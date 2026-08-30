@@ -123,7 +123,7 @@ export class SessionSupervisor {
    * 恢复 suspended 会话：从 DB 行重建受管会话（带 resumeSessionId），
    * AcpSession 内部 load 失败时透明降级为新建并发出 session_expired 信号。
    */
-  resumeSession(sessionId: string): AgentSessionRow {
+  async resumeSession(sessionId: string): Promise<AgentSessionRow> {
     if (this.sessions.has(sessionId)) return this.sessionRepo.byId(sessionId)!;
 
     const row = this.sessionRepo.byId(sessionId);
@@ -136,7 +136,7 @@ export class SessionSupervisor {
     if (!provider) throw new Error(`Provider not found: ${row.providerId}`);
 
     this.sessionRepo.update(sessionId, { status: 'resuming', lastActiveAt: Date.now() });
-    this.spawnSupervisedSession(row, installation, provider, {
+    await this.spawnSupervisedSession(row, installation, provider, {
       resumeSessionId: row.nativeSessionId,
     });
     const updated = this.sessionRepo.byId(sessionId)!;
@@ -173,18 +173,18 @@ export class SessionSupervisor {
     };
     this.sessionRepo.insert(row);
 
-    this.spawnSupervisedSession(row, installation, provider, { yoloMode: options?.yoloMode ?? false });
+    await this.spawnSupervisedSession(row, installation, provider, { yoloMode: options?.yoloMode ?? false });
     return row;
   }
 
   /** 从行构建受管会话并加入会话池（createSession 与 resumeSession 共用） */
-  private spawnSupervisedSession(
+  private async spawnSupervisedSession(
     row: AgentSessionRow,
     installation: import('@shared/index').AgentInstallation,
     provider: import('@shared/index').ProviderSpec,
     options?: { yoloMode?: boolean; resumeSessionId?: string | null }
-  ): void {
-    const spec = buildLaunchSpec(provider, installation, row.workDir);
+  ): Promise<void> {
+    const spec = await buildLaunchSpec(provider, installation, row.workDir);
     const config: AgentConnectionConfig = {
       agentBackend: provider.id,
       foucSessionId: row.id,

@@ -99,21 +99,26 @@
 
 **开发工作流**：`pnpm dev` 并发起 Next.js dev 与后端 `bun --hot`（concurrently）；`desktop:dev` 时 Tauri 壳以 dev 模式拉起后端。前端在后端未就绪时显示连接状态而非白屏。
 
-### AD-3 桥接策略：本地化工件，杜绝运行时网络拉取
+### AD-3 桥接策略：本地化工件 + 按需下载，杜绝安装包膨胀
 
-桥接适配器不依赖 `bun x`/`npx` 在用户机器上现下载（编译后的后端 exe 无法充当
-bun CLI 传参运行，且运行时网络拉取不可控）。桥以本地工件形态随版本走：
+桥不进安装包，也不依赖 `bun x`/`npx` 运行时拉取（编译后的后端 exe 无法充当
+bun CLI 传参运行；AionCore 的 npx+managed-node 方案则需运行时下载 Node 与包）。
+三类形态（版本均由 backend/package.json 锁定）：
 
-- **版本锁定**：三个桥包（claude-agent-acp / codex-acp / codebuddy）是 `backend/package.json`
-  的直接依赖，升级即 Fouc 版本的显式变更；其中 codex 桥是原生二进制（npm 平台包），
-  claude/codebuddy 桥是 JS 适配器；
-- **开发态**：直接运行 `backend/node_modules` 下的入口（JS 入口经 bun、原生直接执行）；
-- **打包态**：JS 桥经 `bun build --compile` 编译为单文件 sidecar（`fouc-bridge-claude`、
-  `fouc-bridge-codebuddy`），codex 原生桥直接复制为 sidecar；均经 Tauri externalBin 随应用分发；
-- **bun 运行时随包分发**：claude 桥的 claude-agent-sdk 在 Bun 下以 `"bun"` 启动解压出的
-  CLI，故 sidecar 目录含 `bun.exe` 并在子进程 PATH 前置（`prepareCleanEnv` 统一处理）；
-- **上游补丁**：claude-agent-sdk 0.2.112 发布包缺失 `tempfile.js`（embed 形态编译必需），
-  以 pnpm patch 补齐（`patches/claude-agent-sdk-tempfile.patch`）。
+- **JS 桥（claude）**：适配器编译进后端二进制，以 `fouc-backend --bridge <id>`
+  分发；claude-agent-sdk 需以 `bun <cli.js>` 启动内嵌 CLI，由 userData 下的
+  bun.exe 硬链接（后端 exe 自身）承接，子进程环境前置其目录；
+- **原生桥（codex，79MB）**：首次使用时从 npm 下载平台包到
+  userData/runtime/bridges/ 并缓存（sha512 完整性校验；官方源失败自动经
+  npmmirror 重试；FOUC_NPM_REGISTRY 可覆盖）；
+- **原生 ACP 的 CLI（codebuddy 等）**：直接启动用户已安装的 CLI（如
+  `codebuddy --acp`），与其余 native Agent 同一信任模型；
+- **上游补丁**：claude-agent-sdk 0.2.112 发布包缺失 tempfile.js（embed 形态
+  编译必需），以 pnpm patch 补齐（patches/claude-agent-sdk-tempfile.patch）。
+
+打包形态的两条硬教训（实机踩坑）：模块顶层 await 分发会让其后的 const 延迟
+求值（端口常量读到 undefined → Bun.serve 落到默认 3000 与 dev server 抢端口）；
+壳对 127.0.0.1 的健康检查必须 no_proxy（系统代理会拦截回环请求造成误杀循环）。
 
 ### AD-4 Provider 目录：声明式、DB 种子、可被用户覆盖
 

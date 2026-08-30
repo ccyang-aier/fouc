@@ -7,17 +7,23 @@
 
 // ─── Agent Provider（一类 Agent 产品的目录声明） ───────────────────
 
-/** ACP 启动方式：原生子命令或桥接工件 */
+/**
+ * ACP 启动方式：原生子命令，或桥接。
+ * 桥的本地化工件按形态区分：开发态统一解析 backend/node_modules 下的 entry
+ * （js 经 bun 运行，native 直接执行）；打包态由 packaged 声明来源——
+ * 并入后端二进制（argv 分发），或首次使用时从 npm 下载原生桥。
+ */
 export type AcpLaunch =
   | { kind: 'native'; args: string[] }
   | {
       kind: 'bridge';
-      /** js：Bun 可直接运行的适配器入口；native：随 npm 包分发的原生桥二进制 */
-      bridgeRuntime: 'js' | 'native';
-      /** backend/node_modules 下的工件路径（开发态直接运行） */
-      entry: string;
-      /** 打包态随应用分发的桥可执行文件名（不含扩展名） */
-      binary: string;
+      /** 开发态工件形态：bun 可运行的 js 入口，或 npm 平台包内的原生二进制 */
+      devRuntime: 'bun' | 'native';
+      /** backend/node_modules 下的工件路径（存在即视为开发态） */
+      devEntry: string;
+      packaged:
+        | { source: 'backend-dispatch' }
+        | { source: 'npm-download'; npmPackage: string; version: string; bin: string };
     };
 
 /** 目录中一个 Provider 的声明（对应 SQLite agent_provider 种子行） */

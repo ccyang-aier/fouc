@@ -88,7 +88,7 @@ export async function probeInstallation(provider: ProviderSpec, installation: Ag
 
   // ── 阶段 3：ACP 握手（协议层） ─────────────────────────────────
   const tempCwd = os.tmpdir();
-  const spec = buildLaunchSpec(provider, { ...installation, executablePath: executable }, tempCwd);
+  const spec = await buildLaunchSpec(provider, { ...installation, executablePath: executable }, tempCwd);
   const initTimeoutMs = provider.acpLaunch.kind === 'bridge' ? ACP_BRIDGE_INIT_TIMEOUT_MS : ACP_INIT_TIMEOUT_MS;
   const client = new ProcessAcpClient(
     async () => {

@@ -12,10 +12,10 @@
 import type { ProviderSpec } from '@shared/index';
 
 /**
- * 桥接 Agent 的适配器以本地化工件运行（版本由 backend/package.json 锁定）：
+ * 桥接 Agent 的适配器本地化（版本由 backend/package.json 锁定）：
  *  - 开发态：直接运行 backend/node_modules 下的入口（js 经 bun，native 直接执行）
- *  - 打包态：运行随应用分发的桥 sidecar（FOUC_BRIDGE_DIR 指向 exe 同目录）
- * 不再使用 `bun x`（编译后的后端 exe 无法充当 bun CLI，且运行时下载不可控）。
+ *  - 打包态：claude 桥并入后端二进制（`fouc-backend --bridge claude` 分发）；
+ *    codex 桥是 79MB 原生二进制，首次使用时从 npm 下载到 userData 并缓存
  */
 export const PROVIDER_CATALOG: ProviderSpec[] = [
   {
@@ -24,9 +24,9 @@ export const PROVIDER_CATALOG: ProviderSpec[] = [
     cliCommand: 'claude',
     acpLaunch: {
       kind: 'bridge',
-      bridgeRuntime: 'js',
-      entry: '@agentclientprotocol/claude-agent-acp/dist/index.js',
-      binary: 'fouc-bridge-claude',
+      devRuntime: 'bun',
+      devEntry: '@agentclientprotocol/claude-agent-acp/dist/index.js',
+      packaged: { source: 'backend-dispatch' },
     },
     authRequired: true,
     skillsDir: '.claude/skills',
@@ -39,9 +39,14 @@ export const PROVIDER_CATALOG: ProviderSpec[] = [
     cliCommand: 'codex',
     acpLaunch: {
       kind: 'bridge',
-      bridgeRuntime: 'native',
-      entry: '@zed-industries/codex-acp-win32-x64/bin/codex-acp.exe',
-      binary: 'fouc-bridge-codex',
+      devRuntime: 'native',
+      devEntry: '@zed-industries/codex-acp-win32-x64/bin/codex-acp.exe',
+      packaged: {
+        source: 'npm-download',
+        npmPackage: '@zed-industries/codex-acp-win32-x64',
+        version: '0.9.5',
+        bin: 'bin/codex-acp.exe',
+      },
     },
     authRequired: true,
     skillsDir: '.codex/skills',
@@ -144,12 +149,7 @@ export const PROVIDER_CATALOG: ProviderSpec[] = [
     id: 'codebuddy',
     name: 'CodeBuddy',
     cliCommand: 'codebuddy',
-    acpLaunch: {
-      kind: 'bridge',
-      bridgeRuntime: 'js',
-      entry: '@tencent-ai/codebuddy-code/bin/codebuddy',
-      binary: 'fouc-bridge-codebuddy',
-    },
+    acpLaunch: { kind: 'native', args: ['--acp'] },
     authRequired: true,
     skillsDir: '.codebuddy/skills',
     defaultEnabled: true,

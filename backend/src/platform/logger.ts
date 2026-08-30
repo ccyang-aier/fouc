@@ -9,7 +9,8 @@ const minLevel: Level = (process.env.FOUC_LOG_LEVEL as Level) ?? 'info';
 
 function emit(level: Level, tag: string, message: string, extra?: unknown): void {
   if (LEVELS[level] < LEVELS[minLevel]) return;
-  const line = `[${new Date().toISOString()}] [${level}] [${tag}] ${message}`;
+  // pid 前缀：桥/垫片子进程与主进程的 stderr 汇入同一日志文件，需可归因
+  const line = `[${new Date().toISOString()}] [pid ${process.pid}] [${level}] [${tag}] ${message}`;
   if (extra !== undefined) {
     // eslint-disable-next-line no-console
     console[level === 'debug' ? 'log' : level](line, extra);

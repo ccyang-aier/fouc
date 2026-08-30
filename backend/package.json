@@ -13,7 +13,6 @@
     "@agentclientprotocol/claude-agent-acp": "0.29.2",
     "@agentclientprotocol/sdk": "^1.4.0",
     "@fouc/shared": "workspace:*",
-    "@tencent-ai/codebuddy-code": "^2.142.0",
     "@zed-industries/codex-acp": "0.9.5",
     "@zed-industries/codex-acp-win32-x64": "0.9.5",
     "hono": "^4.13.5"

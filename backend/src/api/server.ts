@@ -194,9 +194,9 @@ export function createApp(context: ServerContext): { app: Hono; hub: BroadcastHu
 
   app.get('/api/sessions/:id/diagnostics', (c) => c.json({ ok: true, data: supervisor.diagnostics(c.req.param('id')) }));
 
-  app.post('/api/sessions/:id/resume', (c) => {
+  app.post('/api/sessions/:id/resume', async (c) => {
     try {
-      const session = supervisor.resumeSession(c.req.param('id'));
+      const session = await supervisor.resumeSession(c.req.param('id'));
       return c.json({ ok: true, data: session });
     } catch (error) {
       return c.json({ ok: false, error: { code: 'resume_failed', message: String(error) } }, 400);

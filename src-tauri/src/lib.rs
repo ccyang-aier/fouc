@@ -49,10 +49,17 @@ fn generate_token() -> String {
 }
 
 fn pick_free_port() -> Option<u16> {
-    TcpListener::bind("127.0.0.1:0")
-        .ok()
-        .and_then(|l| l.local_addr().ok())
-        .map(|a| a.port())
+    // 3000 = 前端 dev 端口、8710 = 后端 dev 端口：打包实例必须避开——
+    // 开发者同时跑着 dev server 时会互相抢端口，健康检查打到 dev server
+    // 返回 404，导致壳误杀健康后端、陷入重启循环
+    loop {
+        let listener = TcpListener::bind("127.0.0.1:0").ok()?;
+        let port = listener.local_addr().ok()?.port();
+        drop(listener);
+        if port != 3000 && port != 8710 {
+            return Some(port);
+        }
+    }
 }
 
 impl BackendState {
@@ -80,11 +87,7 @@ fn backend_command(_app: &AppHandle, port: u16, token: &str, data_dir: &str) -> 
         c.arg("run").arg(repo_root.join("backend/src/index.ts"));
         c
     } else {
-        // 打包模式：桥 sidecar 与后端 exe 同目录
-        let exe_dir = current_exe_dir()?;
-        let mut c = Command::new(exe_dir.join(sidecar_name()));
-        c.env("FOUC_BRIDGE_DIR", exe_dir.to_string_lossy().to_string());
-        c
+        Command::new(current_exe_dir()?.join(sidecar_name()))
     };
 
     // 后端 stdout/stderr 落盘 userData/logs/backend.log（排查问题；无文件则丢弃）
@@ -177,14 +180,22 @@ fn dirs_fallback() -> String {
 }
 
 /// 健康监视：就绪事件 + 崩溃退避重启（1s/5s/30s 封顶）
+///
+/// 判死纪律：单次超时不算（Agent 启动期的子进程孵化会短暂阻塞事件循环），
+/// 连续 5 次失败才判死；判死后先 kill 旧子进程再退避重启——旧进程可能只是
+/// 阻塞未退，留着会占住端口，让重启的新后端陷入 EADDRINUSE 幽灵循环。
 fn spawn_health_watch(app: AppHandle, state: SharedBackendState, port: u16) {
     std::thread::spawn(move || {
+        // 回环健康检查绝不走代理：系统代理（如 Clash）会拦截/丢弃 127.0.0.1
+        // 请求，导致健康后端被误判死亡、陷入杀重启循环
         let client = reqwest::blocking::Client::builder()
-            .timeout(Duration::from_secs(2))
+            .no_proxy()
+            .timeout(Duration::from_secs(5))
             .build()
             .expect("http client");
         let health_url = format!("http://127.0.0.1:{port}/health");
         let mut ready_announced = false;
+        let mut failures: u32 = 0;
 
         loop {
             std::thread::sleep(Duration::from_millis(500));
@@ -195,6 +206,7 @@ fn spawn_health_watch(app: AppHandle, state: SharedBackendState, port: u16) {
                 .map(|r| r.status().is_success())
                 .unwrap_or(false);
             if healthy {
+                failures = 0;
                 if !ready_announced {
                     ready_announced = true;
                     let _ = app.emit(BACKEND_READY_EVENT, port);
@@ -209,37 +221,19 @@ fn spawn_health_watch(app: AppHandle, state: SharedBackendState, port: u16) {
                 ready_announced = false;
                 let _ = app.emit(BACKEND_DOWN_EVENT, "backend lost — restarting");
             }
-
-            // 进程还活着但健康检查不过：启动窗口（60s）内继续等待
-            let running = state
-                .inner
-                .lock()
-                .map(|mut inner| {
-                    inner
-                        .child
-                        .as_mut()
-                        .map(|c| c.try_wait().map(|s| s.is_none()).unwrap_or(false))
-                        .unwrap_or(false)
-                })
-                .unwrap_or(false);
-            let in_startup_window = state
-                .inner
-                .lock()
-                .map(|inner| {
-                    inner
-                        .last_start
-                        .map(|t| t.elapsed() < Duration::from_secs(60))
-                        .unwrap_or(false)
-                })
-                .unwrap_or(false);
-            if running && in_startup_window {
+            failures += 1;
+            if failures < 5 {
                 continue;
             }
+            failures = 0;
 
-            // 进程死亡或超窗：退避重启
+            // 判死：清掉旧子进程（可能仍在运行并占住端口），再退避重启
             let backoff = {
                 let mut inner = state.inner.lock().unwrap();
-                inner.child = None;
+                if let Some(mut child) = inner.child.take() {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                }
                 let delay = match inner.restart_count {
                     0 => 1,
                     1 | 2 => 5,
@@ -281,6 +275,7 @@ fn shutdown_backend(state: &BackendState) {
         if let Some(mut child) = inner.child.take() {
             if port > 0 {
                 if let Ok(client) = reqwest::blocking::Client::builder()
+                    .no_proxy()
                     .timeout(Duration::from_secs(3))
                     .build()
                 {

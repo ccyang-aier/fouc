@@ -1,0 +1,48 @@
+{
+  "name": "fouc-workbench",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Fouc — a collaborative AI agent workbench for people and teams.",
+  "packageManager": "pnpm@10.29.3",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "next dev --hostname 0.0.0.0",
+    "build": "next build",
+    "preview": "serve out",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --max-warnings=0",
+    "check": "pnpm typecheck && pnpm lint && pnpm build",
+    "tauri": "tauri",
+    "desktop:dev": "tauri dev",
+    "desktop:build": "tauri build"
+  },
+  "dependencies": {
+    "@phosphor-icons/react": "2.1.10",
+    "@radix-ui/react-dropdown-menu": "latest",
+    "@radix-ui/react-slot": "latest",
+    "@radix-ui/react-tooltip": "latest",
+    "@tauri-apps/api": "2.11.1",
+    "class-variance-authority": "latest",
+    "clsx": "latest",
+    "next": "16.3.3",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "tailwind-merge": "latest"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
+    "@tauri-apps/cli": "2.11.4",
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.3.3",
+    "postcss": "latest",
+    "serve": "latest",
+    "tailwindcss": "4.3.3",
+    "tw-animate-css": "latest",
+    "typescript": "5.9.3"
+  }
+}

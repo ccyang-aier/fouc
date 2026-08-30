@@ -1,0 +1,22 @@
+# dependencies
+/node_modules
+
+# Next.js
+/.next
+/out
+*.tsbuildinfo
+
+# Tauri / Rust
+/src-tauri/target
+
+# QA captures
+/qa/*.png
+
+# environment
+.env*
+!.env.example
+
+# system
+.DS_Store
+Thumbs.db
+*.log

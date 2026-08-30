@@ -1,0 +1,127 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+:root {
+  --shell: #f3f4f4;
+  --surface-subtle: #fafafa;
+  --surface-hover: #f4f5f5;
+  --ink: #17191b;
+  --ink-soft: #303438;
+  --muted-strong: #62686f;
+  --muted: #8a9096;
+  --line: rgba(23, 25, 27, 0.085);
+  --line-strong: rgba(23, 25, 27, 0.14);
+  --accent: #0da887;
+  --accent-strong: #078f73;
+  --focus-ring: rgba(13, 168, 135, 0.35);
+}
+
+@theme inline {
+  --color-background: var(--shell);
+  --color-foreground: var(--ink);
+  --font-sans: "Inter Variable", "SF Pro Text", "Segoe UI Variable Text",
+    "Segoe UI", "PingFang SC", "Microsoft YaHei UI", "Noto Sans CJK SC",
+    system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--shell);
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  font-size: 13px;
+  font-family: var(--font-sans);
+  font-synthesis: none;
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button,
+textarea,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: default;
+}
+
+::selection {
+  background: rgba(13, 168, 135, 0.18);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: rgba(56, 61, 66, 0.18);
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (max-width: 820px) {
+  .sidebar-label {
+    display: none;
+  }
+
+  aside nav button,
+  aside section button {
+    justify-content: center;
+  }
+
+  aside > button:first-of-type {
+    justify-content: center;
+    padding-inline: 0;
+  }
+}
+
+.sidebar-collapsed .sidebar-label {
+  display: none;
+}
+
+.sidebar-collapsed nav button,
+.sidebar-collapsed section button {
+  justify-content: center;
+}
+
+@media (max-height: 760px) {
+  aside nav {
+    margin-top: 8px;
+  }
+
+  aside nav button {
+    height: 36px;
+  }
+
+  aside section {
+    margin-top: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

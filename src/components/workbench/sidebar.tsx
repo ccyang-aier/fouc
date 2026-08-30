@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { useState } from "react"
 import {
   Bell,
@@ -21,7 +22,6 @@ import {
 } from "@phosphor-icons/react"
 
 import { Button } from "@/components/ui/button"
-import { FoucMark } from "@/components/brand/fouc-mark"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -75,14 +75,30 @@ export function Sidebar({
                 onClick={onToggle}
                 className="mx-auto flex size-9 items-center justify-center rounded-[9px] outline-none transition-colors hover:bg-black/[0.045] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
               >
-                <FoucMark className="size-8" />
+                <Image
+                  src="/brand/fouc-mark.png"
+                  alt=""
+                  width={32}
+                  height={32}
+                  draggable={false}
+                  className="size-8 object-contain"
+                  priority
+                />
               </button>
             </TooltipTrigger>
             <TooltipContent side="right">展开侧边栏</TooltipContent>
           </Tooltip>
         ) : (
           <>
-            <FoucMark className="size-8" />
+            <Image
+              src="/brand/fouc-mark.png"
+              alt=""
+              width={32}
+              height={32}
+              draggable={false}
+              className="size-8 object-contain"
+              priority
+            />
             <div className="sidebar-label ml-1 min-w-0 flex-1 leading-none">
               <div className="truncate text-[12px] font-semibold tracking-[-0.01em]">Fouc</div>
               <div className="mt-1 truncate text-[9px] text-[var(--muted)]">智能工作台</div>

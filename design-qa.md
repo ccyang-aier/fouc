@@ -13,7 +13,7 @@ The final pass was evaluated at 1920×1080 and 1366×768 CSS pixels in the Codex
 
 ## Final comparison points
 
-1. **Logo fidelity:** the interface mark is rendered as an inline SVG built from the logo's overlapping rounded-square geometry. It stays sharp at every UI scale and no longer depends on screenshot-derived pixels.
+1. **Logo fidelity:** the interface uses a 1312×1199 transparent PNG generated from the accepted logo reference with ImageGen. It preserves the reference's softly dimensional black foreground frame and light-gray rear frame while supplying enough source resolution for high-DPI UI rendering.
 2. **Sidebar header:** a compact 50 px header now contains the Fouc mark, product name, “智能工作台” subtitle, and a working collapse/expand control.
 3. **Density:** the native-style title bar is 38 px, the desktop sidebar is 240 px, primary navigation rows are 34 px, the main heading is 25 px, and secondary UI typography is 9–12 px.
 4. **Icon language:** navigation, workspace, mode, and starter icons use unboxed Phosphor filled glyphs with restrained pastel colors. Only real action hit targets, such as attach and send, retain a background surface.
@@ -29,7 +29,7 @@ The final pass was evaluated at 1920×1080 and 1366×768 CSS pixels in the Codex
 
 ### Collapsed-rail alignment and logo clarity correction
 
-- The title bar and sidebar now share a reusable vector Fouc mark instead of the former 52×53 raster extraction.
+- The title bar and sidebar share the same high-resolution ImageGen raster asset with genuine alpha transparency instead of the former 52×53 screenshot extraction or a flat SVG approximation.
 - Every visible collapsed-rail icon is centered on the 30 px axis of the 60 px sidebar, including the primary new-task control, workspace add control, workspace rows, recent row, and profile control.
 
 ## Verification

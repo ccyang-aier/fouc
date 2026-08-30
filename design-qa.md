@@ -13,7 +13,7 @@ The final pass was evaluated at 1920×1080 and 1366×768 CSS pixels in the Codex
 
 ## Final comparison points
 
-1. **Logo fidelity:** the implementation uses the user-supplied logo pixels. Only the captured light-gray background was converted to transparency, preserving the mark geometry while removing the unwanted rectangular block.
+1. **Logo fidelity:** the interface mark is rendered as an inline SVG built from the logo's overlapping rounded-square geometry. It stays sharp at every UI scale and no longer depends on screenshot-derived pixels.
 2. **Sidebar header:** a compact 50 px header now contains the Fouc mark, product name, “智能工作台” subtitle, and a working collapse/expand control.
 3. **Density:** the native-style title bar is 38 px, the desktop sidebar is 240 px, primary navigation rows are 34 px, the main heading is 25 px, and secondary UI typography is 9–12 px.
 4. **Icon language:** navigation, workspace, mode, and starter icons use unboxed Phosphor filled glyphs with restrained pastel colors. Only real action hit targets, such as attach and send, retain a background surface.
@@ -26,6 +26,11 @@ The final pass was evaluated at 1920×1080 and 1366×768 CSS pixels in the Codex
 - Rendered evidence: `C:\Users\17335\AppData\Local\Temp\fouc-collapse-after.png`
 - Same-input comparison: `C:\Users\17335\AppData\Local\Temp\fouc-collapse-comparison.png`
 - The separate expand chevron is no longer rendered in the collapsed state. The centered Fouc logo is now the only header control and expands the sidebar when clicked; the expanded state retains its dedicated collapse button.
+
+### Collapsed-rail alignment and logo clarity correction
+
+- The title bar and sidebar now share a reusable vector Fouc mark instead of the former 52×53 raster extraction.
+- Every visible collapsed-rail icon is centered on the 30 px axis of the 60 px sidebar, including the primary new-task control, workspace add control, workspace rows, recent row, and profile control.
 
 ## Verification
 

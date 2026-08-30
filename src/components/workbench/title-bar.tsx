@@ -1,6 +1,5 @@
 "use client"
 
-import Image from "next/image"
 import {
   CopySimple,
   Minus,
@@ -16,6 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { FoucMark } from "@/components/brand/fouc-mark"
 import { performWindowAction } from "@/lib/tauri-window"
 import { cn } from "@/lib/utils"
 
@@ -39,14 +39,7 @@ export function TitleBar() {
           data-tauri-drag-region
           className="mr-2 flex items-center gap-1 font-medium"
         >
-          <Image
-            src="/brand/fouc-mark-exact.png"
-            alt="Fouc"
-            width={28}
-            height={28}
-            draggable={false}
-            className="size-7 object-contain mix-blend-multiply"
-          />
+          <FoucMark className="size-7" />
           <span data-tauri-drag-region className="text-[12px]">
             Fouc
           </span>

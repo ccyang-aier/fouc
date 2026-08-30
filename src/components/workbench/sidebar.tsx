@@ -1,6 +1,5 @@
 "use client"
 
-import Image from "next/image"
 import { useState } from "react"
 import {
   Bell,
@@ -22,6 +21,7 @@ import {
 } from "@phosphor-icons/react"
 
 import { Button } from "@/components/ui/button"
+import { FoucMark } from "@/components/brand/fouc-mark"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -75,30 +75,14 @@ export function Sidebar({
                 onClick={onToggle}
                 className="mx-auto flex size-9 items-center justify-center rounded-[9px] outline-none transition-colors hover:bg-black/[0.045] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
               >
-                <Image
-                  src="/brand/fouc-mark-exact.png"
-                  alt=""
-                  width={32}
-                  height={32}
-                  draggable={false}
-                  className="size-8 object-contain mix-blend-multiply"
-                  priority
-                />
+                <FoucMark className="size-8" />
               </button>
             </TooltipTrigger>
             <TooltipContent side="right">展开侧边栏</TooltipContent>
           </Tooltip>
         ) : (
           <>
-            <Image
-              src="/brand/fouc-mark-exact.png"
-              alt="Fouc"
-              width={32}
-              height={32}
-              draggable={false}
-              className="size-8 shrink-0 object-contain mix-blend-multiply"
-              priority
-            />
+            <FoucMark className="size-8" />
             <div className="sidebar-label ml-1 min-w-0 flex-1 leading-none">
               <div className="truncate text-[12px] font-semibold tracking-[-0.01em]">Fouc</div>
               <div className="mt-1 truncate text-[9px] text-[var(--muted)]">智能工作台</div>
@@ -125,7 +109,10 @@ export function Sidebar({
         variant="outline"
         onClick={onNewMission}
         aria-label="新建任务"
-        className="mt-1 h-8 w-full justify-start rounded-[8px] border-black/[0.075] bg-white/30 px-2 text-[12px] font-semibold shadow-none hover:bg-white/70"
+        className={cn(
+          "mt-1 h-8 w-full justify-start rounded-[8px] border-black/[0.075] bg-white/30 px-2 text-[12px] font-semibold shadow-none hover:bg-white/70",
+          collapsed && "justify-center px-0",
+        )}
       >
         <PlusCircle className="size-[16px]" weight="bold" />
         <span className="sidebar-label">新建任务</span>
@@ -161,11 +148,19 @@ export function Sidebar({
       </nav>
 
       <section className="mt-2.5" aria-label="工作空间">
-        <div className="flex h-6 items-center px-2 text-[10px] font-medium text-[var(--muted)]">
+        <div
+          className={cn(
+            "flex h-6 items-center px-2 text-[10px] font-medium text-[var(--muted)]",
+            collapsed && "justify-center px-0",
+          )}
+        >
           <button
             type="button"
             onClick={() => setSpacesOpen((open) => !open)}
-            className="flex items-center gap-1 rounded-md outline-none hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+            className={cn(
+              "flex items-center gap-1 rounded-md outline-none hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+              collapsed && "hidden",
+            )}
             aria-expanded={spacesOpen}
             aria-label="切换空间列表"
           >
@@ -181,7 +176,10 @@ export function Sidebar({
               <button
                 type="button"
                 aria-label="新建空间"
-                className="ml-auto flex size-6 items-center justify-center rounded-md outline-none hover:bg-black/[0.05] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                className={cn(
+                  "ml-auto flex size-6 items-center justify-center rounded-md outline-none hover:bg-black/[0.05] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+                  collapsed && "ml-0",
+                )}
               >
                 <PlusCircle className="size-3.5" />
               </button>
@@ -218,7 +216,10 @@ export function Sidebar({
             <button
               type="button"
               aria-label="打开个人菜单"
-              className="flex h-[42px] w-full items-center gap-2 rounded-[8px] border border-black/[0.065] bg-white/25 px-2 text-left outline-none transition-colors hover:bg-white/65 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+              className={cn(
+                "flex h-[42px] w-full items-center gap-2 rounded-[8px] border border-black/[0.065] bg-white/25 px-2 text-left outline-none transition-colors hover:bg-white/65 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+                collapsed && "justify-center px-0",
+              )}
             >
               <span className="relative flex size-7 shrink-0 items-center justify-center rounded-full bg-[#e5f3ef] text-[#54ac96]">
                 <UserCircle className="size-[21px]" weight="fill" />
@@ -259,6 +260,7 @@ function SpaceRow({
   return (
     <button
       type="button"
+      aria-label={label}
       className="flex h-8 w-full items-center gap-2 rounded-lg px-2 text-left text-[11px] font-medium outline-none transition-colors hover:bg-black/[0.035] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
     >
       <CaretRight className="sidebar-label size-3 text-[var(--muted)]" />

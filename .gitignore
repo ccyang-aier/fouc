@@ -1,5 +1,5 @@
 # dependencies
-/node_modules
+node_modules/
 
 # Next.js
 /.next
@@ -23,3 +23,6 @@
 .DS_Store
 Thumbs.db
 *.log
+
+# backend sidecar build output (bun compile, per-target)
+/src-tauri/binaries

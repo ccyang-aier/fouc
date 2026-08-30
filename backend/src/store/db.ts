@@ -1,0 +1,120 @@
+/**
+ * SQLite 访问层（bun:sqlite）。
+ *
+ * 运行时绑定隔离在本文件与 repositories.ts —— 其余代码不直接触碰 SQL，
+ * 保留退回 Node（better-sqlite3）的低成本通道。
+ */
+
+import { Database } from 'bun:sqlite';
+import { mkdirSync } from 'node:fs';
+import path from 'node:path';
+import { getDbPath } from '../platform/paths';
+import { createLogger } from '../platform/logger';
+
+const log = createLogger('store');
+
+export type Db = Database;
+
+// ─── 嵌入式迁移（AionCore 模式：NNN_描述.sql 顺序执行） ─────────────
+
+const MIGRATIONS: Array<{ name: string; sql: string }> = [
+  {
+    name: '001_initial_schema',
+    sql: `
+CREATE TABLE IF NOT EXISTS agent_provider (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  cli_command TEXT NOT NULL,
+  acp_launch TEXT NOT NULL,
+  auth_required INTEGER NOT NULL DEFAULT 0,
+  skills_dir TEXT,
+  default_enabled INTEGER NOT NULL DEFAULT 1,
+  behavior_policy TEXT NOT NULL DEFAULT '{}'
+);
+
+CREATE TABLE IF NOT EXISTS agent_installation (
+  id TEXT PRIMARY KEY,
+  provider_id TEXT NOT NULL REFERENCES agent_provider(id),
+  executable_path TEXT NOT NULL,
+  source TEXT NOT NULL,
+  version TEXT,
+  status TEXT NOT NULL DEFAULT 'unchecked',
+  capability_manifest TEXT,
+  last_probe_at INTEGER,
+  last_probe_kind TEXT,
+  last_probe_duration_ms INTEGER,
+  last_error_code TEXT,
+  last_error_message TEXT,
+  last_error_guidance TEXT,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  is_default INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_installation_provider ON agent_installation(provider_id);
+
+CREATE TABLE IF NOT EXISTS agent_session (
+  id TEXT PRIMARY KEY,
+  installation_id TEXT NOT NULL REFERENCES agent_installation(id),
+  provider_id TEXT NOT NULL,
+  work_dir TEXT NOT NULL,
+  native_session_id TEXT,
+  status TEXT NOT NULL DEFAULT 'idle',
+  created_at INTEGER NOT NULL,
+  last_active_at INTEGER NOT NULL,
+  ended_at INTEGER,
+  end_reason TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_session_installation ON agent_session(installation_id);
+
+CREATE TABLE IF NOT EXISTS agent_run (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL REFERENCES agent_session(id),
+  seq INTEGER NOT NULL,
+  input TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'queued',
+  started_at INTEGER,
+  ended_at INTEGER,
+  exit_info TEXT,
+  stop_reason TEXT,
+  usage TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_run_session ON agent_run(session_id, seq);
+
+CREATE TABLE IF NOT EXISTS agent_event (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id TEXT,
+  run_id TEXT,
+  installation_id TEXT,
+  seq_in_run INTEGER,
+  type TEXT NOT NULL,
+  payload TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_event_session ON agent_event(session_id, seq_in_run);
+CREATE INDEX IF NOT EXISTS idx_event_type ON agent_event(type, created_at);
+`,
+  },
+];
+
+export function openDatabase(dbPath?: string): Db {
+  const target = dbPath ?? getDbPath();
+  mkdirSync(path.dirname(target), { recursive: true });
+  const db = new Database(target);
+  db.exec('PRAGMA journal_mode = WAL;');
+  db.exec('PRAGMA foreign_keys = ON;');
+
+  db.exec('CREATE TABLE IF NOT EXISTS schema_migrations (name TEXT PRIMARY KEY, applied_at INTEGER NOT NULL)');
+  const applied = new Set(
+    (db.prepare('SELECT name FROM schema_migrations').all() as Array<{ name: string }>).map((r) => r.name)
+  );
+  for (const migration of MIGRATIONS) {
+    if (applied.has(migration.name)) continue;
+    db.transaction(() => {
+      db.exec(migration.sql);
+      db.prepare('INSERT INTO schema_migrations (name, applied_at) VALUES (?, ?)').run(migration.name, Date.now());
+    })();
+    log.info(`Applied migration ${migration.name}`);
+  }
+  return db;
+}

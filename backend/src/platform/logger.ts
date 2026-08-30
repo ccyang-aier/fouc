@@ -1,0 +1,29 @@
+/**
+ * 简单的结构化日志器。后端日志由 Tauri 壳重定向到 userData/logs/backend.log。
+ */
+
+const LEVELS = { debug: 10, info: 20, warn: 30, error: 40 } as const;
+type Level = keyof typeof LEVELS;
+
+const minLevel: Level = (process.env.FOUC_LOG_LEVEL as Level) ?? 'info';
+
+function emit(level: Level, tag: string, message: string, extra?: unknown): void {
+  if (LEVELS[level] < LEVELS[minLevel]) return;
+  const line = `[${new Date().toISOString()}] [${level}] [${tag}] ${message}`;
+  if (extra !== undefined) {
+    // eslint-disable-next-line no-console
+    console[level === 'debug' ? 'log' : level](line, extra);
+  } else {
+    // eslint-disable-next-line no-console
+    console[level === 'debug' ? 'log' : level](line);
+  }
+}
+
+export function createLogger(tag: string) {
+  return {
+    debug: (message: string, extra?: unknown) => emit('debug', tag, message, extra),
+    info: (message: string, extra?: unknown) => emit('info', tag, message, extra),
+    warn: (message: string, extra?: unknown) => emit('warn', tag, message, extra),
+    error: (message: string, extra?: unknown) => emit('error', tag, message, extra),
+  };
+}

@@ -37,25 +37,30 @@ import {
 } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
-const navigation = [
-  { label: "助理", icon: ChatCircleDots, color: "text-[#58b7a2]" },
-  { label: "项目", icon: FolderOpen, color: "text-[#6e9fe6]" },
-  { label: "Agent · 技能 · 连接器", icon: PlugsConnected, color: "text-[#9b80dc]" },
-  { label: "自动化", icon: Lightning, color: "text-[#e6a64f]" },
-  { label: "知识库", icon: BookOpenText, color: "text-[#63b99d]" },
-  { label: "更多", icon: DotsThreeCircle, color: "text-[#929aa3]" },
+export type WorkbenchView = "home" | "agents" | "placeholder"
+
+const navigation: Array<{ label: string; icon: typeof ChatCircleDots; color: string; view: WorkbenchView }> = [
+  { label: "助理", icon: ChatCircleDots, color: "text-[#58b7a2]", view: "home" },
+  { label: "项目", icon: FolderOpen, color: "text-[#6e9fe6]", view: "placeholder" },
+  { label: "Agent · 技能 · 连接器", icon: PlugsConnected, color: "text-[#9b80dc]", view: "agents" },
+  { label: "自动化", icon: Lightning, color: "text-[#e6a64f]", view: "placeholder" },
+  { label: "知识库", icon: BookOpenText, color: "text-[#63b99d]", view: "placeholder" },
+  { label: "更多", icon: DotsThreeCircle, color: "text-[#929aa3]", view: "placeholder" },
 ]
 
 export function Sidebar({
   collapsed,
   onToggle,
   onNewMission,
+  view,
+  onViewChange,
 }: {
   collapsed: boolean
   onToggle: () => void
   onNewMission: () => void
+  view: WorkbenchView
+  onViewChange: (view: WorkbenchView) => void
 }) {
-  const [active, setActive] = useState<string | null>(null)
   const [spacesOpen, setSpacesOpen] = useState(true)
 
   return (
@@ -140,7 +145,7 @@ export function Sidebar({
 
       <nav aria-label="主导航" className="mt-2 space-y-px">
         {navigation.map((item) => {
-          const selected = active === item.label
+          const selected = view === item.view
           const Icon = item.icon
 
           return (
@@ -149,7 +154,7 @@ export function Sidebar({
               type="button"
               aria-label={item.label}
               aria-current={selected ? "page" : undefined}
-              onClick={() => setActive(item.label)}
+              onClick={() => onViewChange(item.view)}
               className={cn(
                 "group flex h-[34px] w-full items-center gap-2.5 rounded-[8px] px-2 text-left text-[12px] font-medium outline-none transition-[background-color,color,transform] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
                 selected

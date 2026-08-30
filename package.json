@@ -16,7 +16,11 @@
     "check": "pnpm typecheck && pnpm lint && pnpm build",
     "tauri": "tauri",
     "desktop:dev": "tauri dev",
-    "desktop:build": "tauri build"
+    "desktop:build": "tauri build",
+    "backend:dev": "bun --hot backend/src/index.ts",
+    "backend:start": "bun backend/src/index.ts",
+    "backend:typecheck": "tsc --noEmit -p backend/tsconfig.json",
+    "backend:build": "node scripts/build-backend.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",
@@ -29,7 +33,8 @@
     "next": "16.3.3",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "tailwind-merge": "latest"
+    "tailwind-merge": "latest",
+    "@fouc/shared": "workspace:*"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.3.3",

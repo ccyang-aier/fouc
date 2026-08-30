@@ -4,17 +4,20 @@ import { useState } from "react"
 
 import { TooltipProvider } from "@/components/ui/tooltip"
 
+import { AgentsCanvas } from "./agents-canvas"
 import { HomeCanvas } from "./home-canvas"
-import { Sidebar } from "./sidebar"
+import { Sidebar, type WorkbenchView } from "./sidebar"
 import { TitleBar } from "./title-bar"
 import { cn } from "@/lib/utils"
 
 export function WorkbenchShell() {
   const [missionKey, setMissionKey] = useState(0)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [view, setView] = useState<WorkbenchView>("home")
 
   function startMission() {
     setMissionKey((key) => key + 1)
+    setView("home")
     requestAnimationFrame(() => {
       document.querySelector<HTMLTextAreaElement>("[aria-label='任务描述']")?.focus()
     })
@@ -36,9 +39,19 @@ export function WorkbenchShell() {
             collapsed={sidebarCollapsed}
             onToggle={() => setSidebarCollapsed((collapsed) => !collapsed)}
             onNewMission={startMission}
+            view={view}
+            onViewChange={setView}
           />
           <main className="relative min-h-0 overflow-hidden rounded-tl-[16px] bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.012)]">
-            <HomeCanvas key={missionKey} />
+            {view === "home" ? (
+              <HomeCanvas key={missionKey} />
+            ) : view === "agents" ? (
+              <AgentsCanvas />
+            ) : (
+              <div className="flex h-full items-center justify-center text-[13px] text-[var(--ink-soft)]">
+                该空间已在 V1 规划中，尚未开放
+              </div>
+            )}
           </main>
         </div>
       </div>

@@ -75,30 +75,34 @@ export function Sidebar({
                 onClick={onToggle}
                 className="mx-auto flex size-9 items-center justify-center rounded-[9px] outline-none transition-colors hover:bg-black/[0.045] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
               >
-                <Image
-                  src="/brand/fouc-mark.png"
-                  alt=""
-                  width={32}
-                  height={32}
-                  draggable={false}
-                  className="size-8 object-contain"
-                  priority
-                />
+                <span className="relative size-6 shrink-0 overflow-hidden">
+                  <Image
+                    src="/brand/fouc-mark.png"
+                    alt=""
+                    fill
+                    sizes="24px"
+                    draggable={false}
+                    className="scale-[1.5] object-contain"
+                    priority
+                  />
+                </span>
               </button>
             </TooltipTrigger>
             <TooltipContent side="right">展开侧边栏</TooltipContent>
           </Tooltip>
         ) : (
           <>
-            <Image
-              src="/brand/fouc-mark.png"
-              alt=""
-              width={32}
-              height={32}
-              draggable={false}
-              className="size-8 object-contain"
-              priority
-            />
+            <span className="relative size-6 shrink-0 overflow-hidden">
+              <Image
+                src="/brand/fouc-mark.png"
+                alt=""
+                fill
+                sizes="24px"
+                draggable={false}
+                className="scale-[1.5] object-contain"
+                priority
+              />
+            </span>
             <div className="sidebar-label ml-1 min-w-0 flex-1 leading-none">
               <div className="truncate text-[12px] font-semibold tracking-[-0.01em]">Fouc</div>
               <div className="mt-1 truncate text-[9px] text-[var(--muted)]">智能工作台</div>

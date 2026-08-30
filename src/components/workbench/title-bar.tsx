@@ -39,14 +39,16 @@ export function TitleBar() {
           data-tauri-drag-region
           className="mr-2 flex items-center gap-1 font-medium"
         >
-          <Image
-            src="/brand/fouc-mark.png"
-            alt=""
-            width={28}
-            height={28}
-            draggable={false}
-            className="size-7 object-contain"
-          />
+          <span className="relative size-5 shrink-0 overflow-hidden">
+            <Image
+              src="/brand/fouc-mark.png"
+              alt=""
+              fill
+              sizes="20px"
+              draggable={false}
+              className="scale-[1.6] object-contain"
+            />
+          </span>
           <span data-tauri-drag-region className="text-[12px]">
             Fouc
           </span>

@@ -50,15 +50,9 @@ async function main(): Promise<void> {
       return app.fetch(req);
     },
     websocket: {
-      open(ws) {
-        hub.attach(ws as unknown as WebSocket);
-      },
-      message() {
-        /* BroadcastHub 自行监听 message 事件 */
-      },
-      close() {
-        /* BroadcastHub 自行监听 close 事件 */
-      },
+      open: (ws) => hub.attach(ws),
+      message: (ws, data) => hub.onMessage(ws, data as string | Buffer),
+      close: (ws) => hub.onClose(ws),
     },
   });
 

@@ -1,0 +1,12 @@
+diff --git a/tempfile.js b/tempfile.js
+new file mode 100644
+--- /dev/null
++++ b/tempfile.js
+@@ -0,0 +1,7 @@
++// Fouc 补丁：上游 0.2.112 发布包缺失本文件，但 extractFromBunfs.js 导入了它，
++// 导致 bun build --compile 无法打包（embed 形态）。按调用方用法补齐最小实现。
++import os from 'node:os'
++
++export function tmpdir() {
++  return os.tmpdir()
++}

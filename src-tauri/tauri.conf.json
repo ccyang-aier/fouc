@@ -10,6 +10,7 @@
     "frontendDist": "../out"
   },
   "app": {
+    "withGlobalTauri": true,
     "windows": [
       {
         "label": "main",
@@ -44,7 +45,11 @@
     "shortDescription": "AI Agent collaborative workbench",
     "longDescription": "Fouc brings people, teams, and AI agents into one shared workflow.",
     "externalBin": [
-      "binaries/fouc-backend"
+      "binaries/fouc-backend",
+      "binaries/fouc-bridge-claude",
+      "binaries/fouc-bridge-codebuddy",
+      "binaries/fouc-bridge-codex",
+      "binaries/bun"
     ]
   }
 }

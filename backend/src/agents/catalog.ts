@@ -11,13 +11,11 @@
 
 import type { ProviderSpec } from '@shared/index';
 
-export const CODEX_ACP_BRIDGE_VERSION = '0.9.5';
-export const CLAUDE_ACP_BRIDGE_VERSION = '0.29.2';
-export const CODEBUDDY_ACP_BRIDGE_VERSION = 'latest';
-
 /**
- * 桥接包统一经 `bun x --bun <pkg>@<version>` 启动（AionCore 生产验证）。
- * Fouc 后端自身运行于 Bun，桥运行时即后端自身二进制，无需用户安装 Node。
+ * 桥接 Agent 的适配器以本地化工件运行（版本由 backend/package.json 锁定）：
+ *  - 开发态：直接运行 backend/node_modules 下的入口（js 经 bun，native 直接执行）
+ *  - 打包态：运行随应用分发的桥 sidecar（FOUC_BRIDGE_DIR 指向 exe 同目录）
+ * 不再使用 `bun x`（编译后的后端 exe 无法充当 bun CLI，且运行时下载不可控）。
  */
 export const PROVIDER_CATALOG: ProviderSpec[] = [
   {
@@ -26,9 +24,9 @@ export const PROVIDER_CATALOG: ProviderSpec[] = [
     cliCommand: 'claude',
     acpLaunch: {
       kind: 'bridge',
-      pkg: '@agentclientprotocol/claude-agent-acp',
-      version: CLAUDE_ACP_BRIDGE_VERSION,
-      bridgeBinary: 'bun',
+      bridgeRuntime: 'js',
+      entry: '@agentclientprotocol/claude-agent-acp/dist/index.js',
+      binary: 'fouc-bridge-claude',
     },
     authRequired: true,
     skillsDir: '.claude/skills',
@@ -41,9 +39,9 @@ export const PROVIDER_CATALOG: ProviderSpec[] = [
     cliCommand: 'codex',
     acpLaunch: {
       kind: 'bridge',
-      pkg: '@zed-industries/codex-acp',
-      version: CODEX_ACP_BRIDGE_VERSION,
-      bridgeBinary: 'bun',
+      bridgeRuntime: 'native',
+      entry: '@zed-industries/codex-acp-win32-x64/bin/codex-acp.exe',
+      binary: 'fouc-bridge-codex',
     },
     authRequired: true,
     skillsDir: '.codex/skills',
@@ -148,9 +146,9 @@ export const PROVIDER_CATALOG: ProviderSpec[] = [
     cliCommand: 'codebuddy',
     acpLaunch: {
       kind: 'bridge',
-      pkg: '@tencent-ai/codebuddy-code',
-      version: CODEBUDDY_ACP_BRIDGE_VERSION,
-      bridgeBinary: 'bun',
+      bridgeRuntime: 'js',
+      entry: '@tencent-ai/codebuddy-code/bin/codebuddy',
+      binary: 'fouc-bridge-codebuddy',
     },
     authRequired: true,
     skillsDir: '.codebuddy/skills',

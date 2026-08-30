@@ -322,7 +322,6 @@ export class AcpSession {
 
     if (acpErr.retryable && this.startRetryCount < this.maxStartRetries) {
       this.startRetryCount++;
-      this.clearBunxCacheIfNeeded();
       void this.teardown().then(() => {
         const delay = 1000 * Math.pow(2, this.startRetryCount - 1);
         setTimeout(() => void this.doStart().catch((e) => this.handleStartError(e)), delay);
@@ -355,7 +354,6 @@ export class AcpSession {
     const acpErr = normalizeError(err);
     if (acpErr.retryable && this.resumeRetryCount < this.maxResumeRetries) {
       this.resumeRetryCount++;
-      this.clearBunxCacheIfNeeded();
       void this.teardown().then(() => {
         const delay = 1000 * Math.pow(2, this.resumeRetryCount - 1);
         setTimeout(() => void this.doResume().catch((e) => this.handleResumeError(e)), delay);
@@ -712,9 +710,5 @@ export class AcpSession {
       }
       this._client = null;
     }
-  }
-
-  private clearBunxCacheIfNeeded(): void {
-    this._client?.clearBunxCacheIfNeeded();
   }
 }

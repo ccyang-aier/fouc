@@ -29,7 +29,7 @@ const log = createLogger('probe');
 
 const CLI_VERSION_TIMEOUT_MS = 5_000;
 const ACP_INIT_TIMEOUT_MS = 15_000;
-/** 桥接包首次运行需下载安装（bun x 冷启动），握手预算放宽 */
+/** 桥 sidecar 首次启动（含防病毒扫描）预算放宽 */
 const ACP_BRIDGE_INIT_TIMEOUT_MS = 90_000;
 
 export type ProbeOutcome =

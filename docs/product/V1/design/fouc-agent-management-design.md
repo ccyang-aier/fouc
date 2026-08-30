@@ -99,14 +99,21 @@
 
 **开发工作流**：`pnpm dev` 并发起 Next.js dev 与后端 `bun --hot`（concurrently）；`desktop:dev` 时 Tauri 壳以 dev 模式拉起后端。前端在后端未就绪时显示连接状态而非白屏。
 
-### AD-3 桥接包策略：bun x + 固定版本 + 本地缓存（AionCore 模式）
+### AD-3 桥接策略：本地化工件，杜绝运行时网络拉取
 
-AionCore 已把 1.x 的 npx 隐式网络拉取收敛为确定性策略，Fouc 直接采纳其成品形态：
+桥接适配器不依赖 `bun x`/`npx` 在用户机器上现下载（编译后的后端 exe 无法充当
+bun CLI 传参运行，且运行时网络拉取不可控）。桥以本地工件形态随版本走：
 
-- **启动行固定**：目录中 codex/claude 的启动即 `bun x --bun <pkg>@<version>`，版本由 Fouc 目录固定，升级随 Fouc 版本走（显式变更）；
-- **首次使用显式安装**：安装到 `userData/runtime/bun-cache/`（Windows 上连同 TMP/TEMP 一起重定向出系统临时目录，规避杀软 EPERM——AionUi 1.x 踩坑结论），安装动作在 UI 可见、可取消；
-- **registry 版本锁**（迁移 AionCore `registry_npx_lock`）：锁文件记录已解析的包版本，锁定期间跳过版本探测；
-- **缓存损坏自修复**（迁移 AionCore `corrupt_npx_cache_repair`）：stderr 匹配损坏模式 → 路径白名单校验 → 定向清理 → 单次重试；Fouc 收敛为"自动诊断 + 显式重装按钮"，网络类重试不做静默回源。
+- **版本锁定**：三个桥包（claude-agent-acp / codex-acp / codebuddy）是 `backend/package.json`
+  的直接依赖，升级即 Fouc 版本的显式变更；其中 codex 桥是原生二进制（npm 平台包），
+  claude/codebuddy 桥是 JS 适配器；
+- **开发态**：直接运行 `backend/node_modules` 下的入口（JS 入口经 bun、原生直接执行）；
+- **打包态**：JS 桥经 `bun build --compile` 编译为单文件 sidecar（`fouc-bridge-claude`、
+  `fouc-bridge-codebuddy`），codex 原生桥直接复制为 sidecar；均经 Tauri externalBin 随应用分发；
+- **bun 运行时随包分发**：claude 桥的 claude-agent-sdk 在 Bun 下以 `"bun"` 启动解压出的
+  CLI，故 sidecar 目录含 `bun.exe` 并在子进程 PATH 前置（`prepareCleanEnv` 统一处理）；
+- **上游补丁**：claude-agent-sdk 0.2.112 发布包缺失 `tempfile.js`（embed 形态编译必需），
+  以 pnpm patch 补齐（`patches/claude-agent-sdk-tempfile.patch`）。
 
 ### AD-4 Provider 目录：声明式、DB 种子、可被用户覆盖
 
@@ -512,7 +519,7 @@ V1 交付四个界面（对齐 local-agent-management.md §九）：
 | 基线操作：创建会话/下发/流式/追加/取消/结束 | §7 Driver + §9 supervisor |
 | 不支持的操作明确降级 | §6 CapabilityManifest.events + 执行器选择页能力差异提示 |
 | 崩溃/退出/协议异常可识别并保留诊断 | §7.2 退出信息 + stderr 缓冲 + orphaned 处理 |
-| 不复制凭据、不破坏配置、不静默升级 | §10 安全边界 + AD-3 显式桥安装 |
+| 不复制凭据、不破坏配置、不静默升级 | §10 安全边界 + AD-3 本地化工件（无运行时拉取） |
 | 操作关联用户/工作对象/工作目录/权限/审计 | §3.1 对象绑定 + 事件日志 + §8 审批链 |
 
 ## 十五、风险与开放问题

@@ -11,6 +11,13 @@ use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
+
+/// 控制台子进程不弹黑窗（GUI 子系统进程 spawn 控制台程序时 Windows 会新建控制台）
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+
 use std::sync::Arc;
 
 use rand::RngCore;
@@ -28,6 +35,8 @@ struct BackendInner {
     child: Option<Child>,
     restart_count: u32,
     last_start: Option<Instant>,
+    /// 健康监视线程只启动一次（每次 spawn 都另起 watcher 会随重启累积、双重拉起）
+    watcher_running: bool,
 }
 
 const BACKEND_READY_EVENT: &str = "backend://ready";
@@ -55,6 +64,7 @@ impl BackendState {
                 child: None,
                 restart_count: 0,
                 last_start: None,
+                watcher_running: false,
             }),
         }
     }
@@ -70,15 +80,37 @@ fn backend_command(_app: &AppHandle, port: u16, token: &str, data_dir: &str) -> 
         c.arg("run").arg(repo_root.join("backend/src/index.ts"));
         c
     } else {
-        Command::new(current_exe_dir()?.join(sidecar_name()))
+        // 打包模式：桥 sidecar 与后端 exe 同目录
+        let exe_dir = current_exe_dir()?;
+        let mut c = Command::new(exe_dir.join(sidecar_name()));
+        c.env("FOUC_BRIDGE_DIR", exe_dir.to_string_lossy().to_string());
+        c
     };
+
+    // 后端 stdout/stderr 落盘 userData/logs/backend.log（排查问题；无文件则丢弃）
     cmd.env("FOUC_BACKEND_PORT", port.to_string())
         .env("FOUC_BACKEND_TOKEN", token)
         .env("FOUC_DATA_DIR", data_dir)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
+        .stdout(backend_log_stdio(data_dir))
+        .stderr(backend_log_stdio(data_dir))
         .stdin(Stdio::null());
+    #[cfg(windows)]
+    cmd.creation_flags(CREATE_NO_WINDOW);
     Some(cmd)
+}
+
+fn backend_log_stdio(data_dir: &str) -> Stdio {
+    std::fs::create_dir_all(std::path::Path::new(data_dir).join("logs"))
+        .ok()
+        .and_then(|_| {
+            std::fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(std::path::Path::new(data_dir).join("logs").join("backend.log"))
+                .ok()
+        })
+        .map(Stdio::from)
+        .unwrap_or(Stdio::null())
 }
 
 fn current_exe_dir() -> Option<std::path::PathBuf> {
@@ -117,9 +149,13 @@ fn spawn_backend(app: &AppHandle, state: SharedBackendState) {
                 inner.child = Some(child);
                 inner.last_start = Some(Instant::now());
                 let port = inner.port;
+                let start_watcher = !inner.watcher_running;
+                inner.watcher_running = true;
                 drop(inner);
                 log_info(&format!("backend spawned on port {port}"));
-                spawn_health_watch(app.clone(), state, port);
+                if start_watcher {
+                    spawn_health_watch(app.clone(), state, port);
+                }
             }
             Err(error) => {
                 let message = format!("failed to spawn backend: {error}");

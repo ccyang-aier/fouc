@@ -11,7 +11,6 @@
  *  - 启动失败监视（Promise.race: initialize vs 进程退出）
  *  - pending 请求追踪（断连时统一拒绝）
  *  - 三阶段优雅关闭
- *  - bunx 缓存损坏检测与白名单校验清理
  */
 
 import type {
@@ -26,9 +25,6 @@ import type {
 } from '@agentclientprotocol/sdk';
 import { ClientSideConnection, PROTOCOL_VERSION } from '@agentclientprotocol/sdk';
 import type { ChildProcess } from 'node:child_process';
-import * as os from 'node:os';
-import * as path from 'node:path';
-import * as fs from 'node:fs';
 import { AgentDisconnectedError, AgentSpawnError, AgentStartupError } from './errors';
 import { NdjsonTransport } from './transport';
 import { gracefulShutdown, waitForExit, waitForSpawn } from '../../../execution/process';
@@ -418,39 +414,6 @@ export class ProcessAcpClient {
       this.stderrBuffer,
       error
     );
-  }
-
-  // ─── 内部：bunx 缓存损坏自愈 ──────────────────────────────────
-
-  /**
-   * stderr 指示 bunx 缓存损坏（"Cannot find package"）时解析缓存路径，
-   * 校验其位于已知缓存目录白名单内（防止恶意 Agent 伪造 stderr 诱导
-   * 任意目录删除）后清除，允许下次重试时全新安装。
-   */
-  clearBunxCacheIfNeeded(): void {
-    if (!/Cannot find (?:package|module)/i.test(this.stderrBuffer)) return;
-
-    const match = this.stderrBuffer.match(/([^\s'"]*[/\\]bunx-\d+[^\s/\\]*[/\\][^\s/\\]+@[^\s/\\]+)[/\\]node_modules/);
-    if (!match) return;
-
-    const cacheDir = path.resolve(match[1]);
-    const allowedPrefixes = [
-      path.resolve(process.env.BUN_TMPDIR || os.tmpdir()),
-      path.resolve(process.env.BUN_INSTALL_CACHE_DIR || path.join(os.homedir(), '.bun', 'install', 'cache')),
-      path.resolve(os.homedir(), '.bun'),
-    ];
-    const isAllowed = allowedPrefixes.some((prefix) => cacheDir.startsWith(prefix + path.sep));
-    if (!isAllowed) {
-      log.warn(`[${this.options.backend}] Refusing to clear suspicious cache path: ${cacheDir}`);
-      return;
-    }
-
-    log.info(`[${this.options.backend}] Clearing corrupted bunx cache: ${cacheDir}`);
-    try {
-      fs.rmSync(cacheDir, { recursive: true, force: true });
-    } catch {
-      /* best effort */
-    }
   }
 }
 

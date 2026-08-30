@@ -21,8 +21,3 @@ export function getDataDir(): string {
 export function getDbPath(): string {
   return path.join(getDataDir(), 'fouc.db');
 }
-
-/** 桥接包运行时缓存目录（Windows 上同时用于 TMP/TEMP 重定向，规避杀软 EPERM） */
-export function getBridgeCacheDir(): string {
-  return path.join(getDataDir(), 'runtime', 'bridge-cache');
-}

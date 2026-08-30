@@ -14,7 +14,6 @@ import { execFile, execFileSync, spawn } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { getBridgeCacheDir } from './paths';
 import { createLogger } from './logger';
 
 const log = createLogger('env');
@@ -295,8 +294,7 @@ export function clearEnvCache(): void {
 /**
  * 为 Agent 子进程准备干净环境：
  * 完整 shell 环境（含用户自定义变量如 API Key）为基底，
- * 叠加增强 PATH，剥离对子进程有害的变量，
- * 并将 Bun 缓存与（Windows）临时目录重定向到 userData（规避杀软 EPERM）。
+ * 叠加增强 PATH，剥离对子进程有害的变量。
  */
 export async function prepareCleanEnv(customEnv?: Record<string, string>): Promise<Record<string, string>> {
   const fullShellEnv = await loadFullShellEnvironment();
@@ -308,17 +306,16 @@ export async function prepareCleanEnv(customEnv?: Record<string, string>): Promi
   delete merged.NODE_DEBUG;
   // 防止从 Claude Code 内启动 Fouc 时被 agent-sdk 检测为嵌套会话
   delete merged.CLAUDECODE;
-  // npm lifecycle 变量会干扰 npx 包解析
+  // npm lifecycle 变量会干扰包解析
   for (const key of Object.keys(merged)) {
     if (key.startsWith('npm_')) delete merged[key];
   }
 
-  const bridgeCache = getBridgeCacheDir();
-  if (!merged.BUN_INSTALL_CACHE_DIR) merged.BUN_INSTALL_CACHE_DIR = path.join(bridgeCache, 'install');
-  if (!merged.BUN_TMPDIR) merged.BUN_TMPDIR = path.join(bridgeCache, 'tmp');
-  if (process.platform === 'win32') {
-    merged.TMP = merged.BUN_TMPDIR;
-    merged.TEMP = merged.BUN_TMPDIR;
+  // 打包模式：桥 sidecar 目录前置到 PATH。claude 桥的 SDK 以 "bun" 启动
+  // 解压出的 CLI，须解析到应用随包分发的 bun 运行时。
+  const bridgeDir = process.env.FOUC_BRIDGE_DIR?.trim();
+  if (bridgeDir && merged.PATH) {
+    merged.PATH = `${bridgeDir}${path.delimiter}${merged.PATH}`;
   }
 
   return merged as Record<string, string>;

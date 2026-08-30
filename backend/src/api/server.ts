@@ -20,10 +20,19 @@ export type ServerContext = {
 
 // ─── WS 广播通道（Bun.serve websocket 回调注入） ───────────────────
 
-type WsClient = { ws: WebSocket; authenticated: boolean };
+/**
+ * 传输最小接口。Bun 的 ServerWebSocket 不是浏览器 WebSocket（没有
+ * addEventListener），连接状态由 hub 内的 Map 承载，message/close 经
+ * Bun.serve 回调送入。
+ */
+interface WsLike {
+  send(frame: string): void;
+}
+
+type WsClient = { authenticated: boolean };
 
 class BroadcastHub {
-  private clients = new Set<WsClient>();
+  private readonly clients = new Map<WsLike, WsClient>();
 
   constructor(
     private readonly expectedToken: string,
@@ -31,31 +40,36 @@ class BroadcastHub {
     private readonly allowAll = false
   ) {}
 
-  attach(ws: WebSocket): void {
-    const client: WsClient = { ws, authenticated: this.allowAll };
-    this.clients.add(client);
-    ws.addEventListener('close', () => this.clients.delete(client));
-    ws.addEventListener('message', (event) => {
-      try {
-        const data = JSON.parse(String(event.data)) as { type?: string; token?: string };
-        if (data.type === 'auth') {
-          client.authenticated = this.allowAll || (!!data.token && data.token === this.expectedToken);
-          ws.send(JSON.stringify({ type: 'auth_result', ok: client.authenticated }));
-        }
-      } catch {
-        /* ignore malformed frames */
+  attach(ws: WsLike): void {
+    this.clients.set(ws, { authenticated: this.allowAll });
+  }
+
+  onMessage(ws: WsLike, data: string | Buffer): void {
+    const client = this.clients.get(ws);
+    if (!client) return;
+    try {
+      const parsed = JSON.parse(String(data)) as { type?: string; token?: string };
+      if (parsed.type === 'auth') {
+        client.authenticated = this.allowAll || (!!parsed.token && parsed.token === this.expectedToken);
+        ws.send(JSON.stringify({ type: 'auth_result', ok: client.authenticated }));
       }
-    });
+    } catch {
+      /* ignore malformed frames */
+    }
+  }
+
+  onClose(ws: WsLike): void {
+    this.clients.delete(ws);
   }
 
   broadcast(envelope: WsEnvelope): void {
     const frame = JSON.stringify(envelope);
-    for (const client of this.clients) {
+    for (const [ws, client] of this.clients) {
       if (!client.authenticated) continue;
       try {
-        client.ws.send(frame);
+        ws.send(frame);
       } catch {
-        this.clients.delete(client);
+        this.clients.delete(ws);
       }
     }
   }
@@ -79,8 +93,12 @@ export function createApp(context: ServerContext): { app: Hono; hub: BroadcastHu
 
   const app = new Hono();
 
-  // 开发模式（next dev 跨端口）放行 CORS；生产 WebView 同源无需
-  app.use('*', cors({ origin: (origin) => (origin && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) ? origin : 'http://localhost:3000') }));
+  // CORS：放行开发服务器与 Tauri WebView 来源（Windows http://tauri.localhost，macOS/Linux tauri://localhost）。
+  // 服务仅绑定 127.0.0.1 且除 /health 外均需 Bearer token，来源白名单无安全影响。
+  const allowedOrigin = /^https?:\/\/(localhost|127\.0\.0\.1|tauri\.localhost)(:\d+)?$/;
+  app.use('*', cors({
+    origin: (origin) => (origin && (allowedOrigin.test(origin) || origin === 'tauri://localhost') ? origin : 'http://localhost:3000'),
+  }));
 
   // Bearer 鉴权中间件（/health 除外）
   app.use('*', async (c, next) => {

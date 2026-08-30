@@ -25,15 +25,21 @@ type WsClient = { ws: WebSocket; authenticated: boolean };
 class BroadcastHub {
   private clients = new Set<WsClient>();
 
+  constructor(
+    private readonly expectedToken: string,
+    /** 开发模式（无 token）下放行所有连接 */
+    private readonly allowAll = false
+  ) {}
+
   attach(ws: WebSocket): void {
-    const client: WsClient = { ws, authenticated: false };
+    const client: WsClient = { ws, authenticated: this.allowAll };
     this.clients.add(client);
     ws.addEventListener('close', () => this.clients.delete(client));
     ws.addEventListener('message', (event) => {
       try {
         const data = JSON.parse(String(event.data)) as { type?: string; token?: string };
-        if (data.type === 'auth' && data.token) {
-          client.authenticated = data.token === this.expectedToken;
+        if (data.type === 'auth') {
+          client.authenticated = this.allowAll || (!!data.token && data.token === this.expectedToken);
           ws.send(JSON.stringify({ type: 'auth_result', ok: client.authenticated }));
         }
       } catch {
@@ -53,8 +59,6 @@ class BroadcastHub {
       }
     }
   }
-
-  constructor(private readonly expectedToken: string) {}
 }
 
 
@@ -71,7 +75,7 @@ async function readJson<T>(c: { req: { json(): Promise<unknown> } }): Promise<T 
 
 export function createApp(context: ServerContext): { app: Hono; hub: BroadcastHub } {
   const { registry, supervisor, token } = context;
-  const hub = new BroadcastHub(token);
+  const hub = new BroadcastHub(token, context.devNoAuth === true);
 
   const app = new Hono();
 

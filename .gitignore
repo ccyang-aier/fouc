@@ -9,6 +9,9 @@
 # Tauri / Rust
 /src-tauri/target
 
+# external open-source references (independent repos, not part of Fouc)
+/opensource
+
 # QA captures
 /qa/*.png
 

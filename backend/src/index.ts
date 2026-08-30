@@ -64,8 +64,10 @@ async function main(): Promise<void> {
 
   log.info(`Fouc backend listening on http://127.0.0.1:${server.port} (auth: ${DEV_NO_AUTH ? 'DEV MODE — no token' : 'bearer token'})`);
 
-  // 重启恢复：孤儿 Run 不误标成功
+  // 重启恢复：孤儿 Run 不误标成功；遗留会话置 suspended 供恢复；启动空闲巡检
   supervisor.markOrphanedRuns();
+  supervisor.startupSuspendScan();
+  supervisor.startIdleReclaimer();
 
   // 后台刷新：发现 + 探测已登记 installation
   registry.startupRefresh();

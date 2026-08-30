@@ -6,6 +6,8 @@
  *  - 事件的 runId 注入、事件日志追加与 WS 广播
  *  - 审批请求/裁决的桥接
  *  - 启动时孤儿 Run 标记（F4-lite：重启不误标成功、不丢记录）
+ *  - 空闲回收（移植 1.x IdleReclaimer：超时会话优雅挂起，下次消息自动恢复）
+ *  - 重启恢复（非 ended 会话置 suspended；resume 优先 session/load，失败降级新建）
  */
 
 import { randomUUID } from 'node:crypto';
@@ -20,6 +22,9 @@ import { isProcessAlive } from '../execution/process';
 
 const log = createLogger('supervisor');
 
+const DEFAULT_IDLE_TIMEOUT_MS = 10 * 60 * 1000; // 10 分钟
+const IDLE_CHECK_INTERVAL_MS = 30 * 1000; // 30 秒巡检
+
 interface SupervisedSession {
   session: AcpSession;
   installationId: string;
@@ -33,6 +38,8 @@ export type EventSink = (event: AgentEvent) => void;
 
 export class SessionSupervisor {
   private readonly sessions = new Map<string, SupervisedSession>();
+  private readonly idleTimeoutMs: number;
+  private idleTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     private readonly registry: AgentRegistry,
@@ -40,7 +47,35 @@ export class SessionSupervisor {
     private readonly runRepo: RunRepository,
     private readonly eventRepo: EventRepository,
     private readonly emitEvent: EventSink
-  ) {}
+  ) {
+    // FOUC_IDLE_TIMEOUT_MS=0 关闭回收（调试用）
+    const configured = Number(process.env.FOUC_IDLE_TIMEOUT_MS);
+    this.idleTimeoutMs = Number.isFinite(configured) && configured >= 0 ? configured : DEFAULT_IDLE_TIMEOUT_MS;
+  }
+
+  /** 启动空闲巡检（IdleReclaimer 移植） */
+  startIdleReclaimer(): void {
+    if (this.idleTimeoutMs === 0 || this.idleTimer) return;
+    this.idleTimer = setInterval(() => this.reclaimIdleSessions(), IDLE_CHECK_INTERVAL_MS);
+    this.idleTimer.unref?.();
+  }
+
+  /**
+   * 回收空闲会话：active 且超时 → 优雅挂起（session/close + 进程退出）。
+   * prompting / 等待审批中的会话不回收；suspended 会话进程已退，无需处理。
+   * 挂起后用户再发消息时 AcpSession.sendMessage 自动 resume（load 失败降级新建）。
+   */
+  private reclaimIdleSessions(): void {
+    const now = Date.now();
+    for (const [sessionId, supervised] of this.sessions) {
+      if (supervised.session.status !== 'active') continue;
+      if (now - supervised.lastActiveAt < this.idleTimeoutMs) continue;
+      log.info(`Session ${sessionId} idle for ${Math.round((now - supervised.lastActiveAt) / 1000)}s — suspending`);
+      void supervised.session.suspend().catch((error) =>
+        log.warn(`Failed to suspend idle session ${sessionId}:`, error)
+      );
+    }
+  }
 
   // ─── 启动恢复 ──────────────────────────────────────────────────
 
@@ -65,6 +100,49 @@ export class SessionSupervisor {
     if (count > 0) log.warn(`Marked ${count} orphaned run(s) as failed after restart`);
     return count;
   }
+
+  /**
+   * 应用重启后：非 ended 会话统一置 suspended（保留 nativeSessionId 与历史）。
+   * suspended 语义 = "可尝试恢复"：resume 时优先 session/load，
+   * Agent 不支持则走 session_expired → 新建会话（1.x tryLoadOrCreate 同款降级）。
+   */
+  startupSuspendScan(): number {
+    const now = Date.now();
+    let count = 0;
+    for (const row of this.sessionRepo.listAll()) {
+      if (row.status === 'ended') continue;
+      this.sessionRepo.update(row.id, { status: 'suspended', lastActiveAt: now });
+      this.emit({ type: 'session.status', sessionId: row.id, status: 'suspended' });
+      count += 1;
+    }
+    if (count > 0) log.info(`Suspended ${count} session(s) carried over from previous run`);
+    return count;
+  }
+
+  /**
+   * 恢复 suspended 会话：从 DB 行重建受管会话（带 resumeSessionId），
+   * AcpSession 内部 load 失败时透明降级为新建并发出 session_expired 信号。
+   */
+  resumeSession(sessionId: string): AgentSessionRow {
+    if (this.sessions.has(sessionId)) return this.sessionRepo.byId(sessionId)!;
+
+    const row = this.sessionRepo.byId(sessionId);
+    if (!row) throw new Error(`Session not found: ${sessionId}`);
+    if (row.status === 'ended') throw new Error('Session already ended');
+
+    const installation = this.registry.installationById(row.installationId);
+    if (!installation) throw new Error(`Installation not found: ${row.installationId}`);
+    const provider = this.registry.providerById(row.providerId);
+    if (!provider) throw new Error(`Provider not found: ${row.providerId}`);
+
+    this.sessionRepo.update(sessionId, { status: 'resuming', lastActiveAt: Date.now() });
+    this.spawnSupervisedSession(row, installation, provider, {
+      resumeSessionId: row.nativeSessionId,
+    });
+    const updated = this.sessionRepo.byId(sessionId)!;
+    return updated;
+  }
+
 
   // ─── 会话管理 ──────────────────────────────────────────────────
 
@@ -95,33 +173,43 @@ export class SessionSupervisor {
     };
     this.sessionRepo.insert(row);
 
-    const spec = buildLaunchSpec(provider, installation, workDir);
+    this.spawnSupervisedSession(row, installation, provider, { yoloMode: options?.yoloMode ?? false });
+    return row;
+  }
+
+  /** 从行构建受管会话并加入会话池（createSession 与 resumeSession 共用） */
+  private spawnSupervisedSession(
+    row: AgentSessionRow,
+    installation: import('@shared/index').AgentInstallation,
+    provider: import('@shared/index').ProviderSpec,
+    options?: { yoloMode?: boolean; resumeSessionId?: string | null }
+  ): void {
+    const spec = buildLaunchSpec(provider, installation, row.workDir);
     const config: AgentConnectionConfig = {
       agentBackend: provider.id,
-      foucSessionId: sessionId,
+      foucSessionId: row.id,
       command: spec.command,
       args: spec.args,
-      cwd: workDir,
+      cwd: row.workDir,
       env: spec.env,
       gracePeriodMs: spec.gracePeriodMs,
       behaviorPolicy: provider.behaviorPolicy,
       yoloMode: options?.yoloMode ?? false,
+      ...(options?.resumeSessionId ? { resumeSessionId: options.resumeSessionId } : {}),
     };
 
     const supervised: SupervisedSession = {
-      session: new AcpSession(config, spec, this.buildCallbacks(sessionId, installationId), {
+      session: new AcpSession(config, spec, this.buildCallbacks(row.id, row.installationId), {
         promptTimeoutMs: 300_000,
       }),
-      installationId,
-      providerId: provider.id,
-      rowId: sessionId,
+      installationId: row.installationId,
+      providerId: row.providerId,
+      rowId: row.id,
       currentRunId: null,
-      lastActiveAt: now,
+      lastActiveAt: Date.now(),
     };
-    this.sessions.set(sessionId, supervised);
-
+    this.sessions.set(row.id, supervised);
     supervised.session.start();
-    return row;
   }
 
   async terminateSession(sessionId: string, reason = 'user_terminated'): Promise<void> {
@@ -227,6 +315,10 @@ export class SessionSupervisor {
   // ─── 关停 ──────────────────────────────────────────────────────
 
   async shutdown(): Promise<void> {
+    if (this.idleTimer) {
+      clearInterval(this.idleTimer);
+      this.idleTimer = null;
+    }
     const promises: Array<Promise<void>> = [];
     for (const [sessionId, supervised] of this.sessions) {
       promises.push(

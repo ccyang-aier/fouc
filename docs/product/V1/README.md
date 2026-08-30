@@ -4,6 +4,21 @@
 
 V1 的目标是建立 Fouc 最小但完整的 Agent 工作底座，并用“本地受管 Agent + 远程环境事实 + 多仓代码 + 团队流程”完成一次可监督、可验证的研发问题闭环。
 
+## P0 基础能力
+
+| ID | 基础能力 | 状态 |
+|---|---|---|
+| F0 | 本机能力与 Agent 控制面 | 未完成 |
+| F1 | 本地安全执行内核 | 未完成 |
+| F2 | 项目、代码仓与隔离工作区控制面 | 未完成 |
+| F3 | 身份、凭据、委托与策略中心 | 未完成 |
+| F4 | 持久化工作运行时与事件存储 | 未完成 |
+| F5 | 上下文、制品与证据基础设施 | 未完成 |
+| F6 | 连接器控制面 | 未完成 |
+| F7 | 团队 Workspace、同步与通知 | 未完成 |
+
+每项能力的职责边界、最小实现、依赖和退出标准见 [P0 基础能力清单](./p0-foundation-capabilities.md)。核心特性只有在自身验收标准及其依赖的 P0 退出标准同时通过后，才能标记为完成。
+
 ## 特性规划
 
 | 核心特性 | 优先级 | 状态 | 详细设计 |
@@ -20,6 +35,7 @@ V1 的目标是建立 Fouc 最小但完整的 Agent 工作底座，并用“本�
 
 | 文档 | 内容 |
 |---|---|
+| [p0-foundation-capabilities.md](./p0-foundation-capabilities.md) | 八项 P0 基础能力的职责、边界、依赖与退出标准 |
 | [core-features.md](./core-features.md) | 五项核心特性的范围、价值、依赖与验收标准 |
 | [local-agent-management.md](./local-agent-management.md) | 本机 Agent 的发现、能力探测、纳管、任务下发与生命周期控制 |
 | [architecture-and-security.md](./architecture-and-security.md) | V1 参考架构、领域对象、权威来源与安全治理 |

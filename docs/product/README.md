@@ -10,6 +10,7 @@ docs/product/
 ├── vision-and-positioning.md
 └── V1/
     ├── README.md
+    ├── p0-foundation-capabilities.md
     ├── core-features.md
     ├── local-agent-management.md
     ├── architecture-and-security.md

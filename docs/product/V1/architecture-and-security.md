@@ -52,7 +52,7 @@ Fouc 采用“薄控制层 + 可替换执行端 + 联邦事实源”的架构，
 - **Session Supervisor**：管理进程、PTY/事件流、会话、取消、恢复、超时与遗留进程；
 - **Policy Binding**：把工作对象、用户授权、工作目录、环境变量和 AgentRun 绑定起来。
 
-上层工作流不得直接拼接 CLI 命令。所有 Agent 操作必须经过 Driver 与 Supervisor，以获得一致的状态、权限、失败和审计语义。详细设计见 [本地 Agent 发现与纳管](./05-local-agent-management.md)。
+上层工作流不得直接拼接 CLI 命令。所有 Agent 操作必须经过 Driver 与 Supervisor，以获得一致的状态、权限、失败和审计语义。详细设计见 [本地 Agent 发现与纳管](./local-agent-management.md)。
 
 ## 四、核心领域对象
 

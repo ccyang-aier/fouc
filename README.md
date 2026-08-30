@@ -2,38 +2,37 @@
 
 > 面向个人与企业团队的 AI Agent 超级工作台。
 
-Fouc 不是新的 Coding Agent。它构建在 Codex、Claude Code 等 Agent 之上，统一组织任务、上下文、工具、人员与企业流程，让复杂工作可执行、可监督、可验证、可闭环。
+Fouc 不是新的 Coding Agent。它构建在 Codex、Claude Code、OpenCode 等 Agent 之上，统一组织任务、上下文、工具、人员与工作流程，让复杂工作可执行、可监督、可验证、可闭环。
 
-项目目前处于产品定义与体验原型阶段。
+## 背景与目标
 
-## 为什么做 Fouc
+AI Agent 正在从辅助工具演进为能够接受委托、持续执行并交付结果的新型工作能力。与此同时，个人和团队使用的 Agent、代码仓、文档、环境、业务系统与协作流程仍然彼此分散，缺少统一的工作入口、执行控制和结果治理。
 
-企业研发的真实工作分散在本地代码、远程环境、问题单、文档、CI/CD 和审批流程中。Coding Agent 擅长理解与修改代码，却通常缺少跨环境诊断、团队流程、权限治理和交付闭环。
+Fouc 的目标是成为 Agent 原生的超级工作台：
 
-Fouc 首先解决一个具体问题：研发人员无需把源码、Agent 和模型凭据搬到测试或客户环境，也能让本地 Agent 安全结合远程运行事实，完成问题定位、修复、验证、审核与回归。
+- 纳管用户已有的 Agent、工具、项目与数据连接；
+- 以目标和工作对象组织任务，而不是以聊天会话组织工作；
+- 支持人与 Agent 在同一条流程中分工、审批、接管与协作；
+- 让执行过程可观察，权限边界可控制，最终结果可验证；
+- 同时服务个人与团队，并从研发扩展到研究、分析和日常办公。
 
-## 产品愿景
+## 版本规划
 
-Fouc 希望成为 Agent 原生的超级工作台：
+Fouc 当前处于 **V1 产品定义与体验原型阶段**。
 
-- 人负责目标、约束、关键判断与最终责任；
-- Agent 负责理解上下文、执行任务并提交可验证结果；
-- Fouc 负责组织工作、编排流程、控制权限和保留证据；
-- 不同 Agent 是可替换的执行器，代码仓、工单和环境仍是事实的权威来源。
+### V1
 
-长期来看，Fouc 将从研发场景扩展到研究、分析、项目协作与日常办公。
+V1 负责建立 Fouc 最小但完整的 Agent 工作底座，并用远程问题定位与研发问题闭环验证其实际价值。
 
-## V1 方向
+| 规划特性 | 优先级 | 状态 |
+|---|---|---|
+| 本机 Agent 自动发现与统一纳管 | P0 | 未完成 |
+| 统一工作对象与 Work Room | P0 | 未完成 |
+| 本地—远程联合诊断 | P0 | 未完成 |
+| 多仓隔离工作区与受管 Agent 编排 | P0 | 未完成 |
+| 可执行研发流程、验证与交付闭环 | P1 | 未完成 |
 
-V1 聚焦“远程问题定位与问题单闭环”，验证以下核心能力：
-
-1. 自动发现并纳管用户机器上的 Codex、Claude Code、OpenCode 等 Agent；
-2. 统一工作对象与 Work Room；
-3. 本地—远程联合诊断；
-4. 多仓隔离工作区与任务编排；
-5. 可执行研发流程、验证与交付闭环。
-
-完整设计见 [V1 核心特性](./docs/product/02-v1-core-features.md)。
+详细范围、验收标准与实现路线见 [V1 产品文档](./docs/product/V1/README.md)。
 
 ## 技术栈
 
@@ -60,9 +59,6 @@ pnpm desktop:build   # 构建桌面端安装产物
 ## 文档
 
 - [产品文档导航](./docs/product/README.md)
-- [产品背景、愿景与定位](./docs/product/01-vision-and-positioning.md)
-- [V1 核心特性](./docs/product/02-v1-core-features.md)
-- [本地 Agent 发现与纳管](./docs/product/05-local-agent-management.md)
-- [V1 架构与安全设计](./docs/product/03-v1-architecture-and-security.md)
-- [V1 范围、路线与成功指标](./docs/product/04-v1-roadmap-and-metrics.md)
+- [产品愿景与定位](./docs/product/vision-and-positioning.md)
+- [V1 产品文档](./docs/product/V1/README.md)
 - [Agent 研发与企业办公调研](./docs/background/README.md)

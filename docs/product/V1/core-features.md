@@ -57,7 +57,7 @@ Agent 市场会持续变化。以能力清单和 Driver 契约纳管本地 Agent
 - 不复制 Agent 的长期凭据，不破坏用户已有配置，不在未授权时升级或卸载工具；
 - 每次操作都关联到用户、工作对象、工作目录、权限与完整审计记录。
 
-详细设计见 [本地 Agent 发现与纳管](./05-local-agent-management.md)。
+详细设计见 [本地 Agent 发现与纳管](./local-agent-management.md)。
 
 ### 2. 统一工作对象与 Work Room
 

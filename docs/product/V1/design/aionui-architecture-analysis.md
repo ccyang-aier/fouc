@@ -1,6 +1,6 @@
 # AionUi 架构与代码分析
 
-> 分析对象：`opensource/AionUi`（iOfficeAI/AionUi，commit `18022a49`，版本 2.2.0）及其配套仓库 iOfficeAI/AionCore。
+> 分析对象：`opensource/AionUi`（iOfficeAI/AionUi，commit `18022a49`，版本 2.2.0）及其配套仓库 AionCore（`opensource/AionCore`，main 分支源码快照，2026-08-30 提取）。
 > 分析目的：为 Fouc V1「本机 Agent 自动发现与统一纳管」提供参考实现与可迁移资产清单。
 > 配套设计：[Fouc 本机 Agent 发现与纳管实现设计](./fouc-agent-management-design.md)。
 
@@ -59,21 +59,23 @@ AionUi/
 
 ### 1.3 AionCore 后端（Rust）
 
-AionCore 是 2.x 的核心引擎，开源（Apache-2.0），Cargo workspace 24 个 crate、四层依赖（Composition → Domain → Capability → Foundation，严格向下依赖）。与 Agent 纳管直接相关的 crate：
+AionCore 是 2.x 的核心引擎，开源（Apache-2.0），Cargo workspace 27 个 crate。本地源码位于 `opensource/AionCore`（tarball 提取、无 git 历史，不影响代码分析）。与 Agent 纳管直接相关的 crate：
 
-| crate | 职责 |
-|---|---|
-| `aionui-ai-agent` | Agent 生命周期管理、worker 任务队列、ACP 及工具输出清洗 |
-| `aionui-session` | 直连 CLI 与 ACP 后端统一的会话状态、能力、命令、事件 |
-| `aionui-runtime` | 受管 Node 运行时（ACP 桥包需要 Node）与子进程 spawn |
-| `aionui-process` | 受监督子进程生命周期、隔离与启动清理 |
-| `aionui-db` | SQLite 仓储层（Repository trait 模式） |
-| `aionui-api-types` | API 契约唯一事实源（禁依赖 HTTP 框架） |
+| crate | 职责 | 规模感 |
+|---|---|---|
+| `aionui-ai-agent` | Agent 目录注册中心、探测、ACP 连接与会话管理、能力管线 | 108 个源文件，2.5MB |
+| `aionui-session` | 会话状态（state/reducer/event 模式）、直连 CLI 与 ACP 统一适配 | 2.3MB |
+| `aionui-runtime` | 受管 bun/Node 运行时、命令解析、统一 spawn Builder、npx 锁 | 252KB |
+| `aionui-process` | 受监督子进程生命周期、隔离与启动清理 | 156KB |
+| `aionui-db` | SQLite 仓储层（Repository trait + 嵌入式迁移） | — |
+| `aionui-api-types` | API 契约唯一事实源（禁依赖 HTTP 框架） | — |
 
-两个值得记录的工程决策：
+Agent 域四个核心 crate 合计约 10 万行 Rust；作为对照，1.x 的等价域是 78 个 TS 文件、约 2.1 万行。**2.x 不只是语言重写，而是约 5 倍规模的深化重构**，关键演进在 §六之后逐一展开，这里先记录四个基础工程决策：
 
 - **PATH 增强在 `main()`、tokio 启动前完成**（合并 login-shell PATH、继承 PATH、平台回退）——GUI 应用拿不到 shell 环境是所有桌面 Agent 工具的第一坑；
-- **spawn 统一入口**：`Builder::agent`（长驻 CLI）与 `Builder::clean_cli`（短命工具）两种构造器，均 `kill_on_drop(true)` 并剥离 debug 环境变量，禁止散落的裸 spawn。
+- **spawn 统一入口**：`Builder`（`spawn.rs`）提供 `agent`（长驻 CLI）与 `clean_cli`（短命工具）两种预设构造器，均设 `kill_on_drop` 并剥离 debug 环境变量，禁止散落的裸 spawn；
+- **官方 Rust ACP SDK 生产可用**：依赖 `agent-client-protocol = "2.0.0"`（启用 `unstable_session_fork`、`unstable_end_turn_token_usage` 特性）——ACP 官方 Rust SDK 由 Zed 维护并被 AionCore 用于生产，这佐证了 ACP 协议本身的多语言成熟度（Fouc 走 TS 路线用官方 TS SDK，同理）；
+- **目录进数据库**：内置 Agent 目录不再是代码内静态表，而是 `001_initial_schema.sql` 起的迁移种子（INSERT 行含 id、图标路径、backend、agent_source、`agent_source_info` JSON、command、args、skills 目录、`behavior_policy` JSON、yolo_id），后续迁移持续增删 Agent（hermes、openclaw、pi、mimo_code 等）。
 
 ## 二、Agent 纳管领域模型
 
@@ -296,16 +298,60 @@ Agent 以扩展形式上架 Hub（`packages/desktop/src/common/types/agent/hub.t
 | Node 版本过旧导致 `#!/usr/bin/env node` 的 CLI 崩溃 | spawn 前检查 Node ≥ 18.17，自动修正 PATH |
 | POSIX 上父进程退出拖死子进程 | 非 Windows `detached: true` + `unref()`，终止时进程组 kill |
 
-## 七、评价：对 Fouc 的价值与局限
+## 七、AionCore 相对 1.x 的关键演进（本地源码核实）
 
-### 7.1 值得吸收的核心资产
+将 AionCore 与 1.x 逐主题对照后，确认 2.x 在以下六个方面是实质演进而非简单平移——这些演进直接决定 Fouc 的参考策略（见配套设计文档）：
+
+### 7.1 桥接运行时：npx → bun x + 受管 bun
+
+1.x 用 `npx <bridge>` 启动 ACP 桥并为此堆了两阶段重试（`--prefer-offline` 优先）、bunx 缓存清理、Defender EPERM 等待等补丁。AionCore 的目录种子显示桥启动已统一为 **`bun x --bun <pkg>@<version>`**（如 codex 行：`command='bun', args=["x","--bun","@zed-industries/codex-acp@0.9.5"]`；claude 行同构），配合 `aionui-runtime/src/node_runtime/managed` 的**受管 bun 运行时**（打包自带、装到 `{data_dir}/runtime`，不依赖用户机器的 Node/Bun）。这把"桥需要 Node"这个 1.x 的隐式依赖变成了确定性的自带运行时，同时大幅消化了 npx 生态坑。配套机制：`registry_npx_lock`（registry 包版本锁）与 `corrupt_npx_cache_repair`（缓存损坏检测与定向修复）。
+
+### 7.2 探测策略：单发探测 → 双预算分级
+
+`aionui-ai-agent/src/cli_probe.rs` 把 1.x 的"跑一次 `--version` 看结果"进化为策略化探测：
+
+- **inline 预算 5s / 后台 recheck 预算 30s**：启动路径上的探测超时**不定罪**（"slow load, not proof of corruption"），转入后台复查；
+- **慢代理白名单**：持久化的启动快照显示探测慢于 2s 的 Agent，下次直接跳过 inline 探测（后端就绪时间不为已知慢 CLI 买单）；
+- **失败分类**：`command_not_found` / `version_probe_failed`（快速确定性失败=疑似损坏安装）/ `version_probe_timeout`（健康但慢）三态分开，不允许合并成同一个"不可用"；
+- **探测产出留存**：`--version` 的首个非空行作为 `reported_version` 带回（避免为拿版本号二次起进程），静默成功的 CLI 报 `None` 而非空串（防空版本误判漂移）；
+- **npx 桥跳过版本探测**：builtin + bridge=npx 的 Agent 有 registry 锁保护时跳过（版本由锁保证）。
+
+### 7.3 注册中心：内存态 → DB 持久化目录 + 目录同步通道
+
+1.x 的 AgentRegistry 每次启动重新检测、状态在内存。AionCore 的 `registry.rs`（2274 行）是持久化目录中心：`agent_metadata` 表为源头，启动时 hydrate 到内存快照（`by_id` RwLock），探测并发度 8；会话握手产生的能力更新经 **MPSC catalog 通道**（容量 256、单写线程消费）串行化落库，避免多会话并发写同一行；`UnavailableReason` 独立维护每个不可用 Agent 的原因分类。
+
+### 7.4 启动失败处理： stderr 语义化与"不泄漏给客户端"
+
+`manager/acp/agent.rs`（2327 行）的启动错误处理比 1.x 精细一档：启动崩溃（exit/signal）与握手超时分开归因；失败时 `peek_stderr_tail` 取 stderr 尾部行做诊断；**stderr 只进自家日志、不折进返回给客户端的错误**（注释明言"may contain sensitive paths"——脱敏意识落在工程上）；cc-switch（Claude 供应商切换工具）的环境变量在 spawn 时定向注入。
+
+### 7.5 行为差异目录化：`behavior_policy`
+
+Claude 的非标准行为不再是散落的代码注释，而是目录行上的结构化开关，例如 claude 行的 `behavior_policy = {"supports_side_question":true, "self_identity_sticky":true, "session_load_via_meta_field":true, "supports_team":true}` 与 `yolo_id = 'bypassPermissions'`。**Agent 间的私有协议缝隙（如 Claude 用 `_meta` 字段做会话恢复）被显式建模为数据**，Driver 逻辑读策略而不写死分支。
+
+### 7.6 会话状态：reducer 模式
+
+`aionui-session` 用 state/reducer/event 的组合管理会话状态（`state.rs`、`reducer.rs`、`event.rs`、`adapter/backend` 双后端适配），把"直连 CLI"与"ACP"两种后端折叠到同一状态机上——这是 1.x 时代 AcpRuntime 状态机的结构化升级。
+
+### 7.7 对 Fouc 参考策略的结论
+
+| 主题 | 参考对象 | 理由 |
+|---|---|---|
+| 连接/检测/会话/审批的**实现逻辑** | **1.x（TS）为主** | 同语言同 SDK（`@agentclientprotocol/sdk`），结构最简表达，可直接移植；Fouc 后端确定走 TS |
+| **工程策略与坑位的最新解** | **AionCore（Rust）为权威** | bun x 桥启动行、双预算探测、慢代理白名单、npx 锁与缓存自修复、behavior_policy 目录化、stderr 脱敏边界——这些是 1.x 冻结后一年多的持续踩坑产出 |
+| 产品域模型（错误码/健康快照/管理视图） | 2.x 前端契约（语言无关） | `AgentMetadata`、四时机健康检查、错误码 → i18n 体系 |
+
+一句话：**1.x 是"Fouc TS 后端"的直系原型，AionCore 是"哪里又踩了坑、现在怎么解"的权威答案**。两者不是二选一，而是分层使用；AionCore 中大量 Fouc 用不到的域（teams、cron、channel、office、webui auth）跳过即可。
+
+## 八、评价：对 Fouc 的价值与局限
+
+### 8.1 值得吸收的核心资产
 
 1. **ACP 作为统一协议基座的架构决策**——把"每个 CLI 一套私有适配"变成"目录里一行声明"，且天然覆盖 Fouc 首批三个 Agent（Codex/Claude/OpenCode），并附带 tool_call 事件、权限审批、计划、用量等结构化能力，直接满足 Fouc L3 要求；
 2. **发现—注册—探测—监督的分层**：AcpDetector（纯检测）/ AgentRegistry（状态编排）/ ProcessAcpClient（进程单责）/ AcpRuntime（会话池）职责边界干净，与 Fouc 规划的 Discovery/Registry/Capability/Driver Router/Session Supervisor 几乎一一对应；
 3. **能力来自握手的坚持**：handshake 留存、健康快照四时机、错误码 + 修复引导，是"状态应显示原因与修复入口"的完整落地；
 4. **大量实测淬炼出的平台细节**：批量 PATH 检测、双阶段连接测试、错误翻译模式、环境坑位表——这些是踩过坑才能写出来的，直接继承可以省掉 Fouc 数月的平台适配返工。
 
-### 7.2 与 Fouc 需求的差距（不能照搬的部分)
+### 8.2 与 Fouc 需求的差距（不能照搬的部分)
 
 | AionUi 的取舍 | Fouc 的要求 | 差距 |
 |---|---|---|
@@ -314,9 +360,9 @@ Agent 以扩展形式上架 Hub（`packages/desktop/src/common/types/agent/hub.t
 | 权限模型即 YOLO/缓存/弹窗三级，无风险分级、无 Delegation | F3 五级风险（read/modify-local/write-remote/push/release）+ 委托与策略 | PermissionResolver 的缓存机制可借鉴，决策链必须接入 Fouc 策略中心 |
 | 静默重试链（清缓存、重装桥包）偏"自愈优先" | 安装/升级/网络拉取必须是显式用户动作 | 自愈策略需收敛为白名单内的诊断提示 + 用户确认 |
 | 检测即信任（`cursor` 用 `which agent` 检测，注释自己承认歧义；扩展 agent 不校验） | 不能仅凭文件名/声明视为可信 Agent，需无副作用探测确认身份 | Fouc 的 probe 必须做身份校验（版本/帮助探测）而非仅存在性检查 |
-| Electron + Node 技术栈，用 TS SDK | Tauri + Rust + Next.js | 协议栈需要重新选型实现（见配套设计文档） |
-| npx 桥依赖隐式网络拉取 | 供应链与确定性要求 | 桥包需要固定版本、校验完整性、显式安装 |
+| 1.x 为 Electron 单体，进程与 UI 同生命周期；2.x 前后端已分进程但后端是 Rust | Fouc：Next.js 前端 + TS sidecar 后端 + Tauri 薄壳 | 进程拓扑不同；协议层 1.x TS 实现可近乎直接移植（见配套设计文档） |
+| npx 桥依赖隐式网络拉取（2.x 已部分解决：bun x + 受管运行时 + registry 锁，见 §7.1） | 供应链与确定性要求 | 桥包固定版本、校验完整性、显式安装；AionCore 的锁与自修复机制可借鉴 |
 
-### 7.3 一句话总结
+### 8.3 一句话总结
 
-AionUi 证明了"用 ACP + 声明式目录 + 握手探测"可以把数十个本机 CLI Agent 纳入统一管理，并把其中最难的跨平台进程工程打磨成熟；Fouc 应继承其协议选型、分层结构与平台经验，而在持久化语义、权限模型、工作对象绑定与安全边界上按自己的产品标准重新设计。
+AionUi 证明了"用 ACP + 声明式目录 + 握手探测"可以把数十个本机 CLI Agent 纳入统一管理，并把其中最难的跨平台进程工程打磨成熟；Fouc 的后端已确定用 TS 实现，因此以 1.x TS 实现为主参考（同语言同 SDK、可直接移植），以 AionCore 为工程策略与最新坑位解法的权威参照（bun x 桥、双预算探测、缓存自修复、行为策略目录化），而在持久化语义、权限模型、工作对象绑定与安全边界上按自己的产品标准重新设计。

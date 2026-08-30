@@ -8,9 +8,11 @@ Fouc 是一套构建于 AI Agent 之上的超级工作台，面向个人与企�
 
 ## 技术栈
 
-- Next.js App Router + React + TypeScript
+- Next.js App Router + React + TypeScript（前端，`src/`）
+- 后端业务逻辑使用 TypeScript，实现为独立 sidecar 进程（`backend/`，运行时 Bun），经本地 HTTP/WS 向前端提供服务；前后端共享契约位于 `shared/`
+- Tauri v2（Rust）仅作为系统薄壳（`src-tauri/`）：窗口、系统能力桥、自动更新与后端进程看护；后端业务逻辑不得写入 Rust
+- 后端代码保持在 Node 兼容 API 子集内（进程/HTTP/文件操作使用标准 API 与框架抽象），保留退回 Node 运行时的低成本通道
 - Tailwind CSS v4 + shadcn/ui-style Radix primitives
-- Tauri v2 for the native application runtime and Windows/macOS/Linux packaging
 - Tauri native application storage for local preferences and state
 
 ## 开发理念

@@ -3,7 +3,7 @@
 ## Visual target and evidence
 
 - Accepted interface reference: `C:\AIWorks\26Coding\fouc\design\fouc-workbench-reference.png`
-- User-confirmed logo source: `C:\Users\17335\AppData\Local\Temp\codex-clipboard-0dc749cb-495c-4ff3-8447-2c9a1fd5f8d0.png`
+- User-confirmed logo source: `C:\Users\17335\.codex\generated_images\01a052ee-c178-7791-b2d9-6258a4de53a8\fouc-overlap-symbol-closed-borders-transparent.png`
 - User-provided sidebar-header reference: `C:\Users\17335\AppData\Local\Temp\codex-clipboard-d451480d-be93-4e9e-ae91-4d98242df784.png`
 - Final 1920×1080 implementation: `C:\AIWorks\26Coding\fouc\qa\implementation-icon-header-1920x1080.png`
 - Final 1366×768 implementation: `C:\AIWorks\26Coding\fouc\qa\implementation-icon-header-1366x768.png`
@@ -13,7 +13,7 @@ The final pass was evaluated at 1920×1080 and 1366×768 CSS pixels in the Codex
 
 ## Final comparison points
 
-1. **Logo fidelity:** the interface uses a 1437×1095 transparent PNG generated from the user-confirmed ImageGen result. It preserves the filled black lower-left square, the complete gray upper-right loop, and the gray boundary that remains visible through the overlap. The rendered mark is approximately 20 px in the sidebar and 18 px in the title bar.
+1. **Logo fidelity:** the interface uses a 1254×1254 transparent PNG supplied by the user. It preserves the filled black lower-left square, the complete gray upper-right loop, and the gray boundary that remains visible through the overlap. The rendered mark is approximately 19 px in the sidebar and 17 px in the title bar.
 2. **Sidebar header:** a compact 50 px header now contains the Fouc mark, product name, “智能工作台” subtitle, and a working collapse/expand control.
 3. **Density:** the native-style title bar is 38 px, the desktop sidebar is 240 px, primary navigation rows are 34 px, the main heading is 25 px, and secondary UI typography is 9–12 px.
 4. **Icon language:** navigation, workspace, mode, and starter icons use unboxed Phosphor filled glyphs with restrained pastel colors. Only real action hit targets, such as attach and send, retain a background surface.
@@ -31,10 +31,10 @@ The final pass was evaluated at 1920×1080 and 1366×768 CSS pixels in the Codex
 
 - The title bar and sidebar share the same high-resolution ImageGen raster asset with genuine alpha transparency instead of the former 52×53 screenshot extraction or a flat SVG approximation. A clipped square slot removes the generated canvas padding without altering the mark's proportions.
 - Every visible collapsed-rail icon is centered on the 30 px axis of the 60 px sidebar, including the primary new-task control, workspace add control, workspace rows, recent row, and profile control.
-- User-confirmed ImageGen visual: `C:\Users\17335\AppData\Local\Temp\codex-clipboard-0dc749cb-495c-4ff3-8447-2c9a1fd5f8d0.png`
-- Final expanded evidence: `C:\Users\17335\AppData\Local\Temp\fouc-logo-expanded-final.png`
-- Final collapsed evidence: `C:\Users\17335\AppData\Local\Temp\fouc-logo-collapsed-final.png`
-- Measured logo slots: 24 px in the sidebar and 20 px in the title bar; the transparent-canvas crop yields approximately 20 px and 18 px visible marks respectively.
+- User-confirmed ImageGen asset: `C:\Users\17335\.codex\generated_images\01a052ee-c178-7791-b2d9-6258a4de53a8\fouc-overlap-symbol-closed-borders-transparent.png`
+- Final expanded evidence: `C:\Users\17335\AppData\Local\Temp\fouc-logo-new-asset-expanded.png`
+- Final collapsed evidence: `C:\Users\17335\AppData\Local\Temp\fouc-logo-new-asset-collapsed.png`
+- Measured logo slots: 24 px in the sidebar and 20 px in the title bar; the transparent-canvas crop yields approximately 19 px and 17 px visible marks respectively.
 
 ## Verification
 

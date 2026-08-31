@@ -51,9 +51,5 @@
     "tw-animate-css": "latest",
     "typescript": "5.9.3"
   },
-  "pnpm": {
-    "patchedDependencies": {
-      "@anthropic-ai/claude-agent-sdk@0.2.112": "patches/claude-agent-sdk-tempfile.patch"
-    }
-  }
+  "pnpm": {}
 }

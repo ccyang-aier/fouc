@@ -1,21 +1,21 @@
 /**
  * @license
  * 目录数据转写自 AionUi (aionui.com) 的 src/common/types/acpTypes.ts
- * ACP_BACKENDS_ALL（Apache-2.0），Copyright 2025 AionUi (aionui.com)，
- * 按 Apache-2.0 授权复用并修改；桥接启动行与 behavior_policy 参考
- * AionCore（iOfficeAI/AionCore）的 001_initial_schema.sql 种子。
+ * ACP_BACKENDS_ALL（Apache-2.0），Copyright 2025 AionUi (aionui.com)；
+ * 启动行与 yolo 档位以 AionCore（iOfficeAI/AionCore）迁移链中的实测契约为准：
+ * 001_initial_schema 种子 + 008/010/021/025/029/031/034/039 系列修订
+ * （025 标题即 "verified builtin launch contracts"）。
  *
- * 每个受管 Agent 是一条声明：命令名 + ACP 启用方式（原生子命令或桥接包）。
- * 新增 Agent = 增加一条目录数据，不新增协议代码。
+ * 每个受管 Agent 是一条声明：命令名 + ACP 启用方式 + 行为策略。
+ * 新增原生 ACP Agent = 增加一条目录数据，不新增协议代码。
  */
 
 import type { ProviderSpec } from '@shared/index';
 
 /**
- * 桥接 Agent 的适配器本地化（版本由 backend/package.json 锁定）：
- *  - 开发态：直接运行 backend/node_modules 下的入口（js 经 bun，native 直接执行）
- *  - 打包态：claude 桥并入后端二进制（`fouc-backend --bridge claude` 分发）；
- *    codex 桥是 79MB 原生二进制，首次使用时从 npm 下载到 userData 并缓存
+ * 桥接策略：claude 桥并入后端二进制（--bridge 分发，经 CLAUDE_CODE_EXECUTABLE
+ * 驱动用户自装的 claude 原生可执行）；codex 桥（原生二进制）首次使用时从
+ * npm 下载到 userData 缓存。其余全部为原生 ACP（用户已装 CLI + acp 子命令）。
  */
 export const PROVIDER_CATALOG: ProviderSpec[] = [
   {
@@ -41,6 +41,8 @@ export const PROVIDER_CATALOG: ProviderSpec[] = [
       kind: 'bridge',
       devRuntime: 'native',
       devEntry: '@zed-industries/codex-acp-win32-x64/bin/codex-acp.exe',
+      // 0.9.5 而非 AionCore 的 0.14.0：0.14 内嵌的 codex-core 配置解析器
+      // 不认新版 CLI 写入的 service_tier="default" 等值，与本机真实配置不兼容
       packaged: {
         source: 'npm-download',
         npmPackage: '@zed-industries/codex-acp-win32-x64',
@@ -51,7 +53,17 @@ export const PROVIDER_CATALOG: ProviderSpec[] = [
     authRequired: true,
     skillsDir: '.codex/skills',
     defaultEnabled: true,
-    behaviorPolicy: { yoloModeId: 'fullAccess' },
+    behaviorPolicy: { yoloModeId: 'agent-full-access' },
+  },
+  {
+    id: 'gemini',
+    name: 'Gemini CLI',
+    cliCommand: 'gemini',
+    acpLaunch: { kind: 'native', args: ['--acp'] },
+    authRequired: true,
+    skillsDir: '.gemini/skills',
+    defaultEnabled: true,
+    behaviorPolicy: { yoloModeId: 'yolo' },
   },
   {
     id: 'opencode',
@@ -61,17 +73,27 @@ export const PROVIDER_CATALOG: ProviderSpec[] = [
     authRequired: false,
     skillsDir: '.opencode/skills',
     defaultEnabled: true,
-    behaviorPolicy: {},
+    behaviorPolicy: { yoloModeId: 'build' },
   },
   {
     id: 'qwen',
     name: 'Qwen Code',
     cliCommand: 'qwen',
-    acpLaunch: { kind: 'native', args: ['--acp'] },
+    acpLaunch: { kind: 'native', args: ['--acp', '--experimental-skills'] },
     authRequired: true,
     skillsDir: '.qwen/skills',
     defaultEnabled: true,
     behaviorPolicy: {},
+  },
+  {
+    id: 'codebuddy',
+    name: 'CodeBuddy',
+    cliCommand: 'codebuddy',
+    acpLaunch: { kind: 'native', args: ['--acp'] },
+    authRequired: true,
+    skillsDir: '.codebuddy/skills',
+    defaultEnabled: true,
+    behaviorPolicy: { yoloModeId: 'bypassPermissions' },
   },
   {
     id: 'goose',
@@ -107,7 +129,7 @@ export const PROVIDER_CATALOG: ProviderSpec[] = [
     id: 'droid',
     name: 'Factory Droid',
     cliCommand: 'droid',
-    acpLaunch: { kind: 'native', args: ['exec', '--output-format', 'acp'] },
+    acpLaunch: { kind: 'native', args: ['acp-daemon'] },
     authRequired: false,
     skillsDir: '.factory/skills',
     defaultEnabled: true,
@@ -126,9 +148,9 @@ export const PROVIDER_CATALOG: ProviderSpec[] = [
   {
     id: 'cursor',
     name: 'Cursor Agent',
-    // 注意：Cursor CLI 使用通用命令名 "agent"，`which agent` 可能命中其他
-    // 工具（AionUi 目录注释明确承认此歧义）。Fouc 靠探测身份校验兜底。
-    cliCommand: 'agent',
+    // AionCore 025 实测契约：独立命令 cursor-agent（消除了 1.x 时代 `which agent`
+    // 的同名歧义），身份校验兜底仍在探测阶段
+    cliCommand: 'cursor-agent',
     acpLaunch: { kind: 'native', args: ['acp'] },
     authRequired: true,
     skillsDir: '.cursor/skills',
@@ -138,42 +160,32 @@ export const PROVIDER_CATALOG: ProviderSpec[] = [
   {
     id: 'kiro',
     name: 'Kiro',
-    cliCommand: 'kiro-cli',
+    cliCommand: 'kiro',
     acpLaunch: { kind: 'native', args: ['acp'] },
     authRequired: true,
     skillsDir: null,
     defaultEnabled: true,
-    behaviorPolicy: {},
-  },
-  {
-    id: 'codebuddy',
-    name: 'CodeBuddy',
-    cliCommand: 'codebuddy',
-    acpLaunch: { kind: 'native', args: ['--acp'] },
-    authRequired: true,
-    skillsDir: '.codebuddy/skills',
-    defaultEnabled: true,
-    behaviorPolicy: {},
+    behaviorPolicy: { yoloModeId: 'yolo' },
   },
   {
     id: 'qoder',
     name: 'Qoder CLI',
-    cliCommand: 'qodercli',
+    cliCommand: 'qoder',
     acpLaunch: { kind: 'native', args: ['--acp'] },
     authRequired: false,
     skillsDir: null,
     defaultEnabled: true,
-    behaviorPolicy: {},
+    behaviorPolicy: { yoloModeId: 'yolo' },
   },
   {
     id: 'vibe',
     name: 'Mistral Vibe',
-    cliCommand: 'vibe-acp',
+    cliCommand: 'vibe',
     acpLaunch: { kind: 'native', args: [] },
     authRequired: false,
     skillsDir: '.vibe/skills',
     defaultEnabled: true,
-    behaviorPolicy: {},
+    behaviorPolicy: { yoloModeId: 'yolo' },
   },
   {
     id: 'hermes',
@@ -191,6 +203,171 @@ export const PROVIDER_CATALOG: ProviderSpec[] = [
     cliCommand: 'snow',
     acpLaunch: { kind: 'native', args: ['--acp'] },
     authRequired: false,
+    skillsDir: null,
+    defaultEnabled: true,
+    behaviorPolicy: { yoloModeId: 'yolo' },
+  },
+  // ─── ACP Registry 实测收录（AionCore 025/029/031/034/039 验证契约） ───
+  {
+    id: 'amp',
+    name: 'Amp',
+    cliCommand: 'amp-acp',
+    acpLaunch: { kind: 'native', args: [] },
+    authRequired: true,
+    skillsDir: null,
+    defaultEnabled: true,
+    behaviorPolicy: { yoloModeId: 'bypass' },
+  },
+  {
+    id: 'cortex-code',
+    name: 'Cortex Code',
+    cliCommand: 'cortex',
+    acpLaunch: { kind: 'native', args: ['acp', 'serve'] },
+    authRequired: true,
+    skillsDir: '.cortex/skills',
+    defaultEnabled: true,
+    behaviorPolicy: { yoloModeId: 'bypass' },
+  },
+  {
+    id: 'corust-agent',
+    name: 'Corust Agent',
+    cliCommand: 'corust-agent-acp',
+    acpLaunch: { kind: 'native', args: [] },
+    authRequired: true,
+    skillsDir: '.corust-agent/skills',
+    defaultEnabled: true,
+    behaviorPolicy: {},
+  },
+  {
+    id: 'devin',
+    name: 'Devin',
+    cliCommand: 'devin',
+    acpLaunch: { kind: 'native', args: ['acp'] },
+    authRequired: true,
+    skillsDir: '.devin/skills',
+    defaultEnabled: true,
+    behaviorPolicy: { yoloModeId: 'bypass' },
+  },
+  {
+    id: 'harn',
+    name: 'Harn',
+    cliCommand: 'harn',
+    acpLaunch: { kind: 'native', args: ['serve', 'acp'] },
+    authRequired: true,
+    skillsDir: '.harn/skills',
+    defaultEnabled: true,
+    behaviorPolicy: {},
+  },
+  {
+    id: 'junie',
+    name: 'Junie',
+    cliCommand: 'junie',
+    acpLaunch: { kind: 'native', args: ['--acp=true'] },
+    authRequired: true,
+    skillsDir: null,
+    defaultEnabled: true,
+    behaviorPolicy: {},
+  },
+  {
+    id: 'poolside',
+    name: 'Poolside',
+    cliCommand: 'pool',
+    acpLaunch: { kind: 'native', args: ['acp'] },
+    authRequired: true,
+    skillsDir: '.poolside/skills',
+    defaultEnabled: true,
+    behaviorPolicy: {},
+  },
+  {
+    id: 'stakpak',
+    name: 'Stakpak',
+    cliCommand: 'stakpak',
+    acpLaunch: { kind: 'native', args: ['acp'] },
+    authRequired: true,
+    skillsDir: '.stakpak/skills',
+    defaultEnabled: true,
+    behaviorPolicy: {},
+  },
+  {
+    id: 'vtcode',
+    name: 'VT Code',
+    cliCommand: 'vtcode',
+    acpLaunch: {
+      kind: 'native',
+      args: ['acp'],
+      env: { VT_ACP_ENABLED: '1', VT_ACP_ZED_ENABLED: '1' },
+    },
+    authRequired: true,
+    skillsDir: '.vtcode/skills',
+    defaultEnabled: true,
+    behaviorPolicy: {},
+  },
+  {
+    id: 'antigravity',
+    name: 'Google Antigravity',
+    cliCommand: 'agy',
+    acpLaunch: { kind: 'native', args: [] },
+    authRequired: true,
+    skillsDir: null,
+    defaultEnabled: true,
+    behaviorPolicy: { yoloModeId: 'yolo' },
+  },
+  {
+    id: 'omp',
+    name: 'Oh My Pi',
+    cliCommand: 'omp',
+    acpLaunch: { kind: 'native', args: ['acp'] },
+    authRequired: true,
+    skillsDir: '.omp/skills',
+    defaultEnabled: true,
+    behaviorPolicy: {},
+  },
+  {
+    id: 'mimo-code',
+    name: 'MiMo Code',
+    cliCommand: 'mimo',
+    acpLaunch: { kind: 'native', args: ['acp'] },
+    authRequired: true,
+    skillsDir: null,
+    defaultEnabled: true,
+    behaviorPolicy: { yoloModeId: 'build' },
+  },
+  {
+    id: 'kilo',
+    name: 'Kilo',
+    cliCommand: 'kilo',
+    acpLaunch: { kind: 'native', args: ['acp'] },
+    authRequired: true,
+    skillsDir: null,
+    defaultEnabled: true,
+    behaviorPolicy: {},
+  },
+  {
+    id: 'nova',
+    name: 'Nova',
+    cliCommand: 'nova',
+    acpLaunch: { kind: 'native', args: ['acp'] },
+    authRequired: true,
+    skillsDir: '.compass/skills',
+    defaultEnabled: true,
+    behaviorPolicy: {},
+  },
+  {
+    id: 'dirac',
+    name: 'Dirac',
+    cliCommand: 'dirac',
+    acpLaunch: { kind: 'native', args: ['--acp'] },
+    authRequired: true,
+    skillsDir: '.dirac/skills',
+    defaultEnabled: true,
+    behaviorPolicy: { yoloModeId: 'yolo' },
+  },
+  {
+    id: 'grok',
+    name: 'Grok Build',
+    cliCommand: 'grok',
+    acpLaunch: { kind: 'native', args: ['agent', 'stdio'] },
+    authRequired: true,
     skillsDir: null,
     defaultEnabled: true,
     behaviorPolicy: {},

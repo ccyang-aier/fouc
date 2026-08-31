@@ -15,7 +15,6 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createLogger } from './logger';
-import { getDataDir } from './paths';
 
 const log = createLogger('env');
 
@@ -315,13 +314,6 @@ export async function prepareCleanEnv(customEnv?: Record<string, string>): Promi
   // npm lifecycle 变量会干扰包解析
   for (const key of Object.keys(merged)) {
     if (key.startsWith('npm_')) delete merged[key];
-  }
-
-  // 打包模式：运行时垫片目录前置到 PATH。claude 桥的 SDK 以 "bun" 启动解压
-  // 出的 CLI，须解析到 userData/runtime/bin 下的 bun.exe（后端 exe 的硬链接）。
-  const runtimeBin = path.join(getDataDir(), 'runtime', 'bin');
-  if (existsSync(runtimeBin) && merged.PATH) {
-    merged.PATH = `${runtimeBin}${path.delimiter}${merged.PATH}`;
   }
 
   return merged as Record<string, string>;

@@ -14,7 +14,7 @@
  * 并入后端二进制（argv 分发），或首次使用时从 npm 下载原生桥。
  */
 export type AcpLaunch =
-  | { kind: 'native'; args: string[] }
+  | { kind: 'native'; args: string[]; env?: Record<string, string> }
   | {
       kind: 'bridge';
       /** 开发态工件形态：bun 可运行的 js 入口，或 npm 平台包内的原生二进制 */

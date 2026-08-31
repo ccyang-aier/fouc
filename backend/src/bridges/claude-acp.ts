@@ -1,10 +1,10 @@
 /**
- * Claude Code 桥 sidecar 入口：由 scripts/build-backend.mjs 编译为
- * fouc-bridge-claude（单文件 Bun 可执行）。适配器在单文件形态下需经
- * claude-agent-sdk 的 embed 导出解析 CLI，故先置位其开关再加载。
+ * Claude Code 桥 sidecar 入口：由 scripts/build-backend.mjs 编译进 fouc-backend
+ * 单文件可执行，经 `--bridge claude-code` 分发。适配器（0.39+）依据
+ * CLAUDE_CODE_EXECUTABLE 环境变量驱动用户自装的原生 claude 可执行，
+ * 由 buildLaunchSpec 注入。
  */
 
-process.env.CLAUDE_AGENT_ACP_IS_SINGLE_FILE_BUN ??= '1';
 await import('@agentclientprotocol/claude-agent-acp/dist/index.js');
 
 export {};

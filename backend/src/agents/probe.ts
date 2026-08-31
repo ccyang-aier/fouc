@@ -92,7 +92,7 @@ export async function probeInstallation(provider: ProviderSpec, installation: Ag
   const initTimeoutMs = provider.acpLaunch.kind === 'bridge' ? ACP_BRIDGE_INIT_TIMEOUT_MS : ACP_INIT_TIMEOUT_MS;
   const client = new ProcessAcpClient(
     async () => {
-      const cleanEnv = await prepareCleanEnv();
+      const cleanEnv = await prepareCleanEnv(spec.env);
       return spawnAgentProcess({ command: spec.command, args: spec.args, cwd: spec.cwd, env: cleanEnv });
     },
     { backend: provider.id, handlers: noopProtocolHandlers, gracePeriodMs: 200 }
@@ -142,6 +142,8 @@ export async function probeInstallation(provider: ProviderSpec, installation: Ag
     let models: HandshakeEvidence['models'] = [];
     let modes: HandshakeEvidence['modes'] = [];
     let configOptions: HandshakeEvidence['configOptions'] = [];
+    let sessionNewOk = false;
+    let sessionNewAuthRequired = false;
     try {
       const session = (await withTimeout(
         client.createSession({ cwd: tempCwd }),
@@ -165,12 +167,15 @@ export async function probeInstallation(provider: ProviderSpec, installation: Ag
         type: (opt.type as 'select' | 'boolean' | 'string') ?? 'string',
         currentValue: opt.currentValue,
       }));
+      sessionNewOk = true;
       if (session.sessionId) {
         await client.closeSession(session.sessionId).catch(() => {});
       }
     } catch (error) {
-      // 控制面采集失败不否定握手成功
-      log.warn(`[${provider.id}] session/new probe failed: ${normalizeError(error).message}`);
+      // 控制面采集失败不否定握手成功，但 AUTH_REQUIRED 是明确凭据信号
+      const normalizedSessionError = normalizeError(error);
+      sessionNewAuthRequired = normalizedSessionError.code === 'AUTH_REQUIRED';
+      log.warn(`[${provider.id}] session/new probe failed: ${normalizedSessionError.message}`);
     }
 
     const evidence: HandshakeEvidence = {
@@ -202,9 +207,15 @@ export async function probeInstallation(provider: ProviderSpec, installation: Ag
 
     await safeClose(client);
 
-    // 认证状态：握手成功但目录声明需要认证且无 env_var 方法可用 → needs_auth
-    const status: InstallationStatus =
-      provider.authRequired && evidence.authMethods.length === 0 ? 'needs_auth' : 'ready';
+    // 认证状态以实测为准：session/new 成功即可用；显式 AUTH_REQUIRED → needs_auth；
+    // 实测不明确时回退启发式（目录要求认证且 Agent 未提供任何登录方式）
+    const status: InstallationStatus = sessionNewAuthRequired
+      ? 'needs_auth'
+      : sessionNewOk
+        ? 'ready'
+        : provider.authRequired && evidence.authMethods.length === 0
+          ? 'needs_auth'
+          : 'ready';
 
     return {
       ok: true,

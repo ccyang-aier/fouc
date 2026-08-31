@@ -184,7 +184,9 @@ export class SessionSupervisor {
     provider: import('@shared/index').ProviderSpec,
     options?: { yoloMode?: boolean; resumeSessionId?: string | null }
   ): Promise<void> {
-    const spec = await buildLaunchSpec(provider, installation, row.workDir);
+    const spec = await buildLaunchSpec(provider, installation, row.workDir, {
+      yoloMode: options?.yoloMode ?? false,
+    });
     const config: AgentConnectionConfig = {
       agentBackend: provider.id,
       foucSessionId: row.id,

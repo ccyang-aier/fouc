@@ -152,7 +152,7 @@ export class AgentRegistry {
   }
 
   /** 用户手工添加路径 */
-  addManualPath(providerId: string, executablePath: string): AgentInstallation {
+  addManualPath(providerId: string, executablePath: string, source: InstallationSource = 'user_added'): AgentInstallation {
     const provider = this.providerById(providerId);
     if (!provider) throw new Error(`Unknown provider: ${providerId}`);
     const id = installationId(providerId, executablePath);
@@ -163,7 +163,7 @@ export class AgentRegistry {
       id,
       providerId,
       executablePath,
-      source: 'user_added',
+      source,
       version: null,
       status: 'unchecked',
       capabilityManifest: null,
@@ -188,6 +188,29 @@ export class AgentRegistry {
     if (!installation) return false;
     this.installationRepo.delete(id);
     return true;
+  }
+
+  /**
+   * 纳管测试（设置页「测试连接」）：优先探测既有实例（默认 → 就绪 → 首个）；
+   * 无实例时按目录命令检查 PATH，命中即登记候选并探测。
+   * 返回 null 表示本机未发现该 CLI。
+   */
+  async testProvider(providerId: string): Promise<AgentInstallation | null> {
+    const provider = this.providerById(providerId);
+    if (!provider) return null;
+
+    const existing = this.installationRepo.listAll().filter((i) => i.providerId === providerId);
+    if (existing.length > 0) {
+      const target = existing.find((i) => i.isDefault) ?? existing.find((i) => i.status === 'ready') ?? existing[0];
+      return this.probeOne(target.id, 'manual');
+    }
+
+    const available = await agentDetector.batchCheckCliAvailability([provider.cliCommand]);
+    if (!available.has(provider.cliCommand)) return null;
+    const executablePath = await agentDetector.resolveCliPath(provider.cliCommand);
+    if (!executablePath) return null;
+    const candidate = this.addManualPath(providerId, executablePath, 'path');
+    return this.probeOne(candidate.id, 'manual');
   }
 
   setEnabled(id: string, enabled: boolean): AgentInstallation | null {

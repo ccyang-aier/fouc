@@ -12,6 +12,11 @@ type Endpoint = { baseUrl: string; token: string }
 let cachedEndpoint: Endpoint | null = null
 let endpointPromise: Promise<Endpoint> | null = null
 
+/** 解析后端端点（Tauri command 或开发回退），供设置页展示连接信息 */
+export function getBackendEndpoint(): Promise<Endpoint> {
+  return resolveEndpoint()
+}
+
 async function resolveEndpoint(): Promise<Endpoint> {
   if (cachedEndpoint) return cachedEndpoint
   if (endpointPromise) return endpointPromise

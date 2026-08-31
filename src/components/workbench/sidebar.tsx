@@ -37,15 +37,15 @@ import {
 } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
-export type WorkbenchView = "home" | "agents" | "placeholder"
+export type WorkbenchView = "home" | "settings" | "projects" | "agent-hub" | "automation" | "knowledge" | "more"
 
 const navigation: Array<{ label: string; icon: typeof ChatCircleDots; color: string; view: WorkbenchView }> = [
   { label: "助理", icon: ChatCircleDots, color: "text-[#58b7a2]", view: "home" },
-  { label: "项目", icon: FolderOpen, color: "text-[#6e9fe6]", view: "placeholder" },
-  { label: "Agent · 技能 · 连接器", icon: PlugsConnected, color: "text-[#9b80dc]", view: "agents" },
-  { label: "自动化", icon: Lightning, color: "text-[#e6a64f]", view: "placeholder" },
-  { label: "知识库", icon: BookOpenText, color: "text-[#63b99d]", view: "placeholder" },
-  { label: "更多", icon: DotsThreeCircle, color: "text-[#929aa3]", view: "placeholder" },
+  { label: "项目", icon: FolderOpen, color: "text-[#6e9fe6]", view: "projects" },
+  { label: "Agent · 技能 · 连接器", icon: PlugsConnected, color: "text-[#9b80dc]", view: "agent-hub" },
+  { label: "自动化", icon: Lightning, color: "text-[#e6a64f]", view: "automation" },
+  { label: "知识库", icon: BookOpenText, color: "text-[#63b99d]", view: "knowledge" },
+  { label: "更多", icon: DotsThreeCircle, color: "text-[#929aa3]", view: "more" },
 ]
 
 export function Sidebar({
@@ -236,6 +236,23 @@ export function Sidebar({
       </section>
 
       <div className="mt-auto">
+        <button
+          type="button"
+          aria-label="设置"
+          aria-current={view === "settings" ? "page" : undefined}
+          onClick={() => onViewChange("settings")}
+          className={cn(
+            "mb-1.5 flex h-[32px] w-full items-center gap-2.5 rounded-[8px] px-2 text-left text-[12px] font-medium outline-none transition-[background-color,color] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+            view === "settings"
+              ? "bg-black/[0.045] text-[var(--ink)]"
+              : "text-[var(--ink-soft)] hover:bg-black/[0.035] hover:text-[var(--ink)]",
+            collapsed && "justify-center px-0",
+          )}
+        >
+          <GearSix className="size-[16px] shrink-0 text-[#89939d]" weight="fill" />
+          <span className="sidebar-label">设置</span>
+        </button>
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
@@ -260,7 +277,7 @@ export function Sidebar({
           <DropdownMenuContent align="start" side="top" className="w-52">
             <DropdownMenuLabel>林默 · 个人工作台</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onViewChange("settings")}>
               <GearSix weight="fill" /> 设置
             </DropdownMenuItem>
             <DropdownMenuItem>

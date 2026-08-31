@@ -137,6 +137,15 @@ export function createApp(context: ServerContext): { app: Hono; hub: BroadcastHu
     return c.json({ ok: true, data: updated });
   });
 
+  app.post('/api/agents/providers/:id/test', async (c) => {
+    const id = c.req.param('id');
+    if (!registry.providerById(id)) {
+      return c.json({ ok: false, error: { code: 'not_found', message: 'Provider not found' } }, 404);
+    }
+    const installation = await registry.testProvider(id);
+    return c.json({ ok: true, data: { installation } });
+  });
+
   app.post('/api/agents/installations', async (c) => {
     const body = await readJson<{ providerId: string; executablePath: string }>(c);
     if (!body || !body.providerId || !body.executablePath) {

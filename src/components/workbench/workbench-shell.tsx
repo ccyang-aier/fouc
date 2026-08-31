@@ -26,11 +26,11 @@ export function WorkbenchShell() {
   return (
     <TooltipProvider>
       <div className="flex h-dvh min-h-[540px] min-w-[660px] flex-col overflow-hidden bg-[var(--shell)] text-[var(--ink)]">
-        <TitleBar />
+        <TitleBar settings={view === "settings"} onBack={() => setView("home")} />
         {view === "settings" ? (
           // 设置为全窗页面：接管标题栏以下的全部空间，不保留工作台侧边栏
           <div className="min-h-0 flex-1">
-            <SettingsCanvas initialSection="agents" onBack={() => setView("home")} />
+            <SettingsCanvas initialSection="appearance" />
           </div>
         ) : (
           <div

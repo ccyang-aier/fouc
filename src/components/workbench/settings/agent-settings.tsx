@@ -267,7 +267,7 @@ export function AgentSettings() {
   ]
 
   return (
-    <div className="mx-auto w-full max-w-[900px] px-8 pb-10 pt-7 max-[1100px]:px-6">
+    <div className="mx-auto w-full max-w-[960px] px-10 pb-14 pt-12 max-[1100px]:px-7 max-[900px]:pt-8">
       <PanelHeader
         title="Agent 纳管"
         description={`管理本机可用的 AI Agent —— ${installations.length} 个已登记实例 / ${providers.length} 种受支持产品。`}

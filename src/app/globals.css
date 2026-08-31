@@ -56,6 +56,42 @@ button {
   cursor: default;
 }
 
+.appearance-range {
+  --range-progress: 40%;
+  height: 16px;
+  appearance: none;
+  background: transparent;
+  cursor: default;
+}
+
+.appearance-range::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    #5f84a4 0,
+    #5f84a4 var(--range-progress),
+    #d8dbd8 var(--range-progress),
+    #d8dbd8 100%
+  );
+}
+
+.appearance-range::-webkit-slider-thumb {
+  width: 15px;
+  height: 15px;
+  margin-top: -6px;
+  appearance: none;
+  border: 1px solid #cfd3d0;
+  border-radius: 999px;
+  background: white;
+  box-shadow: 0 1px 3px rgba(34, 39, 36, 0.12);
+}
+
+.appearance-range:focus-visible {
+  outline: 2px solid rgba(95, 132, 164, 0.25);
+  outline-offset: 2px;
+}
+
 ::selection {
   background: rgba(13, 168, 135, 0.18);
 }

@@ -12,7 +12,7 @@ export const FOUC_VERSION = "0.1.0"
 
 export function AboutSettings() {
   return (
-    <div className="mx-auto w-full max-w-[760px] px-8 py-7 max-[1100px]:px-6">
+    <div className="mx-auto w-full max-w-[960px] px-10 pb-14 pt-12 max-[1100px]:px-7 max-[900px]:pt-8">
       <PanelHeader title="关于" description="Fouc 智能工作台的产品信息。" />
 
       <section className="mt-5 rounded-[12px] border border-[#eceef1] bg-white px-6 py-6 shadow-[0_1px_2px_rgba(23,25,27,0.04)]">

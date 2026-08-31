@@ -48,7 +48,7 @@ export function GeneralSettings() {
   }, null)
 
   return (
-    <div className="mx-auto w-full max-w-[760px] px-8 py-7 max-[1100px]:px-6">
+    <div className="mx-auto w-full max-w-[960px] px-10 pb-14 pt-12 max-[1100px]:px-7 max-[900px]:pt-8">
       <PanelHeader title="通用" description="Fouc 本地服务与 Agent 纳管的整体状态。" />
       <section className="mt-5 overflow-hidden rounded-[12px] border border-[#eceef1] bg-white shadow-[0_1px_2px_rgba(23,25,27,0.04)]">
         <header className="flex items-center gap-2 border-b border-[#f2f3f5] px-5 py-3.5">

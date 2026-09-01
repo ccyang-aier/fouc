@@ -2,7 +2,6 @@
 
 import Image from "next/image"
 import {
-  ArrowLeft,
   CopySimple,
   Minus,
   Question,
@@ -26,13 +25,7 @@ const menuGroups = {
   "帮助(H)": ["快捷键", "产品文档", "关于 Fouc"],
 }
 
-export function TitleBar({
-  settings = false,
-  onBack,
-}: {
-  settings?: boolean
-  onBack?: () => void
-}) {
+export function TitleBar() {
   return (
     <header
       data-tauri-drag-region
@@ -88,37 +81,6 @@ export function TitleBar({
             </DropdownMenuContent>
           </DropdownMenu>
         ))}
-
-        {settings ? (
-          <div data-tauri-drag-region className="flex min-w-0 items-center">
-            <span
-              data-tauri-drag-region
-              className="mx-2.5 h-4 w-px shrink-0 bg-black/[0.09]"
-              aria-hidden
-            />
-            <button
-              data-tauri-drag-region="false"
-              type="button"
-              aria-label="返回工作台"
-              onClick={onBack}
-              className="flex size-7 shrink-0 items-center justify-center rounded-[7px] text-[#6f7478] outline-none transition-colors hover:bg-black/[0.05] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
-            >
-              <ArrowLeft className="size-4" weight="bold" aria-hidden />
-            </button>
-            <span
-              data-tauri-drag-region
-              className="ml-1.5 text-[12px] font-semibold tracking-[-0.01em]"
-            >
-              设置
-            </span>
-            <span
-              data-tauri-drag-region
-              className="ml-2 font-mono text-[10px] text-[#a0a5a9]"
-            >
-              v0.1.0
-            </span>
-          </div>
-        ) : null}
       </div>
 
       <div className="ml-auto flex items-center gap-1">

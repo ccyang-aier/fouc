@@ -33,11 +33,11 @@ export function WorkbenchShell() {
   return (
     <TooltipProvider>
       <div className="flex h-dvh min-h-[540px] min-w-[660px] flex-col overflow-hidden text-[var(--ink)]">
-        <TitleBar settings={view === "settings"} onBack={() => setView("home")} />
+        <TitleBar />
         {view === "settings" ? (
           // 设置为全窗页面：接管标题栏以下的全部空间，不保留工作台侧边栏
           <div className="min-h-0 flex-1">
-            <SettingsCanvas initialSection="appearance" />
+            <SettingsCanvas initialSection="appearance" onBack={() => setView("home")} />
           </div>
         ) : (
           // 材质挂在整行：侧边栏与主面板共用同一块材质底座，
@@ -50,8 +50,9 @@ export function WorkbenchShell() {
               view={view}
               onViewChange={setView}
             />
-            {/* 顶部分割线与左缘分割线同用 --wt-sidebar-glass-edge；从圆角切点（16px）起线，避免横线戳进圆角区 */}
-            <main className="relative min-w-0 flex-1 overflow-hidden rounded-tl-[16px] bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.012)] before:pointer-events-none before:absolute before:top-0 before:right-0 before:left-[16px] before:h-px before:bg-[var(--wt-sidebar-glass-edge)] before:content-['']">
+            {/* 面板自绘 1px 边框（含左上圆角），与侧栏分割线同用 --wt-sidebar-glass-edge：
+                真实 border 不受内容层遮挡，四边与圆角处颜色连续均匀 */}
+            <main className="relative min-w-0 flex-1 overflow-hidden rounded-tl-[16px] border border-[var(--wt-sidebar-glass-edge)] bg-white">
               {view === "home" ? (
                 <HomeCanvas key={missionKey} />
               ) : (

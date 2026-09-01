@@ -3,7 +3,6 @@
 import { useState } from "react"
 import {
   Bell,
-  Binoculars,
   BookOpenText,
   CaretDown,
   CaretRight,
@@ -63,6 +62,16 @@ function DenseCollapseIcon() {
   )
 }
 
+/** 精致版放大镜：细环 + 实心圆角手柄，笔触介于 Phosphor bold 与 fill 之间，小尺寸下更清爽。 */
+function SearchIcon({ className }: { className?: string }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 256 256" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="110" cy="110" r="68" stroke="currentColor" strokeWidth="24" />
+      <path d="M163 163l49 49" stroke="currentColor" strokeWidth="30" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 export function Sidebar({
   collapsed,
   onToggle,
@@ -92,8 +101,8 @@ export function Sidebar({
     >
       <aside
         className={cn(
-          // 分隔线用伪元素从圆角拐点（16px）起线：原生 border 会通到顶、戳进圆角区
-          "relative flex h-full min-h-0 flex-col px-3 pb-3 transition-[padding] duration-200 max-[1080px]:px-2.5 after:pointer-events-none after:absolute after:top-[16px] after:bottom-0 after:right-0 after:w-px after:bg-[var(--wt-sidebar-glass-edge)] after:content-['']",
+          // 右缘分割线由主面板的 border-left 统一提供，此处不再自绘
+          "relative flex h-full min-h-0 flex-col px-3 pb-3 transition-[padding] duration-200 max-[1080px]:px-2.5",
           collapsed && "sidebar-collapsed px-2 max-[1080px]:px-2",
         )}
       >
@@ -138,7 +147,7 @@ export function Sidebar({
                     aria-label="搜索"
                     className="flex size-8 shrink-0 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-black/[0.045] hover:text-[var(--ink-soft)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                   >
-                    <Binoculars className="size-[17px]" weight="fill" />
+                    <SearchIcon className="size-[17px]" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="right">搜索</TooltipContent>

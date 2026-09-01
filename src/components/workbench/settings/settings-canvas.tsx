@@ -7,6 +7,7 @@
 
 import { useState } from "react"
 import {
+  ArrowLeft,
   Info,
   MagnifyingGlass,
   PaintBrush,
@@ -35,8 +36,10 @@ const SECTIONS: Array<SidebarNavItem<SettingsSection>> = [
 
 export function SettingsCanvas({
   initialSection = "appearance",
+  onBack,
 }: {
   initialSection?: SettingsSection
+  onBack?: () => void
 }) {
   const [section, setSection] = useState<SettingsSection>(initialSection)
   const [query, setQuery] = useState("")
@@ -61,10 +64,23 @@ export function SettingsCanvas({
       >
         <nav
           aria-label="设置分区"
-          // 分隔线用伪元素从圆角拐点（16px）起线，与工作台侧边栏一致
-          className="relative flex h-full min-h-0 flex-col px-3 pb-5 pt-[14px] after:pointer-events-none after:absolute after:top-[16px] after:bottom-0 after:right-0 after:w-px after:bg-[var(--wt-sidebar-glass-edge)] after:content-['']"
+          // 右缘分割线由主面板的 border-left 统一提供，此处不再自绘
+          className="relative flex h-full min-h-0 flex-col px-3 pb-5 pt-3"
         >
-          <div className="relative">
+          <div className="flex h-9 shrink-0 items-center gap-1.5">
+            <button
+              type="button"
+              aria-label="返回工作台"
+              onClick={onBack}
+              className="flex size-7 shrink-0 items-center justify-center rounded-[7px] text-[#6f7478] outline-none transition-colors hover:bg-black/[0.05] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+            >
+              <ArrowLeft className="size-4" weight="bold" aria-hidden />
+            </button>
+            <span className="text-[13px] font-semibold tracking-[-0.01em] text-[var(--ink)]">设置</span>
+            <span className="mt-px font-mono text-[10px] text-[#a0a5a9]">v0.1.0</span>
+          </div>
+
+          <div className="relative mt-2.5">
             <MagnifyingGlass
               className="pointer-events-none absolute left-3 top-1/2 size-[15px] -translate-y-1/2 text-[#a8aca8]"
               aria-hidden
@@ -92,8 +108,8 @@ export function SettingsCanvas({
 
       <ScrollArea
         as="main"
-        /* 顶部分割线与左缘分割线同用 --wt-sidebar-glass-edge；从圆角切点（16px）起线，避免横线戳进圆角区 */
-        className="min-h-0 flex-1 overflow-hidden rounded-tl-[16px] bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.012)] before:pointer-events-none before:absolute before:top-0 before:right-0 before:left-[16px] before:h-px before:bg-[var(--wt-sidebar-glass-edge)] before:content-['']"
+        /* 面板自绘 1px 边框（含左上圆角），与侧栏分割线同用 --wt-sidebar-glass-edge，四边与圆角处连续均匀 */
+        className="min-h-0 flex-1 overflow-hidden rounded-tl-[16px] border border-[var(--wt-sidebar-glass-edge)] bg-white"
         viewportClassName="bg-white"
       >
         {section === "appearance" ? (

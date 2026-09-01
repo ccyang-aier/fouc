@@ -3,6 +3,7 @@
 import { useState } from "react"
 import {
   Bell,
+  Binoculars,
   BookOpenText,
   CaretDown,
   CaretRight,
@@ -14,7 +15,6 @@ import {
   Funnel,
   GearSix,
   Lightning,
-  MagnifyingGlass,
   Plus,
   PlusCircle,
   PlugsConnected,
@@ -38,17 +38,18 @@ import {
 } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
+import { SidebarNavList, type SidebarNavItem } from "./sidebar-nav"
 import { SidebarResizeHandle, useSidebarWidth } from "./sidebar-resize"
 
 export type WorkbenchView = "home" | "settings" | "projects" | "agent-hub" | "automation" | "knowledge" | "more"
 
-const navigation: Array<{ label: string; icon: typeof ChatCircleDots; color: string; view: WorkbenchView }> = [
-  { label: "助理", icon: ChatCircleDots, color: "text-[#58b7a2]", view: "home" },
-  { label: "项目", icon: FolderOpen, color: "text-[#6e9fe6]", view: "projects" },
-  { label: "Agent · 技能 · 连接器", icon: PlugsConnected, color: "text-[#9b80dc]", view: "agent-hub" },
-  { label: "自动化", icon: Lightning, color: "text-[#e6a64f]", view: "automation" },
-  { label: "知识库", icon: BookOpenText, color: "text-[#63b99d]", view: "knowledge" },
-  { label: "更多", icon: DotsThreeCircle, color: "text-[#929aa3]", view: "more" },
+const navigation: Array<SidebarNavItem<WorkbenchView>> = [
+  { id: "home", label: "助理", icon: ChatCircleDots, color: "text-[#58b7a2]" },
+  { id: "projects", label: "项目", icon: FolderOpen, color: "text-[#6e9fe6]" },
+  { id: "agent-hub", label: "Agent · 技能 · 连接器", icon: PlugsConnected, color: "text-[#9b80dc]" },
+  { id: "automation", label: "自动化", icon: Lightning, color: "text-[#e6a64f]" },
+  { id: "knowledge", label: "知识库", icon: BookOpenText, color: "text-[#63b99d]" },
+  { id: "more", label: "更多", icon: DotsThreeCircle, color: "text-[#929aa3]" },
 ]
 
 const SIDEBAR_VERSION = "v0.1.0"
@@ -114,7 +115,7 @@ export function Sidebar({
           ) : (
             <>
               <div className="sidebar-label min-w-0 flex-1 leading-none">
-                <div className="truncate text-[15px] font-semibold tracking-[-0.025em]">Fouc</div>
+                <div className="truncate text-[15px] font-semibold tracking-[-0.025em] text-[var(--ink-soft)]">Fouc</div>
                 <div className="mt-1.5 truncate text-[10px] font-medium text-[var(--muted)]">{SIDEBAR_VERSION}</div>
               </div>
               <Tooltip>
@@ -123,7 +124,7 @@ export function Sidebar({
                     type="button"
                     aria-label="收起侧边栏"
                     onClick={onToggle}
-                    className="flex size-8 shrink-0 items-center justify-center rounded-[7px] text-[var(--ink-soft)] outline-none transition-colors hover:bg-black/[0.045] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-black/[0.045] hover:text-[var(--ink-soft)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                   >
                     <DenseCollapseIcon />
                   </button>
@@ -135,9 +136,9 @@ export function Sidebar({
                   <button
                     type="button"
                     aria-label="搜索"
-                    className="flex size-8 shrink-0 items-center justify-center rounded-[7px] text-[var(--ink-soft)] outline-none transition-colors hover:bg-black/[0.045] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-black/[0.045] hover:text-[var(--ink-soft)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                   >
-                    <MagnifyingGlass className="size-4" weight="fill" />
+                    <Binoculars className="size-[17px]" weight="fill" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="right">搜索</TooltipContent>
@@ -147,9 +148,9 @@ export function Sidebar({
                   <button
                     type="button"
                     aria-label="筛选"
-                    className="flex size-8 shrink-0 items-center justify-center rounded-[7px] text-[var(--ink-soft)] outline-none transition-colors hover:bg-black/[0.045] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-black/[0.045] hover:text-[var(--ink-soft)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                   >
-                    <Funnel className="size-4" weight="fill" />
+                    <Funnel className="size-[17px]" weight="fill" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="right">筛选</TooltipContent>
@@ -164,7 +165,7 @@ export function Sidebar({
           onClick={onNewMission}
           aria-label="新建任务"
           className={cn(
-            "mt-1 h-8 w-full justify-start rounded-[8px] border-black/[0.075] bg-white/30 px-2 text-[12px] font-semibold shadow-none hover:bg-white/70",
+            "mt-1 h-8 w-full justify-start rounded-[8px] border-black/[0.075] bg-white/30 px-2 text-[12px] font-semibold shadow-none hover:bg-white",
             collapsed && "justify-center px-0",
           )}
         >
@@ -172,36 +173,21 @@ export function Sidebar({
           <span className="sidebar-label">新建任务</span>
         </Button>
 
-        <nav aria-label="主导航" className="mt-2 space-y-px">
-          {navigation.map((item) => {
-            const selected = view === item.view
-            const Icon = item.icon
-
-            return (
-              <button
-                key={item.label}
-                type="button"
-                aria-label={item.label}
-                aria-current={selected ? "page" : undefined}
-                onClick={() => onViewChange(item.view)}
-                className={cn(
-                  "group flex h-[34px] w-full items-center gap-2.5 rounded-[8px] px-2 text-left text-[12px] font-medium outline-none transition-[background-color,color,transform] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
-                  selected
-                    ? "bg-black/[0.045] text-[var(--ink)]"
-                    : "text-[var(--ink-soft)] hover:bg-black/[0.035] hover:text-[var(--ink)]",
-                )}
-              >
-                <Icon className={cn("size-[17px] shrink-0", item.color)} weight="fill" />
-                <span className="sidebar-label truncate">{item.label}</span>
-                {item.label === "更多" ? (
-                  <CaretRight className="sidebar-label ml-auto size-3 text-[var(--muted)]" />
-                ) : null}
-              </button>
-            )
-          })}
+        <nav aria-label="主导航" className="mt-2.5">
+          <SidebarNavList
+            items={navigation}
+            value={view}
+            onChange={onViewChange}
+            collapsible
+            renderTrailing={(item) =>
+              item.id === "more" ? (
+                <CaretRight className="sidebar-label ml-auto size-3 text-[var(--muted)]" aria-hidden />
+              ) : null
+            }
+          />
         </nav>
 
-        <section className="mt-2.5" aria-label="工作空间">
+        <section className="mt-3" aria-label="工作空间">
           <div
             className={cn(
               "flex h-6 items-center px-2 text-[11px] font-medium text-[var(--muted)]",
@@ -250,7 +236,7 @@ export function Sidebar({
           ) : null}
         </section>
 
-        <section className="mt-2.5" aria-label="最近访问">
+        <section className="mt-3" aria-label="最近访问">
           <div
             className={cn(
               "flex h-6 items-center px-2 text-[11px] font-medium text-[var(--muted)]",
@@ -298,7 +284,7 @@ export function Sidebar({
             {recentOpen ? (
               <button
                 type="button"
-                className="flex h-8 w-full items-center gap-2.5 rounded-lg px-2 text-left text-[11px] outline-none transition-colors hover:bg-black/[0.035] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                className="flex h-8 w-full items-center gap-2.5 rounded-lg px-2 text-left text-[11px] outline-none transition-[background-color,box-shadow] hover:bg-white hover:shadow-[0_1px_2px_rgba(21,30,34,0.05)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
               >
                 <Desktop className="size-[16px] shrink-0 text-[#89939d]" weight="fill" />
                 <span className="sidebar-label truncate">Fouc 桌面端</span>
@@ -312,13 +298,9 @@ export function Sidebar({
           <button
             type="button"
             aria-label="设置"
-            aria-current={view === "settings" ? "page" : undefined}
             onClick={() => onViewChange("settings")}
             className={cn(
-              "mb-1.5 flex h-[32px] w-full items-center gap-2.5 rounded-[8px] px-2 text-left text-[12px] font-medium outline-none transition-[background-color,color] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
-              view === "settings"
-                ? "bg-black/[0.045] text-[var(--ink)]"
-                : "text-[var(--ink-soft)] hover:bg-black/[0.035] hover:text-[var(--ink)]",
+              "mb-1.5 flex h-[32px] w-full items-center gap-2.5 rounded-[8px] px-2 text-left text-[12px] font-medium text-[var(--ink-soft)] outline-none transition-[background-color,color,box-shadow] hover:bg-white hover:text-[var(--ink)] hover:shadow-[0_1px_2px_rgba(21,30,34,0.05)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
               collapsed && "justify-center px-0",
             )}
           >
@@ -379,7 +361,7 @@ function SpaceRow({
     <button
       type="button"
       aria-label={label}
-      className="flex h-8 w-full items-center gap-2 rounded-lg px-2 text-left text-[11px] font-medium outline-none transition-colors hover:bg-black/[0.035] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+      className="flex h-8 w-full items-center gap-2 rounded-lg px-2 text-left text-[11px] font-medium outline-none transition-[background-color,box-shadow] hover:bg-white hover:shadow-[0_1px_2px_rgba(21,30,34,0.05)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
     >
       <CaretRight className="sidebar-label size-3 text-[var(--muted)]" />
       <Icon className={cn("size-[16px] shrink-0", color)} weight="fill" />

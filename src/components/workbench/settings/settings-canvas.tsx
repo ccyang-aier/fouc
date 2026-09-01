@@ -17,6 +17,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 
+import { SidebarNavList, type SidebarNavItem } from "../sidebar-nav"
 import { SidebarResizeHandle, useSidebarWidth } from "../sidebar-resize"
 import { AboutSettings } from "./about-settings"
 import { AgentSettings } from "./agent-settings"
@@ -25,15 +26,11 @@ import { GeneralSettings } from "./general-settings"
 
 export type SettingsSection = "appearance" | "general" | "agents" | "about"
 
-const SECTIONS: Array<{
-  id: SettingsSection
-  label: string
-  icon: typeof SlidersHorizontal
-}> = [
-  { id: "appearance", label: "外观", icon: PaintBrush },
-  { id: "general", label: "通用", icon: SlidersHorizontal },
-  { id: "agents", label: "Agent", icon: Robot },
-  { id: "about", label: "关于", icon: Info },
+const SECTIONS: Array<SidebarNavItem<SettingsSection>> = [
+  { id: "appearance", label: "外观", icon: PaintBrush, color: "text-[#d184ad]" },
+  { id: "general", label: "通用", icon: SlidersHorizontal, color: "text-[#6e9fe6]" },
+  { id: "agents", label: "Agent", icon: Robot, color: "text-[#9b80dc]" },
+  { id: "about", label: "关于", icon: Info, color: "text-[#63b99d]" },
 ]
 
 export function SettingsCanvas({
@@ -81,39 +78,13 @@ export function SettingsCanvas({
               className="h-[34px] w-full rounded-[6px] border border-[#e5e6e3] bg-white pl-9 pr-3 text-[11.5px] text-[var(--ink)] outline-none transition-[border-color,box-shadow] placeholder:text-[#afb3af] focus:border-[#8ba6bc] focus:ring-2 focus:ring-[#7797b3]/15"
             />
           </div>
-          <p className="mb-2 mt-5 px-2 text-[10px] font-medium uppercase tracking-[0.2em] text-[#a7aaa6]">
+          <p className="mb-2 mt-5 px-2.5 text-[10px] font-medium uppercase tracking-[0.2em] text-[#a7aaa6]">
             Preferences
           </p>
-          <div className="space-y-1">
-            {visibleSections.map((item) => {
-              const Icon = item.icon
-              const selected = section === item.id
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  aria-current={selected ? "page" : undefined}
-                  onClick={() => setSection(item.id)}
-                  className={cn(
-                    "flex h-9 w-full items-center gap-3 rounded-[7px] px-3 text-left text-[12px] outline-none transition-[background-color,color] focus-visible:ring-2 focus-visible:ring-[#7797b3]/25",
-                    selected
-                      ? "bg-[#e8eef3] font-medium text-[#54708a]"
-                      : "text-[#747a7d] hover:bg-black/[0.035] hover:text-[var(--ink)]",
-                  )}
-                >
-                  <Icon
-                    className={cn("size-[18px] shrink-0", selected ? "text-[#587a98]" : "text-[#a0a5a3]")}
-                    weight={selected ? "fill" : "regular"}
-                    aria-hidden
-                  />
-                  {item.label}
-                </button>
-              )
-            })}
-            {visibleSections.length === 0 ? (
-              <p className="px-3 py-4 text-[11px] text-[#a0a5a3]">没有匹配的设置</p>
-            ) : null}
-          </div>
+          <SidebarNavList items={visibleSections} value={section} onChange={setSection} />
+          {visibleSections.length === 0 ? (
+            <p className="px-2.5 py-4 text-[11px] text-[#a0a5a3]">没有匹配的设置</p>
+          ) : null}
 
           <SidebarResizeHandle dragging={dragging} onPointerDown={startResize} />
         </nav>
@@ -121,7 +92,8 @@ export function SettingsCanvas({
 
       <ScrollArea
         as="main"
-        className="min-h-0 flex-1 overflow-hidden rounded-tl-[16px] bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.012)]"
+        /* 顶部分割线与左缘分割线同用 --wt-sidebar-glass-edge；从圆角切点（16px）起线，避免横线戳进圆角区 */
+        className="min-h-0 flex-1 overflow-hidden rounded-tl-[16px] bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.012)] before:pointer-events-none before:absolute before:top-0 before:right-0 before:left-[16px] before:h-px before:bg-[var(--wt-sidebar-glass-edge)] before:content-['']"
         viewportClassName="bg-white"
       >
         {section === "appearance" ? (

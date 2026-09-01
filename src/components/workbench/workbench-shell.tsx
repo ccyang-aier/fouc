@@ -50,7 +50,8 @@ export function WorkbenchShell() {
               view={view}
               onViewChange={setView}
             />
-            <main className="relative min-w-0 flex-1 overflow-hidden rounded-tl-[16px] bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.012)]">
+            {/* 顶部分割线与左缘分割线同用 --wt-sidebar-glass-edge；从圆角切点（16px）起线，避免横线戳进圆角区 */}
+            <main className="relative min-w-0 flex-1 overflow-hidden rounded-tl-[16px] bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.012)] before:pointer-events-none before:absolute before:top-0 before:right-0 before:left-[16px] before:h-px before:bg-[var(--wt-sidebar-glass-edge)] before:content-['']">
               {view === "home" ? (
                 <HomeCanvas key={missionKey} />
               ) : (

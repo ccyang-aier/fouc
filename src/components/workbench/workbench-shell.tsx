@@ -40,7 +40,9 @@ export function WorkbenchShell() {
             <SettingsCanvas initialSection="appearance" />
           </div>
         ) : (
-          <div className="flex min-h-0 flex-1">
+          // 材质挂在整行：侧边栏与主面板共用同一块材质底座，
+          // 主面板圆角缺口处透出的也是同一材质，与侧边栏无缝衔接
+          <div className="sidebar-material flex min-h-0 flex-1">
             <Sidebar
               collapsed={sidebarCollapsed}
               onToggle={() => setSidebarCollapsed((collapsed) => !collapsed)}

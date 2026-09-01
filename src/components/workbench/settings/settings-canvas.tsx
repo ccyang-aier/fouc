@@ -50,11 +50,15 @@ export function SettingsCanvas({
     : SECTIONS
 
   return (
-    <div className="flex h-full min-h-0" aria-label="设置">
+    <div
+      /* 材质挂在设置页根节点：侧栏与主面板共用同一块材质底座，圆角缺口与侧栏无缝衔接 */
+      className="sidebar-material flex h-full min-h-0"
+      aria-label="设置"
+    >
       <div
-        style={{ width }}
+        style={{ width, zIndex: 20 }}
         className={cn(
-          "sidebar-material z-20 h-full shrink-0",
+          "h-full shrink-0",
           !dragging && "transition-[width] duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
         )}
       >

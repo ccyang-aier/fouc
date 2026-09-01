@@ -81,9 +81,11 @@ export function Sidebar({
 
   return (
     <div
-      style={{ width: collapsed ? 60 : width }}
+      /* zIndex 用内联：材质底座对直接子元素的非分层 z-index:1 会压过 z-20 工具类，
+         内联才能保住拖拽手柄压在主面板圆角之上的层级 */
+      style={{ width: collapsed ? 60 : width, zIndex: 20 }}
       className={cn(
-        "sidebar-material z-20 h-full shrink-0",
+        "h-full shrink-0",
         !dragging && "transition-[width] duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
       )}
     >

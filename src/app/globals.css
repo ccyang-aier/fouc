@@ -47,15 +47,17 @@
   box-sizing: border-box;
 }
 
+/* 背景只落在 body：html 保持透明，磨砂玻璃模式下 body 被材质层置为
+   transparent 后，原生窗口 acrylic 的桌面景深才能透出（与 world 一致）。 */
 html,
 body {
   height: 100%;
   overflow: hidden;
-  background: var(--shell);
 }
 
 body {
   margin: 0;
+  background: var(--shell);
   color: var(--ink);
   font-size: 13px;
   font-family: var(--font-sans);

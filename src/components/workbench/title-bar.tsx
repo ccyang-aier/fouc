@@ -40,7 +40,7 @@ export function TitleBar({
   return (
     <header
       data-tauri-drag-region
-      className="relative z-40 flex h-[38px] shrink-0 select-none items-center bg-[var(--shell)] px-3 text-[11px] text-[var(--ink)]"
+      className="sidebar-material relative z-40 flex h-[38px] shrink-0 select-none items-center px-3 text-[11px] text-[var(--ink)]"
     >
       <div
         data-tauri-drag-region
@@ -121,7 +121,7 @@ function SettingsTitleBar({ onBack }: { onBack?: () => void }) {
   return (
     <header
       data-tauri-drag-region
-      className="relative z-40 flex h-[44px] shrink-0 select-none items-center bg-[var(--shell)] pl-4 text-[12px] text-[var(--ink)]"
+      className="sidebar-material relative z-40 flex h-[44px] shrink-0 select-none items-center pl-4 text-[12px] text-[var(--ink)]"
     >
       <button
         data-tauri-drag-region="false"

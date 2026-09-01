@@ -68,8 +68,9 @@ export function SidebarResizeHandle({
       /* globals.css 的 button { cursor: default } 会压过 cursor-col-resize 工具类，内联保住手柄光标 */
       style={{ cursor: "col-resize" }}
       className={cn(
-        /* 分割线顶部下移 16px：与主内容区 rounded-tl-[16px] 圆角等高，加粗线不顶着圆角曲线 */
-        "absolute inset-y-0 right-[-4px] z-30 w-[9px] cursor-col-resize touch-none outline-none before:absolute before:top-[16px] before:bottom-0 before:left-1/2 before:w-px before:-translate-x-1/2 before:bg-ink before:opacity-0 before:transition-[opacity,width] before:duration-150 hover:before:opacity-90 focus-visible:before:opacity-90",
+        /* 分割线顶端渐隐：起点与 rounded-tl-[16px] 圆角等高，向下 12px 渐显——
+           圆弧在切点上方就开始剥离主面板边缘，硬截止的线头会显得越过拐点 */
+        "absolute inset-y-0 right-[-4px] z-30 w-[9px] cursor-col-resize touch-none outline-none before:absolute before:top-[16px] before:bottom-0 before:left-1/2 before:w-px before:-translate-x-1/2 before:bg-ink before:opacity-0 before:[mask-image:linear-gradient(to_bottom,transparent,black_12px)] before:transition-[opacity,width] before:duration-150 hover:before:opacity-90 focus-visible:before:opacity-90",
         dragging && "before:w-[2px] before:opacity-100",
       )}
     />

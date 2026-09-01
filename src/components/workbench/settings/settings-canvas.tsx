@@ -64,7 +64,8 @@ export function SettingsCanvas({
       >
         <nav
           aria-label="设置分区"
-          className="relative flex h-full min-h-0 flex-col border-r border-[var(--wt-sidebar-glass-edge)] px-3 pb-5 pt-[14px]"
+          // 分隔线用伪元素从圆角拐点（16px）起线，与工作台侧边栏一致
+          className="relative flex h-full min-h-0 flex-col px-3 pb-5 pt-[14px] after:pointer-events-none after:absolute after:top-[16px] after:bottom-0 after:right-0 after:w-px after:bg-[var(--wt-sidebar-glass-edge)] after:content-['']"
         >
           <div className="relative">
             <MagnifyingGlass

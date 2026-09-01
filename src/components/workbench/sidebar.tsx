@@ -91,7 +91,8 @@ export function Sidebar({
     >
       <aside
         className={cn(
-          "relative flex h-full min-h-0 flex-col border-r border-[var(--wt-sidebar-glass-edge)] px-3 pb-3 transition-[padding] duration-200 max-[1080px]:px-2.5",
+          // 分隔线用伪元素从圆角拐点（16px）起线：原生 border 会通到顶、戳进圆角区
+          "relative flex h-full min-h-0 flex-col px-3 pb-3 transition-[padding] duration-200 max-[1080px]:px-2.5 after:pointer-events-none after:absolute after:top-[16px] after:bottom-0 after:right-0 after:w-px after:bg-[var(--wt-sidebar-glass-edge)] after:content-['']",
           collapsed && "sidebar-collapsed px-2 max-[1080px]:px-2",
         )}
       >

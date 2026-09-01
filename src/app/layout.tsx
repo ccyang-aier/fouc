@@ -17,7 +17,18 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="zh-CN">
-      <body>{children}</body>
+      <body>
+        {/* 首帧标记运行时：桌面端且平台支持窗口特效时注入 head 标记（React 不清理外来 head 节点，
+            html 属性会被 React 19 水合清除，不可用作载体），需在首绘前完成。
+            标记 id 与 sidebar-material.css 保持一致（自 world 原样移植）。 */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              'try{if(window.__TAURI_INTERNALS__&&/Windows|Macintosh/.test(navigator.userAgent)){var s=document.createElement("style");s.id="world-glass-flag";(document.head||document.documentElement).appendChild(s)}}catch(e){}',
+          }}
+        />
+        {children}
+      </body>
     </html>
   )
 }

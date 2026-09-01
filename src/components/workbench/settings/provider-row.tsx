@@ -26,6 +26,7 @@ import {
 import type { AgentInstallation, CapabilityManifest, ProviderSpec } from "@fouc/shared"
 import { formatRelativeTime } from "@/lib/relative-time"
 import { Button } from "@/components/ui/button"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   Tooltip,
   TooltipContent,
@@ -261,7 +262,7 @@ function ExpandedPanel(
   }
 
   return (
-    <div className="max-h-[480px] space-y-4 overflow-y-auto px-4 pb-4 pt-3.5">
+    <ScrollArea className="max-h-[480px]" viewportClassName="space-y-4 px-4 pb-4 pt-3.5">
       {installations.length > 0 ? (
         <section aria-label={`${provider.name} 安装实例`}>
           <SectionLabel>安装实例（{installations.length}）</SectionLabel>
@@ -329,7 +330,7 @@ function ExpandedPanel(
           </div>
         </section>
       )}
-    </div>
+    </ScrollArea>
   )
 }
 

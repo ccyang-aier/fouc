@@ -11,6 +11,7 @@ import { Check, PaperPlaneTilt, ShieldCheck, StopCircle, X } from "@phosphor-ico
 import type { AgentEvent, AgentInstallation } from "@fouc/shared"
 import { backendFetch, subscribeBackendEvents } from "@/lib/backend"
 import { Button } from "@/components/ui/button"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 
 type ConsoleItem =
@@ -140,11 +141,16 @@ export function SessionConsole({ installation, providerName }: { installation: A
         </div>
       ) : (
         <>
-          <div ref={streamRef} className="min-h-0 flex-1 space-y-2.5 overflow-y-auto px-6 py-4" aria-live="polite">
+          <ScrollArea
+            className="min-h-0 flex-1"
+            viewportRef={streamRef}
+            viewportClassName="space-y-2.5 px-6 py-4"
+            aria-live="polite"
+          >
             {items.map((item) => (
               <ConsoleItemView key={item.id} item={item} onApprove={resolveApproval} />
             ))}
-          </div>
+          </ScrollArea>
           <div className="border-t border-[#eceef1] px-6 py-3">
             {error && (
               <p className="mb-2 text-[11.5px] text-[#b3413c]" role="alert">

@@ -37,6 +37,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 
 const modes = [
@@ -93,9 +94,11 @@ export function HomeCanvas() {
   }
 
   return (
-    <section
+    <ScrollArea
+      as="section"
       aria-label="Fouc 首页"
-      className="relative flex h-full min-h-0 flex-col items-center overflow-y-auto bg-white px-7 pt-[106px] max-[1180px]:pt-16 max-[760px]:px-4 max-[760px]:pt-12"
+      className="relative h-full min-h-0"
+      viewportClassName="flex flex-col items-center bg-white px-7 pt-[106px] max-[1180px]:pt-16 max-[760px]:px-4 max-[760px]:pt-12"
     >
       <div className="w-full max-w-[740px] -translate-x-2 text-center max-[1180px]:translate-x-0">
         <h1 className="text-[25px] leading-tight font-semibold tracking-[-0.035em] text-[var(--ink)] max-[760px]:text-[23px]">
@@ -338,6 +341,6 @@ export function HomeCanvas() {
           <CaretRight className="size-3.5" />
         </button>
       </div>
-    </section>
+    </ScrollArea>
   )
 }

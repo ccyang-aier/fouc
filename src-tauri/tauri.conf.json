@@ -11,6 +11,7 @@
   },
   "app": {
     "withGlobalTauri": true,
+    "macOSPrivateApi": true,
     "windows": [
       {
         "label": "main",
@@ -22,8 +23,10 @@
         "center": true,
         "resizable": true,
         "decorations": false,
-        "transparent": false,
-        "backgroundColor": "#f3f4f4",
+        "transparent": true,
+        "windowEffects": {
+          "effects": ["acrylic", "sidebar"]
+        },
         "shadow": true
       }
     ],

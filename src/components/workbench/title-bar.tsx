@@ -121,7 +121,7 @@ function SettingsTitleBar({ onBack }: { onBack?: () => void }) {
   return (
     <header
       data-tauri-drag-region
-      className="relative z-40 flex h-[44px] shrink-0 select-none items-center border-b border-black/[0.075] bg-white pl-4 text-[12px] text-[var(--ink)]"
+      className="relative z-40 flex h-[44px] shrink-0 select-none items-center bg-[var(--shell)] pl-4 text-[12px] text-[var(--ink)]"
     >
       <button
         data-tauri-drag-region="false"

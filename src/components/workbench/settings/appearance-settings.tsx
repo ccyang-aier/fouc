@@ -3,10 +3,15 @@
 import { useMemo, useState } from "react"
 import { Check, Desktop, SpeakerHigh } from "@phosphor-icons/react"
 
+import {
+  SIDEBAR_STYLE_IDS,
+  applySidebarStyle,
+  sidebarStyleLabels,
+  type SidebarStyle,
+} from "@/lib/sidebar-style"
 import { cn } from "@/lib/utils"
 
 type ThemeId = "paper" | "ink" | "warm" | "sage" | "system"
-type SidebarSurface = "standard" | "soft"
 
 const THEMES: Array<{
   id: ThemeId
@@ -25,9 +30,18 @@ const THEMES: Array<{
 
 export function AppearanceSettings() {
   const [theme, setTheme] = useState<ThemeId>("paper")
-  const [sidebarSurface, setSidebarSurface] = useState<SidebarSurface>("soft")
+  // 初始值取当前已应用到 html[data-sidebar-style] 的材质（工作台启动时恢复）
+  const [sidebarStyle, setSidebarStyle] = useState<SidebarStyle>(() => {
+    const applied = document.documentElement.dataset.sidebarStyle
+    return applied === "standard" || applied === "frosted" ? applied : "frosted"
+  })
   const [followSystem, setFollowSystem] = useState(true)
   const [volume, setVolume] = useState(40)
+
+  function changeSidebarStyle(style: SidebarStyle) {
+    setSidebarStyle(style)
+    applySidebarStyle(style)
+  }
 
   const selectedTheme = useMemo(
     () => THEMES.find((item) => item.id === theme) ?? THEMES[0],
@@ -90,19 +104,16 @@ export function AppearanceSettings() {
 
           <fieldset>
             <legend className="mb-3 text-[12px] font-medium text-[#464a47]">侧边栏材质</legend>
-            <div className="grid grid-cols-2 gap-3">
-              <SurfaceChoice
-                id="standard"
-                label="标准"
-                selected={sidebarSurface === "standard"}
-                onSelect={() => setSidebarSurface("standard")}
-              />
-              <SurfaceChoice
-                id="soft"
-                label="柔和层次"
-                selected={sidebarSurface === "soft"}
-                onSelect={() => setSidebarSurface("soft")}
-              />
+            <div className="grid max-w-md grid-cols-2 gap-3" role="radiogroup" aria-label="侧边栏材质">
+              {SIDEBAR_STYLE_IDS.map((id) => (
+                <SurfaceChoice
+                  key={id}
+                  id={id}
+                  label={sidebarStyleLabels[id]}
+                  selected={sidebarStyle === id}
+                  onSelect={() => changeSidebarStyle(id)}
+                />
+              ))}
             </div>
           </fieldset>
 
@@ -154,7 +165,7 @@ export function AppearanceSettings() {
           </section>
         </div>
 
-        <LivePreview theme={selectedTheme} softSidebar={sidebarSurface === "soft"} />
+        <LivePreview theme={selectedTheme} frostedSidebar={sidebarStyle === "frosted"} />
       </div>
     </div>
   )
@@ -166,7 +177,7 @@ function SurfaceChoice({
   selected,
   onSelect,
 }: {
-  id: SidebarSurface
+  id: SidebarStyle
   label: string
   selected: boolean
   onSelect: () => void
@@ -186,8 +197,10 @@ function SurfaceChoice({
     >
       <span
         className={cn(
-          "block h-[47px] rounded-[7px] border border-black/[0.045]",
-          id === "standard" ? "bg-[#f0f1f0]" : "bg-white/65 shadow-[inset_0_1px_0_white] backdrop-blur-xl",
+          "block h-[47px] rounded-[7px] border",
+          id === "standard"
+            ? "border-black/[0.07] bg-[#f2f3f4]"
+            : "border-white/70 bg-white/60 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.76)] backdrop-blur-md",
         )}
       />
       <span className={cn("mt-2 block px-0.5 text-[11px]", selected ? "text-[#54708a]" : "text-[#646966]")}>{label}</span>
@@ -219,16 +232,16 @@ function SettingRow({
 
 function LivePreview({
   theme,
-  softSidebar,
+  frostedSidebar,
 }: {
   theme: (typeof THEMES)[number]
-  softSidebar: boolean
+  frostedSidebar: boolean
 }) {
   return (
     <aside
       className={cn(
         "rounded-[14px] border border-black/[0.035] p-5",
-        softSidebar && "shadow-[0_14px_40px_rgba(34,39,36,0.06)]",
+        frostedSidebar && "shadow-[0_14px_40px_rgba(34,39,36,0.06)]",
       )}
       style={{ backgroundColor: theme.muted }}
       aria-label="实时预览"

@@ -17,6 +17,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 
 import { pickBestInstallation, ProviderRow, type ProviderStatusKey } from "./provider-row"
@@ -313,18 +314,20 @@ export function AgentSettings() {
                     <CaretDown className="size-3" aria-hidden />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="max-h-[320px] w-60 overflow-y-auto">
-                  {unregisteredProviders.length === 0 ? (
-                    <DropdownMenuItem disabled>全部受支持产品均已登记</DropdownMenuItem>
-                  ) : (
-                    unregisteredProviders.map((provider) => (
-                      <DropdownMenuItem key={provider.id} onSelect={() => focusProvider(provider.id)}>
-                        <ProviderAvatar providerId={provider.id} name={provider.name} className="size-5 rounded-md text-[9px]" />
-                        <span className="truncate">{provider.name}</span>
-                        <span className="ml-auto font-mono text-[10px] text-[var(--muted)]">{provider.cliCommand}</span>
-                      </DropdownMenuItem>
-                    ))
-                  )}
+                <DropdownMenuContent align="end" className="w-60 p-0">
+                  <ScrollArea className="max-h-[320px]" viewportClassName="p-1.5">
+                    {unregisteredProviders.length === 0 ? (
+                      <DropdownMenuItem disabled>全部受支持产品均已登记</DropdownMenuItem>
+                    ) : (
+                      unregisteredProviders.map((provider) => (
+                        <DropdownMenuItem key={provider.id} onSelect={() => focusProvider(provider.id)}>
+                          <ProviderAvatar providerId={provider.id} name={provider.name} className="size-5 rounded-md text-[9px]" />
+                          <span className="truncate">{provider.name}</span>
+                          <span className="ml-auto font-mono text-[10px] text-[var(--muted)]">{provider.cliCommand}</span>
+                        </DropdownMenuItem>
+                      ))
+                    )}
+                  </ScrollArea>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

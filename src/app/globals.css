@@ -14,6 +14,18 @@
   --accent: #0da887;
   --accent-strong: #078f73;
   --focus-ring: rgba(13, 168, 135, 0.35);
+
+  /* ── 侧栏材质令牌（自 world 原样移植，供 sidebar-material.css 消费）── */
+  --wt-sidebar-standard-panel: #fafbfc;
+  /* 磨砂层叠在 shell 画布上；偏白浅调，保留层次可见。 */
+  --wt-sidebar-frosted-panel: rgb(255 255 255 / 0.55);
+  /* 客户端磨砂叠在原生 acrylic 上的玻璃 tint：偏浅白的冷调瓷色，非纯白 */
+  --wt-sidebar-native-tint: rgb(252 253 254 / 0.8);
+  --wt-sidebar-glass-backdrop: blur(8px) saturate(148%) brightness(1.1) contrast(1.005);
+  --wt-sidebar-glass-edge: rgb(38 51 59 / 0.07);
+  /* 侧栏交互悬停面：浅白色，与标准面板和磨砂玻璃都协调 */
+  --wt-sidebar-hover: rgb(255 255 255 / 0.55);
+  --wt-sidebar-glass-noise-opacity: 0.42;
 }
 
 @theme inline {
@@ -22,6 +34,13 @@
   --font-sans: "Inter Variable", "SF Pro Text", "Segoe UI Variable Text",
     "Segoe UI", "PingFang SC", "Microsoft YaHei UI", "Noto Sans CJK SC",
     system-ui, sans-serif;
+  /* 自绘滚动条与侧栏拖拽手柄（自 world 原样移植）使用的墨色/边框令牌 */
+  --color-ink: var(--ink);
+  --color-ink-secondary: var(--ink-soft);
+  --color-ink-faint: var(--muted);
+  --color-border-strong: var(--line-strong);
+  --color-surface-hover: var(--surface-hover);
+  --color-sidebar-hover: var(--wt-sidebar-hover);
 }
 
 * {
@@ -96,20 +115,12 @@ button {
   background: rgba(13, 168, 135, 0.18);
 }
 
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* 滚动容器统一由 ui/scroll-area 的自绘滚动条接管，全局隐藏原生滚动条 */
+* {
+  scrollbar-width: none;
 }
-
-::-webkit-scrollbar-thumb {
-  border: 2px solid transparent;
-  border-radius: 999px;
-  background: rgba(56, 61, 66, 0.18);
-  background-clip: padding-box;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
+*::-webkit-scrollbar {
+  display: none;
 }
 
 @media (max-width: 820px) {

@@ -1,0 +1,58 @@
+/* ── dense 侧栏材质：标准 / 磨砂玻璃 ──
+   供 AppShell 内的小说菜单侧栏、检查器与独立工具侧栏共用。 */
+.sidebar-material {
+  position: relative;
+  isolation: isolate;
+  background-color: var(--wt-sidebar-material-background);
+  -webkit-backdrop-filter: var(--wt-sidebar-material-backdrop);
+  backdrop-filter: var(--wt-sidebar-material-backdrop);
+  transition: background-color 180ms ease;
+}
+.sidebar-material::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 96 96' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.86' numOctaves='4' seed='17' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)'/%3E%3C/svg%3E");
+  background-size: 96px 96px;
+  filter: contrast(146%) brightness(122%);
+  mix-blend-mode: soft-light;
+  opacity: var(--wt-sidebar-material-grain-opacity);
+}
+.sidebar-material > * {
+  position: relative;
+  z-index: 1;
+}
+html[data-sidebar-style="standard"] {
+  --wt-sidebar-material-background: var(--wt-sidebar-standard-panel);
+  --wt-sidebar-material-backdrop: none;
+  --wt-sidebar-material-grain-opacity: 0;
+}
+html[data-sidebar-style="frosted"],
+html:not([data-sidebar-style]) {
+  --wt-sidebar-material-background: var(--wt-sidebar-frosted-panel);
+  --wt-sidebar-material-backdrop: var(--wt-sidebar-glass-backdrop);
+  --wt-sidebar-material-grain-opacity: var(--wt-sidebar-glass-noise-opacity);
+}
+/* 桌面端磨砂：模糊与通透由原生窗口特效（acrylic/vibrancy）承担，
+   页面层只留浅色玻璃 tint，body 透出系统磨砂的桌面景深。
+   门控标记 #world-glass-flag 由首帧脚本注入 head（html 属性会被 React 水合清除）。 */
+html:has(#world-glass-flag)[data-sidebar-style="frosted"],
+html:has(#world-glass-flag):not([data-sidebar-style]) {
+  --wt-sidebar-material-background: var(--wt-sidebar-native-tint);
+  --wt-sidebar-material-backdrop: none;
+}
+html:has(#world-glass-flag)[data-sidebar-style="frosted"] body,
+html:has(#world-glass-flag):not([data-sidebar-style]) body {
+  background: transparent;
+}
+
+/* 检查器与独立工具侧栏沿用同一套材质令牌。 */
+.glass-rail {
+  position: relative;
+  isolation: isolate;
+  background-color: var(--wt-sidebar-material-background);
+  -webkit-backdrop-filter: var(--wt-sidebar-material-backdrop);
+  backdrop-filter: var(--wt-sidebar-material-backdrop);
+}

@@ -1,74 +1,74 @@
-# Project Work Page — Visual QA
+# Project Header and Favorites — Visual QA
 
 ## Result
 
 `passed`
 
-No actionable P0, P1, or P2 visual fidelity findings remain in the final exact-size comparison.
+No actionable P0, P1, or P2 visual or interaction findings remain.
 
 ## Visual truth and capture contract
 
-- Source visual truth: `qa/project-work/source.png`
-- Initial implementation capture: `qa/project-work/implementation-initial.png`
-- Final implementation capture: `qa/project-work/implementation-final.png`
-- Full final comparison: `qa/project-work/comparison-final.png`
-- Focused header comparison: `qa/project-work/comparison-header-final.png`
-- Focused detail-panel comparison: `qa/project-work/comparison-detail-final.png`
-- Viewport: `1624 × 968`
+- Source header: `qa/project-header/source-header.png` — `532 × 94`
+- Source tabs: `qa/project-header/source-tabs.png` — `427 × 61`
+- Source actions: `qa/project-header/source-actions.png` — `170 × 67`
+- Browser-rendered implementation: `qa/project-header/implementation-final.png` — `1280 × 1044`
+- Focused header comparison: `qa/project-header/comparison-header.png`
+- Focused tabs comparison: `qa/project-header/comparison-tabs.png`
+- Focused actions comparison: `qa/project-header/comparison-actions.png`
+- CSS viewport: `1280 × 1044`
 - Device pixel ratio: `1`
-- Normalization: none; source and implementation are compared at their native matching dimensions
-- State: light theme, project space open, sidebar expanded, Work tab active, board view active, `ISSUE-128` selected, detail panel open
+- State: light theme, project overview active, project-context sidebar open at full project height, project favorited, main sidebar expanded
+- Normalization: reference snippets remain at native pixels; matching implementation component regions were cropped at 1:1 density and isolated from adjacent UI before side-by-side comparison.
 
-The combined comparison images place the reference on the left and the running implementation on the right.
+Each comparison places the supplied reference on the left and the rendered implementation on the right.
 
-## Comparison history
+## Findings and comparison history
 
 ### Iteration 1 — blocked
 
-- **P1:** The overview-style project title header was reused on the Work page, making the header consume far too much vertical space.
-- **P1:** The detail panel began below the work toolbar instead of at the top of the work region.
-- **P2:** Sidebar width, board start position, column padding, and card density diverged from the source.
-- **P2:** Detail-panel sections were too loose, which pushed dependency and repository context below the first viewport.
+- **P1 — inconsistent project structure:** The old overview used a large title block while Work used a separate compact header, so project sections did not share one visual system.
+- **P1 — oversized project menu:** The existing icon-and-pill navigation was materially larger than the supplied text-and-underline reference.
+- **P2 — incomplete favorite affordance:** The project star had no selected state and did not create the requested sidebar Favorites area.
+- **P2 — sidebar utility icon drift:** Collapse and search no longer used the prior product-specific glyphs.
 
-### Fixes applied
+Fixes: introduced a shared `ProjectHeader`, recreated the title/metadata/Agent composition, added compact underline tabs, added a persisted favorite store and sidebar Favorites region, and restored the prior sidebar collapse/search glyphs.
 
-- Replaced the oversized Work-page header with a compact project breadcrumb, health/owner/Agent metadata row, and source-matched panel toggle.
-- Kept the existing project navigation component as requested, while placing it inside the compact header.
-- Nested the work toolbar only above the board pane so the right detail panel starts at the correct vertical boundary.
-- Controlled the detail panel from the header toggle and kept the close/reopen behavior synchronized.
-- Matched the 278 px sidebar boundary and tightened board padding, column headers, card heights, checklist spacing, and lower detail sections.
-- Restored the repository container treatment and refined the Work Room and panel-toggle icons.
+### Iteration 2 — blocked
 
-### Iteration 2 — passed
+- **P1 — project-context sidebar height regression:** The first shared-header structure placed the project context below the header instead of preserving its original full project-space height.
+- **P2 — header action hover mismatch:** Collapse and More used different hit-area sizes, corner radii, and hover surface colors.
 
-- Re-captured at the exact `1624 × 968` source viewport.
-- Full, header, and detail-panel side-by-side comparisons show no remaining P0/P1/P2 mismatch.
-- Accepted intentional deviation: the project navigation remains the product's existing wide menu, per the user's explicit instruction not to make this menu match the UX reference.
+Fixes: restored the overview/output/resource/timeline layout to an outer two-column grid so the context sidebar again spans the full project-space height. The two header actions now share a `48 × 48` hit area, `10 px` radius, and `#f4f4f5` hover surface; only the collapse action keeps a visible open-state surface.
 
-## Fidelity surface review
+### Iteration 3 — passed
 
-| Surface | Status | Notes |
+- Full-height context sidebar verified in the final overview capture.
+- Header, text navigation, and action controls were recaptured and compared side by side at 1:1 density.
+- No P0/P1/P2 mismatch remains.
+
+## Required fidelity surfaces
+
+| Surface | Status | Evidence |
 | --- | --- | --- |
-| Typography | Passed | Hierarchy, compact sizes, weights, and muted text relationships match the reference closely. |
-| Layout and spacing | Passed | Header height, toolbar boundary, board density, sidebar width, and detail-panel rhythm were aligned. |
-| Colors and tokens | Passed | Existing product tokens were retained; selected, review, completed, priority, and subtle surface states match the source intent. |
-| Images and icons | Passed | Existing avatar assets and the project's Phosphor icon set are used; no generated assets were required. |
-| Copy and data density | Passed | Source issue IDs, labels, counts, checklist, blocker, dependency, and repository content are represented. |
-| Visible interaction states | Passed | Hover/focus/selected/drag/drop/filter/group/checklist/panel states are implemented with visual feedback. |
+| Typography | Passed | Project title, metadata, owner treatment, Agent chip, and 13 px navigation hierarchy match the supplied snippets closely. |
+| Spacing and layout | Passed | Header rhythm, compact tab width, active underline, action sizing, and full-height right sidebar are aligned. |
+| Colors and tokens | Passed | Neutral text, mineral accent underline, muted metadata, violet Agent badge, and hover surfaces retain product tokens and source intent. |
+| Images and icons | Passed | Existing member avatars and Phosphor project icons are used; the sidebar utilities were restored from the product's prior implementation as requested. |
+| Copy and content | Passed | “当前运行中任务 3” replaces the old health copy; owner and Agent copy match the target structure. |
 
 ## Interaction verification
 
-- Sidebar collapse keeps the new collapse control visible and allows expansion again.
-- Header detail toggle and detail-panel close button both close the panel; the header control reopens it.
-- List and board view switching works.
-- `Ctrl+K` focuses the work search field.
-- High-priority filtering reduces the board to the matching three cards and can be reset.
-- Assignee grouping produces 林默 / 小满 / 陈安 / Nova groups and can be reset.
-- Checklist completion updates from `3 / 5` to `4 / 5` and was restored to the source state.
-- `ISSUE-130` can be dragged from 待处理 to 进行中 and back.
-- Browser console error check: none.
+- Project star toggles selected/unselected state.
+- Selecting the star immediately adds “收藏 / Fouc 桌面端 V1” above Spaces in the main sidebar; unselecting removes it.
+- Favorite state is backed by local storage for normal page reloads.
+- All five project tabs switch through the shared header and retain the same dimensions.
+- Header collapse toggles the project context on overview-like sections and the work detail panel on Work.
+- Header More menu opens and closes correctly.
+- Main sidebar collapse/expand and search toggle work with the restored icons.
+- Work toolbar labels remain single-line at the verification viewport.
+- No uncaught error overlay or failed interaction surfaced during browser verification.
+- `pnpm typecheck` and `pnpm lint` pass.
 
-## Verification state
+## Final result
 
-- Final visual verdict: `passed`
-- Remaining visual exceptions: only the explicitly requested preservation of the existing wide project navigation
+final result: passed

@@ -1,17 +1,9 @@
 "use client"
 
-import Image from "next/image"
 import { useState } from "react"
-import { CalendarBlank, CaretDoubleLeft, CaretRight, Circle, DotsThree, GearSix, SidebarSimple, Sparkle, Star } from "@phosphor-icons/react"
+import { CaretRight } from "@phosphor-icons/react"
 
 import { ScrollArea } from "@/components/ui/scroll-area"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 
 import { ProjectActivity } from "./project-activity"
@@ -19,147 +11,89 @@ import { ProjectAttention } from "./project-attention"
 import { ProjectComposer } from "./project-composer"
 import { ProjectContextSidebar } from "./project-context-sidebar"
 import { projectTabs, type ProjectTab } from "./project-data"
+import { ProjectHeader } from "./project-header"
 import { ProjectWorkCanvas } from "./project-work-canvas"
 
-export function ProjectHomeCanvas() {
+export function ProjectHomeCanvas({
+  favorited,
+  onFavoriteChange,
+}: {
+  favorited: boolean
+  onFavoriteChange: (favorited: boolean) => void
+}) {
   const [tab, setTab] = useState<ProjectTab>("overview")
   const [contextOpen, setContextOpen] = useState(true)
   const [workPanelOpen, setWorkPanelOpen] = useState(true)
-  const showContext = contextOpen && tab === "overview"
 
   if (tab === "work") {
     return (
       <div className="flex h-full min-h-0 flex-col bg-panel">
-        <ProjectWorkHeader tab={tab} onTabChange={setTab} panelOpen={workPanelOpen} onTogglePanel={() => setWorkPanelOpen((open) => !open)} />
+        <ProjectHeader
+          tab={tab}
+          onTabChange={setTab}
+          favorited={favorited}
+          onFavoriteChange={onFavoriteChange}
+          panelOpen={workPanelOpen}
+          onTogglePanel={() => setWorkPanelOpen((open) => !open)}
+        />
         <ProjectWorkCanvas detailOpen={workPanelOpen} onDetailOpenChange={setWorkPanelOpen} />
       </div>
     )
   }
 
   return (
-    <div className={cn("grid h-full min-h-0", showContext ? "grid-cols-[minmax(0,1fr)_308px] max-[1160px]:grid-cols-[minmax(0,1fr)_272px] max-[1120px]:grid-cols-1" : "grid-cols-1")}>
-      <ScrollArea
-        as="section"
-        aria-label="项目首页"
-        className="min-h-0"
-        viewportClassName="bg-panel"
-      >
-        <div className="mx-auto flex min-h-full w-full max-w-[1080px] flex-col px-9 pb-6 pt-[22px] max-[1100px]:px-6">
-          <ProjectHeader onToggleContext={() => setContextOpen((value) => !value)} contextOpen={contextOpen} />
-          <ProjectTabs value={tab} onChange={setTab} />
-          {tab === "overview" ? (
-            <div className="mt-[22px] space-y-[18px]">
-              <ProjectAttention />
-              <ProjectActivity onOpenWork={() => setTab("work")} onOpenOutputs={() => setTab("outputs")} />
-              <ProjectComposer />
-            </div>
-          ) : (
-            <ProjectSectionPlaceholder
-              tab={tab}
-              onCreate={() => {
-                setTab("overview")
-                requestAnimationFrame(() => document.querySelector<HTMLTextAreaElement>("[aria-label='任务描述']")?.focus())
-              }}
-            />
-          )}
-        </div>
-      </ScrollArea>
-      {showContext ? <ProjectContextSidebar onCollapse={() => setContextOpen(false)} /> : null}
-    </div>
-  )
-}
-
-function ProjectWorkHeader({ tab, onTabChange, panelOpen, onTogglePanel }: { tab: ProjectTab; onTabChange: (tab: ProjectTab) => void; panelOpen: boolean; onTogglePanel: () => void }) {
-  return (
-    <header className="shrink-0 px-5 pb-4 pt-3 max-[1100px]:px-4">
-      <div className="flex h-8 items-center justify-between">
-        <div className="flex items-center gap-2 text-[11px] text-[var(--muted-strong)]">
-          <button type="button" className="rounded outline-none transition-colors hover:text-[var(--accent-ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">项目</button>
-          <span className="text-[var(--muted)]">/</span>
-          <span className="font-semibold text-[var(--ink-soft)]">Fouc 桌面端 V1</span>
-          <button type="button" aria-label="收藏项目" className="ml-0.5 flex size-6 items-center justify-center rounded-md text-[var(--muted-strong)] outline-none transition-colors hover:bg-wash hover:text-[var(--accent-ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><Star className="size-4" /></button>
-        </div>
-        <button type="button" aria-label={panelOpen ? "收起工作详情" : "展开工作详情"} aria-pressed={panelOpen} onClick={onTogglePanel} className="flex size-8 items-center justify-center rounded-[7px] bg-[var(--accent)] text-white shadow-[0_4px_12px_color-mix(in_srgb,var(--accent)_22%,transparent)] outline-none transition-[transform,background-color] hover:scale-[1.03] hover:bg-[var(--accent-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
-          <CaretDoubleLeft className={cn("size-[17px] transition-transform", !panelOpen && "rotate-180")} weight="bold" />
-        </button>
+    <div
+      className={cn(
+        "grid h-full min-h-0 bg-panel",
+        contextOpen
+          ? "grid-cols-[minmax(0,1fr)_308px] max-[1160px]:grid-cols-[minmax(0,1fr)_272px] max-[1120px]:grid-cols-1"
+          : "grid-cols-1",
+      )}
+    >
+      <div className="flex min-h-0 min-w-0 flex-col">
+        <ProjectHeader
+          tab={tab}
+          onTabChange={setTab}
+          favorited={favorited}
+          onFavoriteChange={onFavoriteChange}
+          panelOpen={contextOpen}
+          onTogglePanel={() => setContextOpen((open) => !open)}
+        />
+        <ScrollArea
+          as="section"
+          aria-label="项目首页"
+          className="min-h-0 flex-1"
+          viewportClassName="bg-panel"
+        >
+          <div className="mx-auto flex min-h-full w-full max-w-[1080px] flex-col px-9 pb-6 pt-[22px] max-[1100px]:px-6">
+            {tab === "overview" ? (
+              <div className="space-y-[18px]">
+                <ProjectAttention />
+                <ProjectActivity onOpenWork={() => setTab("work")} onOpenOutputs={() => setTab("outputs")} />
+                <ProjectComposer />
+              </div>
+            ) : (
+              <ProjectSectionPlaceholder
+                tab={tab}
+                onCreate={() => {
+                  setTab("overview")
+                  requestAnimationFrame(() => document.querySelector<HTMLTextAreaElement>("[aria-label='任务描述']")?.focus())
+                }}
+              />
+            )}
+          </div>
+        </ScrollArea>
       </div>
-
-      <div className="mt-4 flex h-7 items-center gap-5 text-[10.5px] text-[var(--muted-strong)]">
-        <span className="flex items-center gap-2"><Circle className="size-3.5 text-[#667188]" weight="fill" /><span>健康</span><span className="text-[var(--muted)]">·</span><span>进展良好</span></span>
-        <span className="h-4 w-px bg-[var(--line)]" />
-        <span className="flex items-center gap-2">
-          <span className="flex -space-x-1.5"><Image src="/avatars/lin-mo.png" alt="林默" width={22} height={22} className="size-[22px] rounded-full border-2 border-panel object-cover" /><Image src="/avatars/zhou-xin.png" alt="周欣" width={22} height={22} className="size-[22px] rounded-full border-2 border-panel object-cover" /></span>
-          <span>所有者</span><span className="font-semibold text-[var(--ink-soft)]">林默</span>
-        </span>
-        <span className="h-4 w-px bg-[var(--line)]" />
-        <button type="button" className="flex h-7 items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--surface-subtle)] px-3 text-[10px] outline-none transition-colors hover:border-[var(--line-strong)] hover:bg-panel focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><span className="flex size-[18px] items-center justify-center rounded-full bg-[#7977d7] text-white"><Sparkle className="size-2.5" weight="fill" /></span><span>Agent&nbsp; Nova · Sage</span></button>
-      </div>
-
-      <div className="mx-auto max-w-[1080px]">
-        <ProjectTabs value={tab} onChange={onTabChange} />
-      </div>
-    </header>
-  )
-}
-
-function ProjectHeader({ onToggleContext, contextOpen }: { onToggleContext: () => void; contextOpen: boolean }) {
-  return (
-    <header>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-[10.5px] text-[var(--muted-strong)]">
-          <button type="button" className="rounded outline-none hover:text-[var(--accent-ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">项目</button>
-          <span className="text-[var(--muted)]">/</span>
-          <span className="font-medium text-[var(--ink-soft)]">Fouc 桌面端 V1</span>
-        </div>
-        <div className="flex items-center gap-1">
-          {!contextOpen ? (
-            <button type="button" aria-label="展开项目上下文" onClick={onToggleContext} className="flex size-8 items-center justify-center rounded-md text-[var(--muted-strong)] outline-none hover:bg-wash hover:text-[var(--accent-ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><SidebarSimple className="size-[18px]" /></button>
-          ) : null}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button type="button" aria-label="更多项目操作" className="flex size-8 items-center justify-center rounded-md text-[var(--muted-strong)] outline-none hover:bg-wash hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><DotsThree className="size-[19px]" weight="bold" /></button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem><GearSix />项目设置</DropdownMenuItem>
-              <DropdownMenuItem>复制项目链接</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-[var(--err-ink)]">归档项目</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-
-      <h1 className="mt-[25px] text-[31px] font-semibold leading-none tracking-[-0.04em] text-[var(--ink)]">Fouc 桌面端 V1</h1>
-      <div className="mt-[17px] flex items-center gap-6 text-[10.5px] text-[var(--muted-strong)]">
-        <span className="flex items-center gap-2"><Image src="/avatars/lin-mo.png" alt="林默" width={28} height={28} className="size-7 rounded-full object-cover" /><span className="font-medium">林默</span></span>
-        <span className="flex items-center gap-1.5"><CalendarBlank className="size-[15px]" />目标日期<span>2026年10月</span></span>
-        <button type="button" onClick={onToggleContext} className="flex items-center gap-1.5 rounded outline-none transition-colors hover:text-[var(--accent-ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><GearSix className="size-[15px]" />项目控制中心</button>
-      </div>
-    </header>
-  )
-}
-
-function ProjectTabs({ value, onChange }: { value: ProjectTab; onChange: (value: ProjectTab) => void }) {
-  return (
-    <div role="tablist" aria-label="项目分区" className="mt-5 grid h-[52px] grid-cols-5 overflow-hidden rounded-[28px] border border-[var(--line)] bg-panel p-[3px]">
-      {projectTabs.map((item, index) => {
-        const selected = item.id === value
-        return (
-          <button key={item.id} type="button" role="tab" aria-selected={selected} onClick={() => onChange(item.id)} className={cn("relative flex min-w-0 items-center justify-center gap-2 rounded-[23px] text-[11.5px] font-medium outline-none transition-[background-color,color,box-shadow] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]", selected ? "bg-[var(--accent-soft)] text-[var(--accent-ink)]" : "text-[var(--ink-soft)] hover:bg-[var(--surface-subtle)]")}>
-            {index > 0 ? <span aria-hidden className="absolute -left-[2px] top-1/2 h-4 w-px -translate-y-1/2 bg-[var(--line)]" /> : null}
-            <item.icon className="size-[19px]" weight={selected ? "fill" : "regular"} />
-            <span>{item.label}</span>
-          </button>
-        )
-      })}
+      {contextOpen ? <ProjectContextSidebar /> : null}
     </div>
   )
 }
 
 function ProjectSectionPlaceholder({ tab, onCreate }: { tab: ProjectTab; onCreate: () => void }) {
   const label = projectTabs.find((item) => item.id === tab)?.label ?? "项目"
+
   return (
-    <section className="mt-8 flex min-h-[420px] flex-col items-center justify-center rounded-[10px] border border-dashed border-[var(--line-strong)] bg-[var(--surface-subtle)] text-center">
+    <section className="flex min-h-[420px] flex-col items-center justify-center rounded-[10px] border border-dashed border-[var(--line-strong)] bg-[var(--surface-subtle)] text-center">
       <span className="flex size-11 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent-ink)]"><CaretRight className="size-5" /></span>
       <h2 className="mt-4 text-[13px] font-semibold">{label}</h2>
       <p className="mt-1.5 text-[10.5px] text-[var(--muted)]">该分区已连接到项目上下文，内容将在后续任务中逐步沉淀。</p>

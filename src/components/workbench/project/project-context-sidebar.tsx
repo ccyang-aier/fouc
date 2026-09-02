@@ -1,13 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { ArrowRight, ArrowsClockwise, CaretRight, GearSix, SidebarSimple } from "@phosphor-icons/react"
+import { ArrowRight, ArrowsClockwise, CaretRight, GearSix } from "@phosphor-icons/react"
 
 import { cn } from "@/lib/utils"
 
 import { contextGroups, freshnessItems } from "./project-data"
 
-export function ProjectContextSidebar({ onCollapse }: { onCollapse: () => void }) {
+export function ProjectContextSidebar() {
   const [syncing, setSyncing] = useState<string | null>(null)
   const [selected, setSelected] = useState<string | null>(null)
   const [managing, setManaging] = useState(false)
@@ -19,11 +19,8 @@ export function ProjectContextSidebar({ onCollapse }: { onCollapse: () => void }
 
   return (
     <aside className="flex h-full min-h-0 flex-col border-l border-[var(--line)] bg-panel max-[1120px]:hidden" aria-label="项目上下文">
-      <div className="flex h-[72px] shrink-0 translate-y-1.5 items-center justify-between px-6">
+      <div className="flex h-[72px] shrink-0 translate-y-1.5 items-center px-6">
         <h2 className="text-[13px] font-semibold">项目上下文</h2>
-        <button type="button" aria-label="收起项目上下文" onClick={onCollapse} className="flex size-8 items-center justify-center rounded-[6px] bg-[var(--accent)] text-white shadow-[0_4px_12px_color-mix(in_srgb,var(--accent)_22%,transparent)] outline-none transition-transform hover:scale-[1.03] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
-          <SidebarSimple className="size-[17px]" weight="fill" />
-        </button>
       </div>
 
       <div className="px-6">

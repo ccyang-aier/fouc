@@ -15,11 +15,10 @@ import {
   Funnel,
   GearSix,
   Lightning,
-  MagnifyingGlass,
   Plus,
   PlusCircle,
   PlugsConnected,
-  SidebarSimple,
+  Star,
   UsersThree,
 } from "@phosphor-icons/react"
 
@@ -56,18 +55,38 @@ const navigation: Array<SidebarNavItem<WorkbenchView>> = [
 
 const SIDEBAR_VERSION = "v0.1.0"
 
+function DenseCollapseIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 16 16" className="size-4" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="2" y="3" width="3.5" height="10" rx="1.25" fill="currentColor" opacity="0.55" />
+      <rect x="6.5" y="3" width="7.5" height="10" rx="1.5" fill="currentColor" />
+    </svg>
+  )
+}
+
+function SearchIcon({ className }: { className?: string }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 256 256" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="110" cy="110" r="68" stroke="currentColor" strokeWidth="24" />
+      <path d="M163 163l49 49" stroke="currentColor" strokeWidth="30" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 export function Sidebar({
   collapsed,
   onToggle,
   onNewMission,
   view,
   onViewChange,
+  projectFavorited,
 }: {
   collapsed: boolean
   onToggle: () => void
   onNewMission: () => void
   view: WorkbenchView
   onViewChange: (view: WorkbenchView) => void
+  projectFavorited: boolean
 }) {
   const [spacesOpen, setSpacesOpen] = useState(true)
   const [recentOpen, setRecentOpen] = useState(true)
@@ -104,7 +123,7 @@ export function Sidebar({
                   onClick={onToggle}
                   className="relative z-30 mx-auto flex size-9 shrink-0 items-center justify-center rounded-[8px] text-[var(--ink-soft)] outline-none transition-[background-color,color,box-shadow] hover:bg-raise hover:text-[var(--ink)] hover:shadow-[0_2px_8px_rgba(28,32,40,0.06)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                 >
-                  <SidebarSimple className="size-[21px]" weight="regular" />
+                  <span className="scale-x-[-1]"><DenseCollapseIcon /></span>
                 </button>
               </TooltipTrigger>
               <TooltipContent side="right">展开侧边栏</TooltipContent>
@@ -123,7 +142,7 @@ export function Sidebar({
                     onClick={onToggle}
                     className="flex size-8 shrink-0 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-wash hover:text-[var(--ink-soft)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                   >
-                    <SidebarSimple className="size-[20px] scale-x-[-1]" weight="regular" />
+                    <DenseCollapseIcon />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="right">收起侧边栏</TooltipContent>
@@ -137,7 +156,7 @@ export function Sidebar({
                     onClick={() => setSearchOpen((open) => !open)}
                     className="flex size-8 shrink-0 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-wash hover:text-[var(--ink-soft)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                   >
-                    <MagnifyingGlass className="size-[17px]" weight="bold" />
+                    <SearchIcon className="size-[17px]" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="right">搜索</TooltipContent>
@@ -202,7 +221,30 @@ export function Sidebar({
           />
         </nav>
 
-        <section className={cn("mt-5", filter === "recent" && "hidden")} aria-label="工作空间">
+        {projectFavorited && filter === "all" ? (
+          <section className="mt-5" aria-label="收藏项目">
+            <div className={cn("flex h-6 items-center px-2 text-[11px] font-medium text-[var(--muted)]", collapsed && "justify-center px-0")}>
+              <span className={cn("sidebar-label", collapsed && "hidden")}>收藏</span>
+              <Star className={cn("ml-auto size-3 text-[#d79a3b]", !collapsed && "hidden")} weight="fill" />
+            </div>
+            {searchQuery && !"Fouc 桌面端 V1".includes(searchQuery) ? null : (
+              <button
+                type="button"
+                aria-label="打开收藏项目 Fouc 桌面端 V1"
+                onClick={() => onViewChange("projects")}
+                className={cn(
+                  "mt-px flex h-9 w-full items-center gap-2 rounded-lg px-2 text-left text-[11px] font-medium outline-none transition-[background-color,box-shadow] hover:bg-raise focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+                  collapsed && "justify-center px-0",
+                )}
+              >
+                <Star className="size-[15px] shrink-0 text-[#d79a3b]" weight="fill" />
+                <span className="sidebar-label truncate">Fouc 桌面端 V1</span>
+              </button>
+            )}
+          </section>
+        ) : null}
+
+        <section className={cn(projectFavorited && filter === "all" ? "mt-3" : "mt-5", filter === "recent" && "hidden")} aria-label="工作空间">
           <div
             className={cn(
               "flex h-6 items-center px-2 text-[11px] font-medium text-[var(--muted)]",

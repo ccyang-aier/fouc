@@ -107,7 +107,7 @@ export function ProjectHeader({
               <button
                 type="button"
                 aria-label="更多项目操作"
-                className="flex size-9 items-center justify-center rounded-[8px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-[#f4f4f5] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                className="flex size-9 items-center justify-center rounded-[8px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-[#f4f4f5] hover:text-[var(--ink)] data-[state=open]:bg-[#f4f4f5] data-[state=open]:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
               >
                 <DotsThree className="size-[18px]" weight="bold" />
               </button>

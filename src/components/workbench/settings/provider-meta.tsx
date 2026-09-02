@@ -1,9 +1,12 @@
 "use client"
 
 /**
- * Provider 视觉元数据：单色字标头像 + 目录之外不承载行为的展示信息。
- * 色板为品牌印象色（浅底 + 深字），与工作台整体淡彩风格一致。
+ * Provider 视觉元数据：品牌 logo 头像（目录映射）+ 未收录产品的字标回退。
+ * Logo 资产来自 AionCore（Apache-2.0），整库存放于 public/agent-logos；
+ * 多数 logo 为深色透明底，故统一衬在品牌印象色的浅彩底片上，深浅主题皆可读。
  */
+
+import Image from "next/image"
 
 import { cn } from "@/lib/utils"
 
@@ -49,6 +52,40 @@ const PROVIDER_VISUALS: Record<string, ProviderVisual> = {
   grok: { monogram: "GK", bg: "#ebecee", fg: "#2f3237" },
 }
 
+/** provider id → public/agent-logos 下的 logo 路径（未收录者走字标回退） */
+const PROVIDER_LOGOS: Record<string, string> = {
+  "claude-code": "ai-major/claude.svg",
+  codex: "tools/coding/codex.svg",
+  gemini: "ai-major/gemini.svg",
+  opencode: "tools/coding/opencode.svg",
+  qwen: "ai-china/qwen.svg",
+  codebuddy: "tools/coding/codebuddy.svg",
+  goose: "tools/goose.svg",
+  auggie: "brand/auggie.svg",
+  kimi: "ai-china/kimi.svg",
+  droid: "brand/droid.svg",
+  cursor: "tools/coding/cursor.png",
+  qoder: "tools/coding/qoder.png",
+  hermes: "brand/hermes.svg",
+  snow: "tools/coding/snow.png",
+  amp: "acp-registry/amp-acp.svg",
+  "cortex-code": "acp-registry/cortex-code.svg",
+  "corust-agent": "acp-registry/corust-agent.svg",
+  devin: "acp-registry/devin.svg",
+  harn: "acp-registry/harn.svg",
+  junie: "acp-registry/junie.svg",
+  poolside: "acp-registry/poolside.svg",
+  stakpak: "acp-registry/stakpak.svg",
+  vtcode: "acp-registry/vtcode.svg",
+  antigravity: "ai-major/antigravity.svg",
+  omp: "acp-registry/omp.svg",
+  "mimo-code": "acp-registry/mimo-code.svg",
+  kilo: "acp-registry/kilo.svg",
+  nova: "acp-registry/nova.svg",
+  dirac: "acp-registry/dirac.svg",
+  grok: "acp-registry/grok.svg",
+}
+
 const FALLBACK_VISUAL: ProviderVisual = { monogram: "AG", bg: "#eef2f6", fg: "#4b5563" }
 
 export function providerVisual(providerId: string, name: string): ProviderVisual {
@@ -68,16 +105,28 @@ export function ProviderAvatar({
   className?: string
 }) {
   const visual = providerVisual(providerId, name)
+  const logo = PROVIDER_LOGOS[providerId]
   return (
     <span
       aria-hidden
       style={{ backgroundColor: visual.bg, color: visual.fg }}
       className={cn(
-        "flex shrink-0 select-none items-center justify-center rounded-[10px] text-[12px] font-semibold tracking-[0.01em]",
-        className ?? "size-9"
+        "relative flex shrink-0 select-none items-center justify-center overflow-hidden rounded-[10px] text-[12px]",
+        className ?? "size-9",
       )}
     >
-      {visual.monogram}
+      {logo ? (
+        <Image
+          src={`/agent-logos/${logo}`}
+          alt=""
+          fill
+          sizes="36px"
+          draggable={false}
+          className="object-contain p-[14%]"
+        />
+      ) : (
+        <span className="text-[1em] font-semibold tracking-[0.01em]">{visual.monogram}</span>
+      )}
     </span>
   )
 }

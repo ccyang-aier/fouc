@@ -87,7 +87,7 @@ export function ProjectWorkCanvas({ detailOpen, onDetailOpenChange }: { detailOp
   }
 
   return (
-    <section aria-label="项目工作" className="relative flex min-h-0 flex-1 border-t border-[var(--line)] bg-panel">
+    <section aria-label="项目工作" className="relative flex min-h-0 flex-1 bg-panel">
       <div className="flex min-w-0 flex-1 flex-col">
         <WorkToolbar view={view} onViewChange={setView} query={query} onQueryChange={setQuery} priority={priority} onPriorityChange={setPriority} groupBy={groupBy} onGroupByChange={setGroupBy} />
         <div className="min-h-0 min-w-0 flex-1 overflow-auto bg-[#fbfbfc] px-5 py-[11px]">

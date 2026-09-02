@@ -134,7 +134,7 @@ export function ProjectHeader({
               aria-selected={selected}
               onClick={() => onTabChange(item.id)}
               className={cn(
-                "relative flex h-10 shrink-0 items-center pb-3 text-[13px] font-semibold outline-none transition-colors after:absolute after:-inset-x-2 after:bottom-0 after:h-0.5 after:origin-center after:rounded-full after:bg-[var(--accent)] after:transition-transform focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+                "relative flex h-10 shrink-0 items-end pb-1.5 text-[13px] font-semibold outline-none transition-colors after:absolute after:-inset-x-2 after:bottom-0 after:h-0.5 after:origin-center after:rounded-full after:bg-[var(--accent)] after:transition-transform focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
                 selected
                   ? "text-[var(--ink)] after:scale-x-100"
                   : "text-[var(--muted-strong)] after:scale-x-0 hover:text-[var(--ink-soft)]",

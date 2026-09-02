@@ -8,6 +8,7 @@ import { applyAppearancePrefs, readAppearancePrefs } from "@/lib/appearance"
 import { applySidebarStyle, readStoredSidebarStyle } from "@/lib/sidebar-style"
 
 import { HomeCanvas } from "./home-canvas"
+import { ProjectHomeCanvas } from "./project/project-home-canvas"
 import "./sidebar-material.css"
 import { Sidebar, type WorkbenchView } from "./sidebar"
 import { SettingsCanvas } from "./settings/settings-canvas"
@@ -57,6 +58,8 @@ export function WorkbenchShell() {
             <main className="relative min-w-0 flex-1 overflow-hidden rounded-tl-[16px] border border-[var(--wt-sidebar-glass-edge)] bg-panel">
               {view === "home" ? (
                 <HomeCanvas key={missionKey} />
+              ) : view === "projects" ? (
+                <ProjectHomeCanvas />
               ) : (
                 <div className="flex h-full items-center justify-center text-[13px] text-[var(--ink-soft)]">
                   该空间已在 V1 规划中，尚未开放

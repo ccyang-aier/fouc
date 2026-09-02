@@ -27,6 +27,20 @@ export function resolveTheme(pref: ThemePref): ResolvedTheme {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
 }
 
+// ── 主题色 ─────────────────────────────────────────────────────────
+
+export const ACCENT_IDS = ["mineral", "emerald", "ocean", "violet", "amber", "rose"] as const
+export type AccentId = (typeof ACCENT_IDS)[number]
+
+export const accentOptions: Array<{ id: AccentId; label: string; color: string }> = [
+  { id: "mineral", label: "矿物蓝", color: "#647089" },
+  { id: "emerald", label: "松石绿", color: "#2D8C78" },
+  { id: "ocean", label: "海湾蓝", color: "#3F78A8" },
+  { id: "violet", label: "雾紫", color: "#766A9C" },
+  { id: "amber", label: "琥珀", color: "#A67535" },
+  { id: "rose", label: "岩蔷薇", color: "#9A6269" },
+]
+
 // ── 字体目录（预览栈与 globals.css 的属性映射保持同步） ─────────────
 
 export const UI_FONT_IDS = ["default", "native", "mono"] as const
@@ -105,6 +119,7 @@ export const FONT_SIZE_RANGES = {
 
 export type AppearancePrefs = {
   theme: ThemePref
+  accent: AccentId
   uiFont: UiFontId
   uiFontSize: number
   codeFont: CodeFontId
@@ -116,6 +131,7 @@ export type AppearancePrefs = {
 
 export const APPEARANCE_DEFAULTS: AppearancePrefs = {
   theme: "light",
+  accent: "mineral",
   uiFont: "default",
   uiFontSize: 13,
   codeFont: "default",
@@ -147,6 +163,7 @@ export function readAppearancePrefs(): AppearancePrefs {
   const saved = (raw ?? {}) as Record<string, unknown>
   return {
     theme: oneOf(saved.theme, THEME_PREFS, APPEARANCE_DEFAULTS.theme),
+    accent: oneOf(saved.accent, ACCENT_IDS, APPEARANCE_DEFAULTS.accent),
     uiFont: oneOf(saved.uiFont, UI_FONT_IDS, APPEARANCE_DEFAULTS.uiFont),
     uiFontSize: sizeOf(saved.uiFontSize, FONT_SIZE_RANGES.ui, APPEARANCE_DEFAULTS.uiFontSize),
     codeFont: oneOf(saved.codeFont, CODE_FONT_IDS, APPEARANCE_DEFAULTS.codeFont),
@@ -190,6 +207,7 @@ export function applyAppearancePrefs(prefs: AppearancePrefs): void {
   applyResolvedTheme(resolveTheme(prefs.theme))
 
   const root = document.documentElement
+  root.dataset.accent = prefs.accent
   const fontAttrs: Array<[name: string, value: string, isDefault: boolean]> = [
     ["uiFont", prefs.uiFont, prefs.uiFont === "default"],
     ["codeFont", prefs.codeFont, prefs.codeFont === "default"],

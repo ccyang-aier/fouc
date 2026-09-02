@@ -29,7 +29,7 @@ export function TitleBar() {
   return (
     <header
       data-tauri-drag-region
-      className="sidebar-material relative z-40 flex h-[34px] shrink-0 select-none items-center px-3 text-[11px] text-[var(--ink)]"
+      className="sidebar-material relative z-40 flex h-[40px] shrink-0 select-none items-center px-3 text-[11px] text-[var(--ink)]"
     >
       <div
         data-tauri-drag-region

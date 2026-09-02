@@ -11,14 +11,13 @@ import type { Icon } from "@phosphor-icons/react"
 import { cn } from "@/lib/utils"
 
 /** 行高与行距须与下方 space-y 保持同步，指示容器据此计算滑动位置。 */
-const ROW_HEIGHT = 34
+const ROW_HEIGHT = 36
 const ROW_GAP = 3
 
 export type SidebarNavItem<T extends string> = {
   id: T
   label: string
   icon: Icon
-  color?: string
 }
 
 export function SidebarNavList<T extends string>({
@@ -42,7 +41,7 @@ export function SidebarNavList<T extends string>({
       {activeIndex >= 0 ? (
         <span
           aria-hidden
-          className="absolute inset-x-0 top-0 rounded-[8px] bg-raise shadow-[0_1px_2px_rgba(21,30,34,0.07),0_0_0_1px_rgba(21,30,34,0.03)] transition-transform duration-[240ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
+          className="absolute inset-x-0 top-0 rounded-[8px] bg-[var(--accent-soft)] shadow-[inset_0_0_0_1px_var(--accent-soft-line)] transition-transform duration-[240ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
           style={{
             height: ROW_HEIGHT,
             transform: `translateY(${activeIndex * (ROW_HEIGHT + ROW_GAP)}px)`,
@@ -60,12 +59,19 @@ export function SidebarNavList<T extends string>({
                 aria-current={selected ? "page" : undefined}
                 onClick={() => onChange(item.id)}
                 className={cn(
-                  "flex h-[34px] w-full items-center gap-2.5 rounded-[8px] px-2.5 text-left text-[12px] font-medium outline-none transition-[background-color,color,box-shadow] duration-150 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+                  "flex h-[36px] w-full items-center gap-2.5 rounded-[8px] px-2.5 text-left text-[12px] font-medium outline-none transition-[background-color,color,box-shadow] duration-150 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
                   "text-[var(--ink-soft)] hover:bg-raise hover:text-[var(--ink)]",
-                  selected && "text-[var(--ink)]",
+                  selected && "text-[var(--accent-ink)]",
                 )}
               >
-                <Icon className={cn("size-[17px] shrink-0", item.color)} weight="fill" aria-hidden />
+                <Icon
+                  className={cn(
+                    "size-[17px] shrink-0 transition-colors",
+                    selected ? "text-[var(--accent-ink)]" : "text-[var(--muted-strong)]",
+                  )}
+                  weight={selected ? "fill" : "regular"}
+                  aria-hidden
+                />
                 <span className={cn("truncate", collapsible && "sidebar-label")}>{item.label}</span>
                 {renderTrailing?.(item)}
               </button>

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import {
   Bell,
   BookOpenText,
@@ -17,13 +18,13 @@ import {
   Plus,
   PlusCircle,
   PlugsConnected,
-  UserCircle,
   UsersThree,
 } from "@phosphor-icons/react"
 
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
@@ -43,12 +44,12 @@ import { SidebarResizeHandle, useSidebarWidth } from "./sidebar-resize"
 export type WorkbenchView = "home" | "settings" | "projects" | "agent-hub" | "automation" | "knowledge" | "more"
 
 const navigation: Array<SidebarNavItem<WorkbenchView>> = [
-  { id: "home", label: "助理", icon: ChatCircleDots, color: "text-[#58b7a2]" },
-  { id: "projects", label: "项目", icon: FolderOpen, color: "text-[#6e9fe6]" },
-  { id: "agent-hub", label: "Agent · 技能 · 连接器", icon: PlugsConnected, color: "text-[#9b80dc]" },
-  { id: "automation", label: "自动化", icon: Lightning, color: "text-[#e6a64f]" },
-  { id: "knowledge", label: "知识库", icon: BookOpenText, color: "text-[#63b99d]" },
-  { id: "more", label: "更多", icon: DotsThreeCircle, color: "text-[#929aa3]" },
+  { id: "home", label: "助理", icon: ChatCircleDots },
+  { id: "projects", label: "项目", icon: FolderOpen },
+  { id: "agent-hub", label: "Agent · 技能 · 连接器", icon: PlugsConnected },
+  { id: "automation", label: "自动化", icon: Lightning },
+  { id: "knowledge", label: "知识库", icon: BookOpenText },
+  { id: "more", label: "更多", icon: DotsThreeCircle },
 ]
 
 const SIDEBAR_VERSION = "v0.1.0"
@@ -87,6 +88,10 @@ export function Sidebar({
 }) {
   const [spacesOpen, setSpacesOpen] = useState(true)
   const [recentOpen, setRecentOpen] = useState(true)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [filter, setFilter] = useState<"all" | "spaces" | "recent">("all")
+  const [extraSpace, setExtraSpace] = useState(false)
   const { width, dragging, startResize } = useSidebarWidth()
 
   return (
@@ -95,7 +100,7 @@ export function Sidebar({
          内联才能保住拖拽手柄压在主面板圆角之上的层级 */
       style={{ width: collapsed ? 60 : width, zIndex: 20 }}
       className={cn(
-        "h-full shrink-0",
+        "h-full shrink-0 max-[820px]:!w-[60px]",
         !dragging && "transition-[width] duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
       )}
     >
@@ -145,6 +150,8 @@ export function Sidebar({
                   <button
                     type="button"
                     aria-label="搜索"
+                    aria-pressed={searchOpen}
+                    onClick={() => setSearchOpen((open) => !open)}
                     className="flex size-8 shrink-0 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-wash hover:text-[var(--ink-soft)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                   >
                     <SearchIcon className="size-[17px]" />
@@ -152,21 +159,37 @@ export function Sidebar({
                 </TooltipTrigger>
                 <TooltipContent side="right">搜索</TooltipContent>
               </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    aria-label="筛选"
-                    className="flex size-8 shrink-0 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-wash hover:text-[var(--ink-soft)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
-                  >
-                    <Funnel className="size-[17px]" weight="fill" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right">筛选</TooltipContent>
-              </Tooltip>
+              <DropdownMenu>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label="筛选"
+                        className={cn("flex size-8 shrink-0 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-wash hover:text-[var(--ink-soft)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]", filter !== "all" && "bg-[var(--accent-soft)] text-[var(--accent-ink)]")}
+                      >
+                        <Funnel className="size-[17px]" weight="fill" />
+                      </button>
+                    </DropdownMenuTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">筛选</TooltipContent>
+                </Tooltip>
+                <DropdownMenuContent align="start" className="w-36">
+                  <DropdownMenuLabel>显示范围</DropdownMenuLabel>
+                  {([['all', '全部'], ['spaces', '仅空间'], ['recent', '仅最近']] as const).map(([id, label]) => (
+                    <DropdownMenuCheckboxItem key={id} checked={filter === id} onCheckedChange={() => setFilter(id)}>{label}</DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           )}
         </div>
+
+        {searchOpen && !collapsed ? (
+          <div className="mb-1 animate-in fade-in-0 slide-in-from-top-1">
+            <input autoFocus type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="搜索空间与项目" aria-label="搜索空间与项目" className="h-8 w-full rounded-[7px] border border-[var(--line)] bg-panel px-3 text-[11px] outline-none placeholder:text-[var(--muted)] focus:border-[var(--accent-soft-line)] focus:ring-2 focus:ring-[var(--focus-ring)]" />
+          </div>
+        ) : null}
 
         <Button
           type="button"
@@ -174,7 +197,7 @@ export function Sidebar({
           onClick={onNewMission}
           aria-label="新建任务"
           className={cn(
-            "mt-1 h-8 w-full justify-start rounded-[8px] border-[var(--line)] bg-chip px-2 text-[12px] font-semibold shadow-none hover:bg-chip-strong",
+            "mt-1 h-[39px] w-full justify-start rounded-[8px] border-[var(--line)] bg-chip px-3 text-[12px] font-semibold shadow-none hover:bg-chip-strong",
             collapsed && "justify-center px-0",
           )}
         >
@@ -196,7 +219,7 @@ export function Sidebar({
           />
         </nav>
 
-        <section className="mt-3" aria-label="工作空间">
+        <section className={cn("mt-5", filter === "recent" && "hidden")} aria-label="工作空间">
           <div
             className={cn(
               "flex h-6 items-center px-2 text-[11px] font-medium text-[var(--muted)]",
@@ -225,6 +248,10 @@ export function Sidebar({
                 <button
                   type="button"
                   aria-label="新建空间"
+                  onClick={() => {
+                    setSpacesOpen(true)
+                    setExtraSpace(true)
+                  }}
                   className={cn(
                     "ml-auto flex size-6 items-center justify-center rounded-md outline-none hover:bg-wash focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
                     collapsed && "ml-0",
@@ -239,13 +266,14 @@ export function Sidebar({
 
           {spacesOpen ? (
             <div className="mt-px space-y-px animate-in fade-in-0 slide-in-from-top-1">
-              <SpaceRow label="产品研发" icon={Folders} color="text-[#58b7a2]" />
-              <SpaceRow label="个人工作台" icon={UsersThree} color="text-[#6e9fe6]" />
+              <SpaceRow label="产品研发" icon={Folders} onClick={() => onViewChange("projects")} />
+              <SpaceRow label="个人工作台" icon={UsersThree} onClick={() => onViewChange("projects")} />
+              {extraSpace ? <SpaceRow label="未命名空间" icon={Folders} onClick={() => onViewChange("projects")} /> : null}
             </div>
           ) : null}
         </section>
 
-        <section className="mt-3" aria-label="最近访问">
+        <section className={cn("mt-3", filter === "spaces" && "hidden")} aria-label="最近访问">
           <div
             className={cn(
               "flex h-6 items-center px-2 text-[11px] font-medium text-[var(--muted)]",
@@ -293,10 +321,11 @@ export function Sidebar({
             {recentOpen ? (
               <button
                 type="button"
+                onClick={() => onViewChange("projects")}
                 className="flex h-8 w-full items-center gap-2.5 rounded-lg px-2 text-left text-[11px] outline-none transition-[background-color,box-shadow] hover:bg-raise focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
               >
                 <Desktop className="size-[16px] shrink-0 text-[var(--muted)]" weight="fill" />
-                <span className="sidebar-label truncate">Fouc 桌面端</span>
+                <span className="sidebar-label truncate">{searchQuery && !"Fouc 桌面端".includes(searchQuery) ? "未找到项目" : "Fouc 桌面端"}</span>
                 <span className="sidebar-label ml-auto text-[9px] text-[var(--muted)]">2 小时前</span>
               </button>
             ) : null}
@@ -313,7 +342,7 @@ export function Sidebar({
               collapsed && "justify-center px-0",
             )}
           >
-            <GearSix className="size-[16px] shrink-0 text-[var(--muted)]" weight="fill" />
+            <GearSix className="size-[16px] shrink-0 text-[var(--muted-strong)]" weight="regular" />
             <span className="sidebar-label">设置</span>
           </button>
 
@@ -327,8 +356,8 @@ export function Sidebar({
                   collapsed && "justify-center px-0",
                 )}
               >
-                <span className="relative flex size-7 shrink-0 items-center justify-center rounded-full bg-[#e5f3ef] text-[#54ac96]">
-                  <UserCircle className="size-[21px]" weight="fill" />
+                <span className="relative flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--accent-soft)] text-[var(--accent-ink)]">
+                  <Image src="/avatars/lin-mo.png" alt="" width={28} height={28} className="size-7 object-cover" />
                   <span className="absolute right-0 bottom-0 size-1.5 rounded-full border border-[var(--panel)] bg-[#18b988]" />
                 </span>
                 <span className="sidebar-label min-w-0 flex-1">
@@ -360,20 +389,21 @@ export function Sidebar({
 function SpaceRow({
   label,
   icon: Icon,
-  color,
+  onClick,
 }: {
   label: string
   icon: typeof Folders
-  color: string
+  onClick: () => void
 }) {
   return (
     <button
       type="button"
       aria-label={label}
-      className="flex h-8 w-full items-center gap-2 rounded-lg px-2 text-left text-[11px] font-medium outline-none transition-[background-color,box-shadow] hover:bg-raise focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+      onClick={onClick}
+      className="flex h-9 w-full items-center gap-2 rounded-lg px-2 text-left text-[11px] font-medium outline-none transition-[background-color,box-shadow] hover:bg-raise focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
     >
       <CaretRight className="sidebar-label size-3 text-[var(--muted)]" />
-      <Icon className={cn("size-[16px] shrink-0", color)} weight="fill" />
+      <Icon className="size-[16px] shrink-0 text-[var(--muted-strong)]" weight="fill" />
       <span className="sidebar-label truncate">{label}</span>
     </button>
   )

@@ -20,6 +20,7 @@ import {
 import { applySidebarStyle, readStoredSidebarStyle, type SidebarStyle } from "@/lib/sidebar-style"
 
 import { FontSection } from "./appearance/font-section"
+import { AccentSection } from "./appearance/accent-section"
 import { MaterialSection } from "./appearance/material-section"
 import { MiscSection } from "./appearance/misc-section"
 import { ThemeSection } from "./appearance/theme-section"
@@ -52,6 +53,7 @@ export function AppearanceSettings() {
         resolved={resolveTheme(prefs.theme)}
         onChange={(theme) => update({ theme })}
       />
+      <AccentSection value={prefs.accent} onChange={(accent) => update({ accent })} />
       <FontSection prefs={prefs} onChange={update} />
       <MaterialSection value={sidebarStyle} onChange={changeSidebarStyle} />
       <MiscSection

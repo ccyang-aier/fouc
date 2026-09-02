@@ -8,18 +8,18 @@
   --elevated: #ffffff;
   --surface-subtle: #fafafa;
   --surface-hover: #f4f5f5;
-  --ink: #17191b;
-  --ink-soft: #303438;
-  --muted-strong: #62686f;
-  --muted: #8a9096;
-  --line: rgba(23, 25, 27, 0.085);
-  --line-strong: rgba(23, 25, 27, 0.14);
-  --accent: #0da887;
-  --accent-strong: #078f73;
-  --accent-ink: #0b9879;
-  --accent-soft: #ebf7f3;
-  --accent-soft-line: #cce7df;
-  --focus-ring: rgba(13, 168, 135, 0.35);
+  --ink: #202126;
+  --ink-soft: #3f4249;
+  --muted-strong: #6c6e75;
+  --muted: #9699a1;
+  --line: rgba(32, 33, 38, 0.085);
+  --line-strong: rgba(32, 33, 38, 0.14);
+  --accent: #647089;
+  --accent-strong: #566178;
+  --accent-ink: #566681;
+  --accent-soft: #f0f2f6;
+  --accent-soft-line: #d4dae4;
+  --focus-ring: rgba(100, 112, 137, 0.34);
   /* 交互覆盖层：按钮/菜单 hover 的墨色洗染 */
   --hover-fill: rgba(0, 0, 0, 0.045);
   /* 侧栏亮白容器：激活指示与行 hover 的抬升面 */
@@ -68,12 +68,12 @@ html[data-theme="dark"] {
   --muted: #707880;
   --line: rgba(233, 236, 239, 0.09);
   --line-strong: rgba(233, 236, 239, 0.16);
-  --accent: #13b693;
-  --accent-strong: #19caa4;
-  --accent-ink: #2fd4ae;
-  --accent-soft: rgba(19, 182, 147, 0.13);
-  --accent-soft-line: rgba(19, 182, 147, 0.32);
-  --focus-ring: rgba(19, 182, 147, 0.4);
+  --accent: #7c88a0;
+  --accent-strong: #929db2;
+  --accent-ink: #aab4c8;
+  --accent-soft: rgba(124, 136, 160, 0.15);
+  --accent-soft-line: rgba(124, 136, 160, 0.34);
+  --focus-ring: rgba(124, 136, 160, 0.42);
   --hover-fill: rgba(255, 255, 255, 0.055);
   --raise: rgba(255, 255, 255, 0.06);
   --chip: rgba(255, 255, 255, 0.045);
@@ -92,6 +92,69 @@ html[data-theme="dark"] {
   --wt-sidebar-native-tint: rgb(16 18 21 / 0.72);
   --wt-sidebar-glass-edge: rgb(233 236 239 / 0.08);
   --wt-sidebar-hover: rgb(255 255 255 / 0.06);
+}
+
+/* ── 主题色目录：矿物蓝为默认，外观设置通过 data-accent 即时切换。 ── */
+html[data-accent="emerald"] {
+  --accent: #2d8c78;
+  --accent-strong: #247662;
+  --accent-ink: #287b6a;
+  --accent-soft: #edf6f3;
+  --accent-soft-line: #cbe2dc;
+  --focus-ring: rgba(45, 140, 120, 0.34);
+}
+html[data-accent="ocean"] {
+  --accent: #3f78a8;
+  --accent-strong: #32658f;
+  --accent-ink: #376d99;
+  --accent-soft: #edf3f8;
+  --accent-soft-line: #cadbe8;
+  --focus-ring: rgba(63, 120, 168, 0.34);
+}
+html[data-accent="violet"] {
+  --accent: #766a9c;
+  --accent-strong: #625783;
+  --accent-ink: #695d90;
+  --accent-soft: #f2eff7;
+  --accent-soft-line: #dbd4e8;
+  --focus-ring: rgba(118, 106, 156, 0.34);
+}
+html[data-accent="amber"] {
+  --accent: #a67535;
+  --accent-strong: #8e622b;
+  --accent-ink: #94692f;
+  --accent-soft: #f8f3ea;
+  --accent-soft-line: #e8dbc3;
+  --focus-ring: rgba(166, 117, 53, 0.34);
+}
+html[data-accent="rose"] {
+  --accent: #9a6269;
+  --accent-strong: #835159;
+  --accent-ink: #89575f;
+  --accent-soft: #f7f0f1;
+  --accent-soft-line: #e5d2d5;
+  --focus-ring: rgba(154, 98, 105, 0.34);
+}
+
+html[data-theme="dark"][data-accent="emerald"] {
+  --accent: #4ba38f; --accent-strong: #61b4a0; --accent-ink: #78c6b3;
+  --accent-soft: rgba(75, 163, 143, 0.15); --accent-soft-line: rgba(75, 163, 143, 0.34); --focus-ring: rgba(75, 163, 143, 0.42);
+}
+html[data-theme="dark"][data-accent="ocean"] {
+  --accent: #5c91be; --accent-strong: #72a5cf; --accent-ink: #8ab9df;
+  --accent-soft: rgba(92, 145, 190, 0.15); --accent-soft-line: rgba(92, 145, 190, 0.34); --focus-ring: rgba(92, 145, 190, 0.42);
+}
+html[data-theme="dark"][data-accent="violet"] {
+  --accent: #9587bc; --accent-strong: #aa9bcf; --accent-ink: #bdafe0;
+  --accent-soft: rgba(149, 135, 188, 0.15); --accent-soft-line: rgba(149, 135, 188, 0.34); --focus-ring: rgba(149, 135, 188, 0.42);
+}
+html[data-theme="dark"][data-accent="amber"] {
+  --accent: #bd8e4d; --accent-strong: #d0a261; --accent-ink: #dfb875;
+  --accent-soft: rgba(189, 142, 77, 0.15); --accent-soft-line: rgba(189, 142, 77, 0.34); --focus-ring: rgba(189, 142, 77, 0.42);
+}
+html[data-theme="dark"][data-accent="rose"] {
+  --accent: #b47a82; --accent-strong: #c88d95; --accent-ink: #daa2a9;
+  --accent-soft: rgba(180, 122, 130, 0.15); --accent-soft-line: rgba(180, 122, 130, 0.34); --focus-ring: rgba(180, 122, 130, 0.42);
 }
 
 /* ── 字体族目录：默认栈在 @theme 定义并发射到 :root，此处按外观偏好覆盖。
@@ -199,10 +262,7 @@ button {
 }
 
 ::selection {
-  background: rgba(13, 168, 135, 0.18);
-}
-html[data-theme="dark"] ::selection {
-  background: rgba(19, 182, 147, 0.3);
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 /* 滚动容器统一由 ui/scroll-area 的自绘滚动条接管，全局隐藏原生滚动条 */

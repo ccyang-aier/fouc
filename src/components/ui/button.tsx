@@ -10,7 +10,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-[var(--accent)] text-white shadow-[0_4px_12px_rgba(14,166,132,0.16)] hover:bg-[var(--accent-strong)]",
+          "bg-[var(--accent)] text-white shadow-[0_4px_12px_color-mix(in_srgb,var(--accent)_22%,transparent)] hover:bg-[var(--accent-strong)]",
         outline:
           "border border-[var(--line)] bg-panel/80 text-[var(--ink)] hover:border-[var(--line-strong)] hover:bg-[var(--surface-subtle)]",
         ghost:

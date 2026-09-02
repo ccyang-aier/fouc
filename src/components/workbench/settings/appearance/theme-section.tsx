@@ -19,8 +19,8 @@ import { SectionCard } from "./section-card"
 
 /** 预览用解析后调色板，与 globals.css 的浅/深主题令牌一致 */
 const PALETTES: Record<ResolvedTheme, { shell: string; side: string; panel: string; ink: string; line: string; muted: string; accent: string }> = {
-  light: { shell: "#f3f4f4", side: "#fafbfc", panel: "#ffffff", ink: "#17191b", line: "rgba(23,25,27,0.10)", muted: "#d9dbdd", accent: "#0da887" },
-  dark: { shell: "#101214", side: "#141619", panel: "#17191c", ink: "#e9ecef", line: "rgba(233,236,239,0.12)", muted: "#3a3f45", accent: "#13b693" },
+  light: { shell: "#f3f4f4", side: "#fafbfc", panel: "#ffffff", ink: "#202126", line: "rgba(32,33,38,0.10)", muted: "#d9dbdd", accent: "#647089" },
+  dark: { shell: "#101214", side: "#141619", panel: "#17191c", ink: "#e9ecef", line: "rgba(233,236,239,0.12)", muted: "#3a3f45", accent: "#8490a9" },
 }
 
 const THEME_ICONS: Record<ThemePref, typeof Sun> = {

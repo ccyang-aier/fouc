@@ -28,10 +28,10 @@ import { GeneralSettings } from "./general-settings"
 export type SettingsSection = "appearance" | "general" | "agents" | "about"
 
 const SECTIONS: Array<SidebarNavItem<SettingsSection>> = [
-  { id: "appearance", label: "外观", icon: PaintBrush, color: "text-[#d184ad]" },
-  { id: "general", label: "通用", icon: SlidersHorizontal, color: "text-[#6e9fe6]" },
-  { id: "agents", label: "Agent", icon: Robot, color: "text-[#9b80dc]" },
-  { id: "about", label: "关于", icon: Info, color: "text-[#63b99d]" },
+  { id: "appearance", label: "外观", icon: PaintBrush },
+  { id: "general", label: "通用", icon: SlidersHorizontal },
+  { id: "agents", label: "Agent", icon: Robot },
+  { id: "about", label: "关于", icon: Info },
 ]
 
 export function SettingsCanvas({
@@ -58,7 +58,7 @@ export function SettingsCanvas({
       <div
         style={{ width, zIndex: 20 }}
         className={cn(
-          "h-full shrink-0",
+          "h-full shrink-0 max-[820px]:!w-[60px]",
           !dragging && "transition-[width] duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
         )}
       >

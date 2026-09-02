@@ -1,63 +1,67 @@
-# Settings Design QA
+# Fouc 项目首页设计 QA
 
-## Evidence
+## 对比目标
 
-- Source visual truth: `C:\AIWorks\26Coding\fouc\qa\settings\reference.png`
-- Initial implementation: `C:\AIWorks\26Coding\fouc\qa\settings\implementation-initial.png`
-- Final implementation: `C:\AIWorks\26Coding\fouc\qa\settings\implementation-final.png`
-- Initial full-view comparison: `C:\AIWorks\26Coding\fouc\qa\settings\comparison-initial.png`
-- Final focused comparison: `C:\AIWorks\26Coding\fouc\qa\settings\comparison-focused.png`
-- Source pixels: 2558 × 1393
-- Initial implementation pixels: 2381 × 1297, normalized to 2558 × 1393 for the full-view comparison
-- Final browser CSS viewport: 1488 × 837; final raster capture: 1156 × 1044 from the Codex in-app browser surface
-- Focused comparison normalization: source and implementation content regions were each normalized to 800 × 650
-- State: light appearance page, “纸感” selected, “柔和层次” selected, system following enabled, sound at 40%
+- source visual truth: `C:\AIWorks\26Coding\fouc\qa\project-home\reference-normalized.png`
+- implementation screenshot: `C:\AIWorks\26Coding\fouc\qa\project-home\implementation-final.png`
+- side-by-side comparison: `C:\AIWorks\26Coding\fouc\qa\project-home\comparison-final.png`
+- viewport: 1625 × 967 CSS px（Codex IAB；参考原图 1626 × 967，归一化时仅裁去最右侧 1 px 窗口边界）
+- source pixels: 1625 × 967 after normalization
+- implementation pixels: 1625 × 967
+- device scale factor: browser default；源图与实现均以相同像素尺寸比较，无缩放
+- state: 浅色主题、矿物蓝主题色、项目总览、项目上下文展开、待处理事项初始态
 
-## Full-view comparison
+## 全屏对比证据
 
-The application uses the same full-window composition as the reference: a thin native title bar, a dedicated settings sidebar below it, and a broad white content pane. The active navigation treatment, search placement, content start, low-contrast palette, generous whitespace, and two-column appearance layout follow the source hierarchy. Fouc-specific labels and preview copy intentionally replace the reading-app content from the source.
+在 `view_image` 中同时检查了归一化参考图、最终实现截图与横向并排图。三栏骨架保持一致：40 px 系统栏、270 px 左侧栏、308 px 项目上下文栏；中央标题、元信息、五段导航、待处理面板、双栏列表与底部输入框均处于对应区域。开放式白色画布、轻边框、低阴影、圆角半径和高密度小字号与参考设计一致。
 
-## Focused comparison
+## 重点区域证据
 
-The focused comparison covers the typography hierarchy, theme selector, sidebar material choices, settings rows, range control, and live preview. These details are readable at the normalized size, so no additional crop is required.
+未另做局部裁图：两张原始图均以 1625 × 967 原始分辨率通过 `view_image(detail=original)` 检查，小字号、图标、1 px 分割线、头像裁切与控件边界均清晰可读。重点逐项检查如下：
 
-## Comparison history
+1. 字体与层级：标题约 31 px，分区标题 13 px，正文/元信息 9.5–12 px；字重、行高和单行截断符合参考密度。
+2. 间距与布局：主内容左边距约 36 px，标签导航 52 px，高优先级面板和双栏列表对齐；右侧上下文行高约 82 px。
+3. 颜色与令牌：石墨黑 `#202126`、烟灰 `#6C6E75`、矿物蓝 `#647089` 已成为默认；激活、按钮、焦点环与进度条全部取主题变量。
+4. 图标：工作台与设置侧栏的非激活图标统一为烟灰单色，激活图标和文字统一取当前主题色；项目内容采用同一 Phosphor 图标家族。
+5. 图像资产：品牌标记沿用仓库资源；两张项目成员头像为独立真实位图，使用圆形裁切并优化至 256 × 256，无占位符、CSS 绘图或透明边缘问题。
+6. 文案：首屏项目名称、导航、待处理事项、进度、产出和上下文信息与视觉目标一致；未添加营销文案或额外信息层级。
 
-### Pass 1
+## 交互验证
 
-- [P2] Settings chrome was oversized relative to the source.
-  - Evidence: the first implementation used a 52px title bar and 288px CSS sidebar, making the settings shell feel like a scaled web page.
-  - Fix: reduced the title bar to 44px, the sidebar to 240px, the search field to 34px, and navigation rows to 36px.
-- [P2] Main content and live preview were too wide.
-  - Evidence: the first implementation used a 1010px content container and a 340px preview column.
-  - Fix: reduced the content container to 800px, the preview column to 300px, and tightened its vertical dimensions to match the reference density.
+- 左侧“项目”“产品研发”“个人工作台”和最近项目均可进入项目首页。
+- 五个项目标签可切换，非总览标签提供对应空态与返回创建任务的闭环。
+- “查看依据/详情”“开始评审”“确认结果”均有展开、执行中与完成反馈。
+- 上下文分组可选中、同步按钮有旋转和状态文字、管理模式可进入/退出、侧栏可收起/展开。
+- 任务输入支持附件、权限、执行模式、语音状态与 Ctrl+Enter 提交，提交后显示成功反馈。
+- 设置 → 外观的 6 种主题色可即时切换并写入现有外观偏好存储；实测松石绿后再恢复矿物蓝。
+- 1024 × 768 与 768 × 700 视口无水平溢出；紧凑视口自动收窄左侧栏并隐藏右侧上下文栏。
+- 浏览器控制台 error 检查：无应用运行时错误。
 
-### Pass 2
+## 比较历史
 
-- No actionable P0, P1, or P2 differences remain.
-- The smaller navigation set is intentional: only settings backed by the current Fouc product are shown rather than reproducing unrelated reading-app categories from the reference.
+- 初始实现检查：左侧栏宽度、系统栏高度、导航节奏与参考图不一致；修正为 270 px 侧栏、40 px 系统栏、36 px 导航行，并调整空间区间距。
+- 首轮交互检查：窄窗口保留右侧上下文造成主区域过密；增加 1120 px 上下文折叠边界、820 px 左栏紧凑模式及 760 px 待处理行重排。复测 1024 × 768 与 768 × 700 后无水平溢出。
+- 首次保存的 QA 截图处于助理首页，不是同一交互状态，不能用于设计判断；重新进入“项目 / 总览 / 上下文展开”状态并保存最终同尺寸截图。
+- 最终并排复核：未发现可执行的 P0/P1/P2 差异。
 
-## Required fidelity surfaces
+## Findings
 
-- Fonts and typography: passed. Existing Fouc system/CJK font stack is retained; heading, eyebrow, body, label, and caption hierarchy match the source closely.
-- Spacing and layout rhythm: passed after the title-bar, sidebar, content-width, and preview-size corrections.
-- Colors and visual tokens: passed. Warm white surfaces, muted gray text, pale blue selection, and blue-gray control accents match the reference while remaining compatible with Fouc.
-- Image quality and asset fidelity: passed. The screen contains no source raster artwork; interface icons use the existing Phosphor library and the preview is real UI content rather than a placeholder asset.
-- Copy and content: passed. Source reading-app copy was replaced with coherent Fouc settings language.
-- Responsiveness: passed at the reference desktop ratio and a narrower 1191 × 893 browser viewport with no horizontal overflow.
-- Accessibility: passed for semantic search, navigation, radio controls, switch, slider labels, focus states, and reduced-motion compatibility.
+- 无 P0/P1/P2 问题。
+- P3：参考图使用未提供源文件的成员头像和少量专用线性图标；实现使用同构图和独立生成头像，语义、尺寸、裁切、笔触与色彩处理一致。
+- P3：按用户明确要求，默认强调色锁定为矿物蓝 `#647089`，因此比参考图个别主要按钮的明亮蓝更克制，这是有意差异。
 
-## Interactions and runtime
+## Above-the-fold copy diff
 
-- Settings sidebar search filters correctly.
-- Theme selection updates the live preview.
-- Sidebar material selection, system-following switch, and sound slider are interactive.
-- Agent navigation opens the existing Agent management screen.
-- Back navigation returns to the workbench.
-- Browser console errors checked: none.
+- 项目名称、面包屑、成员/日期/控制中心、五个标签、两项待办、推进/产出标题与项目上下文标题全部存在且顺序一致。
+- 无新增 eyebrow、营销标签、数据卡片或未批准的首屏文案。
 
-## Follow-up polish
+## Implementation Checklist
 
-- P3: additional product settings can be added to the sidebar when their backing features exist; no disabled or placeholder categories were introduced.
+- [x] 同尺寸视觉对比
+- [x] 字体、间距、颜色、图片、文案五项核查
+- [x] 核心交互路径与状态反馈
+- [x] 主题色持久化与侧栏单色图标
+- [x] 1024 px 与 768 px 响应式检查
+- [x] TypeScript、ESLint、Next 生产构建
 
 final result: passed

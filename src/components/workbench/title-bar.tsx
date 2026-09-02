@@ -59,7 +59,7 @@ export function TitleBar() {
             <DropdownMenuTrigger asChild>
               <button
                 data-tauri-drag-region="false"
-                className="h-6 rounded-md px-2 text-[11px] outline-none transition-colors hover:bg-wash focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                className="h-6 rounded-md px-2 text-[11px] outline-none transition-colors hover:bg-wash data-[state=open]:bg-wash focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
               >
                 {label}
               </button>

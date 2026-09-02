@@ -382,7 +382,7 @@ export function Sidebar({
                 type="button"
                 aria-label="打开个人菜单"
                 className={cn(
-                  "flex h-[42px] w-full items-center gap-2 rounded-[8px] border border-[var(--line)] bg-chip px-2 text-left outline-none transition-colors hover:bg-chip-strong focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+                  "flex h-[42px] w-full items-center gap-2 rounded-[8px] border border-[var(--line)] bg-chip px-2 text-left outline-none transition-colors hover:bg-chip-strong data-[state=open]:bg-chip-strong focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
                   collapsed && "justify-center px-0",
                 )}
               >

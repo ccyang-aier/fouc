@@ -305,7 +305,7 @@ function ExpandedPanel(
             placeholder="C:\path\to\… 或 /usr/local/bin/…"
             autoFocus={installations.length === 0}
             aria-label={`${provider.name} 可执行文件路径`}
-            className="h-7.5 min-w-0 flex-1 rounded-[8px] border border-[var(--line)] bg-panel px-2.5 py-1.5 font-mono text-[11px] outline-none placeholder:font-sans placeholder:text-[var(--muted)] focus:border-[var(--accent)]/55 focus:ring-2 focus:ring-[var(--focus-ring)]"
+            className="h-7.5 min-w-0 flex-1 rounded-[8px] border border-[var(--line)] bg-panel px-2.5 py-1.5 font-mono text-[11px] outline-none placeholder:font-sans placeholder:text-[var(--muted)] focus:border-[var(--accent)]"
           />
           <Button
             variant="subtle"

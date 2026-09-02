@@ -292,7 +292,7 @@ export function AgentSettings() {
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="搜索 Agent…"
                 aria-label="搜索 Agent"
-                className="h-8 w-[220px] rounded-[9px] border border-[var(--line)] bg-panel pl-8 pr-3 text-[12px] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--muted)] focus:border-[var(--accent)]/55 focus:ring-2 focus:ring-[var(--focus-ring)]"
+                className="h-8 w-[220px] rounded-[9px] border border-[var(--line)] bg-panel pl-8 pr-3 text-[12px] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--muted)] focus:border-[var(--accent)]"
               />
             </div>
             <div className="ml-auto flex items-center gap-2">

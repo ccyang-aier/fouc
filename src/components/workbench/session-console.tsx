@@ -170,7 +170,7 @@ export function SessionConsole({ installation, providerName }: { installation: A
                 placeholder={canSend ? "输入任务，Enter 发送…" : "等待会话就绪…"}
                 disabled={!canSend}
                 aria-label="任务输入"
-                className="chat-scope min-w-0 flex-1 rounded-lg border border-[var(--line-strong)] bg-panel px-3 py-2 outline-none placeholder:text-[var(--muted)] focus:border-[var(--accent)]/55 focus:ring-2 focus:ring-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-60"
+                className="chat-scope min-w-0 flex-1 rounded-lg border border-[var(--line-strong)] bg-panel px-3 py-2 outline-none placeholder:text-[var(--muted)] focus:border-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-60"
               />
               <Button size="sm" onClick={() => void send()} disabled={!canSend} aria-label="发送任务">
                 <PaperPlaneTilt className="size-3.5" aria-hidden />

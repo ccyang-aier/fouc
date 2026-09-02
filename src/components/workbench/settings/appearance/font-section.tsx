@@ -146,7 +146,7 @@ function FontFamilyMenu<T extends string>({
         <button
           type="button"
           aria-label={`${label}字体族`}
-          className="flex h-8 w-[138px] items-center justify-between gap-2 rounded-[8px] border border-[var(--line)] bg-panel px-2.5 text-[11.5px] text-[var(--ink)] outline-none transition-[border-color] duration-150 hover:border-[var(--line-strong)] focus-visible:border-[var(--accent)]/55 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+          className="flex h-8 w-[138px] items-center justify-between gap-2 rounded-[8px] border border-[var(--line)] bg-panel px-2.5 text-[11.5px] text-[var(--ink)] outline-none transition-[border-color] duration-150 hover:border-[var(--line-strong)] focus-visible:border-[var(--accent)] data-[state=open]:border-[var(--accent)]"
         >
           <span className="truncate" style={active.stack ? { fontFamily: active.stack } : undefined}>
             {active.label}

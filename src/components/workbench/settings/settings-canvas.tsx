@@ -91,7 +91,7 @@ export function SettingsCanvas({
               onChange={(event) => setQuery(event.target.value)}
               placeholder="搜索设置"
               aria-label="搜索设置"
-              className="h-[34px] w-full rounded-[6px] border border-[var(--line)] bg-panel pl-9 pr-3 text-[11.5px] text-[var(--ink)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--muted)] focus:border-[var(--accent)]/55 focus:ring-2 focus:ring-[var(--focus-ring)]"
+              className="h-[34px] w-full rounded-[6px] border border-[var(--line)] bg-panel pl-9 pr-3 text-[11.5px] text-[var(--ink)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--muted)] focus:border-[var(--accent)]"
             />
           </div>
           <p className="mb-2 mt-5 px-2.5 text-[10px] font-medium uppercase tracking-[0.2em] text-[var(--muted)]">

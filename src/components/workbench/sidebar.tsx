@@ -184,7 +184,7 @@ export function Sidebar({
                           "flex size-8 shrink-0 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-wash hover:text-[var(--ink-soft)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
                           filter !== "all"
                             ? "bg-[var(--accent-soft)] text-[var(--accent-ink)]"
-                            : "data-[state=open]:bg-wash",
+                            : "aria-expanded:bg-wash",
                         )}
                       >
                         <Funnel className="size-[17px]" weight="fill" />

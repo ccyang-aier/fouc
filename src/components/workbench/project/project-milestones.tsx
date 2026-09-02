@@ -5,7 +5,6 @@ import {
   ArrowRight,
   CheckCircle,
   Circle,
-  CircleNotch,
   Record,
 } from "@phosphor-icons/react"
 
@@ -40,7 +39,7 @@ export function ProjectMilestones() {
   const selected = milestones.find((milestone) => milestone.id === selectedId) ?? milestones[1]
 
   return (
-    <section aria-labelledby="milestone-title">
+    <section aria-labelledby="milestone-title" className="pt-1.5">
       <div className="mb-3 flex items-center justify-between gap-4">
         <h2 id="milestone-title" className="text-[13px] font-semibold text-[var(--ink)]">里程碑进度</h2>
         <button
@@ -54,11 +53,9 @@ export function ProjectMilestones() {
         </button>
       </div>
 
-      <div className="overflow-x-auto rounded-[8px] border border-[var(--line)] bg-panel px-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="-mx-1 overflow-x-auto rounded-[8px] border border-[var(--line)] bg-panel px-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <div className="relative grid h-[100px] min-w-[620px] grid-cols-6">
-          <span aria-hidden className="absolute left-[8.333%] right-[8.333%] top-[49px] h-px bg-[var(--line-strong)]" />
-
-          {milestones.map((milestone) => (
+          {milestones.map((milestone, index) => (
             <button
               key={milestone.id}
               type="button"
@@ -66,16 +63,20 @@ export function ProjectMilestones() {
               onClick={() => setSelectedId(milestone.id)}
               className="group relative z-10 grid grid-rows-[34px_24px_28px] justify-items-start px-3 pt-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)]"
             >
-              <span className="whitespace-nowrap text-[11px] font-medium text-[var(--ink-soft)]">
+              <span className="self-end whitespace-nowrap text-[11px] font-medium text-[var(--ink-soft)]">
                 <span className="mr-2 text-[var(--muted-strong)]">{milestone.id}</span>
                 {milestone.label}
               </span>
 
-              <span className="flex h-6 w-full items-center">
+              {index < milestones.length - 1 ? (
+                <span aria-hidden className="absolute left-5 top-[58px] h-px w-full bg-[var(--line-strong)]" />
+              ) : null}
+
+              <span className="relative z-10 flex h-6 w-full items-center">
                 <MilestoneMarker status={milestone.status} />
               </span>
 
-              <span className={cn("flex items-center gap-1.5 whitespace-nowrap text-[10px]", statusStyles[milestone.status])}>
+              <span className={cn("-mt-1 flex items-center gap-1.5 whitespace-nowrap text-[10px]", statusStyles[milestone.status])}>
                 <MilestoneStatusIcon status={milestone.status} />
                 {milestone.statusLabel}
               </span>
@@ -95,13 +96,17 @@ export function ProjectMilestones() {
 }
 
 function MilestoneMarker({ status }: { status: MilestoneStatus }) {
-  if (status === "done") return <Circle className="size-[11px] text-[#418ac5]" weight="fill" />
-  if (status === "active") return <Record className="size-[17px] text-[#418ac5]" weight="regular" />
-  return <Circle className="size-[16px] bg-panel text-[#bdc5cd]" weight="regular" />
+  return (
+    <span className="flex size-4 items-center justify-center bg-panel">
+      {status === "done" ? <Circle className="size-[10px] text-[#418ac5]" weight="fill" /> : null}
+      {status === "active" ? <Record className="size-4 text-[#418ac5]" weight="regular" /> : null}
+      {status === "upcoming" ? <Circle className="size-[15px] text-[#bdc5cd]" weight="regular" /> : null}
+    </span>
+  )
 }
 
 function MilestoneStatusIcon({ status }: { status: MilestoneStatus }) {
   if (status === "done") return <CheckCircle className="size-[12px]" weight="bold" />
-  if (status === "active") return <CircleNotch className="size-[12px]" weight="bold" />
+  if (status === "active") return <Record className="size-[12px]" weight="regular" />
   return <Circle className="size-[12px]" weight="regular" />
 }

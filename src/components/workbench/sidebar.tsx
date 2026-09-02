@@ -316,19 +316,6 @@ export function Sidebar({
         </section>
 
         <div className="mt-auto">
-          <button
-            type="button"
-            aria-label="设置"
-            onClick={() => onViewChange("settings")}
-            className={cn(
-              "mb-1.5 flex h-[32px] w-full items-center gap-2.5 rounded-[8px] px-2 text-left text-[12px] font-medium text-[var(--ink-soft)] outline-none transition-[background-color,color,box-shadow] hover:bg-raise hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
-              collapsed && "justify-center px-0",
-            )}
-          >
-            <GearSix className="size-[16px] shrink-0 text-[var(--muted-strong)]" weight="regular" />
-            <span className="sidebar-label">设置</span>
-          </button>
-
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button

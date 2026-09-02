@@ -19,13 +19,28 @@ import { ProjectAttention } from "./project-attention"
 import { ProjectComposer } from "./project-composer"
 import { ProjectContextSidebar } from "./project-context-sidebar"
 import { projectTabs, type ProjectTab } from "./project-data"
+import { ProjectWorkCanvas } from "./project-work-canvas"
 
 export function ProjectHomeCanvas() {
   const [tab, setTab] = useState<ProjectTab>("overview")
   const [contextOpen, setContextOpen] = useState(true)
+  const showContext = contextOpen && tab === "overview"
+
+  if (tab === "work") {
+    return (
+      <div className="flex h-full min-h-0 flex-col bg-panel">
+        <div className="mx-auto w-full max-w-[1080px] shrink-0 px-9 pt-[22px] max-[1100px]:px-6">
+          <ProjectHeader onToggleContext={() => setContextOpen((value) => !value)} contextOpen={false} />
+          <ProjectTabs value={tab} onChange={setTab} />
+          <div className="h-[18px]" />
+        </div>
+        <ProjectWorkCanvas />
+      </div>
+    )
+  }
 
   return (
-    <div className={cn("grid h-full min-h-0", contextOpen ? "grid-cols-[minmax(0,1fr)_308px] max-[1160px]:grid-cols-[minmax(0,1fr)_272px] max-[1120px]:grid-cols-1" : "grid-cols-1")}>
+    <div className={cn("grid h-full min-h-0", showContext ? "grid-cols-[minmax(0,1fr)_308px] max-[1160px]:grid-cols-[minmax(0,1fr)_272px] max-[1120px]:grid-cols-1" : "grid-cols-1")}>
       <ScrollArea
         as="section"
         aria-label="项目首页"
@@ -52,7 +67,7 @@ export function ProjectHomeCanvas() {
           )}
         </div>
       </ScrollArea>
-      {contextOpen ? <ProjectContextSidebar onCollapse={() => setContextOpen(false)} /> : null}
+      {showContext ? <ProjectContextSidebar onCollapse={() => setContextOpen(false)} /> : null}
     </div>
   )
 }

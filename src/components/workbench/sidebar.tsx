@@ -15,9 +15,11 @@ import {
   Funnel,
   GearSix,
   Lightning,
+  MagnifyingGlass,
   Plus,
   PlusCircle,
   PlugsConnected,
+  SidebarSimple,
   UsersThree,
 } from "@phosphor-icons/react"
 
@@ -53,25 +55,6 @@ const navigation: Array<SidebarNavItem<WorkbenchView>> = [
 ]
 
 const SIDEBAR_VERSION = "v0.1.0"
-
-function DenseCollapseIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 16 16" className="size-4" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="2" y="3" width="3.5" height="10" rx="1.25" fill="currentColor" opacity="0.55" />
-      <rect x="6.5" y="3" width="7.5" height="10" rx="1.5" fill="currentColor" />
-    </svg>
-  )
-}
-
-/** 精致版放大镜：细环 + 实心圆角手柄，笔触介于 Phosphor bold 与 fill 之间，小尺寸下更清爽。 */
-function SearchIcon({ className }: { className?: string }) {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 256 256" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="110" cy="110" r="68" stroke="currentColor" strokeWidth="24" />
-      <path d="M163 163l49 49" stroke="currentColor" strokeWidth="30" strokeLinecap="round" />
-    </svg>
-  )
-}
 
 export function Sidebar({
   collapsed,
@@ -119,9 +102,9 @@ export function Sidebar({
                   type="button"
                   aria-label="展开侧边栏"
                   onClick={onToggle}
-                  className="mx-auto flex size-8 items-center justify-center rounded-[7px] text-[var(--ink-soft)] outline-none transition-colors hover:bg-wash hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                  className="relative z-30 mx-auto flex size-9 shrink-0 items-center justify-center rounded-[8px] text-[var(--ink-soft)] outline-none transition-[background-color,color,box-shadow] hover:bg-raise hover:text-[var(--ink)] hover:shadow-[0_2px_8px_rgba(28,32,40,0.06)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                 >
-                  <span className="scale-x-[-1]"><DenseCollapseIcon /></span>
+                  <SidebarSimple className="size-[21px]" weight="regular" />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="right">展开侧边栏</TooltipContent>
@@ -140,7 +123,7 @@ export function Sidebar({
                     onClick={onToggle}
                     className="flex size-8 shrink-0 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-wash hover:text-[var(--ink-soft)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                   >
-                    <DenseCollapseIcon />
+                    <SidebarSimple className="size-[20px] scale-x-[-1]" weight="regular" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="right">收起侧边栏</TooltipContent>
@@ -154,7 +137,7 @@ export function Sidebar({
                     onClick={() => setSearchOpen((open) => !open)}
                     className="flex size-8 shrink-0 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-wash hover:text-[var(--ink-soft)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                   >
-                    <SearchIcon className="size-[17px]" />
+                    <MagnifyingGlass className="size-[17px]" weight="bold" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="right">搜索</TooltipContent>

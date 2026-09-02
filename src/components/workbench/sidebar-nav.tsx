@@ -2,8 +2,8 @@
 
 /**
  * 侧栏导航列表（工作台侧栏 / 设置侧栏共用）：
- * 激活态为主题色软底指示容器；指示器即时落位（不做滑动过渡，
- * 避免点击时悬停白底与滑入的激活容器形成两段式闪变），悬停仅作用于未激活行。
+ * 激活态为主题色软底指示容器，切换时沿列表滑动到位；
+ * 悬停白底仅作用于未激活行，避免盖住滑入中的激活容器造成两段式闪变。
  */
 
 import type { ReactNode } from "react"
@@ -42,7 +42,7 @@ export function SidebarNavList<T extends string>({
       {activeIndex >= 0 ? (
         <span
           aria-hidden
-          className="absolute inset-x-0 top-0 rounded-[8px] bg-[var(--accent-soft)] shadow-[inset_0_0_0_1px_var(--accent-soft-line)]"
+          className="absolute inset-x-0 top-0 rounded-[8px] bg-[var(--accent-soft)] shadow-[inset_0_0_0_1px_var(--accent-soft-line)] transition-transform duration-[240ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
           style={{
             height: ROW_HEIGHT,
             transform: `translateY(${activeIndex * (ROW_HEIGHT + ROW_GAP)}px)`,

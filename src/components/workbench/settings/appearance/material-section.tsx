@@ -6,7 +6,7 @@
  * 材质令牌直接取自 globals.css（跟随当前主题明暗）。
  */
 
-import { Check, DropHalf } from "@phosphor-icons/react"
+import { Check } from "@phosphor-icons/react"
 
 import { SIDEBAR_STYLE_IDS, sidebarStyleLabels, type SidebarStyle } from "@/lib/sidebar-style"
 import { cn } from "@/lib/utils"
@@ -26,7 +26,7 @@ export function MaterialSection({
   onChange: (style: SidebarStyle) => void
 }) {
   return (
-    <SettingsSection icon={DropHalf} title="侧边栏材质" description="工作台与设置侧栏的面板质感">
+    <SettingsSection title="侧边栏材质" description="工作台与设置侧栏的面板质感">
       <div className="grid w-fit grid-cols-2 gap-2.5" role="radiogroup" aria-label="侧边栏材质">
         {SIDEBAR_STYLE_IDS.map((id) => {
           const selected = value === id

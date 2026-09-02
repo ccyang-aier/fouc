@@ -30,7 +30,7 @@ export function AccentSection({
   const activeColor = activePreset?.color ?? customColor
 
   return (
-    <SettingsSection icon={Swatches} title="主题色" description="强调色作用于激活状态、主要操作与交互反馈">
+    <SettingsSection title="主题色" description="强调色作用于激活状态、主要操作与交互反馈">
       <div className="flex flex-wrap items-center gap-2 py-1" role="radiogroup" aria-label="主题色">
         {accentOptions.map((option) => {
           const selected = value === option.id
@@ -68,7 +68,8 @@ export function AccentSection({
             value === "custom" && "shadow-[0_0_0_2px_var(--panel),0_0_0_4px_var(--accent-ink)]",
           )}
         >
-          {/* 色环底座：从任意基色都能找到入口的彩虹环 */}
+          {/* 色环底座：从任意基色都能找到入口的彩虹环；内部样式恒定，
+              选中态只由外层圆框（accent-ink 双环）表达 */}
           <span
             className="absolute inset-0 rounded-full"
             aria-hidden
@@ -77,17 +78,9 @@ export function AccentSection({
                 "conic-gradient(from 210deg, #e2564d, #d99a2b, #5aa469, #3f8fd2, #7a5cd6, #d256a0, #e2564d)",
             }}
           />
-          {value === "custom" ? (
-            <span
-              className="absolute inset-[3px] rounded-full border border-white/40"
-              aria-hidden
-              style={{ backgroundColor: customColor }}
-            />
-          ) : (
-            <span className="absolute inset-[3px] flex items-center justify-center rounded-full bg-panel text-[var(--muted-strong)]">
-              <Swatches className="size-[12px]" weight="fill" aria-hidden />
-            </span>
-          )}
+          <span className="absolute inset-[3px] flex items-center justify-center rounded-full bg-panel text-[var(--muted-strong)]">
+            <Swatches className="size-[12px]" weight="fill" aria-hidden />
+          </span>
         </button>
         <input
           ref={pickerRef}

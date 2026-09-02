@@ -5,7 +5,7 @@
  * 行内示例以当前选择实时渲染（字体族 + 字号），所见即所得。
  */
 
-import { CaretDown, Check, Minus, Plus, TextAa } from "@phosphor-icons/react"
+import { CaretDown, Check, Minus, Plus } from "@phosphor-icons/react"
 
 import {
   chatFontOptions,
@@ -32,7 +32,7 @@ export function FontSection({
   onChange: (patch: Partial<AppearancePrefs>) => void
 }) {
   return (
-    <SettingsSection icon={TextAa} title="字体" description="界面、代码与对话的字体族和基准字号，立即生效">
+    <SettingsSection title="字体" description="界面、代码与对话的字体族和基准字号，立即生效">
       <div className="divide-y divide-[var(--line)]">
         <FontRow
           label="界面字体"

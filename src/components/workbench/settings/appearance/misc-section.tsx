@@ -4,7 +4,7 @@
  * 其它分区：动效强度与外观默认值恢复。
  */
 
-import { ArrowCounterClockwise, DotsThree } from "@phosphor-icons/react"
+import { ArrowCounterClockwise } from "@phosphor-icons/react"
 
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -21,7 +21,7 @@ export function MiscSection({
   onReset: () => void
 }) {
   return (
-    <SettingsSection icon={DotsThree} title="其它" description="动效与默认值">
+    <SettingsSection title="其它" description="动效与默认值">
       <div className="flex items-center justify-between gap-6 py-0.5">
         <div className="min-w-0">
           <h3 className="text-[12px] font-medium">减弱动效</h3>

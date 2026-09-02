@@ -5,7 +5,7 @@
  * 卡片内嵌按真实令牌配色渲染的迷你工作台预览；跟随系统为对角拼接的双主题预览。
  */
 
-import { Check, CircleHalf, Monitor, Moon, Sun } from "@phosphor-icons/react"
+import { Check, Monitor, Moon, Sun } from "@phosphor-icons/react"
 
 import {
   THEME_PREFS,
@@ -39,7 +39,7 @@ export function ThemeSection({
   onChange: (theme: ThemePref) => void
 }) {
   return (
-    <SettingsSection icon={CircleHalf} title="主题" description="深浅色基调；跟随系统时随操作系统设置自动切换">
+    <SettingsSection title="主题" description="深浅色基调；跟随系统时随操作系统设置自动切换">
       <div className="grid w-fit grid-cols-3 gap-2.5" role="radiogroup" aria-label="主题">
         {THEME_PREFS.map((id) => {
           const selected = value === id

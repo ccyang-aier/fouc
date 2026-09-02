@@ -19,6 +19,8 @@
   --accent-ink: #566681;
   --accent-soft: #f0f2f6;
   --accent-soft-line: #d4dae4;
+  /* 自定义主题色基色（实际值由 JS 按偏好写入，此为兜底） */
+  --accent-custom: #647089;
   --focus-ring: rgba(100, 112, 137, 0.34);
   /* 交互覆盖层：按钮/菜单 hover 的墨色洗染 */
   --hover-fill: rgba(0, 0, 0, 0.045);
@@ -94,7 +96,16 @@ html[data-theme="dark"] {
   --wt-sidebar-hover: rgb(255 255 255 / 0.06);
 }
 
-/* ── 主题色目录：矿物蓝为默认，外观设置通过 data-accent 即时切换。 ── */
+/* ── 主题色目录：矿物蓝为默认，外观设置通过 data-accent 即时切换。
+   custom 为任意取色：基色由 JS 写入 --accent-custom，其余派生色实时推导。 ── */
+html[data-accent="custom"] {
+  --accent: var(--accent-custom);
+  --accent-strong: color-mix(in oklab, var(--accent-custom) 87%, #14161a);
+  --accent-ink: color-mix(in oklab, var(--accent-custom) 90%, #14161a);
+  --accent-soft: color-mix(in srgb, var(--accent-custom) 8%, #ffffff);
+  --accent-soft-line: color-mix(in srgb, var(--accent-custom) 22%, #ffffff);
+  --focus-ring: color-mix(in srgb, var(--accent-custom) 34%, transparent);
+}
 html[data-accent="emerald"] {
   --accent: #2d8c78;
   --accent-strong: #247662;
@@ -136,6 +147,14 @@ html[data-accent="rose"] {
   --focus-ring: rgba(154, 98, 105, 0.34);
 }
 
+html[data-theme="dark"][data-accent="custom"] {
+  --accent: color-mix(in oklab, var(--accent-custom) 86%, #ffffff);
+  --accent-strong: color-mix(in oklab, var(--accent-custom) 74%, #ffffff);
+  --accent-ink: color-mix(in oklab, var(--accent-custom) 66%, #ffffff);
+  --accent-soft: color-mix(in srgb, var(--accent-custom) 16%, transparent);
+  --accent-soft-line: color-mix(in srgb, var(--accent-custom) 34%, transparent);
+  --focus-ring: color-mix(in srgb, var(--accent-custom) 42%, transparent);
+}
 html[data-theme="dark"][data-accent="emerald"] {
   --accent: #4ba38f; --accent-strong: #61b4a0; --accent-ink: #78c6b3;
   --accent-soft: rgba(75, 163, 143, 0.15); --accent-soft-line: rgba(75, 163, 143, 0.34); --focus-ring: rgba(75, 163, 143, 0.42);

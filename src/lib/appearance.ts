@@ -32,6 +32,9 @@ export function resolveTheme(pref: ThemePref): ResolvedTheme {
 export const ACCENT_IDS = ["mineral", "emerald", "ocean", "violet", "amber", "rose"] as const
 export type AccentId = (typeof ACCENT_IDS)[number]
 
+/** 主题色偏好：六个内置预设，或 custom（任意取色，基色落在 --accent-custom） */
+export type AccentPref = AccentId | "custom"
+
 export const accentOptions: Array<{ id: AccentId; label: string; color: string }> = [
   { id: "mineral", label: "矿物蓝", color: "#647089" },
   { id: "emerald", label: "松石绿", color: "#2D8C78" },
@@ -40,6 +43,8 @@ export const accentOptions: Array<{ id: AccentId; label: string; color: string }
   { id: "amber", label: "琥珀", color: "#A67535" },
   { id: "rose", label: "岩蔷薇", color: "#9A6269" },
 ]
+
+export const ACCENT_PREF_IDS: readonly AccentPref[] = [...ACCENT_IDS, "custom"]
 
 // ── 字体目录（预览栈与 globals.css 的属性映射保持同步） ─────────────
 
@@ -119,7 +124,9 @@ export const FONT_SIZE_RANGES = {
 
 export type AppearancePrefs = {
   theme: ThemePref
-  accent: AccentId
+  accent: AccentPref
+  /** 自定义主题色基色（#rrggbb），仅 accent === "custom" 时生效 */
+  accentCustom: string
   uiFont: UiFontId
   uiFontSize: number
   codeFont: CodeFontId
@@ -132,6 +139,7 @@ export type AppearancePrefs = {
 export const APPEARANCE_DEFAULTS: AppearancePrefs = {
   theme: "light",
   accent: "mineral",
+  accentCustom: "#647089",
   uiFont: "default",
   uiFontSize: 13,
   codeFont: "default",
@@ -152,6 +160,10 @@ function sizeOf(value: unknown, range: { min: number; max: number }, fallback: n
   return Number.isFinite(n) && n >= range.min && n <= range.max ? Math.round(n) : fallback
 }
 
+function hexOf(value: unknown, fallback: string): string {
+  return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value) ? value.toLowerCase() : fallback
+}
+
 export function readAppearancePrefs(): AppearancePrefs {
   if (typeof window === "undefined") return APPEARANCE_DEFAULTS
   let raw: unknown = null
@@ -163,7 +175,8 @@ export function readAppearancePrefs(): AppearancePrefs {
   const saved = (raw ?? {}) as Record<string, unknown>
   return {
     theme: oneOf(saved.theme, THEME_PREFS, APPEARANCE_DEFAULTS.theme),
-    accent: oneOf(saved.accent, ACCENT_IDS, APPEARANCE_DEFAULTS.accent),
+    accent: oneOf(saved.accent, ACCENT_PREF_IDS, APPEARANCE_DEFAULTS.accent),
+    accentCustom: hexOf(saved.accentCustom, APPEARANCE_DEFAULTS.accentCustom),
     uiFont: oneOf(saved.uiFont, UI_FONT_IDS, APPEARANCE_DEFAULTS.uiFont),
     uiFontSize: sizeOf(saved.uiFontSize, FONT_SIZE_RANGES.ui, APPEARANCE_DEFAULTS.uiFontSize),
     codeFont: oneOf(saved.codeFont, CODE_FONT_IDS, APPEARANCE_DEFAULTS.codeFont),
@@ -208,6 +221,11 @@ export function applyAppearancePrefs(prefs: AppearancePrefs): void {
 
   const root = document.documentElement
   root.dataset.accent = prefs.accent
+  if (prefs.accent === "custom") {
+    root.style.setProperty("--accent-custom", prefs.accentCustom)
+  } else {
+    root.style.removeProperty("--accent-custom")
+  }
   const fontAttrs: Array<[name: string, value: string, isDefault: boolean]> = [
     ["uiFont", prefs.uiFont, prefs.uiFont === "default"],
     ["codeFont", prefs.codeFont, prefs.codeFont === "default"],

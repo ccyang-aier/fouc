@@ -9,7 +9,7 @@ import { ArrowCounterClockwise, DotsThree } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-import { SectionCard } from "./section-card"
+import { SettingsSection } from "./section-card"
 
 export function MiscSection({
   reducedMotion,
@@ -21,7 +21,7 @@ export function MiscSection({
   onReset: () => void
 }) {
   return (
-    <SectionCard icon={DotsThree} title="其它" description="动效与默认值">
+    <SettingsSection icon={DotsThree} title="其它" description="动效与默认值">
       <div className="flex items-center justify-between gap-6 py-0.5">
         <div className="min-w-0">
           <h3 className="text-[12px] font-medium">减弱动效</h3>
@@ -45,7 +45,7 @@ export function MiscSection({
           重置
         </Button>
       </div>
-    </SectionCard>
+    </SettingsSection>
   )
 }
 

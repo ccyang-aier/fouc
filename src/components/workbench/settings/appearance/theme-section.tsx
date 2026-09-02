@@ -5,7 +5,7 @@
  * 卡片内嵌按真实令牌配色渲染的迷你工作台预览；跟随系统为对角拼接的双主题预览。
  */
 
-import { Check, Monitor, Moon, Palette, Sun } from "@phosphor-icons/react"
+import { Check, CircleHalf, Monitor, Moon, Sun } from "@phosphor-icons/react"
 
 import {
   THEME_PREFS,
@@ -15,7 +15,7 @@ import {
 } from "@/lib/appearance"
 import { cn } from "@/lib/utils"
 
-import { SectionCard } from "./section-card"
+import { SettingsSection } from "./section-card"
 
 /** 预览用解析后调色板，与 globals.css 的浅/深主题令牌一致 */
 const PALETTES: Record<ResolvedTheme, { shell: string; side: string; panel: string; ink: string; line: string; muted: string; accent: string }> = {
@@ -39,8 +39,8 @@ export function ThemeSection({
   onChange: (theme: ThemePref) => void
 }) {
   return (
-    <SectionCard icon={Palette} title="主题" description="深浅色基调；跟随系统时随操作系统设置自动切换">
-      <div className="grid grid-cols-3 gap-2.5 max-[760px]:grid-cols-1" role="radiogroup" aria-label="主题">
+    <SettingsSection icon={CircleHalf} title="主题" description="深浅色基调；跟随系统时随操作系统设置自动切换">
+      <div className="grid w-fit grid-cols-3 gap-2.5" role="radiogroup" aria-label="主题">
         {THEME_PREFS.map((id) => {
           const selected = value === id
           const Icon = THEME_ICONS[id]
@@ -52,7 +52,7 @@ export function ThemeSection({
               aria-checked={selected}
               onClick={() => onChange(id)}
               className={cn(
-                "group relative rounded-[10px] border p-2 text-left outline-none transition-[border-color,box-shadow,transform] duration-200 ease-out focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] hover:-translate-y-px",
+                "group relative w-[186px] rounded-[10px] border p-2 text-left outline-none transition-[border-color,box-shadow,transform] duration-200 ease-out focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] hover:-translate-y-px",
                 selected
                   ? "border-[var(--accent)] shadow-[0_0_0_1px_var(--accent)]"
                   : "border-[var(--line)] hover:border-[var(--line-strong)]",
@@ -88,7 +88,7 @@ export function ThemeSection({
           )
         })}
       </div>
-    </SectionCard>
+    </SettingsSection>
   )
 }
 

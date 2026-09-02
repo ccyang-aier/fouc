@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 
-import { SectionCard } from "./section-card"
+import { SettingsSection } from "./section-card"
 
 export function FontSection({
   prefs,
@@ -32,7 +32,7 @@ export function FontSection({
   onChange: (patch: Partial<AppearancePrefs>) => void
 }) {
   return (
-    <SectionCard icon={TextAa} title="字体" description="界面、代码与对话的字体族和基准字号，立即生效">
+    <SettingsSection icon={TextAa} title="字体" description="界面、代码与对话的字体族和基准字号，立即生效">
       <div className="divide-y divide-[var(--line)]">
         <FontRow
           label="界面字体"
@@ -69,7 +69,7 @@ export function FontSection({
           sample="好的，我先把需求拆解为任务清单，再逐项推进并汇报进度。"
         />
       </div>
-    </SectionCard>
+    </SettingsSection>
   )
 }
 

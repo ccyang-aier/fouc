@@ -1,7 +1,7 @@
 "use client"
 
 /**
- * 外观设置：主题、字体、侧边栏材质与动效偏好。
+ * 外观设置：主题、主题色、字体、侧边栏材质与动效偏好。
  * 偏好经 lib/appearance 的外部存储管理（useSyncExternalStore 订阅），
  * 修改即时应用到整个工作台并持久化；首帧直接读取本地偏好，无默认值闪变。
  */
@@ -53,7 +53,12 @@ export function AppearanceSettings() {
         resolved={resolveTheme(prefs.theme)}
         onChange={(theme) => update({ theme })}
       />
-      <AccentSection value={prefs.accent} onChange={(accent) => update({ accent })} />
+      <AccentSection
+        value={prefs.accent}
+        customColor={prefs.accentCustom}
+        onChange={(accent) => update({ accent })}
+        onCustomColor={(accentCustom) => update({ accent: "custom", accentCustom })}
+      />
       <FontSection prefs={prefs} onChange={update} />
       <MaterialSection value={sidebarStyle} onChange={changeSidebarStyle} />
       <MiscSection

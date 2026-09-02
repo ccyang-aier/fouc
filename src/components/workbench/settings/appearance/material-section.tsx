@@ -11,7 +11,7 @@ import { Check, DropHalf } from "@phosphor-icons/react"
 import { SIDEBAR_STYLE_IDS, sidebarStyleLabels, type SidebarStyle } from "@/lib/sidebar-style"
 import { cn } from "@/lib/utils"
 
-import { SectionCard } from "./section-card"
+import { SettingsSection } from "./section-card"
 
 const MATERIAL_HINTS: Record<SidebarStyle, string> = {
   standard: "纯色面板，稳定清晰",
@@ -26,8 +26,8 @@ export function MaterialSection({
   onChange: (style: SidebarStyle) => void
 }) {
   return (
-    <SectionCard icon={DropHalf} title="侧边栏材质" description="工作台与设置侧栏的面板质感">
-      <div className="grid grid-cols-2 gap-2.5" role="radiogroup" aria-label="侧边栏材质">
+    <SettingsSection icon={DropHalf} title="侧边栏材质" description="工作台与设置侧栏的面板质感">
+      <div className="grid w-fit grid-cols-2 gap-2.5" role="radiogroup" aria-label="侧边栏材质">
         {SIDEBAR_STYLE_IDS.map((id) => {
           const selected = value === id
           return (
@@ -38,7 +38,7 @@ export function MaterialSection({
               aria-checked={selected}
               onClick={() => onChange(id)}
               className={cn(
-                "relative rounded-[10px] border p-2 text-left outline-none transition-[border-color,box-shadow,transform] duration-200 ease-out focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] hover:-translate-y-px",
+                "relative w-[232px] rounded-[10px] border p-2 text-left outline-none transition-[border-color,box-shadow,transform] duration-200 ease-out focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] hover:-translate-y-px",
                 selected
                   ? "border-[var(--accent)] shadow-[0_0_0_1px_var(--accent)]"
                   : "border-[var(--line)] hover:border-[var(--line-strong)]",
@@ -55,7 +55,7 @@ export function MaterialSection({
           )
         })}
       </div>
-    </SectionCard>
+    </SettingsSection>
   )
 }
 

@@ -15,7 +15,7 @@ export function AboutSettings() {
     <div className="mx-auto w-full max-w-[960px] px-10 pb-14 pt-12 max-[1100px]:px-7 max-[900px]:pt-8">
       <PanelHeader title="关于" description="Fouc 智能工作台的产品信息。" />
 
-      <section className="mt-5 rounded-[12px] border border-[#eceef1] bg-white px-6 py-6 shadow-[0_1px_2px_rgba(23,25,27,0.04)]">
+      <section className="mt-5 rounded-[12px] border border-[var(--line)] bg-panel px-6 py-6 shadow-[0_1px_2px_rgba(23,25,27,0.04)]">
         <div className="flex items-center gap-4">
           <span className="relative size-12 shrink-0 overflow-hidden rounded-[12px]">
             <Image
@@ -36,7 +36,7 @@ export function AboutSettings() {
           Fouc 是构建于 AI Agent 之上的超级工作台，面向个人与企业团队。以人与 Agent
           的高效协作为核心，帮助你在同一条工作流中敏捷完成开发、研究、分析与日常办公任务。
         </p>
-        <div className="mt-5 border-t border-[#f2f3f5] pt-4 text-[11.5px] leading-relaxed text-[var(--muted)]">
+        <div className="mt-5 border-t border-[var(--line)] pt-4 text-[11.5px] leading-relaxed text-[var(--muted)]">
           Agent 接入基于 Agent Client Protocol（ACP）：已内置 33 种 CLI Agent
           的目录声明，安装即可自动发现、探测与纳管，无需任何手工配置。
         </div>

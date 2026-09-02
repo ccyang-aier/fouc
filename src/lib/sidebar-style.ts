@@ -27,5 +27,7 @@ export function applySidebarStyle(style: SidebarStyle): void {
   if (typeof document === "undefined") return
   document.documentElement.dataset.sidebarStyle = style
   window.localStorage.setItem(STORAGE_KEY, style)
-  void syncSidebarWindowEffects(style, "light")
+  // 系统磨砂底色跟随应用主题明暗，避免浅色应用叠在深色磨砂上发闷
+  const theme = document.documentElement.dataset.theme === "dark" ? "dark" : "light"
+  void syncSidebarWindowEffects(style, theme)
 }

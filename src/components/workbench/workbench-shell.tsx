@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 
 import { TooltipProvider } from "@/components/ui/tooltip"
 
+import { applyAppearancePrefs, readAppearancePrefs } from "@/lib/appearance"
 import { applySidebarStyle, readStoredSidebarStyle } from "@/lib/sidebar-style"
 
 import { HomeCanvas } from "./home-canvas"
@@ -17,8 +18,9 @@ export function WorkbenchShell() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [view, setView] = useState<WorkbenchView>("home")
 
-  // 启动时恢复侧栏材质偏好（标准 / 磨砂玻璃）
+  // 启动时恢复外观偏好（主题 / 字体 / 动效）与侧栏材质（标准 / 磨砂玻璃）
   useEffect(() => {
+    applyAppearancePrefs(readAppearancePrefs())
     applySidebarStyle(readStoredSidebarStyle())
   }, [])
 
@@ -52,7 +54,7 @@ export function WorkbenchShell() {
             />
             {/* 面板自绘 1px 边框（含左上圆角），与侧栏分割线同用 --wt-sidebar-glass-edge：
                 真实 border 不受内容层遮挡，四边与圆角处颜色连续均匀 */}
-            <main className="relative min-w-0 flex-1 overflow-hidden rounded-tl-[16px] border border-[var(--wt-sidebar-glass-edge)] bg-white">
+            <main className="relative min-w-0 flex-1 overflow-hidden rounded-tl-[16px] border border-[var(--wt-sidebar-glass-edge)] bg-panel">
               {view === "home" ? (
                 <HomeCanvas key={missionKey} />
               ) : (

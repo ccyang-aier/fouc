@@ -98,7 +98,7 @@ export function HomeCanvas() {
       as="section"
       aria-label="Fouc 首页"
       className="relative h-full min-h-0"
-      viewportClassName="flex flex-col items-center bg-white px-7 pt-[106px] max-[1180px]:pt-16 max-[760px]:px-4 max-[760px]:pt-12"
+      viewportClassName="flex flex-col items-center bg-panel px-7 pt-[106px] max-[1180px]:pt-16 max-[760px]:px-4 max-[760px]:pt-12"
     >
       <div className="w-full max-w-[740px] -translate-x-2 text-center max-[1180px]:translate-x-0">
         <h1 className="text-[25px] leading-tight font-semibold tracking-[-0.035em] text-[var(--ink)] max-[760px]:text-[23px]">
@@ -125,8 +125,8 @@ export function HomeCanvas() {
                 className={cn(
                   "flex h-8 items-center justify-center gap-1.5 rounded-[8px] border text-[11px] font-medium outline-none transition-[background-color,border-color,color,box-shadow,transform] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:translate-y-px",
                   selected
-                    ? "border-[#cce7df] bg-[#ebf7f3] text-[#0b9879] shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]"
-                    : "border-black/[0.075] bg-white text-[var(--ink-soft)] hover:border-black/[0.12] hover:bg-[#fbfbfb]",
+                    ? "border-accent-soft-line bg-accent-soft text-accent-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.4)]"
+                    : "border-[var(--line)] bg-panel text-[var(--ink-soft)] hover:border-[var(--line-strong)] hover:bg-surface-hover",
                 )}
               >
                 <Icon className={cn("size-[15px]", color)} weight="fill" />
@@ -142,7 +142,7 @@ export function HomeCanvas() {
               key={item.label}
               type="button"
               onClick={() => chooseSuggestion(item.prompt)}
-              className="group flex h-[42px] items-center justify-center gap-2 rounded-[8px] border border-black/[0.07] bg-white px-2 text-[11px] font-medium text-[var(--ink-soft)] outline-none transition-[border-color,background-color,transform,box-shadow] hover:-translate-y-0.5 hover:border-black/[0.11] hover:bg-[#fcfcfc] hover:shadow-[0_8px_22px_rgba(30,36,42,0.06)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+              className="group flex h-[42px] items-center justify-center gap-2 rounded-[8px] border border-[var(--line)] bg-panel px-2 text-[11px] font-medium text-[var(--ink-soft)] outline-none transition-[border-color,background-color,transform,box-shadow] hover:-translate-y-0.5 hover:border-[var(--line-strong)] hover:bg-surface-hover hover:shadow-[0_8px_22px_rgba(30,36,42,0.06)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
             >
               <item.icon className={cn("size-[17px] shrink-0", item.color)} weight="fill" />
               <span>{item.label}</span>
@@ -152,8 +152,8 @@ export function HomeCanvas() {
 
         <div
           className={cn(
-            "relative mt-7 flex h-[140px] flex-col rounded-[13px] border bg-white text-left shadow-[0_10px_28px_rgba(28,36,42,0.035)] transition-[border-color,box-shadow] focus-within:border-[#9ed9ca] focus-within:shadow-[0_10px_30px_rgba(14,166,132,0.08),0_0_0_3px_rgba(14,166,132,0.08)]",
-            feedback?.startsWith("先") ? "border-[#efad9f]" : "border-black/[0.14]",
+            "relative mt-7 flex h-[140px] flex-col rounded-[13px] border bg-panel text-left shadow-[0_10px_28px_rgba(28,36,42,0.035)] transition-[border-color,box-shadow] focus-within:border-accent-soft-line focus-within:shadow-[0_10px_30px_rgba(14,166,132,0.08),0_0_0_3px_rgba(14,166,132,0.08)]",
+            feedback?.startsWith("先") ? "border-[#efad9f]" : "border-[var(--line-strong)]",
           )}
         >
           <textarea
@@ -169,7 +169,7 @@ export function HomeCanvas() {
                 submitMission()
               }
             }}
-            className="min-h-0 flex-1 resize-none bg-transparent px-4.5 pt-3.5 pr-[270px] text-[11px] leading-[18px] text-[var(--ink)] outline-none placeholder:text-[#989da3] max-[760px]:pr-4.5"
+            className="min-h-0 flex-1 resize-none bg-transparent px-4.5 pt-3.5 pr-[270px] text-[11px] leading-[18px] text-[var(--ink)] outline-none placeholder:text-[var(--muted)] max-[760px]:pr-4.5"
             placeholder="描述目标、引用资料，或 @ 一位 Agent…"
             aria-label="任务描述"
           />
@@ -182,7 +182,7 @@ export function HomeCanvas() {
                     <span
                       tabIndex={0}
                       className={cn(
-                        "flex size-6 items-center justify-center rounded-full border-2 border-white outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+                        "flex size-6 items-center justify-center rounded-full border-2 border-panel outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
                         agent.color,
                       )}
                     >
@@ -328,8 +328,8 @@ export function HomeCanvas() {
         <button
           type="button"
           className={cn(
-            "mx-auto mt-4 flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-[10px] text-[var(--muted)] outline-none transition-colors hover:bg-black/[0.035] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
-            feedback && "text-[#0b9879]",
+            "mx-auto mt-4 flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-[10px] text-[var(--muted)] outline-none transition-colors hover:bg-wash hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+            feedback && "text-accent-ink",
           )}
         >
           {feedback ? (

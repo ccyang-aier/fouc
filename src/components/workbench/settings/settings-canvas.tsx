@@ -72,17 +72,17 @@ export function SettingsCanvas({
               type="button"
               aria-label="返回工作台"
               onClick={onBack}
-              className="flex size-7 shrink-0 items-center justify-center rounded-[7px] text-[#6f7478] outline-none transition-colors hover:bg-black/[0.05] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+              className="flex size-7 shrink-0 items-center justify-center rounded-[7px] text-[#6f7478] outline-none transition-colors hover:bg-wash hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
             >
               <ArrowLeft className="size-4" weight="bold" aria-hidden />
             </button>
             <span className="text-[13px] font-semibold tracking-[-0.01em] text-[var(--ink)]">设置</span>
-            <span className="mt-px font-mono text-[10px] text-[#a0a5a9]">v0.1.0</span>
+            <span className="mt-px font-mono text-[10px] text-[var(--muted)]">v0.1.0</span>
           </div>
 
           <div className="relative mt-2.5">
             <MagnifyingGlass
-              className="pointer-events-none absolute left-3 top-1/2 size-[15px] -translate-y-1/2 text-[#a8aca8]"
+              className="pointer-events-none absolute left-3 top-1/2 size-[15px] -translate-y-1/2 text-[var(--muted)]"
               aria-hidden
             />
             <input
@@ -91,15 +91,15 @@ export function SettingsCanvas({
               onChange={(event) => setQuery(event.target.value)}
               placeholder="搜索设置"
               aria-label="搜索设置"
-              className="h-[34px] w-full rounded-[6px] border border-[#e5e6e3] bg-white pl-9 pr-3 text-[11.5px] text-[var(--ink)] outline-none transition-[border-color,box-shadow] placeholder:text-[#afb3af] focus:border-[#8ba6bc] focus:ring-2 focus:ring-[#7797b3]/15"
+              className="h-[34px] w-full rounded-[6px] border border-[var(--line)] bg-panel pl-9 pr-3 text-[11.5px] text-[var(--ink)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--muted)] focus:border-[var(--accent)]/55 focus:ring-2 focus:ring-[var(--focus-ring)]"
             />
           </div>
-          <p className="mb-2 mt-5 px-2.5 text-[10px] font-medium uppercase tracking-[0.2em] text-[#a7aaa6]">
+          <p className="mb-2 mt-5 px-2.5 text-[10px] font-medium uppercase tracking-[0.2em] text-[var(--muted)]">
             Preferences
           </p>
           <SidebarNavList items={visibleSections} value={section} onChange={setSection} />
           {visibleSections.length === 0 ? (
-            <p className="px-2.5 py-4 text-[11px] text-[#a0a5a3]">没有匹配的设置</p>
+            <p className="px-2.5 py-4 text-[11px] text-[var(--muted)]">没有匹配的设置</p>
           ) : null}
 
           <SidebarResizeHandle dragging={dragging} onPointerDown={startResize} />
@@ -109,8 +109,8 @@ export function SettingsCanvas({
       <ScrollArea
         as="main"
         /* 面板自绘 1px 边框（含左上圆角），与侧栏分割线同用 --wt-sidebar-glass-edge，四边与圆角处连续均匀 */
-        className="min-h-0 flex-1 overflow-hidden rounded-tl-[16px] border border-[var(--wt-sidebar-glass-edge)] bg-white"
-        viewportClassName="bg-white"
+        className="min-h-0 flex-1 overflow-hidden rounded-tl-[16px] border border-[var(--wt-sidebar-glass-edge)] bg-panel"
+        viewportClassName="bg-panel"
       >
         {section === "appearance" ? (
           <AppearanceSettings />

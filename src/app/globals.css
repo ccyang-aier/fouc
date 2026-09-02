@@ -1,8 +1,11 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* ── 浅色主题令牌（默认） ── */
 :root {
   --shell: #f3f4f4;
+  --panel: #ffffff;
+  --elevated: #ffffff;
   --surface-subtle: #fafafa;
   --surface-hover: #f4f5f5;
   --ink: #17191b;
@@ -13,9 +16,33 @@
   --line-strong: rgba(23, 25, 27, 0.14);
   --accent: #0da887;
   --accent-strong: #078f73;
+  --accent-ink: #0b9879;
+  --accent-soft: #ebf7f3;
+  --accent-soft-line: #cce7df;
   --focus-ring: rgba(13, 168, 135, 0.35);
+  /* 交互覆盖层：按钮/菜单 hover 的墨色洗染 */
+  --hover-fill: rgba(0, 0, 0, 0.045);
+  /* 侧栏亮白容器：激活指示与行 hover 的抬升面 */
+  --raise: #ffffff;
+  /* 玻璃上的浅白芯片（描边按钮 / 用户卡） */
+  --chip: rgba(255, 255, 255, 0.3);
+  --chip-strong: rgba(255, 255, 255, 0.65);
+  --switch-off: #d8dbd8;
+  --tooltip-bg: #202124;
+  --tooltip-ink: #ffffff;
+  --ok-ink: #1f8a5f;
+  --err-ink: #b3413c;
+  --warn-ink: #a06b12;
+  --warn-soft: #fdf8ee;
+  --warn-soft-line: #f0dcae;
 
-  /* ── 侧栏材质令牌（自 world 原样移植，供 sidebar-material.css 消费）── */
+  /* ── 字号基准（字体族默认栈由 @theme 定义，属性映射见下方） ── */
+  --ui-size: 13px;
+  --code-size: 12px;
+  --chat-size: 13px;
+  --font-chat: var(--font-sans);
+
+  /* ── 侧栏材质令牌（供 sidebar-material.css 消费） ── */
   --wt-sidebar-standard-panel: #fafbfc;
   /* 磨砂层叠在 shell 画布上；偏白浅调，保留层次可见。 */
   --wt-sidebar-frosted-panel: rgb(255 255 255 / 0.55);
@@ -28,19 +55,103 @@
   --wt-sidebar-glass-noise-opacity: 0.42;
 }
 
+/* ── 深色主题令牌 ── */
+html[data-theme="dark"] {
+  --shell: #101214;
+  --panel: #17191c;
+  --elevated: #1e2124;
+  --surface-subtle: #1a1d20;
+  --surface-hover: #212428;
+  --ink: #e9ecef;
+  --ink-soft: #c7ccd1;
+  --muted-strong: #949ca4;
+  --muted: #707880;
+  --line: rgba(233, 236, 239, 0.09);
+  --line-strong: rgba(233, 236, 239, 0.16);
+  --accent: #13b693;
+  --accent-strong: #19caa4;
+  --accent-ink: #2fd4ae;
+  --accent-soft: rgba(19, 182, 147, 0.13);
+  --accent-soft-line: rgba(19, 182, 147, 0.32);
+  --focus-ring: rgba(19, 182, 147, 0.4);
+  --hover-fill: rgba(255, 255, 255, 0.055);
+  --raise: rgba(255, 255, 255, 0.06);
+  --chip: rgba(255, 255, 255, 0.045);
+  --chip-strong: rgba(255, 255, 255, 0.09);
+  --switch-off: #3a3f45;
+  --tooltip-bg: #eceef0;
+  --tooltip-ink: #17191c;
+  --ok-ink: #37c395;
+  --err-ink: #e06c5f;
+  --warn-ink: #d9a743;
+  --warn-soft: rgba(217, 167, 67, 0.1);
+  --warn-soft-line: rgba(217, 167, 67, 0.28);
+
+  --wt-sidebar-standard-panel: #141619;
+  --wt-sidebar-frosted-panel: rgb(20 22 25 / 0.62);
+  --wt-sidebar-native-tint: rgb(16 18 21 / 0.72);
+  --wt-sidebar-glass-edge: rgb(233 236 239 / 0.08);
+  --wt-sidebar-hover: rgb(255 255 255 / 0.06);
+}
+
+/* ── 字体族目录：默认栈在 @theme 定义并发射到 :root，此处按外观偏好覆盖。
+   栈内容与 lib/appearance.ts 的预览栈保持同步。 ── */
+html[data-ui-font="native"] {
+  --font-sans: system-ui, "Segoe UI", "PingFang SC", "Microsoft YaHei UI",
+    "Noto Sans CJK SC", sans-serif;
+}
+html[data-ui-font="mono"] {
+  --font-sans: var(--font-code);
+}
+html[data-code-font="cascadia"] {
+  --font-code: "Cascadia Code", "Cascadia Mono", ui-monospace,
+    SFMono-Regular, Consolas, monospace;
+}
+html[data-code-font="jetbrains"] {
+  --font-code: "JetBrains Mono", "Cascadia Code", ui-monospace,
+    SFMono-Regular, Consolas, monospace;
+}
+html[data-code-font="consolas"] {
+  --font-code: Consolas, "Liberation Mono", "Courier New", monospace;
+}
+html[data-chat-font="native"] {
+  --font-chat: system-ui, "Segoe UI", "PingFang SC", "Microsoft YaHei UI",
+    sans-serif;
+}
+html[data-chat-font="serif"] {
+  --font-chat: Georgia, "Source Han Serif SC", "Noto Serif CJK SC",
+    "Songti SC", SimSun, serif;
+}
+
 @theme inline {
   --color-background: var(--shell);
   --color-foreground: var(--ink);
   --font-sans: "Inter Variable", "SF Pro Text", "Segoe UI Variable Text",
     "Segoe UI", "PingFang SC", "Microsoft YaHei UI", "Noto Sans CJK SC",
     system-ui, sans-serif;
-  /* 自绘滚动条与侧栏拖拽手柄（自 world 原样移植）使用的墨色/边框令牌 */
+  /* font-mono 跟随外观设置的代码字体 */
+  --font-mono: var(--font-code);
+  /* 自绘滚动条与侧栏拖拽手柄使用的墨色/边框令牌 */
   --color-ink: var(--ink);
   --color-ink-secondary: var(--ink-soft);
   --color-ink-faint: var(--muted);
+  --color-muted-strong: var(--muted-strong);
   --color-border-strong: var(--line-strong);
   --color-surface-hover: var(--surface-hover);
   --color-sidebar-hover: var(--wt-sidebar-hover);
+  /* 面板与交互覆盖层 */
+  --color-panel: var(--panel);
+  --color-elevated: var(--elevated);
+  --color-wash: var(--hover-fill);
+  --color-raise: var(--raise);
+  --color-chip: var(--chip);
+  --color-chip-strong: var(--chip-strong);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-soft-line: var(--accent-soft-line);
+  --color-ok: var(--ok-ink);
+  --color-err: var(--err-ink);
+  --color-warn: var(--warn-ink);
 }
 
 * {
@@ -48,7 +159,7 @@
 }
 
 /* 背景只落在 body：html 保持透明，磨砂玻璃模式下 body 被材质层置为
-   transparent 后，原生窗口 acrylic 的桌面景深才能透出（与 world 一致）。 */
+   transparent 后，原生窗口 acrylic 的桌面景深才能透出。 */
 html,
 body {
   height: 100%;
@@ -59,7 +170,7 @@ body {
   margin: 0;
   background: var(--shell);
   color: var(--ink);
-  font-size: 13px;
+  font-size: var(--ui-size);
   font-family: var(--font-sans);
   font-synthesis: none;
   text-rendering: geometricPrecision;
@@ -77,44 +188,21 @@ button {
   cursor: default;
 }
 
-.appearance-range {
-  --range-progress: 40%;
-  height: 16px;
-  appearance: none;
-  background: transparent;
-  cursor: default;
+/* 字号作用域：会话消息与输入使用对话字体，等宽内容使用代码字体 */
+.chat-scope {
+  font-family: var(--font-chat);
+  font-size: var(--chat-size);
 }
-
-.appearance-range::-webkit-slider-runnable-track {
-  height: 3px;
-  border-radius: 999px;
-  background: linear-gradient(
-    to right,
-    #5f84a4 0,
-    #5f84a4 var(--range-progress),
-    #d8dbd8 var(--range-progress),
-    #d8dbd8 100%
-  );
-}
-
-.appearance-range::-webkit-slider-thumb {
-  width: 15px;
-  height: 15px;
-  margin-top: -6px;
-  appearance: none;
-  border: 1px solid #cfd3d0;
-  border-radius: 999px;
-  background: white;
-  box-shadow: 0 1px 3px rgba(34, 39, 36, 0.12);
-}
-
-.appearance-range:focus-visible {
-  outline: 2px solid rgba(95, 132, 164, 0.25);
-  outline-offset: 2px;
+.code-scope {
+  font-family: var(--font-code);
+  font-size: var(--code-size);
 }
 
 ::selection {
   background: rgba(13, 168, 135, 0.18);
+}
+html[data-theme="dark"] ::selection {
+  background: rgba(19, 182, 147, 0.3);
 }
 
 /* 滚动容器统一由 ui/scroll-area 的自绘滚动条接管，全局隐藏原生滚动条 */
@@ -173,4 +261,14 @@ button {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* 外观设置里的「减弱动效」偏好：与系统级 prefers-reduced-motion 同等约束 */
+html[data-reduced-motion] *,
+html[data-reduced-motion] *::before,
+html[data-reduced-motion] *::after {
+  scroll-behavior: auto !important;
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
 }

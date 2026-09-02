@@ -59,7 +59,7 @@ export function TitleBar() {
             <DropdownMenuTrigger asChild>
               <button
                 data-tauri-drag-region="false"
-                className="h-6 rounded-md px-2 text-[11px] outline-none transition-colors hover:bg-black/[0.045] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                className="h-6 rounded-md px-2 text-[11px] outline-none transition-colors hover:bg-wash focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
               >
                 {label}
               </button>
@@ -127,10 +127,10 @@ function WindowControl({
       title={label}
       onClick={onClick}
       className={cn(
-        "flex size-7 items-center justify-center rounded-[7px] text-[var(--ink)] outline-none transition-colors focus-visible:bg-black/[0.07]",
+        "flex size-7 items-center justify-center rounded-[7px] text-[var(--ink)] outline-none transition-colors focus-visible:bg-wash",
         danger
           ? "hover:bg-[#f5e0de] hover:text-[#b8493f]"
-          : "hover:bg-black/[0.055]",
+          : "hover:bg-wash",
       )}
     >
       <Icon className={cn("size-[14px]", iconClassName)} />

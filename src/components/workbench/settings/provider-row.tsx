@@ -144,10 +144,10 @@ export function ProviderRow(props: ProviderRowProps) {
     <div
       id={`provider-row-${provider.id}`}
       className={cn(
-        "rounded-[12px] border bg-white transition-[border-color,box-shadow] duration-150",
+        "rounded-[12px] border bg-panel transition-[border-color,box-shadow] duration-150",
         expanded
-          ? "border-[#d8dbe0] shadow-[0_3px_12px_rgba(23,25,27,0.06)]"
-          : "border-[#eceef1] shadow-[0_1px_2px_rgba(23,25,27,0.03)] hover:border-[#dcdfe4] hover:shadow-[0_2px_6px_rgba(23,25,27,0.05)]"
+          ? "border-[var(--line-strong)] shadow-[0_3px_12px_rgba(23,25,27,0.06)]"
+          : "border-[var(--line)] shadow-[0_1px_2px_rgba(23,25,27,0.03)] hover:border-[var(--line-strong)] hover:shadow-[0_2px_6px_rgba(23,25,27,0.05)]"
       )}
     >
       <div className="flex items-center gap-3 px-4 py-2.5">
@@ -167,7 +167,7 @@ export function ProviderRow(props: ProviderRowProps) {
           <p
             className={cn(
               "mt-0.5 truncate text-[11px]",
-              testHint ? "text-[#b3413c]" : "text-[var(--muted)]"
+              testHint ? "text-err" : "text-[var(--muted)]"
             )}
             title={testHint ?? (best?.executablePath ?? provider.cliCommand)}
           >
@@ -177,7 +177,7 @@ export function ProviderRow(props: ProviderRowProps) {
 
         <ProviderInfoTip provider={provider} />
 
-        <div className="flex shrink-0 items-center gap-1.5 border-l border-[#f2f3f5] pl-3">
+        <div className="flex shrink-0 items-center gap-1.5 border-l border-[var(--line)] pl-3">
           <Button
             variant="outline"
             size="sm"
@@ -213,7 +213,7 @@ export function ProviderRow(props: ProviderRowProps) {
       </div>
 
       {expanded && (
-        <div className="animate-in fade-in-0 slide-in-from-top-1 border-t border-[#f2f3f5]">
+        <div className="animate-in fade-in-0 slide-in-from-top-1 border-t border-[var(--line)]">
           <ExpandedPanel {...props} best={best} />
         </div>
       )}
@@ -231,14 +231,14 @@ function ProviderInfoTip({ provider }: { provider: ProviderSpec }) {
         <button
           type="button"
           aria-label={`${provider.name} 接入信息`}
-          className="shrink-0 rounded-md p-1 text-[#b6bcc4] outline-none transition-colors hover:bg-black/[0.045] hover:text-[var(--muted-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+          className="shrink-0 rounded-md p-1 text-[var(--muted)] outline-none transition-colors hover:bg-wash hover:text-[var(--muted-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
         >
           <Info size={13} weight="bold" aria-hidden />
         </button>
       </TooltipTrigger>
       <TooltipContent side="top" className="w-56">
         <p className="font-medium">{provider.name}</p>
-        <p className="mt-1 text-[#d7dce2]">命令 {provider.cliCommand}</p>
+        <p className="mt-1 text-[var(--tooltip-ink)]/75">命令 {provider.cliCommand}</p>
         <p>{launch} · {provider.authRequired ? "需要原生登录" : "无需登录"}</p>
         {provider.skillsDir && <p>技能目录 {provider.skillsDir}</p>}
       </TooltipContent>
@@ -283,7 +283,7 @@ function ExpandedPanel(
       ) : (
         <section aria-label={`${provider.name} 发现状态`}>
           <SectionLabel>发现状态</SectionLabel>
-          <p className="mt-1.5 rounded-[10px] border border-dashed border-[#dcdfe4] bg-[#fafbfa] px-3.5 py-3 text-[11.5px] leading-relaxed text-[var(--muted)]">
+          <p className="mt-1.5 rounded-[10px] border border-dashed border-[var(--line-strong)] bg-[var(--surface-subtle)] px-3.5 py-3 text-[11.5px] leading-relaxed text-[var(--muted)]">
             尚未在本机发现 {provider.name}。安装后其命令（{provider.cliCommand}）加入 PATH
             即会在下次发现时自动登记；也可以在下方直接登记可执行文件路径。
           </p>
@@ -305,7 +305,7 @@ function ExpandedPanel(
             placeholder="C:\path\to\… 或 /usr/local/bin/…"
             autoFocus={installations.length === 0}
             aria-label={`${provider.name} 可执行文件路径`}
-            className="h-7.5 min-w-0 flex-1 rounded-[8px] border border-[#e3e5e8] bg-white px-2.5 py-1.5 font-mono text-[11px] outline-none placeholder:font-sans placeholder:text-[#b6bcc4] focus:border-[var(--accent)]/55 focus:ring-2 focus:ring-[var(--focus-ring)]"
+            className="h-7.5 min-w-0 flex-1 rounded-[8px] border border-[var(--line)] bg-panel px-2.5 py-1.5 font-mono text-[11px] outline-none placeholder:font-sans placeholder:text-[var(--muted)] focus:border-[var(--accent)]/55 focus:ring-2 focus:ring-[var(--focus-ring)]"
           />
           <Button
             variant="subtle"
@@ -325,7 +325,7 @@ function ExpandedPanel(
       {best && (best.status === "ready" || best.status === "needs_auth") && (
         <section aria-label={`${provider.name} 会话验证`}>
           <SectionLabel>会话验证</SectionLabel>
-          <div className="mt-1.5 h-[380px] overflow-hidden rounded-[10px] border border-[#eceef1] bg-[#fbfbfc]">
+          <div className="mt-1.5 h-[380px] overflow-hidden rounded-[10px] border border-[var(--line)] bg-[var(--surface-subtle)]">
             <SessionConsole installation={best} providerName={provider.name} />
           </div>
         </section>
@@ -350,11 +350,11 @@ function InstallationCard(props: {
 }) {
   const { installation } = props
   return (
-    <div className="rounded-[10px] border border-[#f0f1f3] bg-[#fafbfa] px-3.5 py-2.5">
+    <div className="rounded-[10px] border border-[var(--line)] bg-[var(--surface-subtle)] px-3.5 py-2.5">
       <div className="flex items-center gap-2">
         <ProviderStatusBadge statusKey={installation.status as ProviderStatusKey} />
         {installation.version && (
-          <span className="rounded-full border border-[#dcdfe4] bg-white px-1.5 py-px text-[10px] font-medium text-[#6b7280]">
+          <span className="rounded-full border border-[var(--line-strong)] bg-panel px-1.5 py-px text-[10px] font-medium text-[var(--muted-strong)]">
             v{installation.version}
           </span>
         )}
@@ -364,11 +364,11 @@ function InstallationCard(props: {
           {installation.lastProbeDurationMs ? ` · ${installation.lastProbeDurationMs}ms` : ""}
         </span>
       </div>
-      <p className="mt-1 truncate font-mono text-[10.5px] text-[#6b7280]" title={installation.executablePath}>
+      <p className="code-scope mt-1 truncate text-[var(--muted-strong)]" title={installation.executablePath}>
         {installation.executablePath}
       </p>
       {installation.lastErrorMessage && (
-        <p className="mt-1 text-[10.5px] text-[#b3413c]" role="alert">
+        <p className="mt-1 text-[10.5px] text-err" role="alert">
           {installation.lastErrorCode}: {installation.lastErrorMessage}
         </p>
       )}
@@ -413,9 +413,9 @@ function MiniAction({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "inline-flex h-6 items-center gap-1 rounded-[7px] border border-[#e3e5e8] bg-white px-2 text-[10.5px] font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:pointer-events-none disabled:opacity-45",
+        "inline-flex h-6 items-center gap-1 rounded-[7px] border border-[var(--line)] bg-panel px-2 text-[10.5px] font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:pointer-events-none disabled:opacity-45",
         danger
-          ? "text-[#b3413c] hover:border-[#f2c7c4] hover:bg-[#fdf5f4]"
+          ? "text-err hover:border-[var(--line-strong)] hover:bg-wash"
           : "text-[var(--ink-soft)] hover:border-[var(--line-strong)] hover:bg-[var(--surface-subtle)]"
       )}
     >
@@ -430,7 +430,7 @@ function CapabilityPanel({ manifest }: { manifest: CapabilityManifest }) {
   return (
     <section aria-label="能力清单">
       <SectionLabel>能力清单 · 适配级别 {manifest.adapterLevel}</SectionLabel>
-      <dl className="mt-1.5 grid grid-cols-2 gap-x-6 gap-y-1.5 rounded-[10px] border border-[#f0f1f3] bg-[#fafbfa] px-3.5 py-3 text-[11px] max-[900px]:grid-cols-1">
+      <dl className="mt-1.5 grid grid-cols-2 gap-x-6 gap-y-1.5 rounded-[10px] border border-[var(--line)] bg-[var(--surface-subtle)] px-3.5 py-3 text-[11px] max-[900px]:grid-cols-1">
         <Capability label="协议" value={`ACP v${manifest.protocol.version}`} />
         <Capability label="Agent 身份" value={manifest.agentName ?? "—"} />
         <Capability label="会话恢复 / 分叉" value={`${manifest.session.resume ? "支持" : "不支持"} / ${manifest.session.fork ? "支持" : "不支持"}`} />
@@ -448,7 +448,7 @@ function CapabilityPanel({ manifest }: { manifest: CapabilityManifest }) {
             {manifest.controls.modes.slice(0, 8).map((mode) => (
               <span
                 key={mode.id}
-                className="rounded border border-[#e3e5e8] bg-white px-1.5 py-0.5 text-[10px] text-[#6b7280]"
+                className="rounded border border-[var(--line)] bg-panel px-1.5 py-0.5 text-[10px] text-[var(--muted-strong)]"
               >
                 {mode.name}
               </span>
@@ -464,7 +464,7 @@ function Capability({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex min-w-0 items-center gap-1.5">
       <dt className="shrink-0 text-[var(--muted)]">{label}</dt>
-      <dd className="truncate font-medium text-[#4b5563]" title={value}>
+      <dd className="truncate font-medium text-[var(--ink-soft)]" title={value}>
         {value}
       </dd>
     </div>

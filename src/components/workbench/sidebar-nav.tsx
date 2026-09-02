@@ -42,7 +42,7 @@ export function SidebarNavList<T extends string>({
       {activeIndex >= 0 ? (
         <span
           aria-hidden
-          className="absolute inset-x-0 top-0 rounded-[8px] bg-white shadow-[0_1px_2px_rgba(21,30,34,0.07),0_0_0_1px_rgba(21,30,34,0.03)] transition-transform duration-[240ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
+          className="absolute inset-x-0 top-0 rounded-[8px] bg-raise shadow-[0_1px_2px_rgba(21,30,34,0.07),0_0_0_1px_rgba(21,30,34,0.03)] transition-transform duration-[240ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
           style={{
             height: ROW_HEIGHT,
             transform: `translateY(${activeIndex * (ROW_HEIGHT + ROW_GAP)}px)`,
@@ -61,7 +61,7 @@ export function SidebarNavList<T extends string>({
                 onClick={() => onChange(item.id)}
                 className={cn(
                   "flex h-[34px] w-full items-center gap-2.5 rounded-[8px] px-2.5 text-left text-[12px] font-medium outline-none transition-[background-color,color,box-shadow] duration-150 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
-                  "text-[var(--ink-soft)] hover:bg-white hover:text-[var(--ink)] hover:shadow-[0_1px_2px_rgba(21,30,34,0.05)]",
+                  "text-[var(--ink-soft)] hover:bg-raise hover:text-[var(--ink)]",
                   selected && "text-[var(--ink)]",
                 )}
               >

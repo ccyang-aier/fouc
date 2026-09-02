@@ -292,7 +292,7 @@ export function AgentSettings() {
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="搜索 Agent…"
                 aria-label="搜索 Agent"
-                className="h-8 w-[220px] rounded-[9px] border border-[#e3e5e8] bg-white pl-8 pr-3 text-[12px] outline-none transition-[border-color,box-shadow] placeholder:text-[#b6bcc4] focus:border-[var(--accent)]/55 focus:ring-2 focus:ring-[var(--focus-ring)]"
+                className="h-8 w-[220px] rounded-[9px] border border-[var(--line)] bg-panel pl-8 pr-3 text-[12px] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--muted)] focus:border-[var(--accent)]/55 focus:ring-2 focus:ring-[var(--focus-ring)]"
               />
             </div>
             <div className="ml-auto flex items-center gap-2">
@@ -334,7 +334,7 @@ export function AgentSettings() {
           </div>
 
           {/* 可用性 Tab */}
-          <div role="tablist" aria-label="按可用性筛选" className="mt-4 flex items-center gap-5 border-b border-[#eceef1] px-1">
+          <div role="tablist" aria-label="按可用性筛选" className="mt-4 flex items-center gap-5 border-b border-[var(--line)] px-1">
             {tabs.map((item) => {
               const active = tab === item.id
               return (
@@ -353,7 +353,7 @@ export function AgentSettings() {
                   <span
                     className={cn(
                       "rounded-full px-1.5 text-[10px] leading-[16px]",
-                      active ? "bg-[rgba(13,168,135,0.12)] text-[var(--accent-strong)]" : "bg-black/[0.05] text-[var(--muted-strong)]"
+                      active ? "bg-[rgba(13,168,135,0.12)] text-[var(--accent-strong)]" : "bg-wash text-[var(--muted-strong)]"
                     )}
                   >
                     {item.count}
@@ -369,7 +369,7 @@ export function AgentSettings() {
           {/* Provider 列表 */}
           <div className="mt-3 space-y-2">
             {visibleProviders.length === 0 ? (
-              <p className="rounded-[12px] border border-dashed border-[#dcdfe4] bg-white px-6 py-10 text-center text-[12.5px] text-[var(--muted)]">
+              <p className="rounded-[12px] border border-dashed border-[var(--line-strong)] bg-panel px-6 py-10 text-center text-[12.5px] text-[var(--muted)]">
                 没有匹配「{query}」的 Agent
               </p>
             ) : (
@@ -416,12 +416,12 @@ function LoadingState() {
       {Array.from({ length: 8 }, (_, index) => (
         <div
           key={index}
-          className="flex h-[58px] items-center gap-3 rounded-[12px] border border-[#f0f1f3] bg-white px-4"
+          className="flex h-[58px] items-center gap-3 rounded-[12px] border border-[var(--line)] bg-panel px-4"
         >
-          <span className="size-9 animate-pulse rounded-[10px] bg-[#f0f1f3]" />
+          <span className="size-9 animate-pulse rounded-[10px] bg-[var(--surface-hover)]" />
           <span className="flex-1 space-y-1.5">
-            <span className="block h-2.5 w-32 animate-pulse rounded-full bg-[#f0f1f3]" />
-            <span className="block h-2 w-56 animate-pulse rounded-full bg-[#f5f6f7]" />
+            <span className="block h-2.5 w-32 animate-pulse rounded-full bg-[var(--surface-hover)]" />
+            <span className="block h-2 w-56 animate-pulse rounded-full bg-[var(--surface-subtle)]" />
           </span>
         </div>
       ))}
@@ -435,9 +435,9 @@ function LoadingState() {
 
 function OfflineState({ onRetry }: { onRetry: () => void }) {
   return (
-    <div className="mt-6 flex flex-col items-center rounded-[12px] border border-dashed border-[#e3d6d4] bg-white px-6 py-12 text-center">
-      <WifiSlash className="mb-3 size-7 text-[#c4cad2]" aria-hidden />
-      <p className="text-[13px] font-medium text-[#4b5563]">无法连接后端服务</p>
+    <div className="mt-6 flex flex-col items-center rounded-[12px] border border-dashed border-[var(--line-strong)] bg-panel px-6 py-12 text-center">
+      <WifiSlash className="mb-3 size-7 text-[var(--muted)]" aria-hidden />
+      <p className="text-[13px] font-medium text-[var(--ink-soft)]">无法连接后端服务</p>
       <p className="mt-1 max-w-sm text-[12px] leading-relaxed text-[var(--muted)]">
         Agent 目录与纳管操作依赖本地 sidecar 服务（127.0.0.1）。请确认后端进程已启动后重试。
       </p>

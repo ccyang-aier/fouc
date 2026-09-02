@@ -121,9 +121,9 @@ export function SessionConsole({ installation, providerName }: { installation: A
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="border-b border-[#eceef1] px-6 py-4">
+      <header className="border-b border-[var(--line)] px-6 py-4">
         <h2 className="text-[14px] font-semibold">会话控制台 · {providerName}</h2>
-        <p className="mt-0.5 text-[11.5px] text-[#8a919b]">
+        <p className="mt-0.5 text-[11.5px] text-[var(--muted)]">
           {sessionId
             ? `会话 ${sessionId.slice(0, 8)} · 状态 ${sessionStatus}`
             : ready
@@ -151,9 +151,9 @@ export function SessionConsole({ installation, providerName }: { installation: A
               <ConsoleItemView key={item.id} item={item} onApprove={resolveApproval} />
             ))}
           </ScrollArea>
-          <div className="border-t border-[#eceef1] px-6 py-3">
+          <div className="border-t border-[var(--line)] px-6 py-3">
             {error && (
-              <p className="mb-2 text-[11.5px] text-[#b3413c]" role="alert">
+              <p className="mb-2 text-[11.5px] text-err" role="alert">
                 {error}
               </p>
             )}
@@ -170,7 +170,7 @@ export function SessionConsole({ installation, providerName }: { installation: A
                 placeholder={canSend ? "输入任务，Enter 发送…" : "等待会话就绪…"}
                 disabled={!canSend}
                 aria-label="任务输入"
-                className="min-w-0 flex-1 rounded-lg border border-[#dcdfe4] bg-white px-3 py-2 text-[13px] outline-none placeholder:text-[#b6bcc4] focus:border-[#9b80dc]/60 disabled:cursor-not-allowed disabled:bg-[#f7f8f9]"
+                className="chat-scope min-w-0 flex-1 rounded-lg border border-[var(--line-strong)] bg-panel px-3 py-2 outline-none placeholder:text-[var(--muted)] focus:border-[var(--accent)]/55 focus:ring-2 focus:ring-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-60"
               />
               <Button size="sm" onClick={() => void send()} disabled={!canSend} aria-label="发送任务">
                 <PaperPlaneTilt className="size-3.5" aria-hidden />
@@ -282,39 +282,39 @@ function ConsoleItemView(props: { item: ConsoleItem; onApprove: (callId: string,
   switch (item.kind) {
     case "user":
       return (
-        <div className="ml-auto max-w-[85%] rounded-xl rounded-br-sm bg-[#6c5bb3] px-3.5 py-2 text-[13px] text-white">
+        <div className="chat-scope ml-auto max-w-[85%] rounded-xl rounded-br-sm bg-[#6c5bb3] px-3.5 py-2 text-white">
           {item.text}
         </div>
       )
     case "agent":
       return (
-        <div className="max-w-[85%] whitespace-pre-wrap rounded-xl rounded-bl-sm bg-white px-3.5 py-2 text-[13px] text-[#2a2f36] shadow-[0_0_0_1px_rgba(0,0,0,0.04)]">
+        <div className="chat-scope max-w-[85%] whitespace-pre-wrap rounded-xl rounded-bl-sm bg-panel px-3.5 py-2 text-[var(--ink)] shadow-[0_0_0_1px_var(--line)]">
           {item.text}
         </div>
       )
     case "thought":
       return (
-        <div className="max-w-[85%] rounded-lg border border-dashed border-[#dcdfe4] px-3 py-1.5 text-[11.5px] italic text-[#8a919b]">
+        <div className="chat-scope max-w-[85%] rounded-lg border border-dashed border-[var(--line-strong)] px-3 py-1.5 italic text-[var(--muted)]">
           {item.text}
         </div>
       )
     case "tool":
       return (
-        <div className="flex items-center gap-2 text-[11.5px] text-[#4b5563]">
+        <div className="flex items-center gap-2 text-[11.5px] text-[var(--muted-strong)]">
           <span
             className={cn(
               "size-1.5 rounded-full",
-              item.status === "completed" ? "bg-[#1f8a5f]" : item.status === "failed" ? "bg-[#b3413c]" : "bg-[#e6a64f] animate-pulse"
+              item.status === "completed" ? "bg-[var(--ok-ink)]" : item.status === "failed" ? "bg-[var(--err-ink)]" : "bg-[var(--warn-ink)] animate-pulse"
             )}
           />
           <span className="font-medium">工具</span>
           <span className="truncate">{item.title}</span>
-          <span className="text-[#a2a9b3]">{item.status}</span>
+          <span className="text-[var(--muted)]">{item.status}</span>
         </div>
       )
     case "plan":
       return (
-        <ol className="max-w-[85%] space-y-1 rounded-lg border border-[#eceef1] bg-white px-3 py-2 text-[11.5px]">
+        <ol className="chat-scope max-w-[85%] space-y-1 rounded-lg border border-[var(--line)] bg-panel px-3 py-2">
           {item.entries.map((entry, index) => (
             <li key={index} className="flex items-center gap-1.5">
               <span
@@ -323,7 +323,7 @@ function ConsoleItemView(props: { item: ConsoleItem; onApprove: (callId: string,
                   entry.status === "completed" ? "bg-[#1f8a5f]" : entry.status === "in_progress" ? "bg-[#e6a64f]" : "bg-[#c4cad2]"
                 )}
               />
-              <span className={cn(entry.status === "completed" && "text-[#8a919b] line-through")}>{entry.content}</span>
+              <span className={cn(entry.status === "completed" && "text-[var(--muted)] line-through")}>{entry.content}</span>
             </li>
           ))}
         </ol>
@@ -333,7 +333,7 @@ function ConsoleItemView(props: { item: ConsoleItem; onApprove: (callId: string,
         <p
           className={cn(
             "text-center text-[11px]",
-            item.tone === "ok" ? "text-[#1f8a5f]" : item.tone === "err" ? "text-[#b3413c]" : "text-[#8a919b]"
+            item.tone === "ok" ? "text-ok" : item.tone === "err" ? "text-err" : "text-[var(--muted)]"
           )}
         >
           {item.text}
@@ -341,8 +341,8 @@ function ConsoleItemView(props: { item: ConsoleItem; onApprove: (callId: string,
       )
     case "approval":
       return (
-        <div className="max-w-[85%] rounded-xl border border-[#f0dcae] bg-[#fdf8ee] px-3.5 py-2.5">
-          <div className="flex items-center gap-1.5 text-[12.5px] font-medium text-[#7a5b16]">
+        <div className="chat-scope max-w-[85%] rounded-xl border border-[var(--warn-soft-line)] bg-[var(--warn-soft)] px-3.5 py-2.5">
+          <div className="flex items-center gap-1.5 text-[12.5px] font-medium text-warn">
             <ShieldCheck className="size-4" aria-hidden />
             审批请求：{item.title}
           </div>

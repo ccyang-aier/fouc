@@ -40,13 +40,13 @@ function TooltipContent({
         data-slot="tooltip-content"
         sideOffset={sideOffset}
         className={cn(
-          "z-50 rounded-lg bg-[#202124] px-2.5 py-1.5 text-[11px] font-medium text-white shadow-lg animate-in fade-in-0 zoom-in-95",
+          "z-50 rounded-lg bg-[var(--tooltip-bg)] px-2.5 py-1.5 text-[11px] font-medium text-[var(--tooltip-ink)] shadow-lg animate-in fade-in-0 zoom-in-95",
           className,
         )}
         {...props}
       >
         {children}
-        <TooltipPrimitive.Arrow className="fill-[#202124]" />
+        <TooltipPrimitive.Arrow className="fill-[var(--tooltip-bg)]" />
       </TooltipPrimitive.Content>
     </TooltipPrimitive.Portal>
   )

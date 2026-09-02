@@ -114,7 +114,7 @@ export function Sidebar({
                   type="button"
                   aria-label="展开侧边栏"
                   onClick={onToggle}
-                  className="mx-auto flex size-8 items-center justify-center rounded-[7px] text-[var(--ink-soft)] outline-none transition-colors hover:bg-black/[0.045] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                  className="mx-auto flex size-8 items-center justify-center rounded-[7px] text-[var(--ink-soft)] outline-none transition-colors hover:bg-wash hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                 >
                   <span className="scale-x-[-1]"><DenseCollapseIcon /></span>
                 </button>
@@ -133,7 +133,7 @@ export function Sidebar({
                     type="button"
                     aria-label="收起侧边栏"
                     onClick={onToggle}
-                    className="flex size-8 shrink-0 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-black/[0.045] hover:text-[var(--ink-soft)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-wash hover:text-[var(--ink-soft)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                   >
                     <DenseCollapseIcon />
                   </button>
@@ -145,7 +145,7 @@ export function Sidebar({
                   <button
                     type="button"
                     aria-label="搜索"
-                    className="flex size-8 shrink-0 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-black/[0.045] hover:text-[var(--ink-soft)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-wash hover:text-[var(--ink-soft)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                   >
                     <SearchIcon className="size-[17px]" />
                   </button>
@@ -157,7 +157,7 @@ export function Sidebar({
                   <button
                     type="button"
                     aria-label="筛选"
-                    className="flex size-8 shrink-0 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-black/[0.045] hover:text-[var(--ink-soft)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-wash hover:text-[var(--ink-soft)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                   >
                     <Funnel className="size-[17px]" weight="fill" />
                   </button>
@@ -174,7 +174,7 @@ export function Sidebar({
           onClick={onNewMission}
           aria-label="新建任务"
           className={cn(
-            "mt-1 h-8 w-full justify-start rounded-[8px] border-black/[0.075] bg-white/30 px-2 text-[12px] font-semibold shadow-none hover:bg-white",
+            "mt-1 h-8 w-full justify-start rounded-[8px] border-[var(--line)] bg-chip px-2 text-[12px] font-semibold shadow-none hover:bg-chip-strong",
             collapsed && "justify-center px-0",
           )}
         >
@@ -226,7 +226,7 @@ export function Sidebar({
                   type="button"
                   aria-label="新建空间"
                   className={cn(
-                    "ml-auto flex size-6 items-center justify-center rounded-md outline-none hover:bg-black/[0.05] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+                    "ml-auto flex size-6 items-center justify-center rounded-md outline-none hover:bg-wash focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
                     collapsed && "ml-0",
                   )}
                 >
@@ -277,7 +277,7 @@ export function Sidebar({
                     type="button"
                     aria-label="新建任务"
                     onClick={onNewMission}
-                    className="flex size-6 items-center justify-center rounded-md outline-none transition-colors hover:bg-black/[0.05] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                    className="flex size-6 items-center justify-center rounded-md outline-none transition-colors hover:bg-wash hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                   >
                     <Plus className="size-3" weight="bold" />
                   </button>
@@ -293,9 +293,9 @@ export function Sidebar({
             {recentOpen ? (
               <button
                 type="button"
-                className="flex h-8 w-full items-center gap-2.5 rounded-lg px-2 text-left text-[11px] outline-none transition-[background-color,box-shadow] hover:bg-white hover:shadow-[0_1px_2px_rgba(21,30,34,0.05)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                className="flex h-8 w-full items-center gap-2.5 rounded-lg px-2 text-left text-[11px] outline-none transition-[background-color,box-shadow] hover:bg-raise focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
               >
-                <Desktop className="size-[16px] shrink-0 text-[#89939d]" weight="fill" />
+                <Desktop className="size-[16px] shrink-0 text-[var(--muted)]" weight="fill" />
                 <span className="sidebar-label truncate">Fouc 桌面端</span>
                 <span className="sidebar-label ml-auto text-[9px] text-[var(--muted)]">2 小时前</span>
               </button>
@@ -309,11 +309,11 @@ export function Sidebar({
             aria-label="设置"
             onClick={() => onViewChange("settings")}
             className={cn(
-              "mb-1.5 flex h-[32px] w-full items-center gap-2.5 rounded-[8px] px-2 text-left text-[12px] font-medium text-[var(--ink-soft)] outline-none transition-[background-color,color,box-shadow] hover:bg-white hover:text-[var(--ink)] hover:shadow-[0_1px_2px_rgba(21,30,34,0.05)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+              "mb-1.5 flex h-[32px] w-full items-center gap-2.5 rounded-[8px] px-2 text-left text-[12px] font-medium text-[var(--ink-soft)] outline-none transition-[background-color,color,box-shadow] hover:bg-raise hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
               collapsed && "justify-center px-0",
             )}
           >
-            <GearSix className="size-[16px] shrink-0 text-[#89939d]" weight="fill" />
+            <GearSix className="size-[16px] shrink-0 text-[var(--muted)]" weight="fill" />
             <span className="sidebar-label">设置</span>
           </button>
 
@@ -323,13 +323,13 @@ export function Sidebar({
                 type="button"
                 aria-label="打开个人菜单"
                 className={cn(
-                  "flex h-[42px] w-full items-center gap-2 rounded-[8px] border border-black/[0.065] bg-white/25 px-2 text-left outline-none transition-colors hover:bg-white/65 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+                  "flex h-[42px] w-full items-center gap-2 rounded-[8px] border border-[var(--line)] bg-chip px-2 text-left outline-none transition-colors hover:bg-chip-strong focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
                   collapsed && "justify-center px-0",
                 )}
               >
                 <span className="relative flex size-7 shrink-0 items-center justify-center rounded-full bg-[#e5f3ef] text-[#54ac96]">
                   <UserCircle className="size-[21px]" weight="fill" />
-                  <span className="absolute right-0 bottom-0 size-1.5 rounded-full border border-[var(--shell)] bg-[#18b988]" />
+                  <span className="absolute right-0 bottom-0 size-1.5 rounded-full border border-[var(--panel)] bg-[#18b988]" />
                 </span>
                 <span className="sidebar-label min-w-0 flex-1">
                   <span className="block truncate text-[11px] font-semibold">林默</span>
@@ -370,7 +370,7 @@ function SpaceRow({
     <button
       type="button"
       aria-label={label}
-      className="flex h-8 w-full items-center gap-2 rounded-lg px-2 text-left text-[11px] font-medium outline-none transition-[background-color,box-shadow] hover:bg-white hover:shadow-[0_1px_2px_rgba(21,30,34,0.05)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+      className="flex h-8 w-full items-center gap-2 rounded-lg px-2 text-left text-[11px] font-medium outline-none transition-[background-color,box-shadow] hover:bg-raise focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
     >
       <CaretRight className="sidebar-label size-3 text-[var(--muted)]" />
       <Icon className={cn("size-[16px] shrink-0", color)} weight="fill" />

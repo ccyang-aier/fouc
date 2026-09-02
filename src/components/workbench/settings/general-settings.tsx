@@ -50,9 +50,9 @@ export function GeneralSettings() {
   return (
     <div className="mx-auto w-full max-w-[960px] px-10 pb-14 pt-12 max-[1100px]:px-7 max-[900px]:pt-8">
       <PanelHeader title="通用" description="Fouc 本地服务与 Agent 纳管的整体状态。" />
-      <section className="mt-5 overflow-hidden rounded-[12px] border border-[#eceef1] bg-white shadow-[0_1px_2px_rgba(23,25,27,0.04)]">
-        <header className="flex items-center gap-2 border-b border-[#f2f3f5] px-5 py-3.5">
-          <Plugs className="size-[15px] text-[#929aa3]" weight="fill" aria-hidden />
+      <section className="mt-5 overflow-hidden rounded-[12px] border border-[var(--line)] bg-panel shadow-[0_1px_2px_rgba(23,25,27,0.04)]">
+        <header className="flex items-center gap-2 border-b border-[var(--line)] px-5 py-3.5">
+          <Plugs className="size-[15px] text-[var(--muted)]" weight="fill" aria-hidden />
           <h2 className="text-[13px] font-medium">运行状态</h2>
         </header>
         <dl className="px-5 py-2">
@@ -60,18 +60,18 @@ export function GeneralSettings() {
             <span
               className={cn(
                 "inline-flex items-center gap-1.5 font-medium",
-                online ? "text-[#1f8a5f]" : "text-[#a06b12]"
+                online ? "text-ok" : "text-warn"
               )}
             >
               <span
-                className={cn("size-1.5 rounded-full", online ? "bg-[#18b988]" : "bg-[#e6a64f] animate-pulse")}
+                className={cn("size-1.5 rounded-full", online ? "bg-[var(--ok-ink)]" : "bg-[var(--warn-ink)] animate-pulse")}
                 aria-hidden
               />
               {online ? "在线" : "连接中…"}
             </span>
           </StatusRow>
           <StatusRow label="服务地址">
-            <span className="font-mono text-[11.5px] text-[#4b5563]">{backendUrl}</span>
+            <span className="code-scope text-[var(--ink-soft)]">{backendUrl}</span>
           </StatusRow>
           <StatusRow label="受支持产品">
             <span className="font-medium">{providers.length} 种</span>
@@ -96,7 +96,7 @@ function StatusRow({ label, last, children }: { label: string; last?: boolean; c
     <div
       className={cn(
         "flex items-center justify-between gap-4 py-2.5 text-[12px]",
-        !last && "border-b border-[#f6f7f8]"
+        !last && "border-b border-[var(--line)]"
       )}
     >
       <dt className="shrink-0 text-[var(--muted-strong)]">{label}</dt>

@@ -88,18 +88,18 @@ export function ProjectHeader({
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-0.5">
           <button
             type="button"
             aria-label={panelOpen ? "收起右侧面板" : "展开右侧面板"}
             aria-pressed={panelOpen}
             onClick={onTogglePanel}
             className={cn(
-              "flex size-12 items-center justify-center rounded-[10px] text-[#566888] outline-none transition-[background-color,color,transform] hover:text-[var(--accent-ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-95",
+              "flex size-9 items-center justify-center rounded-[8px] text-[#566888] outline-none transition-[background-color,color,transform] hover:text-[var(--accent-ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-95",
               panelOpen ? "bg-[#f4f4f5]" : "bg-transparent hover:bg-[#f4f4f5]",
             )}
           >
-            <SidebarSimple className="size-5" weight="regular" />
+            <SidebarSimple className="size-[18px]" weight="regular" />
           </button>
 
           <DropdownMenu>
@@ -107,9 +107,9 @@ export function ProjectHeader({
               <button
                 type="button"
                 aria-label="更多项目操作"
-                className="flex size-12 items-center justify-center rounded-[10px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-[#f4f4f5] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                className="flex size-9 items-center justify-center rounded-[8px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-[#f4f4f5] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
               >
-                <DotsThree className="size-5" weight="bold" />
+                <DotsThree className="size-[18px]" weight="bold" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -122,7 +122,7 @@ export function ProjectHeader({
         </div>
       </div>
 
-      <nav role="tablist" aria-label="项目分区" className="flex h-10 w-fit max-w-full items-end gap-10 overflow-x-auto border-b border-[var(--line)] pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <nav role="tablist" aria-label="项目分区" className="mt-1.5 flex h-10 w-fit max-w-full items-end gap-10 overflow-x-auto pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {projectTabs.map((item) => {
           const selected = item.id === tab
 
@@ -134,7 +134,7 @@ export function ProjectHeader({
               aria-selected={selected}
               onClick={() => onTabChange(item.id)}
               className={cn(
-                "relative flex h-10 shrink-0 items-center pb-3 text-[13px] font-medium outline-none transition-colors after:absolute after:-inset-x-2 after:bottom-0 after:h-0.5 after:origin-center after:rounded-full after:bg-[var(--accent)] after:transition-transform focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+                "relative flex h-10 shrink-0 items-center pb-3 text-[13px] font-semibold outline-none transition-colors after:absolute after:-inset-x-2 after:bottom-0 after:h-0.5 after:origin-center after:rounded-full after:bg-[var(--accent)] after:transition-transform focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
                 selected
                   ? "text-[var(--ink)] after:scale-x-100"
                   : "text-[var(--muted-strong)] after:scale-x-0 hover:text-[var(--ink-soft)]",

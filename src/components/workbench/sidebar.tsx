@@ -54,6 +54,7 @@ const navigation: Array<SidebarNavItem<WorkbenchView>> = [
 ]
 
 const SIDEBAR_VERSION = "v0.1.0"
+type ActiveProjectItem = "favorite" | "product-development" | "personal-workspace" | "extra-space" | "recent" | null
 
 function DenseCollapseIcon() {
   return (
@@ -94,7 +95,18 @@ export function Sidebar({
   const [searchQuery, setSearchQuery] = useState("")
   const [filter, setFilter] = useState<"all" | "spaces" | "recent">("all")
   const [extraSpace, setExtraSpace] = useState(false)
+  const [activeProjectItem, setActiveProjectItem] = useState<ActiveProjectItem>(null)
   const { width, dragging, startResize } = useSidebarWidth()
+
+  function openProject(item: Exclude<ActiveProjectItem, null>) {
+    setActiveProjectItem(item)
+    onViewChange("projects")
+  }
+
+  function changeTopLevelView(nextView: WorkbenchView) {
+    setActiveProjectItem(null)
+    onViewChange(nextView)
+  }
 
   return (
     <div
@@ -189,7 +201,7 @@ export function Sidebar({
 
         {searchOpen && !collapsed ? (
           <div className="mb-1 animate-in fade-in-0 slide-in-from-top-1">
-            <input autoFocus type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="搜索空间与项目" aria-label="搜索空间与项目" className="h-8 w-full rounded-[7px] border border-[var(--line)] bg-panel px-3 text-[11px] outline-none placeholder:text-[var(--muted)] focus:border-[var(--accent-soft-line)] focus:ring-2 focus:ring-[var(--focus-ring)]" />
+            <input autoFocus type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="搜索空间与项目" aria-label="搜索空间与项目" className="h-8 w-full rounded-[7px] border border-[var(--line)] bg-panel px-3 text-[11px] outline-none placeholder:text-[var(--muted)] focus:border-[var(--accent)]" />
           </div>
         ) : null}
 
@@ -210,8 +222,8 @@ export function Sidebar({
         <nav aria-label="主导航" className="mt-2.5">
           <SidebarNavList
             items={navigation}
-            value={view}
-            onChange={onViewChange}
+            value={view === "projects" && activeProjectItem ? null : view}
+            onChange={changeTopLevelView}
             collapsible
             renderTrailing={(item) =>
               item.id === "more" ? (
@@ -231,9 +243,11 @@ export function Sidebar({
               <button
                 type="button"
                 aria-label="打开收藏项目 Fouc 桌面端 V1"
-                onClick={() => onViewChange("projects")}
+                aria-current={view === "projects" && activeProjectItem === "favorite" ? "page" : undefined}
+                onClick={() => openProject("favorite")}
                 className={cn(
                   "mt-px flex h-9 w-full items-center gap-2 rounded-lg px-2 text-left text-[11px] font-medium outline-none transition-[background-color,box-shadow] hover:bg-raise focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+                  view === "projects" && activeProjectItem === "favorite" && "bg-[var(--accent-soft)] text-[var(--accent-ink)] shadow-[inset_0_0_0_1px_var(--accent-soft-line)]",
                   collapsed && "justify-center px-0",
                 )}
               >
@@ -291,9 +305,9 @@ export function Sidebar({
 
           {spacesOpen ? (
             <div className="mt-px space-y-px animate-in fade-in-0 slide-in-from-top-1">
-              <SpaceRow label="产品研发" icon={Folders} onClick={() => onViewChange("projects")} />
-              <SpaceRow label="个人工作台" icon={UsersThree} onClick={() => onViewChange("projects")} />
-              {extraSpace ? <SpaceRow label="未命名空间" icon={Folders} onClick={() => onViewChange("projects")} /> : null}
+              <SpaceRow label="产品研发" icon={Folders} selected={view === "projects" && activeProjectItem === "product-development"} onClick={() => openProject("product-development")} />
+              <SpaceRow label="个人工作台" icon={UsersThree} selected={view === "projects" && activeProjectItem === "personal-workspace"} onClick={() => openProject("personal-workspace")} />
+              {extraSpace ? <SpaceRow label="未命名空间" icon={Folders} selected={view === "projects" && activeProjectItem === "extra-space"} onClick={() => openProject("extra-space")} /> : null}
             </div>
           ) : null}
         </section>
@@ -346,8 +360,12 @@ export function Sidebar({
             {recentOpen ? (
               <button
                 type="button"
-                onClick={() => onViewChange("projects")}
-                className="flex h-8 w-full items-center gap-2.5 rounded-lg px-2 text-left text-[11px] outline-none transition-[background-color,box-shadow] hover:bg-raise focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                aria-current={view === "projects" && activeProjectItem === "recent" ? "page" : undefined}
+                onClick={() => openProject("recent")}
+                className={cn(
+                  "flex h-8 w-full items-center gap-2.5 rounded-lg px-2 text-left text-[11px] outline-none transition-[background-color,box-shadow] hover:bg-raise focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+                  view === "projects" && activeProjectItem === "recent" && "bg-[var(--accent-soft)] text-[var(--accent-ink)] shadow-[inset_0_0_0_1px_var(--accent-soft-line)]",
+                )}
               >
                 <Desktop className="size-[16px] shrink-0 text-[var(--muted)]" weight="fill" />
                 <span className="sidebar-label truncate">{searchQuery && !"Fouc 桌面端".includes(searchQuery) ? "未找到项目" : "Fouc 桌面端"}</span>
@@ -401,18 +419,24 @@ export function Sidebar({
 function SpaceRow({
   label,
   icon: Icon,
+  selected = false,
   onClick,
 }: {
   label: string
   icon: typeof Folders
+  selected?: boolean
   onClick: () => void
 }) {
   return (
     <button
       type="button"
       aria-label={label}
+      aria-current={selected ? "page" : undefined}
       onClick={onClick}
-      className="flex h-9 w-full items-center gap-2 rounded-lg px-2 text-left text-[11px] font-medium outline-none transition-[background-color,box-shadow] hover:bg-raise focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+      className={cn(
+        "flex h-9 w-full items-center gap-2 rounded-lg px-2 text-left text-[11px] font-medium outline-none transition-[background-color,box-shadow] hover:bg-raise focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+        selected && "bg-[var(--accent-soft)] text-[var(--accent-ink)] shadow-[inset_0_0_0_1px_var(--accent-soft-line)]",
+      )}
     >
       <CaretRight className="sidebar-label size-3 text-[var(--muted)]" />
       <Icon className="size-[16px] shrink-0 text-[var(--muted-strong)]" weight="fill" />

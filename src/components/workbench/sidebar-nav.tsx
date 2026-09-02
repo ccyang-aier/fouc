@@ -29,7 +29,7 @@ export function SidebarNavList<T extends string>({
   renderTrailing,
 }: {
   items: Array<SidebarNavItem<T>>
-  value: T
+  value: T | null
   onChange: (value: T) => void
   /** 工作台侧栏折叠时随 .sidebar-label 约定隐藏文字 */
   collapsible?: boolean

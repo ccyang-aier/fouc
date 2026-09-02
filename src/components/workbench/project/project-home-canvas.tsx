@@ -46,7 +46,7 @@ export function ProjectHomeCanvas({
       className={cn(
         "grid h-full min-h-0 bg-panel",
         contextOpen
-          ? "grid-cols-[minmax(0,1fr)_308px] max-[1160px]:grid-cols-[minmax(0,1fr)_272px] max-[1120px]:grid-cols-1"
+          ? "grid-cols-[minmax(0,1fr)_292px] max-[1120px]:grid-cols-1"
           : "grid-cols-1",
       )}
     >
@@ -65,7 +65,7 @@ export function ProjectHomeCanvas({
           className="min-h-0 flex-1"
           viewportClassName="bg-panel"
         >
-          <div className="mx-auto flex min-h-full w-full max-w-[1080px] flex-col px-9 pb-6 pt-[22px] max-[1100px]:px-6">
+          <div className="flex min-h-full w-full flex-col px-5 pb-6 pt-[22px]">
             {tab === "overview" ? (
               <div className="space-y-[18px]">
                 <ProjectAttention />

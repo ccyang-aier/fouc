@@ -35,7 +35,7 @@ export function WorkCard({ item, selected, onSelect, onDragStart }: { item: Work
         onDragStart()
       }}
       className={cn(
-        "group cursor-grab rounded-[8px] border bg-panel px-3 py-3 outline-none transition-[border-color,box-shadow,transform] active:cursor-grabbing active:scale-[0.99]",
+        "group cursor-grab rounded-[8px] border bg-panel px-3 py-[14px] outline-none transition-[border-color,box-shadow,transform] active:cursor-grabbing active:scale-[0.99]",
         selected
           ? "border-[#5f8ff7] shadow-[0_0_0_1px_rgba(95,143,247,0.12),0_7px_18px_rgba(66,103,175,0.09)]"
           : "border-[var(--line)] shadow-[0_1px_2px_rgba(30,35,45,0.025)] hover:-translate-y-px hover:border-[var(--line-strong)] hover:shadow-[0_7px_18px_rgba(36,41,50,0.07)]",

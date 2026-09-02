@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import { useState } from "react"
-import { CalendarBlank, CaretRight, DotsThree, GearSix, SidebarSimple } from "@phosphor-icons/react"
+import { CalendarBlank, CaretDoubleLeft, CaretRight, Circle, DotsThree, GearSix, SidebarSimple, Sparkle, Star } from "@phosphor-icons/react"
 
 import { ScrollArea } from "@/components/ui/scroll-area"
 import {
@@ -24,17 +24,14 @@ import { ProjectWorkCanvas } from "./project-work-canvas"
 export function ProjectHomeCanvas() {
   const [tab, setTab] = useState<ProjectTab>("overview")
   const [contextOpen, setContextOpen] = useState(true)
+  const [workPanelOpen, setWorkPanelOpen] = useState(true)
   const showContext = contextOpen && tab === "overview"
 
   if (tab === "work") {
     return (
       <div className="flex h-full min-h-0 flex-col bg-panel">
-        <div className="mx-auto w-full max-w-[1080px] shrink-0 px-9 pt-[22px] max-[1100px]:px-6">
-          <ProjectHeader onToggleContext={() => setContextOpen((value) => !value)} contextOpen={false} />
-          <ProjectTabs value={tab} onChange={setTab} />
-          <div className="h-[18px]" />
-        </div>
-        <ProjectWorkCanvas />
+        <ProjectWorkHeader tab={tab} onTabChange={setTab} panelOpen={workPanelOpen} onTogglePanel={() => setWorkPanelOpen((open) => !open)} />
+        <ProjectWorkCanvas detailOpen={workPanelOpen} onDetailOpenChange={setWorkPanelOpen} />
       </div>
     )
   }
@@ -69,6 +66,39 @@ export function ProjectHomeCanvas() {
       </ScrollArea>
       {showContext ? <ProjectContextSidebar onCollapse={() => setContextOpen(false)} /> : null}
     </div>
+  )
+}
+
+function ProjectWorkHeader({ tab, onTabChange, panelOpen, onTogglePanel }: { tab: ProjectTab; onTabChange: (tab: ProjectTab) => void; panelOpen: boolean; onTogglePanel: () => void }) {
+  return (
+    <header className="shrink-0 px-5 pb-4 pt-3 max-[1100px]:px-4">
+      <div className="flex h-8 items-center justify-between">
+        <div className="flex items-center gap-2 text-[11px] text-[var(--muted-strong)]">
+          <button type="button" className="rounded outline-none transition-colors hover:text-[var(--accent-ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">项目</button>
+          <span className="text-[var(--muted)]">/</span>
+          <span className="font-semibold text-[var(--ink-soft)]">Fouc 桌面端 V1</span>
+          <button type="button" aria-label="收藏项目" className="ml-0.5 flex size-6 items-center justify-center rounded-md text-[var(--muted-strong)] outline-none transition-colors hover:bg-wash hover:text-[var(--accent-ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><Star className="size-4" /></button>
+        </div>
+        <button type="button" aria-label={panelOpen ? "收起工作详情" : "展开工作详情"} aria-pressed={panelOpen} onClick={onTogglePanel} className="flex size-8 items-center justify-center rounded-[7px] bg-[var(--accent)] text-white shadow-[0_4px_12px_color-mix(in_srgb,var(--accent)_22%,transparent)] outline-none transition-[transform,background-color] hover:scale-[1.03] hover:bg-[var(--accent-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
+          <CaretDoubleLeft className={cn("size-[17px] transition-transform", !panelOpen && "rotate-180")} weight="bold" />
+        </button>
+      </div>
+
+      <div className="mt-4 flex h-7 items-center gap-5 text-[10.5px] text-[var(--muted-strong)]">
+        <span className="flex items-center gap-2"><Circle className="size-3.5 text-[#667188]" weight="fill" /><span>健康</span><span className="text-[var(--muted)]">·</span><span>进展良好</span></span>
+        <span className="h-4 w-px bg-[var(--line)]" />
+        <span className="flex items-center gap-2">
+          <span className="flex -space-x-1.5"><Image src="/avatars/lin-mo.png" alt="林默" width={22} height={22} className="size-[22px] rounded-full border-2 border-panel object-cover" /><Image src="/avatars/zhou-xin.png" alt="周欣" width={22} height={22} className="size-[22px] rounded-full border-2 border-panel object-cover" /></span>
+          <span>所有者</span><span className="font-semibold text-[var(--ink-soft)]">林默</span>
+        </span>
+        <span className="h-4 w-px bg-[var(--line)]" />
+        <button type="button" className="flex h-7 items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--surface-subtle)] px-3 text-[10px] outline-none transition-colors hover:border-[var(--line-strong)] hover:bg-panel focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><span className="flex size-[18px] items-center justify-center rounded-full bg-[#7977d7] text-white"><Sparkle className="size-2.5" weight="fill" /></span><span>Agent&nbsp; Nova · Sage</span></button>
+      </div>
+
+      <div className="mx-auto max-w-[1080px]">
+        <ProjectTabs value={tab} onChange={onTabChange} />
+      </div>
+    </header>
   )
 }
 

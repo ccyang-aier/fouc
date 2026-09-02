@@ -42,14 +42,13 @@ const viewOptions = [
   { id: "dependencies", label: "依赖图", icon: GitMerge },
 ] as const
 
-export function ProjectWorkCanvas() {
+export function ProjectWorkCanvas({ detailOpen, onDetailOpenChange }: { detailOpen: boolean; onDetailOpenChange: (open: boolean) => void }) {
   const [items, setItems] = useState<WorkItem[]>(initialWorkItems)
   const [view, setView] = useState<WorkView>("board")
   const [query, setQuery] = useState("")
   const [priority, setPriority] = useState<WorkPriority | "all">("all")
   const [groupBy, setGroupBy] = useState<GroupBy>("status")
   const [selectedId, setSelectedId] = useState("ISSUE-128")
-  const [detailOpen, setDetailOpen] = useState(true)
   const [draggingId, setDraggingId] = useState<string | null>(null)
 
   const filteredItems = useMemo(() => items.filter((item) => {
@@ -62,7 +61,7 @@ export function ProjectWorkCanvas() {
 
   function selectItem(id: string) {
     setSelectedId(id)
-    setDetailOpen(true)
+    onDetailOpenChange(true)
   }
 
   function updateItem(id: string, patch: Partial<WorkItem>) {
@@ -88,20 +87,20 @@ export function ProjectWorkCanvas() {
   }
 
   return (
-    <section aria-label="项目工作" className="relative flex min-h-0 flex-1 flex-col border-t border-[var(--line)] bg-panel">
-      <WorkToolbar view={view} onViewChange={setView} query={query} onQueryChange={setQuery} priority={priority} onPriorityChange={setPriority} groupBy={groupBy} onGroupByChange={setGroupBy} />
-      <div className="relative flex min-h-0 flex-1">
-        <div className="min-w-0 flex-1 overflow-auto bg-[#fbfbfc] p-3.5">
-          {view === "board" ? (
-            <WorkBoard items={filteredItems} groupBy={groupBy} selectedId={selectedId} draggingId={draggingId} onSelect={selectItem} onDragStart={setDraggingId} onDrop={(id, key) => {
-              if (groupBy === "status") updateItem(id, { status: key as WorkStatus })
-              else updateItem(id, { assignee: { name: key as WorkItem["assignee"]["name"], ...(key === "林默" ? { avatar: "/avatars/lin-mo.png" } : {}) } })
-              setDraggingId(null)
-            }} onAdd={addGroupedItem} />
-          ) : view === "list" ? <WorkList items={filteredItems} selectedId={selectedId} onSelect={selectItem} /> : view === "timeline" ? <WorkTimeline items={filteredItems} onSelect={selectItem} /> : <WorkDependencies items={filteredItems} onSelect={selectItem} />}
+    <section aria-label="项目工作" className="relative flex min-h-0 flex-1 border-t border-[var(--line)] bg-panel">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <WorkToolbar view={view} onViewChange={setView} query={query} onQueryChange={setQuery} priority={priority} onPriorityChange={setPriority} groupBy={groupBy} onGroupByChange={setGroupBy} />
+        <div className="min-h-0 min-w-0 flex-1 overflow-auto bg-[#fbfbfc] px-5 py-[11px]">
+            {view === "board" ? (
+              <WorkBoard items={filteredItems} groupBy={groupBy} showSourceTotals={query.trim() === "" && priority === "all"} selectedId={selectedId} draggingId={draggingId} onSelect={selectItem} onDragStart={setDraggingId} onDrop={(id, key) => {
+                if (groupBy === "status") updateItem(id, { status: key as WorkStatus })
+                else updateItem(id, { assignee: { name: key as WorkItem["assignee"]["name"], ...(key === "林默" ? { avatar: "/avatars/lin-mo.png" } : {}) } })
+                setDraggingId(null)
+              }} onAdd={addGroupedItem} />
+            ) : view === "list" ? <WorkList items={filteredItems} selectedId={selectedId} onSelect={selectItem} /> : view === "timeline" ? <WorkTimeline items={filteredItems} onSelect={selectItem} /> : <WorkDependencies items={filteredItems} onSelect={selectItem} />}
         </div>
-        {detailOpen && selectedItem ? <WorkDetailPanel key={selectedItem.id} item={selectedItem} onClose={() => setDetailOpen(false)} onStatusChange={(status) => updateItem(selectedItem.id, { status })} /> : null}
       </div>
+      {detailOpen && selectedItem ? <WorkDetailPanel key={selectedItem.id} item={selectedItem} onClose={() => onDetailOpenChange(false)} onStatusChange={(status) => updateItem(selectedItem.id, { status })} /> : null}
     </section>
   )
 }
@@ -141,7 +140,7 @@ function WorkToolbar({ view, onViewChange, query, onQueryChange, priority, onPri
   )
 }
 
-function WorkBoard({ items, groupBy, selectedId, draggingId, onSelect, onDragStart, onDrop, onAdd }: { items: WorkItem[]; groupBy: GroupBy; selectedId: string; draggingId: string | null; onSelect: (id: string) => void; onDragStart: (id: string) => void; onDrop: (id: string, key: string) => void; onAdd: (key: string) => void }) {
+function WorkBoard({ items, groupBy, showSourceTotals, selectedId, draggingId, onSelect, onDragStart, onDrop, onAdd }: { items: WorkItem[]; groupBy: GroupBy; showSourceTotals: boolean; selectedId: string; draggingId: string | null; onSelect: (id: string) => void; onDragStart: (id: string) => void; onDrop: (id: string, key: string) => void; onAdd: (key: string) => void }) {
   const groups = groupBy === "status"
     ? (Object.keys(workStatusMeta) as WorkStatus[]).map((status) => ({ key: status, label: workStatusMeta[status].label, tint: workStatusMeta[status].tint, accent: workStatusMeta[status].accent, items: items.filter((item) => item.status === status) }))
     : (["林默", "小满", "陈安", "Nova"] as const).map((name) => ({ key: name, label: name, tint: "bg-[#f7f8fa]", accent: "text-[#6f7b8e]", items: items.filter((item) => item.assignee.name === name) }))
@@ -149,12 +148,12 @@ function WorkBoard({ items, groupBy, selectedId, draggingId, onSelect, onDragSta
   return (
     <div className="grid min-h-full min-w-[850px] grid-cols-4 gap-3">
       {groups.map((group) => (
-        <section key={group.key} onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "move" }} onDrop={(event) => { event.preventDefault(); const id = event.dataTransfer.getData("text/plain") || draggingId; if (id) onDrop(id, group.key) }} className={cn("min-w-0 rounded-[8px] px-2 py-2.5 transition-[box-shadow,background-color]", group.tint, draggingId && "ring-1 ring-inset ring-[var(--accent-soft-line)]")}>
-          <div className="flex h-8 items-center px-1.5">
-            <GroupIcon groupBy={groupBy} groupKey={group.key} className={cn("size-4", group.accent)} /><h2 className={cn("ml-2 text-[11px] font-semibold", group.accent)}>{group.label}</h2><span className="ml-3 text-[9.5px] text-[var(--muted-strong)]">{group.items.length}</span>
+        <section key={group.key} onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "move" }} onDrop={(event) => { event.preventDefault(); const id = event.dataTransfer.getData("text/plain") || draggingId; if (id) onDrop(id, group.key) }} className={cn("min-w-0 rounded-[8px] px-2 py-3 transition-[box-shadow,background-color]", group.tint, draggingId && "ring-1 ring-inset ring-[var(--accent-soft-line)]")}>
+          <div className="flex h-9 items-center px-1.5">
+            <GroupIcon groupBy={groupBy} groupKey={group.key} className={cn("size-4", group.accent)} /><h2 className={cn("ml-2 text-[11px] font-semibold", group.accent)}>{group.label}</h2><span className="ml-3 text-[9.5px] text-[var(--muted-strong)]">{groupBy === "status" && showSourceTotals ? { todo: 5, doing: 4, review: 3, done: 6 }[group.key as WorkStatus] : group.items.length}</span>
             <button type="button" aria-label={`在${group.label}中新建工作`} onClick={() => onAdd(group.key)} className="ml-auto flex size-7 items-center justify-center rounded-md text-[var(--muted-strong)] outline-none transition-colors hover:bg-black/[0.04] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><Plus className="size-4" /></button>
           </div>
-          <div className="mt-1.5 space-y-2.5">{group.items.map((item) => <WorkCard key={item.id} item={item} selected={selectedId === item.id} onSelect={() => onSelect(item.id)} onDragStart={() => onDragStart(item.id)} />)}{group.items.length === 0 ? <div className="flex h-24 items-center justify-center rounded-[8px] border border-dashed border-[var(--line-strong)] text-[9.5px] text-[var(--muted)]">拖动工作到这里</div> : null}</div>
+          <div className="mt-2.5 space-y-2.5">{group.items.map((item) => <WorkCard key={item.id} item={item} selected={selectedId === item.id} onSelect={() => onSelect(item.id)} onDragStart={() => onDragStart(item.id)} />)}{group.items.length === 0 ? <div className="flex h-24 items-center justify-center rounded-[8px] border border-dashed border-[var(--line-strong)] text-[9.5px] text-[var(--muted)]">拖动工作到这里</div> : null}</div>
         </section>
       ))}
     </div>

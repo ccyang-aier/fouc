@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import {
-  ArrowSquareOut,
   CaretDown,
   CaretLeft,
   Check,
@@ -10,6 +9,7 @@ import {
   Diamond,
   GitBranch,
   GithubLogo,
+  InstagramLogo,
   LinkSimple,
   SpinnerGap,
   Target,
@@ -59,7 +59,7 @@ export function WorkDetailPanel({ item, onClose, onStatusChange }: { item: WorkI
 
         <DetailSection title="验收进度" trailing={`${completed} / ${issueChecklist.length}`}>
           <div className="mb-3 h-[3px] overflow-hidden rounded-full bg-[#e8eaf0]"><span className="block h-full rounded-full bg-[#5674b5] transition-[width] duration-300" style={{ width: `${(completed / issueChecklist.length) * 100}%` }} /></div>
-          <div className="space-y-2">
+          <div className="space-y-1">
             {issueChecklist.map((label, index) => (
               <button key={label} type="button" onClick={() => setChecks((value) => value.map((checked, itemIndex) => itemIndex === index ? !checked : checked))} className="group flex w-full items-center gap-2 rounded text-left text-[9.5px] text-[var(--muted-strong)] outline-none hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
                 <span className={cn("flex size-3.5 items-center justify-center rounded-full border transition-colors", checks[index] ? "border-[#8291aa] bg-[#8291aa] text-white" : "border-[#cbd0d8] bg-panel group-hover:border-[#8291aa]")}>{checks[index] ? <Check className="size-2.5" weight="bold" /> : null}</span>{label}
@@ -68,11 +68,11 @@ export function WorkDetailPanel({ item, onClose, onStatusChange }: { item: WorkI
           </div>
         </DetailSection>
 
-        <DetailSection title="阻塞项">
-          <button type="button" className="flex w-full items-center gap-2 rounded-[6px] px-1 py-1.5 text-left text-[9.5px] outline-none transition-colors hover:bg-[#fff5f4] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><span className="flex size-5 items-center justify-center rounded-[5px] bg-[#fff0ef] text-[#d34b48]"><Diamond className="size-3" weight="fill" /></span><span className="min-w-0"><span className="block font-medium text-[var(--ink-soft)]">未合并的配置变更</span><span className="mt-0.5 block text-[var(--muted)]">由 陈安 · 30 分钟前更新</span></span></button>
+        <DetailSection title="阻塞项" compact>
+          <button type="button" className="flex w-full items-center gap-2 rounded-[6px] px-1 py-1 text-left text-[9.5px] outline-none transition-colors hover:bg-[#fff5f4] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><span className="flex size-5 items-center justify-center rounded-[5px] bg-[#fff0ef] text-[#d34b48]"><Diamond className="size-3" weight="fill" /></span><span className="min-w-0"><span className="block font-medium text-[var(--ink-soft)]">未合并的配置变更</span><span className="mt-0.5 block text-[var(--muted)]">由 陈安 · 30 分钟前更新</span></span></button>
         </DetailSection>
 
-        <DetailSection title="依赖 (1)">
+        <DetailSection title="依赖 (1)" compact>
           <div className="flex items-center gap-2 text-[9px]"><LinkSimple className="size-3.5 text-[var(--muted)]" /><span className="text-[var(--muted-strong)]">TASK-132</span><span className="min-w-0 flex-1 truncate">设计项目权限模型</span>
             <DropdownMenu>
               <DropdownMenuTrigger asChild><button type="button" className={cn("flex items-center gap-1 rounded-[5px] px-2 py-1 font-medium outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]", workStatusMeta[item.status].tint, workStatusMeta[item.status].accent)}>{workStatusMeta[item.status].label}<CaretDown className="size-3" /></button></DropdownMenuTrigger>
@@ -81,20 +81,20 @@ export function WorkDetailPanel({ item, onClose, onStatusChange }: { item: WorkI
           </div>
         </DetailSection>
 
-        <DetailSection title="相关仓库">
-          <div className="space-y-2 text-[9.5px]"><p className="flex items-center gap-2"><GithubLogo className="size-4" weight="fill" />fouc-desktop</p><p className="flex items-center gap-2 text-[var(--muted-strong)]"><GitBranch className="size-4 text-[#e67f22]" />feature/fix-login-error<span className="ml-auto flex items-center gap-1 font-mono text-[#4776d7]"><GitBranch className="size-3" />a1b2c3d</span></p></div>
+        <DetailSection title="相关仓库" compact>
+          <div className="space-y-1 rounded-[6px] border border-[var(--line)] px-2 py-1.5 text-[9.5px]"><p className="flex items-center gap-2"><GithubLogo className="size-4" weight="fill" />fouc-desktop</p><p className="flex items-center gap-2 text-[var(--muted-strong)]"><GitBranch className="size-4 text-[#e67f22]" />feature/fix-login-error<span className="ml-auto flex items-center gap-1 font-mono text-[#4776d7]"><GitBranch className="size-3" />a1b2c3d</span></p></div>
         </DetailSection>
       </div>
 
       <div className="shrink-0 border-t border-[var(--line)] p-3">
         <button type="button" onClick={() => setRoomOpen(true)} className={cn("flex h-9 w-full items-center justify-center gap-2 rounded-[7px] text-[10.5px] font-semibold text-white outline-none transition-[background-color,transform,box-shadow] hover:-translate-y-px focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]", roomOpen ? "bg-[#4f866d] shadow-[0_5px_14px_rgba(54,112,84,0.18)]" : "bg-[#4f6da8] shadow-[0_5px_14px_rgba(58,84,140,0.22)]")}>
-          {roomOpen ? <CheckCircle className="size-4" weight="fill" /> : <ArrowSquareOut className="size-4" />}{roomOpen ? "Work Room 已打开" : "打开 Work Room"}
+          {roomOpen ? <CheckCircle className="size-4" weight="fill" /> : <InstagramLogo className="size-4" />}{roomOpen ? "Work Room 已打开" : "打开 Work Room"}
         </button>
       </div>
     </aside>
   )
 }
 
-function DetailSection({ title, trailing, children }: { title: string; trailing?: string; children: React.ReactNode }) {
-  return <section className="mt-4 border-t border-[var(--line)] pt-3"><div className="mb-3 flex items-center justify-between"><h3 className="text-[10.5px] font-semibold">{title}</h3>{trailing ? <span className="text-[10.5px] font-semibold">{trailing}</span> : null}</div>{children}</section>
+function DetailSection({ title, trailing, children, compact = false }: { title: string; trailing?: string; children: React.ReactNode; compact?: boolean }) {
+  return <section className={cn("border-t border-[var(--line)]", compact ? "mt-2.5 pt-2" : "mt-3 pt-2.5")}><div className={cn("flex items-center justify-between", compact ? "mb-2" : "mb-2.5")}><h3 className="text-[10.5px] font-semibold">{title}</h3>{trailing ? <span className="text-[10.5px] font-semibold">{trailing}</span> : null}</div>{children}</section>
 }

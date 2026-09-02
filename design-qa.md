@@ -1,67 +1,74 @@
-# Fouc 项目首页设计 QA
+# Project Work Page — Visual QA
 
-## 对比目标
+## Result
 
-- source visual truth: `C:\AIWorks\26Coding\fouc\qa\project-home\reference-normalized.png`
-- implementation screenshot: `C:\AIWorks\26Coding\fouc\qa\project-home\implementation-final.png`
-- side-by-side comparison: `C:\AIWorks\26Coding\fouc\qa\project-home\comparison-final.png`
-- viewport: 1625 × 967 CSS px（Codex IAB；参考原图 1626 × 967，归一化时仅裁去最右侧 1 px 窗口边界）
-- source pixels: 1625 × 967 after normalization
-- implementation pixels: 1625 × 967
-- device scale factor: browser default；源图与实现均以相同像素尺寸比较，无缩放
-- state: 浅色主题、矿物蓝主题色、项目总览、项目上下文展开、待处理事项初始态
+`passed`
 
-## 全屏对比证据
+No actionable P0, P1, or P2 visual fidelity findings remain in the final exact-size comparison.
 
-在 `view_image` 中同时检查了归一化参考图、最终实现截图与横向并排图。三栏骨架保持一致：40 px 系统栏、270 px 左侧栏、308 px 项目上下文栏；中央标题、元信息、五段导航、待处理面板、双栏列表与底部输入框均处于对应区域。开放式白色画布、轻边框、低阴影、圆角半径和高密度小字号与参考设计一致。
+## Visual truth and capture contract
 
-## 重点区域证据
+- Source visual truth: `qa/project-work/source.png`
+- Initial implementation capture: `qa/project-work/implementation-initial.png`
+- Final implementation capture: `qa/project-work/implementation-final.png`
+- Full final comparison: `qa/project-work/comparison-final.png`
+- Focused header comparison: `qa/project-work/comparison-header-final.png`
+- Focused detail-panel comparison: `qa/project-work/comparison-detail-final.png`
+- Viewport: `1624 × 968`
+- Device pixel ratio: `1`
+- Normalization: none; source and implementation are compared at their native matching dimensions
+- State: light theme, project space open, sidebar expanded, Work tab active, board view active, `ISSUE-128` selected, detail panel open
 
-未另做局部裁图：两张原始图均以 1625 × 967 原始分辨率通过 `view_image(detail=original)` 检查，小字号、图标、1 px 分割线、头像裁切与控件边界均清晰可读。重点逐项检查如下：
+The combined comparison images place the reference on the left and the running implementation on the right.
 
-1. 字体与层级：标题约 31 px，分区标题 13 px，正文/元信息 9.5–12 px；字重、行高和单行截断符合参考密度。
-2. 间距与布局：主内容左边距约 36 px，标签导航 52 px，高优先级面板和双栏列表对齐；右侧上下文行高约 82 px。
-3. 颜色与令牌：石墨黑 `#202126`、烟灰 `#6C6E75`、矿物蓝 `#647089` 已成为默认；激活、按钮、焦点环与进度条全部取主题变量。
-4. 图标：工作台与设置侧栏的非激活图标统一为烟灰单色，激活图标和文字统一取当前主题色；项目内容采用同一 Phosphor 图标家族。
-5. 图像资产：品牌标记沿用仓库资源；两张项目成员头像为独立真实位图，使用圆形裁切并优化至 256 × 256，无占位符、CSS 绘图或透明边缘问题。
-6. 文案：首屏项目名称、导航、待处理事项、进度、产出和上下文信息与视觉目标一致；未添加营销文案或额外信息层级。
+## Comparison history
 
-## 交互验证
+### Iteration 1 — blocked
 
-- 左侧“项目”“产品研发”“个人工作台”和最近项目均可进入项目首页。
-- 五个项目标签可切换，非总览标签提供对应空态与返回创建任务的闭环。
-- “查看依据/详情”“开始评审”“确认结果”均有展开、执行中与完成反馈。
-- 上下文分组可选中、同步按钮有旋转和状态文字、管理模式可进入/退出、侧栏可收起/展开。
-- 任务输入支持附件、权限、执行模式、语音状态与 Ctrl+Enter 提交，提交后显示成功反馈。
-- 设置 → 外观的 6 种主题色可即时切换并写入现有外观偏好存储；实测松石绿后再恢复矿物蓝。
-- 1024 × 768 与 768 × 700 视口无水平溢出；紧凑视口自动收窄左侧栏并隐藏右侧上下文栏。
-- 浏览器控制台 error 检查：无应用运行时错误。
+- **P1:** The overview-style project title header was reused on the Work page, making the header consume far too much vertical space.
+- **P1:** The detail panel began below the work toolbar instead of at the top of the work region.
+- **P2:** Sidebar width, board start position, column padding, and card density diverged from the source.
+- **P2:** Detail-panel sections were too loose, which pushed dependency and repository context below the first viewport.
 
-## 比较历史
+### Fixes applied
 
-- 初始实现检查：左侧栏宽度、系统栏高度、导航节奏与参考图不一致；修正为 270 px 侧栏、40 px 系统栏、36 px 导航行，并调整空间区间距。
-- 首轮交互检查：窄窗口保留右侧上下文造成主区域过密；增加 1120 px 上下文折叠边界、820 px 左栏紧凑模式及 760 px 待处理行重排。复测 1024 × 768 与 768 × 700 后无水平溢出。
-- 首次保存的 QA 截图处于助理首页，不是同一交互状态，不能用于设计判断；重新进入“项目 / 总览 / 上下文展开”状态并保存最终同尺寸截图。
-- 最终并排复核：未发现可执行的 P0/P1/P2 差异。
+- Replaced the oversized Work-page header with a compact project breadcrumb, health/owner/Agent metadata row, and source-matched panel toggle.
+- Kept the existing project navigation component as requested, while placing it inside the compact header.
+- Nested the work toolbar only above the board pane so the right detail panel starts at the correct vertical boundary.
+- Controlled the detail panel from the header toggle and kept the close/reopen behavior synchronized.
+- Matched the 278 px sidebar boundary and tightened board padding, column headers, card heights, checklist spacing, and lower detail sections.
+- Restored the repository container treatment and refined the Work Room and panel-toggle icons.
 
-## Findings
+### Iteration 2 — passed
 
-- 无 P0/P1/P2 问题。
-- P3：参考图使用未提供源文件的成员头像和少量专用线性图标；实现使用同构图和独立生成头像，语义、尺寸、裁切、笔触与色彩处理一致。
-- P3：按用户明确要求，默认强调色锁定为矿物蓝 `#647089`，因此比参考图个别主要按钮的明亮蓝更克制，这是有意差异。
+- Re-captured at the exact `1624 × 968` source viewport.
+- Full, header, and detail-panel side-by-side comparisons show no remaining P0/P1/P2 mismatch.
+- Accepted intentional deviation: the project navigation remains the product's existing wide menu, per the user's explicit instruction not to make this menu match the UX reference.
 
-## Above-the-fold copy diff
+## Fidelity surface review
 
-- 项目名称、面包屑、成员/日期/控制中心、五个标签、两项待办、推进/产出标题与项目上下文标题全部存在且顺序一致。
-- 无新增 eyebrow、营销标签、数据卡片或未批准的首屏文案。
+| Surface | Status | Notes |
+| --- | --- | --- |
+| Typography | Passed | Hierarchy, compact sizes, weights, and muted text relationships match the reference closely. |
+| Layout and spacing | Passed | Header height, toolbar boundary, board density, sidebar width, and detail-panel rhythm were aligned. |
+| Colors and tokens | Passed | Existing product tokens were retained; selected, review, completed, priority, and subtle surface states match the source intent. |
+| Images and icons | Passed | Existing avatar assets and the project's Phosphor icon set are used; no generated assets were required. |
+| Copy and data density | Passed | Source issue IDs, labels, counts, checklist, blocker, dependency, and repository content are represented. |
+| Visible interaction states | Passed | Hover/focus/selected/drag/drop/filter/group/checklist/panel states are implemented with visual feedback. |
 
-## Implementation Checklist
+## Interaction verification
 
-- [x] 同尺寸视觉对比
-- [x] 字体、间距、颜色、图片、文案五项核查
-- [x] 核心交互路径与状态反馈
-- [x] 主题色持久化与侧栏单色图标
-- [x] 1024 px 与 768 px 响应式检查
-- [x] TypeScript、ESLint、Next 生产构建
+- Sidebar collapse keeps the new collapse control visible and allows expansion again.
+- Header detail toggle and detail-panel close button both close the panel; the header control reopens it.
+- List and board view switching works.
+- `Ctrl+K` focuses the work search field.
+- High-priority filtering reduces the board to the matching three cards and can be reset.
+- Assignee grouping produces 林默 / 小满 / 陈安 / Nova groups and can be reset.
+- Checklist completion updates from `3 / 5` to `4 / 5` and was restored to the source state.
+- `ISSUE-130` can be dragged from 待处理 to 进行中 and back.
+- Browser console error check: none.
 
-final result: passed
+## Verification state
+
+- Final visual verdict: `passed`
+- Remaining visual exceptions: only the explicitly requested preservation of the existing wide project navigation

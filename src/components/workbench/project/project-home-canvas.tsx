@@ -12,6 +12,7 @@ import { ProjectComposer } from "./project-composer"
 import { ProjectContextSidebar } from "./project-context-sidebar"
 import { projectTabs, type ProjectTab } from "./project-data"
 import { ProjectHeader } from "./project-header"
+import { ProjectMilestones } from "./project-milestones"
 import { ProjectWorkCanvas } from "./project-work-canvas"
 
 export function ProjectHomeCanvas({
@@ -69,6 +70,7 @@ export function ProjectHomeCanvas({
             {tab === "overview" ? (
               <div className="space-y-[18px]">
                 <ProjectAttention />
+                <ProjectMilestones />
                 <ProjectActivity onOpenWork={() => setTab("work")} onOpenOutputs={() => setTab("outputs")} />
                 <ProjectComposer />
               </div>

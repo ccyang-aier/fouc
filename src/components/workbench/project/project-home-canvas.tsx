@@ -15,6 +15,8 @@ import { ProjectHeader } from "./project-header"
 import { ProjectMilestones } from "./project-milestones"
 import { ProjectOutputsCanvas } from "./project-outputs-canvas"
 import { ProjectWorkCanvas } from "./project-work-canvas"
+import { workObjectDetails } from "./project-workobject-detail-data"
+import { WorkObjectDetailCanvas } from "./project-workobject-detail"
 
 export function ProjectHomeCanvas({
   favorited,
@@ -27,6 +29,21 @@ export function ProjectHomeCanvas({
   const [contextOpen, setContextOpen] = useState(true)
   const [workPanelOpen, setWorkPanelOpen] = useState(true)
   const [outputsPanelOpen, setOutputsPanelOpen] = useState(true)
+  const [workObjectDetailId, setWorkObjectDetailId] = useState<string | null>(null)
+
+  // 工作对象详情页接管整个项目区域，面包屑可返回项目空间
+  const workObjectDetail = workObjectDetailId ? workObjectDetails[workObjectDetailId] : null
+  if (workObjectDetail) {
+    return (
+      <WorkObjectDetailCanvas
+        detail={workObjectDetail}
+        onExit={(target) => {
+          setWorkObjectDetailId(null)
+          setTab(target)
+        }}
+      />
+    )
+  }
 
   if (tab === "work") {
     return (
@@ -54,6 +71,7 @@ export function ProjectHomeCanvas({
         onFavoriteChange={onFavoriteChange}
         panelOpen={outputsPanelOpen}
         onPanelOpenChange={setOutputsPanelOpen}
+        onOpenWorkObject={setWorkObjectDetailId}
       />
     )
   }

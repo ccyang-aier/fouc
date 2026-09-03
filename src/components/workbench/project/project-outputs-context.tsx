@@ -17,20 +17,22 @@ const contextActions = [
 type OutputsContextPanelProps = {
   groupId: string | null
   output: OutputEntry | null
-  onClose: () => void
+  onOpenWorkObject: (groupId: string) => void
 }
 
 /** 产物页右侧「项目上下文」：当前选中产物的评审、验证与证据总览 */
-export function OutputsContextPanel({ groupId, output, onClose }: OutputsContextPanelProps) {
+export function OutputsContextPanel({ groupId, output, onOpenWorkObject }: OutputsContextPanelProps) {
   return (
     <aside aria-label="产物项目上下文" className="flex h-full min-h-0 flex-col border-l border-[var(--line)] bg-panel max-[1120px]:hidden">
       <div className="flex h-[72px] shrink-0 items-center justify-between pl-8 pr-2.5">
         <h2 className="text-[14px] font-semibold tracking-[-0.01em]">项目上下文</h2>
         <button
           type="button"
-          aria-label="收起项目上下文面板"
-          onClick={onClose}
-          className="flex size-[30px] items-center justify-center rounded-[8px] bg-[#4674ab] text-white outline-none transition-[background-color,transform] hover:bg-[#3d67a0] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-95"
+          aria-label="进入工作对象详情"
+          title="进入工作对象详情"
+          disabled={!groupId}
+          onClick={() => groupId && onOpenWorkObject(groupId)}
+          className="flex size-[30px] items-center justify-center rounded-[8px] bg-[#4674ab] text-white outline-none transition-[background-color,transform,opacity] hover:bg-[#3d67a0] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-95 disabled:pointer-events-none disabled:opacity-40"
         >
           <ArrowLineRight className="size-4" weight="bold" />
         </button>

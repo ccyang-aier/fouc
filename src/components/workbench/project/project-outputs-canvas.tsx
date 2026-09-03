@@ -26,9 +26,10 @@ type ProjectOutputsCanvasProps = {
   onFavoriteChange: (favorited: boolean) => void
   panelOpen: boolean
   onPanelOpenChange: (open: boolean) => void
+  onOpenWorkObject: (groupId: string) => void
 }
 
-export function ProjectOutputsCanvas({ tab, onTabChange, favorited, onFavoriteChange, panelOpen, onPanelOpenChange }: ProjectOutputsCanvasProps) {
+export function ProjectOutputsCanvas({ tab, onTabChange, favorited, onFavoriteChange, panelOpen, onPanelOpenChange, onOpenWorkObject }: ProjectOutputsCanvasProps) {
   const [scope, setScope] = useState<OutputsScope>("work")
   const [query, setQuery] = useState("")
   const [filters, setFilters] = useState<OutputsFilters>(initialOutputsFilters)
@@ -148,7 +149,7 @@ export function ProjectOutputsCanvas({ tab, onTabChange, favorited, onFavoriteCh
           />
         </div>
       </div>
-      {panelOpen ? <OutputsContextPanel groupId={selectedGroupId} output={selectedOutput} onClose={() => onPanelOpenChange(false)} /> : null}
+      {panelOpen ? <OutputsContextPanel groupId={selectedGroupId} output={selectedOutput} onOpenWorkObject={onOpenWorkObject} /> : null}
     </div>
   )
 }

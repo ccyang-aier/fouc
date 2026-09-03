@@ -1,90 +1,101 @@
 "use client"
 
-import { useState } from "react"
 import Image from "next/image"
-import { At, BellSimple, Chat, Plus, Robot } from "@phosphor-icons/react"
+import {
+  At,
+  BellSimple,
+  Chat,
+  CheckSquare,
+  Cube,
+  FolderOpen,
+  GearSix,
+  Plus,
+  Robot,
+} from "@phosphor-icons/react"
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
-type RailPresence = "online" | "busy" | "away" | "offline"
-
-const presenceMeta: Record<RailPresence, { color: string; label: string }> = {
-  online: { color: "#3cc36e", label: "在线" },
-  busy: { color: "#e0464a", label: "忙碌" },
-  away: { color: "#f5b93e", label: "离开" },
-  offline: { color: "#d7dbe1", label: "离线" },
-}
+import {
+  presenceMeta,
+  railMembers,
+  type ProjectManagementPanelId,
+} from "./project-management-model"
 
 const railTools = [
   { id: "chat", label: "项目会话", icon: Chat },
   { id: "mentions", label: "提及我的", icon: At },
   { id: "notifications", label: "通知", icon: BellSimple, badge: true },
-] as const
+  { id: "ai-assets", label: "项目 AI 资产", icon: Cube },
+  { id: "project-assets", label: "代码仓与文档资产", icon: FolderOpen },
+  { id: "tasks", label: "项目任务", icon: CheckSquare },
+] as const satisfies ReadonlyArray<{
+  id: ProjectManagementPanelId
+  label: string
+  icon: typeof Chat
+  badge?: boolean
+}>
 
-type RailTool = (typeof railTools)[number]["id"]
+type ProjectManagementRailProps = {
+  activePanel: ProjectManagementPanelId | null
+  onPanelChange: (panel: ProjectManagementPanelId | null) => void
+}
 
-/** 项目协作成员（头像取自项目空间成员目录），presence 决定右下角状态点 */
-const railMembers: { id: string; name: string; avatar: string; presence: RailPresence }[] = [
-  { id: "lin-mo", name: "林默", avatar: "/avatars/member-1.png", presence: "online" },
-  { id: "zhou-xin", name: "周欣", avatar: "/avatars/member-2.png", presence: "online" },
-  { id: "chen-an", name: "陈安", avatar: "/avatars/member-3.png", presence: "offline" },
-  { id: "su-qing", name: "苏晴", avatar: "/avatars/member-4.png", presence: "busy" },
-  { id: "li-ang", name: "李昂", avatar: "/avatars/member-5.png", presence: "busy" },
-  { id: "xiao-man", name: "小满", avatar: "/avatars/member-6.png", presence: "online" },
-  { id: "he-jing", name: "何静", avatar: "/avatars/member-7.png", presence: "away" },
-  { id: "gao-xiang", name: "高翔", avatar: "/avatars/member-8.png", presence: "away" },
-  { id: "han-mei", name: "韩梅", avatar: "/avatars/member-9.png", presence: "offline" },
-]
-
-/** 项目空间最右侧的全高管理侧栏：协作入口、项目 Agent 与成员在线状态 */
-export function ProjectManagementRail() {
-  const [activeTool, setActiveTool] = useState<RailTool | null>(null)
-  const [activeMemberId, setActiveMemberId] = useState<string | null>(null)
-  const [agentActive, setAgentActive] = useState(false)
+/** 项目空间最右侧的全高管理轨道：每个入口都由同一抽屉状态承接。 */
+export function ProjectManagementRail({ activePanel, onPanelChange }: ProjectManagementRailProps) {
+  function toggle(panel: ProjectManagementPanelId) {
+    onPanelChange(activePanel === panel ? null : panel)
+  }
 
   return (
-    <aside aria-label="项目管理侧栏" className="flex h-full w-14 shrink-0 flex-col items-center overflow-hidden border-l border-[var(--line)] bg-panel">
-      <div role="toolbar" aria-label="协作入口" className="flex flex-col items-center">
-        {railTools.map((tool) => (
-          <RailToolButton
-            key={tool.id}
-            label={tool.label}
-            badge={"badge" in tool && tool.badge}
-            active={activeTool === tool.id}
-            onClick={() => setActiveTool((current) => (current === tool.id ? null : tool.id))}
-          >
-            <tool.icon className="size-[17px]" />
-          </RailToolButton>
-        ))}
+    <aside
+      aria-label="项目管理侧栏"
+      className="relative z-30 flex h-full w-14 shrink-0 flex-col items-center overflow-hidden border-l border-[var(--line)] bg-panel"
+    >
+      <div className="flex w-full flex-col items-center pt-3">
+        <RailButton
+          label="项目概览"
+          active={activePanel === "summary"}
+          onClick={() => toggle("summary")}
+          className="mb-2.5"
+        >
+          <span className="flex size-[27px] items-center justify-center rounded-[8px] border border-[var(--accent-soft-line)] bg-[var(--accent-soft)] text-[var(--accent-ink)] shadow-[inset_0_1px_0_rgb(255_255_255/0.72)]">
+            <span className="text-[9px] font-bold tracking-[-0.02em]">F1</span>
+          </span>
+        </RailButton>
+
+        <nav aria-label="项目管理入口" className="flex flex-col items-center gap-0.5">
+          {railTools.map((tool) => (
+            <RailButton
+              key={tool.id}
+              label={tool.label}
+              badge={"badge" in tool && tool.badge}
+              active={activePanel === tool.id}
+              onClick={() => toggle(tool.id)}
+            >
+              <tool.icon className="size-[17px]" weight={activePanel === tool.id ? "fill" : "regular"} />
+            </RailButton>
+          ))}
+        </nav>
       </div>
 
-      <span aria-hidden className="mt-2.5 h-px w-[26px] bg-[var(--line)]" />
+      <span aria-hidden className="my-2 h-px w-6 shrink-0 bg-[var(--line)]" />
 
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            type="button"
-            aria-label="项目 Agent Nova"
-            aria-pressed={agentActive}
-            onClick={() => setAgentActive((value) => !value)}
-            className={cn(
-              "mt-2.5 flex size-9 items-center justify-center rounded-[10px] outline-none transition-[background-color,transform] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-95",
-              agentActive ? "bg-[var(--accent-soft)]" : "hover:bg-[var(--surface-hover)]",
-            )}
-          >
-            <span className="flex size-4 items-center justify-center rounded-[5px] bg-[#edf0f5] text-[#59606c]">
-              <Robot className="size-[10px]" weight="fill" />
-            </span>
-          </button>
-        </TooltipTrigger>
-        <TooltipContent side="left">Nova · 项目 Agent</TooltipContent>
-      </Tooltip>
+      <RailButton
+        label="Nova · 项目 Agent"
+        active={activePanel === "agent"}
+        onClick={() => toggle("agent")}
+      >
+        <span className="flex size-[18px] items-center justify-center rounded-[5px] bg-[var(--accent-soft)] text-[var(--accent-ink)]">
+          <Robot className="size-[11px]" weight="fill" />
+        </span>
+      </RailButton>
 
-      <div aria-label="项目成员" className="flex flex-col items-center">
+      <div aria-label="项目成员" className="mt-1 flex min-h-0 flex-col items-center">
         {railMembers.map((member) => {
+          const panelId = `member:${member.id}` as const
           const presence = presenceMeta[member.presence]
-          const active = activeMemberId === member.id
+          const active = activePanel === panelId
 
           return (
             <Tooltip key={member.id}>
@@ -92,15 +103,27 @@ export function ProjectManagementRail() {
                 <button
                   type="button"
                   aria-label={`${member.name} · ${presence.label}`}
-                  aria-pressed={active}
-                  onClick={() => setActiveMemberId((current) => (current === member.id ? null : member.id))}
-                  className="group flex size-10 items-center justify-center rounded-[10px] outline-none transition-transform focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-95"
+                  aria-expanded={active}
+                  aria-controls="project-management-drawer"
+                  onClick={() => toggle(panelId)}
+                  className="group flex size-[34px] shrink-0 items-center justify-center rounded-[9px] outline-none transition-transform duration-200 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-95"
                 >
-                  <span className={cn("relative rounded-full transition-transform group-hover:scale-105", active && "ring-2 ring-[var(--accent-ink)] ring-offset-2 ring-offset-panel")}>
-                    <Image src={member.avatar} alt="" width={64} height={64} className="size-8 rounded-full object-cover" />
+                  <span
+                    className={cn(
+                      "relative rounded-full transition-[transform,box-shadow] duration-200 group-hover:scale-[1.06]",
+                      active && "ring-2 ring-[var(--accent)] ring-offset-2 ring-offset-panel",
+                    )}
+                  >
+                    <Image
+                      src={member.avatar}
+                      alt={`${member.name}的头像`}
+                      width={56}
+                      height={56}
+                      className="size-[27px] rounded-full object-cover"
+                    />
                     <span
                       aria-hidden
-                      className="absolute -bottom-px -right-px size-3 rounded-full border-2 border-panel"
+                      className="absolute -bottom-px -right-px size-2 rounded-full border-[1.5px] border-panel shadow-[0_0_0_0.5px_rgb(32_33_38/0.08)]"
                       style={{ backgroundColor: presence.color }}
                     />
                   </span>
@@ -112,38 +135,66 @@ export function ProjectManagementRail() {
         })}
       </div>
 
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            type="button"
-            aria-label="邀请协作成员"
-            className="mt-1.5 flex size-9 items-center justify-center rounded-[10px] text-[var(--muted-strong)] outline-none transition-[background-color,color,transform] hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-95"
-          >
-            <Plus className="size-[15px]" />
-          </button>
-        </TooltipTrigger>
-        <TooltipContent side="left">邀请协作成员</TooltipContent>
-      </Tooltip>
+      <RailButton
+        label="邀请协作成员"
+        active={activePanel === "invite"}
+        onClick={() => toggle("invite")}
+        className="mt-0.5"
+      >
+        <Plus className="size-[15px]" />
+      </RailButton>
+
+      <div className="mt-auto pb-2.5 pt-2">
+        <RailButton
+          label="项目设置"
+          active={activePanel === "settings"}
+          onClick={() => toggle("settings")}
+        >
+          <GearSix className="size-[17px]" />
+        </RailButton>
+      </div>
     </aside>
   )
 }
 
-function RailToolButton({ label, badge, active, onClick, children }: { label: string; badge?: boolean; active: boolean; onClick: () => void; children: React.ReactNode }) {
+function RailButton({
+  label,
+  badge,
+  active,
+  onClick,
+  children,
+  className,
+}: {
+  label: string
+  badge?: boolean
+  active: boolean
+  onClick: () => void
+  children: React.ReactNode
+  className?: string
+}) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <button
           type="button"
           aria-label={label}
-          aria-pressed={active}
+          aria-expanded={active}
+          aria-controls="project-management-drawer"
           onClick={onClick}
           className={cn(
-            "relative flex size-10 items-center justify-center rounded-[10px] text-[var(--muted-strong)] outline-none transition-[background-color,color,transform] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-95",
-            active ? "bg-[var(--accent-soft)] text-[var(--accent-ink)]" : "hover:bg-[var(--surface-hover)] hover:text-[var(--ink)]",
+            "group relative flex size-9 shrink-0 items-center justify-center rounded-[9px] text-[var(--muted-strong)] outline-none transition-transform duration-200 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-95",
+            className,
           )}
         >
-          {children}
-          {badge ? <span aria-hidden className="absolute right-[9px] top-[7px] size-[6px] rounded-full bg-[#e0464a]" /> : null}
+          <span
+            className={cn(
+              "relative flex size-[30px] items-center justify-center rounded-[8px] transition-[background-color,color,box-shadow,transform] duration-200 group-hover:bg-[var(--surface-hover)] group-hover:text-[var(--ink)]",
+              active && "bg-[var(--accent-soft)] text-[var(--accent-ink)] shadow-[inset_0_0_0_1px_var(--accent-soft-line)] group-hover:bg-[var(--accent-soft)] group-hover:text-[var(--accent-ink)]",
+            )}
+          >
+            {children}
+            {badge ? <span aria-hidden className="absolute right-[3px] top-[3px] size-[5px] rounded-full bg-[#df5660] ring-1 ring-panel" /> : null}
+          </span>
         </button>
       </TooltipTrigger>
       <TooltipContent side="left">{label}</TooltipContent>

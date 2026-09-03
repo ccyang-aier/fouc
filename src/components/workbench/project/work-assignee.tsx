@@ -3,9 +3,10 @@ import { Sparkle } from "@phosphor-icons/react"
 
 import { cn } from "@/lib/utils"
 
-import type { WorkAssignee } from "./project-work-data"
+/** 仅依赖 name / avatar 的结构化入参：工作项与产物的人员目录均可复用 */
+type AssigneeLike = { name: string; avatar?: string }
 
-export function WorkAssigneeAvatar({ assignee, size = "md" }: { assignee: WorkAssignee; size?: "sm" | "md" }) {
+export function WorkAssigneeAvatar({ assignee, size = "md" }: { assignee: AssigneeLike; size?: "sm" | "md" }) {
   const sizeClass = size === "sm" ? "size-[18px]" : "size-6"
 
   if (assignee.avatar) {

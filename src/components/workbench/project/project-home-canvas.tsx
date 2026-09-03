@@ -13,6 +13,7 @@ import { ProjectContextSidebar } from "./project-context-sidebar"
 import { projectTabs, type ProjectTab } from "./project-data"
 import { ProjectHeader } from "./project-header"
 import { ProjectMilestones } from "./project-milestones"
+import { ProjectOutputsCanvas } from "./project-outputs-canvas"
 import { ProjectWorkCanvas } from "./project-work-canvas"
 
 export function ProjectHomeCanvas({
@@ -25,6 +26,7 @@ export function ProjectHomeCanvas({
   const [tab, setTab] = useState<ProjectTab>("overview")
   const [contextOpen, setContextOpen] = useState(true)
   const [workPanelOpen, setWorkPanelOpen] = useState(true)
+  const [outputsPanelOpen, setOutputsPanelOpen] = useState(true)
 
   if (tab === "work") {
     return (
@@ -39,6 +41,20 @@ export function ProjectHomeCanvas({
         />
         <ProjectWorkCanvas detailOpen={workPanelOpen} onDetailOpenChange={setWorkPanelOpen} />
       </div>
+    )
+  }
+
+  if (tab === "outputs") {
+    // 产物页：侧边栏与项目头部同栅格，保持与参考稿一致的通栏布局
+    return (
+      <ProjectOutputsCanvas
+        tab={tab}
+        onTabChange={setTab}
+        favorited={favorited}
+        onFavoriteChange={onFavoriteChange}
+        panelOpen={outputsPanelOpen}
+        onPanelOpenChange={setOutputsPanelOpen}
+      />
     )
   }
 

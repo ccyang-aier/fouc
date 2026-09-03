@@ -12,6 +12,7 @@ import { ProjectComposer } from "./project-composer"
 import { ProjectContextSidebar } from "./project-context-sidebar"
 import { projectTabs, type ProjectTab } from "./project-data"
 import { ProjectHeader } from "./project-header"
+import { ProjectManagementRail } from "./project-management-rail"
 import { ProjectMilestones } from "./project-milestones"
 import { ProjectOutputsCanvas } from "./project-outputs-canvas"
 import { ProjectWorkCanvas } from "./project-work-canvas"
@@ -33,8 +34,10 @@ export function ProjectHomeCanvas({
 
   // 工作对象详情页接管整个项目区域，面包屑可返回项目空间
   const workObjectDetail = workObjectDetailId ? workObjectDetails[workObjectDetailId] : null
+
+  let content: React.ReactNode
   if (workObjectDetail) {
-    return (
+    content = (
       <WorkObjectDetailCanvas
         detail={workObjectDetail}
         onExit={(target) => {
@@ -43,10 +46,8 @@ export function ProjectHomeCanvas({
         }}
       />
     )
-  }
-
-  if (tab === "work") {
-    return (
+  } else if (tab === "work") {
+    content = (
       <div className="flex h-full min-h-0 flex-col bg-panel">
         <ProjectHeader
           tab={tab}
@@ -59,11 +60,9 @@ export function ProjectHomeCanvas({
         <ProjectWorkCanvas detailOpen={workPanelOpen} onDetailOpenChange={setWorkPanelOpen} />
       </div>
     )
-  }
-
-  if (tab === "outputs") {
+  } else if (tab === "outputs") {
     // 产物页：侧边栏与项目头部同栅格，保持与参考稿一致的通栏布局
-    return (
+    content = (
       <ProjectOutputsCanvas
         tab={tab}
         onTabChange={setTab}
@@ -74,53 +73,61 @@ export function ProjectHomeCanvas({
         onOpenWorkObject={setWorkObjectDetailId}
       />
     )
+  } else {
+    content = (
+      <div
+        className={cn(
+          "grid h-full min-h-0 bg-panel",
+          contextOpen
+            ? "grid-cols-[minmax(0,1fr)_292px] max-[1120px]:grid-cols-1"
+            : "grid-cols-1",
+        )}
+      >
+        <div className="flex min-h-0 min-w-0 flex-col">
+          <ProjectHeader
+            tab={tab}
+            onTabChange={setTab}
+            favorited={favorited}
+            onFavoriteChange={onFavoriteChange}
+            panelOpen={contextOpen}
+            onTogglePanel={() => setContextOpen((open) => !open)}
+          />
+          <ScrollArea
+            as="section"
+            aria-label="项目首页"
+            className="min-h-0 flex-1"
+            viewportClassName="bg-panel"
+          >
+            <div className="flex min-h-full w-full flex-col px-5 pb-6 pt-[22px]">
+              {tab === "overview" ? (
+                <div className="space-y-[18px]">
+                  <ProjectAttention />
+                  <ProjectMilestones />
+                  <ProjectActivity onOpenWork={() => setTab("work")} onOpenOutputs={() => setTab("outputs")} />
+                  <ProjectComposer />
+                </div>
+              ) : (
+                <ProjectSectionPlaceholder
+                  tab={tab}
+                  onCreate={() => {
+                    setTab("overview")
+                    requestAnimationFrame(() => document.querySelector<HTMLTextAreaElement>("[aria-label='任务描述']")?.focus())
+                  }}
+                />
+              )}
+            </div>
+          </ScrollArea>
+        </div>
+        {contextOpen ? <ProjectContextSidebar /> : null}
+      </div>
+    )
   }
 
+  // 管理侧栏固定于项目空间最右侧，随项目全高常驻
   return (
-    <div
-      className={cn(
-        "grid h-full min-h-0 bg-panel",
-        contextOpen
-          ? "grid-cols-[minmax(0,1fr)_292px] max-[1120px]:grid-cols-1"
-          : "grid-cols-1",
-      )}
-    >
-      <div className="flex min-h-0 min-w-0 flex-col">
-        <ProjectHeader
-          tab={tab}
-          onTabChange={setTab}
-          favorited={favorited}
-          onFavoriteChange={onFavoriteChange}
-          panelOpen={contextOpen}
-          onTogglePanel={() => setContextOpen((open) => !open)}
-        />
-        <ScrollArea
-          as="section"
-          aria-label="项目首页"
-          className="min-h-0 flex-1"
-          viewportClassName="bg-panel"
-        >
-          <div className="flex min-h-full w-full flex-col px-5 pb-6 pt-[22px]">
-            {tab === "overview" ? (
-              <div className="space-y-[18px]">
-                <ProjectAttention />
-                <ProjectMilestones />
-                <ProjectActivity onOpenWork={() => setTab("work")} onOpenOutputs={() => setTab("outputs")} />
-                <ProjectComposer />
-              </div>
-            ) : (
-              <ProjectSectionPlaceholder
-                tab={tab}
-                onCreate={() => {
-                  setTab("overview")
-                  requestAnimationFrame(() => document.querySelector<HTMLTextAreaElement>("[aria-label='任务描述']")?.focus())
-                }}
-              />
-            )}
-          </div>
-        </ScrollArea>
-      </div>
-      {contextOpen ? <ProjectContextSidebar /> : null}
+    <div className="flex h-full min-h-0">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">{content}</div>
+      <ProjectManagementRail />
     </div>
   )
 }

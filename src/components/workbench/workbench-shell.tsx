@@ -8,6 +8,7 @@ import { applyAppearancePrefs, readAppearancePrefs } from "@/lib/appearance"
 import { applySidebarStyle, readStoredSidebarStyle } from "@/lib/sidebar-style"
 
 import { HomeCanvas } from "./home-canvas"
+import { AutomationCanvas } from "./automation/automation-canvas"
 import { ProjectHomeCanvas } from "./project/project-home-canvas"
 import "./sidebar-material.css"
 import { Sidebar, type WorkbenchView } from "./sidebar"
@@ -100,6 +101,8 @@ export function WorkbenchShell() {
                 <HomeCanvas key={missionKey} />
               ) : view === "projects" ? (
                 <ProjectHomeCanvas favorited={projectFavorited} onFavoriteChange={updateProjectFavorite} />
+              ) : view === "automation" ? (
+                <AutomationCanvas />
               ) : (
                 <div className="flex h-full items-center justify-center text-[13px] text-[var(--ink-soft)]">
                   该空间已在 V1 规划中，尚未开放

@@ -5,28 +5,30 @@ import { AnimatePresence, MotionConfig, motion, type Variants } from "motion/rea
 
 import { TooltipProvider } from "@/components/ui/tooltip"
 
-/** 主区视图切换：横向推挤 + 3D 微转角，direction +1 进入项目视图 */
+/**
+ * 主区视图切换：光晕溶解（参考 opensource/ref.html · morph）。
+ * 旧视图放大晕开（blur 40px + 饱和度 ×2）以加速曲线淡出，
+ * 新视图从缩放 0.85 与同等模糊中以减速曲线凝结清晰；先出后进。
+ * filter 各态保持同一组函数，确保 blur/saturate 可连续插值。
+ */
 const mainCanvasVariants: Variants = {
-  enter: (direction: number) => ({
+  enter: {
     opacity: 0,
-    x: direction * 90,
-    scale: 0.96,
-    rotateY: direction * 2.5,
-  }),
+    scale: 0.85,
+    filter: "blur(40px) saturate(1)",
+  },
   center: {
     opacity: 1,
-    x: 0,
     scale: 1,
-    rotateY: 0,
-    transition: { type: "spring", stiffness: 220, damping: 27 },
+    filter: "blur(0px) saturate(1)",
+    transition: { duration: 0.6, ease: [0.2, 0.6, 0.2, 1] },
   },
-  exit: (direction: number) => ({
+  exit: {
     opacity: 0,
-    x: direction * -70,
-    scale: 0.965,
-    rotateY: direction * -2,
-    transition: { duration: 0.2, ease: [0.4, 0, 1, 1] },
-  }),
+    scale: 1.15,
+    filter: "blur(40px) saturate(2)",
+    transition: { duration: 0.45, ease: [0.6, 0, 0.8, 0.4] },
+  },
 }
 
 import { applyAppearancePrefs, readAppearancePrefs } from "@/lib/appearance"
@@ -112,9 +114,10 @@ export function WorkbenchShell() {
   function startMission() {
     setMissionKey((key) => key + 1)
     changeView("home")
-    requestAnimationFrame(() => {
+    // 光晕溶解先出后进：待旧画布退场、新画布挂载后再聚焦输入框
+    window.setTimeout(() => {
       document.querySelector<HTMLTextAreaElement>("[aria-label='任务描述']")?.focus()
-    })
+    }, 520)
   }
 
   return (
@@ -148,11 +151,11 @@ export function WorkbenchShell() {
             {/* 面板自绘 1px 边框（含左上圆角），与侧栏分割线同用 --wt-sidebar-glass-edge：
                 真实 border 不受内容层遮挡，四边与圆角处颜色连续均匀 */}
             <main className="relative min-w-0 flex-1 overflow-hidden rounded-tl-[16px] border border-[var(--wt-sidebar-glass-edge)] bg-panel">
-              <div className="relative h-full min-h-0" style={{ perspective: 1600 }}>
-                <AnimatePresence initial={false} custom={view === "projects" ? 1 : -1}>
+              <div className="relative h-full min-h-0">
+                {/* mode="wait"：旧视图先溶解退场，新视图再凝结进场，与参考稿的先出后进一致 */}
+                <AnimatePresence initial={false} mode="wait">
                   <motion.div
                     key={`${view}-${missionKey}`}
-                    custom={view === "projects" ? 1 : -1}
                     variants={mainCanvasVariants}
                     initial="enter"
                     animate="center"

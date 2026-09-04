@@ -44,7 +44,7 @@ import {
 import { cn } from "@/lib/utils"
 
 import type { ProjectManagementPanelId } from "./project/project-management-model"
-import { paneContainerVariants, paneItemVariants } from "./sidebar-pane-motion"
+import { IDENTITY_CHIP_LAYOUT_ID, paneContainerVariants, paneItemVariants } from "./sidebar-pane-motion"
 import { ProjectSidebarPane } from "./sidebar-project-pane"
 import { SidebarNavList, type SidebarNavItem } from "./sidebar-nav"
 import { SidebarResizeHandle, useSidebarWidth } from "./sidebar-resize"
@@ -119,6 +119,8 @@ export function Sidebar({
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
   const [rowFavorites, setRowFavorites] = useState<Record<string, boolean>>({})
+  // 最近一次进入项目视图所点的行：其图标作为共享元素形变的起点
+  const [launchingId, setLaunchingId] = useState<string | null>(null)
   const { width, dragging, startResize } = useSidebarWidth()
 
   // 中段菜单区在「工作台导航」与「项目管理菜单」间切换：
@@ -254,7 +256,11 @@ export function Sidebar({
                       renaming={renamingId === space.id}
                       favorited={rowFavorites[space.id] ?? false}
                       menuOpen={menuOpenId === space.id}
-                      onOpen={() => onViewChange("projects")}
+                      launchSource={launchingId === space.id}
+                      onOpen={() => {
+                        setLaunchingId(space.id)
+                        onViewChange("projects")
+                      }}
                       onToggleFavorite={() =>
                         setRowFavorites((prev) => ({ ...prev, [space.id]: !prev[space.id] }))
                       }
@@ -538,6 +544,7 @@ function SpaceRow({
   renaming,
   favorited,
   menuOpen,
+  launchSource,
   onOpen,
   onToggleFavorite,
   onStartRename,
@@ -552,6 +559,7 @@ function SpaceRow({
   renaming: boolean
   favorited: boolean
   menuOpen: boolean
+  launchSource: boolean
   onOpen: () => void
   onToggleFavorite: () => void
   onStartRename: () => void
@@ -587,7 +595,12 @@ function SpaceRow({
             className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-lg pl-2 text-left text-[11px] font-medium text-[var(--ink-soft)] outline-none transition-colors hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
           >
             <CaretRight className="sidebar-label size-3 shrink-0 text-[var(--muted)]" aria-hidden />
-            <Icon className="size-[16px] shrink-0 text-[var(--muted-strong)]" weight="fill" aria-hidden />
+            <motion.span
+              layoutId={launchSource ? IDENTITY_CHIP_LAYOUT_ID : undefined}
+              className="flex shrink-0 items-center justify-center"
+            >
+              <Icon className="size-[16px] text-[var(--muted-strong)]" weight="fill" aria-hidden />
+            </motion.span>
             <span className="sidebar-label truncate">{item.label}</span>
           </button>
         )}

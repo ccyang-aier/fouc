@@ -1,9 +1,33 @@
 "use client"
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react"
-import { AnimatePresence, MotionConfig, motion } from "motion/react"
+import { AnimatePresence, MotionConfig, motion, type Variants } from "motion/react"
 
 import { TooltipProvider } from "@/components/ui/tooltip"
+
+/** 主区视图切换：横向推挤 + 3D 微转角，direction +1 进入项目视图 */
+const mainCanvasVariants: Variants = {
+  enter: (direction: number) => ({
+    opacity: 0,
+    x: direction * 90,
+    scale: 0.96,
+    rotateY: direction * 2.5,
+  }),
+  center: {
+    opacity: 1,
+    x: 0,
+    scale: 1,
+    rotateY: 0,
+    transition: { type: "spring", stiffness: 220, damping: 27 },
+  },
+  exit: (direction: number) => ({
+    opacity: 0,
+    x: direction * -70,
+    scale: 0.965,
+    rotateY: direction * -2,
+    transition: { duration: 0.2, ease: [0.4, 0, 1, 1] },
+  }),
+}
 
 import { applyAppearancePrefs, readAppearancePrefs } from "@/lib/appearance"
 import { applySidebarStyle, readStoredSidebarStyle } from "@/lib/sidebar-style"
@@ -124,25 +148,15 @@ export function WorkbenchShell() {
             {/* 面板自绘 1px 边框（含左上圆角），与侧栏分割线同用 --wt-sidebar-glass-edge：
                 真实 border 不受内容层遮挡，四边与圆角处颜色连续均匀 */}
             <main className="relative min-w-0 flex-1 overflow-hidden rounded-tl-[16px] border border-[var(--wt-sidebar-glass-edge)] bg-panel">
-              <div className="relative h-full min-h-0">
-                <AnimatePresence initial={false}>
+              <div className="relative h-full min-h-0" style={{ perspective: 1600 }}>
+                <AnimatePresence initial={false} custom={view === "projects" ? 1 : -1}>
                   <motion.div
                     key={`${view}-${missionKey}`}
-                    initial={{ opacity: 0, y: 22, scale: 0.986, filter: "blur(8px)" }}
-                    animate={{
-                      opacity: 1,
-                      y: 0,
-                      scale: 1,
-                      filter: "blur(0px)",
-                      transition: { type: "spring", stiffness: 260, damping: 28 },
-                    }}
-                    exit={{
-                      opacity: 0,
-                      y: -14,
-                      scale: 0.988,
-                      filter: "blur(6px)",
-                      transition: { duration: 0.18, ease: [0.3, 0, 0.8, 0.2] },
-                    }}
+                    custom={view === "projects" ? 1 : -1}
+                    variants={mainCanvasVariants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
                     className="absolute inset-0"
                   >
                     {view === "home" ? (

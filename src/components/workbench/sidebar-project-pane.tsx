@@ -37,7 +37,7 @@ import { motion } from "motion/react"
 import { cn } from "@/lib/utils"
 
 import { presenceMeta, railMembers, type ProjectManagementPanelId } from "./project/project-management-model"
-import { paneItemVariants } from "./sidebar-pane-motion"
+import { IDENTITY_CHIP_LAYOUT_ID, paneIdentityVariants, paneItemVariants } from "./sidebar-pane-motion"
 import { SidebarNavList, type SidebarNavItem } from "./sidebar-nav"
 
 const projectTools: Array<SidebarNavItem<ProjectManagementPanelId>> = [
@@ -75,9 +75,9 @@ export function ProjectSidebarPane({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      {/* 项目身份卡：下拉承载返回工作台 */}
+      {/* 项目身份卡：下拉承载返回工作台；徽章与来源行动图标共享元素形变 */}
       <motion.div
-        variants={paneItemVariants}
+        variants={paneIdentityVariants}
         className={cn("mt-1 flex min-h-[44px] items-center gap-1 px-1", collapsed && "justify-center px-0")}
       >
         <DropdownMenu>
@@ -90,9 +90,13 @@ export function ProjectSidebarPane({
                 collapsed && "flex-none justify-center px-0",
               )}
             >
-              <span className="flex size-[30px] shrink-0 items-center justify-center rounded-[9px] border border-[var(--accent-soft-line)] bg-[var(--accent-soft)] text-[var(--accent-ink)] shadow-[inset_0_1px_0_rgb(255_255_255/0.72)]">
+              <motion.span
+                layoutId={IDENTITY_CHIP_LAYOUT_ID}
+                transition={{ type: "spring", stiffness: 340, damping: 30 }}
+                className="flex size-[30px] shrink-0 items-center justify-center rounded-[9px] border border-[var(--accent-soft-line)] bg-[var(--accent-soft)] text-[var(--accent-ink)] shadow-[inset_0_1px_0_rgb(255_255_255/0.72)]"
+              >
                 <span className="text-[10px] font-bold tracking-[-0.02em]">F1</span>
-              </span>
+              </motion.span>
               <span className="sidebar-label min-w-0 flex-1">
                 <span className="block truncate text-[12px] font-semibold tracking-[-0.015em] text-[var(--ink)]">Fouc 桌面端 V1</span>
                 <span className="mt-0.5 block truncate text-[9.5px] text-[var(--muted)]">产品研发空间 · 3 个任务运行中</span>

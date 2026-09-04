@@ -57,6 +57,7 @@ export function SidebarNavList<T extends string>({
             <li key={item.id}>
               <button
                 type="button"
+                aria-label={item.label}
                 aria-current={selected ? "page" : undefined}
                 onClick={() => onChange(item.id)}
                 className={cn(

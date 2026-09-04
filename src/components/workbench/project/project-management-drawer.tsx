@@ -50,7 +50,7 @@ const panelCopy: Record<Exclude<ProjectManagementPanelId, `member:${string}`>, {
   settings: { title: "项目设置", description: "配置项目基础信息与协作策略" },
 }
 
-/** 固定在管理轨道左侧的单一抽屉容器，切换入口时复用相同的布局与动效。 */
+/** 锚定主区左缘的单一抽屉容器：入口在左侧项目菜单，切换面板时复用相同的布局与动效。 */
 export function ProjectManagementDrawer({ activePanel, onClose, onOpenWork }: ProjectManagementDrawerProps) {
   const open = activePanel !== null
   const displayedPanel = activePanel ?? "ai-assets"
@@ -61,40 +61,33 @@ export function ProjectManagementDrawer({ activePanel, onClose, onOpenWork }: Pr
     : panelCopy[displayedPanel as Exclude<ProjectManagementPanelId, `member:${string}`>]
 
   return (
-    <div
+    <aside
+      id="project-management-drawer"
+      aria-label={meta.title}
+      aria-hidden={!open}
+      inert={!open}
       className={cn(
-        "relative z-20 h-full shrink-0 overflow-hidden transition-[width] duration-200 ease-out max-[920px]:absolute max-[920px]:inset-y-0 max-[920px]:right-14",
-        open ? "w-[356px] max-[1180px]:w-[330px]" : "w-0",
+        "absolute inset-y-0 left-0 z-30 flex w-[356px] max-w-full flex-col border-r border-[var(--line)] bg-panel shadow-[18px_0_38px_-26px_rgb(38_46_62/0.42)] transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] max-[920px]:w-[320px]",
+        open ? "translate-x-0 opacity-100" : "pointer-events-none -translate-x-4 opacity-0",
       )}
     >
-      <aside
-        id="project-management-drawer"
-        aria-label={meta.title}
-        aria-hidden={!open}
-        inert={!open}
-        className={cn(
-          "absolute inset-y-0 right-0 flex w-[356px] flex-col border-l border-[var(--line)] bg-panel shadow-[-18px_0_36px_-30px_rgb(38_46_62/0.38)] transition-[transform,opacity] duration-200 ease-out max-[1180px]:w-[330px]",
-          open ? "translate-x-0 opacity-100" : "pointer-events-none translate-x-4 opacity-0",
-        )}
-      >
-        <header className="flex min-h-[78px] shrink-0 items-center gap-3 border-b border-[var(--line)] px-5">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-[9px] bg-[var(--accent-soft)] text-[var(--accent-ink)] shadow-[inset_0_0_0_1px_var(--accent-soft-line)]">
-            <PanelIcon panel={displayedPanel} />
-          </span>
-          <div className="min-w-0 flex-1">
-            <h2 className="truncate text-[13px] font-semibold tracking-[-0.015em]">{meta.title}</h2>
-            <p className="mt-1 truncate text-[9.5px] text-[var(--muted)]">{meta.description}</p>
-          </div>
-          <button type="button" aria-label="关闭项目管理面板" onClick={onClose} className="flex size-8 shrink-0 items-center justify-center rounded-[8px] text-[var(--muted-strong)] outline-none transition-[background-color,color,transform] hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-95"><X className="size-4" /></button>
-        </header>
+      <header className="flex min-h-[78px] shrink-0 items-center gap-3 border-b border-[var(--line)] px-5">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-[9px] bg-[var(--accent-soft)] text-[var(--accent-ink)] shadow-[inset_0_0_0_1px_var(--accent-soft-line)]">
+          <PanelIcon panel={displayedPanel} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2 className="truncate text-[13px] font-semibold tracking-[-0.015em]">{meta.title}</h2>
+          <p className="mt-1 truncate text-[9.5px] text-[var(--muted)]">{meta.description}</p>
+        </div>
+        <button type="button" aria-label="关闭项目管理面板" onClick={onClose} className="flex size-8 shrink-0 items-center justify-center rounded-[8px] text-[var(--muted-strong)] outline-none transition-[background-color,color,transform] hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-95"><X className="size-4" /></button>
+      </header>
 
-        <ScrollArea className="min-h-0 flex-1" viewportClassName="bg-panel">
-          <div key={displayedPanel} className="animate-in fade-in slide-in-from-right-2 px-5 pb-8 pt-5 duration-200">
-            <PanelContent panel={displayedPanel} onOpenWork={onOpenWork} />
-          </div>
-        </ScrollArea>
-      </aside>
-    </div>
+      <ScrollArea className="min-h-0 flex-1" viewportClassName="bg-panel">
+        <div key={displayedPanel} className="animate-in fade-in slide-in-from-left-2 px-5 pb-8 pt-5 duration-200">
+          <PanelContent panel={displayedPanel} onOpenWork={onOpenWork} />
+        </div>
+      </ScrollArea>
+    </aside>
   )
 }
 

@@ -13,7 +13,6 @@ import { ProjectContextSidebar } from "./project-context-sidebar"
 import { projectTabs, type ProjectTab } from "./project-data"
 import { ProjectHeader } from "./project-header"
 import { ProjectManagementDrawer } from "./project-management-drawer"
-import { ProjectManagementRail } from "./project-management-rail"
 import type { ProjectManagementPanelId } from "./project-management-model"
 import { ProjectMilestones } from "./project-milestones"
 import { ProjectOutputsCanvas } from "./project-outputs-canvas"
@@ -24,16 +23,19 @@ import { WorkObjectDetailCanvas } from "./project-workobject-detail"
 export function ProjectHomeCanvas({
   favorited,
   onFavoriteChange,
+  managementPanel,
+  onManagementPanelChange,
 }: {
   favorited: boolean
   onFavoriteChange: (favorited: boolean) => void
+  managementPanel: ProjectManagementPanelId | null
+  onManagementPanelChange: (panel: ProjectManagementPanelId | null) => void
 }) {
   const [tab, setTab] = useState<ProjectTab>("overview")
   const [contextOpen, setContextOpen] = useState(true)
   const [workPanelOpen, setWorkPanelOpen] = useState(true)
   const [outputsPanelOpen, setOutputsPanelOpen] = useState(true)
   const [workObjectDetailId, setWorkObjectDetailId] = useState<string | null>(null)
-  const [managementPanel, setManagementPanel] = useState<ProjectManagementPanelId | null>(null)
 
   // 工作对象详情页接管整个项目区域，面包屑可返回项目空间
   const workObjectDetail = workObjectDetailId ? workObjectDetails[workObjectDetailId] : null
@@ -57,17 +59,10 @@ export function ProjectHomeCanvas({
           onTabChange={setTab}
           favorited={favorited}
           onFavoriteChange={onFavoriteChange}
-          panelOpen={workPanelOpen && !managementPanel}
-          onTogglePanel={() => {
-            if (managementPanel) {
-              setManagementPanel(null)
-              setWorkPanelOpen(true)
-            } else {
-              setWorkPanelOpen((open) => !open)
-            }
-          }}
+          panelOpen={workPanelOpen}
+          onTogglePanel={() => setWorkPanelOpen((open) => !open)}
         />
-        <ProjectWorkCanvas detailOpen={workPanelOpen && !managementPanel} onDetailOpenChange={setWorkPanelOpen} />
+        <ProjectWorkCanvas detailOpen={workPanelOpen} onDetailOpenChange={setWorkPanelOpen} />
       </div>
     )
   } else if (tab === "outputs") {
@@ -78,11 +73,8 @@ export function ProjectHomeCanvas({
         onTabChange={setTab}
         favorited={favorited}
         onFavoriteChange={onFavoriteChange}
-        panelOpen={outputsPanelOpen && !managementPanel}
-        onPanelOpenChange={(open) => {
-          if (managementPanel && open) setManagementPanel(null)
-          setOutputsPanelOpen(open)
-        }}
+        panelOpen={outputsPanelOpen}
+        onPanelOpenChange={setOutputsPanelOpen}
         onOpenWorkObject={setWorkObjectDetailId}
       />
     )
@@ -91,9 +83,7 @@ export function ProjectHomeCanvas({
       <div
         className={cn(
           "grid h-full min-h-0 bg-panel",
-          contextOpen && !managementPanel
-            ? "grid-cols-[minmax(0,1fr)_292px] max-[1120px]:grid-cols-1"
-            : "grid-cols-1",
+          contextOpen ? "grid-cols-[minmax(0,1fr)_292px] max-[1120px]:grid-cols-1" : "grid-cols-1",
         )}
       >
         <div className="flex min-h-0 min-w-0 flex-col">
@@ -102,15 +92,8 @@ export function ProjectHomeCanvas({
             onTabChange={setTab}
             favorited={favorited}
             onFavoriteChange={onFavoriteChange}
-            panelOpen={contextOpen && !managementPanel}
-            onTogglePanel={() => {
-              if (managementPanel) {
-                setManagementPanel(null)
-                setContextOpen(true)
-              } else {
-                setContextOpen((open) => !open)
-              }
-            }}
+            panelOpen={contextOpen}
+            onTogglePanel={() => setContextOpen((open) => !open)}
           />
           <ScrollArea
             as="section"
@@ -138,24 +121,23 @@ export function ProjectHomeCanvas({
             </div>
           </ScrollArea>
         </div>
-        {contextOpen && !managementPanel ? <ProjectContextSidebar /> : null}
+        {contextOpen ? <ProjectContextSidebar /> : null}
       </div>
     )
   }
 
-  // 管理侧栏固定于项目空间最右侧，随项目全高常驻
+  // 管理抽屉锚定主区左缘（紧邻侧栏项目菜单），覆盖于项目内容之上
   return (
     <div className="relative flex h-full min-h-0">
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">{content}</div>
       <ProjectManagementDrawer
         activePanel={managementPanel}
-        onClose={() => setManagementPanel(null)}
+        onClose={() => onManagementPanelChange(null)}
         onOpenWork={() => {
           setTab("work")
-          setManagementPanel(null)
+          onManagementPanelChange(null)
         }}
       />
-      <ProjectManagementRail activePanel={managementPanel} onPanelChange={setManagementPanel} />
     </div>
   )
 }

@@ -3,18 +3,21 @@
 import { useState } from "react"
 import Image from "next/image"
 import {
+  Archive,
   Bell,
   BookOpenText,
   CaretDown,
   CaretRight,
   ChatCircleDots,
   Desktop,
+  DotsThree,
   DotsThreeCircle,
   FolderOpen,
   Folders,
   Funnel,
   GearSix,
   Lightning,
+  PencilSimple,
   Plus,
   PlusCircle,
   PlugsConnected,
@@ -39,6 +42,8 @@ import {
 } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
+import type { ProjectManagementPanelId } from "./project/project-management-model"
+import { ProjectSidebarPane } from "./sidebar-project-pane"
 import { SidebarNavList, type SidebarNavItem } from "./sidebar-nav"
 import { SidebarResizeHandle, useSidebarWidth } from "./sidebar-resize"
 
@@ -54,7 +59,9 @@ const navigation: Array<SidebarNavItem<WorkbenchView>> = [
 ]
 
 const SIDEBAR_VERSION = "v0.1.0"
-type ActiveProjectItem = "favorite" | "product-development" | "personal-workspace" | "extra-space" | "recent" | null
+
+type SpaceItem = { id: string; label: string; icon: typeof Folders }
+type SidebarPaneMode = "workbench" | "project"
 
 function DenseCollapseIcon() {
   return (
@@ -81,6 +88,9 @@ export function Sidebar({
   view,
   onViewChange,
   projectFavorited,
+  onProjectFavoriteChange,
+  managementPanel,
+  onManagementPanelChange,
 }: {
   collapsed: boolean
   onToggle: () => void
@@ -88,25 +98,242 @@ export function Sidebar({
   view: WorkbenchView
   onViewChange: (view: WorkbenchView) => void
   projectFavorited: boolean
+  onProjectFavoriteChange: (favorited: boolean) => void
+  managementPanel: ProjectManagementPanelId | null
+  onManagementPanelChange: (panel: ProjectManagementPanelId | null) => void
 }) {
   const [spacesOpen, setSpacesOpen] = useState(true)
   const [recentOpen, setRecentOpen] = useState(true)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [filter, setFilter] = useState<"all" | "spaces" | "recent">("all")
-  const [extraSpace, setExtraSpace] = useState(false)
-  const [activeProjectItem, setActiveProjectItem] = useState<ActiveProjectItem>(null)
+  const [spaces, setSpaces] = useState<SpaceItem[]>([
+    { id: "product-development", label: "产品研发", icon: Folders },
+    { id: "personal-workspace", label: "个人工作台", icon: UsersThree },
+  ])
+  const [renamingId, setRenamingId] = useState<string | null>(null)
+  const [removingId, setRemovingId] = useState<string | null>(null)
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
+  const [rowFavorites, setRowFavorites] = useState<Record<string, boolean>>({})
   const { width, dragging, startResize } = useSidebarWidth()
 
-  function openProject(item: Exclude<ActiveProjectItem, null>) {
-    setActiveProjectItem(item)
-    onViewChange("projects")
+  // 中段菜单区在「工作台导航」与「项目管理菜单」间切换：
+  // 模式变化时在渲染期记录退场面板，待其退场动画播完（onAnimationEnd）再卸载，
+  // 形成双向推挤的转场层次
+  const paneMode: SidebarPaneMode = view === "projects" ? "project" : "workbench"
+  const [pane, setPane] = useState<{ mode: SidebarPaneMode; exiting: SidebarPaneMode | null }>(() => ({
+    mode: paneMode,
+    exiting: null,
+  }))
+  if (pane.mode !== paneMode) {
+    setPane({ mode: paneMode, exiting: pane.mode })
   }
 
-  function changeTopLevelView(nextView: WorkbenchView) {
-    setActiveProjectItem(null)
-    onViewChange(nextView)
+  function createSpace() {
+    setSpacesOpen(true)
+    setSpaces((items) => [...items, { id: `space-${Date.now()}`, label: "未命名空间", icon: Folders }])
   }
+
+  function commitRename(id: string, label: string) {
+    setRenamingId(null)
+    const next = label.trim()
+    if (!next) return
+    setSpaces((items) => items.map((item) => (item.id === id ? { ...item, label: next } : item)))
+  }
+
+  function archiveSpace(id: string) {
+    setRemovingId(id)
+    window.setTimeout(() => {
+      setSpaces((items) => items.filter((item) => item.id !== id))
+      setRemovingId(null)
+    }, 220)
+  }
+
+  const visibleSpaces = searchQuery ? spaces.filter((item) => item.label.includes(searchQuery)) : spaces
+
+  const workbenchPane = (
+    <>
+      <nav aria-label="主导航">
+        <SidebarNavList
+          items={navigation}
+          value={view === "projects" ? null : view}
+          onChange={onViewChange}
+          collapsible
+          renderTrailing={(item) =>
+            item.id === "more" ? (
+              <CaretRight className="sidebar-label ml-auto size-3 text-[var(--muted)]" aria-hidden />
+            ) : null
+          }
+        />
+      </nav>
+
+      {projectFavorited && filter === "all" ? (
+        <section className="mt-5" aria-label="收藏项目">
+          <div className={cn("flex h-6 items-center px-2 text-[11px] font-medium text-[var(--muted)]", collapsed && "justify-center px-0")}>
+            <span className={cn("sidebar-label", collapsed && "hidden")}>收藏</span>
+            <Star className={cn("ml-auto size-3 text-[#d79a3b]", !collapsed && "hidden")} weight="fill" />
+          </div>
+          {searchQuery && !"Fouc 桌面端 V1".includes(searchQuery) ? null : (
+            <button
+              type="button"
+              aria-label="打开收藏项目 Fouc 桌面端 V1"
+              onClick={() => onViewChange("projects")}
+              className={cn(
+                "mt-px flex h-9 w-full items-center gap-2 rounded-lg px-2 text-left text-[11px] font-medium text-[var(--ink-soft)] outline-none transition-[background-color,box-shadow] hover:bg-raise hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+                collapsed && "justify-center px-0",
+              )}
+            >
+              <Star className="size-[15px] shrink-0 text-[#d79a3b]" weight="fill" />
+              <span className="sidebar-label truncate">Fouc 桌面端 V1</span>
+            </button>
+          )}
+        </section>
+      ) : null}
+
+      <section className={cn(projectFavorited && filter === "all" ? "mt-3" : "mt-5", filter === "recent" && "hidden")} aria-label="工作空间">
+        <div
+          className={cn(
+            "flex h-6 items-center px-2 text-[11px] font-medium text-[var(--muted)]",
+            collapsed && "justify-center px-0",
+          )}
+        >
+          <button
+            type="button"
+            onClick={() => setSpacesOpen((open) => !open)}
+            className={cn(
+              "flex items-center gap-1 rounded-md outline-none hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+              collapsed && "hidden",
+            )}
+            aria-expanded={spacesOpen}
+            aria-label="切换空间列表"
+          >
+            <span className="sidebar-label">空间 ({spaces.length})</span>
+            {spacesOpen ? (
+              <CaretDown className="sidebar-label size-3" />
+            ) : (
+              <CaretRight className="sidebar-label size-3" />
+            )}
+          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label="新建空间"
+                onClick={createSpace}
+                className={cn(
+                  "ml-auto flex size-6 items-center justify-center rounded-md outline-none hover:bg-wash focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+                  collapsed && "ml-0",
+                )}
+              >
+                <Plus className="size-3" weight="bold" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">新建空间</TooltipContent>
+          </Tooltip>
+        </div>
+
+        {spacesOpen ? (
+          <div className="mt-px space-y-px animate-in fade-in-0 slide-in-from-top-1">
+            {visibleSpaces.length === 0 ? (
+              <p className="sidebar-label px-2 py-1.5 text-[10.5px] text-[var(--muted)]">未找到空间</p>
+            ) : (
+              visibleSpaces.map((space) => (
+                <SpaceRow
+                  key={space.id}
+                  item={space}
+                  collapsed={collapsed}
+                  renaming={renamingId === space.id}
+                  removing={removingId === space.id}
+                  favorited={rowFavorites[space.id] ?? false}
+                  menuOpen={menuOpenId === space.id}
+                  onOpen={() => onViewChange("projects")}
+                  onToggleFavorite={() =>
+                    setRowFavorites((prev) => ({ ...prev, [space.id]: !prev[space.id] }))
+                  }
+                  onStartRename={() => setRenamingId(space.id)}
+                  onRenameCommit={commitRename}
+                  onRenameCancel={() => setRenamingId(null)}
+                  onArchive={() => archiveSpace(space.id)}
+                  onNewMission={onNewMission}
+                  onMenuOpenChange={(open) => setMenuOpenId(open ? space.id : null)}
+                />
+              ))
+            )}
+          </div>
+        ) : null}
+      </section>
+
+      <section className={cn("mt-3", filter === "spaces" && "hidden")} aria-label="最近访问">
+        <div
+          className={cn(
+            "flex h-6 items-center px-2 text-[11px] font-medium text-[var(--muted)]",
+            collapsed && "justify-center px-0",
+          )}
+        >
+          <button
+            type="button"
+            onClick={() => setRecentOpen((open) => !open)}
+            aria-controls="recent-items"
+            aria-expanded={recentOpen}
+            aria-label={recentOpen ? "收起最近访问" : "展开最近访问"}
+            className={cn(
+              "flex min-w-0 items-center gap-1 rounded-md outline-none hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+              collapsed && "hidden",
+            )}
+          >
+            <span className="sidebar-label">最近 (1)</span>
+            {recentOpen ? (
+              <CaretDown className="sidebar-label size-3" />
+            ) : (
+              <CaretRight className="sidebar-label size-3" />
+            )}
+          </button>
+          <div className={cn("sidebar-label ml-auto flex items-center gap-0.5", collapsed && "ml-0")}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="新建任务"
+                  onClick={onNewMission}
+                  className="flex size-6 items-center justify-center rounded-md outline-none transition-colors hover:bg-wash hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                >
+                  <Plus className="size-3" weight="bold" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">新建</TooltipContent>
+            </Tooltip>
+          </div>
+        </div>
+        <div
+          id="recent-items"
+          className={cn(recentOpen && "mt-1 animate-in fade-in-0 slide-in-from-top-1")}
+        >
+          {recentOpen ? (
+            <button
+              type="button"
+              onClick={() => onViewChange("projects")}
+              className="flex h-8 w-full items-center gap-2.5 rounded-lg px-2 text-left text-[11px] text-[var(--ink-soft)] outline-none transition-[background-color,box-shadow] hover:bg-raise hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+            >
+              <Desktop className="size-[16px] shrink-0 text-[var(--muted)]" weight="fill" />
+              <span className="sidebar-label truncate">{searchQuery && !"Fouc 桌面端".includes(searchQuery) ? "未找到项目" : "Fouc 桌面端"}</span>
+              <span className="sidebar-label ml-auto text-[9px] text-[var(--muted)]">2 小时前</span>
+            </button>
+          ) : null}
+        </div>
+      </section>
+    </>
+  )
+
+  const projectPane = (
+    <ProjectSidebarPane
+      collapsed={collapsed}
+      activePanel={managementPanel}
+      onPanelChange={onManagementPanelChange}
+      favorited={projectFavorited}
+      onFavoriteChange={onProjectFavoriteChange}
+      onExit={() => onViewChange("home")}
+    />
+  )
 
   return (
     <div
@@ -224,161 +451,33 @@ export function Sidebar({
           <span className="sidebar-label">新建任务</span>
         </Button>
 
-        <nav aria-label="主导航" className="mt-2.5">
-          <SidebarNavList
-            items={navigation}
-            value={view === "projects" && activeProjectItem ? null : view}
-            onChange={changeTopLevelView}
-            collapsible
-            renderTrailing={(item) =>
-              item.id === "more" ? (
-                <CaretRight className="sidebar-label ml-auto size-3 text-[var(--muted)]" aria-hidden />
-              ) : null
-            }
-          />
-        </nav>
-
-        {projectFavorited && filter === "all" ? (
-          <section className="mt-5" aria-label="收藏项目">
-            <div className={cn("flex h-6 items-center px-2 text-[11px] font-medium text-[var(--muted)]", collapsed && "justify-center px-0")}>
-              <span className={cn("sidebar-label", collapsed && "hidden")}>收藏</span>
-              <Star className={cn("ml-auto size-3 text-[#d79a3b]", !collapsed && "hidden")} weight="fill" />
-            </div>
-            {searchQuery && !"Fouc 桌面端 V1".includes(searchQuery) ? null : (
-              <button
-                type="button"
-                aria-label="打开收藏项目 Fouc 桌面端 V1"
-                aria-current={view === "projects" && activeProjectItem === "favorite" ? "page" : undefined}
-                onClick={() => openProject("favorite")}
-                className={cn(
-                  "mt-px flex h-9 w-full items-center gap-2 rounded-lg px-2 text-left text-[11px] font-medium outline-none transition-[background-color,box-shadow] hover:bg-raise focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
-                  view === "projects" && activeProjectItem === "favorite" && "bg-[var(--accent-soft)] text-[var(--accent-ink)] shadow-[inset_0_0_0_1px_var(--accent-soft-line)]",
-                  collapsed && "justify-center px-0",
-                )}
-              >
-                <Star className="size-[15px] shrink-0 text-[#d79a3b]" weight="fill" />
-                <span className="sidebar-label truncate">Fouc 桌面端 V1</span>
-              </button>
-            )}
-          </section>
-        ) : null}
-
-        <section className={cn(projectFavorited && filter === "all" ? "mt-3" : "mt-5", filter === "recent" && "hidden")} aria-label="工作空间">
-          <div
-            className={cn(
-              "flex h-6 items-center px-2 text-[11px] font-medium text-[var(--muted)]",
-              collapsed && "justify-center px-0",
-            )}
-          >
-            <button
-              type="button"
-              onClick={() => setSpacesOpen((open) => !open)}
+        <div className="relative mt-2.5 min-h-0 flex-1">
+          {pane.exiting ? (
+            <div
+              key={`exit-${pane.exiting}`}
+              aria-hidden
+              inert
+              onAnimationEnd={(event) => {
+                if (event.target === event.currentTarget) setPane((prev) => ({ ...prev, exiting: null }))
+              }}
               className={cn(
-                "flex items-center gap-1 rounded-md outline-none hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
-                collapsed && "hidden",
+                "pointer-events-none absolute inset-0 flex flex-col overflow-y-auto pb-2 animate-out fade-out duration-300",
+                pane.exiting === "project" ? "slide-out-to-right-3" : "slide-out-to-left-3",
               )}
-              aria-expanded={spacesOpen}
-              aria-label="切换空间列表"
             >
-              <span className="sidebar-label">空间 (2)</span>
-              {spacesOpen ? (
-                <CaretDown className="sidebar-label size-3" />
-              ) : (
-                <CaretRight className="sidebar-label size-3" />
-              )}
-            </button>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  aria-label="新建空间"
-                  onClick={() => {
-                    setSpacesOpen(true)
-                    setExtraSpace(true)
-                  }}
-                  className={cn(
-                    "ml-auto flex size-6 items-center justify-center rounded-md outline-none hover:bg-wash focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
-                    collapsed && "ml-0",
-                  )}
-                >
-                  <Plus className="size-3" weight="bold" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right">新建空间</TooltipContent>
-            </Tooltip>
-          </div>
-
-          {spacesOpen ? (
-            <div className="mt-px space-y-px animate-in fade-in-0 slide-in-from-top-1">
-              <SpaceRow label="产品研发" icon={Folders} selected={view === "projects" && activeProjectItem === "product-development"} onClick={() => openProject("product-development")} />
-              <SpaceRow label="个人工作台" icon={UsersThree} selected={view === "projects" && activeProjectItem === "personal-workspace"} onClick={() => openProject("personal-workspace")} />
-              {extraSpace ? <SpaceRow label="未命名空间" icon={Folders} selected={view === "projects" && activeProjectItem === "extra-space"} onClick={() => openProject("extra-space")} /> : null}
+              {pane.exiting === "project" ? projectPane : workbenchPane}
             </div>
           ) : null}
-        </section>
-
-        <section className={cn("mt-3", filter === "spaces" && "hidden")} aria-label="最近访问">
           <div
+            key={`pane-${pane.mode}`}
             className={cn(
-              "flex h-6 items-center px-2 text-[11px] font-medium text-[var(--muted)]",
-              collapsed && "justify-center px-0",
+              "absolute inset-0 flex flex-col overflow-y-auto pb-2 animate-in fade-in duration-300",
+              pane.mode === "project" ? "slide-in-from-right-3" : "slide-in-from-left-3",
             )}
           >
-            <button
-              type="button"
-              onClick={() => setRecentOpen((open) => !open)}
-              aria-controls="recent-items"
-              aria-expanded={recentOpen}
-              aria-label={recentOpen ? "收起最近访问" : "展开最近访问"}
-              className={cn(
-                "flex min-w-0 items-center gap-1 rounded-md outline-none hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
-                collapsed && "hidden",
-              )}
-            >
-              <span className="sidebar-label">最近 (1)</span>
-              {recentOpen ? (
-                <CaretDown className="sidebar-label size-3" />
-              ) : (
-                <CaretRight className="sidebar-label size-3" />
-              )}
-            </button>
-            <div className={cn("sidebar-label ml-auto flex items-center gap-0.5", collapsed && "ml-0")}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    aria-label="新建任务"
-                    onClick={onNewMission}
-                    className="flex size-6 items-center justify-center rounded-md outline-none transition-colors hover:bg-wash hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
-                  >
-                    <Plus className="size-3" weight="bold" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right">新建</TooltipContent>
-              </Tooltip>
-            </div>
+            {pane.mode === "project" ? projectPane : workbenchPane}
           </div>
-          <div
-            id="recent-items"
-            className={cn(recentOpen && "mt-1 animate-in fade-in-0 slide-in-from-top-1")}
-          >
-            {recentOpen ? (
-              <button
-                type="button"
-                aria-current={view === "projects" && activeProjectItem === "recent" ? "page" : undefined}
-                onClick={() => openProject("recent")}
-                className={cn(
-                  "flex h-8 w-full items-center gap-2.5 rounded-lg px-2 text-left text-[11px] outline-none transition-[background-color,box-shadow] hover:bg-raise focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
-                  view === "projects" && activeProjectItem === "recent" && "bg-[var(--accent-soft)] text-[var(--accent-ink)] shadow-[inset_0_0_0_1px_var(--accent-soft-line)]",
-                )}
-              >
-                <Desktop className="size-[16px] shrink-0 text-[var(--muted)]" weight="fill" />
-                <span className="sidebar-label truncate">{searchQuery && !"Fouc 桌面端".includes(searchQuery) ? "未找到项目" : "Fouc 桌面端"}</span>
-                <span className="sidebar-label ml-auto text-[9px] text-[var(--muted)]">2 小时前</span>
-              </button>
-            ) : null}
-          </div>
-        </section>
+        </div>
 
         <div className="mt-auto">
           <DropdownMenu>
@@ -422,30 +521,141 @@ export function Sidebar({
 }
 
 function SpaceRow({
-  label,
-  icon: Icon,
-  selected = false,
-  onClick,
+  item,
+  collapsed,
+  renaming,
+  removing,
+  favorited,
+  menuOpen,
+  onOpen,
+  onToggleFavorite,
+  onStartRename,
+  onRenameCommit,
+  onRenameCancel,
+  onArchive,
+  onNewMission,
+  onMenuOpenChange,
 }: {
-  label: string
-  icon: typeof Folders
-  selected?: boolean
-  onClick: () => void
+  item: SpaceItem
+  collapsed: boolean
+  renaming: boolean
+  removing: boolean
+  favorited: boolean
+  menuOpen: boolean
+  onOpen: () => void
+  onToggleFavorite: () => void
+  onStartRename: () => void
+  onRenameCommit: (id: string, label: string) => void
+  onRenameCancel: () => void
+  onArchive: () => void
+  onNewMission: () => void
+  onMenuOpenChange: (open: boolean) => void
 }) {
+  const Icon = item.icon
+  const actionsVisible = menuOpen
+
+  return (
+    <div
+      className={cn(
+        "overflow-hidden transition-[max-height,opacity,transform] duration-200 ease-out",
+        removing ? "max-h-0 translate-x-2 opacity-0" : "max-h-[40px]",
+      )}
+    >
+      <div className="group/space relative flex h-9 items-center rounded-lg pr-0.5 transition-[background-color] hover:bg-raise">
+        {renaming ? (
+          <input
+            autoFocus
+            defaultValue={item.label}
+            aria-label="重命名空间"
+            onFocus={(event) => event.target.select()}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") onRenameCommit(item.id, event.currentTarget.value)
+              if (event.key === "Escape") onRenameCancel()
+            }}
+            onBlur={(event) => onRenameCommit(item.id, event.target.value)}
+            className="h-8 min-w-0 flex-1 rounded-[7px] border border-[var(--accent-soft-line)] bg-panel px-2 text-[11px] font-medium text-[var(--ink)] outline-none focus:border-[var(--accent)]"
+          />
+        ) : (
+          <button
+            type="button"
+            aria-label={item.label}
+            onClick={onOpen}
+            className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-lg pl-2 text-left text-[11px] font-medium text-[var(--ink-soft)] outline-none transition-colors hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+          >
+            <CaretRight className="sidebar-label size-3 shrink-0 text-[var(--muted)]" aria-hidden />
+            <Icon className="size-[16px] shrink-0 text-[var(--muted-strong)]" weight="fill" aria-hidden />
+            <span className="sidebar-label truncate">{item.label}</span>
+          </button>
+        )}
+
+        {!renaming && !collapsed ? (
+          <div
+            className={cn(
+              "ml-auto flex shrink-0 items-center gap-0.5 pl-0.5 transition-opacity duration-150",
+              actionsVisible
+                ? "opacity-100"
+                : "opacity-0 group-hover/space:opacity-100 group-focus-within/space:opacity-100",
+            )}
+          >
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <RowIconButton
+                  aria-label={favorited ? "取消收藏" : "收藏"}
+                  onClick={onToggleFavorite}
+                  className={cn(favorited && "text-[#d79a3b]")}
+                >
+                  <Star className="size-[14px]" weight={favorited ? "fill" : "regular"} />
+                </RowIconButton>
+              </TooltipTrigger>
+              <TooltipContent side="top">{favorited ? "取消收藏" : "收藏"}</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <RowIconButton aria-label="新建任务" onClick={onNewMission}>
+                  <Plus className="size-[14px]" weight="bold" />
+                </RowIconButton>
+              </TooltipTrigger>
+              <TooltipContent side="top">新建任务</TooltipContent>
+            </Tooltip>
+            <DropdownMenu open={menuOpen} onOpenChange={onMenuOpenChange}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>
+                    <RowIconButton aria-label={`${item.label} · 更多操作`}>
+                      <DotsThree className="size-[15px]" weight="bold" />
+                    </RowIconButton>
+                  </DropdownMenuTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="top">更多操作</TooltipContent>
+              </Tooltip>
+              <DropdownMenuContent align="end" className="w-36">
+                <DropdownMenuItem onSelect={onStartRename}>
+                  <PencilSimple weight="fill" />重命名
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-[var(--err-ink)]" onSelect={onArchive}>
+                  <Archive weight="fill" />归档
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
+function RowIconButton({ className, children, ...rest }: React.ComponentProps<"button">) {
   return (
     <button
       type="button"
-      aria-label={label}
-      aria-current={selected ? "page" : undefined}
-      onClick={onClick}
       className={cn(
-        "flex h-9 w-full items-center gap-2 rounded-lg px-2 text-left text-[11px] font-medium outline-none transition-[background-color,box-shadow] hover:bg-raise focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
-        selected && "bg-[var(--accent-soft)] text-[var(--accent-ink)] shadow-[inset_0_0_0_1px_var(--accent-soft-line)]",
+        "flex size-[26px] items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none transition-[background-color,color,transform] hover:bg-[var(--hover-fill)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-95",
+        className,
       )}
+      {...rest}
     >
-      <CaretRight className="sidebar-label size-3 text-[var(--muted)]" />
-      <Icon className="size-[16px] shrink-0 text-[var(--muted-strong)]" weight="fill" />
-      <span className="sidebar-label truncate">{label}</span>
+      {children}
     </button>
   )
 }

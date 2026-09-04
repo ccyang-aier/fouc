@@ -3,13 +3,15 @@
 /**
  * 项目模式侧栏菜单：进入项目视图后接管主导航区，
  * 承接原项目视图右侧管理轨道的全部入口（会话 / 提及 / 资产 / 成员 / 设置）。
- * 面板开合由 WorkbenchShell 持有的 managementPanel 状态驱动，抽屉覆盖在主区左缘。
+ * 顶部项目身份卡支持下拉（返回工作台入口收纳于此）；
+ * 侧栏折叠时呈现为图标轨道：工具图标、Agent、成员头像纵向排列。
  */
 
 import Image from "next/image"
 import {
   At,
   BellSimple,
+  CaretDown,
   CaretLeft,
   Chat,
   CheckSquare,
@@ -22,6 +24,14 @@ import {
   Star,
 } from "@phosphor-icons/react"
 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { motion } from "motion/react"
 import { cn } from "@/lib/utils"
@@ -65,25 +75,42 @@ export function ProjectSidebarPane({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <motion.button
+      {/* 项目身份卡：下拉承载返回工作台 */}
+      <motion.div
         variants={paneItemVariants}
-        type="button"
-        aria-label="返回工作台"
-        onClick={onExit}
-        className="flex h-8 w-full items-center gap-1.5 rounded-[8px] px-2 text-[11px] font-medium text-[var(--muted-strong)] outline-none transition-colors hover:bg-wash hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+        className={cn("mt-1 flex min-h-[44px] items-center gap-1 px-1", collapsed && "justify-center px-0")}
       >
-        <CaretLeft className="size-[13px] shrink-0" weight="bold" aria-hidden />
-        <span className="sidebar-label truncate">返回工作台</span>
-      </motion.button>
-
-      <motion.div variants={paneItemVariants} className="mt-1.5 flex min-h-[44px] items-center gap-2.5 px-2">
-        <span className="flex size-[30px] shrink-0 items-center justify-center rounded-[9px] border border-[var(--accent-soft-line)] bg-[var(--accent-soft)] text-[var(--accent-ink)] shadow-[inset_0_1px_0_rgb(255_255_255/0.72)]">
-          <span className="text-[10px] font-bold tracking-[-0.02em]">F1</span>
-        </span>
-        <div className="sidebar-label min-w-0 flex-1">
-          <div className="truncate text-[12px] font-semibold tracking-[-0.015em] text-[var(--ink)]">Fouc 桌面端 V1</div>
-          <div className="mt-0.5 truncate text-[9.5px] text-[var(--muted)]">产品研发空间 · 3 个任务运行中</div>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              aria-label="项目菜单"
+              className={cn(
+                "group/id flex min-w-0 flex-1 items-center gap-2.5 rounded-[9px] px-1.5 py-1.5 text-left outline-none transition-colors hover:bg-wash focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] data-[state=open]:bg-wash",
+                collapsed && "flex-none justify-center px-0",
+              )}
+            >
+              <span className="flex size-[30px] shrink-0 items-center justify-center rounded-[9px] border border-[var(--accent-soft-line)] bg-[var(--accent-soft)] text-[var(--accent-ink)] shadow-[inset_0_1px_0_rgb(255_255_255/0.72)]">
+                <span className="text-[10px] font-bold tracking-[-0.02em]">F1</span>
+              </span>
+              <span className="sidebar-label min-w-0 flex-1">
+                <span className="block truncate text-[12px] font-semibold tracking-[-0.015em] text-[var(--ink)]">Fouc 桌面端 V1</span>
+                <span className="mt-0.5 block truncate text-[9.5px] text-[var(--muted)]">产品研发空间 · 3 个任务运行中</span>
+              </span>
+              <CaretDown
+                aria-hidden
+                className="sidebar-label size-3 shrink-0 text-[var(--muted)] transition-transform duration-200 group-data-[state=open]/id:rotate-180"
+              />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-52">
+            <DropdownMenuLabel>Fouc 桌面端 V1</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={onExit}>
+              <CaretLeft weight="bold" />返回工作台
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <button
           type="button"
           aria-label={favorited ? "取消收藏项目" : "收藏项目"}
@@ -120,10 +147,10 @@ export function ProjectSidebarPane({
         variants={paneItemVariants}
         type="button"
         aria-label="Nova · 项目 Agent"
-        onClick={() => toggle("agent")}
         aria-expanded={activePanel === "agent"}
         aria-controls="project-management-drawer"
-        className={paneRowClasses(activePanel === "agent")}
+        onClick={() => toggle("agent")}
+        className={cn(paneRowClasses(activePanel === "agent"), collapsed && "justify-center px-0")}
       >
         <span
           className={cn(
@@ -138,8 +165,13 @@ export function ProjectSidebarPane({
         <span className="sidebar-label truncate">Nova · 项目 Agent</span>
       </motion.button>
 
-      <motion.section variants={paneItemVariants} aria-label="项目成员" className={cn("mt-2", collapsed && "hidden")}>
-        <div className="flex h-6 items-center px-2 text-[11px] font-medium text-[var(--muted)]">
+      <motion.section variants={paneItemVariants} aria-label="项目成员" className="mt-2">
+        <div
+          className={cn(
+            "flex h-6 items-center px-2 text-[11px] font-medium text-[var(--muted)]",
+            collapsed && "justify-center px-0",
+          )}
+        >
           <span className="sidebar-label">成员 · {railMembers.length}</span>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -149,7 +181,10 @@ export function ProjectSidebarPane({
                 aria-expanded={activePanel === "invite"}
                 aria-controls="project-management-drawer"
                 onClick={() => toggle("invite")}
-                className="ml-auto flex size-6 items-center justify-center rounded-md outline-none transition-colors hover:bg-wash hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                className={cn(
+                  "ml-auto flex size-6 items-center justify-center rounded-md outline-none transition-colors hover:bg-wash hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+                  collapsed && "ml-0",
+                )}
               >
                 <Plus className="size-3" weight="bold" />
               </button>
@@ -157,7 +192,7 @@ export function ProjectSidebarPane({
             <TooltipContent side="right">邀请协作成员</TooltipContent>
           </Tooltip>
         </div>
-        <div className="mt-1 flex flex-wrap gap-1 px-1.5">
+        <div className={cn("mt-1 flex gap-1 px-1.5", collapsed ? "flex-col items-center px-0" : "flex-wrap")}>
           {railMembers.map((member) => {
             const panelId = `member:${member.id}` as const
             const presence = presenceMeta[member.presence]
@@ -198,15 +233,16 @@ export function ProjectSidebarPane({
         </div>
       </motion.section>
 
-      <motion.div variants={paneItemVariants} className="mt-auto">
+      <div className="mt-auto">
         <div aria-hidden className="mb-1.5 h-px bg-[var(--line)]" />
-        <button
+        <motion.button
+          variants={paneItemVariants}
           type="button"
           aria-label="项目设置"
-          onClick={() => toggle("settings")}
           aria-expanded={activePanel === "settings"}
           aria-controls="project-management-drawer"
-          className={paneRowClasses(activePanel === "settings")}
+          onClick={() => toggle("settings")}
+          className={cn(paneRowClasses(activePanel === "settings"), collapsed && "justify-center px-0")}
         >
           <GearSix
             className={cn(
@@ -217,8 +253,8 @@ export function ProjectSidebarPane({
             aria-hidden
           />
           <span className="sidebar-label truncate">项目设置</span>
-        </button>
-      </motion.div>
+        </motion.button>
+      </div>
     </div>
   )
 }

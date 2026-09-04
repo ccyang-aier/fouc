@@ -346,14 +346,14 @@ export function Sidebar({
   )
 
   return (
-    <div
+    <motion.div
       /* zIndex 用内联：材质底座对直接子元素的非分层 z-index:1 会压过 z-20 工具类，
          内联才能保住拖拽手柄压在主面板圆角之上的层级 */
-      style={{ width: collapsed ? 60 : width, zIndex: 20 }}
-      className={cn(
-        "h-full shrink-0 max-[820px]:!w-[60px]",
-        !dragging && "transition-[width] duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
-      )}
+      style={{ zIndex: 20 }}
+      initial={false}
+      animate={{ width: collapsed ? 60 : width }}
+      transition={dragging ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 40 }}
+      className="h-full shrink-0 max-[820px]:!w-[60px]"
     >
       <aside
         className={cn(
@@ -447,21 +447,35 @@ export function Sidebar({
           </div>
         ) : null}
 
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onNewMission}
-          aria-label="新建任务"
-          className={cn(
-            "mt-1 h-[39px] w-full justify-start rounded-[8px] border-[var(--line)] bg-chip px-3 text-[12px] font-semibold shadow-none hover:bg-chip-strong",
-            collapsed && "justify-center px-0",
-          )}
-        >
-          <PlusCircle className="size-[16px]" weight="bold" />
-          <span className="sidebar-label">新建任务</span>
-        </Button>
+        {/* 新建任务仅属于工作台菜单：进入项目菜单时以高度弹簧收起 */}
+        <AnimatePresence initial={false}>
+          {paneMode === "workbench" ? (
+            <motion.div
+              key="mission-button"
+              initial={{ height: 0, opacity: 0, marginTop: 0 }}
+              animate={{ height: 39, opacity: 1, marginTop: 4 }}
+              exit={{ height: 0, opacity: 0, marginTop: 0 }}
+              transition={{ type: "spring", stiffness: 380, damping: 36 }}
+              className="overflow-hidden"
+            >
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onNewMission}
+                aria-label="新建任务"
+                className={cn(
+                  "h-[39px] w-full justify-start rounded-[8px] border-[var(--line)] bg-chip px-3 text-[12px] font-semibold shadow-none hover:bg-chip-strong",
+                  collapsed && "justify-center px-0",
+                )}
+              >
+                <PlusCircle className="size-[16px]" weight="bold" />
+                <span className="sidebar-label">新建任务</span>
+              </Button>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
 
-        <div className="relative mt-2.5 min-h-0 flex-1">
+        <div className="relative mt-2.5 min-h-0 flex-1" style={{ perspective: 1200 }}>
           <AnimatePresence initial={false} custom={paneDirection}>
             <motion.div
               key={paneMode}
@@ -514,7 +528,7 @@ export function Sidebar({
 
         {!collapsed ? <SidebarResizeHandle dragging={dragging} onPointerDown={startResize} /> : null}
       </aside>
-    </div>
+    </motion.div>
   )
 }
 

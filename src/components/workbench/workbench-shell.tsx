@@ -128,18 +128,20 @@ export function WorkbenchShell() {
                 <AnimatePresence initial={false}>
                   <motion.div
                     key={`${view}-${missionKey}`}
-                    initial={{ opacity: 0, y: 10, filter: "blur(6px)" }}
+                    initial={{ opacity: 0, y: 22, scale: 0.986, filter: "blur(8px)" }}
                     animate={{
                       opacity: 1,
                       y: 0,
+                      scale: 1,
                       filter: "blur(0px)",
-                      transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] },
+                      transition: { type: "spring", stiffness: 260, damping: 28 },
                     }}
                     exit={{
                       opacity: 0,
-                      y: -8,
-                      filter: "blur(4px)",
-                      transition: { duration: 0.16, ease: "easeIn" },
+                      y: -14,
+                      scale: 0.988,
+                      filter: "blur(6px)",
+                      transition: { duration: 0.18, ease: [0.3, 0, 0.8, 0.2] },
                     }}
                     className="absolute inset-0"
                   >

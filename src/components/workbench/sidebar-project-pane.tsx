@@ -23,9 +23,11 @@ import {
 } from "@phosphor-icons/react"
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { motion } from "motion/react"
 import { cn } from "@/lib/utils"
 
 import { presenceMeta, railMembers, type ProjectManagementPanelId } from "./project/project-management-model"
+import { paneItemVariants } from "./sidebar-pane-motion"
 import { SidebarNavList, type SidebarNavItem } from "./sidebar-nav"
 
 const projectTools: Array<SidebarNavItem<ProjectManagementPanelId>> = [
@@ -63,16 +65,18 @@ export function ProjectSidebarPane({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <button
+      <motion.button
+        variants={paneItemVariants}
         type="button"
+        aria-label="返回工作台"
         onClick={onExit}
         className="flex h-8 w-full items-center gap-1.5 rounded-[8px] px-2 text-[11px] font-medium text-[var(--muted-strong)] outline-none transition-colors hover:bg-wash hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
       >
         <CaretLeft className="size-[13px] shrink-0" weight="bold" aria-hidden />
         <span className="sidebar-label truncate">返回工作台</span>
-      </button>
+      </motion.button>
 
-      <div className="mt-1.5 flex min-h-[44px] items-center gap-2.5 px-2">
+      <motion.div variants={paneItemVariants} className="mt-1.5 flex min-h-[44px] items-center gap-2.5 px-2">
         <span className="flex size-[30px] shrink-0 items-center justify-center rounded-[9px] border border-[var(--accent-soft-line)] bg-[var(--accent-soft)] text-[var(--accent-ink)] shadow-[inset_0_1px_0_rgb(255_255_255/0.72)]">
           <span className="text-[10px] font-bold tracking-[-0.02em]">F1</span>
         </span>
@@ -92,11 +96,11 @@ export function ProjectSidebarPane({
         >
           <Star className="size-[15px]" weight={favorited ? "fill" : "regular"} />
         </button>
-      </div>
+      </motion.div>
 
       <div aria-hidden className="my-2 h-px shrink-0 bg-[var(--line)]" />
 
-      <nav aria-label="项目管理入口">
+      <motion.nav variants={paneItemVariants} aria-label="项目管理入口">
         <SidebarNavList
           items={projectTools}
           value={toolActive ? activePanel : null}
@@ -108,12 +112,14 @@ export function ProjectSidebarPane({
             ) : null
           }
         />
-      </nav>
+      </motion.nav>
 
       <div aria-hidden className="my-2 h-px shrink-0 bg-[var(--line)]" />
 
-      <button
+      <motion.button
+        variants={paneItemVariants}
         type="button"
+        aria-label="Nova · 项目 Agent"
         onClick={() => toggle("agent")}
         aria-expanded={activePanel === "agent"}
         aria-controls="project-management-drawer"
@@ -130,9 +136,9 @@ export function ProjectSidebarPane({
           <Robot className="size-[13px]" weight="fill" />
         </span>
         <span className="sidebar-label truncate">Nova · 项目 Agent</span>
-      </button>
+      </motion.button>
 
-      <section aria-label="项目成员" className={cn("mt-2", collapsed && "hidden")}>
+      <motion.section variants={paneItemVariants} aria-label="项目成员" className={cn("mt-2", collapsed && "hidden")}>
         <div className="flex h-6 items-center px-2 text-[11px] font-medium text-[var(--muted)]">
           <span className="sidebar-label">成员 · {railMembers.length}</span>
           <Tooltip>
@@ -190,12 +196,13 @@ export function ProjectSidebarPane({
             )
           })}
         </div>
-      </section>
+      </motion.section>
 
-      <div className="mt-auto">
+      <motion.div variants={paneItemVariants} className="mt-auto">
         <div aria-hidden className="mb-1.5 h-px bg-[var(--line)]" />
         <button
           type="button"
+          aria-label="项目设置"
           onClick={() => toggle("settings")}
           aria-expanded={activePanel === "settings"}
           aria-controls="project-management-drawer"
@@ -211,7 +218,7 @@ export function ProjectSidebarPane({
           />
           <span className="sidebar-label truncate">项目设置</span>
         </button>
-      </div>
+      </motion.div>
     </div>
   )
 }

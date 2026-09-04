@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Image from "next/image"
+import { AnimatePresence, motion } from "motion/react"
 import {
   Archive,
   Bell,
@@ -43,6 +44,7 @@ import {
 import { cn } from "@/lib/utils"
 
 import type { ProjectManagementPanelId } from "./project/project-management-model"
+import { paneContainerVariants, paneItemVariants } from "./sidebar-pane-motion"
 import { ProjectSidebarPane } from "./sidebar-project-pane"
 import { SidebarNavList, type SidebarNavItem } from "./sidebar-nav"
 import { SidebarResizeHandle, useSidebarWidth } from "./sidebar-resize"
@@ -62,6 +64,9 @@ const SIDEBAR_VERSION = "v0.1.0"
 
 type SpaceItem = { id: string; label: string; icon: typeof Folders }
 type SidebarPaneMode = "workbench" | "project"
+
+/** 空间行高度（h-9），行容器的高度弹簧动画据此收放 */
+const SPACE_ROW_HEIGHT = 36
 
 function DenseCollapseIcon() {
   return (
@@ -112,22 +117,14 @@ export function Sidebar({
     { id: "personal-workspace", label: "个人工作台", icon: UsersThree },
   ])
   const [renamingId, setRenamingId] = useState<string | null>(null)
-  const [removingId, setRemovingId] = useState<string | null>(null)
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
   const [rowFavorites, setRowFavorites] = useState<Record<string, boolean>>({})
   const { width, dragging, startResize } = useSidebarWidth()
 
   // 中段菜单区在「工作台导航」与「项目管理菜单」间切换：
-  // 模式变化时在渲染期记录退场面板，待其退场动画播完（onAnimationEnd）再卸载，
-  // 形成双向推挤的转场层次
+  // AnimatePresence 同时挂载进退两个面板，做方向感知的推挤转场
   const paneMode: SidebarPaneMode = view === "projects" ? "project" : "workbench"
-  const [pane, setPane] = useState<{ mode: SidebarPaneMode; exiting: SidebarPaneMode | null }>(() => ({
-    mode: paneMode,
-    exiting: null,
-  }))
-  if (pane.mode !== paneMode) {
-    setPane({ mode: paneMode, exiting: pane.mode })
-  }
+  const paneDirection = paneMode === "project" ? 1 : -1
 
   function createSpace() {
     setSpacesOpen(true)
@@ -142,18 +139,14 @@ export function Sidebar({
   }
 
   function archiveSpace(id: string) {
-    setRemovingId(id)
-    window.setTimeout(() => {
-      setSpaces((items) => items.filter((item) => item.id !== id))
-      setRemovingId(null)
-    }, 220)
+    setSpaces((items) => items.filter((item) => item.id !== id))
   }
 
   const visibleSpaces = searchQuery ? spaces.filter((item) => item.label.includes(searchQuery)) : spaces
 
   const workbenchPane = (
     <>
-      <nav aria-label="主导航">
+      <motion.nav variants={paneItemVariants} aria-label="主导航">
         <SidebarNavList
           items={navigation}
           value={view === "projects" ? null : view}
@@ -165,10 +158,10 @@ export function Sidebar({
             ) : null
           }
         />
-      </nav>
+      </motion.nav>
 
       {projectFavorited && filter === "all" ? (
-        <section className="mt-5" aria-label="收藏项目">
+        <motion.section variants={paneItemVariants} className="mt-5" aria-label="收藏项目">
           <div className={cn("flex h-6 items-center px-2 text-[11px] font-medium text-[var(--muted)]", collapsed && "justify-center px-0")}>
             <span className={cn("sidebar-label", collapsed && "hidden")}>收藏</span>
             <Star className={cn("ml-auto size-3 text-[#d79a3b]", !collapsed && "hidden")} weight="fill" />
@@ -187,10 +180,10 @@ export function Sidebar({
               <span className="sidebar-label truncate">Fouc 桌面端 V1</span>
             </button>
           )}
-        </section>
+        </motion.section>
       ) : null}
 
-      <section className={cn(projectFavorited && filter === "all" ? "mt-3" : "mt-5", filter === "recent" && "hidden")} aria-label="工作空间">
+      <motion.section variants={paneItemVariants} className={cn(projectFavorited && filter === "all" ? "mt-3" : "mt-5", filter === "recent" && "hidden")} aria-label="工作空间">
         <div
           className={cn(
             "flex h-6 items-center px-2 text-[11px] font-medium text-[var(--muted)]",
@@ -233,37 +226,54 @@ export function Sidebar({
         </div>
 
         {spacesOpen ? (
-          <div className="mt-px space-y-px animate-in fade-in-0 slide-in-from-top-1">
-            {visibleSpaces.length === 0 ? (
-              <p className="sidebar-label px-2 py-1.5 text-[10.5px] text-[var(--muted)]">未找到空间</p>
-            ) : (
-              visibleSpaces.map((space) => (
-                <SpaceRow
-                  key={space.id}
-                  item={space}
-                  collapsed={collapsed}
-                  renaming={renamingId === space.id}
-                  removing={removingId === space.id}
-                  favorited={rowFavorites[space.id] ?? false}
-                  menuOpen={menuOpenId === space.id}
-                  onOpen={() => onViewChange("projects")}
-                  onToggleFavorite={() =>
-                    setRowFavorites((prev) => ({ ...prev, [space.id]: !prev[space.id] }))
-                  }
-                  onStartRename={() => setRenamingId(space.id)}
-                  onRenameCommit={commitRename}
-                  onRenameCancel={() => setRenamingId(null)}
-                  onArchive={() => archiveSpace(space.id)}
-                  onNewMission={onNewMission}
-                  onMenuOpenChange={(open) => setMenuOpenId(open ? space.id : null)}
-                />
-              ))
-            )}
+          <div className="mt-px">
+            <AnimatePresence initial={false}>
+              {visibleSpaces.length === 0 ? (
+                <motion.p
+                  key="empty"
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="sidebar-label px-2 py-1.5 text-[10.5px] text-[var(--muted)]"
+                >
+                  未找到空间
+                </motion.p>
+              ) : (
+                visibleSpaces.map((space) => (
+                  <motion.div
+                    key={space.id}
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: SPACE_ROW_HEIGHT, opacity: 1 }}
+                    exit={{ height: 0, opacity: 0, x: 14 }}
+                    transition={{ type: "spring", stiffness: 420, damping: 38, opacity: { duration: 0.16 } }}
+                    className="overflow-hidden"
+                  >
+                    <SpaceRow
+                      item={space}
+                      collapsed={collapsed}
+                      renaming={renamingId === space.id}
+                      favorited={rowFavorites[space.id] ?? false}
+                      menuOpen={menuOpenId === space.id}
+                      onOpen={() => onViewChange("projects")}
+                      onToggleFavorite={() =>
+                        setRowFavorites((prev) => ({ ...prev, [space.id]: !prev[space.id] }))
+                      }
+                      onStartRename={() => setRenamingId(space.id)}
+                      onRenameCommit={commitRename}
+                      onRenameCancel={() => setRenamingId(null)}
+                      onArchive={() => archiveSpace(space.id)}
+                      onNewMission={onNewMission}
+                      onMenuOpenChange={(open) => setMenuOpenId(open ? space.id : null)}
+                    />
+                  </motion.div>
+                ))
+              )}
+            </AnimatePresence>
           </div>
         ) : null}
-      </section>
+      </motion.section>
 
-      <section className={cn("mt-3", filter === "spaces" && "hidden")} aria-label="最近访问">
+      <motion.section variants={paneItemVariants} className={cn("mt-3", filter === "spaces" && "hidden")} aria-label="最近访问">
         <div
           className={cn(
             "flex h-6 items-center px-2 text-[11px] font-medium text-[var(--muted)]",
@@ -320,7 +330,7 @@ export function Sidebar({
             </button>
           ) : null}
         </div>
-      </section>
+      </motion.section>
     </>
   )
 
@@ -452,31 +462,19 @@ export function Sidebar({
         </Button>
 
         <div className="relative mt-2.5 min-h-0 flex-1">
-          {pane.exiting ? (
-            <div
-              key={`exit-${pane.exiting}`}
-              aria-hidden
-              inert
-              onAnimationEnd={(event) => {
-                if (event.target === event.currentTarget) setPane((prev) => ({ ...prev, exiting: null }))
-              }}
-              className={cn(
-                "pointer-events-none absolute inset-0 flex flex-col overflow-y-auto pb-2 animate-out fade-out duration-300",
-                pane.exiting === "project" ? "slide-out-to-right-3" : "slide-out-to-left-3",
-              )}
+          <AnimatePresence initial={false} custom={paneDirection}>
+            <motion.div
+              key={paneMode}
+              custom={paneDirection}
+              variants={paneContainerVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              className="absolute inset-0 flex flex-col overflow-y-auto pb-2"
             >
-              {pane.exiting === "project" ? projectPane : workbenchPane}
-            </div>
-          ) : null}
-          <div
-            key={`pane-${pane.mode}`}
-            className={cn(
-              "absolute inset-0 flex flex-col overflow-y-auto pb-2 animate-in fade-in duration-300",
-              pane.mode === "project" ? "slide-in-from-right-3" : "slide-in-from-left-3",
-            )}
-          >
-            {pane.mode === "project" ? projectPane : workbenchPane}
-          </div>
+              {paneMode === "project" ? projectPane : workbenchPane}
+            </motion.div>
+          </AnimatePresence>
         </div>
 
         <div className="mt-auto">
@@ -524,7 +522,6 @@ function SpaceRow({
   item,
   collapsed,
   renaming,
-  removing,
   favorited,
   menuOpen,
   onOpen,
@@ -539,7 +536,6 @@ function SpaceRow({
   item: SpaceItem
   collapsed: boolean
   renaming: boolean
-  removing: boolean
   favorited: boolean
   menuOpen: boolean
   onOpen: () => void
@@ -555,13 +551,7 @@ function SpaceRow({
   const actionsVisible = menuOpen
 
   return (
-    <div
-      className={cn(
-        "overflow-hidden transition-[max-height,opacity,transform] duration-200 ease-out",
-        removing ? "max-h-0 translate-x-2 opacity-0" : "max-h-[40px]",
-      )}
-    >
-      <div className="group/space relative flex h-9 items-center rounded-lg pr-0.5 transition-[background-color] hover:bg-raise">
+    <div className="group/space relative flex h-9 items-center rounded-lg pr-0.5 transition-[background-color] hover:bg-raise">
         {renaming ? (
           <input
             autoFocus
@@ -591,10 +581,10 @@ function SpaceRow({
         {!renaming && !collapsed ? (
           <div
             className={cn(
-              "ml-auto flex shrink-0 items-center gap-0.5 pl-0.5 transition-opacity duration-150",
+              "ml-auto flex shrink-0 items-center gap-0.5 pl-0.5 transition-[opacity,transform] duration-200 ease-out",
               actionsVisible
-                ? "opacity-100"
-                : "opacity-0 group-hover/space:opacity-100 group-focus-within/space:opacity-100",
+                ? "translate-x-0 opacity-100"
+                : "translate-x-[3px] opacity-0 group-hover/space:translate-x-0 group-hover/space:opacity-100 group-focus-within/space:translate-x-0 group-focus-within/space:opacity-100",
             )}
           >
             <Tooltip>
@@ -640,7 +630,6 @@ function SpaceRow({
             </DropdownMenu>
           </div>
         ) : null}
-      </div>
     </div>
   )
 }

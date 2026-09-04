@@ -2,12 +2,13 @@
 
 /**
  * 侧栏导航列表（工作台侧栏 / 设置侧栏共用）：
- * 激活态为主题色软底指示容器，切换时沿列表滑动到位；
+ * 激活态为主题色软底指示容器，切换时以弹簧物理沿列表滑动到位；
  * 悬停白底仅作用于未激活行，避免盖住滑入中的激活容器造成两段式闪变。
  */
 
 import type { ReactNode } from "react"
 import type { Icon } from "@phosphor-icons/react"
+import { motion } from "motion/react"
 
 import { cn } from "@/lib/utils"
 
@@ -40,13 +41,13 @@ export function SidebarNavList<T extends string>({
   return (
     <div className="relative">
       {activeIndex >= 0 ? (
-        <span
+        <motion.span
           aria-hidden
-          className="absolute inset-x-0 top-0 rounded-[8px] bg-[var(--accent-soft)] shadow-[inset_0_0_0_1px_var(--accent-soft-line)] transition-transform duration-[240ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
-          style={{
-            height: ROW_HEIGHT,
-            transform: `translateY(${activeIndex * (ROW_HEIGHT + ROW_GAP)}px)`,
-          }}
+          initial={false}
+          animate={{ y: activeIndex * (ROW_HEIGHT + ROW_GAP) }}
+          transition={{ type: "spring", stiffness: 460, damping: 38 }}
+          className="absolute inset-x-0 top-0 rounded-[8px] bg-[var(--accent-soft)] shadow-[inset_0_0_0_1px_var(--accent-soft-line)]"
+          style={{ height: ROW_HEIGHT }}
         />
       ) : null}
       <ul className="relative space-y-[3px]">

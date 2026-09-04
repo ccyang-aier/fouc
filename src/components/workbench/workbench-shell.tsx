@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState, useSyncExternalStore } from "react"
+import { useEffect, useRef, useState, useSyncExternalStore } from "react"
+import { AnimatePresence, MotionConfig, motion } from "motion/react"
 
 import { TooltipProvider } from "@/components/ui/tooltip"
 
@@ -56,6 +57,8 @@ export function WorkbenchShell() {
   const [view, setView] = useState<WorkbenchView>("home")
   // 项目管理面板状态由壳层持有：左侧项目菜单与项目画布共享同一开合来源
   const [managementPanel, setManagementPanel] = useState<ProjectManagementPanelId | null>(null)
+  // 记录「因进入项目视图而自动收起」的侧栏状态，用于返回时还原
+  const projectAutoCollapsed = useRef(false)
   const projectFavorited = useSyncExternalStore(subscribeProjectFavorite, readProjectFavorite, () => false)
 
   // 启动时恢复外观偏好（主题 / 字体 / 动效）与侧栏材质（标准 / 磨砂玻璃）
@@ -70,6 +73,15 @@ export function WorkbenchShell() {
 
   function changeView(nextView: WorkbenchView) {
     if (nextView !== "projects") setManagementPanel(null)
+    // 进入项目视图默认收起侧栏为内容让位；返回工作台时还原。
+    // 用户在项目视图内手动展开/收起后，视为偏好，不再自动还原。
+    if (nextView === "projects" && !sidebarCollapsed) {
+      projectAutoCollapsed.current = true
+      setSidebarCollapsed(true)
+    } else if (nextView !== "projects" && projectAutoCollapsed.current) {
+      projectAutoCollapsed.current = false
+      setSidebarCollapsed(false)
+    }
     setView(nextView)
   }
 
@@ -82,9 +94,10 @@ export function WorkbenchShell() {
   }
 
   return (
-    <TooltipProvider>
-      <div className="flex h-dvh min-h-[540px] min-w-[660px] flex-col overflow-hidden text-[var(--ink)]">
-        <TitleBar />
+    <MotionConfig reducedMotion="user">
+      <TooltipProvider>
+        <div className="flex h-dvh min-h-[540px] min-w-[660px] flex-col overflow-hidden text-[var(--ink)]">
+          <TitleBar />
         {view === "settings" ? (
           // 设置为全窗页面：接管标题栏以下的全部空间，不保留工作台侧边栏
           <div className="min-h-0 flex-1">
@@ -96,7 +109,10 @@ export function WorkbenchShell() {
           <div className="sidebar-material flex min-h-0 flex-1">
             <Sidebar
               collapsed={sidebarCollapsed}
-              onToggle={() => setSidebarCollapsed((collapsed) => !collapsed)}
+              onToggle={() => {
+                projectAutoCollapsed.current = false
+                setSidebarCollapsed((collapsed) => !collapsed)
+              }}
               onNewMission={startMission}
               view={view}
               onViewChange={changeView}
@@ -108,28 +124,49 @@ export function WorkbenchShell() {
             {/* 面板自绘 1px 边框（含左上圆角），与侧栏分割线同用 --wt-sidebar-glass-edge：
                 真实 border 不受内容层遮挡，四边与圆角处颜色连续均匀 */}
             <main className="relative min-w-0 flex-1 overflow-hidden rounded-tl-[16px] border border-[var(--wt-sidebar-glass-edge)] bg-panel">
-              <div key={`${view}-${missionKey}`} className="h-full min-h-0 animate-in fade-in duration-300">
-                {view === "home" ? (
-                  <HomeCanvas />
-                ) : view === "projects" ? (
-                  <ProjectHomeCanvas
-                    favorited={projectFavorited}
-                    onFavoriteChange={updateProjectFavorite}
-                    managementPanel={managementPanel}
-                    onManagementPanelChange={setManagementPanel}
-                  />
-                ) : view === "automation" ? (
-                  <AutomationCanvas />
-                ) : (
-                  <div className="flex h-full items-center justify-center text-[13px] text-[var(--ink-soft)]">
-                    该空间已在 V1 规划中，尚未开放
-                  </div>
-                )}
+              <div className="relative h-full min-h-0">
+                <AnimatePresence initial={false}>
+                  <motion.div
+                    key={`${view}-${missionKey}`}
+                    initial={{ opacity: 0, y: 10, filter: "blur(6px)" }}
+                    animate={{
+                      opacity: 1,
+                      y: 0,
+                      filter: "blur(0px)",
+                      transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] },
+                    }}
+                    exit={{
+                      opacity: 0,
+                      y: -8,
+                      filter: "blur(4px)",
+                      transition: { duration: 0.16, ease: "easeIn" },
+                    }}
+                    className="absolute inset-0"
+                  >
+                    {view === "home" ? (
+                      <HomeCanvas />
+                    ) : view === "projects" ? (
+                      <ProjectHomeCanvas
+                        favorited={projectFavorited}
+                        onFavoriteChange={updateProjectFavorite}
+                        managementPanel={managementPanel}
+                        onManagementPanelChange={setManagementPanel}
+                      />
+                    ) : view === "automation" ? (
+                      <AutomationCanvas />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-[13px] text-[var(--ink-soft)]">
+                        该空间已在 V1 规划中，尚未开放
+                      </div>
+                    )}
+                  </motion.div>
+                </AnimatePresence>
               </div>
             </main>
           </div>
         )}
-      </div>
-    </TooltipProvider>
+        </div>
+      </TooltipProvider>
+    </MotionConfig>
   )
 }

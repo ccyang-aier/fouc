@@ -59,10 +59,20 @@ export function ProjectHomeCanvas({
           onTabChange={setTab}
           favorited={favorited}
           onFavoriteChange={onFavoriteChange}
-          panelOpen={workPanelOpen}
-          onTogglePanel={() => setWorkPanelOpen((open) => !open)}
+          panelOpen={workPanelOpen && !managementPanel}
+          onTogglePanel={() => {
+            if (managementPanel) {
+              onManagementPanelChange(null)
+              setWorkPanelOpen(true)
+            } else {
+              setWorkPanelOpen((open) => !open)
+            }
+          }}
         />
-        <ProjectWorkCanvas detailOpen={workPanelOpen} onDetailOpenChange={setWorkPanelOpen} />
+        <ProjectWorkCanvas
+          detailOpen={workPanelOpen && !managementPanel}
+          onDetailOpenChange={setWorkPanelOpen}
+        />
       </div>
     )
   } else if (tab === "outputs") {
@@ -73,8 +83,11 @@ export function ProjectHomeCanvas({
         onTabChange={setTab}
         favorited={favorited}
         onFavoriteChange={onFavoriteChange}
-        panelOpen={outputsPanelOpen}
-        onPanelOpenChange={setOutputsPanelOpen}
+        panelOpen={outputsPanelOpen && !managementPanel}
+        onPanelOpenChange={(open) => {
+          if (managementPanel && open) onManagementPanelChange(null)
+          setOutputsPanelOpen(open)
+        }}
         onOpenWorkObject={setWorkObjectDetailId}
       />
     )
@@ -83,7 +96,9 @@ export function ProjectHomeCanvas({
       <div
         className={cn(
           "grid h-full min-h-0 bg-panel",
-          contextOpen ? "grid-cols-[minmax(0,1fr)_292px] max-[1120px]:grid-cols-1" : "grid-cols-1",
+          contextOpen && !managementPanel
+            ? "grid-cols-[minmax(0,1fr)_292px] max-[1120px]:grid-cols-1"
+            : "grid-cols-1",
         )}
       >
         <div className="flex min-h-0 min-w-0 flex-col">
@@ -92,8 +107,15 @@ export function ProjectHomeCanvas({
             onTabChange={setTab}
             favorited={favorited}
             onFavoriteChange={onFavoriteChange}
-            panelOpen={contextOpen}
-            onTogglePanel={() => setContextOpen((open) => !open)}
+            panelOpen={contextOpen && !managementPanel}
+            onTogglePanel={() => {
+              if (managementPanel) {
+                onManagementPanelChange(null)
+                setContextOpen(true)
+              } else {
+                setContextOpen((open) => !open)
+              }
+            }}
           />
           <ScrollArea
             as="section"
@@ -121,15 +143,14 @@ export function ProjectHomeCanvas({
             </div>
           </ScrollArea>
         </div>
-        {contextOpen ? <ProjectContextSidebar /> : null}
+        {contextOpen && !managementPanel ? <ProjectContextSidebar /> : null}
       </div>
     )
   }
 
-  // 管理抽屉锚定主区左缘（紧邻侧栏项目菜单），覆盖于项目内容之上
+  // 管理抽屉位于项目内容左侧（紧邻侧栏项目菜单），推挤而非覆盖内容
   return (
-    <div className="relative flex h-full min-h-0">
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col">{content}</div>
+    <div className="flex h-full min-h-0">
       <ProjectManagementDrawer
         activePanel={managementPanel}
         onClose={() => onManagementPanelChange(null)}
@@ -138,6 +159,7 @@ export function ProjectHomeCanvas({
           onManagementPanelChange(null)
         }}
       />
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">{content}</div>
     </div>
   )
 }

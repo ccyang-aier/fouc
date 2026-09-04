@@ -24,6 +24,7 @@
     "verify:approval": "bun backend/scripts/verify-approval.ts"
   },
   "dependencies": {
+    "@fouc/shared": "workspace:*",
     "@phosphor-icons/react": "2.1.10",
     "@radix-ui/react-dropdown-menu": "latest",
     "@radix-ui/react-slot": "latest",
@@ -31,11 +32,11 @@
     "@tauri-apps/api": "2.11.1",
     "class-variance-authority": "latest",
     "clsx": "latest",
+    "motion": "^13.2.0",
     "next": "16.3.3",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "tailwind-merge": "latest",
-    "@fouc/shared": "workspace:*"
+    "tailwind-merge": "latest"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.3.3",

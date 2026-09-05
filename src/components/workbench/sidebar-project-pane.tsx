@@ -137,9 +137,18 @@ export function ProjectSidebarPane({
           value={toolActive ? activePanel : null}
           onChange={toggle}
           collapsible
-          renderTrailing={(item) =>
+          collapsed={collapsed}
+          renderTrailing={(item, { collapsed: isCollapsed }) =>
             item.id === "notifications" ? (
-              <span aria-hidden className="ml-auto size-[5px] shrink-0 rounded-full bg-[#df5660]" />
+              isCollapsed ? (
+                // 折叠轨道：红点降级为铃铛右上角角标，避免把图标挤离中心
+                <span
+                  aria-hidden
+                  className="absolute right-[calc(50%-13px)] top-[7px] size-2 rounded-full border-[1.5px] border-[var(--panel)] bg-[#df5660]"
+                />
+              ) : (
+                <span aria-hidden className="ml-auto size-[5px] shrink-0 rounded-full bg-[#df5660]" />
+              )
             ) : null
           }
         />
@@ -173,30 +182,12 @@ export function ProjectSidebarPane({
         <div
           className={cn(
             "flex h-6 items-center px-2 text-[11px] font-medium text-[var(--muted)]",
-            collapsed && "justify-center px-0",
+            collapsed && "hidden",
           )}
         >
           <span className="sidebar-label">成员 · {railMembers.length}</span>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                aria-label="邀请协作成员"
-                aria-expanded={activePanel === "invite"}
-                aria-controls="project-management-drawer"
-                onClick={() => toggle("invite")}
-                className={cn(
-                  "ml-auto flex size-6 items-center justify-center rounded-md outline-none transition-colors hover:bg-wash hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
-                  collapsed && "ml-0",
-                )}
-              >
-                <Plus className="size-3" weight="bold" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="right">邀请协作成员</TooltipContent>
-          </Tooltip>
         </div>
-        <div className={cn("mt-1 flex gap-1 px-1.5", collapsed ? "flex-col items-center px-0" : "flex-wrap")}>
+        <div className={cn("flex gap-1 px-1.5", collapsed ? "flex-col items-center px-0" : "mt-1 flex-wrap")}>
           {railMembers.map((member) => {
             const panelId = `member:${member.id}` as const
             const presence = presenceMeta[member.presence]
@@ -234,6 +225,29 @@ export function ProjectSidebarPane({
               </Tooltip>
             )
           })}
+        </div>
+        {/* 邀请入口固定在成员列表末尾，与头像同尺度 */}
+        <div className={cn("mt-1.5 flex", collapsed ? "justify-center" : "px-1.5")}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label="邀请协作成员"
+                aria-expanded={activePanel === "invite"}
+                aria-controls="project-management-drawer"
+                onClick={() => toggle("invite")}
+                className={cn(
+                  "flex size-[27px] items-center justify-center rounded-full border border-dashed outline-none transition-[background-color,color,transform] hover:bg-wash focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-90",
+                  activePanel === "invite"
+                    ? "border-[var(--accent-soft-line)] bg-[var(--accent-soft)] text-[var(--accent-ink)]"
+                    : "border-[var(--line-strong)] text-[var(--muted-strong)] hover:text-[var(--ink)]",
+                )}
+              >
+                <Plus className="size-3" weight="bold" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">邀请协作成员</TooltipContent>
+          </Tooltip>
         </div>
       </motion.section>
 

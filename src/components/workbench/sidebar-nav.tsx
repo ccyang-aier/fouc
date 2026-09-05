@@ -22,11 +22,17 @@ export type SidebarNavItem<T extends string> = {
   icon: Icon
 }
 
+/** renderTrailing 的上下文：折叠轨道下行尾元素需切换为图标角标形态 */
+export type SidebarNavTrailingContext = {
+  collapsed: boolean
+}
+
 export function SidebarNavList<T extends string>({
   items,
   value,
   onChange,
   collapsible = false,
+  collapsed = false,
   renderTrailing,
 }: {
   items: Array<SidebarNavItem<T>>
@@ -34,7 +40,9 @@ export function SidebarNavList<T extends string>({
   onChange: (value: T) => void
   /** 工作台侧栏折叠时随 .sidebar-label 约定隐藏文字 */
   collapsible?: boolean
-  renderTrailing?: (item: SidebarNavItem<T>) => ReactNode
+  /** 折叠轨道形态：图标居中，行尾元素交给 renderTrailing 自行降级 */
+  collapsed?: boolean
+  renderTrailing?: (item: SidebarNavItem<T>, context: SidebarNavTrailingContext) => ReactNode
 }) {
   const activeIndex = items.findIndex((item) => item.id === value)
 
@@ -62,7 +70,8 @@ export function SidebarNavList<T extends string>({
                 aria-current={selected ? "page" : undefined}
                 onClick={() => onChange(item.id)}
                 className={cn(
-                  "flex h-[36px] w-full items-center gap-2.5 rounded-[8px] px-2.5 text-left text-[12px] font-medium outline-none transition-[background-color,color,box-shadow] duration-150 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+                  "relative flex h-[36px] w-full items-center gap-2.5 rounded-[8px] px-2.5 text-left text-[12px] font-medium outline-none transition-[background-color,color,box-shadow] duration-150 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+                  collapsed && "justify-center px-0",
                   selected
                     ? "text-[var(--accent-ink)]"
                     : "text-[var(--ink-soft)] hover:bg-raise hover:text-[var(--ink)]",
@@ -77,7 +86,7 @@ export function SidebarNavList<T extends string>({
                   aria-hidden
                 />
                 <span className={cn("truncate", collapsible && "sidebar-label")}>{item.label}</span>
-                {renderTrailing?.(item)}
+                {renderTrailing?.(item, { collapsed })}
               </button>
             </li>
           )

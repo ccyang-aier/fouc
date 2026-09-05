@@ -74,7 +74,7 @@ export function ProjectManagementDrawer({ activePanel, onClose, onOpenWork }: Pr
           animate={{ width: DRAWER_WIDTH, opacity: 1 }}
           exit={{ width: 0, opacity: 0 }}
           transition={{ type: "spring", stiffness: 340, damping: 36, opacity: { duration: 0.18 } }}
-          className="relative z-20 h-full shrink-0 overflow-hidden border-r border-[var(--line)] bg-panel shadow-[12px_0_32px_-26px_rgb(38_46_62/0.38)]"
+          className="relative z-20 h-full shrink-0 overflow-hidden border-r border-[var(--line)] bg-panel"
         >
           {/* 内层固定宽度：容器宽度收放时内容不发生挤压重排 */}
           <div className="flex h-full flex-col" style={{ width: DRAWER_WIDTH }}>

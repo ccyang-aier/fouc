@@ -319,7 +319,6 @@ export function ChatPanel() {
 
             const isDropTarget = dropTarget === group.id && draggingTag !== null
             const isGroupCollapsed = collapsedGroups[group.id] ?? false
-            const actionSlotWidth = group.kind === "group" ? "mr-[54px]" : "mr-[30px]"
 
             return (
               <section
@@ -344,26 +343,31 @@ export function ChatPanel() {
                 )}
               >
                 {renamingGroupId === group.id ? (
-                  <input
-                    autoFocus
-                    value={renameDraft}
-                    onChange={(event) => setRenameDraft(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") commitGroupRename()
-                      if (event.key === "Escape") setRenamingGroupId(null)
-                    }}
-                    onBlur={commitGroupRename}
-                    aria-label="重命名分组"
-                    className="my-1 h-7 w-full max-w-[160px] rounded-[7px] border border-[var(--accent-soft-line)] bg-panel px-2 text-[11px] font-semibold outline-none"
-                  />
+                  /* 行内分组命名器：卡片化的输入行，回车确认 / Esc 取消 */
+                  <div className="my-1 flex h-[34px] animate-in fade-in slide-in-from-top-1 items-center gap-2 rounded-[9px] border border-[var(--accent-soft-line)] bg-panel pl-2.5 pr-2 shadow-[0_1px_5px_rgba(24,30,42,0.06)]">
+                    <input
+                      autoFocus
+                      value={renameDraft}
+                      onChange={(event) => setRenameDraft(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") commitGroupRename()
+                        if (event.key === "Escape") setRenamingGroupId(null)
+                      }}
+                      onBlur={commitGroupRename}
+                      aria-label="分组名称"
+                      placeholder="分组名称"
+                      className="h-full min-w-0 flex-1 bg-transparent text-[11.5px] font-semibold tracking-[-0.01em] outline-none placeholder:text-[var(--muted)]"
+                    />
+                    <kbd className="shrink-0 rounded-[5px] bg-[var(--surface-subtle)] px-1.5 py-0.5 text-[8px] font-medium text-[var(--muted)]">↵</kbd>
+                  </div>
                 ) : (
-                  /* 分组行是一个整体：标题区可折叠，行内悬停浮现「新建标签」与「更多」 */
+                  /* 分组行是一个整体：标题区可折叠（三角紧随计数），行内悬停浮现「新建标签」与「更多」 */
                   <div className="group/grp relative flex h-[34px] items-center rounded-[9px] pl-2.5 pr-1 transition-colors hover:bg-[var(--surface-hover)]">
                     <button
                       type="button"
                       aria-expanded={!isGroupCollapsed}
                       onClick={() => setCollapsedGroups((current) => ({ ...current, [group.id]: !isGroupCollapsed }))}
-                      className="flex h-full min-w-0 flex-1 items-center gap-2 rounded-[9px] outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                      className="flex h-full min-w-0 flex-1 items-center gap-2 rounded-[9px] pr-1 outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                     >
                       <h3 className="truncate text-[11.5px] font-semibold tracking-[-0.01em] text-[var(--ink)]">{group.label}</h3>
                       {groupTags.length ? (
@@ -372,14 +376,14 @@ export function ChatPanel() {
                       <CaretDown
                         aria-hidden
                         className={cn(
-                          "ml-auto size-[12px] shrink-0 text-[var(--muted)] transition-transform duration-150",
-                          actionSlotWidth,
+                          "size-[11px] shrink-0 text-[var(--muted)] transition-transform duration-150",
                           isGroupCollapsed && "-rotate-90",
                         )}
                         weight="fill"
                       />
                     </button>
-                    <div className="absolute right-1 flex items-center gap-0.5 opacity-0 transition-opacity duration-150 group-hover/grp:opacity-100 focus-within:opacity-100">
+                    {/* 下拉展开期间保持可见，避免触发器图标消失 */}
+                    <div className="absolute right-1 flex items-center gap-0.5 opacity-0 transition-opacity duration-150 group-hover/grp:opacity-100 has-data-[state=open]:opacity-100 focus-within:opacity-100">
                       <button
                         type="button"
                         aria-label={`在${group.label}中新建标签`}
@@ -394,7 +398,7 @@ export function ChatPanel() {
                             <button
                               type="button"
                               aria-label={`${group.label}分组操作`}
-                              className="flex size-6 shrink-0 items-center justify-center rounded-[7px] text-[var(--muted)] outline-none transition-colors hover:bg-wash hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                              className="flex size-6 shrink-0 items-center justify-center rounded-[7px] text-[var(--muted)] outline-none transition-colors hover:bg-wash hover:text-[var(--ink)] data-[state=open]:bg-wash data-[state=open]:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                             >
                               <DotsThree className="size-[15px]" weight="bold" />
                             </button>
@@ -427,19 +431,27 @@ export function ChatPanel() {
 
                         if (renamingTagId === tag) {
                           return (
-                            <input
+                            /* 行内标签命名器：彩色 # 前缀 + 回车提示，与标签行同尺度 */
+                            <div
                               key={tag}
-                              autoFocus
-                              value={tagDraft}
-                              onChange={(event) => setTagDraft(event.target.value)}
-                              onKeyDown={(event) => {
-                                if (event.key === "Enter") commitTagRename()
-                                if (event.key === "Escape") setRenamingTagId(null)
-                              }}
-                              onBlur={commitTagRename}
-                              aria-label="重命名标签"
-                              className="h-[30px] w-full max-w-[160px] rounded-[8px] border border-[var(--accent-soft-line)] bg-panel px-2 text-[10.5px] font-medium outline-none"
-                            />
+                              className="ml-1 flex h-[32px] animate-in fade-in slide-in-from-top-1 items-center gap-2 rounded-[8px] border border-[var(--accent-soft-line)] bg-panel pl-2 pr-1.5 shadow-[0_1px_5px_rgba(24,30,42,0.06)]"
+                            >
+                              <Hash className={cn("size-[14px] shrink-0", toneIcons[meta.tone])} weight="bold" />
+                              <input
+                                autoFocus
+                                value={tagDraft}
+                                onChange={(event) => setTagDraft(event.target.value)}
+                                onKeyDown={(event) => {
+                                  if (event.key === "Enter") commitTagRename()
+                                  if (event.key === "Escape") setRenamingTagId(null)
+                                }}
+                                onBlur={commitTagRename}
+                                aria-label="标签名称"
+                                placeholder="标签名称"
+                                className="h-full min-w-0 flex-1 bg-transparent text-[10.5px] font-medium outline-none placeholder:text-[var(--muted)]"
+                              />
+                              <kbd className="shrink-0 rounded-[5px] bg-[var(--surface-subtle)] px-1.5 py-0.5 text-[8px] font-medium text-[var(--muted)]">↵</kbd>
+                            </div>
                           )
                         }
 
@@ -483,6 +495,25 @@ export function ChatPanel() {
                             >
                               <Plus className="size-[12px]" weight="bold" />
                             </button>
+
+                            {!isCollapsed ? (
+                              tagItems.length === 0 ? (
+                                /* 空标签展开态：明确告知下一步，避免「点了没反应」的观感 */
+                                <p className="ml-4 px-2 py-1 text-[9px] text-[var(--muted)]">暂无会话，点「＋」在此标签下新建</p>
+                              ) : (
+                                <div className="ml-3.5 mt-0.5 space-y-px">
+                                  {tagItems.map((item) => (
+                                    <ConversationRow
+                                      key={item.id}
+                                      item={item}
+                                      tags={tags}
+                                      active={activeId === item.id}
+                                      onSelect={() => selectConversation(item.id)}
+                                    />
+                                  ))}
+                                </div>
+                              )
+                            ) : null}
                           </div>
                         )
                       })}

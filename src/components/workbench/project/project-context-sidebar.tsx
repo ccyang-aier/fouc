@@ -6,6 +6,7 @@ import { ArrowRight, ArrowsClockwise, CaretRight, GearSix } from "@phosphor-icon
 import { cn } from "@/lib/utils"
 
 import { contextGroups, freshnessItems } from "./project-data"
+import { toneChips, toneIcons } from "./icon-tones"
 
 export function ProjectContextSidebar() {
   const [syncing, setSyncing] = useState<string | null>(null)
@@ -35,8 +36,8 @@ export function ProjectContextSidebar() {
               selected === item.label ? "text-[var(--accent-ink)]" : "hover:text-[var(--accent-ink)]",
             )}
           >
-            <span className={cn("flex size-[38px] items-center justify-center rounded-[9px] border border-[var(--line)] bg-panel text-[var(--muted-strong)] transition-colors", selected === item.label && "border-[var(--accent-soft-line)] bg-[var(--accent-soft)] text-[var(--accent-ink)]") }>
-              <item.icon className="size-[20px]" weight="regular" />
+            <span className={cn("flex size-[38px] items-center justify-center rounded-[10px] transition-transform duration-150", toneChips[item.tone], selected === item.label && "scale-105")}>
+              <item.icon className="size-[19px]" weight="regular" />
             </span>
             <span className="min-w-0">
               <span className="block text-[11.5px] font-semibold text-[var(--ink)]">{item.label}</span>
@@ -53,7 +54,7 @@ export function ProjectContextSidebar() {
         <div className="mt-3">
           {freshnessItems.map((item) => (
             <div key={item.label} className="grid h-[64px] grid-cols-[30px_minmax(0,1fr)_30px] items-center gap-2">
-              <item.icon className="size-[17px] text-[var(--muted-strong)]" />
+              <item.icon className={cn("size-[17px]", toneIcons[item.tone])} />
               <div className="min-w-0">
                 <p className="text-[10.5px] font-medium text-[var(--ink)]">{item.label}</p>
                 <p className="mt-1 truncate text-[9.5px] text-[var(--muted)]">{syncing === item.label ? "正在同步…" : item.description}</p>

@@ -1,15 +1,18 @@
 import Image from "next/image"
-import { ArrowRight, Cube, FileText } from "@phosphor-icons/react"
+import { ArrowRight } from "@phosphor-icons/react"
 
+import { cn } from "@/lib/utils"
+
+import { toneIcons } from "./icon-tones"
 import { inProgress, recentOutputs } from "./project-data"
 
 export function ProjectActivity({ onOpenWork, onOpenOutputs }: { onOpenWork: () => void; onOpenOutputs: () => void }) {
   return (
     <div className="grid grid-cols-2 divide-x divide-[var(--line)] max-[940px]:grid-cols-1 max-[940px]:divide-x-0">
       <ActivityColumn title="正在推进" footer="查看全部工作" onFooterClick={onOpenWork}>
-        {inProgress.map((item, index) => (
+        {inProgress.map((item) => (
           <div key={item.title} className="grid h-[62px] grid-cols-[28px_minmax(0,1fr)_30px_64px_68px] items-center gap-2 border-t border-[var(--line)] px-1">
-            {index === 1 ? <Cube className="size-[22px] text-[var(--accent-ink)]" /> : <FileText className="size-[22px] text-[var(--accent-ink)]" />}
+            <item.icon className={cn("size-[21px]", toneIcons[item.tone])} weight="fill" />
             <div className="min-w-0">
               <p className="truncate text-[11px] font-medium text-[var(--ink)]">{item.title}</p>
               <p className="mt-0.5 text-[9.5px] text-[var(--muted)]">{item.meta}</p>
@@ -27,7 +30,7 @@ export function ProjectActivity({ onOpenWork, onOpenOutputs }: { onOpenWork: () 
       <ActivityColumn title="最近产出" footer="查看全部产出" onFooterClick={onOpenOutputs} className="pl-5 max-[940px]:pl-0">
         {recentOutputs.map((item) => (
           <div key={item.title} className="grid h-[62px] grid-cols-[28px_minmax(0,1fr)_58px_88px] items-center gap-2 border-t border-[var(--line)] px-1">
-            <item.icon className="size-[22px] text-[var(--accent-ink)]" />
+            <item.icon className={cn("size-[21px]", toneIcons[item.tone])} weight="fill" />
             <div className="min-w-0">
               <p className="truncate text-[11px] font-medium text-[var(--ink)]">{item.title}</p>
               <p className="mt-0.5 text-[9.5px] text-[var(--muted)]">{item.meta}</p>

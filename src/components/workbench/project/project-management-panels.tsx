@@ -12,7 +12,6 @@ import {
   Check,
   CheckCircle,
   CheckSquare,
-  Chat,
   Cube,
   FileText,
   GitBranch,
@@ -28,13 +27,8 @@ import {
 
 import { cn } from "@/lib/utils"
 
+import { toneChips, type IconTone } from "./icon-tones"
 import { presenceMeta, type RailMember } from "./project-management-model"
-
-const conversations = [
-  { id: "release", title: "V1 发布准备", meta: "Nova · 8 分钟前", unread: 3 },
-  { id: "permission", title: "权限模型评审", meta: "林默 · 42 分钟前", unread: 0 },
-  { id: "issue", title: "Issue-128 回归", meta: "陈安 · 昨天", unread: 0 },
-]
 
 const mentions = [
   { id: "m1", author: "周欣", context: "通知服务接口变更说明", copy: "@林默 请确认兼容范围，我已补充风险说明。", time: "12 分钟前" },
@@ -49,10 +43,10 @@ const notifications = [
 ]
 
 const aiAssets = [
-  { id: "product", title: "产品知识库", detail: "产品定位、功能与用例", count: "24 条", icon: BookOpen },
-  { id: "technical", title: "技术栈与方案", detail: "项目技术选型与方案要点", count: "18 条", icon: Cube },
-  { id: "design", title: "设计系统", detail: "组件库、样式规范与设计原则", count: "32 条", icon: SlidersHorizontal },
-  { id: "code", title: "代码规范", detail: "编码约定与最佳实践", count: "15 条", icon: CheckSquare },
+  { id: "product", title: "产品知识库", detail: "产品定位、功能与用例", count: "24 条", icon: BookOpen, tone: "blue" as IconTone },
+  { id: "technical", title: "技术栈与方案", detail: "项目技术选型与方案要点", count: "18 条", icon: Cube, tone: "violet" as IconTone },
+  { id: "design", title: "设计系统", detail: "组件库、样式规范与设计原则", count: "32 条", icon: SlidersHorizontal, tone: "rose" as IconTone },
+  { id: "code", title: "代码规范", detail: "编码约定与最佳实践", count: "15 条", icon: CheckSquare, tone: "teal" as IconTone },
 ]
 
 const rules = [
@@ -63,10 +57,10 @@ const rules = [
 ]
 
 const projectAssets = [
-  { id: "repo", title: "fouc / desktop", detail: "main · 2 分钟前同步", tag: "代码仓", icon: GitBranch },
-  { id: "api", title: "Fouc API contracts", detail: "shared/ · 18 分钟前同步", tag: "代码仓", icon: Link },
-  { id: "prd", title: "桌面端 V1 产品说明", detail: "27 页 · 今天 09:42 更新", tag: "文档", icon: FileText },
-  { id: "design", title: "工作台交互规范", detail: "12 个章节 · 昨天更新", tag: "文档", icon: BookOpen },
+  { id: "repo", title: "fouc / desktop", detail: "main · 2 分钟前同步", tag: "代码仓", icon: GitBranch, tone: "blue" as IconTone },
+  { id: "api", title: "Fouc API contracts", detail: "shared/ · 18 分钟前同步", tag: "代码仓", icon: Link, tone: "sky" as IconTone },
+  { id: "prd", title: "桌面端 V1 产品说明", detail: "27 页 · 今天 09:42 更新", tag: "文档", icon: FileText, tone: "amber" as IconTone },
+  { id: "design", title: "工作台交互规范", detail: "12 个章节 · 昨天更新", tag: "文档", icon: BookOpen, tone: "rose" as IconTone },
 ]
 
 const tasks = [
@@ -87,56 +81,15 @@ export function ProjectSummaryPanel() {
       </div>
       <PanelSection title="当前状态" meta="今天 10:32">
         <div className="divide-y divide-[var(--line)]">
-          <ManagementRow icon={CheckSquare} title="V1 核心开发" detail="里程碑 M3 · 已完成 68%" meta="进行中" />
-          <ManagementRow icon={CheckCircle} title="项目健康度" detail="2 项风险需要负责人确认" meta="需关注" />
-          <ManagementRow icon={Cube} title="上下文完整度" detail="代码、文档与规则保持同步" meta="良好" />
+          <ManagementRow icon={CheckSquare} tone="teal" title="V1 核心开发" detail="里程碑 M3 · 已完成 68%" meta="进行中" />
+          <ManagementRow icon={CheckCircle} tone="amber" title="项目健康度" detail="2 项风险需要负责人确认" meta="需关注" />
+          <ManagementRow icon={Cube} tone="sky" title="上下文完整度" detail="代码、文档与规则保持同步" meta="良好" />
         </div>
       </PanelSection>
       <PanelSection title="本周协作">
         <TimelineItem title="完成 18 次任务状态更新" time="团队成员" />
         <TimelineItem title="Nova 执行 7 次项目自动化" time="项目 Agent" />
         <TimelineItem title="新增 3 份评审与测试产物" time="项目资产" />
-      </PanelSection>
-    </div>
-  )
-}
-
-export function ChatPanel() {
-  const [active, setActive] = useState(conversations[0].id)
-  const [message, setMessage] = useState("")
-  const [sent, setSent] = useState(false)
-
-  function sendMessage() {
-    if (!message.trim()) return
-    setMessage("")
-    setSent(true)
-  }
-
-  return (
-    <div className="space-y-6">
-      <PanelSection title="最近会话" action={<IconAction label="新建项目会话"><Plus /></IconAction>}>
-        <div className="space-y-1">
-          {conversations.map((item) => (
-            <button key={item.id} type="button" onClick={() => { setActive(item.id); setSent(false) }} className={rowClass(active === item.id)}>
-              <span className={iconBoxClass(active === item.id)}><Chat className="size-4" /></span>
-              <span className="min-w-0 flex-1 text-left">
-                <span className="block truncate text-[11.5px] font-medium text-[var(--ink)]">{item.title}</span>
-                <span className="mt-0.5 block truncate text-[9.5px] text-[var(--muted)]">{item.meta}</span>
-              </span>
-              {item.unread ? <span className="flex size-4 items-center justify-center rounded-full bg-[var(--accent)] text-[8px] font-semibold text-white">{item.unread}</span> : <CaretRight className="size-3.5 text-[var(--muted)]" />}
-            </button>
-          ))}
-        </div>
-      </PanelSection>
-
-      <PanelSection title="快速回复">
-        <div className="rounded-[10px] border border-[var(--line)] bg-[var(--surface-subtle)] p-3">
-          <textarea value={message} onChange={(event) => { setMessage(event.target.value); setSent(false) }} placeholder="向项目成员发送消息…" aria-label="项目会话消息" className="min-h-20 w-full resize-none bg-transparent text-[11px] leading-5 outline-none placeholder:text-[var(--muted)]" />
-          <div className="mt-2 flex items-center justify-between border-t border-[var(--line)] pt-2">
-            <span className={cn("text-[9.5px]", sent ? "text-[var(--ok-ink)]" : "text-[var(--muted)]")}>{sent ? "消息已加入会话" : "发送到当前项目会话"}</span>
-            <button type="button" disabled={!message.trim()} onClick={sendMessage} className="flex size-7 items-center justify-center rounded-[7px] bg-[var(--accent)] text-white outline-none transition-[background-color,transform,opacity] hover:bg-[var(--accent-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-35"><PaperPlaneTilt className="size-3.5" weight="fill" /></button>
-          </div>
-        </div>
       </PanelSection>
     </div>
   )
@@ -197,20 +150,20 @@ export function AiAssetsPanel() {
       <PanelSection title="Skills" meta="4 个" action={<button type="button" onClick={() => setAdding((value) => !value)} className="flex items-center gap-1 text-[9.5px] font-medium text-[var(--accent-ink)] outline-none hover:underline focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><Plus className="size-3" />新增</button>}>
         {adding ? <div className="mb-2 flex items-center gap-2 rounded-[8px] border border-dashed border-[var(--accent-soft-line)] bg-[var(--accent-soft)] px-3 py-2 text-[9.5px] text-[var(--accent-ink)]"><Plus className="size-3.5" />选择 Skill 模板或从目录导入</div> : null}
         <div className="divide-y divide-[var(--line)]">
-          {aiAssets.map((item) => <ManagementRow key={item.id} icon={item.icon} title={item.title} detail={item.detail} meta={item.count} active={selected === item.id} onClick={() => setSelected(item.id)} />)}
+          {aiAssets.map((item) => <ManagementRow key={item.id} icon={item.icon} tone={item.tone} title={item.title} detail={item.detail} meta={item.count} active={selected === item.id} onClick={() => setSelected(item.id)} />)}
         </div>
       </PanelSection>
 
       <PanelSection title="项目规则" meta="6 条" action={<button type="button" onClick={() => setSynced((value) => !value)} className="flex items-center gap-1.5 text-[9px] text-[var(--muted-strong)] outline-none hover:text-[var(--accent-ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><ArrowsClockwise className={cn("size-3", !synced && "animate-spin")} />{synced ? "已同步 · 刚刚" : "同步中…"}</button>}>
         <div className="divide-y divide-[var(--line)]">
-          {rules.map((rule) => <ManagementRow key={rule.title} icon={FileText} title={rule.title} detail={rule.detail} />)}
+          {rules.map((rule) => <ManagementRow key={rule.title} icon={FileText} tone="amber" title={rule.title} detail={rule.detail} />)}
         </div>
       </PanelSection>
 
       <PanelSection title="连接与自动化" action={<IconAction label="新增连接"><Plus /></IconAction>}>
         <div className="divide-y divide-[var(--line)]">
-          <ManagementRow icon={Link} title="MCP 连接" detail="GitHub、Linear、Figma" meta="3 个" />
-          <ManagementRow icon={Lightning} title="自动化规则" detail="任务、评审与同步流程" meta="5 条" />
+          <ManagementRow icon={Link} tone="blue" title="MCP 连接" detail="GitHub、Linear、Figma" meta="3 个" />
+          <ManagementRow icon={Lightning} tone="rose" title="自动化规则" detail="任务、评审与同步流程" meta="5 条" />
         </div>
       </PanelSection>
     </div>
@@ -229,7 +182,7 @@ export function ProjectAssetsPanel() {
       </label>
       <PanelSection title="已关联资产" meta={`${visible.length} 项`} action={<IconAction label="关联新资产"><Plus /></IconAction>}>
         <div className="divide-y divide-[var(--line)]">
-          {visible.map((item) => <ManagementRow key={item.id} icon={item.icon} title={item.title} detail={syncing === item.id ? "正在同步最新内容…" : item.detail} meta={item.tag} trailing={<button type="button" aria-label={`同步${item.title}`} onClick={(event) => { event.stopPropagation(); setSyncing(syncing === item.id ? null : item.id) }} className="flex size-6 items-center justify-center rounded-md text-[var(--muted)] outline-none hover:bg-[var(--surface-hover)] hover:text-[var(--accent-ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><ArrowsClockwise className={cn("size-3.5", syncing === item.id && "animate-spin")} /></button>} />)}
+          {visible.map((item) => <ManagementRow key={item.id} icon={item.icon} tone={item.tone} title={item.title} detail={syncing === item.id ? "正在同步最新内容…" : item.detail} meta={item.tag} trailing={<button type="button" aria-label={`同步${item.title}`} onClick={(event) => { event.stopPropagation(); setSyncing(syncing === item.id ? null : item.id) }} className="flex size-6 items-center justify-center rounded-md text-[var(--muted)] outline-none hover:bg-[var(--surface-hover)] hover:text-[var(--accent-ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><ArrowsClockwise className={cn("size-3.5", syncing === item.id && "animate-spin")} /></button>} />)}
         </div>
       </PanelSection>
       <div className="rounded-[10px] bg-[var(--accent-soft)] px-3.5 py-3 text-[9.5px] leading-4 text-[var(--accent-ink)]">Agent 仅会读取已授权的目录和文档范围。代码仓默认跟随主分支，每 15 分钟检查一次变更。</div>
@@ -354,8 +307,8 @@ function PanelSection({ title, meta, action, children }: { title: string; meta?:
   return <section><div className="mb-2.5 flex min-h-6 items-center"><h3 className="text-[11.5px] font-semibold tracking-[-0.01em]">{title}</h3>{meta ? <span className="ml-2 text-[9px] tabular-nums text-[var(--muted)]">{meta}</span> : null}<div className="ml-auto">{action}</div></div>{children}</section>
 }
 
-function ManagementRow({ icon: Icon, title, detail, meta, active, onClick, trailing }: { icon: typeof Cube; title: string; detail: string; meta?: string; active?: boolean; onClick?: () => void; trailing?: React.ReactNode }) {
-  const content = <><span className={iconBoxClass(active)}><Icon className="size-4" /></span><span className="min-w-0 flex-1 text-left"><span className="block truncate text-[10.5px] font-medium text-[var(--ink)]">{title}</span><span className="mt-0.5 block truncate text-[9px] text-[var(--muted)]">{detail}</span></span>{meta ? <span className="text-[8.5px] text-[var(--muted-strong)]">{meta}</span> : null}{trailing ?? <CaretRight className="size-3 text-[var(--muted)]" />}</>
+function ManagementRow({ icon: Icon, tone, title, detail, meta, active, onClick, trailing }: { icon: typeof Cube; tone?: IconTone; title: string; detail: string; meta?: string; active?: boolean; onClick?: () => void; trailing?: React.ReactNode }) {
+  const content = <><span className={iconBoxClass(active, tone)}><Icon className="size-4" /></span><span className="min-w-0 flex-1 text-left"><span className="block truncate text-[10.5px] font-medium text-[var(--ink)]">{title}</span><span className="mt-0.5 block truncate text-[9px] text-[var(--muted)]">{detail}</span></span>{meta ? <span className="text-[8.5px] text-[var(--muted-strong)]">{meta}</span> : null}{trailing ?? <CaretRight className="size-3 text-[var(--muted)]" />}</>
   return onClick ? <button type="button" aria-pressed={active} onClick={onClick} className={rowClass(active)}>{content}</button> : <div className="flex min-h-[52px] items-center gap-2.5 py-2">{content}</div>
 }
 
@@ -383,7 +336,9 @@ function rowClass(active?: boolean) {
   return cn("group flex min-h-[52px] w-full items-center gap-2.5 rounded-[8px] px-2 py-2 outline-none transition-[background-color,transform] hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-[0.995]", active && "bg-[var(--accent-soft)] hover:bg-[var(--accent-soft)]")
 }
 
-function iconBoxClass(active?: boolean) {
+function iconBoxClass(active?: boolean, tone?: IconTone) {
+  // 有语义色的行使用彩色软底芯片；未指定 tone 的行保持中性灰形态
+  if (tone) return cn("flex size-8 shrink-0 items-center justify-center rounded-[8px] transition-colors", toneChips[tone])
   return cn("flex size-8 shrink-0 items-center justify-center rounded-[8px] border border-[var(--line)] bg-panel text-[var(--muted-strong)] transition-colors", active && "border-[var(--accent-soft-line)] text-[var(--accent-ink)]")
 }
 

@@ -37,17 +37,18 @@ import { motion } from "motion/react"
 import { cn } from "@/lib/utils"
 
 import { presenceMeta, railMembers, type ProjectManagementPanelId } from "./project/project-management-model"
+import { toneIcons } from "./project/icon-tones"
 import { IDENTITY_CHIP_LAYOUT_ID, paneIdentityVariants, paneItemVariants } from "./sidebar-pane-motion"
 import { SidebarNavList, type SidebarNavItem } from "./sidebar-nav"
 
 const projectTools: Array<SidebarNavItem<ProjectManagementPanelId>> = [
-  { id: "summary", label: "项目概览", icon: SquaresFour },
-  { id: "chat", label: "项目会话", icon: Chat },
-  { id: "mentions", label: "提及我的", icon: At },
-  { id: "notifications", label: "通知", icon: BellSimple },
-  { id: "ai-assets", label: "项目 AI 资产", icon: Cube },
-  { id: "project-assets", label: "代码仓与文档资产", icon: FolderOpen },
-  { id: "tasks", label: "项目任务", icon: CheckSquare },
+  { id: "summary", label: "项目概览", icon: SquaresFour, iconClass: toneIcons.sky },
+  { id: "chat", label: "项目会话", icon: Chat, iconClass: toneIcons.teal },
+  { id: "mentions", label: "提及我的", icon: At, iconClass: toneIcons.amber },
+  { id: "notifications", label: "通知", icon: BellSimple, iconClass: toneIcons.rose },
+  { id: "ai-assets", label: "项目 AI 资产", icon: Cube, iconClass: toneIcons.violet },
+  { id: "project-assets", label: "代码仓与文档资产", icon: FolderOpen, iconClass: toneIcons.blue },
+  { id: "tasks", label: "项目任务", icon: CheckSquare, iconClass: toneIcons.indigo },
 ]
 
 type ProjectSidebarPaneProps = {

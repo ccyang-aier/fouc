@@ -20,6 +20,8 @@ export type SidebarNavItem<T extends string> = {
   id: T
   label: string
   icon: Icon
+  /** 未激活行图标的着色（激活行固定白字，不吃此色） */
+  iconClass?: string
 }
 
 /** renderTrailing 的上下文：折叠轨道下行尾元素需切换为图标角标形态 */
@@ -80,7 +82,7 @@ export function SidebarNavList<T extends string>({
                 <Icon
                   className={cn(
                     "size-[17px] shrink-0 transition-colors",
-                    selected ? "text-white" : "text-[var(--muted-strong)]",
+                    selected ? "text-white" : item.iconClass ?? "text-[var(--muted-strong)]",
                   )}
                   weight={selected ? "fill" : "regular"}
                   aria-hidden

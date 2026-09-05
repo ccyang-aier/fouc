@@ -15,12 +15,14 @@ import {
 import { AnimatePresence, motion } from "motion/react"
 
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { cn } from "@/lib/utils"
 
+import { toneChips, type IconTone } from "./icon-tones"
+import { ChatPanel } from "./project-chat-panel"
 import { getRailMember, type ProjectManagementPanelId } from "./project-management-model"
 import {
   AgentPanel,
   AiAssetsPanel,
-  ChatPanel,
   InvitePanel,
   MemberPanel,
   MentionsPanel,
@@ -37,17 +39,17 @@ type ProjectManagementDrawerProps = {
   onOpenWork: () => void
 }
 
-const panelCopy: Record<Exclude<ProjectManagementPanelId, `member:${string}`>, { title: string; description: string }> = {
-  summary: { title: "项目概览", description: "项目状态、协作与关键资源" },
-  chat: { title: "项目会话", description: "围绕项目推进的共享讨论" },
-  mentions: { title: "提及我的", description: "需要你回应或确认的项目动态" },
-  notifications: { title: "项目通知", description: "评审、任务与资产同步提醒" },
-  "ai-assets": { title: "项目 AI 资产", description: "让 Agent 继承项目专属能力与约束" },
-  "project-assets": { title: "代码仓与文档", description: "管理 Agent 可读取的项目资产" },
-  tasks: { title: "项目任务", description: "查看当前项目的任务与进展" },
-  agent: { title: "项目 Agent", description: "Nova 的上下文、能力与执行状态" },
-  invite: { title: "邀请成员", description: "为项目添加新的协作伙伴" },
-  settings: { title: "项目设置", description: "配置项目基础信息与协作策略" },
+const panelCopy: Record<Exclude<ProjectManagementPanelId, `member:${string}`>, { title: string; description: string; tone: IconTone }> = {
+  summary: { title: "项目概览", description: "项目状态、协作与关键资源", tone: "sky" },
+  chat: { title: "项目会话", description: "围绕项目推进的共享讨论", tone: "teal" },
+  mentions: { title: "提及我的", description: "需要你回应或确认的项目动态", tone: "amber" },
+  notifications: { title: "项目通知", description: "评审、任务与资产同步提醒", tone: "rose" },
+  "ai-assets": { title: "项目 AI 资产", description: "让 Agent 继承项目专属能力与约束", tone: "violet" },
+  "project-assets": { title: "代码仓与文档", description: "管理 Agent 可读取的项目资产", tone: "blue" },
+  tasks: { title: "项目任务", description: "查看当前项目的任务与进展", tone: "indigo" },
+  agent: { title: "项目 Agent", description: "Nova 的上下文、能力与执行状态", tone: "indigo" },
+  invite: { title: "邀请成员", description: "为项目添加新的协作伙伴", tone: "blue" },
+  settings: { title: "项目设置", description: "配置项目基础信息与协作策略", tone: "slate" },
 }
 
 const DRAWER_WIDTH = 356
@@ -60,7 +62,7 @@ export function ProjectManagementDrawer({ activePanel, onClose, onOpenWork }: Pr
 
   const member = getRailMember(displayedPanel)
   const meta = member
-    ? { title: member.name, description: `${member.role} · 查看协作状态与任务` }
+    ? { title: member.name, description: `${member.role} · 查看协作状态与任务`, tone: "sky" as IconTone }
     : panelCopy[displayedPanel as Exclude<ProjectManagementPanelId, `member:${string}`>]
 
   return (
@@ -78,13 +80,13 @@ export function ProjectManagementDrawer({ activePanel, onClose, onOpenWork }: Pr
         >
           {/* 内层固定宽度：容器宽度收放时内容不发生挤压重排 */}
           <div className="flex h-full flex-col" style={{ width: DRAWER_WIDTH }}>
-            <header className="flex min-h-[78px] shrink-0 items-center gap-3 border-b border-[var(--line)] px-5">
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-[9px] bg-[var(--accent-soft)] text-[var(--accent-ink)] shadow-[inset_0_0_0_1px_var(--accent-soft-line)]">
+            <header className="flex shrink-0 items-center gap-3 px-5 pb-2 pt-5">
+              <span className={cn("flex size-[34px] shrink-0 items-center justify-center rounded-[10px]", toneChips[meta.tone])}>
                 <PanelIcon panel={displayedPanel} />
               </span>
               <div className="min-w-0 flex-1">
                 <h2 className="truncate text-[13px] font-semibold tracking-[-0.015em]">{meta.title}</h2>
-                <p className="mt-1 truncate text-[9.5px] text-[var(--muted)]">{meta.description}</p>
+                <p className="mt-0.5 truncate text-[9.5px] text-[var(--muted)]">{meta.description}</p>
               </div>
               <button type="button" aria-label="关闭项目管理面板" onClick={onClose} className="flex size-8 shrink-0 items-center justify-center rounded-[8px] text-[var(--muted-strong)] outline-none transition-[background-color,color,transform] hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-95"><X className="size-4" /></button>
             </header>
@@ -95,7 +97,7 @@ export function ProjectManagementDrawer({ activePanel, onClose, onOpenWork }: Pr
                 initial={{ opacity: 0, x: -12 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ type: "spring", stiffness: 380, damping: 34 }}
-                className="px-5 pb-8 pt-5"
+                className="px-5 pb-8 pt-2"
               >
                 <PanelContent panel={displayedPanel} onOpenWork={onOpenWork} />
               </motion.div>

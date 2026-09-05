@@ -64,7 +64,7 @@ export function ProjectAttention() {
           secondaryLabel="查看详情"
         />
         <div className="mx-4 flex h-[48px] items-center gap-2 border-t border-[var(--line)] text-[10.5px] text-[var(--muted-strong)]">
-          <Lightbulb className="size-4 shrink-0 text-[var(--muted-strong)]" />
+          <Lightbulb className="size-4 shrink-0 text-[#c78a2d]" weight="fill" />
           <span>系统建议：建议在确认权限模型后触发自动化回归测试，以降低回归风险。</span>
           <button type="button" onClick={() => setEvidenceOpen(true)} className="ml-1 shrink-0 font-medium text-[var(--accent-ink)] outline-none hover:underline focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">了解更多</button>
         </div>

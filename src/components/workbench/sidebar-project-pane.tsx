@@ -169,7 +169,7 @@ export function ProjectSidebarPane({
           className={cn(
             "flex size-[22px] shrink-0 items-center justify-center rounded-[7px] transition-colors duration-150",
             activePanel === "agent"
-              ? "bg-[var(--accent-ink)] text-[var(--panel)]"
+              ? "bg-[rgb(255_255_255/0.18)] text-white"
               : "bg-[var(--accent-soft)] text-[var(--accent-ink)]",
           )}
         >
@@ -265,7 +265,7 @@ export function ProjectSidebarPane({
           <GearSix
             className={cn(
               "size-[17px] shrink-0 transition-colors",
-              activePanel === "settings" ? "text-[var(--accent-ink)]" : "text-[var(--muted-strong)]",
+              activePanel === "settings" ? "text-white" : "text-[var(--muted-strong)]",
             )}
             weight={activePanel === "settings" ? "fill" : "regular"}
             aria-hidden
@@ -281,7 +281,7 @@ function paneRowClasses(active: boolean) {
   return cn(
     "flex h-[36px] w-full items-center gap-2.5 rounded-[8px] px-2.5 text-left text-[12px] font-medium outline-none transition-[background-color,color,box-shadow] duration-150 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
     active
-      ? "bg-[var(--accent-soft)] text-[var(--accent-ink)] shadow-[inset_0_0_0_1px_var(--accent-soft-line)]"
+      ? "bg-[var(--accent)] text-white shadow-[0_2px_10px_color-mix(in_srgb,var(--accent)_38%,transparent),inset_0_1px_0_rgb(255_255_255/0.16)]"
       : "text-[var(--ink-soft)] hover:bg-raise hover:text-[var(--ink)]",
   )
 }

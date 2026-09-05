@@ -2,7 +2,7 @@
 
 /**
  * 侧栏导航列表（工作台侧栏 / 设置侧栏共用）：
- * 激活态为主题色软底指示容器，切换时以弹簧物理沿列表滑动到位；
+ * 激活态为主题色实底容器（全局唯一的实色锚点），切换时以弹簧物理沿列表滑动到位；
  * 悬停白底仅作用于未激活行，避免盖住滑入中的激活容器造成两段式闪变。
  */
 
@@ -54,7 +54,7 @@ export function SidebarNavList<T extends string>({
           initial={false}
           animate={{ y: activeIndex * (ROW_HEIGHT + ROW_GAP) }}
           transition={{ type: "spring", stiffness: 460, damping: 38 }}
-          className="absolute inset-x-0 top-0 rounded-[8px] bg-[var(--accent-soft)] shadow-[inset_0_0_0_1px_var(--accent-soft-line)]"
+          className="absolute inset-x-0 top-0 rounded-[8px] bg-[var(--accent)] shadow-[0_2px_10px_color-mix(in_srgb,var(--accent)_38%,transparent),inset_0_1px_0_rgb(255_255_255/0.16)]"
           style={{ height: ROW_HEIGHT }}
         />
       ) : null}
@@ -73,14 +73,14 @@ export function SidebarNavList<T extends string>({
                   "relative flex h-[36px] w-full items-center gap-2.5 rounded-[8px] px-2.5 text-left text-[12px] font-medium outline-none transition-[background-color,color,box-shadow] duration-150 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
                   collapsed && "justify-center px-0",
                   selected
-                    ? "text-[var(--accent-ink)]"
+                    ? "text-white"
                     : "text-[var(--ink-soft)] hover:bg-raise hover:text-[var(--ink)]",
                 )}
               >
                 <Icon
                   className={cn(
                     "size-[17px] shrink-0 transition-colors",
-                    selected ? "text-[var(--accent-ink)]" : "text-[var(--muted-strong)]",
+                    selected ? "text-white" : "text-[var(--muted-strong)]",
                   )}
                   weight={selected ? "fill" : "regular"}
                   aria-hidden

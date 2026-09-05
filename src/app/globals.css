@@ -14,14 +14,14 @@
   --muted: #9699a1;
   --line: rgba(32, 33, 38, 0.085);
   --line-strong: rgba(32, 33, 38, 0.14);
-  --accent: #647089;
-  --accent-strong: #566178;
-  --accent-ink: #566681;
-  --accent-soft: #f0f2f6;
-  --accent-soft-line: #d4dae4;
+  --accent: #3e63dd;
+  --accent-strong: #3355c9;
+  --accent-ink: #3a55b0;
+  --accent-soft: #eef1fd;
+  --accent-soft-line: #ccd6f3;
   /* 自定义主题色基色（实际值由 JS 按偏好写入，此为兜底） */
-  --accent-custom: #647089;
-  --focus-ring: rgba(100, 112, 137, 0.34);
+  --accent-custom: #3e63dd;
+  --focus-ring: rgba(62, 99, 221, 0.32);
   /* 交互覆盖层：按钮/菜单 hover 的墨色洗染 */
   --hover-fill: rgba(0, 0, 0, 0.045);
   /* 侧栏亮白容器：激活指示与行 hover 的抬升面 */
@@ -70,12 +70,12 @@ html[data-theme="dark"] {
   --muted: #707880;
   --line: rgba(233, 236, 239, 0.09);
   --line-strong: rgba(233, 236, 239, 0.16);
-  --accent: #7c88a0;
-  --accent-strong: #929db2;
-  --accent-ink: #aab4c8;
-  --accent-soft: rgba(124, 136, 160, 0.15);
-  --accent-soft-line: rgba(124, 136, 160, 0.34);
-  --focus-ring: rgba(124, 136, 160, 0.42);
+  --accent: #6681f5;
+  --accent-strong: #7f97f8;
+  --accent-ink: #9db2fa;
+  --accent-soft: rgba(102, 129, 245, 0.16);
+  --accent-soft-line: rgba(102, 129, 245, 0.36);
+  --focus-ring: rgba(102, 129, 245, 0.42);
   --hover-fill: rgba(255, 255, 255, 0.055);
   --raise: rgba(255, 255, 255, 0.06);
   --chip: rgba(255, 255, 255, 0.045);

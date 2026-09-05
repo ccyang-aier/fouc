@@ -36,7 +36,7 @@ export type AccentId = (typeof ACCENT_IDS)[number]
 export type AccentPref = AccentId | "custom"
 
 export const accentOptions: Array<{ id: AccentId; label: string; color: string }> = [
-  { id: "mineral", label: "矿物蓝", color: "#647089" },
+  { id: "mineral", label: "矿物蓝", color: "#3e63dd" },
   { id: "emerald", label: "松石绿", color: "#2D8C78" },
   { id: "ocean", label: "海湾蓝", color: "#3F78A8" },
   { id: "violet", label: "雾紫", color: "#766A9C" },
@@ -139,7 +139,7 @@ export type AppearancePrefs = {
 export const APPEARANCE_DEFAULTS: AppearancePrefs = {
   theme: "light",
   accent: "mineral",
-  accentCustom: "#647089",
+  accentCustom: "#3e63dd",
   uiFont: "default",
   uiFontSize: 13,
   codeFont: "default",

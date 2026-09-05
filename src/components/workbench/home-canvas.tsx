@@ -152,7 +152,7 @@ export function HomeCanvas() {
 
         <div
           className={cn(
-            "relative mt-7 flex h-[140px] flex-col rounded-[13px] border bg-panel text-left shadow-[0_10px_28px_rgba(28,36,42,0.035)] transition-[border-color,box-shadow] focus-within:border-accent-soft-line focus-within:shadow-[0_10px_30px_rgba(14,166,132,0.08),0_0_0_3px_rgba(14,166,132,0.08)]",
+            "relative mt-7 flex h-[140px] flex-col rounded-[13px] border bg-panel text-left shadow-[0_10px_28px_rgba(28,36,42,0.035)] transition-[border-color,box-shadow] focus-within:border-accent-soft-line focus-within:shadow-[0_10px_30px_color-mix(in_srgb,var(--accent)_10%,transparent),0_0_0_3px_color-mix(in_srgb,var(--accent)_9%,transparent)]",
             feedback?.startsWith("先") ? "border-[#efad9f]" : "border-[var(--line-strong)]",
           )}
         >
@@ -215,7 +215,7 @@ export function HomeCanvas() {
                     variant="ghost"
                     aria-label="添加附件"
                     onClick={() => fileRef.current?.click()}
-                    className="size-8 rounded-[9px] bg-[#edf7f4] text-[#4cac96] hover:bg-[#e3f2ed] hover:text-[#319c84]"
+                    className="size-8 rounded-[9px] bg-accent-soft text-accent-ink hover:shadow-[inset_0_0_0_1px_var(--accent-soft-line)]"
                   >
                     <Paperclip className="size-[16px]" weight="bold" />
                   </Button>

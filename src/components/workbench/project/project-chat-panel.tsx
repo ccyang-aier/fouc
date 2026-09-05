@@ -12,6 +12,7 @@ import {
   CaretDown,
   CheckCircle,
   DotsThree,
+  Funnel,
   Hash,
   MagnifyingGlass,
   PencilSimple,
@@ -23,8 +24,10 @@ import {
 
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
@@ -94,6 +97,7 @@ const viewOptions: Array<{ id: ChatView; label: string; icon: typeof UsersThree 
 export function ChatPanel() {
   const [view, setView] = useState<ChatView>("team")
   const [unreadOnly, setUnreadOnly] = useState(false)
+  const [initiatedOnly, setInitiatedOnly] = useState(false)
   const [query, setQuery] = useState("")
   const [groups, setGroups] = useState(defaultGroups)
   const [tagAssign, setTagAssign] = useState(defaultTagAssign)
@@ -110,8 +114,9 @@ export function ChatPanel() {
   const visible = useMemo(() => {
     let pool = items.filter((item) => (view === "personal" ? item.mine : true))
     if (unreadOnly) pool = pool.filter((item) => item.unread > 0)
+    if (initiatedOnly) pool = pool.filter((item) => item.mine)
     return pool
-  }, [items, view, unreadOnly])
+  }, [items, view, unreadOnly, initiatedOnly])
 
   const usedTags = useMemo(() => {
     const used = new Set<ChatTagId>()
@@ -169,49 +174,33 @@ export function ChatPanel() {
 
   return (
     <div>
-      {/* 视角切换 + 未读筛选 */}
-      <div className="flex items-center gap-1.5">
-        <div role="tablist" aria-label="会话视角" className="flex h-8 rounded-[9px] bg-[var(--surface-subtle)] p-0.5">
-          {viewOptions.map((option) => {
-            const selected = view === option.id
-            return (
-              <button
-                key={option.id}
-                type="button"
-                role="tab"
-                aria-selected={selected}
-                onClick={() => setView(option.id)}
-                className={cn(
-                  "flex h-7 items-center gap-1 rounded-[7px] px-3 text-[10.5px] font-medium outline-none transition-[background-color,color,box-shadow] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
-                  selected
-                    ? "bg-panel text-[var(--ink)] shadow-[0_1px_3px_rgba(24,30,42,0.1)]"
-                    : "text-[var(--muted-strong)] hover:text-[var(--ink-soft)]",
-                )}
-              >
-                <option.icon className="size-[13px]" weight={selected ? "fill" : "regular"} />
-                {option.label}
-              </button>
-            )
-          })}
-        </div>
-        <button
-          type="button"
-          aria-pressed={unreadOnly}
-          onClick={() => setUnreadOnly((value) => !value)}
-          className={cn(
-            "ml-auto flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[9.5px] font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
-            unreadOnly
-              ? "border-[var(--accent-soft-line)] bg-[var(--accent-soft)] text-[var(--accent-ink)]"
-              : "border-[var(--line)] text-[var(--muted-strong)] hover:bg-[var(--surface-hover)] hover:text-[var(--ink-soft)]",
-          )}
-        >
-          <span className={cn("size-1.5 rounded-full", unreadOnly ? "bg-[var(--accent)]" : "bg-[var(--line-strong)]")} />
-          只看未读
-        </button>
+      {/* 视角切换 */}
+      <div role="tablist" aria-label="会话视角" className="flex h-8 w-full rounded-[9px] bg-[var(--surface-subtle)] p-0.5">
+        {viewOptions.map((option) => {
+          const selected = view === option.id
+          return (
+            <button
+              key={option.id}
+              type="button"
+              role="tab"
+              aria-selected={selected}
+              onClick={() => setView(option.id)}
+              className={cn(
+                "flex h-7 flex-1 items-center justify-center gap-1.5 rounded-[7px] text-[10.5px] font-medium outline-none transition-[background-color,color,box-shadow] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+                selected
+                  ? "bg-panel text-[var(--ink)] shadow-[0_1px_3px_rgba(24,30,42,0.1)]"
+                  : "text-[var(--muted-strong)] hover:text-[var(--ink-soft)]",
+              )}
+            >
+              <option.icon className="size-[13px]" weight={selected ? "fill" : "regular"} />
+              {option.label}
+            </button>
+          )
+        })}
       </div>
 
-      {/* 全宽搜索 */}
-      <label className="mt-2.5 flex h-9 w-full items-center gap-1.5 rounded-[9px] border border-[var(--line)] bg-[var(--surface-subtle)] px-3 transition-[border-color,box-shadow] focus-within:border-[var(--accent-soft-line)] focus-within:ring-2 focus-within:ring-[var(--focus-ring)]">
+      {/* 搜索 + 行内筛选 */}
+      <div className="mt-2.5 flex h-9 items-center gap-1 rounded-[9px] border border-[var(--line)] bg-[var(--surface-subtle)] pl-3 pr-1.5 transition-[border-color,box-shadow] focus-within:border-[var(--accent-soft-line)] focus-within:shadow-[0_0_0_3px_color-mix(in_srgb,var(--accent)_8%,transparent)]">
         <MagnifyingGlass className="size-[15px] shrink-0 text-[var(--muted)]" />
         <input
           type="search"
@@ -221,7 +210,33 @@ export function ChatPanel() {
           aria-label="搜索会话"
           className="min-w-0 flex-1 bg-transparent text-[11px] text-[var(--ink)] outline-none placeholder:text-[var(--muted)]"
         />
-      </label>
+        <span aria-hidden className="h-4 w-px shrink-0 bg-[var(--line)]" />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              aria-label="筛选会话"
+              className={cn(
+                "flex size-7 shrink-0 items-center justify-center rounded-[7px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+                unreadOnly || initiatedOnly
+                  ? "bg-[var(--accent-soft)] text-[var(--accent-ink)]"
+                  : "text-[var(--muted-strong)] hover:bg-[var(--surface-hover)] hover:text-[var(--ink-soft)]",
+              )}
+            >
+              <Funnel className="size-[14px]" weight="fill" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-36">
+            <DropdownMenuLabel>会话筛选</DropdownMenuLabel>
+            <DropdownMenuCheckboxItem checked={unreadOnly} onCheckedChange={() => setUnreadOnly((value) => !value)}>
+              只看未读
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem checked={initiatedOnly} onCheckedChange={() => setInitiatedOnly((value) => !value)}>
+              我发起的
+            </DropdownMenuCheckboxItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
       {searching ? (
         /* 搜索态：跨分组的平铺结果 */
@@ -271,7 +286,7 @@ export function ChatPanel() {
                   setDropTarget(null)
                 }}
                 className={cn(
-                  "mb-3 rounded-[10px] transition-[background-color,box-shadow] last:mb-0",
+                  "mb-1 rounded-[12px] px-1.5 pb-2 pt-0.5 transition-[background-color,box-shadow]",
                   isDropTarget && "bg-[var(--accent-soft)] shadow-[inset_0_0_0_1px_var(--accent-soft-line)]",
                 )}
               >
@@ -286,23 +301,23 @@ export function ChatPanel() {
                     }}
                     onBlur={commitGroupRename}
                     aria-label="重命名分组"
-                    className="h-6 w-full max-w-[160px] rounded-[6px] border border-[var(--accent-soft-line)] bg-panel px-1.5 text-[10px] font-semibold outline-none"
+                    className="mt-1 h-7 w-full max-w-[160px] rounded-[7px] border border-[var(--accent-soft-line)] bg-panel px-2 text-[11px] font-semibold outline-none"
                   />
                 ) : (
-                  <div className="flex h-7 items-center gap-1">
-                    {/* 整行折叠分组：展开柄为右侧实心三角 */}
+                  <div className="flex h-[34px] items-center gap-1">
+                    {/* 分组行可整行折叠：层级最高，字号大于标签，展开柄为右侧实心三角 */}
                     <button
                       type="button"
                       aria-expanded={!isGroupCollapsed}
                       onClick={() => setCollapsedGroups((current) => ({ ...current, [group.id]: !isGroupCollapsed }))}
-                      className="flex h-7 min-w-0 flex-1 items-center gap-1.5 rounded-[7px] pr-1 outline-none transition-colors hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                      className="group flex h-[34px] min-w-0 flex-1 items-center gap-2 rounded-[8px] px-1 outline-none transition-colors hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                     >
-                      <h3 className="text-[9.5px] font-semibold tracking-[0.06em] text-[var(--muted-strong)]">{group.label}</h3>
-                      <span className="text-[9px] tabular-nums text-[var(--muted)]">{groupTags.length}</span>
+                      <h3 className="truncate text-[11.5px] font-semibold tracking-[-0.01em] text-[var(--ink)]">{group.label}</h3>
+                      <span className="text-[9.5px] font-medium tabular-nums text-[var(--muted)]">{groupTags.length}</span>
                       <CaretDown
                         aria-hidden
                         className={cn(
-                          "ml-auto size-[11px] shrink-0 text-[var(--muted)] transition-transform duration-150",
+                          "ml-auto size-[12px] shrink-0 text-[var(--muted)] transition-transform duration-150",
                           isGroupCollapsed && "-rotate-90",
                         )}
                         weight="fill"
@@ -314,9 +329,9 @@ export function ChatPanel() {
                           <button
                             type="button"
                             aria-label={`${group.label}分组操作`}
-                            className="flex size-5 shrink-0 items-center justify-center rounded-[6px] text-[var(--muted)] outline-none transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                            className="flex size-6 shrink-0 items-center justify-center rounded-[7px] text-[var(--muted)] outline-none transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                           >
-                            <DotsThree className="size-[14px]" weight="bold" />
+                            <DotsThree className="size-[15px]" weight="bold" />
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-32">
@@ -334,7 +349,7 @@ export function ChatPanel() {
                 )}
 
                 {!isGroupCollapsed ? (
-                  <div className="mt-1 space-y-1.5">
+                  <div className="space-y-1.5">
                     {groupTags.map((tag) => {
                       const meta = chatTags[tag]
                       const tagItems = conversationsOf(tag)
@@ -358,7 +373,7 @@ export function ChatPanel() {
                               className="group flex h-[30px] w-full items-center gap-2 rounded-[8px] px-1.5 outline-none transition-colors hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                             >
                               <Hash className={cn("size-[14px] shrink-0", toneIcons[meta.tone])} weight="bold" />
-                              <span className="text-[11px] font-semibold text-[var(--ink-soft)]">{meta.label}</span>
+                              <span className="text-[10.5px] font-medium text-[var(--ink-soft)]">{meta.label}</span>
                               <span className="rounded-full bg-[var(--surface-subtle)] px-1.5 text-[9px] font-medium tabular-nums text-[var(--muted-strong)]">
                                 {tagItems.length}
                               </span>
@@ -375,7 +390,7 @@ export function ChatPanel() {
                           </div>
 
                           {!isCollapsed ? (
-                            <div className="mt-0.5 space-y-px">
+                            <div className="ml-3.5 mt-0.5 space-y-px">
                               {tagItems.map((item) => (
                                 <ConversationRow
                                   key={item.id}

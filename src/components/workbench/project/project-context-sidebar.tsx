@@ -6,7 +6,7 @@ import { ArrowRight, ArrowsClockwise, CaretRight, GearSix } from "@phosphor-icon
 import { cn } from "@/lib/utils"
 
 import { contextGroups, freshnessItems } from "./project-data"
-import { toneChips, toneIcons } from "./icon-tones"
+import { toneChips, toneIcons } from "../icon-tones"
 
 export function ProjectContextSidebar() {
   const [syncing, setSyncing] = useState<string | null>(null)

@@ -27,7 +27,7 @@ import {
 
 import { cn } from "@/lib/utils"
 
-import { toneChips, type IconTone } from "./icon-tones"
+import { toneChips, type IconTone } from "../icon-tones"
 import { presenceMeta, type RailMember } from "./project-management-model"
 
 const mentions = [

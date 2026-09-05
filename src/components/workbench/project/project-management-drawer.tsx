@@ -17,7 +17,7 @@ import { AnimatePresence, motion } from "motion/react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 
-import { toneChips, type IconTone } from "./icon-tones"
+import { toneChips, type IconTone } from "../icon-tones"
 import { ChatPanel } from "./project-chat-panel"
 import { getRailMember, type ProjectManagementPanelId } from "./project-management-model"
 import {

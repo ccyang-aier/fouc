@@ -37,7 +37,7 @@ import { motion } from "motion/react"
 import { cn } from "@/lib/utils"
 
 import { presenceMeta, railMembers, type ProjectManagementPanelId } from "./project/project-management-model"
-import { toneIcons } from "./project/icon-tones"
+import { toneIcons } from "./icon-tones"
 import { IDENTITY_CHIP_LAYOUT_ID, paneIdentityVariants, paneItemVariants } from "./sidebar-pane-motion"
 import { SidebarNavList, type SidebarNavItem } from "./sidebar-nav"
 

@@ -18,6 +18,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 
+import { toneIcons } from "../icon-tones"
 import { SidebarNavList, type SidebarNavItem } from "../sidebar-nav"
 import { SidebarResizeHandle, useSidebarWidth } from "../sidebar-resize"
 import { AboutSettings } from "./about-settings"
@@ -28,10 +29,10 @@ import { GeneralSettings } from "./general-settings"
 export type SettingsSection = "appearance" | "general" | "agents" | "about"
 
 const SECTIONS: Array<SidebarNavItem<SettingsSection>> = [
-  { id: "appearance", label: "外观", icon: PaintBrush },
-  { id: "general", label: "通用", icon: SlidersHorizontal },
-  { id: "agents", label: "Agent", icon: Robot },
-  { id: "about", label: "关于", icon: Info },
+  { id: "appearance", label: "外观", icon: PaintBrush, iconClass: toneIcons.violet },
+  { id: "general", label: "通用", icon: SlidersHorizontal, iconClass: toneIcons.sky },
+  { id: "agents", label: "Agent", icon: Robot, iconClass: toneIcons.teal },
+  { id: "about", label: "关于", icon: Info, iconClass: toneIcons.slate },
 ]
 
 export function SettingsCanvas({

@@ -258,7 +258,7 @@ export function CommunityCanvas() {
                 <button
                   type="button"
                   onClick={() => notify("作品提交通道即将开放")}
-                  className="ml-1.5 flex h-8 items-center gap-1 rounded-full bg-[var(--accent)] px-3.5 text-[11px] font-semibold text-white outline-none transition-[background-color,opacity] hover:bg-[var(--accent-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                  className="ml-1.5 flex h-8 items-center gap-1 rounded-[8px] bg-[var(--accent)] px-3.5 text-[11px] font-semibold text-white outline-none transition-[background-color,opacity] hover:bg-[var(--accent-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                 >
                   <Plus className="size-3" weight="bold" />
                   提交作品
@@ -359,7 +359,7 @@ export function CommunityCanvas() {
         role="status"
         aria-live="polite"
         className={cn(
-          "pointer-events-none absolute bottom-5 left-1/2 z-40 flex -translate-x-1/2 translate-y-2 items-center gap-2 rounded-full border border-[var(--line-strong)] bg-[var(--ink)] px-3.5 py-1.5 text-[10px] font-medium text-white opacity-0 shadow-[0_8px_24px_rgba(28,33,42,0.16)] transition-[opacity,transform]",
+          "pointer-events-none absolute bottom-5 left-1/2 z-40 flex -translate-x-1/2 translate-y-2 items-center gap-2 rounded-[8px] border border-[var(--line-strong)] bg-[var(--ink)] px-3.5 py-1.5 text-[10px] font-medium text-white opacity-0 shadow-[0_8px_24px_rgba(28,33,42,0.16)] transition-[opacity,transform]",
           toast && "translate-y-0 opacity-100",
         )}
       >

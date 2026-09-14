@@ -103,9 +103,9 @@ export function CommunityDetailPage({
       <ScrollArea className="min-h-0 flex-1" viewportClassName="bg-[#f5f5f7]">
         {/* ── 头部：白底大标题区 + 下划线子页签 ── */}
         <header className="bg-panel">
-          <div className="mx-auto w-full max-w-[860px] px-7 pt-9 max-[760px]:px-5">
+          <div className="w-full px-8 pt-9 max-[760px]:px-5">
             <div className="flex items-start gap-5 max-[760px]:flex-col">
-              <span className="flex size-20 shrink-0 items-center justify-center rounded-[22px] bg-[var(--surface-hover)] text-[26px] font-semibold text-[var(--ink-soft)] shadow-[0_1px_2px_rgba(0,0,0,0.04),0_10px_30px_rgba(0,0,0,0.10)] max-[760px]:size-16 max-[760px]:rounded-[18px] max-[760px]:text-[20px]">
+              <span className="flex size-20 shrink-0 items-center justify-center rounded-[12px] bg-[var(--surface-hover)] text-[26px] font-semibold text-[var(--ink-soft)] shadow-[0_1px_2px_rgba(0,0,0,0.04),0_10px_30px_rgba(0,0,0,0.10)] max-[760px]:size-16 max-[760px]:rounded-[10px] max-[760px]:text-[20px]">
                 {detail.glyph}
               </span>
               <div className="min-w-0 flex-1 pt-1">
@@ -122,7 +122,7 @@ export function CommunityDetailPage({
               </div>
               <div className="flex shrink-0 items-center gap-2.5 pt-1.5 max-[760px]:pt-1">
                 {done ? (
-                  <span className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--line-strong)] px-4 text-[12px] font-medium text-[var(--muted-strong)]">
+                  <span className="flex h-9 items-center gap-1.5 rounded-[8px] border border-[var(--line-strong)] px-4 text-[12px] font-medium text-[var(--muted-strong)]">
                     <Check className="size-3.5" weight="bold" />
                     {DONE_LABELS[detail.tab]}
                   </span>
@@ -130,7 +130,7 @@ export function CommunityDetailPage({
                   <button
                     type="button"
                     onClick={onAction}
-                    className="flex h-9 items-center rounded-full bg-[var(--accent)] px-6 text-[12.5px] font-semibold text-white outline-none transition-[background-color] hover:bg-[var(--accent-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                    className="flex h-9 items-center rounded-[8px] bg-[var(--accent)] px-6 text-[12.5px] font-semibold text-white outline-none transition-[background-color] hover:bg-[var(--accent-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                   >
                     {ACTION_LABELS[detail.tab]}
                   </button>
@@ -140,7 +140,7 @@ export function CommunityDetailPage({
           </div>
 
           {/* 子页签：Apple.com 导航式（文字 + 底部指示线） */}
-          <nav aria-label="详情分区" className="mx-auto mt-7 w-full max-w-[860px] px-7 max-[760px]:px-5">
+          <nav aria-label="详情分区" className="mt-7 w-full px-8 max-[760px]:px-5">
             <div className="flex items-end gap-8 overflow-x-auto border-t border-[var(--line)]">
               {subtabs.map((item) => {
                 const active = subtab === item
@@ -172,10 +172,10 @@ export function CommunityDetailPage({
         </header>
 
         {/* ── 内容区 ── */}
-        <div className="mx-auto w-full max-w-[860px] px-7 pb-20 pt-7 max-[760px]:px-5">
+        <div className="w-full px-8 pb-20 pt-7 max-[760px]:px-5">
           {subtab === "概览" ? (
-            <div className="flex flex-col gap-4">
-              <section className="rounded-[14px] bg-panel p-7">
+            <div className="divide-y divide-[var(--line)] rounded-[10px] bg-panel shadow-[0_1px_2px_rgba(0,0,0,0.03),0_4px_14px_rgba(0,0,0,0.04)]">
+              <section className="p-8">
                 <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)]">关于</h2>
                 <div className="mt-3.5 space-y-3.5">
                   {detail.about.map((paragraph) => (
@@ -185,7 +185,7 @@ export function CommunityDetailPage({
                   ))}
                 </div>
               </section>
-              <section className="rounded-[14px] bg-panel p-7">
+              <section className="p-8">
                 <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)]">亮点</h2>
                 <ul className="mt-4 grid gap-x-8 gap-y-3.5 sm:grid-cols-2">
                   {detail.highlights.map((highlight) => (
@@ -201,7 +201,7 @@ export function CommunityDetailPage({
                   ))}
                 </ul>
               </section>
-              <section className="rounded-[14px] bg-panel p-7">
+              <section className="p-8">
                 <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)]">权限与数据</h2>
                 <ul className="mt-3.5 space-y-2.5">
                   {detail.permissions.map((permission) => (
@@ -216,12 +216,13 @@ export function CommunityDetailPage({
           ) : null}
 
           {subtab === "能力" ? (
-            <section className="rounded-[14px] bg-panel p-7">
+            <div className="rounded-[10px] bg-panel shadow-[0_1px_2px_rgba(0,0,0,0.03),0_4px_14px_rgba(0,0,0,0.04)]">
+              <section className="p-8">
               <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)]">能力明细</h2>
               <div className="mt-5 flex flex-col">
                 {detail.capabilities.map((capability, index) => (
                   <div key={capability.title} className={cn("flex items-start gap-5 py-5", index > 0 && "border-t border-[var(--line)]")}>
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent-soft text-[13px] font-semibold text-accent-ink">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-[8px] bg-accent-soft text-[13px] font-semibold text-accent-ink">
                       {index + 1}
                     </span>
                     <div className="min-w-0 flex-1 pt-1">
@@ -232,10 +233,12 @@ export function CommunityDetailPage({
                 ))}
               </div>
             </section>
+            </div>
           ) : null}
 
           {subtab === "版本历史" ? (
-            <section className="rounded-[14px] bg-panel p-7">
+            <div className="rounded-[10px] bg-panel shadow-[0_1px_2px_rgba(0,0,0,0.03),0_4px_14px_rgba(0,0,0,0.04)]">
+              <section className="p-8">
               <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)]">版本历史</h2>
               <div className="mt-5 flex flex-col">
                 {detail.updates.map((update, index) => (
@@ -249,11 +252,12 @@ export function CommunityDetailPage({
                 ))}
               </div>
             </section>
+            </div>
           ) : null}
 
           {subtab === "安装" ? (
-            <div className="flex flex-col gap-4">
-              <section className="rounded-[14px] bg-panel p-7">
+            <div className="divide-y divide-[var(--line)] rounded-[10px] bg-panel shadow-[0_1px_2px_rgba(0,0,0,0.03),0_4px_14px_rgba(0,0,0,0.04)]">
+              <section className="p-8">
                 <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)]">安装步骤</h2>
                 <div className="mt-5 flex flex-col">
                   {[
@@ -262,7 +266,7 @@ export function CommunityDetailPage({
                     { title: "管理与更新", desc: "在 设置 · 技能 中管理已安装技能，支持一键升级与回滚。" },
                   ].map((step, index) => (
                     <div key={step.title} className={cn("flex items-start gap-5 py-5", index > 0 && "border-t border-[var(--line)]")}>
-                      <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent-soft text-[13px] font-semibold text-accent-ink">
+                      <span className="flex size-10 shrink-0 items-center justify-center rounded-[8px] bg-accent-soft text-[13px] font-semibold text-accent-ink">
                         {index + 1}
                       </span>
                       <div className="min-w-0 flex-1 pt-1">
@@ -273,7 +277,7 @@ export function CommunityDetailPage({
                   ))}
                 </div>
               </section>
-              <section className="rounded-[14px] bg-panel p-7">
+              <section className="p-8">
                 <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)]">运行要求</h2>
                 <p className="mt-3 text-[13px] leading-[22px] text-[var(--ink-soft)]">
                   技能仅在本机加载提示词与模板，不发起网络请求；无额外依赖，卸载即清理全部缓存。
@@ -283,8 +287,8 @@ export function CommunityDetailPage({
           ) : null}
 
           {subtab === "讨论" ? (
-            <div className="flex flex-col gap-4">
-              <section className="rounded-[14px] bg-panel p-7">
+            <div className="divide-y divide-[var(--line)] rounded-[10px] bg-panel shadow-[0_1px_2px_rgba(0,0,0,0.03),0_4px_14px_rgba(0,0,0,0.04)]">
+              <section className="p-8">
                 <div className="flex items-center justify-between gap-4">
                   <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)]">讨论</h2>
                   <button
@@ -335,7 +339,8 @@ export function CommunityDetailPage({
           ) : null}
 
           {subtab === "信息" ? (
-            <section className="rounded-[14px] bg-panel p-7">
+            <div className="rounded-[10px] bg-panel shadow-[0_1px_2px_rgba(0,0,0,0.03),0_4px_14px_rgba(0,0,0,0.04)]">
+              <section className="p-8">
               <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)]">信息</h2>
               <dl className="mt-5 grid gap-x-10 sm:grid-cols-2">
                 {detail.info.map((row) => (
@@ -346,10 +351,12 @@ export function CommunityDetailPage({
                 ))}
               </dl>
             </section>
+            </div>
           ) : null}
 
           {subtab === RELATED_TAB_LABEL[detail.tab] && related.length > 0 ? (
-            <section className="rounded-[14px] bg-panel p-7">
+            <div className="rounded-[10px] bg-panel shadow-[0_1px_2px_rgba(0,0,0,0.03),0_4px_14px_rgba(0,0,0,0.04)]">
+              <section className="p-8">
               <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)]">{RELATED_TAB_LABEL[detail.tab]}</h2>
               <div className="mt-5 grid gap-3 max-[760px]:grid-cols-1 sm:grid-cols-3">
                 {related.map((item) => (
@@ -357,22 +364,23 @@ export function CommunityDetailPage({
                     key={item.id}
                     type="button"
                     onClick={() => onOpenRelated(item.id)}
-                    className="group flex flex-col gap-2.5 rounded-[12px] border border-[var(--line)] bg-panel p-4 text-left outline-none transition-[border-color,box-shadow] hover:border-[var(--line-strong)] hover:shadow-[0_8px_20px_-10px_rgba(28,33,42,0.15)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                    className="group flex flex-col gap-2.5 rounded-[8px] border border-[var(--line)] bg-panel p-4 text-left outline-none transition-[border-color,box-shadow] hover:border-[var(--line-strong)] hover:shadow-[0_8px_20px_-10px_rgba(28,33,42,0.15)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                   >
-                    <span className="flex size-11 items-center justify-center rounded-[11px] bg-[var(--surface-hover)] text-[14px] font-semibold text-[var(--ink-soft)]">
+                    <span className="flex size-11 items-center justify-center rounded-[7px] bg-[var(--surface-hover)] text-[14px] font-semibold text-[var(--ink-soft)]">
                       {item.glyph}
                     </span>
                     <div className="min-w-0">
                       <p className="truncate text-[12.5px] font-semibold text-[var(--ink)]">{item.name}</p>
                       <p className="mt-0.5 truncate text-[10.5px] text-[var(--muted)]">{item.meta}</p>
                     </div>
-                    <span className={cn("mt-0.5 flex h-6 w-fit items-center rounded-full px-3 text-[10.5px] font-semibold", item.done ? "border border-[var(--line-strong)] text-[var(--muted-strong)]" : "bg-accent-soft text-accent-ink")}>
+                    <span className={cn("mt-0.5 flex h-6 w-fit items-center rounded-[6px] px-2.5 text-[10.5px] font-semibold", item.done ? "border border-[var(--line-strong)] text-[var(--muted-strong)]" : "bg-accent-soft text-accent-ink")}>
                       {item.done ? "已添加" : "查看"}
                     </span>
                   </button>
                 ))}
               </div>
             </section>
+            </div>
           ) : null}
         </div>
       </ScrollArea>

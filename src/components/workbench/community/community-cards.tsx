@@ -10,16 +10,16 @@ import { Check } from "@phosphor-icons/react"
 import { formatInstalls, type CommunityAgent, type CommunityConnector, type CommunitySkill } from "./community-data"
 
 const cardShell =
-  "group relative flex cursor-pointer flex-col rounded-[12px] bg-panel p-4 text-left outline-none shadow-[0_1px_2px_rgba(0,0,0,0.03),0_4px_14px_rgba(0,0,0,0.04)] transition-shadow duration-200 hover:shadow-[0_2px_6px_rgba(0,0,0,0.04),0_10px_28px_rgba(0,0,0,0.09)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+  "group relative flex cursor-pointer flex-col rounded-[8px] bg-panel p-4 text-left outline-none shadow-[0_1px_2px_rgba(0,0,0,0.03),0_4px_14px_rgba(0,0,0,0.04)] transition-shadow duration-200 hover:shadow-[0_2px_6px_rgba(0,0,0,0.04),0_10px_28px_rgba(0,0,0,0.09)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
 
 const neutralBadge =
-  "flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-[var(--surface-hover)] text-[13px] font-semibold text-[var(--ink-soft)]"
+  "flex size-10 shrink-0 items-center justify-center rounded-[7px] bg-[var(--surface-hover)] text-[13px] font-semibold text-[var(--ink-soft)]"
 
 const actionPill =
-  "flex h-7 shrink-0 items-center rounded-full bg-accent-soft px-3.5 text-[11px] font-semibold text-accent-ink outline-none transition-[background-color,color] duration-200 group-hover:bg-[var(--accent)] group-hover:text-white focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:bg-[var(--accent)] focus-visible:text-white"
+  "flex h-7 shrink-0 items-center rounded-[7px] bg-accent-soft px-3 text-[11px] font-semibold text-accent-ink outline-none transition-[background-color,color] duration-200 group-hover:bg-[var(--accent)] group-hover:text-white focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:bg-[var(--accent)] focus-visible:text-white"
 
 const installedPill =
-  "flex h-7 shrink-0 items-center gap-1 rounded-full border border-[var(--line-strong)] px-3 text-[10.5px] font-medium text-[var(--muted-strong)]"
+  "flex h-7 shrink-0 items-center gap-1 rounded-[7px] border border-[var(--line-strong)] px-2.5 text-[10.5px] font-medium text-[var(--muted-strong)]"
 
 function cardActivation(onOpen: () => void) {
   return {

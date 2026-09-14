@@ -267,7 +267,7 @@ export function CommunityCanvas() {
             </div>
 
             {/* 内容区：白底、留白排版、发丝线卡片 */}
-            <div ref={scrollRef} className="min-h-0 min-w-0 flex-1 overflow-auto bg-[var(--surface-subtle)]">
+            <div ref={scrollRef} className="min-h-0 min-w-0 flex-1 overflow-auto bg-[#f5f5f7]">
               <div className="mx-auto w-full max-w-[1200px] px-5 pb-16 pt-5">
                 {/* 筛选行：无底色文字 pill + 文字排序 + 极简搜索 */}
                 <div className="flex items-center gap-0.5">

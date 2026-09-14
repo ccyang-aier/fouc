@@ -130,19 +130,40 @@ export type CommunityDetail = {
   category: string
   byline: string
   description: string
+  about: string[]
   highlights: string[]
+  capabilities: Array<{ title: string; desc: string }>
   stats: Array<{ label: string; value: string }>
   info: Array<{ label: string; value: string }>
   updates: Array<{ version: string; date: string; note: string }>
   permissions: string[]
+  discussions: Array<{ author: string; time: string; text: string; replies: Array<{ author: string; time: string; text: string }> }>
 }
 
-const UPDATE_DATES = ["2026-09-08", "2026-08-21", "2026-08-02"] as const
+const UPDATE_DATES = ["2026-09-08", "2026-08-21", "2026-08-02", "2026-07-16", "2026-06-28"] as const
 
-const UPDATE_NOTES: Record<CommunityTab, [string, string, string]> = {
-  agents: ["优化长上下文任务的响应稳定性", "新增快捷指令集与团队规范继承", "修复若干边角案例与提示词回归"],
-  connectors: ["提升同步稳定性与限流退避策略", "支持新版 Webhook 事件订阅", "修复偶发的授权过期问题"],
-  skills: ["精简提示词体积，响应更快", "适配最新模型工具调用协议", "修复边界输入下的格式问题"],
+const UPDATE_NOTES: Record<CommunityTab, string[]> = {
+  agents: [
+    "优化长上下文任务的响应稳定性",
+    "新增快捷指令集与团队规范继承",
+    "修复若干边角案例与提示词回归",
+    "支持在项目空间中设为常驻助理",
+    "首个公开版本：基础任务编排与确认流",
+  ],
+  connectors: [
+    "提升同步稳定性与限流退避策略",
+    "支持新版 Webhook 事件订阅",
+    "修复偶发的授权过期问题",
+    "新增连接健康状态自检",
+    "首个公开版本：只读同步与事件驱动",
+  ],
+  skills: [
+    "精简提示词体积，响应更快",
+    "适配最新模型工具调用协议",
+    "修复边界输入下的格式问题",
+    "新增中英双语输出模板",
+    "首个公开版本：核心提示词模板",
+  ],
 }
 
 const PERMISSIONS: Record<CommunityTab, string[]> = {
@@ -151,23 +172,110 @@ const PERMISSIONS: Record<CommunityTab, string[]> = {
   skills: ["仅在任务内加载提示词与模板", "不发起网络请求（纯本地技能）", "可随时卸载并清理缓存"],
 }
 
-function prevVersions(version: string): [string, string] {
+/** 依当前版本号倒推 4 个历史版本（末位递减，不够则借位） */
+function prevVersions(version: string): string[] {
   const parts = version.split(".")
   if (parts.length === 3 && parts.every((part) => /^\d+$/.test(part))) {
-    const [a, b, c] = parts.map(Number)
-    return [c > 0 ? `${a}.${b}.${c - 1}` : `${a}.${Math.max(b - 1, 0)}.3`, b > 0 ? `${a}.${b - 1}.2` : `${a}.0.9`]
+    const out: string[] = []
+    let [a, b, c] = parts.map(Number)
+    for (let i = 0; i < 4; i += 1) {
+      if (c > 0) c -= 1
+      else if (b > 0) { b -= 1; c = 3 }
+      else { a = Math.max(a - 1, 0); b = 9; c = 9 }
+      out.push(`${a}.${b}.${c}`)
+    }
+    return out
   }
   const n = Number(version) || 1
-  return [(n - 0.1).toFixed(1), (n - 0.2).toFixed(1)]
+  return [1, 2, 3, 4].map((i) => Math.max(n - i * 0.1, 0.1).toFixed(1))
 }
 
 function buildUpdates(tab: CommunityTab, version: string) {
-  const [p1, p2] = prevVersions(version)
+  const prevs = prevVersions(version)
   return UPDATE_DATES.map((date, index) => ({
-    version: [version, p1, p2][index],
+    version: [version, ...prevs][index],
     date,
     note: UPDATE_NOTES[tab][index],
   }))
+}
+
+/** 能力明细的补充描述（与 highlights 一一对应，末位兜底） */
+const CAPABILITY_DESCS: Record<CommunityTab, string[]> = {
+  agents: [
+    "开箱即用，无需手工编写提示词，在任务中直接指名调用即可。",
+    "可与团队规范、知识库上下文联动，保持多次输出的一致性。",
+    "执行过程全程可观测，每一步都可回溯、审阅与重放。",
+    "失败自动重试并给出可读的原因说明，不打断主工作流。",
+  ],
+  connectors: [
+    "OAuth 授权与令牌自动轮换，凭据全程加密保存在本机。",
+    "支持事件驱动与定时拉取两种同步模式，按需选择。",
+    "同步失败自动退避重试，异常会进入待处理列表提醒。",
+    "可同时接入多个实例，数据范围与频率独立配置。",
+  ],
+  skills: [
+    "技能仅在本机加载提示词与模板，不发起网络请求。",
+    "在任务输入中 @ 技能名即可引用，或由 Agent 自动匹配调用。",
+    "版本热更新，升级与回滚都在设置中一键完成。",
+    "可与多位 Agent 协同，组合出更复杂的任务能力。",
+  ],
+}
+
+function buildCapabilities(tab: CommunityTab, name: string, highlights: string[]) {
+  const descs = CAPABILITY_DESCS[tab]
+  return highlights.map((title, index) => ({
+    title,
+    desc: descs[Math.min(index, descs.length - 1)],
+  }))
+}
+
+function buildAbout(tab: CommunityTab, name: string, description: string) {
+  if (tab === "agents") {
+    return [
+      description,
+      `安装后即可在新建任务时选用「${name}」，也可以在项目空间中将其设为常驻助理，自动接管对应类别的任务；所有执行记录都保留在任务时间线中，可随时回看。`,
+      "由社区作者维护，版本更新即时推送；如不再需要，可随时在设置中移除并清理本机数据。",
+    ]
+  }
+  if (tab === "connectors") {
+    return [
+      description,
+      `连接「${name}」后，其数据与事件会作为工作上下文进入工作台：任务可以引用同步内容，自动化可以在事件到达时触发。`,
+      "断开连接即删除远端令牌；重新连接时历史映射会自动恢复。",
+    ]
+  }
+  return [
+    description,
+    `技能以提示词与模板的形式增强 Agent 的领域能力。安装「${name}」后，在任务中 @ 引用即可生效，Agent 也会按任务特征自动匹配。`,
+    "技能纯本地加载、不发起网络请求，可随时卸载并清理缓存。",
+  ]
+}
+
+function buildDiscussions(name: string) {
+  return [
+    {
+      author: "林默",
+      time: "3 天前",
+      text: `在长任务里连续用「${name}」跑了一周，输出很稳定，复杂拆解也没出过格式问题，值得装。`,
+      replies: [
+        { author: "苏晴", time: "2 天前", text: "同感，配合默认 Agent 使用效果最好。" },
+      ],
+    },
+    {
+      author: "周欣",
+      time: "1 周前",
+      text: "想问下团队规范模板支持自定义吗？我们有一套自己的评审清单想接进来。",
+      replies: [
+        { author: "DataCraft", time: "6 天前", text: "支持的，在设置的团队规范里导入即可，下个版本会提供可视化编辑。" },
+      ],
+    },
+    {
+      author: "陆则鸣",
+      time: "2 周前",
+      text: "建议先跑一遍示例任务再上生产，输出风格需要微调两次才贴合团队习惯。",
+      replies: [],
+    },
+  ]
 }
 
 export function buildCommunityDetail(
@@ -185,6 +293,9 @@ export function buildCommunityDetail(
       category: agent.category,
       byline: `by ${agent.author}`,
       description: agent.tagline,
+      about: buildAbout("agents", agent.name, agent.tagline),
+      capabilities: buildCapabilities("agents", agent.name, agent.highlights),
+      discussions: buildDiscussions(agent.name),
       highlights: agent.highlights,
       stats: [
         { label: "评分", value: `★ ${agent.rating}` },
@@ -214,6 +325,9 @@ export function buildCommunityDetail(
       category: connector.category,
       byline: connector.publisher,
       description: connector.description,
+      about: buildAbout("connectors", connector.name, connector.description),
+      capabilities: buildCapabilities("connectors", connector.name, ["OAuth 授权与令牌自动轮换", "事件与定时两种同步模式", "失败自动重试与告警"]),
+      discussions: buildDiscussions(connector.name),
       highlights: ["OAuth 授权与令牌自动轮换", "事件与定时两种同步模式", "失败自动重试与告警"],
       stats: [
         { label: "发布者", value: connector.publisher },
@@ -241,6 +355,9 @@ export function buildCommunityDetail(
     category: skill.category,
     byline: `by ${skill.author}`,
     description: skill.summary,
+    about: buildAbout("skills", skill.name, skill.summary),
+    capabilities: buildCapabilities("skills", skill.name, [`由 ${skill.author} 维护，随版本热更新`, "在任务中 @ 引用即可生效", `与 ${skill.compat.join(" / ")} 协同最佳`]),
+    discussions: buildDiscussions(skill.name),
     highlights: [`由 ${skill.author} 维护，随版本热更新`, "在任务中 @ 引用即可生效", `与 ${skill.compat.join(" / ")} 协同最佳`],
     stats: [
       { label: "安装量", value: formatInstalls(skill.installs) },

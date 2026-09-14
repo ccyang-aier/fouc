@@ -25,6 +25,8 @@ const mainCanvasVariants: Variants = {
     x: direction * -70,
     scale: 0.965,
     rotateY: direction * -2,
+    // 退场层让出指针，避免过渡期间拦截新视图的点击
+    pointerEvents: "none",
     transition: { duration: 0.2, ease: [0.4, 0, 1, 1] },
   }),
 }

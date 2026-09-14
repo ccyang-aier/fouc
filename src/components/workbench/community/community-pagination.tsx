@@ -1,6 +1,6 @@
 "use client"
 
-/** 社区分页器：左侧区间摘要，右侧圆形翻页钮 + 页码（窗口式缩略），激活页主题实底。 */
+/** 社区分页器：摘要与翻页控件同行居中排布，圆形翻页钮 + 窗口式页码，激活页主题实底。 */
 
 import { CaretLeft, CaretRight } from "@phosphor-icons/react"
 
@@ -33,16 +33,16 @@ export function CommunityPagination({
   pageSize: number
   onChange: (page: number) => void
 }) {
-  const from = total === 0 ? 0 : (page - 1) * pageSize + 1
+  const from = (page - 1) * pageSize + 1
   const to = Math.min(page * pageSize, total)
 
   return (
-    <nav aria-label="分页" className="flex w-full items-center gap-3">
+    <nav aria-label="分页" className="flex items-center justify-center gap-4">
       <p className="text-[9.5px] tabular-nums text-[var(--muted)]">
-        第 {from}–{to} 项 <span aria-hidden className="text-[var(--line-strong)]">/</span> 共 {total} 项
+        {from}–{to} <span aria-hidden className="text-[var(--line-strong)]">/</span> {total} 项
       </p>
       {pageCount > 1 ? (
-        <div className="ml-auto flex items-center gap-1">
+        <div className="flex items-center gap-1">
           <button
             type="button"
             aria-label="上一页"

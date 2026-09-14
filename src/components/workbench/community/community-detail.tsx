@@ -8,6 +8,8 @@
  */
 
 import { useState } from "react"
+import Markdown from "react-markdown"
+import type { Components } from "react-markdown"
 import {
   BookOpen,
   CaretLeft,
@@ -16,17 +18,62 @@ import {
   Chats,
   Check,
   ClockCounterClockwise,
-  DownloadSimple,
   Info,
-  ListDashes,
   ShareFat,
-  Stack,
 } from "@phosphor-icons/react"
 
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 
 import type { CommunityDetail, CommunityTab } from "./community-data"
+
+/** Markdown 元素的极简渲染映射：排版驱动，去掉默认重样式 */
+const mdComponents: Components = {
+  h2: ({ children }) => (
+    <h2 className="mt-7 text-[14.5px] font-semibold tracking-[-0.01em] text-[var(--ink)] first:mt-0">
+      {children}
+    </h2>
+  ),
+  h3: ({ children }) => (
+    <h3 className="mt-5 text-[12.5px] font-semibold text-[var(--ink)] first:mt-0">
+      {children}
+    </h3>
+  ),
+  p: ({ children }) => (
+    <p className="my-3 text-[12.5px] leading-[21px] text-[var(--ink-soft)] first:mt-0 last:mb-0">
+      {children}
+    </p>
+  ),
+  ul: ({ children }) => <ul className="my-3 space-y-1.5">{children}</ul>,
+  ol: ({ children }) => <ol className="my-3 list-decimal space-y-1.5 pl-4">{children}</ol>,
+  li: ({ children }) => {
+    const hasListParent = false
+    void hasListParent
+    return (
+      <li className="flex gap-2 text-[12.5px] leading-[19px] text-[var(--ink-soft)]">
+        <span aria-hidden className="mt-[7px] size-1 shrink-0 rounded-full bg-[var(--muted)]" />
+        <span className="min-w-0">{children}</span>
+      </li>
+    )
+  },
+  strong: ({ children }) => <strong className="font-semibold text-[var(--ink)]">{children}</strong>,
+  code: ({ children }) => (
+    <code className="rounded bg-[var(--surface-hover)] px-1 py-0.5 font-mono text-[11px] text-[var(--ink)]">
+      {children}
+    </code>
+  ),
+  blockquote: ({ children }) => (
+    <blockquote className="my-3 border-l-2 border-[var(--line-strong)] py-0.5 pl-3 text-[12px] leading-[19px] text-[var(--muted-strong)]">
+      {children}
+    </blockquote>
+  ),
+  a: ({ children, href }) => (
+    <a href={href} target="_blank" rel="noreferrer" className="text-[var(--accent-ink)] underline underline-offset-2 hover:opacity-80">
+      {children}
+    </a>
+  ),
+  hr: () => <hr className="my-6 border-[var(--line)]" />,
+}
 
 const TAB_LABELS: Record<CommunityTab, string> = {
   agents: "Agents",
@@ -55,20 +102,21 @@ const KIND_NOUN: Record<CommunityTab, string> = {
 const SUBTABS: Record<CommunityTab, ReadonlyArray<{ id: string; label: string; icon: typeof BookOpen }>> = {
   agents: [
     { id: "overview", label: "概览", icon: BookOpen },
-    { id: "capabilities", label: "能力", icon: Stack },
     { id: "versions", label: "版本历史", icon: ClockCounterClockwise },
-    { id: "related", label: "相似助理", icon: ListDashes },
+    { id: "discussions", label: "讨论", icon: Chats },
+    { id: "info", label: "信息", icon: Info },
   ],
   skills: [
     { id: "overview", label: "概览", icon: BookOpen },
-    { id: "install", label: "安装", icon: DownloadSimple },
+    { id: "versions", label: "版本历史", icon: ClockCounterClockwise },
     { id: "discussions", label: "讨论", icon: Chats },
     { id: "info", label: "信息", icon: Info },
   ],
   connectors: [
     { id: "overview", label: "概览", icon: BookOpen },
-    { id: "info", label: "信息", icon: Info },
     { id: "versions", label: "版本历史", icon: ClockCounterClockwise },
+    { id: "discussions", label: "讨论", icon: Chats },
+    { id: "info", label: "信息", icon: Info },
   ],
 }
 
@@ -212,8 +260,8 @@ export function CommunityDetailPage({
           <div className="flex min-w-0 flex-1 flex-col">
             {subtab === "overview" ? (
               <>
-                {/* 可折叠说明框 */}
-                <section className="overflow-hidden rounded-[10px] border border-[var(--line)]">
+                {/* 可折叠说明框：Markdown 渲染 */}
+                <section className="overflow-hidden rounded-[8px] border border-[var(--line)]">
                   <button
                     type="button"
                     onClick={() => setAboutOpen((open) => !open)}
@@ -225,69 +273,22 @@ export function CommunityDetailPage({
                   </button>
                   {aboutOpen ? (
                     <div className="border-t border-[var(--line)] px-5 py-4">
-                      <div className="space-y-3">
-                        {detail.about.map((paragraph) => (
-                          <p key={paragraph.slice(0, 12)} className="text-[12.5px] leading-[21px] text-[var(--ink-soft)]">
-                            {paragraph}
-                          </p>
-                        ))}
-                      </div>
+                      <Markdown components={mdComponents}>{detail.about}</Markdown>
                     </div>
                   ) : null}
                 </section>
-
-                {/* 亮点 */}
-                <section className="mt-8">
-                  <h2 className="text-[15px] font-bold tracking-[-0.01em] text-[var(--ink)]">亮点</h2>
-                  <ul className="mt-3.5 flex flex-col gap-y-3">
-                    {detail.highlights.map((highlight, index) => (
-                      <li key={highlight} className="flex items-start gap-3">
-                        <span className="mt-[3px] flex size-5 shrink-0 items-center justify-center rounded-[6px] bg-[var(--surface-hover)] text-[9.5px] font-semibold text-[var(--muted-strong)]">
-                          {index + 1}
-                        </span>
-                        <div className="min-w-0">
-                          <p className="text-[12.5px] font-medium leading-[18px] text-[var(--ink)]">{highlight}</p>
-                          <p className="mt-0.5 text-[11.5px] leading-[17px] text-[var(--muted-strong)]">
-                            {detail.capabilities[index]?.desc}
-                          </p>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-
-                {/* 权限与数据 */}
-                <section className="mt-8">
+                <section className="mt-9">
                   <h2 className="text-[15px] font-bold tracking-[-0.01em] text-[var(--ink)]">权限与数据</h2>
                   <ul className="mt-3.5 space-y-2">
                     {detail.permissions.map((permission) => (
                       <li key={permission} className="flex items-start gap-2.5 text-[12px] leading-[18px] text-[var(--muted-strong)]">
-                        <Check className="mt-0.5 size-3.5 shrink-0 text-[var(--accent-ink)]" weight="bold" />
+                        <Check className="mt-0.5 size-3.5 shrink-0 text-[var(--muted-strong)]" weight="bold" />
                         {permission}
                       </li>
                     ))}
                   </ul>
                 </section>
               </>
-            ) : null}
-
-            {subtab === "capabilities" ? (
-              <section>
-                <h2 className="text-[15px] font-bold tracking-[-0.01em] text-[var(--ink)]">能力明细</h2>
-                <div className="mt-2 flex flex-col">
-                  {detail.capabilities.map((capability, index) => (
-                    <div key={capability.title} className={cn("flex items-start gap-4 py-4", index > 0 && "border-t border-[var(--line)]")}>
-                      <span className="flex size-9 shrink-0 items-center justify-center rounded-[8px] bg-accent-soft text-[12.5px] font-semibold text-accent-ink">
-                        {index + 1}
-                      </span>
-                      <div className="min-w-0 flex-1 pt-0.5">
-                        <p className="text-[13px] font-semibold tracking-[-0.01em] text-[var(--ink)]">{capability.title}</p>
-                        <p className="mt-1 text-[12px] leading-[18px] text-[var(--muted-strong)]">{capability.desc}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
             ) : null}
 
             {subtab === "versions" ? (
@@ -305,37 +306,6 @@ export function CommunityDetailPage({
                   ))}
                 </div>
               </section>
-            ) : null}
-
-            {subtab === "install" ? (
-              <>
-                <section>
-                  <h2 className="text-[15px] font-bold tracking-[-0.01em] text-[var(--ink)]">安装步骤</h2>
-                  <div className="mt-2 flex flex-col">
-                    {[
-                      { title: "点击安装", desc: "点击右上角「安装」，技能进入本机已安装列表，即刻可用。" },
-                      { title: "在任务中引用", desc: "任务输入中 @ 技能名，或交由 Agent 按任务特征自动调用。" },
-                      { title: "管理与更新", desc: "在 设置 · 技能 中管理已安装技能，支持一键升级与回滚。" },
-                    ].map((step, index) => (
-                      <div key={step.title} className={cn("flex items-start gap-4 py-4", index > 0 && "border-t border-[var(--line)]")}>
-                        <span className="flex size-9 shrink-0 items-center justify-center rounded-[8px] bg-accent-soft text-[12.5px] font-semibold text-accent-ink">
-                          {index + 1}
-                        </span>
-                        <div className="min-w-0 flex-1 pt-0.5">
-                          <p className="text-[13px] font-semibold tracking-[-0.01em] text-[var(--ink)]">{step.title}</p>
-                          <p className="mt-1 text-[12px] leading-[18px] text-[var(--muted-strong)]">{step.desc}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-                <section className="mt-8">
-                  <h2 className="text-[15px] font-bold tracking-[-0.01em] text-[var(--ink)]">运行要求</h2>
-                  <p className="mt-3 text-[12.5px] leading-[20px] text-[var(--ink-soft)]">
-                    技能仅在本机加载提示词与模板，不发起网络请求；无额外依赖，卸载即清理全部缓存。
-                  </p>
-                </section>
-              </>
             ) : null}
 
             {subtab === "discussions" ? (

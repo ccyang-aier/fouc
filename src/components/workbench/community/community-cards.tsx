@@ -10,7 +10,7 @@ import { Check } from "@phosphor-icons/react"
 import { formatInstalls, type CommunityAgent, type CommunityConnector, type CommunitySkill } from "./community-data"
 
 const cardShell =
-  "group relative flex cursor-pointer flex-col rounded-[8px] bg-panel p-4 text-left outline-none shadow-[0_1px_2px_rgba(0,0,0,0.03),0_4px_14px_rgba(0,0,0,0.04)] transition-shadow duration-200 hover:shadow-[0_2px_6px_rgba(0,0,0,0.04),0_10px_28px_rgba(0,0,0,0.09)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+  "group relative flex cursor-pointer flex-col rounded-[8px] bg-panel p-4 text-left outline-none shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_24px_-12px_rgba(0,0,0,0.10)] transition-[box-shadow,transform] duration-200 hover:-translate-y-px hover:shadow-[0_2px_4px_rgba(0,0,0,0.04),0_14px_32px_-14px_rgba(0,0,0,0.16)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
 
 const neutralBadge =
   "flex size-10 shrink-0 items-center justify-center rounded-[7px] bg-[var(--surface-hover)] text-[13px] font-semibold text-[var(--ink-soft)]"
@@ -49,7 +49,7 @@ export function CommunityAgentCard({ agent, onInstall, onOpen }: { agent: Commun
       <div className="flex items-start gap-3">
         <span className={neutralBadge}>{agent.glyph}</span>
         <div className="min-w-0 flex-1 pt-0.5">
-          <p className="truncate text-[13px] font-semibold tracking-[-0.01em] text-[var(--ink)]">{agent.name}</p>
+          <p className="truncate text-[13.5px] font-semibold tracking-[-0.015em] text-[var(--ink)]">{agent.name}</p>
           <p className="mt-0.5 truncate text-[10.5px] text-[var(--muted)]">{agent.author}</p>
         </div>
         {agent.installed ? (
@@ -63,7 +63,7 @@ export function CommunityAgentCard({ agent, onInstall, onOpen }: { agent: Commun
           </button>
         )}
       </div>
-      <p className="mt-3 line-clamp-2 text-[11.5px] leading-[17px] text-[var(--ink-soft)]">{agent.tagline}</p>
+      <p className="mt-3 line-clamp-2 text-[11.5px] leading-[18px] text-[var(--ink-soft)]">{agent.tagline}</p>
       <MetaLine>
         <span className="font-medium text-[var(--ink-soft)]">★ {agent.rating}</span>
         <Dot />
@@ -81,7 +81,7 @@ export function CommunityConnectorCard({ connector, onConnect, onOpen }: { conne
       <div className="flex items-start gap-3">
         <span className={neutralBadge}>{connector.glyph}</span>
         <div className="min-w-0 flex-1 pt-0.5">
-          <p className="truncate text-[13px] font-semibold tracking-[-0.01em] text-[var(--ink)]">{connector.name}</p>
+          <p className="truncate text-[13.5px] font-semibold tracking-[-0.015em] text-[var(--ink)]">{connector.name}</p>
           <p className="mt-0.5 truncate text-[10.5px] text-[var(--muted)]">{connector.publisher}</p>
         </div>
         {connector.connected ? (
@@ -95,7 +95,7 @@ export function CommunityConnectorCard({ connector, onConnect, onOpen }: { conne
           </button>
         )}
       </div>
-      <p className="mt-3 line-clamp-2 text-[11.5px] leading-[17px] text-[var(--ink-soft)]">{connector.description}</p>
+      <p className="mt-3 line-clamp-2 text-[11.5px] leading-[18px] text-[var(--ink-soft)]">{connector.description}</p>
       <MetaLine>
         <span>{connector.category}</span>
         <Dot />
@@ -113,7 +113,7 @@ export function CommunitySkillCard({ skill, onInstall, onOpen }: { skill: Commun
       <div className="flex items-start gap-3">
         <span className={neutralBadge}>{skill.name.slice(0, 1)}</span>
         <div className="min-w-0 flex-1 pt-0.5">
-          <p className="truncate text-[13px] font-semibold tracking-[-0.01em] text-[var(--ink)]">{skill.name}</p>
+          <p className="truncate text-[13.5px] font-semibold tracking-[-0.015em] text-[var(--ink)]">{skill.name}</p>
           <p className="mt-0.5 truncate text-[10.5px] text-[var(--muted)]">{skill.author}</p>
         </div>
         {skill.installed ? (
@@ -127,7 +127,7 @@ export function CommunitySkillCard({ skill, onInstall, onOpen }: { skill: Commun
           </button>
         )}
       </div>
-      <p className="mt-3 line-clamp-2 text-[11.5px] leading-[17px] text-[var(--ink-soft)]">{skill.summary}</p>
+      <p className="mt-3 line-clamp-2 text-[11.5px] leading-[18px] text-[var(--ink-soft)]">{skill.summary}</p>
       <MetaLine>
         <span className="font-medium text-[var(--ink-soft)]">v{skill.version}</span>
         <Dot />

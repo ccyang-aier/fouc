@@ -34,6 +34,7 @@ import { applySidebarStyle, readStoredSidebarStyle } from "@/lib/sidebar-style"
 
 import { HomeCanvas } from "./home-canvas"
 import { AutomationCanvas } from "./automation/automation-canvas"
+import { CommunityCanvas } from "./community/community-canvas"
 import type { ProjectManagementPanelId } from "./project/project-management-model"
 import { ProjectHomeCanvas } from "./project/project-home-canvas"
 import "./sidebar-material.css"
@@ -168,6 +169,8 @@ export function WorkbenchShell() {
                         managementPanel={managementPanel}
                         onManagementPanelChange={setManagementPanel}
                       />
+                    ) : view === "community" ? (
+                      <CommunityCanvas />
                     ) : view === "automation" ? (
                       <AutomationCanvas />
                     ) : (

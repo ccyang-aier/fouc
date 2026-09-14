@@ -20,8 +20,8 @@ import {
   Lightning,
   PencilSimple,
   Plus,
+  Planet,
   PlusCircle,
-  PlugsConnected,
   Star,
   UsersThree,
 } from "@phosphor-icons/react"
@@ -50,12 +50,12 @@ import { ProjectSidebarPane } from "./sidebar-project-pane"
 import { SidebarNavList, type SidebarNavItem } from "./sidebar-nav"
 import { SidebarResizeHandle, useSidebarWidth } from "./sidebar-resize"
 
-export type WorkbenchView = "home" | "settings" | "projects" | "agent-hub" | "automation" | "knowledge" | "more"
+export type WorkbenchView = "home" | "settings" | "projects" | "community" | "automation" | "knowledge" | "more"
 
 const navigation: Array<SidebarNavItem<WorkbenchView>> = [
   { id: "home", label: "助理", icon: ChatCircleDots, iconClass: toneIcons.teal },
   { id: "projects", label: "项目", icon: FolderOpen, iconClass: toneIcons.blue },
-  { id: "agent-hub", label: "Agent · 技能 · 连接器", icon: PlugsConnected, iconClass: toneIcons.violet },
+  { id: "community", label: "社区", icon: Planet, iconClass: toneIcons.violet },
   { id: "automation", label: "自动化", icon: Lightning, iconClass: toneIcons.amber },
   { id: "knowledge", label: "知识库", icon: BookOpenText, iconClass: toneIcons.sky },
   { id: "more", label: "更多", icon: DotsThreeCircle },

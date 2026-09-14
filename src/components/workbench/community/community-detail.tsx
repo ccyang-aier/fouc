@@ -112,7 +112,7 @@ export function CommunityDetailPage({
         <button
           type="button"
           onClick={onBack}
-          className="flex h-7 items-center gap-1 rounded-[7px] px-1.5 text-[11.5px] font-medium text-[var(--accent-ink)] outline-none transition-colors hover:bg-[var(--hover-fill)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+          className="flex h-7 items-center gap-1 rounded-[7px] px-1.5 text-[11.5px] font-medium text-[var(--ink)] outline-none transition-colors hover:bg-[var(--hover-fill)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
         >
           <CaretLeft className="size-3.5" weight="bold" />
           社区

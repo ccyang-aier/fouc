@@ -483,7 +483,8 @@ export function Sidebar({
         </AnimatePresence>
 
         <div
-          className={cn("relative min-h-0 flex-1", paneMode === "project" ? "mt-1" : "mt-2.5")}
+          /* 项目面板上提吃进 header 的下部留白，身份卡紧贴标题区（工作台保持原节奏） */
+          className={cn("relative min-h-0 flex-1", paneMode === "project" ? "-mt-1.5" : "mt-2.5")}
           style={{ perspective: 1200 }}
         >
           <AnimatePresence initial={false} custom={paneDirection}>

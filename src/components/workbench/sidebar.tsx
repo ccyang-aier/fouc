@@ -482,7 +482,10 @@ export function Sidebar({
           ) : null}
         </AnimatePresence>
 
-        <div className="relative mt-2.5 min-h-0 flex-1" style={{ perspective: 1200 }}>
+        <div
+          className={cn("relative min-h-0 flex-1", paneMode === "project" ? "mt-1" : "mt-2.5")}
+          style={{ perspective: 1200 }}
+        >
           <AnimatePresence initial={false} custom={paneDirection}>
             <motion.div
               key={paneMode}

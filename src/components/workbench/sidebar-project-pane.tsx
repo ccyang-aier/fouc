@@ -79,7 +79,7 @@ export function ProjectSidebarPane({
       {/* 项目身份卡：下拉承载返回工作台；徽章与来源行动图标共享元素形变 */}
       <motion.div
         variants={paneIdentityVariants}
-        className={cn("mt-1 flex min-h-[44px] items-center gap-1 px-1", collapsed && "justify-center px-0")}
+        className={cn("flex items-center gap-1 px-1", collapsed && "h-9 justify-center px-0")}
       >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

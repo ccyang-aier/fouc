@@ -56,7 +56,7 @@ export function SidebarNavList<T extends string>({
           initial={false}
           animate={{ y: activeIndex * (ROW_HEIGHT + ROW_GAP) }}
           transition={{ type: "spring", stiffness: 460, damping: 38 }}
-          className="absolute inset-x-0 top-0 rounded-[8px] bg-[var(--accent)] shadow-[0_2px_10px_color-mix(in_srgb,var(--accent)_38%,transparent),inset_0_1px_0_rgb(255_255_255/0.16)]"
+          className="absolute inset-x-0 top-0 rounded-[8px] bg-[var(--accent)] shadow-[inset_0_1px_0_rgb(255_255_255/0.16)]"
           style={{ height: ROW_HEIGHT }}
         />
       ) : null}

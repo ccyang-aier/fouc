@@ -283,7 +283,7 @@ function paneRowClasses(active: boolean) {
   return cn(
     "flex h-[36px] w-full items-center gap-2.5 rounded-[8px] px-2.5 text-left text-[12px] font-medium outline-none transition-[background-color,color,box-shadow] duration-150 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
     active
-      ? "bg-[var(--accent)] text-white shadow-[0_2px_10px_color-mix(in_srgb,var(--accent)_38%,transparent),inset_0_1px_0_rgb(255_255_255/0.16)]"
+      ? "bg-[var(--accent)] text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.16)]"
       : "text-[var(--ink-soft)] hover:bg-raise hover:text-[var(--ink)]",
   )
 }

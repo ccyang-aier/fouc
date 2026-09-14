@@ -1,14 +1,13 @@
 "use client"
 
 /**
- * 社区画布：顶部控制栏（左视图下拉 / 右作用域操作）+ 内容区
- * （灰底承载分类筛选、搜索、排序、卡片栅格与居中分页，无多余分割线）。
- * 点击卡片进入详情页；获取 / 连接 / 安装即时落到本地状态并给出轻提示。
+ * 社区画布：单色克制视觉 —— 文字化控件（无边框下拉 / 无底色筛选）、
+ * 白底内容区 + 发丝线卡片、居中极简分页。点击卡片进入详情页。
  */
 
 import { useMemo, useRef, useState } from "react"
 import { AnimatePresence, motion } from "motion/react"
-import { ArrowsDownUp, ArrowClockwise, CaretDown, Check, CheckCircle, MagnifyingGlass, PlugsConnected, Plus, Robot, Sparkle } from "@phosphor-icons/react"
+import { ArrowClockwise, CaretDown, Check, CheckCircle, MagnifyingGlass, PlugsConnected, Plus, Robot, Sparkle } from "@phosphor-icons/react"
 
 import {
   DropdownMenu,
@@ -155,7 +154,7 @@ export function CommunityCanvas() {
         related: agents
           .filter((other) => other.id !== item.id && other.category === item.category)
           .slice(0, 3)
-          .map<RelatedItem>((other) => ({ id: other.id, name: other.name, glyph: other.glyph, tone: other.tone, meta: `★ ${other.rating} · ${other.author}`, done: other.installed })),
+          .map<RelatedItem>((other) => ({ id: other.id, name: other.name, glyph: other.glyph, meta: `★ ${other.rating}`, done: other.installed })),
       }
     }
     if (tab === "connectors") {
@@ -168,7 +167,7 @@ export function CommunityCanvas() {
         related: connectors
           .filter((other) => other.id !== item.id && other.category === item.category)
           .slice(0, 3)
-          .map<RelatedItem>((other) => ({ id: other.id, name: other.name, glyph: other.glyph, tone: other.tone, meta: other.publisher, done: other.connected })),
+          .map<RelatedItem>((other) => ({ id: other.id, name: other.name, glyph: other.glyph, meta: other.publisher, done: other.connected })),
       }
     }
     const item = skills.find((skill) => skill.id === detailId)
@@ -180,7 +179,7 @@ export function CommunityCanvas() {
       related: skills
         .filter((other) => other.id !== item.id && other.category === item.category)
         .slice(0, 3)
-        .map<RelatedItem>((other) => ({ id: other.id, name: other.name, glyph: other.name.slice(0, 1), tone: other.tone, meta: `v${other.version} · ${other.author}`, done: other.installed })),
+        .map<RelatedItem>((other) => ({ id: other.id, name: other.name, glyph: other.name.slice(0, 1), meta: `v${other.version}`, done: other.installed })),
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [detailId, tab, agents, connectors, skills])
@@ -198,10 +197,10 @@ export function CommunityCanvas() {
         {detail ? (
           <motion.div
             key="detail"
-            initial={{ opacity: 0, x: 28 }}
+            initial={{ opacity: 0, x: 24 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 28 }}
-            transition={{ duration: 0.18, ease: [0.32, 0.72, 0, 1] }}
+            exit={{ opacity: 0, x: 24 }}
+            transition={{ duration: 0.16, ease: [0.32, 0.72, 0, 1] }}
             className="min-h-0 flex-1"
           >
             <CommunityDetailPage
@@ -217,68 +216,66 @@ export function CommunityCanvas() {
         ) : (
           <motion.div
             key="grid"
-            initial={{ opacity: 0, x: -20 }}
+            initial={{ opacity: 0, x: -16 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.18, ease: [0.32, 0.72, 0, 1] }}
+            exit={{ opacity: 0, x: -16 }}
+            transition={{ duration: 0.16, ease: [0.32, 0.72, 0, 1] }}
             className="flex min-w-0 flex-1 flex-col"
           >
-            {/* 顶部控制栏：视图下拉 + 作用域操作 */}
-            <div className="flex h-[52px] shrink-0 items-center gap-3 border-b border-[var(--line)] bg-panel px-4">
+            {/* 控制栏：文字化视图下拉 + 安静操作区，单条发丝线锚定 */}
+            <div className="flex h-12 shrink-0 items-center gap-1 border-b border-[var(--line)] bg-panel px-3">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
                     aria-label="切换社区视图"
-                    className="flex h-8 items-center gap-2 rounded-[9px] border border-[var(--line)] bg-panel px-2.5 text-[11.5px] font-semibold tracking-[-0.01em] text-[var(--ink)] outline-none transition-colors hover:border-[var(--line-strong)] hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] data-[state=open]:border-[var(--line-strong)] data-[state=open]:bg-surface-hover"
+                    className="flex h-8 items-center gap-1.5 rounded-[8px] px-2 text-[12px] font-semibold tracking-[-0.01em] text-[var(--ink)] outline-none transition-colors hover:bg-[var(--hover-fill)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] data-[state=open]:bg-[var(--hover-fill)]"
                   >
-                    <activeTab.icon className="size-4 text-accent-ink" weight="fill" />
                     {activeTab.label}
-                    <span className="text-[9.5px] font-normal text-[var(--muted)]">视图</span>
                     <CaretDown className="size-3 text-[var(--muted)]" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-64">
-                  <DropdownMenuLabel>社区视图</DropdownMenuLabel>
+                <DropdownMenuContent align="start" className="w-60">
+                  <DropdownMenuLabel>浏览</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {TABS.map((item) => (
                     <DropdownMenuItem key={item.id} onSelect={() => switchTab(item.id)} className="gap-2.5 py-2">
-                      <item.icon className={cn("size-4 shrink-0", tab === item.id ? "text-accent-ink" : "text-[var(--muted-strong)]")} weight="fill" />
+                      <item.icon className={cn("size-4 shrink-0", tab === item.id ? "text-[var(--ink)]" : "text-[var(--muted)]")} weight="fill" />
                       <span className="flex min-w-0 flex-col">
                         <span className="text-[11.5px] font-medium">{item.label}</span>
                         <span className="mt-px truncate text-[9.5px] text-[var(--muted)]">{item.blurb}</span>
                       </span>
-                      {tab === item.id ? <Check className="ml-auto size-3.5 shrink-0 text-accent-ink" weight="bold" /> : null}
+                      {tab === item.id ? <Check className="ml-auto size-3.5 shrink-0 text-[var(--ink)]" weight="bold" /> : null}
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <div className="ml-auto flex items-center gap-1.5">
+              <div className="ml-auto flex items-center gap-0.5">
                 <button
                   type="button"
                   aria-label="刷新目录"
                   onClick={() => notify("目录已是最新")}
-                  className="flex size-8 items-center justify-center rounded-[8px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-wash hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                  className="flex size-8 items-center justify-center rounded-[8px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-[var(--hover-fill)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                 >
                   <ArrowClockwise className="size-4" />
                 </button>
                 <button
                   type="button"
                   onClick={() => notify("作品提交通道即将开放")}
-                  className="flex h-8 items-center gap-1.5 rounded-[8px] bg-[var(--accent)] px-3 text-[10.5px] font-semibold text-white outline-none transition-[background-color,transform,box-shadow] hover:-translate-y-px hover:bg-[var(--accent-strong)] hover:shadow-[0_5px_14px_color-mix(in_srgb,var(--accent)_20%,transparent)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:translate-y-0"
+                  className="ml-1 flex h-7 items-center gap-1 rounded-[7px] bg-[var(--ink)] px-2.5 text-[10.5px] font-medium text-white outline-none transition-[opacity,transform] hover:opacity-88 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:translate-y-px"
                 >
-                  <Plus className="size-3.5" weight="bold" />
+                  <Plus className="size-3" weight="bold" />
                   提交作品
                 </button>
               </div>
             </div>
 
-            {/* 内容区：灰底承载筛选、栅格与居中分页 */}
-            <div ref={scrollRef} className="min-h-0 min-w-0 flex-1 overflow-auto bg-[#fbfbfc]">
-              <div className="mx-auto w-full max-w-[1240px] px-4 pb-10 pt-3">
-                {/* 筛选行：融入内容区，白底 pill */}
-                <div className="flex items-center gap-1.5">
+            {/* 内容区：白底、留白排版、发丝线卡片 */}
+            <div ref={scrollRef} className="min-h-0 min-w-0 flex-1 overflow-auto bg-panel">
+              <div className="mx-auto w-full max-w-[1200px] px-5 pb-16 pt-5">
+                {/* 筛选行：无底色文字 pill + 文字排序 + 极简搜索 */}
+                <div className="flex items-center gap-0.5">
                   {CATEGORIES[tab].map((option) => {
                     const active = category === option
                     return (
@@ -288,34 +285,33 @@ export function CommunityCanvas() {
                         aria-pressed={active}
                         onClick={() => { setCategory(option); setPage(1) }}
                         className={cn(
-                          "flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[10.5px] font-medium shadow-[0_1px_2px_rgba(28,33,42,0.04)] outline-none transition-[background-color,border-color,color] duration-200 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+                          "flex h-7 items-center gap-1.5 rounded-[8px] px-2.5 text-[11.5px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
                           active
-                            ? "border-[var(--accent-soft-line)] bg-accent-soft text-accent-ink"
-                            : "border-[var(--line)] bg-panel text-[var(--muted-strong)] hover:border-[var(--line-strong)] hover:text-[var(--ink)]",
+                            ? "bg-[var(--hover-fill)] font-medium text-[var(--ink)]"
+                            : "text-[var(--muted-strong)] hover:text-[var(--ink)]",
                         )}
                       >
                         {option}
-                        <span className={cn("text-[9px] tabular-nums", active ? "opacity-70" : "opacity-55")}>{categoryCounts.get(option) ?? 0}</span>
+                        <span className="text-[9.5px] tabular-nums text-[var(--muted)]">{categoryCounts.get(option) ?? 0}</span>
                       </button>
                     )
                   })}
 
-                  <div className="ml-auto flex items-center gap-1.5">
+                  <div className="ml-auto flex items-center gap-1">
                     {tab !== "connectors" ? (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <button
                             type="button"
                             aria-label="排序"
-                            className="flex h-7 items-center gap-1.5 rounded-full border border-[var(--line)] bg-panel px-2.5 text-[10.5px] font-medium text-[var(--muted-strong)] shadow-[0_1px_2px_rgba(28,33,42,0.04)] outline-none transition-colors hover:border-[var(--line-strong)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] data-[state=open]:border-[var(--line-strong)]"
+                            className="flex h-7 items-center gap-1 rounded-[8px] px-2 text-[11px] text-[var(--muted-strong)] outline-none transition-colors hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] data-[state=open]:text-[var(--ink)]"
                           >
-                            <ArrowsDownUp className="size-3.5" />
                             {SORT_OPTIONS.find((option) => option.id === sort)?.label}
-                            <CaretDown className="size-2.5 opacity-60" />
+                            <CaretDown className="size-2.5" />
                           </button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-36">
-                          <DropdownMenuLabel>排序方式</DropdownMenuLabel>
+                        <DropdownMenuContent align="end" className="w-32">
+                          <DropdownMenuLabel>排序</DropdownMenuLabel>
                           <DropdownMenuSeparator />
                           {SORT_OPTIONS.map((option) => (
                             <DropdownMenuCheckboxItem key={option.id} checked={sort === option.id} onCheckedChange={() => { setSort(option.id); setPage(1) }}>
@@ -325,7 +321,7 @@ export function CommunityCanvas() {
                         </DropdownMenuContent>
                       </DropdownMenu>
                     ) : null}
-                    <label className="flex h-7 w-[200px] items-center gap-1.5 rounded-full border border-[var(--line)] bg-panel px-3 text-[var(--muted)] shadow-[0_1px_2px_rgba(28,33,42,0.04)] transition-[border-color,box-shadow] focus-within:border-[var(--accent)] focus-within:shadow-[0_0_0_3px_color-mix(in_srgb,var(--accent)_10%,transparent)] max-[1200px]:w-[150px]">
+                    <label className="group flex h-7 w-44 items-center gap-1.5 rounded-[8px] px-2 text-[var(--muted)] transition-colors focus-within:bg-[var(--hover-fill)] hover:bg-[var(--hover-fill)] max-[1200px]:w-36">
                       <MagnifyingGlass className="size-3.5 shrink-0" />
                       <input
                         type="search"
@@ -333,7 +329,7 @@ export function CommunityCanvas() {
                         onChange={(event) => { setQuery(event.target.value); setPage(1) }}
                         aria-label={searchPlaceholder}
                         placeholder={searchPlaceholder}
-                        className="min-w-0 flex-1 bg-transparent text-[10.5px] text-[var(--ink)] outline-none placeholder:text-[var(--muted)]"
+                        className="min-w-0 flex-1 bg-transparent text-[11px] text-[var(--ink)] outline-none placeholder:text-[var(--muted)]"
                       />
                     </label>
                   </div>
@@ -341,15 +337,11 @@ export function CommunityCanvas() {
 
                 {/* 卡片栅格 */}
                 {pageItemsLength === 0 ? (
-                  <div className="mt-14 flex flex-col items-center gap-2.5">
-                    <span className="flex size-11 items-center justify-center rounded-[12px] border border-[var(--line)] bg-panel text-[var(--muted-strong)]">
-                      <MagnifyingGlass className="size-5" />
-                    </span>
-                    <p className="text-[11.5px] font-medium text-[var(--ink-soft)]">没有匹配「{query}」的条目</p>
-                    <p className="text-[10px] text-[var(--muted)]">换个关键词，或清空筛选条件再试</p>
-                  </div>
+                  <p className="pb-4 pt-24 text-center text-[11.5px] text-[var(--muted)]">
+                    没有匹配「{query}」的条目 · 试试其他关键词
+                  </p>
                 ) : (
-                  <div className="mt-3.5 grid gap-3 grid-cols-[repeat(auto-fill,minmax(238px,1fr))]">
+                  <div className="mt-5 grid gap-3 grid-cols-[repeat(auto-fill,minmax(240px,1fr))]">
                     {tab === "agents"
                       ? visibleAgents.slice(pageSlice.from, pageSlice.to).map((agent) => <CommunityAgentCard key={agent.id} agent={agent} onInstall={() => installAgent(agent.id)} onOpen={() => setDetailId(agent.id)} />)
                       : tab === "connectors"
@@ -360,7 +352,7 @@ export function CommunityCanvas() {
 
                 {/* 居中分页 */}
                 {total > 0 ? (
-                  <div className="mt-7 flex justify-center">
+                  <div className="mt-12 flex justify-center">
                     <CommunityPagination page={safePage} pageCount={pageCount} total={total} pageSize={PAGE_SIZE} onChange={changePage} />
                   </div>
                 ) : null}
@@ -374,11 +366,11 @@ export function CommunityCanvas() {
         role="status"
         aria-live="polite"
         className={cn(
-          "pointer-events-none absolute right-4 bottom-4 z-40 flex translate-y-2 items-center gap-2 rounded-[7px] border border-[var(--line-strong)] bg-[var(--elevated)] px-3 py-2 text-[9.5px] font-medium text-[var(--ink)] opacity-0 shadow-[0_8px_24px_rgba(28,33,42,0.10)] transition-[opacity,transform]",
+          "pointer-events-none absolute bottom-5 left-1/2 z-40 flex -translate-x-1/2 translate-y-2 items-center gap-2 rounded-full border border-[var(--line-strong)] bg-[var(--ink)] px-3.5 py-1.5 text-[10px] font-medium text-white opacity-0 shadow-[0_8px_24px_rgba(28,33,42,0.16)] transition-[opacity,transform]",
           toast && "translate-y-0 opacity-100",
         )}
       >
-        <CheckCircle className="size-3.5 text-[#318b61]" weight="fill" />
+        <CheckCircle className="size-3.5" weight="fill" />
         {toast}
       </div>
     </section>

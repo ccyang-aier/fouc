@@ -1,50 +1,29 @@
 "use client"
 
 /**
- * 社区目录卡片：三种条目共用一套骨架 —— 图标 + 名称 + 两行简介 + 底部元信息。
- * hover 时整体上浮、描边转主题色、投影加深，动作按钮由浅底翻为主题实底。
+ * 社区目录卡片：单色克制风 —— 中性徽章、排版层级、单行简介、一行元信息。
+ * 无彩色徽章 / 标签堆叠；hover 仅描边加深与轻投影，动作按钮保持安静。
  */
 
-import { CheckCircle, Star } from "@phosphor-icons/react"
+import { Check } from "@phosphor-icons/react"
 
-import { cn } from "@/lib/utils"
-
-import { toneChips } from "../icon-tones"
 import { formatInstalls, type CommunityAgent, type CommunityConnector, type CommunitySkill } from "./community-data"
 
 const cardShell =
-  "group relative flex cursor-pointer flex-col gap-2.5 rounded-[12px] border border-[var(--line)] bg-panel p-3.5 text-left outline-none transition-[transform,border-color,box-shadow] duration-200 ease-out hover:-translate-y-[2px] hover:border-[var(--accent-soft-line)] hover:shadow-[0_16px_32px_-12px_rgba(30,36,42,0.16)] focus-visible:-translate-y-[2px] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+  "group relative flex cursor-pointer flex-col rounded-[12px] border border-[var(--line)] bg-panel p-4 text-left outline-none transition-[border-color,box-shadow] duration-150 hover:border-[var(--line-strong)] hover:shadow-[0_10px_24px_-14px_rgba(28,33,42,0.14)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
 
-const actionChip =
-  "flex h-6 shrink-0 items-center rounded-[7px] px-2.5 text-[9.5px] font-semibold outline-none transition-[background-color,color,box-shadow] duration-200 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+const neutralBadge =
+  "flex size-9 shrink-0 items-center justify-center rounded-[9px] bg-[var(--surface-hover)] text-[12px] font-semibold text-[var(--ink-soft)]"
 
-const pendingChip = `${actionChip} bg-accent-soft text-accent-ink group-hover:bg-[var(--accent)] group-hover:text-white group-hover:shadow-[0_4px_10px_-2px_color-mix(in_srgb,var(--accent)_45%,transparent)]`
+const actionBtn =
+  "flex h-6 shrink-0 items-center rounded-[6px] px-1.5 text-[11px] font-medium text-[var(--accent-ink)] outline-none transition-colors hover:bg-accent-soft focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
 
-function InstalledChip({ label }: { label: string }) {
-  return (
-    <span className={`${actionChip} cursor-default bg-[#e5f4ec] text-[#2e8b63]`}>
-      <CheckCircle className="mr-1 size-3" weight="fill" />
-      {label}
-    </span>
-  )
-}
-
-function CardIcon({ glyph, tone }: { glyph: string; tone: CommunityAgent["tone"] }) {
-  return (
-    <span
-      className={cn(
-        "flex size-10 shrink-0 items-center justify-center rounded-[10px] text-[13px] font-bold shadow-[inset_0_1px_0_rgb(255_255_255/0.55)] transition-transform duration-200 ease-out group-hover:scale-[1.05]",
-        toneChips[tone],
-      )}
-    >
-      {glyph}
-    </span>
-  )
-}
-
-function MetaDot() {
-  return <span aria-hidden className="text-[var(--line-strong)]">·</span>
-}
+const installedMark = (
+  <span className="flex shrink-0 items-center gap-1 text-[10px] text-[var(--muted-strong)]">
+    <Check className="size-3" weight="bold" />
+    已添加
+  </span>
+)
 
 function cardActivation(onOpen: () => void) {
   return {
@@ -58,32 +37,39 @@ function cardActivation(onOpen: () => void) {
   }
 }
 
+function MetaLine({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mt-auto flex items-center gap-1.5 pt-2.5 text-[10px] text-[var(--muted)]">
+      {children}
+    </div>
+  )
+}
+
+const Dot = () => <span aria-hidden className="text-[var(--line-strong)]">·</span>
+
 export function CommunityAgentCard({ agent, onInstall, onOpen }: { agent: CommunityAgent; onInstall: () => void; onOpen: () => void }) {
   return (
     <article {...cardActivation(onOpen)} tabIndex={0} aria-label={`${agent.name} 详情`} className={cardShell}>
-      <div className="flex items-center gap-2.5">
-        <CardIcon glyph={agent.glyph} tone={agent.tone} />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[12px] font-semibold tracking-[-0.01em] text-[var(--ink)]">{agent.name}</p>
-          <p className="mt-px truncate text-[9.5px] text-[var(--muted)]">by {agent.author} · {agent.category}</p>
+      <div className="flex items-start gap-3">
+        <span className={neutralBadge}>{agent.glyph}</span>
+        <div className="min-w-0 flex-1 pt-0.5">
+          <p className="truncate text-[12.5px] font-semibold tracking-[-0.01em] text-[var(--ink)]">{agent.name}</p>
+          <p className="mt-0.5 truncate text-[10px] text-[var(--muted)]">{agent.author}</p>
         </div>
-        {agent.installed ? (
-          <InstalledChip label="已添加" />
-        ) : (
-          <button type="button" onClick={(event) => { event.stopPropagation(); onInstall() }} className={pendingChip}>
+        {agent.installed ? installedMark : (
+          <button type="button" onClick={(event) => { event.stopPropagation(); onInstall() }} className={actionBtn}>
             获取
           </button>
         )}
       </div>
-      <p className="line-clamp-2 min-h-[32px] text-[10.5px] leading-[16px] text-[var(--ink-soft)]">{agent.tagline}</p>
-      <div className="mt-auto flex items-center gap-1.5 pt-0.5 text-[9px] text-[var(--muted)]">
-        <Star className="size-3 text-[#d79a3b]" weight="fill" />
-        <span className="font-medium text-[var(--ink-soft)]">{agent.rating}</span>
-        <MetaDot />
+      <p className="mt-2.5 line-clamp-1 text-[11px] leading-[16px] text-[var(--ink-soft)]">{agent.tagline}</p>
+      <MetaLine>
+        <span className="font-medium text-[var(--ink-soft)]">★ {agent.rating}</span>
+        <Dot />
         <span>{formatInstalls(agent.installs)} 安装</span>
-        <MetaDot />
-        <span>{agent.updated}更新</span>
-      </div>
+        <Dot />
+        <span>{agent.updated}</span>
+      </MetaLine>
     </article>
   )
 }
@@ -91,26 +77,31 @@ export function CommunityAgentCard({ agent, onInstall, onOpen }: { agent: Commun
 export function CommunityConnectorCard({ connector, onConnect, onOpen }: { connector: CommunityConnector; onConnect: () => void; onOpen: () => void }) {
   return (
     <article {...cardActivation(onOpen)} tabIndex={0} aria-label={`${connector.name} 详情`} className={cardShell}>
-      <div className="flex items-center gap-2.5">
-        <CardIcon glyph={connector.glyph} tone={connector.tone} />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[12px] font-semibold tracking-[-0.01em] text-[var(--ink)]">{connector.name}</p>
-          <p className="mt-px truncate text-[9.5px] text-[var(--muted)]">{connector.category} · v{connector.version}</p>
+      <div className="flex items-start gap-3">
+        <span className={neutralBadge}>{connector.glyph}</span>
+        <div className="min-w-0 flex-1 pt-0.5">
+          <p className="truncate text-[12.5px] font-semibold tracking-[-0.01em] text-[var(--ink)]">{connector.name}</p>
+          <p className="mt-0.5 truncate text-[10px] text-[var(--muted)]">{connector.publisher}</p>
         </div>
         {connector.connected ? (
-          <InstalledChip label="已连接" />
+          <span className="flex shrink-0 items-center gap-1 text-[10px] text-[var(--muted-strong)]">
+            <Check className="size-3" weight="bold" />
+            已连接
+          </span>
         ) : (
-          <button type="button" onClick={(event) => { event.stopPropagation(); onConnect() }} className={pendingChip}>
+          <button type="button" onClick={(event) => { event.stopPropagation(); onConnect() }} className={actionBtn}>
             连接
           </button>
         )}
       </div>
-      <p className="line-clamp-2 min-h-[32px] text-[10.5px] leading-[16px] text-[var(--ink-soft)]">{connector.description}</p>
-      <div className="mt-auto flex items-center gap-1.5 pt-0.5 text-[9px] text-[var(--muted)]">
-        <span className="truncate">{connector.publisher}</span>
-        <MetaDot />
-        <span>{connector.updated}更新</span>
-      </div>
+      <p className="mt-2.5 line-clamp-1 text-[11px] leading-[16px] text-[var(--ink-soft)]">{connector.description}</p>
+      <MetaLine>
+        <span>{connector.category}</span>
+        <Dot />
+        <span>v{connector.version}</span>
+        <Dot />
+        <span>{connector.updated}</span>
+      </MetaLine>
     </article>
   )
 }
@@ -118,26 +109,31 @@ export function CommunityConnectorCard({ connector, onConnect, onOpen }: { conne
 export function CommunitySkillCard({ skill, onInstall, onOpen }: { skill: CommunitySkill; onInstall: () => void; onOpen: () => void }) {
   return (
     <article {...cardActivation(onOpen)} tabIndex={0} aria-label={`${skill.name} 详情`} className={cardShell}>
-      <div className="flex items-center gap-2.5">
-        <CardIcon glyph={skill.name.slice(0, 1)} tone={skill.tone} />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[12px] font-semibold tracking-[-0.01em] text-[var(--ink)]">{skill.name}</p>
-          <p className="mt-px truncate text-[9.5px] text-[var(--muted)]">by {skill.author} · v{skill.version}</p>
+      <div className="flex items-start gap-3">
+        <span className={neutralBadge}>{skill.name.slice(0, 1)}</span>
+        <div className="min-w-0 flex-1 pt-0.5">
+          <p className="truncate text-[12.5px] font-semibold tracking-[-0.01em] text-[var(--ink)]">{skill.name}</p>
+          <p className="mt-0.5 truncate text-[10px] text-[var(--muted)]">{skill.author}</p>
         </div>
         {skill.installed ? (
-          <InstalledChip label="已安装" />
+          <span className="flex shrink-0 items-center gap-1 text-[10px] text-[var(--muted-strong)]">
+            <Check className="size-3" weight="bold" />
+            已安装
+          </span>
         ) : (
-          <button type="button" onClick={(event) => { event.stopPropagation(); onInstall() }} className={pendingChip}>
+          <button type="button" onClick={(event) => { event.stopPropagation(); onInstall() }} className={actionBtn}>
             安装
           </button>
         )}
       </div>
-      <p className="line-clamp-2 min-h-[32px] text-[10.5px] leading-[16px] text-[var(--ink-soft)]">{skill.summary}</p>
-      <div className="mt-auto flex items-center gap-1.5 pt-0.5 text-[9px] text-[var(--muted)]">
+      <p className="mt-2.5 line-clamp-1 text-[11px] leading-[16px] text-[var(--ink-soft)]">{skill.summary}</p>
+      <MetaLine>
+        <span className="font-medium text-[var(--ink-soft)]">v{skill.version}</span>
+        <Dot />
         <span>适配 {skill.compat.join(" / ")}</span>
-        <MetaDot />
+        <Dot />
         <span>{formatInstalls(skill.installs)} 安装</span>
-      </div>
+      </MetaLine>
     </article>
   )
 }

@@ -48,7 +48,7 @@ export function CommunityPagination({
             aria-label="上一页"
             disabled={page <= 1}
             onClick={() => onChange(page - 1)}
-            className="flex size-7 items-center justify-center rounded-full text-[var(--muted-strong)] outline-none transition-[background-color,color,opacity] hover:bg-wash hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:pointer-events-none disabled:opacity-35"
+            className="flex size-7 items-center justify-center rounded-full text-[var(--muted-strong)] outline-none transition-[background-color,color,opacity] hover:bg-[var(--hover-fill)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:pointer-events-none disabled:opacity-35"
           >
             <CaretLeft className="size-3.5" weight="bold" />
           </button>
@@ -65,10 +65,10 @@ export function CommunityPagination({
                 aria-current={item === page ? "page" : undefined}
                 onClick={() => onChange(item)}
                 className={cn(
-                  "flex h-7 min-w-7 items-center justify-center rounded-full px-1.5 text-[10.5px] font-medium tabular-nums outline-none transition-[background-color,color,box-shadow] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+                  "flex h-7 min-w-7 items-center justify-center rounded-full px-1.5 text-[10.5px] font-medium tabular-nums outline-none transition-[background-color,color] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
                   item === page
-                    ? "bg-[var(--accent)] text-white shadow-[0_3px_8px_-2px_color-mix(in_srgb,var(--accent)_50%,transparent)]"
-                    : "text-[var(--muted-strong)] hover:bg-wash hover:text-[var(--ink)]",
+                    ? "bg-[var(--ink)] text-white"
+                    : "text-[var(--muted-strong)] hover:bg-[var(--hover-fill)] hover:text-[var(--ink)]",
                 )}
               >
                 {item}
@@ -80,7 +80,7 @@ export function CommunityPagination({
             aria-label="下一页"
             disabled={page >= pageCount}
             onClick={() => onChange(page + 1)}
-            className="flex size-7 items-center justify-center rounded-full text-[var(--muted-strong)] outline-none transition-[background-color,color,opacity] hover:bg-wash hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:pointer-events-none disabled:opacity-35"
+            className="flex size-7 items-center justify-center rounded-full text-[var(--muted-strong)] outline-none transition-[background-color,color,opacity] hover:bg-[var(--hover-fill)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:pointer-events-none disabled:opacity-35"
           >
             <CaretRight className="size-3.5" weight="bold" />
           </button>

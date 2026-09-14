@@ -21,6 +21,7 @@ import {
   PencilSimple,
   Plus,
   Planet,
+  PlugsConnected,
   PlusCircle,
   Star,
   UsersThree,
@@ -50,7 +51,7 @@ import { ProjectSidebarPane } from "./sidebar-project-pane"
 import { SidebarNavList, type SidebarNavItem } from "./sidebar-nav"
 import { SidebarResizeHandle, useSidebarWidth } from "./sidebar-resize"
 
-export type WorkbenchView = "home" | "settings" | "projects" | "community" | "automation" | "knowledge" | "more"
+export type WorkbenchView = "home" | "settings" | "projects" | "community" | "automation" | "knowledge" | "more" | "connectors"
 
 const navigation: Array<SidebarNavItem<WorkbenchView>> = [
   { id: "home", label: "助理", icon: ChatCircleDots, iconClass: toneIcons.teal },
@@ -152,9 +153,27 @@ export function Sidebar({
       <motion.nav variants={paneItemVariants} aria-label="主导航">
         <SidebarNavList
           items={navigation}
-          value={view === "projects" ? null : view}
-          onChange={onViewChange}
+          value={view === "projects" ? null : view === "connectors" ? "more" : view}
+          onChange={(next) => {
+            // 「更多」行是下拉触发器，不再切换视图
+            if (next === "more") return
+            onViewChange(next)
+          }}
           collapsible
+          renderRow={(item, row) =>
+            item.id === "more" ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>{row}</DropdownMenuTrigger>
+                <DropdownMenuContent align="start" side="right" className="w-40">
+                  <DropdownMenuItem onSelect={() => onViewChange("connectors")}>
+                    <PlugsConnected weight="fill" /> 连接器
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              row
+            )
+          }
           renderTrailing={(item) =>
             item.id === "more" ? (
               <CaretRight className="sidebar-label ml-auto size-3 text-[var(--muted)]" aria-hidden />

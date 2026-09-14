@@ -1,11 +1,11 @@
 /**
- * 社区目录数据：Agents / 连接器 / Skills 三个子页的条目与详情派生。
+ * 社区目录数据：Agents / Skills 两个子页的条目与详情派生。
  * V1 为本地演示数据，后续由社区服务接入替换。
  */
 
 import type { IconTone } from "../icon-tones"
 
-export type CommunityTab = "agents" | "connectors" | "skills"
+export type CommunityTab = "agents" | "skills"
 
 export type CommunityAgent = {
   id: string
@@ -21,19 +21,6 @@ export type CommunityAgent = {
   installs: number
   updated: string
   installed: boolean
-}
-
-export type CommunityConnector = {
-  id: string
-  name: string
-  glyph: string
-  tone: IconTone
-  category: "研发协作" | "办公协同" | "数据源" | "设计资产"
-  description: string
-  publisher: string
-  version: string
-  updated: string
-  connected: boolean
 }
 
 export type CommunitySkill = {
@@ -54,7 +41,6 @@ export const PAGE_SIZE = 12
 
 export const CATEGORIES: Record<CommunityTab, string[]> = {
   agents: ["全部", "研发", "办公", "数据", "内容"],
-  connectors: ["全部", "研发协作", "办公协同", "数据源", "设计资产"],
   skills: ["全部", "研发", "办公", "数据"],
 }
 
@@ -75,23 +61,6 @@ export const initialCommunityAgents: CommunityAgent[] = [
   { id: "agent-writer", name: "文档作家", glyph: "文", tone: "amber", category: "内容", tagline: "把粗糙要点扩写为结构清晰的产品文档与发布说明。", highlights: ["要点到章节自动编排", "术语一致性校对", "多模板输出"], author: "墨迹工作室", version: "2.6.0", rating: 4.7, installs: 7100, updated: "4 天前", installed: false },
   { id: "agent-wechat", name: "公众号主笔", glyph: "稿", tone: "rose", category: "内容", tagline: "围绕选题产出公众号长文初稿，配好小标题与配图建议。", highlights: ["选题库灵感续写", "小标题节奏把控", "配图建议与版权提示"], author: "墨迹工作室", version: "1.4.2", rating: 4.4, installs: 2900, updated: "1 周前", installed: false },
   { id: "agent-script", name: "短视频脚本", glyph: "本", tone: "amber", category: "内容", tagline: "生成口播脚本与分镜提示，节奏对齐平台特性。", highlights: ["黄金 3 秒开头模板", "分镜与口播分离", "多平台节奏变体"], author: "星野工作坊", version: "1.2.0", rating: 4.3, installs: 2100, updated: "2 周前", installed: false },
-]
-
-export const initialCommunityConnectors: CommunityConnector[] = [
-  { id: "connector-github", name: "GitHub", glyph: "GH", tone: "slate", category: "研发协作", description: "同步仓库、Issue 与 PR 状态到任务流，提交即更新进度。", publisher: "GitHub, Inc.", version: "4.3.0", updated: "1 天前", connected: true },
-  { id: "connector-gitlab", name: "GitLab", glyph: "GL", tone: "rose", category: "研发协作", description: "接入 GitLab 仓库与流水线状态，MR 联动任务评审。", publisher: "GitLab B.V.", version: "3.1.2", updated: "3 天前", connected: false },
-  { id: "connector-sentry", name: "Sentry", glyph: "Se", tone: "rose", category: "研发协作", description: "引入错误与性能事件，异常自动建单并关联版本。", publisher: "Functional Software, Inc.", version: "2.4.0", updated: "4 天前", connected: false },
-  { id: "connector-jira", name: "Jira", glyph: "Ji", tone: "blue", category: "研发协作", description: "导入看板与缺陷单，状态变更联动任务与里程碑。", publisher: "Atlassian", version: "5.2.1", updated: "1 周前", connected: false },
-  { id: "connector-feishu", name: "飞书", glyph: "飞", tone: "sky", category: "办公协同", description: "群消息、云文档与日历事件接入工作台，@机器人即可派活。", publisher: "字节跳动", version: "6.0.3", updated: "2 天前", connected: true },
-  { id: "connector-dingtalk", name: "钉钉", glyph: "钉", tone: "sky", category: "办公协同", description: "审批与考勤事件驱动的自动化，结果回传群卡片。", publisher: "钉钉", version: "3.8.0", updated: "5 天前", connected: false },
-  { id: "connector-wecom", name: "企业微信", glyph: "企", tone: "teal", category: "办公协同", description: "客户群与内部应用消息互通，外部协作进工作台。", publisher: "腾讯", version: "2.9.1", updated: "1 周前", connected: false },
-  { id: "connector-notion", name: "Notion", glyph: "No", tone: "slate", category: "办公协同", description: "双向同步数据库与文档页面，作为长期知识上下文引用。", publisher: "Notion Labs", version: "4.1.0", updated: "3 天前", connected: false },
-  { id: "connector-gdrive", name: "Google Drive", glyph: "GD", tone: "amber", category: "办公协同", description: "检索并引用云端文档附件，变更时刷新任务上下文。", publisher: "Google", version: "3.5.2", updated: "6 天前", connected: false },
-  { id: "connector-shimo", name: "石墨文档", glyph: "墨", tone: "slate", category: "办公协同", description: "文档与表格轻量接入，评论与 @ 事件可驱动任务。", publisher: "石墨文档", version: "1.9.0", updated: "2 周前", connected: false },
-  { id: "connector-postgres", name: "PostgreSQL", glyph: "PG", tone: "indigo", category: "数据源", description: "只读连接查询业务库，分析结果可物化回写指定 schema。", publisher: "社区维护", version: "5.1.0", updated: "2 天前", connected: false },
-  { id: "connector-mysql", name: "MySQL", glyph: "My", tone: "blue", category: "数据源", description: "安全连接 MySQL 实例，慢查询与表结构随时可查。", publisher: "社区维护", version: "4.7.2", updated: "1 周前", connected: false },
-  { id: "connector-figma", name: "Figma", glyph: "Fi", tone: "rose", category: "设计资产", description: "把设计稿版本与标注挂接到工作对象，改动自动提醒。", publisher: "Figma, Inc.", version: "3.3.4", updated: "3 天前", connected: false },
-  { id: "connector-jsdesign", name: "即时设计", glyph: "即", tone: "violet", category: "设计资产", description: "国产设计工具文件接入，标注与切图直连任务。", publisher: "云协同科技", version: "2.0.1", updated: "5 天前", connected: false },
 ]
 
 export const initialCommunitySkills: CommunitySkill[] = [
@@ -148,13 +117,6 @@ const UPDATE_NOTES: Record<CommunityTab, string[]> = {
     "支持在项目空间中设为常驻助理",
     "首个公开版本：基础任务编排与确认流",
   ],
-  connectors: [
-    "提升同步稳定性与限流退避策略",
-    "支持新版 Webhook 事件订阅",
-    "修复偶发的授权过期问题",
-    "新增连接健康状态自检",
-    "首个公开版本：只读同步与事件驱动",
-  ],
   skills: [
     "精简提示词体积，响应更快",
     "适配最新模型工具调用协议",
@@ -166,7 +128,6 @@ const UPDATE_NOTES: Record<CommunityTab, string[]> = {
 
 const PERMISSIONS: Record<CommunityTab, string[]> = {
   agents: ["读取任务上下文与工作区文件（可随时撤销）", "执行命令前逐条弹出确认", "运行日志仅保留在本机"],
-  connectors: ["OAuth 只读授权，凭据加密存储于本机", "同步频率与数据范围可随时调整", "断开连接即删除远端令牌"],
   skills: ["仅在任务内加载提示词与模板", "不发起网络请求（纯本地技能）", "可随时卸载并清理缓存"],
 }
 
@@ -215,20 +176,6 @@ function buildAbout(tab: CommunityTab, name: string, description: string): strin
       "> 由社区作者维护，版本更新即时推送；不再需要时可随时移除并清理本机数据。",
     ].join("\n")
   }
-  if (tab === "connectors") {
-    return [
-      description,
-      "",
-      "## 连接后可以做什么",
-      "",
-      "- 同步的数据与事件作为工作上下文进入工作台",
-      "- 自动化可在事件到达时触发，结果回写任务与时间线",
-      "",
-      "## 安全与控制",
-      "",
-      "> OAuth 只读授权，凭据加密保存在本机；断开连接即删除远端令牌，重新连接时历史映射自动恢复。",
-    ].join("\n")
-  }
   return [
     description,
     "",
@@ -275,7 +222,7 @@ function buildDiscussions(name: string) {
 
 export function buildCommunityDetail(
   tab: CommunityTab,
-  item: CommunityAgent | CommunityConnector | CommunitySkill
+  item: CommunityAgent | CommunitySkill
 ): CommunityDetail {
   const updates = buildUpdates(tab, item.version)
   if (tab === "agents") {
@@ -306,35 +253,6 @@ export function buildCommunityDetail(
       ],
       updates,
       permissions: PERMISSIONS.agents,
-    }
-  }
-  if (tab === "connectors") {
-    const connector = item as CommunityConnector
-    return {
-      tab,
-      name: connector.name,
-      glyph: connector.glyph,
-      tone: connector.tone,
-      category: connector.category,
-      byline: connector.publisher,
-      description: connector.description,
-      about: buildAbout("connectors", connector.name, connector.description),
-      discussions: buildDiscussions(connector.name),
-      stats: [
-        { label: "发布者", value: connector.publisher },
-        { label: "版本", value: `v${connector.version}` },
-        { label: "更新", value: connector.updated },
-        { label: "状态", value: connector.connected ? "已连接" : "未连接" },
-      ],
-      info: [
-        { label: "发布者", value: connector.publisher },
-        { label: "分类", value: connector.category },
-        { label: "版本", value: `v${connector.version}` },
-        { label: "更新时间", value: connector.updated },
-        { label: "状态", value: connector.connected ? "已连接" : "未连接" },
-      ],
-      updates,
-      permissions: PERMISSIONS.connectors,
     }
   }
   const skill = item as CommunitySkill

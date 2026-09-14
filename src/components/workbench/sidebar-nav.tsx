@@ -35,6 +35,7 @@ export function SidebarNavList<T extends string>({
   onChange,
   collapsible = false,
   collapsed = false,
+  renderRow,
   renderTrailing,
 }: {
   items: Array<SidebarNavItem<T>>
@@ -44,6 +45,8 @@ export function SidebarNavList<T extends string>({
   collapsible?: boolean
   /** 折叠轨道形态：图标居中，行尾元素交给 renderTrailing 自行降级 */
   collapsed?: boolean
+  /** 行级包裹：把指定行接入下拉触发器等交互容器，其余行原样渲染 */
+  renderRow?: (item: SidebarNavItem<T>, row: ReactNode) => ReactNode
   renderTrailing?: (item: SidebarNavItem<T>, context: SidebarNavTrailingContext) => ReactNode
 }) {
   const activeIndex = items.findIndex((item) => item.id === value)
@@ -64,32 +67,35 @@ export function SidebarNavList<T extends string>({
         {items.map((item) => {
           const selected = item.id === value
           const Icon = item.icon
+          const row = (
+            <button
+              type="button"
+              aria-label={item.label}
+              aria-current={selected ? "page" : undefined}
+              onClick={() => onChange(item.id)}
+              className={cn(
+                "relative flex h-[36px] w-full items-center gap-2.5 rounded-[8px] px-2.5 text-left text-[12px] font-medium outline-none transition-[background-color,color,box-shadow] duration-150 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+                collapsed && "justify-center px-0",
+                selected
+                  ? "text-white"
+                  : "text-[var(--ink-soft)] hover:bg-raise hover:text-[var(--ink)]",
+              )}
+            >
+              <Icon
+                className={cn(
+                  "size-[17px] shrink-0 transition-colors",
+                  selected ? "text-white" : item.iconClass ?? "text-[var(--muted-strong)]",
+                )}
+                weight={selected ? "fill" : "regular"}
+                aria-hidden
+              />
+              <span className={cn("truncate", collapsible && "sidebar-label")}>{item.label}</span>
+              {renderTrailing?.(item, { collapsed })}
+            </button>
+          )
           return (
             <li key={item.id}>
-              <button
-                type="button"
-                aria-label={item.label}
-                aria-current={selected ? "page" : undefined}
-                onClick={() => onChange(item.id)}
-                className={cn(
-                  "relative flex h-[36px] w-full items-center gap-2.5 rounded-[8px] px-2.5 text-left text-[12px] font-medium outline-none transition-[background-color,color,box-shadow] duration-150 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
-                  collapsed && "justify-center px-0",
-                  selected
-                    ? "text-white"
-                    : "text-[var(--ink-soft)] hover:bg-raise hover:text-[var(--ink)]",
-                )}
-              >
-                <Icon
-                  className={cn(
-                    "size-[17px] shrink-0 transition-colors",
-                    selected ? "text-white" : item.iconClass ?? "text-[var(--muted-strong)]",
-                  )}
-                  weight={selected ? "fill" : "regular"}
-                  aria-hidden
-                />
-                <span className={cn("truncate", collapsible && "sidebar-label")}>{item.label}</span>
-                {renderTrailing?.(item, { collapsed })}
-              </button>
+              {renderRow ? renderRow(item, row) : row}
             </li>
           )
         })}

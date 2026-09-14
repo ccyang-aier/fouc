@@ -37,6 +37,7 @@ import { applySidebarStyle, readStoredSidebarStyle } from "@/lib/sidebar-style"
 import { HomeCanvas } from "./home-canvas"
 import { AutomationCanvas } from "./automation/automation-canvas"
 import { CommunityCanvas } from "./community/community-canvas"
+import { ConnectorsCanvas } from "./connectors/connectors-canvas"
 import type { ProjectManagementPanelId } from "./project/project-management-model"
 import { ProjectHomeCanvas } from "./project/project-home-canvas"
 import "./sidebar-material.css"
@@ -175,6 +176,8 @@ export function WorkbenchShell() {
                       <CommunityCanvas />
                     ) : view === "automation" ? (
                       <AutomationCanvas />
+                    ) : view === "connectors" ? (
+                      <ConnectorsCanvas />
                     ) : (
                       <div className="flex h-full items-center justify-center text-[13px] text-[var(--ink-soft)]">
                         该空间已在 V1 规划中，尚未开放

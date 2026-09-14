@@ -7,7 +7,7 @@
 
 import { useMemo, useRef, useState } from "react"
 import { AnimatePresence, motion } from "motion/react"
-import { ArrowClockwise, CaretDown, Check, CheckCircle, MagnifyingGlass, PlugsConnected, Plus, Robot, Sparkle } from "@phosphor-icons/react"
+import { ArrowClockwise, CaretDown, Check, CheckCircle, MagnifyingGlass, Plus, Robot, Sparkle } from "@phosphor-icons/react"
 
 import {
   DropdownMenu,
@@ -18,14 +18,13 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 
-import { CommunityAgentCard, CommunityConnectorCard, CommunitySkillCard } from "./community-cards"
+import { CommunityAgentCard, CommunitySkillCard } from "./community-cards"
 import { CommunityDetailPage, type RelatedItem } from "./community-detail"
 import { CommunityPagination } from "./community-pagination"
 import {
   buildCommunityDetail,
   CATEGORIES,
   initialCommunityAgents,
-  initialCommunityConnectors,
   initialCommunitySkills,
   PAGE_SIZE,
   type CommunityTab,
@@ -34,7 +33,6 @@ import {
 const TABS: Array<{ id: CommunityTab; label: string; icon: typeof Robot; blurb: string }> = [
   { id: "agents", label: "Agents", icon: Robot, blurb: "可直接托付任务的社区智能体" },
   { id: "skills", label: "Skills", icon: Sparkle, blurb: "为 Agent 叠加领域能力的技能包" },
-  { id: "connectors", label: "连接器", icon: PlugsConnected, blurb: "接入外部服务与数据源" },
 ]
 
 type SortKey = "popular" | "rating" | "name"
@@ -53,7 +51,6 @@ export function CommunityCanvas() {
   const [page, setPage] = useState(1)
   const [detailId, setDetailId] = useState<string | null>(null)
   const [agents, setAgents] = useState(initialCommunityAgents)
-  const [connectors, setConnectors] = useState(initialCommunityConnectors)
   const [skills, setSkills] = useState(initialCommunitySkills)
   const [toast, setToast] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -80,13 +77,6 @@ export function CommunityCanvas() {
     notify(`${item.name} 已添加到你的 Agent 列表`)
   }
 
-  function connectConnector(id: string) {
-    const item = connectors.find((connector) => connector.id === id)
-    if (!item || item.connected) return
-    setConnectors((list) => list.map((connector) => (connector.id === id ? { ...connector, connected: true } : connector)))
-    notify(`${item.name} 已连接`)
-  }
-
   function installSkill(id: string) {
     const item = skills.find((skill) => skill.id === id)
     if (!item || item.installed) return
@@ -106,17 +96,6 @@ export function CommunityCanvas() {
     return [...list].sort((a, b) => b.installs - a.installs)
   }, [agents, category, normalized, sort])
 
-  const visibleConnectors = useMemo(
-    () =>
-      connectors
-        .filter((connector) =>
-          (category === "全部" || connector.category === category) &&
-          (!normalized || `${connector.name} ${connector.description} ${connector.publisher}`.toLocaleLowerCase("zh-CN").includes(normalized)),
-        )
-        .sort((a, b) => a.name.localeCompare(b.name, "zh-CN")),
-    [connectors, category, normalized],
-  )
-
   const visibleSkills = useMemo(() => {
     const list = skills.filter((skill) =>
       (category === "全部" || skill.category === category) &&
@@ -126,18 +105,18 @@ export function CommunityCanvas() {
     return [...list].sort((a, b) => b.installs - a.installs)
   }, [skills, category, normalized, sort])
 
-  const total = tab === "agents" ? visibleAgents.length : tab === "connectors" ? visibleConnectors.length : visibleSkills.length
+  const total = tab === "agents" ? visibleAgents.length : visibleSkills.length
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE))
   const safePage = Math.min(page, pageCount)
   const pageSlice = { from: (safePage - 1) * PAGE_SIZE, to: safePage * PAGE_SIZE }
   const pageItemsLength = Math.max(0, Math.min(total, pageSlice.to) - pageSlice.from)
 
   const categoryCounts = useMemo(() => {
-    const source: Array<{ category: string }> = tab === "agents" ? agents : tab === "connectors" ? connectors : skills
+    const source: Array<{ category: string }> = tab === "agents" ? agents : skills
     const counts = new Map<string, number>([["全部", source.length]])
     for (const item of source) counts.set(item.category, (counts.get(item.category) ?? 0) + 1)
     return counts
-  }, [tab, agents, connectors, skills])
+  }, [tab, agents, skills])
 
   // 详情：跨 Tab 的条目查找 + 派生数据与相关推荐
   const detail = useMemo(() => {
@@ -155,19 +134,6 @@ export function CommunityCanvas() {
           .map<RelatedItem>((other) => ({ id: other.id, name: other.name, glyph: other.glyph, desc: other.tagline, done: other.installed })),
       }
     }
-    if (tab === "connectors") {
-      const item = connectors.find((connector) => connector.id === detailId)
-      if (!item) return null
-      return {
-        model: buildCommunityDetail("connectors", item),
-        done: item.connected,
-        onAction: () => connectConnector(item.id),
-        related: connectors
-          .filter((other) => other.id !== item.id && other.category === item.category)
-          .slice(0, 3)
-          .map<RelatedItem>((other) => ({ id: other.id, name: other.name, glyph: other.glyph, desc: other.description, done: other.connected })),
-      }
-    }
     const item = skills.find((skill) => skill.id === detailId)
     if (!item) return null
     return {
@@ -180,14 +146,14 @@ export function CommunityCanvas() {
         .map<RelatedItem>((other) => ({ id: other.id, name: other.name, glyph: other.name.slice(0, 1), desc: other.summary, done: other.installed })),
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [detailId, tab, agents, connectors, skills])
+  }, [detailId, tab, agents, skills])
 
   function changePage(next: number) {
     setPage(next)
     scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" })
   }
 
-  const searchPlaceholder = tab === "agents" ? "搜索 Agent / 作者" : tab === "connectors" ? "搜索连接器 / 发布者" : "搜索技能 / 作者"
+  const searchPlaceholder = tab === "agents" ? "搜索 Agent / 作者" : "搜索技能 / 作者"
 
   return (
     <section aria-label="社区" className="relative flex h-full min-h-0 bg-panel">
@@ -293,27 +259,25 @@ export function CommunityCanvas() {
                   })}
 
                   <div className="ml-auto flex items-center gap-1">
-                    {tab !== "connectors" ? (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button
-                            type="button"
-                            aria-label="排序"
-                            className="flex h-7 items-center gap-1 rounded-[8px] px-2 text-[11px] text-[var(--muted-strong)] outline-none transition-colors hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] data-[state=open]:text-[var(--ink)]"
-                          >
-                            {SORT_OPTIONS.find((option) => option.id === sort)?.label}
-                            <CaretDown className="size-2.5" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-32">
-                          {SORT_OPTIONS.map((option) => (
-                            <DropdownMenuCheckboxItem key={option.id} checked={sort === option.id} onCheckedChange={() => { setSort(option.id); setPage(1) }}>
-                              {option.label}
-                            </DropdownMenuCheckboxItem>
-                          ))}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    ) : null}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          aria-label="排序"
+                          className="flex h-7 items-center gap-1 rounded-[8px] px-2 text-[11px] text-[var(--muted-strong)] outline-none transition-colors hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] data-[state=open]:text-[var(--ink)]"
+                        >
+                          {SORT_OPTIONS.find((option) => option.id === sort)?.label}
+                          <CaretDown className="size-2.5" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-32">
+                        {SORT_OPTIONS.map((option) => (
+                          <DropdownMenuCheckboxItem key={option.id} checked={sort === option.id} onCheckedChange={() => { setSort(option.id); setPage(1) }}>
+                            {option.label}
+                          </DropdownMenuCheckboxItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     <label className="group flex h-7 w-44 items-center gap-1.5 rounded-[8px] bg-[var(--hover-fill)] px-2.5 text-[var(--muted)] transition-colors focus-within:bg-panel focus-within:shadow-[0_0_0_2px_var(--focus-ring)] max-[1200px]:w-36">
                       <MagnifyingGlass className="size-3.5 shrink-0" />
                       <input
@@ -334,12 +298,10 @@ export function CommunityCanvas() {
                     没有匹配「{query}」的条目 · 试试其他关键词
                   </p>
                 ) : (
-                  <div className="mt-5 grid gap-3 grid-cols-[repeat(auto-fill,minmax(240px,1fr))]">
+                  <div className="mt-6 grid gap-4 grid-cols-[repeat(auto-fill,minmax(320px,1fr))]">
                     {tab === "agents"
                       ? visibleAgents.slice(pageSlice.from, pageSlice.to).map((agent) => <CommunityAgentCard key={agent.id} agent={agent} onInstall={() => installAgent(agent.id)} onOpen={() => setDetailId(agent.id)} />)
-                      : tab === "connectors"
-                        ? visibleConnectors.slice(pageSlice.from, pageSlice.to).map((connector) => <CommunityConnectorCard key={connector.id} connector={connector} onConnect={() => connectConnector(connector.id)} onOpen={() => setDetailId(connector.id)} />)
-                        : visibleSkills.slice(pageSlice.from, pageSlice.to).map((skill) => <CommunitySkillCard key={skill.id} skill={skill} onInstall={() => installSkill(skill.id)} onOpen={() => setDetailId(skill.id)} />)}
+                      : visibleSkills.slice(pageSlice.from, pageSlice.to).map((skill) => <CommunitySkillCard key={skill.id} skill={skill} onInstall={() => installSkill(skill.id)} onOpen={() => setDetailId(skill.id)} />)}
                   </div>
                 )}
 

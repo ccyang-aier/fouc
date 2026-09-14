@@ -77,26 +77,22 @@ const mdComponents: Components = {
 
 const TAB_LABELS: Record<CommunityTab, string> = {
   agents: "Agents",
-  connectors: "连接器",
   skills: "Skills",
 }
 
 const ACTION_LABELS: Record<CommunityTab, string> = {
   agents: "获取",
-  connectors: "连接",
   skills: "安装",
 }
 
 const DONE_LABELS: Record<CommunityTab, string> = {
   agents: "已添加",
-  connectors: "已连接",
   skills: "已安装",
 }
 
 const KIND_NOUN: Record<CommunityTab, string> = {
   agents: "助理",
   skills: "技能",
-  connectors: "连接器",
 }
 
 const SUBTABS: Record<CommunityTab, ReadonlyArray<{ id: string; label: string; icon: typeof BookOpen }>> = {
@@ -107,12 +103,6 @@ const SUBTABS: Record<CommunityTab, ReadonlyArray<{ id: string; label: string; i
     { id: "info", label: "信息", icon: Info },
   ],
   skills: [
-    { id: "overview", label: "概览", icon: BookOpen },
-    { id: "versions", label: "版本历史", icon: ClockCounterClockwise },
-    { id: "discussions", label: "讨论", icon: Chats },
-    { id: "info", label: "信息", icon: Info },
-  ],
-  connectors: [
     { id: "overview", label: "概览", icon: BookOpen },
     { id: "versions", label: "版本历史", icon: ClockCounterClockwise },
     { id: "discussions", label: "讨论", icon: Chats },

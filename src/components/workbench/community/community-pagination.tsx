@@ -1,0 +1,91 @@
+"use client"
+
+/** 社区分页器：左侧区间摘要，右侧圆形翻页钮 + 页码（窗口式缩略），激活页主题实底。 */
+
+import { CaretLeft, CaretRight } from "@phosphor-icons/react"
+
+import { cn } from "@/lib/utils"
+
+type PageItem = number | "dots"
+
+function pageWindow(current: number, pageCount: number): PageItem[] {
+  if (pageCount <= 1) return []
+  const items: PageItem[] = [1]
+  const left = Math.max(2, current - 1)
+  const right = Math.min(pageCount - 1, current + 1)
+  if (left > 2) items.push("dots")
+  for (let page = left; page <= right; page += 1) items.push(page)
+  if (right < pageCount - 1) items.push("dots")
+  items.push(pageCount)
+  return items
+}
+
+export function CommunityPagination({
+  page,
+  pageCount,
+  total,
+  pageSize,
+  onChange,
+}: {
+  page: number
+  pageCount: number
+  total: number
+  pageSize: number
+  onChange: (page: number) => void
+}) {
+  const from = total === 0 ? 0 : (page - 1) * pageSize + 1
+  const to = Math.min(page * pageSize, total)
+
+  return (
+    <nav aria-label="分页" className="flex w-full items-center gap-3">
+      <p className="text-[9.5px] tabular-nums text-[var(--muted)]">
+        第 {from}–{to} 项 <span aria-hidden className="text-[var(--line-strong)]">/</span> 共 {total} 项
+      </p>
+      {pageCount > 1 ? (
+        <div className="ml-auto flex items-center gap-1">
+          <button
+            type="button"
+            aria-label="上一页"
+            disabled={page <= 1}
+            onClick={() => onChange(page - 1)}
+            className="flex size-7 items-center justify-center rounded-full text-[var(--muted-strong)] outline-none transition-[background-color,color,opacity] hover:bg-wash hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:pointer-events-none disabled:opacity-35"
+          >
+            <CaretLeft className="size-3.5" weight="bold" />
+          </button>
+          {pageWindow(page, pageCount).map((item, index) =>
+            item === "dots" ? (
+              <span key={`dots-${index}`} aria-hidden className="px-0.5 text-[10px] text-[var(--muted)]">
+                …
+              </span>
+            ) : (
+              <button
+                key={item}
+                type="button"
+                aria-label={`第 ${item} 页`}
+                aria-current={item === page ? "page" : undefined}
+                onClick={() => onChange(item)}
+                className={cn(
+                  "flex h-7 min-w-7 items-center justify-center rounded-full px-1.5 text-[10.5px] font-medium tabular-nums outline-none transition-[background-color,color,box-shadow] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+                  item === page
+                    ? "bg-[var(--accent)] text-white shadow-[0_3px_8px_-2px_color-mix(in_srgb,var(--accent)_50%,transparent)]"
+                    : "text-[var(--muted-strong)] hover:bg-wash hover:text-[var(--ink)]",
+                )}
+              >
+                {item}
+              </button>
+            ),
+          )}
+          <button
+            type="button"
+            aria-label="下一页"
+            disabled={page >= pageCount}
+            onClick={() => onChange(page + 1)}
+            className="flex size-7 items-center justify-center rounded-full text-[var(--muted-strong)] outline-none transition-[background-color,color,opacity] hover:bg-wash hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:pointer-events-none disabled:opacity-35"
+          >
+            <CaretRight className="size-3.5" weight="bold" />
+          </button>
+        </div>
+      ) : null}
+    </nav>
+  )
+}

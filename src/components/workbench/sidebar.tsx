@@ -284,7 +284,8 @@ export function Sidebar({
         <div
           className={cn(
             "flex h-6 items-center px-2 text-[11px] font-medium text-[var(--muted)]",
-            collapsed && "justify-center px-0",
+            // 折叠轨道下「最近」小节头只剩空行，直接收起避免死空间
+            collapsed && "hidden",
           )}
         >
           <button
@@ -578,7 +579,12 @@ function SpaceRow({
   const actionsVisible = menuOpen
 
   return (
-    <div className="group/space relative flex h-9 items-center rounded-lg pr-0.5 transition-[background-color] hover:bg-raise">
+    <div
+      className={cn(
+        "group/space relative flex h-9 items-center rounded-lg transition-[background-color] hover:bg-raise",
+        collapsed && "pr-0",
+      )}
+    >
         {renaming ? (
           <input
             autoFocus
@@ -597,7 +603,11 @@ function SpaceRow({
             type="button"
             aria-label={item.label}
             onClick={onOpen}
-            className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-lg pl-2 text-left text-[11px] font-medium text-[var(--ink-soft)] outline-none transition-colors hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+            className={cn(
+              "flex h-9 min-w-0 flex-1 items-center gap-2 rounded-lg text-left text-[11px] font-medium text-[var(--ink-soft)] outline-none transition-colors hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+              // 折叠轨道下消除内边距偏移，让空间图标与导航图标同一条垂直中线
+              collapsed ? "justify-center px-0" : "pl-2",
+            )}
           >
             <CaretRight className="sidebar-label size-3 shrink-0 text-[var(--muted)]" aria-hidden />
             <motion.span

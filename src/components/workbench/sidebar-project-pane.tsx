@@ -87,8 +87,9 @@ export function ProjectSidebarPane({
               type="button"
               aria-label="项目菜单"
               className={cn(
-                "group/id flex min-w-0 flex-1 items-center gap-2.5 rounded-[9px] px-1.5 py-1.5 text-left outline-none transition-colors hover:bg-wash focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] data-[state=open]:bg-wash",
-                collapsed && "flex-none justify-center px-0",
+                "group/id flex min-w-0 items-center gap-2.5 rounded-[9px] text-left outline-none transition-colors hover:bg-wash focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] data-[state=open]:bg-wash",
+                // 折叠轨道：hit 区收成围绕徽章的正方形，避免竖长 hover 底在徽章上下露出色带
+                collapsed ? "size-9 flex-none justify-center p-0" : "flex-1 px-1.5 py-1.5",
               )}
             >
               <motion.span

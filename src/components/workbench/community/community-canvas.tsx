@@ -152,7 +152,7 @@ export function CommunityCanvas() {
         related: agents
           .filter((other) => other.id !== item.id && other.category === item.category)
           .slice(0, 3)
-          .map<RelatedItem>((other) => ({ id: other.id, name: other.name, glyph: other.glyph, meta: `★ ${other.rating}`, done: other.installed })),
+          .map<RelatedItem>((other) => ({ id: other.id, name: other.name, glyph: other.glyph, desc: other.tagline, done: other.installed })),
       }
     }
     if (tab === "connectors") {
@@ -165,7 +165,7 @@ export function CommunityCanvas() {
         related: connectors
           .filter((other) => other.id !== item.id && other.category === item.category)
           .slice(0, 3)
-          .map<RelatedItem>((other) => ({ id: other.id, name: other.name, glyph: other.glyph, meta: other.publisher, done: other.connected })),
+          .map<RelatedItem>((other) => ({ id: other.id, name: other.name, glyph: other.glyph, desc: other.description, done: other.connected })),
       }
     }
     const item = skills.find((skill) => skill.id === detailId)
@@ -177,7 +177,7 @@ export function CommunityCanvas() {
       related: skills
         .filter((other) => other.id !== item.id && other.category === item.category)
         .slice(0, 3)
-        .map<RelatedItem>((other) => ({ id: other.id, name: other.name, glyph: other.name.slice(0, 1), meta: `v${other.version}`, done: other.installed })),
+        .map<RelatedItem>((other) => ({ id: other.id, name: other.name, glyph: other.name.slice(0, 1), desc: other.summary, done: other.installed })),
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [detailId, tab, agents, connectors, skills])
@@ -268,7 +268,7 @@ export function CommunityCanvas() {
 
             {/* 内容区：白底、留白排版、发丝线卡片 */}
             <div ref={scrollRef} className="min-h-0 min-w-0 flex-1 overflow-auto bg-[#f5f5f7]">
-              <div className="mx-auto w-full max-w-[1200px] px-5 pb-16 pt-5">
+              <div className="w-full px-5 pb-16 pt-5">
                 {/* 筛选行：无底色文字 pill + 文字排序 + 极简搜索 */}
                 <div className="flex items-center gap-0.5">
                   {CATEGORIES[tab].map((option) => {

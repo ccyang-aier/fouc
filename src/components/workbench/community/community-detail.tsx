@@ -1,14 +1,27 @@
 "use client"
 
 /**
- * 社区详情页：macOS App Store 桌面版结构 ——
- * 白底大头部（80px 图标 + 大标题 + 元信息 + 胶囊动作）、
- * 下划线式横排子页签（概览/能力/版本历史/相似助理…按类型区分）、
- * 灰底内容区承载完整分区卡片。子页签随类型切换重置。
+ * 社区详情页：通栏白底双栏结构 ——
+ *  头部：图标 + 大标题 + 作者/更新信息 + 分类与数据徽标，右侧动作按钮；
+ *  图标式下划线子页签（按类型区分）；
+ *  左栏主内容直接流在白底上（无边框卡片堆叠），右栏粘性操作 + 相关推荐列表。
  */
 
 import { useState } from "react"
-import { CaretLeft, Check, ChatCircleDots, ShareFat } from "@phosphor-icons/react"
+import {
+  BookOpen,
+  CaretLeft,
+  CaretRight,
+  ChatCircleDots,
+  Chats,
+  Check,
+  ClockCounterClockwise,
+  DownloadSimple,
+  Info,
+  ListDashes,
+  ShareFat,
+  Stack,
+} from "@phosphor-icons/react"
 
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
@@ -33,23 +46,37 @@ const DONE_LABELS: Record<CommunityTab, string> = {
   skills: "已安装",
 }
 
-const SUBTABS: Record<CommunityTab, readonly string[]> = {
-  agents: ["概览", "能力", "版本历史", "相似助理"],
-  skills: ["概览", "安装", "讨论", "信息"],
-  connectors: ["概览", "信息", "版本历史"],
+const KIND_NOUN: Record<CommunityTab, string> = {
+  agents: "助理",
+  skills: "技能",
+  connectors: "连接器",
 }
 
-const RELATED_TAB_LABEL: Record<CommunityTab, string> = {
-  agents: "相似助理",
-  skills: "相关技能",
-  connectors: "相关连接器",
+const SUBTABS: Record<CommunityTab, ReadonlyArray<{ id: string; label: string; icon: typeof BookOpen }>> = {
+  agents: [
+    { id: "overview", label: "概览", icon: BookOpen },
+    { id: "capabilities", label: "能力", icon: Stack },
+    { id: "versions", label: "版本历史", icon: ClockCounterClockwise },
+    { id: "related", label: "相似助理", icon: ListDashes },
+  ],
+  skills: [
+    { id: "overview", label: "概览", icon: BookOpen },
+    { id: "install", label: "安装", icon: DownloadSimple },
+    { id: "discussions", label: "讨论", icon: Chats },
+    { id: "info", label: "信息", icon: Info },
+  ],
+  connectors: [
+    { id: "overview", label: "概览", icon: BookOpen },
+    { id: "info", label: "信息", icon: Info },
+    { id: "versions", label: "版本历史", icon: ClockCounterClockwise },
+  ],
 }
 
 export type RelatedItem = {
   id: string
   name: string
   glyph: string
-  meta: string
+  desc: string
   done: boolean
 }
 
@@ -73,12 +100,15 @@ export function CommunityDetailPage({
   onDiscuss: () => void
 }) {
   const subtabs = SUBTABS[detail.tab]
-  const [subtab, setSubtab] = useState<string>(subtabs[0])
+  const [subtab, setSubtab] = useState<string>(subtabs[0].id)
+  const [aboutOpen, setAboutOpen] = useState(true)
+
+  const discussions = detail.discussions
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-[#f5f5f7]">
+    <div className="flex h-full min-h-0 flex-col bg-panel">
       {/* 顶栏 */}
-      <div className="flex h-11 shrink-0 items-center gap-2 border-b border-[var(--line)] bg-panel/80 px-3 backdrop-blur">
+      <div className="flex h-11 shrink-0 items-center gap-2 border-b border-[var(--line)] px-3">
         <button
           type="button"
           onClick={onBack}
@@ -90,218 +120,239 @@ export function CommunityDetailPage({
         <p className="truncate text-[11px] text-[var(--muted)]">
           {TAB_LABELS[detail.tab]} <span aria-hidden className="text-[var(--line-strong)]">/</span> <span className="text-[var(--ink-soft)]">{detail.name}</span>
         </p>
-        <button
-          type="button"
-          aria-label="分享"
-          onClick={onShare}
-          className="ml-auto flex size-7 items-center justify-center rounded-full text-[var(--muted-strong)] outline-none transition-colors hover:bg-[var(--hover-fill)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
-        >
-          <ShareFat className="size-[15px]" weight="fill" />
-        </button>
       </div>
 
-      <ScrollArea className="min-h-0 flex-1" viewportClassName="bg-[#f5f5f7]">
-        {/* ── 头部：白底大标题区 + 下划线子页签 ── */}
-        <header className="bg-panel">
-          <div className="w-full px-8 pt-9 max-[760px]:px-5">
-            <div className="flex items-start gap-5 max-[760px]:flex-col">
-              <span className="flex size-20 shrink-0 items-center justify-center rounded-[12px] bg-[var(--surface-hover)] text-[26px] font-semibold text-[var(--ink-soft)] shadow-[0_1px_2px_rgba(0,0,0,0.04),0_10px_30px_rgba(0,0,0,0.10)] max-[760px]:size-16 max-[760px]:rounded-[10px] max-[760px]:text-[20px]">
-                {detail.glyph}
-              </span>
-              <div className="min-w-0 flex-1 pt-1">
-                <h1 className="truncate text-[26px] leading-8 font-semibold tracking-[-0.035em] text-[var(--ink)] max-[760px]:text-[21px]">{detail.name}</h1>
-                <p className="mt-1 text-[13px] text-[var(--muted-strong)]">{detail.byline}</p>
-                <p className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-[var(--muted)]">
-                  {detail.stats.map((stat, index) => (
-                    <span key={stat.label} className="flex items-center gap-2">
-                      {index > 0 ? <span aria-hidden className="text-[var(--line-strong)]">·</span> : null}
-                      <span>{stat.value}</span>
+      <ScrollArea className="min-h-0 flex-1" viewportClassName="bg-panel">
+        {/* ── 头部 ── */}
+        <header className="px-8 pt-8 max-[760px]:px-5">
+          <div className="flex items-start gap-5 max-[760px]:flex-col">
+            <span className="flex size-[72px] shrink-0 items-center justify-center rounded-[14px] bg-[var(--surface-hover)] text-[24px] font-semibold text-[var(--ink-soft)]">
+              {detail.glyph}
+            </span>
+            <div className="min-w-0 flex-1 pt-0.5">
+              <h1 className="truncate text-[26px] leading-8 font-bold tracking-[-0.035em] text-[var(--ink)] max-[760px]:text-[21px]">{detail.name}</h1>
+              <p className="mt-1.5 flex flex-wrap items-center gap-x-2 text-[12px] text-[var(--muted-strong)]">
+                <span>{detail.byline}</span>
+                <span aria-hidden className="text-[var(--line-strong)]">·</span>
+                <span>{detail.stats.find((stat) => stat.label === "更新")?.value ?? ""}更新</span>
+              </p>
+              <div className="mt-3.5 flex flex-wrap items-center gap-2">
+                <span className="flex h-6 items-center rounded-[7px] border border-[var(--line)] px-2 text-[10.5px] font-medium text-[var(--ink-soft)]">
+                  {detail.category}
+                </span>
+                {detail.stats
+                  .filter((stat) => stat.label !== "更新" && stat.label !== "分类")
+                  .map((stat) => (
+                    <span key={stat.label} className="flex h-6 items-center gap-1 px-1 text-[10.5px] text-[var(--muted-strong)]">
+                      <span className="font-medium text-[var(--ink-soft)]">{stat.value}</span>
+                      <span className="text-[var(--muted)]">{stat.label}</span>
                     </span>
                   ))}
-                </p>
               </div>
-              <div className="flex shrink-0 items-center gap-2.5 pt-1.5 max-[760px]:pt-1">
-                {done ? (
-                  <span className="flex h-9 items-center gap-1.5 rounded-[8px] border border-[var(--line-strong)] px-4 text-[12px] font-medium text-[var(--muted-strong)]">
-                    <Check className="size-3.5" weight="bold" />
-                    {DONE_LABELS[detail.tab]}
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={onAction}
-                    className="flex h-9 items-center rounded-[8px] bg-[var(--accent)] px-6 text-[12.5px] font-semibold text-white outline-none transition-[background-color] hover:bg-[var(--accent-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
-                  >
-                    {ACTION_LABELS[detail.tab]}
-                  </button>
-                )}
-              </div>
+            </div>
+            <div className="flex shrink-0 items-center gap-2 pt-1">
+              {done ? (
+                <span className="flex h-9 items-center gap-1.5 rounded-[8px] border border-[var(--line-strong)] px-4 text-[12px] font-medium text-[var(--muted-strong)]">
+                  <Check className="size-3.5" weight="bold" />
+                  {DONE_LABELS[detail.tab]}
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={onAction}
+                  className="flex h-9 items-center rounded-[8px] bg-[var(--ink)] px-5 text-[12.5px] font-semibold text-white outline-none transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                >
+                  {ACTION_LABELS[detail.tab]}
+                </button>
+              )}
+              <button
+                type="button"
+                aria-label="分享"
+                onClick={onShare}
+                className="flex size-9 items-center justify-center rounded-[8px] border border-[var(--line)] text-[var(--muted-strong)] outline-none transition-colors hover:bg-[var(--hover-fill)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+              >
+                <ShareFat className="size-4" weight="fill" />
+              </button>
             </div>
           </div>
 
-          {/* 子页签：Apple.com 导航式（文字 + 底部指示线） */}
-          <nav aria-label="详情分区" className="mt-7 w-full px-8 max-[760px]:px-5">
-            <div className="flex items-end gap-8 overflow-x-auto border-t border-[var(--line)]">
-              {subtabs.map((item) => {
-                const active = subtab === item
-                return (
-                  <button
-                    key={item}
-                    type="button"
-                    aria-selected={active}
-                    role="tab"
-                    onClick={() => setSubtab(item)}
+          {/* 子页签 */}
+          <nav aria-label="详情分区" className="mt-7 flex items-center gap-6 overflow-x-auto border-b border-[var(--line)]">
+            {subtabs.map((item) => {
+              const active = subtab === item.id
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setSubtab(item.id)}
+                  className={cn(
+                    "relative flex h-10 shrink-0 items-center gap-1.5 text-[13px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+                    active ? "font-medium text-[var(--ink)]" : "text-[var(--muted)] hover:text-[var(--ink-soft)]",
+                  )}
+                >
+                  <item.icon className={cn("size-4", active ? "text-[var(--ink)]" : "text-[var(--muted)]")} weight="fill" />
+                  {item.label}
+                  <span
+                    aria-hidden
                     className={cn(
-                      "relative flex h-11 shrink-0 items-center pb-0 text-[13px] font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
-                      active ? "text-[var(--ink)]" : "text-[var(--muted)] hover:text-[var(--ink-soft)]",
+                      "absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-[var(--ink)] transition-opacity duration-150",
+                      active ? "opacity-100" : "opacity-0",
                     )}
-                  >
-                    {item}
-                    <span
-                      aria-hidden
-                      className={cn(
-                        "absolute inset-x-0 bottom-0 h-[2.5px] rounded-full bg-[var(--ink)] transition-opacity duration-150",
-                        active ? "opacity-100" : "opacity-0",
-                      )}
-                    />
-                  </button>
-                )
-              })}
-            </div>
+                  />
+                </button>
+              )
+            })}
           </nav>
         </header>
 
-        {/* ── 内容区 ── */}
-        <div className="w-full px-8 pb-20 pt-7 max-[760px]:px-5">
-          {subtab === "概览" ? (
-            <div className="divide-y divide-[var(--line)] rounded-[10px] bg-panel shadow-[0_1px_2px_rgba(0,0,0,0.03),0_4px_14px_rgba(0,0,0,0.04)]">
-              <section className="p-8">
-                <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)]">关于</h2>
-                <div className="mt-3.5 space-y-3.5">
-                  {detail.about.map((paragraph) => (
-                    <p key={paragraph.slice(0, 12)} className="text-[13px] leading-[22px] text-[var(--ink-soft)]">
-                      {paragraph}
-                    </p>
-                  ))}
-                </div>
-              </section>
-              <section className="p-8">
-                <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)]">亮点</h2>
-                <ul className="mt-4 grid gap-x-8 gap-y-3.5 sm:grid-cols-2">
-                  {detail.highlights.map((highlight) => (
-                    <li key={highlight} className="flex items-start gap-2.5">
-                      <span className="mt-[5px] size-1.5 shrink-0 rounded-full bg-[var(--accent)]" aria-hidden />
-                      <div className="min-w-0">
-                        <p className="text-[12.5px] font-medium leading-[18px] text-[var(--ink)]">{highlight}</p>
-                        <p className="mt-1 text-[11.5px] leading-[17px] text-[var(--muted-strong)]">
-                          {detail.capabilities[detail.highlights.indexOf(highlight)]?.desc}
-                        </p>
+        {/* ── 内容：左主内容流 + 右粘性栏 ── */}
+        <div className="flex items-start gap-10 px-8 pb-16 pt-7 max-[1100px]:flex-col max-[760px]:px-5">
+          <div className="flex min-w-0 flex-1 flex-col">
+            {subtab === "overview" ? (
+              <>
+                {/* 可折叠说明框 */}
+                <section className="overflow-hidden rounded-[10px] border border-[var(--line)]">
+                  <button
+                    type="button"
+                    onClick={() => setAboutOpen((open) => !open)}
+                    aria-expanded={aboutOpen}
+                    className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left outline-none transition-colors hover:bg-[var(--surface-subtle)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)]"
+                  >
+                    <span className="text-[13.5px] font-semibold text-[var(--ink)]">你可以使用该{KIND_NOUN[detail.tab]}做什么？</span>
+                    <CaretRight className={cn("size-3.5 text-[var(--muted)] transition-transform duration-200", aboutOpen && "rotate-90")} weight="bold" />
+                  </button>
+                  {aboutOpen ? (
+                    <div className="border-t border-[var(--line)] px-5 py-4">
+                      <div className="space-y-3">
+                        {detail.about.map((paragraph) => (
+                          <p key={paragraph.slice(0, 12)} className="text-[12.5px] leading-[21px] text-[var(--ink-soft)]">
+                            {paragraph}
+                          </p>
+                        ))}
                       </div>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-              <section className="p-8">
-                <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)]">权限与数据</h2>
-                <ul className="mt-3.5 space-y-2.5">
-                  {detail.permissions.map((permission) => (
-                    <li key={permission} className="flex items-start gap-2.5 text-[12.5px] leading-[19px] text-[var(--muted-strong)]">
-                      <Check className="mt-1 size-3.5 shrink-0 text-[var(--accent-ink)]" weight="bold" />
-                      {permission}
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            </div>
-          ) : null}
-
-          {subtab === "能力" ? (
-            <div className="rounded-[10px] bg-panel shadow-[0_1px_2px_rgba(0,0,0,0.03),0_4px_14px_rgba(0,0,0,0.04)]">
-              <section className="p-8">
-              <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)]">能力明细</h2>
-              <div className="mt-5 flex flex-col">
-                {detail.capabilities.map((capability, index) => (
-                  <div key={capability.title} className={cn("flex items-start gap-5 py-5", index > 0 && "border-t border-[var(--line)]")}>
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-[8px] bg-accent-soft text-[13px] font-semibold text-accent-ink">
-                      {index + 1}
-                    </span>
-                    <div className="min-w-0 flex-1 pt-1">
-                      <p className="text-[13.5px] font-semibold tracking-[-0.01em] text-[var(--ink)]">{capability.title}</p>
-                      <p className="mt-1.5 text-[12.5px] leading-[19px] text-[var(--muted-strong)]">{capability.desc}</p>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-            </div>
-          ) : null}
+                  ) : null}
+                </section>
 
-          {subtab === "版本历史" ? (
-            <div className="rounded-[10px] bg-panel shadow-[0_1px_2px_rgba(0,0,0,0.03),0_4px_14px_rgba(0,0,0,0.04)]">
-              <section className="p-8">
-              <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)]">版本历史</h2>
-              <div className="mt-5 flex flex-col">
-                {detail.updates.map((update, index) => (
-                  <div key={`${update.version}-${update.date}`} className={cn("flex items-baseline gap-6 py-3.5", index > 0 && "border-t border-[var(--line)]")}>
-                    <div className="flex w-[130px] shrink-0 flex-col">
-                      <span className="text-[12.5px] font-semibold text-[var(--ink)]">v{update.version}</span>
-                      <span className="mt-0.5 text-[10.5px] tabular-nums text-[var(--muted)]">{update.date}</span>
-                    </div>
-                    <p className="min-w-0 flex-1 text-[12.5px] leading-[19px] text-[var(--ink-soft)]">{update.note}</p>
-                  </div>
-                ))}
-              </div>
-            </section>
-            </div>
-          ) : null}
+                {/* 亮点 */}
+                <section className="mt-8">
+                  <h2 className="text-[15px] font-bold tracking-[-0.01em] text-[var(--ink)]">亮点</h2>
+                  <ul className="mt-3.5 flex flex-col gap-y-3">
+                    {detail.highlights.map((highlight, index) => (
+                      <li key={highlight} className="flex items-start gap-3">
+                        <span className="mt-[3px] flex size-5 shrink-0 items-center justify-center rounded-[6px] bg-[var(--surface-hover)] text-[9.5px] font-semibold text-[var(--muted-strong)]">
+                          {index + 1}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-[12.5px] font-medium leading-[18px] text-[var(--ink)]">{highlight}</p>
+                          <p className="mt-0.5 text-[11.5px] leading-[17px] text-[var(--muted-strong)]">
+                            {detail.capabilities[index]?.desc}
+                          </p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
 
-          {subtab === "安装" ? (
-            <div className="divide-y divide-[var(--line)] rounded-[10px] bg-panel shadow-[0_1px_2px_rgba(0,0,0,0.03),0_4px_14px_rgba(0,0,0,0.04)]">
-              <section className="p-8">
-                <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)]">安装步骤</h2>
-                <div className="mt-5 flex flex-col">
-                  {[
-                    { title: "点击安装", desc: "点击右上角「安装」，技能进入本机已安装列表，即刻可用。" },
-                    { title: "在任务中引用", desc: "任务输入中 @ 技能名，或交由 Agent 按任务特征自动调用。" },
-                    { title: "管理与更新", desc: "在 设置 · 技能 中管理已安装技能，支持一键升级与回滚。" },
-                  ].map((step, index) => (
-                    <div key={step.title} className={cn("flex items-start gap-5 py-5", index > 0 && "border-t border-[var(--line)]")}>
-                      <span className="flex size-10 shrink-0 items-center justify-center rounded-[8px] bg-accent-soft text-[13px] font-semibold text-accent-ink">
+                {/* 权限与数据 */}
+                <section className="mt-8">
+                  <h2 className="text-[15px] font-bold tracking-[-0.01em] text-[var(--ink)]">权限与数据</h2>
+                  <ul className="mt-3.5 space-y-2">
+                    {detail.permissions.map((permission) => (
+                      <li key={permission} className="flex items-start gap-2.5 text-[12px] leading-[18px] text-[var(--muted-strong)]">
+                        <Check className="mt-0.5 size-3.5 shrink-0 text-[var(--accent-ink)]" weight="bold" />
+                        {permission}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              </>
+            ) : null}
+
+            {subtab === "capabilities" ? (
+              <section>
+                <h2 className="text-[15px] font-bold tracking-[-0.01em] text-[var(--ink)]">能力明细</h2>
+                <div className="mt-2 flex flex-col">
+                  {detail.capabilities.map((capability, index) => (
+                    <div key={capability.title} className={cn("flex items-start gap-4 py-4", index > 0 && "border-t border-[var(--line)]")}>
+                      <span className="flex size-9 shrink-0 items-center justify-center rounded-[8px] bg-accent-soft text-[12.5px] font-semibold text-accent-ink">
                         {index + 1}
                       </span>
-                      <div className="min-w-0 flex-1 pt-1">
-                        <p className="text-[13.5px] font-semibold tracking-[-0.01em] text-[var(--ink)]">{step.title}</p>
-                        <p className="mt-1.5 text-[12.5px] leading-[19px] text-[var(--muted-strong)]">{step.desc}</p>
+                      <div className="min-w-0 flex-1 pt-0.5">
+                        <p className="text-[13px] font-semibold tracking-[-0.01em] text-[var(--ink)]">{capability.title}</p>
+                        <p className="mt-1 text-[12px] leading-[18px] text-[var(--muted-strong)]">{capability.desc}</p>
                       </div>
                     </div>
                   ))}
                 </div>
               </section>
-              <section className="p-8">
-                <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)]">运行要求</h2>
-                <p className="mt-3 text-[13px] leading-[22px] text-[var(--ink-soft)]">
-                  技能仅在本机加载提示词与模板，不发起网络请求；无额外依赖，卸载即清理全部缓存。
-                </p>
-              </section>
-            </div>
-          ) : null}
+            ) : null}
 
-          {subtab === "讨论" ? (
-            <div className="divide-y divide-[var(--line)] rounded-[10px] bg-panel shadow-[0_1px_2px_rgba(0,0,0,0.03),0_4px_14px_rgba(0,0,0,0.04)]">
-              <section className="p-8">
+            {subtab === "versions" ? (
+              <section>
+                <h2 className="text-[15px] font-bold tracking-[-0.01em] text-[var(--ink)]">版本历史</h2>
+                <div className="mt-2 flex flex-col">
+                  {detail.updates.map((update, index) => (
+                    <div key={`${update.version}-${update.date}`} className={cn("flex items-baseline gap-6 py-3.5", index > 0 && "border-t border-[var(--line)]")}>
+                      <div className="flex w-[110px] shrink-0 flex-col">
+                        <span className="text-[12.5px] font-semibold text-[var(--ink)]">v{update.version}</span>
+                        <span className="mt-0.5 text-[10.5px] tabular-nums text-[var(--muted)]">{update.date}</span>
+                      </div>
+                      <p className="min-w-0 flex-1 text-[12.5px] leading-[19px] text-[var(--ink-soft)]">{update.note}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            {subtab === "install" ? (
+              <>
+                <section>
+                  <h2 className="text-[15px] font-bold tracking-[-0.01em] text-[var(--ink)]">安装步骤</h2>
+                  <div className="mt-2 flex flex-col">
+                    {[
+                      { title: "点击安装", desc: "点击右上角「安装」，技能进入本机已安装列表，即刻可用。" },
+                      { title: "在任务中引用", desc: "任务输入中 @ 技能名，或交由 Agent 按任务特征自动调用。" },
+                      { title: "管理与更新", desc: "在 设置 · 技能 中管理已安装技能，支持一键升级与回滚。" },
+                    ].map((step, index) => (
+                      <div key={step.title} className={cn("flex items-start gap-4 py-4", index > 0 && "border-t border-[var(--line)]")}>
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-[8px] bg-accent-soft text-[12.5px] font-semibold text-accent-ink">
+                          {index + 1}
+                        </span>
+                        <div className="min-w-0 flex-1 pt-0.5">
+                          <p className="text-[13px] font-semibold tracking-[-0.01em] text-[var(--ink)]">{step.title}</p>
+                          <p className="mt-1 text-[12px] leading-[18px] text-[var(--muted-strong)]">{step.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+                <section className="mt-8">
+                  <h2 className="text-[15px] font-bold tracking-[-0.01em] text-[var(--ink)]">运行要求</h2>
+                  <p className="mt-3 text-[12.5px] leading-[20px] text-[var(--ink-soft)]">
+                    技能仅在本机加载提示词与模板，不发起网络请求；无额外依赖，卸载即清理全部缓存。
+                  </p>
+                </section>
+              </>
+            ) : null}
+
+            {subtab === "discussions" ? (
+              <section>
                 <div className="flex items-center justify-between gap-4">
-                  <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)]">讨论</h2>
+                  <h2 className="text-[15px] font-bold tracking-[-0.01em] text-[var(--ink)]">讨论</h2>
                   <button
                     type="button"
                     onClick={onDiscuss}
-                    className="flex h-8 items-center gap-1.5 rounded-full bg-[var(--hover-fill)] px-3.5 text-[11.5px] font-medium text-[var(--ink-soft)] outline-none transition-colors hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                    className="flex h-8 items-center gap-1.5 rounded-[8px] bg-[var(--hover-fill)] px-3.5 text-[11.5px] font-medium text-[var(--ink-soft)] outline-none transition-colors hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                   >
                     <ChatCircleDots className="size-3.5" weight="fill" />
                     发起讨论
                   </button>
                 </div>
-                <div className="mt-5 flex flex-col">
-                  {detail.discussions.map((post, index) => (
+                <div className="mt-2 flex flex-col">
+                  {discussions.map((post, index) => (
                     <div key={post.author + post.time} className={cn("py-5", index > 0 && "border-t border-[var(--line)]")}>
                       <div className="flex gap-3.5">
                         <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[var(--surface-hover)] text-[12px] font-semibold text-[var(--ink-soft)]">
@@ -314,7 +365,7 @@ export function CommunityDetailPage({
                           </div>
                           <p className="mt-1.5 text-[12.5px] leading-[20px] text-[var(--ink-soft)]">{post.text}</p>
                           {post.replies.length > 0 ? (
-                            <div className="mt-3 space-y-2.5 rounded-[10px] bg-[var(--surface-subtle)] p-3.5">
+                            <div className="mt-3 space-y-3 rounded-[10px] bg-[var(--surface-subtle)] p-4">
                               {post.replies.map((reply) => (
                                 <div key={reply.author + reply.time} className="flex gap-2.5">
                                   <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-panel text-[9.5px] font-semibold text-[var(--muted-strong)]">
@@ -335,53 +386,75 @@ export function CommunityDetailPage({
                   ))}
                 </div>
               </section>
-            </div>
-          ) : null}
+            ) : null}
 
-          {subtab === "信息" ? (
-            <div className="rounded-[10px] bg-panel shadow-[0_1px_2px_rgba(0,0,0,0.03),0_4px_14px_rgba(0,0,0,0.04)]">
-              <section className="p-8">
-              <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)]">信息</h2>
-              <dl className="mt-5 grid gap-x-10 sm:grid-cols-2">
-                {detail.info.map((row) => (
-                  <div key={row.label} className="flex items-baseline justify-between gap-4 border-b border-[var(--line)] py-3.5">
-                    <dt className="shrink-0 text-[11.5px] text-[var(--muted)]">{row.label}</dt>
-                    <dd className="truncate text-[12.5px] font-medium text-[var(--ink)]">{row.value}</dd>
-                  </div>
-                ))}
-              </dl>
-            </section>
-            </div>
-          ) : null}
-
-          {subtab === RELATED_TAB_LABEL[detail.tab] && related.length > 0 ? (
-            <div className="rounded-[10px] bg-panel shadow-[0_1px_2px_rgba(0,0,0,0.03),0_4px_14px_rgba(0,0,0,0.04)]">
-              <section className="p-8">
-              <h2 className="text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)]">{RELATED_TAB_LABEL[detail.tab]}</h2>
-              <div className="mt-5 grid gap-3 max-[760px]:grid-cols-1 sm:grid-cols-3">
-                {related.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => onOpenRelated(item.id)}
-                    className="group flex flex-col gap-2.5 rounded-[8px] border border-[var(--line)] bg-panel p-4 text-left outline-none transition-[border-color,box-shadow] hover:border-[var(--line-strong)] hover:shadow-[0_8px_20px_-10px_rgba(28,33,42,0.15)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
-                  >
-                    <span className="flex size-11 items-center justify-center rounded-[7px] bg-[var(--surface-hover)] text-[14px] font-semibold text-[var(--ink-soft)]">
-                      {item.glyph}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="truncate text-[12.5px] font-semibold text-[var(--ink)]">{item.name}</p>
-                      <p className="mt-0.5 truncate text-[10.5px] text-[var(--muted)]">{item.meta}</p>
+            {subtab === "info" ? (
+              <section>
+                <h2 className="text-[15px] font-bold tracking-[-0.01em] text-[var(--ink)]">信息</h2>
+                <dl className="mt-4 max-w-[640px]">
+                  {detail.info.map((row) => (
+                    <div key={row.label} className="flex items-baseline justify-between gap-4 border-b border-[var(--line)] py-3">
+                      <dt className="shrink-0 text-[11.5px] text-[var(--muted)]">{row.label}</dt>
+                      <dd className="truncate text-[12.5px] font-medium text-[var(--ink)]">{row.value}</dd>
                     </div>
-                    <span className={cn("mt-0.5 flex h-6 w-fit items-center rounded-[6px] px-2.5 text-[10.5px] font-semibold", item.done ? "border border-[var(--line-strong)] text-[var(--muted-strong)]" : "bg-accent-soft text-accent-ink")}>
-                      {item.done ? "已添加" : "查看"}
-                    </span>
+                  ))}
+                </dl>
+              </section>
+            ) : null}
+          </div>
+
+          {/* ── 右栏：动作 + 相关推荐 ── */}
+          <aside className="sticky top-0 w-[300px] shrink-0 max-[1100px]:w-full">
+            {done ? (
+              <span className="flex h-10 w-full items-center justify-center gap-1.5 rounded-[9px] border border-[var(--line-strong)] text-[12px] font-medium text-[var(--muted-strong)]">
+                <Check className="size-3.5" weight="bold" />
+                {DONE_LABELS[detail.tab]}
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={onAction}
+                className="flex h-10 w-full items-center justify-center rounded-[9px] bg-[var(--ink)] text-[12.5px] font-semibold text-white outline-none transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+              >
+                {ACTION_LABELS[detail.tab]}
+              </button>
+            )}
+
+            {related.length > 0 ? (
+              <div className="mt-8">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-[14px] font-bold tracking-[-0.01em] text-[var(--ink)]">相关{KIND_NOUN[detail.tab]}</h3>
+                  <button
+                    type="button"
+                    onClick={onDiscuss}
+                    className="flex items-center gap-0.5 text-[11px] text-[var(--muted)] outline-none transition-colors hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                  >
+                    查看更多
+                    <CaretRight className="size-3" />
                   </button>
-                ))}
+                </div>
+                <div className="mt-3 flex flex-col gap-2.5">
+                  {related.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => onOpenRelated(item.id)}
+                      className="rounded-[10px] border border-[var(--line)] bg-panel p-3.5 text-left outline-none transition-[border-color] hover:border-[var(--line-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className="flex size-8 shrink-0 items-center justify-center rounded-[7px] bg-[var(--surface-hover)] text-[11.5px] font-semibold text-[var(--ink-soft)]">
+                          {item.glyph}
+                        </span>
+                        <p className="min-w-0 flex-1 truncate text-[12px] font-semibold text-[var(--ink)]">{item.name}</p>
+                        {item.done ? <Check className="size-3.5 shrink-0 text-[var(--muted-strong)]" weight="bold" /> : null}
+                      </div>
+                      <p className="mt-2 line-clamp-2 text-[11px] leading-[16px] text-[var(--muted-strong)]">{item.desc}</p>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </section>
-            </div>
-          ) : null}
+            ) : null}
+          </aside>
         </div>
       </ScrollArea>
     </div>

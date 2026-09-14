@@ -14,8 +14,6 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
@@ -204,6 +202,7 @@ export function CommunityCanvas() {
             className="min-h-0 flex-1"
           >
             <CommunityDetailPage
+              key={detail.model.name}
               detail={detail.model}
               done={detail.done}
               related={detail.related}
@@ -211,6 +210,7 @@ export function CommunityCanvas() {
               onAction={detail.onAction}
               onOpenRelated={(id) => setDetailId(id)}
               onShare={() => notify("详情链接已复制")}
+              onDiscuss={() => notify("讨论区即将开放")}
             />
           </motion.div>
         ) : (
@@ -235,16 +235,11 @@ export function CommunityCanvas() {
                     <CaretDown className="size-3 text-[var(--muted)]" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-60">
-                  <DropdownMenuLabel>浏览</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
+                <DropdownMenuContent align="start">
                   {TABS.map((item) => (
-                    <DropdownMenuItem key={item.id} onSelect={() => switchTab(item.id)} className="gap-2.5 py-2">
+                    <DropdownMenuItem key={item.id} onSelect={() => switchTab(item.id)}>
                       <item.icon className={cn("size-4 shrink-0", tab === item.id ? "text-[var(--ink)]" : "text-[var(--muted)]")} weight="fill" />
-                      <span className="flex min-w-0 flex-col">
-                        <span className="text-[11.5px] font-medium">{item.label}</span>
-                        <span className="mt-px truncate text-[9.5px] text-[var(--muted)]">{item.blurb}</span>
-                      </span>
+                      <span className="flex-1">{item.label}</span>
                       {tab === item.id ? <Check className="ml-auto size-3.5 shrink-0 text-[var(--ink)]" weight="bold" /> : null}
                     </DropdownMenuItem>
                   ))}
@@ -263,7 +258,7 @@ export function CommunityCanvas() {
                 <button
                   type="button"
                   onClick={() => notify("作品提交通道即将开放")}
-                  className="ml-1 flex h-7 items-center gap-1 rounded-[7px] bg-[var(--ink)] px-2.5 text-[10.5px] font-medium text-white outline-none transition-[opacity,transform] hover:opacity-88 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:translate-y-px"
+                  className="ml-1.5 flex h-8 items-center gap-1 rounded-full bg-[var(--accent)] px-3.5 text-[11px] font-semibold text-white outline-none transition-[background-color,opacity] hover:bg-[var(--accent-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                 >
                   <Plus className="size-3" weight="bold" />
                   提交作品
@@ -272,7 +267,7 @@ export function CommunityCanvas() {
             </div>
 
             {/* 内容区：白底、留白排版、发丝线卡片 */}
-            <div ref={scrollRef} className="min-h-0 min-w-0 flex-1 overflow-auto bg-panel">
+            <div ref={scrollRef} className="min-h-0 min-w-0 flex-1 overflow-auto bg-[var(--surface-subtle)]">
               <div className="mx-auto w-full max-w-[1200px] px-5 pb-16 pt-5">
                 {/* 筛选行：无底色文字 pill + 文字排序 + 极简搜索 */}
                 <div className="flex items-center gap-0.5">
@@ -285,9 +280,9 @@ export function CommunityCanvas() {
                         aria-pressed={active}
                         onClick={() => { setCategory(option); setPage(1) }}
                         className={cn(
-                          "flex h-7 items-center gap-1.5 rounded-[8px] px-2.5 text-[11.5px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+                          "flex h-7 items-center gap-1.5 rounded-[8px] px-2.5 text-[12px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
                           active
-                            ? "bg-[var(--hover-fill)] font-medium text-[var(--ink)]"
+                            ? "font-semibold text-[var(--accent-ink)]"
                             : "text-[var(--muted-strong)] hover:text-[var(--ink)]",
                         )}
                       >
@@ -311,8 +306,6 @@ export function CommunityCanvas() {
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-32">
-                          <DropdownMenuLabel>排序</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
                           {SORT_OPTIONS.map((option) => (
                             <DropdownMenuCheckboxItem key={option.id} checked={sort === option.id} onCheckedChange={() => { setSort(option.id); setPage(1) }}>
                               {option.label}
@@ -321,7 +314,7 @@ export function CommunityCanvas() {
                         </DropdownMenuContent>
                       </DropdownMenu>
                     ) : null}
-                    <label className="group flex h-7 w-44 items-center gap-1.5 rounded-[8px] px-2 text-[var(--muted)] transition-colors focus-within:bg-[var(--hover-fill)] hover:bg-[var(--hover-fill)] max-[1200px]:w-36">
+                    <label className="group flex h-7 w-44 items-center gap-1.5 rounded-[8px] bg-[var(--hover-fill)] px-2.5 text-[var(--muted)] transition-colors focus-within:bg-panel focus-within:shadow-[0_0_0_2px_var(--focus-ring)] max-[1200px]:w-36">
                       <MagnifyingGlass className="size-3.5 shrink-0" />
                       <input
                         type="search"

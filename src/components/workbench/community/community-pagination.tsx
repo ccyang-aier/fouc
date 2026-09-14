@@ -67,7 +67,7 @@ export function CommunityPagination({
                 className={cn(
                   "flex h-7 min-w-7 items-center justify-center rounded-full px-1.5 text-[10.5px] font-medium tabular-nums outline-none transition-[background-color,color] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
                   item === page
-                    ? "bg-[var(--ink)] text-white"
+                    ? "bg-[var(--accent)] text-white"
                     : "text-[var(--muted-strong)] hover:bg-[var(--hover-fill)] hover:text-[var(--ink)]",
                 )}
               >

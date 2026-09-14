@@ -132,6 +132,7 @@ export type CommunityDetail = {
   description: string
   highlights: string[]
   stats: Array<{ label: string; value: string }>
+  info: Array<{ label: string; value: string }>
   updates: Array<{ version: string; date: string; note: string }>
   permissions: string[]
 }
@@ -191,6 +192,14 @@ export function buildCommunityDetail(
         { label: "版本", value: `v${agent.version}` },
         { label: "更新", value: agent.updated },
       ],
+      info: [
+        { label: "分类", value: agent.category },
+        { label: "作者", value: agent.author },
+        { label: "版本", value: `v${agent.version}` },
+        { label: "评分", value: `★ ${agent.rating}` },
+        { label: "安装量", value: formatInstalls(agent.installs) },
+        { label: "更新时间", value: agent.updated },
+      ],
       updates,
       permissions: PERMISSIONS.agents,
     }
@@ -212,6 +221,13 @@ export function buildCommunityDetail(
         { label: "更新", value: connector.updated },
         { label: "状态", value: connector.connected ? "已连接" : "未连接" },
       ],
+      info: [
+        { label: "发布者", value: connector.publisher },
+        { label: "分类", value: connector.category },
+        { label: "版本", value: `v${connector.version}` },
+        { label: "更新时间", value: connector.updated },
+        { label: "状态", value: connector.connected ? "已连接" : "未连接" },
+      ],
       updates,
       permissions: PERMISSIONS.connectors,
     }
@@ -231,6 +247,14 @@ export function buildCommunityDetail(
       { label: "版本", value: `v${skill.version}` },
       { label: "适配 Agent", value: `${skill.compat.length} 位` },
       { label: "更新", value: skill.updated },
+    ],
+    info: [
+      { label: "分类", value: skill.category },
+      { label: "作者", value: skill.author },
+      { label: "适配 Agent", value: skill.compat.join(" / ") },
+      { label: "版本", value: `v${skill.version}` },
+      { label: "安装量", value: formatInstalls(skill.installs) },
+      { label: "更新时间", value: skill.updated },
     ],
     updates,
     permissions: PERMISSIONS.skills,

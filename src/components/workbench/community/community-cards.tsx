@@ -1,8 +1,8 @@
 "use client"
 
 /**
- * 社区目录卡片：单色克制风 —— 中性徽章、排版层级、单行简介、一行元信息。
- * 无彩色徽章 / 标签堆叠；hover 仅描边加深与轻投影，动作按钮保持安静。
+ * 社区目录卡片：Apple 风格 —— 白卡无描边、常驻柔投影、中性圆角徽章、
+ * 胶囊动作按钮（悬停翻为主题实底），信息三层：名称 / 单行简介 / 元信息。
  */
 
 import { Check } from "@phosphor-icons/react"
@@ -10,20 +10,16 @@ import { Check } from "@phosphor-icons/react"
 import { formatInstalls, type CommunityAgent, type CommunityConnector, type CommunitySkill } from "./community-data"
 
 const cardShell =
-  "group relative flex cursor-pointer flex-col rounded-[12px] border border-[var(--line)] bg-panel p-4 text-left outline-none transition-[border-color,box-shadow] duration-150 hover:border-[var(--line-strong)] hover:shadow-[0_10px_24px_-14px_rgba(28,33,42,0.14)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+  "group relative flex cursor-pointer flex-col rounded-[12px] bg-panel p-4 text-left outline-none shadow-[0_1px_2px_rgba(0,0,0,0.03),0_4px_14px_rgba(0,0,0,0.04)] transition-shadow duration-200 hover:shadow-[0_2px_6px_rgba(0,0,0,0.04),0_10px_28px_rgba(0,0,0,0.09)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
 
 const neutralBadge =
-  "flex size-9 shrink-0 items-center justify-center rounded-[9px] bg-[var(--surface-hover)] text-[12px] font-semibold text-[var(--ink-soft)]"
+  "flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-[var(--surface-hover)] text-[13px] font-semibold text-[var(--ink-soft)]"
 
-const actionBtn =
-  "flex h-6 shrink-0 items-center rounded-[6px] px-1.5 text-[11px] font-medium text-[var(--accent-ink)] outline-none transition-colors hover:bg-accent-soft focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+const actionPill =
+  "flex h-7 shrink-0 items-center rounded-full bg-accent-soft px-3.5 text-[11px] font-semibold text-accent-ink outline-none transition-[background-color,color] duration-200 group-hover:bg-[var(--accent)] group-hover:text-white focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:bg-[var(--accent)] focus-visible:text-white"
 
-const installedMark = (
-  <span className="flex shrink-0 items-center gap-1 text-[10px] text-[var(--muted-strong)]">
-    <Check className="size-3" weight="bold" />
-    已添加
-  </span>
-)
+const installedPill =
+  "flex h-7 shrink-0 items-center gap-1 rounded-full border border-[var(--line-strong)] px-3 text-[10.5px] font-medium text-[var(--muted-strong)]"
 
 function cardActivation(onOpen: () => void) {
   return {
@@ -39,7 +35,7 @@ function cardActivation(onOpen: () => void) {
 
 function MetaLine({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mt-auto flex items-center gap-1.5 pt-2.5 text-[10px] text-[var(--muted)]">
+    <div className="mt-auto flex items-center gap-1.5 pt-3 text-[10px] text-[var(--muted)]">
       {children}
     </div>
   )
@@ -53,16 +49,21 @@ export function CommunityAgentCard({ agent, onInstall, onOpen }: { agent: Commun
       <div className="flex items-start gap-3">
         <span className={neutralBadge}>{agent.glyph}</span>
         <div className="min-w-0 flex-1 pt-0.5">
-          <p className="truncate text-[12.5px] font-semibold tracking-[-0.01em] text-[var(--ink)]">{agent.name}</p>
-          <p className="mt-0.5 truncate text-[10px] text-[var(--muted)]">{agent.author}</p>
+          <p className="truncate text-[13px] font-semibold tracking-[-0.01em] text-[var(--ink)]">{agent.name}</p>
+          <p className="mt-0.5 truncate text-[10.5px] text-[var(--muted)]">{agent.author}</p>
         </div>
-        {agent.installed ? installedMark : (
-          <button type="button" onClick={(event) => { event.stopPropagation(); onInstall() }} className={actionBtn}>
+        {agent.installed ? (
+          <span className={installedPill}>
+            <Check className="size-3" weight="bold" />
+            已添加
+          </span>
+        ) : (
+          <button type="button" onClick={(event) => { event.stopPropagation(); onInstall() }} className={actionPill}>
             获取
           </button>
         )}
       </div>
-      <p className="mt-2.5 line-clamp-1 text-[11px] leading-[16px] text-[var(--ink-soft)]">{agent.tagline}</p>
+      <p className="mt-3 line-clamp-2 text-[11.5px] leading-[17px] text-[var(--ink-soft)]">{agent.tagline}</p>
       <MetaLine>
         <span className="font-medium text-[var(--ink-soft)]">★ {agent.rating}</span>
         <Dot />
@@ -80,21 +81,21 @@ export function CommunityConnectorCard({ connector, onConnect, onOpen }: { conne
       <div className="flex items-start gap-3">
         <span className={neutralBadge}>{connector.glyph}</span>
         <div className="min-w-0 flex-1 pt-0.5">
-          <p className="truncate text-[12.5px] font-semibold tracking-[-0.01em] text-[var(--ink)]">{connector.name}</p>
-          <p className="mt-0.5 truncate text-[10px] text-[var(--muted)]">{connector.publisher}</p>
+          <p className="truncate text-[13px] font-semibold tracking-[-0.01em] text-[var(--ink)]">{connector.name}</p>
+          <p className="mt-0.5 truncate text-[10.5px] text-[var(--muted)]">{connector.publisher}</p>
         </div>
         {connector.connected ? (
-          <span className="flex shrink-0 items-center gap-1 text-[10px] text-[var(--muted-strong)]">
+          <span className={installedPill}>
             <Check className="size-3" weight="bold" />
             已连接
           </span>
         ) : (
-          <button type="button" onClick={(event) => { event.stopPropagation(); onConnect() }} className={actionBtn}>
+          <button type="button" onClick={(event) => { event.stopPropagation(); onConnect() }} className={actionPill}>
             连接
           </button>
         )}
       </div>
-      <p className="mt-2.5 line-clamp-1 text-[11px] leading-[16px] text-[var(--ink-soft)]">{connector.description}</p>
+      <p className="mt-3 line-clamp-2 text-[11.5px] leading-[17px] text-[var(--ink-soft)]">{connector.description}</p>
       <MetaLine>
         <span>{connector.category}</span>
         <Dot />
@@ -112,21 +113,21 @@ export function CommunitySkillCard({ skill, onInstall, onOpen }: { skill: Commun
       <div className="flex items-start gap-3">
         <span className={neutralBadge}>{skill.name.slice(0, 1)}</span>
         <div className="min-w-0 flex-1 pt-0.5">
-          <p className="truncate text-[12.5px] font-semibold tracking-[-0.01em] text-[var(--ink)]">{skill.name}</p>
-          <p className="mt-0.5 truncate text-[10px] text-[var(--muted)]">{skill.author}</p>
+          <p className="truncate text-[13px] font-semibold tracking-[-0.01em] text-[var(--ink)]">{skill.name}</p>
+          <p className="mt-0.5 truncate text-[10.5px] text-[var(--muted)]">{skill.author}</p>
         </div>
         {skill.installed ? (
-          <span className="flex shrink-0 items-center gap-1 text-[10px] text-[var(--muted-strong)]">
+          <span className={installedPill}>
             <Check className="size-3" weight="bold" />
             已安装
           </span>
         ) : (
-          <button type="button" onClick={(event) => { event.stopPropagation(); onInstall() }} className={actionBtn}>
+          <button type="button" onClick={(event) => { event.stopPropagation(); onInstall() }} className={actionPill}>
             安装
           </button>
         )}
       </div>
-      <p className="mt-2.5 line-clamp-1 text-[11px] leading-[16px] text-[var(--ink-soft)]">{skill.summary}</p>
+      <p className="mt-3 line-clamp-2 text-[11.5px] leading-[17px] text-[var(--ink-soft)]">{skill.summary}</p>
       <MetaLine>
         <span className="font-medium text-[var(--ink-soft)]">v{skill.version}</span>
         <Dot />

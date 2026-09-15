@@ -18,8 +18,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 
-import { toneIcons } from "../icon-tones"
-import { SidebarNavList, type SidebarNavItem } from "../sidebar-nav"
+import { NavButton, type SidebarRowItem } from "../navigation-sidebar"
 import { SidebarResizeHandle, useSidebarWidth } from "../sidebar-resize"
 import { AboutSettings } from "./about-settings"
 import { AgentSettings } from "./agent-settings"
@@ -28,11 +27,11 @@ import { GeneralSettings } from "./general-settings"
 
 export type SettingsSection = "appearance" | "general" | "agents" | "about"
 
-const SECTIONS: Array<SidebarNavItem<SettingsSection>> = [
-  { id: "appearance", label: "外观", icon: PaintBrush, iconClass: toneIcons.violet },
-  { id: "general", label: "通用", icon: SlidersHorizontal, iconClass: toneIcons.sky },
-  { id: "agents", label: "Agent", icon: Robot, iconClass: toneIcons.teal },
-  { id: "about", label: "关于", icon: Info, iconClass: toneIcons.slate },
+const SECTIONS: Array<SidebarRowItem & { id: SettingsSection }> = [
+  { id: "appearance", label: "外观", icon: PaintBrush },
+  { id: "general", label: "通用", icon: SlidersHorizontal },
+  { id: "agents", label: "Agent", icon: Robot },
+  { id: "about", label: "关于", icon: Info },
 ]
 
 export function SettingsCanvas({
@@ -59,14 +58,13 @@ export function SettingsCanvas({
       <div
         style={{ width, zIndex: 20 }}
         className={cn(
-          "h-full shrink-0 max-[820px]:!w-[60px]",
-          !dragging && "transition-[width] duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+          "h-full shrink-0",
+          !dragging && "transition-[width] duration-[220ms] ease-out-soft",
         )}
       >
         <nav
           aria-label="设置分区"
-          // 右缘分割线由主面板的 border-left 统一提供，此处不再自绘
-          className="relative flex h-full min-h-0 flex-col px-3 pb-5 pt-3"
+          className="relative flex h-full min-h-0 flex-col border-r border-[var(--wt-sidebar-glass-edge)] px-3 pb-5 pt-3"
         >
           <div className="flex h-9 shrink-0 items-center gap-1.5">
             <button
@@ -98,7 +96,16 @@ export function SettingsCanvas({
           <p className="mb-2 mt-5 px-2.5 text-[10px] font-medium uppercase tracking-[0.2em] text-[var(--muted)]">
             Preferences
           </p>
-          <SidebarNavList items={visibleSections} value={section} onChange={setSection} />
+          <div className="space-y-1">
+            {visibleSections.map((item) => (
+              <NavButton
+                key={item.id}
+                item={item}
+                active={section === item.id}
+                onSelect={() => setSection(item.id as SettingsSection)}
+              />
+            ))}
+          </div>
           {visibleSections.length === 0 ? (
             <p className="px-2.5 py-4 text-[11px] text-[var(--muted)]">没有匹配的设置</p>
           ) : null}
@@ -109,8 +116,7 @@ export function SettingsCanvas({
 
       <ScrollArea
         as="main"
-        /* 面板自绘 1px 边框（含左上圆角），与侧栏分割线同用 --wt-sidebar-glass-edge，四边与圆角处连续均匀 */
-        className="min-h-0 flex-1 overflow-hidden rounded-tl-[16px] border border-[var(--wt-sidebar-glass-edge)] bg-panel"
+        className="min-h-0 flex-1 overflow-hidden bg-panel"
         viewportClassName="bg-panel"
       >
         {section === "appearance" ? (

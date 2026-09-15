@@ -218,6 +218,7 @@ html[data-chat-font="serif"] {
   --color-ink-secondary: var(--ink-soft);
   --color-ink-faint: var(--muted);
   --color-muted-strong: var(--muted-strong);
+  --color-border: var(--line);
   --color-border-strong: var(--line-strong);
   --color-surface-hover: var(--surface-hover);
   --color-sidebar-hover: var(--wt-sidebar-hover);
@@ -234,6 +235,10 @@ html[data-chat-font="serif"] {
   --color-ok: var(--ok-ink);
   --color-err: var(--err-ink);
   --color-warn: var(--warn-ink);
+  /* 侧栏导航小节标题等 11px 微字号 */
+  --text-2xs: 11px;
+  /* 侧栏宽度过渡使用的柔出缓动 */
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 * {
@@ -290,45 +295,6 @@ button {
 }
 *::-webkit-scrollbar {
   display: none;
-}
-
-@media (max-width: 820px) {
-  .sidebar-label {
-    display: none;
-  }
-
-  aside nav button,
-  aside section button {
-    justify-content: center;
-  }
-
-  aside > button:first-of-type {
-    justify-content: center;
-    padding-inline: 0;
-  }
-}
-
-.sidebar-collapsed .sidebar-label {
-  display: none;
-}
-
-.sidebar-collapsed nav button,
-.sidebar-collapsed section button {
-  justify-content: center;
-}
-
-@media (max-height: 760px) {
-  aside nav {
-    margin-top: 8px;
-  }
-
-  aside nav button {
-    height: 36px;
-  }
-
-  aside section {
-    margin-top: 8px;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

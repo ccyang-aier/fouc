@@ -14,9 +14,9 @@ import {
 
 import { cn } from "@/lib/utils"
 
-const MIN_WIDTH = 200
-const MAX_WIDTH = 400
-const DEFAULT_WIDTH = 278
+const MIN_WIDTH = 232
+const MAX_WIDTH = 420
+const DEFAULT_WIDTH = 256
 
 export function useSidebarWidth() {
   const [width, setWidth] = useState(DEFAULT_WIDTH)
@@ -68,8 +68,7 @@ export function SidebarResizeHandle({
       /* globals.css 的 button { cursor: default } 会压过 cursor-col-resize 工具类，内联保住手柄光标 */
       style={{ cursor: "col-resize" }}
       className={cn(
-        /* 分割线顶端与 rounded-tl-[16px] 圆角等高，干净截断：hover 与拖拽保持同一几何 */
-        "absolute inset-y-0 right-[-4px] z-30 w-[9px] cursor-col-resize touch-none outline-none before:absolute before:top-[16px] before:bottom-0 before:left-1/2 before:w-px before:-translate-x-1/2 before:bg-ink before:opacity-0 before:transition-[opacity,width] before:duration-150 hover:before:opacity-90 focus-visible:before:opacity-90",
+        "absolute inset-y-0 right-[-4px] z-30 w-[9px] cursor-col-resize touch-none outline-none before:absolute before:inset-y-0 before:left-1/2 before:w-px before:-translate-x-1/2 before:bg-ink before:opacity-0 before:transition-[opacity,width] before:duration-150 hover:before:opacity-90 focus-visible:before:opacity-90",
         dragging && "before:w-[2px] before:opacity-100",
       )}
     />

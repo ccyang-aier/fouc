@@ -38,12 +38,13 @@ import { HomeCanvas } from "./home-canvas"
 import { AutomationCanvas } from "./automation/automation-canvas"
 import { CommunityCanvas } from "./community/community-canvas"
 import { ConnectorsCanvas } from "./connectors/connectors-canvas"
+import { NavigationSidebar, type WorkbenchView } from "./navigation-sidebar"
 import type { ProjectManagementPanelId } from "./project/project-management-model"
 import { ProjectHomeCanvas } from "./project/project-home-canvas"
 import "./sidebar-material.css"
-import { Sidebar, type WorkbenchView } from "./sidebar"
 import { SettingsCanvas } from "./settings/settings-canvas"
-import { TitleBar } from "./title-bar"
+import { SystemBar } from "./system-bar"
+import { WorkspaceRail } from "./workspace-rail"
 
 const PROJECT_FAVORITE_STORAGE_KEY = "fouc.project.fouc-desktop.favorite"
 const PROJECT_FAVORITE_EVENT = "fouc-project-favorite-change"
@@ -125,70 +126,79 @@ export function WorkbenchShell() {
     <MotionConfig reducedMotion="user">
       <TooltipProvider>
         <div className="flex h-dvh min-h-[540px] min-w-[660px] flex-col overflow-hidden text-[var(--ink)]">
-          <TitleBar />
-        {view === "settings" ? (
-          // 设置为全窗页面：接管标题栏以下的全部空间，不保留工作台侧边栏
-          <div className="min-h-0 flex-1">
-            <SettingsCanvas initialSection="appearance" onBack={() => changeView("home")} />
-          </div>
-        ) : (
-          // 材质挂在整行：侧边栏与主面板共用同一块材质底座，
-          // 主面板圆角缺口处透出的也是同一材质，与侧边栏无缝衔接
-          <div className="sidebar-material flex min-h-0 flex-1">
-            <Sidebar
-              collapsed={sidebarCollapsed}
-              onToggle={() => {
-                projectAutoCollapsed.current = false
-                setSidebarCollapsed((collapsed) => !collapsed)
-              }}
-              onNewMission={startMission}
-              view={view}
-              onViewChange={changeView}
-              projectFavorited={projectFavorited}
-              onProjectFavoriteChange={updateProjectFavorite}
-              managementPanel={managementPanel}
-              onManagementPanelChange={setManagementPanel}
-            />
-            {/* 面板自绘 1px 边框（含左上圆角），与侧栏分割线同用 --wt-sidebar-glass-edge：
-                真实 border 不受内容层遮挡，四边与圆角处颜色连续均匀 */}
-            <main className="relative min-w-0 flex-1 overflow-hidden rounded-tl-[16px] border border-[var(--wt-sidebar-glass-edge)] bg-panel">
-              <div className="relative h-full min-h-0" style={{ perspective: 1600 }}>
-                <AnimatePresence initial={false} custom={view === "projects" ? 1 : -1}>
-                  <motion.div
-                    key={`${view}-${missionKey}`}
-                    custom={view === "projects" ? 1 : -1}
-                    variants={mainCanvasVariants}
-                    initial="enter"
-                    animate="center"
-                    exit="exit"
-                    className="absolute inset-0"
-                  >
-                    {view === "home" ? (
-                      <HomeCanvas />
-                    ) : view === "projects" ? (
-                      <ProjectHomeCanvas
-                        favorited={projectFavorited}
-                        onFavoriteChange={updateProjectFavorite}
-                        managementPanel={managementPanel}
-                        onManagementPanelChange={setManagementPanel}
-                      />
-                    ) : view === "community" ? (
-                      <CommunityCanvas />
-                    ) : view === "automation" ? (
-                      <AutomationCanvas />
-                    ) : view === "connectors" ? (
-                      <ConnectorsCanvas />
-                    ) : (
-                      <div className="flex h-full items-center justify-center text-[13px] text-[var(--ink-soft)]">
-                        该空间已在 V1 规划中，尚未开放
-                      </div>
-                    )}
-                  </motion.div>
-                </AnimatePresence>
+          {view === "settings" ? (
+            // 设置为全窗页面：系统底层行之下接管全部空间，不保留工作台侧边栏
+            <div className="flex min-h-0 flex-1 flex-col">
+              <SystemBar />
+              <div className="min-h-0 flex-1">
+                <SettingsCanvas initialSection="appearance" onBack={() => changeView("home")} />
               </div>
-            </main>
-          </div>
-        )}
+            </div>
+          ) : (
+            // 双层侧栏（工作区轨道 + 主导航）顶行全高，共用同一块材质底座；
+            // 系统底层行只在主区顶部、与主导航 header 等高并接
+            <div className="flex min-h-0 flex-1">
+              <div className="sidebar-material flex shrink-0">
+                <WorkspaceRail view={view} onViewChange={changeView} onNewMission={startMission} />
+                <NavigationSidebar
+                  open={!sidebarCollapsed}
+                  onCollapse={() => {
+                    projectAutoCollapsed.current = false
+                    setSidebarCollapsed(true)
+                  }}
+                  onExpand={() => {
+                    projectAutoCollapsed.current = false
+                    setSidebarCollapsed(false)
+                  }}
+                  view={view}
+                  onViewChange={changeView}
+                  projectFavorited={projectFavorited}
+                  onProjectFavoriteChange={updateProjectFavorite}
+                  managementPanel={managementPanel}
+                  onManagementPanelChange={setManagementPanel}
+                />
+              </div>
+              <div className="flex min-w-0 flex-1 flex-col">
+                <SystemBar />
+                <main className="relative min-w-0 flex-1 overflow-hidden bg-panel">
+                  <div className="relative h-full min-h-0" style={{ perspective: 1600 }}>
+                    <AnimatePresence initial={false} custom={view === "projects" ? 1 : -1}>
+                      <motion.div
+                        key={`${view}-${missionKey}`}
+                        custom={view === "projects" ? 1 : -1}
+                        variants={mainCanvasVariants}
+                        initial="enter"
+                        animate="center"
+                        exit="exit"
+                        className="absolute inset-0"
+                      >
+                        {view === "home" ? (
+                          <HomeCanvas />
+                        ) : view === "projects" ? (
+                          <ProjectHomeCanvas
+                            favorited={projectFavorited}
+                            onFavoriteChange={updateProjectFavorite}
+                            managementPanel={managementPanel}
+                            onManagementPanelChange={setManagementPanel}
+                          />
+                        ) : view === "community" ? (
+                          <CommunityCanvas />
+                        ) : view === "automation" ? (
+                          <AutomationCanvas />
+                        ) : view === "connectors" ? (
+                          <ConnectorsCanvas />
+                        ) : (
+                          <div className="flex h-full items-center justify-center text-[13px] text-[var(--ink-soft)]">
+                            该空间已在 V1 规划中，尚未开放
+                          </div>
+                        )}
+                      </motion.div>
+                    </AnimatePresence>
+                  </div>
+                </main>
+              </div>
+            </div>
+          )}
         </div>
       </TooltipProvider>
     </MotionConfig>

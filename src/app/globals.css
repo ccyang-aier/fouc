@@ -46,19 +46,26 @@
 
   /* ── 侧栏材质令牌（供 sidebar-material.css 消费） ── */
   --wt-sidebar-standard-panel: #fafbfc;
-  /* 磨砂层叠在 shell 画布上：高白度叠层，整体呈干净浅白。 */
-  --wt-sidebar-frosted-panel: rgb(255 255 255 / 0.7);
-  --wt-sidebar-glass-backdrop: blur(8px) saturate(148%) brightness(1.1) contrast(1.005);
+  /* 磨砂层叠在 shell 画布上：半透玻璃叠层，浓度以文字可读为先 */
+  --wt-sidebar-frosted-panel: rgb(255 255 255 / 0.6);
+  --wt-sidebar-glass-backdrop: blur(9px) saturate(155%);
   --wt-sidebar-glass-edge: rgb(38 51 59 / 0.07);
   /* 侧栏交互悬停面：浅白色，与标准面板和磨砂玻璃都协调 */
   --wt-sidebar-hover: rgb(255 255 255 / 0.55);
   --wt-sidebar-glass-noise-opacity: 0.42;
 
-  /* ── 应用画布：多层柔和环境渐变垫底，为磨砂玻璃提供可透出的色彩层次 ── */
+  /* ── 应用画布：为磨砂玻璃提供可透出的色彩层次。
+     画布仅在侧栏与少量 shell 区域可见（主区为不透明面板），
+     色带沿左侧栏纵贯铺满，浓度以透过磨砂层后仍可辨为准 ── */
   --win-canvas:
-    radial-gradient(1100px 720px at 6% -14%, rgb(196 216 246 / 0.55), transparent 62%),
-    radial-gradient(920px 640px at 104% 4%, rgb(243 219 231 / 0.5), transparent 58%),
-    radial-gradient(1000px 820px at 48% 118%, rgb(199 227 213 / 0.45), transparent 62%),
+    radial-gradient(900px 600px at 118% -12%, rgb(255 244 222 / 0.6), transparent 60%),
+    linear-gradient(
+      168deg,
+      rgb(173 203 240 / 0.85) 0%,
+      rgb(201 200 233 / 0.75) 34%,
+      rgb(219 196 224 / 0.7) 62%,
+      rgb(184 218 201 / 0.62) 100%
+    ),
     var(--shell);
 }
 
@@ -95,14 +102,19 @@ html[data-theme="dark"] {
   --warn-soft-line: rgba(217, 167, 67, 0.28);
 
   --wt-sidebar-standard-panel: #141619;
-  --wt-sidebar-frosted-panel: rgb(20 22 25 / 0.62);
+  --wt-sidebar-frosted-panel: rgb(20 22 25 / 0.55);
   --wt-sidebar-glass-edge: rgb(233 236 239 / 0.08);
   --wt-sidebar-hover: rgb(255 255 255 / 0.06);
 
   --win-canvas:
-    radial-gradient(1100px 720px at 6% -14%, rgb(56 78 122 / 0.32), transparent 62%),
-    radial-gradient(920px 640px at 104% 4%, rgb(116 76 106 / 0.26), transparent 58%),
-    radial-gradient(1000px 820px at 48% 118%, rgb(46 98 84 / 0.24), transparent 62%),
+    radial-gradient(900px 600px at 118% -12%, rgb(122 96 58 / 0.3), transparent 60%),
+    linear-gradient(
+      168deg,
+      rgb(54 76 120 / 0.52) 0%,
+      rgb(80 66 118 / 0.44) 34%,
+      rgb(106 66 100 / 0.4) 62%,
+      rgb(44 96 80 / 0.36) 100%
+    ),
     var(--shell);
 }
 

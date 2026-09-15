@@ -19,10 +19,10 @@ export function LiquidGlassFilters() {
       <defs>
         <filter
           id="liquid-glass"
-          x="-35%"
-          y="-35%"
-          width="170%"
-          height="170%"
+          x="0%"
+          y="0%"
+          width="100%"
+          height="100%"
           colorInterpolationFilters="sRGB"
         >
           <feImage

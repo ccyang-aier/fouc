@@ -8,13 +8,17 @@
 .sidebar-material {
   position: relative;
   isolation: isolate;
+  /* 裁剪折射层的外扩取样区，折射输出严格限制在侧栏矩形内 */
+  overflow: hidden;
   transition: background-color 180ms ease;
 }
 
 .sidebar-material::before {
   content: "";
   position: absolute;
-  inset: 0;
+  /* 取样边距需大于最大位移量（scale/2 ≈ 24px）：边缘位移取到的是
+     外扩层的真实像素而非元素外透明，避免窗口边缘出现折射破洞 */
+  inset: -48px;
   z-index: 0;
   pointer-events: none;
   background-color: var(--wt-sidebar-material-background);

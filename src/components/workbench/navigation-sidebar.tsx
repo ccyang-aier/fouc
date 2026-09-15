@@ -94,8 +94,10 @@ export function NavButton({
       />
       {compact ? null : (
         <>
-          <span className="sidebar-nav-label min-w-0 flex-1 truncate">{item.label}</span>
-          {item.trailing}
+          <span className="sidebar-nav-label min-w-0 truncate">{item.label}</span>
+          {item.trailing ? (
+            <span className="ml-auto flex shrink-0 items-center">{item.trailing}</span>
+          ) : null}
         </>
       )}
     </button>

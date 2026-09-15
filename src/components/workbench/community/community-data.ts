@@ -15,9 +15,11 @@ export type CommunityAgent = {
   category: "研发" | "办公" | "数据" | "内容"
   tagline: string
   highlights: string[]
+  tags: string[]
   author: string
   version: string
   rating: number
+  ratingCount: number
   installs: number
   updated: string
   installed: boolean
@@ -45,22 +47,22 @@ export const CATEGORIES: Record<CommunityTab, string[]> = {
 }
 
 export const initialCommunityAgents: CommunityAgent[] = [
-  { id: "agent-reviewer", name: "代码审查官", glyph: "审", tone: "blue", category: "研发", tagline: "按团队规范评审变更，标记风险点并给出可执行的修改建议。", highlights: ["逐文件评审意见与风险分级", "支持自定义团队规范清单", "评审结论可一键回写任务"], author: "Lint Guild", version: "3.2.1", rating: 4.9, installs: 21300, updated: "2 天前", installed: false },
-  { id: "agent-testgen", name: "测试生成器", glyph: "测", tone: "rose", category: "研发", tagline: "依据变更差异生成单元测试与边界用例，直出可运行脚手架。", highlights: ["差异感知的用例选取", "边界与异常路径自动补全", "生成结果可直接落地 CI"], author: "QA Circle", version: "2.8.0", rating: 4.7, installs: 8900, updated: "5 天前", installed: false },
-  { id: "agent-release", name: "发布哨兵", glyph: "哨", tone: "sky", category: "研发", tagline: "盯住构建与发布流水线，异常时给出定位线索与回滚建议。", highlights: ["流水线失败自动归因", "发布检查清单 gate", "回滚预案一键生成"], author: "SRE 工作组", version: "1.9.4", rating: 4.8, installs: 6200, updated: "1 天前", installed: false },
-  { id: "agent-refactor", name: "重构向导", glyph: "构", tone: "indigo", category: "研发", tagline: "识别代码坏味道并拆解为可分步执行的重构任务。", highlights: ["坏味道扫描与优先级排序", "安全小步重构脚本", "重构前后行为等价校验"], author: "Craft Lab", version: "2.1.0", rating: 4.6, installs: 4800, updated: "1 周前", installed: false },
-  { id: "agent-minutes", name: "会议速记员", glyph: "会", tone: "teal", category: "办公", tagline: "从录音与屏幕共享中提炼决议、待办与时间线，同步到任务。", highlights: ["实时转写与说话人识别", "决议 / 待办 / 风险三段结构", "待办自动指派负责人"], author: "Fouc 官方", version: "4.0.2", rating: 4.8, installs: 15200, updated: "3 天前", installed: true },
-  { id: "agent-weekly", name: "周报主编", glyph: "报", tone: "amber", category: "办公", tagline: "汇总任务进度与运行记录，编排成结构化周报草稿。", highlights: ["跨空间进度聚合", "亮点与风险自动提炼", "一键导出为飞书文档"], author: "Fouc 官方", version: "2.4.1", rating: 4.7, installs: 9100, updated: "4 天前", installed: false },
-  { id: "agent-travel", name: "行程管家", glyph: "程", tone: "sky", category: "办公", tagline: "统筹差旅与日程冲突，给出可执行的行程安排。", highlights: ["多日历冲突检测", "差旅政策内自动选票", "行程变更即时重排"], author: "星野工作坊", version: "1.6.0", rating: 4.5, installs: 3300, updated: "2 周前", installed: false },
-  { id: "agent-interviewer", name: "面试教练", glyph: "面", tone: "violet", category: "办公", tagline: "基于岗位 JD 模拟技术面试，逐题给出评分与改进建议。", highlights: ["按 JD 定制题库", "逐题评分与追问", "面试复盘报告"], author: "Offer 更多", version: "3.0.0", rating: 4.6, installs: 3200, updated: "6 天前", installed: false },
-  { id: "agent-backfill", name: "数据补全师", glyph: "数", tone: "indigo", category: "数据", tagline: "识别表格缺失字段，从公开源安全补全并标注置信度。", highlights: ["缺失模式识别", "多源交叉验证", "置信度与来源标注"], author: "DataCraft", version: "2.2.3", rating: 4.6, installs: 5400, updated: "1 周前", installed: false },
-  { id: "agent-metrics", name: "指标解读师", glyph: "指", tone: "teal", category: "数据", tagline: "对北极星指标的异动做自动归因，输出可读的解读简报。", highlights: ["异动自动检测", "多维下钻归因", "归因结论带证据链"], author: "DataCraft", version: "1.8.1", rating: 4.7, installs: 4100, updated: "3 天前", installed: false },
-  { id: "agent-cleaner", name: "表格清洗员", glyph: "洗", tone: "rose", category: "数据", tagline: "批量清洗格式混乱的表格：去重、规范化、异常标记。", highlights: ["列类型自动推断", "重复与冲突合并", "清洗步骤可回放"], author: "表格公社", version: "2.0.5", rating: 4.5, installs: 3700, updated: "5 天前", installed: false },
-  { id: "agent-competitor", name: "竞品雷达", glyph: "竞", tone: "violet", category: "内容", tagline: "持续追踪竞品版本与定价动态，产出周度对比简报。", highlights: ["版本 / 定价 / 招聘三线追踪", "动态时间线沉淀", "周报自动生成"], author: "星野工作坊", version: "3.1.0", rating: 4.8, installs: 9600, updated: "2 天前", installed: false },
-  { id: "agent-translator", name: "翻译本地化", glyph: "译", tone: "sky", category: "内容", tagline: "面向产品文案的多语言本地化，自动保持术语与语气一致。", highlights: ["术语库与语气约束", "多语言并行交付", "回译质检报告"], author: "Fouc 官方", version: "5.0.1", rating: 4.9, installs: 11700, updated: "1 天前", installed: false },
-  { id: "agent-writer", name: "文档作家", glyph: "文", tone: "amber", category: "内容", tagline: "把粗糙要点扩写为结构清晰的产品文档与发布说明。", highlights: ["要点到章节自动编排", "术语一致性校对", "多模板输出"], author: "墨迹工作室", version: "2.6.0", rating: 4.7, installs: 7100, updated: "4 天前", installed: false },
-  { id: "agent-wechat", name: "公众号主笔", glyph: "稿", tone: "rose", category: "内容", tagline: "围绕选题产出公众号长文初稿，配好小标题与配图建议。", highlights: ["选题库灵感续写", "小标题节奏把控", "配图建议与版权提示"], author: "墨迹工作室", version: "1.4.2", rating: 4.4, installs: 2900, updated: "1 周前", installed: false },
-  { id: "agent-script", name: "短视频脚本", glyph: "本", tone: "amber", category: "内容", tagline: "生成口播脚本与分镜提示，节奏对齐平台特性。", highlights: ["黄金 3 秒开头模板", "分镜与口播分离", "多平台节奏变体"], author: "星野工作坊", version: "1.2.0", rating: 4.3, installs: 2100, updated: "2 周前", installed: false },
+  { id: "agent-reviewer", name: "代码审查官", glyph: "审", tone: "blue", category: "研发", tagline: "按团队规范评审变更，标记风险点并给出可执行的修改建议。", highlights: ["逐文件评审意见与风险分级", "支持自定义团队规范清单", "评审结论可一键回写任务"], tags: ["代码评审", "团队规范", "风险检查"], author: "Lint Guild", version: "3.2.1", rating: 4.9, ratingCount: 412, installs: 21300, updated: "2 天前", installed: false },
+  { id: "agent-testgen", name: "测试生成器", glyph: "测", tone: "rose", category: "研发", tagline: "依据变更差异生成单元测试与边界用例，直出可运行脚手架。", highlights: ["差异感知的用例选取", "边界与异常路径自动补全", "生成结果可直接落地 CI"], tags: ["单元测试", "边界用例", "CI"], author: "QA Circle", version: "2.8.0", rating: 4.7, ratingCount: 267, installs: 8900, updated: "5 天前", installed: false },
+  { id: "agent-release", name: "发布哨兵", glyph: "哨", tone: "sky", category: "研发", tagline: "盯住构建与发布流水线，异常时给出定位线索与回滚建议。", highlights: ["流水线失败自动归因", "发布检查清单 gate", "回滚预案一键生成"], tags: ["流水线", "回滚", "值班"], author: "SRE 工作组", version: "1.9.4", rating: 4.8, ratingCount: 189, installs: 6200, updated: "1 天前", installed: false },
+  { id: "agent-refactor", name: "重构向导", glyph: "构", tone: "indigo", category: "研发", tagline: "识别代码坏味道并拆解为可分步执行的重构任务。", highlights: ["坏味道扫描与优先级排序", "安全小步重构脚本", "重构前后行为等价校验"], tags: ["重构", "代码质量"], author: "Craft Lab", version: "2.1.0", rating: 4.6, ratingCount: 143, installs: 4800, updated: "1 周前", installed: false },
+  { id: "agent-minutes", name: "会议速记员", glyph: "会", tone: "teal", category: "办公", tagline: "从录音与屏幕共享中提炼决议、待办与时间线，同步到任务。", highlights: ["实时转写与说话人识别", "决议 / 待办 / 风险三段结构", "待办自动指派负责人"], tags: ["转写", "待办", "纪要"], author: "Fouc 官方", version: "4.0.2", rating: 4.8, ratingCount: 508, installs: 15200, updated: "3 天前", installed: true },
+  { id: "agent-weekly", name: "周报主编", glyph: "报", tone: "amber", category: "办公", tagline: "汇总任务进度与运行记录，编排成结构化周报草稿。", highlights: ["跨空间进度聚合", "亮点与风险自动提炼", "一键导出为飞书文档"], tags: ["周报", "汇总", "导出"], author: "Fouc 官方", version: "2.4.1", rating: 4.7, ratingCount: 276, installs: 9100, updated: "4 天前", installed: false },
+  { id: "agent-travel", name: "行程管家", glyph: "程", tone: "sky", category: "办公", tagline: "统筹差旅与日程冲突，给出可执行的行程安排。", highlights: ["多日历冲突检测", "差旅政策内自动选票", "行程变更即时重排"], tags: ["差旅", "日程"], author: "星野工作坊", version: "1.6.0", rating: 4.5, ratingCount: 98, installs: 3300, updated: "2 周前", installed: false },
+  { id: "agent-interviewer", name: "面试教练", glyph: "面", tone: "violet", category: "办公", tagline: "基于岗位 JD 模拟技术面试，逐题给出评分与改进建议。", highlights: ["按 JD 定制题库", "逐题评分与追问", "面试复盘报告"], tags: ["模拟面试", "评分"], author: "Offer 更多", version: "3.0.0", rating: 4.6, ratingCount: 121, installs: 3200, updated: "6 天前", installed: false },
+  { id: "agent-backfill", name: "数据补全师", glyph: "数", tone: "indigo", category: "数据", tagline: "识别表格缺失字段，从公开源安全补全并标注置信度。", highlights: ["缺失模式识别", "多源交叉验证", "置信度与来源标注"], tags: ["补全", "置信度"], author: "DataCraft", version: "2.2.3", rating: 4.6, ratingCount: 165, installs: 5400, updated: "1 周前", installed: false },
+  { id: "agent-metrics", name: "指标解读师", glyph: "指", tone: "teal", category: "数据", tagline: "对北极星指标的异动做自动归因，输出可读的解读简报。", highlights: ["异动自动检测", "多维下钻归因", "归因结论带证据链"], tags: ["归因", "简报"], author: "DataCraft", version: "1.8.1", rating: 4.7, ratingCount: 132, installs: 4100, updated: "3 天前", installed: false },
+  { id: "agent-cleaner", name: "表格清洗员", glyph: "洗", tone: "rose", category: "数据", tagline: "批量清洗格式混乱的表格：去重、规范化、异常标记。", highlights: ["列类型自动推断", "重复与冲突合并", "清洗步骤可回放"], tags: ["清洗", "去重"], author: "表格公社", version: "2.0.5", rating: 4.5, ratingCount: 112, installs: 3700, updated: "5 天前", installed: false },
+  { id: "agent-competitor", name: "竞品雷达", glyph: "竞", tone: "violet", category: "内容", tagline: "持续追踪竞品版本与定价动态，产出周度对比简报。", highlights: ["版本 / 定价 / 招聘三线追踪", "动态时间线沉淀", "周报自动生成"], tags: ["竞品", "追踪", "周报"], author: "星野工作坊", version: "3.1.0", rating: 4.8, ratingCount: 289, installs: 9600, updated: "2 天前", installed: false },
+  { id: "agent-translator", name: "翻译本地化", glyph: "译", tone: "sky", category: "内容", tagline: "面向产品文案的多语言本地化，自动保持术语与语气一致。", highlights: ["术语库与语气约束", "多语言并行交付", "回译质检报告"], tags: ["翻译", "本地化", "多语言"], author: "Fouc 官方", version: "5.0.1", rating: 4.9, ratingCount: 356, installs: 11700, updated: "1 天前", installed: false },
+  { id: "agent-writer", name: "文档作家", glyph: "文", tone: "amber", category: "内容", tagline: "把粗糙要点扩写为结构清晰的产品文档与发布说明。", highlights: ["要点到章节自动编排", "术语一致性校对", "多模板输出"], tags: ["文档", "扩写"], author: "墨迹工作室", version: "2.6.0", rating: 4.7, ratingCount: 213, installs: 7100, updated: "4 天前", installed: false },
+  { id: "agent-wechat", name: "公众号主笔", glyph: "稿", tone: "rose", category: "内容", tagline: "围绕选题产出公众号长文初稿，配好小标题与配图建议。", highlights: ["选题库灵感续写", "小标题节奏把控", "配图建议与版权提示"], tags: ["长文", "选题", "配图"], author: "墨迹工作室", version: "1.4.2", rating: 4.4, ratingCount: 87, installs: 2900, updated: "1 周前", installed: false },
+  { id: "agent-script", name: "短视频脚本", glyph: "本", tone: "amber", category: "内容", tagline: "生成口播脚本与分镜提示，节奏对齐平台特性。", highlights: ["黄金 3 秒开头模板", "分镜与口播分离", "多平台节奏变体"], tags: ["口播", "分镜"], author: "星野工作坊", version: "1.2.0", rating: 4.3, ratingCount: 64, installs: 2100, updated: "2 周前", installed: false },
 ]
 
 export const initialCommunitySkills: CommunitySkill[] = [

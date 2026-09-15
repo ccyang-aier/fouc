@@ -107,7 +107,7 @@ export function AutomationCanvas() {
           onSortChange={setSort}
         />
 
-        <div className="min-h-0 min-w-0 flex-1 overflow-auto bg-[#fbfbfc] px-3 pt-[10px]">
+        <div className="min-h-0 min-w-0 flex-1 overflow-auto bg-panel px-3 pt-[10px]">
           <div className="min-h-full overflow-hidden rounded-t-[8px] border border-b-0 border-[var(--line)] bg-panel">
             {tab === "automations" ? <AutomationTable items={filtered} selectedId={selectedId} onSelect={openItem} /> : <RunRecordsTable records={runRecords} />}
           </div>

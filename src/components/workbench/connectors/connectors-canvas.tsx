@@ -117,7 +117,7 @@ export function ConnectorsCanvas() {
       </div>
 
       {/* 内容区：白底留白 + 发丝线卡片，与社区目录同一套排版语言 */}
-      <div ref={scrollRef} className="min-h-0 min-w-0 flex-1 overflow-auto bg-[#f5f5f7]">
+      <div ref={scrollRef} className="min-h-0 min-w-0 flex-1 overflow-auto bg-panel">
         <div className="w-full px-5 pb-16 pt-5">
           <div className="flex items-center gap-3">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-[8px] bg-panel text-[var(--ink-soft)] shadow-[0_1px_2px_rgba(0,0,0,0.04)]">

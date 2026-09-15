@@ -3,7 +3,7 @@
 
 /* ── 浅色主题令牌（默认） ── */
 :root {
-  --shell: #f3f4f4;
+  --shell: #f7f8f9;
   --panel: #ffffff;
   --elevated: #ffffff;
   --surface-subtle: #fafafa;
@@ -24,11 +24,11 @@
   --focus-ring: rgba(62, 99, 221, 0.32);
   /* 交互覆盖层：按钮/菜单 hover 的墨色洗染 */
   --hover-fill: rgba(0, 0, 0, 0.045);
-  /* 侧栏亮白容器：激活指示与行 hover 的抬升面 */
-  --raise: #ffffff;
-  /* 玻璃上的浅白芯片（描边按钮 / 用户卡） */
-  --chip: rgba(255, 255, 255, 0.3);
-  --chip-strong: rgba(255, 255, 255, 0.65);
+  /* 侧栏行 hover 的浅灰洗染：侧栏底色已近白，纯白抬升面不可辨 */
+  --raise: rgba(32, 33, 38, 0.05);
+  /* 浅白芯片（描边按钮 / 用户卡） */
+  --chip: rgba(255, 255, 255, 0.75);
+  --chip-strong: rgba(255, 255, 255, 0.95);
   --switch-off: #d8dbd8;
   --tooltip-bg: #202124;
   --tooltip-ink: #ffffff;
@@ -46,10 +46,10 @@
 
   /* ── 侧栏材质令牌（供 sidebar-material.css 消费） ── */
   --wt-sidebar-standard-panel: #fafbfc;
-  /* 磨砂层叠在 shell 画布上；偏白浅调，保留层次可见。 */
-  --wt-sidebar-frosted-panel: rgb(255 255 255 / 0.55);
-  /* 客户端磨砂叠在原生 acrylic 上的玻璃 tint：偏浅白的冷调瓷色，非纯白 */
-  --wt-sidebar-native-tint: rgb(252 253 254 / 0.8);
+  /* 磨砂层叠在 shell 画布上：高白度叠层，整体呈干净浅白。 */
+  --wt-sidebar-frosted-panel: rgb(255 255 255 / 0.7);
+  /* 客户端磨砂叠在原生 acrylic 上的玻璃 tint：浅白瓷色，非纯白 */
+  --wt-sidebar-native-tint: rgb(253 254 254 / 0.88);
   --wt-sidebar-glass-backdrop: blur(8px) saturate(148%) brightness(1.1) contrast(1.005);
   --wt-sidebar-glass-edge: rgb(38 51 59 / 0.07);
   /* 侧栏交互悬停面：浅白色，与标准面板和磨砂玻璃都协调 */

@@ -90,7 +90,7 @@ export function ProjectWorkCanvas({ detailOpen, onDetailOpenChange }: { detailOp
     <section aria-label="项目工作" className="relative flex min-h-0 flex-1 bg-panel">
       <div className="flex min-w-0 flex-1 flex-col">
         <WorkToolbar view={view} onViewChange={setView} query={query} onQueryChange={setQuery} priority={priority} onPriorityChange={setPriority} groupBy={groupBy} onGroupByChange={setGroupBy} />
-        <div className="min-h-0 min-w-0 flex-1 overflow-auto bg-[#fbfbfc] px-5 py-[11px]">
+        <div className="min-h-0 min-w-0 flex-1 overflow-auto bg-panel px-5 py-[11px]">
             {view === "board" ? (
               <WorkBoard items={filteredItems} groupBy={groupBy} showSourceTotals={query.trim() === "" && priority === "all"} selectedId={selectedId} draggingId={draggingId} onSelect={selectItem} onDragStart={setDraggingId} onDrop={(id, key) => {
                 if (groupBy === "status") updateItem(id, { status: key as WorkStatus })

@@ -111,6 +111,8 @@ export function Sidebar({
 }) {
   const [spacesOpen, setSpacesOpen] = useState(true)
   const [recentOpen, setRecentOpen] = useState(true)
+  // 「更多」行的原地展开状态
+  const [moreOpen, setMoreOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [filter, setFilter] = useState<"all" | "spaces" | "recent">("all")
@@ -153,30 +155,65 @@ export function Sidebar({
       <motion.nav variants={paneItemVariants} aria-label="主导航">
         <SidebarNavList
           items={navigation}
-          value={view === "projects" ? null : view === "connectors" ? "more" : view}
+          value={view === "projects" ? null : view}
           onChange={(next) => {
-            // 「更多」行是下拉触发器，不再切换视图
-            if (next === "more") return
+            // 「更多」行原地展开子项，不切换视图
+            if (next === "more") {
+              setMoreOpen((open) => !open)
+              return
+            }
             onViewChange(next)
           }}
           collapsible
           renderRow={(item, row) =>
             item.id === "more" ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>{row}</DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-40">
-                  <DropdownMenuItem onSelect={() => onViewChange("connectors")}>
-                    <PlugsConnected weight="fill" /> 连接器
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <div>
+                {row}
+                <AnimatePresence initial={false}>
+                  {moreOpen ? (
+                    <motion.div
+                      key="more-children"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ type: "spring", stiffness: 420, damping: 38, opacity: { duration: 0.16 } }}
+                      className="overflow-hidden"
+                    >
+                      <button
+                        type="button"
+                        aria-label="连接器"
+                        onClick={() => onViewChange("connectors")}
+                        aria-current={view === "connectors" ? "page" : undefined}
+                        className={cn(
+                          "mt-[3px] flex h-[36px] w-full items-center gap-2.5 rounded-[8px] text-[12px] font-medium outline-none transition-[background-color,color] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+                          collapsed ? "justify-center px-0" : "pl-9 pr-2.5",
+                          view === "connectors"
+                            ? "bg-[var(--accent-soft)] text-[var(--accent-ink)]"
+                            : "text-[var(--ink-soft)] hover:bg-raise hover:text-[var(--ink)]",
+                        )}
+                      >
+                        <PlugsConnected
+                          className="size-[15px] shrink-0"
+                          weight={view === "connectors" ? "fill" : "regular"}
+                          aria-hidden
+                        />
+                        <span className="sidebar-label truncate">连接器</span>
+                      </button>
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
+              </div>
             ) : (
               row
             )
           }
           renderTrailing={(item) =>
             item.id === "more" ? (
-              <CaretRight className="sidebar-label ml-auto size-3 text-[var(--muted)]" aria-hidden />
+              moreOpen ? (
+                <CaretDown className="sidebar-label ml-auto size-3 text-[var(--muted)]" aria-hidden />
+              ) : (
+                <CaretRight className="sidebar-label ml-auto size-3 text-[var(--muted)]" aria-hidden />
+              )
             ) : null
           }
         />

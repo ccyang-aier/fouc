@@ -140,11 +140,16 @@ html[data-desktop-frame][data-window-flat] {
 }
 
 /* ── 应用背景：选择内置背景后画布层整体替换（玻璃透出的即背景）。
-   照片类背景信息密度高，磨砂模糊半径随之加大到真实玻璃的雾面观感。
-   标记与 --app-wallpaper 由 lib/app-background.ts 及首帧脚本维护。 ── */
+   壁纸模式玻璃走「高通透」参数：薄 tint + 提亮提饱和，
+   背景结构保留下来折射才可辨，观感接近真实液态玻璃而非灰板 ── */
 html[data-app-wallpaper] {
   --win-canvas: var(--app-wallpaper);
-  --wt-sidebar-glass-backdrop: blur(22px) saturate(150%);
+  --wt-sidebar-frosted-panel: rgb(255 255 255 / 0.34);
+  --wt-sidebar-glass-backdrop: blur(18px) saturate(180%) brightness(1.18);
+}
+html[data-app-wallpaper][data-theme="dark"] {
+  --wt-sidebar-frosted-panel: rgb(16 18 21 / 0.42);
+  --wt-sidebar-glass-backdrop: blur(18px) saturate(170%);
 }
 
 /* ── 主题色目录：矿物蓝为默认，外观设置通过 data-accent 即时切换。

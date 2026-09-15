@@ -1,46 +1,86 @@
-/* ── dense 侧栏材质：标准 / 磨砂玻璃 ──
-   供 AppShell 内的小说菜单侧栏、检查器与独立工具侧栏共用。 */
+/* ── 侧栏材质：标准 / 液态玻璃 ──
+   液态玻璃由三层构成（移植自 liquid-glass-react MIT 的滤镜核心，
+   定义见 liquid-glass.tsx，全局挂载一次、按 id 引用）：
+   ::before —— 折射层：backdrop-filter 模糊之上叠加 SVG 位移滤镜
+                （边缘弯折 + 三通道色散），并承载材质 tint；
+   ::after  —— 镜面描边：遮罩环形渐变 + 内侧高光，玻璃的「液面」感。
+   滤镜子区域按元素包围盒取百分比，任意尺寸侧栏共用同一滤镜。 */
 .sidebar-material {
   position: relative;
   isolation: isolate;
-  background-color: var(--wt-sidebar-material-background);
-  -webkit-backdrop-filter: var(--wt-sidebar-material-backdrop);
-  backdrop-filter: var(--wt-sidebar-material-backdrop);
   transition: background-color 180ms ease;
 }
+
 .sidebar-material::before {
   content: "";
   position: absolute;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 96 96' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.86' numOctaves='4' seed='17' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)'/%3E%3C/svg%3E");
-  background-size: 96px 96px;
-  filter: contrast(146%) brightness(122%);
-  mix-blend-mode: soft-light;
-  opacity: var(--wt-sidebar-material-grain-opacity);
+  background-color: var(--wt-sidebar-material-background);
+  -webkit-backdrop-filter: var(--wt-sidebar-material-backdrop);
+  backdrop-filter: var(--wt-sidebar-material-backdrop);
+  filter: url(#liquid-glass);
+  transition: background-color 180ms ease;
 }
+
+.sidebar-material::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  padding: 1.5px;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 0 0.5px rgb(255 255 255 / 0.3),
+    inset 0 1px 2px rgb(255 255 255 / 0.18);
+  background: linear-gradient(
+    135deg,
+    rgb(255 255 255 / 0) 0%,
+    rgb(255 255 255 / 0.08) 38%,
+    rgb(255 255 255 / 0.32) 70%,
+    rgb(255 255 255 / 0) 100%
+  );
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
 .sidebar-material > * {
   position: relative;
   z-index: 1;
 }
+
 html[data-sidebar-style="standard"] {
   --wt-sidebar-material-background: var(--wt-sidebar-standard-panel);
   --wt-sidebar-material-backdrop: none;
-  --wt-sidebar-material-grain-opacity: 0;
 }
+/* 标准材质为纯色面板：位移滤镜与镜面描边一并关闭 */
+html[data-sidebar-style="standard"] .sidebar-material::before {
+  filter: none;
+}
+html[data-sidebar-style="standard"] .sidebar-material::after {
+  content: none;
+}
+
 html[data-sidebar-style="frosted"],
 html:not([data-sidebar-style]) {
   --wt-sidebar-material-background: var(--wt-sidebar-frosted-panel);
   --wt-sidebar-material-backdrop: var(--wt-sidebar-glass-backdrop);
-  --wt-sidebar-material-grain-opacity: var(--wt-sidebar-glass-noise-opacity);
 }
 
-/* 检查器与独立工具侧栏沿用同一套材质令牌。 */
-.glass-rail {
-  position: relative;
-  isolation: isolate;
-  background-color: var(--wt-sidebar-material-background);
-  -webkit-backdrop-filter: var(--wt-sidebar-material-backdrop);
-  backdrop-filter: var(--wt-sidebar-material-backdrop);
+/* 深色主题下镜面高光收敛，避免暗面板上白边过亮 */
+html[data-theme="dark"] .sidebar-material::after {
+  box-shadow:
+    inset 0 0 0 0.5px rgb(255 255 255 / 0.22),
+    inset 0 1px 2px rgb(255 255 255 / 0.12);
+  background: linear-gradient(
+    135deg,
+    rgb(255 255 255 / 0) 0%,
+    rgb(255 255 255 / 0.06) 38%,
+    rgb(255 255 255 / 0.22) 70%,
+    rgb(255 255 255 / 0) 100%
+  );
 }

@@ -63,10 +63,11 @@ export function SettingsCanvas({
         )}
       >
         <nav
+          data-tauri-drag-region
           aria-label="设置分区"
           className="relative flex h-full min-h-0 flex-col border-r border-[var(--wt-sidebar-glass-edge)] px-3 pb-5 pt-3"
         >
-          <div className="flex h-9 shrink-0 items-center gap-1.5">
+          <div data-tauri-drag-region className="flex h-9 shrink-0 items-center gap-1.5">
             <button
               type="button"
               aria-label="返回工作台"

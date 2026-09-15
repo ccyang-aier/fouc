@@ -164,7 +164,7 @@ export function Sidebar({
             item.id === "more" ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>{row}</DropdownMenuTrigger>
-                <DropdownMenuContent align="start" side="right" className="w-40">
+                <DropdownMenuContent align="start" className="w-40">
                   <DropdownMenuItem onSelect={() => onViewChange("connectors")}>
                     <PlugsConnected weight="fill" /> 连接器
                   </DropdownMenuItem>

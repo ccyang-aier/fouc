@@ -32,6 +32,7 @@ const mainCanvasVariants: Variants = {
 }
 
 import { applyAppearancePrefs, readAppearancePrefs } from "@/lib/appearance"
+import { applyAppBackground, readStoredAppBackground } from "@/lib/app-background"
 import { setOverlayRoot } from "@/lib/overlay-root"
 import { applySidebarStyle, readStoredSidebarStyle } from "@/lib/sidebar-style"
 import { manageWindowFrame } from "@/lib/window-frame"
@@ -94,10 +95,12 @@ export function WorkbenchShell() {
   // 应用面板根：桌面端作为自绘外框的内层与弹层宿主
   const frameRef = useRef<HTMLDivElement>(null)
 
-  // 启动时恢复外观偏好（主题 / 字体 / 动效）与侧栏材质（标准 / 磨砂玻璃）
+  // 启动时恢复外观偏好（主题 / 字体 / 动效）、侧栏材质（标准 / 磨砂玻璃）
+  // 与应用背景；背景虽由首帧脚本先行应用，html 上的内联样式可能被水合清除，此处幂等补足
   useEffect(() => {
     applyAppearancePrefs(readAppearancePrefs())
     applySidebarStyle(readStoredSidebarStyle())
+    applyAppBackground(readStoredAppBackground())
   }, [])
 
   // 桌面端启用窗口自绘外框，并把弹层收进应用面板内

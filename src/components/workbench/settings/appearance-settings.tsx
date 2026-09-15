@@ -17,10 +17,12 @@ import {
   subscribeAppearance,
   type AppearancePrefs,
 } from "@/lib/appearance"
+import { applyAppBackground, readStoredAppBackground } from "@/lib/app-background"
 import { applySidebarStyle, readStoredSidebarStyle, type SidebarStyle } from "@/lib/sidebar-style"
 
 import { FontSection } from "./appearance/font-section"
 import { AccentSection } from "./appearance/accent-section"
+import { BackgroundSection } from "./appearance/background-section"
 import { MaterialSection } from "./appearance/material-section"
 import { MiscSection } from "./appearance/misc-section"
 import { ThemeSection } from "./appearance/theme-section"
@@ -29,6 +31,7 @@ import { PanelHeader } from "./general-settings"
 export function AppearanceSettings() {
   const prefs = useSyncExternalStore(subscribeAppearance, getAppearanceSnapshot, getAppearanceServerSnapshot)
   const [sidebarStyle, setSidebarStyle] = useState<SidebarStyle>(() => readStoredSidebarStyle())
+  const [appBackground, setAppBackground] = useState(() => readStoredAppBackground())
 
   const update = useCallback((patch: Partial<AppearancePrefs>) => {
     applyAppearancePrefs({ ...getAppearanceSnapshot(), ...patch })
@@ -39,10 +42,17 @@ export function AppearanceSettings() {
     applySidebarStyle(style)
   }, [])
 
+  const changeAppBackground = useCallback((id: string) => {
+    setAppBackground(id)
+    applyAppBackground(id)
+  }, [])
+
   const resetAll = useCallback(() => {
     applyAppearancePrefs(APPEARANCE_DEFAULTS)
     applySidebarStyle("frosted")
     setSidebarStyle("frosted")
+    applyAppBackground("")
+    setAppBackground("")
   }, [])
 
   return (
@@ -61,6 +71,7 @@ export function AppearanceSettings() {
       />
       <FontSection prefs={prefs} onChange={update} />
       <MaterialSection value={sidebarStyle} onChange={changeSidebarStyle} />
+      <BackgroundSection value={appBackground} onChange={changeAppBackground} />
       <MiscSection
         reducedMotion={prefs.reducedMotion}
         onReducedMotionChange={(reducedMotion) => update({ reducedMotion })}

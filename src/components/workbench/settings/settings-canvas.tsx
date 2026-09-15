@@ -19,6 +19,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 
 import { NavButton, type SidebarRowItem } from "../navigation-sidebar"
+import { GlassSlab } from "../glass-slab"
 import { SidebarResizeHandle, useSidebarWidth } from "../sidebar-resize"
 import { AboutSettings } from "./about-settings"
 import { AgentSettings } from "./agent-settings"
@@ -55,6 +56,7 @@ export function SettingsCanvas({
       className="sidebar-material flex h-full min-h-0"
       aria-label="设置"
     >
+      <GlassSlab />
       <div
         style={{ width, zIndex: 20 }}
         className={cn(

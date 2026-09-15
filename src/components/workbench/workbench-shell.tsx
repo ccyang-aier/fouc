@@ -41,7 +41,7 @@ import { HomeCanvas } from "./home-canvas"
 import { AutomationCanvas } from "./automation/automation-canvas"
 import { CommunityCanvas } from "./community/community-canvas"
 import { ConnectorsCanvas } from "./connectors/connectors-canvas"
-import { LiquidGlassFilters } from "./liquid-glass"
+import { GlassSlab } from "./glass-slab"
 import { NavigationSidebar, type WorkbenchView } from "./navigation-sidebar"
 import type { ProjectManagementPanelId } from "./project/project-management-model"
 import { ProjectHomeCanvas } from "./project/project-home-canvas"
@@ -153,7 +153,6 @@ export function WorkbenchShell() {
             style={{ background: "var(--win-canvas)" }}
             className="flex h-full w-full min-w-[660px] min-h-[540px] flex-col overflow-hidden text-[var(--ink)] shadow-[var(--win-shadow)]"
           >
-            <LiquidGlassFilters />
             {view === "settings" ? (
               // 设置为全窗页面：接管全部空间且不显示系统顶行；
               // 窗口拖拽由设置侧栏的 drag region 承担（见 settings-canvas）
@@ -165,6 +164,7 @@ export function WorkbenchShell() {
               // 系统底层行只在主区顶部、与主导航 header 等高并接
               <div className="flex min-h-0 flex-1">
                 <div className="sidebar-material flex shrink-0">
+                  <GlassSlab />
                   <WorkspaceRail view={view} onViewChange={changeView} onNewMission={startMission} />
                   <NavigationSidebar
                     open={!sidebarCollapsed}

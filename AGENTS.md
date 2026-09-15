@@ -28,6 +28,21 @@ Fouc 是一套构建于 AI Agent 之上的超级工作台，面向个人与企�
 - 任务完成并通过验证后执行 Git 提交，提交信息使用规范、清晰的格式。
 - 提交后执行 `pnpm tauri build` 刷新桌面端构建产物，确保客户端始终运行最新代码。
 
+### 桌面端构建（Windows 本机避坑）
+
+`beforeBuildCommand`（`node scripts/build-backend.mjs && pnpm build`）在子 shell 中直接调用 `bun`（sidecar 编译）与 `pnpm`（Next.js 导出），两者必须作为独立命令在 PATH 上可解析，仅 `corepack pnpm` 不够。本机 shell PATH 均不含二者：
+
+- pnpm：`corepack enable --install-directory <目录> pnpm` 生成 shim（现成于 `C:\Users\y00013075\.local\corepack-shims`）
+- bun：`C:\Users\y00013075\.bun-tool\node_modules\bun\bin`
+
+构建前先结束残留的 fouc / fouc-backend 进程：运行中的 sidecar 会锁住 `src-tauri/binaries/` 下旧 exe，`build-backend.mjs` 覆盖时报 EPERM。
+
+```bash
+export PATH="/c/Users/y00013075/.local/corepack-shims:/c/Users/y00013075/.bun-tool/node_modules/bun/bin:/d/Nodejs:$PATH"
+powershell -NoProfile -Command 'Get-Process fouc* -ErrorAction SilentlyContinue | Stop-Process -Force'
+pnpm tauri build   # 产物：src-tauri/target/release/fouc.exe 与 bundle/{msi,nsis}/ 安装包
+```
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know

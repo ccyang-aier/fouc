@@ -1,5 +1,5 @@
 /**
- * 应用背景目录：画布层可切换的内置背景（照片 / 渐变），
+ * 应用背景目录：画布层可切换的内置壁纸，
  * 磨砂玻璃质感构建于画布之上——玻璃透出的即所选背景。
  * 纯数据 + DOM 应用模块（无 "use client"，根布局的首帧脚本也引用目录），
  * 选择持久化在 localStorage，键与 layout 内联脚本保持同步。
@@ -19,21 +19,6 @@ export const APP_BACKGROUNDS: AppBackground[] = [
     id: "dusk-shore",
     label: "暮色",
     css: 'url("/wallpapers/dusk-shore.jpg") center / cover no-repeat',
-  },
-  {
-    id: "mist",
-    label: "雾霭",
-    css: "linear-gradient(165deg, #b9cde2 0%, #cfc8de 46%, #b7d3c7 100%)",
-  },
-  {
-    id: "warm-sand",
-    label: "暖沙",
-    css: "linear-gradient(165deg, #e9d8bf 0%, #dfc9b4 52%, #d3c2ae 100%)",
-  },
-  {
-    id: "graphite",
-    label: "石墨",
-    css: "linear-gradient(165deg, #2b303b 0%, #232733 55%, #1d2530 100%)",
   },
 ]
 

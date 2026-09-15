@@ -52,7 +52,7 @@
   --wt-sidebar-glass-edge: rgb(38 51 59 / 0.07);
   /* 侧栏交互悬停面：浅白色，与标准面板和磨砂玻璃都协调 */
   --wt-sidebar-hover: rgb(255 255 255 / 0.55);
-  --wt-sidebar-glass-noise-opacity: 0.42;
+  --wt-sidebar-glass-noise-opacity: 0.1;
 
   /* ── 应用画布：为磨砂玻璃提供可透出的色彩层次。
      画布仅在侧栏与少量 shell 区域可见（主区为不透明面板），

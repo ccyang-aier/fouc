@@ -22,7 +22,7 @@ export function BackgroundSection({
 }) {
   return (
     <SettingsSection title="应用背景" description="作为画布垫在玻璃材质之下，修改即时生效">
-      <div className="grid w-fit grid-cols-3 gap-2.5" role="radiogroup" aria-label="应用背景">
+      <div className="grid w-fit grid-cols-2 gap-2.5" role="radiogroup" aria-label="应用背景">
         <BackgroundCard
           label="默认"
           hint="晨雾渐变"

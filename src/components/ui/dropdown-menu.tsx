@@ -4,6 +4,7 @@ import * as React from "react"
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu"
 import { Check, CaretRight } from "@phosphor-icons/react"
 
+import { getOverlayRoot } from "@/lib/overlay-root"
 import { cn } from "@/lib/utils"
 
 const DropdownMenu = DropdownMenuPrimitive.Root
@@ -16,7 +17,7 @@ function DropdownMenuContent({
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Content>) {
   return (
-    <DropdownMenuPrimitive.Portal>
+    <DropdownMenuPrimitive.Portal container={getOverlayRoot()}>
       <DropdownMenuPrimitive.Content
         sideOffset={sideOffset}
         className={cn(

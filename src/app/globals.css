@@ -53,6 +53,13 @@
   /* 侧栏交互悬停面：浅白色，与标准面板和磨砂玻璃都协调 */
   --wt-sidebar-hover: rgb(255 255 255 / 0.55);
   --wt-sidebar-glass-noise-opacity: 0.42;
+
+  /* ── 应用画布：多层柔和环境渐变垫底，为磨砂玻璃提供可透出的色彩层次 ── */
+  --win-canvas:
+    radial-gradient(1100px 720px at 6% -14%, rgb(196 216 246 / 0.55), transparent 62%),
+    radial-gradient(920px 640px at 104% 4%, rgb(243 219 231 / 0.5), transparent 58%),
+    radial-gradient(1000px 820px at 48% 118%, rgb(199 227 213 / 0.45), transparent 62%),
+    var(--shell);
 }
 
 /* ── 深色主题令牌 ── */
@@ -91,6 +98,34 @@ html[data-theme="dark"] {
   --wt-sidebar-frosted-panel: rgb(20 22 25 / 0.62);
   --wt-sidebar-glass-edge: rgb(233 236 239 / 0.08);
   --wt-sidebar-hover: rgb(255 255 255 / 0.06);
+
+  --win-canvas:
+    radial-gradient(1100px 720px at 6% -14%, rgb(56 78 122 / 0.32), transparent 62%),
+    radial-gradient(920px 640px at 104% 4%, rgb(116 76 106 / 0.26), transparent 58%),
+    radial-gradient(1000px 820px at 48% 118%, rgb(46 98 84 / 0.24), transparent 62%),
+    var(--shell);
+}
+
+/* ── 窗口自绘外框（桌面端）：关闭系统 DWM 阴影后由应用层绘制阴影，
+   落在窗口透明边缘上叠合桌面，Win10 / Win11 表现一致。
+   标记由 lib/window-frame.ts 运行时维护；贴边（最大化 / 分屏）时收起。 ── */
+html[data-desktop-frame] {
+  --win-frame-inset: 16px;
+  /* 锐利描边 + 紧凑投影：高对比、低扩散 */
+  --win-shadow:
+    0 0 0 1px rgb(16 20 24 / 0.15),
+    0 3px 6px rgb(16 20 24 / 0.15),
+    0 10px 22px rgb(16 20 24 / 0.12);
+}
+html[data-desktop-frame][data-theme="dark"] {
+  --win-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.55),
+    0 3px 6px rgb(0 0 0 / 0.4),
+    0 10px 22px rgb(0 0 0 / 0.45);
+}
+html[data-desktop-frame][data-window-flat] {
+  --win-frame-inset: 0px;
+  --win-shadow: none;
 }
 
 /* ── 主题色目录：矿物蓝为默认，外观设置通过 data-accent 即时切换。
@@ -242,7 +277,8 @@ html[data-chat-font="serif"] {
   box-sizing: border-box;
 }
 
-/* 背景只落在 body，html 不设底色。 */
+/* 背景只落在应用面板根（画布渐变）：桌面端窗口为透明自绘外框，
+   body 必须透出窗口透明边距，阴影才能叠在桌面上。 */
 html,
 body {
   height: 100%;
@@ -259,6 +295,10 @@ body {
   text-rendering: geometricPrecision;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+html[data-desktop-frame] body {
+  background: transparent;
 }
 
 button,

@@ -32,7 +32,9 @@ const mainCanvasVariants: Variants = {
 }
 
 import { applyAppearancePrefs, readAppearancePrefs } from "@/lib/appearance"
+import { setOverlayRoot } from "@/lib/overlay-root"
 import { applySidebarStyle, readStoredSidebarStyle } from "@/lib/sidebar-style"
+import { manageWindowFrame } from "@/lib/window-frame"
 
 import { HomeCanvas } from "./home-canvas"
 import { AutomationCanvas } from "./automation/automation-canvas"
@@ -89,11 +91,26 @@ export function WorkbenchShell() {
   // 记录「因进入项目视图而自动收起」的侧栏状态，用于返回时还原
   const projectAutoCollapsed = useRef(false)
   const projectFavorited = useSyncExternalStore(subscribeProjectFavorite, readProjectFavorite, () => false)
+  // 应用面板根：桌面端作为自绘外框的内层与弹层宿主
+  const frameRef = useRef<HTMLDivElement>(null)
 
   // 启动时恢复外观偏好（主题 / 字体 / 动效）与侧栏材质（标准 / 磨砂玻璃）
   useEffect(() => {
     applyAppearancePrefs(readAppearancePrefs())
     applySidebarStyle(readStoredSidebarStyle())
+  }, [])
+
+  // 桌面端启用窗口自绘外框，并把弹层收进应用面板内
+  useEffect(() => {
+    setOverlayRoot(frameRef.current)
+    let disposeFrame: (() => void) | undefined
+    void manageWindowFrame().then((dispose) => {
+      disposeFrame = dispose
+    })
+    return () => {
+      disposeFrame?.()
+      setOverlayRoot(null)
+    }
   }, [])
 
   function updateProjectFavorite(favorited: boolean) {
@@ -125,80 +142,87 @@ export function WorkbenchShell() {
   return (
     <MotionConfig reducedMotion="user">
       <TooltipProvider>
-        <div className="flex h-dvh min-h-[540px] min-w-[660px] flex-col overflow-hidden text-[var(--ink)]">
-          {view === "settings" ? (
-            // 设置为全窗页面：系统底层行之下接管全部空间，不保留工作台侧边栏
-            <div className="flex min-h-0 flex-1 flex-col">
-              <SystemBar />
-              <div className="min-h-0 flex-1">
-                <SettingsCanvas initialSection="appearance" onBack={() => changeView("home")} />
-              </div>
-            </div>
-          ) : (
-            // 双层侧栏（工作区轨道 + 主导航）顶行全高，共用同一块材质底座；
-            // 系统底层行只在主区顶部、与主导航 header 等高并接
-            <div className="flex min-h-0 flex-1">
-              <div className="sidebar-material flex shrink-0">
-                <WorkspaceRail view={view} onViewChange={changeView} onNewMission={startMission} />
-                <NavigationSidebar
-                  open={!sidebarCollapsed}
-                  onCollapse={() => {
-                    projectAutoCollapsed.current = false
-                    setSidebarCollapsed(true)
-                  }}
-                  onExpand={() => {
-                    projectAutoCollapsed.current = false
-                    setSidebarCollapsed(false)
-                  }}
-                  view={view}
-                  onViewChange={changeView}
-                  projectFavorited={projectFavorited}
-                  onProjectFavoriteChange={updateProjectFavorite}
-                  managementPanel={managementPanel}
-                  onManagementPanelChange={setManagementPanel}
-                />
-              </div>
-              <div className="flex min-w-0 flex-1 flex-col">
+        {/* 外层透明边距承载自绘阴影；应用面板根绘环境画布并作为弹层宿主 */}
+        <div className="h-dvh w-full p-[var(--win-frame-inset)]">
+          <div
+            ref={frameRef}
+            style={{ background: "var(--win-canvas)" }}
+            className="flex h-full w-full min-w-[660px] min-h-[540px] flex-col overflow-hidden text-[var(--ink)] shadow-[var(--win-shadow)]"
+          >
+            {view === "settings" ? (
+              // 设置为全窗页面：系统底层行之下接管全部空间，不保留工作台侧边栏
+              <div className="flex min-h-0 flex-1 flex-col">
                 <SystemBar />
-                <main className="relative min-w-0 flex-1 overflow-hidden bg-panel">
-                  <div className="relative h-full min-h-0" style={{ perspective: 1600 }}>
-                    <AnimatePresence initial={false} custom={view === "projects" ? 1 : -1}>
-                      <motion.div
-                        key={`${view}-${missionKey}`}
-                        custom={view === "projects" ? 1 : -1}
-                        variants={mainCanvasVariants}
-                        initial="enter"
-                        animate="center"
-                        exit="exit"
-                        className="absolute inset-0"
-                      >
-                        {view === "home" ? (
-                          <HomeCanvas />
-                        ) : view === "projects" ? (
-                          <ProjectHomeCanvas
-                            favorited={projectFavorited}
-                            onFavoriteChange={updateProjectFavorite}
-                            managementPanel={managementPanel}
-                            onManagementPanelChange={setManagementPanel}
-                          />
-                        ) : view === "community" ? (
-                          <CommunityCanvas />
-                        ) : view === "automation" ? (
-                          <AutomationCanvas />
-                        ) : view === "connectors" ? (
-                          <ConnectorsCanvas />
-                        ) : (
-                          <div className="flex h-full items-center justify-center text-[13px] text-[var(--ink-soft)]">
-                            该空间已在 V1 规划中，尚未开放
-                          </div>
-                        )}
-                      </motion.div>
-                    </AnimatePresence>
-                  </div>
-                </main>
+                <div className="min-h-0 flex-1">
+                  <SettingsCanvas initialSection="appearance" onBack={() => changeView("home")} />
+                </div>
               </div>
-            </div>
-          )}
+            ) : (
+              // 双层侧栏（工作区轨道 + 主导航）顶行全高，共用同一块材质底座；
+              // 系统底层行只在主区顶部、与主导航 header 等高并接
+              <div className="flex min-h-0 flex-1">
+                <div className="sidebar-material flex shrink-0">
+                  <WorkspaceRail view={view} onViewChange={changeView} onNewMission={startMission} />
+                  <NavigationSidebar
+                    open={!sidebarCollapsed}
+                    onCollapse={() => {
+                      projectAutoCollapsed.current = false
+                      setSidebarCollapsed(true)
+                    }}
+                    onExpand={() => {
+                      projectAutoCollapsed.current = false
+                      setSidebarCollapsed(false)
+                    }}
+                    view={view}
+                    onViewChange={changeView}
+                    projectFavorited={projectFavorited}
+                    onProjectFavoriteChange={updateProjectFavorite}
+                    managementPanel={managementPanel}
+                    onManagementPanelChange={setManagementPanel}
+                  />
+                </div>
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <SystemBar />
+                  <main className="relative min-w-0 flex-1 overflow-hidden bg-panel">
+                    <div className="relative h-full min-h-0" style={{ perspective: 1600 }}>
+                      <AnimatePresence initial={false} custom={view === "projects" ? 1 : -1}>
+                        <motion.div
+                          key={`${view}-${missionKey}`}
+                          custom={view === "projects" ? 1 : -1}
+                          variants={mainCanvasVariants}
+                          initial="enter"
+                          animate="center"
+                          exit="exit"
+                          className="absolute inset-0"
+                        >
+                          {view === "home" ? (
+                            <HomeCanvas />
+                          ) : view === "projects" ? (
+                            <ProjectHomeCanvas
+                              favorited={projectFavorited}
+                              onFavoriteChange={updateProjectFavorite}
+                              managementPanel={managementPanel}
+                              onManagementPanelChange={setManagementPanel}
+                            />
+                          ) : view === "community" ? (
+                            <CommunityCanvas />
+                          ) : view === "automation" ? (
+                            <AutomationCanvas />
+                          ) : view === "connectors" ? (
+                            <ConnectorsCanvas />
+                          ) : (
+                            <div className="flex h-full items-center justify-center text-[13px] text-[var(--ink-soft)]">
+                              该空间已在 V1 规划中，尚未开放
+                            </div>
+                          )}
+                        </motion.div>
+                      </AnimatePresence>
+                    </div>
+                  </main>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </TooltipProvider>
     </MotionConfig>

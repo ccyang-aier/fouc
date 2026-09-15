@@ -5,8 +5,6 @@
  * 状态落在 html[data-sidebar-style] 上，由 sidebar-material.css 消费；本地持久化。
  */
 
-import { syncSidebarWindowEffects } from "@/lib/window-material"
-
 export const SIDEBAR_STYLE_IDS = ["standard", "frosted"] as const
 export type SidebarStyle = (typeof SIDEBAR_STYLE_IDS)[number]
 
@@ -27,7 +25,4 @@ export function applySidebarStyle(style: SidebarStyle): void {
   if (typeof document === "undefined") return
   document.documentElement.dataset.sidebarStyle = style
   window.localStorage.setItem(STORAGE_KEY, style)
-  // 系统磨砂底色跟随应用主题明暗，避免浅色应用叠在深色磨砂上发闷
-  const theme = document.documentElement.dataset.theme === "dark" ? "dark" : "light"
-  void syncSidebarWindowEffects(style, theme)
 }

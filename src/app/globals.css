@@ -48,8 +48,6 @@
   --wt-sidebar-standard-panel: #fafbfc;
   /* 磨砂层叠在 shell 画布上：高白度叠层，整体呈干净浅白。 */
   --wt-sidebar-frosted-panel: rgb(255 255 255 / 0.7);
-  /* 客户端磨砂叠在原生 acrylic 上的玻璃 tint：浅白瓷色，非纯白 */
-  --wt-sidebar-native-tint: rgb(253 254 254 / 0.88);
   --wt-sidebar-glass-backdrop: blur(8px) saturate(148%) brightness(1.1) contrast(1.005);
   --wt-sidebar-glass-edge: rgb(38 51 59 / 0.07);
   /* 侧栏交互悬停面：浅白色，与标准面板和磨砂玻璃都协调 */
@@ -91,7 +89,6 @@ html[data-theme="dark"] {
 
   --wt-sidebar-standard-panel: #141619;
   --wt-sidebar-frosted-panel: rgb(20 22 25 / 0.62);
-  --wt-sidebar-native-tint: rgb(16 18 21 / 0.72);
   --wt-sidebar-glass-edge: rgb(233 236 239 / 0.08);
   --wt-sidebar-hover: rgb(255 255 255 / 0.06);
 }
@@ -245,8 +242,7 @@ html[data-chat-font="serif"] {
   box-sizing: border-box;
 }
 
-/* 背景只落在 body：html 保持透明，磨砂玻璃模式下 body 被材质层置为
-   transparent 后，原生窗口 acrylic 的桌面景深才能透出。 */
+/* 背景只落在 body，html 不设底色。 */
 html,
 body {
   height: 100%;

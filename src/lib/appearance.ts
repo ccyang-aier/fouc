@@ -6,9 +6,6 @@
  * 由 globals.css 消费；localStorage 单键持久化，首帧由 layout 内联脚本应用避免闪色。
  */
 
-import { readStoredSidebarStyle } from "@/lib/sidebar-style"
-import { syncSidebarWindowEffects } from "@/lib/window-material"
-
 // ── 主题 ───────────────────────────────────────────────────────────
 
 export const THEME_PREFS = ["light", "dark", "system"] as const
@@ -198,7 +195,6 @@ function applyResolvedTheme(resolved: ResolvedTheme): void {
   if (typeof document === "undefined") return
   document.documentElement.dataset.theme = resolved
   document.documentElement.style.colorScheme = resolved
-  void syncSidebarWindowEffects(readStoredSidebarStyle(), resolved)
 }
 
 /** 跟随系统：系统深浅色变化时实时重解析（监听常驻，仅在 system 偏好下生效） */

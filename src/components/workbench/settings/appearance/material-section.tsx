@@ -15,7 +15,7 @@ import { SettingsSection } from "./section-card"
 
 const MATERIAL_HINTS: Record<SidebarStyle, string> = {
   standard: "纯色面板，稳定清晰",
-  frosted: "透出背景层次，客户端为系统级磨砂",
+  frosted: "半透玻璃，透出背景层次",
 }
 
 export function MaterialSection({

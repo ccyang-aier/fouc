@@ -35,18 +35,6 @@ html:not([data-sidebar-style]) {
   --wt-sidebar-material-backdrop: var(--wt-sidebar-glass-backdrop);
   --wt-sidebar-material-grain-opacity: var(--wt-sidebar-glass-noise-opacity);
 }
-/* 桌面端磨砂：模糊与通透由原生窗口特效（acrylic/vibrancy）承担，
-   页面层只留浅色玻璃 tint，body 透出系统磨砂的桌面景深。
-   门控标记 #world-glass-flag 由首帧脚本注入 head（html 属性会被 React 水合清除）。 */
-html:has(#world-glass-flag)[data-sidebar-style="frosted"],
-html:has(#world-glass-flag):not([data-sidebar-style]) {
-  --wt-sidebar-material-background: var(--wt-sidebar-native-tint);
-  --wt-sidebar-material-backdrop: none;
-}
-html:has(#world-glass-flag)[data-sidebar-style="frosted"] body,
-html:has(#world-glass-flag):not([data-sidebar-style]) body {
-  background: transparent;
-}
 
 /* 检查器与独立工具侧栏沿用同一套材质令牌。 */
 .glass-rail {

@@ -14,9 +14,9 @@ import {
 
 import { cn } from "@/lib/utils"
 
-const MIN_WIDTH = 232
-const MAX_WIDTH = 420
-const DEFAULT_WIDTH = 256
+const MIN_WIDTH = 204
+const MAX_WIDTH = 360
+const DEFAULT_WIDTH = 224
 
 export function useSidebarWidth() {
   const [width, setWidth] = useState(DEFAULT_WIDTH)

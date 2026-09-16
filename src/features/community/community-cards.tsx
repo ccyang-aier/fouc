@@ -25,11 +25,15 @@ export type CommunityLibraryItem = {
 }
 
 const kindLabel = { agents: "Agent", skills: "Skill" } as const
+const kindBadge = {
+  agents: "bg-[color-mix(in_srgb,#4f7ee8_11%,transparent)] text-[#416bc8]",
+  skills: "bg-[color-mix(in_srgb,#8765d8_11%,transparent)] text-[#7452c1]",
+} as const
 
 export function CommunityAssetTable({ items, selectedId, sort, sortDirection, onSort, onSelect, onOpen }: {
   items: CommunityLibraryItem[]
   selectedId: string | null
-  sort: CommunitySortKey
+  sort: CommunitySortKey | null
   sortDirection: "asc" | "desc"
   onSort: (sort: CommunitySortKey) => void
   onSelect: (id: string) => void
@@ -65,7 +69,7 @@ export function CommunityAssetTable({ items, selectedId, sort, sortDirection, on
   )
 }
 
-function SortHeader({ label, sortKey, activeSort, direction, onSort }: { label: string; sortKey: CommunitySortKey; activeSort: CommunitySortKey; direction: "asc" | "desc"; onSort: (sort: CommunitySortKey) => void }) {
+function SortHeader({ label, sortKey, activeSort, direction, onSort }: { label: string; sortKey: CommunitySortKey; activeSort: CommunitySortKey | null; direction: "asc" | "desc"; onSort: (sort: CommunitySortKey) => void }) {
   const active = activeSort === sortKey
   const Icon = direction === "asc" ? CaretUp : CaretDown
   return <button type="button" onClick={() => onSort(sortKey)} className={cn("flex items-center gap-1 text-left outline-none hover:text-[var(--ink-soft)] focus-visible:text-[var(--accent-ink)]", active && "text-[var(--accent-ink)]")}>{label}{active ? <Icon className="size-2.5" weight="bold" /> : null}</button>
@@ -176,7 +180,7 @@ export function CommunityAssetCard({
           </div>
           <p className="mt-1 truncate text-[10px] text-[var(--muted)]">{item.author}</p>
           <div className="mt-1.5 flex items-center gap-1">
-            <span className="inline-flex rounded-[4px] bg-[color-mix(in_srgb,var(--accent)_9%,transparent)] px-1.5 py-0.5 text-[9px] font-semibold text-[var(--accent-ink)]">{kindLabel[item.kind]}</span>
+            <span className={cn("inline-flex rounded-[4px] px-1.5 py-0.5 text-[9px] font-semibold", kindBadge[item.kind])}>{kindLabel[item.kind]}</span>
             <span className="inline-flex rounded-[4px] border border-[var(--line)] px-1.5 py-0.5 text-[9px] font-medium text-[var(--muted-strong)]">{item.category}</span>
           </div>
         </div>

@@ -88,7 +88,7 @@ export function CommunityFacets({ type, domain, tag, typeCounts, domainCounts, t
       <aside aria-label="社区资源分类（已收起）" className="sidebar-material flex h-full w-11 shrink-0 flex-col items-center border-r border-[var(--wt-sidebar-edge)]">
         <button type="button" aria-label="展开社区侧栏" title="展开社区侧栏" onClick={() => setCollapsed(false)} className="mt-2.5 flex size-7 items-center justify-center rounded-[6px] text-[var(--muted)] outline-none hover:bg-sidebar-hover hover:text-[var(--ink-soft)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><CaretRight className="size-3.5" weight="bold" /></button>
         <div className="mt-2 flex flex-col gap-1">
-          {TYPE_ITEMS.slice(0, 3).map((item) => {
+          {TYPE_ITEMS.map((item) => {
             const Icon = item.icon
             const active = type === item.id && !domain && !tag
             return <button key={item.id} type="button" aria-label={item.label} title={item.label} data-active={active} onClick={() => { onTypeChange(item.id); onDomainChange(""); onTagChange("") }} className="sidebar-nav-row flex size-8 items-center justify-center rounded-[6px] outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><Icon className={cn("size-4", active ? "text-[var(--accent-ink)]" : "text-[var(--muted)]")} weight={active ? "fill" : "duotone"} /></button>

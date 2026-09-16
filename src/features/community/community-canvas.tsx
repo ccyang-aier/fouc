@@ -1,83 +1,146 @@
 "use client"
 
-/**
- * 社区画布：市场目录式首页 —— 编辑精选主位 + 本周上升榜单 + 精选合集，
- * 下方为目录栅格；筛选行用带边框 pill 下拉与「/」快捷搜索。点击卡片进入详情页。
- */
-
 import { useEffect, useMemo, useRef, useState } from "react"
 import { AnimatePresence, motion } from "motion/react"
-import { ArrowClockwise, CaretDown, Check, CheckCircle, MagnifyingGlass, Plus, Robot, Sparkle } from "@phosphor-icons/react"
+import {
+  ArrowClockwise,
+  CaretDown,
+  Check,
+  CheckCircle,
+  DownloadSimple,
+  FunnelSimple,
+  List,
+  MagnifyingGlass,
+  Plus,
+  Robot,
+  SealCheck,
+  Sparkle,
+  SquaresFour,
+  Star,
+  Storefront,
+} from "@phosphor-icons/react"
 
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 
-import { CommunityAgentCard, CommunitySkillCard } from "./community-cards"
+import { CommunityAssetCard, PreviewArtwork, type CommunityLibraryItem } from "./community-cards"
 import { CommunityDetailPage, type RelatedItem } from "./community-detail"
-import { CommunityPagination } from "./community-pagination"
-import { CollectionsRow, FeatureSection, TrendingRail } from "./community-sections"
 import {
   buildCommunityDetail,
   CATEGORIES,
   initialCommunityAgents,
   initialCommunitySkills,
-  PAGE_SIZE,
   type CommunityTab,
 } from "./community-data"
 
-const TABS: Array<{ id: CommunityTab; label: string; icon: typeof Robot; blurb: string }> = [
-  { id: "agents", label: "Agents", icon: Robot, blurb: "可直接托付任务的社区智能体" },
-  { id: "skills", label: "Skills", icon: Sparkle, blurb: "为 Agent 叠加领域能力的技能包" },
-]
-
+type Scope = "all" | CommunityTab | "installed"
 type SortKey = "popular" | "rating" | "name"
+type ViewMode = "grid" | "list"
+
+const SCOPE_OPTIONS: Array<{ id: Scope; label: string; icon: typeof Storefront }> = [
+  { id: "all", label: "全部资源", icon: Storefront },
+  { id: "agents", label: "Agents", icon: Robot },
+  { id: "skills", label: "Skills", icon: Sparkle },
+  { id: "installed", label: "已获取", icon: CheckCircle },
+]
 
 const SORT_OPTIONS: Array<{ id: SortKey; label: string }> = [
-  { id: "popular", label: "热门安装" },
+  { id: "popular", label: "最多获取" },
   { id: "rating", label: "最高评分" },
-  { id: "name", label: "名称" },
+  { id: "name", label: "名称排序" },
 ]
 
-const COLLECTIONS: Record<CommunityTab, Array<{ key: string; title: string; desc: string }>> = {
-  agents: [
-    { key: "研发", title: "研发提效", desc: "从评审到上线，覆盖研发全流程。" },
-    { key: "办公", title: "办公协同", desc: "会议、周报与日程的自动化流转。" },
-    { key: "数据", title: "数据自动化", desc: "让数据自己工作，释放更多可能。" },
-  ],
-  skills: [
-    { key: "研发", title: "研发工程", desc: "评审、测试与 API 速查的得力助手。" },
-    { key: "办公", title: "高质量写作", desc: "更好的表达，带来更大的影响力。" },
-    { key: "数据", title: "数据分析", desc: "从查询到归因的完整链路。" },
-  ],
+const CATEGORY_OPTIONS = [...new Set([...CATEGORIES.agents.slice(1), ...CATEGORIES.skills.slice(1)])]
+
+function itemKindLabel(kind: CommunityTab) {
+  return kind === "agents" ? "Agent" : "Skill"
 }
 
 export function CommunityCanvas() {
-  const [tab, setTab] = useState<CommunityTab>("agents")
-  const [query, setQuery] = useState("")
-  const [category, setCategory] = useState("全部")
-  const [sort, setSort] = useState<SortKey>("popular")
-  const [page, setPage] = useState(1)
-  const [detailId, setDetailId] = useState<string | null>(null)
   const [agents, setAgents] = useState(initialCommunityAgents)
   const [skills, setSkills] = useState(initialCommunitySkills)
+  const [scope, setScope] = useState<Scope>("all")
+  const [category, setCategory] = useState("全部")
+  const [sort, setSort] = useState<SortKey>("popular")
+  const [query, setQuery] = useState("")
+  const [view, setView] = useState<ViewMode>("grid")
+  const [selectedId, setSelectedId] = useState<string | null>("agent-reviewer")
+  const [detailId, setDetailId] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
-  const scrollRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
 
-  const activeTab = TABS.find((item) => item.id === tab) ?? TABS[0]
+  const libraryItems = useMemo<CommunityLibraryItem[]>(() => [
+    ...agents.map((agent) => ({
+      id: agent.id,
+      kind: "agents" as const,
+      name: agent.name,
+      glyph: agent.glyph,
+      tone: agent.tone,
+      category: agent.category,
+      summary: agent.tagline,
+      author: agent.author,
+      version: agent.version,
+      installs: agent.installs,
+      installed: agent.installed,
+      rating: agent.rating,
+      tags: agent.tags,
+      updated: agent.updated,
+    })),
+    ...skills.map((skill) => ({
+      id: skill.id,
+      kind: "skills" as const,
+      name: skill.name,
+      glyph: skill.name.slice(0, 1),
+      tone: skill.tone,
+      category: skill.category,
+      summary: skill.summary,
+      author: skill.author,
+      version: skill.version,
+      installs: skill.installs,
+      installed: skill.installed,
+      tags: skill.compat,
+      updated: skill.updated,
+    })),
+  ], [agents, skills])
 
-  function notify(message: string) {
-    setToast(message)
-    window.setTimeout(() => setToast(null), 2200)
-  }
+  const normalizedQuery = query.trim().toLocaleLowerCase("zh-CN")
+  const visibleItems = useMemo(() => {
+    const filtered = libraryItems.filter((item) => {
+      if (scope === "agents" || scope === "skills") {
+        if (item.kind !== scope) return false
+      } else if (scope === "installed" && !item.installed) return false
+      if (category !== "全部" && item.category !== category) return false
+      if (!normalizedQuery) return true
+      return `${item.name} ${item.summary} ${item.author} ${item.tags.join(" ")}`.toLocaleLowerCase("zh-CN").includes(normalizedQuery)
+    })
+    return filtered.toSorted((a, b) => {
+      if (sort === "name") return a.name.localeCompare(b.name, "zh-CN")
+      if (sort === "rating") return (b.rating ?? 0) - (a.rating ?? 0) || b.installs - a.installs
+      return b.installs - a.installs
+    })
+  }, [category, libraryItems, normalizedQuery, scope, sort])
 
-  // 「/」快捷键聚焦搜索（参考市场目录页习惯）
+  const activeSelectedId = visibleItems.some((item) => item.id === selectedId) ? selectedId : (visibleItems[0]?.id ?? null)
+  const selectedItem = libraryItems.find((item) => item.id === activeSelectedId) ?? null
+
+  const scopeCounts = useMemo(() => ({
+    all: libraryItems.length,
+    agents: agents.length,
+    skills: skills.length,
+    installed: libraryItems.filter((item) => item.installed).length,
+  }), [agents.length, libraryItems, skills.length])
+
+  const categoryCounts = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const item of libraryItems) counts.set(item.category, (counts.get(item.category) ?? 0) + 1)
+    return counts
+  }, [libraryItems])
+
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key !== "/") return
@@ -90,384 +153,288 @@ export function CommunityCanvas() {
     return () => window.removeEventListener("keydown", onKeyDown)
   }, [])
 
-  function switchTab(next: CommunityTab) {
-    setTab(next)
-    setQuery("")
-    setCategory("全部")
-    setPage(1)
-    setDetailId(null)
+  function notify(message: string) {
+    setToast(message)
+    window.setTimeout(() => setToast(null), 2200)
   }
 
-  function installAgent(id: string) {
-    const item = agents.find((agent) => agent.id === id)
-    if (!item || item.installed) return
-    setAgents((list) => list.map((agent) => (agent.id === id ? { ...agent, installed: true } : agent)))
-    notify(`${item.name} 已添加到你的 Agent 列表`)
-  }
-
-  function installSkill(id: string) {
-    const item = skills.find((skill) => skill.id === id)
-    if (!item || item.installed) return
-    setSkills((list) => list.map((skill) => (skill.id === id ? { ...skill, installed: true } : skill)))
-    notify(`${item.name} 已安装，可在任务中引用`)
-  }
-
-  const normalized = query.trim().toLocaleLowerCase("zh-CN")
-
-  const visibleAgents = useMemo(() => {
-    const list = agents.filter((agent) =>
-      (category === "全部" || agent.category === category) &&
-      (!normalized || `${agent.name} ${agent.tagline} ${agent.author}`.toLocaleLowerCase("zh-CN").includes(normalized)),
-    )
-    if (sort === "name") return [...list].sort((a, b) => a.name.localeCompare(b.name, "zh-CN"))
-    if (sort === "rating") return [...list].sort((a, b) => b.rating - a.rating)
-    return [...list].sort((a, b) => b.installs - a.installs)
-  }, [agents, category, normalized, sort])
-
-  const visibleSkills = useMemo(() => {
-    const list = skills.filter((skill) =>
-      (category === "全部" || skill.category === category) &&
-      (!normalized || `${skill.name} ${skill.summary} ${skill.author} ${skill.compat.join(" ")}`.toLocaleLowerCase("zh-CN").includes(normalized)),
-    )
-    if (sort === "name") return [...list].sort((a, b) => a.name.localeCompare(b.name, "zh-CN"))
-    return [...list].sort((a, b) => b.installs - a.installs)
-  }, [skills, category, normalized, sort])
-
-  // 陈列区：编辑精选取安装量最高条目，榜单取前四；筛选或搜索时收起
-  const showcase = useMemo(() => {
-    if (tab === "agents") {
-      const pool = [...agents].sort((a, b) => b.installs - a.installs)
-      const top = pool[0]
-      return {
-        featured: top && {
-          title: top.name,
-          tagline: top.tagline,
-          detail: `${top.highlights.join("；")}。`,
-          author: top.author,
-          official: top.author === "Fouc 官方",
-          glyph: top.author.slice(0, 1),
-          tone: top.tone,
-          tags: top.tags,
-          rating: top.rating,
-          ratingCount: top.ratingCount,
-          installs: top.installs,
-          version: top.version,
-          updated: top.updated,
-          actionLabel: "获取",
-          actioned: top.installed,
-          actionedLabel: "已添加",
-          onOpen: () => setDetailId(top.id),
-          onAction: () => installAgent(top.id),
-        },
-        trending: pool.slice(0, 4).map((agent) => ({
-          id: agent.id,
-          name: agent.name,
-          sub: agent.author,
-          glyph: agent.author.slice(0, 1),
-          tone: agent.tone,
-          trend: Math.max(12, Math.round((agent.rating - 4) * 100)),
-        })),
-      }
+  function acquireItem(item: CommunityLibraryItem) {
+    if (item.installed) return
+    if (item.kind === "agents") {
+      setAgents((list) => list.map((agent) => agent.id === item.id ? { ...agent, installed: true } : agent))
+      notify(`${item.name} 已添加到你的 Agent 列表`)
+    } else {
+      setSkills((list) => list.map((skill) => skill.id === item.id ? { ...skill, installed: true } : skill))
+      notify(`${item.name} 已安装，可在任务中引用`)
     }
-    const pool = [...skills].sort((a, b) => b.installs - a.installs)
-    const top = pool[0]
-    return {
-      featured: top && {
-        title: top.name,
-        tagline: top.summary,
-        author: top.author,
-        official: top.author === "Fouc 官方",
-        glyph: top.author.slice(0, 1),
-        tone: top.tone,
-        tags: top.compat,
-        installs: top.installs,
-        version: top.version,
-        updated: top.updated,
-        actionLabel: "安装",
-        actioned: top.installed,
-        actionedLabel: "已安装",
-        onOpen: () => setDetailId(top.id),
-        onAction: () => installSkill(top.id),
-      },
-      trending: pool.slice(0, 4).map((skill) => ({
-        id: skill.id,
-        name: skill.name,
-        sub: skill.author,
-        glyph: skill.author.slice(0, 1),
-        tone: skill.tone,
-        trend: Math.max(12, Math.round(15 + (skill.installs % 85))),
-      })),
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, agents, skills])
+  }
 
-  const collections = useMemo(() => {
-    const source = tab === "agents" ? agents : skills
-    return COLLECTIONS[tab].map((config) => {
-      const items = source.filter((item) => item.category === config.key)
-      return {
-        ...config,
-        count: items.length,
-        authors: new Set(items.map((item) => item.author)).size,
-        avatars: items.slice(0, 4).map((item) => ({ glyph: item.author.slice(0, 1), tone: item.tone })),
-      }
-    })
-  }, [tab, agents, skills])
-
-  const showcaseVisible = !normalized && category === "全部"
-
-  const total = tab === "agents" ? visibleAgents.length : visibleSkills.length
-  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE))
-  const safePage = Math.min(page, pageCount)
-  const pageSlice = { from: (safePage - 1) * PAGE_SIZE, to: safePage * PAGE_SIZE }
-  const pageItemsLength = Math.max(0, Math.min(total, pageSlice.to) - pageSlice.from)
-
-  const categoryCounts = useMemo(() => {
-    const source: Array<{ category: string }> = tab === "agents" ? agents : skills
-    const counts = new Map<string, number>([["全部", source.length]])
-    for (const item of source) counts.set(item.category, (counts.get(item.category) ?? 0) + 1)
-    return counts
-  }, [tab, agents, skills])
-
-  // 详情：跨 Tab 的条目查找 + 派生数据与相关推荐
   const detail = useMemo(() => {
     if (!detailId) return null
-    if (tab === "agents") {
-      const item = agents.find((agent) => agent.id === detailId)
-      if (!item) return null
+    const agent = agents.find((item) => item.id === detailId)
+    if (agent) {
       return {
-        model: buildCommunityDetail("agents", item),
-        done: item.installed,
-        onAction: () => installAgent(item.id),
-        related: agents
-          .filter((other) => other.id !== item.id && other.category === item.category)
-          .slice(0, 3)
-          .map<RelatedItem>((other) => ({ id: other.id, name: other.name, glyph: other.glyph, desc: other.tagline, done: other.installed })),
+        model: buildCommunityDetail("agents", agent),
+        done: agent.installed,
+        onAction: () => acquireItem(libraryItems.find((item) => item.id === agent.id)!),
+        related: agents.filter((item) => item.id !== agent.id && item.category === agent.category).slice(0, 3)
+          .map<RelatedItem>((item) => ({ id: item.id, name: item.name, glyph: item.glyph, desc: item.tagline, done: item.installed })),
       }
     }
-    const item = skills.find((skill) => skill.id === detailId)
-    if (!item) return null
+    const skill = skills.find((item) => item.id === detailId)
+    if (!skill) return null
     return {
-      model: buildCommunityDetail("skills", item),
-      done: item.installed,
-      onAction: () => installSkill(item.id),
-      related: skills
-        .filter((other) => other.id !== item.id && other.category === item.category)
-        .slice(0, 3)
-        .map<RelatedItem>((other) => ({ id: other.id, name: other.name, glyph: other.name.slice(0, 1), desc: other.summary, done: other.installed })),
+      model: buildCommunityDetail("skills", skill),
+      done: skill.installed,
+      onAction: () => acquireItem(libraryItems.find((item) => item.id === skill.id)!),
+      related: skills.filter((item) => item.id !== skill.id && item.category === skill.category).slice(0, 3)
+        .map<RelatedItem>((item) => ({ id: item.id, name: item.name, glyph: item.name.slice(0, 1), desc: item.summary, done: item.installed })),
     }
+    // acquireItem only writes the item selected by this derived detail model.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [detailId, tab, agents, skills])
+  }, [agents, detailId, libraryItems, skills])
 
-  function changePage(next: number) {
-    setPage(next)
-    scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" })
+  if (detail) {
+    return (
+      <section aria-label="社区详情" className="relative flex h-full min-h-0 bg-panel">
+        <CommunityDetailPage
+          key={detail.model.name}
+          detail={detail.model}
+          done={detail.done}
+          related={detail.related}
+          onBack={() => setDetailId(null)}
+          onAction={detail.onAction}
+          onOpenRelated={(id) => setDetailId(id)}
+          onShare={() => notify("详情链接已复制")}
+          onDiscuss={() => notify("讨论区即将开放")}
+        />
+      </section>
+    )
   }
 
-  const searchPlaceholder = tab === "agents" ? "搜索 Agents、作者或关键词" : "搜索 Skills、作者或关键词"
-  const featured = showcaseVisible ? showcase.featured : null
-
-  const filterPill =
-    "flex h-8 items-center gap-1.5 rounded-[8px] border border-[var(--line)] bg-panel px-3 text-[12px] text-[var(--ink)] outline-none " +
-    "transition-colors hover:border-[var(--line-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] data-[state=open]:border-[var(--line-strong)]"
-
   return (
-    <section aria-label="社区" className="relative flex h-full min-h-0 bg-panel">
-      <AnimatePresence initial={false} mode="wait">
-        {detail ? (
-          <motion.div
-            key="detail"
-            initial={{ opacity: 0, x: 24 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 24 }}
-            transition={{ duration: 0.16, ease: [0.32, 0.72, 0, 1] }}
-            className="min-h-0 flex-1"
-          >
-            <CommunityDetailPage
-              key={detail.model.name}
-              detail={detail.model}
-              done={detail.done}
-              related={detail.related}
-              onBack={() => setDetailId(null)}
-              onAction={detail.onAction}
-              onOpenRelated={(id) => setDetailId(id)}
-              onShare={() => notify("详情链接已复制")}
-              onDiscuss={() => notify("讨论区即将开放")}
-            />
-          </motion.div>
-        ) : (
-          <motion.div
-            key="grid"
-            initial={{ opacity: 0, x: -16 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -16 }}
-            transition={{ duration: 0.16, ease: [0.32, 0.72, 0, 1] }}
-            className="flex min-w-0 flex-1 flex-col"
-          >
-            {/* 控制栏：视图下拉 + 刷新 + 提交作品 */}
-            <div className="flex h-12 shrink-0 items-center gap-1 bg-panel px-4">
+    <section aria-label="社区资产库" className="relative flex h-full min-h-0 flex-col bg-panel">
+      <div className="grid min-h-0 flex-1 grid-cols-[176px_minmax(0,1fr)_286px] max-[1150px]:grid-cols-[160px_minmax(0,1fr)]">
+        <aside className="min-h-0 overflow-y-auto border-r border-[var(--line)] px-3 py-3">
+          <div className="flex items-center justify-between px-1.5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">资源集合</p>
+            <button type="button" aria-label="新建集合" onClick={() => notify("自定义集合即将开放")} className="flex size-6 items-center justify-center rounded-[6px] text-[var(--muted)] hover:bg-[var(--hover-fill)] hover:text-[var(--ink)]">
+              <Plus className="size-3.5" />
+            </button>
+          </div>
+          <div className="mt-1 space-y-0.5">
+            {SCOPE_OPTIONS.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setScope(item.id)}
+                className={cn(
+                  "flex h-8 w-full items-center gap-2 rounded-[7px] px-2 text-left text-[11px] transition-colors",
+                  scope === item.id ? "bg-[color-mix(in_srgb,var(--accent)_10%,transparent)] font-medium text-[var(--accent-ink)]" : "text-[var(--ink-soft)] hover:bg-[var(--hover-fill)]",
+                )}
+              >
+                <item.icon className="size-3.5 shrink-0" weight={scope === item.id ? "fill" : "regular"} />
+                <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                <span className="text-[9.5px] tabular-nums text-[var(--muted)]">{scopeCounts[item.id]}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-5 flex items-center justify-between px-1.5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">分类</p>
+            {category !== "全部" ? (
+              <button type="button" onClick={() => setCategory("全部")} className="text-[9.5px] text-[var(--accent-ink)] hover:underline">清除</button>
+            ) : null}
+          </div>
+          <div className="mt-1 space-y-0.5">
+            {CATEGORY_OPTIONS.map((item) => {
+              const active = category === item
+              return (
+                <button key={item} type="button" onClick={() => setCategory(active ? "全部" : item)} className="flex h-8 w-full items-center gap-2 rounded-[7px] px-2 text-left text-[11px] text-[var(--ink-soft)] hover:bg-[var(--hover-fill)]">
+                  <span className={cn("flex size-3.5 items-center justify-center rounded-[3px] border", active ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--line-strong)]")}>
+                    {active ? <Check className="size-2.5" weight="bold" /> : null}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate">{item}</span>
+                  <span className="text-[9.5px] tabular-nums text-[var(--muted)]">{categoryCounts.get(item) ?? 0}</span>
+                </button>
+              )
+            })}
+          </div>
+
+          <div className="mt-5 border-t border-[var(--line)] px-1.5 pt-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">来源</p>
+            <div className="mt-2 space-y-2.5 text-[10.5px] text-[var(--muted-strong)]">
+              <p className="flex items-center gap-2"><SealCheck className="size-3.5 text-[var(--accent)]" weight="fill" />Fouc 官方精选</p>
+              <p className="flex items-center gap-2"><Storefront className="size-3.5" />社区作者发布</p>
+            </div>
+          </div>
+        </aside>
+
+        <main className="flex min-h-0 min-w-0 flex-col">
+          <header className="shrink-0 border-b border-[var(--line)] px-3 pt-3">
+            <div className="flex items-center gap-2">
+              <label className="flex h-8 min-w-0 flex-1 items-center gap-2 rounded-[7px] border border-[var(--line)] bg-panel px-2.5 text-[var(--muted)] transition-colors focus-within:border-[var(--accent)]">
+                <MagnifyingGlass className="size-3.5 shrink-0" />
+                <input
+                  ref={searchRef}
+                  type="search"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  aria-label="搜索社区资源"
+                  placeholder="搜索资源名称、作者、标签或描述…"
+                  className="min-w-0 flex-1 bg-transparent text-[11px] text-[var(--ink)] outline-none placeholder:text-[var(--muted)]"
+                />
+                <kbd className="rounded-[4px] border border-[var(--line)] px-1.5 text-[9px] leading-[15px] text-[var(--muted)]">/</kbd>
+              </label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    aria-label="切换社区视图"
-                    className="flex h-8 items-center gap-1.5 rounded-[8px] px-2 text-[12px] font-semibold tracking-[-0.01em] text-[var(--ink)] outline-none transition-colors hover:bg-[var(--hover-fill)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] data-[state=open]:bg-[var(--hover-fill)]"
-                  >
-                    {activeTab.label}
+                  <button type="button" className="flex h-8 items-center gap-1.5 rounded-[7px] border border-[var(--line)] px-2.5 text-[10.5px] text-[var(--ink-soft)] outline-none hover:border-[var(--line-strong)] data-[state=open]:border-[var(--line-strong)]">
+                    <FunnelSimple className="size-3.5" />
+                    {SORT_OPTIONS.find((item) => item.id === sort)?.label}
                     <CaretDown className="size-3 text-[var(--muted)]" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  {TABS.map((item) => (
-                    <DropdownMenuItem key={item.id} onSelect={() => switchTab(item.id)}>
-                      <item.icon className={cn("size-4 shrink-0", tab === item.id ? "text-[var(--ink)]" : "text-[var(--muted)]")} weight="fill" />
-                      <span className="flex-1">{item.label}</span>
-                      {tab === item.id ? <Check className="ml-auto size-3.5 shrink-0 text-[var(--ink)]" weight="bold" /> : null}
-                    </DropdownMenuItem>
+                <DropdownMenuContent align="end" className="w-36">
+                  {SORT_OPTIONS.map((item) => (
+                    <DropdownMenuCheckboxItem key={item.id} checked={sort === item.id} onCheckedChange={() => setSort(item.id)}>
+                      {item.label}
+                    </DropdownMenuCheckboxItem>
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
-
-              <div className="ml-auto flex items-center gap-0.5">
-                <button
-                  type="button"
-                  aria-label="刷新目录"
-                  onClick={() => notify("目录已是最新")}
-                  className="flex size-8 items-center justify-center rounded-[8px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-[var(--hover-fill)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
-                >
-                  <ArrowClockwise className="size-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => notify("作品提交通道即将开放")}
-                  className="ml-1.5 flex h-8 items-center gap-1 rounded-[8px] bg-[var(--accent)] px-3.5 text-[11px] font-semibold text-white outline-none transition-[background-color,opacity] hover:bg-[var(--accent-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
-                >
-                  <Plus className="size-3" weight="bold" />
-                  提交作品
-                </button>
-              </div>
+              <button type="button" aria-label="提交资源" onClick={() => notify("作品提交通道即将开放")} className="flex size-8 shrink-0 items-center justify-center rounded-[7px] bg-[var(--accent)] text-white outline-none transition-colors hover:bg-[var(--accent-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
+                <Plus className="size-3.5" weight="bold" />
+              </button>
             </div>
+            <nav aria-label="资源范围" className="mt-2 flex h-8 items-end gap-5">
+              {SCOPE_OPTIONS.map((item) => (
+                <button key={item.id} type="button" onClick={() => setScope(item.id)} className={cn("relative flex h-8 items-center gap-1.5 text-[10.5px] outline-none transition-colors", scope === item.id ? "font-semibold text-[var(--ink)]" : "text-[var(--muted)] hover:text-[var(--ink-soft)]")}>
+                  {item.label}
+                  <span className="rounded-full bg-[var(--surface-hover)] px-1.5 py-0.5 text-[8.5px] tabular-nums text-[var(--muted-strong)]">{scopeCounts[item.id]}</span>
+                  <span className={cn("absolute inset-x-0 bottom-0 h-[2px] rounded-full bg-[var(--ink)] transition-opacity", scope === item.id ? "opacity-100" : "opacity-0")} />
+                </button>
+              ))}
+            </nav>
+          </header>
 
-            {/* 内容区：筛选 pill 行 + 陈列区块 + 目录栅格 */}
-            <div ref={scrollRef} className="min-h-0 min-w-0 flex-1 overflow-auto bg-panel">
-              <div className="w-full px-4 pb-16">
-                {/* 筛选行 */}
-                <div className="flex items-center gap-2 pt-4">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button type="button" aria-label="筛选分类" className={filterPill}>
-                        {category === "全部" ? "全部类型" : category}
-                        <CaretDown className="size-3 text-[var(--muted)]" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-36">
-                      {CATEGORIES[tab].map((option) => (
-                        <DropdownMenuCheckboxItem
-                          key={option}
-                          checked={category === option}
-                          onCheckedChange={() => { setCategory(option); setPage(1) }}
-                        >
-                          {option}
-                          <span className="ml-auto text-[10.5px] tabular-nums text-[var(--muted)]">{categoryCounts.get(option) ?? 0}</span>
-                        </DropdownMenuCheckboxItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+          <div className="flex h-11 shrink-0 items-center gap-2 border-b border-[var(--line)] px-3">
+            <p className="text-[10.5px] tabular-nums text-[var(--muted)]">共 {visibleItems.length} 项资源</p>
+            <div className="ml-auto flex items-center rounded-[7px] border border-[var(--line)] bg-[var(--surface-subtle)] p-0.5">
+              {(["grid", "list"] as const).map((mode) => {
+                const Icon = mode === "grid" ? SquaresFour : List
+                return (
+                  <button key={mode} type="button" aria-label={mode === "grid" ? "网格视图" : "列表视图"} aria-pressed={view === mode} onClick={() => setView(mode)} className={cn("flex size-6 items-center justify-center rounded-[5px] text-[var(--muted)]", view === mode && "bg-panel text-[var(--ink)] shadow-[0_1px_3px_rgba(20,24,32,0.08)]")}>
+                    <Icon className="size-3.5" weight={view === mode ? "fill" : "regular"} />
+                  </button>
+                )
+              })}
+            </div>
+            <button type="button" aria-label="刷新社区资源" onClick={() => notify("社区资源已是最新")} className="flex size-7 items-center justify-center rounded-[7px] text-[var(--muted)] hover:bg-[var(--hover-fill)] hover:text-[var(--ink)]">
+              <ArrowClockwise className="size-3.5" />
+            </button>
+          </div>
 
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button type="button" aria-label="排序" className={filterPill}>
-                        {SORT_OPTIONS.find((option) => option.id === sort)?.label}
-                        <CaretDown className="size-3 text-[var(--muted)]" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-32">
-                      {SORT_OPTIONS.map((option) => (
-                        <DropdownMenuCheckboxItem key={option.id} checked={sort === option.id} onCheckedChange={() => { setSort(option.id); setPage(1) }}>
-                          {option.label}
-                        </DropdownMenuCheckboxItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+          <div className="min-h-0 flex-1 overflow-auto p-3">
+            {visibleItems.length > 0 ? (
+              view === "grid" ? (
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(158px,1fr))] gap-3">
+                  {visibleItems.map((item) => (
+                    <CommunityAssetCard key={item.id} item={item} selected={activeSelectedId === item.id} view="grid" onSelect={() => setSelectedId(item.id)} onOpen={() => setDetailId(item.id)} />
+                  ))}
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-[8px] border border-[var(--line)]">
+                  {visibleItems.map((item) => (
+                    <CommunityAssetCard key={item.id} item={item} selected={activeSelectedId === item.id} view="list" onSelect={() => setSelectedId(item.id)} onOpen={() => setDetailId(item.id)} />
+                  ))}
+                </div>
+              )
+            ) : (
+              <div className="flex h-full min-h-56 flex-col items-center justify-center text-center">
+                <MagnifyingGlass className="size-6 text-[var(--muted)]" />
+                <p className="mt-3 text-[12px] font-medium text-[var(--ink-soft)]">没有匹配的社区资源</p>
+                <button type="button" onClick={() => { setQuery(""); setCategory("全部"); setScope("all") }} className="mt-2 text-[10.5px] text-[var(--accent-ink)] hover:underline">清除筛选条件</button>
+              </div>
+            )}
+          </div>
+        </main>
 
-                  <label className="ml-auto flex h-8 w-72 items-center gap-2 rounded-[8px] border border-[var(--line)] bg-panel px-3 text-[var(--muted)] transition-colors focus-within:border-[var(--accent)] max-[1200px]:w-52">
-                    <MagnifyingGlass className="size-4 shrink-0" />
-                    <input
-                      ref={searchRef}
-                      type="search"
-                      value={query}
-                      onChange={(event) => { setQuery(event.target.value); setPage(1) }}
-                      aria-label={searchPlaceholder}
-                      placeholder={searchPlaceholder}
-                      className="min-w-0 flex-1 bg-transparent text-[12px] text-[var(--ink)] outline-none placeholder:text-[var(--muted)]"
-                    />
-                    <kbd className="shrink-0 rounded-[4px] border border-[var(--line)] px-1.5 text-[10px] leading-[16px] text-[var(--muted)]">/</kbd>
-                  </label>
+        <aside className="min-h-0 overflow-y-auto border-l border-[var(--line)] max-[1150px]:hidden">
+          {selectedItem ? (
+            <div className="flex min-h-full flex-col">
+              <div className="p-3 pb-0">
+                <PreviewArtwork item={selectedItem} />
+              </div>
+              <div className="p-4">
+                <div className="flex items-start gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <h2 className="truncate text-[16px] font-bold tracking-[-0.02em] text-[var(--ink)]">{selectedItem.name}</h2>
+                      {selectedItem.author === "Fouc 官方" ? <SealCheck className="size-4 shrink-0 text-[var(--accent)]" weight="fill" /> : null}
+                    </div>
+                    <p className="mt-1 text-[10.5px] text-[var(--muted)]">{selectedItem.author} · {selectedItem.updated}更新</p>
+                  </div>
+                  <span className="rounded-[6px] bg-[var(--surface-hover)] px-2 py-1 text-[9px] font-medium text-[var(--muted-strong)]">{itemKindLabel(selectedItem.kind)}</span>
                 </div>
 
-                {/* 编辑精选 / 本周上升：各自独立成卡 */}
-                {featured ? (
-                  <div className="mt-4 grid grid-cols-[minmax(0,1fr)_340px] items-stretch gap-4 max-[1100px]:grid-cols-1">
-                    <div className="rounded-[12px] border border-[var(--line)] bg-[var(--surface-subtle)] p-6">
-                      <FeatureSection item={featured} />
+                <p className="mt-4 text-[11.5px] leading-[19px] text-[var(--ink-soft)]">{selectedItem.summary}</p>
+
+                <div className="mt-4 flex flex-wrap gap-1.5">
+                  {selectedItem.tags.map((tag) => <span key={tag} className="rounded-[6px] bg-[var(--surface-hover)] px-2 py-1 text-[9.5px] text-[var(--muted-strong)]">{tag}</span>)}
+                </div>
+
+                <dl className="mt-5 border-y border-[var(--line)] py-2">
+                  {[
+                    ["分类", selectedItem.category],
+                    ["版本", `v${selectedItem.version}`],
+                    ["获取量", selectedItem.installs.toLocaleString("zh-CN")],
+                    ["状态", selectedItem.installed ? "已获取" : "可获取"],
+                  ].map(([label, value]) => (
+                    <div key={label} className="flex items-center justify-between gap-3 py-1.5 text-[10.5px]">
+                      <dt className="text-[var(--muted)]">{label}</dt>
+                      <dd className="truncate font-medium text-[var(--ink-soft)]">{value}</dd>
                     </div>
-                    <div className="rounded-[12px] border border-[var(--line)] bg-[var(--surface-subtle)] p-4">
-                      <TrendingRail items={showcase.trending} onOpen={setDetailId} />
-                    </div>
+                  ))}
+                </dl>
+
+                {typeof selectedItem.rating === "number" ? (
+                  <div className="mt-4 flex items-center gap-1.5">
+                    <Star className="size-4 text-[#dfa43c]" weight="fill" />
+                    <span className="text-[12px] font-semibold text-[var(--ink)]">{selectedItem.rating}</span>
+                    <span className="text-[10px] text-[var(--muted)]">社区评分</span>
                   </div>
                 ) : null}
 
-                {/* 精选合集：浅底面板 */}
-                {showcaseVisible ? (
-                  <div className="mt-4 rounded-[12px] border border-[var(--line)] bg-[var(--surface-subtle)] p-6">
-                    <p className="text-[15px] font-semibold tracking-[-0.01em] text-[var(--ink)]">精选合集</p>
-                    <div className="mt-4">
-                      <CollectionsRow collections={collections} onSelect={(key) => { setCategory(key); setPage(1) }} />
-                    </div>
-                  </div>
-                ) : null}
-
-                {/* 目录栅格 */}
-                {pageItemsLength === 0 ? (
-                  <p className="pb-4 pt-24 text-center text-[11.5px] text-[var(--muted)]">
-                    没有匹配「{query}」的条目 · 试试其他关键词
-                  </p>
-                ) : (
-                  <section className="mt-6">
-                    <p className="text-[15px] font-semibold tracking-[-0.01em] text-[var(--ink)]">
-                      {showcaseVisible ? (tab === "agents" ? "全部 Agents" : "全部 Skills") : "筛选结果"}
-                    </p>
-                    <div className="mt-4 grid gap-3.5 grid-cols-[repeat(auto-fill,minmax(240px,1fr))]">
-                      {tab === "agents"
-                        ? visibleAgents.slice(pageSlice.from, pageSlice.to).map((agent) => <CommunityAgentCard key={agent.id} agent={agent} onInstall={() => installAgent(agent.id)} onOpen={() => setDetailId(agent.id)} />)
-                        : visibleSkills.slice(pageSlice.from, pageSlice.to).map((skill) => <CommunitySkillCard key={skill.id} skill={skill} onInstall={() => installSkill(skill.id)} onOpen={() => setDetailId(skill.id)} />)}
-                    </div>
-                  </section>
-                )}
-
-                {/* 居中分页 */}
-                {total > 0 ? (
-                  <div className="mt-12 flex justify-center">
-                    <CommunityPagination page={safePage} pageCount={pageCount} total={total} pageSize={PAGE_SIZE} onChange={changePage} />
-                  </div>
-                ) : null}
+                <div className="mt-5 grid grid-cols-[1fr_auto] gap-2">
+                  <button
+                    type="button"
+                    disabled={selectedItem.installed}
+                    onClick={() => acquireItem(selectedItem)}
+                    className="flex h-9 items-center justify-center gap-1.5 rounded-[8px] bg-[var(--accent)] px-3 text-[11px] font-semibold text-white outline-none transition-colors hover:bg-[var(--accent-strong)] disabled:bg-[var(--surface-hover)] disabled:text-[var(--ok-ink)]"
+                  >
+                    {selectedItem.installed ? <CheckCircle className="size-3.5" weight="fill" /> : <DownloadSimple className="size-3.5" />}
+                    {selectedItem.installed ? "已获取" : selectedItem.kind === "agents" ? "获取 Agent" : "安装 Skill"}
+                  </button>
+                  <button type="button" onClick={() => setDetailId(selectedItem.id)} className="h-9 rounded-[8px] border border-[var(--line-strong)] px-3 text-[10.5px] font-medium text-[var(--ink-soft)] hover:bg-[var(--hover-fill)]">
+                    查看详情
+                  </button>
+                </div>
               </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div
-        role="status"
-        aria-live="polite"
-        className={cn(
-          "pointer-events-none absolute bottom-5 left-1/2 z-40 flex -translate-x-1/2 translate-y-2 items-center gap-2 rounded-[8px] border border-[var(--line-strong)] bg-[var(--ink)] px-3.5 py-1.5 text-[10px] font-medium text-white opacity-0 shadow-[0_8px_24px_rgba(28,33,42,0.16)] transition-[opacity,transform]",
-          toast && "translate-y-0 opacity-100",
-        )}
-      >
-        <CheckCircle className="size-3.5" weight="fill" />
-        {toast}
+          ) : (
+            <div className="flex h-full items-center justify-center px-8 text-center text-[11px] leading-[18px] text-[var(--muted)]">选择一个资源以查看详情</div>
+          )}
+        </aside>
       </div>
+
+      <AnimatePresence>
+        {toast ? (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }} role="status" className="pointer-events-none absolute bottom-5 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-[8px] border border-white/10 bg-[var(--ink)] px-3.5 py-2 text-[10px] font-medium text-white shadow-[0_8px_24px_rgba(28,33,42,0.16)]">
+            <CheckCircle className="size-3.5" weight="fill" />
+            {toast}
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </section>
   )
 }

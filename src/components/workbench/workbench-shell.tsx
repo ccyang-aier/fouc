@@ -32,16 +32,13 @@ const mainCanvasVariants: Variants = {
 }
 
 import { applyAppearancePrefs, readAppearancePrefs } from "@/lib/appearance"
-import { applyAppBackground, readStoredAppBackground } from "@/lib/app-background"
 import { setOverlayRoot } from "@/lib/overlay-root"
-import { applySidebarStyle, readStoredSidebarStyle } from "@/lib/sidebar-style"
 import { manageWindowFrame } from "@/lib/window-frame"
 
 import { HomeCanvas } from "./home-canvas"
 import { AutomationCanvas } from "./automation/automation-canvas"
 import { CommunityCanvas } from "./community/community-canvas"
 import { ConnectorsCanvas } from "./connectors/connectors-canvas"
-import { GlassSlab } from "./glass-slab"
 import { NavigationSidebar, type WorkbenchView } from "./navigation-sidebar"
 import type { ProjectManagementPanelId } from "./project/project-management-model"
 import { ProjectHomeCanvas } from "./project/project-home-canvas"
@@ -96,12 +93,9 @@ export function WorkbenchShell() {
   // 应用面板根：桌面端作为自绘外框的内层与弹层宿主
   const frameRef = useRef<HTMLDivElement>(null)
 
-  // 启动时恢复外观偏好（主题 / 字体 / 动效）、侧栏材质（标准 / 磨砂玻璃）
-  // 与应用背景；背景虽由首帧脚本先行应用，html 上的内联样式可能被水合清除，此处幂等补足
+  // 启动时恢复外观偏好（主题 / 字体 / 动效）
   useEffect(() => {
     applyAppearancePrefs(readAppearancePrefs())
-    applySidebarStyle(readStoredSidebarStyle())
-    applyAppBackground(readStoredAppBackground())
   }, [])
 
   // 桌面端启用窗口自绘外框，并把弹层收进应用面板内
@@ -150,8 +144,7 @@ export function WorkbenchShell() {
         <div className="h-dvh w-full p-[var(--win-frame-inset)]">
           <div
             ref={frameRef}
-            style={{ background: "var(--win-canvas)" }}
-            className="flex h-full w-full min-w-[660px] min-h-[540px] flex-col overflow-hidden text-[var(--ink)] shadow-[var(--win-shadow)]"
+            className="flex h-full w-full min-w-[660px] min-h-[540px] flex-col overflow-hidden bg-background text-[var(--ink)] shadow-[var(--win-shadow)]"
           >
             {view === "settings" ? (
               // 设置为全窗页面：接管全部空间且不显示系统顶行；
@@ -164,7 +157,6 @@ export function WorkbenchShell() {
               // 系统底层行只在主区顶部、与主导航 header 等高并接
               <div className="flex min-h-0 flex-1">
                 <div className="sidebar-material flex shrink-0">
-                  <GlassSlab />
                   <WorkspaceRail view={view} onViewChange={changeView} onNewMission={startMission} />
                   <NavigationSidebar
                     open={!sidebarCollapsed}

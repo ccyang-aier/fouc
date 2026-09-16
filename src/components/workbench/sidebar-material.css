@@ -1,40 +1,5 @@
-/* ── 侧栏材质：标准 / 液态玻璃 ──
-   液态玻璃效果完全由 liquid-glass-react（官方包）承担：
-   GlassSlab（glass-slab.tsx）在材质容器内平铺一块玻璃底板
-   （位移折射 + 三通道色散 + 镜面描边），内容浮于其上，
-   容器尺寸仍由内容决定。
-   包内 .glass 的行内样式是悬浮药丸场景取值（inline-flex / 24px 间距 /
-   浮起投影），在此以 !important 统一覆盖为铺满、无间距、承载材质 tint。 */
+/* ── 侧栏材质：标准面板 ──
+   不透明浅色面板底座，供工作台双层侧栏与设置页共用。 */
 .sidebar-material {
-  position: relative;
-  isolation: isolate;
-  transition: background-color 180ms ease;
-}
-
-.sidebar-material > * {
-  position: relative;
-  z-index: 1;
-}
-
-.liquid-glass-slab {
-  z-index: 0;
-}
-
-.liquid-glass-slab .glass {
-  display: flex !important;
-  width: 100% !important;
-  height: 100% !important;
-  gap: 0 !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  background: var(--wt-sidebar-frosted-panel) !important;
-}
-
-/* 标准材质为纯色面板：隐藏玻璃底板，容器直接承载面板底色 */
-html[data-sidebar-style="standard"] .sidebar-material {
-  background-color: var(--wt-sidebar-standard-panel);
-}
-
-html[data-sidebar-style="standard"] .liquid-glass-slab {
-  display: none;
+  background: var(--wt-sidebar-standard-panel);
 }

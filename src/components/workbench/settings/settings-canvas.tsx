@@ -19,7 +19,6 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 
 import { NavButton, type SidebarRowItem } from "../navigation-sidebar"
-import { GlassSlab } from "../glass-slab"
 import { SidebarResizeHandle, useSidebarWidth } from "../sidebar-resize"
 import { AboutSettings } from "./about-settings"
 import { AgentSettings } from "./agent-settings"
@@ -56,7 +55,6 @@ export function SettingsCanvas({
       className="sidebar-material flex h-full min-h-0"
       aria-label="设置"
     >
-      <GlassSlab />
       <div
         style={{ width, zIndex: 20 }}
         className={cn(
@@ -67,7 +65,7 @@ export function SettingsCanvas({
         <nav
           data-tauri-drag-region
           aria-label="设置分区"
-          className="relative flex h-full min-h-0 flex-col border-r border-[var(--wt-sidebar-glass-edge)] px-3 pb-5 pt-3"
+          className="relative flex h-full min-h-0 flex-col border-r border-[var(--wt-sidebar-edge)] px-3 pb-5 pt-3"
         >
           <div data-tauri-drag-region className="flex h-9 shrink-0 items-center gap-1.5">
             <button

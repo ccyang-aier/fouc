@@ -109,7 +109,7 @@ function NavSectionLabel({ label }: { label: string }) {
   return (
     <div className="mt-4 flex h-5 items-center gap-2 px-1">
       <span className="shrink-0 text-2xs text-[var(--muted)]">{label}</span>
-      <span aria-hidden className="h-px flex-1 bg-[var(--wt-sidebar-glass-edge)]" />
+      <span aria-hidden className="h-px flex-1 bg-[var(--wt-sidebar-edge)]" />
     </div>
   )
 }
@@ -216,7 +216,7 @@ export function NavigationSidebar({
       aria-label={open ? "主导航" : "主导航（已收起）"}
       style={{ width: open ? width : 64 }}
       className={cn(
-        "relative flex h-full shrink-0 flex-col overflow-hidden border-r border-[var(--wt-sidebar-glass-edge)]",
+        "relative flex h-full shrink-0 flex-col overflow-hidden border-r border-[var(--wt-sidebar-edge)]",
         !dragging && "transition-[width] duration-[220ms] ease-out-soft",
       )}
     >
@@ -229,7 +229,7 @@ export function NavigationSidebar({
         title="展开主导航"
         onClick={onExpand}
         className={cn(
-          "absolute inset-x-0 top-0 z-10 flex h-11 items-center justify-center border-b border-[var(--wt-sidebar-glass-edge)] outline-none transition-[opacity,transform] hover:bg-sidebar-hover focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)]",
+          "absolute inset-x-0 top-0 z-10 flex h-11 items-center justify-center border-b border-[var(--wt-sidebar-edge)] outline-none transition-[opacity,transform] hover:bg-sidebar-hover focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)]",
           open ? "pointer-events-none -translate-x-1 opacity-0" : "opacity-100",
         )}
       >
@@ -239,7 +239,7 @@ export function NavigationSidebar({
       {/* 展开态头部：品牌标 + 名称 + 收起按钮 */}
       <div
         className={cn(
-          "flex h-11 shrink-0 items-center border-b border-[var(--wt-sidebar-glass-edge)] px-[11px] transition-[opacity,transform]",
+          "flex h-11 shrink-0 items-center border-b border-[var(--wt-sidebar-edge)] px-[11px] transition-[opacity,transform]",
           open ? "opacity-100" : "pointer-events-none translate-x-1 opacity-0",
         )}
       >

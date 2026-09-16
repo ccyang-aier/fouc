@@ -1,12 +1,12 @@
 "use client"
 
 /**
- * 外观设置：主题、主题色、字体、侧边栏材质与动效偏好。
+ * 外观设置：主题、主题色、字体与动效偏好。
  * 偏好经 lib/appearance 的外部存储管理（useSyncExternalStore 订阅），
  * 修改即时应用到整个工作台并持久化；首帧直接读取本地偏好，无默认值闪变。
  */
 
-import { useCallback, useState, useSyncExternalStore } from "react"
+import { useCallback, useSyncExternalStore } from "react"
 
 import {
   APPEARANCE_DEFAULTS,
@@ -17,42 +17,22 @@ import {
   subscribeAppearance,
   type AppearancePrefs,
 } from "@/lib/appearance"
-import { applyAppBackground, readStoredAppBackground } from "@/lib/app-background"
-import { applySidebarStyle, readStoredSidebarStyle, type SidebarStyle } from "@/lib/sidebar-style"
 
 import { FontSection } from "./appearance/font-section"
 import { AccentSection } from "./appearance/accent-section"
-import { BackgroundSection } from "./appearance/background-section"
-import { MaterialSection } from "./appearance/material-section"
 import { MiscSection } from "./appearance/misc-section"
 import { ThemeSection } from "./appearance/theme-section"
 import { PanelHeader } from "./general-settings"
 
 export function AppearanceSettings() {
   const prefs = useSyncExternalStore(subscribeAppearance, getAppearanceSnapshot, getAppearanceServerSnapshot)
-  const [sidebarStyle, setSidebarStyle] = useState<SidebarStyle>(() => readStoredSidebarStyle())
-  const [appBackground, setAppBackground] = useState(() => readStoredAppBackground())
 
   const update = useCallback((patch: Partial<AppearancePrefs>) => {
     applyAppearancePrefs({ ...getAppearanceSnapshot(), ...patch })
   }, [])
 
-  const changeSidebarStyle = useCallback((style: SidebarStyle) => {
-    setSidebarStyle(style)
-    applySidebarStyle(style)
-  }, [])
-
-  const changeAppBackground = useCallback((id: string) => {
-    setAppBackground(id)
-    applyAppBackground(id)
-  }, [])
-
   const resetAll = useCallback(() => {
     applyAppearancePrefs(APPEARANCE_DEFAULTS)
-    applySidebarStyle("frosted")
-    setSidebarStyle("frosted")
-    applyAppBackground("")
-    setAppBackground("")
   }, [])
 
   return (
@@ -70,8 +50,6 @@ export function AppearanceSettings() {
         onCustomColor={(accentCustom) => update({ accent: "custom", accentCustom })}
       />
       <FontSection prefs={prefs} onChange={update} />
-      <MaterialSection value={sidebarStyle} onChange={changeSidebarStyle} />
-      <BackgroundSection value={appBackground} onChange={changeAppBackground} />
       <MiscSection
         reducedMotion={prefs.reducedMotion}
         onReducedMotionChange={(reducedMotion) => update({ reducedMotion })}

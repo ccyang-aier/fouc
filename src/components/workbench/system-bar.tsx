@@ -14,7 +14,7 @@ export function SystemBar() {
   return (
     <div
       data-tauri-drag-region
-      className="flex h-11 shrink-0 select-none items-center border-b border-[var(--wt-sidebar-glass-edge)] bg-panel"
+      className="flex h-11 shrink-0 select-none items-center border-b border-[var(--wt-sidebar-edge)] bg-panel"
     >
       <div className="ml-auto flex items-center gap-1 pr-1">
         <WindowControl

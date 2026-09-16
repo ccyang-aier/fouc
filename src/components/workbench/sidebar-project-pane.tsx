@@ -165,7 +165,7 @@ export function ProjectSidebarPane({
         )}
       </div>
 
-      <div aria-hidden className="my-2 h-px shrink-0 bg-[var(--wt-sidebar-glass-edge)]" />
+      <div aria-hidden className="my-2 h-px shrink-0 bg-[var(--wt-sidebar-edge)]" />
 
       <nav
         className={cn(collapsed ? "flex flex-col gap-1" : "space-y-1")}
@@ -176,7 +176,7 @@ export function ProjectSidebarPane({
         )}
       </nav>
 
-      <div aria-hidden className="my-2 h-px shrink-0 bg-[var(--wt-sidebar-glass-edge)]" />
+      <div aria-hidden className="my-2 h-px shrink-0 bg-[var(--wt-sidebar-edge)]" />
 
       {toolRow(agentItem, activePanel === "agent", () => toggle("agent"), "agent")}
 
@@ -251,7 +251,7 @@ export function ProjectSidebarPane({
       </section>
 
       <div className="mt-auto">
-        <div aria-hidden className="mb-1.5 h-px bg-[var(--wt-sidebar-glass-edge)]" />
+        <div aria-hidden className="mb-1.5 h-px bg-[var(--wt-sidebar-edge)]" />
         {toolRow(
           { id: "settings", label: "项目设置", icon: GearSix },
           activePanel === "settings",

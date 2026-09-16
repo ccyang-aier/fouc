@@ -52,7 +52,7 @@ export function WorkspaceRail({
   return (
     <aside
       aria-label="工作区入口"
-      className="relative flex h-full w-[58px] shrink-0 flex-col items-center border-r border-[var(--wt-sidebar-glass-edge)] bg-transparent py-4"
+      className="relative flex h-full w-[58px] shrink-0 flex-col items-center border-r border-[var(--wt-sidebar-edge)] bg-transparent py-4"
     >
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -122,7 +122,7 @@ export function WorkspaceRail({
         ))}
       </div>
 
-      <div className="mt-auto flex flex-col items-center gap-2 border-t border-[var(--wt-sidebar-glass-edge)] pt-4">
+      <div className="mt-auto flex flex-col items-center gap-2 border-t border-[var(--wt-sidebar-edge)] pt-4">
         <Tooltip>
           <TooltipTrigger asChild>
             <button

@@ -47,7 +47,7 @@ export function NavButton({
       aria-label={compact ? item.label : undefined}
       data-active={active}
       className={cn(
-        "sidebar-nav-row group flex items-center rounded-[6px] text-[12px] leading-none outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+        "sidebar-nav-row group flex items-center rounded-[6px] text-[11px] leading-none outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
         compact
           ? "mx-auto size-8 justify-center"
           : cn("h-[30px] w-full gap-2 pr-2", nested ? "pl-5" : "pl-2"),

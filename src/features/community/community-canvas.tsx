@@ -8,18 +8,21 @@ import {
   DotsThree,
   DownloadSimple,
   FunnelSimple,
-  List,
+  ListBullets,
   MagnifyingGlass,
   Plus,
   SealCheck,
   SquaresFour,
   Star,
+  Users,
+  X,
 } from "@phosphor-icons/react"
 
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
@@ -36,6 +39,7 @@ import {
 
 type SortKey = "popular" | "rating" | "name"
 type ViewMode = "grid" | "list"
+type AudienceFilter = "all" | "official" | "community"
 
 const SORT_OPTIONS: Array<{ id: SortKey; label: string }> = [
   { id: "popular", label: "最多获取" },
@@ -47,22 +51,25 @@ function itemKindLabel(kind: CommunityTab) {
   return kind === "agents" ? "Agent" : "Skill"
 }
 
-function itemMatchesTag(item: CommunityLibraryItem, tag: string) {
-  if (!tag) return true
-  if (tag === "写作") return item.category === "内容" || item.tags.some((value) => ["文档", "长文", "周报", "扩写"].includes(value))
-  return item.category === tag || item.tags.includes(tag)
+function itemMatchesDomain(item: CommunityLibraryItem, domain: string) {
+  if (!domain) return true
+  if (domain === "写作") return item.category === "内容" || item.tags.some((value) => ["文档", "长文", "周报", "扩写"].includes(value))
+  return item.category === domain
 }
 
 export function CommunityCanvas() {
   const [agents, setAgents] = useState(initialCommunityAgents)
   const [skills, setSkills] = useState(initialCommunitySkills)
   const [typeFilter, setTypeFilter] = useState<CommunityTypeFilter>("all")
+  const [domain, setDomain] = useState("")
   const [tag, setTag] = useState("")
-  const [installedOnly, setInstalledOnly] = useState(false)
+  const [minRating, setMinRating] = useState(0)
+  const [minDownloads, setMinDownloads] = useState(0)
+  const [audience, setAudience] = useState<AudienceFilter>("all")
   const [sort, setSort] = useState<SortKey>("popular")
   const [query, setQuery] = useState("")
   const [view, setView] = useState<ViewMode>("grid")
-  const [selectedId, setSelectedId] = useState<string | null>("agent-reviewer")
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [detailId, setDetailId] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
@@ -107,8 +114,12 @@ export function CommunityCanvas() {
       if (typeFilter === "agents" || typeFilter === "skills") {
         if (item.kind !== typeFilter) return false
       } else if (typeFilter === "plugins" || typeFilter === "prompts") return false
-      if (installedOnly && !item.installed) return false
-      if (!itemMatchesTag(item, tag)) return false
+      if (!itemMatchesDomain(item, domain)) return false
+      if (tag && !item.tags.includes(tag)) return false
+      if ((item.rating ?? 0) < minRating) return false
+      if (item.installs < minDownloads) return false
+      if (audience === "official" && item.author !== "Fouc 官方") return false
+      if (audience === "community" && item.author === "Fouc 官方") return false
       if (!normalizedQuery) return true
       return `${item.name} ${item.summary} ${item.author} ${item.tags.join(" ")}`.toLocaleLowerCase("zh-CN").includes(normalizedQuery)
     })
@@ -117,9 +128,9 @@ export function CommunityCanvas() {
       if (sort === "rating") return (b.rating ?? 0) - (a.rating ?? 0) || b.installs - a.installs
       return b.installs - a.installs
     })
-  }, [installedOnly, libraryItems, normalizedQuery, sort, tag, typeFilter])
+  }, [audience, domain, libraryItems, minDownloads, minRating, normalizedQuery, sort, tag, typeFilter])
 
-  const activeSelectedId = visibleItems.some((item) => item.id === selectedId) ? selectedId : (visibleItems[0]?.id ?? null)
+  const activeSelectedId = selectedId && visibleItems.some((item) => item.id === selectedId) ? selectedId : null
   const selectedItem = libraryItems.find((item) => item.id === activeSelectedId) ?? null
 
   const typeCounts = useMemo<Record<CommunityTypeFilter, number>>(() => ({
@@ -130,13 +141,29 @@ export function CommunityCanvas() {
     prompts: 0,
   }), [agents.length, libraryItems, skills.length])
 
-  const tagCounts = useMemo(() => {
+  const domainCounts = useMemo(() => {
     const counts = new Map<string, number>()
     for (const label of ["研发", "办公", "数据", "内容", "写作"]) {
-      counts.set(label, libraryItems.filter((item) => itemMatchesTag(item, label)).length)
+      counts.set(label, libraryItems.filter((item) => itemMatchesDomain(item, label)).length)
     }
     return counts
   }, [libraryItems])
+
+  const tagCounts = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const item of libraryItems) {
+      for (const label of item.tags) counts.set(label, (counts.get(label) ?? 0) + 1)
+    }
+    return new Map([...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "zh-CN")))
+  }, [libraryItems])
+
+  const activeFilterCount = Number(minRating > 0) + Number(minDownloads > 0) + Number(audience !== "all")
+
+  function clearAdvancedFilters() {
+    setMinRating(0)
+    setMinDownloads(0)
+    setAudience("all")
+  }
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -212,7 +239,7 @@ export function CommunityCanvas() {
   return (
     <section aria-label="社区资产库" className="relative flex h-full min-h-0 flex-col bg-panel">
       <div className="flex min-h-0 flex-1">
-        <CommunityFacets type={typeFilter} tag={tag} typeCounts={typeCounts} tagCounts={tagCounts} onTypeChange={setTypeFilter} onTagChange={setTag} />
+        <CommunityFacets type={typeFilter} domain={domain} tag={tag} typeCounts={typeCounts} domainCounts={domainCounts} tagCounts={tagCounts} onTypeChange={setTypeFilter} onDomainChange={setDomain} onTagChange={setTag} />
 
         <main className="flex min-h-0 min-w-0 flex-1 flex-col">
           <header className="flex h-[50px] shrink-0 items-center justify-between border-b border-[var(--line)] px-[18px]">
@@ -230,36 +257,41 @@ export function CommunityCanvas() {
           </header>
 
           <div className="flex shrink-0 items-center justify-between gap-[18px] px-[18px] py-[13px]">
-            <div className="flex min-w-0 w-full max-w-[470px] items-center gap-2.5">
+            <div className="flex min-w-0 w-full max-w-[410px] items-center gap-2.5">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button type="button" data-active={installedOnly || undefined} className="flex h-8 w-[86px] shrink-0 items-center justify-between rounded-[6px] border border-[var(--line)] bg-panel px-2.5 text-[10px] text-[var(--ink-soft)] outline-none hover:border-[var(--line-strong)] data-[active=true]:border-[var(--accent-soft-line)] data-[active=true]:text-[var(--accent-ink)]">
-                    <span>{installedOnly ? "已获取" : "状态筛选"}</span><CaretDown className="size-3 text-[var(--muted)]" />
+                  <button type="button" data-active={activeFilterCount > 0 || undefined} className="flex h-8 w-[110px] shrink-0 items-center justify-between rounded-[6px] border border-[var(--line)] bg-panel px-2.5 text-[10px] text-[var(--ink-soft)] outline-none hover:border-[var(--line-strong)] data-[active=true]:border-[var(--accent-soft-line)] data-[active=true]:bg-[color-mix(in_srgb,var(--accent)_5%,transparent)] data-[active=true]:text-[var(--accent-ink)]">
+                    <span className="flex items-center gap-1.5"><FunnelSimple className="size-3.5" />类型筛选{activeFilterCount ? <b className="flex size-4 items-center justify-center rounded-full bg-[var(--accent)] text-[8px] text-white">{activeFilterCount}</b> : null}</span><CaretDown className="size-3 text-[var(--muted)]" />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-36">
-                  <DropdownMenuCheckboxItem checked={installedOnly} onCheckedChange={(checked) => setInstalledOnly(checked === true)}>仅看已获取</DropdownMenuCheckboxItem>
+                <DropdownMenuContent align="start" className="w-[254px] p-2.5">
+                  <div className="flex items-center justify-between px-1 pb-2"><div><p className="text-[11px] font-semibold text-[var(--ink)]">资源筛选</p><p className="mt-0.5 text-[9px] text-[var(--muted)]">组合条件，快速缩小结果范围</p></div>{activeFilterCount ? <button type="button" onClick={clearAdvancedFilters} className="text-[9.5px] text-[var(--accent-ink)] hover:underline">清除</button> : null}</div>
+                  <FilterChoice label="评分" icon={<Star className="size-3.5 text-[#dfa43c]" weight="fill" />} value={minRating} options={[{ value: 0, label: "不限" }, { value: 4.5, label: "4.5+" }, { value: 4.8, label: "4.8+" }]} onChange={setMinRating} />
+                  <DropdownMenuSeparator className="my-2" />
+                  <FilterChoice label="下载量" icon={<DownloadSimple className="size-3.5" />} value={minDownloads} options={[{ value: 0, label: "不限" }, { value: 5000, label: "5千+" }, { value: 10000, label: "1万+" }]} onChange={setMinDownloads} />
+                  <DropdownMenuSeparator className="my-2" />
+                  <FilterChoice label="用户" icon={<Users className="size-3.5" />} value={audience} options={[{ value: "all", label: "全部" }, { value: "official", label: "官方" }, { value: "community", label: "社区" }]} onChange={setAudience} />
                 </DropdownMenuContent>
               </DropdownMenu>
-              <label className="flex h-8 min-w-[160px] max-w-[360px] flex-1 items-center gap-2 rounded-[6px] border border-[var(--line)] bg-panel px-2.5 text-[var(--muted)] transition-colors focus-within:border-[var(--accent)]">
+              <label className="flex h-8 min-w-[150px] max-w-[290px] flex-1 items-center gap-2 rounded-[6px] border border-[var(--line)] bg-panel px-2.5 text-[var(--muted)] transition-colors focus-within:border-[var(--accent)]">
                 <MagnifyingGlass className="size-4 shrink-0" />
                 <input ref={searchRef} type="search" value={query} onChange={(event) => setQuery(event.target.value)} aria-label="搜索社区资源" placeholder="搜索资源名称、标签或描述…" className="min-w-0 flex-1 bg-transparent text-[11px] text-[var(--ink)] outline-none placeholder:text-[var(--muted)]" />
               </label>
             </div>
             <div className="ml-auto flex shrink-0 items-center gap-2.5">
               <div className="flex h-8 items-center overflow-hidden rounded-[6px] border border-[var(--line)]" aria-label="浏览方式">
-              {(["grid", "list"] as const).map((mode) => {
-                const Icon = mode === "grid" ? SquaresFour : List
+              {(["list", "grid"] as const).map((mode) => {
+                const Icon = mode === "grid" ? SquaresFour : ListBullets
                 return (
                   <button key={mode} type="button" aria-label={mode === "grid" ? "网格视图" : "列表视图"} aria-pressed={view === mode} onClick={() => setView(mode)} className={cn("flex size-[30px] items-center justify-center text-[var(--muted)] transition-colors hover:bg-[var(--surface-hover)]", view === mode && "bg-[var(--surface-hover)] text-[var(--ink)]")}>
-                    <Icon className="size-4" weight={view === mode ? "fill" : "regular"} />
+                    <Icon className={mode === "grid" ? "size-[17px]" : "size-[18px]"} weight={view === mode ? "fill" : "regular"} />
                   </button>
                 )
               })}
               </div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button type="button" className="flex h-8 items-center gap-1.5 rounded-[6px] border border-[var(--line)] px-2.5 text-[10px] text-[var(--ink-soft)] outline-none hover:border-[var(--line-strong)]">
+                  <button type="button" className="flex h-8 w-[98px] items-center justify-between gap-1 whitespace-nowrap rounded-[6px] border border-[var(--line)] px-2 text-[10px] text-[var(--ink-soft)] outline-none hover:border-[var(--line-strong)]">
                     <FunnelSimple className="size-3.5" />{SORT_OPTIONS.find((item) => item.id === sort)?.label}<CaretDown className="size-3 text-[var(--muted)]" />
                   </button>
                 </DropdownMenuTrigger>
@@ -290,74 +322,51 @@ export function CommunityCanvas() {
               <div className="flex h-full min-h-56 flex-col items-center justify-center text-center">
                 <MagnifyingGlass className="size-6 text-[var(--muted)]" />
                 <p className="mt-3 text-[12px] font-medium text-[var(--ink-soft)]">没有匹配的社区资源</p>
-                <button type="button" onClick={() => { setQuery(""); setTag(""); setTypeFilter("all"); setInstalledOnly(false) }} className="mt-2 text-[10.5px] text-[var(--accent-ink)] hover:underline">清除筛选条件</button>
+                <button type="button" onClick={() => { setQuery(""); setTag(""); setDomain(""); setTypeFilter("all"); clearAdvancedFilters() }} className="mt-2 text-[10.5px] text-[var(--accent-ink)] hover:underline">清除筛选条件</button>
               </div>
             )}
           </div>
         </main>
 
-        <aside className="w-[286px] shrink-0 min-h-0 overflow-y-auto border-l border-[var(--line)] max-[1150px]:hidden">
-          {selectedItem ? (
-            <div className="flex min-h-full flex-col p-4">
-                <div className="flex items-start gap-3 border-b border-[var(--line)] pb-4">
-                  <CommunityResourceIcon item={selectedItem} size="large" />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <h2 className="truncate text-[16px] font-bold tracking-[-0.02em] text-[var(--ink)]">{selectedItem.name}</h2>
-                      {selectedItem.author === "Fouc 官方" ? <SealCheck className="size-4 shrink-0 text-[var(--accent)]" weight="fill" /> : null}
+        {selectedItem ? (
+          <aside aria-label="资源详情检查器" className="w-[304px] shrink-0 min-h-0 overflow-y-auto border-l border-[var(--line)] bg-[var(--surface-subtle)] max-[1150px]:hidden">
+            <div className="flex min-h-full flex-col">
+              <div className="flex h-11 shrink-0 items-center justify-between border-b border-[var(--line)] bg-panel px-4">
+                <span className="text-[10.5px] font-semibold text-[var(--ink-soft)]">资源详情</span>
+                <button type="button" aria-label="关闭资源详情" title="关闭" onClick={() => setSelectedId(null)} className="flex size-6 items-center justify-center rounded-[5px] text-[var(--muted)] outline-none hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><X className="size-3.5" weight="bold" /></button>
+              </div>
+
+              <div className="flex flex-1 flex-col p-4">
+                <div className="rounded-[12px] border border-[var(--line)] bg-panel p-4 shadow-[0_8px_28px_-24px_rgba(20,24,32,0.55)]">
+                  <div className="flex items-start gap-3">
+                    <CommunityResourceIcon item={selectedItem} size="large" />
+                    <div className="min-w-0 flex-1 pt-0.5">
+                      <div className="flex items-center gap-1.5"><h2 className="truncate text-[16px] font-bold tracking-[-0.02em] text-[var(--ink)]">{selectedItem.name}</h2>{selectedItem.author === "Fouc 官方" ? <SealCheck className="size-4 shrink-0 text-[var(--accent)]" weight="fill" /> : null}</div>
+                      <p className="mt-1 text-[10px] text-[var(--muted)]">{selectedItem.author} · {selectedItem.updated}更新</p>
+                      <div className="mt-2.5 flex items-center gap-1.5"><span className="rounded-[5px] bg-[color-mix(in_srgb,var(--accent)_9%,transparent)] px-2 py-1 text-[9px] font-semibold text-[var(--accent-ink)]">{itemKindLabel(selectedItem.kind)}</span><span className="rounded-[5px] border border-[var(--line)] px-2 py-1 text-[9px] text-[var(--muted-strong)]">{selectedItem.category}</span></div>
                     </div>
-                    <p className="mt-1 text-[10.5px] text-[var(--muted)]">{selectedItem.author} · {selectedItem.updated}更新</p>
-                    <span className="mt-2 inline-flex rounded-[5px] bg-[var(--surface-hover)] px-2 py-1 text-[9px] font-medium text-[var(--muted-strong)]">{itemKindLabel(selectedItem.kind)}</span>
                   </div>
+                  <p className="mt-4 text-[11px] leading-[19px] text-[var(--ink-soft)]">{selectedItem.summary}</p>
+                  <div className="mt-3.5 flex flex-wrap gap-1.5">{selectedItem.tags.map((label) => <span key={label} className="rounded-[5px] bg-[var(--surface-hover)] px-2 py-1 text-[10px] text-[var(--muted-strong)]">{label}</span>)}</div>
                 </div>
 
-                <p className="mt-4 text-[11.5px] leading-[19px] text-[var(--ink-soft)]">{selectedItem.summary}</p>
-
-                <div className="mt-4 flex flex-wrap gap-1.5">
-                  {selectedItem.tags.map((tag) => <span key={tag} className="rounded-[6px] bg-[var(--surface-hover)] px-2 py-1 text-[9.5px] text-[var(--muted-strong)]">{tag}</span>)}
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <div className="rounded-[10px] border border-[var(--line)] bg-panel p-3"><div className="flex items-center gap-1.5 text-[9px] text-[var(--muted)]"><DownloadSimple className="size-3.5" />累计获取</div><p className="mt-1.5 text-[15px] font-semibold tabular-nums text-[var(--ink)]">{selectedItem.installs.toLocaleString("zh-CN")}</p></div>
+                  <div className="rounded-[10px] border border-[var(--line)] bg-panel p-3"><div className="flex items-center gap-1.5 text-[9px] text-[var(--muted)]"><Star className="size-3.5 text-[#dfa43c]" weight="fill" />社区评分</div><p className="mt-1.5 text-[15px] font-semibold tabular-nums text-[var(--ink)]">{selectedItem.rating ?? "—"}</p></div>
                 </div>
 
-                <dl className="mt-5 border-y border-[var(--line)] py-2">
-                  {[
-                    ["分类", selectedItem.category],
-                    ["版本", `v${selectedItem.version}`],
-                    ["获取量", selectedItem.installs.toLocaleString("zh-CN")],
-                    ["状态", selectedItem.installed ? "已获取" : "可获取"],
-                  ].map(([label, value]) => (
-                    <div key={label} className="flex items-center justify-between gap-3 py-1.5 text-[10.5px]">
-                      <dt className="text-[var(--muted)]">{label}</dt>
-                      <dd className="truncate font-medium text-[var(--ink-soft)]">{value}</dd>
-                    </div>
-                  ))}
+                <dl className="mt-3 rounded-[10px] border border-[var(--line)] bg-panel px-3 py-1.5">
+                  {[["类型", itemKindLabel(selectedItem.kind)], ["领域", selectedItem.category], ["版本", `v${selectedItem.version}`], ["状态", selectedItem.installed ? "已获取" : "可获取"]].map(([label, value], index) => <div key={label} className={cn("flex items-center justify-between gap-3 py-2 text-[10.5px]", index > 0 && "border-t border-[var(--line)]")}><dt className="text-[var(--muted)]">{label}</dt><dd className="truncate font-medium text-[var(--ink-soft)]">{value}</dd></div>)}
                 </dl>
 
-                {typeof selectedItem.rating === "number" ? (
-                  <div className="mt-4 flex items-center gap-1.5">
-                    <Star className="size-4 text-[#dfa43c]" weight="fill" />
-                    <span className="text-[12px] font-semibold text-[var(--ink)]">{selectedItem.rating}</span>
-                    <span className="text-[10px] text-[var(--muted)]">社区评分</span>
-                  </div>
-                ) : null}
-
-                <div className="mt-5 grid grid-cols-[1fr_auto] gap-2">
-                  <button
-                    type="button"
-                    disabled={selectedItem.installed}
-                    onClick={() => acquireItem(selectedItem)}
-                    className="flex h-9 items-center justify-center gap-1.5 rounded-[8px] bg-[var(--accent)] px-3 text-[11px] font-semibold text-white outline-none transition-colors hover:bg-[var(--accent-strong)] disabled:bg-[var(--surface-hover)] disabled:text-[var(--ok-ink)]"
-                  >
-                    {selectedItem.installed ? <CheckCircle className="size-3.5" weight="fill" /> : <DownloadSimple className="size-3.5" />}
-                    {selectedItem.installed ? "已获取" : selectedItem.kind === "agents" ? "获取 Agent" : "安装 Skill"}
-                  </button>
-                  <button type="button" onClick={() => setDetailId(selectedItem.id)} className="h-9 rounded-[8px] border border-[var(--line-strong)] px-3 text-[10.5px] font-medium text-[var(--ink-soft)] hover:bg-[var(--hover-fill)]">
-                    查看详情
-                  </button>
+                <div className="mt-auto grid grid-cols-[1fr_auto] gap-2 pt-4">
+                  <button type="button" disabled={selectedItem.installed} onClick={() => acquireItem(selectedItem)} className="flex h-9 items-center justify-center gap-1.5 rounded-[8px] bg-[var(--accent)] px-3 text-[11px] font-semibold text-white shadow-[0_5px_14px_color-mix(in_srgb,var(--accent)_18%,transparent)] outline-none transition-colors hover:bg-[var(--accent-strong)] disabled:bg-[var(--surface-hover)] disabled:text-[var(--ok-ink)] disabled:shadow-none">{selectedItem.installed ? <CheckCircle className="size-3.5" weight="fill" /> : <DownloadSimple className="size-3.5" />}{selectedItem.installed ? "已获取" : selectedItem.kind === "agents" ? "获取 Agent" : "安装 Skill"}</button>
+                  <button type="button" onClick={() => setDetailId(selectedItem.id)} className="h-9 rounded-[8px] border border-[var(--line-strong)] bg-panel px-3 text-[10.5px] font-medium text-[var(--ink-soft)] hover:bg-[var(--hover-fill)]">查看详情</button>
                 </div>
+              </div>
             </div>
-          ) : (
-            <div className="flex h-full items-center justify-center px-8 text-center text-[11px] leading-[18px] text-[var(--muted)]">选择一个资源以查看详情</div>
-          )}
-        </aside>
+          </aside>
+        ) : null}
       </div>
 
       <AnimatePresence>
@@ -369,5 +378,18 @@ export function CommunityCanvas() {
         ) : null}
       </AnimatePresence>
     </section>
+  )
+}
+
+function FilterChoice<T extends string | number>({ label, icon, value, options, onChange }: { label: string; icon: React.ReactNode; value: T; options: Array<{ value: T; label: string }>; onChange: (value: T) => void }) {
+  return (
+    <div className="px-1">
+      <div className="mb-1.5 flex items-center gap-1.5 text-[9.5px] font-medium text-[var(--muted-strong)]">{icon}<span>{label}</span></div>
+      <div className="grid grid-cols-3 gap-1 rounded-[7px] bg-[var(--surface-subtle)] p-1">
+        {options.map((option) => (
+          <button key={String(option.value)} type="button" aria-pressed={value === option.value} onClick={() => onChange(option.value)} className={cn("h-7 rounded-[5px] text-[9.5px] text-[var(--muted)] outline-none transition-[background-color,color,box-shadow] hover:text-[var(--ink-soft)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]", value === option.value && "bg-panel font-medium text-[var(--ink)] shadow-[0_1px_3px_rgba(20,24,32,0.09)]")}>{option.label}</button>
+        ))}
+      </div>
+    </div>
   )
 }

@@ -200,7 +200,7 @@ export function NavigationSidebar({
       >
         <div className="flex min-w-0 items-center gap-1.5">
           <FoucMark />
-          <span className="truncate text-[14px] font-semibold text-[var(--ink)]">Fouc</span>
+          <span className="truncate text-[13px] font-semibold text-[var(--ink)]">Fouc</span>
         </div>
         <button
           type="button"

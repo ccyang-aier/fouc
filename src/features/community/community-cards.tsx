@@ -128,7 +128,10 @@ export function CommunityAssetCard({
             {item.author === "Fouc 官方" ? <SealCheck className="size-3.5 shrink-0 text-[var(--accent)]" weight="fill" /> : null}
           </div>
           <p className="mt-1 truncate text-[10px] text-[var(--muted)]">{item.author}</p>
-          <span className="mt-1.5 inline-flex rounded-[4px] bg-[var(--surface-hover)] px-1.5 py-0.5 text-[8.5px] font-medium text-[var(--muted-strong)]">{kindLabel[item.kind]}</span>
+          <div className="mt-1.5 flex items-center gap-1">
+            <span className="inline-flex rounded-[4px] bg-[color-mix(in_srgb,var(--accent)_9%,transparent)] px-1.5 py-0.5 text-[9px] font-semibold text-[var(--accent-ink)]">{kindLabel[item.kind]}</span>
+            <span className="inline-flex rounded-[4px] border border-[var(--line)] px-1.5 py-0.5 text-[9px] font-medium text-[var(--muted-strong)]">{item.category}</span>
+          </div>
         </div>
       </div>
 
@@ -136,7 +139,7 @@ export function CommunityAssetCard({
 
       <div className="mt-2.5 flex min-w-0 items-center gap-1.5 overflow-hidden">
         {item.tags.slice(0, 3).map((tag) => (
-          <span key={tag} className="truncate rounded-[4px] bg-[var(--surface-subtle)] px-1.5 py-0.5 text-[8.5px] text-[var(--muted)]">{tag}</span>
+          <span key={tag} className="truncate rounded-[5px] bg-[var(--surface-subtle)] px-1.5 py-0.5 text-[10px] text-[var(--muted-strong)]">{tag}</span>
         ))}
       </div>
 

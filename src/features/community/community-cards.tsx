@@ -194,7 +194,7 @@ export function CommunityAssetCard({
         ))}
       </div>
 
-      <div className="mt-3 flex items-center gap-1 border-t border-[var(--line)] pt-2.5 text-[9.5px] tabular-nums text-[var(--muted)]">
+      <div className="mt-3 flex items-center gap-1 border-t border-dashed border-[var(--line)] pt-2.5 text-[9.5px] tabular-nums text-[var(--muted)]">
         {typeof item.rating === "number" ? (
           <>
             <Star className="size-3 text-[#dfa43c]" weight="fill" />

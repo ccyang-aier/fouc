@@ -172,7 +172,7 @@ export function NavigationSidebar({
       style={{ width: open ? width : 64 }}
       className={cn(
         "relative flex h-full shrink-0 flex-col overflow-hidden border-r border-[var(--wt-sidebar-edge)]",
-        !dragging && "transition-[width] duration-[220ms] ease-out-soft",
+        !dragging && "will-change-[width] transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
       )}
     >
       {/* 收起态头部：点击品牌标展开 */}
@@ -184,8 +184,8 @@ export function NavigationSidebar({
         title="展开主导航"
         onClick={onExpand}
         className={cn(
-          "absolute inset-x-0 top-0 z-10 flex h-11 items-center justify-center border-b border-[var(--wt-sidebar-edge)] outline-none transition-[opacity,transform] hover:bg-sidebar-hover focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)]",
-          open ? "pointer-events-none -translate-x-1 opacity-0" : "opacity-100",
+          "absolute inset-x-0 top-0 z-10 flex h-11 items-center justify-center border-b border-[var(--wt-sidebar-edge)] outline-none transition-[opacity,transform] duration-200 hover:bg-sidebar-hover focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)]",
+          open ? "pointer-events-none -translate-x-1 opacity-0" : "delay-100 opacity-100",
         )}
       >
         <FoucMark compact />
@@ -194,8 +194,8 @@ export function NavigationSidebar({
       {/* 展开态头部：品牌标 + 名称 + 收起按钮 */}
       <div
         className={cn(
-          "flex h-11 shrink-0 items-center border-b border-[var(--wt-sidebar-edge)] px-[11px] transition-[opacity,transform]",
-          open ? "opacity-100" : "pointer-events-none translate-x-1 opacity-0",
+          "flex h-11 shrink-0 items-center border-b border-[var(--wt-sidebar-edge)] px-[11px] transition-[opacity,transform] duration-150",
+          open ? "delay-100 opacity-100" : "pointer-events-none translate-x-1 opacity-0",
         )}
       >
         <div className="flex min-w-0 items-center gap-1.5">
@@ -217,8 +217,8 @@ export function NavigationSidebar({
       <ScrollArea
         aria-hidden={!open}
         className={cn(
-          "min-h-0 flex-1 transition-[opacity,transform]",
-          open ? "opacity-100" : "pointer-events-none -translate-x-1 opacity-0",
+          "min-h-0 flex-1 transition-[opacity,transform] duration-150",
+          open ? "delay-100 opacity-100" : "pointer-events-none -translate-x-1 opacity-0",
         )}
         viewportClassName={cn(
           "px-[11px] pb-4 pt-3",
@@ -264,8 +264,8 @@ export function NavigationSidebar({
       {projectsMode ? null : (
         <div
           className={cn(
-            "shrink-0 px-[11px] pb-[9px] pt-2 transition-opacity",
-            open ? "opacity-100" : "pointer-events-none opacity-0",
+            "shrink-0 px-[11px] pb-[9px] pt-2 transition-opacity duration-150",
+            open ? "delay-100 opacity-100" : "pointer-events-none opacity-0",
           )}
         >
           <div className="grid gap-1">
@@ -282,8 +282,8 @@ export function NavigationSidebar({
       <ScrollArea
         aria-hidden={open}
         className={cn(
-          "absolute inset-x-0 bottom-0 top-11 z-[5] min-h-0 transition-opacity",
-          open ? "pointer-events-none opacity-0" : "opacity-100",
+          "absolute inset-x-0 bottom-0 top-11 z-[5] min-h-0 transition-[opacity,transform] duration-200",
+          open ? "pointer-events-none translate-x-1 opacity-0" : "delay-100 translate-x-0 opacity-100",
         )}
         viewportClassName={cn(
           "flex flex-col pb-3 pt-3",

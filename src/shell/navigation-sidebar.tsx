@@ -62,14 +62,14 @@ function ProjectNavSection({
 
   return (
     <div className="mt-3.5">
-      <div className="flex h-7 w-full items-center justify-between gap-2 px-1 text-[10.5px] text-[var(--muted-strong)]">
-        <button type="button" aria-expanded={open} onClick={() => setOpen((value) => !value)} className="flex min-w-0 items-center gap-1.5 rounded-[5px] outline-none hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
+      <div className="group/project flex h-8 w-full items-center justify-between gap-2 rounded-[6px] px-1.5 text-[11.5px] text-[var(--muted-strong)] transition-colors hover:bg-sidebar-hover">
+        <button type="button" aria-expanded={open} onClick={() => setOpen((value) => !value)} className="flex min-w-0 flex-1 items-center gap-1.5 rounded-[5px] text-left outline-none hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
           <span className="flex size-4 shrink-0 items-center justify-center text-[var(--muted)]">{icon}</span>
           <span className="truncate">{label}</span>
           <span className="text-[9px] tabular-nums text-[var(--muted)]">({count})</span>
           <CaretDown aria-hidden className={cn("size-2.5 shrink-0 transition-transform duration-150", !open && "-rotate-90")} weight="fill" />
         </button>
-        <div className="flex shrink-0 items-center gap-0.5">
+        <div className="pointer-events-none flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity duration-150 group-hover/project:pointer-events-auto group-hover/project:opacity-100 group-focus-within/project:pointer-events-auto group-focus-within/project:opacity-100">
           <button type="button" aria-label={`新建${label}`} title={`新建${label}`} onClick={onNew} className="flex size-6 items-center justify-center rounded-[5px] text-[var(--muted)] outline-none hover:bg-sidebar-hover hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><Plus className="size-3.5" /></button>
           <button type="button" aria-label={`${label}更多操作`} title={`${label}更多操作`} onClick={onMore} className="flex size-6 items-center justify-center rounded-[5px] text-[var(--muted)] outline-none hover:bg-sidebar-hover hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><DotsThree className="size-4" weight="bold" /></button>
         </div>
@@ -172,7 +172,7 @@ export function NavigationSidebar({
   return (
     <aside
       aria-label={open ? "主导航" : "主导航（已收起）"}
-      style={{ width: open ? width : 64 }}
+      style={{ width: open ? width : 52 }}
       className={cn(
         "relative flex h-full shrink-0 flex-col overflow-hidden border-r border-[var(--wt-sidebar-edge)]",
         !dragging && "will-change-[width] transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",

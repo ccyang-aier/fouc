@@ -338,8 +338,21 @@ input {
     0 5px 12px -7px rgb(16 20 24 / 0.32);
 }
 
-button {
-  cursor: default;
+:where(
+  button:not(:disabled),
+  a[href],
+  summary,
+  select,
+  [role="button"]:not([aria-disabled="true"]),
+  [role="tab"]:not([aria-disabled="true"]),
+  [role="menuitem"]:not([aria-disabled="true"]),
+  [role="option"]:not([aria-disabled="true"])
+) {
+  cursor: pointer;
+}
+
+:where(button:disabled, [aria-disabled="true"]) {
+  cursor: not-allowed;
 }
 
 /* 字号作用域：会话消息与输入使用对话字体，等宽内容使用代码字体 */

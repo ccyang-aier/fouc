@@ -83,9 +83,9 @@ export function CommunityFacets({ type, domain, tag, typeCounts, domainCounts, t
     onTagChange(next)
   }
 
-  if (collapsed) {
-    return (
-      <aside aria-label="社区资源分类（已收起）" style={{ background: "var(--panel)" }} className="sidebar-material flex h-full w-11 shrink-0 flex-col items-center border-r border-[var(--wt-sidebar-edge)]">
+  return (
+    <aside aria-label={collapsed ? "社区资源分类（已收起）" : "社区资源分类"} style={{ width: collapsed ? 44 : width, flexBasis: collapsed ? 44 : width, background: "var(--panel)" }} className={cn("sidebar-material relative h-full shrink-0 overflow-hidden border-r border-[var(--wt-sidebar-edge)]", !dragging && "will-change-[width,flex-basis] transition-[width,flex-basis] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]")}>
+      <div inert={!collapsed} aria-hidden={!collapsed} className={cn("absolute inset-0 flex w-11 flex-col items-center transition-[opacity,transform] duration-150", collapsed ? "delay-100 translate-x-0 opacity-100" : "pointer-events-none -translate-x-1 opacity-0")}>
         <button type="button" aria-label="展开社区侧栏" title="展开社区侧栏" onClick={() => setCollapsed(false)} className="mt-2.5 flex size-7 items-center justify-center rounded-[6px] text-[var(--muted)] outline-none hover:bg-sidebar-hover hover:text-[var(--ink-soft)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><CaretRight className="size-3.5" weight="bold" /></button>
         <div className="mt-2 flex flex-col gap-1">
           {TYPE_ITEMS.map((item) => {
@@ -94,16 +94,13 @@ export function CommunityFacets({ type, domain, tag, typeCounts, domainCounts, t
             return <button key={item.id} type="button" aria-label={item.label} title={item.label} data-active={active} onClick={() => { onTypeChange(item.id); onDomainChange(""); onTagChange("") }} className="sidebar-nav-row flex size-8 items-center justify-center rounded-[6px] outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><Icon className={cn("size-4", active ? "text-[var(--accent-ink)]" : "text-[var(--muted)]")} weight={active ? "fill" : "duotone"} /></button>
           })}
         </div>
-      </aside>
-    )
-  }
+      </div>
 
-  return (
-    <aside aria-label="社区资源分类" style={{ width, flexBasis: width, background: "var(--panel)" }} className={cn("sidebar-material relative flex h-full shrink-0 flex-col overflow-x-hidden overflow-y-auto border-r border-[var(--wt-sidebar-edge)] px-[11px] pb-6", !dragging && "transition-[width,flex-basis] duration-150")}>
-      <div className="flex h-[47px] shrink-0 items-center justify-between px-1">
+      <div inert={collapsed} aria-hidden={collapsed} style={{ width }} className={cn("absolute inset-y-0 left-0 flex flex-col overflow-y-auto px-[11px] pb-6 transition-[opacity,transform] duration-150", collapsed ? "pointer-events-none translate-x-1 opacity-0" : "delay-100 translate-x-0 opacity-100")}>
+        <div className="flex h-[47px] shrink-0 items-center justify-between px-1">
         <strong className="text-[13px] font-semibold tracking-[-0.02em] text-[var(--ink)]">社区</strong>
         <button type="button" aria-label="收起社区侧栏" title="收起社区侧栏" onClick={() => setCollapsed(true)} className="flex size-6 items-center justify-center rounded-[5px] text-[var(--muted)] outline-none hover:bg-sidebar-hover hover:text-[var(--ink-soft)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><CaretLeft className="size-3" weight="bold" /></button>
-      </div>
+        </div>
 
       <FacetSection label="类型" icon={CirclesFour} count={typeCounts.all} open={typesOpen} onToggle={() => setTypesOpen((open) => !open)}>
         {TYPE_ITEMS.map((item) => {
@@ -129,7 +126,8 @@ export function CommunityFacets({ type, domain, tag, typeCounts, domainCounts, t
         })}
       </FacetSection>
 
-      <button type="button" aria-label="拖拽调整社区侧栏宽度" title="拖拽调整社区侧栏宽度" onPointerDown={beginResize} style={{ cursor: "col-resize" }} className={cn("absolute inset-y-0 right-[-4px] z-30 w-[9px] touch-none outline-none before:absolute before:inset-y-0 before:left-1/2 before:w-px before:-translate-x-1/2 before:bg-[var(--ink)] before:opacity-0 before:transition-opacity hover:before:opacity-100 focus-visible:before:opacity-100", dragging && "before:w-[2px] before:opacity-100")} />
+        <button type="button" aria-label="拖拽调整社区侧栏宽度" title="拖拽调整社区侧栏宽度" onPointerDown={beginResize} style={{ cursor: "col-resize" }} className={cn("absolute inset-y-0 right-[-4px] z-30 w-[9px] touch-none outline-none before:absolute before:inset-y-0 before:left-1/2 before:w-px before:-translate-x-1/2 before:bg-[var(--ink)] before:opacity-0 before:transition-opacity hover:before:opacity-100 focus-visible:before:opacity-100", dragging && "before:w-[2px] before:opacity-100")} />
+      </div>
     </aside>
   )
 }

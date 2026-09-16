@@ -10,7 +10,7 @@ import {
   ShieldCheck,
 } from "@phosphor-icons/react"
 
-import type { IconTone } from "../icon-tones"
+import type { IconTone } from "@/lib/icon-tones"
 
 export const projectTabs = [
   { id: "overview", label: "总览", icon: BracketsCurly },

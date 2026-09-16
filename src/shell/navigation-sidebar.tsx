@@ -7,7 +7,6 @@
  * 进入项目视图时导航区整体切换为项目管理菜单。
  */
 
-import type { ReactNode } from "react"
 import Image from "next/image"
 import {
   BookOpenText,
@@ -20,16 +19,15 @@ import {
   PlugsConnected,
   Star,
 } from "@phosphor-icons/react"
-import type { Icon } from "@phosphor-icons/react"
 
+import { NavButton, type SidebarRowItem } from "@/components/nav-button"
+import { SidebarResizeHandle, useSidebarWidth } from "@/components/sidebar-resize"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
-import type { ProjectManagementPanelId } from "./project/project-management-model"
+import type { ProjectManagementPanelId } from "@/features/project/project-management-model"
 import { ProjectSidebarPane } from "./sidebar-project-pane"
-import { SidebarResizeHandle, useSidebarWidth } from "./sidebar-resize"
-import "./sidebar-nav-row.css"
 
 export type WorkbenchView =
   | "home"
@@ -39,70 +37,6 @@ export type WorkbenchView =
   | "automation"
   | "knowledge"
   | "connectors"
-
-export type SidebarRowItem = {
-  id: string
-  label: string
-  icon: Icon
-  /** 未激活时图标的固定着色（如收藏金星），默认跟随弱化墨色 */
-  iconClassName?: string
-  /** 图标权重：默认 duotone，收藏行等常显 fill */
-  iconWeight?: "duotone" | "fill"
-  /** 行尾附加节点（时间戳、红点等），仅展开态渲染 */
-  trailing?: ReactNode
-}
-
-/** 导航行（展开 30px / 折叠 32px 图标态）：hover 白底抬升，激活图标 duotone→fill */
-export function NavButton({
-  item,
-  active,
-  compact = false,
-  nested = false,
-  onSelect,
-}: {
-  item: SidebarRowItem
-  active: boolean
-  compact?: boolean
-  nested?: boolean
-  onSelect: (id: string) => void
-}) {
-  const Icon = item.icon
-  return (
-    <button
-      type="button"
-      onClick={() => onSelect(item.id)}
-      aria-current={active ? "page" : undefined}
-      aria-label={compact ? item.label : undefined}
-      data-active={active}
-      className={cn(
-        "sidebar-nav-row group flex items-center rounded-[6px] text-[12px] leading-none outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
-        compact
-          ? "mx-auto size-8 justify-center"
-          : cn("h-[30px] w-full gap-2 pr-2", nested ? "pl-5" : "pl-2"),
-      )}
-    >
-      <Icon
-        aria-hidden
-        size={compact ? 18 : 16}
-        weight={active ? "fill" : (item.iconWeight ?? "duotone")}
-        className={cn(
-          "sidebar-nav-icon shrink-0",
-          active
-            ? "text-[var(--accent-ink)]"
-            : cn("text-[var(--muted)] group-hover:text-[var(--muted-strong)]", item.iconClassName),
-        )}
-      />
-      {compact ? null : (
-        <>
-          <span className="sidebar-nav-label min-w-0 truncate">{item.label}</span>
-          {item.trailing ? (
-            <span className="ml-auto flex shrink-0 items-center">{item.trailing}</span>
-          ) : null}
-        </>
-      )}
-    </button>
-  )
-}
 
 /** 小节分隔标题：弱化标签 + 渐隐细线 */
 function NavSectionLabel({ label }: { label: string }) {

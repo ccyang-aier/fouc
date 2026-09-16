@@ -3,7 +3,7 @@ import { ArrowRight } from "@phosphor-icons/react"
 
 import { cn } from "@/lib/utils"
 
-import { toneIcons } from "../icon-tones"
+import { toneIcons } from "@/lib/icon-tones"
 import { inProgress, recentOutputs } from "./project-data"
 
 export function ProjectActivity({ onOpenWork, onOpenOutputs }: { onOpenWork: () => void; onOpenOutputs: () => void }) {

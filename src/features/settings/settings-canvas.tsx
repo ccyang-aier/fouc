@@ -18,8 +18,8 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
 
-import { NavButton, type SidebarRowItem } from "../navigation-sidebar"
-import { SidebarResizeHandle, useSidebarWidth } from "../sidebar-resize"
+import { NavButton, type SidebarRowItem } from "@/components/nav-button"
+import { SidebarResizeHandle, useSidebarWidth } from "@/components/sidebar-resize"
 import { AboutSettings } from "./about-settings"
 import { AgentSettings } from "./agent-settings"
 import { AppearanceSettings } from "./appearance-settings"

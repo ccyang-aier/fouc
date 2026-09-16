@@ -7,7 +7,7 @@
 
 import { ArrowRight, DownloadSimple, SealCheck, Star } from "@phosphor-icons/react"
 
-import type { IconTone } from "../icon-tones"
+import type { IconTone } from "@/lib/icon-tones"
 import { formatInstalls } from "./community-data"
 import { Avatar } from "./community-cards"
 

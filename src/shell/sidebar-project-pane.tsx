@@ -34,8 +34,8 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
-import { NavButton, type SidebarRowItem } from "./navigation-sidebar"
-import { presenceMeta, railMembers, type ProjectManagementPanelId } from "./project/project-management-model"
+import { NavButton, type SidebarRowItem } from "@/components/nav-button"
+import { presenceMeta, railMembers, type ProjectManagementPanelId } from "@/features/project/project-management-model"
 
 type ProjectTool = SidebarRowItem & { id: ProjectManagementPanelId }
 

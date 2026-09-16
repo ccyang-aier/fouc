@@ -7,7 +7,7 @@
 
 import { Check, DownloadSimple, SealCheck, Star } from "@phosphor-icons/react"
 
-import { toneChips, type IconTone } from "../icon-tones"
+import { toneChips, type IconTone } from "@/lib/icon-tones"
 import { formatInstalls, type CommunityAgent, type CommunitySkill } from "./community-data"
 import { cn } from "@/lib/utils"
 

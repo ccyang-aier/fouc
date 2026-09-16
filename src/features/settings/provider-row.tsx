@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
-import { SessionConsole } from "../session-console"
+import { SessionConsole } from "@/features/session/session-console"
 import { ProviderAvatar } from "./provider-meta"
 
 // ─── Provider 级状态 ───────────────────────────────────────────────

@@ -3,7 +3,7 @@
  * V1 为本地演示数据，后续由社区服务接入替换。
  */
 
-import type { IconTone } from "../icon-tones"
+import type { IconTone } from "@/lib/icon-tones"
 
 export type CommunityTab = "agents" | "skills"
 

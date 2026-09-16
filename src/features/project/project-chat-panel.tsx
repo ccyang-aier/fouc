@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 
-import { toneIcons, type IconTone } from "../icon-tones"
+import { toneIcons, type IconTone } from "@/lib/icon-tones"
 
 type ChatView = "team" | "personal"
 type ChatTagId = string

@@ -8,8 +8,8 @@ import {
   BellRinging,
   ArrowRight,
   CheckCircle,
-  CheckSquare,
   Circle,
+  ClipboardText,
   Clock,
   ListChecks,
   MagnifyingGlass,
@@ -135,7 +135,7 @@ export function SystemBar({ onNavigate }: { onNavigate: (view: WorkbenchView) =>
           <PanelRow title="项目周报已生成" detail="产品研发" time="12 分钟前" tone="accent" unread />
           <PanelRow title="连接器同步完成" detail="GitHub 数据已是最新状态" time="1 小时前" tone="success" />
         </QuickPanel>
-        <QuickPanel label="任务" icon={CheckSquare} panelIcon={ListChecks} title="任务" subtitle="1 项进行中" footer="查看全部任务" onFooter={() => onNavigate("projects")}>
+        <QuickPanel label="任务" icon={ClipboardText} panelIcon={ListChecks} title="任务" subtitle="1 项进行中" footer="查看全部任务" onFooter={() => onNavigate("projects")}>
           <PanelRow title="完善桌面端通知中心" detail="产品研发 · 今天" time="进行中" tone="accent" progress={68} />
           <PanelRow title="复核连接器权限" detail="连接器 · 明天" time="待处理" tone="neutral" />
         </QuickPanel>

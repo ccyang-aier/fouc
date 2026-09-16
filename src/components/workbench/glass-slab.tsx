@@ -31,6 +31,7 @@ export function GlassSlab() {
     <div ref={anchor} className="contents">
       <LiquidGlass
         className="liquid-glass-slab"
+        mode="shader"
         elasticity={0}
         cornerRadius={0}
         padding="0"

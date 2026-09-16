@@ -238,7 +238,7 @@ export function WorkspaceRail({
           aria-label={`${menuSpace.label}操作`}
           onPointerDown={(event) => event.stopPropagation()}
           style={{ left: spaceMenu.x, top: spaceMenu.y }}
-          className="overlay-surface fixed z-50 w-48 overflow-hidden rounded-[10px] border bg-elevated p-1.5 text-[11.5px] text-[var(--ink)] animate-in fade-in-0 zoom-in-95"
+          className="overlay-surface fixed z-50 w-48 overflow-hidden rounded-[7px] border bg-elevated p-1 text-[11.5px] text-[var(--ink)] animate-in fade-in-0 zoom-in-95"
         >
           {spaceMenu.mode === "rename" ? (
             <form

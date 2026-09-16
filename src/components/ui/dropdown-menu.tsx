@@ -8,7 +8,17 @@ import { getOverlayRoot } from "@/lib/overlay-root"
 import { cn } from "@/lib/utils"
 
 const DropdownMenu = DropdownMenuPrimitive.Root
-const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger
+function DropdownMenuTrigger({
+  className,
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Trigger>) {
+  return (
+    <DropdownMenuPrimitive.Trigger
+      className={cn("dropdown-menu-trigger", className)}
+      {...props}
+    />
+  )
+}
 const DropdownMenuGroup = DropdownMenuPrimitive.Group
 
 function DropdownMenuContent({
@@ -21,7 +31,7 @@ function DropdownMenuContent({
       <DropdownMenuPrimitive.Content
         sideOffset={sideOffset}
         className={cn(
-          "overlay-surface z-50 min-w-44 overflow-hidden rounded-xl border bg-elevated p-1.5 text-[12px] text-[var(--ink)] animate-in fade-in-0 zoom-in-95",
+          "overlay-surface z-50 min-w-44 overflow-hidden rounded-[7px] border bg-elevated p-1 text-[12px] text-[var(--ink)] animate-in fade-in-0 zoom-in-95",
           className,
         )}
         {...props}
@@ -41,7 +51,7 @@ function DropdownMenuItem({
     <DropdownMenuPrimitive.Item
       data-inset={inset}
       className={cn(
-        "relative flex h-8 cursor-default select-none items-center gap-2 rounded-lg px-2.5 outline-none transition-colors focus:bg-wash data-[disabled]:pointer-events-none data-[disabled]:opacity-45 data-[inset=true]:pl-8 [&_svg]:size-4 [&_svg]:text-[var(--muted)]",
+        "relative flex h-8 cursor-default select-none items-center gap-2 rounded-[5px] px-2.5 outline-none transition-colors focus:bg-wash data-[disabled]:pointer-events-none data-[disabled]:opacity-45 data-[inset=true]:pl-8 [&_svg]:size-4 [&_svg]:text-[var(--muted)]",
         className,
       )}
       {...props}
@@ -58,7 +68,7 @@ function DropdownMenuCheckboxItem({
   return (
     <DropdownMenuPrimitive.CheckboxItem
       className={cn(
-        "relative flex h-8 cursor-default select-none items-center rounded-lg py-1.5 pr-2 pl-8 text-[12px] outline-none transition-colors focus:bg-wash",
+        "relative flex h-8 cursor-default select-none items-center rounded-[5px] py-1.5 pr-2 pl-8 text-[12px] outline-none transition-colors focus:bg-wash",
         className,
       )}
       checked={checked}
@@ -109,7 +119,7 @@ function DropdownMenuSubTrigger({
   return (
     <DropdownMenuPrimitive.SubTrigger
       className={cn(
-        "flex h-8 cursor-default items-center gap-2 rounded-lg px-2.5 text-[12px] outline-none focus:bg-wash data-[state=open]:bg-wash",
+        "flex h-8 cursor-default items-center gap-2 rounded-[5px] px-2.5 text-[12px] outline-none focus:bg-wash data-[state=open]:bg-wash",
         className,
       )}
       {...props}

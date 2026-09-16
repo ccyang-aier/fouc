@@ -36,6 +36,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { cn } from "@/lib/utils"
 
 import type { ProjectManagementPanelId } from "@/features/project/project-management-model"
+import { SidebarAgentSection } from "./sidebar-agent-section"
 import { ProjectSidebarPane } from "./sidebar-project-pane"
 
 export type WorkbenchView =
@@ -65,7 +66,7 @@ function ProjectNavSection({
 
   return (
     <div className="mt-3.5">
-      <div className="group/project flex h-8 w-full items-center justify-between gap-2 rounded-[6px] px-1.5 text-[11.5px] text-[var(--muted-strong)] transition-colors hover:bg-sidebar-hover">
+      <div className="sidebar-nav-row group/project flex h-8 w-full items-center justify-between gap-2 rounded-[6px] px-1.5 text-[11.5px] text-[var(--muted-strong)]">
         <button type="button" aria-expanded={open} onClick={() => setOpen((value) => !value)} className="flex min-w-0 flex-1 items-center gap-1.5 rounded-[5px] text-left outline-none hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
           <span className="flex size-4 shrink-0 items-center justify-center self-center text-[var(--muted)]">{icon}</span>
           <span className="truncate leading-none">{label}</span>
@@ -87,9 +88,11 @@ type ManagedSidebarEntry = {
   time?: string
 }
 
-function ManagedSidebarRow({ entry, editing, onBeginRename, onRename, onDelete, onToggleMark }: {
+function ManagedSidebarRow({ entry, active, editing, onSelect, onBeginRename, onRename, onDelete, onToggleMark }: {
   entry: ManagedSidebarEntry
+  active: boolean
   editing: boolean
+  onSelect: () => void
   onBeginRename: () => void
   onRename: (name: string) => void
   onDelete: () => void
@@ -105,8 +108,8 @@ function ManagedSidebarRow({ entry, editing, onBeginRename, onRename, onDelete, 
   }
 
   return (
-    <div className="group/entry relative flex h-[30px] items-center rounded-[6px] text-[10.5px] text-[var(--muted-strong)] transition-colors hover:bg-sidebar-hover">
-      <button type="button" aria-label={entry.name} className="flex h-full min-w-0 flex-1 items-center gap-2 rounded-[6px] pl-2 pr-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
+    <div data-active={active} className="sidebar-nav-row group/entry relative flex h-[30px] items-center rounded-[6px] text-[10.5px] text-[var(--muted-strong)]">
+      <button type="button" aria-label={entry.name} aria-current={active ? "page" : undefined} onClick={onSelect} className="flex h-full min-w-0 flex-1 items-center gap-2 rounded-[6px] pl-2 pr-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
         <ItemIcon className="size-3.5 shrink-0 text-[var(--muted)]" weight="duotone" />
         <span className="truncate">{entry.name}</span>
         {entry.time ? <span className="ml-auto shrink-0 text-[9px] text-[var(--muted)] transition-opacity group-hover/entry:opacity-0 group-focus-within/entry:opacity-0">{entry.time}</span> : null}
@@ -180,7 +183,9 @@ export function NavigationSidebar({
   const [creatingProject, setCreatingProject] = useState(false)
   const [newProjectDraft, setNewProjectDraft] = useState("")
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null)
-  const markedEntries = [...projects, ...recentChats].filter((entry) => entry.marked)
+  const [activeEntryId, setActiveEntryId] = useState<string | null>(null)
+  const favoriteProjects = projects.filter((entry) => entry.marked)
+  const pinnedChats = recentChats.filter((entry) => entry.marked)
 
   function updateEntry(entry: ManagedSidebarEntry, update: (current: ManagedSidebarEntry) => ManagedSidebarEntry) {
     const setter = entry.kind === "project" ? setProjects : setRecentChats
@@ -213,7 +218,7 @@ export function NavigationSidebar({
   }
 
   function renderManagedEntry(entry: ManagedSidebarEntry, keyPrefix = "") {
-    return <ManagedSidebarRow key={`${keyPrefix}${entry.kind}-${entry.id}`} entry={entry} editing={editingEntryId === entry.id && !keyPrefix} onBeginRename={() => setEditingEntryId(entry.id)} onRename={(name) => renameEntry(entry, name)} onDelete={() => deleteEntry(entry)} onToggleMark={() => toggleMarked(entry)} />
+    return <ManagedSidebarRow key={`${keyPrefix}${entry.kind}-${entry.id}`} entry={entry} active={activeEntryId === entry.id} editing={editingEntryId === entry.id && !keyPrefix} onSelect={() => setActiveEntryId(entry.id)} onBeginRename={() => setEditingEntryId(entry.id)} onRename={(name) => renameEntry(entry, name)} onDelete={() => deleteEntry(entry)} onToggleMark={() => toggleMarked(entry)} />
   }
 
   const paneProps = {
@@ -297,10 +302,15 @@ export function NavigationSidebar({
                 />
               ))}
             </nav>
-            {markedEntries.length > 0 ? <ProjectNavSection label="置顶" count={markedEntries.length} icon={<PushPin className="size-3.5" weight="fill" />}>
-              {markedEntries.map((entry) => renderManagedEntry(entry, "marked-"))}
+            {favoriteProjects.length > 0 ? <ProjectNavSection label="星标项目" count={favoriteProjects.length} icon={<Star className="size-3.5 text-[#d79a3b]" weight="fill" />}>
+              {favoriteProjects.map((entry) => renderManagedEntry(entry, "favorite-"))}
             </ProjectNavSection>
             : null}
+            {pinnedChats.length > 0 ? <ProjectNavSection label="置顶对话" count={pinnedChats.length} icon={<PushPin className="size-3.5" weight="fill" />}>
+              {pinnedChats.map((entry) => renderManagedEntry(entry, "pinned-"))}
+            </ProjectNavSection>
+            : null}
+            <SidebarAgentSection />
             <ProjectNavSection label="项目管理" count={projects.length} icon={<Stack className="size-3.5" weight="duotone" />} onNew={() => { setCreatingProject(true); setNewProjectDraft("") }}>
               {creatingProject ? <div className="flex h-[30px] items-center gap-1.5 rounded-[6px] bg-[var(--surface-subtle)] px-2"><FolderOpen className="size-3.5 shrink-0 text-[var(--muted)]" /><input autoFocus aria-label="新项目名称" value={newProjectDraft} onChange={(event) => setNewProjectDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") createProject(); if (event.key === "Escape") { setCreatingProject(false); setNewProjectDraft("") } }} onBlur={() => { if (!newProjectDraft.trim()) setCreatingProject(false) }} placeholder="项目名称" className="min-w-0 flex-1 bg-transparent text-[10.5px] text-[var(--ink)] outline-none" /></div> : null}
               {projects.map((entry) => renderManagedEntry(entry))}

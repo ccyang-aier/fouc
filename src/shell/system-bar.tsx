@@ -107,7 +107,7 @@ export function SystemBar({ onNavigate }: { onNavigate: (view: WorkbenchView) =>
           <div
             id="global-search-results"
             role="listbox"
-            className="overlay-surface absolute left-0 top-[34px] z-50 w-full overflow-hidden rounded-[10px] border bg-elevated p-1.5"
+            className="overlay-surface absolute left-0 top-[34px] z-50 w-full overflow-hidden rounded-[7px] border bg-elevated p-1"
           >
             {results.length > 0 ? results.slice(0, 6).map((item) => (
               <button
@@ -187,7 +187,7 @@ function QuickPanel({
           {badge ? <span aria-hidden className="absolute right-[5px] top-[5px] size-1.5 rounded-full border border-panel bg-[var(--accent)]" /> : null}
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" sideOffset={8} className="w-[320px] rounded-[12px] p-0">
+      <DropdownMenuContent align="end" sideOffset={8} className="w-[320px] rounded-[7px] p-0">
         <div className="flex items-center gap-2.5 border-b border-[var(--line)] px-3.5 py-3">
           <span className="flex size-8 shrink-0 items-center justify-center rounded-[9px] border border-[var(--accent-soft-line)] bg-[var(--accent-soft)] text-[var(--accent-ink)]">
             <PanelIcon aria-hidden className="size-4" weight="duotone" />

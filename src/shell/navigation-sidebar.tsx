@@ -11,14 +11,16 @@ import { useState } from "react"
 import Image from "next/image"
 import {
   BookOpenText,
-  CaretRight,
+  CaretDown,
   ChatCircleDots,
   Desktop,
+  DotsThree,
   FolderOpen,
   GearSix,
   Lightning,
   Planet,
   PlugsConnected,
+  Plus,
   Star,
 } from "@phosphor-icons/react"
 
@@ -40,32 +42,38 @@ export type WorkbenchView =
   | "knowledge"
   | "connectors"
 
-/** 可折叠导航小节：标题本身即为开关，并保留轻量分隔线。 */
-function CollapsibleNavSection({
+/** 项目集合导航：标题、数量与操作收敛在同一行。 */
+function ProjectNavSection({
   label,
+  count,
+  icon,
   children,
+  onNew,
+  onMore,
 }: {
   label: string
+  count: number
+  icon: React.ReactNode
   children: React.ReactNode
+  onNew: () => void
+  onMore: () => void
 }) {
   const [open, setOpen] = useState(true)
 
   return (
-    <div className="mt-3">
-      <button
-        type="button"
-        aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
-        className="group flex h-6 w-full items-center gap-1 rounded-[5px] px-1 text-2xs text-[var(--muted)] outline-none transition-colors hover:bg-sidebar-hover hover:text-[var(--muted-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
-      >
-        <CaretRight
-          aria-hidden
-          className={cn("size-3 shrink-0 transition-transform duration-150", open && "rotate-90")}
-          weight="bold"
-        />
-        <span className="shrink-0">{label}</span>
-        <span aria-hidden className="ml-1 h-px flex-1 bg-[var(--wt-sidebar-edge)]" />
-      </button>
+    <div className="mt-3.5">
+      <div className="flex h-7 w-full items-center justify-between gap-2 px-1 text-[10.5px] text-[var(--muted-strong)]">
+        <button type="button" aria-expanded={open} onClick={() => setOpen((value) => !value)} className="flex min-w-0 items-center gap-1.5 rounded-[5px] outline-none hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
+          <span className="flex size-4 shrink-0 items-center justify-center text-[var(--muted)]">{icon}</span>
+          <span className="truncate">{label}</span>
+          <span className="text-[9px] tabular-nums text-[var(--muted)]">({count})</span>
+          <CaretDown aria-hidden className={cn("size-2.5 shrink-0 transition-transform duration-150", !open && "-rotate-90")} weight="fill" />
+        </button>
+        <div className="flex shrink-0 items-center gap-0.5">
+          <button type="button" aria-label={`新建${label}`} title={`新建${label}`} onClick={onNew} className="flex size-6 items-center justify-center rounded-[5px] text-[var(--muted)] outline-none hover:bg-sidebar-hover hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><Plus className="size-3.5" /></button>
+          <button type="button" aria-label={`${label}更多操作`} title={`${label}更多操作`} onClick={onMore} className="flex size-6 items-center justify-center rounded-[5px] text-[var(--muted)] outline-none hover:bg-sidebar-hover hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><DotsThree className="size-4" weight="bold" /></button>
+        </div>
+      </div>
       {open ? <div className="mt-0.5 space-y-1">{children}</div> : null}
     </div>
   )
@@ -98,16 +106,11 @@ function CollapseIcon() {
 const primaryItems: Array<SidebarRowItem & { id: WorkbenchView }> = [
   { id: "home", label: "助理", icon: ChatCircleDots },
   { id: "projects", label: "项目", icon: FolderOpen },
-  { id: "community", label: "社区", icon: Planet },
   { id: "automation", label: "自动化", icon: Lightning },
+  { id: "connectors", label: "连接器", icon: PlugsConnected },
+  { id: "community", label: "社区", icon: Planet },
   { id: "knowledge", label: "知识库", icon: BookOpenText },
 ]
-
-const connectorsItem: SidebarRowItem & { id: "connectors" } = {
-  id: "connectors",
-  label: "连接器",
-  icon: PlugsConnected,
-}
 
 const favoriteItem: SidebarRowItem = {
   id: "favorite-project",
@@ -239,23 +242,16 @@ export function NavigationSidebar({
                 />
               ))}
             </nav>
-            <CollapsibleNavSection label="更多">
-              <NavButton
-                item={connectorsItem}
-                active={view === "connectors"}
-                onSelect={() => onViewChange("connectors")}
-              />
-            </CollapsibleNavSection>
-            <CollapsibleNavSection label="项目文件夹">
+            <ProjectNavSection label="项目管理" count={1} icon={<FolderOpen className="size-3.5" />} onNew={() => onViewChange("projects")} onMore={() => onViewChange("projects")}>
               <NavButton
                 item={projectFavorited ? favoriteItem : projectFolderItem}
                 active={false}
                 onSelect={() => onViewChange("projects")}
               />
-            </CollapsibleNavSection>
-            <CollapsibleNavSection label="最近">
+            </ProjectNavSection>
+            <ProjectNavSection label="最近" count={1} icon={<Desktop className="size-3.5" />} onNew={() => onViewChange("projects")} onMore={() => onViewChange("projects")}>
               <NavButton item={recentItem} active={false} onSelect={() => onViewChange("projects")} />
-            </CollapsibleNavSection>
+            </ProjectNavSection>
           </>
         )}
       </ScrollArea>
@@ -294,7 +290,7 @@ export function NavigationSidebar({
           <ProjectSidebarPane collapsed {...paneProps} />
         ) : (
           <nav className="flex w-full flex-col items-center gap-1" aria-label="主导航">
-            {[...primaryItems, connectorsItem].map((item) => (
+            {primaryItems.map((item) => (
               <Tooltip key={item.id}>
                 <TooltipTrigger asChild>
                   <NavButton

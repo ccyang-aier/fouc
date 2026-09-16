@@ -150,7 +150,8 @@ export function CommunityDetailPage({
         <button
           type="button"
           onClick={onBack}
-          className="flex h-7 items-center gap-1 rounded-[7px] px-1.5 text-[11.5px] font-medium text-[var(--muted-strong)] outline-none transition-colors hover:bg-[var(--hover-fill)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+          style={{ fontSize: 10 }}
+          className="flex h-7 items-center gap-1 rounded-[7px] px-1.5 text-[10px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-[var(--hover-fill)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
         >
           <CaretLeft className="size-3.5" weight="bold" />
           社区
@@ -305,44 +306,44 @@ export function CommunityDetailPage({
                   <button
                     type="button"
                     onClick={onDiscuss}
-                    className="flex h-8 items-center gap-1.5 rounded-[8px] bg-[var(--hover-fill)] px-3.5 text-[11.5px] font-medium text-[var(--ink-soft)] outline-none transition-colors hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                    className="flex h-8 items-center gap-1.5 rounded-[8px] bg-[var(--hover-fill)] px-3.5 text-[11.5px] text-[var(--ink-soft)] outline-none transition-colors hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                   >
                     <ChatCircleDots className="size-3.5" weight="fill" />
                     发起讨论
                   </button>
                 </div>
-                <div className="mt-2 flex flex-col">
-                  {discussions.map((post, index) => (
-                    <div key={post.author + post.time} className={cn("py-5", index > 0 && "border-t border-[var(--line)]")}>
+                <div className="mt-4 space-y-3">
+                  {discussions.map((post) => (
+                    <article key={post.author + post.time} className="rounded-[12px] bg-[color-mix(in_srgb,var(--ink)_2%,transparent)] px-4 py-4">
                       <div className="flex gap-3.5">
-                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[var(--surface-hover)] text-[12px] font-semibold text-[var(--ink-soft)]">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--accent)_9%,transparent)] text-[12px] text-[var(--accent-ink)]">
                           {post.author.slice(0, 1)}
                         </span>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-baseline gap-2">
-                            <p className="text-[12.5px] font-semibold text-[var(--ink)]">{post.author}</p>
+                            <p className="text-[12.5px] text-[var(--ink)]">{post.author}</p>
                             <span className="text-[10.5px] text-[var(--muted)]">{post.time}</span>
                           </div>
                           <p className="mt-1.5 text-[12.5px] leading-[20px] text-[var(--ink-soft)]">{post.text}</p>
-                          {post.replies.length > 0 ? (
-                            <div className="mt-3 space-y-3 rounded-[10px] bg-[var(--surface-subtle)] p-4">
-                              {post.replies.map((reply) => (
-                                <div key={reply.author + reply.time} className="flex gap-2.5">
-                                  <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-panel text-[9.5px] font-semibold text-[var(--muted-strong)]">
-                                    {reply.author.slice(0, 1)}
-                                  </span>
-                                  <p className="min-w-0 flex-1 text-[12px] leading-[18px] text-[var(--muted-strong)]">
-                                    <span className="font-medium text-[var(--ink-soft)]">{reply.author}</span>
-                                    <span className="mx-1.5 text-[var(--muted)]">{reply.time}</span>
-                                    {reply.text}
-                                  </p>
-                                </div>
-                              ))}
-                            </div>
-                          ) : null}
+                          <button type="button" onClick={onDiscuss} className="mt-2 rounded-[5px] text-[10.5px] text-[var(--muted)] outline-none hover:text-[var(--accent-ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">回复</button>
                         </div>
                       </div>
-                    </div>
+                      {post.replies.length > 0 ? (
+                        <div className="relative ml-[18px] mt-3 space-y-2.5 pl-[34px] before:absolute before:bottom-4 before:left-0 before:top-0 before:w-px before:bg-[color-mix(in_srgb,var(--ink)_9%,transparent)]">
+                          {post.replies.map((reply) => (
+                            <div key={reply.author + reply.time} className="relative flex gap-2.5 before:absolute before:-left-[34px] before:top-3 before:h-px before:w-6 before:bg-[color-mix(in_srgb,var(--ink)_9%,transparent)]">
+                              <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-panel text-[9.5px] text-[var(--muted-strong)] shadow-[0_0_0_1px_var(--line)]">
+                                {reply.author.slice(0, 1)}
+                              </span>
+                              <div className="min-w-0 flex-1 rounded-[9px] bg-panel px-3 py-2.5">
+                                <div className="flex items-baseline gap-2"><span className="text-[11.5px] text-[var(--ink-soft)]">{reply.author}</span><span className="text-[10px] text-[var(--muted)]">{reply.time}</span></div>
+                                <p className="mt-1 text-[12px] leading-[18px] text-[var(--muted-strong)]">{reply.text}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+                    </article>
                   ))}
                 </div>
               </section>

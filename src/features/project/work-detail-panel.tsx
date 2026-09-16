@@ -34,7 +34,7 @@ export function WorkDetailPanel({ item, onClose, onStatusChange }: { item: WorkI
   const completed = checks.filter(Boolean).length
 
   return (
-    <aside aria-label="工作详情" className="flex h-full min-h-0 w-[292px] shrink-0 flex-col border-l border-[var(--line)] bg-panel max-[1060px]:absolute max-[1060px]:inset-y-0 max-[1060px]:right-0 max-[1060px]:z-30 max-[1060px]:shadow-[-12px_0_32px_rgba(26,31,40,0.10)]">
+    <aside aria-label="工作详情" className="responsive-side-panel-surface flex h-full min-h-0 w-[292px] shrink-0 flex-col border-l border-[var(--line)] bg-panel max-[1060px]:absolute max-[1060px]:inset-y-0 max-[1060px]:right-0 max-[1060px]:z-30">
       <div className="flex h-[74px] shrink-0 items-center border-b border-[var(--line)] px-4">
         <div className="min-w-0 flex-1">
           <p className="truncate text-[10.5px] font-medium text-[var(--ink-soft)]">项目上下文&nbsp; / &nbsp;{item.id}</p>

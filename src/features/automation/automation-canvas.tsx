@@ -121,7 +121,7 @@ export function AutomationCanvas() {
 
       {detailVisible ? (
         <>
-          <button type="button" aria-label="关闭自动化详情" onClick={() => { setSelectedId(null); setCreating(false) }} className="absolute inset-0 z-20 hidden bg-[#171b23]/10 backdrop-blur-[1px] max-[1060px]:block" />
+          <button type="button" aria-label="关闭自动化详情" onClick={() => { setSelectedId(null); setCreating(false) }} className="modal-backdrop absolute inset-0 z-20 hidden max-[1060px]:block" />
           <AutomationDetailPanel
             item={selected}
             creating={creating}

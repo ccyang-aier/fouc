@@ -12,7 +12,7 @@ type CreateDraft = { title: string; instruction: string; schedule: string; agent
 
 export function AutomationDetailPanel({ item, creating, running, onClose, onToggle, onRun, onSave, onCreate }: { item: AutomationDefinition | null; creating: boolean; running: boolean; onClose: () => void; onToggle: (enabled: boolean) => void; onRun: () => void; onSave: () => void; onCreate: (draft: CreateDraft) => void }) {
   return (
-    <aside aria-label={creating ? "新建自动化" : "自动化详情"} className="flex h-full min-h-0 w-[292px] shrink-0 flex-col border-l border-[var(--line)] bg-panel max-[1060px]:absolute max-[1060px]:inset-y-0 max-[1060px]:right-0 max-[1060px]:z-30 max-[1060px]:shadow-[-12px_0_32px_rgba(26,31,40,0.10)]">
+    <aside aria-label={creating ? "新建自动化" : "自动化详情"} className="responsive-side-panel-surface flex h-full min-h-0 w-[292px] shrink-0 flex-col border-l border-[var(--line)] bg-panel max-[1060px]:absolute max-[1060px]:inset-y-0 max-[1060px]:right-0 max-[1060px]:z-30">
       {creating ? <CreatePanel onClose={onClose} onCreate={onCreate} /> : item ? <DetailContent item={item} running={running} onClose={onClose} onToggle={onToggle} onRun={onRun} onSave={onSave} /> : null}
     </aside>
   )

@@ -40,7 +40,7 @@ export function ProjectComposer() {
   }
 
   return (
-    <div className={cn("relative flex h-[100px] shrink-0 flex-col rounded-[8px] border bg-panel transition-[border-color,box-shadow] focus-within:border-[var(--accent-soft-line)] focus-within:shadow-[0_0_0_3px_color-mix(in_srgb,var(--accent)_9%,transparent)]", sent ? "border-[var(--accent-soft-line)]" : "border-[var(--line-strong)]") }>
+    <div className={cn("relative flex h-[100px] shrink-0 flex-col rounded-[8px] border bg-panel transition-[border-color] focus-within:border-[var(--accent)]", sent ? "border-[var(--accent-soft-line)]" : "border-[var(--line-strong)]") }>
       <textarea
         ref={inputRef}
         aria-label="任务描述"

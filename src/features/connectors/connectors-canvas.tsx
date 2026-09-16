@@ -151,7 +151,7 @@ export function ConnectorsCanvas() {
               )
             })}
 
-            <label className="group ml-auto flex h-7 w-44 items-center gap-1.5 rounded-[8px] bg-[var(--hover-fill)] px-2.5 text-[var(--muted)] transition-colors focus-within:bg-panel focus-within:shadow-[0_0_0_2px_var(--focus-ring)] max-[1200px]:w-36">
+            <label className="group ml-auto flex h-7 w-44 items-center gap-1.5 rounded-[8px] border border-transparent bg-[var(--hover-fill)] px-2.5 text-[var(--muted)] transition-colors focus-within:border-[var(--accent)] focus-within:bg-panel max-[1200px]:w-36">
               <MagnifyingGlass className="size-3.5 shrink-0" />
               <input
                 type="search"

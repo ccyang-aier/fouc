@@ -5,9 +5,13 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import {
   BellSimple,
+  BellRinging,
+  ArrowRight,
   CheckCircle,
   CheckSquare,
   Circle,
+  Clock,
+  ListChecks,
   MagnifyingGlass,
   Minus,
   Square,
@@ -94,7 +98,7 @@ export function SystemBar({ onNavigate }: { onNavigate: (view: WorkbenchView) =>
           }}
           onFocus={() => setSearchOpen(true)}
           onBlur={() => setSearchOpen(false)}
-          className="h-7 w-full rounded-[8px] border border-[var(--line)] bg-[var(--surface-subtle)] pl-8 pr-12 text-[11.5px] text-[var(--ink)] shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_1px_2px_rgba(20,24,28,0.04)] outline-none transition-[border-color,box-shadow,background-color] placeholder:text-[var(--muted)] focus:border-[var(--line-strong)] focus:bg-panel focus:shadow-[0_0_0_3px_var(--accent-soft)]"
+          className="h-7 w-full rounded-[8px] border border-[var(--line)] bg-[var(--surface-subtle)] pl-8 pr-12 text-[11.5px] text-[var(--ink)] shadow-[inset_0_1px_0_rgba(255,255,255,0.45),0_1px_2px_rgba(20,24,28,0.04)] outline-none transition-[border-color,background-color] placeholder:text-[var(--muted)] focus:border-[var(--accent)] focus:bg-panel"
         />
         <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded-[4px] border border-[var(--line)] bg-panel px-1.5 py-0.5 font-sans text-[9px] leading-none text-[var(--muted)] shadow-[0_1px_1px_rgba(20,24,28,0.04)]">
           ⌘ K
@@ -103,7 +107,7 @@ export function SystemBar({ onNavigate }: { onNavigate: (view: WorkbenchView) =>
           <div
             id="global-search-results"
             role="listbox"
-            className="absolute left-0 top-[34px] z-50 w-full overflow-hidden rounded-[10px] border border-[var(--line-strong)] bg-elevated p-1.5 shadow-[0_10px_30px_rgba(20,24,28,0.14)]"
+            className="overlay-surface absolute left-0 top-[34px] z-50 w-full overflow-hidden rounded-[10px] border bg-elevated p-1.5"
           >
             {results.length > 0 ? results.slice(0, 6).map((item) => (
               <button
@@ -127,20 +131,13 @@ export function SystemBar({ onNavigate }: { onNavigate: (view: WorkbenchView) =>
       </form>
 
       <div className="ml-auto flex items-center gap-0.5" data-tauri-drag-region="false">
-        <QuickPanel label="通知" icon={BellSimple} title="通知" badge>
-          <PanelRow title="项目周报已生成" detail="产品研发 · 12 分钟前" />
-          <PanelRow title="连接器同步完成" detail="GitHub · 1 小时前" quiet />
+        <QuickPanel label="通知" icon={BellSimple} panelIcon={BellRinging} title="通知" subtitle="2 条最新动态" badge footer="查看全部通知">
+          <PanelRow title="项目周报已生成" detail="产品研发" time="12 分钟前" tone="accent" unread />
+          <PanelRow title="连接器同步完成" detail="GitHub 数据已是最新状态" time="1 小时前" tone="success" />
         </QuickPanel>
-        <QuickPanel label="任务" icon={CheckSquare} title="任务">
-          <PanelRow title="完善桌面端通知中心" detail="进行中 · 今天" />
-          <PanelRow title="复核连接器权限" detail="待处理 · 明天" quiet />
-          <button
-            type="button"
-            onClick={() => onNavigate("projects")}
-            className="mt-1 flex h-7 w-full items-center justify-center rounded-[6px] text-[10.5px] font-medium text-[var(--accent-ink)] outline-none hover:bg-[var(--accent-soft)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
-          >
-            查看全部任务
-          </button>
+        <QuickPanel label="任务" icon={CheckSquare} panelIcon={ListChecks} title="任务" subtitle="1 项进行中" footer="查看全部任务" onFooter={() => onNavigate("projects")}>
+          <PanelRow title="完善桌面端通知中心" detail="产品研发 · 今天" time="进行中" tone="accent" progress={68} />
+          <PanelRow title="复核连接器权限" detail="连接器 · 明天" time="待处理" tone="neutral" />
         </QuickPanel>
         <span aria-hidden className="mx-1.5 h-5 w-px bg-[var(--line-strong)]" />
         <WindowControl label="最小化" icon={Minus} onClick={() => void performWindowAction("minimize")} />
@@ -159,13 +156,21 @@ export function SystemBar({ onNavigate }: { onNavigate: (view: WorkbenchView) =>
 function QuickPanel({
   label,
   icon: Icon,
+  panelIcon: PanelIcon,
   title,
+  subtitle,
+  footer,
+  onFooter,
   badge = false,
   children,
 }: {
   label: string
   icon: typeof BellSimple
+  panelIcon: typeof BellSimple
   title: string
+  subtitle: string
+  footer: string
+  onFooter?: () => void
   badge?: boolean
   children: React.ReactNode
 }) {
@@ -182,31 +187,66 @@ function QuickPanel({
           {badge ? <span aria-hidden className="absolute right-[5px] top-[5px] size-1.5 rounded-full border border-panel bg-[var(--accent)]" /> : null}
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" sideOffset={8} className="w-72 p-2">
-        <div className="flex h-8 items-center px-2">
-          <p className="text-[12px] font-semibold text-[var(--ink)]">{title}</p>
-          <span className="ml-auto text-[9.5px] text-[var(--muted)]">最近</span>
+      <DropdownMenuContent align="end" sideOffset={8} className="w-[320px] rounded-[12px] p-0">
+        <div className="flex items-center gap-2.5 border-b border-[var(--line)] px-3.5 py-3">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-[9px] border border-[var(--accent-soft-line)] bg-[var(--accent-soft)] text-[var(--accent-ink)]">
+            <PanelIcon aria-hidden className="size-4" weight="duotone" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-[12px] font-semibold tracking-[-0.01em] text-[var(--ink)]">{title}</p>
+            <p className="mt-0.5 text-[9.5px] text-[var(--muted)]">{subtitle}</p>
+          </div>
+          <span className="ml-auto rounded-full border border-[var(--line)] bg-[var(--surface-subtle)] px-2 py-0.5 text-[9px] font-medium text-[var(--muted-strong)]">最近</span>
         </div>
-        <div className="mt-1 border-t border-[var(--line)] pt-1">{children}</div>
+        <div className="p-1.5">{children}</div>
+        <button
+          type="button"
+          onClick={onFooter}
+          className="flex h-9 w-full items-center justify-center gap-1.5 border-t border-[var(--line)] bg-[var(--surface-subtle)] text-[10.5px] font-medium text-[var(--accent-ink)] outline-none transition-colors hover:bg-[var(--accent-soft)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)]"
+        >
+          {footer}
+          <ArrowRight aria-hidden className="size-3" weight="bold" />
+        </button>
       </DropdownMenuContent>
     </DropdownMenu>
   )
 }
 
-function PanelRow({ title, detail, quiet = false }: { title: string; detail: string; quiet?: boolean }) {
-  const Icon = quiet ? Circle : CheckCircle
+function PanelRow({
+  title,
+  detail,
+  time,
+  tone,
+  unread = false,
+  progress,
+}: {
+  title: string
+  detail: string
+  time: string
+  tone: "accent" | "success" | "neutral"
+  unread?: boolean
+  progress?: number
+}) {
+  const Icon = tone === "success" ? CheckCircle : tone === "neutral" ? Circle : Clock
   return (
-    <div className="flex items-start gap-2 rounded-[7px] px-2 py-2 hover:bg-wash">
-      <Icon
-        aria-hidden
-        className={cn("mt-0.5 size-3.5 shrink-0", quiet ? "text-[var(--muted)]" : "text-[var(--accent-ink)]")}
-        weight={quiet ? "regular" : "fill"}
-      />
-      <div className="min-w-0">
-        <p className="truncate text-[11px] font-medium text-[var(--ink)]">{title}</p>
+    <button type="button" className={cn("group relative flex w-full items-start gap-2.5 rounded-[8px] px-2.5 py-2.5 text-left outline-none transition-colors hover:bg-wash focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]", unread && "bg-[color-mix(in_srgb,var(--accent-soft)_45%,transparent)]")}>
+      {unread ? <span aria-hidden className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-[var(--accent)]" /> : null}
+      <span className={cn("mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-[7px]", tone === "success" ? "bg-[#edf7f2] text-[var(--ok-ink)]" : tone === "neutral" ? "bg-[var(--surface-subtle)] text-[var(--muted)]" : "bg-[var(--accent-soft)] text-[var(--accent-ink)]")}>
+        <Icon aria-hidden className="size-3.5" weight={tone === "neutral" ? "regular" : "fill"} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline gap-2">
+          <p className="truncate text-[11px] font-medium text-[var(--ink)]">{title}</p>
+          <span className="ml-auto shrink-0 text-[9px] text-[var(--muted)]">{time}</span>
+        </div>
         <p className="mt-0.5 truncate text-[9.5px] text-[var(--muted)]">{detail}</p>
+        {progress !== undefined ? (
+          <span className="mt-2 block h-1 overflow-hidden rounded-full bg-[var(--line)]">
+            <span className="block h-full rounded-full bg-[var(--accent)]" style={{ width: `${progress}%` }} />
+          </span>
+        ) : null}
       </div>
-    </div>
+    </button>
   )
 }
 

@@ -320,6 +320,24 @@ input {
   font: inherit;
 }
 
+/* 表单焦点统一使用清晰边框，不叠加 ring / glow 阴影。 */
+:where(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+  textarea
+):focus {
+  border-color: var(--accent) !important;
+  box-shadow: none !important;
+  outline: none;
+}
+
+/* 弹出菜单统一使用高对比边界与短距离双层投影。 */
+.overlay-surface {
+  border-color: var(--line-strong);
+  box-shadow:
+    0 1px 2px rgb(16 20 24 / 0.14),
+    0 5px 12px -7px rgb(16 20 24 / 0.32);
+}
+
 button {
   cursor: default;
 }

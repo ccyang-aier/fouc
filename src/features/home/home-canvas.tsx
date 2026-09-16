@@ -152,7 +152,7 @@ export function HomeCanvas() {
 
         <div
           className={cn(
-            "relative mt-7 flex h-[140px] flex-col rounded-[13px] border bg-panel text-left shadow-[0_10px_28px_rgba(28,36,42,0.035)] transition-[border-color,box-shadow] focus-within:border-accent-soft-line focus-within:shadow-[0_10px_30px_color-mix(in_srgb,var(--accent)_10%,transparent),0_0_0_3px_color-mix(in_srgb,var(--accent)_9%,transparent)]",
+            "relative mt-7 flex h-[140px] flex-col rounded-[13px] border bg-panel text-left shadow-[0_10px_28px_rgba(28,36,42,0.035)] transition-[border-color,box-shadow] focus-within:border-[var(--accent)]",
             feedback?.startsWith("先") ? "border-[#efad9f]" : "border-[var(--line-strong)]",
           )}
         >

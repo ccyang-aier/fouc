@@ -198,7 +198,7 @@ export function NavigationSidebar({
           open ? "opacity-100" : "pointer-events-none translate-x-1 opacity-0",
         )}
       >
-        <div className="flex min-w-0 items-center gap-2.5">
+        <div className="absolute left-1/2 flex min-w-0 -translate-x-1/2 items-center gap-1.5">
           <FoucMark />
           <span className="truncate text-[14px] font-semibold text-[var(--ink)]">Fouc</span>
         </div>

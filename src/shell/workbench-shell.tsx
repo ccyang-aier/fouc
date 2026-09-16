@@ -82,7 +82,6 @@ function writeProjectFavorite(favorited: boolean) {
 }
 
 export function WorkbenchShell() {
-  const [missionKey, setMissionKey] = useState(0)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [view, setView] = useState<WorkbenchView>("home")
   // 项目管理面板状态由壳层持有：左侧项目菜单与项目画布共享同一开合来源
@@ -129,14 +128,6 @@ export function WorkbenchShell() {
     setView(nextView)
   }
 
-  function startMission() {
-    setMissionKey((key) => key + 1)
-    changeView("home")
-    requestAnimationFrame(() => {
-      document.querySelector<HTMLTextAreaElement>("[aria-label='任务描述']")?.focus()
-    })
-  }
-
   return (
     <MotionConfig reducedMotion="user">
       <TooltipProvider>
@@ -157,7 +148,7 @@ export function WorkbenchShell() {
               // 系统底层行只在主区顶部、与主导航 header 等高并接
               <div className="flex min-h-0 flex-1">
                 <div className="sidebar-material flex shrink-0">
-                  <WorkspaceRail view={view} onViewChange={changeView} onNewMission={startMission} />
+                  <WorkspaceRail view={view} onViewChange={changeView} />
                   <NavigationSidebar
                     open={!sidebarCollapsed}
                     onCollapse={() => {
@@ -182,7 +173,7 @@ export function WorkbenchShell() {
                     <div className="relative h-full min-h-0" style={{ perspective: 1600 }}>
                       <AnimatePresence initial={false} custom={view === "projects" ? 1 : -1}>
                         <motion.div
-                          key={`${view}-${missionKey}`}
+                          key={view}
                           custom={view === "projects" ? 1 : -1}
                           variants={mainCanvasVariants}
                           initial="enter"

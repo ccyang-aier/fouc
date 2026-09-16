@@ -7,9 +7,11 @@
  * 进入项目视图时导航区整体切换为项目管理菜单。
  */
 
+import { useState } from "react"
 import Image from "next/image"
 import {
   BookOpenText,
+  CaretRight,
   ChatCircleDots,
   Desktop,
   FolderOpen,
@@ -38,35 +40,48 @@ export type WorkbenchView =
   | "knowledge"
   | "connectors"
 
-/** 小节分隔标题：弱化标签 + 渐隐细线 */
-function NavSectionLabel({ label }: { label: string }) {
+/** 可折叠导航小节：标题本身即为开关，并保留轻量分隔线。 */
+function CollapsibleNavSection({
+  label,
+  children,
+}: {
+  label: string
+  children: React.ReactNode
+}) {
+  const [open, setOpen] = useState(true)
+
   return (
-    <div className="mt-4 flex h-5 items-center gap-2 px-1">
-      <span className="shrink-0 text-2xs text-[var(--muted)]">{label}</span>
-      <span aria-hidden className="h-px flex-1 bg-[var(--wt-sidebar-edge)]" />
+    <div className="mt-3">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+        className="group flex h-6 w-full items-center gap-1 rounded-[5px] px-1 text-2xs text-[var(--muted)] outline-none transition-colors hover:bg-sidebar-hover hover:text-[var(--muted-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+      >
+        <CaretRight
+          aria-hidden
+          className={cn("size-3 shrink-0 transition-transform duration-150", open && "rotate-90")}
+          weight="bold"
+        />
+        <span className="shrink-0">{label}</span>
+        <span aria-hidden className="ml-1 h-px flex-1 bg-[var(--wt-sidebar-edge)]" />
+      </button>
+      {open ? <div className="mt-0.5 space-y-1">{children}</div> : null}
     </div>
   )
 }
 
-/** 品牌标：白瓷圆角小方 + 居中标志图 */
+/** 品牌标：直接展示 logo，不叠加容器或底色。 */
 function FoucMark({ compact = false }: { compact?: boolean }) {
   return (
-    <span
-      aria-hidden
-      className={cn(
-        "inline-flex shrink-0 items-center justify-center overflow-hidden rounded-[8px] bg-white/90 shadow-[0_4px_12px_rgb(0_0_0_/_0.08)]",
-        compact ? "size-8" : "size-7",
-      )}
-    >
-      <Image
-        src="/brand/fouc-mark.png"
-        alt=""
-        width={20}
-        height={20}
-        draggable={false}
-        className="size-[72%] scale-[1.42] object-contain"
-      />
-    </span>
+    <Image
+      src="/brand/fouc-mark.png"
+      alt=""
+      width={compact ? 26 : 24}
+      height={compact ? 26 : 24}
+      draggable={false}
+      className="shrink-0 object-contain"
+    />
   )
 }
 
@@ -100,6 +115,12 @@ const favoriteItem: SidebarRowItem = {
   icon: Star,
   iconClassName: "text-[#d79a3b] group-hover:text-[#d79a3b]",
   iconWeight: "fill",
+}
+
+const projectFolderItem: SidebarRowItem = {
+  id: "project-folder-fouc",
+  label: "Fouc 桌面端 V1",
+  icon: FolderOpen,
 }
 
 const recentItem: SidebarRowItem = {
@@ -218,30 +239,23 @@ export function NavigationSidebar({
                 />
               ))}
             </nav>
-            <NavSectionLabel label="更多" />
-            <div className="space-y-1">
+            <CollapsibleNavSection label="更多">
               <NavButton
                 item={connectorsItem}
                 active={view === "connectors"}
                 onSelect={() => onViewChange("connectors")}
               />
-            </div>
-            {projectFavorited ? (
-              <>
-                <NavSectionLabel label="收藏" />
-                <div className="space-y-1">
-                  <NavButton
-                    item={favoriteItem}
-                    active={false}
-                    onSelect={() => onViewChange("projects")}
-                  />
-                </div>
-              </>
-            ) : null}
-            <NavSectionLabel label="最近" />
-            <div className="space-y-1">
+            </CollapsibleNavSection>
+            <CollapsibleNavSection label="项目文件夹">
+              <NavButton
+                item={projectFavorited ? favoriteItem : projectFolderItem}
+                active={false}
+                onSelect={() => onViewChange("projects")}
+              />
+            </CollapsibleNavSection>
+            <CollapsibleNavSection label="最近">
               <NavButton item={recentItem} active={false} onSelect={() => onViewChange("projects")} />
-            </div>
+            </CollapsibleNavSection>
           </>
         )}
       </ScrollArea>

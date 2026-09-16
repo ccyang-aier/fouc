@@ -9,7 +9,6 @@
 import { useCallback, useSyncExternalStore } from "react"
 
 import {
-  APPEARANCE_DEFAULTS,
   applyAppearancePrefs,
   getAppearanceServerSnapshot,
   getAppearanceSnapshot,
@@ -20,7 +19,6 @@ import {
 
 import { FontSection } from "./appearance/font-section"
 import { AccentSection } from "./appearance/accent-section"
-import { MiscSection } from "./appearance/misc-section"
 import { ThemeSection } from "./appearance/theme-section"
 import { PanelHeader } from "./general-settings"
 
@@ -29,10 +27,6 @@ export function AppearanceSettings() {
 
   const update = useCallback((patch: Partial<AppearancePrefs>) => {
     applyAppearancePrefs({ ...getAppearanceSnapshot(), ...patch })
-  }, [])
-
-  const resetAll = useCallback(() => {
-    applyAppearancePrefs(APPEARANCE_DEFAULTS)
   }, [])
 
   return (
@@ -50,11 +44,6 @@ export function AppearanceSettings() {
         onCustomColor={(accentCustom) => update({ accent: "custom", accentCustom })}
       />
       <FontSection prefs={prefs} onChange={update} />
-      <MiscSection
-        reducedMotion={prefs.reducedMotion}
-        onReducedMotionChange={(reducedMotion) => update({ reducedMotion })}
-        onReset={resetAll}
-      />
     </div>
   )
 }

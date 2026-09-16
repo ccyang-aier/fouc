@@ -1,7 +1,7 @@
 "use client"
 
 /**
- * 一级工作区轨道（双层侧栏第一层，Kiln 式 58px）：
+ * 一级工作区轨道（双层侧栏第一层，紧凑 48px）：
  * 空间菜单（省略号下拉）/ 新建任务（深色胶囊）/ 空间彩色瓦片 / 底部全部项目入口。
  */
 
@@ -52,14 +52,14 @@ export function WorkspaceRail({
   return (
     <aside
       aria-label="工作区入口"
-      className="relative flex h-full w-[58px] shrink-0 flex-col items-center border-r border-[var(--wt-sidebar-edge)] bg-transparent py-4"
+      className="relative flex h-full w-12 shrink-0 flex-col items-center border-r border-[var(--wt-sidebar-edge)] bg-transparent py-3"
     >
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
             type="button"
             aria-label="打开空间菜单"
-            className="grid size-9 place-items-center rounded-md text-[var(--muted-strong)] outline-none transition-colors hover:bg-sidebar-hover hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+            className="grid size-8 place-items-center rounded-md text-[var(--muted-strong)] outline-none transition-colors hover:bg-sidebar-hover hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
           >
             <DotsThree aria-hidden className="size-4" weight="bold" />
           </button>
@@ -86,9 +86,9 @@ export function WorkspaceRail({
             type="button"
             aria-label="新建任务"
             onClick={onNewMission}
-            className="mt-4 grid size-8 place-items-center rounded-md border border-[var(--line-strong)] bg-ink text-background outline-none transition-colors hover:bg-ink-secondary focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+            className="mt-3 grid size-7 place-items-center rounded-md border border-[var(--line-strong)] bg-ink text-background outline-none transition-colors hover:bg-ink-secondary focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
           >
-            <Plus aria-hidden className="size-5" weight="bold" />
+            <Plus aria-hidden className="size-4" weight="bold" />
           </button>
         </TooltipTrigger>
         <TooltipContent side="right" sideOffset={10}>
@@ -96,7 +96,7 @@ export function WorkspaceRail({
         </TooltipContent>
       </Tooltip>
 
-      <div className="relative z-10 mt-5 flex min-h-0 flex-col items-center gap-2 overflow-visible">
+      <div className="relative z-10 mt-4 flex min-h-0 flex-col items-center gap-2 overflow-visible">
         {spaces.map((space) => (
           <Tooltip key={space.id}>
             <TooltipTrigger asChild>
@@ -105,7 +105,7 @@ export function WorkspaceRail({
                 aria-label={`切换到${space.label}`}
                 onClick={() => selectSpace(space.id)}
                 className={cn(
-                  "grid size-8 shrink-0 place-items-center rounded-md text-sm font-semibold text-white transition-all duration-150 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+                  "grid size-7 shrink-0 place-items-center rounded-md text-[12px] font-semibold text-white transition-all duration-150 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
                   activeSpaceId === space.id
                     ? "outline-2 outline-offset-2 outline-ink"
                     : "opacity-80 hover:scale-[1.03] hover:opacity-100",
@@ -122,14 +122,14 @@ export function WorkspaceRail({
         ))}
       </div>
 
-      <div className="mt-auto flex flex-col items-center gap-2 border-t border-[var(--wt-sidebar-edge)] pt-4">
+      <div className="mt-auto flex flex-col items-center gap-2 border-t border-[var(--wt-sidebar-edge)] pt-3">
         <Tooltip>
           <TooltipTrigger asChild>
             <button
               type="button"
               aria-label="全部项目"
               onClick={() => onViewChange("projects")}
-              className="grid size-9 place-items-center rounded-md text-[var(--muted-strong)] outline-none transition-colors hover:bg-sidebar-hover hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+              className="grid size-8 place-items-center rounded-md text-[var(--muted-strong)] outline-none transition-colors hover:bg-sidebar-hover hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
             >
               <SquaresFour aria-hidden className="size-[18px]" weight="duotone" />
             </button>

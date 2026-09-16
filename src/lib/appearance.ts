@@ -1,8 +1,8 @@
 "use client"
 
 /**
- * 外观偏好：主题（浅色 / 深色 / 跟随系统）、字体（界面 / 代码 / 对话）与动效。
- * 状态落在 html 的 dataset（主题、字体族、动效开关）与 CSS 变量（字号）上，
+ * 外观偏好：主题（浅色 / 深色 / 跟随系统）与字体（界面 / 代码 / 对话）。
+ * 状态落在 html 的 dataset（主题、字体族）与 CSS 变量（字号）上，
  * 由 globals.css 消费；localStorage 单键持久化，首帧由 layout 内联脚本应用避免闪色。
  */
 
@@ -45,7 +45,14 @@ export const ACCENT_PREF_IDS: readonly AccentPref[] = [...ACCENT_IDS, "custom"]
 
 // ── 字体目录（预览栈与 globals.css 的属性映射保持同步） ─────────────
 
-export const UI_FONT_IDS = ["default", "native", "mono"] as const
+export const UI_FONT_IDS = [
+  "default",
+  "native",
+  "lxgw-wenkai",
+  "source-han-sans",
+  "source-han-serif",
+  "mono",
+] as const
 export type UiFontId = (typeof UI_FONT_IDS)[number]
 
 export const uiFontOptions: Array<{ id: UiFontId; label: string; stack: string }> = [
@@ -61,6 +68,21 @@ export const uiFontOptions: Array<{ id: UiFontId; label: string; stack: string }
     stack: 'system-ui, "Segoe UI", "PingFang SC", "Microsoft YaHei UI", "Noto Sans CJK SC", sans-serif',
   },
   {
+    id: "lxgw-wenkai",
+    label: "霞鹜文楷",
+    stack: '"LXGW WenKai", "霞鹜文楷", "STKaiti", "KaiTi", serif',
+  },
+  {
+    id: "source-han-sans",
+    label: "思源黑体",
+    stack: '"Source Han Sans SC", "Noto Sans CJK SC", "Noto Sans SC", "Microsoft YaHei UI", sans-serif',
+  },
+  {
+    id: "source-han-serif",
+    label: "思源宋体",
+    stack: '"Source Han Serif SC", "Noto Serif CJK SC", "Noto Serif SC", "Songti SC", serif',
+  },
+  {
     id: "mono",
     label: "等宽界面",
     stack:
@@ -68,7 +90,18 @@ export const uiFontOptions: Array<{ id: UiFontId; label: string; stack: string }
   },
 ]
 
-export const CODE_FONT_IDS = ["default", "cascadia", "jetbrains", "consolas"] as const
+export const CODE_FONT_IDS = [
+  "default",
+  "cascadia",
+  "jetbrains",
+  "maple",
+  "sarasa",
+  "fira-code",
+  "source-code-pro",
+  "iosevka",
+  "ibm-plex-mono",
+  "consolas",
+] as const
 export type CodeFontId = (typeof CODE_FONT_IDS)[number]
 
 export const codeFontOptions: Array<{ id: CodeFontId; label: string; stack: string }> = [
@@ -88,27 +121,49 @@ export const codeFontOptions: Array<{ id: CodeFontId; label: string; stack: stri
     stack: '"JetBrains Mono", "Cascadia Code", ui-monospace, SFMono-Regular, Consolas, monospace',
   },
   {
+    id: "maple",
+    label: "Maple Mono",
+    stack: '"Maple Mono", "Maple Mono NF CN", "JetBrains Mono", ui-monospace, monospace',
+  },
+  {
+    id: "sarasa",
+    label: "更纱黑体等宽",
+    stack: '"Sarasa Mono SC", "Sarasa Fixed SC", "Noto Sans Mono CJK SC", ui-monospace, monospace',
+  },
+  {
+    id: "fira-code",
+    label: "Fira Code",
+    stack: '"Fira Code", "JetBrains Mono", ui-monospace, monospace',
+  },
+  {
+    id: "source-code-pro",
+    label: "Source Code Pro",
+    stack: '"Source Code Pro", "Cascadia Code", ui-monospace, monospace',
+  },
+  {
+    id: "iosevka",
+    label: "Iosevka",
+    stack: 'Iosevka, "JetBrains Mono", ui-monospace, monospace',
+  },
+  {
+    id: "ibm-plex-mono",
+    label: "IBM Plex Mono",
+    stack: '"IBM Plex Mono", "Source Code Pro", ui-monospace, monospace',
+  },
+  {
     id: "consolas",
     label: "Consolas",
     stack: 'Consolas, "Liberation Mono", "Courier New", monospace',
   },
 ]
 
-export const CHAT_FONT_IDS = ["follow", "native", "serif"] as const
-export type ChatFontId = (typeof CHAT_FONT_IDS)[number]
+export const CHAT_FONT_IDS = ["follow", ...UI_FONT_IDS] as const
+export type ChatFontId = "follow" | UiFontId
 
+/** 对话字体与界面字体共享同一字体池，仅额外提供“跟随界面”。 */
 export const chatFontOptions: Array<{ id: ChatFontId; label: string; stack: string }> = [
   { id: "follow", label: "跟随界面", stack: "" },
-  {
-    id: "native",
-    label: "系统原生",
-    stack: 'system-ui, "Segoe UI", "PingFang SC", "Microsoft YaHei UI", sans-serif',
-  },
-  {
-    id: "serif",
-    label: "衬线阅读",
-    stack: 'Georgia, "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC", SimSun, serif',
-  },
+  ...uiFontOptions,
 ]
 
 export const FONT_SIZE_RANGES = {
@@ -130,7 +185,6 @@ export type AppearancePrefs = {
   codeFontSize: number
   chatFont: ChatFontId
   chatFontSize: number
-  reducedMotion: boolean
 }
 
 export const APPEARANCE_DEFAULTS: AppearancePrefs = {
@@ -143,7 +197,6 @@ export const APPEARANCE_DEFAULTS: AppearancePrefs = {
   codeFontSize: 12,
   chatFont: "follow",
   chatFontSize: 13,
-  reducedMotion: false,
 }
 
 const STORAGE_KEY = "fouc.appearance"
@@ -180,7 +233,6 @@ export function readAppearancePrefs(): AppearancePrefs {
     codeFontSize: sizeOf(saved.codeFontSize, FONT_SIZE_RANGES.code, APPEARANCE_DEFAULTS.codeFontSize),
     chatFont: oneOf(saved.chatFont, CHAT_FONT_IDS, APPEARANCE_DEFAULTS.chatFont),
     chatFontSize: sizeOf(saved.chatFontSize, FONT_SIZE_RANGES.chat, APPEARANCE_DEFAULTS.chatFontSize),
-    reducedMotion: saved.reducedMotion === true,
   }
 }
 
@@ -234,9 +286,6 @@ export function applyAppearancePrefs(prefs: AppearancePrefs): void {
   root.style.setProperty("--ui-size", `${prefs.uiFontSize}px`)
   root.style.setProperty("--code-size", `${prefs.codeFontSize}px`)
   root.style.setProperty("--chat-size", `${prefs.chatFontSize}px`)
-  if (prefs.reducedMotion) root.dataset.reducedMotion = ""
-  else delete root.dataset.reducedMotion
-
   ensureSystemListener()
   for (const listener of listeners) listener()
 }

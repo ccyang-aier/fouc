@@ -177,7 +177,7 @@ export function WorkbenchShell() {
                   />
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col">
-                  <SystemBar />
+                  <SystemBar onNavigate={changeView} />
                   <main className="relative min-w-0 flex-1 overflow-hidden bg-panel">
                     <div className="relative h-full min-h-0" style={{ perspective: 1600 }}>
                       <AnimatePresence initial={false} custom={view === "projects" ? 1 : -1}>

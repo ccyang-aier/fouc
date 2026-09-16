@@ -77,7 +77,6 @@ export function SettingsCanvas({
               <ArrowLeft className="size-4" weight="bold" aria-hidden />
             </button>
             <span className="text-[13px] font-semibold tracking-[-0.01em] text-[var(--ink)]">设置</span>
-            <span className="mt-px font-mono text-[10px] text-[var(--muted)]">v0.1.0</span>
           </div>
 
           <div className="relative mt-2.5">

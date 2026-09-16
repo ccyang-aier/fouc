@@ -42,6 +42,8 @@
   --ui-size: 13px;
   --code-size: 12px;
   --chat-size: 13px;
+  --font-code: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
   --font-chat: var(--font-sans);
 
   /* ── 侧栏材质令牌（供 sidebar-material.css 消费） ── */
@@ -199,6 +201,17 @@ html[data-ui-font="native"] {
 html[data-ui-font="mono"] {
   --font-sans: var(--font-code);
 }
+html[data-ui-font="lxgw-wenkai"] {
+  --font-sans: "LXGW WenKai", "霞鹜文楷", STKaiti, KaiTi, serif;
+}
+html[data-ui-font="source-han-sans"] {
+  --font-sans: "Source Han Sans SC", "Noto Sans CJK SC", "Noto Sans SC",
+    "Microsoft YaHei UI", sans-serif;
+}
+html[data-ui-font="source-han-serif"] {
+  --font-sans: "Source Han Serif SC", "Noto Serif CJK SC", "Noto Serif SC",
+    "Songti SC", serif;
+}
 html[data-code-font="cascadia"] {
   --font-code: "Cascadia Code", "Cascadia Mono", ui-monospace,
     SFMono-Regular, Consolas, monospace;
@@ -207,17 +220,35 @@ html[data-code-font="jetbrains"] {
   --font-code: "JetBrains Mono", "Cascadia Code", ui-monospace,
     SFMono-Regular, Consolas, monospace;
 }
+html[data-code-font="maple"] {
+  --font-code: "Maple Mono", "Maple Mono NF CN", "JetBrains Mono",
+    ui-monospace, monospace;
+}
+html[data-code-font="sarasa"] {
+  --font-code: "Sarasa Mono SC", "Sarasa Fixed SC", "Noto Sans Mono CJK SC",
+    ui-monospace, monospace;
+}
+html[data-code-font="fira-code"] {
+  --font-code: "Fira Code", "JetBrains Mono", ui-monospace, monospace;
+}
+html[data-code-font="source-code-pro"] {
+  --font-code: "Source Code Pro", "Cascadia Code", ui-monospace, monospace;
+}
+html[data-code-font="iosevka"] {
+  --font-code: Iosevka, "JetBrains Mono", ui-monospace, monospace;
+}
+html[data-code-font="ibm-plex-mono"] {
+  --font-code: "IBM Plex Mono", "Source Code Pro", ui-monospace, monospace;
+}
 html[data-code-font="consolas"] {
   --font-code: Consolas, "Liberation Mono", "Courier New", monospace;
 }
-html[data-chat-font="native"] {
-  --font-chat: system-ui, "Segoe UI", "PingFang SC", "Microsoft YaHei UI",
-    sans-serif;
-}
-html[data-chat-font="serif"] {
-  --font-chat: Georgia, "Source Han Serif SC", "Noto Serif CJK SC",
-    "Songti SC", SimSun, serif;
-}
+html[data-chat-font="default"] { --font-chat: "Inter Variable", "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", "PingFang SC", "Microsoft YaHei UI", "Noto Sans CJK SC", system-ui, sans-serif; }
+html[data-chat-font="native"] { --font-chat: system-ui, "Segoe UI", "PingFang SC", "Microsoft YaHei UI", "Noto Sans CJK SC", sans-serif; }
+html[data-chat-font="lxgw-wenkai"] { --font-chat: "LXGW WenKai", "霞鹜文楷", STKaiti, KaiTi, serif; }
+html[data-chat-font="source-han-sans"] { --font-chat: "Source Han Sans SC", "Noto Sans CJK SC", "Noto Sans SC", "Microsoft YaHei UI", sans-serif; }
+html[data-chat-font="source-han-serif"] { --font-chat: "Source Han Serif SC", "Noto Serif CJK SC", "Noto Serif SC", "Songti SC", serif; }
+html[data-chat-font="mono"] { --font-chat: var(--font-code); }
 
 @theme inline {
   --color-background: var(--shell);
@@ -324,14 +355,4 @@ button {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-}
-
-/* 外观设置里的「减弱动效」偏好：与系统级 prefers-reduced-motion 同等约束 */
-html[data-reduced-motion] *,
-html[data-reduced-motion] *::before,
-html[data-reduced-motion] *::after {
-  scroll-behavior: auto !important;
-  animation-duration: 0.01ms !important;
-  animation-iteration-count: 1 !important;
-  transition-duration: 0.01ms !important;
 }

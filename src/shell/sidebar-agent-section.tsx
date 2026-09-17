@@ -96,7 +96,7 @@ export function SidebarAgentSection({ compact = false }: { compact?: boolean }) 
             <Robot className="size-3.5" weight="duotone" />
           </span>
           <span className="truncate leading-none">Agent 管理</span>
-          <span className={cn("text-[9px] tabular-nums text-[var(--muted)]", compact && "ml-auto")}>{compact ? agents.length : `(${agents.length})`}</span>
+          <span className="text-[9px] tabular-nums text-[var(--muted)]">({agents.length})</span>
           <CaretDown aria-hidden className={cn("size-2.5 shrink-0 transition-transform duration-150", !open && "-rotate-90")} weight="fill" />
         </button>
 
@@ -134,7 +134,7 @@ export function SidebarAgentSection({ compact = false }: { compact?: boolean }) 
       </div>
 
       {open ? (
-        <div className="mt-0.5 space-y-1 pl-5">
+        <div className="mt-0.5 space-y-1 pl-3.5">
           {agents.map((agent) => {
             const active = activeAgentId === agent.id
             return (

@@ -107,22 +107,20 @@ html[data-theme="dark"] {
   --wt-sidebar-hover: rgb(255 255 255 / 0.06);
 }
 
-/* ── 窗口自绘外框（桌面端）：关闭系统 DWM 阴影后由应用层绘制阴影，
-   落在窗口透明边缘上叠合桌面，Win10 / Win11 表现一致。
+/* ── 窗口自绘外框（桌面端）：关闭系统 DWM 阴影后由应用层绘制紧凑阴影，
+   仅在窄透明边缘上叠合桌面，避免形成可见的宽浅色边带。
    标记由 lib/window-frame.ts 运行时维护；贴边（最大化 / 分屏）时收起。 ── */
 html[data-desktop-frame] {
-  --win-frame-inset: 16px;
-  /* 锐利描边 + 紧凑投影：高对比、低扩散 */
+  --win-frame-inset: 6px;
+  /* 细描边 + 单层短投影：保留窗口层次，同时避免大范围泛白。 */
   --win-shadow:
-    0 0 0 1px rgb(16 20 24 / 0.15),
-    0 3px 6px rgb(16 20 24 / 0.15),
-    0 10px 22px rgb(16 20 24 / 0.12);
+    0 0 0 1px rgb(16 20 24 / 0.14),
+    0 2px 6px rgb(16 20 24 / 0.12);
 }
 html[data-desktop-frame][data-theme="dark"] {
   --win-shadow:
-    0 0 0 1px rgb(0 0 0 / 0.55),
-    0 3px 6px rgb(0 0 0 / 0.4),
-    0 10px 22px rgb(0 0 0 / 0.45);
+    0 0 0 1px rgb(0 0 0 / 0.5),
+    0 2px 6px rgb(0 0 0 / 0.36);
 }
 html[data-desktop-frame][data-window-flat] {
   --win-frame-inset: 0px;

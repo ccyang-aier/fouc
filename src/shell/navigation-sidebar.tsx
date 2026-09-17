@@ -55,27 +55,71 @@ function ProjectNavSection({
   icon,
   children,
   onNew,
+  compact = false,
+  defaultOpen = true,
 }: {
   label: string
   count: number
   icon: React.ReactNode
   children: React.ReactNode
   onNew?: () => void
+  compact?: boolean
+  defaultOpen?: boolean
 }) {
-  const [open, setOpen] = useState(true)
+  const [open, setOpen] = useState(defaultOpen)
 
   return (
-    <div className="mt-3.5">
+    <div className={cn(compact ? "mt-0.5" : "mt-3.5")}>
       <div className="sidebar-nav-row group/project flex h-8 w-full items-center justify-between gap-2 rounded-[6px] px-1.5 text-[11.5px] text-[var(--muted-strong)]">
         <button type="button" aria-expanded={open} onClick={() => setOpen((value) => !value)} className="flex min-w-0 flex-1 items-center gap-1.5 rounded-[5px] text-left outline-none hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
           <span className="flex size-4 shrink-0 items-center justify-center self-center text-[var(--muted)]">{icon}</span>
           <span className="truncate leading-none">{label}</span>
-          <span className="text-[9px] tabular-nums text-[var(--muted)]">({count})</span>
+          <span className={cn("text-[9px] tabular-nums text-[var(--muted)]", compact && "ml-auto")}>{compact ? count : `(${count})`}</span>
           <CaretDown aria-hidden className={cn("size-2.5 shrink-0 transition-transform duration-150", !open && "-rotate-90")} weight="fill" />
         </button>
         {onNew ? <div className="pointer-events-none flex shrink-0 items-center opacity-0 transition-opacity duration-150 group-hover/project:pointer-events-auto group-hover/project:opacity-100 group-focus-within/project:pointer-events-auto group-focus-within/project:opacity-100"><button type="button" aria-label={`新建${label}`} title={`新建${label}`} onClick={onNew} className="flex size-6 items-center justify-center rounded-[5px] text-[var(--muted)] outline-none hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><Plus className="size-3.5" /></button></div> : null}
       </div>
-      {open ? <div className="mt-0.5 space-y-1 pl-2.5">{children}</div> : null}
+      {open ? <div className="mt-0.5 space-y-1 pl-5">{children}</div> : null}
+    </div>
+  )
+}
+
+function SidebarSectionCaption({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex h-6 items-center gap-2 px-1.5 text-[10px] font-medium tracking-[0.02em] text-[var(--muted)]">
+      <span className="shrink-0">{children}</span>
+      <span aria-hidden className="h-px min-w-0 flex-1 bg-[var(--wt-sidebar-edge)] opacity-70" />
+    </div>
+  )
+}
+
+function QuickAccessCategory({
+  label,
+  count,
+  icon,
+  children,
+}: {
+  label: string
+  count: number
+  icon: React.ReactNode
+  children: React.ReactNode
+}) {
+  const [open, setOpen] = useState(true)
+
+  return (
+    <div>
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+        className="sidebar-nav-row flex h-8 w-full items-center gap-2 rounded-[6px] px-2 text-left text-[11px] text-[var(--muted-strong)] outline-none hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+      >
+        <span className="flex size-4 shrink-0 items-center justify-center">{icon}</span>
+        <span className="min-w-0 flex-1 truncate">{label}</span>
+        <span className="text-[9px] tabular-nums text-[var(--muted)]">{count}</span>
+        <CaretDown aria-hidden className={cn("size-2.5 shrink-0 text-[var(--muted)] transition-transform duration-150", !open && "-rotate-90")} weight="fill" />
+      </button>
+      {open && count > 0 ? <div className="mt-0.5 space-y-1 pl-5">{children}</div> : null}
     </div>
   )
 }
@@ -88,10 +132,11 @@ type ManagedSidebarEntry = {
   time?: string
 }
 
-function ManagedSidebarRow({ entry, active, editing, onSelect, onBeginRename, onRename, onDelete, onToggleMark }: {
+function ManagedSidebarRow({ entry, active, editing, quickAccess = false, onSelect, onBeginRename, onRename, onDelete, onToggleMark }: {
   entry: ManagedSidebarEntry
   active: boolean
   editing: boolean
+  quickAccess?: boolean
   onSelect: () => void
   onBeginRename: () => void
   onRename: (name: string) => void
@@ -99,7 +144,7 @@ function ManagedSidebarRow({ entry, active, editing, onSelect, onBeginRename, on
   onToggleMark: () => void
 }) {
   const [draft, setDraft] = useState(entry.name)
-  const ItemIcon = entry.kind === "project" ? FolderOpen : ChatCircleDots
+  const ItemIcon = quickAccess ? (entry.kind === "project" ? Star : PushPin) : (entry.kind === "project" ? FolderOpen : ChatCircleDots)
   const MarkIcon = entry.kind === "project" ? Star : PushPin
   const markLabel = entry.kind === "project" ? (entry.marked ? "取消星标" : "标记为星标项目") : (entry.marked ? "取消置顶" : "置顶该聊天")
 
@@ -110,7 +155,7 @@ function ManagedSidebarRow({ entry, active, editing, onSelect, onBeginRename, on
   return (
     <div data-active={active} className="sidebar-nav-row group/entry relative flex h-[30px] items-center rounded-[6px] text-[10.5px] text-[var(--muted-strong)]">
       <button type="button" aria-label={entry.name} aria-current={active ? "page" : undefined} onClick={onSelect} className="flex h-full min-w-0 flex-1 items-center gap-2 rounded-[6px] pl-2 pr-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
-        <ItemIcon className="size-3.5 shrink-0 text-[var(--muted)]" weight="duotone" />
+        <ItemIcon className={cn("size-3.5 shrink-0", quickAccess && entry.kind === "project" ? "text-[#d79a3b]" : "text-[var(--muted)]")} weight={quickAccess ? "fill" : "duotone"} />
         <span className="truncate">{entry.name}</span>
         {entry.time ? <span className="ml-auto shrink-0 text-[9px] text-[var(--muted)] transition-opacity group-hover/entry:opacity-0 group-focus-within/entry:opacity-0">{entry.time}</span> : null}
       </button>
@@ -217,8 +262,8 @@ export function NavigationSidebar({
     setCreatingProject(false)
   }
 
-  function renderManagedEntry(entry: ManagedSidebarEntry, keyPrefix = "") {
-    return <ManagedSidebarRow key={`${keyPrefix}${entry.kind}-${entry.id}`} entry={entry} active={activeEntryId === entry.id} editing={editingEntryId === entry.id && !keyPrefix} onSelect={() => setActiveEntryId(entry.id)} onBeginRename={() => setEditingEntryId(entry.id)} onRename={(name) => renameEntry(entry, name)} onDelete={() => deleteEntry(entry)} onToggleMark={() => toggleMarked(entry)} />
+  function renderManagedEntry(entry: ManagedSidebarEntry, keyPrefix = "", quickAccess = false) {
+    return <ManagedSidebarRow key={`${keyPrefix}${entry.kind}-${entry.id}`} entry={entry} active={activeEntryId === entry.id} editing={editingEntryId === entry.id && !keyPrefix} quickAccess={quickAccess} onSelect={() => setActiveEntryId(entry.id)} onBeginRename={() => setEditingEntryId(entry.id)} onRename={(name) => renameEntry(entry, name)} onDelete={() => deleteEntry(entry)} onToggleMark={() => toggleMarked(entry)} />
   }
 
   const paneProps = {
@@ -302,19 +347,26 @@ export function NavigationSidebar({
                 />
               ))}
             </nav>
-            {favoriteProjects.length > 0 ? <ProjectNavSection label="星标项目" count={favoriteProjects.length} icon={<Star className="size-3.5 text-[#d79a3b]" weight="fill" />}>
-              {favoriteProjects.map((entry) => renderManagedEntry(entry, "favorite-"))}
-            </ProjectNavSection>
-            : null}
-            {pinnedChats.length > 0 ? <ProjectNavSection label="置顶对话" count={pinnedChats.length} icon={<PushPin className="size-3.5" weight="fill" />}>
-              {pinnedChats.map((entry) => renderManagedEntry(entry, "pinned-"))}
-            </ProjectNavSection>
-            : null}
-            <SidebarAgentSection />
-            <ProjectNavSection label="项目管理" count={projects.length} icon={<Stack className="size-3.5" weight="duotone" />} onNew={() => { setCreatingProject(true); setNewProjectDraft("") }}>
-              {creatingProject ? <div className="flex h-[30px] items-center gap-1.5 rounded-[6px] bg-[var(--surface-subtle)] px-2"><FolderOpen className="size-3.5 shrink-0 text-[var(--muted)]" /><input autoFocus aria-label="新项目名称" value={newProjectDraft} onChange={(event) => setNewProjectDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") createProject(); if (event.key === "Escape") { setCreatingProject(false); setNewProjectDraft("") } }} onBlur={() => { if (!newProjectDraft.trim()) setCreatingProject(false) }} placeholder="项目名称" className="min-w-0 flex-1 bg-transparent text-[10.5px] text-[var(--ink)] outline-none" /></div> : null}
-              {projects.map((entry) => renderManagedEntry(entry))}
-            </ProjectNavSection>
+            <div className="mt-3">
+              <SidebarSectionCaption>快捷访问</SidebarSectionCaption>
+              <div className="mt-0.5 space-y-0.5">
+                <QuickAccessCategory label="项目" count={favoriteProjects.length} icon={<Star className="size-3.5 text-[#d79a3b]" weight="fill" />}>
+                  {favoriteProjects.map((entry) => renderManagedEntry(entry, "favorite-", true))}
+                </QuickAccessCategory>
+                <QuickAccessCategory label="对话" count={pinnedChats.length} icon={<PushPin className="size-3.5" weight="fill" />}>
+                  {pinnedChats.map((entry) => renderManagedEntry(entry, "pinned-", true))}
+                </QuickAccessCategory>
+              </div>
+            </div>
+
+            <div className="mt-3">
+              <SidebarSectionCaption>工作台</SidebarSectionCaption>
+              <ProjectNavSection compact defaultOpen={false} label="项目库" count={projects.length} icon={<Stack className="size-3.5" weight="duotone" />} onNew={() => { setCreatingProject(true); setNewProjectDraft("") }}>
+                {creatingProject ? <div className="flex h-[30px] items-center gap-1.5 rounded-[6px] bg-[var(--surface-subtle)] px-2"><FolderOpen className="size-3.5 shrink-0 text-[var(--muted)]" /><input autoFocus aria-label="新项目名称" value={newProjectDraft} onChange={(event) => setNewProjectDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") createProject(); if (event.key === "Escape") { setCreatingProject(false); setNewProjectDraft("") } }} onBlur={() => { if (!newProjectDraft.trim()) setCreatingProject(false) }} placeholder="项目名称" className="min-w-0 flex-1 bg-transparent text-[10.5px] text-[var(--ink)] outline-none" /></div> : null}
+                {projects.map((entry) => renderManagedEntry(entry))}
+              </ProjectNavSection>
+              <SidebarAgentSection compact />
+            </div>
             <ProjectNavSection label="最近" count={recentChats.length} icon={<ClockCounterClockwise className="size-3.5" weight="duotone" />}>
               {recentChats.map((entry) => renderManagedEntry(entry))}
             </ProjectNavSection>

@@ -1,64 +1,47 @@
-# Project Navigation and Layout — Visual QA
+# Sidebar Design QA
 
-## Result
+- Source visual truth: `C:\Users\y00013075\.codex\generated_images\01a0a9f9-899e-7bd3-ac72-db73758f62ee\exec-fba1b418-1d99-4521-8029-48ee002adee7.png`
+- Browser-rendered implementation: `D:\AWorks\code\fouc\design-qa-implementation.png`
+- Combined focused comparison: `D:\AWorks\code\fouc\design-qa-comparison.png`
+- Viewport: 1673 × 960 CSS px, device scale factor 1
+- Source pixels: 919 × 1712; implementation pixels: 1673 × 960
+- Normalization: source scaled to 515 × 960 and compared beside a 272 × 960 crop of the implementation sidebar. The final fidelity judgment used the sidebar region, not browser chrome or the surrounding canvas.
+- State: light theme, home view, quick-access categories expanded, workbench entries collapsed, recent conversations expanded.
 
-`passed`
+## Findings
 
-No actionable P0, P1, or P2 visual or interaction findings remain for this revision.
+No actionable P0, P1, or P2 differences remain.
 
-## Visual truth and capture contract
+- Fonts and typography: the implementation keeps the product's existing UI font and compact density; section captions use a smaller, muted optical weight and the working rows preserve the established sidebar scale.
+- Spacing and layout rhythm: 快捷访问 and 工作台 now use caption-plus-hairline headers with no card background; category children use a clear 20 px inset. Workbench entries are collapsed by default, preventing the lower navigation from returning to a stacked-list appearance.
+- Colors and visual tokens: existing sidebar tokens are preserved. The amber starred-project state and muted filled pin state match the intended semantic hierarchy.
+- Image and icon fidelity: no raster assets were required. The implementation intentionally retains the application's current Phosphor filled/duotone icons instead of reproducing the concept image's outline icons, per the product requirement.
+- Copy and content: 快捷访问 contains 项目 and 对话 only; 工作台 contains 项目库 and Agent 管理; 最近 remains the time-oriented history area. Counts reflect live application data rather than the concept image's sample counts.
 
-- Positive tab reference: `qa/project-header/source-tabs.png` — `427 × 61`
-- Negative action-size reference supplied with this revision: `qa/project-header/source-actions-too-large.png` — `251 × 151`
-- Browser-rendered overview: `qa/project-header/implementation-overview-final.png` — `1280 × 1044`
-- Browser-rendered work view: `qa/project-header/implementation-work-final.png` — `1280 × 1044`
-- Focused action comparison: `qa/project-header/comparison-actions-compact.png`
-- Focused tab comparison: `qa/project-header/comparison-tabs-final.png`
-- Cross-tab width comparison: `qa/project-header/comparison-content-widths.png`
-- CSS viewport reported by the browser: `1281 × 1044`; capture output: `1280 × 1044`; reported device pixel ratio: `1.29`. The browser capture was normalized to the CSS viewport by the capture surface, so implementation comparisons use the saved output pixels directly.
-- State: light theme, project favorited, main sidebar expanded, lower “产品研发” project selected, overview/work context panel open.
+## Full-view comparison evidence
 
-The focused comparisons place the supplied reference on the left and the current implementation on the right. The action reference is intentionally a negative reference: its oversized tiles are the behavior being corrected.
+The full browser capture confirms that the unchanged primary navigation, app header, canvas, and settings row retain their previous placement. Only the requested lower sidebar groups changed. The new captions create section hierarchy without adding a background panel, tabs, or segmented controls.
 
-## Findings and comparison history
+## Focused region comparison evidence
 
-### Earlier pass — blocked
+The combined comparison image places the source sidebar and the rendered sidebar in one raster. It verifies the section-caption treatment, category grouping, workbench entry alignment, indentation, count placement, and recent-item hierarchy at a readable scale.
 
-- **P1 — cross-tab content width drift:** Overview used a centered `max-width` shell and a `308 px` context rail while Work used the full content track and a `292 px` detail rail.
-- **P1 — wrong sidebar active ownership:** Opening a lower project left the top-level “项目” item selected instead of the actual Space/Recent/Favorite row.
-- **P2 — oversized header actions:** The collapse and More controls used `48 × 48 px` containers with an `8 px` gap, matching the supplied too-large state rather than the requested compact state.
-- **P2 — tab-bar surface drift:** A full-width divider remained below the menu; the menu sat too close to the metadata row and its labels were too light.
+## Comparison history
 
-Fixes: shared the Work content track with all project sections, standardized the right rail at `292 px`, introduced lower-project selection state with `aria-current="page"`, reduced the action controls to `36 × 36 px` with a `2 px` gap, removed the long divider, increased the tab-bar top offset, and raised labels to semibold.
+1. First comparison found a P2 density mismatch: 项目库 and Agent 管理 were expanded by default, recreating the vertical stacking that the redesign was meant to reduce.
+2. Fix applied: both workbench entries now start collapsed, their counts align at the right edge, and their chevrons communicate expansion. 快捷访问 remains expanded and 最近 retains its visible history item.
+3. Post-fix evidence: `design-qa-comparison.png` shows the workbench compacted to two scannable rows while preserving access to nested content. No further P0/P1/P2 issues were visible.
 
-### Final pass — passed
+## Interaction and runtime checks
 
-- The focused action comparison shows both controls using the same compact geometry and hover/open-state surface family.
-- The focused tab comparison shows the divider removed, stronger typography, preserved compact spacing, and the same active underline treatment.
-- The side-by-side overview/work capture shows both sections terminating at the same `292 px` right rail and sharing identical `20 px` content gutters.
-- DOM inspection reports exactly one active project item: “产品研发”; the top-level “项目” item has no `aria-current` state.
-- No browser error or warning entries were present; only Next.js Fast Refresh informational logs were recorded.
+- Expanded and collapsed 快捷访问/项目, 项目库, Agent 管理, and 最近.
+- Starred a project and pinned a conversation; both appeared in the correct quick-access category with the required filled icons.
+- Verified the UC Agent child and existing project/recent rows remain reachable.
+- Browser console checked after interaction: no errors or warnings.
+- TypeScript and ESLint checks passed.
 
-## Required fidelity surfaces
+## Follow-up polish
 
-| Surface | Status | Evidence |
-| --- | --- | --- |
-| Typography | Passed | Project tab labels use the existing 13 px scale with semibold optical weight and consistent hierarchy. |
-| Spacing and layout | Passed | Header actions are `36 × 36 px` with a `2 px` gap; tabs have the requested extra top breathing room; overview and work share the same content and rail widths. |
-| Colors and tokens | Passed | Neutral header controls, active mineral underline, selected sidebar surface, and hover backgrounds remain mapped to existing product tokens. |
-| Images and icons | Passed | Existing Phosphor icons and avatar assets are retained; no visible asset was approximated with CSS art or text glyphs. |
-| Copy and content | Passed | Project title, running-task metadata, owner, Agent chip, and project navigation labels remain coherent and unchanged. |
-| Interaction and accessibility | Passed | Project tabs, context toggle, More menu, sidebar project selection, favorite item, keyboard focus rings, and `aria-current` ownership are implemented. |
-
-## Interaction verification
-
-- Clicking Favorite, Space, or Recent project rows selects that exact lower item and clears the top-level nav highlight.
-- Clicking a top-level nav item clears the lower project selection.
-- All five project tabs switch inside the shared project header.
-- Project context/detail rails remain full height and the same width across Overview and Work.
-- Header collapse and More controls retain matched hover/focus geometry; the collapse control keeps its visible open-state surface.
-- `pnpm typecheck` and `pnpm lint` both pass with no errors or warnings.
-
-## Final result
+No blocking follow-up. The concept image uses larger demonstration typography and sample counts; the implementation intentionally follows the existing application's denser sidebar system and live data.
 
 final result: passed

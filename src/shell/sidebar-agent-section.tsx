@@ -30,8 +30,8 @@ const UC_AGENT: SidebarAgent = {
   builtIn: true,
 }
 
-export function SidebarAgentSection() {
-  const [open, setOpen] = useState(true)
+export function SidebarAgentSection({ compact = false }: { compact?: boolean }) {
+  const [open, setOpen] = useState(!compact)
   const [agents, setAgents] = useState<SidebarAgent[]>([UC_AGENT])
   const [activeAgentId, setActiveAgentId] = useState(UC_AGENT.id)
   const [providers, setProviders] = useState<ProviderSpec[]>([])
@@ -84,7 +84,7 @@ export function SidebarAgentSection() {
   }
 
   return (
-    <section className="mt-3.5" aria-label="Agents">
+    <section className={compact ? "mt-0.5" : "mt-3.5"} aria-label="Agent 管理">
       <div className="sidebar-nav-row group/agents flex h-8 w-full items-center justify-between gap-2 rounded-[6px] px-1.5 text-[11.5px] text-[var(--muted-strong)]">
         <button
           type="button"
@@ -95,8 +95,8 @@ export function SidebarAgentSection() {
           <span className="flex size-4 shrink-0 items-center justify-center text-[var(--muted)]">
             <Robot className="size-3.5" weight="duotone" />
           </span>
-          <span className="truncate leading-none">Agents</span>
-          <span className="text-[9px] tabular-nums text-[var(--muted)]">({agents.length})</span>
+          <span className="truncate leading-none">Agent 管理</span>
+          <span className={cn("text-[9px] tabular-nums text-[var(--muted)]", compact && "ml-auto")}>{compact ? agents.length : `(${agents.length})`}</span>
           <CaretDown aria-hidden className={cn("size-2.5 shrink-0 transition-transform duration-150", !open && "-rotate-90")} weight="fill" />
         </button>
 
@@ -134,7 +134,7 @@ export function SidebarAgentSection() {
       </div>
 
       {open ? (
-        <div className="mt-0.5 space-y-1 pl-2.5">
+        <div className="mt-0.5 space-y-1 pl-5">
           {agents.map((agent) => {
             const active = activeAgentId === agent.id
             return (

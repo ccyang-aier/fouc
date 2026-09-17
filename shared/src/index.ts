@@ -254,6 +254,174 @@ export interface WsEnvelope {
 
 export const WS_TOPICS = {
   installationChanged: 'agents.installationChanged',
+  connectorChanged: 'connectors.changed',
   runEvent: (sessionId: string): string => `runs.event.${sessionId}`,
   sessionEvent: (sessionId: string): string => `sessions.event.${sessionId}`,
 } as const;
+
+// ─── Connector control plane ──────────────────────────────────────
+
+export type ConnectorEffect = 'read' | 'write' | 'destructive';
+export type ConnectorTargetType = 'desktop_sidecar' | 'cloud_worker' | 'customer_relay';
+export type ConnectorDesiredState = 'enabled' | 'disabled';
+export type ConnectorAuthState = 'unconfigured' | 'connecting' | 'valid' | 'expired' | 'needs_user_action' | 'error';
+export type ConnectorHealthState = 'unknown' | 'healthy' | 'degraded' | 'unreachable';
+export type ConnectorExecutionState = 'online' | 'offline';
+
+export interface ConnectorCapabilityDefinition {
+  id: string;
+  name: string;
+  description: string;
+  effect: ConnectorEffect;
+  approval: 'never' | 'policy' | 'always';
+  idempotent: boolean;
+  traits: string[];
+}
+
+export interface ConnectorProviderDefinition {
+  id: string;
+  name: string;
+  description: string;
+  version: string;
+  category: string;
+  authMethods: Array<'oauth_system_browser' | 'managed_web_session' | 'api_key' | 'username_password' | 'device_code' | 'service_account' | 'client_certificate'>;
+  targetTypes: ConnectorTargetType[];
+  capabilities: ConnectorCapabilityDefinition[];
+}
+
+export interface ConnectorIdentity {
+  externalId: string;
+  displayName: string | null;
+  account: string | null;
+  tenantId: string | null;
+  verifiedAt: number;
+}
+
+export interface ConnectorInstance {
+  id: string;
+  providerId: string;
+  name: string;
+  ownerType: 'user' | 'workspace';
+  ownerId: string;
+  desiredState: ConnectorDesiredState;
+  authState: ConnectorAuthState;
+  healthState: ConnectorHealthState;
+  executionState: ConnectorExecutionState;
+  executionTargetType: ConnectorTargetType;
+  executionTargetId: string;
+  config: Record<string, unknown>;
+  identity: ConnectorIdentity | null;
+  connectedAt: number | null;
+  lastHeartbeatAt: number | null;
+  lastHeartbeatDurationMs: number | null;
+  lastErrorCode: string | null;
+  lastErrorMessage: string | null;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface ConnectorHeartbeat {
+  id: number;
+  instanceId: string;
+  state: ConnectorHealthState;
+  durationMs: number | null;
+  errorCode: string | null;
+  createdAt: number;
+}
+
+export interface ConnectorInvocationRecord {
+  id: string;
+  instanceId: string;
+  providerId: string;
+  capabilityId: string;
+  status: 'running' | 'succeeded' | 'failed' | 'cancelled';
+  inputSummary: string | null;
+  resultSummary: string | null;
+  errorCode: string | null;
+  startedAt: number;
+  endedAt: number | null;
+  durationMs: number | null;
+}
+
+export interface ConnectorDetailDto {
+  provider: ConnectorProviderDefinition;
+  instance: ConnectorInstance;
+  heartbeats: ConnectorHeartbeat[];
+  invocations: ConnectorInvocationRecord[];
+}
+
+export interface ConnectorConnectInteraction {
+  interactionId: string;
+  kind: 'open_managed_web_session';
+  url: string;
+  expiresAt: number;
+}
+
+export type DtsFilterId = 'myTodos' | 'myProcessed' | 'myCreate' | 'myFollowed' | 'myOverdue' | 'ccToMe' | 'closed' | 'unclosed' | 'cancel';
+
+export interface DtsTicketListInput {
+  filter: DtsFilterId;
+  page: number;
+  pageSize: number;
+  keyword?: string;
+}
+
+export interface ExternalObjectRef {
+  connectorInstanceId: string;
+  providerId: string;
+  objectType: string;
+  externalId: string;
+  url: string | null;
+}
+
+export interface DtsTicketSummary {
+  id: string;
+  title: string;
+  status: string;
+  severity: string | null;
+  currentHandler: string | null;
+  creator: string | null;
+  createdAt: string | null;
+  productType: string | null;
+  productPath: string[];
+  remark: string | null;
+  source: ExternalObjectRef;
+}
+
+export interface DtsTicketListResult {
+  items: DtsTicketSummary[];
+  total: number;
+  page: number;
+  pageSize: number;
+  filter: DtsFilterId;
+}
+
+export interface DtsFieldValue {
+  key: string;
+  label: string;
+  value: string | number | boolean | null;
+}
+
+export interface DtsFlowNodeSummary {
+  id: string;
+  name: string;
+  status: string | null;
+  handler: string | null;
+  handledAt: string | null;
+}
+
+export interface DtsTicketDetail extends DtsTicketSummary {
+  currentNode: DtsFlowNodeSummary | null;
+  flowState: string | null;
+  handlers: string[];
+  fields: DtsFieldValue[];
+  flowNodes: DtsFlowNodeSummary[];
+  relations: ExternalObjectRef[];
+  permissions: string[];
+}
+
+export interface DtsFilterDefinition {
+  id: DtsFilterId;
+  name: string;
+  count: number | null;
+}

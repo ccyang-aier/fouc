@@ -88,8 +88,9 @@ V1 中 `baseUrl` 固定为受信任 DTS 地址，不允许用户或 Agent 传入
 1. 用户进入“连接器”目录并选择 DTS；
 2. 详情页说明 DTS 需要公司网络、由本机执行、V1 只读；
 3. 用户点击“连接”；
-4. Fouc 依次检查桌面 sidecar、DNS、TCP、TLS、Uniportal 和 DTS workspace；
-5. 检查失败时显示具体修复建议，不进入登录流程。
+4. Fouc 确认本机 sidecar 可用并创建一次有时限的登录交互；
+5. Tauri 打开受管认证窗口，由真实 workspace 导航暴露 DNS、TLS、VPN 或 SSO 问题；
+6. 身份验证失败时 Instance 回到 `needs_user_action`，界面显示可操作错误，不把窗口打开视为连接成功。
 
 ### 4.2 官方页面登录
 
@@ -137,13 +138,14 @@ DTS
 
 当 sidecar 检测到会话失效：
 
-1. 当前调用进入可恢复暂停；
-2. 同一 Instance 的刷新请求合并为一个 single-flight；
-3. Tauri 用隐藏认证窗口访问 workspace；
-4. 若 WebView SSO 仍有效，重新提取 Cookie 并自动重放一次调用；
-5. 若页面进入登录流程，Instance 变为 `needs_user_action`；
-6. Fouc 显示“DTS 登录已过期”，但不主动抢焦点；
-7. 用户点击重新登录后恢复被暂停的任务。
+1. 当前调用失败为明确的 `session_expired` / `authentication_required`；
+2. Instance 变为 `needs_user_action`，健康状态变为 `degraded`；
+3. Fouc 显示“DTS 登录已过期”，但不主动弹窗抢焦点；
+4. 用户点击“重新连接”后再次进入受管 SSO 窗口；
+5. 若专用 Profile 中官方 SSO 仍有效，页面可无密码完成跳转并重新交接 Cookie；否则由用户完成官方登录；
+6. 连接成功后，用户或上层任务重新发起幂等读取。
+
+自动 single-flight 刷新和原调用自动重放属于后续增强，不是当前 V1 的隐式承诺。
 
 ### 4.5 断开连接
 
@@ -166,16 +168,16 @@ src-tauri/
     ├── 异步读取 HttpOnly Cookie
     └── 直接转交 sidecar
 
-backend/src/connectors/providers/dts/
-├── provider.ts       Provider Definition 与 Adapter Factory
-├── adapter.ts        connect / diagnose / invoke / disconnect
-├── client.ts         DTS 白名单 API
-├── session.ts        CookieJar、失效检测、single-flight 刷新
-├── transport.ts      TLS、代理、超时和有限重试
-├── contracts.ts      外部响应运行时校验
-├── mapper.ts         DTS DTO → Fouc Context/WorkItem
-└── errors.ts         DTS 私有错误 → Connector 公共错误
+backend/src/connectors/
+├── repository.ts     Instance、心跳与调用审计
+├── service.ts        生命周期、Provider Registry 与 Capability 调用
+└── dts/
+    ├── provider.ts   Provider Definition、白名单 API、TLS、超时与重试
+    ├── cookie-jar.ts Cookie domain/path/secure/expiry 语义
+    └── mapper.ts     DTS DTO → Fouc 最小领域输出
 ```
+
+当前 V1 为保持最小实现，将上述职责收敛在 `backend/src/connectors/dts/{provider,cookie-jar,mapper}.ts`，边界不变；仅当第二个 Provider 或协议复杂度确实需要时再拆成更多文件。
 
 Tauri 只实现系统能力桥。DTS 端点、请求体、数据映射和会话判断全部保留在 TypeScript sidecar。
 
@@ -194,7 +196,7 @@ Tauri 只实现系统能力桥。DTS 端点、请求体、数据映射和会话�
 
 Tauri 2.11 的 WebView API 可以读取 HttpOnly 和 Secure Cookie。Windows WebView2 在同步命令或事件回调中读取 Cookie 可能死锁，因此必须从异步命令或独立任务执行。
 
-Cookie 不经 React 状态、浏览器 localStorage、URL、日志或事件 payload。原生层只向本机 sidecar 发送允许域名的 Cookie，并使用现有 sidecar Bearer Token 认证。
+Cookie 不经 React 状态、浏览器 localStorage、URL、日志或事件 payload。原生层只向本机 sidecar 发送允许域名的 Cookie，并使用只存在于 Rust 壳与 sidecar 进程环境中的独立内部令牌认证；普通前端 Bearer Token 无权调用 Cookie handoff 端点。
 
 ### 6.3 Cookie 存储
 
@@ -570,6 +572,22 @@ DTS 前端存在创建、执行、挂起、撤销、归档、删除、批量操�
 - WorkObject 外部引用和最小快照；
 - Web 任务经桌面 Relay 调用。
 
+### 15.1 当前实现与验收记录（2026-09-17）
+
+已完成：
+
+- 通用 Provider / Instance / Capability 契约、Registry、生命周期、心跳和调用审计；
+- 认证、健康、期望启停和执行位置四组正交状态；
+- DTS 系统 CA Transport、完整内存 CookieJar、固定只读请求 DTO、超时和有限重试；
+- 独立 WebView2 官方 SSO 窗口、独立 Profile、无远程 IPC capability、独立内部 handoff 令牌；
+- 断开时清空 sidecar 会话并撤销 DTS 专用 WebView Profile；
+- 身份、首页筛选器、列表、详情、关系、权限、心跳和调用审计；
+- Connector Catalog、DTS 详情页、真实列表、工单详情面板、连接信息与凭证状态界面。
+
+真实环境只读验收结果：身份确认成功；读取到 9 个服务端筛选器；`myTodos / myCreate / myProcessed / myFollowed / ccToMe` 分别返回 6 / 10 / 219 / 0 / 117 条；抽样详情映射出 13 个可展示字段、2 个流程节点、0 个关联和 5 个权限项。非法筛选器返回 400，未认证调用返回 401，错误内部令牌返回 401，过期登录交互返回 410。所有测试均未调用 DTS 写接口。
+
+明确延后：Agent 工具暴露、WorkObject 持久引用、Web→桌面 Relay、自动 single-flight 刷新与调用重放、任何写入 Capability。这些能力不影响当前桌面端 DTS 个人只读闭环。
+
 ## 十六、验收标准
 
 - 用户密码只进入官方 SSO 页面，Fouc 不读取或持久化密码；
@@ -579,7 +597,7 @@ DTS 前端存在创建、执行、挂起、撤销、归档、删除、批量操�
 - 仅注册明确的只读 Capability；
 - Agent 无法构造任意 DTS 请求体或执行全局空过滤查询；
 - 列表、详情、关系和权限输出均通过 schema 校验与字段裁剪；
-- 会话过期可静默恢复，无法恢复时进入可操作状态；
+- 会话过期会进入 `needs_user_action`；用户重新连接时可复用仍有效的官方 SSO Profile；
 - 桌面离线不会将任务误标为完成；
 - 日志、数据库和模型上下文中不存在密码、Cookie 和 SSO 票据；
 - 外部工单始终保留 DTS 权威来源引用和快照时间。

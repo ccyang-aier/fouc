@@ -15,6 +15,57 @@ const log = createLogger('store');
 
 export type Db = Database;
 
+const CONNECTOR_SCHEMA = `
+CREATE TABLE IF NOT EXISTS connector_instance (
+  id TEXT PRIMARY KEY,
+  provider_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  owner_type TEXT NOT NULL,
+  owner_id TEXT NOT NULL,
+  desired_state TEXT NOT NULL,
+  auth_state TEXT NOT NULL,
+  health_state TEXT NOT NULL,
+  execution_state TEXT NOT NULL,
+  execution_target_type TEXT NOT NULL,
+  execution_target_id TEXT NOT NULL,
+  config TEXT NOT NULL DEFAULT '{}',
+  identity TEXT,
+  connected_at INTEGER,
+  last_heartbeat_at INTEGER,
+  last_heartbeat_duration_ms INTEGER,
+  last_error_code TEXT,
+  last_error_message TEXT,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_connector_instance_provider ON connector_instance(provider_id);
+
+CREATE TABLE IF NOT EXISTS connector_heartbeat (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  instance_id TEXT NOT NULL REFERENCES connector_instance(id) ON DELETE CASCADE,
+  state TEXT NOT NULL,
+  duration_ms INTEGER,
+  error_code TEXT,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_connector_heartbeat_instance ON connector_heartbeat(instance_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS connector_invocation (
+  id TEXT PRIMARY KEY,
+  instance_id TEXT NOT NULL REFERENCES connector_instance(id) ON DELETE CASCADE,
+  provider_id TEXT NOT NULL,
+  capability_id TEXT NOT NULL,
+  status TEXT NOT NULL,
+  input_summary TEXT,
+  result_summary TEXT,
+  error_code TEXT,
+  started_at INTEGER NOT NULL,
+  ended_at INTEGER,
+  duration_ms INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_connector_invocation_instance ON connector_invocation(instance_id, started_at DESC);
+`;
+
 // ─── 嵌入式迁移（AionCore 模式：NNN_描述.sql 顺序执行） ─────────────
 
 const MIGRATIONS: Array<{ name: string; sql: string }> = [
@@ -93,13 +144,15 @@ CREATE TABLE IF NOT EXISTS agent_event (
 );
 CREATE INDEX IF NOT EXISTS idx_event_session ON agent_event(session_id, seq_in_run);
 CREATE INDEX IF NOT EXISTS idx_event_type ON agent_event(type, created_at);
+
+${CONNECTOR_SCHEMA}
 `,
   },
 ];
 
 export function openDatabase(dbPath?: string): Db {
   const target = dbPath ?? getDbPath();
-  mkdirSync(path.dirname(target), { recursive: true });
+  if (target !== ':memory:') mkdirSync(path.dirname(target), { recursive: true });
   const db = new Database(target);
   db.exec('PRAGMA journal_mode = WAL;');
   db.exec('PRAGMA foreign_keys = ON;');
@@ -116,5 +169,7 @@ export function openDatabase(dbPath?: string): Db {
     })();
     log.info(`Applied migration ${migration.name}`);
   }
+  // 当前唯一 schema 以幂等 DDL 校准；开发期不保留旧 Connector 数据模型兼容分支。
+  db.exec(CONNECTOR_SCHEMA);
   return db;
 }

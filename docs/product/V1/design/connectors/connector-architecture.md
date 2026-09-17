@@ -139,19 +139,27 @@ interface ConnectorInstance {
   id: string
   providerId: string
   name: string
-  owner: ConnectorOwner
-  placement: ExecutionPlacement
+  ownerType: 'user' | 'workspace'
+  ownerId: string
+  desiredState: 'enabled' | 'disabled'
+  authState: 'unconfigured' | 'connecting' | 'valid' | 'needs_user_action'
+  healthState: 'unknown' | 'healthy' | 'degraded' | 'unreachable'
+  executionState: 'online' | 'offline'
+  executionTargetType: 'desktop_sidecar' | 'cloud' | 'relay'
   executionTargetId: string | null
   config: Record<string, unknown>
-  credentialRef: string | null
   identity: ConnectedIdentity | null
-  status: ConnectorStatus
+  connectedAt: number | null
+  lastHeartbeatAt: number | null
+  lastHeartbeatDurationMs: number | null
+  lastErrorCode: string | null
+  lastErrorMessage: string | null
   createdAt: number
   updatedAt: number
 }
 ```
 
-`config` 只能保存非敏感配置，如服务地址、默认视图、项目范围和分页上限。密码、Token、Cookie 和私钥只能由 `credentialRef` 指向安全存储，或仅存在于运行时内存。
+`config` 只能保存非敏感配置，如服务地址、默认视图、项目范围和分页上限。密码、Token、Cookie 和私钥只能由凭据引用指向安全存储，或仅存在于运行时内存。认证、健康、期望启停与执行目标是相互独立的状态轴，禁止用单个 `status` 混合表达。
 
 ### 4.3 `ConnectedIdentity`
 

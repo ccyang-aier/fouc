@@ -10,11 +10,17 @@ import { cors } from 'hono/cors';
 import type { AgentEvent, WsEnvelope } from '@shared/index';
 import type { AgentRegistry } from '../agents/registry';
 import type { SessionSupervisor } from '../agents/supervisor';
+import type { ConnectorService } from '../connectors/service';
+import { normalizeError } from '../connectors/service';
+import type { CookieHandoff } from '../connectors/dts/provider';
+import type { DtsTicketListInput } from '@shared/index';
 
 export type ServerContext = {
   registry: AgentRegistry;
   supervisor: SessionSupervisor;
+  connectors: ConnectorService;
   token: string;
+  internalToken: string;
   devNoAuth?: boolean;
 };
 
@@ -88,7 +94,7 @@ async function readJson<T>(c: { req: { json(): Promise<unknown> } }): Promise<T 
 // ─── 应用装配 ──────────────────────────────────────────────────────
 
 export function createApp(context: ServerContext): { app: Hono; hub: BroadcastHub } {
-  const { registry, supervisor, token } = context;
+  const { registry, supervisor, connectors, token } = context;
   const hub = new BroadcastHub(token, context.devNoAuth === true);
 
   const app = new Hono();
@@ -102,7 +108,14 @@ export function createApp(context: ServerContext): { app: Hono; hub: BroadcastHu
 
   // Bearer 鉴权中间件（/health 除外）
   app.use('*', async (c, next) => {
-    if (c.req.path === '/health' || context.devNoAuth) return next();
+    if (c.req.path === '/health') return next();
+    if (c.req.path.startsWith('/internal/')) {
+      if (c.req.header('x-fouc-internal-token') !== context.internalToken) {
+        return c.json({ ok: false, error: { code: 'unauthorized', message: 'Invalid internal token' } }, 401);
+      }
+      return next();
+    }
+    if (context.devNoAuth) return next();
     const header = c.req.header('authorization') ?? '';
     if (header !== `Bearer ${token}`) {
       return c.json({ ok: false, error: { code: 'unauthorized', message: 'Missing or invalid bearer token' } }, 401);
@@ -113,6 +126,36 @@ export function createApp(context: ServerContext): { app: Hono; hub: BroadcastHu
   // ── 健康/关停（进程协议端点） ──────────────────────────────────
 
   app.get('/health', (c) => c.json({ ok: true, pid: process.pid, at: Date.now() }));
+
+  // ── Connector 控制面与 DTS 数据面 ─────────────────────────────
+
+  app.get('/api/connectors/providers', (c) => c.json({ ok: true, data: connectors.listProviders() }));
+  app.get('/api/connectors/instances', (c) => c.json({ ok: true, data: connectors.listInstances() }));
+  app.get('/api/connectors/instances/:id', (c) => connectorReply(c, () => connectors.detail(c.req.param('id'))));
+
+  app.post('/api/connectors/instances/:id/connect', (c) => connectorReply(c, () => connectors.beginConnect(c.req.param('id'))));
+  app.post('/api/connectors/instances/:id/disconnect', (c) => connectorReply(c, () => connectors.disconnect(c.req.param('id'))));
+  app.post('/api/connectors/instances/:id/heartbeat', (c) => connectorReply(c, () => connectors.heartbeat(c.req.param('id'))));
+
+  app.get('/api/connectors/instances/:id/dts/filters', (c) => connectorReply(c, () => connectors.dtsFilters(c.req.param('id'))));
+  app.post('/api/connectors/instances/:id/dts/tickets', async (c) => {
+    const body = await readJson<DtsTicketListInput>(c);
+    if (!body) return c.json({ ok: false, error: { code: 'invalid_input', message: '请求体无效' } }, 400);
+    return connectorReply(c, () => connectors.dtsTickets(c.req.param('id'), body));
+  });
+  app.get('/api/connectors/instances/:id/dts/tickets/:ticketId', (c) => connectorReply(c, () => connectors.dtsTicket(c.req.param('id'), c.req.param('ticketId'))));
+
+  // 该端点只接受 Rust 壳持有的独立内部令牌；普通前端 Bearer Token 无权注入 Cookie。
+  app.post('/internal/connectors/dts/auth-handoff', async (c) => {
+    const body = await readJson<{ interactionId: string; cookies: CookieHandoff[] }>(c);
+    if (!body?.interactionId || !Array.isArray(body.cookies)) return c.json({ ok: false, error: { code: 'invalid_input', message: '认证交接数据无效' } }, 400);
+    return connectorReply(c, () => connectors.completeDtsConnect(body.interactionId, body.cookies));
+  });
+  app.post('/internal/connectors/dts/auth-cancel', async (c) => {
+    const body = await readJson<{ interactionId: string }>(c);
+    if (body?.interactionId) connectors.cancelConnect(body.interactionId);
+    return c.json({ ok: true, data: { cancelled: true } });
+  });
 
   // ── Agent 目录与安装 ───────────────────────────────────────────
 
@@ -271,6 +314,15 @@ export function createApp(context: ServerContext): { app: Hono; hub: BroadcastHu
   });
 
   return { app, hub };
+}
+
+async function connectorReply(c: { json: (body: unknown, status?: number) => Response }, work: () => unknown | Promise<unknown>): Promise<Response> {
+  try {
+    return c.json({ ok: true, data: await work() });
+  } catch (error) {
+    const normalized = normalizeError(error);
+    return c.json({ ok: false, error: { code: normalized.code, message: normalized.message } }, normalized.status);
+  }
 }
 
 export function createEventForwarder(hub: BroadcastHub): (event: AgentEvent) => void {

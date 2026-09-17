@@ -21,7 +21,7 @@ const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 use std::sync::Arc;
 
 use rand::RngCore;
-use tauri::{AppHandle, Emitter, Manager, State};
+use tauri::{AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder};
 
 pub type SharedBackendState = Arc<BackendState>;
 
@@ -32,6 +32,7 @@ pub struct BackendState {
 struct BackendInner {
     port: u16,
     token: String,
+    internal_token: String,
     child: Option<Child>,
     restart_count: u32,
     last_start: Option<Instant>,
@@ -68,6 +69,7 @@ impl BackendState {
             inner: Mutex::new(BackendInner {
                 port: 0,
                 token: String::new(),
+                internal_token: String::new(),
                 child: None,
                 restart_count: 0,
                 last_start: None,
@@ -79,7 +81,7 @@ impl BackendState {
 
 /// 解析后端启动命令：开发模式跑 `bun run backend/src/index.ts`，
 /// 生产模式使用随包分发的 sidecar 二进制 fouc-backend。
-fn backend_command(_app: &AppHandle, port: u16, token: &str, data_dir: &str) -> Option<Command> {
+fn backend_command(_app: &AppHandle, port: u16, token: &str, internal_token: &str, data_dir: &str) -> Option<Command> {
     let mut cmd = if cfg!(debug_assertions) {
         // 开发模式：编译期仓库根（tauri dev 的 cwd 是 src-tauri，不可靠）
         let repo_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).parent()?.to_path_buf();
@@ -93,6 +95,7 @@ fn backend_command(_app: &AppHandle, port: u16, token: &str, data_dir: &str) -> 
     // 后端 stdout/stderr 落盘 userData/logs/backend.log（排查问题；无文件则丢弃）
     cmd.env("FOUC_BACKEND_PORT", port.to_string())
         .env("FOUC_BACKEND_TOKEN", token)
+        .env("FOUC_INTERNAL_TOKEN", internal_token)
         .env("FOUC_DATA_DIR", data_dir)
         .stdout(backend_log_stdio(data_dir))
         .stderr(backend_log_stdio(data_dir))
@@ -145,8 +148,11 @@ fn spawn_backend(app: &AppHandle, state: SharedBackendState) {
     if inner.token.is_empty() {
         inner.token = generate_token();
     }
+    if inner.internal_token.is_empty() {
+        inner.internal_token = generate_token();
+    }
 
-    match backend_command(app, inner.port, &inner.token, &data_dir) {
+    match backend_command(app, inner.port, &inner.token, &inner.internal_token, &data_dir) {
         Some(mut cmd) => match cmd.spawn() {
             Ok(child) => {
                 inner.child = Some(child);
@@ -267,6 +273,136 @@ fn get_backend_endpoint(state: State<'_, SharedBackendState>) -> Result<serde_js
     }))
 }
 
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CookieHandoff {
+    name: String,
+    value: String,
+    domain: String,
+    path: String,
+    secure: bool,
+    http_only: bool,
+    expires_at: Option<i64>,
+}
+
+/// 打开 DTS 官方 SSO 受管窗口。窗口 label 不匹配任何 capability，远程页面无 IPC 权限。
+#[tauri::command]
+fn open_dts_auth(
+    app: AppHandle,
+    state: State<'_, SharedBackendState>,
+    interaction_id: String,
+    url: String,
+) -> Result<(), String> {
+    let parsed = url.parse().map_err(|_| "invalid DTS login URL".to_string())?;
+    if !is_allowed_dts_url(&parsed) {
+        return Err("DTS login URL is outside the allowed domain".into());
+    }
+    let label = format!("dts-auth-{}", interaction_id.replace('-', ""));
+    if let Some(existing) = app.get_webview_window(&label) {
+        existing.set_focus().map_err(|error| error.to_string())?;
+        return Ok(());
+    }
+    let profile_dir = app.path().app_data_dir().map_err(|error| error.to_string())?
+        .join("auth-profiles").join("dts");
+    std::fs::create_dir_all(&profile_dir).map_err(|error| error.to_string())?;
+    let window = WebviewWindowBuilder::new(&app, &label, WebviewUrl::External(parsed))
+        .title("登录 DTS")
+        .inner_size(1040.0, 760.0)
+        .min_inner_size(760.0, 560.0)
+        .center()
+        .resizable(true)
+        .devtools(false)
+        .data_directory(profile_dir)
+        .on_navigation(is_allowed_dts_url)
+        .build()
+        .map_err(|error| error.to_string())?;
+
+    let (port, internal_token) = {
+        let inner = state.inner.lock().map_err(|error| error.to_string())?;
+        (inner.port, inner.internal_token.clone())
+    };
+    let poll_app = app.clone();
+    let poll_label = label.clone();
+    std::thread::spawn(move || poll_dts_auth(poll_app, poll_label, interaction_id, port, internal_token));
+    window.set_focus().map_err(|error| error.to_string())?;
+    Ok(())
+}
+
+/// 断开 DTS 时撤销专用浏览器 Profile，确保下一次连接必须重新建立官方 SSO 会话。
+#[tauri::command]
+fn clear_dts_auth_profile(app: AppHandle) -> Result<(), String> {
+    for (label, window) in app.webview_windows() {
+        if label.starts_with("dts-auth-") {
+            let _ = window.close();
+        }
+    }
+    let profile_dir = app.path().app_data_dir().map_err(|error| error.to_string())?
+        .join("auth-profiles").join("dts");
+    if !profile_dir.exists() {
+        return Ok(());
+    }
+    for attempt in 0..5 {
+        match std::fs::remove_dir_all(&profile_dir) {
+            Ok(()) => return Ok(()),
+            Err(error) if attempt == 4 => return Err(format!("failed to clear DTS auth profile: {error}")),
+            Err(_) => std::thread::sleep(Duration::from_millis(120)),
+        }
+    }
+    Ok(())
+}
+
+fn is_allowed_dts_url(url: &tauri::Url) -> bool {
+    url.scheme() == "https"
+        && url.host_str().is_some_and(|host| host == "xfusion.com" || host.ends_with(".xfusion.com"))
+}
+
+fn poll_dts_auth(app: AppHandle, label: String, interaction_id: String, port: u16, internal_token: String) {
+    let client = match reqwest::blocking::Client::builder().no_proxy().timeout(Duration::from_secs(20)).build() {
+        Ok(value) => value,
+        Err(_) => return,
+    };
+    let cookie_url: tauri::Url = match "https://clouddragon.xfusion.com/dts/DTSPortal/workspace".parse() {
+        Ok(value) => value,
+        Err(_) => return,
+    };
+    let endpoint = format!("http://127.0.0.1:{port}/internal/connectors/dts/auth-handoff");
+    let cancel_endpoint = format!("http://127.0.0.1:{port}/internal/connectors/dts/auth-cancel");
+    for _ in 0..300 {
+        std::thread::sleep(Duration::from_secs(2));
+        let Some(window) = app.get_webview_window(&label) else {
+            let _ = client.post(&cancel_endpoint).header("x-fouc-internal-token", &internal_token)
+                .json(&serde_json::json!({ "interactionId": interaction_id })).send();
+            let _ = app.emit("connector://auth-cancelled", serde_json::json!({ "providerId": "dts" }));
+            return;
+        };
+        let Ok(cookies) = window.cookies_for_url(cookie_url.clone()) else { continue };
+        if !cookies.iter().any(|cookie| cookie.name() == "heds-siamSessionhedss" || cookie.name() == "hwsso_uniportal") { continue; }
+        let handoff: Vec<CookieHandoff> = cookies.into_iter().filter_map(|cookie| {
+            let domain = cookie.domain()?.to_string();
+            if domain != "xfusion.com" && !domain.ends_with(".xfusion.com") { return None; }
+            Some(CookieHandoff {
+                name: cookie.name().to_string(), value: cookie.value().to_string(), domain,
+                path: cookie.path().unwrap_or("/").to_string(), secure: cookie.secure().unwrap_or(false),
+                http_only: cookie.http_only().unwrap_or(false),
+                expires_at: cookie.expires_datetime().map(|time| time.unix_timestamp() * 1000),
+            })
+        }).collect();
+        let response = client.post(&endpoint).header("x-fouc-internal-token", &internal_token)
+            .json(&serde_json::json!({ "interactionId": interaction_id, "cookies": handoff })).send();
+        let connected = response.ok().and_then(|item| item.json::<serde_json::Value>().ok())
+            .and_then(|body| body.get("ok").and_then(|value| value.as_bool())).unwrap_or(false);
+        if connected {
+            let _ = window.close();
+            let _ = app.emit("connector://auth-completed", serde_json::json!({ "providerId": "dts", "instanceId": "dts-personal" }));
+            return;
+        }
+    }
+    if let Some(window) = app.get_webview_window(&label) { let _ = window.close(); }
+    let _ = client.post(&cancel_endpoint).header("x-fouc-internal-token", &internal_token)
+        .json(&serde_json::json!({ "interactionId": interaction_id })).send();
+    let _ = app.emit("connector://auth-failed", serde_json::json!({ "providerId": "dts", "code": "timeout" }));
+}
+
 /// 优雅关停：先 POST /shutdown 再兜底 kill
 fn shutdown_backend(state: &BackendState) {
     if let Ok(mut inner) = state.inner.lock() {
@@ -295,14 +431,14 @@ pub fn run() {
 
     tauri::Builder::default()
         .manage(state.clone())
-        .invoke_handler(tauri::generate_handler![get_backend_endpoint])
+        .invoke_handler(tauri::generate_handler![get_backend_endpoint, open_dts_auth, clear_dts_auth_profile])
         .setup(move |app| {
             let handle = app.handle().clone();
             spawn_backend(&handle, state.clone());
             Ok(())
         })
         .on_window_event(|window, event| {
-            if let tauri::WindowEvent::Destroyed = event {
+            if window.label() == "main" && matches!(event, tauri::WindowEvent::Destroyed) {
                 if let Some(state) = window.try_state::<SharedBackendState>() {
                     shutdown_backend(&state);
                 }

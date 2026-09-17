@@ -2,7 +2,7 @@
 
 /** 连接器目录：使用与社区一致的浏览结构，专注单类系统资源。 */
 
-import { useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { motion } from "motion/react"
 import { CaretDown, CaretUp, CheckCircle, MagnifyingGlass, PlugsConnected, SquaresFour, Table } from "@phosphor-icons/react"
 
@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils"
 import { ConnectorCard, ConnectorRow } from "./connector-catalog-items"
 import { ConnectorDetail } from "./connector-detail"
 import { CONNECTOR_CATEGORIES, initialConnectors } from "./connectors-data"
+import { clearDtsAuthProfile, connectorApi } from "./connector-api"
 
 type CatalogView = "grid" | "list"
 type ConnectorSort = "default" | "recent" | "name"
@@ -38,6 +39,18 @@ export function ConnectorsCanvas() {
   const [toast, setToast] = useState<string | null>(null)
   const toastTimerRef = useRef<number | null>(null)
 
+  useEffect(() => {
+    let disposed = false
+    let unlisten: (() => void) | undefined
+    const syncDts = () => void connectorApi.detail().then((detail) => {
+      if (disposed) return
+      setConnectors((list) => list.map((item) => item.id === "connector-dts" ? { ...item, connected: detail.instance.authState === "valid" } : item))
+    }).catch(() => undefined)
+    syncDts()
+    void import("@tauri-apps/api/event").then(async ({ listen }) => { unlisten = await listen("connector://auth-completed", syncDts) }).catch(() => undefined)
+    return () => { disposed = true; unlisten?.() }
+  }, [])
+
   const connectedCount = connectors.filter((connector) => connector.connected).length
 
   function notify(message: string) {
@@ -51,6 +64,31 @@ export function ConnectorsCanvas() {
     if (!item || item.connected === connected) return
     setConnectors((list) => list.map((connector) => connector.id === id ? { ...connector, connected } : connector))
     notify(connected ? `${item.name} 已连接，可在任务与自动化中引用` : `${item.name} 已断开`)
+  }
+
+  function connectConnector(id: string) {
+    if (id === "connector-dts") {
+      setDetailId(id)
+      return
+    }
+    setConnected(id, true)
+  }
+
+  async function disconnectConnector(id: string) {
+    if (id !== "connector-dts") {
+      setConnected(id, false)
+      return
+    }
+    if (!window.confirm("断开 DTS 后会清除本机连接会话与专用登录 Profile。确定继续吗？")) return
+    try {
+      await connectorApi.disconnect()
+      let profileCleared = true
+      try { await clearDtsAuthProfile() } catch { profileCleared = false }
+      setConnectors((list) => list.map((item) => item.id === id ? { ...item, connected: false } : item))
+      notify(profileCleared ? "DTS 已断开，会话凭证已清除" : "DTS 已断开；登录 Profile 清理失败，请重启 Fouc 后重试")
+    } catch (cause) {
+      notify(cause instanceof Error ? cause.message : "DTS 断开失败")
+    }
   }
 
   const normalized = query.trim().toLocaleLowerCase("zh-CN")
@@ -91,7 +129,7 @@ export function ConnectorsCanvas() {
   const breadcrumbLabel = category === "全部" ? "全部连接器" : category
   const detailConnector = detailId ? connectors.find((connector) => connector.id === detailId) : null
 
-  if (detailConnector) return <ConnectorDetail connector={detailConnector} onBack={() => setDetailId(null)} />
+  if (detailConnector) return <ConnectorDetail connector={detailConnector} onBack={() => setDetailId(null)} onConnectionChange={(connected) => setConnectors((list) => list.map((item) => item.id === detailConnector.id ? { ...item, connected } : item))} />
 
   return (
     <section aria-label="连接器" className="relative flex h-full min-h-0 flex-col bg-panel">
@@ -178,7 +216,7 @@ export function ConnectorsCanvas() {
           <div className="grid grid-cols-4 gap-3 max-[1240px]:grid-cols-3 max-[980px]:grid-cols-2 max-[700px]:grid-cols-1">
             {visible.map((connector, index) => (
               <motion.div key={`grid-${connector.id}`} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.16, delay: Math.min(index * 0.012, 0.1) }}>
-                <ConnectorCard connector={connector} onOpen={() => setDetailId(connector.id)} onConnect={() => setConnected(connector.id, true)} onDisconnect={() => setConnected(connector.id, false)} />
+                <ConnectorCard connector={connector} onOpen={() => setDetailId(connector.id)} onConnect={() => connectConnector(connector.id)} onDisconnect={() => void disconnectConnector(connector.id)} />
               </motion.div>
             ))}
           </div>
@@ -194,7 +232,7 @@ export function ConnectorsCanvas() {
             </div>
             {visible.map((connector, index) => (
               <motion.div key={`list-${connector.id}`} initial={{ opacity: 0, y: 3 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.14, delay: Math.min(index * 0.01, 0.08) }}>
-                <ConnectorRow connector={connector} onOpen={() => setDetailId(connector.id)} onConnect={() => setConnected(connector.id, true)} onDisconnect={() => setConnected(connector.id, false)} />
+                <ConnectorRow connector={connector} onOpen={() => setDetailId(connector.id)} onConnect={() => connectConnector(connector.id)} onDisconnect={() => void disconnectConnector(connector.id)} />
               </motion.div>
             ))}
           </div>

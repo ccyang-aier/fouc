@@ -15,12 +15,15 @@ import { EventRepository, InstallationRepository, ProviderRepository, RunReposit
 import { AgentRegistry } from './agents/registry';
 import { SessionSupervisor } from './agents/supervisor';
 import { createLogger } from './platform/logger';
+import { ConnectorRepository } from './connectors/repository';
+import { ConnectorService } from './connectors/service';
 
 const log = createLogger('main');
 
 const PORT = Number(process.env.FOUC_BACKEND_PORT ?? 8710);
 const TOKEN = process.env.FOUC_BACKEND_TOKEN ?? '';
 const DEV_NO_AUTH = TOKEN === '';
+const INTERNAL_TOKEN = process.env.FOUC_INTERNAL_TOKEN ?? (DEV_NO_AUTH ? 'dev-internal' : '');
 
 /**
  * argv 分发：`--bridge <providerId>` 以内嵌桥适配器身份运行（适配器编译进本
@@ -49,12 +52,15 @@ if (bridgeFlag >= 0) {
 }
 
 async function main(): Promise<void> {
+  if (!INTERNAL_TOKEN) throw new Error('FOUC_INTERNAL_TOKEN is required when backend authentication is enabled');
   const db = openDatabase();
   const providerRepo = new ProviderRepository(db);
   const installationRepo = new InstallationRepository(db);
   const sessionRepo = new SessionRepository(db);
   const runRepo = new RunRepository(db);
   const eventRepo = new EventRepository(db);
+  const connectorRepo = new ConnectorRepository(db);
+  const connectors = new ConnectorService(connectorRepo);
 
   // 事件出口：装配期缓冲，服务器就绪后切换为 WS 广播并冲放积压
   const buffered: import('@shared/index').AgentEvent[] = [];
@@ -63,7 +69,7 @@ async function main(): Promise<void> {
   const registry = new AgentRegistry(providerRepo, installationRepo, (event) => emitter.emit(event));
   const supervisor = new SessionSupervisor(registry, sessionRepo, runRepo, eventRepo, (event) => emitter.emit(event));
 
-  const { app, hub } = createApp({ registry, supervisor, token: TOKEN || 'dev', devNoAuth: DEV_NO_AUTH });
+  const { app, hub } = createApp({ registry, supervisor, connectors, token: TOKEN || 'dev', internalToken: INTERNAL_TOKEN, devNoAuth: DEV_NO_AUTH });
   const forwarder = createEventForwarder(hub);
   emitter.emit = (event) => forwarder(event);
   for (const event of buffered.splice(0)) forwarder(event);
@@ -95,10 +101,12 @@ async function main(): Promise<void> {
 
   // 后台刷新：发现 + 探测已登记 installation
   registry.startupRefresh();
+  connectors.startHeartbeat();
 
   // 优雅关停
   const shutdown = async () => {
     log.info('Shutting down: suspending sessions…');
+    connectors.stopHeartbeat();
     await supervisor.shutdown().catch((error) => log.error('shutdown failed:', error));
     server.stop(true);
     process.exit(0);

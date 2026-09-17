@@ -20,6 +20,8 @@
     "backend:dev": "bun --hot backend/src/index.ts",
     "backend:start": "bun backend/src/index.ts",
     "backend:typecheck": "tsc --noEmit -p backend/tsconfig.json",
+    "backend:test": "bun --cwd backend test",
+    "verify:dts-live": "bun backend/scripts/verify-dts-live.ts",
     "backend:build": "node scripts/build-backend.mjs",
     "verify:approval": "bun backend/scripts/verify-approval.ts"
   },

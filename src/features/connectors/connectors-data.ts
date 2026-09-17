@@ -20,6 +20,7 @@ export type Connector = {
 export const CONNECTOR_CATEGORIES: ReadonlyArray<"全部" | ConnectorCategory> = ["全部", "研发协作", "办公协同", "数据源", "设计资产"]
 
 export const initialConnectors: Connector[] = [
+  { id: "connector-dts", name: "DTS", logo: "/connector-logos/dts.svg", category: "研发协作", description: "通过当前设备安全读取工单、流程、关联关系与权限信息。", version: "1.0.0", updated: "刚刚", updatedDays: 0, connected: false },
   { id: "connector-github", name: "GitHub", logo: "/connector-logos/github.svg", category: "研发协作", description: "同步仓库、Issue 与 PR 状态到任务流，提交即更新进度。", version: "4.3.0", updated: "1 天前", updatedDays: 1, connected: true },
   { id: "connector-gitlab", name: "GitLab", logo: "/connector-logos/gitlab.svg", category: "研发协作", description: "接入 GitLab 仓库与流水线状态，MR 联动任务评审。", version: "3.1.2", updated: "3 天前", updatedDays: 3, connected: false },
   { id: "connector-sentry", name: "Sentry", logo: "/connector-logos/sentry.svg", category: "研发协作", description: "引入错误与性能事件，异常自动建单并关联版本。", version: "2.4.0", updated: "4 天前", updatedDays: 4, connected: false },

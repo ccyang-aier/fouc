@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import {
   BookOpen,
   CaretDown,
@@ -47,6 +47,7 @@ function SelectorChevron() {
 export function HomeComposer({ onStatusChange }: HomeComposerProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+  const celebrationTimerRef = useRef<number | null>(null)
   const [prompt, setPrompt] = useState("")
   const [agent, setAgent] = useState<(typeof AGENTS)[number]>("Nova")
   const [mode, setMode] = useState<(typeof MODES)[number]>("Auto")
@@ -57,6 +58,13 @@ export function HomeComposer({ onStatusChange }: HomeComposerProps) {
   const [isListening, setIsListening] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [hasError, setHasError] = useState(false)
+  const [assistantCelebrating, setAssistantCelebrating] = useState(false)
+
+  useEffect(() => {
+    return () => {
+      if (celebrationTimerRef.current !== null) window.clearTimeout(celebrationTimerRef.current)
+    }
+  }, [])
 
   function submitMission() {
     if (!prompt.trim()) {
@@ -73,6 +81,9 @@ export function HomeComposer({ onStatusChange }: HomeComposerProps) {
       setPrompt("")
       setIsSending(false)
       onStatusChange(`${agent} 正在整理任务上下文`)
+      setAssistantCelebrating(true)
+      if (celebrationTimerRef.current !== null) window.clearTimeout(celebrationTimerRef.current)
+      celebrationTimerRef.current = window.setTimeout(() => setAssistantCelebrating(false), 1400)
     }, 720)
   }
 
@@ -83,9 +94,9 @@ export function HomeComposer({ onStatusChange }: HomeComposerProps) {
         hasError ? "border-[#d58c7f]" : "border-[var(--line)]",
       )}
     >
-      <HomeAssistant />
+      <HomeAssistant celebrating={assistantCelebrating} />
 
-      <div className="flex h-[53px] shrink-0 items-center justify-between border-b border-[var(--line)] px-5 max-[760px]:px-3">
+      <div className="relative z-10 flex h-[53px] shrink-0 items-center justify-between rounded-t-[10px] border-b border-[var(--line)] bg-panel px-5 max-[760px]:px-3">
         <div className="flex min-w-0 items-center gap-1">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -162,10 +173,10 @@ export function HomeComposer({ onStatusChange }: HomeComposerProps) {
         }}
         aria-label="任务描述"
         placeholder="描述你的目标、引用资料，或 @ 一位 Agent…"
-        className="chat-scope min-h-0 flex-1 resize-none bg-transparent px-6 pt-4 text-[12px] leading-5 text-[var(--ink)] outline-none placeholder:text-[var(--muted)] max-[760px]:px-4"
+        className="chat-scope relative z-10 min-h-0 flex-1 resize-none bg-panel px-6 pt-4 text-[12px] leading-5 text-[var(--ink)] outline-none placeholder:text-[var(--muted)] max-[760px]:px-4"
       />
 
-      <div className="flex h-[62px] shrink-0 items-center justify-between px-5 pb-3 max-[760px]:px-3">
+      <div className="relative z-10 flex h-[62px] shrink-0 items-center justify-between rounded-b-[10px] bg-panel px-5 pb-3 max-[760px]:px-3">
         <input
           ref={fileRef}
           type="file"

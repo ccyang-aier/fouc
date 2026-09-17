@@ -1,48 +1,50 @@
 # Home assistant integration QA
 
-- Source visual truth: `C:\Users\Y00013~1\AppData\Local\Temp\codex-clipboard-18f38013-de68-422b-949b-19c035edc723.png`
+- Source visual truth: `C:\Users\Y00013~1\AppData\Local\Temp\codex-clipboard-bc3a1c44-4040-4b12-ac01-b1fbbfd072c8.png`
 - Implementation: `http://localhost:3000/` (Codex in-app browser, tab 3)
-- Source pixels: 1062 × 665
-- Implementation capture: 1280 × 720 CSS pixels at device scale factor 1
+- Source pixels: 603 × 367
+- Implementation capture: desktop app viewport at device scale factor 1
 - Responsive check: 680 × 860 CSS pixels at device scale factor 1
-- State: idle composer plus pointer-only left and up tracking states
-- Normalization: the source is a cropped annotated issue screenshot rather than a target mock, so comparison focused on the marked robot/composer junction at equivalent scale. Browser chrome and the red annotation were excluded from fidelity judgment.
+- State: idle composer plus pointer-only left tracking state
+- Normalization: the source is an annotated issue crop rather than a target mock. Comparison focused on the marked robot/composer junction; browser chrome and the red annotation were excluded from fidelity judgment.
 
 ## Full-view comparison evidence
 
-The surrounding home composition, typography, palette, control density, and copy remain unchanged. The implementation intentionally differs only in the marked area: the permission selector moves left, the card border disappears beneath the robot, and the complete transparent robot frame overlaps the card instead of two hard-clipped layers meeting at the card edge.
+The page composition, typography, palette, input dimensions, controls, and copy remain unchanged. The implementation intentionally changes only depth ordering and narrow-screen spacing: the composer is the foreground surface and the robot sits behind it.
 
 ## Focused region comparison evidence
 
-- Before: the hands and torso meet a visible horizontal boundary, the permission control sits directly beneath the character, and the duplicated foreground crop creates a hard seam.
-- After: one continuous raster frame renders above a small panel-colored border break; the hands and torso remain intact; the permission selector has reserved clearance.
-- Interaction: CDP `Input.dispatchMouseEvent` with `type: mouseMoved`, `buttons: 0` changed the robot to left and up frames without pointer down or click.
+- Before: the robot sat above an interrupted card edge, making its torso and hands appear detached from the input surface.
+- After: the card keeps one continuous top edge and foreground surface. It masks only the bottom eight pixels of the 142 px desktop robot frame, so the hands remain visible while their lower edge is naturally occluded.
+- Narrow viewport: an additional 20 px header-to-composer gap prevents the robot from colliding with the subtitle.
+- Interaction: CDP `Input.dispatchMouseEvent` with `type: mouseMoved`, `buttons: 0` changed the robot direction without pointer down or click.
 
 ## Required fidelity surfaces
 
-- Fonts and typography: unchanged; heading and compact control hierarchy remain consistent.
-- Spacing and layout rhythm: permission control clearance and the 150 px desktop / 116 px narrow border break remove the collision without changing composer dimensions.
-- Colors and visual tokens: the integration surface uses the existing `bg-panel` token; no new color or gradient was introduced.
-- Image quality and asset fidelity: existing transparent ImageGen frames are reused at native aspect ratio with no additional crop seam or stretching.
+- Fonts and typography: unchanged; no wrapping or hierarchy regression was introduced.
+- Spacing and layout rhythm: desktop composition is unchanged; the narrow breakpoint receives 20 px more vertical clearance.
+- Colors and visual tokens: unchanged; no masking color, gradient, or artificial bridge remains.
+- Image quality and asset fidelity: the existing transparent ImageGen frame is rendered once at its native aspect ratio, behind the composer, without clipping duplication or stretching.
 - Copy and content: unchanged.
 
 ## Findings
 
-No actionable P0, P1, or P2 differences remain for the requested area. On very narrow layouts the permission label is intentionally hidden by the existing breakpoint while its shield control remains available.
+No actionable P0, P1, or P2 differences remain for the requested junction. The robot reads as emerging from behind the composer, and the card edge remains structurally continuous.
 
 ## Comparison history
 
-- P1 before fix: hard visual seam caused by duplicating and clipping the robot into background and foreground layers. Fixed by rendering one continuous frame above a panel-colored border break. Post-fix desktop and narrow captures show no torso/hand clipping.
-- P1 before fix: tracking required pointer down. Fixed by listening to throttled global `pointermove`. Post-fix mouse-move events with `buttons: 0` visibly select directional frames.
-- P2 before fix: permission selector competed with the robot for the same space. Fixed by reserving responsive right margin for the assistant.
+- P1 previous iteration: a panel-colored break removed the border beneath the robot but made the two elements feel detached. Fixed by deleting the bridge and putting the complete composer above the robot in the stacking order.
+- P2 first layering pass: the foreground hid all of the robot's hands. Fixed by lifting the robot 18 px overall, leaving only its lower eight pixels occluded on desktop.
+- P2 narrow-screen pass: the robot intersected the subtitle at 680 px. Fixed by increasing the narrow header-to-composer gap from 80 px to 100 px.
+- Existing pointer tracking remains verified with `buttons: 0`.
 
 ## Implementation checklist
 
-- [x] Remove clipped duplicate-frame composition.
-- [x] Add seamless composer border break beneath the assistant.
-- [x] Reserve space for the permission selector.
-- [x] Track pointer movement without click or drag.
-- [x] Verify desktop and narrow layouts.
+- [x] Restore an uninterrupted composer edge.
+- [x] Put the robot behind the full composer surface.
+- [x] Tune occlusion so the hands remain visible on desktop.
+- [x] Preserve no-click pointer tracking.
+- [x] Verify desktop and 680 px layouts.
 - [x] Verify page identity, meaningful content, framework overlay absence, and console health.
 
 final result: passed

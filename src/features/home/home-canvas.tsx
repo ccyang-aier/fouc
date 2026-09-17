@@ -28,7 +28,7 @@ export function HomeCanvas() {
           </p>
         </header>
 
-        <div className="mt-[62px] max-[760px]:mt-[80px]">
+        <div className="mt-[62px] max-[760px]:mt-[100px]">
           <HomeComposer onStatusChange={setStatus} />
         </div>
 

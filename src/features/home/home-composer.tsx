@@ -94,13 +94,9 @@ export function HomeComposer({ onStatusChange }: HomeComposerProps) {
         hasError ? "border-[#d58c7f]" : "border-[var(--line)]",
       )}
     >
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -top-px right-1 z-20 h-8 w-[150px] bg-panel max-[760px]:w-[116px]"
-      />
       <HomeAssistant celebrating={assistantCelebrating} />
 
-      <div className="relative z-10 flex h-[53px] shrink-0 items-center justify-between rounded-t-[10px] border-b border-[var(--line)] bg-panel px-5 max-[760px]:px-3">
+      <div className="relative z-20 flex h-[53px] shrink-0 items-center justify-between rounded-t-[10px] border-b border-[var(--line)] bg-panel px-5 max-[760px]:px-3">
         <div className="flex min-w-0 items-center gap-1">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

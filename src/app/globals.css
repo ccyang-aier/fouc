@@ -380,16 +380,16 @@ input {
   }
 }
 
-/* Radix 菜单打开时触发器继续保留可见的激活面，避免弹层出现后来源丢失。 */
+/* Radix 菜单打开时保持 hover 面，不额外描边或改变控件尺寸。 */
 .dropdown-menu-trigger[data-state="open"] {
-  background: var(--chip-strong) !important;
+  background: var(--surface-hover) !important;
   color: var(--ink) !important;
-  box-shadow: inset 0 0 0 1px var(--floating-border), 0 1px 2px rgb(16 20 24 / 0.04);
+  box-shadow: none !important;
 }
 
 html[data-theme="dark"] .dropdown-menu-trigger[data-state="open"] {
   background: var(--surface-hover) !important;
-  box-shadow: inset 0 0 0 1px var(--line-strong);
+  box-shadow: none !important;
 }
 
 :where(

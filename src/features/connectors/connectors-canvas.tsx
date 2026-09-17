@@ -15,6 +15,7 @@ import {
 import { cn } from "@/lib/utils"
 
 import { ConnectorCard, ConnectorRow } from "./connector-catalog-items"
+import { ConnectorDetail } from "./connector-detail"
 import { CONNECTOR_CATEGORIES, initialConnectors } from "./connectors-data"
 
 type CatalogView = "grid" | "list"
@@ -32,6 +33,7 @@ export function ConnectorsCanvas() {
   const [query, setQuery] = useState("")
   const [view, setView] = useState<CatalogView>("grid")
   const [sort, setSort] = useState<ConnectorSort>("default")
+  const [detailId, setDetailId] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const toastTimerRef = useRef<number | null>(null)
 
@@ -70,10 +72,13 @@ export function ConnectorsCanvas() {
 
   const categoryLabel = category === "全部" ? "全部类型" : category
   const breadcrumbLabel = category === "全部" ? "全部连接器" : category
+  const detailConnector = detailId ? connectors.find((connector) => connector.id === detailId) : null
+
+  if (detailConnector) return <ConnectorDetail connector={detailConnector} onBack={() => setDetailId(null)} />
 
   return (
     <section aria-label="连接器" className="relative flex h-full min-h-0 flex-col bg-panel">
-      <header className="flex h-[50px] shrink-0 items-center justify-between gap-4 border-b border-[var(--line)] px-[18px]">
+      <header className="flex h-[42px] shrink-0 items-center justify-between gap-4 border-b border-[var(--line)] px-[18px]">
         <nav aria-label="面包屑" className="flex min-w-0 items-center gap-1.5 text-[11px] text-[var(--muted)]">
           <span>连接器</span>
           <span aria-hidden className="text-[var(--line-strong)]">/</span>
@@ -85,11 +90,11 @@ export function ConnectorsCanvas() {
         </span>
       </header>
 
-      <div className="flex min-h-[58px] shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[var(--line)] px-[18px] py-3">
+      <div className="flex min-h-[50px] shrink-0 flex-wrap items-center justify-between gap-3 px-[18px] py-2.5">
         <div className="flex min-w-0 items-center gap-2.5">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button type="button" className="flex h-8 min-w-[132px] items-center justify-between gap-3 rounded-[6px] border border-[var(--line)] bg-panel px-2.5 text-[10.5px] text-[var(--ink-soft)] outline-none transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
+              <button type="button" className="flex h-8 min-w-[112px] items-center justify-between gap-2 rounded-[6px] border border-[var(--line)] bg-panel px-2.5 text-[10.5px] text-[var(--ink-soft)] outline-none transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
                 <span className="flex min-w-0 items-center gap-1.5">
                   <span className="truncate">{categoryLabel}</span>
                   <span className="text-[9px] tabular-nums text-[var(--muted)]">{categoryCounts.get(category) ?? 0}</span>
@@ -145,7 +150,7 @@ export function ConnectorsCanvas() {
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-auto px-[18px] pb-20 pt-4">
+      <div className="min-h-0 flex-1 overflow-auto px-[18px] pb-20 pt-2.5">
         {visible.length === 0 ? (
           <div className="flex min-h-64 flex-col items-center justify-center text-center">
             <PlugsConnected className="size-6 text-[var(--muted)]" />
@@ -156,7 +161,7 @@ export function ConnectorsCanvas() {
           <div className="grid grid-cols-4 gap-3 max-[1240px]:grid-cols-3 max-[980px]:grid-cols-2 max-[700px]:grid-cols-1">
             {visible.map((connector, index) => (
               <motion.div key={`grid-${connector.id}`} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.16, delay: Math.min(index * 0.012, 0.1) }}>
-                <ConnectorCard connector={connector} onConnect={() => setConnected(connector.id, true)} onDisconnect={() => setConnected(connector.id, false)} />
+                <ConnectorCard connector={connector} onOpen={() => setDetailId(connector.id)} onConnect={() => setConnected(connector.id, true)} onDisconnect={() => setConnected(connector.id, false)} />
               </motion.div>
             ))}
           </div>
@@ -167,7 +172,7 @@ export function ConnectorsCanvas() {
             </div>
             {visible.map((connector, index) => (
               <motion.div key={`list-${connector.id}`} initial={{ opacity: 0, y: 3 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.14, delay: Math.min(index * 0.01, 0.08) }}>
-                <ConnectorRow connector={connector} onConnect={() => setConnected(connector.id, true)} onDisconnect={() => setConnected(connector.id, false)} />
+                <ConnectorRow connector={connector} onOpen={() => setDetailId(connector.id)} onConnect={() => setConnected(connector.id, true)} onDisconnect={() => setConnected(connector.id, false)} />
               </motion.div>
             ))}
           </div>

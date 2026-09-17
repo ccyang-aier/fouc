@@ -75,7 +75,7 @@ export function WorkDetailPanel({ item, onClose, onStatusChange }: { item: WorkI
         <DetailSection title="依赖 (1)" compact>
           <div className="flex items-center gap-2 text-[9px]"><LinkSimple className="size-3.5 text-[var(--muted)]" /><span className="text-[var(--muted-strong)]">TASK-132</span><span className="min-w-0 flex-1 truncate">设计项目权限模型</span>
             <DropdownMenu>
-              <DropdownMenuTrigger asChild><button type="button" className={cn("flex items-center gap-1 rounded-[5px] px-2 py-1 font-medium outline-none data-[state=open]:shadow-[inset_0_0_0_1px_var(--line-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]", workStatusMeta[item.status].tint, workStatusMeta[item.status].accent)}>{workStatusMeta[item.status].label}<CaretDown className="size-3" /></button></DropdownMenuTrigger>
+              <DropdownMenuTrigger asChild><button type="button" className={cn("flex items-center gap-1 rounded-[5px] px-2 py-1 font-medium outline-none transition-colors hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]", workStatusMeta[item.status].tint, workStatusMeta[item.status].accent)}>{workStatusMeta[item.status].label}<CaretDown className="size-3" /></button></DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-32">{(Object.keys(workStatusMeta) as WorkStatus[]).map((status) => <DropdownMenuCheckboxItem key={status} checked={item.status === status} onCheckedChange={() => onStatusChange(status)}>{workStatusMeta[status].label}</DropdownMenuCheckboxItem>)}</DropdownMenuContent>
             </DropdownMenu>
           </div>

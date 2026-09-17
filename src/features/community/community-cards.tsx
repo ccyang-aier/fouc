@@ -41,7 +41,7 @@ export function CommunityAssetTable({ items, selectedId, sort, sortDirection, on
 }) {
   const gridColumns = "grid-cols-[minmax(260px,2fr)_72px_72px_120px_84px_68px_92px_68px]"
   return (
-    <div className="overflow-x-auto rounded-[8px] border border-[var(--line)] bg-panel">
+    <div className="overflow-x-auto border-y border-[var(--line)] bg-panel">
       <div role="row" className={cn("sticky top-0 z-10 grid min-w-[950px] items-center gap-3 border-b border-[var(--line-strong)] bg-[var(--surface-subtle)] px-3 py-2 text-[9.5px] font-medium text-[var(--muted)]", gridColumns)}>
         <SortHeader label="资源" sortKey="name" activeSort={sort} direction={sortDirection} onSort={onSort} />
         <span>类型</span><span>领域</span><span>作者</span>

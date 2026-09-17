@@ -4,7 +4,7 @@
 
 import { useMemo, useRef, useState } from "react"
 import { motion } from "motion/react"
-import { CaretDown, CheckCircle, MagnifyingGlass, PlugsConnected, SquaresFour, Table } from "@phosphor-icons/react"
+import { CaretDown, CaretUp, CheckCircle, MagnifyingGlass, PlugsConnected, SquaresFour, Table } from "@phosphor-icons/react"
 
 import {
   DropdownMenu,
@@ -33,6 +33,7 @@ export function ConnectorsCanvas() {
   const [query, setQuery] = useState("")
   const [view, setView] = useState<CatalogView>("grid")
   const [sort, setSort] = useState<ConnectorSort>("default")
+  const [updatedSortDirection, setUpdatedSortDirection] = useState<"asc" | "desc">("desc")
   const [detailId, setDetailId] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const toastTimerRef = useRef<number | null>(null)
@@ -59,10 +60,26 @@ export function ConnectorsCanvas() {
       (!normalized || `${connector.name} ${connector.description} ${connector.category}`.toLocaleLowerCase("zh-CN").includes(normalized)),
     )
 
-    if (sort === "recent") return filtered.toSorted((a, b) => a.updatedDays - b.updatedDays)
+    if (sort === "recent") {
+      return filtered.toSorted((a, b) => updatedSortDirection === "desc" ? a.updatedDays - b.updatedDays : b.updatedDays - a.updatedDays)
+    }
     if (sort === "name") return filtered.toSorted((a, b) => a.name.localeCompare(b.name, "zh-CN"))
     return filtered
-  }, [connectors, category, normalized, sort])
+  }, [connectors, category, normalized, sort, updatedSortDirection])
+
+  function chooseSort(nextSort: ConnectorSort) {
+    setSort(nextSort)
+    if (nextSort === "recent") setUpdatedSortDirection("desc")
+  }
+
+  function toggleUpdatedSort() {
+    if (sort === "recent") {
+      setUpdatedSortDirection((current) => current === "desc" ? "asc" : "desc")
+    } else {
+      setSort("recent")
+      setUpdatedSortDirection("desc")
+    }
+  }
 
   const categoryCounts = useMemo(() => {
     const counts = new Map<string, number>([["全部", connectors.length]])
@@ -94,7 +111,7 @@ export function ConnectorsCanvas() {
         <div className="flex min-w-0 items-center gap-2.5">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button type="button" className="flex h-8 min-w-[112px] items-center justify-between gap-2 rounded-[6px] border border-[var(--line)] bg-panel px-2.5 text-[10.5px] text-[var(--ink-soft)] outline-none transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
+              <button type="button" className="flex h-8 min-w-[112px] items-center justify-between gap-2 rounded-[6px] border border-[var(--line)] bg-panel px-2.5 text-[10px] text-[var(--ink-soft)] outline-none transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
                 <span className="flex min-w-0 items-center gap-1.5">
                   <span className="truncate">{categoryLabel}</span>
                   <span className="text-[9px] tabular-nums text-[var(--muted)]">{categoryCounts.get(category) ?? 0}</span>
@@ -117,7 +134,7 @@ export function ConnectorsCanvas() {
         <div className="ml-auto flex min-w-0 items-center gap-2">
           <label className="flex h-8 w-[220px] min-w-[150px] items-center gap-2 rounded-[6px] border border-[var(--line)] bg-panel px-2.5 text-[var(--muted)] transition-colors focus-within:border-[var(--accent)] max-[920px]:w-[180px]">
             <MagnifyingGlass className="size-3.5 shrink-0" />
-            <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} aria-label="搜索连接器" placeholder="搜索连接器" className="min-w-0 flex-1 bg-transparent text-[10.5px] text-[var(--ink)] outline-none placeholder:text-[var(--muted)]" />
+            <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} aria-label="搜索连接器" placeholder="搜索连接器" className="min-w-0 flex-1 bg-transparent text-[10px] text-[var(--ink)] outline-none placeholder:text-[var(--muted)]" />
           </label>
 
           <div className="flex h-8 shrink-0 items-center overflow-hidden rounded-[6px] border border-[var(--line)]" aria-label="浏览方式">
@@ -134,14 +151,14 @@ export function ConnectorsCanvas() {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button type="button" className="flex h-8 w-[92px] shrink-0 items-center justify-between gap-1 rounded-[6px] border border-[var(--line)] bg-panel px-2.5 text-[10px] text-[var(--ink-soft)] outline-none transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] max-[760px]:hidden">
+              <button type="button" className="flex h-8 w-[92px] shrink-0 items-center justify-between gap-1 rounded-[6px] border border-[var(--line)] bg-panel px-2.5 text-[9.5px] text-[var(--ink-soft)] outline-none transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] max-[760px]:hidden">
                 {SORT_OPTIONS.find((option) => option.id === sort)?.label}
                 <CaretDown className="size-3 text-[var(--muted)]" weight="bold" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-[118px] min-w-0">
               {SORT_OPTIONS.map((option) => (
-                <DropdownMenuCheckboxItem key={option.id} checked={sort === option.id} onCheckedChange={() => setSort(option.id)} className="text-[11px]">
+                <DropdownMenuCheckboxItem key={option.id} checked={sort === option.id} onCheckedChange={() => chooseSort(option.id)} className="text-[11px]">
                   {option.label}
                 </DropdownMenuCheckboxItem>
               ))}
@@ -167,8 +184,13 @@ export function ConnectorsCanvas() {
           </div>
         ) : (
           <div className="min-w-[780px]">
-            <div className="grid grid-cols-[minmax(178px,1fr)_104px_minmax(250px,2.2fr)_142px_84px] gap-4 border-y border-[var(--line)] bg-[var(--surface-subtle)] px-3 py-2 text-[9.5px] font-medium text-[var(--muted)]">
-              <span>名称</span><span>分类</span><span>描述</span><span>版本 / 更新时间</span><span>操作</span>
+            <div className="grid grid-cols-[minmax(168px,1fr)_96px_minmax(230px,2.2fr)_64px_92px_84px] gap-4 border-y border-[var(--line)] bg-[var(--surface-subtle)] px-3 py-2 text-[9.5px] font-medium text-[var(--muted)]">
+              <span>名称</span><span>分类</span><span>描述</span><span>版本</span>
+              <button type="button" onClick={toggleUpdatedSort} className={cn("flex items-center gap-1 text-left outline-none hover:text-[var(--ink-soft)] focus-visible:text-[var(--accent-ink)]", sort === "recent" && "text-[var(--accent-ink)]")}>
+                更新时间
+                {sort === "recent" ? updatedSortDirection === "desc" ? <CaretDown className="size-2.5" weight="bold" /> : <CaretUp className="size-2.5" weight="bold" /> : null}
+              </button>
+              <span>操作</span>
             </div>
             {visible.map((connector, index) => (
               <motion.div key={`list-${connector.id}`} initial={{ opacity: 0, y: 3 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.14, delay: Math.min(index * 0.01, 0.08) }}>

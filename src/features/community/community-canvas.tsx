@@ -311,7 +311,7 @@ export function CommunityCanvas() {
             <div className="flex min-w-0 w-full max-w-[445px] items-center gap-2.5">
               <div className="flex h-8 shrink-0 items-center overflow-hidden rounded-[6px] border border-[var(--line)] bg-panel">
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild><button type="button" data-active={minRating > 0 || undefined} className="flex h-full items-center gap-1 border-r border-[var(--line)] px-2.5 text-[10px] text-[var(--ink-soft)] outline-none hover:bg-[var(--surface-hover)] data-[active=true]:bg-[color-mix(in_srgb,var(--accent)_8%,transparent)] data-[active=true]:text-[var(--accent-ink)]"><Star className="size-3.5" weight={minRating ? "fill" : "regular"} />评分{minRating ? <span className="font-mono text-[8px]">{minRating}+</span> : null}</button></DropdownMenuTrigger>
+                  <DropdownMenuTrigger asChild><button type="button" data-active={minRating > 0 || undefined} className="flex h-full items-center gap-1 border-r border-[var(--line)] px-2.5 text-[9.5px] text-[var(--ink-soft)] outline-none hover:bg-[var(--surface-hover)] data-[active=true]:bg-[color-mix(in_srgb,var(--accent)_8%,transparent)] data-[active=true]:text-[var(--accent-ink)]"><Star className="size-3.5" weight={minRating ? "fill" : "regular"} />评分{minRating ? <span className="font-mono text-[8px]">{minRating}+</span> : null}</button></DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="w-[228px] min-w-0 p-3">
                     <div className="flex items-center justify-between gap-3"><p className="text-[11px] font-medium text-[var(--ink)]">社区评分</p><span className="rounded-[5px] bg-[var(--surface-subtle)] px-2 py-1 text-[9px] tabular-nums text-[var(--ink-soft)]">{minRating ? `${minRating} 星以上` : "不限"}</span></div>
                     <div className="mt-3 flex items-center justify-between rounded-[7px] bg-[var(--surface-subtle)] px-2 py-1.5">{[1, 2, 3, 4, 5].map((value) => <button key={value} type="button" aria-label={`${value} 星及以上`} aria-pressed={minRating >= value} onClick={() => setMinRating(minRating === value ? 0 : value)} className="flex size-7 items-center justify-center rounded-[5px] outline-none hover:bg-panel focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><Star className={cn("size-[18px]", minRating >= value ? "text-[#dfa43c]" : "text-[var(--line-strong)]")} weight={minRating >= value ? "fill" : "regular"} /></button>)}</div>
@@ -319,7 +319,7 @@ export function CommunityCanvas() {
                   </DropdownMenuContent>
                 </DropdownMenu>
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild><button type="button" data-active={minDownloads > 0 || undefined} className="flex h-full items-center gap-1 border-r border-[var(--line)] px-2.5 text-[10px] text-[var(--ink-soft)] outline-none hover:bg-[var(--surface-hover)] data-[active=true]:bg-[color-mix(in_srgb,var(--accent)_8%,transparent)] data-[active=true]:text-[var(--accent-ink)]"><DownloadSimple className="size-3.5" />下载数{minDownloads ? <span className="font-mono text-[8px]">{minDownloads / 1000}k+</span> : null}</button></DropdownMenuTrigger>
+                  <DropdownMenuTrigger asChild><button type="button" data-active={minDownloads > 0 || undefined} className="flex h-full items-center gap-1 border-r border-[var(--line)] px-2.5 text-[9.5px] text-[var(--ink-soft)] outline-none hover:bg-[var(--surface-hover)] data-[active=true]:bg-[color-mix(in_srgb,var(--accent)_8%,transparent)] data-[active=true]:text-[var(--accent-ink)]"><DownloadSimple className="size-3.5" />下载数{minDownloads ? <span className="font-mono text-[8px]">{minDownloads / 1000}k+</span> : null}</button></DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="w-[236px] min-w-0 p-3">
                     <div className="flex items-center justify-between gap-3"><p className="text-[11px] font-medium text-[var(--ink)]">累计获取量</p><span className="rounded-[5px] bg-[var(--surface-subtle)] px-2 py-1 text-[9px] tabular-nums text-[var(--ink-soft)]">{minDownloads ? `${minDownloads.toLocaleString("zh-CN")}+` : "不限"}</span></div>
                     <div className="mt-3 rounded-[7px] bg-[var(--surface-subtle)] px-3 py-3"><input type="range" aria-label="最低下载量" min="0" max="20000" step="1000" value={minDownloads} onChange={(event) => setMinDownloads(Number(event.target.value))} className="h-1.5 w-full accent-[var(--accent)]" /><div className="mt-2 flex justify-between text-[8px] text-[var(--muted)]"><span>0</span><span>10,000</span><span>20,000+</span></div></div>
@@ -327,7 +327,7 @@ export function CommunityCanvas() {
                   </DropdownMenuContent>
                 </DropdownMenu>
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild><button type="button" data-active={authorQuery.trim().length > 0 || undefined} className="flex h-full items-center gap-1 px-2.5 text-[10px] text-[var(--ink-soft)] outline-none hover:bg-[var(--surface-hover)] data-[active=true]:bg-[color-mix(in_srgb,var(--accent)_8%,transparent)] data-[active=true]:text-[var(--accent-ink)]"><MagnifyingGlass className="size-3.5" />用户{authorQuery ? <span className="size-1.5 rounded-full bg-[var(--accent)]" /> : null}</button></DropdownMenuTrigger>
+                  <DropdownMenuTrigger asChild><button type="button" data-active={authorQuery.trim().length > 0 || undefined} className="flex h-full items-center gap-1 px-2.5 text-[9.5px] text-[var(--ink-soft)] outline-none hover:bg-[var(--surface-hover)] data-[active=true]:bg-[color-mix(in_srgb,var(--accent)_8%,transparent)] data-[active=true]:text-[var(--accent-ink)]"><MagnifyingGlass className="size-3.5" />用户{authorQuery ? <span className="size-1.5 rounded-full bg-[var(--accent)]" /> : null}</button></DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="w-[236px] min-w-0 p-2.5">
                     <div className="px-0.5 pb-2"><p className="text-[11px] font-medium text-[var(--ink)]">资源作者</p></div>
                     <label className="flex h-8 items-center gap-1.5 rounded-[6px] bg-[var(--surface-subtle)] px-2 text-[var(--muted)] focus-within:ring-1 focus-within:ring-[var(--accent)]"><MagnifyingGlass className="size-3.5" /><input autoFocus aria-label="搜索资源作者" value={authorQuery} onChange={(event) => setAuthorQuery(event.target.value)} placeholder="输入作者名称" className="min-w-0 flex-1 bg-transparent text-[10px] text-[var(--ink)] outline-none" />{authorQuery ? <button type="button" aria-label="清除作者搜索" onClick={() => setAuthorQuery("")}><X className="size-3" /></button> : null}</label>
@@ -337,7 +337,7 @@ export function CommunityCanvas() {
               </div>
               <label className="flex h-8 min-w-[140px] max-w-[230px] flex-1 items-center gap-2 rounded-[6px] border border-[var(--line)] bg-panel px-2.5 text-[var(--muted)] transition-colors focus-within:border-[var(--accent)]">
                 <MagnifyingGlass className="size-4 shrink-0" />
-                <input ref={searchRef} type="search" value={query} onChange={(event) => setQuery(event.target.value)} aria-label="搜索社区资源" placeholder="搜索资源名称、标签或描述…" className="min-w-0 flex-1 bg-transparent text-[11px] text-[var(--ink)] outline-none placeholder:text-[var(--muted)]" />
+                <input ref={searchRef} type="search" value={query} onChange={(event) => setQuery(event.target.value)} aria-label="搜索社区资源" placeholder="搜索资源名称、标签或描述…" className="min-w-0 flex-1 bg-transparent text-[10.5px] text-[var(--ink)] outline-none placeholder:text-[var(--muted)]" />
               </label>
             </div>
             <div className="ml-auto flex shrink-0 items-center gap-2.5">
@@ -353,7 +353,7 @@ export function CommunityCanvas() {
               </div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button type="button" className="flex h-8 w-[84px] items-center justify-between gap-1 whitespace-nowrap rounded-[6px] border border-[var(--line)] px-2 text-[10px] text-[var(--ink-soft)] outline-none hover:border-[var(--line-strong)]">
+                  <button type="button" className="flex h-8 w-[84px] items-center justify-between gap-1 whitespace-nowrap rounded-[6px] border border-[var(--line)] px-2 text-[9.5px] text-[var(--ink-soft)] outline-none hover:border-[var(--line-strong)]">
                     {SORT_OPTIONS.find((item) => item.id === sort)?.label}<CaretDown className="size-3 text-[var(--muted)]" />
                   </button>
                 </DropdownMenuTrigger>

@@ -86,8 +86,6 @@ export function WorkbenchShell() {
   const [view, setView] = useState<WorkbenchView>("home")
   // 项目管理面板状态由壳层持有：左侧项目菜单与项目画布共享同一开合来源
   const [managementPanel, setManagementPanel] = useState<ProjectManagementPanelId | null>(null)
-  // 记录因进入内容型视图而自动收起的侧栏状态，用于返回工作台时还原。
-  const contentAutoCollapsed = useRef(false)
   const projectFavorited = useSyncExternalStore(subscribeProjectFavorite, readProjectFavorite, () => false)
   // 应用面板根：桌面端作为自绘外框的内层与弹层宿主
   const frameRef = useRef<HTMLDivElement>(null)
@@ -117,13 +115,9 @@ export function WorkbenchShell() {
   function changeView(nextView: WorkbenchView) {
     if (nextView !== "projects") setManagementPanel(null)
     const needsCompactNavigation = nextView === "projects" || nextView === "community"
-    // 项目与社区视图默认收起主导航为内容让位；用户手动切换后不再自动干预。
+    // 项目与社区视图默认收起主导航为内容让位；收起后切换菜单保持当前状态。
     if (needsCompactNavigation && !sidebarCollapsed) {
-      contentAutoCollapsed.current = true
       setSidebarCollapsed(true)
-    } else if (!needsCompactNavigation && contentAutoCollapsed.current) {
-      contentAutoCollapsed.current = false
-      setSidebarCollapsed(false)
     }
     setView(nextView)
   }
@@ -152,11 +146,9 @@ export function WorkbenchShell() {
                   <NavigationSidebar
                     open={!sidebarCollapsed}
                     onCollapse={() => {
-                      contentAutoCollapsed.current = false
                       setSidebarCollapsed(true)
                     }}
                     onExpand={() => {
-                      contentAutoCollapsed.current = false
                       setSidebarCollapsed(false)
                     }}
                     view={view}

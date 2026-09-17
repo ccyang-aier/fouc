@@ -95,7 +95,7 @@ export function ConnectorRow(props: ConnectorItemProps) {
   const { connector, onOpen } = props
 
   return (
-    <article className="group relative grid min-w-[780px] cursor-pointer grid-cols-[minmax(178px,1fr)_104px_minmax(250px,2.2fr)_142px_84px] items-center gap-4 border-b border-[var(--line)] px-3 py-2.5 outline-none transition-colors hover:bg-[var(--surface-subtle)] focus-within:bg-[color-mix(in_srgb,var(--accent)_4%,transparent)]">
+    <article className="group relative grid min-w-[780px] cursor-pointer grid-cols-[minmax(168px,1fr)_96px_minmax(230px,2.2fr)_64px_92px_84px] items-center gap-4 border-b border-[var(--line)] px-3 py-2.5 outline-none transition-colors hover:bg-[var(--surface-subtle)] focus-within:bg-[color-mix(in_srgb,var(--accent)_4%,transparent)]">
       <button type="button" onClick={onOpen} aria-label={`打开 ${connector.name} 详情`} className="absolute inset-0 z-0 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)]" />
       <div className="flex min-w-0 items-center gap-3">
         <ConnectorLogo connector={connector} size="small" />
@@ -103,11 +103,8 @@ export function ConnectorRow(props: ConnectorItemProps) {
       </div>
       <span className="truncate text-[10px] text-[var(--muted-strong)]">{connector.category}</span>
       <p className="truncate text-[10.5px] leading-5 text-[var(--ink-soft)]">{connector.description}</p>
-      <div className="flex items-center gap-1.5 whitespace-nowrap text-[9.5px] tabular-nums text-[var(--muted)]">
-        <span className="font-medium text-[var(--ink-soft)]">v{connector.version}</span>
-        <span aria-hidden className="text-[var(--line-strong)]">·</span>
-        <span>{connector.updated}</span>
-      </div>
+      <span className="whitespace-nowrap text-[9.5px] font-medium tabular-nums text-[var(--ink-soft)]">v{connector.version}</span>
+      <span className="whitespace-nowrap text-[9.5px] tabular-nums text-[var(--muted)]">{connector.updated}</span>
       <ConnectorAction {...props} />
     </article>
   )

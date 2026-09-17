@@ -14,7 +14,10 @@ function DropdownMenuTrigger({
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Trigger>) {
   return (
     <DropdownMenuPrimitive.Trigger
-      className={cn("dropdown-menu-trigger", className)}
+      className={cn(
+        "dropdown-menu-trigger data-[state=open]:bg-[var(--surface-hover)] data-[state=open]:text-[var(--ink)]",
+        className,
+      )}
       {...props}
     />
   )

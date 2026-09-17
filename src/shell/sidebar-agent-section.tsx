@@ -40,6 +40,7 @@ export function SidebarAgentSection({
   onAgentSelect: (agentId: string) => void
 }) {
   const [open, setOpen] = useState(!compact)
+  const [addMenuOpen, setAddMenuOpen] = useState(false)
   const [agents, setAgents] = useState<SidebarAgent[]>([UC_AGENT])
   const [providers, setProviders] = useState<ProviderSpec[]>([])
   const [installations, setInstallations] = useState<AgentInstallation[]>([])
@@ -92,7 +93,7 @@ export function SidebarAgentSection({
 
   return (
     <section className={compact ? "mt-0.5" : "mt-3.5"} aria-label="Agent 管理">
-      <div className="sidebar-nav-row group/agents flex h-8 w-full items-center justify-between gap-2 rounded-[6px] px-1.5 text-[11.5px] text-[var(--muted-strong)]">
+      <div className="sidebar-nav-row group/agents flex h-8 w-full items-center justify-between gap-2 rounded-[6px] px-1.5 text-[11px] text-[var(--muted-strong)]">
         <button
           type="button"
           aria-expanded={open}
@@ -107,13 +108,13 @@ export function SidebarAgentSection({
           <CaretDown aria-hidden className={cn("size-2.5 shrink-0 transition-transform duration-150", !open && "-rotate-90")} weight="fill" />
         </button>
 
-        <DropdownMenu onOpenChange={(menuOpen) => { if (menuOpen) void loadAvailableAgents() }}>
+        <DropdownMenu open={addMenuOpen} onOpenChange={(menuOpen) => { setAddMenuOpen(menuOpen); if (menuOpen) void loadAvailableAgents() }}>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
               aria-label="新建 Agent"
               title="新建 Agent"
-              className="flex size-6 shrink-0 items-center justify-center rounded-[5px] text-[var(--muted)] opacity-0 outline-none transition-opacity hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus:opacity-100 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] group-hover/agents:opacity-100 group-focus-within/agents:opacity-100"
+              className={cn("flex size-6 shrink-0 items-center justify-center rounded-[5px] text-[var(--muted)] outline-none transition-opacity hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]", addMenuOpen ? "opacity-100" : "opacity-0 focus:opacity-100 group-hover/agents:opacity-100 group-focus-within/agents:opacity-100")}
             >
               <Plus className="size-3.5" />
             </button>

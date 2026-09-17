@@ -70,7 +70,7 @@ function ProjectNavSection({
 
   return (
     <div className={cn(compact ? "mt-0.5" : "mt-3.5")}>
-      <div className="sidebar-nav-row group/project flex h-8 w-full items-center justify-between gap-2 rounded-[6px] px-1.5 text-[11.5px] text-[var(--muted-strong)]">
+      <div className="sidebar-nav-row group/project flex h-8 w-full items-center justify-between gap-2 rounded-[6px] px-1.5 text-[11px] text-[var(--muted-strong)]">
         <button type="button" aria-expanded={open} onClick={() => setOpen((value) => !value)} className="flex min-w-0 flex-1 items-center gap-1.5 rounded-[5px] text-left outline-none hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
           <span className="flex size-4 shrink-0 items-center justify-center self-center text-[var(--muted)]">{icon}</span>
           <span className="truncate leading-none">{label}</span>
@@ -149,7 +149,7 @@ function ManagedSidebarRow({ entry, active, editing, onSelect, onBeginRename, on
   const markLabel = entry.kind === "project" ? (entry.marked ? "取消星标" : "标记为星标项目") : (entry.marked ? "取消置顶" : "置顶该聊天")
 
   if (editing) {
-    return <div className="flex h-[30px] items-center gap-1.5 rounded-[6px] bg-[var(--surface-subtle)] px-2"><ItemIcon className="size-3.5 shrink-0 text-[var(--muted)]" /><input autoFocus aria-label={`重命名${entry.name}`} value={draft} onChange={(event) => setDraft(event.target.value)} onFocus={(event) => event.currentTarget.select()} onBlur={() => onRename(draft)} onKeyDown={(event) => { if (event.key === "Enter") onRename(draft); if (event.key === "Escape") onRename(entry.name) }} className="min-w-0 flex-1 bg-transparent text-[10.5px] text-[var(--ink)] outline-none" /></div>
+    return <div className="flex h-[30px] items-center gap-1.5 rounded-[6px] bg-[var(--surface-subtle)] px-2 text-[10.5px] font-normal"><ItemIcon className="size-3.5 shrink-0 text-[var(--muted)]" /><input autoFocus aria-label={`重命名${entry.name}`} value={draft} onChange={(event) => setDraft(event.target.value)} onFocus={(event) => event.currentTarget.select()} onBlur={() => onRename(draft)} onKeyDown={(event) => { if (event.key === "Enter") onRename(draft); if (event.key === "Escape") onRename(entry.name) }} className="min-w-0 flex-1 bg-transparent text-[var(--ink)] outline-none [font:inherit]" /></div>
   }
 
   return (
@@ -157,10 +157,10 @@ function ManagedSidebarRow({ entry, active, editing, onSelect, onBeginRename, on
       <button type="button" aria-label={entry.name} aria-current={active ? "page" : undefined} onClick={onSelect} className="flex h-full min-w-0 flex-1 items-center gap-2 rounded-[6px] pl-2 pr-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
         <ItemIcon className="size-3.5 shrink-0 text-[var(--muted)]" weight="duotone" />
         <span className="truncate">{entry.name}</span>
-        {entry.time ? <span className="ml-auto shrink-0 text-[9px] text-[var(--muted)] transition-opacity group-hover/entry:opacity-0 group-focus-within/entry:opacity-0">{entry.time}</span> : null}
+        {entry.time ? <span className={cn("ml-auto shrink-0 text-[9px] text-[var(--muted)] transition-opacity group-hover/entry:opacity-0 group-focus-within/entry:opacity-0", menuOpen && "opacity-0")}>{entry.time}</span> : null}
       </button>
       <div className={cn("absolute right-1 flex items-center gap-0.5 transition-opacity", menuOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0 group-hover/entry:pointer-events-auto group-hover/entry:opacity-100 group-focus-within/entry:pointer-events-auto group-focus-within/entry:opacity-100")}>
-        <button type="button" aria-label={markLabel} title={markLabel} aria-pressed={entry.marked} onClick={onToggleMark} className={cn("flex size-6 items-center justify-center rounded-[5px] outline-none hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]", entry.marked ? "text-[#d79a3b]" : "text-[var(--muted)] hover:text-[var(--ink)]")}><MarkIcon className="size-3.5" weight={entry.marked ? "fill" : "regular"} /></button>
+        <button type="button" aria-label={markLabel} title={markLabel} aria-pressed={entry.marked} onClick={onToggleMark} className={cn("flex size-6 items-center justify-center rounded-[5px] outline-none hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]", entry.marked ? (entry.kind === "project" ? "text-[#d79a3b]" : "text-[var(--muted-strong)]") : "text-[var(--muted)] hover:text-[var(--ink)]")}><MarkIcon className="size-3.5" weight={entry.marked ? "fill" : "regular"} /></button>
         <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}><DropdownMenuTrigger asChild><button type="button" aria-label={`${entry.name}更多操作`} title="更多操作" className={cn("flex size-6 items-center justify-center rounded-[5px] text-[var(--muted)] outline-none hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]", menuOpen && "bg-[var(--surface-hover)] text-[var(--ink)]")}><DotsThree className="size-4" weight="bold" /></button></DropdownMenuTrigger><DropdownMenuContent align="end" sideOffset={4} className="w-28 min-w-0"><DropdownMenuItem onSelect={onBeginRename}><PencilSimple />重命名</DropdownMenuItem><DropdownMenuSeparator /><DropdownMenuItem onSelect={onDelete} className="text-[var(--err-ink)]"><Trash />删除</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
       </div>
     </div>
@@ -348,17 +348,19 @@ export function NavigationSidebar({
                 />
               ))}
             </nav>
-            <div className="mt-3">
-              <SidebarSectionCaption>快捷访问</SidebarSectionCaption>
-              <div className="mt-0.5 space-y-0.5">
-                <QuickAccessCategory label="项目" count={favoriteProjects.length} icon={<Star className="size-3.5 text-[#d79a3b]" weight="fill" />}>
-                  {favoriteProjects.map((entry) => renderManagedEntry(entry, "favorite-"))}
-                </QuickAccessCategory>
-                <QuickAccessCategory label="对话" count={pinnedChats.length} icon={<PushPin className="size-3.5 text-[var(--muted-strong)]" weight="fill" />}>
-                  {pinnedChats.map((entry) => renderManagedEntry(entry, "pinned-"))}
-                </QuickAccessCategory>
+            {favoriteProjects.length > 0 || pinnedChats.length > 0 ? (
+              <div className="mt-3">
+                <SidebarSectionCaption>快捷访问</SidebarSectionCaption>
+                <div className="mt-0.5 space-y-0.5">
+                  {favoriteProjects.length > 0 ? <QuickAccessCategory label="项目" count={favoriteProjects.length} icon={<Star className="size-3.5 text-[#d79a3b]" weight="fill" />}>
+                    {favoriteProjects.map((entry) => renderManagedEntry(entry, "favorite-"))}
+                  </QuickAccessCategory> : null}
+                  {pinnedChats.length > 0 ? <QuickAccessCategory label="对话" count={pinnedChats.length} icon={<PushPin className="size-3.5 text-[var(--muted-strong)]" weight="fill" />}>
+                    {pinnedChats.map((entry) => renderManagedEntry(entry, "pinned-"))}
+                  </QuickAccessCategory> : null}
+                </div>
               </div>
-            </div>
+            ) : null}
 
             <div className="mt-3">
               <SidebarSectionCaption>工作台</SidebarSectionCaption>

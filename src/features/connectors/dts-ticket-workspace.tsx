@@ -10,7 +10,6 @@ const DEFAULT_FILTERS: DtsFilterDefinition[] = [
 
 type Props = {
   connected: boolean
-  filters: DtsFilterDefinition[]
   activeFilter: DtsFilterId
   tickets: DtsTicketListResult | null
   selectedId: string | null
@@ -29,15 +28,15 @@ type Props = {
 }
 
 export function DtsTicketWorkspace(props: Props) {
-  const visibleFilters = DEFAULT_FILTERS.map((fallback) => props.filters.find((item) => item.id === fallback.id) ?? fallback)
+  const activeFilterName = DEFAULT_FILTERS.find((filter) => filter.id === props.activeFilter)?.name ?? '当前视图'
   const selectedSummary = props.tickets?.items.find((ticket) => ticket.id === props.selectedId) ?? null
   if (!props.connected) return <DisconnectedState onConnect={props.onConnect} />
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="flex min-h-[46px] shrink-0 items-center gap-2 border-b border-[var(--line)] px-3">
         <div className="flex h-8 shrink-0 items-stretch overflow-hidden rounded-[6px] border border-[var(--line)]">
-          {visibleFilters.map((filter) => <button key={filter.id} type="button" onClick={() => props.onFilterChange(filter.id)} className={cn('flex min-w-[76px] items-center justify-center gap-1 border-r border-[var(--line)] px-2.5 text-[9.5px] font-medium outline-none last:border-r-0 hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)]', props.activeFilter === filter.id ? 'bg-[var(--accent)] text-white hover:bg-[var(--accent)]' : 'bg-panel text-[var(--ink-soft)]')}>
-            {filter.name}{filter.count != null ? <span className={cn('text-[8.5px] tabular-nums', props.activeFilter === filter.id ? 'text-white/75' : 'text-[var(--muted)]')}>{filter.count}</span> : null}
+          {DEFAULT_FILTERS.map((filter) => <button key={filter.id} type="button" onClick={() => props.onFilterChange(filter.id)} className={cn('flex min-w-[76px] items-center justify-center gap-1 border-r border-[var(--line)] px-2.5 text-[9.5px] font-medium outline-none last:border-r-0 hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)]', props.activeFilter === filter.id ? 'bg-[var(--accent)] text-white hover:bg-[var(--accent)]' : 'bg-panel text-[var(--ink-soft)]')}>
+            {filter.name}
           </button>)}
         </div>
         <form onSubmit={(event) => { event.preventDefault(); props.onSearch() }} className="ml-auto flex h-8 min-w-[180px] max-w-[330px] flex-1 items-center gap-2 rounded-[6px] border border-[var(--line)] bg-panel px-2.5 focus-within:border-[var(--accent)]">
@@ -48,12 +47,12 @@ export function DtsTicketWorkspace(props: Props) {
         <button type="button" className="flex h-8 items-center gap-1 rounded-[6px] border border-[var(--line)] bg-panel px-2.5 text-[9.5px] text-[var(--ink-soft)] outline-none hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">当前状态<CaretDown className="size-3" /></button>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-auto">
+      <div className="min-h-0 flex-1 overflow-auto" aria-busy={props.loading}>
         <div className="min-w-[880px]">
           <div className="grid grid-cols-[28px_142px_minmax(250px,1.6fr)_86px_132px_146px_132px] items-center border-b border-[var(--line)] bg-[var(--surface-subtle)] px-3 py-2 text-[9px] font-semibold text-[var(--muted-strong)]">
             <span /><span>工单号</span><span>简要描述</span><span>严重程度</span><span>当前状态</span><span>当前处理人</span><span>创建时间</span>
           </div>
-          {props.loading ? <LoadingRows /> : props.error ? <div className="flex h-36 items-center justify-center text-[10px] text-[var(--err-ink)]">{props.error}</div> : !props.tickets?.items.length ? <div className="flex h-36 items-center justify-center text-[10px] text-[var(--muted)]">当前视图没有可显示的工单</div> : props.tickets.items.map((ticket) => (
+          {props.loading ? <LoadingRows label={`正在加载“${activeFilterName}”工单…`} /> : props.error ? <div className="flex h-36 items-center justify-center text-[10px] text-[var(--err-ink)]">{props.error}</div> : !props.tickets?.items.length ? <div className="flex h-36 items-center justify-center text-[10px] text-[var(--muted)]">当前视图没有可显示的工单</div> : props.tickets.items.map((ticket) => (
             <button key={ticket.id} type="button" onClick={() => props.onSelect(ticket)} className={cn('grid w-full grid-cols-[28px_142px_minmax(250px,1.6fr)_86px_132px_146px_132px] items-center border-b border-[var(--line)] px-3 py-2.5 text-left text-[9.5px] outline-none hover:bg-[var(--surface-subtle)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)]', props.selectedId === ticket.id && 'bg-[color-mix(in_srgb,var(--accent)_6%,transparent)] shadow-[inset_2px_0_var(--accent)]') }>
               <CaretRight className={cn('size-3 text-[var(--muted)] transition-transform', props.selectedId === ticket.id && 'rotate-90 text-[var(--accent-ink)]')} weight="bold" />
               <span className="truncate font-semibold text-[var(--accent-ink)]">{ticket.id}</span>
@@ -81,8 +80,8 @@ function Severity({ value }: { value: string | null }) {
   return <span className="flex items-center gap-1.5 text-[var(--ink-soft)]"><span className={cn('size-1.5 rounded-full', critical ? 'bg-[#ec3f66]' : 'bg-[#f49b38]')} />{value ?? '一般'}</span>
 }
 
-function LoadingRows() {
-  return <div className="flex h-36 items-center justify-center gap-2 text-[10px] text-[var(--muted)]"><SpinnerGap className="size-4 animate-spin" />正在读取 DTS 工单…</div>
+function LoadingRows({ label = '正在读取 DTS 工单…' }: { label?: string }) {
+  return <div role="status" aria-live="polite" className="flex h-36 items-center justify-center gap-2 text-[10px] text-[var(--muted)]"><SpinnerGap className="size-4 animate-spin text-[var(--accent-ink)]" />{label}</div>
 }
 
 function Pagination({ result, onPageChange }: { result: DtsTicketListResult; onPageChange: (page: number) => void }) {

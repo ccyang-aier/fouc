@@ -59,13 +59,25 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
   }, [refreshDetail, loadConnectedData])
 
   useEffect(() => {
-    let unlisten: (() => void) | undefined
+    let disposed = false
+    const unlisten: Array<() => void> = []
     void import('@tauri-apps/api/event').then(async ({ listen }) => {
-      unlisten = await listen<{ instanceId?: string }>('connector://auth-completed', () => {
+      unlisten.push(await listen<{ instanceId?: string }>('connector://auth-completed', () => {
         void refreshDetail().then(loadConnectedData).then(() => { onConnectionChange(true); notify('DTS 已连接，身份与只读能力验证通过') }).finally(() => setBusy(false))
-      })
+      }))
+      const finishWithoutConnection = (message: string) => {
+        if (disposed) return
+        void refreshDetail().catch(() => undefined).finally(() => setBusy(false))
+        notify(message)
+      }
+      unlisten.push(await listen<{ message?: string }>('connector://auth-failed', ({ payload }) => {
+        finishWithoutConnection(payload.message ?? 'DTS 登录失败，请重试')
+      }))
+      unlisten.push(await listen('connector://auth-cancelled', () => {
+        finishWithoutConnection('已取消 DTS 登录')
+      }))
     }).catch(() => undefined)
-    return () => unlisten?.()
+    return () => { disposed = true; unlisten.forEach((stop) => stop()) }
   }, [loadConnectedData, notify, onConnectionChange, refreshDetail])
 
   async function connect() {

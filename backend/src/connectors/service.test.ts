@@ -20,4 +20,22 @@ describe('connector lifecycle', () => {
       db.close();
     }
   });
+
+  test('records an actionable reason when a native login window is cancelled', () => {
+    const db = openDatabase(':memory:');
+    try {
+      const repository = new ConnectorRepository(db);
+      const service = new ConnectorService(repository);
+      const interaction = service.beginConnect('dts-personal');
+      service.cancelConnect(interaction.interactionId, 'page_load_timeout', 'DTS 登录页加载超时');
+
+      const instance = repository.byId('dts-personal');
+      expect(instance?.authState).toBe('needs_user_action');
+      expect(instance?.healthState).toBe('unknown');
+      expect(instance?.lastErrorCode).toBe('page_load_timeout');
+      expect(instance?.lastErrorMessage).toBe('DTS 登录页加载超时');
+    } finally {
+      db.close();
+    }
+  });
 });

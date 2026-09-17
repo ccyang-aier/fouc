@@ -90,11 +90,16 @@ export class ConnectorService {
     }
   }
 
-  cancelConnect(interactionId: string): void {
+  cancelConnect(interactionId: string, errorCode = 'cancelled', errorMessage = '已取消登录'): void {
     const interaction = this.pending.get(interactionId);
     if (!interaction) return;
     this.pending.delete(interactionId);
-    this.repository.patch(interaction.instanceId, { authState: 'needs_user_action' });
+    this.repository.patch(interaction.instanceId, {
+      authState: 'needs_user_action',
+      healthState: 'unknown',
+      lastErrorCode: errorCode,
+      lastErrorMessage: errorMessage,
+    });
   }
 
   disconnect(instanceId: string): ConnectorInstance {

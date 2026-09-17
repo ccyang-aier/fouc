@@ -152,8 +152,8 @@ export function createApp(context: ServerContext): { app: Hono; hub: BroadcastHu
     return connectorReply(c, () => connectors.completeDtsConnect(body.interactionId, body.cookies));
   });
   app.post('/internal/connectors/dts/auth-cancel', async (c) => {
-    const body = await readJson<{ interactionId: string }>(c);
-    if (body?.interactionId) connectors.cancelConnect(body.interactionId);
+    const body = await readJson<{ interactionId: string; errorCode?: string; errorMessage?: string }>(c);
+    if (body?.interactionId) connectors.cancelConnect(body.interactionId, body.errorCode, body.errorMessage);
     return c.json({ ok: true, data: { cancelled: true } });
   });
 

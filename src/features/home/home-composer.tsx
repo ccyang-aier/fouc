@@ -94,6 +94,10 @@ export function HomeComposer({ onStatusChange }: HomeComposerProps) {
         hasError ? "border-[#d58c7f]" : "border-[var(--line)]",
       )}
     >
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -top-px right-1 z-20 h-8 w-[150px] bg-panel max-[760px]:w-[116px]"
+      />
       <HomeAssistant celebrating={assistantCelebrating} />
 
       <div className="relative z-10 flex h-[53px] shrink-0 items-center justify-between rounded-t-[10px] border-b border-[var(--line)] bg-panel px-5 max-[760px]:px-3">
@@ -138,7 +142,11 @@ export function HomeComposer({ onStatusChange }: HomeComposerProps) {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-8 gap-2 px-2 text-[11px] font-medium text-[var(--ink-soft)]">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mr-[150px] h-8 gap-2 px-2 text-[11px] font-medium text-[var(--ink-soft)] max-[760px]:mr-[108px]"
+            >
               <ShieldCheck className="size-[17px]" />
               <span className="max-[760px]:hidden">{permission}</span>
               <SelectorChevron />

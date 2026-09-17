@@ -44,12 +44,9 @@ function frameForPointer(element: HTMLDivElement, clientX: number, clientY: numb
   return dy < 0 ? "up" : "down"
 }
 
-function AssistantFrames({ activeFrame, foreground }: { activeFrame: AssistantFrame; foreground: boolean }) {
+function AssistantFrames({ activeFrame }: { activeFrame: AssistantFrame }) {
   return (
-    <div
-      className={cn("absolute inset-0", foreground ? "z-20" : "z-0")}
-      style={foreground ? { clipPath: "inset(65% 0 0 0)" } : undefined}
-    >
+    <div className="absolute inset-0">
       {FRAMES.map((frame) => (
         <Image
           key={frame}
@@ -73,54 +70,51 @@ function AssistantFrames({ activeFrame, foreground }: { activeFrame: AssistantFr
 
 export function HomeAssistant({ celebrating = false }: HomeAssistantProps) {
   const rootRef = useRef<HTMLDivElement>(null)
-  const draggingRef = useRef(false)
   const blinkTimerRef = useRef<number | null>(null)
   const blinkReleaseTimerRef = useRef<number | null>(null)
   const settleTimerRef = useRef<number | null>(null)
+  const pointerFrameRequestRef = useRef<number | null>(null)
+  const latestPointerRef = useRef({ x: 0, y: 0 })
   const [pointerFrame, setPointerFrame] = useState<AssistantFrame>("neutral")
   const [isBlinking, setIsBlinking] = useState(false)
 
   useEffect(() => {
     function updateFromPointer(event: PointerEvent) {
-      if (!draggingRef.current || !rootRef.current) return
-      const nextFrame = frameForPointer(rootRef.current, event.clientX, event.clientY)
-      setPointerFrame((current) => (current === nextFrame ? current : nextFrame))
-    }
-
-    function startTracking(event: PointerEvent) {
-      if (event.button !== 0) return
+      latestPointerRef.current = { x: event.clientX, y: event.clientY }
       if (settleTimerRef.current !== null) window.clearTimeout(settleTimerRef.current)
-      draggingRef.current = true
       setIsBlinking(false)
-      updateFromPointer(event)
+
+      if (pointerFrameRequestRef.current !== null) return
+      pointerFrameRequestRef.current = window.requestAnimationFrame(() => {
+        pointerFrameRequestRef.current = null
+        if (!rootRef.current) return
+        const { x, y } = latestPointerRef.current
+        const nextFrame = frameForPointer(rootRef.current, x, y)
+        setPointerFrame((current) => (current === nextFrame ? current : nextFrame))
+      })
     }
 
     function stopTracking() {
-      if (!draggingRef.current) return
-      draggingRef.current = false
-      settleTimerRef.current = window.setTimeout(() => setPointerFrame("neutral"), 480)
+      settleTimerRef.current = window.setTimeout(() => setPointerFrame("neutral"), 360)
     }
 
-    window.addEventListener("pointerdown", startTracking, { passive: true })
     window.addEventListener("pointermove", updateFromPointer, { passive: true })
-    window.addEventListener("pointerup", stopTracking, { passive: true })
-    window.addEventListener("pointercancel", stopTracking, { passive: true })
+    document.documentElement.addEventListener("mouseleave", stopTracking)
     window.addEventListener("blur", stopTracking)
 
     return () => {
-      window.removeEventListener("pointerdown", startTracking)
       window.removeEventListener("pointermove", updateFromPointer)
-      window.removeEventListener("pointerup", stopTracking)
-      window.removeEventListener("pointercancel", stopTracking)
+      document.documentElement.removeEventListener("mouseleave", stopTracking)
       window.removeEventListener("blur", stopTracking)
       if (settleTimerRef.current !== null) window.clearTimeout(settleTimerRef.current)
+      if (pointerFrameRequestRef.current !== null) window.cancelAnimationFrame(pointerFrameRequestRef.current)
     }
   }, [])
 
   useEffect(() => {
     function scheduleBlink() {
       blinkTimerRef.current = window.setTimeout(() => {
-        if (!draggingRef.current && !celebrating) {
+        if (!celebrating) {
           setIsBlinking(true)
           blinkReleaseTimerRef.current = window.setTimeout(() => setIsBlinking(false), 150)
         }
@@ -141,10 +135,9 @@ export function HomeAssistant({ celebrating = false }: HomeAssistantProps) {
     <div
       ref={rootRef}
       aria-hidden="true"
-      className="pointer-events-none absolute -top-[116px] right-2 h-[142px] w-[142px] select-none max-[760px]:-top-[91px] max-[760px]:right-0 max-[760px]:h-[112px] max-[760px]:w-[112px]"
+      className="pointer-events-none absolute -top-[116px] right-2 z-30 h-[142px] w-[142px] select-none drop-shadow-[0_9px_12px_rgba(34,39,45,0.06)] max-[760px]:-top-[91px] max-[760px]:right-0 max-[760px]:h-[112px] max-[760px]:w-[112px]"
     >
-      <AssistantFrames activeFrame={activeFrame} foreground={false} />
-      <AssistantFrames activeFrame={activeFrame} foreground />
+      <AssistantFrames activeFrame={activeFrame} />
     </div>
   )
 }

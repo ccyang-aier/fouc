@@ -1,8 +1,8 @@
 # Home assistant integration QA
 
-- Source visual truth: `C:\Users\Y00013~1\AppData\Local\Temp\codex-clipboard-bc3a1c44-4040-4b12-ac01-b1fbbfd072c8.png`
+- Source visual truth: `C:\Users\Y00013~1\AppData\Local\Temp\codex-clipboard-f6a115f0-3329-4091-abfe-f1fcb3718b28.png` and `C:\Users\Y00013~1\AppData\Local\Temp\codex-clipboard-6ca5c830-f886-4c8f-82e1-5520eabe01e6.png`
 - Implementation: `http://localhost:3000/` (Codex in-app browser, tab 3)
-- Source pixels: 603 × 367
+- Source pixels: 651 × 327 and 642 × 468
 - Implementation capture: desktop app viewport at device scale factor 1
 - Responsive check: 680 × 860 CSS pixels at device scale factor 1
 - State: idle composer plus pointer-only left tracking state
@@ -15,7 +15,7 @@ The page composition, typography, palette, input dimensions, controls, and copy 
 ## Focused region comparison evidence
 
 - Before: the robot sat above an interrupted card edge, making its torso and hands appear detached from the input surface.
-- After: the card keeps one continuous top edge and foreground surface. It masks only the bottom eight pixels of the 142 px desktop robot frame, so the hands remain visible while their lower edge is naturally occluded.
+- After: the card keeps one continuous top edge and foreground surface. The robot is lowered by 6 px, so the card masks the bottom 14 pixels of its 142 px desktop frame and gives it a more grounded resting position.
 - Narrow viewport: an additional 20 px header-to-composer gap prevents the robot from colliding with the subtitle.
 - Interaction: CDP `Input.dispatchMouseEvent` with `type: mouseMoved`, `buttons: 0` changed the robot direction without pointer down or click.
 
@@ -34,7 +34,8 @@ No actionable P0, P1, or P2 differences remain for the requested junction. The r
 ## Comparison history
 
 - P1 previous iteration: a panel-colored break removed the border beneath the robot but made the two elements feel detached. Fixed by deleting the bridge and putting the complete composer above the robot in the stacking order.
-- P2 first layering pass: the foreground hid all of the robot's hands. Fixed by lifting the robot 18 px overall, leaving only its lower eight pixels occluded on desktop.
+- P2 first layering pass: the foreground hid all of the robot's hands. Fixed by lifting the robot while retaining foreground overlap.
+- P2 follow-up: the robot still appeared slightly suspended above the card. Fixed by lowering it 6 px on desktop and narrow breakpoints; post-fix evidence at 1064 × 665 shows a firmer visual seat without losing the hands.
 - P2 narrow-screen pass: the robot intersected the subtitle at 680 px. Fixed by increasing the narrow header-to-composer gap from 80 px to 100 px.
 - Existing pointer tracking remains verified with `buttons: 0`.
 

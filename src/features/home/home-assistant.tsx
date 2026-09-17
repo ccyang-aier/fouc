@@ -135,7 +135,7 @@ export function HomeAssistant({ celebrating = false }: HomeAssistantProps) {
     <div
       ref={rootRef}
       aria-hidden="true"
-      className="pointer-events-none absolute -top-[134px] right-2 z-0 h-[142px] w-[142px] select-none drop-shadow-[0_7px_10px_rgba(34,39,45,0.045)] max-[760px]:-top-[104px] max-[760px]:right-0 max-[760px]:h-[112px] max-[760px]:w-[112px]"
+      className="pointer-events-none absolute -top-[128px] right-2 z-0 h-[142px] w-[142px] select-none drop-shadow-[0_7px_10px_rgba(34,39,45,0.045)] max-[760px]:-top-[98px] max-[760px]:right-0 max-[760px]:h-[112px] max-[760px]:w-[112px]"
     >
       <AssistantFrames activeFrame={activeFrame} />
     </div>

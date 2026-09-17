@@ -73,11 +73,11 @@ function ProjectNavSection({
       <div className="sidebar-nav-row group/project flex h-8 w-full items-center justify-between gap-2 rounded-[6px] px-1.5 text-[11px] text-[var(--muted-strong)]">
         <button type="button" aria-expanded={open} onClick={() => setOpen((value) => !value)} className="flex min-w-0 flex-1 items-center gap-1.5 rounded-[5px] text-left outline-none hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
           <span className="flex size-4 shrink-0 items-center justify-center self-center text-[var(--muted)]">{icon}</span>
-          <span className="truncate leading-none">{label}</span>
+          <span className="truncate leading-4">{label}</span>
           <span className="text-[9px] tabular-nums text-[var(--muted)]">({count})</span>
           <CaretDown aria-hidden className={cn("size-2.5 shrink-0 transition-transform duration-150", !open && "-rotate-90")} weight="fill" />
         </button>
-        {onNew ? <div className="pointer-events-none flex shrink-0 items-center opacity-0 transition-opacity duration-150 group-hover/project:pointer-events-auto group-hover/project:opacity-100 group-focus-within/project:pointer-events-auto group-focus-within/project:opacity-100"><button type="button" aria-label={`新建${label}`} title={`新建${label}`} onClick={onNew} className="flex size-6 items-center justify-center rounded-[5px] text-[var(--muted)] outline-none hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><Plus className="size-3.5" /></button></div> : null}
+        {onNew ? <div className="pointer-events-none flex shrink-0 items-center opacity-0 transition-opacity duration-150 group-hover/project:pointer-events-auto group-hover/project:opacity-100 group-focus-within/project:pointer-events-auto group-focus-within/project:opacity-100"><button type="button" aria-label={`新建${label}`} title={`新建${label}`} onClick={() => { setOpen(true); onNew() }} className="flex size-6 items-center justify-center rounded-[5px] text-[var(--muted)] outline-none hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><Plus className="size-3.5" /></button></div> : null}
       </div>
       {open ? <div className="mt-0.5 space-y-1 pl-3.5">{children}</div> : null}
     </div>
@@ -330,7 +330,7 @@ export function NavigationSidebar({
           open ? "delay-100 opacity-100" : "pointer-events-none -translate-x-1 opacity-0",
         )}
         viewportClassName={cn(
-          "px-[11px] pb-4 pt-3",
+          "pb-4 pl-[11px] pr-[10px] pt-3",
           projectsMode && "flex h-full flex-col",
         )}
       >
@@ -365,7 +365,7 @@ export function NavigationSidebar({
             <div className="mt-3">
               <SidebarSectionCaption>工作台</SidebarSectionCaption>
               <ProjectNavSection compact defaultOpen={false} label="项目库" count={projects.length} icon={<Stack className="size-3.5" weight="duotone" />} onNew={() => { setCreatingProject(true); setNewProjectDraft("") }}>
-                {creatingProject ? <div className="flex h-[30px] items-center gap-1.5 rounded-[6px] bg-[var(--surface-subtle)] px-2"><FolderOpen className="size-3.5 shrink-0 text-[var(--muted)]" /><input autoFocus aria-label="新项目名称" value={newProjectDraft} onChange={(event) => setNewProjectDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") createProject(); if (event.key === "Escape") { setCreatingProject(false); setNewProjectDraft("") } }} onBlur={() => { if (!newProjectDraft.trim()) setCreatingProject(false) }} placeholder="项目名称" className="min-w-0 flex-1 bg-transparent text-[10.5px] text-[var(--ink)] outline-none" /></div> : null}
+                {creatingProject ? <div className="flex h-[30px] items-center gap-1.5 rounded-[6px] bg-[var(--surface-subtle)] px-2 text-[10.5px] font-normal"><FolderOpen className="size-3.5 shrink-0 text-[var(--muted)]" /><input autoFocus aria-label="新项目名称" value={newProjectDraft} onChange={(event) => setNewProjectDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") createProject(); if (event.key === "Escape") { setCreatingProject(false); setNewProjectDraft("") } }} onBlur={() => { if (!newProjectDraft.trim()) setCreatingProject(false) }} placeholder="项目名称" className="min-w-0 flex-1 bg-transparent text-[var(--ink)] outline-none placeholder:text-[var(--muted)] [font:inherit]" /></div> : null}
                 {projects.map((entry) => renderManagedEntry(entry))}
               </ProjectNavSection>
               <SidebarAgentSection
@@ -385,7 +385,7 @@ export function NavigationSidebar({
       {projectsMode ? null : (
         <div
           className={cn(
-            "shrink-0 px-[11px] pb-[9px] pt-2 transition-opacity duration-150",
+            "shrink-0 pb-[9px] pl-[11px] pr-[10px] pt-2 transition-opacity duration-150",
             open ? "delay-100 opacity-100" : "pointer-events-none opacity-0",
           )}
         >

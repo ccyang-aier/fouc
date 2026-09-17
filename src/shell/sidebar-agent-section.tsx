@@ -103,7 +103,7 @@ export function SidebarAgentSection({
           <span className="flex size-4 shrink-0 items-center justify-center text-[var(--muted)]">
             <Robot className="size-3.5" weight="duotone" />
           </span>
-          <span className="truncate leading-none">Agent 管理</span>
+          <span className="truncate leading-4">Agent 管理</span>
           <span className="text-[9px] tabular-nums text-[var(--muted)]">({agents.length})</span>
           <CaretDown aria-hidden className={cn("size-2.5 shrink-0 transition-transform duration-150", !open && "-rotate-90")} weight="fill" />
         </button>

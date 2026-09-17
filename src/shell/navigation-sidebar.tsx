@@ -192,7 +192,7 @@ function CollapseIcon() {
 }
 
 const primaryItems: Array<SidebarRowItem & { id: WorkbenchView }> = [
-  { id: "home", label: "助理", icon: ChatCircleDots },
+  { id: "home", label: "新对话", icon: ChatCircleDots },
   { id: "projects", label: "项目", icon: FolderOpen },
   { id: "automation", label: "自动化", icon: Lightning },
   { id: "connectors", label: "连接器", icon: PlugsConnected },

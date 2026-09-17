@@ -29,7 +29,7 @@ import { cn } from "@/lib/utils"
 import type { WorkbenchView } from "./navigation-sidebar"
 
 const SEARCH_ITEMS: Array<{ label: string; detail: string; view: WorkbenchView }> = [
-  { label: "助理", detail: "开始一项新任务", view: "home" },
+  { label: "新对话", detail: "开始一项新任务", view: "home" },
   { label: "项目", detail: "浏览项目文件夹", view: "projects" },
   { label: "社区", detail: "发现 Agent 与技能", view: "community" },
   { label: "自动化", detail: "管理自动执行任务", view: "automation" },

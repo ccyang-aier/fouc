@@ -308,7 +308,9 @@ struct CookieHandoff {
 }
 
 /// 打开 DTS 官方 SSO 受管窗口。窗口 label 不匹配任何 capability，远程页面无 IPC 权限。
-#[tauri::command]
+// Windows 上不能从同步 IPC command 创建第二个 WebView2：builder 会等待主 STA 的
+// COM 回调，而同步 command 本身正占着主线程，最终表现为无法绘制、无法关闭的白窗。
+#[tauri::command(async)]
 fn open_dts_auth(
     app: AppHandle,
     state: State<'_, SharedBackendState>,

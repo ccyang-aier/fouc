@@ -305,6 +305,7 @@ struct CookieHandoff {
     secure: bool,
     http_only: bool,
     expires_at: Option<i64>,
+    host_only: bool,
 }
 
 /// 打开 DTS 官方 SSO 受管窗口。窗口 label 不匹配任何 capability，远程页面无 IPC 权限。
@@ -338,6 +339,15 @@ fn open_dts_auth(
     std::fs::create_dir_all(&profile_dir).map_err(|error| error.to_string())?;
     let page_loaded = Arc::new(AtomicBool::new(false));
     let page_loaded_for_window = page_loaded.clone();
+    let saw_sso = Arc::new(AtomicBool::new(false));
+    let saw_sso_for_navigation = saw_sso.clone();
+    let returning_to_dts = Arc::new(AtomicBool::new(false));
+    let returning_for_navigation = returning_to_dts.clone();
+    let returning_for_window = returning_to_dts.clone();
+    let dts_page_ready = Arc::new(AtomicBool::new(false));
+    let dts_page_ready_for_window = dts_page_ready.clone();
+    let window_closed = Arc::new(AtomicBool::new(false));
+    let window_closed_for_event = window_closed.clone();
     let window = WebviewWindowBuilder::new(&app, &label, WebviewUrl::External(parsed))
         .title("登录 DTS")
         .inner_size(1040.0, 760.0)
@@ -346,14 +356,43 @@ fn open_dts_auth(
         .resizable(true)
         .devtools(false)
         .data_directory(profile_dir.clone())
-        .on_navigation(is_allowed_dts_navigation)
-        .on_page_load(move |_window, payload| {
+        .on_navigation(move |navigation_url| {
+            if !is_allowed_dts_navigation(navigation_url) {
+                return false;
+            }
+            if is_dts_sso_url(navigation_url) {
+                saw_sso_for_navigation.store(true, Ordering::Release);
+            } else if saw_sso_for_navigation.load(Ordering::Acquire)
+                && is_dts_workspace_url(navigation_url)
+            {
+                returning_for_navigation.store(true, Ordering::Release);
+            }
+            true
+        })
+        .on_page_load(move |auth_window, payload| {
             if payload.event() == PageLoadEvent::Finished && is_allowed_dts_url(payload.url()) {
                 page_loaded_for_window.store(true, Ordering::Release);
+            }
+            if returning_for_window.load(Ordering::Acquire) && is_dts_workspace_url(payload.url()) {
+                // SSO 已经完成。不要把 DTS 业务页面作为第二个产品界面展示给用户；
+                // 让返回导航在隐藏窗口中完成，以便 Cookie 落盘后由 sidecar 验证身份。
+                if payload.event() == PageLoadEvent::Started {
+                    let _ = auth_window.hide();
+                } else if payload.event() == PageLoadEvent::Finished {
+                    dts_page_ready_for_window.store(true, Ordering::Release);
+                }
             }
         })
         .build()
         .map_err(|error| error.to_string())?;
+    window.on_window_event(move |event| {
+        if matches!(
+            event,
+            tauri::WindowEvent::CloseRequested { .. } | tauri::WindowEvent::Destroyed
+        ) {
+            window_closed_for_event.store(true, Ordering::Release);
+        }
+    });
 
     let (port, internal_token) = {
         let inner = state.inner.lock().map_err(|error| error.to_string())?;
@@ -369,6 +408,8 @@ fn open_dts_auth(
             port,
             internal_token,
             page_loaded,
+            dts_page_ready,
+            window_closed,
             profile_dir,
         )
     });
@@ -416,6 +457,21 @@ fn is_allowed_dts_navigation(url: &tauri::Url) -> bool {
     is_allowed_dts_url(url) || matches!(url.scheme(), "about" | "edge-error" | "chrome-error")
 }
 
+fn is_dts_workspace_url(url: &tauri::Url) -> bool {
+    url.host_str() == Some("clouddragon.xfusion.com") && url.path().starts_with("/dts/DTSPortal/")
+}
+
+fn is_dts_sso_url(url: &tauri::Url) -> bool {
+    is_allowed_dts_url(url) && url.host_str() != Some("clouddragon.xfusion.com")
+}
+
+fn is_cookie_for_dts(cookie_domain: &str) -> bool {
+    let domain = cookie_domain.trim_start_matches('.').to_ascii_lowercase();
+    domain == "xfusion.com"
+        || domain == "clouddragon.xfusion.com"
+        || domain.ends_with(".clouddragon.xfusion.com")
+}
+
 fn poll_dts_auth(
     app: AppHandle,
     label: String,
@@ -423,6 +479,8 @@ fn poll_dts_auth(
     port: u16,
     internal_token: String,
     page_loaded: Arc<AtomicBool>,
+    dts_page_ready: Arc<AtomicBool>,
+    window_closed: Arc<AtomicBool>,
     profile_dir: PathBuf,
 ) {
     let client = match reqwest::blocking::Client::builder()
@@ -443,9 +501,27 @@ fn poll_dts_auth(
     let started_at = Instant::now();
     let mut first_page_loaded = false;
     let mut next_cookie_check = Instant::now();
+    let mut handoff_started_at: Option<Instant> = None;
+    let mut last_handoff_error = "DTS 会话验证失败，请重新登录".to_string();
 
     loop {
         std::thread::sleep(Duration::from_millis(250));
+        if window_closed.load(Ordering::Acquire) {
+            cancel_dts_auth(
+                &client,
+                &cancel_endpoint,
+                &internal_token,
+                &interaction_id,
+                "cancelled",
+                "已取消 DTS 登录",
+            );
+            let _ = app.emit(
+                "connector://auth-cancelled",
+                serde_json::json!({ "providerId": "dts" }),
+            );
+            cleanup_profile_dir(&profile_dir);
+            return;
+        }
         let Some(window) = app.get_webview_window(&label) else {
             cancel_dts_auth(
                 &client,
@@ -513,27 +589,49 @@ fn poll_dts_auth(
             cleanup_profile_dir(&profile_dir);
             return;
         }
+        if !dts_page_ready.load(Ordering::Acquire) {
+            continue;
+        }
+        let handoff_started = *handoff_started_at.get_or_insert_with(Instant::now);
+        if handoff_started.elapsed() >= Duration::from_secs(30) {
+            let _ = window.close();
+            cancel_dts_auth(
+                &client,
+                &cancel_endpoint,
+                &internal_token,
+                &interaction_id,
+                "authentication_failed",
+                &last_handoff_error,
+            );
+            let _ = app.emit(
+                "connector://auth-failed",
+                serde_json::json!({
+                    "providerId": "dts",
+                    "code": "authentication_failed",
+                    "message": last_handoff_error
+                }),
+            );
+            cleanup_profile_dir(&profile_dir);
+            return;
+        }
         if Instant::now() < next_cookie_check {
             continue;
         }
-        next_cookie_check = Instant::now() + Duration::from_secs(2);
+        next_cookie_check = Instant::now() + Duration::from_secs(1);
 
         let Ok(cookies) = window.cookies_for_url(cookie_url.clone()) else {
             continue;
         };
-        if !cookies.iter().any(|cookie| {
-            (cookie.name() == "heds-siamSessionhedss" || cookie.name() == "hwsso_uniportal")
-                && !cookie.value().is_empty()
-        }) {
-            continue;
-        }
         let handoff: Vec<CookieHandoff> = cookies
             .into_iter()
             .filter_map(|cookie| {
                 let domain = cookie.domain()?.to_string();
-                if domain != "xfusion.com" && !domain.ends_with(".xfusion.com") {
+                if cookie.value().is_empty() || !is_cookie_for_dts(&domain) {
                     return None;
                 }
+                // cookies_for_url 只返回实际适用于 clouddragon 的 Cookie。cookie crate
+                // 会剥离 Domain 的前导点，因此父域必须显式标记为非 host-only。
+                let host_only = domain.eq_ignore_ascii_case("clouddragon.xfusion.com");
                 Some(CookieHandoff {
                     name: cookie.name().to_string(),
                     value: cookie.value().to_string(),
@@ -544,18 +642,25 @@ fn poll_dts_auth(
                     expires_at: cookie
                         .expires_datetime()
                         .map(|time| time.unix_timestamp() * 1000),
+                    host_only,
                 })
             })
             .collect();
+        if handoff.is_empty() {
+            continue;
+        }
         let response = client
             .post(&endpoint)
             .header("x-fouc-internal-token", &internal_token)
             .json(&serde_json::json!({ "interactionId": interaction_id, "cookies": handoff }))
             .send();
-        let connected = response
+        let body = response
             .ok()
-            .and_then(|item| item.json::<serde_json::Value>().ok())
-            .and_then(|body| body.get("ok").and_then(|value| value.as_bool()))
+            .and_then(|item| item.json::<serde_json::Value>().ok());
+        let connected = body
+            .as_ref()
+            .and_then(|value| value.get("ok"))
+            .and_then(|value| value.as_bool())
             .unwrap_or(false);
         if connected {
             let _ = window.close();
@@ -565,6 +670,14 @@ fn poll_dts_auth(
             );
             cleanup_profile_dir(&profile_dir);
             return;
+        }
+        if let Some(message) = body
+            .as_ref()
+            .and_then(|value| value.get("error"))
+            .and_then(|value| value.get("message"))
+            .and_then(|value| value.as_str())
+        {
+            last_handoff_error = message.to_string();
         }
     }
 }
@@ -653,7 +766,10 @@ pub fn run() {
 
 #[cfg(test)]
 mod tests {
-    use super::{is_allowed_dts_navigation, is_allowed_dts_url};
+    use super::{
+        is_allowed_dts_navigation, is_allowed_dts_url, is_cookie_for_dts, is_dts_sso_url,
+        is_dts_workspace_url,
+    };
 
     #[test]
     fn dts_navigation_restricts_remote_hosts_but_keeps_webview_error_pages_visible() {
@@ -670,5 +786,33 @@ mod tests {
         assert!(is_allowed_dts_navigation(&login));
         assert!(is_allowed_dts_navigation(&blank));
         assert!(!is_allowed_dts_navigation(&external));
+    }
+
+    #[test]
+    fn dts_auth_flow_distinguishes_sso_from_the_authenticated_workspace() {
+        let workspace = "https://clouddragon.xfusion.com/dts/DTSPortal/workspace"
+            .parse()
+            .expect("valid URL");
+        let ticket = "https://clouddragon.xfusion.com/dts/DTSPortal/ticket/DTS20260001"
+            .parse()
+            .expect("valid URL");
+        let login = "https://uniportal.xfusion.com/uniportal1/login-pc.html"
+            .parse()
+            .expect("valid URL");
+
+        assert!(is_dts_workspace_url(&workspace));
+        assert!(is_dts_workspace_url(&ticket));
+        assert!(!is_dts_workspace_url(&login));
+        assert!(is_dts_sso_url(&login));
+        assert!(!is_dts_sso_url(&workspace));
+    }
+
+    #[test]
+    fn dts_cookie_filter_accepts_only_domains_that_can_apply_to_the_api_host() {
+        assert!(is_cookie_for_dts("xfusion.com"));
+        assert!(is_cookie_for_dts(".xfusion.com"));
+        assert!(is_cookie_for_dts("clouddragon.xfusion.com"));
+        assert!(!is_cookie_for_dts("uniportal.xfusion.com"));
+        assert!(!is_cookie_for_dts("example.com"));
     }
 }

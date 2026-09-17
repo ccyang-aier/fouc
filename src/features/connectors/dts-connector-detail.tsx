@@ -19,6 +19,7 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
   const [loading, setLoading] = useState(true)
   const [detailLoading, setDetailLoading] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [authPending, setAuthPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const toastTimer = useRef<number | null>(null)
@@ -59,35 +60,48 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
   }, [refreshDetail, loadConnectedData])
 
   useEffect(() => {
-    let disposed = false
-    const unlisten: Array<() => void> = []
-    void import('@tauri-apps/api/event').then(async ({ listen }) => {
-      unlisten.push(await listen<{ instanceId?: string }>('connector://auth-completed', () => {
-        void refreshDetail().then(loadConnectedData).then(() => { onConnectionChange(true); notify('DTS 已连接，身份与只读能力验证通过') }).finally(() => setBusy(false))
-      }))
-      const finishWithoutConnection = (message: string) => {
-        if (disposed) return
-        void refreshDetail().catch(() => undefined).finally(() => setBusy(false))
-        notify(message)
+    if (!authPending) return
+    let active = true
+    let checking = false
+    const check = async () => {
+      if (!active || checking) return
+      checking = true
+      try {
+        const next = await connectorApi.detail()
+        if (!active) return
+        setDetail(next)
+        if (next.instance.authState === 'valid') {
+          await loadConnectedData()
+          if (!active) return
+          onConnectionChange(true)
+          notify('DTS 已连接，身份与只读能力验证通过')
+          setAuthPending(false)
+          setBusy(false)
+        } else if (next.instance.authState !== 'connecting') {
+          notify(next.instance.lastErrorMessage ?? 'DTS 登录未完成，请重试')
+          setAuthPending(false)
+          setBusy(false)
+        }
+      } catch {
+        // sidecar 的瞬时重启或短暂不可用不应丢失一次仍在进行的官方登录。
+      } finally {
+        checking = false
       }
-      unlisten.push(await listen<{ message?: string }>('connector://auth-failed', ({ payload }) => {
-        finishWithoutConnection(payload.message ?? 'DTS 登录失败，请重试')
-      }))
-      unlisten.push(await listen('connector://auth-cancelled', () => {
-        finishWithoutConnection('已取消 DTS 登录')
-      }))
-    }).catch(() => undefined)
-    return () => { disposed = true; unlisten.forEach((stop) => stop()) }
-  }, [loadConnectedData, notify, onConnectionChange, refreshDetail])
+    }
+    void check()
+    const timer = window.setInterval(() => void check(), 750)
+    return () => { active = false; window.clearInterval(timer) }
+  }, [authPending, loadConnectedData, notify, onConnectionChange])
 
   async function connect() {
     setBusy(true); setError(null)
     try {
       const interaction = await connectorApi.connect()
+      setAuthPending(true)
       await openDtsAuthWindow(interaction)
       notify('已打开 DTS 官方登录窗口')
     } catch (cause) {
-      setBusy(false)
+      setAuthPending(false); setBusy(false)
       notify(cause instanceof Error ? cause.message : '无法打开 DTS 登录')
     }
   }
@@ -101,7 +115,7 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
 
   async function disconnect() {
     if (!window.confirm('断开 DTS 后会立即清除 sidecar 内存中的会话凭证。确定继续吗？')) return
-    setBusy(true)
+    setAuthPending(false); setBusy(true)
     try {
       await connectorApi.disconnect()
       let profileCleared = true

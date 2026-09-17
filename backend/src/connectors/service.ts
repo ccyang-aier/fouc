@@ -85,7 +85,9 @@ export class ConnectorService {
     } catch (error) {
       runtime.clear();
       const normalized = normalizeError(error);
-      this.repository.patch(interaction.instanceId, { authState: 'needs_user_action', healthState: 'degraded', lastErrorCode: normalized.code, lastErrorMessage: normalized.message });
+      // WebView 返回 DTS 后，浏览器可能仍在落最后一批 Cookie。原生层会在短时间内
+      // 重新交接；在它明确取消或超时前，这只是一次中间验证失败，不能提前结束登录流程。
+      this.repository.patch(interaction.instanceId, { authState: 'connecting', healthState: 'unknown', lastErrorCode: normalized.code, lastErrorMessage: normalized.message });
       throw normalized;
     }
   }

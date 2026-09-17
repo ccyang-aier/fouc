@@ -132,11 +132,10 @@ type ManagedSidebarEntry = {
   time?: string
 }
 
-function ManagedSidebarRow({ entry, active, editing, quickAccess = false, onSelect, onBeginRename, onRename, onDelete, onToggleMark }: {
+function ManagedSidebarRow({ entry, active, editing, onSelect, onBeginRename, onRename, onDelete, onToggleMark }: {
   entry: ManagedSidebarEntry
   active: boolean
   editing: boolean
-  quickAccess?: boolean
   onSelect: () => void
   onBeginRename: () => void
   onRename: (name: string) => void
@@ -144,7 +143,8 @@ function ManagedSidebarRow({ entry, active, editing, quickAccess = false, onSele
   onToggleMark: () => void
 }) {
   const [draft, setDraft] = useState(entry.name)
-  const ItemIcon = quickAccess ? (entry.kind === "project" ? Star : PushPin) : (entry.kind === "project" ? FolderOpen : ChatCircleDots)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const ItemIcon = entry.kind === "project" ? FolderOpen : ChatCircleDots
   const MarkIcon = entry.kind === "project" ? Star : PushPin
   const markLabel = entry.kind === "project" ? (entry.marked ? "取消星标" : "标记为星标项目") : (entry.marked ? "取消置顶" : "置顶该聊天")
 
@@ -155,13 +155,13 @@ function ManagedSidebarRow({ entry, active, editing, quickAccess = false, onSele
   return (
     <div data-active={active} className="sidebar-nav-row group/entry relative flex h-[30px] items-center rounded-[6px] text-[10.5px] text-[var(--muted-strong)]">
       <button type="button" aria-label={entry.name} aria-current={active ? "page" : undefined} onClick={onSelect} className="flex h-full min-w-0 flex-1 items-center gap-2 rounded-[6px] pl-2 pr-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
-        <ItemIcon className={cn("size-3.5 shrink-0", quickAccess && entry.kind === "project" ? "text-[#d79a3b]" : "text-[var(--muted)]")} weight={quickAccess ? "fill" : "duotone"} />
+        <ItemIcon className="size-3.5 shrink-0 text-[var(--muted)]" weight="duotone" />
         <span className="truncate">{entry.name}</span>
         {entry.time ? <span className="ml-auto shrink-0 text-[9px] text-[var(--muted)] transition-opacity group-hover/entry:opacity-0 group-focus-within/entry:opacity-0">{entry.time}</span> : null}
       </button>
-      <div className="pointer-events-none absolute right-1 flex items-center gap-0.5 opacity-0 transition-opacity group-hover/entry:pointer-events-auto group-hover/entry:opacity-100 group-focus-within/entry:pointer-events-auto group-focus-within/entry:opacity-100">
+      <div className={cn("absolute right-1 flex items-center gap-0.5 transition-opacity", menuOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0 group-hover/entry:pointer-events-auto group-hover/entry:opacity-100 group-focus-within/entry:pointer-events-auto group-focus-within/entry:opacity-100")}>
         <button type="button" aria-label={markLabel} title={markLabel} aria-pressed={entry.marked} onClick={onToggleMark} className={cn("flex size-6 items-center justify-center rounded-[5px] outline-none hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]", entry.marked ? "text-[#d79a3b]" : "text-[var(--muted)] hover:text-[var(--ink)]")}><MarkIcon className="size-3.5" weight={entry.marked ? "fill" : "regular"} /></button>
-        <DropdownMenu><DropdownMenuTrigger asChild><button type="button" aria-label={`${entry.name}更多操作`} title="更多操作" className="flex size-6 items-center justify-center rounded-[5px] text-[var(--muted)] outline-none hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><DotsThree className="size-4" weight="bold" /></button></DropdownMenuTrigger><DropdownMenuContent align="end" sideOffset={4} className="w-28 min-w-0"><DropdownMenuItem onSelect={onBeginRename}><PencilSimple />重命名</DropdownMenuItem><DropdownMenuSeparator /><DropdownMenuItem onSelect={onDelete} className="text-[var(--err-ink)]"><Trash />删除</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
+        <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}><DropdownMenuTrigger asChild><button type="button" aria-label={`${entry.name}更多操作`} title="更多操作" className={cn("flex size-6 items-center justify-center rounded-[5px] text-[var(--muted)] outline-none hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]", menuOpen && "bg-[var(--surface-hover)] text-[var(--ink)]")}><DotsThree className="size-4" weight="bold" /></button></DropdownMenuTrigger><DropdownMenuContent align="end" sideOffset={4} className="w-28 min-w-0"><DropdownMenuItem onSelect={onBeginRename}><PencilSimple />重命名</DropdownMenuItem><DropdownMenuSeparator /><DropdownMenuItem onSelect={onDelete} className="text-[var(--err-ink)]"><Trash />删除</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
       </div>
     </div>
   )
@@ -228,7 +228,7 @@ export function NavigationSidebar({
   const [creatingProject, setCreatingProject] = useState(false)
   const [newProjectDraft, setNewProjectDraft] = useState("")
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null)
-  const [activeEntryId, setActiveEntryId] = useState<string | null>(null)
+  const [activeItemKey, setActiveItemKey] = useState<string | null>(null)
   const favoriteProjects = projects.filter((entry) => entry.marked)
   const pinnedChats = recentChats.filter((entry) => entry.marked)
 
@@ -262,8 +262,9 @@ export function NavigationSidebar({
     setCreatingProject(false)
   }
 
-  function renderManagedEntry(entry: ManagedSidebarEntry, keyPrefix = "", quickAccess = false) {
-    return <ManagedSidebarRow key={`${keyPrefix}${entry.kind}-${entry.id}`} entry={entry} active={activeEntryId === entry.id} editing={editingEntryId === entry.id && !keyPrefix} quickAccess={quickAccess} onSelect={() => setActiveEntryId(entry.id)} onBeginRename={() => setEditingEntryId(entry.id)} onRename={(name) => renameEntry(entry, name)} onDelete={() => deleteEntry(entry)} onToggleMark={() => toggleMarked(entry)} />
+  function renderManagedEntry(entry: ManagedSidebarEntry, keyPrefix = "") {
+    const itemKey = `${keyPrefix}${entry.kind}-${entry.id}`
+    return <ManagedSidebarRow key={itemKey} entry={entry} active={activeItemKey === itemKey} editing={editingEntryId === entry.id && !keyPrefix} onSelect={() => setActiveItemKey(itemKey)} onBeginRename={() => setEditingEntryId(entry.id)} onRename={(name) => renameEntry(entry, name)} onDelete={() => deleteEntry(entry)} onToggleMark={() => toggleMarked(entry)} />
   }
 
   const paneProps = {
@@ -351,10 +352,10 @@ export function NavigationSidebar({
               <SidebarSectionCaption>快捷访问</SidebarSectionCaption>
               <div className="mt-0.5 space-y-0.5">
                 <QuickAccessCategory label="项目" count={favoriteProjects.length} icon={<Star className="size-3.5 text-[#d79a3b]" weight="fill" />}>
-                  {favoriteProjects.map((entry) => renderManagedEntry(entry, "favorite-", true))}
+                  {favoriteProjects.map((entry) => renderManagedEntry(entry, "favorite-"))}
                 </QuickAccessCategory>
                 <QuickAccessCategory label="对话" count={pinnedChats.length} icon={<PushPin className="size-3.5 text-[var(--muted-strong)]" weight="fill" />}>
-                  {pinnedChats.map((entry) => renderManagedEntry(entry, "pinned-", true))}
+                  {pinnedChats.map((entry) => renderManagedEntry(entry, "pinned-"))}
                 </QuickAccessCategory>
               </div>
             </div>
@@ -365,7 +366,11 @@ export function NavigationSidebar({
                 {creatingProject ? <div className="flex h-[30px] items-center gap-1.5 rounded-[6px] bg-[var(--surface-subtle)] px-2"><FolderOpen className="size-3.5 shrink-0 text-[var(--muted)]" /><input autoFocus aria-label="新项目名称" value={newProjectDraft} onChange={(event) => setNewProjectDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") createProject(); if (event.key === "Escape") { setCreatingProject(false); setNewProjectDraft("") } }} onBlur={() => { if (!newProjectDraft.trim()) setCreatingProject(false) }} placeholder="项目名称" className="min-w-0 flex-1 bg-transparent text-[10.5px] text-[var(--ink)] outline-none" /></div> : null}
                 {projects.map((entry) => renderManagedEntry(entry))}
               </ProjectNavSection>
-              <SidebarAgentSection compact />
+              <SidebarAgentSection
+                compact
+                activeAgentId={activeItemKey?.startsWith("agent-") ? activeItemKey.slice(6) : null}
+                onAgentSelect={(agentId) => setActiveItemKey(`agent-${agentId}`)}
+              />
             </div>
             <ProjectNavSection label="最近" count={recentChats.length} icon={<ClockCounterClockwise className="size-3.5" weight="duotone" />}>
               {recentChats.map((entry) => renderManagedEntry(entry))}

@@ -30,10 +30,17 @@ const UC_AGENT: SidebarAgent = {
   builtIn: true,
 }
 
-export function SidebarAgentSection({ compact = false }: { compact?: boolean }) {
+export function SidebarAgentSection({
+  compact = false,
+  activeAgentId,
+  onAgentSelect,
+}: {
+  compact?: boolean
+  activeAgentId: string | null
+  onAgentSelect: (agentId: string) => void
+}) {
   const [open, setOpen] = useState(!compact)
   const [agents, setAgents] = useState<SidebarAgent[]>([UC_AGENT])
-  const [activeAgentId, setActiveAgentId] = useState(UC_AGENT.id)
   const [providers, setProviders] = useState<ProviderSpec[]>([])
   const [installations, setInstallations] = useState<AgentInstallation[]>([])
   const [loading, setLoading] = useState(false)
@@ -74,13 +81,13 @@ export function SidebarAgentSection({ compact = false }: { compact?: boolean }) 
   function addAgent(provider: ProviderSpec) {
     const id = `local-${provider.id}`
     setAgents((current) => [...current, { id, name: provider.name, providerId: provider.id }])
-    setActiveAgentId(id)
+    onAgentSelect(id)
     setOpen(true)
   }
 
   function removeAgent(agentId: string) {
     setAgents((current) => current.filter((agent) => agent.id !== agentId))
-    setActiveAgentId((current) => current === agentId ? UC_AGENT.id : current)
+    if (activeAgentId === agentId) onAgentSelect(UC_AGENT.id)
   }
 
   return (
@@ -143,7 +150,7 @@ export function SidebarAgentSection({ compact = false }: { compact?: boolean }) 
                   type="button"
                   aria-label={agent.name}
                   aria-current={active ? "page" : undefined}
-                  onClick={() => setActiveAgentId(agent.id)}
+                  onClick={() => onAgentSelect(agent.id)}
                   className="flex h-full min-w-0 flex-1 items-center gap-2 rounded-[6px] pl-2 pr-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                 >
                   {agent.providerId ? (

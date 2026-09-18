@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ArrowsClockwise, CaretLeft, CheckCircle, DotsThree, SpinnerGap } from '@phosphor-icons/react'
 import type { ConnectorDetailDto, DtsFilterId, DtsTicketDetail, DtsTicketListResult, DtsTicketSummary } from '@fouc/shared'
+import { AppAlert, type AppAlertMessage, type AppAlertTone } from '@/components/app-alert'
 import { cn } from '@/lib/utils'
 import { clearDtsAuthProfile, connectorApi, openDtsAuthWindow } from './connector-api'
 import { DtsConnectorInspector } from './dts-connector-inspector'
@@ -19,16 +20,17 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
   const [detailLoading, setDetailLoading] = useState(false)
   const [busy, setBusy] = useState(false)
   const [authPending, setAuthPending] = useState(false)
+  const [connectionLoading, setConnectionLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
-  const toastTimer = useRef<number | null>(null)
+  const [alert, setAlert] = useState<AppAlertMessage | null>(null)
+  const alertId = useRef(0)
   const ticketRequestId = useRef(0)
+  const finalizingConnection = useRef(false)
 
-  const notify = useCallback((message: string) => {
-    if (toastTimer.current) window.clearTimeout(toastTimer.current)
-    setToast(message)
-    toastTimer.current = window.setTimeout(() => setToast(null), 2600)
+  const notify = useCallback((tone: AppAlertTone, title: string, description?: string) => {
+    setAlert({ id: ++alertId.current, tone, title, description })
   }, [])
+  const dismissAlert = useCallback(() => setAlert(null), [])
 
   const loadTickets = useCallback(async (filter: DtsFilterId, page = 1, search = '') => {
     const requestId = ++ticketRequestId.current
@@ -66,8 +68,70 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
         setLoading(false)
       })
     }, 0)
-    return () => { active = false; window.clearTimeout(timer); if (toastTimer.current) window.clearTimeout(toastTimer.current) }
+    return () => { active = false; window.clearTimeout(timer) }
   }, [refreshDetail, loadTickets])
+
+  const finishConnection = useCallback(async (next: ConnectorDetailDto) => {
+    if (finalizingConnection.current) return
+    finalizingConnection.current = true
+    setConnectionLoading(true)
+    setDetail(next)
+    setActiveFilter('myTodos')
+    setTickets(null)
+    setSelectedId(null)
+    setTicketDetail(null)
+    setAuthPending(false)
+    setBusy(false)
+    onConnectionChange(true)
+    notify('success', 'DTS 登录成功', '正在同步待处理工单，完成后即可开始使用')
+    try {
+      await loadTickets('myTodos', 1)
+    } finally {
+      setConnectionLoading(false)
+      finalizingConnection.current = false
+    }
+  }, [loadTickets, notify, onConnectionChange])
+
+  useEffect(() => {
+    let disposed = false
+    const unlisten: Array<() => void> = []
+
+    void import('@tauri-apps/api/event').then(async ({ listen }) => {
+      const completed = await listen<{ providerId?: string }>('connector://auth-completed', () => {
+        if (disposed) return
+        setConnectionLoading(true)
+        void connectorApi.detail().then((next) => {
+          if (!disposed && next.instance.authState === 'valid') void finishConnection(next)
+        }).catch(() => {
+          // 轮询仍会接管短暂的 sidecar 不可用或事件早于状态落盘的情况。
+        })
+      })
+      if (disposed) completed(); else unlisten.push(completed)
+
+      const failed = await listen<{ providerId?: string; message?: string }>('connector://auth-failed', (event) => {
+        if (disposed) return
+        setConnectionLoading(false)
+        setAuthPending(false)
+        setBusy(false)
+        notify('error', 'DTS 登录失败', event.payload.message ?? '请检查网络环境后重试')
+      })
+      if (disposed) failed(); else unlisten.push(failed)
+
+      const cancelled = await listen<{ providerId?: string }>('connector://auth-cancelled', () => {
+        if (disposed) return
+        setConnectionLoading(false)
+        setAuthPending(false)
+        setBusy(false)
+        notify('info', '已取消 DTS 登录')
+      })
+      if (disposed) cancelled(); else unlisten.push(cancelled)
+    }).catch(() => undefined)
+
+    return () => {
+      disposed = true
+      unlisten.forEach((stop) => stop())
+    }
+  }, [finishConnection, notify])
 
   useEffect(() => {
     if (!authPending) return
@@ -81,17 +145,9 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
         if (!active) return
         setDetail(next)
         if (next.instance.authState === 'valid') {
-          setActiveFilter('myTodos')
-          setTickets(null)
-          setSelectedId(null)
-          setTicketDetail(null)
-          onConnectionChange(true)
-          notify('DTS 已连接，正在加载待处理工单')
-          setAuthPending(false)
-          setBusy(false)
-          void loadTickets('myTodos', 1)
+          void finishConnection(next)
         } else if (next.instance.authState !== 'connecting') {
-          notify(next.instance.lastErrorMessage ?? 'DTS 登录未完成，请重试')
+          notify('error', 'DTS 登录未完成', next.instance.lastErrorMessage ?? '请重新打开登录窗口后重试')
           setAuthPending(false)
           setBusy(false)
         }
@@ -102,40 +158,41 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
       }
     }
     void check()
-    const timer = window.setInterval(() => void check(), 750)
+    const timer = window.setInterval(() => void check(), 250)
     return () => { active = false; window.clearInterval(timer) }
-  }, [authPending, loadTickets, notify, onConnectionChange])
+  }, [authPending, finishConnection, notify])
 
   async function connect() {
-    setBusy(true); setError(null)
+    setBusy(true); setConnectionLoading(false); setError(null)
     try {
       const interaction = await connectorApi.connect()
       setAuthPending(true)
       await openDtsAuthWindow(interaction)
-      notify('已打开 DTS 官方登录窗口')
+      notify('info', 'DTS 登录窗口已打开', '请在官方 SSO 页面完成身份验证')
     } catch (cause) {
       setAuthPending(false); setBusy(false)
-      notify(cause instanceof Error ? cause.message : '无法打开 DTS 登录')
+      notify('error', '无法打开 DTS 登录', cause instanceof Error ? cause.message : undefined)
     }
   }
 
   async function heartbeat() {
     setBusy(true)
-    try { await connectorApi.heartbeat(); await refreshDetail(); notify('连接正常，身份已重新确认') }
-    catch (cause) { await refreshDetail().catch(() => undefined); notify(cause instanceof Error ? cause.message : '连接检测失败') }
+    try { await connectorApi.heartbeat(); await refreshDetail(); notify('success', 'DTS 连接正常', '身份与会话状态已重新确认') }
+    catch (cause) { await refreshDetail().catch(() => undefined); notify('error', 'DTS 连接检测失败', cause instanceof Error ? cause.message : undefined) }
     finally { setBusy(false) }
   }
 
   async function disconnect() {
     if (!window.confirm('断开 DTS 后会立即清除 sidecar 内存中的会话凭证。确定继续吗？')) return
-    setAuthPending(false); setBusy(true)
+    setAuthPending(false); setConnectionLoading(false); setBusy(true)
     try {
       ticketRequestId.current += 1
       await connectorApi.disconnect()
       let profileCleared = true
       try { await clearDtsAuthProfile() } catch { profileCleared = false }
       await refreshDetail(); setTickets(null); setLoading(false); setSelectedId(null); setTicketDetail(null); onConnectionChange(false)
-      notify(profileCleared ? 'DTS 已断开，会话凭证已清除' : 'DTS 已断开；登录 Profile 清理失败，请重启 Fouc 后重试')
+      if (profileCleared) notify('success', 'DTS 已断开', '本地会话凭证已清除')
+      else notify('warning', 'DTS 已断开', '登录 Profile 清理失败，请重启 Fouc 后重试')
     }
     finally { setBusy(false) }
   }
@@ -143,7 +200,7 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
   async function selectTicket(ticket: DtsTicketSummary) {
     setSelectedId(ticket.id); setTicketDetail(null); setDetailLoading(true)
     try { setTicketDetail(await connectorApi.ticket(ticket.id)) }
-    catch (cause) { notify(cause instanceof Error ? cause.message : '工单详情读取失败') }
+    catch (cause) { notify('error', '工单详情读取失败', cause instanceof Error ? cause.message : undefined) }
     finally { setDetailLoading(false) }
   }
 
@@ -169,7 +226,18 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
           onFilterChange={(filter) => { setActiveFilter(filter); setSelectedId(null); setTicketDetail(null); void loadTickets(filter, 1, keyword) }} onKeywordChange={setKeyword} onSearch={() => void loadTickets(activeFilter, 1, keyword)} onSelect={(ticket) => void selectTicket(ticket)} onCloseDetail={() => { setSelectedId(null); setTicketDetail(null) }} onPageChange={(page) => void loadTickets(activeFilter, page, keyword)} onConnect={() => void connect()} />
         <DtsConnectorInspector detail={detail} busy={busy} onHeartbeat={() => void heartbeat()} onReconnect={() => void connect()} onDisconnect={() => void disconnect()} />
       </div>
-      <div role="status" aria-live="polite" className={cn('pointer-events-none absolute bottom-5 left-1/2 z-50 flex -translate-x-1/2 translate-y-2 items-center gap-2 rounded-[7px] bg-[var(--ink)] px-3.5 py-2 text-[10px] font-medium text-white opacity-0 shadow-lg transition-[opacity,transform]', toast && 'translate-y-0 opacity-100')}><CheckCircle className="size-3.5" weight="fill" />{toast}</div>
+      {connectionLoading ? (
+        <div role="status" aria-live="polite" aria-busy="true" className="absolute inset-0 z-40 flex items-center justify-center bg-[color-mix(in_srgb,var(--panel)_94%,transparent)] backdrop-blur-[1px]">
+          <div className="flex w-[340px] flex-col items-center rounded-[14px] border border-[var(--line)] bg-[var(--elevated)] px-8 py-7 text-center shadow-[0_18px_50px_rgba(24,30,42,0.12)]">
+            <span className="flex size-11 items-center justify-center rounded-[11px] bg-[var(--accent-soft)] text-[var(--accent-ink)]">
+              <SpinnerGap className="size-5 animate-spin" weight="bold" aria-hidden />
+            </span>
+            <h2 className="mt-4 text-[13px] font-semibold text-[var(--ink)]">正在完成 DTS 连接</h2>
+            <p className="mt-1.5 text-[9.5px] leading-4 text-[var(--muted-strong)]">身份验证已完成，正在同步连接状态和待处理工单…</p>
+          </div>
+        </div>
+      ) : null}
+      <AppAlert alert={alert} onClose={dismissAlert} />
     </section>
   )
 }

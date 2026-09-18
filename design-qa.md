@@ -1,35 +1,36 @@
 # Home assistant integration QA
 
-- Source visual truth: `C:\Users\Y00013~1\AppData\Local\Temp\codex-clipboard-f6a115f0-3329-4091-abfe-f1fcb3718b28.png` and `C:\Users\Y00013~1\AppData\Local\Temp\codex-clipboard-6ca5c830-f886-4c8f-82e1-5520eabe01e6.png`
+- Source visual truth: `C:\Users\Y00013~1\AppData\Local\Temp\codex-clipboard-a1dd2902-91bf-4ea9-8de4-dfce635593df.png`
 - Implementation: `http://localhost:3000/` (Codex in-app browser, tab 4)
-- Source pixels: 651 × 327 and 642 × 468
+- Source pixels: 430 × 367
 - Implementation capture: desktop app viewport at device scale factor 1
 - Responsive check: 680 × 860 CSS pixels at device scale factor 1
-- State: idle composer plus continuous pointer-only cardinal, diagonal, intermediate, and settle-to-neutral tracking states using a fixed body and an independently animated head
-- Normalization: the source is an annotated issue crop rather than a target mock. Comparison focused on the marked robot/composer junction; browser chrome and the red annotation were excluded from fidelity judgment.
+- State: idle composer plus continuous pointer-only left, right, up, down, intermediate, and settle-to-neutral tracking states using a fixed body and an independently animated head
+- Normalization: the source is an issue crop rather than a target mock. Comparison focused on head/body identity, apparent head scale, the neck joint, and animation continuity.
 
 ## Full-view comparison evidence
 
-The page composition, typography, palette, input dimensions, controls, and copy remain unchanged. The implementation intentionally changes only depth ordering and narrow-screen spacing: the composer is the foreground surface and the robot sits behind it.
+The page composition, typography, palette, input dimensions, controls, and copy remain unchanged. The implementation changes only the robot's head asset, head motion, and internal head/body stacking. The composer remains the foreground surface and the robot remains behind it.
 
 ## Focused region comparison evidence
 
-- Before: the robot sat above an interrupted card edge, making its torso and hands appear detached from the input surface.
-- After: the card keeps one continuous top edge and foreground surface. The robot is lowered by a further 2 px (8 px total from the initial layered version), so the card masks the bottom 16 pixels of its 142 px desktop frame and gives it a more grounded resting position.
-- Narrow viewport: an additional 20 px header-to-composer gap prevents the robot from colliding with the subtitle.
-- Interaction: CDP `Input.dispatchMouseEvent` with `type: mouseMoved`, `buttons: 0` changed the robot direction without pointer down or click. A 60 Hz left-to-right sweep advanced through the authored yaw sequence while residual 3D rotation filled the angle between key poses. The body and the new neck-joint layer both stayed at computed transform `none`; returning the pointer to the robot center settled the head at `50% 50%` without a visual jump.
+- Before: the 17 x 3 replacement atlas changed the character's head proportions, introduced apparent scale pumping between frames, and required a separate joint image that read as a detached neck block.
+- After: the coherent 9 x 5 head atlas is restored. The body is composited in front of the lower head edge, so its existing collar naturally closes the seam without an additional artificial joint layer.
+- Apparent scale: no scale or translation is applied to the head. Continuous motion uses only a bounded residual yaw/pitch rotation around a fixed 70% neck pivot; the neutral, full-left, full-right, full-up, and full-down captures keep a stable head envelope.
+- Interaction: CDP `Input.dispatchMouseEvent` with `type: mouseMoved`, `buttons: 0` changed the robot direction without pointer down or click. A full-width sweep advanced only through neighboring authored cells while the residual transform updated every animation frame. Returning the pointer to the robot center settled the head at `50% 50%` without a visual jump.
+- Narrow viewport: the 680 x 860 check retained the intended robot/composer overlap without clipping the title or controls.
 
 ## Required fidelity surfaces
 
 - Fonts and typography: unchanged; no wrapping or hierarchy regression was introduced.
 - Spacing and layout rhythm: desktop composition is unchanged; the narrow breakpoint receives 20 px more vertical clearance.
 - Colors and visual tokens: unchanged; no masking color, gradient, or artificial bridge remains.
-- Image quality and asset fidelity: the accepted ImageGen pass uses high-resolution single-row temporal strips instead of a dense two-dimensional generation grid. Three pitch strips were cleaned, aligned to one fixed neck pivot, mirrored for exact bilateral continuity, and packed as a lossless 17 x 3 atlas with 51 authored poses. Adjacent yaw poses are six degrees apart. A separate lossless neck-joint asset masks the feathered head seam while the existing fixed body keeps the torso, arms, and hands pixel-stable. Exactly one head cell is rendered at full opacity at a time.
+- Image quality and asset fidelity: the accepted implementation returns to the coherent high-resolution 9 x 5 atlas whose face shell, crown, neck, and proportions match the fixed body. Exactly one head cell is rendered at full opacity; no crossfade or duplicated silhouette can create ghosting. The rejected 17 x 3 atlas and its mismatched joint asset were removed from the shipped bundle.
 - Copy and content: unchanged.
 
 ## Findings
 
-No actionable P0, P1, or P2 differences remain for the requested junction. The robot reads as emerging from behind the composer, and the card edge remains structurally continuous.
+No actionable P0, P1, or P2 differences remain for the reported regression. The robot reads as one character, the head envelope remains stable during direction changes, and the collar/body foreground cleanly contains the neck seam.
 
 ## Comparison history
 
@@ -41,9 +42,9 @@ No actionable P0, P1, or P2 differences remain for the requested junction. The r
 - P1 smoothness follow-up: the 13-state timer still exposed discrete steps and kept 15 full-size image layers mounted. Fixed by replacing the directional files with a 25-pose atlas and requestAnimationFrame spring interpolation.
 - P1 ghosting regression: four-layer bilinear blending made adjacent full-body silhouettes overlap during head turns. Fixed by rendering a single atlas pose at full opacity and adding pose hysteresis; the 60 Hz spring transform now supplies continuity without transparent frame overlap. Post-fix browser evidence shows one atlas layer, opacity `1`, and no double head or eyes during a rapid full-width sweep.
 - P1 residual smoothness: the 5 x 5 full-body atlas technically contained 25 poses, but a horizontal mouse sweep could only expose five effective yaw steps and each step also moved the body. Fixed by separating the character into a static body and a 9 x 5 head atlas. Horizontal tracking now has nine authored yaw poses, vertical tracking has five pitch poses, and the head receives continuous requestAnimationFrame transforms between pose changes while the body never transforms.
-- P1 remaining micro-stutter: the 9 x 5 atlas still provided only nine effective yaw keys, and its generated angle increments were not uniform enough near center. Rejected attempts included a 297-frame optical-flow atlas because some in-between frames visibly deformed the face, and three dense 7 x 5 sheets because cross-sheet joins introduced inconsistent scale and angle jumps. The accepted asset comes from high-resolution single-row temporal strips and uses 17 ordered yaw keys with a consistent six-degree step.
-- P1 keyframe transition continuity: switching textures alone still exposes a small step. Fixed by calculating the fractional angle remaining between the current pointer pose and the selected keyframe, then applying only that residual yaw/pitch as a GPU transform around the fixed neck pivot. Key poses advance by at most one authored cell per animation frame.
-- P1 neck seam: moving the head canvas also moved the generated neck base against the static torso. Fixed by feathering the generated upper-neck edge and placing a static cylindrical joint above both head and body layers. Browser evidence confirms the body and joint remain untransformed during yaw and pitch movement.
+- P1 rejected dense-atlas pass: the 17 x 3 replacement increased the nominal frame count but changed the head identity and produced frame-to-frame scale pumping. Fixed by restoring the coherent 9 x 5 atlas and deleting the mismatched joint layer; nominal frame count is no longer allowed to override temporal and identity consistency.
+- P1 keyframe transition continuity: switching textures alone exposed a small step. Fixed by calculating the fractional angle remaining between the current pointer pose and the selected keyframe, then applying only that residual yaw/pitch as a GPU transform around the fixed neck pivot. Key poses advance by at most one authored cell per animation frame.
+- P1 neck seam: a separate joint asset read as a detached block between the moving head and static torso. Fixed by rendering the fixed body after the head so the body's own collar covers the lower head edge and forms one coherent assembly.
 - P2 expression interruption: the neutral blink image could interrupt an active directional pose and read as a dropped frame. Fixed by allowing idle blinks only while the smoothed direction is near neutral.
 - P2 reachability pass: a fixed distance threshold made the extreme right pose unreachable because the robot sits near the viewport edge. Fixed by normalizing distance against the available pointer ray to the viewport boundary.
 - Pointer tracking remains verified with `buttons: 0`; diagonal and full-extreme poses are reachable.
@@ -59,15 +60,16 @@ No actionable P0, P1, or P2 differences remain for the requested junction. The r
 - [x] Replace discrete directional files with a single 25-pose atlas.
 - [x] Render one pose at a time with hysteresis so full-body silhouettes never overlap.
 - [x] Replace the full-body atlas with a 45-pose head atlas and a fixed body layer.
-- [x] Replace the uneven 45-pose atlas with a temporally ordered 51-pose atlas built from high-resolution single-row strips.
-- [x] Preserve 60 Hz spring motion and residual-angle rotation on the head between six-degree key poses.
-- [x] Add a static neck-joint layer and feather the moving head seam beneath it.
+- [x] Reject and remove the inconsistent 51-pose replacement atlas.
+- [x] Restore the coherent 45-pose head atlas and preserve 60 Hz spring motion.
+- [x] Add bounded residual-angle rotation between neighboring authored poses without scale or translation.
+- [x] Composite the body collar over the moving head's lower edge instead of adding a separate neck-joint asset.
 - [x] Keep animation values in refs to avoid React re-renders during pointer movement.
 - [x] Prevent idle expression frames from interrupting active tracking.
 - [x] Remove superseded directional files from the shipped public bundle.
 - [x] Verify all horizontal/vertical extremes, diagonal quadrants, and settle-to-neutral behavior.
 - [x] Verify the body remains fixed during a no-click full-width pointer sweep.
-- [x] Verify the neck joint remains fixed through left, right, up, and down extremes.
+- [x] Verify the fixed body/collar remains stable through left, right, up, and down extremes.
 - [x] Verify desktop and 680 px layouts.
 - [x] Verify page identity, meaningful content, framework overlay absence, and console health.
 

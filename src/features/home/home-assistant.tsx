@@ -17,13 +17,16 @@ type MotionPoint = {
 type ExpressionFrame = "blink" | "success"
 
 const BODY_ASSET = "/brand/assistant/assistant-body.webp"
-const HEAD_ATLAS_ASSET = "/brand/assistant/head-atlas.webp"
-const HEAD_ATLAS_COLUMNS = 9
-const HEAD_ATLAS_ROWS = 5
+const HEAD_ATLAS_ASSET = "/brand/assistant/head-atlas-v2.webp"
+const NECK_JOINT_ASSET = "/brand/assistant/assistant-neck-joint.webp"
+const HEAD_ATLAS_COLUMNS = 17
+const HEAD_ATLAS_ROWS = 3
 const ATLAS_CENTER_POSITION = "50% 50%"
-const SPRING_RESPONSE = 17
+const YAW_STEP_DEGREES = 6
+const PITCH_STEP_DEGREES = 12
+const SPRING_RESPONSE = 20
 const MOTION_EPSILON = 0.001
-const POSE_HYSTERESIS = 0.54
+const POSE_HYSTERESIS = 0.52
 
 const EXPRESSION_ASSETS: Record<ExpressionFrame, string> = {
   blink: "/brand/assistant/blink.png",
@@ -63,20 +66,25 @@ function atlasPosition(index: number, frameCount: number) {
 function updateHeadPose(layer: HTMLSpanElement | null, pose: MotionPoint, motion: MotionPoint) {
   const gridX = ((motion.x + 1) / 2) * (HEAD_ATLAS_COLUMNS - 1)
   const gridY = ((motion.y + 1) / 2) * (HEAD_ATLAS_ROWS - 1)
-  const nextColumn = Math.abs(gridX - pose.x) >= POSE_HYSTERESIS ? Math.round(gridX) : pose.x
-  const nextRow = Math.abs(gridY - pose.y) >= POSE_HYSTERESIS ? Math.round(gridY) : pose.y
+  const nextColumn =
+    gridX > pose.x + POSE_HYSTERESIS ? pose.x + 1 : gridX < pose.x - POSE_HYSTERESIS ? pose.x - 1 : pose.x
+  const nextRow =
+    gridY > pose.y + POSE_HYSTERESIS ? pose.y + 1 : gridY < pose.y - POSE_HYSTERESIS ? pose.y - 1 : pose.y
 
-  if (nextColumn === pose.x && nextRow === pose.y) return
-  pose.x = clamp(nextColumn, 0, HEAD_ATLAS_COLUMNS - 1)
-  pose.y = clamp(nextRow, 0, HEAD_ATLAS_ROWS - 1)
-  if (layer) {
-    layer.style.backgroundPosition = `${atlasPosition(pose.x, HEAD_ATLAS_COLUMNS)} ${atlasPosition(pose.y, HEAD_ATLAS_ROWS)}`
+  if (nextColumn !== pose.x || nextRow !== pose.y) {
+    pose.x = clamp(nextColumn, 0, HEAD_ATLAS_COLUMNS - 1)
+    pose.y = clamp(nextRow, 0, HEAD_ATLAS_ROWS - 1)
+    if (layer) {
+      layer.style.backgroundPosition = `${atlasPosition(pose.x, HEAD_ATLAS_COLUMNS)} ${atlasPosition(pose.y, HEAD_ATLAS_ROWS)}`
+    }
   }
+
+  return { x: gridX - pose.x, y: gridY - pose.y }
 }
 
 function AssistantVisual({ celebrating }: HomeAssistantProps) {
   const headLayerRef = useRef<HTMLSpanElement>(null)
-  const headPoseRef = useRef<MotionPoint>({ x: 4, y: 2 })
+  const headPoseRef = useRef<MotionPoint>({ x: 8, y: 1 })
   const targetMotionRef = useRef<MotionPoint>({ x: 0, y: 0 })
   const currentMotionRef = useRef<MotionPoint>({ x: 0, y: 0 })
   const animationFrameRef = useRef<number | null>(null)
@@ -91,9 +99,12 @@ function AssistantVisual({ celebrating }: HomeAssistantProps) {
     const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)")
 
     function renderMotion(motion: MotionPoint) {
-      updateHeadPose(headLayerRef.current, headPoseRef.current, motion)
-      if (!headLayerRef.current) return
-      headLayerRef.current.style.transform = `perspective(320px) translate3d(${(motion.x * 2.8).toFixed(2)}px, ${(motion.y * 2.2).toFixed(2)}px, 0) rotateY(${(motion.x * 2.6).toFixed(2)}deg) rotateX(${(-motion.y * 2.2).toFixed(2)}deg)`
+      const residual = updateHeadPose(headLayerRef.current, headPoseRef.current, motion)
+      if (!headLayerRef.current) return residual
+      const residualYaw = clamp(residual.x, -1.25, 1.25) * YAW_STEP_DEGREES
+      const residualPitch = clamp(residual.y, -1.25, 1.25) * PITCH_STEP_DEGREES
+      headLayerRef.current.style.transform = `perspective(320px) rotateY(${residualYaw.toFixed(2)}deg) rotateX(${(-residualPitch).toFixed(2)}deg)`
+      return residual
     }
 
     function animate(timestamp: number) {
@@ -106,10 +117,12 @@ function AssistantVisual({ celebrating }: HomeAssistantProps) {
       const interpolation = reducedMotionQuery.matches ? 1 : 1 - Math.exp(-SPRING_RESPONSE * deltaSeconds)
       current.x += (target.x - current.x) * interpolation
       current.y += (target.y - current.y) * interpolation
-      renderMotion(current)
+      const poseResidual = renderMotion(current)
 
       const remainingDistance = Math.hypot(target.x - current.x, target.y - current.y)
-      if (remainingDistance > MOTION_EPSILON) {
+      const poseNeedsFrame =
+        Math.abs(poseResidual.x) > POSE_HYSTERESIS || Math.abs(poseResidual.y) > POSE_HYSTERESIS
+      if (remainingDistance > MOTION_EPSILON || poseNeedsFrame) {
         animationFrameRef.current = window.requestAnimationFrame(animate)
         return
       }
@@ -204,9 +217,20 @@ function AssistantVisual({ celebrating }: HomeAssistantProps) {
               backgroundImage: `url(${HEAD_ATLAS_ASSET})`,
               backgroundPosition: ATLAS_CENTER_POSITION,
               backgroundSize: `${HEAD_ATLAS_COLUMNS * 100}% ${HEAD_ATLAS_ROWS * 100}%`,
-              transformOrigin: "50% 70%",
+              transformOrigin: "50% 67%",
             }}
           />
+          <div className="absolute inset-y-0 left-1/2 w-[95.52%] -translate-x-1/2">
+            <Image
+              src={NECK_JOINT_ASSET}
+              alt=""
+              fill
+              priority
+              draggable={false}
+              sizes="(max-width: 760px) 107px, 136px"
+              className="object-fill"
+            />
+          </div>
         </div>
 
         {(Object.keys(EXPRESSION_ASSETS) as ExpressionFrame[]).map((frame) => (

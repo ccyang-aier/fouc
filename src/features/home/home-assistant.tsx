@@ -16,12 +16,14 @@ type MotionPoint = {
 
 type ExpressionFrame = "blink" | "success"
 
-const ATLAS_ASSET = "/brand/assistant/look-atlas.webp"
-const ATLAS_GRID_SIZE = 5
+const BODY_ASSET = "/brand/assistant/assistant-body.webp"
+const HEAD_ATLAS_ASSET = "/brand/assistant/head-atlas.webp"
+const HEAD_ATLAS_COLUMNS = 9
+const HEAD_ATLAS_ROWS = 5
 const ATLAS_CENTER_POSITION = "50% 50%"
-const SPRING_RESPONSE = 14
+const SPRING_RESPONSE = 17
 const MOTION_EPSILON = 0.001
-const POSE_HYSTERESIS = 0.58
+const POSE_HYSTERESIS = 0.54
 
 const EXPRESSION_ASSETS: Record<ExpressionFrame, string> = {
   blink: "/brand/assistant/blink.png",
@@ -54,26 +56,27 @@ function targetForPointer(element: HTMLDivElement, clientX: number, clientY: num
   }
 }
 
-function atlasPosition(index: number) {
-  return `${(index / (ATLAS_GRID_SIZE - 1)) * 100}%`
+function atlasPosition(index: number, frameCount: number) {
+  return `${(index / (frameCount - 1)) * 100}%`
 }
 
-function updateAtlasPose(layer: HTMLSpanElement | null, pose: MotionPoint, motion: MotionPoint) {
-  const gridX = ((motion.x + 1) / 2) * (ATLAS_GRID_SIZE - 1)
-  const gridY = ((motion.y + 1) / 2) * (ATLAS_GRID_SIZE - 1)
+function updateHeadPose(layer: HTMLSpanElement | null, pose: MotionPoint, motion: MotionPoint) {
+  const gridX = ((motion.x + 1) / 2) * (HEAD_ATLAS_COLUMNS - 1)
+  const gridY = ((motion.y + 1) / 2) * (HEAD_ATLAS_ROWS - 1)
   const nextColumn = Math.abs(gridX - pose.x) >= POSE_HYSTERESIS ? Math.round(gridX) : pose.x
   const nextRow = Math.abs(gridY - pose.y) >= POSE_HYSTERESIS ? Math.round(gridY) : pose.y
 
   if (nextColumn === pose.x && nextRow === pose.y) return
-  pose.x = clamp(nextColumn, 0, ATLAS_GRID_SIZE - 1)
-  pose.y = clamp(nextRow, 0, ATLAS_GRID_SIZE - 1)
-  if (layer) layer.style.backgroundPosition = `${atlasPosition(pose.x)} ${atlasPosition(pose.y)}`
+  pose.x = clamp(nextColumn, 0, HEAD_ATLAS_COLUMNS - 1)
+  pose.y = clamp(nextRow, 0, HEAD_ATLAS_ROWS - 1)
+  if (layer) {
+    layer.style.backgroundPosition = `${atlasPosition(pose.x, HEAD_ATLAS_COLUMNS)} ${atlasPosition(pose.y, HEAD_ATLAS_ROWS)}`
+  }
 }
 
 function AssistantVisual({ celebrating }: HomeAssistantProps) {
-  const atlasLayerRef = useRef<HTMLSpanElement>(null)
-  const atlasPoseRef = useRef<MotionPoint>({ x: 2, y: 2 })
-  const visualRef = useRef<HTMLDivElement>(null)
+  const headLayerRef = useRef<HTMLSpanElement>(null)
+  const headPoseRef = useRef<MotionPoint>({ x: 4, y: 2 })
   const targetMotionRef = useRef<MotionPoint>({ x: 0, y: 0 })
   const currentMotionRef = useRef<MotionPoint>({ x: 0, y: 0 })
   const animationFrameRef = useRef<number | null>(null)
@@ -88,9 +91,9 @@ function AssistantVisual({ celebrating }: HomeAssistantProps) {
     const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)")
 
     function renderMotion(motion: MotionPoint) {
-      updateAtlasPose(atlasLayerRef.current, atlasPoseRef.current, motion)
-      if (!visualRef.current) return
-      visualRef.current.style.transform = `translate3d(${(motion.x * 2.4).toFixed(2)}px, ${(motion.y * 1.8).toFixed(2)}px, 0) rotate(${(motion.x * 0.42).toFixed(2)}deg)`
+      updateHeadPose(headLayerRef.current, headPoseRef.current, motion)
+      if (!headLayerRef.current) return
+      headLayerRef.current.style.transform = `perspective(320px) translate3d(${(motion.x * 2.8).toFixed(2)}px, ${(motion.y * 2.2).toFixed(2)}px, 0) rotateY(${(motion.x * 2.6).toFixed(2)}deg) rotateX(${(-motion.y * 2.2).toFixed(2)}deg)`
     }
 
     function animate(timestamp: number) {
@@ -181,15 +184,27 @@ function AssistantVisual({ celebrating }: HomeAssistantProps) {
       aria-hidden="true"
       className="pointer-events-none absolute -top-[126px] right-2 z-0 h-[142px] w-[142px] select-none drop-shadow-[0_7px_10px_rgba(34,39,45,0.045)] max-[760px]:-top-[96px] max-[760px]:right-0 max-[760px]:h-[112px] max-[760px]:w-[112px]"
     >
-      <div ref={visualRef} className="absolute inset-0 will-change-transform">
-        <div className="absolute inset-0 scale-[1.04] transform-gpu origin-bottom">
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 scale-[1.04] origin-bottom">
+          <div className="absolute inset-y-0 left-1/2 w-[95.52%] -translate-x-1/2">
+            <Image
+              src={BODY_ASSET}
+              alt=""
+              fill
+              priority
+              draggable={false}
+              sizes="(max-width: 760px) 107px, 136px"
+              className="object-fill"
+            />
+          </div>
           <span
-            ref={atlasLayerRef}
-            className="absolute inset-0 bg-no-repeat will-change-[background-position]"
+            ref={headLayerRef}
+            className="absolute inset-y-0 left-1/2 w-[95.52%] -translate-x-1/2 bg-no-repeat transform-gpu will-change-[transform,background-position]"
             style={{
-              backgroundImage: `url(${ATLAS_ASSET})`,
+              backgroundImage: `url(${HEAD_ATLAS_ASSET})`,
               backgroundPosition: ATLAS_CENTER_POSITION,
-              backgroundSize: `${ATLAS_GRID_SIZE * 100}% ${ATLAS_GRID_SIZE * 100}%`,
+              backgroundSize: `${HEAD_ATLAS_COLUMNS * 100}% ${HEAD_ATLAS_ROWS * 100}%`,
+              transformOrigin: "50% 70%",
             }}
           />
         </div>

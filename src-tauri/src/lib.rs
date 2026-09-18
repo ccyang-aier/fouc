@@ -515,7 +515,8 @@ fn poll_dts_auth(
                 "cancelled",
                 "已取消 DTS 登录",
             );
-            let _ = app.emit(
+            let _ = app.emit_to(
+                "main",
                 "connector://auth-cancelled",
                 serde_json::json!({ "providerId": "dts" }),
             );
@@ -531,7 +532,8 @@ fn poll_dts_auth(
                 "cancelled",
                 "已取消 DTS 登录",
             );
-            let _ = app.emit(
+            let _ = app.emit_to(
+                "main",
                 "connector://auth-cancelled",
                 serde_json::json!({ "providerId": "dts" }),
             );
@@ -548,7 +550,6 @@ fn poll_dts_auth(
         // and even the native close button. Never touch cookies before a real DTS page loaded.
         if !first_page_loaded {
             if started_at.elapsed() >= Duration::from_secs(45) {
-                let _ = window.close();
                 cancel_dts_auth(
                     &client,
                     &cancel_endpoint,
@@ -557,7 +558,8 @@ fn poll_dts_auth(
                     "page_load_timeout",
                     "DTS 登录页加载超时，请检查公司网络、代理或证书后重试",
                 );
-                let _ = app.emit(
+                let _ = app.emit_to(
+                    "main",
                     "connector://auth-failed",
                     serde_json::json!({
                         "providerId": "dts",
@@ -565,13 +567,13 @@ fn poll_dts_auth(
                         "message": "DTS 登录页加载超时，请检查公司网络、代理或证书后重试"
                     }),
                 );
+                let _ = window.close();
                 cleanup_profile_dir(&profile_dir);
                 return;
             }
             continue;
         }
         if started_at.elapsed() >= Duration::from_secs(600) {
-            let _ = window.close();
             cancel_dts_auth(
                 &client,
                 &cancel_endpoint,
@@ -580,12 +582,14 @@ fn poll_dts_auth(
                 "timeout",
                 "DTS 登录已超时，请重试",
             );
-            let _ = app.emit(
+            let _ = app.emit_to(
+                "main",
                 "connector://auth-failed",
                 serde_json::json!({
                     "providerId": "dts", "code": "timeout", "message": "DTS 登录已超时，请重试"
                 }),
             );
+            let _ = window.close();
             cleanup_profile_dir(&profile_dir);
             return;
         }
@@ -594,7 +598,6 @@ fn poll_dts_auth(
         }
         let handoff_started = *handoff_started_at.get_or_insert_with(Instant::now);
         if handoff_started.elapsed() >= Duration::from_secs(30) {
-            let _ = window.close();
             cancel_dts_auth(
                 &client,
                 &cancel_endpoint,
@@ -603,7 +606,8 @@ fn poll_dts_auth(
                 "authentication_failed",
                 &last_handoff_error,
             );
-            let _ = app.emit(
+            let _ = app.emit_to(
+                "main",
                 "connector://auth-failed",
                 serde_json::json!({
                     "providerId": "dts",
@@ -611,6 +615,7 @@ fn poll_dts_auth(
                     "message": last_handoff_error
                 }),
             );
+            let _ = window.close();
             cleanup_profile_dir(&profile_dir);
             return;
         }
@@ -663,11 +668,14 @@ fn poll_dts_auth(
             .and_then(|value| value.as_bool())
             .unwrap_or(false);
         if connected {
-            let _ = window.close();
-            let _ = app.emit(
+            // 先让主窗口进入连接完成态，再关闭认证 WebView。WebView2 的关闭过程会切换
+            // UI 事件循环；若先 close，成功事件可能在窗口销毁期间延迟甚至丢失。
+            let _ = app.emit_to(
+                "main",
                 "connector://auth-completed",
                 serde_json::json!({ "providerId": "dts", "instanceId": "dts-personal" }),
             );
+            let _ = window.close();
             cleanup_profile_dir(&profile_dir);
             return;
         }

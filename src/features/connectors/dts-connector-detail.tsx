@@ -26,11 +26,18 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
   const alertId = useRef(0)
   const ticketRequestId = useRef(0)
   const finalizingConnection = useRef(false)
+  const connectionAnnounced = useRef(false)
+  const authStartedAt = useRef(0)
 
   const notify = useCallback((tone: AppAlertTone, title: string, description?: string) => {
     setAlert({ id: ++alertId.current, tone, title, description })
   }, [])
   const dismissAlert = useCallback(() => setAlert(null), [])
+  const announceConnection = useCallback(() => {
+    if (connectionAnnounced.current) return
+    connectionAnnounced.current = true
+    notify('success', 'DTS 登录成功', '正在同步待处理工单，完成后即可开始使用')
+  }, [notify])
 
   const loadTickets = useCallback(async (filter: DtsFilterId, page = 1, search = '') => {
     const requestId = ++ticketRequestId.current
@@ -83,14 +90,14 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
     setAuthPending(false)
     setBusy(false)
     onConnectionChange(true)
-    notify('success', 'DTS 登录成功', '正在同步待处理工单，完成后即可开始使用')
+    announceConnection()
     try {
       await loadTickets('myTodos', 1)
     } finally {
       setConnectionLoading(false)
       finalizingConnection.current = false
     }
-  }, [loadTickets, notify, onConnectionChange])
+  }, [announceConnection, loadTickets, onConnectionChange])
 
   useEffect(() => {
     let disposed = false
@@ -99,7 +106,9 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
     void import('@tauri-apps/api/event').then(async ({ listen }) => {
       const completed = await listen<{ providerId?: string }>('connector://auth-completed', () => {
         if (disposed) return
+        // 原生层在关闭登录窗口前发送该事件。此处必须先同步给出反馈，不能等待详情接口。
         setConnectionLoading(true)
+        announceConnection()
         void connectorApi.detail().then((next) => {
           if (!disposed && next.instance.authState === 'valid') void finishConnection(next)
         }).catch(() => {
@@ -131,7 +140,7 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
       disposed = true
       unlisten.forEach((stop) => stop())
     }
-  }, [finishConnection, notify])
+  }, [announceConnection, finishConnection, notify])
 
   useEffect(() => {
     if (!authPending) return
@@ -143,10 +152,10 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
       try {
         const next = await connectorApi.detail()
         if (!active) return
-        setDetail(next)
         if (next.instance.authState === 'valid') {
           void finishConnection(next)
-        } else if (next.instance.authState !== 'connecting') {
+        } else if (next.instance.authState !== 'connecting' && Date.now() - authStartedAt.current >= 3_000) {
+          setDetail(next)
           notify('error', 'DTS 登录未完成', next.instance.lastErrorMessage ?? '请重新打开登录窗口后重试')
           setAuthPending(false)
           setBusy(false)
@@ -163,9 +172,11 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
   }, [authPending, finishConnection, notify])
 
   async function connect() {
+    connectionAnnounced.current = false
     setBusy(true); setConnectionLoading(false); setError(null)
     try {
       const interaction = await connectorApi.connect()
+      authStartedAt.current = Date.now()
       setAuthPending(true)
       await openDtsAuthWindow(interaction)
       notify('info', 'DTS 登录窗口已打开', '请在官方 SSO 页面完成身份验证')
@@ -205,6 +216,14 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
   }
 
   if (!detail) return <div className="flex h-full items-center justify-center gap-2 text-[10.5px] text-[var(--muted)]"><SpinnerGap className="size-4 animate-spin" />正在加载 DTS 连接器…</div>
+  if (connectionLoading) {
+    return (
+      <section aria-label="DTS 连接器连接处理中" className="relative flex h-full min-h-0 flex-col bg-panel">
+        <ConnectionLoading />
+        <AppAlert alert={alert} onClose={dismissAlert} />
+      </section>
+    )
+  }
   const connected = detail.instance.authState === 'valid'
 
   return (
@@ -226,19 +245,22 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
           onFilterChange={(filter) => { setActiveFilter(filter); setSelectedId(null); setTicketDetail(null); void loadTickets(filter, 1, keyword) }} onKeywordChange={setKeyword} onSearch={() => void loadTickets(activeFilter, 1, keyword)} onSelect={(ticket) => void selectTicket(ticket)} onCloseDetail={() => { setSelectedId(null); setTicketDetail(null) }} onPageChange={(page) => void loadTickets(activeFilter, page, keyword)} onConnect={() => void connect()} />
         <DtsConnectorInspector detail={detail} busy={busy} onHeartbeat={() => void heartbeat()} onReconnect={() => void connect()} onDisconnect={() => void disconnect()} />
       </div>
-      {connectionLoading ? (
-        <div role="status" aria-live="polite" aria-busy="true" className="absolute inset-0 z-40 flex items-center justify-center bg-[color-mix(in_srgb,var(--panel)_94%,transparent)] backdrop-blur-[1px]">
-          <div className="flex w-[340px] flex-col items-center rounded-[14px] border border-[var(--line)] bg-[var(--elevated)] px-8 py-7 text-center shadow-[0_18px_50px_rgba(24,30,42,0.12)]">
-            <span className="flex size-11 items-center justify-center rounded-[11px] bg-[var(--accent-soft)] text-[var(--accent-ink)]">
-              <SpinnerGap className="size-5 animate-spin" weight="bold" aria-hidden />
-            </span>
-            <h2 className="mt-4 text-[13px] font-semibold text-[var(--ink)]">正在完成 DTS 连接</h2>
-            <p className="mt-1.5 text-[9.5px] leading-4 text-[var(--muted-strong)]">身份验证已完成，正在同步连接状态和待处理工单…</p>
-          </div>
-        </div>
-      ) : null}
       <AppAlert alert={alert} onClose={dismissAlert} />
     </section>
+  )
+}
+
+function ConnectionLoading() {
+  return (
+    <div role="status" aria-live="polite" aria-busy="true" className="flex min-h-0 flex-1 items-center justify-center bg-panel">
+      <div className="flex w-[340px] flex-col items-center rounded-[14px] border border-[var(--line)] bg-[var(--elevated)] px-8 py-7 text-center shadow-[0_18px_50px_rgba(24,30,42,0.12)]">
+        <span className="flex size-11 items-center justify-center rounded-[11px] bg-[var(--accent-soft)] text-[var(--accent-ink)]">
+          <SpinnerGap className="size-5 animate-spin" weight="bold" aria-hidden />
+        </span>
+        <h2 className="mt-4 text-[13px] font-semibold text-[var(--ink)]">正在完成 DTS 连接</h2>
+        <p className="mt-1.5 text-[9.5px] leading-4 text-[var(--muted-strong)]">身份验证已完成，正在同步连接状态和待处理工单…</p>
+      </div>
+    </div>
   )
 }
 

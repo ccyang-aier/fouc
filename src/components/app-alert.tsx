@@ -61,7 +61,7 @@ export function AppAlert({ alert, onClose, duration = 5_000 }: AppAlertProps) {
     <div
       role={alert.tone === "error" ? "alert" : "status"}
       aria-live={alert.tone === "error" ? "assertive" : "polite"}
-      className="fixed right-5 top-14 z-[100] flex w-[328px] animate-in items-start gap-3 rounded-[10px] border border-[var(--line-strong)] bg-[var(--elevated)] p-3.5 pr-10 text-left shadow-[0_14px_40px_rgba(24,30,42,0.18)] fade-in slide-in-from-top-2 duration-200"
+      className="fixed right-5 top-14 z-[100] flex w-[328px] items-start gap-3 rounded-[10px] border border-[var(--line-strong)] bg-[var(--elevated)] p-3.5 pr-10 text-left shadow-[0_14px_40px_rgba(24,30,42,0.18)]"
     >
       <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-[8px]", style.iconSurface)}>
         <Icon className={cn("size-[17px]", style.icon)} weight="fill" aria-hidden />

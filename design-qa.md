@@ -60,3 +60,47 @@ The implementation preserves the source hierarchy: compact connector header, tic
 - [x] Desktop and narrow-view visual verification
 
 final result: passed
+
+---
+
+# Home assistant whole-character motion atlas — design QA
+
+- Source visual truth: the existing Fouc robot identity plus the user's latest feedback that split head/body motion caused scale pumping, neck separation, and visible discontinuity.
+- Image generation mode: built-in ImageGen, stylized-product-asset workflow.
+- Final asset: `public/brand/assistant/assistant-motion-atlas.webp`.
+- Atlas specification: 24 yaw positions × 5 pitch bands, 120 complete-character frames, 192 × 192 px per cell, 4608 × 960 px total.
+- Runtime display size: 142 × 142 CSS px on desktop and 112 × 112 CSS px at the compact breakpoint.
+
+## Generation direction
+
+Each pitch band was generated as a temporally ordered 6 × 4 contact sheet using the clean neutral robot as the identity anchor. The prompt fixed the camera, character proportions, lighting, baseline, framing, and scale while allowing only small yaw changes from left to right. Separate bands cover approximately 12° up, 6° up, level, 6° down, and 12° down.
+
+## Asset normalization
+
+- Every cell contains the complete robot; the head and body are never composited independently at runtime.
+- Foreground extraction uses one consistent alpha-processing pipeline.
+- Each frame is normalized to the same 174 px visible height and 188 px baseline inside its 192 px cell.
+- Dynamic face-centered cropping prevents the generated contact-sheet drift from clipping hands, body, or head.
+- Frames touching a crop boundary are rejected during atlas assembly.
+
+## Runtime behavior verified
+
+- Pointer movement is observed globally; no click is required.
+- Horizontal motion traverses the 24-column sequence, while vertical motion selects all five pitch rows.
+- Pose selection advances by adjacent cells on animation frames with spring smoothing and hysteresis.
+- The rendered sprite has `transform: none`; there is no runtime scale, head rotation, cross-fade, or dual-image blending that could recreate pumping or ghosting.
+- The robot remains a single 142 px layer and retains the existing overlap with the higher-level composer surface.
+- Reduced-motion preference resolves immediately to the target pose.
+
+## Browser evidence
+
+- The production atlas loaded successfully from `/brand/assistant/assistant-motion-atlas.webp`.
+- Computed desktop robot bounds were 142 × 142 CSS px.
+- Horizontal endpoint tests reached atlas positions 0% and 100%; vertical endpoint tests reached 0%, 50%, and 100% rows.
+- Browser console contained no errors from the assistant component during pointer sweeps.
+
+## Superseded assets
+
+The split `assistant-body.webp` and `head-atlas.webp` assets, plus the differently proportioned legacy blink/success overlays, were removed. Future expressions should be authored as additional whole-character frames so the fixed silhouette and baseline contract remains intact.
+
+final result: passed

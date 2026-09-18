@@ -1,9 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
-import Image from "next/image"
-
-import { cn } from "@/lib/utils"
+import { useEffect, useRef } from "react"
 
 type HomeAssistantProps = {
   celebrating?: boolean
@@ -14,24 +11,13 @@ type MotionPoint = {
   y: number
 }
 
-type ExpressionFrame = "blink" | "success"
-
-const BODY_ASSET = "/brand/assistant/assistant-body.webp"
-const HEAD_ATLAS_ASSET = "/brand/assistant/head-atlas.webp"
-const HEAD_ATLAS_COLUMNS = 9
-const HEAD_ATLAS_ROWS = 5
-const ATLAS_CENTER_POSITION = "50% 50%"
-const YAW_STEP_DEGREES = 8
-const PITCH_STEP_DEGREES = 7
-const SPRING_RESPONSE = 18
+const MOTION_ATLAS_ASSET = "/brand/assistant/assistant-motion-atlas.webp"
+const MOTION_ATLAS_COLUMNS = 24
+const MOTION_ATLAS_ROWS = 5
+const INITIAL_POSE: MotionPoint = { x: 12, y: 2 }
+const SPRING_RESPONSE = 14
 const MOTION_EPSILON = 0.001
-const POSE_HYSTERESIS = 0.54
-const MAX_RESIDUAL_ROTATION = 0.72
-
-const EXPRESSION_ASSETS: Record<ExpressionFrame, string> = {
-  blink: "/brand/assistant/blink.png",
-  success: "/brand/assistant/success.png",
-}
+const POSE_HYSTERESIS = 0.52
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value))
@@ -69,46 +55,38 @@ function stepPoseIndex(current: number, target: number) {
   return current
 }
 
-function updateHeadPose(layer: HTMLSpanElement | null, pose: MotionPoint, motion: MotionPoint) {
-  const gridX = ((motion.x + 1) / 2) * (HEAD_ATLAS_COLUMNS - 1)
-  const gridY = ((motion.y + 1) / 2) * (HEAD_ATLAS_ROWS - 1)
+function updateAssistantPose(layer: HTMLSpanElement | null, pose: MotionPoint, motion: MotionPoint) {
+  const gridX = ((motion.x + 1) / 2) * (MOTION_ATLAS_COLUMNS - 1)
+  const gridY = ((motion.y + 1) / 2) * (MOTION_ATLAS_ROWS - 1)
   const nextColumn = stepPoseIndex(pose.x, gridX)
   const nextRow = stepPoseIndex(pose.y, gridY)
 
   if (nextColumn !== pose.x || nextRow !== pose.y) {
-    pose.x = clamp(nextColumn, 0, HEAD_ATLAS_COLUMNS - 1)
-    pose.y = clamp(nextRow, 0, HEAD_ATLAS_ROWS - 1)
+    pose.x = clamp(nextColumn, 0, MOTION_ATLAS_COLUMNS - 1)
+    pose.y = clamp(nextRow, 0, MOTION_ATLAS_ROWS - 1)
     if (layer) {
-      layer.style.backgroundPosition = `${atlasPosition(pose.x, HEAD_ATLAS_COLUMNS)} ${atlasPosition(pose.y, HEAD_ATLAS_ROWS)}`
+      layer.style.backgroundPosition = `${atlasPosition(pose.x, MOTION_ATLAS_COLUMNS)} ${atlasPosition(pose.y, MOTION_ATLAS_ROWS)}`
     }
   }
 
   return { x: gridX - pose.x, y: gridY - pose.y }
 }
 
-function AssistantVisual({ celebrating }: HomeAssistantProps) {
-  const headLayerRef = useRef<HTMLSpanElement>(null)
-  const headPoseRef = useRef<MotionPoint>({ x: 4, y: 2 })
+function AssistantVisual({ celebrating = false }: HomeAssistantProps) {
+  const assistantLayerRef = useRef<HTMLSpanElement>(null)
+  const poseRef = useRef<MotionPoint>({ ...INITIAL_POSE })
   const targetMotionRef = useRef<MotionPoint>({ x: 0, y: 0 })
   const currentMotionRef = useRef<MotionPoint>({ x: 0, y: 0 })
   const animationFrameRef = useRef<number | null>(null)
   const previousAnimationTimeRef = useRef<number | null>(null)
   const settleTimerRef = useRef<number | null>(null)
-  const blinkTimerRef = useRef<number | null>(null)
-  const blinkReleaseTimerRef = useRef<number | null>(null)
   const rootRef = useRef<HTMLDivElement>(null)
-  const [isBlinking, setIsBlinking] = useState(false)
 
   useEffect(() => {
     const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)")
 
     function renderMotion(motion: MotionPoint) {
-      const residual = updateHeadPose(headLayerRef.current, headPoseRef.current, motion)
-      if (!headLayerRef.current) return residual
-      const residualYaw = clamp(residual.x, -MAX_RESIDUAL_ROTATION, MAX_RESIDUAL_ROTATION) * YAW_STEP_DEGREES
-      const residualPitch = clamp(residual.y, -MAX_RESIDUAL_ROTATION, MAX_RESIDUAL_ROTATION) * PITCH_STEP_DEGREES
-      headLayerRef.current.style.transform = `perspective(320px) rotateY(${residualYaw.toFixed(2)}deg) rotateX(${(-residualPitch).toFixed(2)}deg)`
-      return residual
+      return updateAssistantPose(assistantLayerRef.current, poseRef.current, motion)
     }
 
     function animate(timestamp: number) {
@@ -172,80 +150,27 @@ function AssistantVisual({ celebrating }: HomeAssistantProps) {
     }
   }, [])
 
-  useEffect(() => {
-    function scheduleBlink() {
-      blinkTimerRef.current = window.setTimeout(() => {
-        const motion = currentMotionRef.current
-        const isNearNeutral = Math.hypot(motion.x, motion.y) < 0.12
-
-        if (!celebrating && isNearNeutral) {
-          setIsBlinking(true)
-          blinkReleaseTimerRef.current = window.setTimeout(() => setIsBlinking(false), 135)
-        }
-        scheduleBlink()
-      }, 3800 + Math.random() * 2400)
-    }
-
-    scheduleBlink()
-    return () => {
-      if (blinkTimerRef.current !== null) window.clearTimeout(blinkTimerRef.current)
-      if (blinkReleaseTimerRef.current !== null) window.clearTimeout(blinkReleaseTimerRef.current)
-    }
-  }, [celebrating])
-
-  const activeExpression: ExpressionFrame | null = celebrating ? "success" : isBlinking ? "blink" : null
-
   return (
     <div
       ref={rootRef}
       aria-hidden="true"
       className="pointer-events-none absolute -top-[126px] right-2 z-0 h-[142px] w-[142px] select-none drop-shadow-[0_7px_10px_rgba(34,39,45,0.045)] max-[760px]:-top-[96px] max-[760px]:right-0 max-[760px]:h-[112px] max-[760px]:w-[112px]"
     >
-      <div className="absolute inset-0">
-        <div className="absolute inset-0 scale-[1.04] origin-bottom">
-          <span
-            ref={headLayerRef}
-            className="absolute inset-y-0 left-1/2 w-[95.52%] -translate-x-1/2 bg-no-repeat transform-gpu will-change-[transform,background-position]"
-            style={{
-              backgroundImage: `url(${HEAD_ATLAS_ASSET})`,
-              backgroundPosition: ATLAS_CENTER_POSITION,
-              backgroundSize: `${HEAD_ATLAS_COLUMNS * 100}% ${HEAD_ATLAS_ROWS * 100}%`,
-              transformOrigin: "50% 70%",
-            }}
-          />
-          <div className="absolute inset-y-0 left-1/2 w-[95.52%] -translate-x-1/2">
-            <Image
-              src={BODY_ASSET}
-              alt=""
-              fill
-              priority
-              draggable={false}
-              sizes="(max-width: 760px) 107px, 136px"
-              className="object-fill"
-            />
-          </div>
-        </div>
-
-        {(Object.keys(EXPRESSION_ASSETS) as ExpressionFrame[]).map((frame) => (
-          <Image
-            key={frame}
-            src={EXPRESSION_ASSETS[frame]}
-            alt=""
-            fill
-            loading="eager"
-            draggable={false}
-            sizes="(max-width: 760px) 112px, 142px"
-            className={cn(
-              "object-contain object-bottom transition-opacity duration-75 ease-out",
-              activeExpression === frame ? "opacity-100" : "opacity-0",
-            )}
-          />
-        ))}
-      </div>
+      <span
+        ref={assistantLayerRef}
+        className="absolute inset-0 bg-no-repeat will-change-[background-position]"
+        style={{
+          backgroundImage: `url(${MOTION_ATLAS_ASSET})`,
+          backgroundPosition: `${atlasPosition(INITIAL_POSE.x, MOTION_ATLAS_COLUMNS)} ${atlasPosition(INITIAL_POSE.y, MOTION_ATLAS_ROWS)}`,
+          backgroundSize: `${MOTION_ATLAS_COLUMNS * 100}% ${MOTION_ATLAS_ROWS * 100}%`,
+          filter: celebrating ? "brightness(1.035) saturate(1.08)" : undefined,
+          transition: "filter 180ms ease-out",
+        }}
+      />
     </div>
   )
 }
 
-export function HomeAssistant({ celebrating = false }: HomeAssistantProps) {
-  return <AssistantVisual celebrating={celebrating} />
+export function HomeAssistant(props: HomeAssistantProps) {
+  return <AssistantVisual {...props} />
 }

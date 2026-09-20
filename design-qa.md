@@ -1,7 +1,7 @@
 # DTS 问题单侧栏设计 QA
 
-- Source visual truth: Conversation attachments from Browser Comments 1–4, including the focused metadata-chip reference (no local filesystem path)
-- Implementation screenshots: `C:\Users\y00013075\.codex\visualizations\2026\09\20\01a0be0c-2e93-7543-93a2-4898baa1df50\dts-xyflow-final.png` and `C:\Users\y00013075\.codex\visualizations\2026\09\20\01a0be0c-2e93-7543-93a2-4898baa1df50\dts-inspector-closed.png`
+- Source visual truth: Conversation attachments from Browser Comments, including the latest focused metadata and full relationship-view annotations (no local filesystem path)
+- Implementation screenshots: `C:\Users\y00013075\.codex\visualizations\2026\09\20\01a0be0c-2e93-7543-93a2-4898baa1df50\dts-graph-polish-final.png` and `C:\Users\y00013075\.codex\visualizations\2026\09\20\01a0be0c-2e93-7543-93a2-4898baa1df50\dts-inspector-closed.png`
 - Viewport: 1682 × 960 CSS px
 - Source pixels: 472 × 606 px for the focused card-list reference; the annotated full-page references are 1682 × 960 px
 - Implementation pixels: 1682 × 960 px
@@ -11,7 +11,7 @@
 
 ## Full-view comparison evidence
 
-The updated implementation preserves the original Fouc desktop information architecture while introducing the requested breadcrumb and card-based issue list. The list remains a secondary column, the selected ticket retains a clear active state, and the main work area remains usable at the supplied 1682 × 960 viewport. Collapsing the issue sidebar expands the work area without clipping persistent controls.
+The updated implementation preserves the original Fouc desktop information architecture while introducing the requested breadcrumb and card-based issue list. The list remains a secondary column, the selected ticket retains a clear active state, and the main work area remains usable at the supplied 1682 × 960 viewport. The relationship view now has a clear center-out hierarchy, larger readable nodes, tighter spatial grouping, and a restrained floating graph legend. Collapsing either sidebar expands the work area without clipping persistent controls.
 
 ## Focused region comparison evidence
 
@@ -38,6 +38,7 @@ The focused issue-list region matches the reference's hierarchy: severity marker
 7. Confirmed the rendered DTS view contains `致命`, relation metadata, and comment metadata, and contains no legacy `高` severity label.
 8. Confirmed the XYFlow canvas renders 7 nodes and 6 edges; activating Zoom In changed the viewport transform and Fit View restored the full graph.
 9. Activated `关闭工单上下文`, confirmed the inspector was removed, then activated `打开工单上下文` and confirmed it returned.
+10. Opened a clean in-app browser tab, navigated `连接器 → DTS`, confirmed 7 nodes and 6 edges rendered, and found no console warnings or errors.
 
 ## Comparison history
 
@@ -64,6 +65,12 @@ The focused issue-list region matches the reference's hierarchy: severity marker
 - Earlier findings: The light-theme issue column used a tinted surface, footer metadata was overpacked into one line, hover lacked the selected card's highlighted border, the relationship diagram was a static hand-built canvas, and the right context inspector could not be dismissed.
 - Fixes made: Switched the list surface to the panel token, split metadata into identity and workflow rows, aligned hover/selected border treatment, replaced the diagram with the MIT-licensed React Flow core, and added close/reopen state for the context inspector. The graph inherits draggable nodes, pan/zoom, fit view, interaction locking, a pannable/zoomable minimap, and accessible controls.
 - Post-fix visual evidence: The final screenshot shows a white list column, unclipped two-row metadata, visible relationship edges, branded custom nodes, view controls, and minimap. The closed-inspector screenshot confirms the canvas reflows across the released width and a persistent reopen control remains available. No actionable P0/P1/P2 mismatch remains.
+
+### Pass 5
+
+- Earlier findings: Status and related-issue chips still competed with the identity row below the divider, while the relationship view felt underscaled and visually flat due to loose geometry, tiny handles, uniform card surfaces, weak hierarchy, and sparse use of the canvas.
+- Fixes made: Moved workflow chips above the dashed divider, reserved the lower row for owner/time/comments, tightened graph coordinates, increased fit-view scale, hid visual connection handles, strengthened the central ticket node, added semantic icon surfaces and metadata badges, refined shadows/radii/controls/minimap, and added a compact relationship-network legend.
+- Post-fix visual evidence: The revised screenshot shows stable three-part card composition and a denser center-out network. The central ticket is the visual anchor, surrounding cards have differentiated headers and stronger readable hierarchy, edges terminate cleanly without handle dots, and the graph occupies the useful canvas area without overlap. No actionable P0/P1/P2 mismatch remains.
 
 ## Findings
 

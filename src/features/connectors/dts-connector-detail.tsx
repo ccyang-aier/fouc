@@ -6,7 +6,7 @@ import { ArrowsClockwise, CaretDown, CaretLeft, CheckCircle, DotsThree, SpinnerG
 import type { ConnectorDetailDto, DtsFilterId, DtsTicketDetail, DtsTicketListResult, DtsTicketSummary } from '@fouc/shared'
 import { AppAlert, type AppAlertMessage, type AppAlertTone } from '@/components/app-alert'
 import { cn } from '@/lib/utils'
-import { clearDtsAuthProfile, connectorApi, isDtsWebMock, openDtsAuthWindow } from './connector-api'
+import { clearDtsAuthProfile, dtsConnectorApi, isDtsWebMock, openDtsAuthWindow } from './dts/api'
 import { DtsConnectorInspector } from './dts-connector-inspector'
 import { DtsTicketWorkspace } from './dts-ticket-workspace'
 
@@ -42,7 +42,7 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
 
   const loadTicketDetail = useCallback(async (ticket: DtsTicketSummary) => {
     setSelectedId(ticket.id); setTicketDetail(null); setDetailLoading(true)
-    try { setTicketDetail(await connectorApi.ticket(ticket.id)) }
+    try { setTicketDetail(await dtsConnectorApi.ticket(ticket.id)) }
     catch (cause) { notify('error', '工单详情读取失败', cause instanceof Error ? cause.message : undefined) }
     finally { setDetailLoading(false) }
   }, [notify])
@@ -51,7 +51,7 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
     const requestId = ++ticketRequestId.current
     setLoading(true); setError(null)
     try {
-      const result = await connectorApi.tickets({ filter, page, pageSize: 20, keyword: search.trim() || undefined })
+      const result = await dtsConnectorApi.tickets({ filter, page, pageSize: 20, keyword: search.trim() || undefined })
       if (requestId === ticketRequestId.current) {
         setTickets(result)
         const first = result.items[0]
@@ -66,7 +66,7 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
   }, [loadTicketDetail])
 
   const refreshDetail = useCallback(async () => {
-    const next = await connectorApi.detail()
+    const next = await dtsConnectorApi.detail()
     setDetail(next)
     return next
   }, [])
@@ -122,7 +122,7 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
         // 原生层在关闭登录窗口前发送该事件。此处必须先同步给出反馈，不能等待详情接口。
         setConnectionLoading(true)
         announceConnection()
-        void connectorApi.detail().then((next) => {
+        void dtsConnectorApi.detail().then((next) => {
           if (!disposed && next.instance.authState === 'valid') void finishConnection(next)
         }).catch(() => {
           // 轮询仍会接管短暂的 sidecar 不可用或事件早于状态落盘的情况。
@@ -163,7 +163,7 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
       if (!active || checking) return
       checking = true
       try {
-        const next = await connectorApi.detail()
+        const next = await dtsConnectorApi.detail()
         if (!active) return
         if (next.instance.authState === 'valid') {
           void finishConnection(next)
@@ -188,7 +188,7 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
     connectionAnnounced.current = false
     setBusy(true); setConnectionLoading(false); setError(null)
     try {
-      const interaction = await connectorApi.connect()
+      const interaction = await dtsConnectorApi.connect()
       authStartedAt.current = Date.now()
       setAuthPending(true)
       await openDtsAuthWindow(interaction)
@@ -201,7 +201,7 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
 
   async function heartbeat() {
     setBusy(true)
-    try { await connectorApi.heartbeat(); await refreshDetail(); notify('success', 'DTS 连接正常', '身份与会话状态已重新确认') }
+    try { await dtsConnectorApi.heartbeat(); await refreshDetail(); notify('success', 'DTS 连接正常', '身份与会话状态已重新确认') }
     catch (cause) { await refreshDetail().catch(() => undefined); notify('error', 'DTS 连接检测失败', cause instanceof Error ? cause.message : undefined) }
     finally { setBusy(false) }
   }
@@ -211,7 +211,7 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
     setAuthPending(false); setConnectionLoading(false); setBusy(true)
     try {
       ticketRequestId.current += 1
-      await connectorApi.disconnect()
+      await dtsConnectorApi.disconnect()
       let profileCleared = true
       try { await clearDtsAuthProfile() } catch { profileCleared = false }
       await refreshDetail(); setTickets(null); setLoading(false); setSelectedId(null); setTicketDetail(null); onConnectionChange(false)

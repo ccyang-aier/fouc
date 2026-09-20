@@ -50,6 +50,15 @@ pnpm install
 pnpm dev
 ```
 
+Web 开发默认连接真实 sidecar。需要启用浏览器 Mock 时，在启动进程中设置连接器列表（逗号分隔）：
+
+```powershell
+$env:NEXT_PUBLIC_FOUC_MOCKS="dts"
+pnpm dev
+```
+
+也可以将同名变量写入本地 `.env.local`；可用值示例见 `.env.example`。
+
 ```bash
 pnpm check           # 类型检查、Lint 与 Web 构建
 pnpm desktop:dev     # 启动桌面端开发环境

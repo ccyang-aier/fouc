@@ -1,17 +1,11 @@
 import type {
-  ConnectorConnectInteraction,
-  ConnectorDetailDto,
-  ConnectorInstance,
-  DtsFilterDefinition,
   DtsFilterId,
   DtsTicketDetail,
-  DtsTicketListInput,
-  DtsTicketListResult,
   ExternalObjectRef,
 } from '@fouc/shared'
 
-const DTS_INSTANCE_ID = 'dts-personal'
-const MOCK_NOW = Date.parse('2026-09-20T09:30:00+08:00')
+export const DTS_INSTANCE_ID = 'dts-personal'
+export const MOCK_NOW = Date.parse('2026-09-20T09:30:00+08:00')
 
 function source(id: string): ExternalObjectRef {
   return {
@@ -33,7 +27,7 @@ function relation(id: string, objectType: string): ExternalObjectRef {
   }
 }
 
-const MOCK_TICKETS: DtsTicketDetail[] = [
+export const MOCK_TICKETS: DtsTicketDetail[] = [
   {
     id: 'DTS-20260920-1842',
     title: '生产环境订单中心偶发超时，需确认数据库连接池状态',
@@ -205,7 +199,7 @@ const MOCK_TICKETS: DtsTicketDetail[] = [
   },
 ]
 
-const FILTER_TICKET_IDS: Record<DtsFilterId, string[]> = {
+export const FILTER_TICKET_IDS: Record<DtsFilterId, string[]> = {
   myTodos: ['DTS-20260920-1842', 'DTS-20260920-1765', 'DTS-20260919-1633', 'DTS-20260919-1518'],
   myProcessed: ['DTS-20260918-1427'],
   myCreate: ['DTS-20260919-1518', 'DTS-20260918-1427'],
@@ -217,7 +211,7 @@ const FILTER_TICKET_IDS: Record<DtsFilterId, string[]> = {
   cancel: [],
 }
 
-const FILTER_NAMES: Record<DtsFilterId, string> = {
+export const FILTER_NAMES: Record<DtsFilterId, string> = {
   myTodos: '待处理',
   myProcessed: '我处理过的',
   myCreate: '我创建的',
@@ -227,122 +221,4 @@ const FILTER_NAMES: Record<DtsFilterId, string> = {
   closed: '已关闭',
   unclosed: '未关闭',
   cancel: '已取消',
-}
-
-let connected = true
-
-function instance(): ConnectorInstance {
-  return {
-    id: DTS_INSTANCE_ID,
-    providerId: 'dts',
-    name: 'DTS 个人工作台（Web Mock）',
-    ownerType: 'user',
-    ownerId: 'web-debugger',
-    desiredState: 'enabled',
-    authState: connected ? 'valid' : 'unconfigured',
-    healthState: connected ? 'healthy' : 'unknown',
-    executionState: 'online',
-    executionTargetType: 'desktop_sidecar',
-    executionTargetId: 'web-mock',
-    config: { environment: 'mock', readOnly: true },
-    identity: connected ? {
-      externalId: 'mock-user-001',
-      displayName: 'Web 调试账号',
-      account: 'web.mock@example.test',
-      tenantId: 'fouc-dev',
-      verifiedAt: MOCK_NOW,
-    } : null,
-    connectedAt: connected ? MOCK_NOW - 86_400_000 : null,
-    lastHeartbeatAt: connected ? MOCK_NOW - 32_000 : null,
-    lastHeartbeatDurationMs: connected ? 186 : null,
-    lastErrorCode: null,
-    lastErrorMessage: null,
-    createdAt: MOCK_NOW - 7 * 86_400_000,
-    updatedAt: MOCK_NOW,
-  }
-}
-
-function detail(): ConnectorDetailDto {
-  return {
-    provider: {
-      id: 'dts',
-      name: 'DTS',
-      description: '读取 DTS 工单、流程、关联关系与权限信息。',
-      version: '1.0.0-mock',
-      category: '研发协作',
-      authMethods: ['managed_web_session'],
-      targetTypes: ['desktop_sidecar'],
-      capabilities: [
-        { id: 'ticket.list', name: '查询工单', description: '按个人视图查询 DTS 工单', effect: 'read', approval: 'never', idempotent: true, traits: ['paginated'] },
-        { id: 'ticket.get', name: '读取工单详情', description: '读取字段、流程和关联信息', effect: 'read', approval: 'never', idempotent: true, traits: [] },
-      ],
-    },
-    instance: instance(),
-    heartbeats: connected ? [
-      { id: 3, instanceId: DTS_INSTANCE_ID, state: 'healthy', durationMs: 186, errorCode: null, createdAt: MOCK_NOW - 32_000 },
-      { id: 2, instanceId: DTS_INSTANCE_ID, state: 'healthy', durationMs: 204, errorCode: null, createdAt: MOCK_NOW - 332_000 },
-    ] : [],
-    invocations: connected ? [
-      { id: 'mock-invocation-1', instanceId: DTS_INSTANCE_ID, providerId: 'dts', capabilityId: 'ticket.list', status: 'succeeded', inputSummary: '待处理，第 1 页', resultSummary: '返回 4 条工单', errorCode: null, startedAt: MOCK_NOW - 28_000, endedAt: MOCK_NOW - 27_814, durationMs: 186 },
-    ] : [],
-  }
-}
-
-function listTickets(input: DtsTicketListInput): DtsTicketListResult {
-  const ids = new Set(FILTER_TICKET_IDS[input.filter])
-  const keyword = input.keyword?.trim().toLocaleLowerCase('zh-CN') ?? ''
-  const matches = MOCK_TICKETS.filter((ticket) => ids.has(ticket.id)).filter((ticket) => {
-    if (!keyword) return true
-    return [ticket.id, ticket.title, ticket.status, ticket.currentHandler, ticket.creator, ticket.remark]
-      .filter(Boolean)
-      .some((value) => String(value).toLocaleLowerCase('zh-CN').includes(keyword))
-  })
-  const start = Math.max(0, input.page - 1) * input.pageSize
-  return {
-    items: matches.slice(start, start + input.pageSize),
-    total: matches.length,
-    page: input.page,
-    pageSize: input.pageSize,
-    filter: input.filter,
-  }
-}
-
-function getTicket(id: string): DtsTicketDetail {
-  const ticket = MOCK_TICKETS.find((item) => item.id === id)
-  if (!ticket) throw new Error(`Mock 工单不存在：${id}`)
-  return ticket
-}
-
-export const dtsMockApi = {
-  async detail(): Promise<ConnectorDetailDto> {
-    return detail()
-  },
-  async connect(): Promise<ConnectorConnectInteraction> {
-    connected = true
-    return {
-      interactionId: `web-mock-${Date.now()}`,
-      kind: 'open_managed_web_session',
-      url: 'https://dts.example.test/mock-login',
-      expiresAt: Date.now() + 5 * 60_000,
-    }
-  },
-  async disconnect(): Promise<ConnectorInstance> {
-    connected = false
-    return instance()
-  },
-  async heartbeat(): Promise<ConnectorInstance> {
-    if (!connected) throw new Error('DTS Web Mock 尚未连接')
-    return instance()
-  },
-  async filters(): Promise<DtsFilterDefinition[]> {
-    return (Object.keys(FILTER_NAMES) as DtsFilterId[]).map((id) => ({ id, name: FILTER_NAMES[id], count: FILTER_TICKET_IDS[id].length }))
-  },
-  async tickets(input: DtsTicketListInput): Promise<DtsTicketListResult> {
-    if (!connected) throw new Error('DTS Web Mock 尚未连接')
-    return listTickets(input)
-  },
-  async ticket(id: string): Promise<DtsTicketDetail> {
-    if (!connected) throw new Error('DTS Web Mock 尚未连接')
-    return getTicket(id)
-  },
 }

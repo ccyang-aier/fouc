@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils"
 import { ConnectorCard, ConnectorRow } from "./connector-catalog-items"
 import { ConnectorDetail } from "./connector-detail"
 import { CONNECTOR_CATEGORIES, initialConnectors } from "./connectors-data"
-import { clearDtsAuthProfile, connectorApi } from "./connector-api"
+import { clearDtsAuthProfile, dtsConnectorApi } from "./dts/api"
 
 type CatalogView = "grid" | "list"
 type ConnectorSort = "default" | "recent" | "name"
@@ -42,7 +42,7 @@ export function ConnectorsCanvas() {
   useEffect(() => {
     let disposed = false
     let unlisten: (() => void) | undefined
-    const syncDts = () => void connectorApi.detail().then((detail) => {
+    const syncDts = () => void dtsConnectorApi.detail().then((detail) => {
       if (disposed) return
       setConnectors((list) => list.map((item) => item.id === "connector-dts" ? { ...item, connected: detail.instance.authState === "valid" } : item))
     }).catch(() => undefined)
@@ -81,7 +81,7 @@ export function ConnectorsCanvas() {
     }
     if (!window.confirm("断开 DTS 后会清除本机连接会话与专用登录 Profile。确定继续吗？")) return
     try {
-      await connectorApi.disconnect()
+      await dtsConnectorApi.disconnect()
       let profileCleared = true
       try { await clearDtsAuthProfile() } catch { profileCleared = false }
       setConnectors((list) => list.map((item) => item.id === id ? { ...item, connected: false } : item))

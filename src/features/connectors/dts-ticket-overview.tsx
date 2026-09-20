@@ -30,7 +30,7 @@ function TicketHeader({ ticket }: { ticket: DtsTicketSummary }) {
     <header className="flex min-h-[64px] shrink-0 items-center gap-3 border-b border-[var(--line)] bg-panel px-5">
       <span className={cn('size-2.5 shrink-0 rounded-full', severityTone(ticket.severity))} />
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2"><span className="shrink-0 text-[10px] font-semibold text-[var(--muted-strong)]">{ticket.id}</span><SeverityBadge value={ticket.severity} /><span className="rounded-[5px] bg-[var(--accent-soft)] px-2 py-0.5 text-[8.5px] font-semibold text-[var(--accent-ink)]">{ticket.status}</span></div>
+        <div className="flex items-center gap-2"><span className="shrink-0 text-[10px] font-medium text-[var(--muted-strong)]">{ticket.id}</span><SeverityBadge value={ticket.severity} /><span className="rounded-[5px] bg-[var(--accent-soft)] px-2 py-0.5 text-[8.5px] text-[var(--accent-ink)]">{ticket.status}</span></div>
         <h1 className="mt-1 truncate text-[14px] font-semibold tracking-[-0.015em] text-[var(--ink)]">{ticket.title}</h1>
       </div>
       {ticket.source.url ? <a href={ticket.source.url} target="_blank" rel="noreferrer" className="flex h-8 shrink-0 items-center gap-1.5 rounded-[7px] border border-[var(--line)] bg-panel px-3 text-[9.5px] font-medium text-[var(--ink-soft)] outline-none transition-colors hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">在 DTS 中打开<ArrowSquareOut className="size-3.5" /></a> : null}
@@ -177,6 +177,6 @@ function ActionRow({ index, title, owner }: { index: number; title: string; owne
 function EmptyCardCopy({ children }: { children: React.ReactNode }) { return <p className="text-[9px] leading-4 text-[var(--muted)]">{children}</p> }
 
 function EmptyOverview() { return <main className="flex min-h-0 min-w-[410px] flex-1 items-center justify-center bg-[var(--surface-subtle)]/35"><div className="text-center"><FlowArrow className="mx-auto size-8 text-[var(--line-strong)]" /><p className="mt-3 text-[11px] font-medium text-[var(--ink-soft)]">选择一条工单查看关系图</p><p className="mt-1 text-[9.5px] text-[var(--muted)]">影响范围、流程、证据与行动会围绕工单展开</p></div></main> }
-function SeverityBadge({ value }: { value: string | null }) { return <span className="rounded-[5px] bg-[color-mix(in_srgb,var(--err-ink)_10%,transparent)] px-2 py-0.5 text-[8.5px] font-semibold text-[var(--err-ink)]">{value ?? '一般'}</span> }
+function SeverityBadge({ value }: { value: string | null }) { return <span className="rounded-[5px] bg-[color-mix(in_srgb,var(--err-ink)_10%,transparent)] px-2 py-0.5 text-[8.5px] text-[var(--err-ink)]">{value ?? '一般'}</span> }
 function severityTone(value: string | null): string { return value?.includes('严重') || value === '1' ? 'bg-[#ef4565]' : value?.includes('高') || value === '2' ? 'bg-[#f29d38]' : 'bg-[#8b9ab8]' }
 function nextNodeTitle(nodes: DtsFlowNodeSummary[], current: DtsFlowNodeSummary | null): string { if (!nodes.length || !current) return '补充处理结论并推进流程'; const index = nodes.findIndex((node) => node.id === current.id); return nodes[index + 1]?.name ?? '完成当前节点并关闭工单' }

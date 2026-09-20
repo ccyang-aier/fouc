@@ -1,14 +1,13 @@
 import { useState } from 'react'
-import { ArrowsClockwise, CheckCircle, ClockCounterClockwise, LinkSimple, PaperPlaneTilt, ShieldCheck, SignOut, Sparkle, SpinnerGap, WarningCircle } from '@phosphor-icons/react'
-import type { ConnectorDetailDto, DtsTicketDetail, DtsTicketSummary } from '@fouc/shared'
+import { ClockCounterClockwise, LinkSimple, PaperPlaneTilt, ShieldCheck, Sparkle } from '@phosphor-icons/react'
+import type { DtsTicketDetail, DtsTicketSummary } from '@fouc/shared'
 import { cn } from '@/lib/utils'
 
-type Props = { detail: ConnectorDetailDto; ticket: DtsTicketDetail | null; summary: DtsTicketSummary | null; busy: boolean; onHeartbeat: () => void; onReconnect: () => void; onDisconnect: () => void }
+type Props = { ticket: DtsTicketDetail | null; summary: DtsTicketSummary | null }
 
-export function DtsConnectorInspector({ detail, ticket, summary, busy, onHeartbeat, onReconnect, onDisconnect }: Props) {
+export function DtsConnectorInspector({ ticket, summary }: Props) {
   const [tab, setTab] = useState<'detail' | 'assistant'>('detail')
   const selected = ticket ?? summary
-  const connected = detail.instance.authState === 'valid'
   return (
     <aside aria-label="工单上下文" className="flex min-h-0 w-[282px] shrink-0 flex-col border-l border-[var(--line)] bg-panel max-[1260px]:hidden">
       <div className="flex h-[48px] shrink-0 items-end border-b border-[var(--line)] px-3"><TabButton active={tab === 'detail'} onClick={() => setTab('detail')}>问题详情</TabButton><TabButton active={tab === 'assistant'} onClick={() => setTab('assistant')}>AI 助手</TabButton></div>
@@ -18,7 +17,6 @@ export function DtsConnectorInspector({ detail, ticket, summary, busy, onHeartbe
           <InspectorSection title="Fouc 分析" sparkle><p className="text-[9.5px] leading-[17px] text-[var(--ink-soft)]">当前处于“{selected.status}”阶段，{selected.currentHandler ? `由 ${selected.currentHandler} 负责处理` : '尚未明确当前处理人'}。建议优先核对影响范围与关键字段，再推进当前流程节点。</p><button type="button" className="mt-3 flex h-8 items-center gap-1.5 rounded-[7px] border border-[var(--line)] px-3 text-[9.5px] font-medium text-[var(--ink-soft)] hover:bg-[var(--surface-hover)]"><Sparkle className="size-3.5 text-[var(--accent-ink)]" />查看完整分析</button></InspectorSection>
           <InspectorSection title="关联"><RelationRow icon={LinkSimple} label="外部关联" value={ticket?.relations.length ?? 0} /><RelationRow icon={ShieldCheck} label="可用权限" value={ticket?.permissions.length ?? 0} /><RelationRow icon={ClockCounterClockwise} label="流程节点" value={ticket?.flowNodes.length ?? 0} /></InspectorSection>
         </> : <div className="flex h-48 items-center justify-center text-[9.5px] text-[var(--muted)]">选择工单后查看详情</div> : <div className="py-4"><div className="rounded-[10px] border border-[var(--accent-soft-line)] bg-[var(--accent-soft)] p-3"><div className="flex items-center gap-2 text-[10px] font-semibold text-[var(--accent-ink)]"><Sparkle className="size-4" weight="fill" />围绕当前工单提问</div><p className="mt-1.5 text-[9px] leading-4 text-[var(--muted-strong)]">Fouc 会基于当前工单的字段、流程与关联信息给出建议。</p></div></div>}
-        <InspectorSection title="连接器状态"><div className={cn('flex items-start gap-2', connected ? 'text-[var(--ok-ink)]' : 'text-[var(--warn-ink)]')}>{connected ? <CheckCircle className="mt-0.5 size-4" weight="fill" /> : <WarningCircle className="mt-0.5 size-4" weight="fill" />}<div className="min-w-0"><p className="text-[10px] font-semibold">{connected ? 'DTS 已连接' : 'DTS 需要连接'}</p><p className="mt-0.5 truncate text-[8.5px] font-normal text-[var(--muted)]">{detail.instance.identity?.displayName ?? detail.instance.identity?.account ?? detail.instance.executionTargetId}</p></div></div><button type="button" disabled={busy || !connected} onClick={onHeartbeat} className="mt-3 flex h-7 w-full items-center justify-center gap-1.5 rounded-[6px] border border-[var(--line)] text-[9px] text-[var(--ink-soft)] hover:bg-[var(--surface-hover)] disabled:opacity-40">{busy ? <SpinnerGap className="size-3 animate-spin" /> : <ArrowsClockwise className="size-3" />}检测连接</button><div className="mt-2 flex gap-2"><button type="button" disabled={busy} onClick={onReconnect} className="h-7 flex-1 rounded-[6px] bg-[var(--accent-soft)] text-[9px] font-semibold text-[var(--accent-ink)] disabled:opacity-40">重新连接</button>{connected ? <button type="button" aria-label="断开连接" disabled={busy} onClick={onDisconnect} className="flex size-7 items-center justify-center rounded-[6px] border border-[var(--line)] text-[var(--err-ink)] hover:bg-[var(--surface-hover)] disabled:opacity-40"><SignOut className="size-3.5" /></button> : null}</div></InspectorSection>
       </div>
       <form onSubmit={(event) => event.preventDefault()} className="shrink-0 border-t border-[var(--line)] p-3"><div className="flex min-h-[62px] items-end gap-2 rounded-[9px] border border-[var(--accent-soft-line)] bg-panel p-2.5 focus-within:border-[var(--accent)]"><textarea aria-label="向 Fouc 提问" placeholder="向 Fouc 提问，获取处理建议…" className="min-h-10 min-w-0 flex-1 resize-none bg-transparent text-[9.5px] leading-4 text-[var(--ink)] outline-none placeholder:text-[var(--muted)]" /><button type="submit" aria-label="发送" className="flex size-7 shrink-0 items-center justify-center rounded-[6px] bg-[var(--accent)] text-white"><PaperPlaneTilt className="size-3.5" weight="fill" /></button></div></form>
     </aside>

@@ -134,7 +134,26 @@ function DropdownMenuSubTrigger({
 }
 
 const DropdownMenuSub = DropdownMenuPrimitive.Sub
-const DropdownMenuSubContent = DropdownMenuContent
+function DropdownMenuSubContent({
+  className,
+  sideOffset = 6,
+  alignOffset = -4,
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.SubContent>) {
+  return (
+    <DropdownMenuPrimitive.Portal container={getOverlayRoot()}>
+      <DropdownMenuPrimitive.SubContent
+        sideOffset={sideOffset}
+        alignOffset={alignOffset}
+        className={cn(
+          "overlay-surface z-50 min-w-40 overflow-hidden rounded-[8px] border bg-elevated p-1 text-[12px] text-[var(--ink)] shadow-[0_14px_36px_-18px_rgba(20,32,58,0.38)] animate-in fade-in-0 zoom-in-95 data-[side=right]:slide-in-from-left-1 data-[side=left]:slide-in-from-right-1",
+          className,
+        )}
+        {...props}
+      />
+    </DropdownMenuPrimitive.Portal>
+  )
+}
 
 export {
   DropdownMenu,

@@ -2,12 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
-import { ArrowsClockwise, CaretDown, CaretLeft, Check, CheckCircle, DotsThree, SpinnerGap } from '@phosphor-icons/react'
+import { ArrowsClockwise, CaretDown, CaretLeft, Check, CheckCircle, SignOut, SpinnerGap, WarningCircle } from '@phosphor-icons/react'
 import type { ConnectorDetailDto, DtsFilterId, DtsTicketDetail, DtsTicketListResult, DtsTicketSummary } from '@fouc/shared'
 import { AppAlert, type AppAlertMessage, type AppAlertTone } from '@/components/app-alert'
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
-import { clearDtsAuthProfile, dtsConnectorApi, isDtsWebMock, openDtsAuthWindow } from './dts/api'
+import { clearDtsAuthProfile, dtsConnectorApi, openDtsAuthWindow } from './dts/api'
 import { DtsConnectorInspector } from './dts-connector-inspector'
 import { DtsTicketWorkspace } from './dts-ticket-workspace'
 
@@ -243,7 +243,6 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
     )
   }
   const connected = detail.instance.authState === 'valid'
-  const webMock = isDtsWebMock()
   const activeEnv = DTS_ENVIRONMENT_OPTIONS.find((env) => env.id === runtime.environment) ?? DTS_ENVIRONMENT_OPTIONS[0]
 
   return (
@@ -254,30 +253,30 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
         <div className="flex min-w-0 items-center gap-2"><h1 className="text-[13px] font-semibold tracking-[-0.01em] text-[var(--ink)]">DTS 问题工作台</h1>{connected ? <span className="flex items-center gap-1 text-[8.5px] font-semibold text-[var(--ok-ink)]"><CheckCircle className="size-3" weight="fill" />已连接</span> : null}{connected && loading ? <span role="status" className="flex items-center gap-1 text-[8.5px] text-[var(--muted)]"><SpinnerGap className="size-3 animate-spin" />同步中</span> : null}</div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button type="button" aria-label="版本切换" className="ml-3 flex h-8 max-w-[240px] items-center gap-1.5 rounded-[7px] border border-[var(--line)] bg-[var(--surface-subtle)] px-2.5 text-[9px] text-[var(--ink-soft)] outline-none transition-colors hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] max-[900px]:hidden">
+            <button type="button" aria-label="版本切换" className="ml-3 flex h-8 max-w-[240px] items-center gap-1.5 rounded-[8px] border border-[var(--line)] bg-[var(--surface-subtle)] px-2.5 text-[9px] text-[var(--ink-soft)] shadow-[0_1px_3px_rgba(25,38,65,0.06)] outline-none transition-[background-color,border-color,box-shadow] hover:border-[var(--line-strong)] hover:bg-panel hover:shadow-[0_3px_10px_rgba(25,38,65,0.09)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] max-[900px]:hidden">
               <span className={cn('size-1.5 shrink-0 rounded-full', activeEnv.dotClass)} />
               <span className="truncate">{runtime.version} · {activeEnv.label} · {runtime.increment}</span>
               <CaretDown className="size-3 shrink-0 text-[var(--muted)]" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="min-w-40">
-            <DropdownMenuLabel>版本</DropdownMenuLabel>
+          <DropdownMenuContent align="start" className="min-w-44 rounded-[9px] p-1.5 shadow-[0_16px_42px_-20px_rgba(20,32,58,0.42)]">
+            <DropdownMenuLabel className="text-[9px] uppercase tracking-[0.08em]">选择版本</DropdownMenuLabel>
             {DTS_VERSION_OPTIONS.map((version) => (
               <DropdownMenuSub key={version}>
                 <DropdownMenuSubTrigger>
                   <span className="flex w-3.5 shrink-0 justify-center">{version === runtime.version ? <Check className="size-3.5 text-[var(--accent-ink)]" weight="bold" /> : null}</span>
                   {version}
                 </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent className="min-w-36">
-                  <DropdownMenuLabel>环境</DropdownMenuLabel>
+                <DropdownMenuSubContent sideOffset={7} className="min-w-40 p-1.5">
+                  <DropdownMenuLabel className="text-[9px] uppercase tracking-[0.08em]">选择环境</DropdownMenuLabel>
                   {DTS_ENVIRONMENT_OPTIONS.map((env) => (
                     <DropdownMenuSub key={env.id}>
                       <DropdownMenuSubTrigger>
                         <span className="flex w-3.5 shrink-0 justify-center">{env.id === runtime.environment && version === runtime.version ? <Check className="size-3.5 text-[var(--accent-ink)]" weight="bold" /> : null}</span>
                         {env.label}
                       </DropdownMenuSubTrigger>
-                      <DropdownMenuSubContent className="min-w-36">
-                        <DropdownMenuLabel>PI 迭代</DropdownMenuLabel>
+                      <DropdownMenuSubContent sideOffset={7} className="min-w-40 p-1.5">
+                        <DropdownMenuLabel className="text-[9px] uppercase tracking-[0.08em]">选择 PI 迭代</DropdownMenuLabel>
                         {DTS_INCREMENT_OPTIONS.map((increment) => (
                           <DropdownMenuCheckboxItem key={increment} checked={increment === runtime.increment && env.id === runtime.environment && version === runtime.version} onCheckedChange={() => setRuntime({ version, environment: env.id, increment })}>
                             {increment}
@@ -291,15 +290,58 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-        <div className="ml-auto flex items-center gap-2">{webMock ? <span className="rounded-[5px] border border-[var(--warn-soft-line)] bg-[var(--warn-soft)] px-2 py-1 text-[8.5px] font-semibold text-[var(--warn-ink)]">Web Mock</span> : null}<span className="rounded-[5px] border border-[var(--accent-soft-line)] bg-[var(--accent-soft)] px-2 py-1 text-[8.5px] font-semibold text-[var(--accent-ink)] max-[820px]:hidden">个人只读视图</span><button type="button" disabled={!connected || loading} onClick={() => void loadTickets(activeFilter, 1, keyword)} aria-label="刷新工单" className="flex size-8 items-center justify-center rounded-[7px] border border-[var(--line)] text-[var(--muted-strong)] outline-none hover:bg-[var(--surface-hover)] disabled:opacity-40"><ArrowsClockwise className={cn('size-3.5', loading && 'animate-spin')} /></button><button type="button" aria-label="更多操作" className="flex size-8 items-center justify-center rounded-[7px] border border-[var(--line)] text-[var(--muted)] hover:bg-[var(--surface-hover)]"><DotsThree className="size-4" weight="bold" /></button></div>
+        <div className="ml-auto">
+          <ConnectionStatusMenu detail={detail} connected={connected} busy={busy} onHeartbeat={() => void heartbeat()} onReconnect={() => void connect()} onDisconnect={() => void disconnect()} />
+        </div>
       </header>
       <div className="flex min-h-0 flex-1">
         <DtsTicketWorkspace connected={connected} activeFilter={activeFilter} tickets={tickets} selectedId={selectedId} detail={ticketDetail} loading={loading} detailLoading={detailLoading} keyword={keyword} error={error}
           onFilterChange={(filter) => { setActiveFilter(filter); setSelectedId(null); setTicketDetail(null); void loadTickets(filter, 1, keyword) }} onKeywordChange={setKeyword} onSearch={() => void loadTickets(activeFilter, 1, keyword)} onSelect={(ticket) => void loadTicketDetail(ticket)} onPageChange={(page) => void loadTickets(activeFilter, page, keyword)} onConnect={() => void connect()} />
-        <DtsConnectorInspector detail={detail} ticket={ticketDetail} summary={tickets?.items.find((ticket) => ticket.id === selectedId) ?? null} busy={busy} onHeartbeat={() => void heartbeat()} onReconnect={() => void connect()} onDisconnect={() => void disconnect()} />
+        <DtsConnectorInspector ticket={ticketDetail} summary={tickets?.items.find((ticket) => ticket.id === selectedId) ?? null} />
       </div>
       <AppAlert alert={alert} onClose={dismissAlert} />
     </section>
+  )
+}
+
+function ConnectionStatusMenu({ detail, connected, busy, onHeartbeat, onReconnect, onDisconnect }: { detail: ConnectorDetailDto; connected: boolean; busy: boolean; onHeartbeat: () => void; onReconnect: () => void; onDisconnect: () => void }) {
+  const identity = detail.instance.identity?.displayName ?? detail.instance.identity?.account ?? detail.instance.executionTargetId
+  const healthLabel = detail.instance.healthState === 'healthy' ? '运行正常' : detail.instance.healthState === 'degraded' ? '服务降级' : detail.instance.healthState === 'unreachable' ? '连接不可达' : '等待检测'
+  const heartbeatLabel = detail.instance.lastHeartbeatAt ? new Date(detail.instance.lastHeartbeatAt).toLocaleString('zh-CN', { hour12: false }) : '暂无记录'
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button type="button" aria-label="查看 DTS 连接状态" className={cn('relative flex size-8 items-center justify-center rounded-[8px] border bg-panel outline-none transition-[background-color,border-color,box-shadow] hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]', connected ? 'border-[color-mix(in_srgb,var(--ok-ink)_24%,var(--line))] text-[var(--ok-ink)] shadow-[0_1px_5px_rgba(25,130,91,0.10)]' : 'border-[var(--warn-soft-line)] text-[var(--warn-ink)]')}>
+          {connected ? <CheckCircle className="size-4" weight="fill" /> : <WarningCircle className="size-4" weight="fill" />}
+          <span className={cn('absolute right-1 top-1 size-1.5 rounded-full ring-2 ring-[var(--panel)]', connected ? 'bg-[var(--ok-ink)]' : 'bg-[var(--warn-ink)]')} />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-[264px] rounded-[10px] p-1.5 shadow-[0_18px_48px_-22px_rgba(20,32,58,0.48)]">
+        <div className="rounded-[8px] bg-[var(--surface-subtle)] p-3">
+          <div className={cn('flex items-center gap-2', connected ? 'text-[var(--ok-ink)]' : 'text-[var(--warn-ink)]')}>
+            {connected ? <CheckCircle className="size-4" weight="fill" /> : <WarningCircle className="size-4" weight="fill" />}
+            <span className="text-[11px] font-medium">{connected ? 'DTS 已连接' : 'DTS 需要连接'}</span>
+            <span className="ml-auto rounded-full bg-panel px-2 py-0.5 text-[8px] text-[var(--muted-strong)] ring-1 ring-inset ring-[var(--line)]">{healthLabel}</span>
+          </div>
+          <dl className="mt-3 grid grid-cols-[64px_minmax(0,1fr)] gap-x-3 gap-y-2 text-[8.5px]">
+            <dt className="text-[var(--muted)]">当前身份</dt><dd className="truncate text-right text-[var(--ink-soft)]" title={identity}>{identity}</dd>
+            <dt className="text-[var(--muted)]">运行位置</dt><dd className="truncate text-right text-[var(--ink-soft)]">{detail.instance.executionTargetId}</dd>
+            <dt className="text-[var(--muted)]">最近检测</dt><dd className="truncate text-right tabular-nums text-[var(--ink-soft)]">{heartbeatLabel}</dd>
+          </dl>
+        </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem disabled={busy || !connected} onSelect={onHeartbeat} className="text-[10px]">
+          {busy ? <SpinnerGap className="animate-spin" /> : <ArrowsClockwise />}
+          检测连接
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={busy} onSelect={onReconnect} className="text-[10px]">
+          <ArrowsClockwise />
+          重新连接
+        </DropdownMenuItem>
+        {connected ? <DropdownMenuItem disabled={busy} onSelect={onDisconnect} className="text-[10px] text-[var(--err-ink)] focus:text-[var(--err-ink)]"><SignOut />断开连接</DropdownMenuItem> : null}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 

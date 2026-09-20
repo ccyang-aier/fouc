@@ -23,6 +23,7 @@ Connector Control Plane
 
 - **目录、实例、权限和 Agent 工具层面：MySQL、Redis、etcd 等是独立 `ConnectorProvider`。** 它们的协议、认证、资源模型、风险语义和专用管理界面显著不同。
 - **工程实现层面：它们共同属于一个内置 `Data Store` 模块。** 连接生命周期、隧道、凭据、会话、取消、查询历史、结果集、导入导出、AI 上下文、审批和审计必须复用同一套 Kernel。
+- **产品入口始终留在对应连接器内部。** MySQL Connector 详情页负责创建和维护多个 MySQL Instance；用户选中任一 Instance 后，详情页内部进入共享 Data Store Workbench。Redis、etcd 等也遵循相同路径，不增加独立的全局“数据工作台”菜单。
 - **兼容产品不应机械拆成 Provider。** MariaDB/TiDB/OceanBase MySQL 模式等优先作为 MySQL Provider 的 `profile`；只有协议、认证、能力或工作面不能安全复用时才升级为独立 Provider。
 - **Provider 不是驱动。** Provider 是用户和 Agent 可见的能力与治理边界；Driver 是 Provider 内部的连接实现；Instance 是某个用户或工作区实际保存的一条连接。
 - **dbx 应作为产品行为和测试语料来源，而不是作为第二个应用嵌入 Fouc。** Fouc 不引入 dbx 的 Rust/Tauri 业务层，不运行一套平行控制面，也不复制其单体前端；应按 Fouc 的 Next.js + TypeScript sidecar 边界重写核心能力。
@@ -149,7 +150,7 @@ mysql                      mysql2/native                生产订单库
 
 ```text
 ┌──────────────────────────── Fouc Product Layer ────────────────────────────┐
-│ Connector Catalog · Data Studio · Work Room · Agent · Automation · Project│
+│ Connector Catalog/Detail · Embedded Workbench · Agent · Automation · Project│
 └──────────────────────────────────┬──────────────────────────────────────────┘
                                    │ typed API / WS events
 ┌──────────────────────── Connector Control Plane ───────────────────────────┐
@@ -181,7 +182,7 @@ mysql                      mysql2/native                生产订单库
 
 - `backend/`：全部业务逻辑、驱动编排、策略、查询、结果处理、AI 工具投影；
 - `shared/`：Provider/Instance/Capability DTO、Data Store contracts、分页与事件契约；
-- `src/`：Catalog、连接表单、Data Studio 工作面和 Agent 协作 UI；
+- `src/`：Catalog、Provider 详情、多 Instance 管理、共享 Data Store Workbench 和 Agent 协作 UI；
 - `src-tauri/`：仅提供 OS Vault、文件选择、窗口、进程看护等薄桥，不放数据库业务；
 - 长尾 JDBC/Agent 若采用独立进程，业务策略仍在 TypeScript sidecar，子进程只实现窄驱动协议。
 
@@ -447,7 +448,7 @@ etcd.auth.permission.*
 
 ## 九、核心功能范围
 
-### 9.1 P0：可用的数据工作台
+### 9.1 P0：可用的共享 Workbench
 
 - Connector Catalog 中创建、编辑、复制、测试、连接、断开和删除 Instance；
 - 直连、TLS、连接超时、查询超时、只读与生产标记；
@@ -620,14 +621,37 @@ data_store_transfer_job        # import/export/migration 长任务
 
 ## 十三、前端体验与信息架构
 
-### 13.1 两个入口、一个事实源
+### 13.1 一个产品入口、两级详情状态
 
-1. **Connector Catalog**：发现 Provider、查看权限和能力、创建/管理 Instance；
-2. **Data Studio**：打开已连接 Instance，完成日常数据工作。
+数据存储不增加独立的全局“数据工作台”入口，完整用户路径保持在 Connector 内：
 
-Connector 详情页不承载完整数据库客户端。连接成功后提供“打开数据工作台”，Data Studio 也能从左侧连接树直接切换 Instance。两处读取同一 Provider/Instance API。
+```text
+Connector Catalog
+  → MySQL Connector 详情
+  → 创建/维护多个 MySQL Instance
+  → 选择“生产订单库”
+  → 在当前详情页进入共享 Data Store Workbench
+```
 
-### 13.2 Data Studio 框架
+Connector 详情页包含两个连续状态：
+
+1. **Provider 详情 / Instance 管理状态**：说明 MySQL Provider 的能力、权限和配置，创建、编辑、测试、连接、分组和删除多个 MySQL Instance；
+2. **Instance 工作状态**：选中某个 Instance 后，在同一连接器详情上下文内挂载共享 Workbench，执行查询、浏览和 AI 协作。
+
+MySQL、PostgreSQL、Redis、etcd 等 Connector 复用同一个前后端 Workbench 模块，但向它传入不同的 `providerId`、`instanceId`、`surface` 与能力矩阵。Workbench 根据能力组合显示 SQL、Redis、etcd 或 Document 工作面，而不是由每个 Connector 复制一份页面。
+
+路由可表达为：
+
+```text
+/connectors/mysql
+/connectors/mysql/instances/:instanceId
+/connectors/redis
+/connectors/redis/instances/:instanceId
+```
+
+它们在视觉上始终属于“连接器”，共享 Workbench 只是详情页内部的模块边界。用户返回时回到对应 Provider 的 Instance 列表，不跳转到另一个一级产品。
+
+### 13.2 共享 Workbench 框架
 
 ```text
 ┌ Connections / Resources ┬──────── Tabs + Primary Surface ───────┬ AI ┐
@@ -690,7 +714,7 @@ dataStores.transfer.progress
 dataStores.watch.event
 ```
 
-所有入口最终调用 Connector Service 的 `invoke`，不能由 Data Studio 直接访问 Driver。
+所有入口最终调用 Connector Service 的 `invoke`，不能由 Workbench 直接访问 Driver。
 
 ## 十五、Provider Adapter 契约
 
@@ -818,7 +842,7 @@ P1：
 
 ### Phase 1：MySQL 垂直切片
 
-- MySQL Provider、连接表单、Data Studio shell；
+- MySQL Provider、连接表单、Connector 详情内嵌的共享 Workbench shell；
 - metadata、editor、result grid、history、export；
 - Agent 只读工具与查询限额；
 - 只读、生产、风险分类、取消和审计。
@@ -907,11 +931,13 @@ dbx 的测试文件可作为行为清单和语料参考，但 Fouc 应建立自�
 
 **后果**：需要共享 Kernel 和 capability traits，禁止 Provider 复制公共基础设施。
 
-### ADR-DS-002：Data Studio 是内置模块，不是 Connector 详情页
+### ADR-DS-002：Workbench 内嵌于 Connector 详情页
 
-**决定**：Catalog 管连接，Data Studio 管高频工作。
+**决定**：数据存储只有 Connector 产品入口；Provider 详情管理多个 Instance，Instance 详情挂载共享 Workbench。
 
-**原因**：专业数据库工作面远大于普通 Connector Inspector；混在详情页会破坏导航和组件边界。
+**原因**：用户从具体数据源出发，连接管理与实际操作属于同一连续旅程。页面归属于 Connector 不妨碍内部以独立前后端模块实现大型工作台；共享模块反而能同时保留统一导航心智与工程复用。
+
+**后果**：不增加全局 Data Studio 菜单；路由、返回行为、面包屑和权限上下文始终保留当前 Provider/Instance；Workbench 不得反向承载 Provider Catalog 或跨类型连接管理职责。
 
 ### ADR-DS-003：不嵌入 dbx，不把数据库业务写入 Rust
 
@@ -921,7 +947,7 @@ dbx 的测试文件可作为行为清单和语料参考，但 Fouc 应建立自�
 
 ### ADR-DS-004：Agent 与 UI 共用同一 Capability 执行链
 
-**决定**：Agent tool、Automation 和 Data Studio 最终都调用 Connector `invoke`。
+**决定**：Agent tool、Automation 和共享 Workbench 最终都调用 Connector `invoke`。
 
 **原因**：确保策略、审批、限额、执行位置和审计不可绕过。
 
@@ -933,10 +959,11 @@ dbx 的测试文件可作为行为清单和语料参考，但 Fouc 应建立自�
 
 ## 二十二、最终建议
 
-将该能力在产品上命名为 **Data Studio（数据工作台）**，在架构上归属于 **Connector / Data Store Module**：
+将该能力在架构上定义为 **Connector / Data Store Workbench**，产品入口完全归属于各数据存储 Connector：
 
 - Connector Catalog 中分别展示 MySQL、PostgreSQL、Redis、etcd、MongoDB 等 Provider；
-- 每个 Provider 可创建多个 Instance；
+- 每个 Provider 详情页可创建和维护多个同类型 Instance；
+- 用户选择某个 Instance 后，在该详情页中进入共享 Workbench，不增加外部一级菜单；
 - 同协议产品使用 profile/dialect；
 - 所有 Provider 共享连接、结果、安全、AI 和审计 Kernel；
 - 不复刻 dbx 的应用结构，按能力分阶段迁移；

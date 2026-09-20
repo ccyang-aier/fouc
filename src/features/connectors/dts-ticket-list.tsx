@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { CaretDown, CaretLeft, CaretRight, Funnel, MagnifyingGlass, SpinnerGap, X } from '@phosphor-icons/react'
 import type { DtsFilterId, DtsTicketListResult, DtsTicketSummary } from '@fouc/shared'
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 
 const PRIMARY_FILTERS: ReadonlyArray<{ id: DtsFilterId; label: string }> = [
@@ -54,7 +54,6 @@ export function DtsTicketList(props: Props) {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="min-w-36">
-            <DropdownMenuLabel>工单视图</DropdownMenuLabel>
             {PRIMARY_FILTERS.map((filter) => <DropdownMenuCheckboxItem key={filter.id} checked={props.activeFilter === filter.id} onCheckedChange={() => props.onFilterChange(filter.id)}>{filter.label}</DropdownMenuCheckboxItem>)}
           </DropdownMenuContent>
         </DropdownMenu>
@@ -65,7 +64,6 @@ export function DtsTicketList(props: Props) {
             <button type="button" aria-label="筛选工单" className={cn('flex size-8 shrink-0 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]', MORE_FILTERS.some((filter) => filter.id === props.activeFilter) && 'bg-[var(--accent-soft)] text-[var(--accent-ink)]')}><Funnel className="size-3.5" weight={MORE_FILTERS.some((filter) => filter.id === props.activeFilter) ? 'fill' : 'regular'} /></button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-36">
-            <DropdownMenuLabel>更多视图</DropdownMenuLabel>
             {MORE_FILTERS.map((filter) => <DropdownMenuCheckboxItem key={filter.id} checked={props.activeFilter === filter.id} onCheckedChange={() => props.onFilterChange(filter.id)}>{filter.label}</DropdownMenuCheckboxItem>)}
           </DropdownMenuContent>
         </DropdownMenu>

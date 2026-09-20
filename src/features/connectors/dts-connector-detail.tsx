@@ -5,7 +5,7 @@ import type { ComponentPropsWithoutRef } from 'react'
 import { ArrowSquareOut, ArrowsClockwise, Broadcast, CaretDown, CaretLeft, CheckCircle, CopySimple, DotsThree, SignOut, SpinnerGap, WarningCircle } from '@phosphor-icons/react'
 import type { ConnectorDetailDto, DtsFilterId, DtsTicketDetail, DtsTicketListResult, DtsTicketSummary } from '@fouc/shared'
 import { AppAlert, type AppAlertMessage, type AppAlertTone } from '@/components/app-alert'
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 import { clearDtsAuthProfile, dtsConnectorApi, openDtsAuthWindow } from './dts/api'
 import { DtsConnectorInspector } from './dts-connector-inspector'
@@ -251,18 +251,18 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
       <header className="flex h-[44px] shrink-0 items-center gap-3 border-b border-[var(--line)] px-4">
         <button type="button" onClick={onBack} className="flex size-7 items-center justify-center rounded-[6px] text-[var(--muted)] outline-none hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]" aria-label="返回连接器列表"><CaretLeft className="size-3.5" weight="bold" /></button>
         <div className="flex min-w-0 items-center gap-2"><h1 className="text-[13px] font-normal tracking-[-0.01em] text-[var(--ink)]">DTS 问题工作台</h1>{connected && loading ? <span role="status" className="flex items-center gap-1 text-[8.5px] text-[var(--muted)]"><SpinnerGap className="size-3 animate-spin" />同步中</span> : null}</div>
-        <div role="group" aria-label="DTS 运行上下文" className="ml-3 flex h-8 overflow-hidden rounded-[7px] border border-[var(--line)] bg-panel max-[900px]:hidden">
+        <div role="group" aria-label="DTS 运行上下文" className="ml-3 flex h-7 items-center gap-1.5 max-[900px]:hidden">
           <DropdownMenu>
             <DropdownMenuTrigger asChild><ContextSegment label="选择 DTS 版本">DTS {runtime.version}</ContextSegment></DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="min-w-32"><DropdownMenuLabel>版本</DropdownMenuLabel>{DTS_VERSION_OPTIONS.map((version) => <DropdownMenuCheckboxItem key={version} checked={version === runtime.version} onCheckedChange={() => setRuntime((current) => ({ ...current, version }))}>{version}</DropdownMenuCheckboxItem>)}</DropdownMenuContent>
+            <DropdownMenuContent align="start" className="min-w-28">{DTS_VERSION_OPTIONS.map((version) => <DropdownMenuCheckboxItem key={version} checked={version === runtime.version} onCheckedChange={() => setRuntime((current) => ({ ...current, version }))}>{version}</DropdownMenuCheckboxItem>)}</DropdownMenuContent>
           </DropdownMenu>
           <DropdownMenu>
             <DropdownMenuTrigger asChild><ContextSegment label="选择运行环境">{activeEnv.label}</ContextSegment></DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="min-w-32"><DropdownMenuLabel>环境</DropdownMenuLabel>{DTS_ENVIRONMENT_OPTIONS.map((env) => <DropdownMenuCheckboxItem key={env.id} checked={env.id === runtime.environment} onCheckedChange={() => setRuntime((current) => ({ ...current, environment: env.id }))}>{env.label}</DropdownMenuCheckboxItem>)}</DropdownMenuContent>
+            <DropdownMenuContent align="start" className="min-w-28">{DTS_ENVIRONMENT_OPTIONS.map((env) => <DropdownMenuCheckboxItem key={env.id} checked={env.id === runtime.environment} onCheckedChange={() => setRuntime((current) => ({ ...current, environment: env.id }))}>{env.label}</DropdownMenuCheckboxItem>)}</DropdownMenuContent>
           </DropdownMenu>
           <DropdownMenu>
-            <DropdownMenuTrigger asChild><ContextSegment label="选择 PI 迭代" last>{runtime.increment}</ContextSegment></DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="min-w-32"><DropdownMenuLabel>PI 迭代</DropdownMenuLabel>{DTS_INCREMENT_OPTIONS.map((increment) => <DropdownMenuCheckboxItem key={increment} checked={increment === runtime.increment} onCheckedChange={() => setRuntime((current) => ({ ...current, increment }))}>{increment}</DropdownMenuCheckboxItem>)}</DropdownMenuContent>
+            <DropdownMenuTrigger asChild><ContextSegment label="选择 PI 迭代">{runtime.increment}</ContextSegment></DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="min-w-28">{DTS_INCREMENT_OPTIONS.map((increment) => <DropdownMenuCheckboxItem key={increment} checked={increment === runtime.increment} onCheckedChange={() => setRuntime((current) => ({ ...current, increment }))}>{increment}</DropdownMenuCheckboxItem>)}</DropdownMenuContent>
           </DropdownMenu>
         </div>
         <div className="ml-auto flex items-center gap-1">
@@ -289,8 +289,8 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
   )
 }
 
-const ContextSegment = forwardRef<HTMLButtonElement, ComponentPropsWithoutRef<'button'> & { label: string; last?: boolean }>(function ContextSegment({ label, last, children, className, ...props }, ref) {
-  return <button ref={ref} type="button" aria-label={label} {...props} className={cn('flex h-full items-center gap-1 border-r border-[var(--line)] px-2 text-[8.5px] text-[var(--ink-soft)] outline-none hover:bg-[var(--surface-hover)] focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)]', last && 'border-r-0', className)}><span className="whitespace-nowrap">{children}</span><CaretDown className="size-2.5 shrink-0 text-[var(--muted)]" /></button>
+const ContextSegment = forwardRef<HTMLButtonElement, ComponentPropsWithoutRef<'button'> & { label: string }>(function ContextSegment({ label, children, className, ...props }, ref) {
+  return <button ref={ref} type="button" aria-label={label} {...props} className={cn('flex h-full items-center gap-1 rounded-[6px] border border-[var(--line)] bg-panel px-2 text-[8.5px] text-[var(--ink-soft)] outline-none hover:border-[var(--line-strong)] hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]', className)}><span className="whitespace-nowrap">{children}</span><CaretDown className="size-2.5 shrink-0 text-[var(--muted)]" /></button>
 })
 
 function ConnectionStatusMenu({ detail, connected, busy, onHeartbeat, onReconnect, onDisconnect }: { detail: ConnectorDetailDto; connected: boolean; busy: boolean; onHeartbeat: () => void; onReconnect: () => void; onDisconnect: () => void }) {

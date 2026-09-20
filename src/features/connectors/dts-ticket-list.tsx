@@ -1,4 +1,5 @@
-import { CaretLeft, CaretRight, Funnel, MagnifyingGlass, SpinnerGap } from '@phosphor-icons/react'
+import { useEffect, useRef, useState } from 'react'
+import { CaretDown, CaretLeft, CaretRight, Funnel, MagnifyingGlass, SpinnerGap, X } from '@phosphor-icons/react'
 import type { DtsFilterId, DtsTicketListResult, DtsTicketSummary } from '@fouc/shared'
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
@@ -33,36 +34,53 @@ type Props = {
 }
 
 export function DtsTicketList(props: Props) {
+  const [searchOpen, setSearchOpen] = useState(false)
+  const searchInputRef = useRef<HTMLInputElement>(null)
+  const activeView = [...PRIMARY_FILTERS, ...MORE_FILTERS].find((filter) => filter.id === props.activeFilter)
+
+  useEffect(() => {
+    if (searchOpen) searchInputRef.current?.focus()
+  }, [searchOpen])
+
   return (
     <aside aria-label="DTS 工单列表" className="flex min-h-0 w-[276px] shrink-0 flex-col border-r border-[var(--line)] bg-panel max-[1050px]:w-[244px]">
-      <div className="flex h-[48px] shrink-0 items-center border-b border-[var(--line)] px-2">
-        <div role="group" aria-label="常用工单视图" className="flex h-8 w-full items-center gap-0.5 rounded-[8px] bg-[var(--surface-subtle)] p-0.5 ring-1 ring-inset ring-[var(--line)]">
-        {PRIMARY_FILTERS.map((filter) => (
-          <button key={filter.id} type="button" aria-pressed={props.activeFilter === filter.id} onClick={() => props.onFilterChange(filter.id)} className={cn('flex h-7 min-w-0 flex-1 items-center justify-center gap-1 rounded-[6px] px-1 text-[9.5px] text-[var(--muted-strong)] outline-none transition-[background-color,color,box-shadow] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]', props.activeFilter === filter.id && 'bg-panel text-[var(--ink)] shadow-[0_1px_4px_rgba(24,38,66,0.12)]')}>
-            {filter.label}
-            {filter.id === 'myTodos' && props.activeFilter === filter.id && props.tickets ? <span className="text-[8px] tabular-nums text-[var(--muted)]">{props.tickets.total}</span> : null}
-          </button>
-        ))}
-        </div>
-      </div>
-      <div className="flex shrink-0 gap-1.5 border-b border-[var(--line)] p-2">
-        <form onSubmit={(event) => { event.preventDefault(); props.onSearch() }} className="flex h-8 min-w-0 flex-1 items-center gap-2 rounded-[7px] border border-[var(--line)] bg-[var(--surface-subtle)] px-2.5 focus-within:border-[var(--accent)]">
-          <MagnifyingGlass className="size-3.5 shrink-0 text-[var(--muted)]" />
-          <input aria-label="搜索 DTS 工单" value={props.keyword} onChange={(event) => props.onKeywordChange(event.target.value)} placeholder="搜索标题或工单号" className="min-w-0 flex-1 bg-transparent text-[9.5px] text-[var(--ink)] outline-none placeholder:text-[var(--muted)]" />
-        </form>
+      <div className="flex h-[48px] shrink-0 items-center gap-1 border-b border-[var(--line)] px-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button type="button" aria-label="筛选工单" className={cn('flex size-8 shrink-0 items-center justify-center rounded-[7px] border border-[var(--line)] text-[var(--muted-strong)] outline-none hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]', MORE_FILTERS.some((filter) => filter.id === props.activeFilter) && 'border-[var(--accent-soft-line)] bg-[var(--accent-soft)] text-[var(--accent-ink)]')}><Funnel className="size-3.5" weight={MORE_FILTERS.some((filter) => filter.id === props.activeFilter) ? 'fill' : 'regular'} /></button>
+            <button type="button" aria-label="切换工单视图" className="flex h-8 min-w-0 items-center gap-1.5 rounded-[7px] px-2 text-[10px] text-[var(--ink-soft)] outline-none hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
+              <span className="truncate">{activeView?.label ?? '待处理'}</span>
+              {props.activeFilter === 'myTodos' && props.tickets ? <span className="text-[8px] tabular-nums text-[var(--muted)]">{props.tickets.total}</span> : null}
+              <CaretDown className="size-3 shrink-0 text-[var(--muted)]" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="min-w-36">
+            <DropdownMenuLabel>工单视图</DropdownMenuLabel>
+            {PRIMARY_FILTERS.map((filter) => <DropdownMenuCheckboxItem key={filter.id} checked={props.activeFilter === filter.id} onCheckedChange={() => props.onFilterChange(filter.id)}>{filter.label}</DropdownMenuCheckboxItem>)}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <div className="ml-auto flex items-center gap-0.5">
+          <button type="button" aria-label={searchOpen ? '关闭工单搜索' : '搜索工单'} aria-expanded={searchOpen} onClick={() => setSearchOpen((open) => !open)} className={cn('flex size-8 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]', searchOpen && 'bg-[var(--surface-hover)] text-[var(--ink)]')}><MagnifyingGlass className="size-3.5" /></button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button type="button" aria-label="筛选工单" className={cn('flex size-8 shrink-0 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]', MORE_FILTERS.some((filter) => filter.id === props.activeFilter) && 'bg-[var(--accent-soft)] text-[var(--accent-ink)]')}><Funnel className="size-3.5" weight={MORE_FILTERS.some((filter) => filter.id === props.activeFilter) ? 'fill' : 'regular'} /></button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-36">
             <DropdownMenuLabel>更多视图</DropdownMenuLabel>
             {MORE_FILTERS.map((filter) => <DropdownMenuCheckboxItem key={filter.id} checked={props.activeFilter === filter.id} onCheckedChange={() => props.onFilterChange(filter.id)}>{filter.label}</DropdownMenuCheckboxItem>)}
           </DropdownMenuContent>
         </DropdownMenu>
+        </div>
       </div>
-      <div className="min-h-0 flex-1 space-y-1 overflow-y-auto p-2" aria-busy={props.loading}>
+      {searchOpen ? <form onSubmit={(event) => { event.preventDefault(); props.onSearch() }} className="flex h-[48px] shrink-0 items-center gap-2 border-b border-[var(--line)] px-2">
+        <div className="flex h-8 min-w-0 flex-1 items-center gap-2 rounded-[7px] border border-[var(--line)] bg-[var(--surface-subtle)] px-2.5 focus-within:border-[var(--accent)]">
+          <MagnifyingGlass className="size-3.5 shrink-0 text-[var(--muted)]" />
+          <input ref={searchInputRef} aria-label="搜索 DTS 工单" value={props.keyword} onChange={(event) => props.onKeywordChange(event.target.value)} onKeyDown={(event) => { if (event.key === 'Escape') setSearchOpen(false) }} placeholder="搜索标题或工单号" className="min-w-0 flex-1 bg-transparent text-[9.5px] text-[var(--ink)] outline-none placeholder:text-[var(--muted)]" />
+          <button type="button" aria-label="关闭工单搜索" onClick={() => setSearchOpen(false)} className="flex size-6 shrink-0 items-center justify-center rounded-[5px] text-[var(--muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--ink)]"><X className="size-3" /></button>
+        </div>
+      </form> : null}
+      <div className="min-h-0 flex-1 overflow-y-auto px-2" aria-busy={props.loading}>
         {props.loading ? <ListMessage icon={<SpinnerGap className="size-4 animate-spin" />} label="正在同步工单…" /> : props.error ? <ListMessage label={props.error} error /> : !props.tickets?.items.length ? <ListMessage label="当前视图暂无工单" /> : props.tickets.items.map((ticket) => (
-          <button key={ticket.id} type="button" aria-pressed={props.selectedId === ticket.id} onClick={() => props.onSelect(ticket)} className={cn('group block w-full rounded-[7px] px-2.5 py-2 text-left outline-none transition-[background-color,box-shadow] hover:bg-[var(--surface-subtle)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)]', props.selectedId === ticket.id && 'bg-[var(--accent-soft)] shadow-[0_1px_5px_rgba(42,83,155,0.10)]')}>
+          <button key={ticket.id} type="button" aria-pressed={props.selectedId === ticket.id} onClick={() => props.onSelect(ticket)} className={cn('group block w-full border-b border-[var(--line)] px-2.5 py-2.5 text-left outline-none transition-colors hover:bg-[var(--surface-subtle)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)]', props.selectedId === ticket.id && 'bg-[var(--accent-soft)]')}>
             <div className="flex items-center gap-1.5"><span className={cn('size-1.5 shrink-0 rounded-full', severityTone(ticket.severity))} /><span className="min-w-0 flex-1 truncate text-[9.5px] font-medium text-[var(--ink)]">{ticket.id}</span><span className="shrink-0 text-[8px] tabular-nums text-[var(--muted)]">{shortDate(ticket.createdAt)}</span></div>
             <p className="mt-1 truncate pl-3 text-[9px] leading-[14px] text-[var(--ink-soft)]">{ticket.title}</p>
           </button>

@@ -1,7 +1,6 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import Image from 'next/image'
 import { ArrowSquareOut, ArrowsClockwise, Broadcast, CaretDown, CaretLeft, Check, CheckCircle, CopySimple, DotsThree, SignOut, SpinnerGap, WarningCircle } from '@phosphor-icons/react'
 import type { ConnectorDetailDto, DtsFilterId, DtsTicketDetail, DtsTicketListResult, DtsTicketSummary } from '@fouc/shared'
 import { AppAlert, type AppAlertMessage, type AppAlertTone } from '@/components/app-alert'
@@ -250,8 +249,7 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
     <section aria-label="DTS 连接器详情" className="relative flex h-full min-h-0 flex-col bg-panel">
       <header className="flex h-[44px] shrink-0 items-center gap-3 border-b border-[var(--line)] px-4">
         <button type="button" onClick={onBack} className="flex size-7 items-center justify-center rounded-[6px] text-[var(--muted)] outline-none hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]" aria-label="返回连接器列表"><CaretLeft className="size-3.5" weight="bold" /></button>
-        <Image src="/connector-logos/dts.svg" alt="" width={32} height={32} className="size-8 rounded-[8px]" />
-        <div className="flex min-w-0 items-center gap-2"><h1 className="text-[13px] font-semibold tracking-[-0.01em] text-[var(--ink)]">DTS 问题工作台</h1>{connected ? <span className="flex items-center gap-1 text-[8.5px] font-semibold text-[var(--ok-ink)]"><CheckCircle className="size-3" weight="fill" />已连接</span> : null}{connected && loading ? <span role="status" className="flex items-center gap-1 text-[8.5px] text-[var(--muted)]"><SpinnerGap className="size-3 animate-spin" />同步中</span> : null}</div>
+        <div className="flex min-w-0 items-center gap-2"><h1 className="text-[13px] font-normal tracking-[-0.01em] text-[var(--ink)]">DTS 问题工作台</h1>{connected && loading ? <span role="status" className="flex items-center gap-1 text-[8.5px] text-[var(--muted)]"><SpinnerGap className="size-3 animate-spin" />同步中</span> : null}</div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button type="button" aria-label="版本切换" className="ml-3 flex h-8 max-w-[240px] items-center gap-1.5 rounded-[8px] border border-[var(--line)] bg-[var(--surface-subtle)] px-2.5 text-[9px] text-[var(--ink-soft)] shadow-[0_1px_3px_rgba(25,38,65,0.06)] outline-none transition-[background-color,border-color,box-shadow] hover:border-[var(--line-strong)] hover:bg-panel hover:shadow-[0_3px_10px_rgba(25,38,65,0.09)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] max-[900px]:hidden">

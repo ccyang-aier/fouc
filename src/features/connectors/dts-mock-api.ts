@@ -1,0 +1,348 @@
+import type {
+  ConnectorConnectInteraction,
+  ConnectorDetailDto,
+  ConnectorInstance,
+  DtsFilterDefinition,
+  DtsFilterId,
+  DtsTicketDetail,
+  DtsTicketListInput,
+  DtsTicketListResult,
+  ExternalObjectRef,
+} from '@fouc/shared'
+
+const DTS_INSTANCE_ID = 'dts-personal'
+const MOCK_NOW = Date.parse('2026-09-20T09:30:00+08:00')
+
+function source(id: string): ExternalObjectRef {
+  return {
+    connectorInstanceId: DTS_INSTANCE_ID,
+    providerId: 'dts',
+    objectType: 'ticket',
+    externalId: id,
+    url: `https://dts.example.test/tickets/${encodeURIComponent(id)}`,
+  }
+}
+
+function relation(id: string, objectType: string): ExternalObjectRef {
+  return {
+    connectorInstanceId: DTS_INSTANCE_ID,
+    providerId: 'dts',
+    objectType,
+    externalId: id,
+    url: `https://dts.example.test/${objectType}/${encodeURIComponent(id)}`,
+  }
+}
+
+const MOCK_TICKETS: DtsTicketDetail[] = [
+  {
+    id: 'DTS-20260920-1842',
+    title: '生产环境订单中心偶发超时，需确认数据库连接池状态',
+    status: '处理中',
+    severity: '严重',
+    currentHandler: '陈思远',
+    creator: '周予安',
+    createdAt: '2026-09-20 08:42',
+    productType: '服务故障',
+    productPath: ['交易平台', '订单中心', '订单查询服务'],
+    remark: '上午高峰期间 P99 延迟由 320ms 升至 4.8s，重试后大部分请求成功，需在午间流量前确认根因。',
+    source: source('DTS-20260920-1842'),
+    currentNode: { id: 'diagnose', name: '定位根因', status: 'active', handler: '陈思远', handledAt: null },
+    flowState: 'processing',
+    handlers: ['陈思远', '林晚舟', '数据库值班'],
+    fields: [
+      { key: 'cluster', label: '故障集群', value: 'prod-cn-east-2' },
+      { key: 'impact', label: '影响范围', value: '约 7.6% 查询请求' },
+      { key: 'trace', label: 'Trace 样本', value: 'tr-9f2c1a7' },
+      { key: 'change', label: '最近变更', value: '订单缓存降级策略 v3' },
+    ],
+    flowNodes: [
+      { id: 'report', name: '问题上报', status: 'done', handler: '周予安', handledAt: '2026-09-20 08:42' },
+      { id: 'triage', name: '值班分诊', status: 'done', handler: '林晚舟', handledAt: '2026-09-20 08:49' },
+      { id: 'diagnose', name: '定位根因', status: 'active', handler: '陈思远', handledAt: null },
+      { id: 'verify', name: '修复验证', status: 'pending', handler: null, handledAt: null },
+    ],
+    relations: [relation('INC-8841', 'incident'), relation('CHG-2917', 'change'), relation('DTS-20260918-1731', 'ticket')],
+    permissions: ['ticket:read', 'flow:read', 'relation:read'],
+  },
+  {
+    id: 'DTS-20260920-1765',
+    title: '移动端登录成功后偶现首页数据为空',
+    status: '待验证',
+    severity: '高',
+    currentHandler: '许清禾',
+    creator: '沈亦航',
+    createdAt: '2026-09-20 07:18',
+    productType: '客户端缺陷',
+    productPath: ['移动工作台', '身份认证', '首页聚合'],
+    remark: '仅首次冷启动可复现，切换工作空间后数据恢复。测试环境已合入修复包，等待回归。',
+    source: source('DTS-20260920-1765'),
+    currentNode: { id: 'verify', name: '测试验证', status: 'active', handler: '许清禾', handledAt: null },
+    flowState: 'verifying',
+    handlers: ['沈亦航', '许清禾'],
+    fields: [
+      { key: 'version', label: '影响版本', value: 'iOS 6.18.0' },
+      { key: 'device', label: '复现设备', value: 'iPhone 17 Pro' },
+      { key: 'build', label: '修复构建', value: '6.18.1-rc.3' },
+    ],
+    flowNodes: [
+      { id: 'report', name: '缺陷提交', status: 'done', handler: '沈亦航', handledAt: '2026-09-20 07:18' },
+      { id: 'fix', name: '开发修复', status: 'done', handler: '顾言川', handledAt: '2026-09-20 08:21' },
+      { id: 'verify', name: '测试验证', status: 'active', handler: '许清禾', handledAt: null },
+      { id: 'release', name: '合入发布', status: 'pending', handler: null, handledAt: null },
+    ],
+    relations: [relation('APP-6181-RC3', 'build'), relation('DTS-20260912-0988', 'ticket')],
+    permissions: ['ticket:read', 'flow:read'],
+  },
+  {
+    id: 'DTS-20260919-1633',
+    title: '数据导出任务在大文件场景下进度停留在 99%',
+    status: '处理中',
+    severity: '高',
+    currentHandler: '赵景行',
+    creator: '唐书宁',
+    createdAt: '2026-09-19 16:33',
+    productType: '任务异常',
+    productPath: ['数据平台', '异步任务', '文件导出'],
+    remark: '导出数据超过 500 万行时稳定复现，文件已生成但状态回写消息未被消费。',
+    source: source('DTS-20260919-1633'),
+    currentNode: { id: 'fix', name: '开发修复', status: 'active', handler: '赵景行', handledAt: null },
+    flowState: 'processing',
+    handlers: ['赵景行', '唐书宁'],
+    fields: [
+      { key: 'job', label: '任务编号', value: 'export-4c818' },
+      { key: 'rows', label: '导出行数', value: 5280412 },
+      { key: 'queue', label: '消息队列', value: 'export-status-v2' },
+    ],
+    flowNodes: [
+      { id: 'report', name: '问题确认', status: 'done', handler: '唐书宁', handledAt: '2026-09-19 16:41' },
+      { id: 'diagnose', name: '定位原因', status: 'done', handler: '赵景行', handledAt: '2026-09-19 18:05' },
+      { id: 'fix', name: '开发修复', status: 'active', handler: '赵景行', handledAt: null },
+      { id: 'verify', name: '灰度验证', status: 'pending', handler: null, handledAt: null },
+    ],
+    relations: [relation('JOB-export-4c818', 'job')],
+    permissions: ['ticket:read', 'flow:read', 'relation:read'],
+  },
+  {
+    id: 'DTS-20260919-1518',
+    title: '权限中心角色复制后部分资源范围未生效',
+    status: '待处理',
+    severity: '一般',
+    currentHandler: '陆知遥',
+    creator: '陆知遥',
+    createdAt: '2026-09-19 15:18',
+    productType: '权限问题',
+    productPath: ['统一权限', '角色管理'],
+    remark: '复制含动态组织范围的角色后，资源范围显示正确但授权校验仍使用原角色条件。',
+    source: source('DTS-20260919-1518'),
+    currentNode: { id: 'accept', name: '研发受理', status: 'active', handler: '陆知遥', handledAt: null },
+    flowState: 'pending',
+    handlers: ['陆知遥'],
+    fields: [
+      { key: 'role', label: '角色编号', value: 'role-ops-42-copy' },
+      { key: 'scope', label: '异常范围', value: '华东区运营组织' },
+    ],
+    flowNodes: [
+      { id: 'report', name: '问题提交', status: 'done', handler: '陆知遥', handledAt: '2026-09-19 15:18' },
+      { id: 'accept', name: '研发受理', status: 'active', handler: '陆知遥', handledAt: null },
+      { id: 'fix', name: '修复验证', status: 'pending', handler: null, handledAt: null },
+    ],
+    relations: [relation('ROLE-OPS-42', 'role')],
+    permissions: ['ticket:read'],
+  },
+  {
+    id: 'DTS-20260918-1427',
+    title: '工作台搜索结果排序策略与产品预期不一致',
+    status: '已完成',
+    severity: '一般',
+    currentHandler: '江屿',
+    creator: '江屿',
+    createdAt: '2026-09-18 14:27',
+    productType: '体验优化',
+    productPath: ['超级工作台', '全局搜索'],
+    remark: '已将精确命中、最近访问和语义相似度的权重按产品方案调整，并完成回归。',
+    source: source('DTS-20260918-1427'),
+    currentNode: { id: 'done', name: '完成', status: 'done', handler: '江屿', handledAt: '2026-09-19 11:20' },
+    flowState: 'closed',
+    handlers: ['江屿', '宋时雨'],
+    fields: [
+      { key: 'experiment', label: '实验编号', value: 'search-rank-v5' },
+      { key: 'metric', label: '离线指标', value: 'NDCG +8.4%' },
+    ],
+    flowNodes: [
+      { id: 'proposal', name: '方案确认', status: 'done', handler: '宋时雨', handledAt: '2026-09-18 15:10' },
+      { id: 'implement', name: '开发实现', status: 'done', handler: '江屿', handledAt: '2026-09-19 09:45' },
+      { id: 'done', name: '完成', status: 'done', handler: '江屿', handledAt: '2026-09-19 11:20' },
+    ],
+    relations: [relation('EXP-search-rank-v5', 'experiment')],
+    permissions: ['ticket:read', 'flow:read'],
+  },
+  {
+    id: 'DTS-20260917-1196',
+    title: '批量同步项目成员时缺少失败明细下载入口',
+    status: '方案评审',
+    severity: '一般',
+    currentHandler: '宋时雨',
+    creator: '顾言川',
+    createdAt: '2026-09-17 11:06',
+    productType: '产品需求',
+    productPath: ['项目空间', '成员管理', '批量导入'],
+    remark: '希望在任务结束后提供失败记录与原因的 CSV 下载，便于管理员修正后重试。',
+    source: source('DTS-20260917-1196'),
+    currentNode: { id: 'review', name: '方案评审', status: 'active', handler: '宋时雨', handledAt: null },
+    flowState: 'reviewing',
+    handlers: ['宋时雨', '顾言川'],
+    fields: [
+      { key: 'source', label: '需求来源', value: '企业客户反馈' },
+      { key: 'volume', label: '典型数据量', value: '2000–10000 人' },
+    ],
+    flowNodes: [
+      { id: 'submit', name: '需求提交', status: 'done', handler: '顾言川', handledAt: '2026-09-17 11:06' },
+      { id: 'review', name: '方案评审', status: 'active', handler: '宋时雨', handledAt: null },
+      { id: 'schedule', name: '排期开发', status: 'pending', handler: null, handledAt: null },
+    ],
+    relations: [relation('VOC-2026-391', 'feedback')],
+    permissions: ['ticket:read', 'relation:read'],
+  },
+]
+
+const FILTER_TICKET_IDS: Record<DtsFilterId, string[]> = {
+  myTodos: ['DTS-20260920-1842', 'DTS-20260920-1765', 'DTS-20260919-1633', 'DTS-20260919-1518'],
+  myProcessed: ['DTS-20260918-1427'],
+  myCreate: ['DTS-20260919-1518', 'DTS-20260918-1427'],
+  myFollowed: ['DTS-20260920-1842', 'DTS-20260917-1196'],
+  myOverdue: ['DTS-20260919-1633'],
+  ccToMe: ['DTS-20260920-1765'],
+  closed: ['DTS-20260918-1427'],
+  unclosed: ['DTS-20260920-1842', 'DTS-20260920-1765', 'DTS-20260919-1633', 'DTS-20260919-1518', 'DTS-20260917-1196'],
+  cancel: [],
+}
+
+const FILTER_NAMES: Record<DtsFilterId, string> = {
+  myTodos: '待处理',
+  myProcessed: '我处理过的',
+  myCreate: '我创建的',
+  myFollowed: '我关注的',
+  myOverdue: '已逾期',
+  ccToMe: '抄送给我',
+  closed: '已关闭',
+  unclosed: '未关闭',
+  cancel: '已取消',
+}
+
+let connected = true
+
+function instance(): ConnectorInstance {
+  return {
+    id: DTS_INSTANCE_ID,
+    providerId: 'dts',
+    name: 'DTS 个人工作台（Web Mock）',
+    ownerType: 'user',
+    ownerId: 'web-debugger',
+    desiredState: 'enabled',
+    authState: connected ? 'valid' : 'unconfigured',
+    healthState: connected ? 'healthy' : 'unknown',
+    executionState: 'online',
+    executionTargetType: 'desktop_sidecar',
+    executionTargetId: 'web-mock',
+    config: { environment: 'mock', readOnly: true },
+    identity: connected ? {
+      externalId: 'mock-user-001',
+      displayName: 'Web 调试账号',
+      account: 'web.mock@example.test',
+      tenantId: 'fouc-dev',
+      verifiedAt: MOCK_NOW,
+    } : null,
+    connectedAt: connected ? MOCK_NOW - 86_400_000 : null,
+    lastHeartbeatAt: connected ? MOCK_NOW - 32_000 : null,
+    lastHeartbeatDurationMs: connected ? 186 : null,
+    lastErrorCode: null,
+    lastErrorMessage: null,
+    createdAt: MOCK_NOW - 7 * 86_400_000,
+    updatedAt: MOCK_NOW,
+  }
+}
+
+function detail(): ConnectorDetailDto {
+  return {
+    provider: {
+      id: 'dts',
+      name: 'DTS',
+      description: '读取 DTS 工单、流程、关联关系与权限信息。',
+      version: '1.0.0-mock',
+      category: '研发协作',
+      authMethods: ['managed_web_session'],
+      targetTypes: ['desktop_sidecar'],
+      capabilities: [
+        { id: 'ticket.list', name: '查询工单', description: '按个人视图查询 DTS 工单', effect: 'read', approval: 'never', idempotent: true, traits: ['paginated'] },
+        { id: 'ticket.get', name: '读取工单详情', description: '读取字段、流程和关联信息', effect: 'read', approval: 'never', idempotent: true, traits: [] },
+      ],
+    },
+    instance: instance(),
+    heartbeats: connected ? [
+      { id: 3, instanceId: DTS_INSTANCE_ID, state: 'healthy', durationMs: 186, errorCode: null, createdAt: MOCK_NOW - 32_000 },
+      { id: 2, instanceId: DTS_INSTANCE_ID, state: 'healthy', durationMs: 204, errorCode: null, createdAt: MOCK_NOW - 332_000 },
+    ] : [],
+    invocations: connected ? [
+      { id: 'mock-invocation-1', instanceId: DTS_INSTANCE_ID, providerId: 'dts', capabilityId: 'ticket.list', status: 'succeeded', inputSummary: '待处理，第 1 页', resultSummary: '返回 4 条工单', errorCode: null, startedAt: MOCK_NOW - 28_000, endedAt: MOCK_NOW - 27_814, durationMs: 186 },
+    ] : [],
+  }
+}
+
+function listTickets(input: DtsTicketListInput): DtsTicketListResult {
+  const ids = new Set(FILTER_TICKET_IDS[input.filter])
+  const keyword = input.keyword?.trim().toLocaleLowerCase('zh-CN') ?? ''
+  const matches = MOCK_TICKETS.filter((ticket) => ids.has(ticket.id)).filter((ticket) => {
+    if (!keyword) return true
+    return [ticket.id, ticket.title, ticket.status, ticket.currentHandler, ticket.creator, ticket.remark]
+      .filter(Boolean)
+      .some((value) => String(value).toLocaleLowerCase('zh-CN').includes(keyword))
+  })
+  const start = Math.max(0, input.page - 1) * input.pageSize
+  return {
+    items: matches.slice(start, start + input.pageSize),
+    total: matches.length,
+    page: input.page,
+    pageSize: input.pageSize,
+    filter: input.filter,
+  }
+}
+
+function getTicket(id: string): DtsTicketDetail {
+  const ticket = MOCK_TICKETS.find((item) => item.id === id)
+  if (!ticket) throw new Error(`Mock 工单不存在：${id}`)
+  return ticket
+}
+
+export const dtsMockApi = {
+  async detail(): Promise<ConnectorDetailDto> {
+    return detail()
+  },
+  async connect(): Promise<ConnectorConnectInteraction> {
+    connected = true
+    return {
+      interactionId: `web-mock-${Date.now()}`,
+      kind: 'open_managed_web_session',
+      url: 'https://dts.example.test/mock-login',
+      expiresAt: Date.now() + 5 * 60_000,
+    }
+  },
+  async disconnect(): Promise<ConnectorInstance> {
+    connected = false
+    return instance()
+  },
+  async heartbeat(): Promise<ConnectorInstance> {
+    if (!connected) throw new Error('DTS Web Mock 尚未连接')
+    return instance()
+  },
+  async filters(): Promise<DtsFilterDefinition[]> {
+    return (Object.keys(FILTER_NAMES) as DtsFilterId[]).map((id) => ({ id, name: FILTER_NAMES[id], count: FILTER_TICKET_IDS[id].length }))
+  },
+  async tickets(input: DtsTicketListInput): Promise<DtsTicketListResult> {
+    if (!connected) throw new Error('DTS Web Mock 尚未连接')
+    return listTickets(input)
+  },
+  async ticket(id: string): Promise<DtsTicketDetail> {
+    if (!connected) throw new Error('DTS Web Mock 尚未连接')
+    return getTicket(id)
+  },
+}

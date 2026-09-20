@@ -6,7 +6,7 @@ import { ArrowsClockwise, CaretDown, CaretLeft, CheckCircle, DotsThree, SpinnerG
 import type { ConnectorDetailDto, DtsFilterId, DtsTicketDetail, DtsTicketListResult, DtsTicketSummary } from '@fouc/shared'
 import { AppAlert, type AppAlertMessage, type AppAlertTone } from '@/components/app-alert'
 import { cn } from '@/lib/utils'
-import { clearDtsAuthProfile, connectorApi, openDtsAuthWindow } from './connector-api'
+import { clearDtsAuthProfile, connectorApi, isDtsWebMock, openDtsAuthWindow } from './connector-api'
 import { DtsConnectorInspector } from './dts-connector-inspector'
 import { DtsTicketWorkspace } from './dts-ticket-workspace'
 
@@ -231,6 +231,7 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
     )
   }
   const connected = detail.instance.authState === 'valid'
+  const webMock = isDtsWebMock()
 
   return (
     <section aria-label="DTS 连接器详情" className="relative flex h-full min-h-0 flex-col bg-panel">
@@ -239,7 +240,7 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
         <Image src="/connector-logos/dts.svg" alt="" width={32} height={32} className="size-8 rounded-[8px]" />
         <div className="min-w-0"><div className="flex items-center gap-2"><h1 className="text-[13px] font-semibold tracking-[-0.01em] text-[var(--ink)]">DTS 问题工作台</h1>{connected ? <span className="flex items-center gap-1 text-[8.5px] font-semibold text-[var(--ok-ink)]"><CheckCircle className="size-3" weight="fill" />已连接</span> : null}{connected && loading ? <span role="status" className="flex items-center gap-1 text-[8.5px] text-[var(--muted)]"><SpinnerGap className="size-3 animate-spin" />同步中</span> : null}</div><p className="mt-0.5 text-[8.5px] text-[var(--muted)]">工单 · 流程 · 关联 · 权限</p></div>
         <div className="ml-3 flex h-8 items-center gap-1.5 rounded-[7px] border border-[var(--line)] bg-[var(--surface-subtle)] px-2.5 text-[9px] text-[var(--ink-soft)] max-[900px]:hidden"><span className="size-1.5 rounded-full bg-[var(--ok-ink)]" />生产环境<CaretDown className="size-3 text-[var(--muted)]" /></div>
-        <div className="ml-auto flex items-center gap-2"><span className="rounded-[5px] border border-[var(--accent-soft-line)] bg-[var(--accent-soft)] px-2 py-1 text-[8.5px] font-semibold text-[var(--accent-ink)] max-[820px]:hidden">个人只读视图</span><button type="button" disabled={!connected || loading} onClick={() => void loadTickets(activeFilter, 1, keyword)} aria-label="刷新工单" className="flex size-8 items-center justify-center rounded-[7px] border border-[var(--line)] text-[var(--muted-strong)] outline-none hover:bg-[var(--surface-hover)] disabled:opacity-40"><ArrowsClockwise className={cn('size-3.5', loading && 'animate-spin')} /></button><button type="button" aria-label="更多操作" className="flex size-8 items-center justify-center rounded-[7px] border border-[var(--line)] text-[var(--muted)] hover:bg-[var(--surface-hover)]"><DotsThree className="size-4" weight="bold" /></button></div>
+        <div className="ml-auto flex items-center gap-2">{webMock ? <span className="rounded-[5px] border border-[var(--warn-soft-line)] bg-[var(--warn-soft)] px-2 py-1 text-[8.5px] font-semibold text-[var(--warn-ink)]">Web Mock</span> : null}<span className="rounded-[5px] border border-[var(--accent-soft-line)] bg-[var(--accent-soft)] px-2 py-1 text-[8.5px] font-semibold text-[var(--accent-ink)] max-[820px]:hidden">个人只读视图</span><button type="button" disabled={!connected || loading} onClick={() => void loadTickets(activeFilter, 1, keyword)} aria-label="刷新工单" className="flex size-8 items-center justify-center rounded-[7px] border border-[var(--line)] text-[var(--muted-strong)] outline-none hover:bg-[var(--surface-hover)] disabled:opacity-40"><ArrowsClockwise className={cn('size-3.5', loading && 'animate-spin')} /></button><button type="button" aria-label="更多操作" className="flex size-8 items-center justify-center rounded-[7px] border border-[var(--line)] text-[var(--muted)] hover:bg-[var(--surface-hover)]"><DotsThree className="size-4" weight="bold" /></button></div>
       </header>
       <div className="flex min-h-0 flex-1">
         <DtsTicketWorkspace connected={connected} activeFilter={activeFilter} tickets={tickets} selectedId={selectedId} detail={ticketDetail} loading={loading} detailLoading={detailLoading} keyword={keyword} error={error}

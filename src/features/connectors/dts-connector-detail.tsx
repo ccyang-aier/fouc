@@ -2,13 +2,24 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
-import { ArrowsClockwise, CaretDown, CaretLeft, CheckCircle, DotsThree, SpinnerGap } from '@phosphor-icons/react'
+import { ArrowsClockwise, CaretDown, CaretLeft, Check, CheckCircle, DotsThree, SpinnerGap } from '@phosphor-icons/react'
 import type { ConnectorDetailDto, DtsFilterId, DtsTicketDetail, DtsTicketListResult, DtsTicketSummary } from '@fouc/shared'
 import { AppAlert, type AppAlertMessage, type AppAlertTone } from '@/components/app-alert'
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 import { clearDtsAuthProfile, dtsConnectorApi, isDtsWebMock, openDtsAuthWindow } from './dts/api'
 import { DtsConnectorInspector } from './dts-connector-inspector'
 import { DtsTicketWorkspace } from './dts-ticket-workspace'
+
+// 版本切换上下文（Web Mock 演示数据）：版本 → 环境 → PI 迭代 三级级联
+type DtsRuntimeContext = { version: string; environment: string; increment: string }
+const DTS_VERSION_OPTIONS = ['v2.1.0', 'v2.0.8', 'v2.0.3']
+const DTS_ENVIRONMENT_OPTIONS = [
+  { id: 'prod', label: '生产环境', dotClass: 'bg-[var(--ok-ink)]' },
+  { id: 'staging', label: '预发环境', dotClass: 'bg-[var(--warn-ink)]' },
+  { id: 'test', label: '测试环境', dotClass: 'bg-[var(--muted)]' },
+]
+const DTS_INCREMENT_OPTIONS = ['PI-2026Q3', 'PI-2026Q2', 'PI-2026Q1']
 
 export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () => void; onConnectionChange: (connected: boolean) => void }) {
   const [detail, setDetail] = useState<ConnectorDetailDto | null>(null)
@@ -17,6 +28,7 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
   const [ticketDetail, setTicketDetail] = useState<DtsTicketDetail | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [keyword, setKeyword] = useState('')
+  const [runtime, setRuntime] = useState<DtsRuntimeContext>({ version: 'v2.1.0', environment: 'prod', increment: 'PI-2026Q3' })
   const [loading, setLoading] = useState(true)
   const [detailLoading, setDetailLoading] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -232,6 +244,7 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
   }
   const connected = detail.instance.authState === 'valid'
   const webMock = isDtsWebMock()
+  const activeEnv = DTS_ENVIRONMENT_OPTIONS.find((env) => env.id === runtime.environment) ?? DTS_ENVIRONMENT_OPTIONS[0]
 
   return (
     <section aria-label="DTS 连接器详情" className="relative flex h-full min-h-0 flex-col bg-panel">
@@ -239,7 +252,45 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
         <button type="button" onClick={onBack} className="flex size-7 items-center justify-center rounded-[6px] text-[var(--muted)] outline-none hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]" aria-label="返回连接器列表"><CaretLeft className="size-3.5" weight="bold" /></button>
         <Image src="/connector-logos/dts.svg" alt="" width={32} height={32} className="size-8 rounded-[8px]" />
         <div className="flex min-w-0 items-center gap-2"><h1 className="text-[13px] font-semibold tracking-[-0.01em] text-[var(--ink)]">DTS 问题工作台</h1>{connected ? <span className="flex items-center gap-1 text-[8.5px] font-semibold text-[var(--ok-ink)]"><CheckCircle className="size-3" weight="fill" />已连接</span> : null}{connected && loading ? <span role="status" className="flex items-center gap-1 text-[8.5px] text-[var(--muted)]"><SpinnerGap className="size-3 animate-spin" />同步中</span> : null}</div>
-        <div className="ml-3 flex h-8 items-center gap-1.5 rounded-[7px] border border-[var(--line)] bg-[var(--surface-subtle)] px-2.5 text-[9px] text-[var(--ink-soft)] max-[900px]:hidden"><span className="size-1.5 rounded-full bg-[var(--ok-ink)]" />生产环境<CaretDown className="size-3 text-[var(--muted)]" /></div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button type="button" aria-label="版本切换" className="ml-3 flex h-8 max-w-[240px] items-center gap-1.5 rounded-[7px] border border-[var(--line)] bg-[var(--surface-subtle)] px-2.5 text-[9px] text-[var(--ink-soft)] outline-none transition-colors hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] max-[900px]:hidden">
+              <span className={cn('size-1.5 shrink-0 rounded-full', activeEnv.dotClass)} />
+              <span className="truncate">{runtime.version} · {activeEnv.label} · {runtime.increment}</span>
+              <CaretDown className="size-3 shrink-0 text-[var(--muted)]" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="min-w-40">
+            <DropdownMenuLabel>版本</DropdownMenuLabel>
+            {DTS_VERSION_OPTIONS.map((version) => (
+              <DropdownMenuSub key={version}>
+                <DropdownMenuSubTrigger>
+                  <span className="flex w-3.5 shrink-0 justify-center">{version === runtime.version ? <Check className="size-3.5 text-[var(--accent-ink)]" weight="bold" /> : null}</span>
+                  {version}
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent className="min-w-36">
+                  <DropdownMenuLabel>环境</DropdownMenuLabel>
+                  {DTS_ENVIRONMENT_OPTIONS.map((env) => (
+                    <DropdownMenuSub key={env.id}>
+                      <DropdownMenuSubTrigger>
+                        <span className="flex w-3.5 shrink-0 justify-center">{env.id === runtime.environment && version === runtime.version ? <Check className="size-3.5 text-[var(--accent-ink)]" weight="bold" /> : null}</span>
+                        {env.label}
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent className="min-w-36">
+                        <DropdownMenuLabel>PI 迭代</DropdownMenuLabel>
+                        {DTS_INCREMENT_OPTIONS.map((increment) => (
+                          <DropdownMenuCheckboxItem key={increment} checked={increment === runtime.increment && env.id === runtime.environment && version === runtime.version} onCheckedChange={() => setRuntime({ version, environment: env.id, increment })}>
+                            {increment}
+                          </DropdownMenuCheckboxItem>
+                        ))}
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
         <div className="ml-auto flex items-center gap-2">{webMock ? <span className="rounded-[5px] border border-[var(--warn-soft-line)] bg-[var(--warn-soft)] px-2 py-1 text-[8.5px] font-semibold text-[var(--warn-ink)]">Web Mock</span> : null}<span className="rounded-[5px] border border-[var(--accent-soft-line)] bg-[var(--accent-soft)] px-2 py-1 text-[8.5px] font-semibold text-[var(--accent-ink)] max-[820px]:hidden">个人只读视图</span><button type="button" disabled={!connected || loading} onClick={() => void loadTickets(activeFilter, 1, keyword)} aria-label="刷新工单" className="flex size-8 items-center justify-center rounded-[7px] border border-[var(--line)] text-[var(--muted-strong)] outline-none hover:bg-[var(--surface-hover)] disabled:opacity-40"><ArrowsClockwise className={cn('size-3.5', loading && 'animate-spin')} /></button><button type="button" aria-label="更多操作" className="flex size-8 items-center justify-center rounded-[7px] border border-[var(--line)] text-[var(--muted)] hover:bg-[var(--surface-hover)]"><DotsThree className="size-4" weight="bold" /></button></div>
       </header>
       <div className="flex min-h-0 flex-1">

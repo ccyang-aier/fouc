@@ -44,7 +44,7 @@ export function DtsTicketList(props: Props) {
   }, [searchOpen])
 
   return (
-    <aside aria-label="DTS 工单列表" className="flex min-h-0 w-[316px] shrink-0 flex-col border-r border-[var(--line)] bg-[var(--surface-subtle)]/55 transition-[width] duration-200 max-[1180px]:w-[284px]">
+    <aside aria-label="DTS 工单列表" className="flex min-h-0 w-[316px] shrink-0 flex-col border-r border-[var(--line)] bg-panel transition-[width] duration-200 max-[1180px]:w-[284px]">
       <div className="flex h-[48px] shrink-0 items-center gap-1 border-b border-[var(--line-strong)] px-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -80,7 +80,7 @@ export function DtsTicketList(props: Props) {
       </form> : null}
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-2" aria-busy={props.loading}>
         {props.loading ? <ListMessage icon={<SpinnerGap className="size-4 animate-spin" />} label="正在同步工单…" /> : props.error ? <ListMessage label={props.error} error /> : !props.tickets?.items.length ? <ListMessage label="当前视图暂无工单" /> : props.tickets.items.map((ticket) => (
-          <button key={ticket.id} type="button" aria-pressed={props.selectedId === ticket.id} onClick={() => props.onSelect(ticket)} className={cn('group block w-full rounded-[10px] border bg-panel px-3 py-2.5 text-left outline-none transition-[border-color,box-shadow,background-color] hover:border-[var(--line-strong)] hover:shadow-[0_6px_18px_-14px_rgba(35,49,78,0.45)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]', props.selectedId === ticket.id ? 'border-[var(--accent)] bg-[var(--accent-soft)]/35 shadow-[0_7px_20px_-14px_rgba(42,101,220,0.52)]' : 'border-[var(--line)]')}>
+          <button key={ticket.id} type="button" aria-pressed={props.selectedId === ticket.id} onClick={() => props.onSelect(ticket)} className={cn('group block w-full rounded-[10px] border bg-panel px-3 py-2.5 text-left outline-none transition-[border-color,box-shadow,background-color] hover:border-[var(--accent)] hover:bg-[var(--accent-soft)]/20 hover:shadow-[0_7px_20px_-14px_rgba(42,101,220,0.45)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]', props.selectedId === ticket.id ? 'border-[var(--accent)] bg-[var(--accent-soft)]/35 shadow-[0_7px_20px_-14px_rgba(42,101,220,0.52)]' : 'border-[var(--line)]')}>
             <div className="flex items-center gap-1.5">
               <span className={cn('size-1.5 shrink-0 rounded-full', severityDot(ticket.severity))} />
               <span className="min-w-0 flex-1 truncate text-[9px] font-semibold tracking-[-0.01em] text-[var(--ink)]">{ticket.id}</span>
@@ -88,12 +88,14 @@ export function DtsTicketList(props: Props) {
             </div>
             <p className="mt-1.5 line-clamp-2 text-[10.5px] font-semibold leading-[15px] tracking-[-0.012em] text-[var(--ink)]">{ticket.title}</p>
             {ticket.remark ? <p className="mt-1 line-clamp-2 text-[8.5px] leading-[13px] text-[var(--muted-strong)]">{ticket.remark}</p> : null}
-            <div className="mt-2 flex min-w-0 items-center gap-1.5 border-t border-dashed border-[var(--line-strong)]/70 pt-2 text-[8px] text-[var(--muted)]">
-              <span className="flex min-w-0 max-w-[58px] items-center gap-1"><User className="size-3 shrink-0" weight="regular" /><span className="truncate">{ticket.currentHandler ?? ticket.creator ?? '未分配'}</span></span>
+            <div className="mt-2 flex min-w-0 items-center gap-2 border-t border-dashed border-[var(--line-strong)]/70 pt-2 text-[8px] text-[var(--muted)]">
+              <span className="flex min-w-0 items-center gap-1"><User className="size-3 shrink-0" weight="regular" /><span className="truncate">{ticket.currentHandler ?? ticket.creator ?? '未分配'}</span></span>
               <span className="flex shrink-0 items-center gap-1 tabular-nums"><Clock className="size-3" />{shortDate(ticket.createdAt)}</span>
-              <span className={cn('max-w-[58px] shrink-0 truncate rounded-[5px] px-1.5 py-0.5 font-medium', statusTone(ticket.status))}>{ticket.status}</span>
-              {ticket.relatedCount != null ? <span className="flex min-w-0 max-w-[82px] items-center gap-1 rounded-[5px] bg-[var(--accent-soft)] px-1.5 py-0.5 font-medium text-[var(--accent-ink)]"><LinkSimple className="size-2.5 shrink-0" /><span className="truncate">与 {ticket.relatedCount} 个问题相关</span></span> : null}
               {ticket.commentCount != null ? <span className="ml-auto flex shrink-0 items-center gap-1 text-[var(--muted-strong)]" aria-label={`${ticket.commentCount} 条评论`}><ChatCircleDots className="size-3" />{ticket.commentCount}</span> : null}
+            </div>
+            <div className="mt-1.5 grid min-w-0 grid-cols-[minmax(58px,auto)_minmax(0,1fr)] items-center gap-2 text-[8px]">
+              <span className={cn('w-fit max-w-full truncate rounded-[5px] px-1.5 py-0.5 font-medium', statusTone(ticket.status))}>{ticket.status}</span>
+              {ticket.relatedCount != null ? <span className="flex min-w-0 items-center justify-center gap-1 rounded-[5px] bg-[var(--accent-soft)] px-1.5 py-0.5 font-medium text-[var(--accent-ink)]"><LinkSimple className="size-2.5 shrink-0" /><span className="truncate">与 {ticket.relatedCount} 个问题相关</span></span> : <span />}
             </div>
           </button>
         ))}

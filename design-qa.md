@@ -1,7 +1,7 @@
 # DTS 问题单侧栏设计 QA
 
 - Source visual truth: Conversation attachments from Browser Comments 1–4, including the focused metadata-chip reference (no local filesystem path)
-- Implementation screenshots: `C:\Users\y00013075\.codex\visualizations\2026\09\20\01a0be0c-2e93-7543-93a2-4898baa1df50\dts-layout-refine-expanded.png` and `C:\Users\y00013075\.codex\visualizations\2026\09\20\01a0be0c-2e93-7543-93a2-4898baa1df50\dts-layout-refine-collapsed.png`
+- Implementation screenshots: `C:\Users\y00013075\.codex\visualizations\2026\09\20\01a0be0c-2e93-7543-93a2-4898baa1df50\dts-xyflow-final.png` and `C:\Users\y00013075\.codex\visualizations\2026\09\20\01a0be0c-2e93-7543-93a2-4898baa1df50\dts-inspector-closed.png`
 - Viewport: 1682 × 960 CSS px
 - Source pixels: 472 × 606 px for the focused card-list reference; the annotated full-page references are 1682 × 960 px
 - Implementation pixels: 1682 × 960 px
@@ -15,17 +15,17 @@ The updated implementation preserves the original Fouc desktop information archi
 
 ## Focused region comparison evidence
 
-The focused issue-list region matches the reference's hierarchy: severity marker and ticket ID at the top, a prominent multi-line title, a secondary summary, a dashed metadata divider, and one compact metadata rail for owner, time, status, related issues, and comments. Rounded bordered cards, restrained elevation, semantic severity colors, and a visible selected outline reproduce the reference intent using the existing Fouc design tokens and Phosphor icon family. Relation and comment counts are carried through the DTS summary contract rather than hard-coded in the component.
+The focused issue-list region matches the reference's hierarchy: severity marker and ticket ID at the top, a prominent multi-line title, a secondary summary, a dashed metadata divider, and two deliberately separated metadata rows. Owner, time, and comments occupy the first row; status and related issues occupy the second, avoiding clipped labels. Rounded bordered cards, restrained elevation, semantic severity colors, and matching hover/selected outlines reproduce the reference intent using the existing Fouc design tokens and Phosphor icon family. Relation and comment counts are carried through the DTS summary contract rather than hard-coded in the component.
 
 ## Required fidelity surfaces
 
 - Fonts and typography: Existing Fouc sans stack retained; ticket titles use a stronger optical weight and two-line truncation, with smaller supporting text and tabular times. No cramped or broken wrapping was observed.
-- Spacing and layout rhythm: 8 px list gaps, 10 px card radii, compact card padding, and a 316 px desktop list width provide clear separation while keeping all four tickets visible in the first viewport. The card footer is now a single horizontal rail rather than two stacked rows.
-- Colors and visual tokens: Existing panel, line, accent, warning, error, and muted tokens are used. The supported severity enum is exactly `致命 / 严重 / 一般 / 提示`, with distinct semantic badge and dot treatments.
+- Spacing and layout rhythm: 8 px list gaps, 10 px card radii, compact card padding, and a 316 px desktop list width provide clear separation. Card metadata is split into two stable rows so no status or relation label competes with identity and comment data.
+- Colors and visual tokens: Existing panel, line, accent, warning, error, and muted tokens are used. The issue sidebar resolves to `rgb(255, 255, 255)` in the light theme. Hover and selected cards share the accent border treatment. The supported severity enum is exactly `致命 / 严重 / 一般 / 提示`, with distinct semantic badge and dot treatments.
 - Image quality and asset fidelity: The target contains no raster imagery. All visible UI icons use the existing Phosphor icon library; no CSS drawings, inline SVG substitutes, or placeholders were introduced.
 - Copy and content: All card content comes from existing DTS ticket data. The breadcrumb copy is exactly `连接器 / DTS`.
 - Responsiveness: The list narrows to 284 px below 1180 px and is fully removed from layout when collapsed. No residual rail, overlap, or clipping was observed at the tested desktop viewport.
-- Accessibility and interactions: Collapse/expand controls expose labels and expanded state, keyboard focus rings are present, selected tickets retain pressed state, and the independent back button plus breadcrumb return action are keyboard-accessible.
+- Accessibility and interactions: Collapse/expand controls expose labels and expanded state, keyboard focus rings are present, selected tickets retain pressed state, and the independent back button plus breadcrumb return action are keyboard-accessible. The relationship canvas exposes named zoom, fit-view, and interaction-lock controls plus a labeled minimap. The context inspector has explicit close and reopen controls.
 
 ## Interaction verification
 
@@ -36,6 +36,8 @@ The focused issue-list region matches the reference's hierarchy: severity marker
 5. Checked browser console warnings and errors: none.
 6. Checked for a Next.js/framework error overlay: none.
 7. Confirmed the rendered DTS view contains `致命`, relation metadata, and comment metadata, and contains no legacy `高` severity label.
+8. Confirmed the XYFlow canvas renders 7 nodes and 6 edges; activating Zoom In changed the viewport transform and Fit View restored the full graph.
+9. Activated `关闭工单上下文`, confirmed the inspector was removed, then activated `打开工单上下文` and confirmed it returned.
 
 ## Comparison history
 
@@ -56,6 +58,12 @@ The focused issue-list region matches the reference's hierarchy: severity marker
 - Earlier findings: Card footer details were split across two dense rows; the collapsed list left a 44 px vertical rail; the page path lacked a distinct back control and used a chevron rather than the requested slash breadcrumb.
 - Fixes made: Consolidated owner, time, status, relation, and comment details into one metadata rail; lifted list visibility to the workspace so collapse unmounts the sidebar entirely; moved the expand control into the issue header; added an independent back button and rendered `连接器 / DTS`.
 - Post-fix visual evidence: The expanded screenshot shows all footer metadata aligned on one baseline and the requested back-plus-breadcrumb pattern. The collapsed screenshot shows the relationship canvas beginning immediately after the app navigation with no residual issue-list strip or border. No actionable P0/P1/P2 mismatch remains.
+
+### Pass 4
+
+- Earlier findings: The light-theme issue column used a tinted surface, footer metadata was overpacked into one line, hover lacked the selected card's highlighted border, the relationship diagram was a static hand-built canvas, and the right context inspector could not be dismissed.
+- Fixes made: Switched the list surface to the panel token, split metadata into identity and workflow rows, aligned hover/selected border treatment, replaced the diagram with the MIT-licensed React Flow core, and added close/reopen state for the context inspector. The graph inherits draggable nodes, pan/zoom, fit view, interaction locking, a pannable/zoomable minimap, and accessible controls.
+- Post-fix visual evidence: The final screenshot shows a white list column, unclipped two-row metadata, visible relationship edges, branded custom nodes, view controls, and minimap. The closed-inspector screenshot confirms the canvas reflows across the released width and a persistent reopen control remains available. No actionable P0/P1/P2 mismatch remains.
 
 ## Findings
 

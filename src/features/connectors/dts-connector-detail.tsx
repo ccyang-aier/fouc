@@ -2,7 +2,7 @@
 
 import { forwardRef, useCallback, useEffect, useRef, useState } from 'react'
 import type { ComponentPropsWithoutRef } from 'react'
-import { ArrowSquareOut, ArrowsClockwise, Broadcast, CaretDown, CaretLeft, CheckCircle, CopySimple, DotsThree, SignOut, SpinnerGap, WarningCircle } from '@phosphor-icons/react'
+import { ArrowSquareOut, ArrowsClockwise, Broadcast, CaretDown, CaretLeft, CheckCircle, CopySimple, DotsThree, SidebarSimple, SignOut, SpinnerGap, WarningCircle } from '@phosphor-icons/react'
 import type { ConnectorDetailDto, DtsFilterId, DtsTicketDetail, DtsTicketListResult, DtsTicketSummary } from '@fouc/shared'
 import { AppAlert, type AppAlertMessage, type AppAlertTone } from '@/components/app-alert'
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -36,6 +36,7 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
   const [connectionLoading, setConnectionLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [alert, setAlert] = useState<AppAlertMessage | null>(null)
+  const [inspectorOpen, setInspectorOpen] = useState(true)
   const alertId = useRef(0)
   const ticketRequestId = useRef(0)
   const finalizingConnection = useRef(false)
@@ -282,12 +283,13 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
               <DropdownMenuItem disabled={!selectedTicket?.source.url} onSelect={() => { if (selectedTicket?.source.url) window.open(selectedTicket.source.url, '_blank', 'noopener,noreferrer') }}><ArrowSquareOut />在 DTS 中打开</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          {!inspectorOpen ? <button type="button" aria-label="打开工单上下文" onClick={() => setInspectorOpen(true)} className="flex size-8 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><SidebarSimple className="size-4" /></button> : null}
         </div>
       </header>
       <div className="flex min-h-0 flex-1">
         <DtsTicketWorkspace connected={connected} activeFilter={activeFilter} tickets={tickets} selectedId={selectedId} detail={ticketDetail} loading={loading} detailLoading={detailLoading} keyword={keyword} error={error}
           onFilterChange={(filter) => { setActiveFilter(filter); setSelectedId(null); setTicketDetail(null); void loadTickets(filter, 1, keyword) }} onKeywordChange={setKeyword} onSearch={() => void loadTickets(activeFilter, 1, keyword)} onSelect={(ticket) => void loadTicketDetail(ticket)} onPageChange={(page) => void loadTickets(activeFilter, page, keyword)} onConnect={() => void connect()} />
-        <DtsConnectorInspector ticket={ticketDetail} summary={tickets?.items.find((ticket) => ticket.id === selectedId) ?? null} />
+        {inspectorOpen ? <DtsConnectorInspector ticket={ticketDetail} summary={tickets?.items.find((ticket) => ticket.id === selectedId) ?? null} onClose={() => setInspectorOpen(false)} /> : null}
       </div>
       <AppAlert alert={alert} onClose={dismissAlert} />
     </section>

@@ -1,16 +1,16 @@
 import { useState } from 'react'
-import { ClockCounterClockwise, LinkSimple, PaperPlaneTilt, ShieldCheck, Sparkle } from '@phosphor-icons/react'
+import { ClockCounterClockwise, LinkSimple, PaperPlaneTilt, ShieldCheck, Sparkle, X } from '@phosphor-icons/react'
 import type { DtsTicketDetail, DtsTicketSummary } from '@fouc/shared'
 import { cn } from '@/lib/utils'
 
-type Props = { ticket: DtsTicketDetail | null; summary: DtsTicketSummary | null }
+type Props = { ticket: DtsTicketDetail | null; summary: DtsTicketSummary | null; onClose: () => void }
 
-export function DtsConnectorInspector({ ticket, summary }: Props) {
+export function DtsConnectorInspector({ ticket, summary, onClose }: Props) {
   const [tab, setTab] = useState<'detail' | 'assistant'>('detail')
   const selected = ticket ?? summary
   return (
     <aside aria-label="工单上下文" className="flex min-h-0 w-[282px] shrink-0 flex-col border-l border-[var(--line)] bg-panel max-[1260px]:hidden">
-      <div className="flex h-[48px] shrink-0 items-end border-b border-[var(--line)] px-3"><TabButton active={tab === 'detail'} onClick={() => setTab('detail')}>AI 概述</TabButton><TabButton active={tab === 'assistant'} onClick={() => setTab('assistant')}>AI 助手</TabButton></div>
+      <div className="flex h-[48px] shrink-0 items-end border-b border-[var(--line)] pl-3 pr-2"><TabButton active={tab === 'detail'} onClick={() => setTab('detail')}>AI 概述</TabButton><TabButton active={tab === 'assistant'} onClick={() => setTab('assistant')}>AI 助手</TabButton><button type="button" aria-label="关闭工单上下文" onClick={onClose} className="mb-2 ml-1 flex size-7 shrink-0 items-center justify-center rounded-[6px] text-[var(--muted)] outline-none hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><X className="size-3.5" /></button></div>
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-1">
         {tab === 'detail' ? selected ? <>
           <InspectorSection title="问题摘要"><p className="text-[10px] font-medium leading-[17px] text-[var(--ink-soft)]">{selected.title}</p><p className="mt-2 line-clamp-4 text-[9.5px] leading-[16px] text-[var(--muted-strong)]">{selected.remark || '该问题正在 DTS 流程中处理，可结合中间概览查看影响范围、责任人与当前节点。'}</p></InspectorSection>

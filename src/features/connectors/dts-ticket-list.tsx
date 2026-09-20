@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { CaretDown, CaretLeft, CaretRight, Funnel, MagnifyingGlass, SpinnerGap, X } from '@phosphor-icons/react'
+import { CaretDown, CaretLeft, CaretRight, Clock, Funnel, MagnifyingGlass, SidebarSimple, SpinnerGap, UserCircle, X } from '@phosphor-icons/react'
 import type { DtsFilterId, DtsTicketListResult, DtsTicketSummary } from '@fouc/shared'
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
@@ -35,6 +35,7 @@ type Props = {
 
 export function DtsTicketList(props: Props) {
   const [searchOpen, setSearchOpen] = useState(false)
+  const [collapsed, setCollapsed] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const activeView = [...PRIMARY_FILTERS, ...MORE_FILTERS].find((filter) => filter.id === props.activeFilter)
 
@@ -42,8 +43,20 @@ export function DtsTicketList(props: Props) {
     if (searchOpen) searchInputRef.current?.focus()
   }, [searchOpen])
 
+  if (collapsed) {
+    return (
+      <aside aria-label="DTS 工单列表（已收起）" className="flex min-h-0 w-11 shrink-0 flex-col items-center border-r border-[var(--line)] bg-panel py-2 transition-[width] duration-200">
+        <button type="button" aria-label="展开工单侧栏" aria-expanded="false" onClick={() => setCollapsed(false)} className="flex size-8 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
+          <SidebarSimple className="size-4" weight="regular" />
+        </button>
+        <span className="mt-3 text-[8px] font-medium tracking-[0.18em] text-[var(--muted)] [writing-mode:vertical-rl]">工单列表</span>
+        {props.tickets ? <span className="mt-2 flex size-5 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[8px] font-semibold tabular-nums text-[var(--accent-ink)]">{props.tickets.total}</span> : null}
+      </aside>
+    )
+  }
+
   return (
-    <aside aria-label="DTS 工单列表" className="flex min-h-0 w-[276px] shrink-0 flex-col border-r border-[var(--line)] bg-panel max-[1050px]:w-[244px]">
+    <aside aria-label="DTS 工单列表" className="flex min-h-0 w-[316px] shrink-0 flex-col border-r border-[var(--line)] bg-[var(--surface-subtle)]/55 transition-[width] duration-200 max-[1180px]:w-[284px]">
       <div className="flex h-[48px] shrink-0 items-center gap-1 border-b border-[var(--line-strong)] px-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -67,6 +80,7 @@ export function DtsTicketList(props: Props) {
             {MORE_FILTERS.map((filter) => <DropdownMenuCheckboxItem key={filter.id} checked={props.activeFilter === filter.id} onCheckedChange={() => props.onFilterChange(filter.id)}>{filter.label}</DropdownMenuCheckboxItem>)}
           </DropdownMenuContent>
         </DropdownMenu>
+        <button type="button" aria-label="收起工单侧栏" aria-expanded="true" onClick={() => setCollapsed(true)} className="flex size-8 shrink-0 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><SidebarSimple className="size-3.5" weight="regular" /></button>
         </div>
       </div>
       {searchOpen ? <form onSubmit={(event) => { event.preventDefault(); props.onSearch() }} className="flex h-[48px] shrink-0 items-center gap-2 border-b border-[var(--line)] px-2">
@@ -76,11 +90,21 @@ export function DtsTicketList(props: Props) {
           <button type="button" aria-label="关闭工单搜索" onClick={() => setSearchOpen(false)} className="flex size-6 shrink-0 items-center justify-center rounded-[5px] text-[var(--muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--ink)]"><X className="size-3" /></button>
         </div>
       </form> : null}
-      <div className="min-h-0 flex-1 overflow-y-auto px-2 pt-2" aria-busy={props.loading}>
+      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-2" aria-busy={props.loading}>
         {props.loading ? <ListMessage icon={<SpinnerGap className="size-4 animate-spin" />} label="正在同步工单…" /> : props.error ? <ListMessage label={props.error} error /> : !props.tickets?.items.length ? <ListMessage label="当前视图暂无工单" /> : props.tickets.items.map((ticket) => (
-          <button key={ticket.id} type="button" aria-pressed={props.selectedId === ticket.id} onClick={() => props.onSelect(ticket)} className={cn('group block w-full border-b border-[var(--line)] px-2.5 py-2.5 text-left outline-none transition-colors hover:bg-[var(--surface-subtle)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)]', props.selectedId === ticket.id && 'bg-[var(--accent-soft)]')}>
-            <div className="flex items-center gap-1.5"><span className={cn('size-1.5 shrink-0 rounded-full', severityTone(ticket.severity))} /><span className="min-w-0 flex-1 truncate text-[9.5px] font-medium text-[var(--ink)]">{ticket.id}</span><span className="shrink-0 text-[8px] tabular-nums text-[var(--muted)]">{shortDate(ticket.createdAt)}</span></div>
-            <p className="mt-1 truncate pl-3 text-[9px] leading-[14px] text-[var(--ink-soft)]">{ticket.title}</p>
+          <button key={ticket.id} type="button" aria-pressed={props.selectedId === ticket.id} onClick={() => props.onSelect(ticket)} className={cn('group block w-full rounded-[10px] border bg-panel px-3 py-2.5 text-left outline-none transition-[border-color,box-shadow,background-color] hover:border-[var(--line-strong)] hover:shadow-[0_6px_18px_-14px_rgba(35,49,78,0.45)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]', props.selectedId === ticket.id ? 'border-[var(--accent)] bg-[var(--accent-soft)]/35 shadow-[0_7px_20px_-14px_rgba(42,101,220,0.52)]' : 'border-[var(--line)]')}>
+            <div className="flex items-center gap-1.5">
+              <span className={cn('size-1.5 shrink-0 rounded-full', severityDot(ticket.severity))} />
+              <span className="min-w-0 flex-1 truncate text-[9px] font-semibold tracking-[-0.01em] text-[var(--ink)]">{ticket.id}</span>
+              <span className={cn('shrink-0 rounded-[5px] px-1.5 py-0.5 text-[8px] font-semibold', severityBadge(ticket.severity))}>{ticket.severity ?? '一般'}</span>
+            </div>
+            <p className="mt-1.5 line-clamp-2 text-[10.5px] font-semibold leading-[15px] tracking-[-0.012em] text-[var(--ink)]">{ticket.title}</p>
+            {ticket.remark ? <p className="mt-1 line-clamp-2 text-[8.5px] leading-[13px] text-[var(--muted-strong)]">{ticket.remark}</p> : null}
+            <div className="mt-2 flex min-w-0 items-center gap-2 border-t border-[var(--line)]/70 pt-2 text-[8px] text-[var(--muted)]">
+              <span className="flex min-w-0 items-center gap-1"><UserCircle className="size-3 shrink-0" /><span className="truncate">{ticket.currentHandler ?? ticket.creator ?? '未分配'}</span></span>
+              <span className="flex shrink-0 items-center gap-1 tabular-nums"><Clock className="size-3" />{shortDate(ticket.createdAt)}</span>
+              <span className={cn('ml-auto max-w-[76px] truncate rounded-[5px] px-1.5 py-0.5 font-medium', statusTone(ticket.status))}>{ticket.status}</span>
+            </div>
           </button>
         ))}
       </div>
@@ -98,10 +122,22 @@ function Pagination({ result, onPageChange }: { result: DtsTicketListResult; onP
   return <div className="flex h-10 shrink-0 items-center justify-center gap-3 border-t border-[var(--line)] text-[9px] text-[var(--muted)]"><button aria-label="上一页" disabled={result.page <= 1} onClick={() => onPageChange(result.page - 1)} className="flex size-6 items-center justify-center rounded-[5px] hover:bg-[var(--surface-hover)] disabled:opacity-25"><CaretLeft className="size-3" /></button><span className="rounded-[5px] bg-[var(--accent-soft)] px-2 py-1 font-semibold tabular-nums text-[var(--accent-ink)]">{result.page}</span><span>/ {pages}</span><button aria-label="下一页" disabled={result.page >= pages} onClick={() => onPageChange(result.page + 1)} className="flex size-6 items-center justify-center rounded-[5px] hover:bg-[var(--surface-hover)] disabled:opacity-25"><CaretRight className="size-3" /></button></div>
 }
 
-function severityTone(value: string | null): string {
+function severityDot(value: string | null): string {
   if (value?.includes('严重') || value === '1') return 'bg-[#ef4565] shadow-[0_0_0_3px_rgba(239,69,101,0.10)]'
   if (value?.includes('高') || value === '2') return 'bg-[#f29d38]'
-  return 'bg-[#8b9ab8]'
+  return 'bg-[#e6982d]'
+}
+
+function severityBadge(value: string | null): string {
+  if (value?.includes('严重') || value === '1') return 'bg-[color-mix(in_srgb,var(--err-ink)_10%,var(--panel))] text-[var(--err-ink)] ring-1 ring-inset ring-[var(--err-ink)]/10'
+  if (value?.includes('高') || value === '2') return 'bg-[var(--warn-soft)] text-[var(--warn-ink)] ring-1 ring-inset ring-[var(--warn-ink)]/10'
+  return 'bg-[#fff5e2] text-[#a76512] ring-1 ring-inset ring-[#e6982d]/15'
+}
+
+function statusTone(value: string): string {
+  if (value.includes('完成') || value.includes('关闭')) return 'bg-[color-mix(in_srgb,var(--ok-ink)_10%,var(--panel))] text-[var(--ok-ink)]'
+  if (value.includes('处理') || value.includes('验证')) return 'bg-[var(--accent-soft)] text-[var(--accent-ink)]'
+  return 'bg-[var(--warn-soft)] text-[var(--warn-ink)]'
 }
 
 function shortDate(value: string | null): string {

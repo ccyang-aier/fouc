@@ -2,7 +2,7 @@
 
 import { forwardRef, useCallback, useEffect, useRef, useState } from 'react'
 import type { ComponentPropsWithoutRef } from 'react'
-import { ArrowSquareOut, ArrowsClockwise, Broadcast, CaretDown, CaretLeft, CheckCircle, CopySimple, DotsThree, SignOut, SpinnerGap, WarningCircle } from '@phosphor-icons/react'
+import { ArrowSquareOut, ArrowsClockwise, Broadcast, CaretDown, CaretRight, CheckCircle, CopySimple, DotsThree, SignOut, SpinnerGap, WarningCircle } from '@phosphor-icons/react'
 import type { ConnectorDetailDto, DtsFilterId, DtsTicketDetail, DtsTicketListResult, DtsTicketSummary } from '@fouc/shared'
 import { AppAlert, type AppAlertMessage, type AppAlertTone } from '@/components/app-alert'
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -249,8 +249,12 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
   return (
     <section aria-label="DTS 连接器详情" className="relative flex h-full min-h-0 flex-col bg-panel">
       <header className="flex h-[44px] shrink-0 items-center gap-3 border-b border-[var(--line)] px-4">
-        <button type="button" onClick={onBack} className="flex size-7 items-center justify-center rounded-[6px] text-[var(--muted)] outline-none hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]" aria-label="返回连接器列表"><CaretLeft className="size-3.5" weight="bold" /></button>
-        <div className="flex min-w-0 items-center gap-2"><h1 className="text-[13px] font-normal tracking-[-0.01em] text-[var(--ink)]">DTS 问题工作台</h1>{connected && loading ? <span role="status" className="flex items-center gap-1 text-[8.5px] text-[var(--muted)]"><SpinnerGap className="size-3 animate-spin" />同步中</span> : null}</div>
+        <nav aria-label="当前位置" className="flex min-w-0 items-center gap-1.5">
+          <button type="button" onClick={onBack} className="rounded-[5px] px-1.5 py-1 text-[10px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">连接器</button>
+          <CaretRight className="size-3 shrink-0 text-[var(--muted)]" aria-hidden />
+          <h1 aria-current="page" className="truncate text-[11px] font-medium tracking-[-0.01em] text-[var(--ink)]">DTS</h1>
+          {connected && loading ? <span role="status" className="ml-1 flex items-center gap-1 text-[8.5px] text-[var(--muted)]"><SpinnerGap className="size-3 animate-spin" />同步中</span> : null}
+        </nav>
         <div role="group" aria-label="DTS 运行上下文" className="ml-3 flex h-7 items-center gap-1.5 max-[900px]:hidden">
           <DropdownMenu>
             <DropdownMenuTrigger asChild><ContextSegment label="选择 DTS 版本">DTS {runtime.version}</ContextSegment></DropdownMenuTrigger>

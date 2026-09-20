@@ -1,154 +1,55 @@
-# DTS connector detail — design QA
+# DTS 问题单侧栏设计 QA
 
-- Source visual truth: `C:/Users/Y00013~1/AppData/Local/Temp/codex-clipboard-e242fb46-1d7f-4403-8d63-1180e002d404.png`
-- Implementation: `http://localhost:3000/`, DTS connector detail (browser-rendered Codex in-app Browser capture; inline comparison evidence retained in the task)
-- Primary viewport: 1584 × 992 CSS px
-- Source pixels: 1584 × 992
-- Implementation pixels: 1584 × 992
-- Density normalization: the browser capture was inspected at a 1584 × 992 CSS viewport to match the source dimensions
-- State: connected DTS instance, first pending ticket selected, light theme
+- Source visual truth: Conversation attachment (Browser Comment 1 additional reference image; no local filesystem path)
+- Implementation screenshot: `C:\Users\y00013075\.codex\visualizations\2026\09\20\01a0be0c-2e93-7543-93a2-4898baa1df50\dts-sidebar-after.png`
+- Viewport: 1682 × 960 CSS px
+- Source pixels: 472 × 606 px for the focused card-list reference; the annotated full-page references are 1682 × 960 px
+- Implementation pixels: 1682 × 960 px
+- Device pixel ratio: 1
+- Density normalization: Full-page comparison used equal 1682 × 960 dimensions; the 472 × 606 card reference was evaluated as a focused component reference rather than scaled as a full-page layout
+- State: DTS detail open, issue sidebar expanded, first issue selected, relationship graph visible
 
 ## Full-view comparison evidence
 
-The implementation preserves the source hierarchy: compact connector header, ticket navigation on the left, an explorable relationship graph in the center, and detail/assistant context on the right. The relationship graph restores the reference's central-ticket composition, six surrounding information nodes, curved connectors, and canvas controls. Positions express stable UI categories rather than DTS-provided coordinates.
+The updated implementation preserves the original Fouc desktop information architecture while introducing the requested breadcrumb and card-based issue list. The list remains a secondary column, the selected ticket retains a clear active state, and the main work area remains usable at the supplied 1682 × 960 viewport. Collapsing the issue sidebar expands the work area without clipping persistent controls.
 
-## Focused region evidence
+## Focused region comparison evidence
 
-- Left navigation: active filter, search, selected row, severity, owner, state, and time were checked at both viewports.
-- Center relationship graph: the central ticket, impact, flow blockers, key evidence, owners and time, related issues, next actions, curved connectors, zoom, fit, and pan controls were checked for clipping and overlap.
-- Right context: detail and AI tabs, Fouc analysis, relation counts, connector health, and prompt composer were checked. The AI tab transition was exercised.
-- Canvas behavior: the graph automatically fits the available center pane and can be zoomed, reset, or panned without changing the surrounding workbench layout.
+The focused issue-list region matches the reference's hierarchy: severity marker and ticket ID at the top, a prominent multi-line title, a secondary summary, and a compact metadata row with owner, time, and status. Rounded bordered cards, restrained elevation, semantic severity colors, and a visible selected outline reproduce the reference intent using the existing Fouc design tokens and Phosphor icon family. Counts or labels that are not present in the DTS response were intentionally not fabricated.
 
 ## Required fidelity surfaces
 
-- Fonts and typography: uses the existing Fouc UI font stack and optical hierarchy; headings, metadata, truncation, and line-height remain readable at the app's compact density.
-- Spacing and layout rhythm: three-column proportions mirror the source, with the selected ticket acting as the graph focal point, balanced surrounding nodes, compact rows, and restrained shadows.
-- Colors and visual tokens: all surfaces use existing Fouc theme tokens; semantic red, orange, green, blue, violet, and mint accents match the source's information coding and remain dark-theme compatible.
-- Image quality and asset fidelity: the repository's real DTS vector logo and Phosphor icon set are used; no placeholder or hand-drawn image assets were introduced.
-- Copy and content: UI labels match the DTS domain and all ticket-specific content is driven by the existing connector contracts.
+- Fonts and typography: Existing Fouc sans stack retained; ticket titles use a stronger optical weight and two-line truncation, with smaller supporting text and tabular times. No cramped or broken wrapping was observed.
+- Spacing and layout rhythm: 8 px list gaps, 10 px card radii, compact card padding, and a 316 px desktop list width provide clear separation while keeping all four tickets visible in the first viewport.
+- Colors and visual tokens: Existing panel, line, accent, warning, error, and muted tokens are used. Severity and selection states remain legible in the current theme.
+- Image quality and asset fidelity: The target contains no raster imagery. All visible UI icons use the existing Phosphor icon library; no CSS drawings, inline SVG substitutes, or placeholders were introduced.
+- Copy and content: All card content comes from existing DTS ticket data. The breadcrumb copy is exactly `连接器 / DTS`.
+- Responsiveness: The list narrows to 284 px below 1180 px and can collapse to a 44 px rail. No overlap or clipping was observed at the tested desktop viewport.
+- Accessibility and interactions: Collapse/expand controls expose labels and expanded state, keyboard focus rings are present, selected tickets retain pressed state, and the breadcrumb return action is keyboard-accessible.
 
-## Findings
+## Interaction verification
 
-- No actionable P0/P1/P2 visual issues remain.
-- No actionable P3 visual issues remain in the relationship graph at the primary viewport.
+1. Opened DTS detail at `http://localhost:3000/` and confirmed meaningful ticket content rendered.
+2. Activated `收起工单侧栏`; the list became a 44 px rail and the main ticket workspace expanded.
+3. Activated `展开工单侧栏`; all tickets and the current selection returned.
+4. Activated the `连接器` breadcrumb; the connector catalog rendered, then DTS was reopened successfully.
+5. Checked browser console warnings and errors: none.
+6. Checked for a Next.js/framework error overlay: none.
 
 ## Comparison history
 
-1. Initial 1584 × 992 pass found one P2 content-format issue: list timestamps displayed the first year fragment (`26-09`) instead of the ticket time.
-2. Fixed `shortDate` to parse the full `YYYY-MM-DD HH:mm` shape and display `HH:mm`.
-3. The first redesign incorrectly replaced the relationship graph with a card grid; this failed the source's primary interaction and visual hierarchy.
-4. Restored the relationship graph with a central ticket, six connected nodes, curved edges, and zoom/fit/pan controls.
-5. Post-fix 1584 × 992 inspection shows all six nodes and controls inside the center pane without clipping or overlap.
+### Pass 1
 
-## Primary interactions tested
+- Earlier finding: The initial card implementation referenced undefined `--err-soft` and `--ok-soft` background tokens, which could make semantic chips lose their intended surface color.
+- Fix made: Replaced those surfaces with theme-aware `color-mix()` expressions based on the existing semantic ink and panel tokens.
+- Post-fix visual evidence: The implementation screenshot shows the severity badges and status chips with visible, balanced semantic fills; no actionable P0/P1/P2 mismatch remains.
 
-- Open DTS detail from the connector catalog.
-- Automatic first-ticket selection and detail loading.
-- Switch between “问题详情” and “AI 助手”.
-- Zoom in, zoom out, fit-to-canvas, and pan-mode toggle.
-- Browser console checked: no errors or warnings.
+## Findings
 
-## Implementation checklist
+No actionable P0, P1, or P2 findings remain. The implementation intentionally adapts the standalone card reference to Fouc's denser desktop workbench scale instead of copying its mobile-width proportions.
 
-- [x] Three-column DTS workbench
-- [x] Responsive ticket navigation
-- [x] Real-data relationship graph with curved connectors
-- [x] Zoom, fit, and drag-canvas controls
-- [x] Context and AI assistant tabs
-- [x] Connected/disconnected states
-- [x] Keyboard-visible focus styles and semantic labels
-- [x] Desktop and narrow-view visual verification
+## Follow-up polish
 
-final result: passed
-
----
-
-# Home assistant whole-character motion atlas — design QA (superseded)
-
-- Source visual truth: the existing Fouc robot identity plus the user's latest feedback that split head/body motion caused scale pumping, neck separation, and visible discontinuity.
-- Image generation mode: built-in ImageGen, stylized-product-asset workflow.
-- Final asset: `public/brand/assistant/assistant-motion-atlas.webp`.
-- Atlas specification: 24 yaw positions × 5 pitch bands, 120 complete-character frames, 192 × 192 px per cell, 4608 × 960 px total.
-- Runtime display size: 142 × 142 CSS px on desktop and 112 × 112 CSS px at the compact breakpoint.
-
-## Generation direction
-
-Each pitch band was generated as a temporally ordered 6 × 4 contact sheet using the clean neutral robot as the identity anchor. The prompt fixed the camera, character proportions, lighting, baseline, framing, and scale while allowing only small yaw changes from left to right. Separate bands cover approximately 12° up, 6° up, level, 6° down, and 12° down.
-
-## Asset normalization
-
-- Every cell contains the complete robot; the head and body are never composited independently at runtime.
-- Foreground extraction uses one consistent alpha-processing pipeline.
-- Each frame is normalized to the same 174 px visible height and 188 px baseline inside its 192 px cell.
-- Dynamic face-centered cropping prevents the generated contact-sheet drift from clipping hands, body, or head.
-- Frames touching a crop boundary are rejected during atlas assembly.
-
-## Runtime behavior verified
-
-- Pointer movement is observed globally; no click is required.
-- Horizontal motion traverses the 24-column sequence, while vertical motion selects all five pitch rows.
-- Pose selection advances by adjacent cells on animation frames with spring smoothing and hysteresis.
-- The rendered sprite has `transform: none`; there is no runtime scale, head rotation, cross-fade, or dual-image blending that could recreate pumping or ghosting.
-- The robot remains a single 142 px layer and retains the existing overlap with the higher-level composer surface.
-- Reduced-motion preference resolves immediately to the target pose.
-
-## Browser evidence
-
-- The production atlas loaded successfully from `/brand/assistant/assistant-motion-atlas.webp`.
-- Computed desktop robot bounds were 142 × 142 CSS px.
-- Horizontal endpoint tests reached atlas positions 0% and 100%; vertical endpoint tests reached 0%, 50%, and 100% rows.
-- Browser console contained no errors from the assistant component during pointer sweeps.
-
-## Superseded assets
-
-The split `assistant-body.webp` and `head-atlas.webp` assets, plus the differently proportioned legacy blink/success overlays, were removed. Future expressions should be authored as additional whole-character frames so the fixed silhouette and baseline contract remains intact.
-
-final result: superseded after user testing because directional frames still produced visible temporal drift
-
----
-
-# Home assistant fixed-direction expression atlas — design QA
-
-- User decision: remove mouse-follow direction changes completely and keep the robot facing straight ahead.
-- Image generation mode: built-in ImageGen, identity-preserve workflow.
-- Final asset: `public/brand/assistant/assistant-expression-atlas-v2.webp`.
-- Atlas specification: six fixed-pose expressions in one 1152 × 192 px transparent WebP; 192 × 192 px per frame; 33 KB lossless output.
-
-## Expression set
-
-1. Neutral
-2. Half blink
-3. Closed blink
-4. Happy
-5. Curious
-6. Focused
-
-ImageGen supplied the expression design reference. The production atlas then reuses one identical neutral robot silhouette for all six frames and composites only the cyan eye pixels inside the face screen. Head, body, hands, neck, crop, alpha, baseline, and scale are therefore pixel-identical between frames.
-
-## Timing behavior
-
-- Neutral remains the dominant state.
-- Ambient expressions occur at randomized 3.8–6.6 second intervals.
-- A natural blink uses half-blink → closed → half-blink → neutral timing.
-- Happy, curious, and focused states appear occasionally for about 1.1–1.35 seconds before returning to neutral.
-- Task creation overrides the ambient state with the happy expression.
-- `prefers-reduced-motion` disables ambient timed changes while preserving the static task-completion expression.
-
-## Browser evidence
-
-- Mouse sweeps across all four viewport corners left `background-position: 0% 50%` unchanged.
-- Timed ambient state changed from neutral to happy/focused and returned to neutral without changing the robot bounds.
-- Creating a task changed `data-expression` to `happy`, then restored neutral.
-- Desktop robot bounds remain 142 × 142 CSS px; the existing compact rule remains 112 × 112 CSS px.
-- The final page loaded the expression atlas at `background-size: 600% 100%` with no transform.
-- Pixel audit confirmed zero visible-pixel differences outside the face screen and zero alpha differences across all six frames.
-- No relevant browser console warnings or errors were present.
-
-## Frontal alignment correction
-
-- The first expression atlas inherited a half-step yaw because its neutral base came from an even 24-column directional atlas with no exact center frame.
-- The corrected base is generated from a strictly front-facing, bilaterally aligned source and uses a new `v2` asset URL to bypass stale browser caching.
-- In the normalized 192 px frame, the face screen center is x=99.0 and the eye-pair midpoint is x=100.93; visual inspection confirms no head yaw or tilt.
-- As before, every expression shares the exact same robot pixels and alpha outside the face screen.
+No required follow-up. A future API expansion could add real relation or comment counts to the metadata row if DTS exposes those fields.
 
 final result: passed

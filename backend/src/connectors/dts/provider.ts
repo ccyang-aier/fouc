@@ -83,10 +83,11 @@ export class DtsRuntime {
     const detailObject = asObject(rawDetail);
     const seed = mapTicketSummary({ ...detailObject, dtsBizNo: id }, this.instanceId) ?? {
       id, title: id, status: '未知', severity: null, currentHandler: null, creator: null, createdAt: null,
-      productType: null, productPath: [], remark: null,
+      productType: null, productPath: [], remark: null, relatedCount: null, commentCount: null,
       source: { connectorInstanceId: this.instanceId, providerId: 'dts', objectType: 'ticket', externalId: id, url: null },
     };
-    return { ...mapTicketDetail(rawDetail, seed, this.instanceId), relations: mapRelations(rawRelations, this.instanceId), permissions: mapPermissions(rawPermissions) };
+    const relations = mapRelations(rawRelations, this.instanceId);
+    return { ...mapTicketDetail(rawDetail, seed, this.instanceId), relatedCount: relations.length, relations, permissions: mapPermissions(rawPermissions) };
   }
 
   private async call(path: string, init: RequestInit): Promise<unknown> {

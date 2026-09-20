@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { CaretDown, CaretLeft, CaretRight, Clock, Funnel, MagnifyingGlass, SidebarSimple, SpinnerGap, UserCircle, X } from '@phosphor-icons/react'
-import type { DtsFilterId, DtsTicketListResult, DtsTicketSummary } from '@fouc/shared'
+import { CaretDown, CaretLeft, CaretRight, ChatCircleDots, Clock, Funnel, LinkSimple, MagnifyingGlass, SidebarSimple, SpinnerGap, User, X } from '@phosphor-icons/react'
+import type { DtsFilterId, DtsSeverity, DtsTicketListResult, DtsTicketSummary } from '@fouc/shared'
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 
@@ -100,10 +100,14 @@ export function DtsTicketList(props: Props) {
             </div>
             <p className="mt-1.5 line-clamp-2 text-[10.5px] font-semibold leading-[15px] tracking-[-0.012em] text-[var(--ink)]">{ticket.title}</p>
             {ticket.remark ? <p className="mt-1 line-clamp-2 text-[8.5px] leading-[13px] text-[var(--muted-strong)]">{ticket.remark}</p> : null}
-            <div className="mt-2 flex min-w-0 items-center gap-2 border-t border-[var(--line)]/70 pt-2 text-[8px] text-[var(--muted)]">
-              <span className="flex min-w-0 items-center gap-1"><UserCircle className="size-3 shrink-0" /><span className="truncate">{ticket.currentHandler ?? ticket.creator ?? '未分配'}</span></span>
+            <div className="mt-2 flex min-w-0 items-center gap-2 border-t border-dashed border-[var(--line-strong)]/70 pt-2 text-[8px] text-[var(--muted)]">
+              <span className="flex min-w-0 items-center gap-1"><User className="size-3 shrink-0" /><span className="truncate">{ticket.currentHandler ?? ticket.creator ?? '未分配'}</span></span>
               <span className="flex shrink-0 items-center gap-1 tabular-nums"><Clock className="size-3" />{shortDate(ticket.createdAt)}</span>
-              <span className={cn('ml-auto max-w-[76px] truncate rounded-[5px] px-1.5 py-0.5 font-medium', statusTone(ticket.status))}>{ticket.status}</span>
+            </div>
+            <div className="mt-1.5 flex min-w-0 items-center gap-1.5 text-[8px]">
+              <span className={cn('max-w-[72px] truncate rounded-[5px] px-1.5 py-0.5 font-medium', statusTone(ticket.status))}>{ticket.status}</span>
+              {ticket.relatedCount != null ? <span className="flex min-w-0 items-center gap-1 rounded-[5px] bg-[var(--accent-soft)] px-1.5 py-0.5 font-medium text-[var(--accent-ink)]"><LinkSimple className="size-2.5 shrink-0" /><span className="truncate">与 {ticket.relatedCount} 个问题相关</span></span> : null}
+              {ticket.commentCount != null ? <span className="ml-auto flex shrink-0 items-center gap-1 text-[var(--muted-strong)]" aria-label={`${ticket.commentCount} 条评论`}><ChatCircleDots className="size-3" />{ticket.commentCount}</span> : null}
             </div>
           </button>
         ))}
@@ -122,16 +126,18 @@ function Pagination({ result, onPageChange }: { result: DtsTicketListResult; onP
   return <div className="flex h-10 shrink-0 items-center justify-center gap-3 border-t border-[var(--line)] text-[9px] text-[var(--muted)]"><button aria-label="上一页" disabled={result.page <= 1} onClick={() => onPageChange(result.page - 1)} className="flex size-6 items-center justify-center rounded-[5px] hover:bg-[var(--surface-hover)] disabled:opacity-25"><CaretLeft className="size-3" /></button><span className="rounded-[5px] bg-[var(--accent-soft)] px-2 py-1 font-semibold tabular-nums text-[var(--accent-ink)]">{result.page}</span><span>/ {pages}</span><button aria-label="下一页" disabled={result.page >= pages} onClick={() => onPageChange(result.page + 1)} className="flex size-6 items-center justify-center rounded-[5px] hover:bg-[var(--surface-hover)] disabled:opacity-25"><CaretRight className="size-3" /></button></div>
 }
 
-function severityDot(value: string | null): string {
-  if (value?.includes('严重') || value === '1') return 'bg-[#ef4565] shadow-[0_0_0_3px_rgba(239,69,101,0.10)]'
-  if (value?.includes('高') || value === '2') return 'bg-[#f29d38]'
-  return 'bg-[#e6982d]'
+function severityDot(value: DtsSeverity | null): string {
+  if (value === '致命') return 'bg-[#d92d20] shadow-[0_0_0_3px_rgba(217,45,32,0.10)]'
+  if (value === '严重') return 'bg-[#ef4565]'
+  if (value === '一般') return 'bg-[#e6982d]'
+  return 'bg-[#6681f5]'
 }
 
-function severityBadge(value: string | null): string {
-  if (value?.includes('严重') || value === '1') return 'bg-[color-mix(in_srgb,var(--err-ink)_10%,var(--panel))] text-[var(--err-ink)] ring-1 ring-inset ring-[var(--err-ink)]/10'
-  if (value?.includes('高') || value === '2') return 'bg-[var(--warn-soft)] text-[var(--warn-ink)] ring-1 ring-inset ring-[var(--warn-ink)]/10'
-  return 'bg-[#fff5e2] text-[#a76512] ring-1 ring-inset ring-[#e6982d]/15'
+function severityBadge(value: DtsSeverity | null): string {
+  if (value === '致命') return 'bg-[color-mix(in_srgb,var(--err-ink)_16%,var(--panel))] text-[var(--err-ink)] ring-1 ring-inset ring-[var(--err-ink)]/15'
+  if (value === '严重') return 'bg-[color-mix(in_srgb,var(--err-ink)_10%,var(--panel))] text-[var(--err-ink)] ring-1 ring-inset ring-[var(--err-ink)]/10'
+  if (value === '一般') return 'bg-[var(--warn-soft)] text-[var(--warn-ink)] ring-1 ring-inset ring-[var(--warn-ink)]/10'
+  return 'bg-[var(--accent-soft)] text-[var(--accent-ink)] ring-1 ring-inset ring-[var(--accent)]/10'
 }
 
 function statusTone(value: string): string {

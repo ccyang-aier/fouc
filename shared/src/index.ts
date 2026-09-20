@@ -374,17 +374,21 @@ export interface ExternalObjectRef {
   url: string | null;
 }
 
+export type DtsSeverity = '致命' | '严重' | '一般' | '提示';
+
 export interface DtsTicketSummary {
   id: string;
   title: string;
   status: string;
-  severity: string | null;
+  severity: DtsSeverity | null;
   currentHandler: string | null;
   creator: string | null;
   createdAt: string | null;
   productType: string | null;
   productPath: string[];
   remark: string | null;
+  relatedCount: number | null;
+  commentCount: number | null;
   source: ExternalObjectRef;
 }
 

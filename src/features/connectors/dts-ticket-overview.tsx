@@ -3,7 +3,7 @@ import {
   ArrowSquareOut, CalendarBlank, Check, CornersOut, FileText, FlowArrow, Hand,
   LinkSimple, ListChecks, Minus, Plus, ShareNetwork, SpinnerGap, Stack, User, UsersThree,
 } from '@phosphor-icons/react'
-import type { DtsFlowNodeSummary, DtsTicketDetail, DtsTicketSummary } from '@fouc/shared'
+import type { DtsFlowNodeSummary, DtsSeverity, DtsTicketDetail, DtsTicketSummary } from '@fouc/shared'
 import { cn } from '@/lib/utils'
 import { DtsTicketDetailView } from './dts-ticket-detail-view'
 
@@ -170,7 +170,7 @@ function GraphCard({ className, title, icon: Icon, meta, tone, source, children 
 
 function CenterTicketCard({ ticket, detail }: { ticket: DtsTicketSummary; detail: DtsTicketDetail | null }) {
   const description = ticket.remark || detail?.fields.find((field) => field.label.includes('描述'))?.value?.toString() || '暂无补充描述，可结合周边关系节点继续处理。'
-  return <article className="absolute left-[274px] top-[270px] z-20 h-[176px] w-[212px] rounded-[12px] border border-[var(--accent-soft-line)] bg-panel p-4 shadow-[0_12px_30px_-20px_rgba(48,83,163,0.5)]"><div className="flex items-center gap-1.5"><span className={cn('size-2 rounded-full', severityTone(ticket.severity))} /><span className="rounded-[5px] bg-[color-mix(in_srgb,var(--err-ink)_10%,transparent)] px-1.5 py-0.5 text-[8.5px] font-semibold text-[var(--err-ink)]">{ticket.severity ?? '一般'}</span><span className="ml-auto text-[8px] font-medium text-[var(--muted)]">{ticket.id}</span></div><h2 className="mt-2.5 line-clamp-2 text-[12px] font-semibold leading-[18px] text-[var(--ink)]">{ticket.title}</h2><p className="mt-1.5 line-clamp-2 text-[9px] leading-[15px] text-[var(--muted-strong)]">{description}</p><div className="absolute inset-x-4 bottom-3 flex items-center gap-2 border-t border-[var(--line)] pt-2 text-[7.5px] text-[var(--muted)]"><span className="truncate">创建于 {ticket.createdAt ?? '—'}</span><span>·</span><span className="truncate">{ticket.creator ?? '未知'}</span></div></article>
+  return <article className="absolute left-[274px] top-[270px] z-20 h-[176px] w-[212px] rounded-[12px] border border-[var(--accent-soft-line)] bg-panel p-4 shadow-[0_12px_30px_-20px_rgba(48,83,163,0.5)]"><div className="flex items-center gap-1.5"><span className={cn('size-2 rounded-full', severityTone(ticket.severity))} /><SeverityBadge value={ticket.severity} /><span className="ml-auto text-[8px] font-medium text-[var(--muted)]">{ticket.id}</span></div><h2 className="mt-2.5 line-clamp-2 text-[12px] font-semibold leading-[18px] text-[var(--ink)]">{ticket.title}</h2><p className="mt-1.5 line-clamp-2 text-[9px] leading-[15px] text-[var(--muted-strong)]">{description}</p><div className="absolute inset-x-4 bottom-3 flex items-center gap-2 border-t border-[var(--line)] pt-2 text-[7.5px] text-[var(--muted)]"><span className="truncate">创建于 {ticket.createdAt ?? '—'}</span><span>·</span><span className="truncate">{ticket.creator ?? '未知'}</span></div></article>
 }
 
 function FlowGraphCard({ className, nodes, currentNode, status }: { className: string; nodes: DtsFlowNodeSummary[]; currentNode: DtsFlowNodeSummary | null; status: string }) {
@@ -187,6 +187,7 @@ function ActionRow({ index, title, owner }: { index: number; title: string; owne
 function EmptyCardCopy({ children }: { children: React.ReactNode }) { return <p className="text-[9px] leading-4 text-[var(--muted)]">{children}</p> }
 
 function EmptyOverview() { return <main className="flex min-h-0 min-w-[410px] flex-1 items-center justify-center bg-[var(--surface-subtle)]/35"><div className="text-center"><FlowArrow className="mx-auto size-8 text-[var(--line-strong)]" /><p className="mt-3 text-[11px] font-medium text-[var(--ink-soft)]">选择一条工单查看关系图</p><p className="mt-1 text-[9.5px] text-[var(--muted)]">影响范围、流程、证据与行动会围绕工单展开</p></div></main> }
-function SeverityBadge({ value }: { value: string | null }) { return <span className="rounded-[5px] bg-[color-mix(in_srgb,var(--err-ink)_10%,transparent)] px-2 py-0.5 text-[8.5px] text-[var(--err-ink)]">{value ?? '一般'}</span> }
-function severityTone(value: string | null): string { return value?.includes('严重') || value === '1' ? 'bg-[#ef4565]' : value?.includes('高') || value === '2' ? 'bg-[#f29d38]' : 'bg-[#8b9ab8]' }
+function SeverityBadge({ value }: { value: DtsSeverity | null }) { return <span className={cn('rounded-[5px] px-2 py-0.5 text-[8.5px] font-medium', severityBadgeTone(value))}>{value ?? '一般'}</span> }
+function severityTone(value: DtsSeverity | null): string { return value === '致命' ? 'bg-[#d92d20]' : value === '严重' ? 'bg-[#ef4565]' : value === '一般' ? 'bg-[#e6982d]' : 'bg-[#6681f5]' }
+function severityBadgeTone(value: DtsSeverity | null): string { return value === '致命' ? 'bg-[color-mix(in_srgb,var(--err-ink)_16%,transparent)] text-[var(--err-ink)]' : value === '严重' ? 'bg-[color-mix(in_srgb,var(--err-ink)_10%,transparent)] text-[var(--err-ink)]' : value === '一般' ? 'bg-[var(--warn-soft)] text-[var(--warn-ink)]' : 'bg-[var(--accent-soft)] text-[var(--accent-ink)]' }
 function nextNodeTitle(nodes: DtsFlowNodeSummary[], current: DtsFlowNodeSummary | null): string { if (!nodes.length || !current) return '补充处理结论并推进流程'; const index = nodes.findIndex((node) => node.id === current.id); return nodes[index + 1]?.name ?? '完成当前节点并关闭工单' }

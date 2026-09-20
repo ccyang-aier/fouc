@@ -1,4 +1,4 @@
-import type { DtsFieldValue, DtsFlowNodeSummary, DtsTicketDetail, DtsTicketSummary, ExternalObjectRef } from '@shared/index';
+import type { DtsFieldValue, DtsFlowNodeSummary, DtsSeverity, DtsTicketDetail, DtsTicketSummary, ExternalObjectRef } from '@shared/index';
 
 const DTS_ORIGIN = 'https://clouddragon.xfusion.com';
 const FIELD_LABELS: Record<string, string> = {
@@ -40,6 +40,16 @@ function pick(source: Record<string, unknown>, keys: string[]): string | null {
   return null;
 }
 
+function count(source: Record<string, unknown>, keys: string[]): number | null {
+  for (const key of keys) {
+    const raw = source[key];
+    if (raw == null || raw === '') continue;
+    const parsed = Number(raw);
+    if (Number.isInteger(parsed) && parsed >= 0) return parsed;
+  }
+  return null;
+}
+
 function firstArray(value: unknown, keys: string[]): unknown[] {
   if (Array.isArray(value)) return value;
   const source = object(value);
@@ -63,13 +73,15 @@ export function mapTicketSummary(raw: unknown, instanceId: string): DtsTicketSum
     id,
     title: pick(source, ['sBriefDescription', 'briefDescription', 'title']) ?? id,
     status: pick(source, ['status', 'dtsStatus', 'flowState']) ?? '未知',
-    severity: pick(source, ['sSeverityNo', 'severity']),
+    severity: severityLabel(pick(source, ['sSeverityNo', 'severity'])),
     currentHandler: pick(source, ['sCurrentHandler', 'currentHandler', 'last_dts009_handler']),
     creator: pick(source, ['creator', 'submitUser']),
     createdAt: pick(source, ['createAt', 'createTime', 'createdAt']),
     productType: pick(source, ['productType', 'itProduct']),
     productPath,
     remark: pick(source, ['ticketRemark', 'remark']),
+    relatedCount: count(source, ['relationCount', 'relatedCount', 'relationNum', 'relationDtsCount']),
+    commentCount: count(source, ['commentCount', 'commentNum', 'replyCount', 'discussCount']),
     source: reference(instanceId, id),
   };
 }
@@ -181,9 +193,11 @@ function formatTimestamp(value: unknown): string | null {
   return text(value);
 }
 
-function severityLabel(value: string | null): string | null {
+function severityLabel(value: string | null): DtsSeverity | null {
   if (!value) return null;
-  return ({ Fatal: '致命', Critical: '严重', Major: '严重', Minor: '一般', Suggestion: '提示' } as Record<string, string>)[value] ?? value;
+  return ({ Fatal: '致命', Critical: '严重', Major: '严重', Minor: '一般', Suggestion: '提示',
+    致命: '致命', 严重: '严重', 高: '严重', 一般: '一般', 提示: '提示',
+    1: '致命', 2: '严重', 3: '一般', 4: '提示' } as Record<string, DtsSeverity>)[value] ?? null;
 }
 
 function reference(instanceId: string, id: string): ExternalObjectRef {

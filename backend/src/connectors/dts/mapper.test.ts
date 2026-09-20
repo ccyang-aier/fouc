@@ -4,14 +4,22 @@ import { listRows, listTotal, mapPermissions, mapRelations, mapTicketDetail, map
 describe('DTS response mapping', () => {
   const raw = {
     dtsBizNo: 'DTS2026091400331', sBriefDescription: '灰度发布重构', status: '开发人员实施修改',
-    sSeverityNo: '严重', sCurrentHandler: 'yanghao 00013075', creator: 'yanyalun W0017722',
+    sSeverityNo: '严重', sCurrentHandler: 'yanghao 00013075', creator: 'yanyalun W0017722', relationCount: 3, commentNum: 5,
     createAt: '2026-09-14 18:11:09', ticketRemark: '0915：已修复', sProdLineNo: '算力事业部', sProdRNo: 'FusionOne AI',
   };
 
   test('maps only the summary contract', () => {
     const summary = mapTicketSummary(raw, 'dts-personal');
-    expect(summary).toMatchObject({ id: raw.dtsBizNo, title: raw.sBriefDescription, severity: '严重', productPath: ['算力事业部', 'FusionOne AI'] });
+    expect(summary).toMatchObject({ id: raw.dtsBizNo, title: raw.sBriefDescription, severity: '严重', relatedCount: 3, commentCount: 5, productPath: ['算力事业部', 'FusionOne AI'] });
     expect(summary?.source.providerId).toBe('dts');
+  });
+
+  test('normalizes DTS severity to the supported four-level enum', () => {
+    expect(mapTicketSummary({ ...raw, sSeverityNo: 'Fatal' }, 'dts-personal')?.severity).toBe('致命');
+    expect(mapTicketSummary({ ...raw, sSeverityNo: '高' }, 'dts-personal')?.severity).toBe('严重');
+    expect(mapTicketSummary({ ...raw, sSeverityNo: 'Minor' }, 'dts-personal')?.severity).toBe('一般');
+    expect(mapTicketSummary({ ...raw, sSeverityNo: 'Suggestion' }, 'dts-personal')?.severity).toBe('提示');
+    expect(mapTicketSummary({ ...raw, sSeverityNo: 'unknown' }, 'dts-personal')?.severity).toBeNull();
   });
 
   test('maps object-valued list columns returned by DTS', () => {

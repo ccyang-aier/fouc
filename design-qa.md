@@ -111,7 +111,7 @@ final result: superseded after user testing because directional frames still pro
 
 - User decision: remove mouse-follow direction changes completely and keep the robot facing straight ahead.
 - Image generation mode: built-in ImageGen, identity-preserve workflow.
-- Final asset: `public/brand/assistant/assistant-expression-atlas.webp`.
+- Final asset: `public/brand/assistant/assistant-expression-atlas-v2.webp`.
 - Atlas specification: six fixed-pose expressions in one 1152 × 192 px transparent WebP; 192 × 192 px per frame; 33 KB lossless output.
 
 ## Expression set
@@ -143,5 +143,12 @@ ImageGen supplied the expression design reference. The production atlas then reu
 - The final page loaded the expression atlas at `background-size: 600% 100%` with no transform.
 - Pixel audit confirmed zero visible-pixel differences outside the face screen and zero alpha differences across all six frames.
 - No relevant browser console warnings or errors were present.
+
+## Frontal alignment correction
+
+- The first expression atlas inherited a half-step yaw because its neutral base came from an even 24-column directional atlas with no exact center frame.
+- The corrected base is generated from a strictly front-facing, bilaterally aligned source and uses a new `v2` asset URL to bypass stale browser caching.
+- In the normalized 192 px frame, the face screen center is x=99.0 and the eye-pair midpoint is x=100.93; visual inspection confirms no head yaw or tilt.
+- As before, every expression shares the exact same robot pixels and alpha outside the face screen.
 
 final result: passed

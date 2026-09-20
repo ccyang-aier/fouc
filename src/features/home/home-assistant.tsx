@@ -13,7 +13,7 @@ type ExpressionStep = {
   duration: number
 }
 
-const EXPRESSION_ATLAS_ASSET = "/brand/assistant/assistant-expression-atlas.webp"
+const EXPRESSION_ATLAS_ASSET = "/brand/assistant/assistant-expression-atlas-v2.webp"
 const EXPRESSION_FRAMES: ExpressionFrame[] = ["neutral", "halfBlink", "blink", "happy", "curious", "focused"]
 const AMBIENT_DELAY_MIN = 3800
 const AMBIENT_DELAY_RANGE = 2800

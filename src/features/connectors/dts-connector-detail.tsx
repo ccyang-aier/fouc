@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
-import { ArrowsClockwise, CaretDown, CaretLeft, Check, CheckCircle, SignOut, SpinnerGap, WarningCircle } from '@phosphor-icons/react'
+import { ArrowSquareOut, ArrowsClockwise, CaretDown, CaretLeft, Check, CheckCircle, CopySimple, DotsThree, Plug, SignOut, SpinnerGap, WarningCircle } from '@phosphor-icons/react'
 import type { ConnectorDetailDto, DtsFilterId, DtsTicketDetail, DtsTicketListResult, DtsTicketSummary } from '@fouc/shared'
 import { AppAlert, type AppAlertMessage, type AppAlertTone } from '@/components/app-alert'
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -244,6 +244,7 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
   }
   const connected = detail.instance.authState === 'valid'
   const activeEnv = DTS_ENVIRONMENT_OPTIONS.find((env) => env.id === runtime.environment) ?? DTS_ENVIRONMENT_OPTIONS[0]
+  const selectedTicket = ticketDetail ?? tickets?.items.find((ticket) => ticket.id === selectedId) ?? null
 
   return (
     <section aria-label="DTS 连接器详情" className="relative flex h-full min-h-0 flex-col bg-panel">
@@ -290,7 +291,17 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-1">
+          <button type="button" disabled={!connected || loading} onClick={() => void loadTickets(activeFilter, 1, keyword)} aria-label="刷新工单" className="flex size-8 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:opacity-40"><ArrowsClockwise className={cn('size-3.5', loading && 'animate-spin')} /></button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button type="button" aria-label="更多操作" className="flex size-8 items-center justify-center rounded-[7px] text-[var(--muted)] outline-none hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><DotsThree className="size-4" weight="bold" /></button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-40">
+              <DropdownMenuItem disabled={!selectedTicket} onSelect={() => { if (selectedTicket) void navigator.clipboard.writeText(selectedTicket.id).then(() => notify('success', '已复制工单编号', selectedTicket.id)) }}><CopySimple />复制工单编号</DropdownMenuItem>
+              <DropdownMenuItem disabled={!selectedTicket?.source.url} onSelect={() => { if (selectedTicket?.source.url) window.open(selectedTicket.source.url, '_blank', 'noopener,noreferrer') }}><ArrowSquareOut />在 DTS 中打开</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <ConnectionStatusMenu detail={detail} connected={connected} busy={busy} onHeartbeat={() => void heartbeat()} onReconnect={() => void connect()} onDisconnect={() => void disconnect()} />
         </div>
       </header>
@@ -312,9 +323,8 @@ function ConnectionStatusMenu({ detail, connected, busy, onHeartbeat, onReconnec
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button type="button" aria-label="查看 DTS 连接状态" className={cn('relative flex size-8 items-center justify-center rounded-[8px] border bg-panel outline-none transition-[background-color,border-color,box-shadow] hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]', connected ? 'border-[color-mix(in_srgb,var(--ok-ink)_24%,var(--line))] text-[var(--ok-ink)] shadow-[0_1px_5px_rgba(25,130,91,0.10)]' : 'border-[var(--warn-soft-line)] text-[var(--warn-ink)]')}>
-          {connected ? <CheckCircle className="size-4" weight="fill" /> : <WarningCircle className="size-4" weight="fill" />}
-          <span className={cn('absolute right-1 top-1 size-1.5 rounded-full ring-2 ring-[var(--panel)]', connected ? 'bg-[var(--ok-ink)]' : 'bg-[var(--warn-ink)]')} />
+        <button type="button" aria-label="查看 DTS 连接状态" className={cn('flex size-8 items-center justify-center rounded-[7px] outline-none transition-colors hover:bg-[var(--surface-hover)] focus-visible:bg-[var(--accent-soft)]', connected ? 'text-[var(--ok-ink)]' : 'text-[var(--warn-ink)]')}>
+          <Plug className="size-[18px]" weight={connected ? 'fill' : 'regular'} />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[264px] rounded-[10px] p-1.5 shadow-[0_18px_48px_-22px_rgba(20,32,58,0.48)]">

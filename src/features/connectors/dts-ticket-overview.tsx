@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   ArrowSquareOut, CalendarBlank, Check, CornersOut, FileText, FlowArrow, Hand,
-  LinkSimple, ListChecks, Minus, Plus, SpinnerGap, Stack, User, UsersThree,
+  LinkSimple, ListChecks, Minus, Plus, ShareNetwork, SpinnerGap, Stack, User, UsersThree,
 } from '@phosphor-icons/react'
 import type { DtsFlowNodeSummary, DtsTicketDetail, DtsTicketSummary } from '@fouc/shared'
 import { cn } from '@/lib/utils'
+import { DtsTicketDetailView } from './dts-ticket-detail-view'
 
 type Props = { detail: DtsTicketDetail | null; summary: DtsTicketSummary | null; loading: boolean }
 type Offset = { x: number; y: number }
@@ -14,18 +15,19 @@ const MAX_ZOOM = 1.12
 const ZOOM_STEP = 0.08
 
 export function DtsTicketOverview({ detail, summary, loading }: Props) {
+  const [view, setView] = useState<'graph' | 'detail'>('graph')
   const ticket = detail ?? summary
   if (!ticket) return <EmptyOverview />
 
   return (
-    <main aria-label="工单关系图" className="flex min-h-0 min-w-[410px] flex-1 flex-col overflow-hidden bg-[var(--surface-subtle)]/35">
-      <TicketHeader ticket={ticket} />
-      {loading ? <div className="flex min-h-0 flex-1 items-center justify-center gap-2 text-[10px] text-[var(--muted)]"><SpinnerGap className="size-4 animate-spin" />正在构建工单关系图…</div> : <RelationshipCanvas ticket={ticket} detail={detail} />}
+    <main aria-label="工单工作区" className="flex min-h-0 min-w-[410px] flex-1 flex-col overflow-hidden bg-[var(--surface-subtle)]/35">
+      <TicketHeader ticket={ticket} view={view} onViewChange={setView} />
+      {loading ? <div className="flex min-h-0 flex-1 items-center justify-center gap-2 text-[10px] text-[var(--muted)]"><SpinnerGap className="size-4 animate-spin" />正在读取问题单…</div> : view === 'graph' ? <RelationshipCanvas ticket={ticket} detail={detail} /> : <DtsTicketDetailView ticket={ticket} detail={detail} />}
     </main>
   )
 }
 
-function TicketHeader({ ticket }: { ticket: DtsTicketSummary }) {
+function TicketHeader({ ticket, view, onViewChange }: { ticket: DtsTicketSummary; view: 'graph' | 'detail'; onViewChange: (view: 'graph' | 'detail') => void }) {
   return (
     <header className="flex min-h-[64px] shrink-0 items-center gap-3 border-b border-[var(--line)] bg-panel px-5">
       <span className={cn('size-2.5 shrink-0 rounded-full', severityTone(ticket.severity))} />
@@ -33,9 +35,17 @@ function TicketHeader({ ticket }: { ticket: DtsTicketSummary }) {
         <div className="flex items-center gap-2"><span className="shrink-0 text-[10px] font-medium text-[var(--muted-strong)]">{ticket.id}</span><SeverityBadge value={ticket.severity} /><span className="rounded-[5px] bg-[var(--accent-soft)] px-2 py-0.5 text-[8.5px] text-[var(--accent-ink)]">{ticket.status}</span></div>
         <h1 className="mt-1 truncate text-[14px] font-semibold tracking-[-0.015em] text-[var(--ink)]">{ticket.title}</h1>
       </div>
+      <div role="tablist" aria-label="问题单视图" className="flex h-8 shrink-0 items-center rounded-[8px] bg-[var(--surface-subtle)] p-0.5 ring-1 ring-inset ring-[var(--line)]">
+        <ViewButton active={view === 'graph'} label="关系图" icon={ShareNetwork} onClick={() => onViewChange('graph')} />
+        <ViewButton active={view === 'detail'} label="问题单详情" icon={FileText} onClick={() => onViewChange('detail')} />
+      </div>
       {ticket.source.url ? <a href={ticket.source.url} target="_blank" rel="noreferrer" className="flex h-8 shrink-0 items-center gap-1.5 rounded-[7px] border border-[var(--line)] bg-panel px-3 text-[9.5px] font-medium text-[var(--ink-soft)] outline-none transition-colors hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">在 DTS 中打开<ArrowSquareOut className="size-3.5" /></a> : null}
     </header>
   )
+}
+
+function ViewButton({ active, label, icon: Icon, onClick }: { active: boolean; label: string; icon: typeof FileText; onClick: () => void }) {
+  return <button type="button" role="tab" aria-selected={active} onClick={onClick} className={cn('flex h-7 items-center gap-1.5 rounded-[6px] px-2.5 text-[8.5px] text-[var(--muted-strong)] outline-none transition-[background-color,color,box-shadow] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]', active && 'bg-panel text-[var(--ink)] shadow-[0_1px_4px_rgba(24,38,66,0.12)]')}><Icon className="size-3.5" />{label}</button>
 }
 
 function RelationshipCanvas({ ticket, detail }: { ticket: DtsTicketSummary; detail: DtsTicketDetail | null }) {

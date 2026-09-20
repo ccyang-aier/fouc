@@ -44,10 +44,10 @@ export function DtsTicketList(props: Props) {
 
   return (
     <aside aria-label="DTS 工单列表" className="flex min-h-0 w-[276px] shrink-0 flex-col border-r border-[var(--line)] bg-panel max-[1050px]:w-[244px]">
-      <div className="flex h-[48px] shrink-0 items-center gap-1 border-b border-[var(--line)] px-2">
+      <div className="flex h-[48px] shrink-0 items-center gap-1 border-b border-[var(--line-strong)] px-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button type="button" aria-label="切换工单视图" className="flex h-8 min-w-0 items-center gap-1.5 rounded-[7px] px-2 text-[10px] text-[var(--ink-soft)] outline-none hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
+            <button type="button" aria-label="切换工单视图" className="flex h-8 min-w-0 items-center gap-1.5 rounded-[7px] border border-[var(--line)] bg-panel px-2.5 text-[10px] text-[var(--ink-soft)] outline-none hover:border-[var(--line-strong)] hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
               <span className="truncate">{activeView?.label ?? '待处理'}</span>
               {props.activeFilter === 'myTodos' && props.tickets ? <span className="text-[8px] tabular-nums text-[var(--muted)]">{props.tickets.total}</span> : null}
               <CaretDown className="size-3 shrink-0 text-[var(--muted)]" />
@@ -78,7 +78,7 @@ export function DtsTicketList(props: Props) {
           <button type="button" aria-label="关闭工单搜索" onClick={() => setSearchOpen(false)} className="flex size-6 shrink-0 items-center justify-center rounded-[5px] text-[var(--muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--ink)]"><X className="size-3" /></button>
         </div>
       </form> : null}
-      <div className="min-h-0 flex-1 overflow-y-auto px-2" aria-busy={props.loading}>
+      <div className="min-h-0 flex-1 overflow-y-auto px-2 pt-2" aria-busy={props.loading}>
         {props.loading ? <ListMessage icon={<SpinnerGap className="size-4 animate-spin" />} label="正在同步工单…" /> : props.error ? <ListMessage label={props.error} error /> : !props.tickets?.items.length ? <ListMessage label="当前视图暂无工单" /> : props.tickets.items.map((ticket) => (
           <button key={ticket.id} type="button" aria-pressed={props.selectedId === ticket.id} onClick={() => props.onSelect(ticket)} className={cn('group block w-full border-b border-[var(--line)] px-2.5 py-2.5 text-left outline-none transition-colors hover:bg-[var(--surface-subtle)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)]', props.selectedId === ticket.id && 'bg-[var(--accent-soft)]')}>
             <div className="flex items-center gap-1.5"><span className={cn('size-1.5 shrink-0 rounded-full', severityTone(ticket.severity))} /><span className="min-w-0 flex-1 truncate text-[9.5px] font-medium text-[var(--ink)]">{ticket.id}</span><span className="shrink-0 text-[8px] tabular-nums text-[var(--muted)]">{shortDate(ticket.createdAt)}</span></div>

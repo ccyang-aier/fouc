@@ -29,11 +29,11 @@ export function DtsTicketOverview({ detail, summary, loading }: Props) {
 
 function TicketHeader({ ticket, view, onViewChange }: { ticket: DtsTicketSummary; view: 'graph' | 'detail'; onViewChange: (view: 'graph' | 'detail') => void }) {
   return (
-    <header className="flex min-h-[64px] shrink-0 items-center gap-3 border-b border-[var(--line)] bg-panel px-5">
-      <span className={cn('size-2.5 shrink-0 rounded-full', severityTone(ticket.severity))} />
+    <header className="flex h-[48px] shrink-0 items-center gap-2.5 border-b border-[var(--line)] bg-panel px-4">
+      <span className={cn('size-2 shrink-0 rounded-full', severityTone(ticket.severity))} />
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2"><span className="shrink-0 text-[10px] font-medium text-[var(--muted-strong)]">{ticket.id}</span><SeverityBadge value={ticket.severity} /><span className="rounded-[5px] bg-[var(--accent-soft)] px-2 py-0.5 text-[8.5px] text-[var(--accent-ink)]">{ticket.status}</span></div>
-        <h1 className="mt-1 truncate text-[14px] font-semibold tracking-[-0.015em] text-[var(--ink)]">{ticket.title}</h1>
+        <div className="flex items-center gap-1.5"><span className="shrink-0 text-[8.5px] font-medium text-[var(--muted-strong)]">{ticket.id}</span><SeverityBadge value={ticket.severity} /><span className="rounded-[5px] bg-[var(--accent-soft)] px-1.5 py-px text-[8px] text-[var(--accent-ink)]">{ticket.status}</span></div>
+        <h1 className="mt-0.5 truncate text-[11.5px] font-medium tracking-[-0.01em] text-[var(--ink)]">{ticket.title}</h1>
       </div>
       <div role="tablist" aria-label="问题单视图" className="flex h-8 shrink-0 items-center rounded-[8px] bg-[var(--surface-subtle)] p-0.5 ring-1 ring-inset ring-[var(--line)]">
         <ViewButton active={view === 'graph'} label="关系图" icon={ShareNetwork} onClick={() => onViewChange('graph')} />

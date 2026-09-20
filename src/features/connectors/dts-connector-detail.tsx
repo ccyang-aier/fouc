@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
-import { ArrowSquareOut, ArrowsClockwise, CaretDown, CaretLeft, Check, CheckCircle, CopySimple, DotsThree, Plug, SignOut, SpinnerGap, WarningCircle } from '@phosphor-icons/react'
+import { ArrowSquareOut, ArrowsClockwise, Broadcast, CaretDown, CaretLeft, Check, CheckCircle, CopySimple, DotsThree, SignOut, SpinnerGap, WarningCircle } from '@phosphor-icons/react'
 import type { ConnectorDetailDto, DtsFilterId, DtsTicketDetail, DtsTicketListResult, DtsTicketSummary } from '@fouc/shared'
 import { AppAlert, type AppAlertMessage, type AppAlertTone } from '@/components/app-alert'
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -292,6 +292,7 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
           </DropdownMenuContent>
         </DropdownMenu>
         <div className="ml-auto flex items-center gap-1">
+          <ConnectionStatusMenu detail={detail} connected={connected} busy={busy} onHeartbeat={() => void heartbeat()} onReconnect={() => void connect()} onDisconnect={() => void disconnect()} />
           <button type="button" disabled={!connected || loading} onClick={() => void loadTickets(activeFilter, 1, keyword)} aria-label="刷新工单" className="flex size-8 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:opacity-40"><ArrowsClockwise className={cn('size-3.5', loading && 'animate-spin')} /></button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -302,7 +303,6 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
               <DropdownMenuItem disabled={!selectedTicket?.source.url} onSelect={() => { if (selectedTicket?.source.url) window.open(selectedTicket.source.url, '_blank', 'noopener,noreferrer') }}><ArrowSquareOut />在 DTS 中打开</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <ConnectionStatusMenu detail={detail} connected={connected} busy={busy} onHeartbeat={() => void heartbeat()} onReconnect={() => void connect()} onDisconnect={() => void disconnect()} />
         </div>
       </header>
       <div className="flex min-h-0 flex-1">
@@ -323,8 +323,8 @@ function ConnectionStatusMenu({ detail, connected, busy, onHeartbeat, onReconnec
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button type="button" aria-label="查看 DTS 连接状态" className={cn('flex size-8 items-center justify-center rounded-[7px] outline-none transition-colors hover:bg-[var(--surface-hover)] focus-visible:bg-[var(--accent-soft)]', connected ? 'text-[var(--ok-ink)]' : 'text-[var(--warn-ink)]')}>
-          <Plug className="size-[18px]" weight={connected ? 'fill' : 'regular'} />
+        <button type="button" aria-label="查看 DTS 连接状态" className="flex size-8 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
+          <Broadcast className="size-4" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[264px] rounded-[10px] p-1.5 shadow-[0_18px_48px_-22px_rgba(20,32,58,0.48)]">

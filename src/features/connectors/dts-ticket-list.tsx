@@ -35,7 +35,7 @@ type Props = {
 export function DtsTicketList(props: Props) {
   return (
     <aside aria-label="DTS 工单列表" className="flex min-h-0 w-[276px] shrink-0 flex-col border-r border-[var(--line)] bg-panel max-[1050px]:w-[244px]">
-      <div className="flex h-[46px] shrink-0 items-center border-b border-[var(--line)] px-2">
+      <div className="flex h-[48px] shrink-0 items-center border-b border-[var(--line)] px-2">
         <div role="group" aria-label="常用工单视图" className="flex h-8 w-full items-center gap-0.5 rounded-[8px] bg-[var(--surface-subtle)] p-0.5 ring-1 ring-inset ring-[var(--line)]">
         {PRIMARY_FILTERS.map((filter) => (
           <button key={filter.id} type="button" aria-pressed={props.activeFilter === filter.id} onClick={() => props.onFilterChange(filter.id)} className={cn('flex h-7 min-w-0 flex-1 items-center justify-center gap-1 rounded-[6px] px-1 text-[9.5px] text-[var(--muted-strong)] outline-none transition-[background-color,color,box-shadow] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]', props.activeFilter === filter.id && 'bg-panel text-[var(--ink)] shadow-[0_1px_4px_rgba(24,38,66,0.12)]')}>

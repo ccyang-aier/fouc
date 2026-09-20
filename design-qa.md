@@ -63,7 +63,7 @@ final result: passed
 
 ---
 
-# Home assistant whole-character motion atlas — design QA
+# Home assistant whole-character motion atlas — design QA (superseded)
 
 - Source visual truth: the existing Fouc robot identity plus the user's latest feedback that split head/body motion caused scale pumping, neck separation, and visible discontinuity.
 - Image generation mode: built-in ImageGen, stylized-product-asset workflow.
@@ -102,5 +102,46 @@ Each pitch band was generated as a temporally ordered 6 × 4 contact sheet using
 ## Superseded assets
 
 The split `assistant-body.webp` and `head-atlas.webp` assets, plus the differently proportioned legacy blink/success overlays, were removed. Future expressions should be authored as additional whole-character frames so the fixed silhouette and baseline contract remains intact.
+
+final result: superseded after user testing because directional frames still produced visible temporal drift
+
+---
+
+# Home assistant fixed-direction expression atlas — design QA
+
+- User decision: remove mouse-follow direction changes completely and keep the robot facing straight ahead.
+- Image generation mode: built-in ImageGen, identity-preserve workflow.
+- Final asset: `public/brand/assistant/assistant-expression-atlas.webp`.
+- Atlas specification: six fixed-pose expressions in one 1152 × 192 px transparent WebP; 192 × 192 px per frame; 33 KB lossless output.
+
+## Expression set
+
+1. Neutral
+2. Half blink
+3. Closed blink
+4. Happy
+5. Curious
+6. Focused
+
+ImageGen supplied the expression design reference. The production atlas then reuses one identical neutral robot silhouette for all six frames and composites only the cyan eye pixels inside the face screen. Head, body, hands, neck, crop, alpha, baseline, and scale are therefore pixel-identical between frames.
+
+## Timing behavior
+
+- Neutral remains the dominant state.
+- Ambient expressions occur at randomized 3.8–6.6 second intervals.
+- A natural blink uses half-blink → closed → half-blink → neutral timing.
+- Happy, curious, and focused states appear occasionally for about 1.1–1.35 seconds before returning to neutral.
+- Task creation overrides the ambient state with the happy expression.
+- `prefers-reduced-motion` disables ambient timed changes while preserving the static task-completion expression.
+
+## Browser evidence
+
+- Mouse sweeps across all four viewport corners left `background-position: 0% 50%` unchanged.
+- Timed ambient state changed from neutral to happy/focused and returned to neutral without changing the robot bounds.
+- Creating a task changed `data-expression` to `happy`, then restored neutral.
+- Desktop robot bounds remain 142 × 142 CSS px; the existing compact rule remains 112 × 112 CSS px.
+- The final page loaded the expression atlas at `background-size: 600% 100%` with no transform.
+- Pixel audit confirmed zero visible-pixel differences outside the face screen and zero alpha differences across all six frames.
+- No relevant browser console warnings or errors were present.
 
 final result: passed

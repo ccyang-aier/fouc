@@ -31,29 +31,17 @@ type Props = {
   onSearch: () => void
   onSelect: (ticket: DtsTicketSummary) => void
   onPageChange: (page: number) => void
+  onCollapse: () => void
 }
 
 export function DtsTicketList(props: Props) {
   const [searchOpen, setSearchOpen] = useState(false)
-  const [collapsed, setCollapsed] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const activeView = [...PRIMARY_FILTERS, ...MORE_FILTERS].find((filter) => filter.id === props.activeFilter)
 
   useEffect(() => {
     if (searchOpen) searchInputRef.current?.focus()
   }, [searchOpen])
-
-  if (collapsed) {
-    return (
-      <aside aria-label="DTS 工单列表（已收起）" className="flex min-h-0 w-11 shrink-0 flex-col items-center border-r border-[var(--line)] bg-panel py-2 transition-[width] duration-200">
-        <button type="button" aria-label="展开工单侧栏" aria-expanded="false" onClick={() => setCollapsed(false)} className="flex size-8 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
-          <SidebarSimple className="size-4" weight="regular" />
-        </button>
-        <span className="mt-3 text-[8px] font-medium tracking-[0.18em] text-[var(--muted)] [writing-mode:vertical-rl]">工单列表</span>
-        {props.tickets ? <span className="mt-2 flex size-5 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[8px] font-semibold tabular-nums text-[var(--accent-ink)]">{props.tickets.total}</span> : null}
-      </aside>
-    )
-  }
 
   return (
     <aside aria-label="DTS 工单列表" className="flex min-h-0 w-[316px] shrink-0 flex-col border-r border-[var(--line)] bg-[var(--surface-subtle)]/55 transition-[width] duration-200 max-[1180px]:w-[284px]">
@@ -80,7 +68,7 @@ export function DtsTicketList(props: Props) {
             {MORE_FILTERS.map((filter) => <DropdownMenuCheckboxItem key={filter.id} checked={props.activeFilter === filter.id} onCheckedChange={() => props.onFilterChange(filter.id)}>{filter.label}</DropdownMenuCheckboxItem>)}
           </DropdownMenuContent>
         </DropdownMenu>
-        <button type="button" aria-label="收起工单侧栏" aria-expanded="true" onClick={() => setCollapsed(true)} className="flex size-8 shrink-0 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><SidebarSimple className="size-3.5" weight="regular" /></button>
+        <button type="button" aria-label="收起工单侧栏" aria-expanded="true" onClick={props.onCollapse} className="flex size-8 shrink-0 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><SidebarSimple className="size-3.5" weight="regular" /></button>
         </div>
       </div>
       {searchOpen ? <form onSubmit={(event) => { event.preventDefault(); props.onSearch() }} className="flex h-[48px] shrink-0 items-center gap-2 border-b border-[var(--line)] px-2">
@@ -100,13 +88,11 @@ export function DtsTicketList(props: Props) {
             </div>
             <p className="mt-1.5 line-clamp-2 text-[10.5px] font-semibold leading-[15px] tracking-[-0.012em] text-[var(--ink)]">{ticket.title}</p>
             {ticket.remark ? <p className="mt-1 line-clamp-2 text-[8.5px] leading-[13px] text-[var(--muted-strong)]">{ticket.remark}</p> : null}
-            <div className="mt-2 flex min-w-0 items-center gap-2 border-t border-dashed border-[var(--line-strong)]/70 pt-2 text-[8px] text-[var(--muted)]">
-              <span className="flex min-w-0 items-center gap-1"><User className="size-3 shrink-0" /><span className="truncate">{ticket.currentHandler ?? ticket.creator ?? '未分配'}</span></span>
+            <div className="mt-2 flex min-w-0 items-center gap-1.5 border-t border-dashed border-[var(--line-strong)]/70 pt-2 text-[8px] text-[var(--muted)]">
+              <span className="flex min-w-0 max-w-[58px] items-center gap-1"><User className="size-3 shrink-0" weight="regular" /><span className="truncate">{ticket.currentHandler ?? ticket.creator ?? '未分配'}</span></span>
               <span className="flex shrink-0 items-center gap-1 tabular-nums"><Clock className="size-3" />{shortDate(ticket.createdAt)}</span>
-            </div>
-            <div className="mt-1.5 flex min-w-0 items-center gap-1.5 text-[8px]">
-              <span className={cn('max-w-[72px] truncate rounded-[5px] px-1.5 py-0.5 font-medium', statusTone(ticket.status))}>{ticket.status}</span>
-              {ticket.relatedCount != null ? <span className="flex min-w-0 items-center gap-1 rounded-[5px] bg-[var(--accent-soft)] px-1.5 py-0.5 font-medium text-[var(--accent-ink)]"><LinkSimple className="size-2.5 shrink-0" /><span className="truncate">与 {ticket.relatedCount} 个问题相关</span></span> : null}
+              <span className={cn('max-w-[58px] shrink-0 truncate rounded-[5px] px-1.5 py-0.5 font-medium', statusTone(ticket.status))}>{ticket.status}</span>
+              {ticket.relatedCount != null ? <span className="flex min-w-0 max-w-[82px] items-center gap-1 rounded-[5px] bg-[var(--accent-soft)] px-1.5 py-0.5 font-medium text-[var(--accent-ink)]"><LinkSimple className="size-2.5 shrink-0" /><span className="truncate">与 {ticket.relatedCount} 个问题相关</span></span> : null}
               {ticket.commentCount != null ? <span className="ml-auto flex shrink-0 items-center gap-1 text-[var(--muted-strong)]" aria-label={`${ticket.commentCount} 条评论`}><ChatCircleDots className="size-3" />{ticket.commentCount}</span> : null}
             </div>
           </button>

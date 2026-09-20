@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { DtsFilterId, DtsTicketDetail, DtsTicketListResult, DtsTicketSummary } from '@fouc/shared'
 import Image from 'next/image'
 import { DtsTicketList } from './dts-ticket-list'
@@ -22,11 +23,13 @@ type Props = {
 }
 
 export function DtsTicketWorkspace(props: Props) {
+  const [listOpen, setListOpen] = useState(true)
+
   if (!props.connected) return <DisconnectedState onConnect={props.onConnect} />
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden bg-[var(--surface-subtle)]/45">
-      <DtsTicketList
+      {listOpen ? <DtsTicketList
         activeFilter={props.activeFilter}
         tickets={props.tickets}
         selectedId={props.selectedId}
@@ -38,11 +41,13 @@ export function DtsTicketWorkspace(props: Props) {
         onSearch={props.onSearch}
         onSelect={props.onSelect}
         onPageChange={props.onPageChange}
-      />
+        onCollapse={() => setListOpen(false)}
+      /> : null}
       <DtsTicketOverview
         detail={props.detail}
         summary={props.tickets?.items.find((ticket) => ticket.id === props.selectedId) ?? null}
         loading={props.detailLoading}
+        onOpenList={listOpen ? undefined : () => setListOpen(true)}
       />
     </div>
   )

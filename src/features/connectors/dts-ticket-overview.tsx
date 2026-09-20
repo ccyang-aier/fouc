@@ -1,35 +1,36 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   ArrowSquareOut, CalendarBlank, Check, CornersOut, FileText, FlowArrow, Hand,
-  LinkSimple, ListChecks, Minus, Plus, ShareNetwork, SpinnerGap, Stack, User, UsersThree,
+  LinkSimple, ListChecks, Minus, Plus, ShareNetwork, SidebarSimple, SpinnerGap, Stack, User, UsersThree,
 } from '@phosphor-icons/react'
 import type { DtsFlowNodeSummary, DtsSeverity, DtsTicketDetail, DtsTicketSummary } from '@fouc/shared'
 import { cn } from '@/lib/utils'
 import { DtsTicketDetailView } from './dts-ticket-detail-view'
 
-type Props = { detail: DtsTicketDetail | null; summary: DtsTicketSummary | null; loading: boolean }
+type Props = { detail: DtsTicketDetail | null; summary: DtsTicketSummary | null; loading: boolean; onOpenList?: () => void }
 type Offset = { x: number; y: number }
 
 const MIN_ZOOM = 0.48
 const MAX_ZOOM = 1.12
 const ZOOM_STEP = 0.08
 
-export function DtsTicketOverview({ detail, summary, loading }: Props) {
+export function DtsTicketOverview({ detail, summary, loading, onOpenList }: Props) {
   const [view, setView] = useState<'graph' | 'detail'>('graph')
   const ticket = detail ?? summary
   if (!ticket) return <EmptyOverview />
 
   return (
     <main aria-label="工单工作区" className="flex min-h-0 min-w-[410px] flex-1 flex-col overflow-hidden bg-[var(--surface-subtle)]/35">
-      <TicketHeader ticket={ticket} view={view} onViewChange={setView} />
+      <TicketHeader ticket={ticket} view={view} onViewChange={setView} onOpenList={onOpenList} />
       {loading ? <div className="flex min-h-0 flex-1 items-center justify-center gap-2 text-[10px] text-[var(--muted)]"><SpinnerGap className="size-4 animate-spin" />正在读取问题单…</div> : view === 'graph' ? <RelationshipCanvas ticket={ticket} detail={detail} /> : <DtsTicketDetailView ticket={ticket} detail={detail} />}
     </main>
   )
 }
 
-function TicketHeader({ ticket, view, onViewChange }: { ticket: DtsTicketSummary; view: 'graph' | 'detail'; onViewChange: (view: 'graph' | 'detail') => void }) {
+function TicketHeader({ ticket, view, onViewChange, onOpenList }: { ticket: DtsTicketSummary; view: 'graph' | 'detail'; onViewChange: (view: 'graph' | 'detail') => void; onOpenList?: () => void }) {
   return (
     <header className="flex h-[48px] shrink-0 items-center gap-2.5 border-b border-[var(--line)] bg-panel px-4">
+      {onOpenList ? <button type="button" aria-label="展开工单侧栏" aria-expanded="false" onClick={onOpenList} className="flex size-8 shrink-0 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><SidebarSimple className="size-4" weight="regular" /></button> : null}
       <span className={cn('size-2 shrink-0 rounded-full', severityTone(ticket.severity))} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5"><span className="shrink-0 text-[8.5px] font-medium text-[var(--muted-strong)]">{ticket.id}</span><SeverityBadge value={ticket.severity} /><span className="rounded-[5px] bg-[var(--accent-soft)] px-1.5 py-px text-[8px] text-[var(--accent-ink)]">{ticket.status}</span></div>

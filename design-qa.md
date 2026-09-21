@@ -1,65 +1,54 @@
-# MySQL 连接列表页 Design QA
+# MySQL connection list design QA
 
-- Source visual truth: `C:\Users\y00013075\.codex\generated_images\01a0be23-9fae-7eb1-a835-706cd61a971f\exec-ae835694-eaee-4ffa-a945-40b27d408021.png`
-- Implementation screenshot: `D:\AWorks\code\fouc\design-qa-mysql-implementation.png`
-- Browser: Codex in-app browser, `http://127.0.0.1:3001/`
-- CSS viewport: 1488 × 1058 px
-- Source pixels: 1487 × 1058 px
-- Implementation pixels: 1487 × 968 px
-- Device pixel ratio: 1
-- Density normalization: both images were inspected at 1×. The implementation evidence uses the top 1487 × 968 px content crop because the remaining 90 px in the source is empty canvas and contains no UI.
-- State: light theme, main navigation expanded, Connectors selected, MySQL provider open, all filters at their default values.
+- Source visual truth path: task-attached Browser Comment screenshots 1–4 (1682 × 960 px).
+- Implementation screenshot path: Codex in-app Browser inline captures from `http://127.0.0.1:3001/` in this task.
+- Viewport: 1682 × 960 CSS px, device scale factor 1.
+- Source pixels: 1682 × 960. Implementation pixels: 1682 × 960. No density normalization required.
+- State: MySQL connector connection list, five mock connections, default filters; an additional focused-search capture verifies focus treatment.
 
 ## Full-view comparison evidence
 
-The source and implementation were placed together in one browser comparison surface before review. The implementation preserves the source composition: existing Fouc rail and navigation, breadcrumb, single MySQL provider header, one primary create action, one horizontal filter row, one continuous five-row table, and the connection count below it. It does not introduce a connection detail pane, SQL editor, schema tree, workbench preview, AI panel, dashboard cards, or unrelated capability advertising.
-
-The existing Fouc navigation shell is intentionally retained at its production width instead of copying the slightly wider shell synthesized by ImageGen. The main-page proportions, content padding, title hierarchy, toolbar distribution, table width, and whitespace match the selected direction without modifying global navigation behavior.
+The annotated source screenshots and the revised browser capture were reviewed together at the same viewport. The revised implementation now has the requested persistent connector-detail header, compact provider summary, split filter toolbar, borderless-side table, and compact rows. The global Fouc shell is unchanged.
 
 ## Focused region comparison evidence
 
-A second side-by-side comparison showed the source and implementation at 1× with the upper content region cropped to the breadcrumb, provider heading, filters, and table. The connection-name, environment, address, and database baselines align consistently. Header height and five row heights reproduce the source density. The first implementation pass placed the toolbar and table about 20 px too low; the provider header and vertical gaps were reduced, then recaptured. The final screenshot shows the corrected placement.
+- Top navigation: 42px connector-detail header with a visible back icon and `连接器 / MySQL` breadcrumb.
+- Provider summary: 58px content header, 48px logo tile, 22px title, circular create and more controls.
+- Filter toolbar: search and status on the left; project, environment, and sort on the right.
+- Focus state: search focus uses only an accent border; the browser capture shows no focus shadow.
+- Table: 38px header, 60px rows, horizontal rules only, no left or right outer border.
 
 ## Required fidelity surfaces
 
-- Fonts and typography: Uses the existing Fouc UI font stack. The 30 px semibold provider title, 13 px connection names, compact secondary tags, 11–12 px table copy, and tabular address/time values reproduce the target hierarchy without wrapping or truncation at the reference width.
-- Spacing and layout rhythm: The page uses 28 px horizontal padding, a 70 px provider mark, 40 px filter controls, a 48 px table header, 78 px rows, 12 px column gaps, and lightweight separators. No nested cards or per-row card shadows are present.
-- Colors and visual tokens: Existing panel, surface, line, ink, accent, focus, success, warning, and error tokens are used. Environment dots and state pills are limited to semantic color. Light-theme foreground and border contrast remain consistent with Fouc.
-- Image and icon fidelity: The page reuses the repository's real MySQL SVG and Phosphor icon family. No inline SVG, CSS drawing, emoji, placeholder, generated raster icon, or approximate brand asset is used.
-- Copy and content: Breadcrumb, title, helper copy, filters, headers, five connection records, statuses, timestamps, actions, and footer count match the selected mock's content.
-- Responsiveness: At narrower desktop widths the table remains usable through horizontal overflow rather than collapsing columns or merging list and detail content. The selected 1488 px viewport shows every source column and row action.
-- Accessibility: Search and filters are labeled; the table exposes a named list; rows are keyboard-openable; favorites expose pressed state; status is not color-only; dropdown and modal controls retain visible focus rings.
-
-## Interaction verification
-
-1. Navigated through `连接器 → MySQL` and confirmed the standalone list page rendered in the existing Fouc shell.
-2. Entered `订单` in search and confirmed the list and footer count reduced from five connections to one, then cleared the query and confirmed all five returned.
-3. Opened `新建连接` and confirmed the modal exposes connection name, host, port, database, environment, cancel, close, and create controls.
-4. Activated the first row's `测试` action and confirmed its disabled `测试中` state, followed by successful completion.
-5. Confirmed environment, status, and sort controls expose dropdown semantics; favorite, overflow, and full-row entry affordances are independently accessible.
-6. Checked browser console warnings and errors after navigation and interactions: none.
-7. Ran TypeScript type checking and ESLint with zero errors and zero warnings.
+- Fonts and typography: preserved the Fouc application font stack and reduced title/table sizing to match the denser connector-detail hierarchy.
+- Spacing and layout rhythm: header, provider summary, toolbar, and table now use a compact 42/58/32/38/60px rhythm.
+- Colors and visual tokens: all surfaces use existing Fouc panel, line, accent, ink, muted, and semantic status tokens.
+- Image quality and asset fidelity: retained the existing official MySQL logo asset at its native aspect ratio; no generated or CSS-drawn replacement.
+- Copy and content: retained the five connection records and added the requested `全部项目` filter with product-consistent project names.
 
 ## Comparison history
 
-### Pass 1
+### Pass 1 — blocked
 
-- Finding [P2]: Connection rows included a repeated MySQL logo that was not present in the selected source and compressed the name column.
-- Fix: Removed the row-level brand mark, leaving the provider-level MySQL asset in the header and restoring the source's star-plus-name hierarchy.
-- Evidence: The final focused comparison shows name and tag beginning directly after the favorite column, matching the source.
+- P1: breadcrumb was embedded in page content and had no explicit back icon.
+- P2: toolbar was a single undifferentiated row and lacked project filtering.
+- P2: search focus used a ring shadow.
+- P2: table rows and outer container were too tall/heavy and had side borders.
+- P2: provider summary and rectangular create button were oversized.
 
-### Pass 2
+Fixes made: extracted a shared connector detail header; added project metadata/filtering; split toolbar alignment; removed input focus shadows; reduced table/header/row density; removed table side borders; replaced the CTA with circular create/more actions.
 
-- Finding [P2]: The enlarged provider header pushed the filter row and table about 20 px below the source positions.
-- Fix: Restored the original 20 px top and section gaps with a 76 px header footprint while retaining the clearer 70 px provider mark and 30 px title.
-- Evidence: The final screenshot aligns the toolbar and table with the selected mock and preserves all five visible rows.
+### Pass 2 — passed
+
+Post-fix evidence at 1682 × 960 shows all four annotated regions corrected. Browser interaction checks confirmed search filtering (5 → 1), project filtering (5 → 2), back navigation, new-connection dialog, and the more-actions menu. Browser console warnings/errors: none.
 
 ## Findings
 
-No actionable P0, P1, or P2 visual differences remain. The only intentional difference is the unchanged production Fouc navigation width and the repository's official MySQL brand color, both of which are product-system constraints rather than page-level drift.
+No actionable P0, P1, or P2 differences remain against the four requested annotations.
 
-## Follow-up polish
+## Remaining risk
 
-No required visual follow-up. Backend persistence and the separate connection workbench are outside this list-page implementation scope.
+- The table intentionally retains horizontal scrolling below its 850px minimum width; mobile layout was not part of the desktop-app reference.
+- Project ownership is mock data until connection persistence is connected to the backend.
 
 final result: passed

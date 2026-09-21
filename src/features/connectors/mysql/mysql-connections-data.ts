@@ -1,10 +1,12 @@
 export type MysqlConnectionEnvironment = "生产" | "分析" | "预发布" | "开发" | "其他"
 export type MysqlConnectionStatus = "healthy" | "auth-required" | "offline"
+export type MysqlConnectionProject = "Fouc 桌面端 V1" | "数据平台" | "个人工作台"
 
 export type MysqlConnection = {
   id: string
   name: string
   description: string
+  project: MysqlConnectionProject
   environment: MysqlConnectionEnvironment
   host: string
   database: string
@@ -30,11 +32,19 @@ export const MYSQL_STATUSES: ReadonlyArray<{ value: "all" | MysqlConnectionStatu
   { value: "offline", label: "离线" },
 ]
 
+export const MYSQL_PROJECTS: ReadonlyArray<"全部项目" | MysqlConnectionProject> = [
+  "全部项目",
+  "Fouc 桌面端 V1",
+  "数据平台",
+  "个人工作台",
+]
+
 export const initialMysqlConnections: MysqlConnection[] = [
   {
     id: "mysql-production-orders",
     name: "生产订单库",
     description: "核心业务",
+    project: "Fouc 桌面端 V1",
     environment: "生产",
     host: "mysql-prod.internal:3306",
     database: "orders",
@@ -47,6 +57,7 @@ export const initialMysqlConnections: MysqlConnection[] = [
     id: "mysql-analytics",
     name: "数据分析库",
     description: "BI / 报表",
+    project: "数据平台",
     environment: "分析",
     host: "10.24.8.16:3306",
     database: "analytics",
@@ -59,6 +70,7 @@ export const initialMysqlConnections: MysqlConnection[] = [
     id: "mysql-staging",
     name: "预发布验证库",
     description: "测试环境",
+    project: "Fouc 桌面端 V1",
     environment: "预发布",
     host: "10.24.8.32:3306",
     database: "test",
@@ -71,6 +83,7 @@ export const initialMysqlConnections: MysqlConnection[] = [
     id: "mysql-local",
     name: "本地开发库",
     description: "个人",
+    project: "个人工作台",
     environment: "开发",
     host: "127.0.0.1:3306",
     database: "dev",
@@ -83,6 +96,7 @@ export const initialMysqlConnections: MysqlConnection[] = [
     id: "mysql-customer-mirror",
     name: "客户镜像库",
     description: "客户数据",
+    project: "数据平台",
     environment: "其他",
     host: "192.168.1.88:3306",
     database: "customer",

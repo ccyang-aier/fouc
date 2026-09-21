@@ -52,8 +52,8 @@ export function MysqlConnectionTable({
   onDelete,
 }: MysqlConnectionTableProps) {
   return (
-    <div className="min-w-[850px] overflow-hidden rounded-[9px] border border-[var(--line)] bg-panel">
-      <div className="grid h-[48px] grid-cols-[40px_minmax(170px,1.32fr)_106px_minmax(190px,1.5fr)_118px_110px_126px_128px] items-center gap-3 bg-[var(--surface-subtle)] px-4 text-[11px] font-medium text-[var(--muted-strong)]">
+    <div className="min-w-[850px] border-y border-[var(--line)] bg-panel">
+      <div className="grid h-[38px] grid-cols-[36px_minmax(170px,1.32fr)_100px_minmax(190px,1.5fr)_112px_104px_120px_122px] items-center gap-3 bg-[var(--surface-subtle)] px-3 text-[10px] font-medium text-[var(--muted-strong)]">
         <span aria-hidden />
         <span>连接名称</span>
         <span>环境</span>
@@ -123,7 +123,7 @@ function MysqlConnectionRow({
           onOpen(connection)
         }
       }}
-      className="group grid min-h-[78px] cursor-pointer grid-cols-[40px_minmax(170px,1.32fr)_106px_minmax(190px,1.5fr)_118px_110px_126px_128px] items-center gap-3 border-t border-[var(--line)] px-4 outline-none transition-colors hover:bg-[color-mix(in_srgb,var(--accent)_2.8%,var(--panel))] focus-visible:bg-[var(--accent-soft)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)]"
+      className="group grid h-[60px] cursor-pointer grid-cols-[36px_minmax(170px,1.32fr)_100px_minmax(190px,1.5fr)_112px_104px_120px_122px] items-center gap-3 border-t border-[var(--line)] px-3 outline-none transition-colors hover:bg-[color-mix(in_srgb,var(--accent)_2.8%,var(--panel))] focus-visible:bg-[var(--accent-soft)]"
     >
       <button
         type="button"
@@ -134,7 +134,7 @@ function MysqlConnectionRow({
           onToggleFavorite(connection.id)
         }}
         className={cn(
-          "flex size-7 items-center justify-center rounded-[6px] outline-none transition-colors hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
+          "flex size-7 items-center justify-center rounded-[6px] outline-none transition-colors hover:bg-[var(--surface-hover)] focus-visible:text-[var(--accent-ink)]",
           connection.favorite ? "text-[#dd9d22]" : "text-[var(--muted)] hover:text-[var(--ink-soft)]",
         )}
       >
@@ -143,22 +143,22 @@ function MysqlConnectionRow({
 
       <div className="min-w-0">
         <div className="min-w-0">
-          <p className="truncate text-[13px] font-semibold tracking-[-0.012em] text-[var(--ink)]">{connection.name}</p>
-          <span className="mt-1 inline-flex rounded-[5px] bg-[var(--surface-hover)] px-1.5 py-0.5 text-[9.5px] leading-[14px] text-[var(--muted-strong)]">{connection.description}</span>
+          <p className="truncate text-[12px] font-semibold tracking-[-0.012em] text-[var(--ink)]">{connection.name}</p>
+          <span className="mt-0.5 inline-flex rounded-[4px] bg-[var(--surface-hover)] px-1.5 py-px text-[9px] leading-[13px] text-[var(--muted-strong)]">{connection.description}</span>
         </div>
       </div>
 
-      <span className="flex items-center gap-2 text-[11px] font-medium text-[var(--ink-soft)]">
+      <span className="flex items-center gap-2 text-[10px] font-medium text-[var(--ink-soft)]">
         <span className="size-2 rounded-full" style={{ backgroundColor: mysqlEnvironmentTone[connection.environment] }} />
         {connection.environment}
       </span>
-      <span className="truncate text-[12px] tabular-nums text-[var(--ink-soft)]">{connection.host}</span>
-      <span className="truncate text-[12px] text-[var(--ink-soft)]">{connection.database}</span>
-      <span className={cn("inline-flex h-6 w-fit items-center gap-1.5 rounded-full border px-2 text-[10px] font-medium", STATUS_CLASSES[connection.status])}>
+      <span className="truncate text-[11px] tabular-nums text-[var(--ink-soft)]">{connection.host}</span>
+      <span className="truncate text-[11px] text-[var(--ink-soft)]">{connection.database}</span>
+      <span className={cn("inline-flex h-5 w-fit items-center gap-1.5 rounded-full border px-2 text-[9px] font-medium", STATUS_CLASSES[connection.status])}>
         <span className="size-1.5 rounded-full bg-current" />
         {status.label}
       </span>
-      <span className="whitespace-nowrap text-[11.5px] tabular-nums text-[var(--muted-strong)]">{connection.lastUsed}</span>
+      <span className="whitespace-nowrap text-[10.5px] tabular-nums text-[var(--muted-strong)]">{connection.lastUsed}</span>
 
       <div className="relative z-10 flex items-center gap-1 pl-1">
         <button

@@ -14,7 +14,7 @@ type MysqlConnectionDialogProps = {
   onCreate: (connection: MysqlConnection) => void
 }
 
-const INPUT_CLASS = "h-[34px] w-full rounded-[7px] border border-[var(--line)] bg-panel px-2.5 text-[11px] text-[var(--ink)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--muted)] focus:border-[var(--accent)] focus:shadow-[0_0_0_2px_var(--focus-ring)]"
+const INPUT_CLASS = "h-[34px] w-full rounded-[7px] border border-[var(--line)] bg-panel px-2.5 text-[11px] text-[var(--ink)] outline-none transition-colors placeholder:text-[var(--muted)] focus:border-[var(--accent)]"
 
 export function MysqlConnectionDialog({ open, onClose, onCreate }: MysqlConnectionDialogProps) {
   const [name, setName] = useState("")
@@ -35,6 +35,7 @@ export function MysqlConnectionDialog({ open, onClose, onCreate }: MysqlConnecti
       id: `mysql-${Date.now()}`,
       name: trimmedName,
       description: "新建连接",
+      project: "Fouc 桌面端 V1",
       environment,
       host: `${trimmedHost}:${port || "3306"}`,
       database: database.trim() || "—",

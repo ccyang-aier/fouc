@@ -4,9 +4,11 @@ import { CaretLeft } from "@phosphor-icons/react"
 
 import type { Connector } from "./connectors-data"
 import { DtsConnectorDetail } from "./dts-connector-detail"
+import { MysqlConnectionList } from "./mysql/mysql-connection-list"
 
 export function ConnectorDetail({ connector, onBack, onConnectionChange }: { connector: Connector; onBack: () => void; onConnectionChange: (connected: boolean) => void }) {
   if (connector.id === "connector-dts") return <DtsConnectorDetail onBack={onBack} onConnectionChange={onConnectionChange} />
+  if (connector.id === "connector-mysql") return <MysqlConnectionList onBack={onBack} />
   return (
     <section aria-label={`${connector.name} 连接器详情`} className="flex h-full min-h-0 flex-col bg-panel">
       <header className="flex h-[42px] shrink-0 items-center border-b border-[var(--line)] px-[18px]">

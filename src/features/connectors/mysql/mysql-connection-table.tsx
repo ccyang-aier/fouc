@@ -52,13 +52,15 @@ export function MysqlConnectionTable({
   onDelete,
 }: MysqlConnectionTableProps) {
   return (
-    <div className="min-w-[850px] border-y border-[var(--line)] bg-panel">
-      <div className="grid h-[38px] grid-cols-[36px_minmax(170px,1.32fr)_100px_minmax(190px,1.5fr)_112px_104px_120px_122px] items-center gap-3 bg-[var(--surface-subtle)] px-3 text-[10px] font-medium text-[var(--muted-strong)]">
+    <div className="min-w-[1160px] border-y border-[var(--line)] bg-panel">
+      <div className="grid h-[38px] grid-cols-[32px_minmax(160px,1.2fr)_128px_86px_minmax(180px,1.45fr)_100px_104px_86px_112px_116px] items-center gap-3 bg-[var(--surface-subtle)] px-3 text-[10px] font-medium text-[var(--muted-strong)]">
         <span aria-hidden />
         <span>连接名称</span>
+        <span>项目</span>
         <span>环境</span>
         <span>地址</span>
         <span>数据库</span>
+        <span>用户</span>
         <span>状态</span>
         <button
           type="button"
@@ -123,7 +125,7 @@ function MysqlConnectionRow({
           onOpen(connection)
         }
       }}
-      className="group grid h-[60px] cursor-pointer grid-cols-[36px_minmax(170px,1.32fr)_100px_minmax(190px,1.5fr)_112px_104px_120px_122px] items-center gap-3 border-t border-[var(--line)] px-3 outline-none transition-colors hover:bg-[color-mix(in_srgb,var(--accent)_2.8%,var(--panel))] focus-visible:bg-[var(--accent-soft)]"
+      className="group grid h-[60px] cursor-pointer grid-cols-[32px_minmax(160px,1.2fr)_128px_86px_minmax(180px,1.45fr)_100px_104px_86px_112px_116px] items-center gap-3 border-t border-[var(--line)] px-3 outline-none transition-colors hover:bg-[color-mix(in_srgb,var(--accent)_2.8%,var(--panel))] focus-visible:bg-[var(--accent-soft)]"
     >
       <button
         type="button"
@@ -148,12 +150,14 @@ function MysqlConnectionRow({
         </div>
       </div>
 
+      <span className="truncate text-[10.5px] text-[var(--ink-soft)]" title={connection.project}>{connection.project}</span>
       <span className="flex items-center gap-2 text-[10px] font-medium text-[var(--ink-soft)]">
         <span className="size-2 rounded-full" style={{ backgroundColor: mysqlEnvironmentTone[connection.environment] }} />
         {connection.environment}
       </span>
       <span className="truncate text-[11px] tabular-nums text-[var(--ink-soft)]">{connection.host}</span>
       <span className="truncate text-[11px] text-[var(--ink-soft)]">{connection.database}</span>
+      <span className="truncate text-[10.5px] text-[var(--muted-strong)]">{connection.username}</span>
       <span className={cn("inline-flex h-5 w-fit items-center gap-1.5 rounded-full border px-2 text-[9px] font-medium", STATUS_CLASSES[connection.status])}>
         <span className="size-1.5 rounded-full bg-current" />
         {status.label}

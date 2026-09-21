@@ -39,6 +39,7 @@ export function MysqlConnectionDialog({ open, onClose, onCreate }: MysqlConnecti
       environment,
       host: `${trimmedHost}:${port || "3306"}`,
       database: database.trim() || "—",
+      username: "root",
       status: "healthy",
       lastUsed: "刚刚",
       lastUsedOrder: -1,

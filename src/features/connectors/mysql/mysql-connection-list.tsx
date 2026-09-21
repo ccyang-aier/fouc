@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import { useCallback, useMemo, useState } from "react"
-import { CaretDown, DotsThree, MagnifyingGlass, Plus, SortAscending, UploadSimple } from "@phosphor-icons/react"
+import { CaretDown, DotsThree, MagnifyingGlass, Plus, UploadSimple } from "@phosphor-icons/react"
 
 import { AppAlert, type AppAlertMessage } from "@/components/app-alert"
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -40,7 +40,7 @@ export function MysqlConnectionList({ onBack }: { onBack: () => void }) {
   const visibleConnections = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase("zh-CN")
     const filtered = connections.filter((connection) => {
-      const matchesQuery = !normalized || `${connection.name} ${connection.description} ${connection.host} ${connection.database}`.toLocaleLowerCase("zh-CN").includes(normalized)
+      const matchesQuery = !normalized || `${connection.name} ${connection.description} ${connection.project} ${connection.host} ${connection.database} ${connection.username}`.toLocaleLowerCase("zh-CN").includes(normalized)
       const matchesEnvironment = environment === "全部环境" || connection.environment === environment
       const matchesProject = project === "全部项目" || connection.project === project
       const matchesStatus = status === "all" || connection.status === status
@@ -84,13 +84,13 @@ export function MysqlConnectionList({ onBack }: { onBack: () => void }) {
             <p className="mt-1 text-[10px] text-[var(--muted-strong)]">管理并访问你的 MySQL 连接</p>
           </div>
           <div className="ml-auto flex items-center gap-1.5">
-            <button type="button" onClick={() => setCreateOpen(true)} aria-label="新建连接" title="新建连接" className="flex size-9 items-center justify-center rounded-full bg-[var(--accent)] text-white outline-none transition-colors hover:bg-[var(--accent-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]">
-              <Plus className="size-4" weight="bold" />
+            <button type="button" onClick={() => setCreateOpen(true)} aria-label="新建连接" title="新建连接" className="flex size-7 items-center justify-center rounded-full border border-[var(--accent)] bg-panel text-[var(--accent-ink)] outline-none transition-colors hover:bg-[var(--accent-soft)] focus-visible:border-[var(--accent-strong)]">
+              <Plus className="size-3.5" weight="bold" />
             </button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button type="button" aria-label="更多操作" title="更多操作" className="flex size-9 items-center justify-center rounded-full border border-[var(--line)] text-[var(--muted-strong)] outline-none transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:border-[var(--accent)]">
-                  <DotsThree className="size-[18px]" weight="bold" />
+                <button type="button" aria-label="更多操作" title="更多操作" className="flex size-7 items-center justify-center rounded-full border border-[var(--line)] text-[var(--muted-strong)] outline-none transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:border-[var(--accent)]">
+                  <DotsThree className="size-4" weight="bold" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-36 min-w-0">
@@ -102,24 +102,24 @@ export function MysqlConnectionList({ onBack }: { onBack: () => void }) {
           </div>
         </header>
 
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2.5">
-          <div className="flex min-w-[380px] flex-1 items-center gap-2.5">
-            <label className="flex h-8 min-w-[240px] max-w-[520px] flex-1 items-center gap-2 rounded-[6px] border border-[var(--line)] bg-panel px-2.5 text-[var(--muted)] transition-colors focus-within:border-[var(--accent)]">
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2">
+            <FilterMenu label={MYSQL_STATUSES.find((option) => option.value === status)?.label ?? "全部状态"} width="w-[100px]">
+              {MYSQL_STATUSES.map((option) => <DropdownMenuCheckboxItem key={option.value} checked={status === option.value} onCheckedChange={() => setStatus(option.value)}>{option.label}</DropdownMenuCheckboxItem>)}
+            </FilterMenu>
+            <label className="flex h-8 w-[280px] items-center gap-2 rounded-[6px] border border-[var(--line)] bg-panel px-2.5 text-[var(--muted)] transition-colors focus-within:border-[var(--accent)]">
               <MagnifyingGlass className="size-3.5 shrink-0" />
               <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索名称、地址或标签" aria-label="搜索 MySQL 连接" className="min-w-0 flex-1 bg-transparent text-[10px] text-[var(--ink)] outline-none placeholder:text-[var(--muted)]" />
             </label>
-            <FilterMenu label={MYSQL_STATUSES.find((option) => option.value === status)?.label ?? "全部状态"} width="w-[126px]">
-              {MYSQL_STATUSES.map((option) => <DropdownMenuCheckboxItem key={option.value} checked={status === option.value} onCheckedChange={() => setStatus(option.value)}>{option.label}</DropdownMenuCheckboxItem>)}
-            </FilterMenu>
           </div>
-          <div className="ml-auto flex items-center gap-2.5">
-            <FilterMenu label={project} width="w-[150px]">
+          <div className="ml-auto flex items-center gap-2">
+            <FilterMenu label={project} width="w-[118px]">
               {MYSQL_PROJECTS.map((option) => <DropdownMenuCheckboxItem key={option} checked={project === option} onCheckedChange={() => setProject(option)}>{option}</DropdownMenuCheckboxItem>)}
             </FilterMenu>
-            <FilterMenu label={environment} width="w-[126px]">
+            <FilterMenu label={environment} width="w-[96px]">
               {MYSQL_ENVIRONMENTS.map((option) => <DropdownMenuCheckboxItem key={option} checked={environment === option} onCheckedChange={() => setEnvironment(option)}>{option}</DropdownMenuCheckboxItem>)}
             </FilterMenu>
-            <FilterMenu label={SORT_OPTIONS.find((option) => option.value === sort)?.label ?? "最近使用"} width="w-[136px]" icon>
+            <FilterMenu label={SORT_OPTIONS.find((option) => option.value === sort)?.label ?? "最近使用"} width="w-[100px]">
               {SORT_OPTIONS.map((option) => <DropdownMenuCheckboxItem key={option.value} checked={sort === option.value} onCheckedChange={() => setSort(option.value)}>{option.label}</DropdownMenuCheckboxItem>)}
             </FilterMenu>
           </div>
@@ -159,12 +159,11 @@ export function MysqlConnectionList({ onBack }: { onBack: () => void }) {
   )
 }
 
-function FilterMenu({ label, width, icon = false, children }: { label: string; width: string; icon?: boolean; children: React.ReactNode }) {
+function FilterMenu({ label, width, children }: { label: string; width: string; children: React.ReactNode }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button type="button" className={`${width} flex h-8 shrink-0 items-center gap-2 rounded-[6px] border border-[var(--line)] bg-panel px-2.5 text-[10px] text-[var(--ink-soft)] outline-none transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--surface-subtle)] focus-visible:border-[var(--accent)]`}>
-          {icon ? <SortAscending className="size-4 shrink-0 text-[var(--muted-strong)]" /> : null}
           <span className="truncate">{label}</span><CaretDown className="ml-auto size-3 shrink-0 text-[var(--muted)]" weight="bold" />
         </button>
       </DropdownMenuTrigger>

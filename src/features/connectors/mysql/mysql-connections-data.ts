@@ -10,6 +10,7 @@ export type MysqlConnection = {
   environment: MysqlConnectionEnvironment
   host: string
   database: string
+  username: string
   status: MysqlConnectionStatus
   lastUsed: string
   lastUsedOrder: number
@@ -48,6 +49,7 @@ export const initialMysqlConnections: MysqlConnection[] = [
     environment: "生产",
     host: "mysql-prod.internal:3306",
     database: "orders",
+    username: "orders_app",
     status: "healthy",
     lastUsed: "今天 14:30",
     lastUsedOrder: 0,
@@ -61,6 +63,7 @@ export const initialMysqlConnections: MysqlConnection[] = [
     environment: "分析",
     host: "10.24.8.16:3306",
     database: "analytics",
+    username: "bi_reader",
     status: "healthy",
     lastUsed: "今天 11:20",
     lastUsedOrder: 1,
@@ -74,6 +77,7 @@ export const initialMysqlConnections: MysqlConnection[] = [
     environment: "预发布",
     host: "10.24.8.32:3306",
     database: "test",
+    username: "qa_runner",
     status: "auth-required",
     lastUsed: "昨天 18:45",
     lastUsedOrder: 2,
@@ -87,6 +91,7 @@ export const initialMysqlConnections: MysqlConnection[] = [
     environment: "开发",
     host: "127.0.0.1:3306",
     database: "dev",
+    username: "root",
     status: "healthy",
     lastUsed: "昨天 10:12",
     lastUsedOrder: 3,
@@ -100,6 +105,7 @@ export const initialMysqlConnections: MysqlConnection[] = [
     environment: "其他",
     host: "192.168.1.88:3306",
     database: "customer",
+    username: "mirror_ro",
     status: "offline",
     lastUsed: "2025-03-08 16:20",
     lastUsedOrder: 4,

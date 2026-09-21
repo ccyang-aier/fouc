@@ -84,6 +84,12 @@ The focused issue-list region matches the reference's hierarchy: severity marker
 - Fix made: Rebuilt the composition as an asymmetric note canvas with smaller lightweight nodes, dotted paper texture, dark dashed curved relationships, explicit plus/ellipsis junctions, a dashed selected ticket note, and a compact vertical control rail. Existing DTS content and native zoom, fit, and pan behavior were retained.
 - Post-fix visual evidence: `dts-mindmap-final.png` shows seven dispersed notes with varied placement, clear negative space, high-contrast relationship paths, and controls aligned to the right edge. Browser verification confirmed zoom changed 95% to 103%, fit restored 95%, and pan mode toggled on and off without disturbing the selected ticket state.
 
+### Pass 8
+
+- Earlier finding: The freeform composition was visually convincing but functionally static. Nodes could not be repositioned, decorative junction pills looked actionable without responding, and both ends of each relationship used endpoint styling.
+- Fix made: Made every graph node pointer-draggable with live edge recomputation, selection feedback, keyboard arrow-key movement, stage-bound clamping, and a reset-layout control. Removed all decorative junction controls. Relationship starts are now unmarked and only targets use hollow circular endpoints.
+- Post-fix visual evidence: `dts-draggable-graph-final.png` shows the simplified connector treatment and explicit draggable-node accessibility labels. Browser interaction moved the impact node, confirmed its selected state and attached edge moved with it, then used `重置节点布局` to restore the initial composition. Browser console warnings and errors remained empty.
+
 ## Findings
 
 No actionable P0, P1, or P2 findings remain. The implementation intentionally adapts the standalone card reference to Fouc's denser desktop workbench scale instead of copying its mobile-width proportions.

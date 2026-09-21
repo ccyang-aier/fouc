@@ -1,7 +1,7 @@
 # DTS 问题单侧栏设计 QA
 
 - Source visual truth: Conversation attachments from Browser Comments, including the latest focused metadata and full relationship-view annotations (no local filesystem path)
-- Implementation screenshots: `C:\Users\y00013075\.codex\visualizations\2026\09\20\01a0be0c-2e93-7543-93a2-4898baa1df50\dts-native-graph-final.png`, `C:\Users\y00013075\.codex\visualizations\2026\09\20\01a0be0c-2e93-7543-93a2-4898baa1df50\dts-native-graph-expanded.png`, and `C:\Users\y00013075\.codex\visualizations\2026\09\20\01a0be0c-2e93-7543-93a2-4898baa1df50\dts-mindmap-final.png`
+- Implementation screenshots: `C:\Users\y00013075\.codex\visualizations\2026\09\20\01a0be0c-2e93-7543-93a2-4898baa1df50\dts-native-graph-final.png`, `C:\Users\y00013075\.codex\visualizations\2026\09\20\01a0be0c-2e93-7543-93a2-4898baa1df50\dts-native-graph-expanded.png`, `C:\Users\y00013075\.codex\visualizations\2026\09\20\01a0be0c-2e93-7543-93a2-4898baa1df50\dts-mindmap-final.png`, and `C:\Users\y00013075\.codex\visualizations\2026\09\20\01a0be0c-2e93-7543-93a2-4898baa1df50\dts-interaction-polish-final.png`
 - Viewport: 1682 × 960 CSS px
 - Source pixels: 472 × 606 px for the focused card-list reference; the annotated full-page references are 1682 × 960 px
 - Implementation pixels: 1682 × 960 px
@@ -95,6 +95,12 @@ The focused issue-list region matches the reference's hierarchy: severity marker
 - Earlier findings: The default freeform positions still clustered nodes unevenly, the selected node used an unnecessarily heavy shadow, node cards could only be moved rather than created or removed, header icons sat inside decorative containers, and the canvas tools remained a grouped vertical rail on the right edge.
 - Fixes made: Rebalanced the seven default nodes around a centered ticket, reduced the active treatment to a quiet border and tinted surface with no shadow, added hover/focus create and delete actions with dynamic node and edge state, added collision-aware placement for newly created cards, removed header icon containers, and separated the canvas tools into individual bottom-right controls.
 - Post-fix visual evidence: Browser verification at 1682 × 960 shows a balanced center-out composition with clear negative space and standalone bottom-right controls. Creating from `影响范围` produced an eighth connected card, the new card was dragged from `(719, 468)` to `(664, 411)`, and its delete control remained visible and enabled. Reloading restored the seven-node default layout. No framework error overlay appeared.
+
+### Pass 10
+
+- Earlier findings: The root ticket's selected state added a solid outline over its intentional dashed border, selected nodes used a neutral rather than theme-colored border, node movement stopped at the fixed 1020 × 680 logical stage despite visible canvas space, canvas panning could create a browser text selection, selected-node actions remained outlined, and the AI inspector opened by default from a control outside the ticket header.
+- Fixes made: Preserved the root's dashed border while recoloring it with the theme accent, reduced all selected states to a single 1 px accent border with no shadow, removed fixed-stage clamping while allowing SVG relationships to render outside the original view box, disabled text selection and default pointer selection during pan, filled selected add/delete actions with accent/error colors, and moved the inspector launcher into the ticket header with the inspector closed by default.
+- Post-fix visual evidence: `dts-interaction-polish-final.png` shows the default seven-node graph with a quiet dashed accent root, no inspector, and the new `AI` header button. Computed browser styles report `rgb(62, 99, 221)` for selected borders, `dashed` for the root and `solid` for ordinary nodes, with zero visible box shadow. The impact node moved from logical `y=64` to `y=588`, beyond the old `y=540` limit; panning changed the stage transform while `window.getSelection()` remained empty. Opening `AI` displayed both inspector tabs, and closing it restored the launcher. Console warnings and errors were empty.
 
 ## Findings
 

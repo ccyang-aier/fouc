@@ -84,7 +84,7 @@ export function DtsRelationshipGraph({ ticket, detail }: { ticket: DtsTicketSumm
   }
 
   function moveNode(nodeId: string, position: Offset) {
-    setNodes((current) => current.map((node) => node.id === nodeId ? { ...node, box: { ...node.box, x: clamp(position.x, 0, STAGE_WIDTH - node.box.width), y: clamp(position.y, 36, STAGE_HEIGHT - node.box.height) } } : node))
+    setNodes((current) => current.map((node) => node.id === nodeId ? { ...node, box: { ...node.box, ...position } } : node))
   }
 
   function addNode(parentId: string) {
@@ -110,6 +110,7 @@ export function DtsRelationshipGraph({ ticket, detail }: { ticket: DtsTicketSumm
 
   function startCanvasDrag(event: React.PointerEvent<HTMLDivElement>) {
     if (!panMode) return
+    event.preventDefault()
     canvasDragRef.current = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, origin: offset }
     event.currentTarget.setPointerCapture(event.pointerId)
   }
@@ -124,7 +125,7 @@ export function DtsRelationshipGraph({ ticket, detail }: { ticket: DtsTicketSumm
     <div ref={canvasRef} aria-label="DTS 工单关系图谱" className="relative min-h-0 flex-1 overflow-hidden bg-[var(--panel)]" style={{ backgroundImage: 'radial-gradient(circle, color-mix(in srgb, var(--muted) 28%, transparent) 0.8px, transparent 0.8px)', backgroundSize: '18px 18px' }}>
       <GraphSummary nodeCount={nodes.length} activity={activity} />
       <CanvasControls zoom={zoom} panMode={panMode} onZoomOut={() => { setZoom((value) => Math.max(MIN_ZOOM, value - 0.08)); setActivity('画布已缩小') }} onZoomIn={() => { setZoom((value) => Math.min(MAX_ZOOM, value + 0.08)); setActivity('画布已放大') }} onFit={fitCanvas} onReset={resetLayout} onTogglePan={() => { setPanMode((value) => !value); setActivity(panMode ? '拖动画布已关闭' : '拖动画布已开启') }} />
-      <div className={cn('absolute inset-0', panMode && 'cursor-grab active:cursor-grabbing')} onPointerDown={startCanvasDrag} onPointerMove={moveCanvas} onPointerUp={() => { canvasDragRef.current = null }} onPointerCancel={() => { canvasDragRef.current = null }}>
+      <div className={cn('absolute inset-0', panMode && 'cursor-grab select-none active:cursor-grabbing')} onPointerDown={startCanvasDrag} onPointerMove={moveCanvas} onPointerUp={() => { canvasDragRef.current = null }} onPointerCancel={() => { canvasDragRef.current = null }}>
         <div className="absolute left-1/2 top-1/2 origin-center transition-transform duration-150" style={{ width: STAGE_WIDTH, height: STAGE_HEIGHT, transform: `translate(-50%, -50%) translate(${offset.x}px, ${offset.y}px) scale(${zoom})` }}>
           <GraphConnectors nodes={nodes} edges={edges} />
           {nodes.map((node) => <DraggableNode key={node.id} node={node} zoom={zoom} selected={selectedNode === node.id} onMove={moveNode} onSelect={setSelectedNode} onAdd={addNode} onDelete={deleteNode}>{renderNodeContent(node, ticket, detail)}</DraggableNode>)}
@@ -140,14 +141,15 @@ function DraggableNode({ node, zoom, selected, onMove, onSelect, onAdd, onDelete
   function moveDrag(event: React.PointerEvent<HTMLDivElement>) { const drag = dragRef.current; if (!drag || drag.pointerId !== event.pointerId) return; event.stopPropagation(); onMove(node.id, { x: drag.origin.x + (event.clientX - drag.startX) / zoom, y: drag.origin.y + (event.clientY - drag.startY) / zoom }) }
   function moveWithKeyboard(event: React.KeyboardEvent<HTMLDivElement>) { const delta = event.shiftKey ? 24 : 8; const movement = event.key === 'ArrowLeft' ? { x: -delta, y: 0 } : event.key === 'ArrowRight' ? { x: delta, y: 0 } : event.key === 'ArrowUp' ? { x: 0, y: -delta } : event.key === 'ArrowDown' ? { x: 0, y: delta } : null; if (!movement) return; event.preventDefault(); onSelect(node.id); onMove(node.id, { x: node.box.x + movement.x, y: node.box.y + movement.y }) }
   const label = graphNodeLabel(node)
-  return <div role="button" tabIndex={0} aria-label={`拖动${label}节点`} aria-pressed={selected} className={cn('group absolute z-10 touch-none cursor-grab rounded-[11px] outline-none transition-[box-shadow] active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]', selected && 'z-20 ring-1 ring-[#66758a]/70 [&>*:last-child]:border-[#66758a] [&>*:last-child]:bg-[color-mix(in_srgb,var(--accent-soft)_28%,var(--panel))] [&>*:last-child]:shadow-none')} style={{ left: node.box.x, top: node.box.y, width: node.box.width, height: node.box.height }} onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={(event) => { event.stopPropagation(); dragRef.current = null }} onPointerCancel={() => { dragRef.current = null }} onKeyDown={moveWithKeyboard}>
-    <NodeActions label={label} onAdd={() => onAdd(node.id)} onDelete={() => onDelete(node.id)} />
+  return <div role="button" tabIndex={0} aria-label={`拖动${label}节点`} aria-pressed={selected} className={cn('group absolute z-10 touch-none cursor-grab rounded-[11px] outline-none active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]', selected && 'z-20 [&>*:last-child]:border-[var(--accent)] [&>*:last-child]:bg-[color-mix(in_srgb,var(--accent-soft)_24%,var(--panel))] [&>*:last-child]:shadow-none')} style={{ left: node.box.x, top: node.box.y, width: node.box.width, height: node.box.height }} onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={(event) => { event.stopPropagation(); dragRef.current = null }} onPointerCancel={() => { dragRef.current = null }} onKeyDown={moveWithKeyboard}>
+    <NodeActions label={label} selected={selected} onAdd={() => onAdd(node.id)} onDelete={() => onDelete(node.id)} />
     {children}
   </div>
 }
 
-function NodeActions({ label, onAdd, onDelete }: { label: string; onAdd: () => void; onDelete: () => void }) {
-  return <div className="pointer-events-none absolute -top-2 right-0 z-30 flex -translate-y-full gap-1.5 opacity-0 transition-[opacity,transform] duration-150 group-hover:opacity-100 group-focus-within:opacity-100"><button type="button" aria-label={`从${label}新建节点`} title="新建关联节点" onClick={(event) => { event.stopPropagation(); onAdd() }} className="pointer-events-auto flex size-7 items-center justify-center rounded-full border border-[var(--line-strong)] bg-panel text-[var(--muted-strong)] shadow-[0_6px_16px_-10px_rgba(15,23,42,0.7)] outline-none hover:border-[var(--accent-soft-line)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent-ink)] active:scale-90 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><Plus className="size-3.5" weight="bold" /></button><button type="button" aria-label={`删除${label}节点`} title="删除节点" onClick={(event) => { event.stopPropagation(); onDelete() }} className="pointer-events-auto flex size-7 items-center justify-center rounded-full border border-[var(--line-strong)] bg-panel text-[var(--muted-strong)] shadow-[0_6px_16px_-10px_rgba(15,23,42,0.7)] outline-none hover:border-[color-mix(in_srgb,var(--err-ink)_35%,var(--line))] hover:bg-[color-mix(in_srgb,var(--err-ink)_8%,var(--panel))] hover:text-[var(--err-ink)] active:scale-90 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><Trash className="size-3.5" /></button></div>
+function NodeActions({ label, selected, onAdd, onDelete }: { label: string; selected: boolean; onAdd: () => void; onDelete: () => void }) {
+  const baseClassName = 'pointer-events-auto flex size-7 items-center justify-center rounded-full border outline-none transition-[background-color,color,border-color,transform] active:scale-90 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]'
+  return <div className="pointer-events-none absolute -top-2 right-0 z-30 flex -translate-y-full gap-1.5 opacity-0 transition-[opacity,transform] duration-150 group-hover:opacity-100 group-focus-within:opacity-100"><button type="button" aria-label={`从${label}新建节点`} title="新建关联节点" onClick={(event) => { event.stopPropagation(); onAdd() }} className={cn(baseClassName, selected ? 'border-[var(--accent)] bg-[var(--accent)] text-white hover:brightness-105' : 'border-[var(--line-strong)] bg-panel text-[var(--muted-strong)] hover:border-[var(--accent-soft-line)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent-ink)]')}><Plus className="size-3.5" weight="bold" /></button><button type="button" aria-label={`删除${label}节点`} title="删除节点" onClick={(event) => { event.stopPropagation(); onDelete() }} className={cn(baseClassName, selected ? 'border-[var(--err-ink)] bg-[var(--err-ink)] text-white hover:brightness-105' : 'border-[var(--line-strong)] bg-panel text-[var(--muted-strong)] hover:border-[color-mix(in_srgb,var(--err-ink)_35%,var(--line))] hover:bg-[color-mix(in_srgb,var(--err-ink)_8%,var(--panel))] hover:text-[var(--err-ink)]')}><Trash className="size-3.5" /></button></div>
 }
 
 function GraphSummary({ nodeCount, activity }: { nodeCount: number; activity: string }) { return <div aria-live="polite" className="pointer-events-none absolute left-4 top-4 z-30 flex h-8 items-center gap-2 rounded-[9px] border border-[var(--line)] bg-panel/95 px-2.5 shadow-[0_8px_24px_-18px_rgba(15,23,42,0.65)] backdrop-blur"><ShareNetwork className="size-3.5 text-[var(--ink)]" weight="bold" /><span className="text-[8.5px] font-semibold text-[var(--ink)]">关系画布</span><span className="text-[8px] text-[var(--muted)]">{nodeCount} 个节点 · {activity}</span></div> }
@@ -162,7 +164,7 @@ function ControlButton({ label, onClick, children }: { label: string; onClick: (
 function GraphConnectors({ nodes, edges }: { nodes: GraphNode[]; edges: GraphEdge[] }) {
   const nodeMap = new Map(nodes.map((node) => [node.id, node.box]))
   const visibleEdges = edges.flatMap((edge) => { const source = nodeMap.get(edge.source); const target = nodeMap.get(edge.target); return source && target ? [{ edge, geometry: calculateEdge(source, target) }] : [] })
-  return <svg aria-hidden className="pointer-events-none absolute inset-0 z-0 h-full w-full" viewBox={`0 0 ${STAGE_WIDTH} ${STAGE_HEIGHT}`} fill="none"><g stroke="#172033" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="5 6">{visibleEdges.map(({ edge, geometry }) => <path key={edge.id} d={geometry.path} />)}</g><g fill="var(--panel)" stroke="#172033" strokeWidth="2">{visibleEdges.map(({ edge, geometry }) => <circle key={edge.id} cx={geometry.end.x} cy={geometry.end.y} r="4" />)}</g></svg>
+  return <svg aria-hidden className="pointer-events-none absolute inset-0 z-0 h-full w-full overflow-visible" viewBox={`0 0 ${STAGE_WIDTH} ${STAGE_HEIGHT}`} fill="none"><g stroke="#172033" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="5 6">{visibleEdges.map(({ edge, geometry }) => <path key={edge.id} d={geometry.path} />)}</g><g fill="var(--panel)" stroke="#172033" strokeWidth="2">{visibleEdges.map(({ edge, geometry }) => <circle key={edge.id} cx={geometry.end.x} cy={geometry.end.y} r="4" />)}</g></svg>
 }
 
 function calculateEdge(source: NodeBox, target: NodeBox): { path: string; end: Offset } {

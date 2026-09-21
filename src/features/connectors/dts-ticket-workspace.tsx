@@ -20,6 +20,7 @@ type Props = {
   onSelect: (ticket: DtsTicketSummary) => void
   onPageChange: (page: number) => void
   onConnect: () => void
+  onOpenInspector?: () => void
 }
 
 export function DtsTicketWorkspace(props: Props) {
@@ -48,6 +49,7 @@ export function DtsTicketWorkspace(props: Props) {
         summary={props.tickets?.items.find((ticket) => ticket.id === props.selectedId) ?? null}
         loading={props.detailLoading}
         onOpenList={listOpen ? undefined : () => setListOpen(true)}
+        onOpenInspector={props.onOpenInspector}
       />
     </div>
   )

@@ -90,9 +90,15 @@ The focused issue-list region matches the reference's hierarchy: severity marker
 - Fix made: Made every graph node pointer-draggable with live edge recomputation, selection feedback, keyboard arrow-key movement, stage-bound clamping, and a reset-layout control. Removed all decorative junction controls. Relationship starts are now unmarked and only targets use hollow circular endpoints.
 - Post-fix visual evidence: `dts-draggable-graph-final.png` shows the simplified connector treatment and explicit draggable-node accessibility labels. Browser interaction moved the impact node, confirmed its selected state and attached edge moved with it, then used `重置节点布局` to restore the initial composition. Browser console warnings and errors remained empty.
 
+### Pass 9
+
+- Earlier findings: The default freeform positions still clustered nodes unevenly, the selected node used an unnecessarily heavy shadow, node cards could only be moved rather than created or removed, header icons sat inside decorative containers, and the canvas tools remained a grouped vertical rail on the right edge.
+- Fixes made: Rebalanced the seven default nodes around a centered ticket, reduced the active treatment to a quiet border and tinted surface with no shadow, added hover/focus create and delete actions with dynamic node and edge state, added collision-aware placement for newly created cards, removed header icon containers, and separated the canvas tools into individual bottom-right controls.
+- Post-fix visual evidence: Browser verification at 1682 × 960 shows a balanced center-out composition with clear negative space and standalone bottom-right controls. Creating from `影响范围` produced an eighth connected card, the new card was dragged from `(719, 468)` to `(664, 411)`, and its delete control remained visible and enabled. Reloading restored the seven-node default layout. No framework error overlay appeared.
+
 ## Findings
 
-No actionable P0, P1, or P2 findings remain. The implementation intentionally adapts the standalone card reference to Fouc's denser desktop workbench scale instead of copying its mobile-width proportions.
+No actionable P0, P1, or P2 findings remain. The implementation intentionally adapts the supplied mind-map reference to Fouc's denser desktop workbench scale while keeping the graph editable and keyboard-accessible.
 
 ## Follow-up polish
 

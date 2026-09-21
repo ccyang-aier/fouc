@@ -11,8 +11,11 @@ import {
   ListChecks,
   MagnifyingGlassMinus,
   MagnifyingGlassPlus,
+  NotePencil,
+  Plus,
   ShareNetwork,
   Stack,
+  Trash,
   User,
   UsersThree,
 } from '@phosphor-icons/react'
@@ -20,33 +23,37 @@ import type { DtsFlowNodeSummary, DtsSeverity, DtsTicketDetail, DtsTicketSummary
 import { cn } from '@/lib/utils'
 
 type Offset = { x: number; y: number }
-type NodeId = 'ticket' | 'impact' | 'evidence' | 'flow' | 'people' | 'relations' | 'actions'
+type BuiltInNodeId = 'ticket' | 'impact' | 'evidence' | 'flow' | 'people' | 'relations' | 'actions'
 type NodeBox = Offset & { width: number; height: number }
-type NodeLayout = Record<NodeId, NodeBox>
+type GraphNode = { id: string; kind: BuiltInNodeId | 'custom'; box: NodeBox; title?: string }
+type GraphEdge = { id: string; source: string; target: string }
 
-const STAGE_WIDTH = 900
-const STAGE_HEIGHT = 660
-const MIN_ZOOM = 0.46
+const STAGE_WIDTH = 1020
+const STAGE_HEIGHT = 680
+const MIN_ZOOM = 0.44
 const MAX_ZOOM = 1.2
-const INITIAL_NODES: NodeLayout = {
-  ticket: { x: 310, y: 58, width: 255, height: 152 },
-  impact: { x: 28, y: 205, width: 220, height: 140 },
-  evidence: { x: 62, y: 424, width: 224, height: 140 },
-  flow: { x: 658, y: 58, width: 212, height: 146 },
-  people: { x: 578, y: 292, width: 218, height: 136 },
-  relations: { x: 324, y: 472, width: 222, height: 128 },
-  actions: { x: 654, y: 492, width: 216, height: 132 },
-}
-const EDGE_TARGETS: NodeId[] = ['impact', 'evidence', 'flow', 'people', 'relations', 'actions']
+const INITIAL_NODES: GraphNode[] = [
+  { id: 'ticket', kind: 'ticket', box: { x: 382, y: 238, width: 256, height: 152 } },
+  { id: 'impact', kind: 'impact', box: { x: 48, y: 64, width: 220, height: 140 } },
+  { id: 'evidence', kind: 'evidence', box: { x: 62, y: 456, width: 224, height: 140 } },
+  { id: 'flow', kind: 'flow', box: { x: 746, y: 54, width: 212, height: 146 } },
+  { id: 'people', kind: 'people', box: { x: 748, y: 278, width: 218, height: 136 } },
+  { id: 'relations', kind: 'relations', box: { x: 322, y: 512, width: 222, height: 128 } },
+  { id: 'actions', kind: 'actions', box: { x: 704, y: 498, width: 216, height: 132 } },
+]
+const INITIAL_EDGES: GraphEdge[] = ['impact', 'evidence', 'flow', 'people', 'relations', 'actions'].map((target) => ({ id: `ticket-${target}`, source: 'ticket', target }))
 
 export function DtsRelationshipGraph({ ticket, detail }: { ticket: DtsTicketSummary; detail: DtsTicketDetail | null }) {
-  const [zoom, setZoom] = useState(0.78)
+  const [zoom, setZoom] = useState(0.76)
   const [panMode, setPanMode] = useState(false)
   const [offset, setOffset] = useState<Offset>({ x: 0, y: 0 })
-  const [nodes, setNodes] = useState<NodeLayout>(() => cloneInitialNodes())
-  const [selectedNode, setSelectedNode] = useState<NodeId>('ticket')
+  const [nodes, setNodes] = useState<GraphNode[]>(() => cloneInitialNodes())
+  const [edges, setEdges] = useState<GraphEdge[]>(() => [...INITIAL_EDGES])
+  const [selectedNode, setSelectedNode] = useState<string | null>('ticket')
+  const [activity, setActivity] = useState('拖拽节点自由排列')
   const canvasRef = useRef<HTMLDivElement>(null)
   const canvasDragRef = useRef<{ pointerId: number; startX: number; startY: number; origin: Offset } | null>(null)
+  const nextNodeIdRef = useRef(1)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -64,26 +71,41 @@ export function DtsRelationshipGraph({ ticket, detail }: { ticket: DtsTicketSumm
     const canvas = canvasRef.current
     if (canvas) setZoom(calculateFitZoom(canvas.clientWidth, canvas.clientHeight))
     setOffset({ x: 0, y: 0 })
+    setActivity('已适应画布')
   }
 
   function resetLayout() {
     setNodes(cloneInitialNodes())
+    setEdges([...INITIAL_EDGES])
     setSelectedNode('ticket')
+    nextNodeIdRef.current = 1
     fitCanvas()
+    setActivity('布局已重置')
   }
 
-  function moveNode(nodeId: NodeId, position: Offset) {
-    setNodes((current) => {
-      const node = current[nodeId]
-      return {
-        ...current,
-        [nodeId]: {
-          ...node,
-          x: clamp(position.x, 0, STAGE_WIDTH - node.width),
-          y: clamp(position.y, 0, STAGE_HEIGHT - node.height),
-        },
-      }
-    })
+  function moveNode(nodeId: string, position: Offset) {
+    setNodes((current) => current.map((node) => node.id === nodeId ? { ...node, box: { ...node.box, x: clamp(position.x, 0, STAGE_WIDTH - node.box.width), y: clamp(position.y, 36, STAGE_HEIGHT - node.box.height) } } : node))
+  }
+
+  function addNode(parentId: string) {
+    const parent = nodes.find((node) => node.id === parentId)
+    if (!parent) return
+    const count = nextNodeIdRef.current++
+    const id = `custom-${count}`
+    const box = findOpenPosition(nodes, parent.box, 212, 124)
+    setNodes((current) => [...current, { id, kind: 'custom', title: `新建节点 ${count}`, box }])
+    setEdges((current) => [...current, { id: `${parentId}-${id}`, source: parentId, target: id }])
+    setSelectedNode(id)
+    setActivity(`已从${graphNodeLabel(parent)}新建节点`)
+  }
+
+  function deleteNode(nodeId: string) {
+    const node = nodes.find((item) => item.id === nodeId)
+    if (!node) return
+    setNodes((current) => current.filter((item) => item.id !== nodeId))
+    setEdges((current) => current.filter((edge) => edge.source !== nodeId && edge.target !== nodeId))
+    setSelectedNode((current) => current === nodeId ? null : current)
+    setActivity(`已删除${graphNodeLabel(node)}`)
   }
 
   function startCanvasDrag(event: React.PointerEvent<HTMLDivElement>) {
@@ -99,130 +121,48 @@ export function DtsRelationshipGraph({ ticket, detail }: { ticket: DtsTicketSumm
   }
 
   return (
-    <div
-      ref={canvasRef}
-      aria-label="DTS 工单关系图谱"
-      className="relative min-h-0 flex-1 overflow-hidden bg-[var(--panel)]"
-      style={{ backgroundImage: 'radial-gradient(circle, color-mix(in srgb, var(--muted) 28%, transparent) 0.8px, transparent 0.8px)', backgroundSize: '18px 18px' }}
-    >
-      <GraphSummary />
-      <CanvasControls
-        zoom={zoom}
-        panMode={panMode}
-        onZoomOut={() => setZoom((value) => Math.max(MIN_ZOOM, value - 0.08))}
-        onZoomIn={() => setZoom((value) => Math.min(MAX_ZOOM, value + 0.08))}
-        onFit={fitCanvas}
-        onReset={resetLayout}
-        onTogglePan={() => setPanMode((value) => !value)}
-      />
-      <div
-        className={cn('absolute inset-0', panMode && 'cursor-grab active:cursor-grabbing')}
-        onPointerDown={startCanvasDrag}
-        onPointerMove={moveCanvas}
-        onPointerUp={() => { canvasDragRef.current = null }}
-        onPointerCancel={() => { canvasDragRef.current = null }}
-      >
-        <div
-          className="absolute left-1/2 top-1/2 origin-center transition-transform duration-150"
-          style={{ width: STAGE_WIDTH, height: STAGE_HEIGHT, transform: `translate(-50%, -50%) translate(${offset.x}px, ${offset.y}px) scale(${zoom})` }}
-        >
-          <GraphConnectors nodes={nodes} />
-          <DraggableNode nodeId="ticket" box={nodes.ticket} zoom={zoom} selected={selectedNode === 'ticket'} onMove={moveNode} onSelect={setSelectedNode}>
-            <CenterTicketNote ticket={ticket} detail={detail} />
-          </DraggableNode>
-          <DraggableNode nodeId="impact" box={nodes.impact} zoom={zoom} selected={selectedNode === 'impact'} onMove={moveNode} onSelect={setSelectedNode}>
-            <GraphNote title="影响范围" icon={Stack} meta={`${ticket.productPath.length || 1} 项`} tone="violet">
-              {(ticket.productPath.length ? ticket.productPath : [ticket.productType ?? '未归类产品']).slice(0, 3).map((item, index) => <CompactRow key={`${item}-${index}`} label={item} value={index === 0 ? '核心服务' : `${index + 1} 个版本`} />)}
-            </GraphNote>
-          </DraggableNode>
-          <DraggableNode nodeId="evidence" box={nodes.evidence} zoom={zoom} selected={selectedNode === 'evidence'} onMove={moveNode} onSelect={setSelectedNode}>
-            <GraphNote title="关键证据" icon={FileText} meta={`${detail?.fields.length ?? 0} 条`} tone="mint">
-              {detail?.fields.length ? detail.fields.slice(0, 3).map((field) => <CompactRow key={field.key} label={field.label} value={field.value == null ? '—' : String(field.value)} />) : <EmptyCopy>等待 DTS 返回详情字段。</EmptyCopy>}
-            </GraphNote>
-          </DraggableNode>
-          <DraggableNode nodeId="flow" box={nodes.flow} zoom={zoom} selected={selectedNode === 'flow'} onMove={moveNode} onSelect={setSelectedNode}>
-            <FlowNote nodes={detail?.flowNodes ?? []} currentNode={detail?.currentNode ?? null} status={ticket.status} />
-          </DraggableNode>
-          <DraggableNode nodeId="people" box={nodes.people} zoom={zoom} selected={selectedNode === 'people'} onMove={moveNode} onSelect={setSelectedNode}>
-            <GraphNote title="责任人与时间" icon={User} meta={`${detail?.handlers.length || (ticket.currentHandler ? 1 : 0)} 人`} tone="blue">
-              <IconRow icon={User} label="负责人" value={ticket.currentHandler ?? '待分配'} />
-              <IconRow icon={UsersThree} label="创建人" value={ticket.creator ?? '—'} />
-              <IconRow icon={CalendarBlank} label="创建时间" value={ticket.createdAt ?? '—'} />
-            </GraphNote>
-          </DraggableNode>
-          <DraggableNode nodeId="relations" box={nodes.relations} zoom={zoom} selected={selectedNode === 'relations'} onMove={moveNode} onSelect={setSelectedNode}>
-            <GraphNote title="关联问题" icon={LinkSimple} meta={`${detail?.relations.length ?? 0} 个`} tone="blue">
-              {detail?.relations.length ? detail.relations.slice(0, 3).map((relation, index) => <RelatedRow key={`${relation.objectType}-${relation.externalId}`} relation={relation} severity={index === 0 ? '严重' : '一般'} />) : <EmptyCopy>暂无外部关联问题。</EmptyCopy>}
-            </GraphNote>
-          </DraggableNode>
-          <DraggableNode nodeId="actions" box={nodes.actions} zoom={zoom} selected={selectedNode === 'actions'} onMove={moveNode} onSelect={setSelectedNode}>
-            <GraphNote title="下一步行动" icon={ListChecks} meta="2 项" tone="mint">
-              <ActionRow index={1} title={detail?.currentNode?.name ?? '确认问题范围'} owner={detail?.currentNode?.handler ?? ticket.currentHandler ?? '待分配'} />
-              <ActionRow index={2} title={nextNodeTitle(detail?.flowNodes ?? [], detail?.currentNode ?? null)} owner="完成后流转" />
-            </GraphNote>
-          </DraggableNode>
+    <div ref={canvasRef} aria-label="DTS 工单关系图谱" className="relative min-h-0 flex-1 overflow-hidden bg-[var(--panel)]" style={{ backgroundImage: 'radial-gradient(circle, color-mix(in srgb, var(--muted) 28%, transparent) 0.8px, transparent 0.8px)', backgroundSize: '18px 18px' }}>
+      <GraphSummary nodeCount={nodes.length} activity={activity} />
+      <CanvasControls zoom={zoom} panMode={panMode} onZoomOut={() => { setZoom((value) => Math.max(MIN_ZOOM, value - 0.08)); setActivity('画布已缩小') }} onZoomIn={() => { setZoom((value) => Math.min(MAX_ZOOM, value + 0.08)); setActivity('画布已放大') }} onFit={fitCanvas} onReset={resetLayout} onTogglePan={() => { setPanMode((value) => !value); setActivity(panMode ? '拖动画布已关闭' : '拖动画布已开启') }} />
+      <div className={cn('absolute inset-0', panMode && 'cursor-grab active:cursor-grabbing')} onPointerDown={startCanvasDrag} onPointerMove={moveCanvas} onPointerUp={() => { canvasDragRef.current = null }} onPointerCancel={() => { canvasDragRef.current = null }}>
+        <div className="absolute left-1/2 top-1/2 origin-center transition-transform duration-150" style={{ width: STAGE_WIDTH, height: STAGE_HEIGHT, transform: `translate(-50%, -50%) translate(${offset.x}px, ${offset.y}px) scale(${zoom})` }}>
+          <GraphConnectors nodes={nodes} edges={edges} />
+          {nodes.map((node) => <DraggableNode key={node.id} node={node} zoom={zoom} selected={selectedNode === node.id} onMove={moveNode} onSelect={setSelectedNode} onAdd={addNode} onDelete={deleteNode}>{renderNodeContent(node, ticket, detail)}</DraggableNode>)}
         </div>
       </div>
     </div>
   )
 }
 
-function DraggableNode({ nodeId, box, zoom, selected, onMove, onSelect, children }: { nodeId: NodeId; box: NodeBox; zoom: number; selected: boolean; onMove: (nodeId: NodeId, position: Offset) => void; onSelect: (nodeId: NodeId) => void; children: React.ReactNode }) {
+function DraggableNode({ node, zoom, selected, onMove, onSelect, onAdd, onDelete, children }: { node: GraphNode; zoom: number; selected: boolean; onMove: (nodeId: string, position: Offset) => void; onSelect: (nodeId: string) => void; onAdd: (nodeId: string) => void; onDelete: (nodeId: string) => void; children: React.ReactNode }) {
   const dragRef = useRef<{ pointerId: number; startX: number; startY: number; origin: Offset } | null>(null)
-
-  function startDrag(event: React.PointerEvent<HTMLDivElement>) {
-    if ((event.target as HTMLElement).closest('a, button')) return
-    event.stopPropagation()
-    onSelect(nodeId)
-    dragRef.current = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, origin: { x: box.x, y: box.y } }
-    event.currentTarget.setPointerCapture(event.pointerId)
-  }
-
-  function moveDrag(event: React.PointerEvent<HTMLDivElement>) {
-    const drag = dragRef.current
-    if (!drag || drag.pointerId !== event.pointerId) return
-    event.stopPropagation()
-    onMove(nodeId, { x: drag.origin.x + (event.clientX - drag.startX) / zoom, y: drag.origin.y + (event.clientY - drag.startY) / zoom })
-  }
-
-  function moveWithKeyboard(event: React.KeyboardEvent<HTMLDivElement>) {
-    const delta = event.shiftKey ? 24 : 8
-    const movement = event.key === 'ArrowLeft' ? { x: -delta, y: 0 } : event.key === 'ArrowRight' ? { x: delta, y: 0 } : event.key === 'ArrowUp' ? { x: 0, y: -delta } : event.key === 'ArrowDown' ? { x: 0, y: delta } : null
-    if (!movement) return
-    event.preventDefault()
-    onSelect(nodeId)
-    onMove(nodeId, { x: box.x + movement.x, y: box.y + movement.y })
-  }
-
-  return <div
-    role="button"
-    tabIndex={0}
-    aria-label={`拖动${nodeLabel(nodeId)}节点`}
-    aria-pressed={selected}
-    className={cn('absolute z-10 touch-none cursor-grab rounded-[11px] outline-none active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-[#172033]/35', selected && 'z-20 ring-2 ring-[#172033]/18 [&>*]:border-[#172033] [&>*]:shadow-[0_18px_38px_-22px_rgba(15,23,42,0.5)]')}
-    style={{ left: box.x, top: box.y, width: box.width, height: box.height }}
-    onPointerDown={startDrag}
-    onPointerMove={moveDrag}
-    onPointerUp={(event) => { event.stopPropagation(); dragRef.current = null }}
-    onPointerCancel={() => { dragRef.current = null }}
-    onKeyDown={moveWithKeyboard}
-  >{children}</div>
+  function startDrag(event: React.PointerEvent<HTMLDivElement>) { if ((event.target as HTMLElement).closest('a, button')) return; event.stopPropagation(); onSelect(node.id); dragRef.current = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, origin: { x: node.box.x, y: node.box.y } }; event.currentTarget.setPointerCapture(event.pointerId) }
+  function moveDrag(event: React.PointerEvent<HTMLDivElement>) { const drag = dragRef.current; if (!drag || drag.pointerId !== event.pointerId) return; event.stopPropagation(); onMove(node.id, { x: drag.origin.x + (event.clientX - drag.startX) / zoom, y: drag.origin.y + (event.clientY - drag.startY) / zoom }) }
+  function moveWithKeyboard(event: React.KeyboardEvent<HTMLDivElement>) { const delta = event.shiftKey ? 24 : 8; const movement = event.key === 'ArrowLeft' ? { x: -delta, y: 0 } : event.key === 'ArrowRight' ? { x: delta, y: 0 } : event.key === 'ArrowUp' ? { x: 0, y: -delta } : event.key === 'ArrowDown' ? { x: 0, y: delta } : null; if (!movement) return; event.preventDefault(); onSelect(node.id); onMove(node.id, { x: node.box.x + movement.x, y: node.box.y + movement.y }) }
+  const label = graphNodeLabel(node)
+  return <div role="button" tabIndex={0} aria-label={`拖动${label}节点`} aria-pressed={selected} className={cn('group absolute z-10 touch-none cursor-grab rounded-[11px] outline-none transition-[box-shadow] active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]', selected && 'z-20 ring-1 ring-[#66758a]/70 [&>*:last-child]:border-[#66758a] [&>*:last-child]:bg-[color-mix(in_srgb,var(--accent-soft)_28%,var(--panel))] [&>*:last-child]:shadow-none')} style={{ left: node.box.x, top: node.box.y, width: node.box.width, height: node.box.height }} onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={(event) => { event.stopPropagation(); dragRef.current = null }} onPointerCancel={() => { dragRef.current = null }} onKeyDown={moveWithKeyboard}>
+    <NodeActions label={label} onAdd={() => onAdd(node.id)} onDelete={() => onDelete(node.id)} />
+    {children}
+  </div>
 }
 
-function GraphSummary() {
-  return <div className="pointer-events-none absolute left-4 top-4 z-30 flex h-8 items-center gap-2 rounded-[9px] border border-[var(--line)] bg-panel/95 px-2.5 shadow-[0_8px_24px_-18px_rgba(15,23,42,0.65)] backdrop-blur"><ShareNetwork className="size-3.5 text-[var(--ink)]" weight="bold" /><span className="text-[8.5px] font-semibold text-[var(--ink)]">关系画布</span><span className="text-[8px] text-[var(--muted)]">拖拽节点自由排列</span></div>
+function NodeActions({ label, onAdd, onDelete }: { label: string; onAdd: () => void; onDelete: () => void }) {
+  return <div className="pointer-events-none absolute -top-2 right-0 z-30 flex -translate-y-full gap-1.5 opacity-0 transition-[opacity,transform] duration-150 group-hover:opacity-100 group-focus-within:opacity-100"><button type="button" aria-label={`从${label}新建节点`} title="新建关联节点" onClick={(event) => { event.stopPropagation(); onAdd() }} className="pointer-events-auto flex size-7 items-center justify-center rounded-full border border-[var(--line-strong)] bg-panel text-[var(--muted-strong)] shadow-[0_6px_16px_-10px_rgba(15,23,42,0.7)] outline-none hover:border-[var(--accent-soft-line)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent-ink)] active:scale-90 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><Plus className="size-3.5" weight="bold" /></button><button type="button" aria-label={`删除${label}节点`} title="删除节点" onClick={(event) => { event.stopPropagation(); onDelete() }} className="pointer-events-auto flex size-7 items-center justify-center rounded-full border border-[var(--line-strong)] bg-panel text-[var(--muted-strong)] shadow-[0_6px_16px_-10px_rgba(15,23,42,0.7)] outline-none hover:border-[color-mix(in_srgb,var(--err-ink)_35%,var(--line))] hover:bg-[color-mix(in_srgb,var(--err-ink)_8%,var(--panel))] hover:text-[var(--err-ink)] active:scale-90 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><Trash className="size-3.5" /></button></div>
 }
+
+function GraphSummary({ nodeCount, activity }: { nodeCount: number; activity: string }) { return <div aria-live="polite" className="pointer-events-none absolute left-4 top-4 z-30 flex h-8 items-center gap-2 rounded-[9px] border border-[var(--line)] bg-panel/95 px-2.5 shadow-[0_8px_24px_-18px_rgba(15,23,42,0.65)] backdrop-blur"><ShareNetwork className="size-3.5 text-[var(--ink)]" weight="bold" /><span className="text-[8.5px] font-semibold text-[var(--ink)]">关系画布</span><span className="text-[8px] text-[var(--muted)]">{nodeCount} 个节点 · {activity}</span></div> }
 
 function CanvasControls({ zoom, panMode, onZoomOut, onZoomIn, onFit, onReset, onTogglePan }: { zoom: number; panMode: boolean; onZoomOut: () => void; onZoomIn: () => void; onFit: () => void; onReset: () => void; onTogglePan: () => void }) {
-  return <div className="absolute right-4 top-1/2 z-30 flex -translate-y-1/2 flex-col overflow-hidden rounded-[10px] border border-[var(--line)] bg-panel/95 shadow-[0_14px_34px_-20px_rgba(15,23,42,0.5)] backdrop-blur"><ControlButton label="放大" onClick={onZoomIn}><MagnifyingGlassPlus className="size-4" /></ControlButton><ControlButton label="缩小" onClick={onZoomOut}><MagnifyingGlassMinus className="size-4" /></ControlButton><ControlButton label={`适应画布，当前 ${Math.round(zoom * 100)}%`} onClick={onFit}><CornersOut className="size-4" /></ControlButton><ControlButton label="重置节点布局" onClick={onReset}><ArrowCounterClockwise className="size-4" /></ControlButton><button type="button" aria-label="拖动画布" aria-pressed={panMode} onClick={onTogglePan} className={cn('flex size-9 items-center justify-center text-[var(--muted-strong)] outline-none transition-[background,color,transform] hover:bg-[var(--surface-hover)] active:scale-90 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)]', panMode && 'bg-[#172033] text-white hover:bg-[#172033]')}><Hand className="size-4" weight={panMode ? 'fill' : 'regular'} /></button></div>
+  return <div className="absolute bottom-5 right-5 z-30 flex flex-col gap-2"><ControlButton label="放大" onClick={onZoomIn}><MagnifyingGlassPlus className="size-4" /></ControlButton><ControlButton label="缩小" onClick={onZoomOut}><MagnifyingGlassMinus className="size-4" /></ControlButton><ControlButton label={`适应画布，当前 ${Math.round(zoom * 100)}%`} onClick={onFit}><CornersOut className="size-4" /></ControlButton><ControlButton label="重置节点布局" onClick={onReset}><ArrowCounterClockwise className="size-4" /></ControlButton><button type="button" aria-label="拖动画布" aria-pressed={panMode} onClick={onTogglePan} className={cn(controlClassName, panMode && 'border-[#172033] bg-[#172033] text-white hover:bg-[#172033]')}><Hand className="size-4" weight={panMode ? 'fill' : 'regular'} /></button></div>
 }
 
-function ControlButton({ label, onClick, children }: { label: string; onClick: () => void; children: React.ReactNode }) {
-  return <button type="button" aria-label={label} onClick={onClick} className="flex size-9 items-center justify-center border-b border-[var(--line)] text-[var(--muted-strong)] outline-none transition-[background,color,transform] hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] active:scale-90 active:bg-[var(--surface-active)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)]">{children}</button>
-}
+const controlClassName = 'flex size-9 items-center justify-center rounded-[10px] border border-[var(--line-strong)] bg-panel text-[var(--muted-strong)] shadow-[0_8px_20px_-14px_rgba(15,23,42,0.55)] outline-none transition-[background,color,border-color,transform] hover:border-[#b7c0cf] hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] active:scale-90 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]'
+function ControlButton({ label, onClick, children }: { label: string; onClick: () => void; children: React.ReactNode }) { return <button type="button" aria-label={label} onClick={onClick} className={controlClassName}>{children}</button> }
 
-function GraphConnectors({ nodes }: { nodes: NodeLayout }) {
-  return <svg aria-hidden className="pointer-events-none absolute inset-0 z-0 h-full w-full" viewBox={`0 0 ${STAGE_WIDTH} ${STAGE_HEIGHT}`} fill="none"><g stroke="#172033" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="5 6">{EDGE_TARGETS.map((targetId) => { const edge = calculateEdge(nodes.ticket, nodes[targetId]); return <path key={targetId} d={edge.path} /> })}</g><g fill="var(--panel)" stroke="#172033" strokeWidth="2">{EDGE_TARGETS.map((targetId) => { const edge = calculateEdge(nodes.ticket, nodes[targetId]); return <circle key={targetId} cx={edge.end.x} cy={edge.end.y} r="4" /> })}</g></svg>
+function GraphConnectors({ nodes, edges }: { nodes: GraphNode[]; edges: GraphEdge[] }) {
+  const nodeMap = new Map(nodes.map((node) => [node.id, node.box]))
+  const visibleEdges = edges.flatMap((edge) => { const source = nodeMap.get(edge.source); const target = nodeMap.get(edge.target); return source && target ? [{ edge, geometry: calculateEdge(source, target) }] : [] })
+  return <svg aria-hidden className="pointer-events-none absolute inset-0 z-0 h-full w-full" viewBox={`0 0 ${STAGE_WIDTH} ${STAGE_HEIGHT}`} fill="none"><g stroke="#172033" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="5 6">{visibleEdges.map(({ edge, geometry }) => <path key={edge.id} d={geometry.path} />)}</g><g fill="var(--panel)" stroke="#172033" strokeWidth="2">{visibleEdges.map(({ edge, geometry }) => <circle key={edge.id} cx={geometry.end.x} cy={geometry.end.y} r="4" />)}</g></svg>
 }
 
 function calculateEdge(source: NodeBox, target: NodeBox): { path: string; end: Offset } {
@@ -230,13 +170,7 @@ function calculateEdge(source: NodeBox, target: NodeBox): { path: string; end: O
   const targetCenter = { x: target.x + target.width / 2, y: target.y + target.height / 2 }
   const dx = targetCenter.x - sourceCenter.x
   const dy = targetCenter.y - sourceCenter.y
-  if (Math.abs(dx) >= Math.abs(dy)) {
-    const direction = dx >= 0 ? 1 : -1
-    const start = { x: sourceCenter.x + direction * source.width / 2, y: sourceCenter.y }
-    const end = { x: targetCenter.x - direction * target.width / 2, y: targetCenter.y }
-    const bend = Math.max(48, Math.abs(end.x - start.x) * 0.42)
-    return { path: `M ${start.x} ${start.y} C ${start.x + direction * bend} ${start.y}, ${end.x - direction * bend} ${end.y}, ${end.x} ${end.y}`, end }
-  }
+  if (Math.abs(dx) >= Math.abs(dy)) { const direction = dx >= 0 ? 1 : -1; const start = { x: sourceCenter.x + direction * source.width / 2, y: sourceCenter.y }; const end = { x: targetCenter.x - direction * target.width / 2, y: targetCenter.y }; const bend = Math.max(48, Math.abs(end.x - start.x) * 0.42); return { path: `M ${start.x} ${start.y} C ${start.x + direction * bend} ${start.y}, ${end.x - direction * bend} ${end.y}, ${end.x} ${end.y}`, end } }
   const direction = dy >= 0 ? 1 : -1
   const start = { x: sourceCenter.x, y: sourceCenter.y + direction * source.height / 2 }
   const end = { x: targetCenter.x, y: targetCenter.y - direction * target.height / 2 }
@@ -244,32 +178,43 @@ function calculateEdge(source: NodeBox, target: NodeBox): { path: string; end: O
   return { path: `M ${start.x} ${start.y} C ${start.x} ${start.y + direction * bend}, ${end.x} ${end.y - direction * bend}, ${end.x} ${end.y}`, end }
 }
 
-function GraphNote({ title, icon: Icon, meta, tone, children }: { title: string; icon: typeof Stack; meta: string; tone: 'blue' | 'violet' | 'mint'; children: React.ReactNode }) {
-  const toneClass = { blue: 'bg-[#eaf1ff] text-[#3b6fe8]', violet: 'bg-[#f0ecff] text-[#7255df]', mint: 'bg-[#e8f8f3] text-[#149777]' }[tone]
-  return <section className="h-full rounded-[10px] border border-[var(--line-strong)] bg-panel px-3.5 py-3 shadow-[0_12px_30px_-22px_rgba(15,23,42,0.52)] transition-[border-color,box-shadow] duration-150 hover:border-[#aeb7c7] hover:shadow-[0_16px_32px_-20px_rgba(15,23,42,0.38)]"><header className="mb-3 flex items-center gap-2"><span className={cn('flex size-6 items-center justify-center rounded-[7px]', toneClass)}><Icon className="size-3.5" weight="bold" /></span><h2 className="text-[10.5px] font-semibold text-[var(--ink)]">{title}</h2><span className="ml-auto text-[7.5px] text-[var(--muted)]">{meta}</span></header><div className="space-y-2.5">{children}</div></section>
+function renderNodeContent(node: GraphNode, ticket: DtsTicketSummary, detail: DtsTicketDetail | null): React.ReactNode {
+  if (node.kind === 'ticket') return <CenterTicketNote ticket={ticket} detail={detail} />
+  if (node.kind === 'impact') return <GraphNote title="影响范围" icon={Stack} meta={`${ticket.productPath.length || 1} 项`} tone="violet">{(ticket.productPath.length ? ticket.productPath : [ticket.productType ?? '未归类产品']).slice(0, 3).map((item, index) => <CompactRow key={`${item}-${index}`} label={item} value={index === 0 ? '核心服务' : `${index + 1} 个版本`} />)}</GraphNote>
+  if (node.kind === 'evidence') return <GraphNote title="关键证据" icon={FileText} meta={`${detail?.fields.length ?? 0} 条`} tone="mint">{detail?.fields.length ? detail.fields.slice(0, 3).map((field) => <CompactRow key={field.key} label={field.label} value={field.value == null ? '—' : String(field.value)} />) : <EmptyCopy>等待 DTS 返回详情字段。</EmptyCopy>}</GraphNote>
+  if (node.kind === 'flow') return <FlowNote nodes={detail?.flowNodes ?? []} currentNode={detail?.currentNode ?? null} status={ticket.status} />
+  if (node.kind === 'people') return <GraphNote title="责任人与时间" icon={User} meta={`${detail?.handlers.length || (ticket.currentHandler ? 1 : 0)} 人`} tone="blue"><IconRow icon={User} label="负责人" value={ticket.currentHandler ?? '待分配'} /><IconRow icon={UsersThree} label="创建人" value={ticket.creator ?? '—'} /><IconRow icon={CalendarBlank} label="创建时间" value={ticket.createdAt ?? '—'} /></GraphNote>
+  if (node.kind === 'relations') return <GraphNote title="关联问题" icon={LinkSimple} meta={`${detail?.relations.length ?? 0} 个`} tone="blue">{detail?.relations.length ? detail.relations.slice(0, 3).map((relation, index) => <RelatedRow key={`${relation.objectType}-${relation.externalId}`} relation={relation} severity={index === 0 ? '严重' : '一般'} />) : <EmptyCopy>暂无外部关联问题。</EmptyCopy>}</GraphNote>
+  if (node.kind === 'actions') return <GraphNote title="下一步行动" icon={ListChecks} meta="2 项" tone="mint"><ActionRow index={1} title={detail?.currentNode?.name ?? '确认问题范围'} owner={detail?.currentNode?.handler ?? ticket.currentHandler ?? '待分配'} /><ActionRow index={2} title={nextNodeTitle(detail?.flowNodes ?? [], detail?.currentNode ?? null)} owner="完成后流转" /></GraphNote>
+  return <GraphNote title={node.title ?? '新建节点'} icon={NotePencil} meta="自定义" tone="slate"><p className="text-[8.5px] leading-4 text-[var(--muted-strong)]">拖动节点调整位置，继续新建可扩展这条关系。</p></GraphNote>
 }
 
-function CenterTicketNote({ ticket, detail }: { ticket: DtsTicketSummary; detail: DtsTicketDetail | null }) {
-  const description = ticket.remark || detail?.fields.find((field) => field.label.includes('描述'))?.value?.toString() || '暂无补充描述，可结合周边关系继续处理。'
-  return <article className="relative h-full rounded-[10px] border border-dashed border-[#172033] bg-panel px-4 py-3.5 shadow-[0_14px_34px_-22px_rgba(15,23,42,0.42)]"><div className="flex items-center gap-1.5"><span className={cn('size-2 rounded-full', severityTone(ticket.severity))} /><SeverityBadge value={ticket.severity} /><span className="rounded-[4px] bg-[var(--accent-soft)] px-1.5 py-0.5 text-[7px] text-[var(--accent-ink)]">{ticket.status}</span></div><h2 className="mt-2.5 line-clamp-2 text-[12px] font-semibold leading-[17px] tracking-[-0.01em] text-[var(--ink)]">{ticket.title}</h2><p className="mt-1.5 line-clamp-2 text-[8.5px] leading-[14px] text-[var(--muted-strong)]">{description}</p><div className="absolute inset-x-4 bottom-3 flex items-center gap-2 text-[7.5px] text-[var(--muted)]"><span className="truncate">{ticket.id}</span><span className="ml-auto truncate">{ticket.currentHandler ?? '待分配'}</span></div></article>
+function GraphNote({ title, icon: Icon, meta, tone, children }: { title: string; icon: typeof Stack; meta: string; tone: 'blue' | 'violet' | 'mint' | 'slate'; children: React.ReactNode }) {
+  const toneClass = { blue: 'text-[#3b6fe8]', violet: 'text-[#7255df]', mint: 'text-[#149777]', slate: 'text-[#66758a]' }[tone]
+  return <section className="h-full rounded-[10px] border border-[var(--line-strong)] bg-panel px-3.5 py-3 shadow-[0_10px_26px_-22px_rgba(15,23,42,0.5)] transition-[border-color,background,box-shadow] duration-150 hover:border-[#b4bdcb]"><header className="mb-3 flex items-center gap-2"><Icon className={cn('size-4 shrink-0', toneClass)} weight="bold" /><h2 className="text-[10.5px] font-semibold text-[var(--ink)]">{title}</h2><span className="ml-auto text-[7.5px] text-[var(--muted)]">{meta}</span></header><div className="space-y-2.5">{children}</div></section>
 }
 
-function FlowNote({ nodes, currentNode, status }: { nodes: DtsFlowNodeSummary[]; currentNode: DtsFlowNodeSummary | null; status: string }) {
-  const visible = nodes.length ? nodes.slice(0, 4) : [{ id: 'current', name: status, status: 'active', handler: null, handledAt: null }]
-  const activeIndex = Math.max(0, visible.findIndex((node) => node.id === currentNode?.id))
-  return <GraphNote title="流程进度" icon={FlowArrow} meta={`${visible.length} 个阶段`} tone="blue"><ol className="space-y-2">{visible.map((node, index) => { const active = index === activeIndex; const done = index < activeIndex; return <li key={node.id} className="flex items-center gap-2"><span className={cn('flex size-3.5 items-center justify-center rounded-full border', active ? 'border-[#172033] text-[#172033]' : done ? 'border-[var(--ok-ink)] bg-[var(--ok-ink)] text-white' : 'border-[var(--line-strong)] text-[var(--muted)]')}>{done ? <Check className="size-2.5" weight="bold" /> : <span className={cn('size-1.5 rounded-full', active ? 'bg-[#172033]' : 'bg-[var(--line-strong)]')} />}</span><span className={cn('min-w-0 flex-1 truncate text-[8.5px]', active ? 'font-semibold text-[var(--ink)]' : 'text-[var(--ink-soft)]')}>{node.name}</span>{active ? <span className="rounded-[4px] bg-[var(--accent-soft)] px-1 py-0.5 text-[7px] text-[var(--accent-ink)]">当前</span> : null}</li> })}</ol></GraphNote>
+function CenterTicketNote({ ticket, detail }: { ticket: DtsTicketSummary; detail: DtsTicketDetail | null }) { const description = ticket.remark || detail?.fields.find((field) => field.label.includes('描述'))?.value?.toString() || '暂无补充描述，可结合周边关系继续处理。'; return <article className="relative h-full rounded-[10px] border border-dashed border-[#172033] bg-panel px-4 py-3.5 shadow-[0_12px_30px_-24px_rgba(15,23,42,0.45)] transition-[border-color,background,box-shadow] duration-150"><div className="flex items-center gap-1.5"><span className={cn('size-2 rounded-full', severityTone(ticket.severity))} /><SeverityBadge value={ticket.severity} /><span className="rounded-[4px] bg-[var(--accent-soft)] px-1.5 py-0.5 text-[7px] text-[var(--accent-ink)]">{ticket.status}</span></div><h2 className="mt-2.5 line-clamp-2 text-[12px] font-semibold leading-[17px] tracking-[-0.01em] text-[var(--ink)]">{ticket.title}</h2><p className="mt-1.5 line-clamp-2 text-[8.5px] leading-[14px] text-[var(--muted-strong)]">{description}</p><div className="absolute inset-x-4 bottom-3 flex items-center gap-2 text-[7.5px] text-[var(--muted)]"><span className="truncate">{ticket.id}</span><span className="ml-auto truncate">{ticket.currentHandler ?? '待分配'}</span></div></article> }
+function FlowNote({ nodes, currentNode, status }: { nodes: DtsFlowNodeSummary[]; currentNode: DtsFlowNodeSummary | null; status: string }) { const visible = nodes.length ? nodes.slice(0, 4) : [{ id: 'current', name: status, status: 'active', handler: null, handledAt: null }]; const activeIndex = Math.max(0, visible.findIndex((node) => node.id === currentNode?.id)); return <GraphNote title="流程进度" icon={FlowArrow} meta={`${visible.length} 个阶段`} tone="blue"><ol className="space-y-2">{visible.map((node, index) => { const active = index === activeIndex; const done = index < activeIndex; return <li key={node.id} className="flex items-center gap-2"><span className={cn('flex size-3.5 items-center justify-center rounded-full border', active ? 'border-[#172033] text-[#172033]' : done ? 'border-[var(--ok-ink)] bg-[var(--ok-ink)] text-white' : 'border-[var(--line-strong)] text-[var(--muted)]')}>{done ? <Check className="size-2.5" weight="bold" /> : <span className={cn('size-1.5 rounded-full', active ? 'bg-[#172033]' : 'bg-[var(--line-strong)]')} />}</span><span className={cn('min-w-0 flex-1 truncate text-[8.5px]', active ? 'font-semibold text-[var(--ink)]' : 'text-[var(--ink-soft)]')}>{node.name}</span>{active ? <span className="rounded-[4px] bg-[var(--accent-soft)] px-1 py-0.5 text-[7px] text-[var(--accent-ink)]">当前</span> : null}</li> })}</ol></GraphNote> }
+
+function findOpenPosition(nodes: GraphNode[], source: NodeBox, width: number, height: number): NodeBox {
+  const candidates = [{ x: source.x + source.width + 48, y: source.y + 28 }, { x: source.x - width - 48, y: source.y + 28 }, { x: source.x + 24, y: source.y + source.height + 52 }, { x: source.x + 24, y: source.y - height - 52 }, { x: source.x + source.width + 48, y: source.y + source.height + 38 }, { x: source.x - width - 48, y: source.y + source.height + 38 }]
+  for (const candidate of candidates) { const box = { x: clamp(candidate.x, 0, STAGE_WIDTH - width), y: clamp(candidate.y, 36, STAGE_HEIGHT - height), width, height }; if (!nodes.some((node) => rectanglesOverlap(box, node.box, 24))) return box }
+  for (let y = 56; y <= STAGE_HEIGHT - height; y += 52) for (let x = 24; x <= STAGE_WIDTH - width; x += 58) { const box = { x, y, width, height }; if (!nodes.some((node) => rectanglesOverlap(box, node.box, 20))) return box }
+  return { x: clamp(source.x + 36, 0, STAGE_WIDTH - width), y: clamp(source.y + 36, 36, STAGE_HEIGHT - height), width, height }
 }
 
+function rectanglesOverlap(a: NodeBox, b: NodeBox, gap: number): boolean { return a.x < b.x + b.width + gap && a.x + a.width + gap > b.x && a.y < b.y + b.height + gap && a.y + a.height + gap > b.y }
 function CompactRow({ label, value }: { label: string; value: string }) { return <div className="flex items-center gap-2 text-[8.5px]"><span className="size-1.5 shrink-0 rounded-full bg-[#7888a5]" /><span className="min-w-0 flex-1 truncate text-[var(--ink-soft)]">{label}</span><span className="max-w-[78px] truncate text-[var(--muted)]">{value}</span></div> }
 function IconRow({ icon: Icon, label, value }: { icon: typeof User; label: string; value: string }) { return <div className="grid grid-cols-[62px_minmax(0,1fr)] items-center gap-2 text-[8.5px]"><span className="flex items-center gap-1.5 text-[var(--muted)]"><Icon className="size-3.5" />{label}</span><span className="truncate text-right font-medium text-[var(--ink-soft)]">{value}</span></div> }
 function RelatedRow({ relation, severity }: { relation: DtsTicketDetail['relations'][number]; severity: string }) { return <a href={relation.url ?? undefined} target={relation.url ? '_blank' : undefined} rel="noreferrer" className="grid grid-cols-[7px_minmax(0,1fr)_36px] items-center gap-2 text-[8.5px] text-[var(--ink-soft)] outline-none hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><span className={cn('size-1.5 rounded-full', severity === '严重' ? 'bg-[#ef4565]' : 'bg-[#f29d38]')} /><span className="truncate">{relation.externalId}</span><span className="rounded-[4px] bg-[var(--surface-subtle)] px-1 py-0.5 text-center text-[7px] text-[var(--muted)]">{severity}</span></a> }
 function ActionRow({ index, title, owner }: { index: number; title: string; owner: string }) { return <div className="flex items-start gap-2"><span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[7.5px] font-semibold text-[var(--accent-ink)]">{index}</span><div className="min-w-0"><p className="truncate text-[8.5px] font-semibold text-[var(--ink)]">{title}</p><p className="mt-0.5 truncate text-[7.5px] text-[var(--muted)]">{owner}</p></div></div> }
 function EmptyCopy({ children }: { children: React.ReactNode }) { return <p className="text-[8.5px] leading-4 text-[var(--muted)]">{children}</p> }
 function SeverityBadge({ value }: { value: DtsSeverity | null }) { return <span className={cn('rounded-[4px] px-1.5 py-0.5 text-[7px] font-medium', severityBadgeTone(value))}>{value ?? '一般'}</span> }
-function cloneInitialNodes(): NodeLayout { return Object.fromEntries(Object.entries(INITIAL_NODES).map(([id, box]) => [id, { ...box }])) as NodeLayout }
+function cloneInitialNodes(): GraphNode[] { return INITIAL_NODES.map((node) => ({ ...node, box: { ...node.box } })) }
+function graphNodeLabel(node: GraphNode): string { if (node.kind === 'custom') return node.title ?? '新建节点'; return { ticket: '当前工单', impact: '影响范围', evidence: '关键证据', flow: '流程进度', people: '责任人与时间', relations: '关联问题', actions: '下一步行动' }[node.kind] }
 function clamp(value: number, minimum: number, maximum: number): number { return Math.min(maximum, Math.max(minimum, value)) }
-function nodeLabel(nodeId: NodeId): string { return { ticket: '当前工单', impact: '影响范围', evidence: '关键证据', flow: '流程进度', people: '责任人与时间', relations: '关联问题', actions: '下一步行动' }[nodeId] }
-function calculateFitZoom(width: number, height: number): number { return Math.min(0.95, Math.max(MIN_ZOOM, (width - 56) / STAGE_WIDTH), Math.max(MIN_ZOOM, (height - 42) / STAGE_HEIGHT)) }
+function calculateFitZoom(width: number, height: number): number { return Math.min(0.95, Math.max(MIN_ZOOM, (width - 58) / STAGE_WIDTH), Math.max(MIN_ZOOM, (height - 44) / STAGE_HEIGHT)) }
 function severityTone(value: DtsSeverity | null): string { return value === '致命' ? 'bg-[#d92d20]' : value === '严重' ? 'bg-[#ef4565]' : value === '一般' ? 'bg-[#e6982d]' : 'bg-[#6681f5]' }
 function severityBadgeTone(value: DtsSeverity | null): string { return value === '致命' ? 'bg-[color-mix(in_srgb,var(--err-ink)_16%,transparent)] text-[var(--err-ink)]' : value === '严重' ? 'bg-[color-mix(in_srgb,var(--err-ink)_10%,transparent)] text-[var(--err-ink)]' : value === '一般' ? 'bg-[var(--warn-soft)] text-[var(--warn-ink)]' : 'bg-[var(--accent-soft)] text-[var(--accent-ink)]' }
 function nextNodeTitle(nodes: DtsFlowNodeSummary[], current: DtsFlowNodeSummary | null): string { if (!nodes.length || !current) return '补充处理结论并推进流程'; const index = nodes.findIndex((node) => node.id === current.id); return nodes[index + 1]?.name ?? '完成当前节点并关闭工单' }

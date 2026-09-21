@@ -18,7 +18,6 @@ import {
   Trash,
   User,
   UsersThree,
-  X,
 } from '@phosphor-icons/react'
 import type { DtsFlowNodeSummary, DtsSeverity, DtsTicketDetail, DtsTicketSummary } from '@fouc/shared'
 import { cn } from '@/lib/utils'
@@ -34,6 +33,8 @@ const STAGE_WIDTH = 1020
 const STAGE_HEIGHT = 680
 const MIN_ZOOM = 0.44
 const MAX_ZOOM = 1.2
+const CUSTOM_NODE_VIEW_SIZE = { width: 220, height: 128 }
+const CUSTOM_NODE_EDIT_SIZE = { width: 240, height: 174 }
 const INITIAL_NODES: GraphNode[] = [
   { id: 'ticket', kind: 'ticket', box: { x: 382, y: 238, width: 256, height: 152 } },
   { id: 'impact', kind: 'impact', box: { x: 48, y: 64, width: 220, height: 140 } },
@@ -104,7 +105,7 @@ export function DtsRelationshipGraph({ ticket, detail }: { ticket: DtsTicketSumm
     if (!parent) return
     const count = nextNodeIdRef.current++
     const id = `custom-${count}`
-    const box = findOpenPosition(nodes, parent.box, 212, 124)
+    const box = findOpenPosition(nodes, parent.box, CUSTOM_NODE_EDIT_SIZE.width, CUSTOM_NODE_EDIT_SIZE.height)
     setNodes((current) => [...current, { id, kind: 'custom', title: `新建节点 ${count}`, content: '拖动节点调整位置，继续新建可扩展这条关系。', icon: 'note', box }])
     setEdges((current) => [...current, { id: `${parentId}-${id}`, source: parentId, target: id }])
     setSelectedNode(id)
@@ -127,7 +128,18 @@ export function DtsRelationshipGraph({ ticket, detail }: { ticket: DtsTicketSumm
     setActivity('自定义节点已更新')
   }
 
-  const editableNode = nodes.find((node) => node.id === editingNode && node.kind === 'custom') ?? null
+  function startEditingNode(nodeId: string) {
+    setNodes((current) => current.map((node) => node.id === nodeId && node.kind === 'custom' ? { ...node, box: { ...node.box, ...CUSTOM_NODE_EDIT_SIZE } } : node))
+    setSelectedNode(nodeId)
+    setEditingNode(nodeId)
+    setActivity('正在编辑自定义节点')
+  }
+
+  function finishEditingNode(nodeId: string) {
+    setNodes((current) => current.map((node) => node.id === nodeId && node.kind === 'custom' ? { ...node, title: node.title?.trim() || '未命名节点', content: node.content?.trim() || '暂无补充内容。', box: { ...node.box, ...CUSTOM_NODE_VIEW_SIZE } } : node))
+    setEditingNode(null)
+    setActivity('自定义节点已保存')
+  }
 
   function startCanvasDrag(event: React.PointerEvent<HTMLDivElement>) {
     if (!panMode) return
@@ -145,12 +157,11 @@ export function DtsRelationshipGraph({ ticket, detail }: { ticket: DtsTicketSumm
   return (
     <div ref={canvasRef} aria-label="DTS 工单关系图谱" className="relative min-h-0 flex-1 overflow-hidden bg-[var(--panel)]" style={{ backgroundImage: 'radial-gradient(circle, color-mix(in srgb, var(--muted) 28%, transparent) 0.8px, transparent 0.8px)', backgroundSize: '18px 18px' }}>
       <GraphSummary nodeCount={nodes.length} activity={activity} />
-      {editableNode ? <CustomNodeEditor node={editableNode} onChange={(patch) => updateCustomNode(editableNode.id, patch)} onClose={() => setEditingNode(null)} /> : null}
       <CanvasControls zoom={zoom} panMode={panMode} onZoomOut={() => { setZoom((value) => Math.max(MIN_ZOOM, value - 0.08)); setActivity('画布已缩小') }} onZoomIn={() => { setZoom((value) => Math.min(MAX_ZOOM, value + 0.08)); setActivity('画布已放大') }} onFit={fitCanvas} onReset={resetLayout} onTogglePan={() => { setPanMode((value) => !value); setActivity(panMode ? '拖动画布已关闭' : '拖动画布已开启') }} />
       <div className={cn('absolute inset-0', panMode && 'cursor-grab select-none active:cursor-grabbing')} onPointerDown={startCanvasDrag} onPointerMove={moveCanvas} onPointerUp={() => { canvasDragRef.current = null }} onPointerCancel={() => { canvasDragRef.current = null }}>
         <div className="absolute left-1/2 top-1/2 origin-center transition-transform duration-150" style={{ width: STAGE_WIDTH, height: STAGE_HEIGHT, transform: `translate(-50%, -50%) translate(${offset.x}px, ${offset.y}px) scale(${zoom})` }}>
           <GraphConnectors nodes={nodes} edges={edges} />
-          {nodes.map((node) => <DraggableNode key={node.id} node={node} zoom={zoom} selected={selectedNode === node.id} onMove={moveNode} onSelect={setSelectedNode} onAdd={addNode} onEdit={node.kind === 'custom' ? () => setEditingNode(node.id) : undefined} onDelete={deleteNode}>{renderNodeContent(node, ticket, detail)}</DraggableNode>)}
+          {nodes.map((node) => <DraggableNode key={node.id} node={node} zoom={zoom} selected={selectedNode === node.id} onMove={moveNode} onSelect={setSelectedNode} onAdd={addNode} onEdit={node.kind === 'custom' ? () => startEditingNode(node.id) : undefined} onDelete={deleteNode}>{renderNodeContent(node, ticket, detail, editingNode === node.id, (patch) => updateCustomNode(node.id, patch), () => finishEditingNode(node.id))}</DraggableNode>)}
         </div>
       </div>
     </div>
@@ -159,9 +170,9 @@ export function DtsRelationshipGraph({ ticket, detail }: { ticket: DtsTicketSumm
 
 function DraggableNode({ node, zoom, selected, onMove, onSelect, onAdd, onEdit, onDelete, children }: { node: GraphNode; zoom: number; selected: boolean; onMove: (nodeId: string, position: Offset) => void; onSelect: (nodeId: string) => void; onAdd: (nodeId: string) => void; onEdit?: () => void; onDelete: (nodeId: string) => void; children: React.ReactNode }) {
   const dragRef = useRef<{ pointerId: number; startX: number; startY: number; origin: Offset } | null>(null)
-  function startDrag(event: React.PointerEvent<HTMLDivElement>) { if ((event.target as HTMLElement).closest('a, button')) return; event.stopPropagation(); onSelect(node.id); dragRef.current = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, origin: { x: node.box.x, y: node.box.y } }; event.currentTarget.setPointerCapture(event.pointerId) }
+  function startDrag(event: React.PointerEvent<HTMLDivElement>) { if ((event.target as HTMLElement).closest('a, button, input, textarea, select')) return; event.stopPropagation(); onSelect(node.id); dragRef.current = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, origin: { x: node.box.x, y: node.box.y } }; event.currentTarget.setPointerCapture(event.pointerId) }
   function moveDrag(event: React.PointerEvent<HTMLDivElement>) { const drag = dragRef.current; if (!drag || drag.pointerId !== event.pointerId) return; event.stopPropagation(); onMove(node.id, { x: drag.origin.x + (event.clientX - drag.startX) / zoom, y: drag.origin.y + (event.clientY - drag.startY) / zoom }) }
-  function moveWithKeyboard(event: React.KeyboardEvent<HTMLDivElement>) { const delta = event.shiftKey ? 24 : 8; const movement = event.key === 'ArrowLeft' ? { x: -delta, y: 0 } : event.key === 'ArrowRight' ? { x: delta, y: 0 } : event.key === 'ArrowUp' ? { x: 0, y: -delta } : event.key === 'ArrowDown' ? { x: 0, y: delta } : null; if (!movement) return; event.preventDefault(); onSelect(node.id); onMove(node.id, { x: node.box.x + movement.x, y: node.box.y + movement.y }) }
+  function moveWithKeyboard(event: React.KeyboardEvent<HTMLDivElement>) { if ((event.target as HTMLElement).matches('input, textarea, select')) return; const delta = event.shiftKey ? 24 : 8; const movement = event.key === 'ArrowLeft' ? { x: -delta, y: 0 } : event.key === 'ArrowRight' ? { x: delta, y: 0 } : event.key === 'ArrowUp' ? { x: 0, y: -delta } : event.key === 'ArrowDown' ? { x: 0, y: delta } : null; if (!movement) return; event.preventDefault(); onSelect(node.id); onMove(node.id, { x: node.box.x + movement.x, y: node.box.y + movement.y }) }
   const label = graphNodeLabel(node)
   return <div role="button" tabIndex={0} aria-label={`拖动${label}节点`} aria-pressed={selected} className={cn('group absolute z-10 touch-none cursor-grab rounded-[11px] outline-none active:cursor-grabbing focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]', selected && 'z-20 [&>*:last-child]:bg-[color-mix(in_srgb,var(--accent-soft)_24%,var(--panel))]')} style={{ left: node.box.x, top: node.box.y, width: node.box.width, height: node.box.height, '--node-frame-color': selected ? 'var(--accent)' : 'var(--line-strong)' } as React.CSSProperties} onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={(event) => { event.stopPropagation(); dragRef.current = null }} onPointerCancel={() => { dragRef.current = null }} onKeyDown={moveWithKeyboard}>
     <NodeActions label={label} selected={selected} onAdd={() => onAdd(node.id)} onEdit={onEdit} onDelete={() => onDelete(node.id)} />
@@ -174,14 +185,12 @@ function NodeActions({ label, selected, onAdd, onEdit, onDelete }: { label: stri
   return <div className={cn('pointer-events-none absolute -top-2 right-0 z-30 flex -translate-y-full gap-1.5 opacity-0 transition-[opacity,transform] duration-150 group-hover:opacity-100 group-focus-within:opacity-100', selected && 'opacity-100')}><button type="button" aria-label={`从${label}新建节点`} title="新建关联节点" onClick={(event) => { event.stopPropagation(); onAdd() }} className={cn(baseClassName, 'border-[var(--accent)] bg-[var(--accent)] text-white hover:brightness-105')}><Plus className="size-3.5" weight="bold" /></button>{onEdit ? <button type="button" aria-label={`编辑${label}节点`} title="编辑节点" onClick={(event) => { event.stopPropagation(); onEdit() }} className={cn(baseClassName, 'border-[#4d5f78] bg-[#4d5f78] text-white hover:brightness-105')}><NotePencil className="size-3.5" weight="bold" /></button> : null}<button type="button" aria-label={`删除${label}节点`} title="删除节点" onClick={(event) => { event.stopPropagation(); onDelete() }} className={cn(baseClassName, 'border-[var(--err-ink)] bg-[var(--err-ink)] text-white hover:brightness-105')}><Trash className="size-3.5" /></button></div>
 }
 
-function CustomNodeEditor({ node, onChange, onClose }: { node: GraphNode; onChange: (patch: Pick<GraphNode, 'title' | 'content' | 'icon'>) => void; onClose: () => void }) {
-  return <aside aria-label="编辑自定义节点" className="absolute right-5 top-5 z-40 w-[270px] rounded-[12px] border border-[var(--line-strong)] bg-panel p-4 shadow-[0_18px_50px_-28px_rgba(15,23,42,0.65)]" onPointerDown={(event) => event.stopPropagation()}>
-    <header className="flex items-center gap-2"><NotePencil className="size-4 text-[var(--accent)]" weight="bold" /><h2 className="text-[11px] font-semibold text-[var(--ink)]">编辑节点</h2><button type="button" aria-label="关闭节点编辑" onClick={onClose} className="ml-auto flex size-7 items-center justify-center rounded-[7px] text-[var(--muted)] outline-none transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><X className="size-3.5" /></button></header>
-    <fieldset className="mt-4"><legend className="mb-2 text-[8.5px] font-medium text-[var(--muted-strong)]">节点图标</legend><div className="grid grid-cols-6 gap-1.5">{CUSTOM_ICON_OPTIONS.map(({ id, label, icon: Icon }) => <button key={id} type="button" aria-label={`选择${label}图标`} aria-pressed={(node.icon ?? 'note') === id} onClick={() => onChange({ title: node.title, content: node.content, icon: id })} className={cn('flex size-8 items-center justify-center rounded-[8px] border outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]', (node.icon ?? 'note') === id ? 'border-[var(--accent)] bg-[var(--accent)] text-white' : 'border-[var(--line)] bg-[var(--surface-subtle)] text-[var(--muted-strong)] hover:border-[var(--accent-soft-line)] hover:text-[var(--accent-ink)]')}><Icon className="size-4" weight="bold" /></button>)}</div></fieldset>
-    <label className="mt-4 block text-[8.5px] font-medium text-[var(--muted-strong)]">节点标题<input value={node.title ?? ''} maxLength={32} onChange={(event) => onChange({ title: event.target.value, content: node.content, icon: node.icon })} className="mt-1.5 h-9 w-full rounded-[8px] border border-[var(--line-strong)] bg-[var(--panel)] px-3 text-[10px] font-medium text-[var(--ink)] outline-none transition-colors placeholder:text-[var(--muted)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)]" placeholder="输入节点标题" /></label>
-    <label className="mt-3 block text-[8.5px] font-medium text-[var(--muted-strong)]">节点内容<textarea value={node.content ?? ''} maxLength={120} rows={4} onChange={(event) => onChange({ title: node.title, content: event.target.value, icon: node.icon })} className="mt-1.5 w-full resize-none rounded-[8px] border border-[var(--line-strong)] bg-[var(--panel)] px-3 py-2.5 text-[9px] leading-4 text-[var(--ink-soft)] outline-none transition-colors placeholder:text-[var(--muted)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)]" placeholder="输入节点内容" /></label>
-    <button type="button" onClick={onClose} className="mt-3 flex h-9 w-full items-center justify-center gap-1.5 rounded-[8px] bg-[var(--accent)] text-[9px] font-semibold text-white outline-none transition-[filter,transform] hover:brightness-105 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><Check className="size-3.5" weight="bold" />完成编辑</button>
-  </aside>
+function CustomNodeEditor({ node, onChange, onDone }: { node: GraphNode; onChange: (patch: Pick<GraphNode, 'title' | 'content' | 'icon'>) => void; onDone: () => void }) {
+  return <section aria-label="编辑自定义节点" className="relative h-full rounded-[10px] bg-panel px-3 py-2.5"><NodeFrame /><div className="relative z-10 flex h-full flex-col">
+    <div className="flex items-center gap-1">{CUSTOM_ICON_OPTIONS.map(({ id, label, icon: Icon }) => <button key={id} type="button" aria-label={`选择${label}图标`} aria-pressed={(node.icon ?? 'note') === id} onClick={() => onChange({ title: node.title, content: node.content, icon: id })} className={cn('flex size-6 items-center justify-center rounded-[6px] border outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]', (node.icon ?? 'note') === id ? 'border-[var(--accent)] bg-[var(--accent)] text-white' : 'border-transparent text-[var(--muted)] hover:border-[var(--line)] hover:bg-[var(--surface-hover)] hover:text-[var(--ink-soft)]')}><Icon className="size-3.5" weight="bold" /></button>)}<button type="button" aria-label="完成编辑" onClick={onDone} className="ml-auto flex size-7 items-center justify-center rounded-[7px] bg-[var(--accent)] text-white outline-none transition-[filter,transform] hover:brightness-105 active:scale-90 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><Check className="size-3.5" weight="bold" /></button></div>
+    <input aria-label="节点标题" value={node.title ?? ''} maxLength={32} onChange={(event) => onChange({ title: event.target.value, content: node.content, icon: node.icon })} className="mt-2.5 h-7 w-full border-0 border-b border-dashed border-[var(--line)] bg-transparent px-0 text-[10.5px] font-semibold text-[var(--ink)] outline-none transition-colors placeholder:text-[var(--muted)] focus:border-[var(--accent)]" placeholder="输入节点标题" />
+    <textarea aria-label="节点内容" value={node.content ?? ''} maxLength={120} onChange={(event) => onChange({ title: node.title, content: event.target.value, icon: node.icon })} className="mt-2 min-h-0 flex-1 resize-none border-0 bg-transparent p-0 text-[8.5px] leading-4 text-[var(--muted-strong)] outline-none placeholder:text-[var(--muted)]" placeholder="输入节点内容" />
+  </div></section>
 }
 
 function GraphSummary({ nodeCount, activity }: { nodeCount: number; activity: string }) { return <div aria-live="polite" className="pointer-events-none absolute left-4 top-4 z-30 flex h-8 items-center gap-2 rounded-[9px] border border-[var(--line)] bg-panel/95 px-2.5 shadow-[0_8px_24px_-18px_rgba(15,23,42,0.65)] backdrop-blur"><ShareNetwork className="size-3.5 text-[var(--ink)]" weight="bold" /><span className="text-[8.5px] font-semibold text-[var(--ink)]">关系画布</span><span className="text-[8px] text-[var(--muted)]">{nodeCount} 个节点 · {activity}</span></div> }
@@ -212,7 +221,7 @@ function calculateEdge(source: NodeBox, target: NodeBox): { path: string; end: O
   return { path: `M ${start.x} ${start.y} C ${start.x} ${start.y + direction * bend}, ${end.x} ${end.y - direction * bend}, ${end.x} ${end.y}`, end }
 }
 
-function renderNodeContent(node: GraphNode, ticket: DtsTicketSummary, detail: DtsTicketDetail | null): React.ReactNode {
+function renderNodeContent(node: GraphNode, ticket: DtsTicketSummary, detail: DtsTicketDetail | null, editing = false, onChange: (patch: Pick<GraphNode, 'title' | 'content' | 'icon'>) => void = () => undefined, onDone: () => void = () => undefined): React.ReactNode {
   if (node.kind === 'ticket') return <CenterTicketNote ticket={ticket} detail={detail} />
   if (node.kind === 'impact') return <GraphNote title="影响范围" icon={Stack} meta={`${ticket.productPath.length || 1} 项`} tone="violet">{(ticket.productPath.length ? ticket.productPath : [ticket.productType ?? '未归类产品']).slice(0, 3).map((item, index) => <CompactRow key={`${item}-${index}`} label={item} value={index === 0 ? '核心服务' : `${index + 1} 个版本`} />)}</GraphNote>
   if (node.kind === 'evidence') return <GraphNote title="关键证据" icon={FileText} meta={`${detail?.fields.length ?? 0} 条`} tone="mint">{detail?.fields.length ? detail.fields.slice(0, 3).map((field) => <CompactRow key={field.key} label={field.label} value={field.value == null ? '—' : String(field.value)} />) : <EmptyCopy>等待 DTS 返回详情字段。</EmptyCopy>}</GraphNote>
@@ -220,6 +229,7 @@ function renderNodeContent(node: GraphNode, ticket: DtsTicketSummary, detail: Dt
   if (node.kind === 'people') return <GraphNote title="责任人与时间" icon={User} meta={`${detail?.handlers.length || (ticket.currentHandler ? 1 : 0)} 人`} tone="blue"><IconRow icon={User} label="负责人" value={ticket.currentHandler ?? '待分配'} /><IconRow icon={UsersThree} label="创建人" value={ticket.creator ?? '—'} /><IconRow icon={CalendarBlank} label="创建时间" value={ticket.createdAt ?? '—'} /></GraphNote>
   if (node.kind === 'relations') return <GraphNote title="关联问题" icon={LinkSimple} meta={`${detail?.relations.length ?? 0} 个`} tone="blue">{detail?.relations.length ? detail.relations.slice(0, 3).map((relation, index) => <RelatedRow key={`${relation.objectType}-${relation.externalId}`} relation={relation} severity={index === 0 ? '严重' : '一般'} />) : <EmptyCopy>暂无外部关联问题。</EmptyCopy>}</GraphNote>
   if (node.kind === 'actions') return <GraphNote title="下一步行动" icon={ListChecks} meta="2 项" tone="mint"><ActionRow index={1} title={detail?.currentNode?.name ?? '确认问题范围'} owner={detail?.currentNode?.handler ?? ticket.currentHandler ?? '待分配'} /><ActionRow index={2} title={nextNodeTitle(detail?.flowNodes ?? [], detail?.currentNode ?? null)} owner="完成后流转" /></GraphNote>
+  if (editing) return <CustomNodeEditor node={node} onChange={onChange} onDone={onDone} />
   const CustomIcon = CUSTOM_ICON_OPTIONS.find((option) => option.id === node.icon)?.icon ?? NotePencil
   return <GraphNote title={node.title ?? '新建节点'} icon={CustomIcon} meta="自定义" tone="slate"><p className="line-clamp-3 text-[8.5px] leading-4 text-[var(--muted-strong)]">{node.content || '拖动节点调整位置，继续新建可扩展这条关系。'}</p></GraphNote>
 }

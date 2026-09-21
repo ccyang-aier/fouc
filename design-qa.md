@@ -108,6 +108,12 @@ The focused issue-list region matches the reference's hierarchy: severity marker
 - Fixes made: Replaced every node border with the same non-scaling 1 px dashed frame so dash width, spacing, and contrast remain stable while zooming; retained the theme accent only as the selected-frame color; made add and delete controls permanently filled whenever visible; added a custom-node editor with six built-in Phosphor icons, title editing, content editing, live preview, and a persistent edit action.
 - Post-fix visual evidence: Live browser inspection at `http://localhost:3001/` found eight node frames with identical `4 4` dash arrays and `non-scaling-stroke`; seven unselected frames shared `rgba(32, 33, 38, 0.14)` and the selected custom frame used `rgb(62, 99, 221)`. Add/delete controls computed to accent/error filled backgrounds with white icons. A custom node was created, changed to the task icon, renamed to `数据库回滚方案`, given new body copy, closed, reopened, and retained all three edited values.
 
+### Pass 12
+
+- Earlier finding: Editing a custom node opened a large detached panel at the canvas top-right, obscuring nearby graph content and separating the form from the node being changed.
+- Fix made: Removed the floating editor and moved icon selection, title input, content input, and completion control directly into the custom card. New cards now expand in place to `240 × 174` for editing and return to a compact `220 × 128` display card after saving; reopening edit expands the same node in place.
+- Post-fix visual evidence: Browser verification created and edited `数据库回滚方案` directly on the connected card. DOM inspection found zero detached editor asides, confirmed the editor region is nested inside the selected graph node, and verified the card transitions from `240 × 174` editing state to `220 × 128` display state while retaining the selected task icon and edited copy. Console warnings and errors were empty.
+
 ## Findings
 
 No actionable P0, P1, or P2 findings remain. The implementation intentionally adapts the supplied mind-map reference to Fouc's denser desktop workbench scale while keeping the graph editable and keyboard-accessible.

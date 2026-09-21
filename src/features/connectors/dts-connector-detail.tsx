@@ -252,9 +252,9 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
       <header className="flex h-[44px] shrink-0 items-center gap-3 border-b border-[var(--line)] px-4">
         <button type="button" onClick={onBack} aria-label="返回连接器列表" className="flex size-7 shrink-0 items-center justify-center rounded-[6px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><CaretLeft className="size-3.5" weight="bold" /></button>
         <nav aria-label="当前位置" className="flex min-w-0 items-center gap-1.5">
-          <button type="button" onClick={onBack} className="rounded-[5px] px-1 py-0.5 text-[10px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">连接器</button>
+          <button type="button" onClick={onBack} className="rounded-[5px] px-1 py-0.5 font-normal text-[var(--muted)] outline-none transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--muted-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><span className="text-[10px]">连接器</span></button>
           <span className="text-[10px] text-[var(--muted)]" aria-hidden>/</span>
-          <h1 aria-current="page" className="truncate text-[11px] font-medium tracking-[-0.01em] text-[var(--ink)]">DTS</h1>
+          <h1 aria-current="page" className="truncate text-[10px] font-normal text-[var(--muted)]">DTS</h1>
           {connected && loading ? <span role="status" className="ml-1 flex items-center gap-1 text-[8.5px] text-[var(--muted)]"><SpinnerGap className="size-3 animate-spin" />同步中</span> : null}
         </nav>
         <div role="group" aria-label="DTS 运行上下文" className="ml-3 flex h-7 items-center gap-1.5 max-[900px]:hidden">

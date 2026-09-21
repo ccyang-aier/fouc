@@ -1,7 +1,7 @@
 # DTS 问题单侧栏设计 QA
 
 - Source visual truth: Conversation attachments from Browser Comments, including the latest focused metadata and full relationship-view annotations (no local filesystem path)
-- Implementation screenshots: `C:\Users\y00013075\.codex\visualizations\2026\09\20\01a0be0c-2e93-7543-93a2-4898baa1df50\dts-graph-polish-final.png` and `C:\Users\y00013075\.codex\visualizations\2026\09\20\01a0be0c-2e93-7543-93a2-4898baa1df50\dts-inspector-closed.png`
+- Implementation screenshots: `C:\Users\y00013075\.codex\visualizations\2026\09\20\01a0be0c-2e93-7543-93a2-4898baa1df50\dts-native-graph-final.png` and `C:\Users\y00013075\.codex\visualizations\2026\09\20\01a0be0c-2e93-7543-93a2-4898baa1df50\dts-native-graph-expanded.png`
 - Viewport: 1682 × 960 CSS px
 - Source pixels: 472 × 606 px for the focused card-list reference; the annotated full-page references are 1682 × 960 px
 - Implementation pixels: 1682 × 960 px
@@ -25,7 +25,7 @@ The focused issue-list region matches the reference's hierarchy: severity marker
 - Image quality and asset fidelity: The target contains no raster imagery. All visible UI icons use the existing Phosphor icon library; no CSS drawings, inline SVG substitutes, or placeholders were introduced.
 - Copy and content: All card content comes from existing DTS ticket data. The breadcrumb copy is exactly `连接器 / DTS`.
 - Responsiveness: The list narrows to 284 px below 1180 px and is fully removed from layout when collapsed. No residual rail, overlap, or clipping was observed at the tested desktop viewport.
-- Accessibility and interactions: Collapse/expand controls expose labels and expanded state, keyboard focus rings are present, selected tickets retain pressed state, and the independent back button plus breadcrumb return action are keyboard-accessible. The relationship canvas exposes named zoom, fit-view, and interaction-lock controls plus a labeled minimap. The context inspector has explicit close and reopen controls.
+- Accessibility and interactions: Collapse/expand controls expose labels and expanded state, keyboard focus rings are present, selected tickets retain pressed state, and the independent back button plus breadcrumb return action are keyboard-accessible. The native relationship canvas exposes named zoom, fit-view, and drag-mode controls. The context inspector has explicit close and reopen controls.
 
 ## Interaction verification
 
@@ -36,7 +36,7 @@ The focused issue-list region matches the reference's hierarchy: severity marker
 5. Checked browser console warnings and errors: none.
 6. Checked for a Next.js/framework error overlay: none.
 7. Confirmed the rendered DTS view contains `致命`, relation metadata, and comment metadata, and contains no legacy `高` severity label.
-8. Confirmed the XYFlow canvas renders 7 nodes and 6 edges; activating Zoom In changed the viewport transform and Fit View restored the full graph.
+8. Confirmed the native canvas renders 7 nodes and 6 SVG relationships; activating `放大` changed 78% to 86%, and `适应` restored the fitted graph.
 9. Activated `关闭工单上下文`, confirmed the inspector was removed, then activated `打开工单上下文` and confirmed it returned.
 10. Opened a clean in-app browser tab, navigated `连接器 → DTS`, confirmed 7 nodes and 6 edges rendered, and found no console warnings or errors.
 
@@ -71,6 +71,12 @@ The focused issue-list region matches the reference's hierarchy: severity marker
 - Earlier findings: Status and related-issue chips still competed with the identity row below the divider, while the relationship view felt underscaled and visually flat due to loose geometry, tiny handles, uniform card surfaces, weak hierarchy, and sparse use of the canvas.
 - Fixes made: Moved workflow chips above the dashed divider, reserved the lower row for owner/time/comments, tightened graph coordinates, increased fit-view scale, hid visual connection handles, strengthened the central ticket node, added semantic icon surfaces and metadata badges, refined shadows/radii/controls/minimap, and added a compact relationship-network legend.
 - Post-fix visual evidence: The revised screenshot shows stable three-part card composition and a denser center-out network. The central ticket is the visual anchor, surrounding cards have differentiated headers and stronger readable hierarchy, edges terminate cleanly without handle dots, and the graph occupies the useful canvas area without overlap. No actionable P0/P1/P2 mismatch remains.
+
+### Pass 6
+
+- Earlier findings: The React Flow treatment still felt foreign to Fouc and added library-specific chrome without improving the core hierarchy. Ticket statuses were not visually distinct enough, the relation chip was too wide and too close to the status treatment, and breadcrumb segments differed in size and color.
+- Fixes made: Removed `@xyflow/react`, its stylesheet, minimap, attribution, and runtime components; rebuilt the graph with project-owned React state, semantic cards, and SVG relationships. Added distinct status palettes for processing, verification, pending, completed, and failed states; changed the related-issue chip to a narrower violet treatment; normalized both breadcrumb labels to 10 px regular muted text.
+- Post-fix visual evidence: The native graph screenshot shows the same seven-node relationship hierarchy without third-party chrome, with clearer Fouc-aligned controls and a stronger center ticket. Computed styles confirm both breadcrumb labels are 10 px and `rgb(150, 153, 161)`; processing, verification, and pending tickets use different computed foreground/background pairs. DOM inspection reports zero React Flow elements and the clean browser console reports no warnings or errors.
 
 ## Findings
 

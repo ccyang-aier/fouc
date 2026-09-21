@@ -88,9 +88,9 @@ export function DtsTicketList(props: Props) {
             </div>
             <p className="mt-1.5 line-clamp-2 text-[10.5px] font-semibold leading-[15px] tracking-[-0.012em] text-[var(--ink)]">{ticket.title}</p>
             {ticket.remark ? <p className="mt-1 line-clamp-2 text-[8.5px] leading-[13px] text-[var(--muted-strong)]">{ticket.remark}</p> : null}
-            <div className="mt-2 grid min-w-0 grid-cols-[minmax(58px,auto)_minmax(0,1fr)] items-center gap-2 text-[8px]">
+            <div className="mt-2 flex min-w-0 items-center gap-2 text-[8px]">
               <span className={cn('w-fit max-w-full truncate rounded-[5px] px-1.5 py-0.5 font-medium', statusTone(ticket.status))}>{ticket.status}</span>
-              {ticket.relatedCount != null ? <span className="flex min-w-0 items-center justify-center gap-1 rounded-[5px] bg-[var(--accent-soft)] px-1.5 py-0.5 font-medium text-[var(--accent-ink)]"><LinkSimple className="size-2.5 shrink-0" /><span className="truncate">与 {ticket.relatedCount} 个问题相关</span></span> : <span />}
+              {ticket.relatedCount != null ? <span className="flex max-w-[96px] min-w-0 items-center gap-1 rounded-[5px] bg-[color-mix(in_srgb,#7658f5_10%,var(--panel))] px-1.5 py-0.5 font-medium text-[#6b54c7]"><LinkSimple className="size-2.5 shrink-0" /><span className="truncate">与 {ticket.relatedCount} 个问题相关</span></span> : null}
             </div>
             <div className="mt-2 flex min-w-0 items-center gap-2 border-t border-dashed border-[var(--line-strong)]/70 pt-2 text-[8px] text-[var(--muted)]">
               <span className="flex min-w-0 items-center gap-1"><User className="size-3 shrink-0" weight="regular" /><span className="truncate">{ticket.currentHandler ?? ticket.creator ?? '未分配'}</span></span>
@@ -130,7 +130,9 @@ function severityBadge(value: DtsSeverity | null): string {
 
 function statusTone(value: string): string {
   if (value.includes('完成') || value.includes('关闭')) return 'bg-[color-mix(in_srgb,var(--ok-ink)_10%,var(--panel))] text-[var(--ok-ink)]'
-  if (value.includes('处理') || value.includes('验证')) return 'bg-[var(--accent-soft)] text-[var(--accent-ink)]'
+  if (value.includes('验证')) return 'bg-[color-mix(in_srgb,#7658f5_10%,var(--panel))] text-[#6b54c7]'
+  if (value.includes('处理中')) return 'bg-[var(--accent-soft)] text-[var(--accent-ink)]'
+  if (value.includes('阻塞') || value.includes('失败')) return 'bg-[color-mix(in_srgb,var(--err-ink)_10%,var(--panel))] text-[var(--err-ink)]'
   return 'bg-[var(--warn-soft)] text-[var(--warn-ink)]'
 }
 

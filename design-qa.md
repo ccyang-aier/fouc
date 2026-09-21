@@ -1,7 +1,7 @@
 # DTS 问题单侧栏设计 QA
 
 - Source visual truth: Conversation attachments from Browser Comments, including the latest focused metadata and full relationship-view annotations (no local filesystem path)
-- Implementation screenshots: `C:\Users\y00013075\.codex\visualizations\2026\09\20\01a0be0c-2e93-7543-93a2-4898baa1df50\dts-native-graph-final.png` and `C:\Users\y00013075\.codex\visualizations\2026\09\20\01a0be0c-2e93-7543-93a2-4898baa1df50\dts-native-graph-expanded.png`
+- Implementation screenshots: `C:\Users\y00013075\.codex\visualizations\2026\09\20\01a0be0c-2e93-7543-93a2-4898baa1df50\dts-native-graph-final.png`, `C:\Users\y00013075\.codex\visualizations\2026\09\20\01a0be0c-2e93-7543-93a2-4898baa1df50\dts-native-graph-expanded.png`, and `C:\Users\y00013075\.codex\visualizations\2026\09\20\01a0be0c-2e93-7543-93a2-4898baa1df50\dts-mindmap-final.png`
 - Viewport: 1682 × 960 CSS px
 - Source pixels: 472 × 606 px for the focused card-list reference; the annotated full-page references are 1682 × 960 px
 - Implementation pixels: 1682 × 960 px
@@ -77,6 +77,12 @@ The focused issue-list region matches the reference's hierarchy: severity marker
 - Earlier findings: The React Flow treatment still felt foreign to Fouc and added library-specific chrome without improving the core hierarchy. Ticket statuses were not visually distinct enough, the relation chip was too wide and too close to the status treatment, and breadcrumb segments differed in size and color.
 - Fixes made: Removed `@xyflow/react`, its stylesheet, minimap, attribution, and runtime components; rebuilt the graph with project-owned React state, semantic cards, and SVG relationships. Added distinct status palettes for processing, verification, pending, completed, and failed states; changed the related-issue chip to a narrower violet treatment; normalized both breadcrumb labels to 10 px regular muted text.
 - Post-fix visual evidence: The native graph screenshot shows the same seven-node relationship hierarchy without third-party chrome, with clearer Fouc-aligned controls and a stronger center ticket. Computed styles confirm both breadcrumb labels are 10 px and `rgb(150, 153, 161)`; processing, verification, and pending tickets use different computed foreground/background pairs. DOM inspection reports zero React Flow elements and the clean browser console reports no warnings or errors.
+
+### Pass 7
+
+- Earlier finding: Although library chrome was removed, the graph remained a symmetric dashboard topology made from large uniform information cards. It did not match the supplied freeform mind-map reference and left too little visual breathing room.
+- Fix made: Rebuilt the composition as an asymmetric note canvas with smaller lightweight nodes, dotted paper texture, dark dashed curved relationships, explicit plus/ellipsis junctions, a dashed selected ticket note, and a compact vertical control rail. Existing DTS content and native zoom, fit, and pan behavior were retained.
+- Post-fix visual evidence: `dts-mindmap-final.png` shows seven dispersed notes with varied placement, clear negative space, high-contrast relationship paths, and controls aligned to the right edge. Browser verification confirmed zoom changed 95% to 103%, fit restored 95%, and pan mode toggled on and off without disturbing the selected ticket state.
 
 ## Findings
 

@@ -1,4 +1,5 @@
 import {
+  ArrowRight,
   DotsThree,
   Play,
   Star,
@@ -52,8 +53,8 @@ export function MysqlConnectionTable({
   onDelete,
 }: MysqlConnectionTableProps) {
   return (
-    <div className="min-w-[1160px] border-y border-[var(--line)] bg-panel">
-      <div className="grid h-[38px] grid-cols-[32px_minmax(160px,1.2fr)_128px_86px_minmax(180px,1.45fr)_100px_104px_86px_112px_116px] items-center gap-3 bg-[var(--surface-subtle)] px-3 text-[10px] font-medium text-[var(--muted-strong)]">
+    <div className="min-w-[1210px] border-y border-[var(--line)] bg-panel">
+      <div className="grid h-[38px] grid-cols-[32px_minmax(160px,1.2fr)_128px_86px_minmax(180px,1.45fr)_100px_104px_86px_112px_168px] items-center gap-3 bg-[var(--surface-subtle)] px-3 text-[10px] font-medium text-[var(--muted-strong)]">
         <span aria-hidden />
         <span>连接名称</span>
         <span>项目</span>
@@ -125,7 +126,7 @@ function MysqlConnectionRow({
           onOpen(connection)
         }
       }}
-      className="group grid h-[60px] cursor-pointer grid-cols-[32px_minmax(160px,1.2fr)_128px_86px_minmax(180px,1.45fr)_100px_104px_86px_112px_116px] items-center gap-3 border-t border-[var(--line)] px-3 outline-none transition-colors hover:bg-[color-mix(in_srgb,var(--accent)_2.8%,var(--panel))] focus-visible:bg-[var(--accent-soft)]"
+      className="group grid h-[60px] cursor-pointer grid-cols-[32px_minmax(160px,1.2fr)_128px_86px_minmax(180px,1.45fr)_100px_104px_86px_112px_168px] items-center gap-3 border-t border-[var(--line)] px-3 outline-none transition-colors hover:bg-[color-mix(in_srgb,var(--accent)_2.8%,var(--panel))] focus-visible:bg-[var(--accent-soft)]"
     >
       <button
         type="button"
@@ -165,6 +166,17 @@ function MysqlConnectionRow({
       <span className="whitespace-nowrap text-[10.5px] tabular-nums text-[var(--muted-strong)]">{connection.lastUsed}</span>
 
       <div className="relative z-10 flex items-center gap-1 pl-1">
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation()
+            onOpen(connection)
+          }}
+          className="flex h-7 items-center gap-1 rounded-[6px] px-2 text-[10.5px] font-medium text-[var(--ink-soft)] outline-none transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:bg-[var(--surface-hover)]"
+        >
+          <ArrowRight className="size-3.5" />
+          打开
+        </button>
         <button
           type="button"
           disabled={testing}

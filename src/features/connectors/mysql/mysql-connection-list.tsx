@@ -84,7 +84,7 @@ export function MysqlConnectionList({ onBack }: { onBack: () => void }) {
             <p className="mt-1 text-[10px] text-[var(--muted-strong)]">管理并访问你的 MySQL 连接</p>
           </div>
           <div className="ml-auto flex items-center gap-1.5">
-            <button type="button" onClick={() => setCreateOpen(true)} aria-label="新建连接" title="新建连接" className="flex size-7 items-center justify-center rounded-full border border-[var(--accent)] bg-panel text-[var(--accent-ink)] outline-none transition-colors hover:bg-[var(--accent-soft)] focus-visible:border-[var(--accent-strong)]">
+            <button type="button" onClick={() => setCreateOpen(true)} aria-label="新建连接" title="新建连接" className="flex size-7 items-center justify-center rounded-full border border-[var(--line-strong)] bg-panel text-[var(--ink-soft)] outline-none transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:border-[var(--ink-soft)]">
               <Plus className="size-3.5" weight="bold" />
             </button>
             <DropdownMenu>

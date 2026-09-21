@@ -1,6 +1,6 @@
 # MySQL connection list design QA
 
-- Source visual truth path: task-attached Browser Comment screenshots 1–6 (1682 × 960 px).
+- Source visual truth path: task-attached Browser Comment screenshots 1–2 (1682 × 960 px).
 - Implementation screenshot path: Codex in-app Browser inline capture from `http://127.0.0.1:3001/` in this task.
 - Viewport: 1682 × 960 CSS px, device scale factor 1.
 - Source pixels: 1682 × 960. Implementation pixels: 1682 × 960. No density normalization required.
@@ -8,51 +8,40 @@
 
 ## Full-view comparison evidence
 
-The six annotated source screenshots and revised browser capture were compared at the same viewport. The revision preserves the existing Fouc shell and compact connection-list structure while tightening the exact annotated controls and adding requested table information.
+The two annotated regions and final browser capture were compared at the same viewport. Existing layout, table density, filters, content, and interactions remain unchanged outside the requested action controls.
 
 ## Focused region comparison evidence
 
-- Header actions: create and more controls are now 28px circles; create is an outlined accent control.
-- Breadcrumb: back-control-to-breadcrumb gap is 4px and breadcrumb segment gap is 2px.
-- Toolbar: status precedes a fixed 280px search field; project, environment, and sort are 118/96/100px.
-- Table: added `项目` and `用户` columns without increasing the 60px row height or restoring side borders.
+- Header create control: 28px circle now uses only neutral line, panel, and ink tokens; no accent color remains.
+- Row operation cell: exposes `打开`, `测试`, and the existing overflow menu with adequate spacing and no clipping.
 
 ## Required fidelity surfaces
 
-- Fonts and typography: existing Fouc type scale and optical weights remain unchanged; compact controls keep 10px labels fully visible.
-- Spacing and layout rhythm: reduced control widths and breadcrumb gaps remove the loose horizontal rhythm called out in annotations.
-- Colors and visual tokens: outlined create action uses existing accent, panel, line, ink, muted, and semantic status tokens.
-- Image quality and asset fidelity: official MySQL logo asset remains unchanged and correctly scaled.
-- Copy and content: the connection table now exposes project ownership and database username with realistic mock values.
+- Fonts and typography: existing compact 10–10.5px action labels remain aligned and readable.
+- Spacing and layout rhythm: operation track expanded to 168px while retaining 60px row height.
+- Colors and visual tokens: create action is fully grayscale in default, hover, and focus states.
+- Image quality and asset fidelity: no image assets changed.
+- Copy and content: `打开` is now an explicit quick action for every connection.
 
 ## Comparison history
 
 ### Pass 1 — blocked
 
-- P2: header action buttons were oversized and the create action was filled.
-- P2: breadcrumb slash spacing was too loose.
-- P2: filter and search widths were too large; status was positioned after search.
-- P2: the table omitted useful project and credential-identity context.
+- P2: create control still used the accent color.
+- P2: only connection testing was exposed as a labeled row action.
 
-Fixes made: reduced both header controls to 28px, changed create to outlined styling, tightened breadcrumb gaps, moved status before search, reduced all toolbar widths, and added project/user data columns.
+Fixes made: converted create to neutral grayscale styling and added a labeled `打开` action before `测试` for each row.
 
-### Pass 2 — blocked
+### Pass 2 — passed
 
-- P2: the compact status and sort controls truncated their default labels because the sort icon consumed horizontal space.
-
-Fixes made: removed the redundant toolbar sort icon and rebalanced the status/sort controls to 100px each.
-
-### Pass 3 — passed
-
-The final 1682 × 960 browser capture shows complete filter labels, compact outlined actions, tighter breadcrumbs, and all ten table columns without clipping. Interaction checks confirmed username search (5 → 1), healthy-status filtering (5 → 3), new-connection dialog opening, and filter reset. Browser console warnings/errors: none.
+The final 1682 × 960 capture shows the neutral create control and five rows with complete `打开 / 测试 / 更多` actions. Interaction checks confirmed all five open buttons are exposed, opening the first connection produces feedback, the create dialog still opens, and the browser console has no warnings or errors.
 
 ## Findings
 
-No actionable P0, P1, or P2 differences remain against the six requested annotations.
+No actionable P0, P1, or P2 differences remain against the two requested annotations.
 
 ## Remaining risk
 
-- Project and username values remain mock data until backend persistence is connected.
-- The dense table intentionally uses horizontal scrolling below its 1160px minimum width.
+- `打开` currently invokes the existing workbench-entry placeholder feedback until the MySQL workbench page is implemented.
 
 final result: passed

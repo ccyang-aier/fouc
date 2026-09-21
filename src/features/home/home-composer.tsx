@@ -90,18 +90,18 @@ export function HomeComposer({ onStatusChange }: HomeComposerProps) {
   return (
     <div
       className={cn(
-        "group/composer relative flex h-[216px] w-full flex-col rounded-[11px] border bg-panel text-left shadow-[0_1px_2px_rgba(22,28,36,0.025),0_12px_34px_-28px_rgba(22,28,36,0.32)] transition-[border-color,box-shadow] duration-200 focus-within:border-[var(--line-strong)] focus-within:shadow-[0_1px_2px_rgba(22,28,36,0.035),0_18px_38px_-28px_rgba(22,28,36,0.4)]",
+        "group/composer relative flex h-[190px] w-full flex-col rounded-[11px] border bg-panel text-left shadow-[0_1px_2px_rgba(22,28,36,0.025),0_12px_34px_-28px_rgba(22,28,36,0.32)] transition-[border-color,box-shadow] duration-200 focus-within:border-[var(--line-strong)] focus-within:shadow-[0_1px_2px_rgba(22,28,36,0.035),0_18px_38px_-28px_rgba(22,28,36,0.4)]",
         hasError ? "border-[#d58c7f]" : "border-[var(--line)]",
       )}
     >
       <HomeAssistant celebrating={assistantCelebrating} />
 
-      <div className="relative z-20 flex h-[53px] shrink-0 items-center justify-between rounded-t-[10px] border-b border-[var(--line)] bg-panel px-5 max-[760px]:px-3">
+      <div className="relative z-20 flex h-[42px] shrink-0 items-center rounded-t-[10px] border-b border-[var(--line)] bg-panel px-4 max-[760px]:px-3">
         <div className="flex min-w-0 items-center gap-1">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 gap-2 px-2 text-[11px] font-medium text-[var(--ink-soft)]">
-                <FolderSimple className="size-[17px]" />
+              <Button variant="ghost" size="sm" className="h-7 gap-1.5 px-2 text-[11px] font-medium text-[var(--ink-soft)]">
+                <FolderSimple className="size-[15px]" />
                 <span className="max-[520px]:hidden">当前项目</span>
                 <SelectorChevron />
               </Button>
@@ -116,12 +116,12 @@ export function HomeComposer({ onStatusChange }: HomeComposerProps) {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <span className="mx-1 h-5 w-px bg-[var(--line)]" />
+          <span className="mx-1 h-4 w-px bg-[var(--line)]" />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 gap-2 px-2 text-[11px] font-medium text-[var(--ink-soft)]">
-                <BookOpen className="size-[17px]" />
+              <Button variant="ghost" size="sm" className="h-7 gap-1.5 px-2 text-[11px] font-medium text-[var(--ink-soft)]">
+                <BookOpen className="size-[15px]" />
                 <span className="max-[520px]:hidden">知识库</span>
                 <SelectorChevron />
               </Button>
@@ -141,9 +141,9 @@ export function HomeComposer({ onStatusChange }: HomeComposerProps) {
             <Button
               variant="ghost"
               size="sm"
-              className="mr-[150px] h-8 gap-2 px-2 text-[11px] font-medium text-[var(--ink-soft)] max-[760px]:mr-[108px]"
+              className="ml-auto h-7 gap-1.5 px-2 text-[11px] font-medium text-[var(--ink-soft)]"
             >
-              <ShieldCheck className="size-[17px]" />
+              <ShieldCheck className="size-[15px]" />
               <span className="max-[760px]:hidden">{permission}</span>
               <SelectorChevron />
             </Button>
@@ -177,10 +177,10 @@ export function HomeComposer({ onStatusChange }: HomeComposerProps) {
         }}
         aria-label="任务描述"
         placeholder="描述你的目标、引用资料，或 @ 一位 Agent…"
-        className="chat-scope relative z-10 min-h-0 flex-1 resize-none bg-panel px-6 pt-4 text-[12px] leading-5 text-[var(--ink)] outline-none placeholder:text-[var(--muted)] max-[760px]:px-4"
+        className="chat-scope relative z-10 min-h-0 flex-1 resize-none bg-panel px-5 pt-3 text-[12px] leading-5 text-[var(--ink)] outline-none placeholder:text-[var(--muted)] max-[760px]:px-4"
       />
 
-      <div className="relative z-10 flex h-[62px] shrink-0 items-center justify-between rounded-b-[10px] bg-panel px-5 pb-3 max-[760px]:px-3">
+      <div className="relative z-10 flex h-[48px] shrink-0 items-center justify-between rounded-b-[10px] bg-panel px-4 max-[760px]:px-3">
         <input
           ref={fileRef}
           type="file"
@@ -200,9 +200,9 @@ export function HomeComposer({ onStatusChange }: HomeComposerProps) {
               size="icon"
               aria-label="添加附件"
               onClick={() => fileRef.current?.click()}
-              className="size-10 rounded-[7px] border-[var(--line)] bg-transparent text-[var(--ink-soft)] shadow-none hover:bg-[var(--surface-hover)]"
+              className="size-8 rounded-[7px] border-[var(--line)] bg-transparent text-[var(--ink-soft)] shadow-none hover:bg-[var(--surface-hover)]"
             >
-              {attachmentCount ? <Paperclip className="size-[18px]" weight="bold" /> : <Plus className="size-[18px]" />}
+              {attachmentCount ? <Paperclip className="size-[15px]" weight="bold" /> : <Plus className="size-[15px]" />}
             </Button>
           </TooltipTrigger>
           <TooltipContent>{attachmentCount ? `已添加 ${attachmentCount} 个附件` : "添加附件"}</TooltipContent>
@@ -211,8 +211,8 @@ export function HomeComposer({ onStatusChange }: HomeComposerProps) {
         <div className="flex items-center gap-2 max-[760px]:gap-1">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-10 min-w-[118px] justify-between rounded-[7px] bg-transparent px-3 text-[11px] shadow-none max-[760px]:min-w-0">
-                <span className="flex items-center gap-2"><Stack className="size-[16px]" />{agent}</span>
+              <Button variant="outline" size="sm" className="h-8 min-w-[96px] justify-between rounded-[7px] bg-transparent px-2.5 text-[10.5px] shadow-none max-[760px]:min-w-0">
+                <span className="flex items-center gap-1.5"><Stack className="size-[14px]" />{agent}</span>
                 <SelectorChevron />
               </Button>
             </DropdownMenuTrigger>
@@ -228,8 +228,8 @@ export function HomeComposer({ onStatusChange }: HomeComposerProps) {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-10 min-w-[118px] justify-between rounded-[7px] bg-transparent px-3 text-[11px] shadow-none max-[760px]:min-w-0">
-                <span className="flex items-center gap-2"><SlidersHorizontal className="size-[16px]" />{mode}</span>
+              <Button variant="outline" size="sm" className="h-8 min-w-[96px] justify-between rounded-[7px] bg-transparent px-2.5 text-[10.5px] shadow-none max-[760px]:min-w-0">
+                <span className="flex items-center gap-1.5"><SlidersHorizontal className="size-[14px]" />{mode}</span>
                 <SelectorChevron />
               </Button>
             </DropdownMenuTrigger>
@@ -245,7 +245,7 @@ export function HomeComposer({ onStatusChange }: HomeComposerProps) {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <span className="mx-1 h-6 w-px bg-[var(--line)] max-[760px]:hidden" />
+          <span className="mx-1 h-5 w-px bg-[var(--line)] max-[760px]:hidden" />
 
           <Tooltip>
             <TooltipTrigger asChild>
@@ -259,9 +259,9 @@ export function HomeComposer({ onStatusChange }: HomeComposerProps) {
                   setIsListening((value) => !value)
                   onStatusChange(isListening ? null : "正在聆听…")
                 }}
-                className={cn("size-10 rounded-[7px] bg-transparent shadow-none", isListening && "border-[#df9e93] bg-[#fff6f4] text-[#c15d4d]")}
+                className={cn("size-8 rounded-[7px] bg-transparent shadow-none", isListening && "border-[#df9e93] bg-[#fff6f4] text-[#c15d4d]")}
               >
-                <Microphone className="size-[19px]" weight={isListening ? "fill" : "regular"} />
+                <Microphone className="size-[16px]" weight={isListening ? "fill" : "regular"} />
               </Button>
             </TooltipTrigger>
             <TooltipContent>{isListening ? "停止语音输入" : "语音输入"}</TooltipContent>
@@ -275,9 +275,9 @@ export function HomeComposer({ onStatusChange }: HomeComposerProps) {
                 aria-label="创建任务"
                 disabled={isSending}
                 onClick={submitMission}
-                className="size-10 rounded-[7px] bg-[#4a8fca] shadow-[0_5px_12px_rgba(74,143,202,0.2)] hover:bg-[#3f80b8]"
+                className="size-8 rounded-[7px] bg-[#4a8fca] shadow-[0_5px_12px_rgba(74,143,202,0.2)] hover:bg-[#3f80b8]"
               >
-                {isSending ? <CircleNotch className="size-[18px] animate-spin" /> : <PaperPlaneTilt className="size-[18px]" weight="fill" />}
+                {isSending ? <CircleNotch className="size-[16px] animate-spin" /> : <PaperPlaneTilt className="size-[16px]" weight="fill" />}
               </Button>
             </TooltipTrigger>
             <TooltipContent>创建任务 · Ctrl Enter</TooltipContent>

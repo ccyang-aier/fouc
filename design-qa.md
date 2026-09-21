@@ -114,6 +114,12 @@ The focused issue-list region matches the reference's hierarchy: severity marker
 - Fix made: Removed the floating editor and moved icon selection, title input, content input, and completion control directly into the custom card. New cards now expand in place to `240 × 174` for editing and return to a compact `220 × 128` display card after saving; reopening edit expands the same node in place.
 - Post-fix visual evidence: Browser verification created and edited `数据库回滚方案` directly on the connected card. DOM inspection found zero detached editor asides, confirmed the editor region is nested inside the selected graph node, and verified the card transitions from `240 × 174` editing state to `220 × 128` display state while retaining the selected task icon and edited copy. Console warnings and errors were empty.
 
+### Pass 13
+
+- Earlier findings: The home composer used 53 px and 62 px toolbars with oversized 40 px controls, while the permission selector was held away from the right edge by fixed margins. The graph exposed inline icon choices only for custom nodes, built-in nodes could not be edited, low-contrast dashed frames faded into the canvas, and target endpoint circles were half-covered by opaque cards.
+- Fixes made: Reduced the composer to 190 px with 42 px and 48 px toolbars, centered 32 px controls vertically, and moved the permission selector to the far right with flex layout. Added edit actions to every graph node, hydrated built-in node content into the same in-card editor, expanded the icon library to twelve choices in a popup menu, strengthened unselected dashed frames, and offset endpoint circles four pixels outside target card bounds.
+- Post-fix visual evidence: Browser verification at `http://localhost:3001/` shows the shorter composer with aligned controls and a right-anchored permission selector. The DTS graph exposes `编辑…节点` actions for all seven nodes; `影响范围` opened in-place, displayed the twelve-item icon popup, accepted the data icon, and saved as an edited card. The final graph screenshot shows uniformly legible dashed borders and complete hollow endpoint circles touching card edges without clipping. Console warnings and errors were empty.
+
 ## Findings
 
 No actionable P0, P1, or P2 findings remain. The implementation intentionally adapts the supplied mind-map reference to Fouc's denser desktop workbench scale while keeping the graph editable and keyboard-accessible.

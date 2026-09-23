@@ -128,7 +128,7 @@ function MysqlConnectionRow({
           onOpen(connection)
         }
       }}
-      className={cn("group grid h-[68px] cursor-pointer items-center gap-3 border-t border-[var(--line)] px-4 outline-none transition-colors hover:bg-[color-mix(in_srgb,var(--accent)_3.2%,var(--panel))] focus-visible:bg-[var(--accent-soft)]", GRID_COLUMNS)}
+      className={cn("group grid h-[54px] cursor-pointer items-center gap-3 border-t border-[var(--line)] px-4 outline-none transition-colors hover:bg-[color-mix(in_srgb,var(--accent)_3.2%,var(--panel))] focus-visible:bg-[var(--accent-soft)]", GRID_COLUMNS)}
     >
       <button
         type="button"

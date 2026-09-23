@@ -1,6 +1,5 @@
 "use client"
 
-import Image from "next/image"
 import { useCallback, useMemo, useState } from "react"
 import { ArrowLeft, CaretDown, CaretRight, Check, DotsThree, MagnifyingGlass, Plus, UploadSimple } from "@phosphor-icons/react"
 
@@ -79,33 +78,24 @@ export function MysqlConnectionList({ onBack }: { onBack: () => void }) {
 
   return (
     <section aria-label="MySQL 连接" className="relative flex h-full min-h-0 flex-col overflow-hidden bg-panel">
-      <header className="flex h-[64px] shrink-0 items-center gap-3 border-b border-[var(--line)] px-[18px]">
-        <div className="flex min-w-0 items-center gap-3">
+      <header className="flex h-[42px] shrink-0 items-center gap-3 border-b border-[var(--line)] px-[18px]">
+        <div className="flex min-w-0 items-center gap-1.5">
           <button type="button" onClick={onBack} aria-label="返回连接器列表" className="flex size-7 shrink-0 items-center justify-center rounded-[6px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
             <ArrowLeft className="size-3.5" />
           </button>
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-[8px] bg-[var(--surface-subtle)]">
-            <Image src="/connector-logos/mysql.svg" alt="" width={24} height={24} className="size-6 object-contain" priority />
-          </span>
-          <div className="min-w-0">
-            <nav aria-label="面包屑" className="flex items-center gap-1 text-[9.5px] leading-4 text-[var(--muted-strong)]">
-              <button type="button" onClick={onBack} className="rounded-[4px] outline-none hover:text-[var(--accent-ink)] focus-visible:text-[var(--accent-ink)]">连接器</button>
-              <CaretRight className="size-2.5 text-[var(--muted)]" />
-              <span aria-current="page">MySQL</span>
-            </nav>
-            <div className="flex items-baseline gap-2.5">
-              <h1 className="text-[16px] font-semibold leading-5 tracking-[-0.025em] text-[var(--ink)]">MySQL</h1>
-              <span className="text-[10px] tabular-nums text-[var(--muted-strong)]">{connections.length} 个连接</span>
-            </div>
-          </div>
+          <nav aria-label="面包屑" className="flex min-w-0 items-center gap-1.5 text-[10.5px] text-[var(--muted-strong)]">
+            <button type="button" onClick={onBack} className="rounded-[4px] outline-none hover:text-[var(--accent-ink)] focus-visible:text-[var(--accent-ink)]">连接器</button>
+            <CaretRight className="size-2.5 shrink-0 text-[var(--muted)]" />
+            <span aria-current="page" className="truncate font-medium text-[var(--ink-soft)]">MySQL</span>
+          </nav>
         </div>
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
-          <button type="button" onClick={() => setCreateOpen(true)} className="flex h-8 items-center gap-1.5 rounded-[6px] border border-[var(--accent-soft-line)] bg-[var(--accent-soft)] px-2.5 text-[10.5px] font-medium text-[var(--accent-ink)] outline-none transition-colors hover:border-[var(--accent)] hover:bg-[color-mix(in_srgb,var(--accent)_12%,var(--panel))] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
+          <button type="button" onClick={() => setCreateOpen(true)} className="flex h-7 items-center gap-1.5 rounded-[6px] border border-[var(--accent-soft-line)] bg-[var(--accent-soft)] px-2.5 text-[10.5px] font-medium text-[var(--accent-ink)] outline-none transition-colors hover:border-[var(--accent)] hover:bg-[color-mix(in_srgb,var(--accent)_12%,var(--panel))] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
             <Plus className="size-3" weight="bold" />新建连接
           </button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button type="button" aria-label="更多操作" title="更多操作" className="flex size-8 items-center justify-center rounded-[6px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
+              <button type="button" aria-label="更多操作" title="更多操作" className="flex size-7 items-center justify-center rounded-[6px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
                 <DotsThree className="size-4" weight="bold" />
               </button>
             </DropdownMenuTrigger>
@@ -180,7 +170,6 @@ function MultiSelectFilter<T extends string>({ title, allLabel, options, selecte
 
   return (
     <FilterMenu label={label} width={title === "项目" ? "w-[122px]" : "w-[104px]"} active={selected.length > 0} align={title === "状态" ? "start" : "end"}>
-      <RightCheckboxItem checked={selected.length === 0} onCheckedChange={() => onChange([])}>{allLabel}</RightCheckboxItem>
       {options.map((option) => (
         <RightCheckboxItem
           key={option.value}
@@ -190,6 +179,12 @@ function MultiSelectFilter<T extends string>({ title, allLabel, options, selecte
           {option.label}
         </RightCheckboxItem>
       ))}
+      {selected.length > 0 && (
+        <>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={() => onChange([])} className="text-[10.5px] text-[var(--accent-ink)]">清除筛选</DropdownMenuItem>
+        </>
+      )}
     </FilterMenu>
   )
 }

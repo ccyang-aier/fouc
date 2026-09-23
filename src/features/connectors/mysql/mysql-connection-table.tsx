@@ -27,6 +27,8 @@ const STATUS_CLASSES: Record<MysqlConnectionStatus, string> = {
   offline: "border-[#f3c8c5] bg-[#fff0ef] text-[#c14740]",
 }
 
+const GRID_COLUMNS = "grid-cols-[32px_minmax(170px,1.25fr)_128px_86px_minmax(178px,1.35fr)_95px_100px_86px_112px_176px]"
+
 type MysqlConnectionTableProps = {
   connections: MysqlConnection[]
   testingId: string | null
@@ -53,8 +55,8 @@ export function MysqlConnectionTable({
   onDelete,
 }: MysqlConnectionTableProps) {
   return (
-    <div className="min-w-[1210px] border-y border-[var(--line)] bg-panel">
-      <div className="grid h-[38px] grid-cols-[32px_minmax(160px,1.2fr)_128px_86px_minmax(180px,1.45fr)_100px_104px_86px_112px_168px] items-center gap-3 bg-[var(--surface-subtle)] px-3 text-[10px] font-medium text-[var(--muted-strong)]">
+    <div className="min-w-[1210px] overflow-hidden rounded-[10px] border border-[var(--line-strong)] bg-panel shadow-[0_3px_14px_rgba(18,23,31,0.035)]">
+      <div className={cn("grid h-[42px] items-center gap-3 bg-[var(--surface-subtle)] px-4 text-[10px] font-semibold tracking-[0.015em] text-[var(--muted-strong)]", GRID_COLUMNS)}>
         <span aria-hidden />
         <span>连接名称</span>
         <span>项目</span>
@@ -71,7 +73,7 @@ export function MysqlConnectionTable({
           最近使用
           <span className={cn("text-[12px] text-[#259b70] transition-transform", sortDirection === "asc" && "rotate-180")}>↓</span>
         </button>
-        <span className="pl-2">操作</span>
+        <span className="pl-1">操作</span>
       </div>
 
       <div role="list" aria-label="MySQL 连接列表">
@@ -126,7 +128,7 @@ function MysqlConnectionRow({
           onOpen(connection)
         }
       }}
-      className="group grid h-[60px] cursor-pointer grid-cols-[32px_minmax(160px,1.2fr)_128px_86px_minmax(180px,1.45fr)_100px_104px_86px_112px_168px] items-center gap-3 border-t border-[var(--line)] px-3 outline-none transition-colors hover:bg-[color-mix(in_srgb,var(--accent)_2.8%,var(--panel))] focus-visible:bg-[var(--accent-soft)]"
+      className={cn("group grid h-[68px] cursor-pointer items-center gap-3 border-t border-[var(--line)] px-4 outline-none transition-colors hover:bg-[color-mix(in_srgb,var(--accent)_3.2%,var(--panel))] focus-visible:bg-[var(--accent-soft)]", GRID_COLUMNS)}
     >
       <button
         type="button"
@@ -137,7 +139,7 @@ function MysqlConnectionRow({
           onToggleFavorite(connection.id)
         }}
         className={cn(
-          "flex size-7 items-center justify-center rounded-[6px] outline-none transition-colors hover:bg-[var(--surface-hover)] focus-visible:text-[var(--accent-ink)]",
+          "flex size-8 items-center justify-center rounded-[7px] outline-none transition-colors hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
           connection.favorite ? "text-[#dd9d22]" : "text-[var(--muted)] hover:text-[var(--ink-soft)]",
         )}
       >
@@ -146,8 +148,8 @@ function MysqlConnectionRow({
 
       <div className="min-w-0">
         <div className="min-w-0">
-          <p className="truncate text-[12px] font-semibold tracking-[-0.012em] text-[var(--ink)]">{connection.name}</p>
-          <span className="mt-0.5 inline-flex rounded-[4px] bg-[var(--surface-hover)] px-1.5 py-px text-[9px] leading-[13px] text-[var(--muted-strong)]">{connection.description}</span>
+          <p className="truncate text-[11.5px] font-semibold tracking-[-0.012em] text-[var(--ink)]">{connection.name}</p>
+          <span className="mt-1 block truncate text-[10px] text-[var(--muted-strong)]">{connection.description}</span>
         </div>
       </div>
 
@@ -156,8 +158,8 @@ function MysqlConnectionRow({
         <span className="size-2 rounded-full" style={{ backgroundColor: mysqlEnvironmentTone[connection.environment] }} />
         {connection.environment}
       </span>
-      <span className="truncate text-[11px] tabular-nums text-[var(--ink-soft)]">{connection.host}</span>
-      <span className="truncate text-[11px] text-[var(--ink-soft)]">{connection.database}</span>
+      <span className="truncate font-mono text-[10px] tabular-nums text-[var(--ink-soft)]" title={connection.host}>{connection.host}</span>
+      <span className="truncate font-mono text-[10px] text-[var(--ink-soft)]" title={connection.database}>{connection.database}</span>
       <span className="truncate text-[10.5px] text-[var(--muted-strong)]">{connection.username}</span>
       <span className={cn("inline-flex h-5 w-fit items-center gap-1.5 rounded-full border px-2 text-[9px] font-medium", STATUS_CLASSES[connection.status])}>
         <span className="size-1.5 rounded-full bg-current" />
@@ -165,14 +167,14 @@ function MysqlConnectionRow({
       </span>
       <span className="whitespace-nowrap text-[10.5px] tabular-nums text-[var(--muted-strong)]">{connection.lastUsed}</span>
 
-      <div className="relative z-10 flex items-center gap-1 pl-1">
+      <div className="relative z-10 flex items-center gap-1.5 pl-1">
         <button
           type="button"
           onClick={(event) => {
             event.stopPropagation()
             onOpen(connection)
           }}
-          className="flex h-7 items-center gap-1 rounded-[6px] px-2 text-[10.5px] font-medium text-[var(--ink-soft)] outline-none transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:bg-[var(--surface-hover)]"
+          className="flex h-[30px] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[7px] border border-[var(--accent-soft-line)] bg-[var(--accent-soft)] px-2.5 text-[10px] font-semibold text-[var(--accent-ink)] outline-none transition-colors hover:border-[var(--accent)] hover:bg-[color-mix(in_srgb,var(--accent)_13%,var(--panel))] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
         >
           <ArrowRight className="size-3.5" />
           打开
@@ -184,7 +186,7 @@ function MysqlConnectionRow({
             event.stopPropagation()
             onTest(connection)
           }}
-          className="flex h-7 items-center gap-1.5 rounded-[6px] px-2 text-[10.5px] font-medium text-[var(--accent-ink)] outline-none transition-colors hover:bg-[var(--accent-soft)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:opacity-60"
+          className="flex h-[30px] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[7px] border border-[var(--line-strong)] bg-panel px-2.5 text-[10px] font-medium text-[var(--ink-soft)] outline-none transition-colors hover:border-[var(--accent-soft-line)] hover:text-[var(--accent-ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:opacity-60"
         >
           <Play className={cn("size-3.5", testing && "animate-pulse")} weight="regular" />
           {testing ? "测试中" : "测试"}
@@ -194,7 +196,7 @@ function MysqlConnectionRow({
             <button
               type="button"
               aria-label={`${connection.name} 更多操作`}
-              className="flex size-7 items-center justify-center rounded-[6px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+              className="flex size-[30px] shrink-0 items-center justify-center rounded-[7px] border border-transparent text-[var(--muted-strong)] outline-none transition-colors hover:border-[var(--line-strong)] hover:bg-panel hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
             >
               <DotsThree className="size-4" weight="bold" />
             </button>

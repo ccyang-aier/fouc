@@ -4,7 +4,7 @@ import { useMemo, useState } from "react"
 import {
   ArrowsClockwise, BracketsCurly, CaretDown, CaretDoubleLeft, CaretDoubleRight,
   CaretRight, ClockCounterClockwise, Database, FileCode, FilePlus, FolderOpen,
-  Eye, Funnel, MagnifyingGlass, Plus, Table, UsersThree,
+  Eye, Funnel, GridFour, MagnifyingGlass, Plus, UsersThree,
 } from "@phosphor-icons/react"
 
 import type { MysqlConnection } from "../mysql-connections-data"
@@ -32,6 +32,7 @@ export function MysqlWorkbenchExplorer({ connection, collapsed, activeTable, onC
   const [query, setQuery] = useState("")
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set(["orders", "tables"]))
   const [onlyTables, setOnlyTables] = useState(false)
+  const [recentOpen, setRecentOpen] = useState(true)
   const normalized = query.trim().toLocaleLowerCase("zh-CN")
   const visibleTables = useMemo(() => TABLE_NAMES.filter((name) => name.includes(normalized)), [normalized])
 
@@ -89,7 +90,7 @@ export function MysqlWorkbenchExplorer({ connection, collapsed, activeTable, onC
                   </button>
                   {expanded.has("tables") && visibleTables.map((table) => (
                     <button type="button" key={table} className={`mw-tree-row mw-table-row ${activeTable === table ? "mw-tree-selected" : ""}`} onClick={() => onOpenTable(table)}>
-                      <CaretRight size={12} /><Table size={15} className="mw-blue" /><span className="mw-ellipsis">{table}</span>
+                      <CaretRight size={12} /><GridFour size={15} weight="duotone" className="mw-blue" /><span className="mw-ellipsis">{table}</span>
                     </button>
                   ))}
                   {!onlyTables && !normalized && (
@@ -107,8 +108,8 @@ export function MysqlWorkbenchExplorer({ connection, collapsed, activeTable, onC
         })}
         {!normalized && !onlyTables && (
           <div className="mw-recent">
-            <div className="mw-recent-title"><ClockCounterClockwise size={13} />最近访问</div>
-            {RECENT.map((item) => <button type="button" className="mw-recent-row" key={item.name} onClick={() => item.table ? onOpenTable(item.name) : onNewQuery()}>{item.table ? <Table size={14} /> : <FileCode size={14} />}<span className="mw-ellipsis">{item.name}</span><span>{item.time}</span></button>)}
+            <button type="button" className="mw-recent-title" aria-expanded={recentOpen} onClick={() => setRecentOpen((open) => !open)}>{recentOpen ? <CaretDown size={12} /> : <CaretRight size={12} />}<ClockCounterClockwise size={13} />最近访问</button>
+            {recentOpen && RECENT.map((item) => <button type="button" className="mw-recent-row" key={item.name} onClick={() => item.table ? onOpenTable(item.name) : onNewQuery()}>{item.table ? <GridFour size={14} weight="duotone" /> : <FileCode size={14} />}<span className="mw-ellipsis">{item.name}</span><span>{item.time}</span></button>)}
           </div>
         )}
       </div>

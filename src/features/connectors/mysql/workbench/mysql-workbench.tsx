@@ -1,11 +1,11 @@
 "use client"
 
 import { useCallback, useState } from "react"
-import { ArrowLeft, CaretRight, FileCode, Plus, Table, X } from "@phosphor-icons/react"
+import { ArrowLeft, CaretRight, DotsThree, FileCode, Plus, Table, X } from "@phosphor-icons/react"
 
 import { AppAlert, type AppAlertMessage } from "@/components/app-alert"
 import type { MysqlConnection } from "../mysql-connections-data"
-import { DEFAULT_SQL, getInitialRows, type DataRow, type WorkbenchTab } from "./mysql-workbench-data"
+import { DEFAULT_SQL, getInitialRows, type CellSelection, type DataRow, type WorkbenchTab } from "./mysql-workbench-data"
 import { MysqlWorkbenchExplorer } from "./mysql-workbench-explorer"
 import { MysqlWorkbenchGrid } from "./mysql-workbench-grid"
 import { MysqlWorkbenchInspector } from "./mysql-workbench-inspector"
@@ -30,6 +30,8 @@ export function MysqlWorkbench({ connection, onBack, onConnectorBack }: { connec
   const [pendingByTable, setPendingByTable] = useState<Record<string, number>>({})
   const [sqlByTab, setSqlByTab] = useState<Record<string, string>>({ "sql-order-query": DEFAULT_SQL })
   const [aiFilter, setAiFilter] = useState<{ field: string; value: string } | null>(null)
+  const [selection, setSelection] = useState<CellSelection | null>(null)
+  const [tabsMenuOpen, setTabsMenuOpen] = useState(false)
   const [alert, setAlert] = useState<AppAlertMessage | null>(null)
   const activeTab = tabs.find((tab) => tab.id === activeTabId) ?? tabs[0]
   const activeTable = activeTab.kind === "table" ? activeTab.table ?? "customers" : null
@@ -45,6 +47,8 @@ export function MysqlWorkbench({ connection, onBack, onConnectorBack }: { connec
     setSelectedRowId(table === "customers" ? 1003 : null)
     setInfoMode("row")
     setAiFilter(null)
+    setSelection(null)
+    setTabsMenuOpen(false)
   }
 
   function newQuery() {
@@ -53,6 +57,8 @@ export function MysqlWorkbench({ connection, onBack, onConnectorBack }: { connec
     setTabs((current) => [...current, { id, kind: "sql", title }])
     setSqlByTab((current) => ({ ...current, [id]: "SELECT *\nFROM orders.customers\nLIMIT 100;" }))
     setActiveTabId(id)
+    setSelection(null)
+    setTabsMenuOpen(false)
   }
 
   function closeTab(id: string) {
@@ -103,10 +109,10 @@ export function MysqlWorkbench({ connection, onBack, onConnectorBack }: { connec
     <div className="mw-body">
       <MysqlWorkbenchExplorer connection={connection} collapsed={explorerCollapsed} activeTable={activeTable} onCollapse={() => setExplorerCollapsed((value) => !value)} onOpenTable={openTable} onNewQuery={newQuery} onRefresh={() => notify("数据库资源已刷新")} onNotice={(message) => notify(message, "info")} />
       <main className="mw-center">
-        <div className="mw-document-tabs" role="tablist" aria-label="打开的工作标签">{tabs.map((tab) => <div key={tab.id} className={`mw-document-tab ${activeTabId === tab.id ? "mw-document-active" : ""}`}><button type="button" role="tab" aria-selected={activeTabId === tab.id} onClick={() => { setActiveTabId(tab.id); setInfoMode("row"); setAiFilter(null) }}>{tab.kind === "sql" ? <FileCode size={15} /> : <Table size={15} />}<span>{tab.title}</span></button><button type="button" aria-label={`关闭 ${tab.title}`} className="mw-close-tab" onClick={() => closeTab(tab.id)}><X size={12} /></button></div>)}<button type="button" className="mw-new-tab" aria-label="新建 SQL 查询" title="新建 SQL 查询" onClick={newQuery}><Plus size={17} /></button><button type="button" className="mw-tabs-more" aria-label="更多标签" title="更多标签" onClick={() => notify(`已打开 ${tabs.length} 个标签`, "info")}>···</button></div>
-        {activeTab.kind === "table" ? <MysqlWorkbenchGrid key={activeTab.id} table={activeTable ?? "customers"} rows={currentRows} pendingCount={pendingByTable[activeTable ?? "customers"] ?? 0} selectedRowId={selectedRowId} onSelectRow={(id) => { setSelectedRowId(id); setInfoMode("row"); setInspectorView("info") }} onRowsChange={changeRows} onCommit={commitRows} onRollback={rollbackRows} onShowTableInfo={() => { setInfoMode("schema"); setInspectorView("info") }} onNotice={(message) => notify(message, "info")} appliedFilter={aiFilter} onClearAppliedFilter={() => setAiFilter(null)} /> : <MysqlWorkbenchSql key={activeTab.id} title={activeTab.title} query={sqlByTab[activeTab.id] ?? DEFAULT_SQL} onQueryChange={(query) => setSqlByTab((current) => ({ ...current, [activeTab.id]: query }))} onNotice={(message) => notify(message, "info")} />}
+        <div className="mw-tab-strip"><div className="mw-document-tabs" role="tablist" aria-label="打开的工作标签">{tabs.map((tab) => <div key={tab.id} className={`mw-document-tab ${activeTabId === tab.id ? "mw-document-active" : ""}`}><button type="button" role="tab" aria-selected={activeTabId === tab.id} onClick={() => { setActiveTabId(tab.id); setInfoMode("row"); setAiFilter(null); setSelection(null); setTabsMenuOpen(false) }}>{tab.kind === "sql" ? <FileCode size={15} /> : <Table size={15} />}<span>{tab.title}</span></button><button type="button" aria-label={`关闭 ${tab.title}`} className="mw-close-tab" onClick={() => closeTab(tab.id)}><X size={12} /></button></div>)}<button type="button" className="mw-new-tab" aria-label="新建 SQL 查询" title="新建 SQL 查询" onClick={newQuery}><Plus size={17} /></button><button type="button" className="mw-tabs-more" aria-label="更多标签" aria-expanded={tabsMenuOpen} title="更多标签" onClick={() => setTabsMenuOpen((open) => !open)}><DotsThree size={16} /></button></div>{tabsMenuOpen && <div className="mw-tabs-popover">{tabs.map((tab) => <button type="button" key={tab.id} onClick={() => { setActiveTabId(tab.id); setSelection(null); setTabsMenuOpen(false) }}>{tab.kind === "sql" ? <FileCode size={14} /> : <Table size={14} />}{tab.title}</button>)}</div>}</div>
+        {activeTab.kind === "table" ? <MysqlWorkbenchGrid key={activeTab.id} table={activeTable ?? "customers"} rows={currentRows} pendingCount={pendingByTable[activeTable ?? "customers"] ?? 0} selectedRowId={selectedRowId} onSelectRow={(id) => { setSelectedRowId(id); setInfoMode("row"); setInspectorView("info") }} onSelectionChange={setSelection} onRowsChange={changeRows} onCommit={commitRows} onRollback={rollbackRows} onShowTableInfo={() => { setInfoMode("schema"); setSelection(null); setInspectorView("info") }} onNotice={(message) => notify(message, "info")} appliedFilter={aiFilter} onClearAppliedFilter={() => setAiFilter(null)} /> : <MysqlWorkbenchSql key={activeTab.id} title={activeTab.title} query={sqlByTab[activeTab.id] ?? DEFAULT_SQL} onQueryChange={(query) => setSqlByTab((current) => ({ ...current, [activeTab.id]: query }))} onNotice={(message) => notify(message, "info")} />}
       </main>
-      <MysqlWorkbenchInspector table={activeTable ?? "customers"} row={selectedRow} view={inspectorView} infoMode={infoMode} onViewChange={setInspectorView} onUpdateRow={updateFromInspector} onOpenOrders={() => openTable("orders")} onApplyFilter={applyAiFilter} onNotice={(message) => notify(message, "info")} />
+      <MysqlWorkbenchInspector table={activeTable ?? "customers"} row={selectedRow} rows={currentRows} orders={draftRows.orders ?? getInitialRows("orders")} customers={draftRows.customers ?? getInitialRows("customers")} selection={selection} view={inspectorView} infoMode={infoMode} onViewChange={setInspectorView} onUpdateRow={updateFromInspector} onOpenTable={openTable} onApplyFilter={applyAiFilter} onNotice={(message) => notify(message, "info")} />
     </div>
     <AppAlert alert={alert} onClose={() => setAlert(null)} duration={3200} />
   </section>

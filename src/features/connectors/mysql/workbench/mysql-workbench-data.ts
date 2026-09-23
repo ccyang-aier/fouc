@@ -1,5 +1,10 @@
 export type DataRow = Record<string, string | number>
 
+export type CellSelection = {
+  rowIds: number[]
+  columnKeys: string[]
+}
+
 export type ColumnDefinition = {
   key: string
   label: string

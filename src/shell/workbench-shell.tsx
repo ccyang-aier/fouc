@@ -187,7 +187,7 @@ export function WorkbenchShell() {
                           ) : view === "automation" ? (
                             <AutomationCanvas />
                           ) : view === "connectors" ? (
-                            <ConnectorsCanvas />
+                            <ConnectorsCanvas onWorkbenchFocus={() => setSidebarCollapsed(true)} />
                           ) : (
                             <div className="flex h-full items-center justify-center text-[13px] text-[var(--ink-soft)]">
                               该空间已在 V1 规划中，尚未开放

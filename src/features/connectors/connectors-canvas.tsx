@@ -28,7 +28,7 @@ const SORT_OPTIONS: ReadonlyArray<{ id: ConnectorSort; label: string }> = [
   { id: "name", label: "名称排序" },
 ]
 
-export function ConnectorsCanvas() {
+export function ConnectorsCanvas({ onWorkbenchFocus }: { onWorkbenchFocus?: () => void } = {}) {
   const [connectors, setConnectors] = useState(initialConnectors)
   const [category, setCategory] = useState<(typeof CONNECTOR_CATEGORIES)[number]>("全部")
   const [query, setQuery] = useState("")
@@ -129,7 +129,7 @@ export function ConnectorsCanvas() {
   const breadcrumbLabel = category === "全部" ? "全部连接器" : category
   const detailConnector = detailId ? connectors.find((connector) => connector.id === detailId) : null
 
-  if (detailConnector) return <ConnectorDetail connector={detailConnector} onBack={() => setDetailId(null)} onConnectionChange={(connected) => setConnectors((list) => list.map((item) => item.id === detailConnector.id ? { ...item, connected } : item))} />
+  if (detailConnector) return <ConnectorDetail connector={detailConnector} onBack={() => setDetailId(null)} onConnectionChange={(connected) => setConnectors((list) => list.map((item) => item.id === detailConnector.id ? { ...item, connected } : item))} onWorkbenchFocus={onWorkbenchFocus} />
 
   return (
     <section aria-label="连接器" className="relative flex h-full min-h-0 flex-col bg-panel">

@@ -8,6 +8,7 @@ import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMe
 
 import { MysqlConnectionDialog } from "./mysql-connection-dialog"
 import { MysqlConnectionTable } from "./mysql-connection-table"
+import { MysqlWorkbench } from "./workbench/mysql-workbench"
 import { initialMysqlConnections, MYSQL_ENVIRONMENTS, MYSQL_PROJECTS, MYSQL_STATUSES, type MysqlConnection, type MysqlConnectionEnvironment, type MysqlConnectionProject, type MysqlConnectionStatus } from "./mysql-connections-data"
 
 type MysqlSort = "recent" | "name" | "favorite"
@@ -18,8 +19,9 @@ const SORT_OPTIONS: ReadonlyArray<{ value: MysqlSort; label: string }> = [
   { value: "favorite", label: "收藏优先" },
 ]
 
-export function MysqlConnectionList({ onBack }: { onBack: () => void }) {
+export function MysqlConnectionList({ onBack, onWorkbenchFocus }: { onBack: () => void; onWorkbenchFocus?: () => void }) {
   const [connections, setConnections] = useState(initialMysqlConnections)
+  const [activeConnection, setActiveConnection] = useState<MysqlConnection | null>(null)
   const [query, setQuery] = useState("")
   const [environments, setEnvironments] = useState<MysqlConnectionEnvironment[]>([])
   const [projects, setProjects] = useState<MysqlConnectionProject[]>([])
@@ -76,6 +78,8 @@ export function MysqlConnectionList({ onBack }: { onBack: () => void }) {
     notify("连接已删除", connection.name, "info")
   }
 
+  if (activeConnection) return <MysqlWorkbench connection={activeConnection} onBack={() => setActiveConnection(null)} onConnectorBack={onBack} />
+
   return (
     <section aria-label="MySQL 连接" className="relative flex h-full min-h-0 flex-col overflow-hidden bg-panel">
       <header className="flex h-[42px] shrink-0 items-center gap-3 border-b border-[var(--line)] px-[18px]">
@@ -131,7 +135,7 @@ export function MysqlConnectionList({ onBack }: { onBack: () => void }) {
               connections={visibleConnections}
               testingId={testingId}
               sortDirection={sortDirection}
-              onOpen={(connection) => notify(`准备进入 ${connection.name}`, "工作台将在后续页面实现", "info")}
+              onOpen={(connection) => { setActiveConnection(connection); onWorkbenchFocus?.() }}
               onTest={testConnection}
               onToggleFavorite={(connectionId) => setConnections((current) => current.map((item) => item.id === connectionId ? { ...item, favorite: !item.favorite } : item))}
               onToggleSortDirection={() => { setSort("recent"); setSortDirection((current) => current === "desc" ? "asc" : "desc") }}

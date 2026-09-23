@@ -1,5 +1,5 @@
 import {
-  ArrowRight,
+  ArrowUpRight,
   DotsThree,
   Play,
   Star,
@@ -176,7 +176,7 @@ function MysqlConnectionRow({
           }}
           className="flex h-[30px] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[7px] border border-[var(--accent-soft-line)] bg-[var(--accent-soft)] px-2.5 text-[10px] font-semibold text-[var(--accent-ink)] outline-none transition-colors hover:border-[var(--accent)] hover:bg-[color-mix(in_srgb,var(--accent)_13%,var(--panel))] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
         >
-          <ArrowRight className="size-3.5" />
+          <ArrowUpRight className="size-3.5" weight="bold" />
           打开
         </button>
         <button

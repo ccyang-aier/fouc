@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import { useCallback, useMemo, useState } from "react"
-import { ArrowLeft, CaretDown, CaretRight, DotsThree, MagnifyingGlass, Plus, UploadSimple } from "@phosphor-icons/react"
+import { ArrowLeft, CaretDown, CaretRight, Check, DotsThree, MagnifyingGlass, Plus, UploadSimple } from "@phosphor-icons/react"
 
 import { AppAlert, type AppAlertMessage } from "@/components/app-alert"
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -79,50 +79,46 @@ export function MysqlConnectionList({ onBack }: { onBack: () => void }) {
 
   return (
     <section aria-label="MySQL 连接" className="relative flex h-full min-h-0 flex-col overflow-hidden bg-panel">
-      <header className="shrink-0 border-b border-[var(--line)] bg-[linear-gradient(115deg,color-mix(in_srgb,var(--accent)_4%,var(--panel)),var(--panel)_42%)] px-6 py-5">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex min-w-0 items-center gap-4">
-            <button type="button" onClick={onBack} aria-label="返回连接器列表" className="flex size-9 shrink-0 items-center justify-center rounded-[10px] border border-[var(--line-strong)] bg-panel text-[var(--ink-soft)] shadow-[0_1px_2px_rgba(18,23,31,0.04)] outline-none transition-colors hover:border-[var(--accent-soft-line)] hover:text-[var(--accent-ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
-              <ArrowLeft className="size-4" />
-            </button>
-            <span className="flex size-12 shrink-0 items-center justify-center rounded-[12px] border border-[var(--line)] bg-panel shadow-[0_2px_8px_rgba(18,23,31,0.04)]">
-              <Image src="/connector-logos/mysql.svg" alt="" width={32} height={32} className="size-8 object-contain" priority />
-            </span>
-            <div className="min-w-0">
-              <nav aria-label="面包屑" className="mb-1 flex items-center gap-1.5 text-[10px] text-[var(--muted-strong)]">
-                <button type="button" onClick={onBack} className="rounded-[4px] outline-none hover:text-[var(--accent-ink)] focus-visible:text-[var(--accent-ink)]">连接器</button>
-                <CaretRight className="size-2.5 text-[var(--muted)]" />
-                <span aria-current="page">MySQL</span>
-              </nav>
-              <div className="flex items-baseline gap-3">
-                <h1 className="text-[21px] font-semibold leading-6 tracking-[-0.035em] text-[var(--ink)]">MySQL</h1>
-                <span className="rounded-full border border-[var(--line)] bg-panel px-2 py-0.5 text-[10px] tabular-nums text-[var(--muted-strong)]">{connections.length} 个连接</span>
-              </div>
-              <p className="mt-1 text-[10.5px] text-[var(--muted-strong)]">管理并访问你的 MySQL 数据库</p>
+      <header className="flex h-[64px] shrink-0 items-center gap-3 border-b border-[var(--line)] px-[18px]">
+        <div className="flex min-w-0 items-center gap-3">
+          <button type="button" onClick={onBack} aria-label="返回连接器列表" className="flex size-7 shrink-0 items-center justify-center rounded-[6px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
+            <ArrowLeft className="size-3.5" />
+          </button>
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-[8px] bg-[var(--surface-subtle)]">
+            <Image src="/connector-logos/mysql.svg" alt="" width={24} height={24} className="size-6 object-contain" priority />
+          </span>
+          <div className="min-w-0">
+            <nav aria-label="面包屑" className="flex items-center gap-1 text-[9.5px] leading-4 text-[var(--muted-strong)]">
+              <button type="button" onClick={onBack} className="rounded-[4px] outline-none hover:text-[var(--accent-ink)] focus-visible:text-[var(--accent-ink)]">连接器</button>
+              <CaretRight className="size-2.5 text-[var(--muted)]" />
+              <span aria-current="page">MySQL</span>
+            </nav>
+            <div className="flex items-baseline gap-2.5">
+              <h1 className="text-[16px] font-semibold leading-5 tracking-[-0.025em] text-[var(--ink)]">MySQL</h1>
+              <span className="text-[10px] tabular-nums text-[var(--muted-strong)]">{connections.length} 个连接</span>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button type="button" onClick={() => setCreateOpen(true)} className="flex h-9 items-center gap-2 rounded-[8px] bg-[var(--accent)] px-3.5 text-[11px] font-medium text-white shadow-[0_3px_9px_color-mix(in_srgb,var(--accent)_18%,transparent)] outline-none transition-colors hover:bg-[var(--accent-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
-              <Plus className="size-3.5" weight="bold" />新建连接
-            </button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button type="button" aria-label="更多操作" title="更多操作" className="flex size-9 items-center justify-center rounded-[8px] border border-[var(--line-strong)] bg-panel text-[var(--muted-strong)] outline-none transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
-                  <DotsThree className="size-4" weight="bold" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-36 min-w-0">
-                <DropdownMenuItem onSelect={() => notify("导入连接", "批量导入能力将在连接配置模块中提供", "info")}><UploadSimple />导入连接</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => notify("连接设置", "已进入 MySQL 连接配置入口", "info")}>连接设置</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+        </div>
+        <div className="ml-auto flex shrink-0 items-center gap-1.5">
+          <button type="button" onClick={() => setCreateOpen(true)} className="flex h-8 items-center gap-1.5 rounded-[6px] border border-[var(--accent-soft-line)] bg-[var(--accent-soft)] px-2.5 text-[10.5px] font-medium text-[var(--accent-ink)] outline-none transition-colors hover:border-[var(--accent)] hover:bg-[color-mix(in_srgb,var(--accent)_12%,var(--panel))] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
+            <Plus className="size-3" weight="bold" />新建连接
+          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button type="button" aria-label="更多操作" title="更多操作" className="flex size-8 items-center justify-center rounded-[6px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
+                <DotsThree className="size-4" weight="bold" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-36 min-w-0">
+              <DropdownMenuItem onSelect={() => notify("导入连接", "批量导入能力将在连接配置模块中提供", "info")}><UploadSimple />导入连接</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={() => notify("连接设置", "已进入 MySQL 连接配置入口", "info")}>连接设置</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
-      <div className="min-h-0 flex-1 overflow-auto px-6 pb-10 pt-5">
-
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+      <div className="min-h-0 flex-1 overflow-auto px-[18px] pb-10 pt-3">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-2">
             <MultiSelectFilter title="状态" allLabel="全部状态" options={MYSQL_STATUSES.filter((option) => option.value !== "all").map((option) => ({ value: option.value as MysqlConnectionStatus, label: option.label }))} selected={statuses} onChange={setStatuses} />
             <label className="flex h-8 w-[280px] items-center gap-2 rounded-[6px] border border-[var(--line)] bg-panel px-2.5 text-[var(--muted)] transition-colors focus-within:border-[var(--accent)]">
@@ -183,25 +179,33 @@ function MultiSelectFilter<T extends string>({ title, allLabel, options, selecte
   const label = selected.length === 0 ? allLabel : selected.length === 1 ? options.find((option) => option.value === selected[0])?.label ?? allLabel : `${title} · ${selected.length}`
 
   return (
-    <FilterMenu label={label} width={title === "项目" ? "w-[122px]" : "w-[104px]"} active={selected.length > 0}>
-      <div className="px-2.5 pb-1 pt-1.5 text-[10px] font-medium text-[var(--muted)]">{title}筛选 · 可多选</div>
-      <DropdownMenuCheckboxItem checked={selected.length === 0} onSelect={(event) => event.preventDefault()} onCheckedChange={() => onChange([])}>{allLabel}</DropdownMenuCheckboxItem>
-      <DropdownMenuSeparator />
+    <FilterMenu label={label} width={title === "项目" ? "w-[122px]" : "w-[104px]"} active={selected.length > 0} align={title === "状态" ? "start" : "end"}>
+      <RightCheckboxItem checked={selected.length === 0} onCheckedChange={() => onChange([])}>{allLabel}</RightCheckboxItem>
       {options.map((option) => (
-        <DropdownMenuCheckboxItem
+        <RightCheckboxItem
           key={option.value}
           checked={selected.includes(option.value)}
-          onSelect={(event) => event.preventDefault()}
           onCheckedChange={() => onChange(selected.includes(option.value) ? selected.filter((value) => value !== option.value) : [...selected, option.value])}
         >
           {option.label}
-        </DropdownMenuCheckboxItem>
+        </RightCheckboxItem>
       ))}
     </FilterMenu>
   )
 }
 
-function FilterMenu({ label, width, active = false, children }: { label: string; width: string; active?: boolean; children: React.ReactNode }) {
+function RightCheckboxItem({ checked, onCheckedChange, children }: { checked: boolean; onCheckedChange: () => void; children: React.ReactNode }) {
+  return (
+    <DropdownMenuCheckboxItem checked={checked} onSelect={(event) => event.preventDefault()} onCheckedChange={onCheckedChange} className="!justify-between !pl-2.5 !pr-2.5 [&>span:first-child]:hidden">
+      <span>{children}</span>
+      <span aria-hidden className={`ml-auto flex size-4 shrink-0 items-center justify-center rounded-[4px] border ${checked ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--line-strong)] bg-panel"}`}>
+        {checked && <Check className="size-3" weight="bold" />}
+      </span>
+    </DropdownMenuCheckboxItem>
+  )
+}
+
+function FilterMenu({ label, width, active = false, align = "end", children }: { label: string; width: string; active?: boolean; align?: "start" | "end"; children: React.ReactNode }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -209,7 +213,7 @@ function FilterMenu({ label, width, active = false, children }: { label: string;
           <span className="truncate">{label}</span><CaretDown className="ml-auto size-3 shrink-0 text-[var(--muted)]" weight="bold" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[188px] min-w-0">{children}</DropdownMenuContent>
+      <DropdownMenuContent align={align} className="w-[188px] min-w-0">{children}</DropdownMenuContent>
     </DropdownMenu>
   )
 }

@@ -15,6 +15,7 @@ export type MysqlConnection = {
   lastUsed: string
   lastUsedOrder: number
   favorite: boolean
+  liveSessionId?: string
 }
 
 export const MYSQL_ENVIRONMENTS: ReadonlyArray<"全部环境" | MysqlConnectionEnvironment> = [

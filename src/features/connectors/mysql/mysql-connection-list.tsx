@@ -1,15 +1,17 @@
 "use client"
 
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { ArrowLeft, CaretDown, CaretRight, Check, DotsThree, MagnifyingGlass, Plus, UploadSimple } from "@phosphor-icons/react"
 
 import { AppAlert, type AppAlertMessage } from "@/components/app-alert"
+import { backendFetch } from "@/lib/backend"
+import type { DatabaseCapabilitySnapshot } from "@fouc/shared"
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
-import { MysqlConnectionDialog } from "./mysql-connection-dialog"
+import { MysqlConnectionDialog, type MysqlConnectionDraft } from "./mysql-connection-dialog"
 import { MysqlConnectionTable } from "./mysql-connection-table"
-import { MysqlWorkbench } from "./workbench/mysql-workbench"
-import { initialMysqlConnections, MYSQL_ENVIRONMENTS, MYSQL_PROJECTS, MYSQL_STATUSES, type MysqlConnection, type MysqlConnectionEnvironment, type MysqlConnectionProject, type MysqlConnectionStatus } from "./mysql-connections-data"
+import { MysqlLiveWorkbench } from "./workbench/mysql-live-workbench"
+import { MYSQL_ENVIRONMENTS, MYSQL_PROJECTS, MYSQL_STATUSES, type MysqlConnection, type MysqlConnectionEnvironment, type MysqlConnectionProject, type MysqlConnectionStatus } from "./mysql-connections-data"
 
 type MysqlSort = "recent" | "name" | "favorite"
 
@@ -20,7 +22,7 @@ const SORT_OPTIONS: ReadonlyArray<{ value: MysqlSort; label: string }> = [
 ]
 
 export function MysqlConnectionList({ onBack, onWorkbenchFocus }: { onBack: () => void; onWorkbenchFocus?: () => void }) {
-  const [connections, setConnections] = useState(initialMysqlConnections)
+  const [connections, setConnections] = useState<MysqlConnection[]>([])
   const [activeConnection, setActiveConnection] = useState<MysqlConnection | null>(null)
   const [query, setQuery] = useState("")
   const [environments, setEnvironments] = useState<MysqlConnectionEnvironment[]>([])
@@ -31,7 +33,13 @@ export function MysqlConnectionList({ onBack, onWorkbenchFocus }: { onBack: () =
   const [testingId, setTestingId] = useState<string | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
   const [alert, setAlert] = useState<AppAlertMessage | null>(null)
+  const liveSessions = useRef(new Set<string>())
   const closeAlert = useCallback(() => setAlert(null), [])
+
+  useEffect(() => () => {
+    for (const id of liveSessions.current) void backendFetch(`/api/database/mysql/sessions/${id}`, { method: "DELETE" }).catch(() => undefined)
+    liveSessions.current.clear()
+  }, [])
 
   const notify = useCallback((title: string, description?: string, tone: AppAlertMessage["tone"] = "success") => {
     setAlert({ id: Date.now(), title, description, tone })
@@ -62,23 +70,52 @@ export function MysqlConnectionList({ onBack, onWorkbenchFocus }: { onBack: () =
     setStatuses([])
   }
 
-  function testConnection(connection: MysqlConnection) {
+  async function testConnection(connection: MysqlConnection) {
     if (testingId) return
+    if (!connection.liveSessionId) return
     setTestingId(connection.id)
-    window.setTimeout(() => {
+    try {
+      await backendFetch<DatabaseCapabilitySnapshot>(`/api/database/connections/${connection.liveSessionId}/capabilities`)
       setConnections((current) => current.map((item) => item.id === connection.id ? { ...item, status: "healthy" } : item))
-      setTestingId(null)
       notify(`${connection.name} 连接正常`, `已成功连接 ${connection.host}`)
-    }, 700)
+    } catch (error) {
+      setConnections((current) => current.map((item) => item.id === connection.id ? { ...item, status: "offline" } : item))
+      notify("连接测试失败", error instanceof Error ? error.message : "连接已断开", "error")
+    } finally {
+      setTestingId(null)
+    }
   }
 
   function deleteConnection(connection: MysqlConnection) {
     if (!window.confirm(`确定删除「${connection.name}」吗？`)) return
+    if (connection.liveSessionId) {
+      liveSessions.current.delete(connection.liveSessionId)
+      void backendFetch(`/api/database/mysql/sessions/${connection.liveSessionId}`, { method: "DELETE" }).catch(() => undefined)
+    }
     setConnections((current) => current.filter((item) => item.id !== connection.id))
     notify("连接已删除", connection.name, "info")
   }
 
-  if (activeConnection) return <MysqlWorkbench connection={activeConnection} onBack={() => setActiveConnection(null)} onConnectorBack={onBack} />
+  async function createConnection(draft: MysqlConnectionDraft) {
+    const snapshot = await backendFetch<DatabaseCapabilitySnapshot>("/api/database/mysql/sessions", {
+      method: "POST",
+      body: JSON.stringify({ host: draft.host, port: draft.port, username: draft.username, password: draft.password,
+        database: draft.database || null, readOnly: true, production: draft.environment === "生产" }),
+    })
+    liveSessions.current.add(snapshot.connectionId)
+    const connection: MysqlConnection = {
+      id: snapshot.connectionId, liveSessionId: snapshot.connectionId, name: draft.name,
+      description: "本次会话", project: "Fouc 桌面端 V1", environment: draft.environment,
+      host: `${draft.host}:${draft.port}`, database: draft.database || "—", username: draft.username,
+      status: "healthy", lastUsed: "刚刚", lastUsedOrder: -1, favorite: false,
+    }
+    setConnections((current) => [connection, ...current])
+    setCreateOpen(false)
+    setActiveConnection(connection)
+    onWorkbenchFocus?.()
+  }
+
+  if (activeConnection?.liveSessionId) return <MysqlLiveWorkbench connection={activeConnection} onBack={() => setActiveConnection(null)} onConnectorBack={onBack} />
 
   return (
     <section aria-label="MySQL 连接" className="relative flex h-full min-h-0 flex-col overflow-hidden bg-panel">
@@ -140,24 +177,21 @@ export function MysqlConnectionList({ onBack, onWorkbenchFocus }: { onBack: () =
               onToggleFavorite={(connectionId) => setConnections((current) => current.map((item) => item.id === connectionId ? { ...item, favorite: !item.favorite } : item))}
               onToggleSortDirection={() => { setSort("recent"); setSortDirection((current) => current === "desc" ? "asc" : "desc") }}
               onEdit={(connection) => notify(`编辑 ${connection.name}`, "连接编辑页将在后续页面实现", "info")}
-              onDuplicate={(connection) => {
-                setConnections((current) => [...current, { ...connection, id: `${connection.id}-copy-${Date.now()}`, name: `${connection.name} 副本`, favorite: false }])
-                notify("已复制连接", connection.name)
-              }}
+              onDuplicate={() => { setCreateOpen(true); notify("重新建立连接", "复制连接需要重新输入凭据", "info") }}
               onDelete={deleteConnection}
             />
           ) : (
             <div className="flex min-h-[280px] flex-col items-center justify-center rounded-[9px] border border-dashed border-[var(--line-strong)] text-center">
               <MagnifyingGlass className="size-6 text-[var(--muted)]" />
-              <p className="mt-3 text-[12px] font-medium text-[var(--ink-soft)]">没有匹配的连接</p>
-              <button type="button" onClick={clearFilters} className="mt-2 text-[10.5px] text-[var(--accent-ink)] hover:underline">清除筛选条件</button>
+              <p className="mt-3 text-[12px] font-medium text-[var(--ink-soft)]">{connections.length ? "没有匹配的连接" : "还没有 MySQL 连接"}</p>
+              <button type="button" onClick={connections.length ? clearFilters : () => setCreateOpen(true)} className="mt-2 text-[10.5px] text-[var(--accent-ink)] hover:underline">{connections.length ? "清除筛选条件" : "新建连接"}</button>
             </div>
           )}
         </div>
         <p className="mt-3 text-[10px] tabular-nums text-[var(--muted-strong)]">{visibleConnections.length} 个连接</p>
       </div>
 
-      <MysqlConnectionDialog open={createOpen} onClose={() => setCreateOpen(false)} onCreate={(connection) => { setConnections((current) => [connection, ...current]); setCreateOpen(false); notify("连接已创建", connection.name) }} />
+      <MysqlConnectionDialog open={createOpen} onClose={() => setCreateOpen(false)} onCreate={createConnection} />
       <AppAlert alert={alert} onClose={closeAlert} />
     </section>
   )

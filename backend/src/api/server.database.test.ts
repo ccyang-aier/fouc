@@ -39,6 +39,8 @@ describe('database capability API', () => {
       async query(sql) {
         if (sql === 'SHOW DATABASES') return [{ Database: 'orders' }];
         if (sql.includes('information_schema.TABLES')) return [{ TABLE_NAME: 'customers', TABLE_TYPE: 'BASE TABLE' }];
+        if (sql.includes('information_schema.COLUMNS')) return [{ COLUMN_NAME: 'id', COLUMN_TYPE: 'int', IS_NULLABLE: 'NO', COLUMN_KEY: 'PRI' }];
+        if (sql.startsWith('SELECT *')) return [{ id: 1001 }];
         return [{ fouc_probe: 1 }];
       },
       async end() {},
@@ -56,6 +58,9 @@ describe('database capability API', () => {
     expect((await databases.json() as { data: Array<{ name: string }> }).data[0]?.name).toBe('orders');
     const tables = await app.request(`/api/database/mysql/sessions/${id}/databases/orders/tables`, { headers });
     expect((await tables.json() as { data: Array<{ name: string }> }).data[0]?.name).toBe('customers');
+    const rows = await app.request(`/api/database/mysql/sessions/${id}/databases/orders/tables/customers/rows?limit=1`, { headers });
+    expect((await rows.json() as { data: { rows: number[][] } }).data.rows).toEqual([[1001]]);
+    expect((await app.request(`/api/database/mysql/sessions/${id}/databases/orders/tables/customers/rows?limit=501`, { headers })).status).toBe(400);
     expect((await app.request(`/api/database/mysql/sessions/${id}`, { method: 'DELETE', headers })).status).toBe(200);
     expect((await app.request(`/api/database/connections/${id}/capabilities`, { headers })).status).toBe(404);
   });

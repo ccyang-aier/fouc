@@ -166,6 +166,7 @@
 .mw .mw-grid-cell-editing input, .mw .mw-grid-cell-editing input:focus-visible { width: 100%; height: 100%; padding: 0 9px; outline: none; border: 0; background: transparent; box-shadow: none; color: var(--mw-text); }
 .mw-status-good { color: #238653; }
 .mw-grid-footer { height: 92px; flex: none; display: flex; align-items: flex-end; gap: 12px; padding: 0 10px 28px; border-top: 1px solid var(--mw-line); white-space: nowrap; color: #5f7089; font-size: 10.5px; }
+.mw-live-footer { height: 44px; align-items: center; padding: 0 10px; }
 .mw-grid-footer > span:nth-child(2) { flex: none; }
 .mw-sql-preview { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; }
 .mw-pagination { display: flex; flex: none; align-items: center; gap: 2px; }

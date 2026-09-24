@@ -3,7 +3,10 @@ import {
   DATABASE_CAPABILITIES,
   type DatabaseCapabilities,
   type DatabaseCapabilitySnapshot,
+  type DatabaseCell,
+  type DatabaseColumnInfo,
   type DatabaseObjectInfo,
+  type DatabaseTablePage,
   type MysqlConnectInput,
 } from '@fouc/shared';
 import { DatabaseCapabilityRegistry } from './capability-registry';
@@ -21,6 +24,35 @@ const DECLARED = Object.fromEntries(DATABASE_CAPABILITIES.map((key) => [key, key
 const OBSERVED = Object.fromEntries(DATABASE_CAPABILITIES.map((key) => [key, key === 'metadataBrowse'])) as DatabaseCapabilities;
 const DATABASES_SQL = ['SHOW DATABASES', 'SELECT SCHEMA_NAME FROM information_schema.SCHEMATA ORDER BY SCHEMA_NAME'];
 const TABLES_SQL = 'SELECT TABLE_NAME, TABLE_TYPE, TABLE_COMMENT FROM information_schema.TABLES WHERE TABLE_SCHEMA = ? ORDER BY TABLE_NAME';
+// Keep the information_schema.COLUMNS query separate from TABLES as DBX does:
+// MySQL 5.7 can materialize the joined TABLES metadata very slowly.
+const COLUMNS_SQL = `SELECT COLUMN_NAME, DATA_TYPE, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT, EXTRA,
+  COLUMN_COMMENT, COLUMN_KEY, NUMERIC_PRECISION, NUMERIC_SCALE, CHARACTER_MAXIMUM_LENGTH,
+  CHARACTER_SET_NAME, COLLATION_NAME FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? ORDER BY ORDINAL_POSITION`;
+
+function quoteIdentifier(value: string): string {
+  if (!value.trim() || value.length > 255) throw new Error('数据库对象名称无效');
+  return '`' + value.replaceAll('`', '``') + '`';
+}
+
+function optionalNumber(value: unknown): number | null {
+  if (value == null) return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function asCell(value: unknown): DatabaseCell {
+  if (value == null) return null;
+  if (typeof value === 'string' || typeof value === 'boolean') return value;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : String(value);
+  if (typeof value === 'bigint') return value.toString();
+  if (value instanceof Date) return value.toISOString();
+  if (Buffer.isBuffer(value)) return { type: 'binary', base64: value.toString('base64') };
+  if (Array.isArray(value)) return value.map(asCell);
+  if (typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, asCell(entry)]));
+  return String(value);
+}
 
 type Session = { wire: MysqlWire; readOnly: boolean; production: boolean };
 
@@ -142,6 +174,43 @@ export class MysqlSessionManager {
       return { connectionId: id, database, schema: null, kind: type.toUpperCase().includes('VIEW') ? 'view' as const : 'table' as const,
         name, comment: row.TABLE_COMMENT == null ? null : String(row.TABLE_COMMENT) };
     }).filter((item) => item.name !== '');
+  }
+
+  async tablePage(id: string, database: string, table: string, offset = 0, limit = 100): Promise<DatabaseTablePage | null> {
+    const session = this.sessions.get(id);
+    if (!session || !await this.refresh(id)) return null;
+    if (!Number.isInteger(offset) || offset < 0 || offset > 10_000_000 || !Number.isInteger(limit) || limit < 1 || limit > 500) {
+      throw new Error('分页范围无效');
+    }
+    const columnRows = await session.wire.query(COLUMNS_SQL, [database, table]);
+    const columns: DatabaseColumnInfo[] = columnRows.map((row) => ({
+      name: String(row.COLUMN_NAME ?? ''),
+      dataType: String(row.COLUMN_TYPE ?? row.DATA_TYPE ?? ''),
+      isNullable: row.IS_NULLABLE === 'YES',
+      columnDefault: row.COLUMN_DEFAULT == null ? null : String(row.COLUMN_DEFAULT),
+      isPrimaryKey: row.COLUMN_KEY === 'PRI',
+      isUnique: row.COLUMN_KEY === 'UNI',
+      extra: row.EXTRA == null ? null : String(row.EXTRA),
+      comment: row.COLUMN_COMMENT == null ? null : String(row.COLUMN_COMMENT),
+      numericPrecision: optionalNumber(row.NUMERIC_PRECISION),
+      numericScale: optionalNumber(row.NUMERIC_SCALE),
+      characterMaximumLength: optionalNumber(row.CHARACTER_MAXIMUM_LENGTH),
+      characterSet: row.CHARACTER_SET_NAME == null ? null : String(row.CHARACTER_SET_NAME),
+      collation: row.COLLATION_NAME == null ? null : String(row.COLLATION_NAME),
+    })).filter((column) => column.name !== '');
+    if (columns.length === 0) throw new Error('表不存在或当前账号无权读取字段');
+
+    const primary = columns.filter((column) => column.isPrimaryKey);
+    const order = primary.length ? ` ORDER BY ${primary.map((column) => quoteIdentifier(column.name)).join(', ')}` : '';
+    const rows = await session.wire.query(
+      `SELECT * FROM ${quoteIdentifier(database)}.${quoteIdentifier(table)}${order} LIMIT ? OFFSET ?`,
+      [limit + 1, offset],
+    );
+    return {
+      connectionId: id, database, table, columns,
+      rows: rows.slice(0, limit).map((row) => columns.map((column) => asCell(row[column.name]))),
+      offset, limit, hasMore: rows.length > limit,
+    };
   }
 
   async disconnect(id: string): Promise<boolean> {

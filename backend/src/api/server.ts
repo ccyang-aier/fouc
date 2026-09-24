@@ -173,6 +173,20 @@ export function createApp(context: ServerContext): { app: Hono; hub: BroadcastHu
     }
   });
 
+  app.get('/api/database/mysql/sessions/:id/databases/:database/tables/:table/rows', async (c) => {
+    const offset = Number(c.req.query('offset') ?? 0);
+    const limit = Number(c.req.query('limit') ?? 100);
+    if (!Number.isInteger(offset) || offset < 0 || offset > 10_000_000 || !Number.isInteger(limit) || limit < 1 || limit > 500) {
+      return c.json({ ok: false, error: { code: 'invalid_input', message: '分页范围无效' } }, 400);
+    }
+    try {
+      const data = await context.mysqlSessions?.tablePage(c.req.param('id'), c.req.param('database'), c.req.param('table'), offset, limit) ?? null;
+      return data ? c.json({ ok: true, data }) : c.json({ ok: false, error: { code: 'not_connected', message: '连接已断开' } }, 404);
+    } catch (error) {
+      return c.json({ ok: false, error: { code: 'query_failed', message: error instanceof Error ? error.message : '表数据读取失败' } }, 502);
+    }
+  });
+
   app.delete('/api/database/mysql/sessions/:id', async (c) => {
     const closed = await context.mysqlSessions?.disconnect(c.req.param('id')) ?? false;
     return closed ? c.json({ ok: true, data: { disconnected: true } })

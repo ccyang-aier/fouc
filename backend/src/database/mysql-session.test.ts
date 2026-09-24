@@ -56,4 +56,31 @@ describe('MySQL live session', () => {
     await expect(manager.connect(input)).rejects.toThrow('access denied');
     expect(closed).toBe(true);
   });
+
+  test('reads a bounded page using escaped identifiers and primary-key order', async () => {
+    const sqls: string[] = [];
+    const manager = new MysqlSessionManager(new DatabaseCapabilityRegistry(), () => ({
+      async query(sql, values) {
+        sqls.push(sql);
+        if (sql === 'SHOW DATABASES') return [{ Database: 'order`data' }];
+        if (sql.includes('information_schema.COLUMNS')) return [
+          { COLUMN_NAME: 'id', COLUMN_TYPE: 'bigint', IS_NULLABLE: 'NO', COLUMN_KEY: 'PRI' },
+          { COLUMN_NAME: 'total', COLUMN_TYPE: 'decimal(12,2)', IS_NULLABLE: 'YES', COLUMN_KEY: '' },
+        ];
+        if (sql.startsWith('SELECT *')) {
+          expect(values).toEqual([2, 0]);
+          return [{ id: '9007199254740993', total: '12.50' }, { id: '9007199254740994', total: '13.50' }];
+        }
+        return [{ fouc_probe: 1 }];
+      },
+      async end() {},
+    }));
+    const snapshot = await manager.connect(input);
+    const page = await manager.tablePage(snapshot.connectionId, 'order`data', 'cost`report', 0, 1);
+    expect(page?.columns.map((column) => column.name)).toEqual(['id', 'total']);
+    expect(page?.rows).toEqual([['9007199254740993', '12.50']]);
+    expect(page?.hasMore).toBe(true);
+    expect(sqls).toContain('SELECT * FROM `order``data`.`cost``report` ORDER BY `id` LIMIT ? OFFSET ?');
+    await manager.shutdown();
+  });
 });

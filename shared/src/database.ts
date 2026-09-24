@@ -200,6 +200,17 @@ export interface DatabaseColumnInfo {
   collation?: string | null;
 }
 
+export interface DatabaseTablePage {
+  connectionId: string;
+  database: string;
+  table: string;
+  columns: DatabaseColumnInfo[];
+  rows: DatabaseCell[][];
+  offset: number;
+  limit: number;
+  hasMore: boolean;
+}
+
 export type DatabaseCell = string | number | boolean | null | DatabaseCell[] | { [key: string]: DatabaseCell };
 
 export interface DatabaseQueryMessage {

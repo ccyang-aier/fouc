@@ -62,10 +62,57 @@ export function KnowledgePage() {
   const [infoDocumentId, setInfoDocumentId] = React.useState<string | null>(null);
   const [historyDocumentId, setHistoryDocumentId] = React.useState<string | null>(null);
   const [versions, setVersions] = React.useState<DocumentVersion[]>([]);
+  const snapshotRequest = React.useRef(0);
 
-  const refresh = React.useCallback(async () => { const next = await loadKnowledge(); setLibrary(next); setStatus("ready"); return next; }, []);
-  React.useEffect(() => { let cancelled = false; void loadKnowledge().then((next) => { if (!cancelled) { setLibrary(next); setStatus("ready"); } }).catch((cause) => { if (!cancelled) { setError(String(cause)); setStatus("error"); } }); return () => { cancelled = true; }; }, []);
-  const act = React.useCallback(async <T,>(input: KnowledgeAction): Promise<T | null> => { try { setError(null); const result = await runKnowledgeAction<T>(input); await refresh(); return result; } catch (cause) { setError(cause instanceof Error ? cause.message : String(cause)); return null; } }, [refresh]);
+  const applySnapshot = React.useCallback((next: KnowledgeSnapshot) => {
+    const projectIds = new Set(next.projects.map((project) => project.id));
+    const documentIds = new Set(next.documents.map((document) => document.id));
+    setLibrary(next);
+    setActiveResource((current) => current?.startsWith("project:") && !projectIds.has(current.slice(8)) ? null : current);
+    setActiveDocumentId((current) => current && !documentIds.has(current) ? null : current);
+    setTabs((current) => current.filter((id) => documentIds.has(id)));
+    setSplitDocumentId((current) => current && !documentIds.has(current) ? null : current);
+    setInfoDocumentId((current) => current && !documentIds.has(current) ? null : current);
+    setHistoryDocumentId((current) => current && !documentIds.has(current) ? null : current);
+    setStatus("ready");
+    setError(null);
+  }, []);
+  const refresh = React.useCallback(async () => {
+    const request = ++snapshotRequest.current;
+    const next = await loadKnowledge();
+    if (request === snapshotRequest.current) applySnapshot(next);
+    return next;
+  }, [applySnapshot]);
+  React.useEffect(() => {
+    const requests = snapshotRequest;
+    let firstLoad = true;
+    const update = () => {
+      const initial = firstLoad;
+      firstLoad = false;
+      void refresh().catch((cause) => { if (initial) { setError(String(cause)); setStatus("error"); } });
+    };
+    const updateWhenVisible = () => { if (document.visibilityState === "visible") update(); };
+    update();
+    window.addEventListener("focus", updateWhenVisible);
+    document.addEventListener("visibilitychange", updateWhenVisible);
+    const timer = window.setInterval(updateWhenVisible, 30_000);
+    return () => { requests.current++; window.removeEventListener("focus", updateWhenVisible); document.removeEventListener("visibilitychange", updateWhenVisible); window.clearInterval(timer); };
+  }, [refresh]);
+  const act = React.useCallback(async <T,>(input: KnowledgeAction): Promise<T | null> => {
+    try {
+      setError(null);
+      const result = await runKnowledgeAction<T>(input);
+      await refresh();
+      return result;
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : String(cause);
+      if (message.includes("不存在")) {
+        try { await refresh(); setError("所选内容已变化，知识库已刷新，请重试。"); return null; } catch { /* Show the original error if refresh also fails. */ }
+      }
+      setError(message);
+      return null;
+    }
+  }, [refresh]);
 
   const activeDocuments = React.useMemo(() => library.documents.filter((document) => !document.trashedAt), [library.documents]);
   const sidebarProjects = React.useMemo(() => buildSidebarProjects(library.projects, activeDocuments), [library.projects, activeDocuments]);

@@ -1,0 +1,28 @@
+.layout { display: flex; height: 100%; min-width: 0; }
+.sidebar { width: 252px; flex: none; overflow-y: auto; border-right: 1px solid #e7e9ed; background: #fff; color: #68737b; scrollbar-width: thin; }
+.navigation { padding: 9px 10px 24px 12px; }
+.mainItems { display: grid; gap: 1px; }
+.mainRow, .sectionRow, .treeRow, .documentRow { width: 100%; height: 29px; border-radius: 6px; }
+.mainRow { display: flex; align-items: center; gap: 9px; padding: 0 7px; text-align: left; font-size: 13px; }
+.mainRow:hover, .sectionRow:hover, .treeRow:hover, .documentRow:hover { background: #f7f8fa; color: #303940; }
+.mainRow[data-selected="true"], .sectionRow[data-selected="true"], .treeRow[data-selected="true"], .documentRow[data-selected="true"] { background: #fff; color: #303940; box-shadow: inset 0 0 0 1px #e9ebef, 0 1px 2px #1d2d3910; }
+.mainRow:focus-visible, .sectionRow button:focus-visible, .treeRow button:focus-visible, .documentRow:focus-visible { outline: 2px solid #718ba3; outline-offset: -2px; }
+.group { margin-top: 16px; }
+.sectionRow { display: flex; align-items: center; gap: 8px; padding: 0 7px; color: #78858d; }
+.sectionTitle { height: 100%; min-width: 0; font-size: 13px; font-weight: 500; color: #56626a; text-align: left; }
+.caretButton { display: inline-flex; width: 18px; height: 22px; align-items: center; justify-content: center; color: #424c53; }
+.rotated { transform: rotate(90deg); }
+.caretButton svg, .treeCaret svg { transition: transform 160ms ease; }
+.tree { padding-top: 2px; }
+.treeRow { display: flex; align-items: center; gap: 1px; padding-left: 6px; font-size: 12px; }
+.treeCaret { display: inline-flex; width: 17px; height: 24px; align-items: center; justify-content: center; color: #69767e; }
+.treeLabel { display: flex; height: 100%; min-width: 0; flex: 1; align-items: center; gap: 8px; overflow: hidden; text-align: left; white-space: nowrap; }
+.projectGlyph { display: inline-flex; width: 15px; height: 15px; flex: none; align-items: center; justify-content: center; border-radius: 4px; background: #dc6467; }
+.dot { width: 8px; height: 8px; flex: none; border-radius: 50%; }
+.documentRow { display: flex; align-items: center; gap: 9px; padding-left: 30px; text-align: left; font-size: 12px; color: #707d85; }
+.emptyTree { padding: 6px 0 6px 32px; font-size: 11px; color: #9aa3a9; }
+.content { min-width: 0; flex: 1; background: #fff; }
+.contentInner { max-width: 760px; padding: 42px 48px; }
+.eyebrow { color: #8a959c; font-size: 11px; letter-spacing: .08em; }
+.content h1 { margin-top: 12px; color: #27343d; font-size: 26px; font-weight: 600; letter-spacing: -.035em; }
+.content p { margin-top: 12px; color: #879198; font-size: 13px; }

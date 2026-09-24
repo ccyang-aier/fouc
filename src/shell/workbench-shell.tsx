@@ -39,6 +39,7 @@ import { HomeCanvas } from "@/features/home/home-canvas"
 import { AutomationCanvas } from "@/features/automation/automation-canvas"
 import { CommunityCanvas } from "@/features/community/community-canvas"
 import { ConnectorsCanvas } from "@/features/connectors/connectors-canvas"
+import { KnowledgeCanvas } from "@/features/knowledge/knowledge-canvas"
 import { NavigationSidebar, type WorkbenchView } from "./navigation-sidebar"
 import type { ProjectManagementPanelId } from "@/features/project/project-management-model"
 import { ProjectHomeCanvas } from "@/features/project/project-home-canvas"
@@ -114,8 +115,8 @@ export function WorkbenchShell() {
 
   function changeView(nextView: WorkbenchView) {
     if (nextView !== "projects") setManagementPanel(null)
-    const needsCompactNavigation = nextView === "projects" || nextView === "community"
-    // 项目与社区视图默认收起主导航为内容让位；收起后切换菜单保持当前状态。
+    const needsCompactNavigation = nextView === "projects" || nextView === "community" || nextView === "knowledge"
+    // 项目、社区与知识库视图默认收起主导航为内容让位。
     if (needsCompactNavigation && !sidebarCollapsed) {
       setSidebarCollapsed(true)
     }
@@ -188,6 +189,8 @@ export function WorkbenchShell() {
                             <AutomationCanvas />
                           ) : view === "connectors" ? (
                             <ConnectorsCanvas onWorkbenchFocus={() => setSidebarCollapsed(true)} />
+                          ) : view === "knowledge" ? (
+                            <KnowledgeCanvas />
                           ) : (
                             <div className="flex h-full items-center justify-center text-[13px] text-[var(--ink-soft)]">
                               该空间已在 V1 规划中，尚未开放

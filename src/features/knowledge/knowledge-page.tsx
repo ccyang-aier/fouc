@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { SidebarSimple } from "@phosphor-icons/react";
 import { ExpandedPrimarySidebar, type SidebarSectionId } from "./dense-sidebar/expanded-primary-sidebar";
 import { getProjectIconDefinition } from "./dense-sidebar/project-icons";
 import { DEFAULT_PROJECT_ICON_ID, type ProjectIconId } from "./dense-sidebar/project-icons";
@@ -12,6 +13,7 @@ import type { DocumentAction } from "./dense-sidebar/document-action-menu-conten
 import { EMPTY_KNOWLEDGE, type DocumentVersion, type HyperdocDocumentSummary, type KnowledgeSnapshot } from "./knowledge-model";
 import { loadDocumentVersions, loadKnowledge, runKnowledgeAction, type KnowledgeAction } from "./knowledge-client";
 import { KnowledgeContent } from "./knowledge-content";
+import { KnowledgeWorkspaceHeader } from "./knowledge-workspace-header";
 import styles from "./knowledge-canvas.module.css";
 
 // Adapted from dense/src/shell/app-shell.tsx: buildSidebarProjects.
@@ -43,7 +45,8 @@ function buildSidebarProjects(projects: KnowledgeSnapshot["projects"], documents
 
 const tagPalette = ["#ada34e", "#d8777b", "#cd9552", "#6e9a8f", "#798dc0"];
 
-export function KnowledgePage() {
+export function KnowledgePage({ workspaceName, onCreateWorkspace, onOpenSettings }: { workspaceName: string; onCreateWorkspace: () => void; onOpenSettings: () => void }) {
+  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
   const [library, setLibrary] = React.useState<KnowledgeSnapshot>(EMPTY_KNOWLEDGE);
   const [status, setStatus] = React.useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = React.useState<string | null>(null);
@@ -157,7 +160,11 @@ export function KnowledgePage() {
   }
 
   return <div className={styles.layout}>
-    <ExpandedPrimarySidebar className={styles.sidebar} activeItem={activeItem} activeResource={activeResource} activeDocumentId={activeDocumentId} activeDocumentLocation={activeDocumentLocation} projects={sidebarProjects} tags={library.tags} tagDocuments={tagDocuments} recentNotes={recentNotes} expandedProjects={expandedProjects} expandedTags={expandedTags} expandedSections={expandedSections} onNavigateMain={navigate} onBrowseProjects={() => navigate("projects")} onSelectProject={(id) => selectProject(`project:${id}`)} onSelectDocument={(id) => openDocument(id, "project")} onToggleProject={(id) => setExpandedProjects((current) => ({ ...current, [id]: !(current[id] ?? sidebarProjects.some((node) => node.id === id && node.defaultExpanded)) }))} onProjectAction={projectAction} onTagAction={tagAction} onDocumentAction={documentAction} onToggleSection={(section) => setExpandedSections((current) => ({ ...current, [section]: !current[section] }))} onNewProject={() => { setProjectName(""); setProjectDialogOpen(true); }} onCreateTag={(name) => { void act({ action: "create-tag", name, color: tagPalette[library.tags.length % tagPalette.length] }); }} onSelectTagDocument={(id) => openDocument(id, "tag")} onToggleTag={(id) => setExpandedTags((current) => ({ ...current, [id]: !(current[id] ?? true) }))} onSelectRecent={(id) => openDocument(id, "recent")} />
+    {sidebarCollapsed ? <aside className={styles.collapsedSidebar} aria-label="知识库导航（已收起）">
+      <button type="button" className={styles.collapsedExpand} aria-label="展开知识库侧边栏" title="展开知识库侧边栏" onClick={() => setSidebarCollapsed(false)}><SidebarSimple aria-hidden="true" weight="regular" /></button>
+    </aside> : <ExpandedPrimarySidebar
+      header={<KnowledgeWorkspaceHeader workspaceName={workspaceName} onCollapse={() => setSidebarCollapsed(true)} onCreateWorkspace={onCreateWorkspace} onOpenSettings={onOpenSettings} />}
+      className={styles.sidebar} activeItem={activeItem} activeResource={activeResource} activeDocumentId={activeDocumentId} activeDocumentLocation={activeDocumentLocation} projects={sidebarProjects} tags={library.tags} tagDocuments={tagDocuments} recentNotes={recentNotes} expandedProjects={expandedProjects} expandedTags={expandedTags} expandedSections={expandedSections} onNavigateMain={navigate} onBrowseProjects={() => navigate("projects")} onSelectProject={(id) => selectProject(`project:${id}`)} onSelectDocument={(id) => openDocument(id, "project")} onToggleProject={(id) => setExpandedProjects((current) => ({ ...current, [id]: !(current[id] ?? sidebarProjects.some((node) => node.id === id && node.defaultExpanded)) }))} onProjectAction={projectAction} onTagAction={tagAction} onDocumentAction={documentAction} onToggleSection={(section) => setExpandedSections((current) => ({ ...current, [section]: !current[section] }))} onNewProject={() => { setProjectName(""); setProjectDialogOpen(true); }} onCreateTag={(name) => { void act({ action: "create-tag", name, color: tagPalette[library.tags.length % tagPalette.length] }); }} onSelectTagDocument={(id) => openDocument(id, "tag")} onToggleTag={(id) => setExpandedTags((current) => ({ ...current, [id]: !(current[id] ?? true) }))} onSelectRecent={(id) => openDocument(id, "recent")} />}
     <KnowledgeContent library={library} status={status} error={error} clearError={() => setError(null)} retry={() => { setStatus("loading"); void refresh().catch((cause) => { setError(String(cause)); setStatus("error"); }); }} activeItem={activeItem} activeResource={activeResource} activeDocumentId={activeDocumentId} tabs={tabs} splitDocumentId={splitDocumentId} infoDocumentId={infoDocumentId} historyDocumentId={historyDocumentId} versions={versions} setTabs={setTabs} setActiveDocumentId={setActiveDocumentId} setSplitDocumentId={setSplitDocumentId} setInfoDocumentId={setInfoDocumentId} setHistoryDocumentId={setHistoryDocumentId} openDocument={openDocument} createDocument={createDocument} openProjectDialog={() => setProjectDialogOpen(true)} act={act} />
     {projectDialogOpen && <div className={styles.dialogBackdrop} role="presentation" onMouseDown={() => setProjectDialogOpen(false)}><form className={styles.dialog} role="dialog" aria-modal="true" aria-label="新建项目" onMouseDown={(event) => event.stopPropagation()} onSubmit={(event) => { event.preventDefault(); const name = projectName.trim(); if (name) { void createProject(name, null, projectIconId); setProjectDialogOpen(false); } }}><h2>新建项目</h2><label>项目名称<input autoFocus value={projectName} onChange={(event) => setProjectName(event.target.value)} placeholder="输入项目名称" maxLength={36} /></label><ProjectIconPicker value={projectIconId} onChange={setProjectIconId} /><div><button type="button" onClick={() => setProjectDialogOpen(false)}>取消</button><button type="submit" disabled={!projectName.trim()}>创建项目</button></div></form></div>}
   </div>;

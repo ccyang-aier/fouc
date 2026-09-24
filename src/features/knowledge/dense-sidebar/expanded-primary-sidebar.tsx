@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 export type SidebarSectionId = "projects" | "tags" | "recent";
 
 export function ExpandedPrimarySidebar({
+  header,
   activeItem,
   className,
   activeResource,
@@ -57,6 +58,7 @@ export function ExpandedPrimarySidebar({
   onToggleTag,
   onSelectRecent,
 }: {
+  header?: React.ReactNode;
   activeItem: string;
   className?: string;
   activeResource: string | null;
@@ -105,6 +107,7 @@ export function ExpandedPrimarySidebar({
         className,
       )}
     >
+      {header}
       <div className="min-h-0 flex flex-1 flex-col px-[11px] pb-4 pt-2">
         <div className="scrollbar-hidden min-h-0 shrink overflow-y-auto pr-px">
           <nav aria-label={t("sidebar.library")} className="space-y-px">

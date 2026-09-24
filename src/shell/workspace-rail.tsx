@@ -30,7 +30,7 @@ import { cn } from "@/lib/utils"
 
 import type { WorkbenchView } from "./navigation-sidebar"
 
-type RailSpace = { id: string; label: string; pinned: boolean }
+export type RailSpace = { id: string; label: string; pinned: boolean }
 type SpaceMenuState = {
   spaceId: string
   x: number
@@ -38,7 +38,7 @@ type SpaceMenuState = {
   mode: "menu" | "rename" | "delete"
 }
 
-const DEFAULT_SPACES: RailSpace[] = [
+export const DEFAULT_SPACES: RailSpace[] = [
   { id: "product-development", label: "产品研发", pinned: true },
   { id: "personal-workspace", label: "个人工作台", pinned: true },
 ]
@@ -46,12 +46,20 @@ const DEFAULT_SPACES: RailSpace[] = [
 export function WorkspaceRail({
   view,
   onViewChange,
+  spaces,
+  activeSpaceId,
+  onSpacesChange,
+  onActiveSpaceChange,
+  onCreateSpace,
 }: {
   view: WorkbenchView
   onViewChange: (view: WorkbenchView) => void
+  spaces: RailSpace[]
+  activeSpaceId: string
+  onSpacesChange: React.Dispatch<React.SetStateAction<RailSpace[]>>
+  onActiveSpaceChange: (id: string) => void
+  onCreateSpace: () => string
 }) {
-  const [spaces, setSpaces] = useState(DEFAULT_SPACES)
-  const [activeSpaceId, setActiveSpaceId] = useState(DEFAULT_SPACES[0].id)
   const [spaceMenu, setSpaceMenu] = useState<SpaceMenuState | null>(null)
   const [renameValue, setRenameValue] = useState("")
   const [feedback, setFeedback] = useState("")
@@ -99,15 +107,12 @@ export function WorkspaceRail({
   }, [feedback])
 
   function selectSpace(id: string) {
-    setActiveSpaceId(id)
+    onActiveSpaceChange(id)
     if (view !== "projects") onViewChange("projects")
   }
 
   function createSpace() {
-    const id = `space-${Date.now()}`
-    const label = `新工作空间 ${spaces.length + 1}`
-    setSpaces((items) => [...items, { id, label, pinned: true }])
-    setActiveSpaceId(id)
+    const label = onCreateSpace()
     setFeedback(`已创建「${label}」`)
     onViewChange("projects")
   }
@@ -126,14 +131,14 @@ export function WorkspaceRail({
   function renameSpace() {
     if (!menuSpace || !renameValue.trim()) return
     const label = renameValue.trim()
-    setSpaces((items) => items.map((space) => space.id === menuSpace.id ? { ...space, label } : space))
+    onSpacesChange((items) => items.map((space) => space.id === menuSpace.id ? { ...space, label } : space))
     setFeedback(`已重命名为「${label}」`)
     setSpaceMenu(null)
   }
 
   function unpinSpace() {
     if (!menuSpace) return
-    setSpaces((items) => items.map((space) => space.id === menuSpace.id ? { ...space, pinned: false } : space))
+    onSpacesChange((items) => items.map((space) => space.id === menuSpace.id ? { ...space, pinned: false } : space))
     setFeedback(`已取消置顶「${menuSpace.label}」`)
     setSpaceMenu(null)
   }
@@ -141,8 +146,8 @@ export function WorkspaceRail({
   function deleteSpace() {
     if (!menuSpace) return
     const remaining = spaces.filter((space) => space.id !== menuSpace.id)
-    setSpaces(remaining)
-    if (activeSpaceId === menuSpace.id) setActiveSpaceId(remaining[0]?.id ?? "")
+    onSpacesChange(remaining)
+    if (activeSpaceId === menuSpace.id) onActiveSpaceChange(remaining[0]?.id ?? "")
     setFeedback(`已删除「${menuSpace.label}」`)
     setSpaceMenu(null)
   }

@@ -17,6 +17,7 @@ import type { DtsTicketListInput } from '@shared/index';
 import { DatabaseCapabilityRegistry } from '../database/capability-registry';
 import type { MysqlSessionManager } from '../database/mysql-session';
 import { MysqlReadOnlySqlError } from '../database/mysql-read-only-sql';
+import type { KnowledgeRepository } from '../knowledge/repository';
 import { DATABASE_CATALOG_REVISION, getDatabaseDialect, getDatabaseProfile, listDatabaseDrivers, listDatabaseProfiles } from '@shared/database-catalog';
 
 export type ServerContext = {
@@ -25,6 +26,7 @@ export type ServerContext = {
   connectors: ConnectorService;
   databaseCapabilities?: DatabaseCapabilityRegistry;
   mysqlSessions?: MysqlSessionManager;
+  knowledge?: KnowledgeRepository;
   token: string;
   internalToken: string;
   devNoAuth?: boolean;
@@ -132,6 +134,42 @@ export function createApp(context: ServerContext): { app: Hono; hub: BroadcastHu
   // ── 健康/关停（进程协议端点） ──────────────────────────────────
 
   app.get('/health', (c) => c.json({ ok: true, pid: process.pid, at: Date.now() }));
+
+  // Dense 侧栏使用的项目、文档、标签操作在 sidecar 中持久化。
+  app.get('/api/knowledge', (c) => connectorReply(c, () => context.knowledge?.snapshot()));
+  app.get('/api/knowledge/documents/:id/versions', (c) => connectorReply(c, () => context.knowledge?.versions(c.req.param('id'))));
+  app.post('/api/knowledge/actions', async (c) => {
+    const input = await readJson<{ action?: string; id?: string; name?: string; iconId?: string; parentId?: string | null; projectId?: string | null; tagId?: string | null; title?: string; content?: string; starred?: boolean; trashed?: boolean; color?: string; versionId?: string }>(c);
+    if (!input?.action || !context.knowledge) return c.json({ ok: false, error: { code: 'invalid_params', message: '无效的知识库操作' } }, 400);
+    const repo = context.knowledge;
+    try {
+      const requiredId = () => { if (!input.id) throw new Error('缺少 ID'); return input.id; };
+      const requiredName = () => { const value = input.name?.trim(); if (!value) throw new Error('名称不能为空'); return value; };
+      let data: unknown = null;
+      switch (input.action) {
+        case 'create-project': data = repo.createProject(requiredName(), input.iconId ?? 'folder', input.parentId); break;
+        case 'rename-project': repo.renameProject(requiredId(), requiredName()); break;
+        case 'star-project': repo.starProject(requiredId(), Boolean(input.starred)); break;
+        case 'delete-project': repo.deleteProject(requiredId()); break;
+        case 'create-document': data = repo.createDocument(input.projectId, input.tagId); break;
+        case 'update-document': repo.updateDocument(requiredId(), { title: input.title, content: input.content }); break;
+        case 'star-document': repo.starDocument(requiredId(), Boolean(input.starred)); break;
+        case 'trash-document': repo.trashDocument(requiredId(), Boolean(input.trashed)); break;
+        case 'move-document': repo.moveDocument(requiredId(), input.projectId ?? null); break;
+        case 'delete-document': repo.deleteDocument(requiredId()); break;
+        case 'restore-version': if (!input.versionId) throw new Error('缺少版本 ID'); repo.restoreVersion(requiredId(), input.versionId); break;
+        case 'create-tag': data = repo.createTag(requiredName(), input.color ?? '#ada34e'); break;
+        case 'rename-tag': repo.renameTag(requiredId(), requiredName()); break;
+        case 'delete-tag': repo.deleteTag(requiredId()); break;
+        case 'assign-tag': if (!input.tagId) throw new Error('缺少标签 ID'); repo.assignTag(requiredId(), input.tagId); break;
+        case 'unassign-tag': if (!input.tagId) throw new Error('缺少标签 ID'); repo.unassignTag(requiredId(), input.tagId); break;
+        default: throw new Error('未知的知识库操作');
+      }
+      return c.json({ ok: true, data: data ?? repo.snapshot() });
+    } catch (error) {
+      return c.json({ ok: false, error: { code: 'knowledge_action_failed', message: error instanceof Error ? error.message : String(error) } }, 400);
+    }
+  });
 
   // ── Connector 控制面与 DTS 数据面 ─────────────────────────────
 

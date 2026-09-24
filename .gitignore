@@ -14,6 +14,7 @@ node_modules/
 
 # QA captures
 /qa/*.png
+/.playwright-cli/
 
 # environment
 .env*

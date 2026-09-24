@@ -66,6 +66,34 @@ CREATE TABLE IF NOT EXISTS connector_invocation (
 CREATE INDEX IF NOT EXISTS idx_connector_invocation_instance ON connector_invocation(instance_id, started_at DESC);
 `;
 
+const KNOWLEDGE_SCHEMA = `
+CREATE TABLE IF NOT EXISTS knowledge_project (
+  id TEXT PRIMARY KEY, name TEXT NOT NULL, icon_id TEXT NOT NULL,
+  parent_id TEXT REFERENCES knowledge_project(id) ON DELETE SET NULL,
+  starred INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS knowledge_document (
+  id TEXT PRIMARY KEY, title TEXT NOT NULL, content TEXT NOT NULL DEFAULT '',
+  project_id TEXT REFERENCES knowledge_project(id) ON DELETE SET NULL,
+  starred INTEGER NOT NULL DEFAULT 0, trashed_at INTEGER,
+  created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_knowledge_document_project ON knowledge_document(project_id);
+CREATE TABLE IF NOT EXISTS knowledge_tag (
+  id TEXT PRIMARY KEY, name TEXT NOT NULL UNIQUE, color TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS knowledge_document_tag (
+  document_id TEXT NOT NULL REFERENCES knowledge_document(id) ON DELETE CASCADE,
+  tag_id TEXT NOT NULL REFERENCES knowledge_tag(id) ON DELETE CASCADE,
+  PRIMARY KEY (document_id, tag_id)
+);
+CREATE TABLE IF NOT EXISTS knowledge_document_version (
+  id TEXT PRIMARY KEY, document_id TEXT NOT NULL REFERENCES knowledge_document(id) ON DELETE CASCADE,
+  title TEXT NOT NULL, content TEXT NOT NULL, created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_knowledge_version_document ON knowledge_document_version(document_id, created_at DESC);
+`;
+
 // ─── 嵌入式迁移（AionCore 模式：NNN_描述.sql 顺序执行） ─────────────
 
 const MIGRATIONS: Array<{ name: string; sql: string }> = [
@@ -171,5 +199,6 @@ export function openDatabase(dbPath?: string): Db {
   }
   // 当前唯一 schema 以幂等 DDL 校准；开发期不保留旧 Connector 数据模型兼容分支。
   db.exec(CONNECTOR_SCHEMA);
+  db.exec(KNOWLEDGE_SCHEMA);
   return db;
 }

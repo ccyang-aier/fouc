@@ -39,7 +39,7 @@ import { HomeCanvas } from "@/features/home/home-canvas"
 import { AutomationCanvas } from "@/features/automation/automation-canvas"
 import { CommunityCanvas } from "@/features/community/community-canvas"
 import { ConnectorsCanvas } from "@/features/connectors/connectors-canvas"
-import { KnowledgeCanvas } from "@/features/knowledge/knowledge-canvas"
+import { KnowledgePage } from "@/features/knowledge/knowledge-page"
 import { NavigationSidebar, type WorkbenchView } from "./navigation-sidebar"
 import type { ProjectManagementPanelId } from "@/features/project/project-management-model"
 import { ProjectHomeCanvas } from "@/features/project/project-home-canvas"
@@ -190,7 +190,7 @@ export function WorkbenchShell() {
                           ) : view === "connectors" ? (
                             <ConnectorsCanvas onWorkbenchFocus={() => setSidebarCollapsed(true)} />
                           ) : view === "knowledge" ? (
-                            <KnowledgeCanvas />
+                            <KnowledgePage />
                           ) : (
                             <div className="flex h-full items-center justify-center text-[13px] text-[var(--ink-soft)]">
                               该空间已在 V1 规划中，尚未开放

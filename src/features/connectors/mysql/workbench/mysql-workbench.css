@@ -160,7 +160,9 @@
 .mw-grid-cell > span { overflow: hidden; text-overflow: ellipsis; }
 .mw-grid-cell.mw-range-cell { background: #e9f2ff; box-shadow: inset 0 0 0 1px #87b3f2; }
 .mw-grid-cell:focus-visible { position: relative; z-index: 1; outline: 1px solid var(--mw-blue); }
-.mw-grid-cell input { width: 100%; height: 100%; outline: 1px solid var(--mw-blue); border: 0; background: white; color: var(--mw-text); }
+.mw-grid-cell.mw-grid-cell-editing { position: relative; z-index: 2; overflow: visible; padding: 0; background: #fff; box-shadow: inset 0 0 0 1px #5c91e7, 0 0 0 2px #2d73d91c; }
+.mw-grid-cell.mw-grid-cell-editing:focus-visible { outline: none; }
+.mw .mw-grid-cell-editing input, .mw .mw-grid-cell-editing input:focus-visible { width: 100%; height: 100%; padding: 0 9px; outline: none; border: 0; background: transparent; box-shadow: none; color: var(--mw-text); }
 .mw-status-good { color: #238653; }
 .mw-grid-footer { height: 92px; flex: none; display: flex; align-items: flex-end; gap: 12px; padding: 0 10px 28px; border-top: 1px solid var(--mw-line); white-space: nowrap; color: #5f7089; font-size: 10.5px; }
 .mw-grid-footer > span:nth-child(2) { flex: none; }

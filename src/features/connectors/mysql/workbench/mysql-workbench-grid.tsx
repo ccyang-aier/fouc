@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react"
 import {
   ArrowDown, ArrowUp, ArrowsClockwise, CaretDown, CaretLeft, CaretRight,
-  Check, ClipboardText, Copy, DotsThree, DownloadSimple, Funnel, MagnifyingGlass,
+  Check, ClipboardText, Copy, DotsThree, DownloadSimple, Funnel, GridFour, MagnifyingGlass,
   PencilSimple, Plus, Selection, Table, Trash, X,
 } from "@phosphor-icons/react"
 
@@ -39,7 +39,7 @@ export function MysqlWorkbenchGrid({ table, rows, pendingCount, selectedRowId, o
   const [sort, setSort] = useState<{ key: string; direction: "asc" | "desc" } | null>(null)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(100)
-  const [menu, setMenu] = useState<MenuState | null>(table === "customers" ? { x: 385, y: 159, rowId: 1003, column: "name" } : null)
+  const [menu, setMenu] = useState<MenuState | null>(null)
   const [editing, setEditing] = useState<{ rowId: number; key: string } | null>(null)
   const [editValue, setEditValue] = useState("")
   const [batchEdit, setBatchEdit] = useState(false)
@@ -48,7 +48,7 @@ export function MysqlWorkbenchGrid({ table, rows, pendingCount, selectedRowId, o
   const [toolMenu, setToolMenu] = useState(false)
   const [scopeOpen, setScopeOpen] = useState(false)
   const [rowScope, setRowScope] = useState<"all" | "selected" | "normal">("all")
-  const [range, setRange] = useState<Range | null>(table === "customers" ? { anchor: { row: 2, col: 1 }, focus: { row: 4, col: 4 } } : null)
+  const [range, setRange] = useState<Range | null>(null)
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({})
   const [rowHeights, setRowHeights] = useState<Record<number, number>>({})
   const dragging = useRef(false)
@@ -178,7 +178,7 @@ export function MysqlWorkbenchGrid({ table, rows, pendingCount, selectedRowId, o
 
   return <div className="mw-grid-workspace">
     <div className="mw-table-heading">
-      <div className="mw-table-identity"><Table size={17} className="mw-blue" /><strong>{table}</strong><span>生产订单库&nbsp; / &nbsp;orders&nbsp; / &nbsp;{table}</span></div>
+      <div className="mw-table-identity"><GridFour size={17} weight="duotone" className="mw-blue" /><strong>{table}</strong><span>生产订单库&nbsp; / &nbsp;orders&nbsp; / &nbsp;{table}</span></div>
       <div className="mw-table-heading-end"><span>{allColumns.length} 字段</span><span>{rows.length} 行</span><label className="mw-field-search"><MagnifyingGlass size={13} /><input aria-label="筛选字段" placeholder="筛选字段..." value={fieldQuery} onChange={(event) => { setFieldQuery(event.target.value); clearRange() }} /></label><button type="button" className="mw-tool-button" onClick={onShowTableInfo}><Table size={14} />表结构</button><button type="button" className="mw-tool-button" onClick={() => setToolMenu((open) => !open)}><ClipboardText size={14} />数据工具</button><button type="button" className="mw-icon-button mw-outline" aria-label="更多数据工具" onClick={() => setToolMenu((open) => !open)}><DotsThree size={16} /></button></div>
       {toolMenu && <div className="mw-tool-popover"><button type="button" onClick={() => exportRows("csv")}>导出 CSV</button><button type="button" onClick={() => exportRows("json")}>导出 JSON</button><button type="button" onClick={() => { void navigator.clipboard.writeText(queryText); setToolMenu(false); onNotice("查询 SQL 已复制") }}>复制查询 SQL</button></div>}
     </div>
@@ -202,8 +202,8 @@ export function MysqlWorkbenchGrid({ table, rows, pendingCount, selectedRowId, o
           {visibleRows.map((row, rowIndex) => <div role="row" className={`mw-grid-row ${selectedRowId === Number(row.id) ? "mw-row-active" : ""}`} key={row.id} style={{ gridTemplateColumns: gridColumns, height: rowHeights[Number(row.id)] ?? 29 }}><div role="rowheader" className="mw-row-number" onPointerDown={(event) => { if (event.button !== 0) return; event.preventDefault(); dragging.current = true; selectRange({ row: rowIndex, col: 0 }, { row: rowIndex, col: columns.length - 1 }) }} onPointerEnter={() => { if (dragging.current && range) selectRange(range.anchor, { row: rowIndex, col: columns.length - 1 }) }}>{(page - 1) * pageSize + rowIndex + 1}<span className="mw-row-resizer" role="separator" aria-label={`调整第 ${(page - 1) * pageSize + rowIndex + 1} 行高度`} aria-orientation="horizontal" onPointerDown={(event) => startResize(event, "row", Number(row.id), rowHeights[Number(row.id)] ?? 29)} onPointerMove={moveResize} onPointerUp={() => { resizing.current = null }} /></div>{columns.map((column, columnIndex) => {
             const inRange = !!range && rowIndex >= Math.min(range.anchor.row, range.focus.row) && rowIndex <= Math.max(range.anchor.row, range.focus.row) && columnIndex >= Math.min(range.anchor.col, range.focus.col) && columnIndex <= Math.max(range.anchor.col, range.focus.col)
             const activeEdit = editing?.rowId === Number(row.id) && editing.key === column.key
-            return <div role="gridcell" key={column.key} tabIndex={0} aria-selected={inRange} className={`mw-grid-cell ${inRange ? "mw-range-cell" : ""}`} onPointerDown={(event) => { if (event.button !== 0 || event.target instanceof HTMLInputElement) return; event.preventDefault(); dragging.current = true; const point = { row: rowIndex, col: columnIndex }; selectRange(event.shiftKey && range ? range.anchor : point, point); setMenu(null) }} onPointerEnter={() => { if (dragging.current && range) selectRange(range.anchor, { row: rowIndex, col: columnIndex }) }} onDoubleClick={() => { setEditing({ rowId: Number(row.id), key: column.key }); setEditValue(String(row[column.key] ?? "")) }} onContextMenu={(event) => { event.preventDefault(); if (!inRange) selectRange({ row: rowIndex, col: columnIndex }, { row: rowIndex, col: columnIndex }); const bounds = bodyRef.current?.getBoundingClientRect(); setMenu({ x: Math.min(event.clientX - (bounds?.left ?? 0), (bounds?.width ?? 600) - 185), y: Math.min(event.clientY - (bounds?.top ?? 0), (bounds?.height ?? 500) - 322), rowId: Number(row.id), column: column.key }) }}>
-              {activeEdit ? <input autoFocus aria-label={`编辑 ${column.label}`} value={editValue} onChange={(event) => setEditValue(event.target.value)} onBlur={(event) => { if (event.currentTarget.dataset.cancelled !== "true") updateCell(Number(row.id), column.key, editValue) }} onKeyDown={(event) => { if (event.key === "Enter") updateCell(Number(row.id), column.key, editValue); if (event.key === "Escape") { event.currentTarget.dataset.cancelled = "true"; setEditing(null) } }} /> : <span className={column.key === "status" && String(row[column.key]) === "正常" ? "mw-status-good" : ""}>{String(row[column.key] ?? "")}</span>}
+            return <div role="gridcell" key={column.key} tabIndex={0} aria-selected={inRange} className={`mw-grid-cell ${inRange ? "mw-range-cell" : ""} ${activeEdit ? "mw-grid-cell-editing" : ""}`} onPointerDown={(event) => { if (event.button !== 0 || event.target instanceof HTMLInputElement) return; event.preventDefault(); dragging.current = true; const point = { row: rowIndex, col: columnIndex }; selectRange(event.shiftKey && range ? range.anchor : point, point); setMenu(null) }} onPointerEnter={() => { if (dragging.current && range) selectRange(range.anchor, { row: rowIndex, col: columnIndex }) }} onDoubleClick={() => { setEditing({ rowId: Number(row.id), key: column.key }); setEditValue(String(row[column.key] ?? "")) }} onContextMenu={(event) => { event.preventDefault(); if (!inRange) selectRange({ row: rowIndex, col: columnIndex }, { row: rowIndex, col: columnIndex }); const bounds = bodyRef.current?.getBoundingClientRect(); setMenu({ x: Math.min(event.clientX - (bounds?.left ?? 0), (bounds?.width ?? 600) - 185), y: Math.min(event.clientY - (bounds?.top ?? 0), (bounds?.height ?? 500) - 322), rowId: Number(row.id), column: column.key }) }}>
+              {activeEdit ? <input autoFocus aria-label={`编辑 ${column.label}`} value={editValue} onChange={(event) => setEditValue(event.target.value)} onBlur={(event) => { if (event.currentTarget.dataset.cancelled !== "true") updateCell(Number(row.id), column.key, editValue) }} onKeyDown={(event) => { if (event.key === "Enter") { event.currentTarget.dataset.cancelled = "true"; updateCell(Number(row.id), column.key, editValue) } if (event.key === "Escape") { event.currentTarget.dataset.cancelled = "true"; setEditing(null) } }} /> : <span className={column.key === "status" && String(row[column.key]) === "正常" ? "mw-status-good" : ""}>{String(row[column.key] ?? "")}</span>}
             </div>
           })}</div>)}
         </div>

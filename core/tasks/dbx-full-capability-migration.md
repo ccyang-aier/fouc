@@ -11,8 +11,25 @@
 - **全量范围**：DBX 本地源码和中文产品文档中已实现且可使用的桌面、Web、CLI、MCP、插件、驱动与专项工作台能力；包括下文 81 个驱动类型与 104 个连接 Profile。实验性、默认关闭的能力也列入，并保留同等安全开关。不可把连接成功、静态演示、空按钮或仅有 UI 当作完成。
 - **功能等价**：按 DBX 的 capability、数据库类型、运行入口和账号权限逐项验收。DBX 本身没有声明的能力不强行开放；不同版本/Edition/驱动的动态差异要保留。桌面特有功能可用 Tauri 桥接，Web 的文件路径与网络按服务器环境解释。
 - **Fouc 架构**：React/Next.js 实现 UI，Bun/TypeScript sidecar 承担业务逻辑，共享契约置于 `shared/`，Tauri v2 只保留系统薄壳。DBX 的 Rust/Vue/Go 实现是行为与算法参考，迁移前记录许可证与第三方依赖；不把业务逻辑搬入 Fouc Rust 壳。
-- **任务完成定义**：每行须具备真实后端通路、前端交互及加载/空/错误/取消/成功反馈、只读和生产保护、适用数据库矩阵验证、桌面及 Web 适用入口验证、必要的集成测试。数据库专属任务用对应服务实例或可重复的协议测试验证。功能与 DBX 有意差异时记录差异和验收依据。
+- **任务完成定义**：每行须具备真实后端通路、前端交互及加载/空/错误/取消/成功反馈、只读和生产保护、适用数据库矩阵验证、桌面及 Web 适用入口验证、必要的集成测试。数据库专属任务用对应服务实例或可重复的协议测试验证。**一行中用顿号、斜杠或分号列出的能力必须逐项留证**，不能只验收其中一个按钮或一种数据库。功能与 DBX 有意差异时记录差异和验收依据。
 - **依赖顺序**：`F00 → F01/F02/F03/F04 → C/S/Q/G → D/X/A/P/R`；任务可并行，但不得用一个通用模拟驱动宣称完成全部类型。现有 MySQL 工作台主要为本地样例数据，作为视觉骨架而非后端完成基线。
+
+## 核心功能覆盖复核（2026-09-24）
+
+对照 DBX 当前源码的桌面组件目录、`dbx-core`/CLI/MCP/Web 模块、中文功能文档和驱动/Profile 清单，**本表已覆盖大部分核心功能类别**。这表示计划范围覆盖，不表示 Fouc 已实现或已验证。复核中把容易被大任务描述掩盖的细节补入 S02、S07、G01、A05、X01、X02；后续验收仍按行内子能力逐项留证。
+
+| DBX 核心域 | 计划入口 | 复核结论 |
+| --- | --- | --- |
+| 连接、网络、凭据、保护与驱动 | F01–F08、C01–C08、R01–R81 和 104 个 Profile | 范围覆盖；真实驱动、动态能力与全入口安全仍待实现 |
+| 对象树、对象/结构浏览、文档与图 | S01–S08、P08–P09 | 范围覆盖；新增树批量操作与文档笔记的逐项验收 |
+| SQL 编辑、执行、计划、历史与文件 | Q01–Q10 | 范围覆盖；须按方言和结果类型验证，不以编辑器外观代替执行能力 |
+| 表格、编辑、过滤、复杂值与导出 | G01–G11 | 范围覆盖；新增密度、来源和字段注释验收，写入需真实目标行识别 |
+| 导入、迁移、比较、备份与生成 | D01–D09 | 范围覆盖；大任务中的格式、恢复、部分失败分别留证 |
+| AI、MCP、CLI 与 Web API | A01–A09、F03、F07、P10 | 范围覆盖；新增 CLI 诊断、直连/桥接/Web 模式验收 |
+| Redis、MongoDB 与其他专项工作台 | X01–X16 | 范围覆盖；新增 Redis MONITOR/消费组与 MongoDB 类型往返验收 |
+| 插件、设置、发布与文档 | P01–P10、F06 | 范围覆盖；实验性或默认关闭能力按 DBX 实际开关验收 |
+
+**覆盖边界**：现有矩阵是任务级范围索引，不是逐按钮的测试结果；特别是 81 个驱动的能力位与 104 个 Profile 均需在实施时生成真实服务/协议夹具证据。源码中存在未确认可从产品入口使用的组件或内部模块时，先核实可用性再扩展范围，不把仅有文件存在当作已交付功能。
 
 ## 0. 清点、契约与平台底座
 
@@ -46,12 +63,12 @@
 | ID | 任务 / 可验收交付 | DBX 对照 | 状态 |
 | --- | --- | --- | --- |
 | S01 | 在 Fouc 公共顶栏/导航内实现可折叠数据库资源栏、主区和 AI/信息详情右栏；多标签、拆分/分组、拖拽、关闭确认、标签恢复与独立窗口行为。 | `components/layout/`、`tabs/` | 待实施 |
-| S02 | 连接→数据库→Schema→表/视图/字段/索引/外键/触发器等树，异步展开、搜索过滤、计数、刷新、固定、权限/错误提示和上下文菜单。 | `components/sidebar/`、`schema-browser.cn.mdx` | 待实施 |
+| S02 | 连接→数据库→Schema→表/视图/字段/索引/外键/触发器等树；异步展开/全展开/全折叠、搜索过滤与可见范围（隐藏系统 Schema/前缀）、计数、刷新、固定/粘性行、标签反向定位、权限/错误提示和上下文菜单；嵌套连接分组、多选批量管理、对象复制粘贴及拖入 SQL 编辑器逐项验收。 | `components/sidebar/`、`schema-browser.cn.mdx` | 待实施 |
 | S03 | 全局快速打开/搜索与数据库对象搜索，跨连接、数据库、Schema 的命中定位和打开。 | `components/quick-open/`、`search/`、`global_search.rs` | 待实施 |
 | S04 | 对象浏览器覆盖表、视图、过程、函数、序列、事件、扩展、类型及特定数据库对象；列表、详情、源码/DDL、创建/修改/删除及能力门控。 | `components/objects/`、`object-browser.cn.mdx` | 待实施 |
 | S05 | 表结构视图和编辑：列、主键、索引、约束、外键、注释、存储选项，生成/预览 DDL；SQLite 重建等方言特例正确处理。 | `components/structure/`、`schema/table_structure_sql.rs` | 待实施 |
 | S06 | ER 图、表间关系、布局、搜索/缩放/导出；字段血缘、上下游依赖和字段来源解释。 | `components/diagram/`、`lineage/` | 待实施 |
-| S07 | 数据库文档快照、注释、关系、DBML/文档导出与刷新；支持 CLI/MCP 同源文档上下文。 | `crates/dbx-core/src/data/docs/`、`database-docs.cn.mdx` | 待实施 |
+| S07 | 数据库文档快照、双向关系、表/字段 Markdown 笔记与彩色分组、自动保存/失败重试、本地笔记和数据库注释并存、DBML/文档导出与刷新；孤儿笔记、缺失元数据及不支持 DBML 的结构明确告警；支持 CLI/MCP 同源文档上下文。 | `crates/dbx-core/src/data/docs/`、`database-docs.cn.mdx` | 待实施 |
 | S08 | 数据库/Schema 创建与管理、对象复制/粘贴、跨库作用域、菜单权限和危险操作确认。 | `components/objects/`、`schema/` | 待实施 |
 
 ## 3. SQL 编辑、执行与结果分析
@@ -73,7 +90,7 @@
 
 | ID | 任务 / 可验收交付 | DBX 对照 | 状态 |
 | --- | --- | --- | --- |
-| G01 | 真实表数据按页/虚拟滚动加载、行号、斑马纹、空值/类型展示、列宽行高拖拽、自适应少列填满、宽表横向滚动。 | `components/grid/`、`data-grid.cn.mdx` | 待实施 |
+| G01 | 真实表数据按页/虚拟滚动加载、行号、斑马纹、空值/类型展示、列宽行高拖拽、自适应少列填满、宽表横向滚动；字体/字号/行高/密度设置和连接、结果来源、字段类型/注释信息可见。 | `components/grid/`、`data-grid.cn.mdx` | 待实施 |
 | G02 | 单格、连续矩形、多行/列选择；键盘导航、复制/粘贴、上下文菜单、选择状态与右侧详情同步，首次打开不预选。 | `components/grid/` | 待实施 |
 | G03 | 分清数据库侧 WHERE/ORDER BY 与客户端的当前结果搜索、值过滤、当前页排序；提供列筛选、LIKE/NOT LIKE、多字段排序、刷新/重置、页大小与分页，并明确显示条件的执行位置与范围。 | `components/grid/`、`data-grid.cn.mdx` | 待实施 |
 | G04 | 单元格编辑、批量改单元格、新增/复制/删除行、脏数据标记、撤销/回滚、提交前 SQL 预览与冲突/部分失败反馈。 | `components/grid/`、`crates/dbx-sql/src/` | 待实施 |
@@ -107,7 +124,7 @@
 | A02 | 模型配置覆盖 Claude、OpenAI、Gemini、DeepSeek、Qwen、MiniMax、Ollama、OpenAI/Anthropic Compatible、Custom；模型发现、API 风格、认证、代理、自定义请求头、推理强度/Thinking、凭据管理、连通测试与多配置切换。 | `crates/dbx-ai-provider/`、`ai_multi_config.rs`、`ai-assistant.cn.mdx` | 待实施 |
 | A03 | Agent 工具调用、只读 Ask 和受控执行、生产写入人工审查、会话历史、取消、错误恢复和用量/结果反馈。 | `crates/dbx-core/src/ai/`、`components/ai/` | 待实施 |
 | A04 | MCP stdio/HTTP 服务：连接/结构/文档/查询/专项资源与工具；连接白名单、库/资源作用域、只读/读写/完全访问三级权限、认证和会话。 | `crates/dbx-mcp/`、`mcp_policy.rs` | 待实施 |
-| A05 | CLI：列连接/库/表、描述结构、查询、上下文/文档导出、表打开 Deep Link；Table/JSON/CSV 输出、超时、文件、写入/危险操作显式参数。 | `crates/dbx-cli/`、`cli.cn.mdx` | 待实施 |
+| A05 | CLI：`doctor`/`capabilities` 诊断、列连接/库/表、描述结构、查询、上下文/DBML 文档导出、表打开 Deep Link；本机直连与桌面桥、Web 远程模式、默认连接；Table/JSON/CSV 稳定输出与非零错误码、超时/行数/文件、写入/危险操作显式参数。 | `crates/dbx-cli/`、`cli.cn.mdx` | 待实施 |
 | A06 | 桌面 Deep Link 与外部 AI/脚本唤起目标连接、表、SQL 标签；错误目标与权限反馈。 | `deep_link.rs`、`launch_args.rs` | 待实施 |
 | A07 | 桌面本地 CLI Agent（Claude Code、Codex、Pi，及源码已接入的其他 CLI）路径/环境配置、受限 MCP 桥；Agent 轮次/重试、`@` 表与 SQL 文件上下文、全局指令/多模板快照、按连接历史和 Markdown 导出。Web 隐藏仅适用本机的 CLI 入口。 | `crates/dbx-ai-provider/src/`、`ai-assistant.cn.mdx` | 待实施 |
 | A08 | MCP 工具逐项对齐 DBX 清单：连接增删复制、库/表/例程/源码/Schema 文档、SQL/Redis/Mongo/消息队列、桌面打开/展示；实现批量 SQL、固定连接会话与 MySQL 显式事务、回滚/未知结果处理、工具/连接/库/资源作用域。 | `crates/dbx-mcp/`、`mcp.cn.mdx` | 待实施 |
@@ -117,8 +134,8 @@
 
 | ID | 任务 / 可验收交付 | DBX 对照 | 状态 |
 | --- | --- | --- | --- |
-| X01 | Redis：库/Key 前缀与类型浏览、String/Hash/List/Set/ZSet/Stream 等查看编辑、TTL、命令台、PubSub、统计/Slowlog、危险命令保护。 | `components/redis/`、`redis_cmd.rs` | 待实施 |
-| X02 | MongoDB：库/集合/文档 CRUD、筛选/排序/分页/聚合、索引、JSON 编辑、GridFS、导入导出与 dump。 | `components/document/`、`mongo_cmd.rs` | 待实施 |
+| X01 | Redis：库/Key 前缀与类型浏览、String/Hash/List/Set/ZSet/Stream 等查看编辑、TTL、命令台与历史、PubSub、Dashboard/Key 统计/Slowlog、Stream 消费组/Pending/Lag、批量 Key/TTL 操作、危险命令保护；独立连接的实时 `MONITOR` 含停止/关闭释放、记录上限和 Sentinel/Cluster 限制。 | `components/redis/`、`redis_cmd.rs`、`redis.cn.mdx` | 待实施 |
+| X02 | MongoDB：库/集合/文档 CRUD、筛选/排序/分页/聚合、索引、JSON 编辑、GridFS、导入导出与 dump；CSV 嵌套字段路径/数组索引和 ObjectId 类型识别、JSON/NDJSON Extended JSON 往返、采样推断与字段映射逐项验收。 | `components/document/`、`mongo_cmd.rs`、`mongodb.cn.mdx` | 待实施 |
 | X03 | Elasticsearch/Easysearch/Meilisearch/Manticore：索引/文档/Schema 浏览、搜索/原始请求、响应与 Profile 视图、适用的写入。 | `components/meilisearch/`、`Elasticsearch*` | 待实施 |
 | X04 | Qdrant/Milvus/Weaviate/ChromaDB：集合/维度/Schema、Top-K 检索、请求预览、Upsert、删除及引擎专属参数。 | `components/vector/`、`vector_cmd.rs` | 待实施 |
 | X05 | HBase：Namespace、表、Column Family、Row Key/范围扫描、行数据和结构管理；限制大扫描。 | `components/hbase/`、`hbase_cmd.rs` | 待实施 |
@@ -350,7 +367,7 @@ Profile 来源：`opensource/dbx/plugins/connection-types/profiles/catalog.yaml`
 
 ## 10. 收尾核验
 
-- [ ] F00 将本文件各行转换为可追踪任务；每行提交 PR/测试/截图或录屏证据，并记录 DBX 版本差异。
+- [x] F00 已将本文件各行转换为可追踪任务并固定 DBX 源码版本；后续每行仍须提交 PR/测试/截图或录屏证据，并记录版本差异。
 - [ ] 81 个 R 任务与 104 个 Profile 全部有真实连接验收记录；能力位为 true 的功能逐项通过，false 的操作不会错误显示。
 - [ ] 桌面、Web、CLI、MCP 四入口的共享能力行为一致；平台专属能力有明确边界和提示。
 - [ ] 只读、生产确认、Agent 执行和 MCP 权限不能被任意入口绕过；失败和取消可恢复。

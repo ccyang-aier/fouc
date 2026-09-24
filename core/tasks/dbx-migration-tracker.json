@@ -1444,7 +1444,7 @@
       "regressionCase": {
         "id": "MIG-S02-01",
         "setup": "使用适用驱动的真实服务或可重复协议夹具，并在所列入口进入对应功能",
-        "action": "连接→数据库→Schema→表/视图/字段/索引/外键/触发器等树，异步展开、搜索过滤、计数、刷新、固定、权限/错误提示和上下文菜单。",
+        "action": "连接→数据库→Schema→表/视图/字段/索引/外键/触发器等树；异步展开/全展开/全折叠、搜索过滤与可见范围（隐藏系统 Schema/前缀）、计数、刷新、固定/粘性行、标签反向定位、权限/错误提示和上下文菜单；嵌套连接分组、多选批量管理、对象复制粘贴及拖入 SQL 编辑器逐项验收。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
       "acceptanceEvidence": [],
@@ -1843,7 +1843,7 @@
       "regressionCase": {
         "id": "MIG-S07-01",
         "setup": "使用适用驱动的真实服务或可重复协议夹具，并在所列入口进入对应功能",
-        "action": "数据库文档快照、注释、关系、DBML/文档导出与刷新；支持 CLI/MCP 同源文档上下文。",
+        "action": "数据库文档快照、双向关系、表/字段 Markdown 笔记与彩色分组、自动保存/失败重试、本地笔记和数据库注释并存、DBML/文档导出与刷新；孤儿笔记、缺失元数据及不支持 DBML 的结构明确告警；支持 CLI/MCP 同源文档上下文。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
       "acceptanceEvidence": [],
@@ -2831,7 +2831,7 @@
       "regressionCase": {
         "id": "MIG-G01-01",
         "setup": "使用适用驱动的真实服务或可重复协议夹具，并在所列入口进入对应功能",
-        "action": "真实表数据按页/虚拟滚动加载、行号、斑马纹、空值/类型展示、列宽行高拖拽、自适应少列填满、宽表横向滚动。",
+        "action": "真实表数据按页/虚拟滚动加载、行号、斑马纹、空值/类型展示、列宽行高拖拽、自适应少列填满、宽表横向滚动；字体/字号/行高/密度设置和连接、结果来源、字段类型/注释信息可见。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
       "acceptanceEvidence": [],
@@ -4637,7 +4637,7 @@
       "regressionCase": {
         "id": "MIG-A05-01",
         "setup": "使用适用驱动的真实服务或可重复协议夹具，并在所列入口进入对应功能",
-        "action": "CLI：列连接/库/表、描述结构、查询、上下文/文档导出、表打开 Deep Link；Table/JSON/CSV 输出、超时、文件、写入/危险操作显式参数。",
+        "action": "CLI：`doctor`/`capabilities` 诊断、列连接/库/表、描述结构、查询、上下文/DBML 文档导出、表打开 Deep Link；本机直连与桌面桥、Web 远程模式、默认连接；Table/JSON/CSV 稳定输出与非零错误码、超时/行数/文件、写入/危险操作显式参数。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
       "acceptanceEvidence": [],
@@ -5067,7 +5067,7 @@
       "regressionCase": {
         "id": "MIG-X01-01",
         "setup": "使用适用驱动的真实服务或可重复协议夹具，并在所列入口进入对应功能",
-        "action": "Redis：库/Key 前缀与类型浏览、String/Hash/List/Set/ZSet/Stream 等查看编辑、TTL、命令台、PubSub、统计/Slowlog、危险命令保护。",
+        "action": "Redis：库/Key 前缀与类型浏览、String/Hash/List/Set/ZSet/Stream 等查看编辑、TTL、命令台与历史、PubSub、Dashboard/Key 统计/Slowlog、Stream 消费组/Pending/Lag、批量 Key/TTL 操作、危险命令保护；独立连接的实时 `MONITOR` 含停止/关闭释放、记录上限和 Sentinel/Cluster 限制。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
       "acceptanceEvidence": [],
@@ -5091,7 +5091,7 @@
       "regressionCase": {
         "id": "MIG-X02-01",
         "setup": "使用适用驱动的真实服务或可重复协议夹具，并在所列入口进入对应功能",
-        "action": "MongoDB：库/集合/文档 CRUD、筛选/排序/分页/聚合、索引、JSON 编辑、GridFS、导入导出与 dump。",
+        "action": "MongoDB：库/集合/文档 CRUD、筛选/排序/分页/聚合、索引、JSON 编辑、GridFS、导入导出与 dump；CSV 嵌套字段路径/数组索引和 ObjectId 类型识别、JSON/NDJSON Extended JSON 往返、采样推断与字段映射逐项验收。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
       "acceptanceEvidence": [],

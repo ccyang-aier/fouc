@@ -57,6 +57,9 @@ describe('database capability API', () => {
         if (sql.startsWith('SELECT *')) return [{ id: 1001 }];
         return [{ fouc_probe: 1 }];
       },
+      async readOnlyQuery() {
+        return { rows: [{ value: 1 }], fields: [{ name: 'value', columnType: 3 }] as never, hasMore: false };
+      },
       async end() {},
     }));
     const app = testApp(registry, sessions);
@@ -68,6 +71,13 @@ describe('database capability API', () => {
     expect(created.status).toBe(201);
     const id = (await created.json() as { data: { connectionId: string } }).data.connectionId;
     expect((await app.request(`/api/database/connections/${id}/capabilities`, { headers })).status).toBe(200);
+    const query = await app.request(`/api/database/mysql/sessions/${id}/query`, {
+      method: 'POST', headers, body: JSON.stringify({ database: 'orders', sql: 'SELECT 1 AS value', maxRows: 10 }),
+    });
+    expect((await query.json() as { data: { rows: number[][] } }).data.rows).toEqual([[1]]);
+    expect((await app.request(`/api/database/mysql/sessions/${id}/query`, {
+      method: 'POST', headers, body: JSON.stringify({ database: 'orders', sql: 'DELETE FROM customers' }),
+    })).status).toBe(400);
     const databases = await app.request(`/api/database/mysql/sessions/${id}/databases`, { headers });
     expect((await databases.json() as { data: Array<{ name: string }> }).data[0]?.name).toBe('orders');
     const tables = await app.request(`/api/database/mysql/sessions/${id}/databases/orders/tables`, { headers });

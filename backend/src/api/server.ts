@@ -16,6 +16,7 @@ import type { CookieHandoff } from '../connectors/dts/provider';
 import type { DtsTicketListInput } from '@shared/index';
 import { DatabaseCapabilityRegistry } from '../database/capability-registry';
 import type { MysqlSessionManager } from '../database/mysql-session';
+import { MysqlReadOnlySqlError } from '../database/mysql-read-only-sql';
 import { DATABASE_CATALOG_REVISION, getDatabaseDialect, listDatabaseDrivers, listDatabaseProfiles } from '@shared/database-catalog';
 
 export type ServerContext = {
@@ -195,6 +196,26 @@ export function createApp(context: ServerContext): { app: Hono; hub: BroadcastHu
       return data ? c.json({ ok: true, data }) : c.json({ ok: false, error: { code: 'not_connected', message: '连接已断开' } }, 404);
     } catch (error) {
       return c.json({ ok: false, error: { code: 'query_failed', message: error instanceof Error ? error.message : '表数据读取失败' } }, 502);
+    }
+  });
+
+  app.post('/api/database/mysql/sessions/:id/query', async (c) => {
+    const body = await readJson<unknown>(c);
+    const fields = body && typeof body === 'object' ? body as Record<string, unknown> : null;
+    if (!fields || typeof fields.sql !== 'string' || (fields.database !== null && typeof fields.database !== 'string')) {
+      return c.json({ ok: false, error: { code: 'invalid_input', message: '查询参数无效' } }, 400);
+    }
+    const input = fields as { database: string | null; sql: string; maxRows?: number };
+    if (input.maxRows !== undefined && (!Number.isInteger(input.maxRows) || input.maxRows < 1 || input.maxRows > 5_000)) {
+      return c.json({ ok: false, error: { code: 'invalid_input', message: '最大返回行数必须为 1–5000' } }, 400);
+    }
+    try {
+      const result = await context.mysqlSessions?.executeReadOnly(c.req.param('id'), input.database, input.sql, input.maxRows) ?? null;
+      return result ? c.json({ ok: true, data: result })
+        : c.json({ ok: false, error: { code: 'not_connected', message: '连接已断开或只读查询不可用' } }, 404);
+    } catch (error) {
+      const invalid = error instanceof MysqlReadOnlySqlError;
+      return c.json({ ok: false, error: { code: invalid ? 'unsafe_sql' : 'query_failed', message: error instanceof Error ? error.message : '查询失败' } }, invalid ? 400 : 502);
     }
   });
 

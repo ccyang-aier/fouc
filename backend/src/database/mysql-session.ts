@@ -1,4 +1,5 @@
 import mysql from 'mysql2/promise';
+import { Types, type Connection as RawMysqlConnection, type FieldPacket } from 'mysql2';
 import {
   DATABASE_CAPABILITIES,
   type DatabaseCapabilities,
@@ -6,15 +7,18 @@ import {
   type DatabaseCell,
   type DatabaseColumnInfo,
   type DatabaseObjectInfo,
+  type DatabaseQueryResult,
   type DatabaseTablePage,
   type MysqlConnectInput,
 } from '@fouc/shared';
 import { DatabaseCapabilityRegistry } from './capability-registry';
 import { getDatabaseDriver } from '@shared/database-catalog';
+import { assertMysqlReadOnlySql } from './mysql-read-only-sql';
 
 type Row = Record<string, unknown>;
 type MysqlWire = {
   query(sql: string, values?: unknown[]): Promise<Row[]>;
+  readOnlyQuery?(sql: string, database: string | null, maxRows: number): Promise<{ rows: Row[]; fields: FieldPacket[]; hasMore: boolean }>;
   end(): Promise<void>;
 };
 type WireFactory = (input: MysqlConnectInput) => MysqlWire;
@@ -24,7 +28,11 @@ type WireFactory = (input: MysqlConnectInput) => MysqlWire;
 const mysqlDriver = getDatabaseDriver('mysql');
 if (!mysqlDriver) throw new Error('MySQL 驱动未在数据库目录中声明');
 const DECLARED = mysqlDriver.capabilities;
-const OBSERVED = Object.fromEntries(DATABASE_CAPABILITIES.map((key) => [key, key === 'metadataBrowse'])) as DatabaseCapabilities;
+function observed(wire: MysqlWire): DatabaseCapabilities {
+  return Object.fromEntries(DATABASE_CAPABILITIES.map((key) => [key,
+    key === 'metadataBrowse' || (key === 'queryExecution' && typeof wire.readOnlyQuery === 'function'),
+  ])) as DatabaseCapabilities;
+}
 const DATABASES_SQL = ['SHOW DATABASES', 'SELECT SCHEMA_NAME FROM information_schema.SCHEMATA ORDER BY SCHEMA_NAME'];
 const TABLES_SQL = 'SELECT TABLE_NAME, TABLE_TYPE, TABLE_COMMENT FROM information_schema.TABLES WHERE TABLE_SCHEMA = ? ORDER BY TABLE_NAME';
 // Keep the information_schema.COLUMNS query separate from TABLES as DBX does:
@@ -80,6 +88,38 @@ function createMysqlWire(input: MysqlConnectInput): MysqlWire {
       const [rows] = await pool.query(sql, values);
       return rows as Row[];
     },
+    async readOnlyQuery(sql, database, maxRows) {
+      const connection = await pool.getConnection();
+      let destroyed = false;
+      let transaction = false;
+      try {
+        if (database) await connection.query(`USE ${quoteIdentifier(database)}`);
+        await connection.query('START TRANSACTION READ ONLY');
+        transaction = true;
+        const query = (connection.connection as unknown as RawMysqlConnection).query(sql);
+        let fields: FieldPacket[] = [];
+        query.on('fields', (metadata: FieldPacket[]) => { fields = metadata; });
+        const stream = query.stream({ highWaterMark: 16 });
+        const rows: Row[] = [];
+        for await (const value of stream) {
+          rows.push(value as Row);
+          if (rows.length > maxRows) {
+            stream.destroy();
+            connection.destroy();
+            destroyed = true;
+            return { rows: rows.slice(0, maxRows), fields, hasMore: true };
+          }
+        }
+        await connection.query('ROLLBACK');
+        transaction = false;
+        return { rows, fields, hasMore: false };
+      } catch (error) {
+        if (transaction && !destroyed) await connection.query('ROLLBACK').catch(() => { connection.destroy(); destroyed = true; });
+        throw error;
+      } finally {
+        if (!destroyed) connection.release();
+      }
+    },
     end: () => pool.end(),
   };
 }
@@ -114,6 +154,7 @@ export class MysqlSessionManager {
   async connect(value: unknown): Promise<DatabaseCapabilitySnapshot> {
     assertConnectInput(value);
     const input = value;
+    if (input.readOnly === false) throw new Error('写入连接须等待统一安全策略接入；当前仅支持只读连接');
     const id = crypto.randomUUID();
     const wire = this.wireFactory(input);
     this.capabilities.begin(id, id);
@@ -122,12 +163,12 @@ export class MysqlSessionManager {
       // DBX probes server metadata after checkout. A successful TCP handshake alone
       // never grants metadata access; this query checks the current account.
       await this.queryDatabases(wire);
-      const snapshot = this.capabilities.confirm(id, id, DECLARED, OBSERVED, {
-        readOnly: input.readOnly ?? false,
+      const snapshot = this.capabilities.confirm(id, id, DECLARED, observed(wire), {
+        readOnly: true,
         production: input.production ?? false,
       });
       if (!snapshot) throw new Error('连接探测已失效');
-      this.sessions.set(id, { wire, readOnly: input.readOnly ?? false, production: input.production ?? false });
+      this.sessions.set(id, { wire, readOnly: true, production: input.production ?? false });
       return snapshot;
     } catch (error) {
       this.capabilities.disconnect(id, id);
@@ -142,7 +183,7 @@ export class MysqlSessionManager {
     try {
       await session.wire.query('SELECT 1 AS fouc_probe');
       await this.queryDatabases(session.wire);
-      return this.capabilities.confirm(id, id, DECLARED, OBSERVED, {
+      return this.capabilities.confirm(id, id, DECLARED, observed(session.wire), {
         readOnly: session.readOnly,
         production: session.production,
       });
@@ -213,6 +254,27 @@ export class MysqlSessionManager {
       connectionId: id, database, table, columns,
       rows: rows.slice(0, limit).map((row) => columns.map((column) => asCell(row[column.name]))),
       offset, limit, hasMore: rows.length > limit,
+    };
+  }
+
+  async executeReadOnly(id: string, database: string | null, sql: string, maxRows = 500): Promise<DatabaseQueryResult | null> {
+    const session = this.sessions.get(id);
+    if (!session?.wire.readOnlyQuery || !await this.refresh(id)) return null;
+    if (!Number.isInteger(maxRows) || maxRows < 1 || maxRows > 5_000) throw new Error('最大返回行数必须为 1–5000');
+    const statement = assertMysqlReadOnlySql(sql);
+    const started = performance.now();
+    const { rows, fields, hasMore } = await session.wire.readOnlyQuery(statement, database?.trim() || null, maxRows);
+    return {
+      columns: fields.map((field) => field.name),
+      columnTypes: fields.map((field) => field.typeName ?? (Types as unknown as Record<number, string>)[field.columnType ?? field.type ?? -1] ?? 'unknown'),
+      columnSortables: fields.map(() => false),
+      rows: rows.map((row) => fields.map((field) => asCell(row[field.name]))),
+      affectedRows: 0,
+      executionTimeMs: Math.round(performance.now() - started),
+      truncated: hasMore,
+      sessionId: null,
+      hasMore,
+      messages: [],
     };
   }
 

@@ -53,7 +53,7 @@
 | C02 | 支持 URL/DSN 解析与反向填表、多认证方式、TLS/CA/客户端证书、超时与连接参数；敏感项与普通配置分离。 | `plugins/connection-types/*.yaml`、`connection/` | 待实施 |
 | C03 | SSH 隧道、跳板/密钥/口令提示、SSH config 导入、隧道 Profile、SOCKS5、HTTP 代理/隧道、网络失败诊断和安全关闭。 | `components/ssh/`、`tunnel_profiles.rs`、`ssh-tunnel.cn.mdx` | 待实施 |
 | C04 | 本地凭据安全存储、解锁和密码提示；配置导出 AES-GCM 加密、导入/合并/冲突处理，支持从 DBeaver、Navicat、DataGrip 导入连接。 | `connection_secrets.rs`、`keychain.rs`、`config_cmd.rs`、`connection-import.cn.mdx` | 待实施 |
-| C05 | 连接与数据库级只读、写入解锁、SQL/命令风险分类、每次生产写入确认、危险语句/目标组保护；所有 UI、CLI、MCP 和专项 API 走同一策略。 | `crates/dbx-core/src/safety/`、`crates/dbx-sql/src/` | 待实施 |
+| C05 | 连接与数据库级只读、写入解锁、SQL/命令风险分类、每次生产写入确认、危险语句/目标组保护；所有 UI、CLI、MCP 和专项 API 走同一策略。 | `crates/dbx-core/src/safety/`、`crates/dbx-sql/src/` | 进行中 |
 | C06 | 写入前 SQL/请求预览、影响范围和失败反馈；事务提交/回滚、部分成功标识、取消行为，不以客户端禁用按钮代替服务端拦截。 | `production-safety.cn.mdx`、`query/two_phase_commit.rs` | 待实施 |
 | C07 | Agent/JDBC/外部驱动下载、安装、版本/运行时检测、更新/卸载、缺失提示和驱动商店；系统/托管/多版本 JRE、离线 ZIP/JRE 包导入、运行时 PID/CPU/内存/Session 监控及停止/重启；兼容各驱动的 Agent 进程协议。 | `agents/`、`driver-management.cn.mdx` | 待实施 |
 | C08 | 连接设置和 SQL 库的 WebDAV/Gist/Gitee 同步、冲突处理、手动/自动同步状态及恢复。 | `cloud_sync.rs`、`cloud-sync.cn.mdx` | 待实施 |
@@ -75,7 +75,7 @@
 
 | ID | 任务 / 可验收交付 | DBX 对照 | 状态 |
 | --- | --- | --- | --- |
-| Q01 | SQL 编辑器语法高亮、方言切换、元数据补全、括号/缩进、诊断、主题、快捷键及选中/当前语句/全文件执行；中文输入与选区显示正常。 | `components/editor/`、`query-editor.cn.mdx` | 待实施 |
+| Q01 | SQL 编辑器语法高亮、方言切换、元数据补全、括号/缩进、诊断、主题、快捷键及选中/当前语句/全文件执行；中文输入与选区显示正常。 | `components/editor/`、`query-editor.cn.mdx` | 进行中 |
 | Q02 | SQL 格式化、快速操作、参数输入、SQL snippet/模板/SQL 库、搜索、保存/打开/重命名、SQL 文件树及标签恢复。 | `sql-formatter.cn.mdx`、`sql-snippets.cn.mdx`、`saved_sql.rs` | 待实施 |
 | Q03 | 查询目标连接/数据库/Schema 切换，多目标组执行、单/多结果导航、消息、受影响行、耗时、可取消执行、异常定位及历史重跑。 | `components/layout/SqlEditorWorkspace.vue`、`query.rs`、`history.rs` | 待实施 |
 | Q04 | SQL 风险诊断、执行计划/Explain 可视化、优化提示、目标环境提示与可审查执行入口。 | `components/explain/`、`crates/dbx-sql/src/` | 待实施 |

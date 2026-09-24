@@ -135,6 +135,12 @@ export interface MysqlConnectInput {
   production?: boolean;
 }
 
+export interface MysqlReadOnlyQueryInput {
+  database: string | null;
+  sql: string;
+  maxRows?: number;
+}
+
 export type DatabaseConnectionHealth = 'disconnected' | 'connecting' | 'connected' | 'degraded' | 'error';
 
 /** Static driver declarations never grant an operation on their own. */

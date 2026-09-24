@@ -83,4 +83,24 @@ describe('MySQL live session', () => {
     expect(sqls).toContain('SELECT * FROM `order``data`.`cost``report` ORDER BY `id` LIMIT ? OFFSET ?');
     await manager.shutdown();
   });
+
+  test('exposes query execution only for a wire with read-only transaction support', async () => {
+    let executed = 0;
+    const manager = new MysqlSessionManager(new DatabaseCapabilityRegistry(), () => ({
+      async query(sql) { return sql === 'SHOW DATABASES' ? [{ Database: 'orders' }] : [{ fouc_probe: 1 }]; },
+      async readOnlyQuery(sql, database, maxRows) {
+        executed++;
+        expect([sql, database, maxRows]).toEqual(['SELECT 1 AS value', 'orders', 10]);
+        return { rows: [{ value: 1 }], fields: [{ name: 'value', columnType: 3 }] as never, hasMore: false };
+      },
+      async end() {},
+    }));
+    const snapshot = await manager.connect({ ...input, readOnly: true });
+    expect(snapshot.capabilities.queryExecution).toBe(true);
+    expect(snapshot.restrictions.readOnly).toBe(true);
+    expect((await manager.executeReadOnly(snapshot.connectionId, 'orders', 'SELECT 1 AS value', 10))?.rows).toEqual([[1]]);
+    await expect(manager.executeReadOnly(snapshot.connectionId, 'orders', 'DELETE FROM users')).rejects.toThrow();
+    expect(executed).toBe(1);
+    await manager.shutdown();
+  });
 });

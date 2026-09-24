@@ -938,7 +938,7 @@
     {
       "id": "C05",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "available",
       "applicableDriverTypes": [
         "mysql",
@@ -1036,7 +1036,13 @@
         "action": "连接与数据库级只读、写入解锁、SQL/命令风险分类、每次生产写入确认、危险语句/目标组保护；所有 UI、CLI、MCP 和专项 API 走同一策略。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-live-smoke",
+          "path": "core/tasks/dbx-live-mysql-smoke-2026-09-24.md",
+          "check": "MySQL single-statement read-only preflight and server-enforced read-only transaction; writes and other entry points remain open"
+        }
+      ],
       "scopeKind": "driver"
     },
     {
@@ -1921,7 +1927,7 @@
     {
       "id": "Q01",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql",
@@ -2001,7 +2007,13 @@
         "action": "SQL 编辑器语法高亮、方言切换、元数据补全、括号/缩进、诊断、主题、快捷键及选中/当前语句/全文件执行；中文输入与选区显示正常。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-live-smoke",
+          "path": "core/tasks/dbx-live-mysql-smoke-2026-09-24.md",
+          "check": "Web SQL tab executes selected text or editor content through live MySQL read-only API; editor completion, dialect and multi-statement scope remain open"
+        }
+      ],
       "scopeKind": "driver"
     },
     {

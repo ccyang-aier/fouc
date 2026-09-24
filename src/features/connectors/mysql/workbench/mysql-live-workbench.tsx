@@ -3,21 +3,18 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import {
   ArrowUUpLeft, ArrowsClockwise, CaretDown, CaretDoubleLeft, CaretDoubleRight,
-  CaretLeft, CaretRight, Database, GridFour, MagnifyingGlass, Table,
+  CaretLeft, CaretRight, Database, FileCode, GridFour, MagnifyingGlass, Plus, Table,
 } from "@phosphor-icons/react"
-import { canUseDatabaseCapability, type DatabaseCapabilitySnapshot, type DatabaseCell, type DatabaseObjectInfo, type DatabaseTablePage } from "@fouc/shared"
+import { canUseDatabaseCapability, type DatabaseCapabilitySnapshot, type DatabaseObjectInfo, type DatabaseTablePage } from "@fouc/shared"
 
 import { backendFetch } from "@/lib/backend"
 import type { MysqlConnection } from "../mysql-connections-data"
+import { databaseCellText } from "./mysql-live-format"
+import { MysqlLiveSql } from "./mysql-live-sql"
 import "./mysql-workbench.css"
 
 type Props = { connection: MysqlConnection; onBack: () => void; onConnectorBack: () => void }
-
-function cellText(value: DatabaseCell): string {
-  if (value === null) return "NULL"
-  if (typeof value === "object") return !Array.isArray(value) && value.type === "binary" ? "[二进制数据]" : JSON.stringify(value)
-  return String(value)
-}
+type SqlTab = { id: number; title: string; database: string; query: string }
 
 export function MysqlLiveWorkbench({ connection, onBack, onConnectorBack }: Props) {
   const sessionId = connection.liveSessionId!
@@ -26,6 +23,8 @@ export function MysqlLiveWorkbench({ connection, onBack, onConnectorBack }: Prop
   const [database, setDatabase] = useState("")
   const [tables, setTables] = useState<DatabaseObjectInfo[]>([])
   const [openTables, setOpenTables] = useState<string[]>([])
+  const [sqlTabs, setSqlTabs] = useState<SqlTab[]>([])
+  const [activeSqlId, setActiveSqlId] = useState<number | null>(null)
   const [table, setTable] = useState("")
   const [page, setPage] = useState<DatabaseTablePage | null>(null)
   const [offset, setOffset] = useState(0)
@@ -106,9 +105,11 @@ export function MysqlLiveWorkbench({ connection, onBack, onConnectorBack }: Prop
   const columns = page?.columns ?? []
   const gridColumns = `38px ${columns.map(() => "minmax(120px, 1fr)").join(" ")}`
   const gridWidth = Math.max(38 + columns.length * 120, 700)
-  const selected = selectedRow === null ? null : page?.rows[selectedRow] ?? null
+  const selected = activeSqlId !== null || selectedRow === null ? null : page?.rows[selectedRow] ?? null
+  const activeSql = sqlTabs.find((item) => item.id === activeSqlId)
 
   function openTable(name: string) {
+    setActiveSqlId(null)
     setLoading("rows")
     setError("")
     setOpenTables((current) => current.includes(name) ? current : [...current, name])
@@ -122,6 +123,22 @@ export function MysqlLiveWorkbench({ connection, onBack, onConnectorBack }: Prop
     const next = openTables.filter((item) => item !== name)
     setOpenTables(next)
     if (table === name) { setTable(next.at(-1) ?? ""); setPage(null); setSelectedRow(null); setOffset(0) }
+  }
+
+  function newQuery() {
+    const id = Math.max(0, ...sqlTabs.map((item) => item.id)) + 1
+    const query = table && database
+      ? `SELECT * FROM \`${database.replaceAll("`", "``")}\`.\`${table.replaceAll("`", "``")}\` LIMIT 100;`
+      : "SELECT 1;"
+    setSqlTabs((current) => [...current, { id, title: `查询 ${id}.sql`, database, query }])
+    setActiveSqlId(id)
+    setSelectedRow(null)
+  }
+
+  function closeQuery(id: number) {
+    const next = sqlTabs.filter((item) => item.id !== id)
+    setSqlTabs(next)
+    if (activeSqlId === id) setActiveSqlId(next.at(-1)?.id ?? null)
   }
 
   return <section aria-label={`${connection.name} MySQL 工作台`} className="mw">
@@ -139,16 +156,17 @@ export function MysqlLiveWorkbench({ connection, onBack, onConnectorBack }: Prop
         </>}
       </aside>
       <main className="mw-center">
-        <div className="mw-tab-strip"><div className="mw-document-tabs" role="tablist" aria-label="打开的工作标签">{openTables.map((name) => <div key={name} className={`mw-document-tab ${table === name ? "mw-document-active" : ""}`}><button type="button" role="tab" aria-selected={table === name} onClick={() => { setLoading("rows"); setError(""); setTable(name); setPage(null); setOffset(0); setSelectedRow(null) }}><GridFour size={15} weight="duotone" /><span>{name}</span></button><button type="button" className="mw-close-tab" aria-label={`关闭 ${name}`} onClick={() => closeTable(name)}>×</button></div>)}</div></div>
+        <div className="mw-tab-strip"><div className="mw-document-tabs" role="tablist" aria-label="打开的工作标签">{openTables.map((name) => <div key={name} className={`mw-document-tab ${activeSqlId === null && table === name ? "mw-document-active" : ""}`}><button type="button" role="tab" aria-selected={activeSqlId === null && table === name} onClick={() => { setActiveSqlId(null); setLoading("rows"); setError(""); setTable(name); setPage(null); setOffset(0); setSelectedRow(null) }}><GridFour size={15} weight="duotone" /><span>{name}</span></button><button type="button" className="mw-close-tab" aria-label={`关闭 ${name}`} onClick={() => closeTable(name)}>×</button></div>)}{sqlTabs.map((item) => <div key={item.id} className={`mw-document-tab ${activeSqlId === item.id ? "mw-document-active" : ""}`}><button type="button" role="tab" aria-selected={activeSqlId === item.id} onClick={() => { setActiveSqlId(item.id); setSelectedRow(null) }}><FileCode size={15} /><span>{item.title}</span></button><button type="button" className="mw-close-tab" aria-label={`关闭 ${item.title}`} onClick={() => closeQuery(item.id)}>×</button></div>)}{canUseDatabaseCapability(capabilities, "queryExecution") && <button type="button" className="mw-new-tab" aria-label="新建 SQL 查询" title="新建 SQL 查询" onClick={newQuery}><Plus size={15} /></button>}</div></div>
         {error && <div role="alert" className="border-b border-red-200 bg-red-50 px-4 py-2 text-xs text-red-700">{error} <button type="button" onClick={refresh} className="ml-2 underline">重试</button></div>}
-        {!canUseDatabaseCapability(capabilities, "metadataBrowse") ? <div className="m-auto text-xs text-[var(--muted-strong)]">{loading ? "正在验证连接…" : "当前连接没有已验证的元数据浏览能力"}</div>
+        {activeSql ? <MysqlLiveSql key={activeSql.id} sessionId={sessionId} database={activeSql.database} query={activeSql.query} onQueryChange={(query) => setSqlTabs((current) => current.map((item) => item.id === activeSql.id ? { ...item, query } : item))} />
+          : !canUseDatabaseCapability(capabilities, "metadataBrowse") ? <div className="m-auto text-xs text-[var(--muted-strong)]">{loading ? "正在验证连接…" : "当前连接没有已验证的元数据浏览能力"}</div>
           : !table ? <div className="m-auto text-xs text-[var(--muted-strong)]">从左侧选择一张表或视图</div>
             : <div className="mw-grid-workspace"><div className="mw-table-heading"><div className="mw-table-identity"><GridFour size={17} weight="duotone" className="mw-blue" /><strong>{table}</strong><span>{connection.name} / {database} / {table}</span></div><div className="mw-table-heading-end"><span>{columns.length} 字段</span><button type="button" className="mw-tool-button" onClick={refresh}><ArrowsClockwise size={14} />刷新</button></div></div>
-              <div className="mw-sheet-body"><div className="mw-sheet-scroll"><div role="grid" aria-label={`${table} 数据表`} className="mw-data-grid" style={{ width: `max(100%, ${gridWidth}px)` }}><div role="row" className="mw-grid-header" style={{ gridTemplateColumns: gridColumns }}><div className="mw-row-number">#</div>{columns.map((column) => <div role="columnheader" key={column.name} className="mw-column-head"><strong>{column.name}</strong><small>{column.dataType}</small></div>)}</div>{page?.rows.map((row, index) => <div role="row" key={`${offset}-${index}`} className={`mw-grid-row ${selectedRow === index ? "mw-row-active" : ""}`} style={{ gridTemplateColumns: gridColumns }}><div role="rowheader" className="mw-row-number">{offset + index + 1}</div>{row.map((cell, columnIndex) => <button type="button" role="gridcell" aria-selected={selectedRow === index} key={columnIndex} className="mw-grid-cell" onClick={() => { setSelectedRow(index); setInspectorView("info") }} title={cellText(cell)}><span>{cellText(cell)}</span></button>)}</div>)}</div>{loading === "rows" && <p className="p-4 text-xs text-[var(--muted-strong)]">正在读取表数据…</p>}{page && page.rows.length === 0 && <p className="p-4 text-xs text-[var(--muted-strong)]">此页没有记录</p>}</div></div>
+              <div className="mw-sheet-body"><div className="mw-sheet-scroll"><div role="grid" aria-label={`${table} 数据表`} className="mw-data-grid" style={{ width: `max(100%, ${gridWidth}px)` }}><div role="row" className="mw-grid-header" style={{ gridTemplateColumns: gridColumns }}><div className="mw-row-number">#</div>{columns.map((column) => <div role="columnheader" key={column.name} className="mw-column-head"><strong>{column.name}</strong><small>{column.dataType}</small></div>)}</div>{page?.rows.map((row, index) => <div role="row" key={`${offset}-${index}`} className={`mw-grid-row ${selectedRow === index ? "mw-row-active" : ""}`} style={{ gridTemplateColumns: gridColumns }}><div role="rowheader" className="mw-row-number">{offset + index + 1}</div>{row.map((cell, columnIndex) => <button type="button" role="gridcell" aria-selected={selectedRow === index} key={columnIndex} className="mw-grid-cell" onClick={() => { setSelectedRow(index); setInspectorView("info") }} title={databaseCellText(cell)}><span>{databaseCellText(cell)}</span></button>)}</div>)}</div>{loading === "rows" && <p className="p-4 text-xs text-[var(--muted-strong)]">正在读取表数据…</p>}{page && page.rows.length === 0 && <p className="p-4 text-xs text-[var(--muted-strong)]">此页没有记录</p>}</div></div>
               <div className="mw-grid-footer mw-live-footer"><span>只读预览 · {page?.rows.length ?? 0} 行</span><span className="ml-auto">{page?.rows.length ? offset + 1 : 0}–{offset + (page?.rows.length ?? 0)}</span><button type="button" className="mw-tool-button" disabled={offset === 0 || loading === "rows"} onClick={() => { setLoading("rows"); setPage(null); setSelectedRow(null); setOffset(Math.max(0, offset - 100)) }}><CaretLeft size={13} />上一页</button><button type="button" className="mw-tool-button" disabled={!page?.hasMore || loading === "rows"} onClick={() => { setLoading("rows"); setPage(null); setSelectedRow(null); setOffset(offset + 100) }}>下一页<CaretRight size={13} /></button></div>
             </div>}
       </main>
-      <aside className={`mw-inspector ${inspectorCollapsed ? "mw-inspector-collapsed" : ""}`} aria-label="信息侧栏">{inspectorCollapsed ? <button type="button" className="mw-inspector-expand" aria-label="展开信息侧栏" onClick={() => setInspectorCollapsed(false)}><CaretDoubleLeft size={16} /></button> : <><div className="mw-inspector-head"><div className="mw-inspector-tabs"><button type="button" className={inspectorView === "ai" ? "mw-inspector-tab-active" : ""} onClick={() => setInspectorView("ai")}>AI 助手</button><button type="button" className={inspectorView === "info" ? "mw-inspector-tab-active" : ""} onClick={() => setInspectorView("info")}>信息详情</button></div><button type="button" className="mw-inspector-toggle" aria-label="收起信息侧栏" onClick={() => setInspectorCollapsed(true)}><CaretDoubleRight size={14} /></button></div><div className="min-h-0 flex-1 overflow-auto p-4 text-[11px]">{inspectorView === "ai" ? <p className="text-[var(--muted-strong)]">AI 助手将在连接上下文与执行安全策略接入后开放。</p> : selected && page ? <><strong className="text-[12px]">{table} · 第 {offset + selectedRow! + 1} 行</strong><div className="mt-3 border-t border-[var(--mw-line)]">{columns.map((column, index) => <div key={column.name} className="grid grid-cols-[110px_1fr] gap-3 border-b border-[var(--mw-line)] py-2"><span className="truncate text-[var(--muted-strong)]" title={column.name}>{column.name}</span><span className="break-all text-[var(--ink)]">{cellText(selected[index] ?? null)}</span></div>)}</div></> : <p className="text-[var(--muted-strong)]">选择一行查看字段与值。</p>}</div></>}</aside>
+      <aside className={`mw-inspector ${inspectorCollapsed ? "mw-inspector-collapsed" : ""}`} aria-label="信息侧栏">{inspectorCollapsed ? <button type="button" className="mw-inspector-expand" aria-label="展开信息侧栏" onClick={() => setInspectorCollapsed(false)}><CaretDoubleLeft size={16} /></button> : <><div className="mw-inspector-head"><div className="mw-inspector-tabs"><button type="button" className={inspectorView === "ai" ? "mw-inspector-tab-active" : ""} onClick={() => setInspectorView("ai")}>AI 助手</button><button type="button" className={inspectorView === "info" ? "mw-inspector-tab-active" : ""} onClick={() => setInspectorView("info")}>信息详情</button></div><button type="button" className="mw-inspector-toggle" aria-label="收起信息侧栏" onClick={() => setInspectorCollapsed(true)}><CaretDoubleRight size={14} /></button></div><div className="min-h-0 flex-1 overflow-auto p-4 text-[11px]">{inspectorView === "ai" ? <p className="text-[var(--muted-strong)]">AI 助手将在连接上下文与执行安全策略接入后开放。</p> : selected && page ? <><strong className="text-[12px]">{table} · 第 {offset + selectedRow! + 1} 行</strong><div className="mt-3 border-t border-[var(--mw-line)]">{columns.map((column, index) => <div key={column.name} className="grid grid-cols-[110px_1fr] gap-3 border-b border-[var(--mw-line)] py-2"><span className="truncate text-[var(--muted-strong)]" title={column.name}>{column.name}</span><span className="break-all text-[var(--ink)]">{databaseCellText(selected[index] ?? null)}</span></div>)}</div></> : <p className="text-[var(--muted-strong)]">选择一行查看字段与值。</p>}</div></>}</aside>
     </div>
   </section>
 }

@@ -287,7 +287,7 @@
 .mw-sql-keyword { color: #1648c9; font-weight: 650; }
 .mw-sql-string { color: #bf3d37; }
 .mw-sql-number { color: #289056; }
-.mw-result { min-height: 0; flex: 1; display: flex; flex-direction: column; }
+.mw-result { position: relative; min-height: 0; flex: 1; display: flex; flex-direction: column; }
 .mw-result-tabs { height: 39px; flex: none; display: flex; align-items: stretch; justify-content: space-between; border-bottom: 1px solid var(--mw-line); }
 .mw-result-tabs > div { display: flex; }
 .mw-result-tabs button { display: flex; align-items: center; gap: 4px; padding: 0 11px; border-bottom: 2px solid transparent; color: #596a7e; font-size: 11px; }
@@ -316,6 +316,33 @@
 .mw-result-footer { height: 33px; flex: none; display: flex; align-items: center; gap: 10px; padding: 0 10px; border-top: 1px solid var(--mw-line); color: #66768d; font-size: 10px; }
 .mw-result-footer span:nth-child(2) { margin-left: auto; }
 .mw-result-footer button { display: flex; align-items: center; gap: 4px; }
+.mw-live-result-tabs { gap: 8px; overflow: hidden; }
+.mw-live-result-tabs [role="tablist"] { min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.mw-live-result-tabs [role="tab"] { flex: none; white-space: nowrap; }
+.mw-live-result-actions { flex: none; align-items: center; gap: 7px; padding: 0 8px; color: #738399; font-size: 10px; white-space: nowrap; }
+.mw-live-result-actions button, .mw-live-result-actions select { height: 24px; border: 1px solid var(--mw-line); border-radius: 4px; background: var(--panel); color: #365171; font-size: 10px; padding: 0 6px; }
+.mw-live-result-actions button:disabled, .mw-live-result-actions select:disabled { opacity: .5; cursor: default; }
+.mw-live-result-pre { min-height: 0; flex: 1; overflow: auto; margin: 0; padding: 12px 15px; color: #34445a; font: 11px/1.6 var(--font-code); white-space: pre; }
+.mw-live-result-empty { padding: 16px; color: #718096; font-size: 11px; }
+.mw-live-chart-controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 16px; }
+.mw-live-chart-controls label { display: flex; align-items: center; gap: 5px; color: #66768c; font-size: 11px; }
+.mw-live-chart-controls select { height: 26px; max-width: 180px; padding: 0 6px; border: 1px solid var(--mw-line); border-radius: 4px; background: var(--panel); color: #314157; }
+.mw-live-bars { max-width: 750px; }
+.mw-live-line-chart { width: min(100%, 750px); height: 190px; border-bottom: 1px solid var(--mw-line); }
+.mw-live-pie-layout { display: flex; align-items: center; gap: 24px; }
+.mw-live-pie { width: 170px; height: 170px; flex: none; border-radius: 50%; }
+.mw-live-pie-legend { min-width: 0; max-height: 190px; overflow: auto; }
+.mw-live-pie-legend > div { display: flex; align-items: center; gap: 7px; height: 23px; color: #41546d; font-size: 10px; }
+.mw-live-pie-legend i { width: 8px; height: 8px; flex: none; border-radius: 2px; }
+.mw-live-pie-legend span { min-width: 0; max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mw-live-pie-legend strong { margin-left: auto; }
+.mw-live-metrics { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; max-width: 750px; }
+.mw-live-metrics > div { min-width: 0; padding: 10px; border: 1px solid var(--mw-line); border-radius: 5px; }
+.mw-live-metrics span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #66768c; font-size: 10px; }
+.mw-live-metrics strong { display: block; margin-top: 6px; color: #25476b; font-size: 17px; }
+.mw-live-chart-note { margin-top: 12px; color: #738399; font-size: 10px; }
+.mw-live-result-message { padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid var(--mw-line); }
+.mw-live-result-feedback { position: absolute; right: 12px; bottom: 38px; z-index: 2; padding: 7px 10px; border: 1px solid #c9dfce; border-radius: 5px; background: #f3fcf5; color: #287a41; font-size: 10px; box-shadow: 0 3px 10px #172b3e14; }
 
 @media (max-width: 1370px) {
   .mw-explorer { flex-basis: 250px; width: 250px; }

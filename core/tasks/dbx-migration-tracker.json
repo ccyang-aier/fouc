@@ -2460,7 +2460,7 @@
     {
       "id": "Q07",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql",
@@ -2540,7 +2540,9 @@
         "action": "查询结果的表格、文本、JSON、图表/指标切换；图表维度/指标配置、结果复制和导出。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        "MySQL 实时只读查询结果支持表格/文本/JSON/柱状图/趋势图/指标/摘要/消息、维度指标选择、复制和 CSV/TSV/JSON 导出；qa/mysql-live-result-format.test.ts 的 4 项格式测试及真实 MySQL 浏览器验收通过。仍需其他适用驱动、完整数据集导出及桌面验收。"
+      ],
       "scopeKind": "driver"
     },
     {

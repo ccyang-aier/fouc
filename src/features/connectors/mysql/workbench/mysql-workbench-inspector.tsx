@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ArrowRight, ArrowSquareOut, Check, Copy, DownloadSimple, PaperPlaneTilt, PencilSimple, Robot, Sparkle, X } from "@phosphor-icons/react"
+import { ArrowRight, ArrowSquareOut, CaretDoubleLeft, CaretDoubleRight, Check, Copy, DownloadSimple, PaperPlaneTilt, PencilSimple, Robot, Sparkle, X } from "@phosphor-icons/react"
 
 import type { CellSelection, DataRow } from "./mysql-workbench-data"
 import { getColumns } from "./mysql-workbench-data"
@@ -15,6 +15,8 @@ type Props = {
   selection: CellSelection | null
   view: "ai" | "info"
   infoMode: "row" | "schema"
+  collapsed: boolean
+  onToggleCollapse: () => void
   onViewChange: (view: "ai" | "info") => void
   onUpdateRow: (values: DataRow) => void
   onOpenTable: (table: string) => void
@@ -36,7 +38,7 @@ const FIELD_DESCRIPTIONS: Record<string, string> = {
   order_no: "订单编号", customer_id: "关联客户 ID", total_amount: "订单金额",
 }
 
-export function MysqlWorkbenchInspector({ table, row, rows, orders, customers, selection, view, infoMode, onViewChange, onUpdateRow, onOpenTable, onApplyFilter, onNotice }: Props) {
+export function MysqlWorkbenchInspector({ table, row, rows, orders, customers, selection, view, infoMode, collapsed, onToggleCollapse, onViewChange, onUpdateRow, onOpenTable, onApplyFilter, onNotice }: Props) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState<DataRow>({})
   const [prompt, setPrompt] = useState("")
@@ -107,8 +109,10 @@ export function MysqlWorkbenchInspector({ table, row, rows, orders, customers, s
     setPrompt("")
   }
 
+  if (collapsed) return <aside className="mw-inspector mw-inspector-collapsed" aria-label="MySQL 工作台侧栏"><button type="button" className="mw-inspector-expand" aria-label="展开右侧栏" title="展开右侧栏" onClick={onToggleCollapse}><CaretDoubleLeft size={16} /></button><span>侧栏</span></aside>
+
   return <aside className="mw-inspector" aria-label="MySQL 工作台侧栏">
-    <div className="mw-inspector-tabs" role="tablist" aria-label="侧栏视图"><button type="button" role="tab" aria-selected={view === "ai"} className={view === "ai" ? "mw-inspector-tab-active" : ""} onClick={() => onViewChange("ai")}>AI 助手</button><button type="button" role="tab" aria-selected={view === "info"} className={view === "info" ? "mw-inspector-tab-active" : ""} onClick={() => onViewChange("info")}>信息详情</button></div>
+    <div className="mw-inspector-head"><div className="mw-inspector-tabs" role="tablist" aria-label="侧栏视图"><button type="button" role="tab" aria-selected={view === "ai"} className={view === "ai" ? "mw-inspector-tab-active" : ""} onClick={() => onViewChange("ai")}>AI 助手</button><button type="button" role="tab" aria-selected={view === "info"} className={view === "info" ? "mw-inspector-tab-active" : ""} onClick={() => onViewChange("info")}>信息详情</button></div><button type="button" className="mw-inspector-toggle" aria-label="收起右侧栏" title="收起右侧栏" onClick={onToggleCollapse}><CaretDoubleRight size={15} /></button></div>
     {view === "info" ? <div className="mw-info-scroll">
       {infoMode === "schema" ? <><div className="mw-info-heading"><strong>{table} · 表结构</strong></div><div className="mw-info-fields">{getColumns(table).map((column) => <div className="mw-info-field" key={column.key}><span>{column.label}</span><strong>{column.type}</strong></div>)}</div><div className="mw-info-section"><h3>数据库对象</h3><div className="mw-info-relation"><span>数据库</span><strong>orders</strong></div><div className="mw-info-relation"><span>表名</span><strong>{table}</strong></div></div></> : showSelection ? <>
         <div className="mw-info-heading"><strong>选中内容</strong><span className="mw-selection-count">{selectedRows.length} 行 · {selectedColumns.length} 列</span></div>

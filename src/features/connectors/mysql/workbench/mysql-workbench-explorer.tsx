@@ -108,7 +108,7 @@ export function MysqlWorkbenchExplorer({ connection, collapsed, activeTable, onC
         })}
         {!normalized && !onlyTables && (
           <div className="mw-recent">
-            <button type="button" className="mw-recent-title" aria-expanded={recentOpen} onClick={() => setRecentOpen((open) => !open)}>{recentOpen ? <CaretDown size={12} /> : <CaretRight size={12} />}<ClockCounterClockwise size={13} />最近访问</button>
+            <button type="button" className="mw-recent-title" aria-expanded={recentOpen} onClick={() => setRecentOpen((open) => !open)}><ClockCounterClockwise size={13} /><span>最近访问</span>{recentOpen ? <CaretDown className="mw-recent-caret" size={12} /> : <CaretRight className="mw-recent-caret" size={12} />}</button>
             {recentOpen && RECENT.map((item) => <button type="button" className="mw-recent-row" key={item.name} onClick={() => item.table ? onOpenTable(item.name) : onNewQuery()}>{item.table ? <GridFour size={14} weight="duotone" /> : <FileCode size={14} />}<span className="mw-ellipsis">{item.name}</span><span>{item.time}</span></button>)}
           </div>
         )}

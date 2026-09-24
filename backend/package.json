@@ -15,7 +15,8 @@
     "@agentclientprotocol/sdk": "^1.4.0",
     "@fouc/shared": "workspace:*",
     "@zed-industries/codex-acp-win32-x64": "0.9.5",
-    "hono": "^4.13.5"
+    "hono": "^4.13.5",
+    "mysql2": "3.24.4"
   },
   "devDependencies": {
     "@types/bun": "^1.4.0"

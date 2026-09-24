@@ -14,11 +14,15 @@ import type { ConnectorService } from '../connectors/service';
 import { normalizeError } from '../connectors/service';
 import type { CookieHandoff } from '../connectors/dts/provider';
 import type { DtsTicketListInput } from '@shared/index';
+import { DatabaseCapabilityRegistry } from '../database/capability-registry';
+import type { MysqlSessionManager } from '../database/mysql-session';
 
 export type ServerContext = {
   registry: AgentRegistry;
   supervisor: SessionSupervisor;
   connectors: ConnectorService;
+  databaseCapabilities?: DatabaseCapabilityRegistry;
+  mysqlSessions?: MysqlSessionManager;
   token: string;
   internalToken: string;
   devNoAuth?: boolean;
@@ -132,6 +136,48 @@ export function createApp(context: ServerContext): { app: Hono; hub: BroadcastHu
   app.get('/api/connectors/providers', (c) => c.json({ ok: true, data: connectors.listProviders() }));
   app.get('/api/connectors/instances', (c) => c.json({ ok: true, data: connectors.listInstances() }));
   app.get('/api/connectors/instances/:id', (c) => connectorReply(c, () => connectors.detail(c.req.param('id'))));
+
+  app.post('/api/database/mysql/sessions', async (c) => {
+    if (!context.mysqlSessions) return c.json({ ok: false, error: { code: 'unavailable', message: 'MySQL 驱动未启用' } }, 503);
+    const body = await readJson<unknown>(c);
+    if (!body) return c.json({ ok: false, error: { code: 'invalid_input', message: '请求体无效' } }, 400);
+    try {
+      return c.json({ ok: true, data: await context.mysqlSessions.connect(body) }, 201);
+    } catch (error) {
+      return c.json({ ok: false, error: { code: 'connect_failed', message: error instanceof Error ? error.message : '连接失败' } }, 400);
+    }
+  });
+
+  app.get('/api/database/connections/:id/capabilities', async (c) => {
+    const id = c.req.param('id');
+    const snapshot = (await context.mysqlSessions?.refresh(id)) ?? context.databaseCapabilities?.get(id) ?? null;
+    if (!snapshot) return c.json({ ok: false, error: { code: 'not_connected', message: '数据库尚未建立已验证连接' } }, 404);
+    return c.json({ ok: true, data: snapshot });
+  });
+
+  app.get('/api/database/mysql/sessions/:id/databases', async (c) => {
+    try {
+      const data = await context.mysqlSessions?.databases(c.req.param('id')) ?? null;
+      return data ? c.json({ ok: true, data }) : c.json({ ok: false, error: { code: 'not_connected', message: '连接已断开' } }, 404);
+    } catch (error) {
+      return c.json({ ok: false, error: { code: 'metadata_failed', message: error instanceof Error ? error.message : '数据库列表读取失败' } }, 502);
+    }
+  });
+
+  app.get('/api/database/mysql/sessions/:id/databases/:database/tables', async (c) => {
+    try {
+      const data = await context.mysqlSessions?.tables(c.req.param('id'), c.req.param('database')) ?? null;
+      return data ? c.json({ ok: true, data }) : c.json({ ok: false, error: { code: 'not_connected', message: '连接已断开' } }, 404);
+    } catch (error) {
+      return c.json({ ok: false, error: { code: 'metadata_failed', message: error instanceof Error ? error.message : '表列表读取失败' } }, 502);
+    }
+  });
+
+  app.delete('/api/database/mysql/sessions/:id', async (c) => {
+    const closed = await context.mysqlSessions?.disconnect(c.req.param('id')) ?? false;
+    return closed ? c.json({ ok: true, data: { disconnected: true } })
+      : c.json({ ok: false, error: { code: 'not_connected', message: '连接已断开' } }, 404);
+  });
 
   app.post('/api/connectors/instances/:id/connect', (c) => connectorReply(c, () => connectors.beginConnect(c.req.param('id'))));
   app.post('/api/connectors/instances/:id/disconnect', (c) => connectorReply(c, () => connectors.disconnect(c.req.param('id'))));

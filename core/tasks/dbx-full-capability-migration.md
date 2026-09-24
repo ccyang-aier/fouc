@@ -37,7 +37,7 @@
 | --- | --- | --- | --- |
 | F00 | 固定 DBX 源码版本，逐条建立「功能 × 数据库 × 桌面/Web/CLI/MCP」验收矩阵，记录已实现/受限/实验性状态；本文所有任务有负责人、状态、证据链接与回归用例。 | `docs/content/docs/`、`plugins/connection-types/`、`crates/dbx-core/assets/database-drivers.manifest.json` | 已完成 |
 | F01 | 建立 Fouc 连接、能力、对象、查询结果、任务进度、错误和权限的共享 TypeScript 契约；UI 只按后端实际 capability 显示操作。 | `crates/dbx-core/src/models/`、`crates/dbx-drivers/` | 进行中 |
-| F02 | 在 Bun sidecar 实现驱动注册、生命周期、连接池/单连接、超时、取消、自动重连、元数据缓存/失效、长任务和流式结果；隔离各连接。 | `crates/dbx-core/src/connection/`、`query/`、`schema/` | 待实施 |
+| F02 | 在 Bun sidecar 实现驱动注册、生命周期、连接池/单连接、超时、取消、自动重连、元数据缓存/失效、长任务和流式结果；隔离各连接。 | `crates/dbx-core/src/connection/`、`query/`、`schema/` | 进行中 |
 | F03 | 桌面 HTTP/WS 桥与 Web API/SSE 共用服务层；鉴权、会话、下载、进度、错误语义一致，Web 服务可部署。 | `crates/dbx-web/src/`、`src-tauri/src/commands/` | 待实施 |
 | F04 | 将 DBX 能力标记、SQL 方言和连接 Profile 转为 Fouc 单一目录源；启动时校验 Profile→驱动→能力映射，未知/缺失能力不误开放。 | `plugins/connection-types/`、`plugins/dialects/` | 待实施 |
 | F05 | 引入可重复的数据库测试矩阵、容器/测试服务、协议夹具和桌面/Web 端到端用例；每个驱动至少验证连接、故障、声明能力和只读阻断。 | `crates/*/tests/`、`apps/desktop/src/**/__tests__/` | 待实施 |

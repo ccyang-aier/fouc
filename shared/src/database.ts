@@ -122,6 +122,19 @@ export interface DatabaseConnectionTestResult {
   databaseInfo: DatabaseConnectionInfo | null;
 }
 
+/** One live MySQL session. The password is accepted for this request only. */
+export interface MysqlConnectInput {
+  host: string;
+  port: number;
+  username: string;
+  password: string;
+  database?: string | null;
+  connectTimeoutSecs?: number;
+  ssl?: boolean;
+  readOnly?: boolean;
+  production?: boolean;
+}
+
 export type DatabaseConnectionHealth = 'disconnected' | 'connecting' | 'connected' | 'degraded' | 'error';
 
 /** Static driver declarations never grant an operation on their own. */

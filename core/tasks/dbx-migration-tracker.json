@@ -170,6 +170,11 @@
           "kind": "partial-test",
           "path": "backend/src/connectors/database-contract.test.ts",
           "check": "2 capability-gate tests passed"
+        },
+        {
+          "kind": "partial-live-smoke",
+          "path": "core/tasks/dbx-live-mysql-smoke-2026-09-24.md",
+          "check": "MySQL server probe and metadata browse passed; UI capability gating remains open"
         }
       ],
       "scopeKind": "driver"
@@ -177,7 +182,7 @@
     {
       "id": "F02",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "available",
       "applicableDriverTypes": [
         "mysql",
@@ -275,7 +280,13 @@
         "action": "在 Bun sidecar 实现驱动注册、生命周期、连接池/单连接、超时、取消、自动重连、元数据缓存/失效、长任务和流式结果；隔离各连接。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-live-smoke",
+          "path": "core/tasks/dbx-live-mysql-smoke-2026-09-24.md",
+          "check": "Real MySQL connect, 6 database names and 93 table names; remaining lifecycle and driver matrix open"
+        }
+      ],
       "scopeKind": "driver"
     },
     {

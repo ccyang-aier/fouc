@@ -44,6 +44,14 @@ export interface DatabaseDriverDescriptor {
   skipTcpProbe: boolean;
   traits: Record<string, boolean | number | string>;
   capabilities: DatabaseCapabilities;
+  agentKey?: string;
+  driverProfiles?: { profile: string; agentKey: string; label: string; storeVisible: boolean; storeOrder: number }[];
+  driverStoreOrder?: number;
+  driverStoreVisible?: boolean;
+  formKind?: string;
+  localFile?: boolean;
+  managedDrivers?: { key: string; label: string; storeVisible: boolean; storeOrder: number }[];
+  specializedSurface?: boolean;
 }
 
 export interface DatabaseConnectionProfile {
@@ -56,6 +64,8 @@ export interface DatabaseConnectionProfile {
   category: string | null;
   urlParams?: string;
   pickerLabel?: string;
+  pickerIcon?: string;
+  host?: string;
 }
 
 export type DatabaseTransportLayer =

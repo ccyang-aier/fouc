@@ -28,5 +28,24 @@ describe('copied DBX database catalog', () => {
     const missingCapability = structuredClone(catalog);
     delete (missingCapability.drivers[0]!.capabilities as Record<string, boolean>).queryExecution;
     expect(() => assertDatabaseCatalog(missingCapability)).toThrow('能力声明无效');
+
+    const unknownCapability = structuredClone(catalog);
+    (unknownCapability.drivers[0]!.capabilities as Record<string, boolean>).unverifiedFeature = true;
+    expect(() => assertDatabaseCatalog(unknownCapability)).toThrow('能力声明无效');
+
+    const invalidProfile = structuredClone(catalog);
+    invalidProfile.profiles[0]!.port = -1;
+    expect(() => assertDatabaseCatalog(invalidProfile)).toThrow('Profile 结构无效');
+
+    const duplicateDialect = structuredClone(catalog);
+    duplicateDialect.dialects[1]!.id = duplicateDialect.dialects[0]!.id;
+    expect(() => assertDatabaseCatalog(duplicateDialect)).toThrow('SQL 方言 ID');
+  });
+
+  test('does not permit callers to mutate catalog capability declarations', () => {
+    const driver = getDatabaseDriver('mysql')!;
+    expect(Object.isFrozen(driver)).toBe(true);
+    expect(Object.isFrozen(driver.capabilities)).toBe(true);
+    expect(Object.isFrozen(getDatabaseDialect('MySQL')?.types)).toBe(true);
   });
 });

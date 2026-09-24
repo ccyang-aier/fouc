@@ -31,6 +31,11 @@ describe('database capability API', () => {
     expect(catalog.profiles).toHaveLength(104);
     expect((await app.request('/api/database/catalog/dialects/MySQL', { headers })).status).toBe(200);
     expect((await app.request('/api/database/catalog/dialects/unknown', { headers })).status).toBe(404);
+    expect((await app.request('/api/database/catalog/profiles/mysql')).status).toBe(401);
+    const profile = await app.request('/api/database/catalog/profiles/mysql', { headers });
+    expect(profile.status).toBe(200);
+    expect((await profile.json() as { data: { port: number; user: string } }).data).toMatchObject({ port: 3306, user: 'root' });
+    expect((await app.request('/api/database/catalog/profiles/unknown', { headers })).status).toBe(404);
   });
 
   test('requires authentication and a server-confirmed connection', async () => {

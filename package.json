@@ -23,7 +23,8 @@
     "backend:test": "bun --cwd backend test",
     "verify:dts-live": "bun backend/scripts/verify-dts-live.ts",
     "backend:build": "node scripts/build-backend.mjs",
-    "verify:approval": "bun backend/scripts/verify-approval.ts"
+    "verify:approval": "bun backend/scripts/verify-approval.ts",
+    "verify:dbx-catalog": "bun scripts/verify-dbx-catalog.ts"
   },
   "dependencies": {
     "@fouc/shared": "workspace:*",

@@ -17,7 +17,7 @@ import type { DtsTicketListInput } from '@shared/index';
 import { DatabaseCapabilityRegistry } from '../database/capability-registry';
 import type { MysqlSessionManager } from '../database/mysql-session';
 import { MysqlReadOnlySqlError } from '../database/mysql-read-only-sql';
-import { DATABASE_CATALOG_REVISION, getDatabaseDialect, listDatabaseDrivers, listDatabaseProfiles } from '@shared/database-catalog';
+import { DATABASE_CATALOG_REVISION, getDatabaseDialect, getDatabaseProfile, listDatabaseDrivers, listDatabaseProfiles } from '@shared/database-catalog';
 
 export type ServerContext = {
   registry: AgentRegistry;
@@ -147,6 +147,11 @@ export function createApp(context: ServerContext): { app: Hono; hub: BroadcastHu
     const dialect = getDatabaseDialect(c.req.param('name'));
     return dialect ? c.json({ ok: true, data: dialect })
       : c.json({ ok: false, error: { code: 'not_found', message: 'SQL 方言不存在' } }, 404);
+  });
+  app.get('/api/database/catalog/profiles/:id', (c) => {
+    const profile = getDatabaseProfile(c.req.param('id'));
+    return profile ? c.json({ ok: true, data: profile })
+      : c.json({ ok: false, error: { code: 'not_found', message: '连接 Profile 不存在' } }, 404);
   });
 
   app.post('/api/database/mysql/sessions', async (c) => {

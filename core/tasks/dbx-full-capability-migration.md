@@ -49,7 +49,7 @@
 
 | ID | 任务 / 可验收交付 | DBX 对照 | 状态 |
 | --- | --- | --- | --- |
-| C01 | 迁移全部 104 个 Profile 的分类、搜索、默认字段、图标、默认端口、URL 模板、特色选项与动态表单；增删改复制、测试、最近/置顶/分组/颜色完整闭环。 | `plugins/connection-types/profiles/catalog.yaml`、`components/connection/` | 待实施 |
+| C01 | 迁移全部 104 个 Profile 的分类、搜索、默认字段、图标、默认端口、URL 模板、特色选项与动态表单；增删改复制、测试、最近/置顶/分组/颜色完整闭环。 | `plugins/connection-types/profiles/catalog.yaml`、`components/connection/` | 进行中 |
 | C02 | 支持 URL/DSN 解析与反向填表、多认证方式、TLS/CA/客户端证书、超时与连接参数；敏感项与普通配置分离。 | `plugins/connection-types/*.yaml`、`connection/` | 待实施 |
 | C03 | SSH 隧道、跳板/密钥/口令提示、SSH config 导入、隧道 Profile、SOCKS5、HTTP 代理/隧道、网络失败诊断和安全关闭。 | `components/ssh/`、`tunnel_profiles.rs`、`ssh-tunnel.cn.mdx` | 待实施 |
 | C04 | 本地凭据安全存储、解锁和密码提示；配置导出 AES-GCM 加密、导入/合并/冲突处理，支持从 DBeaver、Navicat、DataGrip 导入连接。 | `connection_secrets.rs`、`keychain.rs`、`config_cmd.rs`、`connection-import.cn.mdx` | 待实施 |

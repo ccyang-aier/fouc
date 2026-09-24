@@ -426,7 +426,7 @@
         {
           "kind": "partial-acceptance",
           "path": "core/tasks/dbx-catalog-integration-2026-09-24.md",
-          "check": "source hashes, mapping tests, API authentication and remaining entry-point gaps recorded"
+          "check": "content-level source equivalence, startup validation, immutable declarations, API authentication and remaining entry-point gaps recorded"
         }
       ],
       "scopeKind": "driver"
@@ -522,7 +522,7 @@
     {
       "id": "C01",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "available",
       "applicableDriverTypes": [
         "mysql",
@@ -620,7 +620,13 @@
         "action": "迁移全部 104 个 Profile 的分类、搜索、默认字段、图标、默认端口、URL 模板、特色选项与动态表单；增删改复制、测试、最近/置顶/分组/颜色完整闭环。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-profile-ui",
+          "path": "core/tasks/dbx-catalog-integration-2026-09-24.md",
+          "check": "MySQL connection dialog loads port and user from authenticated Profile API; remaining 103 Profile forms and lifecycle actions open"
+        }
+      ],
       "scopeKind": "driver"
     },
     {

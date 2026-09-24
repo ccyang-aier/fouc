@@ -1,10 +1,12 @@
 "use client"
 
-import { useState, type FormEvent } from "react"
+import { useEffect, useState, type FormEvent } from "react"
 import Image from "next/image"
 import { X } from "@phosphor-icons/react"
+import type { DatabaseConnectionProfile } from "@fouc/shared"
 
 import { Button } from "@/components/ui/button"
+import { backendFetch } from "@/lib/backend"
 
 import type { MysqlConnectionEnvironment } from "./mysql-connections-data"
 
@@ -29,13 +31,31 @@ const INPUT_CLASS = "h-[34px] w-full rounded-[7px] border border-[var(--line)] b
 export function MysqlConnectionDialog({ open, onClose, onCreate }: MysqlConnectionDialogProps) {
   const [name, setName] = useState("")
   const [host, setHost] = useState("")
-  const [port, setPort] = useState("3306")
+  const [port, setPort] = useState("")
   const [database, setDatabase] = useState("")
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [environment, setEnvironment] = useState<MysqlConnectionEnvironment>("开发")
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
+  const [profileReady, setProfileReady] = useState(false)
+  const [profileRefresh, setProfileRefresh] = useState(0)
+
+  useEffect(() => {
+    if (!open) return
+    let cancelled = false
+    void backendFetch<DatabaseConnectionProfile>("/api/database/catalog/profiles/mysql")
+      .then((profile) => {
+        if (cancelled) return
+        setPort((current) => current || String(profile.port))
+        setUsername((current) => current || profile.user)
+        setProfileReady(true)
+      }).catch((reason) => {
+        if (cancelled) return
+        setError(reason instanceof Error ? reason.message : "MySQL 连接配置加载失败")
+      })
+    return () => { cancelled = true }
+  }, [open, profileRefresh])
 
   if (!open) return null
 
@@ -43,6 +63,7 @@ export function MysqlConnectionDialog({ open, onClose, onCreate }: MysqlConnecti
     if (submitting) return
     setPassword("")
     setError("")
+    setProfileReady(false)
     onClose()
   }
 
@@ -51,7 +72,7 @@ export function MysqlConnectionDialog({ open, onClose, onCreate }: MysqlConnecti
     const trimmedName = name.trim()
     const trimmedHost = host.trim()
     const parsedPort = Number(port)
-    if (!trimmedName || !trimmedHost || !username.trim() || !Number.isInteger(parsedPort) || parsedPort < 1 || parsedPort > 65535) {
+    if (!profileReady || !trimmedName || !trimmedHost || !username.trim() || !Number.isInteger(parsedPort) || parsedPort < 1 || parsedPort > 65535) {
       setError("请填写有效的名称、主机、端口和用户")
       return
     }
@@ -61,7 +82,7 @@ export function MysqlConnectionDialog({ open, onClose, onCreate }: MysqlConnecti
       await onCreate({ name: trimmedName, host: trimmedHost, port: parsedPort, database: database.trim(), username: username.trim(), password, environment })
       setName("")
       setHost("")
-      setPort("3306")
+      setPort("")
       setDatabase("")
       setUsername("")
       setPassword("")
@@ -113,12 +134,12 @@ export function MysqlConnectionDialog({ open, onClose, onCreate }: MysqlConnecti
           <Field label="密码">
             <input type="password" autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="可留空" className={INPUT_CLASS} />
           </Field>
-          {error && <p role="alert" className="col-span-2 text-[11px] text-[var(--danger,#d44848)]">{error}</p>}
+          {error && <p role="alert" className="col-span-2 text-[11px] text-[var(--danger,#d44848)]">{error}{!profileReady && <button type="button" className="ml-2 underline" onClick={() => { setError(""); setProfileRefresh((value) => value + 1) }}>重试</button>}</p>}
         </div>
 
         <footer className="flex justify-end gap-2 border-t border-[var(--line)] bg-[var(--surface-subtle)] px-5 py-3.5">
           <Button type="button" variant="outline" size="sm" onClick={close} disabled={submitting}>取消</Button>
-          <Button type="submit" size="sm" disabled={submitting}>{submitting ? "连接中…" : "连接"}</Button>
+          <Button type="submit" size="sm" disabled={submitting || !profileReady}>{submitting ? "连接中…" : profileReady ? "连接" : "加载配置中…"}</Button>
         </footer>
       </form>
     </div>

@@ -8,7 +8,7 @@
 - **功能等价**：按 DBX 的 capability、数据库类型、运行入口和账号权限逐项验收。DBX 本身没有声明的能力不强行开放；不同版本/Edition/驱动的动态差异要保留。桌面特有功能可用 Tauri 桥接，Web 的文件路径与网络按服务器环境解释。
 - **Fouc 架构**：React/Next.js 实现 UI，Bun/TypeScript sidecar 承担业务逻辑，共享契约置于 `shared/`，Tauri v2 只保留系统薄壳。DBX 的 Rust/Vue/Go 实现是行为与算法参考，迁移前记录许可证与第三方依赖；不把业务逻辑搬入 Fouc Rust 壳。
 - **任务完成定义**：每行须具备真实后端通路、前端交互及加载/空/错误/取消/成功反馈、只读和生产保护、适用数据库矩阵验证、桌面及 Web 适用入口验证、必要的集成测试。数据库专属任务用对应服务实例或可重复的协议测试验证。功能与 DBX 有意差异时记录差异和验收依据。
-- **依赖顺序**：`F00 → F01/F02 → C/S/Q/G → D/X/A/P/W`；任务可并行，但不得用一个通用模拟驱动宣称完成全部类型。现有 MySQL 工作台主要为本地样例数据，作为视觉骨架而非后端完成基线。
+- **依赖顺序**：`F00 → F01/F02/F03/F04 → C/S/Q/G → D/X/A/P/R`；任务可并行，但不得用一个通用模拟驱动宣称完成全部类型。现有 MySQL 工作台主要为本地样例数据，作为视觉骨架而非后端完成基线。
 
 ## 0. 清点、契约与平台底座
 
@@ -21,6 +21,8 @@
 | F04 | 将 DBX 能力标记、SQL 方言和连接 Profile 转为 Fouc 单一目录源；启动时校验 Profile→驱动→能力映射，未知/缺失能力不误开放。 | `plugins/connection-types/`、`plugins/dialects/` |
 | F05 | 引入可重复的数据库测试矩阵、容器/测试服务、协议夹具和桌面/Web 端到端用例；每个驱动至少验证连接、故障、声明能力和只读阻断。 | `crates/*/tests/`、`apps/desktop/src/**/__tests__/` |
 | F06 | 审核 DBX Apache-2.0、复用代码/素材、第三方驱动与插件许可证；保留所需 NOTICE 和依赖清单。 | `opensource/dbx/LICENSE`、`agents/`、`plugins/` |
+| F07 | Web 首次设置、登录/登出、修改密码、会话 Cookie、API 鉴权与部署在子路径时的路由；桌面本地访问和 Web 登录边界分别验收。 | `crates/dbx-web/src/auth.rs`、`components/auth/LoginPage.vue` |
+| F08 | 为主要数据库及版本建立可重复的本地测试实验室：容器配方、健康检查、冒烟数据、连接字段输出、端口冲突检查与一键验证；作为 Rxx 验收基础。 | `docs/content/docs/database-lab.cn.mdx`、`opensource/dbx/deploy/` |
 
 ## 1. 连接、网络、配置与安全
 
@@ -29,10 +31,10 @@
 | C01 | 迁移全部 104 个 Profile 的分类、搜索、默认字段、图标、默认端口、URL 模板、特色选项与动态表单；增删改复制、测试、最近/置顶/分组/颜色完整闭环。 | `plugins/connection-types/profiles/catalog.yaml`、`components/connection/` |
 | C02 | 支持 URL/DSN 解析与反向填表、多认证方式、TLS/CA/客户端证书、超时与连接参数；敏感项与普通配置分离。 | `plugins/connection-types/*.yaml`、`connection/` |
 | C03 | SSH 隧道、跳板/密钥/口令提示、SSH config 导入、隧道 Profile、SOCKS5、HTTP 代理/隧道、网络失败诊断和安全关闭。 | `components/ssh/`、`tunnel_profiles.rs`、`ssh-tunnel.cn.mdx` |
-| C04 | 本地凭据安全存储、解锁和密码提示；配置导出 AES-GCM 加密、导入/合并/冲突处理，支持从 DBeaver/Navicat 等连接导入。 | `connection_secrets.rs`、`keychain.rs`、`config_cmd.rs`、`connection-import.cn.mdx` |
+| C04 | 本地凭据安全存储、解锁和密码提示；配置导出 AES-GCM 加密、导入/合并/冲突处理，支持从 DBeaver、Navicat、DataGrip 导入连接。 | `connection_secrets.rs`、`keychain.rs`、`config_cmd.rs`、`connection-import.cn.mdx` |
 | C05 | 连接与数据库级只读、写入解锁、SQL/命令风险分类、每次生产写入确认、危险语句/目标组保护；所有 UI、CLI、MCP 和专项 API 走同一策略。 | `crates/dbx-core/src/safety/`、`crates/dbx-sql/src/` |
 | C06 | 写入前 SQL/请求预览、影响范围和失败反馈；事务提交/回滚、部分成功标识、取消行为，不以客户端禁用按钮代替服务端拦截。 | `production-safety.cn.mdx`、`query/two_phase_commit.rs` |
-| C07 | Agent/JDBC/外部驱动下载、安装、版本/运行时检测、更新/卸载、缺失提示和驱动商店；兼容各驱动的 Agent 进程协议。 | `agents/`、`driver-management.cn.mdx` |
+| C07 | Agent/JDBC/外部驱动下载、安装、版本/运行时检测、更新/卸载、缺失提示和驱动商店；系统/托管/多版本 JRE、离线 ZIP/JRE 包导入、运行时 PID/CPU/内存/Session 监控及停止/重启；兼容各驱动的 Agent 进程协议。 | `agents/`、`driver-management.cn.mdx` |
 | C08 | 连接设置和 SQL 库的 WebDAV/Gist/Gitee 同步、冲突处理、手动/自动同步状态及恢复。 | `cloud_sync.rs`、`cloud-sync.cn.mdx` |
 
 ## 2. 工作台壳、导航与对象资源
@@ -60,6 +62,8 @@
 | Q06 | 大 SQL 文件预览、编码/路径校验、分段执行、进度、失败定位/重试/取消；SQL 文件导入/恢复与 ZIP 包。 | `components/sql-file/`、`data/sql_file_import.rs` |
 | Q07 | 查询结果的表格、文本、JSON、图表/指标切换；图表维度/指标配置、结果复制和导出。 | `components/chart/`、`QueryResultViewSwitcher.vue` |
 | Q08 | SQL 方言解析、标识符引用、日期/二进制/NULL 格式、只读/可编辑结果判定、语句拆分及多数据库特例。 | `crates/dbx-sql/`、`crates/dbx-formats/` |
+| Q09 | 编辑器悬停提示、代码折叠、别名/CTE/JOIN 补全、`Ctrl/Cmd+Click` 对象跳转；占位符 `?`、`:name`、`${name}`、`#{name}`、`@name` 与 `@set` 输入；执行范围选择器和「在新结果中执行」。 | `query-editor.cn.mdx`、`components/editor/` |
+| Q10 | 对 `INSERT/UPDATE/DELETE` 提供执行前变更预览：只读改写、旧/新值对照、受影响行展示；无法安全改写时明确拒绝预览而不误报执行结果。 | `query-editor.cn.mdx`、`crates/dbx-sql/src/` |
 
 ## 4. 数据表格与数据编辑
 
@@ -67,23 +71,27 @@
 | --- | --- | --- |
 | G01 | 真实表数据按页/虚拟滚动加载、行号、斑马纹、空值/类型展示、列宽行高拖拽、自适应少列填满、宽表横向滚动。 | `components/grid/`、`data-grid.cn.mdx` |
 | G02 | 单格、连续矩形、多行/列选择；键盘导航、复制/粘贴、上下文菜单、选择状态与右侧详情同步，首次打开不预选。 | `components/grid/` |
-| G03 | WHERE/ORDER BY 构造器、列筛选、LIKE/NOT LIKE、全文搜索、多字段排序、刷新/重置、页大小与分页；条件严格在数据库执行。 | `components/grid/`、`data-grid.cn.mdx` |
+| G03 | 分清数据库侧 WHERE/ORDER BY 与客户端的当前结果搜索、值过滤、当前页排序；提供列筛选、LIKE/NOT LIKE、多字段排序、刷新/重置、页大小与分页，并明确显示条件的执行位置与范围。 | `components/grid/`、`data-grid.cn.mdx` |
 | G04 | 单元格编辑、批量改单元格、新增/复制/删除行、脏数据标记、撤销/回滚、提交前 SQL 预览与冲突/部分失败反馈。 | `components/grid/`、`crates/dbx-sql/src/` |
 | G05 | 单元格/行/列详情、字段元数据、关联数据跳转、值大文本查看、行详情动态展示与字段筛选。 | `components/grid/`、`components/objects/` |
 | G06 | CSV、TSV、JSON、Markdown、XLSX、INSERT SQL 的选择/全表复制及导出；大结果分片/ZIP、进度/取消和正确转义。 | `crates/dbx-formats/`、`table_export.rs` |
 | G07 | 表结构筛选、列显示/隐藏/固定、自动适宽、数据/结构工具栏、Canvas 编辑模式和上下文操作完整可用。 | `components/grid/` |
+| G08 | 转置视图、列头拖拽排序、左右冻结、字段注释搜索、表/查询级布局记忆与重置、自动刷新和多次运行结果固定；未提交编辑时防止自动刷新覆盖。 | `data-grid.cn.mdx`、`useDataGridAutoRefresh.ts`、`useDataGridColumnLayout.ts` |
+| G09 | 列格式化器（日期/时间、JSON 路径、掩码、模板）、选择区数量/求和摘要、复制为批量 INSERT/UPDATE、可选注释表头与标识符引用；显示格式不改变原始值。 | `data-grid.cn.mdx`、`useDataGridColumnFormatter.ts` |
+| G10 | 复杂值详情支持长文本/JSON、二进制十六进制与 ASCII、图像、日期时区、空间数据与 SRID；编辑时区分 NULL、空字符串、默认值和生成值。 | `data-grid.cn.mdx`、`useDataGridLargeValues.ts` |
+| G11 | MySQL 单字段按 WHERE 跨未加载分页批量更新：条件构造、预计影响行数、完整 SQL 确认与实际影响行反馈；不得伪装成可可靠回滚的逐行编辑。 | `data-grid.cn.mdx`、`components/grid/` |
 
 ## 5. 导入、传输、差异、备份
 
 | ID | 任务 / 可验收交付 | DBX 对照 |
 | --- | --- | --- |
-| D01 | CSV/TSV/JSON/Excel 文件预览、编码/分隔符/表头/类型推断、字段映射、新表或现有表导入、错误行报告和取消。 | `components/import/`、`data/table_import.rs` |
+| D01 | CSV/TSV/自定义分隔文本、JSON、XLS/XLSX/XLSM、字面量 INSERT SQL 的预览与导入；编码、行范围、空值/空白、工作表、字段映射与类型推断；现有表追加/清空或多文件多工作表批量建表，逐任务进度、部分成功与取消。 | `components/import/`、`data/table_import.rs`、`table-import.cn.mdx` |
 | D02 | 跨连接/跨引擎数据传输：源目标映射、类型转换、建表/清表/追加、批量流式处理、进度/失败重试/断点与任务记录。 | `components/transfer/`、`data/transfer.rs` |
 | D03 | 数据比较与同步：键列选择、差异行、字段映射、冲突矩阵、修改预览、选择性同步与风险提示。 | `components/diff/DataCompareDialog.vue`、`data/data_compare.rs` |
 | D04 | Schema diff：对象树、差异/DDL、依赖排序、选项、影响报告、部署/回滚或重试；原生在线结构变更/OSC 仅在适用驱动开放。 | `components/diff/SchemaDiff*`、`schema_diff.rs` |
 | D05 | 数据库/表结构与数据导出、SQL 脚本生成、格式选择、拆分包、进度/取消；区分轻量导出与数据库原生备份。 | `data/database_export.rs`、`script_generator.rs` |
-| D06 | SQLite 备份、MongoDB dump/import/export、其他数据库适用的备份路径及定时备份设置/状态/保留策略。 | `sqlite_backup.rs`、`mongodb_dump.rs`、`components/backup/` |
-| D07 | 本地 CSV/JSON/Parquet 文件预览与 DuckDB 查询；桌面/Web 文件来源、路径和权限分别处理。 | `database-lab.cn.mdx`、`components/layout/` |
+| D06 | SQLite 备份、MongoDB dump/import/export；MySQL/PostgreSQL 桌面一次性与小时/日/周定时逻辑备份，库/表模式、结构/数据/对象、路径模板、只读一致性快照、保留/历史/取消清理和 MySQL 指定表恢复。 | `sqlite_backup.rs`、`mongodb_dump.rs`、`components/backup/`、`database-backup.cn.mdx` |
+| D07 | 桌面文件拖放生成 DuckDB 文件查询及 CSV/JSON/Parquet 读取入口；Web 上传与服务器路径、临时文件清理分别处理。 | `useFileDrop.ts`、`buildDroppedFilePreviewSql` |
 | D08 | 传输、导入、导出任务持久化与重新打开；文件下载校验、出错详情、取消和完成通知。 | `transferTaskStore.ts`、`crates/dbx-web/src/routes/` |
 | D09 | 测试数据生成：按字段配置姓名、地址、日期、数字、枚举、正则、外键等生成器，预览、批量写入、进度和生产写入保护。 | `components/generate/` |
 
@@ -92,11 +100,14 @@
 | ID | 任务 / 可验收交付 | DBX 对照 |
 | --- | --- | --- |
 | A01 | 右侧 AI Ask/Agent：当前连接/Schema/选区上下文、流式对话、生成/解释/优化/修复 SQL、复制或送回编辑器。 | `components/ai/`、`ai-assistant.cn.mdx` |
-| A02 | 模型配置覆盖 Claude、OpenAI、Ollama 与兼容接口；模型/凭据管理、连通测试、提示词模板与多配置切换。 | `ai.rs`、`ai_multi_config.rs`、`prompt_template.rs` |
+| A02 | 模型配置覆盖 Claude、OpenAI、Gemini、DeepSeek、Qwen、MiniMax、Ollama、OpenAI/Anthropic Compatible、Custom；模型发现、API 风格、认证、代理、自定义请求头、推理强度/Thinking、凭据管理、连通测试与多配置切换。 | `crates/dbx-ai-provider/`、`ai_multi_config.rs`、`ai-assistant.cn.mdx` |
 | A03 | Agent 工具调用、只读 Ask 和受控执行、生产写入人工审查、会话历史、取消、错误恢复和用量/结果反馈。 | `crates/dbx-core/src/ai/`、`components/ai/` |
 | A04 | MCP stdio/HTTP 服务：连接/结构/文档/查询/专项资源与工具；连接白名单、库/资源作用域、只读/读写/完全访问三级权限、认证和会话。 | `crates/dbx-mcp/`、`mcp_policy.rs` |
 | A05 | CLI：列连接/库/表、描述结构、查询、上下文/文档导出、表打开 Deep Link；Table/JSON/CSV 输出、超时、文件、写入/危险操作显式参数。 | `crates/dbx-cli/`、`cli.cn.mdx` |
 | A06 | 桌面 Deep Link 与外部 AI/脚本唤起目标连接、表、SQL 标签；错误目标与权限反馈。 | `deep_link.rs`、`launch_args.rs` |
+| A07 | 桌面本地 CLI Agent（Claude Code、Codex、Pi，及源码已接入的其他 CLI）路径/环境配置、受限 MCP 桥；Agent 轮次/重试、`@` 表与 SQL 文件上下文、全局指令/多模板快照、按连接历史和 Markdown 导出。Web 隐藏仅适用本机的 CLI 入口。 | `crates/dbx-ai-provider/src/`、`ai-assistant.cn.mdx` |
+| A08 | MCP 工具逐项对齐 DBX 清单：连接增删复制、库/表/例程/源码/Schema 文档、SQL/Redis/Mongo/消息队列、桌面打开/展示；实现批量 SQL、固定连接会话与 MySQL 显式事务、回滚/未知结果处理、工具/连接/库/资源作用域。 | `crates/dbx-mcp/`、`mcp.cn.mdx` |
+| A09 | MCP Desktop 与 Web Streamable HTTP/stdio 入口，默认关闭本机 HTTP、Bearer Token 轮换、Host/Origin 白名单、远程访问显式启用与异常重启；CLI/MCP 安装包和跨平台分发。 | `mcp_http_server.rs`、`crates/dbx-mcp/`、`mcp.cn.mdx` |
 
 ## 7. 非 SQL 专项工作台
 
@@ -132,6 +143,7 @@
 | P07 | 专项系统及各 SQL 方言的用户文档、能力矩阵、快捷键、Web API/CLI/MCP/插件开发文档同步到 Fouc。 | `docs/content/docs/` |
 | P08 | Dolt 分支/提交/修订选择、版本差异、表与单元格 diff、分页和版本控制操作；只在 Dolt Profile 启用。 | `components/dolt/` |
 | P09 | 对象/Schema 代码快照、差异查看与导出，保持快照来源、时间和目标上下文可追溯。 | `components/codeSnapshot/` |
+| P10 | Web 部署的首次初始化、登录安全、容器持久化、反向代理/子路径、1Panel 部署和升级验证；发布 CLI/MCP/桌面安装包与对应平台运行时。 | `crates/dbx-web/`、`deploy/`、`1panel.cn.mdx` |
 
 ## 9. 驱动与连接 Profile 覆盖矩阵
 

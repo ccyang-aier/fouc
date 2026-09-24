@@ -6,6 +6,7 @@
  */
 
 export * from './database';
+export * from './mysql-query-ranges';
 
 // ─── Agent Provider（一类 Agent 产品的目录声明） ───────────────────
 

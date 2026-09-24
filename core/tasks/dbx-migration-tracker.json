@@ -2018,6 +2018,11 @@
           "kind": "partial-live-smoke",
           "path": "core/tasks/dbx-live-mysql-smoke-2026-09-24.md",
           "check": "Web SQL tab executes selected text or editor content through live MySQL read-only API; editor completion, dialect and multi-statement scope remain open"
+        },
+        {
+          "kind": "partial-editor-smoke",
+          "path": "core/tasks/dbx-sql-editor-smoke-2026-09-24.md",
+          "check": "DBX-aligned CodeMirror stack with readable selection, MySQL syntax, selected/current statement execution; full Q01 scope remains open"
         }
       ],
       "scopeKind": "driver"
@@ -2541,7 +2546,7 @@
     {
       "id": "Q08",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql",
@@ -2621,7 +2626,13 @@
         "action": "SQL 方言解析、标识符引用、日期/二进制/NULL 格式、只读/可编辑结果判定、语句拆分及多数据库特例。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-mysql-parser",
+          "path": "core/tasks/dbx-sql-editor-smoke-2026-09-24.md",
+          "check": "MySQL read-query statement ranges preserve source offsets and skip delimiters in strings and comments; other dialect semantics remain open"
+        }
+      ],
       "scopeKind": "driver"
     },
     {

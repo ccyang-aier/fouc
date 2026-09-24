@@ -19,6 +19,20 @@ function testApp(registry: DatabaseCapabilityRegistry, mysqlSessions?: MysqlSess
 }
 
 describe('database capability API', () => {
+  test('serves the validated catalog behind the same authentication boundary', async () => {
+    const app = testApp(new DatabaseCapabilityRegistry());
+    expect((await app.request('/api/database/catalog')).status).toBe(401);
+    const headers = { authorization: 'Bearer frontend-token' };
+    const response = await app.request('/api/database/catalog', { headers });
+    expect(response.status).toBe(200);
+    const catalog = (await response.json() as { data: { declarationOnly: boolean; drivers: unknown[]; profiles: unknown[] } }).data;
+    expect(catalog.declarationOnly).toBe(true);
+    expect(catalog.drivers).toHaveLength(81);
+    expect(catalog.profiles).toHaveLength(104);
+    expect((await app.request('/api/database/catalog/dialects/MySQL', { headers })).status).toBe(200);
+    expect((await app.request('/api/database/catalog/dialects/unknown', { headers })).status).toBe(404);
+  });
+
   test('requires authentication and a server-confirmed connection', async () => {
     const registry = new DatabaseCapabilityRegistry();
     const app = testApp(registry);

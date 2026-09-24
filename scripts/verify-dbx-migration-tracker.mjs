@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { readFileSync, readdirSync } from "node:fs";
 
 const readJson = (path) => JSON.parse(readFileSync(path, "utf8"));
 const plan = readFileSync("core/tasks/dbx-full-capability-migration.md", "utf8");
-const baseline = readJson("core/tasks/dbx-source-baseline.json");
+const baseline = readJson("shared/catalog/dbx-catalog.json");
 const tracker = readJson("core/tasks/dbx-migration-tracker.json");
 
 const planIds = [...plan.matchAll(/^\| ([FCSQGDAXPR]\d\d) \|/gm)].map((match) => match[1]);
@@ -14,14 +15,30 @@ const driverById = new Map(baseline.drivers.map((driver) => [driver.dbType, driv
 const validEntries = new Set(tracker.entryPointValues);
 const validStatuses = new Set(tracker.statusValues);
 const statusLabels = { pending: "待实施", "in-progress": "进行中", completed: "已完成" };
+const sha256 = (path) => createHash("sha256").update(readFileSync(path)).digest("hex");
 
 assert.equal(baseline.sourceRevision, tracker.dbxRevision);
 assert.equal(baseline.drivers.length, 81);
 assert.equal(baseline.profiles.length, 104);
+assert.equal(baseline.dialects.length, 35);
 assert.equal(new Set(driverIds).size, driverIds.length, "duplicate driver type");
 assert.equal(new Set(profileIds).size, profileIds.length, "duplicate connection profile");
 assert.equal(baseline.sourceHashes.driverManifestSha256.length, 64);
 assert.equal(baseline.sourceHashes.profileCatalogSha256.length, 64);
+assert.equal(Object.keys(baseline.sourceHashes.dialectFilesSha256).length, 35);
+assert.equal(sha256("opensource/dbx/crates/dbx-core/assets/database-drivers.manifest.json"), baseline.sourceHashes.driverManifestSha256);
+assert.equal(sha256("opensource/dbx/plugins/connection-types/profiles/catalog.yaml"), baseline.sourceHashes.profileCatalogSha256);
+const sourceDialectFiles = readdirSync("opensource/dbx/plugins/dialects").filter((name) => name.endsWith(".yaml")).sort();
+assert.deepEqual(Object.keys(baseline.sourceHashes.dialectFilesSha256), sourceDialectFiles);
+for (const file of sourceDialectFiles) {
+  assert.equal(sha256(`opensource/dbx/plugins/dialects/${file}`), baseline.sourceHashes.dialectFilesSha256[file]);
+}
+const dialects = new Set(baseline.dialects.map((descriptor) => descriptor.dialect.name));
+assert.equal(dialects.size, baseline.dialects.length, "duplicate SQL dialect");
+for (const driver of baseline.drivers) {
+  if (driver.dialect) assert.ok(dialects.has(driver.dialect), `${driver.dbType} references missing SQL dialect`);
+}
+assert.equal(tracker.sourceBaseline, "shared/catalog/dbx-catalog.json");
 assert.equal(new Set(planIds).size, planIds.length, "duplicate plan task ID");
 assert.equal(new Set(taskIds).size, taskIds.length, "duplicate tracker task ID");
 assert.deepEqual(taskIds, planIds, "tracker and plan tasks differ or have drifted in order");

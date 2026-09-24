@@ -10,6 +10,7 @@ import {
   type MysqlConnectInput,
 } from '@fouc/shared';
 import { DatabaseCapabilityRegistry } from './capability-registry';
+import { getDatabaseDriver } from '@shared/database-catalog';
 
 type Row = Record<string, unknown>;
 type MysqlWire = {
@@ -18,9 +19,11 @@ type MysqlWire = {
 };
 type WireFactory = (input: MysqlConnectInput) => MysqlWire;
 
-// DBX's MySQL driver declaration; observation below remains narrower until
-// the corresponding runtime operation is wired and verified in Fouc.
-const DECLARED = Object.fromEntries(DATABASE_CAPABILITIES.map((key) => [key, key !== 'driverManagement'])) as DatabaseCapabilities;
+// The copied DBX catalog is the sole source of driver declarations. Runtime
+// observation remains narrower until each operation is wired and verified.
+const mysqlDriver = getDatabaseDriver('mysql');
+if (!mysqlDriver) throw new Error('MySQL 驱动未在数据库目录中声明');
+const DECLARED = mysqlDriver.capabilities;
 const OBSERVED = Object.fromEntries(DATABASE_CAPABILITIES.map((key) => [key, key === 'metadataBrowse'])) as DatabaseCapabilities;
 const DATABASES_SQL = ['SHOW DATABASES', 'SELECT SCHEMA_NAME FROM information_schema.SCHEMATA ORDER BY SCHEMA_NAME'];
 const TABLES_SQL = 'SELECT TABLE_NAME, TABLE_TYPE, TABLE_COMMENT FROM information_schema.TABLES WHERE TABLE_SCHEMA = ? ORDER BY TABLE_NAME';

@@ -1,0 +1,32 @@
+import { describe, expect, test } from 'bun:test';
+import catalog from '../../../shared/catalog/dbx-catalog.json';
+import {
+  assertDatabaseCatalog, getDatabaseDialect, getDatabaseDriver,
+  getDatabaseProfile, listDatabaseDrivers, listDatabaseProfiles,
+} from '@shared/database-catalog';
+
+describe('copied DBX database catalog', () => {
+  test('maps every Profile to a driver and every declared SQL dialect to a descriptor', () => {
+    expect(listDatabaseDrivers()).toHaveLength(81);
+    expect(listDatabaseProfiles()).toHaveLength(104);
+    expect(getDatabaseProfile('mysql')?.dbType).toBe('mysql');
+    expect(getDatabaseDriver('mysql')?.dialect).toBe('MySQL');
+    expect(getDatabaseDialect('MySQL')?.id).toBe('mysql');
+    expect(getDatabaseDriver('mongodb')?.dialect).toBeNull();
+    expect(getDatabaseDriver('unknown')).toBeNull();
+  });
+
+  test('fails closed on a missing driver, dialect or capability declaration', () => {
+    const missingDriver = structuredClone(catalog);
+    missingDriver.profiles[0]!.dbType = 'unavailable';
+    expect(() => assertDatabaseCatalog(missingDriver)).toThrow('驱动缺失');
+
+    const missingDialect = structuredClone(catalog);
+    missingDialect.drivers[0]!.dialect = 'unavailable';
+    expect(() => assertDatabaseCatalog(missingDialect)).toThrow('SQL 方言缺失');
+
+    const missingCapability = structuredClone(catalog);
+    delete (missingCapability.drivers[0]!.capabilities as Record<string, boolean>).queryExecution;
+    expect(() => assertDatabaseCatalog(missingCapability)).toThrow('能力声明无效');
+  });
+});

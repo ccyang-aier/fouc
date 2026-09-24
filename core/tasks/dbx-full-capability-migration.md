@@ -4,7 +4,7 @@
 
 ## 进度与证据
 
-每个任务的当前状态见下表和 [迁移验收矩阵](dbx-migration-tracker.json)。矩阵记录负责人、DBX 来源、适用驱动与桌面/Web/CLI/MCP 入口、回归用例和验收证据；[DBX 源码基线](dbx-source-baseline.json) 是已复制进 Fouc 的驱动/Profile 元数据快照。运行 `node scripts/verify-dbx-migration-tracker.mjs` 检查任务、状态、驱动与 Profile 是否同步。状态只有「待实施」「进行中」「已完成」；通过实际验收并填写证据后才能改为已完成。
+每个任务的当前状态见下表和 [迁移验收矩阵](dbx-migration-tracker.json)。矩阵记录负责人、DBX 来源、适用驱动与桌面/Web/CLI/MCP 入口、回归用例和验收证据；[DBX 目录源](../../shared/catalog/dbx-catalog.json) 包含已复制进 Fouc 的驱动、Profile 和 SQL 方言元数据。运行 `node scripts/verify-dbx-migration-tracker.mjs` 检查任务、状态及目录映射。状态只有「待实施」「进行中」「已完成」；通过实际验收并填写证据后才能改为已完成。
 
 ## 范围与验收规则
 
@@ -39,7 +39,7 @@
 | F01 | 建立 Fouc 连接、能力、对象、查询结果、任务进度、错误和权限的共享 TypeScript 契约；UI 只按后端实际 capability 显示操作。 | `crates/dbx-core/src/models/`、`crates/dbx-drivers/` | 进行中 |
 | F02 | 在 Bun sidecar 实现驱动注册、生命周期、连接池/单连接、超时、取消、自动重连、元数据缓存/失效、长任务和流式结果；隔离各连接。 | `crates/dbx-core/src/connection/`、`query/`、`schema/` | 进行中 |
 | F03 | 桌面 HTTP/WS 桥与 Web API/SSE 共用服务层；鉴权、会话、下载、进度、错误语义一致，Web 服务可部署。 | `crates/dbx-web/src/`、`src-tauri/src/commands/` | 待实施 |
-| F04 | 将 DBX 能力标记、SQL 方言和连接 Profile 转为 Fouc 单一目录源；启动时校验 Profile→驱动→能力映射，未知/缺失能力不误开放。 | `plugins/connection-types/`、`plugins/dialects/` | 待实施 |
+| F04 | 将 DBX 能力标记、SQL 方言和连接 Profile 转为 Fouc 单一目录源；启动时校验 Profile→驱动→能力映射，未知/缺失能力不误开放。 | `plugins/connection-types/`、`plugins/dialects/` | 进行中 |
 | F05 | 引入可重复的数据库测试矩阵、容器/测试服务、协议夹具和桌面/Web 端到端用例；每个驱动至少验证连接、故障、声明能力和只读阻断。 | `crates/*/tests/`、`apps/desktop/src/**/__tests__/` | 待实施 |
 | F06 | 审核 DBX Apache-2.0、复用代码/素材、第三方驱动与插件许可证；保留所需 NOTICE 和依赖清单。 | `opensource/dbx/LICENSE`、`agents/`、`plugins/` | 待实施 |
 | F07 | Web 首次设置、登录/登出、修改密码、会话 Cookie、API 鉴权与部署在子路径时的路由；桌面本地访问和 Web 登录边界分别验收。 | `crates/dbx-web/src/auth.rs`、`components/auth/LoginPage.vue` | 待实施 |

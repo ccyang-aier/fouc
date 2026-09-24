@@ -34,11 +34,11 @@ export type DatabaseMcpMode = 'direct' | 'bridge' | 'unsupported';
 export interface DatabaseDriverDescriptor {
   dbType: string;
   label: string;
-  dialect: string;
+  dialect: string | null;
   runtimeMode: DatabaseRuntimeMode;
   mcpMode: DatabaseMcpMode;
   supportLevel: DatabaseSupportLevel;
-  defaultPort: number;
+  defaultPort: number | null;
   singleConnectionPool: boolean;
   metadataConnectionScoped: boolean;
   skipTcpProbe: boolean;

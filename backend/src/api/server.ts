@@ -16,6 +16,7 @@ import type { CookieHandoff } from '../connectors/dts/provider';
 import type { DtsTicketListInput } from '@shared/index';
 import { DatabaseCapabilityRegistry } from '../database/capability-registry';
 import type { MysqlSessionManager } from '../database/mysql-session';
+import { DATABASE_CATALOG_REVISION, getDatabaseDialect, listDatabaseDrivers, listDatabaseProfiles } from '@shared/database-catalog';
 
 export type ServerContext = {
   registry: AgentRegistry;
@@ -136,6 +137,16 @@ export function createApp(context: ServerContext): { app: Hono; hub: BroadcastHu
   app.get('/api/connectors/providers', (c) => c.json({ ok: true, data: connectors.listProviders() }));
   app.get('/api/connectors/instances', (c) => c.json({ ok: true, data: connectors.listInstances() }));
   app.get('/api/connectors/instances/:id', (c) => connectorReply(c, () => connectors.detail(c.req.param('id'))));
+
+  app.get('/api/database/catalog', (c) => c.json({
+    ok: true,
+    data: { sourceRevision: DATABASE_CATALOG_REVISION, declarationOnly: true, drivers: listDatabaseDrivers(), profiles: listDatabaseProfiles() },
+  }));
+  app.get('/api/database/catalog/dialects/:name', (c) => {
+    const dialect = getDatabaseDialect(c.req.param('name'));
+    return dialect ? c.json({ ok: true, data: dialect })
+      : c.json({ ok: false, error: { code: 'not_found', message: 'SQL 方言不存在' } }, 404);
+  });
 
   app.post('/api/database/mysql/sessions', async (c) => {
     if (!context.mysqlSessions) return c.json({ ok: false, error: { code: 'unavailable', message: 'MySQL 驱动未启用' } }, 503);

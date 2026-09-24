@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "dbxRevision": "f909f85075e12beb78dffe5942f7d039bede25de",
-  "sourceBaseline": "core/tasks/dbx-source-baseline.json",
+  "sourceBaseline": "shared/catalog/dbx-catalog.json",
   "sourcePlan": "core/tasks/dbx-full-capability-migration.md",
   "statusValues": [
     "pending",
@@ -47,7 +47,7 @@
         },
         {
           "kind": "driver-profile-snapshot",
-          "path": "core/tasks/dbx-source-baseline.json",
+          "path": "shared/catalog/dbx-catalog.json",
           "check": "81 unique driver types, 104 unique profiles, source SHA-256 recorded"
         },
         {
@@ -314,7 +314,7 @@
     {
       "id": "F04",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "available",
       "applicableDriverTypes": [
         "mysql",
@@ -412,7 +412,23 @@
         "action": "将 DBX 能力标记、SQL 方言和连接 Profile 转为 Fouc 单一目录源；启动时校验 Profile→驱动→能力映射，未知/缺失能力不误开放。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-catalog",
+          "path": "shared/catalog/dbx-catalog.json",
+          "check": "81 drivers, 104 profiles, 35 SQL dialects; source SHA-256 and mapping verification"
+        },
+        {
+          "kind": "partial-runtime",
+          "path": "shared/src/database-catalog.ts",
+          "check": "startup validation fails closed; authenticated catalog API and MySQL declaration read from local catalog"
+        },
+        {
+          "kind": "partial-acceptance",
+          "path": "core/tasks/dbx-catalog-integration-2026-09-24.md",
+          "check": "source hashes, mapping tests, API authentication and remaining entry-point gaps recorded"
+        }
+      ],
       "scopeKind": "driver"
     },
     {

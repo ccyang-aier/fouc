@@ -1,0 +1,11 @@
+DBX
+Source revision: f909f85075e12beb78dffe5942f7d039bede25de
+License: Apache License 2.0; see DBX-LICENSE.txt in this directory.
+
+Fouc incorporates adapted DBX driver and connection Profile descriptors and
+SQL dialect metadata in shared/catalog/dbx-catalog.json. The YAML dialect
+descriptors were converted to JSON. The MySQL metadata lookup sequence was
+adapted for the Fouc Bun sidecar.
+
+This notice covers DBX-derived material. Other dependency notices remain
+subject to the separate F06 license audit.

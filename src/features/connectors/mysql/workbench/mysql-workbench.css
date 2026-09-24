@@ -262,7 +262,7 @@
 .mw-editor-code pre, .mw-editor-code textarea { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 10px 12px; overflow: auto; white-space: pre; tab-size: 2; font: 12px/23px var(--font-code); letter-spacing: 0; }
 .mw-editor-code pre { pointer-events: none; color: #293c54; }
 .mw-editor-code textarea { resize: none; border: 0; outline: none; background: transparent; color: transparent; caret-color: var(--ink); -webkit-text-fill-color: transparent; }
-.mw-editor-code textarea::selection { background: #bfd7ff; }
+.mw-editor-code textarea::selection { background: #5f9af444; }
 .mw-sql-keyword { color: #1648c9; font-weight: 650; }
 .mw-sql-string { color: #bf3d37; }
 .mw-sql-number { color: #289056; }

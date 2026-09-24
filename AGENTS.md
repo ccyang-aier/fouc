@@ -28,7 +28,7 @@ Fouc 是一套构建于 AI Agent 之上的超级工作台，面向个人与企�
 - 任务完成并通过验证后执行 Git 提交，提交信息使用规范、清晰的格式。
 - 提交后执行 `pnpm tauri build` 刷新桌面端构建产物，确保客户端始终运行最新代码。
 
-### 桌面端构建（Windows 本机避坑）
+### 桌面端构建
 
 `beforeBuildCommand`（`node scripts/build-backend.mjs && pnpm build`）在子 shell 中直接调用 `bun`（sidecar 编译）与 `pnpm`（Next.js 导出），两者必须作为独立命令在 PATH 上可解析，仅 `corepack pnpm` 不够。本机 shell PATH 均不含二者：
 

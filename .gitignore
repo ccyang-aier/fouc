@@ -26,3 +26,5 @@ Thumbs.db
 
 # backend sidecar build output (bun compile, per-target)
 /src-tauri/binaries
+
+/opensource

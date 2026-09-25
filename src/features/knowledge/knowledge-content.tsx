@@ -1,7 +1,7 @@
 "use client";
 
 import type * as React from "react";
-import { ArrowUUpLeft, ClockCounterClockwise, FilePlus, FolderPlus, Star, Trash, X } from "@phosphor-icons/react";
+import { ArrowUUpLeft, ClockCounterClockwise, FilePlus, FolderPlus, SidebarSimple, Star, Trash, X } from "@phosphor-icons/react";
 import type { DocumentVersion, KnowledgeSnapshot } from "./knowledge-model";
 import type { KnowledgeAction } from "./knowledge-client";
 import styles from "./knowledge-canvas.module.css";
@@ -11,6 +11,7 @@ const headings: Record<string, string> = { home: "首页", "all-documents": "全
 interface Props {
   library: KnowledgeSnapshot; status: "loading" | "ready" | "error"; error: string | null;
   clearError: () => void; retry: () => void; activeItem: string; activeResource: string | null;
+  onExpandSidebar?: () => void;
   activeDocumentId: string | null; tabs: string[]; splitDocumentId: string | null;
   infoDocumentId: string | null; historyDocumentId: string | null; versions: DocumentVersion[];
   setTabs: React.Dispatch<React.SetStateAction<string[]>>; setActiveDocumentId: (id: string | null) => void;
@@ -32,9 +33,10 @@ export function KnowledgeContent(props: Props) {
   const listedDocuments = activeProject ? liveDocuments.filter((document) => document.projectId === activeProject.id) : activeItem === "trash" ? library.documents.filter((document) => document.trashedAt) : activeItem === "starred" ? liveDocuments.filter((document) => document.starred) : liveDocuments;
 
   return <main className={styles.content}>
+    {props.onExpandSidebar && <button type="button" className={styles.expandSidebar} aria-label="展开知识库侧边栏" title="展开知识库侧边栏" onClick={props.onExpandSidebar}><SidebarSimple aria-hidden="true" weight="regular" /></button>}
     {props.error && <div role="alert" className={styles.error}>{props.error}<button type="button" onClick={props.clearError} aria-label="关闭错误"><X size={15} /></button></div>}
     {props.status === "loading" ? <div className={styles.empty}>正在加载知识库…</div> : props.status === "error" ? <div className={styles.empty}><button type="button" onClick={props.retry}>重试连接知识库</button></div> : activeDocument ? <>
-      {tabs.length > 0 && <div className={styles.tabs}>{tabs.map((id) => { const document = library.documents.find((item) => item.id === id); return document && <div key={id} className={styles.tab} data-active={id === activeDocumentId}><button type="button" onClick={() => props.openDocument(id)}>{document.title}</button><button type="button" aria-label={`关闭 ${document.title}`} onClick={() => { const next = tabs.filter((tab) => tab !== id); props.setTabs(next); if (activeDocumentId === id) props.setActiveDocumentId(next.at(-1) ?? null); }}><X size={12} /></button></div>; })}</div>}
+      {tabs.length > 0 && <div className={`${styles.tabs} ${props.onExpandSidebar ? styles.tabsWithExpand : ""}`}>{tabs.map((id) => { const document = library.documents.find((item) => item.id === id); return document && <div key={id} className={styles.tab} data-active={id === activeDocumentId}><button type="button" onClick={() => props.openDocument(id)}>{document.title}</button><button type="button" aria-label={`关闭 ${document.title}`} onClick={() => { const next = tabs.filter((tab) => tab !== id); props.setTabs(next); if (activeDocumentId === id) props.setActiveDocumentId(next.at(-1) ?? null); }}><X size={12} /></button></div>; })}</div>}
       <div className={styles.editorLayout}><article className={styles.editor}><input aria-label="文档标题" key={activeDocument.id + activeDocument.title} defaultValue={activeDocument.title} onBlur={(event) => { const title = event.target.value.trim(); if (title && title !== activeDocument.title) void props.act({ action: "update-document", id: activeDocument.id, title }); }} className={styles.titleInput} /><textarea aria-label="文档内容" key={activeDocument.id + activeDocument.updatedAt} defaultValue={activeDocument.content} onBlur={(event) => { const content = event.target.value; if (content !== activeDocument.content) void props.act({ action: "update-document", id: activeDocument.id, content }); }} className={styles.editorInput} placeholder="开始记录…" /></article>{splitDocument && <article className={styles.editor}><div className={styles.splitHeader}>{splitDocument.title}<button type="button" onClick={() => props.setSplitDocumentId(null)} aria-label="关闭分屏"><X size={14} /></button></div><p>{splitDocument.content || "暂无内容"}</p></article>}</div>
     </> : <div className={styles.libraryView}>
       <div className={styles.viewHeader}><div><span className={styles.eyebrow}>知识库</span><h1>{activeProject?.name ?? headings[activeItem] ?? "知识库"}</h1></div>{activeItem !== "trash" && <button type="button" className={styles.primaryAction} onClick={() => void props.createDocument(activeProject?.id ?? null)}><FilePlus size={16} />新建文档</button>}</div>

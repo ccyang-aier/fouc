@@ -1,22 +1,21 @@
 .layout { display: flex; width: 100%; height: 100%; min-width: 0; background: #fff; }
 .sidebar { width: 252px; flex: none; overflow: hidden; border-right: 1px solid #e7e9ed; background: #fff; color: #67747d; --sidebar-text: #68747c; --sidebar-heading: #59666f; --sidebar-row-hover: #f5f7f8; --sidebar-row-hover-border: #eceef0; --sidebar-row-selected: #fff; --sidebar-row-selected-border: #e7e9ed; --sidebar-row-shadow: #1d2d3910; --sidebar-row-focus: #7994aa; --sidebar-row-pressed: #edf0f2; }
-.workspaceHeader { display: flex; height: 72px; flex: none; align-items: center; gap: 8px; padding: 9px 8px; }
-.workspaceButton { display: flex; height: 52px; min-width: 0; flex: 1; align-items: center; gap: 10px; padding: 0 10px; border-radius: 7px; background: #e8eff7; color: #101923; text-align: left; outline: none; transition: background .15s ease; }
-.workspaceButton:hover, .workspaceButton[data-state="open"] { background: #d9e5f2; }
-.workspaceButton:focus-visible, .workspaceCollapse:focus-visible, .collapsedExpand:focus-visible { outline: 2px solid #7994aa; outline-offset: 2px; }
-.workspaceAvatar { display: grid; width: 34px; height: 34px; flex: none; place-items: center; border-radius: 7px; background: #9858fa; color: #fff; font-size: 16px; font-weight: 600; }
-.workspaceName { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 17px; font-weight: 600; line-height: 1; }
-.workspaceCollapse { display: grid; width: 28px; height: 36px; flex: none; place-items: center; border-radius: 6px; color: #5f718a; outline: none; }
-.workspaceCollapse:hover, .collapsedExpand:hover { background: #eef3f8; }
-.workspaceCollapse svg, .collapsedExpand svg { width: 21px; height: 21px; }
-.workspaceMenu { width: 270px; padding: 8px; border: 1px solid #dfe5ee; border-radius: 12px; background: #fff; box-shadow: 0 10px 28px #17243d24; }
-.workspaceMenuTitle { padding: 9px 12px 13px 51px; color: #39485d; font-size: 17px; font-weight: 500; }
-.workspaceMenuItem { height: 43px; gap: 16px; padding: 0 15px; color: #344156; font-size: 16px; cursor: pointer; }
-.workspaceMenuItem svg { width: 21px; height: 21px; flex: none; color: #3e4a5b; }
+.workspaceHeader { display: flex; height: 54px; flex: none; align-items: center; gap: 4px; padding: 6px 8px; }
+.workspaceButton { display: flex; height: 40px; min-width: 0; flex: 1; align-items: center; gap: 9px; padding: 0 7px; border-radius: 7px; background: #fff; color: #101923; text-align: left; outline: none; transition: background .15s ease; }
+.workspaceButton:hover, .workspaceButton[data-state="open"] { background: #f4f6f8; }
+.workspaceButton:focus-visible, .workspaceCollapse:focus-visible, .expandSidebar:focus-visible { outline: 2px solid #7994aa; outline-offset: 2px; }
+.workspaceAvatar { display: grid; width: 28px; height: 28px; flex: none; place-items: center; border-radius: 6px; background: #9858fa; color: #fff; font-size: 13px; font-weight: 600; }
+.workspaceName { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 14px; font-weight: 600; line-height: 1; }
+.workspaceCollapse { display: grid; width: 28px; height: 32px; flex: none; place-items: center; border-radius: 6px; color: #5f718a; outline: none; }
+.workspaceCollapse:hover, .expandSidebar:hover { background: #eef3f8; }
+.workspaceCollapse svg, .expandSidebar svg { width: 18px; height: 18px; }
+.workspaceMenu { width: 212px; padding: 5px; border: 1px solid #dfe5ee; border-radius: 10px; background: #fff; box-shadow: 0 10px 28px #17243d24; }
+.workspaceMenuTitle { padding: 7px 9px 9px 38px; color: #39485d; font-size: 13px; font-weight: 500; }
+.workspaceMenuItem { height: 34px; gap: 11px; padding: 0 10px; color: #344156; font-size: 13px; cursor: pointer; }
+.workspaceMenuItem svg { width: 16px; height: 16px; flex: none; color: #3e4a5b; }
 .workspaceMenuItem[data-disabled] { cursor: not-allowed; opacity: .46; }
-.workspaceMenuSeparator { margin: 5px 0 7px; background: #dce4ef; }
-.collapsedSidebar { display: flex; width: 48px; height: 100%; flex: none; justify-content: center; border-right: 1px solid #e7e9ed; background: #fff; padding-top: 18px; }
-.collapsedExpand { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 6px; color: #5f718a; outline: none; }
+.workspaceMenuSeparator { margin: 4px 0; background: #dce4ef; }
+.expandSidebar { position: absolute; top: 8px; left: 8px; z-index: 1; display: grid; width: 30px; height: 30px; place-items: center; border-radius: 6px; color: #5f718a; outline: none; }
 .content { position: relative; min-width: 0; flex: 1; overflow: auto; background: #fff; color: #28343c; }
 .libraryView { max-width: 900px; margin: 0 auto; padding: 40px 48px; }
 .viewHeader { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 32px; }
@@ -36,6 +35,7 @@
 .secondaryAction { margin-top: 22px; }
 .error { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 9px 15px; background: #fff4f2; color: #a5483b; font-size: 12px; }
 .tabs { display: flex; gap: 2px; padding: 8px 12px 0; border-bottom: 1px solid #e8ecee; }
+.tabsWithExpand { padding-left: 44px; }
 .tab { display: flex; align-items: center; gap: 10px; max-width: 190px; padding: 6px 9px; border: 1px solid transparent; border-radius: 6px 6px 0 0; color: #7d898f; font-size: 11px; }
 .tab[data-active="true"] { border-color: #e8ecee; border-bottom-color: #fff; color: #37454f; }
 .tab button:first-child { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
@@ -52,6 +52,6 @@
 .dialog label { display: grid; gap: 8px; }
 .dialog input { width: 100%; padding: 9px 10px; border: 1px solid #dce2e5; border-radius: 6px; outline: none; }
 .dialog > div:last-child { display: flex; justify-content: end; gap: 8px; }
-.dialog button { padding: 7px 10px; border: 1px solid #dce2e5; border-radius: 6px; }
+.dialog button:not([role="radio"]) { padding: 7px 10px; border: 1px solid #dce2e5; border-radius: 6px; }
 .dialog button:disabled { opacity: .45; }
 .version { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid #edf0f1; }

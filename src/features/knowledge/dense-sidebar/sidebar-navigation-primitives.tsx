@@ -227,17 +227,6 @@ export function ProductivityGlyph({
   );
 }
 
-export function SidebarDocumentStar({ className }: { className?: string }) {
-  return (
-    <Star
-      aria-hidden="true"
-      size={12}
-      weight="fill"
-      className={cn(styles.documentStar, "shrink-0 text-[#f5b91e]", className)}
-    />
-  );
-}
-
 export function SidebarDocumentActions({
   documentId,
   starred,
@@ -247,18 +236,23 @@ export function SidebarDocumentActions({
   starred: boolean;
   onAction: (documentId: string, action: DocumentAction) => void;
 }) {
-  const [menuOpen, setMenuOpen] = React.useState(false);
-
   return (
-    <>
-      {starred && !menuOpen ? <SidebarDocumentStar className="ml-auto" /> : null}
+    <div className={cn(styles.actions, "ml-auto flex shrink-0 items-center gap-0.5")} data-starred={starred ? "true" : undefined}>
+      <button
+        type="button"
+        className={styles.actionButton}
+        aria-label={starred ? "取消收藏文档" : "收藏文档"}
+        title={starred ? "取消收藏" : "收藏"}
+        onClick={() => onAction(documentId, "toggle-star")}
+      >
+        <Star aria-hidden="true" size={14} weight={starred ? "fill" : "regular"} className={starred ? "text-[#e5aa14]" : undefined} />
+      </button>
       <SidebarDocumentMenu
         documentId={documentId}
         starred={starred}
         onAction={onAction}
-        onOpenChange={setMenuOpen}
       />
-    </>
+    </div>
   );
 }
 

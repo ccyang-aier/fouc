@@ -17,30 +17,26 @@ export function SidebarDocumentMenu({
   documentId,
   starred,
   onAction,
-  onOpenChange,
 }: {
   documentId: string;
   starred: boolean;
   onAction: (documentId: string, action: DocumentAction) => void;
-  onOpenChange?: (open: boolean) => void;
 }) {
   const { t } = useI18n();
 
   return (
-    <div className={styles.actions}>
-      <DropdownMenu onOpenChange={onOpenChange}>
-        <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            aria-label={t("sidebar.documentActions")}
-            className={styles.actionButton}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <DotsThree aria-hidden="true" size={15} weight="bold" />
-          </button>
-        </DropdownMenuTrigger>
-        <DocumentActionMenuContent documentId={documentId} starred={starred} onAction={onAction} />
-      </DropdownMenu>
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          aria-label={t("sidebar.documentActions")}
+          className={styles.actionButton}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <DotsThree aria-hidden="true" size={15} weight="bold" />
+        </button>
+      </DropdownMenuTrigger>
+      <DocumentActionMenuContent documentId={documentId} starred={starred} onAction={onAction} />
+    </DropdownMenu>
   );
 }

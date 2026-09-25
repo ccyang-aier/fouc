@@ -31,6 +31,7 @@ export type SidebarSectionId = "projects" | "tags" | "recent";
 
 export function ExpandedPrimarySidebar({
   header,
+  collapsed = false,
   activeItem,
   className,
   activeResource,
@@ -59,6 +60,7 @@ export function ExpandedPrimarySidebar({
   onSelectRecent,
 }: {
   header?: React.ReactNode;
+  collapsed?: boolean;
   activeItem: string;
   className?: string;
   activeResource: string | null;
@@ -102,6 +104,9 @@ export function ExpandedPrimarySidebar({
   return (
     <aside
       aria-label={t("nav.primary")}
+      aria-hidden={collapsed}
+      inert={collapsed}
+      data-collapsed={collapsed}
       className={cn(
         "group/sidebar relative z-20 flex h-full min-h-0 flex-col overflow-hidden",
         className,

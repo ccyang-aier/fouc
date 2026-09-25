@@ -9,7 +9,6 @@ import {
   FileText,
   FolderOpen,
   HashStraight,
-  House,
   ImageSquare,
   Plant,
   SquaresFour,
@@ -31,7 +30,6 @@ import { SidebarDocumentMenu } from "@/features/knowledge/dense-sidebar/sidebar-
 import styles from "./sidebar-interactions.module.css";
 
 export const sidebarIconMap: Record<SidebarIconName, PhosphorIcon> = {
-  home: House,
   star: Star,
   archive: Archive,
   trash: TrashSimple,

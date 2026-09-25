@@ -1,5 +1,5 @@
 export const PROJECT_ICON_CATALOG = [
-  { id: "folder", fileName: "01-folder.png", labels: { en: "Folder", zh: "普通项目" } },
+  { id: "folder", fileName: "01-folder.png", labels: { en: "Folder", zh: "普通知识库" } },
   { id: "document", fileName: "02-document.png", labels: { en: "Document", zh: "文档" } },
   { id: "notebook", fileName: "03-notebook.png", labels: { en: "Notebook", zh: "笔记" } },
   { id: "collection", fileName: "04-collection.png", labels: { en: "Collection", zh: "资料集" } },

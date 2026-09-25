@@ -32,7 +32,7 @@ export class KnowledgeRepository {
   tag(id: string) { return this.db.prepare('SELECT * FROM knowledge_tag WHERE id = ?').get(id) as TagRow | undefined; }
 
   createProject(name: string, iconId: string, parentId: string | null = null): KnowledgeProject {
-    if (parentId && !this.project(parentId)) throw new Error('项目不存在');
+    if (parentId && !this.project(parentId)) throw new Error('知识库不存在');
     const id = crypto.randomUUID();
     const now = Date.now();
     this.db.prepare('INSERT INTO knowledge_project (id, name, icon_id, parent_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)').run(id, name, iconId, parentId, now, now);
@@ -46,7 +46,7 @@ export class KnowledgeRepository {
   deleteProject(id: string) { this.db.prepare('DELETE FROM knowledge_project WHERE id = ?').run(id); }
 
   createDocument(projectId: string | null = null, tagId: string | null = null): KnowledgeDocument {
-    if (projectId && !this.project(projectId)) throw new Error('项目不存在');
+    if (projectId && !this.project(projectId)) throw new Error('知识库不存在');
     if (tagId && !this.tag(tagId)) throw new Error('标签不存在');
     const id = crypto.randomUUID();
     const now = Date.now();
@@ -71,7 +71,7 @@ export class KnowledgeRepository {
   starDocument(id: string, starred: boolean) { this.db.prepare('UPDATE knowledge_document SET starred = ?, updated_at = ? WHERE id = ?').run(Number(starred), Date.now(), id); }
   trashDocument(id: string, trashed: boolean) { this.db.prepare('UPDATE knowledge_document SET trashed_at = ?, updated_at = ? WHERE id = ?').run(trashed ? Date.now() : null, Date.now(), id); }
   moveDocument(id: string, projectId: string | null) {
-    if (projectId && !this.project(projectId)) throw new Error('项目不存在');
+    if (projectId && !this.project(projectId)) throw new Error('知识库不存在');
     this.db.prepare('UPDATE knowledge_document SET project_id = ?, updated_at = ? WHERE id = ?').run(projectId, Date.now(), id);
   }
   deleteDocument(id: string) { this.db.prepare('DELETE FROM knowledge_document WHERE id = ?').run(id); }

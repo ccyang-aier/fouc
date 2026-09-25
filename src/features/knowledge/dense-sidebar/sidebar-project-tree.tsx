@@ -14,6 +14,7 @@ import {
 
 import {
   ProjectGlyph,
+  SidebarCreateIcon,
   SidebarDocumentActions,
   sidebarDocumentIconClass,
   sidebarIconMap,
@@ -120,7 +121,7 @@ export function SidebarProjectTreeNode({
               className={styles.actionButton}
               onClick={() => onProjectAction(node.id, "new-document")}
             >
-              <FilePlus aria-hidden="true" size={14} weight="regular" />
+              <SidebarCreateIcon />
             </button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

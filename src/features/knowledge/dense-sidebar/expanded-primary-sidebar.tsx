@@ -1,11 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { Clock, Folder, FolderPlus, Folders, Tag } from "@phosphor-icons/react";
+import { Clock, Folder, Folders, Tag } from "@phosphor-icons/react";
 
 import type { DocumentAction } from "@/features/knowledge/dense-sidebar/document-action-menu-content";
 import {
   SidebarCollapsibleContent,
+  SidebarCreateIcon,
   sidebarIconMap,
   SidebarRow,
   SidebarSectionHeader,
@@ -158,15 +159,10 @@ export function ExpandedPrimarySidebar({
                 <IconButton
                   label={t("sidebar.newProject")}
                   size="icon-xs"
-                  className="size-[20px] rounded-[4px] text-muted-foreground shadow-none hover:bg-[var(--knowledge-sidebar-state-bg)] hover:text-foreground [&_svg]:!size-[13px]"
+                  className="size-[20px] rounded-[4px] text-muted-foreground shadow-none hover:bg-[var(--knowledge-sidebar-state-bg)] hover:text-foreground"
                   onClick={onNewProject}
                 >
-                  <FolderPlus
-                    aria-hidden="true"
-                    size={13}
-                    weight="regular"
-                    className="size-[13px]"
-                  />
+                  <SidebarCreateIcon />
                 </IconButton>
               </>
             }
@@ -207,7 +203,7 @@ export function ExpandedPrimarySidebar({
                   className="size-[20px] rounded-[4px] text-muted-foreground shadow-none hover:bg-[var(--knowledge-sidebar-state-bg)] hover:text-foreground"
                   onClick={() => setTagPopoverOpen((open) => !open)}
                 >
-                  <Tag aria-hidden="true" size={14} />
+                  <SidebarCreateIcon />
                 </IconButton>
             }
           />

@@ -4,12 +4,12 @@ import {
   CaretDown,
   CaretRight,
   DotsThree,
-  FilePlus,
   PencilSimple,
   Trash,
 } from "@phosphor-icons/react";
 
 import {
+  SidebarCreateIcon,
   SidebarDocumentActions,
   sidebarDocumentIconClass,
 } from "@/features/knowledge/dense-sidebar/sidebar-navigation-primitives";
@@ -95,7 +95,7 @@ export function SidebarTagTreeNode({
             className={styles.actionButton}
             onClick={() => onTagAction(tag.id, "new-document")}
           >
-            <FilePlus aria-hidden="true" size={14} weight="regular" />
+            <SidebarCreateIcon />
           </button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

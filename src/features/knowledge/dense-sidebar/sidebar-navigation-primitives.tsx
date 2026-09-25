@@ -11,6 +11,7 @@ import {
   HashStraight,
   ImageSquare,
   Plant,
+  Plus,
   SquaresFour,
   Star,
   TrashSimple,
@@ -42,6 +43,10 @@ export const sidebarIconMap: Record<SidebarIconName, PhosphorIcon> = {
   tasks: CheckSquareOffset,
   blocks: SquaresFour,
 };
+
+export function SidebarCreateIcon() {
+  return <Plus aria-hidden="true" size={14} weight="regular" />;
+}
 
 export const sidebarDocumentIconClass =
   "mr-2 shrink-0 text-[#7c8387] transition-colors duration-150 ease-out group-hover:text-foreground group-focus-within:text-foreground group-data-[selected=true]:text-foreground";

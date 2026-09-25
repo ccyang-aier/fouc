@@ -12,7 +12,7 @@ import type { DocumentAction } from "./dense-sidebar/document-action-menu-conten
 import { EMPTY_KNOWLEDGE, type DocumentVersion, type HyperdocDocumentSummary, type KnowledgeSnapshot } from "./knowledge-model";
 import { loadDocumentVersions, loadKnowledge, runKnowledgeAction, type KnowledgeAction } from "./knowledge-client";
 import { KnowledgeContent } from "./knowledge-content";
-import { KnowledgeWorkspaceHeader } from "./knowledge-workspace-header";
+import { KnowledgeBaseHeader } from "./knowledge-base-header";
 import styles from "./knowledge-canvas.module.css";
 
 // Adapted from dense/src/shell/app-shell.tsx: buildSidebarProjects.
@@ -44,9 +44,10 @@ function buildSidebarProjects(projects: KnowledgeSnapshot["projects"], documents
 
 const tagPalette = ["#ada34e", "#d8777b", "#cd9552", "#6e9a8f", "#798dc0"];
 
-export function KnowledgePage({ workspaceName, workspaces, activeWorkspaceId, onSelectWorkspace, onOpenSettings }: { workspaceName: string; workspaces: readonly { id: string; label: string }[]; activeWorkspaceId: string; onSelectWorkspace: (id: string) => void; onOpenSettings: () => void }) {
+export function KnowledgePage({ onOpenSettings }: { onOpenSettings: () => void }) {
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
   const [library, setLibrary] = React.useState<KnowledgeSnapshot>(EMPTY_KNOWLEDGE);
+  const [activeKnowledgeBaseId, setActiveKnowledgeBaseId] = React.useState<string | null>(null);
   const [status, setStatus] = React.useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = React.useState<string | null>(null);
   const [activeItem, setActiveItem] = React.useState("all-documents");
@@ -68,8 +69,10 @@ export function KnowledgePage({ workspaceName, workspaces, activeWorkspaceId, on
 
   const applySnapshot = React.useCallback((next: KnowledgeSnapshot) => {
     const projectIds = new Set(next.projects.map((project) => project.id));
+    const knowledgeBaseIds = next.projects.filter((project) => !project.parentId).map((project) => project.id);
     const documentIds = new Set(next.documents.map((document) => document.id));
     setLibrary(next);
+    setActiveKnowledgeBaseId((current) => current && knowledgeBaseIds.includes(current) ? current : knowledgeBaseIds[0] ?? null);
     setActiveResource((current) => current?.startsWith("project:") && !projectIds.has(current.slice(8)) ? null : current);
     setActiveDocumentId((current) => current && !documentIds.has(current) ? null : current);
     setTabs((current) => current.filter((id) => documentIds.has(id)));
@@ -117,16 +120,25 @@ export function KnowledgePage({ workspaceName, workspaces, activeWorkspaceId, on
   }, [refresh]);
 
   const activeDocuments = React.useMemo(() => library.documents.filter((document) => !document.trashedAt), [library.documents]);
+  const knowledgeBases = React.useMemo(() => library.projects.filter((project) => !project.parentId), [library.projects]);
   const sidebarProjects = React.useMemo(() => buildSidebarProjects(library.projects, activeDocuments), [library.projects, activeDocuments]);
   const recentNotes = React.useMemo<SidebarRecentNote[]>(() => activeDocuments.slice(0, 10).map((document) => ({ id: document.id, label: document.title, starred: document.starred })), [activeDocuments]);
   const tagDocuments = React.useMemo(() => Object.fromEntries(library.tags.map((tag) => [tag.id, activeDocuments.filter((document) => library.documentTags[document.id]?.includes(tag.id))])), [library, activeDocuments]);
 
   function navigate(id: string) { setActiveItem(id); setActiveResource(null); setActiveDocumentId(null); setActiveDocumentLocation(null); }
-  function selectProject(id: string) { setActiveResource(id); setActiveDocumentId(null); setActiveDocumentLocation(null); }
+  function selectProject(id: string) {
+    setActiveResource(id);
+    setActiveDocumentId(null);
+    setActiveDocumentLocation(null);
+    let project = library.projects.find((item) => item.id === id.slice(8));
+    while (project?.parentId) project = library.projects.find((item) => item.id === project?.parentId);
+    if (project) setActiveKnowledgeBaseId(project.id);
+  }
+  function selectKnowledgeBase(id: string) { selectProject(`project:${id}`); }
   function openProjectDialog() { setProjectName(""); setProjectIconId(DEFAULT_PROJECT_ICON_ID); setProjectDialogOpen(true); }
   function openDocument(id: string, location: "project" | "recent" | "tag" | null = null) { setActiveDocumentId(id); setActiveResource(null); setActiveDocumentLocation(location); setTabs((current) => current.includes(id) ? current : [...current, id]); }
   async function createDocument(projectId: string | null = null, tagId: string | null = null) { const document = await act<HyperdocDocumentSummary>({ action: "create-document", projectId, tagId }); if (document) openDocument(document.id, tagId ? "tag" : projectId ? "project" : null); }
-  async function createProject(name: string, parentId: string | null = null, iconId: ProjectIconId = DEFAULT_PROJECT_ICON_ID) { const project = await act<{ id: string }>({ action: "create-project", name, iconId, parentId }); if (project) selectProject(`project:${project.id}`); }
+  async function createProject(name: string, parentId: string | null = null, iconId: ProjectIconId = DEFAULT_PROJECT_ICON_ID) { const project = await act<{ id: string }>({ action: "create-project", name, iconId, parentId }); if (project) { if (!parentId) setActiveKnowledgeBaseId(project.id); selectProject(`project:${project.id}`); } }
 
   // Adapted from dense/src/shell/app-shell.tsx: sidebar action handlers.
   function projectAction(id: string, action: SidebarProjectAction) {
@@ -162,7 +174,7 @@ export function KnowledgePage({ workspaceName, workspaces, activeWorkspaceId, on
   return <div className={styles.layout}>
     <ExpandedPrimarySidebar
       collapsed={sidebarCollapsed}
-      header={<KnowledgeWorkspaceHeader workspaceName={workspaceName} workspaces={workspaces} activeWorkspaceId={activeWorkspaceId} onSelectWorkspace={onSelectWorkspace} onCollapse={() => setSidebarCollapsed(true)} onCreateKnowledgeBase={openProjectDialog} onOpenSettings={onOpenSettings} />}
+      header={<KnowledgeBaseHeader knowledgeBases={knowledgeBases} activeKnowledgeBaseId={activeKnowledgeBaseId} onSelectKnowledgeBase={selectKnowledgeBase} onCollapse={() => setSidebarCollapsed(true)} onCreateKnowledgeBase={openProjectDialog} onOpenSettings={onOpenSettings} />}
       className={styles.sidebar} activeItem={activeItem} activeResource={activeResource} activeDocumentId={activeDocumentId} activeDocumentLocation={activeDocumentLocation} projects={sidebarProjects} tags={library.tags} tagDocuments={tagDocuments} recentNotes={recentNotes} expandedProjects={expandedProjects} expandedTags={expandedTags} expandedSections={expandedSections} onNavigateMain={navigate} onBrowseProjects={() => navigate("projects")} onSelectProject={(id) => selectProject(`project:${id}`)} onSelectDocument={(id) => openDocument(id, "project")} onToggleProject={(id) => setExpandedProjects((current) => ({ ...current, [id]: !(current[id] ?? sidebarProjects.some((node) => node.id === id && node.defaultExpanded)) }))} onProjectAction={projectAction} onTagAction={tagAction} onDocumentAction={documentAction} onToggleSection={(section) => setExpandedSections((current) => ({ ...current, [section]: !current[section] }))} onNewProject={openProjectDialog} onCreateTag={(name) => { void act({ action: "create-tag", name, color: tagPalette[library.tags.length % tagPalette.length] }); }} onSelectTagDocument={(id) => openDocument(id, "tag")} onToggleTag={(id) => setExpandedTags((current) => ({ ...current, [id]: !(current[id] ?? true) }))} onSelectRecent={(id) => openDocument(id, "recent")} />
     <KnowledgeContent library={library} status={status} error={error} clearError={() => setError(null)} retry={() => { setStatus("loading"); void refresh().catch((cause) => { setError(String(cause)); setStatus("error"); }); }} onExpandSidebar={sidebarCollapsed ? () => setSidebarCollapsed(false) : undefined} activeItem={activeItem} activeResource={activeResource} activeDocumentId={activeDocumentId} tabs={tabs} splitDocumentId={splitDocumentId} infoDocumentId={infoDocumentId} historyDocumentId={historyDocumentId} versions={versions} setTabs={setTabs} setActiveDocumentId={setActiveDocumentId} setSplitDocumentId={setSplitDocumentId} setInfoDocumentId={setInfoDocumentId} setHistoryDocumentId={setHistoryDocumentId} openDocument={openDocument} selectProject={selectProject} createDocument={createDocument} openProjectDialog={openProjectDialog} act={act} />
     {projectDialogOpen && <div className={styles.dialogBackdrop} role="presentation" onMouseDown={() => setProjectDialogOpen(false)}><form className={styles.dialog} role="dialog" aria-modal="true" aria-label="新建知识库" onMouseDown={(event) => event.stopPropagation()} onSubmit={(event) => { event.preventDefault(); const name = projectName.trim(); if (name) { void createProject(name, null, projectIconId); setProjectDialogOpen(false); } }}><h2>新建知识库</h2><label>知识库名称<input autoFocus value={projectName} onChange={(event) => setProjectName(event.target.value)} placeholder="输入知识库名称" maxLength={36} /></label><ProjectIconPicker value={projectIconId} onChange={setProjectIconId} /><div><button type="button" onClick={() => setProjectDialogOpen(false)}>取消</button><button type="submit" disabled={!projectName.trim()}>创建知识库</button></div></form></div>}

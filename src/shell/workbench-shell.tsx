@@ -133,8 +133,6 @@ export function WorkbenchShell() {
     return label
   }
 
-  const activeSpaceName = spaces.find((space) => space.id === activeSpaceId)?.label ?? "工作空间"
-
   return (
     <MotionConfig reducedMotion="user">
       <TooltipProvider>
@@ -204,7 +202,7 @@ export function WorkbenchShell() {
                           ) : view === "connectors" ? (
                             <ConnectorsCanvas onWorkbenchFocus={() => setSidebarCollapsed(true)} />
                           ) : view === "knowledge" ? (
-                            <KnowledgePage workspaceName={activeSpaceName} workspaces={spaces} activeWorkspaceId={activeSpaceId} onSelectWorkspace={setActiveSpaceId} onOpenSettings={() => changeView("settings")} />
+                            <KnowledgePage onOpenSettings={() => changeView("settings")} />
                           ) : (
                             <div className="flex h-full items-center justify-center text-[13px] text-[var(--ink-soft)]">
                               该空间已在 V1 规划中，尚未开放

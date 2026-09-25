@@ -1,11 +1,10 @@
 "use client";
 
-import { GearSix, Plus, SidebarSimple, SignOut } from "@phosphor-icons/react";
+import { Check, GearSix, Plus, SidebarSimple } from "@phosphor-icons/react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -13,13 +12,19 @@ import styles from "./knowledge-canvas.module.css";
 
 export function KnowledgeWorkspaceHeader({
   workspaceName,
+  workspaces,
+  activeWorkspaceId,
+  onSelectWorkspace,
   onCollapse,
-  onCreateWorkspace,
+  onCreateKnowledgeBase,
   onOpenSettings,
 }: {
   workspaceName: string;
+  workspaces: readonly { id: string; label: string }[];
+  activeWorkspaceId: string;
+  onSelectWorkspace: (id: string) => void;
   onCollapse: () => void;
-  onCreateWorkspace: () => void;
+  onCreateKnowledgeBase: () => void;
   onOpenSettings: () => void;
 }) {
   return <div className={styles.workspaceHeader}>
@@ -31,16 +36,19 @@ export function KnowledgeWorkspaceHeader({
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" sideOffset={5} className={styles.workspaceMenu}>
-        <DropdownMenuLabel className={styles.workspaceMenuTitle}>{workspaceName}</DropdownMenuLabel>
-        <DropdownMenuItem className={styles.workspaceMenuItem} onSelect={onCreateWorkspace}>
-          <Plus aria-hidden="true" weight="bold" />新建工作区...
+        {workspaces.map((workspace) => (
+          <DropdownMenuItem key={workspace.id} className={styles.workspaceMenuWorkspace} data-active={workspace.id === activeWorkspaceId} onSelect={() => onSelectWorkspace(workspace.id)}>
+            <span className={styles.workspaceMenuAvatar} aria-hidden="true">{workspace.label.trim().slice(0, 1) || "工"}</span>
+            <span className={styles.workspaceMenuWorkspaceName}>{workspace.label}</span>
+            {workspace.id === activeWorkspaceId && <Check className={styles.workspaceMenuCheck} aria-label="当前工作区" weight="bold" />}
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuItem className={styles.workspaceMenuItem} onSelect={onCreateKnowledgeBase}>
+          <Plus aria-hidden="true" weight="bold" />新建知识库
         </DropdownMenuItem>
         <DropdownMenuSeparator className={styles.workspaceMenuSeparator} />
         <DropdownMenuItem className={styles.workspaceMenuItem} onSelect={onOpenSettings}>
           <GearSix aria-hidden="true" weight="fill" />设置
-        </DropdownMenuItem>
-        <DropdownMenuItem className={styles.workspaceMenuItem} disabled title="尚未接入账户服务">
-          <SignOut aria-hidden="true" weight="fill" />退出登录
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

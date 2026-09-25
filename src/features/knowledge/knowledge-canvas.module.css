@@ -14,7 +14,11 @@
 .workspaceCollapse:hover, .expandSidebar:hover { background: #eef3f8; }
 .workspaceCollapse svg, .expandSidebar svg { width: 18px; height: 18px; }
 .workspaceMenu { width: 212px; padding: 5px; border: 1px solid #dfe5ee; border-radius: 10px; background: #fff; box-shadow: 0 10px 28px #17243d24; }
-.workspaceMenuTitle { padding: 7px 9px 9px 38px; color: #39485d; font-size: 13px; font-weight: 500; }
+.workspaceMenuWorkspace { display: flex; min-height: 34px; gap: 9px; padding: 4px 9px; border-radius: 6px; color: #344156; font-size: 13px; cursor: pointer; }
+.workspaceMenuWorkspace[data-active="true"] { background: #f4f6f9; }
+.workspaceMenuAvatar { display: grid; width: 22px; height: 22px; flex: none; place-items: center; border-radius: 5px; background: #9858fa; color: #fff; font-size: 11px; font-weight: 600; }
+.workspaceMenuWorkspaceName { min-width: 0; flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.workspaceMenuCheck { width: 14px; height: 14px; flex: none; color: #6550b8; }
 .workspaceMenuItem { height: 34px; gap: 11px; padding: 0 10px; color: #344156; font-size: 13px; cursor: pointer; }
 .workspaceMenuItem svg { width: 16px; height: 16px; flex: none; color: #3e4a5b; }
 .workspaceMenuItem[data-disabled] { cursor: not-allowed; opacity: .46; }

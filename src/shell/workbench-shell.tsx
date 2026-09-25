@@ -202,7 +202,7 @@ export function WorkbenchShell() {
                           ) : view === "connectors" ? (
                             <ConnectorsCanvas onWorkbenchFocus={() => setSidebarCollapsed(true)} />
                           ) : view === "knowledge" ? (
-                            <KnowledgePage workspaceName={activeSpaceName} onCreateWorkspace={() => { createSpace(); changeView("projects") }} onOpenSettings={() => changeView("settings")} />
+                            <KnowledgePage workspaceName={activeSpaceName} workspaces={spaces} activeWorkspaceId={activeSpaceId} onSelectWorkspace={setActiveSpaceId} onOpenSettings={() => changeView("settings")} />
                           ) : (
                             <div className="flex h-full items-center justify-center text-[13px] text-[var(--ink-soft)]">
                               该空间已在 V1 规划中，尚未开放

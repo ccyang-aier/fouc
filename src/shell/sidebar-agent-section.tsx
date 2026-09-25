@@ -93,7 +93,7 @@ export function SidebarAgentSection({
 
   return (
     <section className={compact ? "mt-0.5" : "mt-3.5"} aria-label="Agent 管理">
-      <div className="sidebar-nav-row group/agents flex h-8 w-full items-center justify-between gap-2 rounded-[6px] px-1.5 text-[11px] text-[var(--muted-strong)]">
+      <div className="sidebar-nav-row group/agents flex h-8 w-full items-center justify-between gap-2 rounded-[6px] px-1.5 text-[12px] text-[var(--muted-strong)]">
         <button
           type="button"
           aria-expanded={open}
@@ -104,7 +104,7 @@ export function SidebarAgentSection({
             <Robot className="size-3.5" weight="duotone" />
           </span>
           <span className="truncate leading-4">Agent 管理</span>
-          <span className="text-[9px] tabular-nums text-[var(--muted)]">({agents.length})</span>
+          <span className="text-[10.5px] tabular-nums text-[var(--muted)]">({agents.length})</span>
           <CaretDown aria-hidden className={cn("size-2.5 shrink-0 transition-transform duration-150", !open && "-rotate-90")} weight="fill" />
         </button>
 
@@ -146,7 +146,7 @@ export function SidebarAgentSection({
           {agents.map((agent) => {
             const active = activeAgentId === agent.id
             return (
-              <div key={agent.id} data-active={active} className="sidebar-nav-row group/agent relative flex h-[30px] items-center rounded-[6px] text-[10.5px] text-[var(--muted-strong)]">
+              <div key={agent.id} data-active={active} className="sidebar-nav-row group/agent relative flex h-[30px] items-center rounded-[6px] text-[11.5px] text-[var(--muted-strong)]">
                 <button
                   type="button"
                   aria-label={agent.name}

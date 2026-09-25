@@ -188,6 +188,8 @@ export function WorkbenchShell() {
                         >
                           {view === "home" ? (
                             <HomeCanvas />
+                          ) : view === "project-home" ? (
+                            <div className="h-full bg-panel" aria-label="项目首页" />
                           ) : view === "projects" ? (
                             <ProjectHomeCanvas
                               favorited={projectFavorited}

@@ -108,13 +108,13 @@ export function WorkspaceRail({
 
   function selectSpace(id: string) {
     onActiveSpaceChange(id)
-    if (view !== "projects") onViewChange("projects")
+    if (view === "projects") onViewChange("project-home")
   }
 
   function createSpace() {
     const label = onCreateSpace()
     setFeedback(`已创建「${label}」`)
-    onViewChange("projects")
+    onViewChange("project-home")
   }
 
   function openSpaceMenu(event: React.MouseEvent, space: RailSpace) {
@@ -308,7 +308,7 @@ export function WorkspaceRail({
             <button
               type="button"
               aria-label="全部项目"
-              onClick={() => onViewChange("projects")}
+              onClick={() => onViewChange("project-home")}
               className="grid size-8 place-items-center rounded-md text-[var(--muted-strong)] outline-none transition-colors hover:bg-sidebar-hover hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
             >
               <SquaresFour aria-hidden className="size-[18px]" weight="duotone" />

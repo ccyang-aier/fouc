@@ -30,7 +30,7 @@ import type { WorkbenchView } from "./navigation-sidebar"
 
 const SEARCH_ITEMS: Array<{ label: string; detail: string; view: WorkbenchView }> = [
   { label: "新对话", detail: "开始一项新任务", view: "home" },
-  { label: "项目", detail: "浏览项目文件夹", view: "projects" },
+  { label: "项目", detail: "浏览项目文件夹", view: "project-home" },
   { label: "社区", detail: "发现 Agent 与技能", view: "community" },
   { label: "自动化", detail: "管理自动执行任务", view: "automation" },
   { label: "知识库", detail: "查看沉淀的知识", view: "knowledge" },
@@ -135,7 +135,7 @@ export function SystemBar({ onNavigate }: { onNavigate: (view: WorkbenchView) =>
           <PanelRow title="项目周报已生成" detail="产品研发" time="12 分钟前" tone="accent" unread />
           <PanelRow title="连接器同步完成" detail="GitHub 数据已是最新状态" time="1 小时前" tone="success" />
         </QuickPanel>
-        <QuickPanel label="任务" icon={ClipboardText} panelIcon={ListChecks} title="任务" subtitle="1 项进行中" footer="查看全部任务" onFooter={() => onNavigate("projects")}>
+        <QuickPanel label="任务" icon={ClipboardText} panelIcon={ListChecks} title="任务" subtitle="1 项进行中" footer="查看全部任务" onFooter={() => onNavigate("project-home")}>
           <PanelRow title="完善桌面端通知中心" detail="产品研发 · 今天" time="进行中" tone="accent" progress={68} />
           <PanelRow title="复核连接器权限" detail="连接器 · 明天" time="待处理" tone="neutral" />
         </QuickPanel>

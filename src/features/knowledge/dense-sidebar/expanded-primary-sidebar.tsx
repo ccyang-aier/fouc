@@ -145,7 +145,7 @@ export function ExpandedPrimarySidebar({
                 <IconButton
                   label={t("sidebar.browseAll")}
                   size="icon-xs"
-                  className="size-[20px] rounded-[4px] text-muted-foreground shadow-none hover:bg-hover hover:text-foreground [&_svg]:!size-[13px]"
+                  className="size-[20px] rounded-[4px] text-muted-foreground shadow-none hover:bg-[var(--knowledge-sidebar-state-bg)] hover:text-foreground [&_svg]:!size-[13px]"
                   onClick={onBrowseProjects}
                 >
                   <Folders
@@ -158,7 +158,7 @@ export function ExpandedPrimarySidebar({
                 <IconButton
                   label={t("sidebar.newProject")}
                   size="icon-xs"
-                  className="size-[20px] rounded-[4px] text-muted-foreground shadow-none hover:bg-hover hover:text-foreground [&_svg]:!size-[13px]"
+                  className="size-[20px] rounded-[4px] text-muted-foreground shadow-none hover:bg-[var(--knowledge-sidebar-state-bg)] hover:text-foreground [&_svg]:!size-[13px]"
                   onClick={onNewProject}
                 >
                   <FolderPlus
@@ -204,7 +204,7 @@ export function ExpandedPrimarySidebar({
                   label={t("sidebar.newTag")}
                   tooltipSide="top"
                   size="icon-xs"
-                  className="size-[20px] rounded-[4px] text-muted-foreground shadow-none hover:bg-hover hover:text-foreground"
+                  className="size-[20px] rounded-[4px] text-muted-foreground shadow-none hover:bg-[var(--knowledge-sidebar-state-bg)] hover:text-foreground"
                   onClick={() => setTagPopoverOpen((open) => !open)}
                 >
                   <Tag aria-hidden="true" size={14} />

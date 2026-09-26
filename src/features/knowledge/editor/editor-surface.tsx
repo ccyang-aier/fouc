@@ -22,6 +22,7 @@ import { ReadonlyBanner } from './components/readonly-banner';
 import { SyncIndicator } from './components/sync-indicator';
 import type { PageEditorViewModel } from './editor-state';
 import { pageCollaborationExtension } from './page-collaboration';
+import { createPageReviewExtension, PageReviewRail } from './review-integration';
 
 /** Document typography for the shared schema's DOM output (E05 adds NodeView polish). */
 const documentClasses = [
@@ -82,6 +83,7 @@ export function PageEditorSurface({
       ...createKnowledgeExtensions(),
       createBlockIdExtension({ pageId: scope.pageId }),
       pageCollaborationExtension(document, pageUndo),
+      createPageReviewExtension(),
     ],
     [scope.pageId, document, pageUndo],
   );
@@ -110,10 +112,13 @@ export function PageEditorSurface({
         <SyncIndicator view={view.sync} />
       </header>
       {view.readonlyReason ? <ReadonlyBanner reason={view.readonlyReason} level={level} /> : null}
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className={documentClasses}>
-          <EditorContent editor={editor} />
+      <div className="flex min-h-0 flex-1">
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className={documentClasses}>
+            <EditorContent editor={editor} />
+          </div>
         </div>
+        <PageReviewRail editor={editor} editable={view.editable} />
       </div>
     </section>
   );

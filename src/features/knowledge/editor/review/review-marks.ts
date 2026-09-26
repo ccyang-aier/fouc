@@ -108,16 +108,22 @@ function createReviewPlugin(): Plugin<ReviewMarksState> {
         let { flashId } = previous;
         if (meta?.type === 'select') activeId = meta.id;
         if (meta?.type === 'flash') flashId = meta.id;
-        if (tr.docChanged) {
-          // A resolved suggestion stops being active the moment it leaves the doc.
-          const outstanding = new Set(collectSuggestions(tr.doc).map((summary) => summary.suggestionId));
-          if (activeId !== null && !outstanding.has(activeId)) activeId = null;
-          if (flashId !== null && !outstanding.has(flashId)) flashId = null;
-          return { activeId, flashId, decorations: buildDecorations(tr.doc, { activeId, flashId }) };
-        }
         if (tr.selectionSet && !meta) {
           const derived = suggestionIdAt(newState.doc, newState.selection.from) ?? suggestionIdAt(newState.doc, newState.selection.to);
           if (derived !== null) activeId = derived;
+        }
+        // Rebuild whenever the visible state can differ: doc changes (remote
+        // or local) and selection-derived/manual active or flash transitions.
+        // A selection-only pick must repaint the classes immediately — waiting
+        // for the next content change would leave the card/marks disagreeing.
+        if (tr.docChanged || activeId !== previous.activeId || flashId !== previous.flashId) {
+          if (tr.docChanged) {
+            // A resolved suggestion stops being active the moment it leaves the doc.
+            const outstanding = new Set(collectSuggestions(tr.doc).map((summary) => summary.suggestionId));
+            if (activeId !== null && !outstanding.has(activeId)) activeId = null;
+            if (flashId !== null && !outstanding.has(flashId)) flashId = null;
+          }
+          return { activeId, flashId, decorations: buildDecorations(tr.doc, { activeId, flashId }) };
         }
         return { activeId, flashId, decorations: previous.decorations.map(tr.mapping, tr.doc) };
       },

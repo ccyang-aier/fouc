@@ -985,10 +985,17 @@
         "E03",
         "B08"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "src/features/knowledge/editor/review/",
       "acceptance": "人/AI 同一路径；作者/时间/来源可见；逐条/全部接受拒绝；只读不允许修改；长文滚动定位",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "36 项测试/137 断言 + 真实双 peer 运行时 13 项:建议标记(绿插/红删/块框/作者徽标)、审阅侧栏单条与全部接受拒绝(S01 单事务=单 undo 步)、定位滚动、自动开栏/Esc、只读禁用矩阵、远程建议实时入列;key 撞名回归修复",
+          "command": "bun test src/features/knowledge/editor/review; bunx tsc --noEmit",
+          "verifiedAt": "2026-09-27",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-27-s02-review-ui.md"
+        }
+      ]
     },
     {
       "id": "V01",

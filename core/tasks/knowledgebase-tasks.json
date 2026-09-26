@@ -1362,10 +1362,17 @@
         "H04",
         "U02"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "src/features/knowledge/search/",
       "acceptance": "关键词/语义混合查询、过滤/取消/空状态、键盘导航、引用预览；点击打开准确块并高亮",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "4 项测试/19 断言:queryId 丢弃迟到响应、空/错误相位、键盘两端钳制与 Enter/Esc 语义、降级文案;面板含标题路径/来源徽标/严格响应校验,点击回调 pageId+blockId",
+          "command": "bun test src/features/knowledge/search; pnpm typecheck; pnpm exec eslint --max-warnings=0 src/features/knowledge/search; node scripts/verify-knowledge-boundaries.mjs",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-search-ui.md"
+        }
+      ]
     },
     {
       "id": "AS01",

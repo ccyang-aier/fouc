@@ -2,7 +2,7 @@
 
 > 本表由 `knowledgebase-tasks.json` 生成。修改任务和证据后运行 `node scripts/verify-knowledge-tasks.mjs --write`。
 
-设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 61 项。
+设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 62 项。
 
 ## 实施约束
 
@@ -38,7 +38,6 @@
 - L02 实时只读块引用 NodeView
 - U05 权限、继承与分享管理界面
 - U06 数据库表格视图
-- H05 搜索 UI 与块引用导航
 - U08 浏览器哈希上传与进度控制
 - W05 媒体派生任务编排与重索引
 - J04 逐块流式 AI 与任务撤销
@@ -116,7 +115,7 @@
 | [x] 已验收 | H02 | 向量批量生成与模型换代<br>backend/src/knowledge/search/embeddings.ts | §7.1 / §12 | H01, G01 | 仅变化块调用；embed_model/维度隔离；后台重建完成原子切换，失败保持旧索引可用 | [22 项 search 全套测试:embedded_hash 血缘仅变化块调用(改1增1恰1批2值)、模型/维度隔离、重建单事务原子切换失败回退旧索引可查、批次限速与队列重试收敛;真实 Ollama 384 维 3 次调用记账,云嵌入端点已探明未耗成本](../../core/tasks/knowledgebase-acceptance/2026-09-26-embeddings.md) |
 | [x] 已验收 | H03 | BM25 中英文检索<br>backend/src/knowledge/search/keyword.ts | §7.2 / §7.3 | H01, D03 | pg_search/jieba 与 ICU 配置真实查询验证；workspace/principals 在排名前过滤；返回可引用块 | [19 项测试(6 新增+13 回归):真实 pg_search jieba 中文命中/英文前缀扩展/混合析取、EXPLAIN 实证权限过滤先于排名、可引用块结构(pageId/blockId/titlePath/snippet/score)入 shared 契约、分页一致、回收页即空](../../core/tasks/knowledgebase-acceptance/2026-09-26-keyword.md) |
 | [x] 已验收 | H04 | 向量/RRF/重排统一检索<br>backend/src/knowledge/search/service.ts | §7.2 | H02, H03 | HNSW 限当前模型、各取 50/RRF 常数60/前20重排；查询前授权；API/AI/MCP 共用结果结构 | [28 项 search 全套(6 新增+22 回归):HNSW 限当前模型(维度错实测防护)、两腿各 50→RRF k=60 与手算逐一吻合→前 20 真实 GLM rerank 精排(端点实测探明)、授权谓词两腿先于名次、HybridSearchHit 统一契约供 API/AI/MCP](../../core/tasks/knowledgebase-acceptance/2026-09-26-hybrid.md) |
-| [ ] 待实施 | H05 | 搜索 UI 与块引用导航<br>src/features/knowledge/search/ | §7.2 / §9.4 | H04, U02 | 关键词/语义混合查询、过滤/取消/空状态、键盘导航、引用预览；点击打开准确块并高亮 | — |
+| [x] 已验收 | H05 | 搜索 UI 与块引用导航<br>src/features/knowledge/search/ | §7.2 / §9.4 | H04, U02 | 关键词/语义混合查询、过滤/取消/空状态、键盘导航、引用预览；点击打开准确块并高亮 | [4 项测试/19 断言:queryId 丢弃迟到响应、空/错误相位、键盘两端钳制与 Enter/Esc 语义、降级文案;面板含标题路径/来源徽标/严格响应校验,点击回调 pageId+blockId](../../core/tasks/knowledgebase-acceptance/2026-09-26-search-ui.md) |
 | [ ] 待实施 | U08 | 浏览器哈希上传与进度控制<br>src/features/knowledge/assets/ | §8 / §8.1 | AS01, U02 | 浏览器 SHA256、预签名直传、完整性确认闭环；秒传/进度/取消/重试/错误均有反馈；通过真实后端与 S3 验证 | — |
 | [ ] 待实施 | U09 | 图片/音频/视频/文件/嵌入 NodeView<br>src/features/knowledge/editor/blocks/media/ | §4.1 / §8.1 / §12 | U08, E03 | 插入 asset:hash，上传进度/取消/失败重试，媒体懒加载；安全嵌入；替代文本、下载与键盘可用 | — |
 | [x] 已验收 | W01 | 无状态 Media Worker HTTP 服务<br>services/media-worker/ | §8.2 / §11 | C01, R01 | FastAPI 健康/解析接口有资源上限与任务取消；请求携带短期资源，不访问 DB/队列；CPU/GPU 配置可解析；真实模型解析分别 W02/W03 验收 | [27 Python、7 Bun/Node 客户端用例与真实 HTTP/子进程取消；隐藏服务常驻](../../services/media-worker/ACCEPTANCE.md) |
@@ -555,6 +554,7 @@ flowchart TD
   style H02 fill:#e4f4e9,stroke:#42845c
   style H03 fill:#e4f4e9,stroke:#42845c
   style H04 fill:#e4f4e9,stroke:#42845c
+  style H05 fill:#e4f4e9,stroke:#42845c
   style W01 fill:#e4f4e9,stroke:#42845c
   style W02 fill:#e4f4e9,stroke:#42845c
   style W03 fill:#e4f4e9,stroke:#42845c

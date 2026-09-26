@@ -10,7 +10,11 @@ import { knowledgeApiRouter } from '../../api/knowledge/router';
 import { blockIndex, groupMember, member, page } from '../../database/knowledge/schema';
 import { withKnowledgeTenant } from '../../database/knowledge/tenant';
 import { createAuthTestServer, responseCookie, testPassword } from '../auth/auth-test-server';
+import { createKnowledgeRequestAuthenticator, createKnowledgeTokenService } from '../auth';
+import type { KnowledgeRequestAuthenticator, KnowledgeTokenScope } from '../auth';
 import type { KnowledgeIdentity } from '../auth/identity';
+
+type KnowledgeTokenService = ReturnType<typeof createKnowledgeTokenService>;
 import { createOrganizationRoutes } from '../organization/http';
 import { createOrganizationService } from '../organization/service';
 import type { OrganizationService } from '../organization/service';
@@ -45,10 +49,14 @@ export function barrier() {
 export async function createPermissionsFixture() {
   let pool!: Pool;
   let organization!: OrganizationService;
+  let authenticator!: KnowledgeRequestAuthenticator;
+  let tokens!: KnowledgeTokenService;
   const errors: Error[] = [];
   const server = await createAuthTestServer({ mount(app, { database, auth }) {
     pool = new Pool({ ...database.pool.options, max: 8 });
     pool.on('error', (error) => errors.push(error));
+    authenticator = createKnowledgeRequestAuthenticator({ auth, pool });
+    tokens = createKnowledgeTokenService({ auth, pool });
     organization = createOrganizationService(pool, { permissions: teamspacePermissionInvalidator });
     app.route('/', createOrganizationRoutes(auth, organization));
     app.route('/', createKnowledgeApiRoutes({ auth, pool }));
@@ -142,7 +150,13 @@ export async function createPermissionsFixture() {
       return (await client.query<{ waiting: boolean }>(`SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND usename=$1 AND wait_event_type='Lock' AND query LIKE '%workspace%for update%') AS waiting`, [server.database.role.name])).rows[0]!.waiting;
     });
   }
-  return { server, admin, pool, owner, foreign, reader, alpha, beta, organization, errors,
+  return { server, admin, pool, authenticator, owner, foreign, reader, alpha, beta, organization, errors,
+    async createToken(actor: PermissionTestActor, scopes: KnowledgeTokenScope[], workspaceId = alpha.id) {
+      const created = await tokens.create(new Request(`${server.origin}/test-token-setup`, { method: 'POST', headers: { origin: server.webOrigin, cookie: actor.cookie } }),
+        { workspaceId, name: 'Collaboration test', scopes, expiresAt: null });
+      if (!('token' in created)) throw new Error('Token creation failed');
+      return `Bearer ${created.token}`;
+    },
     tree, jobs, start, stop, drain, resetJobs, latestEvent, access, subjects, patchTeamspace, waitForWorkspaceLock,
     apiClient(headers: Record<string, string> = {}, workspaceId = alpha.id) {
       return createTRPCClient<typeof knowledgeApiRouter>({ links: [httpLink({ url: `${server.origin}/api/knowledge/${workspaceId}/trpc`, headers })] });

@@ -745,10 +745,17 @@
       "dependencies": [
         "B02"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "backend/src/store/knowledge-documents.ts; src/features/knowledge/collaboration/",
       "acceptance": "sidecar 持久化 Yjs 更新/状态；重启/离线/重连收敛；Rust 不写知识库业务；与服务端正文权威清晰",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "store 字节级 round-trip/重启存活/隔离 + 真实监听器离线编辑跨重启恢复与云端状态 CRDT 合并不覆盖;桌面装配同 Hocuspocus 内核、SQLite 后端",
+          "command": "bun test backend/src/store/knowledge-documents.test.ts backend/src/knowledge/collaboration/desktop-persistence.integration.test.ts; pnpm exec eslint --no-ignore backend/src/store/knowledge-documents.ts backend/src/knowledge/collaboration/page-collaboration-desktop.ts; node scripts/verify-knowledge-boundaries.mjs",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-desktop-documents.md"
+        }
+      ]
     },
     {
       "id": "B06",
@@ -1969,10 +1976,17 @@
         "A03",
         "U01"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "src/features/knowledge/auth/",
       "acceptance": "邮箱登录/注册/验证、OAuth/SSO、登出、会话过期恢复闭环；加载/错误/键盘焦点清晰；Web 与桌面共用",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "95 项测试/383 断言、lint 零告警、三路由浏览器 200;A01 受理文案/重发冷却/验证四态、22 个 OAuth 错误码中文映射、登出、returnTo 会话恢复、端点复用 U01",
+          "command": "bun test src/features/knowledge/auth; pnpm exec eslint --no-ignore src/features/knowledge/auth src/app/auth; node scripts/verify-knowledge-boundaries.mjs",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-auth-ui.md"
+        }
+      ]
     }
   ],
   "finalTask": "Z09"

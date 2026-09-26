@@ -2,7 +2,7 @@
 
 > 本表由 `knowledgebase-tasks.json` 生成。修改任务和证据后运行 `node scripts/verify-knowledge-tasks.mjs --write`。
 
-设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 49 项。
+设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 50 项。
 
 ## 实施约束
 
@@ -27,7 +27,8 @@
 
 - U02 应用壳与知识库新模型接入
 - B08 本地撤销与 Agent 事务隔离
-- H01 块索引增量投影
+- H02 向量批量生成与模型换代
+- H03 BM25 中英文检索
 
 ## 拓扑排序任务表
 
@@ -96,7 +97,7 @@
 | [ ] 待实施 | U07 | 数据库看板视图<br>src/features/knowledge/databases/ | §3.3 | U06 | 同一组行按状态分组，拖动改属性；无状态/无权限/空状态正确；打开同一行页面；失败乐观回滚 | — |
 | [x] 已验收 | G01 | AI SDK 统一模型网关<br>backend/src/knowledge/ai/gateway/ | §9.1 | F02, D03 | 所有模型调用经统一入口；云/BYOK/Ollama、流、取消、异常可控；无任意工具越权路径 | [官方 AI SDK 网关、21 项 Bun / 16 项 Node 测试；真实 GLM 平台/流式/PG 加密 BYOK 撤销与真实 Ollama 生成/流式/384 维向量通过；密钥与正文不入日志。](../../core/tasks/knowledgebase-acceptance/2026-09-26-model-gateway.md) |
 | [x] 已验收 | G02 | OpenTelemetry 与 AI 用量<br>backend/src/knowledge/observability/ | §9.1 / §1 | G01 | 每次真实调用记录 token/耗时/模型/workspace/任务与 trace；日志无 key；错误调用可追踪 | [观测模块 5 项 Bun + 5 项 Node 测试;真实 PG 记账(token 未报告存 null)、OTLP collector 实收 trace 与 usage 行关联、密钥零泄漏、独立短事务先于结果提交](../../core/tasks/knowledgebase-acceptance/2026-09-26-observability.md) |
-| [ ] 待实施 | H01 | 块索引增量投影<br>backend/src/knowledge/search/indexer.ts | §7.1 / §12 | M02, B02, P02, Q01, L01 | 遍历嵌套块、hash 差量增改删、修复 ID、更新 backlink；重跑幂等；短块带标题路径 | — |
+| [x] 已验收 | H01 | 块索引增量投影<br>backend/src/knowledge/search/indexer.ts | §7.1 / §12 | M02, B02, P02, Q01, L01 | 遍历嵌套块、hash 差量增改删、修复 ID、更新 backlink；重跑幂等；短块带标题路径 | [13 项测试(L01 回归含):嵌套块全遍历(skip 容器不重复)、sha256 差量真零 DML、E02 规则修复 blockId 并回写 doc_state、与 backlinks 并发收敛(FOR UPDATE+同事务补算)、幂等重跑、title_path 标题路径列;权限投影经 P02 端口联动](../../core/tasks/knowledgebase-acceptance/2026-09-26-block-index.md) |
 | [ ] 待实施 | H02 | 向量批量生成与模型换代<br>backend/src/knowledge/search/embeddings.ts | §7.1 / §12 | H01, G01 | 仅变化块调用；embed_model/维度隔离；后台重建完成原子切换，失败保持旧索引可用 | — |
 | [ ] 待实施 | H03 | BM25 中英文检索<br>backend/src/knowledge/search/keyword.ts | §7.2 / §7.3 | H01, D03 | pg_search/jieba 与 ICU 配置真实查询验证；workspace/principals 在排名前过滤；返回可引用块 | — |
 | [ ] 待实施 | H04 | 向量/RRF/重排统一检索<br>backend/src/knowledge/search/service.ts | §7.2 | H02, H03 | HNSW 限当前模型、各取 50/RRF 常数60/前20重排；查询前授权；API/AI/MCP 共用结果结构 | — |
@@ -531,6 +532,7 @@ flowchart TD
   style P04 fill:#e4f4e9,stroke:#42845c
   style G01 fill:#e4f4e9,stroke:#42845c
   style G02 fill:#e4f4e9,stroke:#42845c
+  style H01 fill:#e4f4e9,stroke:#42845c
   style W01 fill:#e4f4e9,stroke:#42845c
   style W02 fill:#e4f4e9,stroke:#42845c
   style W03 fill:#e4f4e9,stroke:#42845c

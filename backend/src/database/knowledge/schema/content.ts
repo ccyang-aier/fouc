@@ -18,6 +18,8 @@ export const blockIndex = knowledge.table('block_index', {
   blockType: varchar('block_type', { length: 60 }).notNull(),
   contentMd: text('content_md').notNull(),
   contentHash: varchar('content_hash', { length: 64 }).notNull(),
+  /** Presentation context for short blocks: page-title path plus ancestor heading texts. */
+  titlePath: text('title_path'),
   embedding: embeddingVector('embedding'),
   embedModel: text('embed_model'),
   embedDimensions: integer('embed_dimensions'),

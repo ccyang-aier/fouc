@@ -152,6 +152,7 @@ CREATE TABLE "knowledge"."block_index" (
 	"block_type" varchar(60) NOT NULL,
 	"content_md" text NOT NULL,
 	"content_hash" varchar(64) NOT NULL,
+	"title_path" text,
 	"embedding" vector,
 	"embed_model" text,
 	"embed_dimensions" integer,

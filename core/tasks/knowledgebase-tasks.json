@@ -632,10 +632,17 @@
         "T01",
         "A04"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "src/features/knowledge/knowledge-page.tsx; src/shell/",
       "acceptance": "替换旧知识库文本 CRUD UI；复用设计 tokens/侧栏；选择/导航/空状态真实联动；无旧模型适配双轨",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "211 项测试/923 断言:旧 textarea+30 秒轮询 UI 全删除零残留,四道真实闸门状态机(13 phase)、三栏舞台+页面树(WAI-ARIA roving)、B06 事件失效装配;浏览器实测诚实态与拦截桩布局,修两处实测缺陷",
+          "command": "bun test src/features/knowledge; pnpm exec eslint --max-warnings=0 src/features/knowledge src/shell; pnpm typecheck; node scripts/verify-knowledge-boundaries.mjs",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-app-shell.md"
+        }
+      ]
     },
     {
       "id": "U03",
@@ -834,10 +841,17 @@
         "B04",
         "B00"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "shared/src/knowledge/schema/; src/features/knowledge/collaboration/",
       "acceptance": "本地 UndoManager 不撤其他人/Agent；任务 origin 独立，AI 整个任务可单独撤销",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "28 项 collaboration 测试(21 回归+7 新增)+B00 内核回归:本地栈不撤他人/Agent、任务 origin 整体一次撤销/恢复、destroy 清理、离线撤销可用;撤销事务正确进 cloudPending",
+          "command": "bun test src/features/knowledge/collaboration; bun test shared/src/knowledge/collaboration; pnpm typecheck; pnpm shared:typecheck; pnpm exec eslint --max-warnings=0 src/features/knowledge/collaboration",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-undo-isolation.md"
+        }
+      ]
     },
     {
       "id": "E03",
@@ -1282,10 +1296,17 @@
         "H01",
         "D03"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "backend/src/knowledge/search/keyword.ts",
       "acceptance": "pg_search/jieba 与 ICU 配置真实查询验证；workspace/principals 在排名前过滤；返回可引用块",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "19 项测试(6 新增+13 回归):真实 pg_search jieba 中文命中/英文前缀扩展/混合析取、EXPLAIN 实证权限过滤先于排名、可引用块结构(pageId/blockId/titlePath/snippet/score)入 shared 契约、分页一致、回收页即空",
+          "command": "bun test backend/src/knowledge/search/keyword.integration.test.ts backend/src/knowledge/search/backlinks.integration.test.ts backend/src/knowledge/search/indexer.integration.test.ts; pnpm backend:typecheck; pnpm shared:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/search; bun backend/scripts/knowledge-schema.ts --check",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-keyword.md"
+        }
+      ]
     },
     {
       "id": "H04",

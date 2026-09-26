@@ -18,6 +18,9 @@ export interface KnowledgeAccessDependencies {
 
 export async function verifiedRequestSession(auth: KnowledgeAuth, request: Request, mutation = false): Promise<KnowledgeIdentity> {
   const origins = auth.options.trustedOrigins as string[];
+  // A request carrying no cookie has nothing to forge: report the missing credential
+  // (401, with the RFC 9727 challenge on MCP endpoints) instead of an origin problem.
+  if (!request.headers.has('cookie')) throw new KnowledgeAccessError('UNAUTHENTICATED');
   if (!hasTrustedKnowledgeOrigin(request, origins) || (mutation && !request.headers.get('origin'))) {
     throw new KnowledgeAccessError('INVALID_ORIGIN');
   }

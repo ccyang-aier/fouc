@@ -1,19 +1,18 @@
-import { entityIdSchema } from '@fouc/shared/knowledge/contracts';
-import { z } from 'zod';
+import {
+  createKnowledgePatInputSchema,
+  entityIdSchema,
+  knowledgePatScopes,
+  knowledgePatScopesSchema,
+  revokeKnowledgePatInputSchema,
+} from '@fouc/shared/knowledge/contracts';
 
-/** Scopes match operations exactly; write does not imply read or administration. */
-export const knowledgeTokenScopes = Object.freeze(['read', 'write'] as const);
-export type KnowledgeTokenScope = typeof knowledgeTokenScopes[number];
-export const tokenScopesSchema = z.array(z.enum(knowledgeTokenScopes)).min(1).max(knowledgeTokenScopes.length)
-  .refine((scopes) => new Set(scopes).size === scopes.length);
-export const tokenWorkspaceSchema = entityIdSchema.transform((value) => value.toLowerCase());
-export const createKnowledgeTokenInputSchema = z.strictObject({
-  workspaceId: tokenWorkspaceSchema,
-  name: z.string().trim().min(1).max(120),
-  scopes: tokenScopesSchema,
-  expiresAt: z.iso.datetime({ offset: true }).nullable(),
-});
-export const revokeKnowledgeTokenInputSchema = z.strictObject({ workspaceId: tokenWorkspaceSchema, tokenId: entityIdSchema });
+/** The shared PAT contract is the single source of truth; historical names alias it. */
+export const knowledgeTokenScopes = knowledgePatScopes;
+export type KnowledgeTokenScope = (typeof knowledgePatScopes)[number];
+export const tokenScopesSchema = knowledgePatScopesSchema;
+export const tokenWorkspaceSchema = entityIdSchema;
+export const createKnowledgeTokenInputSchema = createKnowledgePatInputSchema;
+export const revokeKnowledgeTokenInputSchema = revokeKnowledgePatInputSchema;
 
 const failures = {
   UNAUTHENTICATED: { status: 401, message: 'Valid workspace credentials are required.' },

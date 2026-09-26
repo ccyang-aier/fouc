@@ -173,6 +173,21 @@ Scope 仅允许显式 `read`、`write`，必须非空、无重复；`write` **�
 
 真实 PostgreSQL/Node HTTP 测试覆盖相同 token UUID 在不同租户的隔离、改写 locator、一次性明文、显式 scopes、期限/撤销/成员退出/邮箱失效/用户删除、Bearer 不回退 Cookie、跨用户管理、伪造 actor、长连接刷新与数据库错误脱敏。测试数据库由 D03 disposable helper 创建并清理，主数据库不写入测试数据。PostgreSQL skill 的最小权限与复合索引规则使所有认证 SQL 复用普通应用连接和既有 `(workspace_id,id)` 主键；无跨租户扫描或新索引。
 
+## MCP OAuth 2.1 授权服务器（K02）
+
+`oauth-server.ts` 是 MCP 专用 OAuth 2.1 授权服务器引擎：RFC 7591 动态注册（仅公共 PKCE 客户端，`token_endpoint_auth_method=none`）、S256 PKCE、5 分钟一次性授权码（原子 `DELETE ... RETURNING` 认领）、HMAC 绑定的同意表单证明，以及把验证后的授权换成 PAT。HTTP 形态（RFC 9728/8416 元数据、authorize/token/register/revoke 路由与同意页面）在 `knowledge/mcp/oauth.ts`，挂载在 HTTP 根路径：
+
+```ts
+app.route('/', createKnowledgeMcpAuthorizationRoutes({ auth, pool, externalOrigin }));
+const mcp = createKnowledgeMcpRequestHandler({ authenticator, pool, oauth: { externalOrigin } });
+```
+
+- 资源为 `<externalOrigin>/api/knowledge/<ws>/mcp`；未认证的 MCP 请求按 RFC 9727 返回 `401 + WWW-Authenticate: Bearer resource_metadata=...`，元数据位于 RFC 9728/8416 的 path-suffix well-known 路径，AS issuer 为 `<externalOrigin>/api/knowledge/<ws>/oauth`。
+- 授权码与注册客户端存于 `knowledge_auth.verification`（沿用 A02 的服务端键值存储先例，命名空间 `fouc:mcp-client:v1:` / `fouc:mcp-code:v1:`），无新表或 migration。
+- authorize 要求真实 verified 会话且为该工作区现役成员；同意表单隐藏字段经 BETTER_AUTH_SECRET 派生密钥的 HMAC 签名（10 分钟），POST 需可信 Origin。token 端点在签发前重查成员与邮箱验证；签发的令牌就是标准 PAT（`fouc_pat.` 前缀、SHA-256 存储、name 为 `mcp:<client>`），撤销/到期逐请求查库即时生效，与手工 PAT 同一验证路径。
+- redirect URI 仅接受 HTTPS 或 loopback HTTP（无 fragment/credentials/query）；loopback 端口可变（RFC 8252）。scope 仅 `read`/`write`；`resource` 不匹配返回 `invalid_target`。RFC 7009 `/revoke` 对未知令牌恒返回成功，不泄露存在性。
+- 会话缺失（无 Cookie）的请求返回 401 而非 403，使无凭证的 MCP 客户端能收到发现挑战；携带 Cookie 的请求仍完整执行 A01 Origin/CSRF 边界。
+
 ## 验证
 
 ```powershell

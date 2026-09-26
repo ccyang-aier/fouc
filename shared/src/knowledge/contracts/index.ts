@@ -9,4 +9,6 @@ export * from './assets';
 export * from './events';
 export * from './models';
 export * from './ai';
+export * from './ai-tasks';
 export * from './agent-tools';
+export * from './pat';

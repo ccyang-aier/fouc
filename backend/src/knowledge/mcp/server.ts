@@ -5,13 +5,17 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import type { Pool } from 'pg';
 import { knowledgeAgentTools } from '../ai/tools';
 import type { KnowledgeAgentWriteContext } from '../ai/tools';
+import { KnowledgeAccessError } from '../auth/access-policy';
 import type { KnowledgeRequestAuthenticator, KnowledgeRequestContext } from '../auth';
+import { knowledgeMcpWwwAuthenticate } from './oauth';
 
 export interface KnowledgeMcpDependencies {
   authenticator: KnowledgeRequestAuthenticator;
   pool: Pool;
   /** 可选:协作宿主,写工具经 direct connection 提交建议。 */
   hocuspocus?: KnowledgeAgentWriteContext['hocuspocus'];
+  /** 可选:启用后未认证响应按 RFC 9727 指向 OAuth 发现文档。 */
+  oauth?: { readonly externalOrigin: string };
 }
 
 interface McpSession {
@@ -59,8 +63,8 @@ export function createKnowledgeMcpRequestHandler(deps: KnowledgeMcpDependencies)
   };
 
   return async function handleKnowledgeMcp(request: IncomingMessage, response: ServerResponse): Promise<void> {
+    const workspaceId = /\/api\/knowledge\/([a-zA-Z0-9-]+)\/mcp\/?$/.exec(request.url ?? '')?.[1] ?? '';
     try {
-      const workspaceId = /\/api\/knowledge\/([a-zA-Z0-9-]+)\/mcp\/?$/.exec(request.url ?? '')?.[1] ?? '';
       const authenticate = () => deps.authenticator.authenticate(
         new Request(`http://mcp.local${request.url ?? '/'}`, { method: request.method, headers: request.headers as Record<string, string> }),
         workspaceId,
@@ -82,10 +86,16 @@ export function createKnowledgeMcpRequestHandler(deps: KnowledgeMcpDependencies)
       const authority = await authenticate();
       const session = await buildSession(authority);
       await session.transport.handleRequest(request, response);
-    } catch {
+    } catch (error) {
+      // RFC 9727:401 指向 RFC 9728 保护资源元数据;其余按访问策略状态码应答。
+      const failure = error instanceof KnowledgeAccessError ? error : new KnowledgeAccessError('AUTH_UNAVAILABLE');
       if (!response.headersSent) {
-        response.writeHead(401, { 'content-type': 'application/json' });
-        response.end(JSON.stringify({ jsonrpc: '2.0', error: { code: -32000, message: 'Unauthorized' }, id: null }));
+        const headers: Record<string, string> = { 'content-type': 'application/json', 'cache-control': 'no-store' };
+        if (failure.status === 401) {
+          headers['www-authenticate'] = deps.oauth ? knowledgeMcpWwwAuthenticate(deps.oauth.externalOrigin, workspaceId) : 'Bearer realm="knowledge"';
+        }
+        response.writeHead(failure.status, headers);
+        response.end(JSON.stringify({ jsonrpc: '2.0', error: { code: -32000, message: failure.message }, id: null }));
       } else {
         response.end();
       }

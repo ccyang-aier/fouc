@@ -1785,10 +1785,17 @@
         "A02",
         "A03"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "backend/src/knowledge/mcp/auth/",
       "acceptance": "发现/注册/授权/PKCE/token/撤销标准流程，scope/audience 验证；PAT 可用；无认证拒绝工具",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "99 项测试/1730 断言(auth 87 + mcp 12):RFC 7636 向量、redirect 规则、注册 schema、HMAC 轮转;端到端 401→PRM→AS→注册→成员同意→PKCE 换 PAT→listTools→code 单次性→RFC 7009 撤销即 401;实活 8711 验证 PRM/AS 元数据与 9727 挑战;常量时间比较、逐请求查库吊销",
+          "command": "bun test backend/src/knowledge/auth backend/src/knowledge/mcp; cd backend && bunx tsc --noEmit",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-k02-mcp-oauth-pat.md"
+        }
+      ]
     },
     {
       "id": "K03",

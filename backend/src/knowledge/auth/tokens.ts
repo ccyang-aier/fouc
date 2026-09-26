@@ -1,5 +1,5 @@
 import { and, desc, eq, isNull, or, sql } from 'drizzle-orm';
-import type { MemberRole } from '@fouc/shared/knowledge/contracts';
+import type { KnowledgePatSummary, MemberRole } from '@fouc/shared/knowledge/contracts';
 import { authUser, member, personalAccessToken } from '../../database/knowledge/schema';
 import { withKnowledgeTenant } from '../../database/knowledge/tenant';
 import { createKnowledgeTokenInputSchema, KnowledgeAccessError, revokeKnowledgeTokenInputSchema, sanitizedAccess, tokenScopesSchema, tokenWorkspaceSchema } from './access-policy';
@@ -15,16 +15,7 @@ const metadataColumns = {
   expiresAt: personalAccessToken.expiresAt, revokedAt: personalAccessToken.revokedAt, lastUsedAt: personalAccessToken.lastUsedAt,
 };
 type StoredTokenMetadata = Pick<typeof personalAccessToken.$inferSelect, keyof typeof metadataColumns>;
-export interface KnowledgeTokenSummary {
-  readonly workspaceId: string;
-  readonly id: string;
-  readonly name: string;
-  readonly scopes: readonly KnowledgeTokenScope[];
-  readonly createdAt: string;
-  readonly expiresAt: string | null;
-  readonly revokedAt: string | null;
-  readonly lastUsedAt: string | null;
-}
+export type KnowledgeTokenSummary = KnowledgePatSummary;
 
 function summary(value: StoredTokenMetadata): KnowledgeTokenSummary {
   return Object.freeze({

@@ -27,28 +27,47 @@ export const PAGE_BODY_FRAGMENT = 'default';
 const historyReconcileKey = new PluginKey('foucPageHistoryReconcile');
 
 /**
- * E02's blockId repairs close every repair-bearing batch with
- * `addToHistory: false` (correct for a plain PM history plugin), but
- * y-prosemirror mirrors the batch's *last* transaction flag onto the single
- * Y transaction it pushes for the whole batch — which would silently drop
- * the user's own block edit from the B08 undo stack.
+ * Two y-prosemirror semantics have to be reconciled with B08 here:
  *
- * A repair that lands through `appendTransaction` carries the batch's root
- * — the user's change — in its `appendedTransaction` meta (plugins only see
- * the transactions added since their last consultation). A trailing
- * meta-only transaction then restores the flag, so the combined change is
- * pushed and captured as one undoable unit; repair-only dispatches (e.g. the
- * initial `onCreate` pass) are roots themselves and stay out of the history.
+ * 1. **Repairs close their batch.** E02's blockId repairs end every
+ *    repair-bearing batch with `addToHistory: false` (correct for a plain PM
+ *    history plugin), but y-prosemirror mirrors the batch's *last*
+ *    transaction flag onto the single Y transaction it pushes for the whole
+ *    batch — silently dropping the user's own block edit from the undo
+ *    stack. A trailing meta-only transaction restores the flag whenever a
+ *    real content change and a repair share one batch; repair-only
+ *    dispatches (e.g. the initial `onCreate` pass) are roots themselves and
+ *    stay out of the history.
+ *
+ * 2. **Selection-only batches would poison the stacks.** After the first
+ *    content change y-prosemirror pushes *every* subsequent dispatch —
+ *    including caret moves, focus and other step-less transactions — as an
+ *    (empty) Y transaction, and Yjs clears the redo stack on any captured
+ *    transaction. Marking selection-only batches `addToHistory: false`
+ *    keeps them out of the undo manager entirely, like PM history does.
  */
 function pageHistoryReconcilePlugin() {
   return new Plugin({
     key: historyReconcileKey,
     appendTransaction: (transactions: readonly Transaction[], _oldState, newState) => {
       const last = transactions[transactions.length - 1];
-      if (!last || last.getMeta('addToHistory') !== false || last.getMeta(blockIdPluginKey) !== true) return null;
-      const root = (last.getMeta('appendedTransaction') as Transaction | undefined) ?? last;
-      if (!root.docChanged || root.getMeta(blockIdPluginKey) === true) return null;
-      return newState.tr.setMeta(historyReconcileKey, true).setMeta('addToHistory', true);
+      if (!last || last.getMeta(historyReconcileKey) !== undefined) return null;
+
+      // Rule 1: a repair closes a batch whose root is a real user change —
+      // restore the flag so the combined push stays one undoable unit.
+      // (Repair-only dispatches are roots themselves and stay out.)
+      if (last.getMeta('addToHistory') === false && last.getMeta(blockIdPluginKey) === true) {
+        const root = (last.getMeta('appendedTransaction') as Transaction | undefined) ?? last;
+        if (root.docChanged && root.getMeta(blockIdPluginKey) !== true) {
+          return newState.tr.setMeta(historyReconcileKey, 'repair-reconciled').setMeta('addToHistory', true);
+        }
+        return null;
+      }
+
+      // Rule 2: selection-only batches stay out of the history.
+      if (transactions.some((tr) => tr.docChanged)) return null;
+      if (last.getMeta('addToHistory') === false) return null;
+      return newState.tr.setMeta(historyReconcileKey, 'selection-only').setMeta('addToHistory', false);
     },
   });
 }

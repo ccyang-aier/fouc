@@ -872,10 +872,17 @@
         "B04",
         "U02"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "src/features/knowledge/editor/",
       "acceptance": "替换 textarea，Y.Doc 驱动唯一正文；Client Boundary 懒加载；加载/离线/同步/只读/错误闭环；无 SSR 水合异常",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "editor 20 项/122 断言+全套回归:shared PM schema 逐字节一致、Y.Doc 唯一正文(刷新经 y-indexeddb 回归实测)、Client Boundary 懒加载+首屏隔离测试钉死、六态指示+只读/无权/鉴权横幅闭环、无水合异常;修复 E02 修复事务逃逸撤销栈的集成缺陷;浏览器 7 场景核验",
+          "command": "bun test src/features/knowledge/editor; pnpm typecheck; pnpm exec eslint --max-warnings=0 src/features/knowledge/editor; node scripts/verify-knowledge-boundaries.mjs",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-editor.md"
+        }
+      ]
     },
     {
       "id": "E04",

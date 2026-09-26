@@ -68,7 +68,9 @@ export function EditorToolbar({ editor, pageUndo, editable }: { editor: Editor |
         disabled={blocked || !pageUndo.canUndo()}
         onClick={() => {
           pageUndo.undo();
-          editor?.commands.focus();
+          // DOM focus only — a focus transaction here would (via the Y
+          // binding) clear the redo stack that this button just filled.
+          editor?.view.focus();
         }}
       >
         <ArrowCounterClockwise aria-hidden className="size-3.5" />
@@ -78,7 +80,7 @@ export function EditorToolbar({ editor, pageUndo, editable }: { editor: Editor |
         disabled={blocked || !pageUndo.canRedo()}
         onClick={() => {
           pageUndo.redo();
-          editor?.commands.focus();
+          editor?.view.focus();
         }}
       >
         <ArrowClockwise aria-hidden className="size-3.5" />

@@ -99,6 +99,16 @@ describe('editor stack under a real Tiptap instance', () => {
     expect(fragment.length).toBe(2);
     pageUndo.undo(); // the first merged item covers the session's earlier writes
     expect(fragment.length).toBe(0);
+
+    // A selection-only dispatch after undo (caret move, focus command) must
+    // not clear the redo stack through the Y binding.
+    pageUndo.redo();
+    expect(fragment.length).toBe(2);
+    editor.view.focus();
+    editor.view.dispatch(editor.state.tr); // step-less, selection-only
+    expect(pageUndo.canRedo()).toBe(true);
+    pageUndo.redo();
+    expect(fragment.length).toBe(3);
     editor.destroy();
   });
 

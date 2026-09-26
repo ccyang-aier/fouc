@@ -21,3 +21,14 @@ test('acceptance requires evidence and accepted prerequisites', () => {
   assert.throws(() => verifyPlan(plan([task('A01'), accepted]), source), /前置 A01 尚未验收/);
   assert.throws(() => verifyPlan(plan([{ ...task('A01'), status: 'accepted' }]), source), /无证据/);
 });
+
+test('final acceptance must transitively include every task', () => {
+  assert.throws(() => verifyPlan({ ...plan([task('A01'), task('B01')]), finalTask: 'A01' }, source), /最终验收未依赖 B01/);
+  assert.doesNotThrow(() => verifyPlan({ ...plan([task('A01'), task('B01', ['A01'])]), finalTask: 'B01' }, source));
+});
+
+test('implementation cannot start while a hard prerequisite is unaccepted', () => {
+  const pending = plan([task('A01'), { ...task('B01', ['A01']), status: 'in_progress' }]);
+  pending.statusLegend.in_progress = '进行中';
+  assert.throws(() => verifyPlan(pending, source), /前置 A01 尚未验收/);
+});

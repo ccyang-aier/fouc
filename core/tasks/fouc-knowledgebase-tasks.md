@@ -2,7 +2,7 @@
 
 > 本表由 `knowledgebase-tasks.json` 生成。修改任务和证据后运行 `node scripts/verify-knowledge-tasks.mjs --write`。
 
-设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 7 项。
+设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 10 项。
 
 ## 实施约束
 
@@ -25,7 +25,7 @@
 
 ## 可开始的任务
 
-- W01 无状态 Media Worker HTTP 服务
+- S01 建议 insert/delete marks 与事务转换
 
 ## 拓扑排序任务表
 
@@ -35,13 +35,14 @@
 | [x] 已验收 | F01 | 工作区依赖边界与分层验证入口<br>package.json; shared/package.json; scripts/verify-knowledge-boundaries.mjs | §1 / §10 | F00 | 共享包/前端/后端各自 typecheck；共享领域无浏览器或服务端运行时耦合；现有测试仍通过 | [三层类型、架构边界及回归通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
 | [x] 已验收 | C01 | 领域实体、权限、事件与 API 输入契约<br>shared/src/knowledge/contracts/ | §3 / §3.1 / §3.2 / §3.3 / §6.1 | F01 | 运行时校验 UUID、workspace 作用域、页面类型、属性、主体和事件；错误输入被拒绝；前后端复用 | [7 组领域契约行为用例与两层类型检查通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
 | [x] 已验收 | E01 | 一方块注册表与共享 ProseMirror Schema<br>shared/src/knowledge/schema/ | §4 / §4.1 / §4.2 / §10 | F01 | 所有设计块类型可构造和序列化；通过一个定义注册新块；React NodeView 不进入共享包 | [27 种块、同源 Schema 与安全序列化 15 测试通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
-| [ ] 进行中 | E02 | blockId 完整性与粘贴来源插件<br>shared/src/knowledge/schema/block-id.ts | §4.3 / §12 | E01 | 新建、拆分、合并、复制、跨页粘贴、嵌套和协作重复均满足 ID 规则；服务端可检测修复 | — |
-| [ ] 待实施 | M01 | 标准 Markdown 双向管线<br>shared/src/knowledge/markdown/ | §4.4 | E02 | GFM、嵌套块、指令、公式、wiki 链接、marks 与所有一方块往返不丢语义；明确不支持输入报错 | — |
+| [x] 已验收 | E02 | blockId 完整性与粘贴来源插件<br>shared/src/knowledge/schema/block-id.ts | §4.3 / §12 | E01 | 新建、拆分、合并、复制、跨页粘贴、嵌套和协作重复均满足 ID 规则；服务端可检测修复 | [真实 ProseMirror 事务/剪贴板/服务端修复 15 项测试通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
+| [ ] 进行中 | M01 | 标准 Markdown 双向管线<br>shared/src/knowledge/markdown/ | §4.4 | E02 | GFM、嵌套块、指令、公式、wiki 链接、marks 与所有一方块往返不丢语义；明确不支持输入报错 | — |
 | [ ] 待实施 | M02 | AI 方言锚点与媒体派生文本<br>shared/src/knowledge/markdown/ | §4.4 / §7.1 / §9.6 | M01, C01 | 同一管线开关产生 blockId 锚点；容器子块和媒体文本完整；可按锚点读取且引用稳定 | — |
 | [x] 已验收 | P01 | 主体展开与纯权限继承计算<br>backend/src/knowledge/permissions/ | §6 / §6.1 / §6.2 | C01 | 四级权限、用户/群组/workspace/link、继承中断、teamspace 根默认合并用行为用例覆盖 | [权限继承/四级主体/撤权窗口 6 组行为测试通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
-| [ ] 进行中 | D01 | Postgres 当前唯一 schema 与约束<br>backend/src/database/knowledge/ | §3.1 / §3.2 / §3.3 / §10 | C01 | Drizzle 当前表模型与初始化 SQL 包含全部表/租户外键/ltree/vector/索引；静态 schema 约束测试及类型检查通过；真实执行单独由 D03 验收 | — |
-| [ ] 进行中 | I01 | Postgres/Redis/S3 基础服务与健康检查<br>compose.knowledge.yaml; .env.example | §2 / §11 | F01 | 真实 ParadeDB（ltree/pg_search/pgvector）、Redis、MinIO 启动可访问；凭据仅环境注入；五类服务完整装配留给 Z03 | — |
-| [ ] 待实施 | D02 | 请求级租户事务与强制 RLS<br>backend/src/database/knowledge/tenant.ts | §3.2 / §6.2 | D01, I01 | SET LOCAL/set_config 随事务回收；非超级用户跨租户 SELECT/INSERT/UPDATE/DELETE 均拒绝，连接池无上下文泄漏 | — |
+| [x] 已验收 | F02 | 模型任务档位与安全配置契约<br>shared/src/knowledge/contracts/models.ts; backend/src/knowledge/ai/config.ts | §9.1 | C01 | fast/smart/embed/rerank/vision，平台/BYOK/Ollama 层级解析；密钥只留服务端；模型/维度验证 | [模型档位/来源与密钥归属 3 组测试通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
+| [x] 已验收 | D01 | Postgres 当前唯一 schema 与约束<br>backend/src/database/knowledge/ | §3.1 / §3.2 / §3.3 / §10 | C01, F02 | Drizzle 当前表模型与初始化 SQL 包含全部表/租户外键/ltree/vector/索引；静态 schema 约束测试及类型检查通过；真实执行单独由 D03 验收 | [24 张租户表与 4 张认证表；约束与 SQL 漂移静态验收通过，真实初始化另行验收](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
+| [x] 已验收 | I01 | Postgres/Redis/S3 基础服务与健康检查<br>compose.knowledge.yaml; .env.example | §2 / §11 | F01 | 真实 ParadeDB（ltree/pg_search/pgvector）、Redis、MinIO 启动可访问；凭据仅环境注入；五类服务完整装配留给 Z03 | [真实 ParadeDB 扩展/分词/索引、Redis 认证读写、S3 签名读写及持续运行通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-infrastructure.md) |
+| [ ] 进行中 | D02 | 请求级租户事务与强制 RLS<br>backend/src/database/knowledge/tenant.ts | §3.2 / §6.2 | D01, I01 | SET LOCAL/set_config 随事务回收；非超级用户跨租户 SELECT/INSERT/UPDATE/DELETE 均拒绝，连接池无上下文泄漏 | — |
 | [ ] 待实施 | D03 | 真实数据库初始化与隔离集成测试<br>backend/scripts/knowledge-db.ts; backend/src/database/knowledge/*.test.ts | §3.2 / §11 / §12 | D01, D02, I01 | 在真实 ParadeDB 创建新库、执行全部表/索引/RLS；两个租户恶意访问测试通过 | — |
 | [x] 已验收 | R01 | 后端角色配置与生命周期<br>backend/src/knowledge/runtime/ | §1 / §2 / §10 | C01 | ROLE=api/collab/worker/mcp/all 严格解析；必需配置校验；同一进程生命周期可启停且失败清理资源；业务用 Node API | [配置与角色生命周期 5 组测试通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
 | [ ] 待实施 | A01 | Better Auth 邮箱与会话<br>backend/src/knowledge/auth/ | §1 / §6 | D03, R01 | 注册/登录/登出/邮箱验证、会话撤销真实往返；cookie/CORS 配置对 Web 与桌面有效 | — |
@@ -72,7 +73,7 @@
 | [ ] 待实施 | B06 | 工作区无状态事件与缓存失效<br>backend/src/knowledge/collaboration/events.ts; src/features/knowledge/collaboration/ | §5.3 | B02, U01 | ws:workspaceId 频道校验成员身份；树/评论/通知/行事件只失效相关 Query；重连补拉 | — |
 | [ ] 待实施 | E03 | Tiptap 编辑器 React 容器与状态<br>src/features/knowledge/editor/ | §4.1 / §10 | E02, B04, U02 | 替换 textarea，Y.Doc 驱动唯一正文；Client Boundary 懒加载；加载/离线/同步/只读/错误闭环；无 SSR 水合异常 | — |
 | [ ] 待实施 | B07 | Awareness 人/Agent 光标与在线成员<br>src/features/knowledge/collaboration/awareness.ts; src/features/knowledge/editor/ | §5.5 / §9.3 | B04, E03 | user/color/cursor/selection/kind 完整；两客户端能见光标、AI 正在编辑状态；断开自动移除 | — |
-| [ ] 待实施 | B00 | 共享 CRDT 事务来源与撤销内核<br>shared/src/knowledge/collaboration/ | §5.4 / §9.3 | E02 | 定义 human/agent/mcp/restore 来源；Yjs UndoManager 按来源和任务隔离，跨文档更新收敛；不依赖 React 或网络 provider | — |
+| [ ] 进行中 | B00 | 共享 CRDT 事务来源与撤销内核<br>shared/src/knowledge/collaboration/ | §5.4 / §9.3 | E02 | 定义 human/agent/mcp/restore 来源；Yjs UndoManager 按来源和任务隔离，跨文档更新收敛；不依赖 React 或网络 provider | — |
 | [ ] 待实施 | B08 | 本地撤销与 Agent 事务隔离<br>shared/src/knowledge/schema/; src/features/knowledge/collaboration/ | §5.4 / §9.3 | B04, B00 | 本地 UndoManager 不撤其他人/Agent；任务 origin 独立，AI 整个任务可单独撤销 | — |
 | [ ] 待实施 | E04 | 基础块快捷输入与键盘编辑<br>src/features/knowledge/editor/ | §4.1 / §4.4 | E03 | 段落、标题、列表、待办、引用、代码、公式可鼠标/键盘插入编辑；输入规则、格式菜单可访问 | — |
 | [ ] 待实施 | E05 | 表格、分栏和 Callout NodeView<br>src/features/knowledge/editor/blocks/ | §4.1 / §4.2 | E03 | 嵌套编辑/增删/拖拽/键盘不损坏 blockId；表格编辑、分栏自适应、callout 风格精致；共享 schema 一致 | — |
@@ -91,7 +92,6 @@
 | [ ] 待实施 | U05 | 权限、继承与分享管理界面<br>src/features/knowledge/sharing/ | §6 | P04, U02 | 用户/组/workspace 授权、继承开关、有效权限解释；完整保存/撤销失败反馈；非 full 禁止操作 | — |
 | [ ] 待实施 | U06 | 数据库表格视图<br>src/features/knowledge/databases/ | §3.3 | T02, E03, U02 | 类型化列增删改、行属性编辑、筛选/排序/打开行正文；加载/无权/空/错误及键盘完整 | — |
 | [ ] 待实施 | U07 | 数据库看板视图<br>src/features/knowledge/databases/ | §3.3 | U06 | 同一组行按状态分组，拖动改属性；无状态/无权限/空状态正确；打开同一行页面；失败乐观回滚 | — |
-| [x] 已验收 | F02 | 模型任务档位与安全配置契约<br>shared/src/knowledge/contracts/models.ts; backend/src/knowledge/ai/config.ts | §9.1 | C01 | fast/smart/embed/rerank/vision，平台/BYOK/Ollama 层级解析；密钥只留服务端；模型/维度验证 | [模型档位/来源与密钥归属 3 组测试通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
 | [ ] 待实施 | G01 | AI SDK 统一模型网关<br>backend/src/knowledge/ai/gateway/ | §9.1 | F02, D03 | 所有模型调用经统一入口；云/BYOK/Ollama、流、取消、异常可控；无任意工具越权路径 | — |
 | [ ] 待实施 | G02 | OpenTelemetry 与 AI 用量<br>backend/src/knowledge/observability/ | §9.1 / §1 | G01 | 每次真实调用记录 token/耗时/模型/workspace/任务与 trace；日志无 key；错误调用可追踪 | — |
 | [ ] 待实施 | H01 | 块索引增量投影<br>backend/src/knowledge/search/indexer.ts | §7.1 / §12 | M02, B02, P02, Q01, L01 | 遍历嵌套块、hash 差量增改删、修复 ID、更新 backlink；重跑幂等；短块带标题路径 | — |
@@ -101,7 +101,7 @@
 | [ ] 待实施 | H05 | 搜索 UI 与块引用导航<br>src/features/knowledge/search/ | §7.2 / §9.4 | H04, U02 | 关键词/语义混合查询、过滤/取消/空状态、键盘导航、引用预览；点击打开准确块并高亮 | — |
 | [ ] 待实施 | U08 | 浏览器哈希上传与进度控制<br>src/features/knowledge/assets/ | §8 / §8.1 | AS01, U02 | 浏览器 SHA256、预签名直传、完整性确认闭环；秒传/进度/取消/重试/错误均有反馈；通过真实后端与 S3 验证 | — |
 | [ ] 待实施 | U09 | 图片/音频/视频/文件/嵌入 NodeView<br>src/features/knowledge/editor/blocks/media/ | §4.1 / §8.1 / §12 | U08, E03 | 插入 asset:hash，上传进度/取消/失败重试，媒体懒加载；安全嵌入；替代文本、下载与键盘可用 | — |
-| [ ] 待实施 | W01 | 无状态 Media Worker HTTP 服务<br>services/media-worker/ | §8.2 / §11 | C01, R01 | FastAPI 健康/解析接口有资源上限与任务取消；请求携带短期资源，不访问 DB/队列；CPU/GPU 配置可解析；真实模型解析分别 W02/W03 验收 | — |
+| [ ] 进行中 | W01 | 无状态 Media Worker HTTP 服务<br>services/media-worker/ | §8.2 / §11 | C01, R01 | FastAPI 健康/解析接口有资源上限与任务取消；请求携带短期资源，不访问 DB/队列；CPU/GPU 配置可解析；真实模型解析分别 W02/W03 验收 | — |
 | [ ] 待实施 | W02 | Whisper 音视频时间戳转写<br>services/media-worker/ | §8.2 | W01 | 真实音视频样本生成带时间戳分段文本；模型可配置；失败、超时与重试可观察 | — |
 | [ ] 待实施 | W03 | Docling PDF/Office 解析<br>services/media-worker/ | §8.2 | W01 | 真实 PDF/Office 表格/图片/标题解析成结构化 Markdown；空/损坏样本报错清楚 | — |
 | [ ] 待实施 | W04 | 图片视觉描述与 OCR<br>backend/src/knowledge/workers/vision.ts | §8.2 | AS01, G01 | 真实图片经 vision 档生成描述/OCR；结果写 asset.derived；权限与模型用量可追踪 | — |
@@ -145,6 +145,7 @@ flowchart TD
   M01["M01 标准 Markdown 双向管线"]
   M02["M02 AI 方言锚点与媒体派生文本"]
   P01["P01 主体展开与纯权限继承计算"]
+  F02["F02 模型任务档位与安全配置契约"]
   D01["D01 Postgres 当前唯一 schema 与约束"]
   I01["I01 Postgres/Redis/S3 基础服务与健康检查"]
   D02["D02 请求级租户事务与强制 RLS"]
@@ -197,7 +198,6 @@ flowchart TD
   U05["U05 权限、继承与分享管理界面"]
   U06["U06 数据库表格视图"]
   U07["U07 数据库看板视图"]
-  F02["F02 模型任务档位与安全配置契约"]
   G01["G01 AI SDK 统一模型网关"]
   G02["G02 OpenTelemetry 与 AI 用量"]
   H01["H01 块索引增量投影"]
@@ -244,7 +244,9 @@ flowchart TD
   M01 --> M02
   C01 --> M02
   C01 --> P01
+  C01 --> F02
   C01 --> D01
+  F02 --> D01
   F01 --> I01
   D01 --> D02
   I01 --> D02
@@ -352,7 +354,6 @@ flowchart TD
   E03 --> U06
   U02 --> U06
   U06 --> U07
-  C01 --> F02
   F02 --> G01
   D03 --> G01
   G01 --> G02
@@ -488,9 +489,12 @@ flowchart TD
   style F01 fill:#e4f4e9,stroke:#42845c
   style C01 fill:#e4f4e9,stroke:#42845c
   style E01 fill:#e4f4e9,stroke:#42845c
+  style E02 fill:#e4f4e9,stroke:#42845c
   style P01 fill:#e4f4e9,stroke:#42845c
-  style R01 fill:#e4f4e9,stroke:#42845c
   style F02 fill:#e4f4e9,stroke:#42845c
+  style D01 fill:#e4f4e9,stroke:#42845c
+  style I01 fill:#e4f4e9,stroke:#42845c
+  style R01 fill:#e4f4e9,stroke:#42845c
 ```
 
 ## 设计覆盖矩阵

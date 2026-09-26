@@ -62,6 +62,25 @@
 - `pnpm shared:typecheck` 与针对 runtime/permissions/ai config 的完整依赖 `tsc --noEmit --strict --skipLibCheck --moduleResolution bundler --module esnext --target es2022` 检查均通过。D01 Agent 同时编辑全局数据库 schema，最终整体类型检查随后统一进行。
 - 边界：配置解析通过不代表真实 AI 调用；网关和真实模型验证仍待 G01/G02/Z07。
 
+## E02 · 块身份完整性
+
+- `bun test shared/src/knowledge/schema/block-id.test.ts`：15 passed / 0 failed；真实 ProseMirror 拆分/合并、嵌套块、重复修复、剪贴板位置、跨页来源、同页拖动及导入/恢复区别均有断言。
+- 主代理复验整个 schema 与 D01 测试：42 passed / 0 failed，308 assertions；共享类型检查通过。
+- 粘贴在 Slice 进入文档前重分配 ID，避免粘到原块前方误改原始身份；服务端修复保留合法 ID，客户端来源按 EditorView 隔离。
+- 边界：本验收为编辑器无 UI 内核；多浏览器协作与实际编辑控件仍待 E03/Z04/Z06。
+
+## D01 · Postgres 唯一表模型
+
+- 24 张知识库业务表与 4 张全局身份表；业务表含非空 workspace_id 和租户复合外键；正文仅保存 Yjs 二进制，向量切换 staging 不复制正文。
+- `bun test backend/src/database/knowledge/schema.test.ts`：12 passed；`bun backend/scripts/knowledge-schema.ts --check`：无 DDL 漂移；整体后端类型检查通过。
+- 模型档位枚举直接引用 F02 共享定义，DAG 已显式补充该硬依赖。
+- 边界：未将静态 schema 验证当成真实初始化/RLS 通过；D02/D03 继续独立验收。
+
+## 追加验证与安全配置
+
+- 计划校验器增加最终节点传递覆盖及进行中依赖门禁用例，与边界测试合计 9 passed。
+- 用户提供的模型配置仅保存在 gitignored 的服务端本地环境文件；不记录密钥，未声称模型调用已经验证。实际网关与能力验证属于 G01/Z07。
+
 ## 初始回归基线
 
 - `pnpm backend:typecheck`：通过（只读审计执行）。

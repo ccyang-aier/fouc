@@ -10,6 +10,12 @@ export { defineBlock, isKnowledgeBlock } from './types';
 export type { BlockDefinition, MarkDefinition, MarkdownMapping } from './types';
 export { safeKnowledgeUrl } from './urls';
 export type { KnowledgeUrlPurpose } from './urls';
+export { isValidBlockId, inspectBlockIds, planBlockIdRepairs, applyBlockIdRepairs, repairBlockIds } from './block-id';
+export type { BlockIdOptions, BlockIdIssueKind, BlockIdIssue, BlockIdRepair } from './block-id';
+export { BLOCK_CLIPBOARD_SOURCE_ATTRIBUTE, createBlockClipboardSerializer, readBlockClipboardSource, reidentifyPastedSlice } from './block-id-clipboard';
+export type { BlockPasteOptions } from './block-id-clipboard';
+export { blockIdPluginKey, createBlockIdRepairTransaction, createBlockIdPlugin, createBlockIdExtension } from './block-id-plugin';
+export type { BlockIdPluginOptions } from './block-id-plugin';
 
 export function createKnowledgeRegistry(additions: {
   blocks?: readonly BlockDefinition[];

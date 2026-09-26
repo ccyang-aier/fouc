@@ -2,7 +2,7 @@
 
 > 本表由 `knowledgebase-tasks.json` 生成。修改任务和证据后运行 `node scripts/verify-knowledge-tasks.mjs --write`。
 
-设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 30 项。
+设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 31 项。
 
 ## 实施约束
 
@@ -28,6 +28,8 @@
 - T01 页面树服务与分数排序
 - AS01 S3 工作区资源服务与预签名
 - B01 Hocuspocus v4 鉴权与只读连接
+- A04 登录、注册、SSO 与会话恢复界面
+- O02 Workspace/成员/Teamspace 组织界面
 - N01 评论线程持久化与权限
 - P04 分享链接权限与失效
 
@@ -61,7 +63,7 @@
 | [ ] 待实施 | AS01 | S3 工作区资源服务与预签名<br>backend/src/knowledge/assets/ | §8 / §8.1 | P03, I01, Q01 | 按 workspace/hash 寻址、秒传不泄漏跨租户存在性；上传确认校验哈希/大小/类型；下载授权；asset.created 原子且真实 S3 往返 | — |
 | [ ] 待实施 | B01 | Hocuspocus v4 鉴权与只读连接<br>backend/src/knowledge/collaboration/ | §5 / §5.1 / §6.2 | P03, R01, E02 | WS 校验会话/PAT/page scope；view/comment 连接禁止正文写入；GC 开启；拒绝未授权文档和 workspace 频道 | — |
 | [ ] 待实施 | B02 | Y.Doc 权威持久化与原子 Outbox<br>backend/src/knowledge/collaboration/persistence.ts | §3.1 / §5.1 | B01, Q01 | 从 doc_state 加载，2 秒防抖/最长 10 秒落库；state/vector/outbox 同事务；崩溃重连内容不丢 | — |
-| [ ] 进行中 | U01 | TanStack Query 与 tRPC 客户端数据边界<br>src/features/knowledge/data/ | §1 / §2 / §10 | A00 | 类型安全调用；workspace Query keys 隔离；取消/错误/失效一致；Web SaaS/私有部署地址及桌面 sidecar 端点配置真实可用 | — |
+| [x] 已验收 | U01 | TanStack Query 与 tRPC 客户端数据边界<br>src/features/knowledge/data/ | §1 / §2 / §10 | A00 | 类型安全调用；workspace Query keys 隔离；取消/错误/失效一致；Web SaaS/私有部署地址及桌面 sidecar 端点配置真实可用 | [AppRouter 类型推导客户端 + workspace 键隔离 + 取消/错误归一/失效 + 四路径端点解析；29 项测试/125 断言、类型/lint/边界全过，浏览器 bundle 无后端运行时](../../core/tasks/knowledgebase-acceptance/2026-09-26-client-data.md) |
 | [x] 已验收 | A02 | OAuth 与 OIDC/SSO 身份<br>backend/src/knowledge/auth/ | §1 / §6 | A01 | 真实或标准测试 IdP 完整回调/PKCE/state/nonce；账号身份映射一致；错误可恢复 | [79 项真实 HTTP/PG 测试全通过（A02 新增 41 项）；Node 24 冒烟真实 OIDC/OAuth 回调、单次 state、身份映射与错误恢复通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-authentication.md) |
 | [ ] 待实施 | A04 | 登录、注册、SSO 与会话恢复界面<br>src/features/knowledge/auth/ | §1 / §6 | A02, A03, U01 | 邮箱登录/注册/验证、OAuth/SSO、登出、会话过期恢复闭环；加载/错误/键盘焦点清晰；Web 与桌面共用 | — |
 | [ ] 待实施 | U02 | 应用壳与知识库新模型接入<br>src/features/knowledge/knowledge-page.tsx; src/shell/ | §0.1 / §3.3 / §10 | U01, T01, A04 | 替换旧知识库文本 CRUD UI；复用设计 tokens/侧栏；选择/导航/空状态真实联动；无旧模型适配双轨 | — |
@@ -511,6 +513,7 @@ flowchart TD
   style A03 fill:#e4f4e9,stroke:#42845c
   style A00 fill:#e4f4e9,stroke:#42845c
   style P03 fill:#e4f4e9,stroke:#42845c
+  style U01 fill:#e4f4e9,stroke:#42845c
   style A02 fill:#e4f4e9,stroke:#42845c
   style B00 fill:#e4f4e9,stroke:#42845c
   style S01 fill:#e4f4e9,stroke:#42845c

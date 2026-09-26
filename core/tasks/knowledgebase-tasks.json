@@ -586,10 +586,17 @@
       "dependencies": [
         "A00"
       ],
-      "status": "in_progress",
+      "status": "accepted",
       "deliverables": "src/features/knowledge/data/",
       "acceptance": "类型安全调用；workspace Query keys 隔离；取消/错误/失效一致；Web SaaS/私有部署地址及桌面 sidecar 端点配置真实可用",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "AppRouter 类型推导客户端 + workspace 键隔离 + 取消/错误归一/失效 + 四路径端点解析；29 项测试/125 断言、类型/lint/边界全过，浏览器 bundle 无后端运行时",
+          "command": "bun test src/features/knowledge/data; pnpm typecheck; pnpm exec eslint --max-warnings=0 src/features/knowledge/data; node scripts/verify-knowledge-boundaries.mjs",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-client-data.md"
+        }
+      ]
     },
     {
       "id": "U02",

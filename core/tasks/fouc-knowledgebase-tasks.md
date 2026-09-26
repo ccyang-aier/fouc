@@ -2,7 +2,7 @@
 
 > 本表由 `knowledgebase-tasks.json` 生成。修改任务和证据后运行 `node scripts/verify-knowledge-tasks.mjs --write`。
 
-设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 23 项。
+设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 24 项。
 
 ## 实施约束
 
@@ -25,7 +25,7 @@
 
 ## 可开始的任务
 
-- V02 块与行内历史差异算法
+检查进行中和待验收任务。
 
 ## 拓扑排序任务表
 
@@ -81,7 +81,7 @@
 | [x] 已验收 | S01 | 建议 insert/delete marks 与事务转换<br>shared/src/knowledge/schema/suggestions/ | §4.5 | E02 | 插入带 mark、删除保留内容；接受/拒绝按 suggestionId 原子执行；范围/嵌套/替换/撤销正确 | [建议编辑/嵌套块/原子审阅与真实 Yjs 往返 11 项测试通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
 | [ ] 待实施 | S02 | 建议模式 UI 与批量审阅<br>src/features/knowledge/editor/review/ | §4.5 / §9.3 | S01, E03, B08 | 人/AI 同一路径；作者/时间/来源可见；逐条/全部接受拒绝；只读不允许修改；长文滚动定位 | — |
 | [ ] 待实施 | V01 | 自动、结束会话与手动检查点<br>backend/src/knowledge/collaboration/checkpoints.ts | §5.2 | B02, Q01 | 超过 10 分钟且有编辑、结束会话、命名版本按策略写；无变化不重复；作者集合正确；GC 保持开启 | — |
-| [ ] 待实施 | V02 | 块与行内历史差异算法<br>shared/src/knowledge/history/ | §5.2 | M01, C01 | 新增/删除/移动/修改块与行内差异可解释；ID 用于稳定比对；空页/相邻版本正确 | — |
+| [x] 已验收 | V02 | 块与行内历史差异算法<br>shared/src/knowledge/history/ | §5.2 | M01, C01 | 新增/删除/移动/修改块与行内差异可解释；ID 用于稳定比对；空页/相邻版本正确 | [20 项 Bun/Node 双运行时 diff 测试，166 项共享回归；120排列移动最小性、120文本重建、27块Markdown快照往返](../../core/tasks/knowledgebase-acceptance/2026-09-26-history.md) |
 | [ ] 待实施 | V03 | 历史面板与协作安全恢复<br>src/features/knowledge/history/; backend/src/knowledge/collaboration/ | §5.2 | V01, V02, E03, B08 | 预览版本、作者、命名；恢复通过新 Y.Doc 事务且可撤销；另一在线编辑者不中断 | — |
 | [ ] 待实施 | N01 | 评论线程持久化与权限<br>backend/src/knowledge/comments/ | §4.6 | P03, Q01 | 创建/回复/解决/重开/删除有独立生命周期；仅 comment+ 可写；通知 Outbox 原子且 workspace 隔离 | — |
 | [ ] 待实施 | N02 | CRDT 评论锚点与侧栏<br>src/features/knowledge/editor/comments/ | §4.6 / §5.3 | N01, E03, B06 | 选区 comment mark 绑定 threadId；协作插删锚点不漂；孤立锚点状态可解释；线程/正文跳转 | — |
@@ -505,6 +505,7 @@ flowchart TD
   style A03 fill:#e4f4e9,stroke:#42845c
   style B00 fill:#e4f4e9,stroke:#42845c
   style S01 fill:#e4f4e9,stroke:#42845c
+  style V02 fill:#e4f4e9,stroke:#42845c
   style W01 fill:#e4f4e9,stroke:#42845c
   style W02 fill:#e4f4e9,stroke:#42845c
   style W03 fill:#e4f4e9,stroke:#42845c

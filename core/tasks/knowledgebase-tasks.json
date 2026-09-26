@@ -875,10 +875,17 @@
         "M01",
         "C01"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "shared/src/knowledge/history/",
       "acceptance": "新增/删除/移动/修改块与行内差异可解释；ID 用于稳定比对；空页/相邻版本正确",
-      "evidence": []
+      "evidence": [
+        {
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-history.md",
+          "summary": "20 项 Bun/Node 双运行时 diff 测试，166 项共享回归；120排列移动最小性、120文本重建、27块Markdown快照往返",
+          "command": "bun test shared/src/knowledge/history shared/src/knowledge/markdown shared/src/knowledge/schema; pnpm shared:typecheck; pnpm exec eslint --no-ignore shared/src/knowledge/history; node --test backend/node_modules/.cache/knowledge/history.test.mjs",
+          "verifiedAt": "2026-09-26"
+        }
+      ]
     },
     {
       "id": "V03",

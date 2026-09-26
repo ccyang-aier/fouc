@@ -1,0 +1,64 @@
+import { z } from 'zod';
+
+export const runtimeRoles = ['api', 'collab', 'worker', 'mcp'] as const;
+export type RuntimeRole = typeof runtimeRoles[number];
+const roleSchema = z.enum([...runtimeRoles, 'all']);
+
+const urlFor = (protocols: readonly string[]) => z.url().refine((value) => {
+  try { return protocols.includes(new URL(value).protocol); } catch { return false; }
+});
+const httpUrl = urlFor(['http:', 'https:']);
+const databaseUrl = urlFor(['postgres:', 'postgresql:']);
+const redisUrl = urlFor(['redis:', 'rediss:']);
+const baseEnvironmentSchema = z.object({
+  ROLE: roleSchema.default('all'),
+  DATABASE_URL: databaseUrl,
+  FOUC_BACKEND_HOST: z.string().min(1).default('127.0.0.1'),
+  FOUC_BACKEND_PORT: z.coerce.number().int().min(1).max(65535).default(8710),
+  BETTER_AUTH_URL: httpUrl,
+  BETTER_AUTH_SECRET: z.string().min(32),
+  KNOWLEDGE_ALLOWED_ORIGINS: z.string().optional(),
+  REDIS_URL: redisUrl.optional(),
+  S3_ENDPOINT: httpUrl.optional(),
+  S3_REGION: z.string().min(1).optional(),
+  S3_BUCKET: z.string().min(3).max(63).optional(),
+  S3_ACCESS_KEY_ID: z.string().min(1).optional(),
+  S3_SECRET_ACCESS_KEY: z.string().min(1).optional(),
+  MEDIA_WORKER_URL: httpUrl.optional(),
+}).superRefine((environment, context) => {
+  const active: readonly string[] = environment.ROLE === 'all' ? runtimeRoles : [environment.ROLE];
+  const require = (fields: (keyof typeof environment)[]) => {
+    for (const field of fields) if (!environment[field]) context.addIssue({ code: 'custom', path: [field], message: 'Required for the selected role' });
+  };
+  if (active.includes('collab')) require(['REDIS_URL']);
+  if (environment.S3_ENDPOINT || active.some((role) => role === 'api' || role === 'worker')) require(['S3_ENDPOINT', 'S3_REGION', 'S3_BUCKET', 'S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY']);
+  if (active.includes('worker')) require(['MEDIA_WORKER_URL']);
+  const authUrl = httpUrl.safeParse(environment.BETTER_AUTH_URL);
+  const defaultOrigin = authUrl.success ? new URL(authUrl.data).origin : '';
+  for (const origin of (environment.KNOWLEDGE_ALLOWED_ORIGINS ?? defaultOrigin).split(',').map((value) => value.trim())) {
+    const parsed = httpUrl.safeParse(origin);
+    if (!parsed.success || new URL(origin).origin !== origin) context.addIssue({ code: 'custom', path: ['KNOWLEDGE_ALLOWED_ORIGINS'], message: 'Use exact HTTP origins, not paths or wildcards' });
+  }
+});
+
+export function readKnowledgeConfig(environment: Record<string, string | undefined> = process.env) {
+  const parsed = baseEnvironmentSchema.safeParse(environment);
+  if (!parsed.success) {
+    // Do not interpolate Zod values or URLs: these fields contain credentials.
+    throw new Error(`Invalid knowledge configuration: ${[...new Set(parsed.error.issues.map((issue) => issue.path.join('.')))].join(', ')}`);
+  }
+  const config = parsed.data;
+  return Object.freeze({
+    roles: config.ROLE === 'all' ? [...runtimeRoles] : [config.ROLE],
+    databaseUrl: config.DATABASE_URL,
+    hostname: config.FOUC_BACKEND_HOST,
+    port: config.FOUC_BACKEND_PORT,
+    auth: { baseUrl: config.BETTER_AUTH_URL, secret: config.BETTER_AUTH_SECRET },
+    allowedOrigins: (config.KNOWLEDGE_ALLOWED_ORIGINS ?? new URL(config.BETTER_AUTH_URL).origin).split(',').map((value) => value.trim()),
+    redisUrl: config.REDIS_URL,
+    storage: config.S3_ENDPOINT ? { endpoint: config.S3_ENDPOINT, region: config.S3_REGION!, bucket: config.S3_BUCKET!, accessKeyId: config.S3_ACCESS_KEY_ID!, secretAccessKey: config.S3_SECRET_ACCESS_KEY! } : undefined,
+    mediaWorkerUrl: config.MEDIA_WORKER_URL,
+  });
+}
+
+export type KnowledgeConfig = ReturnType<typeof readKnowledgeConfig>;

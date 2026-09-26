@@ -2,7 +2,7 @@
 
 > 本表由 `knowledgebase-tasks.json` 生成。修改任务和证据后运行 `node scripts/verify-knowledge-tasks.mjs --write`。
 
-设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 97 项，已验收 2 项。
+设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 7 项。
 
 ## 实施约束
 
@@ -25,7 +25,7 @@
 
 ## 可开始的任务
 
-检查进行中和待验收任务。
+- W01 无状态 Media Worker HTTP 服务
 
 ## 拓扑排序任务表
 
@@ -33,34 +33,36 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | [x] 已验收 | F00 | 设计覆盖矩阵、任务 DAG 与验收账本<br>core/tasks/knowledgebase-*; scripts/verify-knowledge-tasks.mjs | §0 / §0.1 / §0.2 / §10 | — | 全部设计章节有任务；ID 唯一、依赖存在、无环；已验收任务有证据且前置已验收 | [42 节覆盖、DAG 与追踪规则通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
 | [x] 已验收 | F01 | 工作区依赖边界与分层验证入口<br>package.json; shared/package.json; scripts/verify-knowledge-boundaries.mjs | §1 / §10 | F00 | 共享包/前端/后端各自 typecheck；共享领域无浏览器或服务端运行时耦合；现有测试仍通过 | [三层类型、架构边界及回归通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
-| [ ] 进行中 | C01 | 领域实体、权限、事件与 API 输入契约<br>shared/src/knowledge/contracts/ | §3 / §3.1 / §3.2 / §3.3 / §6.1 | F01 | 运行时校验 UUID、workspace 作用域、页面类型、属性、主体和事件；错误输入被拒绝；前后端复用 | — |
-| [ ] 进行中 | E01 | 一方块注册表与共享 ProseMirror Schema<br>shared/src/knowledge/schema/ | §4 / §4.1 / §4.2 / §10 | F01 | 所有设计块类型可构造和序列化；通过一个定义注册新块；React NodeView 不进入共享包 | — |
-| [ ] 待实施 | E02 | blockId 完整性与粘贴来源插件<br>shared/src/knowledge/schema/block-id.ts | §4.3 / §12 | E01 | 新建、拆分、合并、复制、跨页粘贴、嵌套和协作重复均满足 ID 规则；服务端可检测修复 | — |
+| [x] 已验收 | C01 | 领域实体、权限、事件与 API 输入契约<br>shared/src/knowledge/contracts/ | §3 / §3.1 / §3.2 / §3.3 / §6.1 | F01 | 运行时校验 UUID、workspace 作用域、页面类型、属性、主体和事件；错误输入被拒绝；前后端复用 | [7 组领域契约行为用例与两层类型检查通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
+| [x] 已验收 | E01 | 一方块注册表与共享 ProseMirror Schema<br>shared/src/knowledge/schema/ | §4 / §4.1 / §4.2 / §10 | F01 | 所有设计块类型可构造和序列化；通过一个定义注册新块；React NodeView 不进入共享包 | [27 种块、同源 Schema 与安全序列化 15 测试通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
+| [ ] 进行中 | E02 | blockId 完整性与粘贴来源插件<br>shared/src/knowledge/schema/block-id.ts | §4.3 / §12 | E01 | 新建、拆分、合并、复制、跨页粘贴、嵌套和协作重复均满足 ID 规则；服务端可检测修复 | — |
 | [ ] 待实施 | M01 | 标准 Markdown 双向管线<br>shared/src/knowledge/markdown/ | §4.4 | E02 | GFM、嵌套块、指令、公式、wiki 链接、marks 与所有一方块往返不丢语义；明确不支持输入报错 | — |
 | [ ] 待实施 | M02 | AI 方言锚点与媒体派生文本<br>shared/src/knowledge/markdown/ | §4.4 / §7.1 / §9.6 | M01, C01 | 同一管线开关产生 blockId 锚点；容器子块和媒体文本完整；可按锚点读取且引用稳定 | — |
-| [ ] 待实施 | P01 | 主体展开与纯权限继承计算<br>backend/src/knowledge/permissions/ | §6 / §6.1 / §6.2 | C01 | 四级权限、用户/群组/workspace/link、继承中断、teamspace 根默认合并用行为用例覆盖 | — |
-| [ ] 待实施 | D01 | Postgres 当前唯一 schema 与约束<br>backend/src/database/knowledge/ | §3.1 / §3.2 / §3.3 / §10 | C01 | Drizzle 当前表模型与初始化 SQL 包含全部表/租户外键/ltree/vector/索引；静态 schema 约束测试及类型检查通过；真实执行单独由 D03 验收 | — |
+| [x] 已验收 | P01 | 主体展开与纯权限继承计算<br>backend/src/knowledge/permissions/ | §6 / §6.1 / §6.2 | C01 | 四级权限、用户/群组/workspace/link、继承中断、teamspace 根默认合并用行为用例覆盖 | [权限继承/四级主体/撤权窗口 6 组行为测试通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
+| [ ] 进行中 | D01 | Postgres 当前唯一 schema 与约束<br>backend/src/database/knowledge/ | §3.1 / §3.2 / §3.3 / §10 | C01 | Drizzle 当前表模型与初始化 SQL 包含全部表/租户外键/ltree/vector/索引；静态 schema 约束测试及类型检查通过；真实执行单独由 D03 验收 | — |
 | [ ] 进行中 | I01 | Postgres/Redis/S3 基础服务与健康检查<br>compose.knowledge.yaml; .env.example | §2 / §11 | F01 | 真实 ParadeDB（ltree/pg_search/pgvector）、Redis、MinIO 启动可访问；凭据仅环境注入；五类服务完整装配留给 Z03 | — |
 | [ ] 待实施 | D02 | 请求级租户事务与强制 RLS<br>backend/src/database/knowledge/tenant.ts | §3.2 / §6.2 | D01, I01 | SET LOCAL/set_config 随事务回收；非超级用户跨租户 SELECT/INSERT/UPDATE/DELETE 均拒绝，连接池无上下文泄漏 | — |
 | [ ] 待实施 | D03 | 真实数据库初始化与隔离集成测试<br>backend/scripts/knowledge-db.ts; backend/src/database/knowledge/*.test.ts | §3.2 / §11 / §12 | D01, D02, I01 | 在真实 ParadeDB 创建新库、执行全部表/索引/RLS；两个租户恶意访问测试通过 | — |
-| [ ] 待实施 | R01 | 后端角色配置与生命周期<br>backend/src/knowledge/runtime/ | §1 / §2 / §10 | C01 | ROLE=api/collab/worker/mcp/all 严格解析；必需配置校验；同一进程生命周期可启停且失败清理资源；业务用 Node API | — |
+| [x] 已验收 | R01 | 后端角色配置与生命周期<br>backend/src/knowledge/runtime/ | §1 / §2 / §10 | C01 | ROLE=api/collab/worker/mcp/all 严格解析；必需配置校验；同一进程生命周期可启停且失败清理资源；业务用 Node API | [配置与角色生命周期 5 组测试通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
 | [ ] 待实施 | A01 | Better Auth 邮箱与会话<br>backend/src/knowledge/auth/ | §1 / §6 | D03, R01 | 注册/登录/登出/邮箱验证、会话撤销真实往返；cookie/CORS 配置对 Web 与桌面有效 | — |
-| [ ] 待实施 | O01 | 个人/团队 Workspace 与成员群组<br>backend/src/knowledge/organization/ | §3.3 / §6.1 | A01, D03 | 个人和团队走同一逻辑；owner/admin/member/guest 与群组加入移除可操作且越权失败 | — |
+| [ ] 待实施 | O01 | 个人/团队 Workspace 与成员群组<br>backend/src/knowledge/organization/ | §3.3 / §6.1 | A01, D03 | 个人和团队走同一逻辑；owner/admin/member/guest 与群组加入移除可操作且越权失败；成员邀请及身份绑定通过真实流程 | — |
 | [ ] 待实施 | O03 | Teamspace 服务与根默认权限<br>backend/src/knowledge/organization/teamspaces.ts | §3.3 / §6.1 | O01 | 空间 CRUD 与 owner/admin 授权、根默认级别持久化；个人和团队共享逻辑；权限计算可读取根默认值 | — |
 | [ ] 待实施 | Q01 | 事务 Outbox 与 graphile-worker 调度<br>backend/src/knowledge/workers/ | §2 / §3.2 / §5.1 / §7.1 | D03, R01 | 业务写与 outbox 原子提交；重试、去重、崩溃恢复不丢任务；Worker 生命周期停止干净 | — |
 | [ ] 待实施 | P02 | 有效权限物化、失效围栏与索引同步<br>backend/src/knowledge/permissions/ | §6.2 / §12 | P01, O03, Q01 | 授权/移动/断继承批量子树重算；撤权立即阻止旧 ACL 泄漏；GIN 主体数组与 block_index 同步；群组变更无需逐页重算 | — |
 | [ ] 待实施 | A03 | PAT 与服务端请求身份<br>backend/src/knowledge/auth/tokens.ts | §1 / §6 / §9.5 | A01 | PAT 哈希存储、范围/到期/撤销生效；session/PAT 归一到同一发起者上下文，禁止客户端伪造身份 | — |
-| [ ] 待实施 | P03 | 权限一致的页面授权接口<br>backend/src/knowledge/permissions/; backend/src/api/knowledge/ | §6.1 / §6.2 | P02, A03 | 查看/评论/编辑/full 动作逐一授权；API/WS/AI 共用入口；无权限目标不可通过 ID 猜测访问 | — |
+| [ ] 待实施 | A00 | Hono tRPC 服务端上下文与错误边界<br>backend/src/api/knowledge/ | §1 / §2 / §10 | C01, R01, A03 | tRPC 挂载 Hono；session/PAT 与 workspace 上下文注入；输入校验、结构化错误、无权/未认证拒绝；不依赖客户端 | — |
+| [ ] 待实施 | P03 | 权限一致的页面授权接口<br>backend/src/knowledge/permissions/; backend/src/api/knowledge/ | §6.1 / §6.2 | P02, A03, A00 | 查看/评论/编辑/full 动作逐一授权；API/WS/AI 共用入口；无权限目标不可通过 ID 猜测访问 | — |
 | [ ] 待实施 | T01 | 页面树服务与分数排序<br>backend/src/knowledge/pages/ | §3.3 / §5.4 | P03 | UUID 离线可建、ltree 子树移动、分数排序、回收恢复；禁止循环/越权移动/跨租户父子；失败事务回滚 | — |
 | [ ] 待实施 | AS01 | S3 工作区资源服务与预签名<br>backend/src/knowledge/assets/ | §8 / §8.1 | P03, I01, Q01 | 按 workspace/hash 寻址、秒传不泄漏跨租户存在性；上传确认校验哈希/大小/类型；下载授权；asset.created 原子且真实 S3 往返 | — |
 | [ ] 待实施 | B01 | Hocuspocus v4 鉴权与只读连接<br>backend/src/knowledge/collaboration/ | §5 / §5.1 / §6.2 | P03, R01, E02 | WS 校验会话/PAT/page scope；view/comment 连接禁止正文写入；GC 开启；拒绝未授权文档和 workspace 频道 | — |
 | [ ] 待实施 | B02 | Y.Doc 权威持久化与原子 Outbox<br>backend/src/knowledge/collaboration/persistence.ts | §3.1 / §5.1 | B01, Q01 | 从 doc_state 加载，2 秒防抖/最长 10 秒落库；state/vector/outbox 同事务；崩溃重连内容不丢 | — |
-| [ ] 待实施 | U01 | tRPC 与 TanStack Query 数据边界<br>backend/src/api/knowledge/; src/features/knowledge/data/ | §1 / §2 / §10 | C01, R01, A03 | Hono 上挂载类型安全 tRPC；身份与 workspace 注入；Query keys 隔离；错误/取消/失效一致 | — |
-| [ ] 待实施 | U02 | 应用壳与知识库新模型接入<br>src/features/knowledge/knowledge-page.tsx; src/shell/ | §0.1 / §3.3 / §10 | U01, T01 | 替换旧知识库文本 CRUD UI；复用设计 tokens/侧栏；选择/导航/空状态真实联动；无旧模型适配双轨 | — |
+| [ ] 待实施 | U01 | TanStack Query 与 tRPC 客户端数据边界<br>src/features/knowledge/data/ | §1 / §2 / §10 | A00 | 类型安全调用；workspace Query keys 隔离；取消/错误/失效一致；Web SaaS/私有部署地址及桌面 sidecar 端点配置真实可用 | — |
+| [ ] 待实施 | A02 | OAuth 与 OIDC/SSO 身份<br>backend/src/knowledge/auth/ | §1 / §6 | A01 | 真实或标准测试 IdP 完整回调/PKCE/state/nonce；账号身份映射一致；错误可恢复 | — |
+| [ ] 待实施 | A04 | 登录、注册、SSO 与会话恢复界面<br>src/features/knowledge/auth/ | §1 / §6 | A02, A03, U01 | 邮箱登录/注册/验证、OAuth/SSO、登出、会话过期恢复闭环；加载/错误/键盘焦点清晰；Web 与桌面共用 | — |
+| [ ] 待实施 | U02 | 应用壳与知识库新模型接入<br>src/features/knowledge/knowledge-page.tsx; src/shell/ | §0.1 / §3.3 / §10 | U01, T01, A04 | 替换旧知识库文本 CRUD UI；复用设计 tokens/侧栏；选择/导航/空状态真实联动；无旧模型适配双轨 | — |
 | [ ] 待实施 | M03 | Obsidian 仓库导入导出<br>backend/src/knowledge/import-export/; src/features/knowledge/ | §4.4 | M01, T01, AS01, B02, U02 | 目录、附件、frontmatter、wiki/块链接可往返；多页导入有进度与逐项失败反馈 | — |
 | [ ] 待实施 | T02 | 数据库页面及类型化行属性<br>backend/src/knowledge/databases/ | §3.3 / §9.2 | T01 | database/row 均为 page；每行可独立 Y.Doc/权限；schema/属性验证、筛选排序和分页正确 | — |
 | [ ] 待实施 | M04 | Notion 导出导入<br>backend/src/knowledge/import-export/ | §4.4 | M01, T02, AS01, B02, U02 | HTML/Markdown/CSV、目录与附件导入真实样本；页面链接正确映射，无静默丢失 | — |
-| [ ] 待实施 | A02 | OAuth 与 OIDC/SSO 身份<br>backend/src/knowledge/auth/ | §1 / §6 | A01 | 真实或标准测试 IdP 完整回调/PKCE/state/nonce；用户映射与 workspace 邀请一致；错误可恢复 | — |
 | [ ] 待实施 | O02 | Workspace/成员/Teamspace 组织界面<br>backend/src/knowledge/organization/; src/features/knowledge/organization/ | §3.3 / §6.1 | O03, U01 | 空间创建、切换、成员/群组管理闭环；空/加载/无权/失败状态清晰；根默认权限生效 | — |
 | [ ] 待实施 | U03 | 页面树操作与乐观反馈<br>src/features/knowledge/navigation/ | §3.3 / §5.4 | U02, T01 | 新建、重命名、图标/封面、嵌套移动/排序、删除恢复、键盘导航；失败恢复且提示明确 | — |
 | [ ] 待实施 | U04 | 本地元数据操作队列<br>src/features/knowledge/collaboration/metadata-queue.ts | §5.4 | U03 | UUID 操作持久化，离线乐观、重连按序提交；循环/无权失败回滚；重复重试不重复创建 | — |
@@ -89,10 +91,10 @@
 | [ ] 待实施 | U05 | 权限、继承与分享管理界面<br>src/features/knowledge/sharing/ | §6 | P04, U02 | 用户/组/workspace 授权、继承开关、有效权限解释；完整保存/撤销失败反馈；非 full 禁止操作 | — |
 | [ ] 待实施 | U06 | 数据库表格视图<br>src/features/knowledge/databases/ | §3.3 | T02, E03, U02 | 类型化列增删改、行属性编辑、筛选/排序/打开行正文；加载/无权/空/错误及键盘完整 | — |
 | [ ] 待实施 | U07 | 数据库看板视图<br>src/features/knowledge/databases/ | §3.3 | U06 | 同一组行按状态分组，拖动改属性；无状态/无权限/空状态正确；打开同一行页面；失败乐观回滚 | — |
-| [ ] 待实施 | F02 | 模型任务档位与安全配置契约<br>shared/src/knowledge/contracts/models.ts; backend/src/knowledge/ai/config.ts | §9.1 | C01 | fast/smart/embed/rerank/vision，平台/BYOK/Ollama 层级解析；密钥只留服务端；模型/维度验证 | — |
+| [x] 已验收 | F02 | 模型任务档位与安全配置契约<br>shared/src/knowledge/contracts/models.ts; backend/src/knowledge/ai/config.ts | §9.1 | C01 | fast/smart/embed/rerank/vision，平台/BYOK/Ollama 层级解析；密钥只留服务端；模型/维度验证 | [模型档位/来源与密钥归属 3 组测试通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
 | [ ] 待实施 | G01 | AI SDK 统一模型网关<br>backend/src/knowledge/ai/gateway/ | §9.1 | F02, D03 | 所有模型调用经统一入口；云/BYOK/Ollama、流、取消、异常可控；无任意工具越权路径 | — |
 | [ ] 待实施 | G02 | OpenTelemetry 与 AI 用量<br>backend/src/knowledge/observability/ | §9.1 / §1 | G01 | 每次真实调用记录 token/耗时/模型/workspace/任务与 trace；日志无 key；错误调用可追踪 | — |
-| [ ] 待实施 | H01 | 块索引增量投影<br>backend/src/knowledge/search/indexer.ts | §7.1 / §12 | M02, B02, P02, Q01 | 遍历嵌套块、hash 差量增改删、修复 ID、更新 backlink；重跑幂等；短块带标题路径 | — |
+| [ ] 待实施 | H01 | 块索引增量投影<br>backend/src/knowledge/search/indexer.ts | §7.1 / §12 | M02, B02, P02, Q01, L01 | 遍历嵌套块、hash 差量增改删、修复 ID、更新 backlink；重跑幂等；短块带标题路径 | — |
 | [ ] 待实施 | H02 | 向量批量生成与模型换代<br>backend/src/knowledge/search/embeddings.ts | §7.1 / §12 | H01, G01 | 仅变化块调用；embed_model/维度隔离；后台重建完成原子切换，失败保持旧索引可用 | — |
 | [ ] 待实施 | H03 | BM25 中英文检索<br>backend/src/knowledge/search/keyword.ts | §7.2 / §7.3 | H01, D03 | pg_search/jieba 与 ICU 配置真实查询验证；workspace/principals 在排名前过滤；返回可引用块 | — |
 | [ ] 待实施 | H04 | 向量/RRF/重排统一检索<br>backend/src/knowledge/search/service.ts | §7.2 | H02, H03 | HNSW 限当前模型、各取 50/RRF 常数60/前20重排；查询前授权；API/AI/MCP 共用结果结构 | — |
@@ -103,16 +105,16 @@
 | [ ] 待实施 | W02 | Whisper 音视频时间戳转写<br>services/media-worker/ | §8.2 | W01 | 真实音视频样本生成带时间戳分段文本；模型可配置；失败、超时与重试可观察 | — |
 | [ ] 待实施 | W03 | Docling PDF/Office 解析<br>services/media-worker/ | §8.2 | W01 | 真实 PDF/Office 表格/图片/标题解析成结构化 Markdown；空/损坏样本报错清楚 | — |
 | [ ] 待实施 | W04 | 图片视觉描述与 OCR<br>backend/src/knowledge/workers/vision.ts | §8.2 | AS01, G01 | 真实图片经 vision 档生成描述/OCR；结果写 asset.derived；权限与模型用量可追踪 | — |
-| [ ] 待实施 | W05 | 媒体派生任务编排与重索引<br>backend/src/knowledge/workers/media.ts | §8.2 / §7.1 | W02, W03, W04, H01 | graphile-worker 调用无状态 HTTP；幂等派生结果写库并索引引用块；图片/录音/PDF 可搜索且 AI 可读 | — |
+| [ ] 待实施 | J02 | 共用只读 Agent 工具<br>backend/src/knowledge/ai/tools/ | §9.2 / §9.5 | H04, M02, T02, L01 | search/read_page/query_database/list_pages/get_backlinks 同发起者授权；range/filter/sort 有验证、引用准确 | — |
+| [ ] 待实施 | W05 | 媒体派生任务编排与重索引<br>backend/src/knowledge/workers/media.ts | §8.2 / §7.1 | W02, W03, W04, H01, H04, J02 | graphile-worker 调用无状态 HTTP；幂等派生结果写库并索引引用块；图片/录音/PDF 可搜索且 AI 可读 | — |
 | [ ] 待实施 | U10 | 媒体派生内容与处理状态 UI<br>src/features/knowledge/assets/ | §8.2 | W05, U09 | 排队/处理中/成功/失败可见；OCR/时间戳转录/解析预览、重试；引用点击定位片段 | — |
 | [ ] 待实施 | J01 | 上下文组装与引用校验<br>backend/src/knowledge/ai/context.ts | §9.6 | M02, H04 | 规则→大纲→邻块→检索→历史顺序；预算超限从检索尾部截断；回答 blockId 引用校验与权限过滤 | — |
-| [ ] 待实施 | J02 | 共用只读 Agent 工具<br>backend/src/knowledge/ai/tools/ | §9.2 / §9.5 | J01, T02, L01 | search/read_page/query_database/list_pages/get_backlinks 同发起者授权；range/filter/sort 有验证、引用准确 | — |
 | [ ] 待实施 | J03 | CRDT 建议写入 Agent 工具<br>backend/src/knowledge/ai/tools/ | §9.2 / §9.3 | J02, S01, B01, B00 | insert/replace/delete/create/update_properties 权限一致；openDirectConnection+agent:taskId；新 ID/建议默认；无 SQL 正文双写 | — |
 | [ ] 待实施 | B09 | 服务端 Agent Awareness 发布<br>backend/src/knowledge/collaboration/agent-awareness.ts | §5.5 / §9.3 | B01, B00 | 服务端 direct connection 以 Agent 身份发布 cursor/selection/正在编辑状态；任务结束和异常清理，协议客户端能接收 | — |
-| [ ] 待实施 | J04 | 逐块流式 AI 与任务撤销<br>backend/src/knowledge/ai/streaming.ts | §9.3 | J03, G01, B09 | 完整块到达即写共享 Y.Doc；Awareness 显示 Agent 光标；取消后部分结果可审阅；整体任务撤销不影响人编辑 | — |
+| [ ] 待实施 | J04 | 逐块流式 AI 与任务撤销<br>backend/src/knowledge/ai/streaming.ts | §9.3 | J03, G01, B09, J01 | 完整块到达即写共享 Y.Doc；Awareness 显示 Agent 光标；取消后部分结果可审阅；整体任务撤销不影响人编辑 | — |
 | [ ] 待实施 | J05 | 划词改写/翻译/总结与 /ai 续写<br>src/features/knowledge/ai/inline/ | §9.4 | J04, S02, E06 | 选区和邻块作为上下文，建议回原处；流式/取消/失败/重试/直接应用；键盘入口完整 | — |
 | [ ] 待实施 | J06 | 侧栏 Agent 对话与可点击引用<br>src/features/knowledge/ai/chat/ | §9.4 | J04, H05 | 工具调用状态、流式回答和引用跳转高亮；会话历史/取消/错误；无权引用不泄漏 | — |
-| [ ] 待实施 | J07 | 持久 AI 长任务与审批恢复<br>backend/src/knowledge/ai/tasks/ | §9.4 | J03, Q01, G02 | 整理空间/周报可执行；running/awaiting_approval/done/failed state 持久化；重启续跑不重复写；审批身份校验 | — |
+| [ ] 待实施 | J07 | 持久 AI 长任务与审批恢复<br>backend/src/knowledge/ai/tasks/ | §9.4 | J03, Q01, G02, J01 | 整理空间/周报可执行；running/awaiting_approval/done/failed state 持久化；重启续跑不重复写；审批身份校验 | — |
 | [ ] 待实施 | J08 | AI 块提示、范围与定时生成<br>src/features/knowledge/editor/blocks/ai-block.tsx; backend/src/knowledge/ai/ | §4.1 / §9.4 | J07, E03, S02 | 保存提示/范围、手动/定时执行、建议回块内容；授权重检；取消与失败反馈 | — |
 | [ ] 待实施 | J09 | AI 模型设置、用量与任务中心 UI<br>src/features/knowledge/ai/settings/; src/features/knowledge/ai/tasks/ | §9.1 / §9.4 | J07, G02, U02 | 档位/平台/BYOK/Ollama 配置可保存验证；安全显示密钥；用量、步骤、审批、重试与撤销完整 | — |
 | [ ] 待实施 | K01 | MCP Streamable HTTP 服务<br>backend/src/knowledge/mcp/ | §9.5 | J03, R01 | 标准 SDK client 初始化/工具发现/调用/取消可运行；复用工具层；mcp:clientName 来源进入建议 | — |
@@ -154,17 +156,19 @@ flowchart TD
   Q01["Q01 事务 Outbox 与 graphile-worker 调度"]
   P02["P02 有效权限物化、失效围栏与索引同步"]
   A03["A03 PAT 与服务端请求身份"]
+  A00["A00 Hono tRPC 服务端上下文与错误边界"]
   P03["P03 权限一致的页面授权接口"]
   T01["T01 页面树服务与分数排序"]
   AS01["AS01 S3 工作区资源服务与预签名"]
   B01["B01 Hocuspocus v4 鉴权与只读连接"]
   B02["B02 Y.Doc 权威持久化与原子 Outbox"]
-  U01["U01 tRPC 与 TanStack Query 数据边界"]
+  U01["U01 TanStack Query 与 tRPC 客户端数据边界"]
+  A02["A02 OAuth 与 OIDC/SSO 身份"]
+  A04["A04 登录、注册、SSO 与会话恢复界面"]
   U02["U02 应用壳与知识库新模型接入"]
   M03["M03 Obsidian 仓库导入导出"]
   T02["T02 数据库页面及类型化行属性"]
   M04["M04 Notion 导出导入"]
-  A02["A02 OAuth 与 OIDC/SSO 身份"]
   O02["O02 Workspace/成员/Teamspace 组织界面"]
   U03["U03 页面树操作与乐观反馈"]
   U04["U04 本地元数据操作队列"]
@@ -207,10 +211,10 @@ flowchart TD
   W02["W02 Whisper 音视频时间戳转写"]
   W03["W03 Docling PDF/Office 解析"]
   W04["W04 图片视觉描述与 OCR"]
+  J02["J02 共用只读 Agent 工具"]
   W05["W05 媒体派生任务编排与重索引"]
   U10["U10 媒体派生内容与处理状态 UI"]
   J01["J01 上下文组装与引用校验"]
-  J02["J02 共用只读 Agent 工具"]
   J03["J03 CRDT 建议写入 Agent 工具"]
   B09["B09 服务端 Agent Awareness 发布"]
   J04["J04 逐块流式 AI 与任务撤销"]
@@ -259,8 +263,12 @@ flowchart TD
   O03 --> P02
   Q01 --> P02
   A01 --> A03
+  C01 --> A00
+  R01 --> A00
+  A03 --> A00
   P02 --> P03
   A03 --> P03
+  A00 --> P03
   P03 --> T01
   P03 --> AS01
   I01 --> AS01
@@ -270,11 +278,14 @@ flowchart TD
   E02 --> B01
   B01 --> B02
   Q01 --> B02
-  C01 --> U01
-  R01 --> U01
-  A03 --> U01
+  A00 --> U01
+  A01 --> A02
+  A02 --> A04
+  A03 --> A04
+  U01 --> A04
   U01 --> U02
   T01 --> U02
+  A04 --> U02
   M01 --> M03
   T01 --> M03
   AS01 --> M03
@@ -286,7 +297,6 @@ flowchart TD
   AS01 --> M04
   B02 --> M04
   U02 --> M04
-  A01 --> A02
   O03 --> O02
   U01 --> O02
   U02 --> U03
@@ -350,6 +360,7 @@ flowchart TD
   B02 --> H01
   P02 --> H01
   Q01 --> H01
+  L01 --> H01
   H01 --> H02
   G01 --> H02
   H01 --> H03
@@ -368,17 +379,20 @@ flowchart TD
   W01 --> W03
   AS01 --> W04
   G01 --> W04
+  H04 --> J02
+  M02 --> J02
+  T02 --> J02
+  L01 --> J02
   W02 --> W05
   W03 --> W05
   W04 --> W05
   H01 --> W05
+  H04 --> W05
+  J02 --> W05
   W05 --> U10
   U09 --> U10
   M02 --> J01
   H04 --> J01
-  J01 --> J02
-  T02 --> J02
-  L01 --> J02
   J02 --> J03
   S01 --> J03
   B01 --> J03
@@ -388,6 +402,7 @@ flowchart TD
   J03 --> J04
   G01 --> J04
   B09 --> J04
+  J01 --> J04
   J04 --> J05
   S02 --> J05
   E06 --> J05
@@ -396,6 +411,7 @@ flowchart TD
   J03 --> J07
   Q01 --> J07
   G02 --> J07
+  J01 --> J07
   J07 --> J08
   E03 --> J08
   S02 --> J08
@@ -470,6 +486,11 @@ flowchart TD
   Z08 --> Z09
   style F00 fill:#e4f4e9,stroke:#42845c
   style F01 fill:#e4f4e9,stroke:#42845c
+  style C01 fill:#e4f4e9,stroke:#42845c
+  style E01 fill:#e4f4e9,stroke:#42845c
+  style P01 fill:#e4f4e9,stroke:#42845c
+  style R01 fill:#e4f4e9,stroke:#42845c
+  style F02 fill:#e4f4e9,stroke:#42845c
 ```
 
 ## 设计覆盖矩阵
@@ -479,8 +500,8 @@ flowchart TD
 | §0 | 设计目标与原则 | F00, Z09 |
 | §0.1 | 核心诉求 | F00, U02, Z08, Z09 |
 | §0.2 | 设计原则 | F00, Z01, Z09 |
-| §1 | 技术选型 | F01, R01, A01, A03, U01, A02, G02, Z02, Z09 |
-| §2 | 总体架构 | I01, R01, Q01, U01, B03, Z02, Z03, Z09 |
+| §1 | 技术选型 | F01, R01, A01, A03, A00, U01, A02, A04, G02, Z02, Z09 |
+| §2 | 总体架构 | I01, R01, Q01, A00, U01, B03, Z02, Z03, Z09 |
 | §3 | 数据模型 | C01, Z09 |
 | §3.1 | 权威来源划分 | C01, D01, B02, B04, B05, Z01 |
 | §3.2 | 核心表 | C01, D01, D02, D03, Q01, Z05 |
@@ -498,7 +519,7 @@ flowchart TD
 | §5.3 | 工作区事件频道 | B06, N02, N03, Z04 |
 | §5.4 | 离线与冲突 | T01, U03, U04, B04, B00, B08, Z04 |
 | §5.5 | Awareness | B07, B09, Z04 |
-| §6 | 权限 | P01, A01, A03, A02, U05, Z05, Z09 |
+| §6 | 权限 | P01, A01, A03, A02, A04, U05, Z05, Z09 |
 | §6.1 | 模型 | C01, P01, O01, O03, P03, O02, P04 |
 | §6.2 | 实现 | P01, D02, P02, P03, B01 |
 | §7 | 检索与知识索引 | Z07, Z09 |
@@ -515,7 +536,7 @@ flowchart TD
 | §9.4 | 交互入口 | E06, H05, J05, J06, J07, J08, J09, Z07 |
 | §9.5 | MCP Server | A03, P04, J02, K01, K02, K03, Z05, Z07 |
 | §9.6 | 上下文组装 | M02, J01, Z07 |
-| §10 | 工程结构 | F00, F01, E01, D01, R01, U01, U02, B05, E03, Z01, Z02, Z09 |
+| §10 | 工程结构 | F00, F01, E01, D01, R01, A00, U01, U02, B05, E03, Z01, Z02, Z09 |
 | §11 | 部署 | I01, D03, B03, W01, Z02, Z03, Z09 |
 | §12 | 关键风险与对策 | E02, D03, P02, H01, H02, U09, K03, Z04, Z05, Z08, Z09 |
 

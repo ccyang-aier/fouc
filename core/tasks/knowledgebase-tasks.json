@@ -85,10 +85,17 @@
       "dependencies": [
         "F01"
       ],
-      "status": "in_progress",
+      "status": "accepted",
       "deliverables": "shared/src/knowledge/contracts/",
       "acceptance": "运行时校验 UUID、workspace 作用域、页面类型、属性、主体和事件；错误输入被拒绝；前后端复用",
-      "evidence": []
+      "evidence": [
+        {
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md",
+          "summary": "7 组领域契约行为用例与两层类型检查通过",
+          "command": "bun test shared/src/knowledge/contracts; pnpm shared:typecheck; pnpm backend:typecheck",
+          "verifiedAt": "2026-09-26"
+        }
+      ]
     },
     {
       "id": "E01",
@@ -102,10 +109,17 @@
       "dependencies": [
         "F01"
       ],
-      "status": "in_progress",
+      "status": "accepted",
       "deliverables": "shared/src/knowledge/schema/",
       "acceptance": "所有设计块类型可构造和序列化；通过一个定义注册新块；React NodeView 不进入共享包",
-      "evidence": []
+      "evidence": [
+        {
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md",
+          "summary": "27 种块、同源 Schema 与安全序列化 15 测试通过",
+          "command": "bun test shared/src/knowledge/schema; pnpm shared:typecheck",
+          "verifiedAt": "2026-09-26"
+        }
+      ]
     },
     {
       "id": "E02",
@@ -117,7 +131,7 @@
       "dependencies": [
         "E01"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "deliverables": "shared/src/knowledge/schema/block-id.ts",
       "acceptance": "新建、拆分、合并、复制、跨页粘贴、嵌套和协作重复均满足 ID 规则；服务端可检测修复",
       "evidence": []
@@ -201,7 +215,7 @@
       "dependencies": [
         "C01"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "deliverables": "backend/src/database/knowledge/",
       "acceptance": "Drizzle 当前表模型与初始化 SQL 包含全部表/租户外键/ltree/vector/索引；静态 schema 约束测试及类型检查通过；真实执行单独由 D03 验收",
       "evidence": []
@@ -233,10 +247,17 @@
       "dependencies": [
         "C01"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "backend/src/knowledge/runtime/",
       "acceptance": "ROLE=api/collab/worker/mcp/all 严格解析；必需配置校验；同一进程生命周期可启停且失败清理资源；业务用 Node API",
-      "evidence": []
+      "evidence": [
+        {
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md",
+          "summary": "配置与角色生命周期 5 组测试通过",
+          "command": "bun test backend/src/knowledge/runtime",
+          "verifiedAt": "2026-09-26"
+        }
+      ]
     },
     {
       "id": "I01",
@@ -299,7 +320,7 @@
       ],
       "status": "pending",
       "deliverables": "backend/src/knowledge/auth/",
-      "acceptance": "真实或标准测试 IdP 完整回调/PKCE/state/nonce；用户映射与 workspace 邀请一致；错误可恢复",
+      "acceptance": "真实或标准测试 IdP 完整回调/PKCE/state/nonce；账号身份映射一致；错误可恢复",
       "evidence": []
     },
     {
@@ -331,7 +352,7 @@
       ],
       "status": "pending",
       "deliverables": "backend/src/knowledge/organization/",
-      "acceptance": "个人和团队走同一逻辑；owner/admin/member/guest 与群组加入移除可操作且越权失败",
+      "acceptance": "个人和团队走同一逻辑；owner/admin/member/guest 与群组加入移除可操作且越权失败；成员邀请及身份绑定通过真实流程",
       "evidence": []
     },
     {
@@ -361,10 +382,17 @@
       "dependencies": [
         "C01"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "backend/src/knowledge/permissions/",
       "acceptance": "四级权限、用户/群组/workspace/link、继承中断、teamspace 根默认合并用行为用例覆盖",
-      "evidence": []
+      "evidence": [
+        {
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md",
+          "summary": "权限继承/四级主体/撤权窗口 6 组行为测试通过",
+          "command": "bun test backend/src/knowledge/permissions",
+          "verifiedAt": "2026-09-26"
+        }
+      ]
     },
     {
       "id": "Q01",
@@ -410,7 +438,8 @@
       ],
       "dependencies": [
         "P02",
-        "A03"
+        "A03",
+        "A00"
       ],
       "status": "pending",
       "deliverables": "backend/src/knowledge/permissions/; backend/src/api/knowledge/",
@@ -449,20 +478,18 @@
     },
     {
       "id": "U01",
-      "title": "tRPC 与 TanStack Query 数据边界",
+      "title": "TanStack Query 与 tRPC 客户端数据边界",
       "sections": [
         "1",
         "2",
         "10"
       ],
       "dependencies": [
-        "C01",
-        "R01",
-        "A03"
+        "A00"
       ],
       "status": "pending",
-      "deliverables": "backend/src/api/knowledge/; src/features/knowledge/data/",
-      "acceptance": "Hono 上挂载类型安全 tRPC；身份与 workspace 注入；Query keys 隔离；错误/取消/失效一致",
+      "deliverables": "src/features/knowledge/data/",
+      "acceptance": "类型安全调用；workspace Query keys 隔离；取消/错误/失效一致；Web SaaS/私有部署地址及桌面 sidecar 端点配置真实可用",
       "evidence": []
     },
     {
@@ -475,7 +502,8 @@
       ],
       "dependencies": [
         "U01",
-        "T01"
+        "T01",
+        "A04"
       ],
       "status": "pending",
       "deliverables": "src/features/knowledge/knowledge-page.tsx; src/shell/",
@@ -934,10 +962,17 @@
       "dependencies": [
         "C01"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "shared/src/knowledge/contracts/models.ts; backend/src/knowledge/ai/config.ts",
       "acceptance": "fast/smart/embed/rerank/vision，平台/BYOK/Ollama 层级解析；密钥只留服务端；模型/维度验证",
-      "evidence": []
+      "evidence": [
+        {
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md",
+          "summary": "模型档位/来源与密钥归属 3 组测试通过",
+          "command": "bun test backend/src/knowledge/ai/config.test.ts",
+          "verifiedAt": "2026-09-26"
+        }
+      ]
     },
     {
       "id": "G01",
@@ -980,7 +1015,8 @@
         "M02",
         "B02",
         "P02",
-        "Q01"
+        "Q01",
+        "L01"
       ],
       "status": "pending",
       "deliverables": "backend/src/knowledge/search/indexer.ts",
@@ -1170,7 +1206,9 @@
         "W02",
         "W03",
         "W04",
-        "H01"
+        "H01",
+        "H04",
+        "J02"
       ],
       "status": "pending",
       "deliverables": "backend/src/knowledge/workers/media.ts",
@@ -1215,7 +1253,8 @@
         "9.5"
       ],
       "dependencies": [
-        "J01",
+        "H04",
+        "M02",
         "T02",
         "L01"
       ],
@@ -1251,7 +1290,8 @@
       "dependencies": [
         "J03",
         "G01",
-        "B09"
+        "B09",
+        "J01"
       ],
       "status": "pending",
       "deliverables": "backend/src/knowledge/ai/streaming.ts",
@@ -1298,7 +1338,8 @@
       "dependencies": [
         "J03",
         "Q01",
-        "G02"
+        "G02",
+        "J01"
       ],
       "status": "pending",
       "deliverables": "backend/src/knowledge/ai/tasks/",
@@ -1672,6 +1713,42 @@
       "acceptance": "同一组行按日期展示、切换月份与拖动更新日期；时区/无日期/无权状态正确；行正文不复制；失败乐观回滚",
       "status": "pending",
       "evidence": []
+    },
+    {
+      "id": "A00",
+      "title": "Hono tRPC 服务端上下文与错误边界",
+      "sections": [
+        "1",
+        "2",
+        "10"
+      ],
+      "dependencies": [
+        "C01",
+        "R01",
+        "A03"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/api/knowledge/",
+      "acceptance": "tRPC 挂载 Hono；session/PAT 与 workspace 上下文注入；输入校验、结构化错误、无权/未认证拒绝；不依赖客户端",
+      "evidence": []
+    },
+    {
+      "id": "A04",
+      "title": "登录、注册、SSO 与会话恢复界面",
+      "sections": [
+        "1",
+        "6"
+      ],
+      "dependencies": [
+        "A02",
+        "A03",
+        "U01"
+      ],
+      "status": "pending",
+      "deliverables": "src/features/knowledge/auth/",
+      "acceptance": "邮箱登录/注册/验证、OAuth/SSO、登出、会话过期恢复闭环；加载/错误/键盘焦点清晰；Web 与桌面共用",
+      "evidence": []
     }
-  ]
+  ],
+  "finalTask": "Z09"
 }

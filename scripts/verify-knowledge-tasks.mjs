@@ -32,6 +32,16 @@ export function verifyPlan(plan, source, fileExists = (name) => existsSync(path.
     ordered.push(task);
   }
   for (const task of plan.tasks) visit(task.id);
+  if (plan.finalTask) {
+    const included = new Set();
+    const collect = (id) => {
+      if (included.has(id)) return;
+      included.add(id);
+      for (const dep of byId.get(id)?.dependencies ?? []) collect(dep);
+    };
+    collect(plan.finalTask);
+    for (const task of plan.tasks) if (!included.has(task.id)) errors.push(`最终验收未依赖 ${task.id}`);
+  }
   const sections = [...source.matchAll(/^#{2,3}\s+(\d+(?:\.\d+)?)\.?\s+(.+)$/gm)].map((match) => ({ id: match[1], title: match[2].trim() }));
   const sectionIds = new Set(sections.map((section) => section.id));
   for (const section of sections) {
@@ -39,8 +49,10 @@ export function verifyPlan(plan, source, fileExists = (name) => existsSync(path.
   }
   for (const task of plan.tasks) {
     for (const section of task.sections) if (!sectionIds.has(section)) errors.push(`${task.id} 引用了不存在的章节 ${section}`);
-    if (task.status === 'accepted') {
+    if (task.status !== 'pending') {
       for (const dep of task.dependencies) if (byId.get(dep)?.status !== 'accepted') errors.push(`${task.id} 前置 ${dep} 尚未验收`);
+    }
+    if (task.status === 'accepted') {
       if (!task.evidence.length) errors.push(`${task.id} 已验收但无证据`);
       for (const item of task.evidence) {
         if (!item.summary || !item.command || !item.verifiedAt || !item.path || !fileExists(item.path)) errors.push(`${task.id} 证据不完整或路径不存在`);

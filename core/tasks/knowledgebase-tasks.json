@@ -1444,10 +1444,17 @@
         "AS01",
         "U02"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "src/features/knowledge/assets/",
       "acceptance": "浏览器 SHA256、预签名直传、完整性确认闭环；秒传/进度/取消/重试/错误均有反馈；通过真实后端与 S3 验证",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "53 项测试/242 断言:流式 SHA-256 NIST 向量与跨块边界、秒传/授权/契约拒绝状态机、取消×3相位、重试哈希复用、真实 MinIO SigV4 PUT→GET 回读复哈希闭环;组件 happy-dom 事件闭环;eslint 0/0",
+          "command": "bun test src/features/knowledge/assets; bunx eslint --no-ignore src/features/knowledge/assets; node scripts/verify-knowledge-boundaries.mjs",
+          "verifiedAt": "2026-09-27",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-27-u08-hash-upload.md"
+        }
+      ]
     },
     {
       "id": "U09",

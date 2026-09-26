@@ -36,6 +36,9 @@ export const assetDerivedSchema = z.strictObject({
   markdown: z.string().optional(),
   transcript: z.array(transcriptSegmentSchema).optional(),
   error: z.string().optional(),
+  /** Producing model id of the latest successful derivation; empty while pending/failed. */
+  model: z.string().min(1).max(200).optional(),
+  generatedAt: timestampSchema.optional(),
 });
 export const assetSchema = workspaceScopeSchema.extend({
   hash: assetHashSchema, mime: z.string().min(1).max(200), size: z.number().int().nonnegative(),

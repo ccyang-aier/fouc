@@ -584,10 +584,17 @@
       "dependencies": [
         "T01"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "backend/src/knowledge/databases/",
       "acceptance": "database/row 均为 page；每行可独立 Y.Doc/权限；schema/属性验证、筛选排序和分页正确",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "18 项测试/161 断言连跑 4 次一致:database/row 均 page 且独立授权、九种列类型验证、筛选/排序/游标分页 fail closed、列变更语义;另修复 pg like_escape 通配符不转义缺陷",
+          "command": "bun test backend/src/knowledge/databases; bun test backend/src/knowledge/pages; bun test shared/src/knowledge/contracts; pnpm shared:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/databases shared/src/knowledge/contracts; bun backend/scripts/knowledge-schema.ts --check",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-databases.md"
+        }
+      ]
     },
     {
       "id": "U01",

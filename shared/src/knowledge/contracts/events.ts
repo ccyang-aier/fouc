@@ -20,7 +20,7 @@ export const workspaceEventSchema = z.discriminatedUnion('type', [
 export const outboxEventSchema = z.discriminatedUnion('topic', [
   workspaceScopeSchema.extend({ topic: z.literal('doc.changed'), pageId: entityIdSchema, actor: actorSchema, occurredAt: timestampSchema }),
   workspaceScopeSchema.extend({ topic: z.literal('acl.changed'), rootPageId: entityIdSchema, revision: z.number().int().nonnegative() }),
-  workspaceScopeSchema.extend({ topic: z.literal('asset.created'), hash: assetHashSchema }),
+  workspaceScopeSchema.extend({ topic: z.literal('asset.created'), hash: assetHashSchema, initiatedBy: entityIdSchema }),
   workspaceScopeSchema.extend({ topic: z.literal('workspace.event'), event: workspaceEventSchema }),
 ]).superRefine((event, context) => {
   if (event.topic === 'workspace.event' && event.workspaceId !== event.event.workspaceId) context.addIssue({ code: 'custom', message: '事件不得跨工作区嵌套' });

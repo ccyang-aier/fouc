@@ -2,6 +2,7 @@ export * from './primitives';
 export * from './organization';
 export * from './pages';
 export * from './pages-tree';
+export * from './databases';
 export * from './sharing';
 export * from './content';
 export * from './assets';

@@ -2,7 +2,7 @@
 
 > 本表由 `knowledgebase-tasks.json` 生成。修改任务和证据后运行 `node scripts/verify-knowledge-tasks.mjs --write`。
 
-设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 42 项。
+设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 43 项。
 
 ## 实施约束
 
@@ -32,7 +32,6 @@
 - V01 自动、结束会话与手动检查点
 - L01 页面/块链接与反向引用派生
 - W04 图片视觉描述与 OCR
-- B09 服务端 Agent Awareness 发布
 
 ## 拓扑排序任务表
 
@@ -117,7 +116,7 @@
 | [ ] 待实施 | U10 | 媒体派生内容与处理状态 UI<br>src/features/knowledge/assets/ | §8.2 | W05, U09 | 排队/处理中/成功/失败可见；OCR/时间戳转录/解析预览、重试；引用点击定位片段 | — |
 | [ ] 待实施 | J01 | 上下文组装与引用校验<br>backend/src/knowledge/ai/context.ts | §9.6 | M02, H04 | 规则→大纲→邻块→检索→历史顺序；预算超限从检索尾部截断；回答 blockId 引用校验与权限过滤 | — |
 | [ ] 待实施 | J03 | CRDT 建议写入 Agent 工具<br>backend/src/knowledge/ai/tools/ | §9.2 / §9.3 | J02, S01, B01, B00 | insert/replace/delete/create/update_properties 权限一致；openDirectConnection+agent:taskId；新 ID/建议默认；无 SQL 正文双写 | — |
-| [ ] 待实施 | B09 | 服务端 Agent Awareness 发布<br>backend/src/knowledge/collaboration/agent-awareness.ts | §5.5 / §9.3 | B01, B00 | 服务端 direct connection 以 Agent 身份发布 cursor/selection/正在编辑状态；任务结束和异常清理，协议客户端能接收 | — |
+| [x] 已验收 | B09 | 服务端 Agent Awareness 发布<br>backend/src/knowledge/collaboration/agent-awareness.ts | §5.5 / §9.3 | B01, B00 | 服务端 direct connection 以 Agent 身份发布 cursor/selection/正在编辑状态；任务结束和异常清理，协议客户端能接收 | [真实监听器+官方 provider 客户端 3 项测试:agent 状态(含 taskId/kind/cursor)实时可见、stop/abort 清理幂等、非 page 文档名拒绝](../../core/tasks/knowledgebase-acceptance/2026-09-26-agent-awareness.md) |
 | [ ] 待实施 | J04 | 逐块流式 AI 与任务撤销<br>backend/src/knowledge/ai/streaming.ts | §9.3 | J03, G01, B09, J01 | 完整块到达即写共享 Y.Doc；Awareness 显示 Agent 光标；取消后部分结果可审阅；整体任务撤销不影响人编辑 | — |
 | [ ] 待实施 | J05 | 划词改写/翻译/总结与 /ai 续写<br>src/features/knowledge/ai/inline/ | §9.4 | J04, S02, E06 | 选区和邻块作为上下文，建议回原处；流式/取消/失败/重试/直接应用；键盘入口完整 | — |
 | [ ] 待实施 | J06 | 侧栏 Agent 对话与可点击引用<br>src/features/knowledge/ai/chat/ | §9.4 | J04, H05 | 工具调用状态、流式回答和引用跳转高亮；会话历史/取消/错误；无权引用不泄漏 | — |
@@ -534,6 +533,7 @@ flowchart TD
   style W01 fill:#e4f4e9,stroke:#42845c
   style W02 fill:#e4f4e9,stroke:#42845c
   style W03 fill:#e4f4e9,stroke:#42845c
+  style B09 fill:#e4f4e9,stroke:#42845c
 ```
 
 ## 设计覆盖矩阵

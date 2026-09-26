@@ -1929,8 +1929,15 @@
       ],
       "deliverables": "backend/src/knowledge/collaboration/agent-awareness.ts",
       "acceptance": "服务端 direct connection 以 Agent 身份发布 cursor/selection/正在编辑状态；任务结束和异常清理，协议客户端能接收",
-      "status": "pending",
-      "evidence": []
+      "status": "accepted",
+      "evidence": [
+        {
+          "summary": "真实监听器+官方 provider 客户端 3 项测试:agent 状态(含 taskId/kind/cursor)实时可见、stop/abort 清理幂等、非 page 文档名拒绝",
+          "command": "bun test backend/src/knowledge/collaboration/agent-awareness.integration.test.ts; pnpm exec eslint --no-ignore backend/src/knowledge/collaboration/agent-awareness.ts",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-agent-awareness.md"
+        }
+      ]
     },
     {
       "id": "U11",

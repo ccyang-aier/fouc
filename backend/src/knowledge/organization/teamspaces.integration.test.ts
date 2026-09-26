@@ -14,6 +14,8 @@ import { createOrganizationRoutes } from './http';
 import { createOrganizationService } from './service';
 import type { OrganizationService } from './service';
 import { readTeamspacePermissionRoot } from './teamspaces';
+import { teamspacePermissionInvalidator } from '../permissions/fence';
+import { initializeKnowledgeJobs } from '../workers/initialize';
 
 interface Actor { email: string; cookie: string; identity: KnowledgeIdentity }
 let server: AuthTestServer;
@@ -74,9 +76,10 @@ async function waitForTeamspaceLock(client: PoolClient) {
 
 beforeAll(async () => {
   server = await createAuthTestServer({ mount(app, { auth, database }) {
-    service = createOrganizationService(database.pool);
+    service = createOrganizationService(database.pool, { permissions: teamspacePermissionInvalidator });
     app.route('/', createOrganizationRoutes(auth, service));
   } });
+  await initializeKnowledgeJobs(server.database.admin, server.database.pool);
   owner = await register('owner'); admin = await register('admin'); regular = await register('member'); guest = await register('guest'); outsider = await register('outsider');
   personalId = (await result<{ id: string }>(request('', owner, 'POST', { name: 'Personal', kind: 'personal' }), 201)).id;
   workspaceId = (await result<{ id: string }>(request('', owner, 'POST', { name: 'Team', kind: 'team' }), 201)).id;
@@ -197,34 +200,32 @@ describe('Teamspace metadata and root defaults over real HTTP/PostgreSQL', () =>
   });
 });
 
-describe('Teamspace deletion and pre-P02 fail-closed boundary', () => {
-  for (const recycled of [false, true]) test(`${recycled ? 'recycled' : 'live'} pages prevent deletion and default changes without erasing data`, async () => {
+describe('Teamspace deletion and transactional permission invalidation', () => {
+  for (const recycled of [false, true]) test(`${recycled ? 'recycled' : 'live'} pages prevent deletion; root changes fence ACLs without erasing data`, async () => {
     const record = await create(recycled ? 'Recycle bin protected' : 'Pages protected', 'view');
     const pageId = await insertPage(record, recycled);
     const before = await server.database.admin.query('SELECT name, default_access, updated_at FROM knowledge.teamspace WHERE workspace_id = $1 AND id = $2', [workspaceId, record.id]);
     expect((await result<{ code: string }>(request(path(record), owner, 'DELETE', {}), 409)).code).toBe('TEAMSPACE_NOT_EMPTY');
-    for (const actor of [owner, admin]) {
-      for (const defaultAccess of [null, 'comment', 'edit', 'full'] as const) {
-        const failed = await result<{ code: string }>(request(path(record), actor, 'PATCH', { name: 'Must not partially rename', defaultAccess }), 409);
-        expect(failed.code).toBe('TEAMSPACE_DEFAULT_ACCESS_REQUIRES_REBUILD');
-      }
-    }
     const after = await server.database.admin.query('SELECT name, default_access, updated_at FROM knowledge.teamspace WHERE workspace_id = $1 AND id = $2', [workspaceId, record.id]);
     expect(after.rows).toEqual(before.rows);
+    // Same-value and name-only updates are not permission changes.
+    expect((await result<Teamspace>(request(path(record), admin, 'PATCH', { name: 'Safe rename', defaultAccess: 'view' }))).name).toBe('Safe rename');
+    const beforeJobs = (await server.database.admin.query('SELECT count(*)::int AS n FROM knowledge.outbox')).rows[0]!.n;
+    expect((await result<Teamspace>(request(path(record), owner, 'PATCH', { defaultAccess: null }))).defaultAccess).toBeNull();
     const saved = await withKnowledgeTenant(server.database.pool, workspaceId, async (db) => ({
       document: await db.select().from(docState).where(eq(docState.pageId, pageId)),
       acl: await db.select().from(pageEffectiveAcl).where(eq(pageEffectiveAcl.pageId, pageId)),
       index: await db.select().from(blockIndex).where(eq(blockIndex.pageId, pageId)),
     }));
     expect([...saved.document[0]!.state]).toEqual([0, 0]);
-    expect(saved.acl[0]!.view).toEqual([principal('workspace', workspaceId)]);
+    expect(saved.acl[0]!.view).toEqual([]);
     expect(saved.acl[0]!.revision).toBe(0);
-    expect(saved.index[0]!.principals).toEqual([principal('workspace', workspaceId)]);
-    // Names do not change ACLs; an unchanged default is not a permission mutation.
-    expect((await result<Teamspace>(request(path(record), admin, 'PATCH', { name: 'Safe rename', defaultAccess: 'view' }))).name).toBe('Safe rename');
+    expect(saved.index[0]!.principals).toEqual([]);
+    expect((await server.database.admin.query('SELECT acl_revision FROM knowledge.page WHERE workspace_id=$1 AND id=$2', [workspaceId, pageId])).rows[0]!.acl_revision).toBe('1');
+    expect((await server.database.admin.query('SELECT count(*)::int AS n FROM knowledge.outbox')).rows[0]!.n).toBe(beforeJobs + 1);
   });
 
-  for (const operation of ['delete', 'default'] as const) test(`a child committed while ${operation} waits for the container lock prevents the mutation`, async () => {
+  for (const operation of ['delete', 'default'] as const) test(`a child committed while ${operation} waits for the container lock is protected`, async () => {
     const record = await create(`Concurrent ${operation}`, 'view');
     const client = await server.database.admin.connect();
     let outcome: Promise<unknown> | undefined;
@@ -237,9 +238,9 @@ describe('Teamspace deletion and pre-P02 fail-closed boundary', () => {
       const id = randomUUID();
       await client.query('INSERT INTO knowledge.page (workspace_id, id, teamspace_id, position, path, created_by) VALUES ($1, $2, $3, $4, $5, $6)', [workspaceId, id, record.id, 'a0', id.replaceAll('-', '_'), owner.identity.userId]);
       await client.query('COMMIT');
-      expect(await outcome).toMatchObject({ code: operation === 'delete' ? 'TEAMSPACE_NOT_EMPTY' : 'TEAMSPACE_DEFAULT_ACCESS_REQUIRES_REBUILD' });
-      expect((await result<Teamspace>(request(path(record)))).defaultAccess).toBe('view');
-      expect((await client.query('SELECT id FROM knowledge.page WHERE workspace_id = $1 AND id = $2', [workspaceId, id])).rowCount).toBe(1);
+      expect(await outcome).toMatchObject(operation === 'delete' ? { code: 'TEAMSPACE_NOT_EMPTY' } : { defaultAccess: 'full' });
+      expect((await result<Teamspace>(request(path(record)))).defaultAccess).toBe(operation === 'delete' ? 'view' : 'full');
+      expect((await client.query('SELECT acl_revision FROM knowledge.page WHERE workspace_id = $1 AND id = $2', [workspaceId, id])).rows).toEqual([{ acl_revision: operation === 'delete' ? '0' : '1' }]);
     } finally { await client.query('ROLLBACK'); if (outcome) await outcome; client.release(); }
   });
 

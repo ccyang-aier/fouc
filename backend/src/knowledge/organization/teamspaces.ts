@@ -35,7 +35,12 @@ export async function readTeamspacePermissionRoot(db: KnowledgeTenantTransaction
   return { ...scope, defaultAccess: record.defaultAccess };
 }
 
-export function teamspaceOperations(pool: Pool) {
+/** Required server dependency, invoked after a root change in its SAME TX. */
+export interface TeamspacePermissionInvalidator {
+  invalidate(db: KnowledgeTenantTransaction, scope: TeamspaceScope): Promise<void>;
+}
+
+export function teamspaceOperations(pool: Pool, permissions: TeamspacePermissionInvalidator) {
   function mutate<T>(identity: KnowledgeIdentity, scope: TeamspaceScope, operation: (db: KnowledgeTenantTransaction, record: typeof teamspace.$inferSelect) => Promise<T>) {
     return inWorkspace(pool, identity, scope.workspaceId, true, async ({ db, role }) => {
       requireManager(role);
@@ -75,13 +80,11 @@ export function teamspaceOperations(pool: Pool) {
     async updateTeamspace(identity: KnowledgeIdentity, input: unknown) {
       const parsed = parseInput(updateTeamspaceInputSchema, input);
       return mutate(identity, parsed, async (db, existing) => {
-        if (parsed.defaultAccess !== undefined && parsed.defaultAccess !== existing.defaultAccess && await containsPages(db, parsed)) {
-          // P02 must replace this guard with same-transaction invalidation and
-          // Outbox enqueue. Never permit a root change while old ACLs remain live.
-          throw new OrganizationError('TEAMSPACE_DEFAULT_ACCESS_REQUIRES_REBUILD', 'Changing default access on a non-empty teamspace requires permission rebuilding.', 409);
-        }
         const [updated] = await db.update(teamspace).set({ name: parsed.name, defaultAccess: parsed.defaultAccess, updatedAt: sql`clock_timestamp()` })
           .where(targetTeamspace(parsed)).returning();
+        if (parsed.defaultAccess !== undefined && parsed.defaultAccess !== existing.defaultAccess) {
+          await permissions.invalidate(db, { workspaceId: parsed.workspaceId, teamspaceId: parsed.teamspaceId });
+        }
         return teamspaceView(updated!);
       });
     },

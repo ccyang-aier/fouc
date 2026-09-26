@@ -1,0 +1,11 @@
+export { canAccess, computeEffectivePermissions, expandPrincipals, permissionFor, restrictDuringRebuild } from './effective';
+export { KnowledgePermissionError } from './errors';
+export { teamspacePermissionInvalidator } from './fence';
+export type { PermissionFence } from './fence';
+export { lockPermissionWorkspace } from './locking';
+export { replaceAuthorizedPageAcl, setAuthorizedPageInheritance, withAuthorizedPageTreeMutation } from './mutations';
+export { withPermissionIndexWrite } from './projection';
+export type { IndexPermissionProjection } from './projection';
+export { effectivePageAccessCondition, indexedBlockAccessCondition, readMaterializedPagePermissions } from './queries';
+export type { MaterializedPagePermissions } from './queries';
+export { createPermissionRebuildConsumer } from './rebuild';

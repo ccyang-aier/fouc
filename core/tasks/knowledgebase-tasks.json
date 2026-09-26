@@ -509,10 +509,17 @@
         "O03",
         "Q01"
       ],
-      "status": "in_progress",
+      "status": "accepted",
       "deliverables": "backend/src/knowledge/permissions/",
       "acceptance": "授权/移动/断继承批量子树重算；撤权立即阻止旧 ACL 泄漏；GIN 主体数组与 block_index 同步；群组变更无需逐页重算",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "真实队列/RLS 54 项测试（新增 10 项集成/71 断言）：子树重算、fail-closed 围栏、索引同步、群组即时生效、teamspace 根默认、事件合并与跨租户全部通过",
+          "command": "bun test backend/src/knowledge/permissions backend/src/knowledge/organization shared/src/knowledge/contracts/organization.test.ts; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/permissions; node scripts/verify-knowledge-boundaries.mjs",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-permissions-materialization.md"
+        }
+      ]
     },
     {
       "id": "P03",

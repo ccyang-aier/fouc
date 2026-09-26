@@ -13,6 +13,7 @@ import { createOrganizationRoutes } from './http';
 import { createOrganizationService } from './service';
 import type { OrganizationService } from './service';
 import { OrganizationError, postgresCode } from './errors';
+import { teamspacePermissionInvalidator } from '../permissions/fence';
 
 interface Actor { email: string; cookie: string; identity: KnowledgeIdentity }
 interface Space { id: string; name: string; kind: 'personal' | 'team'; role: MemberRole }
@@ -77,7 +78,7 @@ async function waitForWorkspaceLock(client: PoolClient) {
 
 beforeAll(async () => {
   server = await createAuthTestServer({ mount(app, { auth, database }) {
-    service = createOrganizationService(database.pool);
+    service = createOrganizationService(database.pool, { permissions: teamspacePermissionInvalidator });
     app.route('/', createOrganizationRoutes(auth, service));
   } });
   owner = await register('owner');
@@ -338,7 +339,7 @@ describe('group and membership invariants', () => {
     const parallel = new Pool({ connectionString: server.database.pool.options.connectionString, max: 4 });
     parallel.on('error', () => undefined);
     try {
-      const concurrent = createOrganizationService(parallel);
+      const concurrent = createOrganizationService(parallel, { permissions: teamspacePermissionInvalidator });
       const outcomes = await Promise.allSettled([owner, coOwner].map((actor) => concurrent.removeMember(actor.identity, { workspaceId: space.id, userId: actor.identity.userId })));
       expect(parallel.totalCount).toBeGreaterThanOrEqual(2);
       expect(outcomes.filter((outcome) => outcome.status === 'fulfilled')).toHaveLength(1);
@@ -356,7 +357,7 @@ describe('group and membership invariants', () => {
     const parallel = new Pool({ connectionString: server.database.pool.options.connectionString, max: 2 });
     parallel.on('error', () => undefined);
     try {
-      const concurrent = createOrganizationService(parallel);
+      const concurrent = createOrganizationService(parallel, { permissions: teamspacePermissionInvalidator });
       const input = { workspaceId: space.id, invitationId: invitation.invitation.id, token: invitation.token };
       const outcomes = await Promise.allSettled([concurrent.acceptInvitation(regular.identity, input), concurrent.acceptInvitation(regular.identity, input)]);
       expect(parallel.totalCount).toBe(2);

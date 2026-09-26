@@ -1422,10 +1422,17 @@
         "AS01",
         "G01"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "backend/src/knowledge/workers/vision.ts",
       "acceptance": "真实图片经 vision 档生成描述/OCR；结果写 asset.derived；权限与模型用量可追踪",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "28 项测试(workers 15+assets 13 回归):真实 PNG 经真实 MinIO+队列+网关 vision 档(glm-5.3-flash 原生图文)生成描述、真实 tokens 落 ai_usage;失败/限流/缺配置结构化重试;幂等重放不重复调用",
+          "command": "bun test backend/src/knowledge/workers backend/src/knowledge/assets; pnpm exec eslint --no-ignore backend/src/knowledge/workers backend/src/knowledge/assets; pnpm backend:typecheck; bun backend/scripts/knowledge-schema.ts --check",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-vision.md"
+        }
+      ]
     },
     {
       "id": "W05",

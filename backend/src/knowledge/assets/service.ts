@@ -67,7 +67,8 @@ export async function confirmWorkspaceAssetUpload(storage: KnowledgeAssetStorage
     if (winner?.status === 'revoked') throw new KnowledgeAssetError('ASSET_NOT_READY');
     return { status: 'ready', created: false };
   }
-  await appendKnowledgeOutbox(db, { workspaceId: parsed.workspaceId, topic: 'asset.created', hash: parsed.hash });
+  // The confirming member is the attribution target for downstream derivations (§8.2).
+  await appendKnowledgeOutbox(db, { workspaceId: parsed.workspaceId, topic: 'asset.created', hash: parsed.hash, initiatedBy: parsed.userId });
   return { status: 'ready', created: true };
 }
 

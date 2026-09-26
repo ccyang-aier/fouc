@@ -4,9 +4,11 @@ import { knowledgeBusinessTables } from './schema';
 
 const identifier = (value: string) => `"${value.replaceAll('"', '""')}"`;
 
+export const knowledgeTenantPredicate = `"workspace_id" = (SELECT NULLIF(current_setting('app.workspace_id', true), '')::uuid)`;
+
 /** DDL identifiers come only from the checked-in Drizzle table definitions. */
 export function knowledgeRlsSql(): string {
-  const scope = `"workspace_id" = (SELECT NULLIF(current_setting('app.workspace_id', true), '')::uuid)`;
+  const scope = knowledgeTenantPredicate;
   return knowledgeBusinessTables.map((table) => {
     const config = getTableConfig(table);
     const name = `${identifier(config.schema!)}.${identifier(config.name)}`;

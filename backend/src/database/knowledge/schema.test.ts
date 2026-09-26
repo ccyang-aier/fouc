@@ -165,6 +165,17 @@ describe('knowledge current Drizzle schema', () => {
     }
   });
 
+  test('schema-owned identifiers fit PostgreSQL without silent truncation', () => {
+    for (const table of allKnowledgeTables) {
+      const config = getTableConfig(table);
+      const names = [config.schema!, config.name, ...config.columns.map((column) => column.name),
+        ...config.foreignKeys.map((key) => key.getName()), ...config.checks.map((check) => check.name),
+        ...config.primaryKeys.map((key) => key.getName()), ...config.uniqueConstraints.map((key) => key.getName()!),
+        ...config.indexes.map((index) => index.config.name!)];
+      for (const name of names) expect(Buffer.byteLength(name), name).toBeLessThanOrEqual(63);
+    }
+  });
+
   test('generated initialization contains the current schema without DDL drift', async () => {
     const sql = await generateKnowledgeSchemaSql();
     const saved = await readFile(knowledgeSchemaSqlPath, 'utf8');

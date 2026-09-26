@@ -2,7 +2,7 @@
 
 > 本表由 `knowledgebase-tasks.json` 生成。修改任务和证据后运行 `node scripts/verify-knowledge-tasks.mjs --write`。
 
-设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 15 项。
+设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 16 项。
 
 ## 实施约束
 
@@ -25,6 +25,7 @@
 
 ## 可开始的任务
 
+- Q01 事务 Outbox 与 graphile-worker 调度
 - V02 块与行内历史差异算法
 - W03 Docling PDF/Office 解析
 
@@ -44,9 +45,9 @@
 | [x] 已验收 | D01 | Postgres 当前唯一 schema 与约束<br>backend/src/database/knowledge/ | §3.1 / §3.2 / §3.3 / §10 | C01, F02 | Drizzle 当前表模型与初始化 SQL 包含全部表/租户外键/ltree/vector/索引；静态 schema 约束测试及类型检查通过；真实执行单独由 D03 验收 | [24 张租户表与 4 张认证表；约束与 SQL 漂移静态验收通过，真实初始化另行验收](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
 | [x] 已验收 | I01 | Postgres/Redis/S3 基础服务与健康检查<br>compose.knowledge.yaml; .env.example | §2 / §11 | F01 | 真实 ParadeDB（ltree/pg_search/pgvector）、Redis、MinIO 启动可访问；凭据仅环境注入；五类服务完整装配留给 Z03 | [真实 ParadeDB 扩展/分词/索引、Redis 认证读写、S3 签名读写及持续运行通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-infrastructure.md) |
 | [x] 已验收 | D02 | 请求级租户事务与强制 RLS<br>backend/src/database/knowledge/tenant.ts | §3.2 / §6.2 | D01, I01 | SET LOCAL/set_config 随事务回收；非超级用户跨租户 SELECT/INSERT/UPDATE/DELETE 均拒绝，连接池无上下文泄漏 | [真实两租户全表隔离、事务/连接复用与异常清理 19 项测试通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-storage.md) |
-| [ ] 进行中 | D03 | 真实数据库初始化与隔离集成测试<br>backend/scripts/knowledge-db.ts; backend/src/database/knowledge/*.test.ts | §3.2 / §11 / §12 | D01, D02, I01 | 在真实 ParadeDB 创建新库、执行全部表/索引/RLS；两个租户恶意访问测试通过 | — |
+| [x] 已验收 | D03 | 真实数据库初始化与隔离集成测试<br>backend/scripts/knowledge-db.ts; backend/src/database/knowledge/*.test.ts | §3.2 / §11 / §12 | D01, D02, I01 | 在真实 ParadeDB 创建新库、执行全部表/索引/RLS；两个租户恶意访问测试通过 | [真实主库 28 表/24 FORCE RLS ready；46 测试/1307 断言通过、初始化回滚与最小权限](../../core/tasks/knowledgebase-acceptance/2026-09-26-database-initialization.md) |
 | [x] 已验收 | R01 | 后端角色配置与生命周期<br>backend/src/knowledge/runtime/ | §1 / §2 / §10 | C01 | ROLE=api/collab/worker/mcp/all 严格解析；必需配置校验；同一进程生命周期可启停且失败清理资源；业务用 Node API | [配置与角色生命周期 5 组测试通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
-| [ ] 待实施 | A01 | Better Auth 邮箱与会话<br>backend/src/knowledge/auth/ | §1 / §6 | D03, R01 | 注册/登录/登出/邮箱验证、会话撤销真实往返；cookie/CORS 配置对 Web 与桌面有效 | — |
+| [ ] 进行中 | A01 | Better Auth 邮箱与会话<br>backend/src/knowledge/auth/ | §1 / §6 | D03, R01 | 注册/登录/登出/邮箱验证、会话撤销真实往返；cookie/CORS 配置对 Web 与桌面有效 | — |
 | [ ] 待实施 | O01 | 个人/团队 Workspace 与成员群组<br>backend/src/knowledge/organization/ | §3.3 / §6.1 | A01, D03 | 个人和团队走同一逻辑；owner/admin/member/guest 与群组加入移除可操作且越权失败；成员邀请及身份绑定通过真实流程 | — |
 | [ ] 待实施 | O03 | Teamspace 服务与根默认权限<br>backend/src/knowledge/organization/teamspaces.ts | §3.3 / §6.1 | O01 | 空间 CRUD 与 owner/admin 授权、根默认级别持久化；个人和团队共享逻辑；权限计算可读取根默认值 | — |
 | [ ] 待实施 | Q01 | 事务 Outbox 与 graphile-worker 调度<br>backend/src/knowledge/workers/ | §2 / §3.2 / §5.1 / §7.1 | D03, R01 | 业务写与 outbox 原子提交；重试、去重、崩溃恢复不丢任务；Worker 生命周期停止干净 | — |
@@ -93,7 +94,7 @@
 | [ ] 待实施 | U05 | 权限、继承与分享管理界面<br>src/features/knowledge/sharing/ | §6 | P04, U02 | 用户/组/workspace 授权、继承开关、有效权限解释；完整保存/撤销失败反馈；非 full 禁止操作 | — |
 | [ ] 待实施 | U06 | 数据库表格视图<br>src/features/knowledge/databases/ | §3.3 | T02, E03, U02 | 类型化列增删改、行属性编辑、筛选/排序/打开行正文；加载/无权/空/错误及键盘完整 | — |
 | [ ] 待实施 | U07 | 数据库看板视图<br>src/features/knowledge/databases/ | §3.3 | U06 | 同一组行按状态分组，拖动改属性；无状态/无权限/空状态正确；打开同一行页面；失败乐观回滚 | — |
-| [ ] 待实施 | G01 | AI SDK 统一模型网关<br>backend/src/knowledge/ai/gateway/ | §9.1 | F02, D03 | 所有模型调用经统一入口；云/BYOK/Ollama、流、取消、异常可控；无任意工具越权路径 | — |
+| [ ] 进行中 | G01 | AI SDK 统一模型网关<br>backend/src/knowledge/ai/gateway/ | §9.1 | F02, D03 | 所有模型调用经统一入口；云/BYOK/Ollama、流、取消、异常可控；无任意工具越权路径 | — |
 | [ ] 待实施 | G02 | OpenTelemetry 与 AI 用量<br>backend/src/knowledge/observability/ | §9.1 / §1 | G01 | 每次真实调用记录 token/耗时/模型/workspace/任务与 trace；日志无 key；错误调用可追踪 | — |
 | [ ] 待实施 | H01 | 块索引增量投影<br>backend/src/knowledge/search/indexer.ts | §7.1 / §12 | M02, B02, P02, Q01, L01 | 遍历嵌套块、hash 差量增改删、修复 ID、更新 backlink；重跑幂等；短块带标题路径 | — |
 | [ ] 待实施 | H02 | 向量批量生成与模型换代<br>backend/src/knowledge/search/embeddings.ts | §7.1 / §12 | H01, G01 | 仅变化块调用；embed_model/维度隔离；后台重建完成原子切换，失败保持旧索引可用 | — |
@@ -497,6 +498,7 @@ flowchart TD
   style D01 fill:#e4f4e9,stroke:#42845c
   style I01 fill:#e4f4e9,stroke:#42845c
   style D02 fill:#e4f4e9,stroke:#42845c
+  style D03 fill:#e4f4e9,stroke:#42845c
   style R01 fill:#e4f4e9,stroke:#42845c
   style B00 fill:#e4f4e9,stroke:#42845c
   style S01 fill:#e4f4e9,stroke:#42845c

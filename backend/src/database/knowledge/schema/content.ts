@@ -111,7 +111,7 @@ export const comment = knowledge.table('comment', {
   updatedAt: instant('updated_at').notNull().defaultNow(),
 }, (table) => [
   primaryKey({ columns: [table.workspaceId, table.id] }),
-  foreignKey({ columns: [table.workspaceId, table.threadId], foreignColumns: [commentThread.workspaceId, commentThread.id] }).onDelete('cascade'),
+  foreignKey({ name: 'comment_thread_fk', columns: [table.workspaceId, table.threadId], foreignColumns: [commentThread.workspaceId, commentThread.id] }).onDelete('cascade'),
   check('comment_body_valid', sql`length(btrim(${table.bodyMd})) BETWEEN 1 AND 50000`),
   index('comment_thread_time_idx').on(table.workspaceId, table.threadId, table.createdAt),
   index('comment_author_idx').on(table.authorId),

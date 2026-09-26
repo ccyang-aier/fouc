@@ -1,38 +1,17 @@
 import { randomUUID } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
-import { parseEnv } from 'node:util';
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
-import { installKnowledgeRls } from './rls';
+import { initializeKnowledgeDatabase } from './initialize';
+import { readKnowledgeDatabaseConnections } from './initialize-config';
+import { assertKnowledgeApplicationRole } from './initialize-role';
 import * as tables from './schema';
 
-const localEnvFile = new URL('../../../../.env.knowledge.local', import.meta.url);
-const currentSqlFile = new URL('./current.sql', import.meta.url);
 const databaseNamePattern = /^fouc_rls_[a-f0-9]{32}$/;
 const identifier = (value: string) => `"${value.replaceAll('"', '""')}"`;
 
-async function connectionUrls() {
-  let local: Record<string, string | undefined> = {};
-  try {
-    local = parseEnv(await readFile(localEnvFile, 'utf8'));
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
-  }
-  const environment = { ...local, ...process.env };
-  try {
-    const admin = new URL(environment.DATABASE_ADMIN_URL ?? '');
-    const application = new URL(environment.DATABASE_URL ?? '');
-    if (![admin, application].every((url) => ['postgres:', 'postgresql:'].includes(url.protocol))) throw new Error();
-    if (admin.host !== application.host) throw new Error();
-    return { admin, application };
-  } catch {
-    throw new Error('Tenant integration tests require DATABASE_ADMIN_URL and DATABASE_URL for the same PostgreSQL instance');
-  }
-}
-
 /** Only databases created by this invocation can be removed by this closure. */
-export async function createTenantTestDatabase() {
-  const urls = await connectionUrls();
+export async function createTenantTestDatabase(options: { initialize?: boolean } = {}) {
+  const urls = await readKnowledgeDatabaseConnections();
   const name = `fouc_rls_${randomUUID().replaceAll('-', '')}`;
   if (!databaseNamePattern.test(name)) throw new Error('Invalid disposable database name');
   const maintenance = new Pool({ connectionString: urls.admin.toString(), max: 1, connectionTimeoutMillis: 10_000 });
@@ -68,30 +47,9 @@ export async function createTenantTestDatabase() {
   try {
     await maintenance.query(`CREATE DATABASE ${identifier(name)} TEMPLATE template0`);
     created = true;
-    const roleInfo = await pool.query<{ role: string; rolsuper: boolean; rolbypassrls: boolean; rolcreatedb: boolean; rolcreaterole: boolean }>(
-      'SELECT current_user AS role, rolsuper, rolbypassrls, rolcreatedb, rolcreaterole FROM pg_roles WHERE rolname = current_user',
-    );
-    const role = roleInfo.rows[0];
-    if (!role || role.rolsuper || role.rolbypassrls || role.rolcreatedb || role.rolcreaterole) {
-      throw new Error('Tenant tests require an ordinary application role without administrative privileges');
-    }
-
-    const client = await admin.connect();
-    try {
-      await client.query('BEGIN');
-      await client.query(await readFile(currentSqlFile, 'utf8'));
-      await installKnowledgeRls(client);
-      const applicationRole = identifier(role.role);
-      await client.query(`GRANT USAGE ON SCHEMA knowledge, knowledge_auth TO ${applicationRole}`);
-      await client.query(`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA knowledge, knowledge_auth TO ${applicationRole}`);
-      await client.query(`GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA knowledge TO ${applicationRole}`);
-      await client.query('COMMIT');
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
-    }
+    console.log(`Created disposable tenant-test database ${name}.`);
+    const role = await assertKnowledgeApplicationRole(admin, pool);
+    if (options.initialize !== false) await initializeKnowledgeDatabase(admin, pool);
     return { name, admin, pool, role, idleErrors, dispose };
   } catch (error) {
     await dispose();

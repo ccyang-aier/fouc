@@ -83,7 +83,7 @@ describe('real PostgreSQL tenant isolation', () => {
   test('FORCE RLS still filters an ordinary role that owns the table', async () => {
     const owner = await database.admin.query<{ role: string }>('SELECT current_user AS role');
     const quote = (value: string) => `"${value.replaceAll('"', '""')}"`;
-    await database.admin.query(`ALTER TABLE knowledge.workspace OWNER TO ${quote(database.role.role)}`);
+    await database.admin.query(`ALTER TABLE knowledge.workspace OWNER TO ${quote(database.role.name)}`);
     try {
       expect((await database.pool.query('SELECT workspace_id FROM knowledge.workspace')).rowCount).toBe(0);
       const own = await withKnowledgeTenant(database.pool, data.tenants[0].workspaceId, (db) => db.select().from(workspace));
@@ -91,7 +91,7 @@ describe('real PostgreSQL tenant isolation', () => {
       expect(own[0]?.id).toBe(data.tenants[0].workspaceId);
     } finally {
       await database.admin.query(`ALTER TABLE knowledge.workspace OWNER TO ${quote(owner.rows[0]!.role)}`);
-      await database.admin.query(`GRANT SELECT, INSERT, UPDATE, DELETE ON knowledge.workspace TO ${quote(database.role.role)}`);
+      await database.admin.query(`GRANT SELECT, INSERT, UPDATE, DELETE ON knowledge.workspace TO ${quote(database.role.name)}`);
     }
   });
 

@@ -323,10 +323,17 @@
         "D02",
         "I01"
       ],
-      "status": "in_progress",
+      "status": "accepted",
       "deliverables": "backend/scripts/knowledge-db.ts; backend/src/database/knowledge/*.test.ts",
       "acceptance": "在真实 ParadeDB 创建新库、执行全部表/索引/RLS；两个租户恶意访问测试通过",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "真实主库 28 表/24 FORCE RLS ready；46 测试/1307 断言通过、初始化回滚与最小权限",
+          "command": "bun test backend/src/database/knowledge; bun backend/scripts/knowledge-db.ts check; pnpm backend:typecheck",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-database-initialization.md"
+        }
+      ]
     },
     {
       "id": "A01",
@@ -339,7 +346,7 @@
         "D03",
         "R01"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "deliverables": "backend/src/knowledge/auth/",
       "acceptance": "注册/登录/登出/邮箱验证、会话撤销真实往返；cookie/CORS 配置对 Web 与桌面有效",
       "evidence": []
@@ -1027,7 +1034,7 @@
         "F02",
         "D03"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "deliverables": "backend/src/knowledge/ai/gateway/",
       "acceptance": "所有模型调用经统一入口；云/BYOK/Ollama、流、取消、异常可控；无任意工具越权路径",
       "evidence": []

@@ -47,7 +47,7 @@ export const groupMember = knowledge.table('group_member', {
 }, (table) => [
   primaryKey({ columns: [table.workspaceId, table.groupId, table.userId] }),
   foreignKey({ columns: [table.workspaceId, table.groupId], foreignColumns: [group.workspaceId, group.id] }).onDelete('cascade'),
-  foreignKey({ columns: [table.workspaceId, table.userId], foreignColumns: [member.workspaceId, member.userId] }).onDelete('cascade'),
+  foreignKey({ name: 'group_member_membership_fk', columns: [table.workspaceId, table.userId], foreignColumns: [member.workspaceId, member.userId] }).onDelete('cascade'),
   index('group_member_user_idx').on(table.workspaceId, table.userId),
 ]);
 

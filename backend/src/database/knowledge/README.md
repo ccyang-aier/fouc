@@ -29,3 +29,27 @@ pnpm exec tsc --noEmit -p backend/tsconfig.json
 D01 的元测试覆盖表清单、租户外键、类型约束、二进制映射、枚举来源、检索键和 SQL 无漂移。它不证明已在真实数据库创建，也不证明 RLS 或检索索引已生效；真实初始化和 RLS 验收属于 D02/D03，BM25/HNSW 属于 H02/H03。
 
 参考：Drizzle 官方 [export 文档](https://orm.drizzle.team/docs/drizzle-kit-export)。
+
+## 新库部署与核验
+
+先在 PostgreSQL 创建业务数据库与独立的普通登录角色；应用角色不可拥有数据库，不可具备 superuser、BYPASSRLS、CREATEDB、CREATEROLE、REPLICATION 或管理角色成员资格。初始化账号须有建扩展和建表权限。`DATABASE_ADMIN_URL` 与 `DATABASE_URL` 分别配置管理连接与应用连接，必须指向同一数据库；开发环境也可使用被 Git 忽略的仓库根目录 `.env.knowledge.local`。不要把管理连接交给业务服务。
+
+```powershell
+bun backend/scripts/knowledge-db.ts status
+bun backend/scripts/knowledge-db.ts init
+bun backend/scripts/knowledge-db.ts check
+```
+
+- `status` 只读返回 `empty`、`incomplete` 或 `ready` 与检查结果。`check` 仅在 `ready` 时成功退出。
+- `init` 在单一事务中执行当前生成 SQL、24 张业务表的强制 RLS、应用角色最小表和序列授权，并在提交前核验实际目录。任一步失败均回滚，初始化不会写入示例业务或身份数据。
+- 任一目标 schema 已存在时，`init` 明确拒绝；没有重置、升级或迁移分支。发生结构差异时先调查检查结果，不要对已有库重复初始化。
+- `check` 核对表和列类型、约束名称与有效性、索引名称与方法、RLS 完整策略、扩展及有效权限。它不是任意数据库对象的完整语义 diff，也不验证后续 H02/H03 管理的检索索引。
+- 业务操作使用 `withKnowledgeTenant(pool, workspaceId, callback)`，通过同一借出连接上的事务局部租户上下文访问 Drizzle。调用前由服务验证用户成员资格；无上下文默认不可访问业务行。不要在回调中改用 `pool.query`。
+
+真实数据库回归只创建带随机 UUID 的一次性测试库，确认创建归属后清理并验证不存在；不会删除开发主库。
+
+```powershell
+bun test backend/src/database/knowledge/schema.test.ts backend/src/database/knowledge/rls.test.ts backend/src/database/knowledge/tenant.test.ts backend/src/database/knowledge/tenant.integration.test.ts backend/src/database/knowledge/initialize.test.ts backend/src/database/knowledge/initialize.integration.test.ts
+```
+
+D02/D03 实测覆盖两个租户在全部业务表上的隔离、无上下文拒绝、连接复用与失败回收、初始化原子性、复合外键和数据库行约束，以及真实 Y.Doc 的二进制保存、检查点恢复和并发收敛。CLI 用例以独立进程执行真实部署命令。

@@ -35,6 +35,7 @@ import { KnowledgeQueryProvider } from './data/provider';
 import { invalidateKnowledgeQueries } from './data/query-client';
 import { flattenWorkspaceList, useKnowledgeTeamspacesQuery, useKnowledgeWorkspacesQuery } from './data/workspace-queries';
 import { deriveKnowledgeEntryPhase, entryPhaseShowsStage, knowledgeErrorCodeOf } from './entry-state';
+import { useKnowledgeNotificationsBridge } from './notifications/notifications-queries';
 import type { TreeStageTeamspaceState } from './navigation/tree-stage';
 import { KnowledgeTreeStage } from './navigation/tree-stage';
 import { AssistantRail, AssistantRailToggle } from './assistant-rail';
@@ -183,6 +184,9 @@ function KnowledgeWorkbench({ onOpenSettings }: { onOpenSettings: () => void }) 
   // sync while the tree layer owns everything page-shaped.
   const [selectedTeamspaceId, setSelectedTeamspaceId] = useState<string | null>(null);
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
+
+  // ── N03: publish the live inbox (unread badge, rows, jump) to the shell bell ──
+  useKnowledgeNotificationsBridge({ active: stageActive, workspaceId: activeId, openPage: setSelectedPageId });
 
   const selectedTeamspace = teamspaces.find((teamspace) => teamspace.id === selectedTeamspaceId) ?? null;
 

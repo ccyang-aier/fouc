@@ -5,7 +5,6 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import {
   BellSimple,
-  BellRinging,
   ArrowRight,
   CheckCircle,
   Circle,
@@ -26,6 +25,7 @@ import {
 import { performWindowAction } from "@/lib/tauri-window"
 import { cn } from "@/lib/utils"
 
+import { KnowledgeNotificationBell } from "@/features/knowledge/notifications/components/notification-bell"
 import type { WorkbenchView } from "./navigation-sidebar"
 
 const SEARCH_ITEMS: Array<{ label: string; detail: string; view: WorkbenchView }> = [
@@ -131,10 +131,8 @@ export function SystemBar({ onNavigate }: { onNavigate: (view: WorkbenchView) =>
       </form>
 
       <div className="ml-auto flex items-center gap-0.5" data-tauri-drag-region="false">
-        <QuickPanel label="通知" icon={BellSimple} panelIcon={BellRinging} title="通知" subtitle="2 条最新动态" badge footer="查看全部通知">
-          <PanelRow title="项目周报已生成" detail="产品研发" time="12 分钟前" tone="accent" unread />
-          <PanelRow title="连接器同步完成" detail="GitHub 数据已是最新状态" time="1 小时前" tone="success" />
-        </QuickPanel>
+        {/* 通知铃铛：知识库工作台在线时经桥接快照实时显示真实收件箱，未在线时点击进入知识库 */}
+        <KnowledgeNotificationBell onOpenWorkbench={() => onNavigate("knowledge")} />
         <QuickPanel label="任务" icon={ClipboardText} panelIcon={ListChecks} title="任务" subtitle="1 项进行中" footer="查看全部任务" onFooter={() => onNavigate("project-home")}>
           <PanelRow title="完善桌面端通知中心" detail="产品研发 · 今天" time="进行中" tone="accent" progress={68} />
           <PanelRow title="复核连接器权限" detail="连接器 · 明天" time="待处理" tone="neutral" />

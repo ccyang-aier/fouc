@@ -6,7 +6,7 @@ from media_worker.processors import ProcessorInput
 
 
 def echo(source: ProcessorInput):
-    return {"status": "ready", "markdown": source.source.read_text()}
+    return {"derived": {"status": "ready", "markdown": source.source.read_text()}}
 
 
 def slow(source: ProcessorInput):
@@ -20,11 +20,11 @@ def failure(_source: ProcessorInput):
 
 
 def oversized(_source: ProcessorInput):
-    return {"status": "ready", "markdown": "x" * 4096}
+    return {"derived": {"status": "ready", "markdown": "x" * 4096}}
 
 
 def invalid(_source: ProcessorInput):
-    return {"status": "ready", "transcript": [{"start": 5.0, "end": 1.0, "text": "invalid"}]}
+    return {"derived": {"status": "ready", "transcript": [{"start": 5.0, "end": 1.0, "text": "invalid"}]}}
 
 
 def secret_free(source: ProcessorInput):

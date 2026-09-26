@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .config import Settings
-from .contracts import Derived, Operation
+from .contracts import Operation, ProcessorOutput
 from .errors import WorkerError
 
 
@@ -44,6 +44,10 @@ PROCESSOR_FAILURES = {
     "invalid_media": ("The media input cannot be decoded or contains no audio samples.", 422, False),
     "media_too_long": ("Decoded media duration exceeds the configured limit.", 413, False),
     "unsupported_language": ("The configured model does not support the requested language.", 422, False),
+    "invalid_document": ("The document is corrupt, encrypted, unsafe, or does not match its declared format.", 422, False),
+    "empty_document": ("The document contains no extractable content.", 422, False),
+    "document_limit_exceeded": ("The document exceeds its page, archive, image, or input limits.", 413, False),
+    "unsupported_document_content": ("A document picture cannot be extracted by the configured local pipeline.", 422, False),
 }
 
 
@@ -85,9 +89,11 @@ class ProcessorRegistry:
 
 
 def default_registry() -> ProcessorRegistry:
+    from .docling import docling_spec
     from .whisper import whisper_spec
     registry = ProcessorRegistry()
     registry.register("transcribe", whisper_spec())
+    registry.register("parse_document", docling_spec())
     return registry
 
 
@@ -104,8 +110,8 @@ def _child_entry(spec: ProcessorSpec, source: ProcessorInput, result_path: Path,
         try:
             module_name, function_name = spec.entrypoint.split(":", 1)
             processor = getattr(importlib.import_module(module_name), function_name)
-            derived = Derived.model_validate(processor(source, **spec.options))
-            result = {"derived": derived.model_dump(exclude_none=True)}
+            output = ProcessorOutput.model_validate(processor(source, **spec.options))
+            result = output.model_dump(exclude_none=True)
             encoded = json.dumps(result, ensure_ascii=False).encode("utf-8")
             if len(encoded) > result_limit:
                 encoded = b'{"error":"result_too_large"}'
@@ -137,7 +143,7 @@ def _stop_process(process: multiprocessing.Process) -> None:
     process.close()
 
 
-async def run_processor(spec: ProcessorSpec, source: ProcessorInput, settings: Settings) -> Derived:
+async def run_processor(spec: ProcessorSpec, source: ProcessorInput, settings: Settings) -> ProcessorOutput:
     result_path = source.source.parent / "result.json"
     process = multiprocessing.get_context("spawn").Process(
         target=_child_entry, args=(spec, source, result_path, settings.max_response_bytes),
@@ -157,7 +163,7 @@ async def run_processor(spec: ProcessorSpec, source: ProcessorInput, settings: S
             if result["error"] in PROCESSOR_FAILURES:
                 raise processor_error(result["error"])
             raise WorkerError("processing_failed", "Media processor failed.", 502, retryable=True)
-        return Derived.model_validate(result["derived"])
+        return ProcessorOutput.model_validate(result)
     finally:
         # No detached model threads or ffmpeg children may outlive cancellation.
         await asyncio.to_thread(_stop_process, process)

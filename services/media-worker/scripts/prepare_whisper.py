@@ -1,9 +1,7 @@
 """Explicit, size-bounded public model preparation; never uses implicit HF keys."""
-import hashlib
 import json
 import os
 import sys
-import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -12,19 +10,9 @@ os.environ["HF_HUB_DISABLE_IMPLICIT_TOKEN"] = "1"
 os.environ["HF_HUB_DISABLE_XET"] = "1"
 os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
 
-from huggingface_hub import HfApi, hf_hub_download
+from huggingface_hub import HfApi
 from media_worker.whisper_config import MODEL_FILES, MODEL_REPOSITORIES, REQUIRED_MODEL_FILES, WhisperSettings
-
-
-def retry(operation):
-    for attempt in range(3):
-        try:
-            return operation()
-        except Exception as error:
-            if attempt == 2:
-                raise RuntimeError(f"Public model preparation failed ({type(error).__name__}); no credentials were used.") from None
-            print(f"Public model transfer retry {attempt + 1}/2 ({type(error).__name__}).", flush=True)
-            time.sleep(2 ** attempt)
+from model_download import retry, verified_download
 
 
 def main():
@@ -43,16 +31,7 @@ def main():
     print(f"Preparing public {repo} at revision {info.sha}: {total} bytes in the isolated model cache.", flush=True)
     evidence = []
     for entry in files:
-        downloaded = Path(retry(lambda: hf_hub_download(repo, entry.rfilename, revision=info.sha,
-                                                       local_dir=config.directory, token=False)))
-        if downloaded.stat().st_size != entry.size:
-            raise RuntimeError("Downloaded model artifact size did not match official metadata.")
-        with downloaded.open("rb") as content:
-            digest = hashlib.file_digest(content, "sha256").hexdigest()
-        if entry.lfs is not None and digest != entry.lfs.sha256:
-            raise RuntimeError("Downloaded model artifact checksum did not match official metadata.")
-        evidence.append({"name": entry.rfilename, "bytes": entry.size, "sha256": digest})
-        print(f"Verified {entry.rfilename}: {entry.size} bytes.", flush=True)
+        evidence.append(verified_download(repo, info.sha, entry, config.directory))
     manifest = {"repository": repo, "revision": info.sha, "bytes": total, "files": evidence}
     (config.directory / "fouc-model.json").write_text(json.dumps(manifest, indent=2) + "\n")
     print("PASS model preparation: size and checksums verified; HTTP inference uses local files only.")

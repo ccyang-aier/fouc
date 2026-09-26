@@ -1,3 +1,7 @@
+import base64
+import hashlib
+import re
+import struct
 from datetime import datetime
 from typing import Annotated, Literal
 
@@ -83,11 +87,50 @@ class Derived(StrictModel):
         return self
 
 
-class ProcessResponse(StrictModel):
+class Attachment(StrictModel):
+    sha256: AssetHash
+    mime: Literal["image/png"]
+    size: int = Field(gt=0, le=1024**2)
+    width: int = Field(gt=0, le=4_000_000)
+    height: int = Field(gt=0, le=4_000_000)
+    dataBase64: str = Field(min_length=1, max_length=1_398_104)
+
+    @model_validator(mode="after")
+    def valid_png(self) -> "Attachment":
+        data = base64.b64decode(self.dataBase64, validate=True)
+        if (len(data) != self.size or base64.b64encode(data).decode() != self.dataBase64
+                or hashlib.sha256(data).hexdigest() != self.sha256):
+            raise ValueError("Attachment integrity mismatch")
+        if (len(data) < 45 or data[:16] != b"\x89PNG\r\n\x1a\n\x00\x00\x00\x0dIHDR"
+                or data[-12:] != b"\x00\x00\x00\x00IEND\xaeB`\x82"
+                or struct.unpack(">II", data[16:24]) != (self.width, self.height)
+                or self.width * self.height > 4_000_000):
+            raise ValueError("Attachment must be a bounded PNG matching its dimensions")
+        return self
+
+
+class ProcessorOutput(StrictModel):
+    derived: Derived
+    attachments: list[Attachment] | None = Field(default=None, max_length=32)
+
+    @model_validator(mode="after")
+    def attachment_references(self) -> "ProcessorOutput":
+        attachments = self.attachments or []
+        hashes = [attachment.sha256 for attachment in attachments]
+        references = re.findall(r"!\[[^\]]*\]\(asset:([a-f0-9]{64})\)", self.derived.markdown or "")
+        if len(hashes) != len(set(hashes)) or set(references) != set(hashes):
+            raise ValueError("Attachments and Markdown image references must match exactly")
+        if sum(attachment.size for attachment in attachments) > 1024**2:
+            raise ValueError("Attachment total exceeds the byte budget")
+        if attachments and self.derived.markdown is None:
+            raise ValueError("Only document conversion may return attachments")
+        return self
+
+
+class ProcessResponse(ProcessorOutput):
     requestId: RequestId
     operation: Operation
     assetHash: AssetHash
-    derived: Derived
     processor: str = Field(min_length=1, max_length=100)
     elapsedMs: int = Field(ge=0)
 

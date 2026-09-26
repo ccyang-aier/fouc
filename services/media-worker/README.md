@@ -2,7 +2,7 @@
 
 无状态 FastAPI HTTP 服务。TypeScript/Graphile Worker 负责业务鉴权、队列重试、资产记录与 `asset.derived` 写入；Python 只下载一次短期 S3 资源，在独立子进程中解析，再返回 JSON。它不读取数据库、Redis、S3 长期凭据或模型网关密钥，没有自己的业务存储或任务队列。
 
-Whisper（W02）通过 `faster-whisper` 真实本地推理实现，模型准备完成后注册 `transcribe`。Docling（W03）仍未实现，文档解析明确返回 `503 processor_unavailable`，不会生成占位 Markdown。历史 W01 基础层验收保留在 `ACCEPTANCE.md`，真实转写验收见 `ACCEPTANCE-WHISPER.md`。
+Whisper（W02）通过 `faster-whisper` 真实本地推理实现，模型准备完成后注册 `transcribe`。Docling（W03）真实解析 PDF/DOCX/PPTX/XLSX，返回结构化 Markdown 与独立 PNG 附件；Office 不需要模型，PDF 需要显式准备的本地版面/表格模型。历史 W01 基础层验收保留在 `ACCEPTANCE.md`，转写见 `ACCEPTANCE-WHISPER.md`，文档解析见 `ACCEPTANCE-DOCLING.md`。
 
 ## 本地开发
 
@@ -13,6 +13,7 @@ python -m venv services/media-worker/.venv
 .\services\media-worker\.venv\Scripts\python.exe -m pip install -r services/media-worker/requirements-dev.txt
 python services/media-worker/dev.py init
 .\services\media-worker\.venv\Scripts\python.exe services/media-worker/scripts/prepare_whisper.py
+.\services\media-worker\.venv\Scripts\python.exe services/media-worker/scripts/prepare_docling.py
 python services/media-worker/dev.py start
 python services/media-worker/dev.py verify
 ```
@@ -54,9 +55,13 @@ Python 服务当前不自动热重载。已实际发现 Uvicorn 的 Windows relo
 
 成功响应包含 `requestId / operation / assetHash / derived / processor / elapsedMs`。`derived` 是共享 `assetDerivedSchema` 的 ready 子集：文档只返回 `{ status: 'ready', markdown }`，音视频只返回 `{ status: 'ready', transcript: [{ start, end, text }] }`。时间戳必须非负且 end 不早于 start；不得返回与请求操作不匹配的结果。
 
+文档可以另带 `attachments: [{ sha256, mime: 'image/png', size, width, height, dataBase64 }]`，它是 **HTTP 临时产物**，不属于 `asset.derived`。Markdown 只以 `![Image](asset:<sha256>)` 引用实际提取图片，不嵌入 base64、文件路径或临时 URL。服务与 Node 客户端复核 PNG 头、尺寸、SHA-256、实际字节数、规范 base64、重复哈希及图片引用集合；提取图按内容去重。最多 32 张、单图和总图字节均最多 1 MiB、单图最多 4 MP，另受整个 JSON 响应默认 2 MiB 限制。超限明确失败，不静默截掉图片。附件只有在 AS01/W05 完成同工作区资源写入后才成为可访问资产。
+
 错误统一为 `{ requestId: string | null, error: { code, message, retryable } }`，不回显请求内容、下载 URL、token、模型异常文本或文件路径。重要状态：401 鉴权、409 同 requestId 正在运行、413 资源超限、422 输入/资源完整性错误、429 并发已满、499 已取消、502 下载/处理失败、503 能力/模型/计算环境不可用、504 下载或任务超时。输入、HTTP 响应与客户端都拒绝未知字段；客户端还复核 requestId、assetHash 与操作，避免错配派生结果。
 
 处理器进一步区分 `dependency_missing / model_unavailable / device_unavailable / invalid_media / media_too_long / unsupported_language`，不会回传第三方库异常原文。配置问题、损坏媒体与不支持的语言不可盲目重试；HTTP/下载超时可交给 Graphile Worker 重试，Python 不创建重试队列。
+
+文档错误为 `invalid_document`（422，损坏/不安全/加密或格式不匹配）、`empty_document`（422，无可提取内容）、`unsupported_document_content`（422，已检测图片无法由本地管线提取）、`document_limit_exceeded`（413，文档/图像资源超限）。这些不是暂态错误，不应盲目重试；Docling 的部分成功不会被包装为完整 ready 结果。
 
 ## 限制与取消
 
@@ -118,16 +123,59 @@ node services/media-worker/scripts/check-whisper.mjs
 
 样本命令从 OpenAI 官方 Whisper 测试仓库下载真实 JFK 语音，并用已有 FFmpeg 封装为含 H.264 视频轨/AAC 音轨的 MP4；两者同源，不代表两个独立声学样本。验收命令仅读取本项目 MinIO 开发凭据，把随机测试对象上传到独立知识库 bucket，使用真实短期签名 GET 调用生产 HTTP 接口，完成后删除这些测试对象；不会打印凭据或签名 URL。音视频原文件和无秘密的验收 JSON 保留在忽略目录，供复跑。
 
+## Docling 文档与图片
+
+使用 [Docling 官方最小可选依赖包](https://github.com/docling-project/docling/tree/v2.130.0) 的 PDF、Office 和本地模型能力，没有安装全量 VLM、音视频或远程服务功能。默认 PDF 模型是 Heron 版面分析 + `fast` TableFormer，共 317,123,044 字节；只取选定文件，预下载时按 revision/字节数/SHA-256 校验，清单位于 `.cache/models/docling/fouc-models.json`。选择 `accurate` 需重新显式准备对应权重，不会在请求中补下载。
+
+默认只处理 PDF 文本层，**扫描 PDF 文字没有做 OCR**，没有虚假的 OCR 配置开关。只含图片的文档可返回实际提取的图片附件与图片引用，但不代表已经得到可检索文字。图片描述/OCR 属于设计 §8.2 的 W04 vision 处理；Docling 未下载 OCR、图片描述、公式或代码 VLM 权重，也不会调用用户模型 API。图表位图保留为图片，未声称识别其数值或语义。
+
+PDF 采用标准模型管线，保留标题、表格结构和图像。Office 采用真实格式后端；例如 Excel 标题单元格仍作为单元格/表格保留，不伪造 Word 标题层级。不启用 LibreOffice 图表渲染，并在转换期间关闭固定版本 Docling 的自动 LibreOffice 发现入口，避免外部应用启动及不受 Python 网络保护的加载器；无法提取的图片明确失败，不伪造占位图。
+
+解析只接受服务已经下载到单次任务目录的文件，启用 Hugging Face/Transformers offline 与禁止隐式 token。禁用远程服务/外部插件；解析期间对 Python socket connect、DNS 和 connection API 加禁止网络保护。这是受信任依赖的纵深保护，不是操作系统沙箱。PDF 在模型执行前检查页数、页面渲染像素；OOXML 检查成员数量、总解压字节、路径穿越、加密标记和安全 XML（含 UTF-16 的 DTD/实体拒绝）。真实图片像素解码、图片数量及 PNG 输出均有限额。
+
+以下变量以 `MEDIA_WORKER_DOCLING_` 开头；模型准备命令与服务启动必须使用一致配置：
+
+| 后缀 | 默认值 | 用途 |
+| --- | --- | --- |
+| `ARTIFACTS_PATH` | 本服务 `.cache/models/docling/` | 本地模型目录；不读取全局模型缓存 |
+| `TABLE_MODE` | `fast` | `fast / accurate`；改变后显式准备模型 |
+| `MAX_DOWNLOAD_BYTES` | 512 MiB | 准备阶段全部选定权重预算，最大 2 GiB |
+| `MAX_FILE_BYTES` | 50 MiB | 文档压缩文件输入限制，另受服务下载限制 |
+| `MAX_PAGES` | 100 | PDF 页、PPTX 幻灯片、XLSX sheet 上限；DOCX 流式版式不伪造页数 |
+| `MAX_PAGE_PIXELS` | 10 MP | 按 PDF 页面 2x 渲染面积限制 |
+| `MAX_ZIP_ENTRIES` / `MAX_UNCOMPRESSED_BYTES` | 5000 / 128 MiB | OOXML 容器限制 |
+| `MAX_IMAGES` / `MAX_IMAGE_PIXELS` | 32 / 4 MP | 可调低，不得超过协议上限 |
+| `MAX_IMAGE_BYTES` / `MAX_TOTAL_IMAGE_BYTES` | 各 1 MiB | 单图及去重后图片总字节，可调低 |
+
+Docling 使用公共 `DEVICE / DEVICE_INDEX / CPU_THREADS`，CPU 路径为 PyTorch float32；公共 `COMPUTE_TYPE` 是 Whisper 的量化选择，不宣称 Docling 支持 int8。逐任务隔离意味着每次重新加载模型：本机有文本层单页 PDF 约 10–13 秒，Office 约 5–6 秒；不是长文档吞吐或 GPU 基准。OS 内存硬限制及 Linux 生命周期属于 Z03。
+
+```powershell
+.\services\media-worker\.venv\Scripts\python.exe services/media-worker/scripts/prepare_documents.py
+bun build backend/src/knowledge/media/client.ts --target=node --format=esm --outfile services/media-worker/.runtime/client.mjs
+node services/media-worker/scripts/check-docling.mjs
+```
+
+样本由 ReportLab、python-docx、python-pptx、openpyxl、Pillow 生成，包含真实标题、表格及图片像素，不手写文件二进制。PDF 样本经过 Poppler 渲染检查。验收走真实 MinIO 短期 GET 和生产 HTTP；原文件、提取图预览与无秘密的记录留在忽略目录。`verification-storage.mjs` 仅是两套验收脚本共用的 S3 测试传输，不进入 Python 服务。
+
+### AS01/W05 持久化交接
+
+1. W05 校验响应与源资产对应关系；复核附件字节、PNG、哈希和限制，使用源资产的同一 `workspace_id`，不能从 Python 响应推断租户。
+2. 经 AS01 幂等写入提取图的同工作区 S3 对象和 `asset` 记录。相同哈希可复用，但不得使用跨工作区存在性查询泄露信息；Python 的 `asset:<hash>` 引用此时才有持久化对象。
+3. 在附件均可用且源任务仍有效后，事务提交派生结果、图像关联及 outbox/重索引事件。失败或取消时不得提交悬空引用；S3 与数据库没有跨系统原子事务，新建但未引用的对象需要明确的补偿/垃圾回收策略，不能删除已经被其他记录复用的对象。
+4. 只有 `derived` 写入派生字段；附件 base64 只用于受限传输，不写入 Markdown、检索文本或 AI 上下文。图片描述/OCR 后续走 W04 vision，不由 Docling 静默推断。
+
+这些是调用边界要求，**W03 没有实现或验收业务资源持久化**。
+
 ## 处理器注册接口
 
 在 `media_worker/processors.py` 的 `default_registry()` 中注册真实实现：
 
 ```python
 registry.register("transcribe", whisper_spec())
-registry.register("parse_document", ProcessorSpec("docling", "media_worker.docling:parse_document"))
+registry.register("parse_document", docling_spec())
 ```
 
-注册函数接受 `ProcessorInput`（本次只读源文件、MIME、language、device/index、compute_type、cpu_threads），以及 `ProcessorSpec.options` 传入的受信任静态配置，同步返回 ready 派生结果 dict。`whisper_spec()` 会检查依赖和本地模型是否已准备；不可用的注册项不会出现在 operations 中，但调用时会得到具体错误码。入口必须由受信任代码注册，HTTP 不能传入模块路径或覆盖模型配置。函数参数不含 S3 签名 URL 或 Worker token；子进程进入解析前还会从自身环境移除 Worker token。实现可以使用同一临时目录，不得将资产或结果持久化到业务存储。处理器可抛出 `ProcessorFailure` 的白名单错误码，其他异常统一脱敏。
+注册函数接受 `ProcessorInput`（本次只读源文件、MIME、language、device/index、compute_type、cpu_threads），以及 `ProcessorSpec.options` 传入的受信任静态配置，统一同步返回 `{ derived: ready结果, attachments?: 附件数组 }`，没有旧返回格式兼容分支。`whisper_spec()` 会检查依赖和本地模型是否已准备；Docling Office 不依赖权重，PDF 在调用时额外检查本地模型。不可用的注册项不会出现在 operations 中，但调用时会得到具体错误码。入口必须由受信任代码注册，HTTP 不能传入模块路径或覆盖模型配置。函数参数不含 S3 签名 URL 或 Worker token；子进程进入解析前还会从自身环境移除 Worker token。实现可以使用同一临时目录，不得将资产或结果持久化到业务存储。处理器可抛出 `ProcessorFailure` 的白名单错误码，其他异常统一脱敏。
 
 ## 验证
 

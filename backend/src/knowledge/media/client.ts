@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { assetDerivedSchema, assetHashSchema, entityIdSchema, timestampSchema } from '@fouc/shared/knowledge/contracts';
 
@@ -17,14 +18,40 @@ export const mediaProcessRequestSchema = z.strictObject({
   language: z.string().regex(/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$/).optional(),
 }).refine((request) => request.operation === 'transcribe' || request.language === undefined);
 
+export const mediaAttachmentSchema = z.strictObject({
+  sha256: assetHashSchema, mime: z.literal('image/png'), size: z.number().int().positive().max(1024 ** 2),
+  width: z.number().int().positive().max(4_000_000), height: z.number().int().positive().max(4_000_000),
+  dataBase64: z.string().min(1).max(1_398_104),
+}).superRefine((attachment, context) => {
+  const bytes = Buffer.from(attachment.dataBase64, 'base64');
+  if (bytes.length !== attachment.size || bytes.toString('base64') !== attachment.dataBase64
+      || createHash('sha256').update(bytes).digest('hex') !== attachment.sha256
+      || bytes.length < 45 || bytes.subarray(0, 16).toString('hex') !== '89504e470d0a1a0a0000000d49484452'
+      || bytes.subarray(-12).toString('hex') !== '0000000049454e44ae426082'
+      || bytes.readUInt32BE(16) !== attachment.width || bytes.readUInt32BE(20) !== attachment.height
+      || attachment.width * attachment.height > 4_000_000) {
+    context.addIssue({ code: 'custom', message: 'Attachment must be an integrity-checked bounded PNG' });
+  }
+});
+
 export const mediaProcessResponseSchema = z.strictObject({
   requestId: entityIdSchema, operation: operationSchema, assetHash: assetHashSchema,
   derived: assetDerivedSchema, processor: z.string().min(1).max(100), elapsedMs: z.number().int().nonnegative(),
+  attachments: z.array(mediaAttachmentSchema).max(32).optional(),
 }).superRefine((response, context) => {
   const expectedField = response.operation === 'transcribe' ? 'transcript' : 'markdown';
   if (response.derived.status !== 'ready' || response.derived[expectedField] === undefined
       || Object.keys(response.derived).some((key) => key !== 'status' && key !== expectedField)) {
     context.addIssue({ code: 'custom', path: ['derived'], message: 'Media result must match its operation' });
+  }
+  const attachments = response.attachments ?? [];
+  const hashes = new Set(attachments.map((attachment) => attachment.sha256));
+  const references = new Set([...response.derived.markdown?.matchAll(/!\[[^\]]*\]\(asset:([a-f0-9]{64})\)/g) ?? []]
+    .map((match) => match[1]));
+  if (hashes.size !== attachments.length || attachments.reduce((sum, item) => sum + item.size, 0) > 1024 ** 2
+      || (attachments.length > 0 && response.operation !== 'parse_document')
+      || hashes.size !== references.size || [...references].some((hash) => !hashes.has(hash))) {
+    context.addIssue({ code: 'custom', path: ['attachments'], message: 'Attachments must uniquely match document image references within the total byte limit' });
   }
 });
 
@@ -43,6 +70,7 @@ const errorCodes = [
   'download_timeout', 'processor_unavailable', 'processing_failed', 'result_too_large',
   'worker_unavailable', 'worker_busy', 'duplicate_request', 'task_timeout', 'task_cancelled', 'task_not_found',
   'dependency_missing', 'model_unavailable', 'device_unavailable', 'invalid_media', 'media_too_long', 'unsupported_language',
+  'invalid_document', 'empty_document', 'document_limit_exceeded', 'unsupported_document_content',
 ] as const;
 const errorSchema = z.strictObject({
   requestId: entityIdSchema.nullable(),
@@ -51,6 +79,7 @@ const errorSchema = z.strictObject({
 
 export type MediaProcessRequest = z.input<typeof mediaProcessRequestSchema>;
 export type MediaProcessResponse = z.infer<typeof mediaProcessResponseSchema>;
+export type MediaAttachment = z.infer<typeof mediaAttachmentSchema>;
 export type MediaWorkerCapabilities = z.infer<typeof capabilitiesSchema>;
 export type MediaWorkerErrorCode = typeof errorCodes[number] | 'protocol_error' | 'transport_error';
 

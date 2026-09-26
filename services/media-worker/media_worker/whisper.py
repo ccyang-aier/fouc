@@ -102,4 +102,4 @@ def transcribe(source: ProcessorInput, *, config: WhisperSettings):
         text = segment.text.strip()
         if text and start < duration:
             transcript.append({"start": round(start, 3), "end": round(min(end, duration), 3), "text": text})
-    return {"status": "ready", "transcript": transcript}
+    return {"derived": {"status": "ready", "transcript": transcript}}

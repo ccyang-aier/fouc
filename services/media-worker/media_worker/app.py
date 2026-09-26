@@ -131,12 +131,12 @@ def create_app(settings: Settings | None = None, registry: ProcessorRegistry | N
         with TemporaryDirectory(prefix="fouc-media-", dir=settings.temp_dir) as directory:
             source = Path(directory) / f"source{suffix}"
             await download_resource(body.resource, source, settings, app.state.download_client)
-            derived = await run_processor(spec, ProcessorInput(
+            output = await run_processor(spec, ProcessorInput(
                 source=source, mime=body.resource.mime, language=body.language, device=settings.device,
                 device_index=settings.device_index, compute_type=settings.compute_type, cpu_threads=settings.cpu_threads,
             ), settings)
             response = ProcessResponse(requestId=body.requestId, operation=body.operation,
-                                       assetHash=body.resource.sha256, derived=derived, processor=spec.name,
+                                       assetHash=body.resource.sha256, **output.model_dump(exclude_none=True), processor=spec.name,
                                        elapsedMs=int((time.monotonic() - started) * 1000))
             if len(response.model_dump_json(exclude_none=True).encode()) > settings.max_response_bytes:
                 raise WorkerError("result_too_large", "Media output exceeds the response limit.", 413)

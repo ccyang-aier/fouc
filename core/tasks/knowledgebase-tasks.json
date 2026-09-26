@@ -375,7 +375,7 @@
       "dependencies": [
         "A01"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "deliverables": "backend/src/knowledge/auth/",
       "acceptance": "真实或标准测试 IdP 完整回调/PKCE/state/nonce；账号身份映射一致；错误可恢复",
       "evidence": []
@@ -1274,10 +1274,17 @@
       "dependencies": [
         "W01"
       ],
-      "status": "in_progress",
+      "status": "accepted",
       "deliverables": "services/media-worker/",
       "acceptance": "真实 PDF/Office 表格/图片/标题解析成结构化 Markdown；空/损坏样本报错清楚",
-      "evidence": []
+      "evidence": [
+        {
+          "path": "services/media-worker/ACCEPTANCE-DOCLING.md",
+          "summary": "真实 MinIO→HTTP→Docling 四格式标题/表格/PNG、空/损坏/期限/重试/取消通过；56 Python + 9 Bun + 9 Node 测试",
+          "command": "services/media-worker/.venv/Scripts/python.exe -m pytest -q services/media-worker; bun test backend/src/knowledge/media/client.test.ts; node services/media-worker/scripts/check-docling.mjs; node --test services/media-worker/.runtime/client.test.mjs; services/media-worker/.venv/Scripts/python.exe services/media-worker/dev.py verify",
+          "verifiedAt": "2026-09-26"
+        }
+      ]
     },
     {
       "id": "W04",

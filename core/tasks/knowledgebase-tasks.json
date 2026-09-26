@@ -1779,8 +1779,15 @@
       ],
       "deliverables": "backend/src/knowledge/organization/teamspaces.ts",
       "acceptance": "空间 CRUD 与 owner/admin 授权、根默认级别持久化；个人和团队共享逻辑；权限计算可读取根默认值",
-      "status": "in_progress",
-      "evidence": []
+      "status": "accepted",
+      "evidence": [
+        {
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-organization.md",
+          "summary": "真实 HTTP/PG Teamspace CRUD、四级/null根默认权限、并发非空保护与会话过期；组织/P01回归44项399断言",
+          "command": "bun test backend/src/knowledge/organization backend/src/knowledge/permissions shared/src/knowledge/contracts/organization.test.ts; pnpm backend:typecheck; pnpm shared:typecheck",
+          "verifiedAt": "2026-09-26"
+        }
+      ]
     },
     {
       "id": "B00",

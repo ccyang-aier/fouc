@@ -47,6 +47,11 @@ export function createOrganizationRoutes(auth: KnowledgeAuth, service: Organizat
   app.post(base, async (context) => context.json(await service.createWorkspace(context.get('identity'), await bodyWithPath(context)), 201));
   app.get(`${base}/:workspaceId`, async (context) => context.json(await service.getWorkspace(context.get('identity'), context.req.param())));
   app.patch(`${base}/:workspaceId`, async (context) => context.json(await service.renameWorkspace(context.get('identity'), await bodyWithPath(context, context.req.param()))));
+  app.get(`${base}/:workspaceId/teamspaces`, async (context) => context.json(await service.listTeamspaces(context.get('identity'), { ...pagination(context), ...context.req.param() })));
+  app.post(`${base}/:workspaceId/teamspaces`, async (context) => context.json(await service.createTeamspace(context.get('identity'), await bodyWithPath(context, context.req.param())), 201));
+  app.get(`${base}/:workspaceId/teamspaces/:teamspaceId`, async (context) => context.json(await service.getTeamspace(context.get('identity'), context.req.param())));
+  app.patch(`${base}/:workspaceId/teamspaces/:teamspaceId`, async (context) => context.json(await service.updateTeamspace(context.get('identity'), await bodyWithPath(context, context.req.param()))));
+  app.delete(`${base}/:workspaceId/teamspaces/:teamspaceId`, async (context) => context.json(await service.removeTeamspace(context.get('identity'), await bodyWithPath(context, context.req.param()))));
   app.get(`${base}/:workspaceId/members`, async (context) => context.json(await service.listMembers(context.get('identity'), { ...pagination(context), ...context.req.param() })));
   app.patch(`${base}/:workspaceId/members/:userId`, async (context) => context.json(await service.changeMemberRole(context.get('identity'), await bodyWithPath(context, context.req.param()))));
   app.delete(`${base}/:workspaceId/members/:userId`, async (context) => context.json(await service.removeMember(context.get('identity'), await bodyWithPath(context, context.req.param()))));

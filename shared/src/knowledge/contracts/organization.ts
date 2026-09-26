@@ -50,6 +50,14 @@ export const teamspaceSchema = workspaceScopeSchema.extend({
   name: z.string().trim().min(1).max(120),
   defaultAccess: permissionLevelSchema.nullable(),
 });
+export const teamspaceScopeSchema = workspaceScopeSchema.extend({ teamspaceId: entityIdSchema });
+export const createTeamspaceInputSchema = teamspaceSchema.omit({ id: true }).extend({ defaultAccess: teamspaceSchema.shape.defaultAccess.default(null) });
+export const listTeamspacesInputSchema = listOrganizationInputSchema;
+export const updateTeamspaceInputSchema = teamspaceScopeSchema.extend({
+  name: teamspaceSchema.shape.name.optional(),
+  defaultAccess: teamspaceSchema.shape.defaultAccess.optional(),
+}).refine((value) => value.name !== undefined || value.defaultAccess !== undefined, { message: 'At least one teamspace field is required' });
+export const removeTeamspaceInputSchema = teamspaceScopeSchema;
 export const pageAclSchema = workspaceScopeSchema.extend({
   pageId: entityIdSchema,
   principal: principalSchema,
@@ -81,6 +89,7 @@ export type Group = z.infer<typeof groupSchema>;
 export type WorkspaceInvitation = z.infer<typeof workspaceInvitationSchema>;
 export type WorkspaceMemberSummary = z.infer<typeof workspaceMemberSummarySchema>;
 export type Teamspace = z.infer<typeof teamspaceSchema>;
+export type TeamspaceScope = z.infer<typeof teamspaceScopeSchema>;
 export type PageAcl = z.infer<typeof pageAclSchema>;
 export type EffectivePermissions = z.infer<typeof effectivePermissionsSchema>;
 export type Actor = z.infer<typeof actorSchema>;

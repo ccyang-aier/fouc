@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { randomUUID } from 'node:crypto';
 import { acceptWorkspaceInvitationInputSchema, createWorkspaceInputSchema, createWorkspaceInvitationInputSchema, changeMemberRoleInputSchema, listOrganizationInputSchema } from './organization';
+import { createTeamspaceInputSchema, teamspaceScopeSchema, updateTeamspaceInputSchema } from './organization';
 
 test('organization mutations reject injected actor identity and owner invitations', () => {
   const workspaceId = randomUUID();
@@ -12,4 +13,18 @@ test('organization mutations reject injected actor identity and owner invitation
   assert.equal(acceptWorkspaceInvitationInputSchema.safeParse({ workspaceId, invitationId: randomUUID(), token: 'short' }).success, false);
   assert.equal(listOrganizationInputSchema.parse({ workspaceId }).limit, 50);
   assert.equal(listOrganizationInputSchema.safeParse({ workspaceId, limit: 101 }).success, false);
+});
+
+test('teamspace inputs preserve null defaults, explicit patches and server-owned identity', () => {
+  const workspaceId = randomUUID();
+  const teamspaceId = randomUUID();
+  assert.equal(createTeamspaceInputSchema.parse({ workspaceId, name: '  Research  ' }).defaultAccess, null);
+  assert.equal(createTeamspaceInputSchema.parse({ workspaceId, name: '  Research  ' }).name, 'Research');
+  assert.equal(createTeamspaceInputSchema.safeParse({ workspaceId, name: 'Research', id: teamspaceId }).success, false);
+  assert.equal(createTeamspaceInputSchema.safeParse({ workspaceId, name: 'Research', userId: randomUUID() }).success, false);
+  assert.equal(updateTeamspaceInputSchema.safeParse({ workspaceId, teamspaceId }).success, false);
+  assert.equal(updateTeamspaceInputSchema.parse({ workspaceId, teamspaceId, defaultAccess: null }).defaultAccess, null);
+  assert.equal(updateTeamspaceInputSchema.safeParse({ workspaceId, teamspaceId, defaultAccess: 'owner' }).success, false);
+  assert.equal(updateTeamspaceInputSchema.safeParse({ workspaceId, teamspaceId, name: ' ' }).success, false);
+  assert.equal(teamspaceScopeSchema.safeParse({ workspaceId, teamspaceId: 'invalid' }).success, false);
 });

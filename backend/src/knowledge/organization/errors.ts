@@ -1,6 +1,6 @@
 import type { z } from 'zod';
 
-export type OrganizationErrorCode = 'INVALID_INPUT' | 'UNAUTHENTICATED' | 'WORKSPACE_NOT_FOUND' | 'FORBIDDEN' | 'MEMBER_NOT_FOUND' | 'GROUP_NOT_FOUND' | 'LAST_OWNER' | 'CONFLICT' | 'INVITATION_INVALID';
+export type OrganizationErrorCode = 'INVALID_INPUT' | 'UNAUTHENTICATED' | 'WORKSPACE_NOT_FOUND' | 'FORBIDDEN' | 'MEMBER_NOT_FOUND' | 'GROUP_NOT_FOUND' | 'TEAMSPACE_NOT_FOUND' | 'TEAMSPACE_NOT_EMPTY' | 'TEAMSPACE_DEFAULT_ACCESS_REQUIRES_REBUILD' | 'LAST_OWNER' | 'CONFLICT' | 'INVITATION_INVALID';
 
 export class OrganizationError extends Error {
   constructor(readonly code: OrganizationErrorCode, message: string, readonly status: 400 | 401 | 403 | 404 | 409) {

@@ -1,4 +1,4 @@
-# Knowledge organization service (O01)
+# Knowledge organization service (O01 / O03)
 
 `createOrganizationService(pool)` 使用普通应用角色，所有入口接收由服务端认证生成的 `KnowledgeIdentity`。每次事务重新核对 sessionId/userId、过期时间及已验证邮箱，并读取当前成员角色；身份不是成员资格，HTTP body 中也没有操作者字段。
 
@@ -35,6 +35,8 @@ O01 提供可复制的一次性邀请令牌，不自动发外网邀请邮件。�
 |---|---|---|
 | `/` | GET / POST | 自己的工作区列表 / 创建 |
 | `/:workspaceId` | GET / PATCH | 详情 / 重命名 |
+| `/:workspaceId/teamspaces` | GET / POST | Teamspace 列表 / 创建 |
+| `/:workspaceId/teamspaces/:teamspaceId` | GET / PATCH / DELETE | Teamspace 详情 / 修改 / 删除空空间 |
 | `/:workspaceId/members` | GET | 成员目录 |
 | `/:workspaceId/members/:userId` | PATCH / DELETE | 角色变更 / 移除或自退 |
 | `/:workspaceId/groups` | GET / POST | 群组列表 / 创建 |
@@ -46,6 +48,23 @@ O01 提供可复制的一次性邀请令牌，不自动发外网邀请邮件。�
 | `/:workspaceId/invitations/:invitationId/accept` | POST | 邮箱绑定接受 |
 
 URL 参数不得在 body 中重复；DELETE 发送 `{}`。共享 Zod schema 拒绝多余字段，错误码包含 `FORBIDDEN`、`WORKSPACE_NOT_FOUND`、`LAST_OWNER`、`INVITATION_INVALID`、`CONFLICT`。请求中的 `userId` 只代表被管理对象，不代表操作者。
+
+## Teamspace 与根默认权限（O03）
+
+`teamspaces.ts` 复用同一组织服务、认证中间件和工作区事务。owner/admin 可创建、重命名、变更根默认级别、删除；owner/admin/member 可读元数据，guest 不开放组织目录。读取 Teamspace 名称或默认值不授予任何页面权限。个人/团队完全同路径，不创建第二套个人空间权限逻辑。
+
+创建输入为 `{ name, defaultAccess? }`，省略时安全默认 `null`；PATCH 只接收 `name` 和/或 `defaultAccess`。`view/comment/edit/full/null` 保存在现有 `teamspace.default_access`，更新同步写 `updated_at`。ID 由服务端生成，URL 提供 workspaceId/teamspaceId，未知字段、伪造身份和跨租户范围会拒绝。空列表与 UUID 游标分页沿用 O01。
+
+`readTeamspacePermissionRoot(db, { workspaceId, teamspaceId })` 只从调用方已授权的租户事务中读取 `{ workspaceId, teamspaceId, defaultAccess }`，可直接作为 P01 `computeEffectivePermissions` 输入的一部分。它不是授权接口，不开启跨租户发现，也不缓存默认值；P02 应在自己的同一租户事务中使用该函数，结合完整页面祖先链计算权限。
+
+当前尚无 P02 物化失效围栏，因此安全边界如下：
+
+- 真正空的 Teamspace 可以修改任意默认级别或清为 null。
+- 包含任何 page（含回收站页面）时，实际改变 defaultAccess 返回 `409 TEAMSPACE_DEFAULT_ACCESS_REQUIRES_REBUILD`，保持原默认值、名称、ACL 和索引不变；不能将“只更新根值”声称为安全撤权。同值提交及单独重命名不影响权限，可以正常执行。
+- 删除仅限真正空空间，否则返回 `409 TEAMSPACE_NOT_EMPTY`。不因表上存在 CASCADE 就隐式删除正文、检查点或回收站内容。
+- 变更先按 O01 顺序锁会话/用户和工作区，再对 Teamspace `FOR UPDATE`，与新页面的 FK key-share 锁互斥；取得该锁后再次检查会话有效期，按实时数据库时钟拒绝已过期会话。
+
+P02 接线时必须一次性将非空空间默认值变更的拒绝条件替换成**同事务的根默认值更新、页面 ACL revision 失效围栏和 Outbox 入队**，再异步重算/同步 block_index；不能保留临时双轨开关，也不能在重算完成前让旧授权继续放行。O03 不提前实现该 Worker、权限物化或页面授权逻辑。
 
 ## 验证
 

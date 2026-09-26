@@ -99,10 +99,10 @@ const table: MarkdownBlockCodec = {
       || cell.attrs.colspan !== 1 || cell.attrs.rowspan !== 1)) return context.encodeBlock(node, true);
     return {
       type: 'table', align: childNodes(rows[0]).map((cell) => cell.attrs.align ?? null),
-      children: rows.map((row) => ({
-        type: 'tableRow', children: childNodes(row).map((cell) => ({
+      children: rows.map((row) => context.bindBlock(row, {
+        type: 'tableRow', children: childNodes(row).map((cell) => context.bindBlock(cell, context.bindBlock(cell.firstChild!, {
           type: 'tableCell', children: context.encodeInline(childNodes(cell.firstChild!)),
-        })),
+        }))),
       })),
     };
   },

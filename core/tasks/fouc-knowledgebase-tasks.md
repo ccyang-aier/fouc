@@ -2,7 +2,7 @@
 
 > 本表由 `knowledgebase-tasks.json` 生成。修改任务和证据后运行 `node scripts/verify-knowledge-tasks.mjs --write`。
 
-设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 18 项。
+设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 19 项。
 
 ## 实施约束
 
@@ -25,8 +25,6 @@
 
 ## 可开始的任务
 
-- Q01 事务 Outbox 与 graphile-worker 调度
-- A03 PAT 与服务端请求身份
 - A02 OAuth 与 OIDC/SSO 身份
 - V02 块与行内历史差异算法
 
@@ -40,7 +38,7 @@
 | [x] 已验收 | E01 | 一方块注册表与共享 ProseMirror Schema<br>shared/src/knowledge/schema/ | §4 / §4.1 / §4.2 / §10 | F01 | 所有设计块类型可构造和序列化；通过一个定义注册新块；React NodeView 不进入共享包 | [27 种块、同源 Schema 与安全序列化 15 测试通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
 | [x] 已验收 | E02 | blockId 完整性与粘贴来源插件<br>shared/src/knowledge/schema/block-id.ts | §4.3 / §12 | E01 | 新建、拆分、合并、复制、跨页粘贴、嵌套和协作重复均满足 ID 规则；服务端可检测修复 | [真实 ProseMirror 事务/剪贴板/服务端修复 15 项测试通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
 | [x] 已验收 | M01 | 标准 Markdown 双向管线<br>shared/src/knowledge/markdown/ | §4.4 | E02 | GFM、嵌套块、指令、公式、wiki 链接、marks 与所有一方块往返不丢语义；明确不支持输入报错 | [55 项真实 remark 往返测试；27 块、全部 marks、嵌套、保真元数据与显式错误](../../core/tasks/knowledgebase-acceptance/2026-09-26-markdown.md) |
-| [ ] 进行中 | M02 | AI 方言锚点与媒体派生文本<br>shared/src/knowledge/markdown/ | §4.4 / §7.1 / §9.6 | M01, C01 | 同一管线开关产生 blockId 锚点；容器子块和媒体文本完整；可按锚点读取且引用稳定 | — |
+| [x] 已验收 | M02 | AI 方言锚点与媒体派生文本<br>shared/src/knowledge/markdown/ | §4.4 / §7.1 / §9.6 | M01, C01 | 同一管线开关产生 blockId 锚点；容器子块和媒体文本完整；可按锚点读取且引用稳定 | [同一管线可信 AI 锚点与只读派生隔离，157 项回归通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-markdown.md) |
 | [x] 已验收 | P01 | 主体展开与纯权限继承计算<br>backend/src/knowledge/permissions/ | §6 / §6.1 / §6.2 | C01 | 四级权限、用户/群组/workspace/link、继承中断、teamspace 根默认合并用行为用例覆盖 | [权限继承/四级主体/撤权窗口 6 组行为测试通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
 | [x] 已验收 | F02 | 模型任务档位与安全配置契约<br>shared/src/knowledge/contracts/models.ts; backend/src/knowledge/ai/config.ts | §9.1 | C01 | fast/smart/embed/rerank/vision，平台/BYOK/Ollama 层级解析；密钥只留服务端；模型/维度验证 | [模型档位/来源与密钥归属 3 组测试通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
 | [x] 已验收 | D01 | Postgres 当前唯一 schema 与约束<br>backend/src/database/knowledge/ | §3.1 / §3.2 / §3.3 / §10 | C01, F02 | Drizzle 当前表模型与初始化 SQL 包含全部表/租户外键/ltree/vector/索引；静态 schema 约束测试及类型检查通过；真实执行单独由 D03 验收 | [24 张租户表与 4 张认证表；约束与 SQL 漂移静态验收通过，真实初始化另行验收](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
@@ -51,9 +49,9 @@
 | [x] 已验收 | A01 | Better Auth 邮箱与会话<br>backend/src/knowledge/auth/ | §1 / §6 | D03, R01 | 注册/登录/登出/邮箱验证、会话撤销真实往返；cookie/CORS 配置对 Web 与桌面有效 | [真实 PG+HTTP 邮箱验证与会话撤销、Cookie/CORS/CSRF；15 测试/167 断言](../../core/tasks/knowledgebase-acceptance/2026-09-26-authentication.md) |
 | [ ] 进行中 | O01 | 个人/团队 Workspace 与成员群组<br>backend/src/knowledge/organization/ | §3.3 / §6.1 | A01, D03 | 个人和团队走同一逻辑；owner/admin/member/guest 与群组加入移除可操作且越权失败；成员邀请及身份绑定通过真实流程 | — |
 | [ ] 待实施 | O03 | Teamspace 服务与根默认权限<br>backend/src/knowledge/organization/teamspaces.ts | §3.3 / §6.1 | O01 | 空间 CRUD 与 owner/admin 授权、根默认级别持久化；个人和团队共享逻辑；权限计算可读取根默认值 | — |
-| [ ] 待实施 | Q01 | 事务 Outbox 与 graphile-worker 调度<br>backend/src/knowledge/workers/ | §2 / §3.2 / §5.1 / §7.1 | D03, R01 | 业务写与 outbox 原子提交；重试、去重、崩溃恢复不丢任务；Worker 生命周期停止干净 | — |
+| [ ] 进行中 | Q01 | 事务 Outbox 与 graphile-worker 调度<br>backend/src/knowledge/workers/ | §2 / §3.2 / §5.1 / §7.1 | D03, R01 | 业务写与 outbox 原子提交；重试、去重、崩溃恢复不丢任务；Worker 生命周期停止干净 | — |
 | [ ] 待实施 | P02 | 有效权限物化、失效围栏与索引同步<br>backend/src/knowledge/permissions/ | §6.2 / §12 | P01, O03, Q01 | 授权/移动/断继承批量子树重算；撤权立即阻止旧 ACL 泄漏；GIN 主体数组与 block_index 同步；群组变更无需逐页重算 | — |
-| [ ] 待实施 | A03 | PAT 与服务端请求身份<br>backend/src/knowledge/auth/tokens.ts | §1 / §6 / §9.5 | A01 | PAT 哈希存储、范围/到期/撤销生效；session/PAT 归一到同一发起者上下文，禁止客户端伪造身份 | — |
+| [ ] 进行中 | A03 | PAT 与服务端请求身份<br>backend/src/knowledge/auth/tokens.ts | §1 / §6 / §9.5 | A01 | PAT 哈希存储、范围/到期/撤销生效；session/PAT 归一到同一发起者上下文，禁止客户端伪造身份 | — |
 | [ ] 待实施 | A00 | Hono tRPC 服务端上下文与错误边界<br>backend/src/api/knowledge/ | §1 / §2 / §10 | C01, R01, A03 | tRPC 挂载 Hono；session/PAT 与 workspace 上下文注入；输入校验、结构化错误、无权/未认证拒绝；不依赖客户端 | — |
 | [ ] 待实施 | P03 | 权限一致的页面授权接口<br>backend/src/knowledge/permissions/; backend/src/api/knowledge/ | §6.1 / §6.2 | P02, A03, A00 | 查看/评论/编辑/full 动作逐一授权；API/WS/AI 共用入口；无权限目标不可通过 ID 猜测访问 | — |
 | [ ] 待实施 | T01 | 页面树服务与分数排序<br>backend/src/knowledge/pages/ | §3.3 / §5.4 | P03 | UUID 离线可建、ltree 子树移动、分数排序、回收恢复；禁止循环/越权移动/跨租户父子；失败事务回滚 | — |
@@ -494,6 +492,7 @@ flowchart TD
   style E01 fill:#e4f4e9,stroke:#42845c
   style E02 fill:#e4f4e9,stroke:#42845c
   style M01 fill:#e4f4e9,stroke:#42845c
+  style M02 fill:#e4f4e9,stroke:#42845c
   style P01 fill:#e4f4e9,stroke:#42845c
   style F02 fill:#e4f4e9,stroke:#42845c
   style D01 fill:#e4f4e9,stroke:#42845c

@@ -176,10 +176,17 @@
         "M01",
         "C01"
       ],
-      "status": "in_progress",
+      "status": "accepted",
       "deliverables": "shared/src/knowledge/markdown/",
       "acceptance": "同一管线开关产生 blockId 锚点；容器子块和媒体文本完整；可按锚点读取且引用稳定",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "同一管线可信 AI 锚点与只读派生隔离，157 项回归通过",
+          "command": "bun test shared/src/knowledge/schema shared/src/knowledge/markdown shared/src/knowledge/collaboration; pnpm shared:typecheck; pnpm backend:typecheck",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-markdown.md"
+        }
+      ]
     },
     {
       "id": "M03",
@@ -384,7 +391,7 @@
       "dependencies": [
         "A01"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "deliverables": "backend/src/knowledge/auth/tokens.ts",
       "acceptance": "PAT 哈希存储、范围/到期/撤销生效；session/PAT 归一到同一发起者上下文，禁止客户端伪造身份",
       "evidence": []
@@ -457,7 +464,7 @@
         "D03",
         "R01"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "deliverables": "backend/src/knowledge/workers/",
       "acceptance": "业务写与 outbox 原子提交；重试、去重、崩溃恢复不丢任务；Worker 生命周期停止干净",
       "evidence": []

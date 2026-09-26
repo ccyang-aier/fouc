@@ -2,10 +2,12 @@ import type { Root } from 'mdast';
 import type { Mark, Node as ProseMirrorNode, Schema } from '@tiptap/pm/model';
 
 import type { BlockDefinition, BlockRegistry, MarkDefinition } from '../schema';
+import type { AiMarkdownContext, AiMarkdownOptions, MarkdownExportOptions, MarkdownImportOptions } from './ai-types';
 
 /** The open mdast shape also covers registry-defined directive syntax. */
 export interface MarkdownNode {
   type: string;
+  blockId?: string;
   children?: MarkdownNode[];
   value?: string;
   name?: string;
@@ -38,6 +40,7 @@ export interface MarkdownContext {
   createBlock(definition: BlockDefinition, attrs: Record<string, unknown> | null, children?: readonly ProseMirrorNode[], source?: MarkdownNode): ProseMirrorNode;
   createMark(definition: MarkDefinition, attrs?: Record<string, unknown> | null, source?: MarkdownNode): Mark;
   encodeBlock(node: ProseMirrorNode, canonical?: boolean): MarkdownNode;
+  bindBlock(node: ProseMirrorNode, markdown: MarkdownNode): MarkdownNode;
   encodeInline(nodes: readonly ProseMirrorNode[], canonical?: boolean): MarkdownNode[];
   decodeBlocks(nodes: readonly MarkdownNode[]): ProseMirrorNode[];
   decodeBlock(node: MarkdownNode): ProseMirrorNode[];
@@ -54,8 +57,9 @@ export interface MarkdownBlockCodec {
 export interface MarkdownPipeline {
   readonly registry: BlockRegistry;
   readonly schema: Schema;
-  parse(markdown: string): ProseMirrorNode;
-  serialize(document: ProseMirrorNode): string;
-  fromMdast(tree: Root): ProseMirrorNode;
-  toMdast(document: ProseMirrorNode): Root;
+  parse(markdown: string, options?: MarkdownImportOptions): ProseMirrorNode;
+  serialize(document: ProseMirrorNode, options?: MarkdownExportOptions): string;
+  fromMdast(tree: Root, options?: MarkdownImportOptions): ProseMirrorNode;
+  toMdast(document: ProseMirrorNode, options?: MarkdownExportOptions): Root;
+  createAiContext(document: ProseMirrorNode, options?: Omit<AiMarkdownOptions, 'dialect'>): AiMarkdownContext;
 }

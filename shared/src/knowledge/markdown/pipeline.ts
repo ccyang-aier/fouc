@@ -9,6 +9,10 @@ import remarkMath from 'remark-math';
 
 import { createKnowledgeRegistry, knowledgeSchema } from '../schema';
 import type { BlockDefinition, BlockRegistry, MarkDefinition } from '../schema';
+import { remarkKnowledgeBlockAnchors } from './ai-anchors';
+import { createAiContext as buildAiContext, decodeAiProjection } from './ai-context';
+import type { AiPipelineBridge } from './ai-context';
+import { AI_BINDINGS_DATA, AI_DERIVED_DIRECTIVE } from './ai-types';
 import { assertKnownAttributes, sameValue } from './attributes';
 import { childNodes, STANDARD_BLOCK_CODECS } from './block-codecs';
 import { BLOCK_DIRECTIVE, BOUNDARY_DIRECTIVE, decodeDirectiveBlock, encodeDirectiveBlock, META_DIRECTIVE, RESERVED_DIRECTIVES } from './directives';
@@ -52,7 +56,7 @@ export function createMarkdownPipeline(options: MarkdownPipelineOptions = {}): M
     const mapping = definition.markdown.fromMd;
     if ('directive' in mapping) {
       const key = `${mapping.kind}Directive:${mapping.directive}`;
-      if (RESERVED_DIRECTIVES.has(mapping.directive) || usedDirectives.has(key)) {
+      if (RESERVED_DIRECTIVES.has(mapping.directive) || mapping.directive === AI_DERIVED_DIRECTIVE || usedDirectives.has(key)) {
         throw new KnowledgeMarkdownError('ambiguous_mapping', `Duplicate or reserved Markdown directive: ${mapping.directive}`);
       }
       usedDirectives.add(key);
@@ -68,10 +72,11 @@ export function createMarkdownPipeline(options: MarkdownPipelineOptions = {}): M
   }
   const processor = unified().use(remarkParse).use(remarkGfm).use(remarkDirective)
     .use(remarkMath).use(remarkKnowledgeWikiLinks).use(remarkStringify, { bullet: '-', fences: true, listItemIndent: 'one', emphasis: '*', strong: '*', quote: "'" });
+  const aiProcessor = processor().use(remarkGfm, { tableCellPadding: false, tablePipeAlign: false }).use(remarkKnowledgeBlockAnchors);
   const stringify = (tree: MarkdownNode) => processor.stringify(tree as Root);
   const parseTree = (markdown: string) => processor.parse(markdown) as MarkdownNode;
 
-  function context(tree?: MarkdownNode): MarkdownContext {
+  function context(tree?: MarkdownNode, bind = false): MarkdownContext {
     const references = new Map<string, MarkdownNode>();
     const gather = (node: MarkdownNode) => {
       if (node.type === 'definition' && !references.has(referenceKey(node.identifier ?? ''))) references.set(referenceKey(node.identifier ?? ''), node);
@@ -104,14 +109,19 @@ export function createMarkdownPipeline(options: MarkdownPipelineOptions = {}): M
         try { const mark = type.create(attrs); schema.text('x', [mark]).check(); return mark; }
         catch (cause) { throw new KnowledgeMarkdownError('invalid_attribute', `Invalid ${definition.name} mark attributes`, source, { cause }); }
       },
+      bindBlock(node, markdown) {
+        if (!bind) return markdown;
+        const previous = (markdown.data?.[AI_BINDINGS_DATA] ?? []) as readonly string[];
+        return { ...markdown, data: { ...markdown.data, [AI_BINDINGS_DATA]: [...new Set([...previous, node.attrs.blockId as string])] } };
+      },
       encodeBlock(node, canonical = false) {
         const definition = registry.get(node.type.name);
         if (!definition) throw new KnowledgeMarkdownError('unsupported_node', `Unregistered block: ${node.type.name}`);
         const mapping = definition.markdown.fromMd;
-        if (canonical || 'directive' in mapping) return encodeDirectiveBlock(node, definition, ctx, canonical);
+        if (canonical || 'directive' in mapping) return ctx.bindBlock(node, encodeDirectiveBlock(node, definition, ctx, canonical));
         const codec = codecs[mapping.type];
         if (!codec) throw new KnowledgeMarkdownError('unsupported_node', `No grammar codec for Markdown ${mapping.type}`);
-        return codec.encode(node, definition, ctx);
+        return ctx.bindBlock(node, codec.encode(node, definition, ctx));
       },
       encodeInline: (nodes, canonical) => encodeInline(nodes, ctx, canonical),
       decodeInline: (nodes, activeMarks) => decodeInline(nodes, ctx, activeMarks),
@@ -179,10 +189,10 @@ export function createMarkdownPipeline(options: MarkdownPipelineOptions = {}): M
     return [ctx.encodeBlock(node, true)];
   }
 
-  function toTree(document: ProseMirrorNode): Root {
+  function toTree(document: ProseMirrorNode, bind = false): Root {
     document.check();
     if (document.type.name !== schema.topNodeType.name) throw new KnowledgeMarkdownError('invalid_content', 'Expected a knowledge document');
-    const ctx = context();
+    const ctx = context(undefined, bind);
     let tree = separateContainers({ type: 'root', children: childNodes(document).flatMap((node) => losslessBlock(node, ctx)) });
     const verifies = (candidate: MarkdownNode) => {
       try { return sameValue(document.toJSON(), fromTree(parseTree(stringify(candidate))).toJSON()); }
@@ -195,11 +205,23 @@ export function createMarkdownPipeline(options: MarkdownPipelineOptions = {}): M
     return tree as Root;
   }
 
+  const aiBridge: AiPipelineBridge = {
+    owner: {}, registry, toTree: (document) => toTree(document, true) as MarkdownNode,
+    stringify: (tree) => aiProcessor.stringify(tree as Root),
+    parse: (source) => aiProcessor.parse(source) as MarkdownNode,
+    decode: fromTree,
+  };
+
   return {
     registry, schema,
-    parse: (markdown) => fromTree(parseTree(markdown)),
-    serialize: (document) => stringify(toTree(document) as MarkdownNode),
-    fromMdast: (tree) => fromTree(tree as MarkdownNode),
-    toMdast: toTree,
+    parse: (markdown, options) => options?.dialect === 'ai'
+      ? decodeAiProjection(aiBridge.parse(markdown), options.context, aiBridge) : fromTree(parseTree(markdown)),
+    serialize: (document, options) => options?.dialect === 'ai'
+      ? buildAiContext(document, options, aiBridge).context.markdown : stringify(toTree(document) as MarkdownNode),
+    fromMdast: (tree, options) => options?.dialect === 'ai'
+      ? decodeAiProjection(aiBridge.parse(aiBridge.stringify(tree as MarkdownNode)), options.context, aiBridge) : fromTree(tree as MarkdownNode),
+    toMdast: (document, options) => options?.dialect === 'ai'
+      ? buildAiContext(document, options, aiBridge).tree as Root : toTree(document),
+    createAiContext: (document, options = {}) => buildAiContext(document, options, aiBridge).context,
   };
 }

@@ -9,6 +9,8 @@ import { authAccount, authSession, authUser, authVerification } from '../../data
 import { knowledgeAuthBasePath, knowledgeAuthClientIpHeader, validateKnowledgeAuthConfig } from './config';
 import type { KnowledgeAuthConfig } from './config';
 import type { AuthEmailTransport } from './email';
+import { createKnowledgeOAuth, discardedOAuthTokens } from './oauth';
+import type { KnowledgeOAuthOptions } from './oauth-config';
 
 export type AuthDiagnostic = 'auth_error' | 'auth_warning' | 'email_delivery_failed';
 export type AuthRateLimitStorage = NonNullable<BetterAuthRateLimitOptions['customStorage']>;
@@ -18,8 +20,10 @@ export function createKnowledgeAuth(options: {
   pool: Pool; config: KnowledgeAuthConfig; email: AuthEmailTransport; onDiagnostic?: (event: AuthDiagnostic) => void;
   /** Server-owned atomic storage dependency, never client configuration. Defaults to Better Auth memory storage. */
   rateLimitStorage?: AuthRateLimitStorage;
+  oauth?: KnowledgeOAuthOptions;
 }) {
   const config = validateKnowledgeAuthConfig(options.config);
+  const oauth = createKnowledgeOAuth({ pool: options.pool, config, oauth: options.oauth, diagnostic: () => options.onDiagnostic?.('auth_warning') });
   const schema = { user: authUser, session: authSession, account: authAccount, verification: authVerification };
   const checkedName = (name: string) => {
     const value = name.trim();
@@ -30,6 +34,11 @@ export function createKnowledgeAuth(options: {
     appName: 'Fouc', baseURL: config.baseUrl, basePath: knowledgeAuthBasePath, secret: config.secret,
     trustedOrigins: [...config.trustedOrigins],
     database: drizzleAdapter(drizzle(options.pool, { schema }), { provider: 'pg', schema, transaction: true }),
+    plugins: [oauth.plugin],
+    user: { validateUserInfo: oauth.validateUserInfo },
+    account: { storeAccountCookie: false, encryptOAuthTokens: true,
+      accountLinking: { enabled: true, disableImplicitLinking: true, allowDifferentEmails: false, trustedProviders: [] },
+    },
     emailAndPassword: { enabled: true, requireEmailVerification: true, autoSignIn: false, minPasswordLength: 12, maxPasswordLength: 128 },
     emailVerification: {
       sendOnSignUp: true, sendOnSignIn: true, autoSignInAfterVerification: false, expiresIn: 3_600,
@@ -52,9 +61,16 @@ export function createKnowledgeAuth(options: {
     rateLimit: {
       enabled: true, storage: 'memory', window: 60, max: 120,
       customStorage: options.rateLimitStorage,
-      customRules: { '/sign-in/email': { window: 60, max: 20 }, '/sign-up/email': { window: 60, max: 10 }, '/send-verification-email': { window: 60, max: 5 } },
+      customRules: {
+        '/sign-in/email': { window: 60, max: 20 }, '/sign-in/social': { window: 60, max: 20 }, '/link-social': { window: 60, max: 10 },
+        '/sign-up/email': { window: 60, max: 10 }, '/send-verification-email': { window: 60, max: 5 },
+      },
     },
     databaseHooks: {
+      account: {
+        create: { before: async (account) => ({ data: { ...account, ...discardedOAuthTokens } }) },
+        update: { before: async (account) => ({ data: { ...account, ...discardedOAuthTokens } }) },
+      },
       user: {
         create: { before: async (user) => ({ data: { ...user, name: checkedName(user.name) } }) },
         update: { before: async (user) => ({ data: user.name === undefined ? user : { ...user, name: checkedName(user.name) } }) },

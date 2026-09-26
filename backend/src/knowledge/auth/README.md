@@ -1,6 +1,6 @@
 # Knowledge identity authentication
 
-A01 提供 Better Auth 的邮箱身份与数据库会话，不创建 Workspace、Member，也不把身份认证等同于租户授权。只使用 `knowledge_auth` 的四张既有表；不运行 Better Auth CLI/migration，不复制一套 schema。
+A01 提供 Better Auth 的邮箱身份与数据库会话，A02 增加 OAuth/OIDC 企业 SSO；不创建 Workspace、Member，也不把身份认证等同于租户授权。只使用 `knowledge_auth` 的四张既有表；不运行 Better Auth CLI/migration，不复制一套 schema。
 
 ## 运行时接线
 
@@ -10,7 +10,8 @@ A01 提供 Better Auth 的邮箱身份与数据库会话，不创建 Workspace�
 const config = readKnowledgeAuthConfig(environment);
 const email = createSmtpAuthEmailTransport(environment); // 缺配置立即报错
 await email.verify(); // 启动前验证 SMTP 连接，不代表外网邮件最终送达
-const auth = createKnowledgeAuth({ pool: applicationPool, config, email });
+const oauth = readKnowledgeOAuthOptions(environment); // 未配置提供方时为空，不影响邮箱登录
+const auth = createKnowledgeAuth({ pool: applicationPool, config, email, oauth });
 app.route('/', createKnowledgeAuthRoutes(auth, getVerifiedPeerAddress));
 ```
 
@@ -54,6 +55,85 @@ Better Auth 1.7.6 的注册防枚举语义会统一接受注册请求；其 `run
 - 内建内存限流始终启用：登录每 IP 20 次/分钟、注册 10 次/分钟、重发 5 次/分钟；地址由可信 HTTP transport 注入。此限流为单进程范围，Z03 多副本部署须接共享存储/网关限流，不能把它声称为分布式额度。
 
 `createKnowledgeAuth` 可选服务端 `rateLimitStorage` 使用 Better Auth 官方原子 customStorage；生产省略时仍使用内建 memory。测试 server 每实例注入独立 Map，避免官方模块全局内存桶跨测试串扰；没有关闭限流或伪造来源地址，原有 429 / 真实 socket IP 回归保持通过。
+
+## OAuth、OIDC 与企业 SSO（A02）
+
+使用固定的 Better Auth **1.7.6** `genericOAuth`、`authorizationCodeRequest`、`getOAuth2Tokens`、官方 state/callback、`addOAuthServerContext` / `getOAuthState` 和 `user.validateUserInfo`。JWS/JWKS 使用 **jose 6.2.10**；不实现另一套登录会话、授权服务器或用户表。`oauth-provider.ts` 只为官方提供方装配受限 HTTP 与经过验证的元数据，核心回调和签名/nonce 校验仍由官方执行。
+
+运行时从 `KNOWLEDGE_AUTH_PROVIDERS` 读取提供方数组 JSON，显式传入 `createKnowledgeAuth({ ..., oauth })`。下面是配置形状，示例占位符不是可用秘密：
+
+```json
+[
+  {
+    "id": "company",
+    "kind": "oidc",
+    "name": "Company SSO",
+    "issuer": "https://identity.example.com/realms/company",
+    "clientId": "fouc",
+    "clientSecret": "<deployment-secret>",
+    "allowedEmailDomains": ["example.com"]
+  }
+]
+```
+
+仅部署管理员能配置提供方，绝不把这个配置接口暴露给浏览器或工作区成员。`id` 是稳定的全局命名空间，不能含路径或使用保留值 `credential`；禁止重复 ID、任意安全开关与未知字段。Secret 必须通过部署秘密注入，不出现在 Git、诊断或公开提供方列表。A02 不修改根 env/compose 或生产 server，Z03 按上述接口装配。
+
+| 项目 | 规则 |
+| --- | --- |
+| OIDC | 精确 issuer + `${issuer}/.well-known/openid-configuration`；必须支持 code、S256、可信非对称签名算法与 JWKS |
+| 普通 OAuth | `kind: "oauth"`，显式 `authorizationUrl` / `tokenUrl` / `userInfoUrl` / `scopes`；userinfo 必须返回不可变 `id`、`email`、布尔 `email_verified`、`name`；不能冒充 OIDC 解码未验证 JWT |
+| Token endpoint | 默认 `client_secret_basic`；支持服务端显式 `client_secret_post`；只允许 confidential code + S256，不请求 refresh/offline grant |
+| 网络 | 生产全部 HTTPS；无 userinfo/query/fragment；discovery 的所有端点默认与 issuer 同 origin，跨 origin 须显式配置 `endpointOrigins` |
+| DNS / SSRF | 默认拒绝私网、保留、metadata、映射 IPv6 和过渡地址；解析全部地址并检查，再将选中的地址固定给 socket，保持原 Host/SNI；不进行第二次 DNS 查询或跟随 HTTP 重定向 |
+| 私有部署 | 内部 HTTPS IdP 可由管理员显式 `allowPrivateNetwork: true`；这项授权仅限已配置 origin，不降低 TLS 校验。开发 HTTP 仅精确 loopback，localhost 也只能解析到 loopback |
+| 预算 | 每次网络请求含 DNS/响应体默认 8 秒，服务端 `oauth.timeoutMs` 可设 100～15,000 ms；响应最多 128 KiB、响应头 16 KiB，不记录外部错误正文 |
+| OIDC claims | 官方 JWKS 校验 signature、issuer、audience、nonce；额外强制 exp/iat/sub/nonce，检查 azp，最长 ID Token 年龄 10 分钟；无 ID Token 的 OIDC 不降级成 userinfo 登录 |
+
+首次使用提供方才做 discovery，成功后该进程复用固定的已验证元数据；JWKS 按 JOSE 缓存/轮换机制读取。发现失败不拖慢邮箱/会话路由，下一次发起登录会重试，不要求重启 API。已配置 issuer 或端点变更属于部署配置变更，需重新装配 auth；不得在运行中借客户端输入改变它。企业域名限制只控制该 IdP 的身份入口，**不是 workspace 成员/页面 ACL 授权**。
+
+### HTTP 登录与关联
+
+- `GET /api/auth/oauth/providers`：仅 `{id,name,kind}[]`，表示已配置入口，**不是 IdP 健康检查**。
+- `POST /api/auth/sign-in/social`：`{provider,callbackURL?,errorCallbackURL?,newUserCallbackURL?,disableRedirect?,requestSignUp?,loginHint?}`；JSON + 可信 Origin，返回官方 `{url,redirect}`。客户端使用顶层导航访问授权 URL，不把令牌存 localStorage。
+- IdP 必须精确注册 `${BETTER_AUTH_URL}/api/auth/callback/<id>`。服务端固定构造此 `redirect_uri`，不读取未经验证的 Host/X-Forwarded-Host。只接受授权码 `response_mode=query` 的 GET 回调，不支持 `form_post`、无 state IdP-initiated 或前端直接提交 ID Token。
+- 应用完成/失败回调必须是精确 trusted origin 下的 HTTP(S) URL 或安全相对路径，拒绝反斜线、协议相对地址、用户信息、任意 scheme。客户端不能增加 scope、issuer、additionalData、额外 authorization params 或伪造 link/userId。
+- `POST /api/auth/link-social` 复用同一输入，但要求**当前已验证且 15 分钟内的新鲜会话**。发起者的 provider/user/session ID 经官方 serverContext 存入 state，回调写账户前重新读取活态 session；撤销、过期、用户切换、不同邮箱或已归属另一用户的 subject 均拒绝。`unlink-account` 同样要求新鲜 verified session，原生逻辑保留最后一个登录方式的保护。
+- 原生 `list-accounts` 仅返回本人的账户元数据。`get-access-token`、`refresh-token`、`account-info` 对 HTTP 关闭；它们不是本产品的第三方 API 授权接口。
+
+全局 user UUID 是唯一身份。OIDC account 的键是 `(providerId, JSON.stringify([issuer, sub]))`；普通 OAuth 为 `(providerId, JSON.stringify([userInfoUrl, id]))`。邮箱/名称是可变资料，不是 subject；返回用户仍映射原 UUID，不用 IdP 的新邮箱覆盖本地已验证邮箱。不复制 user 到 workspace，也不写任何成员角色。
+
+**禁止按邮箱隐式合并**，即便双方都已验证。同邮箱已有用户先用原登录方式认证，再显式 link；两种方式随后回到同一个 UUID。未验证本地账号不会被外部 verified email 接管。每次外部登录都要求该次 IdP profile 的 `email_verified === true` 且满足服务端域名限制，不能靠以前验证过的本地 email 绕过失效的 IdP claim。
+
+所有 provider access/refresh/ID token 只在当前服务器处理流程内使用；account create/update hooks 将三种 token 及其到期字段置空，`storeAccountCookie` 关闭。既有 PAT 与用户 session 完全不变。没有持久保存 provider grant，因而退出仅撤销 **Fouc** 会话，不声称已经退出 IdP 全局会话；后续再登录可能复用企业 IdP 的浏览器会话。
+
+### 单次 state 与可恢复错误
+
+官方数据库 state 的寿命为 10 分钟，签名 state Cookie 为 5 分钟，Cookie/状态检查不开后门。固定 1.7.6 的 `dist/state.mjs:parseGenericState` 使用 **find → cookie check → delete**，没有可配置的原子消费 hook；在 `getToken` 扩展点被调用时，原始行已经删除。因此这里没有重写 SDK 或伪称顺序删除具有原子性。
+
+`oauth-state.ts` 只在官方 Cookie/state 校验通过后、token exchange 之前增加单次标记：既有 verification 表中的保留 UUID v8 主键，固定 `fouc:oauth:consumed:v1:` 命名空间 + SHA-256(state)，不保存 state 明文。`INSERT ... ON CONFLICT DO NOTHING` 使独立连接/实例仅一次成功；有效 state 错误 Cookie 不会提前消费标记。标记至少保留 15 分钟，并保证晚于原始 state 到期至少 1 分钟，每次新 claim 最多清理 128 条该命名空间的过期标记，不删除其他功能的记录。无新表、migration 或第二套凭证。
+
+用户拒绝是 `access_denied`；IdP 自带的其他错误固定映射为 `oauth_provider_error`，移除外部 `error_description`，避免凭据进入重定向。state、issuer、code、nonce 或会话绑定失败保留稳定错误码；失败流程不可恢复使用旧 code/state，用户重新发起即可。网络/发现/未知服务错误复用 A01 的脱敏 `503 AUTH_UNAVAILABLE`。OAuth 发起每 IP 20 次/分钟、显式 link 10 次/分钟；继续使用真实 socket IP 与共享 `rateLimitStorage` 接口，多副本部署规则同 A01。
+
+Web/Tauri 的 Cookie 边界仍遵循前文。A02 验证真实 HTTP 协议，不声称已完成浏览器系统登录窗口回跳、WebView Cookie 转接或 UI；A04/Z03 完成这些客户端闭环。OIDC 已覆盖企业 SSO；未实现 SAML、SCIM、自助动态 IdP 注册或 OAuth 授权服务器，MCP OAuth 2.1 仍属于 K02。
+
+### A02 验证
+
+`oidc-test-provider.ts` 是仅测试用途的本地标准协议 IdP：Node HTTP、真实 RSA/JWKS、精确注册 redirect URI、客户端认证、S256、一次性授权码与实际签名 ID Token。测试控制的是用户选择/故障，不 mock OAuth SDK 或识别结果；不将它声称为通过 OpenID 认证的产品 IdP。
+
+每项 OAuth 集成测试使用新的 disposable database/普通应用角色/独立限流桶，均由已有 D03 closure 清理；不关闭生产限流或向开发主库写 fixture。并发测试只把官方真实删除的时序对齐，仍执行所有真实 Cookie/DB/HTTP 操作；两个不同有效 code、相同 state 只有一个成功。另用两个独立普通 pool 直接验证唯一标记的竞争与命名空间清理。
+
+```powershell
+bun test backend/src/knowledge/auth
+pnpm backend:typecheck
+pnpm exec eslint --no-ignore backend/src/knowledge/auth
+
+# 纯 Node 验证：打包测试入口并复制其 SQL 运行资产（均位于精确 ignored .runtime）。
+bun build backend/src/knowledge/auth/oauth-node-smoke.ts --target=node --format=esm --outfile backend/src/knowledge/auth/.runtime/oauth-node-smoke.mjs
+Copy-Item -LiteralPath backend/src/database/knowledge/current.sql -Destination backend/src/knowledge/auth/.runtime/current.sql
+node --env-file=.env.knowledge.local backend/src/knowledge/auth/.runtime/oauth-node-smoke.mjs
+```
+
+没有读取用户模型密钥；没有访问外网企业 SSO 账号。参考 [官方 Generic OAuth](https://better-auth.com/docs/plugins/generic-oauth)、[账号关联](https://better-auth.com/docs/concepts/users-accounts)、[JOSE](https://github.com/panva/jose)，以实际安装 1.7.6 源码为准。PostgreSQL skill 的最小权限和连接复用要求用于全局账户查询/单次 marker：只用普通应用 pool 和既有唯一约束。
 
 ## PAT 与服务端请求上下文（A03）
 

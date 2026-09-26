@@ -39,3 +39,35 @@ pnpm backend:typecheck
 - 所有错误脱敏；Cookie-only 原 A01 入口也明确拒绝 Authorization，保留现有 API。测试实例使用官方 customStorage 隔离模块全局限流桶，原实际 socket IP 和 429 测试仍通过。
 
 边界：不是页面授权（P03）、MCP OAuth 或最终 API 路由装配（A00/Z03）。已开始的操作不会自动终止，后续动作必须重新 authenticate/refresh 并在业务事务内授权。生产必须 TLS，代理日志不能记录 Authorization/Cookie 或一次性 PAT 响应。
+
+# A02 · OAuth 与 OIDC/SSO 身份
+
+日期：2026-09-26。主代理审阅 oauth-config/oauth-http/oauth-provider/oauth-state/oidc-test-provider 与 README，复核 Better Auth 1.7.6 genericOAuth 官方路径，并独立重跑全部验证（先构建后 lint，避免 `--no-ignore` 扫到 3.1 MB 一次性冒烟 bundle）：
+
+```powershell
+bun test backend/src/knowledge/auth
+pnpm backend:typecheck
+pnpm exec eslint --no-ignore backend/src/knowledge/auth
+bun build backend/src/knowledge/auth/oauth-node-smoke.ts --target=node --format=esm --outfile backend/src/knowledge/auth/.runtime/oauth-node-smoke.mjs
+Copy-Item backend/src/database/knowledge/current.sql backend/src/knowledge/auth/.runtime/current.sql
+node --env-file=.env.knowledge.local backend/src/knowledge/auth/.runtime/oauth-node-smoke.mjs
+```
+
+结果：**79 tests / 0 fail / 1633 assertions**（A02 新增 41 项），类型检查与定向 lint 通过；Node 24.16.0 冒烟在一次性 PostgreSQL/HTTP 上 **PASS**（真实 discovery/JWKS/RS256、S256、nonce 拒绝、错误恢复、稳定身份、不落盘 provider token），临时库创建后删除确认不存在。
+
+## 通过的实际流程
+
+- 内嵌标准协议测试 IdP（真实 Node HTTP + RSA/JWKS + 精确 redirect 注册 + S256 + 一次性授权码 + 实签 ID Token）：OIDC 全回调建立全局用户；不可变 subject 回到同一 UUID 且不覆盖本地已验证邮箱；普通 OAuth 走服务端 userinfo 且要求 `email_verified`。
+- 两个有效 code 复用同一 state 仅一次成功（verification 表单次消费标记 + 官方 state/Cookie 校验）；标记过期清理有界且不删他人记录。
+- 显式 link 要求 15 分钟内新鲜已验证会话；撤销/切换会话、邮箱不符、subject 已归属他用户均拒绝；禁止按邮箱隐式合并，未验证本地账号不可被外部身份接管。
+- issuer/provider 混用、攻击者回调 URL、任意 provider/scope/issuer 注入、前端直交 ID Token、无 state 发起全部拒绝；nonce 缺失/错误的真实 IdP token 拒绝且不建会话。
+- `access_denied` 与 `oauth_provider_error` 脱敏（外部 error_description 不进重定向）；token/redirect/网络类失败仅能用全新流程恢复；服务类错误复用 A01 的 503 `AUTH_UNAVAILABLE`。
+- SSRF/DNS：私网/保留地址默认拒绝、解析全部地址并固定 socket、不跟随重定向、JWKS 重定向在带凭证请求前拒绝；discovery 失败不阻塞邮箱登录且无需重启重试；每请求 8 秒/128 KiB 预算。
+- provider access/refresh/ID token 仅在当次流程内使用，account hooks 置空落库并关闭账户 Cookie；`get-access-token`/`refresh-token`/`account-info` 对 HTTP 关闭；`/providers` 只暴露 `{id,name,kind}`。
+- OAuth 发起每 IP 20/min、显式 link 10/min，继续采用真实 socket IP 与共享 rateLimitStorage 接口；伪造转发头不影响限流计数。
+
+## 明确边界
+
+测试 IdP 为本地标准协议实现，未调用外网真实企业 IdP，也未声称通过 OpenID 认证；SSO 浏览器窗口回跳、Tauri WebView Cookie 转接与登录 UI 属 A04/Z03，MCP OAuth 2.1 属 K02，SAML/SCIM/自助动态 IdP 注册未实现。会话/Cookie/限流边界沿用 A01/A03 记录。
+
+另记：本次验收前把本地开发端点从 Windows→WSL loopback 转发改为 WSL NAT 地址直连（`compose.knowledge.yaml` 端口绑定与 `knowledge-infra.mjs` 端点同步）：loopback 转发在并发连接池下返回 ECONNREFUSED，NAT 地址直连 100 并发全通；凭据与端口不变，外部 LAN 仍不可达。

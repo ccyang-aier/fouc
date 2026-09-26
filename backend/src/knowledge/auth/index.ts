@@ -14,3 +14,5 @@ export type { KnowledgeRequestContext, KnowledgeRequestAuthenticator } from './r
 export { KnowledgeAccessError, knowledgeAccessErrorResponse, knowledgeTokenScopes, createKnowledgeTokenInputSchema, revokeKnowledgeTokenInputSchema } from './access-policy';
 export type { KnowledgeTokenScope, KnowledgeAccessErrorCode, KnowledgeAccessDiagnostic } from './access-policy';
 export type { KnowledgeAccessDependencies } from './session-access';
+export { readKnowledgeOAuthOptions, validateKnowledgeOAuthOptions } from './oauth-config';
+export type { KnowledgeOAuthOptions, KnowledgeOAuthProvider } from './oauth-config';

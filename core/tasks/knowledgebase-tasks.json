@@ -375,10 +375,17 @@
       "dependencies": [
         "A01"
       ],
-      "status": "in_progress",
+      "status": "accepted",
       "deliverables": "backend/src/knowledge/auth/",
       "acceptance": "真实或标准测试 IdP 完整回调/PKCE/state/nonce；账号身份映射一致；错误可恢复",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "79 项真实 HTTP/PG 测试全通过（A02 新增 41 项）；Node 24 冒烟真实 OIDC/OAuth 回调、单次 state、身份映射与错误恢复通过",
+          "command": "bun test backend/src/knowledge/auth; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/auth; node --env-file=.env.knowledge.local backend/src/knowledge/auth/.runtime/oauth-node-smoke.mjs",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-authentication.md"
+        }
+      ]
     },
     {
       "id": "A03",
@@ -1098,7 +1105,7 @@
       "dependencies": [
         "G01"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "deliverables": "backend/src/knowledge/observability/",
       "acceptance": "每次真实调用记录 token/耗时/模型/workspace/任务与 trace；日志无 key；错误调用可追踪",
       "evidence": []

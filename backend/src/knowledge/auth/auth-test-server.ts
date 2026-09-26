@@ -11,6 +11,7 @@ import { createVerificationEmailTransport } from './email';
 import type { AuthEmailTransport } from './email';
 import { validateKnowledgeAuthConfig } from './config';
 import { requireKnowledgeIdentity } from './identity';
+import type { KnowledgeOAuthOptions } from './oauth-config';
 
 export const testPassword = 'correct-horse-battery-94';
 
@@ -34,6 +35,7 @@ export function bindAuthTestRequestLifetime(request: IncomingMessage, response: 
 export async function createAuthTestServer(options: {
   crossSite?: boolean;
   email?: AuthEmailTransport;
+  oauth?: KnowledgeOAuthOptions;
   mount?: (app: Hono, dependencies: { auth: ReturnType<typeof createKnowledgeAuth>; database: Awaited<ReturnType<typeof createTenantTestDatabase>> }) => void;
 } = {}) {
   const database = await createTenantTestDatabase();
@@ -83,7 +85,7 @@ export async function createAuthTestServer(options: {
   // Better Auth's built-in memory map is module-global. Isolate test servers
   // without disabling limits, changing thresholds or spoofing the socket IP.
   const rateCounts = new Map<string, { count: number; expiresAt: number }>();
-  const auth = createKnowledgeAuth({ pool: database.pool, config, email, onDiagnostic: (event) => diagnostics.push(event),
+  const auth = createKnowledgeAuth({ pool: database.pool, config, email, oauth: options.oauth, onDiagnostic: (event) => diagnostics.push(event),
     rateLimitStorage: { async consume(key, rule) {
       const now = Date.now();
       const existing = rateCounts.get(key);

@@ -2,7 +2,7 @@
 
 > 本表由 `knowledgebase-tasks.json` 生成。修改任务和证据后运行 `node scripts/verify-knowledge-tasks.mjs --write`。
 
-设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 44 项。
+设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 45 项。
 
 ## 实施约束
 
@@ -29,7 +29,7 @@
 - B03 Redis 多节点广播
 - B04 Web y-indexeddb 文档生命周期
 - V01 自动、结束会话与手动检查点
-- L01 页面/块链接与反向引用派生
+- H01 块索引增量投影
 - W04 图片视觉描述与 OCR
 
 ## 拓扑排序任务表
@@ -91,7 +91,7 @@
 | [x] 已验收 | N01 | 评论线程持久化与权限<br>backend/src/knowledge/comments/ | §4.6 | P03, Q01 | 创建/回复/解决/重开/删除有独立生命周期；仅 comment+ 可写；通知 Outbox 原子且 workspace 隔离 | [6 组真实集成测试(58 断言):线程生命周期状态机、view 级五写路径全拒/comment+ 走通、通知+outbox 同事务原子(回滚零残留)、回收页即时拒绝、跨租户 NOT_FOUND 不可区分](../../core/tasks/knowledgebase-acceptance/2026-09-26-comments.md) |
 | [ ] 待实施 | N02 | CRDT 评论锚点与侧栏<br>src/features/knowledge/editor/comments/ | §4.6 / §5.3 | N01, E03, B06 | 选区 comment mark 绑定 threadId；协作插删锚点不漂；孤立锚点状态可解释；线程/正文跳转 | — |
 | [ ] 待实施 | N03 | 通知收件箱<br>src/features/knowledge/notifications/; backend/src/knowledge/notifications/ | §4.6 / §5.3 | N01, B06, U02 | 评论通知收件人权限过滤、已读操作、实时更新与跳转；无重复跨租户消息 | — |
-| [ ] 待实施 | L01 | 页面/块链接与反向引用派生<br>backend/src/knowledge/search/backlinks.ts | §4.6 / §7.1 | M02, B02, T01 | 页面链接、blockReference 可解析稳定 ID；正文变化更新 backlink；无权限来源不泄漏 | — |
+| [x] 已验收 | L01 | 页面/块链接与反向引用派生<br>backend/src/knowledge/search/backlinks.ts | §4.6 / §7.1 | M02, B02, T01 | 页面链接、blockReference 可解析稳定 ID；正文变化更新 backlink；无权限来源不泄漏 | [6 项真实队列/RLS 测试:显式 pageId 优先/标题精确/块锚解析、悬链零落表零泄漏、doc.changed 消费幂等(FOR UPDATE 串行)、入链经 P03 谓词过滤、损坏 doc_state 留队重试不阻塞](../../core/tasks/knowledgebase-acceptance/2026-09-26-backlinks.md) |
 | [ ] 待实施 | L02 | 实时只读块引用 NodeView<br>src/features/knowledge/editor/blocks/block-reference.tsx | §4.6 | L01, E03 | 按需加载来源 Y.Doc；更改实时反映；点击原文高亮；无权/删除/循环引用有明确状态并释放连接 | — |
 | [x] 已验收 | P04 | 分享链接权限与失效<br>backend/src/knowledge/sharing/ | §6.1 / §9.5 | P03 | link 主体令牌哈希、到期/撤销/级别限制；页面及附件同权；访问不能获得 workspace 全部成员主体；授权接口有集成证据 | [12 项测试(140 断言,真实会话/队列/RLS):令牌只存 SHA-256+恒时比较、到期/撤销/降级即时 fail closed、link 主体恰为 {link:id} 不扩 workspace、越权创建/跨租户/重建窗口全拒](../../core/tasks/knowledgebase-acceptance/2026-09-26-sharing.md) |
 | [ ] 待实施 | U05 | 权限、继承与分享管理界面<br>src/features/knowledge/sharing/ | §6 | P04, U02 | 用户/组/workspace 授权、继承开关、有效权限解释；完整保存/撤销失败反馈；非 full 禁止操作 | — |
@@ -527,6 +527,7 @@ flowchart TD
   style S01 fill:#e4f4e9,stroke:#42845c
   style V02 fill:#e4f4e9,stroke:#42845c
   style N01 fill:#e4f4e9,stroke:#42845c
+  style L01 fill:#e4f4e9,stroke:#42845c
   style P04 fill:#e4f4e9,stroke:#42845c
   style G01 fill:#e4f4e9,stroke:#42845c
   style G02 fill:#e4f4e9,stroke:#42845c

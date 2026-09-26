@@ -1049,10 +1049,17 @@
         "B02",
         "T01"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "backend/src/knowledge/search/backlinks.ts",
       "acceptance": "页面链接、blockReference 可解析稳定 ID；正文变化更新 backlink；无权限来源不泄漏",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "6 项真实队列/RLS 测试:显式 pageId 优先/标题精确/块锚解析、悬链零落表零泄漏、doc.changed 消费幂等(FOR UPDATE 串行)、入链经 P03 谓词过滤、损坏 doc_state 留队重试不阻塞",
+          "command": "bun test backend/src/knowledge/search; pnpm exec eslint --no-ignore backend/src/knowledge/search; pnpm backend:typecheck; bun backend/scripts/knowledge-schema.ts --check",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-backlinks.md"
+        }
+      ]
     },
     {
       "id": "L02",

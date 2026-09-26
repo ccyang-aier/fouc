@@ -4,6 +4,7 @@ import { createLogger } from '../../platform/logger';
 import type { KnowledgeRequestAuthenticator } from '../auth';
 import { createPageCollaboration } from './page-collaboration-server';
 import type { PageCollaborationPersistence } from './page-collaboration-server';
+import type { WorkspaceEventsChannel } from './events';
 
 const log = createLogger('knowledge.collaboration');
 
@@ -40,7 +41,7 @@ export interface PageCollaborationListener {
  * to the authenticated Hocuspocus host through crossws's Bun adapter. Z03 owns
  * when/where this runs; tests embed it exactly the way production does.
  */
-export function createPageCollaborationListener(deps: { authenticator: KnowledgeRequestAuthenticator; pool: Pool }, options: { port?: number; hostname?: string; signal?: AbortSignal; persistence?: PageCollaborationPersistence } = {}): PageCollaborationListener {
+export function createPageCollaborationListener(deps: { authenticator: KnowledgeRequestAuthenticator; pool: Pool }, options: { port?: number; hostname?: string; signal?: AbortSignal; persistence?: PageCollaborationPersistence; events?: WorkspaceEventsChannel } = {}): PageCollaborationListener {
   const hocuspocus = createPageCollaboration(deps, options.persistence);
   const connections = new Map<unknown, ReturnType<typeof hocuspocus.handleConnection>>();
   const crossws = bunAdapter({
@@ -64,14 +65,32 @@ export function createPageCollaborationListener(deps: { authenticator: Knowledge
     port: options.port ?? 0,
     hostname: options.hostname ?? '127.0.0.1',
     idleTimeout: 255,
-    fetch(request, srv) {
+    async fetch(request, srv) {
       if (request.headers.get('upgrade')?.toLowerCase() === 'websocket') {
+        // Metadata events ride their own stateless channel by URL; page
+        // documents stay on the Hocuspocus transport.
+        const events = options.events;
+        const match = events && /\/api\/knowledge\/([a-zA-Z0-9-]+)\/events\/?$/.exec(new URL(request.url).pathname);
+        if (events && match) return (await events.handleUpgrade(request, match[1]!, srv)) ?? (undefined as never);
         // Returning the promise lets Bun keep the upgrade alive across the adapter's async hooks.
         return crossws.handleUpgrade(request, srv as never) as never;
       }
       return new Response('Not found.', { status: 404 });
     },
-    websocket: crossws.websocket as never,
+    websocket: {
+      open(ws) {
+        if ((ws.data as { kind?: string } | undefined)?.kind === 'workspace-events') options.events?.open(ws as never);
+        else crossws.websocket.open(ws as never);
+      },
+      message(ws, message) {
+        if ((ws.data as { kind?: string } | undefined)?.kind === 'workspace-events') options.events?.message(ws as never, String(message));
+        else crossws.websocket.message(ws as never, message as never);
+      },
+      close(ws, code, reason) {
+        if ((ws.data as { kind?: string } | undefined)?.kind === 'workspace-events') options.events?.close(ws as never);
+        else crossws.websocket.close(ws as never, code, reason);
+      },
+    } as never,
   });
   const close = async () => {
     options.signal?.removeEventListener('abort', close);

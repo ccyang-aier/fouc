@@ -2,7 +2,7 @@
 
 > 本表由 `knowledgebase-tasks.json` 生成。修改任务和证据后运行 `node scripts/verify-knowledge-tasks.mjs --write`。
 
-设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 38 项。
+设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 39 项。
 
 ## 实施约束
 
@@ -31,7 +31,6 @@
 - B03 Redis 多节点广播
 - B04 Web y-indexeddb 文档生命周期
 - B05 桌面 SQLite 离线 Yjs 副本
-- B06 工作区无状态事件与缓存失效
 - V01 自动、结束会话与手动检查点
 - L01 页面/块链接与反向引用派生
 - W04 图片视觉描述与 OCR
@@ -80,7 +79,7 @@
 | [ ] 待实施 | B03 | Redis 多节点广播<br>backend/src/knowledge/collaboration/ | §2 / §5.1 / §11 | B02, I01 | 两节点客户端并发更新实时收敛；断连恢复；无二次业务正文存储 | — |
 | [ ] 待实施 | B04 | Web y-indexeddb 文档生命周期<br>src/features/knowledge/collaboration/ | §3.1 / §5.1 / §5.4 | B02 | 离线先加载本地 Y.Doc 可编辑；state vector 交换后收敛；切页清理 provider/监听；状态区分本地保存与云同步 | — |
 | [ ] 待实施 | B05 | 桌面 SQLite 离线 Yjs 副本<br>backend/src/store/knowledge-documents.ts; src/features/knowledge/collaboration/ | §3.1 / §5.1 / §10 | B02 | sidecar 持久化 Yjs 更新/状态；重启/离线/重连收敛；Rust 不写知识库业务；与服务端正文权威清晰 | — |
-| [ ] 待实施 | B06 | 工作区无状态事件与缓存失效<br>backend/src/knowledge/collaboration/events.ts; src/features/knowledge/collaboration/ | §5.3 | B02, U01 | ws:workspaceId 频道校验成员身份；树/评论/通知/行事件只失效相关 Query；重连补拉 | — |
+| [x] 已验收 | B06 | 工作区无状态事件与缓存失效<br>backend/src/knowledge/collaboration/events.ts; src/features/knowledge/collaboration/ | §5.3 | B02, U01 | ws:workspaceId 频道校验成员身份；树/评论/通知/行事件只失效相关 Query；重连补拉 | [后端 5 项(成员 403/队列投递/隔离/双通道并存)+前端 4 项(9 事件映射/URL/重连补拉/容错)全过;B01/B02 10 项回归绿;频道无状态,重连失效全命名空间](../../core/tasks/knowledgebase-acceptance/2026-09-26-workspace-events.md) |
 | [ ] 待实施 | E03 | Tiptap 编辑器 React 容器与状态<br>src/features/knowledge/editor/ | §4.1 / §10 | E02, B04, U02 | 替换 textarea，Y.Doc 驱动唯一正文；Client Boundary 懒加载；加载/离线/同步/只读/错误闭环；无 SSR 水合异常 | — |
 | [ ] 待实施 | B07 | Awareness 人/Agent 光标与在线成员<br>src/features/knowledge/collaboration/awareness.ts; src/features/knowledge/editor/ | §5.5 / §9.3 | B04, E03 | user/color/cursor/selection/kind 完整；两客户端能见光标、AI 正在编辑状态；断开自动移除 | — |
 | [x] 已验收 | B00 | 共享 CRDT 事务来源与撤销内核<br>shared/src/knowledge/collaboration/ | §5.4 / §9.3 | E02 | 定义 human/agent/mcp/restore 来源；Yjs UndoManager 按来源和任务隔离，跨文档更新收敛；不依赖 React 或网络 provider | [本地/任务来源、XML 人工内容保护与副本收敛 11 项测试通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
@@ -523,6 +522,7 @@ flowchart TD
   style B02 fill:#e4f4e9,stroke:#42845c
   style U01 fill:#e4f4e9,stroke:#42845c
   style A02 fill:#e4f4e9,stroke:#42845c
+  style B06 fill:#e4f4e9,stroke:#42845c
   style B00 fill:#e4f4e9,stroke:#42845c
   style S01 fill:#e4f4e9,stroke:#42845c
   style V02 fill:#e4f4e9,stroke:#42845c

@@ -760,10 +760,17 @@
         "B02",
         "U01"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "backend/src/knowledge/collaboration/events.ts; src/features/knowledge/collaboration/",
       "acceptance": "ws:workspaceId 频道校验成员身份；树/评论/通知/行事件只失效相关 Query；重连补拉",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "后端 5 项(成员 403/队列投递/隔离/双通道并存)+前端 4 项(9 事件映射/URL/重连补拉/容错)全过;B01/B02 10 项回归绿;频道无状态,重连失效全命名空间",
+          "command": "bun test backend/src/knowledge/collaboration; bun test src/features/knowledge/collaboration; pnpm exec eslint --no-ignore backend/src/knowledge/collaboration src/features/knowledge/collaboration src/features/knowledge/data; node scripts/verify-knowledge-boundaries.mjs",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-workspace-events.md"
+        }
+      ]
     },
     {
       "id": "B07",

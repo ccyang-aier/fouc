@@ -2,7 +2,7 @@
 
 > 本表由 `knowledgebase-tasks.json` 生成。修改任务和证据后运行 `node scripts/verify-knowledge-tasks.mjs --write`。
 
-设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 41 项。
+设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 42 项。
 
 ## 实施约束
 
@@ -27,7 +27,6 @@
 
 - U02 应用壳与知识库新模型接入
 - T02 数据库页面及类型化行属性
-- O02 Workspace/成员/Teamspace 组织界面
 - B03 Redis 多节点广播
 - B04 Web y-indexeddb 文档生命周期
 - V01 自动、结束会话与手动检查点
@@ -72,7 +71,7 @@
 | [ ] 待实施 | M03 | Obsidian 仓库导入导出<br>backend/src/knowledge/import-export/; src/features/knowledge/ | §4.4 | M01, T01, AS01, B02, U02 | 目录、附件、frontmatter、wiki/块链接可往返；多页导入有进度与逐项失败反馈 | — |
 | [ ] 待实施 | T02 | 数据库页面及类型化行属性<br>backend/src/knowledge/databases/ | §3.3 / §9.2 | T01 | database/row 均为 page；每行可独立 Y.Doc/权限；schema/属性验证、筛选排序和分页正确 | — |
 | [ ] 待实施 | M04 | Notion 导出导入<br>backend/src/knowledge/import-export/ | §4.4 | M01, T02, AS01, B02, U02 | HTML/Markdown/CSV、目录与附件导入真实样本；页面链接正确映射，无静默丢失 | — |
-| [ ] 待实施 | O02 | Workspace/成员/Teamspace 组织界面<br>backend/src/knowledge/organization/; src/features/knowledge/organization/ | §3.3 / §6.1 | O03, U01 | 空间创建、切换、成员/群组管理闭环；空/加载/无权/失败状态清晰；根默认权限生效 | — |
+| [x] 已验收 | O02 | Workspace/成员/Teamspace 组织界面<br>backend/src/knowledge/organization/; src/features/knowledge/organization/ | §3.3 / §6.1 | O03, U01 | 空间创建、切换、成员/群组管理闭环；空/加载/无权/失败状态清晰；根默认权限生效 | [32 项测试/160 断言、lint/类型/边界全过;空间/成员/群组/Teamspace 面板闭环、四态+乐观回滚、根默认权限重算提示;13 张状态截图归档为视觉证据](../../core/tasks/knowledgebase-acceptance/2026-09-26-organization-ui.md) |
 | [ ] 待实施 | U03 | 页面树操作与乐观反馈<br>src/features/knowledge/navigation/ | §3.3 / §5.4 | U02, T01 | 新建、重命名、图标/封面、嵌套移动/排序、删除恢复、键盘导航；失败恢复且提示明确 | — |
 | [ ] 待实施 | U04 | 本地元数据操作队列<br>src/features/knowledge/collaboration/metadata-queue.ts | §5.4 | U03 | UUID 操作持久化，离线乐观、重连按序提交；循环/无权失败回滚；重复重试不重复创建 | — |
 | [ ] 待实施 | B03 | Redis 多节点广播<br>backend/src/knowledge/collaboration/ | §2 / §5.1 / §11 | B02, I01 | 两节点客户端并发更新实时收敛；断连恢复；无二次业务正文存储 | — |
@@ -522,6 +521,7 @@ flowchart TD
   style U01 fill:#e4f4e9,stroke:#42845c
   style A02 fill:#e4f4e9,stroke:#42845c
   style A04 fill:#e4f4e9,stroke:#42845c
+  style O02 fill:#e4f4e9,stroke:#42845c
   style B05 fill:#e4f4e9,stroke:#42845c
   style B06 fill:#e4f4e9,stroke:#42845c
   style B00 fill:#e4f4e9,stroke:#42845c

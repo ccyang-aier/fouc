@@ -130,6 +130,14 @@ CREATE TABLE "knowledge"."backlink" (
 	CONSTRAINT "backlink_destination_block_valid" CHECK ("knowledge"."backlink"."dst_block_id" IS NULL OR "knowledge"."backlink"."dst_block_id" ~ '^[A-Za-z0-9_-]+$')
 );
 
+CREATE TABLE "knowledge"."block_embedding_model" (
+	"workspace_id" uuid PRIMARY KEY NOT NULL,
+	"embed_model" text NOT NULL,
+	"embed_dimensions" integer NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "block_embedding_model_valid" CHECK (length("knowledge"."block_embedding_model"."embed_model") > 0 AND "knowledge"."block_embedding_model"."embed_dimensions" > 0)
+);
+
 CREATE TABLE "knowledge"."block_embedding_staging" (
 	"workspace_id" uuid NOT NULL,
 	"page_id" uuid NOT NULL,
@@ -156,13 +164,14 @@ CREATE TABLE "knowledge"."block_index" (
 	"embedding" vector,
 	"embed_model" text,
 	"embed_dimensions" integer,
+	"embedded_hash" varchar(64),
 	"principals" text[] DEFAULT ARRAY[]::text[] NOT NULL,
 	"acl_revision" bigint DEFAULT 0 NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "block_index_workspace_page_block_unique" UNIQUE("workspace_id","page_id","block_id"),
 	CONSTRAINT "block_index_block_id_valid" CHECK ("knowledge"."block_index"."block_id" ~ '^[A-Za-z0-9_-]+$'),
 	CONSTRAINT "block_index_content_hash_valid" CHECK ("knowledge"."block_index"."content_hash" ~ '^[a-f0-9]{64}$'),
-	CONSTRAINT "block_index_embedding_metadata" CHECK (("knowledge"."block_index"."embedding" IS NULL AND "knowledge"."block_index"."embed_model" IS NULL AND "knowledge"."block_index"."embed_dimensions" IS NULL) OR ("knowledge"."block_index"."embedding" IS NOT NULL AND "knowledge"."block_index"."embed_model" IS NOT NULL AND length("knowledge"."block_index"."embed_model") > 0 AND "knowledge"."block_index"."embed_dimensions" IS NOT NULL AND "knowledge"."block_index"."embed_dimensions" > 0 AND vector_dims("knowledge"."block_index"."embedding") = "knowledge"."block_index"."embed_dimensions")),
+	CONSTRAINT "block_index_embedding_metadata" CHECK (("knowledge"."block_index"."embedding" IS NULL AND "knowledge"."block_index"."embed_model" IS NULL AND "knowledge"."block_index"."embed_dimensions" IS NULL AND "knowledge"."block_index"."embedded_hash" IS NULL) OR ("knowledge"."block_index"."embedding" IS NOT NULL AND "knowledge"."block_index"."embed_model" IS NOT NULL AND length("knowledge"."block_index"."embed_model") > 0 AND "knowledge"."block_index"."embed_dimensions" IS NOT NULL AND "knowledge"."block_index"."embed_dimensions" > 0 AND vector_dims("knowledge"."block_index"."embedding") = "knowledge"."block_index"."embed_dimensions" AND "knowledge"."block_index"."embedded_hash" IS NOT NULL AND "knowledge"."block_index"."embedded_hash" ~ '^[a-f0-9]{64}$')),
 	CONSTRAINT "block_index_acl_revision_nonnegative" CHECK ("knowledge"."block_index"."acl_revision" >= 0)
 );
 
@@ -425,6 +434,7 @@ ALTER TABLE "knowledge_auth"."account" ADD CONSTRAINT "account_user_id_user_id_f
 ALTER TABLE "knowledge_auth"."session" ADD CONSTRAINT "session_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "knowledge_auth"."user"("id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "knowledge"."backlink" ADD CONSTRAINT "backlink_workspace_id_src_page_id_page_workspace_id_id_fk" FOREIGN KEY ("workspace_id","src_page_id") REFERENCES "knowledge"."page"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "knowledge"."backlink" ADD CONSTRAINT "backlink_workspace_id_dst_page_id_page_workspace_id_id_fk" FOREIGN KEY ("workspace_id","dst_page_id") REFERENCES "knowledge"."page"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "knowledge"."block_embedding_model" ADD CONSTRAINT "block_embedding_model_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "knowledge"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "knowledge"."block_embedding_staging" ADD CONSTRAINT "block_embedding_staging_block_fk" FOREIGN KEY ("workspace_id","page_id","block_id") REFERENCES "knowledge"."block_index"("workspace_id","page_id","block_id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "knowledge"."block_index" ADD CONSTRAINT "block_index_workspace_id_page_id_page_workspace_id_id_fk" FOREIGN KEY ("workspace_id","page_id") REFERENCES "knowledge"."page"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "knowledge"."comment" ADD CONSTRAINT "comment_author_id_user_id_fk" FOREIGN KEY ("author_id") REFERENCES "knowledge_auth"."user"("id") ON DELETE no action ON UPDATE no action;
@@ -473,6 +483,7 @@ CREATE INDEX "backlink_destination_idx" ON "knowledge"."backlink" USING btree ("
 CREATE INDEX "block_embedding_staging_model_idx" ON "knowledge"."block_embedding_staging" USING btree ("workspace_id","embed_model","embed_dimensions");
 CREATE INDEX "block_index_principals_gin_idx" ON "knowledge"."block_index" USING gin ("principals");
 CREATE INDEX "block_index_embedding_model_idx" ON "knowledge"."block_index" USING btree ("workspace_id","embed_model","embed_dimensions");
+CREATE INDEX "block_index_bm25_idx" ON "knowledge"."block_index" USING paradedb ("id",("content_md"::pdb.jieba)) WITH (key_field='id');
 CREATE INDEX "comment_thread_time_idx" ON "knowledge"."comment" USING btree ("workspace_id","thread_id","created_at");
 CREATE INDEX "comment_author_idx" ON "knowledge"."comment" USING btree ("author_id");
 CREATE INDEX "comment_thread_page_idx" ON "knowledge"."comment_thread" USING btree ("workspace_id","page_id","status");

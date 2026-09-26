@@ -106,8 +106,9 @@ export async function seedTenantTestData(admin: Pool) {
       await db.insert(tables.pageEffectiveAcl).values({ ...scope, view: [principal], comment: [principal], edit: [principal], full: [principal] });
       await db.insert(tables.blockIndex).values({
         ...scope, blockId: 'block-1', blockType: 'paragraph', contentMd: `${name} private block`, contentHash: 'a'.repeat(64),
-        embedding: [1, 2], embedModel: 'previous-model', embedDimensions: 2, principals: [principal],
+        embedding: [1, 2], embedModel: 'previous-model', embedDimensions: 2, embeddedHash: 'a'.repeat(64), principals: [principal],
       });
+      await db.insert(tables.blockEmbeddingModel).values({ workspaceId, embedModel: 'previous-model', embedDimensions: 2 });
       await db.insert(tables.blockEmbeddingStaging).values({
         ...scope, blockId: 'block-1', contentHash: 'a'.repeat(64), embedding: [1, 2, 3], embedModel: 'replacement-model', embedDimensions: 3,
       });

@@ -1280,10 +1280,17 @@
         "H01",
         "G01"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "backend/src/knowledge/search/embeddings.ts",
       "acceptance": "仅变化块调用；embed_model/维度隔离；后台重建完成原子切换，失败保持旧索引可用",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "22 项 search 全套测试:embedded_hash 血缘仅变化块调用(改1增1恰1批2值)、模型/维度隔离、重建单事务原子切换失败回退旧索引可查、批次限速与队列重试收敛;真实 Ollama 384 维 3 次调用记账,云嵌入端点已探明未耗成本",
+          "command": "bun test backend/src/knowledge/search; bun test backend/src/database/knowledge; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/search; bun backend/scripts/knowledge-schema.ts --check",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-embeddings.md"
+        }
+      ]
     },
     {
       "id": "H03",

@@ -18,8 +18,8 @@ pnpm exec tsc --noEmit -p backend/tsconfig.json
 - 所有业务表之间的外键都包含 `workspace_id`。页面、父页面和所属数据库还必须处于相同 Teamspace。`database_definition` 的类型 CHECK 和复合外键保证只有 `kind=database` 页可以拥有行。
 - `page.path` 为 `ltree`；单页标签为 UUID 的 `-` 替换成 `_`。父页面为空时路径深度为 1，末尾标签始终等于自身 ID。完整祖先路径和防环由页面树事务服务维护。
 - `doc_state`、`doc_checkpoint` 只保存 Yjs `bytea` 状态与 `state_vector`；转换层以 `Uint8Array` 供 Yjs 使用、以 Node `Buffer` 供 `pg` 使用。正文不写入 `page`。
-- `block_index.id` 是全局唯一 `bigint generated always as identity`，供 pg_search 的 `key_field` 使用。逻辑块键仍为 `(workspace_id,page_id,block_id)`。`embedding` 为无固定维度的 `vector`；模型和维度必须一起存在并匹配，H02/H03 负责模型特定 HNSW 与 BM25 索引。
-- `block_embedding_staging` 只存新模型的派生向量及对应内容哈希；旧模型在重建完成前仍由 `block_index` 提供查询。H02 验证哈希并事务切换时才替换 active 向量，避免重建期间覆盖旧模型导致漏检。
+- `block_index.id` 是全局唯一 `bigint generated always as identity`，供 pg_search 的 `key_field` 使用。逻辑块键仍为 `(workspace_id,page_id,block_id)`。`embedding` 为无固定维度的 `vector`；模型、维度与 `embedded_hash`（向量所代表嵌入输入的哈希，短块含标题路径前缀）必须一起存在并匹配，H02/H03 负责模型特定 HNSW 与 BM25 索引。
+- `block_embedding_staging` 只存新模型的派生向量及其嵌入输入哈希；旧模型在重建完成前仍由 `block_index` 提供查询。H02 验证哈希并事务切换时才替换 active 向量，避免重建期间覆盖旧模型导致漏检。`block_embedding_model` 每工作区一行，记录当前生效模型（查询侧过滤依据，重建切换的原子标记）。
 - `page.acl_revision`、`page_effective_acl.revision` 和 `block_index.acl_revision` 为权限变更后的拒绝式失效留出依据；有效权限列为按等级累积的主体集合。
 - 模型密钥只在 `model_credential.encrypted_secret` 存放加密字节；`workspace.settings` 只引用公开配置和凭据 ID。PAT 与分享链接只存哈希。
 - `workspace_invitation` 仅保存一次性邀请令牌的 SHA-256 哈希；待接受邮箱在工作区内唯一，禁止邀请 owner。邀请接受与成员创建、personal→team 转换由组织服务在一个事务中完成。

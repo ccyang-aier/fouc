@@ -23,6 +23,8 @@ export const blockIndex = knowledge.table('block_index', {
   embedding: embeddingVector('embedding'),
   embedModel: text('embed_model'),
   embedDimensions: integer('embed_dimensions'),
+  /** Content hash the current vector was derived from; drift marks it stale without another model call. */
+  embeddedHash: varchar('embedded_hash', { length: 64 }),
   principals: text('principals').array().$type<Principal[]>().notNull().default(sql`ARRAY[]::text[]`),
   aclRevision: bigint('acl_revision', { mode: 'number' }).notNull().default(0),
   updatedAt: instant('updated_at').notNull().defaultNow(),
@@ -31,11 +33,17 @@ export const blockIndex = knowledge.table('block_index', {
   foreignKey({ columns: [table.workspaceId, table.pageId], foreignColumns: [page.workspaceId, page.id] }).onDelete('cascade'),
   check('block_index_block_id_valid', sql`${table.blockId} ~ '^[A-Za-z0-9_-]+$'`),
   check('block_index_content_hash_valid', sql`${table.contentHash} ~ '^[a-f0-9]{64}$'`),
-  check('block_index_embedding_metadata', sql`(${table.embedding} IS NULL AND ${table.embedModel} IS NULL AND ${table.embedDimensions} IS NULL) OR (${table.embedding} IS NOT NULL AND ${table.embedModel} IS NOT NULL AND length(${table.embedModel}) > 0 AND ${table.embedDimensions} IS NOT NULL AND ${table.embedDimensions} > 0 AND vector_dims(${table.embedding}) = ${table.embedDimensions})`),
+  check('block_index_embedding_metadata', sql`(${table.embedding} IS NULL AND ${table.embedModel} IS NULL AND ${table.embedDimensions} IS NULL AND ${table.embeddedHash} IS NULL) OR (${table.embedding} IS NOT NULL AND ${table.embedModel} IS NOT NULL AND length(${table.embedModel}) > 0 AND ${table.embedDimensions} IS NOT NULL AND ${table.embedDimensions} > 0 AND vector_dims(${table.embedding}) = ${table.embedDimensions} AND ${table.embeddedHash} IS NOT NULL AND ${table.embeddedHash} ~ '^[a-f0-9]{64}$')`),
   check('block_index_acl_revision_nonnegative', sql`${table.aclRevision} >= 0`),
   index('block_index_principals_gin_idx').using('gin', table.principals),
   index('block_index_embedding_model_idx').on(table.workspaceId, table.embedModel, table.embedDimensions),
-  // BM25 tokenizers and per-model expression HNSW indexes are owned by H02/H03.
+  /**
+   * H03 的 BM25 索引（§7.3）：jieba 同时切分中文与拉丁词（大小写归一）。pg_search
+   * 每表仅允许一个 paradedb 索引、同一列不可配置两种分词器，ICU/stemming 无法与
+   * jieba 共存于同一列；英文词干行为由检索端前缀扩展提供（search/keyword.ts）。
+   */
+  index('block_index_bm25_idx').using('paradedb', table.id, sql`(${table.contentMd}::pdb.jieba)`).with({ key_field: `'id'` }),
+  // Per-model expression HNSW indexes are owned by H02.
 ]);
 
 /** Keep active vectors readable while a replacement model is being built. */
@@ -54,6 +62,21 @@ export const blockEmbeddingStaging = knowledge.table('block_embedding_staging', 
   check('block_embedding_staging_hash_valid', sql`${table.contentHash} ~ '^[a-f0-9]{64}$'`),
   check('block_embedding_staging_metadata', sql`length(${table.embedModel}) > 0 AND ${table.embedDimensions} > 0 AND vector_dims(${table.embedding}) = ${table.embedDimensions}`),
   index('block_embedding_staging_model_idx').on(table.workspaceId, table.embedModel, table.embedDimensions),
+]);
+
+/**
+ * The workspace's active embedding model: exactly what H02's rebuild switch
+ * promotes, and the (embed_model, embed_dimensions) retrieval filters by (§7.1).
+ * Absent until the first rebuild; queries then simply have no vector leg.
+ */
+export const blockEmbeddingModel = knowledge.table('block_embedding_model', {
+  workspaceId: uuid('workspace_id').primaryKey(),
+  embedModel: text('embed_model').notNull(),
+  embedDimensions: integer('embed_dimensions').notNull(),
+  updatedAt: instant('updated_at').notNull().defaultNow(),
+}, (table) => [
+  foreignKey({ columns: [table.workspaceId], foreignColumns: [workspace.id] }).onDelete('cascade'),
+  check('block_embedding_model_valid', sql`length(${table.embedModel}) > 0 AND ${table.embedDimensions} > 0`),
 ]);
 
 export const backlink = knowledge.table('backlink', {

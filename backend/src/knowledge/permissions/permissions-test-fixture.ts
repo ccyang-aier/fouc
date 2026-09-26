@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 import { and, eq } from 'drizzle-orm';
+import { Hono } from 'hono';
 import { Pool } from 'pg';
 import type { PoolClient } from 'pg';
 import { createTRPCClient, httpLink } from '@trpc/client';
@@ -12,6 +13,7 @@ import { withKnowledgeTenant } from '../../database/knowledge/tenant';
 import { createAuthTestServer, responseCookie, testPassword } from '../auth/auth-test-server';
 import { createKnowledgeRequestAuthenticator, createKnowledgeTokenService } from '../auth';
 import type { KnowledgeRequestAuthenticator, KnowledgeTokenScope } from '../auth';
+import type { KnowledgeAuth } from '../auth/service';
 import type { KnowledgeIdentity } from '../auth/identity';
 
 type KnowledgeTokenService = ReturnType<typeof createKnowledgeTokenService>;
@@ -46,7 +48,10 @@ export function barrier() {
 }
 
 /** Real HTTP identities/organization, real queue, ordinary-role business writes. */
-export async function createPermissionsFixture() {
+/** Extra routes an embedding test mounts into the same authenticated server. */
+export type PermissionsFixtureMount = (app: Hono, context: { auth: KnowledgeAuth; pool: Pool; authenticator: KnowledgeRequestAuthenticator }) => void;
+
+export async function createPermissionsFixture(options: { mount?: PermissionsFixtureMount } = {}) {
   let pool!: Pool;
   let organization!: OrganizationService;
   let authenticator!: KnowledgeRequestAuthenticator;
@@ -60,6 +65,7 @@ export async function createPermissionsFixture() {
     organization = createOrganizationService(pool, { permissions: teamspacePermissionInvalidator });
     app.route('/', createOrganizationRoutes(auth, organization));
     app.route('/', createKnowledgeApiRoutes({ auth, pool }));
+    options.mount?.(app, { auth, pool, authenticator });
   } });
   const admin = server.database.admin;
   const runners = new Set<RunningRole>();

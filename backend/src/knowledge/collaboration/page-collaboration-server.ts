@@ -12,6 +12,7 @@ import type { PageCollaborationContext } from './page-collaboration';
 import { parsePageDocument } from './page-documents';
 import { pageCollaborationRedisExtension } from './page-collaboration-redis';
 import type { PageCollaborationBroadcast } from './page-collaboration-redis';
+import type { PageCheckpointExtension } from './checkpoints';
 
 export interface PageCollaborationPersistence {
   /** Store debounce window; production default 2s per the design contract. */
@@ -29,13 +30,13 @@ export interface PageCollaborationPersistence {
  * through it skip the store hooks, and a Redlock keeps simultaneous stores
  * single-writer, so the persistence path below stays the only one.
  */
-export function pageCollaborationConfiguration(deps: { authenticator: KnowledgeRequestAuthenticator; pool: Pool }, persistence: PageCollaborationPersistence = {}, broadcast?: PageCollaborationBroadcast): Partial<Configuration<PageCollaborationContext>> {
+export function pageCollaborationConfiguration(deps: { authenticator: KnowledgeRequestAuthenticator; pool: Pool }, persistence: PageCollaborationPersistence = {}, broadcast?: PageCollaborationBroadcast, checkpoints?: PageCheckpointExtension): Partial<Configuration<PageCollaborationContext>> {
   const collaboration = pageCollaborationExtension(deps);
   return {
     name: 'fouc-page-collaboration',
     debounce: persistence.debounceMs ?? 2_000,
     maxDebounce: persistence.maxDebounceMs ?? 10_000,
-    extensions: broadcast ? [pageCollaborationRedisExtension(broadcast)] : [],
+    extensions: [...(broadcast ? [pageCollaborationRedisExtension(broadcast)] : []), ...(checkpoints ? [checkpoints] : [])],
     yDocOptions: { gc: true, gcFilter: () => true },
     async onConnect(data) {
       return collaboration.onConnect?.(data);
@@ -66,6 +67,6 @@ export function pageCollaborationConfiguration(deps: { authenticator: KnowledgeR
 }
 
 /** A standalone host without a listener; Z03 owns real sockets. */
-export function createPageCollaboration(deps: { authenticator: KnowledgeRequestAuthenticator; pool: Pool }, persistence: PageCollaborationPersistence = {}, broadcast?: PageCollaborationBroadcast): Hocuspocus<PageCollaborationContext> {
-  return new Hocuspocus<PageCollaborationContext>(pageCollaborationConfiguration(deps, persistence, broadcast) as Partial<Configuration<PageCollaborationContext>>);
+export function createPageCollaboration(deps: { authenticator: KnowledgeRequestAuthenticator; pool: Pool }, persistence: PageCollaborationPersistence = {}, broadcast?: PageCollaborationBroadcast, checkpoints?: PageCheckpointExtension): Hocuspocus<PageCollaborationContext> {
+  return new Hocuspocus<PageCollaborationContext>(pageCollaborationConfiguration(deps, persistence, broadcast, checkpoints) as Partial<Configuration<PageCollaborationContext>>);
 }

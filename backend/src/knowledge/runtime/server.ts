@@ -10,8 +10,11 @@ import { createOrganizationRoutes } from '../organization/http';
 import { createOrganizationService } from '../organization/service';
 import { teamspacePermissionInvalidator } from '../permissions/fence';
 import { createKnowledgeApiRoutes, createKnowledgePatRoutes } from '../../api/knowledge';
+import { createKnowledgeCheckpointRoutes } from '../../api/knowledge/checkpoint-routes';
+import { createKnowledgeNotificationRoutes } from '../notifications';
 import { createPageCollaborationListener } from '../collaboration/page-collaboration-bun';
 import { createWorkspaceEventRuntime } from '../collaboration/events';
+import { pageCheckpointExtension } from '../collaboration/checkpoints';
 import { createKnowledgeMcpAuthorizationRoutes } from '../mcp/oauth';
 import { createKnowledgeMcpRequestHandler } from '../mcp/server';
 import { handleKnowledgeMcpOnBun } from '../mcp/bun-adapter';
@@ -44,12 +47,15 @@ export async function startKnowledgeRuntime(config: KnowledgeConfig, environment
   const authenticator = createKnowledgeRequestAuthenticator({ auth, pool });
   const externalOrigin = new URL(config.auth.baseUrl).origin;
   const events = createWorkspaceEventRuntime({ authenticator });
+  const checkpoints = config.roles.includes('collab') ? pageCheckpointExtension({ pool }) : undefined;
   const app = new Hono();
   app.route('/', createKnowledgeAuthRoutes(auth, (context) => context.env.clientAddress as string));
   app.route('/', createOrganizationRoutes(auth, createOrganizationService(pool, { permissions: teamspacePermissionInvalidator })));
   app.route('/', createKnowledgeApiRoutes({ auth, pool }));
   app.route('/', createKnowledgePatRoutes({ auth, pool }));
   app.route('/', createKnowledgeMcpAuthorizationRoutes({ auth, pool, externalOrigin }));
+  app.route('/', createKnowledgeCheckpointRoutes({ auth, pool, checkpoints }));
+  app.route('/', createKnowledgeNotificationRoutes({ authenticator, pool, trustedOrigins: auth.options.trustedOrigins as string[] }));
 
   let mcp: ReturnType<typeof createKnowledgeMcpRequestHandler> | undefined;
   const listener = createPageCollaborationListener({ authenticator, pool }, {
@@ -57,6 +63,7 @@ export async function startKnowledgeRuntime(config: KnowledgeConfig, environment
     hostname: config.hostname,
     events: events.channel,
     ...(config.redisUrl ? { broadcast: { redisUrl: config.redisUrl } } : {}),
+    ...(checkpoints ? { checkpoints } : {}),
     http: async (request, clientAddress) => {
       if (mcp && mcpPathPattern.test(new URL(request.url).pathname)) return handleKnowledgeMcpOnBun(mcp, request);
       return app.fetch(request, { clientAddress });

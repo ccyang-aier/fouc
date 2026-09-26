@@ -5,6 +5,7 @@ import type { KnowledgeRequestAuthenticator } from '../auth';
 import { createPageCollaboration } from './page-collaboration-server';
 import type { PageCollaborationPersistence } from './page-collaboration-server';
 import type { PageCollaborationBroadcast } from './page-collaboration-redis';
+import type { PageCheckpointExtension } from './checkpoints';
 import type { WorkspaceEventsChannel } from './events';
 
 const log = createLogger('knowledge.collaboration');
@@ -42,8 +43,8 @@ export interface PageCollaborationListener {
  * to the authenticated Hocuspocus host through crossws's Bun adapter. Z03 owns
  * when/where this runs; tests embed it exactly the way production does.
  */
-export function createPageCollaborationListener(deps: { authenticator: KnowledgeRequestAuthenticator; pool: Pool }, options: { port?: number; hostname?: string; signal?: AbortSignal; persistence?: PageCollaborationPersistence; broadcast?: PageCollaborationBroadcast; events?: WorkspaceEventsChannel; /** Non-WebSocket fallback so one port can also host the HTTP API (Z03). */ http?: (request: Request, clientAddress: string) => Response | Promise<Response> } = {}): PageCollaborationListener {
-  const hocuspocus = createPageCollaboration(deps, options.persistence, options.broadcast);
+export function createPageCollaborationListener(deps: { authenticator: KnowledgeRequestAuthenticator; pool: Pool }, options: { port?: number; hostname?: string; signal?: AbortSignal; persistence?: PageCollaborationPersistence; broadcast?: PageCollaborationBroadcast; events?: WorkspaceEventsChannel; /** V01 checkpoints, mounted by the production assembly (Z03/V03). */ checkpoints?: PageCheckpointExtension; /** Non-WebSocket fallback so one port can also host the HTTP API (Z03). */ http?: (request: Request, clientAddress: string) => Response | Promise<Response> } = {}): PageCollaborationListener {
+  const hocuspocus = createPageCollaboration(deps, options.persistence, options.broadcast, options.checkpoints);
   const connections = new Map<unknown, ReturnType<typeof hocuspocus.handleConnection>>();
   const crossws = bunAdapter({
     hooks: {

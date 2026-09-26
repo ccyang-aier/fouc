@@ -192,7 +192,7 @@ describe('read-only knowledge agent tools', () => {
       expect(scoped.code).toBe('INSUFFICIENT_SCOPE');
 
       // 注册表即 §9.2 只读全集，名称稳定供 J04/K01 装配。
-      expect(knowledgeAgentTools.map((tool) => tool.name)).toEqual(['search', 'read_page', 'query_database', 'list_pages', 'get_backlinks']);
+      expect(knowledgeAgentTools.map((tool) => tool.name)).toEqual(['search', 'read_page', 'query_database', 'list_pages', 'get_backlinks', 'insert', 'replace', 'delete', 'create_page', 'update_properties']);
     }, 30_000);
 
     test('non-members cannot obtain a request context for the workspace at all', async () => {

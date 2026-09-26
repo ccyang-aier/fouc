@@ -1606,10 +1606,17 @@
         "B01",
         "B00"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "backend/src/knowledge/ai/tools/",
       "acceptance": "insert/replace/delete/create/update_properties 权限一致；openDirectConnection+agent:taskId；新 ID/建议默认；无 SQL 正文双写",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "19 项工具测试(6 新增)+69 项回归:三正文工具按 S01 语义 Y 层定点建议落稿(openDirectConnection agent actor/无宿主等价兜底,无 SQL 双写)、新 blockId、审阅前原文保留;create/update_properties 走 T01 服务与 P03 授权",
+          "command": "bun test backend/src/knowledge/ai/tools; bun test backend/src/knowledge/pages backend/src/knowledge/ai; pnpm backend:typecheck; pnpm shared:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/ai/tools",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-write-tools.md"
+        }
+      ]
     },
     {
       "id": "J04",

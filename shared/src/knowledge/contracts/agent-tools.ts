@@ -84,6 +84,58 @@ export const agentGetBacklinksToolResultSchema = z.strictObject({
   backlinks: z.array(agentPageBacklinkSchema),
 });
 
+
+// ── J03 写工具输入契约 ────────────────────────────────────────────
+// workspaceId 与发起者身份照旧不出现在工具输入之外(与只读集同一防线);
+// 写工具一律以建议(S01)形式落稿,审阅接受前不改权威内容。
+
+const markdownBody = z.string().min(1).max(20_000);
+
+export const agentSuggestInsertToolInputSchema = z.strictObject({
+  workspaceId: entityIdSchema,
+  pageId: entityIdSchema,
+  afterBlockId: blockIdSchema.nullable().default(null),
+  markdown: markdownBody,
+});
+
+export const agentSuggestReplaceToolInputSchema = z.strictObject({
+  workspaceId: entityIdSchema,
+  pageId: entityIdSchema,
+  blockId: blockIdSchema,
+  markdown: markdownBody,
+});
+
+export const agentSuggestDeleteToolInputSchema = z.strictObject({
+  workspaceId: entityIdSchema,
+  pageId: entityIdSchema,
+  blockId: blockIdSchema,
+});
+
+export const agentCreatePageToolInputSchema = z.strictObject({
+  workspaceId: entityIdSchema,
+  teamspaceId: entityIdSchema,
+  parentId: entityIdSchema.nullable(),
+  title: z.string().min(1).max(500),
+  kind: z.literal('doc').default('doc'),
+  icon: z.string().max(200).nullable().default(null),
+  cover: z.string().max(2048).nullable().default(null),
+  afterPageId: entityIdSchema.nullable().default(null),
+});
+
+export const agentUpdatePagePropertiesToolInputSchema = z.strictObject({
+  workspaceId: entityIdSchema,
+  pageId: entityIdSchema,
+  patch: z.strictObject({
+    title: z.string().min(1).max(500).optional(),
+    icon: z.string().max(200).nullable().optional(),
+    cover: z.string().max(2048).nullable().optional(),
+  }).refine((value) => Object.keys(value).length > 0, 'at least one field'),
+});
+
+export const agentSuggestToolResultSchema = z.strictObject({
+  suggestionId: z.string().regex(/^[A-Za-z0-9_-]{1,128}$/),
+});
+
 export type AgentSearchToolInput = z.infer<typeof agentSearchToolInputSchema>;
 export type AgentReadPageToolInput = z.infer<typeof agentReadPageToolInputSchema>;
 export type AgentQueryDatabaseToolInput = z.infer<typeof agentQueryDatabaseToolInputSchema>;
@@ -95,3 +147,10 @@ export type AgentListedPage = z.infer<typeof agentListedPageSchema>;
 export type AgentListPagesToolResult = z.infer<typeof agentListPagesToolResultSchema>;
 export type AgentPageBacklink = z.infer<typeof agentPageBacklinkSchema>;
 export type AgentGetBacklinksToolResult = z.infer<typeof agentGetBacklinksToolResultSchema>;
+
+export type AgentSuggestInsertToolInput = z.infer<typeof agentSuggestInsertToolInputSchema>;
+export type AgentSuggestReplaceToolInput = z.infer<typeof agentSuggestReplaceToolInputSchema>;
+export type AgentSuggestDeleteToolInput = z.infer<typeof agentSuggestDeleteToolInputSchema>;
+export type AgentCreatePageToolInput = z.infer<typeof agentCreatePageToolInputSchema>;
+export type AgentUpdatePagePropertiesToolInput = z.infer<typeof agentUpdatePagePropertiesToolInputSchema>;
+export type AgentSuggestToolResult = z.infer<typeof agentSuggestToolResultSchema>;

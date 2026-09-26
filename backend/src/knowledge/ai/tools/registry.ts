@@ -64,7 +64,8 @@ export function defineKnowledgeAgentTool<S extends z.ZodType>(definition: Knowle
   };
 }
 
-export const knowledgeAgentTools: readonly KnowledgeAgentTool[] = Object.freeze([
+/** J02 只读集;J03 写工具在 index.ts 组合(避免 registry ⇄ write 循环初始化)。 */
+export const knowledgeAgentReadTools: readonly KnowledgeAgentTool[] = Object.freeze([
   defineKnowledgeAgentTool({
     name: 'search',
     description: '混合检索发起者可见的页面块，返回带 blockId 锚点的命中与摘要',
@@ -101,10 +102,3 @@ export const knowledgeAgentTools: readonly KnowledgeAgentTool[] = Object.freeze(
     handler: executeAgentGetBacklinks,
   }),
 ]);
-
-/** 按名称分发（MCP 工具调用的入口形态）；名称、输入与范围校验同 execute。 */
-export async function invokeKnowledgeAgentTool(name: string, input: unknown, context: KnowledgeAgentToolContext): Promise<unknown> {
-  const tool = knowledgeAgentTools.find((entry) => entry.name === name);
-  if (!tool) throw new KnowledgeAgentToolError('UNKNOWN_TOOL', name);
-  return tool.execute(input, context);
-}

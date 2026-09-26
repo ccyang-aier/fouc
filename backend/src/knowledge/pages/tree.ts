@@ -105,6 +105,32 @@ export async function createAuthorizedPage(db: KnowledgeTenantTransaction, input
  * `newPrefix || subpath(path, nlevel(oldPath))` 单语句推导;循环移动、跨租户/跨
  * teamspace 父子与非法 afterPageId 在任何写入前被拒绝,失败整体回滚。
  */
+/**
+ * P03 must authorize page-level `edit` before calling. Metadata updates
+ * never touch ACLs, so no permission fence runs; the page.updated workspace
+ * event lets tree UIs refetch. Title changes refresh derived title paths on
+ * the next body change (H01 contract).
+ */
+const pagePatchSchema = z.strictObject({
+  workspaceId: z.string().uuid(),
+  pageId: z.string().uuid(),
+  patch: z.strictObject({
+    title: z.string().min(1).max(500).optional(),
+    icon: z.string().max(200).nullable().optional(),
+    cover: z.string().max(2048).nullable().optional(),
+  }).refine((value) => Object.keys(value).length > 0, 'at least one field'),
+});
+
+export async function updateAuthorizedPage(db: KnowledgeTenantTransaction, input: unknown): Promise<PagePlacement> {
+  const parsed = parse(pagePatchSchema, input);
+  const scope = { workspaceId: parsed.workspaceId, pageId: parsed.pageId };
+  const node = await lockPermissionPage(db, scope);
+  if (!node || node.deletedAt !== null) throw new KnowledgePageError('PAGE_NOT_FOUND');
+  await db.update(page).set({ ...parsed.patch, updatedAt: sql`clock_timestamp()` })
+    .where(and(eq(page.workspaceId, scope.workspaceId), eq(page.id, scope.pageId)));
+  return placement({ ...node, ...parsed.patch });
+}
+
 export async function moveAuthorizedPage(db: KnowledgeTenantTransaction, input: unknown): Promise<PagePlacement> {
   const parsed = parse(movePageInputSchema, input);
   const scope = { workspaceId: parsed.workspaceId, pageId: parsed.pageId };

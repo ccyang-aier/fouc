@@ -22,3 +22,9 @@ export interface KnowledgeAgentToolContext {
   readonly search?: KnowledgeAgentSearchModels;
   readonly signal?: AbortSignal;
 }
+
+/** J03 写工具的附加上下文:Agent 任务身份(建议 author/actor)与协作宿主(可选)。 */
+export interface KnowledgeAgentWriteContext extends KnowledgeAgentToolContext {
+  readonly agent: { taskId: string };
+  readonly hocuspocus?: import('@hocuspocus/server').Hocuspocus;
+}

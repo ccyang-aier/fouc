@@ -2,7 +2,7 @@
 
 > 本表由 `knowledgebase-tasks.json` 生成。修改任务和证据后运行 `node scripts/verify-knowledge-tasks.mjs --write`。
 
-设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 59 项。
+设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 60 项。
 
 ## 实施约束
 
@@ -41,7 +41,9 @@
 - H05 搜索 UI 与块引用导航
 - U08 浏览器哈希上传与进度控制
 - W05 媒体派生任务编排与重索引
-- J03 CRDT 建议写入 Agent 工具
+- J04 逐块流式 AI 与任务撤销
+- J07 持久 AI 长任务与审批恢复
+- K01 MCP Streamable HTTP 服务
 
 ## 拓扑排序任务表
 
@@ -125,7 +127,7 @@
 | [ ] 待实施 | W05 | 媒体派生任务编排与重索引<br>backend/src/knowledge/workers/media.ts | §8.2 / §7.1 | W02, W03, W04, H01, H04, J02 | graphile-worker 调用无状态 HTTP；幂等派生结果写库并索引引用块；图片/录音/PDF 可搜索且 AI 可读 | — |
 | [ ] 待实施 | U10 | 媒体派生内容与处理状态 UI<br>src/features/knowledge/assets/ | §8.2 | W05, U09 | 排队/处理中/成功/失败可见；OCR/时间戳转录/解析预览、重试；引用点击定位片段 | — |
 | [x] 已验收 | J01 | 上下文组装与引用校验<br>backend/src/knowledge/ai/context.ts | §9.6 | M02, H04 | 规则→大纲→邻块→检索→历史顺序；预算超限从检索尾部截断；回答 blockId 引用校验与权限过滤 | [40 项 ai 测试(6 新增):五腿顺序组装(规则→大纲→焦点邻块→检索→历史)、UTF-8 预算仅检索腿尾整条剔除、引用校验折叠无权/不存在/回收为同一 invalid;契约入 shared](../../core/tasks/knowledgebase-acceptance/2026-09-26-context.md) |
-| [ ] 待实施 | J03 | CRDT 建议写入 Agent 工具<br>backend/src/knowledge/ai/tools/ | §9.2 / §9.3 | J02, S01, B01, B00 | insert/replace/delete/create/update_properties 权限一致；openDirectConnection+agent:taskId；新 ID/建议默认；无 SQL 正文双写 | — |
+| [x] 已验收 | J03 | CRDT 建议写入 Agent 工具<br>backend/src/knowledge/ai/tools/ | §9.2 / §9.3 | J02, S01, B01, B00 | insert/replace/delete/create/update_properties 权限一致；openDirectConnection+agent:taskId；新 ID/建议默认；无 SQL 正文双写 | [19 项工具测试(6 新增)+69 项回归:三正文工具按 S01 语义 Y 层定点建议落稿(openDirectConnection agent actor/无宿主等价兜底,无 SQL 双写)、新 blockId、审阅前原文保留;create/update_properties 走 T01 服务与 P03 授权](../../core/tasks/knowledgebase-acceptance/2026-09-26-write-tools.md) |
 | [x] 已验收 | B09 | 服务端 Agent Awareness 发布<br>backend/src/knowledge/collaboration/agent-awareness.ts | §5.5 / §9.3 | B01, B00 | 服务端 direct connection 以 Agent 身份发布 cursor/selection/正在编辑状态；任务结束和异常清理，协议客户端能接收 | [真实监听器+官方 provider 客户端 3 项测试:agent 状态(含 taskId/kind/cursor)实时可见、stop/abort 清理幂等、非 page 文档名拒绝](../../core/tasks/knowledgebase-acceptance/2026-09-26-agent-awareness.md) |
 | [ ] 待实施 | J04 | 逐块流式 AI 与任务撤销<br>backend/src/knowledge/ai/streaming.ts | §9.3 | J03, G01, B09, J01 | 完整块到达即写共享 Y.Doc；Awareness 显示 Agent 光标；取消后部分结果可审阅；整体任务撤销不影响人编辑 | — |
 | [ ] 待实施 | J05 | 划词改写/翻译/总结与 /ai 续写<br>src/features/knowledge/ai/inline/ | §9.4 | J04, S02, E06 | 选区和邻块作为上下文，建议回原处；流式/取消/失败/重试/直接应用；键盘入口完整 | — |
@@ -559,6 +561,7 @@ flowchart TD
   style W04 fill:#e4f4e9,stroke:#42845c
   style J02 fill:#e4f4e9,stroke:#42845c
   style J01 fill:#e4f4e9,stroke:#42845c
+  style J03 fill:#e4f4e9,stroke:#42845c
   style B09 fill:#e4f4e9,stroke:#42845c
 ```
 

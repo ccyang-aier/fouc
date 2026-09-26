@@ -683,10 +683,17 @@
       "dependencies": [
         "U03"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "src/features/knowledge/collaboration/metadata-queue.ts",
       "acceptance": "UUID 操作持久化，离线乐观、重连按序提交；循环/无权失败回滚；重复重试不重复创建",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "6 项测试/29 断言:离线入队持久化+新实例按序重放、transient 保留/永久拒绝回滚继续、重复 operationId 去重、重试原样载荷、损坏 storage 清空、online 事件续传;失败分类复用 isRetryableKnowledgeError,乐观/回滚复用 U03 代数",
+          "command": "bun test src/features/knowledge/collaboration/metadata-queue.test.ts; bunx eslint --max-warnings=0 src/features/knowledge/collaboration; node scripts/verify-knowledge-boundaries.mjs",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-u04-metadata-queue.md"
+        }
+      ]
     },
     {
       "id": "B01",

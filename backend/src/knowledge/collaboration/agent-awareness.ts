@@ -61,7 +61,7 @@ export async function createAgentAwarenessSession(hocuspocus: Hocuspocus, option
     stopped = true;
     options.signal?.removeEventListener('abort', stop);
     try {
-      removeAwarenessStates(scratch, [scratchDoc.clientID]);
+      removeAwarenessStates(scratch, [scratchDoc.clientID], 'agent');
       apply();
     } finally {
       scratch.destroy();

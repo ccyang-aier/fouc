@@ -13,11 +13,18 @@
   "dependencies": {
     "@agentclientprotocol/claude-agent-acp": "0.39.0",
     "@agentclientprotocol/sdk": "^1.4.0",
+    "@ai-sdk/anthropic": "4.0.65",
+    "@ai-sdk/cohere": "4.0.50",
+    "@ai-sdk/openai-compatible": "3.0.57",
+    "@better-auth/drizzle-adapter": "1.7.6",
     "@fouc/shared": "workspace:*",
     "@zed-industries/codex-acp-win32-x64": "0.9.5",
+    "ai": "7.0.116",
+    "better-auth": "1.7.6",
     "drizzle-orm": "0.45.3",
     "hono": "^4.13.5",
     "mysql2": "3.24.4",
+    "nodemailer": "10.0.10",
     "pg": "8.23.0",
     "yjs": "13.6.33",
     "zod": "4.6.5"

@@ -346,10 +346,17 @@
         "D03",
         "R01"
       ],
-      "status": "in_progress",
+      "status": "accepted",
       "deliverables": "backend/src/knowledge/auth/",
       "acceptance": "注册/登录/登出/邮箱验证、会话撤销真实往返；cookie/CORS 配置对 Web 与桌面有效",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "真实 PG+HTTP 邮箱验证与会话撤销、Cookie/CORS/CSRF；15 测试/167 断言",
+          "command": "bun test backend/src/knowledge/auth; pnpm backend:typecheck",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-authentication.md"
+        }
+      ]
     },
     {
       "id": "A02",
@@ -393,7 +400,7 @@
         "A01",
         "D03"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "deliverables": "backend/src/knowledge/organization/",
       "acceptance": "个人和团队走同一逻辑；owner/admin/member/guest 与群组加入移除可操作且越权失败；成员邀请及身份绑定通过真实流程",
       "evidence": []
@@ -1218,10 +1225,17 @@
       "dependencies": [
         "W01"
       ],
-      "status": "in_progress",
+      "status": "accepted",
       "deliverables": "services/media-worker/",
       "acceptance": "真实音视频样本生成带时间戳分段文本；模型可配置；失败、超时与重试可观察",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "CPU Whisper 真实音频/MP4及签名S3链路；33 Python+8客户端，失败/超时/取消/重试",
+          "command": ".\\services\\media-worker\\.venv\\Scripts\\python.exe -m pytest -q services/media-worker; bun test backend/src/knowledge/media/client.test.ts; node services/media-worker/scripts/check-whisper.mjs",
+          "verifiedAt": "2026-09-26",
+          "path": "services/media-worker/ACCEPTANCE-WHISPER.md"
+        }
+      ]
     },
     {
       "id": "W03",
@@ -1232,7 +1246,7 @@
       "dependencies": [
         "W01"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "deliverables": "services/media-worker/",
       "acceptance": "真实 PDF/Office 表格/图片/标题解析成结构化 Markdown；空/损坏样本报错清楚",
       "evidence": []

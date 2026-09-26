@@ -1,0 +1,61 @@
+import { randomUUID } from 'node:crypto';
+import type { Pool } from 'pg';
+import { betterAuth } from 'better-auth';
+import { APIError } from 'better-auth/api';
+import { drizzleAdapter } from '@better-auth/drizzle-adapter';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { authAccount, authSession, authUser, authVerification } from '../../database/knowledge/schema';
+import { knowledgeAuthBasePath, knowledgeAuthClientIpHeader, validateKnowledgeAuthConfig } from './config';
+import type { KnowledgeAuthConfig } from './config';
+import type { AuthEmailTransport } from './email';
+
+export type AuthDiagnostic = 'auth_error' | 'auth_warning' | 'email_delivery_failed';
+
+/** Uses the ordinary application pool, never the DDL/administrator connection. */
+export function createKnowledgeAuth(options: { pool: Pool; config: KnowledgeAuthConfig; email: AuthEmailTransport; onDiagnostic?: (event: AuthDiagnostic) => void }) {
+  const config = validateKnowledgeAuthConfig(options.config);
+  const schema = { user: authUser, session: authSession, account: authAccount, verification: authVerification };
+  const checkedName = (name: string) => {
+    const value = name.trim();
+    if (!value || value.length > 120) throw new APIError('BAD_REQUEST', { code: 'INVALID_NAME', message: 'Name must contain 1–120 characters.' });
+    return value;
+  };
+  return betterAuth({
+    appName: 'Fouc', baseURL: config.baseUrl, basePath: knowledgeAuthBasePath, secret: config.secret,
+    trustedOrigins: [...config.trustedOrigins],
+    database: drizzleAdapter(drizzle(options.pool, { schema }), { provider: 'pg', schema, transaction: true }),
+    emailAndPassword: { enabled: true, requireEmailVerification: true, autoSignIn: false, minPasswordLength: 12, maxPasswordLength: 128 },
+    emailVerification: {
+      sendOnSignUp: true, sendOnSignIn: true, autoSignInAfterVerification: false, expiresIn: 3_600,
+      async sendVerificationEmail({ user, url }) {
+        try { await options.email.sendVerification({ to: user.email, url }); }
+        catch {
+          options.onDiagnostic?.('email_delivery_failed');
+          throw new APIError('SERVICE_UNAVAILABLE', { code: 'EMAIL_DELIVERY_FAILED', message: 'Verification email could not be sent. Please retry later.' });
+        }
+      },
+    },
+    session: { expiresIn: 7 * 24 * 3_600, updateAge: 24 * 3_600, freshAge: 15 * 60, cookieCache: { enabled: false } },
+    advanced: {
+      database: { generateId: () => randomUUID() },
+      cookiePrefix: 'fouc', useSecureCookies: config.baseUrl.startsWith('https:'),
+      defaultCookieAttributes: { httpOnly: true, sameSite: config.cookieMode === 'cross-site' ? 'none' : 'lax', path: '/' },
+      disableCSRFCheck: false, disableOriginCheck: false, trustedProxyHeaders: false,
+      ipAddress: { ipAddressHeaders: [knowledgeAuthClientIpHeader] },
+    },
+    rateLimit: {
+      enabled: true, storage: 'memory', window: 60, max: 120,
+      customRules: { '/sign-in/email': { window: 60, max: 20 }, '/sign-up/email': { window: 60, max: 10 }, '/send-verification-email': { window: 60, max: 5 } },
+    },
+    databaseHooks: {
+      user: {
+        create: { before: async (user) => ({ data: { ...user, name: checkedName(user.name) } }) },
+        update: { before: async (user) => ({ data: user.name === undefined ? user : { ...user, name: checkedName(user.name) } }) },
+      },
+    },
+    logger: { level: 'warn', log: (level) => options.onDiagnostic?.(level === 'error' ? 'auth_error' : 'auth_warning') },
+    onAPIError: { onError: () => { options.onDiagnostic?.('auth_error'); } },
+  });
+}
+
+export type KnowledgeAuth = ReturnType<typeof createKnowledgeAuth>;

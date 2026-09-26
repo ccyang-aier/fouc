@@ -75,3 +75,14 @@ test('cancel validates IDs and treats completed tasks as absent', async () => {
   assert.equal(await connection.cancel(randomUUID()), false);
   await assert.rejects(connection.cancel('../escape'), hasCode('invalid_request'));
 });
+
+test('processor configuration and media errors retain actionable retry semantics', async () => {
+  for (const code of ['dependency_missing', 'model_unavailable', 'device_unavailable']) {
+    await assert.rejects(client(async () => failure(code, 503)).process(input()),
+      (error: unknown) => error instanceof MediaWorkerError && error.code === code && error.status === 503 && !error.retryable);
+  }
+  for (const code of ['invalid_media', 'unsupported_language']) {
+    await assert.rejects(client(async () => failure(code, 422)).process(input()), hasCode(code));
+  }
+  await assert.rejects(client(async () => failure('media_too_long', 413)).process(input()), hasCode('media_too_long'));
+});

@@ -2,7 +2,7 @@
 
 无状态 FastAPI HTTP 服务。TypeScript/Graphile Worker 负责业务鉴权、队列重试、资产记录与 `asset.derived` 写入；Python 只下载一次短期 S3 资源，在独立子进程中解析，再返回 JSON。它不读取数据库、Redis、S3 长期凭据或模型网关密钥，没有自己的业务存储或任务队列。
 
-W01 只交付安全的 HTTP/执行边界。生产注册表当前为空，Whisper（W02）与 Docling（W03）尚未实现；对应请求明确返回 `503 processor_unavailable`，不会生成占位转写或伪造 Markdown。
+Whisper（W02）通过 `faster-whisper` 真实本地推理实现，模型准备完成后注册 `transcribe`。Docling（W03）仍未实现，文档解析明确返回 `503 processor_unavailable`，不会生成占位 Markdown。历史 W01 基础层验收保留在 `ACCEPTANCE.md`，真实转写验收见 `ACCEPTANCE-WHISPER.md`。
 
 ## 本地开发
 
@@ -12,6 +12,7 @@ W01 只交付安全的 HTTP/执行边界。生产注册表当前为空，Whisper
 python -m venv services/media-worker/.venv
 .\services\media-worker\.venv\Scripts\python.exe -m pip install -r services/media-worker/requirements-dev.txt
 python services/media-worker/dev.py init
+.\services\media-worker\.venv\Scripts\python.exe services/media-worker/scripts/prepare_whisper.py
 python services/media-worker/dev.py start
 python services/media-worker/dev.py verify
 ```
@@ -53,7 +54,9 @@ Python 服务当前不自动热重载。已实际发现 Uvicorn 的 Windows relo
 
 成功响应包含 `requestId / operation / assetHash / derived / processor / elapsedMs`。`derived` 是共享 `assetDerivedSchema` 的 ready 子集：文档只返回 `{ status: 'ready', markdown }`，音视频只返回 `{ status: 'ready', transcript: [{ start, end, text }] }`。时间戳必须非负且 end 不早于 start；不得返回与请求操作不匹配的结果。
 
-错误统一为 `{ requestId: string | null, error: { code, message, retryable } }`，不回显请求内容、下载 URL、token、模型异常文本或文件路径。重要状态：401 鉴权、409 同 requestId 正在运行、413 资源超限、422 输入/资源完整性错误、429 并发已满、499 已取消、502 下载/处理失败、503 能力未安装、504 下载或任务超时。输入、HTTP 响应与客户端都拒绝未知字段；客户端还复核 requestId、assetHash 与操作，避免错配派生结果。
+错误统一为 `{ requestId: string | null, error: { code, message, retryable } }`，不回显请求内容、下载 URL、token、模型异常文本或文件路径。重要状态：401 鉴权、409 同 requestId 正在运行、413 资源超限、422 输入/资源完整性错误、429 并发已满、499 已取消、502 下载/处理失败、503 能力/模型/计算环境不可用、504 下载或任务超时。输入、HTTP 响应与客户端都拒绝未知字段；客户端还复核 requestId、assetHash 与操作，避免错配派生结果。
+
+处理器进一步区分 `dependency_missing / model_unavailable / device_unavailable / invalid_media / media_too_long / unsupported_language`，不会回传第三方库异常原文。配置问题、损坏媒体与不支持的语言不可盲目重试；HTTP/下载超时可交给 Graphile Worker 重试，Python 不创建重试队列。
 
 ## 限制与取消
 
@@ -85,16 +88,46 @@ Python 服务当前不自动热重载。已实际发现 Uvicorn 的 Windows relo
 
 后端使用 `backend/src/knowledge/media/client.ts` 的 `createMediaWorkerClient({ baseUrl, token })`，传入 `MEDIA_WORKER_URL` 和相同的 `MEDIA_WORKER_TOKEN`。客户端使用 Node 标准 `fetch / AbortSignal / Buffer`，不依赖 Bun 专有 API；`process(request, signal)` 支持调用方取消。
 
-## W02 / W03 注册接口
+## Whisper 模型与缓存
+
+实现使用 [SYSTRAN faster-whisper](https://github.com/SYSTRAN/faster-whisper/tree/v1.2.1) 和 CTranslate2，本地 PyAV 解码音频或视频的第一条音轨，不执行用户提供的命令。CPU 的 `compute_type=auto` 解析为 int8，CUDA 为 float16；未具备请求的设备/精度时返回明确错误。
+
+`prepare_whisper.py` 是显式模型准备命令。它先读取公开模型元数据，按预算检查总字节数，再固定该次 revision 下载白名单文件，验证字节数和 LFS SHA-256，生成缓存内 `fouc-model.json`。默认 tiny 约 78 MB；下载预算默认 256 MiB，选择大模型时必须显式提高预算。只使用公开匿名下载（`token=False`），不读取用户模型 API Key。短暂下载失败最多安全重试 2 次，不用失败结果冒充已准备。
+
+HTTP 推理只加载本地目录，设置 `local_files_only=True` 和 Hugging Face offline/禁用隐式 token；缺缓存返回 `model_unavailable`，不会在请求过程中联网补下载。缓存是可重新生成的模型文件，不是业务资产存储，默认位于被精确忽略的 `.cache/models/`。
+
+以下变量均以 `MEDIA_WORKER_WHISPER_` 开头：
+
+| 后缀 | 默认值 | 说明 |
+| --- | --- | --- |
+| `MODEL` | `tiny` | tiny/base/small/medium（含 `.en`）、large-v3 或 turbo |
+| `CACHE_DIR` | 本服务 `.cache/models/` | 显式准备的独立缓存根目录 |
+| `MODEL_PATH` | 未设置 | 可选，直接加载已转换的本地 CTranslate2 模型目录；不下载 |
+| `BEAM_SIZE` | `5` | 1–10，转写使用 temperature 0 |
+| `VAD_FILTER` | `true` | Silero VAD；时间戳由真实推理返回并保留原始音轨坐标 |
+| `MAX_AUDIO_SECONDS` | `3600` | 1–14400；逐帧统计实际 16 kHz 解码采样数，防止仅依赖容器元数据 |
+| `MAX_DOWNLOAD_BYTES` | 256 MiB | 仅准备命令使用，最大 8 GiB |
+
+真实模型验证：
+
+```powershell
+.\services\media-worker\.venv\Scripts\python.exe services/media-worker/scripts/prepare_samples.py
+bun build backend/src/knowledge/media/client.ts --target=node --format=esm --outfile services/media-worker/.runtime/client.mjs
+node services/media-worker/scripts/check-whisper.mjs
+```
+
+样本命令从 OpenAI 官方 Whisper 测试仓库下载真实 JFK 语音，并用已有 FFmpeg 封装为含 H.264 视频轨/AAC 音轨的 MP4；两者同源，不代表两个独立声学样本。验收命令仅读取本项目 MinIO 开发凭据，把随机测试对象上传到独立知识库 bucket，使用真实短期签名 GET 调用生产 HTTP 接口，完成后删除这些测试对象；不会打印凭据或签名 URL。音视频原文件和无秘密的验收 JSON 保留在忽略目录，供复跑。
+
+## 处理器注册接口
 
 在 `media_worker/processors.py` 的 `default_registry()` 中注册真实实现：
 
 ```python
-registry.register("transcribe", ProcessorSpec("whisper", "media_worker.whisper:transcribe"))
+registry.register("transcribe", whisper_spec())
 registry.register("parse_document", ProcessorSpec("docling", "media_worker.docling:parse_document"))
 ```
 
-注册函数接受 `ProcessorInput`（本次只读源文件、MIME、language、device/index、compute_type、cpu_threads），同步返回 ready 派生结果 dict。入口必须由受信任代码注册，HTTP 不能传入模块路径。函数参数不含 S3 签名 URL 或 Worker token；子进程进入解析前还会从自身环境移除 Worker token。实现可以使用同一临时目录，不得将资产或结果持久化到业务存储；模型下载缓存由 W02/W03 单独定义。
+注册函数接受 `ProcessorInput`（本次只读源文件、MIME、language、device/index、compute_type、cpu_threads），以及 `ProcessorSpec.options` 传入的受信任静态配置，同步返回 ready 派生结果 dict。`whisper_spec()` 会检查依赖和本地模型是否已准备；不可用的注册项不会出现在 operations 中，但调用时会得到具体错误码。入口必须由受信任代码注册，HTTP 不能传入模块路径或覆盖模型配置。函数参数不含 S3 签名 URL 或 Worker token；子进程进入解析前还会从自身环境移除 Worker token。实现可以使用同一临时目录，不得将资产或结果持久化到业务存储。处理器可抛出 `ProcessorFailure` 的白名单错误码，其他异常统一脱敏。
 
 ## 验证
 

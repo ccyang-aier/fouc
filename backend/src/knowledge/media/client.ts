@@ -42,6 +42,7 @@ const errorCodes = [
   'resource_too_large', 'redirect_forbidden', 'size_mismatch', 'hash_mismatch', 'download_failed',
   'download_timeout', 'processor_unavailable', 'processing_failed', 'result_too_large',
   'worker_unavailable', 'worker_busy', 'duplicate_request', 'task_timeout', 'task_cancelled', 'task_not_found',
+  'dependency_missing', 'model_unavailable', 'device_unavailable', 'invalid_media', 'media_too_long', 'unsupported_language',
 ] as const;
 const errorSchema = z.strictObject({
   requestId: entityIdSchema.nullable(),

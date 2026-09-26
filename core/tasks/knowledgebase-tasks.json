@@ -152,10 +152,17 @@
       "dependencies": [
         "E02"
       ],
-      "status": "in_progress",
+      "status": "accepted",
       "deliverables": "shared/src/knowledge/markdown/",
       "acceptance": "GFM、嵌套块、指令、公式、wiki 链接、marks 与所有一方块往返不丢语义；明确不支持输入报错",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "55 项真实 remark 往返测试；27 块、全部 marks、嵌套、保真元数据与显式错误",
+          "command": "bun test shared/src/knowledge/schema shared/src/knowledge/markdown shared/src/knowledge/collaboration; pnpm shared:typecheck",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-markdown.md"
+        }
+      ]
     },
     {
       "id": "M02",
@@ -169,7 +176,7 @@
         "M01",
         "C01"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "deliverables": "shared/src/knowledge/markdown/",
       "acceptance": "同一管线开关产生 blockId 锚点；容器子块和媒体文本完整；可按锚点读取且引用稳定",
       "evidence": []
@@ -772,10 +779,17 @@
       "dependencies": [
         "E02"
       ],
-      "status": "in_progress",
+      "status": "accepted",
       "deliverables": "shared/src/knowledge/schema/suggestions/",
       "acceptance": "插入带 mark、删除保留内容；接受/拒绝按 suggestionId 原子执行；范围/嵌套/替换/撤销正确",
-      "evidence": []
+      "evidence": [
+        {
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md",
+          "summary": "建议编辑/嵌套块/原子审阅与真实 Yjs 往返 11 项测试通过",
+          "command": "bun test shared/src/knowledge/schema/suggestions; pnpm shared:typecheck; pnpm backend:typecheck",
+          "verifiedAt": "2026-09-26"
+        }
+      ]
     },
     {
       "id": "S02",
@@ -1176,10 +1190,17 @@
         "C01",
         "R01"
       ],
-      "status": "in_progress",
+      "status": "accepted",
       "deliverables": "services/media-worker/",
       "acceptance": "FastAPI 健康/解析接口有资源上限与任务取消；请求携带短期资源，不访问 DB/队列；CPU/GPU 配置可解析；真实模型解析分别 W02/W03 验收",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "27 Python、7 Bun/Node 客户端用例与真实 HTTP/子进程取消；隐藏服务常驻",
+          "command": ".\\services\\media-worker\\.venv\\Scripts\\python.exe -m pytest -q services/media-worker; bun test backend/src/knowledge/media/client.test.ts; python services/media-worker/dev.py verify",
+          "verifiedAt": "2026-09-26",
+          "path": "services/media-worker/ACCEPTANCE.md"
+        }
+      ]
     },
     {
       "id": "W02",
@@ -1190,7 +1211,7 @@
       "dependencies": [
         "W01"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "deliverables": "services/media-worker/",
       "acceptance": "真实音视频样本生成带时间戳分段文本；模型可配置；失败、超时与重试可观察",
       "evidence": []

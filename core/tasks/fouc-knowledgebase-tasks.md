@@ -2,7 +2,7 @@
 
 > 本表由 `knowledgebase-tasks.json` 生成。修改任务和证据后运行 `node scripts/verify-knowledge-tasks.mjs --write`。
 
-设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 12 项。
+设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 15 项。
 
 ## 实施约束
 
@@ -25,7 +25,8 @@
 
 ## 可开始的任务
 
-检查进行中和待验收任务。
+- V02 块与行内历史差异算法
+- W03 Docling PDF/Office 解析
 
 ## 拓扑排序任务表
 
@@ -36,8 +37,8 @@
 | [x] 已验收 | C01 | 领域实体、权限、事件与 API 输入契约<br>shared/src/knowledge/contracts/ | §3 / §3.1 / §3.2 / §3.3 / §6.1 | F01 | 运行时校验 UUID、workspace 作用域、页面类型、属性、主体和事件；错误输入被拒绝；前后端复用 | [7 组领域契约行为用例与两层类型检查通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
 | [x] 已验收 | E01 | 一方块注册表与共享 ProseMirror Schema<br>shared/src/knowledge/schema/ | §4 / §4.1 / §4.2 / §10 | F01 | 所有设计块类型可构造和序列化；通过一个定义注册新块；React NodeView 不进入共享包 | [27 种块、同源 Schema 与安全序列化 15 测试通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
 | [x] 已验收 | E02 | blockId 完整性与粘贴来源插件<br>shared/src/knowledge/schema/block-id.ts | §4.3 / §12 | E01 | 新建、拆分、合并、复制、跨页粘贴、嵌套和协作重复均满足 ID 规则；服务端可检测修复 | [真实 ProseMirror 事务/剪贴板/服务端修复 15 项测试通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
-| [ ] 进行中 | M01 | 标准 Markdown 双向管线<br>shared/src/knowledge/markdown/ | §4.4 | E02 | GFM、嵌套块、指令、公式、wiki 链接、marks 与所有一方块往返不丢语义；明确不支持输入报错 | — |
-| [ ] 待实施 | M02 | AI 方言锚点与媒体派生文本<br>shared/src/knowledge/markdown/ | §4.4 / §7.1 / §9.6 | M01, C01 | 同一管线开关产生 blockId 锚点；容器子块和媒体文本完整；可按锚点读取且引用稳定 | — |
+| [x] 已验收 | M01 | 标准 Markdown 双向管线<br>shared/src/knowledge/markdown/ | §4.4 | E02 | GFM、嵌套块、指令、公式、wiki 链接、marks 与所有一方块往返不丢语义；明确不支持输入报错 | [55 项真实 remark 往返测试；27 块、全部 marks、嵌套、保真元数据与显式错误](../../core/tasks/knowledgebase-acceptance/2026-09-26-markdown.md) |
+| [ ] 进行中 | M02 | AI 方言锚点与媒体派生文本<br>shared/src/knowledge/markdown/ | §4.4 / §7.1 / §9.6 | M01, C01 | 同一管线开关产生 blockId 锚点；容器子块和媒体文本完整；可按锚点读取且引用稳定 | — |
 | [x] 已验收 | P01 | 主体展开与纯权限继承计算<br>backend/src/knowledge/permissions/ | §6 / §6.1 / §6.2 | C01 | 四级权限、用户/群组/workspace/link、继承中断、teamspace 根默认合并用行为用例覆盖 | [权限继承/四级主体/撤权窗口 6 组行为测试通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
 | [x] 已验收 | F02 | 模型任务档位与安全配置契约<br>shared/src/knowledge/contracts/models.ts; backend/src/knowledge/ai/config.ts | §9.1 | C01 | fast/smart/embed/rerank/vision，平台/BYOK/Ollama 层级解析；密钥只留服务端；模型/维度验证 | [模型档位/来源与密钥归属 3 组测试通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
 | [x] 已验收 | D01 | Postgres 当前唯一 schema 与约束<br>backend/src/database/knowledge/ | §3.1 / §3.2 / §3.3 / §10 | C01, F02 | Drizzle 当前表模型与初始化 SQL 包含全部表/租户外键/ltree/vector/索引；静态 schema 约束测试及类型检查通过；真实执行单独由 D03 验收 | [24 张租户表与 4 张认证表；约束与 SQL 漂移静态验收通过，真实初始化另行验收](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
@@ -78,7 +79,7 @@
 | [ ] 待实施 | E04 | 基础块快捷输入与键盘编辑<br>src/features/knowledge/editor/ | §4.1 / §4.4 | E03 | 段落、标题、列表、待办、引用、代码、公式可鼠标/键盘插入编辑；输入规则、格式菜单可访问 | — |
 | [ ] 待实施 | E05 | 表格、分栏和 Callout NodeView<br>src/features/knowledge/editor/blocks/ | §4.1 / §4.2 | E03 | 嵌套编辑/增删/拖拽/键盘不损坏 blockId；表格编辑、分栏自适应、callout 风格精致；共享 schema 一致 | — |
 | [ ] 待实施 | E06 | Slash 菜单与 Markdown/HTML 粘贴<br>src/features/knowledge/editor/commands/ | §4.2 / §4.4 / §9.4 | E04, M01 | 菜单由注册表生成、检索、方向键/回车/Esc；Markdown/HTML/纯文本识别；不执行不安全 HTML | — |
-| [ ] 进行中 | S01 | 建议 insert/delete marks 与事务转换<br>shared/src/knowledge/schema/suggestions/ | §4.5 | E02 | 插入带 mark、删除保留内容；接受/拒绝按 suggestionId 原子执行；范围/嵌套/替换/撤销正确 | — |
+| [x] 已验收 | S01 | 建议 insert/delete marks 与事务转换<br>shared/src/knowledge/schema/suggestions/ | §4.5 | E02 | 插入带 mark、删除保留内容；接受/拒绝按 suggestionId 原子执行；范围/嵌套/替换/撤销正确 | [建议编辑/嵌套块/原子审阅与真实 Yjs 往返 11 项测试通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
 | [ ] 待实施 | S02 | 建议模式 UI 与批量审阅<br>src/features/knowledge/editor/review/ | §4.5 / §9.3 | S01, E03, B08 | 人/AI 同一路径；作者/时间/来源可见；逐条/全部接受拒绝；只读不允许修改；长文滚动定位 | — |
 | [ ] 待实施 | V01 | 自动、结束会话与手动检查点<br>backend/src/knowledge/collaboration/checkpoints.ts | §5.2 | B02, Q01 | 超过 10 分钟且有编辑、结束会话、命名版本按策略写；无变化不重复；作者集合正确；GC 保持开启 | — |
 | [ ] 待实施 | V02 | 块与行内历史差异算法<br>shared/src/knowledge/history/ | §5.2 | M01, C01 | 新增/删除/移动/修改块与行内差异可解释；ID 用于稳定比对；空页/相邻版本正确 | — |
@@ -101,8 +102,8 @@
 | [ ] 待实施 | H05 | 搜索 UI 与块引用导航<br>src/features/knowledge/search/ | §7.2 / §9.4 | H04, U02 | 关键词/语义混合查询、过滤/取消/空状态、键盘导航、引用预览；点击打开准确块并高亮 | — |
 | [ ] 待实施 | U08 | 浏览器哈希上传与进度控制<br>src/features/knowledge/assets/ | §8 / §8.1 | AS01, U02 | 浏览器 SHA256、预签名直传、完整性确认闭环；秒传/进度/取消/重试/错误均有反馈；通过真实后端与 S3 验证 | — |
 | [ ] 待实施 | U09 | 图片/音频/视频/文件/嵌入 NodeView<br>src/features/knowledge/editor/blocks/media/ | §4.1 / §8.1 / §12 | U08, E03 | 插入 asset:hash，上传进度/取消/失败重试，媒体懒加载；安全嵌入；替代文本、下载与键盘可用 | — |
-| [ ] 进行中 | W01 | 无状态 Media Worker HTTP 服务<br>services/media-worker/ | §8.2 / §11 | C01, R01 | FastAPI 健康/解析接口有资源上限与任务取消；请求携带短期资源，不访问 DB/队列；CPU/GPU 配置可解析；真实模型解析分别 W02/W03 验收 | — |
-| [ ] 待实施 | W02 | Whisper 音视频时间戳转写<br>services/media-worker/ | §8.2 | W01 | 真实音视频样本生成带时间戳分段文本；模型可配置；失败、超时与重试可观察 | — |
+| [x] 已验收 | W01 | 无状态 Media Worker HTTP 服务<br>services/media-worker/ | §8.2 / §11 | C01, R01 | FastAPI 健康/解析接口有资源上限与任务取消；请求携带短期资源，不访问 DB/队列；CPU/GPU 配置可解析；真实模型解析分别 W02/W03 验收 | [27 Python、7 Bun/Node 客户端用例与真实 HTTP/子进程取消；隐藏服务常驻](../../services/media-worker/ACCEPTANCE.md) |
+| [ ] 进行中 | W02 | Whisper 音视频时间戳转写<br>services/media-worker/ | §8.2 | W01 | 真实音视频样本生成带时间戳分段文本；模型可配置；失败、超时与重试可观察 | — |
 | [ ] 待实施 | W03 | Docling PDF/Office 解析<br>services/media-worker/ | §8.2 | W01 | 真实 PDF/Office 表格/图片/标题解析成结构化 Markdown；空/损坏样本报错清楚 | — |
 | [ ] 待实施 | W04 | 图片视觉描述与 OCR<br>backend/src/knowledge/workers/vision.ts | §8.2 | AS01, G01 | 真实图片经 vision 档生成描述/OCR；结果写 asset.derived；权限与模型用量可追踪 | — |
 | [ ] 待实施 | J02 | 共用只读 Agent 工具<br>backend/src/knowledge/ai/tools/ | §9.2 / §9.5 | H04, M02, T02, L01 | search/read_page/query_database/list_pages/get_backlinks 同发起者授权；range/filter/sort 有验证、引用准确 | — |
@@ -490,6 +491,7 @@ flowchart TD
   style C01 fill:#e4f4e9,stroke:#42845c
   style E01 fill:#e4f4e9,stroke:#42845c
   style E02 fill:#e4f4e9,stroke:#42845c
+  style M01 fill:#e4f4e9,stroke:#42845c
   style P01 fill:#e4f4e9,stroke:#42845c
   style F02 fill:#e4f4e9,stroke:#42845c
   style D01 fill:#e4f4e9,stroke:#42845c
@@ -497,6 +499,8 @@ flowchart TD
   style D02 fill:#e4f4e9,stroke:#42845c
   style R01 fill:#e4f4e9,stroke:#42845c
   style B00 fill:#e4f4e9,stroke:#42845c
+  style S01 fill:#e4f4e9,stroke:#42845c
+  style W01 fill:#e4f4e9,stroke:#42845c
 ```
 
 ## 设计覆盖矩阵

@@ -94,6 +94,22 @@
 
 ## 原始回归基线
 
+## S01 · 建议编辑与原子审阅
+
+- `bun test shared/src/knowledge/schema/suggestions`：11 passed / 0 failed；插入、保留删除、成对替换、编辑自己的待审插入、已有删除不重复标记、嵌套列表整块替换、媒体/公式、指定 ID 幂等审阅、批量审阅/撤销均通过。
+- `bun test shared/src/knowledge/schema shared/src/knowledge/collaboration`：52 passed / 0 failed；`pnpm shared:typecheck`、`pnpm backend:typecheck`、定向 ESLint 与架构边界通过。
+- 真实 Yjs 二进制副本往返保留文字和非文本节点的待审状态；多建议一起接受只产生一次 Yjs update，可作为一个本地操作撤销，人工新增内容仍在。
+- 实测澄清设计 4.5 的表示边界：y-prosemirror 1.3.7 仅序列化 text marks，非文本节点 marks 会丢失。因此正文仍使用两个 suggestion marks，完整块/媒体/行内原子节点由注册表集中保存同结构 annotations 属性；不并存历史 schema 或兼容分支。详见共享 suggestions/README.md 与往返测试。
+- 边界：共享命令生成实际事务，尚未声称键盘/IME、审阅侧栏或 AI 服务已经接入；结构命令需按完整块生成两份可审结构，不把删除段落边界伪装成删文字。UI 集成在 E03/S02/E06/Z06 验收。
+
+## AI 凭据连通性补充
+
+- 用户指定的智谱 Chat Completion 端点与 `glm-5.3-flash` 进行一次仅含 `Reply with exactly OK.` 的短请求，HTTP 200、文本返回、finish_reason=stop；prompt 17、completion 3、total 20 tokens。
+- 本地凭据文件被 Git 忽略，没有输出密钥或响应正文；无真实业务内容外发。
+- 这是端点/凭据连通性诊断，不代替 G01 的 AI SDK 网关或 G02 用量持久化验收。
+
+## 最初回归基线
+
 - `pnpm backend:typecheck`：通过（只读审计执行）。
 - `pnpm backend:test`：36 passed / 0 failed，13 files / 151 assertions（只读审计执行）。
 - `http://localhost:3000/`：HTTP 200，Next dev PID 14720，复用并保持运行。

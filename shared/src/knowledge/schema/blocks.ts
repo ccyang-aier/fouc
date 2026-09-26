@@ -12,6 +12,12 @@ const textBlock = (tag: string): NodeSpec => ({
 });
 
 const cellAttributes: NodeSpec['attrs'] = {
+  align: {
+    default: null,
+    validate(value: unknown) {
+      if (value !== null && value !== 'left' && value !== 'right' && value !== 'center') throw new RangeError('Unknown table alignment');
+    },
+  },
   colspan: integerAttribute(1, 1),
   rowspan: integerAttribute(1, 1),
   colwidth: {
@@ -63,7 +69,7 @@ export const KNOWLEDGE_BLOCKS: readonly BlockDefinition[] = Object.freeze([
   }),
   defineBlock({
     name: 'bulletList', schema: { content: 'listItem+', parseDOM: [{ tag: 'ul:not([data-task-list])' }], toDOM: () => ['ul', 0] },
-    markdown: { fromMd: { type: 'list' } }, index: { mode: 'skip' },
+    markdown: { fromMd: { type: 'list', variant: 'unordered' } }, index: { mode: 'skip' },
     slash: { title: '无序列表', keywords: ['bullet', 'list', '列表'], group: 'text' },
   }),
   defineBlock({
@@ -73,16 +79,21 @@ export const KNOWLEDGE_BLOCKS: readonly BlockDefinition[] = Object.freeze([
       parseDOM: [{ tag: 'ol', getAttrs: (element) => ({ start: Number(element.getAttribute('start') ?? 1) }) }],
       toDOM: (node) => ['ol', { start: node.attrs.start }, 0],
     },
-    markdown: { fromMd: { type: 'list' } }, index: { mode: 'skip' },
+    markdown: { fromMd: { type: 'list', variant: 'ordered' } }, index: { mode: 'skip' },
     slash: { title: '有序列表', keywords: ['ordered', 'number', '列表'], group: 'text' },
   }),
   defineBlock({
     name: 'listItem', schema: { group: '', content: 'paragraph block*', defining: true, parseDOM: [{ tag: 'li:not([data-task-item])' }], toDOM: () => ['li', 0] },
-    markdown: { fromMd: { type: 'listItem' } }, index: { mode: 'text' },
+    markdown: { fromMd: { type: 'listItem', variant: 'plain' } }, index: { mode: 'text' },
   }),
   defineBlock({
-    name: 'taskList', schema: { content: 'taskItem+', parseDOM: [{ tag: 'ul[data-task-list]' }], toDOM: () => ['ul', { 'data-task-list': '' }, 0] },
-    markdown: { fromMd: { type: 'list' } }, index: { mode: 'skip' },
+    name: 'taskList',
+    schema: {
+      content: 'taskItem+', attrs: { ordered: { default: false, validate: 'boolean' }, start: integerAttribute(1, 0) },
+      parseDOM: ['ul', 'ol'].map((tag) => ({ tag: `${tag}[data-task-list]`, getAttrs: (element) => ({ ordered: tag === 'ol', start: Number(element.getAttribute('start') ?? 1) }) })),
+      toDOM: (node) => [node.attrs.ordered ? 'ol' : 'ul', { 'data-task-list': '', ...(node.attrs.ordered ? { start: node.attrs.start } : {}) }, 0],
+    },
+    markdown: { fromMd: { type: 'list', variant: 'task' } }, index: { mode: 'skip' },
     slash: { title: '待办列表', keywords: ['todo', 'task', '待办'], group: 'text' },
   }),
   defineBlock({
@@ -92,7 +103,7 @@ export const KNOWLEDGE_BLOCKS: readonly BlockDefinition[] = Object.freeze([
       parseDOM: [{ tag: 'li[data-task-item]', getAttrs: (element) => ({ checked: element.getAttribute('data-checked') === 'true' }) }],
       toDOM: (node) => ['li', { 'data-task-item': '', 'data-checked': String(node.attrs.checked) }, 0],
     },
-    markdown: { fromMd: { type: 'listItem' } }, index: { mode: 'text' },
+    markdown: { fromMd: { type: 'listItem', variant: 'task' } }, index: { mode: 'text' },
   }),
   defineBlock({
     name: 'blockquote', schema: { content: 'block+', defining: true, parseDOM: [{ tag: 'blockquote' }], toDOM: () => ['blockquote', 0] },
@@ -138,10 +149,10 @@ export const KNOWLEDGE_BLOCKS: readonly BlockDefinition[] = Object.freeze([
     name,
     schema: {
       group: '', content: 'block+', isolating: true, tableRole: name === 'tableCell' ? 'cell' : 'header_cell', attrs: cellAttributes,
-      parseDOM: [{ tag: name === 'tableCell' ? 'td' : 'th', getAttrs: (element) => ({ colspan: Number(element.getAttribute('colspan') ?? 1), rowspan: Number(element.getAttribute('rowspan') ?? 1) }) }],
-      toDOM: (node) => [name === 'tableCell' ? 'td' : 'th', { colspan: node.attrs.colspan, rowspan: node.attrs.rowspan }, 0],
+      parseDOM: [{ tag: name === 'tableCell' ? 'td' : 'th', getAttrs: (element) => ({ colspan: Number(element.getAttribute('colspan') ?? 1), rowspan: Number(element.getAttribute('rowspan') ?? 1), align: element.getAttribute('align') }) }],
+      toDOM: (node) => [name === 'tableCell' ? 'td' : 'th', { colspan: node.attrs.colspan, rowspan: node.attrs.rowspan, align: node.attrs.align }, 0],
     },
-    markdown: { fromMd: { type: 'tableCell' } }, index: { mode: 'text' },
+    markdown: { fromMd: { type: 'tableCell', variant: name === 'tableHeader' ? 'header' : 'cell' } }, index: { mode: 'text' },
   })),
   defineBlock({
     name: 'columns', schema: { content: 'column{2,}', isolating: true, toDOM: () => ['div', { 'data-columns': '' }, 0] },

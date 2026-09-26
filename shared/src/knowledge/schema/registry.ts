@@ -3,6 +3,7 @@ import type { Attributes, Extensions } from '@tiptap/core';
 import type { DOMOutputSpec, Mark as ProseMirrorMark, MarkSpec, Node as ProseMirrorNode, NodeSpec, ParseRule, Schema } from '@tiptap/pm/model';
 
 import { nullableString, stringAttribute } from './attributes';
+import { nodeAnnotationsAttribute } from './annotations';
 import { defineBlock } from './types';
 import type { BlockDefinition, MarkDefinition } from './types';
 
@@ -118,10 +119,12 @@ export class BlockRegistry {
 
   createExtensions(): Extensions {
     const core = Object.entries(CORE_NODES).map(([name, spec]) => nodeExtension(name,
-      name === 'doc' || name === 'text' ? spec : withSerializedAttributes(name, spec, 'node') as NodeSpec));
+      name === 'doc' || name === 'text' ? spec : withSerializedAttributes(name, {
+        ...spec, attrs: { ...spec.attrs, annotations: nodeAnnotationsAttribute },
+      }, 'node') as NodeSpec));
     const blocks = [...this.blocks.values()].map(({ name, schema }) => nodeExtension(name, withSerializedAttributes(name, {
       group: 'block', ...schema, foucBlock: true,
-      attrs: { ...schema.attrs, blockId: nullableString, sourceBlockId: nullableString },
+      attrs: { ...schema.attrs, blockId: nullableString, sourceBlockId: nullableString, annotations: nodeAnnotationsAttribute },
     }, 'node') as NodeSpec));
     const marks = [...this.marks.values()].map(({ name, schema }) => markExtension(name, withSerializedAttributes(name, schema, 'mark') as MarkSpec));
     return [...core, ...blocks, ...marks];

@@ -1,0 +1,6 @@
+/.venv/
+/.runtime/
+/.pytest_cache/
+/.env.local
+__pycache__/
+*.pyc

@@ -13,7 +13,7 @@ export const KNOWLEDGE_MARKS: readonly MarkDefinition[] = Object.freeze<MarkDefi
   formattingMark('strike', 's', 'delete'),
   { name: 'underline', schema: { parseDOM: [{ tag: 'u' }], toDOM: () => ['u', 0] }, markdown: { fromMd: { directive: 'underline', kind: 'text' } } },
   {
-    name: 'code', schema: { code: true, excludes: 'code bold italic strike underline highlight', parseDOM: [{ tag: 'code' }], toDOM: () => ['code', 0] },
+    name: 'code', schema: { code: true, excludes: 'code', parseDOM: [{ tag: 'code' }], toDOM: () => ['code', 0] },
     markdown: { fromMd: { type: 'inlineCode' } },
   },
   {

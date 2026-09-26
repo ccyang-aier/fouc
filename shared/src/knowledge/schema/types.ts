@@ -2,7 +2,7 @@ import type { MarkSpec, Node as ProseMirrorNode, NodeSpec } from '@tiptap/pm/mod
 
 /** Semantic mapping only. The remark pipeline owns the corresponding codecs. */
 export type MarkdownMapping =
-  | { readonly type: string }
+  | { readonly type: string; readonly variant?: string }
   | { readonly directive: string; readonly kind: 'container' | 'leaf' | 'text' };
 
 export interface BlockDefinition<Name extends string = string> {
@@ -29,8 +29,8 @@ export function defineBlock<const Name extends string>(definition: BlockDefiniti
     throw new Error(`Invalid block name: ${definition.name}`);
   }
   if (definition.schema.inline) throw new Error(`Block ${definition.name} cannot be inline`);
-  if (definition.schema.attrs?.blockId || definition.schema.attrs?.sourceBlockId) {
-    throw new Error(`Block identity attributes are owned by the registry: ${definition.name}`);
+  if (definition.schema.attrs?.blockId || definition.schema.attrs?.sourceBlockId || definition.schema.attrs?.annotations) {
+    throw new Error(`Block identity and annotation attributes are owned by the registry: ${definition.name}`);
   }
   return Object.freeze(definition);
 }

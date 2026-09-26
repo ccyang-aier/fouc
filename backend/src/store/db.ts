@@ -92,6 +92,14 @@ CREATE TABLE IF NOT EXISTS knowledge_document_version (
   title TEXT NOT NULL, content TEXT NOT NULL, created_at INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_knowledge_version_document ON knowledge_document_version(document_id, created_at DESC);
+CREATE TABLE IF NOT EXISTS knowledge_page_document (
+  workspace_id TEXT NOT NULL,
+  page_id TEXT NOT NULL,
+  state BLOB NOT NULL,
+  state_vector BLOB NOT NULL,
+  updated_at INTEGER NOT NULL,
+  PRIMARY KEY (workspace_id, page_id)
+);
 `;
 
 // ─── 嵌入式迁移（AionCore 模式：NNN_描述.sql 顺序执行） ─────────────

@@ -1727,10 +1727,17 @@
         "J03",
         "R01"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "backend/src/knowledge/mcp/",
       "acceptance": "标准 SDK client 初始化/工具发现/调用/取消可运行；复用工具层；mcp:clientName 来源进入建议",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "官方 SDK 双端 3 项集成测试:initialize/10 工具发现/真实调用/取消信号、写建议 mcp:clientName 来源标注、匿名与低权 PAT 拒绝;会话式传输逐请求重验",
+          "command": "bun test backend/src/knowledge/mcp; bun test backend/src/knowledge/ai/tools; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/mcp",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-mcp.md"
+        }
+      ]
     },
     {
       "id": "K02",

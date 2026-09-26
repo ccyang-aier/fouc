@@ -28,7 +28,9 @@ import type { KnowledgeAgentWriteContext } from './types';
 const pipeline = createMarkdownPipeline();
 
 /** S03-style attribution: agent identity rides the suggestion author field. */
-const suggestionAuthor = (context: KnowledgeAgentWriteContext) => `agent:${context.authority.userId}:${context.agent.taskId}`;
+const suggestionAuthor = (context: KnowledgeAgentWriteContext) => context.agent.clientName
+  ? `mcp:${context.authority.userId}:${context.agent.taskId}:${context.agent.clientName}`
+  : `agent:${context.authority.userId}:${context.agent.taskId}`;
 
 function requireWriteContext(context: KnowledgeAgentWriteContext): void {
   if (!context.agent?.taskId) throw new KnowledgeAgentToolError('INVALID_TOOL_INPUT', 'write');
@@ -108,7 +110,9 @@ async function withAgentBodyEdit(context: KnowledgeAgentWriteContext, scope: Bod
   const author = suggestionAuthor(context);
   const suggestionId = ydoc.transact(() => mutate(ydoc.getXmlFragment(PAGE_BODY_FRAGMENT), author));
   const update = Y.encodeStateAsUpdate(ydoc, baseVector);
-  const actor = { kind: 'agent' as const, userId: context.authority.userId, taskId: context.agent.taskId };
+  const actor = context.agent.clientName
+    ? { kind: 'mcp' as const, userId: context.authority.userId, taskId: context.agent.taskId, clientName: context.agent.clientName }
+    : { kind: 'agent' as const, userId: context.authority.userId, taskId: context.agent.taskId };
 
   if (context.hocuspocus) {
     const connection = await context.hocuspocus.openDirectConnection(pageDocumentName(scope), { pageId: scope.pageId, actor });

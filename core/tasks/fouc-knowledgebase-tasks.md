@@ -2,7 +2,7 @@
 
 > 本表由 `knowledgebase-tasks.json` 生成。修改任务和证据后运行 `node scripts/verify-knowledge-tasks.mjs --write`。
 
-设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 60 项。
+设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 61 项。
 
 ## 实施约束
 
@@ -43,7 +43,7 @@
 - W05 媒体派生任务编排与重索引
 - J04 逐块流式 AI 与任务撤销
 - J07 持久 AI 长任务与审批恢复
-- K01 MCP Streamable HTTP 服务
+- K02 MCP OAuth 2.1 与 PAT 授权
 
 ## 拓扑排序任务表
 
@@ -135,7 +135,7 @@
 | [ ] 待实施 | J07 | 持久 AI 长任务与审批恢复<br>backend/src/knowledge/ai/tasks/ | §9.4 | J03, Q01, G02, J01 | 整理空间/周报可执行；running/awaiting_approval/done/failed state 持久化；重启续跑不重复写；审批身份校验 | — |
 | [ ] 待实施 | J08 | AI 块提示、范围与定时生成<br>src/features/knowledge/editor/blocks/ai-block.tsx; backend/src/knowledge/ai/ | §4.1 / §9.4 | J07, E03, S02 | 保存提示/范围、手动/定时执行、建议回块内容；授权重检；取消与失败反馈 | — |
 | [ ] 待实施 | J09 | AI 模型设置、用量与任务中心 UI<br>src/features/knowledge/ai/settings/; src/features/knowledge/ai/tasks/ | §9.1 / §9.4 | J07, G02, U02 | 档位/平台/BYOK/Ollama 配置可保存验证；安全显示密钥；用量、步骤、审批、重试与撤销完整 | — |
-| [ ] 待实施 | K01 | MCP Streamable HTTP 服务<br>backend/src/knowledge/mcp/ | §9.5 | J03, R01 | 标准 SDK client 初始化/工具发现/调用/取消可运行；复用工具层；mcp:clientName 来源进入建议 | — |
+| [x] 已验收 | K01 | MCP Streamable HTTP 服务<br>backend/src/knowledge/mcp/ | §9.5 | J03, R01 | 标准 SDK client 初始化/工具发现/调用/取消可运行；复用工具层；mcp:clientName 来源进入建议 | [官方 SDK 双端 3 项集成测试:initialize/10 工具发现/真实调用/取消信号、写建议 mcp:clientName 来源标注、匿名与低权 PAT 拒绝;会话式传输逐请求重验](../../core/tasks/knowledgebase-acceptance/2026-09-26-mcp.md) |
 | [ ] 待实施 | K02 | MCP OAuth 2.1 与 PAT 授权<br>backend/src/knowledge/mcp/auth/ | §9.5 | K01, A02, A03 | 发现/注册/授权/PKCE/token/撤销标准流程，scope/audience 验证；PAT 可用；无认证拒绝工具 | — |
 | [ ] 待实施 | K03 | MCP 外部 Agent 一致性验收<br>backend/scripts/verify-knowledge-mcp.ts | §9.5 / §12 | K02, J04, S02 | 真实标准 MCP client 读写/越权/撤权/取消；建议出现在编辑器，可接受拒绝；来源标注正确 | — |
 | [ ] 待实施 | Z01 | 旧知识库实现与开发数据清理<br>backend/src/store/; backend/src/api/server.ts; shared/src/index.ts; src/features/knowledge/ | §0.2 / §3.1 / §10 | U02, B05, M03, M04 | 删除 SQLite 正文/旧 REST/轮询/旧种子，仅保留 Yjs 本地副本；明确清理限定知识库开发表，其他业务不受影响 | — |
@@ -563,6 +563,7 @@ flowchart TD
   style J01 fill:#e4f4e9,stroke:#42845c
   style J03 fill:#e4f4e9,stroke:#42845c
   style B09 fill:#e4f4e9,stroke:#42845c
+  style K01 fill:#e4f4e9,stroke:#42845c
 ```
 
 ## 设计覆盖矩阵

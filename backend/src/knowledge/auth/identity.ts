@@ -11,6 +11,7 @@ export interface KnowledgeIdentity {
 }
 
 export async function getKnowledgeIdentity(auth: KnowledgeAuth, headers: Headers): Promise<KnowledgeIdentity | null> {
+  if (headers.has('authorization')) return null; // Cookie-only: never ignore an explicit credential and fall back.
   const result = await auth.api.getSession({ headers, query: { disableCookieCache: true } });
   if (!result?.user.emailVerified) return null;
   return { userId: result.user.id, sessionId: result.session.id, email: result.user.email, name: result.user.name };

@@ -20,3 +20,22 @@
 内存限流仅单进程，Z03 多副本需共享限流。A01 只认证全局身份，Workspace 成员资格仍由 O01/P 系列校验。业务路由接线、SSO/PAT/登录界面分别由后续任务完成。
 
 Better Auth 1.7.6 官方包的 utils peer 声明与本体依赖存在版本警告；没有强制全局 override。当前真实鉴权全流程与类型检查通过，依赖升级时继续回归。
+
+# A03 · PAT 与统一服务端身份
+
+日期：2026-09-26。主代理审阅 access policy、token format、session access、token service、opaque request context/refresh 与 identity 变更，并独立重跑：
+
+```powershell
+bun test backend/src/knowledge/auth
+pnpm backend:typecheck
+```
+
+结果 **38 passed / 0 failed，1147 assertions**，其中 PAT 23 项（19 真实 Node HTTP/PostgreSQL，4 单测）。所有临时数据库由 helper 创建闭包清理确认不存在；主库未写入测试记录。
+
+- PAT 为 256-bit 随机秘密，包含公开 workspace/token UUID 定位，整串 SHA256 仅存 hash；恒时摘要比较；明文只返回创建响应一次。
+- `read`/`write` 显式匹配，不相互隐含，更不授予页面 ACL 或管理权限。Session-only 创建/列出/撤销自己的 token，每次事务重新检查已验证用户、有效 session 和成员资格。
+- 认证查询仅限 token workspace，交叉租户与修改定位失败；到期、撤销、成员删除、用户未验证及未知持久化 scopes 即时生效；没有 bearer→cookie 回退。
+- Session/PAT 统一签发不可变服务端 context；客户端的 actor/user/kind/task 不能覆盖。长连接逐操作 `refresh` 仅接受同实例私有 proof，重查活态，不保存 bearer 明文或信任序列化快照。
+- 所有错误脱敏；Cookie-only 原 A01 入口也明确拒绝 Authorization，保留现有 API。测试实例使用官方 customStorage 隔离模块全局限流桶，原实际 socket IP 和 429 测试仍通过。
+
+边界：不是页面授权（P03）、MCP OAuth 或最终 API 路由装配（A00/Z03）。已开始的操作不会自动终止，后续动作必须重新 authenticate/refresh 并在业务事务内授权。生产必须 TLS，代理日志不能记录 Authorization/Cookie 或一次性 PAT 响应。

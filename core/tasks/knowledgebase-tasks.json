@@ -391,10 +391,17 @@
       "dependencies": [
         "A01"
       ],
-      "status": "in_progress",
+      "status": "accepted",
       "deliverables": "backend/src/knowledge/auth/tokens.ts",
       "acceptance": "PAT 哈希存储、范围/到期/撤销生效；session/PAT 归一到同一发起者上下文，禁止客户端伪造身份",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "23 项 PAT 专项、38 项真实认证回归通过，活态身份与范围隔离",
+          "command": "bun test backend/src/knowledge/auth; pnpm backend:typecheck",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-authentication.md"
+        }
+      ]
     },
     {
       "id": "O01",
@@ -1819,7 +1826,7 @@
         "R01",
         "A03"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "deliverables": "backend/src/api/knowledge/",
       "acceptance": "tRPC 挂载 Hono；session/PAT 与 workspace 上下文注入；输入校验、结构化错误、无权/未认证拒绝；不依赖客户端",
       "evidence": []

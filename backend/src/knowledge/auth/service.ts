@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Pool } from 'pg';
 import { betterAuth } from 'better-auth';
+import type { BetterAuthRateLimitOptions } from 'better-auth';
 import { APIError } from 'better-auth/api';
 import { drizzleAdapter } from '@better-auth/drizzle-adapter';
 import { drizzle } from 'drizzle-orm/node-postgres';
@@ -10,9 +11,14 @@ import type { KnowledgeAuthConfig } from './config';
 import type { AuthEmailTransport } from './email';
 
 export type AuthDiagnostic = 'auth_error' | 'auth_warning' | 'email_delivery_failed';
+export type AuthRateLimitStorage = NonNullable<BetterAuthRateLimitOptions['customStorage']>;
 
 /** Uses the ordinary application pool, never the DDL/administrator connection. */
-export function createKnowledgeAuth(options: { pool: Pool; config: KnowledgeAuthConfig; email: AuthEmailTransport; onDiagnostic?: (event: AuthDiagnostic) => void }) {
+export function createKnowledgeAuth(options: {
+  pool: Pool; config: KnowledgeAuthConfig; email: AuthEmailTransport; onDiagnostic?: (event: AuthDiagnostic) => void;
+  /** Server-owned atomic storage dependency, never client configuration. Defaults to Better Auth memory storage. */
+  rateLimitStorage?: AuthRateLimitStorage;
+}) {
   const config = validateKnowledgeAuthConfig(options.config);
   const schema = { user: authUser, session: authSession, account: authAccount, verification: authVerification };
   const checkedName = (name: string) => {
@@ -45,6 +51,7 @@ export function createKnowledgeAuth(options: { pool: Pool; config: KnowledgeAuth
     },
     rateLimit: {
       enabled: true, storage: 'memory', window: 60, max: 120,
+      customStorage: options.rateLimitStorage,
       customRules: { '/sign-in/email': { window: 60, max: 20 }, '/sign-up/email': { window: 60, max: 10 }, '/send-verification-email': { window: 60, max: 5 } },
     },
     databaseHooks: {

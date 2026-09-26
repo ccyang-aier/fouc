@@ -7,3 +7,10 @@ export { readKnowledgeAuthConfig, validateKnowledgeAuthConfig, knowledgeAuthBase
 export type { KnowledgeAuthConfig } from './config';
 export { createSmtpAuthEmailTransport } from './email';
 export type { AuthEmailTransport } from './email';
+export { createKnowledgeTokenService } from './tokens';
+export type { KnowledgeTokenSummary } from './tokens';
+export { createKnowledgeRequestAuthenticator, requireKnowledgeRequest, requireKnowledgeScopes } from './request-context';
+export type { KnowledgeRequestContext, KnowledgeRequestAuthenticator } from './request-context';
+export { KnowledgeAccessError, knowledgeAccessErrorResponse, knowledgeTokenScopes, createKnowledgeTokenInputSchema, revokeKnowledgeTokenInputSchema } from './access-policy';
+export type { KnowledgeTokenScope, KnowledgeAccessErrorCode, KnowledgeAccessDiagnostic } from './access-policy';
+export type { KnowledgeAccessDependencies } from './session-access';

@@ -14,7 +14,11 @@ import { requireKnowledgeIdentity } from './identity';
 export const testPassword = 'correct-horse-battery-94';
 
 /** Real Node HTTP socket + ordinary PostgreSQL role; only email delivery is captured. */
-export async function createAuthTestServer(options: { crossSite?: boolean; email?: AuthEmailTransport } = {}) {
+export async function createAuthTestServer(options: {
+  crossSite?: boolean;
+  email?: AuthEmailTransport;
+  mount?: (app: Hono, dependencies: { auth: ReturnType<typeof createKnowledgeAuth>; database: Awaited<ReturnType<typeof createTenantTestDatabase>> }) => void;
+} = {}) {
   const database = await createTenantTestDatabase();
   const captured: { to: { address: string }[]; text: string }[] = [];
   const diagnostics: string[] = [];
@@ -53,10 +57,24 @@ export async function createAuthTestServer(options: { crossSite?: boolean; email
     trustedOrigins: options.crossSite ? [webOrigin, 'tauri://localhost', 'http://tauri.localhost', 'https://tauri.localhost'] : [webOrigin],
     cookieMode: options.crossSite ? 'cross-site' : 'same-site',
   });
-  const auth = createKnowledgeAuth({ pool: database.pool, config, email, onDiagnostic: (event) => diagnostics.push(event) });
+  // Better Auth's built-in memory map is module-global. Isolate test servers
+  // without disabling limits, changing thresholds or spoofing the socket IP.
+  const rateCounts = new Map<string, { count: number; expiresAt: number }>();
+  const auth = createKnowledgeAuth({ pool: database.pool, config, email, onDiagnostic: (event) => diagnostics.push(event),
+    rateLimitStorage: { async consume(key, rule) {
+      const now = Date.now();
+      const existing = rateCounts.get(key);
+      const current = existing && existing.expiresAt > now ? existing : undefined;
+      if (current && current.count >= rule.max) return { allowed: false, retryAfter: Math.ceil((current.expiresAt - now) / 1_000) };
+      // No await between read and update: the consume step is atomic in this process.
+      rateCounts.set(key, { count: (current?.count ?? 0) + 1, expiresAt: now + rule.window * 1_000 });
+      return { allowed: true, retryAfter: null };
+    } },
+  });
   app.route('/', createKnowledgeAuthRoutes(auth, (context) => context.env.clientAddress as string));
   app.get('/test/identity', requireKnowledgeIdentity(auth), (context) => context.json(context.get('identity')));
   app.post('/test/identity', requireKnowledgeIdentity(auth), (context) => context.json(context.get('identity')));
+  options.mount?.(app, { auth, database });
   return {
     database, auth, origin, webOrigin, captured, diagnostics,
     request(path: string, body?: unknown, cookie?: string, extra: Record<string, string> = {}) {

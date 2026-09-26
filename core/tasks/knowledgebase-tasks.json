@@ -201,10 +201,17 @@
         "B02",
         "U02"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "backend/src/knowledge/import-export/; src/features/knowledge/",
       "acceptance": "目录、附件、frontmatter、wiki/块链接可往返；多页导入有进度与逐项失败反馈",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "52 项 M03 测试(全目录 64/0):目录树映射、同名兄弟去重、wikilink/嵌入/媒体指令往返(导出→再导入→再导出不动点)、frontmatter、AS01 附件入湖、幂等重放、越权拒绝、逐项失败进进度事件;修复前任骨架 4 个真实缺陷",
+          "command": "bun test backend/src/knowledge/import-export/; cd backend && bunx tsc --noEmit; node scripts/verify-knowledge-boundaries.mjs",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-m03-obsidian-vault.md"
+        }
+      ]
     },
     {
       "id": "M04",

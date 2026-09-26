@@ -533,10 +533,17 @@
         "A03",
         "A00"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "backend/src/knowledge/permissions/; backend/src/api/knowledge/",
       "acceptance": "查看/评论/编辑/full 动作逐一授权；API/WS/AI 共用入口；无权限目标不可通过 ID 猜测访问",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "authorizePageAccess 唯一入口 + tRPC page.access 逐动作授权；48 项真实 HTTP/队列/RLS 测试，四类拒绝不可区分，围栏期 fail closed",
+          "command": "bun test backend/src/knowledge/permissions backend/src/api/knowledge; pnpm exec eslint --no-ignore backend/src/knowledge/permissions backend/src/api/knowledge; node scripts/verify-knowledge-boundaries.mjs",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-page-authorization.md"
+        }
+      ]
     },
     {
       "id": "T01",

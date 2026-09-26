@@ -2,7 +2,7 @@
 
 `createKnowledgeApiRoutes({ auth, pool, signal, router?, onDiagnostic? })` returns a Hono sub-application. Z03 mounts it with `app.route('/', routes)` on the existing API role listener and supplies R01's shutdown signal. This module does not listen on a port, start another role, close the injected pool, or modify the old global server.
 
-The only owned paths are `/api/knowledge/:workspaceId/trpc` and its procedure subpaths. Organization/auth/media siblings remain available regardless of mount order. The default router exposes only the authenticated `access` query (workspace, user, role, human actor, credential kind, scopes). It exposes no page data, business CRUD, credential IDs, PAT text or hashes.
+The only owned paths are `/api/knowledge/:workspaceId/trpc` and its procedure subpaths. Organization/auth/media siblings remain available regardless of mount order. The default router exposes the authenticated `access` query (workspace, user, role, human actor, credential kind, scopes) and P03's `page.access` per-action ACL query. Neither exposes page content, business CRUD, credential IDs, PAT text or hashes.
 
 ## Defining a procedure
 
@@ -14,7 +14,7 @@ Context is created with the A03 authenticator using a verified session or PAT; a
 
 `ctx.withTenant(async (db, authority) => ...)` refreshes credentials/scopes again at the start of each new operation, then opens the D02 transaction bound to the authenticated workspace. The second callback argument is the newly checked authority (including a current role), rather than the earlier resolver snapshot. No caller-supplied workspace or raw pool is exposed to the resolver.
 
-**P03 remains required.** Operation-start authentication/scope checks are not an ACL check, a lock on membership or credential rows, or a linearization guarantee for revocations during an entire transaction. P03/domain services must check page authorization and implement their concurrent-revocation/permission fences inside the domain transaction. Use the transaction callback's authority there. A guest or `write` PAT cannot thereby gain page write/admin permissions. Do not hold tenant transactions across remote calls or user/model waits. The test-only probe/write procedures are not part of the default router.
+**Page authorization (P03) is `authorizePageAccess`.** Domain procedures, WS handshakes and AI/MCP tool calls must run it inside their tenant transaction with the operation's refreshed authority, one call per action level. It fails closed on fenced subtrees; HTTP surfaces fold `rebuilding` into a plain deny so denied, missing and recycling pages stay indistinguishable. Operation-start authentication/scope checks are still not an ACL check, a lock on membership or credential rows, or a linearization guarantee for revocations during an entire transaction; concurrent-revocation fences remain the domain transaction's job. A guest or `write` PAT cannot thereby gain page write/admin permissions. Do not hold tenant transactions across remote calls or user/model waits. The test-only probe/write procedures are not part of the default router.
 
 ## HTTP, errors and cancellation
 

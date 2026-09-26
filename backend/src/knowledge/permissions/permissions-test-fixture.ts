@@ -3,7 +3,10 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { and, eq } from 'drizzle-orm';
 import { Pool } from 'pg';
 import type { PoolClient } from 'pg';
+import { createTRPCClient, httpLink } from '@trpc/client';
 import type { OutboxEvent, PageScope, PermissionLevel, Principal, Teamspace } from '@fouc/shared/knowledge/contracts';
+import { createKnowledgeApiRoutes } from '../../api/knowledge/http';
+import { knowledgeApiRouter } from '../../api/knowledge/router';
 import { blockIndex, groupMember, member, page } from '../../database/knowledge/schema';
 import { withKnowledgeTenant } from '../../database/knowledge/tenant';
 import { createAuthTestServer, responseCookie, testPassword } from '../auth/auth-test-server';
@@ -48,6 +51,7 @@ export async function createPermissionsFixture() {
     pool.on('error', (error) => errors.push(error));
     organization = createOrganizationService(pool, { permissions: teamspacePermissionInvalidator });
     app.route('/', createOrganizationRoutes(auth, organization));
+    app.route('/', createKnowledgeApiRoutes({ auth, pool }));
   } });
   const admin = server.database.admin;
   const runners = new Set<RunningRole>();
@@ -140,6 +144,9 @@ export async function createPermissionsFixture() {
   }
   return { server, admin, pool, owner, foreign, reader, alpha, beta, organization, errors,
     tree, jobs, start, stop, drain, resetJobs, latestEvent, access, subjects, patchTeamspace, waitForWorkspaceLock,
+    apiClient(headers: Record<string, string> = {}, workspaceId = alpha.id) {
+      return createTRPCClient<typeof knowledgeApiRouter>({ links: [httpLink({ url: `${server.origin}/api/knowledge/${workspaceId}/trpc`, headers })] });
+    },
     async close() { await resetJobs(); await pool.end(); await server.close(); },
   };
 }

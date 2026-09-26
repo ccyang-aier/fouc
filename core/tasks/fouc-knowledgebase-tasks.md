@@ -2,7 +2,7 @@
 
 > 本表由 `knowledgebase-tasks.json` 生成。修改任务和证据后运行 `node scripts/verify-knowledge-tasks.mjs --write`。
 
-设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 29 项。
+设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 30 项。
 
 ## 实施约束
 
@@ -25,7 +25,11 @@
 
 ## 可开始的任务
 
-- P03 权限一致的页面授权接口
+- T01 页面树服务与分数排序
+- AS01 S3 工作区资源服务与预签名
+- B01 Hocuspocus v4 鉴权与只读连接
+- N01 评论线程持久化与权限
+- P04 分享链接权限与失效
 
 ## 拓扑排序任务表
 
@@ -52,7 +56,7 @@
 | [x] 已验收 | P02 | 有效权限物化、失效围栏与索引同步<br>backend/src/knowledge/permissions/ | §6.2 / §12 | P01, O03, Q01 | 授权/移动/断继承批量子树重算；撤权立即阻止旧 ACL 泄漏；GIN 主体数组与 block_index 同步；群组变更无需逐页重算 | [真实队列/RLS 54 项测试（新增 10 项集成/71 断言）：子树重算、fail-closed 围栏、索引同步、群组即时生效、teamspace 根默认、事件合并与跨租户全部通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-permissions-materialization.md) |
 | [x] 已验收 | A03 | PAT 与服务端请求身份<br>backend/src/knowledge/auth/tokens.ts | §1 / §6 / §9.5 | A01 | PAT 哈希存储、范围/到期/撤销生效；session/PAT 归一到同一发起者上下文，禁止客户端伪造身份 | [23 项 PAT 专项、38 项真实认证回归通过，活态身份与范围隔离](../../core/tasks/knowledgebase-acceptance/2026-09-26-authentication.md) |
 | [x] 已验收 | A00 | Hono tRPC 服务端上下文与错误边界<br>backend/src/api/knowledge/ | §1 / §2 / §10 | C01, R01, A03 | tRPC 挂载 Hono；session/PAT 与 workspace 上下文注入；输入校验、结构化错误、无权/未认证拒绝；不依赖客户端 | [Hono/tRPC 真实 Session/PAT/PG网络认证、RLS、取消回滚、同前缀路由隔离；A00/PAT组合46项487断言，类型入口浏览器bundle为空](../../core/tasks/knowledgebase-acceptance/2026-09-26-api.md) |
-| [ ] 待实施 | P03 | 权限一致的页面授权接口<br>backend/src/knowledge/permissions/; backend/src/api/knowledge/ | §6.1 / §6.2 | P02, A03, A00 | 查看/评论/编辑/full 动作逐一授权；API/WS/AI 共用入口；无权限目标不可通过 ID 猜测访问 | — |
+| [x] 已验收 | P03 | 权限一致的页面授权接口<br>backend/src/knowledge/permissions/; backend/src/api/knowledge/ | §6.1 / §6.2 | P02, A03, A00 | 查看/评论/编辑/full 动作逐一授权；API/WS/AI 共用入口；无权限目标不可通过 ID 猜测访问 | [authorizePageAccess 唯一入口 + tRPC page.access 逐动作授权；48 项真实 HTTP/队列/RLS 测试，四类拒绝不可区分，围栏期 fail closed](../../core/tasks/knowledgebase-acceptance/2026-09-26-page-authorization.md) |
 | [ ] 待实施 | T01 | 页面树服务与分数排序<br>backend/src/knowledge/pages/ | §3.3 / §5.4 | P03 | UUID 离线可建、ltree 子树移动、分数排序、回收恢复；禁止循环/越权移动/跨租户父子；失败事务回滚 | — |
 | [ ] 待实施 | AS01 | S3 工作区资源服务与预签名<br>backend/src/knowledge/assets/ | §8 / §8.1 | P03, I01, Q01 | 按 workspace/hash 寻址、秒传不泄漏跨租户存在性；上传确认校验哈希/大小/类型；下载授权；asset.created 原子且真实 S3 往返 | — |
 | [ ] 待实施 | B01 | Hocuspocus v4 鉴权与只读连接<br>backend/src/knowledge/collaboration/ | §5 / §5.1 / §6.2 | P03, R01, E02 | WS 校验会话/PAT/page scope；view/comment 连接禁止正文写入；GC 开启；拒绝未授权文档和 workspace 频道 | — |
@@ -506,6 +510,7 @@ flowchart TD
   style P02 fill:#e4f4e9,stroke:#42845c
   style A03 fill:#e4f4e9,stroke:#42845c
   style A00 fill:#e4f4e9,stroke:#42845c
+  style P03 fill:#e4f4e9,stroke:#42845c
   style A02 fill:#e4f4e9,stroke:#42845c
   style B00 fill:#e4f4e9,stroke:#42845c
   style S01 fill:#e4f4e9,stroke:#42845c

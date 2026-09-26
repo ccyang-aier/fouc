@@ -2,7 +2,7 @@ import { sql } from 'drizzle-orm';
 import { bigint, check, foreignKey, index, integer, jsonb, primaryKey, text, unique, uuid, varchar } from 'drizzle-orm/pg-core';
 import type { Asset, Principal } from '@fouc/shared/knowledge/contracts';
 import { assetDerivedSchema } from '@fouc/shared/knowledge/contracts';
-import { commentThreadStatus } from './enums';
+import { assetStatus, commentThreadStatus } from './enums';
 import { authUser } from './identity';
 import { knowledge } from './namespaces';
 import { workspace } from './organization';
@@ -75,6 +75,7 @@ export const asset = knowledge.table('asset', {
   hash: varchar('hash', { length: 64 }).notNull(),
   mime: varchar('mime', { length: 200 }).notNull(),
   size: bigint('size', { mode: 'number' }).notNull(),
+  status: assetStatus('status').notNull().default('ready'),
   meta: jsonb('meta').$type<Asset['meta']>().notNull().default({}),
   derived: jsonb('derived').$type<Asset['derived']>().notNull().default({ status: 'pending' }),
   createdAt: instant('created_at').notNull().defaultNow(),

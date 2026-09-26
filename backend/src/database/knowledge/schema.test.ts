@@ -4,6 +4,7 @@ import { describe, expect, test } from 'bun:test';
 import { getTableConfig } from 'drizzle-orm/pg-core';
 import {
   aiTaskSchema,
+  assetStatusSchema,
   commentThreadSchema,
   memberRoleSchema,
   modelTiers,
@@ -16,6 +17,8 @@ import {
   aiTaskKind,
   aiTaskStatus,
   allKnowledgeTables,
+  asset,
+  assetStatus,
   blockEmbeddingStaging,
   blockIndex,
   commentThreadStatus,
@@ -84,8 +87,17 @@ describe('knowledge current Drizzle schema', () => {
     expect(permissionLevel.enumValues).toEqual([...permissionLevels]);
     expect(modelTier.enumValues).toEqual([...modelTiers]);
     expect([...commentThreadStatus.enumValues]).toEqual(commentThreadSchema.shape.status.options);
+    expect([...assetStatus.enumValues]).toEqual(assetStatusSchema.options);
     expect([...aiTaskKind.enumValues]).toEqual(aiTaskSchema.shape.kind.options);
     expect([...aiTaskStatus.enumValues]).toEqual(aiTaskSchema.shape.status.options);
+  });
+
+  test('assets are workspace-scoped content-addressed blobs with a lifecycle status', () => {
+    const config = getTableConfig(asset);
+    expect(config.primaryKeys[0]?.columns.map((column) => column.name)).toEqual(['workspace_id', 'hash']);
+    expect(config.checks.map((check) => check.name)).toEqual(expect.arrayContaining(['asset_hash_valid', 'asset_mime_valid']));
+    expect(asset.status.notNull).toBe(true);
+    expect(asset.status.enumValues).toEqual(['ready', 'revoked']);
   });
 
   test('database rows reference tenant-local database pages, never arbitrary documents', () => {

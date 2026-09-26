@@ -9,6 +9,7 @@ CREATE SCHEMA "knowledge";
 
 CREATE TYPE "knowledge"."ai_task_kind" AS ENUM('inline', 'continue', 'chat', 'aiBlock', 'organize', 'report', 'mcp');
 CREATE TYPE "knowledge"."ai_task_status" AS ENUM('running', 'awaiting_approval', 'done', 'failed');
+CREATE TYPE "knowledge"."asset_status" AS ENUM('ready', 'revoked');
 CREATE TYPE "knowledge"."comment_thread_status" AS ENUM('open', 'resolved');
 CREATE TYPE "knowledge"."member_role" AS ENUM('owner', 'admin', 'member', 'guest');
 CREATE TYPE "knowledge"."model_tier" AS ENUM('fast', 'smart', 'embed', 'rerank', 'vision');
@@ -34,16 +35,20 @@ CREATE TABLE "knowledge"."ai_usage" (
 	"id" uuid NOT NULL,
 	"user_id" uuid NOT NULL,
 	"task_id" uuid,
+	"operation" varchar(16) NOT NULL,
+	"status" varchar(16) NOT NULL,
 	"tier" "knowledge"."model_tier" NOT NULL,
-	"provider" text NOT NULL,
-	"model" text NOT NULL,
-	"input_tokens" integer DEFAULT 0 NOT NULL,
-	"output_tokens" integer DEFAULT 0 NOT NULL,
+	"provider" text,
+	"model" text,
+	"input_tokens" integer,
+	"output_tokens" integer,
 	"duration_ms" bigint NOT NULL,
+	"error_code" varchar(40),
 	"trace_id" varchar(32),
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "ai_usage_workspace_id_id_pk" PRIMARY KEY("workspace_id","id"),
-	CONSTRAINT "ai_usage_nonnegative" CHECK ("knowledge"."ai_usage"."input_tokens" >= 0 AND "knowledge"."ai_usage"."output_tokens" >= 0 AND "knowledge"."ai_usage"."duration_ms" >= 0)
+	CONSTRAINT "ai_usage_nonnegative" CHECK ("knowledge"."ai_usage"."input_tokens" >= 0 AND "knowledge"."ai_usage"."output_tokens" >= 0 AND "knowledge"."ai_usage"."duration_ms" >= 0),
+	CONSTRAINT "ai_usage_outcome_valid" CHECK ("knowledge"."ai_usage"."operation" IN ('generate', 'stream', 'embed', 'rerank') AND "knowledge"."ai_usage"."status" IN ('success', 'error', 'cancelled'))
 );
 
 CREATE TABLE "knowledge"."asset" (
@@ -51,6 +56,7 @@ CREATE TABLE "knowledge"."asset" (
 	"hash" varchar(64) NOT NULL,
 	"mime" varchar(200) NOT NULL,
 	"size" bigint NOT NULL,
+	"status" "knowledge"."asset_status" DEFAULT 'ready' NOT NULL,
 	"meta" jsonb DEFAULT '{}'::jsonb NOT NULL,
 	"derived" jsonb DEFAULT '{"status":"pending"}'::jsonb NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
@@ -456,6 +462,7 @@ CREATE INDEX "ai_task_initiator_idx" ON "knowledge"."ai_task" USING btree ("init
 CREATE INDEX "ai_usage_workspace_time_idx" ON "knowledge"."ai_usage" USING btree ("workspace_id","created_at");
 CREATE INDEX "ai_usage_task_idx" ON "knowledge"."ai_usage" USING btree ("workspace_id","task_id");
 CREATE INDEX "ai_usage_user_idx" ON "knowledge"."ai_usage" USING btree ("user_id");
+CREATE INDEX "ai_usage_outcome_idx" ON "knowledge"."ai_usage" USING btree ("workspace_id","status","created_at");
 CREATE INDEX "account_user_idx" ON "knowledge_auth"."account" USING btree ("user_id");
 CREATE INDEX "session_user_idx" ON "knowledge_auth"."session" USING btree ("user_id");
 CREATE INDEX "session_expiry_idx" ON "knowledge_auth"."session" USING btree ("expires_at");

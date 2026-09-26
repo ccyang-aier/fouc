@@ -43,21 +43,27 @@ export const aiUsage = knowledge.table('ai_usage', {
   id: uuid('id').notNull(),
   userId: uuid('user_id').notNull().references(() => authUser.id),
   taskId: uuid('task_id'),
+  operation: varchar('operation', { length: 16 }).notNull(),
+  status: varchar('status', { length: 16 }).notNull(),
   tier: modelTier('tier').notNull(),
-  provider: text('provider').notNull(),
-  model: text('model').notNull(),
-  inputTokens: integer('input_tokens').notNull().default(0),
-  outputTokens: integer('output_tokens').notNull().default(0),
+  provider: text('provider'),
+  model: text('model'),
+  /** Provider-reported tokens only; unreported usage stays null, never a fake zero. */
+  inputTokens: integer('input_tokens'),
+  outputTokens: integer('output_tokens'),
   durationMs: bigint('duration_ms', { mode: 'number' }).notNull(),
+  errorCode: varchar('error_code', { length: 40 }),
   traceId: varchar('trace_id', { length: 32 }),
   createdAt: instant('created_at').notNull().defaultNow(),
 }, (table) => [
   primaryKey({ columns: [table.workspaceId, table.id] }),
   foreignKey({ columns: [table.workspaceId, table.taskId], foreignColumns: [aiTask.workspaceId, aiTask.id] }),
   check('ai_usage_nonnegative', sql`${table.inputTokens} >= 0 AND ${table.outputTokens} >= 0 AND ${table.durationMs} >= 0`),
+  check('ai_usage_outcome_valid', sql`${table.operation} IN ('generate', 'stream', 'embed', 'rerank') AND ${table.status} IN ('success', 'error', 'cancelled')`),
   index('ai_usage_workspace_time_idx').on(table.workspaceId, table.createdAt),
   index('ai_usage_task_idx').on(table.workspaceId, table.taskId),
   index('ai_usage_user_idx').on(table.userId),
+  index('ai_usage_outcome_idx').on(table.workspaceId, table.status, table.createdAt),
 ]);
 
 export const notification = knowledge.table('notification', {

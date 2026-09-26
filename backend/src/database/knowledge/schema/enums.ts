@@ -1,5 +1,6 @@
 import {
   aiTaskSchema,
+  assetStatusSchema,
   commentThreadSchema,
   memberRoleSchema,
   modelTiers,
@@ -24,6 +25,7 @@ export const pageKind = knowledge.enum('page_kind', values(pageKindSchema.option
 export const permissionLevel = knowledge.enum('permission_level', permissionLevels);
 export const modelTier = knowledge.enum('model_tier', modelTiers);
 export const commentThreadStatus = knowledge.enum('comment_thread_status', values(commentThreadSchema.shape.status.options));
+export const assetStatus = knowledge.enum('asset_status', values(assetStatusSchema.options));
 export const aiTaskKind = knowledge.enum('ai_task_kind', values(aiTaskSchema.shape.kind.options));
 export const aiTaskStatus = knowledge.enum('ai_task_status', values(aiTaskSchema.shape.status.options));
 

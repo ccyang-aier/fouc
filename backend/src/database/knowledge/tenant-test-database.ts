@@ -120,7 +120,7 @@ export async function seedTenantTestData(admin: Pool) {
         payload: { ...scope, topic: 'doc.changed', actor: { kind: 'human', userId }, occurredAt: new Date().toISOString() },
       });
       await db.insert(tables.aiTask).values({ workspaceId, id: ids.task, initiatedBy: userId, kind: 'chat' });
-      await db.insert(tables.aiUsage).values({ workspaceId, id: ids.usage, userId, taskId: ids.task, tier: 'smart', provider: 'local', model: 'test', durationMs: 1 });
+      await db.insert(tables.aiUsage).values({ workspaceId, id: ids.usage, userId, taskId: ids.task, operation: 'generate', status: 'success', tier: 'smart', provider: 'local', model: 'test', durationMs: 1 });
       await db.insert(tables.notification).values({ ...scope, id: ids.notification, userId, kind: 'mention', payload: {} });
       await db.insert(tables.personalAccessToken).values({ workspaceId, id: ids.pat, userId, name: 'Test', tokenHash: 'b'.repeat(64), scopes: ['read'] });
       await db.insert(tables.shareLink).values({ ...scope, id: ids.share, tokenHash: 'c'.repeat(64), createdBy: userId });

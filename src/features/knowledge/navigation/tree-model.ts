@@ -91,6 +91,46 @@ function byPosition(left: LivePage, right: LivePage): number {
   return left.position === right.position ? left.id.localeCompare(right.id) : left.position < right.position ? -1 : 1;
 }
 
+export type RecycledPageSummary = {
+  id: string;
+  teamspaceId: string;
+  parentId: string | null;
+  title: string;
+  icon: string | null;
+  deletedAt: string;
+};
+
+/**
+ * The recycle-bin entries (U03): the pages whose *own* row is recycled — their
+ * descendants stay attached and come back with the root on restore, while a
+ * recycled page under a recycled ancestor stays out of the bin (restoring the
+ * ancestor is the operation that surfaces it, matching the T01/P02 semantics).
+ */
+export function recycledRootPages(pages: readonly LivePage[]): RecycledPageSummary[] {
+  const byId = new Map(pages.map((page) => [page.id, page] as const));
+  const isUnderRecycledAncestor = (page: LivePage): boolean => {
+    let cursor = page.parentId;
+    while (cursor !== null) {
+      const ancestor = byId.get(cursor);
+      if (ancestor === undefined) return false; // Broken chain hides the subtree; it is not a bin entry.
+      if (ancestor.deletedAt !== null) return true;
+      cursor = ancestor.parentId;
+    }
+    return false;
+  };
+  return pages
+    .filter((page) => page.deletedAt !== null && !isUnderRecycledAncestor(page))
+    .map((page) => ({
+      id: page.id,
+      teamspaceId: page.teamspaceId,
+      parentId: page.parentId,
+      title: pageDisplayTitle(page),
+      icon: page.icon,
+      deletedAt: page.deletedAt as string,
+    }))
+    .sort((a, b) => (a.deletedAt === b.deletedAt ? a.id.localeCompare(b.id) : a.deletedAt < b.deletedAt ? 1 : -1));
+}
+
 /** One row of the rendered tree: a selectable teamspace section or one page node. */
 export type FlatNavigationItem = {
   key: string;

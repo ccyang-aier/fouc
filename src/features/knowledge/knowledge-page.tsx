@@ -11,11 +11,12 @@
  * (navigation sidebar / canvas / reserved review-AI rail) and the B06
  * workspace-event subscription wires live invalidation into the U01 cache.
  *
- * The page tree is the U03 skeleton: sections and keyboard/selection rules are
- * final, pages arrive with the page read API, and sections say so honestly.
+ * The tree area itself is the U03 stage (navigation/tree-stage): the page
+ * read, every tree operation with its optimistic loop, and the recycle bin
+ * live there; this page only owns the entry phases and the selection state.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { FolderPlus, XCircle } from '@phosphor-icons/react';
 import { motion } from 'motion/react';
@@ -34,25 +35,17 @@ import { KnowledgeQueryProvider } from './data/provider';
 import { invalidateKnowledgeQueries } from './data/query-client';
 import { flattenWorkspaceList, useKnowledgeTeamspacesQuery, useKnowledgeWorkspacesQuery } from './data/workspace-queries';
 import { deriveKnowledgeEntryPhase, entryPhaseShowsStage, knowledgeErrorCodeOf } from './entry-state';
+import type { TreeStageTeamspaceState } from './navigation/tree-stage';
+import { KnowledgeTreeStage } from './navigation/tree-stage';
 import { AssistantRail, AssistantRailToggle } from './assistant-rail';
 import { CreateTeamspaceDialog } from './navigation/create-teamspace-dialog';
-import {
-  PageTreeSidebar,
-  SidebarFooter,
-  TreeArea,
-  TreeAreaHeader,
-  TreeEmpty,
-  TreeError,
-  TreeForbidden,
-  TreeLoading,
-  TreeReady,
-} from './navigation/page-tree-sidebar';
-import { buildNavigationSections } from './navigation/tree-model';
+import { PageTreeSidebar, SidebarFooter } from './navigation/page-tree-sidebar';
 import { organizationErrorTextOf } from './organization/errors';
 import { organizationQueryKeys } from './organization/keys';
 import { ToastRegion, useOrganizationToast } from './organization/ui';
 import { CreateWorkspaceDialog } from './organization/workspace-bar';
 import { WorkspaceCanvas } from './workspace-canvas';
+import { KnowledgePageEditor } from './editor';
 
 const ACTIVE_WORKSPACE_STORAGE_KEY = 'fouc.knowledge.activeWorkspaceId';
 
@@ -185,10 +178,12 @@ function KnowledgeWorkbench({ onOpenSettings }: { onOpenSettings: () => void }) 
 
   // ── Tree selection and creation dialogs ─────────────────────────
   // Selection self-heals across workspace switches: teamspace ids are unique,
-  // so a stale id from another workspace simply matches no row.
+  // so a stale id from another workspace simply matches no row. A page click
+  // also selects its teamspace (the stage resolves it), keeping the canvas in
+  // sync while the tree layer owns everything page-shaped.
   const [selectedTeamspaceId, setSelectedTeamspaceId] = useState<string | null>(null);
+  const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
 
-  const sections = useMemo(() => buildNavigationSections(teamspaces, []), [teamspaces]);
   const selectedTeamspace = teamspaces.find((teamspace) => teamspace.id === selectedTeamspaceId) ?? null;
 
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
@@ -198,23 +193,31 @@ function KnowledgeWorkbench({ onOpenSettings }: { onOpenSettings: () => void }) 
 
   const retryTeamspaces = () => void teamspacesQuery.refetch();
 
+  const treeTeamspaceState: TreeStageTeamspaceState =
+    phase === 'tree-loading'
+      ? 'loading'
+      : phase === 'tree-error'
+        ? 'error'
+        : phase === 'tree-forbidden'
+          ? 'forbidden'
+          : teamspaces.length === 0
+            ? 'empty'
+            : 'ready';
+
   const treeArea = (
-    <>
-      <TreeAreaHeader onCreateTeamspace={() => setCreateTeamspaceOpen(true)} />
-      {phase === 'tree-loading' ? (
-        <TreeLoading />
-      ) : phase === 'tree-error' ? (
-        <TreeError onRetry={retryTeamspaces} />
-      ) : phase === 'tree-forbidden' ? (
-        <TreeForbidden />
-      ) : sections.length === 0 ? (
-        <TreeEmpty onCreateTeamspace={() => setCreateTeamspaceOpen(true)} />
-      ) : (
-        <TreeArea>
-          <TreeReady sections={sections} selectedSectionId={selectedTeamspaceId} onSelectSection={setSelectedTeamspaceId} />
-        </TreeArea>
-      )}
-    </>
+    <KnowledgeTreeStage
+      workspaceId={activeId}
+      teamspaces={teamspaces}
+      teamspaceState={treeTeamspaceState}
+      access={accessQuery.data}
+      selectedSectionId={selectedTeamspaceId}
+      selectedPageId={selectedPageId}
+      onSelectSection={setSelectedTeamspaceId}
+      onSelectPage={setSelectedPageId}
+      onRetryTeamspaces={retryTeamspaces}
+      onCreateTeamspace={() => setCreateTeamspaceOpen(true)}
+      notify={notify}
+    />
   );
 
   return (
@@ -266,6 +269,9 @@ function KnowledgeWorkbench({ onOpenSettings }: { onOpenSettings: () => void }) 
             treeArea={treeArea}
             footer={<SidebarFooter user={session.user} onOpenSettings={onOpenSettings} />}
           />
+          {selectedPageId && activeId ? (
+            <KnowledgePageEditor scope={{ workspaceId: activeId, pageId: selectedPageId }} />
+          ) : (
           <WorkspaceCanvas
             phase={
               phase === 'workspace-loading' || phase === 'workspace-error' || phase === 'workspace-forbidden'
@@ -281,6 +287,7 @@ function KnowledgeWorkbench({ onOpenSettings }: { onOpenSettings: () => void }) 
             onRetry={() => void accessQuery.refetch()}
             actions={<AssistantRailToggle open={railOpen} onToggle={() => setRailOpen((open) => !open)} />}
           />
+          )}
           <AssistantRail open={railOpen} onClose={() => setRailOpen(false)} />
         </div>
       ) : null}

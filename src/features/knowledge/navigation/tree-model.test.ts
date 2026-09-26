@@ -5,6 +5,7 @@ import {
   buildNavigationSections,
   flattenNavigationTree,
   pageDisplayTitle,
+  recycledRootPages,
   stepNavigationFocus,
   untitledPageLabel,
 } from './tree-model';
@@ -93,6 +94,27 @@ describe('buildNavigationSections', () => {
     expect(pageDisplayTitle({ title: '' })).toBe(untitledPageLabel);
     expect(pageDisplayTitle({ title: '   ' })).toBe(untitledPageLabel);
     expect(pageDisplayTitle({ title: ' 手册 ' })).toBe('手册');
+  });
+});
+
+describe('recycledRootPages (U03 recycle bin)', () => {
+  test('lists directly recycled pages newest first; nested recycled pages belong to their recycled root', () => {
+    const roots = recycledRootPages([
+      page({ id: 'live', parentId: null, position: '000001', title: '保留' }),
+      page({ id: 'dead', parentId: null, position: '000002', title: '昨天回收', deletedAt: '2026-09-25T00:00:00Z' }),
+      page({ id: 'dead-child', parentId: 'dead', position: '000001', title: '其子页', deletedAt: '2026-09-26T01:00:00Z' }),
+      page({ id: 'newer-dead', parentId: null, position: '000003', title: '今天回收', deletedAt: '2026-09-26T02:00:00Z' }),
+    ]);
+    expect(roots.map((row) => row.id)).toEqual(['newer-dead', 'dead']);
+    expect(roots.map((row) => row.title)).toEqual(['今天回收', '昨天回收']);
+  });
+
+  test('whitespace titles fall back to the untitled label; live pages never appear', () => {
+    const roots = recycledRootPages([
+      page({ id: 'titled', parentId: null, position: '000001', title: '  ', deletedAt: '2026-09-26T00:00:00Z' }),
+      page({ id: 'alive', parentId: null, position: '000002', title: '活着' }),
+    ]);
+    expect(roots.map((row) => row.title)).toEqual([untitledPageLabel]);
   });
 });
 

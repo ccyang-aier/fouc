@@ -1,5 +1,5 @@
-import { createTRPCClient, httpBatchLink } from '@trpc/client';
-import type { TRPCClient } from '@trpc/client';
+import { createTRPCClient, createTRPCUntypedClient, httpBatchLink } from '@trpc/client';
+import type { TRPCClient, TRPCUntypedClient } from '@trpc/client';
 import type { KnowledgeApiRouter } from './api-types';
 import { getKnowledgeApiOrigin, knowledgeTrpcUrl } from './endpoint';
 import { normalizeKnowledgeError } from './errors';
@@ -15,19 +15,32 @@ import { normalizeKnowledgeError } from './errors';
  */
 
 export type KnowledgeTrpcClient = TRPCClient<KnowledgeApiRouter>;
+export type KnowledgeUntypedTrpcClient = TRPCUntypedClient<KnowledgeApiRouter>;
 export type KnowledgeFetch = typeof fetch;
 
+function knowledgeLinks(origin: string, workspaceId: string, fetchImpl: KnowledgeFetch) {
+  return [
+    httpBatchLink({
+      url: knowledgeTrpcUrl(origin, workspaceId),
+      maxItems: 10,
+      maxURLLength: 8192,
+      fetch: (input, init) => fetchImpl(input, { ...init, credentials: 'include' }),
+    }),
+  ];
+}
+
 export function createKnowledgeTrpcClient(origin: string, workspaceId: string, fetchImpl: KnowledgeFetch = fetch): KnowledgeTrpcClient {
-  return createTRPCClient<KnowledgeApiRouter>({
-    links: [
-      httpBatchLink({
-        url: knowledgeTrpcUrl(origin, workspaceId),
-        maxItems: 10,
-        maxURLLength: 8192,
-        fetch: (input, init) => fetchImpl(input, { ...init, credentials: 'include' }),
-      }),
-    ],
-  });
+  return createTRPCClient<KnowledgeApiRouter>({ links: knowledgeLinks(origin, workspaceId, fetchImpl) });
+}
+
+/**
+ * The same transport with the flat `query(path, input, opts)` /
+ * `mutation(path, input, opts)` surface (U03): the page procedures are not on
+ * the router type until the API task mounts them, so the page client calls
+ * them dynamically and validates every response against the shared contracts.
+ */
+export function createKnowledgeUntypedTrpcClient(origin: string, workspaceId: string, fetchImpl: KnowledgeFetch = fetch): KnowledgeUntypedTrpcClient {
+  return createTRPCUntypedClient<KnowledgeApiRouter>({ links: knowledgeLinks(origin, workspaceId, fetchImpl) });
 }
 
 /** One client per (origin, workspace) transport URL; per-call state travels in options, not in the client. */
@@ -39,6 +52,22 @@ export function createKnowledgeClientCache(fetchImpl: KnowledgeFetch = fetch) {
       let client = clients.get(url);
       if (!client) {
         client = createKnowledgeTrpcClient(origin, workspaceId, fetchImpl);
+        clients.set(url, client);
+      }
+      return client;
+    },
+  };
+}
+
+/** The untyped twin of the cache above, for surfaces that call not-yet-typed procedures. */
+export function createKnowledgeUntypedClientCache(fetchImpl: KnowledgeFetch = fetch) {
+  const clients = new Map<string, KnowledgeUntypedTrpcClient>();
+  return {
+    get(origin: string, workspaceId: string): KnowledgeUntypedTrpcClient {
+      const url = knowledgeTrpcUrl(origin, workspaceId);
+      let client = clients.get(url);
+      if (!client) {
+        client = createKnowledgeUntypedTrpcClient(origin, workspaceId, fetchImpl);
         clients.set(url, client);
       }
       return client;

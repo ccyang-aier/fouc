@@ -9,7 +9,7 @@
  */
 
 import type { ReactNode } from 'react';
-import { GearSix, Plus, Stack, Warning, XCircle } from '@phosphor-icons/react';
+import { FilePlus, GearSix, Plus, Stack, Warning, XCircle } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -18,8 +18,6 @@ import type { KnowledgeAuthUser } from '../auth/auth-api';
 import type { WorkspaceWithRole } from '../organization/client';
 import { WorkspaceSwitcher } from '../organization/workspace-bar';
 import { CanvasState, TreeSkeletonRows } from '../canvas-states';
-import { PageTree } from './page-tree';
-import type { NavigationSection } from './tree-model';
 
 export function PageTreeSidebar({
   workspaces,
@@ -58,21 +56,34 @@ export function PageTreeSidebar({
   );
 }
 
-/** Caption row of the tree area with the teamspace creation affordance. */
-export function TreeAreaHeader({ onCreateTeamspace, busy }: { onCreateTeamspace: () => void; busy?: boolean }) {
+/** Caption row of the tree area: page creation first (the common action), teamspace creation beside it. */
+export function TreeAreaHeader({ onCreateTeamspace, onCreatePage, busy }: { onCreateTeamspace: () => void; onCreatePage?: () => void; busy?: boolean }) {
   return (
     <div className="flex h-[34px] shrink-0 items-center justify-between gap-2 border-b border-[var(--line)] px-3">
       <span className="text-[11px] font-medium tracking-[0.02em] text-[var(--muted-strong)]">页面树</span>
-      <button
-        type="button"
-        aria-label="新建团队空间"
-        title="新建团队空间"
-        disabled={busy}
-        onClick={onCreateTeamspace}
-        className="flex size-6 items-center justify-center rounded-[5px] text-[var(--muted)] outline-none transition-colors hover:bg-[var(--raise)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] disabled:opacity-45"
-      >
-        <Plus aria-hidden className="size-3.5" />
-      </button>
+      <div className="flex items-center gap-0.5">
+        {onCreatePage ? (
+          <button
+            type="button"
+            aria-label="新建页面"
+            title="新建页面（在当前团队空间根部）"
+            onClick={onCreatePage}
+            className="flex size-6 items-center justify-center rounded-[5px] text-[var(--muted)] outline-none transition-colors hover:bg-[var(--raise)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)]"
+          >
+            <FilePlus aria-hidden className="size-3.5" />
+          </button>
+        ) : null}
+        <button
+          type="button"
+          aria-label="新建团队空间"
+          title="新建团队空间"
+          disabled={busy}
+          onClick={onCreateTeamspace}
+          className="flex size-6 items-center justify-center rounded-[5px] text-[var(--muted)] outline-none transition-colors hover:bg-[var(--raise)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] disabled:opacity-45"
+        >
+          <Plus aria-hidden className="size-3.5" />
+        </button>
+      </div>
     </div>
   );
 }
@@ -139,18 +150,6 @@ export function TreeEmpty({ onCreateTeamspace }: { onCreateTeamspace: () => void
       }
     />
   );
-}
-
-export function TreeReady({
-  sections,
-  selectedSectionId,
-  onSelectSection,
-}: {
-  sections: readonly NavigationSection[];
-  selectedSectionId: string | null;
-  onSelectSection: (sectionId: string) => void;
-}) {
-  return <PageTree sections={sections} selectedSectionId={selectedSectionId} selectedPageId={null} onSelectSection={onSelectSection} />;
 }
 
 /** Account row: session identity, settings entry and the A04 sign-out flow. */

@@ -555,10 +555,17 @@
       "dependencies": [
         "P03"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "backend/src/knowledge/pages/",
       "acceptance": "UUID 离线可建、ltree 子树移动、分数排序、回收恢复；禁止循环/越权移动/跨租户父子；失败事务回滚",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "23 项测试/2273 断言(17 项真实 PG 集成):UUID 幂等建页、ltree 单事务子树移动+路径推导、base-36 分数排序相邻插入零重排、回收/恢复经真实 rebuild 验证、循环/跨 teamspace/跨租户全拒、失败全量回滚与 4 连接并发收敛",
+          "command": "bun test backend/src/knowledge/pages; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/pages; bun test shared/src/knowledge/contracts",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-page-tree.md"
+        }
+      ]
     },
     {
       "id": "T02",
@@ -659,10 +666,17 @@
         "R01",
         "E02"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "backend/src/knowledge/collaboration/",
       "acceptance": "WS 校验会话/PAT/page scope；view/comment 连接禁止正文写入；GC 开启；拒绝未授权文档和 workspace 频道",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "官方 provider 协议客户端 6 项测试:会话/PAT 按 scope 鉴权、view/comment 原生只读强制(syncStatus 拒写)、GC 开启、匿名/越权/围栏/频道名统一 permission-denied、Bun 生产装配双适配",
+          "command": "bun test backend/src/knowledge/collaboration; pnpm exec eslint --no-ignore backend/src/knowledge/collaboration; node scripts/verify-knowledge-boundaries.mjs",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-collaboration-auth.md"
+        }
+      ]
     },
     {
       "id": "B02",
@@ -942,10 +956,17 @@
         "P03",
         "Q01"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "backend/src/knowledge/comments/",
       "acceptance": "创建/回复/解决/重开/删除有独立生命周期；仅 comment+ 可写；通知 Outbox 原子且 workspace 隔离",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "6 组真实集成测试(58 断言):线程生命周期状态机、view 级五写路径全拒/comment+ 走通、通知+outbox 同事务原子(回滚零残留)、回收页即时拒绝、跨租户 NOT_FOUND 不可区分",
+          "command": "bun test backend/src/knowledge/comments; pnpm exec eslint --no-ignore backend/src/knowledge/comments",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-comments.md"
+        }
+      ]
     },
     {
       "id": "N02",
@@ -1038,10 +1059,17 @@
       "dependencies": [
         "P03"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "backend/src/knowledge/sharing/",
       "acceptance": "link 主体令牌哈希、到期/撤销/级别限制；页面及附件同权；访问不能获得 workspace 全部成员主体；授权接口有集成证据",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "12 项测试(140 断言,真实会话/队列/RLS):令牌只存 SHA-256+恒时比较、到期/撤销/降级即时 fail closed、link 主体恰为 {link:id} 不扩 workspace、越权创建/跨租户/重建窗口全拒",
+          "command": "bun test backend/src/knowledge/sharing; pnpm exec eslint --no-ignore backend/src/knowledge/sharing; bun test shared/src/knowledge backend/src/knowledge/permissions; node scripts/verify-knowledge-boundaries.mjs",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-sharing.md"
+        }
+      ]
     },
     {
       "id": "U06",
@@ -1126,10 +1154,17 @@
       "dependencies": [
         "G01"
       ],
-      "status": "in_progress",
+      "status": "accepted",
       "deliverables": "backend/src/knowledge/observability/",
       "acceptance": "每次真实调用记录 token/耗时/模型/workspace/任务与 trace；日志无 key；错误调用可追踪",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "观测模块 5 项 Bun + 5 项 Node 测试;真实 PG 记账(token 未报告存 null)、OTLP collector 实收 trace 与 usage 行关联、密钥零泄漏、独立短事务先于结果提交",
+          "command": "bun test backend/src/knowledge/observability; bun build backend/src/knowledge/observability/observability.test.ts --target=node && node --test; bun test backend/src/knowledge/ai; pnpm exec eslint --no-ignore backend/src/knowledge/observability backend/src/database/knowledge; bun backend/scripts/knowledge-schema.ts --check",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-observability.md"
+        }
+      ]
     },
     {
       "id": "H01",
@@ -1225,10 +1260,17 @@
         "I01",
         "Q01"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "backend/src/knowledge/assets/",
       "acceptance": "按 workspace/hash 寻址、秒传不泄漏跨租户存在性；上传确认校验哈希/大小/类型；下载授权；asset.created 原子且真实 S3 往返",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "13 项测试(9 项真实 MinIO 往返+一次性 RLS 库):workspace/hash 寻址秒传、确认校验哈希/大小/类型、下载授权与方法绑定签名、asset.created 同事务原子、跨租户互不可见",
+          "command": "bun test backend/src/knowledge/assets; pnpm exec eslint --no-ignore backend/src/knowledge/assets; pnpm shared:typecheck; bun backend/scripts/knowledge-schema.ts --check",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-assets.md"
+        }
+      ]
     },
     {
       "id": "U08",

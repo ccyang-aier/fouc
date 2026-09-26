@@ -11,10 +11,11 @@
  */
 
 import { useEffect, useState } from 'react';
-import { ArrowClockwise, ArrowCounterClockwise, TextAa } from '@phosphor-icons/react';
+import { ArrowClockwise, ArrowCounterClockwise } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import type { Editor } from '@tiptap/react';
 import type { PageUndo } from '../../collaboration/page-undo';
+import { BlockFormatMenu } from './block-format-menu';
 
 const undoEvents = ['stack-item-added', 'stack-item-popped', 'stack-item-updated'] as const;
 
@@ -86,15 +87,7 @@ export function EditorToolbar({ editor, pageUndo, editable }: { editor: Editor |
         <ArrowClockwise aria-hidden className="size-3.5" />
       </ToolbarButton>
       <span aria-hidden className="mx-1.5 h-4 w-px bg-[var(--line)]" />
-      <button
-        type="button"
-        aria-disabled="true"
-        aria-label="文本格式（即将接入）"
-        title="文本格式（即将接入）"
-        className="flex size-7 cursor-not-allowed items-center justify-center rounded-[6px] text-[var(--muted)] opacity-50"
-      >
-        <TextAa aria-hidden className="size-3.5" />
-      </button>
+      <BlockFormatMenu editor={editor} disabled={blocked} />
     </div>
   );
 }

@@ -11,11 +11,12 @@
  * itself lives in the Y.Doc — the component holds no second content state.
  */
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import type { PageScope, PermissionLevel } from '@fouc/shared/knowledge/contracts';
 import { createBlockIdExtension, createKnowledgeExtensions } from '@fouc/shared/knowledge/schema';
 import type * as Y from 'yjs';
+import { ClockCounterClockwise } from '@phosphor-icons/react';
 import type { PageUndo } from '../collaboration/page-undo';
 import { EditorToolbar } from './components/editor-toolbar';
 import { ReadonlyBanner } from './components/readonly-banner';
@@ -23,6 +24,8 @@ import { SyncIndicator } from './components/sync-indicator';
 import type { PageEditorViewModel } from './editor-state';
 import { pageCollaborationExtension } from './page-collaboration';
 import { createPageReviewExtension, PageReviewRail } from './review-integration';
+import { createBlockEditingExtensions } from './extensions';
+import { HistoryPanel } from '../history/history-panel';
 
 /** Document typography for the shared schema's DOM output (E05 adds NodeView polish). */
 const documentClasses = [
@@ -77,13 +80,15 @@ export function PageEditorSurface({
   view: PageEditorViewModel;
 }) {
   // One extension set per page session: shared registry (E01), blockId
-  // integrity (E02) and the y-prosemirror binding (B04/B08).
+  // integrity (E02), the y-prosemirror binding (B04/B08), suggestion marks
+  // (S01) and markdown/keyboard block editing (E04).
   const extensions = useMemo(
     () => [
       ...createKnowledgeExtensions(),
       createBlockIdExtension({ pageId: scope.pageId }),
       pageCollaborationExtension(document, pageUndo),
       createPageReviewExtension(),
+      ...createBlockEditingExtensions(),
     ],
     [scope.pageId, document, pageUndo],
   );
@@ -105,11 +110,25 @@ export function PageEditorSurface({
     editor?.setEditable(view.editable);
   }, [editor, view.editable]);
 
+  const [historyOpen, setHistoryOpen] = useState(false);
+
   return (
     <section aria-label="页面编辑器" className="flex h-full min-w-0 flex-1 flex-col bg-[var(--panel)]">
       <header className="flex h-[42px] shrink-0 items-center justify-between gap-4 border-b border-[var(--line)] px-4">
         <EditorToolbar editor={editor} pageUndo={pageUndo} editable={view.editable} />
-        <SyncIndicator view={view.sync} />
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setHistoryOpen((open) => !open)}
+            aria-expanded={historyOpen}
+            aria-label="历史版本"
+            title="历史版本"
+            className="flex size-7 items-center justify-center rounded-[6px] text-[var(--muted)] transition-colors hover:bg-[var(--overlay)] hover:text-[var(--ink)]"
+          >
+            <ClockCounterClockwise aria-hidden className="size-4" />
+          </button>
+          <SyncIndicator view={view.sync} />
+        </div>
       </header>
       {view.readonlyReason ? <ReadonlyBanner reason={view.readonlyReason} level={level} /> : null}
       <div className="flex min-h-0 flex-1">
@@ -119,6 +138,17 @@ export function PageEditorSurface({
           </div>
         </div>
         <PageReviewRail editor={editor} editable={view.editable} />
+        {historyOpen && (
+          <aside className="flex h-full w-[320px] shrink-0 flex-col border-l border-[var(--line)] bg-[var(--panel)]">
+            <HistoryPanel
+              workspaceId={scope.workspaceId}
+              pageId={scope.pageId}
+              editor={editor}
+              canEdit={view.editable}
+              onClose={() => setHistoryOpen(false)}
+            />
+          </aside>
+        )}
       </div>
     </section>
   );

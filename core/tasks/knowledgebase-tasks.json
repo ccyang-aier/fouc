@@ -915,10 +915,17 @@
       "dependencies": [
         "E03"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "src/features/knowledge/editor/",
       "acceptance": "段落、标题、列表、待办、引用、代码、公式可鼠标/键盘插入编辑；输入规则、格式菜单可访问",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "编辑器全树 104 项测试/601 断言(E04 48 项):7 类输入规则、Enter/Backspace/Tab/块移动键盘语义、IME 合成守卫、格式命令 toggle 与菜单模型;装配进 editor-surface 与工具栏;scratch 草稿清零",
+          "command": "bun test src/features/knowledge/editor; bunx eslint --no-ignore src/features/knowledge/editor/extensions; bunx tsc --noEmit",
+          "verifiedAt": "2026-09-27",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-27-e04-block-input.md"
+        }
+      ]
     },
     {
       "id": "E05",

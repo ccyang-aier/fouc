@@ -22,6 +22,7 @@
     "ai": "7.0.116",
     "better-auth": "1.7.6",
     "drizzle-orm": "0.45.3",
+    "graphile-worker": "0.18.0",
     "hono": "^4.13.5",
     "mysql2": "3.24.4",
     "nodemailer": "10.0.10",

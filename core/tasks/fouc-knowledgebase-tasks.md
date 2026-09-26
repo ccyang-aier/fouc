@@ -2,7 +2,7 @@
 
 > 本表由 `knowledgebase-tasks.json` 生成。修改任务和证据后运行 `node scripts/verify-knowledge-tasks.mjs --write`。
 
-设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 19 项。
+设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 20 项。
 
 ## 实施约束
 
@@ -49,7 +49,7 @@
 | [x] 已验收 | A01 | Better Auth 邮箱与会话<br>backend/src/knowledge/auth/ | §1 / §6 | D03, R01 | 注册/登录/登出/邮箱验证、会话撤销真实往返；cookie/CORS 配置对 Web 与桌面有效 | [真实 PG+HTTP 邮箱验证与会话撤销、Cookie/CORS/CSRF；15 测试/167 断言](../../core/tasks/knowledgebase-acceptance/2026-09-26-authentication.md) |
 | [ ] 进行中 | O01 | 个人/团队 Workspace 与成员群组<br>backend/src/knowledge/organization/ | §3.3 / §6.1 | A01, D03 | 个人和团队走同一逻辑；owner/admin/member/guest 与群组加入移除可操作且越权失败；成员邀请及身份绑定通过真实流程 | — |
 | [ ] 待实施 | O03 | Teamspace 服务与根默认权限<br>backend/src/knowledge/organization/teamspaces.ts | §3.3 / §6.1 | O01 | 空间 CRUD 与 owner/admin 授权、根默认级别持久化；个人和团队共享逻辑；权限计算可读取根默认值 | — |
-| [ ] 进行中 | Q01 | 事务 Outbox 与 graphile-worker 调度<br>backend/src/knowledge/workers/ | §2 / §3.2 / §5.1 / §7.1 | D03, R01 | 业务写与 outbox 原子提交；重试、去重、崩溃恢复不丢任务；Worker 生命周期停止干净 | — |
+| [x] 已验收 | Q01 | 事务 Outbox 与 graphile-worker 调度<br>backend/src/knowledge/workers/ | §2 / §3.2 / §5.1 / §7.1 | D03, R01 | 业务写与 outbox 原子提交；重试、去重、崩溃恢复不丢任务；Worker 生命周期停止干净 | [11 项真实 PG 原子入队、幂等、重试和终止进程恢复验收](../../core/tasks/knowledgebase-acceptance/2026-09-26-queue.md) |
 | [ ] 待实施 | P02 | 有效权限物化、失效围栏与索引同步<br>backend/src/knowledge/permissions/ | §6.2 / §12 | P01, O03, Q01 | 授权/移动/断继承批量子树重算；撤权立即阻止旧 ACL 泄漏；GIN 主体数组与 block_index 同步；群组变更无需逐页重算 | — |
 | [ ] 进行中 | A03 | PAT 与服务端请求身份<br>backend/src/knowledge/auth/tokens.ts | §1 / §6 / §9.5 | A01 | PAT 哈希存储、范围/到期/撤销生效；session/PAT 归一到同一发起者上下文，禁止客户端伪造身份 | — |
 | [ ] 待实施 | A00 | Hono tRPC 服务端上下文与错误边界<br>backend/src/api/knowledge/ | §1 / §2 / §10 | C01, R01, A03 | tRPC 挂载 Hono；session/PAT 与 workspace 上下文注入；输入校验、结构化错误、无权/未认证拒绝；不依赖客户端 | — |
@@ -501,6 +501,7 @@ flowchart TD
   style D03 fill:#e4f4e9,stroke:#42845c
   style R01 fill:#e4f4e9,stroke:#42845c
   style A01 fill:#e4f4e9,stroke:#42845c
+  style Q01 fill:#e4f4e9,stroke:#42845c
   style B00 fill:#e4f4e9,stroke:#42845c
   style S01 fill:#e4f4e9,stroke:#42845c
   style W01 fill:#e4f4e9,stroke:#42845c

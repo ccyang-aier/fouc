@@ -464,10 +464,17 @@
         "D03",
         "R01"
       ],
-      "status": "in_progress",
+      "status": "accepted",
       "deliverables": "backend/src/knowledge/workers/",
       "acceptance": "业务写与 outbox 原子提交；重试、去重、崩溃恢复不丢任务；Worker 生命周期停止干净",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "11 项真实 PG 原子入队、幂等、重试和终止进程恢复验收",
+          "command": "bun test backend/src/knowledge/workers/workers.integration.test.ts; pnpm backend:typecheck; node scripts/verify-knowledge-boundaries.mjs",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-queue.md"
+        }
+      ]
     },
     {
       "id": "P02",

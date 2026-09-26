@@ -2,7 +2,7 @@
 
 > 本表由 `knowledgebase-tasks.json` 生成。修改任务和证据后运行 `node scripts/verify-knowledge-tasks.mjs --write`。
 
-设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 54 项。
+设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 56 项。
 
 ## 实施约束
 
@@ -27,12 +27,14 @@
 
 - M03 Obsidian 仓库导入导出
 - M04 Notion 导出导入
-- U03 页面树操作与乐观反馈
+- U04 本地元数据操作队列
 - E03 Tiptap 编辑器 React 容器与状态
 - N03 通知收件箱
 - U05 权限、继承与分享管理界面
-- H04 向量/RRF/重排统一检索
+- H05 搜索 UI 与块引用导航
 - U08 浏览器哈希上传与进度控制
+- J02 共用只读 Agent 工具
+- J01 上下文组装与引用校验
 
 ## 拓扑排序任务表
 
@@ -72,7 +74,7 @@
 | [x] 已验收 | T02 | 数据库页面及类型化行属性<br>backend/src/knowledge/databases/ | §3.3 / §9.2 | T01 | database/row 均为 page；每行可独立 Y.Doc/权限；schema/属性验证、筛选排序和分页正确 | [18 项测试/161 断言连跑 4 次一致:database/row 均 page 且独立授权、九种列类型验证、筛选/排序/游标分页 fail closed、列变更语义;另修复 pg like_escape 通配符不转义缺陷](../../core/tasks/knowledgebase-acceptance/2026-09-26-databases.md) |
 | [ ] 待实施 | M04 | Notion 导出导入<br>backend/src/knowledge/import-export/ | §4.4 | M01, T02, AS01, B02, U02 | HTML/Markdown/CSV、目录与附件导入真实样本；页面链接正确映射，无静默丢失 | — |
 | [x] 已验收 | O02 | Workspace/成员/Teamspace 组织界面<br>backend/src/knowledge/organization/; src/features/knowledge/organization/ | §3.3 / §6.1 | O03, U01 | 空间创建、切换、成员/群组管理闭环；空/加载/无权/失败状态清晰；根默认权限生效 | [32 项测试/160 断言、lint/类型/边界全过;空间/成员/群组/Teamspace 面板闭环、四态+乐观回滚、根默认权限重算提示;13 张状态截图归档为视觉证据](../../core/tasks/knowledgebase-acceptance/2026-09-26-organization-ui.md) |
-| [ ] 待实施 | U03 | 页面树操作与乐观反馈<br>src/features/knowledge/navigation/ | §3.3 / §5.4 | U02, T01 | 新建、重命名、图标/封面、嵌套移动/排序、删除恢复、键盘导航；失败恢复且提示明确 | — |
+| [x] 已验收 | U03 | 页面树操作与乐观反馈<br>src/features/knowledge/navigation/ | §3.3 / §5.4 | U02, T01 | 新建、重命名、图标/封面、嵌套移动/排序、删除恢复、键盘导航；失败恢复且提示明确 | [272 项前端测试(新增 32):全操作集+权限门、拖拽/Alt+方向分数移动、回收恢复闭环、乐观精确回滚+结构化 toast+B06 收敛(真实 QueryClient 单测)、行内 spinner/空态/错误态;浏览器 7 场景截图核验](../../core/tasks/knowledgebase-acceptance/2026-09-26-tree-operations.md) |
 | [ ] 待实施 | U04 | 本地元数据操作队列<br>src/features/knowledge/collaboration/metadata-queue.ts | §5.4 | U03 | UUID 操作持久化，离线乐观、重连按序提交；循环/无权失败回滚；重复重试不重复创建 | — |
 | [x] 已验收 | B03 | Redis 多节点广播<br>backend/src/knowledge/collaboration/ | §2 / §5.1 / §11 | B02, I01 | 两节点客户端并发更新实时收敛；断连恢复；无二次业务正文存储 | [30 项 collaboration 全套(含 B01/B02/B06/V01 回归):两节点双向 16ms 收敛、断连重连 state-vector 并集无丢失、redis-origin 跳过 store+Redlock 单写者防二次落库、WRONGPASS 认证与 reconnecting/autoResubscribe 断线恢复](../../core/tasks/knowledgebase-acceptance/2026-09-26-multi-node.md) |
 | [x] 已验收 | B04 | Web y-indexeddb 文档生命周期<br>src/features/knowledge/collaboration/ | §3.1 / §5.1 / §5.4 | B02 | 离线先加载本地 Y.Doc 可编辑；state vector 交换后收敛；切页清理 provider/监听；状态区分本地保存与云同步 | [21 项测试(含协议级 fake-WebSocket 集成与 fake-indexeddb 真实持久化):离线先渲染可编辑、重连 SV 双向收敛、destroy 三层清理无泄漏、local-only/syncing/synced/offline/error 状态机;另有真实监听器+RLS 库+TCP WS 的全栈冒烟](../../core/tasks/knowledgebase-acceptance/2026-09-26-web-documents.md) |
@@ -104,7 +106,7 @@
 | [x] 已验收 | H01 | 块索引增量投影<br>backend/src/knowledge/search/indexer.ts | §7.1 / §12 | M02, B02, P02, Q01, L01 | 遍历嵌套块、hash 差量增改删、修复 ID、更新 backlink；重跑幂等；短块带标题路径 | [13 项测试(L01 回归含):嵌套块全遍历(skip 容器不重复)、sha256 差量真零 DML、E02 规则修复 blockId 并回写 doc_state、与 backlinks 并发收敛(FOR UPDATE+同事务补算)、幂等重跑、title_path 标题路径列;权限投影经 P02 端口联动](../../core/tasks/knowledgebase-acceptance/2026-09-26-block-index.md) |
 | [x] 已验收 | H02 | 向量批量生成与模型换代<br>backend/src/knowledge/search/embeddings.ts | §7.1 / §12 | H01, G01 | 仅变化块调用；embed_model/维度隔离；后台重建完成原子切换，失败保持旧索引可用 | [22 项 search 全套测试:embedded_hash 血缘仅变化块调用(改1增1恰1批2值)、模型/维度隔离、重建单事务原子切换失败回退旧索引可查、批次限速与队列重试收敛;真实 Ollama 384 维 3 次调用记账,云嵌入端点已探明未耗成本](../../core/tasks/knowledgebase-acceptance/2026-09-26-embeddings.md) |
 | [x] 已验收 | H03 | BM25 中英文检索<br>backend/src/knowledge/search/keyword.ts | §7.2 / §7.3 | H01, D03 | pg_search/jieba 与 ICU 配置真实查询验证；workspace/principals 在排名前过滤；返回可引用块 | [19 项测试(6 新增+13 回归):真实 pg_search jieba 中文命中/英文前缀扩展/混合析取、EXPLAIN 实证权限过滤先于排名、可引用块结构(pageId/blockId/titlePath/snippet/score)入 shared 契约、分页一致、回收页即空](../../core/tasks/knowledgebase-acceptance/2026-09-26-keyword.md) |
-| [ ] 待实施 | H04 | 向量/RRF/重排统一检索<br>backend/src/knowledge/search/service.ts | §7.2 | H02, H03 | HNSW 限当前模型、各取 50/RRF 常数60/前20重排；查询前授权；API/AI/MCP 共用结果结构 | — |
+| [x] 已验收 | H04 | 向量/RRF/重排统一检索<br>backend/src/knowledge/search/service.ts | §7.2 | H02, H03 | HNSW 限当前模型、各取 50/RRF 常数60/前20重排；查询前授权；API/AI/MCP 共用结果结构 | [28 项 search 全套(6 新增+22 回归):HNSW 限当前模型(维度错实测防护)、两腿各 50→RRF k=60 与手算逐一吻合→前 20 真实 GLM rerank 精排(端点实测探明)、授权谓词两腿先于名次、HybridSearchHit 统一契约供 API/AI/MCP](../../core/tasks/knowledgebase-acceptance/2026-09-26-hybrid.md) |
 | [ ] 待实施 | H05 | 搜索 UI 与块引用导航<br>src/features/knowledge/search/ | §7.2 / §9.4 | H04, U02 | 关键词/语义混合查询、过滤/取消/空状态、键盘导航、引用预览；点击打开准确块并高亮 | — |
 | [ ] 待实施 | U08 | 浏览器哈希上传与进度控制<br>src/features/knowledge/assets/ | §8 / §8.1 | AS01, U02 | 浏览器 SHA256、预签名直传、完整性确认闭环；秒传/进度/取消/重试/错误均有反馈；通过真实后端与 S3 验证 | — |
 | [ ] 待实施 | U09 | 图片/音频/视频/文件/嵌入 NodeView<br>src/features/knowledge/editor/blocks/media/ | §4.1 / §8.1 / §12 | U08, E03 | 插入 asset:hash，上传进度/取消/失败重试，媒体懒加载；安全嵌入；替代文本、下载与键盘可用 | — |
@@ -524,6 +526,7 @@ flowchart TD
   style U02 fill:#e4f4e9,stroke:#42845c
   style T02 fill:#e4f4e9,stroke:#42845c
   style O02 fill:#e4f4e9,stroke:#42845c
+  style U03 fill:#e4f4e9,stroke:#42845c
   style B03 fill:#e4f4e9,stroke:#42845c
   style B04 fill:#e4f4e9,stroke:#42845c
   style B05 fill:#e4f4e9,stroke:#42845c
@@ -541,6 +544,7 @@ flowchart TD
   style H01 fill:#e4f4e9,stroke:#42845c
   style H02 fill:#e4f4e9,stroke:#42845c
   style H03 fill:#e4f4e9,stroke:#42845c
+  style H04 fill:#e4f4e9,stroke:#42845c
   style W01 fill:#e4f4e9,stroke:#42845c
   style W02 fill:#e4f4e9,stroke:#42845c
   style W03 fill:#e4f4e9,stroke:#42845c

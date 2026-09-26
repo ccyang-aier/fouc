@@ -655,10 +655,17 @@
         "U02",
         "T01"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "src/features/knowledge/navigation/",
       "acceptance": "新建、重命名、图标/封面、嵌套移动/排序、删除恢复、键盘导航；失败恢复且提示明确",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "272 项前端测试(新增 32):全操作集+权限门、拖拽/Alt+方向分数移动、回收恢复闭环、乐观精确回滚+结构化 toast+B06 收敛(真实 QueryClient 单测)、行内 spinner/空态/错误态;浏览器 7 场景截图核验",
+          "command": "bun test src/features/knowledge; pnpm typecheck; pnpm exec eslint --max-warnings=0 src/features/knowledge/navigation src/features/knowledge/data; node scripts/verify-knowledge-boundaries.mjs",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-tree-operations.md"
+        }
+      ]
     },
     {
       "id": "U04",
@@ -1325,10 +1332,17 @@
         "H02",
         "H03"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "backend/src/knowledge/search/service.ts",
       "acceptance": "HNSW 限当前模型、各取 50/RRF 常数60/前20重排；查询前授权；API/AI/MCP 共用结果结构",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "28 项 search 全套(6 新增+22 回归):HNSW 限当前模型(维度错实测防护)、两腿各 50→RRF k=60 与手算逐一吻合→前 20 真实 GLM rerank 精排(端点实测探明)、授权谓词两腿先于名次、HybridSearchHit 统一契约供 API/AI/MCP",
+          "command": "bun test backend/src/knowledge/search; pnpm backend:typecheck; pnpm shared:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/search",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-hybrid.md"
+        }
+      ]
     },
     {
       "id": "H05",

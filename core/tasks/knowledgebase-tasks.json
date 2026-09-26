@@ -689,10 +689,17 @@
         "B01",
         "Q01"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "backend/src/knowledge/collaboration/persistence.ts",
       "acceptance": "从 doc_state 加载，2 秒防抖/最长 10 秒落库；state/vector/outbox 同事务；崩溃重连内容不丢",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "4 项持久化集成测试 + 6 项 B01 回归全过:doc_state 唯一权威、2s/10s 防抖实测、state/vector/doc.changed 同事务、重启恢复与 maxDebounce 强制落库",
+          "command": "bun test backend/src/knowledge/collaboration; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/collaboration; node scripts/verify-knowledge-boundaries.mjs",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-document-persistence.md"
+        }
+      ]
     },
     {
       "id": "B03",

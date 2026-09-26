@@ -2,7 +2,7 @@
 
 > 本表由 `knowledgebase-tasks.json` 生成。修改任务和证据后运行 `node scripts/verify-knowledge-tasks.mjs --write`。
 
-设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 37 项。
+设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 38 项。
 
 ## 实施约束
 
@@ -25,10 +25,15 @@
 
 ## 可开始的任务
 
-- B02 Y.Doc 权威持久化与原子 Outbox
 - A04 登录、注册、SSO 与会话恢复界面
 - T02 数据库页面及类型化行属性
 - O02 Workspace/成员/Teamspace 组织界面
+- B03 Redis 多节点广播
+- B04 Web y-indexeddb 文档生命周期
+- B05 桌面 SQLite 离线 Yjs 副本
+- B06 工作区无状态事件与缓存失效
+- V01 自动、结束会话与手动检查点
+- L01 页面/块链接与反向引用派生
 - W04 图片视觉描述与 OCR
 - B09 服务端 Agent Awareness 发布
 
@@ -61,7 +66,7 @@
 | [x] 已验收 | T01 | 页面树服务与分数排序<br>backend/src/knowledge/pages/ | §3.3 / §5.4 | P03 | UUID 离线可建、ltree 子树移动、分数排序、回收恢复；禁止循环/越权移动/跨租户父子；失败事务回滚 | [23 项测试/2273 断言(17 项真实 PG 集成):UUID 幂等建页、ltree 单事务子树移动+路径推导、base-36 分数排序相邻插入零重排、回收/恢复经真实 rebuild 验证、循环/跨 teamspace/跨租户全拒、失败全量回滚与 4 连接并发收敛](../../core/tasks/knowledgebase-acceptance/2026-09-26-page-tree.md) |
 | [x] 已验收 | AS01 | S3 工作区资源服务与预签名<br>backend/src/knowledge/assets/ | §8 / §8.1 | P03, I01, Q01 | 按 workspace/hash 寻址、秒传不泄漏跨租户存在性；上传确认校验哈希/大小/类型；下载授权；asset.created 原子且真实 S3 往返 | [13 项测试(9 项真实 MinIO 往返+一次性 RLS 库):workspace/hash 寻址秒传、确认校验哈希/大小/类型、下载授权与方法绑定签名、asset.created 同事务原子、跨租户互不可见](../../core/tasks/knowledgebase-acceptance/2026-09-26-assets.md) |
 | [x] 已验收 | B01 | Hocuspocus v4 鉴权与只读连接<br>backend/src/knowledge/collaboration/ | §5 / §5.1 / §6.2 | P03, R01, E02 | WS 校验会话/PAT/page scope；view/comment 连接禁止正文写入；GC 开启；拒绝未授权文档和 workspace 频道 | [官方 provider 协议客户端 6 项测试:会话/PAT 按 scope 鉴权、view/comment 原生只读强制(syncStatus 拒写)、GC 开启、匿名/越权/围栏/频道名统一 permission-denied、Bun 生产装配双适配](../../core/tasks/knowledgebase-acceptance/2026-09-26-collaboration-auth.md) |
-| [ ] 待实施 | B02 | Y.Doc 权威持久化与原子 Outbox<br>backend/src/knowledge/collaboration/persistence.ts | §3.1 / §5.1 | B01, Q01 | 从 doc_state 加载，2 秒防抖/最长 10 秒落库；state/vector/outbox 同事务；崩溃重连内容不丢 | — |
+| [x] 已验收 | B02 | Y.Doc 权威持久化与原子 Outbox<br>backend/src/knowledge/collaboration/persistence.ts | §3.1 / §5.1 | B01, Q01 | 从 doc_state 加载，2 秒防抖/最长 10 秒落库；state/vector/outbox 同事务；崩溃重连内容不丢 | [4 项持久化集成测试 + 6 项 B01 回归全过:doc_state 唯一权威、2s/10s 防抖实测、state/vector/doc.changed 同事务、重启恢复与 maxDebounce 强制落库](../../core/tasks/knowledgebase-acceptance/2026-09-26-document-persistence.md) |
 | [x] 已验收 | U01 | TanStack Query 与 tRPC 客户端数据边界<br>src/features/knowledge/data/ | §1 / §2 / §10 | A00 | 类型安全调用；workspace Query keys 隔离；取消/错误/失效一致；Web SaaS/私有部署地址及桌面 sidecar 端点配置真实可用 | [AppRouter 类型推导客户端 + workspace 键隔离 + 取消/错误归一/失效 + 四路径端点解析；29 项测试/125 断言、类型/lint/边界全过，浏览器 bundle 无后端运行时](../../core/tasks/knowledgebase-acceptance/2026-09-26-client-data.md) |
 | [x] 已验收 | A02 | OAuth 与 OIDC/SSO 身份<br>backend/src/knowledge/auth/ | §1 / §6 | A01 | 真实或标准测试 IdP 完整回调/PKCE/state/nonce；账号身份映射一致；错误可恢复 | [79 项真实 HTTP/PG 测试全通过（A02 新增 41 项）；Node 24 冒烟真实 OIDC/OAuth 回调、单次 state、身份映射与错误恢复通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-authentication.md) |
 | [ ] 待实施 | A04 | 登录、注册、SSO 与会话恢复界面<br>src/features/knowledge/auth/ | §1 / §6 | A02, A03, U01 | 邮箱登录/注册/验证、OAuth/SSO、登出、会话过期恢复闭环；加载/错误/键盘焦点清晰；Web 与桌面共用 | — |
@@ -515,6 +520,7 @@ flowchart TD
   style T01 fill:#e4f4e9,stroke:#42845c
   style AS01 fill:#e4f4e9,stroke:#42845c
   style B01 fill:#e4f4e9,stroke:#42845c
+  style B02 fill:#e4f4e9,stroke:#42845c
   style U01 fill:#e4f4e9,stroke:#42845c
   style A02 fill:#e4f4e9,stroke:#42845c
   style B00 fill:#e4f4e9,stroke:#42845c

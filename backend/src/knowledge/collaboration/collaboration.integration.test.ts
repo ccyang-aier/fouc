@@ -1,70 +1,22 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
-import { HocuspocusProvider } from '@hocuspocus/provider';
-import { WebSocket as NodeWebSocket } from 'ws';
-import type { AuthorizedScope } from '@hocuspocus/provider';
-import * as Y from 'yjs';
 import { principal } from '@fouc/shared/knowledge/contracts';
 import { withKnowledgeTenant } from '../../database/knowledge/tenant';
 import { replaceAuthorizedPageAcl } from '../permissions/mutations';
 import { createPermissionsFixture, until, type PermissionsFixture } from '../permissions/permissions-test-fixture';
 import { pageDocumentName } from './page-documents';
+import { connectCollaborationClient } from './collaboration-test-client';
+import type { CollaborationClient } from './collaboration-test-client';
 import { createPageCollaborationListener } from './page-collaboration-bun';
 import type { PageCollaborationListener } from './page-collaboration-bun';
 
-/** Official protocol client against the real Bun-sidecar listener assembly. */
-class HeaderWebSocket extends NodeWebSocket {
-  constructor(url: string, protocols?: string[]) {
-    super(url, protocols, { headers: HeaderWebSocket.headers, maxPayload: 8 * 1024 * 1024 });
-  }
-  static headers: Record<string, string> = {};
-}
-
-interface ClientHandle {
-  provider: HocuspocusProvider;
-  document: Y.Doc;
-  scope(): AuthorizedScope | undefined;
-  failure(): string | undefined;
-  synced(): boolean;
-  destroy(): Promise<void>;
-}
-
-let listener: PageCollaborationListener;
-let serverWebOrigin: string;
-
-function connect(name: string, authorization?: string): ClientHandle {
-  const headers: Record<string, string> = { origin: serverWebOrigin };
-  if (authorization?.startsWith('Bearer ')) headers.authorization = authorization;
-  else if (authorization) headers.cookie = authorization;
-  HeaderWebSocket.headers = headers;
-  const document = new Y.Doc();
-  const state = { scope: undefined as AuthorizedScope | undefined, failure: undefined as string | undefined, synced: false };
-  const provider = new HocuspocusProvider({
-    url: `ws://127.0.0.1:${listener.port}`,
-    name,
-    document,
-    WebSocketPolyfill: HeaderWebSocket,
-    maxAttempts: 1,
-    delay: 0,
-    minDelay: 0,
-    jitter: false,
-    onAuthenticated: ({ scope }: { scope: AuthorizedScope }) => { state.scope = scope; },
-    onAuthenticationFailed: ({ reason }: { reason: string }) => { state.failure = reason; },
-    onSynced: ({ state: value }: { state: boolean }) => { state.synced = value; },
-  } as never);
-  return {
-    provider, document,
-    scope: () => state.scope,
-    failure: () => state.failure,
-    synced: () => state.synced,
-    async destroy() {
-      provider.destroy();
-      await new Promise((resolve) => setTimeout(resolve, 30));
-    },
-  };
-}
-
 describe('authenticated page collaboration websocket boundary', () => {
   let fixture: PermissionsFixture;
+  let listener: PageCollaborationListener;
+  let serverWebOrigin: string;
+
+  function connect(name: string, authorization?: string): CollaborationClient {
+    return connectCollaborationClient({ port: listener.port, origin: serverWebOrigin, name, authorization });
+  }
 
   beforeAll(async () => {
     fixture = await createPermissionsFixture();

@@ -3,6 +3,7 @@ import type { Pool } from 'pg';
 import { createLogger } from '../../platform/logger';
 import type { KnowledgeRequestAuthenticator } from '../auth';
 import { createPageCollaboration } from './page-collaboration-server';
+import type { PageCollaborationPersistence } from './page-collaboration-server';
 
 const log = createLogger('knowledge.collaboration');
 
@@ -39,8 +40,8 @@ export interface PageCollaborationListener {
  * to the authenticated Hocuspocus host through crossws's Bun adapter. Z03 owns
  * when/where this runs; tests embed it exactly the way production does.
  */
-export function createPageCollaborationListener(deps: { authenticator: KnowledgeRequestAuthenticator; pool: Pool }, options: { port?: number; hostname?: string; signal?: AbortSignal } = {}): PageCollaborationListener {
-  const hocuspocus = createPageCollaboration(deps);
+export function createPageCollaborationListener(deps: { authenticator: KnowledgeRequestAuthenticator; pool: Pool }, options: { port?: number; hostname?: string; signal?: AbortSignal; persistence?: PageCollaborationPersistence } = {}): PageCollaborationListener {
+  const hocuspocus = createPageCollaboration(deps, options.persistence);
   const connections = new Map<unknown, ReturnType<typeof hocuspocus.handleConnection>>();
   const crossws = bunAdapter({
     hooks: {

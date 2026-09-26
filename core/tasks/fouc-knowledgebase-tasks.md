@@ -2,7 +2,7 @@
 
 > 本表由 `knowledgebase-tasks.json` 生成。修改任务和证据后运行 `node scripts/verify-knowledge-tasks.mjs --write`。
 
-设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 62 项。
+设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 63 项。
 
 ## 实施约束
 
@@ -36,7 +36,6 @@
 - N02 CRDT 评论锚点与侧栏
 - N03 通知收件箱
 - L02 实时只读块引用 NodeView
-- U05 权限、继承与分享管理界面
 - U06 数据库表格视图
 - U08 浏览器哈希上传与进度控制
 - W05 媒体派生任务编排与重索引
@@ -106,7 +105,7 @@
 | [x] 已验收 | L01 | 页面/块链接与反向引用派生<br>backend/src/knowledge/search/backlinks.ts | §4.6 / §7.1 | M02, B02, T01 | 页面链接、blockReference 可解析稳定 ID；正文变化更新 backlink；无权限来源不泄漏 | [6 项真实队列/RLS 测试:显式 pageId 优先/标题精确/块锚解析、悬链零落表零泄漏、doc.changed 消费幂等(FOR UPDATE 串行)、入链经 P03 谓词过滤、损坏 doc_state 留队重试不阻塞](../../core/tasks/knowledgebase-acceptance/2026-09-26-backlinks.md) |
 | [ ] 待实施 | L02 | 实时只读块引用 NodeView<br>src/features/knowledge/editor/blocks/block-reference.tsx | §4.6 | L01, E03 | 按需加载来源 Y.Doc；更改实时反映；点击原文高亮；无权/删除/循环引用有明确状态并释放连接 | — |
 | [x] 已验收 | P04 | 分享链接权限与失效<br>backend/src/knowledge/sharing/ | §6.1 / §9.5 | P03 | link 主体令牌哈希、到期/撤销/级别限制；页面及附件同权；访问不能获得 workspace 全部成员主体；授权接口有集成证据 | [12 项测试(140 断言,真实会话/队列/RLS):令牌只存 SHA-256+恒时比较、到期/撤销/降级即时 fail closed、link 主体恰为 {link:id} 不扩 workspace、越权创建/跨租户/重建窗口全拒](../../core/tasks/knowledgebase-acceptance/2026-09-26-sharing.md) |
-| [ ] 待实施 | U05 | 权限、继承与分享管理界面<br>src/features/knowledge/sharing/ | §6 | P04, U02 | 用户/组/workspace 授权、继承开关、有效权限解释；完整保存/撤销失败反馈；非 full 禁止操作 | — |
+| [x] 已验收 | U05 | 权限、继承与分享管理界面<br>src/features/knowledge/sharing/ | §6 | P04, U02 | 用户/组/workspace 授权、继承开关、有效权限解释；完整保存/撤销失败反馈；非 full 禁止操作 | [4 项测试/26 断言:级别序/主体解析、授予不超操作者+workspace 主体校验、有效权限四源解释链、变更计划去重与拒绝;面板含继承开关重算说明、链接令牌一次性展示、非 edit+ 全禁用](../../core/tasks/knowledgebase-acceptance/2026-09-26-sharing-ui.md) |
 | [ ] 待实施 | U06 | 数据库表格视图<br>src/features/knowledge/databases/ | §3.3 | T02, E03, U02 | 类型化列增删改、行属性编辑、筛选/排序/打开行正文；加载/无权/空/错误及键盘完整 | — |
 | [ ] 待实施 | U07 | 数据库看板视图<br>src/features/knowledge/databases/ | §3.3 | U06 | 同一组行按状态分组，拖动改属性；无状态/无权限/空状态正确；打开同一行页面；失败乐观回滚 | — |
 | [x] 已验收 | G01 | AI SDK 统一模型网关<br>backend/src/knowledge/ai/gateway/ | §9.1 | F02, D03 | 所有模型调用经统一入口；云/BYOK/Ollama、流、取消、异常可控；无任意工具越权路径 | [官方 AI SDK 网关、21 项 Bun / 16 项 Node 测试；真实 GLM 平台/流式/PG 加密 BYOK 撤销与真实 Ollama 生成/流式/384 维向量通过；密钥与正文不入日志。](../../core/tasks/knowledgebase-acceptance/2026-09-26-model-gateway.md) |
@@ -548,6 +547,7 @@ flowchart TD
   style N01 fill:#e4f4e9,stroke:#42845c
   style L01 fill:#e4f4e9,stroke:#42845c
   style P04 fill:#e4f4e9,stroke:#42845c
+  style U05 fill:#e4f4e9,stroke:#42845c
   style G01 fill:#e4f4e9,stroke:#42845c
   style G02 fill:#e4f4e9,stroke:#42845c
   style H01 fill:#e4f4e9,stroke:#42845c

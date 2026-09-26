@@ -1135,10 +1135,17 @@
         "P04",
         "U02"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "src/features/knowledge/sharing/",
       "acceptance": "用户/组/workspace 授权、继承开关、有效权限解释；完整保存/撤销失败反馈；非 full 禁止操作",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "4 项测试/26 断言:级别序/主体解析、授予不超操作者+workspace 主体校验、有效权限四源解释链、变更计划去重与拒绝;面板含继承开关重算说明、链接令牌一次性展示、非 edit+ 全禁用",
+          "command": "bun test src/features/knowledge/sharing; pnpm typecheck; pnpm exec eslint --max-warnings=0 src/features/knowledge/sharing; node scripts/verify-knowledge-boundaries.mjs",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-sharing-ui.md"
+        }
+      ]
     },
     {
       "id": "P04",

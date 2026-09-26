@@ -219,10 +219,17 @@
         "B02",
         "U02"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "backend/src/knowledge/import-export/",
       "acceptance": "HTML/Markdown/CSV、目录与附件导入真实样本；页面链接正确映射，无静默丢失",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "12 项测试/62 断言全绿(修复前 8/4):figure.quote 行内聚合、code figure 元素化(解析器 pre 吞并修复)、multiSelect 单格拆分信号、行链接断言下钻;HTML/Markdown/CSV 三路径 + 目录外壳两遍父归属 + wikilink/asset/断链映射无静默丢失",
+          "command": "bun test backend/src/knowledge/import-export/notion-html.test.ts; cd backend && bunx tsc --noEmit",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-m04-notion-import.md"
+        }
+      ]
     },
     {
       "id": "D01",

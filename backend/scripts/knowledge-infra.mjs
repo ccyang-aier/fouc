@@ -14,6 +14,35 @@ const linuxPath = (value) => windows ? value.replace(/^([A-Za-z]):[\\/]/, (_, dr
 let localEnv = {};
 const wslDistro = () => process.env.KNOWLEDGE_WSL_DISTRO ?? localEnv.KNOWLEDGE_WSL_DISTRO ?? 'Ubuntu-22.04';
 
+// Windows reaches the WSL-side services through the WSL NAT address. The
+// Windows→WSL loopback relay cannot sustain pooled concurrent connections, so
+// host-side endpoints must never point at 127.0.0.1.
+async function endpointHost() {
+  if (!windows) return '127.0.0.1';
+  const output = await run('wsl.exe', ['-d', wslDistro(), '--exec', 'hostname', '-I'], { quiet: true, timeout: 15000 });
+  const address = output.trim().split(/\s+/).find((token) => /^\d+(\.\d+){3}$/.test(token) && !token.startsWith('127.'));
+  if (!address) throw new Error('Could not resolve the WSL address for development endpoints.');
+  return address;
+}
+
+// The WSL NAT address changes across reboots; realign endpoint hosts in the
+// gitignored env file so test suites keep a single source of truth.
+function syncEndpoints(host) {
+  let changed = false;
+  const lines = readFileSync(envPath, 'utf8').split(/\r?\n/).map((line) => {
+    const updated = line
+      .replace(/^(DATABASE_URL|DATABASE_ADMIN_URL|REDIS_URL)=(\S+@)[^:]+:/, `$1=$2${host}:`)
+      .replace(/^(S3_ENDPOINT)=(\w+:\/\/)[^:]+:/, `$1=$2${host}:`);
+    if (updated !== line) changed = true;
+    return updated;
+  });
+  if (changed) {
+    writeFileSync(envPath, lines.join('\n'));
+    localEnv = loadLocalEnv();
+    console.log(`Development endpoints in .env.knowledge.local updated to the current WSL address ${host}.`);
+  }
+}
+
 function loadLocalEnv() {
   if (!existsSync(envPath)) throw new Error('Run node backend/scripts/knowledge-infra.mjs init first.');
   return Object.fromEntries(readFileSync(envPath, 'utf8').split(/\r?\n/).filter((line) => line && !line.startsWith('#')).map((line) => {
@@ -85,6 +114,7 @@ async function init() {
   const postgresPassword = password();
   const appPassword = password();
   const redisPassword = password();
+  const host = await endpointHost();
   localEnv = {
     KNOWLEDGE_WSL_DISTRO: wslDistro(),
     KNOWLEDGE_POSTGRES_USER: 'fouc_admin',
@@ -92,10 +122,10 @@ async function init() {
     KNOWLEDGE_POSTGRES_PASSWORD: postgresPassword,
     KNOWLEDGE_APP_PASSWORD: appPassword,
     KNOWLEDGE_REDIS_PASSWORD: redisPassword,
-    DATABASE_URL: `postgresql://fouc_app:${appPassword}@127.0.0.1:55432/fouc_knowledge`,
-    DATABASE_ADMIN_URL: `postgresql://fouc_admin:${postgresPassword}@127.0.0.1:55432/fouc_knowledge`,
-    REDIS_URL: `redis://:${redisPassword}@127.0.0.1:56379`,
-    S3_ENDPOINT: 'http://127.0.0.1:59000',
+    DATABASE_URL: `postgresql://fouc_app:${appPassword}@${host}:55432/fouc_knowledge`,
+    DATABASE_ADMIN_URL: `postgresql://fouc_admin:${postgresPassword}@${host}:55432/fouc_knowledge`,
+    REDIS_URL: `redis://:${redisPassword}@${host}:56379`,
+    S3_ENDPOINT: `http://${host}:59000`,
     S3_REGION: 'us-east-1',
     S3_BUCKET: 'fouc-knowledge',
     S3_ACCESS_KEY_ID: `fouc${randomBytes(10).toString('hex')}`,
@@ -251,6 +281,7 @@ async function main() {
   if (!['init', 'up', 'verify', 'status'].includes(command)) throw new Error('Usage: knowledge-infra.mjs init|up|verify|status');
   if (command === 'init') return init();
   localEnv = loadLocalEnv();
+  if (windows) syncEndpoints(await endpointHost());
   if (command === 'up') {
     await compose(['config', '--quiet'], { quiet: true });
     await keepWslAlive();

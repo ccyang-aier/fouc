@@ -1,7 +1,10 @@
 name: fouc-knowledge-dev
 
 # I01: infrastructure only. Backend and Media Worker are assembled in Z03.
-# All published ports are loopback-only and separate from existing local services.
+# Ports bind 0.0.0.0 inside the WSL NAT network: the Windows host reaches them
+# via the WSL address (see knowledge-infra.mjs endpoint sync), while physical
+# LAN peers cannot route into the WSL NAT. The Windows→WSL loopback relay is
+# intentionally avoided: it cannot sustain pooled concurrent connections.
 services:
   postgres:
     image: paradedb/paradedb:0.25.10-pg17
@@ -12,7 +15,7 @@ services:
       POSTGRES_DB: ${KNOWLEDGE_POSTGRES_DB:?Run knowledge-infra.mjs init}
       POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
     ports:
-      - "127.0.0.1:55432:5432"
+      - "55432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     shm_size: 256mb
@@ -33,7 +36,7 @@ services:
       - -ec
       - exec redis-server --appendonly yes --requirepass "$$REDIS_PASSWORD"
     ports:
-      - "127.0.0.1:56379:6379"
+      - "56379:6379"
     volumes:
       - redis-data:/data
     healthcheck:
@@ -62,8 +65,8 @@ services:
       MINIO_BROWSER_REDIRECT_URL: http://127.0.0.1:59001
     command: ["server", "/data", "--console-address", ":9001"]
     ports:
-      - "127.0.0.1:59000:9000"
-      - "127.0.0.1:59001:9001"
+      - "59000:9000"
+      - "59001:9001"
     volumes:
       - minio-data:/data
     healthcheck:

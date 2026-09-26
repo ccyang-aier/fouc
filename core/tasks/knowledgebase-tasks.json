@@ -1561,10 +1561,17 @@
         "H04",
         "J02"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "backend/src/knowledge/workers/media.ts",
       "acceptance": "graphile-worker 调用无状态 HTTP；幂等派生结果写库并索引引用块；图片/录音/PDF 可搜索且 AI 可读",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "3 项集成测试/11 断言(真实 MinIO+graphile+outbox):presigned GET 转写幂等落库、引用页 doc.changed 重索引、插图成资产入 S3、永久失败安全码;mime 集合镜像服务端 contracts.py",
+          "command": "bun test backend/src/knowledge/workers/media.integration.test.ts; cd backend && bunx tsc --noEmit",
+          "verifiedAt": "2026-09-27",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-27-w05-media-orchestration.md"
+        }
+      ]
     },
     {
       "id": "U10",

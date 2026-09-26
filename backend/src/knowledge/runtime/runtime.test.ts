@@ -13,6 +13,11 @@ const base = {
 test('roles and role-specific requirements are explicit, without an unauthenticated fallback', () => {
   assert.deepEqual(readKnowledgeConfig(base).roles, ['api', 'collab', 'worker', 'mcp']);
   assert.deepEqual(readKnowledgeConfig({ ...base, ROLE: 'mcp', REDIS_URL: undefined, S3_ENDPOINT: undefined }).roles, ['mcp']);
+  assert.deepEqual(readKnowledgeConfig({ ...base, ROLE: 'api,collab', MEDIA_WORKER_URL: undefined }).roles, ['api', 'collab']);
+  assert.deepEqual(readKnowledgeConfig({ ...base, ROLE: 'collab, collab,api' }).roles, ['collab', 'api']);
+  assert.throws(() => readKnowledgeConfig({ ...base, ROLE: 'api,shell' }), /ROLE/);
+  assert.throws(() => readKnowledgeConfig({ ...base, ROLE: 'all,api' }), /ROLE/);
+  assert.throws(() => readKnowledgeConfig({ ...base, ROLE: ',' }), /ROLE/);
   assert.throws(() => readKnowledgeConfig({ ...base, ROLE: 'collab', REDIS_URL: undefined }), /REDIS_URL/);
   assert.throws(() => readKnowledgeConfig({ ...base, ROLE: 'api', S3_ENDPOINT: undefined }), /S3_ENDPOINT/);
   assert.throws(() => readKnowledgeConfig({ ...base, ROLE: 'worker', MEDIA_WORKER_URL: undefined }), /MEDIA_WORKER_URL/);

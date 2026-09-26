@@ -42,7 +42,7 @@ export interface PageCollaborationListener {
  * to the authenticated Hocuspocus host through crossws's Bun adapter. Z03 owns
  * when/where this runs; tests embed it exactly the way production does.
  */
-export function createPageCollaborationListener(deps: { authenticator: KnowledgeRequestAuthenticator; pool: Pool }, options: { port?: number; hostname?: string; signal?: AbortSignal; persistence?: PageCollaborationPersistence; broadcast?: PageCollaborationBroadcast; events?: WorkspaceEventsChannel } = {}): PageCollaborationListener {
+export function createPageCollaborationListener(deps: { authenticator: KnowledgeRequestAuthenticator; pool: Pool }, options: { port?: number; hostname?: string; signal?: AbortSignal; persistence?: PageCollaborationPersistence; broadcast?: PageCollaborationBroadcast; events?: WorkspaceEventsChannel; /** Non-WebSocket fallback so one port can also host the HTTP API (Z03). */ http?: (request: Request, clientAddress: string) => Response | Promise<Response> } = {}): PageCollaborationListener {
   const hocuspocus = createPageCollaboration(deps, options.persistence, options.broadcast);
   const connections = new Map<unknown, ReturnType<typeof hocuspocus.handleConnection>>();
   const crossws = bunAdapter({
@@ -75,6 +75,10 @@ export function createPageCollaborationListener(deps: { authenticator: Knowledge
         if (events && match) return (await events.handleUpgrade(request, match[1]!, srv)) ?? (undefined as never);
         // Returning the promise lets Bun keep the upgrade alive across the adapter's async hooks.
         return crossws.handleUpgrade(request, srv as never) as never;
+      }
+      if (options.http) {
+        const info = srv.requestIP(request);
+        return options.http(request, info?.address ?? '127.0.0.1');
       }
       return new Response('Not found.', { status: 404 });
     },

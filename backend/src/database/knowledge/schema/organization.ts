@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { check, foreignKey, index, jsonb, primaryKey, unique, uuid, varchar } from 'drizzle-orm/pg-core';
+import { check, foreignKey, index, jsonb, primaryKey, text, unique, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
 import type { Workspace } from '@fouc/shared/knowledge/contracts';
 import { memberRole, permissionLevel, workspaceKind } from './enums';
 import { authUser } from './identity';
@@ -27,6 +27,31 @@ export const member = knowledge.table('member', {
 }, (table) => [
   primaryKey({ columns: [table.workspaceId, table.userId] }),
   index('member_user_idx').on(table.userId, table.workspaceId),
+]);
+
+export const workspaceInvitation = knowledge.table('workspace_invitation', {
+  workspaceId: uuid('workspace_id').notNull().references(() => workspace.id, { onDelete: 'cascade' }),
+  id: uuid('id').notNull(),
+  email: text('email').notNull(),
+  role: memberRole('role').notNull(),
+  tokenHash: varchar('token_hash', { length: 64 }).notNull(),
+  invitedBy: uuid('invited_by').notNull().references(() => authUser.id),
+  expiresAt: instant('expires_at').notNull(),
+  createdAt: instant('created_at').notNull().defaultNow(),
+  acceptedAt: instant('accepted_at'),
+  acceptedBy: uuid('accepted_by').references(() => authUser.id, { onDelete: 'set null' }),
+  revokedAt: instant('revoked_at'),
+}, (table) => [
+  primaryKey({ columns: [table.workspaceId, table.id] }),
+  unique('workspace_invitation_token_unique').on(table.workspaceId, table.tokenHash),
+  uniqueIndex('workspace_invitation_pending_email_idx').on(table.workspaceId, table.email)
+    .where(sql`${table.acceptedAt} IS NULL AND ${table.revokedAt} IS NULL`),
+  index('workspace_invitation_expiry_idx').on(table.workspaceId, table.expiresAt),
+  check('workspace_invitation_role', sql`${table.role} <> 'owner'`),
+  check('workspace_invitation_email', sql`${table.email} = lower(btrim(${table.email})) AND position('@' IN ${table.email}) > 1`),
+  check('workspace_invitation_token_hash', sql`${table.tokenHash} ~ '^[a-f0-9]{64}$'`),
+  check('workspace_invitation_expiry', sql`${table.expiresAt} > ${table.createdAt}`),
+  check('workspace_invitation_state', sql`(${table.acceptedAt} IS NULL OR ${table.revokedAt} IS NULL) AND (${table.acceptedBy} IS NULL OR ${table.acceptedAt} IS NOT NULL)`),
 ]);
 
 export const group = knowledge.table('group', {

@@ -81,6 +81,10 @@ export async function seedTenantTestData(admin: Pool) {
       await db.insert(tables.authUser).values({ id: userId, name, email: `${userId}@tenant.test` });
       await db.insert(tables.workspace).values({ id: workspaceId, name, kind: 'team' });
       await db.insert(tables.member).values({ workspaceId, userId, role: 'owner' });
+      await db.insert(tables.workspaceInvitation).values({
+        workspaceId, id: randomUUID(), email: 'invitee@tenant.test', role: 'member', tokenHash: 'd'.repeat(64),
+        invitedBy: userId, expiresAt: new Date(Date.now() + 86_400_000),
+      });
       await db.insert(tables.group).values({ workspaceId, id: ids.group, name: 'Editors' });
       await db.insert(tables.groupMember).values({ workspaceId, groupId: ids.group, userId });
       await db.insert(tables.teamspace).values({ workspaceId, id: ids.teamspace, name: 'Team', defaultAccess: 'view' });

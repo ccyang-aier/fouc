@@ -6,6 +6,7 @@ import { knowledgeSchema } from './schema';
 
 /** The request owns its transaction; services cannot start a second top-level one. */
 export type KnowledgeTenantTransaction = Omit<NodePgDatabase<typeof knowledgeSchema>, 'transaction'>;
+export type KnowledgeIdentityTransaction = Pick<KnowledgeTenantTransaction, 'select' | 'execute'>;
 
 export class KnowledgeTransactionAbortedError extends Error {
   constructor() {
@@ -25,7 +26,24 @@ export async function withKnowledgeTenant<T>(
   operation: (db: KnowledgeTenantTransaction) => Promise<T>,
 ): Promise<T> {
   if (!entityIdSchema.safeParse(workspaceId).success) throw new TypeError('Invalid workspace ID');
+  return withKnowledgeScope(pool, { workspaceId, sessionId: '', readOnly: false }, operation);
+}
 
+/** sessionId must be obtained from a verified server-side auth session, never a request body. */
+export async function withKnowledgeIdentity<T>(
+  pool: Pool,
+  sessionId: string,
+  operation: (db: KnowledgeIdentityTransaction) => Promise<T>,
+): Promise<T> {
+  if (!entityIdSchema.safeParse(sessionId).success) throw new TypeError('Invalid session ID');
+  return withKnowledgeScope(pool, { workspaceId: '', sessionId, readOnly: true }, operation);
+}
+
+async function withKnowledgeScope<T>(
+  pool: Pool,
+  scope: { workspaceId: string; sessionId: string; readOnly: boolean },
+  operation: (db: KnowledgeTenantTransaction) => Promise<T>,
+): Promise<T> {
   const client = await pool.connect();
   let began = false;
   let reusable = false;
@@ -34,9 +52,10 @@ export async function withKnowledgeTenant<T>(
   client.on('error', onError);
 
   try {
-    await client.query('BEGIN');
+    await client.query(scope.readOnly ? 'BEGIN READ ONLY' : 'BEGIN');
     began = true;
-    await client.query("SELECT set_config('app.workspace_id', $1, true)", [workspaceId]);
+    // Explicitly clear the other scope even on a reused connection.
+    await client.query("SELECT set_config('app.workspace_id', $1, true), set_config('app.auth_session_id', $2, true)", [scope.workspaceId, scope.sessionId]);
     const db: KnowledgeTenantTransaction = drizzle(client, { schema: knowledgeSchema });
     const result = await operation(db);
     if (connectionError) throw connectionError;

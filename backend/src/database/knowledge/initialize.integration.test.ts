@@ -52,7 +52,7 @@ afterAll(async () => {
 }, 30_000);
 
 describe('current schema initialization against PostgreSQL', () => {
-  test('catalog matches all 28 tables, column types, constraints, indexes, RLS and least-privilege grants', async () => {
+  test('catalog matches all current tables, column types, constraints, indexes, RLS and least-privilege grants', async () => {
     const status = await inspectKnowledgeDatabase(database.admin, database.pool);
     expect(status.state).toBe('ready');
     expect(status.tables).toBe(tables.allKnowledgeTables.length);

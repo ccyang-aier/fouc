@@ -387,6 +387,27 @@ CREATE TABLE "knowledge"."workspace" (
 	CONSTRAINT "workspace_settings_object" CHECK (jsonb_typeof("knowledge"."workspace"."settings") = 'object')
 );
 
+CREATE TABLE "knowledge"."workspace_invitation" (
+	"workspace_id" uuid NOT NULL,
+	"id" uuid NOT NULL,
+	"email" text NOT NULL,
+	"role" "knowledge"."member_role" NOT NULL,
+	"token_hash" varchar(64) NOT NULL,
+	"invited_by" uuid NOT NULL,
+	"expires_at" timestamp with time zone NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"accepted_at" timestamp with time zone,
+	"accepted_by" uuid,
+	"revoked_at" timestamp with time zone,
+	CONSTRAINT "workspace_invitation_workspace_id_id_pk" PRIMARY KEY("workspace_id","id"),
+	CONSTRAINT "workspace_invitation_token_unique" UNIQUE("workspace_id","token_hash"),
+	CONSTRAINT "workspace_invitation_role" CHECK ("knowledge"."workspace_invitation"."role" <> 'owner'),
+	CONSTRAINT "workspace_invitation_email" CHECK ("knowledge"."workspace_invitation"."email" = lower(btrim("knowledge"."workspace_invitation"."email")) AND position('@' IN "knowledge"."workspace_invitation"."email") > 1),
+	CONSTRAINT "workspace_invitation_token_hash" CHECK ("knowledge"."workspace_invitation"."token_hash" ~ '^[a-f0-9]{64}$'),
+	CONSTRAINT "workspace_invitation_expiry" CHECK ("knowledge"."workspace_invitation"."expires_at" > "knowledge"."workspace_invitation"."created_at"),
+	CONSTRAINT "workspace_invitation_state" CHECK (("knowledge"."workspace_invitation"."accepted_at" IS NULL OR "knowledge"."workspace_invitation"."revoked_at" IS NULL) AND ("knowledge"."workspace_invitation"."accepted_by" IS NULL OR "knowledge"."workspace_invitation"."accepted_at" IS NOT NULL))
+);
+
 ALTER TABLE "knowledge"."ai_task" ADD CONSTRAINT "ai_task_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "knowledge"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "knowledge"."ai_task" ADD CONSTRAINT "ai_task_initiated_by_user_id_fk" FOREIGN KEY ("initiated_by") REFERENCES "knowledge_auth"."user"("id") ON DELETE no action ON UPDATE no action;
 ALTER TABLE "knowledge"."ai_usage" ADD CONSTRAINT "ai_usage_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "knowledge"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
@@ -427,6 +448,9 @@ ALTER TABLE "knowledge"."personal_access_token" ADD CONSTRAINT "personal_access_
 ALTER TABLE "knowledge"."share_link" ADD CONSTRAINT "share_link_created_by_user_id_fk" FOREIGN KEY ("created_by") REFERENCES "knowledge_auth"."user"("id") ON DELETE no action ON UPDATE no action;
 ALTER TABLE "knowledge"."share_link" ADD CONSTRAINT "share_link_workspace_id_page_id_page_workspace_id_id_fk" FOREIGN KEY ("workspace_id","page_id") REFERENCES "knowledge"."page"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "knowledge"."teamspace" ADD CONSTRAINT "teamspace_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "knowledge"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "knowledge"."workspace_invitation" ADD CONSTRAINT "workspace_invitation_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "knowledge"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "knowledge"."workspace_invitation" ADD CONSTRAINT "workspace_invitation_invited_by_user_id_fk" FOREIGN KEY ("invited_by") REFERENCES "knowledge_auth"."user"("id") ON DELETE no action ON UPDATE no action;
+ALTER TABLE "knowledge"."workspace_invitation" ADD CONSTRAINT "workspace_invitation_accepted_by_user_id_fk" FOREIGN KEY ("accepted_by") REFERENCES "knowledge_auth"."user"("id") ON DELETE set null ON UPDATE no action;
 CREATE INDEX "ai_task_workspace_status_idx" ON "knowledge"."ai_task" USING btree ("workspace_id","status","updated_at");
 CREATE INDEX "ai_task_initiator_idx" ON "knowledge"."ai_task" USING btree ("initiated_by");
 CREATE INDEX "ai_usage_workspace_time_idx" ON "knowledge"."ai_usage" USING btree ("workspace_id","created_at");
@@ -467,3 +491,5 @@ CREATE INDEX "personal_access_token_user_idx" ON "knowledge"."personal_access_to
 CREATE INDEX "share_link_page_idx" ON "knowledge"."share_link" USING btree ("workspace_id","page_id");
 CREATE INDEX "share_link_token_idx" ON "knowledge"."share_link" USING btree ("workspace_id","token_hash");
 CREATE INDEX "share_link_created_by_idx" ON "knowledge"."share_link" USING btree ("created_by");
+CREATE UNIQUE INDEX "workspace_invitation_pending_email_idx" ON "knowledge"."workspace_invitation" USING btree ("workspace_id","email") WHERE "knowledge"."workspace_invitation"."accepted_at" IS NULL AND "knowledge"."workspace_invitation"."revoked_at" IS NULL;
+CREATE INDEX "workspace_invitation_expiry_idx" ON "knowledge"."workspace_invitation" USING btree ("workspace_id","expires_at");

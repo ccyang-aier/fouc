@@ -1,6 +1,6 @@
 import { getTableConfig } from 'drizzle-orm/pg-core';
 import { allKnowledgeTables, knowledgeBusinessTables } from './schema';
-import { knowledgeTenantPredicate } from './rls';
+import { knowledgePoliciesForTable } from './rls';
 import { assertKnowledgeApplicationRole } from './initialize-role';
 import type { KnowledgeSqlConnection } from './initialize-role';
 
@@ -89,9 +89,12 @@ export async function inspectKnowledgeDatabase(admin: KnowledgeSqlConnection, ap
       if (relation.enabled && relation.forced) status.forcedTenantTables += 1;
       else issues.push(`RLS not enabled and forced: ${target}`);
       const tablePolicies = policies.rows.filter((row) => key(row.schema, row.table) === target);
-      const policy = tablePolicies[0];
-      if (tablePolicies.length !== 1 || !policy || policy.name !== 'tenant_scope' || policy.command !== '*' || !policy.permissive || policy.roles.length !== 1 || policy.roles[0] !== 0
-        || normalizePolicy(policy.using ?? '') !== normalizePolicy(knowledgeTenantPredicate) || normalizePolicy(policy.check ?? '') !== normalizePolicy(knowledgeTenantPredicate)) {
+      const expectedPolicies = knowledgePoliciesForTable(table);
+      if (tablePolicies.length !== expectedPolicies.length || expectedPolicies.some((expected) => {
+        const policy = tablePolicies.find((item) => item.name === expected.name);
+        return !policy || policy.command !== (expected.command === 'ALL' ? '*' : 'r') || !policy.permissive || policy.roles.length !== 1 || policy.roles[0] !== 0
+          || normalizePolicy(policy.using ?? '') !== normalizePolicy(expected.using) || normalizePolicy(policy.check ?? '') !== normalizePolicy(expected.check ?? '');
+      })) {
         issues.push(`Tenant policy differs from current definition: ${target}`);
       }
     }

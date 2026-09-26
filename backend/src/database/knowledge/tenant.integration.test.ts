@@ -55,7 +55,7 @@ describe('real PostgreSQL tenant isolation', () => {
       expect(row.forced, row.name).toBe(true);
       expect(row.expression, row.name).toContain('app.workspace_id');
       expect(row.check, row.name).toBe(row.expression);
-      expect(row.policies, row.name).toBe(1);
+      expect(row.policies, row.name).toBe(['member', 'workspace'].includes(row.name) ? 2 : 1);
     }
   });
 

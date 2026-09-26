@@ -414,10 +414,17 @@
         "A01",
         "D03"
       ],
-      "status": "in_progress",
+      "status": "accepted",
       "deliverables": "backend/src/knowledge/organization/",
       "acceptance": "个人和团队走同一逻辑；owner/admin/member/guest 与群组加入移除可操作且越权失败；成员邀请及身份绑定通过真实流程",
-      "evidence": []
+      "evidence": [
+        {
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-organization.md",
+          "summary": "真实 HTTP/PG/RLS 116 测试、2747 断言；并发最后 owner、一次性邀请及锁等待期间自然过期均验证",
+          "command": "bun test backend/src/database/knowledge backend/src/knowledge/auth backend/src/knowledge/organization shared/src/knowledge/contracts/organization.test.ts; pnpm backend:typecheck; pnpm shared:typecheck; bun backend/scripts/knowledge-schema.ts --check",
+          "verifiedAt": "2026-09-26"
+        }
+      ]
     },
     {
       "id": "O02",
@@ -1758,7 +1765,7 @@
       ],
       "deliverables": "backend/src/knowledge/organization/teamspaces.ts",
       "acceptance": "空间 CRUD 与 owner/admin 授权、根默认级别持久化；个人和团队共享逻辑；权限计算可读取根默认值",
-      "status": "pending",
+      "status": "in_progress",
       "evidence": []
     },
     {

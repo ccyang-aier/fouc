@@ -37,7 +37,7 @@ describe('knowledge current Drizzle schema', () => {
   test('covers all designed business tables and keeps global identity separate', () => {
     const names = knowledgeBusinessTables.map((table) => getTableConfig(table).name);
     for (const name of [
-      'workspace', 'member', 'group', 'group_member', 'teamspace', 'page',
+      'workspace', 'member', 'workspace_invitation', 'group', 'group_member', 'teamspace', 'page',
       'database_definition', 'doc_state', 'doc_checkpoint', 'page_acl',
       'page_effective_acl', 'block_index', 'backlink', 'asset', 'comment_thread',
       'comment', 'outbox', 'ai_task', 'ai_usage', 'notification',

@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events';
 import { describe, expect, test } from 'bun:test';
 import type { Pool } from 'pg';
-import { KnowledgeTransactionAbortedError, withKnowledgeTenant } from './tenant';
+import { KnowledgeTransactionAbortedError, withKnowledgeIdentity, withKnowledgeTenant } from './tenant';
 
 const workspaceId = '11223344-5566-4788-99aa-bbccddeeff00';
 
@@ -34,10 +34,19 @@ describe('request tenant transaction lifecycle', () => {
   test('scope is a parameterized local setting on the borrowed connection', async () => {
     const testConnection = connection(async (command) => ({ command }));
     expect(await withKnowledgeTenant(testConnection.pool, workspaceId, async () => 'committed')).toBe('committed');
-    expect(testConnection.commands).toEqual(['BEGIN', "SELECT set_config('app.workspace_id', $1, true)", 'COMMIT']);
-    expect(testConnection.parameters[1]).toEqual([workspaceId]);
+    expect(testConnection.commands).toEqual(['BEGIN', "SELECT set_config('app.workspace_id', $1, true), set_config('app.auth_session_id', $2, true)", 'COMMIT']);
+    expect(testConnection.parameters[1]).toEqual([workspaceId, '']);
     expect(testConnection.releases).toEqual([false]);
     expect(testConnection.client.listenerCount('error')).toBe(0);
+  });
+
+  test('identity discovery is read-only and clears the tenant setting', async () => {
+    const testConnection = connection(async (command) => ({ command: command === 'BEGIN READ ONLY' ? 'BEGIN' : command }));
+    await withKnowledgeIdentity(testConnection.pool, workspaceId, async () => undefined);
+    expect(testConnection.commands[0]).toBe('BEGIN READ ONLY');
+    expect(testConnection.parameters[1]).toEqual(['', workspaceId]);
+    await expect(withKnowledgeIdentity(testConnection.pool, 'bad-session', async () => undefined)).rejects.toThrow('Invalid session ID');
+    expect(testConnection.checkouts()).toBe(1);
   });
 
   test('destroys a connection when BEGIN fails', async () => {

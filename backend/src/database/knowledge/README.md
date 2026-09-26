@@ -22,6 +22,7 @@ pnpm exec tsc --noEmit -p backend/tsconfig.json
 - `block_embedding_staging` 只存新模型的派生向量及对应内容哈希；旧模型在重建完成前仍由 `block_index` 提供查询。H02 验证哈希并事务切换时才替换 active 向量，避免重建期间覆盖旧模型导致漏检。
 - `page.acl_revision`、`page_effective_acl.revision` 和 `block_index.acl_revision` 为权限变更后的拒绝式失效留出依据；有效权限列为按等级累积的主体集合。
 - 模型密钥只在 `model_credential.encrypted_secret` 存放加密字节；`workspace.settings` 只引用公开配置和凭据 ID。PAT 与分享链接只存哈希。
+- `workspace_invitation` 仅保存一次性邀请令牌的 SHA-256 哈希；待接受邮箱在工作区内唯一，禁止邀请 owner。邀请接受与成员创建、personal→team 转换由组织服务在一个事务中完成。
 - 时间列统一为 `timestamptz`。后续写入服务负责更新 `updated_at`，不添加第二套触发器更新时间规则。
 
 ## 验收范围
@@ -41,15 +42,16 @@ bun backend/scripts/knowledge-db.ts check
 ```
 
 - `status` 只读返回 `empty`、`incomplete` 或 `ready` 与检查结果。`check` 仅在 `ready` 时成功退出。
-- `init` 在单一事务中执行当前生成 SQL、24 张业务表的强制 RLS、应用角色最小表和序列授权，并在提交前核验实际目录。任一步失败均回滚，初始化不会写入示例业务或身份数据。
+- `init` 在单一事务中执行当前生成 SQL、全部业务表的强制 RLS、应用角色最小表和序列授权，并在提交前核验实际目录。任一步失败均回滚，初始化不会写入示例业务或身份数据。
 - 任一目标 schema 已存在时，`init` 明确拒绝；没有重置、升级或迁移分支。发生结构差异时先调查检查结果，不要对已有库重复初始化。
 - `check` 核对表和列类型、约束名称与有效性、索引名称与方法、RLS 完整策略、扩展及有效权限。它不是任意数据库对象的完整语义 diff，也不验证后续 H02/H03 管理的检索索引。
-- 业务操作使用 `withKnowledgeTenant(pool, workspaceId, callback)`，通过同一借出连接上的事务局部租户上下文访问 Drizzle。调用前由服务验证用户成员资格；无上下文默认不可访问业务行。不要在回调中改用 `pool.query`。
+- 业务操作使用 `withKnowledgeTenant(pool, workspaceId, callback)`，通过同一借出连接上的事务局部租户上下文访问 Drizzle。服务必须在回调内验证身份和工作区成员资格后才执行业务操作；无上下文默认不可访问业务行。不要在回调中改用 `pool.query`。
+- 跨工作区发现只使用 `withKnowledgeIdentity(pool, sessionId, callback)` 的 `BEGIN READ ONLY`。`member`、`workspace` 各有一条 `FOR SELECT` 的 `own_identity` policy，只允许有效、未撤销且邮箱已验证会话发现自身成员关系。sessionId 必须来自服务端认证，不能来自请求 body；PAT 不能使用这一路径。业务写入仍由 `tenant_scope` 保护，没有 BYPASSRLS 或 SECURITY DEFINER。两种事务都显式清空另一种作用域。
 
 真实数据库回归只创建带随机 UUID 的一次性测试库，确认创建归属后清理并验证不存在；不会删除开发主库。
 
 ```powershell
-bun test backend/src/database/knowledge/schema.test.ts backend/src/database/knowledge/rls.test.ts backend/src/database/knowledge/tenant.test.ts backend/src/database/knowledge/tenant.integration.test.ts backend/src/database/knowledge/initialize.test.ts backend/src/database/knowledge/initialize.integration.test.ts
+bun test backend/src/database/knowledge
 ```
 
 D02/D03 实测覆盖两个租户在全部业务表上的隔离、无上下文拒绝、连接复用与失败回收、初始化原子性、复合外键和数据库行约束，以及真实 Y.Doc 的二进制保存、检查点恢复和并发收敛。CLI 用例以独立进程执行真实部署命令。

@@ -246,10 +246,17 @@
         "D01",
         "I01"
       ],
-      "status": "in_progress",
+      "status": "accepted",
       "deliverables": "backend/src/database/knowledge/tenant.ts",
       "acceptance": "SET LOCAL/set_config 随事务回收；非超级用户跨租户 SELECT/INSERT/UPDATE/DELETE 均拒绝，连接池无上下文泄漏",
-      "evidence": []
+      "evidence": [
+        {
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-storage.md",
+          "summary": "真实两租户全表隔离、事务/连接复用与异常清理 19 项测试通过",
+          "command": "bun test backend/src/database/knowledge/tenant.test.ts backend/src/database/knowledge/rls.test.ts backend/src/database/knowledge/tenant.integration.test.ts",
+          "verifiedAt": "2026-09-26"
+        }
+      ]
     },
     {
       "id": "R01",
@@ -309,7 +316,7 @@
         "D02",
         "I01"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "deliverables": "backend/scripts/knowledge-db.ts; backend/src/database/knowledge/*.test.ts",
       "acceptance": "在真实 ParadeDB 创建新库、执行全部表/索引/RLS；两个租户恶意访问测试通过",
       "evidence": []
@@ -765,7 +772,7 @@
       "dependencies": [
         "E02"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "deliverables": "shared/src/knowledge/schema/suggestions/",
       "acceptance": "插入带 mark、删除保留内容；接受/拒绝按 suggestionId 原子执行；范围/嵌套/替换/撤销正确",
       "evidence": []
@@ -1703,8 +1710,15 @@
       ],
       "deliverables": "shared/src/knowledge/collaboration/",
       "acceptance": "定义 human/agent/mcp/restore 来源；Yjs UndoManager 按来源和任务隔离，跨文档更新收敛；不依赖 React 或网络 provider",
-      "status": "in_progress",
-      "evidence": []
+      "status": "accepted",
+      "evidence": [
+        {
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md",
+          "summary": "本地/任务来源、XML 人工内容保护与副本收敛 11 项测试通过",
+          "command": "bun test shared/src/knowledge/collaboration; pnpm shared:typecheck; pnpm backend:typecheck",
+          "verifiedAt": "2026-09-26"
+        }
+      ]
     },
     {
       "id": "B09",

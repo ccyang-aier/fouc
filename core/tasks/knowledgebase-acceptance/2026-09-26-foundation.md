@@ -83,6 +83,17 @@
 
 ## 初始回归基线
 
+## B00 · CRDT 来源与撤销内核
+
+- `bun test shared/src/knowledge/collaboration`：11 passed / 0 failed；使用真实 Y.Doc、二进制更新与 ProseMirror XML 转换。
+- 本地用户/另一窗口/Agent/MCP/restore 来源分别隔离；网络更新即使附相同字符串也不会进入本地撤销；流式任务无论间隔多久归于一个撤销条目。
+- 离线并发增量交换、重复更新与撤销后状态向量收敛；AI 创建嵌套块后人工继续输入，撤销仅移除 AI 内容，块 ID 和人工内容保留；仅修改媒体 caption 的人工编辑也保留。
+- `pnpm shared:typecheck`、`pnpm backend:typecheck`、定向 ESLint `--no-ignore` 和依赖边界检查通过。
+- 依据 [Yjs selective UndoManager](https://docs.yjs.dev/api/undo-manager)；附加 XML 父节点/身份保护有真实副本行为测试，不把 origin 当认证来源。
+- 边界：这是无网络/React 的共享内核；实际 UI 快捷键、多页任务编排、重启恢复分别由 B08/J04/J07/V03/Z04 验收。
+
+## 原始回归基线
+
 - `pnpm backend:typecheck`：通过（只读审计执行）。
 - `pnpm backend:test`：36 passed / 0 failed，13 files / 151 assertions（只读审计执行）。
 - `http://localhost:3000/`：HTTP 200，Next dev PID 14720，复用并保持运行。

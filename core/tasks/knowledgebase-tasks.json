@@ -1,0 +1,1677 @@
+{
+  "title": "Fouc AI Native 知识库与协同编辑器 · 实施与验收计划",
+  "source": "docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md",
+  "createdAt": "2026-09-26",
+  "statusLegend": {
+    "pending": "待实施",
+    "in_progress": "进行中",
+    "implemented": "已实现待验收",
+    "accepted": "已验收"
+  },
+  "rules": [
+    "目标覆盖整个设计文档，不以 MVP、界面样机或仅单元测试替代最终产品。",
+    "任务 dependencies 是硬前置；仅当前置全部验收后开始实现。无依赖关系且文件所有权分离的任务可以并行。",
+    "勾选只表示已验收；必须记录命令、真实观察、证据路径、适用范围与未验证边界。",
+    "共享领域→基础设施/权限/服务→API/协同→客户端/AI/MCP→端到端，禁止底层依赖前端或高层流程。",
+    "正文唯一权威为 Y.Doc/doc_state，元数据/ACL/评论唯一权威为 Postgres；IndexedDB/SQLite 仅离线副本。",
+    "当前唯一 schema 初始化，不做旧开发格式 migration/adapter/双轨；旧知识库开发数据按明确表范围清理。",
+    "撤权、断继承和子树移动的重算窗口必须 fail closed；不能假定旧权限总比新权限严格。",
+    "Web 保持 Next 静态导出边界，动态服务在 backend；本会话保持 dev 常驻且不构建 Tauri。",
+    "真实服务或模型不可用时，相关集成任务不勾选；独立的其他 DAG 节点继续推进。"
+  ],
+  "baseline": {
+    "frontend": "Next 16.3.3 dev :3000 正在运行；原知识库 textarea + 30 秒 REST 轮询。",
+    "backend": "原知识库 SQLite project/document/tag/version 文本 CRUD，无 CRDT/Postgres/auth/权限/索引链路。",
+    "environment": "pnpm 10.29.3、Bun 1.4.0、Node 24.16.0 可用；Windows 暂未发现 Docker/Postgres/Redis/S3，WSL 待核查。",
+    "preservedChanges": [
+      "next-env.d.ts 是任务开始前已有的开发生成变更，不纳入功能提交。"
+    ]
+  },
+  "tasks": [
+    {
+      "id": "F00",
+      "title": "设计覆盖矩阵、任务 DAG 与验收账本",
+      "sections": [
+        "0",
+        "0.1",
+        "0.2",
+        "10"
+      ],
+      "dependencies": [],
+      "status": "accepted",
+      "deliverables": "core/tasks/knowledgebase-*; scripts/verify-knowledge-tasks.mjs",
+      "acceptance": "全部设计章节有任务；ID 唯一、依赖存在、无环；已验收任务有证据且前置已验收",
+      "evidence": [
+        {
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md",
+          "summary": "42 节覆盖、DAG 与追踪规则通过",
+          "command": "node scripts/verify-knowledge-tasks.mjs --write && node --test scripts/verify-knowledge-tasks.test.mjs",
+          "verifiedAt": "2026-09-26"
+        }
+      ]
+    },
+    {
+      "id": "F01",
+      "title": "工作区依赖边界与分层验证入口",
+      "sections": [
+        "1",
+        "10"
+      ],
+      "dependencies": [
+        "F00"
+      ],
+      "status": "accepted",
+      "deliverables": "package.json; shared/package.json; scripts/verify-knowledge-boundaries.mjs",
+      "acceptance": "共享包/前端/后端各自 typecheck；共享领域无浏览器或服务端运行时耦合；现有测试仍通过",
+      "evidence": [
+        {
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md",
+          "summary": "三层类型、架构边界及回归通过",
+          "command": "pnpm shared:typecheck; pnpm backend:typecheck; node node_modules/typescript/bin/tsc --noEmit --incremental false; pnpm backend:test; pnpm knowledge:verify",
+          "verifiedAt": "2026-09-26"
+        }
+      ]
+    },
+    {
+      "id": "C01",
+      "title": "领域实体、权限、事件与 API 输入契约",
+      "sections": [
+        "3",
+        "3.1",
+        "3.2",
+        "3.3",
+        "6.1"
+      ],
+      "dependencies": [
+        "F01"
+      ],
+      "status": "in_progress",
+      "deliverables": "shared/src/knowledge/contracts/",
+      "acceptance": "运行时校验 UUID、workspace 作用域、页面类型、属性、主体和事件；错误输入被拒绝；前后端复用",
+      "evidence": []
+    },
+    {
+      "id": "E01",
+      "title": "一方块注册表与共享 ProseMirror Schema",
+      "sections": [
+        "4",
+        "4.1",
+        "4.2",
+        "10"
+      ],
+      "dependencies": [
+        "F01"
+      ],
+      "status": "in_progress",
+      "deliverables": "shared/src/knowledge/schema/",
+      "acceptance": "所有设计块类型可构造和序列化；通过一个定义注册新块；React NodeView 不进入共享包",
+      "evidence": []
+    },
+    {
+      "id": "E02",
+      "title": "blockId 完整性与粘贴来源插件",
+      "sections": [
+        "4.3",
+        "12"
+      ],
+      "dependencies": [
+        "E01"
+      ],
+      "status": "pending",
+      "deliverables": "shared/src/knowledge/schema/block-id.ts",
+      "acceptance": "新建、拆分、合并、复制、跨页粘贴、嵌套和协作重复均满足 ID 规则；服务端可检测修复",
+      "evidence": []
+    },
+    {
+      "id": "M01",
+      "title": "标准 Markdown 双向管线",
+      "sections": [
+        "4.4"
+      ],
+      "dependencies": [
+        "E02"
+      ],
+      "status": "pending",
+      "deliverables": "shared/src/knowledge/markdown/",
+      "acceptance": "GFM、嵌套块、指令、公式、wiki 链接、marks 与所有一方块往返不丢语义；明确不支持输入报错",
+      "evidence": []
+    },
+    {
+      "id": "M02",
+      "title": "AI 方言锚点与媒体派生文本",
+      "sections": [
+        "4.4",
+        "7.1",
+        "9.6"
+      ],
+      "dependencies": [
+        "M01",
+        "C01"
+      ],
+      "status": "pending",
+      "deliverables": "shared/src/knowledge/markdown/",
+      "acceptance": "同一管线开关产生 blockId 锚点；容器子块和媒体文本完整；可按锚点读取且引用稳定",
+      "evidence": []
+    },
+    {
+      "id": "M03",
+      "title": "Obsidian 仓库导入导出",
+      "sections": [
+        "4.4"
+      ],
+      "dependencies": [
+        "M01",
+        "T01",
+        "AS01",
+        "B02",
+        "U02"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/import-export/; src/features/knowledge/",
+      "acceptance": "目录、附件、frontmatter、wiki/块链接可往返；多页导入有进度与逐项失败反馈",
+      "evidence": []
+    },
+    {
+      "id": "M04",
+      "title": "Notion 导出导入",
+      "sections": [
+        "4.4"
+      ],
+      "dependencies": [
+        "M01",
+        "T02",
+        "AS01",
+        "B02",
+        "U02"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/import-export/",
+      "acceptance": "HTML/Markdown/CSV、目录与附件导入真实样本；页面链接正确映射，无静默丢失",
+      "evidence": []
+    },
+    {
+      "id": "D01",
+      "title": "Postgres 当前唯一 schema 与约束",
+      "sections": [
+        "3.1",
+        "3.2",
+        "3.3",
+        "10"
+      ],
+      "dependencies": [
+        "C01"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/database/knowledge/",
+      "acceptance": "Drizzle 当前表模型与初始化 SQL 包含全部表/租户外键/ltree/vector/索引；静态 schema 约束测试及类型检查通过；真实执行单独由 D03 验收",
+      "evidence": []
+    },
+    {
+      "id": "D02",
+      "title": "请求级租户事务与强制 RLS",
+      "sections": [
+        "3.2",
+        "6.2"
+      ],
+      "dependencies": [
+        "D01",
+        "I01"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/database/knowledge/tenant.ts",
+      "acceptance": "SET LOCAL/set_config 随事务回收；非超级用户跨租户 SELECT/INSERT/UPDATE/DELETE 均拒绝，连接池无上下文泄漏",
+      "evidence": []
+    },
+    {
+      "id": "R01",
+      "title": "后端角色配置与生命周期",
+      "sections": [
+        "1",
+        "2",
+        "10"
+      ],
+      "dependencies": [
+        "C01"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/runtime/",
+      "acceptance": "ROLE=api/collab/worker/mcp/all 严格解析；必需配置校验；同一进程生命周期可启停且失败清理资源；业务用 Node API",
+      "evidence": []
+    },
+    {
+      "id": "I01",
+      "title": "Postgres/Redis/S3 基础服务与健康检查",
+      "sections": [
+        "2",
+        "11"
+      ],
+      "dependencies": [
+        "F01"
+      ],
+      "status": "in_progress",
+      "deliverables": "compose.knowledge.yaml; .env.example",
+      "acceptance": "真实 ParadeDB（ltree/pg_search/pgvector）、Redis、MinIO 启动可访问；凭据仅环境注入；五类服务完整装配留给 Z03",
+      "evidence": []
+    },
+    {
+      "id": "D03",
+      "title": "真实数据库初始化与隔离集成测试",
+      "sections": [
+        "3.2",
+        "11",
+        "12"
+      ],
+      "dependencies": [
+        "D01",
+        "D02",
+        "I01"
+      ],
+      "status": "pending",
+      "deliverables": "backend/scripts/knowledge-db.ts; backend/src/database/knowledge/*.test.ts",
+      "acceptance": "在真实 ParadeDB 创建新库、执行全部表/索引/RLS；两个租户恶意访问测试通过",
+      "evidence": []
+    },
+    {
+      "id": "A01",
+      "title": "Better Auth 邮箱与会话",
+      "sections": [
+        "1",
+        "6"
+      ],
+      "dependencies": [
+        "D03",
+        "R01"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/auth/",
+      "acceptance": "注册/登录/登出/邮箱验证、会话撤销真实往返；cookie/CORS 配置对 Web 与桌面有效",
+      "evidence": []
+    },
+    {
+      "id": "A02",
+      "title": "OAuth 与 OIDC/SSO 身份",
+      "sections": [
+        "1",
+        "6"
+      ],
+      "dependencies": [
+        "A01"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/auth/",
+      "acceptance": "真实或标准测试 IdP 完整回调/PKCE/state/nonce；用户映射与 workspace 邀请一致；错误可恢复",
+      "evidence": []
+    },
+    {
+      "id": "A03",
+      "title": "PAT 与服务端请求身份",
+      "sections": [
+        "1",
+        "6",
+        "9.5"
+      ],
+      "dependencies": [
+        "A01"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/auth/tokens.ts",
+      "acceptance": "PAT 哈希存储、范围/到期/撤销生效；session/PAT 归一到同一发起者上下文，禁止客户端伪造身份",
+      "evidence": []
+    },
+    {
+      "id": "O01",
+      "title": "个人/团队 Workspace 与成员群组",
+      "sections": [
+        "3.3",
+        "6.1"
+      ],
+      "dependencies": [
+        "A01",
+        "D03"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/organization/",
+      "acceptance": "个人和团队走同一逻辑；owner/admin/member/guest 与群组加入移除可操作且越权失败",
+      "evidence": []
+    },
+    {
+      "id": "O02",
+      "title": "Workspace/成员/Teamspace 组织界面",
+      "sections": [
+        "3.3",
+        "6.1"
+      ],
+      "dependencies": [
+        "O03",
+        "U01"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/organization/; src/features/knowledge/organization/",
+      "acceptance": "空间创建、切换、成员/群组管理闭环；空/加载/无权/失败状态清晰；根默认权限生效",
+      "evidence": []
+    },
+    {
+      "id": "P01",
+      "title": "主体展开与纯权限继承计算",
+      "sections": [
+        "6",
+        "6.1",
+        "6.2"
+      ],
+      "dependencies": [
+        "C01"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/permissions/",
+      "acceptance": "四级权限、用户/群组/workspace/link、继承中断、teamspace 根默认合并用行为用例覆盖",
+      "evidence": []
+    },
+    {
+      "id": "Q01",
+      "title": "事务 Outbox 与 graphile-worker 调度",
+      "sections": [
+        "2",
+        "3.2",
+        "5.1",
+        "7.1"
+      ],
+      "dependencies": [
+        "D03",
+        "R01"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/workers/",
+      "acceptance": "业务写与 outbox 原子提交；重试、去重、崩溃恢复不丢任务；Worker 生命周期停止干净",
+      "evidence": []
+    },
+    {
+      "id": "P02",
+      "title": "有效权限物化、失效围栏与索引同步",
+      "sections": [
+        "6.2",
+        "12"
+      ],
+      "dependencies": [
+        "P01",
+        "O03",
+        "Q01"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/permissions/",
+      "acceptance": "授权/移动/断继承批量子树重算；撤权立即阻止旧 ACL 泄漏；GIN 主体数组与 block_index 同步；群组变更无需逐页重算",
+      "evidence": []
+    },
+    {
+      "id": "P03",
+      "title": "权限一致的页面授权接口",
+      "sections": [
+        "6.1",
+        "6.2"
+      ],
+      "dependencies": [
+        "P02",
+        "A03"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/permissions/; backend/src/api/knowledge/",
+      "acceptance": "查看/评论/编辑/full 动作逐一授权；API/WS/AI 共用入口；无权限目标不可通过 ID 猜测访问",
+      "evidence": []
+    },
+    {
+      "id": "T01",
+      "title": "页面树服务与分数排序",
+      "sections": [
+        "3.3",
+        "5.4"
+      ],
+      "dependencies": [
+        "P03"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/pages/",
+      "acceptance": "UUID 离线可建、ltree 子树移动、分数排序、回收恢复；禁止循环/越权移动/跨租户父子；失败事务回滚",
+      "evidence": []
+    },
+    {
+      "id": "T02",
+      "title": "数据库页面及类型化行属性",
+      "sections": [
+        "3.3",
+        "9.2"
+      ],
+      "dependencies": [
+        "T01"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/databases/",
+      "acceptance": "database/row 均为 page；每行可独立 Y.Doc/权限；schema/属性验证、筛选排序和分页正确",
+      "evidence": []
+    },
+    {
+      "id": "U01",
+      "title": "tRPC 与 TanStack Query 数据边界",
+      "sections": [
+        "1",
+        "2",
+        "10"
+      ],
+      "dependencies": [
+        "C01",
+        "R01",
+        "A03"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/api/knowledge/; src/features/knowledge/data/",
+      "acceptance": "Hono 上挂载类型安全 tRPC；身份与 workspace 注入；Query keys 隔离；错误/取消/失效一致",
+      "evidence": []
+    },
+    {
+      "id": "U02",
+      "title": "应用壳与知识库新模型接入",
+      "sections": [
+        "0.1",
+        "3.3",
+        "10"
+      ],
+      "dependencies": [
+        "U01",
+        "T01"
+      ],
+      "status": "pending",
+      "deliverables": "src/features/knowledge/knowledge-page.tsx; src/shell/",
+      "acceptance": "替换旧知识库文本 CRUD UI；复用设计 tokens/侧栏；选择/导航/空状态真实联动；无旧模型适配双轨",
+      "evidence": []
+    },
+    {
+      "id": "U03",
+      "title": "页面树操作与乐观反馈",
+      "sections": [
+        "3.3",
+        "5.4"
+      ],
+      "dependencies": [
+        "U02",
+        "T01"
+      ],
+      "status": "pending",
+      "deliverables": "src/features/knowledge/navigation/",
+      "acceptance": "新建、重命名、图标/封面、嵌套移动/排序、删除恢复、键盘导航；失败恢复且提示明确",
+      "evidence": []
+    },
+    {
+      "id": "U04",
+      "title": "本地元数据操作队列",
+      "sections": [
+        "5.4"
+      ],
+      "dependencies": [
+        "U03"
+      ],
+      "status": "pending",
+      "deliverables": "src/features/knowledge/collaboration/metadata-queue.ts",
+      "acceptance": "UUID 操作持久化，离线乐观、重连按序提交；循环/无权失败回滚；重复重试不重复创建",
+      "evidence": []
+    },
+    {
+      "id": "B01",
+      "title": "Hocuspocus v4 鉴权与只读连接",
+      "sections": [
+        "5",
+        "5.1",
+        "6.2"
+      ],
+      "dependencies": [
+        "P03",
+        "R01",
+        "E02"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/collaboration/",
+      "acceptance": "WS 校验会话/PAT/page scope；view/comment 连接禁止正文写入；GC 开启；拒绝未授权文档和 workspace 频道",
+      "evidence": []
+    },
+    {
+      "id": "B02",
+      "title": "Y.Doc 权威持久化与原子 Outbox",
+      "sections": [
+        "3.1",
+        "5.1"
+      ],
+      "dependencies": [
+        "B01",
+        "Q01"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/collaboration/persistence.ts",
+      "acceptance": "从 doc_state 加载，2 秒防抖/最长 10 秒落库；state/vector/outbox 同事务；崩溃重连内容不丢",
+      "evidence": []
+    },
+    {
+      "id": "B03",
+      "title": "Redis 多节点广播",
+      "sections": [
+        "2",
+        "5.1",
+        "11"
+      ],
+      "dependencies": [
+        "B02",
+        "I01"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/collaboration/",
+      "acceptance": "两节点客户端并发更新实时收敛；断连恢复；无二次业务正文存储",
+      "evidence": []
+    },
+    {
+      "id": "B04",
+      "title": "Web y-indexeddb 文档生命周期",
+      "sections": [
+        "3.1",
+        "5.1",
+        "5.4"
+      ],
+      "dependencies": [
+        "B02"
+      ],
+      "status": "pending",
+      "deliverables": "src/features/knowledge/collaboration/",
+      "acceptance": "离线先加载本地 Y.Doc 可编辑；state vector 交换后收敛；切页清理 provider/监听；状态区分本地保存与云同步",
+      "evidence": []
+    },
+    {
+      "id": "B05",
+      "title": "桌面 SQLite 离线 Yjs 副本",
+      "sections": [
+        "3.1",
+        "5.1",
+        "10"
+      ],
+      "dependencies": [
+        "B02"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/store/knowledge-documents.ts; src/features/knowledge/collaboration/",
+      "acceptance": "sidecar 持久化 Yjs 更新/状态；重启/离线/重连收敛；Rust 不写知识库业务；与服务端正文权威清晰",
+      "evidence": []
+    },
+    {
+      "id": "B06",
+      "title": "工作区无状态事件与缓存失效",
+      "sections": [
+        "5.3"
+      ],
+      "dependencies": [
+        "B02",
+        "U01"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/collaboration/events.ts; src/features/knowledge/collaboration/",
+      "acceptance": "ws:workspaceId 频道校验成员身份；树/评论/通知/行事件只失效相关 Query；重连补拉",
+      "evidence": []
+    },
+    {
+      "id": "B07",
+      "title": "Awareness 人/Agent 光标与在线成员",
+      "sections": [
+        "5.5",
+        "9.3"
+      ],
+      "dependencies": [
+        "B04",
+        "E03"
+      ],
+      "status": "pending",
+      "deliverables": "src/features/knowledge/collaboration/awareness.ts; src/features/knowledge/editor/",
+      "acceptance": "user/color/cursor/selection/kind 完整；两客户端能见光标、AI 正在编辑状态；断开自动移除",
+      "evidence": []
+    },
+    {
+      "id": "B08",
+      "title": "本地撤销与 Agent 事务隔离",
+      "sections": [
+        "5.4",
+        "9.3"
+      ],
+      "dependencies": [
+        "B04",
+        "B00"
+      ],
+      "status": "pending",
+      "deliverables": "shared/src/knowledge/schema/; src/features/knowledge/collaboration/",
+      "acceptance": "本地 UndoManager 不撤其他人/Agent；任务 origin 独立，AI 整个任务可单独撤销",
+      "evidence": []
+    },
+    {
+      "id": "E03",
+      "title": "Tiptap 编辑器 React 容器与状态",
+      "sections": [
+        "4.1",
+        "10"
+      ],
+      "dependencies": [
+        "E02",
+        "B04",
+        "U02"
+      ],
+      "status": "pending",
+      "deliverables": "src/features/knowledge/editor/",
+      "acceptance": "替换 textarea，Y.Doc 驱动唯一正文；Client Boundary 懒加载；加载/离线/同步/只读/错误闭环；无 SSR 水合异常",
+      "evidence": []
+    },
+    {
+      "id": "E04",
+      "title": "基础块快捷输入与键盘编辑",
+      "sections": [
+        "4.1",
+        "4.4"
+      ],
+      "dependencies": [
+        "E03"
+      ],
+      "status": "pending",
+      "deliverables": "src/features/knowledge/editor/",
+      "acceptance": "段落、标题、列表、待办、引用、代码、公式可鼠标/键盘插入编辑；输入规则、格式菜单可访问",
+      "evidence": []
+    },
+    {
+      "id": "E05",
+      "title": "表格、分栏和 Callout NodeView",
+      "sections": [
+        "4.1",
+        "4.2"
+      ],
+      "dependencies": [
+        "E03"
+      ],
+      "status": "pending",
+      "deliverables": "src/features/knowledge/editor/blocks/",
+      "acceptance": "嵌套编辑/增删/拖拽/键盘不损坏 blockId；表格编辑、分栏自适应、callout 风格精致；共享 schema 一致",
+      "evidence": []
+    },
+    {
+      "id": "E06",
+      "title": "Slash 菜单与 Markdown/HTML 粘贴",
+      "sections": [
+        "4.2",
+        "4.4",
+        "9.4"
+      ],
+      "dependencies": [
+        "E04",
+        "M01"
+      ],
+      "status": "pending",
+      "deliverables": "src/features/knowledge/editor/commands/",
+      "acceptance": "菜单由注册表生成、检索、方向键/回车/Esc；Markdown/HTML/纯文本识别；不执行不安全 HTML",
+      "evidence": []
+    },
+    {
+      "id": "S01",
+      "title": "建议 insert/delete marks 与事务转换",
+      "sections": [
+        "4.5"
+      ],
+      "dependencies": [
+        "E02"
+      ],
+      "status": "pending",
+      "deliverables": "shared/src/knowledge/schema/suggestions/",
+      "acceptance": "插入带 mark、删除保留内容；接受/拒绝按 suggestionId 原子执行；范围/嵌套/替换/撤销正确",
+      "evidence": []
+    },
+    {
+      "id": "S02",
+      "title": "建议模式 UI 与批量审阅",
+      "sections": [
+        "4.5",
+        "9.3"
+      ],
+      "dependencies": [
+        "S01",
+        "E03",
+        "B08"
+      ],
+      "status": "pending",
+      "deliverables": "src/features/knowledge/editor/review/",
+      "acceptance": "人/AI 同一路径；作者/时间/来源可见；逐条/全部接受拒绝；只读不允许修改；长文滚动定位",
+      "evidence": []
+    },
+    {
+      "id": "V01",
+      "title": "自动、结束会话与手动检查点",
+      "sections": [
+        "5.2"
+      ],
+      "dependencies": [
+        "B02",
+        "Q01"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/collaboration/checkpoints.ts",
+      "acceptance": "超过 10 分钟且有编辑、结束会话、命名版本按策略写；无变化不重复；作者集合正确；GC 保持开启",
+      "evidence": []
+    },
+    {
+      "id": "V02",
+      "title": "块与行内历史差异算法",
+      "sections": [
+        "5.2"
+      ],
+      "dependencies": [
+        "M01",
+        "C01"
+      ],
+      "status": "pending",
+      "deliverables": "shared/src/knowledge/history/",
+      "acceptance": "新增/删除/移动/修改块与行内差异可解释；ID 用于稳定比对；空页/相邻版本正确",
+      "evidence": []
+    },
+    {
+      "id": "V03",
+      "title": "历史面板与协作安全恢复",
+      "sections": [
+        "5.2"
+      ],
+      "dependencies": [
+        "V01",
+        "V02",
+        "E03",
+        "B08"
+      ],
+      "status": "pending",
+      "deliverables": "src/features/knowledge/history/; backend/src/knowledge/collaboration/",
+      "acceptance": "预览版本、作者、命名；恢复通过新 Y.Doc 事务且可撤销；另一在线编辑者不中断",
+      "evidence": []
+    },
+    {
+      "id": "N01",
+      "title": "评论线程持久化与权限",
+      "sections": [
+        "4.6"
+      ],
+      "dependencies": [
+        "P03",
+        "Q01"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/comments/",
+      "acceptance": "创建/回复/解决/重开/删除有独立生命周期；仅 comment+ 可写；通知 Outbox 原子且 workspace 隔离",
+      "evidence": []
+    },
+    {
+      "id": "N02",
+      "title": "CRDT 评论锚点与侧栏",
+      "sections": [
+        "4.6",
+        "5.3"
+      ],
+      "dependencies": [
+        "N01",
+        "E03",
+        "B06"
+      ],
+      "status": "pending",
+      "deliverables": "src/features/knowledge/editor/comments/",
+      "acceptance": "选区 comment mark 绑定 threadId；协作插删锚点不漂；孤立锚点状态可解释；线程/正文跳转",
+      "evidence": []
+    },
+    {
+      "id": "N03",
+      "title": "通知收件箱",
+      "sections": [
+        "4.6",
+        "5.3"
+      ],
+      "dependencies": [
+        "N01",
+        "B06",
+        "U02"
+      ],
+      "status": "pending",
+      "deliverables": "src/features/knowledge/notifications/; backend/src/knowledge/notifications/",
+      "acceptance": "评论通知收件人权限过滤、已读操作、实时更新与跳转；无重复跨租户消息",
+      "evidence": []
+    },
+    {
+      "id": "L01",
+      "title": "页面/块链接与反向引用派生",
+      "sections": [
+        "4.6",
+        "7.1"
+      ],
+      "dependencies": [
+        "M02",
+        "B02",
+        "T01"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/search/backlinks.ts",
+      "acceptance": "页面链接、blockReference 可解析稳定 ID；正文变化更新 backlink；无权限来源不泄漏",
+      "evidence": []
+    },
+    {
+      "id": "L02",
+      "title": "实时只读块引用 NodeView",
+      "sections": [
+        "4.6"
+      ],
+      "dependencies": [
+        "L01",
+        "E03"
+      ],
+      "status": "pending",
+      "deliverables": "src/features/knowledge/editor/blocks/block-reference.tsx",
+      "acceptance": "按需加载来源 Y.Doc；更改实时反映；点击原文高亮；无权/删除/循环引用有明确状态并释放连接",
+      "evidence": []
+    },
+    {
+      "id": "U05",
+      "title": "权限、继承与分享管理界面",
+      "sections": [
+        "6"
+      ],
+      "dependencies": [
+        "P04",
+        "U02"
+      ],
+      "status": "pending",
+      "deliverables": "src/features/knowledge/sharing/",
+      "acceptance": "用户/组/workspace 授权、继承开关、有效权限解释；完整保存/撤销失败反馈；非 full 禁止操作",
+      "evidence": []
+    },
+    {
+      "id": "P04",
+      "title": "分享链接权限与失效",
+      "sections": [
+        "6.1",
+        "9.5"
+      ],
+      "dependencies": [
+        "P03"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/sharing/",
+      "acceptance": "link 主体令牌哈希、到期/撤销/级别限制；页面及附件同权；访问不能获得 workspace 全部成员主体；授权接口有集成证据",
+      "evidence": []
+    },
+    {
+      "id": "U06",
+      "title": "数据库表格视图",
+      "sections": [
+        "3.3"
+      ],
+      "dependencies": [
+        "T02",
+        "E03",
+        "U02"
+      ],
+      "status": "pending",
+      "deliverables": "src/features/knowledge/databases/",
+      "acceptance": "类型化列增删改、行属性编辑、筛选/排序/打开行正文；加载/无权/空/错误及键盘完整",
+      "evidence": []
+    },
+    {
+      "id": "U07",
+      "title": "数据库看板视图",
+      "sections": [
+        "3.3"
+      ],
+      "dependencies": [
+        "U06"
+      ],
+      "status": "pending",
+      "deliverables": "src/features/knowledge/databases/",
+      "acceptance": "同一组行按状态分组，拖动改属性；无状态/无权限/空状态正确；打开同一行页面；失败乐观回滚",
+      "evidence": []
+    },
+    {
+      "id": "F02",
+      "title": "模型任务档位与安全配置契约",
+      "sections": [
+        "9.1"
+      ],
+      "dependencies": [
+        "C01"
+      ],
+      "status": "pending",
+      "deliverables": "shared/src/knowledge/contracts/models.ts; backend/src/knowledge/ai/config.ts",
+      "acceptance": "fast/smart/embed/rerank/vision，平台/BYOK/Ollama 层级解析；密钥只留服务端；模型/维度验证",
+      "evidence": []
+    },
+    {
+      "id": "G01",
+      "title": "AI SDK 统一模型网关",
+      "sections": [
+        "9.1"
+      ],
+      "dependencies": [
+        "F02",
+        "D03"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/ai/gateway/",
+      "acceptance": "所有模型调用经统一入口；云/BYOK/Ollama、流、取消、异常可控；无任意工具越权路径",
+      "evidence": []
+    },
+    {
+      "id": "G02",
+      "title": "OpenTelemetry 与 AI 用量",
+      "sections": [
+        "9.1",
+        "1"
+      ],
+      "dependencies": [
+        "G01"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/observability/",
+      "acceptance": "每次真实调用记录 token/耗时/模型/workspace/任务与 trace；日志无 key；错误调用可追踪",
+      "evidence": []
+    },
+    {
+      "id": "H01",
+      "title": "块索引增量投影",
+      "sections": [
+        "7.1",
+        "12"
+      ],
+      "dependencies": [
+        "M02",
+        "B02",
+        "P02",
+        "Q01"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/search/indexer.ts",
+      "acceptance": "遍历嵌套块、hash 差量增改删、修复 ID、更新 backlink；重跑幂等；短块带标题路径",
+      "evidence": []
+    },
+    {
+      "id": "H02",
+      "title": "向量批量生成与模型换代",
+      "sections": [
+        "7.1",
+        "12"
+      ],
+      "dependencies": [
+        "H01",
+        "G01"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/search/embeddings.ts",
+      "acceptance": "仅变化块调用；embed_model/维度隔离；后台重建完成原子切换，失败保持旧索引可用",
+      "evidence": []
+    },
+    {
+      "id": "H03",
+      "title": "BM25 中英文检索",
+      "sections": [
+        "7.2",
+        "7.3"
+      ],
+      "dependencies": [
+        "H01",
+        "D03"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/search/keyword.ts",
+      "acceptance": "pg_search/jieba 与 ICU 配置真实查询验证；workspace/principals 在排名前过滤；返回可引用块",
+      "evidence": []
+    },
+    {
+      "id": "H04",
+      "title": "向量/RRF/重排统一检索",
+      "sections": [
+        "7.2"
+      ],
+      "dependencies": [
+        "H02",
+        "H03"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/search/service.ts",
+      "acceptance": "HNSW 限当前模型、各取 50/RRF 常数60/前20重排；查询前授权；API/AI/MCP 共用结果结构",
+      "evidence": []
+    },
+    {
+      "id": "H05",
+      "title": "搜索 UI 与块引用导航",
+      "sections": [
+        "7.2",
+        "9.4"
+      ],
+      "dependencies": [
+        "H04",
+        "U02"
+      ],
+      "status": "pending",
+      "deliverables": "src/features/knowledge/search/",
+      "acceptance": "关键词/语义混合查询、过滤/取消/空状态、键盘导航、引用预览；点击打开准确块并高亮",
+      "evidence": []
+    },
+    {
+      "id": "AS01",
+      "title": "S3 工作区资源服务与预签名",
+      "sections": [
+        "8",
+        "8.1"
+      ],
+      "dependencies": [
+        "P03",
+        "I01",
+        "Q01"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/assets/",
+      "acceptance": "按 workspace/hash 寻址、秒传不泄漏跨租户存在性；上传确认校验哈希/大小/类型；下载授权；asset.created 原子且真实 S3 往返",
+      "evidence": []
+    },
+    {
+      "id": "U08",
+      "title": "浏览器哈希上传与进度控制",
+      "sections": [
+        "8",
+        "8.1"
+      ],
+      "dependencies": [
+        "AS01",
+        "U02"
+      ],
+      "status": "pending",
+      "deliverables": "src/features/knowledge/assets/",
+      "acceptance": "浏览器 SHA256、预签名直传、完整性确认闭环；秒传/进度/取消/重试/错误均有反馈；通过真实后端与 S3 验证",
+      "evidence": []
+    },
+    {
+      "id": "U09",
+      "title": "图片/音频/视频/文件/嵌入 NodeView",
+      "sections": [
+        "4.1",
+        "8.1",
+        "12"
+      ],
+      "dependencies": [
+        "U08",
+        "E03"
+      ],
+      "status": "pending",
+      "deliverables": "src/features/knowledge/editor/blocks/media/",
+      "acceptance": "插入 asset:hash，上传进度/取消/失败重试，媒体懒加载；安全嵌入；替代文本、下载与键盘可用",
+      "evidence": []
+    },
+    {
+      "id": "W01",
+      "title": "无状态 Media Worker HTTP 服务",
+      "sections": [
+        "8.2",
+        "11"
+      ],
+      "dependencies": [
+        "C01",
+        "R01"
+      ],
+      "status": "pending",
+      "deliverables": "services/media-worker/",
+      "acceptance": "FastAPI 健康/解析接口有资源上限与任务取消；请求携带短期资源，不访问 DB/队列；CPU/GPU 配置可解析；真实模型解析分别 W02/W03 验收",
+      "evidence": []
+    },
+    {
+      "id": "W02",
+      "title": "Whisper 音视频时间戳转写",
+      "sections": [
+        "8.2"
+      ],
+      "dependencies": [
+        "W01"
+      ],
+      "status": "pending",
+      "deliverables": "services/media-worker/",
+      "acceptance": "真实音视频样本生成带时间戳分段文本；模型可配置；失败、超时与重试可观察",
+      "evidence": []
+    },
+    {
+      "id": "W03",
+      "title": "Docling PDF/Office 解析",
+      "sections": [
+        "8.2"
+      ],
+      "dependencies": [
+        "W01"
+      ],
+      "status": "pending",
+      "deliverables": "services/media-worker/",
+      "acceptance": "真实 PDF/Office 表格/图片/标题解析成结构化 Markdown；空/损坏样本报错清楚",
+      "evidence": []
+    },
+    {
+      "id": "W04",
+      "title": "图片视觉描述与 OCR",
+      "sections": [
+        "8.2"
+      ],
+      "dependencies": [
+        "AS01",
+        "G01"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/workers/vision.ts",
+      "acceptance": "真实图片经 vision 档生成描述/OCR；结果写 asset.derived；权限与模型用量可追踪",
+      "evidence": []
+    },
+    {
+      "id": "W05",
+      "title": "媒体派生任务编排与重索引",
+      "sections": [
+        "8.2",
+        "7.1"
+      ],
+      "dependencies": [
+        "W02",
+        "W03",
+        "W04",
+        "H01"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/workers/media.ts",
+      "acceptance": "graphile-worker 调用无状态 HTTP；幂等派生结果写库并索引引用块；图片/录音/PDF 可搜索且 AI 可读",
+      "evidence": []
+    },
+    {
+      "id": "U10",
+      "title": "媒体派生内容与处理状态 UI",
+      "sections": [
+        "8.2"
+      ],
+      "dependencies": [
+        "W05",
+        "U09"
+      ],
+      "status": "pending",
+      "deliverables": "src/features/knowledge/assets/",
+      "acceptance": "排队/处理中/成功/失败可见；OCR/时间戳转录/解析预览、重试；引用点击定位片段",
+      "evidence": []
+    },
+    {
+      "id": "J01",
+      "title": "上下文组装与引用校验",
+      "sections": [
+        "9.6"
+      ],
+      "dependencies": [
+        "M02",
+        "H04"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/ai/context.ts",
+      "acceptance": "规则→大纲→邻块→检索→历史顺序；预算超限从检索尾部截断；回答 blockId 引用校验与权限过滤",
+      "evidence": []
+    },
+    {
+      "id": "J02",
+      "title": "共用只读 Agent 工具",
+      "sections": [
+        "9.2",
+        "9.5"
+      ],
+      "dependencies": [
+        "J01",
+        "T02",
+        "L01"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/ai/tools/",
+      "acceptance": "search/read_page/query_database/list_pages/get_backlinks 同发起者授权；range/filter/sort 有验证、引用准确",
+      "evidence": []
+    },
+    {
+      "id": "J03",
+      "title": "CRDT 建议写入 Agent 工具",
+      "sections": [
+        "9.2",
+        "9.3"
+      ],
+      "dependencies": [
+        "J02",
+        "S01",
+        "B01",
+        "B00"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/ai/tools/",
+      "acceptance": "insert/replace/delete/create/update_properties 权限一致；openDirectConnection+agent:taskId；新 ID/建议默认；无 SQL 正文双写",
+      "evidence": []
+    },
+    {
+      "id": "J04",
+      "title": "逐块流式 AI 与任务撤销",
+      "sections": [
+        "9.3"
+      ],
+      "dependencies": [
+        "J03",
+        "G01",
+        "B09"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/ai/streaming.ts",
+      "acceptance": "完整块到达即写共享 Y.Doc；Awareness 显示 Agent 光标；取消后部分结果可审阅；整体任务撤销不影响人编辑",
+      "evidence": []
+    },
+    {
+      "id": "J05",
+      "title": "划词改写/翻译/总结与 /ai 续写",
+      "sections": [
+        "9.4"
+      ],
+      "dependencies": [
+        "J04",
+        "S02",
+        "E06"
+      ],
+      "status": "pending",
+      "deliverables": "src/features/knowledge/ai/inline/",
+      "acceptance": "选区和邻块作为上下文，建议回原处；流式/取消/失败/重试/直接应用；键盘入口完整",
+      "evidence": []
+    },
+    {
+      "id": "J06",
+      "title": "侧栏 Agent 对话与可点击引用",
+      "sections": [
+        "9.4"
+      ],
+      "dependencies": [
+        "J04",
+        "H05"
+      ],
+      "status": "pending",
+      "deliverables": "src/features/knowledge/ai/chat/",
+      "acceptance": "工具调用状态、流式回答和引用跳转高亮；会话历史/取消/错误；无权引用不泄漏",
+      "evidence": []
+    },
+    {
+      "id": "J07",
+      "title": "持久 AI 长任务与审批恢复",
+      "sections": [
+        "9.4"
+      ],
+      "dependencies": [
+        "J03",
+        "Q01",
+        "G02"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/ai/tasks/",
+      "acceptance": "整理空间/周报可执行；running/awaiting_approval/done/failed state 持久化；重启续跑不重复写；审批身份校验",
+      "evidence": []
+    },
+    {
+      "id": "J08",
+      "title": "AI 块提示、范围与定时生成",
+      "sections": [
+        "4.1",
+        "9.4"
+      ],
+      "dependencies": [
+        "J07",
+        "E03",
+        "S02"
+      ],
+      "status": "pending",
+      "deliverables": "src/features/knowledge/editor/blocks/ai-block.tsx; backend/src/knowledge/ai/",
+      "acceptance": "保存提示/范围、手动/定时执行、建议回块内容；授权重检；取消与失败反馈",
+      "evidence": []
+    },
+    {
+      "id": "J09",
+      "title": "AI 模型设置、用量与任务中心 UI",
+      "sections": [
+        "9.1",
+        "9.4"
+      ],
+      "dependencies": [
+        "J07",
+        "G02",
+        "U02"
+      ],
+      "status": "pending",
+      "deliverables": "src/features/knowledge/ai/settings/; src/features/knowledge/ai/tasks/",
+      "acceptance": "档位/平台/BYOK/Ollama 配置可保存验证；安全显示密钥；用量、步骤、审批、重试与撤销完整",
+      "evidence": []
+    },
+    {
+      "id": "K01",
+      "title": "MCP Streamable HTTP 服务",
+      "sections": [
+        "9.5"
+      ],
+      "dependencies": [
+        "J03",
+        "R01"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/mcp/",
+      "acceptance": "标准 SDK client 初始化/工具发现/调用/取消可运行；复用工具层；mcp:clientName 来源进入建议",
+      "evidence": []
+    },
+    {
+      "id": "K02",
+      "title": "MCP OAuth 2.1 与 PAT 授权",
+      "sections": [
+        "9.5"
+      ],
+      "dependencies": [
+        "K01",
+        "A02",
+        "A03"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/mcp/auth/",
+      "acceptance": "发现/注册/授权/PKCE/token/撤销标准流程，scope/audience 验证；PAT 可用；无认证拒绝工具",
+      "evidence": []
+    },
+    {
+      "id": "K03",
+      "title": "MCP 外部 Agent 一致性验收",
+      "sections": [
+        "9.5",
+        "12"
+      ],
+      "dependencies": [
+        "K02",
+        "J04",
+        "S02"
+      ],
+      "status": "pending",
+      "deliverables": "backend/scripts/verify-knowledge-mcp.ts",
+      "acceptance": "真实标准 MCP client 读写/越权/撤权/取消；建议出现在编辑器，可接受拒绝；来源标注正确",
+      "evidence": []
+    },
+    {
+      "id": "Z01",
+      "title": "旧知识库实现与开发数据清理",
+      "sections": [
+        "0.2",
+        "3.1",
+        "10"
+      ],
+      "dependencies": [
+        "U02",
+        "B05",
+        "M03",
+        "M04"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/store/; backend/src/api/server.ts; shared/src/index.ts; src/features/knowledge/",
+      "acceptance": "删除 SQLite 正文/旧 REST/轮询/旧种子，仅保留 Yjs 本地副本；明确清理限定知识库开发表，其他业务不受影响",
+      "evidence": []
+    },
+    {
+      "id": "Z02",
+      "title": "Node 与 Bun 同构后端验证",
+      "sections": [
+        "1",
+        "2",
+        "10",
+        "11"
+      ],
+      "dependencies": [
+        "K01",
+        "B03",
+        "J07",
+        "W05"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/runtime/; backend/scripts/",
+      "acceptance": "API/collab/worker/mcp 分角色/all 在两运行时冒烟通过；没有 Bun 专属业务依赖；桌面桥独立",
+      "evidence": []
+    },
+    {
+      "id": "Z03",
+      "title": "私有部署与角色横向扩展验收",
+      "sections": [
+        "2",
+        "11"
+      ],
+      "dependencies": [
+        "Z02",
+        "K02",
+        "W05"
+      ],
+      "status": "pending",
+      "deliverables": "compose.knowledge.yaml; docs/knowledge-deployment.md",
+      "acceptance": "全栈真实冷启动、重启、健康检查；2 collab/2 api/worker 并发；五类组件且不增加独立队列/搜索服务",
+      "evidence": []
+    },
+    {
+      "id": "Z04",
+      "title": "协作/离线/恢复端到端验收",
+      "sections": [
+        "5",
+        "5.1",
+        "5.2",
+        "5.3",
+        "5.4",
+        "5.5",
+        "12"
+      ],
+      "dependencies": [
+        "E06",
+        "S02",
+        "V03",
+        "N02",
+        "L02",
+        "B03",
+        "B05",
+        "B06",
+        "B07",
+        "B08",
+        "U04"
+      ],
+      "status": "pending",
+      "deliverables": "qa/knowledge/; core/tasks/knowledgebase-acceptance/",
+      "acceptance": "多浏览器并发、离线新建/编辑/移动失败回滚、重连、崩溃、版本恢复；Y.Doc 收敛和本地撤销隔离",
+      "evidence": []
+    },
+    {
+      "id": "Z05",
+      "title": "权限与多租户对抗验收",
+      "sections": [
+        "3.2",
+        "6",
+        "7.2",
+        "9.2",
+        "9.5",
+        "12"
+      ],
+      "dependencies": [
+        "P04",
+        "H04",
+        "K03",
+        "N03",
+        "U07",
+        "U10",
+        "J09",
+        "U11"
+      ],
+      "status": "pending",
+      "deliverables": "backend/src/knowledge/**/*.test.ts; qa/knowledge/",
+      "acceptance": "API/WS/search/asset/AI/MCP/数据库视图越权、群组移除、分享撤销、大子树 ACL 刷新窗口均无泄漏",
+      "evidence": []
+    },
+    {
+      "id": "Z06",
+      "title": "全部块与导入导出端到端验收",
+      "sections": [
+        "4",
+        "4.1",
+        "4.2",
+        "4.3",
+        "4.4",
+        "4.5",
+        "4.6"
+      ],
+      "dependencies": [
+        "M03",
+        "M04",
+        "E05",
+        "E06",
+        "U09",
+        "J08",
+        "L02",
+        "N02",
+        "S02"
+      ],
+      "status": "pending",
+      "deliverables": "qa/knowledge/; core/tasks/knowledgebase-acceptance/",
+      "acceptance": "每类块创建/编辑/复制/重排/Markdown 往返，Notion/Obsidian 样本、ID 稳定与多媒体 UI 逐项验收",
+      "evidence": []
+    },
+    {
+      "id": "Z07",
+      "title": "AI、检索与多模态真实链路验收",
+      "sections": [
+        "7",
+        "7.1",
+        "7.2",
+        "7.3",
+        "8",
+        "8.1",
+        "8.2",
+        "9",
+        "9.1",
+        "9.2",
+        "9.3",
+        "9.4",
+        "9.5",
+        "9.6"
+      ],
+      "dependencies": [
+        "J05",
+        "J06",
+        "J08",
+        "J09",
+        "K03",
+        "H05",
+        "U10"
+      ],
+      "status": "pending",
+      "deliverables": "core/tasks/knowledgebase-acceptance/",
+      "acceptance": "真实模型/媒体/中英文查询证据；引用可达、默认建议、逐块流/审批/任务撤销/换向量模型全部通过",
+      "evidence": []
+    },
+    {
+      "id": "Z08",
+      "title": "大文档性能、键盘与视觉打磨",
+      "sections": [
+        "0.1",
+        "4",
+        "12"
+      ],
+      "dependencies": [
+        "Z04",
+        "Z06",
+        "Z07",
+        "O02",
+        "U05",
+        "U07",
+        "U11"
+      ],
+      "status": "pending",
+      "deliverables": "src/features/knowledge/; qa/knowledge/",
+      "acceptance": "长文增量渲染/媒体懒加载量测；桌面/窄屏/亮暗主题、键盘焦点/读屏/空错状态人工截图验收；无无效交互",
+      "evidence": []
+    },
+    {
+      "id": "Z09",
+      "title": "完整覆盖审计与最终交付",
+      "sections": [
+        "0",
+        "0.1",
+        "0.2",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12"
+      ],
+      "dependencies": [
+        "Z01",
+        "Z03",
+        "Z05",
+        "Z08"
+      ],
+      "status": "pending",
+      "deliverables": "core/tasks/fouc-knowledgebase-tasks.md; core/tasks/knowledgebase-acceptance/",
+      "acceptance": "所有任务验收并勾选；逐章实际代码/运行证据一致；验证静态导出、既有业务回归、Git 提交；Web dev 常驻；本会话免 Tauri 构建",
+      "evidence": []
+    },
+    {
+      "id": "O03",
+      "title": "Teamspace 服务与根默认权限",
+      "sections": [
+        "3.3",
+        "6.1"
+      ],
+      "dependencies": [
+        "O01"
+      ],
+      "deliverables": "backend/src/knowledge/organization/teamspaces.ts",
+      "acceptance": "空间 CRUD 与 owner/admin 授权、根默认级别持久化；个人和团队共享逻辑；权限计算可读取根默认值",
+      "status": "pending",
+      "evidence": []
+    },
+    {
+      "id": "B00",
+      "title": "共享 CRDT 事务来源与撤销内核",
+      "sections": [
+        "5.4",
+        "9.3"
+      ],
+      "dependencies": [
+        "E02"
+      ],
+      "deliverables": "shared/src/knowledge/collaboration/",
+      "acceptance": "定义 human/agent/mcp/restore 来源；Yjs UndoManager 按来源和任务隔离，跨文档更新收敛；不依赖 React 或网络 provider",
+      "status": "pending",
+      "evidence": []
+    },
+    {
+      "id": "B09",
+      "title": "服务端 Agent Awareness 发布",
+      "sections": [
+        "5.5",
+        "9.3"
+      ],
+      "dependencies": [
+        "B01",
+        "B00"
+      ],
+      "deliverables": "backend/src/knowledge/collaboration/agent-awareness.ts",
+      "acceptance": "服务端 direct connection 以 Agent 身份发布 cursor/selection/正在编辑状态；任务结束和异常清理，协议客户端能接收",
+      "status": "pending",
+      "evidence": []
+    },
+    {
+      "id": "U11",
+      "title": "数据库日历视图",
+      "sections": [
+        "3.3"
+      ],
+      "dependencies": [
+        "U06"
+      ],
+      "deliverables": "src/features/knowledge/databases/calendar-view.tsx",
+      "acceptance": "同一组行按日期展示、切换月份与拖动更新日期；时区/无日期/无权状态正确；行正文不复制；失败乐观回滚",
+      "status": "pending",
+      "evidence": []
+    }
+  ]
+}

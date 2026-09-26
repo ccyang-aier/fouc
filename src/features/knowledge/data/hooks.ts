@@ -13,9 +13,12 @@ import { runKnowledgeCall } from './trpc-client';
 
 export type KnowledgeAccess = KnowledgeApiOutputs['access'];
 
-export function useKnowledgeAccessQuery(workspaceId: string) {
+export function useKnowledgeAccessQuery(workspaceId: string, options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: knowledgeQueryKeys.access(workspaceId),
     queryFn: ({ signal }) => runKnowledgeCall(workspaceId, signal, (client) => client.access.query({ workspaceId }, { signal })),
+    // U02: the shell only asks for the access snapshot once a workspace is
+    // actually active — an empty id would only produce transport noise.
+    enabled: (options.enabled ?? true) && workspaceId.length > 0,
   });
 }

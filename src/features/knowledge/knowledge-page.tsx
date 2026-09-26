@@ -1,182 +1,359 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { ExpandedPrimarySidebar, type SidebarSectionId } from "./dense-sidebar/expanded-primary-sidebar";
-import { getProjectIconDefinition } from "./dense-sidebar/project-icons";
-import { DEFAULT_PROJECT_ICON_ID, type ProjectIconId } from "./dense-sidebar/project-icons";
-import { ProjectIconPicker } from "./dense-sidebar/project-icon-picker";
-import type { SidebarProjectNode, SidebarRecentNote } from "./dense-sidebar/sidebar-navigation";
-import type { SidebarProjectAction } from "./dense-sidebar/sidebar-project-tree";
-import type { SidebarTagAction } from "./dense-sidebar/sidebar-tag-tree";
-import type { DocumentAction } from "./dense-sidebar/document-action-menu-content";
-import { EMPTY_KNOWLEDGE, type DocumentVersion, type HyperdocDocumentSummary, type KnowledgeSnapshot } from "./knowledge-model";
-import { loadDocumentVersions, loadKnowledge, runKnowledgeAction, type KnowledgeAction } from "./knowledge-client";
-import { KnowledgeContent } from "./knowledge-content";
-import { KnowledgeBaseHeader } from "./knowledge-base-header";
-import styles from "./knowledge-canvas.module.css";
+/**
+ * The knowledge workbench entry (U02): the app shell of the new knowledge
+ * model. Entry runs through the real gates in order — the A04 session check
+ * (anonymous goes to `/auth`, an unavailable auth service is an honest error
+ * with retry), the O01 workspace list, the A00 access snapshot over the U01
+ * tRPC client, and the O03 teamspace directory — and one pure state machine
+ * (`entry-state.ts`) maps those onto the rendered phase, so no screen ever
+ * invents data. Once a workspace is active the three-column stage mounts
+ * (navigation sidebar / canvas / reserved review-AI rail) and the B06
+ * workspace-event subscription wires live invalidation into the U01 cache.
+ *
+ * The page tree is the U03 skeleton: sections and keyboard/selection rules are
+ * final, pages arrive with the page read API, and sections say so honestly.
+ */
 
-// Adapted from dense/src/shell/app-shell.tsx: buildSidebarProjects.
-function buildSidebarProjects(projects: KnowledgeSnapshot["projects"], documents: HyperdocDocumentSummary[]): SidebarProjectNode[] {
-  const projectIds = new Set(projects.map((project) => project.id));
-  const childrenByParent = new Map<string | null, typeof projects>();
-  for (const project of projects) {
-    const parentId = project.parentId && projectIds.has(project.parentId) ? project.parentId : null;
-    const siblings = childrenByParent.get(parentId) ?? [];
-    siblings.push(project);
-    childrenByParent.set(parentId, siblings);
-  }
-  const documentsByProject = new Map<string, typeof documents>();
-  for (const document of documents) {
-    if (!document.projectId) continue;
-    const siblings = documentsByProject.get(document.projectId) ?? [];
-    siblings.push(document);
-    documentsByProject.set(document.projectId, siblings);
-  }
-  const toNode = (project: (typeof projects)[number]): SidebarProjectNode => {
-    const children: SidebarProjectNode[] = [
-      ...(childrenByParent.get(project.id) ?? []).map(toNode),
-      ...(documentsByProject.get(project.id) ?? []).map((document) => ({ id: document.id, kind: "document" as const, label: document.title, icon: "file" as const, starred: document.starred })),
-    ];
-    return { id: project.id, kind: "project", label: project.name, projectIconId: getProjectIconDefinition(project.iconId).id, starred: project.starred, expandable: children.length > 0, defaultExpanded: children.length > 0, children };
-  };
-  return (childrenByParent.get(null) ?? []).map(toNode);
-}
+import { useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { FolderPlus, XCircle } from '@phosphor-icons/react';
+import { motion } from 'motion/react';
 
-const tagPalette = ["#ada34e", "#d8777b", "#cd9552", "#6e9a8f", "#798dc0"];
+import { Button } from '@/components/ui/button';
+
+import type { KnowledgeAuthUser } from './auth/auth-api';
+import { authErrorCopyFor } from './auth/auth-errors';
+import { buildAuthEntryUrl, fetchKnowledgeSessionUser, redirectToKnowledgeSignIn } from './auth/session';
+import { connectKnowledgeWorkspaceEvents, type KnowledgeWorkspaceEvents } from './collaboration/workspace-events';
+import { CanvasError, CanvasRedirect, CanvasSpinner, CanvasState } from './canvas-states';
+import { getKnowledgeApiOrigin } from './data/endpoint';
+import { useKnowledgeAccessQuery } from './data/hooks';
+import { knowledgeKeysForSegments, knowledgeWorkspaceRootKey } from './data/invalidation';
+import { KnowledgeQueryProvider } from './data/provider';
+import { invalidateKnowledgeQueries } from './data/query-client';
+import { flattenWorkspaceList, useKnowledgeTeamspacesQuery, useKnowledgeWorkspacesQuery } from './data/workspace-queries';
+import { deriveKnowledgeEntryPhase, entryPhaseShowsStage, knowledgeErrorCodeOf } from './entry-state';
+import { AssistantRail, AssistantRailToggle } from './assistant-rail';
+import { CreateTeamspaceDialog } from './navigation/create-teamspace-dialog';
+import {
+  PageTreeSidebar,
+  SidebarFooter,
+  TreeArea,
+  TreeAreaHeader,
+  TreeEmpty,
+  TreeError,
+  TreeForbidden,
+  TreeLoading,
+  TreeReady,
+} from './navigation/page-tree-sidebar';
+import { buildNavigationSections } from './navigation/tree-model';
+import { organizationErrorTextOf } from './organization/errors';
+import { organizationQueryKeys } from './organization/keys';
+import { ToastRegion, useOrganizationToast } from './organization/ui';
+import { CreateWorkspaceDialog } from './organization/workspace-bar';
+import { WorkspaceCanvas } from './workspace-canvas';
+
+const ACTIVE_WORKSPACE_STORAGE_KEY = 'fouc.knowledge.activeWorkspaceId';
+
+type SessionGate =
+  | { status: 'checking' }
+  | { status: 'anonymous' }
+  | { status: 'error'; error: unknown }
+  | { status: 'authenticated'; user: KnowledgeAuthUser };
 
 export function KnowledgePage({ onOpenSettings }: { onOpenSettings: () => void }) {
-  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
-  const [library, setLibrary] = React.useState<KnowledgeSnapshot>(EMPTY_KNOWLEDGE);
-  const [activeKnowledgeBaseId, setActiveKnowledgeBaseId] = React.useState<string | null>(null);
-  const [status, setStatus] = React.useState<"loading" | "ready" | "error">("loading");
-  const [error, setError] = React.useState<string | null>(null);
-  const [activeItem, setActiveItem] = React.useState("all-documents");
-  const [activeResource, setActiveResource] = React.useState<string | null>(null);
-  const [activeDocumentId, setActiveDocumentId] = React.useState<string | null>(null);
-  const [activeDocumentLocation, setActiveDocumentLocation] = React.useState<"project" | "recent" | "tag" | null>(null);
-  const [expandedSections, setExpandedSections] = React.useState<Record<SidebarSectionId, boolean>>({ projects: true, tags: true, recent: false });
-  const [expandedProjects, setExpandedProjects] = React.useState<Record<string, boolean>>({});
-  const [expandedTags, setExpandedTags] = React.useState<Record<string, boolean>>({});
-  const [projectDialogOpen, setProjectDialogOpen] = React.useState(false);
-  const [projectName, setProjectName] = React.useState("");
-  const [projectIconId, setProjectIconId] = React.useState<ProjectIconId>(DEFAULT_PROJECT_ICON_ID);
-  const [tabs, setTabs] = React.useState<string[]>([]);
-  const [splitDocumentId, setSplitDocumentId] = React.useState<string | null>(null);
-  const [infoDocumentId, setInfoDocumentId] = React.useState<string | null>(null);
-  const [historyDocumentId, setHistoryDocumentId] = React.useState<string | null>(null);
-  const [versions, setVersions] = React.useState<DocumentVersion[]>([]);
-  const snapshotRequest = React.useRef(0);
+  return (
+    <KnowledgeQueryProvider>
+      <KnowledgeWorkbench onOpenSettings={onOpenSettings} />
+    </KnowledgeQueryProvider>
+  );
+}
 
-  const applySnapshot = React.useCallback((next: KnowledgeSnapshot) => {
-    const projectIds = new Set(next.projects.map((project) => project.id));
-    const knowledgeBaseIds = next.projects.filter((project) => !project.parentId).map((project) => project.id);
-    const documentIds = new Set(next.documents.map((document) => document.id));
-    setLibrary(next);
-    setActiveKnowledgeBaseId((current) => current && knowledgeBaseIds.includes(current) ? current : knowledgeBaseIds[0] ?? null);
-    setActiveResource((current) => current?.startsWith("project:") && !projectIds.has(current.slice(8)) ? null : current);
-    setActiveDocumentId((current) => current && !documentIds.has(current) ? null : current);
-    setTabs((current) => current.filter((id) => documentIds.has(id)));
-    setSplitDocumentId((current) => current && !documentIds.has(current) ? null : current);
-    setInfoDocumentId((current) => current && !documentIds.has(current) ? null : current);
-    setHistoryDocumentId((current) => current && !documentIds.has(current) ? null : current);
-    setStatus("ready");
-    setError(null);
-  }, []);
-  const refresh = React.useCallback(async () => {
-    const request = ++snapshotRequest.current;
-    const next = await loadKnowledge();
-    if (request === snapshotRequest.current) applySnapshot(next);
-    return next;
-  }, [applySnapshot]);
-  React.useEffect(() => {
-    const requests = snapshotRequest;
-    let firstLoad = true;
-    const update = () => {
-      const initial = firstLoad;
-      firstLoad = false;
-      void refresh().catch((cause) => { if (initial) { setError(String(cause)); setStatus("error"); } });
+function KnowledgeWorkbench({ onOpenSettings }: { onOpenSettings: () => void }) {
+  // The U01 QueryClient shared by every query below and by the B06 event
+  // subscription's invalidations.
+  const queryClient = useQueryClient();
+
+  // ── A04 session gate ────────────────────────────────────────────
+  const [session, setSession] = useState<SessionGate>({ status: 'checking' });
+  const [sessionAttempt, setSessionAttempt] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchKnowledgeSessionUser()
+      .then((user) => {
+        if (!cancelled) setSession(user ? { status: 'authenticated', user } : { status: 'anonymous' });
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) setSession({ status: 'error', error });
+      });
+    return () => {
+      cancelled = true;
     };
-    const updateWhenVisible = () => { if (document.visibilityState === "visible") update(); };
-    update();
-    window.addEventListener("focus", updateWhenVisible);
-    document.addEventListener("visibilitychange", updateWhenVisible);
-    const timer = window.setInterval(updateWhenVisible, 30_000);
-    return () => { requests.current++; window.removeEventListener("focus", updateWhenVisible); document.removeEventListener("visibilitychange", updateWhenVisible); window.clearInterval(timer); };
-  }, [refresh]);
-  const act = React.useCallback(async <T,>(input: KnowledgeAction): Promise<T | null> => {
-    try {
-      setError(null);
-      const result = await runKnowledgeAction<T>(input);
-      await refresh();
-      return result;
-    } catch (cause) {
-      const message = cause instanceof Error ? cause.message : String(cause);
-      if (message.includes("不存在")) {
-        try { await refresh(); setError("所选内容已变化，知识库已刷新，请重试。"); return null; } catch { /* Show the original error if refresh also fails. */ }
+  }, [sessionAttempt]);
+
+  /** Retry flips the gate back to checking in the event handler; the effect only fetches. */
+  const retrySession = () => {
+    setSession({ status: 'checking' });
+    setSessionAttempt((attempt) => attempt + 1);
+  };
+
+  // Anonymous at the entry goes to the plain sign-in page; a session that
+  // expires mid-flight (phase below) goes through the A04 return-to flow.
+  useEffect(() => {
+    if (session.status === 'anonymous') window.location.assign(buildAuthEntryUrl());
+  }, [session.status]);
+
+  // ── Workspace scope ─────────────────────────────────────────────
+  const authenticated = session.status === 'authenticated';
+  const workspacesQuery = useKnowledgeWorkspacesQuery(authenticated);
+  const workspaces = flattenWorkspaceList(workspacesQuery.data);
+
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(() => readStoredWorkspaceId());
+  const activeWorkspace = workspaces.find((workspace) => workspace.id === activeWorkspaceId) ?? workspaces[0] ?? null;
+  const activeId = activeWorkspace?.id ?? null;
+
+  useEffect(() => {
+    if (activeId) writeStoredWorkspaceId(activeId);
+  }, [activeId]);
+
+  const accessQuery = useKnowledgeAccessQuery(activeId ?? '', { enabled: activeId !== null });
+  const teamspacesQuery = useKnowledgeTeamspacesQuery(activeId);
+  const teamspaces = flattenWorkspaceList(teamspacesQuery.data);
+
+  const phase = deriveKnowledgeEntryPhase({
+    session:
+      session.status === 'checking' || session.status === 'anonymous' || session.status === 'error'
+        ? { status: session.status }
+        : { status: 'authenticated' },
+    workspaces: authenticated
+      ? {
+          status: workspacesQuery.status,
+          errorCode: workspacesQuery.error === null ? null : knowledgeErrorCodeOf(workspacesQuery.error),
+          count: workspaces.length,
+        }
+      : null,
+    access: activeId
+      ? { status: accessQuery.status, errorCode: accessQuery.error === null ? null : knowledgeErrorCodeOf(accessQuery.error) }
+      : null,
+    teamspaces: activeId && accessQuery.isSuccess
+      ? {
+          status: teamspacesQuery.status,
+          errorCode: teamspacesQuery.error === null ? null : knowledgeErrorCodeOf(teamspacesQuery.error),
+          count: teamspaces.length,
+        }
+      : null,
+  });
+
+  // An authenticated surface that turns UNAUTHENTICATED means the session
+  // expired under us: hand the current location to the sign-in entry.
+  useEffect(() => {
+    if (phase === 'auth-redirect' && session.status !== 'anonymous') redirectToKnowledgeSignIn('expired');
+  }, [phase, session.status]);
+
+  // ── B06: live workspace events → U01 cache invalidation ────────
+  const stageActive = entryPhaseShowsStage(phase) && activeId !== null;
+  const eventsWorkspaceId = stageActive ? activeId : null;
+  useEffect(() => {
+    if (!eventsWorkspaceId) return undefined;
+    const controller = new AbortController();
+    let connection: KnowledgeWorkspaceEvents | undefined;
+    void getKnowledgeApiOrigin()
+      .then(({ origin }) => {
+        if (controller.signal.aborted) return;
+        connection = connectKnowledgeWorkspaceEvents({
+          workspaceId: eventsWorkspaceId,
+          origin,
+          signal: controller.signal,
+          invalidate: (segments) => {
+            for (const key of knowledgeKeysForSegments(eventsWorkspaceId, segments)) {
+              void invalidateKnowledgeQueries(queryClient, key);
+            }
+          },
+          invalidateAll: () => {
+            void invalidateKnowledgeQueries(queryClient, knowledgeWorkspaceRootKey(eventsWorkspaceId));
+          },
+        });
+      })
+      .catch(() => undefined); // Endpoint failures surface through the queries themselves.
+    return () => {
+      controller.abort();
+      connection?.close();
+    };
+  }, [eventsWorkspaceId, queryClient]);
+
+  // ── Tree selection and creation dialogs ─────────────────────────
+  // Selection self-heals across workspace switches: teamspace ids are unique,
+  // so a stale id from another workspace simply matches no row.
+  const [selectedTeamspaceId, setSelectedTeamspaceId] = useState<string | null>(null);
+
+  const sections = useMemo(() => buildNavigationSections(teamspaces, []), [teamspaces]);
+  const selectedTeamspace = teamspaces.find((teamspace) => teamspace.id === selectedTeamspaceId) ?? null;
+
+  const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
+  const [createTeamspaceOpen, setCreateTeamspaceOpen] = useState(false);
+  const [railOpen, setRailOpen] = useState(false);
+  const { toast, notify } = useOrganizationToast();
+
+  const retryTeamspaces = () => void teamspacesQuery.refetch();
+
+  const treeArea = (
+    <>
+      <TreeAreaHeader onCreateTeamspace={() => setCreateTeamspaceOpen(true)} />
+      {phase === 'tree-loading' ? (
+        <TreeLoading />
+      ) : phase === 'tree-error' ? (
+        <TreeError onRetry={retryTeamspaces} />
+      ) : phase === 'tree-forbidden' ? (
+        <TreeForbidden />
+      ) : sections.length === 0 ? (
+        <TreeEmpty onCreateTeamspace={() => setCreateTeamspaceOpen(true)} />
+      ) : (
+        <TreeArea>
+          <TreeReady sections={sections} selectedSectionId={selectedTeamspaceId} onSelectSection={setSelectedTeamspaceId} />
+        </TreeArea>
+      )}
+    </>
+  );
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+      className="relative h-full min-h-0 w-full overflow-hidden bg-[var(--panel)]"
+    >
+      {phase === 'session-checking' ? (
+        <CanvasSpinner label="正在确认登录状态" />
+      ) : phase === 'session-error' ? (
+        <SessionErrorState
+          description={authErrorCopyFor(session.status === 'error' ? session.error : null).description}
+          onRetry={retrySession}
+          onSignIn={() => window.location.assign(buildAuthEntryUrl())}
+        />
+      ) : phase === 'auth-redirect' ? (
+        <CanvasRedirect />
+      ) : phase === 'workspaces-loading' ? (
+        <CanvasSpinner label="正在加载工作区" />
+      ) : phase === 'workspaces-error' ? (
+        <CanvasError
+          title="工作区列表加载失败"
+          detail={organizationErrorTextOf(workspacesQuery.error)}
+          onRetry={() => void queryClient.invalidateQueries({ queryKey: organizationQueryKeys.workspaces })}
+        />
+      ) : phase === 'workspaces-empty' ? (
+        <CanvasState
+          tone="accent"
+          icon={<FolderPlus aria-hidden className="size-5" weight="regular" />}
+          title="还没有可用的工作区"
+          hint="工作区是知识库组织的顶层边界；创建第一个工作区后，页面树会在这里展开。"
+          announce="polite"
+          actions={
+            <Button onClick={() => setCreateWorkspaceOpen(true)}>
+              <FolderPlus aria-hidden className="size-3.5" />
+              新建工作区
+            </Button>
+          }
+        />
+      ) : activeWorkspace && session.status === 'authenticated' ? (
+        <div className="flex h-full min-h-0">
+          <PageTreeSidebar
+            workspaces={workspaces}
+            activeWorkspaceId={activeWorkspace.id}
+            onSelectWorkspace={setActiveWorkspaceId}
+            onCreateWorkspace={() => setCreateWorkspaceOpen(true)}
+            treeArea={treeArea}
+            footer={<SidebarFooter user={session.user} onOpenSettings={onOpenSettings} />}
+          />
+          <WorkspaceCanvas
+            phase={
+              phase === 'workspace-loading' || phase === 'workspace-error' || phase === 'workspace-forbidden'
+                ? phase
+                : 'ready'
+            }
+            workspace={activeWorkspace}
+            access={accessQuery.data}
+            user={session.user}
+            teamspaces={teamspaces}
+            selectedTeamspace={selectedTeamspace}
+            errorText={accessQuery.error === null ? undefined : knowledgeAccessErrorText(accessQuery.error)}
+            onRetry={() => void accessQuery.refetch()}
+            actions={<AssistantRailToggle open={railOpen} onToggle={() => setRailOpen((open) => !open)} />}
+          />
+          <AssistantRail open={railOpen} onClose={() => setRailOpen(false)} />
+        </div>
+      ) : null}
+
+      <CreateWorkspaceDialog
+        open={createWorkspaceOpen}
+        onClose={() => setCreateWorkspaceOpen(false)}
+        onCreated={(workspaceId) => {
+          setActiveWorkspaceId(workspaceId);
+          notify('success', '工作区已创建');
+        }}
+        notify={notify}
+      />
+      {activeWorkspace ? (
+        <CreateTeamspaceDialog
+          workspaceId={activeWorkspace.id}
+          open={createTeamspaceOpen}
+          onClose={() => setCreateTeamspaceOpen(false)}
+          onCreated={(teamspace) => setSelectedTeamspaceId(teamspace.id)}
+        />
+      ) : null}
+      <ToastRegion toast={toast} />
+    </motion.div>
+  );
+}
+
+function SessionErrorState({ description, onRetry, onSignIn }: { description: string; onRetry: () => void; onSignIn: () => void }) {
+  return (
+    <CanvasState
+      tone="error"
+      announce="assertive"
+      icon={<XCircle aria-hidden className="size-5" weight="fill" />}
+      title="无法确认登录状态"
+      hint={description}
+      actions={
+        <>
+          <Button variant="outline" size="sm" onClick={onRetry}>
+            重试
+          </Button>
+          <Button variant="ghost" size="sm" onClick={onSignIn}>
+            前往登录
+          </Button>
+        </>
       }
-      setError(message);
-      return null;
-    }
-  }, [refresh]);
+    />
+  );
+}
 
-  const activeDocuments = React.useMemo(() => library.documents.filter((document) => !document.trashedAt), [library.documents]);
-  const knowledgeBases = React.useMemo(() => library.projects.filter((project) => !project.parentId), [library.projects]);
-  const sidebarProjects = React.useMemo(() => buildSidebarProjects(library.projects, activeDocuments), [library.projects, activeDocuments]);
-  const recentNotes = React.useMemo<SidebarRecentNote[]>(() => activeDocuments.slice(0, 10).map((document) => ({ id: document.id, label: document.title, starred: document.starred })), [activeDocuments]);
-  const tagDocuments = React.useMemo(() => Object.fromEntries(library.tags.map((tag) => [tag.id, activeDocuments.filter((document) => library.documentTags[document.id]?.includes(tag.id))])), [library, activeDocuments]);
+function knowledgeAccessErrorText(error: unknown): string {
+  const code = knowledgeErrorCodeOf(error);
+  const copy: Record<string, string> = {
+    UNAVAILABLE: '知识服务暂时不可用，请稍后重试。',
+    NETWORK: '无法连接知识服务，请检查网络后重试。',
+    TIMEOUT: '连接知识服务超时，请重试。',
+    RATE_LIMITED: '请求过于频繁，请稍后重试。',
+    ENDPOINT: '知识服务地址未配置，无法建立连接。',
+    PAYMENT_REQUIRED: '该操作需要更高的访问权限。',
+  };
+  return (code && copy[code]) ?? '确认工作区访问时出现问题，请重试。';
+}
 
-  function navigate(id: string) { setActiveItem(id); setActiveResource(null); setActiveDocumentId(null); setActiveDocumentLocation(null); }
-  function selectProject(id: string) {
-    setActiveResource(id);
-    setActiveDocumentId(null);
-    setActiveDocumentLocation(null);
-    let project = library.projects.find((item) => item.id === id.slice(8));
-    while (project?.parentId) project = library.projects.find((item) => item.id === project?.parentId);
-    if (project) setActiveKnowledgeBaseId(project.id);
+function readStoredWorkspaceId(): string | null {
+  try {
+    return window.localStorage.getItem(ACTIVE_WORKSPACE_STORAGE_KEY);
+  } catch {
+    return null;
   }
-  function selectKnowledgeBase(id: string) { selectProject(`project:${id}`); }
-  function openProjectDialog() { setProjectName(""); setProjectIconId(DEFAULT_PROJECT_ICON_ID); setProjectDialogOpen(true); }
-  function openDocument(id: string, location: "project" | "recent" | "tag" | null = null) { setActiveDocumentId(id); setActiveResource(null); setActiveDocumentLocation(location); setTabs((current) => current.includes(id) ? current : [...current, id]); }
-  async function createDocument(projectId: string | null = null, tagId: string | null = null) { const document = await act<HyperdocDocumentSummary>({ action: "create-document", projectId, tagId }); if (document) openDocument(document.id, tagId ? "tag" : projectId ? "project" : null); }
-  async function createProject(name: string, parentId: string | null = null, iconId: ProjectIconId = DEFAULT_PROJECT_ICON_ID) { const project = await act<{ id: string }>({ action: "create-project", name, iconId, parentId }); if (project) { if (!parentId) setActiveKnowledgeBaseId(project.id); selectProject(`project:${project.id}`); } }
+}
 
-  // Adapted from dense/src/shell/app-shell.tsx: sidebar action handlers.
-  function projectAction(id: string, action: SidebarProjectAction) {
-    const project = library.projects.find((item) => item.id === id);
-    if (!project) return;
-    if (action === "new-document") { void createDocument(id); return; }
-    if (action === "rename") { const name = window.prompt("重命名知识库", project.name)?.trim(); if (name && name !== project.name) void act({ action: "rename-project", id, name }); return; }
-    if (action === "new-subfolder") { const name = window.prompt("子知识库名称")?.trim(); if (name) void createProject(name, id); return; }
-    if (action === "add-tag") { const name = window.prompt("标签名称")?.trim(); if (name) void act({ action: "create-tag", name, color: tagPalette[library.tags.length % tagPalette.length] }); return; }
-    if (action === "toggle-star") { void act({ action: "star-project", id, starred: !project.starred }); return; }
-    if (action === "delete" && window.confirm(`删除「${project.name}」？其中的文档会保留。`)) { void act({ action: "delete-project", id }).then(() => navigate("projects")); }
+function writeStoredWorkspaceId(workspaceId: string): void {
+  try {
+    window.localStorage.setItem(ACTIVE_WORKSPACE_STORAGE_KEY, workspaceId);
+  } catch {
+    // Storage can be unavailable (private mode); the selection still works in memory.
   }
-  function tagAction(id: string, action: SidebarTagAction) {
-    const tag = library.tags.find((item) => item.id === id);
-    if (!tag) return;
-    if (action === "new-document") { void createDocument(null, id); return; }
-    if (action === "rename") { const name = window.prompt("重命名标签", tag.name)?.trim(); if (name && name !== tag.name) void act({ action: "rename-tag", id, name }); return; }
-    if (action === "delete" && window.confirm(`删除「${tag.name}」？文档会保留。`)) void act({ action: "delete-tag", id });
-  }
-  function documentAction(id: string, action: DocumentAction) {
-    const document = library.documents.find((item) => item.id === id);
-    if (!document) return;
-    if (action === "rename") { const title = window.prompt("重命名文档", document.title)?.trim(); if (title && title !== document.title) void act({ action: "update-document", id, title }); return; }
-    if (action === "info") { setInfoDocumentId(id); return; }
-    if (action === "open-new-tab") { openDocument(id); return; }
-    if (action === "open-split") { if (activeDocumentId && activeDocumentId !== id) setSplitDocumentId(id); else openDocument(id); return; }
-    if (action === "toggle-star") { void act({ action: "star-document", id, starred: !document.starred }); return; }
-    if (action === "remove-from-folder") { void act({ action: "move-document", id, projectId: null }); return; }
-    if (action === "history") { openDocument(id); setHistoryDocumentId(id); void loadDocumentVersions(id).then(setVersions).catch((cause) => setError(String(cause))); return; }
-    if (action === "trash") { void act({ action: "trash-document", id, trashed: true }).then(() => { if (activeDocumentId === id) { setActiveDocumentId(null); setTabs((current) => current.filter((tab) => tab !== id)); } }); }
-  }
-
-  return <div className={styles.layout}>
-    <ExpandedPrimarySidebar
-      collapsed={sidebarCollapsed}
-      header={<KnowledgeBaseHeader knowledgeBases={knowledgeBases} activeKnowledgeBaseId={activeKnowledgeBaseId} onSelectKnowledgeBase={selectKnowledgeBase} onCollapse={() => setSidebarCollapsed(true)} onCreateKnowledgeBase={openProjectDialog} onOpenSettings={onOpenSettings} />}
-      className={styles.sidebar} activeItem={activeItem} activeResource={activeResource} activeDocumentId={activeDocumentId} activeDocumentLocation={activeDocumentLocation} projects={sidebarProjects} tags={library.tags} tagDocuments={tagDocuments} recentNotes={recentNotes} expandedProjects={expandedProjects} expandedTags={expandedTags} expandedSections={expandedSections} onNavigateMain={navigate} onBrowseProjects={() => navigate("projects")} onSelectProject={(id) => selectProject(`project:${id}`)} onSelectDocument={(id) => openDocument(id, "project")} onToggleProject={(id) => setExpandedProjects((current) => ({ ...current, [id]: !(current[id] ?? sidebarProjects.some((node) => node.id === id && node.defaultExpanded)) }))} onProjectAction={projectAction} onTagAction={tagAction} onDocumentAction={documentAction} onToggleSection={(section) => setExpandedSections((current) => ({ ...current, [section]: !current[section] }))} onNewProject={openProjectDialog} onCreateTag={(name) => { void act({ action: "create-tag", name, color: tagPalette[library.tags.length % tagPalette.length] }); }} onSelectTagDocument={(id) => openDocument(id, "tag")} onToggleTag={(id) => setExpandedTags((current) => ({ ...current, [id]: !(current[id] ?? true) }))} onSelectRecent={(id) => openDocument(id, "recent")} />
-    <KnowledgeContent library={library} status={status} error={error} clearError={() => setError(null)} retry={() => { setStatus("loading"); void refresh().catch((cause) => { setError(String(cause)); setStatus("error"); }); }} onExpandSidebar={sidebarCollapsed ? () => setSidebarCollapsed(false) : undefined} activeItem={activeItem} activeResource={activeResource} activeDocumentId={activeDocumentId} tabs={tabs} splitDocumentId={splitDocumentId} infoDocumentId={infoDocumentId} historyDocumentId={historyDocumentId} versions={versions} setTabs={setTabs} setActiveDocumentId={setActiveDocumentId} setSplitDocumentId={setSplitDocumentId} setInfoDocumentId={setInfoDocumentId} setHistoryDocumentId={setHistoryDocumentId} openDocument={openDocument} selectProject={selectProject} createDocument={createDocument} openProjectDialog={openProjectDialog} act={act} />
-    {projectDialogOpen && <div className={styles.dialogBackdrop} role="presentation" onMouseDown={() => setProjectDialogOpen(false)}><form className={styles.dialog} role="dialog" aria-modal="true" aria-label="新建知识库" onMouseDown={(event) => event.stopPropagation()} onSubmit={(event) => { event.preventDefault(); const name = projectName.trim(); if (name) { void createProject(name, null, projectIconId); setProjectDialogOpen(false); } }}><h2>新建知识库</h2><label>知识库名称<input autoFocus value={projectName} onChange={(event) => setProjectName(event.target.value)} placeholder="输入知识库名称" maxLength={36} /></label><ProjectIconPicker value={projectIconId} onChange={setProjectIconId} /><div><button type="button" onClick={() => setProjectDialogOpen(false)}>取消</button><button type="submit" disabled={!projectName.trim()}>创建知识库</button></div></form></div>}
-  </div>;
 }

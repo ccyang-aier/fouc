@@ -2,7 +2,7 @@
 
 > 本表由 `knowledgebase-tasks.json` 生成。修改任务和证据后运行 `node scripts/verify-knowledge-tasks.mjs --write`。
 
-设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 57 项。
+设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 59 项。
 
 ## 实施约束
 
@@ -40,8 +40,8 @@
 - U06 数据库表格视图
 - H05 搜索 UI 与块引用导航
 - U08 浏览器哈希上传与进度控制
-- J02 共用只读 Agent 工具
-- J01 上下文组装与引用校验
+- W05 媒体派生任务编排与重索引
+- J03 CRDT 建议写入 Agent 工具
 
 ## 拓扑排序任务表
 
@@ -121,10 +121,10 @@
 | [x] 已验收 | W02 | Whisper 音视频时间戳转写<br>services/media-worker/ | §8.2 | W01 | 真实音视频样本生成带时间戳分段文本；模型可配置；失败、超时与重试可观察 | [CPU Whisper 真实音频/MP4及签名S3链路；33 Python+8客户端，失败/超时/取消/重试](../../services/media-worker/ACCEPTANCE-WHISPER.md) |
 | [x] 已验收 | W03 | Docling PDF/Office 解析<br>services/media-worker/ | §8.2 | W01 | 真实 PDF/Office 表格/图片/标题解析成结构化 Markdown；空/损坏样本报错清楚 | [真实 MinIO→HTTP→Docling 四格式标题/表格/PNG、空/损坏/期限/重试/取消通过；56 Python + 9 Bun + 9 Node 测试](../../services/media-worker/ACCEPTANCE-DOCLING.md) |
 | [x] 已验收 | W04 | 图片视觉描述与 OCR<br>backend/src/knowledge/workers/vision.ts | §8.2 | AS01, G01 | 真实图片经 vision 档生成描述/OCR；结果写 asset.derived；权限与模型用量可追踪 | [28 项测试(workers 15+assets 13 回归):真实 PNG 经真实 MinIO+队列+网关 vision 档(glm-5.3-flash 原生图文)生成描述、真实 tokens 落 ai_usage;失败/限流/缺配置结构化重试;幂等重放不重复调用](../../core/tasks/knowledgebase-acceptance/2026-09-26-vision.md) |
-| [ ] 待实施 | J02 | 共用只读 Agent 工具<br>backend/src/knowledge/ai/tools/ | §9.2 / §9.5 | H04, M02, T02, L01 | search/read_page/query_database/list_pages/get_backlinks 同发起者授权；range/filter/sort 有验证、引用准确 | — |
+| [x] 已验收 | J02 | 共用只读 Agent 工具<br>backend/src/knowledge/ai/tools/ | §9.2 / §9.5 | H04, M02, T02, L01 | search/read_page/query_database/list_pages/get_backlinks 同发起者授权；range/filter/sort 有验证、引用准确 | [13 项真实工具测试+search/databases/契约回归:五只读工具同一发起者授权(A03 范围+zod 输入双防线,principals 永不出现在输入)、range 越界拒绝、回收/无权不可区分;注册表供 J04/K01 共用](../../core/tasks/knowledgebase-acceptance/2026-09-26-agent-tools.md) |
 | [ ] 待实施 | W05 | 媒体派生任务编排与重索引<br>backend/src/knowledge/workers/media.ts | §8.2 / §7.1 | W02, W03, W04, H01, H04, J02 | graphile-worker 调用无状态 HTTP；幂等派生结果写库并索引引用块；图片/录音/PDF 可搜索且 AI 可读 | — |
 | [ ] 待实施 | U10 | 媒体派生内容与处理状态 UI<br>src/features/knowledge/assets/ | §8.2 | W05, U09 | 排队/处理中/成功/失败可见；OCR/时间戳转录/解析预览、重试；引用点击定位片段 | — |
-| [ ] 待实施 | J01 | 上下文组装与引用校验<br>backend/src/knowledge/ai/context.ts | §9.6 | M02, H04 | 规则→大纲→邻块→检索→历史顺序；预算超限从检索尾部截断；回答 blockId 引用校验与权限过滤 | — |
+| [x] 已验收 | J01 | 上下文组装与引用校验<br>backend/src/knowledge/ai/context.ts | §9.6 | M02, H04 | 规则→大纲→邻块→检索→历史顺序；预算超限从检索尾部截断；回答 blockId 引用校验与权限过滤 | [40 项 ai 测试(6 新增):五腿顺序组装(规则→大纲→焦点邻块→检索→历史)、UTF-8 预算仅检索腿尾整条剔除、引用校验折叠无权/不存在/回收为同一 invalid;契约入 shared](../../core/tasks/knowledgebase-acceptance/2026-09-26-context.md) |
 | [ ] 待实施 | J03 | CRDT 建议写入 Agent 工具<br>backend/src/knowledge/ai/tools/ | §9.2 / §9.3 | J02, S01, B01, B00 | insert/replace/delete/create/update_properties 权限一致；openDirectConnection+agent:taskId；新 ID/建议默认；无 SQL 正文双写 | — |
 | [x] 已验收 | B09 | 服务端 Agent Awareness 发布<br>backend/src/knowledge/collaboration/agent-awareness.ts | §5.5 / §9.3 | B01, B00 | 服务端 direct connection 以 Agent 身份发布 cursor/selection/正在编辑状态；任务结束和异常清理，协议客户端能接收 | [真实监听器+官方 provider 客户端 3 项测试:agent 状态(含 taskId/kind/cursor)实时可见、stop/abort 清理幂等、非 page 文档名拒绝](../../core/tasks/knowledgebase-acceptance/2026-09-26-agent-awareness.md) |
 | [ ] 待实施 | J04 | 逐块流式 AI 与任务撤销<br>backend/src/knowledge/ai/streaming.ts | §9.3 | J03, G01, B09, J01 | 完整块到达即写共享 Y.Doc；Awareness 显示 Agent 光标；取消后部分结果可审阅；整体任务撤销不影响人编辑 | — |
@@ -557,6 +557,8 @@ flowchart TD
   style W02 fill:#e4f4e9,stroke:#42845c
   style W03 fill:#e4f4e9,stroke:#42845c
   style W04 fill:#e4f4e9,stroke:#42845c
+  style J02 fill:#e4f4e9,stroke:#42845c
+  style J01 fill:#e4f4e9,stroke:#42845c
   style B09 fill:#e4f4e9,stroke:#42845c
 ```
 

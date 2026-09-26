@@ -1556,10 +1556,17 @@
         "M02",
         "H04"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "backend/src/knowledge/ai/context.ts",
       "acceptance": "规则→大纲→邻块→检索→历史顺序；预算超限从检索尾部截断；回答 blockId 引用校验与权限过滤",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "40 项 ai 测试(6 新增):五腿顺序组装(规则→大纲→焦点邻块→检索→历史)、UTF-8 预算仅检索腿尾整条剔除、引用校验折叠无权/不存在/回收为同一 invalid;契约入 shared",
+          "command": "bun test backend/src/knowledge/ai; pnpm shared:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/ai/context.ts",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-context.md"
+        }
+      ]
     },
     {
       "id": "J02",
@@ -1574,10 +1581,17 @@
         "T02",
         "L01"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "backend/src/knowledge/ai/tools/",
       "acceptance": "search/read_page/query_database/list_pages/get_backlinks 同发起者授权；range/filter/sort 有验证、引用准确",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "13 项真实工具测试+search/databases/契约回归:五只读工具同一发起者授权(A03 范围+zod 输入双防线,principals 永不出现在输入)、range 越界拒绝、回收/无权不可区分;注册表供 J04/K01 共用",
+          "command": "bun test backend/src/knowledge/ai/tools; bun test backend/src/knowledge/search backend/src/knowledge/databases; bun test shared/src/knowledge/contracts shared/src/knowledge/markdown; pnpm shared:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/ai/tools",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-agent-tools.md"
+        }
+      ]
     },
     {
       "id": "J03",

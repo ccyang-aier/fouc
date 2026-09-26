@@ -74,15 +74,13 @@ interface PageBodyModel {
   readonly repaired: boolean;
 }
 
-/**
- * 解码正文碎片并执行 E02 服务端 blockId 修复。修复以共享注册表中的
- * planBlockIdRepairs（与 repairBlockIds 同一规则：缺失/非法/后出现的重复重新
- * 分配、invalid_source 只清洗来源）计算，再按位置映射回 Y.XmlElement 以
- * setAttribute 落回——正是编辑器 setNodeMarkup 经 updateYFragment 会产生的
- * Y 变更，因此可与并发编辑安全合并。修复后的模型从 Y 树重建，保证投影与
- * 回写状态一致。
- */
-function loadPageBodyModel(body: Y.XmlFragment): PageBodyModel {
+interface DecodedPageBody {
+  readonly document: KnowledgeNode | null;
+  /** 首次解码的 PM 节点 → Y.XmlElement 映射，供修复按位置回写。 */
+  readonly elements: Readonly<WeakMap<KnowledgeNode, Y.XmlElement>>;
+}
+
+function decodeBodyModel(body: Y.XmlFragment): DecodedPageBody {
   const elements = new WeakMap<KnowledgeNode, Y.XmlElement>();
   const build = (): KnowledgeNode | null => {
     const children: KnowledgeNode[] = [];
@@ -93,7 +91,25 @@ function loadPageBodyModel(body: Y.XmlFragment): PageBodyModel {
     }
     return children.length ? schema.topNodeType.createChecked(null, children) : null;
   };
-  const document = build();
+  return { document: build(), elements };
+}
+
+/** 只读解码权威正文碎片（y-prosemirror 存储编码 → PM 模型）；null = 碎片为空。索引与 Agent 工具读取共用同一解码。 */
+export function decodePageBody(body: Y.XmlFragment): KnowledgeNode | null {
+  return decodeBodyModel(body).document;
+}
+
+/**
+ * 解码正文碎片并执行 E02 服务端 blockId 修复。修复以共享注册表中的
+ * planBlockIdRepairs（与 repairBlockIds 同一规则：缺失/非法/后出现的重复重新
+ * 分配、invalid_source 只清洗来源）计算，再按位置映射回 Y.XmlElement 以
+ * setAttribute 落回——正是编辑器 setNodeMarkup 经 updateYFragment 会产生的
+ * Y 变更，因此可与并发编辑安全合并。修复后的模型从 Y 树重建，保证投影与
+ * 回写状态一致。
+ */
+function loadPageBodyModel(body: Y.XmlFragment): PageBodyModel {
+  const decoded = decodeBodyModel(body);
+  const document = decoded.document;
   if (!document) return { document: null, repairs: [], repaired: false };
   const repairs = planBlockIdRepairs(document);
   if (!repairs.length) return { document, repairs, repaired: false };
@@ -102,14 +118,14 @@ function loadPageBodyModel(body: Y.XmlFragment): PageBodyModel {
   owner.transact(() => {
     for (const repair of repairs) {
       const node = document.nodeAt(repair.position);
-      const element = node ? elements.get(node) : undefined;
+      const element = node ? decoded.elements.get(node) : undefined;
       if (!element) throw new Error('Block ID repair lost its Yjs element');
       if (element.getAttribute('blockId') !== repair.blockId) element.setAttribute('blockId', repair.blockId);
       if (repair.sourceBlockId === null) element.removeAttribute('sourceBlockId');
       else if (element.getAttribute('sourceBlockId') !== repair.sourceBlockId) element.setAttribute('sourceBlockId', repair.sourceBlockId);
     }
   });
-  return { document: build(), repairs, repaired: true };
+  return { document: decodeBodyModel(body).document, repairs, repaired: true };
 }
 
 export interface BlockIndexDraft {

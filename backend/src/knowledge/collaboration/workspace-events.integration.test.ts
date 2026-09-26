@@ -2,6 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:tes
 import { WebSocket } from 'ws';
 import { randomUUID } from 'node:crypto';
 import { principal } from '@fouc/shared/knowledge/contracts';
+import type { WorkspaceEvent } from '@fouc/shared/knowledge/contracts';
 import { withKnowledgeTenant } from '../../database/knowledge/tenant';
 import { replaceAuthorizedPageAcl } from '../permissions/mutations';
 import { createPermissionsFixture, until, type PermissionsFixture } from '../permissions/permissions-test-fixture';
@@ -51,10 +52,10 @@ describe('workspace event channel', () => {
       },
     };
   }
-  function workspaceEvent(workspaceId: string, pageId: string) {
+  function workspaceEvent(workspaceId: string, pageId: string): WorkspaceEvent {
     return {
       id: randomUUID(), workspaceId, type: 'page.updated', ids: [pageId], occurredAt: new Date().toISOString(),
-    } as const;
+    };
   }
 
   test('members receive published workspace events; every subscriber sees them', async () => {

@@ -1,4 +1,3 @@
-import type { Pool } from 'pg';
 import type { WorkspaceEvent } from '@fouc/shared/knowledge/contracts';
 import type { KnowledgeRequestAuthenticator } from '../auth';
 import type { KnowledgeConsumer } from '../workers/types';

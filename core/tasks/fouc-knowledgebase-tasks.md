@@ -2,7 +2,7 @@
 
 > 本表由 `knowledgebase-tasks.json` 生成。修改任务和证据后运行 `node scripts/verify-knowledge-tasks.mjs --write`。
 
-设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 47 项。
+设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 48 项。
 
 ## 实施约束
 
@@ -26,7 +26,6 @@
 ## 可开始的任务
 
 - U02 应用壳与知识库新模型接入
-- B03 Redis 多节点广播
 - B04 Web y-indexeddb 文档生命周期
 - H01 块索引增量投影
 
@@ -70,7 +69,7 @@
 | [x] 已验收 | O02 | Workspace/成员/Teamspace 组织界面<br>backend/src/knowledge/organization/; src/features/knowledge/organization/ | §3.3 / §6.1 | O03, U01 | 空间创建、切换、成员/群组管理闭环；空/加载/无权/失败状态清晰；根默认权限生效 | [32 项测试/160 断言、lint/类型/边界全过;空间/成员/群组/Teamspace 面板闭环、四态+乐观回滚、根默认权限重算提示;13 张状态截图归档为视觉证据](../../core/tasks/knowledgebase-acceptance/2026-09-26-organization-ui.md) |
 | [ ] 待实施 | U03 | 页面树操作与乐观反馈<br>src/features/knowledge/navigation/ | §3.3 / §5.4 | U02, T01 | 新建、重命名、图标/封面、嵌套移动/排序、删除恢复、键盘导航；失败恢复且提示明确 | — |
 | [ ] 待实施 | U04 | 本地元数据操作队列<br>src/features/knowledge/collaboration/metadata-queue.ts | §5.4 | U03 | UUID 操作持久化，离线乐观、重连按序提交；循环/无权失败回滚；重复重试不重复创建 | — |
-| [ ] 待实施 | B03 | Redis 多节点广播<br>backend/src/knowledge/collaboration/ | §2 / §5.1 / §11 | B02, I01 | 两节点客户端并发更新实时收敛；断连恢复；无二次业务正文存储 | — |
+| [x] 已验收 | B03 | Redis 多节点广播<br>backend/src/knowledge/collaboration/ | §2 / §5.1 / §11 | B02, I01 | 两节点客户端并发更新实时收敛；断连恢复；无二次业务正文存储 | [30 项 collaboration 全套(含 B01/B02/B06/V01 回归):两节点双向 16ms 收敛、断连重连 state-vector 并集无丢失、redis-origin 跳过 store+Redlock 单写者防二次落库、WRONGPASS 认证与 reconnecting/autoResubscribe 断线恢复](../../core/tasks/knowledgebase-acceptance/2026-09-26-multi-node.md) |
 | [ ] 待实施 | B04 | Web y-indexeddb 文档生命周期<br>src/features/knowledge/collaboration/ | §3.1 / §5.1 / §5.4 | B02 | 离线先加载本地 Y.Doc 可编辑；state vector 交换后收敛；切页清理 provider/监听；状态区分本地保存与云同步 | — |
 | [x] 已验收 | B05 | 桌面 SQLite 离线 Yjs 副本<br>backend/src/store/knowledge-documents.ts; src/features/knowledge/collaboration/ | §3.1 / §5.1 / §10 | B02 | sidecar 持久化 Yjs 更新/状态；重启/离线/重连收敛；Rust 不写知识库业务；与服务端正文权威清晰 | [store 字节级 round-trip/重启存活/隔离 + 真实监听器离线编辑跨重启恢复与云端状态 CRDT 合并不覆盖;桌面装配同 Hocuspocus 内核、SQLite 后端](../../core/tasks/knowledgebase-acceptance/2026-09-26-desktop-documents.md) |
 | [x] 已验收 | B06 | 工作区无状态事件与缓存失效<br>backend/src/knowledge/collaboration/events.ts; src/features/knowledge/collaboration/ | §5.3 | B02, U01 | ws:workspaceId 频道校验成员身份；树/评论/通知/行事件只失效相关 Query；重连补拉 | [后端 5 项(成员 403/队列投递/隔离/双通道并存)+前端 4 项(9 事件映射/URL/重连补拉/容错)全过;B01/B02 10 项回归绿;频道无状态,重连失效全命名空间](../../core/tasks/knowledgebase-acceptance/2026-09-26-workspace-events.md) |
@@ -519,6 +518,7 @@ flowchart TD
   style A04 fill:#e4f4e9,stroke:#42845c
   style T02 fill:#e4f4e9,stroke:#42845c
   style O02 fill:#e4f4e9,stroke:#42845c
+  style B03 fill:#e4f4e9,stroke:#42845c
   style B05 fill:#e4f4e9,stroke:#42845c
   style B06 fill:#e4f4e9,stroke:#42845c
   style B00 fill:#e4f4e9,stroke:#42845c

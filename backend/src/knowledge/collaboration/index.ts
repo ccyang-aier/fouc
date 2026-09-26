@@ -5,5 +5,7 @@ export { createPageCollaboration, pageCollaborationConfiguration } from './page-
 export type { PageCollaborationPersistence } from './page-collaboration-server';
 export { createPageCollaborationListener } from './page-collaboration-bun';
 export type { PageCollaborationListener } from './page-collaboration-bun';
+export { pageCollaborationRedisExtension, readPageCollaborationBroadcastConfig } from './page-collaboration-redis';
+export type { PageCollaborationBroadcast } from './page-collaboration-redis';
 export { WorkspaceEventHub, createWorkspaceEventRuntime, workspaceEventConsumer, createWorkspaceEventsChannel } from './events';
 export type { WorkspaceEventsChannel } from './events';

@@ -4,6 +4,7 @@ import { createLogger } from '../../platform/logger';
 import type { KnowledgeRequestAuthenticator } from '../auth';
 import { createPageCollaboration } from './page-collaboration-server';
 import type { PageCollaborationPersistence } from './page-collaboration-server';
+import type { PageCollaborationBroadcast } from './page-collaboration-redis';
 import type { WorkspaceEventsChannel } from './events';
 
 const log = createLogger('knowledge.collaboration');
@@ -41,8 +42,8 @@ export interface PageCollaborationListener {
  * to the authenticated Hocuspocus host through crossws's Bun adapter. Z03 owns
  * when/where this runs; tests embed it exactly the way production does.
  */
-export function createPageCollaborationListener(deps: { authenticator: KnowledgeRequestAuthenticator; pool: Pool }, options: { port?: number; hostname?: string; signal?: AbortSignal; persistence?: PageCollaborationPersistence; events?: WorkspaceEventsChannel } = {}): PageCollaborationListener {
-  const hocuspocus = createPageCollaboration(deps, options.persistence);
+export function createPageCollaborationListener(deps: { authenticator: KnowledgeRequestAuthenticator; pool: Pool }, options: { port?: number; hostname?: string; signal?: AbortSignal; persistence?: PageCollaborationPersistence; broadcast?: PageCollaborationBroadcast; events?: WorkspaceEventsChannel } = {}): PageCollaborationListener {
+  const hocuspocus = createPageCollaboration(deps, options.persistence, options.broadcast);
   const connections = new Map<unknown, ReturnType<typeof hocuspocus.handleConnection>>();
   const crossws = bunAdapter({
     hooks: {
@@ -78,23 +79,26 @@ export function createPageCollaborationListener(deps: { authenticator: Knowledge
       return new Response('Not found.', { status: 404 });
     },
     websocket: {
-      open(ws) {
-        if ((ws.data as { kind?: string } | undefined)?.kind === 'workspace-events') options.events?.open(ws as never);
-        else crossws.websocket.open(ws as never);
+      open(ws: { data?: { kind?: string } }) {
+        if (ws.data?.kind === 'workspace-events') options.events?.open(ws as never);
+        else crossws.websocket.open?.(ws as never);
       },
-      message(ws, message) {
-        if ((ws.data as { kind?: string } | undefined)?.kind === 'workspace-events') options.events?.message(ws as never, String(message));
-        else crossws.websocket.message(ws as never, message as never);
+      message(ws: { data?: { kind?: string } }, message: unknown) {
+        if (ws.data?.kind === 'workspace-events') options.events?.message(ws as never, String(message));
+        else crossws.websocket.message?.(ws as never, message as never);
       },
-      close(ws, code, reason) {
-        if ((ws.data as { kind?: string } | undefined)?.kind === 'workspace-events') options.events?.close(ws as never);
-        else crossws.websocket.close(ws as never, code, reason);
+      close(ws: { data?: { kind?: string } }, code: number, reason: string) {
+        if (ws.data?.kind === 'workspace-events') options.events?.close(ws as never);
+        else crossws.websocket.close?.(ws as never, code, reason);
       },
     } as never,
   });
   const close = async () => {
     options.signal?.removeEventListener('abort', close);
     hocuspocus.closeConnections();
+    // Same shutdown contract as upstream Server.destroy(): the extension
+    // chain releases its own resources (Redis pub/sub) when the listener dies.
+    await hocuspocus.hooks('onDestroy', { instance: hocuspocus });
     server.stop(true);
   };
   options.signal?.addEventListener('abort', close);

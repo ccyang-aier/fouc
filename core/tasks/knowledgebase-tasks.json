@@ -727,10 +727,17 @@
         "B02",
         "I01"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "backend/src/knowledge/collaboration/",
       "acceptance": "两节点客户端并发更新实时收敛；断连恢复；无二次业务正文存储",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "30 项 collaboration 全套(含 B01/B02/B06/V01 回归):两节点双向 16ms 收敛、断连重连 state-vector 并集无丢失、redis-origin 跳过 store+Redlock 单写者防二次落库、WRONGPASS 认证与 reconnecting/autoResubscribe 断线恢复",
+          "command": "bun test backend/src/knowledge/collaboration; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/collaboration",
+          "verifiedAt": "2026-09-26",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-multi-node.md"
+        }
+      ]
     },
     {
       "id": "B04",

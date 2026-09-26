@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import { createServer } from 'node:http';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { Hono } from 'hono';
 import { createTransport } from 'nodemailer';
@@ -12,6 +13,22 @@ import { validateKnowledgeAuthConfig } from './config';
 import { requireKnowledgeIdentity } from './identity';
 
 export const testPassword = 'correct-horse-battery-94';
+
+/** Match a production Node adapter's disconnect semantics without aborting normal completion. */
+export function bindAuthTestRequestLifetime(request: IncomingMessage, response: ServerResponse) {
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  const disconnected = () => { if (!response.writableEnded) abort(); };
+  request.once('aborted', abort);
+  response.once('close', disconnected);
+  return {
+    signal: controller.signal,
+    dispose() {
+      request.removeListener('aborted', abort);
+      response.removeListener('close', disconnected);
+    },
+  };
+}
 
 /** Real Node HTTP socket + ordinary PostgreSQL role; only email delivery is captured. */
 export async function createAuthTestServer(options: {
@@ -30,6 +47,7 @@ export async function createAuthTestServer(options: {
   });
   const app = new Hono();
   const server = createServer(async (request, response) => {
+    const lifetime = bindAuthTestRequestLifetime(request, response);
     try {
       const chunks: Buffer[] = [];
       for await (const chunk of request) chunks.push(Buffer.from(chunk));
@@ -39,13 +57,18 @@ export async function createAuthTestServer(options: {
         else if (value !== undefined) headers.set(key, value);
       }
       const body = Buffer.concat(chunks);
-      const input = new Request(`http://${request.headers.host}${request.url}`, { method: request.method, headers, body: body.length ? body : undefined });
+      const input = new Request(`http://${request.headers.host}${request.url}`, { method: request.method, headers, body: body.length ? body : undefined, signal: lifetime.signal });
       const result = await app.fetch(input, { clientAddress: request.socket.remoteAddress });
+      if (lifetime.signal.aborted) return;
       response.writeHead(result.status, [...result.headers].filter(([key]) => key !== 'set-cookie').concat(result.headers.getSetCookie().map((value) => ['set-cookie', value])).flat());
       response.end(Buffer.from(await result.arrayBuffer()));
     } catch {
-      response.writeHead(500);
-      response.end('Test HTTP adapter failed');
+      if (!lifetime.signal.aborted) {
+        response.writeHead(500);
+        response.end('Test HTTP adapter failed');
+      }
+    } finally {
+      lifetime.dispose();
     }
   });
   await new Promise<void>((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });

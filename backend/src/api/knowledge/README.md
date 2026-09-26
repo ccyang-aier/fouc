@@ -1,0 +1,37 @@
+# Knowledge HTTP / tRPC boundary (A00)
+
+`createKnowledgeApiRoutes({ auth, pool, signal, router?, onDiagnostic? })` returns a Hono sub-application. Z03 mounts it with `app.route('/', routes)` on the existing API role listener and supplies R01's shutdown signal. This module does not listen on a port, start another role, close the injected pool, or modify the old global server.
+
+The only owned paths are `/api/knowledge/:workspaceId/trpc` and its procedure subpaths. Organization/auth/media siblings remain available regardless of mount order. The default router exposes only the authenticated `access` query (workspace, user, role, human actor, credential kind, scopes). It exposes no page data, business CRUD, credential IDs, PAT text or hashes.
+
+## Defining a procedure
+
+Use `knowledgeQuery` / `knowledgeMutation` with a complete Zod input schema, a nonempty explicit list of `read` / `write` scopes, and a resolver. Combine these with `createKnowledgeRouter({ ... })`; nested route records are supported. Raw tRPC/public procedures and foreign routers are rejected at construction/mount. There is no exported public-procedure builder. The implementation uses the official tRPC 11.19.0 Fetch adapter directly; no second adapter package or second authentication model exists.
+
+Every input must contain a UUID `workspaceId` matching the URL's authenticated workspace (case-normalized). Prefer `z.strictObject` or the strict shared scope schemas so unexpected fields are rejected. A complete schema is required instead of chaining a strict workspace-only parser that would reject legitimate domain fields. Explicit scopes are matched independently: `write` does **not** include `read`, management rights, or page access. The server selects scopes; JSON, headers, query parameters and actor/task claims cannot replace identity.
+
+Context is created with the A03 authenticator using a verified session or PAT; any Authorization header prevents cookie fallback. A private WeakMap binds tRPC contexts to the actual server authentication result: fabricated/copied contexts are not authority. Each procedure, including every member of a batch, refreshes that credential and workspace membership before its resolver. `ctx.authority` is that operation-start snapshot, not a permanent entitlement.
+
+`ctx.withTenant(async (db, authority) => ...)` refreshes credentials/scopes again at the start of each new operation, then opens the D02 transaction bound to the authenticated workspace. The second callback argument is the newly checked authority (including a current role), rather than the earlier resolver snapshot. No caller-supplied workspace or raw pool is exposed to the resolver.
+
+**P03 remains required.** Operation-start authentication/scope checks are not an ACL check, a lock on membership or credential rows, or a linearization guarantee for revocations during an entire transaction. P03/domain services must check page authorization and implement their concurrent-revocation/permission fences inside the domain transaction. Use the transaction callback's authority there. A guest or `write` PAT cannot thereby gain page write/admin permissions. Do not hold tenant transactions across remote calls or user/model waits. The test-only probe/write procedures are not part of the default router.
+
+## HTTP, errors and cancellation
+
+- Queries use GET, mutations use JSON POST. Method override, subscriptions, JSONL/SSE, multipart and compressed bodies are not supported here. Media/collaboration use their own transports.
+- CORS matches the static validated Better Auth origin allowlist exactly, with credentials; no wildcard or client-configured origin. Cookie POST requires a trusted Origin. A non-browser Bearer client may omit Origin, but a supplied untrusted Origin is rejected. Preflight allows only GET/POST and Authorization/Content-Type.
+- Every handled response (success, error, preflight) is `no-store`, `no-referrer`, `nosniff` and has a server-generated `X-Request-Id`. Caller trace IDs are not trusted. CORS exposes the generated ID.
+- Limits: 1 MiB actual JSON body bytes, 8 KiB UTF-8 URL bytes, 10 calls per batch. Content-Length is only an early rejection; chunked/under-declared bodies are counted. A batch is **not** an atomic transaction and never shares a mutable permission/tenant snapshot. Configure the client's `httpBatchLink.maxItems` to at most 10 and keep query URLs within the URL cap.
+- Error responses use tRPC's numeric code plus `{ code, httpStatus, requestId }` and fixed allowlisted messages. They do not include stack, cause, Zod issue values, input, query/path, SQL, credentials or provider details. Before context creation, the error body's request ID may be null; the response header still contains the generated correlation ID. Optional diagnostics contain only that ID, the code and status; observer failures are swallowed.
+- Request disconnect and R01 role shutdown are combined into `ctx.signal`. Resolvers must pass it to cancellable remote work and release their own listeners. Downstream AbortErrors are classified by the actual lifecycle signal, not serialized. Cancellation observed before the tenant callback completes rolls back; shutdown returns a sanitized 503 and new requests are refused. Normal completion merely removes listeners and does not falsely abort a successful request.
+- This is cooperative cancellation, not PostgreSQL wire-level query cancellation. A running SQL statement completes/fails before the callback can observe abort, and already committed writes cannot be undone. Use bounded database query/lock timeouts for domain work; handle retries/idempotency at that layer. Z03's real Node/Bun adapter must propagate disconnect into `Request.signal` and preserve a streaming/bounded request body (rather than unbounded buffering before this boundary). The shared test adapter now bridges `IncomingMessage.aborted` / premature `ServerResponse.close`, and removes its listeners after completion.
+
+## Browser type boundary
+
+U01 can `import type { KnowledgeApiRouter, KnowledgeApiInputs, KnowledgeApiOutputs }` from `client-types.ts`. That entry exports no values and its browser bundle is empty; do not runtime-import `index.ts`, `router.ts`, auth or PostgreSQL modules into the frontend. Domain routers can extend the inferred API type when their ACL-backed procedures are implemented.
+
+## Verification
+
+`bun test backend/src/api/knowledge` uses a real Node HTTP socket, Hono, tRPC's typed HTTP / batch clients, verified email sessions, A03-generated PATs, and a disposable PostgreSQL database with an ordinary RLS role. Tests cover cross-workspace URLs/inputs, spoofed identity, invalid Bearer + valid cookies, live token/member/user state, revocation after batch context creation, transaction-start role refresh, exact Origin/CSRF/preflight, malformed JSON, byte limits including chunked HTTP, multi-connection concurrent tenant isolation and clean pooled settings, sanitized rollback, real client disconnect and role shutdown rollback. Unit tests additionally cover unprotected router rejection, fabricated contexts, body-stream cancellation and listener cleanup. A browser-target build and compile-time assertions cover the type-only client entry.
+
+Only explicitly created disposable databases are seeded and removed; the main database and Web development service are not touched. No Tauri or production build is required.

@@ -502,7 +502,7 @@
         "O03",
         "Q01"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "deliverables": "backend/src/knowledge/permissions/",
       "acceptance": "授权/移动/断继承批量子树重算；撤权立即阻止旧 ACL 泄漏；GIN 主体数组与 block_index 同步；群组变更无需逐页重算",
       "evidence": []
@@ -1854,10 +1854,17 @@
         "R01",
         "A03"
       ],
-      "status": "in_progress",
+      "status": "accepted",
       "deliverables": "backend/src/api/knowledge/",
       "acceptance": "tRPC 挂载 Hono；session/PAT 与 workspace 上下文注入；输入校验、结构化错误、无权/未认证拒绝；不依赖客户端",
-      "evidence": []
+      "evidence": [
+        {
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-26-api.md",
+          "summary": "Hono/tRPC 真实 Session/PAT/PG网络认证、RLS、取消回滚、同前缀路由隔离；A00/PAT组合46项487断言，类型入口浏览器bundle为空",
+          "command": "bun test backend/src/api/knowledge backend/src/knowledge/auth/access-policy.test.ts backend/src/knowledge/auth/tokens.integration.test.ts; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/src/api/knowledge; node --test scripts/verify-knowledge-boundaries.test.mjs",
+          "verifiedAt": "2026-09-26"
+        }
+      ]
     },
     {
       "id": "A04",

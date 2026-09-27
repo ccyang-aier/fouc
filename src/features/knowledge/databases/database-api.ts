@@ -30,7 +30,7 @@ import type {
   RowPropertiesState,
   UpdateDatabaseColumnsInput,
 } from '@fouc/shared/knowledge/contracts';
-import { getKnowledgeApiOrigin } from '../data/endpoint';
+import { getFoucApiOrigin } from '@/lib/fouc-api-endpoint';
 import { KnowledgeDataError, normalizeKnowledgeError } from '../data/errors';
 import { createKnowledgeUntypedClientCache, type KnowledgeFetch, type KnowledgeUntypedTrpcClient } from '../data/trpc-client';
 
@@ -105,5 +105,5 @@ export function createKnowledgeDatabasesApi(deps: { resolveOrigin: () => Promise
 
 /** 浏览器绑定：U01 端点解析器 + 全局 fetch。 */
 export const knowledgeDatabasesApi = createKnowledgeDatabasesApi({
-  resolveOrigin: async () => (await getKnowledgeApiOrigin()).origin,
+  resolveOrigin: async () => (await getFoucApiOrigin()).origin,
 });

@@ -10,11 +10,11 @@ import { createKnowledgeApiRoutes } from '../../api/knowledge/http';
 import { knowledgeApiRouter } from '../../api/knowledge/router';
 import { blockIndex, groupMember, member, page } from '../../database/knowledge/schema';
 import { withKnowledgeTenant } from '../../database/knowledge/tenant';
-import { createAuthTestServer, responseCookie, testPassword } from '../auth/auth-test-server';
-import { createKnowledgeRequestAuthenticator, createKnowledgeTokenService } from '../auth';
-import type { KnowledgeRequestAuthenticator, KnowledgeTokenScope } from '../auth';
-import type { KnowledgeAuth } from '../auth/service';
-import type { KnowledgeIdentity } from '../auth/identity';
+import { createAuthTestServer, responseCookie, testPassword } from '../../identity/auth-test-server';
+import { createKnowledgeRequestAuthenticator, createKnowledgeTokenService } from '../access';
+import type { KnowledgeRequestAuthenticator, KnowledgeTokenScope } from '../access';
+import type { FoucAuth } from '../../identity/service';
+import type { FoucIdentity } from '../../identity/identity';
 
 type KnowledgeTokenService = ReturnType<typeof createKnowledgeTokenService>;
 import { createOrganizationRoutes } from '../organization/http';
@@ -30,7 +30,7 @@ import { withAuthorizedPageTreeMutation } from './mutations';
 import { effectivePageAccessCondition, indexedBlockAccessCondition } from './queries';
 import { createPermissionRebuildConsumer } from './rebuild';
 
-export interface PermissionTestActor { cookie: string; identity: KnowledgeIdentity }
+export interface PermissionTestActor { cookie: string; identity: FoucIdentity }
 type AclEvent = Extract<OutboxEvent, { topic: 'acl.changed' }>;
 
 export async function until(check: () => Promise<boolean>, timeout = 10_000) {
@@ -49,7 +49,7 @@ export function barrier() {
 
 /** Real HTTP identities/organization, real queue, ordinary-role business writes. */
 /** Extra routes an embedding test mounts into the same authenticated server. */
-export type PermissionsFixtureMount = (app: Hono, context: { auth: KnowledgeAuth; pool: Pool; authenticator: KnowledgeRequestAuthenticator }) => void;
+export type PermissionsFixtureMount = (app: Hono, context: { auth: FoucAuth; pool: Pool; authenticator: KnowledgeRequestAuthenticator }) => void;
 
 export async function createPermissionsFixture(options: { mount?: PermissionsFixtureMount } = {}) {
   let pool!: Pool;
@@ -79,7 +79,7 @@ export async function createPermissionsFixture(options: { mount?: PermissionsFix
     const cookie = responseCookie(signed);
     const response = await fetch(`${server.origin}/test/identity`, { headers: { cookie } });
     if (response.status !== 200) throw new Error('Permission fixture identity failed');
-    return { cookie, identity: await response.json() as KnowledgeIdentity };
+    return { cookie, identity: await response.json() as FoucIdentity };
   }
   const owner = await actor('owner'), foreign = await actor('foreign'), reader = await actor('reader');
   const alpha = await organization.createWorkspace(owner.identity, { name: 'Alpha', kind: 'team' });

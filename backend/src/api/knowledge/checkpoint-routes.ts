@@ -1,10 +1,10 @@
 import { Hono } from 'hono';
 import type { Context } from 'hono';
 import type { Pool } from 'pg';
-import { hasTrustedKnowledgeOrigin } from '../../knowledge/auth/config';
-import { requireKnowledgeIdentity } from '../../knowledge/auth/identity';
-import type { KnowledgeIdentity } from '../../knowledge/auth/identity';
-import type { KnowledgeAuth } from '../../knowledge/auth/service';
+import { hasTrustedFoucOrigin } from '../../identity/config';
+import { requireFoucIdentity } from '../../identity/identity';
+import type { FoucIdentity } from '../../identity/identity';
+import type { FoucAuth } from '../../identity/service';
 import { authorizePageAccess } from '../../knowledge/permissions';
 import { listPageCheckpoints, readPageCheckpoint } from '../../knowledge/collaboration/history';
 import { PageHistoryError } from '../../knowledge/collaboration/history';
@@ -12,7 +12,7 @@ import { CheckpointLabelError } from '../../knowledge/collaboration/checkpoints'
 import type { PageCheckpointExtension } from '../../knowledge/collaboration/checkpoints';
 import { withKnowledgeTenant } from '../../database/knowledge/tenant';
 
-type CheckpointEnvironment = { Variables: { identity: KnowledgeIdentity } };
+type CheckpointEnvironment = { Variables: { identity: FoucIdentity } };
 const base = '/api/knowledge/:workspaceId/pages/:pageId/checkpoints';
 
 /**
@@ -22,7 +22,7 @@ const base = '/api/knowledge/:workspaceId/pages/:pageId/checkpoints';
  * P03 is the single ACL entry: one authorizePageAccess per request.
  */
 export function createKnowledgeCheckpointRoutes(dependencies: {
-  auth: KnowledgeAuth;
+  auth: FoucAuth;
   pool: Pool;
   /** The collaboration host's checkpoint extension; absent hosts cannot name versions. */
   checkpoints?: PageCheckpointExtension;
@@ -33,10 +33,10 @@ export function createKnowledgeCheckpointRoutes(dependencies: {
   app.use(`${base}/*`, async (context, next) => {
     context.header('Cache-Control', 'no-store');
     context.header('Referrer-Policy', 'no-referrer');
-    if (!hasTrustedKnowledgeOrigin(context.req.raw, origins)) return context.json({ code: 'INVALID_ORIGIN', message: 'A trusted Origin is required.' }, 403);
+    if (!hasTrustedFoucOrigin(context.req.raw, origins)) return context.json({ code: 'INVALID_ORIGIN', message: 'A trusted Origin is required.' }, 403);
     await next();
   });
-  app.use(`${base}/*`, requireKnowledgeIdentity(dependencies.auth));
+  app.use(`${base}/*`, requireFoucIdentity(dependencies.auth));
 
   async function authorize(context: Context<CheckpointEnvironment>, required: 'view' | 'edit') {
     const { workspaceId, pageId } = context.req.param();

@@ -2,8 +2,8 @@ import type { Pool } from 'pg';
 import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import { withKnowledgeTenant } from '../../database/knowledge/tenant';
-import { getKnowledgeIdentity } from '../auth/identity';
-import { activeSessionMember } from '../auth/session-access';
+import { getFoucIdentity } from '../../identity/identity';
+import { activeSessionMember } from '../access/session-access';
 import {
   createKnowledgeMcpOAuthServer,
   createMcpConsentProof,
@@ -14,12 +14,12 @@ import {
   mcpCodeVerifierPattern,
   mcpVerifyPkce,
   verifyMcpConsentProof,
-} from '../auth/oauth-server';
-import { hasTrustedKnowledgeOrigin } from '../auth/config';
-import { KnowledgeAccessError, knowledgeTokenScopes, tokenWorkspaceSchema } from '../auth/access-policy';
-import type { KnowledgeTokenScope } from '../auth/access-policy';
-import type { KnowledgeAuth } from '../auth/service';
-import type { KnowledgeIdentity } from '../auth/identity';
+} from '../access/oauth-server';
+import { hasTrustedFoucOrigin } from '../../identity/config';
+import { KnowledgeAccessError, knowledgeTokenScopes, tokenWorkspaceSchema } from '../access/access-policy';
+import type { KnowledgeTokenScope } from '../access/access-policy';
+import type { FoucAuth } from '../../identity/service';
+import type { FoucIdentity } from '../../identity/identity';
 
 /**
  * K02: OAuth 2.1 authorization server HTTP surface for the knowledge MCP resource
@@ -32,7 +32,7 @@ import type { KnowledgeIdentity } from '../auth/identity';
  */
 
 export interface KnowledgeMcpOAuthOptions {
-  readonly auth: KnowledgeAuth;
+  readonly auth: FoucAuth;
   readonly pool: Pool;
   /** Absolute origin (scheme://host[:port]) at which the MCP resource and this server are reachable. */
   readonly externalOrigin: string;
@@ -160,8 +160,8 @@ export function createKnowledgeMcpAuthorizationRoutes(options: KnowledgeMcpOAuth
   const resourceOf = (workspaceId: string) => `${origin}/api/knowledge/${workspaceId}/mcp`;
 
   /** Verified browser session that is still an active member of the workspace. */
-  const authorizeActor = async (request: Request, workspaceId: string): Promise<KnowledgeIdentity | 'signin' | 'forbidden'> => {
-    const identity = await getKnowledgeIdentity(options.auth, request.headers);
+  const authorizeActor = async (request: Request, workspaceId: string): Promise<FoucIdentity | 'signin' | 'forbidden'> => {
+    const identity = await getFoucIdentity(options.auth, request.headers);
     if (!identity) return 'signin';
     try {
       await withKnowledgeTenant(options.pool, workspaceId, (db) => activeSessionMember(db, workspaceId, identity));
@@ -247,7 +247,7 @@ export function createKnowledgeMcpAuthorizationRoutes(options: KnowledgeMcpOAuth
   app.post('/api/knowledge/:workspaceId/oauth/authorize', async (context) => {
     const workspaceId = workspace(context.req.param('workspaceId'));
     if (!workspaceId) return context.notFound();
-    if (!hasTrustedKnowledgeOrigin(context.req.raw, trustedOrigins)) return page(403, 'Untrusted request origin', 'The consent request came from an untrusted origin.');
+    if (!hasTrustedFoucOrigin(context.req.raw, trustedOrigins)) return page(403, 'Untrusted request origin', 'The consent request came from an untrusted origin.');
     const actor = await authorizeActor(context.req.raw, workspaceId);
     if (actor === 'signin') return page(401, 'Sign in required', 'Sign in to Fouc in this browser first, then let the MCP client retry.');
     if (actor === 'forbidden') return page(403, 'Not a workspace member', 'Your account is not a member of this workspace.');

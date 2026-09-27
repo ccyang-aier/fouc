@@ -1,5 +1,6 @@
 "use client"
 
+import { useWorkbenchView } from "./workbench-view"
 import { useEffect, useRef, useState, useSyncExternalStore } from "react"
 import { AnimatePresence, MotionConfig, motion, type Variants } from "motion/react"
 
@@ -84,7 +85,7 @@ function writeProjectFavorite(favorited: boolean) {
 
 export function WorkbenchShell() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [view, setView] = useState<WorkbenchView>("home")
+  const [view, setView] = useWorkbenchView()
   const [spaces, setSpaces] = useState<RailSpace[]>(DEFAULT_SPACES)
   const [activeSpaceId, setActiveSpaceId] = useState(DEFAULT_SPACES[0].id)
   // 项目管理面板状态由壳层持有：左侧项目菜单与项目画布共享同一开合来源

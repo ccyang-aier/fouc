@@ -2,8 +2,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:tes
 import { principal } from '@fouc/shared/knowledge/contracts';
 import type { PermissionLevel, WorkspaceEvent } from '@fouc/shared/knowledge/contracts';
 import { withKnowledgeTenant } from '../../database/knowledge/tenant';
-import { responseCookie, testPassword } from '../auth/auth-test-server';
-import type { KnowledgeIdentity } from '../auth/identity';
+import { responseCookie, testPassword } from '../../identity/auth-test-server';
+import type { FoucIdentity } from '../../identity/identity';
 import { createWorkspaceEventRuntime } from '../collaboration/events';
 import { createCommentThread } from '../comments/mutations';
 import { replaceAuthorizedPageAcl } from '../permissions/mutations';
@@ -42,14 +42,14 @@ describe('notification workspace events', () => {
       createCommentThread(db, { workspaceId, pageId, userId: actorId, bodyMd: 'Live notice', mentions: [mentioned] }));
   }
 
-  async function memberOf(workspaceId: string, name: string, inviter: PermissionTestActor): Promise<KnowledgeIdentity> {
+  async function memberOf(workspaceId: string, name: string, inviter: PermissionTestActor): Promise<FoucIdentity> {
     const email = `${name}@notifications.test`;
     const signup = await fixture.server.request('/sign-up/email', { email, name, password: testPassword });
     expect(signup.status).toBe(200);
     expect((await fixture.server.request(fixture.server.verificationPath(email))).status).toBe(302);
     const signed = await fixture.server.request('/sign-in/email', { email, password: testPassword });
     expect(signed.status).toBe(200);
-    const identity = await (await fetch(`${fixture.server.origin}/test/identity`, { headers: { cookie: responseCookie(signed) } })).json() as KnowledgeIdentity;
+    const identity = await (await fetch(`${fixture.server.origin}/test/identity`, { headers: { cookie: responseCookie(signed) } })).json() as FoucIdentity;
     const invitation = await fixture.organization.createInvitation(inviter.identity, { workspaceId, email, role: 'member' });
     await fixture.organization.acceptInvitation(identity, { workspaceId, invitationId: invitation.invitation.id, token: invitation.token });
     return identity;
@@ -117,4 +117,4 @@ describe('notification workspace events', () => {
   });
 });
 
-interface PermissionTestActor { cookie: string; identity: KnowledgeIdentity }
+interface PermissionTestActor { cookie: string; identity: FoucIdentity }

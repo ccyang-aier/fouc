@@ -1,4 +1,4 @@
-import { KnowledgeAccessError } from '../auth/access-policy';
+import { KnowledgeAccessError } from '../access/access-policy';
 import { KnowledgePermissionError } from '../permissions/errors';
 
 export type SharingErrorCode =

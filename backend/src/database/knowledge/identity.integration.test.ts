@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { sql } from 'drizzle-orm';
 import { group, member, workspace } from './schema';
-import { withKnowledgeIdentity, withKnowledgeTenant } from './tenant';
+import { withFoucIdentity, withKnowledgeTenant } from './tenant';
 import { createTenantTestDatabase, seedTenantTestData } from './tenant-test-database';
 import { inspectKnowledgeDatabase } from './initialize-status';
 import { knowledgePoliciesForTable } from './rls';
@@ -52,7 +52,7 @@ describe('verified session identity discovery RLS', () => {
   });
 
   test('can discover only own memberships/workspaces, never another member or tenant content', async () => {
-    const own = await withKnowledgeIdentity(database.pool, sessionId, async (db) => ({
+    const own = await withFoucIdentity(database.pool, sessionId, async (db) => ({
       workspaces: await db.select().from(workspace), memberships: await db.select().from(member), groups: await db.select().from(group),
     }));
     expect(own.workspaces.map((row) => row.id).sort()).toEqual([data.tenants[0].workspaceId, anotherWorkspaceId].sort());
@@ -63,9 +63,9 @@ describe('verified session identity discovery RLS', () => {
   });
 
   test('identity transaction is genuinely read-only, not just a narrowed TypeScript surface', async () => {
-    await sqlFailure(() => withKnowledgeIdentity(database.pool, sessionId, (db) => db.execute(sql`UPDATE ${workspace} SET name = 'forbidden'`)), '25006');
-    await sqlFailure(() => withKnowledgeIdentity(database.pool, sessionId, (db) => db.execute(sql`DELETE FROM ${member}`)), '25006');
-    await sqlFailure(() => withKnowledgeIdentity(database.pool, sessionId, (db) => db.execute(sql`INSERT INTO ${workspace} (workspace_id, name, kind) VALUES (${randomUUID()}, 'forbidden', 'personal')`)), '25006');
+    await sqlFailure(() => withFoucIdentity(database.pool, sessionId, (db) => db.execute(sql`UPDATE ${workspace} SET name = 'forbidden'`)), '25006');
+    await sqlFailure(() => withFoucIdentity(database.pool, sessionId, (db) => db.execute(sql`DELETE FROM ${member}`)), '25006');
+    await sqlFailure(() => withFoucIdentity(database.pool, sessionId, (db) => db.execute(sql`INSERT INTO ${workspace} (workspace_id, name, kind) VALUES (${randomUUID()}, 'forbidden', 'personal')`)), '25006');
   });
 
   test('SELECT-only identity policies do not grant UPDATE, DELETE or INSERT even in a writable transaction', async () => {
@@ -81,7 +81,7 @@ describe('verified session identity discovery RLS', () => {
   });
 
   test('unknown, expired and unverified sessions fail closed', async () => {
-    const discover = (id: string) => withKnowledgeIdentity(database.pool, id, (db) => db.select().from(workspace));
+    const discover = (id: string) => withFoucIdentity(database.pool, id, (db) => db.select().from(workspace));
     expect(await discover(randomUUID())).toHaveLength(0);
     await database.admin.query('UPDATE knowledge_auth.session SET expires_at = now() - interval \'1 second\' WHERE id = $1', [sessionId]);
     expect(await discover(sessionId)).toHaveLength(0);
@@ -95,7 +95,7 @@ describe('verified session identity discovery RLS', () => {
   test('commit and rollback clear identity scope on the same reused physical connection', async () => {
     const readScope = () => database.pool.query<{ pid: number; identity: string | null; tenant: string | null }>("SELECT pg_backend_pid() AS pid, NULLIF(current_setting('app.auth_session_id', true), '') AS identity, NULLIF(current_setting('app.workspace_id', true), '') AS tenant");
     const before = (await readScope()).rows[0]!;
-    const pid = await withKnowledgeIdentity(database.pool, sessionId, async (db) => {
+    const pid = await withFoucIdentity(database.pool, sessionId, async (db) => {
       const result = await db.execute<{ pid: number; id: string; tenant: string }>(sql`SELECT pg_backend_pid() AS pid, current_setting('app.auth_session_id') AS id, current_setting('app.workspace_id') AS tenant`);
       expect(result.rows[0]!.id).toBe(sessionId);
       expect(result.rows[0]!.tenant).toBe('');
@@ -103,7 +103,7 @@ describe('verified session identity discovery RLS', () => {
     });
     expect(pid).toBe(before.pid);
     expect((await readScope()).rows[0]).toEqual({ pid, identity: null, tenant: null });
-    await expect(withKnowledgeIdentity(database.pool, sessionId, async () => { throw new Error('rollback identity request'); })).rejects.toThrow('rollback identity request');
+    await expect(withFoucIdentity(database.pool, sessionId, async () => { throw new Error('rollback identity request'); })).rejects.toThrow('rollback identity request');
     expect((await readScope()).rows[0]).toEqual({ pid, identity: null, tenant: null });
     await withKnowledgeTenant(database.pool, data.tenants[1].workspaceId, async (db) => {
       const rows = await db.select().from(workspace);
@@ -122,7 +122,7 @@ describe('verified session identity discovery RLS', () => {
     } finally { await database.pool.query('RESET app.auth_session_id'); }
     await database.pool.query("SELECT set_config('app.workspace_id', $1, false)", [data.tenants[1].workspaceId]);
     try {
-      await withKnowledgeIdentity(database.pool, sessionId, async (db) => {
+      await withFoucIdentity(database.pool, sessionId, async (db) => {
         expect((await db.select().from(workspace)).some((row) => row.id === data.tenants[1].workspaceId)).toBe(false);
       });
     } finally { await database.pool.query('RESET app.workspace_id'); }
@@ -130,14 +130,14 @@ describe('verified session identity discovery RLS', () => {
 
   test('session revocation immediately removes all discovery access', async () => {
     await database.admin.query('DELETE FROM knowledge_auth.session WHERE id = $1', [sessionId]);
-    expect(await withKnowledgeIdentity(database.pool, sessionId, (db) => db.select().from(workspace))).toHaveLength(0);
-    expect(await withKnowledgeIdentity(database.pool, sessionId, (db) => db.select().from(member))).toHaveLength(0);
+    expect(await withFoucIdentity(database.pool, sessionId, (db) => db.select().from(workspace))).toHaveLength(0);
+    expect(await withFoucIdentity(database.pool, sessionId, (db) => db.select().from(member))).toHaveLength(0);
   });
 
   test('a session expiring inside an open read-only transaction is no longer discoverable', async () => {
     const shortSession = randomUUID();
     await database.admin.query("INSERT INTO knowledge_auth.session (id, user_id, token, expires_at) VALUES ($1, $2, $3, clock_timestamp() + interval '300 milliseconds')", [shortSession, data.tenants[0].userId, randomUUID()]);
-    await withKnowledgeIdentity(database.pool, shortSession, async (db) => {
+    await withFoucIdentity(database.pool, shortSession, async (db) => {
       expect(await db.select().from(workspace)).toHaveLength(2);
       await db.execute(sql`SELECT pg_sleep(0.35)`);
       expect(await db.select().from(workspace)).toHaveLength(0);

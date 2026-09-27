@@ -1,9 +1,11 @@
 import type { Metadata, Viewport } from "next"
 
 import "./globals.css"
+import { IdentityProvider } from "@/features/identity/identity-provider"
 
 export const metadata: Metadata = {
   title: "Fouc · AI Agent 工作台",
+  icons: { icon: "/brand/fouc-mark.png" },
   description: "面向个人与团队的人机协同 AI Agent 超级工作台。",
 }
 
@@ -28,7 +30,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="zh-CN" suppressHydrationWarning>
       <body>
         <script dangerouslySetInnerHTML={{ __html: BOOT_SCRIPT }} />
-        {children}
+        <IdentityProvider>{children}</IdentityProvider>
       </body>
     </html>
   )

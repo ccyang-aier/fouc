@@ -16,7 +16,7 @@ import { EditorContent, useEditor } from '@tiptap/react';
 import type { PageScope, PermissionLevel } from '@fouc/shared/knowledge/contracts';
 import { createBlockIdExtension, createKnowledgeExtensions } from '@fouc/shared/knowledge/schema';
 import { ClockCounterClockwise } from '@phosphor-icons/react';
-import type { KnowledgeAuthUser } from '../auth/auth-api';
+import type { FoucAuthUser } from '../../identity/auth-api';
 import type { PageUndo } from '../collaboration/page-undo';
 import type { PageDocumentSession } from '../collaboration/page-provider';
 import { AwarenessMembers, createAwarenessExtension } from './awareness';
@@ -87,7 +87,7 @@ export function PageEditorSurface({
   /** Resolved knowledge API origin (block-reference source connections). */
   origin: string | null;
   /** The signed-in human the awareness publishes as (B07). */
-  user: KnowledgeAuthUser | null;
+  user: FoucAuthUser | null;
   pageUndo: PageUndo;
   level: PermissionLevel;
   view: PageEditorViewModel;

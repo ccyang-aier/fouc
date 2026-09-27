@@ -2,21 +2,7 @@
 
 import { IconButton } from './dense-sidebar/icon-button';
 
-/**
- * The knowledge workbench entry (U02): the app shell of the new knowledge
- * model. Entry runs through the real gates in order — the A04 session check
- * (anonymous goes to `/auth`, an unavailable auth service is an honest error
- * with retry), the O01 workspace list, the A00 access snapshot over the U01
- * tRPC client, and the O03 teamspace directory — and one pure state machine
- * (`entry-state.ts`) maps those onto the rendered phase, so no screen ever
- * invents data. Once a workspace is active the three-column stage mounts
- * (navigation sidebar / canvas / reserved review-AI rail) and the B06
- * workspace-event subscription wires live invalidation into the U01 cache.
- *
- * The tree area itself is the U03 stage (navigation/tree-stage): the page
- * read, every tree operation with its optimistic loop, and the recycle bin
- * live there; this page only owns the entry phases and the selection state.
- */
+/** Knowledge consumes the shared Fouc session. Anonymous users work locally; cloud data stays scoped to the authenticated user and resource ACL. */
 
 import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -25,12 +11,13 @@ import { motion } from 'motion/react';
 
 import { Button } from '@/components/ui/button';
 
-import type { KnowledgeAuthUser } from './auth/auth-api';
-import { authErrorCopyFor } from './auth/auth-errors';
-import { buildAuthEntryUrl, fetchKnowledgeSessionUser, redirectToKnowledgeSignIn } from './auth/session';
+import { useIdentity } from '@/features/identity/identity-provider';
+import dynamic from 'next/dynamic';
+import { authErrorCopyFor } from '../identity/auth-errors';
+
 import { connectKnowledgeWorkspaceEvents, type KnowledgeWorkspaceEvents } from './collaboration/workspace-events';
-import { CanvasError, CanvasRedirect, CanvasSpinner, CanvasState } from './canvas-states';
-import { getKnowledgeApiOrigin } from './data/endpoint';
+import { CanvasError, CanvasSpinner, CanvasState } from './canvas-states';
+import { getFoucApiOrigin } from '@/lib/fouc-api-endpoint';
 import { useKnowledgeAccessQuery } from './data/hooks';
 import { knowledgeKeysForSegments, knowledgeWorkspaceRootKey } from './data/invalidation';
 import { KnowledgeQueryProvider } from './data/provider';
@@ -51,56 +38,25 @@ import { LibraryCanvas } from './navigation/library-canvas';
 import type { LibraryView } from './navigation/tree-stage';
 import { KnowledgePageEditor } from './editor';
 
+const GuestKnowledge = dynamic(() => import('./guest/guest-knowledge').then((module) => module.GuestKnowledge), { ssr: false });
+
 const ACTIVE_WORKSPACE_STORAGE_KEY = 'fouc.knowledge.activeWorkspaceId';
 
-type SessionGate =
-  | { status: 'checking' }
-  | { status: 'anonymous' }
-  | { status: 'error'; error: unknown }
-  | { status: 'authenticated'; user: KnowledgeAuthUser };
-
 export function KnowledgePage({ onOpenSettings }: { onOpenSettings: () => void }) {
-  return (
-    <KnowledgeQueryProvider>
-      <KnowledgeWorkbench onOpenSettings={onOpenSettings} />
-    </KnowledgeQueryProvider>
-  );
+  const { session } = useIdentity();
+  const [localMode, setLocalMode] = useState(false);
+  if (session.status === 'checking') return <CanvasSpinner label="正在确认 Fouc 身份" />;
+  if (session.status !== 'authenticated' || localMode) return <GuestKnowledge onOpenSettings={onOpenSettings} onOpenCloud={() => setLocalMode(false)} />;
+  return <KnowledgeQueryProvider key={session.user.id}><KnowledgeWorkbench onOpenSettings={onOpenSettings} onOpenLocal={() => setLocalMode(true)} /></KnowledgeQueryProvider>;
 }
 
-function KnowledgeWorkbench({ onOpenSettings }: { onOpenSettings: () => void }) {
+function KnowledgeWorkbench({ onOpenSettings, onOpenLocal }: { onOpenSettings: () => void; onOpenLocal: () => void }) {
   // The U01 QueryClient shared by every query below and by the B06 event
   // subscription's invalidations.
   const queryClient = useQueryClient();
 
-  // ── A04 session gate ────────────────────────────────────────────
-  const [session, setSession] = useState<SessionGate>({ status: 'checking' });
-  const [sessionAttempt, setSessionAttempt] = useState(0);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetchKnowledgeSessionUser()
-      .then((user) => {
-        if (!cancelled) setSession(user ? { status: 'authenticated', user } : { status: 'anonymous' });
-      })
-      .catch((error: unknown) => {
-        if (!cancelled) setSession({ status: 'error', error });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [sessionAttempt]);
-
-  /** Retry flips the gate back to checking in the event handler; the effect only fetches. */
-  const retrySession = () => {
-    setSession({ status: 'checking' });
-    setSessionAttempt((attempt) => attempt + 1);
-  };
-
-  // Anonymous at the entry goes to the plain sign-in page; a session that
-  // expires mid-flight (phase below) goes through the A04 return-to flow.
-  useEffect(() => {
-    if (session.status === 'anonymous') window.location.assign(buildAuthEntryUrl());
-  }, [session.status]);
+  const { session, refresh, expireSession, openSignIn } = useIdentity();
+  const retrySession = () => { void refresh(); };
 
   // ── Workspace scope ─────────────────────────────────────────────
   const authenticated = session.status === 'authenticated';
@@ -144,10 +100,10 @@ function KnowledgeWorkbench({ onOpenSettings }: { onOpenSettings: () => void }) 
   });
 
   // An authenticated surface that turns UNAUTHENTICATED means the session
-  // expired under us: hand the current location to the sign-in entry.
+  // expired under us: update the global identity and return to local capabilities.
   useEffect(() => {
-    if (phase === 'auth-redirect' && session.status !== 'anonymous') redirectToKnowledgeSignIn('expired');
-  }, [phase, session.status]);
+    if (phase === 'auth-required' && session.status === 'authenticated') expireSession();
+  }, [phase, session.status, expireSession]);
 
   // ── B06: live workspace events → U01 cache invalidation ────────
   const stageActive = entryPhaseShowsStage(phase) && activeId !== null;
@@ -156,7 +112,7 @@ function KnowledgeWorkbench({ onOpenSettings }: { onOpenSettings: () => void }) 
     if (!eventsWorkspaceId) return undefined;
     const controller = new AbortController();
     let connection: KnowledgeWorkspaceEvents | undefined;
-    void getKnowledgeApiOrigin()
+    void getFoucApiOrigin()
       .then(({ origin }) => {
         if (controller.signal.aborted) return;
         connection = connectKnowledgeWorkspaceEvents({
@@ -254,10 +210,10 @@ function KnowledgeWorkbench({ onOpenSettings }: { onOpenSettings: () => void }) 
         <SessionErrorState
           description={authErrorCopyFor(session.status === 'error' ? session.error : null).description}
           onRetry={retrySession}
-          onSignIn={() => window.location.assign(buildAuthEntryUrl())}
+          onSignIn={openSignIn}
         />
-      ) : phase === 'auth-redirect' ? (
-        <CanvasRedirect />
+      ) : phase === 'auth-required' ? (
+        <CanvasSpinner label="正在更新 Fouc 身份" />
       ) : phase === 'workspaces-loading' ? (
         <CanvasSpinner label="正在加载知识库" />
       ) : phase === 'workspaces-error' ? (
@@ -286,6 +242,7 @@ function KnowledgeWorkbench({ onOpenSettings }: { onOpenSettings: () => void }) 
             collapsed={sidebarCollapsed}
             onCollapse={() => setSidebarCollapsed(true)}
             onOpenSettings={onOpenSettings}
+            onOpenLocal={onOpenLocal}
             workspaces={workspaces}
             activeWorkspaceId={activeWorkspace.id}
             onSelectWorkspace={(id) => { setActiveWorkspaceId(id); setSelectedTeamspaceId(null); setSelectedPageId(null); setLibraryView('all-documents'); }}

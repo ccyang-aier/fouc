@@ -1,7 +1,9 @@
+import { authenticatedFetch } from '@/lib/authenticated-fetch';
 import { createTRPCClient, createTRPCUntypedClient, httpBatchLink } from '@trpc/client';
 import type { TRPCClient, TRPCUntypedClient } from '@trpc/client';
 import type { KnowledgeApiRouter } from './api-types';
-import { getKnowledgeApiOrigin, knowledgeTrpcUrl } from './endpoint';
+import { knowledgeTrpcUrl } from './endpoint';
+import { getFoucApiOrigin } from '@/lib/fouc-api-endpoint';
 import { normalizeKnowledgeError } from './errors';
 
 /**
@@ -29,7 +31,7 @@ function knowledgeLinks(origin: string, workspaceId: string, fetchImpl: Knowledg
   ];
 }
 
-export function createKnowledgeTrpcClient(origin: string, workspaceId: string, fetchImpl: KnowledgeFetch = fetch): KnowledgeTrpcClient {
+export function createKnowledgeTrpcClient(origin: string, workspaceId: string, fetchImpl: KnowledgeFetch = authenticatedFetch): KnowledgeTrpcClient {
   return createTRPCClient<KnowledgeApiRouter>({ links: knowledgeLinks(origin, workspaceId, fetchImpl) });
 }
 
@@ -39,7 +41,7 @@ export function createKnowledgeTrpcClient(origin: string, workspaceId: string, f
  * the router type until the API task mounts them, so the page client calls
  * them dynamically and validates every response against the shared contracts.
  */
-export function createKnowledgeUntypedTrpcClient(origin: string, workspaceId: string, fetchImpl: KnowledgeFetch = fetch): KnowledgeUntypedTrpcClient {
+export function createKnowledgeUntypedTrpcClient(origin: string, workspaceId: string, fetchImpl: KnowledgeFetch = authenticatedFetch): KnowledgeUntypedTrpcClient {
   return createTRPCUntypedClient<KnowledgeApiRouter>({ links: knowledgeLinks(origin, workspaceId, fetchImpl) });
 }
 
@@ -48,7 +50,7 @@ export function createKnowledgeUntypedTrpcClient(origin: string, workspaceId: st
  * The default fetch resolves the global at call time (the organization client's
  * pattern), so test doubles installed after module load are honored.
  */
-export function createKnowledgeClientCache(fetchImpl: KnowledgeFetch = (...args) => fetch(...args)) {
+export function createKnowledgeClientCache(fetchImpl: KnowledgeFetch = authenticatedFetch) {
   const clients = new Map<string, KnowledgeTrpcClient>();
   return {
     get(origin: string, workspaceId: string): KnowledgeTrpcClient {
@@ -64,7 +66,7 @@ export function createKnowledgeClientCache(fetchImpl: KnowledgeFetch = (...args)
 }
 
 /** The untyped twin of the cache above, for surfaces that call not-yet-typed procedures. */
-export function createKnowledgeUntypedClientCache(fetchImpl: KnowledgeFetch = (...args) => fetch(...args)) {
+export function createKnowledgeUntypedClientCache(fetchImpl: KnowledgeFetch = authenticatedFetch) {
   const clients = new Map<string, KnowledgeUntypedTrpcClient>();
   return {
     get(origin: string, workspaceId: string): KnowledgeUntypedTrpcClient {
@@ -82,7 +84,7 @@ export function createKnowledgeUntypedClientCache(fetchImpl: KnowledgeFetch = (.
 const clientCache = createKnowledgeClientCache();
 
 export async function getKnowledgeTrpcClient(workspaceId: string): Promise<KnowledgeTrpcClient> {
-  const { origin } = await getKnowledgeApiOrigin();
+  const { origin } = await getFoucApiOrigin();
   return clientCache.get(origin, workspaceId);
 }
 

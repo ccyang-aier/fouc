@@ -1,6 +1,6 @@
 import { pageScopeSchema, permissionLevelSchema, workspaceScopeSchema } from '@fouc/shared/knowledge/contracts';
 import { aiStreamingTaskSelectorSchema, startAiStreamingTaskInputSchema } from '@fouc/shared/knowledge/contracts';
-import type { KnowledgeRequestContext } from '../../knowledge/auth';
+import type { KnowledgeRequestContext } from '../../knowledge/access';
 import { authorizePageAccess } from '../../knowledge/permissions';
 import { knowledgeStreamingTasks, toKnowledgeStreamingTrpcError } from '../../knowledge/ai/streaming';
 import type { KnowledgeStreamingTasks } from '../../knowledge/ai/streaming';

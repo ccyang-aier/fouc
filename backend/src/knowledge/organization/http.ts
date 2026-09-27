@@ -2,14 +2,14 @@ import { Hono } from 'hono';
 import type { Context } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import { cors } from 'hono/cors';
-import { hasTrustedKnowledgeOrigin } from '../auth/config';
-import { requireKnowledgeIdentity } from '../auth/identity';
-import type { KnowledgeIdentity } from '../auth/identity';
-import type { KnowledgeAuth } from '../auth/service';
+import { hasTrustedFoucOrigin } from '../../identity/config';
+import { requireFoucIdentity } from '../../identity/identity';
+import type { FoucIdentity } from '../../identity/identity';
+import type { FoucAuth } from '../../identity/service';
 import { OrganizationError, organizationFailure } from './errors';
 import type { OrganizationService } from './service';
 
-type OrganizationEnvironment = { Variables: { identity: KnowledgeIdentity } };
+type OrganizationEnvironment = { Variables: { identity: FoucIdentity } };
 const base = '/api/knowledge/workspaces';
 
 async function bodyWithPath(context: Context, path: Record<string, string> = {}) {
@@ -27,13 +27,13 @@ function pagination(context: Context) {
 }
 
 /** Mount at / before the legacy bearer catch-all; session-only, never PAT discovery. */
-export function createOrganizationRoutes(auth: KnowledgeAuth, service: OrganizationService) {
+export function createOrganizationRoutes(auth: FoucAuth, service: OrganizationService) {
   const app = new Hono<OrganizationEnvironment>();
   const origins = auth.options.trustedOrigins as string[];
   app.use(`${base}/*`, async (context, next) => {
     context.header('Cache-Control', 'no-store');
     context.header('Referrer-Policy', 'no-referrer');
-    if (!hasTrustedKnowledgeOrigin(context.req.raw, origins)) return context.json({ code: 'INVALID_ORIGIN', message: 'A trusted Origin is required.' }, 403);
+    if (!hasTrustedFoucOrigin(context.req.raw, origins)) return context.json({ code: 'INVALID_ORIGIN', message: 'A trusted Origin is required.' }, 403);
     if (!['GET', 'HEAD', 'OPTIONS'].includes(context.req.method) && context.req.header('content-type')?.split(';')[0]?.trim() !== 'application/json') {
       return context.json({ code: 'INVALID_CONTENT_TYPE', message: 'JSON requests are required.' }, 415);
     }
@@ -42,7 +42,7 @@ export function createOrganizationRoutes(auth: KnowledgeAuth, service: Organizat
   app.use(`${base}/*`, cors({ origin: (origin) => origins.includes(origin) ? origin : undefined, credentials: true,
     allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'], allowHeaders: ['Content-Type'], maxAge: 600 }));
   app.use(`${base}/*`, bodyLimit({ maxSize: 16 * 1_024, onError: (context) => context.json({ code: 'PAYLOAD_TOO_LARGE', message: 'Organization request is too large.' }, 413) }));
-  app.use(`${base}/*`, requireKnowledgeIdentity(auth));
+  app.use(`${base}/*`, requireFoucIdentity(auth));
   app.get(base, async (context) => context.json(await service.listWorkspaces(context.get('identity'), pagination(context))));
   app.post(base, async (context) => context.json(await service.createWorkspace(context.get('identity'), await bodyWithPath(context)), 201));
   app.get(`${base}/:workspaceId`, async (context) => context.json(await service.getWorkspace(context.get('identity'), context.req.param())));

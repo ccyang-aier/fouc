@@ -5,7 +5,8 @@
  * server-side; the client maps failures to the structured data-layer codes.
  */
 
-import { getKnowledgeApiOrigin } from '../data/endpoint';
+import { authenticatedFetch } from '@/lib/authenticated-fetch';
+import { getFoucApiOrigin } from '@/lib/fouc-api-endpoint';
 import { KnowledgeDataError } from '../data/errors';
 
 export interface PageCheckpointEntry {
@@ -41,7 +42,7 @@ export function parseCheckpointList(body: unknown): PageCheckpointEntry[] {
   });
 }
 
-export function createHistoryApi(deps: HistoryApiDeps = { resolveOrigin: getKnowledgeApiOrigin, fetchImpl: (input, init) => fetch(input, init) }) {
+export function createHistoryApi(deps: HistoryApiDeps = { resolveOrigin: getFoucApiOrigin, fetchImpl: authenticatedFetch }) {
   async function request<T>(path: string, init: { method?: 'GET' | 'POST'; body?: unknown } = {}): Promise<T> {
     const { origin } = await deps.resolveOrigin();
     const response = await deps.fetchImpl(`${origin}${path}`, {

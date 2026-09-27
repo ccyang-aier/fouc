@@ -15,8 +15,8 @@ import {
 import { Pool } from 'pg';
 import { blockIndex, page } from '../../database/knowledge/schema';
 import { withKnowledgeTenant } from '../../database/knowledge/tenant';
-import { createAuthTestServer, responseCookie, testPassword } from '../../knowledge/auth/auth-test-server';
-import type { KnowledgeIdentity } from '../../knowledge/auth/identity';
+import { createAuthTestServer, responseCookie, testPassword } from '../../identity/auth-test-server';
+import type { FoucIdentity } from '../../identity/identity';
 import { createOrganizationService } from '../../knowledge/organization/service';
 import { teamspacePermissionInvalidator } from '../../knowledge/permissions/fence';
 import { replaceAuthorizedPageAcl, withAuthorizedPageTreeMutation } from '../../knowledge/permissions/mutations';
@@ -40,7 +40,7 @@ import { createKnowledgeRouter } from './procedures';
 const commentRouter = createKnowledgeRouter({ comment: knowledgeCommentRouterRecord });
 type CommentRouter = typeof commentRouter;
 
-interface Actor { cookie: string; identity: KnowledgeIdentity }
+interface Actor { cookie: string; identity: FoucIdentity }
 interface PageRef { workspaceId: string; pageId: string }
 
 async function createCommentRoutesFixture() {
@@ -84,7 +84,7 @@ async function createCommentRoutesFixture() {
     const signed = await server.request('/sign-in/email', { email, password: testPassword });
     expect(signed.status).toBe(200);
     const cookie = responseCookie(signed);
-    const identity = await (await fetch(`${server.origin}/test/identity`, { headers: { cookie } })).json() as KnowledgeIdentity;
+    const identity = await (await fetch(`${server.origin}/test/identity`, { headers: { cookie } })).json() as FoucIdentity;
     return { cookie, identity };
   }
 

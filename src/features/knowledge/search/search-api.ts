@@ -4,6 +4,7 @@
  * validation - unrouteable backends surface as endpoint errors, never as
  * fabricated results.
  */
+import { authenticatedFetch } from '@/lib/authenticated-fetch';
 import { hybridSearchResultSchema } from '@fouc/shared/knowledge/search';
 import type { HybridSearchHit } from '@fouc/shared/knowledge/search';
 import { createKnowledgeUntypedClientCache } from '../data/trpc-client';
@@ -15,7 +16,7 @@ export interface HybridSearchOutcome {
 }
 
 export function createKnowledgeSearchApi(options: { origin: string; fetchImpl?: typeof fetch }) {
-  const fetchImpl = options.fetchImpl ?? globalThis.fetch.bind(globalThis);
+  const fetchImpl = options.fetchImpl ?? authenticatedFetch;
   const clients = createKnowledgeUntypedClientCache(fetchImpl);
   return {
     async search(input: { workspaceId: string; query: string; limit?: number }, signal?: AbortSignal): Promise<HybridSearchOutcome> {

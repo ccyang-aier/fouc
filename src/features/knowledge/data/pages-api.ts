@@ -26,7 +26,7 @@ import {
   updatePageInputSchema,
 } from '@fouc/shared/knowledge/contracts';
 import type { CreatePageInput, Page, PageLifecycleState, PagePlacement } from '@fouc/shared/knowledge/contracts';
-import { getKnowledgeApiOrigin } from './endpoint';
+import { getFoucApiOrigin } from '@/lib/fouc-api-endpoint';
 import { KnowledgeDataError, normalizeKnowledgeError } from './errors';
 import { createKnowledgeUntypedClientCache, type KnowledgeFetch, type KnowledgeUntypedTrpcClient } from './trpc-client';
 
@@ -124,7 +124,7 @@ export function createKnowledgePagesApi(deps: { resolveOrigin: () => Promise<str
 
 /** The browser binding: the U01 endpoint resolver plus the global fetch. */
 export const knowledgePagesApi = createKnowledgePagesApi({
-  resolveOrigin: async () => (await getKnowledgeApiOrigin()).origin,
+  resolveOrigin: async () => (await getFoucApiOrigin()).origin,
 });
 
 // The names the tree operations controller consumes; one module reads as the

@@ -1,0 +1,11 @@
+export { createFoucAuth } from './service';
+export type { FoucAuth, AuthDiagnostic } from './service';
+export { createFoucAuthRoutes } from './http';
+export { getFoucIdentity, requireFoucIdentity } from './identity';
+export type { FoucIdentity } from './identity';
+export { readFoucAuthConfig, validateFoucAuthConfig, foucAuthBasePath } from './config';
+export type { FoucAuthConfig } from './config';
+export { createSmtpAuthEmailTransport } from './email';
+export type { AuthEmailTransport } from './email';
+export { readFoucOAuthOptions, validateFoucOAuthOptions } from './oauth-config';
+export type { FoucOAuthOptions, FoucOAuthProvider } from './oauth-config';

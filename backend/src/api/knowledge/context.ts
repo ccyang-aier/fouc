@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { entityIdSchema } from '@fouc/shared/knowledge/contracts';
 import type { Pool } from 'pg';
-import type { KnowledgeRequestAuthenticator, KnowledgeRequestContext, KnowledgeTokenScope } from '../../knowledge/auth';
+import type { KnowledgeRequestAuthenticator, KnowledgeRequestContext, KnowledgeTokenScope } from '../../knowledge/access';
 import { withKnowledgeTenant } from '../../database/knowledge/tenant';
 import type { KnowledgeTenantTransaction } from '../../database/knowledge/tenant';
 import { assertRequestActive } from './lifetime';

@@ -3,7 +3,7 @@ import { bigint, check, foreignKey, index, integer, jsonb, primaryKey, text, uni
 import type { Asset, Principal } from '@fouc/shared/knowledge/contracts';
 import { assetDerivedSchema } from '@fouc/shared/knowledge/contracts';
 import { assetStatus, commentThreadStatus } from './enums';
-import { authUser } from './identity';
+import { authUser } from '../../identity/schema';
 import { knowledge } from './namespaces';
 import { workspace } from './organization';
 import { page } from './pages';

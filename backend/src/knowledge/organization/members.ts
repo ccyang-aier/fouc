@@ -3,7 +3,7 @@ import type { Pool } from 'pg';
 import { changeMemberRoleInputSchema, listOrganizationInputSchema, removeMemberInputSchema } from '@fouc/shared/knowledge/contracts';
 import { authUser, member } from '../../database/knowledge/schema';
 import type { KnowledgeTenantTransaction } from '../../database/knowledge/tenant';
-import type { KnowledgeIdentity } from '../auth/identity';
+import type { FoucIdentity } from '../../identity/identity';
 import { inWorkspace, pageOf, requireDirectory, requireRoleAuthority } from './context';
 import { OrganizationError, parseInput } from './errors';
 
@@ -14,7 +14,7 @@ async function protectLastOwner(db: KnowledgeTenantTransaction, workspaceId: str
 
 export function memberOperations(pool: Pool) {
   return {
-    async listMembers(identity: KnowledgeIdentity, input: unknown) {
+    async listMembers(identity: FoucIdentity, input: unknown) {
       const parsed = parseInput(listOrganizationInputSchema, input);
       return inWorkspace(pool, identity, parsed.workspaceId, false, async ({ db, role }) => {
         requireDirectory(role);
@@ -26,7 +26,7 @@ export function memberOperations(pool: Pool) {
         return pageOf(rows, parsed.limit, (row) => row.userId);
       });
     },
-    async changeMemberRole(identity: KnowledgeIdentity, input: unknown) {
+    async changeMemberRole(identity: FoucIdentity, input: unknown) {
       const parsed = parseInput(changeMemberRoleInputSchema, input);
       return inWorkspace(pool, identity, parsed.workspaceId, true, async ({ db, role }) => {
         requireRoleAuthority(role, parsed.role);
@@ -39,7 +39,7 @@ export function memberOperations(pool: Pool) {
         return { workspaceId: updated!.workspaceId, userId: updated!.userId, role: updated!.role };
       });
     },
-    async removeMember(identity: KnowledgeIdentity, input: unknown) {
+    async removeMember(identity: FoucIdentity, input: unknown) {
       const parsed = parseInput(removeMemberInputSchema, input);
       return inWorkspace(pool, identity, parsed.workspaceId, true, async ({ db, actor, role }) => {
         const target = and(eq(member.workspaceId, parsed.workspaceId), eq(member.userId, parsed.userId));

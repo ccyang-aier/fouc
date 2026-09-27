@@ -2,7 +2,7 @@ import { sql } from 'drizzle-orm';
 import { check, foreignKey, index, jsonb, primaryKey, text, unique, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
 import type { Workspace } from '@fouc/shared/knowledge/contracts';
 import { memberRole, permissionLevel, workspaceKind } from './enums';
-import { authUser } from './identity';
+import { authUser } from '../../identity/schema';
 import { knowledge } from './namespaces';
 import { instant } from './types';
 

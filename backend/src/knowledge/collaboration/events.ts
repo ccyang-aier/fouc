@@ -1,5 +1,5 @@
 import type { WorkspaceEvent } from '@fouc/shared/knowledge/contracts';
-import type { KnowledgeRequestAuthenticator } from '../auth';
+import type { KnowledgeRequestAuthenticator } from '../access';
 import type { KnowledgeConsumer } from '../workers/types';
 
 type Subscriber = (event: WorkspaceEvent) => void;

@@ -28,7 +28,7 @@ import type {
   DeleteOwnCommentResult,
   ReplyCommentThreadResult,
 } from '@fouc/shared/knowledge/comments';
-import { getKnowledgeApiOrigin } from '../data/endpoint';
+import { getFoucApiOrigin } from '@/lib/fouc-api-endpoint';
 import { KnowledgeDataError, normalizeKnowledgeError } from '../data/errors';
 import { createKnowledgeUntypedClientCache, type KnowledgeFetch, type KnowledgeUntypedTrpcClient } from '../data/trpc-client';
 
@@ -112,4 +112,4 @@ export function createKnowledgeCommentsApi(deps: { resolveOrigin: () => Promise<
 }
 
 /** The browser binding the React hooks call. */
-export const knowledgeCommentsApi = createKnowledgeCommentsApi({ resolveOrigin: () => getKnowledgeApiOrigin().then(({ origin }) => origin) });
+export const knowledgeCommentsApi = createKnowledgeCommentsApi({ resolveOrigin: () => getFoucApiOrigin().then(({ origin }) => origin) });

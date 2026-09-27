@@ -5,8 +5,8 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import type { Pool } from 'pg';
 import { knowledgeAgentTools } from '../ai/tools';
 import type { KnowledgeAgentWriteContext } from '../ai/tools';
-import { KnowledgeAccessError } from '../auth/access-policy';
-import type { KnowledgeRequestAuthenticator, KnowledgeRequestContext } from '../auth';
+import { KnowledgeAccessError } from '../access/access-policy';
+import type { KnowledgeRequestAuthenticator, KnowledgeRequestContext } from '../access';
 import { knowledgeMcpWwwAuthenticate } from './oauth';
 
 export interface KnowledgeMcpDependencies {

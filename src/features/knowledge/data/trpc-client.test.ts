@@ -54,7 +54,7 @@ describe('createKnowledgeTrpcClient', () => {
   });
 
   test('rejects invalid endpoints and workspaceIds at construction', () => {
-    expect(() => createKnowledgeTrpcClient('https://api.example/path', workspace)).toThrow('Invalid knowledge API origin');
+    expect(() => createKnowledgeTrpcClient('https://api.example/path', workspace)).toThrow('Invalid Fouc API origin');
     expect(() => createKnowledgeTrpcClient(origin, 'not-a-uuid')).toThrow('workspaceId must be a UUID');
   });
 });

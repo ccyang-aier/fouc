@@ -8,6 +8,7 @@
  */
 
 import { useState } from "react"
+import { AccountItem } from "@/features/identity/components/account-item"
 import Image from "next/image"
 import {
   BookOpenText,
@@ -399,12 +400,13 @@ export function NavigationSidebar({
           </div>
         </div>
       )}
+      {open ? <div className="shrink-0 border-t border-[var(--wt-sidebar-edge)] px-2 py-1"><AccountItem /></div> : null}
 
       {/* 收起态图标轨道：工作台导航 / 项目管理菜单（折叠形态） */}
       <ScrollArea
         aria-hidden={open}
         className={cn(
-          "absolute inset-x-0 bottom-0 top-11 z-[5] min-h-0 transition-[opacity,transform] duration-200",
+          "absolute inset-x-0 bottom-12 top-11 z-[5] min-h-0 transition-[opacity,transform] duration-200",
           open ? "pointer-events-none translate-x-1 opacity-0" : "delay-100 translate-x-0 opacity-100",
         )}
         viewportClassName={cn(
@@ -435,6 +437,7 @@ export function NavigationSidebar({
         )}
       </ScrollArea>
 
+      {!open ? <div className="absolute inset-x-0 bottom-0 z-10 border-t border-[var(--wt-sidebar-edge)] bg-[var(--shell)] p-1"><AccountItem compact /></div> : null}
       {open ? <SidebarResizeHandle dragging={dragging} onPointerDown={startResize} /> : null}
     </aside>
   )

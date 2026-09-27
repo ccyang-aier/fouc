@@ -5,8 +5,8 @@ import {
   shareLinkAccessInputSchema,
 } from '@fouc/shared/knowledge/contracts';
 import { withKnowledgeTenant } from '../../database/knowledge/tenant';
-import { verifiedRequestSession, activeSessionMember } from '../auth/session-access';
-import type { KnowledgeAccessDependencies } from '../auth/session-access';
+import { verifiedRequestSession, activeSessionMember } from '../access/session-access';
+import type { KnowledgeAccessDependencies } from '../access/session-access';
 import { sanitizedSharing } from './errors';
 import { KnowledgeSharingError } from './errors';
 import { authorizeShareLinkPageAccess, createAuthorizedShareLink, revokeAuthorizedShareLink, setAuthorizedShareLinkLevel, shareLinkLocator, verifyShareLink } from './links';

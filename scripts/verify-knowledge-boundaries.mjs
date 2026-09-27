@@ -7,8 +7,9 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const sharedRoot = 'shared/src/knowledge/';
 const backendRoot = 'backend/src/knowledge/';
 const backendApiRoot = 'backend/src/api/knowledge/';
-const backendRoots = [backendRoot, backendApiRoot];
+const backendRoots = [backendRoot, backendApiRoot, 'backend/src/identity/'];
 const frontendRoot = 'src/features/knowledge/';
+const frontendRoots = [frontendRoot, 'src/features/identity/'];
 const gatewayRoot = `${backendRoot}ai/gateway/`;
 const aiHelpers = new Set(['tool', 'jsonSchema', 'zodSchema', 'modelMessageSchema']);
 
@@ -34,7 +35,7 @@ export function checkKnowledgeImports(relativeFile, content) {
     if (backendRoots.some((root) => relativeFile.startsWith(root)) && (/^src\//.test(resolved) || /^(@\/|react(?:\/|$)|react-dom(?:\/|$)|next(?:\/|$))/.test(target))) fail('后端不得依赖前端');
     if (backendRoots.some((root) => relativeFile.startsWith(root)) && !relativeFile.startsWith(gatewayRoot) && !typeOnly
       && (/^@ai-sdk\//.test(target) || (target === 'ai' && !helperOnly))) fail('模型调用与 Provider 只能位于统一 AI 网关；工具 schema 帮助函数和类型除外');
-    if (relativeFile.startsWith(frontendRoot) && !typeOnly && (/^backend\//.test(resolved) || /^(@backend\/|bun:|node:)/.test(target))) fail('前端不得导入服务端运行时代码');
+    if (frontendRoots.some((root) => relativeFile.startsWith(root)) && !typeOnly && (/^backend\//.test(resolved) || /^(@backend\/|bun:|node:)/.test(target))) fail('前端不得导入服务端运行时代码');
   }
   function visit(node) {
     if (ts.isImportDeclaration(node)) {
@@ -57,7 +58,7 @@ export function checkKnowledgeImports(relativeFile, content) {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const files = [sharedRoot, ...backendRoots, frontendRoot].flatMap((directory) => filesIn(path.join(root, directory)));
+  const files = [sharedRoot, ...backendRoots, ...frontendRoots].flatMap((directory) => filesIn(path.join(root, directory)));
   const errors = files.flatMap((file) => checkKnowledgeImports(path.relative(root, file).replaceAll('\\', '/'), readFileSync(file, 'utf8')));
   if (errors.length) throw new Error(errors.join('\n'));
   console.log(`Knowledge boundaries: ${files.length} source files checked; no inverted runtime dependencies.`);

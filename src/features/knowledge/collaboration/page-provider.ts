@@ -36,7 +36,7 @@ export function pageCollaborationUrl(origin: string): string {
 
 export interface PageDocumentSessionOptions {
   scope: PageScope;
-  /** Knowledge API origin from U01 (`resolveKnowledgeApiOrigin`). */
+  /** Knowledge API origin from U01 (`resolveFoucApiOrigin`). */
   origin: string;
   /** Aborting destroys the session (leaving the page). */
   signal?: AbortSignal;

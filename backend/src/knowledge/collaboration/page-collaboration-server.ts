@@ -6,7 +6,7 @@ import type { Pool } from 'pg';
 import { docState } from '../../database/knowledge/schema';
 import { withKnowledgeTenant } from '../../database/knowledge/tenant';
 import { appendKnowledgeOutbox } from '../workers/outbox';
-import type { KnowledgeRequestAuthenticator } from '../auth';
+import type { KnowledgeRequestAuthenticator } from '../access';
 import { pageCollaborationExtension } from './page-collaboration';
 import type { PageCollaborationContext } from './page-collaboration';
 import { parsePageDocument } from './page-documents';

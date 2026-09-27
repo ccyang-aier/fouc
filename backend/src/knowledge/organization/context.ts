@@ -4,11 +4,11 @@ import { entityIdSchema } from '@fouc/shared/knowledge/contracts';
 import type { MemberRole } from '@fouc/shared/knowledge/contracts';
 import { authSession, authUser, member, workspace } from '../../database/knowledge/schema';
 import { withKnowledgeTenant } from '../../database/knowledge/tenant';
-import type { KnowledgeIdentityTransaction, KnowledgeTenantTransaction } from '../../database/knowledge/tenant';
-import type { KnowledgeIdentity } from '../auth/identity';
+import type { FoucIdentityTransaction, KnowledgeTenantTransaction } from '../../database/knowledge/tenant';
+import type { FoucIdentity } from '../../identity/identity';
 import { OrganizationError } from './errors';
 
-export async function currentIdentity(db: KnowledgeIdentityTransaction, identity: KnowledgeIdentity, lock = false) {
+export async function currentIdentity(db: FoucIdentityTransaction, identity: FoucIdentity, lock = false) {
   if (!entityIdSchema.safeParse(identity.userId).success || !entityIdSchema.safeParse(identity.sessionId).success) {
     throw new OrganizationError('UNAUTHENTICATED', 'A verified active session is required.', 401);
   }
@@ -45,7 +45,7 @@ export interface WorkspaceContext {
 }
 
 /** Membership mutations lock the workspace first; every service uses this order. */
-export function inWorkspace<T>(pool: Pool, identity: KnowledgeIdentity, workspaceId: string, write: boolean, operation: (context: WorkspaceContext) => Promise<T>) {
+export function inWorkspace<T>(pool: Pool, identity: FoucIdentity, workspaceId: string, write: boolean, operation: (context: WorkspaceContext) => Promise<T>) {
   return withKnowledgeTenant(pool, workspaceId, async (db) => {
     const actor = await currentIdentity(db, identity, write);
     const ownMembership = db.select({ userId: member.userId }).from(member).where(and(eq(member.workspaceId, workspaceId), eq(member.userId, actor.userId)));

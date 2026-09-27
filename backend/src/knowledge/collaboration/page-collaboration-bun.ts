@@ -1,7 +1,7 @@
 import bunAdapter from 'crossws/adapters/bun';
 import type { Pool } from 'pg';
 import { createLogger } from '../../platform/logger';
-import type { KnowledgeRequestAuthenticator } from '../auth';
+import type { KnowledgeRequestAuthenticator } from '../access';
 import { createPageCollaboration } from './page-collaboration-server';
 import type { PageCollaborationPersistence } from './page-collaboration-server';
 import type { PageCollaborationBroadcast } from './page-collaboration-redis';

@@ -6,9 +6,9 @@ import { principal, teamspaceSchema } from '@fouc/shared/knowledge/contracts';
 import type { PermissionLevel, Teamspace } from '@fouc/shared/knowledge/contracts';
 import { blockIndex, docState, page, pageEffectiveAcl, teamspace } from '../../database/knowledge/schema';
 import { withKnowledgeTenant } from '../../database/knowledge/tenant';
-import { createAuthTestServer, responseCookie, testPassword } from '../auth/auth-test-server';
-import type { AuthTestServer } from '../auth/auth-test-server';
-import type { KnowledgeIdentity } from '../auth/identity';
+import { createAuthTestServer, responseCookie, testPassword } from '../../identity/auth-test-server';
+import type { AuthTestServer } from '../../identity/auth-test-server';
+import type { FoucIdentity } from '../../identity/identity';
 import { computeEffectivePermissions, permissionFor } from '../permissions/effective';
 import { createOrganizationRoutes } from './http';
 import { createOrganizationService } from './service';
@@ -17,7 +17,7 @@ import { readTeamspacePermissionRoot } from './teamspaces';
 import { teamspacePermissionInvalidator } from '../permissions/fence';
 import { initializeKnowledgeJobs } from '../workers/initialize';
 
-interface Actor { email: string; cookie: string; identity: KnowledgeIdentity }
+interface Actor { email: string; cookie: string; identity: FoucIdentity }
 let server: AuthTestServer;
 let service: OrganizationService;
 let owner: Actor, admin: Actor, regular: Actor, guest: Actor, outsider: Actor;
@@ -43,7 +43,7 @@ async function register(name: string): Promise<Actor> {
   const signed = await server.request('/sign-in/email', { email, password: testPassword });
   expect(signed.status).toBe(200);
   const cookie = responseCookie(signed);
-  const identity = await (await fetch(`${server.origin}/test/identity`, { headers: { cookie } })).json() as KnowledgeIdentity;
+  const identity = await (await fetch(`${server.origin}/test/identity`, { headers: { cookie } })).json() as FoucIdentity;
   return { email, cookie, identity };
 }
 

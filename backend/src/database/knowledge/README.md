@@ -46,7 +46,7 @@ bun backend/scripts/knowledge-db.ts check
 - 任一目标 schema 已存在时，`init` 明确拒绝；没有重置、升级或迁移分支。发生结构差异时先调查检查结果，不要对已有库重复初始化。
 - `check` 核对表和列类型、约束名称与有效性、索引名称与方法、RLS 完整策略、扩展及有效权限。它不是任意数据库对象的完整语义 diff，也不验证后续 H02/H03 管理的检索索引。
 - 业务操作使用 `withKnowledgeTenant(pool, workspaceId, callback)`，通过同一借出连接上的事务局部租户上下文访问 Drizzle。服务必须在回调内验证身份和工作区成员资格后才执行业务操作；无上下文默认不可访问业务行。不要在回调中改用 `pool.query`。
-- 跨工作区发现只使用 `withKnowledgeIdentity(pool, sessionId, callback)` 的 `BEGIN READ ONLY`。`member`、`workspace` 各有一条 `FOR SELECT` 的 `own_identity` policy，只允许有效、未撤销且邮箱已验证会话发现自身成员关系。sessionId 必须来自服务端认证，不能来自请求 body；PAT 不能使用这一路径。业务写入仍由 `tenant_scope` 保护，没有 BYPASSRLS 或 SECURITY DEFINER。两种事务都显式清空另一种作用域。
+- 跨工作区发现只使用 `withFoucIdentity(pool, sessionId, callback)` 的 `BEGIN READ ONLY`。`member`、`workspace` 各有一条 `FOR SELECT` 的 `own_identity` policy，只允许有效、未撤销且邮箱已验证会话发现自身成员关系。sessionId 必须来自服务端认证，不能来自请求 body；PAT 不能使用这一路径。业务写入仍由 `tenant_scope` 保护，没有 BYPASSRLS 或 SECURITY DEFINER。两种事务都显式清空另一种作用域。
 
 真实数据库回归只创建带随机 UUID 的一次性测试库，确认创建归属后清理并验证不存在；不会删除开发主库。
 

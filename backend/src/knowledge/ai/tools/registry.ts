@@ -6,8 +6,8 @@ import {
   agentReadPageToolInputSchema,
   agentSearchToolInputSchema,
 } from '@fouc/shared/knowledge/contracts';
-import type { KnowledgeTokenScope } from '../../auth';
-import { KnowledgeAccessError, requireKnowledgeScopes } from '../../auth';
+import type { KnowledgeTokenScope } from '../../access';
+import { KnowledgeAccessError, requireKnowledgeScopes } from '../../access';
 import { KnowledgeAgentToolError } from './errors';
 import { executeAgentGetBacklinks } from './get-backlinks';
 import { executeAgentListPages } from './list-pages';

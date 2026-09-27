@@ -4,7 +4,7 @@ import { IncomingMessage, ServerResponse } from 'node:http';
 import { Socket } from 'node:net';
 import { initTRPC, TRPCError } from '@trpc/server';
 import { workspaceScopeSchema } from '@fouc/shared/knowledge/contracts';
-import { bindAuthTestRequestLifetime } from '../../knowledge/auth/auth-test-server';
+import { bindAuthTestRequestLifetime } from '../../identity/auth-test-server';
 import { createKnowledgeRouter, knowledgeQuery, assertKnowledgeRouter } from './procedures';
 import { createRequestLifetime, assertRequestActive } from './lifetime';
 import { boundedJsonRequest } from './transport';

@@ -20,7 +20,7 @@ import type { PageDocumentSession } from '../collaboration/page-provider';
 import type { PageDocumentStatus } from '../collaboration/page-sync-state';
 import { createPageUndo } from '../collaboration/page-undo';
 import type { PageUndo } from '../collaboration/page-undo';
-import { getKnowledgeApiOrigin } from '../data/endpoint';
+import { getFoucApiOrigin } from '@/lib/fouc-api-endpoint';
 
 interface SessionState {
   key: string | null;
@@ -52,7 +52,7 @@ export function usePageEditorSession(scope: PageScope | null): PageEditorSession
     const controller = new AbortController();
     let unsubscribe: (() => void) | undefined;
     let session: PageDocumentSession | undefined;
-    void getKnowledgeApiOrigin()
+    void getFoucApiOrigin()
       .then(({ origin }) => {
         if (controller.signal.aborted) return;
         const connected = connectPageDocument({ scope: { workspaceId, pageId }, origin, signal: controller.signal });

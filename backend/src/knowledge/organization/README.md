@@ -1,6 +1,6 @@
 # Knowledge organization service (O01 / O03)
 
-`createOrganizationService(pool)` 使用普通应用角色，所有入口接收由服务端认证生成的 `KnowledgeIdentity`。每次事务重新核对 sessionId/userId、过期时间及已验证邮箱，并读取当前成员角色；身份不是成员资格，HTTP body 中也没有操作者字段。
+`createOrganizationService(pool)` 使用普通应用角色，所有入口接收由服务端认证生成的 `FoucIdentity`。每次事务重新核对 sessionId/userId、过期时间及已验证邮箱，并读取当前成员角色；身份不是成员资格，HTTP body 中也没有操作者字段。
 
 `createOrganizationRoutes(auth, service)` 导出真实 Hono HTTP 集成，挂载在 `/`，路由限于 `/api/knowledge/workspaces`，须放在旧 bearer catch-all 之前。Z03 负责接入运行进程，本模块不启动第二个服务，也不停止 Web dev。写操作要求 JSON 与可信 Origin；只接受 Better Auth 会话，不接受 PAT。CORS/HttpOnly cookie 配置复用 A01，路由统一 `no-store`、`no-referrer`，内部异常只返回脱敏的可重试 503。
 
@@ -69,7 +69,7 @@ P02 接线时必须一次性将非空空间默认值变更的拒绝条件替换�
 ## 验证
 
 ```powershell
-bun test backend/src/database/knowledge backend/src/knowledge/auth backend/src/knowledge/organization shared/src/knowledge/contracts/organization.test.ts
+bun test backend/src/database/knowledge backend/src/identity backend/src/knowledge/organization shared/src/knowledge/contracts/organization.test.ts
 bun backend/scripts/knowledge-schema.ts --check
 pnpm backend:typecheck
 pnpm shared:typecheck

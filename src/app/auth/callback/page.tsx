@@ -1,7 +1,7 @@
 import { Suspense } from "react"
 import type { Metadata } from "next"
 
-import { OAuthCallbackScene } from "@/features/knowledge/auth"
+import { OAuthCallbackScene } from "@/features/identity"
 
 export const metadata: Metadata = {
   title: "企业登录 · Fouc",

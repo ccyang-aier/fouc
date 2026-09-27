@@ -1,8 +1,8 @@
 import { initTRPC, TRPCError } from '@trpc/server';
 import type { AnyTRPCProcedure, AnyTRPCRouter, TRPCRouterRecord } from '@trpc/server';
 import type { z } from 'zod';
-import { knowledgeTokenScopes } from '../../knowledge/auth';
-import type { KnowledgeTokenScope } from '../../knowledge/auth';
+import { knowledgeTokenScopes } from '../../knowledge/access';
+import type { KnowledgeTokenScope } from '../../knowledge/access';
 import { apiError, apiErrorShape } from './errors';
 import { authorizeKnowledgeProcedure } from './context';
 import type { KnowledgeApiContext, KnowledgeProcedureContext } from './context';

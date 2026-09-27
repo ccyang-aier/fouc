@@ -3,7 +3,7 @@ import { bigint, boolean, check, foreignKey, index, jsonb, primaryKey, text, uni
 import type { PgTableExtraConfigValue } from 'drizzle-orm/pg-core';
 import type { Principal, Properties, PropertyDefinition } from '@fouc/shared/knowledge/contracts';
 import { pageKind, permissionLevel } from './enums';
-import { authUser } from './identity';
+import { authUser } from '../../identity/schema';
 import { knowledge } from './namespaces';
 import { teamspace } from './organization';
 import { bytea, instant, ltree } from './types';

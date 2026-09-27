@@ -2,7 +2,7 @@ import { TRPCError } from '@trpc/server';
 import type { TRPC_ERROR_CODE_KEY } from '@trpc/server';
 import { getHTTPStatusCodeFromError } from '@trpc/server/http';
 import { TRPC_ERROR_CODES_BY_KEY } from '@trpc/server/rpc';
-import { KnowledgeAccessError } from '../../knowledge/auth';
+import { KnowledgeAccessError } from '../../knowledge/access';
 
 const messages: Record<TRPC_ERROR_CODE_KEY, string> = {
   PARSE_ERROR: 'Invalid JSON request.',

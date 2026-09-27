@@ -5,7 +5,7 @@
 ## 验收命令与结果
 
 ```
-bun test backend/src/knowledge/auth backend/src/knowledge/mcp   # 99 pass / 0 fail / 1730 断言(11 文件)
+bun test backend/src/identity backend/src/knowledge/mcp   # 99 pass / 0 fail / 1730 断言(11 文件)
 cd backend && bunx tsc --noEmit                                  # 除并行在写的 ai/streaming 外 0 错误
 ```
 
@@ -16,7 +16,7 @@ cd backend && bunx tsc --noEmit                                  # 除并行在�
 
 ## 交付内容
 
-- `backend/src/knowledge/auth/oauth-server.ts`:OAuth 2.1 授权服务器引擎——RFC 7591 动态客户端注册(仅公共 PKCE 客户端)、授权端点(会话+工作区成员校验、HMAC 同意证明、5 分钟一次性 code、RFC 9207 iss)、令牌端点(code 原子认领、PKCE S256 常量时间、RFC 8707 resource 校验、签发标准 PAT 写入既有 personal_access_token 表)、RFC 7009 撤销(未知令牌恒 200)。
+- `backend/src/knowledge/access/oauth-server.ts`:OAuth 2.1 授权服务器引擎——RFC 7591 动态客户端注册(仅公共 PKCE 客户端)、授权端点(会话+工作区成员校验、HMAC 同意证明、5 分钟一次性 code、RFC 9207 iss)、令牌端点(code 原子认领、PKCE S256 常量时间、RFC 8707 resource 校验、签发标准 PAT 写入既有 personal_access_token 表)、RFC 7009 撤销(未知令牌恒 200)。
 - `backend/src/knowledge/mcp/oauth.ts`:HTTP 路由 + PRM/AS 元数据 + WWW-Authenticate 助手;`mcp/server.ts` 认证段接入 oauth.externalOrigin(未认证挑战从 Bearer realm 升级为 resource_metadata)。
 - `backend/src/api/knowledge/pat-routes.ts`:PAT 签发/列表/吊销专用路由(会话专属,tRPC 上下文不保留原始 Request 且 PAT 不得铸造 PAT)。
 - `shared/src/knowledge/contracts/pat.ts`:PAT 契约上收单一事实源(access-policy/tokens 改别名导出,兼容保留)。

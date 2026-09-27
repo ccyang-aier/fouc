@@ -98,6 +98,7 @@ export function isRetryableKnowledgeError(error: unknown): boolean {
 export function normalizeKnowledgeError(cause: unknown, signal?: AbortSignal): unknown {
   if (signal?.aborted) return cause;
   if (cause instanceof KnowledgeDataError) return cause;
+  if ((cause as { code?: unknown } | null)?.code === 'ENDPOINT') return new KnowledgeDataError('ENDPOINT', { cause });
   if (cause instanceof TRPCClientError) {
     const data = cause.data as { code?: unknown; httpStatus?: unknown; requestId?: unknown } | undefined;
     if (typeof data?.code === 'string') {

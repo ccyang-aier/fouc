@@ -4,7 +4,7 @@ import type { Pool } from 'pg';
 import { createGroupInputSchema, groupMemberInputSchema, listGroupMembersInputSchema, listOrganizationInputSchema, removeGroupInputSchema, renameGroupInputSchema } from '@fouc/shared/knowledge/contracts';
 import { group, groupMember, member } from '../../database/knowledge/schema';
 import type { KnowledgeTenantTransaction } from '../../database/knowledge/tenant';
-import type { KnowledgeIdentity } from '../auth/identity';
+import type { FoucIdentity } from '../../identity/identity';
 import { inWorkspace, pageOf, requireDirectory, requireManager } from './context';
 import { OrganizationError, parseInput } from './errors';
 
@@ -16,7 +16,7 @@ async function existingGroup(db: KnowledgeTenantTransaction, workspaceId: string
 
 export function groupOperations(pool: Pool) {
   return {
-    async listGroups(identity: KnowledgeIdentity, input: unknown) {
+    async listGroups(identity: FoucIdentity, input: unknown) {
       const parsed = parseInput(listOrganizationInputSchema, input);
       return inWorkspace(pool, identity, parsed.workspaceId, false, async ({ db, role }) => {
         requireDirectory(role);
@@ -25,7 +25,7 @@ export function groupOperations(pool: Pool) {
         return pageOf(rows, parsed.limit, (row) => row.id);
       });
     },
-    async createGroup(identity: KnowledgeIdentity, input: unknown) {
+    async createGroup(identity: FoucIdentity, input: unknown) {
       const parsed = parseInput(createGroupInputSchema, input);
       return inWorkspace(pool, identity, parsed.workspaceId, true, async ({ db, role }) => {
         requireManager(role);
@@ -34,7 +34,7 @@ export function groupOperations(pool: Pool) {
         return record;
       });
     },
-    async renameGroup(identity: KnowledgeIdentity, input: unknown) {
+    async renameGroup(identity: FoucIdentity, input: unknown) {
       const parsed = parseInput(renameGroupInputSchema, input);
       return inWorkspace(pool, identity, parsed.workspaceId, true, async ({ db, role }) => {
         requireManager(role);
@@ -43,7 +43,7 @@ export function groupOperations(pool: Pool) {
         return parsed;
       });
     },
-    async removeGroup(identity: KnowledgeIdentity, input: unknown) {
+    async removeGroup(identity: FoucIdentity, input: unknown) {
       const parsed = parseInput(removeGroupInputSchema, input);
       return inWorkspace(pool, identity, parsed.workspaceId, true, async ({ db, role }) => {
         requireManager(role);
@@ -52,7 +52,7 @@ export function groupOperations(pool: Pool) {
         return { removed: true as const };
       });
     },
-    async listGroupMembers(identity: KnowledgeIdentity, input: unknown) {
+    async listGroupMembers(identity: FoucIdentity, input: unknown) {
       const parsed = parseInput(listGroupMembersInputSchema, input);
       return inWorkspace(pool, identity, parsed.workspaceId, false, async ({ db, role }) => {
         requireDirectory(role);
@@ -62,7 +62,7 @@ export function groupOperations(pool: Pool) {
         return pageOf(rows, parsed.limit, (row) => row.userId);
       });
     },
-    async addGroupMember(identity: KnowledgeIdentity, input: unknown) {
+    async addGroupMember(identity: FoucIdentity, input: unknown) {
       const parsed = parseInput(groupMemberInputSchema, input);
       return inWorkspace(pool, identity, parsed.workspaceId, true, async ({ db, role }) => {
         requireManager(role);
@@ -73,7 +73,7 @@ export function groupOperations(pool: Pool) {
         return parsed;
       });
     },
-    async removeGroupMember(identity: KnowledgeIdentity, input: unknown) {
+    async removeGroupMember(identity: FoucIdentity, input: unknown) {
       const parsed = parseInput(groupMemberInputSchema, input);
       return inWorkspace(pool, identity, parsed.workspaceId, true, async ({ db, role }) => {
         requireManager(role);

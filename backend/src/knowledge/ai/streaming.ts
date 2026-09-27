@@ -13,7 +13,7 @@ import type {
   RevokeAiStreamingTaskResult,
   StartAiStreamingTaskInput,
 } from '@fouc/shared/knowledge/contracts';
-import type { KnowledgeRequestContext } from '../auth';
+import type { KnowledgeRequestContext } from '../access';
 import type { NodeAnnotation } from '@fouc/shared/knowledge/schema/suggestions';
 import { newSuggestion } from '@fouc/shared/knowledge/schema/suggestions';
 import { createMarkdownPipeline } from '@fouc/shared/knowledge/markdown';

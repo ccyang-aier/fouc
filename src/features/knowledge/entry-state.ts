@@ -25,7 +25,7 @@ export type KnowledgeQuerySlice = {
 export type KnowledgeEntryPhase =
   | 'session-checking'
   | 'session-error'
-  | 'auth-redirect'
+  | 'auth-required'
   | 'workspaces-loading'
   | 'workspaces-error'
   | 'workspaces-empty'
@@ -55,19 +55,19 @@ export function deriveKnowledgeEntryPhase(input: {
   const { session } = input;
   if (session.status === 'checking') return 'session-checking';
   if (session.status === 'error') return 'session-error';
-  if (session.status === 'anonymous') return 'auth-redirect';
+  if (session.status === 'anonymous') return 'auth-required';
 
   const workspaces = input.workspaces;
   if (!workspaces || workspaces.status === 'pending') return 'workspaces-loading';
   if (workspaces.status === 'error') {
-    return workspaces.errorCode === 'UNAUTHENTICATED' ? 'auth-redirect' : 'workspaces-error';
+    return workspaces.errorCode === 'UNAUTHENTICATED' ? 'auth-required' : 'workspaces-error';
   }
   if ((workspaces.count ?? 0) === 0) return 'workspaces-empty';
 
   const access = input.access;
   if (!access || access.status === 'pending') return 'workspace-loading';
   if (access.status === 'error') {
-    if (access.errorCode === 'UNAUTHENTICATED') return 'auth-redirect';
+    if (access.errorCode === 'UNAUTHENTICATED') return 'auth-required';
     if (access.errorCode === 'FORBIDDEN') return 'workspace-forbidden';
     return 'workspace-error';
   }
@@ -75,7 +75,7 @@ export function deriveKnowledgeEntryPhase(input: {
   const teamspaces = input.teamspaces;
   if (!teamspaces || teamspaces.status === 'pending') return 'tree-loading';
   if (teamspaces.status === 'error') {
-    if (teamspaces.errorCode === 'UNAUTHENTICATED') return 'auth-redirect';
+    if (teamspaces.errorCode === 'UNAUTHENTICATED') return 'auth-required';
     if (teamspaces.errorCode === 'FORBIDDEN') return 'tree-forbidden';
     return 'tree-error';
   }

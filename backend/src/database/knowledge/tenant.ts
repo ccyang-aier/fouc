@@ -6,7 +6,7 @@ import { knowledgeSchema } from './schema';
 
 /** The request owns its transaction; services cannot start a second top-level one. */
 export type KnowledgeTenantTransaction = Omit<NodePgDatabase<typeof knowledgeSchema>, 'transaction'>;
-export type KnowledgeIdentityTransaction = Pick<KnowledgeTenantTransaction, 'select' | 'execute'>;
+export type FoucIdentityTransaction = Pick<KnowledgeTenantTransaction, 'select' | 'execute'>;
 
 export class KnowledgeTransactionAbortedError extends Error {
   constructor() {
@@ -30,10 +30,10 @@ export async function withKnowledgeTenant<T>(
 }
 
 /** sessionId must be obtained from a verified server-side auth session, never a request body. */
-export async function withKnowledgeIdentity<T>(
+export async function withFoucIdentity<T>(
   pool: Pool,
   sessionId: string,
-  operation: (db: KnowledgeIdentityTransaction) => Promise<T>,
+  operation: (db: FoucIdentityTransaction) => Promise<T>,
 ): Promise<T> {
   if (!entityIdSchema.safeParse(sessionId).success) throw new TypeError('Invalid session ID');
   return withKnowledgeScope(pool, { workspaceId: '', sessionId, readOnly: true }, operation);

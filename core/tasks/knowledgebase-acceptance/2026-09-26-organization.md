@@ -14,7 +14,7 @@
 ## 主代理验证
 
 ```powershell
-bun test backend/src/database/knowledge backend/src/knowledge/auth backend/src/knowledge/organization shared/src/knowledge/contracts/organization.test.ts
+bun test backend/src/database/knowledge backend/src/identity backend/src/knowledge/organization shared/src/knowledge/contracts/organization.test.ts
 pnpm backend:typecheck
 pnpm shared:typecheck
 bun backend/scripts/knowledge-schema.ts --check

@@ -6,7 +6,7 @@
 
 - `api-types.ts`：仅 `export type` 复用 A00 `backend/src/api/knowledge/client-types.ts` 的 `KnowledgeApiRouter / KnowledgeApiInputs / KnowledgeApiOutputs`。该入口零运行时导出；架构扫描器允许该 type-only 反向引用，禁止任何值导入。
 - `trpc-client.ts`：`createTRPCClient<KnowledgeApiRouter>` 类型安全调用面，URL 仅由 `knowledgeTrpcUrl`（`<origin>/api/knowledge/<workspaceId>/trpc`）这一个契约函数构造；`httpBatchLink` 按 A00 限制配置 `maxItems: 10`、`maxURLLength: 8192`，fetch 包装恒定 `credentials: 'include'`（Cookie 会话凭据）。每 (origin, workspace) 一个客户端实例缓存；`runKnowledgeCall` 统一执行包裹。
-- `endpoint.ts`：桌面（Tauri）经 `get_backend_endpoint` 命令解析本地 sidecar origin（复用 `src/lib/backend.ts` 约定，不使用 sidecar token——知识库 API 认证是 Cookie 会话/PAT）；Web 用 `NEXT_PUBLIC_KNOWLEDGE_API_URL`（仅 origin，禁 path/query/fragment/凭据）；Web dev 回退 `http://127.0.0.1:8710`，生产缺配置直接抛清晰错误，绝不静默回退。解析按文档生命周期记忆化一次。
+- `endpoint.ts`：桌面（Tauri）经 `get_backend_endpoint` 命令解析本地 sidecar origin（复用 `src/lib/backend.ts` 约定，不使用 sidecar token——知识库 API 认证是 Cookie 会话/PAT）；Web 用 `NEXT_PUBLIC_FOUC_API_URL`（仅 origin，禁 path/query/fragment/凭据）；Web dev 回退 `http://127.0.0.1:8710`，生产缺配置直接抛清晰错误，绝不静默回退。解析按文档生命周期记忆化一次。
 - `errors.ts`：`KnowledgeDataError`（`code / requestId / httpStatus / cause`）领域错误；A00 全部 21 个允许错误码显式映射，未知服务码降级 `UNAVAILABLE`，无错误体的传输失败归 `NETWORK`，非 tRPC HTTP 响应归 `UNAVAILABLE` 并保留状态码。已中止的 `signal` 原样放行错误（取消不是错误，交由查询层自身语义）；`isRetryableKnowledgeError` 仅 NETWORK/UNAVAILABLE/RATE_LIMITED 可重试。
 - `query-keys.ts`：workspaceId 为每个查询键的顶层命名空间（`[workspaceId, 'knowledge', …]`），提供类型化键工厂。
 - `query-client.ts`：`createKnowledgeQueryClient` 默认重试策略为领域感知（仅瞬态错误、最多 2 次；mutation 不重试）；`invalidateKnowledgeQueries` 接受键工厂的 workspace 级或细粒度键。
@@ -30,5 +30,5 @@ node scripts/verify-knowledge-boundaries.mjs
 
 - **无在线往返**：本机 sidecar `127.0.0.1:8710` 探测 `GET /api/knowledge/<uuid>/trpc/access` 返回 404（旧全局 `/api/knowledge` 为 200）——A00 尚未由 Z03 挂载，真实 Cookie/PAT 往返、CORS/credentials 行为留给 Z03/U02 在真实装配后验收。
 - **桌面端未实测**：未构建 Tauri、未在 WebView 里调用 `get_backend_endpoint`；桌面路径仅以注入依赖单测。WebView 跨站 Cookie 限制仍按认证 README 归 Z03。
-- **Web 部署变量未接入配置样例**：`NEXT_PUBLIC_KNOWLEDGE_API_URL` 已在代码与测试中生效，但 `.env.example` 归根仓库所有，本任务未改动，建议主线程补一行示例。
+- **Web 部署变量未接入配置样例**：`NEXT_PUBLIC_FOUC_API_URL` 已在代码与测试中生效，但 `.env.example` 归根仓库所有，本任务未改动，建议主线程补一行示例。
 - `bun-test.d.ts` 为本地最小类型面，workspace 将来统一 `@types/bun` 时应删除；Provider/hooks 尚无页面消费者（属 U02+）。

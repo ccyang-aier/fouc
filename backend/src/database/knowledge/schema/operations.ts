@@ -2,7 +2,7 @@ import { sql } from 'drizzle-orm';
 import { bigint, check, foreignKey, index, integer, jsonb, primaryKey, text, uuid, varchar } from 'drizzle-orm/pg-core';
 import type { AiTask, OutboxEvent } from '@fouc/shared/knowledge/contracts';
 import { aiTaskKind, aiTaskStatus, modelTier, outboxTopic, permissionLevel } from './enums';
-import { authUser } from './identity';
+import { authUser } from '../../identity/schema';
 import { knowledge } from './namespaces';
 import { workspace } from './organization';
 import { page } from './pages';

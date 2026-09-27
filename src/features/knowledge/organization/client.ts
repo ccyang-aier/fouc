@@ -4,12 +4,13 @@
  * The organization service is a plain Hono REST surface under
  * `/api/knowledge/workspaces` — not the workspace-scoped tRPC transport of U01 —
  * so this module owns its own endpoint mapping while reusing the U01 endpoint
- * resolver (`getKnowledgeApiOrigin`) and following the same error-normalization
+ * resolver (`getFoucApiOrigin`) and following the same error-normalization
  * pattern. Contract: mutations send `application/json` bodies; DELETE requests
  * carry an empty `{}` body because the route middleware demands JSON on every
  * non-GET request; list endpoints paginate by UUID cursor.
  */
 
+import { authenticatedFetch } from '@/lib/authenticated-fetch';
 import type {
   Group,
   MemberRole,
@@ -17,7 +18,8 @@ import type {
   Workspace,
   WorkspaceMemberSummary,
 } from '@fouc/shared/knowledge/contracts';
-import { getKnowledgeApiOrigin, knowledgeApiPathPrefix } from '../data/endpoint';
+import { knowledgeApiPathPrefix } from '../data/endpoint';
+import { getFoucApiOrigin } from '@/lib/fouc-api-endpoint';
 import { OrganizationDataError, normalizeOrganizationError, organizationErrorFromBody } from './errors';
 
 export type { Group, MemberRole, Teamspace, Workspace, WorkspaceMemberSummary };
@@ -227,6 +229,6 @@ export type OrganizationClient = ReturnType<typeof createOrganizationClient>;
 
 /** Browser binding: the same origin resolver as the tRPC transport; cookies are the credential. */
 export const organizationClient: OrganizationClient = createOrganizationClient({
-  origin: async () => (await getKnowledgeApiOrigin()).origin,
-  fetchImpl: (...args) => fetch(...args),
+  origin: async () => (await getFoucApiOrigin()).origin,
+  fetchImpl: authenticatedFetch,
 });

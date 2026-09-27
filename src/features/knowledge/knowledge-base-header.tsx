@@ -19,6 +19,7 @@ export function KnowledgeBaseHeader({
   onCollapse,
   onCreateKnowledgeBase,
   onOpenSettings,
+  onOpenLocal,
 }: {
   knowledgeBases: readonly KnowledgeBaseSummary[];
   activeKnowledgeBaseId: string | null;
@@ -26,6 +27,7 @@ export function KnowledgeBaseHeader({
   onCollapse: () => void;
   onCreateKnowledgeBase: () => void;
   onOpenSettings: () => void;
+  onOpenLocal?: () => void;
 }) {
   const activeKnowledgeBase = knowledgeBases.find((base) => base.id === activeKnowledgeBaseId);
   const knowledgeBaseName = activeKnowledgeBase?.name ?? "知识库";
@@ -39,6 +41,7 @@ export function KnowledgeBaseHeader({
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" sideOffset={5} className={styles.knowledgeMenu}>
+        {onOpenLocal ? <DropdownMenuItem className={styles.knowledgeMenuItem} onSelect={onOpenLocal}>本机知识库</DropdownMenuItem> : null}
         {knowledgeBases.map((base, index) => (
           <DropdownMenuItem key={base.id} className={styles.knowledgeMenuBase} data-active={base.id === activeKnowledgeBaseId} onSelect={() => onSelectKnowledgeBase(base.id)}>
             <span aria-hidden="true" className={styles.knowledgeMenuAvatar} data-tone={index % 6}>{Array.from(base.name.trim())[0]?.toUpperCase() ?? "K"}</span>

@@ -2,7 +2,7 @@ import type { Pool } from 'pg';
 import type { Extension, onConnectPayload } from '@hocuspocus/server';
 import type { PermissionLevel } from '@fouc/shared/knowledge/contracts';
 import { withKnowledgeTenant } from '../../database/knowledge/tenant';
-import type { KnowledgeRequestAuthenticator, KnowledgeRequestContext } from '../auth';
+import type { KnowledgeRequestAuthenticator, KnowledgeRequestContext } from '../access';
 import { authorizePageAccess } from '../permissions';
 import { parsePageDocument } from './page-documents';
 

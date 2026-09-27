@@ -3,14 +3,14 @@ import { and, asc, eq, gt } from 'drizzle-orm';
 import type { Pool } from 'pg';
 import { createWorkspaceInputSchema, listWorkspacesInputSchema, renameWorkspaceInputSchema, workspaceScopeSchema } from '@fouc/shared/knowledge/contracts';
 import { member, workspace } from '../../database/knowledge/schema';
-import { withKnowledgeIdentity, withKnowledgeTenant } from '../../database/knowledge/tenant';
-import type { KnowledgeIdentity } from '../auth/identity';
+import { withFoucIdentity, withKnowledgeTenant } from '../../database/knowledge/tenant';
+import type { FoucIdentity } from '../../identity/identity';
 import { currentIdentity, inWorkspace, pageOf, requireManager, workspaceView } from './context';
 import { parseInput } from './errors';
 
 export function workspaceOperations(pool: Pool) {
   return {
-    async createWorkspace(identity: KnowledgeIdentity, input: unknown) {
+    async createWorkspace(identity: FoucIdentity, input: unknown) {
       const parsed = parseInput(createWorkspaceInputSchema, input);
       const id = randomUUID();
       return withKnowledgeTenant(pool, id, async (db) => {
@@ -20,9 +20,9 @@ export function workspaceOperations(pool: Pool) {
         return { ...workspaceView(created!), role: 'owner' as const };
       });
     },
-    async listWorkspaces(identity: KnowledgeIdentity, input: unknown = {}) {
+    async listWorkspaces(identity: FoucIdentity, input: unknown = {}) {
       const parsed = parseInput(listWorkspacesInputSchema, input);
-      return withKnowledgeIdentity(pool, identity.sessionId, async (db) => {
+      return withFoucIdentity(pool, identity.sessionId, async (db) => {
         const actor = await currentIdentity(db, identity);
         const records = await db.select({ workspace, role: member.role }).from(workspace)
           .innerJoin(member, and(eq(member.workspaceId, workspace.id), eq(member.userId, actor.userId)))
@@ -30,11 +30,11 @@ export function workspaceOperations(pool: Pool) {
         return pageOf(records.map((row) => ({ ...workspaceView(row.workspace), role: row.role })), parsed.limit, (row) => row.id);
       });
     },
-    async getWorkspace(identity: KnowledgeIdentity, input: unknown) {
+    async getWorkspace(identity: FoucIdentity, input: unknown) {
       const parsed = parseInput(workspaceScopeSchema, input);
       return inWorkspace(pool, identity, parsed.workspaceId, false, async (context) => ({ ...workspaceView(context.workspace), role: context.role }));
     },
-    async renameWorkspace(identity: KnowledgeIdentity, input: unknown) {
+    async renameWorkspace(identity: FoucIdentity, input: unknown) {
       const parsed = parseInput(renameWorkspaceInputSchema, input);
       return inWorkspace(pool, identity, parsed.workspaceId, true, async ({ db, role }) => {
         requireManager(role);

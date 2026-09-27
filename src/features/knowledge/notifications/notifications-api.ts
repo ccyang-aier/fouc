@@ -12,6 +12,7 @@
  * inbox data.
  */
 
+import { authenticatedFetch } from '@/lib/authenticated-fetch';
 import {
   markAllNotificationsReadResultSchema,
   markNotificationReadResultSchema,
@@ -20,7 +21,7 @@ import {
   notificationUnreadCountResultSchema,
 } from '@fouc/shared/knowledge/notifications';
 import type { NotificationItem, NotificationListResult } from '@fouc/shared/knowledge/notifications';
-import { getKnowledgeApiOrigin } from '../data/endpoint';
+import { getFoucApiOrigin } from '@/lib/fouc-api-endpoint';
 import { KnowledgeDataError } from '../data/errors';
 
 export type KnowledgeNotificationsFetch = typeof fetch;
@@ -61,7 +62,7 @@ export type KnowledgeNotificationsApi = {
 };
 
 export function createKnowledgeNotificationsApi(deps: { resolveOrigin: () => Promise<string> | string; fetchImpl?: KnowledgeNotificationsFetch }): KnowledgeNotificationsApi {
-  const fetchImpl = deps.fetchImpl ?? fetch;
+  const fetchImpl = deps.fetchImpl ?? authenticatedFetch;
 
   async function call<T>(path: string, init: RequestInit, signal: AbortSignal | undefined, procedure: string, parse: (payload: unknown) => T): Promise<T> {
     let response: Response;
@@ -110,4 +111,4 @@ export function createKnowledgeNotificationsApi(deps: { resolveOrigin: () => Pro
 }
 
 /** The browser binding the React hooks call. */
-export const knowledgeNotificationsApi = createKnowledgeNotificationsApi({ resolveOrigin: () => getKnowledgeApiOrigin().then(({ origin }) => origin) });
+export const knowledgeNotificationsApi = createKnowledgeNotificationsApi({ resolveOrigin: () => getFoucApiOrigin().then(({ origin }) => origin) });

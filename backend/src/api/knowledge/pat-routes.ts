@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
-import { createKnowledgeTokenService, knowledgeAccessErrorResponse } from '../../knowledge/auth';
-import type { KnowledgeAccessDependencies } from '../../knowledge/auth';
+import { createKnowledgeTokenService, knowledgeAccessErrorResponse } from '../../knowledge/access';
+import type { KnowledgeAccessDependencies } from '../../knowledge/access';
 
 /**
  * K02: session-authenticated PAT management over the A03 token service. PATs are
@@ -8,7 +8,7 @@ import type { KnowledgeAccessDependencies } from '../../knowledge/auth';
  * another credential); the service itself re-verifies the browser session per call.
  *
  * Not wired into the API listener yet. Suggested wiring in the role that owns
- * `createKnowledgeApiRoutes`/`createKnowledgeAuthRoutes`:
+ * `createKnowledgeApiRoutes`/`createFoucAuthRoutes`:
  *
  *   app.route('/', createKnowledgePatRoutes({ auth, pool }));
  *

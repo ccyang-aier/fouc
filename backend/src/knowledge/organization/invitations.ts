@@ -5,7 +5,7 @@ import { acceptWorkspaceInvitationInputSchema, createWorkspaceInvitationInputSch
 import type { WorkspaceInvitation } from '@fouc/shared/knowledge/contracts';
 import { authUser, member, workspace, workspaceInvitation } from '../../database/knowledge/schema';
 import { withKnowledgeTenant } from '../../database/knowledge/tenant';
-import type { KnowledgeIdentity } from '../auth/identity';
+import type { FoucIdentity } from '../../identity/identity';
 import { currentIdentity, inWorkspace, pageOf, requireManager, requireRoleAuthority, workspaceView } from './context';
 import { OrganizationError, parseInput } from './errors';
 
@@ -20,7 +20,7 @@ const invitationView = (row: typeof workspaceInvitation.$inferSelect): Workspace
 
 export function invitationOperations(pool: Pool) {
   return {
-    async listInvitations(identity: KnowledgeIdentity, input: unknown) {
+    async listInvitations(identity: FoucIdentity, input: unknown) {
       const parsed = parseInput(listOrganizationInputSchema, input);
       return inWorkspace(pool, identity, parsed.workspaceId, false, async ({ db, role }) => {
         requireManager(role);
@@ -30,7 +30,7 @@ export function invitationOperations(pool: Pool) {
         return pageOf(rows.map(invitationView), parsed.limit, (row) => row.id);
       });
     },
-    async createInvitation(identity: KnowledgeIdentity, input: unknown) {
+    async createInvitation(identity: FoucIdentity, input: unknown) {
       const parsed = parseInput(createWorkspaceInvitationInputSchema, input);
       const token = randomBytes(32).toString('base64url');
       return inWorkspace(pool, identity, parsed.workspaceId, true, async ({ db, actor, role }) => {
@@ -50,7 +50,7 @@ export function invitationOperations(pool: Pool) {
         return { invitation: invitationView(created!), token };
       });
     },
-    async revokeInvitation(identity: KnowledgeIdentity, input: unknown) {
+    async revokeInvitation(identity: FoucIdentity, input: unknown) {
       const parsed = parseInput(revokeWorkspaceInvitationInputSchema, input);
       return inWorkspace(pool, identity, parsed.workspaceId, true, async ({ db, role }) => {
         requireManager(role);
@@ -63,7 +63,7 @@ export function invitationOperations(pool: Pool) {
         return { revoked: true as const };
       });
     },
-    async acceptInvitation(identity: KnowledgeIdentity, input: unknown) {
+    async acceptInvitation(identity: FoucIdentity, input: unknown) {
       const parsed = parseInput(acceptWorkspaceInvitationInputSchema, input);
       return withKnowledgeTenant(pool, parsed.workspaceId, async (db) => {
         await currentIdentity(db, identity, true);

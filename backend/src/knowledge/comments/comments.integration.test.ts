@@ -5,8 +5,8 @@ import { principal } from '@fouc/shared/knowledge/contracts';
 import type { PermissionLevel } from '@fouc/shared/knowledge/contracts';
 import { comment, commentThread, notification } from '../../database/knowledge/schema';
 import { withKnowledgeTenant } from '../../database/knowledge/tenant';
-import { responseCookie, testPassword } from '../auth/auth-test-server';
-import type { KnowledgeIdentity } from '../auth/identity';
+import { responseCookie, testPassword } from '../../identity/auth-test-server';
+import type { FoucIdentity } from '../../identity/identity';
 import { replaceAuthorizedPageAcl } from '../permissions/mutations';
 import { createPermissionsFixture, type PermissionsFixture } from '../permissions/permissions-test-fixture';
 import type { CommentErrorCode } from './errors';
@@ -48,14 +48,14 @@ describe('comment thread persistence and permissions', () => {
   }
 
   /** An extra real member used to prove notification recipient filtering. */
-  async function invite(name: string): Promise<KnowledgeIdentity> {
+  async function invite(name: string): Promise<FoucIdentity> {
     const email = `${name}@comments.test`;
     const signup = await fixture.server.request('/sign-up/email', { email, name, password: testPassword });
     expect(signup.status).toBe(200);
     expect((await fixture.server.request(fixture.server.verificationPath(email))).status).toBe(302);
     const signed = await fixture.server.request('/sign-in/email', { email, password: testPassword });
     expect(signed.status).toBe(200);
-    const identity = await (await fetch(`${fixture.server.origin}/test/identity`, { headers: { cookie: responseCookie(signed) } })).json() as KnowledgeIdentity;
+    const identity = await (await fetch(`${fixture.server.origin}/test/identity`, { headers: { cookie: responseCookie(signed) } })).json() as FoucIdentity;
     const invitation = await fixture.organization.createInvitation(fixture.owner.identity, { workspaceId: fixture.alpha.id, email, role: 'member' });
     await fixture.organization.acceptInvitation(identity, { workspaceId: fixture.alpha.id, invitationId: invitation.invitation.id, token: invitation.token });
     return identity;

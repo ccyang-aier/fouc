@@ -368,12 +368,12 @@
         "R01"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/auth/",
+      "deliverables": "backend/src/identity/",
       "acceptance": "注册/登录/登出/邮箱验证、会话撤销真实往返；cookie/CORS 配置对 Web 与桌面有效",
       "evidence": [
         {
           "summary": "真实 PG+HTTP 邮箱验证与会话撤销、Cookie/CORS/CSRF；15 测试/167 断言",
-          "command": "bun test backend/src/knowledge/auth; pnpm backend:typecheck",
+          "command": "bun test backend/src/identity; pnpm backend:typecheck",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-authentication.md"
         }
@@ -390,12 +390,12 @@
         "A01"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/auth/",
+      "deliverables": "backend/src/identity/",
       "acceptance": "真实或标准测试 IdP 完整回调/PKCE/state/nonce；账号身份映射一致；错误可恢复",
       "evidence": [
         {
           "summary": "79 项真实 HTTP/PG 测试全通过（A02 新增 41 项）；Node 24 冒烟真实 OIDC/OAuth 回调、单次 state、身份映射与错误恢复通过",
-          "command": "bun test backend/src/knowledge/auth; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/auth; node --env-file=.env.knowledge.local backend/src/knowledge/auth/.runtime/oauth-node-smoke.mjs",
+          "command": "bun test backend/src/identity; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/src/identity; node --env-file=.env.knowledge.local backend/src/identity/.runtime/oauth-node-smoke.mjs",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-authentication.md"
         }
@@ -413,12 +413,12 @@
         "A01"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/auth/tokens.ts",
+      "deliverables": "backend/src/knowledge/access/tokens.ts",
       "acceptance": "PAT 哈希存储、范围/到期/撤销生效；session/PAT 归一到同一发起者上下文，禁止客户端伪造身份",
       "evidence": [
         {
           "summary": "23 项 PAT 专项、38 项真实认证回归通过，活态身份与范围隔离",
-          "command": "bun test backend/src/knowledge/auth; pnpm backend:typecheck",
+          "command": "bun test backend/src/identity; pnpm backend:typecheck",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-authentication.md"
         }
@@ -442,7 +442,7 @@
         {
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-organization.md",
           "summary": "真实 HTTP/PG/RLS 116 测试、2747 断言；并发最后 owner、一次性邀请及锁等待期间自然过期均验证",
-          "command": "bun test backend/src/database/knowledge backend/src/knowledge/auth backend/src/knowledge/organization shared/src/knowledge/contracts/organization.test.ts; pnpm backend:typecheck; pnpm shared:typecheck; bun backend/scripts/knowledge-schema.ts --check",
+          "command": "bun test backend/src/database/knowledge backend/src/identity backend/src/knowledge/organization shared/src/knowledge/contracts/organization.test.ts; pnpm backend:typecheck; pnpm shared:typecheck; bun backend/scripts/knowledge-schema.ts --check",
           "verifiedAt": "2026-09-26"
         }
       ]
@@ -1906,7 +1906,7 @@
       "evidence": [
         {
           "summary": "99 项测试/1730 断言(auth 87 + mcp 12):RFC 7636 向量、redirect 规则、注册 schema、HMAC 轮转;端到端 401→PRM→AS→注册→成员同意→PKCE 换 PAT→listTools→code 单次性→RFC 7009 撤销即 401;实活 8711 验证 PRM/AS 元数据与 9727 挑战;常量时间比较、逐请求查库吊销",
-          "command": "bun test backend/src/knowledge/auth backend/src/knowledge/mcp; cd backend && bunx tsc --noEmit",
+          "command": "bun test backend/src/identity backend/src/knowledge/mcp; cd backend && bunx tsc --noEmit",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-k02-mcp-oauth-pat.md"
         }
@@ -2256,7 +2256,7 @@
         {
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-api.md",
           "summary": "Hono/tRPC 真实 Session/PAT/PG网络认证、RLS、取消回滚、同前缀路由隔离；A00/PAT组合46项487断言，类型入口浏览器bundle为空",
-          "command": "bun test backend/src/api/knowledge backend/src/knowledge/auth/access-policy.test.ts backend/src/knowledge/auth/tokens.integration.test.ts; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/src/api/knowledge; node --test scripts/verify-knowledge-boundaries.test.mjs",
+          "command": "bun test backend/src/api/knowledge backend/src/knowledge/access/access-policy.test.ts backend/src/knowledge/access/tokens.integration.test.ts; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/src/api/knowledge; node --test scripts/verify-knowledge-boundaries.test.mjs",
           "verifiedAt": "2026-09-26"
         }
       ]
@@ -2274,12 +2274,12 @@
         "U01"
       ],
       "status": "accepted",
-      "deliverables": "src/features/knowledge/auth/",
+      "deliverables": "src/features/identity/",
       "acceptance": "邮箱登录/注册/验证、OAuth/SSO、登出、会话过期恢复闭环；加载/错误/键盘焦点清晰；Web 与桌面共用",
       "evidence": [
         {
           "summary": "95 项测试/383 断言、lint 零告警、三路由浏览器 200;A01 受理文案/重发冷却/验证四态、22 个 OAuth 错误码中文映射、登出、returnTo 会话恢复、端点复用 U01",
-          "command": "bun test src/features/knowledge/auth; pnpm exec eslint --no-ignore src/features/knowledge/auth src/app/auth; node scripts/verify-knowledge-boundaries.mjs",
+          "command": "bun test src/features/identity; pnpm exec eslint --no-ignore src/features/identity src/app/auth; node scripts/verify-knowledge-boundaries.mjs",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-auth-ui.md"
         }

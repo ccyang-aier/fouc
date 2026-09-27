@@ -5,7 +5,7 @@ import { createTeamspaceInputSchema, listTeamspacesInputSchema, removeTeamspaceI
 import type { Teamspace, TeamspaceScope } from '@fouc/shared/knowledge/contracts';
 import { page, teamspace } from '../../database/knowledge/schema';
 import type { KnowledgeTenantTransaction } from '../../database/knowledge/tenant';
-import type { KnowledgeIdentity } from '../auth/identity';
+import type { FoucIdentity } from '../../identity/identity';
 import { currentIdentity, inWorkspace, pageOf, requireDirectory, requireManager } from './context';
 import { OrganizationError, parseInput } from './errors';
 
@@ -41,7 +41,7 @@ export interface TeamspacePermissionInvalidator {
 }
 
 export function teamspaceOperations(pool: Pool, permissions: TeamspacePermissionInvalidator) {
-  function mutate<T>(identity: KnowledgeIdentity, scope: TeamspaceScope, operation: (db: KnowledgeTenantTransaction, record: typeof teamspace.$inferSelect) => Promise<T>) {
+  function mutate<T>(identity: FoucIdentity, scope: TeamspaceScope, operation: (db: KnowledgeTenantTransaction, record: typeof teamspace.$inferSelect) => Promise<T>) {
     return inWorkspace(pool, identity, scope.workspaceId, true, async ({ db, role }) => {
       requireManager(role);
       // FOR UPDATE conflicts with a new page's FK key-share lock. The empty
@@ -53,7 +53,7 @@ export function teamspaceOperations(pool: Pool, permissions: TeamspacePermission
   }
 
   return {
-    async createTeamspace(identity: KnowledgeIdentity, input: unknown) {
+    async createTeamspace(identity: FoucIdentity, input: unknown) {
       const parsed = parseInput(createTeamspaceInputSchema, input);
       return inWorkspace(pool, identity, parsed.workspaceId, true, async ({ db, role }) => {
         requireManager(role);
@@ -61,7 +61,7 @@ export function teamspaceOperations(pool: Pool, permissions: TeamspacePermission
         return teamspaceView(created!);
       });
     },
-    async listTeamspaces(identity: KnowledgeIdentity, input: unknown) {
+    async listTeamspaces(identity: FoucIdentity, input: unknown) {
       const parsed = parseInput(listTeamspacesInputSchema, input);
       return inWorkspace(pool, identity, parsed.workspaceId, false, async ({ db, role }) => {
         requireDirectory(role);
@@ -70,14 +70,14 @@ export function teamspaceOperations(pool: Pool, permissions: TeamspacePermission
         return pageOf(rows.map(teamspaceView), parsed.limit, (row) => row.id);
       });
     },
-    async getTeamspace(identity: KnowledgeIdentity, input: unknown) {
+    async getTeamspace(identity: FoucIdentity, input: unknown) {
       const scope = parseInput(teamspaceScopeSchema, input);
       return inWorkspace(pool, identity, scope.workspaceId, false, async ({ db, role }) => {
         requireDirectory(role);
         return teamspaceView(await loadTeamspace(db, scope));
       });
     },
-    async updateTeamspace(identity: KnowledgeIdentity, input: unknown) {
+    async updateTeamspace(identity: FoucIdentity, input: unknown) {
       const parsed = parseInput(updateTeamspaceInputSchema, input);
       return mutate(identity, parsed, async (db, existing) => {
         const [updated] = await db.update(teamspace).set({ name: parsed.name, defaultAccess: parsed.defaultAccess, updatedAt: sql`clock_timestamp()` })
@@ -88,7 +88,7 @@ export function teamspaceOperations(pool: Pool, permissions: TeamspacePermission
         return teamspaceView(updated!);
       });
     },
-    async removeTeamspace(identity: KnowledgeIdentity, input: unknown) {
+    async removeTeamspace(identity: FoucIdentity, input: unknown) {
       const scope = parseInput(removeTeamspaceInputSchema, input);
       return mutate(identity, scope, async (db) => {
         if (await containsPages(db, scope)) throw new OrganizationError('TEAMSPACE_NOT_EMPTY', 'Move or permanently remove all pages before deleting this teamspace.', 409);

@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { knowledgeSchema } from '@fouc/shared/knowledge/schema';
 import { collectSuggestions } from '@fouc/shared/knowledge/schema/suggestions';
 import { principal } from '@fouc/shared/knowledge/contracts';
-import type { KnowledgeRequestContext } from '../auth';
+import type { KnowledgeRequestContext } from '../access';
 import { docState } from '../../database/knowledge/schema';
 import { withKnowledgeTenant } from '../../database/knowledge/tenant';
 import { replaceAuthorizedPageAcl } from '../permissions/mutations';

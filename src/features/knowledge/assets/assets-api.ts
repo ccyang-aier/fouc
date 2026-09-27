@@ -17,7 +17,7 @@
 import { assetConfirmResultSchema, uploadIntentSchema } from '@fouc/shared/knowledge/contracts';
 import type { AssetConfirmResult, AssetUploadPrepareResult } from '@fouc/shared/knowledge/contracts';
 import { assetUploadPrepareResultSchema } from '@fouc/shared/knowledge/contracts';
-import { getKnowledgeApiOrigin } from '../data/endpoint';
+import { getFoucApiOrigin } from '@/lib/fouc-api-endpoint';
 import { KnowledgeDataError, normalizeKnowledgeError } from '../data/errors';
 import { createKnowledgeUntypedClientCache, type KnowledgeFetch, type KnowledgeUntypedTrpcClient } from '../data/trpc-client';
 
@@ -77,5 +77,5 @@ export function createKnowledgeAssetsApi(deps: { resolveOrigin: () => Promise<st
 
 /** 浏览器装配:U01 端点解析器 + 全局 fetch;测试注入自己的传输。 */
 export const knowledgeAssetsApi = createKnowledgeAssetsApi({
-  resolveOrigin: async () => (await getKnowledgeApiOrigin()).origin,
+  resolveOrigin: async () => (await getFoucApiOrigin()).origin,
 });

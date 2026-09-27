@@ -27,7 +27,7 @@ describe('deriveKnowledgeEntryPhase', () => {
     const busyWorkspaces = slice({ status: 'pending' });
     expect(deriveKnowledgeEntryPhase({ session: { status: 'checking' }, workspaces: busyWorkspaces, access: null, teamspaces: null })).toBe('session-checking');
     expect(deriveKnowledgeEntryPhase({ session: { status: 'error' }, workspaces: busyWorkspaces, access: null, teamspaces: null })).toBe('session-error');
-    expect(deriveKnowledgeEntryPhase({ session: { status: 'anonymous' }, workspaces: busyWorkspaces, access: null, teamspaces: null })).toBe('auth-redirect');
+    expect(deriveKnowledgeEntryPhase({ session: { status: 'anonymous' }, workspaces: busyWorkspaces, access: null, teamspaces: null })).toBe('auth-required');
   });
 
   test('authenticated without workspace data yet still counts as loading the list', () => {
@@ -41,7 +41,7 @@ describe('deriveKnowledgeEntryPhase', () => {
       workspaces: slice({ status: 'error', errorCode: 'UNAUTHENTICATED' }),
       access: null,
       teamspaces: null,
-    })).toBe('auth-redirect');
+    })).toBe('auth-required');
     expect(deriveKnowledgeEntryPhase({
       session: authenticated,
       workspaces: slice({ status: 'error', errorCode: 'NETWORK' }),
@@ -65,7 +65,7 @@ describe('deriveKnowledgeEntryPhase', () => {
     expect(deriveKnowledgeEntryPhase({ session: authenticated, workspaces, access: slice({ status: 'pending' }), teamspaces: null })).toBe('workspace-loading');
     expect(deriveKnowledgeEntryPhase({ session: authenticated, workspaces, access: slice({ status: 'error', errorCode: 'FORBIDDEN' }), teamspaces: null })).toBe('workspace-forbidden');
     expect(deriveKnowledgeEntryPhase({ session: authenticated, workspaces, access: slice({ status: 'error', errorCode: 'UNAVAILABLE' }), teamspaces: null })).toBe('workspace-error');
-    expect(deriveKnowledgeEntryPhase({ session: authenticated, workspaces, access: slice({ status: 'error', errorCode: 'UNAUTHENTICATED' }), teamspaces: null })).toBe('auth-redirect');
+    expect(deriveKnowledgeEntryPhase({ session: authenticated, workspaces, access: slice({ status: 'error', errorCode: 'UNAUTHENTICATED' }), teamspaces: null })).toBe('auth-required');
   });
 
   test('teamspace directory gates the tree: loading, guest-forbidden, error and ready', () => {
@@ -75,7 +75,7 @@ describe('deriveKnowledgeEntryPhase', () => {
     expect(deriveKnowledgeEntryPhase({ session: authenticated, workspaces, access, teamspaces: slice({ status: 'pending' }) })).toBe('tree-loading');
     expect(deriveKnowledgeEntryPhase({ session: authenticated, workspaces, access, teamspaces: slice({ status: 'error', errorCode: 'FORBIDDEN' }) })).toBe('tree-forbidden');
     expect(deriveKnowledgeEntryPhase({ session: authenticated, workspaces, access, teamspaces: slice({ status: 'error', errorCode: 'ORGANIZATION_UNAVAILABLE' }) })).toBe('tree-error');
-    expect(deriveKnowledgeEntryPhase({ session: authenticated, workspaces, access, teamspaces: slice({ status: 'error', errorCode: 'UNAUTHENTICATED' }) })).toBe('auth-redirect');
+    expect(deriveKnowledgeEntryPhase({ session: authenticated, workspaces, access, teamspaces: slice({ status: 'error', errorCode: 'UNAUTHENTICATED' }) })).toBe('auth-required');
     expect(deriveKnowledgeEntryPhase({ session: authenticated, workspaces, access, teamspaces: slice({ status: 'success', count: 0 }) })).toBe('ready');
     expect(deriveKnowledgeEntryPhase({ session: authenticated, workspaces, access, teamspaces: slice({ status: 'success', count: 3 }) })).toBe('ready');
   });
@@ -87,7 +87,7 @@ describe('deriveKnowledgeEntryPhase', () => {
 
 describe('entryPhaseShowsStage', () => {
   test('gate screens render alone; access-confirmed phases render the three-column stage', () => {
-    for (const phase of ['session-checking', 'session-error', 'auth-redirect', 'workspaces-loading', 'workspaces-error', 'workspaces-empty'] as const) {
+    for (const phase of ['session-checking', 'session-error', 'auth-required', 'workspaces-loading', 'workspaces-error', 'workspaces-empty'] as const) {
       expect(entryPhaseShowsStage(phase)).toBe(false);
     }
     for (const phase of ['workspace-loading', 'workspace-error', 'workspace-forbidden', 'tree-loading', 'tree-forbidden', 'tree-error', 'ready'] as const) {

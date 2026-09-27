@@ -7,8 +7,8 @@ import { principal } from '@fouc/shared/knowledge/contracts';
 import type { OutboxEvent, PageScope, PermissionLevel, Principal, Teamspace } from '@fouc/shared/knowledge/contracts';
 import { blockIndex, page, pageAcl, pageEffectiveAcl } from '../../database/knowledge/schema';
 import { withKnowledgeTenant } from '../../database/knowledge/tenant';
-import { createAuthTestServer, responseCookie, testPassword } from '../auth/auth-test-server';
-import type { KnowledgeIdentity } from '../auth/identity';
+import { createAuthTestServer, responseCookie, testPassword } from '../../identity/auth-test-server';
+import type { FoucIdentity } from '../../identity/identity';
 import { createOrganizationService } from '../organization/service';
 import type { OrganizationService } from '../organization/service';
 import { teamspacePermissionInvalidator } from '../permissions/fence';
@@ -21,7 +21,7 @@ import { shareLinkLocator, verifyShareLink } from './links';
 import { createShareLinkService } from './service';
 import { sharingErrorResponse } from './errors';
 
-interface TestActor { cookie: string; identity: KnowledgeIdentity }
+interface TestActor { cookie: string; identity: FoucIdentity }
 type AclEvent = Extract<OutboxEvent, { topic: 'acl.changed' }>;
 type TreePage = PageScope & { parentId: string | null; path: string };
 type CreateReply = { token: string; share: { id: string; pageId: string; level: string; revokedAt: string | null }; fence: { rootPageId: string; revision: number; pagesInvalidated: number } };
@@ -56,7 +56,7 @@ async function createSharingFixture() {
     const cookie = responseCookie(signed);
     const response = await fetch(`${server.origin}/test/identity`, { headers: { cookie } });
     if (response.status !== 200) throw new Error('Sharing fixture identity failed');
-    return { cookie, identity: await response.json() as KnowledgeIdentity };
+    return { cookie, identity: await response.json() as FoucIdentity };
   }
   const owner = await actor('owner'), reader = await actor('reader'), foreign = await actor('foreign');
   const alpha = await organization.createWorkspace(owner.identity, { name: 'Alpha', kind: 'team' });

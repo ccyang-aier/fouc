@@ -4,8 +4,9 @@ import { Pool } from 'pg';
 import { Hono } from 'hono';
 import { readKnowledgeConfig } from './config';
 import type { KnowledgeConfig } from './config';
-import { createKnowledgeAuth, createKnowledgeAuthRoutes, createKnowledgeRequestAuthenticator, readKnowledgeAuthConfig, createSmtpAuthEmailTransport } from '../auth';
-import { createVerificationEmailTransport } from '../auth/email';
+import { createFoucAuth, createFoucAuthRoutes, readFoucAuthConfig, createSmtpAuthEmailTransport } from '../../identity';
+import { createKnowledgeRequestAuthenticator } from '../access';
+import { createVerificationEmailTransport } from '../../identity/email';
 import { createOrganizationRoutes } from '../organization/http';
 import { createOrganizationService } from '../organization/service';
 import { teamspacePermissionInvalidator } from '../permissions/fence';
@@ -37,9 +38,9 @@ export interface KnowledgeRuntime {
 export async function startKnowledgeRuntime(config: KnowledgeConfig, environment: NodeJS.ProcessEnv = process.env): Promise<KnowledgeRuntime> {
   const pool = new Pool({ connectionString: config.databaseUrl, max: 8 });
   pool.on('error', () => {});
-  const auth = createKnowledgeAuth({
+  const auth = createFoucAuth({
     pool,
-    config: readKnowledgeAuthConfig(environment),
+    config: readFoucAuthConfig(environment),
     // Production reads SMTP from the environment; a development process
     // without SMTP prints each verification link to its own log.
     email: environment.SMTP_HOST
@@ -51,7 +52,7 @@ export async function startKnowledgeRuntime(config: KnowledgeConfig, environment
   const events = createWorkspaceEventRuntime({ authenticator });
   const checkpoints = config.roles.includes('collab') ? pageCheckpointExtension({ pool }) : undefined;
   const app = new Hono();
-  app.route('/', createKnowledgeAuthRoutes(auth, (context) => context.env.clientAddress as string));
+  app.route('/', createFoucAuthRoutes(auth, (context) => context.env.clientAddress as string));
   app.route('/', createOrganizationRoutes(auth, createOrganizationService(pool, { permissions: teamspacePermissionInvalidator })));
   app.route('/', createKnowledgeApiRoutes({ auth, pool }));
   app.route('/', createKnowledgePatRoutes({ auth, pool }));

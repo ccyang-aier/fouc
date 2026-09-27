@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events';
 import { describe, expect, test } from 'bun:test';
 import type { Pool } from 'pg';
-import { KnowledgeTransactionAbortedError, withKnowledgeIdentity, withKnowledgeTenant } from './tenant';
+import { KnowledgeTransactionAbortedError, withFoucIdentity, withKnowledgeTenant } from './tenant';
 
 const workspaceId = '11223344-5566-4788-99aa-bbccddeeff00';
 
@@ -42,10 +42,10 @@ describe('request tenant transaction lifecycle', () => {
 
   test('identity discovery is read-only and clears the tenant setting', async () => {
     const testConnection = connection(async (command) => ({ command: command === 'BEGIN READ ONLY' ? 'BEGIN' : command }));
-    await withKnowledgeIdentity(testConnection.pool, workspaceId, async () => undefined);
+    await withFoucIdentity(testConnection.pool, workspaceId, async () => undefined);
     expect(testConnection.commands[0]).toBe('BEGIN READ ONLY');
     expect(testConnection.parameters[1]).toEqual(['', workspaceId]);
-    await expect(withKnowledgeIdentity(testConnection.pool, 'bad-session', async () => undefined)).rejects.toThrow('Invalid session ID');
+    await expect(withFoucIdentity(testConnection.pool, 'bad-session', async () => undefined)).rejects.toThrow('Invalid session ID');
     expect(testConnection.checkouts()).toBe(1);
   });
 

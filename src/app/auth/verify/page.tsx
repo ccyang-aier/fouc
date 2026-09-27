@@ -1,7 +1,7 @@
 import { Suspense } from "react"
 import type { Metadata } from "next"
 
-import { VerifyEmailScene } from "@/features/knowledge/auth"
+import { VerifyEmailScene } from "@/features/identity"
 
 export const metadata: Metadata = {
   title: "邮箱验证 · Fouc",

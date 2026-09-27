@@ -1,7 +1,7 @@
 import { Suspense } from "react"
 import type { Metadata } from "next"
 
-import { AuthEntryScene } from "@/features/knowledge/auth"
+import { AuthEntryScene } from "@/features/identity"
 
 export const metadata: Metadata = {
   title: "登录 · Fouc",

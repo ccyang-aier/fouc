@@ -1,6 +1,6 @@
 import type { Pool } from 'pg';
 import type { ModelBinding } from '@fouc/shared/knowledge/contracts';
-import type { KnowledgeRequestContext } from '../../auth';
+import type { KnowledgeRequestContext } from '../../access';
 import type { EmbeddingBinding } from '../../search/embeddings';
 import type { SearchGateway } from '../../search/service';
 

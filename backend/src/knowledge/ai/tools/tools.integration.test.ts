@@ -16,7 +16,7 @@ import { hybridSearchResultSchema } from '@fouc/shared/knowledge/search';
 import type { HybridSearchResult } from '@fouc/shared/knowledge/search';
 import { blockIndex, docState } from '../../../database/knowledge/schema';
 import { withKnowledgeTenant } from '../../../database/knowledge/tenant';
-import type { KnowledgeRequestContext } from '../../auth';
+import type { KnowledgeRequestContext } from '../../access';
 import { createModelGateway } from '../gateway';
 import { createAuthorizedDatabase, createAuthorizedRow } from '../../databases/service';
 import { replaceAuthorizedPageAcl } from '../../permissions/mutations';

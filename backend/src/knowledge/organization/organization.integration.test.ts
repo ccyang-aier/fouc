@@ -6,16 +6,16 @@ import { eq } from 'drizzle-orm';
 import type { MemberRole, WorkspaceInvitation } from '@fouc/shared/knowledge/contracts';
 import { workspaceInvitation } from '../../database/knowledge/schema';
 import { withKnowledgeTenant } from '../../database/knowledge/tenant';
-import { createAuthTestServer, responseCookie, testPassword } from '../auth/auth-test-server';
-import type { AuthTestServer } from '../auth/auth-test-server';
-import type { KnowledgeIdentity } from '../auth/identity';
+import { createAuthTestServer, responseCookie, testPassword } from '../../identity/auth-test-server';
+import type { AuthTestServer } from '../../identity/auth-test-server';
+import type { FoucIdentity } from '../../identity/identity';
 import { createOrganizationRoutes } from './http';
 import { createOrganizationService } from './service';
 import type { OrganizationService } from './service';
 import { OrganizationError, postgresCode } from './errors';
 import { teamspacePermissionInvalidator } from '../permissions/fence';
 
-interface Actor { email: string; cookie: string; identity: KnowledgeIdentity }
+interface Actor { email: string; cookie: string; identity: FoucIdentity }
 interface Space { id: string; name: string; kind: 'personal' | 'team'; role: MemberRole }
 interface Invite { invitation: WorkspaceInvitation; token: string }
 let server: AuthTestServer;
@@ -50,7 +50,7 @@ async function register(name: string): Promise<Actor> {
   const response = await server.request('/sign-in/email', { email, password: testPassword });
   expect(response.status).toBe(200);
   const cookie = responseCookie(response);
-  const identity = await (await fetch(`${server.origin}/test/identity`, { headers: { cookie } })).json() as KnowledgeIdentity;
+  const identity = await (await fetch(`${server.origin}/test/identity`, { headers: { cookie } })).json() as FoucIdentity;
   return { email, cookie, identity };
 }
 

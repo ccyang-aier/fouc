@@ -1,0 +1,22 @@
+.libraryView { max-width: 900px; margin: 0 auto; padding: 40px 48px; }
+.viewHeader { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 32px; }
+.eyebrow { font-size: 11px; letter-spacing: .08em; color: #89959d; }
+.viewHeader h1 { margin-top: 8px; font-size: 27px; font-weight: 600; letter-spacing: -.035em; }
+.primaryAction { display: inline-flex; align-items: center; gap: 7px; padding: 8px 12px; border: 1px solid #dce2e5; border-radius: 7px; font-size: 12px; color: #40525d; }
+.primaryAction:hover { background: #f5f7f8; }
+.documentList { border: 1px solid #e8ecee; border-radius: 9px; overflow: hidden; }
+.knowledgeBaseRow { display: flex; width: 100%; min-height: 46px; align-items: center; gap: 11px; padding: 0 16px; border-bottom: 1px solid #eef0f1; color: #40525d; text-align: left; font-size: 13px; }
+.knowledgeBaseRow:last-child { border-bottom: 0; }
+.knowledgeBaseRow:hover, .knowledgeBaseRow:focus-visible { background: #f8f9fa; outline: none; }
+.knowledgeBaseRow svg { flex: none; color: #81909a; }
+.knowledgeBaseRow span { min-width: 0; flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.knowledgeBaseRow small { flex: none; }
+.documentCard { display: flex; align-items: center; border-bottom: 1px solid #eef0f1; }
+.documentCard:last-child { border-bottom: 0; }
+.documentCard > button:first-child { display: flex; min-width: 0; flex: 1; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 16px; text-align: left; font-size: 13px; }
+.documentCard > button:first-child:hover { background: #f8f9fa; }
+.documentCard small { color: #97a0a6; font-size: 11px; }
+.documentCard > button:not(:first-child) { display: inline-flex; width: 34px; height: 34px; align-items: center; justify-content: center; color: #849199; }
+.documentCard > button:not(:first-child):hover { color: #384852; }
+.empty { padding: 60px 16px; text-align: center; color: #93a0a6; font-size: 13px; }
+.error { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 9px 15px; background: #fff4f2; color: #a5483b; font-size: 12px; }

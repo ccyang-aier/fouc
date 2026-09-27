@@ -1,6 +1,28 @@
-.sidebar { width: 252px; flex: none; overflow: hidden; border-right: 1px solid var(--line); background: var(--panel); transition: width 320ms cubic-bezier(.22,1,.36,1); }
-.sidebar > :not([role="presentation"]) { width: 251px; min-width: 251px; transition: opacity 180ms ease-out, transform 260ms cubic-bezier(.22,1,.36,1); }
+.layout { display: flex; width: 100%; height: 100%; min-width: 0; background: #fff; --knowledge-sidebar-state-bg: #f4f6f8; }
+.sidebar { width: 252px; flex: none; overflow: hidden; border-right: 1px solid #e7e9ed; background: #fff; color: #67747d; transition: width 320ms cubic-bezier(.22, 1, .36, 1); --sidebar-text: #68747c; --sidebar-heading: #59666f; --sidebar-row-hover: var(--knowledge-sidebar-state-bg); --sidebar-row-selected: var(--knowledge-sidebar-state-bg); --sidebar-row-focus: #7994aa; --sidebar-row-pressed: #edf0f2; }
+.sidebar > * { width: 251px; min-width: 251px; transition: opacity 180ms ease-out, transform 260ms cubic-bezier(.22, 1, .36, 1); }
 .sidebar[data-collapsed="true"] { width: 0; border-right-width: 0; transition-duration: 260ms; }
 .sidebar[data-collapsed="true"] > * { opacity: 0; transform: translateX(-12px); }
 .sidebar[data-collapsed="false"] > * { transition-delay: 55ms, 0ms; }
-@media (prefers-reduced-motion: reduce) { .sidebar, .sidebar > :not([role="presentation"]) { transition: none; } }
+.knowledgeHeader { display: flex; height: 54px; flex: none; align-items: center; gap: 4px; padding: 6px 8px; }
+.knowledgeButton { display: flex; height: 40px; min-width: 0; flex: 1; align-items: center; gap: 9px; padding: 0 7px; border-radius: 7px; background: #fff; color: #101923; text-align: left; outline: none; transition: background .15s ease; }
+.knowledgeButton:hover, .knowledgeButton[data-state="open"] { background: var(--knowledge-sidebar-state-bg); }
+.knowledgeButton:focus-visible, .knowledgeCollapse:focus-visible, .expandSidebar:focus-visible { outline: 2px solid #7994aa; outline-offset: 2px; }
+.knowledgeAvatar { width: 28px; height: 28px; flex: none; border-radius: 6px; }
+.knowledgeName { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 14px; font-weight: 600; line-height: 1; }
+.knowledgeCollapse { display: grid; width: 28px; height: 32px; flex: none; place-items: center; border-radius: 6px; color: #5f718a; outline: none; }
+.knowledgeCollapse:hover, .knowledgeCollapse:active, .expandSidebar:hover, .expandSidebar:active { background: var(--knowledge-sidebar-state-bg); }
+.knowledgeCollapse svg, .expandSidebar svg { width: 18px; height: 18px; }
+.knowledgeMenu { width: 212px; padding: 5px; border: 1px solid #dfe5ee; border-radius: 10px; background: #fff; box-shadow: 0 10px 28px #17243d24; --knowledge-sidebar-state-bg: #f4f6f8; }
+.knowledgeMenuBase { display: flex; min-height: 34px; gap: 9px; padding: 4px 9px; border-radius: 6px; color: #344156; font-size: 13px; cursor: pointer; }
+.knowledgeMenuBase[data-active="true"], .knowledgeMenuBase[data-highlighted] { background: var(--knowledge-sidebar-state-bg); }
+.knowledgeMenuAvatar { width: 22px; height: 22px; flex: none; border-radius: 5px; }
+.knowledgeMenuBaseName { min-width: 0; flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.knowledgeMenuCheck { width: 14px; height: 14px; flex: none; color: #6550b8; }
+.knowledgeMenuItem { height: 34px; gap: 11px; padding: 0 10px; color: #344156; font-size: 13px; cursor: pointer; }
+.knowledgeMenuItem[data-highlighted] { background: var(--knowledge-sidebar-state-bg); }
+.knowledgeMenuItem svg { width: 16px; height: 16px; flex: none; color: #3e4a5b; }
+.knowledgeMenuSeparator { margin: 4px 0; background: #dce4ef; }
+.expandSidebar { position: absolute; top: 8px; left: 8px; z-index: 1; display: grid; width: 30px; height: 30px; place-items: center; border-radius: 6px; color: #5f718a; outline: none; animation: expandSidebarControlIn 180ms 90ms both cubic-bezier(.22, 1, .36, 1); }
+@keyframes expandSidebarControlIn { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: translateX(0); } }
+@media (prefers-reduced-motion: reduce) { .sidebar, .sidebar > * { transition: none; } .expandSidebar { animation: none; } }

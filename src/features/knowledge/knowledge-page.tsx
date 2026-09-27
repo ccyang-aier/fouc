@@ -39,14 +39,14 @@ import { useKnowledgeNotificationsBridge } from './notifications/notifications-q
 import { subscribeOpenPageTarget } from './editor/open-target';
 import type { TreeStageTeamspaceState } from './navigation/tree-stage';
 import { KnowledgeTreeStage } from './navigation/tree-stage';
-import { AssistantRail, AssistantRailToggle } from './assistant-rail';
 import { CreateTeamspaceDialog } from './navigation/create-teamspace-dialog';
-import { PageTreeSidebar, SidebarFooter } from './navigation/page-tree-sidebar';
+import { PageTreeSidebar } from './navigation/page-tree-sidebar';
 import { organizationErrorTextOf } from './organization/errors';
 import { organizationQueryKeys } from './organization/keys';
 import { ToastRegion, useOrganizationToast } from './organization/ui';
-import { CreateWorkspaceDialog } from './organization/workspace-bar';
-import { WorkspaceCanvas } from './workspace-canvas';
+import { CreateKnowledgeBaseDialog } from './organization/create-knowledge-base-dialog';
+import { LibraryCanvas } from './navigation/library-canvas';
+import type { LibraryView } from './navigation/tree-stage';
 import { KnowledgePageEditor } from './editor';
 
 const ACTIVE_WORKSPACE_STORAGE_KEY = 'fouc.knowledge.activeWorkspaceId';
@@ -183,6 +183,7 @@ function KnowledgeWorkbench({ onOpenSettings }: { onOpenSettings: () => void }) 
   // so a stale id from another workspace simply matches no row. A page click
   // also selects its teamspace (the stage resolves it), keeping the canvas in
   // sync while the tree layer owns everything page-shaped.
+  const [libraryView, setLibraryView] = useState<LibraryView>('all-documents');
   const [selectedTeamspaceId, setSelectedTeamspaceId] = useState<string | null>(null);
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
 
@@ -203,7 +204,6 @@ function KnowledgeWorkbench({ onOpenSettings }: { onOpenSettings: () => void }) 
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
   const [createTeamspaceOpen, setCreateTeamspaceOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [railOpen, setRailOpen] = useState(false);
   const { toast, notify } = useOrganizationToast();
 
   const retryTeamspaces = () => void teamspacesQuery.refetch();
@@ -223,13 +223,15 @@ function KnowledgeWorkbench({ onOpenSettings }: { onOpenSettings: () => void }) 
     <KnowledgeTreeStage
       key={`${activeId}:${session.status === 'authenticated' ? session.user.id : ''}`}
       userId={session.status === 'authenticated' ? session.user.id : ''}
+      view={libraryView}
+      onNavigate={(view) => { setLibraryView(view); setSelectedPageId(null); }}
       workspaceId={activeId}
       teamspaces={teamspaces}
       teamspaceState={treeTeamspaceState}
       access={accessQuery.data}
       selectedSectionId={selectedTeamspaceId}
       selectedPageId={selectedPageId}
-      onSelectSection={(id) => { setSelectedTeamspaceId(id); setSelectedPageId(null); }}
+      onSelectSection={(id) => { setSelectedTeamspaceId(id); setSelectedPageId(null); setLibraryView('overview'); }}
       onSelectPage={setSelectedPageId}
       onRetryTeamspaces={retryTeamspaces}
       onCreateTeamspace={() => setCreateTeamspaceOpen(true)}
@@ -255,10 +257,10 @@ function KnowledgeWorkbench({ onOpenSettings }: { onOpenSettings: () => void }) 
       ) : phase === 'auth-redirect' ? (
         <CanvasRedirect />
       ) : phase === 'workspaces-loading' ? (
-        <CanvasSpinner label="正在加载工作区" />
+        <CanvasSpinner label="正在加载知识库" />
       ) : phase === 'workspaces-error' ? (
         <CanvasError
-          title="工作区列表加载失败"
+          title="知识库列表加载失败"
           detail={organizationErrorTextOf(workspacesQuery.error)}
           onRetry={() => void queryClient.invalidateQueries({ queryKey: organizationQueryKeys.workspaces })}
         />
@@ -266,13 +268,13 @@ function KnowledgeWorkbench({ onOpenSettings }: { onOpenSettings: () => void }) 
         <CanvasState
           tone="accent"
           icon={<FolderPlus aria-hidden className="size-5" weight="regular" />}
-          title="还没有可用的工作区"
-          hint="工作区是知识库组织的顶层边界；创建第一个工作区后，页面树会在这里展开。"
+          title="还没有知识库"
+          hint="创建第一个知识库，开始整理文件夹和文档。"
           announce="polite"
           actions={
             <Button onClick={() => setCreateWorkspaceOpen(true)}>
               <FolderPlus aria-hidden className="size-3.5" />
-              新建工作区
+              新建知识库
             </Button>
           }
         />
@@ -281,50 +283,32 @@ function KnowledgeWorkbench({ onOpenSettings }: { onOpenSettings: () => void }) 
           <PageTreeSidebar
             collapsed={sidebarCollapsed}
             onCollapse={() => setSidebarCollapsed(true)}
-            teamspaces={teamspaces}
-            activeTeamspaceId={selectedTeamspaceId}
-            onSelectTeamspace={(id) => { setSelectedTeamspaceId(id); setSelectedPageId(null); }}
-            onCreateTeamspace={() => setCreateTeamspaceOpen(true)}
             onOpenSettings={onOpenSettings}
             workspaces={workspaces}
             activeWorkspaceId={activeWorkspace.id}
-            onSelectWorkspace={(id) => { setActiveWorkspaceId(id); setSelectedTeamspaceId(null); setSelectedPageId(null); }}
+            onSelectWorkspace={(id) => { setActiveWorkspaceId(id); setSelectedTeamspaceId(null); setSelectedPageId(null); setLibraryView('all-documents'); }}
             onCreateWorkspace={() => setCreateWorkspaceOpen(true)}
             treeArea={treeArea}
-            footer={<SidebarFooter user={session.user} onOpenSettings={onOpenSettings} />}
           />
           <div className={`relative flex min-h-0 min-w-0 flex-1 flex-col ${sidebarCollapsed ? '[&>section>header]:pl-11' : ''}`}>
           {sidebarCollapsed ? <button type="button" aria-label="展开知识库侧边栏" title="展开知识库侧边栏" onClick={() => setSidebarCollapsed(false)} className="absolute left-2 top-1.5 z-10 flex size-7 items-center justify-center rounded-md text-[var(--muted-strong)] hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><SidebarSimple size={18} /></button> : null}
           {selectedPageId && activeId ? (
             <KnowledgePageEditor scope={{ workspaceId: activeId, pageId: selectedPageId }} user={session.user} />
-          ) : (
-          <WorkspaceCanvas
-            phase={
-              phase === 'workspace-loading' || phase === 'workspace-error' || phase === 'workspace-forbidden'
-                ? phase
-                : 'ready'
-            }
-            workspace={activeWorkspace}
-            access={accessQuery.data}
-            user={session.user}
-            teamspaces={teamspaces}
-            selectedTeamspace={selectedTeamspace}
-            errorText={accessQuery.error === null ? undefined : knowledgeAccessErrorText(accessQuery.error)}
-            onRetry={() => void accessQuery.refetch()}
-            actions={<AssistantRailToggle open={railOpen} onToggle={() => setRailOpen((open) => !open)} />}
-          />
-          )}
+          ) : activeId ? (
+            <LibraryCanvas key={activeId} workspaceId={activeId} userId={session.user.id} name={activeWorkspace.name} view={libraryView} access={accessQuery.data} teamspaces={teamspaces} folder={selectedTeamspace} onOpenPage={setSelectedPageId} onSelectFolder={(id) => { setSelectedTeamspaceId(id); setLibraryView('overview'); }} onCreateFolder={() => setCreateTeamspaceOpen(true)} notify={notify} />
+          ) : null}
           </div>
-          <AssistantRail open={railOpen} onClose={() => setRailOpen(false)} />
         </div>
       ) : null}
 
-      <CreateWorkspaceDialog
+      <CreateKnowledgeBaseDialog
         open={createWorkspaceOpen}
         onClose={() => setCreateWorkspaceOpen(false)}
         onCreated={(workspaceId) => {
           setActiveWorkspaceId(workspaceId);
-          notify('success', '工作区已创建');
+          setSelectedPageId(null);
+          setSelectedTeamspaceId(null);
+          setLibraryView('all-documents');
         }}
         notify={notify}
       />
@@ -333,7 +317,7 @@ function KnowledgeWorkbench({ onOpenSettings }: { onOpenSettings: () => void }) 
           workspaceId={activeWorkspace.id}
           open={createTeamspaceOpen}
           onClose={() => setCreateTeamspaceOpen(false)}
-          onCreated={(teamspace) => setSelectedTeamspaceId(teamspace.id)}
+          onCreated={(teamspace) => { setSelectedTeamspaceId(teamspace.id); setSelectedPageId(null); setLibraryView('overview'); }}
         />
       ) : null}
       <ToastRegion toast={toast} />
@@ -361,19 +345,6 @@ function SessionErrorState({ description, onRetry, onSignIn }: { description: st
       }
     />
   );
-}
-
-function knowledgeAccessErrorText(error: unknown): string {
-  const code = knowledgeErrorCodeOf(error);
-  const copy: Record<string, string> = {
-    UNAVAILABLE: '知识服务暂时不可用，请稍后重试。',
-    NETWORK: '无法连接知识服务，请检查网络后重试。',
-    TIMEOUT: '连接知识服务超时，请重试。',
-    RATE_LIMITED: '请求过于频繁，请稍后重试。',
-    ENDPOINT: '知识服务地址未配置，无法建立连接。',
-    PAYMENT_REQUIRED: '该操作需要更高的访问权限。',
-  };
-  return (code && copy[code]) ?? '确认工作区访问时出现问题，请重试。';
 }
 
 function readStoredWorkspaceId(): string | null {

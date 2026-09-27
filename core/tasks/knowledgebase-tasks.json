@@ -1707,10 +1707,17 @@
         "B09",
         "J01"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "backend/src/knowledge/ai/streaming.ts",
       "acceptance": "完整块到达即写共享 Y.Doc；Awareness 显示 Agent 光标；取消后部分结果可审阅；整体任务撤销不影响人编辑",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "57 项后端/228 断言(切分器单元、逐块写入+awareness、取消保留、整体撤销隔离、撤权 fail closed、tRPC 边界、headless 回退、真实 Ollama e2e)+前端 5 项;修复切分器三处缺陷;主会话装配 runtime 真实网关并修复 agent/mcp 作者语法违约为共享 origin 构造器",
+          "command": "bun test backend/src/knowledge/ai; bun test src/features/knowledge/ai; cd backend && bunx tsc --noEmit",
+          "verifiedAt": "2026-09-27",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-27-j04-streaming-ai.md"
+        }
+      ]
     },
     {
       "id": "J05",

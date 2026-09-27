@@ -43,8 +43,12 @@ export function createKnowledgeUntypedTrpcClient(origin: string, workspaceId: st
   return createTRPCUntypedClient<KnowledgeApiRouter>({ links: knowledgeLinks(origin, workspaceId, fetchImpl) });
 }
 
-/** One client per (origin, workspace) transport URL; per-call state travels in options, not in the client. */
-export function createKnowledgeClientCache(fetchImpl: KnowledgeFetch = fetch) {
+/** One client per (origin, workspace) transport URL; per-call state travels in options, not in the client.
+ *
+ * The default fetch resolves the global at call time (the organization client's
+ * pattern), so test doubles installed after module load are honored.
+ */
+export function createKnowledgeClientCache(fetchImpl: KnowledgeFetch = (...args) => fetch(...args)) {
   const clients = new Map<string, KnowledgeTrpcClient>();
   return {
     get(origin: string, workspaceId: string): KnowledgeTrpcClient {
@@ -60,7 +64,7 @@ export function createKnowledgeClientCache(fetchImpl: KnowledgeFetch = fetch) {
 }
 
 /** The untyped twin of the cache above, for surfaces that call not-yet-typed procedures. */
-export function createKnowledgeUntypedClientCache(fetchImpl: KnowledgeFetch = fetch) {
+export function createKnowledgeUntypedClientCache(fetchImpl: KnowledgeFetch = (...args) => fetch(...args)) {
   const clients = new Map<string, KnowledgeUntypedTrpcClient>();
   return {
     get(origin: string, workspaceId: string): KnowledgeUntypedTrpcClient {

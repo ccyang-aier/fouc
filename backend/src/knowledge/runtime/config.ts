@@ -47,6 +47,13 @@ const baseEnvironmentSchema = z.object({
   S3_ACCESS_KEY_ID: z.string().min(1).optional(),
   S3_SECRET_ACCESS_KEY: z.string().min(1).optional(),
   MEDIA_WORKER_URL: httpUrl.optional(),
+  // Model credentials (the gitignored .env.knowledge.models.local); without
+  // them the gateway keeps only explicit/Ollama bindings and AI tasks stay
+  // unbound — a loud SERVICE_UNAVAILABLE, never a silent wrong provider.
+  KNOWLEDGE_AI_API_KEY: z.string().min(1).optional(),
+  KNOWLEDGE_AI_CHAT_BASE_URL: httpUrl.optional(),
+  KNOWLEDGE_AI_MODEL: z.string().min(1).optional(),
+  KNOWLEDGE_AI_OLLAMA_ENDPOINT: httpUrl.optional(),
 }).superRefine((environment, context) => {
   const active: readonly RuntimeRole[] = environment.ROLE;
   const require = (fields: (keyof typeof environment)[]) => {
@@ -80,6 +87,12 @@ export function readKnowledgeConfig(environment: Record<string, string | undefin
     redisUrl: config.REDIS_URL,
     storage: config.S3_ENDPOINT ? { endpoint: config.S3_ENDPOINT, region: config.S3_REGION!, bucket: config.S3_BUCKET!, accessKeyId: config.S3_ACCESS_KEY_ID!, secretAccessKey: config.S3_SECRET_ACCESS_KEY! } : undefined,
     mediaWorkerUrl: config.MEDIA_WORKER_URL,
+    models: Object.freeze({
+      apiKey: config.KNOWLEDGE_AI_API_KEY,
+      chatBaseUrl: config.KNOWLEDGE_AI_CHAT_BASE_URL,
+      model: config.KNOWLEDGE_AI_MODEL,
+      ollamaEndpoint: config.KNOWLEDGE_AI_OLLAMA_ENDPOINT,
+    }),
   });
 }
 

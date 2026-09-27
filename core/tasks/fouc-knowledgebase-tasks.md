@@ -2,7 +2,7 @@
 
 > 本表由 `knowledgebase-tasks.json` 生成。修改任务和证据后运行 `node scripts/verify-knowledge-tasks.mjs --write`。
 
-设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 63 项。
+设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 74 项。
 
 ## 实施约束
 
@@ -25,23 +25,17 @@
 
 ## 可开始的任务
 
-- M03 Obsidian 仓库导入导出
-- M04 Notion 导出导入
-- U04 本地元数据操作队列
 - B07 Awareness 人/Agent 光标与在线成员
-- E04 基础块快捷输入与键盘编辑
 - E05 表格、分栏和 Callout NodeView
-- S02 建议模式 UI 与批量审阅
-- V03 历史面板与协作安全恢复
+- E06 Slash 菜单与 Markdown/HTML 粘贴
 - N02 CRDT 评论锚点与侧栏
-- N03 通知收件箱
 - L02 实时只读块引用 NodeView
 - U06 数据库表格视图
-- U08 浏览器哈希上传与进度控制
-- W05 媒体派生任务编排与重索引
-- J04 逐块流式 AI 与任务撤销
+- U09 图片/音频/视频/文件/嵌入 NodeView
+- J06 侧栏 Agent 对话与可点击引用
 - J07 持久 AI 长任务与审批恢复
-- K02 MCP OAuth 2.1 与 PAT 授权
+- K03 MCP 外部 Agent 一致性验收
+- Z01 旧知识库实现与开发数据清理
 
 ## 拓扑排序任务表
 
@@ -77,12 +71,12 @@
 | [x] 已验收 | A02 | OAuth 与 OIDC/SSO 身份<br>backend/src/knowledge/auth/ | §1 / §6 | A01 | 真实或标准测试 IdP 完整回调/PKCE/state/nonce；账号身份映射一致；错误可恢复 | [79 项真实 HTTP/PG 测试全通过（A02 新增 41 项）；Node 24 冒烟真实 OIDC/OAuth 回调、单次 state、身份映射与错误恢复通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-authentication.md) |
 | [x] 已验收 | A04 | 登录、注册、SSO 与会话恢复界面<br>src/features/knowledge/auth/ | §1 / §6 | A02, A03, U01 | 邮箱登录/注册/验证、OAuth/SSO、登出、会话过期恢复闭环；加载/错误/键盘焦点清晰；Web 与桌面共用 | [95 项测试/383 断言、lint 零告警、三路由浏览器 200;A01 受理文案/重发冷却/验证四态、22 个 OAuth 错误码中文映射、登出、returnTo 会话恢复、端点复用 U01](../../core/tasks/knowledgebase-acceptance/2026-09-26-auth-ui.md) |
 | [x] 已验收 | U02 | 应用壳与知识库新模型接入<br>src/features/knowledge/knowledge-page.tsx; src/shell/ | §0.1 / §3.3 / §10 | U01, T01, A04 | 替换旧知识库文本 CRUD UI；复用设计 tokens/侧栏；选择/导航/空状态真实联动；无旧模型适配双轨 | [211 项测试/923 断言:旧 textarea+30 秒轮询 UI 全删除零残留,四道真实闸门状态机(13 phase)、三栏舞台+页面树(WAI-ARIA roving)、B06 事件失效装配;浏览器实测诚实态与拦截桩布局,修两处实测缺陷](../../core/tasks/knowledgebase-acceptance/2026-09-26-app-shell.md) |
-| [ ] 待实施 | M03 | Obsidian 仓库导入导出<br>backend/src/knowledge/import-export/; src/features/knowledge/ | §4.4 | M01, T01, AS01, B02, U02 | 目录、附件、frontmatter、wiki/块链接可往返；多页导入有进度与逐项失败反馈 | — |
+| [x] 已验收 | M03 | Obsidian 仓库导入导出<br>backend/src/knowledge/import-export/; src/features/knowledge/ | §4.4 | M01, T01, AS01, B02, U02 | 目录、附件、frontmatter、wiki/块链接可往返；多页导入有进度与逐项失败反馈 | [52 项 M03 测试(全目录 64/0):目录树映射、同名兄弟去重、wikilink/嵌入/媒体指令往返(导出→再导入→再导出不动点)、frontmatter、AS01 附件入湖、幂等重放、越权拒绝、逐项失败进进度事件;修复前任骨架 4 个真实缺陷](../../core/tasks/knowledgebase-acceptance/2026-09-26-m03-obsidian-vault.md) |
 | [x] 已验收 | T02 | 数据库页面及类型化行属性<br>backend/src/knowledge/databases/ | §3.3 / §9.2 | T01 | database/row 均为 page；每行可独立 Y.Doc/权限；schema/属性验证、筛选排序和分页正确 | [18 项测试/161 断言连跑 4 次一致:database/row 均 page 且独立授权、九种列类型验证、筛选/排序/游标分页 fail closed、列变更语义;另修复 pg like_escape 通配符不转义缺陷](../../core/tasks/knowledgebase-acceptance/2026-09-26-databases.md) |
-| [ ] 待实施 | M04 | Notion 导出导入<br>backend/src/knowledge/import-export/ | §4.4 | M01, T02, AS01, B02, U02 | HTML/Markdown/CSV、目录与附件导入真实样本；页面链接正确映射，无静默丢失 | — |
+| [x] 已验收 | M04 | Notion 导出导入<br>backend/src/knowledge/import-export/ | §4.4 | M01, T02, AS01, B02, U02 | HTML/Markdown/CSV、目录与附件导入真实样本；页面链接正确映射，无静默丢失 | [12 项测试/62 断言全绿(修复前 8/4):figure.quote 行内聚合、code figure 元素化(解析器 pre 吞并修复)、multiSelect 单格拆分信号、行链接断言下钻;HTML/Markdown/CSV 三路径 + 目录外壳两遍父归属 + wikilink/asset/断链映射无静默丢失](../../core/tasks/knowledgebase-acceptance/2026-09-26-m04-notion-import.md) |
 | [x] 已验收 | O02 | Workspace/成员/Teamspace 组织界面<br>backend/src/knowledge/organization/; src/features/knowledge/organization/ | §3.3 / §6.1 | O03, U01 | 空间创建、切换、成员/群组管理闭环；空/加载/无权/失败状态清晰；根默认权限生效 | [32 项测试/160 断言、lint/类型/边界全过;空间/成员/群组/Teamspace 面板闭环、四态+乐观回滚、根默认权限重算提示;13 张状态截图归档为视觉证据](../../core/tasks/knowledgebase-acceptance/2026-09-26-organization-ui.md) |
 | [x] 已验收 | U03 | 页面树操作与乐观反馈<br>src/features/knowledge/navigation/ | §3.3 / §5.4 | U02, T01 | 新建、重命名、图标/封面、嵌套移动/排序、删除恢复、键盘导航；失败恢复且提示明确 | [272 项前端测试(新增 32):全操作集+权限门、拖拽/Alt+方向分数移动、回收恢复闭环、乐观精确回滚+结构化 toast+B06 收敛(真实 QueryClient 单测)、行内 spinner/空态/错误态;浏览器 7 场景截图核验](../../core/tasks/knowledgebase-acceptance/2026-09-26-tree-operations.md) |
-| [ ] 待实施 | U04 | 本地元数据操作队列<br>src/features/knowledge/collaboration/metadata-queue.ts | §5.4 | U03 | UUID 操作持久化，离线乐观、重连按序提交；循环/无权失败回滚；重复重试不重复创建 | — |
+| [x] 已验收 | U04 | 本地元数据操作队列<br>src/features/knowledge/collaboration/metadata-queue.ts | §5.4 | U03 | UUID 操作持久化，离线乐观、重连按序提交；循环/无权失败回滚；重复重试不重复创建 | [6 项测试/29 断言:离线入队持久化+新实例按序重放、transient 保留/永久拒绝回滚继续、重复 operationId 去重、重试原样载荷、损坏 storage 清空、online 事件续传;失败分类复用 isRetryableKnowledgeError,乐观/回滚复用 U03 代数](../../core/tasks/knowledgebase-acceptance/2026-09-26-u04-metadata-queue.md) |
 | [x] 已验收 | B03 | Redis 多节点广播<br>backend/src/knowledge/collaboration/ | §2 / §5.1 / §11 | B02, I01 | 两节点客户端并发更新实时收敛；断连恢复；无二次业务正文存储 | [30 项 collaboration 全套(含 B01/B02/B06/V01 回归):两节点双向 16ms 收敛、断连重连 state-vector 并集无丢失、redis-origin 跳过 store+Redlock 单写者防二次落库、WRONGPASS 认证与 reconnecting/autoResubscribe 断线恢复](../../core/tasks/knowledgebase-acceptance/2026-09-26-multi-node.md) |
 | [x] 已验收 | B04 | Web y-indexeddb 文档生命周期<br>src/features/knowledge/collaboration/ | §3.1 / §5.1 / §5.4 | B02 | 离线先加载本地 Y.Doc 可编辑；state vector 交换后收敛；切页清理 provider/监听；状态区分本地保存与云同步 | [21 项测试(含协议级 fake-WebSocket 集成与 fake-indexeddb 真实持久化):离线先渲染可编辑、重连 SV 双向收敛、destroy 三层清理无泄漏、local-only/syncing/synced/offline/error 状态机;另有真实监听器+RLS 库+TCP WS 的全栈冒烟](../../core/tasks/knowledgebase-acceptance/2026-09-26-web-documents.md) |
 | [x] 已验收 | B05 | 桌面 SQLite 离线 Yjs 副本<br>backend/src/store/knowledge-documents.ts; src/features/knowledge/collaboration/ | §3.1 / §5.1 / §10 | B02 | sidecar 持久化 Yjs 更新/状态；重启/离线/重连收敛；Rust 不写知识库业务；与服务端正文权威清晰 | [store 字节级 round-trip/重启存活/隔离 + 真实监听器离线编辑跨重启恢复与云端状态 CRDT 合并不覆盖;桌面装配同 Hocuspocus 内核、SQLite 后端](../../core/tasks/knowledgebase-acceptance/2026-09-26-desktop-documents.md) |
@@ -91,17 +85,17 @@
 | [ ] 待实施 | B07 | Awareness 人/Agent 光标与在线成员<br>src/features/knowledge/collaboration/awareness.ts; src/features/knowledge/editor/ | §5.5 / §9.3 | B04, E03 | user/color/cursor/selection/kind 完整；两客户端能见光标、AI 正在编辑状态；断开自动移除 | — |
 | [x] 已验收 | B00 | 共享 CRDT 事务来源与撤销内核<br>shared/src/knowledge/collaboration/ | §5.4 / §9.3 | E02 | 定义 human/agent/mcp/restore 来源；Yjs UndoManager 按来源和任务隔离，跨文档更新收敛；不依赖 React 或网络 provider | [本地/任务来源、XML 人工内容保护与副本收敛 11 项测试通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
 | [x] 已验收 | B08 | 本地撤销与 Agent 事务隔离<br>shared/src/knowledge/schema/; src/features/knowledge/collaboration/ | §5.4 / §9.3 | B04, B00 | 本地 UndoManager 不撤其他人/Agent；任务 origin 独立，AI 整个任务可单独撤销 | [28 项 collaboration 测试(21 回归+7 新增)+B00 内核回归:本地栈不撤他人/Agent、任务 origin 整体一次撤销/恢复、destroy 清理、离线撤销可用;撤销事务正确进 cloudPending](../../core/tasks/knowledgebase-acceptance/2026-09-26-undo-isolation.md) |
-| [ ] 待实施 | E04 | 基础块快捷输入与键盘编辑<br>src/features/knowledge/editor/ | §4.1 / §4.4 | E03 | 段落、标题、列表、待办、引用、代码、公式可鼠标/键盘插入编辑；输入规则、格式菜单可访问 | — |
+| [x] 已验收 | E04 | 基础块快捷输入与键盘编辑<br>src/features/knowledge/editor/ | §4.1 / §4.4 | E03 | 段落、标题、列表、待办、引用、代码、公式可鼠标/键盘插入编辑；输入规则、格式菜单可访问 | [编辑器全树 104 项测试/601 断言(E04 48 项):7 类输入规则、Enter/Backspace/Tab/块移动键盘语义、IME 合成守卫、格式命令 toggle 与菜单模型;装配进 editor-surface 与工具栏;scratch 草稿清零](../../core/tasks/knowledgebase-acceptance/2026-09-27-e04-block-input.md) |
 | [ ] 待实施 | E05 | 表格、分栏和 Callout NodeView<br>src/features/knowledge/editor/blocks/ | §4.1 / §4.2 | E03 | 嵌套编辑/增删/拖拽/键盘不损坏 blockId；表格编辑、分栏自适应、callout 风格精致；共享 schema 一致 | — |
 | [ ] 待实施 | E06 | Slash 菜单与 Markdown/HTML 粘贴<br>src/features/knowledge/editor/commands/ | §4.2 / §4.4 / §9.4 | E04, M01 | 菜单由注册表生成、检索、方向键/回车/Esc；Markdown/HTML/纯文本识别；不执行不安全 HTML | — |
 | [x] 已验收 | S01 | 建议 insert/delete marks 与事务转换<br>shared/src/knowledge/schema/suggestions/ | §4.5 | E02 | 插入带 mark、删除保留内容；接受/拒绝按 suggestionId 原子执行；范围/嵌套/替换/撤销正确 | [建议编辑/嵌套块/原子审阅与真实 Yjs 往返 11 项测试通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
-| [ ] 待实施 | S02 | 建议模式 UI 与批量审阅<br>src/features/knowledge/editor/review/ | §4.5 / §9.3 | S01, E03, B08 | 人/AI 同一路径；作者/时间/来源可见；逐条/全部接受拒绝；只读不允许修改；长文滚动定位 | — |
+| [x] 已验收 | S02 | 建议模式 UI 与批量审阅<br>src/features/knowledge/editor/review/ | §4.5 / §9.3 | S01, E03, B08 | 人/AI 同一路径；作者/时间/来源可见；逐条/全部接受拒绝；只读不允许修改；长文滚动定位 | [36 项测试/137 断言 + 真实双 peer 运行时 13 项:建议标记(绿插/红删/块框/作者徽标)、审阅侧栏单条与全部接受拒绝(S01 单事务=单 undo 步)、定位滚动、自动开栏/Esc、只读禁用矩阵、远程建议实时入列;key 撞名回归修复](../../core/tasks/knowledgebase-acceptance/2026-09-27-s02-review-ui.md) |
 | [x] 已验收 | V01 | 自动、结束会话与手动检查点<br>backend/src/knowledge/collaboration/checkpoints.ts | §5.2 | B02, Q01 | 超过 10 分钟且有编辑、结束会话、命名版本按策略写；无变化不重复；作者集合正确；GC 保持开启 | [6 项真实监听器测试:自动检查点挂存储钩空闲零写、会话结束 state-vector 比对、手动命名幂等(label 附既有快照)、双用户 authors 聚合、GC 后快照不含已删内容;另发现并记录 B02 lastContext 空上下文缺陷](../../core/tasks/knowledgebase-acceptance/2026-09-26-checkpoints.md) |
 | [x] 已验收 | V02 | 块与行内历史差异算法<br>shared/src/knowledge/history/ | §5.2 | M01, C01 | 新增/删除/移动/修改块与行内差异可解释；ID 用于稳定比对；空页/相邻版本正确 | [20 项 Bun/Node 双运行时 diff 测试，166 项共享回归；120排列移动最小性、120文本重建、27块Markdown快照往返](../../core/tasks/knowledgebase-acceptance/2026-09-26-history.md) |
-| [ ] 待实施 | V03 | 历史面板与协作安全恢复<br>src/features/knowledge/history/; backend/src/knowledge/collaboration/ | §5.2 | V01, V02, E03, B08 | 预览版本、作者、命名；恢复通过新 Y.Doc 事务且可撤销；另一在线编辑者不中断 | — |
+| [x] 已验收 | V03 | 历史面板与协作安全恢复<br>src/features/knowledge/history/; backend/src/knowledge/collaboration/ | §5.2 | V01, V02, E03, B08 | 预览版本、作者、命名；恢复通过新 Y.Doc 事务且可撤销；另一在线编辑者不中断 | [后端 3 项集成(命名版本+作者归因+PM 预览+ACL 403/跨租户)+恢复语义(客户端单 PM 事务,第二编辑者不中断继续编辑)+前端 8 项(单步恢复事务/预览序列化/错误映射)+编辑器装配后全树 104/0 回归;checkpoints 扩展经 listener 可选参数挂载](../../core/tasks/knowledgebase-acceptance/2026-09-27-v03-history-panel.md) |
 | [x] 已验收 | N01 | 评论线程持久化与权限<br>backend/src/knowledge/comments/ | §4.6 | P03, Q01 | 创建/回复/解决/重开/删除有独立生命周期；仅 comment+ 可写；通知 Outbox 原子且 workspace 隔离 | [6 组真实集成测试(58 断言):线程生命周期状态机、view 级五写路径全拒/comment+ 走通、通知+outbox 同事务原子(回滚零残留)、回收页即时拒绝、跨租户 NOT_FOUND 不可区分](../../core/tasks/knowledgebase-acceptance/2026-09-26-comments.md) |
 | [ ] 待实施 | N02 | CRDT 评论锚点与侧栏<br>src/features/knowledge/editor/comments/ | §4.6 / §5.3 | N01, E03, B06 | 选区 comment mark 绑定 threadId；协作插删锚点不漂；孤立锚点状态可解释；线程/正文跳转 | — |
-| [ ] 待实施 | N03 | 通知收件箱<br>src/features/knowledge/notifications/; backend/src/knowledge/notifications/ | §4.6 / §5.3 | N01, B06, U02 | 评论通知收件人权限过滤、已读操作、实时更新与跳转；无重复跨租户消息 | — |
+| [x] 已验收 | N03 | 通知收件箱<br>src/features/knowledge/notifications/; backend/src/knowledge/notifications/ | §4.6 / §5.3 | N01, B06, U02 | 评论通知收件人权限过滤、已读操作、实时更新与跳转；无重复跨租户消息 | [后端 11 项(收件箱权限双重过滤 fail closed、已读幂等、keyset 分页、跨租户隔离、HTTP 映射、outbox→hub 精确一次实时投递)+前端 16 项(传输契约/桥/失效键/视图模型);runtime 已接线通知路由](../../core/tasks/knowledgebase-acceptance/2026-09-27-n03-notifications.md) |
 | [x] 已验收 | L01 | 页面/块链接与反向引用派生<br>backend/src/knowledge/search/backlinks.ts | §4.6 / §7.1 | M02, B02, T01 | 页面链接、blockReference 可解析稳定 ID；正文变化更新 backlink；无权限来源不泄漏 | [6 项真实队列/RLS 测试:显式 pageId 优先/标题精确/块锚解析、悬链零落表零泄漏、doc.changed 消费幂等(FOR UPDATE 串行)、入链经 P03 谓词过滤、损坏 doc_state 留队重试不阻塞](../../core/tasks/knowledgebase-acceptance/2026-09-26-backlinks.md) |
 | [ ] 待实施 | L02 | 实时只读块引用 NodeView<br>src/features/knowledge/editor/blocks/block-reference.tsx | §4.6 | L01, E03 | 按需加载来源 Y.Doc；更改实时反映；点击原文高亮；无权/删除/循环引用有明确状态并释放连接 | — |
 | [x] 已验收 | P04 | 分享链接权限与失效<br>backend/src/knowledge/sharing/ | §6.1 / §9.5 | P03 | link 主体令牌哈希、到期/撤销/级别限制；页面及附件同权；访问不能获得 workspace 全部成员主体；授权接口有集成证据 | [12 项测试(140 断言,真实会话/队列/RLS):令牌只存 SHA-256+恒时比较、到期/撤销/降级即时 fail closed、link 主体恰为 {link:id} 不扩 workspace、越权创建/跨租户/重建窗口全拒](../../core/tasks/knowledgebase-acceptance/2026-09-26-sharing.md) |
@@ -115,26 +109,26 @@
 | [x] 已验收 | H03 | BM25 中英文检索<br>backend/src/knowledge/search/keyword.ts | §7.2 / §7.3 | H01, D03 | pg_search/jieba 与 ICU 配置真实查询验证；workspace/principals 在排名前过滤；返回可引用块 | [19 项测试(6 新增+13 回归):真实 pg_search jieba 中文命中/英文前缀扩展/混合析取、EXPLAIN 实证权限过滤先于排名、可引用块结构(pageId/blockId/titlePath/snippet/score)入 shared 契约、分页一致、回收页即空](../../core/tasks/knowledgebase-acceptance/2026-09-26-keyword.md) |
 | [x] 已验收 | H04 | 向量/RRF/重排统一检索<br>backend/src/knowledge/search/service.ts | §7.2 | H02, H03 | HNSW 限当前模型、各取 50/RRF 常数60/前20重排；查询前授权；API/AI/MCP 共用结果结构 | [28 项 search 全套(6 新增+22 回归):HNSW 限当前模型(维度错实测防护)、两腿各 50→RRF k=60 与手算逐一吻合→前 20 真实 GLM rerank 精排(端点实测探明)、授权谓词两腿先于名次、HybridSearchHit 统一契约供 API/AI/MCP](../../core/tasks/knowledgebase-acceptance/2026-09-26-hybrid.md) |
 | [x] 已验收 | H05 | 搜索 UI 与块引用导航<br>src/features/knowledge/search/ | §7.2 / §9.4 | H04, U02 | 关键词/语义混合查询、过滤/取消/空状态、键盘导航、引用预览；点击打开准确块并高亮 | [4 项测试/19 断言:queryId 丢弃迟到响应、空/错误相位、键盘两端钳制与 Enter/Esc 语义、降级文案;面板含标题路径/来源徽标/严格响应校验,点击回调 pageId+blockId](../../core/tasks/knowledgebase-acceptance/2026-09-26-search-ui.md) |
-| [ ] 待实施 | U08 | 浏览器哈希上传与进度控制<br>src/features/knowledge/assets/ | §8 / §8.1 | AS01, U02 | 浏览器 SHA256、预签名直传、完整性确认闭环；秒传/进度/取消/重试/错误均有反馈；通过真实后端与 S3 验证 | — |
+| [x] 已验收 | U08 | 浏览器哈希上传与进度控制<br>src/features/knowledge/assets/ | §8 / §8.1 | AS01, U02 | 浏览器 SHA256、预签名直传、完整性确认闭环；秒传/进度/取消/重试/错误均有反馈；通过真实后端与 S3 验证 | [53 项测试/242 断言:流式 SHA-256 NIST 向量与跨块边界、秒传/授权/契约拒绝状态机、取消×3相位、重试哈希复用、真实 MinIO SigV4 PUT→GET 回读复哈希闭环;组件 happy-dom 事件闭环;eslint 0/0](../../core/tasks/knowledgebase-acceptance/2026-09-27-u08-hash-upload.md) |
 | [ ] 待实施 | U09 | 图片/音频/视频/文件/嵌入 NodeView<br>src/features/knowledge/editor/blocks/media/ | §4.1 / §8.1 / §12 | U08, E03 | 插入 asset:hash，上传进度/取消/失败重试，媒体懒加载；安全嵌入；替代文本、下载与键盘可用 | — |
 | [x] 已验收 | W01 | 无状态 Media Worker HTTP 服务<br>services/media-worker/ | §8.2 / §11 | C01, R01 | FastAPI 健康/解析接口有资源上限与任务取消；请求携带短期资源，不访问 DB/队列；CPU/GPU 配置可解析；真实模型解析分别 W02/W03 验收 | [27 Python、7 Bun/Node 客户端用例与真实 HTTP/子进程取消；隐藏服务常驻](../../services/media-worker/ACCEPTANCE.md) |
 | [x] 已验收 | W02 | Whisper 音视频时间戳转写<br>services/media-worker/ | §8.2 | W01 | 真实音视频样本生成带时间戳分段文本；模型可配置；失败、超时与重试可观察 | [CPU Whisper 真实音频/MP4及签名S3链路；33 Python+8客户端，失败/超时/取消/重试](../../services/media-worker/ACCEPTANCE-WHISPER.md) |
 | [x] 已验收 | W03 | Docling PDF/Office 解析<br>services/media-worker/ | §8.2 | W01 | 真实 PDF/Office 表格/图片/标题解析成结构化 Markdown；空/损坏样本报错清楚 | [真实 MinIO→HTTP→Docling 四格式标题/表格/PNG、空/损坏/期限/重试/取消通过；56 Python + 9 Bun + 9 Node 测试](../../services/media-worker/ACCEPTANCE-DOCLING.md) |
 | [x] 已验收 | W04 | 图片视觉描述与 OCR<br>backend/src/knowledge/workers/vision.ts | §8.2 | AS01, G01 | 真实图片经 vision 档生成描述/OCR；结果写 asset.derived；权限与模型用量可追踪 | [28 项测试(workers 15+assets 13 回归):真实 PNG 经真实 MinIO+队列+网关 vision 档(glm-5.3-flash 原生图文)生成描述、真实 tokens 落 ai_usage;失败/限流/缺配置结构化重试;幂等重放不重复调用](../../core/tasks/knowledgebase-acceptance/2026-09-26-vision.md) |
 | [x] 已验收 | J02 | 共用只读 Agent 工具<br>backend/src/knowledge/ai/tools/ | §9.2 / §9.5 | H04, M02, T02, L01 | search/read_page/query_database/list_pages/get_backlinks 同发起者授权；range/filter/sort 有验证、引用准确 | [13 项真实工具测试+search/databases/契约回归:五只读工具同一发起者授权(A03 范围+zod 输入双防线,principals 永不出现在输入)、range 越界拒绝、回收/无权不可区分;注册表供 J04/K01 共用](../../core/tasks/knowledgebase-acceptance/2026-09-26-agent-tools.md) |
-| [ ] 待实施 | W05 | 媒体派生任务编排与重索引<br>backend/src/knowledge/workers/media.ts | §8.2 / §7.1 | W02, W03, W04, H01, H04, J02 | graphile-worker 调用无状态 HTTP；幂等派生结果写库并索引引用块；图片/录音/PDF 可搜索且 AI 可读 | — |
+| [x] 已验收 | W05 | 媒体派生任务编排与重索引<br>backend/src/knowledge/workers/media.ts | §8.2 / §7.1 | W02, W03, W04, H01, H04, J02 | graphile-worker 调用无状态 HTTP；幂等派生结果写库并索引引用块；图片/录音/PDF 可搜索且 AI 可读 | [3 项集成测试/11 断言(真实 MinIO+graphile+outbox):presigned GET 转写幂等落库、引用页 doc.changed 重索引、插图成资产入 S3、永久失败安全码;mime 集合镜像服务端 contracts.py](../../core/tasks/knowledgebase-acceptance/2026-09-27-w05-media-orchestration.md) |
 | [ ] 待实施 | U10 | 媒体派生内容与处理状态 UI<br>src/features/knowledge/assets/ | §8.2 | W05, U09 | 排队/处理中/成功/失败可见；OCR/时间戳转录/解析预览、重试；引用点击定位片段 | — |
 | [x] 已验收 | J01 | 上下文组装与引用校验<br>backend/src/knowledge/ai/context.ts | §9.6 | M02, H04 | 规则→大纲→邻块→检索→历史顺序；预算超限从检索尾部截断；回答 blockId 引用校验与权限过滤 | [40 项 ai 测试(6 新增):五腿顺序组装(规则→大纲→焦点邻块→检索→历史)、UTF-8 预算仅检索腿尾整条剔除、引用校验折叠无权/不存在/回收为同一 invalid;契约入 shared](../../core/tasks/knowledgebase-acceptance/2026-09-26-context.md) |
 | [x] 已验收 | J03 | CRDT 建议写入 Agent 工具<br>backend/src/knowledge/ai/tools/ | §9.2 / §9.3 | J02, S01, B01, B00 | insert/replace/delete/create/update_properties 权限一致；openDirectConnection+agent:taskId；新 ID/建议默认；无 SQL 正文双写 | [19 项工具测试(6 新增)+69 项回归:三正文工具按 S01 语义 Y 层定点建议落稿(openDirectConnection agent actor/无宿主等价兜底,无 SQL 双写)、新 blockId、审阅前原文保留;create/update_properties 走 T01 服务与 P03 授权](../../core/tasks/knowledgebase-acceptance/2026-09-26-write-tools.md) |
 | [x] 已验收 | B09 | 服务端 Agent Awareness 发布<br>backend/src/knowledge/collaboration/agent-awareness.ts | §5.5 / §9.3 | B01, B00 | 服务端 direct connection 以 Agent 身份发布 cursor/selection/正在编辑状态；任务结束和异常清理，协议客户端能接收 | [真实监听器+官方 provider 客户端 3 项测试:agent 状态(含 taskId/kind/cursor)实时可见、stop/abort 清理幂等、非 page 文档名拒绝](../../core/tasks/knowledgebase-acceptance/2026-09-26-agent-awareness.md) |
-| [ ] 待实施 | J04 | 逐块流式 AI 与任务撤销<br>backend/src/knowledge/ai/streaming.ts | §9.3 | J03, G01, B09, J01 | 完整块到达即写共享 Y.Doc；Awareness 显示 Agent 光标；取消后部分结果可审阅；整体任务撤销不影响人编辑 | — |
+| [x] 已验收 | J04 | 逐块流式 AI 与任务撤销<br>backend/src/knowledge/ai/streaming.ts | §9.3 | J03, G01, B09, J01 | 完整块到达即写共享 Y.Doc；Awareness 显示 Agent 光标；取消后部分结果可审阅；整体任务撤销不影响人编辑 | [57 项后端/228 断言(切分器单元、逐块写入+awareness、取消保留、整体撤销隔离、撤权 fail closed、tRPC 边界、headless 回退、真实 Ollama e2e)+前端 5 项;修复切分器三处缺陷;主会话装配 runtime 真实网关并修复 agent/mcp 作者语法违约为共享 origin 构造器](../../core/tasks/knowledgebase-acceptance/2026-09-27-j04-streaming-ai.md) |
 | [ ] 待实施 | J05 | 划词改写/翻译/总结与 /ai 续写<br>src/features/knowledge/ai/inline/ | §9.4 | J04, S02, E06 | 选区和邻块作为上下文，建议回原处；流式/取消/失败/重试/直接应用；键盘入口完整 | — |
 | [ ] 待实施 | J06 | 侧栏 Agent 对话与可点击引用<br>src/features/knowledge/ai/chat/ | §9.4 | J04, H05 | 工具调用状态、流式回答和引用跳转高亮；会话历史/取消/错误；无权引用不泄漏 | — |
 | [ ] 待实施 | J07 | 持久 AI 长任务与审批恢复<br>backend/src/knowledge/ai/tasks/ | §9.4 | J03, Q01, G02, J01 | 整理空间/周报可执行；running/awaiting_approval/done/failed state 持久化；重启续跑不重复写；审批身份校验 | — |
 | [ ] 待实施 | J08 | AI 块提示、范围与定时生成<br>src/features/knowledge/editor/blocks/ai-block.tsx; backend/src/knowledge/ai/ | §4.1 / §9.4 | J07, E03, S02 | 保存提示/范围、手动/定时执行、建议回块内容；授权重检；取消与失败反馈 | — |
 | [ ] 待实施 | J09 | AI 模型设置、用量与任务中心 UI<br>src/features/knowledge/ai/settings/; src/features/knowledge/ai/tasks/ | §9.1 / §9.4 | J07, G02, U02 | 档位/平台/BYOK/Ollama 配置可保存验证；安全显示密钥；用量、步骤、审批、重试与撤销完整 | — |
 | [x] 已验收 | K01 | MCP Streamable HTTP 服务<br>backend/src/knowledge/mcp/ | §9.5 | J03, R01 | 标准 SDK client 初始化/工具发现/调用/取消可运行；复用工具层；mcp:clientName 来源进入建议 | [官方 SDK 双端 3 项集成测试:initialize/10 工具发现/真实调用/取消信号、写建议 mcp:clientName 来源标注、匿名与低权 PAT 拒绝;会话式传输逐请求重验](../../core/tasks/knowledgebase-acceptance/2026-09-26-mcp.md) |
-| [ ] 待实施 | K02 | MCP OAuth 2.1 与 PAT 授权<br>backend/src/knowledge/mcp/auth/ | §9.5 | K01, A02, A03 | 发现/注册/授权/PKCE/token/撤销标准流程，scope/audience 验证；PAT 可用；无认证拒绝工具 | — |
+| [x] 已验收 | K02 | MCP OAuth 2.1 与 PAT 授权<br>backend/src/knowledge/mcp/auth/ | §9.5 | K01, A02, A03 | 发现/注册/授权/PKCE/token/撤销标准流程，scope/audience 验证；PAT 可用；无认证拒绝工具 | [99 项测试/1730 断言(auth 87 + mcp 12):RFC 7636 向量、redirect 规则、注册 schema、HMAC 轮转;端到端 401→PRM→AS→注册→成员同意→PKCE 换 PAT→listTools→code 单次性→RFC 7009 撤销即 401;实活 8711 验证 PRM/AS 元数据与 9727 挑战;常量时间比较、逐请求查库吊销](../../core/tasks/knowledgebase-acceptance/2026-09-26-k02-mcp-oauth-pat.md) |
 | [ ] 待实施 | K03 | MCP 外部 Agent 一致性验收<br>backend/scripts/verify-knowledge-mcp.ts | §9.5 / §12 | K02, J04, S02 | 真实标准 MCP client 读写/越权/撤权/取消；建议出现在编辑器，可接受拒绝；来源标注正确 | — |
 | [ ] 待实施 | Z01 | 旧知识库实现与开发数据清理<br>backend/src/store/; backend/src/api/server.ts; shared/src/index.ts; src/features/knowledge/ | §0.2 / §3.1 / §10 | U02, B05, M03, M04 | 删除 SQLite 正文/旧 REST/轮询/旧种子，仅保留 Yjs 本地副本；明确清理限定知识库开发表，其他业务不受影响 | — |
 | [ ] 待实施 | Z02 | Node 与 Bun 同构后端验证<br>backend/src/knowledge/runtime/; backend/scripts/ | §1 / §2 / §10 / §11 | K01, B03, J07, W05 | API/collab/worker/mcp 分角色/all 在两运行时冒烟通过；没有 Bun 专属业务依赖；桌面桥独立 | — |
@@ -531,9 +525,12 @@ flowchart TD
   style A02 fill:#e4f4e9,stroke:#42845c
   style A04 fill:#e4f4e9,stroke:#42845c
   style U02 fill:#e4f4e9,stroke:#42845c
+  style M03 fill:#e4f4e9,stroke:#42845c
   style T02 fill:#e4f4e9,stroke:#42845c
+  style M04 fill:#e4f4e9,stroke:#42845c
   style O02 fill:#e4f4e9,stroke:#42845c
   style U03 fill:#e4f4e9,stroke:#42845c
+  style U04 fill:#e4f4e9,stroke:#42845c
   style B03 fill:#e4f4e9,stroke:#42845c
   style B04 fill:#e4f4e9,stroke:#42845c
   style B05 fill:#e4f4e9,stroke:#42845c
@@ -541,10 +538,14 @@ flowchart TD
   style E03 fill:#e4f4e9,stroke:#42845c
   style B00 fill:#e4f4e9,stroke:#42845c
   style B08 fill:#e4f4e9,stroke:#42845c
+  style E04 fill:#e4f4e9,stroke:#42845c
   style S01 fill:#e4f4e9,stroke:#42845c
+  style S02 fill:#e4f4e9,stroke:#42845c
   style V01 fill:#e4f4e9,stroke:#42845c
   style V02 fill:#e4f4e9,stroke:#42845c
+  style V03 fill:#e4f4e9,stroke:#42845c
   style N01 fill:#e4f4e9,stroke:#42845c
+  style N03 fill:#e4f4e9,stroke:#42845c
   style L01 fill:#e4f4e9,stroke:#42845c
   style P04 fill:#e4f4e9,stroke:#42845c
   style U05 fill:#e4f4e9,stroke:#42845c
@@ -555,15 +556,19 @@ flowchart TD
   style H03 fill:#e4f4e9,stroke:#42845c
   style H04 fill:#e4f4e9,stroke:#42845c
   style H05 fill:#e4f4e9,stroke:#42845c
+  style U08 fill:#e4f4e9,stroke:#42845c
   style W01 fill:#e4f4e9,stroke:#42845c
   style W02 fill:#e4f4e9,stroke:#42845c
   style W03 fill:#e4f4e9,stroke:#42845c
   style W04 fill:#e4f4e9,stroke:#42845c
   style J02 fill:#e4f4e9,stroke:#42845c
+  style W05 fill:#e4f4e9,stroke:#42845c
   style J01 fill:#e4f4e9,stroke:#42845c
   style J03 fill:#e4f4e9,stroke:#42845c
   style B09 fill:#e4f4e9,stroke:#42845c
+  style J04 fill:#e4f4e9,stroke:#42845c
   style K01 fill:#e4f4e9,stroke:#42845c
+  style K02 fill:#e4f4e9,stroke:#42845c
 ```
 
 ## 设计覆盖矩阵

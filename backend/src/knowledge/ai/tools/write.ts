@@ -19,6 +19,7 @@ import { withKnowledgeTenant } from '../../../database/knowledge/tenant';
 import { authorizePageAccess } from '../../permissions/authorization';
 import { pageDocumentName } from '../../collaboration/page-documents';
 import { PAGE_BODY_FRAGMENT, insertProseMirrorBlocks } from '../../import-export/y-encoding';
+import { agentOrigin, mcpOrigin } from '@fouc/shared/knowledge/collaboration';
 import { appendKnowledgeOutbox } from '../../workers/outbox';
 import { createAuthorizedPage, updateAuthorizedPage } from '../../pages/tree';
 import { defineKnowledgeAgentTool } from './registry';
@@ -28,9 +29,11 @@ import type { KnowledgeAgentWriteContext } from './types';
 const pipeline = createMarkdownPipeline();
 
 /** S03-style attribution: agent identity rides the suggestion author field. */
+// The shared origin grammar is the single source of truth (S01); the UI and
+// the undo scope both parse suggestions through parseKnowledgeOrigin.
 const suggestionAuthor = (context: KnowledgeAgentWriteContext) => context.agent.clientName
-  ? `mcp:${context.authority.userId}:${context.agent.taskId}:${context.agent.clientName}`
-  : `agent:${context.authority.userId}:${context.agent.taskId}`;
+  ? mcpOrigin(context.agent.clientName, context.agent.taskId)
+  : agentOrigin(context.agent.taskId);
 
 function requireWriteContext(context: KnowledgeAgentWriteContext): void {
   if (!context.agent?.taskId) throw new KnowledgeAgentToolError('INVALID_TOOL_INPUT', 'write');

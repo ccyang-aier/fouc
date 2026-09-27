@@ -76,7 +76,7 @@ describe('agent suggestion write tools', () => {
     expect(suggestions.length).toBeGreaterThan(0);
     const inserted = suggestions.at(-1)!;
     expect(inserted.suggestionId).toBe(suggestionId);
-    expect(inserted.author).toBe(`agent:${authority.userId}:${TASK_ID}`);
+    expect(inserted.author).toBe(`agent:${TASK_ID}`);
     // 建议块获得新 blockId(非空且不与锚点相同)
     const newBlockId = await suggestedBlockId(scope, suggestionId);
     expect(newBlockId).toBeTruthy();

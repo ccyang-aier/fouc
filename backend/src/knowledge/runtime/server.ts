@@ -12,6 +12,8 @@ import { teamspacePermissionInvalidator } from '../permissions/fence';
 import { createKnowledgeApiRoutes, createKnowledgePatRoutes } from '../../api/knowledge';
 import { createKnowledgeCheckpointRoutes } from '../../api/knowledge/checkpoint-routes';
 import { createKnowledgeNotificationRoutes } from '../notifications';
+import { bindKnowledgeStreamingTasks, createKnowledgeStreamingTasks } from '../ai';
+import { createModelGateway } from '../ai/gateway';
 import { createPageCollaborationListener } from '../collaboration/page-collaboration-bun';
 import { createWorkspaceEventRuntime } from '../collaboration/events';
 import { pageCheckpointExtension } from '../collaboration/checkpoints';
@@ -70,6 +72,25 @@ export async function startKnowledgeRuntime(config: KnowledgeConfig, environment
     },
   });
   if (config.roles.includes('mcp')) mcp = createKnowledgeMcpRequestHandler({ authenticator, pool, hocuspocus: listener.hocuspocus, oauth: { externalOrigin } });
+  // J04: bind the streaming AI task service to the tRPC registry. Without
+  // model credentials the gateway holds no platform binding and aiTask.*
+  // answers SERVICE_UNAVAILABLE by design.
+  if (config.roles.includes('api')) {
+    const models = config.models;
+    const gateway = createModelGateway({
+      platform: models.apiKey && models.chatBaseUrl && models.model ? {
+        providers: { zhipu: { apiKey: models.apiKey, endpoint: models.chatBaseUrl } },
+        defaults: { fast: { source: 'platform', provider: 'zhipu', model: models.model }, smart: { source: 'platform', provider: 'zhipu', model: models.model } },
+      } : { providers: {}, defaults: {} },
+      providers: models.apiKey && models.chatBaseUrl ? { zhipu: { protocol: 'openai-compatible', endpoints: [models.chatBaseUrl], tiers: ['fast', 'smart'] } } : {},
+      ollamaEndpoints: models.ollamaEndpoint ? [models.ollamaEndpoint] : [],
+    });
+    bindKnowledgeStreamingTasks(createKnowledgeStreamingTasks({
+      pool,
+      gateway,
+      hocuspocus: config.roles.includes('collab') ? listener.hocuspocus : undefined,
+    }));
+  }
   console.log(`knowledge runtime ready on http://${config.hostname}:${listener.port} (roles: ${config.roles.join(',')})`);
   return {
     port: listener.port as number,

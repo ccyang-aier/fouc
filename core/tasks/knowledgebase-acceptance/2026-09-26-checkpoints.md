@@ -1,15 +1,15 @@
 # V01 · 自动、结束会话与手动检查点
 
-日期：2026-09-26。模块：`backend/src/knowledge/collaboration/checkpoints.ts`（策略 + 自包含 Hocuspocus Extension）+ `checkpoints.integration.test.ts`（真实 Bun 监听器 + 真实 PG）。
+日期：2026-09-26。模块：`backend/server/src/modules/knowledge/collaboration/checkpoints.ts`（策略 + 自包含 Hocuspocus Extension）+ `checkpoints.integration.test.ts`（真实 Bun 监听器 + 真实 PG）。
 
 `doc_checkpoint` 沿用现有 schema（workspaceId/id/pageId/state/stateVector/authors uuid[]/label varchar(200)/createdAt），无需 schema 变更。Extension 通过 `onChange` 聚合作者、`afterStoreDocument`（在 B02 doc_state 提交之后）评估自动检查点、`beforeUnloadDocument`（最后连接断开、最终落库已冲刷后）写会话结束检查点；手动命名版本是 Extension 上的显式方法。阈值 `CHECKPOINT_INTERVAL_MS = 10 分钟`，可经 `PageCheckpointPolicy { intervalMs, now }` 注入。
 
 ```bash
 cd C:/AIWorks/26Coding/fouc
-bun test backend/src/knowledge/collaboration/checkpoints          # 6 pass / 0 fail（另与 B02 4 项合跑 10 pass / 0 fail，共三连绿）
+bun test backend/server/src/modules/knowledge/collaboration/checkpoints          # 6 pass / 0 fail（另与 B02 4 项合跑 10 pass / 0 fail，共三连绿）
 pnpm backend:typecheck                                             # 零错误
-pnpm exec eslint --no-ignore backend/src/knowledge/collaboration/checkpoints.ts        # 无发现
-pnpm exec eslint --no-ignore backend/src/knowledge/collaboration/checkpoints.integration.test.ts  # 无发现
+pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/collaboration/checkpoints.ts        # 无发现
+pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/collaboration/checkpoints.integration.test.ts  # 无发现
 ```
 
 装配方式（测试即示例；生产合并待主线程，见下）：`pageCollaborationConfiguration(...)` 的返回值上追加 `extensions: [...(config.extensions ?? []), pageCheckpointExtension({ pool }, { intervalMs })]` 后交给 `new Hocuspocus(...)`，B02 钩子零改动。

@@ -3,7 +3,7 @@ import { pageDocumentName, parsePageDocument } from '@fouc/shared/knowledge/coll
 import { pageCollaborationUrl } from './page-provider';
 
 // The expected strings below are written out literally from the semantics of
-// backend/src/knowledge/collaboration/page-documents.ts (B01's server-side
+// shared/src/knowledge/collaboration/page-documents.ts (B01's server-side
 // gate): `page:<workspaceId>:<pageId>`, both ids strictly UUIDs. Importing the
 // backend module here would invert the frontend/backend boundary, so the
 // parity is asserted against these fixed literals; the backend is expected to

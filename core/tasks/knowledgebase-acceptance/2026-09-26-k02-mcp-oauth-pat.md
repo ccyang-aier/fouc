@@ -5,7 +5,7 @@
 ## 验收命令与结果
 
 ```
-bun test backend/src/identity backend/src/knowledge/mcp   # 99 pass / 0 fail / 1730 断言(11 文件)
+bun test backend/server/src/platform/identity backend/server/src/modules/knowledge/mcp   # 99 pass / 0 fail / 1730 断言(11 文件)
 cd backend && bunx tsc --noEmit                                  # 除并行在写的 ai/streaming 外 0 错误
 ```
 
@@ -16,9 +16,9 @@ cd backend && bunx tsc --noEmit                                  # 除并行在�
 
 ## 交付内容
 
-- `backend/src/knowledge/access/oauth-server.ts`:OAuth 2.1 授权服务器引擎——RFC 7591 动态客户端注册(仅公共 PKCE 客户端)、授权端点(会话+工作区成员校验、HMAC 同意证明、5 分钟一次性 code、RFC 9207 iss)、令牌端点(code 原子认领、PKCE S256 常量时间、RFC 8707 resource 校验、签发标准 PAT 写入既有 personal_access_token 表)、RFC 7009 撤销(未知令牌恒 200)。
-- `backend/src/knowledge/mcp/oauth.ts`:HTTP 路由 + PRM/AS 元数据 + WWW-Authenticate 助手;`mcp/server.ts` 认证段接入 oauth.externalOrigin(未认证挑战从 Bearer realm 升级为 resource_metadata)。
-- `backend/src/api/knowledge/pat-routes.ts`:PAT 签发/列表/吊销专用路由(会话专属,tRPC 上下文不保留原始 Request 且 PAT 不得铸造 PAT)。
+- `backend/server/src/modules/knowledge/access/oauth-server.ts`:OAuth 2.1 授权服务器引擎——RFC 7591 动态客户端注册(仅公共 PKCE 客户端)、授权端点(会话+工作区成员校验、HMAC 同意证明、5 分钟一次性 code、RFC 9207 iss)、令牌端点(code 原子认领、PKCE S256 常量时间、RFC 8707 resource 校验、签发标准 PAT 写入既有 personal_access_token 表)、RFC 7009 撤销(未知令牌恒 200)。
+- `backend/server/src/modules/knowledge/mcp/oauth.ts`:HTTP 路由 + PRM/AS 元数据 + WWW-Authenticate 助手;`mcp/server.ts` 认证段接入 oauth.externalOrigin(未认证挑战从 Bearer realm 升级为 resource_metadata)。
+- `backend/server/src/modules/knowledge/api/pat-routes.ts`:PAT 签发/列表/吊销专用路由(会话专属,tRPC 上下文不保留原始 Request 且 PAT 不得铸造 PAT)。
 - `shared/src/knowledge/contracts/pat.ts`:PAT 契约上收单一事实源(access-policy/tokens 改别名导出,兼容保留)。
 - 安全:全部比较常量时间;code/client_id/PAT secret ≥256-bit;逐请求查库吊销即时;redirect 仅 HTTPS/loopback(RFC 8252 端口可变);端点错误固定码脱敏。
 - 接线(主会话):`runtime/server.ts` 挂载 PAT 路由、MCP OAuth 路由,`createKnowledgeMcpRequestHandler` 传入 `oauth.externalOrigin`;修复 MCP 分发正则未锚定行首导致 PRM 路径被截胡的缺陷;`api/knowledge/index.ts` 导出 `createKnowledgePatRoutes`。

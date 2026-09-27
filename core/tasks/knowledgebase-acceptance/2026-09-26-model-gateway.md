@@ -13,13 +13,13 @@
 ## 可复现验证
 
 ```powershell
-bun test backend/src/knowledge/ai
+bun test backend/server/src/modules/knowledge/ai
 pnpm backend:typecheck
-pnpm exec eslint --no-ignore backend/src/knowledge/ai/gateway backend/scripts/knowledge-model-check.ts backend/scripts/knowledge-ollama-check.ts
-bun build backend/src/knowledge/ai/gateway/gateway.test.ts --target=node --outfile backend/node_modules/.cache/knowledge/gateway.test.mjs
-node --test backend/node_modules/.cache/knowledge/gateway.test.mjs
-bun backend/scripts/knowledge-model-check.ts
-bun backend/scripts/knowledge-ollama-check.ts
+pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/ai/gateway backend/server/scripts/knowledge-model-check.ts backend/server/scripts/knowledge-ollama-check.ts
+bun build backend/server/src/modules/knowledge/ai/gateway/gateway.test.ts --target=node --outfile .runtime/verification/knowledge/gateway.test.mjs
+node --test .runtime/verification/knowledge/gateway.test.mjs
+bun backend/server/scripts/knowledge-model-check.ts
+bun backend/server/scripts/knowledge-ollama-check.ts
 ```
 
 21 项 Bun 测试通过；网关 16 项在 Node 24.16.0 再通过。类型与定向 lint 通过。测试含真实套接字取消、流错误、惰性工具、多协议、UTF-8/媒体预算、异常脱敏、不可用能力、观察失败、未报告 token、向量维度与重排索引校验；隔离普通 RLS 角色数据库创建后销毁并确认不存在。

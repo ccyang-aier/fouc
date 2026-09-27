@@ -5,7 +5,7 @@ import { blockIdSchema, entityIdSchema } from './primitives';
 
 /**
  * §9.2 只读 Agent 工具（J02）的输入与结果契约。产品内 AI（J04）与 MCP Server
- * （K01）共用 `backend/src/knowledge/ai/tools/` 的同一注册表执行；输入里永远不出现
+ * （K01）共用 `backend/server/src/modules/knowledge/ai/tools/` 的同一注册表执行；输入里永远不出现
  * `workspaceId` 或 principals——工具层从已验证的请求上下文（A03）取得工作区与
  * 发起者，并在服务端展开主体，绝不采纳客户端自报身份。
  */

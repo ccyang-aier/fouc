@@ -1,6 +1,6 @@
 # B04 · Web y-indexeddb 文档生命周期
 
-日期：2026-09-26。模块：前端 `src/features/knowledge/collaboration/`（`page-provider.ts` 连接编排、`page-sync-state.ts` 纯状态机、`offline-doc.ts` y-indexeddb 生命周期）+ 共享命名源 `shared/src/knowledge/collaboration/page-documents.ts`（`pageDocumentName`/`parsePageDocument` 纯函数，与 backend/src/knowledge/collaboration/page-documents.ts 语义一致，后端后续切换复用）+ 根依赖（`@hocuspocus/provider@4.7.0`、`yjs@13.6.33`、`y-protocols`、`y-indexeddb@9.0.12`；dev：`fake-indexeddb`、`lib0`）。
+日期：2026-09-26。模块：前端 `src/features/knowledge/collaboration/`（`page-provider.ts` 连接编排、`page-sync-state.ts` 纯状态机、`offline-doc.ts` y-indexeddb 生命周期）+ 共享命名源 `shared/src/knowledge/collaboration/page-documents.ts`（`pageDocumentName`/`parsePageDocument` 纯函数，与 shared/src/knowledge/collaboration/page-documents.ts 语义一致，后端后续切换复用）+ 根依赖（`@hocuspocus/provider@4.7.0`、`yjs@13.6.33`、`y-protocols`、`y-indexeddb@9.0.12`；dev：`fake-indexeddb`、`lib0`）。
 
 ```powershell
 bun test src/features/knowledge/collaboration   # 21 pass / 0 fail（本任务新增 17，B06 回归 4）

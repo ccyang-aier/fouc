@@ -5,7 +5,7 @@
 ## 验收命令与结果
 
 ```
-bun test backend/src/knowledge/ai     # 57 pass / 0 fail / 228 断言(8 文件,含真实 Ollama e2e)
+bun test backend/server/src/modules/knowledge/ai     # 57 pass / 0 fail / 228 断言(8 文件,含真实 Ollama e2e)
 bun test src/features/knowledge/ai    # 5 pass / 0 fail
 cd backend && bunx tsc --noEmit       # ai 文件 0 错误
 ```

@@ -1,14 +1,14 @@
 # B03 · Redis 多节点广播
 
-日期：2026-09-26。模块：`backend/src/knowledge/collaboration/page-collaboration-redis.ts`（配置与工厂）+ `page-collaboration-server.ts` / `page-collaboration-bun.ts`（broadcast 接线）+ `multi-node.integration.test.ts`。
+日期：2026-09-26。模块：`backend/server/src/modules/knowledge/collaboration/page-collaboration-redis.ts`（配置与工厂）+ `page-collaboration-server.ts` / `page-collaboration-bun.ts`（broadcast 接线）+ `multi-node.integration.test.ts`。
 
-选择的官方机制：`@hocuspocus/extension-redis` 4.7.0（hocuspocus 官方横向扩展扩展），非自研 pub/sub。每节点建立 pub/sub 双连接，订阅 `{prefix}:{documentName}`（默认 prefix `fouc`）与私有回复通道 `{prefix}#reply:{identifier}`；本地变更经单事件循环回合合并后发布 SyncStep1（当前 state vector），对端除应答外立即回发自己的 SyncStep1，本端再以 SyncStep2（真实差量）在对端回复通道送达，对端以 redis 事务 origin 应用——内容传播三跳完成，实测双向 16–19ms。依赖补齐：`backend/package.json` 新增直接依赖 `ioredis@5.6.1`（与扩展声明的 `~5.6.1` 同版去重；代码 import 其类型）；Redlock（`@sesamecare-oss/redlock`）是扩展自带内部机制，我方代码不直接引用，不重复声明。
+选择的官方机制：`@hocuspocus/extension-redis` 4.7.0（hocuspocus 官方横向扩展扩展），非自研 pub/sub。每节点建立 pub/sub 双连接，订阅 `{prefix}:{documentName}`（默认 prefix `fouc`）与私有回复通道 `{prefix}#reply:{identifier}`；本地变更经单事件循环回合合并后发布 SyncStep1（当前 state vector），对端除应答外立即回发自己的 SyncStep1，本端再以 SyncStep2（真实差量）在对端回复通道送达，对端以 redis 事务 origin 应用——内容传播三跳完成，实测双向 16–19ms。依赖补齐：`backend/server/package.json` 新增直接依赖 `ioredis@5.6.1`（与扩展声明的 `~5.6.1` 同版去重；代码 import 其类型）；Redlock（`@sesamecare-oss/redlock`）是扩展自带内部机制，我方代码不直接引用，不重复声明。
 
 ```bash
 pnpm --dir backend add ioredis@5.6.1
-bun test backend/src/knowledge/collaboration      # 30 pass / 0 fail（7 文件）
+bun test backend/server/src/modules/knowledge/collaboration      # 30 pass / 0 fail（7 文件）
 pnpm backend:typecheck                             # 全绿
-pnpm exec eslint --no-ignore backend/src/knowledge/collaboration   # 0 error 0 warning
+pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/collaboration   # 0 error 0 warning
 ```
 
 修复两处收尾问题：`RedisInstance` 是 `RedisClient | Cluster` 联合，`.stream` 仅存在于单机客户端，测试以 `instanceof RedisClient` 运行时收窄；ioredis 的重连事件名是 `'reconnecting'`（携带 delay 参数），不存在 `'reconnect'`，前代理写错导致标志位永不置位、断线测试超时。另清理 `events.ts` 一个未使用导入。

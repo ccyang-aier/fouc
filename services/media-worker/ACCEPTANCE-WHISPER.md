@@ -82,12 +82,12 @@ Python 服务没有数据库、队列或独立业务存储，没有读取用户�
 
 ```powershell
 .\services\media-worker\.venv\Scripts\python.exe -m pytest -q services/media-worker
-bun test backend/src/knowledge/media/client.test.ts
+bun test backend/server/src/modules/knowledge/media/client.test.ts
 pnpm backend:typecheck
 .\services\media-worker\.venv\Scripts\python.exe services/media-worker/dev.py status
-bun build backend/src/knowledge/media/client.ts --target=node --format=esm --outfile services/media-worker/.runtime/client.mjs
+bun build backend/server/src/modules/knowledge/media/client.ts --target=node --format=esm --outfile services/media-worker/.runtime/client.mjs
 node services/media-worker/scripts/check-client.mjs
-bun build backend/src/knowledge/media/client.test.ts --target=node --format=esm --outfile services/media-worker/.runtime/client.test.mjs
+bun build backend/server/src/modules/knowledge/media/client.test.ts --target=node --format=esm --outfile services/media-worker/.runtime/client.test.mjs
 node --test services/media-worker/.runtime/client.test.mjs
 node services/media-worker/scripts/check-whisper.mjs
 ```

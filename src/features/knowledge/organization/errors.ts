@@ -1,7 +1,7 @@
 /**
  * Organization client error boundary (O02).
  *
- * The organization REST surface (backend/src/knowledge/organization/http.ts)
+ * The organization REST surface (backend/server/src/modules/knowledge/organization/http.ts)
  * answers with `{ code, message }` bodies from a fixed code set plus transport
  * failures. Everything is normalized here into one domain error so UI consumers
  * branch on a stable `code`; Chinese copy for each code lives in this module so

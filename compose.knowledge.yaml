@@ -48,7 +48,7 @@ services:
   minio:
     image: fouc-knowledge-minio:RELEASE.2025-10-15T17-29-55Z
     build:
-      context: ./backend/scripts
+      context: ./backend/server/scripts
       dockerfile: knowledge-infra-minio.Dockerfile
       # Build-time only: lets an existing loopback proxy in WSL serve downloads.
       # The running services continue to use the isolated Compose network.

@@ -103,7 +103,7 @@
 
 桥不进安装包，也不依赖 `bun x`/`npx` 运行时拉取（编译后的后端 exe 无法充当
 bun CLI 传参运行；AionCore 的 npx+managed-node 方案则需运行时下载 Node 与包）。
-三类形态（版本均由 backend/package.json 锁定）：
+三类形态（版本均由 backend/device/package.json 锁定）：
 
 - **JS 桥（claude）**：适配器编译进后端二进制，以 `fouc-backend --bridge <id>`
   分发；claude-agent-sdk 需以 `bun <cli.js>` 启动内嵌 CLI，由 userData 下的
@@ -204,7 +204,7 @@ fouc/
 
 ### 2.2 与 Fouc 其他 P0 能力的边界
 
-- **F1 执行内核**（`backend/src/execution`）：Agent 子进程必须经 F1 统一入口创建（`agent()` 长驻构造器：kill_on_drop、环境清洗、工作目录固定；`cleanCli()` 短命构造器：版本探测等一次性命令），Agent Driver 不自建进程管理；Git/SSH/脚本执行同样走这里；
+- **F1 执行内核**（`backend/device/src/execution`）：Agent 子进程必须经 F1 统一入口创建（`agent()` 长驻构造器：kill_on_drop、环境清洗、工作目录固定；`cleanCli()` 短命构造器：版本探测等一次性命令），Agent Driver 不自建进程管理；Git/SSH/脚本执行同样走这里；
 - **F3 策略中心**：审批请求（`request_permission`）经 F3 风险分级决策（见 §8），Agent Driver 只负责协议往返；
 - **F4 持久化**：所有状态变更（installation 状态、session/run 生命周期、事件、审批）追加写入 `agent_event` 事件日志，UI 状态可由持久事实重建。
 
@@ -227,7 +227,7 @@ fouc/
 | `AgentSession` | 多轮会话，绑定 WorkObject、安装实例、工作目录、原生 sessionId | `AcpSession`（增加 Fouc 绑定关系） |
 | `AgentRun` | 一次可取消、可审计的执行（prompt 级） | 无对应——Fouc 新增 |
 
-### 3.2 SQLite 表（`backend/src/store/migrations`，嵌入式迁移）
+### 3.2 SQLite 表（`backend/device/src/storage/migrations`，嵌入式迁移）
 
 ```sql
 agent_installation (

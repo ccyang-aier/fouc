@@ -4,7 +4,7 @@ import { TRPCClientError } from '@trpc/client';
  * Knowledge client error boundary (U01).
  *
  * The server allowlists a fixed set of tRPC error codes with sanitized messages
- * (backend/src/api/knowledge/errors.ts). Every transport failure is normalized
+ * (backend/server/src/modules/knowledge/api/errors.ts). Every transport failure is normalized
  * here into one domain error so query consumers branch on a stable `code`
  * instead of sniffing tRPC internals.
  */

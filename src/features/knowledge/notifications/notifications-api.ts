@@ -3,7 +3,7 @@
 /**
  * Notification inbox client surface (N03) over plain workspace-scoped HTTP.
  *
- * The backend routes (backend/src/knowledge/notifications/http.ts) live outside
+ * The backend routes (backend/server/src/modules/knowledge/notifications/http.ts) live outside
  * the tRPC boundary, so this client owns a small fetch transport with the same
  * semantics as the tRPC layer: cookies always ride along
  * (`credentials: 'include'`), inputs are validated client-side against the

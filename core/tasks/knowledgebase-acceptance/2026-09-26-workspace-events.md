@@ -1,13 +1,13 @@
 # B06 · 工作区无状态事件与缓存失效
 
-日期：2026-09-26。模块：`backend/src/knowledge/collaboration/events.ts`（hub/consumer/频道）+ 监听器集成（page-collaboration-bun.ts 路由分发）+ 前端 `src/features/knowledge/collaboration/workspace-events.ts` 与 query-keys 域段扩展。
+日期：2026-09-26。模块：`backend/server/src/modules/knowledge/collaboration/events.ts`（hub/consumer/频道）+ 监听器集成（page-collaboration-bun.ts 路由分发）+ 前端 `src/features/knowledge/collaboration/workspace-events.ts` 与 query-keys 域段扩展。
 
 主代理实现并验证：成员校验的 `/api/knowledge/:workspaceId/events` WebSocket 频道挂在协作监听器上（与页面文档传输并存、互不干扰）；graphile consumer 把 `workspace.event` outbox 事件扇出到本进程订阅者；频道无状态——不存任何每客户端游标。
 
 ```powershell
-bun test backend/src/knowledge/collaboration
+bun test backend/server/src/modules/knowledge/collaboration
 bun test src/features/knowledge/collaboration
-pnpm exec eslint --no-ignore backend/src/knowledge/collaboration src/features/knowledge/collaboration src/features/knowledge/data
+pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/collaboration src/features/knowledge/collaboration src/features/knowledge/data
 node scripts/verify-knowledge-boundaries.mjs
 ```
 

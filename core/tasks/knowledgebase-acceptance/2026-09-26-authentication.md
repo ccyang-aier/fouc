@@ -1,8 +1,8 @@
 # A01 · 邮箱与会话验收
 
-日期：2026-09-26。模块：`backend/src/identity/`。
+日期：2026-09-26。模块：`backend/server/src/platform/identity/`。
 
-主代理复核 config/service/http/email/identity 与 README，运行 `bun test backend/src/identity`：**15 tests / 167 assertions / 0 failures**；整体 backend 类型检查通过。测试使用真实 Node HTTP 端口、普通 PostgreSQL 应用角色与三个唯一临时数据库，结束后逐一删除验证，不 seed 主库。
+主代理复核 config/service/http/email/identity 与 README，运行 `bun test backend/server/src/platform/identity`：**15 tests / 167 assertions / 0 failures**；整体 backend 类型检查通过。测试使用真实 Node HTTP 端口、普通 PostgreSQL 应用角色与三个唯一临时数据库，结束后逐一删除验证，不 seed 主库。
 
 ## 通过的实际流程
 
@@ -26,7 +26,7 @@ Better Auth 1.7.6 官方包的 utils peer 声明与本体依赖存在版本警�
 日期：2026-09-26。主代理审阅 access policy、token format、session access、token service、opaque request context/refresh 与 identity 变更，并独立重跑：
 
 ```powershell
-bun test backend/src/identity
+bun test backend/server/src/platform/identity
 pnpm backend:typecheck
 ```
 
@@ -45,12 +45,12 @@ pnpm backend:typecheck
 日期：2026-09-26。主代理审阅 oauth-config/oauth-http/oauth-provider/oauth-state/oidc-test-provider 与 README，复核 Better Auth 1.7.6 genericOAuth 官方路径，并独立重跑全部验证（先构建后 lint，避免 `--no-ignore` 扫到 3.1 MB 一次性冒烟 bundle）：
 
 ```powershell
-bun test backend/src/identity
+bun test backend/server/src/platform/identity
 pnpm backend:typecheck
-pnpm exec eslint --no-ignore backend/src/identity
-bun build backend/src/identity/oauth-node-smoke.ts --target=node --format=esm --outfile backend/src/identity/.runtime/oauth-node-smoke.mjs
-Copy-Item backend/src/database/current.sql backend/src/identity/.runtime/current.sql
-node --env-file=.env.fouc.local backend/src/identity/.runtime/oauth-node-smoke.mjs
+pnpm exec eslint --no-ignore backend/server/src/platform/identity
+bun build backend/server/src/platform/identity/oauth-node-smoke.ts --target=node --format=esm --outfile backend/server/src/platform/identity/.runtime/oauth-node-smoke.mjs
+Copy-Item backend/server/src/platform/database/current.sql backend/server/src/platform/identity/.runtime/current.sql
+node --env-file=.env.fouc.local backend/server/src/platform/identity/.runtime/oauth-node-smoke.mjs
 ```
 
 结果：**79 tests / 0 fail / 1633 assertions**（A02 新增 41 项），类型检查与定向 lint 通过；Node 24.16.0 冒烟在一次性 PostgreSQL/HTTP 上 **PASS**（真实 discovery/JWKS/RS256、S256、nonce 拒绝、错误恢复、稳定身份、不落盘 provider token），临时库创建后删除确认不存在。

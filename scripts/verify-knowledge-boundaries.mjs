@@ -5,9 +5,8 @@ import ts from 'typescript';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const sharedRoot = 'shared/src/knowledge/';
-const backendRoot = 'backend/src/knowledge/';
-const backendApiRoot = 'backend/src/api/knowledge/';
-const backendRoots = [backendRoot, backendApiRoot, 'backend/src/identity/', 'backend/src/runtime/'];
+const backendRoot = 'backend/server/src/modules/knowledge/';
+const backendRoots = ['backend/server/src/', 'backend/device/src/'];
 const frontendRoot = 'src/features/knowledge/';
 const frontendRoots = [frontendRoot, 'src/features/identity/'];
 const gatewayRoot = `${backendRoot}ai/gateway/`;
@@ -35,7 +34,7 @@ export function checkKnowledgeImports(relativeFile, content) {
     if (backendRoots.some((root) => relativeFile.startsWith(root)) && (/^src\//.test(resolved) || /^(@\/|react(?:\/|$)|react-dom(?:\/|$)|next(?:\/|$))/.test(target))) fail('后端不得依赖前端');
     if (backendRoots.some((root) => relativeFile.startsWith(root)) && !relativeFile.startsWith(gatewayRoot) && !typeOnly
       && (/^@ai-sdk\//.test(target) || (target === 'ai' && !helperOnly))) fail('模型调用与 Provider 只能位于统一 AI 网关；工具 schema 帮助函数和类型除外');
-    if (frontendRoots.some((root) => relativeFile.startsWith(root)) && !typeOnly && (/^backend\//.test(resolved) || /^(@backend\/|bun:|node:)/.test(target))) fail('前端不得导入服务端运行时代码');
+    if (frontendRoots.some((root) => relativeFile.startsWith(root)) && (/^backend\//.test(resolved) || /^(@backend\/|bun:|node:)/.test(target) || (target.startsWith('@fouc/server') && !(target === '@fouc/server/knowledge-api' && typeOnly)))) fail('前端只能消费公开类型契约，禁止导入后端内部代码');
   }
   function visit(node) {
     if (ts.isImportDeclaration(node)) {

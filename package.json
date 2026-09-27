@@ -9,25 +9,38 @@
   },
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0",
+    "dev:all": "node scripts/dev.mjs",
     "build": "next build",
     "preview": "serve out",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings=0",
-    "check": "pnpm typecheck && pnpm lint && pnpm build",
+    "check": "pnpm typecheck && pnpm backend:typecheck && pnpm shared:typecheck && pnpm architecture:verify && pnpm lint && pnpm build",
     "tauri": "tauri",
     "desktop:dev": "tauri dev",
     "desktop:build": "tauri build",
-    "backend:dev": "bun --hot backend/src/index.ts",
-    "backend:start": "bun backend/src/index.ts",
-    "backend:typecheck": "tsc --noEmit -p backend/tsconfig.json",
+    "backend:dev": "pnpm device:dev",
+    "backend:start": "pnpm device:start",
+    "backend:typecheck": "pnpm device:typecheck && pnpm server:typecheck",
     "shared:typecheck": "tsc --noEmit -p shared/tsconfig.json",
+    "test:frontend": "bun test --isolate ./shared/src ./src",
     "knowledge:verify": "node scripts/verify-knowledge-tasks.mjs && node scripts/verify-knowledge-boundaries.mjs",
-    "knowledge:test": "bun test shared/src/knowledge backend/src/knowledge",
-    "backend:test": "bun --cwd backend test",
-    "verify:dts-live": "bun backend/scripts/verify-dts-live.ts",
+    "knowledge:test": "bun test --isolate ./shared/src/knowledge ./backend/device/src/knowledge ./backend/device/src/collaboration ./backend/server/src/modules/knowledge",
+    "backend:test": "pnpm device:test && pnpm server:test",
+    "verify:dts-live": "bun backend/device/scripts/verify-dts-live.ts",
     "backend:build": "node scripts/build-backend.mjs",
-    "verify:approval": "bun backend/scripts/verify-approval.ts",
-    "verify:dbx-catalog": "bun scripts/verify-dbx-catalog.ts"
+    "verify:approval": "bun backend/device/scripts/verify-approval.ts",
+    "verify:dbx-catalog": "bun scripts/verify-dbx-catalog.ts",
+    "device:dev": "bun --hot backend/device/src/entrypoints/index.ts",
+    "device:start": "bun backend/device/src/entrypoints/index.ts",
+    "device:typecheck": "pnpm --filter @fouc/device typecheck",
+    "device:test": "pnpm --filter @fouc/device test",
+    "device:build": "pnpm --filter @fouc/device build",
+    "server:dev": "bun --watch --env-file=.env.fouc.local --env-file=.env.knowledge.models.local backend/server/src/entrypoints/server.ts",
+    "server:start": "bun backend/server/src/entrypoints/server.ts",
+    "server:typecheck": "pnpm --filter @fouc/server typecheck",
+    "server:test": "pnpm --filter @fouc/server test",
+    "server:build": "pnpm --filter @fouc/server build",
+    "architecture:verify": "node scripts/verify-architecture.mjs"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.3",
@@ -62,7 +75,8 @@
     "y-indexeddb": "9.0.12",
     "y-prosemirror": "1.3.7",
     "y-protocols": "^1.0.7",
-    "yjs": "13.6.33"
+    "yjs": "13.6.33",
+    "client-only": "0.0.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.3.3",
@@ -80,7 +94,10 @@
     "serve": "latest",
     "tailwindcss": "4.3.3",
     "tw-animate-css": "latest",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "@fouc/server": "workspace:*",
+    "ws": "^8.21.3",
+    "@types/ws": "^8.18.1"
   },
   "pnpm": {}
 }

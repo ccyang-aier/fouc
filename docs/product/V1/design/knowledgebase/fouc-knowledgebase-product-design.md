@@ -456,7 +456,7 @@ services/
   media-worker/                独立 Python 服务（FastAPI + Whisper + Docling）
 ```
 
-关键点是把 `schema`、`markdown` 和相关契约放入现有 `shared/` 工作区，由前端和后端共同消费。React NodeView 等仅浏览器可运行的实现留在 `src/features/knowledge/`；Hocuspocus、索引、权限和 AI 工具等服务端实现留在 `backend/src/knowledge/`。这样共享的是领域语义和纯转换代码，而不是把前后端运行时代码强行塞进同一个包。
+关键点是把 `schema`、`markdown` 和相关契约放入现有 `shared/` 工作区，由前端和后端共同消费。React NodeView 等仅浏览器可运行的实现留在 `src/features/knowledge/`；Hocuspocus、索引、权限和 AI 工具等服务端实现留在 `backend/server/src/modules/knowledge/`。这样共享的是领域语义和纯转换代码，而不是把前后端运行时代码强行塞进同一个包。
 
 ---
 

@@ -6,8 +6,8 @@
 
 ```
 bun test src/features/knowledge/comments                        # 30 pass / 0 fail(5 文件)
-bun test backend/src/knowledge/comments                         # 7 pass / 0 fail(真实 RLS 租户库)
-bun test backend/src/api/knowledge/comment-routes.test.ts       # 4 pass / 0 fail(真实 HTTP 边界)
+bun test backend/server/src/modules/knowledge/comments                         # 7 pass / 0 fail(真实 RLS 租户库)
+bun test backend/server/src/modules/knowledge/api/comment-routes.test.ts       # 4 pass / 0 fail(真实 HTTP 边界)
 bun test src/features/knowledge/editor                          # 104 pass(装配后全树回归)
 cd backend && bunx tsc --noEmit; bunx tsc --noEmit(根)          # N02 文件 0 错误
 bunx eslint src/features/knowledge/comments ...                 # 干净

@@ -1,18 +1,18 @@
 # T02 · 数据库页面及类型化行属性
 
-日期：2026-09-26。模块：`backend/src/knowledge/databases/`（service/properties/errors/index）与 `shared/src/knowledge/contracts/databases.ts`（新增）+ `pages.ts` kind/属性/筛选契约扩展 + barrel。
+日期：2026-09-26。模块：`backend/server/src/modules/knowledge/databases/`（service/properties/errors/index）与 `shared/src/knowledge/contracts/databases.ts`（新增）+ `pages.ts` kind/属性/筛选契约扩展 + barrel。
 
 真实 PostgreSQL（.env.fouc.local，PG 17.11 / en_US.utf8）一次性 disposable 库上运行验收：
 
 ```bash
-bun test backend/src/knowledge/databases        # 18 tests / 0 fail / 161 assertions,连跑 4 次一致
-bun test backend/src/knowledge/pages            # 23 tests / 0 fail(T01 回归,契约扩展后仍绿)
+bun test backend/server/src/modules/knowledge/databases        # 18 tests / 0 fail / 161 assertions,连跑 4 次一致
+bun test backend/server/src/modules/knowledge/pages            # 23 tests / 0 fail(T01 回归,契约扩展后仍绿)
 bun test shared/src/knowledge/contracts         # 9 tests / 0 fail
 pnpm shared:typecheck                           # 0 错误
-pnpm exec eslint --no-ignore backend/src/knowledge/databases shared/src/knowledge/contracts
+pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/databases shared/src/knowledge/contracts
                                                 # 0 错误;仅存量已提交文件 contracts.test.ts 一条 `_after` 未用警告(非本任务改动)
-bun backend/scripts/database-schema.ts --check # Knowledge current SQL matches the Drizzle source.
-git diff backend/src/database/knowledge/        # 空——schema 无改动需求
+bun backend/server/scripts/database-schema.ts --check # Knowledge current SQL matches the Drizzle source.
+git diff backend/server/src/platform/database/knowledge/        # 空——schema 无改动需求
 ```
 
 `pnpm backend:typecheck` 中 databases 目录 0 错误；全局输出在验收期间持续出现其他并行代理进行中文件(collaboration/search)的瞬时错误,与本任务无关且不属本任务修复范围。

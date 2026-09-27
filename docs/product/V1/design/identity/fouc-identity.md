@@ -2,11 +2,11 @@
 
 ## 账户归属
 
-Fouc 只有一套账户。邮箱密码、邮箱验证、企业 SSO 与数据库会话由 `backend/src/identity` 提供，接口统一为 `/api/auth/*`。身份表由 `backend/src/database/identity/schema.ts` 定义，知识库和其它资源只引用同一个用户 UUID。
+Fouc 只有一套账户。邮箱密码、邮箱验证、企业 SSO 与数据库会话由 `backend/server/src/platform/identity` 提供，接口统一为 `/api/auth/*`。身份表由 `backend/server/src/platform/database/identity/schema.ts` 定义，知识库和其它资源只引用同一个用户 UUID。
 
 PostgreSQL 数据库统一命名为 `fouc`；账户表位于全局 `auth` schema，其中 `user`、`session`、`account`、`verification` 由身份模块拥有。知识库业务表位于 `knowledge` schema，仅通过用户 UUID 引用全局账户。
 
-`backend/src/database/schema.ts` 组合各模块的表定义；全局初始化、检查与当前 DDL 位于 `backend/src/database/initialize*.ts`、`current.sql`。命令为 `bun backend/scripts/database.ts [init|status|check]`、`bun backend/scripts/database-schema.ts [--write|--check]`。初始化只接受空数据库，没有迁移链、旧 schema 分支或兼容适配器。开发环境集中配置在忽略提交的 `.env.fouc.local`；内置开发账户由 `backend/scripts/auth-admin.ts` 创建。
+`backend/server/src/platform/database/schema.ts` 组合各模块的表定义；全局初始化、检查与当前 DDL 位于 `backend/server/src/platform/database/initialize*.ts`、`current.sql`。命令为 `bun backend/server/scripts/database.ts [init|status|check]`、`bun backend/server/scripts/database-schema.ts [--write|--check]`。初始化只接受空数据库，没有迁移链、旧 schema 分支或兼容适配器。开发环境集中配置在忽略提交的 `.env.fouc.local`；内置开发账户由 `backend/server/scripts/auth-admin.ts` 创建。
 
 前端 `src/features/identity` 挂载于应用根布局。所有模块通过 `useIdentity()` 获取同一会话，不自行发起模块登录流程。侧栏设置下方是账户入口；展开时显示头像、名称与邮箱，收起时保留头像和内置提示。登录模态框和独立 `/auth` 页面共用同一表单，验证与 SSO 回调仍有独立页面。
 
@@ -29,7 +29,7 @@ PostgreSQL 数据库统一命名为 `fouc`；账户表位于全局 `auth` schema
 
 身份回答“当前是谁”；资源授权回答“能对这个资源做什么”。账户名称、邮箱或登录成功都不授予管理员权限。
 
-知识库的 `backend/src/knowledge/access` 将全局会话或工作区 PAT 转为服务器拥有的请求上下文；实时检查工作区成员关系、角色和令牌范围。`backend/src/knowledge/permissions` 继续检查文件夹、页面及操作级 ACL。前端显隐和只读状态来自这些真实结果，后端仍独立校验每次读取和写入。403 保留登录身份，401 触发全局会话失效处理。
+知识库的 `backend/server/src/modules/knowledge/access` 将全局会话或工作区 PAT 转为服务器拥有的请求上下文；实时检查工作区成员关系、角色和令牌范围。`backend/server/src/modules/knowledge/permissions` 继续检查文件夹、页面及操作级 ACL。前端显隐和只读状态来自这些真实结果，后端仍独立校验每次读取和写入。403 保留登录身份，401 触发全局会话失效处理。
 
 其它模块应消费同一个身份入口，在自己的业务边界检查资源授权，不能新增模块账户。桌面本机进程的 IPC/Bearer 安全令牌是设备通信凭据，不是另一套用户账户，也不能作为云端用户授权。
 
@@ -49,7 +49,7 @@ Web 与桌面共同使用 `NEXT_PUBLIC_FOUC_API_URL`；桌面注册及重发邮�
 
 ## 桌面传输
 
-`backend/src/runtime/server.ts` 是全局服务装配入口，将身份与资源模块挂载于同一个监听器；本机设备 sidecar (`backend/src/index.ts`) 的随机 IPC token 只保护设备操作。
+`backend/server/src/entrypoints/server.ts` 是全局服务装配入口，将身份与资源模块挂载于同一个监听器；本机设备 sidecar (`backend/device/src/entrypoints/index.ts`) 的随机 IPC token 只保护设备操作。
 
 Tauri 构建读取同一个 `NEXT_PUBLIC_FOUC_API_URL`，`get_fouc_service_origin` 返回固定的服务地址。`src/lib/fouc-service-fetch.ts` 与 `src-tauri/src/service_http.rs` 提供受限原生 HTTP 能力：仅主窗口、本产品页面和固定服务 `/api/*` 可调用；Cookie 保留在 WebView 的持久 HttpOnly 存储中；JS 不能指定 Cookie、Origin 或设备令牌，Set-Cookie 不返回 JS。远程服务只接受 HTTPS，本机开发允许 HTTP loopback；不关闭 CSRF 或证书校验。
 

@@ -34,7 +34,7 @@ AionUi 1.x 同时支持 5 种执行引擎（kind），Fouc V1 只实现 ACP 一�
 | 1 | 只装 OpenCode 的机器自动识别并可直接建会话 | ✅ 真机验证（发现→探测→会话→流式回复→token 用量） |
 | 2 | 多版本共存、不混淆路径与会话 | ⚠️ 数据模型支持（installation 按 provider+路径摘要唯一），未做多版本真机验证 |
 | 3 | Claude 未登录 → needs_auth + 原生认证引导 | ✅ 状态语义真机验证；原生认证引导 UI 待补（当前仅错误文案） |
-| 4 | 高风险工具审批在 Work Room 呈现，未批准不推进 | ✅ 审批往返经 Mock ACP Agent（真实子进程/NDJSON/SDK）8 项断言验证：UI 委托、outcome 回写、allow_once 不缓存、allow_always 缓存重放（`bun backend/scripts/verify-approval.ts` 可重复） |
+| 4 | 高风险工具审批在 Work Room 呈现，未批准不推进 | ✅ 审批往返经 Mock ACP Agent（真实子进程/NDJSON/SDK）8 项断言验证：UI 委托、outcome 回写、allow_once 不缓存、allow_always 缓存重放（`bun backend/device/scripts/verify-approval.ts` 可重复） |
 | 5 | 取消长任务：优雅取消 → 确认进程状态 → 保留输出 | ✅ cancel API + 事件保留实现；cancel 后进程状态确认 UI 待补 |
 | 6 | Agent 升级事件格式变化 → 标记不兼容不误判 | ⚠️ 指纹机制已实现（capability fingerprint），未做升级演练验证 |
 | 7 | Fouc 重启：恢复可恢复会话或明确不可恢复原因 | ✅ 真机验证：重启后 suspended 且 nativeSessionId 保留，resume → active（OpenCode 实测 loadSession 成功） |

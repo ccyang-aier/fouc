@@ -5,12 +5,12 @@
 ## 验收命令与结果
 
 ```
-bun test backend/src/knowledge/import-export/    # 64 pass / 0 fail / 281 断言(5 文件)
+bun test backend/server/src/modules/knowledge/import-export/    # 64 pass / 0 fail / 281 断言(5 文件)
 cd backend && bunx tsc --noEmit                  # 除并行代理在写的 ai/streaming 外 0 错误
 node scripts/verify-knowledge-boundaries.mjs     # 335 文件通过
 ```
 
-## 交付内容(backend/src/knowledge/import-export/)
+## 交付内容(backend/server/src/modules/knowledge/import-export/)
 
 - `vault.ts`:vault 目录树→页面树映射、同名兄弟导出去重(首名保留、后续 ` 2`/` 3`)、`vaultPathsForExport`。
 - `frontmatter.ts` / `body.ts`:frontmatter 解析;正文↔Y.Doc 双向翻译,wikilink `[[page]]`/`[[page.md]]` basename 解析、嵌入 `![[asset]]`→`asset:hash`、导出侧容器块先递归子节点再重建(嵌套行内 wiki 链接正确改写为 vault 路径)、video/audio/file 媒体指令 src 往返改写。

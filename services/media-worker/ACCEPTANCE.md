@@ -9,7 +9,7 @@
 - `media_worker/download.py`：精确 origin 白名单、短期 S3 SigV4 URL、禁止跳转/环境代理/压缩内容、流式字节上限、声明大小及 SHA-256 校验。
 - `media_worker/processors.py`：受信任静态注册，逐任务 spawn 子进程、结果大小限制、终止与临时文件清理。生产注册表为空，不安装测试探针。
 - `media_worker/config.py`：CPU/CUDA/auto、compute type、线程/并发/输入输出/期限限制；必需秘密配置错误只暴露字段名。
-- `backend/src/knowledge/media/client.ts`：Node 兼容客户端，复用共享 `assetDerivedSchema`、UUID、哈希与时间契约；响应关联性、大小/结构验证、超时与主动取消。
+- `backend/server/src/modules/knowledge/media/client.ts`：Node 兼容客户端，复用共享 `assetDerivedSchema`、UUID、哈希与时间契约；响应关联性、大小/结构验证、超时与主动取消。
 - `dev.py`、requirements、Dockerfile、README、目录内精确 `.gitignore`：独立虚拟环境、隐藏常驻开发服务与复现方式。
 
 没有添加数据库驱动、Redis 客户端或 Python 队列；没有读取用户模型密钥文件；没有写入业务资产存储。所有 SQL、Graphile Worker 调度、业务授权、持久化派生结果及重索引仍由后续 TypeScript 任务负责。
@@ -43,12 +43,12 @@
 
 ```powershell
 .\services\media-worker\.venv\Scripts\python.exe -m pytest -q services/media-worker
-bun test backend/src/knowledge/media/client.test.ts
+bun test backend/server/src/modules/knowledge/media/client.test.ts
 pnpm backend:typecheck
 python services/media-worker/dev.py verify
-bun build backend/src/knowledge/media/client.ts --target=node --format=esm --outfile services/media-worker/.runtime/client.mjs
+bun build backend/server/src/modules/knowledge/media/client.ts --target=node --format=esm --outfile services/media-worker/.runtime/client.mjs
 node services/media-worker/scripts/check-client.mjs
-bun build backend/src/knowledge/media/client.test.ts --target=node --format=esm --outfile services/media-worker/.runtime/client.test.mjs
+bun build backend/server/src/modules/knowledge/media/client.test.ts --target=node --format=esm --outfile services/media-worker/.runtime/client.test.mjs
 node --test services/media-worker/.runtime/client.test.mjs
 ```
 

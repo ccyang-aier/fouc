@@ -1,13 +1,13 @@
 # P02 · 有效权限物化、失效围栏与索引同步
 
-日期：2026-09-26。模块：`backend/src/knowledge/permissions/`（locking/mutations/fence/projection/queries/rebuild）与 `organization/teamspaces.ts` 根默认权限接线。
+日期：2026-09-26。模块：`backend/server/src/modules/knowledge/permissions/`（locking/mutations/fence/projection/queries/rebuild）与 `organization/teamspaces.ts` 根默认权限接线。
 
 主代理复核实现并以真实身份、真实 graphile-worker 队列、普通 RLS 角色租户事务运行新增集成验收：
 
 ```powershell
-bun test backend/src/knowledge/permissions backend/src/knowledge/organization shared/src/knowledge/contracts/organization.test.ts
+bun test backend/server/src/modules/knowledge/permissions backend/server/src/modules/knowledge/organization shared/src/knowledge/contracts/organization.test.ts
 pnpm backend:typecheck
-pnpm exec eslint --no-ignore backend/src/knowledge/permissions
+pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/permissions
 node scripts/verify-knowledge-boundaries.mjs
 ```
 

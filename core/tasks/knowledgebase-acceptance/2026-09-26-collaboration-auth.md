@@ -1,12 +1,12 @@
 # B01 · Hocuspocus v4 鉴权与只读连接
 
-日期：2026-09-26。模块：`backend/src/knowledge/collaboration/`（page-documents/page-collaboration/page-collaboration-server/page-collaboration-bun）。
+日期：2026-09-26。模块：`backend/server/src/modules/knowledge/collaboration/`（page-documents/page-collaboration/page-collaboration-server/page-collaboration-bun）。
 
 主代理实现并以真实 Bun 监听器装配 + 官方 @hocuspocus/provider 4.7.0 协议客户端验证：
 
 ```powershell
-bun test backend/src/knowledge/collaboration
-pnpm exec eslint --no-ignore backend/src/knowledge/collaboration
+bun test backend/server/src/modules/knowledge/collaboration
+pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/collaboration
 node scripts/verify-knowledge-boundaries.mjs
 ```
 

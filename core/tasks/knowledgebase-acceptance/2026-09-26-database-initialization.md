@@ -7,8 +7,8 @@
 复核初始化、配置/角色检查、目录核验与 CLI；重新运行：
 
 ```powershell
-bun test backend/src/database/knowledge
-bun backend/scripts/database.ts check
+bun test backend/server/src/platform/database/knowledge
+bun backend/server/scripts/database.ts check
 pnpm backend:typecheck
 ```
 

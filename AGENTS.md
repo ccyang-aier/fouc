@@ -9,11 +9,19 @@ Fouc 是一套构建于 AI Agent 之上的超级工作台，面向个人与企�
 ## 技术栈
 
 - Next.js App Router + React + TypeScript（前端，`src/`）
-- 后端业务逻辑使用 TypeScript，实现为独立 sidecar 进程（`backend/`，运行时 Bun），经本地 HTTP/WS 向前端提供服务；前后端共享契约位于 `shared/`
+- 后端采用两个独立 TypeScript/Bun workspace 包：`backend/device/` 是桌面设备 sidecar，负责本机 Agent、连接器与执行；`backend/server/` 是统一业务服务，负责账户、共享资源与协作。`backend/` 仅为组织目录；共享契约与跨宿主纯文档协议位于 `shared/`
 - Tauri v2（Rust）仅作为系统薄壳（`src-tauri/`）：窗口、系统能力桥、自动更新与后端进程看护；后端业务逻辑不得写入 Rust
 - 后端代码保持在 Node 兼容 API 子集内（进程/HTTP/文件操作使用标准 API 与框架抽象），保留退回 Node 运行时的低成本通道
 - Tailwind CSS v4 + shadcn/ui-style Radix primitives
 - Tauri native application storage for local preferences and state
+
+## 工程边界
+
+- 前端保持在 `src/`，不得导入后端内部实现；tRPC 客户端类型仅通过 `@fouc/server/knowledge-api` 的公开 type-only 导出使用，禁止运行时导入。
+- 两个后端包互不导入内部代码；设备包不连接账户与共享业务数据库。跨宿主协议经 `@fouc/shared` 的公开导出使用。
+- Python 内容处理仍位于 `services/media-worker/`，不进入桌面 sidecar 的运行与分发依赖。
+- `pnpm dev:all` 启动或复用本仓库的 Web、设备运行时和业务服务；服务在命令退出后保持运行并自动刷新源码。
+- `pnpm architecture:verify` 验证依赖边界与依赖声明；后端分别使用 `device:*`、`server:*` 命令检查、测试与构建。
 
 ## 开发理念
 

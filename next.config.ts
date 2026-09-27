@@ -1,6 +1,8 @@
 import type { NextConfig } from "next"
+import { PHASE_DEVELOPMENT_SERVER } from "next/constants"
 
-const nextConfig: NextConfig = {
+const nextConfig = (phase: string): NextConfig => ({
+  distDir: phase === PHASE_DEVELOPMENT_SERVER ? ".next" : ".next-build",
   transpilePackages: ['@fouc/shared'],
   output: "export",
   devIndicators: false,
@@ -8,6 +10,6 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
-}
+})
 
 export default nextConfig

@@ -34,7 +34,7 @@ const outfile = path.join(outDir, `fouc-backend-${target}${ext}`);
 if (existsSync(outfile)) rmSync(outfile);
 
 // --compile 将 hono/@agentclientprotocol/sdk/claude 桥适配器等全部内联进单文件
-execSync(`bun build --compile --minify backend/src/index.ts --outfile "${outfile}"`, {
+execSync(`bun build --compile --minify backend/device/src/entrypoints/index.ts --outfile "${outfile}"`, {
   cwd: root,
   stdio: "inherit",
 });

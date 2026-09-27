@@ -12,7 +12,7 @@ export * from './mysql-query-ranges';
 
 /**
  * ACP 启动方式：原生子命令，或桥接。
- * 桥的本地化工件按形态区分：开发态统一解析 backend/node_modules 下的 entry
+ * 桥的本地化工件按形态区分：开发态统一解析 backend/device/node_modules 下的 entry
  * （js 经 bun 运行，native 直接执行）；打包态由 packaged 声明来源——
  * 并入后端二进制（argv 分发），或首次使用时从 npm 下载原生桥。
  */
@@ -22,7 +22,7 @@ export type AcpLaunch =
       kind: 'bridge';
       /** 开发态工件形态：bun 可运行的 js 入口，或 npm 平台包内的原生二进制 */
       devRuntime: 'bun' | 'native';
-      /** backend/node_modules 下的工件路径（存在即视为开发态） */
+      /** backend/device/node_modules 下的工件路径（存在即视为开发态） */
       devEntry: string;
       packaged:
         | { source: 'backend-dispatch' }

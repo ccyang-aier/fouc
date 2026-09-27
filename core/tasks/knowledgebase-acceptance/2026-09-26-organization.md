@@ -14,11 +14,11 @@
 ## 主代理验证
 
 ```powershell
-bun test backend/src/database/knowledge backend/src/identity backend/src/knowledge/organization shared/src/knowledge/contracts/organization.test.ts
+bun test backend/server/src/platform/database/knowledge backend/server/src/platform/identity backend/server/src/modules/knowledge/organization shared/src/knowledge/contracts/organization.test.ts
 pnpm backend:typecheck
 pnpm shared:typecheck
-bun backend/scripts/database-schema.ts --check
-pnpm exec eslint --no-ignore backend/src/knowledge/organization backend/src/database/knowledge shared/src/knowledge/contracts/organization.ts shared/src/knowledge/contracts/organization.test.ts
+bun backend/server/scripts/database-schema.ts --check
+pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/organization backend/server/src/platform/database/knowledge shared/src/knowledge/contracts/organization.ts shared/src/knowledge/contracts/organization.test.ts
 ```
 
 - **116 测试、2747 断言，0 失败**；包含 O01 21 项真实 PostgreSQL/HTTP 组织流程与 9 项只读身份发现 RLS 测试，以及数据库与认证回归。
@@ -42,10 +42,10 @@ pnpm exec eslint --no-ignore backend/src/knowledge/organization backend/src/data
 删除仅允许不含任何页面（含回收站）的空间。权限根实际变更在尚未接入 P02 时对非空空间明确 409，保持默认值、名称、ACL、正文和索引原样；空空间可变更，同值提交和重命名正常。真实双连接等待 Teamspace 行锁时插入页面、会话自然过期以及数据库失败回滚均验证。P02 接线将替换此非空变更拒绝为同事务失效围栏/Outbox，不能误称本项已实现权限异步重算。
 
 ```powershell
-bun test backend/src/knowledge/organization backend/src/knowledge/permissions shared/src/knowledge/contracts/organization.test.ts
+bun test backend/server/src/modules/knowledge/organization backend/server/src/modules/knowledge/permissions shared/src/knowledge/contracts/organization.test.ts
 pnpm backend:typecheck
 pnpm shared:typecheck
-pnpm exec eslint --no-ignore backend/src/knowledge/organization shared/src/knowledge/contracts/organization.ts shared/src/knowledge/contracts/organization.test.ts
+pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/organization shared/src/knowledge/contracts/organization.ts shared/src/knowledge/contracts/organization.test.ts
 ```
 
 未运行主开发库删除/重建；测试临时库按各自创建闭包清理。O02 组织界面及 Z03 运行进程接线尚未验收。

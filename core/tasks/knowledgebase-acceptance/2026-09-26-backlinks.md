@@ -1,14 +1,14 @@
 # L01 · 页面/块链接与反向引用派生
 
-日期：2026-09-26。模块：`backend/src/knowledge/search/`（backlinks.ts + index.ts + backlinks.integration.test.ts）。前置：M02 AI 方言锚点、B02 doc.changed outbox（onStoreDocument 原子提交 state/vector/事件）、T01 页树、P03 授权谓词、Q01 graphile-worker 消费者模式。schema 的 `backlink` 表（唯一约束 nullsNotDistinct、双侧 page FK cascade、block 格式 check）已存在于 `database/knowledge/schema/content.ts`，本任务未改动 schema。
+日期：2026-09-26。模块：`backend/server/src/modules/knowledge/search/`（backlinks.ts + index.ts + backlinks.integration.test.ts）。前置：M02 AI 方言锚点、B02 doc.changed outbox（onStoreDocument 原子提交 state/vector/事件）、T01 页树、P03 授权谓词、Q01 graphile-worker 消费者模式。schema 的 `backlink` 表（唯一约束 nullsNotDistinct、双侧 page FK cascade、block 格式 check）已存在于 `database/knowledge/schema/content.ts`，本任务未改动 schema。
 
 以真实邮箱身份、真实 graphile-worker 队列、普通 RLS 角色租户事务、一次性 disposable 数据库验证：
 
 ```bash
-bun test backend/src/knowledge/search          # 6 pass / 0 fail / 22 expect，两轮复跑稳定
-pnpm exec eslint --no-ignore backend/src/knowledge/search   # 无告警
+bun test backend/server/src/modules/knowledge/search          # 6 pass / 0 fail / 22 expect，两轮复跑稳定
+pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/search   # 无告警
 pnpm backend:typecheck                         # search/ 零错误
-bun backend/scripts/database-schema.ts --check             # Knowledge current SQL matches the Drizzle source
+bun backend/server/scripts/database-schema.ts --check             # Knowledge current SQL matches the Drizzle source
 ```
 
 `pnpm backend:typecheck` 全量输出当时仅剩 `collaboration/agent-awareness.ts(64)` 一处错误：该文件为其他并行任务的同会话未跟踪新文件（两次运行间才出现），与本任务无关；search/ 目录无任何类型错误。未改动 `shared/`，故未运行 `pnpm shared:typecheck`。

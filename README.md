@@ -43,12 +43,14 @@ V1 负责建立 Fouc 最小但完整的 Agent 工作底座，并用远程问题�
 
 ## 本地开发
 
-环境要求：Node.js 22+、pnpm 10.29.3，以及 Tauri 所需的 Rust 与平台工具链。
+环境要求：Node.js 22+、pnpm 10.29.3、Bun；开发桌面壳时还需要 Rust 与平台工具链。
 
 ```bash
 pnpm install
-pnpm dev
+pnpm dev:all
 ```
+
+`dev:all` 启动或复用本仓库 Web、设备运行时和业务服务，退出命令后服务常驻并自动刷新源码。业务服务配置使用 `.env.fouc.local`。前端保持在 `src/`，后端拆为 `backend/device/` 与 `backend/server/`；详细边界、独立命令和基础设施配置见 [后端工程说明](./backend/README.md)。单独启动前端仍使用 `pnpm dev`。
 
 Web 开发默认连接真实 sidecar。需要启用浏览器 Mock 时，在启动进程中设置连接器列表（逗号分隔）：
 

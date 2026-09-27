@@ -2,7 +2,7 @@
 
 - 日期：2026-09-27
 - 结论：**通过**
-- 交付物：`src/features/knowledge/editor/blocks/block-reference.tsx`、`block-reference-source.ts`（+两测试）、`src/features/knowledge/editor/open-target.ts`（+测试）、后端 `backend/src/knowledge/search/backlinks.ts`（blockReference 收集）+ 集成测试扩展
+- 交付物：`src/features/knowledge/editor/blocks/block-reference.tsx`、`block-reference-source.ts`（+两测试）、`src/features/knowledge/editor/open-target.ts`（+测试）、后端 `backend/server/src/modules/knowledge/search/backlinks.ts`（blockReference 收集）+ 集成测试扩展
 
 ## 验收命令（本人执行）
 

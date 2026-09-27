@@ -3,7 +3,7 @@
 /**
  * 数据库客户端数据面（U06）——与 data/pages-api.ts 同一模式（U01）。
  *
- * T02 服务（backend/src/knowledge/databases/service.ts）已有领域实现，但 tRPC
+ * T02 服务（backend/server/src/modules/knowledge/databases/service.ts）已有领域实现，但 tRPC
  * 路由由 Z03 装配；因此这里经非类型化 tRPC 客户端动态调用
  * `database.getColumns / listRows / createRow / updateRowProperties /
  * updateColumns`（与 T02 服务函数一一对应），输入先过共享 zod 契约镜像（非法

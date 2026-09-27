@@ -5,7 +5,7 @@
 ## 验收命令与结果
 
 ```
-bun test backend/src/knowledge/notifications     # 11 pass / 0 fail / 77 断言(真实 Postgres)
+bun test backend/server/src/modules/knowledge/notifications     # 11 pass / 0 fail / 77 断言(真实 Postgres)
 bun test src/features/knowledge/notifications    # 16 pass / 0 fail / 57 断言
 bun test shared/src                              # 186 pass(回归)
 bunx tsc --noEmit(backend/根) + eslint           # N03 文件 0 错误
@@ -14,7 +14,7 @@ node scripts/verify-knowledge-boundaries.mjs     # 375 文件通过
 
 ## 交付内容
 
-**后端**(backend/src/knowledge/notifications/):service(keyset 分页收件箱、创建时过滤+读时按当前有效 ACL 再过滤——撤权/回收页 fail closed、未读计数、单条已读幂等+他人通知 404 无泄露、全部已读含不可见行防复活)、http(独立 Hono 路由:列表/未读数/单条已读/全部已读,每请求 authenticator 重验会话+成员资格)。主会话已接线 runtime/server.ts。
+**后端**(backend/server/src/modules/knowledge/notifications/):service(keyset 分页收件箱、创建时过滤+读时按当前有效 ACL 再过滤——撤权/回收页 fail closed、未读计数、单条已读幂等+他人通知 404 无泄露、全部已读含不可见行防复活)、http(独立 Hono 路由:列表/未读数/单条已读/全部已读,每请求 authenticator 重验会话+成员资格)。主会话已接线 runtime/server.ts。
 
 **契约**(shared/src/knowledge/notifications/):item/list/mark-read 全套 zod,前后端复用。
 

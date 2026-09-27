@@ -1,14 +1,14 @@
 # H01 · 块索引增量投影
 
-日期：2026-09-26。模块：`backend/src/knowledge/search/indexer.ts`（新增）+ `indexer.integration.test.ts`（新增）。前置：M02 AI 方言锚点、B02 doc.changed outbox、P02 `withPermissionIndexWrite`、Q01 graphile-worker 消费者模式、L01 backlinks 消费者、E01/E02 块注册表与 blockId 修复。schema 变更：`database/knowledge/schema/content.ts` 的 `block_index` 按任务约定补列 `title_path text`（可空，短块的检索呈现上下文），`current.sql` 已重生成并通过 `--check`。
+日期：2026-09-26。模块：`backend/server/src/modules/knowledge/search/indexer.ts`（新增）+ `indexer.integration.test.ts`（新增）。前置：M02 AI 方言锚点、B02 doc.changed outbox、P02 `withPermissionIndexWrite`、Q01 graphile-worker 消费者模式、L01 backlinks 消费者、E01/E02 块注册表与 blockId 修复。schema 变更：`database/knowledge/schema/content.ts` 的 `block_index` 按任务约定补列 `title_path text`（可空，短块的检索呈现上下文），`current.sql` 已重生成并通过 `--check`。
 
 以真实邮箱身份、真实 graphile-worker 队列（同事件并行调度 backlinks + index 两个消费者）、普通 RLS 角色租户事务、一次性 disposable 数据库验证：
 
 ```bash
-bun test backend/src/knowledge/search            # 13 pass / 0 fail / 105 expect（含 L01 回归 6 项），三轮复跑稳定
+bun test backend/server/src/modules/knowledge/search            # 13 pass / 0 fail / 105 expect（含 L01 回归 6 项），三轮复跑稳定
 pnpm backend:typecheck                           # 0 错误
-pnpm exec eslint --no-ignore backend/src/knowledge/search   # 无告警
-bun backend/scripts/database-schema.ts --check  # Knowledge current SQL matches the Drizzle source
+pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/search   # 无告警
+bun backend/server/scripts/database-schema.ts --check  # Knowledge current SQL matches the Drizzle source
 ```
 
 ## 管线与关键决策

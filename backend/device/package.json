@@ -1,0 +1,29 @@
+{
+  "name": "@fouc/device",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/entrypoints/index.ts",
+  "scripts": {
+    "dev": "bun --hot src/entrypoints/index.ts",
+    "start": "bun src/entrypoints/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test src",
+    "build": "bun build --target=bun --packages=external ./src/entrypoints/index.ts --outdir dist"
+  },
+  "dependencies": {
+    "@agentclientprotocol/claude-agent-acp": "0.39.0",
+    "@agentclientprotocol/sdk": "^1.4.0",
+    "@fouc/shared": "workspace:*",
+    "@hocuspocus/server": "^4.7.0",
+    "@zed-industries/codex-acp-win32-x64": "0.9.5",
+    "hono": "^4.13.5",
+    "mysql2": "3.24.4",
+    "yjs": "13.6.33"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.0",
+    "@types/ws": "^8.18.1",
+    "typescript": "5.9.3"
+  }
+}

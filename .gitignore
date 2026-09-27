@@ -4,6 +4,7 @@ node_modules/
 # Next.js
 /next-env.d.ts
 /.next
+/.next-build
 /out
 *.tsbuildinfo
 
@@ -30,3 +31,8 @@ Thumbs.db
 /src-tauri/binaries
 
 /opensource
+
+# Independent backend bundle outputs
+/.runtime/
+/backend/device/dist/
+/backend/server/dist/

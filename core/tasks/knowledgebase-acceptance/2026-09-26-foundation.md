@@ -45,19 +45,19 @@
 
 ## P01 · 权限计算内核
 
-- `bun test backend/src/knowledge/permissions`：6 passed / 0 failed；四级累积权限、显式授权只增加权限、断继承清除祖先/根默认、匿名分享不带 workspace 主体、群组退出无需重算页面、撤权重算交集收窄、跨租户/断链/循环输入拒绝。
+- `bun test backend/server/src/modules/knowledge/permissions`：6 passed / 0 failed；四级累积权限、显式授权只增加权限、断继承清除祖先/根默认、匿名分享不带 workspace 主体、群组退出无需重算页面、撤权重算交集收窄、跨租户/断链/循环输入拒绝。
 - 主体扩展只接收服务端已验证的 membership/group/link 记录；不从客户端正文接收有效主体。
 - 已验证范围：纯权限算法。数据库物化、GIN 查询、并发撤权及权限中间件仍待 P02/P03/Z05 实际验收。
 
 ## R01 · 后端角色配置与资源生命周期
 
-- `bun test backend/src/knowledge/runtime`：5 passed / 0 failed；四角色/all、按角色必需配置、端点/端口/origin 校验、错误不回显凭据、一次性逆序关停、启动失败清理、降级健康检查。
+- `bun test backend/server/src/modules/knowledge/runtime`：5 passed / 0 failed；四角色/all、按角色必需配置、端点/端口/origin 校验、错误不回显凭据、一次性逆序关停、启动失败清理、降级健康检查。
 - 角色工厂使用 Node 兼容 AbortSignal/Promise 接口；缺失角色实现直接报错，不以空实现假装服务已启动。
 - 已验证范围：配置和生命周期编排，测试注册可观察资源工厂；真实 API/Collab/Worker/MCP 的端口及五组件装配分别由 A00/B01/Q01/K01/Z03 验收。
 
 ## F02 · 模型档位与安全配置
 
-- `bun test backend/src/knowledge/ai/config.test.ts`：3 passed / 0 failed；workspace 覆盖平台默认，平台/BYOK/Ollama 三来源，未配置时明确拒绝；BYOK 绑定发起用户/工作区/供应商/撤销状态；公开设置拒绝 apiKey；embed 维度只用于 embed 档。
+- `bun test backend/server/src/modules/knowledge/ai/config.test.ts`：3 passed / 0 failed；workspace 覆盖平台默认，平台/BYOK/Ollama 三来源，未配置时明确拒绝；BYOK 绑定发起用户/工作区/供应商/撤销状态；公开设置拒绝 apiKey；embed 维度只用于 embed 档。
 - 模型配置在共享层，凭据解析在 backend；不在 workspace.settings 中保存明文密钥。
 - `pnpm shared:typecheck` 与针对 runtime/permissions/ai config 的完整依赖 `tsc --noEmit --strict --skipLibCheck --moduleResolution bundler --module esnext --target es2022` 检查均通过。D01 Agent 同时编辑全局数据库 schema，最终整体类型检查随后统一进行。
 - 边界：配置解析通过不代表真实 AI 调用；网关和真实模型验证仍待 G01/G02/Z07。
@@ -72,7 +72,7 @@
 ## D01 · Postgres 唯一表模型
 
 - 24 张知识库业务表与 4 张全局身份表；业务表含非空 workspace_id 和租户复合外键；正文仅保存 Yjs 二进制，向量切换 staging 不复制正文。
-- `bun test backend/src/database/schema.test.ts`：12 passed；`bun backend/scripts/database-schema.ts --check`：无 DDL 漂移；整体后端类型检查通过。
+- `bun test backend/server/src/platform/database/schema.test.ts`：12 passed；`bun backend/server/scripts/database-schema.ts --check`：无 DDL 漂移；整体后端类型检查通过。
 - 模型档位枚举直接引用 F02 共享定义，DAG 已显式补充该硬依赖。
 - 边界：未将静态 schema 验证当成真实初始化/RLS 通过；D02/D03 继续独立验收。
 

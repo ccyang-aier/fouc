@@ -1,17 +1,17 @@
 # J02 · 共用只读 Agent 工具
 
-日期：2026-09-26。模块：`backend/src/knowledge/ai/tools/`（新增：`registry.ts`/`types.ts`/`errors.ts`/`search.ts`/`read-page.ts`/`query-database.ts`/`list-pages.ts`/`get-backlinks.ts`/`index.ts` + `tools.integration.test.ts` 13 项）；共享契约新增 `shared/src/knowledge/contracts/agent-tools.ts`（barrel 追加一行导出）；`backend/src/knowledge/search/indexer.ts` 把既有的 Y.Doc 正文解码抽为只读导出 `decodePageBody`（行为不变，供索引修复与工具读取共用同一解码）。前置：H04（`searchHybrid`）、M02（`createAiContext`/`read(range)` AI 方言）、T02（`listDatabaseRows`）、L01（`readPageBacklinks`）、P03（`authorizePageAccess`/`expandRequestPrincipals`/`effectivePageAccessCondition`）、B02（doc_state 唯一权威）、A03（`KnowledgeRequestContext`/`requireKnowledgeScopes`）。
+日期：2026-09-26。模块：`backend/server/src/modules/knowledge/ai/tools/`（新增：`registry.ts`/`types.ts`/`errors.ts`/`search.ts`/`read-page.ts`/`query-database.ts`/`list-pages.ts`/`get-backlinks.ts`/`index.ts` + `tools.integration.test.ts` 13 项）；共享契约新增 `shared/src/knowledge/contracts/agent-tools.ts`（barrel 追加一行导出）；`backend/server/src/modules/knowledge/search/indexer.ts` 把既有的 Y.Doc 正文解码抽为只读导出 `decodePageBody`（行为不变，供索引修复与工具读取共用同一解码）。前置：H04（`searchHybrid`）、M02（`createAiContext`/`read(range)` AI 方言）、T02（`listDatabaseRows`）、L01（`readPageBacklinks`）、P03（`authorizePageAccess`/`expandRequestPrincipals`/`effectivePageAccessCondition`）、B02（doc_state 唯一权威）、A03（`KnowledgeRequestContext`/`requireKnowledgeScopes`）。
 
 ## 可复现验证
 
 ```bash
-bun test backend/src/knowledge/ai/tools              # 13 pass / 0 fail / 91 expect
-bun test backend/src/knowledge/search                # 28 pass / 0 fail（indexer 抽取回归）
-bun test backend/src/knowledge/databases             # 18 pass / 0 fail（T02 依赖回归）
+bun test backend/server/src/modules/knowledge/ai/tools              # 13 pass / 0 fail / 91 expect
+bun test backend/server/src/modules/knowledge/search                # 28 pass / 0 fail（indexer 抽取回归）
+bun test backend/server/src/modules/knowledge/databases             # 18 pass / 0 fail（T02 依赖回归）
 bun test shared/src/knowledge/contracts shared/src/knowledge/markdown   # 9 + 105 pass（契约/M02 回归）
 pnpm shared:typecheck                                # 0 错误
-pnpm exec eslint --no-ignore backend/src/knowledge/ai/tools            # 0 告警（exit 0）
-pnpm exec eslint --no-ignore shared/src/knowledge/contracts/agent-tools.ts backend/src/knowledge/search/indexer.ts   # 0 告警
+pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/ai/tools            # 0 告警（exit 0）
+pnpm exec eslint --no-ignore shared/src/knowledge/contracts/agent-tools.ts backend/server/src/modules/knowledge/search/indexer.ts   # 0 告警
 pnpm backend:typecheck                               # 本任务文件 0 错误（仓内仅存 import-export/export.ts 1 处，属并行 M03/M04 代理进行中的文件，非本任务产物）
 ```
 

@@ -22,15 +22,15 @@ usage **不并入**业务写事务，而是在调用结束时经自己的短租�
 ## 可复现验证
 
 ```powershell
-bun test backend/src/knowledge/observability
-bun test backend/src/knowledge/ai
-bun test backend/src/database/knowledge
-pnpm exec eslint --no-ignore backend/src/knowledge/observability backend/src/database/knowledge/schema/operations.ts backend/src/database/knowledge/tenant-test-database.ts
-bun backend/scripts/database-schema.ts --check
+bun test backend/server/src/modules/knowledge/observability
+bun test backend/server/src/modules/knowledge/ai
+bun test backend/server/src/platform/database/knowledge
+pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/observability backend/server/src/platform/database/knowledge/schema/operations.ts backend/server/src/platform/database/knowledge/tenant-test-database.ts
+bun backend/server/scripts/database-schema.ts --check
 # Node 冒烟：打包同一套件并复制其 SQL 运行资产
-bun build backend/src/knowledge/observability/observability.test.ts --target=node --outfile backend/node_modules/.cache/knowledge/observability.test.mjs
-Copy-Item backend/src/database/current.sql backend/node_modules/.cache/knowledge/current.sql
-node --test backend/node_modules/.cache/knowledge/observability.test.mjs
+bun build backend/server/src/modules/knowledge/observability/observability.test.ts --target=node --outfile .runtime/verification/knowledge/observability.test.mjs
+Copy-Item backend/server/src/platform/database/current.sql .runtime/verification/knowledge/current.sql
+node --test .runtime/verification/knowledge/observability.test.mjs
 ```
 
 实测（2026-09-26）：observability 5 项通过（Bun 1.4.0 与 Node 24.16.0 各一次，一次性库创建后删除确认）；网关 21 项全绿；数据库 57 项全绿；定向 lint 无输出；schema `--check` 通过。全量 `pnpm backend:typecheck` 当时被并行任务的在途文件（`collaboration/page-collaboration-bun.ts`、`permissions/permissions-test-fixture.ts`，非本任务产物）阻塞；以临时隔离 tsconfig（observability + ai + database/knowledge + shared）验证本任务范围 `tsc --noEmit` 退出码 0，本模块自身亦在并行改动落地前通过过全量 typecheck。

@@ -91,7 +91,7 @@ Python 服务当前不自动热重载。已实际发现 Uvicorn 的 Windows relo
 | `MAX_RESOURCE_TTL_SECONDS` | `900` | 1–3600，实际 URL 必须未过期 |
 | `TEMP_DIR` | 系统临时目录 | 若指定，必须是已存在目录 |
 
-后端使用 `backend/src/knowledge/media/client.ts` 的 `createMediaWorkerClient({ baseUrl, token })`，传入 `MEDIA_WORKER_URL` 和相同的 `MEDIA_WORKER_TOKEN`。客户端使用 Node 标准 `fetch / AbortSignal / Buffer`，不依赖 Bun 专有 API；`process(request, signal)` 支持调用方取消。
+后端使用 `backend/server/src/modules/knowledge/media/client.ts` 的 `createMediaWorkerClient({ baseUrl, token })`，传入 `MEDIA_WORKER_URL` 和相同的 `MEDIA_WORKER_TOKEN`。客户端使用 Node 标准 `fetch / AbortSignal / Buffer`，不依赖 Bun 专有 API；`process(request, signal)` 支持调用方取消。
 
 ## Whisper 模型与缓存
 
@@ -117,7 +117,7 @@ HTTP 推理只加载本地目录，设置 `local_files_only=True` 和 Hugging Fa
 
 ```powershell
 .\services\media-worker\.venv\Scripts\python.exe services/media-worker/scripts/prepare_samples.py
-bun build backend/src/knowledge/media/client.ts --target=node --format=esm --outfile services/media-worker/.runtime/client.mjs
+bun build backend/server/src/modules/knowledge/media/client.ts --target=node --format=esm --outfile services/media-worker/.runtime/client.mjs
 node services/media-worker/scripts/check-whisper.mjs
 ```
 
@@ -151,7 +151,7 @@ Docling 使用公共 `DEVICE / DEVICE_INDEX / CPU_THREADS`，CPU 路径为 PyTor
 
 ```powershell
 .\services\media-worker\.venv\Scripts\python.exe services/media-worker/scripts/prepare_documents.py
-bun build backend/src/knowledge/media/client.ts --target=node --format=esm --outfile services/media-worker/.runtime/client.mjs
+bun build backend/server/src/modules/knowledge/media/client.ts --target=node --format=esm --outfile services/media-worker/.runtime/client.mjs
 node services/media-worker/scripts/check-docling.mjs
 ```
 
@@ -181,11 +181,11 @@ registry.register("parse_document", docling_spec())
 
 ```powershell
 .\services\media-worker\.venv\Scripts\python.exe -m pytest -q services/media-worker
-bun test backend/src/knowledge/media/client.test.ts
+bun test backend/server/src/modules/knowledge/media/client.test.ts
 pnpm backend:typecheck
-bun build backend/src/knowledge/media/client.ts --target=node --format=esm --outfile services/media-worker/.runtime/client.mjs
+bun build backend/server/src/modules/knowledge/media/client.ts --target=node --format=esm --outfile services/media-worker/.runtime/client.mjs
 node services/media-worker/scripts/check-client.mjs
-bun build backend/src/knowledge/media/client.test.ts --target=node --format=esm --outfile services/media-worker/.runtime/client.test.mjs
+bun build backend/server/src/modules/knowledge/media/client.test.ts --target=node --format=esm --outfile services/media-worker/.runtime/client.test.mjs
 node --test services/media-worker/.runtime/client.test.mjs
 ```
 

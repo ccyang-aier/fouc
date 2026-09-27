@@ -46,7 +46,7 @@ try {
     const request = await resource(`report.${extension}`, mime);
     const result = await client.process(request);
     assertDocument(result, extension);
-    const attachments = result.attachments.map(({ dataBase64: _bytes, ...metadata }) => metadata);
+    const attachments = result.attachments.map((attachment) => Object.fromEntries(Object.entries(attachment).filter(([key]) => key !== 'dataBase64')));
     evidence.results.push({ fixture: `report.${extension}`, ...result, attachments });
     console.log(`PASS real ${extension}: structured Markdown + ${attachments.length} extracted PNG, ${result.elapsedMs} ms.`);
     if (extension === 'pdf') pdfRequest = request;

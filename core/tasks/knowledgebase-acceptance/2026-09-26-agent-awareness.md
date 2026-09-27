@@ -1,12 +1,12 @@
 # B09 · 服务端 Agent Awareness 发布
 
-日期：2026-09-26。模块：`backend/src/knowledge/collaboration/agent-awareness.ts`。
+日期：2026-09-26。模块：`backend/server/src/modules/knowledge/collaboration/agent-awareness.ts`。
 
 主代理实现并验证：`createAgentAwarenessSession(hocuspocus, { documentName, identity, signal })` 以 DirectConnection 绑定页面文档，用稳定合成 client 的 scratch Awareness 编码状态并 `applyAwarenessUpdate` 注入共享 awareness——经 Hocuspocus 内建广播路径到达所有协议客户端，Agent 与真人 peer 同一呈现。
 
 ```powershell
-bun test backend/src/knowledge/collaboration/agent-awareness.integration.test.ts
-pnpm exec eslint --no-ignore backend/src/knowledge/collaboration/agent-awareness.ts backend/src/knowledge/collaboration/agent-awareness.integration.test.ts
+bun test backend/server/src/modules/knowledge/collaboration/agent-awareness.integration.test.ts
+pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/collaboration/agent-awareness.ts backend/server/src/modules/knowledge/collaboration/agent-awareness.integration.test.ts
 ```
 
 **3 tests / 0 fail**（真实监听器 + 官方 provider 客户端观察），定向 lint 零告警。

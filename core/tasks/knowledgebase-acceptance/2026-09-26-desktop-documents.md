@@ -1,12 +1,12 @@
 # B05 · 桌面 SQLite 离线 Yjs 副本
 
-日期：2026-09-26。模块：`backend/src/store/knowledge-documents.ts`（副本接口 + bun:sqlite 实现 + db.ts 新表 knowledge_page_document）、`backend/src/knowledge/collaboration/page-collaboration-desktop.ts`（桌面装配）、两套测试。
+日期：2026-09-26。模块：`backend/device/src/storage/knowledge-documents.ts`（副本接口 + bun:sqlite 实现 + db.ts 新表 knowledge_page_document）、`backend/device/src/collaboration/page-collaboration-desktop.ts`（桌面装配）、两套测试。
 
 主代理实现并验证：桌面 sidecar 运行与生产同一 Hocuspocus 内核的本地页面协作装配，持久化后端换为 SQLite 副本；云端 Postgres doc_state（B02）仍是正文唯一权威，副本只是本地缓存/离线缓冲，重连经 state vector 交换 CRDT 合并收敛、绝不覆盖。
 
 ```powershell
-bun test backend/src/store/knowledge-documents.test.ts backend/src/knowledge/collaboration/desktop-persistence.integration.test.ts
-pnpm exec eslint --no-ignore backend/src/store/knowledge-documents.ts backend/src/knowledge/collaboration/page-collaboration-desktop.ts
+bun test backend/device/src/storage/knowledge-documents.test.ts backend/device/src/collaboration/desktop-persistence.integration.test.ts
+pnpm exec eslint --no-ignore backend/device/src/storage/knowledge-documents.ts backend/device/src/collaboration/page-collaboration-desktop.ts
 node scripts/verify-knowledge-boundaries.mjs
 ```
 

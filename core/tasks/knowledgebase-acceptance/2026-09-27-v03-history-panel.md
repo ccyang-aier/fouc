@@ -5,10 +5,10 @@
 ## 验收命令与结果
 
 ```
-bun test backend/src/knowledge/collaboration/history.integration.test.ts   # 3 pass / 0 fail / 11 断言
+bun test backend/server/src/modules/knowledge/collaboration/history.integration.test.ts   # 3 pass / 0 fail / 11 断言
 bun test src/features/knowledge/history                                    # 8 pass / 0 fail / 20 断言(2 文件)
-bun test backend/src/knowledge/collaboration/checkpoints.integration.test.ts + collaboration.integration.test.ts  # 12 pass(回归)
-bun test backend/src/knowledge/permissions + organization                  # 57 pass(回归,fixture 扩展)
+bun test backend/server/src/modules/knowledge/collaboration/checkpoints.integration.test.ts + collaboration.integration.test.ts  # 12 pass(回归)
+bun test backend/server/src/modules/knowledge/permissions + organization                  # 57 pass(回归,fixture 扩展)
 bun test src/features/knowledge/editor                                     # 104 pass(装配后全树回归)
 bunx tsc --noEmit(backend + 根)/eslint --max-warnings=0 history            # 0 错误/干净
 node scripts/verify-knowledge-boundaries.mjs                               # 375 文件通过

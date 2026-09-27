@@ -168,7 +168,7 @@
         },
         {
           "kind": "partial-test",
-          "path": "backend/src/connectors/database-contract.test.ts",
+          "path": "backend/device/src/connectors/database-contract.test.ts",
           "check": "2 capability-gate tests passed"
         },
         {

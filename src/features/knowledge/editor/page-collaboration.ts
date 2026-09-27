@@ -19,7 +19,7 @@ import type { PageUndo } from '../collaboration/page-undo';
 /**
  * The page body fragment of the knowledge document model. The collaboration
  * server and the backend indexers read the same name (`PAGE_BODY_FRAGMENT`
- * in backend/src/knowledge/search/backlinks.ts) and it is y-prosemirror's
+ * in backend/server/src/modules/knowledge/search/backlinks.ts) and it is y-prosemirror's
  * conventional default; keep the three in lockstep.
  */
 export const PAGE_BODY_FRAGMENT = 'default';

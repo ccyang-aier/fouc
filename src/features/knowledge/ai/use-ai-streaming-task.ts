@@ -6,7 +6,7 @@
  * 撤销与状态轮询（运行中细粒度刷新，终态停表）。
  */
 
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   AiStreamingTaskSnapshot,
@@ -35,7 +35,7 @@ export interface UseAiStreamingTaskResult {
 export function useAiStreamingTask(workspaceId: string): UseAiStreamingTaskResult {
   const [taskId, setTaskId] = useState<string | null>(null);
   const queryClient = useQueryClient();
-  const taskKey = [...knowledgeQueryKeys.aiTasks(workspaceId), taskId] as const;
+  const taskKey = useMemo(() => [...knowledgeQueryKeys.aiTasks(workspaceId), taskId] as const, [workspaceId, taskId]);
 
   const statusQuery = useQuery({
     queryKey: taskKey,

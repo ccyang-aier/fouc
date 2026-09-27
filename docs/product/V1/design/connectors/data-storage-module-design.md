@@ -60,8 +60,8 @@ Connector Control Plane
 现有代码已经落下 Connector 控制面的第一条纵向切片：
 
 - `shared/src/index.ts` 已定义 Provider、Instance、Capability、身份、健康与调用记录；
-- `backend/src/connectors/service.ts` 已实现 DTS 的连接、心跳、调用审计和错误归一化；
-- `backend/src/connectors/repository.ts` 与 `backend/src/store/db.ts` 已持久化 Instance、Heartbeat、Invocation；
+- `backend/device/src/connectors/service.ts` 已实现 DTS 的连接、心跳、调用审计和错误归一化；
+- `backend/device/src/connectors/repository.ts` 与 `backend/device/src/storage/db.ts` 已持久化 Instance、Heartbeat、Invocation；
 - `src/features/connectors/` 已有 Connector Catalog 与 DTS 详情页；
 - 当前实现仍是 DTS 特化：Service 直接持有 `DtsRuntime`，没有通用 Adapter Registry、Credential Broker、输入输出 schema、审批记录和通用实例创建流程；
 - Catalog 已展示 MySQL 与 PostgreSQL，但还是本地演示数据，不代表已经存在 Provider。
@@ -189,7 +189,7 @@ mysql                      mysql2/native                生产订单库
 ### 5.2 建议代码组织
 
 ```text
-backend/src/connectors/
+backend/device/src/connectors/
 ├── core/
 │   ├── provider.ts
 │   ├── registry.ts

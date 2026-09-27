@@ -7,10 +7,10 @@
 ## 产物
 
 - `compose.knowledge.yaml`：固定镜像版本、独立项目 `fouc-knowledge-dev`、独立持久卷、三个健康检查、loopback 端口。
-- `backend/scripts/knowledge-infra.mjs`：`init / up / verify / status`，Windows 使用 WSL Docker，其他平台使用本机 Docker。
-- `backend/scripts/knowledge-infra-check.sql`：真实扩展、jieba/ICU、中文/英文全文查询、HNSW 与 ltree 探针。测试表和索引在事务结束时回滚。
-- `backend/scripts/knowledge-infra-minio.Dockerfile`：从 MinIO 官方固定源码发布构建安全修复版本，以非 root 用户运行。
-- `backend/scripts/knowledge-infra-minio.Dockerfile.dockerignore`：构建不需要任何工作区数据，禁止把脚本、配置或凭据发送到构建上下文。
+- `backend/server/scripts/knowledge-infra.mjs`：`init / up / verify / status`，Windows 使用 WSL Docker，其他平台使用本机 Docker。
+- `backend/server/scripts/knowledge-infra-check.sql`：真实扩展、jieba/ICU、中文/英文全文查询、HNSW 与 ltree 探针。测试表和索引在事务结束时回滚。
+- `backend/server/scripts/knowledge-infra-minio.Dockerfile`：从 MinIO 官方固定源码发布构建安全修复版本，以非 root 用户运行。
+- `backend/server/scripts/knowledge-infra-minio.Dockerfile.dockerignore`：构建不需要任何工作区数据，禁止把脚本、配置或凭据发送到构建上下文。
 - `.env.example`：仅变量定义和占位值；实际 `.env.fouc.local` 由脚本随机生成且被现有 `.gitignore` 忽略。
 
 ## 可复现命令
@@ -18,12 +18,12 @@
 在仓库根目录运行：
 
 ```powershell
-node --check backend/scripts/knowledge-infra.mjs
-node backend/scripts/knowledge-infra.mjs init
-node backend/scripts/knowledge-infra.mjs up
-node backend/scripts/knowledge-infra.mjs verify
-bun backend/scripts/knowledge-infra.mjs verify
-node backend/scripts/knowledge-infra.mjs status
+node --check backend/server/scripts/knowledge-infra.mjs
+node backend/server/scripts/knowledge-infra.mjs init
+node backend/server/scripts/knowledge-infra.mjs up
+node backend/server/scripts/knowledge-infra.mjs verify
+bun backend/server/scripts/knowledge-infra.mjs verify
+node backend/server/scripts/knowledge-infra.mjs status
 git check-ignore .env.fouc.local
 ```
 

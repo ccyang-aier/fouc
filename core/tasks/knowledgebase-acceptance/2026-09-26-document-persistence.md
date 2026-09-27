@@ -1,13 +1,13 @@
 # B02 · Y.Doc 权威持久化与原子 Outbox
 
-日期：2026-09-26。模块：`backend/src/knowledge/collaboration/page-collaboration-server.ts`（持久化钩子并入统一装配）+ `persistence.integration.test.ts` / `collaboration-test-client.ts`。
+日期：2026-09-26。模块：`backend/server/src/modules/knowledge/collaboration/page-collaboration-server.ts`（持久化钩子并入统一装配）+ `persistence.integration.test.ts` / `collaboration-test-client.ts`。
 
 主代理实现并验证：doc_state 是正文唯一权威，onLoadDocument 从其加载，onStoreDocument 在一个租户事务里原子写 state + stateVector + `doc.changed` outbox（含 graphile job）。装配显式设置生产防抖 2s / 上限 10s（Hocuspocus debounce/maxDebounce），测试用 120/400ms 加速窗口。
 
 ```powershell
-bun test backend/src/knowledge/collaboration
+bun test backend/server/src/modules/knowledge/collaboration
 pnpm backend:typecheck
-pnpm exec eslint --no-ignore backend/src/knowledge/collaboration
+pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/collaboration
 node scripts/verify-knowledge-boundaries.mjs
 ```
 

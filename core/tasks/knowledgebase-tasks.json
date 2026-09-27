@@ -202,12 +202,12 @@
         "U02"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/import-export/; src/features/knowledge/",
+      "deliverables": "backend/server/src/modules/knowledge/import-export/; src/features/knowledge/",
       "acceptance": "目录、附件、frontmatter、wiki/块链接可往返；多页导入有进度与逐项失败反馈",
       "evidence": [
         {
           "summary": "52 项 M03 测试(全目录 64/0):目录树映射、同名兄弟去重、wikilink/嵌入/媒体指令往返(导出→再导入→再导出不动点)、frontmatter、AS01 附件入湖、幂等重放、越权拒绝、逐项失败进进度事件;修复前任骨架 4 个真实缺陷",
-          "command": "bun test backend/src/knowledge/import-export/; cd backend && bunx tsc --noEmit; node scripts/verify-knowledge-boundaries.mjs",
+          "command": "bun test backend/server/src/modules/knowledge/import-export/; cd backend && bunx tsc --noEmit; node scripts/verify-knowledge-boundaries.mjs",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-m03-obsidian-vault.md"
         }
@@ -227,12 +227,12 @@
         "U02"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/import-export/",
+      "deliverables": "backend/server/src/modules/knowledge/import-export/",
       "acceptance": "HTML/Markdown/CSV、目录与附件导入真实样本；页面链接正确映射，无静默丢失",
       "evidence": [
         {
           "summary": "12 项测试/62 断言全绿(修复前 8/4):figure.quote 行内聚合、code figure 元素化(解析器 pre 吞并修复)、multiSelect 单格拆分信号、行链接断言下钻;HTML/Markdown/CSV 三路径 + 目录外壳两遍父归属 + wikilink/asset/断链映射无静默丢失",
-          "command": "bun test backend/src/knowledge/import-export/notion-html.test.ts; cd backend && bunx tsc --noEmit",
+          "command": "bun test backend/server/src/modules/knowledge/import-export/notion-html.test.ts; cd backend && bunx tsc --noEmit",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-m04-notion-import.md"
         }
@@ -252,13 +252,13 @@
         "F02"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/database/knowledge/",
+      "deliverables": "backend/server/src/platform/database/knowledge/",
       "acceptance": "Drizzle 当前表模型与初始化 SQL 包含全部表/租户外键/ltree/vector/索引；静态 schema 约束测试及类型检查通过；真实执行单独由 D03 验收",
       "evidence": [
         {
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md",
           "summary": "24 张租户表与 4 张认证表；约束与 SQL 漂移静态验收通过，真实初始化另行验收",
-          "command": "bun test backend/src/database/schema.test.ts; bun backend/scripts/database-schema.ts --check; pnpm backend:typecheck",
+          "command": "bun test backend/server/src/platform/database/schema.test.ts; bun backend/server/scripts/database-schema.ts --check; pnpm backend:typecheck",
           "verifiedAt": "2026-09-26"
         }
       ]
@@ -275,13 +275,13 @@
         "I01"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/database/knowledge/tenant.ts",
+      "deliverables": "backend/server/src/platform/database/knowledge/tenant.ts",
       "acceptance": "SET LOCAL/set_config 随事务回收；非超级用户跨租户 SELECT/INSERT/UPDATE/DELETE 均拒绝，连接池无上下文泄漏",
       "evidence": [
         {
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-storage.md",
           "summary": "真实两租户全表隔离、事务/连接复用与异常清理 19 项测试通过",
-          "command": "bun test backend/src/database/knowledge/tenant.test.ts backend/src/database/knowledge/rls.test.ts backend/src/database/knowledge/tenant.integration.test.ts",
+          "command": "bun test backend/server/src/platform/database/knowledge/tenant.test.ts backend/server/src/platform/database/knowledge/rls.test.ts backend/server/src/platform/database/knowledge/tenant.integration.test.ts",
           "verifiedAt": "2026-09-26"
         }
       ]
@@ -298,13 +298,13 @@
         "C01"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/runtime/",
+      "deliverables": "backend/server/src/modules/knowledge/runtime/",
       "acceptance": "ROLE=api/collab/worker/mcp/all 严格解析；必需配置校验；同一进程生命周期可启停且失败清理资源；业务用 Node API",
       "evidence": [
         {
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md",
           "summary": "配置与角色生命周期 5 组测试通过",
-          "command": "bun test backend/src/knowledge/runtime",
+          "command": "bun test backend/server/src/modules/knowledge/runtime",
           "verifiedAt": "2026-09-26"
         }
       ]
@@ -326,7 +326,7 @@
         {
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-infrastructure.md",
           "summary": "真实 ParadeDB 扩展/分词/索引、Redis 认证读写、S3 签名读写及持续运行通过",
-          "command": "bun backend/scripts/knowledge-infra.mjs verify",
+          "command": "bun backend/server/scripts/knowledge-infra.mjs verify",
           "verifiedAt": "2026-09-26"
         }
       ]
@@ -345,12 +345,12 @@
         "I01"
       ],
       "status": "accepted",
-      "deliverables": "backend/scripts/database.ts; backend/src/database/knowledge/*.test.ts",
+      "deliverables": "backend/server/scripts/database.ts; backend/server/src/platform/database/knowledge/*.test.ts",
       "acceptance": "在真实 ParadeDB 创建新库、执行全部表/索引/RLS；两个租户恶意访问测试通过",
       "evidence": [
         {
           "summary": "真实主库 28 表/24 FORCE RLS ready；46 测试/1307 断言通过、初始化回滚与最小权限",
-          "command": "bun test backend/src/database/knowledge; bun backend/scripts/database.ts check; pnpm backend:typecheck",
+          "command": "bun test backend/server/src/platform/database/knowledge; bun backend/server/scripts/database.ts check; pnpm backend:typecheck",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-database-initialization.md"
         }
@@ -368,12 +368,12 @@
         "R01"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/identity/",
+      "deliverables": "backend/server/src/platform/identity/",
       "acceptance": "注册/登录/登出/邮箱验证、会话撤销真实往返；cookie/CORS 配置对 Web 与桌面有效",
       "evidence": [
         {
           "summary": "真实 PG+HTTP 邮箱验证与会话撤销、Cookie/CORS/CSRF；15 测试/167 断言",
-          "command": "bun test backend/src/identity; pnpm backend:typecheck",
+          "command": "bun test backend/server/src/platform/identity; pnpm backend:typecheck",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-authentication.md"
         }
@@ -390,12 +390,12 @@
         "A01"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/identity/",
+      "deliverables": "backend/server/src/platform/identity/",
       "acceptance": "真实或标准测试 IdP 完整回调/PKCE/state/nonce；账号身份映射一致；错误可恢复",
       "evidence": [
         {
           "summary": "79 项真实 HTTP/PG 测试全通过（A02 新增 41 项）；Node 24 冒烟真实 OIDC/OAuth 回调、单次 state、身份映射与错误恢复通过",
-          "command": "bun test backend/src/identity; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/src/identity; node --env-file=.env.fouc.local backend/src/identity/.runtime/oauth-node-smoke.mjs",
+          "command": "bun test backend/server/src/platform/identity; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/server/src/platform/identity; node --env-file=.env.fouc.local backend/server/src/platform/identity/.runtime/oauth-node-smoke.mjs",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-authentication.md"
         }
@@ -413,12 +413,12 @@
         "A01"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/access/tokens.ts",
+      "deliverables": "backend/server/src/modules/knowledge/access/tokens.ts",
       "acceptance": "PAT 哈希存储、范围/到期/撤销生效；session/PAT 归一到同一发起者上下文，禁止客户端伪造身份",
       "evidence": [
         {
           "summary": "23 项 PAT 专项、38 项真实认证回归通过，活态身份与范围隔离",
-          "command": "bun test backend/src/identity; pnpm backend:typecheck",
+          "command": "bun test backend/server/src/platform/identity; pnpm backend:typecheck",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-authentication.md"
         }
@@ -436,13 +436,13 @@
         "D03"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/organization/",
+      "deliverables": "backend/server/src/modules/knowledge/organization/",
       "acceptance": "个人和团队走同一逻辑；owner/admin/member/guest 与群组加入移除可操作且越权失败；成员邀请及身份绑定通过真实流程",
       "evidence": [
         {
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-organization.md",
           "summary": "真实 HTTP/PG/RLS 116 测试、2747 断言；并发最后 owner、一次性邀请及锁等待期间自然过期均验证",
-          "command": "bun test backend/src/database/knowledge backend/src/identity backend/src/knowledge/organization shared/src/knowledge/contracts/organization.test.ts; pnpm backend:typecheck; pnpm shared:typecheck; bun backend/scripts/database-schema.ts --check",
+          "command": "bun test backend/server/src/platform/database/knowledge backend/server/src/platform/identity backend/server/src/modules/knowledge/organization shared/src/knowledge/contracts/organization.test.ts; pnpm backend:typecheck; pnpm shared:typecheck; bun backend/server/scripts/database-schema.ts --check",
           "verifiedAt": "2026-09-26"
         }
       ]
@@ -459,7 +459,7 @@
         "U01"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/organization/; src/features/knowledge/organization/",
+      "deliverables": "backend/server/src/modules/knowledge/organization/; src/features/knowledge/organization/",
       "acceptance": "空间创建、切换、成员/群组管理闭环；空/加载/无权/失败状态清晰；根默认权限生效",
       "evidence": [
         {
@@ -482,13 +482,13 @@
         "C01"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/permissions/",
+      "deliverables": "backend/server/src/modules/knowledge/permissions/",
       "acceptance": "四级权限、用户/群组/workspace/link、继承中断、teamspace 根默认合并用行为用例覆盖",
       "evidence": [
         {
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md",
           "summary": "权限继承/四级主体/撤权窗口 6 组行为测试通过",
-          "command": "bun test backend/src/knowledge/permissions",
+          "command": "bun test backend/server/src/modules/knowledge/permissions",
           "verifiedAt": "2026-09-26"
         }
       ]
@@ -507,12 +507,12 @@
         "R01"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/workers/",
+      "deliverables": "backend/server/src/modules/knowledge/workers/",
       "acceptance": "业务写与 outbox 原子提交；重试、去重、崩溃恢复不丢任务；Worker 生命周期停止干净",
       "evidence": [
         {
           "summary": "11 项真实 PG 原子入队、幂等、重试和终止进程恢复验收",
-          "command": "bun test backend/src/knowledge/workers/workers.integration.test.ts; pnpm backend:typecheck; node scripts/verify-knowledge-boundaries.mjs",
+          "command": "bun test backend/server/src/modules/knowledge/workers/workers.integration.test.ts; pnpm backend:typecheck; node scripts/verify-knowledge-boundaries.mjs",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-queue.md"
         }
@@ -531,12 +531,12 @@
         "Q01"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/permissions/",
+      "deliverables": "backend/server/src/modules/knowledge/permissions/",
       "acceptance": "授权/移动/断继承批量子树重算；撤权立即阻止旧 ACL 泄漏；GIN 主体数组与 block_index 同步；群组变更无需逐页重算",
       "evidence": [
         {
           "summary": "真实队列/RLS 54 项测试（新增 10 项集成/71 断言）：子树重算、fail-closed 围栏、索引同步、群组即时生效、teamspace 根默认、事件合并与跨租户全部通过",
-          "command": "bun test backend/src/knowledge/permissions backend/src/knowledge/organization shared/src/knowledge/contracts/organization.test.ts; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/permissions; node scripts/verify-knowledge-boundaries.mjs",
+          "command": "bun test backend/server/src/modules/knowledge/permissions backend/server/src/modules/knowledge/organization shared/src/knowledge/contracts/organization.test.ts; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/permissions; node scripts/verify-knowledge-boundaries.mjs",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-permissions-materialization.md"
         }
@@ -555,12 +555,12 @@
         "A00"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/permissions/; backend/src/api/knowledge/",
+      "deliverables": "backend/server/src/modules/knowledge/permissions/; backend/server/src/modules/knowledge/api/",
       "acceptance": "查看/评论/编辑/full 动作逐一授权；API/WS/AI 共用入口；无权限目标不可通过 ID 猜测访问",
       "evidence": [
         {
           "summary": "authorizePageAccess 唯一入口 + tRPC page.access 逐动作授权；48 项真实 HTTP/队列/RLS 测试，四类拒绝不可区分，围栏期 fail closed",
-          "command": "bun test backend/src/knowledge/permissions backend/src/api/knowledge; pnpm exec eslint --no-ignore backend/src/knowledge/permissions backend/src/api/knowledge; node scripts/verify-knowledge-boundaries.mjs",
+          "command": "bun test backend/server/src/modules/knowledge/permissions backend/server/src/modules/knowledge/api; pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/permissions backend/server/src/modules/knowledge/api; node scripts/verify-knowledge-boundaries.mjs",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-page-authorization.md"
         }
@@ -577,12 +577,12 @@
         "P03"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/pages/",
+      "deliverables": "backend/server/src/modules/knowledge/pages/",
       "acceptance": "UUID 离线可建、ltree 子树移动、分数排序、回收恢复；禁止循环/越权移动/跨租户父子；失败事务回滚",
       "evidence": [
         {
           "summary": "23 项测试/2273 断言(17 项真实 PG 集成):UUID 幂等建页、ltree 单事务子树移动+路径推导、base-36 分数排序相邻插入零重排、回收/恢复经真实 rebuild 验证、循环/跨 teamspace/跨租户全拒、失败全量回滚与 4 连接并发收敛",
-          "command": "bun test backend/src/knowledge/pages; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/pages; bun test shared/src/knowledge/contracts",
+          "command": "bun test backend/server/src/modules/knowledge/pages; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/pages; bun test shared/src/knowledge/contracts",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-page-tree.md"
         }
@@ -599,12 +599,12 @@
         "T01"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/databases/",
+      "deliverables": "backend/server/src/modules/knowledge/databases/",
       "acceptance": "database/row 均为 page；每行可独立 Y.Doc/权限；schema/属性验证、筛选排序和分页正确",
       "evidence": [
         {
           "summary": "18 项测试/161 断言连跑 4 次一致:database/row 均 page 且独立授权、九种列类型验证、筛选/排序/游标分页 fail closed、列变更语义;另修复 pg like_escape 通配符不转义缺陷",
-          "command": "bun test backend/src/knowledge/databases; bun test backend/src/knowledge/pages; bun test shared/src/knowledge/contracts; pnpm shared:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/databases shared/src/knowledge/contracts; bun backend/scripts/database-schema.ts --check",
+          "command": "bun test backend/server/src/modules/knowledge/databases; bun test backend/server/src/modules/knowledge/pages; bun test shared/src/knowledge/contracts; pnpm shared:typecheck; pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/databases shared/src/knowledge/contracts; bun backend/server/scripts/database-schema.ts --check",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-databases.md"
         }
@@ -716,12 +716,12 @@
         "E02"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/collaboration/",
+      "deliverables": "backend/server/src/modules/knowledge/collaboration/",
       "acceptance": "WS 校验会话/PAT/page scope；view/comment 连接禁止正文写入；GC 开启；拒绝未授权文档和 workspace 频道",
       "evidence": [
         {
           "summary": "官方 provider 协议客户端 6 项测试:会话/PAT 按 scope 鉴权、view/comment 原生只读强制(syncStatus 拒写)、GC 开启、匿名/越权/围栏/频道名统一 permission-denied、Bun 生产装配双适配",
-          "command": "bun test backend/src/knowledge/collaboration; pnpm exec eslint --no-ignore backend/src/knowledge/collaboration; node scripts/verify-knowledge-boundaries.mjs",
+          "command": "bun test backend/server/src/modules/knowledge/collaboration; pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/collaboration; node scripts/verify-knowledge-boundaries.mjs",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-collaboration-auth.md"
         }
@@ -739,12 +739,12 @@
         "Q01"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/collaboration/persistence.ts",
+      "deliverables": "backend/server/src/modules/knowledge/collaboration/persistence.ts",
       "acceptance": "从 doc_state 加载，2 秒防抖/最长 10 秒落库；state/vector/outbox 同事务；崩溃重连内容不丢",
       "evidence": [
         {
           "summary": "4 项持久化集成测试 + 6 项 B01 回归全过:doc_state 唯一权威、2s/10s 防抖实测、state/vector/doc.changed 同事务、重启恢复与 maxDebounce 强制落库",
-          "command": "bun test backend/src/knowledge/collaboration; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/collaboration; node scripts/verify-knowledge-boundaries.mjs",
+          "command": "bun test backend/server/src/modules/knowledge/collaboration; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/collaboration; node scripts/verify-knowledge-boundaries.mjs",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-document-persistence.md"
         }
@@ -763,12 +763,12 @@
         "I01"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/collaboration/",
+      "deliverables": "backend/server/src/modules/knowledge/collaboration/",
       "acceptance": "两节点客户端并发更新实时收敛；断连恢复；无二次业务正文存储",
       "evidence": [
         {
           "summary": "30 项 collaboration 全套(含 B01/B02/B06/V01 回归):两节点双向 16ms 收敛、断连重连 state-vector 并集无丢失、redis-origin 跳过 store+Redlock 单写者防二次落库、WRONGPASS 认证与 reconnecting/autoResubscribe 断线恢复",
-          "command": "bun test backend/src/knowledge/collaboration; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/collaboration",
+          "command": "bun test backend/server/src/modules/knowledge/collaboration; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/collaboration",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-multi-node.md"
         }
@@ -809,12 +809,12 @@
         "B02"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/store/knowledge-documents.ts; src/features/knowledge/collaboration/",
+      "deliverables": "backend/device/src/storage/knowledge-documents.ts; src/features/knowledge/collaboration/",
       "acceptance": "sidecar 持久化 Yjs 更新/状态；重启/离线/重连收敛；Rust 不写知识库业务；与服务端正文权威清晰",
       "evidence": [
         {
           "summary": "store 字节级 round-trip/重启存活/隔离 + 真实监听器离线编辑跨重启恢复与云端状态 CRDT 合并不覆盖;桌面装配同 Hocuspocus 内核、SQLite 后端",
-          "command": "bun test backend/src/store/knowledge-documents.test.ts backend/src/knowledge/collaboration/desktop-persistence.integration.test.ts; pnpm exec eslint --no-ignore backend/src/store/knowledge-documents.ts backend/src/knowledge/collaboration/page-collaboration-desktop.ts; node scripts/verify-knowledge-boundaries.mjs",
+          "command": "bun test backend/device/src/storage/knowledge-documents.test.ts backend/device/src/collaboration/desktop-persistence.integration.test.ts; pnpm exec eslint --no-ignore backend/device/src/storage/knowledge-documents.ts backend/device/src/collaboration/page-collaboration-desktop.ts; node scripts/verify-knowledge-boundaries.mjs",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-desktop-documents.md"
         }
@@ -831,12 +831,12 @@
         "U01"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/collaboration/events.ts; src/features/knowledge/collaboration/",
+      "deliverables": "backend/server/src/modules/knowledge/collaboration/events.ts; src/features/knowledge/collaboration/",
       "acceptance": "ws:workspaceId 频道校验成员身份；树/评论/通知/行事件只失效相关 Query；重连补拉",
       "evidence": [
         {
           "summary": "后端 5 项(成员 403/队列投递/隔离/双通道并存)+前端 4 项(9 事件映射/URL/重连补拉/容错)全过;B01/B02 10 项回归绿;频道无状态,重连失效全命名空间",
-          "command": "bun test backend/src/knowledge/collaboration; bun test src/features/knowledge/collaboration; pnpm exec eslint --no-ignore backend/src/knowledge/collaboration src/features/knowledge/collaboration src/features/knowledge/data; node scripts/verify-knowledge-boundaries.mjs",
+          "command": "bun test backend/server/src/modules/knowledge/collaboration; bun test src/features/knowledge/collaboration; pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/collaboration src/features/knowledge/collaboration src/features/knowledge/data; node scripts/verify-knowledge-boundaries.mjs",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-workspace-events.md"
         }
@@ -1054,12 +1054,12 @@
         "Q01"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/collaboration/checkpoints.ts",
+      "deliverables": "backend/server/src/modules/knowledge/collaboration/checkpoints.ts",
       "acceptance": "超过 10 分钟且有编辑、结束会话、命名版本按策略写；无变化不重复；作者集合正确；GC 保持开启",
       "evidence": [
         {
           "summary": "6 项真实监听器测试:自动检查点挂存储钩空闲零写、会话结束 state-vector 比对、手动命名幂等(label 附既有快照)、双用户 authors 聚合、GC 后快照不含已删内容;另发现并记录 B02 lastContext 空上下文缺陷",
-          "command": "bun test backend/src/knowledge/collaboration/checkpoints.integration.test.ts; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/collaboration/checkpoints.ts",
+          "command": "bun test backend/server/src/modules/knowledge/collaboration/checkpoints.integration.test.ts; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/collaboration/checkpoints.ts",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-checkpoints.md"
         }
@@ -1082,7 +1082,7 @@
         {
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-history.md",
           "summary": "20 项 Bun/Node 双运行时 diff 测试，166 项共享回归；120排列移动最小性、120文本重建、27块Markdown快照往返",
-          "command": "bun test shared/src/knowledge/history shared/src/knowledge/markdown shared/src/knowledge/schema; pnpm shared:typecheck; pnpm exec eslint --no-ignore shared/src/knowledge/history; node --test backend/node_modules/.cache/knowledge/history.test.mjs",
+          "command": "bun test shared/src/knowledge/history shared/src/knowledge/markdown shared/src/knowledge/schema; pnpm shared:typecheck; pnpm exec eslint --no-ignore shared/src/knowledge/history; node --test backend/device/node_modules/.cache/knowledge/history.test.mjs",
           "verifiedAt": "2026-09-26"
         }
       ]
@@ -1100,12 +1100,12 @@
         "B08"
       ],
       "status": "accepted",
-      "deliverables": "src/features/knowledge/history/; backend/src/knowledge/collaboration/",
+      "deliverables": "src/features/knowledge/history/; backend/server/src/modules/knowledge/collaboration/",
       "acceptance": "预览版本、作者、命名；恢复通过新 Y.Doc 事务且可撤销；另一在线编辑者不中断",
       "evidence": [
         {
           "summary": "后端 3 项集成(命名版本+作者归因+PM 预览+ACL 403/跨租户)+恢复语义(客户端单 PM 事务,第二编辑者不中断继续编辑)+前端 8 项(单步恢复事务/预览序列化/错误映射)+编辑器装配后全树 104/0 回归;checkpoints 扩展经 listener 可选参数挂载",
-          "command": "bun test backend/src/knowledge/collaboration/history.integration.test.ts; bun test src/features/knowledge/history; bun test src/features/knowledge/editor",
+          "command": "bun test backend/server/src/modules/knowledge/collaboration/history.integration.test.ts; bun test src/features/knowledge/history; bun test src/features/knowledge/editor",
           "verifiedAt": "2026-09-27",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-27-v03-history-panel.md"
         }
@@ -1122,12 +1122,12 @@
         "Q01"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/comments/",
+      "deliverables": "backend/server/src/modules/knowledge/comments/",
       "acceptance": "创建/回复/解决/重开/删除有独立生命周期；仅 comment+ 可写；通知 Outbox 原子且 workspace 隔离",
       "evidence": [
         {
           "summary": "6 组真实集成测试(58 断言):线程生命周期状态机、view 级五写路径全拒/comment+ 走通、通知+outbox 同事务原子(回滚零残留)、回收页即时拒绝、跨租户 NOT_FOUND 不可区分",
-          "command": "bun test backend/src/knowledge/comments; pnpm exec eslint --no-ignore backend/src/knowledge/comments",
+          "command": "bun test backend/server/src/modules/knowledge/comments; pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/comments",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-comments.md"
         }
@@ -1151,7 +1151,7 @@
       "evidence": [
         {
           "summary": "前端 30 项(双编辑器 CRDT 锚点收敛/删除传播/五态装饰/分组侧栏/只读矩阵)+后端 7+4 项(真实 RLS+HTTP 边界 ACL fail-closed/幂等创建);comment tRPC 过程挂载后 8711 实活 401 鉴权可达;实时链路 comment.changed→B06→失效验证",
-          "command": "bun test src/features/knowledge/comments; bun test backend/src/knowledge/comments; bun test backend/src/api/knowledge/comment-routes.test.ts",
+          "command": "bun test src/features/knowledge/comments; bun test backend/server/src/modules/knowledge/comments; bun test backend/server/src/modules/knowledge/api/comment-routes.test.ts",
           "verifiedAt": "2026-09-27",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-27-n02-comments-ui.md"
         }
@@ -1170,12 +1170,12 @@
         "U02"
       ],
       "status": "accepted",
-      "deliverables": "src/features/knowledge/notifications/; backend/src/knowledge/notifications/",
+      "deliverables": "src/features/knowledge/notifications/; backend/server/src/modules/knowledge/notifications/",
       "acceptance": "评论通知收件人权限过滤、已读操作、实时更新与跳转；无重复跨租户消息",
       "evidence": [
         {
           "summary": "后端 11 项(收件箱权限双重过滤 fail closed、已读幂等、keyset 分页、跨租户隔离、HTTP 映射、outbox→hub 精确一次实时投递)+前端 16 项(传输契约/桥/失效键/视图模型);runtime 已接线通知路由",
-          "command": "bun test backend/src/knowledge/notifications; bun test src/features/knowledge/notifications; bun test shared/src",
+          "command": "bun test backend/server/src/modules/knowledge/notifications; bun test src/features/knowledge/notifications; bun test shared/src",
           "verifiedAt": "2026-09-27",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-27-n03-notifications.md"
         }
@@ -1194,12 +1194,12 @@
         "T01"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/search/backlinks.ts",
+      "deliverables": "backend/server/src/modules/knowledge/search/backlinks.ts",
       "acceptance": "页面链接、blockReference 可解析稳定 ID；正文变化更新 backlink；无权限来源不泄漏",
       "evidence": [
         {
           "summary": "6 项真实队列/RLS 测试:显式 pageId 优先/标题精确/块锚解析、悬链零落表零泄漏、doc.changed 消费幂等(FOR UPDATE 串行)、入链经 P03 谓词过滤、损坏 doc_state 留队重试不阻塞",
-          "command": "bun test backend/src/knowledge/search; pnpm exec eslint --no-ignore backend/src/knowledge/search; pnpm backend:typecheck; bun backend/scripts/database-schema.ts --check",
+          "command": "bun test backend/server/src/modules/knowledge/search; pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/search; pnpm backend:typecheck; bun backend/server/scripts/database-schema.ts --check",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-backlinks.md"
         }
@@ -1266,12 +1266,12 @@
         "P03"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/sharing/",
+      "deliverables": "backend/server/src/modules/knowledge/sharing/",
       "acceptance": "link 主体令牌哈希、到期/撤销/级别限制；页面及附件同权；访问不能获得 workspace 全部成员主体；授权接口有集成证据",
       "evidence": [
         {
           "summary": "12 项测试(140 断言,真实会话/队列/RLS):令牌只存 SHA-256+恒时比较、到期/撤销/降级即时 fail closed、link 主体恰为 {link:id} 不扩 workspace、越权创建/跨租户/重建窗口全拒",
-          "command": "bun test backend/src/knowledge/sharing; pnpm exec eslint --no-ignore backend/src/knowledge/sharing; bun test shared/src/knowledge backend/src/knowledge/permissions; node scripts/verify-knowledge-boundaries.mjs",
+          "command": "bun test backend/server/src/modules/knowledge/sharing; pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/sharing; bun test shared/src/knowledge backend/server/src/modules/knowledge/permissions; node scripts/verify-knowledge-boundaries.mjs",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-sharing.md"
         }
@@ -1324,13 +1324,13 @@
         "C01"
       ],
       "status": "accepted",
-      "deliverables": "shared/src/knowledge/contracts/models.ts; backend/src/knowledge/ai/config.ts",
+      "deliverables": "shared/src/knowledge/contracts/models.ts; backend/server/src/modules/knowledge/ai/config.ts",
       "acceptance": "fast/smart/embed/rerank/vision，平台/BYOK/Ollama 层级解析；密钥只留服务端；模型/维度验证",
       "evidence": [
         {
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md",
           "summary": "模型档位/来源与密钥归属 3 组测试通过",
-          "command": "bun test backend/src/knowledge/ai/config.test.ts",
+          "command": "bun test backend/server/src/modules/knowledge/ai/config.test.ts",
           "verifiedAt": "2026-09-26"
         }
       ]
@@ -1346,13 +1346,13 @@
         "D03"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/ai/gateway/",
+      "deliverables": "backend/server/src/modules/knowledge/ai/gateway/",
       "acceptance": "所有模型调用经统一入口；云/BYOK/Ollama、流、取消、异常可控；无任意工具越权路径",
       "evidence": [
         {
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-model-gateway.md",
           "summary": "官方 AI SDK 网关、21 项 Bun / 16 项 Node 测试；真实 GLM 平台/流式/PG 加密 BYOK 撤销与真实 Ollama 生成/流式/384 维向量通过；密钥与正文不入日志。",
-          "command": "bun test backend/src/knowledge/ai; node --test backend/node_modules/.cache/knowledge/gateway.test.mjs; bun backend/scripts/knowledge-model-check.ts; bun backend/scripts/knowledge-ollama-check.ts; pnpm backend:typecheck",
+          "command": "bun test backend/server/src/modules/knowledge/ai; node --test backend/device/node_modules/.cache/knowledge/gateway.test.mjs; bun backend/server/scripts/knowledge-model-check.ts; bun backend/server/scripts/knowledge-ollama-check.ts; pnpm backend:typecheck",
           "verifiedAt": "2026-09-26"
         }
       ]
@@ -1368,12 +1368,12 @@
         "G01"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/observability/",
+      "deliverables": "backend/server/src/modules/knowledge/observability/",
       "acceptance": "每次真实调用记录 token/耗时/模型/workspace/任务与 trace；日志无 key；错误调用可追踪",
       "evidence": [
         {
           "summary": "观测模块 5 项 Bun + 5 项 Node 测试;真实 PG 记账(token 未报告存 null)、OTLP collector 实收 trace 与 usage 行关联、密钥零泄漏、独立短事务先于结果提交",
-          "command": "bun test backend/src/knowledge/observability; bun build backend/src/knowledge/observability/observability.test.ts --target=node && node --test; bun test backend/src/knowledge/ai; pnpm exec eslint --no-ignore backend/src/knowledge/observability backend/src/database/knowledge; bun backend/scripts/database-schema.ts --check",
+          "command": "bun test backend/server/src/modules/knowledge/observability; bun build backend/server/src/modules/knowledge/observability/observability.test.ts --target=node && node --test; bun test backend/server/src/modules/knowledge/ai; pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/observability backend/server/src/platform/database/knowledge; bun backend/server/scripts/database-schema.ts --check",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-observability.md"
         }
@@ -1394,12 +1394,12 @@
         "L01"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/search/indexer.ts",
+      "deliverables": "backend/server/src/modules/knowledge/search/indexer.ts",
       "acceptance": "遍历嵌套块、hash 差量增改删、修复 ID、更新 backlink；重跑幂等；短块带标题路径",
       "evidence": [
         {
           "summary": "13 项测试(L01 回归含):嵌套块全遍历(skip 容器不重复)、sha256 差量真零 DML、E02 规则修复 blockId 并回写 doc_state、与 backlinks 并发收敛(FOR UPDATE+同事务补算)、幂等重跑、title_path 标题路径列;权限投影经 P02 端口联动",
-          "command": "bun test backend/src/knowledge/search; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/search; bun backend/scripts/database-schema.ts --check",
+          "command": "bun test backend/server/src/modules/knowledge/search; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/search; bun backend/server/scripts/database-schema.ts --check",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-block-index.md"
         }
@@ -1417,12 +1417,12 @@
         "G01"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/search/embeddings.ts",
+      "deliverables": "backend/server/src/modules/knowledge/search/embeddings.ts",
       "acceptance": "仅变化块调用；embed_model/维度隔离；后台重建完成原子切换，失败保持旧索引可用",
       "evidence": [
         {
           "summary": "22 项 search 全套测试:embedded_hash 血缘仅变化块调用(改1增1恰1批2值)、模型/维度隔离、重建单事务原子切换失败回退旧索引可查、批次限速与队列重试收敛;真实 Ollama 384 维 3 次调用记账,云嵌入端点已探明未耗成本",
-          "command": "bun test backend/src/knowledge/search; bun test backend/src/database/knowledge; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/search; bun backend/scripts/database-schema.ts --check",
+          "command": "bun test backend/server/src/modules/knowledge/search; bun test backend/server/src/platform/database/knowledge; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/search; bun backend/server/scripts/database-schema.ts --check",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-embeddings.md"
         }
@@ -1440,12 +1440,12 @@
         "D03"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/search/keyword.ts",
+      "deliverables": "backend/server/src/modules/knowledge/search/keyword.ts",
       "acceptance": "pg_search/jieba 与 ICU 配置真实查询验证；workspace/principals 在排名前过滤；返回可引用块",
       "evidence": [
         {
           "summary": "19 项测试(6 新增+13 回归):真实 pg_search jieba 中文命中/英文前缀扩展/混合析取、EXPLAIN 实证权限过滤先于排名、可引用块结构(pageId/blockId/titlePath/snippet/score)入 shared 契约、分页一致、回收页即空",
-          "command": "bun test backend/src/knowledge/search/keyword.integration.test.ts backend/src/knowledge/search/backlinks.integration.test.ts backend/src/knowledge/search/indexer.integration.test.ts; pnpm backend:typecheck; pnpm shared:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/search; bun backend/scripts/database-schema.ts --check",
+          "command": "bun test backend/server/src/modules/knowledge/search/keyword.integration.test.ts backend/server/src/modules/knowledge/search/backlinks.integration.test.ts backend/server/src/modules/knowledge/search/indexer.integration.test.ts; pnpm backend:typecheck; pnpm shared:typecheck; pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/search; bun backend/server/scripts/database-schema.ts --check",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-keyword.md"
         }
@@ -1462,12 +1462,12 @@
         "H03"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/search/service.ts",
+      "deliverables": "backend/server/src/modules/knowledge/search/service.ts",
       "acceptance": "HNSW 限当前模型、各取 50/RRF 常数60/前20重排；查询前授权；API/AI/MCP 共用结果结构",
       "evidence": [
         {
           "summary": "28 项 search 全套(6 新增+22 回归):HNSW 限当前模型(维度错实测防护)、两腿各 50→RRF k=60 与手算逐一吻合→前 20 真实 GLM rerank 精排(端点实测探明)、授权谓词两腿先于名次、HybridSearchHit 统一契约供 API/AI/MCP",
-          "command": "bun test backend/src/knowledge/search; pnpm backend:typecheck; pnpm shared:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/search",
+          "command": "bun test backend/server/src/modules/knowledge/search; pnpm backend:typecheck; pnpm shared:typecheck; pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/search",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-hybrid.md"
         }
@@ -1509,12 +1509,12 @@
         "Q01"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/assets/",
+      "deliverables": "backend/server/src/modules/knowledge/assets/",
       "acceptance": "按 workspace/hash 寻址、秒传不泄漏跨租户存在性；上传确认校验哈希/大小/类型；下载授权；asset.created 原子且真实 S3 往返",
       "evidence": [
         {
           "summary": "13 项测试(9 项真实 MinIO 往返+一次性 RLS 库):workspace/hash 寻址秒传、确认校验哈希/大小/类型、下载授权与方法绑定签名、asset.created 同事务原子、跨租户互不可见",
-          "command": "bun test backend/src/knowledge/assets; pnpm exec eslint --no-ignore backend/src/knowledge/assets; pnpm shared:typecheck; bun backend/scripts/database-schema.ts --check",
+          "command": "bun test backend/server/src/modules/knowledge/assets; pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/assets; pnpm shared:typecheck; bun backend/server/scripts/database-schema.ts --check",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-assets.md"
         }
@@ -1577,7 +1577,7 @@
       "evidence": [
         {
           "summary": "27 Python、7 Bun/Node 客户端用例与真实 HTTP/子进程取消；隐藏服务常驻",
-          "command": ".\\services\\media-worker\\.venv\\Scripts\\python.exe -m pytest -q services/media-worker; bun test backend/src/knowledge/media/client.test.ts; python services/media-worker/dev.py verify",
+          "command": ".\\services\\media-worker\\.venv\\Scripts\\python.exe -m pytest -q services/media-worker; bun test backend/server/src/modules/knowledge/media/client.test.ts; python services/media-worker/dev.py verify",
           "verifiedAt": "2026-09-26",
           "path": "services/media-worker/ACCEPTANCE.md"
         }
@@ -1598,7 +1598,7 @@
       "evidence": [
         {
           "summary": "CPU Whisper 真实音频/MP4及签名S3链路；33 Python+8客户端，失败/超时/取消/重试",
-          "command": ".\\services\\media-worker\\.venv\\Scripts\\python.exe -m pytest -q services/media-worker; bun test backend/src/knowledge/media/client.test.ts; node services/media-worker/scripts/check-whisper.mjs",
+          "command": ".\\services\\media-worker\\.venv\\Scripts\\python.exe -m pytest -q services/media-worker; bun test backend/server/src/modules/knowledge/media/client.test.ts; node services/media-worker/scripts/check-whisper.mjs",
           "verifiedAt": "2026-09-26",
           "path": "services/media-worker/ACCEPTANCE-WHISPER.md"
         }
@@ -1620,7 +1620,7 @@
         {
           "path": "services/media-worker/ACCEPTANCE-DOCLING.md",
           "summary": "真实 MinIO→HTTP→Docling 四格式标题/表格/PNG、空/损坏/期限/重试/取消通过；56 Python + 9 Bun + 9 Node 测试",
-          "command": "services/media-worker/.venv/Scripts/python.exe -m pytest -q services/media-worker; bun test backend/src/knowledge/media/client.test.ts; node services/media-worker/scripts/check-docling.mjs; node --test services/media-worker/.runtime/client.test.mjs; services/media-worker/.venv/Scripts/python.exe services/media-worker/dev.py verify",
+          "command": "services/media-worker/.venv/Scripts/python.exe -m pytest -q services/media-worker; bun test backend/server/src/modules/knowledge/media/client.test.ts; node services/media-worker/scripts/check-docling.mjs; node --test services/media-worker/.runtime/client.test.mjs; services/media-worker/.venv/Scripts/python.exe services/media-worker/dev.py verify",
           "verifiedAt": "2026-09-26"
         }
       ]
@@ -1636,12 +1636,12 @@
         "G01"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/workers/vision.ts",
+      "deliverables": "backend/server/src/modules/knowledge/workers/vision.ts",
       "acceptance": "真实图片经 vision 档生成描述/OCR；结果写 asset.derived；权限与模型用量可追踪",
       "evidence": [
         {
           "summary": "28 项测试(workers 15+assets 13 回归):真实 PNG 经真实 MinIO+队列+网关 vision 档(glm-5.3-flash 原生图文)生成描述、真实 tokens 落 ai_usage;失败/限流/缺配置结构化重试;幂等重放不重复调用",
-          "command": "bun test backend/src/knowledge/workers backend/src/knowledge/assets; pnpm exec eslint --no-ignore backend/src/knowledge/workers backend/src/knowledge/assets; pnpm backend:typecheck; bun backend/scripts/database-schema.ts --check",
+          "command": "bun test backend/server/src/modules/knowledge/workers backend/server/src/modules/knowledge/assets; pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/workers backend/server/src/modules/knowledge/assets; pnpm backend:typecheck; bun backend/server/scripts/database-schema.ts --check",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-vision.md"
         }
@@ -1663,12 +1663,12 @@
         "J02"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/workers/media.ts",
+      "deliverables": "backend/server/src/modules/knowledge/workers/media.ts",
       "acceptance": "graphile-worker 调用无状态 HTTP；幂等派生结果写库并索引引用块；图片/录音/PDF 可搜索且 AI 可读",
       "evidence": [
         {
           "summary": "3 项集成测试/11 断言(真实 MinIO+graphile+outbox):presigned GET 转写幂等落库、引用页 doc.changed 重索引、插图成资产入 S3、永久失败安全码;mime 集合镜像服务端 contracts.py",
-          "command": "bun test backend/src/knowledge/workers/media.integration.test.ts; cd backend && bunx tsc --noEmit",
+          "command": "bun test backend/server/src/modules/knowledge/workers/media.integration.test.ts; cd backend && bunx tsc --noEmit",
           "verifiedAt": "2026-09-27",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-27-w05-media-orchestration.md"
         }
@@ -1700,12 +1700,12 @@
         "H04"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/ai/context.ts",
+      "deliverables": "backend/server/src/modules/knowledge/ai/context.ts",
       "acceptance": "规则→大纲→邻块→检索→历史顺序；预算超限从检索尾部截断；回答 blockId 引用校验与权限过滤",
       "evidence": [
         {
           "summary": "40 项 ai 测试(6 新增):五腿顺序组装(规则→大纲→焦点邻块→检索→历史)、UTF-8 预算仅检索腿尾整条剔除、引用校验折叠无权/不存在/回收为同一 invalid;契约入 shared",
-          "command": "bun test backend/src/knowledge/ai; pnpm shared:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/ai/context.ts",
+          "command": "bun test backend/server/src/modules/knowledge/ai; pnpm shared:typecheck; pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/ai/context.ts",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-context.md"
         }
@@ -1725,12 +1725,12 @@
         "L01"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/ai/tools/",
+      "deliverables": "backend/server/src/modules/knowledge/ai/tools/",
       "acceptance": "search/read_page/query_database/list_pages/get_backlinks 同发起者授权；range/filter/sort 有验证、引用准确",
       "evidence": [
         {
           "summary": "13 项真实工具测试+search/databases/契约回归:五只读工具同一发起者授权(A03 范围+zod 输入双防线,principals 永不出现在输入)、range 越界拒绝、回收/无权不可区分;注册表供 J04/K01 共用",
-          "command": "bun test backend/src/knowledge/ai/tools; bun test backend/src/knowledge/search backend/src/knowledge/databases; bun test shared/src/knowledge/contracts shared/src/knowledge/markdown; pnpm shared:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/ai/tools",
+          "command": "bun test backend/server/src/modules/knowledge/ai/tools; bun test backend/server/src/modules/knowledge/search backend/server/src/modules/knowledge/databases; bun test shared/src/knowledge/contracts shared/src/knowledge/markdown; pnpm shared:typecheck; pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/ai/tools",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-agent-tools.md"
         }
@@ -1750,12 +1750,12 @@
         "B00"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/ai/tools/",
+      "deliverables": "backend/server/src/modules/knowledge/ai/tools/",
       "acceptance": "insert/replace/delete/create/update_properties 权限一致；openDirectConnection+agent:taskId；新 ID/建议默认；无 SQL 正文双写",
       "evidence": [
         {
           "summary": "19 项工具测试(6 新增)+69 项回归:三正文工具按 S01 语义 Y 层定点建议落稿(openDirectConnection agent actor/无宿主等价兜底,无 SQL 双写)、新 blockId、审阅前原文保留;create/update_properties 走 T01 服务与 P03 授权",
-          "command": "bun test backend/src/knowledge/ai/tools; bun test backend/src/knowledge/pages backend/src/knowledge/ai; pnpm backend:typecheck; pnpm shared:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/ai/tools",
+          "command": "bun test backend/server/src/modules/knowledge/ai/tools; bun test backend/server/src/modules/knowledge/pages backend/server/src/modules/knowledge/ai; pnpm backend:typecheck; pnpm shared:typecheck; pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/ai/tools",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-write-tools.md"
         }
@@ -1774,12 +1774,12 @@
         "J01"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/ai/streaming.ts",
+      "deliverables": "backend/server/src/modules/knowledge/ai/streaming.ts",
       "acceptance": "完整块到达即写共享 Y.Doc；Awareness 显示 Agent 光标；取消后部分结果可审阅；整体任务撤销不影响人编辑",
       "evidence": [
         {
           "summary": "57 项后端/228 断言(切分器单元、逐块写入+awareness、取消保留、整体撤销隔离、撤权 fail closed、tRPC 边界、headless 回退、真实 Ollama e2e)+前端 5 项;修复切分器三处缺陷;主会话装配 runtime 真实网关并修复 agent/mcp 作者语法违约为共享 origin 构造器",
-          "command": "bun test backend/src/knowledge/ai; bun test src/features/knowledge/ai; cd backend && bunx tsc --noEmit",
+          "command": "bun test backend/server/src/modules/knowledge/ai; bun test src/features/knowledge/ai; cd backend && bunx tsc --noEmit",
           "verifiedAt": "2026-09-27",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-27-j04-streaming-ai.md"
         }
@@ -1829,7 +1829,7 @@
         "J01"
       ],
       "status": "pending",
-      "deliverables": "backend/src/knowledge/ai/tasks/",
+      "deliverables": "backend/server/src/modules/knowledge/ai/tasks/",
       "acceptance": "整理空间/周报可执行；running/awaiting_approval/done/failed state 持久化；重启续跑不重复写；审批身份校验",
       "evidence": []
     },
@@ -1846,7 +1846,7 @@
         "S02"
       ],
       "status": "pending",
-      "deliverables": "src/features/knowledge/editor/blocks/ai-block.tsx; backend/src/knowledge/ai/",
+      "deliverables": "src/features/knowledge/editor/blocks/ai-block.tsx; backend/server/src/modules/knowledge/ai/",
       "acceptance": "保存提示/范围、手动/定时执行、建议回块内容；授权重检；取消与失败反馈",
       "evidence": []
     },
@@ -1878,12 +1878,12 @@
         "R01"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/mcp/",
+      "deliverables": "backend/server/src/modules/knowledge/mcp/",
       "acceptance": "标准 SDK client 初始化/工具发现/调用/取消可运行；复用工具层；mcp:clientName 来源进入建议",
       "evidence": [
         {
           "summary": "官方 SDK 双端 3 项集成测试:initialize/10 工具发现/真实调用/取消信号、写建议 mcp:clientName 来源标注、匿名与低权 PAT 拒绝;会话式传输逐请求重验",
-          "command": "bun test backend/src/knowledge/mcp; bun test backend/src/knowledge/ai/tools; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/mcp",
+          "command": "bun test backend/server/src/modules/knowledge/mcp; bun test backend/server/src/modules/knowledge/ai/tools; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/mcp",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-mcp.md"
         }
@@ -1901,12 +1901,12 @@
         "A03"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/knowledge/mcp/auth/",
+      "deliverables": "backend/server/src/modules/knowledge/mcp/auth/",
       "acceptance": "发现/注册/授权/PKCE/token/撤销标准流程，scope/audience 验证；PAT 可用；无认证拒绝工具",
       "evidence": [
         {
           "summary": "99 项测试/1730 断言(auth 87 + mcp 12):RFC 7636 向量、redirect 规则、注册 schema、HMAC 轮转;端到端 401→PRM→AS→注册→成员同意→PKCE 换 PAT→listTools→code 单次性→RFC 7009 撤销即 401;实活 8711 验证 PRM/AS 元数据与 9727 挑战;常量时间比较、逐请求查库吊销",
-          "command": "bun test backend/src/identity backend/src/knowledge/mcp; cd backend && bunx tsc --noEmit",
+          "command": "bun test backend/server/src/platform/identity backend/server/src/modules/knowledge/mcp; cd backend && bunx tsc --noEmit",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-k02-mcp-oauth-pat.md"
         }
@@ -1925,7 +1925,7 @@
         "S02"
       ],
       "status": "pending",
-      "deliverables": "backend/scripts/verify-knowledge-mcp.ts",
+      "deliverables": "backend/server/scripts/verify-knowledge-mcp.ts",
       "acceptance": "真实标准 MCP client 读写/越权/撤权/取消；建议出现在编辑器，可接受拒绝；来源标注正确",
       "evidence": []
     },
@@ -1944,7 +1944,7 @@
         "M04"
       ],
       "status": "pending",
-      "deliverables": "backend/src/store/; backend/src/api/server.ts; shared/src/index.ts; src/features/knowledge/",
+      "deliverables": "backend/device/src/storage/; backend/device/src/api/server.ts; shared/src/index.ts; src/features/knowledge/",
       "acceptance": "删除 SQLite 正文/旧 REST/轮询/旧种子，仅保留 Yjs 本地副本；明确清理限定知识库开发表，其他业务不受影响",
       "evidence": []
     },
@@ -1964,7 +1964,7 @@
         "W05"
       ],
       "status": "pending",
-      "deliverables": "backend/src/knowledge/runtime/; backend/scripts/",
+      "deliverables": "backend/server/src/modules/knowledge/runtime/; backend/server/scripts/",
       "acceptance": "API/collab/worker/mcp 分角色/all 在两运行时冒烟通过；没有 Bun 专属业务依赖；桌面桥独立",
       "evidence": []
     },
@@ -2037,7 +2037,7 @@
         "U11"
       ],
       "status": "pending",
-      "deliverables": "backend/src/knowledge/**/*.test.ts; qa/knowledge/",
+      "deliverables": "backend/server/src/modules/knowledge/**/*.test.ts; qa/knowledge/",
       "acceptance": "API/WS/search/asset/AI/MCP/数据库视图越权、群组移除、分享撤销、大子树 ACL 刷新窗口均无泄漏",
       "evidence": []
     },
@@ -2165,14 +2165,14 @@
       "dependencies": [
         "O01"
       ],
-      "deliverables": "backend/src/knowledge/organization/teamspaces.ts",
+      "deliverables": "backend/server/src/modules/knowledge/organization/teamspaces.ts",
       "acceptance": "空间 CRUD 与 owner/admin 授权、根默认级别持久化；个人和团队共享逻辑；权限计算可读取根默认值",
       "status": "accepted",
       "evidence": [
         {
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-organization.md",
           "summary": "真实 HTTP/PG Teamspace CRUD、四级/null根默认权限、并发非空保护与会话过期；组织/P01回归44项399断言",
-          "command": "bun test backend/src/knowledge/organization backend/src/knowledge/permissions shared/src/knowledge/contracts/organization.test.ts; pnpm backend:typecheck; pnpm shared:typecheck",
+          "command": "bun test backend/server/src/modules/knowledge/organization backend/server/src/modules/knowledge/permissions shared/src/knowledge/contracts/organization.test.ts; pnpm backend:typecheck; pnpm shared:typecheck",
           "verifiedAt": "2026-09-26"
         }
       ]
@@ -2210,13 +2210,13 @@
         "B01",
         "B00"
       ],
-      "deliverables": "backend/src/knowledge/collaboration/agent-awareness.ts",
+      "deliverables": "backend/server/src/modules/knowledge/collaboration/agent-awareness.ts",
       "acceptance": "服务端 direct connection 以 Agent 身份发布 cursor/selection/正在编辑状态；任务结束和异常清理，协议客户端能接收",
       "status": "accepted",
       "evidence": [
         {
           "summary": "真实监听器+官方 provider 客户端 3 项测试:agent 状态(含 taskId/kind/cursor)实时可见、stop/abort 清理幂等、非 page 文档名拒绝",
-          "command": "bun test backend/src/knowledge/collaboration/agent-awareness.integration.test.ts; pnpm exec eslint --no-ignore backend/src/knowledge/collaboration/agent-awareness.ts",
+          "command": "bun test backend/server/src/modules/knowledge/collaboration/agent-awareness.integration.test.ts; pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/collaboration/agent-awareness.ts",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-agent-awareness.md"
         }
@@ -2250,13 +2250,13 @@
         "A03"
       ],
       "status": "accepted",
-      "deliverables": "backend/src/api/knowledge/",
+      "deliverables": "backend/server/src/modules/knowledge/api/",
       "acceptance": "tRPC 挂载 Hono；session/PAT 与 workspace 上下文注入；输入校验、结构化错误、无权/未认证拒绝；不依赖客户端",
       "evidence": [
         {
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-api.md",
           "summary": "Hono/tRPC 真实 Session/PAT/PG网络认证、RLS、取消回滚、同前缀路由隔离；A00/PAT组合46项487断言，类型入口浏览器bundle为空",
-          "command": "bun test backend/src/api/knowledge backend/src/knowledge/access/access-policy.test.ts backend/src/knowledge/access/tokens.integration.test.ts; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/src/api/knowledge; node --test scripts/verify-knowledge-boundaries.test.mjs",
+          "command": "bun test backend/server/src/modules/knowledge/api backend/server/src/modules/knowledge/access/access-policy.test.ts backend/server/src/modules/knowledge/access/tokens.integration.test.ts; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/api; node --test scripts/verify-knowledge-boundaries.test.mjs",
           "verifiedAt": "2026-09-26"
         }
       ]

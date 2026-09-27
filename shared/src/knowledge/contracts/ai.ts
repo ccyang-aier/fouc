@@ -3,7 +3,7 @@ import { blockIdSchema, entityIdSchema } from './primitives';
 
 /**
  * J01 上下文组装与引用校验（§9.6）的前后端共享契约。组装本身是后端纯读取逻辑
- * （`backend/src/knowledge/ai/context.ts`）；这里的结构是 J 系列流式写入（J04）、
+ * （`backend/server/src/modules/knowledge/ai/context.ts`）；这里的结构是 J 系列流式写入（J04）、
  * Agent 工具层与 UI 引用渲染共用的稳定输出形状。
  */
 

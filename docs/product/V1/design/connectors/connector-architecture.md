@@ -486,7 +486,7 @@ Credential Broker 负责：
 V1 采用仓库内静态注册，不提前建设动态插件加载：
 
 ```text
-backend/src/connectors/
+backend/device/src/connectors/
 ├── core/
 │   ├── provider.ts
 │   ├── instance.ts

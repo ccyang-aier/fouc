@@ -52,7 +52,7 @@ let minioAvailable = false;
 try {
   // 非字面量说明符:根 tsconfig 无 allowImportingTsExtensions,Bun 运行时
   // 正常解析到 backend 的 TS 源文件;类型由上方最小接口约束。
-  const backendStorageSpecifier = '../../../../backend/src/knowledge/assets/storage.ts';
+  const backendStorageSpecifier = '../../../../backend/server/src/modules/knowledge/assets/storage.ts';
   const backend = await import(backendStorageSpecifier) as unknown as BackendStorageModule;
   storage = backend.createKnowledgeAssetStorage(await backend.readKnowledgeAssetStorageConfig());
   // 预签名 URL 的 origin 即 MinIO origin,健康探测走同一地址。

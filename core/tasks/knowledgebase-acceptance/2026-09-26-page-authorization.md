@@ -1,12 +1,12 @@
 # P03 · 权限一致的页面授权接口
 
-日期：2026-09-26。模块：`backend/src/knowledge/permissions/authorization.ts`、`backend/src/api/knowledge/router.ts`（`page.access`）、`permissions-test-fixture.ts`（挂载真实 tRPC 边界）。
+日期：2026-09-26。模块：`backend/server/src/modules/knowledge/permissions/authorization.ts`、`backend/server/src/modules/knowledge/api/router.ts`（`page.access`）、`permissions-test-fixture.ts`（挂载真实 tRPC 边界）。
 
 主代理实现并复核：授权入口 `authorizePageAccess` 在域租户事务内完成「验证成员行+群组行 → 主体展开 → 物化 ACL 判定」；tRPC `page.access` 查询逐动作授权。真实 HTTP/tRPC 客户端 + 真实队列 + 普通 RLS 角色验证：
 
 ```powershell
-bun test backend/src/knowledge/permissions backend/src/api/knowledge
-pnpm exec eslint --no-ignore backend/src/knowledge/permissions backend/src/api/knowledge
+bun test backend/server/src/modules/knowledge/permissions backend/server/src/modules/knowledge/api
+pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/permissions backend/server/src/modules/knowledge/api
 node scripts/verify-knowledge-boundaries.mjs
 ```
 

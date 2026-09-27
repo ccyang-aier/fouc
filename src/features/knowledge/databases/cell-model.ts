@@ -1,7 +1,7 @@
 /**
  * 类型化单元格视图模型（U06）——列与单元格的纯逻辑层。
  *
- * 语义逐条镜像 T02 服务端验证（backend/src/knowledge/databases/properties.ts）：
+ * 语义逐条镜像 T02 服务端验证（backend/server/src/modules/knowledge/databases/properties.ts）：
  * 属性值按列 schema 逐键验证，null 是所有类型的空值；person/relation 是用户/行
  * 页面 UUID 数组，multiSelect 的元素必须是已声明选项，date 接受 ISO 日期或带
  * 时差的完整时间，url 必须是绝对 URL。客户端先验到同一结论，服务端仍是权威。

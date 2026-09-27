@@ -5,7 +5,7 @@
  * `{ code?, message? }` JSON bodies with a status, or as transport failures.
  * Everything normalizes here into one domain error so auth UI branches on a
  * stable `code` instead of sniffing response internals. The Fouc backend
- * contract (`backend/src/identity/README.md`) guarantees sanitized
+ * contract (`backend/server/src/platform/identity/README.md`) guarantees sanitized
  * codes/messages; unknown codes degrade instead of leaking internals.
  */
 

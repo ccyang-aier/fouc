@@ -9,7 +9,7 @@
 - `media_worker/docling.py`：真实 Docling 标准 PDF 管线及 DOCX/PPTX/XLSX 格式后端，静态注册 `parse_document`，复用 W01 的可取消 spawn 子进程。
 - `docling_config.py` / `document_limits.py`：本地模型与可调低的图片限额；文件、PDF 页数/渲染像素、OOXML 成员/解压总量/路径/安全 XML 等预检。
 - `contracts.py` / `processors.py` / `app.py`：统一 `{ derived, attachments? }` 处理器输出和独立 HTTP 图片附件；Whisper 与生命周期探针同步改为唯一新接口，没有兼容双轨。
-- `backend/src/knowledge/media/client.ts`：Node 兼容附件验证，PNG 头、尺寸、SHA-256、真实字节数、规范 base64、重复哈希、引用集合及聚合上限。
+- `backend/server/src/modules/knowledge/media/client.ts`：Node 兼容附件验证，PNG 头、尺寸、SHA-256、真实字节数、规范 base64、重复哈希、引用集合及聚合上限。
 - `scripts/prepare_docling.py` / `model_download.py`：显式、匿名、受预算的本地模型准备与大小/校验和核验；Whisper 共享同一实际复用的下载校验函数。
 - `scripts/prepare_documents.py` / `check-docling.mjs`：真正生成 PDF/OOXML 文档并经真实 MinIO + HTTP 验证；两套媒体验收复用 `verification-storage.mjs`，该测试辅助不进入 Python 服务。
 - `tests/test_docling.py`、客户端测试与 README：真实文档、真实像素、资源限额和安全边界，以及 AS01/W05 持久化交接说明。
@@ -92,13 +92,13 @@ PDF 提取图片 SHA-256 为 `24eded23f87f1b6387831649fe5bc09d1c0c116ce491910daf
 
 ```powershell
 .\services\media-worker\.venv\Scripts\python.exe -m pytest -q services/media-worker
-bun test backend/src/knowledge/media/client.test.ts
+bun test backend/server/src/modules/knowledge/media/client.test.ts
 pnpm backend:typecheck
 .\services\media-worker\.venv\Scripts\python.exe services/media-worker/dev.py verify
-bun build backend/src/knowledge/media/client.ts --target=node --format=esm --outfile services/media-worker/.runtime/client.mjs
+bun build backend/server/src/modules/knowledge/media/client.ts --target=node --format=esm --outfile services/media-worker/.runtime/client.mjs
 node services/media-worker/scripts/check-docling.mjs
 node services/media-worker/scripts/check-whisper.mjs
-bun build backend/src/knowledge/media/client.test.ts --target=node --format=esm --outfile services/media-worker/.runtime/client.test.mjs
+bun build backend/server/src/modules/knowledge/media/client.test.ts --target=node --format=esm --outfile services/media-worker/.runtime/client.test.mjs
 node --test services/media-worker/.runtime/client.test.mjs
 ```
 

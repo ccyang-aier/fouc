@@ -5,14 +5,14 @@
 ## 验收命令与结果
 
 ```
-bun test backend/src/knowledge/workers/media.integration.test.ts   # 3 pass / 0 fail / 11 断言
+bun test backend/server/src/modules/knowledge/workers/media.integration.test.ts   # 3 pass / 0 fail / 11 断言
 cd backend && bunx tsc --noEmit                                      # media* 0 错误
-bunx eslint --no-ignore backend/src/knowledge/workers/media*.ts     # 干净
+bunx eslint --no-ignore backend/server/src/modules/knowledge/workers/media*.ts     # 干净
 ```
 
 真实链路:真实 MinIO 上传(AS01 prepare/confirm)、真实 graphile-worker 任务与 outbox 派发;媒体 HTTP 服务一 seam 之隔(W01-W03 已对真实服务验收,此处以客户端契约为界模拟响应)。
 
-## 交付内容(backend/src/knowledge/workers/media.ts + media.integration.test.ts)
+## 交付内容(backend/server/src/modules/knowledge/workers/media.ts + media.integration.test.ts)
 
 - `createAssetMediaConsumer({pool, storage, media})`:订阅 asset.created,audio/video 十一类 mime → transcribe,PDF/DOCX/PPTX/XLSX 四类 → parse_document(镜像服务端 contracts.py 集合);pending→processing→ready/failed 状态机与 W04 vision 同构,重放即 no-op(幂等)。
 - 派生调用:服务端 presignDownload(600s)授予短期 GET,请求载荷带 sha256/size/mime;响应(严格经 mediaProcessResponseSchema 语义)写 asset.derived(model=processor,generatedAt)。

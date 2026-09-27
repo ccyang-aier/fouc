@@ -168,7 +168,7 @@ src-tauri/
     ├── 异步读取 HttpOnly Cookie
     └── 直接转交 sidecar
 
-backend/src/connectors/
+backend/device/src/connectors/
 ├── repository.ts     Instance、心跳与调用审计
 ├── service.ts        生命周期、Provider Registry 与 Capability 调用
 └── dts/
@@ -177,7 +177,7 @@ backend/src/connectors/
     └── mapper.ts     DTS DTO → Fouc 最小领域输出
 ```
 
-当前 V1 为保持最小实现，将上述职责收敛在 `backend/src/connectors/dts/{provider,cookie-jar,mapper}.ts`，边界不变；仅当第二个 Provider 或协议复杂度确实需要时再拆成更多文件。
+当前 V1 为保持最小实现，将上述职责收敛在 `backend/device/src/connectors/dts/{provider,cookie-jar,mapper}.ts`，边界不变；仅当第二个 Provider 或协议复杂度确实需要时再拆成更多文件。
 
 Tauri 只实现系统能力桥。DTS 端点、请求体、数据映射和会话判断全部保留在 TypeScript sidecar。
 

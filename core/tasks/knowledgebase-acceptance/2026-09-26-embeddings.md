@@ -1,16 +1,16 @@
 # H02 · 向量批量生成与模型换代
 
-日期：2026-09-26。模块：`backend/src/knowledge/search/embeddings.ts`（新增）+ `embeddings.integration.test.ts`（新增 3 项）。前置：H01 块索引投影（`refreshPageBlockIndex`/`content_hash`）、G01 模型网关 embed 档（真实 Ollama all-minilm 384 维验收先例）、G02 观测记账（`createAiUsageRecorder`）、Q01 graphile-worker 消费者/重试语义。schema 变更：`database/knowledge/schema/content.ts` 的 `block_index` 增列 `embedded_hash varchar(64)`（与 embedding/embed_model/embed_dimensions 同进退的 check 扩展），新增 `block_embedding_model`（每工作区当前生效模型标记，FK→workspace）；`current.sql` 重生成并通过 `--check`；`tenant-test-database.ts` 种子数据同步（embedded_hash + 标记行），D01 元测试与 RLS/租户隔离回归全过。
+日期：2026-09-26。模块：`backend/server/src/modules/knowledge/search/embeddings.ts`（新增）+ `embeddings.integration.test.ts`（新增 3 项）。前置：H01 块索引投影（`refreshPageBlockIndex`/`content_hash`）、G01 模型网关 embed 档（真实 Ollama all-minilm 384 维验收先例）、G02 观测记账（`createAiUsageRecorder`）、Q01 graphile-worker 消费者/重试语义。schema 变更：`database/knowledge/schema/content.ts` 的 `block_index` 增列 `embedded_hash varchar(64)`（与 embedding/embed_model/embed_dimensions 同进退的 check 扩展），新增 `block_embedding_model`（每工作区当前生效模型标记，FK→workspace）；`current.sql` 重生成并通过 `--check`；`tenant-test-database.ts` 种子数据同步（embedded_hash + 标记行），D01 元测试与 RLS/租户隔离回归全过。
 
 ## 可复现验证
 
 ```bash
-bun test backend/src/knowledge/search            # 22 pass / 0 fail / 235 expect（含 H01 13 项与并行 H03 6 项回归），两轮复跑稳定
-bun test backend/src/database/knowledge          # 57 pass / 0 fail（schema 变更后的 D01 元测试 + RLS/租户隔离回归）
+bun test backend/server/src/modules/knowledge/search            # 22 pass / 0 fail / 235 expect（含 H01 13 项与并行 H03 6 项回归），两轮复跑稳定
+bun test backend/server/src/platform/database/knowledge          # 57 pass / 0 fail（schema 变更后的 D01 元测试 + RLS/租户隔离回归）
 pnpm backend:typecheck                           # 0 错误
-pnpm exec eslint --no-ignore backend/src/knowledge/search   # 无告警
-bun backend/scripts/database-schema.ts --check  # Knowledge current SQL matches the Drizzle source
-bun backend/scripts/knowledge-ollama-check.ts    # 真实 Ollama embed 探针（2×384 维，先例见 G01 验收）
+pnpm exec eslint --no-ignore backend/server/src/modules/knowledge/search   # 无告警
+bun backend/server/scripts/database-schema.ts --check  # Knowledge current SQL matches the Drizzle source
+bun backend/server/scripts/knowledge-ollama-check.ts    # 真实 Ollama embed 探针（2×384 维，先例见 G01 验收）
 ```
 
 真实环境：一次性 disposable RLS 数据库（`fouc_rls_*`，随建随删）、普通应用角色租户事务、真实 graphile-worker 队列。真实嵌入来源：本机 WSL Docker Ollama `all-minilm`（384 维，仅回环 127.0.0.1:11434，与 G01 验收同一实例）。测试 1 的 3 次真实调用合计 6 段短文本（4 段初次重建 + 2 段差量），token 用量为网关真实上报（断言 `input_tokens > 0`，落 `ai_usage`，operation=embed）；受控桩（确定向量、失败注入、批次计数）全部经 `createModelGateway` 的 fetch 边界注入，走完整网关校验（预算/维度/invalid_response），不绕过接口。

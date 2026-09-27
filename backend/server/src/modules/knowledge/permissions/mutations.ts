@@ -1,0 +1,85 @@
+import { and, eq, inArray } from 'drizzle-orm';
+import { z } from 'zod';
+import { pageAclSchema, pageScopeSchema } from '@fouc/shared/knowledge/contracts';
+import type { PageScope, Principal } from '@fouc/shared/knowledge/contracts';
+import { group, member, page, pageAcl, shareLink } from '../../../platform/database/knowledge/schema';
+import type { KnowledgeTenantTransaction } from '../../../platform/database/knowledge/tenant';
+import { KnowledgePermissionError } from './errors';
+import { fencePermissionSubtree } from './fence';
+import type { PermissionFence } from './fence';
+import { lockPermissionPage, lockPermissionWorkspace } from './locking';
+
+const grantsSchema = pageScopeSchema.extend({
+  grants: z.array(pageAclSchema.pick({ principal: true, level: true })).max(1_000),
+}).refine((input) => new Set(input.grants.map((grant) => grant.principal)).size === input.grants.length);
+const inheritanceSchema = pageScopeSchema.extend({ inheritsPermissions: z.boolean() });
+
+function parse<S extends z.ZodType>(schema: S, input: unknown): z.output<S> {
+  const parsed = schema.safeParse(input);
+  if (!parsed.success) throw new KnowledgePermissionError('INVALID_PERMISSION_INPUT');
+  return parsed.data;
+}
+
+async function target(db: KnowledgeTenantTransaction, scope: PageScope) {
+  await lockPermissionWorkspace(db, scope.workspaceId);
+  const record = await lockPermissionPage(db, scope);
+  if (!record) throw new KnowledgePermissionError('PERMISSION_SCOPE_NOT_FOUND');
+  return record;
+}
+
+async function validatePrincipals(db: KnowledgeTenantTransaction, workspaceId: string, principals: Principal[]) {
+  const ids = (kind: string) => principals.filter((value) => value.startsWith(`${kind}:`)).map((value) => value.slice(kind.length + 1));
+  if (ids('workspace').some((id) => id !== workspaceId)) throw new KnowledgePermissionError('INVALID_PERMISSION_PRINCIPAL');
+  const users = ids('user'), groups = ids('group'), links = ids('link');
+  // String principals have no SQL FK. Verify their tenant scope in bounded sets,
+  // never by a global user-directory lookup or a privileged connection.
+  if (users.length && (await db.select({ id: member.userId }).from(member).where(and(eq(member.workspaceId, workspaceId), inArray(member.userId, users)))).length !== users.length
+    || groups.length && (await db.select({ id: group.id }).from(group).where(and(eq(group.workspaceId, workspaceId), inArray(group.id, groups)))).length !== groups.length
+    || links.length && (await db.select({ id: shareLink.id }).from(shareLink).where(and(eq(shareLink.workspaceId, workspaceId), inArray(shareLink.id, links)))).length !== links.length) {
+    throw new KnowledgePermissionError('INVALID_PERMISSION_PRINCIPAL');
+  }
+}
+
+/**
+ * P03 must authorize `full` under lockPermissionWorkspace before calling this
+ * internal service. No actor or HTTP route is accepted/provided here.
+ */
+export async function replaceAuthorizedPageAcl(db: KnowledgeTenantTransaction, input: unknown): Promise<PermissionFence> {
+  const parsed = parse(grantsSchema, input);
+  const scope = { workspaceId: parsed.workspaceId, pageId: parsed.pageId };
+  const record = await target(db, scope);
+  await validatePrincipals(db, scope.workspaceId, parsed.grants.map((grant) => grant.principal));
+  const predicate = and(eq(pageAcl.workspaceId, scope.workspaceId), eq(pageAcl.pageId, scope.pageId));
+  const previous = await db.select().from(pageAcl).where(predicate);
+  if (previous.length === parsed.grants.length && previous.every((before) => !before.inherited && parsed.grants.some((after) => before.principal === after.principal && before.level === after.level))) {
+    return { rootPageId: record.id, revision: record.aclRevision, pagesInvalidated: 0 };
+  }
+  await db.delete(pageAcl).where(predicate);
+  if (parsed.grants.length) await db.insert(pageAcl).values(parsed.grants.map((grant) => ({ ...scope, ...grant, inherited: false })));
+  return fencePermissionSubtree(db, scope);
+}
+
+/** Authorized full-access mutation; breaking OR restoring inheritance is fenced. */
+export async function setAuthorizedPageInheritance(db: KnowledgeTenantTransaction, input: unknown): Promise<PermissionFence> {
+  const parsed = parse(inheritanceSchema, input);
+  const scope = { workspaceId: parsed.workspaceId, pageId: parsed.pageId };
+  const record = await target(db, scope);
+  if (record.inheritsPermissions === parsed.inheritsPermissions) return { rootPageId: record.id, revision: record.aclRevision, pagesInvalidated: 0 };
+  await db.update(page).set({ inheritsPermissions: parsed.inheritsPermissions }).where(and(eq(page.workspaceId, scope.workspaceId), eq(page.id, scope.pageId)));
+  return fencePermissionSubtree(db, scope);
+}
+
+/**
+ * B-layer tree creation/move boundary: lock BEFORE its callback, then fence the
+ * resulting authoritative subtree in that SAME transaction. The caller checks
+ * source/destination authority, cycles, row/database relations and positions;
+ * this function is neither an HTTP endpoint nor a page-tree implementation.
+ * All moved descendants must have their path/teamspace updated by the callback.
+ */
+export async function withAuthorizedPageTreeMutation<T>(db: KnowledgeTenantTransaction, input: PageScope, mutation: () => Promise<T>) {
+  const scope = parse(pageScopeSchema, input);
+  await lockPermissionWorkspace(db, scope.workspaceId);
+  const value = await mutation();
+  const fence = await fencePermissionSubtree(db, scope);
+  return { value, fence };
+}

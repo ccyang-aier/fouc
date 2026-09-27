@@ -4,7 +4,7 @@
 
 ## 实现
 
-- `api-types.ts`：仅 `export type` 复用 A00 `backend/src/api/knowledge/client-types.ts` 的 `KnowledgeApiRouter / KnowledgeApiInputs / KnowledgeApiOutputs`。该入口零运行时导出；架构扫描器允许该 type-only 反向引用，禁止任何值导入。
+- `api-types.ts`：仅 `export type` 复用 A00 `backend/server/src/modules/knowledge/api/client-types.ts` 的 `KnowledgeApiRouter / KnowledgeApiInputs / KnowledgeApiOutputs`。该入口零运行时导出；架构扫描器允许该 type-only 反向引用，禁止任何值导入。
 - `trpc-client.ts`：`createTRPCClient<KnowledgeApiRouter>` 类型安全调用面，URL 仅由 `knowledgeTrpcUrl`（`<origin>/api/knowledge/<workspaceId>/trpc`）这一个契约函数构造；`httpBatchLink` 按 A00 限制配置 `maxItems: 10`、`maxURLLength: 8192`，fetch 包装恒定 `credentials: 'include'`（Cookie 会话凭据）。每 (origin, workspace) 一个客户端实例缓存；`runKnowledgeCall` 统一执行包裹。
 - `endpoint.ts`：桌面（Tauri）经 `get_backend_endpoint` 命令解析本地 sidecar origin（复用 `src/lib/backend.ts` 约定，不使用 sidecar token——知识库 API 认证是 Cookie 会话/PAT）；Web 用 `NEXT_PUBLIC_FOUC_API_URL`（仅 origin，禁 path/query/fragment/凭据）；Web dev 回退 `http://127.0.0.1:8710`，生产缺配置直接抛清晰错误，绝不静默回退。解析按文档生命周期记忆化一次。
 - `errors.ts`：`KnowledgeDataError`（`code / requestId / httpStatus / cause`）领域错误；A00 全部 21 个允许错误码显式映射，未知服务码降级 `UNAVAILABLE`，无错误体的传输失败归 `NETWORK`，非 tRPC HTTP 响应归 `UNAVAILABLE` 并保留状态码。已中止的 `signal` 原样放行错误（取消不是错误，交由查询层自身语义）；`isRetryableKnowledgeError` 仅 NETWORK/UNAVAILABLE/RATE_LIMITED 可重试。

@@ -84,7 +84,7 @@ impl BackendState {
     }
 }
 
-/// 解析后端启动命令：开发模式跑 `bun run backend/src/index.ts`，
+/// 解析后端启动命令：开发模式跑 `bun run backend/device/src/entrypoints/index.ts`，
 /// 生产模式使用随包分发的 sidecar 二进制 fouc-backend。
 fn backend_command(
     _app: &AppHandle,
@@ -99,7 +99,7 @@ fn backend_command(
             .parent()?
             .to_path_buf();
         let mut c = Command::new("bun");
-        c.arg("run").arg(repo_root.join("backend/src/index.ts"));
+        c.arg("run").arg(repo_root.join("backend/device/src/entrypoints/index.ts"));
         c
     } else {
         Command::new(current_exe_dir()?.join(sidecar_name()))

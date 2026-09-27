@@ -58,7 +58,7 @@ Tauri 的 `beforeBuildCommand` 只执行设备单文件编译与前端构建，�
 
 `server/` 是独立业务后端，当前接口包含 HTTP、tRPC、WebSocket 协作与 MCP，并运行后台作业，因此职责不只是一组 REST 接口。接口协议不限定实现语言；当前工程选择 TypeScript/Bun，不表示独立后端必须使用 TypeScript。
 
-本次拆分沿用已有 TypeScript 业务实现，保留账户、授权、协作、作业与 AI 编排逻辑。共享 schema、tRPC 类型推导以及现有 Yjs/Hocuspocus、AI 和 MCP 集成提供了可验证的复用收益；没有已测量的瓶颈或明确需求支持此时重写为另一种语言。文档解析和模型相关计算使用现有独立 Python media worker。
+即使从零开始，按当前产品目标也优先选择 TypeScript 实现核心业务服务：复杂操作契约需要与双端前端准确衔接，实时协作与 Agent/工具编排需要纯协议共享和异步 I/O；CPU 计算由明确的 worker 边界承接。共享 schema、tRPC 类型推导以及 Yjs/Hocuspocus、AI 和 MCP 集成是具体收益。已有实现的重写成本不是该结论的必要前提，也不宣称所有未来负载下 TypeScript 都最优。文档解析和模型相关计算使用独立 Python media worker；语言与 Bun/Node 运行时分别评估。详细判断见 [服务端选型与前端审视](../docs/product/V1/design/arch/2026-09-27-server-selection-and-frontend-audit.md)。
 
 独立部署不等于当前实现可以无成本跨语言替换：前端公开 tRPC 类型和共享 TypeScript 协议仍构成编译期耦合。若后续明确选择 Python/Go 实现某项独立能力，应先定义语言无关的网络契约与生成客户端，例如 HTTP 的 OpenAPI，并验证协作协议、授权和事务语义；不能仅替换入口或运行命令。依据实际职责和工程收益选择语言，保持业务服务模块化单体，不为语言差异提前拆分所有业务模块。
 

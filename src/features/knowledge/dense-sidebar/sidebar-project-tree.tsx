@@ -160,7 +160,7 @@ export function SidebarProjectTreeNode({
       </div>
 
       {node.children?.length && isExpanded ? (
-        <div role="group">
+        <div role="group" className="space-y-0.5 pt-0.5">
           {node.children.map((child) => (
             <SidebarProjectTreeNode
               key={child.id}

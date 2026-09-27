@@ -51,7 +51,7 @@ export function SidebarRecentNotes({
     <nav
       ref={listRef}
       onScroll={updateFade}
-      className="h-full min-h-0 space-y-px overflow-y-auto pr-px [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      className="h-full min-h-0 space-y-0.5 overflow-y-auto pr-px [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       style={
         fadesAtBottom
           ? { maskImage: bottomFadeMask, WebkitMaskImage: bottomFadeMask }

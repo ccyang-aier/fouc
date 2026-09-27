@@ -116,7 +116,7 @@ export function ExpandedPrimarySidebar({
       {header}
       <div className="min-h-0 flex flex-1 flex-col px-[11px] pb-4 pt-2">
         <div className="scrollbar-hidden min-h-0 shrink overflow-y-auto pr-px">
-          <nav aria-label={t("sidebar.library")} className="space-y-px">
+          <nav aria-label={t("sidebar.library")} className="space-y-0.5">
           {SIDEBAR_MAIN_ITEMS.map((item) => {
             const Icon = sidebarIconMap[item.icon];
             return (
@@ -154,7 +154,7 @@ export function ExpandedPrimarySidebar({
             }
           />
           <SidebarCollapsibleContent expanded={expandedSections.projects}>
-            <div role="tree" aria-label={t("sidebar.projects")} className="space-y-px pt-0.5">
+            <div role="tree" aria-label={t("sidebar.projects")} className="space-y-0.5 pt-0.5">
               {projects.map((node) => (
                 <SidebarProjectTreeNode
                   key={node.id}
@@ -198,7 +198,7 @@ export function ExpandedPrimarySidebar({
             <button type="submit" disabled={!tagName.trim()} className="px-2 text-xs text-[#3f8990] disabled:opacity-40">创建</button>
           </form>}
           <SidebarCollapsibleContent expanded={expandedSections.tags}>
-            <div role="tree" aria-label={t("sidebar.tags")} className="space-y-px pt-0.5">
+            <div role="tree" aria-label={t("sidebar.tags")} className="space-y-0.5 pt-0.5">
               {tags.map((tag) => (
                 <SidebarTagTreeNode
                   key={tag.id}

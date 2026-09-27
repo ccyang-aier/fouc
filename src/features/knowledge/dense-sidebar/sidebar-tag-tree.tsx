@@ -129,7 +129,7 @@ export function SidebarTagTreeNode({
       </div>
 
       {hasDocuments && expanded ? (
-        <div role="group">
+        <div role="group" className="space-y-0.5 pt-0.5">
           {documents.map((document) => {
             const selected = activeDocumentLocation === "tag" && activeDocumentId === document.id;
             return (

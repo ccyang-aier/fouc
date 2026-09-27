@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { Page, Teamspace } from '@fouc/shared/knowledge/contracts';
+import { PermissionSelect } from '../organization/permission-select';
 import { DialogButton, ModalDialog, NameField } from '../organization/ui';
 
 export type DocumentCreation = { teamspaceId?: string; parentId: string | null; title: string; kind: 'doc' | 'database'; icon: string | null; cover: string | null; inheritsPermissions: boolean };
@@ -39,7 +40,10 @@ export function CreateDocumentDialog({ teamspaces, pages, target, onClose, onCre
       </div>
       <label className="text-[11px]">页面类型<select aria-label="页面类型" className={fieldClass} value={kind} onChange={(event) => setKind(event.target.value as 'doc' | 'database')}><option value="doc">文档</option><option value="database">数据库</option></select></label>
       <div className="grid grid-cols-2 gap-3"><NameField label="图标（可选）" value={icon} onChange={setIcon} placeholder="例如：📚" maxLength={200} /><NameField label="封面（可选）" value={cover} onChange={setCover} placeholder="图片 URL" maxLength={2048} /></div>
-      <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-[var(--line)] p-3"><input type="checkbox" checked={inherits} onChange={(event) => setInherits(event.target.checked)} className="mt-0.5 accent-[var(--accent)]" /><span><span className="block text-[12px] font-medium">继承父页面或文件夹权限</span><span className="mt-1 block text-[11px] leading-relaxed text-[var(--muted-strong)]">{inherits ? '使用上级的成员授权与默认权限。' : '不继承上级授权；创建者保留完全控制，其他成员需单独授权。'}</span></span></label>
+      <PermissionSelect label="文档权限" value={inherits ? 'inherit' : 'independent'} disabled={busy} onChange={(value) => setInherits(value === 'inherit')} options={[
+        { value: 'inherit', label: '继承上级权限', description: '使用父页面或文件夹的成员授权与默认权限。' },
+        { value: 'independent', label: '独立授权', description: '创建者保留完全控制，其他成员需单独授权。' },
+      ]} />
     </fieldset>
     {failed ? <p role="alert" className="mt-3 text-[12px] text-[var(--err-ink)]">创建失败，请检查错误提示后重试。</p> : null}
   </ModalDialog>;

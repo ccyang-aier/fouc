@@ -29,3 +29,9 @@
 
 .knowledgeAvatar, .knowledgeMenuAvatar { display: grid; place-items: center; background: #ece8fa; color: #6b55af; font-weight: 600; font-size: 14px; }
 .knowledgeMenuAvatar { font-size: 12px; }
+
+.knowledgeAvatar[data-tone="1"], .knowledgeMenuAvatar[data-tone="1"] { background: #e3f2ee; color: #347b68; }
+.knowledgeAvatar[data-tone="2"], .knowledgeMenuAvatar[data-tone="2"] { background: #e5edf9; color: #426ca8; }
+.knowledgeAvatar[data-tone="3"], .knowledgeMenuAvatar[data-tone="3"] { background: #faf0dc; color: #9c772d; }
+.knowledgeAvatar[data-tone="4"], .knowledgeMenuAvatar[data-tone="4"] { background: #f7e6ec; color: #a35e79; }
+.knowledgeAvatar[data-tone="5"], .knowledgeMenuAvatar[data-tone="5"] { background: #e9edef; color: #617682; }

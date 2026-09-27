@@ -31,11 +31,11 @@ function fakeApi(overrides: Partial<MetadataMutationApi> = {}) {
   const calls: Recorded[] = [];
   const record = (entry: Recorded) => { calls.push(entry); return entry; };
   const api: MetadataMutationApi = {
-    async createPage(_ws, input) { record({ operationId: input.id, kind: 'create', input }); return { pageId: input.id, teamspaceId: 'ts', parentId: null, position: 'z' }; },
+    async createPage(_ws, input) { record({ operationId: input.id, kind: 'create', input }); return { pageId: input.id, teamspaceId: 'ts', parentId: null, position: 'z', path: 'p' }; },
     async updatePage(_ws, input) { record({ operationId: input.pageId, kind: 'update', input }); return page(input.pageId, 'updated'); },
-    async movePage(_ws, input) { record({ operationId: input.operationId, kind: 'move', input }); return { pageId: input.pageId, teamspaceId: 'ts', parentId: input.parentId, position: 'z' }; },
-    async recyclePage(_ws, input) { record({ operationId: input.pageId, kind: 'recycle', input }); return { pageId: input.pageId, deletedAt: '2026-09-26T01:00:00Z' }; },
-    async restorePage(_ws, input) { record({ operationId: input.pageId, kind: 'restore', input }); return { pageId: input.pageId, deletedAt: null }; },
+    async movePage(_ws, input) { record({ operationId: input.operationId, kind: 'move', input }); return { pageId: input.pageId, teamspaceId: 'ts', parentId: input.parentId, position: 'z', path: 'p' }; },
+    async recyclePage(_ws, input) { record({ operationId: input.pageId, kind: 'recycle', input }); return { workspaceId: 'ws', pageId: input.pageId, deletedAt: '2026-09-26T01:00:00Z' }; },
+    async restorePage(_ws, input) { record({ operationId: input.pageId, kind: 'restore', input }); return { workspaceId: 'ws', pageId: input.pageId, deletedAt: null }; },
     ...overrides,
   };
   return { api, calls };

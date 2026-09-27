@@ -2,7 +2,7 @@
 
 > 本表由 `knowledgebase-tasks.json` 生成。修改任务和证据后运行 `node scripts/verify-knowledge-tasks.mjs --write`。
 
-设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 74 项。
+设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 75 项。
 
 ## 实施约束
 
@@ -28,7 +28,6 @@
 - B07 Awareness 人/Agent 光标与在线成员
 - E05 表格、分栏和 Callout NodeView
 - E06 Slash 菜单与 Markdown/HTML 粘贴
-- N02 CRDT 评论锚点与侧栏
 - L02 实时只读块引用 NodeView
 - U06 数据库表格视图
 - U09 图片/音频/视频/文件/嵌入 NodeView
@@ -94,7 +93,7 @@
 | [x] 已验收 | V02 | 块与行内历史差异算法<br>shared/src/knowledge/history/ | §5.2 | M01, C01 | 新增/删除/移动/修改块与行内差异可解释；ID 用于稳定比对；空页/相邻版本正确 | [20 项 Bun/Node 双运行时 diff 测试，166 项共享回归；120排列移动最小性、120文本重建、27块Markdown快照往返](../../core/tasks/knowledgebase-acceptance/2026-09-26-history.md) |
 | [x] 已验收 | V03 | 历史面板与协作安全恢复<br>src/features/knowledge/history/; backend/src/knowledge/collaboration/ | §5.2 | V01, V02, E03, B08 | 预览版本、作者、命名；恢复通过新 Y.Doc 事务且可撤销；另一在线编辑者不中断 | [后端 3 项集成(命名版本+作者归因+PM 预览+ACL 403/跨租户)+恢复语义(客户端单 PM 事务,第二编辑者不中断继续编辑)+前端 8 项(单步恢复事务/预览序列化/错误映射)+编辑器装配后全树 104/0 回归;checkpoints 扩展经 listener 可选参数挂载](../../core/tasks/knowledgebase-acceptance/2026-09-27-v03-history-panel.md) |
 | [x] 已验收 | N01 | 评论线程持久化与权限<br>backend/src/knowledge/comments/ | §4.6 | P03, Q01 | 创建/回复/解决/重开/删除有独立生命周期；仅 comment+ 可写；通知 Outbox 原子且 workspace 隔离 | [6 组真实集成测试(58 断言):线程生命周期状态机、view 级五写路径全拒/comment+ 走通、通知+outbox 同事务原子(回滚零残留)、回收页即时拒绝、跨租户 NOT_FOUND 不可区分](../../core/tasks/knowledgebase-acceptance/2026-09-26-comments.md) |
-| [ ] 待实施 | N02 | CRDT 评论锚点与侧栏<br>src/features/knowledge/editor/comments/ | §4.6 / §5.3 | N01, E03, B06 | 选区 comment mark 绑定 threadId；协作插删锚点不漂；孤立锚点状态可解释；线程/正文跳转 | — |
+| [x] 已验收 | N02 | CRDT 评论锚点与侧栏<br>src/features/knowledge/editor/comments/ | §4.6 / §5.3 | N01, E03, B06 | 选区 comment mark 绑定 threadId；协作插删锚点不漂；孤立锚点状态可解释；线程/正文跳转 | [前端 30 项(双编辑器 CRDT 锚点收敛/删除传播/五态装饰/分组侧栏/只读矩阵)+后端 7+4 项(真实 RLS+HTTP 边界 ACL fail-closed/幂等创建);comment tRPC 过程挂载后 8711 实活 401 鉴权可达;实时链路 comment.changed→B06→失效验证](../../core/tasks/knowledgebase-acceptance/2026-09-27-n02-comments-ui.md) |
 | [x] 已验收 | N03 | 通知收件箱<br>src/features/knowledge/notifications/; backend/src/knowledge/notifications/ | §4.6 / §5.3 | N01, B06, U02 | 评论通知收件人权限过滤、已读操作、实时更新与跳转；无重复跨租户消息 | [后端 11 项(收件箱权限双重过滤 fail closed、已读幂等、keyset 分页、跨租户隔离、HTTP 映射、outbox→hub 精确一次实时投递)+前端 16 项(传输契约/桥/失效键/视图模型);runtime 已接线通知路由](../../core/tasks/knowledgebase-acceptance/2026-09-27-n03-notifications.md) |
 | [x] 已验收 | L01 | 页面/块链接与反向引用派生<br>backend/src/knowledge/search/backlinks.ts | §4.6 / §7.1 | M02, B02, T01 | 页面链接、blockReference 可解析稳定 ID；正文变化更新 backlink；无权限来源不泄漏 | [6 项真实队列/RLS 测试:显式 pageId 优先/标题精确/块锚解析、悬链零落表零泄漏、doc.changed 消费幂等(FOR UPDATE 串行)、入链经 P03 谓词过滤、损坏 doc_state 留队重试不阻塞](../../core/tasks/knowledgebase-acceptance/2026-09-26-backlinks.md) |
 | [ ] 待实施 | L02 | 实时只读块引用 NodeView<br>src/features/knowledge/editor/blocks/block-reference.tsx | §4.6 | L01, E03 | 按需加载来源 Y.Doc；更改实时反映；点击原文高亮；无权/删除/循环引用有明确状态并释放连接 | — |
@@ -545,6 +544,7 @@ flowchart TD
   style V02 fill:#e4f4e9,stroke:#42845c
   style V03 fill:#e4f4e9,stroke:#42845c
   style N01 fill:#e4f4e9,stroke:#42845c
+  style N02 fill:#e4f4e9,stroke:#42845c
   style N03 fill:#e4f4e9,stroke:#42845c
   style L01 fill:#e4f4e9,stroke:#42845c
   style P04 fill:#e4f4e9,stroke:#42845c

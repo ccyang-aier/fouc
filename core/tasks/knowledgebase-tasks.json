@@ -1106,10 +1106,17 @@
         "E03",
         "B06"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "src/features/knowledge/editor/comments/",
       "acceptance": "选区 comment mark 绑定 threadId；协作插删锚点不漂；孤立锚点状态可解释；线程/正文跳转",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "前端 30 项(双编辑器 CRDT 锚点收敛/删除传播/五态装饰/分组侧栏/只读矩阵)+后端 7+4 项(真实 RLS+HTTP 边界 ACL fail-closed/幂等创建);comment tRPC 过程挂载后 8711 实活 401 鉴权可达;实时链路 comment.changed→B06→失效验证",
+          "command": "bun test src/features/knowledge/comments; bun test backend/src/knowledge/comments; bun test backend/src/api/knowledge/comment-routes.test.ts",
+          "verifiedAt": "2026-09-27",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-27-n02-comments-ui.md"
+        }
+      ]
     },
     {
       "id": "N03",

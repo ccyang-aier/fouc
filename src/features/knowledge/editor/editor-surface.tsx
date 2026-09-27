@@ -26,6 +26,7 @@ import { pageCollaborationExtension } from './page-collaboration';
 import { createPageReviewExtension, PageReviewRail } from './review-integration';
 import { createBlockEditingExtensions } from './extensions';
 import { HistoryPanel } from '../history/history-panel';
+import { createCommentsEditorExtension, PageCommentsLayer } from './comments-integration';
 
 /** Document typography for the shared schema's DOM output (E05 adds NodeView polish). */
 const documentClasses = [
@@ -88,6 +89,7 @@ export function PageEditorSurface({
       createBlockIdExtension({ pageId: scope.pageId }),
       pageCollaborationExtension(document, pageUndo),
       createPageReviewExtension(),
+      createCommentsEditorExtension(),
       ...createBlockEditingExtensions(),
     ],
     [scope.pageId, document, pageUndo],
@@ -131,7 +133,7 @@ export function PageEditorSurface({
         </div>
       </header>
       {view.readonlyReason ? <ReadonlyBanner reason={view.readonlyReason} level={level} /> : null}
-      <div className="flex min-h-0 flex-1">
+      <PageCommentsLayer scope={scope} editor={editor} level={level}>
         <div className="min-h-0 flex-1 overflow-y-auto">
           <div className={documentClasses}>
             <EditorContent editor={editor} />
@@ -149,7 +151,7 @@ export function PageEditorSurface({
             />
           </aside>
         )}
-      </div>
+      </PageCommentsLayer>
     </section>
   );
 }

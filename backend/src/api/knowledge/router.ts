@@ -5,10 +5,13 @@ import { authorizePageAccess } from '../../knowledge/permissions';
 import { knowledgeStreamingTasks, toKnowledgeStreamingTrpcError } from '../../knowledge/ai/streaming';
 import type { KnowledgeStreamingTasks } from '../../knowledge/ai/streaming';
 import { createKnowledgeRouter, knowledgeQuery, knowledgeMutation } from './procedures';
+import { knowledgeCommentRouterRecord } from './comment-routes';
 import type { KnowledgeProcedureContext } from './context';
 
 /** Infrastructure plus the P03 page ACL query. Page content and writes arrive with T01+/B01+. */
+/** N02 (§4.6): the sidebar's comment thread lifecycle over the shared comment contracts. */
 export const knowledgeApiRouter = createKnowledgeRouter({
+  comment: knowledgeCommentRouterRecord,
   access: knowledgeQuery({
     input: workspaceScopeSchema,
     scopes: ['read'],

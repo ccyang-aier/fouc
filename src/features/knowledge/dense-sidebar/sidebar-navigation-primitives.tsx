@@ -74,8 +74,10 @@ export function SidebarSectionHeader({ icon: Icon, label, expanded, onToggle, se
       <span className="truncate">{label}</span>
       <CaretRight aria-hidden weight="fill" className={cn("ml-1 size-[10px] shrink-0 transition-transform duration-200", expanded && "rotate-90")} />
     </button>
-    {actions && <div className="ml-1 flex shrink-0 items-center gap-px invisible opacity-0 transition-opacity group-hover/section:visible group-hover/section:opacity-100 group-focus-within/section:visible group-focus-within/section:opacity-100">{actions}</div>}
-    {count !== undefined && <span className={styles.count}>{count}</span>}
+    <div className={styles.trailing}>
+      {actions && <div className={cn(styles.actions, "flex items-center gap-px")}>{actions}</div>}
+      {count !== undefined && <span className={styles.count}>{count}</span>}
+    </div>
   </div>;
 }
 

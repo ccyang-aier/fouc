@@ -8,10 +8,32 @@
     transform 120ms ease;
 }
 
-/* Keep counts at the same right edge while reserving a separate action slot. */
-.actions.inlineActions {
-  position: static;
+.trailing {
+  display: grid;
+  flex-shrink: 0;
+  align-items: center;
   margin-left: 4px;
+}
+
+.trailing > .actions,
+.trailing > .count {
+  grid-area: 1 / 1;
+  justify-self: end;
+}
+
+.trailing > .actions {
+  position: static;
+  transform: none;
+}
+
+.trailing > .count {
+  margin-left: 0;
+}
+
+.row:hover > .trailing:has(.actions) > .count,
+.row:has(:focus-visible) > .trailing:has(.actions) > .count,
+.trailing:has([data-state="open"]) > .count {
+  visibility: hidden;
 }
 
 .count {
@@ -45,7 +67,7 @@
 }
 
 .row:hover .actions,
-.row:focus-within .actions,
+.row:has(:focus-visible) .actions,
 .actions[data-starred="true"],
 .actions:has([data-state="open"]) {
   visibility: visible;

@@ -89,7 +89,8 @@ export function SidebarTagTreeNode({
           />
           <span className="my-auto inline-flex h-4 min-w-0 items-center truncate leading-4">{tag.name}</span>
         </button>
-        <div className={cn(styles.actions, styles.inlineActions, "flex shrink-0 items-center gap-0.5")}>
+        <div className={styles.trailing}>
+        <div className={cn(styles.actions, "flex items-center gap-0.5")}>
           <IconButton
             type="button"
             label={t("sidebar.newDocumentInTag", { tag: tag.name })}
@@ -124,6 +125,7 @@ export function SidebarTagTreeNode({
           </DropdownMenu>
         </div>
         <span className={styles.count}>{documents.length}</span>
+        </div>
       </div>
 
       {hasDocuments && expanded ? (

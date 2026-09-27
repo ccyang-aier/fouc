@@ -113,7 +113,8 @@ export function SidebarProjectTreeNode({
         {isDocument ? (
           <SidebarDocumentActions documentId={node.id} starred={Boolean(node.starred)} onAction={onDocumentAction} />
         ) : (
-          <div className={cn(styles.actions, styles.inlineActions, "flex shrink-0 items-center gap-0.5")}>
+          <div className={styles.trailing}>
+          <div className={cn(styles.actions, "flex items-center gap-0.5")}>
             <IconButton
               type="button"
               label={t("sidebar.newDocument")}
@@ -153,8 +154,9 @@ export function SidebarProjectTreeNode({
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+          <span className={styles.count}>{node.count ?? 0}</span>
+          </div>
         )}
-        {!isDocument && <span className={styles.count}>{node.count ?? 0}</span>}
       </div>
 
       {node.children?.length && isExpanded ? (

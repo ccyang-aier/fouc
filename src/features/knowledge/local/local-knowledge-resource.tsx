@@ -22,9 +22,9 @@ import { DotsThree } from '@phosphor-icons/react';
 type View = 'all-documents' | 'starred' | 'drafts' | 'trash';
 type Store = ReturnType<typeof createLocalLibraryStore>;
 
-export function LocalKnowledgeResource(props: { onOpenSettings: () => void; onOpenWorkspace: () => void }) {
+export function LocalKnowledgeResource({ workspaceId, ...props }: { workspaceId: string; onOpenSettings: () => void; onOpenWorkspace: () => void }) {
   const [{ store, error }] = useState<{ store: Store | null; error: string | null }>(() => {
-    try { return { store: createLocalLibraryStore(window.localStorage), error: null }; }
+    try { return { store: createLocalLibraryStore(window.localStorage, workspaceId), error: null }; }
     catch { return { store: null, error: '无法读取本机文档，请检查浏览器存储设置。' }; }
   });
   if (!store) return <div role="status" className="flex h-full items-center justify-center text-sm text-[var(--muted)]">{error ?? '正在打开本机知识库…'}</div>;

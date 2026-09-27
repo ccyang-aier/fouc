@@ -9,7 +9,7 @@ import { KnowledgeBaseHeader } from '../knowledge-base-header';
 import { CanvasState, TreeSkeletonRows } from '../canvas-states';
 import styles from './knowledge-sidebar.module.css';
 
-export function PageTreeSidebar({ collapsed, onCollapse, workspaces, activeWorkspaceId, onSelectWorkspace, onCreateWorkspace, onOpenSettings, onOpenLocal, onOpenWorkspace, treeArea, footer }: {
+export function PageTreeSidebar({ collapsed, onCollapse, workspaces, activeWorkspaceId, onSelectWorkspace, onCreateWorkspace, onOpenSettings, onOpenLocal, onOpenWorkspace, treeArea, footer, createLabel }: {
   collapsed: boolean;
   onCollapse: () => void;
   workspaces: readonly Pick<WorkspaceWithRole, 'id' | 'name'>[];
@@ -21,9 +21,10 @@ export function PageTreeSidebar({ collapsed, onCollapse, workspaces, activeWorks
   onOpenWorkspace?: () => void;
   treeArea: ReactNode;
   footer?: ReactNode;
+  createLabel?: string;
 }) {
   return <aside aria-label="知识库侧边栏" aria-hidden={collapsed} inert={collapsed} data-collapsed={collapsed} className={cn('flex h-full min-h-0 flex-col', styles.sidebar)}>
-    <KnowledgeBaseHeader knowledgeBases={workspaces} activeKnowledgeBaseId={activeWorkspaceId} onSelectKnowledgeBase={onSelectWorkspace} onCollapse={onCollapse} onCreateKnowledgeBase={onCreateWorkspace} onOpenSettings={onOpenSettings} onOpenLocal={onOpenLocal} onOpenWorkspace={onOpenWorkspace} />
+    <KnowledgeBaseHeader knowledgeBases={workspaces} activeKnowledgeBaseId={activeWorkspaceId} onSelectKnowledgeBase={onSelectWorkspace} onCollapse={onCollapse} onCreateKnowledgeBase={onCreateWorkspace} onOpenSettings={onOpenSettings} onOpenLocal={onOpenLocal} onOpenWorkspace={onOpenWorkspace} createLabel={createLabel} />
     {treeArea}
     {footer}
   </aside>;

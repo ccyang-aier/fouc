@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createKnowledgeQueryClient } from './query-client';
 
@@ -10,5 +10,9 @@ import { createKnowledgeQueryClient } from './query-client';
  */
 export function KnowledgeQueryProvider({ children }: { children: ReactNode }) {
   const [queryClient] = useState(createKnowledgeQueryClient);
+  useEffect(() => () => {
+    void queryClient.cancelQueries();
+    queryClient.clear();
+  }, [queryClient]);
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }

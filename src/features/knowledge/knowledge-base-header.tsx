@@ -21,6 +21,7 @@ export function KnowledgeBaseHeader({
   onOpenSettings,
   onOpenLocal,
   onOpenWorkspace,
+  createLabel = "新建知识库",
 }: {
   knowledgeBases: readonly KnowledgeBaseSummary[];
   activeKnowledgeBaseId: string | null;
@@ -30,6 +31,7 @@ export function KnowledgeBaseHeader({
   onOpenSettings: () => void;
   onOpenLocal?: () => void;
   onOpenWorkspace?: () => void;
+  createLabel?: string;
 }) {
   const activeKnowledgeBase = knowledgeBases.find((base) => base.id === activeKnowledgeBaseId);
   const knowledgeBaseName = activeKnowledgeBase?.name ?? "知识库";
@@ -53,7 +55,7 @@ export function KnowledgeBaseHeader({
           </DropdownMenuItem>
         ))}
         <DropdownMenuItem className={styles.knowledgeMenuItem} onSelect={onCreateKnowledgeBase}>
-          <Plus aria-hidden="true" weight="bold" />新建知识库
+          <Plus aria-hidden="true" weight="bold" />{createLabel}
         </DropdownMenuItem>
         <DropdownMenuSeparator className={styles.knowledgeMenuSeparator} />
         <DropdownMenuItem className={styles.knowledgeMenuItem} onSelect={onOpenSettings}>

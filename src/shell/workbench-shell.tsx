@@ -47,7 +47,8 @@ import { ProjectHomeCanvas } from "@/features/project/project-home-canvas"
 import "./sidebar-material.css"
 import { SettingsCanvas } from "@/features/settings/settings-canvas"
 import { SystemBar } from "./system-bar"
-import { DEFAULT_SPACES, WorkspaceRail, type RailSpace } from "./workspace-rail"
+import { WorkspaceRail } from "./workspace-rail"
+import { useWorkspace } from "@/features/workspaces/workspace-provider"
 
 const PROJECT_FAVORITE_STORAGE_KEY = "fouc.project.fouc-desktop.favorite"
 const PROJECT_FAVORITE_EVENT = "fouc-project-favorite-change"
@@ -86,8 +87,7 @@ function writeProjectFavorite(favorited: boolean) {
 export function WorkbenchShell() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [view, setView] = useWorkbenchView()
-  const [spaces, setSpaces] = useState<RailSpace[]>(DEFAULT_SPACES)
-  const [activeSpaceId, setActiveSpaceId] = useState(DEFAULT_SPACES[0].id)
+  const { spaces, activeSpace, updateSpaces, selectWorkspace, createWorkspace } = useWorkspace()
   // 项目管理面板状态由壳层持有：左侧项目菜单与项目画布共享同一开合来源
   const [managementPanel, setManagementPanel] = useState<ProjectManagementPanelId | null>(null)
   const projectFavorited = useSyncExternalStore(subscribeProjectFavorite, readProjectFavorite, () => false)
@@ -126,14 +126,6 @@ export function WorkbenchShell() {
     setView(nextView)
   }
 
-  function createSpace() {
-    const label = `新工作空间 ${spaces.length + 1}`
-    const id = `space-${crypto.randomUUID()}`
-    setSpaces((current) => [...current, { id, label, pinned: true }])
-    setActiveSpaceId(id)
-    return label
-  }
-
   return (
     <MotionConfig reducedMotion="user">
       <TooltipProvider>
@@ -154,7 +146,7 @@ export function WorkbenchShell() {
               // 系统底层行只在主区顶部、与主导航 header 等高并接
               <div className="flex min-h-0 flex-1">
                 <div className="sidebar-material flex shrink-0">
-                  <WorkspaceRail view={view} onViewChange={changeView} spaces={spaces} activeSpaceId={activeSpaceId} onSpacesChange={setSpaces} onActiveSpaceChange={setActiveSpaceId} onCreateSpace={createSpace} />
+                  <WorkspaceRail view={view} onViewChange={changeView} spaces={spaces} activeSpaceId={activeSpace.id} onSpacesChange={updateSpaces} onActiveSpaceChange={selectWorkspace} onCreateSpace={createWorkspace} />
                   <NavigationSidebar
                     open={!sidebarCollapsed}
                     onCollapse={() => {
@@ -203,7 +195,7 @@ export function WorkbenchShell() {
                           ) : view === "connectors" ? (
                             <ConnectorsCanvas onWorkbenchFocus={() => setSidebarCollapsed(true)} />
                           ) : view === "knowledge" ? (
-                            <KnowledgePage onOpenSettings={() => changeView("settings")} />
+                            <KnowledgePage key={activeSpace.id} onOpenSettings={() => changeView("settings")} />
                           ) : (
                             <div className="flex h-full items-center justify-center text-[13px] text-[var(--ink-soft)]">
                               该空间已在 V1 规划中，尚未开放

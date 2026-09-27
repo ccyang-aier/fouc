@@ -19,7 +19,7 @@ import { useKnowledgeAccessQuery } from './data/hooks';
 import { knowledgeKeysForSegments, knowledgeWorkspaceRootKey } from './data/invalidation';
 import { KnowledgeQueryProvider } from './data/provider';
 import { invalidateKnowledgeQueries } from './data/query-client';
-import { flattenWorkspaceList, useKnowledgeTeamspacesQuery, useKnowledgeWorkspacesQuery } from './data/workspace-queries';
+import { flattenWorkspaceList, useKnowledgeTeamspacesQuery } from './data/workspace-queries';
 import { deriveKnowledgeEntryPhase, entryPhaseShowsStage, knowledgeErrorCodeOf } from './entry-state';
 import { useKnowledgeNotificationsBridge } from './notifications/notifications-queries';
 import { subscribeOpenPageTarget } from './editor/open-target';
@@ -28,30 +28,29 @@ import { KnowledgeTreeStage } from './navigation/tree-stage';
 import { CreateTeamspaceDialog } from './navigation/create-teamspace-dialog';
 import { PageTreeSidebar } from './navigation/page-tree-sidebar';
 import { organizationErrorTextOf } from './organization/errors';
-import { organizationQueryKeys } from './organization/keys';
 import { ToastRegion, useOrganizationToast } from './organization/ui';
-import { CreateKnowledgeBaseDialog } from './organization/create-knowledge-base-dialog';
+import { CreateWorkspaceDialog } from './organization/create-workspace-dialog';
 import { LibraryCanvas } from './navigation/library-canvas';
 import type { LibraryView } from './navigation/tree-stage';
 import { KnowledgePageEditor } from './editor';
 import { KnowledgeWorkbench } from './knowledge-workbench';
 import { createBrowserKnowledgeResourceSelection } from './resource-selection';
+import { useWorkspace } from '@/features/workspaces/workspace-provider';
 
 const LocalKnowledgeResource = dynamic(() => import('./local/local-knowledge-resource').then((module) => module.LocalKnowledgeResource), { ssr: false, loading: () => <CanvasSpinner label="正在加载知识资源" /> });
 
-const ACTIVE_WORKSPACE_STORAGE_KEY = 'fouc.knowledge.activeWorkspaceId';
-
 export function KnowledgePage({ onOpenSettings }: { onOpenSettings: () => void }) {
   const { session } = useIdentity();
-  const [selection] = useState(createBrowserKnowledgeResourceSelection);
+  const { activeSpace } = useWorkspace();
+  const [selection] = useState(() => createBrowserKnowledgeResourceSelection(activeSpace.id, activeSpace.kind === 'server' ? 'workspace' : 'local'));
   const resource = useSyncExternalStore(selection.subscribe, selection.getSnapshot, selection.getServerSnapshot);
   if (!resource) return <CanvasSpinner label="正在加载知识资源" />;
-  if (resource === 'local') return <LocalKnowledgeResource onOpenSettings={onOpenSettings} onOpenWorkspace={() => selection.select('workspace')} />;
+  if (resource === 'local' && activeSpace.kind === 'local') return <LocalKnowledgeResource workspaceId={activeSpace.id} onOpenSettings={onOpenSettings} onOpenWorkspace={() => selection.select('workspace')} />;
   // Private query caches must never survive account changes; local edits remain mounted during sign-in.
-  return <KnowledgeQueryProvider key={session.status === 'authenticated' ? session.user.id : 'unauthenticated'}><WorkspaceKnowledgeResource onOpenSettings={onOpenSettings} onOpenLocal={() => selection.select('local')} /></KnowledgeQueryProvider>;
+  return <KnowledgeQueryProvider key={`${activeSpace.id}:${session.status === 'authenticated' ? session.user.id : 'unauthenticated'}`}><WorkspaceKnowledgeResource localSelected={resource === 'local'} onOpenSettings={onOpenSettings} onOpenLocal={() => selection.select('local')} onOpenWorkspace={() => selection.select('workspace')} /></KnowledgeQueryProvider>;
 }
 
-function WorkspaceKnowledgeResource({ onOpenSettings, onOpenLocal }: { onOpenSettings: () => void; onOpenLocal: () => void }) {
+function WorkspaceKnowledgeResource({ onOpenSettings, onOpenLocal, onOpenWorkspace, localSelected }: { onOpenSettings: () => void; onOpenLocal: () => void; onOpenWorkspace: () => void; localSelected: boolean }) {
   // The U01 QueryClient shared by every query below and by the B06 event
   // subscription's invalidations.
   const queryClient = useQueryClient();
@@ -61,19 +60,13 @@ function WorkspaceKnowledgeResource({ onOpenSettings, onOpenLocal }: { onOpenSet
 
   // ── Workspace scope ─────────────────────────────────────────────
   const authenticated = session.status === 'authenticated';
-  const workspacesQuery = useKnowledgeWorkspacesQuery(authenticated);
-  const workspaces = authenticated ? flattenWorkspaceList(workspacesQuery.data) : [];
-
-  const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(() => readStoredWorkspaceId());
-  const activeWorkspace = workspaces.find((workspace) => workspace.id === activeWorkspaceId) ?? workspaces[0] ?? null;
+  const { activeSpace, serverDirectory, selectWorkspace, refreshWorkspaces } = useWorkspace();
+  const workspaces = authenticated ? serverDirectory.items : [];
+  const activeWorkspace = activeSpace.kind === 'server' ? workspaces.find((workspace) => workspace.id === activeSpace.id) ?? null : null;
   const activeId = activeWorkspace?.id ?? null;
 
-  useEffect(() => {
-    if (activeId) writeStoredWorkspaceId(activeId);
-  }, [activeId]);
-
   const accessQuery = useKnowledgeAccessQuery(activeId ?? '', { enabled: activeId !== null });
-  const teamspacesQuery = useKnowledgeTeamspacesQuery(activeId);
+  const teamspacesQuery = useKnowledgeTeamspacesQuery(localSelected ? null : activeId);
   const teamspaces = flattenWorkspaceList(teamspacesQuery.data);
 
   const phase = deriveKnowledgeEntryPhase({
@@ -83,8 +76,8 @@ function WorkspaceKnowledgeResource({ onOpenSettings, onOpenLocal }: { onOpenSet
         : { status: 'authenticated' },
     workspaces: authenticated
       ? {
-          status: workspacesQuery.status,
-          errorCode: workspacesQuery.error === null ? null : knowledgeErrorCodeOf(workspacesQuery.error),
+          status: serverDirectory.status,
+          errorCode: knowledgeErrorCodeOf(serverDirectory.error),
           count: workspaces.length,
         }
       : null,
@@ -107,7 +100,7 @@ function WorkspaceKnowledgeResource({ onOpenSettings, onOpenLocal }: { onOpenSet
   }, [phase, session.status, expireSession]);
 
   // ── B06: live workspace events → U01 cache invalidation ────────
-  const stageActive = entryPhaseShowsStage(phase) && activeId !== null;
+  const stageActive = !localSelected && entryPhaseShowsStage(phase) && activeId !== null;
   const eventsWorkspaceId = stageActive ? activeId : null;
   useEffect(() => {
     if (!eventsWorkspaceId) return undefined;
@@ -138,10 +131,8 @@ function WorkspaceKnowledgeResource({ onOpenSettings, onOpenLocal }: { onOpenSet
   }, [eventsWorkspaceId, queryClient]);
 
   // ── Tree selection and creation dialogs ─────────────────────────
-  // Selection self-heals across workspace switches: teamspace ids are unique,
-  // so a stale id from another workspace simply matches no row. A page click
-  // also selects its teamspace (the stage resolves it), keeping the canvas in
-  // sync while the tree layer owns everything page-shaped.
+  // The whole resource adapter remounts on global workspace changes, resetting
+  // editor, folder and filter state and disposing the old event subscription.
   const [libraryView, setLibraryView] = useState<LibraryView>('all-documents');
   const [selectedTeamspaceId, setSelectedTeamspaceId] = useState<string | null>(null);
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
@@ -198,6 +189,12 @@ function WorkspaceKnowledgeResource({ onOpenSettings, onOpenLocal }: { onOpenSet
     />
   );
 
+  // Device copies inside a server workspace still require that workspace's
+  // membership. Switching source must not bypass its authorization boundary.
+  if (localSelected && authenticated && activeWorkspace && accessQuery.isSuccess) {
+    return <LocalKnowledgeResource workspaceId={activeWorkspace.id} onOpenSettings={onOpenSettings} onOpenWorkspace={onOpenWorkspace} />;
+  }
+
   return (
     <KnowledgeWorkbench
       sidebar={<PageTreeSidebar
@@ -205,16 +202,17 @@ function WorkspaceKnowledgeResource({ onOpenSettings, onOpenLocal }: { onOpenSet
         onCollapse={() => setSidebarCollapsed(true)}
         onOpenSettings={onOpenSettings}
         onOpenLocal={onOpenLocal}
-        workspaces={workspaces}
+        workspaces={activeWorkspace ? [activeWorkspace] : []}
         activeWorkspaceId={activeWorkspace?.id ?? null}
-        onSelectWorkspace={(id) => { setActiveWorkspaceId(id); setSelectedTeamspaceId(null); setSelectedPageId(null); setLibraryView('all-documents'); }}
+        onSelectWorkspace={selectWorkspace}
         onCreateWorkspace={authenticated ? () => setCreateWorkspaceOpen(true) : openSignIn}
+        createLabel="新建服务端工作空间"
         treeArea={stageActive ? treeArea : null}
       />}
       onExpandSidebar={sidebarCollapsed && (selectedPageId || libraryView !== 'all-documents' || !stageActive) ? () => setSidebarCollapsed(false) : undefined}
       overlays={<>
-        <CreateKnowledgeBaseDialog open={createWorkspaceOpen} onClose={() => setCreateWorkspaceOpen(false)} onCreated={(workspaceId) => {
-          setActiveWorkspaceId(workspaceId); setSelectedPageId(null); setSelectedTeamspaceId(null); setLibraryView('all-documents');
+        <CreateWorkspaceDialog open={createWorkspaceOpen} onClose={() => setCreateWorkspaceOpen(false)} onCreated={(workspaceId) => {
+          refreshWorkspaces(); selectWorkspace(workspaceId, activeSpace.id);
         }} notify={notify} />
         {activeWorkspace ? <CreateTeamspaceDialog workspaceId={activeWorkspace.id} open={createTeamspaceOpen} onClose={() => setCreateTeamspaceOpen(false)} onCreated={(teamspace) => { setSelectedTeamspaceId(teamspace.id); setSelectedPageId(null); setLibraryView('overview'); }} /> : null}
         <ToastRegion toast={toast} />
@@ -235,23 +233,31 @@ function WorkspaceKnowledgeResource({ onOpenSettings, onOpenLocal }: { onOpenSet
       ) : phase === 'workspaces-error' ? (
         <CanvasError
           title="知识库列表加载失败"
-          detail={organizationErrorTextOf(workspacesQuery.error)}
-          onRetry={() => void queryClient.invalidateQueries({ queryKey: organizationQueryKeys.workspaces })}
+          detail={organizationErrorTextOf(serverDirectory.error)}
+          onRetry={refreshWorkspaces}
         />
+      ) : authenticated && serverDirectory.status === 'success' && activeSpace.kind === 'server' && !activeWorkspace ? (
+        <CanvasState icon={<LockSimple aria-hidden className="size-5" />} title="无法访问当前工作空间" hint="当前账户不是此空间的成员，或空间已被移除。请选择有访问权限的工作空间。" />
+      ) : authenticated && serverDirectory.status === 'success' && activeSpace.kind === 'local' && workspaces.length > 0 ? (
+        <CanvasState icon={<FolderPlus aria-hidden className="size-5" />} title="当前工作空间没有服务端知识资源" hint="本机工作空间不会自动关联其它空间的数据。请从最左侧选择服务端工作空间，或继续使用此空间的本机文档。" actions={<Button variant="outline" onClick={onOpenLocal}>返回本机文档</Button>} />
       ) : phase === 'workspaces-empty' ? (
         <CanvasState
           tone="accent"
           icon={<FolderPlus aria-hidden className="size-5" weight="regular" />}
-          title="还没有知识库"
-          hint="创建第一个知识库，开始整理文件夹和文档。"
+          title="还没有服务端工作空间"
+          hint="创建工作空间并初始化文档目录，或继续使用当前空间的本机文档。"
           announce="polite"
           actions={
             <Button onClick={() => setCreateWorkspaceOpen(true)}>
               <FolderPlus aria-hidden className="size-3.5" />
-              新建知识库
+              新建服务端工作空间
             </Button>
           }
         />
+      ) : localSelected && accessQuery.isPending ? (
+        <CanvasSpinner label="正在确认工作空间权限" />
+      ) : localSelected && accessQuery.isError ? (
+        <CanvasError title="无法访问当前工作空间" detail="无法确认此空间的资源访问权限，请重试或选择其它工作空间。" onRetry={() => void accessQuery.refetch()} />
       ) : activeWorkspace && session.status === 'authenticated' ? (
         <>
           {selectedPageId && activeId ? (
@@ -285,20 +291,4 @@ function SessionErrorState({ description, onRetry, onSignIn }: { description: st
       }
     />
   );
-}
-
-function readStoredWorkspaceId(): string | null {
-  try {
-    return window.localStorage.getItem(ACTIVE_WORKSPACE_STORAGE_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function writeStoredWorkspaceId(workspaceId: string): void {
-  try {
-    window.localStorage.setItem(ACTIVE_WORKSPACE_STORAGE_KEY, workspaceId);
-  } catch {
-    // Storage can be unavailable (private mode); the selection still works in memory.
-  }
 }

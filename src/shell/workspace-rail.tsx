@@ -30,18 +30,13 @@ import { cn } from "@/lib/utils"
 
 import type { WorkbenchView } from "./navigation-sidebar"
 
-export type RailSpace = { id: string; label: string; pinned: boolean }
+import type { RailSpace } from "@/features/workspaces/workspace-store"
 type SpaceMenuState = {
   spaceId: string
   x: number
   y: number
   mode: "menu" | "rename" | "delete"
 }
-
-export const DEFAULT_SPACES: RailSpace[] = [
-  { id: "product-development", label: "产品研发", pinned: true },
-  { id: "personal-workspace", label: "个人工作台", pinned: true },
-]
 
 export function WorkspaceRail({
   view,
@@ -76,12 +71,12 @@ export function WorkspaceRail({
     }
     const handleKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") close()
-      if (spaceMenu.mode === "menu" && event.key === "F2") {
+      if (menuSpace?.kind === "local" && spaceMenu.mode === "menu" && event.key === "F2") {
         event.preventDefault()
         setRenameValue(menuSpace?.label ?? "")
         setSpaceMenu((current) => current ? { ...current, mode: "rename" } : null)
       }
-      if (spaceMenu.mode === "menu" && event.key === "Delete") {
+      if (menuSpace?.kind === "local" && spaceMenu.mode === "menu" && event.key === "Delete") {
         event.preventDefault()
         setSpaceMenu((current) => current ? { ...current, mode: "delete" } : null)
       }
@@ -92,7 +87,7 @@ export function WorkspaceRail({
       document.removeEventListener("pointerdown", close)
       window.removeEventListener("keydown", handleKey)
     }
-  }, [menuSpace?.label, spaceMenu])
+  }, [menuSpace?.label, menuSpace?.kind, spaceMenu])
 
   useEffect(() => {
     if (spaceMenu?.mode !== "rename") return
@@ -146,6 +141,7 @@ export function WorkspaceRail({
   function deleteSpace() {
     if (!menuSpace) return
     const remaining = spaces.filter((space) => space.id !== menuSpace.id)
+    if (!remaining.length) { setFeedback("请保留至少一个工作空间"); setSpaceMenu(null); return }
     onSpacesChange(remaining)
     if (activeSpaceId === menuSpace.id) onActiveSpaceChange(remaining[0]?.id ?? "")
     setFeedback(`已删除「${menuSpace.label}」`)
@@ -157,6 +153,7 @@ export function WorkspaceRail({
       aria-label="工作区入口"
       className="relative z-40 flex h-full w-12 shrink-0 flex-col items-center border-r border-[var(--wt-sidebar-edge)] bg-transparent py-3"
     >
+      <span role="status" className="sr-only">当前工作空间：{spaces.find((space) => space.id === activeSpaceId)?.label ?? "工作空间"}</span>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
@@ -206,6 +203,7 @@ export function WorkspaceRail({
               <button
                 type="button"
                 aria-label={`切换到${space.label}`}
+                aria-pressed={activeSpaceId === space.id}
                 onClick={() => selectSpace(space.id)}
                 onContextMenu={(event) => openSpaceMenu(event, space)}
                 className={cn(
@@ -282,21 +280,20 @@ export function WorkspaceRail({
                 <p className="mt-0.5 text-[9.5px] text-[var(--muted)]">工作空间快捷操作</p>
               </div>
               <div className="my-1 h-px bg-[var(--line)]" />
-              <MenuAction
+              {menuSpace.kind === "local" ? <MenuAction
                 label="重命名"
                 shortcut="F2"
                 icon={PencilSimple}
                 onClick={() => setSpaceMenu((current) => current ? { ...current, mode: "rename" } : null)}
-              />
+              /> : null}
               <MenuAction label="取消置顶" icon={PushPinSlash} onClick={unpinSpace} />
-              <div className="my-1 h-px bg-[var(--line)]" />
-              <MenuAction
+              {menuSpace.kind === "local" ? <><div className="my-1 h-px bg-[var(--line)]" /><MenuAction
                 label="删除"
                 shortcut="Del"
                 icon={Trash}
                 onClick={() => setSpaceMenu((current) => current ? { ...current, mode: "delete" } : null)}
                 danger
-              />
+              /></> : null}
             </>
           )}
         </div>

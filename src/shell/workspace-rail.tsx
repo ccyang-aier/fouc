@@ -31,6 +31,9 @@ import { cn } from "@/lib/utils"
 import type { WorkbenchView } from "./navigation-sidebar"
 
 import type { RailSpace } from "@/features/workspaces/workspace-store"
+
+const WORKSPACE_COLORS = ["#5367D8", "#B36D50", "#408C7A", "#9465B6", "#AA8241", "#477EA8"] as const
+
 type SpaceMenuState = {
   spaceId: string
   x: number
@@ -62,6 +65,8 @@ export function WorkspaceRail({
   const menuRef = useRef<HTMLDivElement>(null)
 
   const menuSpace = spaceMenu ? spaces.find((space) => space.id === spaceMenu.spaceId) : undefined
+  // Use the whole directory so unpinning a tile never recolors the remaining ones.
+  const spaceColors = new Map(spaces.map((space, index) => [space.id, WORKSPACE_COLORS[index % WORKSPACE_COLORS.length]]))
 
   useEffect(() => {
     if (!spaceMenu) return
@@ -168,7 +173,7 @@ export function WorkspaceRail({
           <DropdownMenuLabel>空间</DropdownMenuLabel>
           {spaces.map((space) => (
             <DropdownMenuItem key={space.id} onSelect={() => selectSpace(space.id)}>
-              <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-[var(--accent)]" />
+                <span aria-hidden className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: spaceColors.get(space.id) }} />
               {space.label}
             </DropdownMenuItem>
           ))}
@@ -212,7 +217,7 @@ export function WorkspaceRail({
                     ? "outline-2 outline-offset-2 outline-ink"
                     : "opacity-80 hover:scale-[1.03] hover:opacity-100",
                 )}
-                style={{ backgroundColor: "var(--accent)" }}
+                style={{ backgroundColor: spaceColors.get(space.id) }}
               >
                 {space.label.slice(0, 1)}
               </button>

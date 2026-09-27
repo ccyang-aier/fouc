@@ -2,7 +2,7 @@
 
 > 本表由 `knowledgebase-tasks.json` 生成。修改任务和证据后运行 `node scripts/verify-knowledge-tasks.mjs --write`。
 
-设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 75 项。
+设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 76 项。
 
 ## 实施约束
 
@@ -29,12 +29,13 @@
 - E05 表格、分栏和 Callout NodeView
 - E06 Slash 菜单与 Markdown/HTML 粘贴
 - L02 实时只读块引用 NodeView
-- U06 数据库表格视图
+- U07 数据库看板视图
 - U09 图片/音频/视频/文件/嵌入 NodeView
 - J06 侧栏 Agent 对话与可点击引用
 - J07 持久 AI 长任务与审批恢复
 - K03 MCP 外部 Agent 一致性验收
 - Z01 旧知识库实现与开发数据清理
+- U11 数据库日历视图
 
 ## 拓扑排序任务表
 
@@ -99,7 +100,7 @@
 | [ ] 待实施 | L02 | 实时只读块引用 NodeView<br>src/features/knowledge/editor/blocks/block-reference.tsx | §4.6 | L01, E03 | 按需加载来源 Y.Doc；更改实时反映；点击原文高亮；无权/删除/循环引用有明确状态并释放连接 | — |
 | [x] 已验收 | P04 | 分享链接权限与失效<br>backend/src/knowledge/sharing/ | §6.1 / §9.5 | P03 | link 主体令牌哈希、到期/撤销/级别限制；页面及附件同权；访问不能获得 workspace 全部成员主体；授权接口有集成证据 | [12 项测试(140 断言,真实会话/队列/RLS):令牌只存 SHA-256+恒时比较、到期/撤销/降级即时 fail closed、link 主体恰为 {link:id} 不扩 workspace、越权创建/跨租户/重建窗口全拒](../../core/tasks/knowledgebase-acceptance/2026-09-26-sharing.md) |
 | [x] 已验收 | U05 | 权限、继承与分享管理界面<br>src/features/knowledge/sharing/ | §6 | P04, U02 | 用户/组/workspace 授权、继承开关、有效权限解释；完整保存/撤销失败反馈；非 full 禁止操作 | [4 项测试/26 断言:级别序/主体解析、授予不超操作者+workspace 主体校验、有效权限四源解释链、变更计划去重与拒绝;面板含继承开关重算说明、链接令牌一次性展示、非 edit+ 全禁用](../../core/tasks/knowledgebase-acceptance/2026-09-26-sharing-ui.md) |
-| [ ] 待实施 | U06 | 数据库表格视图<br>src/features/knowledge/databases/ | §3.3 | T02, E03, U02 | 类型化列增删改、行属性编辑、筛选/排序/打开行正文；加载/无权/空/错误及键盘完整 | — |
+| [x] 已验收 | U06 | 数据库表格视图<br>src/features/knowledge/databases/ | §3.3 | T02, E03, U02 | 类型化列增删改、行属性编辑、筛选/排序/打开行正文；加载/无权/空/错误及键盘完整 | [65 项测试/248 断言:7 类列渲染编辑、列增删改(两步删确认)、行属性乐观回滚、契约化筛选排序(操作符按类型裁剪)、四态、完整键盘契约(方向/Tab 环绕/Enter/Esc/Home/End);全仓 tsc 清零+eslint 干净;未挂载过程诚实 NOT_FOUND](../../core/tasks/knowledgebase-acceptance/2026-09-27-u06-table-view.md) |
 | [ ] 待实施 | U07 | 数据库看板视图<br>src/features/knowledge/databases/ | §3.3 | U06 | 同一组行按状态分组，拖动改属性；无状态/无权限/空状态正确；打开同一行页面；失败乐观回滚 | — |
 | [x] 已验收 | G01 | AI SDK 统一模型网关<br>backend/src/knowledge/ai/gateway/ | §9.1 | F02, D03 | 所有模型调用经统一入口；云/BYOK/Ollama、流、取消、异常可控；无任意工具越权路径 | [官方 AI SDK 网关、21 项 Bun / 16 项 Node 测试；真实 GLM 平台/流式/PG 加密 BYOK 撤销与真实 Ollama 生成/流式/384 维向量通过；密钥与正文不入日志。](../../core/tasks/knowledgebase-acceptance/2026-09-26-model-gateway.md) |
 | [x] 已验收 | G02 | OpenTelemetry 与 AI 用量<br>backend/src/knowledge/observability/ | §9.1 / §1 | G01 | 每次真实调用记录 token/耗时/模型/workspace/任务与 trace；日志无 key；错误调用可追踪 | [观测模块 5 项 Bun + 5 项 Node 测试;真实 PG 记账(token 未报告存 null)、OTLP collector 实收 trace 与 usage 行关联、密钥零泄漏、独立短事务先于结果提交](../../core/tasks/knowledgebase-acceptance/2026-09-26-observability.md) |
@@ -549,6 +550,7 @@ flowchart TD
   style L01 fill:#e4f4e9,stroke:#42845c
   style P04 fill:#e4f4e9,stroke:#42845c
   style U05 fill:#e4f4e9,stroke:#42845c
+  style U06 fill:#e4f4e9,stroke:#42845c
   style G01 fill:#e4f4e9,stroke:#42845c
   style G02 fill:#e4f4e9,stroke:#42845c
   style H01 fill:#e4f4e9,stroke:#42845c

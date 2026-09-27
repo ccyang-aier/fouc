@@ -1236,10 +1236,17 @@
         "E03",
         "U02"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "src/features/knowledge/databases/",
       "acceptance": "类型化列增删改、行属性编辑、筛选/排序/打开行正文；加载/无权/空/错误及键盘完整",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "65 项测试/248 断言:7 类列渲染编辑、列增删改(两步删确认)、行属性乐观回滚、契约化筛选排序(操作符按类型裁剪)、四态、完整键盘契约(方向/Tab 环绕/Enter/Esc/Home/End);全仓 tsc 清零+eslint 干净;未挂载过程诚实 NOT_FOUND",
+          "command": "bun test src/features/knowledge/databases; bunx tsc --noEmit --incremental false; npx eslint src/features/knowledge/databases",
+          "verifiedAt": "2026-09-27",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-27-u06-table-view.md"
+        }
+      ]
     },
     {
       "id": "U07",

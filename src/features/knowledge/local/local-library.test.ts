@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test';
 import { createLocalLibraryStore, newLocalDocument } from './local-library';
 
-test('guest documents survive reload without inventing a server user', () => {
+test('local documents survive reload without inventing a server user', () => {
   const values = new Map<string, string>();
   const storage = { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => { values.set(key, value); } };
   const first = createLocalLibraryStore(storage);

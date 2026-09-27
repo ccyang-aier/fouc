@@ -1,13 +1,10 @@
 'use client';
 
-import { IconButton } from './dense-sidebar/icon-button';
+/** Identity controls resource access, never the selected knowledge resource. */
 
-/** Knowledge consumes the shared Fouc session. Anonymous users work locally; cloud data stays scoped to the authenticated user and resource ACL. */
-
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { FolderPlus, SidebarSimple, XCircle } from '@phosphor-icons/react';
-import { motion } from 'motion/react';
+import { FolderPlus, LockSimple, XCircle } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 
@@ -37,20 +34,24 @@ import { CreateKnowledgeBaseDialog } from './organization/create-knowledge-base-
 import { LibraryCanvas } from './navigation/library-canvas';
 import type { LibraryView } from './navigation/tree-stage';
 import { KnowledgePageEditor } from './editor';
+import { KnowledgeWorkbench } from './knowledge-workbench';
+import { createBrowserKnowledgeResourceSelection } from './resource-selection';
 
-const GuestKnowledge = dynamic(() => import('./guest/guest-knowledge').then((module) => module.GuestKnowledge), { ssr: false });
+const LocalKnowledgeResource = dynamic(() => import('./local/local-knowledge-resource').then((module) => module.LocalKnowledgeResource), { ssr: false, loading: () => <CanvasSpinner label="正在加载知识资源" /> });
 
 const ACTIVE_WORKSPACE_STORAGE_KEY = 'fouc.knowledge.activeWorkspaceId';
 
 export function KnowledgePage({ onOpenSettings }: { onOpenSettings: () => void }) {
   const { session } = useIdentity();
-  const [localMode, setLocalMode] = useState(false);
-  if (session.status === 'checking') return <CanvasSpinner label="正在确认 Fouc 身份" />;
-  if (session.status !== 'authenticated' || localMode) return <GuestKnowledge onOpenSettings={onOpenSettings} onOpenCloud={() => setLocalMode(false)} />;
-  return <KnowledgeQueryProvider key={session.user.id}><KnowledgeWorkbench onOpenSettings={onOpenSettings} onOpenLocal={() => setLocalMode(true)} /></KnowledgeQueryProvider>;
+  const [selection] = useState(createBrowserKnowledgeResourceSelection);
+  const resource = useSyncExternalStore(selection.subscribe, selection.getSnapshot, selection.getServerSnapshot);
+  if (!resource) return <CanvasSpinner label="正在加载知识资源" />;
+  if (resource === 'local') return <LocalKnowledgeResource onOpenSettings={onOpenSettings} onOpenWorkspace={() => selection.select('workspace')} />;
+  // Private query caches must never survive account changes; local edits remain mounted during sign-in.
+  return <KnowledgeQueryProvider key={session.status === 'authenticated' ? session.user.id : 'unauthenticated'}><WorkspaceKnowledgeResource onOpenSettings={onOpenSettings} onOpenLocal={() => selection.select('local')} /></KnowledgeQueryProvider>;
 }
 
-function KnowledgeWorkbench({ onOpenSettings, onOpenLocal }: { onOpenSettings: () => void; onOpenLocal: () => void }) {
+function WorkspaceKnowledgeResource({ onOpenSettings, onOpenLocal }: { onOpenSettings: () => void; onOpenLocal: () => void }) {
   // The U01 QueryClient shared by every query below and by the B06 event
   // subscription's invalidations.
   const queryClient = useQueryClient();
@@ -61,7 +62,7 @@ function KnowledgeWorkbench({ onOpenSettings, onOpenLocal }: { onOpenSettings: (
   // ── Workspace scope ─────────────────────────────────────────────
   const authenticated = session.status === 'authenticated';
   const workspacesQuery = useKnowledgeWorkspacesQuery(authenticated);
-  const workspaces = flattenWorkspaceList(workspacesQuery.data);
+  const workspaces = authenticated ? flattenWorkspaceList(workspacesQuery.data) : [];
 
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(() => readStoredWorkspaceId());
   const activeWorkspace = workspaces.find((workspace) => workspace.id === activeWorkspaceId) ?? workspaces[0] ?? null;
@@ -100,7 +101,7 @@ function KnowledgeWorkbench({ onOpenSettings, onOpenLocal }: { onOpenSettings: (
   });
 
   // An authenticated surface that turns UNAUTHENTICATED means the session
-  // expired under us: update the global identity and return to local capabilities.
+  // expired under us: revoke private access without changing the chosen resource.
   useEffect(() => {
     if (phase === 'auth-required' && session.status === 'authenticated') expireSession();
   }, [phase, session.status, expireSession]);
@@ -198,11 +199,26 @@ function KnowledgeWorkbench({ onOpenSettings, onOpenLocal }: { onOpenSettings: (
   );
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-      className="relative h-full min-h-0 w-full overflow-hidden bg-[var(--panel)]"
+    <KnowledgeWorkbench
+      sidebar={<PageTreeSidebar
+        collapsed={sidebarCollapsed}
+        onCollapse={() => setSidebarCollapsed(true)}
+        onOpenSettings={onOpenSettings}
+        onOpenLocal={onOpenLocal}
+        workspaces={workspaces}
+        activeWorkspaceId={activeWorkspace?.id ?? null}
+        onSelectWorkspace={(id) => { setActiveWorkspaceId(id); setSelectedTeamspaceId(null); setSelectedPageId(null); setLibraryView('all-documents'); }}
+        onCreateWorkspace={authenticated ? () => setCreateWorkspaceOpen(true) : openSignIn}
+        treeArea={stageActive ? treeArea : null}
+      />}
+      onExpandSidebar={sidebarCollapsed && (selectedPageId || libraryView !== 'all-documents' || !stageActive) ? () => setSidebarCollapsed(false) : undefined}
+      overlays={<>
+        <CreateKnowledgeBaseDialog open={createWorkspaceOpen} onClose={() => setCreateWorkspaceOpen(false)} onCreated={(workspaceId) => {
+          setActiveWorkspaceId(workspaceId); setSelectedPageId(null); setSelectedTeamspaceId(null); setLibraryView('all-documents');
+        }} notify={notify} />
+        {activeWorkspace ? <CreateTeamspaceDialog workspaceId={activeWorkspace.id} open={createTeamspaceOpen} onClose={() => setCreateTeamspaceOpen(false)} onCreated={(teamspace) => { setSelectedTeamspaceId(teamspace.id); setSelectedPageId(null); setLibraryView('overview'); }} /> : null}
+        <ToastRegion toast={toast} />
+      </>}
     >
       {phase === 'session-checking' ? (
         <CanvasSpinner label="正在确认登录状态" />
@@ -213,7 +229,7 @@ function KnowledgeWorkbench({ onOpenSettings, onOpenLocal }: { onOpenSettings: (
           onSignIn={openSignIn}
         />
       ) : phase === 'auth-required' ? (
-        <CanvasSpinner label="正在更新 Fouc 身份" />
+        <CanvasState icon={<LockSimple aria-hidden className="size-5" />} title="此知识资源需要登录" hint="登录后继续访问当前选择的资源。你也可以通过知识库菜单选择本机文档。" actions={<Button onClick={openSignIn}>登录并继续</Button>} />
       ) : phase === 'workspaces-loading' ? (
         <CanvasSpinner label="正在加载知识库" />
       ) : phase === 'workspaces-error' ? (
@@ -237,50 +253,15 @@ function KnowledgeWorkbench({ onOpenSettings, onOpenLocal }: { onOpenSettings: (
           }
         />
       ) : activeWorkspace && session.status === 'authenticated' ? (
-        <div className="flex h-full min-h-0">
-          <PageTreeSidebar
-            collapsed={sidebarCollapsed}
-            onCollapse={() => setSidebarCollapsed(true)}
-            onOpenSettings={onOpenSettings}
-            onOpenLocal={onOpenLocal}
-            workspaces={workspaces}
-            activeWorkspaceId={activeWorkspace.id}
-            onSelectWorkspace={(id) => { setActiveWorkspaceId(id); setSelectedTeamspaceId(null); setSelectedPageId(null); setLibraryView('all-documents'); }}
-            onCreateWorkspace={() => setCreateWorkspaceOpen(true)}
-            treeArea={treeArea}
-          />
-          <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-          {sidebarCollapsed && (selectedPageId || libraryView !== 'all-documents') ? <IconButton label="展开知识库侧边栏" onClick={() => setSidebarCollapsed(false)} className="absolute left-2 top-2 z-10 flex size-7 items-center justify-center rounded-md text-[var(--muted-strong)] hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><SidebarSimple size={18} /></IconButton> : null}
+        <>
           {selectedPageId && activeId ? (
             <KnowledgePageEditor scope={{ workspaceId: activeId, pageId: selectedPageId }} user={session.user} />
           ) : activeId ? (
             <LibraryCanvas key={activeId} workspaceId={activeId} userId={session.user.id} name={activeWorkspace.name} view={libraryView} access={accessQuery.data} teamspaces={teamspaces} folder={selectedTeamspace} onOpenPage={setSelectedPageId} onSelectFolder={(id) => { setSelectedTeamspaceId(id); setLibraryView('overview'); }} onCreateFolder={() => setCreateTeamspaceOpen(true)} onExpandSidebar={sidebarCollapsed ? () => setSidebarCollapsed(false) : undefined} notify={notify} />
           ) : null}
-          </div>
-        </div>
+        </>
       ) : null}
-
-      <CreateKnowledgeBaseDialog
-        open={createWorkspaceOpen}
-        onClose={() => setCreateWorkspaceOpen(false)}
-        onCreated={(workspaceId) => {
-          setActiveWorkspaceId(workspaceId);
-          setSelectedPageId(null);
-          setSelectedTeamspaceId(null);
-          setLibraryView('all-documents');
-        }}
-        notify={notify}
-      />
-      {activeWorkspace ? (
-        <CreateTeamspaceDialog
-          workspaceId={activeWorkspace.id}
-          open={createTeamspaceOpen}
-          onClose={() => setCreateTeamspaceOpen(false)}
-          onCreated={(teamspace) => { setSelectedTeamspaceId(teamspace.id); setSelectedPageId(null); setLibraryView('overview'); }}
-        />
-      ) : null}
-      <ToastRegion toast={toast} />
-    </motion.div>
+    </KnowledgeWorkbench>
   );
 }
 

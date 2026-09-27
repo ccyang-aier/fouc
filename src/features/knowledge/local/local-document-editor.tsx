@@ -1,5 +1,7 @@
 'use client';
 
+/** Editor for an explicitly selected local document. */
+
 import { useMemo } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import { createKnowledgeExtensions } from '@fouc/shared/knowledge/schema';

@@ -1,15 +1,17 @@
 'use client';
 
+/** Local storage is a resource capability, independent of account identity. */
+
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { FilePlus, Folder, LockSimple, Plus, SidebarSimple } from '@phosphor-icons/react';
+import { FilePlus, Folder, LockSimple, Plus } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { useIdentity } from '@/features/identity/identity-provider';
-import { KnowledgeBaseHeader } from '../knowledge-base-header';
+import { KnowledgeWorkbench } from '../knowledge-workbench';
+import { PageTreeSidebar } from '../navigation/page-tree-sidebar';
 import { IconButton } from '../dense-sidebar/icon-button';
 import { SidebarRow, SidebarSectionHeader, sidebarIconMap } from '../dense-sidebar/sidebar-navigation-primitives';
 import { SIDEBAR_MAIN_ITEMS } from '../dense-sidebar/sidebar-navigation';
 import { useI18n } from '../dense-sidebar/use-i18n';
-import styles from '../navigation/knowledge-sidebar.module.css';
 import { createLocalLibraryStore, emptyLocalLibrary, newLocalDocument, type LocalDocument } from './local-library';
 import { LocalDocumentEditor } from './local-document-editor';
 import { DocumentsPage } from '../documents/documents-page';
@@ -20,16 +22,16 @@ import { DotsThree } from '@phosphor-icons/react';
 type View = 'all-documents' | 'starred' | 'drafts' | 'trash';
 type Store = ReturnType<typeof createLocalLibraryStore>;
 
-export function GuestKnowledge(props: { onOpenSettings: () => void; onOpenCloud: () => void }) {
+export function LocalKnowledgeResource(props: { onOpenSettings: () => void; onOpenWorkspace: () => void }) {
   const [{ store, error }] = useState<{ store: Store | null; error: string | null }>(() => {
     try { return { store: createLocalLibraryStore(window.localStorage), error: null }; }
     catch { return { store: null, error: '无法读取本机文档，请检查浏览器存储设置。' }; }
   });
   if (!store) return <div role="status" className="flex h-full items-center justify-center text-sm text-[var(--muted)]">{error ?? '正在打开本机知识库…'}</div>;
-  return <LocalKnowledgeWorkbench store={store} {...props} />;
+  return <LocalKnowledgeContent store={store} {...props} />;
 }
 
-function LocalKnowledgeWorkbench({ store, onOpenSettings, onOpenCloud }: { store: Store; onOpenSettings: () => void; onOpenCloud: () => void }) {
+function LocalKnowledgeContent({ store, onOpenSettings, onOpenWorkspace }: { store: Store; onOpenSettings: () => void; onOpenWorkspace: () => void }) {
   const library = useSyncExternalStore(store.subscribe, store.getSnapshot, () => emptyLocalLibrary);
   const { session, openSignIn } = useIdentity();
   const { t } = useI18n();
@@ -54,19 +56,27 @@ function LocalKnowledgeWorkbench({ store, onOpenSettings, onOpenCloud }: { store
     write((current) => ({ ...current, documents: current.documents.map((item) => item.id === id ? { ...item, ...patch, updatedAt: new Date().toISOString() } : item) }));
   }
   const title = selected ? selected.title : SIDEBAR_MAIN_ITEMS.find((item) => item.id === view)?.labelKey;
-  return <div className="relative flex h-full min-h-0 bg-[var(--panel)]">
-    <aside aria-label="知识库侧边栏" data-collapsed={collapsed} inert={collapsed} className={`flex h-full min-h-0 flex-col ${styles.sidebar}`}>
-      <KnowledgeBaseHeader knowledgeBases={library.bases} activeKnowledgeBaseId={base?.id ?? null} onSelectKnowledgeBase={(id) => { setBaseId(id); setSelectedId(null); }} onCollapse={() => setCollapsed(true)} onCreateKnowledgeBase={() => setCreation('base')} onOpenSettings={onOpenSettings} />
-      <div className="min-h-0 flex-1 overflow-auto px-3 py-3">
+  return <KnowledgeWorkbench
+    sidebar={<PageTreeSidebar collapsed={collapsed} onCollapse={() => setCollapsed(true)} workspaces={library.bases} activeWorkspaceId={base?.id ?? null} onSelectWorkspace={(id) => { setBaseId(id); setSelectedId(null); }} onCreateWorkspace={() => setCreation('base')} onOpenSettings={onOpenSettings} onOpenWorkspace={onOpenWorkspace} treeArea={<div className="min-h-0 flex-1 overflow-auto px-3 py-3">
         <div className="space-y-1">{SIDEBAR_MAIN_ITEMS.map((item) => <SidebarRow key={item.id} icon={sidebarIconMap[item.icon]} iconTone={item.tone} label={t(item.labelKey)} count={counts[item.id as View]} selected={!selected && item.id === view} onClick={() => { setView(item.id as View); setSelectedId(null); }} />)}</div>
         <div className="mt-5"><SidebarSectionHeader icon={Folder} label="文件夹" count={live.length} expanded={foldersOpen} onToggle={() => setFoldersOpen((value) => !value)} actions={<IconButton label="新建文档" onClick={() => setCreation('document')} className="rounded p-1 hover:bg-[var(--surface-hover)]"><Plus size={15} /></IconButton>} />
           {foldersOpen ? <div className="mt-2 space-y-1">{live.map((item) => <SidebarRow key={item.id} icon={sidebarIconMap.file} label={item.title || '无标题文档'} selected={selectedId === item.id} onClick={() => setSelectedId(item.id)} />)}{!live.length ? <button type="button" onClick={() => setCreation('document')} className="w-full rounded-md p-2 text-left text-xs text-[var(--muted)] hover:bg-[var(--surface-hover)]">暂无文档 · 新建第一个文档</button> : null}</div> : null}
         </div>
-      </div>
-      <button type="button" onClick={session.status === 'authenticated' ? onOpenCloud : openSignIn} className="m-3 flex items-center gap-2 rounded-lg border border-[var(--line)] px-3 py-2.5 text-left text-xs text-[var(--muted-strong)] hover:bg-[var(--surface-hover)]"><LockSimple size={15} />{session.status === 'authenticated' ? '打开账户知识库' : '登录以开启团队协作'}</button>
-    </aside>
-    <div className="relative min-w-0 flex-1">
-      {collapsed && (selected || view !== 'all-documents') ? <IconButton label="展开知识库侧边栏" onClick={() => setCollapsed(false)} className="absolute left-2 top-2 z-10 flex size-7 items-center justify-center rounded-md text-[var(--muted-strong)] hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><SidebarSimple size={18} /></IconButton> : null}
+      </div>} footer={<button type="button" onClick={session.status === 'authenticated' ? onOpenWorkspace : openSignIn} className="m-3 flex items-center gap-2 rounded-lg border border-[var(--line)] px-3 py-2.5 text-left text-xs text-[var(--muted-strong)] hover:bg-[var(--surface-hover)]"><LockSimple size={15} />{session.status === 'authenticated' ? '打开工作空间知识库' : '登录以开启团队协作'}</button>} />}
+    onExpandSidebar={collapsed && (selected || view !== 'all-documents') ? () => setCollapsed(false) : undefined}
+    overlays={<LocalCreationDialog kind={creation} onClose={() => setCreation(null)} onCreate={(name) => {
+      if (creation === 'base') {
+        const id = crypto.randomUUID();
+        if (!write((current) => ({ ...current, bases: [...current.bases, { id, name }] }))) return;
+        setBaseId(id); setSelectedId(null);
+      } else {
+        const document = newLocalDocument(base?.id ?? 'personal', name);
+        if (!write((current) => ({ ...current, documents: [...current.documents, document] }))) return;
+        setSelectedId(document.id);
+      }
+      setCreation(null);
+    }} />}
+  >
       {selected ? <LocalDocumentEditor key={selected.id} document={selected} onChange={(patch) => updateDocument(selected.id, patch)} onBack={() => setSelectedId(null)} /> : view === 'all-documents' ? <DocumentsPage
         onExpandSidebar={collapsed ? () => setCollapsed(false) : undefined}
         documents={live.map((item) => ({ id: item.id, title: item.title, updatedAt: item.updatedAt, creator: '我', source: '本机文档', status: '暂无状态', starred: item.starred }))}
@@ -90,20 +100,7 @@ function LocalKnowledgeWorkbench({ store, onOpenSettings, onOpenCloud }: { store
         </div>
       </section>}
       {failure ? <div role="alert" className="absolute bottom-4 left-4 right-4 rounded-lg bg-[var(--err-ink)] p-3 text-xs text-white">{failure}</div> : null}
-    </div>
-    <LocalCreationDialog kind={creation} onClose={() => setCreation(null)} onCreate={(name) => {
-      if (creation === 'base') {
-        const id = crypto.randomUUID();
-        if (!write((current) => ({ ...current, bases: [...current.bases, { id, name }] }))) return;
-        setBaseId(id); setSelectedId(null);
-      } else {
-        const document = newLocalDocument(base?.id ?? 'personal', name);
-        if (!write((current) => ({ ...current, documents: [...current.documents, document] }))) return;
-        setSelectedId(document.id);
-      }
-      setCreation(null);
-    }} />
-  </div>;
+  </KnowledgeWorkbench>;
 }
 
 function LocalCreationDialog({ kind, onClose, onCreate }: { kind: 'document' | 'base' | null; onClose: () => void; onCreate: (name: string) => void }) {

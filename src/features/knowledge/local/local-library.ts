@@ -5,7 +5,7 @@ export type LocalLibrary = { bases: { id: string; name: string }[]; documents: L
 export const localLibraryKey = 'fouc.local-library';
 export const emptyLocalLibrary: LocalLibrary = { bases: [{ id: 'personal', name: '本机知识库' }], documents: [] };
 
-/** Guest content stays on this device. It is never treated as an authenticated principal or uploaded implicitly. */
+/** Local content stays on this device regardless of sign-in; it is never uploaded implicitly. */
 export function createLocalLibraryStore(storage: Pick<Storage, 'getItem' | 'setItem'>) {
   let snapshot = emptyLocalLibrary;
   const stored = storage.getItem(localLibraryKey);

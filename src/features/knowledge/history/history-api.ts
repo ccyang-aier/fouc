@@ -41,7 +41,7 @@ export function parseCheckpointList(body: unknown): PageCheckpointEntry[] {
   });
 }
 
-export function createHistoryApi(deps: HistoryApiDeps = { resolveOrigin: getKnowledgeApiOrigin, fetchImpl: fetch }) {
+export function createHistoryApi(deps: HistoryApiDeps = { resolveOrigin: getKnowledgeApiOrigin, fetchImpl: (input, init) => fetch(input, init) }) {
   async function request<T>(path: string, init: { method?: 'GET' | 'POST'; body?: unknown } = {}): Promise<T> {
     const { origin } = await deps.resolveOrigin();
     const response = await deps.fetchImpl(`${origin}${path}`, {

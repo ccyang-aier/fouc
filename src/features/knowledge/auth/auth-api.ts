@@ -69,7 +69,7 @@ export function parseOAuthProviders(body: unknown): KnowledgeOAuthProvider[] {
 
 export function createKnowledgeAuthApi(deps: KnowledgeAuthApiDeps = {
   resolveOrigin: getKnowledgeApiOrigin,
-  fetchImpl: fetch,
+  fetchImpl: (input, init) => fetch(input, init),
 }) {
   async function request<T>(path: string, init: { method?: 'GET' | 'POST'; body?: unknown; signal?: AbortSignal } = {}): Promise<T> {
     let origin: string;

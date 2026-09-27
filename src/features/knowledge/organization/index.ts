@@ -6,6 +6,6 @@
  */
 
 export { OrganizationPanel } from './organization-panel';
-export { organizationClient } from './client';
-export type { OrganizationClient } from './client';
+export { organizationClient } from '@/features/workspaces/organization-client';
+export type { OrganizationClient } from '@/features/workspaces/organization-client';
 export { organizationQueryKeys } from './keys';

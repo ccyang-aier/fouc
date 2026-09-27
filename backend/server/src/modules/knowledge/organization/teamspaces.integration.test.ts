@@ -4,7 +4,7 @@ import type { PoolClient } from 'pg';
 import { eq } from 'drizzle-orm';
 import { principal, teamspaceSchema } from '@fouc/shared/knowledge/contracts';
 import type { PermissionLevel, Teamspace } from '@fouc/shared/knowledge/contracts';
-import { blockIndex, docState, page, pageEffectiveAcl, teamspace } from '../../../platform/database/knowledge/schema';
+import { knowledgeBase, blockIndex, docState, page, pageEffectiveAcl, teamspace } from '../../../platform/database/knowledge/schema';
 import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
 import { createAuthTestServer, responseCookie, testPassword } from '../../../platform/identity/auth-test-server';
 import type { AuthTestServer } from '../../../platform/identity/auth-test-server';
@@ -22,7 +22,8 @@ let server: AuthTestServer;
 let service: OrganizationService;
 let owner: Actor, admin: Actor, regular: Actor, guest: Actor, outsider: Actor;
 let personalId: string, workspaceId: string, otherId: string;
-const base = '/api/knowledge/workspaces';
+const base = '/api/workspaces';
+const knowledgeBaseId = randomUUID();
 
 function request(path: string, actor: Actor | undefined = owner, method = 'GET', body?: unknown, extra: Record<string, string> = {}) {
   return fetch(`${server.origin}${base}${path}`, { method, headers: {
@@ -50,7 +51,7 @@ async function register(name: string): Promise<Actor> {
 const scope = (record: Teamspace) => ({ workspaceId: record.workspaceId, teamspaceId: record.id });
 const path = (record: Teamspace) => `/${record.workspaceId}/teamspaces/${record.id}`;
 async function create(name: string, defaultAccess: PermissionLevel | null = null, actor = owner, target = workspaceId) {
-  return result<Teamspace>(request(`/${target}/teamspaces`, actor, 'POST', { name, defaultAccess }), 201);
+  return result<Teamspace>(request(`/${target}/teamspaces`, actor, 'POST', { knowledgeBaseId, name, defaultAccess }), 201);
 }
 
 async function insertPage(record: Teamspace, recycled = false) {
@@ -84,6 +85,7 @@ beforeAll(async () => {
   personalId = (await result<{ id: string }>(request('', owner, 'POST', { name: 'Personal', kind: 'personal' }), 201)).id;
   workspaceId = (await result<{ id: string }>(request('', owner, 'POST', { name: 'Team', kind: 'team' }), 201)).id;
   otherId = (await result<{ id: string }>(request('', outsider, 'POST', { name: 'Other tenant', kind: 'team' }), 201)).id;
+  for (const id of [personalId, workspaceId, otherId]) await withKnowledgeTenant(server.database.pool, id, (db) => db.insert(knowledgeBase).values({ workspaceId: id, id: knowledgeBaseId, name: 'Fixture library' }));
   for (const [actor, role] of [[admin, 'admin'], [regular, 'member'], [guest, 'guest']] as const) {
     const invite = await result<{ invitation: { id: string }; token: string }>(request(`/${workspaceId}/invitations`, owner, 'POST', { email: actor.email, role }), 201);
     await result(request(`/${workspaceId}/invitations/${invite.invitation.id}/accept`, actor, 'POST', { token: invite.token }));
@@ -95,7 +97,7 @@ afterAll(async () => { if (server) await server.close(); }, 30_000);
 describe('Teamspace metadata and root defaults over real HTTP/PostgreSQL', () => {
   test('personal and team workspaces use the same creation path with null as the safe default', async () => {
     for (const target of [personalId, workspaceId]) {
-      const record = await result<Teamspace>(request(`/${target}/teamspaces`, owner, 'POST', { name: '  Research  ' }), 201);
+      const record = await result<Teamspace>(request(`/${target}/teamspaces`, owner, 'POST', { knowledgeBaseId, name: '  Research  ' }), 201);
       expect(teamspaceSchema.safeParse(record).success).toBe(true);
       expect(record.name).toBe('Research');
       expect(record.defaultAccess).toBeNull();
@@ -135,7 +137,7 @@ describe('Teamspace metadata and root defaults over real HTTP/PostgreSQL', () =>
   test('member/guest cannot create, mutate defaults, rename or delete; identity injection is rejected', async () => {
     const record = await create('Role ceilings', 'view');
     for (const actor of [regular, guest]) {
-      expect((await request(`/${workspaceId}/teamspaces`, actor, 'POST', { name: 'Forbidden' })).status).toBe(403);
+      expect((await request(`/${workspaceId}/teamspaces`, actor, 'POST', { knowledgeBaseId, name: 'Forbidden' })).status).toBe(403);
       expect((await request(path(record), actor, 'PATCH', { defaultAccess: 'full' })).status).toBe(403);
       expect((await request(path(record), actor, 'PATCH', { name: 'Forbidden' })).status).toBe(403);
       expect((await request(path(record), actor, 'DELETE', {})).status).toBe(403);
@@ -176,7 +178,7 @@ describe('Teamspace metadata and root defaults over real HTTP/PostgreSQL', () =>
 
   test('same Teamspace UUID in different tenants never crosses read, update, delete or root lookup', async () => {
     const record = await create('Alpha scope', 'view');
-    await withKnowledgeTenant(server.database.pool, otherId, (db) => db.insert(teamspace).values({ workspaceId: otherId, id: record.id, name: 'Beta scope', defaultAccess: 'full' }));
+    await withKnowledgeTenant(server.database.pool, otherId, (db) => db.insert(teamspace).values({ workspaceId: otherId, knowledgeBaseId, id: record.id, name: 'Beta scope', defaultAccess: 'full' }));
     const foreign = { ...record, workspaceId: otherId };
     expect((await result<Teamspace>(request(path(record)))).name).toBe('Alpha scope');
     expect((await result<Teamspace>(request(path(foreign), outsider))).name).toBe('Beta scope');

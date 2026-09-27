@@ -4,18 +4,18 @@ import type { ReactNode } from 'react';
 import { Warning, XCircle } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import type { WorkspaceWithRole } from '../organization/client';
+import type { KnowledgeBase } from '@fouc/shared/knowledge/contracts';
 import { KnowledgeBaseHeader } from '../knowledge-base-header';
 import { CanvasState, TreeSkeletonRows } from '../canvas-states';
 import styles from './knowledge-sidebar.module.css';
 
-export function PageTreeSidebar({ collapsed, onCollapse, workspaces, activeWorkspaceId, onSelectWorkspace, onCreateWorkspace, onOpenSettings, onOpenLocal, onOpenWorkspace, treeArea, footer, createLabel }: {
+export function PageTreeSidebar({ collapsed, onCollapse, knowledgeBases, activeKnowledgeBaseId, onSelectKnowledgeBase, onCreateKnowledgeBase, onOpenSettings, onOpenLocal, onOpenWorkspace, treeArea, footer, createLabel }: {
   collapsed: boolean;
   onCollapse: () => void;
-  workspaces: readonly Pick<WorkspaceWithRole, 'id' | 'name'>[];
-  activeWorkspaceId: string | null;
-  onSelectWorkspace: (id: string) => void;
-  onCreateWorkspace: () => void;
+  knowledgeBases: readonly Pick<KnowledgeBase, 'id' | 'name'>[];
+  activeKnowledgeBaseId: string | null;
+  onSelectKnowledgeBase: (id: string) => void;
+  onCreateKnowledgeBase: () => void;
   onOpenSettings: () => void;
   onOpenLocal?: () => void;
   onOpenWorkspace?: () => void;
@@ -24,7 +24,7 @@ export function PageTreeSidebar({ collapsed, onCollapse, workspaces, activeWorks
   createLabel?: string;
 }) {
   return <aside aria-label="知识库侧边栏" aria-hidden={collapsed} inert={collapsed} data-collapsed={collapsed} className={cn('flex h-full min-h-0 flex-col', styles.sidebar)}>
-    <KnowledgeBaseHeader knowledgeBases={workspaces} activeKnowledgeBaseId={activeWorkspaceId} onSelectKnowledgeBase={onSelectWorkspace} onCollapse={onCollapse} onCreateKnowledgeBase={onCreateWorkspace} onOpenSettings={onOpenSettings} onOpenLocal={onOpenLocal} onOpenWorkspace={onOpenWorkspace} createLabel={createLabel} />
+    <KnowledgeBaseHeader knowledgeBases={knowledgeBases} activeKnowledgeBaseId={activeKnowledgeBaseId} onSelectKnowledgeBase={onSelectKnowledgeBase} onCollapse={onCollapse} onCreateKnowledgeBase={onCreateKnowledgeBase} onOpenSettings={onOpenSettings} onOpenLocal={onOpenLocal} onOpenWorkspace={onOpenWorkspace} createLabel={createLabel} />
     {treeArea}
     {footer}
   </aside>;

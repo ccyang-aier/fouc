@@ -1,10 +1,11 @@
+import { createDevelopmentWorkspaces } from '@fouc/shared/development-workbench';
+
 export type RailSpace = { id: string; label: string; pinned: boolean; kind: 'local' | 'server' };
 export type WorkspaceSelection = { localSpaces: RailSpace[]; activeId: string; serverPins: Record<string, boolean> };
-export const workspaceSelectionKey = 'fouc.workspaces.selection';
-export const DEFAULT_SPACES: RailSpace[] = [
-  { id: 'product-development', label: '产品研发', pinned: true, kind: 'local' },
-  { id: 'personal-workspace', label: '个人工作台', pinned: true, kind: 'local' },
-];
+export const workspaceSelectionKey = 'fouc.workspaces.current';
+export const DEFAULT_SPACES: RailSpace[] = process.env.NODE_ENV === 'development'
+  ? createDevelopmentWorkspaces().map((space) => ({ id: space.id, label: space.name, pinned: true, kind: 'local' }))
+  : [{ id: 'personal-workspace', label: '个人工作台', pinned: true, kind: 'local' }];
 
 /** Application selection, not identity, owns the active resource boundary. */
 export function createWorkspaceStore(storage: Pick<Storage, 'getItem' | 'setItem'> | null) {
@@ -29,10 +30,15 @@ export function createWorkspaceStore(storage: Pick<Storage, 'getItem' | 'setItem
       if (id !== snapshot.activeId) update({ ...snapshot, activeId: id });
     },
     updateSpaces(spaces: RailSpace[]) {
-      const localSpaces = spaces.filter((space) => space.kind === 'local');
+      const serverIds = new Set(spaces.filter((space) => space.kind === 'server').map((space) => space.id));
+      const localSpaces = [...spaces.filter((space) => space.kind === 'local'), ...snapshot.localSpaces.filter((space) => serverIds.has(space.id))];
       const serverPins = { ...snapshot.serverPins };
       for (const space of spaces) if (space.kind === 'server') serverPins[space.id] = space.pinned;
       update({ ...snapshot, localSpaces, serverPins });
+    },
+    rememberServerScopes(ids: string[]) {
+      if (ids.every((id) => id in snapshot.serverPins)) return;
+      update({ ...snapshot, serverPins: { ...Object.fromEntries(ids.map((id) => [id, true])), ...snapshot.serverPins } });
     },
     create() {
       const space: RailSpace = { id: `space-${crypto.randomUUID()}`, label: `新工作空间 ${snapshot.localSpaces.length + 1}`, pinned: true, kind: 'local' };

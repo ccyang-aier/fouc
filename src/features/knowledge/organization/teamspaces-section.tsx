@@ -8,11 +8,13 @@
  * restores access under the new default.
  */
 
+import { useKnowledgeBasesQuery, flattenWorkspaceList } from '../data/workspace-queries';
+import type { KnowledgeBase } from '@fouc/shared/knowledge/contracts';
 import { useState } from 'react';
 import { FolderOpen, PencilSimple, ShieldCheck, Trash } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { validateOrganizationName } from './client';
-import type { MemberRole, TeamspaceAccess } from './client';
+import { validateOrganizationName } from '@/features/workspaces/organization-client';
+import type { MemberRole, TeamspaceAccess } from '@/features/workspaces/organization-client';
 import { useCreateTeamspaceMutation, useRemoveTeamspaceMutation, useTeamspacesQuery, useUpdateTeamspaceMutation } from './hooks';
 import type { TeamspaceRow } from './list-mutations';
 import { canManageOrganization, defaultAccessOptions, defaultAccessRebuildNotice, needsAccessRebuildConfirmation } from './view-model';
@@ -23,6 +25,8 @@ export function TeamspacesSection({ workspaceId, actorRole, notify }: {
   actorRole: MemberRole;
   notify: (kind: 'success' | 'error', text: string) => void;
 }) {
+  const basesQuery = useKnowledgeBasesQuery(workspaceId);
+  const bases = flattenWorkspaceList(basesQuery.data);
   const canManage = canManageOrganization(actorRole);
   const teamspacesQuery = useTeamspacesQuery(workspaceId);
   const createMutation = useCreateTeamspaceMutation(workspaceId);
@@ -122,12 +126,13 @@ export function TeamspacesSection({ workspaceId, actorRole, notify }: {
       </ListStateShell>
 
       <CreateTeamspaceDialog
+        bases={bases}
         open={creating}
         busy={createMutation.isPending}
         onClose={() => setCreating(false)}
-        onSubmit={async (name, defaultAccess) => {
+        onSubmit={async (name, defaultAccess, knowledgeBaseId) => {
           try {
-            const created = await createMutation.mutateAsync({ name, defaultAccess });
+            const created = await createMutation.mutateAsync({ name, defaultAccess, knowledgeBaseId });
             notify('success', `团队空间「${created.name}」已创建`);
             setCreating(false);
           } catch (error) {
@@ -217,20 +222,23 @@ function AccessOptions({ value, onChange, disabled }: { value: TeamspaceAccess; 
   );
 }
 
-function CreateTeamspaceDialog({ open, busy, onClose, onSubmit }: {
+function CreateTeamspaceDialog({ bases, open, busy, onClose, onSubmit }: {
   open: boolean;
   busy: boolean;
   onClose: () => void;
-  onSubmit: (name: string, defaultAccess: TeamspaceAccess) => void;
+  bases: KnowledgeBase[];
+  onSubmit: (name: string, defaultAccess: TeamspaceAccess, knowledgeBaseId: string) => void;
 }) {
   const [name, setName] = useState('');
   const [access, setAccess] = useState<TeamspaceAccess>(null);
+  const [chosenBaseId, setChosenBaseId] = useState('');
+  const baseId = bases.find((base) => base.id === chosenBaseId)?.id ?? bases[0]?.id;
   const [touched, setTouched] = useState(false);
   const validation = validateOrganizationName(name);
   function close() { onClose(); setName(''); setAccess(null); setTouched(false); }
   function submit() {
     setTouched(true);
-    if (validation.ok) onSubmit(validation.value, access);
+    if (validation.ok && baseId) onSubmit(validation.value, access, baseId);
   }
   return (
     <ModalDialog
@@ -242,11 +250,11 @@ function CreateTeamspaceDialog({ open, busy, onClose, onSubmit }: {
       footer={
         <>
           <DialogButton onClick={close}>取消</DialogButton>
-          <DialogButton variant="primary" disabled={!validation.ok || busy} onClick={submit}>{busy ? '正在创建…' : '创建'}</DialogButton>
+          <DialogButton variant="primary" disabled={!validation.ok || !baseId || busy} onClick={submit}>{busy ? '正在创建…' : '创建'}</DialogButton>
         </>
       }
     >
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4"><label className="text-xs">所属知识库<select aria-label="所属知识库" value={baseId ?? ''} onChange={(event) => setChosenBaseId(event.target.value)} className="mt-2 block w-full rounded-md border border-[var(--line)] bg-panel p-2">{!bases.length ? <option value="">请先创建知识库</option> : bases.map((base) => <option key={base.id} value={base.id}>{base.name}</option>)}</select></label>
         <NameField
           label="名称"
           value={name}

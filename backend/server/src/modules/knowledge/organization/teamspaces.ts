@@ -3,14 +3,14 @@ import { and, asc, eq, gt, sql } from 'drizzle-orm';
 import type { Pool } from 'pg';
 import { createTeamspaceInputSchema, listTeamspacesInputSchema, removeTeamspaceInputSchema, teamspaceScopeSchema, updateTeamspaceInputSchema } from '@fouc/shared/knowledge/contracts';
 import type { Teamspace, TeamspaceScope } from '@fouc/shared/knowledge/contracts';
-import { page, teamspace } from '../../../platform/database/knowledge/schema';
+import { knowledgeBase, page, teamspace } from '../../../platform/database/knowledge/schema';
 import type { KnowledgeTenantTransaction } from '../../../platform/database/knowledge/tenant';
 import type { FoucIdentity } from '../../../platform/identity/identity';
 import { currentIdentity, inWorkspace, pageOf, requireDirectory, requireManager } from './context';
 import { OrganizationError, parseInput } from './errors';
 
 const targetTeamspace = (scope: TeamspaceScope) => and(eq(teamspace.workspaceId, scope.workspaceId), eq(teamspace.id, scope.teamspaceId));
-const teamspaceView = (row: typeof teamspace.$inferSelect): Teamspace => ({ workspaceId: row.workspaceId, id: row.id, name: row.name, defaultAccess: row.defaultAccess });
+const teamspaceView = (row: typeof teamspace.$inferSelect): Teamspace => ({ workspaceId: row.workspaceId, knowledgeBaseId: row.knowledgeBaseId, id: row.id, name: row.name, defaultAccess: row.defaultAccess });
 
 async function loadTeamspace(db: KnowledgeTenantTransaction, scope: TeamspaceScope, lock = false) {
   const query = db.select().from(teamspace).where(targetTeamspace(scope));
@@ -57,6 +57,8 @@ export function teamspaceOperations(pool: Pool, permissions: TeamspacePermission
       const parsed = parseInput(createTeamspaceInputSchema, input);
       return inWorkspace(pool, identity, parsed.workspaceId, true, async ({ db, role }) => {
         requireManager(role);
+        const [base] = await db.select({ id: knowledgeBase.id }).from(knowledgeBase).where(and(eq(knowledgeBase.workspaceId, parsed.workspaceId), eq(knowledgeBase.id, parsed.knowledgeBaseId)));
+        if (!base) throw new OrganizationError('KNOWLEDGE_BASE_NOT_FOUND', 'Knowledge base was not found in this workspace.', 404);
         const [created] = await db.insert(teamspace).values({ ...parsed, id: randomUUID() }).returning();
         return teamspaceView(created!);
       });
@@ -65,7 +67,7 @@ export function teamspaceOperations(pool: Pool, permissions: TeamspacePermission
       const parsed = parseInput(listTeamspacesInputSchema, input);
       return inWorkspace(pool, identity, parsed.workspaceId, false, async ({ db, role }) => {
         requireDirectory(role);
-        const rows = await db.select().from(teamspace).where(and(eq(teamspace.workspaceId, parsed.workspaceId), parsed.cursor ? gt(teamspace.id, parsed.cursor) : undefined))
+        const rows = await db.select().from(teamspace).where(and(eq(teamspace.workspaceId, parsed.workspaceId), parsed.knowledgeBaseId ? eq(teamspace.knowledgeBaseId, parsed.knowledgeBaseId) : undefined, parsed.cursor ? gt(teamspace.id, parsed.cursor) : undefined))
           .orderBy(asc(teamspace.id)).limit(parsed.limit + 1);
         return pageOf(rows.map(teamspaceView), parsed.limit, (row) => row.id);
       });

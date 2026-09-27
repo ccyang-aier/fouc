@@ -4,7 +4,7 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { unzipSync, zipSync } from 'fflate';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import type { OutboxEvent } from '@fouc/shared/knowledge/contracts';
-import { knowledgeSchema, member, teamspace, workspace } from '../../../platform/database/knowledge/schema';
+import { knowledgeBase, knowledgeSchema, member, teamspace, workspace } from '../../../platform/database/knowledge/schema';
 import { authUser } from '../../../platform/database/identity/schema';
 import { createTenantTestDatabase } from '../../../platform/database/knowledge/tenant-test-database';
 import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
@@ -127,7 +127,9 @@ beforeAll(async () => {
     ]);
     await db.insert(workspace).values({ id: owner.workspaceId, name: 'M03 Vault', kind: 'team' });
     await db.insert(member).values({ workspaceId: owner.workspaceId, userId: owner.userId, role: 'owner' });
-    await db.insert(teamspace).values({ workspaceId: owner.workspaceId, id: teamspaceId, name: 'Main', defaultAccess: 'edit' });
+    const knowledgeBaseId = randomUUID();
+    await db.insert(knowledgeBase).values({ workspaceId: owner.workspaceId, id: knowledgeBaseId, name: 'Import library' });
+    await db.insert(teamspace).values({ workspaceId: owner.workspaceId, knowledgeBaseId, id: teamspaceId, name: 'Main', defaultAccess: 'edit' });
     await client.query('COMMIT');
   } catch (error) {
     await client.query('ROLLBACK');

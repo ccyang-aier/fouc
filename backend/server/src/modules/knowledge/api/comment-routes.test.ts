@@ -135,7 +135,8 @@ async function createCommentRoutesFixture() {
 
   /** A one-page teamspace subtree whose default access is the given level. */
   async function tree(defaultAccess: PermissionLevel): Promise<PageRef> {
-    const space = await organization.createTeamspace(owner.identity, { workspaceId, name: `Comment tree ${defaultAccess}`, defaultAccess });
+    const base = await organization.createKnowledgeBase(owner.identity, { workspaceId, name: 'Comment library' });
+    const space = await organization.createTeamspace(owner.identity, { workspaceId, knowledgeBaseId: base.id, name: `Comment tree ${defaultAccess}`, defaultAccess });
     const pageId = randomUUID();
     await withKnowledgeTenant(pool, workspaceId, (db) => withAuthorizedPageTreeMutation(db, { workspaceId, pageId }, async () => {
       await db.insert(page).values({ workspaceId, id: pageId, parentId: null, path: pageId.replaceAll('-', '_'), teamspaceId: space.id, position: 'a0', createdBy: owner.identity.userId, inheritsPermissions: true, deletedAt: null });

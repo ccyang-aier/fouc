@@ -19,8 +19,8 @@ const snapshots = new Map<string, Collections>();
 const listeners = new Map<string, Set<() => void>>();
 const empty: Collections = { starred: [], drafts: [], tags: [] };
 
-export function useSidebarCollections(userId: string, workspaceId: string | null) {
-  const key = `fouc.knowledge.collections:${userId}:${workspaceId}`;
+export function useSidebarCollections(userId: string, workspaceId: string | null, knowledgeBaseId: string) {
+  const key = `fouc.knowledge.collections:${userId}:${workspaceId}:${knowledgeBaseId}`;
   const getSnapshot = () => {
     if (!snapshots.has(key)) snapshots.set(key, readCollections(key));
     return snapshots.get(key)!;

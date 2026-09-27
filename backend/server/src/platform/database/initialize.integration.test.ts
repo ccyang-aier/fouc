@@ -151,7 +151,7 @@ describe('real PostgreSQL constraints and Yjs persistence', () => {
     const foreignPage = randomUUID();
     const foreignThread = randomUUID();
     await withKnowledgeTenant(database.pool, beta.workspaceId, async (db) => {
-      await db.insert(tables.teamspace).values({ workspaceId: beta.workspaceId, id: foreignTeamspace, name: 'Private team' });
+      await db.insert(tables.teamspace).values({ workspaceId: beta.workspaceId, knowledgeBaseId: data.ids.knowledgeBase, id: foreignTeamspace, name: 'Private team' });
       await db.insert(tables.page).values({ workspaceId: beta.workspaceId, id: foreignPage, teamspaceId: foreignTeamspace, path: foreignPage.replaceAll('-', '_'), position: 'a0', createdBy: beta.userId });
       await db.insert(tables.commentThread).values({ workspaceId: beta.workspaceId, id: foreignThread, pageId: foreignPage });
     });

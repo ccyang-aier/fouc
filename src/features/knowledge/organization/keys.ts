@@ -6,6 +6,7 @@
 
 export const organizationQueryKeys = {
   workspaces: ['organization', 'workspaces'] as const,
+  knowledgeBases: (workspaceId: string) => ['organization', workspaceId, 'knowledge-bases'] as const,
   members: (workspaceId: string) => ['organization', workspaceId, 'members'] as const,
   groups: (workspaceId: string) => ['organization', workspaceId, 'groups'] as const,
   groupMembers: (workspaceId: string, groupId: string) => ['organization', workspaceId, 'groups', groupId, 'members'] as const,
@@ -14,6 +15,7 @@ export const organizationQueryKeys = {
 
 export type OrganizationQueryKey =
   | typeof organizationQueryKeys.workspaces
+  | ReturnType<(typeof organizationQueryKeys)['knowledgeBases']>
   | ReturnType<(typeof organizationQueryKeys)['members']>
   | ReturnType<(typeof organizationQueryKeys)['groups']>
   | ReturnType<(typeof organizationQueryKeys)['groupMembers']>

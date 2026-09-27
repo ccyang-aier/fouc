@@ -30,7 +30,7 @@ async function error(response: Response, code: string) {
 
 describe('Hono + tRPC over real HTTP and isolated PostgreSQL', () => {
   test('tRPC mount does not steal sibling organization routes regardless of registration order', async () => {
-    const response = await fetch(`${fixture.server.origin}/api/knowledge/workspaces`);
+    const response = await fetch(`${fixture.server.origin}/api/workspaces`);
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ handledBy: 'later-organization-router' });
     expect(response.headers.has('x-request-id')).toBe(false);

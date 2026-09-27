@@ -248,6 +248,16 @@ CREATE TABLE "knowledge"."group_member" (
 	CONSTRAINT "group_member_workspace_id_group_id_user_id_pk" PRIMARY KEY("workspace_id","group_id","user_id")
 );
 
+CREATE TABLE "knowledge"."knowledge_base" (
+	"workspace_id" uuid NOT NULL,
+	"id" uuid NOT NULL,
+	"name" varchar(120) NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "knowledge_base_workspace_id_id_pk" PRIMARY KEY("workspace_id","id"),
+	CONSTRAINT "knowledge_base_name_not_empty" CHECK (length(btrim("knowledge"."knowledge_base"."name")) > 0)
+);
+
 CREATE TABLE "knowledge"."member" (
 	"workspace_id" uuid NOT NULL,
 	"user_id" uuid NOT NULL,
@@ -384,6 +394,7 @@ CREATE TABLE "knowledge"."share_link" (
 CREATE TABLE "knowledge"."teamspace" (
 	"workspace_id" uuid NOT NULL,
 	"id" uuid NOT NULL,
+	"knowledge_base_id" uuid NOT NULL,
 	"name" varchar(120) NOT NULL,
 	"default_access" "knowledge"."permission_level",
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
@@ -446,6 +457,7 @@ ALTER TABLE "knowledge"."doc_state" ADD CONSTRAINT "doc_state_workspace_id_page_
 ALTER TABLE "knowledge"."group" ADD CONSTRAINT "group_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "knowledge"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "knowledge"."group_member" ADD CONSTRAINT "group_member_workspace_id_group_id_group_workspace_id_id_fk" FOREIGN KEY ("workspace_id","group_id") REFERENCES "knowledge"."group"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "knowledge"."group_member" ADD CONSTRAINT "group_member_membership_fk" FOREIGN KEY ("workspace_id","user_id") REFERENCES "knowledge"."member"("workspace_id","user_id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "knowledge"."knowledge_base" ADD CONSTRAINT "knowledge_base_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "knowledge"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "knowledge"."member" ADD CONSTRAINT "member_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "knowledge"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "knowledge"."member" ADD CONSTRAINT "member_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "knowledge"."model_credential" ADD CONSTRAINT "model_credential_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "knowledge"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
@@ -465,6 +477,7 @@ ALTER TABLE "knowledge"."personal_access_token" ADD CONSTRAINT "personal_access_
 ALTER TABLE "knowledge"."share_link" ADD CONSTRAINT "share_link_created_by_user_id_fk" FOREIGN KEY ("created_by") REFERENCES "auth"."user"("id") ON DELETE no action ON UPDATE no action;
 ALTER TABLE "knowledge"."share_link" ADD CONSTRAINT "share_link_workspace_id_page_id_page_workspace_id_id_fk" FOREIGN KEY ("workspace_id","page_id") REFERENCES "knowledge"."page"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "knowledge"."teamspace" ADD CONSTRAINT "teamspace_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "knowledge"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "knowledge"."teamspace" ADD CONSTRAINT "teamspace_knowledge_base_fk" FOREIGN KEY ("workspace_id","knowledge_base_id") REFERENCES "knowledge"."knowledge_base"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "knowledge"."workspace_invitation" ADD CONSTRAINT "workspace_invitation_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "knowledge"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "knowledge"."workspace_invitation" ADD CONSTRAINT "workspace_invitation_invited_by_user_id_fk" FOREIGN KEY ("invited_by") REFERENCES "auth"."user"("id") ON DELETE no action ON UPDATE no action;
 ALTER TABLE "knowledge"."workspace_invitation" ADD CONSTRAINT "workspace_invitation_accepted_by_user_id_fk" FOREIGN KEY ("accepted_by") REFERENCES "auth"."user"("id") ON DELETE set null ON UPDATE no action;

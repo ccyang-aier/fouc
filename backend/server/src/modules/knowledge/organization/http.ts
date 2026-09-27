@@ -10,7 +10,7 @@ import { OrganizationError, organizationFailure } from './errors';
 import type { OrganizationService } from './service';
 
 type OrganizationEnvironment = { Variables: { identity: FoucIdentity } };
-const base = '/api/knowledge/workspaces';
+const base = '/api/workspaces';
 
 async function bodyWithPath(context: Context, path: Record<string, string> = {}) {
   let body: unknown;
@@ -26,7 +26,7 @@ function pagination(context: Context) {
   return { ...values, ...(values.limit === undefined ? {} : { limit: Number(values.limit) }) };
 }
 
-/** Mount at / before the legacy bearer catch-all; session-only, never PAT discovery. */
+/** Shared workspace directory; session-only, never PAT discovery. */
 export function createOrganizationRoutes(auth: FoucAuth, service: OrganizationService) {
   const app = new Hono<OrganizationEnvironment>();
   const origins = auth.options.trustedOrigins as string[];
@@ -47,6 +47,8 @@ export function createOrganizationRoutes(auth: FoucAuth, service: OrganizationSe
   app.post(base, async (context) => context.json(await service.createWorkspace(context.get('identity'), await bodyWithPath(context)), 201));
   app.get(`${base}/:workspaceId`, async (context) => context.json(await service.getWorkspace(context.get('identity'), context.req.param())));
   app.patch(`${base}/:workspaceId`, async (context) => context.json(await service.renameWorkspace(context.get('identity'), await bodyWithPath(context, context.req.param()))));
+  app.get(`${base}/:workspaceId/knowledge-bases`, async (context) => context.json(await service.listKnowledgeBases(context.get('identity'), { ...pagination(context), ...context.req.param() })));
+  app.post(`${base}/:workspaceId/knowledge-bases`, async (context) => context.json(await service.createKnowledgeBase(context.get('identity'), await bodyWithPath(context, context.req.param())), 201));
   app.get(`${base}/:workspaceId/teamspaces`, async (context) => context.json(await service.listTeamspaces(context.get('identity'), { ...pagination(context), ...context.req.param() })));
   app.post(`${base}/:workspaceId/teamspaces`, async (context) => context.json(await service.createTeamspace(context.get('identity'), await bodyWithPath(context, context.req.param())), 201));
   app.get(`${base}/:workspaceId/teamspaces/:teamspaceId`, async (context) => context.json(await service.getTeamspace(context.get('identity'), context.req.param())));

@@ -1,5 +1,5 @@
 /**
- * Organization client error boundary (O02).
+ * Shared workspace organization client error boundary.
  *
  * The organization REST surface (backend/server/src/modules/knowledge/organization/http.ts)
  * answers with `{ code, message }` bodies from a fixed code set plus transport
@@ -13,6 +13,7 @@ export type OrganizationErrorCode =
   | 'INVALID_INPUT'
   | 'UNAUTHENTICATED'
   | 'WORKSPACE_NOT_FOUND'
+  | 'KNOWLEDGE_BASE_NOT_FOUND'
   | 'FORBIDDEN'
   | 'MEMBER_NOT_FOUND'
   | 'GROUP_NOT_FOUND'
@@ -35,6 +36,7 @@ export const organizationErrorText: Record<OrganizationErrorCode, string> = {
   INVALID_INPUT: '请求参数不正确，请检查后重试',
   UNAUTHENTICATED: '需要已验证的登录会话才能访问组织信息',
   WORKSPACE_NOT_FOUND: '工作区不存在或不可访问',
+  KNOWLEDGE_BASE_NOT_FOUND: '当前工作空间内不存在该知识库',
   FORBIDDEN: '当前角色没有执行此操作的权限',
   MEMBER_NOT_FOUND: '该成员不存在或已离开工作区',
   GROUP_NOT_FOUND: '该群组不存在或已删除',
@@ -53,7 +55,7 @@ export const organizationErrorText: Record<OrganizationErrorCode, string> = {
 };
 
 const serverCodes = new Set<string>([
-  'INVALID_INPUT', 'UNAUTHENTICATED', 'WORKSPACE_NOT_FOUND', 'FORBIDDEN', 'MEMBER_NOT_FOUND',
+  'INVALID_INPUT', 'UNAUTHENTICATED', 'WORKSPACE_NOT_FOUND', 'KNOWLEDGE_BASE_NOT_FOUND', 'FORBIDDEN', 'MEMBER_NOT_FOUND',
   'GROUP_NOT_FOUND', 'TEAMSPACE_NOT_FOUND', 'TEAMSPACE_NOT_EMPTY', 'LAST_OWNER', 'CONFLICT',
   'INVITATION_INVALID', 'INVALID_ORIGIN', 'INVALID_CONTENT_TYPE', 'PAYLOAD_TOO_LARGE', 'ORGANIZATION_UNAVAILABLE',
 ]);

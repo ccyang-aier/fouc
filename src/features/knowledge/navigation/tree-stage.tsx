@@ -21,8 +21,9 @@ import type { TreeNotifier } from './page-operations';
 export type TreeStageTeamspaceState = 'loading' | 'error' | 'forbidden' | 'empty' | 'ready';
 export type LibraryView = 'overview' | 'all-documents' | 'starred' | 'drafts' | 'trash' | 'projects' | 'recent';
 
-export function KnowledgeTreeStage({ userId, workspaceId, teamspaces, teamspaceState, access, selectedSectionId, selectedPageId, onSelectSection, onSelectPage, onRetryTeamspaces, onCreateTeamspace, notify, view, onNavigate }: {
+export function KnowledgeTreeStage({ knowledgeBaseId, userId, workspaceId, teamspaces, teamspaceState, access, selectedSectionId, selectedPageId, onSelectSection, onSelectPage, onRetryTeamspaces, onCreateTeamspace, notify, view, onNavigate }: {
   userId: string;
+  knowledgeBaseId: string;
   workspaceId: string | null;
   teamspaces: readonly Teamspace[];
   teamspaceState: TreeStageTeamspaceState;
@@ -38,10 +39,13 @@ export function KnowledgeTreeStage({ userId, workspaceId, teamspaces, teamspaceS
   onNavigate: (view: LibraryView) => void;
 }) {
   const pagesQuery = useKnowledgePagesQuery(workspaceId, { enabled: teamspaceState === 'ready' });
-  const pages = useMemo(() => pagesQuery.data ?? [], [pagesQuery.data]);
+  const pages = useMemo(() => {
+    const folderIds = new Set(teamspaces.map((folder) => folder.id));
+    return (pagesQuery.data ?? []).filter((page) => folderIds.has(page.teamspaceId));
+  }, [pagesQuery.data, teamspaces]);
   const sections = useMemo(() => buildNavigationSections(teamspaces, pages), [teamspaces, pages]);
   const documents = useMemo(() => sidebarDocuments(sections, pages), [sections, pages]);
-  const { collections, setCollections, toggleStar } = useSidebarCollections(userId, workspaceId);
+  const { collections, setCollections, toggleStar } = useSidebarCollections(userId, workspaceId, knowledgeBaseId);
   const [expandedSections, setExpandedSections] = useState<Record<SidebarSectionId, boolean>>({ projects: true, tags: true, recent: false });
   const [expandedProjects, setExpandedProjects] = useState<Record<string, boolean>>({});
   const [expandedTags, setExpandedTags] = useState<Record<string, boolean>>({});
@@ -55,7 +59,7 @@ export function KnowledgeTreeStage({ userId, workspaceId, teamspaces, teamspaceS
     setLocation(from);
     onSelectPage(id);
   }
-  const actions = useDocumentNavigationActions({ workspaceId: workspaceId ?? '', userId, pages, teamspaces, canEdit: canEditTree(access), onOpenPage: openPage, notify });
+  const actions = useDocumentNavigationActions({ knowledgeBaseId, workspaceId: workspaceId ?? '', userId, pages, teamspaces, canEdit: canEditTree(access), onOpenPage: openPage, notify });
   const toNode = (node: NavigationPageNode): SidebarProjectNode => ({ id: node.id, kind: 'document', label: node.title, icon: 'file', starred: collections.starred.includes(node.id), expandable: node.children.length > 0, defaultExpanded: true, children: node.children.map(toNode) });
   const projects: SidebarProjectNode[] = sections.map((section) => ({ id: section.id, kind: 'project', label: section.title, count: documents.filter((page) => page.teamspaceId === section.id).length, projectIconId: 'folder', starred: collections.starred.includes(section.id), expandable: section.pages.length > 0, defaultExpanded: true, children: section.pages.map(toNode) }));
   const tags = collections.tags.map((tag) => ({ id: tag.id, name: tag.name, color: '#ada34e' }));

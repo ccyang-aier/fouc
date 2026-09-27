@@ -18,10 +18,10 @@ test('organization mutations reject injected actor identity and owner invitation
 test('teamspace inputs preserve null defaults, explicit patches and server-owned identity', () => {
   const workspaceId = randomUUID();
   const teamspaceId = randomUUID();
-  assert.equal(createTeamspaceInputSchema.parse({ workspaceId, name: '  Research  ' }).defaultAccess, null);
-  assert.equal(createTeamspaceInputSchema.parse({ workspaceId, name: '  Research  ' }).name, 'Research');
-  assert.equal(createTeamspaceInputSchema.safeParse({ workspaceId, name: 'Research', id: teamspaceId }).success, false);
-  assert.equal(createTeamspaceInputSchema.safeParse({ workspaceId, name: 'Research', userId: randomUUID() }).success, false);
+  assert.equal(createTeamspaceInputSchema.parse({ workspaceId, knowledgeBaseId: randomUUID(), name: '  Research  ' }).defaultAccess, null);
+  assert.equal(createTeamspaceInputSchema.parse({ workspaceId, knowledgeBaseId: randomUUID(), name: '  Research  ' }).name, 'Research');
+  assert.equal(createTeamspaceInputSchema.safeParse({ workspaceId, knowledgeBaseId: randomUUID(), name: 'Research', id: teamspaceId }).success, false);
+  assert.equal(createTeamspaceInputSchema.safeParse({ workspaceId, knowledgeBaseId: randomUUID(), name: 'Research', userId: randomUUID() }).success, false);
   assert.equal(updateTeamspaceInputSchema.safeParse({ workspaceId, teamspaceId }).success, false);
   assert.equal(updateTeamspaceInputSchema.parse({ workspaceId, teamspaceId, defaultAccess: null }).defaultAccess, null);
   assert.equal(updateTeamspaceInputSchema.safeParse({ workspaceId, teamspaceId, defaultAccess: 'owner' }).success, false);

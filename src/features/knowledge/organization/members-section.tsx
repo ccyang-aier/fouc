@@ -11,7 +11,7 @@ import { useState } from 'react';
 import { CaretDown, Trash, UsersThree } from '@phosphor-icons/react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import type { MemberRole } from './client';
+import type { MemberRole } from '@/features/workspaces/organization-client';
 import { useChangeMemberRoleMutation, useMembersQuery, useRemoveMemberMutation } from './hooks';
 import type { MemberRow } from './list-mutations';
 import { assignableRoles, canManageMember, memberRoleLabels } from './view-model';

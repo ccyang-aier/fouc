@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRemoveTeamspaceMutation, useUpdateTeamspaceMutation } from '../organization/hooks';
-import type { Teamspace } from '../organization/client';
+import type { Teamspace } from '@/features/workspaces/organization-client';
 import { ConfirmDialog, DialogButton, ModalDialog, NameField, mutationErrorText } from '../organization/ui';
 import { NavigationDialogPortal } from './navigation-dialog-portal';
 import type { TreeNotifier } from './page-operations';

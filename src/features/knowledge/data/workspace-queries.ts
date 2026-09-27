@@ -11,8 +11,8 @@
  */
 
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { organizationClient } from '../organization/client';
-import type { Teamspace, WorkspaceWithRole } from '../organization/client';
+import { organizationClient } from '@/features/workspaces/organization-client';
+import type { Teamspace, WorkspaceWithRole } from '@/features/workspaces/organization-client';
 import { organizationQueryKeys } from '../organization/keys';
 
 const firstCursor = null as string | null;
@@ -28,11 +28,21 @@ export function useKnowledgeWorkspacesQuery(enabled: boolean) {
   });
 }
 
-export function useKnowledgeTeamspacesQuery(workspaceId: string | null) {
+export function useKnowledgeBasesQuery(workspaceId: string | null) {
   return useInfiniteQuery({
-    queryKey: organizationQueryKeys.teamspaces(workspaceId ?? 'none'),
-    queryFn: ({ signal, pageParam }) => organizationClient.listTeamspaces(workspaceId!, { cursor: pageParam, signal }),
+    queryKey: organizationQueryKeys.knowledgeBases(workspaceId ?? 'none'),
+    queryFn: ({ signal, pageParam }) => organizationClient.listKnowledgeBases(workspaceId!, { cursor: pageParam, signal }),
     enabled: workspaceId !== null,
+    initialPageParam: firstCursor,
+    getNextPageParam: nextCursor,
+  });
+}
+
+export function useKnowledgeTeamspacesQuery(workspaceId: string | null, knowledgeBaseId: string | null) {
+  return useInfiniteQuery({
+    queryKey: [...organizationQueryKeys.teamspaces(workspaceId ?? 'none'), knowledgeBaseId],
+    queryFn: ({ signal, pageParam }) => organizationClient.listTeamspaces(workspaceId!, { knowledgeBaseId: knowledgeBaseId!, cursor: pageParam, signal }),
+    enabled: workspaceId !== null && knowledgeBaseId !== null,
     initialPageParam: firstCursor,
     getNextPageParam: nextCursor,
   });

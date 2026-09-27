@@ -64,7 +64,7 @@ export async function seedTenantTestData(admin: Pool) {
   // The same page/group/etc. UUIDs intentionally occur in both tenants. Only the
   // composite workspace key may distinguish them in joins and foreign keys.
   const ids = {
-    teamspace: randomUUID(), group: randomUUID(), page: randomUUID(), database: randomUUID(), row: randomUUID(),
+    knowledgeBase: randomUUID(), teamspace: randomUUID(), group: randomUUID(), page: randomUUID(), database: randomUUID(), row: randomUUID(),
     checkpoint: randomUUID(), thread: randomUUID(), comment: randomUUID(), task: randomUUID(), usage: randomUUID(),
     notification: randomUUID(), outbox: randomUUID(), pat: randomUUID(), share: randomUUID(), credential: randomUUID(),
   };
@@ -88,7 +88,8 @@ export async function seedTenantTestData(admin: Pool) {
       });
       await db.insert(tables.group).values({ workspaceId, id: ids.group, name: 'Editors' });
       await db.insert(tables.groupMember).values({ workspaceId, groupId: ids.group, userId });
-      await db.insert(tables.teamspace).values({ workspaceId, id: ids.teamspace, name: 'Team', defaultAccess: 'view' });
+      await db.insert(tables.knowledgeBase).values({ workspaceId, id: ids.knowledgeBase, name: 'Knowledge library' });
+      await db.insert(tables.teamspace).values({ workspaceId, knowledgeBaseId: ids.knowledgeBase, id: ids.teamspace, name: 'Team', defaultAccess: 'view' });
       const metadata = { workspaceId, teamspaceId: ids.teamspace, createdBy: userId };
       await db.insert(tables.page).values([
         { ...metadata, id: ids.page, kind: 'doc', path: ids.page.replaceAll('-', '_'), position: 'a0', title: `${name} document` },

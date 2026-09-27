@@ -29,7 +29,7 @@ let coOwner: Actor;
 let temporary: Actor;
 let main: Space;
 let other: Space;
-const base = '/api/knowledge/workspaces';
+const base = '/api/workspaces';
 
 function request(path: string, actor?: Actor, method = 'GET', body?: unknown, extra: Record<string, string> = {}) {
   return fetch(`${server.origin}${base}${path}`, { method, redirect: 'manual', headers: {

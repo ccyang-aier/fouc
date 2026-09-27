@@ -119,7 +119,7 @@ export async function createApiTestServer() {
       throw new Error('observer-private-canary'); // Observer errors must not alter the safe response.
     } }));
     // Registered afterwards on purpose: the tRPC module must not own this sibling route.
-    app.get('/api/knowledge/workspaces', (context) => context.json({ handledBy: 'later-organization-router' }));
+    app.get('/api/workspaces', (context) => context.json({ handledBy: 'later-organization-router' }));
   } });
   async function account(email: string) {
     const signup = await server.request('/sign-up/email', { name: email, email, password: testPassword });

@@ -38,7 +38,7 @@ describe('pure list reducers', () => {
   });
 
   test('teamspace patches cover both rename and default access', () => {
-    const teamspace: TeamspaceRow = { workspaceId: ws, id: '40000000-0000-4000-8000-000000000004', name: '文档', defaultAccess: null };
+    const teamspace: TeamspaceRow = { knowledgeBaseId: 'base', workspaceId: ws, id: '40000000-0000-4000-8000-000000000004', name: '文档', defaultAccess: null };
     expect(applyTeamspacePatch([teamspace], teamspace.id, { defaultAccess: 'edit' })[0]?.defaultAccess).toBe('edit');
     expect(applyTeamspacePatch([teamspace], teamspace.id, { name: '文档库' })[0]?.name).toBe('文档库');
     expect(applyTeamspacePatch([teamspace], teamspace.id, { name: '文档库' })[0]?.defaultAccess).toBe(null);

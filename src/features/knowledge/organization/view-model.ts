@@ -4,8 +4,8 @@
  * the P02 rebuild notice. No React here, so every rule is directly testable.
  */
 
-import type { MemberRole } from './client';
-import type { TeamspaceAccess } from './client';
+import type { MemberRole } from '@/features/workspaces/organization-client';
+import type { TeamspaceAccess } from '@/features/workspaces/organization-client';
 
 /** The four observable list states plus the ready state they lead to. */
 export type OrganizationListState = 'loading' | 'unauthenticated' | 'forbidden' | 'error' | 'empty' | 'ready';

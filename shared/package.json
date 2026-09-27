@@ -9,6 +9,7 @@
     ".": "./src/index.ts",
     "./knowledge/*": "./src/knowledge/*/index.ts",
     "./database-catalog": "./src/database-catalog.ts",
+    "./development-workbench": "./src/development-workbench.ts",
     "./catalog/dbx-catalog.json": "./catalog/dbx-catalog.json"
   },
   "scripts": {

@@ -19,7 +19,7 @@ import { useKnowledgeAccessQuery } from './data/hooks';
 import { knowledgeKeysForSegments, knowledgeWorkspaceRootKey } from './data/invalidation';
 import { KnowledgeQueryProvider } from './data/provider';
 import { invalidateKnowledgeQueries } from './data/query-client';
-import { flattenWorkspaceList, useKnowledgeTeamspacesQuery } from './data/workspace-queries';
+import { flattenWorkspaceList, useKnowledgeBasesQuery, useKnowledgeTeamspacesQuery } from './data/workspace-queries';
 import { deriveKnowledgeEntryPhase, entryPhaseShowsStage, knowledgeErrorCodeOf } from './entry-state';
 import { useKnowledgeNotificationsBridge } from './notifications/notifications-queries';
 import { subscribeOpenPageTarget } from './editor/open-target';
@@ -27,14 +27,15 @@ import type { TreeStageTeamspaceState } from './navigation/tree-stage';
 import { KnowledgeTreeStage } from './navigation/tree-stage';
 import { CreateTeamspaceDialog } from './navigation/create-teamspace-dialog';
 import { PageTreeSidebar } from './navigation/page-tree-sidebar';
-import { organizationErrorTextOf } from './organization/errors';
+import { organizationErrorTextOf } from '@/features/workspaces/organization-errors';
 import { ToastRegion, useOrganizationToast } from './organization/ui';
-import { CreateWorkspaceDialog } from './organization/create-workspace-dialog';
+import { CreateKnowledgeBaseDialog } from './organization/create-knowledge-base-dialog';
 import { LibraryCanvas } from './navigation/library-canvas';
 import type { LibraryView } from './navigation/tree-stage';
 import { KnowledgePageEditor } from './editor';
 import { KnowledgeWorkbench } from './knowledge-workbench';
 import { createBrowserKnowledgeResourceSelection } from './resource-selection';
+import { useKnowledgeBaseSelection } from './use-knowledge-base-selection';
 import { useWorkspace } from '@/features/workspaces/workspace-provider';
 
 const LocalKnowledgeResource = dynamic(() => import('./local/local-knowledge-resource').then((module) => module.LocalKnowledgeResource), { ssr: false, loading: () => <CanvasSpinner label="正在加载知识资源" /> });
@@ -46,7 +47,7 @@ export function KnowledgePage({ onOpenSettings }: { onOpenSettings: () => void }
   const resource = useSyncExternalStore(selection.subscribe, selection.getSnapshot, selection.getServerSnapshot);
   if (!resource) return <CanvasSpinner label="正在加载知识资源" />;
   if (resource === 'local' && activeSpace.kind === 'local') return <LocalKnowledgeResource workspaceId={activeSpace.id} onOpenSettings={onOpenSettings} onOpenWorkspace={() => selection.select('workspace')} />;
-  // Private query caches must never survive account changes; local edits remain mounted during sign-in.
+  // Private query caches must never survive account changes. Device content is never implicitly uploaded.
   return <KnowledgeQueryProvider key={`${activeSpace.id}:${session.status === 'authenticated' ? session.user.id : 'unauthenticated'}`}><WorkspaceKnowledgeResource localSelected={resource === 'local'} onOpenSettings={onOpenSettings} onOpenLocal={() => selection.select('local')} onOpenWorkspace={() => selection.select('workspace')} /></KnowledgeQueryProvider>;
 }
 
@@ -60,13 +61,17 @@ function WorkspaceKnowledgeResource({ onOpenSettings, onOpenLocal, onOpenWorkspa
 
   // ── Workspace scope ─────────────────────────────────────────────
   const authenticated = session.status === 'authenticated';
-  const { activeSpace, serverDirectory, selectWorkspace, refreshWorkspaces } = useWorkspace();
+  const { activeSpace, serverDirectory, refreshWorkspaces } = useWorkspace();
   const workspaces = authenticated ? serverDirectory.items : [];
   const activeWorkspace = activeSpace.kind === 'server' ? workspaces.find((workspace) => workspace.id === activeSpace.id) ?? null : null;
   const activeId = activeWorkspace?.id ?? null;
 
   const accessQuery = useKnowledgeAccessQuery(activeId ?? '', { enabled: activeId !== null });
-  const teamspacesQuery = useKnowledgeTeamspacesQuery(localSelected ? null : activeId);
+  const basesQuery = useKnowledgeBasesQuery(localSelected ? null : activeId);
+  const knowledgeBases = flattenWorkspaceList(basesQuery.data);
+  const [chosenBaseId, setChosenBaseId] = useKnowledgeBaseSelection(`${activeSpace.id}:${authenticated ? session.user.id : 'anonymous'}:server`);
+  const activeBase = knowledgeBases.find((base) => base.id === chosenBaseId) ?? knowledgeBases[0] ?? null;
+  const teamspacesQuery = useKnowledgeTeamspacesQuery(localSelected ? null : activeId, activeBase?.id ?? null);
   const teamspaces = flattenWorkspaceList(teamspacesQuery.data);
 
   const phase = deriveKnowledgeEntryPhase({
@@ -151,7 +156,7 @@ function WorkspaceKnowledgeResource({ onOpenSettings, onOpenLocal, onOpenWorkspa
 
   const selectedTeamspace = teamspaces.find((teamspace) => teamspace.id === selectedTeamspaceId) ?? null;
 
-  const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
+  const [createKnowledgeBaseOpen, setCreateKnowledgeBaseOpen] = useState(false);
   const [createTeamspaceOpen, setCreateTeamspaceOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { toast, notify } = useOrganizationToast();
@@ -170,8 +175,8 @@ function WorkspaceKnowledgeResource({ onOpenSettings, onOpenLocal, onOpenWorkspa
             : 'ready';
 
   const treeArea = (
-    <KnowledgeTreeStage
-      key={`${activeId}:${session.status === 'authenticated' ? session.user.id : ''}`}
+    <KnowledgeTreeStage knowledgeBaseId={activeBase?.id ?? ''}
+      key={`${activeId}:${activeBase?.id}:${session.status === 'authenticated' ? session.user.id : ''}`}
       userId={session.status === 'authenticated' ? session.user.id : ''}
       view={libraryView}
       onNavigate={(view) => { setLibraryView(view); setSelectedPageId(null); }}
@@ -202,19 +207,17 @@ function WorkspaceKnowledgeResource({ onOpenSettings, onOpenLocal, onOpenWorkspa
         onCollapse={() => setSidebarCollapsed(true)}
         onOpenSettings={onOpenSettings}
         onOpenLocal={onOpenLocal}
-        workspaces={activeWorkspace ? [activeWorkspace] : []}
-        activeWorkspaceId={activeWorkspace?.id ?? null}
-        onSelectWorkspace={selectWorkspace}
-        onCreateWorkspace={authenticated ? () => setCreateWorkspaceOpen(true) : openSignIn}
-        createLabel="新建服务端工作空间"
+        knowledgeBases={knowledgeBases}
+        activeKnowledgeBaseId={activeBase?.id ?? null}
+        onSelectKnowledgeBase={(id) => { setChosenBaseId(id); setSelectedTeamspaceId(null); setSelectedPageId(null); setLibraryView('all-documents'); }}
+        onCreateKnowledgeBase={authenticated ? () => setCreateKnowledgeBaseOpen(true) : openSignIn}
+        createLabel="新建知识库"
         treeArea={stageActive ? treeArea : null}
       />}
       onExpandSidebar={sidebarCollapsed && (selectedPageId || libraryView !== 'all-documents' || !stageActive) ? () => setSidebarCollapsed(false) : undefined}
       overlays={<>
-        <CreateWorkspaceDialog open={createWorkspaceOpen} onClose={() => setCreateWorkspaceOpen(false)} onCreated={(workspaceId) => {
-          refreshWorkspaces(); selectWorkspace(workspaceId, activeSpace.id);
-        }} notify={notify} />
-        {activeWorkspace ? <CreateTeamspaceDialog workspaceId={activeWorkspace.id} open={createTeamspaceOpen} onClose={() => setCreateTeamspaceOpen(false)} onCreated={(teamspace) => { setSelectedTeamspaceId(teamspace.id); setSelectedPageId(null); setLibraryView('overview'); }} /> : null}
+        {activeId ? <CreateKnowledgeBaseDialog workspaceId={activeId} open={createKnowledgeBaseOpen} onClose={() => setCreateKnowledgeBaseOpen(false)} onCreated={(id) => { setChosenBaseId(id); setSelectedTeamspaceId(null); setSelectedPageId(null); setLibraryView('all-documents'); notify('success', '知识库已创建'); }} /> : null}
+        {activeWorkspace && activeBase ? <CreateTeamspaceDialog knowledgeBaseId={activeBase.id} workspaceId={activeWorkspace.id} open={createTeamspaceOpen} onClose={() => setCreateTeamspaceOpen(false)} onCreated={(teamspace) => { setSelectedTeamspaceId(teamspace.id); setSelectedPageId(null); setLibraryView('overview'); }} /> : null}
         <ToastRegion toast={toast} />
       </>}
     >
@@ -245,25 +248,26 @@ function WorkspaceKnowledgeResource({ onOpenSettings, onOpenLocal, onOpenWorkspa
           tone="accent"
           icon={<FolderPlus aria-hidden className="size-5" weight="regular" />}
           title="还没有服务端工作空间"
-          hint="创建工作空间并初始化文档目录，或继续使用当前空间的本机文档。"
+          hint="从最左侧创建或选择工作空间，或继续使用当前空间的本机文档。"
           announce="polite"
-          actions={
-            <Button onClick={() => setCreateWorkspaceOpen(true)}>
-              <FolderPlus aria-hidden className="size-3.5" />
-              新建服务端工作空间
-            </Button>
-          }
+          actions={<Button variant="outline" onClick={onOpenLocal}>返回本机文档</Button>}
         />
       ) : localSelected && accessQuery.isPending ? (
         <CanvasSpinner label="正在确认工作空间权限" />
       ) : localSelected && accessQuery.isError ? (
         <CanvasError title="无法访问当前工作空间" detail="无法确认此空间的资源访问权限，请重试或选择其它工作空间。" onRetry={() => void accessQuery.refetch()} />
+      ) : basesQuery.isError ? (
+        <CanvasError title="知识库列表加载失败" detail={organizationErrorTextOf(basesQuery.error)} onRetry={() => void basesQuery.refetch()} />
+      ) : activeWorkspace && basesQuery.isPending ? (
+        <CanvasSpinner label="正在加载知识库" />
+      ) : activeWorkspace && !activeBase ? (
+        <CanvasState title="还没有知识库" hint="一个工作空间可以包含多个独立知识库。" actions={<Button onClick={() => setCreateKnowledgeBaseOpen(true)}>新建知识库</Button>} />
       ) : activeWorkspace && session.status === 'authenticated' ? (
         <>
           {selectedPageId && activeId ? (
             <KnowledgePageEditor scope={{ workspaceId: activeId, pageId: selectedPageId }} user={session.user} />
           ) : activeId ? (
-            <LibraryCanvas key={activeId} workspaceId={activeId} userId={session.user.id} name={activeWorkspace.name} view={libraryView} access={accessQuery.data} teamspaces={teamspaces} folder={selectedTeamspace} onOpenPage={setSelectedPageId} onSelectFolder={(id) => { setSelectedTeamspaceId(id); setLibraryView('overview'); }} onCreateFolder={() => setCreateTeamspaceOpen(true)} onExpandSidebar={sidebarCollapsed ? () => setSidebarCollapsed(false) : undefined} notify={notify} />
+            <LibraryCanvas knowledgeBaseId={activeBase?.id ?? ''} key={`${activeId}:${activeBase?.id}`} workspaceId={activeId} userId={session.user.id} name={activeBase?.name ?? ''} view={libraryView} access={accessQuery.data} teamspaces={teamspaces} folder={selectedTeamspace} onOpenPage={setSelectedPageId} onSelectFolder={(id) => { setSelectedTeamspaceId(id); setLibraryView('overview'); }} onCreateFolder={() => setCreateTeamspaceOpen(true)} onExpandSidebar={sidebarCollapsed ? () => setSidebarCollapsed(false) : undefined} notify={notify} />
           ) : null}
         </>
       ) : null}

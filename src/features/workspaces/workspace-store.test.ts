@@ -7,8 +7,9 @@ test('global workspace selection and local workspace management survive reload',
   const store = createWorkspaceStore(storage);
   let updates = 0;
   store.subscribe(() => { updates++; });
-  store.select('personal-workspace');
-  expect(createWorkspaceStore(storage).getSnapshot().activeId).toBe('personal-workspace');
+  const target = 'other-workspace';
+  store.select(target);
+  expect(createWorkspaceStore(storage).getSnapshot().activeId).toBe(target);
   store.create();
   const createdId = store.getSnapshot().activeId;
   store.updateSpaces(store.getSnapshot().localSpaces.map((space) => space.id === createdId ? { ...space, label: '研究空间', pinned: false } : space));
@@ -30,9 +31,23 @@ test('server workspace IDs remain real IDs and server metadata is never persiste
 test('a late workspace creation response cannot replace a newer user selection', () => {
   const store = createWorkspaceStore(null);
   const origin = store.getSnapshot().activeId;
-  store.select('personal-workspace');
+  const target = 'other-workspace';
+  store.select(target);
   store.select('new-server-workspace', origin);
-  expect(store.getSnapshot().activeId).toBe('personal-workspace');
-  store.select('new-server-workspace', 'personal-workspace');
+  expect(store.getSnapshot().activeId).toBe(target);
+  store.select('new-server-workspace', target);
   expect(store.getSnapshot().activeId).toBe('new-server-workspace');
+});
+
+test('known server scopes remain protected and pin changes preserve device metadata', () => {
+  const values = new Map<string, string>();
+  const storage = { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => { values.set(key, value); } };
+  const store = createWorkspaceStore(storage);
+  const first = store.getSnapshot().localSpaces[0]!;
+  store.rememberServerScopes([first.id]);
+  store.updateSpaces(store.getSnapshot().localSpaces.map((space) => space.id === first.id ? { ...space, kind: 'server', pinned: false } : space));
+  const restored = createWorkspaceStore(storage).getSnapshot();
+  expect(first.id in restored.serverPins).toBe(true);
+  expect(restored.serverPins[first.id]).toBe(false);
+  expect(restored.localSpaces.find((space) => space.id === first.id)?.label).toBe(first.label);
 });

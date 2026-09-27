@@ -16,6 +16,10 @@ export const invitationRoleSchema = memberRoleSchema.exclude(['owner']);
 export const createWorkspaceInputSchema = workspaceSchema.pick({ name: true, kind: true });
 export const renameWorkspaceInputSchema = workspaceScopeSchema.extend({ name: workspaceSchema.shape.name });
 export const listWorkspacesInputSchema = paginationSchema;
+export const knowledgeBaseSchema = workspaceScopeSchema.extend({ id: entityIdSchema, name: z.string().trim().min(1).max(120) });
+export const knowledgeBaseScopeSchema = workspaceScopeSchema.extend({ knowledgeBaseId: entityIdSchema });
+export const createKnowledgeBaseInputSchema = knowledgeBaseSchema.omit({ id: true });
+export const listKnowledgeBasesInputSchema = paginationSchema.extend({ workspaceId: entityIdSchema });
 export const listOrganizationInputSchema = paginationSchema.extend({ workspaceId: entityIdSchema });
 export const listGroupMembersInputSchema = listOrganizationInputSchema.extend({ groupId: entityIdSchema });
 export const changeMemberRoleInputSchema = memberSchema;
@@ -47,12 +51,13 @@ export const revokeWorkspaceInvitationInputSchema = workspaceScopeSchema.extend(
 export const workspaceMemberSummarySchema = memberSchema.extend({ name: z.string(), email: z.email() });
 export const teamspaceSchema = workspaceScopeSchema.extend({
   id: entityIdSchema,
+  knowledgeBaseId: entityIdSchema,
   name: z.string().trim().min(1).max(120),
   defaultAccess: permissionLevelSchema.nullable(),
 });
 export const teamspaceScopeSchema = workspaceScopeSchema.extend({ teamspaceId: entityIdSchema });
 export const createTeamspaceInputSchema = teamspaceSchema.omit({ id: true }).extend({ defaultAccess: teamspaceSchema.shape.defaultAccess.default(null) });
-export const listTeamspacesInputSchema = listOrganizationInputSchema;
+export const listTeamspacesInputSchema = listOrganizationInputSchema.extend({ knowledgeBaseId: entityIdSchema.optional() });
 export const updateTeamspaceInputSchema = teamspaceScopeSchema.extend({
   name: teamspaceSchema.shape.name.optional(),
   defaultAccess: teamspaceSchema.shape.defaultAccess.optional(),
@@ -83,6 +88,7 @@ export const sessionSummarySchema = z.strictObject({
 });
 
 export type Workspace = z.infer<typeof workspaceSchema>;
+export type KnowledgeBase = z.infer<typeof knowledgeBaseSchema>;
 export type Member = z.infer<typeof memberSchema>;
 export type MemberRole = z.infer<typeof memberRoleSchema>;
 export type Group = z.infer<typeof groupSchema>;

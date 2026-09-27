@@ -12,8 +12,8 @@ import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Warning, WarningCircle, XCircle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import type { MemberRole, TeamspaceAccess } from './client';
-import { isOrganizationDataError, organizationErrorTextOf } from './errors';
+import type { MemberRole, TeamspaceAccess } from '@/features/workspaces/organization-client';
+import { isOrganizationDataError, organizationErrorTextOf } from '@/features/workspaces/organization-errors';
 import { defaultAccessLabel, deriveListState, memberRoleLabels } from './view-model';
 import type { OrganizationListState } from './view-model';
 

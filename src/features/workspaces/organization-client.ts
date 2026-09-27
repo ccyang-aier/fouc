@@ -2,7 +2,7 @@
  * Organization REST client (O02).
  *
  * The organization service is a plain Hono REST surface under
- * `/api/knowledge/workspaces` — not the workspace-scoped tRPC transport of U01 —
+ * `/api/workspaces` — not the workspace-scoped tRPC transport of U01 —
  * so this module owns its own endpoint mapping while reusing the U01 endpoint
  * resolver (`getFoucApiOrigin`) and following the same error-normalization
  * pattern. Contract: mutations send `application/json` bodies; DELETE requests
@@ -18,9 +18,8 @@ import type {
   Workspace,
   WorkspaceMemberSummary,
 } from '@fouc/shared/knowledge/contracts';
-import { knowledgeApiPathPrefix } from '../data/endpoint';
 import { getFoucApiOrigin } from '@/lib/fouc-api-endpoint';
-import { OrganizationDataError, normalizeOrganizationError, organizationErrorFromBody } from './errors';
+import { OrganizationDataError, normalizeOrganizationError, organizationErrorFromBody } from './organization-errors';
 
 export type { Group, MemberRole, Teamspace, Workspace, WorkspaceMemberSummary };
 /** Backend row of `group_member`: identity only; names resolve against the member directory. */
@@ -38,7 +37,7 @@ export const memberRoles: readonly MemberRole[] = ['owner', 'admin', 'member', '
 export const workspaceKinds: readonly Workspace['kind'][] = ['personal', 'team'];
 export const teamspaceAccessValues: readonly NonNullable<TeamspaceAccess>[] = ['view', 'comment', 'edit', 'full'];
 
-const organizationPathPrefix = `${knowledgeApiPathPrefix}/workspaces`;
+const organizationPathPrefix = '/api/workspaces';
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -198,13 +197,21 @@ export function createOrganizationClient(deps: OrganizationClientDeps) {
       const member = requireUuid(userId, 'userId');
       return request<RemovedResult>({ method: 'DELETE', path: `${organizationPathPrefix}/${scope}/groups/${group}/members/${member}`, body: {} });
     },
-    listTeamspaces(workspaceId: string, options: OrganizationListOptions = {}) {
+    listKnowledgeBases(workspaceId: string, options: OrganizationListOptions = {}) {
       const scope = requireUuid(workspaceId, 'workspaceId');
-      return request<OrganizationPage<Teamspace>>({ method: 'GET', path: `${organizationPathPrefix}/${scope}/teamspaces`, query: listQuery(options), signal: options.signal });
+      return request<OrganizationPage<import('@fouc/shared/knowledge/contracts').KnowledgeBase>>({ method: 'GET', path: `${organizationPathPrefix}/${scope}/knowledge-bases`, query: listQuery(options), signal: options.signal });
     },
-    createTeamspace(workspaceId: string, input: { name: string; defaultAccess: TeamspaceAccess }) {
+    createKnowledgeBase(workspaceId: string, input: { name: string }) {
       const scope = requireUuid(workspaceId, 'workspaceId');
-      return request<Teamspace>({ method: 'POST', path: `${organizationPathPrefix}/${scope}/teamspaces`, body: { name: requireName(input.name), defaultAccess: requireAccess(input.defaultAccess) } });
+      return request<import('@fouc/shared/knowledge/contracts').KnowledgeBase>({ method: 'POST', path: `${organizationPathPrefix}/${scope}/knowledge-bases`, body: { name: requireName(input.name) } });
+    },
+    listTeamspaces(workspaceId: string, options: OrganizationListOptions & { knowledgeBaseId?: string } = {}) {
+      const scope = requireUuid(workspaceId, 'workspaceId');
+      return request<OrganizationPage<Teamspace>>({ method: 'GET', path: `${organizationPathPrefix}/${scope}/teamspaces`, query: { ...listQuery(options), knowledgeBaseId: options.knowledgeBaseId ? requireUuid(options.knowledgeBaseId, 'knowledgeBaseId') : undefined }, signal: options.signal });
+    },
+    createTeamspace(workspaceId: string, input: { knowledgeBaseId: string; name: string; defaultAccess: TeamspaceAccess }) {
+      const scope = requireUuid(workspaceId, 'workspaceId');
+      return request<Teamspace>({ method: 'POST', path: `${organizationPathPrefix}/${scope}/teamspaces`, body: { knowledgeBaseId: requireUuid(input.knowledgeBaseId, 'knowledgeBaseId'), name: requireName(input.name), defaultAccess: requireAccess(input.defaultAccess) } });
     },
     updateTeamspace(workspaceId: string, teamspaceId: string, patch: TeamspacePatch) {
       const scope = requireUuid(workspaceId, 'workspaceId');

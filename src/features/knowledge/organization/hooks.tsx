@@ -12,11 +12,11 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { organizationClient } from './client';
-import type { MemberRole, OrganizationPage, TeamspaceAccess, WorkspaceWithRole } from './client';
+import { organizationClient } from '@/features/workspaces/organization-client';
+import type { MemberRole, OrganizationPage, TeamspaceAccess, WorkspaceWithRole } from '@/features/workspaces/organization-client';
 import { applyOptimisticList, restoreOptimisticList } from './cache';
 import type { OptimisticSnapshot } from './cache';
-import { isRetryableOrganizationError } from './errors';
+import { isRetryableOrganizationError } from '@/features/workspaces/organization-errors';
 import { organizationQueryKeys } from './keys';
 import type { GroupRow, MemberRow, TeamspaceRow } from './list-mutations';
 import { applyMemberRole, applyTeamspacePatch, patchByKey, removeByKey, upsertByKey } from './list-mutations';
@@ -207,9 +207,9 @@ export function useCreateTeamspaceMutation(workspaceId: string) {
   const queryClient = useQueryClient();
   const key = organizationQueryKeys.teamspaces(workspaceId);
   return useMutation({
-    mutationFn: (input: { name: string; defaultAccess: TeamspaceAccess }) => organizationClient.createTeamspace(workspaceId, input),
-    onMutate: ({ name, defaultAccess }) => {
-      const optimistic: TeamspaceRow = { workspaceId, id: pendingId(), name: name.trim(), defaultAccess };
+    mutationFn: (input: { knowledgeBaseId: string; name: string; defaultAccess: TeamspaceAccess }) => organizationClient.createTeamspace(workspaceId, input),
+    onMutate: ({ knowledgeBaseId, name, defaultAccess }) => {
+      const optimistic: TeamspaceRow = { workspaceId, knowledgeBaseId, id: pendingId(), name: name.trim(), defaultAccess };
       return { tempId: optimistic.id, snapshot: applyOptimisticList<TeamspaceRow>(queryClient, key, (items) => [...items, optimistic]) };
     },
     onSuccess: (created, _input, context) => {

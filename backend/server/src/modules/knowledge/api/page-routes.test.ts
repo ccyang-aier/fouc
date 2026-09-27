@@ -9,7 +9,7 @@ afterAll(async () => { await fixture?.close(); }, 60_000);
 
 describe('page HTTP lifecycle', () => {
   test('owner can create independent pages in restricted folders while members cannot', async () => {
-    const root = await fixture.organization.createTeamspace(fixture.owner.identity, { workspaceId: fixture.alpha.id, name: 'Restricted documents', defaultAccess: 'comment' });
+    const root = await fixture.organization.createTeamspace(fixture.owner.identity, { knowledgeBaseId: fixture.alphaKnowledgeBase.id, workspaceId: fixture.alpha.id, name: 'Restricted documents', defaultAccess: 'comment' });
     const input = { workspaceId: fixture.alpha.id, id: randomUUID(), teamspaceId: root.id, parentId: null, kind: 'doc' as const, databaseId: null, title: 'Independent', icon: '📚', inheritsPermissions: false };
     const owner = fixture.apiClient({ cookie: fixture.owner.cookie, origin: fixture.server.webOrigin });
     await owner.page.create.mutate(input);
@@ -19,7 +19,7 @@ describe('page HTTP lifecycle', () => {
     expect((await reader.page.list.query({ workspaceId: fixture.alpha.id })).some((row) => row.id === input.id)).toBe(false);
   }, 30_000);
   test('create, list, rename, nest, recycle and restore with immediately usable ACLs', async () => {
-    const root = await fixture.organization.createTeamspace(fixture.owner.identity, { workspaceId: fixture.alpha.id, name: 'Documents', defaultAccess: 'edit' });
+    const root = await fixture.organization.createTeamspace(fixture.owner.identity, { knowledgeBaseId: fixture.alphaKnowledgeBase.id, workspaceId: fixture.alpha.id, name: 'Documents', defaultAccess: 'edit' });
     const client = fixture.apiClient({ cookie: fixture.owner.cookie, origin: fixture.server.webOrigin });
     const input = { workspaceId: fixture.alpha.id, id: randomUUID(), teamspaceId: root.id, parentId: null, kind: 'doc' as const, databaseId: null, title: 'First document' };
     const created = await client.page.create.mutate(input);
@@ -53,7 +53,7 @@ describe('page HTTP lifecycle', () => {
   }, 30_000);
 
   test('cross-workspace destinations and write operations without write scope fail closed', async () => {
-    const foreign = await fixture.organization.createTeamspace(fixture.foreign.identity, { workspaceId: fixture.beta.id, name: 'Private', defaultAccess: 'edit' });
+    const foreign = await fixture.organization.createTeamspace(fixture.foreign.identity, { knowledgeBaseId: fixture.betaKnowledgeBase.id, workspaceId: fixture.beta.id, name: 'Private', defaultAccess: 'edit' });
     const client = fixture.apiClient({ cookie: fixture.owner.cookie, origin: fixture.server.webOrigin });
     await expect(client.page.create.mutate({ workspaceId: fixture.alpha.id, id: randomUUID(), teamspaceId: foreign.id, parentId: null, kind: 'doc', databaseId: null, title: 'Denied' })).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
     const authorization = await fixture.createToken(fixture.owner, ['read']);

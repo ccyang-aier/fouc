@@ -120,7 +120,9 @@ describe('asset media derivation orchestration (W05)', () => {
       await db.insert(authUser).values({ id: tenant.userId, name: 'W05 Uploader', email: `${tenant.userId}@media.test` });
       await db.insert(tables.workspace).values({ id: tenant.workspaceId, name: 'W05 Workspace', kind: 'team' });
       await db.insert(tables.member).values({ workspaceId: tenant.workspaceId, userId: tenant.userId, role: 'owner' });
-      await db.insert(tables.teamspace).values({ workspaceId: tenant.workspaceId, id: tenant.workspaceId, name: '默认', defaultAccess: 'view' }).onConflictDoNothing();
+      const knowledgeBaseId = randomUUID();
+      await db.insert(tables.knowledgeBase).values({ workspaceId: tenant.workspaceId, id: knowledgeBaseId, name: 'Fixture library' });
+      await db.insert(tables.teamspace).values({ knowledgeBaseId, workspaceId: tenant.workspaceId, id: tenant.workspaceId, name: '默认', defaultAccess: 'view' }).onConflictDoNothing();
     } finally {
       client.release();
     }

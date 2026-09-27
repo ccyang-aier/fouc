@@ -84,6 +84,8 @@ export async function createPermissionsFixture(options: { mount?: PermissionsFix
   const owner = await actor('owner'), foreign = await actor('foreign'), reader = await actor('reader');
   const alpha = await organization.createWorkspace(owner.identity, { name: 'Alpha', kind: 'team' });
   const beta = await organization.createWorkspace(foreign.identity, { name: 'Beta', kind: 'personal' });
+  const alphaKnowledgeBase = await organization.createKnowledgeBase(owner.identity, { workspaceId: alpha.id, name: 'Alpha library' });
+  const betaKnowledgeBase = await organization.createKnowledgeBase(foreign.identity, { workspaceId: beta.id, name: 'Beta library' });
   const invitation = await organization.createInvitation(owner.identity, { workspaceId: alpha.id, email: reader.identity.email, role: 'member' });
   await organization.acceptInvitation(reader.identity, { workspaceId: alpha.id, invitationId: invitation.invitation.id, token: invitation.token });
 
@@ -108,7 +110,7 @@ export async function createPermissionsFixture(options: { mount?: PermissionsFix
   async function tree(options: { teamspace?: Teamspace; tenant?: 'alpha' | 'beta'; defaultAccess?: PermissionLevel | null; parents?: (number | null)[]; breaks?: number[]; recycled?: number[]; ids?: string[] } = {}) {
     const workspaceId = options.tenant === 'beta' ? beta.id : alpha.id;
     const author = options.tenant === 'beta' ? foreign : owner;
-    const space = options.teamspace ?? await organization.createTeamspace(author.identity, { workspaceId, name: 'Permission tree', defaultAccess: options.defaultAccess === undefined ? 'view' : options.defaultAccess });
+    const space = options.teamspace ?? await organization.createTeamspace(author.identity, { workspaceId, knowledgeBaseId: options.tenant === 'beta' ? betaKnowledgeBase.id : alphaKnowledgeBase.id, name: 'Permission tree', defaultAccess: options.defaultAccess === undefined ? 'view' : options.defaultAccess });
     const parents = options.parents ?? [null, 0, 1, 0];
     const pages: (PageScope & { parentId: string | null; path: string })[] = [];
     for (const [index, parentIndex] of parents.entries()) {
@@ -148,7 +150,7 @@ export async function createPermissionsFixture(options: { mount?: PermissionsFix
     });
   }
   function patchTeamspace(space: Teamspace, body: unknown, actor = owner) {
-    return fetch(`${server.origin}/api/knowledge/workspaces/${space.workspaceId}/teamspaces/${space.id}`, { method: 'PATCH', headers: { cookie: actor.cookie, origin: server.webOrigin, 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    return fetch(`${server.origin}/api/workspaces/${space.workspaceId}/teamspaces/${space.id}`, { method: 'PATCH', headers: { cookie: actor.cookie, origin: server.webOrigin, 'content-type': 'application/json' }, body: JSON.stringify(body) });
   }
   async function waitForWorkspaceLock(client: PoolClient) {
     await until(async () => {
@@ -156,7 +158,7 @@ export async function createPermissionsFixture(options: { mount?: PermissionsFix
       return (await client.query<{ waiting: boolean }>(`SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND usename=$1 AND wait_event_type='Lock' AND query LIKE '%workspace%for update%') AS waiting`, [server.database.role.name])).rows[0]!.waiting;
     });
   }
-  return { server, admin, pool, authenticator, owner, foreign, reader, alpha, beta, organization, errors,
+  return { server, admin, pool, authenticator, owner, foreign, reader, alpha, beta, alphaKnowledgeBase, betaKnowledgeBase, organization, errors,
     async createToken(actor: PermissionTestActor, scopes: KnowledgeTokenScope[], workspaceId = alpha.id) {
       const created = await tokens.create(new Request(`${server.origin}/test-token-setup`, { method: 'POST', headers: { origin: server.webOrigin, cookie: actor.cookie } }),
         { workspaceId, name: 'Collaboration test', scopes, expiresAt: null });

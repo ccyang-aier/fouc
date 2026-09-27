@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useSyncExternalStore, type ReactNode, type SetStateAction } from 'react';
 import { useIdentity } from '@/features/identity/identity-provider';
-import { organizationClient, type WorkspaceWithRole } from '@/features/knowledge/organization/client';
+import { organizationClient, type WorkspaceWithRole } from '@/features/workspaces/organization-client';
 import { createWorkspaceStore, type RailSpace } from './workspace-store';
 
 type ServerDirectory = { owner: string | null; revision: number; status: 'pending' | 'success' | 'error'; items: WorkspaceWithRole[]; error: unknown };
@@ -39,17 +39,23 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         items.push(...page.items);
         cursor = page.nextCursor;
       } while (cursor && !controller.signal.aborted);
-      if (!controller.signal.aborted) setDirectory({ owner, revision, status: 'success', items, error: null });
+      if (!controller.signal.aborted) {
+        store.rememberServerScopes(items.map((space) => space.id));
+        setDirectory({ owner, revision, status: 'success', items, error: null });
+      }
     })().catch((error: unknown) => {
       if (!controller.signal.aborted) setDirectory({ owner, revision, status: 'error', items: [], error });
     });
     return () => controller.abort();
-  }, [owner, revision]);
+  }, [owner, revision, store]);
   if (!selection) return null;
   // Never expose the previous account's directory, even before effect cleanup runs.
   const serverDirectory: ServerDirectory = owner && directory.owner === owner && directory.revision === revision
     ? directory : { owner, revision, status: 'pending', items: [], error: null };
-  const spaces: RailSpace[] = [...selection.localSpaces, ...serverDirectory.items.map((space) => ({ id: space.id, label: space.name, kind: 'server' as const, pinned: selection.serverPins[space.id] ?? true }))];
+  const serverIds = new Set(serverDirectory.items.map((space) => space.id));
+  // A known server scope cannot turn into an unprotected device workspace on
+  // sign-out or membership loss, including development fixtures with shared IDs.
+  const spaces: RailSpace[] = [...selection.localSpaces.filter((space) => !serverIds.has(space.id)).map((space) => space.id in selection.serverPins ? { ...space, kind: 'server' as const, pinned: selection.serverPins[space.id] } : space), ...serverDirectory.items.map((space) => ({ id: space.id, label: space.name, kind: 'server' as const, pinned: selection.serverPins[space.id] ?? true }))];
   const activeSpace = spaces.find((space) => space.id === selection.activeId)
     ?? { id: selection.activeId, label: '工作空间', kind: 'server' as const, pinned: true };
   return <WorkspaceContext.Provider value={{

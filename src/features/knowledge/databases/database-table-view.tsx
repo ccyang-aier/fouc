@@ -18,7 +18,7 @@ import { runKnowledgeCall } from '../data/trpc-client';
 import { knowledgeErrorCodeOf } from '../entry-state';
 import { CanvasError, CanvasForbidden, CanvasSpinner, CanvasState } from '../canvas-states';
 import { organizationQueryKeys } from '../organization/keys';
-import { organizationClient } from '../organization/client';
+import { organizationClient } from '@/features/workspaces/organization-client';
 import { knowledgeDatabasesApi } from './database-api';
 import { useDatabaseColumnsQuery, useDatabaseRowsQuery } from './database-queries';
 import { pruneQueryState, toggleSort, type SortKey } from './query-state';

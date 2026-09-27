@@ -10,7 +10,7 @@ import {
   untitledPageLabel,
 } from './tree-model';
 
-const teamspace = (id: string, name: string): Teamspace => ({ id, workspaceId: ws, name, defaultAccess: null });
+const teamspace = (id: string, name: string): Teamspace => ({ id, workspaceId: ws, knowledgeBaseId: 'base', name, defaultAccess: null });
 const ws = 'e2f7a4c1-0000-4000-8000-6b1f9a2c3d01';
 
 type PageSeed = Partial<Page> & Pick<Page, 'id' | 'parentId' | 'position' | 'title'>;

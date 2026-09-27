@@ -13,7 +13,7 @@
 import { useState } from 'react';
 import { FolderOpen } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import type { WorkspaceWithRole } from './client';
+import type { WorkspaceWithRole } from '@/features/workspaces/organization-client';
 import { GroupsSection } from './groups-section';
 import { OrganizationQueryProvider, useWorkspacesQuery } from './hooks';
 import { MembersSection } from './members-section';

@@ -11,8 +11,9 @@ import { CreateDocumentDialog, type DocumentCreation } from './create-document-d
 import { PageAppearanceDialog } from './page-appearance-dialog';
 import { useSidebarCollections } from './sidebar-collections';
 
-export function useDocumentNavigationActions({ workspaceId, userId, pages, teamspaces, canEdit, onOpenPage, notify }: {
+export function useDocumentNavigationActions({ workspaceId, knowledgeBaseId, userId, pages, teamspaces, canEdit, onOpenPage, notify }: {
   workspaceId: string;
+  knowledgeBaseId: string;
   userId: string;
   pages: readonly Page[];
   teamspaces: readonly Teamspace[];
@@ -22,7 +23,7 @@ export function useDocumentNavigationActions({ workspaceId, userId, pages, teams
 }) {
   const operations = usePageTreeOperations(workspaceId, { canEdit, notify });
   const createFolder = useCreateTeamspaceMutation(workspaceId);
-  const { collections, toggleStar, toggleDraft } = useSidebarCollections(userId, workspaceId);
+  const { collections, toggleStar, toggleDraft } = useSidebarCollections(userId, workspaceId, knowledgeBaseId);
   const [renaming, setRenaming] = useState<Pick<Page, 'id' | 'title'> | null>(null);
   const [title, setTitle] = useState('');
   const [creation, setCreation] = useState<{ teamspaceId?: string; parentId: string | null; resolve: (id: string | null) => void } | null>(null);
@@ -34,7 +35,7 @@ export function useDocumentNavigationActions({ workspaceId, userId, pages, teams
   function closeCreation() { creation?.resolve(null); setCreation(null); }
   async function submitCreation(input: DocumentCreation) {
     try {
-      const folderId = input.teamspaceId ?? (await createFolder.mutateAsync({ name: '文档', defaultAccess: 'edit' })).id;
+      const folderId = input.teamspaceId ?? (await createFolder.mutateAsync({ knowledgeBaseId, name: '文档', defaultAccess: 'edit' })).id;
       const id = await operations.createPage({ ...input, teamspaceId: folderId });
       if (id) { creation?.resolve(id); setCreation(null); onOpenPage(id); }
       return id;

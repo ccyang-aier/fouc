@@ -2,7 +2,9 @@
 
 `createOrganizationService(pool)` 使用普通应用角色，所有入口接收由服务端认证生成的 `FoucIdentity`。每次事务重新核对 sessionId/userId、过期时间及已验证邮箱，并读取当前成员角色；身份不是成员资格，HTTP body 中也没有操作者字段。
 
-`createOrganizationRoutes(auth, service)` 导出真实 Hono HTTP 集成，挂载在 `/`，路由限于 `/api/knowledge/workspaces`，须放在旧 bearer catch-all 之前。Z03 负责接入运行进程，本模块不启动第二个服务，也不停止 Web dev。写操作要求 JSON 与可信 Origin；只接受 Better Auth 会话，不接受 PAT。CORS/HttpOnly cookie 配置复用 A01，路由统一 `no-store`、`no-referrer`，内部异常只返回脱敏的可重试 503。
+`createOrganizationRoutes(auth, service)` 导出真实 Hono HTTP 集成，挂载在 `/`，路由使用公共工作空间路径 `/api/workspaces`。Z03 负责接入运行进程，本模块不启动第二个服务，也不停止 Web dev。写操作要求 JSON 与可信 Origin；只接受 Better Auth 会话，不接受 PAT。CORS/HttpOnly cookie 配置复用 A01，路由统一 `no-store`、`no-referrer`，内部异常只返回脱敏的可重试 503。
+
+工作空间是产品资源与成员关系边界，知识库是空间下的独立资源。`knowledgeBase` 具有独立 ID 和必填 workspaceId；Teamspace 是知识库下的文件夹，必填 knowledgeBaseId，组合外键与强制 RLS 防止跨空间关联。创建知识库与初始化文档文件夹在同一事务完成，不创建工作空间；创建其他文件夹必须指定当前空间内存在的知识库。
 
 ## 角色边界
 
@@ -29,12 +31,13 @@ O01 提供可复制的一次性邀请令牌，不自动发外网邀请邮件。�
 
 ## HTTP 路径
 
-相对于 `/api/knowledge/workspaces`：
+相对于 `/api/workspaces`：
 
 | 路径 | 方法 | 内容 |
 |---|---|---|
 | `/` | GET / POST | 自己的工作区列表 / 创建 |
 | `/:workspaceId` | GET / PATCH | 详情 / 重命名 |
+| `/:workspaceId/knowledge-bases` | GET / POST | 当前空间知识库目录 / 创建知识库 |
 | `/:workspaceId/teamspaces` | GET / POST | Teamspace 列表 / 创建 |
 | `/:workspaceId/teamspaces/:teamspaceId` | GET / PATCH / DELETE | Teamspace 详情 / 修改 / 删除空空间 |
 | `/:workspaceId/members` | GET | 成员目录 |
@@ -47,7 +50,7 @@ O01 提供可复制的一次性邀请令牌，不自动发外网邀请邮件。�
 | `/:workspaceId/invitations/:invitationId` | DELETE | 撤销 |
 | `/:workspaceId/invitations/:invitationId/accept` | POST | 邮箱绑定接受 |
 
-URL 参数不得在 body 中重复；DELETE 发送 `{}`。共享 Zod schema 拒绝多余字段，错误码包含 `FORBIDDEN`、`WORKSPACE_NOT_FOUND`、`LAST_OWNER`、`INVITATION_INVALID`、`CONFLICT`。请求中的 `userId` 只代表被管理对象，不代表操作者。
+URL 参数不得在 body 中重复；DELETE 发送 `{}`。文件夹列表可使用 knowledgeBaseId 精确过滤；未指定时供当前空间的组织管理列表使用。共享 Zod schema 拒绝多余字段，错误码包含 `FORBIDDEN`、`WORKSPACE_NOT_FOUND`、`KNOWLEDGE_BASE_NOT_FOUND`、`LAST_OWNER`、`INVITATION_INVALID`、`CONFLICT`。请求中的 `userId` 只代表被管理对象，不代表操作者。
 
 ## Teamspace 与根默认权限（O03）
 

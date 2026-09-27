@@ -88,7 +88,9 @@ describe('block embedding generation and model switch', () => {
       const db = drizzle(client, { schema: tables.knowledgeSchema });
       await db.insert(tables.workspace).values({ id: workspaceId, name: 'Embeddings Workspace', kind: 'team' });
       await db.insert(tables.member).values({ workspaceId, userId, role: 'owner' });
-      await db.insert(tables.teamspace).values({ workspaceId, id: teamspaceId, name: 'Space', defaultAccess: 'view' });
+      const knowledgeBaseId = randomUUID();
+      await db.insert(tables.knowledgeBase).values({ workspaceId, id: knowledgeBaseId, name: 'Fixture library' });
+      await db.insert(tables.teamspace).values({ knowledgeBaseId, workspaceId, id: teamspaceId, name: 'Space', defaultAccess: 'view' });
       await db.insert(tables.page).values({ workspaceId, id: pageId, teamspaceId, kind: 'doc', path: pageId.replaceAll('-', '_'), position: 'a0', title: '向量页', createdBy: userId });
       await client.query('COMMIT');
     } catch (error) {

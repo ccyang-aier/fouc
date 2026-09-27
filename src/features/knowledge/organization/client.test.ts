@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
-import { createOrganizationClient } from './client';
-import type { OrganizationClientDeps } from './client';
-import { isOrganizationDataError, organizationErrorText } from './errors';
+import { createOrganizationClient } from '@/features/workspaces/organization-client';
+import type { OrganizationClientDeps } from '@/features/workspaces/organization-client';
+import { isOrganizationDataError, organizationErrorText } from '@/features/workspaces/organization-errors';
 
 /**
  * Route-contract tests (O02): every client operation must hit exactly the
@@ -11,7 +11,7 @@ import { isOrganizationDataError, organizationErrorText } from './errors';
  */
 
 const ORIGIN = 'http://127.0.0.1:8710';
-const BASE = `${ORIGIN}/api/knowledge/workspaces`;
+const BASE = `${ORIGIN}/api/workspaces`;
 const ws = '10000000-0000-4000-8000-000000000001';
 const otherUser = '20000000-0000-4000-8000-000000000002';
 const groupId = '30000000-0000-4000-8000-000000000003';
@@ -132,8 +132,8 @@ describe('route contract', () => {
   test('teamspace creation sends defaultAccess including null; updates send only provided fields', async () => {
     const { calls, impl } = recordingFetch(201, { workspaceId: ws, id: teamspaceId, name: '文档', defaultAccess: null });
     const client = clientWith(impl as unknown as typeof fetch);
-    await client.createTeamspace(ws, { name: '文档', defaultAccess: null });
-    expect(lastCall(calls).body).toBe(JSON.stringify({ name: '文档', defaultAccess: null }));
+    await client.createTeamspace(ws, { knowledgeBaseId: groupId, name: '文档', defaultAccess: null });
+    expect(lastCall(calls).body).toBe(JSON.stringify({ knowledgeBaseId: groupId, name: '文档', defaultAccess: null }));
     await client.updateTeamspace(ws, teamspaceId, { defaultAccess: 'edit' });
     expect(lastCall(calls).body).toBe(JSON.stringify({ defaultAccess: 'edit' }));
     await client.updateTeamspace(ws, teamspaceId, { name: '文档库' });
@@ -148,7 +148,7 @@ describe('input validation fails before any request', () => {
     await expectInvalidInput(() => client.createWorkspace({ name: '   ', kind: 'team' }));
     await expectInvalidInput(() => client.createGroup(ws, { name: 'x'.repeat(121) }));
     await expectInvalidInput(() => client.renameGroup(ws, { id: groupId, name: '' }));
-    await expectInvalidInput(() => client.createTeamspace(ws, { name: '  ', defaultAccess: null }));
+    await expectInvalidInput(() => client.createTeamspace(ws, { knowledgeBaseId: groupId, name: '  ', defaultAccess: null }));
     expect(calls).toHaveLength(0);
   });
 
@@ -174,7 +174,7 @@ describe('input validation fails before any request', () => {
     const { calls, impl } = recordingFetch(200, {});
     const client = clientWith(impl as unknown as typeof fetch);
     await expectInvalidInput(() => client.updateTeamspace(ws, teamspaceId, {}));
-    await expectInvalidInput(() => client.createTeamspace(ws, { name: 'x', defaultAccess: 'root' as never }));
+    await expectInvalidInput(() => client.createTeamspace(ws, { knowledgeBaseId: groupId, name: 'x', defaultAccess: 'root' as never }));
     await expectInvalidInput(() => client.changeMemberRole(ws, { userId: otherUser, role: 'superuser' as never }));
     expect(calls).toHaveLength(0);
   });

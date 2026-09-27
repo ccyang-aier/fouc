@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import type { OutboxEvent, PagePlacement, PageScope, Principal, PropertyDefinition } from '@fouc/shared/knowledge/contracts';
-import { knowledgeSchema, member, page, teamspace, workspace } from '../../../platform/database/knowledge/schema';
+import { knowledgeBase, knowledgeSchema, member, page, teamspace, workspace } from '../../../platform/database/knowledge/schema';
 import { authUser } from '../../../platform/database/identity/schema';
 import { createTenantTestDatabase } from '../../../platform/database/knowledge/tenant-test-database';
 import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
@@ -130,9 +130,11 @@ beforeAll(async () => {
       { workspaceId: alpha.workspaceId, userId: alpha.viewer, role: 'member' },
       { workspaceId: beta.workspaceId, userId: beta.owner, role: 'owner' },
     ]);
+    const knowledgeBaseId = randomUUID();
+    await db.insert(knowledgeBase).values([ { workspaceId: alpha.workspaceId, id: knowledgeBaseId, name: 'Alpha library' }, { workspaceId: beta.workspaceId, id: knowledgeBaseId, name: 'Beta library' } ]);
     await db.insert(teamspace).values([
-      { workspaceId: alpha.workspaceId, id: alpha.main, name: 'Main', defaultAccess: 'view' },
-      { workspaceId: beta.workspaceId, id: beta.teamspace, name: 'Beta', defaultAccess: 'view' },
+      { knowledgeBaseId, workspaceId: alpha.workspaceId, id: alpha.main, name: 'Main', defaultAccess: 'view' },
+      { knowledgeBaseId, workspaceId: beta.workspaceId, id: beta.teamspace, name: 'Beta', defaultAccess: 'view' },
     ]);
     await client.query('COMMIT');
   } catch (error) {

@@ -6,11 +6,13 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { FilePlus, Folder, LockSimple, Plus } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { useIdentity } from '@/features/identity/identity-provider';
+import { CanvasState } from '../canvas-states';
 import { KnowledgeWorkbench } from '../knowledge-workbench';
 import { PageTreeSidebar } from '../navigation/page-tree-sidebar';
 import { IconButton } from '../dense-sidebar/icon-button';
 import { SidebarRow, SidebarSectionHeader, sidebarIconMap } from '../dense-sidebar/sidebar-navigation-primitives';
 import { SIDEBAR_MAIN_ITEMS } from '../dense-sidebar/sidebar-navigation';
+import { useKnowledgeBaseSelection } from '../use-knowledge-base-selection';
 import { useI18n } from '../dense-sidebar/use-i18n';
 import { createLocalLibraryStore, emptyLocalLibrary, newLocalDocument, type LocalDocument } from './local-library';
 import { LocalDocumentEditor } from './local-document-editor';
@@ -28,22 +30,25 @@ export function LocalKnowledgeResource({ workspaceId, ...props }: { workspaceId:
     catch { return { store: null, error: '无法读取本机文档，请检查浏览器存储设置。' }; }
   });
   if (!store) return <div role="status" className="flex h-full items-center justify-center text-sm text-[var(--muted)]">{error ?? '正在打开本机知识库…'}</div>;
-  return <LocalKnowledgeContent store={store} {...props} />;
+  return <LocalKnowledgeContent workspaceId={workspaceId} store={store} {...props} />;
 }
 
-function LocalKnowledgeContent({ store, onOpenSettings, onOpenWorkspace }: { store: Store; onOpenSettings: () => void; onOpenWorkspace: () => void }) {
+function LocalKnowledgeContent({ workspaceId, store, onOpenSettings, onOpenWorkspace }: { workspaceId: string; store: Store; onOpenSettings: () => void; onOpenWorkspace: () => void }) {
   const library = useSyncExternalStore(store.subscribe, store.getSnapshot, () => emptyLocalLibrary);
   const { session, openSignIn } = useIdentity();
   const { t } = useI18n();
-  const [baseId, setBaseId] = useState(library.bases[0]?.id ?? 'personal');
+  const [baseId, setBaseId] = useKnowledgeBaseSelection(`${workspaceId}:local`);
   const [view, setView] = useState<View>('all-documents');
+  const [folderId, setFolderId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   const [foldersOpen, setFoldersOpen] = useState(true);
-  const [creation, setCreation] = useState<'document' | 'base' | null>(null);
+  const [creation, setCreation] = useState<'document' | 'base' | 'folder' | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const base = library.bases.find((item) => item.id === baseId) ?? library.bases[0];
   const documents = library.documents.filter((item) => item.baseId === base?.id);
+  const folders = library.folders.filter((folder) => folder.knowledgeBaseId === base?.id);
+  const listed = documents.filter((item) => !item.deleted && (!folderId || item.folderId === folderId));
   const live = documents.filter((item) => !item.deleted);
   const visible = documents.filter((item) => view === 'trash' ? item.deleted : !item.deleted && (view === 'starred' ? item.starred : view === 'drafts' ? item.draft : true));
   const selected = live.find((item) => item.id === selectedId);
@@ -57,10 +62,10 @@ function LocalKnowledgeContent({ store, onOpenSettings, onOpenWorkspace }: { sto
   }
   const title = selected ? selected.title : SIDEBAR_MAIN_ITEMS.find((item) => item.id === view)?.labelKey;
   return <KnowledgeWorkbench
-    sidebar={<PageTreeSidebar collapsed={collapsed} onCollapse={() => setCollapsed(true)} workspaces={library.bases} activeWorkspaceId={base?.id ?? null} onSelectWorkspace={(id) => { setBaseId(id); setSelectedId(null); }} onCreateWorkspace={() => setCreation('base')} onOpenSettings={onOpenSettings} onOpenWorkspace={onOpenWorkspace} treeArea={<div className="min-h-0 flex-1 overflow-auto px-3 py-3">
-        <div className="space-y-1">{SIDEBAR_MAIN_ITEMS.map((item) => <SidebarRow key={item.id} icon={sidebarIconMap[item.icon]} iconTone={item.tone} label={t(item.labelKey)} count={counts[item.id as View]} selected={!selected && item.id === view} onClick={() => { setView(item.id as View); setSelectedId(null); }} />)}</div>
-        <div className="mt-5"><SidebarSectionHeader icon={Folder} label="文件夹" count={live.length} expanded={foldersOpen} onToggle={() => setFoldersOpen((value) => !value)} actions={<IconButton label="新建文档" onClick={() => setCreation('document')} className="rounded p-1 hover:bg-[var(--surface-hover)]"><Plus size={15} /></IconButton>} />
-          {foldersOpen ? <div className="mt-2 space-y-1">{live.map((item) => <SidebarRow key={item.id} icon={sidebarIconMap.file} label={item.title || '无标题文档'} selected={selectedId === item.id} onClick={() => setSelectedId(item.id)} />)}{!live.length ? <button type="button" onClick={() => setCreation('document')} className="w-full rounded-md p-2 text-left text-xs text-[var(--muted)] hover:bg-[var(--surface-hover)]">暂无文档 · 新建第一个文档</button> : null}</div> : null}
+    sidebar={<PageTreeSidebar collapsed={collapsed} onCollapse={() => setCollapsed(true)} knowledgeBases={library.bases} activeKnowledgeBaseId={base?.id ?? null} onSelectKnowledgeBase={(id) => { setBaseId(id); setSelectedId(null); setFolderId(null); setView('all-documents'); }} onCreateKnowledgeBase={() => setCreation('base')} onOpenSettings={onOpenSettings} onOpenWorkspace={onOpenWorkspace} treeArea={<div className="min-h-0 flex-1 overflow-auto px-3 py-3">
+        <div className="space-y-1">{SIDEBAR_MAIN_ITEMS.map((item) => <SidebarRow key={item.id} icon={sidebarIconMap[item.icon]} iconTone={item.tone} label={t(item.labelKey)} count={counts[item.id as View]} selected={!selected && item.id === view} onClick={() => { setView(item.id as View); setSelectedId(null); setFolderId(null); }} />)}</div>
+        <div className="mt-5"><SidebarSectionHeader icon={Folder} label="文件夹" count={folders.length} expanded={foldersOpen} onToggle={() => setFoldersOpen((value) => !value)} actions={<IconButton label="新建文件夹" onClick={() => setCreation(base ? 'folder' : 'base')} className="rounded p-1 hover:bg-[var(--surface-hover)]"><Plus size={15} /></IconButton>} />
+          {foldersOpen ? <div className="mt-2 space-y-1">{folders.map((folder) => <SidebarRow key={folder.id} icon={Folder} label={folder.name} count={live.filter((item) => item.folderId === folder.id).length} selected={folderId === folder.id && !selectedId} onClick={() => { setFolderId(folder.id); setSelectedId(null); setView('all-documents'); }} />)}{live.filter((item) => !item.folderId).map((item) => <SidebarRow key={item.id} icon={sidebarIconMap.file} label={item.title || '无标题文档'} selected={selectedId === item.id} onClick={() => setSelectedId(item.id)} />)}{!live.length ? <button type="button" onClick={() => setCreation('document')} className="w-full rounded-md p-2 text-left text-xs text-[var(--muted)] hover:bg-[var(--surface-hover)]">暂无文档 · 新建第一个文档</button> : null}</div> : null}
         </div>
       </div>} footer={<button type="button" onClick={session.status === 'authenticated' ? onOpenWorkspace : openSignIn} className="m-3 flex items-center gap-2 rounded-lg border border-[var(--line)] px-3 py-2.5 text-left text-xs text-[var(--muted-strong)] hover:bg-[var(--surface-hover)]"><LockSimple size={15} />{session.status === 'authenticated' ? '打开工作空间知识库' : '登录以开启团队协作'}</button>} />}
     onExpandSidebar={collapsed && (selected || view !== 'all-documents') ? () => setCollapsed(false) : undefined}
@@ -70,19 +75,19 @@ function LocalKnowledgeContent({ store, onOpenSettings, onOpenWorkspace }: { sto
         if (!write((current) => ({ ...current, bases: [...current.bases, { id, name }] }))) return;
         setBaseId(id); setSelectedId(null);
       } else {
-        const document = newLocalDocument(base?.id ?? 'personal', name);
+        const document = { ...newLocalDocument(base.id, name), folderId: folderId ?? folders[0]?.id };
         if (!write((current) => ({ ...current, documents: [...current.documents, document] }))) return;
         setSelectedId(document.id);
       }
       setCreation(null);
     }} />}
   >
-      {selected ? <LocalDocumentEditor key={selected.id} document={selected} onChange={(patch) => updateDocument(selected.id, patch)} onBack={() => setSelectedId(null)} /> : view === 'all-documents' ? <DocumentsPage
+      {!base ? <CanvasState title="还没有知识库" hint="在当前工作空间新建知识库，开始整理资料。" actions={<Button onClick={() => setCreation('base')}>新建知识库</Button>} /> : selected ? <LocalDocumentEditor key={selected.id} document={selected} onChange={(patch) => updateDocument(selected.id, patch)} onBack={() => setSelectedId(null)} /> : view === 'all-documents' ? <DocumentsPage key={`${base.id}:${folderId ?? 'all'}`}
         onExpandSidebar={collapsed ? () => setCollapsed(false) : undefined}
-        documents={live.map((item) => ({ id: item.id, title: item.title, updatedAt: item.updatedAt, creator: '我', source: '本机文档', status: '暂无状态', starred: item.starred }))}
-        folders={[]}
-        onOpen={setSelectedId} onOpenFolder={() => {}} onCreate={() => setCreation('document')}
-        upload={<LocalDocumentImport onImport={(items) => write((current) => ({ ...current, documents: [...current.documents, ...items.map((item) => ({ ...newLocalDocument(base?.id ?? 'personal', item.name), body: { type: 'doc', content: item.text.split(/\r?\n/).map((text) => ({ type: 'paragraph', ...(text ? { content: [{ type: 'text', text }] } : {}) })) } }))] }))} />}
+        documents={listed.map((item) => ({ id: item.id, title: item.title, updatedAt: item.updatedAt, creator: item.creator ?? '我', source: item.source ?? '本机文档', status: item.indexStatus ?? '暂无状态', starred: item.starred, folderId: item.folderId }))}
+        folders={folders.map((folder) => ({ id: folder.id, name: folder.name, count: live.filter((item) => item.folderId === folder.id).length, updatedAt: live.filter((item) => item.folderId === folder.id).map((item) => item.updatedAt).sort().at(-1) }))}
+        onOpen={setSelectedId} onOpenFolder={setFolderId} onCreate={() => setCreation('document')} onCreateFolder={() => setCreation('folder')}
+        upload={<LocalDocumentImport onImport={(items) => write((current) => ({ ...current, documents: [...current.documents, ...items.map((item) => ({ ...newLocalDocument(base.id, item.name), folderId: folderId ?? folders[0]?.id, body: { type: 'doc', content: item.text.split(/\r?\n/).map((text) => ({ type: 'paragraph', ...(text ? { content: [{ type: 'text', text }] } : {}) })) } }))] }))} />}
         renderMenu={(id) => <DropdownMenu><DropdownMenuTrigger asChild><button type="button" aria-label="文档操作" className="p-2 text-slate-500"><DotsThree size={17} weight="bold" /></button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onSelect={() => setSelectedId(id)}>打开 / 编辑</DropdownMenuItem><DropdownMenuItem onSelect={() => { const item = live.find((doc) => doc.id === id); if (item) updateDocument(id, { starred: !item.starred }); }}>切换星标</DropdownMenuItem><DropdownMenuItem onSelect={() => { const item = live.find((doc) => doc.id === id); if (item) updateDocument(id, { draft: !item.draft }); }}>切换草稿</DropdownMenuItem><DropdownMenuItem onSelect={() => updateDocument(id, { deleted: true })} className="text-red-600">移至回收站</DropdownMenuItem></DropdownMenuContent></DropdownMenu>}
       /> : <section className="h-full overflow-auto px-8 py-12 sm:px-14">
         <div className="mx-auto max-w-[860px]">
@@ -103,13 +108,13 @@ function LocalKnowledgeContent({ store, onOpenSettings, onOpenWorkspace }: { sto
   </KnowledgeWorkbench>;
 }
 
-function LocalCreationDialog({ kind, onClose, onCreate }: { kind: 'document' | 'base' | null; onClose: () => void; onCreate: (name: string) => void }) {
+function LocalCreationDialog({ kind, onClose, onCreate }: { kind: 'document' | 'base' | 'folder' | null; onClose: () => void; onCreate: (name: string) => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [name, setName] = useState('');
   useEffect(() => { if (kind) dialog.current?.showModal(); else dialog.current?.close(); }, [kind]);
-  return <dialog ref={dialog} aria-label={kind === 'base' ? '新建本机知识库' : '新建本机文档'} onCancel={onClose} onClose={onClose} className="m-auto w-[400px] max-w-[calc(100vw-32px)] rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-7 text-[var(--ink)] shadow-xl backdrop:bg-black/25 backdrop:backdrop-blur-sm">
+  return <dialog ref={dialog} aria-label={kind === 'base' ? '新建本机知识库' : kind === 'folder' ? '新建文件夹' : '新建本机文档'} onCancel={onClose} onClose={onClose} className="m-auto w-[400px] max-w-[calc(100vw-32px)] rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-7 text-[var(--ink)] shadow-xl backdrop:bg-black/25 backdrop:backdrop-blur-sm">
     <form onSubmit={(event) => { event.preventDefault(); if (name.trim()) { onCreate(name.trim()); setName(''); } }}>
-      <h2 className="mb-2 text-base font-semibold">{kind === 'base' ? '新建本机知识库' : '新建文档'}</h2>
+      <h2 className="mb-2 text-base font-semibold">{kind === 'base' ? '新建本机知识库' : kind === 'folder' ? '新建文件夹' : '新建文档'}</h2>
       <p className="mb-5 text-xs text-[var(--muted)]">仅保存在本机，无需设置团队权限。</p>
       <label className="block text-xs">名称<input autoFocus required value={name} onChange={(event) => setName(event.target.value)} className="mt-2 h-10 w-full rounded-lg border border-[var(--line)] bg-transparent px-3 outline-none focus:border-[var(--accent)]" /></label>
       <div className="mt-6 flex justify-end gap-2"><Button type="button" variant="ghost" onClick={() => { setName(''); onClose(); }}>取消</Button><Button type="submit" disabled={!name.trim()}>创建</Button></div>

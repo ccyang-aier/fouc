@@ -1,6 +1,6 @@
 'use client';
 
-import type { TeamspaceAccess } from './client';
+import type { TeamspaceAccess } from '@/features/workspaces/organization-client';
 import { defaultAccessOptions } from './view-model';
 import { PermissionSelect } from './permission-select';
 

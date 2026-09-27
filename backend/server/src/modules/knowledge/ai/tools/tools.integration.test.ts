@@ -363,7 +363,7 @@ describe('read-only knowledge agent tools', () => {
     }
 
     test('members filter, sort and paginate rows with product semantics', async () => {
-      const space = await fixture.organization.createTeamspace(fixture.owner.identity, { workspaceId: fixture.alpha.id, name: 'Agent 工具库', defaultAccess: 'view' });
+      const space = await fixture.organization.createTeamspace(fixture.owner.identity, { knowledgeBaseId: fixture.alphaKnowledgeBase.id, workspaceId: fixture.alpha.id, name: 'Agent 工具库', defaultAccess: 'view' });
       const databaseId = await seededDatabase(space);
 
       const owner = await toolContext();
@@ -385,7 +385,7 @@ describe('read-only knowledge agent tools', () => {
     }, 90_000);
 
     test('private databases, unknown ids, bad filters, sorts and cursors fail closed', async () => {
-      const privateSpace = await fixture.organization.createTeamspace(fixture.owner.identity, { workspaceId: fixture.alpha.id, name: '私有工具库', defaultAccess: null });
+      const privateSpace = await fixture.organization.createTeamspace(fixture.owner.identity, { knowledgeBaseId: fixture.alphaKnowledgeBase.id, workspaceId: fixture.alpha.id, name: '私有工具库', defaultAccess: null });
       const databaseId = await seededDatabase(privateSpace, { private: true });
       const reader = await toolContext(fixture.reader);
 
@@ -410,7 +410,7 @@ describe('read-only knowledge agent tools', () => {
 
   describe('list_pages tool', () => {
     test('lists the visible tree, subtrees and root level for members', async () => {
-      const space = await fixture.organization.createTeamspace(fixture.owner.identity, { workspaceId: fixture.alpha.id, name: '树空间', defaultAccess: 'view' });
+      const space = await fixture.organization.createTeamspace(fixture.owner.identity, { knowledgeBaseId: fixture.alphaKnowledgeBase.id, workspaceId: fixture.alpha.id, name: '树空间', defaultAccess: 'view' });
       const created = await tree({ teamspace: space, parents: [null, 0, 0, 1] });
       const [root, first, , grandchild] = created.pages;
       const owner = await toolContext();
@@ -430,7 +430,7 @@ describe('read-only knowledge agent tools', () => {
     }, 90_000);
 
     test('private subtrees stay invisible and recycled pages never appear', async () => {
-      const privateSpace = await fixture.organization.createTeamspace(fixture.owner.identity, { workspaceId: fixture.alpha.id, name: '私有树空间', defaultAccess: null });
+      const privateSpace = await fixture.organization.createTeamspace(fixture.owner.identity, { knowledgeBaseId: fixture.alphaKnowledgeBase.id, workspaceId: fixture.alpha.id, name: '私有树空间', defaultAccess: null });
       const privateTree = await tree({ teamspace: privateSpace, parents: [null, 0] });
       await grant(privateTree.pages[0]!, ownerPrincipal(), 'full');
 
@@ -442,7 +442,7 @@ describe('read-only knowledge agent tools', () => {
       const denied = await failure(async () => invokeKnowledgeAgentTool('list_pages', { parentId: privateTree.pages[0]!.pageId }, await toolContext(fixture.reader)));
       expect(denied.code).toBe('TARGET_NOT_ACCESSIBLE');
 
-      const space = await fixture.organization.createTeamspace(fixture.owner.identity, { workspaceId: fixture.alpha.id, name: '回收树空间', defaultAccess: 'view' });
+      const space = await fixture.organization.createTeamspace(fixture.owner.identity, { knowledgeBaseId: fixture.alphaKnowledgeBase.id, workspaceId: fixture.alpha.id, name: '回收树空间', defaultAccess: 'view' });
       const recycled = await tree({ teamspace: space, parents: [null, 0, 0], recycled: [1] });
       const [root, first, second] = recycled.pages;
       const owner = await toolContext();
@@ -455,10 +455,10 @@ describe('read-only knowledge agent tools', () => {
 
   describe('get_backlinks tool', () => {
     test('exposes member-visible sources with block anchors and filters the rest', async () => {
-      const sharedSpace = await fixture.organization.createTeamspace(fixture.owner.identity, { workspaceId: fixture.alpha.id, name: '链接目标空间', defaultAccess: 'view' });
+      const sharedSpace = await fixture.organization.createTeamspace(fixture.owner.identity, { knowledgeBaseId: fixture.alphaKnowledgeBase.id, workspaceId: fixture.alpha.id, name: '链接目标空间', defaultAccess: 'view' });
       const targetTree = await tree({ teamspace: sharedSpace, parents: [null] });
       const [target] = targetTree.pages;
-      const privateSpace = await fixture.organization.createTeamspace(fixture.owner.identity, { workspaceId: fixture.alpha.id, name: '链接来源空间', defaultAccess: null });
+      const privateSpace = await fixture.organization.createTeamspace(fixture.owner.identity, { knowledgeBaseId: fixture.alphaKnowledgeBase.id, workspaceId: fixture.alpha.id, name: '链接来源空间', defaultAccess: null });
       const sourceTree = await tree({ teamspace: privateSpace, parents: [null] });
       const [source] = sourceTree.pages;
       await grant(source, ownerPrincipal(), 'full');

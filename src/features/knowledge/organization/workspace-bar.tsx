@@ -10,8 +10,8 @@ import { useState } from 'react';
 import { CaretDown, Check, Plus, User, UsersThree } from '@phosphor-icons/react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import { validateOrganizationName } from './client';
-import type { WorkspaceWithRole } from './client';
+import { validateOrganizationName } from '@/features/workspaces/organization-client';
+import type { WorkspaceWithRole } from '@/features/workspaces/organization-client';
 import { useCreateWorkspaceMutation } from './hooks';
 import { DialogButton, KindBadge, ModalDialog, NameField, RoleBadge, mutationErrorText } from './ui';
 

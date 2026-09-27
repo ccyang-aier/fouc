@@ -20,7 +20,8 @@ import styles from '../library-canvas.module.css';
 
 const titles = { overview: '知识库', 'all-documents': '文档', starred: '星标', drafts: '草稿', trash: '回收站', projects: '文件夹', recent: '最近' };
 
-export function LibraryCanvas({ workspaceId, userId, name, view, access, teamspaces, onOpenPage, onSelectFolder, onCreateFolder, notify, folder, onExpandSidebar }: {
+export function LibraryCanvas({ knowledgeBaseId, workspaceId, userId, name, view, access, teamspaces, onOpenPage, onSelectFolder, onCreateFolder, notify, folder, onExpandSidebar }: {
+  knowledgeBaseId: string;
   workspaceId: string;
   userId: string;
   name: string;
@@ -35,17 +36,20 @@ export function LibraryCanvas({ workspaceId, userId, name, view, access, teamspa
   onExpandSidebar?: () => void;
 }) {
   const query = useKnowledgePagesQuery(workspaceId);
-  const pages = useMemo(() => query.data ?? [], [query.data]);
+  const pages = useMemo(() => {
+    const folderIds = new Set(teamspaces.map((folder) => folder.id));
+    return (query.data ?? []).filter((page) => folderIds.has(page.teamspaceId));
+  }, [query.data, teamspaces]);
   const documents = sidebarDocuments(buildNavigationSections(teamspaces, pages), pages);
-  const { collections } = useSidebarCollections(userId, workspaceId);
-  const actions = useDocumentNavigationActions({ workspaceId, userId, pages, teamspaces, canEdit: canEditTree(access), onOpenPage, notify });
+  const { collections } = useSidebarCollections(userId, workspaceId, knowledgeBaseId);
+  const actions = useDocumentNavigationActions({ knowledgeBaseId, workspaceId, userId, pages, teamspaces, canEdit: canEditTree(access), onOpenPage, notify });
   const listed = view === 'overview' && folder ? documents.filter((page) => page.teamspaceId === folder.id) : view === 'starred' ? documents.filter((page) => collections.starred.includes(page.id)) : view === 'drafts' ? documents.filter((page) => collections.drafts.includes(page.id)) : view === 'recent' ? documents.slice(0, 10) : documents;
   if (query.isPending) return <CanvasSpinner label="正在加载文档" />;
   if (query.isError) return <CanvasError title="文档加载失败" onRetry={() => void query.refetch()} />;
   const recycled = recycledRootPages(pages);
   if (view === 'all-documents') return <><DocumentsPage
     onExpandSidebar={onExpandSidebar}
-    documents={documents.map((page) => ({ id: page.id, title: pageDisplayTitle(page), updatedAt: page.updatedAt, creator: page.createdBy === userId ? '我' : '成员', source: '知识库', status: '暂无状态', folderId: page.teamspaceId, starred: collections.starred.includes(page.id) }))}
+    documents={documents.map((page) => ({ id: page.id, title: pageDisplayTitle(page), updatedAt: page.updatedAt, creator: typeof page.properties?.displayCreator === 'string' ? page.properties.displayCreator : page.createdBy === userId ? '我' : '成员', source: typeof page.properties?.fileSource === 'string' ? page.properties.fileSource : '知识库', status: typeof page.properties?.indexStatus === 'string' ? page.properties.indexStatus : '暂无状态', folderId: page.teamspaceId, starred: collections.starred.includes(page.id) }))}
     folders={teamspaces.map((space) => ({ id: space.id, name: space.name, count: documents.filter((page) => page.teamspaceId === space.id).length, updatedAt: documents.filter((page) => page.teamspaceId === space.id).map((page) => page.updatedAt).sort().at(-1) }))}
     onOpen={onOpenPage} onOpenFolder={onSelectFolder} onCreate={() => void actions.create()} onCreateFolder={onCreateFolder} canEdit={canEditTree(access)}
     upload={<><p className="mb-4 text-xs text-slate-500">上传至当前知识库的附件存储。文档内可通过附件功能引用；上传不会自动创建页面或完成索引。</p><AssetUploader workspaceId={workspaceId} /></>}

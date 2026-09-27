@@ -89,8 +89,9 @@ async function createSharingFixture() {
   }
   async function tree(options: { tenant?: 'alpha' | 'beta'; defaultAccess?: PermissionLevel | null; breaks?: number[] } = {}) {
     const tenant = options.tenant === 'beta' ? { workspaceId: beta.id, author: foreign } : { workspaceId: alpha.id, author: owner };
+    const base = await organization.createKnowledgeBase(tenant.author.identity, { workspaceId: tenant.workspaceId, name: 'Sharing library' });
     const space: Teamspace = await organization.createTeamspace(tenant.author.identity, {
-      workspaceId: tenant.workspaceId, name: `Share tree ${randomUUID().slice(0, 8)}`,
+      workspaceId: tenant.workspaceId, knowledgeBaseId: base.id, name: `Share tree ${randomUUID().slice(0, 8)}`,
       defaultAccess: options.defaultAccess === undefined ? null : options.defaultAccess,
     });
     const parents = [null, 0, 1, 0];

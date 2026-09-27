@@ -5,7 +5,7 @@ import type { ProjectIconId } from "./project-icons";
 export interface SidebarProjectNode { id: string; kind?: "project" | "document"; label?: string; labelKey?: string; projectIconId?: ProjectIconId; icon?: SidebarIconName; expandable?: boolean; defaultExpanded?: boolean; starred?: boolean; count?: number; children?: SidebarProjectNode[] }
 export interface SidebarRecentNote { id: string; label?: string; labelKey?: string; starred?: boolean }
 export const SIDEBAR_MAIN_ITEMS: SidebarNavigationItem[] = [
-  { id: "all-documents", labelKey: "sidebar.allDocuments", icon: "file", tone: "indigo" },
+  { id: "all-documents", labelKey: "sidebar.home", icon: "file", tone: "indigo" },
   { id: "starred", labelKey: "sidebar.starred", icon: "star", tone: "amber" },
   { id: "drafts", labelKey: "sidebar.drafts", icon: "draft", tone: "teal" },
   { id: "trash", labelKey: "sidebar.trash", icon: "trash", tone: "rose" },

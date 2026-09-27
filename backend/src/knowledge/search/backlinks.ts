@@ -16,15 +16,15 @@ import type { KnowledgeConsumer } from '../workers/types';
  */
 export const PAGE_BODY_FRAGMENT = 'default';
 
-/** 一条正文中的 wiki 链接（含块引用形态），按写入原文提取，不做任何解析。 */
+/** 一条正文中的出链（wiki 链接或块级 blockReference 节点），按写入原文提取，不做任何解析。 */
 export interface PageBodyReference {
-  /** 承载该链接的最近祖先块；无可用 blockId 的链接不产生反向引用。 */
+  /** 承载该链接的最近祖先块；无可用 blockId 的链接不产生反向引用（blockReference 用自身 blockId）。 */
   readonly srcBlockId: string;
-  /** `[[target]]` 的目标文本；显式 pageId 存在时仅作展示，不参与解析。 */
+  /** `[[target]]` 的目标文本；显式 pageId 存在时仅作展示，不参与解析（blockReference 恒为空）。 */
   readonly target: string;
   /** `[[target#^block]]` 的块锚点；非空时该链接是块引用。 */
   readonly targetBlockId: string | null;
-  /** 编辑器已解析并写入节点属性的稳定 pageId（wikiLink.attrs.pageId）。 */
+  /** 编辑器已解析并写入节点属性的稳定 pageId（wikiLink.attrs.pageId / blockReference.attrs.pageId）。 */
   readonly explicitPageId: string | null;
 }
 
@@ -34,10 +34,11 @@ export type ResolvedPageReference =
   | { status: 'dangling'; srcBlockId: string; target: string; targetBlockId: string | null };
 
 /**
- * 遍历 Y.Doc 正文碎片，收集全部 wikiLink。节点名与属性即 y-prosemirror 对
- * ProseMirror 文档的编码（块上的 blockId、wikiLink 上的 pageId/target/
- * targetBlockId），因此无需在 backend 引入编辑器依赖即可获得与权威文档一致的视图。
- * 属性取值全部先经契约校验：损坏的锚点降级为页面链接，损坏的 blockId 忽略。
+ * 遍历 Y.Doc 正文碎片，收集全部 wikiLink 与块级 blockReference 节点。节点名与属性即
+ * y-prosemirror 对 ProseMirror 文档的编码（块上的 blockId、wikiLink 上的 pageId/
+ * target/targetBlockId、blockReference 上的 pageId/targetBlockId），因此无需在
+ * backend 引入编辑器依赖即可获得与权威文档一致的视图。属性取值全部先经契约校验：
+ * 损坏的锚点降级为页面链接，损坏的 blockId 忽略。
  */
 export function extractPageBodyReferences(document: Y.Doc): PageBodyReference[] {
   const references: PageBodyReference[] = [];
@@ -52,6 +53,25 @@ export function extractPageBodyReferences(document: Y.Doc): PageBodyReference[] 
       references.push({
         srcBlockId: blockId,
         target: typeof attributes.target === 'string' ? attributes.target : '',
+        targetBlockId: typeof attributes.targetBlockId === 'string' && blockIdSchema.safeParse(attributes.targetBlockId).success
+          ? attributes.targetBlockId
+          : null,
+        explicitPageId: typeof attributes.pageId === 'string' && entityIdSchema.safeParse(attributes.pageId).success
+          ? attributes.pageId
+          : null,
+      });
+      return;
+    }
+    if (node.nodeName === 'blockReference') {
+      // 块级引用（atom，无子节点）：反向引用落在引用节点自身的 blockId 上；
+      // 自身 blockId 无效时不产生反向引用，也不回退最近祖先——引用节点就是块本身。
+      const ownBlockId = typeof attributes.blockId === 'string' && blockIdSchema.safeParse(attributes.blockId).success
+        ? attributes.blockId
+        : null;
+      if (ownBlockId === null) return;
+      references.push({
+        srcBlockId: ownBlockId,
+        target: '',
         targetBlockId: typeof attributes.targetBlockId === 'string' && blockIdSchema.safeParse(attributes.targetBlockId).success
           ? attributes.targetBlockId
           : null,

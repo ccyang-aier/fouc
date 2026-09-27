@@ -1215,10 +1215,23 @@
         "L01",
         "E03"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "src/features/knowledge/editor/blocks/block-reference.tsx",
       "acceptance": "按需加载来源 Y.Doc；更改实时反映；点击原文高亮；无权/删除/循环引用有明确状态并释放连接",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "bun test L02 前端 25 pass / 0 fail：引用计数缓存/失败重试、定位器嵌套命中、状态真值表、实时更新/删除翻转、循环短路不连接、点击载荷、flash 定位、open-target 一次性语义",
+          "command": "bun test src/features/knowledge/editor/blocks/block-reference.test.ts src/features/knowledge/editor/blocks/block-reference.instance.test.ts src/features/knowledge/editor/open-target.test.ts",
+          "verifiedAt": "2026-09-27",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-27-l02-block-reference.md"
+        },
+        {
+          "summary": "后端 backlinks 集成 8 pass / 0 fail（真实 Postgres）：blockReference 有效成行、悬链不落行、非法 blockId 跳过；backend bun run typecheck clean",
+          "command": "cd backend && bun test src/knowledge/search/backlinks.integration.test.ts && bun run typecheck",
+          "verifiedAt": "2026-09-27",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-27-l02-block-reference.md"
+        }
+      ]
     },
     {
       "id": "U05",

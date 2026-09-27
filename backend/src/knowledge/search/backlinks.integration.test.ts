@@ -33,7 +33,8 @@ describe('page backlink derivation', () => {
   });
 
   interface DraftLink { target?: string; targetBlockId?: string; pageId?: string }
-  interface DraftBlock { blockId?: string; nodeName?: string; text?: string; links?: readonly DraftLink[] }
+  interface DraftReference { pageId?: string; targetBlockId?: string }
+  interface DraftBlock { blockId?: string; nodeName?: string; text?: string; links?: readonly DraftLink[]; reference?: DraftReference }
 
   /** Encoded exactly the way y-prosemirror stores a body in the default fragment. */
   function encodeBody(blocks: readonly DraftBlock[]) {
@@ -41,6 +42,14 @@ describe('page backlink derivation', () => {
     const fragment = document.getXmlFragment(PAGE_BODY_FRAGMENT);
     document.transact(() => {
       for (const block of blocks) {
+        if (block.reference) {
+          const reference = new Y.XmlElement('blockReference');
+          if (block.blockId !== undefined) reference.setAttribute('blockId', block.blockId);
+          if (block.reference.pageId !== undefined) reference.setAttribute('pageId', block.reference.pageId);
+          if (block.reference.targetBlockId !== undefined) reference.setAttribute('targetBlockId', block.reference.targetBlockId);
+          fragment.insert(fragment.length, [reference]);
+          continue;
+        }
         const element = new Y.XmlElement(block.nodeName ?? 'paragraph');
         if (block.blockId !== undefined) element.setAttribute('blockId', block.blockId);
         let at = 0;
@@ -176,6 +185,70 @@ describe('page backlink derivation', () => {
       { srcBlockId: 'q1', target: 'C', targetBlockId: null, explicitPageId: null },
     ]);
   });
+
+  test('extractPageBodyReferences collects blockReference atoms under their own blockId', () => {
+    const document = new Y.Doc();
+    const fragment = document.getXmlFragment(PAGE_BODY_FRAGMENT);
+    const guideId = '00000000-0000-4000-8000-000000000009';
+    const good = new Y.XmlElement('blockReference');
+    good.setAttribute('blockId', 'refA');
+    good.setAttribute('pageId', guideId);
+    good.setAttribute('targetBlockId', 'k3f9tgt0');
+    const brokenAnchor = new Y.XmlElement('blockReference');
+    brokenAnchor.setAttribute('blockId', 'refB');
+    brokenAnchor.setAttribute('pageId', guideId);
+    brokenAnchor.setAttribute('targetBlockId', 'bad#anchor');
+    const bare = new Y.XmlElement('blockReference');
+    bare.setAttribute('blockId', 'refC');
+    const anonymous = new Y.XmlElement('blockReference');
+    anonymous.setAttribute('pageId', guideId);
+    const carrier = new Y.XmlElement('callout');
+    carrier.setAttribute('blockId', 'carrier1');
+    const nestedNoOwnId = new Y.XmlElement('blockReference');
+    nestedNoOwnId.setAttribute('pageId', guideId);
+    document.transact(() => {
+      carrier.insert(0, [nestedNoOwnId]);
+      fragment.insert(0, [anonymous, bare, brokenAnchor, good, carrier]);
+    });
+    expect(extractPageBodyReferences(document)).toEqual([
+      { srcBlockId: 'refC', target: '', targetBlockId: null, explicitPageId: null },
+      { srcBlockId: 'refB', target: '', targetBlockId: null, explicitPageId: guideId },
+      { srcBlockId: 'refA', target: '', targetBlockId: 'k3f9tgt0', explicitPageId: guideId },
+    ]);
+  });
+
+  test('block reference nodes write backlink rows keyed by their own blockId', async () => {
+    const { pages } = await fixture.tree({ parents: [null, 0] });
+    const [index, guide] = pages;
+    // Titles stay unique across the shared alpha workspace: other suites resolve by title too.
+    await retitle(index, 'Ref Index');
+    await retitle(guide, 'Ref Guide');
+
+    await writeBody(index, [
+      // 解析成功：srcBlockId 是引用节点自身的 blockId，dstBlockId 是目标块锚点。
+      { blockId: 'refA', reference: { pageId: guide.pageId, targetBlockId: 'k3f9tgt0' } },
+      // 指向不存在的页面：悬链，不落 backlink 行。
+      { blockId: 'refB', reference: { pageId: '00000000-0000-4000-8000-00000000dead' } },
+      // 未配置目标页（pageId 为空）：悬链，不落行。
+      { blockId: 'refC', reference: {} },
+      // 引用节点自身 blockId 无效：忽略，不回退最近祖先。
+      { blockId: 'bad#id', reference: { pageId: guide.pageId } },
+    ]);
+    await process();
+
+    expect(await sourceRows(index)).toEqual([
+      { srcPageId: index.pageId, srcBlockId: 'refA', dstPageId: guide.pageId, dstBlockId: 'k3f9tgt0' },
+    ]);
+    expect(await outgoing(index)).toEqual([
+      { status: 'linked', srcBlockId: 'refA', dstPageId: guide.pageId, dstBlockId: 'k3f9tgt0' },
+      { status: 'dangling', srcBlockId: 'refB', target: '', targetBlockId: null },
+      { status: 'dangling', srcBlockId: 'refC', target: '', targetBlockId: null },
+    ]);
+    const owner = await subjects(fixture.owner.identity.userId);
+    expect(await incoming(guide, owner)).toEqual([
+      { srcPageId: index.pageId, srcTitle: 'Ref Index', srcBlockId: 'refA', dstBlockId: 'k3f9tgt0' },
+    ]);
+  }, 30_000);
 
   test('explicit ids, unique titles and block anchors resolve; the rest dangles', async () => {
     const { pages } = await fixture.tree({ parents: [null, 0, 0, 0] });

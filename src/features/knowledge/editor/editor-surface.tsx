@@ -15,13 +15,19 @@ import { useEffect, useMemo, useState } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import type { PageScope, PermissionLevel } from '@fouc/shared/knowledge/contracts';
 import { createBlockIdExtension, createKnowledgeExtensions } from '@fouc/shared/knowledge/schema';
-import type * as Y from 'yjs';
 import { ClockCounterClockwise } from '@phosphor-icons/react';
+import type { KnowledgeAuthUser } from '../auth/auth-api';
 import type { PageUndo } from '../collaboration/page-undo';
+import type { PageDocumentSession } from '../collaboration/page-provider';
+import { AwarenessMembers, createAwarenessExtension } from './awareness';
+import { applyBlockNodeViews } from './blocks';
+import { applyBlockReferenceView } from './blocks/block-reference';
+import { createSlashPasteExtensions, SlashMenuLayer } from './commands';
 import { EditorToolbar } from './components/editor-toolbar';
 import { ReadonlyBanner } from './components/readonly-banner';
 import { SyncIndicator } from './components/sync-indicator';
 import type { PageEditorViewModel } from './editor-state';
+import { revealBlockInEditor, subscribeOpenPageTarget, takeStagedBlockHighlight } from './open-target';
 import { pageCollaborationExtension } from './page-collaboration';
 import { createPageReviewExtension, PageReviewRail } from './review-integration';
 import { createBlockEditingExtensions } from './extensions';
@@ -68,32 +74,56 @@ const documentClasses = [
 
 export function PageEditorSurface({
   scope,
-  document,
+  session,
+  origin,
+  user,
   pageUndo,
   level,
   view,
 }: {
   scope: PageScope;
-  /** The live B04 page document — the only body authority. */
-  document: Y.Doc;
+  /** The live B04 page session — its document is the only body authority. */
+  session: PageDocumentSession;
+  /** Resolved knowledge API origin (block-reference source connections). */
+  origin: string | null;
+  /** The signed-in human the awareness publishes as (B07). */
+  user: KnowledgeAuthUser | null;
   pageUndo: PageUndo;
   level: PermissionLevel;
   view: PageEditorViewModel;
 }) {
-  // One extension set per page session: shared registry (E01), blockId
-  // integrity (E02), the y-prosemirror binding (B04/B08), suggestion marks
-  // (S01) and markdown/keyboard block editing (E04).
-  const extensions = useMemo(
-    () => [
-      ...createKnowledgeExtensions(),
+  const document = session.document;
+  // One extension set per page session: shared registry (E01) with the
+  // block/callout/table and block-reference NodeViews layered on (E05/L02),
+  // blockId integrity (E02), the y-prosemirror binding (B04/B08), suggestion
+  // marks (S01), comments (N02), markdown/keyboard block editing (E04), the
+  // slash menu + paste pipeline (E06) and presence cursors (B07).
+  const extensions = useMemo(() => {
+    const registry = applyBlockReferenceView(applyBlockNodeViews(createKnowledgeExtensions()), {
+      scope,
+      origin: origin ?? '',
+    });
+    return [
+      ...registry,
       createBlockIdExtension({ pageId: scope.pageId }),
       pageCollaborationExtension(document, pageUndo),
       createPageReviewExtension(),
       createCommentsEditorExtension(),
       ...createBlockEditingExtensions(),
-    ],
-    [scope.pageId, document, pageUndo],
-  );
+      ...createSlashPasteExtensions(),
+      ...(user
+        ? [createAwarenessExtension({
+          getAwareness: () => session.awareness,
+          subscribeAwareness: session.subscribe,
+          identity: { userId: user.id, name: user.name },
+        })]
+        : []),
+    ];
+  // The scope object itself is re-created by the shell on every render, so
+  // only its identity-bearing fields belong here — otherwise the inline
+  // object would rebuild (and remount) the editor on every parent render.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scope.pageId, scope.workspaceId, document, pageUndo, origin, user, session]);
 
   const editor = useEditor(
     {
@@ -112,6 +142,18 @@ export function PageEditorSurface({
     editor?.setEditable(view.editable);
   }, [editor, view.editable]);
 
+  // L02: a block-reference click that lands on this page reveals the block —
+  // a pre-mount navigation consumes its staged highlight, later targets ride
+  // the open-target channel (both selection-free).
+  useEffect(() => {
+    if (!editor) return undefined;
+    const staged = takeStagedBlockHighlight(scope.pageId);
+    if (staged) revealBlockInEditor(editor.view, staged.blockId);
+    return subscribeOpenPageTarget((target) => {
+      if (target.pageId === scope.pageId && target.blockId) revealBlockInEditor(editor.view, target.blockId);
+    });
+  }, [editor, scope.pageId]);
+
   const [historyOpen, setHistoryOpen] = useState(false);
 
   return (
@@ -119,6 +161,7 @@ export function PageEditorSurface({
       <header className="flex h-[42px] shrink-0 items-center justify-between gap-4 border-b border-[var(--line)] px-4">
         <EditorToolbar editor={editor} pageUndo={pageUndo} editable={view.editable} />
         <div className="flex items-center gap-3">
+          <AwarenessMembers awareness={session.awareness} />
           <button
             type="button"
             onClick={() => setHistoryOpen((open) => !open)}
@@ -152,6 +195,7 @@ export function PageEditorSurface({
           </aside>
         )}
       </PageCommentsLayer>
+      <SlashMenuLayer editor={editor} />
     </section>
   );
 }

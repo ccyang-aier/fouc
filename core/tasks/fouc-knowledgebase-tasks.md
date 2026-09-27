@@ -2,7 +2,7 @@
 
 > 本表由 `knowledgebase-tasks.json` 生成。修改任务和证据后运行 `node scripts/verify-knowledge-tasks.mjs --write`。
 
-设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 76 项。
+设计依据：[原始设计文档](../../docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。共 99 项，已验收 80 项。
 
 ## 实施约束
 
@@ -25,16 +25,14 @@
 
 ## 可开始的任务
 
-- B07 Awareness 人/Agent 光标与在线成员
-- E05 表格、分栏和 Callout NodeView
-- E06 Slash 菜单与 Markdown/HTML 粘贴
-- L02 实时只读块引用 NodeView
 - U07 数据库看板视图
 - U09 图片/音频/视频/文件/嵌入 NodeView
+- J05 划词改写/翻译/总结与 /ai 续写
 - J06 侧栏 Agent 对话与可点击引用
 - J07 持久 AI 长任务与审批恢复
 - K03 MCP 外部 Agent 一致性验收
 - Z01 旧知识库实现与开发数据清理
+- Z04 协作/离线/恢复端到端验收
 - U11 数据库日历视图
 
 ## 拓扑排序任务表
@@ -82,12 +80,12 @@
 | [x] 已验收 | B05 | 桌面 SQLite 离线 Yjs 副本<br>backend/src/store/knowledge-documents.ts; src/features/knowledge/collaboration/ | §3.1 / §5.1 / §10 | B02 | sidecar 持久化 Yjs 更新/状态；重启/离线/重连收敛；Rust 不写知识库业务；与服务端正文权威清晰 | [store 字节级 round-trip/重启存活/隔离 + 真实监听器离线编辑跨重启恢复与云端状态 CRDT 合并不覆盖;桌面装配同 Hocuspocus 内核、SQLite 后端](../../core/tasks/knowledgebase-acceptance/2026-09-26-desktop-documents.md) |
 | [x] 已验收 | B06 | 工作区无状态事件与缓存失效<br>backend/src/knowledge/collaboration/events.ts; src/features/knowledge/collaboration/ | §5.3 | B02, U01 | ws:workspaceId 频道校验成员身份；树/评论/通知/行事件只失效相关 Query；重连补拉 | [后端 5 项(成员 403/队列投递/隔离/双通道并存)+前端 4 项(9 事件映射/URL/重连补拉/容错)全过;B01/B02 10 项回归绿;频道无状态,重连失效全命名空间](../../core/tasks/knowledgebase-acceptance/2026-09-26-workspace-events.md) |
 | [x] 已验收 | E03 | Tiptap 编辑器 React 容器与状态<br>src/features/knowledge/editor/ | §4.1 / §10 | E02, B04, U02 | 替换 textarea，Y.Doc 驱动唯一正文；Client Boundary 懒加载；加载/离线/同步/只读/错误闭环；无 SSR 水合异常 | [editor 20 项/122 断言+全套回归:shared PM schema 逐字节一致、Y.Doc 唯一正文(刷新经 y-indexeddb 回归实测)、Client Boundary 懒加载+首屏隔离测试钉死、六态指示+只读/无权/鉴权横幅闭环、无水合异常;修复 E02 修复事务逃逸撤销栈的集成缺陷;浏览器 7 场景核验](../../core/tasks/knowledgebase-acceptance/2026-09-26-editor.md) |
-| [ ] 待实施 | B07 | Awareness 人/Agent 光标与在线成员<br>src/features/knowledge/collaboration/awareness.ts; src/features/knowledge/editor/ | §5.5 / §9.3 | B04, E03 | user/color/cursor/selection/kind 完整；两客户端能见光标、AI 正在编辑状态；断开自动移除 | — |
+| [x] 已验收 | B07 | Awareness 人/Agent 光标与在线成员<br>src/features/knowledge/collaboration/awareness.ts; src/features/knowledge/editor/ | §5.5 / §9.3 | B04, E03 | user/color/cursor/selection/kind 完整；两客户端能见光标、AI 正在编辑状态；断开自动移除 | [bun test B07 套件 16 pass / 0 fail：契约形态 schema 校验、双 Editor 光标/选区互见、Agent blockId 光标兼容渲染与正在编辑脉冲、状态移除与销毁清理、惰性挂接、page-provider 生命周期](../../core/tasks/knowledgebase-acceptance/2026-09-27-b07-awareness-cursors.md)<br>[整仓 bunx tsc --noEmit --incremental false 0 错误；B07 文件 eslint clean](../../core/tasks/knowledgebase-acceptance/2026-09-27-b07-awareness-cursors.md) |
 | [x] 已验收 | B00 | 共享 CRDT 事务来源与撤销内核<br>shared/src/knowledge/collaboration/ | §5.4 / §9.3 | E02 | 定义 human/agent/mcp/restore 来源；Yjs UndoManager 按来源和任务隔离，跨文档更新收敛；不依赖 React 或网络 provider | [本地/任务来源、XML 人工内容保护与副本收敛 11 项测试通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
 | [x] 已验收 | B08 | 本地撤销与 Agent 事务隔离<br>shared/src/knowledge/schema/; src/features/knowledge/collaboration/ | §5.4 / §9.3 | B04, B00 | 本地 UndoManager 不撤其他人/Agent；任务 origin 独立，AI 整个任务可单独撤销 | [28 项 collaboration 测试(21 回归+7 新增)+B00 内核回归:本地栈不撤他人/Agent、任务 origin 整体一次撤销/恢复、destroy 清理、离线撤销可用;撤销事务正确进 cloudPending](../../core/tasks/knowledgebase-acceptance/2026-09-26-undo-isolation.md) |
 | [x] 已验收 | E04 | 基础块快捷输入与键盘编辑<br>src/features/knowledge/editor/ | §4.1 / §4.4 | E03 | 段落、标题、列表、待办、引用、代码、公式可鼠标/键盘插入编辑；输入规则、格式菜单可访问 | [编辑器全树 104 项测试/601 断言(E04 48 项):7 类输入规则、Enter/Backspace/Tab/块移动键盘语义、IME 合成守卫、格式命令 toggle 与菜单模型;装配进 editor-surface 与工具栏;scratch 草稿清零](../../core/tasks/knowledgebase-acceptance/2026-09-27-e04-block-input.md) |
-| [ ] 待实施 | E05 | 表格、分栏和 Callout NodeView<br>src/features/knowledge/editor/blocks/ | §4.1 / §4.2 | E03 | 嵌套编辑/增删/拖拽/键盘不损坏 blockId；表格编辑、分栏自适应、callout 风格精致；共享 schema 一致 | — |
-| [ ] 待实施 | E06 | Slash 菜单与 Markdown/HTML 粘贴<br>src/features/knowledge/editor/commands/ | §4.2 / §4.4 / §9.4 | E04, M01 | 菜单由注册表生成、检索、方向键/回车/Esc；Markdown/HTML/纯文本识别；不执行不安全 HTML | — |
+| [x] 已验收 | E05 | 表格、分栏和 Callout NodeView<br>src/features/knowledge/editor/blocks/ | §4.1 / §4.2 | E03 | 嵌套编辑/增删/拖拽/键盘不损坏 blockId；表格编辑、分栏自适应、callout 风格精致；共享 schema 一致 | [bun test blocks 套件 31 pass / 0 fail（表格命令 23 + 实例 8，覆盖 blockId 完整性/嵌套编辑/拖拽粘贴副本）](../../core/tasks/knowledgebase-acceptance/2026-09-27-e05-block-node-views.md)<br>[整仓 bunx tsc --noEmit --incremental false 0 错误；blocks 目录 eslint clean](../../core/tasks/knowledgebase-acceptance/2026-09-27-e05-block-node-views.md) |
+| [x] 已验收 | E06 | Slash 菜单与 Markdown/HTML 粘贴<br>src/features/knowledge/editor/commands/ | §4.2 / §4.4 / §9.4 | E04, M01 | 菜单由注册表生成、检索、方向键/回车/Esc；Markdown/HTML/纯文本识别；不执行不安全 HTML | [bun test commands 套件 48 pass / 0 fail：注册表菜单对齐、每条目真实插入、过滤排序、方向键/回车/Esc、Markdown/HTML/纯文本识别、危险 HTML 中和、内部粘贴不回归](../../core/tasks/knowledgebase-acceptance/2026-09-27-e06-slash-paste.md)<br>[整仓 bunx tsc --noEmit --incremental false 0 错误；commands 目录 eslint clean](../../core/tasks/knowledgebase-acceptance/2026-09-27-e06-slash-paste.md) |
 | [x] 已验收 | S01 | 建议 insert/delete marks 与事务转换<br>shared/src/knowledge/schema/suggestions/ | §4.5 | E02 | 插入带 mark、删除保留内容；接受/拒绝按 suggestionId 原子执行；范围/嵌套/替换/撤销正确 | [建议编辑/嵌套块/原子审阅与真实 Yjs 往返 11 项测试通过](../../core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md) |
 | [x] 已验收 | S02 | 建议模式 UI 与批量审阅<br>src/features/knowledge/editor/review/ | §4.5 / §9.3 | S01, E03, B08 | 人/AI 同一路径；作者/时间/来源可见；逐条/全部接受拒绝；只读不允许修改；长文滚动定位 | [36 项测试/137 断言 + 真实双 peer 运行时 13 项:建议标记(绿插/红删/块框/作者徽标)、审阅侧栏单条与全部接受拒绝(S01 单事务=单 undo 步)、定位滚动、自动开栏/Esc、只读禁用矩阵、远程建议实时入列;key 撞名回归修复](../../core/tasks/knowledgebase-acceptance/2026-09-27-s02-review-ui.md) |
 | [x] 已验收 | V01 | 自动、结束会话与手动检查点<br>backend/src/knowledge/collaboration/checkpoints.ts | §5.2 | B02, Q01 | 超过 10 分钟且有编辑、结束会话、命名版本按策略写；无变化不重复；作者集合正确；GC 保持开启 | [6 项真实监听器测试:自动检查点挂存储钩空闲零写、会话结束 state-vector 比对、手动命名幂等(label 附既有快照)、双用户 authors 聚合、GC 后快照不含已删内容;另发现并记录 B02 lastContext 空上下文缺陷](../../core/tasks/knowledgebase-acceptance/2026-09-26-checkpoints.md) |
@@ -97,7 +95,7 @@
 | [x] 已验收 | N02 | CRDT 评论锚点与侧栏<br>src/features/knowledge/editor/comments/ | §4.6 / §5.3 | N01, E03, B06 | 选区 comment mark 绑定 threadId；协作插删锚点不漂；孤立锚点状态可解释；线程/正文跳转 | [前端 30 项(双编辑器 CRDT 锚点收敛/删除传播/五态装饰/分组侧栏/只读矩阵)+后端 7+4 项(真实 RLS+HTTP 边界 ACL fail-closed/幂等创建);comment tRPC 过程挂载后 8711 实活 401 鉴权可达;实时链路 comment.changed→B06→失效验证](../../core/tasks/knowledgebase-acceptance/2026-09-27-n02-comments-ui.md) |
 | [x] 已验收 | N03 | 通知收件箱<br>src/features/knowledge/notifications/; backend/src/knowledge/notifications/ | §4.6 / §5.3 | N01, B06, U02 | 评论通知收件人权限过滤、已读操作、实时更新与跳转；无重复跨租户消息 | [后端 11 项(收件箱权限双重过滤 fail closed、已读幂等、keyset 分页、跨租户隔离、HTTP 映射、outbox→hub 精确一次实时投递)+前端 16 项(传输契约/桥/失效键/视图模型);runtime 已接线通知路由](../../core/tasks/knowledgebase-acceptance/2026-09-27-n03-notifications.md) |
 | [x] 已验收 | L01 | 页面/块链接与反向引用派生<br>backend/src/knowledge/search/backlinks.ts | §4.6 / §7.1 | M02, B02, T01 | 页面链接、blockReference 可解析稳定 ID；正文变化更新 backlink；无权限来源不泄漏 | [6 项真实队列/RLS 测试:显式 pageId 优先/标题精确/块锚解析、悬链零落表零泄漏、doc.changed 消费幂等(FOR UPDATE 串行)、入链经 P03 谓词过滤、损坏 doc_state 留队重试不阻塞](../../core/tasks/knowledgebase-acceptance/2026-09-26-backlinks.md) |
-| [ ] 待实施 | L02 | 实时只读块引用 NodeView<br>src/features/knowledge/editor/blocks/block-reference.tsx | §4.6 | L01, E03 | 按需加载来源 Y.Doc；更改实时反映；点击原文高亮；无权/删除/循环引用有明确状态并释放连接 | — |
+| [x] 已验收 | L02 | 实时只读块引用 NodeView<br>src/features/knowledge/editor/blocks/block-reference.tsx | §4.6 | L01, E03 | 按需加载来源 Y.Doc；更改实时反映；点击原文高亮；无权/删除/循环引用有明确状态并释放连接 | [bun test L02 前端 25 pass / 0 fail：引用计数缓存/失败重试、定位器嵌套命中、状态真值表、实时更新/删除翻转、循环短路不连接、点击载荷、flash 定位、open-target 一次性语义](../../core/tasks/knowledgebase-acceptance/2026-09-27-l02-block-reference.md)<br>[后端 backlinks 集成 8 pass / 0 fail（真实 Postgres）：blockReference 有效成行、悬链不落行、非法 blockId 跳过；backend bun run typecheck clean](../../core/tasks/knowledgebase-acceptance/2026-09-27-l02-block-reference.md) |
 | [x] 已验收 | P04 | 分享链接权限与失效<br>backend/src/knowledge/sharing/ | §6.1 / §9.5 | P03 | link 主体令牌哈希、到期/撤销/级别限制；页面及附件同权；访问不能获得 workspace 全部成员主体；授权接口有集成证据 | [12 项测试(140 断言,真实会话/队列/RLS):令牌只存 SHA-256+恒时比较、到期/撤销/降级即时 fail closed、link 主体恰为 {link:id} 不扩 workspace、越权创建/跨租户/重建窗口全拒](../../core/tasks/knowledgebase-acceptance/2026-09-26-sharing.md) |
 | [x] 已验收 | U05 | 权限、继承与分享管理界面<br>src/features/knowledge/sharing/ | §6 | P04, U02 | 用户/组/workspace 授权、继承开关、有效权限解释；完整保存/撤销失败反馈；非 full 禁止操作 | [4 项测试/26 断言:级别序/主体解析、授予不超操作者+workspace 主体校验、有效权限四源解释链、变更计划去重与拒绝;面板含继承开关重算说明、链接令牌一次性展示、非 edit+ 全禁用](../../core/tasks/knowledgebase-acceptance/2026-09-26-sharing-ui.md) |
 | [x] 已验收 | U06 | 数据库表格视图<br>src/features/knowledge/databases/ | §3.3 | T02, E03, U02 | 类型化列增删改、行属性编辑、筛选/排序/打开行正文；加载/无权/空/错误及键盘完整 | [65 项测试/248 断言:7 类列渲染编辑、列增删改(两步删确认)、行属性乐观回滚、契约化筛选排序(操作符按类型裁剪)、四态、完整键盘契约(方向/Tab 环绕/Enter/Esc/Home/End);全仓 tsc 清零+eslint 干净;未挂载过程诚实 NOT_FOUND](../../core/tasks/knowledgebase-acceptance/2026-09-27-u06-table-view.md) |
@@ -536,9 +534,12 @@ flowchart TD
   style B05 fill:#e4f4e9,stroke:#42845c
   style B06 fill:#e4f4e9,stroke:#42845c
   style E03 fill:#e4f4e9,stroke:#42845c
+  style B07 fill:#e4f4e9,stroke:#42845c
   style B00 fill:#e4f4e9,stroke:#42845c
   style B08 fill:#e4f4e9,stroke:#42845c
   style E04 fill:#e4f4e9,stroke:#42845c
+  style E05 fill:#e4f4e9,stroke:#42845c
+  style E06 fill:#e4f4e9,stroke:#42845c
   style S01 fill:#e4f4e9,stroke:#42845c
   style S02 fill:#e4f4e9,stroke:#42845c
   style V01 fill:#e4f4e9,stroke:#42845c
@@ -548,6 +549,7 @@ flowchart TD
   style N02 fill:#e4f4e9,stroke:#42845c
   style N03 fill:#e4f4e9,stroke:#42845c
   style L01 fill:#e4f4e9,stroke:#42845c
+  style L02 fill:#e4f4e9,stroke:#42845c
   style P04 fill:#e4f4e9,stroke:#42845c
   style U05 fill:#e4f4e9,stroke:#42845c
   style U06 fill:#e4f4e9,stroke:#42845c

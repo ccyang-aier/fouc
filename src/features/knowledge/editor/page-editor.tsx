@@ -15,6 +15,7 @@
  */
 
 import type { PageScope } from '@fouc/shared/knowledge/contracts';
+import type { KnowledgeAuthUser } from '../auth/auth-api';
 import { CanvasError, CanvasForbidden, CanvasSpinner } from '../canvas-states';
 import { knowledgeErrorCodeOf } from '../entry-state';
 import { derivePageEditorView } from './editor-state';
@@ -36,7 +37,7 @@ function pageAccessErrorText(error: unknown): string {
 }
 
 /** The page editor of one open page; mounts inside the U02 canvas main column. */
-export function PageEditor({ scope }: { scope: PageScope }) {
+export function PageEditor({ scope, user }: { scope: PageScope; user: KnowledgeAuthUser | null }) {
   const { gate, error: gateError, retry } = usePageEditorGate(scope.workspaceId, scope.pageId);
   // The collaboration session only exists once view access has been granted —
   // a denied page never opens a WebSocket or an IndexedDB copy.
@@ -72,7 +73,9 @@ export function PageEditor({ scope }: { scope: PageScope }) {
   return (
     <PageEditorSurface
       scope={scope}
-      document={session.session.document}
+      session={session.session}
+      origin={session.origin}
+      user={user}
       pageUndo={session.undo}
       level={gate.level}
       view={view}

@@ -36,6 +36,7 @@ import { invalidateKnowledgeQueries } from './data/query-client';
 import { flattenWorkspaceList, useKnowledgeTeamspacesQuery, useKnowledgeWorkspacesQuery } from './data/workspace-queries';
 import { deriveKnowledgeEntryPhase, entryPhaseShowsStage, knowledgeErrorCodeOf } from './entry-state';
 import { useKnowledgeNotificationsBridge } from './notifications/notifications-queries';
+import { subscribeOpenPageTarget } from './editor/open-target';
 import type { TreeStageTeamspaceState } from './navigation/tree-stage';
 import { KnowledgeTreeStage } from './navigation/tree-stage';
 import { AssistantRail, AssistantRailToggle } from './assistant-rail';
@@ -188,6 +189,15 @@ function KnowledgeWorkbench({ onOpenSettings }: { onOpenSettings: () => void }) 
   // ── N03: publish the live inbox (unread badge, rows, jump) to the shell bell ──
   useKnowledgeNotificationsBridge({ active: stageActive, workspaceId: activeId, openPage: setSelectedPageId });
 
+  // ── L02: block-reference cards ask the shell to open their source page ──
+  // (the highlight itself rides the staged one-shot channel the editor consumes).
+  useEffect(() => {
+    if (!stageActive) return undefined;
+    return subscribeOpenPageTarget((target) => {
+      if (target.workspaceId === activeId) setSelectedPageId(target.pageId);
+    });
+  }, [stageActive, activeId]);
+
   const selectedTeamspace = teamspaces.find((teamspace) => teamspace.id === selectedTeamspaceId) ?? null;
 
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
@@ -274,7 +284,7 @@ function KnowledgeWorkbench({ onOpenSettings }: { onOpenSettings: () => void }) 
             footer={<SidebarFooter user={session.user} onOpenSettings={onOpenSettings} />}
           />
           {selectedPageId && activeId ? (
-            <KnowledgePageEditor scope={{ workspaceId: activeId, pageId: selectedPageId }} />
+            <KnowledgePageEditor scope={{ workspaceId: activeId, pageId: selectedPageId }} user={session.user} />
           ) : (
           <WorkspaceCanvas
             phase={

@@ -27,11 +27,13 @@ interface SessionState {
   session: PageDocumentSession | null;
   undo: PageUndo | null;
   status: PageDocumentStatus | null;
+  /** The resolved knowledge API origin (block-reference source connections need it). */
+  origin: string | null;
   /** Endpoint resolution failed before any session existed. */
   failure: string | null;
 }
 
-const initialSessionState: SessionState = { key: null, session: null, undo: null, status: null, failure: null };
+const initialSessionState: SessionState = { key: null, session: null, undo: null, status: null, origin: null, failure: null };
 
 export interface PageEditorSession extends Omit<SessionState, 'key'> {
   /** Re-runs endpoint resolution and session creation after a failure. */
@@ -58,7 +60,7 @@ export function usePageEditorSession(scope: PageScope | null): PageEditorSession
         // Editor transactions ride the ySyncPlugin origin, so B08 counts
         // them as this human's writing (its bindingOrigins contract).
         const undo = createPageUndo({ document: connected.document, bindingOrigins: [ySyncPluginKey] });
-        const publish = () => setState({ key: scopeKey, session: connected, undo, status: connected.getStatus(), failure: null });
+        const publish = () => setState({ key: scopeKey, session: connected, undo, status: connected.getStatus(), origin, failure: null });
         publish();
         unsubscribe = connected.subscribe(publish);
       })
@@ -69,6 +71,7 @@ export function usePageEditorSession(scope: PageScope | null): PageEditorSession
           session: null,
           undo: null,
           status: null,
+          origin: null,
           failure: cause instanceof Error && cause.message ? cause.message : '无法确定知识服务地址。',
         });
       });
@@ -82,5 +85,5 @@ export function usePageEditorSession(scope: PageScope | null): PageEditorSession
   const retry = useCallback(() => setAttempt((value) => value + 1), []);
   // State from a previous scope stays unread until the new session publishes.
   const current = state.key === scopeKey ? state : initialSessionState;
-  return { session: current.session, undo: current.undo, status: current.status, failure: current.failure, retry };
+  return { session: current.session, undo: current.undo, status: current.status, origin: current.origin, failure: current.failure, retry };
 }

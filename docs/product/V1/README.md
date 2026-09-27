@@ -39,6 +39,7 @@ V1 的目标是建立 Fouc 最小但完整的 Agent 工作底座，并用“本�
 | [core-features.md](./core-features.md) | 五项核心特性的范围、价值、依赖与验收标准 |
 | [local-agent-management.md](./local-agent-management.md) | 本机 Agent 的发现、能力探测、纳管、任务下发与生命周期控制 |
 | [architecture-and-security.md](./architecture-and-security.md) | V1 参考架构、领域对象、权威来源与安全治理 |
+| [design/arch/fouc-project-structure-design.md](./design/arch/fouc-project-structure-design.md) | 双端工作台的项目结构、服务与设备边界、访客及操作授权模型、重构顺序 |
 | [roadmap-and-metrics.md](./roadmap-and-metrics.md) | V1 范围边界、交付阶段、成功指标与试点原则 |
 | [design/aionui-architecture-analysis.md](./design/aionui-architecture-analysis.md) | AionUi/AionCore 开源参考项目深度分析：架构、模块、Agent 纳管实现 |
 | [design/fouc-agent-management-design.md](./design/fouc-agent-management-design.md) | 本机 Agent 自动发现与统一纳管的实现设计与迁移方案 |

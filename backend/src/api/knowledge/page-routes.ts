@@ -5,7 +5,7 @@ import {
   recyclePageInputSchema, restorePageInputSchema, updatePageInputSchema, principal,
 } from '@fouc/shared/knowledge/contracts';
 import type { PageScope, PermissionLevel } from '@fouc/shared/knowledge/contracts';
-import { page, pageAcl } from '../../database/knowledge/schema';
+import { member, page, pageAcl } from '../../database/knowledge/schema';
 import type { KnowledgeTenantTransaction } from '../../database/knowledge/tenant';
 import { readTeamspacePermissionRoot } from '../../knowledge/organization/teamspaces';
 import { OrganizationError } from '../../knowledge/organization/errors';
@@ -24,6 +24,9 @@ async function requirePage(db: KnowledgeTenantTransaction, userId: string, scope
 async function requireDestination(db: KnowledgeTenantTransaction, userId: string, input: { workspaceId: string; teamspaceId: string; parentId: string | null }) {
   if (input.parentId) return requirePage(db, userId, { workspaceId: input.workspaceId, pageId: input.parentId }, 'edit');
   const root = await readTeamspacePermissionRoot(db, { workspaceId: input.workspaceId, teamspaceId: input.teamspaceId });
+  const [membership] = await db.select({ role: member.role }).from(member).where(and(eq(member.workspaceId, input.workspaceId), eq(member.userId, userId)));
+  // Directory managers can seed a restricted folder without granting edit to all members.
+  if (membership?.role === 'owner' || membership?.role === 'admin') return;
   const principals = await expandRequestPrincipals(db, input.workspaceId, userId);
   const allowed = root.defaultAccess === 'edit' || root.defaultAccess === 'full';
   if (!allowed || !principals.includes(principal('workspace', input.workspaceId))) {

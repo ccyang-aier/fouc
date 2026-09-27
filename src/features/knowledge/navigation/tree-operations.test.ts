@@ -18,6 +18,11 @@ import { optimisticInsertPosition } from './move-controller';
 const ws = 'e2f7a4c1-0000-4000-8000-6b1f9a2c3d01';
 const tsA = 'a0000000-0000-4000-8000-00000000000a';
 
+test('optimistic creation preserves selected metadata and permission inheritance', () => {
+  const created = optimisticCreatedPage({ id: crypto.randomUUID(), workspaceId: ws, teamspaceId: tsA, parentId: null, parentPath: null, title: '权限文档', kind: 'database', icon: '📚', cover: 'https://example.com/cover.png', inheritsPermissions: false, position: 'a0', now: '2026-09-27T00:00:00Z' });
+  expect(created).toMatchObject({ title: '权限文档', kind: 'database', icon: '📚', cover: 'https://example.com/cover.png', inheritsPermissions: false });
+});
+
 type PageSeed = Partial<Page> & Pick<Page, 'id' | 'parentId' | 'position'>;
 
 function page(seed: PageSeed): Page {

@@ -26,3 +26,6 @@
 .expandSidebar { position: absolute; top: 8px; left: 8px; z-index: 1; display: grid; width: 30px; height: 30px; place-items: center; border-radius: 6px; color: #5f718a; outline: none; animation: expandSidebarControlIn 180ms 90ms both cubic-bezier(.22, 1, .36, 1); }
 @keyframes expandSidebarControlIn { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: translateX(0); } }
 @media (prefers-reduced-motion: reduce) { .sidebar, .sidebar > * { transition: none; } .expandSidebar { animation: none; } }
+
+.knowledgeAvatar, .knowledgeMenuAvatar { display: grid; place-items: center; background: #ece8fa; color: #6b55af; font-weight: 600; font-size: 14px; }
+.knowledgeMenuAvatar { font-size: 12px; }

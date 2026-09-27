@@ -7,6 +7,7 @@ import { DialogButton, ModalDialog, NameField } from '../organization/ui';
 import type { DocumentAction } from '../dense-sidebar/document-action-menu-content';
 import { usePageTreeOperations, type TreeNotifier } from './page-operations';
 import { NavigationDialogPortal } from './navigation-dialog-portal';
+import { CreateDocumentDialog, type DocumentCreation } from './create-document-dialog';
 import { PageAppearanceDialog } from './page-appearance-dialog';
 import { useSidebarCollections } from './sidebar-collections';
 
@@ -24,29 +25,22 @@ export function useDocumentNavigationActions({ workspaceId, userId, pages, teams
   const { toggleStar } = useSidebarCollections(userId, workspaceId);
   const [renaming, setRenaming] = useState<Pick<Page, 'id' | 'title'> | null>(null);
   const [title, setTitle] = useState('');
-  const [createdPageId, setCreatedPageId] = useState<string | null>(null);
+  const [creation, setCreation] = useState<{ teamspaceId?: string; parentId: string | null; resolve: (id: string | null) => void } | null>(null);
   const [appearance, setAppearance] = useState<{ page: Page; mode: 'icon' | 'cover' } | null>(null);
-  async function create(teamspaceId?: string, parentId: string | null = null) {
-    if (!canEdit) { notify('error', '没有创建文档的权限'); return null; }
+  function create(teamspaceId?: string, parentId: string | null = null): Promise<string | null> {
+    if (!canEdit) { notify('error', '没有创建文档的权限'); return Promise.resolve(null); }
+    return new Promise((resolve) => setCreation({ teamspaceId, parentId, resolve }));
+  }
+  function closeCreation() { creation?.resolve(null); setCreation(null); }
+  async function submitCreation(input: DocumentCreation) {
     try {
-      const folderId = teamspaceId ?? teamspaces[0]?.id ?? (await createFolder.mutateAsync({ name: '文档', defaultAccess: 'edit' })).id;
-      const id = await operations.createPage({ teamspaceId: folderId, parentId });
-      if (id) {
-        setCreatedPageId(id);
-        setRenaming({ id, title: '' });
-        setTitle('');
-      }
+      const folderId = input.teamspaceId ?? (await createFolder.mutateAsync({ name: '文档', defaultAccess: 'edit' })).id;
+      const id = await operations.createPage({ ...input, teamspaceId: folderId });
+      if (id) { creation?.resolve(id); setCreation(null); onOpenPage(id); }
       return id;
-    } catch {
-      notify('error', '创建文档失败，请重试');
-      return null;
-    }
+    } catch { notify('error', '创建文档失败，请重试'); return null; }
   }
-  function closeRename() {
-    setRenaming(null);
-    if (createdPageId) onOpenPage(createdPageId);
-    setCreatedPageId(null);
-  }
+  function closeRename() { setRenaming(null); }
   function act(id: string, action: DocumentAction) {
     const page = pages.find((item) => item.id === id);
     if (!page) return;
@@ -59,6 +53,7 @@ export function useDocumentNavigationActions({ workspaceId, userId, pages, teams
     if (action === 'move-up' || action === 'move-down' || action === 'indent' || action === 'outdent') void operations.movePageByKeyboard(id, action === 'move-up' ? 'up' : action === 'move-down' ? 'down' : action);
   }
   const dialogs = <>
+    {creation ? <NavigationDialogPortal><CreateDocumentDialog teamspaces={teamspaces} pages={pages} target={creation} onClose={closeCreation} onCreate={submitCreation} /></NavigationDialogPortal> : null}
     {renaming ? <NavigationDialogPortal><ModalDialog open title="重命名文档" onClose={closeRename} footer={<><DialogButton onClick={closeRename}>取消</DialogButton><DialogButton variant="primary" disabled={operations.hasPending(renaming.id)} onClick={() => { void operations.renamePage(renaming.id, title).then(closeRename); }}>保存</DialogButton></>}><NameField label="文档名称" value={title} onChange={setTitle} autoFocus maxLength={500} /></ModalDialog></NavigationDialogPortal> : null}
     {appearance ? <NavigationDialogPortal><PageAppearanceDialog key={`${appearance.page.id}:${appearance.mode}`} open page={appearance.page} mode={appearance.mode} onClose={() => setAppearance(null)} onApply={(id, patch) => void operations.updateAppearance(id, patch)} /></NavigationDialogPortal> : null}
   </>;

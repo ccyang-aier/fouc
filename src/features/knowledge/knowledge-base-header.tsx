@@ -8,8 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ProjectIcon } from "./dense-sidebar/project-icon";
-type KnowledgeBaseSummary = { id: string; name: string; iconId?: string };
+type KnowledgeBaseSummary = { id: string; name: string;  };
 import styles from "./navigation/knowledge-sidebar.module.css";
 
 export function KnowledgeBaseHeader({
@@ -34,14 +33,14 @@ export function KnowledgeBaseHeader({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button type="button" className={styles.knowledgeButton} aria-label={`知识库菜单：${knowledgeBaseName}`} title={knowledgeBaseName}>
-          <ProjectIcon iconId={activeKnowledgeBase?.iconId} className={styles.knowledgeAvatar} />
+          <span aria-hidden="true" className={styles.knowledgeAvatar}>{Array.from(knowledgeBaseName.trim())[0]?.toUpperCase() ?? "K"}</span>
           <span className={styles.knowledgeName}>{knowledgeBaseName}</span>
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" sideOffset={5} className={styles.knowledgeMenu}>
         {knowledgeBases.map((base) => (
           <DropdownMenuItem key={base.id} className={styles.knowledgeMenuBase} data-active={base.id === activeKnowledgeBaseId} onSelect={() => onSelectKnowledgeBase(base.id)}>
-            <ProjectIcon iconId={base.iconId} className={styles.knowledgeMenuAvatar} />
+            <span aria-hidden="true" className={styles.knowledgeMenuAvatar}>{Array.from(base.name.trim())[0]?.toUpperCase() ?? "K"}</span>
             <span className={styles.knowledgeMenuBaseName}>{base.name}</span>
             {base.id === activeKnowledgeBaseId && <Check className={styles.knowledgeMenuCheck} aria-label="当前知识库" weight="bold" />}
           </DropdownMenuItem>

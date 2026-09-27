@@ -58,7 +58,7 @@ export type PageTreeOperations = {
   pendingByPage: Map<string, TreeOperationKind[]>;
   hasPending: (pageId: string) => boolean;
   /** Creates a page under the target and returns its id (null when blocked); the row starts in rename mode. */
-  createPage: (target: { teamspaceId: string; parentId: string | null }) => Promise<string | null>;
+  createPage: (target: { teamspaceId: string; parentId: string | null; title?: string; icon?: string | null; cover?: string | null; inheritsPermissions?: boolean; kind?: 'doc' | 'database' }) => Promise<string | null>;
   renamePage: (pageId: string, title: string) => Promise<void>;
   updateAppearance: (pageId: string, patch: { icon?: string | null; cover?: string | null }) => Promise<boolean>;
   movePage: (pageId: string, placement: PlacementRequest) => Promise<boolean>;
@@ -146,7 +146,7 @@ export function usePageTreeOperations(
   const pendingByPage = useMemo(() => pendingKindsByPage(pending), [pending]);
 
   const createPage = useCallback(
-    async (target: { teamspaceId: string; parentId: string | null }): Promise<string | null> => {
+    async (target: { teamspaceId: string; parentId: string | null; title?: string; icon?: string | null; cover?: string | null; inheritsPermissions?: boolean; kind?: 'doc' | 'database' }): Promise<string | null> => {
       if (workspaceId === null || !optionsRef.current.canEdit) return null;
       const pages = readPages();
       const id = crypto.randomUUID();
@@ -166,7 +166,11 @@ export function usePageTreeOperations(
         teamspaceId: target.teamspaceId,
         parentId: target.parentId,
         parentPath: parent?.path ?? null,
-        title: '',
+        title: target.title ?? '',
+        icon: target.icon,
+        cover: target.cover,
+        inheritsPermissions: target.inheritsPermissions,
+        kind: target.kind,
         position,
         now: new Date().toISOString(),
       });
@@ -178,13 +182,13 @@ export function usePageTreeOperations(
           workspaceId,
           teamspaceId: target.teamspaceId,
           parentId: target.parentId,
-          kind: 'doc',
+          kind: target.kind ?? 'doc',
           databaseId: null,
-          title: '',
-          icon: null,
-          cover: null,
+          title: target.title ?? '',
+          icon: target.icon ?? null,
+          cover: target.cover ?? null,
           properties: {},
-          inheritsPermissions: true,
+          inheritsPermissions: target.inheritsPermissions ?? true,
           afterPageId: null,
         }),
         (current, placement) => settleTreePlacement(current, placement),

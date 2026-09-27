@@ -123,6 +123,9 @@ export function optimisticCreatedPage(input: {
   parentPath: string | null;
   title: string;
   icon?: string | null;
+  cover?: string | null;
+  inheritsPermissions?: boolean;
+  kind?: 'doc' | 'database';
   position: string;
   now: string;
 }): Page {
@@ -132,13 +135,13 @@ export function optimisticCreatedPage(input: {
     workspaceId: input.workspaceId,
     teamspaceId: input.teamspaceId,
     parentId: input.parentId,
-    kind: 'doc',
+    kind: input.kind ?? 'doc',
     databaseId: null,
     title: input.title,
     icon: input.icon ?? null,
-    cover: null,
+    cover: input.cover ?? null,
     properties: {},
-    inheritsPermissions: true,
+    inheritsPermissions: input.inheritsPermissions ?? true,
     position: input.position,
     path: input.parentPath === null ? label : `${input.parentPath}.${label}`,
     createdBy: '00000000-0000-4000-8000-000000000000',

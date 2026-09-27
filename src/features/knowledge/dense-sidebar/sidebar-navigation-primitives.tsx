@@ -178,6 +178,7 @@ export function SidebarRow({
     <button
       type="button"
       onClick={onClick}
+      aria-current={selected ? "page" : undefined}
       data-selected={selected ? "true" : undefined}
       className={cn(
         styles.row,

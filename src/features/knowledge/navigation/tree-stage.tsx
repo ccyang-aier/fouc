@@ -75,8 +75,8 @@ export function KnowledgeTreeStage({ userId, workspaceId, teamspaces, teamspaceS
     {teamspaceState === 'loading' || (teamspaceState === 'ready' && pagesQuery.isPending) ? <TreeLoading /> : teamspaceState === 'error' || pagesQuery.isError ? <TreeError onRetry={() => { onRetryTeamspaces(); void pagesQuery.refetch(); }} /> : teamspaceState === 'forbidden' ? <TreeForbidden /> : (
       <ExpandedPrimarySidebar
         className="min-h-0 flex-1"
-        activeItem={view}
-        activeResource={selectedSectionId ? `project:${selectedSectionId}` : null}
+        activeItem={selectedPageId ? '' : view}
+        activeResource={!selectedPageId && view === 'overview' && selectedSectionId ? `project:${selectedSectionId}` : null}
         activeDocumentId={selectedPageId}
         activeDocumentLocation={location}
         projects={projects}

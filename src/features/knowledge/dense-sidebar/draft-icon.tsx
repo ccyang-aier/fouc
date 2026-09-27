@@ -2,9 +2,7 @@ import { forwardRef, type ReactElement } from 'react';
 import { IconBase, type IconProps, type IconWeight } from '@phosphor-icons/react';
 
 const glyph = <>
-  <rect x="48" y="32" width="160" height="192" rx="36" fill="currentColor" opacity="0.12" />
-  <rect x="48" y="32" width="160" height="192" rx="36" fill="none" stroke="currentColor" strokeWidth="16" />
-  <path d="M88 104h80M88 152h48" fill="none" stroke="currentColor" strokeWidth="16" strokeLinecap="round" />
+  <path fill="currentColor" fillRule="evenodd" d="M84 32h88a36 36 0 0 1 36 36v120a36 36 0 0 1-36 36H84a36 36 0 0 1-36-36V68a36 36 0 0 1 36-36ZM88 96a8 8 0 0 0 0 16h80a8 8 0 0 0 0-16H88Zm0 48a8 8 0 0 0 0 16h48a8 8 0 0 0 0-16H88Z" />
 </>;
 const weights = new Map<IconWeight, ReactElement>([
   ['thin', glyph], ['light', glyph], ['regular', glyph],

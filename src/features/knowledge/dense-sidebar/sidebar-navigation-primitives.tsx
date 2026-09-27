@@ -7,7 +7,6 @@ import {
   CaretRight,
   CheckSquareOffset,
   FileText,
-  PenNib,
   FolderOpen,
   HashStraight,
   ImageSquare,
@@ -30,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { IconButton } from "./icon-button";
 import { SidebarDocumentMenu } from "@/features/knowledge/dense-sidebar/sidebar-document-menu";
 import styles from "./sidebar-interactions.module.css";
+import { DraftIcon } from './draft-icon';
 
 export const sidebarIconMap: Record<SidebarIconName, PhosphorIcon> = {
   star: Star,
@@ -40,7 +40,7 @@ export const sidebarIconMap: Record<SidebarIconName, PhosphorIcon> = {
   sprout: Plant,
   image: ImageSquare,
   file: FileText,
-  draft: PenNib,
+  draft: DraftIcon,
   folder: FolderOpen,
   tasks: CheckSquareOffset,
   blocks: SquaresFour,

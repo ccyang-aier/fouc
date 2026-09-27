@@ -1,0 +1,160 @@
+/**
+ * Tests of the slash menu item model (E06): the list is generated from the
+ * shared E01 registry's `slash` metadata, every item's insert command succeeds
+ * on a real Tiptap Editor over the shared schema (producing a node of its own
+ * type — atom blocks included, with E02 blockIds minted by the blockId
+ * plugin), `registerSlashInsert` extends/overrides the command map, and the
+ * query filter ranks prefix > substring > keyword while keeping registry
+ * order otherwise.
+ */
+
+import { Window } from 'happy-dom';
+import { beforeAll, describe, expect, test } from 'bun:test';
+import { Editor } from '@tiptap/core';
+import {
+  createKnowledgeExtensions,
+  createKnowledgeRegistry,
+  defineBlock,
+  KNOWLEDGE_BLOCKS,
+} from '@fouc/shared/knowledge/schema';
+import type { BlockDefinition } from '@fouc/shared/knowledge/schema';
+import { setBlockFormat } from '../extensions/format/block-format';
+import { buildSlashItems, filterSlashItems, registerSlashInsert } from './slash-items';
+import type { SlashMenuItem } from './slash-items';
+
+let window: Window;
+
+beforeAll(() => {
+  window = new Window({ url: 'https://knowledge.fouc.test/page' });
+  const globals = window as unknown as Record<string, unknown>;
+  for (const key of ['document', 'DOMParser', 'MutationObserver', 'Range', 'getSelection', 'HTMLElement', 'Element', 'Node', 'Text', 'Comment', 'customElements', 'requestAnimationFrame']) {
+    if (globals[key] !== undefined) (globalThis as Record<string, unknown>)[key] = globals[key];
+  }
+  (globalThis as Record<string, unknown>).window = window;
+});
+
+function mountEditor(): Editor {
+  const host = window.document.createElement('div');
+  window.document.body.appendChild(host);
+  const editor = new Editor({ element: host as unknown as HTMLElement, extensions: [...createKnowledgeExtensions()] });
+  editor.commands.focus('end');
+  return editor;
+}
+
+/** Every node type name present in the document, depth-first. */
+function nodeNames(editor: Editor): string[] {
+  const names: string[] = [];
+  editor.state.doc.descendants((node) => {
+    names.push(node.type.name);
+    return true;
+  });
+  return names;
+}
+
+describe('slash menu items', () => {
+  test('the menu is generated from the registry slash metadata', () => {
+    const items = buildSlashItems();
+    const expected = KNOWLEDGE_BLOCKS.filter((definition) => definition.slash);
+    expect(items.map((item) => item.name)).toEqual(expected.map((definition) => definition.name));
+    expect(items.map((item) => item.title)).toEqual(expected.map((definition) => definition.slash!.title));
+    expect(items.map((item) => item.group)).toEqual(expected.map((definition) => definition.slash!.group ?? 'text'));
+    // No structural child (listItem, tableRow, column…) ever shows in the menu.
+    for (const hidden of ['listItem', 'taskItem', 'tableRow', 'tableCell', 'tableHeader', 'column']) {
+      expect(items.some((item) => item.name === hidden)).toBe(false);
+    }
+  });
+
+  test('every item inserts a node of its own type into a real editor', () => {
+    const items = buildSlashItems();
+    expect(items.length).toBeGreaterThan(0);
+    for (const item of items) {
+      const editor = mountEditor(); // one empty paragraph, caret at its end
+      expect(item.run(editor)).toBe(true);
+      const names = nodeNames(editor);
+      expect(names).toContain(item.name);
+      editor.state.doc.check(); // every insertion leaves a valid document
+      editor.destroy();
+    }
+  });
+
+  test('converters restyle the trigger block instead of appending (paragraph/heading/lists)', () => {
+    const items = new Map(buildSlashItems().map((item) => [item.name, item]));
+    const editor = mountEditor();
+    items.get('heading')!.run(editor);
+    expect(editor.state.doc.firstChild?.type.name).toBe('heading');
+    expect(editor.state.doc.firstChild?.attrs.level).toBe(2);
+    expect(editor.state.doc.childCount).toBe(1);
+    items.get('paragraph')!.run(editor);
+    expect(editor.state.doc.firstChild?.type.name).toBe('paragraph');
+    expect(editor.state.doc.childCount).toBe(1);
+    editor.destroy();
+  });
+
+  test('registerSlashInsert overrides built-ins and adds future entries', () => {
+    const items = buildSlashItems();
+    const builtIn = items.find((item) => item.name === 'heading')!;
+    let overrideCalls = 0;
+    registerSlashInsert('heading', (editor) => {
+      overrideCalls += 1;
+      return builtIn.run(editor);
+    });
+    try {
+      const editor = mountEditor();
+      const overridden = buildSlashItems().find((item) => item.name === 'heading')!;
+      overridden.run(editor);
+      expect(overrideCalls).toBe(1);
+      expect(editor.state.doc.firstChild?.type.name).toBe('heading');
+      editor.destroy();
+
+      // A registry block with slash metadata but no built-in command stays
+      // listed and fails honestly until one is registered.
+      const extension: BlockDefinition = defineBlock({
+        name: 'spacerBlock',
+        schema: { content: 'inline*', toDOM: () => ['div', { 'data-spacer': '' }, 0] },
+        markdown: { fromMd: { type: 'paragraph' } },
+        index: { mode: 'skip' },
+        slash: { title: '占位块', keywords: ['spacer'], group: 'layout' },
+      });
+      const registry = createKnowledgeRegistry({ blocks: [extension] });
+      const custom = buildSlashItems(registry);
+      expect(custom.map((item) => item.name)).toContain('spacerBlock');
+      const unregistered = mountEditor();
+      expect(custom.find((item) => item.name === 'spacerBlock')!.run(unregistered)).toBe(false);
+      unregistered.destroy();
+      registerSlashInsert('spacerBlock', (editor) => editor.chain().focus().command(setBlockFormat({ kind: 'heading', level: 3 })).run());
+      const registered = mountEditor();
+      expect(buildSlashItems(registry).find((item) => item.name === 'spacerBlock')!.run(registered)).toBe(true);
+      expect(registered.state.doc.firstChild?.type.name).toBe('heading');
+      registered.destroy();
+    } finally {
+      registerSlashInsert('heading', (editor) => builtIn.run(editor));
+    }
+  });
+});
+
+describe('filterSlashItems', () => {
+  const items: SlashMenuItem[] = buildSlashItems();
+
+  test('an empty query returns every item in registry order', () => {
+    expect(filterSlashItems(items, '')).toEqual(items);
+    expect(filterSlashItems(items, '   ')).toEqual(items);
+  });
+
+  test('title prefixes outrank substrings, which outrank keyword hits', () => {
+    // '表格' is the table title itself; no other title or keyword contains it.
+    expect(filterSlashItems(items, '表格').map((item) => item.name)).toEqual(['table']);
+    // '列' hits three list titles — all substring rank, registry order kept.
+    const lists = filterSlashItems(items, '列');
+    expect(lists.map((item) => item.name)).toEqual(['bulletList', 'orderedList', 'taskList']);
+    expect(lists.every((item) => item.title.includes('列'))).toBe(true);
+    // 'code' is a keyword of 代码 (no title matches it).
+    expect(filterSlashItems(items, 'code').map((item) => item.name)).toEqual(['codeBlock']);
+    // Prefix tier first: '表' prefixes 表格 even though nothing else matches.
+    expect(filterSlashItems(items, '表')[0]?.name).toBe('table');
+  });
+
+  test('matching is case-insensitive and misses are empty', () => {
+    expect(filterSlashItems(items, 'TODO').map((item) => item.name)).toEqual(['taskList']);
+    expect(filterSlashItems(items, 'zzz')).toEqual([]);
+  });
+});

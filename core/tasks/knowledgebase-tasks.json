@@ -967,10 +967,23 @@
         "E04",
         "M01"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "src/features/knowledge/editor/commands/",
       "acceptance": "菜单由注册表生成、检索、方向键/回车/Esc；Markdown/HTML/纯文本识别；不执行不安全 HTML",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "bun test commands 套件 48 pass / 0 fail：注册表菜单对齐、每条目真实插入、过滤排序、方向键/回车/Esc、Markdown/HTML/纯文本识别、危险 HTML 中和、内部粘贴不回归",
+          "command": "bun test src/features/knowledge/editor/commands/",
+          "verifiedAt": "2026-09-27",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-27-e06-slash-paste.md"
+        },
+        {
+          "summary": "整仓 bunx tsc --noEmit --incremental false 0 错误；commands 目录 eslint clean",
+          "command": "bunx tsc --noEmit --incremental false && bunx eslint src/features/knowledge/editor/commands",
+          "verifiedAt": "2026-09-27",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-27-e06-slash-paste.md"
+        }
+      ]
     },
     {
       "id": "S01",

@@ -22,7 +22,7 @@ export function CreateTeamspaceDialog({ workspaceId, open, onClose, onCreated }:
   onCreated: (teamspace: Teamspace) => void;
 }) {
   const [name, setName] = useState('');
-  const [access, setAccess] = useState<number>(1); // 可查看: the balanced default for a fresh teamspace
+  const [access, setAccess] = useState<number>(3); // 新知识库默认可编辑，可以直接创建文档。
   const [touched, setTouched] = useState(false);
   const mutation = useCreateTeamspaceMutation(workspaceId);
 
@@ -33,7 +33,7 @@ export function CreateTeamspaceDialog({ workspaceId, open, onClose, onCreated }:
   function close() {
     mutation.reset();
     setName('');
-    setAccess(1);
+    setAccess(3);
     setTouched(false);
     onClose();
   }
@@ -56,8 +56,8 @@ export function CreateTeamspaceDialog({ workspaceId, open, onClose, onCreated }:
     <ModalDialog
       open={open}
       onClose={close}
-      title="新建团队空间"
-      description="团队空间是页面树的顶层分组，根页面的默认权限在这里设定。"
+      title="新建知识库"
+      description="知识库用于组织文档，根页面的默认权限在这里设定。"
       footer={
         <>
           <DialogButton onClick={close}>取消</DialogButton>

@@ -18,7 +18,7 @@
 
 import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { FolderPlus, XCircle } from '@phosphor-icons/react';
+import { FolderPlus, SidebarSimple, XCircle } from '@phosphor-icons/react';
 import { motion } from 'motion/react';
 
 import { Button } from '@/components/ui/button';
@@ -202,6 +202,7 @@ function KnowledgeWorkbench({ onOpenSettings }: { onOpenSettings: () => void }) 
 
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false);
   const [createTeamspaceOpen, setCreateTeamspaceOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [railOpen, setRailOpen] = useState(false);
   const { toast, notify } = useOrganizationToast();
 
@@ -220,13 +221,15 @@ function KnowledgeWorkbench({ onOpenSettings }: { onOpenSettings: () => void }) 
 
   const treeArea = (
     <KnowledgeTreeStage
+      key={`${activeId}:${session.status === 'authenticated' ? session.user.id : ''}`}
+      userId={session.status === 'authenticated' ? session.user.id : ''}
       workspaceId={activeId}
       teamspaces={teamspaces}
       teamspaceState={treeTeamspaceState}
       access={accessQuery.data}
       selectedSectionId={selectedTeamspaceId}
       selectedPageId={selectedPageId}
-      onSelectSection={setSelectedTeamspaceId}
+      onSelectSection={(id) => { setSelectedTeamspaceId(id); setSelectedPageId(null); }}
       onSelectPage={setSelectedPageId}
       onRetryTeamspaces={retryTeamspaces}
       onCreateTeamspace={() => setCreateTeamspaceOpen(true)}
@@ -276,13 +279,22 @@ function KnowledgeWorkbench({ onOpenSettings }: { onOpenSettings: () => void }) 
       ) : activeWorkspace && session.status === 'authenticated' ? (
         <div className="flex h-full min-h-0">
           <PageTreeSidebar
+            collapsed={sidebarCollapsed}
+            onCollapse={() => setSidebarCollapsed(true)}
+            teamspaces={teamspaces}
+            activeTeamspaceId={selectedTeamspaceId}
+            onSelectTeamspace={(id) => { setSelectedTeamspaceId(id); setSelectedPageId(null); }}
+            onCreateTeamspace={() => setCreateTeamspaceOpen(true)}
+            onOpenSettings={onOpenSettings}
             workspaces={workspaces}
             activeWorkspaceId={activeWorkspace.id}
-            onSelectWorkspace={setActiveWorkspaceId}
+            onSelectWorkspace={(id) => { setActiveWorkspaceId(id); setSelectedTeamspaceId(null); setSelectedPageId(null); }}
             onCreateWorkspace={() => setCreateWorkspaceOpen(true)}
             treeArea={treeArea}
             footer={<SidebarFooter user={session.user} onOpenSettings={onOpenSettings} />}
           />
+          <div className={`relative flex min-h-0 min-w-0 flex-1 flex-col ${sidebarCollapsed ? '[&>section>header]:pl-11' : ''}`}>
+          {sidebarCollapsed ? <button type="button" aria-label="展开知识库侧边栏" title="展开知识库侧边栏" onClick={() => setSidebarCollapsed(false)} className="absolute left-2 top-1.5 z-10 flex size-7 items-center justify-center rounded-md text-[var(--muted-strong)] hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><SidebarSimple size={18} /></button> : null}
           {selectedPageId && activeId ? (
             <KnowledgePageEditor scope={{ workspaceId: activeId, pageId: selectedPageId }} user={session.user} />
           ) : (
@@ -302,6 +314,7 @@ function KnowledgeWorkbench({ onOpenSettings }: { onOpenSettings: () => void }) 
             actions={<AssistantRailToggle open={railOpen} onToggle={() => setRailOpen((open) => !open)} />}
           />
           )}
+          </div>
           <AssistantRail open={railOpen} onClose={() => setRailOpen(false)} />
         </div>
       ) : null}

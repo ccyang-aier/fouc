@@ -1,0 +1,6 @@
+.sidebar { width: 252px; flex: none; overflow: hidden; border-right: 1px solid var(--line); background: var(--panel); transition: width 320ms cubic-bezier(.22,1,.36,1); }
+.sidebar > :not([role="presentation"]) { width: 251px; min-width: 251px; transition: opacity 180ms ease-out, transform 260ms cubic-bezier(.22,1,.36,1); }
+.sidebar[data-collapsed="true"] { width: 0; border-right-width: 0; transition-duration: 260ms; }
+.sidebar[data-collapsed="true"] > * { opacity: 0; transform: translateX(-12px); }
+.sidebar[data-collapsed="false"] > * { transition-delay: 55ms, 0ms; }
+@media (prefers-reduced-motion: reduce) { .sidebar, .sidebar > :not([role="presentation"]) { transition: none; } }

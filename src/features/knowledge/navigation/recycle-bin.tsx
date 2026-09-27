@@ -21,13 +21,15 @@ export function RecycleBin({
   restoringIds,
   onRestore,
   className,
+  initiallyOpen = false,
 }: {
   pages: readonly RecycledPageSummary[];
   restoringIds: ReadonlySet<string>;
   onRestore: (pageId: string) => void;
   className?: string;
+  initiallyOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(initiallyOpen);
   if (pages.length === 0) return null;
 
   return (

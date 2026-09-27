@@ -18,7 +18,7 @@
  */
 
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { CaretRight, CircleNotch, DotsThree, FileText, Rows, Stack, Table } from '@phosphor-icons/react';
+import { CaretRight, CircleNotch, DotsThree, FileText, Folder, Rows, Table } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import type { Page } from '@fouc/shared/knowledge/contracts';
 import {
@@ -54,6 +54,7 @@ export type PageTreeProps = {
   onSelectSection: (sectionId: string) => void;
   onSelectPage: (pageId: string) => void;
   onCreateChild: (target: { pageId: string | null; sectionId: string }) => void;
+  onSectionMenu?: (id: string) => React.ReactNode;
   onEditAppearance: (pageId: string, mode: 'icon' | 'cover') => void;
   className?: string;
 };
@@ -70,6 +71,7 @@ export const PageTree = forwardRef<PageTreeHandle, PageTreeProps>(function PageT
     onSelectPage,
     onCreateChild,
     onEditAppearance,
+    onSectionMenu,
     className,
   },
   ref,
@@ -138,6 +140,8 @@ export const PageTree = forwardRef<PageTreeHandle, PageTreeProps>(function PageT
 
   // ── Keyboard: navigation (U02) + operation intents (U03) ──────────
   const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    // Embedded controls own their keys; Enter on a menu/caret must not activate the row.
+    if ((event.target as HTMLElement).closest('button, input')) return;
     const current = focus === null ? null : itemByKey.get(focus) ?? null;
     const intent = operationKeyIntent(event.nativeEvent);
     if (intent !== null && current !== null && canEdit && renamingPageId === null) {
@@ -309,7 +313,7 @@ export const PageTree = forwardRef<PageTreeHandle, PageTreeProps>(function PageT
     >
       {items.map((item) => {
         const selected = item.pageId === null ? item.sectionId === selectedSectionId : item.pageId === selectedPageId;
-        const Icon = item.kind === 'teamspace' ? Stack : pageKindIcon[item.kind];
+        const Icon = item.kind === 'teamspace' ? Folder : pageKindIcon[item.kind];
         const section = item.pageId === null ? sectionById.get(item.sectionId) : undefined;
         const pageIcon = item.pageId === null ? null : pages.find((row) => row.id === item.pageId)?.icon ?? null;
         const pending = item.pageId !== null && operations.hasPending(item.pageId);
@@ -328,7 +332,8 @@ export const PageTree = forwardRef<PageTreeHandle, PageTreeProps>(function PageT
                 aria-expanded={item.expandable ? item.expanded : undefined}
                 aria-selected={selected}
                 aria-disabled={pending || undefined}
-                tabIndex={focus === item.key ? 0 : -1}
+                tabIndex={(focus ?? items[0]?.key) === item.key ? 0 : -1}
+                onFocus={() => setFocusKey(item.key)}
                 draggable={canEdit && item.pageId !== null && !pending && !renaming}
                 onClick={() => {
                   setFocusKey(item.key);
@@ -399,16 +404,20 @@ export const PageTree = forwardRef<PageTreeHandle, PageTreeProps>(function PageT
                 {pending ? (
                   <CircleNotch aria-label="正在同步" size={12} className="ml-1 size-3 shrink-0 animate-spin text-[var(--muted)]" />
                 ) : item.expandable ? (
-                  <span
-                    aria-hidden
+                  <button
+                    type="button"
+                    aria-label={`${item.expanded ? '收起' : '展开'}「${item.title}」`}
+                    aria-expanded={item.expanded}
+                    onClick={(event) => { event.stopPropagation(); toggle(item.key); }}
                     className={cn(
                       'ml-1 inline-flex size-[18px] shrink-0 items-center justify-center rounded-[4px] text-[var(--muted)] transition-transform duration-200',
                       item.expanded ? 'rotate-90 opacity-100' : 'opacity-0 group-hover/row:opacity-100',
                     )}
                   >
                     <CaretRight size={10} weight="fill" />
-                  </span>
+                  </button>
                 ) : null}
+                {item.pageId === null ? onSectionMenu?.(item.sectionId) : null}
                 {item.pageId !== null && canEdit && !renaming ? (
                   <button
                     type="button"

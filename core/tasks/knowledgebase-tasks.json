@@ -937,10 +937,23 @@
       "dependencies": [
         "E03"
       ],
-      "status": "pending",
+      "status": "accepted",
       "deliverables": "src/features/knowledge/editor/blocks/",
       "acceptance": "嵌套编辑/增删/拖拽/键盘不损坏 blockId；表格编辑、分栏自适应、callout 风格精致；共享 schema 一致",
-      "evidence": []
+      "evidence": [
+        {
+          "summary": "bun test blocks 套件 31 pass / 0 fail（表格命令 23 + 实例 8，覆盖 blockId 完整性/嵌套编辑/拖拽粘贴副本）",
+          "command": "bun test src/features/knowledge/editor/blocks/table-commands.test.ts src/features/knowledge/editor/blocks/blocks.instance.test.ts",
+          "verifiedAt": "2026-09-27",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-27-e05-block-node-views.md"
+        },
+        {
+          "summary": "整仓 bunx tsc --noEmit --incremental false 0 错误；blocks 目录 eslint clean",
+          "command": "bunx tsc --noEmit --incremental false && bunx eslint src/features/knowledge/editor/blocks",
+          "verifiedAt": "2026-09-27",
+          "path": "core/tasks/knowledgebase-acceptance/2026-09-27-e05-block-node-views.md"
+        }
+      ]
     },
     {
       "id": "E06",

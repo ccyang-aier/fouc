@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Clock, Folder, Folders, Tag } from "@phosphor-icons/react";
+import { Clock, Folder, Tag } from "@phosphor-icons/react";
 
 import type { DocumentAction } from "@/features/knowledge/dense-sidebar/document-action-menu-content";
 import {
@@ -38,6 +38,7 @@ export function ExpandedPrimarySidebar({
   activeResource,
   activeDocumentId,
   activeDocumentLocation,
+  counts,
   projects,
   tags,
   tagDocuments,
@@ -46,7 +47,6 @@ export function ExpandedPrimarySidebar({
   expandedTags,
   expandedSections,
   onNavigateMain,
-  onBrowseProjects,
   onSelectProject,
   onSelectDocument,
   onToggleProject,
@@ -67,6 +67,7 @@ export function ExpandedPrimarySidebar({
   activeResource: string | null;
   activeDocumentId: string | null;
   activeDocumentLocation: "project" | "recent" | "tag" | null;
+  counts: Record<string, number>;
   projects: SidebarProjectNode[];
   tags: TagSummary[];
   tagDocuments: Record<string, SidebarDocumentSummary[]>;
@@ -75,7 +76,6 @@ export function ExpandedPrimarySidebar({
   expandedTags: Record<string, boolean>;
   expandedSections: Record<SidebarSectionId, boolean>;
   onNavigateMain: (id: string) => void;
-  onBrowseProjects: () => void;
   onSelectProject: (id: string) => void;
   onSelectDocument: (id: string) => void;
   onToggleProject: (id: string) => void;
@@ -124,7 +124,7 @@ export function ExpandedPrimarySidebar({
                 key={item.id}
                 label={t(item.labelKey)}
                 icon={Icon}
-                count={item.count}
+                count={counts[item.id] ?? 0}
                 iconTone={item.tone}
                 selected={activeItem === item.id}
                 onClick={() => onNavigateMain(item.id)}
@@ -139,26 +139,12 @@ export function ExpandedPrimarySidebar({
             label={t("sidebar.projects")}
             expanded={expandedSections.projects}
             onToggle={() => onToggleSection("projects")}
-            onSelect={() => onNavigateMain("projects")}
+            count={counts.projects}
             selected={activeItem === "projects"}
             actions={
               <>
                 <IconButton
-                  label={t("sidebar.browseAll")}
-                  size="icon-xs"
-                  className="size-[20px] rounded-[4px] text-muted-foreground shadow-none hover:bg-[var(--knowledge-sidebar-state-bg)] hover:text-foreground [&_svg]:!size-[13px]"
-                  onClick={onBrowseProjects}
-                >
-                  <Folders
-                    aria-hidden="true"
-                    size={13}
-                    weight="regular"
-                    className="size-[13px]"
-                  />
-                </IconButton>
-                <IconButton
                   label={t("sidebar.newProject")}
-                  size="icon-xs"
                   className="size-[20px] rounded-[4px] text-muted-foreground shadow-none hover:bg-[var(--knowledge-sidebar-state-bg)] hover:text-foreground"
                   onClick={onNewProject}
                 >
@@ -193,13 +179,13 @@ export function ExpandedPrimarySidebar({
           <SidebarSectionHeader
             icon={Tag}
             label={t("sidebar.tags")}
+            count={counts.tags}
             expanded={expandedSections.tags}
             onToggle={() => onToggleSection("tags")}
             actions={
                 <IconButton
                   label={t("sidebar.newTag")}
                   tooltipSide="top"
-                  size="icon-xs"
                   className="size-[20px] rounded-[4px] text-muted-foreground shadow-none hover:bg-[var(--knowledge-sidebar-state-bg)] hover:text-foreground"
                   onClick={() => setTagPopoverOpen((open) => !open)}
                 >
@@ -244,7 +230,7 @@ export function ExpandedPrimarySidebar({
             label={t("sidebar.recentNotes")}
             expanded={expandedSections.recent}
             onToggle={() => onToggleSection("recent")}
-            onSelect={() => onNavigateMain("recent")}
+            count={recentNotes.length}
             selected={activeItem === "recent"}
           />
           <SidebarCollapsibleContent

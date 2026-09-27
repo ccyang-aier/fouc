@@ -22,7 +22,7 @@ export function useDocumentNavigationActions({ workspaceId, userId, pages, teams
 }) {
   const operations = usePageTreeOperations(workspaceId, { canEdit, notify });
   const createFolder = useCreateTeamspaceMutation(workspaceId);
-  const { toggleStar } = useSidebarCollections(userId, workspaceId);
+  const { collections, toggleStar, toggleDraft } = useSidebarCollections(userId, workspaceId);
   const [renaming, setRenaming] = useState<Pick<Page, 'id' | 'title'> | null>(null);
   const [title, setTitle] = useState('');
   const [creation, setCreation] = useState<{ teamspaceId?: string; parentId: string | null; resolve: (id: string | null) => void } | null>(null);
@@ -44,6 +44,7 @@ export function useDocumentNavigationActions({ workspaceId, userId, pages, teams
   function act(id: string, action: DocumentAction) {
     const page = pages.find((item) => item.id === id);
     if (!page) return;
+    if (action === 'toggle-draft') { const wasDraft = collections.drafts.includes(id); toggleDraft(id); notify('success', wasDraft ? '已移出草稿' : '已加入草稿'); return; }
     if (action === 'toggle-star') { toggleStar(id); return; }
     if (!canEdit) { notify('error', '没有修改文档的权限'); return; }
     if (action === 'rename') { setRenaming(page); setTitle(page.title); }
@@ -53,7 +54,7 @@ export function useDocumentNavigationActions({ workspaceId, userId, pages, teams
     if (action === 'move-up' || action === 'move-down' || action === 'indent' || action === 'outdent') void operations.movePageByKeyboard(id, action === 'move-up' ? 'up' : action === 'move-down' ? 'down' : action);
   }
   const dialogs = <>
-    {creation ? <NavigationDialogPortal><CreateDocumentDialog teamspaces={teamspaces} pages={pages} target={creation} onClose={closeCreation} onCreate={submitCreation} /></NavigationDialogPortal> : null}
+    {creation ? <NavigationDialogPortal><CreateDocumentDialog teamspaces={teamspaces} target={creation} onClose={closeCreation} onCreate={submitCreation} /></NavigationDialogPortal> : null}
     {renaming ? <NavigationDialogPortal><ModalDialog open title="重命名文档" onClose={closeRename} footer={<><DialogButton onClick={closeRename}>取消</DialogButton><DialogButton variant="primary" disabled={operations.hasPending(renaming.id)} onClick={() => { void operations.renamePage(renaming.id, title).then(closeRename); }}>保存</DialogButton></>}><NameField label="文档名称" value={title} onChange={setTitle} autoFocus maxLength={500} /></ModalDialog></NavigationDialogPortal> : null}
     {appearance ? <NavigationDialogPortal><PageAppearanceDialog key={`${appearance.page.id}:${appearance.mode}`} open page={appearance.page} mode={appearance.mode} onClose={() => setAppearance(null)} onApply={(id, patch) => void operations.updateAppearance(id, patch)} /></NavigationDialogPortal> : null}
   </>;

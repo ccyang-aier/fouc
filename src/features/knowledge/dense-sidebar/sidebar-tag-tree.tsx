@@ -26,6 +26,7 @@ import {
 import { FileText } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/features/knowledge/dense-sidebar/use-i18n";
+import { IconButton } from "./icon-button";
 import styles from "./sidebar-interactions.module.css";
 
 export type SidebarTagAction = "new-document" | "rename" | "delete";
@@ -64,15 +65,15 @@ export function SidebarTagTreeNode({
         style={{ paddingLeft: 5 }}
       >
         {hasDocuments ? (
-          <button
+          <IconButton
             type="button"
-            aria-label={t(expanded ? "sidebar.collapseSection" : "sidebar.expandSection", { section: tag.name })}
+            label={t(expanded ? "sidebar.collapseSection" : "sidebar.expandSection", { section: tag.name })}
             aria-expanded={expanded}
             onClick={() => onToggle(tag.id)}
             className="mr-0.5 inline-flex size-[17px] shrink-0 items-center justify-center rounded-[4px] outline-none transition-colors hover:text-foreground focus-visible:text-foreground"
           >
             {expanded ? <CaretDown aria-hidden="true" size={10} weight="bold" /> : <CaretRight aria-hidden="true" size={10} weight="bold" />}
-          </button>
+          </IconButton>
         ) : (
           <span className="mr-0.5 size-[17px] shrink-0" />
         )}
@@ -87,26 +88,27 @@ export function SidebarTagTreeNode({
             style={{ backgroundColor: tag.color }}
           />
           <span className="my-auto inline-flex h-4 min-w-0 items-center truncate leading-4">{tag.name}</span>
+          <span className="ml-auto pl-2 text-[10.5px] tabular-nums text-[#8b9093]">{documents.length}</span>
         </button>
         <div className={cn(styles.actions, "ml-auto flex shrink-0 items-center gap-0.5")}>
-          <button
+          <IconButton
             type="button"
-            aria-label={t("sidebar.newDocumentInTag", { tag: tag.name })}
+            label={t("sidebar.newDocumentInTag", { tag: tag.name })}
             className={styles.actionButton}
             onClick={() => onTagAction(tag.id, "new-document")}
           >
             <SidebarCreateIcon />
-          </button>
+          </IconButton>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button
+              <IconButton
                 type="button"
-                aria-label={t("sidebar.tagMenu", { tag: tag.name })}
+                label={t("sidebar.tagMenu", { tag: tag.name })}
                 className={styles.actionButton}
                 onClick={(event) => event.stopPropagation()}
               >
                 <DotsThree aria-hidden="true" size={16} weight="bold" />
-              </button>
+              </IconButton>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-[170px]">
               <DropdownMenuItem onSelect={() => onTagAction(tag.id, "rename")}>

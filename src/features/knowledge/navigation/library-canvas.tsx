@@ -16,7 +16,7 @@ import type { TreeNotifier } from './page-operations';
 import type { LibraryView } from './tree-stage';
 import styles from '../library-canvas.module.css';
 
-const titles = { overview: '知识库', 'all-documents': '文档', starred: '星标', trash: '回收站', projects: '文件夹', recent: '最近' };
+const titles = { overview: '知识库', 'all-documents': '文档', starred: '星标', drafts: '草稿', trash: '回收站', projects: '文件夹', recent: '最近' };
 
 export function LibraryCanvas({ workspaceId, userId, name, view, access, teamspaces, onOpenPage, onSelectFolder, onCreateFolder, notify, folder }: {
   workspaceId: string;
@@ -36,7 +36,7 @@ export function LibraryCanvas({ workspaceId, userId, name, view, access, teamspa
   const documents = sidebarDocuments(buildNavigationSections(teamspaces, pages), pages);
   const { collections } = useSidebarCollections(userId, workspaceId);
   const actions = useDocumentNavigationActions({ workspaceId, userId, pages, teamspaces, canEdit: canEditTree(access), onOpenPage, notify });
-  const listed = view === 'overview' && folder ? documents.filter((page) => page.teamspaceId === folder.id) : view === 'starred' ? documents.filter((page) => collections.starred.includes(page.id)) : view === 'recent' ? documents.slice(0, 10) : documents;
+  const listed = view === 'overview' && folder ? documents.filter((page) => page.teamspaceId === folder.id) : view === 'starred' ? documents.filter((page) => collections.starred.includes(page.id)) : view === 'drafts' ? documents.filter((page) => collections.drafts.includes(page.id)) : view === 'recent' ? documents.slice(0, 10) : documents;
   if (query.isPending) return <CanvasSpinner label="正在加载文档" />;
   if (query.isError) return <CanvasError title="文档加载失败" onRetry={() => void query.refetch()} />;
   const recycled = recycledRootPages(pages);

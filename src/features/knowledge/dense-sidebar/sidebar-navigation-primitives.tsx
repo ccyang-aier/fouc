@@ -25,8 +25,8 @@ import type {
   SidebarIconName,
   SidebarNavigationItem,
 } from "@/features/knowledge/dense-sidebar/sidebar-navigation";
-import { useI18n } from "@/features/knowledge/dense-sidebar/use-i18n";
 import { cn } from "@/lib/utils";
+import { IconButton } from "./icon-button";
 import { SidebarDocumentMenu } from "@/features/knowledge/dense-sidebar/sidebar-document-menu";
 import styles from "./sidebar-interactions.module.css";
 
@@ -63,68 +63,18 @@ export const sidebarIconToneClasses: Record<
   violet: "text-[#7a67d5]",
 };
 
-export function SidebarSectionHeader({
-  icon: Icon,
-  label,
-  expanded,
-  onToggle,
-  onSelect,
-  selected,
-  actions,
-}: {
-  icon: PhosphorIcon;
-  label: string;
-  expanded: boolean;
-  onToggle: () => void;
-  onSelect?: () => void;
-  selected?: boolean;
-  actions?: React.ReactNode;
+export function SidebarSectionHeader({ icon: Icon, label, expanded, onToggle, selected, actions, count }: {
+  icon: PhosphorIcon; label: string; expanded: boolean; onToggle: () => void; selected?: boolean; actions?: React.ReactNode; count?: number;
 }) {
-  const { t } = useI18n();
-
-  return (
-    <div
-      data-selected={selected ? "true" : undefined}
-      className={cn(styles.row, "group/section flex h-[30px] items-center rounded-[6px] pl-1.5 pr-1")}
-    >
-      <Icon
-        aria-hidden="true"
-        size={15}
-        weight="regular"
-        className="mr-2 shrink-0 text-[#7c8387] transition-colors group-hover/section:text-foreground group-focus-within/section:text-foreground"
-      />
-      <button
-        type="button"
-        aria-current={selected ? "page" : undefined}
-        onClick={onSelect ?? onToggle}
-        className="flex h-full min-w-0 items-center truncate text-left text-[13px] font-medium leading-none text-[var(--sidebar-heading)] outline-none transition-colors hover:text-foreground focus-visible:text-foreground"
-      >
-        <span className="my-auto inline-flex h-4 items-center truncate leading-4">{label}</span>
-      </button>
-      <button
-        type="button"
-        aria-expanded={expanded}
-        aria-label={t(expanded ? "sidebar.collapseSection" : "sidebar.expandSection", {
-          section: label,
-        })}
-        onClick={onToggle}
-        className="ml-0.5 inline-flex size-[23px] shrink-0 items-center justify-center rounded-[5px] text-[var(--sidebar-heading)] outline-none transition-colors hover:text-foreground focus-visible:text-foreground"
-      >
-        <CaretRight
-          weight="fill"
-          className={cn(
-            "size-[10px] shrink-0 transition-transform duration-200",
-            expanded && "rotate-90",
-          )}
-        />
-      </button>
-      {actions ? (
-        <div className="pointer-events-none ml-auto flex shrink-0 items-center gap-px opacity-0 transition-opacity group-hover/section:pointer-events-auto group-hover/section:opacity-100 group-focus-within/section:pointer-events-auto group-focus-within/section:opacity-100">
-          {actions}
-        </div>
-      ) : null}
-    </div>
-  );
+  return <div data-selected={selected ? "true" : undefined} className={cn(styles.row, "group/section flex h-[30px] items-center rounded-[6px] pl-1.5 pr-1")}>
+    <button type="button" aria-expanded={expanded} aria-label={label} onClick={onToggle} className="flex h-full min-w-0 flex-1 items-center text-left text-[13px] font-medium text-[var(--sidebar-heading)] outline-none">
+      <Icon aria-hidden size={15} className="mr-2 shrink-0 text-[#7c8387]" />
+      <span className="truncate">{label}</span>
+      <CaretRight aria-hidden weight="fill" className={cn("ml-1 size-[10px] shrink-0 transition-transform duration-200", expanded && "rotate-90")} />
+      {count !== undefined && <span className="ml-auto pr-1 text-[10.5px] font-normal tabular-nums text-[#8b9093]">{count}</span>}
+    </button>
+    {actions && <div className="ml-1 flex shrink-0 items-center gap-px opacity-0 transition-opacity group-hover/section:opacity-100 group-focus-within/section:opacity-100">{actions}</div>}
+  </div>;
 }
 
 export function SidebarCollapsibleContent({
@@ -202,7 +152,7 @@ export function SidebarRow({
         ) : null)}
       <span className="my-auto inline-flex h-4 min-w-0 items-center truncate leading-4">{label}</span>
       {count !== undefined ? (
-        <span className="ml-2 text-[10.5px] tabular-nums text-[#8b9093]">{count}</span>
+        <span className="ml-auto pl-2 text-[10.5px] tabular-nums text-[#8b9093]">{count}</span>
       ) : null}
     </button>
   );
@@ -244,15 +194,13 @@ export function SidebarDocumentActions({
 }) {
   return (
     <div className={cn(styles.actions, "ml-auto flex shrink-0 items-center gap-0.5")} data-starred={starred ? "true" : undefined}>
-      <button
-        type="button"
+      <IconButton
         className={styles.actionButton}
-        aria-label={starred ? "取消收藏文档" : "收藏文档"}
-        title={starred ? "取消收藏" : "收藏"}
+        label={starred ? "取消收藏文档" : "收藏文档"}
         onClick={() => onAction(documentId, "toggle-star")}
       >
         <Star aria-hidden="true" size={14} weight={starred ? "fill" : "regular"} className={starred ? "text-[#e5aa14]" : undefined} />
-      </button>
+      </IconButton>
       <SidebarDocumentMenu
         documentId={documentId}
         starred={starred}

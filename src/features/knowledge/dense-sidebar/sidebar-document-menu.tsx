@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useI18n } from "@/features/knowledge/dense-sidebar/use-i18n";
+import { IconButton } from "./icon-button";
 import styles from "./sidebar-interactions.module.css";
 
 export function SidebarDocumentMenu({
@@ -27,14 +28,14 @@ export function SidebarDocumentMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button
+        <IconButton
           type="button"
-          aria-label={t("sidebar.documentActions")}
+          label={t("sidebar.documentActions")}
           className={styles.actionButton}
           onClick={(event) => event.stopPropagation()}
         >
           <DotsThree aria-hidden="true" size={15} weight="bold" />
-        </button>
+        </IconButton>
       </DropdownMenuTrigger>
       <DocumentActionMenuContent documentId={documentId} starred={starred} onAction={onAction} />
     </DropdownMenu>

@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 type KnowledgeBaseSummary = { id: string; name: string };
+import { IconButton } from "./dense-sidebar/icon-button";
 import styles from "./navigation/knowledge-sidebar.module.css";
 
 export function KnowledgeBaseHeader({
@@ -32,7 +33,7 @@ export function KnowledgeBaseHeader({
   return <div className={styles.knowledgeHeader}>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button type="button" className={styles.knowledgeButton} aria-label={`知识库菜单：${knowledgeBaseName}`} title={knowledgeBaseName}>
+        <button type="button" className={styles.knowledgeButton} aria-label={`知识库菜单：${knowledgeBaseName}`}>
           <span aria-hidden="true" className={styles.knowledgeAvatar} data-tone={Math.max(0, knowledgeBases.findIndex((base) => base.id === activeKnowledgeBaseId)) % 6}>{Array.from(knowledgeBaseName.trim())[0]?.toUpperCase() ?? "K"}</span>
           <span className={styles.knowledgeName}>{knowledgeBaseName}</span>
         </button>
@@ -54,8 +55,8 @@ export function KnowledgeBaseHeader({
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-    <button type="button" className={styles.knowledgeCollapse} aria-label="收起知识库侧边栏" title="收起知识库侧边栏" onClick={onCollapse}>
+    <IconButton className={styles.knowledgeCollapse} label="收起知识库侧边栏" onClick={onCollapse}>
       <SidebarSimple aria-hidden="true" weight="regular" />
-    </button>
+    </IconButton>
   </div>;
 }

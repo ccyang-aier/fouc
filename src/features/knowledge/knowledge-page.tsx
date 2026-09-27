@@ -1,5 +1,7 @@
 'use client';
 
+import { IconButton } from './dense-sidebar/icon-button';
+
 /**
  * The knowledge workbench entry (U02): the app shell of the new knowledge
  * model. Entry runs through the real gates in order — the A04 session check
@@ -291,7 +293,7 @@ function KnowledgeWorkbench({ onOpenSettings }: { onOpenSettings: () => void }) 
             treeArea={treeArea}
           />
           <div className={`relative flex min-h-0 min-w-0 flex-1 flex-col ${sidebarCollapsed ? '[&>section>header]:pl-11' : ''}`}>
-          {sidebarCollapsed ? <button type="button" aria-label="展开知识库侧边栏" title="展开知识库侧边栏" onClick={() => setSidebarCollapsed(false)} className="absolute left-2 top-1.5 z-10 flex size-7 items-center justify-center rounded-md text-[var(--muted-strong)] hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><SidebarSimple size={18} /></button> : null}
+          {sidebarCollapsed ? <IconButton label="展开知识库侧边栏" onClick={() => setSidebarCollapsed(false)} className="absolute left-2 top-1.5 z-10 flex size-7 items-center justify-center rounded-md text-[var(--muted-strong)] hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><SidebarSimple size={18} /></IconButton> : null}
           {selectedPageId && activeId ? (
             <KnowledgePageEditor scope={{ workspaceId: activeId, pageId: selectedPageId }} user={session.user} />
           ) : activeId ? (

@@ -29,6 +29,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { IconButton } from "./icon-button";
 import styles from "./sidebar-interactions.module.css";
 
 export type SidebarProjectAction =
@@ -84,22 +85,22 @@ export function SidebarProjectTreeNode({
         style={{ paddingLeft: isDocument ? 18 + depth * 12 : 5 + depth * 14 }}
       >
         {node.expandable ? (
-          <button
+          <IconButton
             type="button"
-            aria-label={t(isExpanded ? "sidebar.collapseSection" : "sidebar.expandSection", { section: label })}
+            label={t(isExpanded ? "sidebar.collapseSection" : "sidebar.expandSection", { section: label })}
             aria-expanded={isExpanded}
             onClick={() => onToggle(node.id)}
             className="mr-0.5 inline-flex size-[17px] shrink-0 items-center justify-center rounded-[4px] outline-none transition-colors hover:text-foreground focus-visible:text-foreground"
           >
             {isExpanded ? <CaretDown aria-hidden="true" size={10} weight="bold" /> : <CaretRight aria-hidden="true" size={10} weight="bold" />}
-          </button>
+          </IconButton>
         ) : !isDocument ? (
           <span className="mr-0.5 size-[17px] shrink-0" />
         ) : null}
         <button
           type="button"
           aria-current={selected ? "page" : undefined}
-          onClick={() => (isDocument ? onSelectDocument(node.id) : onSelectProject(node.id))}
+          onClick={() => { if (isDocument) onSelectDocument(node.id); else { onSelectProject(node.id); onToggle(node.id); } }}
           className="flex h-full min-w-0 flex-1 items-center text-left outline-none"
         >
           {isDocument ? (
@@ -108,29 +109,30 @@ export function SidebarProjectTreeNode({
             <ProjectGlyph iconId={node.projectIconId} />
           )}
           <span className="my-auto inline-flex h-4 min-w-0 items-center truncate leading-4">{label}</span>
+          {!isDocument && <span className="ml-auto pl-2 text-[10.5px] tabular-nums text-[#8b9093]">{node.count ?? 0}</span>}
         </button>
         {isDocument ? (
           <SidebarDocumentActions documentId={node.id} starred={Boolean(node.starred)} onAction={onDocumentAction} />
         ) : (
           <div className={cn(styles.actions, "ml-auto flex shrink-0 items-center gap-0.5")}>
-            <button
+            <IconButton
               type="button"
-              aria-label={t("sidebar.newDocument")}
+              label={t("sidebar.newDocument")}
               className={styles.actionButton}
               onClick={() => onProjectAction(node.id, "new-document")}
             >
               <SidebarCreateIcon />
-            </button>
+            </IconButton>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button
+                <IconButton
                   type="button"
-                  aria-label={t("sidebar.projectMenu", { project: label })}
+                  label={t("sidebar.projectMenu", { project: label })}
                   className={styles.actionButton}
                   onClick={(event) => event.stopPropagation()}
                 >
                   <DotsThree aria-hidden="true" size={16} weight="bold" />
-                </button>
+                </IconButton>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-[190px]">
                 <DropdownMenuItem onSelect={() => onProjectAction(node.id, "rename")}>

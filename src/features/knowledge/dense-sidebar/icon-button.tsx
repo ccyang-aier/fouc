@@ -1,6 +1,8 @@
-import type { ReactNode } from "react";
+"use client";
+import { forwardRef, type ComponentProps } from "react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
-export function IconButton({ label, children, className, onClick }: { label: string; children: ReactNode; className?: string; size?: string; tooltipSide?: string; onClick?: () => void }) {
-  return <button type="button" aria-label={label} title={label} onClick={onClick} className={cn("inline-flex items-center justify-center", className)}>{children}</button>;
-}
+export const IconButton = forwardRef<HTMLButtonElement, ComponentProps<'button'> & { label: string; tooltipSide?: 'top' | 'right' | 'bottom' | 'left' }>(function IconButton({ label, children, className, tooltipSide = 'right', ...props }, ref) {
+  return <Tooltip><TooltipTrigger asChild><button {...props} ref={ref} type="button" aria-label={label} className={cn("inline-flex items-center justify-center", className)}>{children}</button></TooltipTrigger><TooltipContent side={tooltipSide}>{label}</TooltipContent></Tooltip>;
+});

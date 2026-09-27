@@ -19,7 +19,7 @@ import { canEditTree } from './tree-actions';
 import type { TreeNotifier } from './page-operations';
 
 export type TreeStageTeamspaceState = 'loading' | 'error' | 'forbidden' | 'empty' | 'ready';
-export type LibraryView = 'overview' | 'all-documents' | 'starred' | 'trash' | 'projects' | 'recent';
+export type LibraryView = 'overview' | 'all-documents' | 'starred' | 'drafts' | 'trash' | 'projects' | 'recent';
 
 export function KnowledgeTreeStage({ userId, workspaceId, teamspaces, teamspaceState, access, selectedSectionId, selectedPageId, onSelectSection, onSelectPage, onRetryTeamspaces, onCreateTeamspace, notify, view, onNavigate }: {
   userId: string;
@@ -57,7 +57,7 @@ export function KnowledgeTreeStage({ userId, workspaceId, teamspaces, teamspaceS
   }
   const actions = useDocumentNavigationActions({ workspaceId: workspaceId ?? '', userId, pages, teamspaces, canEdit: canEditTree(access), onOpenPage: openPage, notify });
   const toNode = (node: NavigationPageNode): SidebarProjectNode => ({ id: node.id, kind: 'document', label: node.title, icon: 'file', starred: collections.starred.includes(node.id), expandable: node.children.length > 0, defaultExpanded: true, children: node.children.map(toNode) });
-  const projects: SidebarProjectNode[] = sections.map((section) => ({ id: section.id, kind: 'project', label: section.title, projectIconId: 'folder', starred: collections.starred.includes(section.id), expandable: section.pages.length > 0, defaultExpanded: true, children: section.pages.map(toNode) }));
+  const projects: SidebarProjectNode[] = sections.map((section) => ({ id: section.id, kind: 'project', label: section.title, count: documents.filter((page) => page.teamspaceId === section.id).length, projectIconId: 'folder', starred: collections.starred.includes(section.id), expandable: section.pages.length > 0, defaultExpanded: true, children: section.pages.map(toNode) }));
   const tags = collections.tags.map((tag) => ({ id: tag.id, name: tag.name, color: '#ada34e' }));
   const tagDocuments = Object.fromEntries(collections.tags.map((tag) => [tag.id, documents.filter((page) => tag.pageIds.includes(page.id)).map((page) => ({ id: page.id, title: page.title || '无标题页面', starred: collections.starred.includes(page.id) }))]));
   function addTag(name: string, pageIds: string[] = []) {
@@ -79,6 +79,7 @@ export function KnowledgeTreeStage({ userId, workspaceId, teamspaces, teamspaceS
         activeResource={!selectedPageId && view === 'overview' && selectedSectionId ? `project:${selectedSectionId}` : null}
         activeDocumentId={selectedPageId}
         activeDocumentLocation={location}
+        counts={{ 'all-documents': documents.length, starred: documents.filter((page) => collections.starred.includes(page.id)).length, drafts: documents.filter((page) => collections.drafts.includes(page.id)).length, trash: pages.filter((page) => page.deletedAt).length, projects: documents.length, tags: new Set(Object.values(tagDocuments).flat().map((page) => page.id)).size }}
         projects={projects}
         tags={tags}
         tagDocuments={tagDocuments}
@@ -87,7 +88,6 @@ export function KnowledgeTreeStage({ userId, workspaceId, teamspaces, teamspaceS
         expandedProjects={expandedProjects}
         expandedTags={expandedTags}
         onNavigateMain={(id) => onNavigate(id as LibraryView)}
-        onBrowseProjects={() => onNavigate('projects')}
         onSelectProject={(id) => { onSelectSection(id); onNavigate('overview'); }}
         onSelectDocument={(id) => openPage(id)}
         onToggleProject={(id) => setExpandedProjects((current) => ({ ...current, [id]: !(current[id] ?? true) }))}

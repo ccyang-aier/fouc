@@ -12,11 +12,11 @@ import {
   permissionLevels,
   workspaceKindSchema,
 } from '@fouc/shared/knowledge/contracts';
-import { generateKnowledgeSchemaSql, knowledgeSchemaSqlPath } from '../../../scripts/knowledge-schema';
+import { generateDatabaseSchemaSql, databaseSchemaSqlPath } from '../../scripts/database-schema';
 import {
   aiTaskKind,
   aiTaskStatus,
-  allKnowledgeTables,
+  allApplicationTables,
   asset,
   assetStatus,
   blockEmbeddingStaging,
@@ -26,7 +26,7 @@ import {
   docCheckpoint,
   docState,
   knowledgeBusinessTables,
-  knowledgeIdentityTables,
+  identityTables,
   memberRole,
   modelTier,
   page,
@@ -46,9 +46,9 @@ describe('knowledge current Drizzle schema', () => {
       'comment', 'outbox', 'ai_task', 'ai_usage', 'notification',
       'personal_access_token', 'share_link', 'model_credential', 'block_embedding_staging',
     ]) expect(names).toContain(name);
-    expect(knowledgeIdentityTables.map((table) => getTableConfig(table).name).sort())
+    expect(identityTables.map((table) => getTableConfig(table).name).sort())
       .toEqual(['account', 'session', 'user', 'verification']);
-    expect(new Set(allKnowledgeTables).size).toBe(allKnowledgeTables.length);
+    expect(new Set(allApplicationTables).size).toBe(allApplicationTables.length);
   });
 
   test('all business tables carry a non-null workspace key and tenant-safe foreign keys', () => {
@@ -68,7 +68,7 @@ describe('knowledge current Drizzle schema', () => {
   });
 
   test('every tenant-owned table has a foreign-key path to its workspace root', () => {
-    function reachesRoot(table: typeof allKnowledgeTables[number], visited = new Set<object>()): boolean {
+    function reachesRoot(table: typeof allApplicationTables[number], visited = new Set<object>()): boolean {
       if (visited.has(table)) return false;
       visited.add(table);
       const config = getTableConfig(table);
@@ -170,7 +170,7 @@ describe('knowledge current Drizzle schema', () => {
   });
 
   test('every timestamp is timezone-aware', () => {
-    for (const table of allKnowledgeTables) {
+    for (const table of allApplicationTables) {
       for (const column of getTableConfig(table).columns) {
         if (column.columnType === 'PgTimestamp') expect(column.getSQLType()).toBe('timestamp with time zone');
       }
@@ -178,7 +178,7 @@ describe('knowledge current Drizzle schema', () => {
   });
 
   test('schema-owned identifiers fit PostgreSQL without silent truncation', () => {
-    for (const table of allKnowledgeTables) {
+    for (const table of allApplicationTables) {
       const config = getTableConfig(table);
       const names = [config.schema!, config.name, ...config.columns.map((column) => column.name),
         ...config.foreignKeys.map((key) => key.getName()), ...config.checks.map((check) => check.name),
@@ -189,10 +189,10 @@ describe('knowledge current Drizzle schema', () => {
   });
 
   test('generated initialization contains the current schema without DDL drift', async () => {
-    const sql = await generateKnowledgeSchemaSql();
-    const saved = await readFile(knowledgeSchemaSqlPath, 'utf8');
+    const sql = await generateDatabaseSchemaSql();
+    const saved = await readFile(databaseSchemaSqlPath, 'utf8');
     expect(saved.replaceAll('\r\n', '\n')).toBe(sql);
-    for (const table of allKnowledgeTables) {
+    for (const table of allApplicationTables) {
       const config = getTableConfig(table);
       expect(sql).toContain(`CREATE TABLE "${config.schema}"."${config.name}"`);
     }

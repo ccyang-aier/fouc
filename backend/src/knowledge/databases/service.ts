@@ -27,12 +27,12 @@ import { createAuthorizedPage } from '../pages/tree';
 import { lockPermissionPage } from '../permissions/locking';
 import { effectivePageAccessCondition } from '../permissions/queries';
 import { appendKnowledgeOutbox } from '../workers/outbox';
-import { KnowledgeDatabaseError } from './errors';
+import { FoucDatabaseError } from './errors';
 import { compileRowFilters, compileRowOrder, compileRowSeek, relationReferences, validateRowProperties } from './properties';
 
 function parse<S extends z.ZodType>(schema: S, input: unknown): z.output<S> {
   const parsed = schema.safeParse(input);
-  if (!parsed.success) throw new KnowledgeDatabaseError('INVALID_DATABASE_INPUT');
+  if (!parsed.success) throw new FoucDatabaseError('INVALID_DATABASE_INPUT');
   return parsed.data;
 }
 
@@ -45,7 +45,7 @@ async function loadDatabase(db: KnowledgeTenantTransaction, scope: { workspaceId
     .from(databaseDefinition)
     .innerJoin(page, and(eq(page.workspaceId, databaseDefinition.workspaceId), eq(page.id, databaseDefinition.pageId)))
     .where(and(eq(databaseDefinition.workspaceId, scope.workspaceId), eq(databaseDefinition.pageId, scope.pageId), isNull(page.deletedAt)));
-  if (!record) throw new KnowledgeDatabaseError('DATABASE_NOT_FOUND');
+  if (!record) throw new FoucDatabaseError('DATABASE_NOT_FOUND');
   return record;
 }
 
@@ -55,7 +55,7 @@ async function assertRelationTargets(db: KnowledgeTenantTransaction, workspaceId
   if (!targets.length) return;
   const found = await db.select({ id: page.id }).from(page)
     .where(and(eq(page.workspaceId, workspaceId), inArray(page.id, targets), eq(page.kind, 'database'), isNull(page.deletedAt)));
-  if (found.length !== targets.length) throw new KnowledgeDatabaseError('INVALID_DATABASE_COLUMNS');
+  if (found.length !== targets.length) throw new FoucDatabaseError('INVALID_DATABASE_COLUMNS');
 }
 
 /** relation 属性值引用的每个页面都必须是目标数据库下未回收的行页面。 */
@@ -64,7 +64,7 @@ async function assertRelationValues(db: KnowledgeTenantTransaction, workspaceId:
     const unique = [...new Set(ids)];
     const found = await db.select({ id: page.id }).from(page)
       .where(and(eq(page.workspaceId, workspaceId), eq(page.databaseId, target), eq(page.kind, 'row'), isNull(page.deletedAt), inArray(page.id, unique)));
-    if (found.length !== unique.length) throw new KnowledgeDatabaseError('INVALID_ROW_PROPERTIES');
+    if (found.length !== unique.length) throw new FoucDatabaseError('INVALID_ROW_PROPERTIES');
   }
 }
 
@@ -95,10 +95,10 @@ async function emitColumnsChanged(db: KnowledgeTenantTransaction, scope: PageSco
  */
 export async function createAuthorizedDatabase(db: KnowledgeTenantTransaction, input: unknown, createdBy: string): Promise<DatabaseColumnsState> {
   const parsed = parse(createDatabaseInputSchema, input);
-  if (!entityIdSchema.safeParse(createdBy).success) throw new KnowledgeDatabaseError('INVALID_DATABASE_INPUT');
+  if (!entityIdSchema.safeParse(createdBy).success) throw new FoucDatabaseError('INVALID_DATABASE_INPUT');
   await assertRelationTargets(db, parsed.workspaceId, parsed.columns);
   const [existing] = await db.select({ kind: page.kind }).from(page).where(and(eq(page.workspaceId, parsed.workspaceId), eq(page.id, parsed.id)));
-  if (existing && existing.kind !== 'database') throw new KnowledgeDatabaseError('INVALID_DATABASE_INPUT');
+  if (existing && existing.kind !== 'database') throw new FoucDatabaseError('INVALID_DATABASE_INPUT');
   const placed = await createAuthorizedPage(db, {
     id: parsed.id,
     workspaceId: parsed.workspaceId,
@@ -128,11 +128,11 @@ export async function createAuthorizedDatabase(db: KnowledgeTenantTransaction, i
  */
 export async function createAuthorizedRow(db: KnowledgeTenantTransaction, input: unknown, createdBy: string): Promise<PagePlacement> {
   const parsed = parse(createRowInputSchema, input);
-  if (!entityIdSchema.safeParse(createdBy).success) throw new KnowledgeDatabaseError('INVALID_DATABASE_INPUT');
+  if (!entityIdSchema.safeParse(createdBy).success) throw new FoucDatabaseError('INVALID_DATABASE_INPUT');
   const database = await loadDatabase(db, { workspaceId: parsed.workspaceId, pageId: parsed.databaseId });
   const [existing] = await db.select().from(page).where(and(eq(page.workspaceId, parsed.workspaceId), eq(page.id, parsed.id)));
   if (existing) {
-    if (existing.kind !== 'row' || existing.databaseId !== parsed.databaseId) throw new KnowledgeDatabaseError('INVALID_DATABASE_INPUT');
+    if (existing.kind !== 'row' || existing.databaseId !== parsed.databaseId) throw new FoucDatabaseError('INVALID_DATABASE_INPUT');
     return placement(existing);
   }
   validateRowProperties(database.columns, parsed.properties);
@@ -163,8 +163,8 @@ export async function updateAuthorizedRowProperties(db: KnowledgeTenantTransacti
   const parsed = parse(updatePropertiesInputSchema, input);
   const [row] = await db.select({ id: page.id, kind: page.kind, databaseId: page.databaseId, deletedAt: page.deletedAt }).from(page)
     .where(and(eq(page.workspaceId, parsed.workspaceId), eq(page.id, parsed.pageId)));
-  if (!row || row.deletedAt !== null) throw new KnowledgeDatabaseError('ROW_NOT_FOUND');
-  if (row.kind !== 'row' || row.databaseId === null) throw new KnowledgeDatabaseError('INVALID_DATABASE_INPUT');
+  if (!row || row.deletedAt !== null) throw new FoucDatabaseError('ROW_NOT_FOUND');
+  if (row.kind !== 'row' || row.databaseId === null) throw new FoucDatabaseError('INVALID_DATABASE_INPUT');
   // 数据库页面锁把行属性写入与列变更(删列清洗/定义替换)互斥;workspace→teamspace→page
   // 的加锁顺序与 P03 既有协议一致。
   await lockPermissionPage(db, { workspaceId: parsed.workspaceId, pageId: row.databaseId });
@@ -174,7 +174,7 @@ export async function updateAuthorizedRowProperties(db: KnowledgeTenantTransacti
   const updated = await db.update(page).set({ properties: parsed.properties, updatedAt: sql`clock_timestamp()` })
     .where(and(eq(page.workspaceId, parsed.workspaceId), eq(page.id, parsed.pageId), isNull(page.deletedAt)))
     .returning({ id: page.id });
-  if (!updated.length) throw new KnowledgeDatabaseError('ROW_NOT_FOUND');
+  if (!updated.length) throw new FoucDatabaseError('ROW_NOT_FOUND');
   await emitRowsChanged(db, { workspaceId: parsed.workspaceId, databaseId: row.databaseId, ids: [parsed.pageId] });
   return { workspaceId: parsed.workspaceId, pageId: parsed.pageId, properties: parsed.properties };
 }
@@ -192,7 +192,7 @@ export async function updateAuthorizedDatabaseColumns(db: KnowledgeTenantTransac
   const next = new Map(parsed.columns.map((column) => [column.id, column] as const));
   for (const previous of database.columns) {
     const updated = next.get(previous.id);
-    if (updated && updated.type !== previous.type) throw new KnowledgeDatabaseError('INVALID_DATABASE_COLUMNS');
+    if (updated && updated.type !== previous.type) throw new FoucDatabaseError('INVALID_DATABASE_COLUMNS');
   }
   await assertRelationTargets(db, parsed.workspaceId, parsed.columns);
   if (database.columns.length === parsed.columns.length && database.columns.every((previous, index) => JSON.stringify(previous) === JSON.stringify(parsed.columns[index]))) {
@@ -223,7 +223,7 @@ export async function listDatabaseRows(db: KnowledgeTenantTransaction, input: un
   if (parsed.cursor) {
     const [anchor] = await db.select({ id: page.id, position: page.position, properties: page.properties }).from(page)
       .where(and(eq(page.workspaceId, parsed.workspaceId), eq(page.databaseId, parsed.databaseId), eq(page.id, parsed.cursor)));
-    if (!anchor) throw new KnowledgeDatabaseError('INVALID_DATABASE_QUERY');
+    if (!anchor) throw new FoucDatabaseError('INVALID_DATABASE_QUERY');
     conditions.push(compileRowSeek(database.columns, parsed.sort, anchor));
   }
   const found = await db.select({ pageId: page.id, title: page.title, properties: page.properties }).from(page)

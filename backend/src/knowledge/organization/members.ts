@@ -1,7 +1,8 @@
 import { and, asc, count, eq, gt } from 'drizzle-orm';
 import type { Pool } from 'pg';
 import { changeMemberRoleInputSchema, listOrganizationInputSchema, removeMemberInputSchema } from '@fouc/shared/knowledge/contracts';
-import { authUser, member } from '../../database/knowledge/schema';
+import { member } from '../../database/knowledge/schema';
+import { authUser } from '../../database/identity/schema';
 import type { KnowledgeTenantTransaction } from '../../database/knowledge/tenant';
 import type { FoucIdentity } from '../../identity/identity';
 import { inWorkspace, pageOf, requireDirectory, requireRoleAuthority } from './context';

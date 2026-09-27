@@ -1,15 +1,16 @@
 /**
- * Native-fetch client for the knowledge auth API (A04).
+ * HTTP client for the global Fouc identity API.
  *
  * Email/password sign-in, sign-up, verification email, sign-out, session
  * checks and the OAuth start are plain Better Auth HTTP routes under
  * `/api/auth/*` — a native fetch seam, not tRPC. The API origin comes from
- * the data layer's resolver (U01 `endpoint.ts`): desktop asks the Tauri shell,
- * web reads `NEXT_PUBLIC_FOUC_API_URL`, dev falls back to the sidecar.
+ * the global service resolver: desktop asks the Tauri shell,
+ * web reads `NEXT_PUBLIC_FOUC_API_URL`, development uses the configured service.
  * Cookies (`credentials: 'include'`) are the only credential the client holds;
  * session tokens that appear in response bodies are ignored, never stored.
  */
 
+import { foucServiceFetch } from '@/lib/fouc-service-fetch';
 import { getFoucApiOrigin } from '@/lib/fouc-api-endpoint';
 import { authFlowErrorFromResponse, normalizeAuthFlowError } from './auth-errors';
 
@@ -69,7 +70,7 @@ export function parseOAuthProviders(body: unknown): FoucOAuthProvider[] {
 
 export function createFoucAuthApi(deps: FoucAuthApiDeps = {
   resolveOrigin: getFoucApiOrigin,
-  fetchImpl: (input, init) => fetch(input, init),
+  fetchImpl: foucServiceFetch,
 }) {
   async function request<T>(path: string, init: { method?: 'GET' | 'POST'; body?: unknown; signal?: AbortSignal } = {}): Promise<T> {
     let origin: string;

@@ -261,13 +261,13 @@ describe('email-bound, expiring one-time invitations', () => {
   for (const expires of ['invitation', 'session'] as const) test(`${expires} expiry during a workspace-lock wait denies acceptance with no partial writes`, async () => {
     const space = await create(owner, `Expiring ${expires}`);
     const invitation = await invite(space, regular);
-    const previous = await server.database.admin.query<{ expires_at: Date }>('SELECT expires_at FROM knowledge_auth.session WHERE id = $1', [regular.identity.sessionId]);
+    const previous = await server.database.admin.query<{ expires_at: Date }>('SELECT expires_at FROM auth.session WHERE id = $1', [regular.identity.sessionId]);
     const client = await server.database.admin.connect();
     let outcome: Promise<unknown> | undefined;
     try {
       // Commit the short deadline first, so the request can authenticate and
       // reach the workspace lock rather than waiting on an uncommitted session.
-      if (expires === 'session') await client.query("UPDATE knowledge_auth.session SET expires_at = clock_timestamp() + interval '400 milliseconds' WHERE id = $1", [regular.identity.sessionId]);
+      if (expires === 'session') await client.query("UPDATE auth.session SET expires_at = clock_timestamp() + interval '400 milliseconds' WHERE id = $1", [regular.identity.sessionId]);
       else await client.query("UPDATE knowledge.workspace_invitation SET created_at = clock_timestamp() - interval '1 second', expires_at = clock_timestamp() + interval '400 milliseconds' WHERE workspace_id = $1 AND id = $2", [space.id, invitation.invitation.id]);
       await client.query('BEGIN');
       await client.query('SELECT workspace_id FROM knowledge.workspace WHERE workspace_id = $1 FOR UPDATE', [space.id]);
@@ -284,7 +284,7 @@ describe('email-bound, expiring one-time invitations', () => {
     } finally {
       await client.query('ROLLBACK');
       if (outcome) await outcome;
-      await client.query('UPDATE knowledge_auth.session SET expires_at = $2 WHERE id = $1', [regular.identity.sessionId, previous.rows[0]!.expires_at]);
+      await client.query('UPDATE auth.session SET expires_at = $2 WHERE id = $1', [regular.identity.sessionId, previous.rows[0]!.expires_at]);
       client.release();
     }
   });
@@ -400,14 +400,14 @@ describe('active identity cannot be supplied or widened by HTTP input', () => {
     expect((await server.request('/sign-up/email', { email, password: testPassword, name: 'Unverified' })).status).toBe(200);
     expect((await server.request('/sign-in/email', { email, password: testPassword })).status).toBe(403);
     expect((await request('', undefined)).status).toBe(401);
-    await server.database.admin.query('UPDATE knowledge_auth."user" SET email_verified = false WHERE id = $1', [temporary.identity.userId]);
+    await server.database.admin.query('UPDATE auth."user" SET email_verified = false WHERE id = $1', [temporary.identity.userId]);
     expect((await request('', temporary)).status).toBe(401);
     await expect(service.createWorkspace(temporary.identity, { name: 'Denied', kind: 'personal' })).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
-    await server.database.admin.query('UPDATE knowledge_auth."user" SET email_verified = true WHERE id = $1', [temporary.identity.userId]);
-    await server.database.admin.query('UPDATE knowledge_auth.session SET expires_at = now() - interval \'1 second\' WHERE id = $1', [temporary.identity.sessionId]);
+    await server.database.admin.query('UPDATE auth."user" SET email_verified = true WHERE id = $1', [temporary.identity.userId]);
+    await server.database.admin.query('UPDATE auth.session SET expires_at = now() - interval \'1 second\' WHERE id = $1', [temporary.identity.sessionId]);
     await expect(service.listWorkspaces(temporary.identity)).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
     expect((await request('', temporary)).status).toBe(401);
-    await server.database.admin.query('DELETE FROM knowledge_auth.session WHERE id = $1', [temporary.identity.sessionId]);
+    await server.database.admin.query('DELETE FROM auth.session WHERE id = $1', [temporary.identity.sessionId]);
     await expect(service.listWorkspaces(temporary.identity)).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
     expect((await request('', temporary, 'POST', { name: 'Denied', kind: 'personal' })).status).toBe(401);
     expect(server.database.idleErrors).toHaveLength(0);

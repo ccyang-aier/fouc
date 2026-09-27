@@ -1,7 +1,8 @@
 import { and, eq, gt, sql } from 'drizzle-orm';
 import type { MemberRole } from '@fouc/shared/knowledge/contracts';
 import type { Pool } from 'pg';
-import { authSession, authUser, member } from '../../database/knowledge/schema';
+import { member } from '../../database/knowledge/schema';
+import { authSession, authUser } from '../../database/identity/schema';
 import type { KnowledgeTenantTransaction } from '../../database/knowledge/tenant';
 import { hasTrustedFoucOrigin } from '../../identity/config';
 import { KnowledgeAccessError } from './access-policy';

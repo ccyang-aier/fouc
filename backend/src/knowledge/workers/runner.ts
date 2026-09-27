@@ -1,7 +1,7 @@
 import { run } from 'graphile-worker';
 import type { Pool } from 'pg';
-import type { RunningRole } from '../runtime/lifecycle';
-import { isKnowledgeApplicationRoleSafe, readKnowledgeApplicationRole } from '../../database/knowledge/initialize-role';
+import type { RunningRole } from '../../runtime/lifecycle';
+import { isFoucApplicationRoleSafe, readFoucApplicationRole } from '../../database/initialize-role';
 import { KNOWLEDGE_JOBS_SCHEMA } from './initialize';
 import { knowledgeWorkerLogger, observeWorker } from './logger';
 import { createKnowledgeTaskList } from './tasks';
@@ -28,7 +28,7 @@ export async function startKnowledgeWorker(options: KnowledgeWorkerOptions): Pro
     || !Number.isInteger(gracefulShutdownAbortTimeout) || gracefulShutdownAbortTimeout < 1 || gracefulShutdownAbortTimeout > 30_000) {
     throw new TypeError('Invalid knowledge worker runtime options');
   }
-  if (!isKnowledgeApplicationRoleSafe(await readKnowledgeApplicationRole(pool))) throw new Error('Knowledge workers require an unprivileged application database role');
+  if (!isFoucApplicationRoleSafe(await readFoucApplicationRole(pool))) throw new Error('Knowledge workers require an unprivileged application database role');
   const taskList = createKnowledgeTaskList(pool, options.consumers, observer);
   const releaseErrors = guardKnowledgeWorkerPool(pool, observer);
   const runner = await run({

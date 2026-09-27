@@ -4,7 +4,8 @@ import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import type { OutboxEvent, PagePlacement, PageScope, Principal, PropertyDefinition } from '@fouc/shared/knowledge/contracts';
-import { authUser, knowledgeSchema, member, page, teamspace, workspace } from '../../database/knowledge/schema';
+import { knowledgeSchema, member, page, teamspace, workspace } from '../../database/knowledge/schema';
+import { authUser } from '../../database/identity/schema';
 import { createTenantTestDatabase } from '../../database/knowledge/tenant-test-database';
 import { withKnowledgeTenant } from '../../database/knowledge/tenant';
 import type { KnowledgeTenantTransaction } from '../../database/knowledge/tenant';
@@ -14,7 +15,7 @@ import { authorizePageAccess, expandRequestPrincipals } from '../permissions/aut
 import { replaceAuthorizedPageAcl, setAuthorizedPageInheritance } from '../permissions/mutations';
 import { rebuildPermissionSubtree } from '../permissions/rebuild';
 import { initializeKnowledgeJobs } from '../workers/initialize';
-import { KnowledgeDatabaseError } from './errors';
+import { FoucDatabaseError } from './errors';
 import type { DatabaseErrorCode } from './errors';
 import { createAuthorizedDatabase, createAuthorizedRow, listDatabaseRows, updateAuthorizedDatabaseColumns, updateAuthorizedRowProperties } from './service';
 
@@ -35,8 +36,8 @@ async function rejects(operation: () => Promise<unknown>, code: DatabaseErrorCod
   } catch (error) {
     failure = error;
   }
-  expect(failure).toBeInstanceOf(KnowledgeDatabaseError);
-  expect((failure as KnowledgeDatabaseError).code).toBe(code);
+  expect(failure).toBeInstanceOf(FoucDatabaseError);
+  expect((failure as FoucDatabaseError).code).toBe(code);
 }
 
 async function rows<T extends Record<string, unknown>>(query: string, values: unknown[] = []): Promise<T[]> {

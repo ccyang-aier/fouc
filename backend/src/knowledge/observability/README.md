@@ -25,7 +25,7 @@ pnpm backend:typecheck
 pnpm exec eslint --no-ignore backend/src/knowledge/observability
 # Node smoke: bundle for Node, copy the SQL asset next to it, run the same suite.
 bun build backend/src/knowledge/observability/observability.test.ts --target=node --outfile backend/node_modules/.cache/knowledge/observability.test.mjs
-Copy-Item backend/src/database/knowledge/current.sql backend/node_modules/.cache/knowledge/current.sql
+Copy-Item backend/src/database/current.sql backend/node_modules/.cache/knowledge/current.sql
 node --test backend/node_modules/.cache/knowledge/observability.test.mjs
 ```
 

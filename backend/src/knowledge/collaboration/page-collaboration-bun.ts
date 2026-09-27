@@ -1,3 +1,4 @@
+import type { FoucSocketTickets } from '../../identity/socket-tickets';
 import bunAdapter from 'crossws/adapters/bun';
 import type { Pool } from 'pg';
 import { createLogger } from '../../platform/logger';
@@ -43,7 +44,7 @@ export interface PageCollaborationListener {
  * to the authenticated Hocuspocus host through crossws's Bun adapter. Z03 owns
  * when/where this runs; tests embed it exactly the way production does.
  */
-export function createPageCollaborationListener(deps: { authenticator: KnowledgeRequestAuthenticator; pool: Pool }, options: { port?: number; hostname?: string; signal?: AbortSignal; persistence?: PageCollaborationPersistence; broadcast?: PageCollaborationBroadcast; events?: WorkspaceEventsChannel; /** V01 checkpoints, mounted by the production assembly (Z03/V03). */ checkpoints?: PageCheckpointExtension; /** Non-WebSocket fallback so one port can also host the HTTP API (Z03). */ http?: (request: Request, clientAddress: string) => Response | Promise<Response> } = {}): PageCollaborationListener {
+export function createPageCollaborationListener(deps: { authenticator: KnowledgeRequestAuthenticator; pool: Pool }, options: { socketTickets?: FoucSocketTickets; port?: number; hostname?: string; signal?: AbortSignal; persistence?: PageCollaborationPersistence; broadcast?: PageCollaborationBroadcast; events?: WorkspaceEventsChannel; /** V01 checkpoints, mounted by the production assembly (Z03/V03). */ checkpoints?: PageCheckpointExtension; /** Non-WebSocket fallback so one port can also host the HTTP API (Z03). */ http?: (request: Request, clientAddress: string) => Response | Promise<Response> } = {}): PageCollaborationListener {
   const hocuspocus = createPageCollaboration(deps, options.persistence, options.broadcast, options.checkpoints);
   const connections = new Map<unknown, ReturnType<typeof hocuspocus.handleConnection>>();
   const crossws = bunAdapter({
@@ -69,6 +70,9 @@ export function createPageCollaborationListener(deps: { authenticator: Knowledge
     idleTimeout: 255,
     async fetch(request, srv) {
       if (request.headers.get('upgrade')?.toLowerCase() === 'websocket') {
+        const authorized = options.socketTickets?.consume(request) ?? (options.socketTickets ? null : request);
+        if (!authorized) return new Response('Unauthorized', { status: 401 });
+        request = authorized;
         // Metadata events ride their own stateless channel by URL; page
         // documents stay on the Hocuspocus transport.
         const events = options.events;

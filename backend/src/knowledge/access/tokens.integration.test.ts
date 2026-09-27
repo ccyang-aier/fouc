@@ -183,9 +183,9 @@ describe('workspace PAT with real PostgreSQL, HTTP and verified sessions', () =>
     const login = await server.request('/sign-in/email', { email: 'pat-owner@example.test', password: testPassword });
     const cookie = responseCookie(login);
     const context = await authenticator.authenticate(new Request(`${server.origin}/test`, { headers: { cookie } }), workspaceId);
-    await server.database.admin.query('UPDATE knowledge_auth."user" SET email_verified=false WHERE id=$1', [owner.id]);
+    await server.database.admin.query('UPDATE auth."user" SET email_verified=false WHERE id=$1', [owner.id]);
     try { await expect(authenticator.refresh(context)).rejects.toMatchObject({ code: 'UNAUTHENTICATED' }); }
-    finally { await server.database.admin.query('UPDATE knowledge_auth."user" SET email_verified=true WHERE id=$1', [owner.id]); }
+    finally { await server.database.admin.query('UPDATE auth."user" SET email_verified=true WHERE id=$1', [owner.id]); }
     await server.database.admin.query('DELETE FROM knowledge.member WHERE workspace_id=$1 AND user_id=$2', [workspaceId, owner.id]);
     try { await expect(authenticator.refresh(context)).rejects.toMatchObject({ code: 'UNAUTHENTICATED' }); }
     finally { await server.database.admin.query("INSERT INTO knowledge.member(workspace_id,user_id,role) VALUES ($1,$2,'owner')", [workspaceId, owner.id]); }
@@ -272,12 +272,12 @@ describe('workspace PAT with real PostgreSQL, HTTP and verified sessions', () =>
 
   test('loss of verified user status and unknown persisted scopes fail closed', async () => {
     const created = await create();
-    await server.database.admin.query('UPDATE knowledge_auth."user" SET email_verified=false WHERE id=$1', [owner.id]);
+    await server.database.admin.query('UPDATE auth."user" SET email_verified=false WHERE id=$1', [owner.id]);
     try {
       expect((await access(created.token)).status).toBe(401);
       expect((await request(`/test/access/${workspaceId}`, { cookie: owner.cookie })).status).toBe(401);
       expect((await request('/test/tokens/revoke', { cookie: owner.cookie, body: { workspaceId, tokenId: created.metadata.id } })).status).toBe(401);
-    } finally { await server.database.admin.query('UPDATE knowledge_auth."user" SET email_verified=true WHERE id=$1', [owner.id]); }
+    } finally { await server.database.admin.query('UPDATE auth."user" SET email_verified=true WHERE id=$1', [owner.id]); }
     await server.database.admin.query("UPDATE knowledge.personal_access_token SET scopes=ARRAY['admin'] WHERE workspace_id=$1 AND id=$2", [workspaceId, created.metadata.id]);
     try { expect((await access(created.token)).status).toBe(401); }
     finally { await server.database.admin.query("UPDATE knowledge.personal_access_token SET scopes=ARRAY['read'] WHERE workspace_id=$1 AND id=$2", [workspaceId, created.metadata.id]); }
@@ -288,7 +288,7 @@ describe('workspace PAT with real PostgreSQL, HTTP and verified sessions', () =>
     const login = await server.request('/sign-in/email', { email: 'pat-owner@example.test', password: testPassword });
     const cookie = responseCookie(login);
     const session = await server.auth.api.getSession({ headers: new Headers({ cookie }), query: { disableCookieCache: true } });
-    await server.database.admin.query("UPDATE knowledge_auth.session SET expires_at=now()-interval '1 second' WHERE id=$1", [session!.session.id]);
+    await server.database.admin.query("UPDATE auth.session SET expires_at=now()-interval '1 second' WHERE id=$1", [session!.session.id]);
     expect((await request('/test/tokens', { cookie, body: { workspaceId, name: 'Expired', scopes: ['read'], expiresAt: null } })).status).toBe(401);
     expect((await request('/test/tokens/revoke', { cookie, body: { workspaceId, tokenId: created.metadata.id } })).status).toBe(401);
     const fresh = await server.request('/sign-in/email', { email: 'pat-owner@example.test', password: testPassword });
@@ -303,7 +303,7 @@ describe('workspace PAT with real PostgreSQL, HTTP and verified sessions', () =>
     await server.database.admin.query("INSERT INTO knowledge.member(workspace_id,user_id,role) VALUES ($1,$2,'member')", [workspaceId, transient.id]);
     const created = await create(['read'], {}, transient.cookie);
     const context = await authenticator.authenticate(new Request(`${server.origin}/test`, { headers: { authorization: `Bearer ${created.token}` } }), workspaceId);
-    await server.database.admin.query('DELETE FROM knowledge_auth."user" WHERE id=$1', [transient.id]);
+    await server.database.admin.query('DELETE FROM auth."user" WHERE id=$1', [transient.id]);
     expect((await access(created.token)).status).toBe(401);
     await expect(authenticator.refresh(context)).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
   });

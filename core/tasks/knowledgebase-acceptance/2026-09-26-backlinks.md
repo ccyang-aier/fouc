@@ -8,7 +8,7 @@
 bun test backend/src/knowledge/search          # 6 pass / 0 fail / 22 expect，两轮复跑稳定
 pnpm exec eslint --no-ignore backend/src/knowledge/search   # 无告警
 pnpm backend:typecheck                         # search/ 零错误
-bun backend/scripts/knowledge-schema.ts --check             # Knowledge current SQL matches the Drizzle source
+bun backend/scripts/database-schema.ts --check             # Knowledge current SQL matches the Drizzle source
 ```
 
 `pnpm backend:typecheck` 全量输出当时仅剩 `collaboration/agent-awareness.ts(64)` 一处错误：该文件为其他并行任务的同会话未跟踪新文件（两次运行间才出现），与本任务无关；search/ 目录无任何类型错误。未改动 `shared/`，故未运行 `pnpm shared:typecheck`。

@@ -4,7 +4,7 @@ import { sql } from 'drizzle-orm';
 import { group, member, workspace } from './schema';
 import { withFoucIdentity, withKnowledgeTenant } from './tenant';
 import { createTenantTestDatabase, seedTenantTestData } from './tenant-test-database';
-import { inspectKnowledgeDatabase } from './initialize-status';
+import { inspectFoucDatabase } from '../initialize-status';
 import { knowledgePoliciesForTable } from './rls';
 import type { TenantTestDatabase } from './tenant-test-database';
 
@@ -29,8 +29,8 @@ beforeAll(async () => {
   database = await createTenantTestDatabase();
   data = await seedTenantTestData(database.admin);
   const [alpha, beta] = data.tenants;
-  await database.admin.query('UPDATE knowledge_auth."user" SET email_verified = true WHERE id = $1', [alpha.userId]);
-  await database.admin.query('INSERT INTO knowledge_auth.session (id, user_id, token, expires_at) VALUES ($1, $2, $3, now() + interval \'1 hour\')', [sessionId, alpha.userId, randomUUID()]);
+  await database.admin.query('UPDATE auth."user" SET email_verified = true WHERE id = $1', [alpha.userId]);
+  await database.admin.query('INSERT INTO auth.session (id, user_id, token, expires_at) VALUES ($1, $2, $3, now() + interval \'1 hour\')', [sessionId, alpha.userId, randomUUID()]);
   await database.admin.query('INSERT INTO knowledge.workspace (workspace_id, name, kind) VALUES ($1, $2, $3)', [anotherWorkspaceId, 'Another own workspace', 'personal']);
   await database.admin.query('INSERT INTO knowledge.member (workspace_id, user_id, role) VALUES ($1, $2, $3), ($4, $5, $6)', [anotherWorkspaceId, alpha.userId, 'owner', alpha.workspaceId, beta.userId, 'guest']);
 }, 30_000);
@@ -41,14 +41,14 @@ describe('verified session identity discovery RLS', () => {
   test('deployment check detects a weakened identity discovery policy', async () => {
     await database.admin.query('ALTER POLICY own_identity ON knowledge.member USING (true)');
     try {
-      const status = await inspectKnowledgeDatabase(database.admin, database.pool);
+      const status = await inspectFoucDatabase(database.admin, database.pool);
       expect(status.state).toBe('incomplete');
       expect(status.issues).toContain('Tenant policy differs from current definition: knowledge.member');
     } finally {
       const policy = knowledgePoliciesForTable(member).find((item) => item.name === 'own_identity')!;
       await database.admin.query(`ALTER POLICY own_identity ON knowledge.member USING (${policy.using})`);
     }
-    expect((await inspectKnowledgeDatabase(database.admin, database.pool)).state).toBe('ready');
+    expect((await inspectFoucDatabase(database.admin, database.pool)).state).toBe('ready');
   });
 
   test('can discover only own memberships/workspaces, never another member or tenant content', async () => {
@@ -83,12 +83,12 @@ describe('verified session identity discovery RLS', () => {
   test('unknown, expired and unverified sessions fail closed', async () => {
     const discover = (id: string) => withFoucIdentity(database.pool, id, (db) => db.select().from(workspace));
     expect(await discover(randomUUID())).toHaveLength(0);
-    await database.admin.query('UPDATE knowledge_auth.session SET expires_at = now() - interval \'1 second\' WHERE id = $1', [sessionId]);
+    await database.admin.query('UPDATE auth.session SET expires_at = now() - interval \'1 second\' WHERE id = $1', [sessionId]);
     expect(await discover(sessionId)).toHaveLength(0);
-    await database.admin.query('UPDATE knowledge_auth.session SET expires_at = now() + interval \'1 hour\' WHERE id = $1', [sessionId]);
-    await database.admin.query('UPDATE knowledge_auth."user" SET email_verified = false WHERE id = $1', [data.tenants[0].userId]);
+    await database.admin.query('UPDATE auth.session SET expires_at = now() + interval \'1 hour\' WHERE id = $1', [sessionId]);
+    await database.admin.query('UPDATE auth."user" SET email_verified = false WHERE id = $1', [data.tenants[0].userId]);
     expect(await discover(sessionId)).toHaveLength(0);
-    await database.admin.query('UPDATE knowledge_auth."user" SET email_verified = true WHERE id = $1', [data.tenants[0].userId]);
+    await database.admin.query('UPDATE auth."user" SET email_verified = true WHERE id = $1', [data.tenants[0].userId]);
     expect(await discover(sessionId)).toHaveLength(2);
   });
 
@@ -129,14 +129,14 @@ describe('verified session identity discovery RLS', () => {
   });
 
   test('session revocation immediately removes all discovery access', async () => {
-    await database.admin.query('DELETE FROM knowledge_auth.session WHERE id = $1', [sessionId]);
+    await database.admin.query('DELETE FROM auth.session WHERE id = $1', [sessionId]);
     expect(await withFoucIdentity(database.pool, sessionId, (db) => db.select().from(workspace))).toHaveLength(0);
     expect(await withFoucIdentity(database.pool, sessionId, (db) => db.select().from(member))).toHaveLength(0);
   });
 
   test('a session expiring inside an open read-only transaction is no longer discoverable', async () => {
     const shortSession = randomUUID();
-    await database.admin.query("INSERT INTO knowledge_auth.session (id, user_id, token, expires_at) VALUES ($1, $2, $3, clock_timestamp() + interval '300 milliseconds')", [shortSession, data.tenants[0].userId, randomUUID()]);
+    await database.admin.query("INSERT INTO auth.session (id, user_id, token, expires_at) VALUES ($1, $2, $3, clock_timestamp() + interval '300 milliseconds')", [shortSession, data.tenants[0].userId, randomUUID()]);
     await withFoucIdentity(database.pool, shortSession, async (db) => {
       expect(await db.select().from(workspace)).toHaveLength(2);
       await db.execute(sql`SELECT pg_sleep(0.35)`);

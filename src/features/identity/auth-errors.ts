@@ -1,5 +1,5 @@
 /**
- * Knowledge auth flow error boundary (A04).
+ * Global Fouc identity error boundary.
  *
  * The auth API is plain Better Auth HTTP (not tRPC): failures arrive as
  * `{ code?, message? }` JSON bodies with a status, or as transport failures.

@@ -1,6 +1,6 @@
 import type { AgentQueryDatabaseToolInput, DatabaseRowsPage } from '@fouc/shared/knowledge/contracts';
 import { withKnowledgeTenant } from '../../../database/knowledge/tenant';
-import { KnowledgeDatabaseError } from '../../databases/errors';
+import { FoucDatabaseError } from '../../databases/errors';
 import { listDatabaseRows } from '../../databases/service';
 import { authorizePageAccess, expandRequestPrincipals } from '../../permissions';
 import { KnowledgeAgentToolError } from './errors';
@@ -29,7 +29,7 @@ export async function executeAgentQueryDatabase(input: AgentQueryDatabaseToolInp
         limit: input.limit,
       });
     } catch (error) {
-      if (!(error instanceof KnowledgeDatabaseError)) throw error;
+      if (!(error instanceof FoucDatabaseError)) throw error;
       if (error.code === 'DATABASE_NOT_FOUND') throw new KnowledgeAgentToolError('TARGET_NOT_ACCESSIBLE', 'query_database');
       if (error.code === 'INVALID_DATABASE_QUERY') throw new KnowledgeAgentToolError('INVALID_TOOL_QUERY', 'query_database');
       throw error;

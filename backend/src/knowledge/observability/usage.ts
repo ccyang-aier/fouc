@@ -1,6 +1,6 @@
 import type { Pool } from 'pg';
 import { aiUsage } from '../../database/knowledge/schema';
-import { knowledgeDatabaseErrorMessage } from '../../database/knowledge/initialize-config';
+import { foucDatabaseErrorMessage } from '../../database/initialize-config';
 import { withKnowledgeTenant } from '../../database/knowledge/tenant';
 import type { ModelCallRecord } from '../ai/gateway';
 
@@ -52,7 +52,7 @@ export function createAiUsageRecorder(pool: Pool, onDiagnostic: (event: Observab
         onDiagnostic({
           type: 'usage_persist_failed', callId: record.callId, workspaceId: record.context.workspaceId,
           operation: record.operation, status: record.status, errorCode: record.errorCode ?? null,
-          cause: knowledgeDatabaseErrorMessage(error),
+          cause: foucDatabaseErrorMessage(error),
         });
         return false;
       }

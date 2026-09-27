@@ -246,11 +246,11 @@ describe('Teamspace deletion and transactional permission invalidation', () => {
 
   test('a session expiring while waiting for the Teamspace lock cannot mutate root defaults', async () => {
     const record = await create('Session deadline', 'view');
-    const previous = await server.database.admin.query<{ expires_at: Date }>('SELECT expires_at FROM knowledge_auth.session WHERE id = $1', [admin.identity.sessionId]);
+    const previous = await server.database.admin.query<{ expires_at: Date }>('SELECT expires_at FROM auth.session WHERE id = $1', [admin.identity.sessionId]);
     const client = await server.database.admin.connect();
     let outcome: Promise<unknown> | undefined;
     try {
-      await client.query("UPDATE knowledge_auth.session SET expires_at = clock_timestamp() + interval '400 milliseconds' WHERE id = $1", [admin.identity.sessionId]);
+      await client.query("UPDATE auth.session SET expires_at = clock_timestamp() + interval '400 milliseconds' WHERE id = $1", [admin.identity.sessionId]);
       await client.query('BEGIN');
       await client.query('SELECT id FROM knowledge.teamspace WHERE workspace_id = $1 AND id = $2 FOR UPDATE', [workspaceId, record.id]);
       outcome = service.updateTeamspace(admin.identity, { ...scope(record), defaultAccess: 'full' }).catch((error: unknown) => error);
@@ -261,7 +261,7 @@ describe('Teamspace deletion and transactional permission invalidation', () => {
       expect((await result<Teamspace>(request(path(record)))).defaultAccess).toBe('view');
     } finally {
       await client.query('ROLLBACK'); if (outcome) await outcome;
-      await client.query('UPDATE knowledge_auth.session SET expires_at = $2 WHERE id = $1', [admin.identity.sessionId, previous.rows[0]!.expires_at]);
+      await client.query('UPDATE auth.session SET expires_at = $2 WHERE id = $1', [admin.identity.sessionId, previous.rows[0]!.expires_at]);
       client.release();
     }
   });
@@ -287,7 +287,7 @@ describe('Teamspace deletion and transactional permission invalidation', () => {
     await result(request(`/${workspaceId}/members/${regular.identity.userId}`, owner, 'DELETE', {}));
     expect((await request(path(record), regular)).status).toBe(404);
     await expect(service.getTeamspace({ ...owner.identity, userId: outsider.identity.userId }, scope(record))).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
-    await server.database.admin.query('DELETE FROM knowledge_auth.session WHERE id = $1', [admin.identity.sessionId]);
+    await server.database.admin.query('DELETE FROM auth.session WHERE id = $1', [admin.identity.sessionId]);
     expect((await request(path(record), admin, 'PATCH', { defaultAccess: 'full' })).status).toBe(401);
     await expect(service.removeTeamspace(admin.identity, scope(record))).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
     expect(server.database.idleErrors).toHaveLength(0);

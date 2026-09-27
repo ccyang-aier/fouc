@@ -27,13 +27,13 @@ const configSchema = z.strictObject({
 
 /**
  * Environment first; local development falls back to the generated credentials
- * file, mirroring readKnowledgeDatabaseConnections. Never logs these values.
+ * file, mirroring readFoucDatabaseConnections. Never logs these values.
  */
 export async function readKnowledgeAssetStorageConfig(environment: NodeJS.ProcessEnv = process.env): Promise<KnowledgeAssetStorageConfig> {
   let local: Record<string, string | undefined> = {};
   if (!environment.S3_ENDPOINT) {
     try {
-      local = parseEnv(await readFile(new URL('../../../../.env.knowledge.local', import.meta.url), 'utf8'));
+      local = parseEnv(await readFile(new URL('../../../../.env.fouc.local', import.meta.url), 'utf8'));
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
     }

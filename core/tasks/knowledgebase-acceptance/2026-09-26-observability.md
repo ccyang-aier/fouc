@@ -26,10 +26,10 @@ bun test backend/src/knowledge/observability
 bun test backend/src/knowledge/ai
 bun test backend/src/database/knowledge
 pnpm exec eslint --no-ignore backend/src/knowledge/observability backend/src/database/knowledge/schema/operations.ts backend/src/database/knowledge/tenant-test-database.ts
-bun backend/scripts/knowledge-schema.ts --check
+bun backend/scripts/database-schema.ts --check
 # Node 冒烟：打包同一套件并复制其 SQL 运行资产
 bun build backend/src/knowledge/observability/observability.test.ts --target=node --outfile backend/node_modules/.cache/knowledge/observability.test.mjs
-Copy-Item backend/src/database/knowledge/current.sql backend/node_modules/.cache/knowledge/current.sql
+Copy-Item backend/src/database/current.sql backend/node_modules/.cache/knowledge/current.sql
 node --test backend/node_modules/.cache/knowledge/observability.test.mjs
 ```
 

@@ -1,3 +1,4 @@
+import type { FoucSocketTickets } from './socket-tickets';
 import { randomBytes } from 'node:crypto';
 import { createServer } from 'node:http';
 import type { IncomingMessage, ServerResponse } from 'node:http';
@@ -34,6 +35,7 @@ export function bindAuthTestRequestLifetime(request: IncomingMessage, response: 
 /** Real Node HTTP socket + ordinary PostgreSQL role; only email delivery is captured. */
 export async function createAuthTestServer(options: {
   crossSite?: boolean;
+  socketTickets?: FoucSocketTickets;
   email?: AuthEmailTransport;
   oauth?: FoucOAuthOptions;
   mount?: (app: Hono, dependencies: { auth: ReturnType<typeof createFoucAuth>; database: Awaited<ReturnType<typeof createTenantTestDatabase>> }) => void;
@@ -96,7 +98,7 @@ export async function createAuthTestServer(options: {
       return { allowed: true, retryAfter: null };
     } },
   });
-  app.route('/', createFoucAuthRoutes(auth, (context) => context.env.clientAddress as string));
+  app.route('/', createFoucAuthRoutes(auth, (context) => context.env.clientAddress as string, options.socketTickets));
   app.get('/test/identity', requireFoucIdentity(auth), (context) => context.json(context.get('identity')));
   app.post('/test/identity', requireFoucIdentity(auth), (context) => context.json(context.get('identity')));
   options.mount?.(app, { auth, database });

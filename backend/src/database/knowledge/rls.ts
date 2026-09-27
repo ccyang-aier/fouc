@@ -7,8 +7,8 @@ const identifier = (value: string) => `"${value.replaceAll('"', '""')}"`;
 
 export const knowledgeTenantPredicate = `"workspace_id" = (SELECT NULLIF(current_setting('app.workspace_id', true), '')::uuid)`;
 
-const verifiedIdentityUser = `(SELECT s.user_id FROM knowledge_auth.session s
-  JOIN knowledge_auth."user" u ON u.id = s.user_id
+const verifiedIdentityUser = `(SELECT s.user_id FROM auth.session s
+  JOIN auth."user" u ON u.id = s.user_id
   WHERE s.id = NULLIF(current_setting('app.auth_session_id', true), '')::uuid
     AND s.expires_at > clock_timestamp() AND u.email_verified IS TRUE)`;
 

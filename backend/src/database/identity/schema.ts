@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { boolean, check, index, text, unique, uuid, varchar, pgSchema, timestamp } from 'drizzle-orm/pg-core';
-export const identity = pgSchema('knowledge_auth');
+export const identity = pgSchema('auth');
 const instant = (name: string) => timestamp(name, { withTimezone: true, mode: 'date' });
 
 /** Better Auth's core fields; configure its id generator to UUIDs. */

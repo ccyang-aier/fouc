@@ -31,9 +31,6 @@ const configSchema = z.object({
   if (url.protocol !== 'https:' && (config.production || config.cookieMode === 'cross-site' || !local)) {
     context.addIssue({ code: 'custom', path: ['baseUrl'], message: 'HTTPS is required outside local same-site development' });
   }
-  if (config.cookieMode !== 'cross-site' && config.trustedOrigins.some((origin) => desktopOrigins.has(origin))) {
-    context.addIssue({ code: 'custom', path: ['cookieMode'], message: 'Desktop WebView origins require cross-site cookies over HTTPS' });
-  }
   if (config.production && config.trustedOrigins.some((origin) => !desktopOrigins.has(origin) && !origin.startsWith('https:'))) {
     context.addIssue({ code: 'custom', path: ['trustedOrigins'], message: 'Production Web origins must use HTTPS' });
   }

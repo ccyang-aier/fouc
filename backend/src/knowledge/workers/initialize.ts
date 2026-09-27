@@ -1,6 +1,6 @@
 import { runMigrations } from 'graphile-worker';
 import type { Pool } from 'pg';
-import { assertKnowledgeApplicationRole } from '../../database/knowledge/initialize-role';
+import { assertFoucApplicationRole } from '../../database/initialize-role';
 import { knowledgeWorkerLogger } from './logger';
 import { guardKnowledgeWorkerPool } from './pool-errors';
 
@@ -13,7 +13,7 @@ const identifier = (name: string) => `"${name.replaceAll('"', '""')}"`;
  * Runtime uses only the ordinary application role and cannot run DDL/migrations.
  */
 export async function initializeKnowledgeJobs(admin: Pool, application: Pool): Promise<void> {
-  const role = await assertKnowledgeApplicationRole(admin, application);
+  const role = await assertFoucApplicationRole(admin, application);
   const releaseErrors = guardKnowledgeWorkerPool(admin);
   try { await runMigrations({ pgPool: admin, schema: KNOWLEDGE_JOBS_SCHEMA, logger: knowledgeWorkerLogger() }); }
   finally { releaseErrors(); }

@@ -116,9 +116,9 @@ describe('Hono + tRPC over real HTTP and isolated PostgreSQL', () => {
     }
     const pat = await fixture.createToken();
     const client = fixture.client({ authorization: `Bearer ${pat.token}` });
-    await fixture.server.database.admin.query('UPDATE knowledge_auth."user" SET email_verified=false WHERE id=$1', [fixture.alpha.userId]);
+    await fixture.server.database.admin.query('UPDATE auth."user" SET email_verified=false WHERE id=$1', [fixture.alpha.userId]);
     try { await expect(client.access.query(input)).rejects.toMatchObject({ data: { code: 'UNAUTHORIZED' } }); }
-    finally { await fixture.server.database.admin.query('UPDATE knowledge_auth."user" SET email_verified=true WHERE id=$1', [fixture.alpha.userId]); }
+    finally { await fixture.server.database.admin.query('UPDATE auth."user" SET email_verified=true WHERE id=$1', [fixture.alpha.userId]); }
     await fixture.server.database.admin.query('DELETE FROM knowledge.member WHERE workspace_id=$1 AND user_id=$2', [fixture.alpha.workspaceId, fixture.alpha.userId]);
     try {
       await expect(client.access.query(input)).rejects.toMatchObject({ data: { code: 'UNAUTHORIZED' } });

@@ -2,7 +2,7 @@
 
 Fouc 所有模块共用此账户与会话服务。知识库成员、页面 ACL 与 PAT 由 `backend/src/knowledge/access` 和 permissions 服务处理。
 
-A01 提供 Better Auth 的邮箱身份与数据库会话，A02 增加 OAuth/OIDC 企业 SSO；不创建 Workspace、Member，也不把身份认证等同于租户授权。只使用 `knowledge_auth` 的四张既有表；不运行 Better Auth CLI/migration，不复制一套 schema。
+A01 提供 Better Auth 的邮箱身份与数据库会话，A02 增加 OAuth/OIDC 企业 SSO；不创建 Workspace、Member，也不把身份认证等同于租户授权。只使用 `auth` 的四张既有表；不运行 Better Auth CLI/migration，不复制一套 schema。
 
 ## 运行时接线
 
@@ -25,16 +25,16 @@ app.route('/', createFoucAuthRoutes(auth, getVerifiedPeerAddress));
 
 - `BETTER_AUTH_URL`：固定的对外 API origin，不含路径。路由固定为 `/api/auth/*`；不从未经验证的 Host/X-Forwarded-Host 推断回调地址。
 - `BETTER_AUTH_SECRET`：至少 32 字符的随机秘密，由部署注入且跨重启保持稳定。
-- `FOUC_AUTH_TRUSTED_ORIGINS`：逗号分隔、逐项精确 origin；未设置时采用 `KNOWLEDGE_ALLOWED_ORIGINS`，再回退到 API origin。禁止通配符、`null`、用户信息、路径和查询参数。
+- `FOUC_AUTH_TRUSTED_ORIGINS`：逗号分隔、逐项精确 origin；未设置时仅采用 API origin。禁止通配符、`null`、用户信息、路径和查询参数。
 - `FOUC_AUTH_COOKIE_MODE`：默认 `same-site`；桌面跨站场景显式配置 `cross-site`。生产 API 及生产 Web origin 要求 HTTPS。
 
 | 场景 | 配置与客户端要求 |
 | --- | --- |
 | Web 部署 | 推荐页面同源反代 `/api/auth`；host-only、HttpOnly、SameSite=Lax、HTTPS Secure，不设置宽泛 Domain |
 | 本地 Web dev | API 与页面统一使用 localhost 或统一使用 127.0.0.1；不同端口可凭精确 CORS + `credentials: 'include'` 使用同站 Cookie；不要混用两个主机名 |
-| Tauri WebView → HTTPS API | cross-site 模式，SameSite=None + Secure + HttpOnly；仅按目标平台加入 `tauri://localhost`、`http://tauri.localhost` 或 `https://tauri.localhost`；客户端使用 credentials include |
+| Tauri WebView | `src-tauri/src/service_http.rs` 只访问构建时配置的全局 origin；原生网络桥读取/更新 WebView 的持久 HttpOnly Cookie，设备 IPC token 不参与用户认证。正式服务使用 HTTPS。 |
 
-HTTP loopback API + Tauri 跨站 Cookie 不会被配置成不安全的“可用模式”。WebView/系统的第三方 Cookie 限制也不因 SameSite=None 消失；特别是 macOS/WKWebView，应由 Z03 接入同源代理或受保护的 native Cookie jar，并在实际 WebView 验收。A01 实测了真实 HTTP 代理后端上的三种桌面 Origin、CORS 和 Secure Cookie 往返，未声称已经测试 Tauri 窗口或浏览器第三方 Cookie 策略。不得把会话令牌写进 localStorage 作为绕过措施。
+桌面回调仅添加实际平台 origin。原生请求使用固定服务 Origin，不开放自定义 Cookie、Origin 或 Authorization 请求头，不跟随 HTTP 重定向，也不向 JS 返回 Set-Cookie。Web Cookie 安全配置不变。协作连接通过已登录 HTTP 请求取得 20 秒、单次、路径绑定的 socket ticket；握手后继续实时校验全局会话与资源 ACL。
 
 所有认证 POST 必须为 JSON 且携带可信 Origin；CORS 不使用 `*`。Better Auth 的 Origin/CSRF/Fetch Metadata 检查始终启用（包括测试环境）。验证邮件中的 GET 链接允许无 Origin，但 token 和回调目标由 Better Auth 校验。认证响应 `no-store`、`no-referrer`，请求体上限 16 KiB。
 
@@ -62,7 +62,7 @@ Better Auth 1.7.6 的注册防枚举语义会统一接受注册请求；其 `run
 
 使用固定的 Better Auth **1.7.6** `genericOAuth`、`authorizationCodeRequest`、`getOAuth2Tokens`、官方 state/callback、`addOAuthServerContext` / `getOAuthState` 和 `user.validateUserInfo`。JWS/JWKS 使用 **jose 6.2.10**；不实现另一套登录会话、授权服务器或用户表。`oauth-provider.ts` 只为官方提供方装配受限 HTTP 与经过验证的元数据，核心回调和签名/nonce 校验仍由官方执行。
 
-运行时从 `KNOWLEDGE_AUTH_PROVIDERS` 读取提供方数组 JSON，显式传入 `createFoucAuth({ ..., oauth })`。下面是配置形状，示例占位符不是可用秘密：
+运行时从 `FOUC_AUTH_PROVIDERS` 读取提供方数组 JSON，显式传入 `createFoucAuth({ ..., oauth })`。下面是配置形状，示例占位符不是可用秘密：
 
 ```json
 [
@@ -131,8 +131,8 @@ pnpm exec eslint --no-ignore backend/src/identity
 
 # 纯 Node 验证：打包测试入口并复制其 SQL 运行资产（均位于精确 ignored .runtime）。
 bun build backend/src/identity/oauth-node-smoke.ts --target=node --format=esm --outfile backend/src/identity/.runtime/oauth-node-smoke.mjs
-Copy-Item -LiteralPath backend/src/database/knowledge/current.sql -Destination backend/src/identity/.runtime/current.sql
-node --env-file=.env.knowledge.local backend/src/identity/.runtime/oauth-node-smoke.mjs
+Copy-Item -LiteralPath backend/src/database/current.sql -Destination backend/src/identity/.runtime/current.sql
+node --env-file=.env.fouc.local backend/src/identity/.runtime/oauth-node-smoke.mjs
 ```
 
 没有读取用户模型密钥；没有访问外网企业 SSO 账号。参考 [官方 Generic OAuth](https://better-auth.com/docs/plugins/generic-oauth)、[账号关联](https://better-auth.com/docs/concepts/users-accounts)、[JOSE](https://github.com/panva/jose)，以实际安装 1.7.6 源码为准。PostgreSQL skill 的最小权限和连接复用要求用于全局账户查询/单次 marker：只用普通应用 pool 和既有唯一约束。
@@ -185,7 +185,7 @@ const mcp = createKnowledgeMcpRequestHandler({ authenticator, pool, oauth: { ext
 ```
 
 - 资源为 `<externalOrigin>/api/knowledge/<ws>/mcp`；未认证的 MCP 请求按 RFC 9727 返回 `401 + WWW-Authenticate: Bearer resource_metadata=...`，元数据位于 RFC 9728/8416 的 path-suffix well-known 路径，AS issuer 为 `<externalOrigin>/api/knowledge/<ws>/oauth`。
-- 授权码与注册客户端存于 `knowledge_auth.verification`（沿用 A02 的服务端键值存储先例，命名空间 `fouc:mcp-client:v1:` / `fouc:mcp-code:v1:`），无新表或 migration。
+- 授权码与注册客户端存于 `auth.verification`（沿用 A02 的服务端键值存储先例，命名空间 `fouc:mcp-client:v1:` / `fouc:mcp-code:v1:`），无新表或 migration。
 - authorize 要求真实 verified 会话且为该工作区现役成员；同意表单隐藏字段经 BETTER_AUTH_SECRET 派生密钥的 HMAC 签名（10 分钟），POST 需可信 Origin。token 端点在签发前重查成员与邮箱验证；签发的令牌就是标准 PAT（`fouc_pat.` 前缀、SHA-256 存储、name 为 `mcp:<client>`），撤销/到期逐请求查库即时生效，与手工 PAT 同一验证路径。
 - redirect URI 仅接受 HTTPS 或 loopback HTTP（无 fragment/credentials/query）；loopback 端口可变（RFC 8252）。scope 仅 `read`/`write`；`resource` 不匹配返回 `invalid_target`。RFC 7009 `/revoke` 对未知令牌恒返回成功，不泄露存在性。
 - 会话缺失（无 Cookie）的请求返回 401 而非 403，使无凭证的 MCP 客户端能收到发现挑战；携带 Cookie 的请求仍完整执行 A01 Origin/CSRF 边界。

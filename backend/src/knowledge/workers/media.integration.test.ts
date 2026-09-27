@@ -1,3 +1,4 @@
+import { authUser } from '../../database/identity/schema';
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { createHash, randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -12,7 +13,7 @@ import { blockIndex, page } from '../../database/knowledge/schema';
 import { prepareWorkspaceAssetUpload, confirmWorkspaceAssetUpload } from '../assets/service';
 import { createKnowledgeAssetStorage, readKnowledgeAssetStorageConfig, type KnowledgeAssetStorage } from '../assets/storage';
 import type { MediaProcessRequest, MediaProcessResponse } from '../media/client';
-import type { RunningRole } from '../runtime/lifecycle';
+import type { RunningRole } from '../../runtime/lifecycle';
 import { initializeKnowledgeJobs } from './initialize';
 import { appendKnowledgeOutbox } from './outbox';
 import { startKnowledgeWorker } from './runner';
@@ -116,7 +117,7 @@ describe('asset media derivation orchestration (W05)', () => {
     const client = await database.admin.connect();
     try {
       const db = drizzle(client, { schema: tables.knowledgeSchema });
-      await db.insert(tables.authUser).values({ id: tenant.userId, name: 'W05 Uploader', email: `${tenant.userId}@media.test` });
+      await db.insert(authUser).values({ id: tenant.userId, name: 'W05 Uploader', email: `${tenant.userId}@media.test` });
       await db.insert(tables.workspace).values({ id: tenant.workspaceId, name: 'W05 Workspace', kind: 'team' });
       await db.insert(tables.member).values({ workspaceId: tenant.workspaceId, userId: tenant.userId, role: 'owner' });
       await db.insert(tables.teamspace).values({ workspaceId: tenant.workspaceId, id: tenant.workspaceId, name: '默认', defaultAccess: 'view' }).onConflictDoNothing();

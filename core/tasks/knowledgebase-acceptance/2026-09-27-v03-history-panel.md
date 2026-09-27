@@ -18,7 +18,7 @@ node scripts/verify-knowledge-boundaries.mjs                               # 375
 
 **后端**:
 - `collaboration/history.ts`:listPageCheckpoints(新→旧,200 条上限)、readPageCheckpoint(Y 状态→PM JSON 预览,不可解码报 CHECKPOINT_UNREADABLE,状态 blob 不出服务端)。
-- `api/knowledge/checkpoint-routes.ts`:GET 列表/预览(view)、POST 命名(edit);P03 单一 ACL 入口逐请求授权;requireKnowledgeIdentity 会话;跨租户 403 无存在性泄露。
+- `api/knowledge/checkpoint-routes.ts`:GET 列表/预览(view)、POST 命名(edit);P03 单一 ACL 入口逐请求授权;requireFoucIdentity 会话;跨租户 403 无存在性泄露。
 - checkpoint 扩展装配:pageCollaborationConfiguration/createPageCollaborationListener 增可选 checkpoints 参数(runtime 以 collab 角色挂载);permissions-test-fixture 增 mount 扩展点。
 
 **前端**(src/features/knowledge/history/):

@@ -4,7 +4,9 @@
 
 Fouc 只有一套账户。邮箱密码、邮箱验证、企业 SSO 与数据库会话由 `backend/src/identity` 提供，接口统一为 `/api/auth/*`。身份表由 `backend/src/database/identity/schema.ts` 定义，知识库和其它资源只引用同一个用户 UUID。
 
-现有物理存储命名空间为 `knowledge_auth`，其中四张表就是全局 user/session/account/verification；没有另一套模块账户，也没有复制表、迁移适配器或旧格式分支。物理命名不会决定账户的产品归属。
+PostgreSQL 数据库统一命名为 `fouc`；账户表位于全局 `auth` schema，其中 `user`、`session`、`account`、`verification` 由身份模块拥有。知识库业务表位于 `knowledge` schema，仅通过用户 UUID 引用全局账户。
+
+`backend/src/database/schema.ts` 组合各模块的表定义；全局初始化、检查与当前 DDL 位于 `backend/src/database/initialize*.ts`、`current.sql`。命令为 `bun backend/scripts/database.ts [init|status|check]`、`bun backend/scripts/database-schema.ts [--write|--check]`。初始化只接受空数据库，没有迁移链、旧 schema 分支或兼容适配器。开发环境集中配置在忽略提交的 `.env.fouc.local`；内置开发账户由 `backend/scripts/auth-admin.ts` 创建。
 
 前端 `src/features/identity` 挂载于应用根布局。所有模块通过 `useIdentity()` 获取同一会话，不自行发起模块登录流程。侧栏设置下方是账户入口；展开时显示头像、名称与邮箱，收起时保留头像和内置提示。登录模态框和独立 `/auth` 页面共用同一表单，验证与 SSO 回调仍有独立页面。
 
@@ -39,8 +41,27 @@ Fouc 只有一套账户。邮箱密码、邮箱验证、企业 SSO 与数据库�
 
 ## 配置与验证
 
-Web 使用 `NEXT_PUBLIC_FOUC_API_URL`；身份服务使用 `BETTER_AUTH_URL`、`BETTER_AUTH_SECRET`、`FOUC_AUTH_TRUSTED_ORIGINS` 与 `FOUC_AUTH_COOKIE_MODE`。可信 Origin 必须明确列出，CSRF、Cookie 安全属性和限流继续启用。生产环境需配置 SMTP 才能发送验证邮件；当前开发运行时把验证链接写入服务日志。SSO 只显示服务器配置的提供方。
+Web 与桌面共同使用 `NEXT_PUBLIC_FOUC_API_URL`；桌面注册及重发邮件使用 `NEXT_PUBLIC_FOUC_WEB_URL` 作为系统浏览器可访问的验证落地页，不能回跳到内部 WebView 地址；身份服务使用 `BETTER_AUTH_URL`、`BETTER_AUTH_SECRET`、`FOUC_AUTH_TRUSTED_ORIGINS`、`FOUC_AUTH_COOKIE_MODE` 与 `FOUC_AUTH_PROVIDERS`。可信 Origin 必须明确列出，CSRF、Cookie 安全属性和限流继续启用。生产环境需配置 SMTP 才能发送验证邮件；当前开发运行时把验证链接写入服务日志。SSO 只显示服务器配置的提供方。
 
 已验证 localhost 和 127.0.0.1 两种地址：访客创建/编辑/刷新保留、注册界面、admin 登录、连续三次刷新、切回本机内容、退出登录。真实隔离数据库测试覆盖注册、邮箱验证、会话撤销与到期、SSO、安全边界、PAT 和资源 ACL；测试数据库在结束后移除。
 
-当前工作按 Web 开发模式交付，未构建或验证 Tauri WebView。桌面跨站 Cookie 的部署约束仍由运行时配置校验。
+## 桌面传输
+
+`backend/src/runtime/server.ts` 是全局服务装配入口，将身份与资源模块挂载于同一个监听器；本机设备 sidecar (`backend/src/index.ts`) 的随机 IPC token 只保护设备操作。
+
+Tauri 构建读取同一个 `NEXT_PUBLIC_FOUC_API_URL`，`get_fouc_service_origin` 返回固定的服务地址。`src/lib/fouc-service-fetch.ts` 与 `src-tauri/src/service_http.rs` 提供受限原生 HTTP 能力：仅主窗口、本产品页面和固定服务 `/api/*` 可调用；Cookie 保留在 WebView 的持久 HttpOnly 存储中；JS 不能指定 Cookie、Origin 或设备令牌，Set-Cookie 不返回 JS。远程服务只接受 HTTPS，本机开发允许 HTTP loopback；不关闭 CSRF 或证书校验。
+
+桌面协作连接先通过已登录 HTTP 请求获取 20 秒、单次、路径绑定的 socket ticket。服务端握手消费后继续检查当前会话、成员关系及资源 ACL，退出后旧 ticket 不能恢复已撤销的会话。Web 继续使用浏览器 Cookie；两端共享同一账户与授权模型。
+
+## Windows 客户端验收
+
+使用实际 Release `fouc.exe` 的 WebView2（`http://tauri.localhost`、原生 Tauri 能力），已通过：
+
+- 访客进入知识库、错误密码提示、admin 登录、连续三次刷新仍保持身份，无 `/auth` 循环。
+- 注册请求受理、验证邮件重发、未验证邮箱拒绝登录、真实验证 token 核验、验证后登录及刷新。
+- 真实 HTTP OIDC 测试 IdP 的授权、RSA/JWKS、PKCE、回调、全局身份刷新与退出。未使用企业真实账号或伪造授权响应。
+- 非成员知识库请求返回 404，避免泄露资源存在性；被拒绝后保留身份；本人知识库及文件夹创建通过。
+- 实际 WebSocket 握手返回 101，单次凭证的重放被拒绝；Bun 原始 Request 的升级行为有独立回归测试。
+- HttpOnly Cookie 不进入 `document.cookie` 或 JS 响应头；调用设备 sidecar 或其它目标地址被原生网络桥拒绝。
+
+后端身份、SSO、权限与隔离集成测试使用真实一次性 PostgreSQL 数据库。验证邮件采用开发传输，生产仍需配置 SMTP；SSO 测试使用本地标准协议 IdP，实际企业提供方需在 `FOUC_AUTH_PROVIDERS` 配置。

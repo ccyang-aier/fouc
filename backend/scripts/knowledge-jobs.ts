@@ -1,16 +1,16 @@
 import { Pool } from 'pg';
-import { readKnowledgeDatabaseConnections } from '../src/database/knowledge/initialize-config';
-import { inspectKnowledgeDatabase } from '../src/database/knowledge/initialize-status';
+import { readFoucDatabaseConnections } from '../src/database/initialize-config';
+import { inspectFoucDatabase } from '../src/database/initialize-status';
 import { initializeKnowledgeJobs } from '../src/knowledge/workers/initialize';
 
 async function main() {
   if (process.argv[2] !== 'init') throw new Error('Usage: bun backend/scripts/knowledge-jobs.ts init');
-  const connections = await readKnowledgeDatabaseConnections();
+  const connections = await readFoucDatabaseConnections();
   const admin = new Pool({ connectionString: connections.admin, max: 1, connectionTimeoutMillis: 10_000 });
   const application = new Pool({ connectionString: connections.application, max: 2, connectionTimeoutMillis: 10_000 });
   for (const pool of [admin, application]) pool.on('error', () => {});
   try {
-    const database = await inspectKnowledgeDatabase(admin, application);
+    const database = await inspectFoucDatabase(admin, application);
     if (database.state !== 'ready') throw new Error('Current business schema must be initialized before the queue');
     await initializeKnowledgeJobs(admin, application);
     console.log(JSON.stringify({ state: 'ready', schema: 'knowledge_jobs', runtimeRole: 'verified non-owner/NOBYPASSRLS' }));

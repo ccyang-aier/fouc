@@ -8,7 +8,7 @@
 
 ```powershell
 bun test backend/src/database/knowledge
-bun backend/scripts/knowledge-db.ts check
+bun backend/scripts/database.ts check
 pnpm backend:typecheck
 ```
 

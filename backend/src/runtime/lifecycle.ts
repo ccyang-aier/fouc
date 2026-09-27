@@ -1,14 +1,14 @@
-import type { KnowledgeConfig, RuntimeRole } from './config';
+import type { FoucServiceConfig, RuntimeRole } from './config';
 
 export interface RunningRole {
   close(): Promise<void>;
   health(): Promise<{ status: 'ready' | 'degraded'; detail?: string }>;
 }
-export type RoleFactory = (context: { config: KnowledgeConfig; signal: AbortSignal }) => Promise<RunningRole>;
+export type RoleFactory = (context: { config: FoucServiceConfig; signal: AbortSignal }) => Promise<RunningRole>;
 
 /** Role composition is infrastructure only; each role owns and releases its resources. */
-export async function startKnowledgeRoles(config: KnowledgeConfig, factories: Partial<Record<RuntimeRole, RoleFactory>>) {
-  for (const role of config.roles) if (!factories[role]) throw new Error(`Knowledge role is not registered: ${role}`);
+export async function startFoucRoles(config: FoucServiceConfig, factories: Partial<Record<RuntimeRole, RoleFactory>>) {
+  for (const role of config.roles) if (!factories[role]) throw new Error(`Fouc service role is not registered: ${role}`);
   const controller = new AbortController();
   const running = new Map<RuntimeRole, RunningRole>();
   let closing: Promise<void> | undefined;
@@ -20,14 +20,14 @@ export async function startKnowledgeRoles(config: KnowledgeConfig, factories: Pa
         try { await instance.close(); } catch (error) { errors.push(error); }
       }
       running.clear();
-      if (errors.length) throw new AggregateError(errors, 'Knowledge role shutdown failed');
+      if (errors.length) throw new AggregateError(errors, 'Fouc service role shutdown failed');
     })();
     return closing;
   };
   try {
     for (const role of config.roles) running.set(role, await factories[role]!({ config, signal: controller.signal }));
   } catch (error) {
-    try { await close(); } catch (cleanupError) { throw new AggregateError([error, cleanupError], 'Knowledge startup and cleanup failed'); }
+    try { await close(); } catch (cleanupError) { throw new AggregateError([error, cleanupError], 'Fouc service startup and cleanup failed'); }
     throw error;
   }
   return {

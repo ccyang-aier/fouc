@@ -1,8 +1,8 @@
 import type { Pool } from 'pg';
-import { KnowledgeDatabaseError } from './initialize-config';
+import { FoucDatabaseError } from './initialize-config';
 
-export type KnowledgeSqlConnection = Pick<Pool, 'query'>;
-export interface KnowledgeApplicationRole {
+export type FoucSqlConnection = Pick<Pool, 'query'>;
+export interface FoucApplicationRole {
   name: string;
   database: string;
   address: string | null;
@@ -16,8 +16,8 @@ export interface KnowledgeApplicationRole {
   privilegedMembership: boolean;
 }
 
-export async function readKnowledgeApplicationRole(connection: KnowledgeSqlConnection): Promise<KnowledgeApplicationRole> {
-  const result = await connection.query<KnowledgeApplicationRole>(`
+export async function readFoucApplicationRole(connection: FoucSqlConnection): Promise<FoucApplicationRole> {
+  const result = await connection.query<FoucApplicationRole>(`
     SELECT current_user AS name, current_database() AS database,
       inet_server_addr()::text AS address, inet_server_port() AS port,
       r.rolsuper, r.rolbypassrls, r.rolcreatedb, r.rolcreaterole, r.rolreplication,
@@ -31,24 +31,24 @@ export async function readKnowledgeApplicationRole(connection: KnowledgeSqlConne
     WHERE r.rolname = current_user
   `);
   const role = result.rows[0];
-  if (!role) throw new KnowledgeDatabaseError('unsafe_role', 'The application database role could not be verified.');
+  if (!role) throw new FoucDatabaseError('unsafe_role', 'The application database role could not be verified.');
   return role;
 }
 
-export function isKnowledgeApplicationRoleSafe(role: KnowledgeApplicationRole): boolean {
+export function isFoucApplicationRoleSafe(role: FoucApplicationRole): boolean {
   return !role.rolsuper && !role.rolbypassrls && !role.rolcreatedb && !role.rolcreaterole && !role.rolreplication && !role.ownsDatabase && !role.privilegedMembership;
 }
 
-export async function assertKnowledgeApplicationRole(admin: KnowledgeSqlConnection, application: KnowledgeSqlConnection) {
-  const role = await readKnowledgeApplicationRole(application);
-  if (!isKnowledgeApplicationRoleSafe(role)) {
-    throw new KnowledgeDatabaseError('unsafe_role', 'The application role must not own the database, hold administrative privileges, or be a member of a privileged role.');
+export async function assertFoucApplicationRole(admin: FoucSqlConnection, application: FoucSqlConnection) {
+  const role = await readFoucApplicationRole(application);
+  if (!isFoucApplicationRoleSafe(role)) {
+    throw new FoucDatabaseError('unsafe_role', 'The application role must not own the database, hold administrative privileges, or be a member of a privileged role.');
   }
   const target = await admin.query<{ database: string; address: string | null; port: number | null }>(
     'SELECT current_database() AS database, inet_server_addr()::text AS address, inet_server_port() AS port',
   );
   if (target.rows[0]?.database !== role.database || target.rows[0]?.address !== role.address || target.rows[0]?.port !== role.port) {
-    throw new KnowledgeDatabaseError('database_mismatch', 'Administrator and application connections must use the same PostgreSQL database.');
+    throw new FoucDatabaseError('database_mismatch', 'Administrator and application connections must use the same PostgreSQL database.');
   }
   return role;
 }

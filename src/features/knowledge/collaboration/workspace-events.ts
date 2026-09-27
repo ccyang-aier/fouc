@@ -1,3 +1,4 @@
+import { getFoucServiceWebSocket } from '@/lib/fouc-service-socket';
 /**
  * Workspace metadata event subscriptions (B06).
  *
@@ -56,7 +57,7 @@ export interface KnowledgeWorkspaceEvents {
 }
 
 export function connectKnowledgeWorkspaceEvents(options: KnowledgeWorkspaceEventsOptions): KnowledgeWorkspaceEvents {
-  const Socket = options.WebSocketImpl ?? WebSocket;
+  const Socket = options.WebSocketImpl ?? getFoucServiceWebSocket();
   const baseDelay = options.reconnectDelayMs ?? 1_000;
   const maxDelay = options.maxReconnectDelayMs ?? 30_000;
   let attempts = 0;

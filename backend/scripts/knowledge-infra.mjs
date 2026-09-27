@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const envPath = path.join(root, '.env.knowledge.local');
+const envPath = path.join(root, '.env.fouc.local');
 const project = 'fouc-knowledge-dev';
 const images = ['paradedb/paradedb:0.25.10-pg17', 'redis:7.4.8-alpine', 'golang:1.24.8-alpine', 'alpine:3.21'];
 const windows = process.platform === 'win32';
@@ -39,7 +39,7 @@ function syncEndpoints(host) {
   if (changed) {
     writeFileSync(envPath, lines.join('\n'));
     localEnv = loadLocalEnv();
-    console.log(`Development endpoints in .env.knowledge.local updated to the current WSL address ${host}.`);
+    console.log(`Development endpoints in .env.fouc.local updated to the current WSL address ${host}.`);
   }
 }
 
@@ -105,11 +105,11 @@ async function keepWslAlive() {
 
 async function init() {
   if (existsSync(envPath)) {
-    console.log('Using existing gitignored .env.knowledge.local; credentials unchanged.');
+    console.log('Using existing gitignored .env.fouc.local; credentials unchanged.');
     localEnv = loadLocalEnv();
     return;
   }
-  await run('git', ['check-ignore', '.env.knowledge.local'], { quiet: true });
+  await run('git', ['check-ignore', '.env.fouc.local'], { quiet: true });
   const password = () => randomBytes(32).toString('hex');
   const postgresPassword = password();
   const appPassword = password();
@@ -117,13 +117,13 @@ async function init() {
   const host = await endpointHost();
   localEnv = {
     KNOWLEDGE_WSL_DISTRO: wslDistro(),
-    KNOWLEDGE_POSTGRES_USER: 'fouc_admin',
-    KNOWLEDGE_POSTGRES_DB: 'fouc_knowledge',
-    KNOWLEDGE_POSTGRES_PASSWORD: postgresPassword,
-    KNOWLEDGE_APP_PASSWORD: appPassword,
+    FOUC_POSTGRES_USER: 'fouc_admin',
+    FOUC_POSTGRES_DB: 'fouc',
+    FOUC_POSTGRES_PASSWORD: postgresPassword,
+    FOUC_DATABASE_APP_PASSWORD: appPassword,
     KNOWLEDGE_REDIS_PASSWORD: redisPassword,
-    DATABASE_URL: `postgresql://fouc_app:${appPassword}@${host}:55432/fouc_knowledge`,
-    DATABASE_ADMIN_URL: `postgresql://fouc_admin:${postgresPassword}@${host}:55432/fouc_knowledge`,
+    DATABASE_URL: `postgresql://fouc_app:${appPassword}@${host}:55432/fouc`,
+    DATABASE_ADMIN_URL: `postgresql://fouc_admin:${postgresPassword}@${host}:55432/fouc`,
     REDIS_URL: `redis://:${redisPassword}@${host}:56379`,
     S3_ENDPOINT: `http://${host}:59000`,
     S3_REGION: 'us-east-1',
@@ -132,7 +132,7 @@ async function init() {
     S3_SECRET_ACCESS_KEY: password(),
   };
   writeFileSync(envPath, `# Generated local development credentials. Do not commit.\n${Object.entries(localEnv).map(([key, value]) => `${key}=${value}`).join('\n')}\n`, { flag: 'wx', mode: 0o600 });
-  console.log('Created gitignored .env.knowledge.local with unique credentials (values not displayed).');
+  console.log('Created gitignored .env.fouc.local with unique credentials (values not displayed).');
 }
 
 async function pullImage(image) {
@@ -155,7 +155,7 @@ async function pullImage(image) {
 }
 
 async function initializeDatabase() {
-  const appPassword = localEnv.KNOWLEDGE_APP_PASSWORD;
+  const appPassword = localEnv.FOUC_DATABASE_APP_PASSWORD;
   if (!/^[a-f0-9]{64}$/.test(appPassword)) throw new Error('Local app credential has an unexpected format.');
   const sql = `CREATE EXTENSION IF NOT EXISTS vector;
 CREATE EXTENSION IF NOT EXISTS pg_search;
@@ -165,10 +165,10 @@ DO $bootstrap$ BEGIN
     CREATE ROLE fouc_app LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS PASSWORD '${appPassword}';
   END IF;
 END $bootstrap$;
-GRANT CONNECT ON DATABASE fouc_knowledge TO fouc_app;
+GRANT CONNECT ON DATABASE fouc TO fouc_app;
 GRANT USAGE ON SCHEMA public, paradedb, pdb TO fouc_app;
 `;
-  await compose(['exec', '-T', 'postgres', 'psql', '-X', '-q', '-v', 'ON_ERROR_STOP=1', '-U', localEnv.KNOWLEDGE_POSTGRES_USER, '-d', localEnv.KNOWLEDGE_POSTGRES_DB], { input: sql, quiet: true });
+  await compose(['exec', '-T', 'postgres', 'psql', '-X', '-q', '-v', 'ON_ERROR_STOP=1', '-U', localEnv.FOUC_POSTGRES_USER, '-d', localEnv.FOUC_POSTGRES_DB], { input: sql, quiet: true });
   console.log('Database extensions and non-superuser runtime role are ready.');
 }
 
@@ -243,7 +243,7 @@ async function verifyRedis() {
 
 async function verifyPostgres() {
   const sql = readFileSync(path.join(root, 'backend/scripts/knowledge-infra-check.sql'), 'utf8');
-  const output = await compose(['exec', '-T', 'postgres', 'psql', '-X', '-qAt', '-U', localEnv.KNOWLEDGE_POSTGRES_USER, '-d', localEnv.KNOWLEDGE_POSTGRES_DB], { input: sql, quiet: true });
+  const output = await compose(['exec', '-T', 'postgres', 'psql', '-X', '-qAt', '-U', localEnv.FOUC_POSTGRES_USER, '-d', localEnv.FOUC_POSTGRES_DB], { input: sql, quiet: true });
   const results = output.split(/\r?\n/).filter((line) => line.startsWith('{')).map((line) => JSON.parse(line));
   const extensions = results.find((entry) => entry.extensions)?.extensions;
   const tokenizers = results.find((entry) => entry.jieba);

@@ -15,9 +15,9 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 
 function databaseUrl(): string {
   if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
-  const env = readFileSync(resolve(root, '.env.knowledge.local'), 'utf8');
+  const env = readFileSync(resolve(root, '.env.fouc.local'), 'utf8');
   const match = /^DATABASE_URL=(.+)$/m.exec(env);
-  if (!match) throw new Error('DATABASE_URL not found in process env or .env.knowledge.local');
+  if (!match) throw new Error('DATABASE_URL not found in process env or .env.fouc.local');
   return match[1].trim().replace(/^["']|["']$/g, '');
 }
 
@@ -30,14 +30,14 @@ async function main() {
   pool.on('error', () => {});
   try {
     const user = await pool.query<{ id: string }>(
-      `INSERT INTO knowledge_auth.user (id, name, email, email_verified)
+      `INSERT INTO auth.user (id, name, email, email_verified)
        VALUES ($1, $2, $3, true)
        ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, email_verified = true, updated_at = clock_timestamp()
        RETURNING id`,
       [randomUUID(), 'Fouc Admin', email],
     );
     await pool.query(
-      `INSERT INTO knowledge_auth.account (id, user_id, account_id, provider_id, password)
+      `INSERT INTO auth.account (id, user_id, account_id, provider_id, password)
        VALUES ($1::uuid, $2::uuid, $2::text, 'credential', $3)
        ON CONFLICT (provider_id, account_id) DO UPDATE SET password = EXCLUDED.password, updated_at = clock_timestamp()`,
       [randomUUID(), user.rows[0].id, await hashPassword(password)],

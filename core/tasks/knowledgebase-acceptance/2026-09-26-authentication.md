@@ -49,8 +49,8 @@ bun test backend/src/identity
 pnpm backend:typecheck
 pnpm exec eslint --no-ignore backend/src/identity
 bun build backend/src/identity/oauth-node-smoke.ts --target=node --format=esm --outfile backend/src/identity/.runtime/oauth-node-smoke.mjs
-Copy-Item backend/src/database/knowledge/current.sql backend/src/identity/.runtime/current.sql
-node --env-file=.env.knowledge.local backend/src/identity/.runtime/oauth-node-smoke.mjs
+Copy-Item backend/src/database/current.sql backend/src/identity/.runtime/current.sql
+node --env-file=.env.fouc.local backend/src/identity/.runtime/oauth-node-smoke.mjs
 ```
 
 结果：**79 tests / 0 fail / 1633 assertions**（A02 新增 41 项），类型检查与定向 lint 通过；Node 24.16.0 冒烟在一次性 PostgreSQL/HTTP 上 **PASS**（真实 discovery/JWKS/RS256、S256、nonce 拒绝、错误恢复、稳定身份、不落盘 provider token），临时库创建后删除确认不存在。

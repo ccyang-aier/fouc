@@ -1,18 +1,18 @@
 import { readFile } from 'node:fs/promises';
 import { parseEnv } from 'node:util';
 
-export class KnowledgeDatabaseError extends Error {
+export class FoucDatabaseError extends Error {
   constructor(readonly code: 'invalid_config' | 'unsafe_role' | 'database_mismatch' | 'already_initialized' | 'check_failed', message: string) {
     super(message);
-    this.name = 'KnowledgeDatabaseError';
+    this.name = 'FoucDatabaseError';
   }
 }
 
-export async function readKnowledgeDatabaseConnections(environment: NodeJS.ProcessEnv = process.env) {
+export async function readFoucDatabaseConnections(environment: NodeJS.ProcessEnv = process.env) {
   let local: Record<string, string | undefined> = {};
   if (!environment.DATABASE_ADMIN_URL || !environment.DATABASE_URL) {
     try {
-      local = parseEnv(await readFile(new URL('../../../../.env.knowledge.local', import.meta.url), 'utf8'));
+      local = parseEnv(await readFile(new URL('../../../.env.fouc.local', import.meta.url), 'utf8'));
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
     }
@@ -25,15 +25,15 @@ export async function readKnowledgeDatabaseConnections(environment: NodeJS.Proce
     if (admin.host !== application.host || admin.pathname !== application.pathname) throw new Error();
     return { admin: admin.toString(), application: application.toString() };
   } catch {
-    throw new KnowledgeDatabaseError('invalid_config', 'DATABASE_ADMIN_URL and DATABASE_URL must target the same PostgreSQL database.');
+    throw new FoucDatabaseError('invalid_config', 'DATABASE_ADMIN_URL and DATABASE_URL must target the same PostgreSQL database.');
   }
 }
 
 /** Database errors may include SQL parameters and credentials; never print them. */
-export function knowledgeDatabaseErrorMessage(error: unknown): string {
-  if (error instanceof KnowledgeDatabaseError) return error.message;
+export function foucDatabaseErrorMessage(error: unknown): string {
+  if (error instanceof FoucDatabaseError) return error.message;
   if (error && typeof error === 'object' && 'code' in error && typeof error.code === 'string' && /^[0-9A-Z]{5}$/.test(error.code)) {
-    return `Knowledge database command failed (PostgreSQL ${error.code}).`;
+    return `Fouc database command failed (PostgreSQL ${error.code}).`;
   }
-  return 'Knowledge database command failed. Verify the connection settings, administrator privileges, and PostgreSQL service.';
+  return 'Fouc database command failed. Verify the connection settings, administrator privileges, and PostgreSQL service.';
 }

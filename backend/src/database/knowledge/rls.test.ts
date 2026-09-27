@@ -15,7 +15,7 @@ describe('tenant RLS installation definition', () => {
     }
     expect(ddl.match(/WITH CHECK/g)).toHaveLength(knowledgeBusinessTables.length);
     expect(ddl).toContain("NULLIF(current_setting('app.workspace_id', true), '')::uuid");
-    expect(ddl).not.toContain('ALTER TABLE "knowledge_auth"');
+    expect(ddl).not.toContain('ALTER TABLE "auth"');
     expect(ddl.match(/"own_identity"[^\n]+FOR SELECT/g)).toHaveLength(2);
     expect(ddl).toContain("current_setting('app.auth_session_id', true)");
   });

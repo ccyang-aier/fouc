@@ -17,7 +17,7 @@
 bun test backend/src/database/knowledge backend/src/identity backend/src/knowledge/organization shared/src/knowledge/contracts/organization.test.ts
 pnpm backend:typecheck
 pnpm shared:typecheck
-bun backend/scripts/knowledge-schema.ts --check
+bun backend/scripts/database-schema.ts --check
 pnpm exec eslint --no-ignore backend/src/knowledge/organization backend/src/database/knowledge shared/src/knowledge/contracts/organization.ts shared/src/knowledge/contracts/organization.test.ts
 ```
 

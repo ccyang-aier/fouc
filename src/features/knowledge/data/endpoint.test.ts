@@ -40,12 +40,12 @@ describe('knowledgeTrpcUrl', () => {
 });
 
 describe('resolveFoucApiOrigin', () => {
-  test('desktop resolves the sidecar endpoint through the Tauri command', async () => {
+  test('desktop resolves the global service without using the device sidecar', async () => {
     const origin = await resolveFoucApiOrigin(deps({
       runtime: () => 'tauri',
-      invokeTauriCommand: (command) => Promise.resolve(command === 'get_backend_endpoint' ? { baseUrl: 'http://127.0.0.1:8710', token: 'unused' } : null),
+      invokeTauriCommand: (command) => Promise.resolve(command === 'get_fouc_service_origin' ? 'http://127.0.0.1:8711' : null),
     }));
-    expect(origin).toEqual({ origin: 'http://127.0.0.1:8710', source: 'sidecar' });
+    expect(origin).toEqual({ origin: 'http://127.0.0.1:8711', source: 'desktop-service' });
   });
 
   test('desktop failures are loud endpoint errors, never a silent web fallback', async () => {

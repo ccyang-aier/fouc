@@ -72,7 +72,7 @@
 ## D01 · Postgres 唯一表模型
 
 - 24 张知识库业务表与 4 张全局身份表；业务表含非空 workspace_id 和租户复合外键；正文仅保存 Yjs 二进制，向量切换 staging 不复制正文。
-- `bun test backend/src/database/knowledge/schema.test.ts`：12 passed；`bun backend/scripts/knowledge-schema.ts --check`：无 DDL 漂移；整体后端类型检查通过。
+- `bun test backend/src/database/schema.test.ts`：12 passed；`bun backend/scripts/database-schema.ts --check`：无 DDL 漂移；整体后端类型检查通过。
 - 模型档位枚举直接引用 F02 共享定义，DAG 已显式补充该硬依赖。
 - 边界：未将静态 schema 验证当成真实初始化/RLS 通过；D02/D03 继续独立验收。
 

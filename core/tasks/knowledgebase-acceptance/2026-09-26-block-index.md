@@ -8,7 +8,7 @@
 bun test backend/src/knowledge/search            # 13 pass / 0 fail / 105 expect（含 L01 回归 6 项），三轮复跑稳定
 pnpm backend:typecheck                           # 0 错误
 pnpm exec eslint --no-ignore backend/src/knowledge/search   # 无告警
-bun backend/scripts/knowledge-schema.ts --check  # Knowledge current SQL matches the Drizzle source
+bun backend/scripts/database-schema.ts --check  # Knowledge current SQL matches the Drizzle source
 ```
 
 ## 管线与关键决策

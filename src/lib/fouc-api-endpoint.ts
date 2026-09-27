@@ -1,21 +1,12 @@
 import type { AppRuntime } from '@/lib/runtime-client';
 class ApiEndpointError extends Error { readonly code = 'ENDPOINT'; }
 
-/**
- * Shared Fouc API endpoint resolution.
- *
- * - Desktop (Tauri shell): the local sidecar endpoint, asked from the Rust shell
- *   via the same `get_backend_endpoint` command as src/lib/backend.ts. The
- *   knowledge API authenticates with cookie sessions or PATs, so the sidecar
- *   token is intentionally not used here.
- * - Web (SaaS / private deployment): the API origin configured through
- *   `NEXT_PUBLIC_FOUC_API_URL` (origin only, no path).
- * - Web dev fallback: the local sidecar `http://127.0.0.1:8710`. In production
- *   builds a missing configuration is a loud error, never a silent fallback.
- */
+/** Global account and resource service. Device IPC uses src/lib/backend.ts separately.
+ * Desktop resolves the configured service through the shell; Web uses the same
+ * NEXT_PUBLIC_FOUC_API_URL deployment configuration. */
 
 export const foucApiUrlEnvName = 'NEXT_PUBLIC_FOUC_API_URL';
-export const foucApiDevOrigin = 'http://127.0.0.1:8710';
+export const foucApiDevOrigin = 'http://127.0.0.1:8711';
 
 /** Accepts an http(s) origin (optional trailing slash) and returns it in normalized origin form. */
 export function parseFoucApiOrigin(raw: string): string {
@@ -33,7 +24,7 @@ export function parseFoucApiOrigin(raw: string): string {
   return url.origin;
 }
 
-export type FoucApiOrigin = { origin: string; source: 'sidecar' | 'configured' | 'dev' };
+export type FoucApiOrigin = { origin: string; source: 'desktop-service' | 'configured' | 'dev' };
 
 /** Injectable environment of the resolver; the browser binding is at the bottom of this module. */
 export type FoucEndpointDeps = {
@@ -52,15 +43,15 @@ export async function resolveFoucApiOrigin(deps: FoucEndpointDeps): Promise<Fouc
   if (runtime === 'tauri') {
     let raw: unknown;
     try {
-      raw = await deps.invokeTauriCommand('get_backend_endpoint');
+      raw = await deps.invokeTauriCommand('get_fouc_service_origin');
     } catch {
-      throw new ApiEndpointError('The desktop sidecar endpoint could not be resolved.');
+      throw new ApiEndpointError('The desktop global service endpoint could not be resolved.');
     }
-    const baseUrl = (raw as { baseUrl?: unknown } | null)?.baseUrl;
+    const baseUrl = raw;
     if (typeof baseUrl !== 'string' || !baseUrl) {
-      throw new ApiEndpointError('The desktop shell returned an invalid sidecar endpoint.');
+      throw new ApiEndpointError('The desktop shell returned an invalid global service origin.');
     }
-    return { origin: parseFoucApiOrigin(baseUrl), source: 'sidecar' };
+    return { origin: parseFoucApiOrigin(baseUrl), source: 'desktop-service' };
   }
   const configured = deps.environmentUrl();
   if (configured !== undefined && configured !== '') {

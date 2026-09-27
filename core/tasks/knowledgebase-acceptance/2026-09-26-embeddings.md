@@ -9,7 +9,7 @@ bun test backend/src/knowledge/search            # 22 pass / 0 fail / 235 expect
 bun test backend/src/database/knowledge          # 57 pass / 0 fail（schema 变更后的 D01 元测试 + RLS/租户隔离回归）
 pnpm backend:typecheck                           # 0 错误
 pnpm exec eslint --no-ignore backend/src/knowledge/search   # 无告警
-bun backend/scripts/knowledge-schema.ts --check  # Knowledge current SQL matches the Drizzle source
+bun backend/scripts/database-schema.ts --check  # Knowledge current SQL matches the Drizzle source
 bun backend/scripts/knowledge-ollama-check.ts    # 真实 Ollama embed 探针（2×384 维，先例见 G01 验收）
 ```
 

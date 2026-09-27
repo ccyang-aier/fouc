@@ -1,3 +1,5 @@
+import { requireFoucIdentity } from './identity';
+import type { FoucSocketTickets } from './socket-tickets';
 import { isIP } from 'node:net';
 import { Hono } from 'hono';
 import type { Context } from 'hono';
@@ -7,7 +9,7 @@ import { hasTrustedFoucOrigin, foucAuthBasePath, foucAuthClientIpHeader } from '
 import type { FoucAuth } from './service';
 
 /** Mount at / before any legacy bearer-token catch-all. Peer IP is transport-owned. */
-export function createFoucAuthRoutes(auth: FoucAuth, resolveClientAddress: (context: Context) => string) {
+export function createFoucAuthRoutes(auth: FoucAuth, resolveClientAddress: (context: Context) => string, socketTickets?: FoucSocketTickets) {
   const app = new Hono();
   const origins = new Set(auth.options.trustedOrigins as string[]);
   const route = `${foucAuthBasePath}/*`;
@@ -24,6 +26,11 @@ export function createFoucAuthRoutes(auth: FoucAuth, resolveClientAddress: (cont
     credentials: true, allowMethods: ['GET', 'POST', 'OPTIONS'], allowHeaders: ['Content-Type'], maxAge: 600,
   }));
   app.use(route, bodyLimit({ maxSize: 16 * 1_024, onError: (context) => context.json({ code: 'PAYLOAD_TOO_LARGE', message: 'Authentication request is too large.' }, 413) }));
+  if (socketTickets) app.post(`${foucAuthBasePath}/socket-ticket`, requireFoucIdentity(auth), async (context) => {
+    const body = await context.req.json().catch(() => null) as { path?: unknown } | null;
+    const ticket = typeof body?.path === 'string' ? socketTickets.issue(body.path, context.req.raw.headers) : null;
+    return ticket ? context.json({ ticket }) : context.json({ code: 'INVALID_REQUEST' }, 400);
+  });
   app.all(route, async (context) => {
     const address = resolveClientAddress(context);
     if (!isIP(address)) return context.json({ code: 'AUTH_TRANSPORT_MISCONFIGURED', message: 'Authentication is temporarily unavailable.' }, 503);

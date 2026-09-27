@@ -56,8 +56,8 @@ export function validateFoucOAuthOptions(input: FoucOAuthOptions, production = f
 
 /** Provider configuration and client secrets are server-owned; never accept this JSON from HTTP. */
 export function readFoucOAuthOptions(environment: NodeJS.ProcessEnv = process.env): FoucOAuthOptions {
-  if (!environment.KNOWLEDGE_AUTH_PROVIDERS) return { providers: [] };
+  if (!environment.FOUC_AUTH_PROVIDERS) return { providers: [] };
   try {
-    return validateFoucOAuthOptions({ providers: JSON.parse(environment.KNOWLEDGE_AUTH_PROVIDERS) }, environment.NODE_ENV === 'production');
-  } catch { throw new FoucAuthConfigurationError('KNOWLEDGE_AUTH_PROVIDERS'); }
+    return validateFoucOAuthOptions({ providers: JSON.parse(environment.FOUC_AUTH_PROVIDERS) }, environment.NODE_ENV === 'production');
+  } catch { throw new FoucAuthConfigurationError('FOUC_AUTH_PROVIDERS'); }
 }

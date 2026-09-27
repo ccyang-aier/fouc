@@ -86,7 +86,7 @@ describe('real OAuth/OIDC HTTP identity flow', () => {
     expect(session?.user.email).toBe('employee@example.test');
     primaryUserId = session!.user.id;
     expect(idp.exchanges.at(-1)).toEqual({ accepted: true, confidential: true, pkce: true });
-    const rows = await server.database.pool.query('SELECT provider_id, account_id, user_id, access_token, refresh_token, id_token FROM knowledge_auth.account WHERE user_id=$1', [primaryUserId]);
+    const rows = await server.database.pool.query('SELECT provider_id, account_id, user_id, access_token, refresh_token, id_token FROM auth.account WHERE user_id=$1', [primaryUserId]);
     expect(rows.rows).toEqual([{ provider_id: 'company', account_id: JSON.stringify([idp.origin, 'employee-123']), user_id: primaryUserId, access_token: null, refresh_token: null, id_token: null }]);
     expect((await server.database.admin.query('SELECT count(*)::int AS count FROM knowledge.workspace')).rows[0].count).toBe(0);
   });
@@ -115,14 +115,14 @@ describe('real OAuth/OIDC HTTP identity flow', () => {
 describe('OIDC cryptographic and callback boundaries', () => {
   for (const fault of ['nonce', 'missing_nonce', 'issuer', 'audience', 'azp', 'expired', 'missing_exp', 'signature', 'missing_id_token'] satisfies IdpFault[]) {
     test(`rejects a real IdP token with ${fault} and creates no session`, async () => {
-      const before = await server.database.pool.query('SELECT count(*)::int AS count FROM knowledge_auth.session');
+      const before = await server.database.pool.query('SELECT count(*)::int AS count FROM auth.session');
       idp.setFault(fault);
       try {
         const { response } = await complete();
         expect(response.status).toBe(302);
         expect(errorCode(response)).toBe(fault === 'missing_id_token' ? 'invalid_code' : 'unable_to_get_user_info');
         expect(response.headers.getSetCookie().some((cookie) => cookie.startsWith('fouc.session_token='))).toBe(false);
-        expect((await server.database.pool.query('SELECT count(*)::int AS count FROM knowledge_auth.session')).rows).toEqual(before.rows);
+        expect((await server.database.pool.query('SELECT count(*)::int AS count FROM auth.session')).rows).toEqual(before.rows);
       } finally { idp.setFault('none'); }
     });
   }
@@ -212,7 +212,7 @@ describe('OIDC cryptographic and callback boundaries', () => {
     const retained = randomUUID();
     const expired = randomUUID();
     const unrelated = randomUUID();
-    await server.database.pool.query(`INSERT INTO knowledge_auth.verification (id, identifier, value, expires_at) VALUES
+    await server.database.pool.query(`INSERT INTO auth.verification (id, identifier, value, expires_at) VALUES
       ($1,'fouc:oauth:consumed:v1:test-live','{}',clock_timestamp()+interval '20 minutes'),
       ($2,'fouc:oauth:consumed:v1:test-expired','{}',clock_timestamp()-interval '1 minute'),
       ($3,'another-feature-expired','{}',clock_timestamp()-interval '1 minute')`, [retained, expired, unrelated]);
@@ -224,18 +224,18 @@ describe('OIDC cryptographic and callback boundaries', () => {
       expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
       expect(results.filter((result) => result.status === 'rejected')).toHaveLength(1);
     } finally { await separatePool.end(); }
-    const rows = await server.database.pool.query('SELECT id FROM knowledge_auth.verification WHERE id = ANY($1::uuid[]) ORDER BY id', [[retained, expired, unrelated]]);
+    const rows = await server.database.pool.query('SELECT id FROM auth.verification WHERE id = ANY($1::uuid[]) ORDER BY id', [[retained, expired, unrelated]]);
     expect(rows.rows.some((row) => row.id === retained)).toBe(true);
     expect(rows.rows.some((row) => row.id === expired)).toBe(false);
     expect(rows.rows.some((row) => row.id === unrelated)).toBe(true);
-    const marker = await server.database.pool.query("SELECT id, identifier, value, expires_at FROM knowledge_auth.verification WHERE identifier LIKE 'fouc:oauth:consumed:v1:%' ORDER BY expires_at DESC LIMIT 1");
+    const marker = await server.database.pool.query("SELECT id, identifier, value, expires_at FROM auth.verification WHERE identifier LIKE 'fouc:oauth:consumed:v1:%' ORDER BY expires_at DESC LIMIT 1");
     expect(marker.rows[0].id.split('-')[2]).toMatch(/^8/);
     expect(marker.rows[0].identifier).not.toContain(state);
     expect(marker.rows[0].value).toBe('{}');
     expect(marker.rows[0].expires_at.getTime()).toBeGreaterThan(expiry);
     const flow = await start();
     const callbackUrl = await authorize(flow.url);
-    await server.database.pool.query(`UPDATE knowledge_auth.verification SET value=jsonb_set(value::jsonb,'{expiresAt}',to_jsonb($2::bigint))::text
+    await server.database.pool.query(`UPDATE auth.verification SET value=jsonb_set(value::jsonb,'{expiresAt}',to_jsonb($2::bigint))::text
       WHERE identifier=$1`, [new URL(flow.url).searchParams.get('state'), Date.now() - 1_000]);
     expect(errorCode(await callback(callbackUrl, flow.cookie))).toBe('state_mismatch');
   });
@@ -249,7 +249,7 @@ describe('global account ownership and active-session association', () => {
       expect((await complete('company', linkedCookie, true)).response.headers.get('location')).toBe(`${server.webOrigin}/knowledge`);
       const { response } = await complete();
       expect((await readSession(responseCookie(response)))?.user.id).toBe(linkedUserId);
-      const accounts = await server.database.pool.query('SELECT provider_id FROM knowledge_auth.account WHERE user_id=$1 ORDER BY provider_id', [linkedUserId]);
+      const accounts = await server.database.pool.query('SELECT provider_id FROM auth.account WHERE user_id=$1 ORDER BY provider_id', [linkedUserId]);
       expect(accounts.rows).toEqual([{ provider_id: 'company' }, { provider_id: 'credential' }]);
     } finally { idp.selectIdentity({ subject: 'employee-123', email: 'employee@example.test' }); }
   });
@@ -260,7 +260,7 @@ describe('global account ownership and active-session association', () => {
     finally { idp.selectIdentity({ subject: 'new-unverified', email: 'brand-new@example.test', verified: false }); }
     try {
       expect(errorCode((await complete()).response)).toBe('oauth_identity_rejected');
-      expect((await server.database.pool.query('SELECT id FROM knowledge_auth."user" WHERE email=$1', ['brand-new@example.test'])).rowCount).toBe(0);
+      expect((await server.database.pool.query('SELECT id FROM auth."user" WHERE email=$1', ['brand-new@example.test'])).rowCount).toBe(0);
       idp.selectIdentity({ verified: true, email: 'wrong@outside.test' });
       expect(errorCode((await complete()).response)).toBe('oauth_identity_rejected');
     } finally { idp.selectIdentity({ subject: 'employee-123', email: 'employee@example.test', verified: true }); }
@@ -270,7 +270,7 @@ describe('global account ownership and active-session association', () => {
     expect((await server.request('/link-social', { provider: 'company', userId: primaryUserId }, linkedCookie)).status).toBe(400);
     expect(errorCode((await complete('company', linkedCookie, true)).response)).toBe('email_does_not_match');
     const oldSession = await readSession(linkedCookie);
-    await server.database.pool.query("UPDATE knowledge_auth.session SET created_at=clock_timestamp()-interval '16 minutes' WHERE id=$1", [oldSession!.session.id]);
+    await server.database.pool.query("UPDATE auth.session SET created_at=clock_timestamp()-interval '16 minutes' WHERE id=$1", [oldSession!.session.id]);
     expect((await server.request('/link-social', { provider: 'company' }, linkedCookie)).status).toBe(401);
     linkedCookie = responseCookie(await server.request('/sign-in/email', { email: 'linked@example.test', password: testPassword }));
   });
@@ -286,14 +286,14 @@ describe('global account ownership and active-session association', () => {
         else callbackCookie = `${flow.cookie.split('; ').filter((item) => !item.startsWith('fouc.session_token=')).join('; ')}; ${primaryCookie.split('; ').find((item) => item.startsWith('fouc.session_token='))}`;
         expect(errorCode(await callback(callbackUrl, callbackCookie))).toBe('oauth_session_changed');
       }
-      expect((await server.database.pool.query('SELECT id FROM knowledge_auth.account WHERE account_id=$1', [JSON.stringify([idp.origin, 'must-not-link'])])).rowCount).toBe(0);
+      expect((await server.database.pool.query('SELECT id FROM auth.account WHERE account_id=$1', [JSON.stringify([idp.origin, 'must-not-link'])])).rowCount).toBe(0);
     } finally { idp.selectIdentity({ subject: 'employee-123', email: 'employee@example.test' }); }
   });
   test('callback never changes ownership when a different local user attempts to link an existing subject', async () => {
     idp.selectIdentity({ subject: 'employee-123', email: 'linked@example.test' });
     try { expect(errorCode((await complete('company', linkedCookie, true)).response)).toBe('account_already_linked_to_different_user'); }
     finally { idp.selectIdentity({ email: 'employee@example.test' }); }
-    expect((await server.database.pool.query('SELECT user_id FROM knowledge_auth.account WHERE account_id=$1', [JSON.stringify([idp.origin, 'employee-123'])])).rows[0].user_id).toBe(primaryUserId);
+    expect((await server.database.pool.query('SELECT user_id FROM auth.account WHERE account_id=$1', [JSON.stringify([idp.origin, 'employee-123'])])).rows[0].user_id).toBe(primaryUserId);
   });
 });
 
@@ -361,7 +361,7 @@ describe('recoverable provider errors and credential minimization', () => {
     for (const path of ['/get-access-token', '/refresh-token', '/account-info']) {
       expect((await server.request(path, path === '/account-info' ? undefined : { accountId: primaryUserId }, primaryCookie)).status).toBe(403);
     }
-    expect((await server.database.pool.query('SELECT id FROM knowledge_auth.account WHERE access_token IS NOT NULL OR refresh_token IS NOT NULL OR id_token IS NOT NULL')).rowCount).toBe(0);
+    expect((await server.database.pool.query('SELECT id FROM auth.account WHERE access_token IS NOT NULL OR refresh_token IS NOT NULL OR id_token IS NOT NULL')).rowCount).toBe(0);
     expect(server.diagnostics.every((event) => ['auth_error', 'auth_warning', 'email_delivery_failed'].includes(event))).toBe(true);
   });
 });

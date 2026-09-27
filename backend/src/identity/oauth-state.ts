@@ -28,11 +28,11 @@ export async function consumeOAuthStateMarker(pool: Pool, state: string, stateEx
   // The pinned SDK removes its original state before getToken and offers no atomic
   // consume hook. This existing-table marker closes concurrent distinct-code replay.
   const result = await pool.query(`WITH cleanup AS (
-      DELETE FROM knowledge_auth.verification WHERE id IN (
-        SELECT id FROM knowledge_auth.verification WHERE identifier LIKE 'fouc:oauth:consumed:v1:%'
+      DELETE FROM auth.verification WHERE id IN (
+        SELECT id FROM auth.verification WHERE identifier LIKE 'fouc:oauth:consumed:v1:%'
         AND expires_at < clock_timestamp() ORDER BY expires_at LIMIT 128
       )
-    ) INSERT INTO knowledge_auth.verification (id, identifier, value, expires_at)
+    ) INSERT INTO auth.verification (id, identifier, value, expires_at)
       VALUES ($1, $2, '{}', $3) ON CONFLICT (id) DO NOTHING RETURNING id`, [id, markerPrefix + hex, expiresAt]);
   if (result.rowCount !== 1) throw new Error('OAuth flow already consumed');
 }

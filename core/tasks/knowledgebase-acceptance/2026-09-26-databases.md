@@ -2,7 +2,7 @@
 
 日期：2026-09-26。模块：`backend/src/knowledge/databases/`（service/properties/errors/index）与 `shared/src/knowledge/contracts/databases.ts`（新增）+ `pages.ts` kind/属性/筛选契约扩展 + barrel。
 
-真实 PostgreSQL（.env.knowledge.local，PG 17.11 / en_US.utf8）一次性 disposable 库上运行验收：
+真实 PostgreSQL（.env.fouc.local，PG 17.11 / en_US.utf8）一次性 disposable 库上运行验收：
 
 ```bash
 bun test backend/src/knowledge/databases        # 18 tests / 0 fail / 161 assertions,连跑 4 次一致
@@ -11,7 +11,7 @@ bun test shared/src/knowledge/contracts         # 9 tests / 0 fail
 pnpm shared:typecheck                           # 0 错误
 pnpm exec eslint --no-ignore backend/src/knowledge/databases shared/src/knowledge/contracts
                                                 # 0 错误;仅存量已提交文件 contracts.test.ts 一条 `_after` 未用警告(非本任务改动)
-bun backend/scripts/knowledge-schema.ts --check # Knowledge current SQL matches the Drizzle source.
+bun backend/scripts/database-schema.ts --check # Knowledge current SQL matches the Drizzle source.
 git diff backend/src/database/knowledge/        # 空——schema 无改动需求
 ```
 
@@ -46,7 +46,7 @@ git diff backend/src/database/knowledge/        # 空——schema 无改动需�
 
 ## 明确边界
 
-- P03 的 HTTP 路由层授权(在数据库页面上校验 full/edit、行页面上校验 edit 的调用方契约已在服务注释声明)与 A02 tRPC 暴露不在本任务;`KnowledgeDatabaseError` 到 HTTP 状态码的映射归路由层。
+- P03 的 HTTP 路由层授权(在数据库页面上校验 full/edit、行页面上校验 edit 的调用方契约已在服务注释声明)与 A02 tRPC 暴露不在本任务;`FoucDatabaseError` 到 HTTP 状态码的映射归路由层。
 - 游标锚点行按 (workspace,database,id) 查找,不校验 viewer 对锚点行的可见性:锚点属性仅用于服务端 seek 谓词、绝不返回,但持有数据库 view 的主体可用非法游标探测某 id 是否属于该库(错误码区分),视为可接受的低风险存在性预言。
 - relation 值校验为创建/更新时点的存在性断言,不维护引用完整性(目标行此后被回收不回溯清除,读取时表现为指向已回收页面的悬垂引用)。
 - jsonb 排序/比较语义:`text/url/date` 值按数据库 collation 的字符串序、number 按数值序、跨类型按 jsonb 类型序;mixed-type 列值间的全序由 DB 决定,应用层不再加一层规范化。

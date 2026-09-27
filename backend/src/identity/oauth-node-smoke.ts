@@ -38,7 +38,7 @@ try {
   idp.selectIdentity({ subject: 'node-oauth', email: 'node-oauth@example.test' });
   assert.equal((await finish('plain')).headers.get('location'), `${server.webOrigin}/knowledge`);
   stage = 'credential minimization';
-  assert.equal((await server.database.pool.query('SELECT id FROM knowledge_auth.account WHERE access_token IS NOT NULL OR refresh_token IS NOT NULL OR id_token IS NOT NULL')).rowCount, 0);
+  assert.equal((await server.database.pool.query('SELECT id FROM auth.account WHERE access_token IS NOT NULL OR refresh_token IS NOT NULL OR id_token IS NOT NULL')).rowCount, 0);
   console.log(`PASS Node ${process.version}: real PostgreSQL/HTTP OIDC + OAuth, S256, RS256/JWKS, nonce rejection, recovery, stable identity and no stored provider tokens.`);
 } catch {
   console.error(`FAIL Node OAuth smoke at ${stage}; no credentials logged.`);

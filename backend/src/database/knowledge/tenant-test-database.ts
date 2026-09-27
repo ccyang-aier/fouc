@@ -1,17 +1,18 @@
+import { authUser } from '../identity/schema';
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
-import { initializeKnowledgeDatabase } from './initialize';
-import { readKnowledgeDatabaseConnections } from './initialize-config';
-import { assertKnowledgeApplicationRole } from './initialize-role';
-import * as tables from './schema';
+import { initializeFoucDatabase } from '../initialize';
+import { readFoucDatabaseConnections } from '../initialize-config';
+import { assertFoucApplicationRole } from '../initialize-role';
+import * as tables from '../schema';
 
 const databaseNamePattern = /^fouc_rls_[a-f0-9]{32}$/;
 const identifier = (value: string) => `"${value.replaceAll('"', '""')}"`;
 
 /** Only databases created by this invocation can be removed by this closure. */
 export async function createTenantTestDatabase(options: { initialize?: boolean } = {}) {
-  const urls = await readKnowledgeDatabaseConnections();
+  const urls = await readFoucDatabaseConnections();
   const name = `fouc_rls_${randomUUID().replaceAll('-', '')}`;
   if (!databaseNamePattern.test(name)) throw new Error('Invalid disposable database name');
   const maintenance = new Pool({ connectionString: urls.admin.toString(), max: 1, connectionTimeoutMillis: 10_000 });
@@ -48,8 +49,8 @@ export async function createTenantTestDatabase(options: { initialize?: boolean }
     await maintenance.query(`CREATE DATABASE ${identifier(name)} TEMPLATE template0`);
     created = true;
     console.log(`Created disposable tenant-test database ${name}.`);
-    const role = await assertKnowledgeApplicationRole(admin, pool);
-    if (options.initialize !== false) await initializeKnowledgeDatabase(admin, pool);
+    const role = await assertFoucApplicationRole(admin, pool);
+    if (options.initialize !== false) await initializeFoucDatabase(admin, pool);
     return { name, admin, pool, role, idleErrors, dispose };
   } catch (error) {
     await dispose();
@@ -78,7 +79,7 @@ export async function seedTenantTestData(admin: Pool) {
     for (const tenant of tenants) {
       const { workspaceId, userId, name } = tenant;
       const principal = `user:${userId}` as const;
-      await db.insert(tables.authUser).values({ id: userId, name, email: `${userId}@tenant.test` });
+      await db.insert(authUser).values({ id: userId, name, email: `${userId}@tenant.test` });
       await db.insert(tables.workspace).values({ id: workspaceId, name, kind: 'team' });
       await db.insert(tables.member).values({ workspaceId, userId, role: 'owner' });
       await db.insert(tables.workspaceInvitation).values({

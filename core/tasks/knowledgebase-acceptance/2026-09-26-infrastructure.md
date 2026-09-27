@@ -11,7 +11,7 @@
 - `backend/scripts/knowledge-infra-check.sql`：真实扩展、jieba/ICU、中文/英文全文查询、HNSW 与 ltree 探针。测试表和索引在事务结束时回滚。
 - `backend/scripts/knowledge-infra-minio.Dockerfile`：从 MinIO 官方固定源码发布构建安全修复版本，以非 root 用户运行。
 - `backend/scripts/knowledge-infra-minio.Dockerfile.dockerignore`：构建不需要任何工作区数据，禁止把脚本、配置或凭据发送到构建上下文。
-- `.env.example`：仅变量定义和占位值；实际 `.env.knowledge.local` 由脚本随机生成且被现有 `.gitignore` 忽略。
+- `.env.example`：仅变量定义和占位值；实际 `.env.fouc.local` 由脚本随机生成且被现有 `.gitignore` 忽略。
 
 ## 可复现命令
 
@@ -24,7 +24,7 @@ node backend/scripts/knowledge-infra.mjs up
 node backend/scripts/knowledge-infra.mjs verify
 bun backend/scripts/knowledge-infra.mjs verify
 node backend/scripts/knowledge-infra.mjs status
-git check-ignore .env.knowledge.local
+git check-ignore .env.fouc.local
 ```
 
 `init` 仅首次生成新凭据，已有文件不会被覆盖。`up` 只管理 `fouc-knowledge-dev`，不停止或修改其他项目。正常镜像拉取失败时，可使用当前 WSL 已安装的 Skopeo 从同一官方 registry 导入 Docker；没有使用不明镜像站，也没有修改系统 Docker daemon 配置。
@@ -42,7 +42,7 @@ Windows 下 `up` 会保留一个隐藏 WSL 会话，以 `/tmp/fouc-knowledge-dev
 | S3 | `http://127.0.0.1:59000` | `http://minio:9000` |
 | MinIO Console | `http://127.0.0.1:59001` | `http://minio:9001` |
 
-后端配置使用 `DATABASE_URL / REDIS_URL / S3_ENDPOINT / S3_REGION / S3_BUCKET / S3_ACCESS_KEY_ID / S3_SECRET_ACCESS_KEY`。Bun 可用 `--env-file=.env.knowledge.local` 注入配置，知识库 API 装配仍由后续任务实现。
+后端配置使用 `DATABASE_URL / REDIS_URL / S3_ENDPOINT / S3_REGION / S3_BUCKET / S3_ACCESS_KEY_ID / S3_SECRET_ACCESS_KEY`。Bun 可用 `--env-file=.env.fouc.local` 注入配置，知识库 API 装配仍由后续任务实现。
 
 `DATABASE_URL` 使用 `fouc_app`，明确为 `NOSUPERUSER NOBYPASSRLS`；`DATABASE_ADMIN_URL` 仅供 schema/扩展初始化使用。当前尚无知识库业务表，因此不能把本记录视为 D02/D03 的租户隔离验收。
 
@@ -81,7 +81,7 @@ PostgreSQL 的实际 JSON 输出：
 - Windows/Bun 通过 `127.0.0.1:55432` 的真实 PostgreSQL 协议认证为 `fouc_app`，查询确认 `rolsuper=false`、`rolbypassrls=false`，并成功执行 jieba tokenizer。Bun 内置 SQL 仅用于这个开发探针，不引入后端业务运行时耦合。
 - Windows 的 Redis TCP 探针实际执行 `AUTH → PING → SET EX 30 → GET → DEL → QUIT`，逐字匹配 RESP 结果；随机测试 key 被删除。
 - Windows 的 S3 HTTP 探针完成 readiness、bucket access，以及 AWS SigV4 签名 `PUT → GET → DELETE`，UTF-8 内容逐字一致。`fouc-knowledge` bucket 保留供后续开发使用，随机测试对象已删除。
-- 所有发布端口经 Docker 元数据确认仅绑定 `127.0.0.1`；MinIO 运行用户为 `10001:10001`。凭据从未输出或写入验收报告；`.env.knowledge.local` 命中现有 Git ignore 规则。
+- 所有发布端口经 Docker 元数据确认仅绑定 `127.0.0.1`；MinIO 运行用户为 `10001:10001`。凭据从未输出或写入验收报告；`.env.fouc.local` 命中现有 Git ignore 规则。
 - 原有 `kernelon-api-1` (`7348a005346c`) 与 `kernelon-postgres-1` (`e677b2deaa29`) 保持 `Exited (0) 2 months ago`；原生 PostgreSQL `16/main:5432` online、原生 Redis active，未被本任务配置或操作。
 - 现有 Web 开发服务 `http://localhost:3000/` 返回 HTTP 200；本任务未停止、重启或替换 Web 服务。
 

@@ -1,6 +1,7 @@
 import { and, desc, eq, isNull, or, sql } from 'drizzle-orm';
 import type { KnowledgePatSummary, MemberRole } from '@fouc/shared/knowledge/contracts';
-import { authUser, member, personalAccessToken } from '../../database/knowledge/schema';
+import { member, personalAccessToken } from '../../database/knowledge/schema';
+import { authUser } from '../../database/identity/schema';
 import { withKnowledgeTenant } from '../../database/knowledge/tenant';
 import { createKnowledgeTokenInputSchema, KnowledgeAccessError, revokeKnowledgeTokenInputSchema, sanitizedAccess, tokenScopesSchema, tokenWorkspaceSchema } from './access-policy';
 import type { KnowledgeTokenScope } from './access-policy';

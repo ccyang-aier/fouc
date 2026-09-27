@@ -4,12 +4,12 @@ import { fileURLToPath } from 'node:url';
 import { beforeAll, afterAll, describe, expect, test } from 'bun:test';
 import { and, eq, sql } from 'drizzle-orm';
 import * as Y from 'yjs';
-import { initializeKnowledgeDatabase } from './initialize';
-import { readKnowledgeDatabaseConnections } from './initialize-config';
-import { inspectKnowledgeDatabase } from './initialize-status';
-import { createTenantTestDatabase, seedTenantTestData } from './tenant-test-database';
-import type { TenantTestDatabase } from './tenant-test-database';
-import { withKnowledgeTenant } from './tenant';
+import { initializeFoucDatabase } from './initialize';
+import { readFoucDatabaseConnections } from './initialize-config';
+import { inspectFoucDatabase } from './initialize-status';
+import { createTenantTestDatabase, seedTenantTestData } from './knowledge/tenant-test-database';
+import type { TenantTestDatabase } from './knowledge/tenant-test-database';
+import { withKnowledgeTenant } from './knowledge/tenant';
 import * as tables from './schema';
 
 let database: TenantTestDatabase;
@@ -30,7 +30,7 @@ async function violates(operation: () => Promise<unknown>, code: string, constra
 
 function runCommand(command: string, environment: NodeJS.ProcessEnv): Promise<{ code: number | null; stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [fileURLToPath(new URL('../../../scripts/knowledge-db.ts', import.meta.url)), command], {
+    const child = spawn(process.execPath, [fileURLToPath(new URL('../../scripts/database.ts', import.meta.url)), command], {
       env: { ...process.env, ...environment }, stdio: ['ignore', 'pipe', 'pipe'],
     });
     let stdout = '';
@@ -53,22 +53,22 @@ afterAll(async () => {
 
 describe('current schema initialization against PostgreSQL', () => {
   test('catalog matches all current tables, column types, constraints, indexes, RLS and least-privilege grants', async () => {
-    const status = await inspectKnowledgeDatabase(database.admin, database.pool);
+    const status = await inspectFoucDatabase(database.admin, database.pool);
     expect(status.state).toBe('ready');
-    expect(status.tables).toBe(tables.allKnowledgeTables.length);
+    expect(status.tables).toBe(tables.allApplicationTables.length);
     expect(status.forcedTenantTables).toBe(tables.knowledgeBusinessTables.length);
     expect(status.issues).toEqual([]);
   });
 
   test('init refuses existing schemas without modifying their data', async () => {
-    await expect(initializeKnowledgeDatabase(database.admin, database.pool)).rejects.toMatchObject({ code: 'already_initialized' });
+    await expect(initializeFoucDatabase(database.admin, database.pool)).rejects.toMatchObject({ code: 'already_initialized' });
     const count = await database.admin.query<{ total: number }>('SELECT count(*)::int AS total FROM knowledge.workspace');
     expect(count.rows[0]?.total).toBe(2);
-    expect((await inspectKnowledgeDatabase(database.admin, database.pool)).state).toBe('ready');
+    expect((await inspectFoucDatabase(database.admin, database.pool)).state).toBe('ready');
   });
 
   test('init rejects an administrative application connection before schema changes', async () => {
-    await expect(initializeKnowledgeDatabase(database.admin, database.admin)).rejects.toMatchObject({ code: 'unsafe_role' });
+    await expect(initializeFoucDatabase(database.admin, database.admin)).rejects.toMatchObject({ code: 'unsafe_role' });
   });
 
   test('runtime grants do not permit table creation, RLS disabling, or TRUNCATE bypass', async () => {
@@ -82,7 +82,7 @@ describe('current schema initialization against PostgreSQL', () => {
     try {
       await client.query('BEGIN');
       await client.query('ALTER POLICY tenant_scope ON knowledge.workspace USING (true) WITH CHECK (true)');
-      const changed = await inspectKnowledgeDatabase(client, database.pool);
+      const changed = await inspectFoucDatabase(client, database.pool);
       expect(changed.state).toBe('incomplete');
       expect(changed.issues).toContain('Tenant policy differs from current definition: knowledge.workspace');
     } finally {
@@ -94,7 +94,7 @@ describe('current schema initialization against PostgreSQL', () => {
   test('status/check/init commands handle an empty database and leave business tables empty', async () => {
     const empty = await createTenantTestDatabase({ initialize: false });
     try {
-      const connections = await readKnowledgeDatabaseConnections();
+      const connections = await readFoucDatabaseConnections();
       const admin = new URL(connections.admin);
       const application = new URL(connections.application);
       admin.pathname = application.pathname = `/${empty.name}`;
@@ -132,14 +132,14 @@ describe('current schema initialization against PostgreSQL', () => {
         CREATE EVENT TRIGGER fouc_test_reject_policy ON ddl_command_end WHEN TAG IN ('CREATE POLICY')
           EXECUTE FUNCTION public.fouc_test_reject_policy();
       `);
-      await violates(() => initializeKnowledgeDatabase(empty.admin, empty.pool), 'P0001');
-      const after = await inspectKnowledgeDatabase(empty.admin, empty.pool);
+      await violates(() => initializeFoucDatabase(empty.admin, empty.pool), 'P0001');
+      const after = await inspectFoucDatabase(empty.admin, empty.pool);
       expect(after.state).toBe('empty');
       expect(after.schemas).toEqual([]);
       expect(after.extensions).toEqual([]);
       await empty.admin.query('DROP EVENT TRIGGER fouc_test_reject_policy; DROP FUNCTION public.fouc_test_reject_policy();');
-      await initializeKnowledgeDatabase(empty.admin, empty.pool);
-      expect((await inspectKnowledgeDatabase(empty.admin, empty.pool)).state).toBe('ready');
+      await initializeFoucDatabase(empty.admin, empty.pool);
+      expect((await inspectFoucDatabase(empty.admin, empty.pool)).state).toBe('ready');
     } finally { await empty.dispose(); }
   }, 30_000);
 });

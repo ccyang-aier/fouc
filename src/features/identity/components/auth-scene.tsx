@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Shared layout for every knowledge-auth surface (A04): a quiet, centered
+ * Shared layout for every Fouc authentication surface (A04): a quiet, centered
  * stage over the app shell background with the Fouc mark, one card, and a
  * restrained entrance. All colors come from the workspace design tokens, so
  * theme/accent preferences apply to the auth pages unchanged.

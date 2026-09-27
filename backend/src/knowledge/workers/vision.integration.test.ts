@@ -1,3 +1,4 @@
+import { authUser } from '../../database/identity/schema';
 import { createHash, randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -16,7 +17,7 @@ import { confirmWorkspaceAssetUpload, prepareWorkspaceAssetUpload } from '../ass
 import { createKnowledgeAssetStorage, readKnowledgeAssetStorageConfig, type KnowledgeAssetStorage } from '../assets/storage';
 import { createAiUsageRecorder } from '../observability';
 import type { AiUsageRecorder } from '../observability/usage';
-import type { RunningRole } from '../runtime/lifecycle';
+import type { RunningRole } from '../../runtime/lifecycle';
 import { initializeKnowledgeJobs } from './initialize';
 import { appendKnowledgeOutbox } from './outbox';
 import { startKnowledgeWorker } from './runner';
@@ -146,7 +147,7 @@ describe('asset vision derivation through the real queue and GLM vision model', 
     const client = await database.admin.connect();
     try {
       const db = drizzle(client, { schema: tables.knowledgeSchema });
-      await db.insert(tables.authUser).values({ id: tenant.userId, name: 'Vision Owner', email: `${tenant.userId}@vision.test` });
+      await db.insert(authUser).values({ id: tenant.userId, name: 'Vision Owner', email: `${tenant.userId}@vision.test` });
       await db.insert(tables.workspace).values({ id: tenant.workspaceId, name: 'Vision Workspace', kind: 'team' });
       await db.insert(tables.member).values({ workspaceId: tenant.workspaceId, userId: tenant.userId, role: 'owner' });
     } finally {

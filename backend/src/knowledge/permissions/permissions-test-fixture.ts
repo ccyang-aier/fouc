@@ -20,7 +20,7 @@ type KnowledgeTokenService = ReturnType<typeof createKnowledgeTokenService>;
 import { createOrganizationRoutes } from '../organization/http';
 import { createOrganizationService } from '../organization/service';
 import type { OrganizationService } from '../organization/service';
-import type { RunningRole } from '../runtime/lifecycle';
+import type { RunningRole } from '../../runtime/lifecycle';
 import { initializeKnowledgeJobs } from '../workers/initialize';
 import { startKnowledgeWorker } from '../workers/runner';
 import type { KnowledgeConsumer, KnowledgeWorkerDiagnostic } from '../workers/types';

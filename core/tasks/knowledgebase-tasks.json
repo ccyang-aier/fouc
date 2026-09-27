@@ -258,7 +258,7 @@
         {
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-foundation.md",
           "summary": "24 张租户表与 4 张认证表；约束与 SQL 漂移静态验收通过，真实初始化另行验收",
-          "command": "bun test backend/src/database/knowledge/schema.test.ts; bun backend/scripts/knowledge-schema.ts --check; pnpm backend:typecheck",
+          "command": "bun test backend/src/database/schema.test.ts; bun backend/scripts/database-schema.ts --check; pnpm backend:typecheck",
           "verifiedAt": "2026-09-26"
         }
       ]
@@ -345,12 +345,12 @@
         "I01"
       ],
       "status": "accepted",
-      "deliverables": "backend/scripts/knowledge-db.ts; backend/src/database/knowledge/*.test.ts",
+      "deliverables": "backend/scripts/database.ts; backend/src/database/knowledge/*.test.ts",
       "acceptance": "在真实 ParadeDB 创建新库、执行全部表/索引/RLS；两个租户恶意访问测试通过",
       "evidence": [
         {
           "summary": "真实主库 28 表/24 FORCE RLS ready；46 测试/1307 断言通过、初始化回滚与最小权限",
-          "command": "bun test backend/src/database/knowledge; bun backend/scripts/knowledge-db.ts check; pnpm backend:typecheck",
+          "command": "bun test backend/src/database/knowledge; bun backend/scripts/database.ts check; pnpm backend:typecheck",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-database-initialization.md"
         }
@@ -395,7 +395,7 @@
       "evidence": [
         {
           "summary": "79 项真实 HTTP/PG 测试全通过（A02 新增 41 项）；Node 24 冒烟真实 OIDC/OAuth 回调、单次 state、身份映射与错误恢复通过",
-          "command": "bun test backend/src/identity; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/src/identity; node --env-file=.env.knowledge.local backend/src/identity/.runtime/oauth-node-smoke.mjs",
+          "command": "bun test backend/src/identity; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/src/identity; node --env-file=.env.fouc.local backend/src/identity/.runtime/oauth-node-smoke.mjs",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-authentication.md"
         }
@@ -442,7 +442,7 @@
         {
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-organization.md",
           "summary": "真实 HTTP/PG/RLS 116 测试、2747 断言；并发最后 owner、一次性邀请及锁等待期间自然过期均验证",
-          "command": "bun test backend/src/database/knowledge backend/src/identity backend/src/knowledge/organization shared/src/knowledge/contracts/organization.test.ts; pnpm backend:typecheck; pnpm shared:typecheck; bun backend/scripts/knowledge-schema.ts --check",
+          "command": "bun test backend/src/database/knowledge backend/src/identity backend/src/knowledge/organization shared/src/knowledge/contracts/organization.test.ts; pnpm backend:typecheck; pnpm shared:typecheck; bun backend/scripts/database-schema.ts --check",
           "verifiedAt": "2026-09-26"
         }
       ]
@@ -604,7 +604,7 @@
       "evidence": [
         {
           "summary": "18 项测试/161 断言连跑 4 次一致:database/row 均 page 且独立授权、九种列类型验证、筛选/排序/游标分页 fail closed、列变更语义;另修复 pg like_escape 通配符不转义缺陷",
-          "command": "bun test backend/src/knowledge/databases; bun test backend/src/knowledge/pages; bun test shared/src/knowledge/contracts; pnpm shared:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/databases shared/src/knowledge/contracts; bun backend/scripts/knowledge-schema.ts --check",
+          "command": "bun test backend/src/knowledge/databases; bun test backend/src/knowledge/pages; bun test shared/src/knowledge/contracts; pnpm shared:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/databases shared/src/knowledge/contracts; bun backend/scripts/database-schema.ts --check",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-databases.md"
         }
@@ -1199,7 +1199,7 @@
       "evidence": [
         {
           "summary": "6 项真实队列/RLS 测试:显式 pageId 优先/标题精确/块锚解析、悬链零落表零泄漏、doc.changed 消费幂等(FOR UPDATE 串行)、入链经 P03 谓词过滤、损坏 doc_state 留队重试不阻塞",
-          "command": "bun test backend/src/knowledge/search; pnpm exec eslint --no-ignore backend/src/knowledge/search; pnpm backend:typecheck; bun backend/scripts/knowledge-schema.ts --check",
+          "command": "bun test backend/src/knowledge/search; pnpm exec eslint --no-ignore backend/src/knowledge/search; pnpm backend:typecheck; bun backend/scripts/database-schema.ts --check",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-backlinks.md"
         }
@@ -1373,7 +1373,7 @@
       "evidence": [
         {
           "summary": "观测模块 5 项 Bun + 5 项 Node 测试;真实 PG 记账(token 未报告存 null)、OTLP collector 实收 trace 与 usage 行关联、密钥零泄漏、独立短事务先于结果提交",
-          "command": "bun test backend/src/knowledge/observability; bun build backend/src/knowledge/observability/observability.test.ts --target=node && node --test; bun test backend/src/knowledge/ai; pnpm exec eslint --no-ignore backend/src/knowledge/observability backend/src/database/knowledge; bun backend/scripts/knowledge-schema.ts --check",
+          "command": "bun test backend/src/knowledge/observability; bun build backend/src/knowledge/observability/observability.test.ts --target=node && node --test; bun test backend/src/knowledge/ai; pnpm exec eslint --no-ignore backend/src/knowledge/observability backend/src/database/knowledge; bun backend/scripts/database-schema.ts --check",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-observability.md"
         }
@@ -1399,7 +1399,7 @@
       "evidence": [
         {
           "summary": "13 项测试(L01 回归含):嵌套块全遍历(skip 容器不重复)、sha256 差量真零 DML、E02 规则修复 blockId 并回写 doc_state、与 backlinks 并发收敛(FOR UPDATE+同事务补算)、幂等重跑、title_path 标题路径列;权限投影经 P02 端口联动",
-          "command": "bun test backend/src/knowledge/search; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/search; bun backend/scripts/knowledge-schema.ts --check",
+          "command": "bun test backend/src/knowledge/search; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/search; bun backend/scripts/database-schema.ts --check",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-block-index.md"
         }
@@ -1422,7 +1422,7 @@
       "evidence": [
         {
           "summary": "22 项 search 全套测试:embedded_hash 血缘仅变化块调用(改1增1恰1批2值)、模型/维度隔离、重建单事务原子切换失败回退旧索引可查、批次限速与队列重试收敛;真实 Ollama 384 维 3 次调用记账,云嵌入端点已探明未耗成本",
-          "command": "bun test backend/src/knowledge/search; bun test backend/src/database/knowledge; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/search; bun backend/scripts/knowledge-schema.ts --check",
+          "command": "bun test backend/src/knowledge/search; bun test backend/src/database/knowledge; pnpm backend:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/search; bun backend/scripts/database-schema.ts --check",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-embeddings.md"
         }
@@ -1445,7 +1445,7 @@
       "evidence": [
         {
           "summary": "19 项测试(6 新增+13 回归):真实 pg_search jieba 中文命中/英文前缀扩展/混合析取、EXPLAIN 实证权限过滤先于排名、可引用块结构(pageId/blockId/titlePath/snippet/score)入 shared 契约、分页一致、回收页即空",
-          "command": "bun test backend/src/knowledge/search/keyword.integration.test.ts backend/src/knowledge/search/backlinks.integration.test.ts backend/src/knowledge/search/indexer.integration.test.ts; pnpm backend:typecheck; pnpm shared:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/search; bun backend/scripts/knowledge-schema.ts --check",
+          "command": "bun test backend/src/knowledge/search/keyword.integration.test.ts backend/src/knowledge/search/backlinks.integration.test.ts backend/src/knowledge/search/indexer.integration.test.ts; pnpm backend:typecheck; pnpm shared:typecheck; pnpm exec eslint --no-ignore backend/src/knowledge/search; bun backend/scripts/database-schema.ts --check",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-keyword.md"
         }
@@ -1514,7 +1514,7 @@
       "evidence": [
         {
           "summary": "13 项测试(9 项真实 MinIO 往返+一次性 RLS 库):workspace/hash 寻址秒传、确认校验哈希/大小/类型、下载授权与方法绑定签名、asset.created 同事务原子、跨租户互不可见",
-          "command": "bun test backend/src/knowledge/assets; pnpm exec eslint --no-ignore backend/src/knowledge/assets; pnpm shared:typecheck; bun backend/scripts/knowledge-schema.ts --check",
+          "command": "bun test backend/src/knowledge/assets; pnpm exec eslint --no-ignore backend/src/knowledge/assets; pnpm shared:typecheck; bun backend/scripts/database-schema.ts --check",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-assets.md"
         }
@@ -1641,7 +1641,7 @@
       "evidence": [
         {
           "summary": "28 项测试(workers 15+assets 13 回归):真实 PNG 经真实 MinIO+队列+网关 vision 档(glm-5.3-flash 原生图文)生成描述、真实 tokens 落 ai_usage;失败/限流/缺配置结构化重试;幂等重放不重复调用",
-          "command": "bun test backend/src/knowledge/workers backend/src/knowledge/assets; pnpm exec eslint --no-ignore backend/src/knowledge/workers backend/src/knowledge/assets; pnpm backend:typecheck; bun backend/scripts/knowledge-schema.ts --check",
+          "command": "bun test backend/src/knowledge/workers backend/src/knowledge/assets; pnpm exec eslint --no-ignore backend/src/knowledge/workers backend/src/knowledge/assets; pnpm backend:typecheck; bun backend/scripts/database-schema.ts --check",
           "verifiedAt": "2026-09-26",
           "path": "core/tasks/knowledgebase-acceptance/2026-09-26-vision.md"
         }

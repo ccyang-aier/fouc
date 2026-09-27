@@ -70,7 +70,7 @@ P02 接线时必须一次性将非空空间默认值变更的拒绝条件替换�
 
 ```powershell
 bun test backend/src/database/knowledge backend/src/identity backend/src/knowledge/organization shared/src/knowledge/contracts/organization.test.ts
-bun backend/scripts/knowledge-schema.ts --check
+bun backend/scripts/database-schema.ts --check
 pnpm backend:typecheck
 pnpm shared:typecheck
 ```

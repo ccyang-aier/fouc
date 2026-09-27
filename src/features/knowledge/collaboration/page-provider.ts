@@ -1,3 +1,4 @@
+import { getFoucServiceWebSocket } from '@/lib/fouc-service-socket';
 /**
  * Web page document lifecycle (B04, design §5.1/§5.4).
  *
@@ -112,7 +113,7 @@ export function connectPageDocument(options: PageDocumentSessionOptions): PageDo
       url,
       name: documentName,
       document,
-      WebSocketPolyfill: options.WebSocketPolyfill,
+      WebSocketPolyfill: options.WebSocketPolyfill ?? getFoucServiceWebSocket(),
       delay,
       minDelay: delay,
       maxDelay: options.maxReconnectDelayMs ?? 30_000,

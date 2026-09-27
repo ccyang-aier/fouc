@@ -3,7 +3,8 @@ import type { Pool } from 'pg';
 import { and, eq, sql } from 'drizzle-orm';
 import { entityIdSchema } from '@fouc/shared/knowledge/contracts';
 import { z } from 'zod';
-import { authUser, member, personalAccessToken } from '../../database/knowledge/schema';
+import { member, personalAccessToken } from '../../database/knowledge/schema';
+import { authUser } from '../../database/identity/schema';
 import { withKnowledgeTenant } from '../../database/knowledge/tenant';
 import { isLoopbackHost } from '../../identity/oauth-config';
 import { tokenScopesSchema, tokenWorkspaceSchema } from './access-policy';
@@ -14,7 +15,7 @@ import { issueKnowledgeToken, parseKnowledgeToken } from './token-format';
  * K02: OAuth 2.1 authorization server engine for MCP clients (RFC 6749/7636/7591/8707/7009).
  * This module owns protocol state and secret handling only; HTTP shaping lives in
  * knowledge/mcp/oauth.ts. Authorization codes and dynamically registered clients are
- * stored in knowledge_auth.verification (the same server-owned keyed store Better Auth
+ * stored in auth.verification (the same server-owned keyed store Better Auth
  * uses), codes single-use with a five-minute lifetime.
  */
 
@@ -139,7 +140,7 @@ export function createKnowledgeMcpOAuthServer(options: KnowledgeMcpOAuthServerOp
       if (!parsed.success) return null;
       const clientId = `mcp_${randomBytes(18).toString('base64url')}`;
       await pool.query(
-        `INSERT INTO knowledge_auth.verification (id, identifier, value, expires_at)
+        `INSERT INTO auth.verification (id, identifier, value, expires_at)
          VALUES ($1, $2, $3, clock_timestamp() + interval '10 years')`,
         [randomUUID(), clientIdentifier(clientId), JSON.stringify({ name: parsed.data.client_name, redirectUris: parsed.data.redirect_uris })],
       );
@@ -149,7 +150,7 @@ export function createKnowledgeMcpOAuthServer(options: KnowledgeMcpOAuthServerOp
     async client(clientId: string): Promise<McpOAuthClient | null> {
       if (!mcpClientIdPattern.test(clientId)) return null;
       const result = await pool.query(
-        'SELECT value FROM knowledge_auth.verification WHERE identifier = $1 AND expires_at > clock_timestamp() LIMIT 1',
+        'SELECT value FROM auth.verification WHERE identifier = $1 AND expires_at > clock_timestamp() LIMIT 1',
         [clientIdentifier(clientId)],
       );
       const parsed = storedClientSchema.safeParse(result.rows[0] ? JSON.parse(result.rows[0].value as string) : null);
@@ -161,11 +162,11 @@ export function createKnowledgeMcpOAuthServer(options: KnowledgeMcpOAuthServerOp
       const stored = grantSchema.parse(grant);
       const code = randomBytes(32).toString('base64url');
       await pool.query(`WITH cleanup AS (
-          DELETE FROM knowledge_auth.verification WHERE id IN (
-            SELECT id FROM knowledge_auth.verification WHERE identifier LIKE 'fouc:mcp-code:v1:%'
+          DELETE FROM auth.verification WHERE id IN (
+            SELECT id FROM auth.verification WHERE identifier LIKE 'fouc:mcp-code:v1:%'
             AND expires_at < clock_timestamp() ORDER BY expires_at LIMIT 64
           )
-        ) INSERT INTO knowledge_auth.verification (id, identifier, value, expires_at)
+        ) INSERT INTO auth.verification (id, identifier, value, expires_at)
         VALUES ($1, $2, $3, clock_timestamp() + $4::interval)`,
       [randomUUID(), codeIdentifier(code), JSON.stringify(stored), codeLifetime]);
       return code;
@@ -175,7 +176,7 @@ export function createKnowledgeMcpOAuthServer(options: KnowledgeMcpOAuthServerOp
     async claimAuthorizationCode(code: string): Promise<McpAuthorizationGrant | null> {
       if (!code || code.length > 256) return null;
       const result = await pool.query(
-        'DELETE FROM knowledge_auth.verification WHERE identifier = $1 AND expires_at > clock_timestamp() RETURNING value',
+        'DELETE FROM auth.verification WHERE identifier = $1 AND expires_at > clock_timestamp() RETURNING value',
         [codeIdentifier(code)],
       );
       const parsed = grantSchema.safeParse(result.rows[0] ? JSON.parse(result.rows[0].value as string) : null);

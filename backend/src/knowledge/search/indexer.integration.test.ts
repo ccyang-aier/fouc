@@ -10,7 +10,7 @@ import { replaceAuthorizedPageAcl } from '../permissions/mutations';
 import { createPermissionsFixture, until } from '../permissions/permissions-test-fixture';
 import type { PermissionsFixture } from '../permissions/permissions-test-fixture';
 import { createPermissionRebuildConsumer } from '../permissions/rebuild';
-import type { RunningRole } from '../runtime/lifecycle';
+import type { RunningRole } from '../../runtime/lifecycle';
 import { appendKnowledgeOutbox } from '../workers/outbox';
 import { startKnowledgeWorker } from '../workers/runner';
 import type { KnowledgeConsumer, KnowledgeWorkerDiagnostic } from '../workers/types';

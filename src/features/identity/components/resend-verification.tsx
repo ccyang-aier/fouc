@@ -9,6 +9,7 @@
  * delivery for unknown or already-verified addresses.
  */
 
+import { verificationCallbackUrl } from '../verification-url';
 import { useEffect, useMemo, useState } from 'react';
 import { CircleNotch, PaperPlaneTilt } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
@@ -54,8 +55,7 @@ export function ResendVerificationEntry({
     setSending(true);
     setOutcome(null);
     try {
-      const callbackBase = typeof window === 'undefined' ? '' : new URL('/auth/verify', window.location.origin).origin;
-      await api.sendVerificationEmail({ email: candidate, callbackURL: `${callbackBase}/auth/verify?status=verified` });
+      await api.sendVerificationEmail({ email: candidate, callbackURL: verificationCallbackUrl() });
       setOutcome({
         tone: 'success',
         title: '发送请求已受理',

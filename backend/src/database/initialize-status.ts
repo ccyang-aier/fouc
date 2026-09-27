@@ -1,13 +1,13 @@
 import { getTableConfig } from 'drizzle-orm/pg-core';
-import { allKnowledgeTables, knowledgeBusinessTables } from './schema';
-import { knowledgePoliciesForTable } from './rls';
-import { assertKnowledgeApplicationRole } from './initialize-role';
-import type { KnowledgeSqlConnection } from './initialize-role';
+import { allApplicationTables, knowledgeBusinessTables } from './schema';
+import { knowledgePoliciesForTable } from './knowledge/rls';
+import { assertFoucApplicationRole } from './initialize-role';
+import type { FoucSqlConnection } from './initialize-role';
 
-export const knowledgeDatabaseSchemas = ['knowledge', 'knowledge_auth'] as const;
+export const foucDatabaseSchemas = ['knowledge', 'auth'] as const;
 const requiredExtensions = ['ltree', 'pg_search', 'vector'];
 
-export interface KnowledgeDatabaseStatus {
+export interface FoucDatabaseStatus {
   state: 'empty' | 'incomplete' | 'ready';
   schemas: string[];
   tables: number;
@@ -29,19 +29,19 @@ function normalizeType(value: string): string {
 }
 
 /** Read-only structural, RLS, extension and runtime-grant verification. */
-export async function inspectKnowledgeDatabase(admin: KnowledgeSqlConnection, application: KnowledgeSqlConnection): Promise<KnowledgeDatabaseStatus> {
-  const role = await assertKnowledgeApplicationRole(admin, application);
-  const namespaces = await admin.query<{ name: string }>('SELECT nspname AS name FROM pg_namespace WHERE nspname = ANY($1::text[]) ORDER BY nspname', [[...knowledgeDatabaseSchemas]]);
+export async function inspectFoucDatabase(admin: FoucSqlConnection, application: FoucSqlConnection): Promise<FoucDatabaseStatus> {
+  const role = await assertFoucApplicationRole(admin, application);
+  const namespaces = await admin.query<{ name: string }>('SELECT nspname AS name FROM pg_namespace WHERE nspname = ANY($1::text[]) ORDER BY nspname', [[...foucDatabaseSchemas]]);
   const extensions = await admin.query<{ name: string }>('SELECT extname AS name FROM pg_extension WHERE extname = ANY($1::text[]) ORDER BY extname', [requiredExtensions]);
   const issues: string[] = [];
-  const status: KnowledgeDatabaseStatus = {
-    state: 'empty', schemas: namespaces.rows.map((row) => row.name), tables: 0, expectedTables: allKnowledgeTables.length,
+  const status: FoucDatabaseStatus = {
+    state: 'empty', schemas: namespaces.rows.map((row) => row.name), tables: 0, expectedTables: allApplicationTables.length,
     forcedTenantTables: 0, expectedTenantTables: knowledgeBusinessTables.length,
     extensions: extensions.rows.map((row) => row.name), issues,
   };
   if (!status.schemas.length) return status;
   status.state = 'incomplete';
-  for (const expected of knowledgeDatabaseSchemas) if (!status.schemas.includes(expected)) issues.push(`Missing schema: ${expected}`);
+  for (const expected of foucDatabaseSchemas) if (!status.schemas.includes(expected)) issues.push(`Missing schema: ${expected}`);
   for (const expected of requiredExtensions) if (!status.extensions.includes(expected)) issues.push(`Missing extension: ${expected}`);
 
   const relations = await admin.query<{ schema: string; name: string; enabled: boolean; forced: boolean; owner: string }>(`
@@ -49,37 +49,37 @@ export async function inspectKnowledgeDatabase(admin: KnowledgeSqlConnection, ap
       c.relforcerowsecurity AS forced, pg_get_userbyid(c.relowner) AS owner
     FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
     WHERE n.nspname = ANY($1::text[]) AND c.relkind = 'r'
-  `, [[...knowledgeDatabaseSchemas]]);
+  `, [[...foucDatabaseSchemas]]);
   status.tables = relations.rows.length;
   const columns = await admin.query<{ schema: string; table: string; name: string; type: string; notNull: boolean; identity: string }>(`
     SELECT n.nspname AS schema, c.relname AS table, a.attname AS name,
       format_type(a.atttypid, a.atttypmod) AS type, a.attnotnull AS "notNull", a.attidentity AS identity
     FROM pg_attribute a JOIN pg_class c ON c.oid = a.attrelid JOIN pg_namespace n ON n.oid = c.relnamespace
     WHERE n.nspname = ANY($1::text[]) AND c.relkind = 'r' AND a.attnum > 0 AND NOT a.attisdropped
-  `, [[...knowledgeDatabaseSchemas]]);
+  `, [[...foucDatabaseSchemas]]);
   const constraints = await admin.query<{ schema: string; table: string; name: string; validated: boolean }>(`
     SELECT n.nspname AS schema, c.relname AS table, k.conname AS name, k.convalidated AS validated
     FROM pg_constraint k JOIN pg_class c ON c.oid = k.conrelid JOIN pg_namespace n ON n.oid = c.relnamespace
     WHERE n.nspname = ANY($1::text[])
-  `, [[...knowledgeDatabaseSchemas]]);
+  `, [[...foucDatabaseSchemas]]);
   const indexes = await admin.query<{ schema: string; table: string; name: string; method: string; valid: boolean }>(`
     SELECT n.nspname AS schema, c.relname AS table, i.relname AS name, a.amname AS method, x.indisvalid AS valid
     FROM pg_index x JOIN pg_class c ON c.oid = x.indrelid JOIN pg_class i ON i.oid = x.indexrelid
     JOIN pg_namespace n ON n.oid = c.relnamespace JOIN pg_am a ON a.oid = i.relam
     WHERE n.nspname = ANY($1::text[])
-  `, [[...knowledgeDatabaseSchemas]]);
+  `, [[...foucDatabaseSchemas]]);
   const policies = await admin.query<{ schema: string; table: string; name: string; command: string; permissive: boolean; roles: number[]; using: string; check: string }>(`
     SELECT n.nspname AS schema, c.relname AS table, p.polname AS name, p.polcmd AS command,
       p.polpermissive AS permissive, p.polroles AS roles,
       pg_get_expr(p.polqual, p.polrelid) AS using, pg_get_expr(p.polwithcheck, p.polrelid) AS check
     FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid JOIN pg_namespace n ON n.oid = c.relnamespace
     WHERE n.nspname = ANY($1::text[])
-  `, [[...knowledgeDatabaseSchemas]]);
+  `, [[...foucDatabaseSchemas]]);
 
   const key = (schema: string, name: string) => `${schema}.${name}`;
-  const expectedTables = new Set(allKnowledgeTables.map((table) => { const config = getTableConfig(table); return key(config.schema!, config.name); }));
+  const expectedTables = new Set(allApplicationTables.map((table) => { const config = getTableConfig(table); return key(config.schema!, config.name); }));
   for (const relation of relations.rows) if (!expectedTables.has(key(relation.schema, relation.name))) issues.push('Unexpected table in knowledge schemas');
-  for (const table of allKnowledgeTables) {
+  for (const table of allApplicationTables) {
     const config = getTableConfig(table);
     const target = key(config.schema!, config.name);
     const relation = relations.rows.find((row) => key(row.schema, row.name) === target);
@@ -125,7 +125,7 @@ export async function inspectKnowledgeDatabase(admin: KnowledgeSqlConnection, ap
   const schemaPrivileges = await admin.query<{ name: string; usage: boolean; create: boolean }>(`
     SELECT nspname AS name, has_schema_privilege($2::name, oid, 'USAGE') AS usage, has_schema_privilege($2::name, oid, 'CREATE') AS create
     FROM pg_namespace WHERE nspname = ANY($1::text[])
-  `, [[...knowledgeDatabaseSchemas], role.name]);
+  `, [[...foucDatabaseSchemas], role.name]);
   for (const row of schemaPrivileges.rows) if (!row.usage || row.create) issues.push('Application schema grants differ from least privilege');
   const privileges = await admin.query<{ allowed: boolean; elevated: boolean }>(`
     SELECT has_table_privilege($2::name, c.oid, 'SELECT') AND has_table_privilege($2::name, c.oid, 'INSERT')
@@ -133,14 +133,14 @@ export async function inspectKnowledgeDatabase(admin: KnowledgeSqlConnection, ap
       has_table_privilege($2::name, c.oid, 'TRUNCATE') OR has_table_privilege($2::name, c.oid, 'REFERENCES') OR has_table_privilege($2::name, c.oid, 'TRIGGER') AS elevated
     FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
     WHERE n.nspname = ANY($1::text[]) AND c.relkind = 'r'
-  `, [[...knowledgeDatabaseSchemas], role.name]);
+  `, [[...foucDatabaseSchemas], role.name]);
   if (privileges.rows.some((row) => !row.allowed || row.elevated)) issues.push('Application table grants differ from least privilege');
   const sequences = await admin.query<{ allowed: boolean; elevated: boolean }>(`
     SELECT has_sequence_privilege($2::name, c.oid, 'USAGE') AND has_sequence_privilege($2::name, c.oid, 'SELECT') AS allowed,
       has_sequence_privilege($2::name, c.oid, 'UPDATE') AS elevated
     FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
     WHERE n.nspname = ANY($1::text[]) AND c.relkind = 'S'
-  `, [[...knowledgeDatabaseSchemas], role.name]);
+  `, [[...foucDatabaseSchemas], role.name]);
   if (sequences.rows.some((row) => !row.allowed || row.elevated)) issues.push('Application sequence grants differ from least privilege');
   if (!issues.length) status.state = 'ready';
   return status;

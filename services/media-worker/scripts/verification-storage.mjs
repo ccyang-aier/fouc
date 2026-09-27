@@ -15,7 +15,7 @@ function environment(url) {
 
 export function createVerificationContext() {
   const worker = environment(new URL('../.env.local', import.meta.url));
-  const storage = environment(new URL('../../../.env.knowledge.local', import.meta.url));
+  const storage = environment(new URL('../../../.env.fouc.local', import.meta.url));
   const hmac = (key, value) => createHmac('sha256', key).update(value).digest();
   const encode = (value) => encodeURIComponent(value).replace(/[!'()*]/g, (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`);
   const signingKey = (day) => hmac(hmac(hmac(hmac(`AWS4${storage.S3_SECRET_ACCESS_KEY}`, day), storage.S3_REGION), 's3'), 'aws4_request');

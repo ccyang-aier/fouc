@@ -12,7 +12,7 @@ import { createTenantTestDatabase, seedTenantTestData } from '../../database/kno
 import type { TenantTestDatabase } from '../../database/knowledge/tenant-test-database';
 import { withKnowledgeTenant } from '../../database/knowledge/tenant';
 import { notification, page } from '../../database/knowledge/schema';
-import type { RunningRole } from '../runtime/lifecycle';
+import type { RunningRole } from '../../runtime/lifecycle';
 import { appendKnowledgeOutbox, consumerTask, DISPATCH_TASK, jobKey } from './outbox';
 import { initializeKnowledgeJobs, KNOWLEDGE_JOBS_SCHEMA } from './initialize';
 import { knowledgeWorkerLogger } from './logger';

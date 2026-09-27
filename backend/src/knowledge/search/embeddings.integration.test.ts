@@ -1,3 +1,4 @@
+import { authUser } from '../../database/identity/schema';
 import { createHash, randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
@@ -13,7 +14,7 @@ import { withKnowledgeTenant } from '../../database/knowledge/tenant';
 import { createModelGateway } from '../ai/gateway';
 import type { GatewayFetch, ModelGateway } from '../ai/gateway';
 import { createAiUsageRecorder } from '../observability';
-import type { RunningRole } from '../runtime/lifecycle';
+import type { RunningRole } from '../../runtime/lifecycle';
 import { initializeKnowledgeJobs } from '../workers/initialize';
 import { appendKnowledgeOutbox } from '../workers/outbox';
 import { startKnowledgeWorker } from '../workers/runner';
@@ -212,7 +213,7 @@ describe('block embedding generation and model switch', () => {
     const client = await database.admin.connect();
     try {
       const db = drizzle(client, { schema: tables.knowledgeSchema });
-      await db.insert(tables.authUser).values({ id: userId, name: 'Embeddings Owner', email: `${userId}@embeddings.test` });
+      await db.insert(authUser).values({ id: userId, name: 'Embeddings Owner', email: `${userId}@embeddings.test` });
     } finally {
       client.release();
     }

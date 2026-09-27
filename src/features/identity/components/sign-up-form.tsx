@@ -6,6 +6,7 @@
  * exactly the A01 wording: 注册请求已受理,请查收验证邮件;未收到可重发。
  */
 
+import { verificationCallbackUrl } from '../verification-url';
 import { useState, type FormEvent } from 'react';
 import { CircleNotch, PaperPlaneTilt } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
@@ -35,12 +36,11 @@ export function SignUpForm({ api = foucAuthApi }: { api?: FoucAuthApi }) {
     if (hasAuthFieldErrors(errors)) return;
     setSubmitting(true);
     try {
-      const callbackBase = typeof window === 'undefined' ? '' : new URL('/auth/verify', window.location.origin).origin;
       await api.signUpWithEmail({
         name: name.trim(),
         email: email.trim(),
         password,
-        callbackURL: `${callbackBase}/auth/verify?status=verified`,
+        callbackURL: verificationCallbackUrl(),
       });
       try {
         window.sessionStorage.setItem(authPendingEmailStorageKey, email.trim().toLowerCase());

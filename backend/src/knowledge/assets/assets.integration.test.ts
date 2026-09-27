@@ -1,3 +1,4 @@
+import { authUser } from '../../database/identity/schema';
 import { createHash, randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { drizzle } from 'drizzle-orm/node-postgres';
@@ -53,7 +54,7 @@ describe('workspace asset upload, confirmation and presigned access', () => {
     const client = await database.admin.connect();
     try {
       const db = drizzle(client, { schema: tables.knowledgeSchema });
-      await db.insert(tables.authUser).values([
+      await db.insert(authUser).values([
         { id: alpha.userId, name: 'Alpha Owner', email: `${alpha.userId}@assets.test` },
         { id: beta.userId, name: 'Beta Owner', email: `${beta.userId}@assets.test` },
         { id: outsider, name: 'Outsider', email: `${outsider}@assets.test` },
@@ -276,7 +277,7 @@ describe('workspace asset upload, confirmation and presigned access', () => {
       const client = await bare.admin.connect();
       try {
         const db = drizzle(client, { schema: tables.knowledgeSchema });
-        await db.insert(tables.authUser).values({ id: gamma.userId, name: 'Gamma Owner', email: `${gamma.userId}@assets.test` });
+        await db.insert(authUser).values({ id: gamma.userId, name: 'Gamma Owner', email: `${gamma.userId}@assets.test` });
         await db.insert(tables.workspace).values({ id: gamma.workspaceId, name: 'Assets Gamma', kind: 'team' });
         await db.insert(tables.member).values({ workspaceId: gamma.workspaceId, userId: gamma.userId, role: 'owner' });
       } finally {

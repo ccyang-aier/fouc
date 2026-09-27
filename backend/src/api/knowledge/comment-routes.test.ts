@@ -21,7 +21,7 @@ import { createOrganizationService } from '../../knowledge/organization/service'
 import { teamspacePermissionInvalidator } from '../../knowledge/permissions/fence';
 import { replaceAuthorizedPageAcl, withAuthorizedPageTreeMutation } from '../../knowledge/permissions/mutations';
 import { createPermissionRebuildConsumer } from '../../knowledge/permissions/rebuild';
-import type { RunningRole } from '../../knowledge/runtime/lifecycle';
+import type { RunningRole } from '../../runtime/lifecycle';
 import { initializeKnowledgeJobs } from '../../knowledge/workers/initialize';
 import { startKnowledgeWorker } from '../../knowledge/workers/runner';
 import { createKnowledgeApiRoutes } from './http';

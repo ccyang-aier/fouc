@@ -10,9 +10,9 @@ services:
     image: paradedb/paradedb:0.25.10-pg17
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${KNOWLEDGE_POSTGRES_USER:?Run knowledge-infra.mjs init}
-      POSTGRES_PASSWORD: ${KNOWLEDGE_POSTGRES_PASSWORD:?Run knowledge-infra.mjs init}
-      POSTGRES_DB: ${KNOWLEDGE_POSTGRES_DB:?Run knowledge-infra.mjs init}
+      POSTGRES_USER: ${FOUC_POSTGRES_USER:?Run knowledge-infra.mjs init}
+      POSTGRES_PASSWORD: ${FOUC_POSTGRES_PASSWORD:?Run knowledge-infra.mjs init}
+      POSTGRES_DB: ${FOUC_POSTGRES_DB:?Run knowledge-infra.mjs init}
       POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
     ports:
       - "55432:5432"

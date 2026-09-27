@@ -23,7 +23,7 @@ describe('server-owned OAuth configuration', () => {
   });
   test('malformed secret-bearing deployment JSON is never included in errors', () => {
     for (const value of ['server-only-secret', JSON.stringify([{ ...provider, issuer: 'http://169.254.169.254' }])]) {
-      expect(() => readFoucOAuthOptions({ KNOWLEDGE_AUTH_PROVIDERS: value })).toThrow('Invalid Fouc authentication configuration: KNOWLEDGE_AUTH_PROVIDERS');
+      expect(() => readFoucOAuthOptions({ FOUC_AUTH_PROVIDERS: value })).toThrow('Invalid Fouc authentication configuration: FOUC_AUTH_PROVIDERS');
     }
   });
 });

@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { entityIdSchema } from '@fouc/shared/knowledge/contracts';
 import type { DatabaseFilter, Properties, PropertyDefinition, PropertyValue } from '@fouc/shared/knowledge/contracts';
 import { page } from '../../database/knowledge/schema';
-import { KnowledgeDatabaseError } from './errors';
+import { FoucDatabaseError } from './errors';
 
 export interface RowSortKey { propertyId: string; direction: 'asc' | 'desc' }
 
@@ -19,15 +19,15 @@ export function validateRowProperties(columns: PropertyDefinition[], properties:
   const definitions = byId(columns);
   for (const [propertyId, value] of Object.entries(properties)) {
     const column = definitions.get(propertyId);
-    if (!column) throw new KnowledgeDatabaseError('INVALID_ROW_PROPERTIES');
+    if (!column) throw new FoucDatabaseError('INVALID_ROW_PROPERTIES');
     if (value === null) continue;
     if (arrayTyped(column.type)) {
       if (!Array.isArray(value) || new Set(value).size !== value.length
         || !value.every((entry) => (column.type === 'multiSelect'
           ? column.options?.some((option) => option.id === entry)
-          : entityIdSchema.safeParse(entry).success))) throw new KnowledgeDatabaseError('INVALID_ROW_PROPERTIES');
+          : entityIdSchema.safeParse(entry).success))) throw new FoucDatabaseError('INVALID_ROW_PROPERTIES');
     } else if (Array.isArray(value) || !validScalar(column, value)) {
-      throw new KnowledgeDatabaseError('INVALID_ROW_PROPERTIES');
+      throw new FoucDatabaseError('INVALID_ROW_PROPERTIES');
     }
   }
 }
@@ -80,19 +80,19 @@ export function compileRowFilters(columns: PropertyDefinition[], filters: Databa
   const conditions: SQL[] = [];
   for (const filter of filters) {
     const column = definitions.get(filter.propertyId);
-    if (!column) throw new KnowledgeDatabaseError('INVALID_DATABASE_QUERY');
+    if (!column) throw new FoucDatabaseError('INVALID_DATABASE_QUERY');
     // isEmpty/isNotEmpty 不取值;契约允许携带的冗余值被忽略。
     if (filter.operator === 'isEmpty' || filter.operator === 'isNotEmpty') {
       conditions.push(filter.operator === 'isEmpty' ? emptyCell(filter.propertyId) : sql`not ${emptyCell(filter.propertyId)}`);
       continue;
     }
     const value = filter.value;
-    if (value === undefined) throw new KnowledgeDatabaseError('INVALID_DATABASE_QUERY');
+    if (value === undefined) throw new FoucDatabaseError('INVALID_DATABASE_QUERY');
     if (arrayTyped(column.type)) {
       if (typeof value !== 'string' || (column.type === 'multiSelect' && !column.options?.some((option) => option.id === value))
-        || (column.type !== 'multiSelect' && !entityIdSchema.safeParse(value).success)) throw new KnowledgeDatabaseError('INVALID_DATABASE_QUERY');
+        || (column.type !== 'multiSelect' && !entityIdSchema.safeParse(value).success)) throw new FoucDatabaseError('INVALID_DATABASE_QUERY');
     } else if (value === null || Array.isArray(value) || !validScalar(column, value)) {
-      throw new KnowledgeDatabaseError('INVALID_DATABASE_QUERY');
+      throw new FoucDatabaseError('INVALID_DATABASE_QUERY');
     }
     switch (filter.operator) {
       case 'eq':
@@ -104,12 +104,12 @@ export function compileRowFilters(columns: PropertyDefinition[], filters: Databa
           : sql`${cell(filter.propertyId)} is not null and ${cell(filter.propertyId)} <> ${jsonbValue(value)}`);
         break;
       case 'gt': case 'gte': case 'lt': case 'lte': {
-        if (column.type !== 'text' && column.type !== 'url' && column.type !== 'number' && column.type !== 'date') throw new KnowledgeDatabaseError('INVALID_DATABASE_QUERY');
+        if (column.type !== 'text' && column.type !== 'url' && column.type !== 'number' && column.type !== 'date') throw new FoucDatabaseError('INVALID_DATABASE_QUERY');
         conditions.push(sql`${cell(filter.propertyId)} ${comparators[filter.operator]} ${jsonbValue(value)}`);
         break;
       }
       case 'contains':
-        if (column.type !== 'text' && column.type !== 'url' && !arrayTyped(column.type)) throw new KnowledgeDatabaseError('INVALID_DATABASE_QUERY');
+        if (column.type !== 'text' && column.type !== 'url' && !arrayTyped(column.type)) throw new FoucDatabaseError('INVALID_DATABASE_QUERY');
         conditions.push(column.type === 'text' || column.type === 'url'
           ? sql`${textCell(filter.propertyId)} ilike concat('%', ${escapeLikePattern(value as string)}::text, '%')`
           : sql`${cell(filter.propertyId)} @> ${jsonbValue(value)}`);
@@ -124,7 +124,7 @@ export function compileRowOrder(columns: PropertyDefinition[], sort: RowSortKey[
   if (!sort.length) return [];
   const definitions = byId(columns);
   return sort.map((key) => {
-    if (!definitions.has(key.propertyId)) throw new KnowledgeDatabaseError('INVALID_DATABASE_QUERY');
+    if (!definitions.has(key.propertyId)) throw new FoucDatabaseError('INVALID_DATABASE_QUERY');
     return key.direction === 'asc' ? asc(sortCell(key.propertyId)) : desc(sortCell(key.propertyId));
   });
 }
@@ -138,7 +138,7 @@ export function compileRowSeek(columns: PropertyDefinition[], sort: RowSortKey[]
   const equalities: SQL[] = [];
   const disjuncts: SQL[] = [];
   for (const key of sort) {
-    if (!definitions.has(key.propertyId)) throw new KnowledgeDatabaseError('INVALID_DATABASE_QUERY');
+    if (!definitions.has(key.propertyId)) throw new FoucDatabaseError('INVALID_DATABASE_QUERY');
     const value = jsonbValue(cursor.properties[key.propertyId] ?? null);
     const keyCell = sortCell(key.propertyId);
     disjuncts.push(and(...equalities, key.direction === 'asc' ? sql`${keyCell} > ${value}` : sql`${keyCell} < ${value}`)!);

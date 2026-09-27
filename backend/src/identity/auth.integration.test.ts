@@ -39,7 +39,7 @@ describe('Better Auth with real PostgreSQL and HTTP', () => {
     expect(result.user.email).toBe(email);
     expect(result.user.emailVerified).toBe(false);
     expect(response.headers.getSetCookie()).toHaveLength(0);
-    const stored = await server.database.admin.query<{ password: string; id: string; name: string; provider: string; account: string }>('SELECT a.password, a.id, u.name, a.provider_id AS provider, a.account_id AS account FROM knowledge_auth.account a JOIN knowledge_auth."user" u ON u.id=a.user_id WHERE u.id=$1', [userId]);
+    const stored = await server.database.admin.query<{ password: string; id: string; name: string; provider: string; account: string }>('SELECT a.password, a.id, u.name, a.provider_id AS provider, a.account_id AS account FROM auth.account a JOIN auth."user" u ON u.id=a.user_id WHERE u.id=$1', [userId]);
     expect(stored.rows[0]?.id).toMatch(/^[a-f0-9-]{36}$/);
     expect(stored.rows[0]?.password).not.toBe(testPassword);
     expect(stored.rows[0]?.password).toMatch(/^[a-f0-9]{32}:[a-f0-9]+$/);
@@ -65,9 +65,9 @@ describe('Better Auth with real PostgreSQL and HTTP', () => {
     const verified = await server.request(path);
     expect(verified.status).toBe(302);
     expect(verified.headers.getSetCookie()).toHaveLength(0);
-    expect((await server.database.admin.query('SELECT email_verified FROM knowledge_auth."user" WHERE id=$1', [userId])).rows[0].email_verified).toBe(true);
+    expect((await server.database.admin.query('SELECT email_verified FROM auth."user" WHERE id=$1', [userId])).rows[0].email_verified).toBe(true);
     expect((await server.request(path)).status).toBe(302);
-    expect((await server.database.admin.query('SELECT count(*)::int AS count FROM knowledge_auth.session')).rows[0].count).toBe(0);
+    expect((await server.database.admin.query('SELECT count(*)::int AS count FROM auth.session')).rows[0].count).toBe(0);
   });
 
   test('login, persisted session and identity middleware work with HttpOnly host-only same-site cookies', async () => {
@@ -104,7 +104,7 @@ describe('Better Auth with real PostgreSQL and HTTP', () => {
     const response = await server.request('/sign-up/email', { name: 'Other name', email, password: 'replacement-password-44' });
     expect(response.status).toBe(200);
     expect((await response.json() as { token: null }).token).toBeNull();
-    expect((await server.database.admin.query('SELECT count(*)::int AS count FROM knowledge_auth."user"')).rows[0].count).toBe(1);
+    expect((await server.database.admin.query('SELECT count(*)::int AS count FROM auth."user"')).rows[0].count).toBe(1);
     expect((await server.request('/sign-in/email', { email, password: 'replacement-password-44' })).status).toBe(401);
     expect((await login()).cookie).toBeTruthy();
   });
@@ -145,7 +145,7 @@ describe('Better Auth with real PostgreSQL and HTTP', () => {
     expect(await session(primaryCookie)).toBeNull();
     const renewed = await login();
     const active = await session(renewed.cookie);
-    await server.database.admin.query('UPDATE knowledge_auth.session SET expires_at=now()-interval \'1 minute\' WHERE id=$1', [active!.session.id]);
+    await server.database.admin.query('UPDATE auth.session SET expires_at=now()-interval \'1 minute\' WHERE id=$1', [active!.session.id]);
     expect(await session(renewed.cookie)).toBeNull();
   });
 });
@@ -195,13 +195,13 @@ describe('desktop cookie transport and mail failures', () => {
       expect(JSON.parse(body)).toMatchObject({ code: 'EMAIL_DELIVERY_FAILED', retryable: true });
       expect(failing.diagnostics).toContain('email_delivery_failed');
       expect(failing.diagnostics.every((event) => ['auth_error', 'auth_warning', 'email_delivery_failed'].includes(event))).toBe(true);
-      expect((await failing.database.admin.query('SELECT email_verified FROM knowledge_auth."user"')).rows[0].email_verified).toBe(false);
-      expect((await failing.database.admin.query('SELECT count(*)::int AS count FROM knowledge_auth.session')).rows[0].count).toBe(0);
+      expect((await failing.database.admin.query('SELECT email_verified FROM auth."user"')).rows[0].email_verified).toBe(false);
+      expect((await failing.database.admin.query('SELECT count(*)::int AS count FROM auth.session')).rows[0].count).toBe(0);
       failDelivery = false;
       expect((await failing.request('/send-verification-email', { email: 'failure@example.test' })).status).toBe(200);
       const link = new URL(delivered[0]!.url);
       expect((await failing.request(link.pathname.replace('/api/auth', '') + link.search)).status).toBe(302);
-      expect((await failing.database.admin.query('SELECT email_verified FROM knowledge_auth."user"')).rows[0].email_verified).toBe(true);
+      expect((await failing.database.admin.query('SELECT email_verified FROM auth."user"')).rows[0].email_verified).toBe(true);
     } finally { await failing.close(); }
   }, 30_000);
 });

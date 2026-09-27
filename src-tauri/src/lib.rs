@@ -1,3 +1,4 @@
+mod service_http;
 // Fouc Rust 薄壳 —— 唯一逻辑职责：TS 后端进程看护。
 //
 // 启动协议：
@@ -753,6 +754,8 @@ pub fn run() {
         .manage(state.clone())
         .invoke_handler(tauri::generate_handler![
             get_backend_endpoint,
+            service_http::get_fouc_service_origin,
+            service_http::fouc_service_request,
             open_dts_auth,
             clear_dts_auth_profile
         ])

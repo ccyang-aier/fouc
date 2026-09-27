@@ -16,6 +16,7 @@ import type {
   onSyncedParameters,
 } from '@hocuspocus/provider';
 import * as Y from 'yjs';
+import type { Awareness } from 'y-protocols/awareness';
 import type { PageScope } from '@fouc/shared/knowledge/contracts';
 import { pageDocumentName } from '@fouc/shared/knowledge/collaboration';
 import { openOfflinePageDocument } from './offline-doc';
@@ -51,6 +52,11 @@ export interface PageDocumentSessionOptions {
 export interface PageDocumentSession {
   readonly scope: PageScope;
   readonly document: Y.Doc;
+  /**
+   * The provider's shared awareness (B07 cursors and members); null before
+   * the provider exists and after destroy.
+   */
+  readonly awareness: Awareness | null;
   getStatus(): PageDocumentStatus;
   /** Notified on every status change; unsubscribe by calling the return value. */
   subscribe(listener: () => void): () => void;
@@ -136,6 +142,9 @@ export function connectPageDocument(options: PageDocumentSessionOptions): PageDo
   return {
     scope: options.scope,
     document,
+    get awareness(): Awareness | null {
+      return provider && !destroyed ? provider.awareness : null;
+    },
     getStatus: () => status,
     subscribe: (listener) => {
       listeners.add(listener);

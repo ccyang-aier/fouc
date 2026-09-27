@@ -276,15 +276,19 @@ describe('page document session', () => {
     const server = new FakeCollaborationServer(name);
 
     const session = connectPageDocument({ ...sessionOptions, scope, WebSocketPolyfill: FakeWebSocket as never });
+    // B07: the shared awareness rides the provider — absent before it exists.
+    expect(session.awareness).toBe(null);
     const socket = await nextSocket(0);
     server.attach(socket);
     socket.open();
     await until(() => session.getStatus().phase === 'synced');
+    expect(session.awareness).not.toBe(null);
     session.document.getText('body').insert(0, 'before leaving');
     await until(() => server.document.getText('body').toString().includes('before leaving'));
 
     await session.destroy();
     await session.destroy();
+    expect(session.awareness).toBe(null);
     expect(socket.readyState).toBe(3);
     expect(socket.clientClosed).toBe(true);
     expect(Object.keys(documentObservers(session.document))).toHaveLength(0);

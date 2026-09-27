@@ -12,6 +12,10 @@ import { useI18n } from '../dense-sidebar/use-i18n';
 import styles from '../navigation/knowledge-sidebar.module.css';
 import { createLocalLibraryStore, emptyLocalLibrary, newLocalDocument, type LocalDocument } from './local-library';
 import { LocalDocumentEditor } from './local-document-editor';
+import { DocumentsPage } from '../documents/documents-page';
+import { LocalDocumentImport } from '../documents/local-document-import';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { DotsThree } from '@phosphor-icons/react';
 
 type View = 'all-documents' | 'starred' | 'drafts' | 'trash';
 type Store = ReturnType<typeof createLocalLibraryStore>;
@@ -63,7 +67,13 @@ function LocalKnowledgeWorkbench({ store, onOpenSettings, onOpenCloud }: { store
     </aside>
     <div className="relative min-w-0 flex-1">
       {collapsed ? <IconButton label="展开知识库侧边栏" onClick={() => setCollapsed(false)} className="absolute left-3 top-3 z-10 rounded-md p-1 hover:bg-[var(--surface-hover)]"><SidebarSimple size={18} /></IconButton> : null}
-      {selected ? <LocalDocumentEditor key={selected.id} document={selected} onChange={(patch) => updateDocument(selected.id, patch)} onBack={() => setSelectedId(null)} /> : <section className="h-full overflow-auto px-8 py-12 sm:px-14">
+      {selected ? <LocalDocumentEditor key={selected.id} document={selected} onChange={(patch) => updateDocument(selected.id, patch)} onBack={() => setSelectedId(null)} /> : view === 'all-documents' ? <DocumentsPage
+        documents={live.map((item) => ({ id: item.id, title: item.title, updatedAt: item.updatedAt, creator: '我', source: '本机文档', status: '暂无状态', starred: item.starred }))}
+        folders={[]}
+        onOpen={setSelectedId} onOpenFolder={() => {}} onCreate={() => setCreation('document')}
+        upload={<LocalDocumentImport onImport={(items) => write((current) => ({ ...current, documents: [...current.documents, ...items.map((item) => ({ ...newLocalDocument(base?.id ?? 'personal', item.name), body: { type: 'doc', content: item.text.split(/\r?\n/).map((text) => ({ type: 'paragraph', ...(text ? { content: [{ type: 'text', text }] } : {}) })) } }))] }))} />}
+        renderMenu={(id) => <DropdownMenu><DropdownMenuTrigger asChild><button type="button" aria-label="文档操作" className="p-2 text-slate-500"><DotsThree size={17} weight="bold" /></button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onSelect={() => setSelectedId(id)}>打开 / 编辑</DropdownMenuItem><DropdownMenuItem onSelect={() => { const item = live.find((doc) => doc.id === id); if (item) updateDocument(id, { starred: !item.starred }); }}>切换星标</DropdownMenuItem><DropdownMenuItem onSelect={() => { const item = live.find((doc) => doc.id === id); if (item) updateDocument(id, { draft: !item.draft }); }}>切换草稿</DropdownMenuItem><DropdownMenuItem onSelect={() => updateDocument(id, { deleted: true })} className="text-red-600">移至回收站</DropdownMenuItem></DropdownMenuContent></DropdownMenu>}
+      /> : <section className="h-full overflow-auto px-8 py-12 sm:px-14">
         <div className="mx-auto max-w-[860px]">
           <p className="mb-4 text-xs text-[var(--muted)]">{base?.name} <span className="ml-2 rounded-full bg-[var(--surface-subtle)] px-2 py-1 text-[10px]">本机 · 个人</span></p>
           <div className="mb-7 flex items-center justify-between"><h1 className="text-[26px] font-semibold tracking-tight">{title ? t(title) : '文档'}</h1>{view !== 'trash' ? <Button size="sm" variant="outline" onClick={() => setCreation('document')}><FilePlus size={15} />新建文档</Button> : null}</div>

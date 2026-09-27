@@ -1,6 +1,8 @@
 'use client';
 
 import { useMemo } from 'react';
+import { DocumentsPage } from '../documents/documents-page';
+import { AssetUploader } from '../assets/components/asset-uploader';
 import { FilePlus, Folder, Plus } from '@phosphor-icons/react';
 import type { Teamspace } from '@fouc/shared/knowledge/contracts';
 import type { KnowledgeAccess } from '../data/hooks';
@@ -40,6 +42,13 @@ export function LibraryCanvas({ workspaceId, userId, name, view, access, teamspa
   if (query.isPending) return <CanvasSpinner label="正在加载文档" />;
   if (query.isError) return <CanvasError title="文档加载失败" onRetry={() => void query.refetch()} />;
   const recycled = recycledRootPages(pages);
+  if (view === 'all-documents') return <><DocumentsPage
+    documents={documents.map((page) => ({ id: page.id, title: pageDisplayTitle(page), updatedAt: page.updatedAt, creator: page.createdBy === userId ? '我' : '成员', source: '知识库', status: '暂无状态', folderId: page.teamspaceId, starred: collections.starred.includes(page.id) }))}
+    folders={teamspaces.map((space) => ({ id: space.id, name: space.name, count: documents.filter((page) => page.teamspaceId === space.id).length, updatedAt: documents.filter((page) => page.teamspaceId === space.id).map((page) => page.updatedAt).sort().at(-1) }))}
+    onOpen={onOpenPage} onOpenFolder={onSelectFolder} onCreate={() => void actions.create()} onCreateFolder={onCreateFolder} canEdit={canEditTree(access)}
+    upload={<><p className="mb-4 text-xs text-slate-500">上传至当前知识库的附件存储。文档内可通过附件功能引用；上传不会自动创建页面或完成索引。</p><AssetUploader workspaceId={workspaceId} /></>}
+    renderMenu={(id) => <SidebarDocumentMenu documentId={id} starred={collections.starred.includes(id)} onAction={actions.act} />}
+  />{actions.dialogs}</>;
   return <section aria-label="知识库文档列表" className="min-h-0 flex-1 overflow-y-auto bg-white">
     <div className={styles.libraryView}>
       <header className={styles.viewHeader}>

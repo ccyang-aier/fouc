@@ -156,7 +156,7 @@ export function SidebarRow({
         ) : null)}
       <span className="my-auto inline-flex h-4 min-w-0 items-center truncate leading-4">{label}</span>
       {count !== undefined ? (
-        <span className="ml-auto pl-2 text-[10.5px] tabular-nums text-[#8b9093]">{count}</span>
+        <span className="ml-auto pl-2 pr-0.5 text-[10.5px] tabular-nums text-[#8b9093]">{count}</span>
       ) : null}
     </button>
   );

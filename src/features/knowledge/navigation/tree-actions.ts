@@ -118,7 +118,7 @@ const errorCodeCopy: Record<KnowledgeErrorCode, string> = {
   UNAUTHENTICATED: '登录状态已过期，请重新登录后再试。',
   PAYMENT_REQUIRED: '当前计划不支持该操作。',
   FORBIDDEN: '没有执行该操作的权限。',
-  NOT_FOUND: '页面树服务尚未开放该操作（后端路由装配前如实报错）。',
+  NOT_FOUND: '页面不存在或已被移除，请刷新目录后重试。',
   INVALID_REQUEST: '请求内容不符合页面树契约。',
   CONFLICT: '页面结构已被他人更新，正在重新同步。',
   PAYLOAD_TOO_LARGE: '请求内容超出大小限制。',

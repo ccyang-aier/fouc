@@ -127,7 +127,7 @@ function WorkspaceOverview({
           <div className="rounded-[10px] border border-[var(--line)] bg-[var(--surface-subtle)] px-4 py-3">
             <p className="text-[11px] font-medium text-[var(--muted-strong)]">页面目录</p>
             <p className="mt-1 text-[12px] leading-relaxed text-[var(--ink-soft)]">
-              该团队空间尚未接入页面读取接口，页面树与正文编辑器会在接入后在这里展开。
+              在左侧展开团队空间，选择已有文档或新建第一个文档。
             </p>
           </div>
         </div>
@@ -156,7 +156,7 @@ function WorkspaceOverview({
 
       <div className="mt-5">
         <CanvasNotice>
-          当前版本提供工作区与团队空间导航；页面正文编辑、页面树操作与评审 / AI 栏位将在接入后开放。
+          从左侧新建或选择文档，开始编辑。文档会自动保存，也可通过页面菜单重命名、移动或移入回收站。
         </CanvasNotice>
       </div>
     </div>

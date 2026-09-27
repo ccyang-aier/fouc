@@ -5,12 +5,10 @@
  *
  * The shared contracts own every input shape (`listPagesInputSchema`,
  * `createPageInputSchema`, …) and every output shape (`pageSchema`,
- * `pagePlacementSchema`, `pageLifecycleStateSchema`); the HTTP routes are
- * mounted by the API task, so until then each call fails honestly with the
- * transport's NOT_FOUND — never with fabricated data.
+ * `pagePlacementSchema`, `pageLifecycleStateSchema`). The backend page router
+ * serves these procedures through the authenticated workspace transport.
  *
- * The U01 router type does not list these procedures yet, so the calls go
- * through the tRPC client's dynamic `query`/`mutate` entry points and every
+ * The calls go through the tRPC client's dynamic `query`/`mutate` entry points and every
  * response is re-validated with the shared zod schemas at the boundary: the
  * type safety here comes from the contracts, not from trust in the wire.
  * Tests inject the transport through the same factory seam the organization

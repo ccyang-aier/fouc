@@ -67,7 +67,7 @@ describe('treeOperationErrorText / treeOperationSuccessText', () => {
   test('structured errors name the action, the code, the Chinese reason and the rollback', () => {
     const text = treeOperationErrorText('rename', new KnowledgeDataError('NOT_FOUND'));
     expect(text).toContain('重命名页面失败（NOT_FOUND）');
-    expect(text).toContain('尚未开放');
+    expect(text).toContain('页面不存在或已被移除');
     expect(text).toContain('已恢复');
 
     const forbidden = treeOperationErrorText('move-down', new KnowledgeDataError('FORBIDDEN'));

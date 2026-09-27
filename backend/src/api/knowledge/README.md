@@ -2,7 +2,9 @@
 
 `createKnowledgeApiRoutes({ auth, pool, signal, router?, onDiagnostic? })` returns a Hono sub-application. Z03 mounts it with `app.route('/', routes)` on the existing API role listener and supplies R01's shutdown signal. This module does not listen on a port, start another role, close the injected pool, or modify the old global server.
 
-The only owned paths are `/api/knowledge/:workspaceId/trpc` and its procedure subpaths. Organization/auth/media siblings remain available regardless of mount order. The default router exposes the authenticated `access` query (workspace, user, role, human actor, credential kind, scopes) and P03's `page.access` per-action ACL query. Neither exposes page content, business CRUD, credential IDs, PAT text or hashes.
+The only owned paths are `/api/knowledge/:workspaceId/trpc` and its procedure subpaths. Organization/auth/media siblings remain available regardless of mount order. The default router exposes authenticated workspace access, page access and metadata operations (`page.list/create/update/move/recycle/restore`), comments and AI tasks. Document bodies use the Y.Doc channel; credential IDs, PAT text and hashes are never exposed.
+
+Page mutations acquire the workspace lock before checking page and destination permissions. Root creation requires the teamspace's `edit` or `full` default; child creation requires parent `edit`. New pages grant their authenticated creator explicit `full` access. Permission projections are rebuilt in the mutation transaction so the acknowledged page can be opened immediately. Directory reads filter live pages through current effective ACLs; recycled roots are visible only to holders of an explicit `full` grant. Recovery additionally requires current destination edit rights. Existing IDs are retried only after checking access to that page.
 
 ## Defining a procedure
 

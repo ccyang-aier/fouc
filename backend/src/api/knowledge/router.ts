@@ -6,9 +6,10 @@ import { knowledgeStreamingTasks, toKnowledgeStreamingTrpcError } from '../../kn
 import type { KnowledgeStreamingTasks } from '../../knowledge/ai/streaming';
 import { createKnowledgeRouter, knowledgeQuery, knowledgeMutation } from './procedures';
 import { knowledgeCommentRouterRecord } from './comment-routes';
+import { knowledgePageRouterRecord } from './page-routes';
 import type { KnowledgeProcedureContext } from './context';
 
-/** Infrastructure plus the P03 page ACL query. Page content and writes arrive with T01+/B01+. */
+/** Authenticated page metadata, ACL, comments and AI tasks. Body edits use Y.Doc. */
 /** N02 (§4.6): the sidebar's comment thread lifecycle over the shared comment contracts. */
 export const knowledgeApiRouter = createKnowledgeRouter({
   comment: knowledgeCommentRouterRecord,
@@ -25,6 +26,7 @@ export const knowledgeApiRouter = createKnowledgeRouter({
     }),
   }),
   page: {
+    ...knowledgePageRouterRecord,
     /** One authorization per action. Denied, rebuilding and missing pages share one shape. */
     access: knowledgeQuery({
       input: pageScopeSchema.extend({ action: permissionLevelSchema }),

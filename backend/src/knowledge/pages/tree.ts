@@ -115,7 +115,7 @@ const pagePatchSchema = z.strictObject({
   workspaceId: z.string().uuid(),
   pageId: z.string().uuid(),
   patch: z.strictObject({
-    title: z.string().min(1).max(500).optional(),
+    title: z.string().max(500).optional(),
     icon: z.string().max(200).nullable().optional(),
     cover: z.string().max(2048).nullable().optional(),
   }).refine((value) => Object.keys(value).length > 0, 'at least one field'),

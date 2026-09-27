@@ -145,7 +145,7 @@ export function KnowledgeTreeStage({
 function TreePagesError({ code, onRetry }: { code: string | null; onRetry: () => void }) {
   const copy: Record<string, string> = {
     FORBIDDEN: '没有读取页面目录的权限。',
-    NOT_FOUND: '页面读取服务尚未装配（后端路由建设中），暂无法加载目录。',
+    NOT_FOUND: '页面目录不可用，请刷新后重试。',
     UNAVAILABLE: '知识服务暂时不可用，请稍后重试。',
     NETWORK: '无法连接知识服务，请检查网络后重试。',
     UNAUTHENTICATED: '登录状态已过期，请重新登录。',

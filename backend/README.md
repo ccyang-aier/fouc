@@ -40,6 +40,28 @@ pnpm knowledge:verify
 
 桌面只打包设备运行时。`scripts/build-backend.mjs` 编译设备入口，保持原有 `fouc-backend-<target>` 产物名称；Tauri 的开发启动路径同步指向设备入口。Web dev 缓存 `.next/` 与静态构建缓存 `.next-build/` 分开，Web/Tauri 静态前端仍输出到 `out/`。
 
+## 构建与分发边界
+
+| 命令 | 产物 | 用途 |
+| --- | --- | --- |
+| `pnpm build` | `out/` 静态前端；`.next-build/` 构建缓存 | Web 静态部署或桌面前端资源 |
+| `pnpm device:build` | `backend/device/dist/index.js` | 设备包 Bun bundle 验证；外部依赖另行安装 |
+| `pnpm backend:build` | `src-tauri/binaries/fouc-backend-<target>[.exe]` | 嵌入 Bun 运行时与依赖的设备可执行文件 |
+| `pnpm tauri build` | Windows 下的 `fouc.exe`、`fouc-backend.exe` 和 MSI/NSIS 安装包 | 桌面壳、前端资源与设备运行时一起分发 |
+| `pnpm server:build` | `backend/server/dist/server.js` | 独立业务服务 Bun bundle；运行环境、依赖及共享包另行部署 |
+
+`fouc-backend.exe` 的源码来自 `device/`：提供本机 Agent、进程执行、设备连接器与本机状态，由 Tauri 启动、看护和关停。它不包含 `server/` 的业务服务。两个 exe 是桌面的主要可执行程序，不表示安装包内只有两个文件。
+
+Tauri 的 `beforeBuildCommand` 只执行设备单文件编译与前端构建，没有执行 `server:build`。前端编译会读取业务服务公开的 tRPC 类型，但类型检查依赖不等于服务端运行时代码被打包。业务服务集中部署，供 Web 与桌面通过网络访问；开发时运行在本机，不改变这一边界。
+
+## 业务服务语言选择
+
+`server/` 是独立业务后端，当前接口包含 HTTP、tRPC、WebSocket 协作与 MCP，并运行后台作业，因此职责不只是一组 REST 接口。接口协议不限定实现语言；当前工程选择 TypeScript/Bun，不表示独立后端必须使用 TypeScript。
+
+本次拆分沿用已有 TypeScript 业务实现，保留账户、授权、协作、作业与 AI 编排逻辑。共享 schema、tRPC 类型推导以及现有 Yjs/Hocuspocus、AI 和 MCP 集成提供了可验证的复用收益；没有已测量的瓶颈或明确需求支持此时重写为另一种语言。文档解析和模型相关计算使用现有独立 Python media worker。
+
+独立部署不等于当前实现可以无成本跨语言替换：前端公开 tRPC 类型和共享 TypeScript 协议仍构成编译期耦合。若后续明确选择 Python/Go 实现某项独立能力，应先定义语言无关的网络契约与生成客户端，例如 HTTP 的 OpenAPI，并验证协作协议、授权和事务语义；不能仅替换入口或运行命令。依据实际职责和工程收益选择语言，保持业务服务模块化单体，不为语言差异提前拆分所有业务模块。
+
 ## 本次范围
 
 本次落地工程组织与运行边界，保留已有 API、存储模型、权限判断、前端页面和样式。访客主体、登录承接与全产品操作授权仍需对应产品规则；目录拆分不表示这些新能力已实现。后续模块扩展遵循 [`项目结构设计`](../docs/product/V1/design/arch/fouc-project-structure-design.md)。

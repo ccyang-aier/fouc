@@ -1,7 +1,8 @@
 'use client';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
-import { DotsThree, ArrowsDownUp, CaretRight, FileText, Funnel, MagnifyingGlass, Plus, SquaresFour, Table, UploadSimple, X } from '@phosphor-icons/react';
+import { DotsThree, ArrowsDownUp, CaretDown, CaretRight, FileText, Funnel, MagnifyingGlass, Plus, SidebarSimple, SquaresFour, Table, UploadSimple, X } from '@phosphor-icons/react';
+import { IconButton } from '../dense-sidebar/icon-button';
 import styles from './documents-page.module.css';
 import { formatOf } from './document-visuals';
 import { DocumentFolders } from './document-folders';
@@ -17,8 +18,9 @@ type Props = {
     upload: ReactNode;
     renderMenu: (id: string) => ReactNode;
     canEdit?: boolean;
+    onExpandSidebar?: () => void;
 };
-export function DocumentsPage({ documents, folders, onOpen, onOpenFolder, onCreate, onCreateFolder, upload, renderMenu, canEdit = true }: Props) {
+export function DocumentsPage({ documents, folders, onOpen, onOpenFolder, onCreate, onCreateFolder, upload, renderMenu, canEdit = true, onExpandSidebar }: Props) {
     const uploadDialog = useRef<HTMLDialogElement>(null);
     const [search, setSearch] = useState('');
     const [filter, setFilter] = useState('all');
@@ -54,7 +56,7 @@ export function DocumentsPage({ documents, folders, onOpen, onOpenFolder, onCrea
         setFilterOpen(false);
         setNewOpen(false);
     } }}>
-    <header className={styles.toolbar}><div className={styles.heading}><FileText size={18}/><h1>文档</h1><span>{documents.length}</span></div>
+    <header className={styles.toolbar}><div className={styles.heading}>{onExpandSidebar ? <IconButton label="展开知识库侧边栏" onClick={onExpandSidebar} className={styles.sidebarToggle}><SidebarSimple size={18}/></IconButton> : null}<h1>文档</h1><span>{documents.length}</span></div>
       <div className={styles.tools}><label className={styles.search}><MagnifyingGlass size={16}/><input aria-label="搜索文档" placeholder="搜索文档" value={search} onChange={(event) => setSearch(event.target.value)}/>{search ? <button aria-label="清除搜索" onClick={() => setSearch('')}><X size={13}/></button> : null}</label>
         <div className={styles.popoverAnchor} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) {
         setNewOpen(false);
@@ -62,7 +64,7 @@ export function DocumentsPage({ documents, folders, onOpen, onOpenFolder, onCrea
     } }}><button className={styles.control} aria-expanded={filterOpen} onClick={() => setFilterOpen(!filterOpen)} data-active={filter !== 'all'}><Funnel size={16}/>筛选</button>{filterOpen ? <div className={styles.popover}><label>显示文档<select aria-label="筛选格式" value={filter} onChange={(event) => { setFilter(event.target.value); setFilterOpen(false); }}><option value="all">全部格式</option><option value="starred">仅星标文档</option>{formats.map((format) => <option key={format}>{format}</option>)}</select></label><button onClick={() => { setFilter('all'); setFilterOpen(false); }}>重置筛选</button></div> : null}</div>
         <button className={styles.control} title={ascending ? '按更新时间从新到旧' : '按更新时间从旧到新'} aria-label="切换更新时间排序" onClick={() => setAscending(!ascending)}><ArrowsDownUp size={17}/></button>
         <div className={styles.switcher}><button aria-label="文件夹卡片视图" aria-pressed={layout === 'table'} onClick={() => setLayout('table')}><SquaresFour size={17} weight="fill"/></button><button aria-label="文件网格视图" aria-pressed={layout === 'grid'} onClick={() => setLayout('grid')}><Table size={17}/></button></div>
-        <div className={styles.popoverAnchor}><button className={styles.control} disabled={!canEdit} aria-expanded={newOpen} onClick={() => setNewOpen(!newOpen)}><Plus size={17}/>新建<span className={styles.caret}>⌄</span></button>{newOpen ? <div className={styles.popover}><button onClick={() => { setNewOpen(false); onCreate(); }}>新建文档</button>{onCreateFolder ? <button onClick={() => { setNewOpen(false); onCreateFolder(); }}>新建文件夹</button> : null}</div> : null}</div>
+        <div className={styles.popoverAnchor}><button className={styles.control} disabled={!canEdit} aria-expanded={newOpen} onClick={() => setNewOpen(!newOpen)}><Plus size={17}/>新建<CaretDown className={styles.caret} size={12}/></button>{newOpen ? <div className={styles.popover}><button onClick={() => { setNewOpen(false); onCreate(); }}>新建文档</button>{onCreateFolder ? <button onClick={() => { setNewOpen(false); onCreateFolder(); }}>新建文件夹</button> : null}</div> : null}</div>
         <button className={styles.upload} disabled={!canEdit} onClick={() => setUploadOpen(true)}><UploadSimple size={17}/>上传</button><DropdownMenu><DropdownMenuTrigger asChild><button className={styles.more} aria-label="文档视图更多操作"><DotsThree size={19} weight="bold" /></button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onSelect={() => { setSearch(''); setFilter('all'); setAscending(false); setLayout('table'); setSelected(new Set()); setAllFolders(false); }}>重置视图</DropdownMenuItem><DropdownMenuItem disabled={!selectedCount} onSelect={exportSelection}>导出所选文档清单</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
       </div>
     </header>

@@ -20,7 +20,7 @@ import styles from '../library-canvas.module.css';
 
 const titles = { overview: '知识库', 'all-documents': '文档', starred: '星标', drafts: '草稿', trash: '回收站', projects: '文件夹', recent: '最近' };
 
-export function LibraryCanvas({ workspaceId, userId, name, view, access, teamspaces, onOpenPage, onSelectFolder, onCreateFolder, notify, folder }: {
+export function LibraryCanvas({ workspaceId, userId, name, view, access, teamspaces, onOpenPage, onSelectFolder, onCreateFolder, notify, folder, onExpandSidebar }: {
   workspaceId: string;
   userId: string;
   name: string;
@@ -32,6 +32,7 @@ export function LibraryCanvas({ workspaceId, userId, name, view, access, teamspa
   onCreateFolder: () => void;
   notify: TreeNotifier;
   folder?: Teamspace | null;
+  onExpandSidebar?: () => void;
 }) {
   const query = useKnowledgePagesQuery(workspaceId);
   const pages = useMemo(() => query.data ?? [], [query.data]);
@@ -43,6 +44,7 @@ export function LibraryCanvas({ workspaceId, userId, name, view, access, teamspa
   if (query.isError) return <CanvasError title="文档加载失败" onRetry={() => void query.refetch()} />;
   const recycled = recycledRootPages(pages);
   if (view === 'all-documents') return <><DocumentsPage
+    onExpandSidebar={onExpandSidebar}
     documents={documents.map((page) => ({ id: page.id, title: pageDisplayTitle(page), updatedAt: page.updatedAt, creator: page.createdBy === userId ? '我' : '成员', source: '知识库', status: '暂无状态', folderId: page.teamspaceId, starred: collections.starred.includes(page.id) }))}
     folders={teamspaces.map((space) => ({ id: space.id, name: space.name, count: documents.filter((page) => page.teamspaceId === space.id).length, updatedAt: documents.filter((page) => page.teamspaceId === space.id).map((page) => page.updatedAt).sort().at(-1) }))}
     onOpen={onOpenPage} onOpenFolder={onSelectFolder} onCreate={() => void actions.create()} onCreateFolder={onCreateFolder} canEdit={canEditTree(access)}

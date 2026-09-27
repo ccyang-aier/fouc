@@ -249,12 +249,12 @@ function KnowledgeWorkbench({ onOpenSettings, onOpenLocal }: { onOpenSettings: (
             onCreateWorkspace={() => setCreateWorkspaceOpen(true)}
             treeArea={treeArea}
           />
-          <div className={`relative flex min-h-0 min-w-0 flex-1 flex-col ${sidebarCollapsed ? '[&>section>header]:pl-11' : ''}`}>
-          {sidebarCollapsed ? <IconButton label="展开知识库侧边栏" onClick={() => setSidebarCollapsed(false)} className="absolute left-2 top-1.5 z-10 flex size-7 items-center justify-center rounded-md text-[var(--muted-strong)] hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><SidebarSimple size={18} /></IconButton> : null}
+          <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+          {sidebarCollapsed && (selectedPageId || libraryView !== 'all-documents') ? <IconButton label="展开知识库侧边栏" onClick={() => setSidebarCollapsed(false)} className="absolute left-2 top-2 z-10 flex size-7 items-center justify-center rounded-md text-[var(--muted-strong)] hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><SidebarSimple size={18} /></IconButton> : null}
           {selectedPageId && activeId ? (
             <KnowledgePageEditor scope={{ workspaceId: activeId, pageId: selectedPageId }} user={session.user} />
           ) : activeId ? (
-            <LibraryCanvas key={activeId} workspaceId={activeId} userId={session.user.id} name={activeWorkspace.name} view={libraryView} access={accessQuery.data} teamspaces={teamspaces} folder={selectedTeamspace} onOpenPage={setSelectedPageId} onSelectFolder={(id) => { setSelectedTeamspaceId(id); setLibraryView('overview'); }} onCreateFolder={() => setCreateTeamspaceOpen(true)} notify={notify} />
+            <LibraryCanvas key={activeId} workspaceId={activeId} userId={session.user.id} name={activeWorkspace.name} view={libraryView} access={accessQuery.data} teamspaces={teamspaces} folder={selectedTeamspace} onOpenPage={setSelectedPageId} onSelectFolder={(id) => { setSelectedTeamspaceId(id); setLibraryView('overview'); }} onCreateFolder={() => setCreateTeamspaceOpen(true)} onExpandSidebar={sidebarCollapsed ? () => setSidebarCollapsed(false) : undefined} notify={notify} />
           ) : null}
           </div>
         </div>

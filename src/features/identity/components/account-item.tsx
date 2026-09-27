@@ -6,6 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useIdentity } from '../identity-provider';
 import { presenceDisplay, presenceOptions } from '../presence';
+import '@/components/sidebar-nav-row.css';
 
 export function AccountItem({ compact = false }: { compact?: boolean }) {
   const { session, openSignIn, signOut, presence, presencePreference, setPresence } = useIdentity();
@@ -15,12 +16,12 @@ export function AccountItem({ compact = false }: { compact?: boolean }) {
   const label = user?.name ?? (session.status === 'checking' ? '正在确认身份' : '未登录');
   const detail = user?.email ?? (session.status === 'error' ? '服务暂不可用，点击重试登录' : '登录以使用你的账户');
   const status = presenceDisplay(presence);
-  const button = <button type="button" data-session-status={session.status} data-presence={user ? presence : undefined} aria-busy={session.status === 'checking'} aria-label={user ? `Fouc 账户：${user.name} · ${status.label}` : '登录 Fouc 账户'} onClick={user ? undefined : openSignIn} className={`flex w-full items-center rounded-lg text-left transition-colors hover:bg-sidebar-hover focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] ${compact ? 'justify-center p-1.5' : 'gap-2.5 px-2 py-1.5'}`}>
-    <span aria-hidden className="relative flex size-8 shrink-0 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--panel)] text-[var(--muted)] shadow-sm">
+  const button = <button type="button" data-session-status={session.status} data-presence={user ? presence : undefined} aria-busy={session.status === 'checking'} aria-label={user ? `Fouc 账户：${user.name} · ${status.label}` : '登录 Fouc 账户'} onClick={user ? undefined : openSignIn} className={`sidebar-nav-row flex w-full items-center rounded-[6px] text-left focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] ${compact ? 'justify-center p-1' : 'gap-2.5 px-2 py-1'}`}>
+    <span aria-hidden className="relative flex size-7 shrink-0 items-center justify-center rounded-lg border border-[var(--line)] bg-[var(--panel)] text-[var(--muted)] shadow-sm">
       {user ? <span className="text-xs font-medium text-[var(--accent-ink)]">{Array.from(user.name)[0]?.toUpperCase()}</span> : session.status === 'checking' ? <CircleNotch className="size-4 animate-spin" /> : <UserCircle size={22} weight="duotone" />}
       {user ? <span className="absolute -bottom-px -right-px flex size-2.5 items-center justify-center rounded-full ring-2 ring-[var(--shell)]" style={{ backgroundColor: status.color }}>{presence === 'do-not-disturb' ? <span className="h-px w-1.5 bg-white" /> : presence === 'away' ? <span className="size-1 rounded-full bg-[var(--panel)]" /> : null}</span> : null}
     </span>
-    {!compact ? <><span className="min-w-0 flex-1"><span className="block truncate text-xs font-medium text-[var(--ink)]">{label}</span><span className="mt-0.5 block truncate text-[10.5px] text-[var(--muted)]">{detail}</span></span><CaretRight className="size-3.5 shrink-0 text-[var(--muted)]" /></> : null}
+    {!compact ? <><span className="min-w-0 flex-1"><span className="block truncate text-xs font-medium leading-4 text-[var(--ink)]">{label}</span><span className="mt-0.5 block truncate text-[10.5px] leading-3 text-[var(--muted)]">{detail}</span></span><CaretRight className="size-3.5 shrink-0 text-[var(--muted)]" /></> : null}
   </button>;
   const trigger = compact ? <Tooltip><TooltipTrigger asChild>{button}</TooltipTrigger><TooltipContent side="right">{label}{user ? ` · ${status.label}` : ''}</TooltipContent></Tooltip> : button;
   if (!user) return trigger;

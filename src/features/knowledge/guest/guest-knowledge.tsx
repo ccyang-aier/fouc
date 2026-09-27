@@ -66,8 +66,9 @@ function LocalKnowledgeWorkbench({ store, onOpenSettings, onOpenCloud }: { store
       <button type="button" onClick={session.status === 'authenticated' ? onOpenCloud : openSignIn} className="m-3 flex items-center gap-2 rounded-lg border border-[var(--line)] px-3 py-2.5 text-left text-xs text-[var(--muted-strong)] hover:bg-[var(--surface-hover)]"><LockSimple size={15} />{session.status === 'authenticated' ? '打开账户知识库' : '登录以开启团队协作'}</button>
     </aside>
     <div className="relative min-w-0 flex-1">
-      {collapsed ? <IconButton label="展开知识库侧边栏" onClick={() => setCollapsed(false)} className="absolute left-3 top-3 z-10 rounded-md p-1 hover:bg-[var(--surface-hover)]"><SidebarSimple size={18} /></IconButton> : null}
+      {collapsed && (selected || view !== 'all-documents') ? <IconButton label="展开知识库侧边栏" onClick={() => setCollapsed(false)} className="absolute left-2 top-2 z-10 flex size-7 items-center justify-center rounded-md text-[var(--muted-strong)] hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><SidebarSimple size={18} /></IconButton> : null}
       {selected ? <LocalDocumentEditor key={selected.id} document={selected} onChange={(patch) => updateDocument(selected.id, patch)} onBack={() => setSelectedId(null)} /> : view === 'all-documents' ? <DocumentsPage
+        onExpandSidebar={collapsed ? () => setCollapsed(false) : undefined}
         documents={live.map((item) => ({ id: item.id, title: item.title, updatedAt: item.updatedAt, creator: '我', source: '本机文档', status: '暂无状态', starred: item.starred }))}
         folders={[]}
         onOpen={setSelectedId} onOpenFolder={() => {}} onCreate={() => setCreation('document')}

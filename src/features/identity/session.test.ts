@@ -24,6 +24,7 @@ function fakeApi(overrides: Partial<FoucAuthApi> = {}): FoucAuthApi {
     signUpWithEmail: async () => ({ user: { id: 'u', email: 'e', name: 'n', emailVerified: false } }),
     sendVerificationEmail: async () => ({ status: true }),
     signOut: async () => ({ success: true }),
+    updateProfile: async () => ({ status: true }),
     getSession: async () => null,
     startSocialSignIn: async () => ({ url: 'https://idp', redirect: true }),
     ...overrides,

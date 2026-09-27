@@ -5,6 +5,9 @@ import { X } from '@phosphor-icons/react';
 import { useIdentity } from '../identity-provider';
 import { AuthEntryContent } from './auth-entry-content';
 import { Button } from '@/components/ui/button';
+import { foucAuthApi } from '../auth-api';
+import { authErrorCopyFor } from '../auth-errors';
+import { presenceDisplay } from '../presence';
 
 /** Native dialog supplies focus trapping, Escape and focus restoration without another overlay system. */
 export function AccountDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -30,12 +33,34 @@ export function AccountDialog({ open, onClose }: { open: boolean; onClose: () =>
 }
 
 function AccountDetails() {
-  const { session } = useIdentity();
+  const { session, refresh, presence } = useIdentity();
+  const [name, setName] = useState(session.status === 'authenticated' ? session.user.name : '');
+  const [saving, setSaving] = useState(false);
+  const [feedback, setFeedback] = useState<{ error: boolean; text: string } | null>(null);
   if (session.status !== 'authenticated') return null;
+  const user = session.user;
+  const status = presenceDisplay(presence);
+  async function saveProfile(event: React.FormEvent) {
+    event.preventDefault();
+    setSaving(true);
+    setFeedback(null);
+    try {
+      await foucAuthApi.updateProfile({ name: name.trim() });
+      await refresh();
+      setFeedback({ error: false, text: '个人信息已保存' });
+    } catch (error) { setFeedback({ error: true, text: authErrorCopyFor(error).description }); }
+    finally { setSaving(false); }
+  }
   return <div className="text-center">
     <div aria-hidden className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-[var(--accent-soft)] text-xl font-medium text-[var(--accent-ink)]">{Array.from(session.user.name)[0]?.toUpperCase()}</div>
-    <h2 className="text-lg font-semibold">{session.user.name}</h2>
-    <p className="mt-1 text-xs text-[var(--muted)]">{session.user.email}</p>
-    <p className="mt-5 rounded-xl bg-[var(--surface-subtle)] p-4 text-xs leading-6 text-[var(--muted-strong)]">这是你的 Fouc 账户。所有模块共用此身份，具体操作由所在知识库、项目和资源的授权决定。</p>
+    <h2 className="text-lg font-semibold">个人信息</h2>
+    <p className="mt-1 text-xs text-[var(--muted)]">管理你的 Fouc 账户资料</p>
+    <span className="mt-3 inline-flex items-center gap-1.5 text-[11px] text-[var(--muted)]"><span aria-hidden className="size-1.5 rounded-full" style={{ backgroundColor: status.color }} />{status.label}</span>
+    <form onSubmit={(event) => void saveProfile(event)} className="mt-6 space-y-4 text-left">
+      <label className="block text-xs text-[var(--muted-strong)]">显示名称<input aria-label="显示名称" required maxLength={120} value={name} onChange={(event) => { setName(event.target.value); setFeedback(null); }} className="mt-2 h-10 w-full rounded-lg border border-[var(--line)] bg-transparent px-3 text-xs text-[var(--ink)] outline-none focus:border-[var(--focus-ring)]" /></label>
+      <div><p className="text-xs text-[var(--muted-strong)]">邮箱</p><p className="mt-2 flex items-center justify-between rounded-lg bg-[var(--surface-subtle)] px-3 py-3 text-xs"><span className="truncate">{user.email}</span><span className="ml-2 shrink-0 text-[10px] text-[#35a879]">已验证</span></p></div>
+      {feedback ? <p role={feedback.error ? 'alert' : 'status'} className={`text-xs ${feedback.error ? 'text-[#c05c64]' : 'text-[#35a879]'}`}>{feedback.text}</p> : null}
+      <Button type="submit" className="w-full" disabled={saving || !name.trim() || name.trim() === user.name} aria-busy={saving}>{saving ? '正在保存…' : '保存修改'}</Button>
+    </form>
   </div>;
 }

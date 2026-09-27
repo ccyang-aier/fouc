@@ -88,9 +88,8 @@ export function SidebarTagTreeNode({
             style={{ backgroundColor: tag.color }}
           />
           <span className="my-auto inline-flex h-4 min-w-0 items-center truncate leading-4">{tag.name}</span>
-          <span className="ml-auto pl-2 text-[10.5px] tabular-nums text-[#8b9093]">{documents.length}</span>
         </button>
-        <div className={cn(styles.actions, "ml-auto flex shrink-0 items-center gap-0.5")}>
+        <div className={cn(styles.actions, styles.inlineActions, "flex shrink-0 items-center gap-0.5")}>
           <IconButton
             type="button"
             label={t("sidebar.newDocumentInTag", { tag: tag.name })}
@@ -124,6 +123,7 @@ export function SidebarTagTreeNode({
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+        <span className={styles.count}>{documents.length}</span>
       </div>
 
       {hasDocuments && expanded ? (

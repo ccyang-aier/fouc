@@ -109,12 +109,11 @@ export function SidebarProjectTreeNode({
             <ProjectGlyph iconId={node.projectIconId} />
           )}
           <span className="my-auto inline-flex h-4 min-w-0 items-center truncate leading-4">{label}</span>
-          {!isDocument && <span className="ml-auto pl-2 text-[10.5px] tabular-nums text-[#8b9093]">{node.count ?? 0}</span>}
         </button>
         {isDocument ? (
           <SidebarDocumentActions documentId={node.id} starred={Boolean(node.starred)} onAction={onDocumentAction} />
         ) : (
-          <div className={cn(styles.actions, "ml-auto flex shrink-0 items-center gap-0.5")}>
+          <div className={cn(styles.actions, styles.inlineActions, "flex shrink-0 items-center gap-0.5")}>
             <IconButton
               type="button"
               label={t("sidebar.newDocument")}
@@ -155,6 +154,7 @@ export function SidebarProjectTreeNode({
             </DropdownMenu>
           </div>
         )}
+        {!isDocument && <span className={styles.count}>{node.count ?? 0}</span>}
       </div>
 
       {node.children?.length && isExpanded ? (

@@ -7,6 +7,7 @@ import {
   CaretRight,
   CheckSquareOffset,
   FileText,
+  NotePencil,
   FolderOpen,
   HashStraight,
   ImageSquare,
@@ -39,6 +40,7 @@ export const sidebarIconMap: Record<SidebarIconName, PhosphorIcon> = {
   sprout: Plant,
   image: ImageSquare,
   file: FileText,
+  draft: NotePencil,
   folder: FolderOpen,
   tasks: CheckSquareOffset,
   blocks: SquaresFour,
@@ -71,9 +73,9 @@ export function SidebarSectionHeader({ icon: Icon, label, expanded, onToggle, se
       <Icon aria-hidden size={15} className="mr-2 shrink-0 text-[#7c8387]" />
       <span className="truncate">{label}</span>
       <CaretRight aria-hidden weight="fill" className={cn("ml-1 size-[10px] shrink-0 transition-transform duration-200", expanded && "rotate-90")} />
-      {count !== undefined && <span className="ml-auto pr-1 text-[10.5px] font-normal tabular-nums text-[#8b9093]">{count}</span>}
     </button>
-    {actions && <div className="ml-1 flex shrink-0 items-center gap-px opacity-0 transition-opacity group-hover/section:opacity-100 group-focus-within/section:opacity-100">{actions}</div>}
+    {actions && <div className="ml-1 flex shrink-0 items-center gap-px invisible opacity-0 transition-opacity group-hover/section:visible group-hover/section:opacity-100 group-focus-within/section:visible group-focus-within/section:opacity-100">{actions}</div>}
+    {count !== undefined && <span className={styles.count}>{count}</span>}
   </div>;
 }
 

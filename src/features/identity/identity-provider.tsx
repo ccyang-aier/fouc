@@ -5,6 +5,8 @@ import { sessionExpiredEvent } from '@/lib/authenticated-fetch';
 import { createIdentitySessionStore, type IdentitySession } from './session-store';
 import { authErrorCopyFor } from './auth-errors';
 import { AccountDialog } from './components/account-dialog';
+import { createPresenceStore } from './presence-store';
+import type { PresencePreference, PresenceStatus } from './presence';
 
 type IdentityContextValue = {
   session: IdentitySession;
@@ -13,12 +15,18 @@ type IdentityContextValue = {
   signOut: () => Promise<void>;
   expireSession: () => void;
   openSignIn: () => void;
+  presence: PresenceStatus;
+  presencePreference: PresencePreference;
+  setPresence: (value: PresencePreference) => void;
 };
 const IdentityContext = createContext<IdentityContextValue | null>(null);
 
 export function IdentityProvider({ children }: { children: ReactNode }) {
   const [store] = useState(createIdentitySessionStore);
   const session = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
+  const userId = session.status === 'authenticated' ? session.user.id : null;
+  const presenceStore = useMemo(() => createPresenceStore(userId), [userId]);
+  const presence = useSyncExternalStore(presenceStore.subscribe, presenceStore.getSnapshot, presenceStore.getServerSnapshot);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const channel = useRef<BroadcastChannel | null>(null);
@@ -65,7 +73,7 @@ export function IdentityProvider({ children }: { children: ReactNode }) {
     store.expire();
     setNotice('登录已过期，你可以继续使用本机知识库');
   }, [store]);
-  const value = useMemo<IdentityContextValue>(() => ({ session, refresh, openSignIn, completeSignIn, signOut, expireSession }), [session, refresh, openSignIn, completeSignIn, signOut, expireSession]);
+  const value = useMemo<IdentityContextValue>(() => ({ session, refresh, openSignIn, completeSignIn, signOut, expireSession, presence: presence.status, presencePreference: presence.preference, setPresence: presenceStore.setPreference }), [session, refresh, openSignIn, completeSignIn, signOut, expireSession, presence, presenceStore]);
   return <IdentityContext.Provider value={value}>
     {children}
     <AccountDialog open={dialogOpen} onClose={closeDialog} />

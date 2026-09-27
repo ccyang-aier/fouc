@@ -8,6 +8,23 @@
     transform 120ms ease;
 }
 
+/* Keep counts at the same right edge while reserving a separate action slot. */
+.actions.inlineActions {
+  position: static;
+  margin-left: 4px;
+}
+
+.count {
+  min-width: 14px;
+  flex-shrink: 0;
+  margin-left: 4px;
+  text-align: right;
+  font-size: 10.5px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  color: #8b9093;
+}
+
 .row {
   position: relative;
 }

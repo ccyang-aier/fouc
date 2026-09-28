@@ -9,12 +9,12 @@ const docs = [];
 
 function visit(directory) {
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
-    if (entry.name.startsWith('.') || ['node_modules', 'out', 'opensource'].includes(entry.name)) continue;
+    if ((entry.name.startsWith('.') && entry.name !== '.spec') || ['node_modules', 'out', 'opensource'].includes(entry.name)) continue;
     const absolute = path.join(directory, entry.name);
     if (entry.isDirectory()) visit(absolute);
     else if (entry.name.endsWith('.md')) {
       const relative = path.relative(root, absolute).replaceAll('\\', '/');
-      if (!relative.startsWith('docs/') && !allowedRootDocs.has(relative)) failures.push(`${relative}: document belongs under docs/`);
+      if (!relative.startsWith('docs/') && !relative.startsWith('.spec/tasks/') && !allowedRootDocs.has(relative)) failures.push(`${relative}: document belongs under docs/`);
       if (relative.startsWith('docs/product/V1/design/') && /^\d{4}-\d{2}-\d{2}/.test(entry.name)) failures.push(`${relative}: design document cannot be dated`);
       docs.push({ absolute, relative });
     }

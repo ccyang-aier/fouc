@@ -23,4 +23,4 @@ V1 以个人和团队共用的 Web / 桌面 AI 工作台为产品范围。工作
 | DTS 特有的认证与能力 | [DTS Provider](design/connectors/dts-connector-design.md) |
 | 数据存储 Provider 与共享内核 | [数据存储模块](design/connectors/data-storage-module-design.md) |
 
-每个主题直接更新上述文档；不要为评估、实现批次或日期另写一份同主题设计。当前代码协议与运行命令见 [工程文档](../../engineering/README.md)，外部项目研究见 [背景材料](../../background/README.md)。
+每个主题直接更新上述文档；不要为评估、实现批次或日期另写一份同主题设计。运行命令见仓库 [README](../../../README.md)，实际协议以代码和测试为准，外部项目研究见 [背景材料](../../background/README.md)。

@@ -43,8 +43,8 @@ Fouc 是一套构建于 AI Agent 之上的超级工作台，面向个人与企�
 
 - 任务完成并通过验证后执行 Git 提交，提交信息使用规范、清晰的格式。
 - 开发任务默认保持 `pnpm dev:all` 启动或复用的 Web 开发服务常驻并自动刷新源码。仅在用户明确要求桌面验证、发布或打包时执行 `pnpm tauri build`；Web 改动按需运行 `pnpm build`。
-- **文档唯一权威**：产品、架构、设计与实现说明统一维护在 `docs/`。每个设计主题只保留一份当前有效的权威文档；后续决策直接修改该文档。不同职责（如连接器框架与 DTS Provider）可以分别成文，但不按日期、任务或重构批次复制设计、建立存档或保留已失效方案。一次性验收结果不进入设计目录。
-- **清理任务产物**：临时截图、比较图、审计报告、验收账本和中间生成文件可在任务期间使用，任务结束前须清理。持续有效的测试、脚本、源代码和运行所需缓存不因目录名像临时目录就删除；先确认引用与运行状态。
+- **文档唯一权威**：产品、架构与实现决策统一维护在 `docs/` 的对应主题设计文档中。每个设计主题只保留一份当前有效的权威文档；后续决策直接修改该文档。不同职责（如连接器框架与 DTS Provider）可以分别成文，但不按日期、任务或重构批次复制设计、建立存档或保留已失效方案。具体代码与测试是实现现状的依据，不另建一套重复的“工程实现说明”。
+- **任务进度与清理**：持续推进的大任务在 `.spec/tasks/` 保留任务表、状态和必要的验证摘要，随实施更新；它们是执行跟踪，不是第二份设计。临时截图、比较图、一次性审计、验收报告和中间生成文件可在任务期间使用，任务结束前须清理。持续有效的测试、脚本、源代码和运行所需缓存不因目录名像临时目录就删除；先确认引用与运行状态。
 
 ## 按需阅读文档
 
@@ -57,7 +57,7 @@ Fouc 是一套构建于 AI Agent 之上的超级工作台，面向个人与企�
 - 知识库与协同编辑：[知识库设计](docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。
 - 连接器、DTS 与数据存储：[连接器架构](docs/product/V1/design/connectors/connector-architecture.md)、[DTS](docs/product/V1/design/connectors/dts-connector-design.md)、[数据存储](docs/product/V1/design/connectors/data-storage-module-design.md)。
 - Agent 纳管：[本机 Agent 设计](docs/product/V1/design/agents/fouc-agent-management-design.md)。
-- 当前代码与开发命令：[工程说明](docs/engineering/README.md)。
+- 长期任务进度：[知识库任务表](.spec/tasks/fouc-knowledgebase-tasks.md)、[DBX 迁移任务表](.spec/tasks/dbx-full-capability-migration.md)；仅在涉及对应任务时阅读。
 
 ### 桌面端构建
 

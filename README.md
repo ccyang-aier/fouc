@@ -50,7 +50,7 @@ pnpm install
 pnpm dev:all
 ```
 
-`dev:all` 启动或复用本仓库 Web、设备运行时和业务服务，退出命令后服务常驻并自动刷新源码。业务服务配置使用 `.env.fouc.local`。前端保持在 `src/`，后端拆为 `backend/device/` 与 `backend/server/`；详细边界、独立命令和基础设施配置见 [后端运行说明](./docs/engineering/backend-runtime.md)。单独启动前端仍使用 `pnpm dev`。
+`dev:all` 启动或复用本仓库 Web、设备运行时和业务服务，退出命令后服务常驻并自动刷新源码。业务服务配置使用 `.env.fouc.local`。前端保持在 `src/`，后端拆为 `backend/device/` 与 `backend/server/`；职责和分发边界见[项目结构设计](./docs/product/V1/design/arch/fouc-project-structure-design.md)。单独启动前端仍使用 `pnpm dev`。
 
 Web 开发默认连接真实 sidecar。需要启用浏览器 Mock 时，在启动进程中设置连接器列表（逗号分隔）：
 
@@ -66,6 +66,8 @@ pnpm check           # 类型检查、Lint 与 Web 构建
 pnpm desktop:dev     # 启动桌面端开发环境
 pnpm desktop:build   # 构建桌面端安装产物
 ```
+
+后端可分别使用 `pnpm device:*` 与 `pnpm server:*` 的 `dev`、`typecheck`、`test`、`build` 命令；`pnpm backend:build` 只生成桌面设备 sidecar，`pnpm server:build` 生成独立业务服务。跨包边界运行 `pnpm architecture:verify`，知识库与 DBX 任务表分别运行 `pnpm knowledge:verify`、`pnpm dbx:verify`。可选 Python 内容处理服务在 `services/media-worker/`，仅涉及媒体解析时按其 `dev.py` 初始化和启动。
 
 ## 文档
 

@@ -19,7 +19,7 @@ DTS Connector 是 [Fouc Connector 整体架构设计](./connector-architecture.m
 
 ### 2.2 已验证事实
 
-2026-09-17 的受控测试确认：
+以下是既有受控测试观察，只用于说明设计依据，实际平台行为需在接入时重新验证：
 
 - Node 22 和 Bun 1.4.2 均可完成登录与只读 API 调用；
 - 登录完成后可直接调用 DTS API，不需要成功完成 `ssoproxysvr/v2/tickets` 跳转；
@@ -572,21 +572,9 @@ DTS 前端存在创建、执行、挂起、撤销、归档、删除、批量操�
 - WorkObject 外部引用和最小快照；
 - Web 任务经桌面 Relay 调用。
 
-### 15.1 当前实现与验收记录（2026-09-17）
+## 当前实现边界
 
-已完成：
-
-- 通用 Provider / Instance / Capability 契约、Registry、生命周期、心跳和调用审计；
-- 认证、健康、期望启停和执行位置四组正交状态；
-- DTS 系统 CA Transport、完整内存 CookieJar、固定只读请求 DTO、超时和有限重试；
-- 独立 WebView2 官方 SSO 窗口、独立 Profile、无远程 IPC capability、独立内部 handoff 令牌；
-- 断开时清空 sidecar 会话并撤销 DTS 专用 WebView Profile；
-- 身份、首页筛选器、列表、详情、关系、权限、心跳和调用审计；
-- Connector Catalog、DTS 详情页、真实列表、工单详情面板、连接信息与凭证状态界面。
-
-真实环境只读验收结果：身份确认成功；读取到 9 个服务端筛选器；`myTodos / myCreate / myProcessed / myFollowed / ccToMe` 分别返回 6 / 10 / 219 / 0 / 117 条；抽样详情映射出 13 个可展示字段、2 个流程节点、0 个关联和 5 个权限项。非法筛选器返回 400，未认证调用返回 401，错误内部令牌返回 401，过期登录交互返回 410。所有测试均未调用 DTS 写接口。
-
-明确延后：Agent 工具暴露、WorkObject 持久引用、Web→桌面 Relay、自动 single-flight 刷新与调用重放、任何写入 Capability。这些能力不影响当前桌面端 DTS 个人只读闭环。
+桌面设备侧已提供 DTS 个人只读连接、受管 SSO、列表/详情/关系/权限读取及连接状态界面。Agent 工具、WorkObject 持久引用、Web 到桌面的 Relay、自动刷新重放和写能力仍属于目标设计；是否已落地以 `backend/device/src/connectors/` 与 `src/features/connectors/` 的当前代码和测试为准。
 
 ## 十六、验收标准
 

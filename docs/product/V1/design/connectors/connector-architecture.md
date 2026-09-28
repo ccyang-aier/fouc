@@ -14,7 +14,7 @@
 零到多个 ConnectorInstance
 ```
 
-例如 DTS、Figma、飞书分别拥有独立 Provider；一个用户可以建立多个 Figma 或数据库 Instance。通用框架只负责纳管这些 Provider 和 Instance，不取代每个平台自己的协议、认证与领域语义。
+例如 DTS、Figma、飞书分别拥有独立 Provider；一个工作空间可以建立多个 Figma 或数据库 Instance。Provider 是平台目录，Instance 是当前工作空间内的资源；用户私有凭据和设备执行能力是单独的授权/宿主事实，不改变资源归属。
 
 ## 二、目标与非目标
 
@@ -42,7 +42,7 @@
 
 ### 3.1 一平台一 Provider，多连接实例
 
-`ConnectorProvider` 描述一种平台的接入实现，如 DTS、Figma、飞书。`ConnectorInstance` 表示用户或团队实际建立的一条连接，例如“我的 DTS”“产品团队 Figma”或“客户 A PostgreSQL”。
+`ConnectorProvider` 描述一种平台的接入实现，如 DTS、Figma、飞书。`ConnectorInstance` 表示某个工作空间实际建立的一条连接，例如“我的 DTS”“产品团队 Figma”或“客户 A PostgreSQL”。个人与团队空间使用同一资源模型。
 
 Provider 与外部平台一一对应是默认原则；只有同一平台的部署形态、认证协议或能力模型确实不同，且共享实现会造成错误耦合时，才拆分 Provider，例如 GitHub Cloud 与某个不兼容版本的 GitHub Enterprise Server。
 
@@ -132,15 +132,15 @@ interface ConnectorProviderDefinition {
 
 ### 4.2 `ConnectorInstance`
 
-用户或团队实际建立的一条连接。
+当前工作空间内建立的一条连接。跨空间不得隐式复用实例、授权范围、查询结果或 Agent 工具引用；用户可在不同空间分别授权同一外部账户，但每个实例独立。
 
 ```ts
 interface ConnectorInstance {
   id: string
   providerId: string
   name: string
-  ownerType: 'user' | 'workspace'
-  ownerId: string
+  workspaceId: string
+  createdBy: string
   desiredState: 'enabled' | 'disabled'
   authState: 'unconfigured' | 'connecting' | 'valid' | 'needs_user_action'
   healthState: 'unknown' | 'healthy' | 'degraded' | 'unreachable'
@@ -465,7 +465,7 @@ V1 可增加：
 - `connector_invocation`：调用审计、结果摘要和错误；
 - `connector_snapshot`：必要的外部对象最小快照。
 
-Provider Definition 和 Capability Definition 由代码注册。Secret、Cookie、Token 和私钥不进入 SQLite。
+Provider Definition 和 Capability Definition 由代码注册。Secret、Cookie、Token 和私钥不进入普通业务表或设备 SQLite；设备侧凭据仅在安全存储或受控运行时内存。实例与授权由服务端按 `workspaceId` 校验，设备进程不能单独声明其对工作空间的访问权。
 
 ### 9.2 Credential Broker
 
@@ -476,6 +476,8 @@ Credential Broker 负责：
 - 区分个人凭据、团队凭据和短期会话；
 - 支持吊销、轮换和删除；
 - 避免凭据进入日志、Trace、错误消息和模型上下文。
+
+当前 DTS 设备连接与连接器目录尚未形成完整的服务端工作空间实例模型；以上是目标归属与授权边界，不能把现有全局设备连接状态解释为已实现的跨空间隔离。
 
 ### 9.3 远程认证窗口
 

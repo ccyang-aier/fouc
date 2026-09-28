@@ -18,7 +18,7 @@ Fouc 的目标是成为 Agent 原生的超级工作台：
 
 ## 版本规划
 
-Fouc 当前处于 **V1 产品定义与体验原型阶段**。
+Fouc 正在实现 **V1**；页面、演示数据与设计文档不等于对应业务能力已经交付。
 
 ### V1
 
@@ -50,7 +50,7 @@ pnpm install
 pnpm dev:all
 ```
 
-`dev:all` 启动或复用本仓库 Web、设备运行时和业务服务，退出命令后服务常驻并自动刷新源码。业务服务配置使用 `.env.fouc.local`。前端保持在 `src/`，后端拆为 `backend/device/` 与 `backend/server/`；详细边界、独立命令和基础设施配置见 [后端工程说明](./backend/README.md)。单独启动前端仍使用 `pnpm dev`。
+`dev:all` 启动或复用本仓库 Web、设备运行时和业务服务，退出命令后服务常驻并自动刷新源码。业务服务配置使用 `.env.fouc.local`。前端保持在 `src/`，后端拆为 `backend/device/` 与 `backend/server/`；详细边界、独立命令和基础设施配置见 [后端运行说明](./docs/engineering/backend-runtime.md)。单独启动前端仍使用 `pnpm dev`。
 
 Web 开发默认连接真实 sidecar。需要启用浏览器 Mock 时，在启动进程中设置连接器列表（逗号分隔）：
 
@@ -69,6 +69,7 @@ pnpm desktop:build   # 构建桌面端安装产物
 
 ## 文档
 
+- [全部文档导航](./docs/README.md)
 - [产品文档导航](./docs/product/README.md)
 - [产品愿景与定位](./docs/product/vision-and-positioning.md)
 - [V1 产品文档](./docs/product/V1/README.md)

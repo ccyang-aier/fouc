@@ -1,5 +1,7 @@
 # Fouc AI Native 知识库与协同编辑器 · 架构设计文档
 
+> 本文件是知识库模块的目标设计。工作空间是全产品隔离根，知识库是其下可创建多个的资源；已实现功能与目标功能须按代码核对，不能用设计章节宣称交付。
+
 ## 0. 设计目标与原则
 
 ### 0.1 核心诉求
@@ -33,7 +35,7 @@
 | 离线 | y-indexeddb（Web）+ SQLite（桌面） | Web 在 IndexedDB 持久化；桌面由现有 Bun sidecar 写入 SQLite，均支持离线编辑 |
 | 协同服务 | Hocuspocus v4 + Redis 扩展 | 运行在 TypeScript 后端中，负责 WebSocket 同步、鉴权、持久化和多节点广播 |
 | Markdown | unified / remark（mdast）↔ ProseMirror | 双向转换，分为标准 Markdown 和 AI 方言两种格式 |
-| API | Hono + tRPC | 沿用 `backend/` 的 Hono 服务边界，补充 tRPC 作为知识库内部类型安全接口 |
+| API | Hono + tRPC | 由 `backend/server/src/modules/knowledge/api` 提供知识库接口 |
 | 认证 | Better Auth | 邮箱登录、OAuth、OIDC/SSO、个人访问令牌（PAT），可以自托管 |
 | 数据库 | PostgreSQL（ParadeDB 镜像） | 元数据、Yjs 状态、权限、检索、任务队列 |
 | 全文检索 | pg_search（BM25 + jieba 分词） | 中英文关键词检索 |
@@ -46,7 +48,7 @@
 | 可观测性 | OpenTelemetry | trace、指标、日志；token 用量记录在 Postgres |
 | 部署 | Bun sidecar + Docker 镜像 + Docker Compose | 桌面端分发编译后的 sidecar；SaaS 和私有部署复用同一套 Node 兼容后端代码与镜像 |
 
-> **认证与组织体系的当前定位（预留实现，非最终成果）**：Fouc 产品自身的认证与账户体系尚未建立。知识库任务中基于 Better Auth 的邮箱登录、OAuth/OIDC SSO、PAT（A01～A03）以及 Workspace/成员/Teamspace 组织模型（O01/O03），当前定位是**预留的代码实现**——用于端到端验证请求边界、租户隔离、RLS 与主体权限这条安全链路，不代表最终账户成果。知识库的身份与组织体系最终必须与 Fouc 全局的认证、账户体系结合分析后再定型。届时预期保留的是：请求边界与发起者上下文、PAT、主体权限模型与租户隔离；可能替换的是身份提供方与会话来源——Better Auth 上升为 Fouc 全局身份服务，或改为校验 Fouc 账户体系签发的凭证并映射到知识库主体。在方向确定前，登录相关客户端界面（A04）不过度打磨。
+> 身份与工作空间由全产品模块统一持有，知识库不建立独立账户或顶层工作空间。登录控制主体及具体操作权限，不切换整套知识库实现。详见[项目结构设计](../arch/fouc-project-structure-design.md)与[统一身份](../identity/fouc-identity.md)。
 
 ---
 
@@ -98,51 +100,15 @@
 | 评论线程 | Postgres（锚点在 Yjs 的 mark 里） | 评论有独立的生命周期，还要发通知 |
 | 块索引（文本、向量） | 派生数据，由 Yjs 生成 | 随时可以重建 |
 
-Web 端的 IndexedDB 与桌面端的 SQLite 都是本地离线副本，不是第二套业务权威来源：当前编辑状态始终由内存中的 Y.Doc 驱动；联网后与服务端 Y.Doc 合并，服务端再把持久状态写入 `doc_state`。桌面 SQLite 的读写由 `backend/` sidecar 负责，Tauri Rust 层不直接处理文档数据。
+Web 端的 IndexedDB 与桌面端的 SQLite 可作为明确资源的本地副本，不能自动冒充服务端知识库的第二套业务权威。协同文档的编辑状态由 Y.Doc 驱动，服务端持久状态写入 `doc_state`。桌面 SQLite 的读写由 `backend/device/` 负责，Tauri Rust 层不直接处理文档数据；访客本机资源与服务端资源的选择必须明确。
 
-### 3.2 核心表
+### 3.2 核心实体与存储边界
 
-```sql
-workspace(id, name, kind /* personal | team */, settings jsonb)
-member(workspace_id, user_id, role /* owner | admin | member | guest */)
-group(id, workspace_id, name) · group_member(group_id, user_id)
-
-teamspace(id, workspace_id, name, default_access)
-page(
-  id uuid,                -- 由客户端生成，离线时也能创建
-  workspace_id, teamspace_id,
-  parent_id, position text, -- 分数索引（fractional indexing）排序
-  path ltree,             -- 祖先路径，用于继承和子树查询
-  kind /* doc | database | row */,
-  database_id,            -- kind=row 时指向所属的数据库页
-  properties jsonb,       -- 数据库行的属性
-  title, icon, cover, created_by, updated_at, deleted_at
-)
-
-doc_state(page_id, state bytea, state_vector bytea, updated_at)   -- 当前 Yjs 全量状态
-doc_checkpoint(id, page_id, state bytea, created_at, authors uuid[], label)  -- 历史版本
-
-page_acl(page_id, principal /* user:x | group:x | workspace:x | link:x */, level, inherited bool)
-page_effective_acl(page_id, principals text[] /* 按 level 分列 */)  -- 物化结果
-
-block_index(
-  workspace_id, page_id, block_id, block_type,
-  content_md text, content_hash, embedding vector(N), embed_model,
-  principals text[],      -- 从 page_effective_acl 复制过来，检索时先过滤
-  updated_at
-)
-backlink(src_page_id, src_block_id, dst_page_id, dst_block_id)
-asset(workspace_id, hash, mime, size, meta jsonb, derived jsonb /* OCR、转写、解析结果 */)
-comment_thread(id, page_id, status) · comment(id, thread_id, author, body_md)
-outbox(id, topic, payload jsonb, created_at)
-ai_task(id, workspace_id, kind, status /* running | awaiting_approval | done | failed */, state jsonb)
-```
-
-所有业务表都带 `workspace_id`，并开启 **RLS**：每个请求开始时执行 `SET app.workspace_id`，在数据库层隔离租户。
+全局 `workspace` 持有成员、分组、项目与知识库；`knowledge_base` 持有文件夹（现有内部表名 `teamspace`），文件夹持有文档页面。项目是工作空间的另一条资源分支，不由知识库拥有。正文与历史、页面 ACL、索引、反向链接、资产、评论、异步任务分别在知识库边界维护；工作空间身份与成员关系由全局模块维护。所有租户资源的 `workspace_id` 必须由数据库事务与强制 RLS 约束，同空间的知识库和文件夹归属由外键约束。准确表定义以 `backend/server/src/platform/database/workspace/` 的 schema 与 `current.sql` 为准，不在此复制易过期的伪 DDL。
 
 ### 3.3 组织模型
 
-`Workspace → Teamspace → Page 树 → Block`。个人版就是只有一个成员的 Workspace（`kind=personal`），和团队版使用同一套代码路径。
+`Workspace → KnowledgeBase → Teamspace（文件夹）→ Page 树 → Block`。同一工作空间可有多个知识库；个人与团队空间共享资源模型。项目与知识库并列，可在授权下引用同空间文档，但引用不改变归属。
 
 **数据库即页面**：数据库本身是 `kind=database` 的页面，每一行是 `kind=row` 的页面，属性存在 `properties`，行的正文是它自己的 Y.Doc。这样表格、看板、日历只是同一组行页面的不同视图。行天然支持打开、引用、检索、设置权限和 AI 操作，不需要另写一套逻辑。
 
@@ -342,7 +308,7 @@ pg_search 配置 jieba 分词器，同时用 ICU 分词器兼容英文和其他�
 | 音频、视频 | Whisper 转写，保留时间戳分段 | Python Media Worker |
 | PDF、Office | Docling 解析成结构化 Markdown | Python Media Worker |
 
-- **调用方式**：Python Media Worker 是**无状态的 HTTP 服务**，由 `backend/` 中的 graphile-worker 任务调用，它自己不接触队列和数据库。
+- **调用方式**：Python Media Worker 是**无状态的 HTTP 服务**，由 `backend/server/` 中的 graphile-worker 任务调用，它自己不接触队列和数据库。
 - **结果写入**：派生结果写入 `asset.derived`，媒体块被索引时会带上这些派生文本，因此图片、会议录音、PDF 都能被检索，AI 也能读到。
 
 ---
@@ -413,50 +379,19 @@ pg_search 配置 jieba 分词器，同时用 ICU 分词器兼容英文和其他�
 
 ## 10. 工程结构
 
-知识库能力沿用 Fouc 当前目录边界扩展，不再另建 Vite 应用、`apps/*` 层或 Turborepo 包图。下列子目录按实现进度补齐：
+知识库沿用 Fouc 现有模块边界，不建立独立应用或平行账户体系：
 
 ```
-src/
-  app/                         Next.js App Router 路由与页面入口
-  features/knowledge/
-    editor/                    Tiptap、NodeView、建议模式、评论、斜杠菜单
-    collaboration/             Y.Doc、Awareness、本地持久化与工作区事件订阅
-    search/                    搜索与引用的客户端交互
-    ai/                        AI 编辑、审阅与任务界面
-  components/                  跨功能 UI 组件
-  lib/                         浏览器端基础设施
-  shell/                       Web / Tauri 共用的应用壳
-
-backend/
-  src/
-    api/                       Hono 服务入口与 tRPC 路由
-    knowledge/
-      collaboration/           Hocuspocus 鉴权、持久化、检查点、工作区频道
-      permissions/             主体展开、有效权限计算
-      search/                  索引管线与混合检索
-      ai/                      模型网关、Agent 工具层、上下文组装、Y.Doc 写入
-      mcp/                     MCP Server，复用 Agent 工具层
-      workers/                 Outbox、graphile-worker 与媒体任务编排
-    database/                  PostgreSQL/Drizzle schema、迁移与 RLS 策略
-    store/                     桌面本地 SQLite 访问层
-    platform/                  运行时、路径、日志等平台适配
-  scripts/
-
-shared/
-  src/
-    knowledge/
-      schema/                  块注册表、ProseMirror schema、共享块定义
-      markdown/                remark ↔ ProseMirror、标准格式与 AI 方言
-      contracts/               API、事件、任务与权限契约
-
-src-tauri/
-  src/                         薄壳：窗口、系统能力桥、更新、sidecar 看护
-
-services/
-  media-worker/                独立 Python 服务（FastAPI + Whisper + Docling）
+src/features/workspaces/                   全局工作空间选择
+src/features/knowledge/                    知识库目录、文档与编辑交互
+backend/server/src/modules/knowledge/      授权、协作、索引、AI、MCP、作业
+backend/server/src/platform/database/workspace/  租户 schema
+backend/device/src/knowledge/              明确的设备本机能力
+shared/src/knowledge/                      纯文档协议、schema 与 Markdown
+services/media-worker/                     独立内容处理
 ```
 
-关键点是把 `schema`、`markdown` 和相关契约放入现有 `shared/` 工作区，由前端和后端共同消费。React NodeView 等仅浏览器可运行的实现留在 `src/features/knowledge/`；Hocuspocus、索引、权限和 AI 工具等服务端实现留在 `backend/server/src/modules/knowledge/`。这样共享的是领域语义和纯转换代码，而不是把前后端运行时代码强行塞进同一个包。
+共享包仅承载纯领域语义与协议；React NodeView 留在前端，服务端授权与仓储留在业务服务。准确目录和模块边界见[项目结构设计](../arch/fouc-project-structure-design.md)。
 
 ---
 
@@ -467,7 +402,7 @@ services/
 - `postgres`（ParadeDB 镜像，自带 pg_search 和 pgvector）
 - `redis`
 - `minio`（使用云端 S3 时可以去掉）
-- `backend`（同一镜像；私有部署默认一个 Bun 进程运行全部角色，SaaS 按角色分别扩容）
+- `backend/server` 业务服务（API、协作与作业按实际部署角色运行）
 - `media-worker`（可以使用 GPU）
 
 **扩展方式：**
@@ -488,5 +423,9 @@ services/
 | 离线后移动页面冲突 | 服务端做合法性校验，校验失败时客户端回滚并提示 |
 | AI 越权读取 | 所有工具都以发起者身份执行，检索先按权限过滤，数据库层还有 RLS 兜底 |
 | AI 误改内容 | 默认建议模式，可以按任务整体撤销，并有检查点可以恢复 |
-| 权限重算风暴（移动大子树） | 批量更新子树，任务在队列中去重合并；重算完成前沿用旧的权限（只会更严格，不会放宽） |
+| 权限重算风暴（移动大子树） | 批量更新子树并合并队列任务；重算窗口必须 fail closed，不能假设旧权限一定更严格 |
 | 更换向量模型 | 通过 `embed_model` 字段隔离新旧向量，后台重建完成后再切换 |
+
+## 当前交付边界
+
+已存在知识库/文件夹/文档的空间归属、权限、协同、检索与若干编辑能力；本设计其余条目仍是目标，不因代码或演示入口存在而自动完成。特别是数据库看板/日历、完整多媒体 NodeView、AI 选区工具与任务中心、跨宿主及私有部署验收等仍需逐项按实际实现和集成验证确认。当前代码细节与可复验命令见 [工程说明](../../../../engineering/README.md)。

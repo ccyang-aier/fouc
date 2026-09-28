@@ -1,6 +1,6 @@
 # Fouc V1 核心特性
 
-本文件描述用户可感知的 V1 场景特性。所有特性均依赖 [P0 基础能力](./p0-foundation-capabilities.md)；只有特性验收标准及其依赖的 P0 退出标准同时通过，特性才能标记为完成。
+本文件描述 V1 优先验证的研发工作闭环，不将 Fouc 的产品范围限制为 Coding Agent 或单一项目模块。知识库、连接器、社区等并列能力按各自设计演进。下述场景依赖 [P0 基础能力](./p0-foundation-capabilities.md)；只有场景验收标准及其依赖的 P0 退出标准同时通过，才能标记完成。
 
 ## 一、V1 产品目标
 
@@ -59,7 +59,7 @@ Agent 市场会持续变化。以能力清单和 Driver 契约纳管本地 Agent
 - 不复制 Agent 的长期凭据，不破坏用户已有配置，不在未授权时升级或卸载工具；
 - 每次操作都关联到用户、工作对象、工作目录、权限与完整审计记录。
 
-详细设计见 [本地 Agent 发现与纳管](./local-agent-management.md)。
+详细设计见 [本机 Agent 设计](./design/agents/fouc-agent-management-design.md)。
 
 ### 2. 统一工作对象与 Work Room
 

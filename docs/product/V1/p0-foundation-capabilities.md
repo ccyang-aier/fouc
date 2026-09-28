@@ -60,7 +60,7 @@ P0 表示 V1 必须实现其最小闭环，不表示一次性建设完整企业�
 - 允许用户启用、停用、选择默认实例或打开原生工具；
 - 不负责复制长期凭据，也不静默安装、升级或卸载 Agent。
 
-Agent 纳管的详细协议见 [本地 Agent 发现与纳管](./local-agent-management.md)。
+Agent 纳管的详细协议见 [本机 Agent 设计](./design/agents/fouc-agent-management-design.md)。
 
 ### V1 最小实现
 

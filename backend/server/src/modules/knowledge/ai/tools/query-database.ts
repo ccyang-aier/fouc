@@ -1,5 +1,5 @@
 import type { AgentQueryDatabaseToolInput, DatabaseRowsPage } from '@fouc/shared/knowledge/contracts';
-import { withKnowledgeTenant } from '../../../../platform/database/knowledge/tenant';
+import { withWorkspaceTenant } from '../../../../platform/database/workspace/tenant';
 import { FoucDatabaseError } from '../../databases/errors';
 import { listDatabaseRows } from '../../databases/service';
 import { authorizePageAccess, expandRequestPrincipals } from '../../permissions';
@@ -14,7 +14,7 @@ import type { KnowledgeAgentToolContext } from './types';
  */
 export async function executeAgentQueryDatabase(input: AgentQueryDatabaseToolInput, context: KnowledgeAgentToolContext): Promise<DatabaseRowsPage> {
   const scope = { workspaceId: context.authority.workspaceId, pageId: input.databaseId };
-  return withKnowledgeTenant(context.pool, scope.workspaceId, async (db) => {
+  return withWorkspaceTenant(context.pool, scope.workspaceId, async (db) => {
     const decision = await authorizePageAccess(db, { userId: context.authority.userId, scope, required: 'view' });
     if (decision.decision !== 'allow') throw new KnowledgeAgentToolError('TARGET_NOT_ACCESSIBLE', 'query_database');
     const viewer = await expandRequestPrincipals(db, scope.workspaceId, context.authority.userId);

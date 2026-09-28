@@ -7,10 +7,10 @@ import { SpanKind } from '@opentelemetry/api';
 import { InMemorySpanExporter, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base';
 import type { ReadableSpan } from '@opentelemetry/sdk-trace-base';
 import { eq } from 'drizzle-orm';
-import { aiUsage } from '../../../platform/database/knowledge/schema';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
-import { createTenantTestDatabase, seedTenantTestData } from '../../../platform/database/knowledge/tenant-test-database';
-import type { TenantTestDatabase } from '../../../platform/database/knowledge/tenant-test-database';
+import { aiUsage } from '../../../platform/database/workspace/schema';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import { createTenantTestDatabase, seedTenantTestData } from '../../../platform/database/workspace/tenant-test-database';
+import type { TenantTestDatabase } from '../../../platform/database/workspace/tenant-test-database';
 import { createModelGateway } from '../ai/gateway';
 import type { GatewayFetch, GatewayOptions, ModelGateway, TextCall } from '../ai/gateway';
 import { startKnowledgeObservability } from './assembly';
@@ -55,10 +55,10 @@ async function createSuite(fetch: GatewayFetch) {
   return { database, context, request, observability, gateway, spans, diagnostics } satisfies Suite;
 }
 
-const usageRows = (suite: Suite) => withKnowledgeTenant(suite.database.pool, suite.context.workspaceId, (db) => db.select().from(aiUsage).orderBy(aiUsage.createdAt));
+const usageRows = (suite: Suite) => withWorkspaceTenant(suite.database.pool, suite.context.workspaceId, (db) => db.select().from(aiUsage).orderBy(aiUsage.createdAt));
 
 const usageRow = async (suite: Suite, callId: string) => {
-  const row = await withKnowledgeTenant(suite.database.pool, suite.context.workspaceId, (db) => db.select().from(aiUsage).where(eq(aiUsage.id, callId)));
+  const row = await withWorkspaceTenant(suite.database.pool, suite.context.workspaceId, (db) => db.select().from(aiUsage).where(eq(aiUsage.id, callId)));
   assert.equal(row.length, 1, 'expected exactly one usage row per call id');
   return row[0];
 };
@@ -127,7 +127,7 @@ test('success, failure and unreported-token calls persist durable usage rows lin
       const admin = await suite.database.admin.connect();
       try {
         await admin.query("SELECT set_config('app.workspace_id', $1, false)", [suite.context.workspaceId]);
-        const durable = await admin.query('SELECT input_tokens, output_tokens, trace_id FROM knowledge.ai_usage WHERE id = $1', [success.callId]);
+        const durable = await admin.query('SELECT input_tokens, output_tokens, trace_id FROM workspace.ai_usage WHERE id = $1', [success.callId]);
         assert.equal(durable.rowCount, 1);
         assert.deepEqual([durable.rows[0].input_tokens, durable.rows[0].output_tokens], [3, 2]);
         assert.ok(isTraceId(durable.rows[0].trace_id));
@@ -286,7 +286,7 @@ test('OTLP HTTP tracing is optional: unconfigured stays silent, configured expor
     const offline = await startKnowledgeObservability({ pool: database.pool, environment: {} });
     assert.equal(offline.spansEnabled, false);
     await build(offline).generate(request);
-    const offlineRow = await withKnowledgeTenant(database.pool, context.workspaceId, (db) => db.select().from(aiUsage).orderBy(aiUsage.createdAt));
+    const offlineRow = await withWorkspaceTenant(database.pool, context.workspaceId, (db) => db.select().from(aiUsage).orderBy(aiUsage.createdAt));
     assert.equal(offlineRow.length, 2);
     assert.equal(offlineRow[1].traceId, null, 'without a real trace the row stores null instead of a fabricated id');
     await offline.close();
@@ -323,7 +323,7 @@ test('OTLP HTTP tracing is optional: unconfigured stays silent, configured expor
           }
         }
       }
-      const rows = await withKnowledgeTenant(database.pool, context.workspaceId, (db) => db.select().from(aiUsage).orderBy(aiUsage.createdAt));
+      const rows = await withWorkspaceTenant(database.pool, context.workspaceId, (db) => db.select().from(aiUsage).orderBy(aiUsage.createdAt));
       assert.equal(rows.length, 3);
       const exportedTraceId = rows[2].traceId;
       assert.ok(isTraceId(exportedTraceId), 'the exported span trace id is the one stored in the usage row');

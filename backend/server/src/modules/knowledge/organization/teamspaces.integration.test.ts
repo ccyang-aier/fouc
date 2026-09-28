@@ -1,25 +1,28 @@
+import { createWorkspaceRoutes } from '../../workspaces/http';
+import { createWorkspaceService } from '../../workspaces/service';
+import type { WorkspaceService } from '../../workspaces/service';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import type { PoolClient } from 'pg';
 import { eq } from 'drizzle-orm';
 import { principal, teamspaceSchema } from '@fouc/shared/knowledge/contracts';
 import type { PermissionLevel, Teamspace } from '@fouc/shared/knowledge/contracts';
-import { knowledgeBase, blockIndex, docState, page, pageEffectiveAcl, teamspace } from '../../../platform/database/knowledge/schema';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { knowledgeBase, blockIndex, docState, page, pageEffectiveAcl, teamspace } from '../../../platform/database/workspace/schema';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { createAuthTestServer, responseCookie, testPassword } from '../../../platform/identity/auth-test-server';
 import type { AuthTestServer } from '../../../platform/identity/auth-test-server';
 import type { FoucIdentity } from '../../../platform/identity/identity';
 import { computeEffectivePermissions, permissionFor } from '../permissions/effective';
-import { createOrganizationRoutes } from './http';
-import { createOrganizationService } from './service';
-import type { OrganizationService } from './service';
+import { createKnowledgeCatalogRoutes } from './http';
+import { createKnowledgeCatalogService } from './service';
+import type { KnowledgeCatalogService } from './service';
 import { readTeamspacePermissionRoot } from './teamspaces';
 import { teamspacePermissionInvalidator } from '../permissions/fence';
 import { initializeKnowledgeJobs } from '../workers/initialize';
 
 interface Actor { email: string; cookie: string; identity: FoucIdentity }
 let server: AuthTestServer;
-let service: OrganizationService;
+let service: WorkspaceService & KnowledgeCatalogService;
 let owner: Actor, admin: Actor, regular: Actor, guest: Actor, outsider: Actor;
 let personalId: string, workspaceId: string, otherId: string;
 const base = '/api/workspaces';
@@ -56,7 +59,7 @@ async function create(name: string, defaultAccess: PermissionLevel | null = null
 
 async function insertPage(record: Teamspace, recycled = false) {
   const id = randomUUID();
-  await withKnowledgeTenant(server.database.pool, record.workspaceId, async (db) => {
+  await withWorkspaceTenant(server.database.pool, record.workspaceId, async (db) => {
     await db.insert(page).values({ workspaceId: record.workspaceId, id, teamspaceId: record.id, position: 'a0', path: id.replaceAll('-', '_'), title: 'Preserve this page', createdBy: owner.identity.userId, deletedAt: recycled ? new Date() : null });
     await db.insert(docState).values({ workspaceId: record.workspaceId, pageId: id, state: new Uint8Array([0, 0]), stateVector: new Uint8Array([0]) });
     await db.insert(pageEffectiveAcl).values({ workspaceId: record.workspaceId, pageId: id, view: [principal('workspace', record.workspaceId)] });
@@ -77,15 +80,16 @@ async function waitForTeamspaceLock(client: PoolClient) {
 
 beforeAll(async () => {
   server = await createAuthTestServer({ mount(app, { auth, database }) {
-    service = createOrganizationService(database.pool, { permissions: teamspacePermissionInvalidator });
-    app.route('/', createOrganizationRoutes(auth, service));
+    service = { ...createWorkspaceService(database.pool), ...createKnowledgeCatalogService(database.pool, { permissions: teamspacePermissionInvalidator }) };
+    app.route('/', createWorkspaceRoutes(auth, service));
+    app.route('/', createKnowledgeCatalogRoutes(auth, service));
   } });
   await initializeKnowledgeJobs(server.database.admin, server.database.pool);
   owner = await register('owner'); admin = await register('admin'); regular = await register('member'); guest = await register('guest'); outsider = await register('outsider');
   personalId = (await result<{ id: string }>(request('', owner, 'POST', { name: 'Personal', kind: 'personal' }), 201)).id;
   workspaceId = (await result<{ id: string }>(request('', owner, 'POST', { name: 'Team', kind: 'team' }), 201)).id;
   otherId = (await result<{ id: string }>(request('', outsider, 'POST', { name: 'Other tenant', kind: 'team' }), 201)).id;
-  for (const id of [personalId, workspaceId, otherId]) await withKnowledgeTenant(server.database.pool, id, (db) => db.insert(knowledgeBase).values({ workspaceId: id, id: knowledgeBaseId, name: 'Fixture library' }));
+  for (const id of [personalId, workspaceId, otherId]) await withWorkspaceTenant(server.database.pool, id, (db) => db.insert(knowledgeBase).values({ workspaceId: id, id: knowledgeBaseId, name: 'Fixture library' }));
   for (const [actor, role] of [[admin, 'admin'], [regular, 'member'], [guest, 'guest']] as const) {
     const invite = await result<{ invitation: { id: string }; token: string }>(request(`/${workspaceId}/invitations`, owner, 'POST', { email: actor.email, role }), 201);
     await result(request(`/${workspaceId}/invitations/${invite.invitation.id}/accept`, actor, 'POST', { token: invite.token }));
@@ -109,10 +113,10 @@ describe('Teamspace metadata and root defaults over real HTTP/PostgreSQL', () =>
   test('owner/admin can create, rename, change root defaults and delete an empty Teamspace', async () => {
     for (const actor of [owner, admin]) {
       const record = await create('Managed', 'view', actor);
-      const before = await server.database.admin.query<{ created_at: Date; updated_at: Date }>('SELECT created_at, updated_at FROM knowledge.teamspace WHERE workspace_id = $1 AND id = $2', [workspaceId, record.id]);
+      const before = await server.database.admin.query<{ created_at: Date; updated_at: Date }>('SELECT created_at, updated_at FROM workspace.teamspace WHERE workspace_id = $1 AND id = $2', [workspaceId, record.id]);
       const changed = await result<Teamspace>(request(path(record), actor, 'PATCH', { name: 'Managed renamed', defaultAccess: 'edit' }));
       expect(changed).toEqual({ ...record, name: 'Managed renamed', defaultAccess: 'edit' });
-      const after = await server.database.admin.query<{ created_at: Date; updated_at: Date }>('SELECT created_at, updated_at FROM knowledge.teamspace WHERE workspace_id = $1 AND id = $2', [workspaceId, record.id]);
+      const after = await server.database.admin.query<{ created_at: Date; updated_at: Date }>('SELECT created_at, updated_at FROM workspace.teamspace WHERE workspace_id = $1 AND id = $2', [workspaceId, record.id]);
       expect(after.rows[0]!.created_at).toEqual(before.rows[0]!.created_at);
       expect(after.rows[0]!.updated_at.getTime()).toBeGreaterThan(before.rows[0]!.updated_at.getTime());
       expect((await result<Teamspace>(request(path(record), actor))).defaultAccess).toBe('edit');
@@ -154,7 +158,7 @@ describe('Teamspace metadata and root defaults over real HTTP/PostgreSQL', () =>
     for (const defaultAccess of ['view', 'comment', 'edit', 'full', null] as const) {
       const updated = await result<Teamspace>(request(path(record), owner, 'PATCH', { defaultAccess }));
       expect(updated.defaultAccess).toBe(defaultAccess);
-      const root = await withKnowledgeTenant(server.database.pool, workspaceId, (db) => readTeamspacePermissionRoot(db, scope(record)));
+      const root = await withWorkspaceTenant(server.database.pool, workspaceId, (db) => readTeamspacePermissionRoot(db, scope(record)));
       expect(root).toEqual({ ...scope(record), defaultAccess });
       const permissions = computeEffectivePermissions({ ...root, lineage: [{ id: pageId, parentId: null, workspaceId, teamspaceId: record.id, inheritsPermissions: true, grants: [] }] });
       expect(permissionFor([principal('workspace', workspaceId)], permissions)).toBe(defaultAccess);
@@ -178,13 +182,13 @@ describe('Teamspace metadata and root defaults over real HTTP/PostgreSQL', () =>
 
   test('same Teamspace UUID in different tenants never crosses read, update, delete or root lookup', async () => {
     const record = await create('Alpha scope', 'view');
-    await withKnowledgeTenant(server.database.pool, otherId, (db) => db.insert(teamspace).values({ workspaceId: otherId, knowledgeBaseId, id: record.id, name: 'Beta scope', defaultAccess: 'full' }));
+    await withWorkspaceTenant(server.database.pool, otherId, (db) => db.insert(teamspace).values({ workspaceId: otherId, knowledgeBaseId, id: record.id, name: 'Beta scope', defaultAccess: 'full' }));
     const foreign = { ...record, workspaceId: otherId };
     expect((await result<Teamspace>(request(path(record)))).name).toBe('Alpha scope');
     expect((await result<Teamspace>(request(path(foreign), outsider))).name).toBe('Beta scope');
     expect((await request(path(foreign), owner, 'PATCH', { defaultAccess: null })).status).toBe(404);
     expect((await request(path(foreign), owner, 'DELETE', {})).status).toBe(404);
-    await expect(withKnowledgeTenant(server.database.pool, workspaceId, (db) => readTeamspacePermissionRoot(db, scope(foreign)))).rejects.toMatchObject({ code: 'TEAMSPACE_NOT_FOUND' });
+    await expect(withWorkspaceTenant(server.database.pool, workspaceId, (db) => readTeamspacePermissionRoot(db, scope(foreign)))).rejects.toMatchObject({ code: 'TEAMSPACE_NOT_FOUND' });
     await result(request(path(record), owner, 'DELETE', {}));
     expect((await result<Teamspace>(request(path(foreign), outsider))).defaultAccess).toBe('full');
   });
@@ -206,15 +210,15 @@ describe('Teamspace deletion and transactional permission invalidation', () => {
   for (const recycled of [false, true]) test(`${recycled ? 'recycled' : 'live'} pages prevent deletion; root changes fence ACLs without erasing data`, async () => {
     const record = await create(recycled ? 'Recycle bin protected' : 'Pages protected', 'view');
     const pageId = await insertPage(record, recycled);
-    const before = await server.database.admin.query('SELECT name, default_access, updated_at FROM knowledge.teamspace WHERE workspace_id = $1 AND id = $2', [workspaceId, record.id]);
+    const before = await server.database.admin.query('SELECT name, default_access, updated_at FROM workspace.teamspace WHERE workspace_id = $1 AND id = $2', [workspaceId, record.id]);
     expect((await result<{ code: string }>(request(path(record), owner, 'DELETE', {}), 409)).code).toBe('TEAMSPACE_NOT_EMPTY');
-    const after = await server.database.admin.query('SELECT name, default_access, updated_at FROM knowledge.teamspace WHERE workspace_id = $1 AND id = $2', [workspaceId, record.id]);
+    const after = await server.database.admin.query('SELECT name, default_access, updated_at FROM workspace.teamspace WHERE workspace_id = $1 AND id = $2', [workspaceId, record.id]);
     expect(after.rows).toEqual(before.rows);
     // Same-value and name-only updates are not permission changes.
     expect((await result<Teamspace>(request(path(record), admin, 'PATCH', { name: 'Safe rename', defaultAccess: 'view' }))).name).toBe('Safe rename');
-    const beforeJobs = (await server.database.admin.query('SELECT count(*)::int AS n FROM knowledge.outbox')).rows[0]!.n;
+    const beforeJobs = (await server.database.admin.query('SELECT count(*)::int AS n FROM workspace.outbox')).rows[0]!.n;
     expect((await result<Teamspace>(request(path(record), owner, 'PATCH', { defaultAccess: null }))).defaultAccess).toBeNull();
-    const saved = await withKnowledgeTenant(server.database.pool, workspaceId, async (db) => ({
+    const saved = await withWorkspaceTenant(server.database.pool, workspaceId, async (db) => ({
       document: await db.select().from(docState).where(eq(docState.pageId, pageId)),
       acl: await db.select().from(pageEffectiveAcl).where(eq(pageEffectiveAcl.pageId, pageId)),
       index: await db.select().from(blockIndex).where(eq(blockIndex.pageId, pageId)),
@@ -223,8 +227,8 @@ describe('Teamspace deletion and transactional permission invalidation', () => {
     expect(saved.acl[0]!.view).toEqual([]);
     expect(saved.acl[0]!.revision).toBe(0);
     expect(saved.index[0]!.principals).toEqual([]);
-    expect((await server.database.admin.query('SELECT acl_revision FROM knowledge.page WHERE workspace_id=$1 AND id=$2', [workspaceId, pageId])).rows[0]!.acl_revision).toBe('1');
-    expect((await server.database.admin.query('SELECT count(*)::int AS n FROM knowledge.outbox')).rows[0]!.n).toBe(beforeJobs + 1);
+    expect((await server.database.admin.query('SELECT acl_revision FROM workspace.page WHERE workspace_id=$1 AND id=$2', [workspaceId, pageId])).rows[0]!.acl_revision).toBe('1');
+    expect((await server.database.admin.query('SELECT count(*)::int AS n FROM workspace.outbox')).rows[0]!.n).toBe(beforeJobs + 1);
   });
 
   for (const operation of ['delete', 'default'] as const) test(`a child committed while ${operation} waits for the container lock is protected`, async () => {
@@ -233,16 +237,16 @@ describe('Teamspace deletion and transactional permission invalidation', () => {
     let outcome: Promise<unknown> | undefined;
     try {
       await client.query('BEGIN');
-      await client.query('SELECT id FROM knowledge.teamspace WHERE workspace_id = $1 AND id = $2 FOR UPDATE', [workspaceId, record.id]);
+      await client.query('SELECT id FROM workspace.teamspace WHERE workspace_id = $1 AND id = $2 FOR UPDATE', [workspaceId, record.id]);
       outcome = (operation === 'delete' ? service.removeTeamspace(owner.identity, scope(record))
         : service.updateTeamspace(owner.identity, { ...scope(record), defaultAccess: 'full' })).catch((error: unknown) => error);
       await waitForTeamspaceLock(client);
       const id = randomUUID();
-      await client.query('INSERT INTO knowledge.page (workspace_id, id, teamspace_id, position, path, created_by) VALUES ($1, $2, $3, $4, $5, $6)', [workspaceId, id, record.id, 'a0', id.replaceAll('-', '_'), owner.identity.userId]);
+      await client.query('INSERT INTO workspace.page (workspace_id, id, teamspace_id, position, path, created_by) VALUES ($1, $2, $3, $4, $5, $6)', [workspaceId, id, record.id, 'a0', id.replaceAll('-', '_'), owner.identity.userId]);
       await client.query('COMMIT');
       expect(await outcome).toMatchObject(operation === 'delete' ? { code: 'TEAMSPACE_NOT_EMPTY' } : { defaultAccess: 'full' });
       expect((await result<Teamspace>(request(path(record)))).defaultAccess).toBe(operation === 'delete' ? 'view' : 'full');
-      expect((await client.query('SELECT acl_revision FROM knowledge.page WHERE workspace_id = $1 AND id = $2', [workspaceId, id])).rows).toEqual([{ acl_revision: operation === 'delete' ? '0' : '1' }]);
+      expect((await client.query('SELECT acl_revision FROM workspace.page WHERE workspace_id = $1 AND id = $2', [workspaceId, id])).rows).toEqual([{ acl_revision: operation === 'delete' ? '0' : '1' }]);
     } finally { await client.query('ROLLBACK'); if (outcome) await outcome; client.release(); }
   });
 
@@ -254,7 +258,7 @@ describe('Teamspace deletion and transactional permission invalidation', () => {
     try {
       await client.query("UPDATE auth.session SET expires_at = clock_timestamp() + interval '400 milliseconds' WHERE id = $1", [admin.identity.sessionId]);
       await client.query('BEGIN');
-      await client.query('SELECT id FROM knowledge.teamspace WHERE workspace_id = $1 AND id = $2 FOR UPDATE', [workspaceId, record.id]);
+      await client.query('SELECT id FROM workspace.teamspace WHERE workspace_id = $1 AND id = $2 FOR UPDATE', [workspaceId, record.id]);
       outcome = service.updateTeamspace(admin.identity, { ...scope(record), defaultAccess: 'full' }).catch((error: unknown) => error);
       await waitForTeamspaceLock(client);
       await client.query('SELECT pg_sleep(0.45)');
@@ -270,16 +274,16 @@ describe('Teamspace deletion and transactional permission invalidation', () => {
 
   test('database failure rolls back both fields and returns a sanitized retryable error', async () => {
     const record = await create('Before failure', null);
-    await server.database.admin.query(`CREATE FUNCTION knowledge.reject_test_teamspace() RETURNS trigger LANGUAGE plpgsql AS $$
+    await server.database.admin.query(`CREATE FUNCTION workspace.reject_test_teamspace() RETURNS trigger LANGUAGE plpgsql AS $$
       BEGIN IF NEW.name = 'Injected failure' THEN RAISE EXCEPTION 'private database failure'; END IF; RETURN NEW; END $$;
-      CREATE TRIGGER reject_test_teamspace BEFORE UPDATE ON knowledge.teamspace FOR EACH ROW EXECUTE FUNCTION knowledge.reject_test_teamspace();`);
+      CREATE TRIGGER reject_test_teamspace BEFORE UPDATE ON workspace.teamspace FOR EACH ROW EXECUTE FUNCTION workspace.reject_test_teamspace();`);
     try {
       const failed = await request(path(record), owner, 'PATCH', { name: 'Injected failure', defaultAccess: 'full' });
       expect(failed.status).toBe(503);
       expect(await failed.json()).toEqual({ code: 'ORGANIZATION_UNAVAILABLE', message: 'Organization service is temporarily unavailable.', retryable: true });
       expect(await result<Teamspace>(request(path(record)))).toEqual(record);
     } finally {
-      await server.database.admin.query('DROP TRIGGER reject_test_teamspace ON knowledge.teamspace; DROP FUNCTION knowledge.reject_test_teamspace();');
+      await server.database.admin.query('DROP TRIGGER reject_test_teamspace ON workspace.teamspace; DROP FUNCTION workspace.reject_test_teamspace();');
     }
     expect((await result<Teamspace>(request(path(record), owner, 'PATCH', { name: 'Recovered' }))).name).toBe('Recovered');
   });

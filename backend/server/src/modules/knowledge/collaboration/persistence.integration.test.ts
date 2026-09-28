@@ -2,8 +2,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:tes
 import { and, eq } from 'drizzle-orm';
 import * as Y from 'yjs';
 import { principal } from '@fouc/shared/knowledge/contracts';
-import { docState } from '../../../platform/database/knowledge/schema';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { docState } from '../../../platform/database/workspace/schema';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { replaceAuthorizedPageAcl } from '../permissions/mutations';
 import { createPermissionsFixture, until, type PermissionsFixture } from '../permissions/permissions-test-fixture';
 import { pageDocumentName } from '@fouc/shared/knowledge/collaboration';
@@ -34,18 +34,18 @@ describe('authoritative page document persistence', () => {
   });
 
   async function grant(node: { workspaceId: string; pageId: string }, grants: { principal: string; level: 'view' | 'comment' | 'edit' | 'full' }[]) {
-    return withKnowledgeTenant(fixture.pool, node.workspaceId, (db) => replaceAuthorizedPageAcl(db, { workspaceId: node.workspaceId, pageId: node.pageId, grants }));
+    return withWorkspaceTenant(fixture.pool, node.workspaceId, (db) => replaceAuthorizedPageAcl(db, { workspaceId: node.workspaceId, pageId: node.pageId, grants }));
   }
   function client(name: string, cookie = fixture.reader.cookie): CollaborationClient {
     return connectCollaborationClient({ port: listener.port, origin: fixture.server.webOrigin, name, authorization: cookie });
   }
   async function storedState(pageId: string) {
-    return withKnowledgeTenant(fixture.pool, fixture.alpha.id, (db) => db.select({ state: docState.state, vector: docState.stateVector })
+    return withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => db.select({ state: docState.state, vector: docState.stateVector })
       .from(docState).where(and(eq(docState.workspaceId, fixture.alpha.id), eq(docState.pageId, pageId))));
   }
   async function docChangedEvents(pageId: string) {
     const result = await fixture.server.database.admin.query(
-      "SELECT payload FROM knowledge.outbox WHERE workspace_id=$1 AND topic='doc.changed' AND payload->>'pageId'=$2", [fixture.alpha.id, pageId]);
+      "SELECT payload FROM workspace.outbox WHERE workspace_id=$1 AND topic='doc.changed' AND payload->>'pageId'=$2", [fixture.alpha.id, pageId]);
     return result.rows as { payload: { actor: { kind: string; userId: string } } }[];
   }
 

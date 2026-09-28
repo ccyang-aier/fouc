@@ -14,8 +14,8 @@ import type { SuggestionMetadata, NodeAnnotation } from '@fouc/shared/knowledge/
 import { newSuggestion } from '@fouc/shared/knowledge/schema/suggestions';
 import { knowledgeSchema } from '@fouc/shared/knowledge/schema';
 import { createMarkdownPipeline } from '@fouc/shared/knowledge/markdown';
-import { docState } from '../../../../platform/database/knowledge/schema';
-import { withKnowledgeTenant } from '../../../../platform/database/knowledge/tenant';
+import { docState } from '../../../../platform/database/workspace/schema';
+import { withWorkspaceTenant } from '../../../../platform/database/workspace/tenant';
 import { authorizePageAccess } from '../../permissions/authorization';
 import { pageDocumentName } from '@fouc/shared/knowledge/collaboration';
 import { PAGE_BODY_FRAGMENT, insertProseMirrorBlocks } from '../../import-export/y-encoding';
@@ -100,7 +100,7 @@ interface BodyScope { workspaceId: string; pageId: string }
  * writes the same two records directly. There is no second body store.
  */
 async function withAgentBodyEdit(context: KnowledgeAgentWriteContext, scope: BodyScope, mutate: (fragment: Y.XmlFragment, author: string) => string): Promise<{ suggestionId: string }> {
-  const loaded = await withKnowledgeTenant(context.pool, scope.workspaceId, async (db) => {
+  const loaded = await withWorkspaceTenant(context.pool, scope.workspaceId, async (db) => {
     const decision = await authorizePageAccess(db, { userId: context.authority.userId, scope, required: 'edit' });
     if (decision.decision !== 'allow') throw new KnowledgeAgentToolError('TARGET_NOT_ACCESSIBLE', 'insert');
     const [row] = await db.select({ state: docState.state }).from(docState).where(eq(docState.pageId, scope.pageId));
@@ -129,7 +129,7 @@ async function withAgentBodyEdit(context: KnowledgeAgentWriteContext, scope: Bod
   } else {
     const state = Buffer.from(Y.encodeStateAsUpdate(ydoc));
     const stateVector = Buffer.from(Y.encodeStateVector(ydoc));
-    await withKnowledgeTenant(context.pool, scope.workspaceId, async (db) => {
+    await withWorkspaceTenant(context.pool, scope.workspaceId, async (db) => {
       await db.insert(docState).values({ ...scope, state, stateVector })
         .onConflictDoUpdate({ target: [docState.workspaceId, docState.pageId], set: { state, stateVector, updatedAt: new Date() } });
       await appendKnowledgeOutbox(db, { topic: 'doc.changed', workspaceId: scope.workspaceId, pageId: scope.pageId, actor, occurredAt: new Date().toISOString() });
@@ -200,7 +200,7 @@ export const knowledgeAgentWriteTools = [
     async handler(input, context) {
       requireWriteContext(context as KnowledgeAgentWriteContext);
       const write = context as KnowledgeAgentWriteContext;
-      return withKnowledgeTenant(write.pool, input.workspaceId, async (db) => {
+      return withWorkspaceTenant(write.pool, input.workspaceId, async (db) => {
         if (input.parentId) {
           const decision = await authorizePageAccess(db, { userId: write.authority.userId, scope: { workspaceId: input.workspaceId, pageId: input.parentId }, required: 'edit' });
           if (decision.decision !== 'allow') throw new KnowledgeAgentToolError('TARGET_NOT_ACCESSIBLE', 'create_page');
@@ -221,7 +221,7 @@ export const knowledgeAgentWriteTools = [
     async handler(input, context) {
       requireWriteContext(context as KnowledgeAgentWriteContext);
       const write = context as KnowledgeAgentWriteContext;
-      return withKnowledgeTenant(write.pool, input.workspaceId, async (db) => {
+      return withWorkspaceTenant(write.pool, input.workspaceId, async (db) => {
         const decision = await authorizePageAccess(db, { userId: write.authority.userId, scope: { workspaceId: input.workspaceId, pageId: input.pageId }, required: 'edit' });
         if (decision.decision !== 'allow') throw new KnowledgeAgentToolError('TARGET_NOT_ACCESSIBLE', 'update_properties');
         return updateAuthorizedPage(db, { workspaceId: input.workspaceId, pageId: input.pageId, patch: input.patch });

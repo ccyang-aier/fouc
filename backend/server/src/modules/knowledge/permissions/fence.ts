@@ -2,8 +2,8 @@ import { and, eq, isNull, sql } from 'drizzle-orm';
 import type { SQL } from 'drizzle-orm';
 import { teamspaceScopeSchema } from '@fouc/shared/knowledge/contracts';
 import type { PageScope, TeamspaceScope } from '@fouc/shared/knowledge/contracts';
-import { blockIndex, page, pageEffectiveAcl } from '../../../platform/database/knowledge/schema';
-import type { KnowledgeTenantTransaction } from '../../../platform/database/knowledge/tenant';
+import { blockIndex, page, pageEffectiveAcl } from '../../../platform/database/workspace/schema';
+import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
 import type { TeamspacePermissionInvalidator } from '../organization/teamspaces';
 import { appendKnowledgeOutbox } from '../workers/outbox';
 import { KnowledgePermissionError } from './errors';
@@ -16,7 +16,7 @@ export interface PermissionFence {
 }
 
 /** All affected rows, including recycled pages, are fenced in the caller's TX. */
-async function fencePages(db: KnowledgeTenantTransaction, workspaceId: string, predicate: SQL) {
+async function fencePages(db: WorkspaceTenantTransaction, workspaceId: string, predicate: SQL) {
   const changed = await db.update(page).set({ aclRevision: sql`${page.aclRevision} + 1` }).where(predicate)
     .returning({ id: page.id, revision: page.aclRevision });
   if (!changed.length) return changed;
@@ -31,7 +31,7 @@ async function fencePages(db: KnowledgeTenantTransaction, workspaceId: string, p
 }
 
 /** Caller holds workspace/teamspace locks and has completed an authorized change. */
-export async function fencePermissionSubtree(db: KnowledgeTenantTransaction, scope: PageScope): Promise<PermissionFence> {
+export async function fencePermissionSubtree(db: WorkspaceTenantTransaction, scope: PageScope): Promise<PermissionFence> {
   const root = await lockPermissionPage(db, scope);
   if (!root) throw new KnowledgePermissionError('PERMISSION_SCOPE_NOT_FOUND');
   const changed = await fencePages(db, scope.workspaceId, and(eq(page.workspaceId, scope.workspaceId), eq(page.teamspaceId, root.teamspaceId), sql`${page.path} <@ ${root.path}::ltree`)!);
@@ -41,7 +41,7 @@ export async function fencePermissionSubtree(db: KnowledgeTenantTransaction, sco
 }
 
 /** O03's required transaction port; root value has already changed in this TX. */
-async function invalidateTeamspace(db: KnowledgeTenantTransaction, input: TeamspaceScope): Promise<void> {
+async function invalidateTeamspace(db: WorkspaceTenantTransaction, input: TeamspaceScope): Promise<void> {
   const parsed = teamspaceScopeSchema.safeParse(input);
   if (!parsed.success) throw new KnowledgePermissionError('INVALID_PERMISSION_INPUT');
   const scope = parsed.data;

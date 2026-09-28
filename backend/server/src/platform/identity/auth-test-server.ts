@@ -5,7 +5,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { Hono } from 'hono';
 import { createTransport } from 'nodemailer';
-import { createTenantTestDatabase } from '../database/knowledge/tenant-test-database';
+import { createTenantTestDatabase } from '../database/workspace/tenant-test-database';
 import { createFoucAuth } from './service';
 import { createFoucAuthRoutes } from './http';
 import { createVerificationEmailTransport } from './email';

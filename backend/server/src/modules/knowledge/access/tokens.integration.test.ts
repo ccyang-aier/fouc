@@ -60,8 +60,8 @@ beforeAll(async () => {
   } });
   owner = await account('pat-owner@example.test');
   other = await account('pat-other@example.test');
-  await server.database.admin.query("INSERT INTO knowledge.workspace(workspace_id,name,kind) VALUES ($1,'PAT Alpha','team'),($2,'PAT Beta','team')", [workspaceId, otherWorkspaceId]);
-  await server.database.admin.query("INSERT INTO knowledge.member(workspace_id,user_id,role) VALUES ($1,$3,'owner'),($2,$4,'owner'),($1,$4,'guest')", [workspaceId, otherWorkspaceId, owner.id, other.id]);
+  await server.database.admin.query("INSERT INTO workspace.workspace(workspace_id,name,kind) VALUES ($1,'PAT Alpha','team'),($2,'PAT Beta','team')", [workspaceId, otherWorkspaceId]);
+  await server.database.admin.query("INSERT INTO workspace.member(workspace_id,user_id,role) VALUES ($1,$3,'owner'),($2,$4,'owner'),($1,$4,'guest')", [workspaceId, otherWorkspaceId, owner.id, other.id]);
 }, 30_000);
 afterAll(async () => { if (server) await server.close(); }, 30_000);
 
@@ -69,7 +69,7 @@ describe('workspace PAT with real PostgreSQL, HTTP and verified sessions', () =>
   test('creates plaintext once; stores a hash; list never returns either secret or hash', async () => {
     const created = await create(['read', 'write']);
     expect(created.token).toMatch(/^fouc_pat\.[a-f0-9-]{36}\.[a-f0-9-]{36}\.[A-Za-z0-9_-]{43}$/);
-    const row = (await server.database.admin.query('SELECT * FROM knowledge.personal_access_token WHERE workspace_id=$1 AND id=$2', [workspaceId, created.metadata.id])).rows[0];
+    const row = (await server.database.admin.query('SELECT * FROM workspace.personal_access_token WHERE workspace_id=$1 AND id=$2', [workspaceId, created.metadata.id])).rows[0];
     expect(row.token_hash).toBe(createHash('sha256').update(created.token).digest('hex'));
     expect(JSON.stringify(row)).not.toContain(created.token);
     const listed = await request(`/test/tokens/${workspaceId}`, { cookie: owner.cookie });
@@ -81,7 +81,7 @@ describe('workspace PAT with real PostgreSQL, HTTP and verified sessions', () =>
     expect(body).not.toContain('tokenHash');
     expect(JSON.parse(body).some((token: KnowledgeTokenSummary) => token.id === created.metadata.id)).toBe(true);
     expect((await access(created.token)).status).toBe(200);
-    expect((await server.database.admin.query('SELECT last_used_at FROM knowledge.personal_access_token WHERE workspace_id=$1 AND id=$2', [workspaceId, created.metadata.id])).rows[0].last_used_at).not.toBeNull();
+    expect((await server.database.admin.query('SELECT last_used_at FROM workspace.personal_access_token WHERE workspace_id=$1 AND id=$2', [workspaceId, created.metadata.id])).rows[0].last_used_at).not.toBeNull();
   });
 
   test('matches read/write explicitly and rechecks scopes on every request', async () => {
@@ -91,7 +91,7 @@ describe('workspace PAT with real PostgreSQL, HTTP and verified sessions', () =>
     expect((await access(readonly.token, workspaceId, true)).status).toBe(403);
     expect((await access(writeonly.token)).status).toBe(403);
     expect((await access(writeonly.token, workspaceId, true)).status).toBe(200);
-    await server.database.admin.query("UPDATE knowledge.personal_access_token SET scopes=ARRAY['read'] WHERE workspace_id=$1 AND id=$2", [workspaceId, writeonly.metadata.id]);
+    await server.database.admin.query("UPDATE workspace.personal_access_token SET scopes=ARRAY['read'] WHERE workspace_id=$1 AND id=$2", [workspaceId, writeonly.metadata.id]);
     expect((await access(writeonly.token, workspaceId, true)).status).toBe(403);
     expect((await access(writeonly.token)).status).toBe(200);
   });
@@ -100,7 +100,7 @@ describe('workspace PAT with real PostgreSQL, HTTP and verified sessions', () =>
     const alpha = await create();
     const beta = await create(['read'], { workspaceId: otherWorkspaceId }, other.cookie);
     const betaToken = beta.token.replace(beta.metadata.id, alpha.metadata.id);
-    await server.database.admin.query('UPDATE knowledge.personal_access_token SET id=$3,token_hash=$4 WHERE workspace_id=$1 AND id=$2',
+    await server.database.admin.query('UPDATE workspace.personal_access_token SET id=$3,token_hash=$4 WHERE workspace_id=$1 AND id=$2',
       [otherWorkspaceId, beta.metadata.id, alpha.metadata.id, createHash('sha256').update(betaToken).digest('hex')]);
     expect((await access(alpha.token, otherWorkspaceId)).status).toBe(401);
     expect((await access(alpha.token.replace(workspaceId, otherWorkspaceId), otherWorkspaceId)).status).toBe(401);
@@ -166,15 +166,15 @@ describe('workspace PAT with real PostgreSQL, HTTP and verified sessions', () =>
     const created = await create(['read', 'write']);
     const context = await authenticator.authenticate(new Request(`${server.origin}/test`, { headers: { authorization: `Bearer ${created.token}` } }), workspaceId);
     expect(JSON.stringify(context)).not.toContain(created.token);
-    await server.database.admin.query("UPDATE knowledge.personal_access_token SET scopes=ARRAY['read'] WHERE workspace_id=$1 AND id=$2", [workspaceId, created.metadata.id]);
+    await server.database.admin.query("UPDATE workspace.personal_access_token SET scopes=ARRAY['read'] WHERE workspace_id=$1 AND id=$2", [workspaceId, created.metadata.id]);
     await expect(authenticator.refresh(context, ['write'])).rejects.toMatchObject({ code: 'INSUFFICIENT_SCOPE' });
-    await server.database.admin.query("UPDATE knowledge.member SET role='guest' WHERE workspace_id=$1 AND user_id=$2", [workspaceId, owner.id]);
+    await server.database.admin.query("UPDATE workspace.member SET role='guest' WHERE workspace_id=$1 AND user_id=$2", [workspaceId, owner.id]);
     try {
       const refreshed = await authenticator.refresh(context, ['read']);
       expect(refreshed.role).toBe('guest');
       expect(refreshed.scopes).toEqual(['read']);
       expect(context.role).toBe('owner'); // A snapshot must not be reused as live authorization.
-    } finally { await server.database.admin.query("UPDATE knowledge.member SET role='owner' WHERE workspace_id=$1 AND user_id=$2", [workspaceId, owner.id]); }
+    } finally { await server.database.admin.query("UPDATE workspace.member SET role='owner' WHERE workspace_id=$1 AND user_id=$2", [workspaceId, owner.id]); }
     expect((await request('/test/tokens/revoke', { cookie: owner.cookie, body: { workspaceId, tokenId: created.metadata.id } })).status).toBe(200);
     await expect(authenticator.refresh(context, ['read'])).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
   });
@@ -186,9 +186,9 @@ describe('workspace PAT with real PostgreSQL, HTTP and verified sessions', () =>
     await server.database.admin.query('UPDATE auth."user" SET email_verified=false WHERE id=$1', [owner.id]);
     try { await expect(authenticator.refresh(context)).rejects.toMatchObject({ code: 'UNAUTHENTICATED' }); }
     finally { await server.database.admin.query('UPDATE auth."user" SET email_verified=true WHERE id=$1', [owner.id]); }
-    await server.database.admin.query('DELETE FROM knowledge.member WHERE workspace_id=$1 AND user_id=$2', [workspaceId, owner.id]);
+    await server.database.admin.query('DELETE FROM workspace.member WHERE workspace_id=$1 AND user_id=$2', [workspaceId, owner.id]);
     try { await expect(authenticator.refresh(context)).rejects.toMatchObject({ code: 'UNAUTHENTICATED' }); }
-    finally { await server.database.admin.query("INSERT INTO knowledge.member(workspace_id,user_id,role) VALUES ($1,$2,'owner')", [workspaceId, owner.id]); }
+    finally { await server.database.admin.query("INSERT INTO workspace.member(workspace_id,user_id,role) VALUES ($1,$2,'owner')", [workspaceId, owner.id]); }
     expect((await server.request('/sign-out', {}, cookie)).status).toBe(200);
     await expect(authenticator.refresh(context)).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
   });
@@ -215,19 +215,19 @@ describe('workspace PAT with real PostgreSQL, HTTP and verified sessions', () =>
   });
 
   test('rejects non-explicit scopes, stale expiry and forged identity grants before persistence', async () => {
-    const count = (await server.database.admin.query('SELECT count(*)::int AS n FROM knowledge.personal_access_token')).rows[0].n;
+    const count = (await server.database.admin.query('SELECT count(*)::int AS n FROM workspace.personal_access_token')).rows[0].n;
     const body = { workspaceId, name: 'Invalid', scopes: ['read'], expiresAt: null };
     for (const extra of [{ scopes: [] }, { scopes: ['*'] }, { scopes: ['admin'] }, { scopes: ['read', 'read'] },
       { userId: other.id }, { kind: 'agent', taskId: randomUUID() }, { expiresAt: '2000-01-01T00:00:00Z' }]) {
       expect((await request('/test/tokens', { cookie: owner.cookie, body: { ...body, ...extra } })).status).toBe(400);
     }
-    expect((await server.database.admin.query('SELECT count(*)::int AS n FROM knowledge.personal_access_token')).rows[0].n).toBe(count);
+    expect((await server.database.admin.query('SELECT count(*)::int AS n FROM workspace.personal_access_token')).rows[0].n).toBe(count);
   });
 
   test('checks expiry and committed revocation immediately without a credential cache', async () => {
     const expiring = await create(['read'], { expiresAt: new Date(Date.now() + 60_000).toISOString() });
     expect((await access(expiring.token)).status).toBe(200);
-    await server.database.admin.query("UPDATE knowledge.personal_access_token SET expires_at=now()-interval '1 second' WHERE workspace_id=$1 AND id=$2", [workspaceId, expiring.metadata.id]);
+    await server.database.admin.query("UPDATE workspace.personal_access_token SET expires_at=now()-interval '1 second' WHERE workspace_id=$1 AND id=$2", [workspaceId, expiring.metadata.id]);
     expect((await access(expiring.token)).status).toBe(401);
     const revoked = await create();
     expect((await access(revoked.token)).status).toBe(200);
@@ -258,7 +258,7 @@ describe('workspace PAT with real PostgreSQL, HTTP and verified sessions', () =>
 
   test('member removal disables PAT, session workspace access and token management immediately', async () => {
     const created = await create();
-    await server.database.admin.query('DELETE FROM knowledge.member WHERE workspace_id=$1 AND user_id=$2', [workspaceId, owner.id]);
+    await server.database.admin.query('DELETE FROM workspace.member WHERE workspace_id=$1 AND user_id=$2', [workspaceId, owner.id]);
     try {
       expect((await access(created.token)).status).toBe(401);
       expect((await request(`/test/access/${workspaceId}`, { cookie: owner.cookie })).status).toBe(401);
@@ -266,7 +266,7 @@ describe('workspace PAT with real PostgreSQL, HTTP and verified sessions', () =>
       expect((await request('/test/tokens', { cookie: owner.cookie, body: { workspaceId, name: 'Unverified', scopes: ['read'], expiresAt: null } })).status).toBe(401);
       expect((await request('/test/tokens', { cookie: owner.cookie, body: { workspaceId, name: 'Denied', scopes: ['read'], expiresAt: null } })).status).toBe(401);
     } finally {
-      await server.database.admin.query("INSERT INTO knowledge.member(workspace_id,user_id,role) VALUES ($1,$2,'owner')", [workspaceId, owner.id]);
+      await server.database.admin.query("INSERT INTO workspace.member(workspace_id,user_id,role) VALUES ($1,$2,'owner')", [workspaceId, owner.id]);
     }
   });
 
@@ -278,9 +278,9 @@ describe('workspace PAT with real PostgreSQL, HTTP and verified sessions', () =>
       expect((await request(`/test/access/${workspaceId}`, { cookie: owner.cookie })).status).toBe(401);
       expect((await request('/test/tokens/revoke', { cookie: owner.cookie, body: { workspaceId, tokenId: created.metadata.id } })).status).toBe(401);
     } finally { await server.database.admin.query('UPDATE auth."user" SET email_verified=true WHERE id=$1', [owner.id]); }
-    await server.database.admin.query("UPDATE knowledge.personal_access_token SET scopes=ARRAY['admin'] WHERE workspace_id=$1 AND id=$2", [workspaceId, created.metadata.id]);
+    await server.database.admin.query("UPDATE workspace.personal_access_token SET scopes=ARRAY['admin'] WHERE workspace_id=$1 AND id=$2", [workspaceId, created.metadata.id]);
     try { expect((await access(created.token)).status).toBe(401); }
-    finally { await server.database.admin.query("UPDATE knowledge.personal_access_token SET scopes=ARRAY['read'] WHERE workspace_id=$1 AND id=$2", [workspaceId, created.metadata.id]); }
+    finally { await server.database.admin.query("UPDATE workspace.personal_access_token SET scopes=ARRAY['read'] WHERE workspace_id=$1 AND id=$2", [workspaceId, created.metadata.id]); }
   });
 
   test('revoked or expired sessions cannot create or revoke tokens; PAT remains an independent credential', async () => {
@@ -300,7 +300,7 @@ describe('workspace PAT with real PostgreSQL, HTTP and verified sessions', () =>
 
   test('deleted users invalidate their PAT and any previously issued context', async () => {
     const transient = await account('pat-deleted@example.test');
-    await server.database.admin.query("INSERT INTO knowledge.member(workspace_id,user_id,role) VALUES ($1,$2,'member')", [workspaceId, transient.id]);
+    await server.database.admin.query("INSERT INTO workspace.member(workspace_id,user_id,role) VALUES ($1,$2,'member')", [workspaceId, transient.id]);
     const created = await create(['read'], {}, transient.cookie);
     const context = await authenticator.authenticate(new Request(`${server.origin}/test`, { headers: { authorization: `Bearer ${created.token}` } }), workspaceId);
     await server.database.admin.query('DELETE FROM auth."user" WHERE id=$1', [transient.id]);
@@ -310,8 +310,8 @@ describe('workspace PAT with real PostgreSQL, HTTP and verified sessions', () =>
 
   test('service errors expose only fixed responses and diagnostic codes, never SQL or credential text', async () => {
     const canary = 'private-database-error-canary';
-    await server.database.admin.query(`CREATE FUNCTION knowledge.reject_pat_test() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION '${canary}'; END $$`);
-    await server.database.admin.query('CREATE TRIGGER reject_pat_test BEFORE INSERT ON knowledge.personal_access_token FOR EACH ROW EXECUTE FUNCTION knowledge.reject_pat_test()');
+    await server.database.admin.query(`CREATE FUNCTION workspace.reject_pat_test() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION '${canary}'; END $$`);
+    await server.database.admin.query('CREATE TRIGGER reject_pat_test BEFORE INSERT ON workspace.personal_access_token FOR EACH ROW EXECUTE FUNCTION workspace.reject_pat_test()');
     try {
       const response = await request('/test/tokens', { cookie: owner.cookie, body: { workspaceId, name: 'Failed', scopes: ['read'], expiresAt: null } });
       expect(response.status).toBe(503);
@@ -319,8 +319,8 @@ describe('workspace PAT with real PostgreSQL, HTTP and verified sessions', () =>
       expect(diagnostics.every((event) => ['access_denied', 'access_unavailable'].includes(event))).toBe(true);
       expect(diagnostics).toContain('access_unavailable');
     } finally {
-      await server.database.admin.query('DROP TRIGGER reject_pat_test ON knowledge.personal_access_token');
-      await server.database.admin.query('DROP FUNCTION knowledge.reject_pat_test()');
+      await server.database.admin.query('DROP TRIGGER reject_pat_test ON workspace.personal_access_token');
+      await server.database.admin.query('DROP FUNCTION workspace.reject_pat_test()');
     }
     expect(server.database.idleErrors).toHaveLength(0);
   });

@@ -8,9 +8,9 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import type { AssetDerived } from '@fouc/shared/knowledge/contracts';
-import { createTenantTestDatabase, type TenantTestDatabase } from '../../../platform/database/knowledge/tenant-test-database';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
-import * as tables from '../../../platform/database/knowledge/schema';
+import { createTenantTestDatabase, type TenantTestDatabase } from '../../../platform/database/workspace/tenant-test-database';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import * as tables from '../../../platform/database/workspace/schema';
 import { createModelGateway } from '../ai/gateway';
 import type { GatewayFetch, ModelGateway } from '../ai/gateway';
 import { confirmWorkspaceAssetUpload, prepareWorkspaceAssetUpload } from '../assets/service';
@@ -108,25 +108,25 @@ describe('asset vision derivation through the real queue and GLM vision model', 
   async function upload(label: string, mime: string, bytes: Buffer): Promise<{ hash: string; event: { workspaceId: string; topic: 'asset.created'; hash: string; initiatedBy: string } }> {
     const hash = createHash('sha256').update(bytes).digest('hex');
     const request = { workspaceId: tenant.workspaceId, userId: tenant.userId, hash, mime, size: bytes.byteLength, name: `${label}.${mime.split('/')[1]}` };
-    const prepared = await withKnowledgeTenant(pool, tenant.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, request));
+    const prepared = await withWorkspaceTenant(pool, tenant.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, request));
     if (prepared.action !== 'upload') throw new Error('expected an upload grant');
     const response = await fetch(prepared.url, { method: 'PUT', headers: { 'content-type': mime }, body: bytes });
     if (response.status !== 200) throw new Error(`upload failed: ${response.status}`);
     objects.push({ workspaceId: tenant.workspaceId, hash });
-    const confirmed = await withKnowledgeTenant(pool, tenant.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, request));
+    const confirmed = await withWorkspaceTenant(pool, tenant.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, request));
     if (confirmed.status !== 'ready') throw new Error('expected a ready asset');
     return { hash, event: { workspaceId: tenant.workspaceId, topic: 'asset.created', hash, initiatedBy: tenant.userId } };
   }
 
   async function derivedOf(workspaceId: string, hash: string): Promise<AssetDerived | undefined> {
     const result = await database.admin.query<{ derived: AssetDerived }>(
-      'SELECT derived FROM knowledge.asset WHERE workspace_id=$1 AND hash=$2', [workspaceId, hash],
+      'SELECT derived FROM workspace.asset WHERE workspace_id=$1 AND hash=$2', [workspaceId, hash],
     );
     return result.rows[0]?.derived;
   }
   async function usageRows(workspaceId: string) {
     return (await database.admin.query<{ tier: string; operation: string; status: string; provider: string | null; model: string | null; input_tokens: number | null; output_tokens: number | null; error_code: string | null }>(
-      'SELECT tier, operation, status, provider, model, input_tokens, output_tokens, error_code FROM knowledge.ai_usage WHERE workspace_id=$1 ORDER BY created_at', [workspaceId],
+      'SELECT tier, operation, status, provider, model, input_tokens, output_tokens, error_code FROM workspace.ai_usage WHERE workspace_id=$1 ORDER BY created_at', [workspaceId],
     )).rows;
   }
   async function until(check: () => Promise<boolean>, timeout = 60_000) {
@@ -146,7 +146,7 @@ describe('asset vision derivation through the real queue and GLM vision model', 
     await initializeKnowledgeJobs(database.admin, pool);
     const client = await database.admin.connect();
     try {
-      const db = drizzle(client, { schema: tables.knowledgeSchema });
+      const db = drizzle(client, { schema: tables.workspaceTenantSchema });
       await db.insert(authUser).values({ id: tenant.userId, name: 'Vision Owner', email: `${tenant.userId}@vision.test` });
       await db.insert(tables.workspace).values({ id: tenant.workspaceId, name: 'Vision Workspace', kind: 'team' });
       await db.insert(tables.member).values({ workspaceId: tenant.workspaceId, userId: tenant.userId, role: 'owner' });
@@ -196,9 +196,9 @@ describe('asset vision derivation through the real queue and GLM vision model', 
     // Idempotent replay: the same asset.created content under a new outbox id re-dispatches
     // the consumer, which must no-op without another model call or derived overwrite.
     const settled = derived!;
-    await withKnowledgeTenant(pool, tenant.workspaceId, (db) => appendKnowledgeOutbox(db, event));
+    await withWorkspaceTenant(pool, tenant.workspaceId, (db) => appendKnowledgeOutbox(db, event));
     await until(async () => (await database.admin.query<{ events: number; pending: number }>(
-      `SELECT (SELECT count(*)::int FROM knowledge.outbox WHERE workspace_id=$1 AND topic='asset.created' AND payload->>'hash'=$2) AS events,
+      `SELECT (SELECT count(*)::int FROM workspace.outbox WHERE workspace_id=$1 AND topic='asset.created' AND payload->>'hash'=$2) AS events,
               (SELECT count(*)::int FROM knowledge_jobs._private_jobs) AS pending`, [tenant.workspaceId, hash],
     )).rows[0]?.events === 2 && (await database.admin.query<{ pending: number }>('SELECT count(*)::int AS pending FROM knowledge_jobs._private_jobs')).rows[0]?.pending === 0);
     await delay(200);

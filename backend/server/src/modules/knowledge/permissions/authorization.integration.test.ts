@@ -2,7 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:tes
 import { randomUUID } from 'node:crypto';
 import { principal } from '@fouc/shared/knowledge/contracts';
 import type { PermissionLevel } from '@fouc/shared/knowledge/contracts';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { replaceAuthorizedPageAcl } from './mutations';
 import { authorizePageAccess, expandRequestPrincipals } from './authorization';
 import { createPermissionsFixture, type PermissionsFixture } from './permissions-test-fixture';
@@ -25,7 +25,7 @@ describe('page authorization entry for api, collaboration and ai callers', () =>
   });
 
   async function grant(node: { workspaceId: string; pageId: string }, grants: { principal: string; level: PermissionLevel }[]) {
-    return withKnowledgeTenant(fixture.pool, node.workspaceId, (db) => replaceAuthorizedPageAcl(db, { workspaceId: node.workspaceId, pageId: node.pageId, grants }));
+    return withWorkspaceTenant(fixture.pool, node.workspaceId, (db) => replaceAuthorizedPageAcl(db, { workspaceId: node.workspaceId, pageId: node.pageId, grants }));
   }
   function scopeOf(node: { workspaceId: string; pageId: string }) {
     return { workspaceId: node.workspaceId, pageId: node.pageId };
@@ -41,7 +41,7 @@ describe('page authorization entry for api, collaboration and ai callers', () =>
 
     const decisions = {} as Record<PermissionLevel, boolean>;
     for (const action of actions) {
-      const decision = await withKnowledgeTenant(fixture.pool, fixture.alpha.id, (db) => authorizePageAccess(db, {
+      const decision = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => authorizePageAccess(db, {
         userId: fixture.reader.identity.userId, scope: scopeOf(pages[2]), required: action,
       }));
       decisions[action] = decision.decision === 'allow';
@@ -50,7 +50,7 @@ describe('page authorization entry for api, collaboration and ai callers', () =>
     expect(decisions).toEqual({ view: true, comment: true, edit: false, full: false });
 
     // A full grant stays above every required action.
-    const owner = await withKnowledgeTenant(fixture.pool, fixture.alpha.id, (db) => authorizePageAccess(db, {
+    const owner = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => authorizePageAccess(db, {
       userId: fixture.owner.identity.userId, scope: scopeOf(pages[2]), required: 'full',
     }));
     expect(owner.decision).toBe('allow');
@@ -62,13 +62,13 @@ describe('page authorization entry for api, collaboration and ai callers', () =>
     await grant(pages[0], [{ principal: principal('user', fixture.reader.identity.userId), level: 'view' }]);
     await fixture.drain();
 
-    const denied = await withKnowledgeTenant(fixture.pool, fixture.alpha.id, (db) => authorizePageAccess(db, {
+    const denied = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => authorizePageAccess(db, {
       userId: fixture.reader.identity.userId, scope: { workspaceId: fixture.alpha.id, pageId: randomUUID() }, required: 'view',
     }));
-    const recycled = await withKnowledgeTenant(fixture.pool, fixture.alpha.id, (db) => authorizePageAccess(db, {
+    const recycled = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => authorizePageAccess(db, {
       userId: fixture.reader.identity.userId, scope: scopeOf(pages[2]), required: 'view',
     }));
-    const unauthorized = await withKnowledgeTenant(fixture.pool, fixture.alpha.id, (db) => authorizePageAccess(db, {
+    const unauthorized = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => authorizePageAccess(db, {
       userId: fixture.reader.identity.userId, scope: scopeOf(pages[1]), required: 'edit',
     }));
     expect(denied).toEqual({ decision: 'deny', pageId: denied.pageId });
@@ -76,8 +76,8 @@ describe('page authorization entry for api, collaboration and ai callers', () =>
     expect(unauthorized).toEqual({ decision: 'deny', pageId: pages[1].pageId });
 
     // A non-member expands to no principals and is denied identically.
-    expect(await withKnowledgeTenant(fixture.pool, fixture.alpha.id, (db) => expandRequestPrincipals(db, fixture.alpha.id, fixture.foreign.identity.userId))).toEqual([]);
-    const foreign = await withKnowledgeTenant(fixture.pool, fixture.alpha.id, (db) => authorizePageAccess(db, {
+    expect(await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => expandRequestPrincipals(db, fixture.alpha.id, fixture.foreign.identity.userId))).toEqual([]);
+    const foreign = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => authorizePageAccess(db, {
       userId: fixture.foreign.identity.userId, scope: scopeOf(pages[0]), required: 'view',
     }));
     expect(foreign.decision).toBe('deny');
@@ -89,7 +89,7 @@ describe('page authorization entry for api, collaboration and ai callers', () =>
     await fixture.drain();
 
     await grant(pages[0], [{ principal: principal('user', fixture.reader.identity.userId), level: 'edit' }]);
-    const rebuilding = await withKnowledgeTenant(fixture.pool, fixture.alpha.id, (db) => authorizePageAccess(db, {
+    const rebuilding = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => authorizePageAccess(db, {
       userId: fixture.reader.identity.userId, scope: scopeOf(pages[3]), required: 'edit',
     }));
     expect(rebuilding).toEqual({ decision: 'rebuilding', pageId: pages[3].pageId });
@@ -111,13 +111,13 @@ describe('page authorization entry for api, collaboration and ai callers', () =>
     await grant(pages[0], [{ principal: principal('group', group.id), level: 'edit' }]);
     await fixture.drain();
 
-    const allowed = await withKnowledgeTenant(fixture.pool, fixture.alpha.id, (db) => authorizePageAccess(db, {
+    const allowed = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => authorizePageAccess(db, {
       userId: fixture.reader.identity.userId, scope: scopeOf(pages[2]), required: 'edit',
     }));
     expect(allowed.decision).toBe('allow');
 
     await fixture.organization.removeGroupMember(fixture.owner.identity, { workspaceId: fixture.alpha.id, groupId: group.id, userId: fixture.reader.identity.userId });
-    const revoked = await withKnowledgeTenant(fixture.pool, fixture.alpha.id, (db) => authorizePageAccess(db, {
+    const revoked = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => authorizePageAccess(db, {
       userId: fixture.reader.identity.userId, scope: scopeOf(pages[2]), required: 'edit',
     }));
     expect(revoked.decision).toBe('deny');

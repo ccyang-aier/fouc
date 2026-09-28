@@ -12,7 +12,7 @@ type WorkspaceContextValue = {
   serverDirectory: ServerDirectory;
   selectWorkspace: (id: string, expectedActiveId?: string) => void;
   updateSpaces: (action: SetStateAction<RailSpace[]>) => void;
-  createWorkspace: () => string;
+  createWorkspace: () => Promise<string>;
   refreshWorkspaces: () => void;
 };
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
@@ -62,7 +62,17 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     activeSpace, spaces, serverDirectory,
     selectWorkspace: store.select,
     updateSpaces: (action) => store.updateSpaces(typeof action === 'function' ? action(spaces) : action),
-    createWorkspace: store.create,
+    createWorkspace: async () => {
+      if (!owner) return store.create();
+      const previousId = store.getSnapshot().activeId;
+      const created = await organizationClient.createWorkspace({ name: `新工作空间 ${serverDirectory.items.length + 1}`, kind: 'personal' });
+      store.rememberServerScopes([created.id]);
+      setDirectory((current) => current.owner === owner && current.revision === revision
+        ? { ...current, items: [...current.items, created] }
+        : current);
+      store.select(created.id, previousId);
+      return created.name;
+    },
     refreshWorkspaces: () => setRevision((value) => value + 1),
   }}>{children}</WorkspaceContext.Provider>;
 }

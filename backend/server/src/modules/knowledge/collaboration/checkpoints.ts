@@ -4,8 +4,8 @@ import type { Extension, Hocuspocus } from '@hocuspocus/server';
 import type { Pool } from 'pg';
 import * as Y from 'yjs';
 import type { PageScope } from '@fouc/shared/knowledge/contracts';
-import { docCheckpoint, docState } from '../../../platform/database/knowledge/schema';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { docCheckpoint, docState } from '../../../platform/database/workspace/schema';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import type { PageCollaborationContext } from './page-collaboration';
 import { pageDocumentName, parsePageDocument } from '@fouc/shared/knowledge/collaboration';
 
@@ -106,7 +106,7 @@ export function pageCheckpointExtension(deps: { pool: Pool }, policy: PageCheckp
   }
 
   async function latestCheckpoint(scope: PageScope): Promise<LatestCheckpoint | undefined> {
-    const rows = await withKnowledgeTenant(deps.pool, scope.workspaceId, (db) => db
+    const rows = await withWorkspaceTenant(deps.pool, scope.workspaceId, (db) => db
       .select({ id: docCheckpoint.id, stateVector: docCheckpoint.stateVector, createdAt: docCheckpoint.createdAt })
       .from(docCheckpoint)
       .where(and(eq(docCheckpoint.workspaceId, scope.workspaceId), eq(docCheckpoint.pageId, scope.pageId)))
@@ -117,7 +117,7 @@ export function pageCheckpointExtension(deps: { pool: Pool }, policy: PageCheckp
 
   async function insertCheckpoint(scope: PageScope, document: Y.Doc, vector: Uint8Array, authors: string[], label: string | null): Promise<string> {
     const id = randomUUID();
-    await withKnowledgeTenant(deps.pool, scope.workspaceId, (db) => db.insert(docCheckpoint).values({
+    await withWorkspaceTenant(deps.pool, scope.workspaceId, (db) => db.insert(docCheckpoint).values({
       workspaceId: scope.workspaceId,
       pageId: scope.pageId,
       id,
@@ -130,7 +130,7 @@ export function pageCheckpointExtension(deps: { pool: Pool }, policy: PageCheckp
   }
 
   async function relabelCheckpoint(scope: PageScope, checkpointId: string, label: string): Promise<void> {
-    await withKnowledgeTenant(deps.pool, scope.workspaceId, (db) => db.update(docCheckpoint)
+    await withWorkspaceTenant(deps.pool, scope.workspaceId, (db) => db.update(docCheckpoint)
       .set({ label })
       .where(and(eq(docCheckpoint.workspaceId, scope.workspaceId), eq(docCheckpoint.id, checkpointId))));
   }
@@ -232,7 +232,7 @@ export function pageCheckpointExtension(deps: { pool: Pool }, policy: PageCheckp
       // Not hosted: name the committed doc_state authority. Authors of past
       // intervals are not reconstructible offline, so the row records none.
       const source = new Y.Doc();
-      const rows = await withKnowledgeTenant(deps.pool, scope.workspaceId, (db) => db
+      const rows = await withWorkspaceTenant(deps.pool, scope.workspaceId, (db) => db
         .select({ state: docState.state })
         .from(docState)
         .where(and(eq(docState.workspaceId, scope.workspaceId), eq(docState.pageId, scope.pageId))));

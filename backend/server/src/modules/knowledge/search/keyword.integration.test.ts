@@ -3,8 +3,8 @@ import { and, eq, inArray, sql } from 'drizzle-orm';
 import * as Y from 'yjs';
 import type { PageScope, PermissionLevel, Principal } from '@fouc/shared/knowledge/contracts';
 import { keywordSearchHitSchema } from '@fouc/shared/knowledge/search';
-import { blockIndex, docState, page, shareLink } from '../../../platform/database/knowledge/schema';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { blockIndex, docState, page, shareLink } from '../../../platform/database/workspace/schema';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { replaceAuthorizedPageAcl } from '../permissions/mutations';
 import { createPermissionsFixture } from '../permissions/permissions-test-fixture';
 import type { PermissionsFixture } from '../permissions/permissions-test-fixture';
@@ -27,7 +27,7 @@ describe('block index keyword search', () => {
   }, 30_000);
   beforeEach(async () => {
     await fixture.resetJobs();
-    await fixture.server.database.admin.query('DELETE FROM knowledge.block_index');
+    await fixture.server.database.admin.query('DELETE FROM workspace.block_index');
   });
 
   function encodeBody(blocks: readonly DraftBlock[]) {
@@ -48,7 +48,7 @@ describe('block index keyword search', () => {
   /** The authoritative doc_state write onStoreDocument performs; direct refresh needs no outbox. */
   async function writeBody(node: { workspaceId: string; pageId: string }, blocks: readonly DraftBlock[]) {
     const { state, stateVector } = encodeBody(blocks);
-    await withKnowledgeTenant(fixture.pool, node.workspaceId, async (db) => {
+    await withWorkspaceTenant(fixture.pool, node.workspaceId, async (db) => {
       await db.insert(docState).values({ workspaceId: node.workspaceId, pageId: node.pageId, state, stateVector })
         .onConflictDoUpdate({ target: [docState.workspaceId, docState.pageId], set: { state, stateVector, updatedAt: sql`clock_timestamp()` } });
     });
@@ -59,7 +59,7 @@ describe('block index keyword search', () => {
     const created = await fixture.tree(options);
     // Materialize page_effective_acl before any refresh so indexed rows carry a live projection.
     await fixture.drain();
-    await withKnowledgeTenant(fixture.pool, created.root.workspaceId, (db) => db.delete(blockIndex).where(and(
+    await withWorkspaceTenant(fixture.pool, created.root.workspaceId, (db) => db.delete(blockIndex).where(and(
       eq(blockIndex.workspaceId, created.root.workspaceId),
       inArray(blockIndex.pageId, created.pages.map((node) => node.pageId)),
     )));
@@ -68,20 +68,20 @@ describe('block index keyword search', () => {
 
   function refresh(node: { workspaceId: string; pageId: string }) {
     const scope: PageScope = { workspaceId: node.workspaceId, pageId: node.pageId };
-    return withKnowledgeTenant(fixture.pool, scope.workspaceId, (db) => refreshPageBlockIndex(db, scope));
+    return withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) => refreshPageBlockIndex(db, scope));
   }
 
   function search(workspaceId: string, principals: readonly Principal[], query: string, options: { limit?: number; offset?: number } = {}) {
-    return withKnowledgeTenant(fixture.pool, workspaceId, (db) => searchBlocksByKeyword(db, { workspaceId, principals, query, ...options }));
+    return withWorkspaceTenant(fixture.pool, workspaceId, (db) => searchBlocksByKeyword(db, { workspaceId, principals, query, ...options }));
   }
 
   async function retitle(scope: PageScope, title: string) {
-    await withKnowledgeTenant(fixture.pool, scope.workspaceId, (db) =>
+    await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) =>
       db.update(page).set({ title }).where(and(eq(page.workspaceId, scope.workspaceId), eq(page.id, scope.pageId))));
   }
 
   async function grant(scope: PageScope, grants: readonly { principal: Principal; level: PermissionLevel }[]) {
-    await withKnowledgeTenant(fixture.pool, scope.workspaceId, (db) =>
+    await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) =>
       replaceAuthorizedPageAcl(db, { workspaceId: scope.workspaceId, pageId: scope.pageId, grants: grants.map((entry) => ({ principal: entry.principal, level: entry.level })) }));
   }
 
@@ -156,7 +156,7 @@ describe('block index keyword search', () => {
     const [readerPage] = readerTree.pages;
     // replaceAuthorizedPageAcl only accepts principals backed by real authority rows.
     const linkId = crypto.randomUUID();
-    await withKnowledgeTenant(fixture.pool, readerPage.workspaceId, (db) =>
+    await withWorkspaceTenant(fixture.pool, readerPage.workspaceId, (db) =>
       db.insert(shareLink).values({ workspaceId: readerPage.workspaceId, id: linkId, pageId: readerPage.pageId, tokenHash: 'c'.repeat(64), level: 'view', createdBy: fixture.owner.identity.userId }));
     const linkPrincipal = `link:${linkId}` as Principal;
     await grant(readerPage, [
@@ -208,13 +208,13 @@ describe('block index keyword search', () => {
     const before = await search(body.workspaceId, owner, '独特词汇');
     expect(before.map((hit) => hit.blockId)).toEqual(['r1']);
 
-    await withKnowledgeTenant(fixture.pool, body.workspaceId, (db) =>
+    await withWorkspaceTenant(fixture.pool, body.workspaceId, (db) =>
       db.update(page).set({ deletedAt: new Date() }).where(and(eq(page.workspaceId, body.workspaceId), eq(page.id, body.pageId))));
 
     const after = await search(body.workspaceId, owner, '独特词汇');
     expect(after).toEqual([]);
     // The projection row still exists; the predicate, not the indexer, removed it from search.
-    const rows = await withKnowledgeTenant(fixture.pool, body.workspaceId, (db) =>
+    const rows = await withWorkspaceTenant(fixture.pool, body.workspaceId, (db) =>
       db.select({ blockId: blockIndex.blockId }).from(blockIndex).where(and(eq(blockIndex.workspaceId, body.workspaceId), eq(blockIndex.pageId, body.pageId))));
     expect(rows.map((row) => row.blockId)).toEqual(['r1']);
   }, 30_000);

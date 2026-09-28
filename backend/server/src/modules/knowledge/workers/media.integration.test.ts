@@ -5,11 +5,11 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { deflateSync } from 'node:zlib';
 import { Pool } from 'pg';
 import type { AssetDerived } from '@fouc/shared/knowledge/contracts';
-import { createTenantTestDatabase, type TenantTestDatabase } from '../../../platform/database/knowledge/tenant-test-database';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { createTenantTestDatabase, type TenantTestDatabase } from '../../../platform/database/workspace/tenant-test-database';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { drizzle } from 'drizzle-orm/node-postgres';
-import * as tables from '../../../platform/database/knowledge/schema';
-import { blockIndex, page } from '../../../platform/database/knowledge/schema';
+import * as tables from '../../../platform/database/workspace/schema';
+import { blockIndex, page } from '../../../platform/database/workspace/schema';
 import { prepareWorkspaceAssetUpload, confirmWorkspaceAssetUpload } from '../assets/service';
 import { createKnowledgeAssetStorage, readKnowledgeAssetStorageConfig, type KnowledgeAssetStorage } from '../assets/storage';
 import type { MediaProcessRequest, MediaProcessResponse } from '../media/client';
@@ -91,19 +91,19 @@ describe('asset media derivation orchestration (W05)', () => {
   });
   async function derivedOf(hash: string): Promise<AssetDerived | undefined> {
     const result = await database.admin.query<{ derived: AssetDerived }>(
-      'SELECT derived FROM knowledge.asset WHERE workspace_id=$1 AND hash=$2', [tenant.workspaceId, hash],
+      'SELECT derived FROM workspace.asset WHERE workspace_id=$1 AND hash=$2', [tenant.workspaceId, hash],
     );
     return result.rows[0]?.derived;
   }
   async function upload(label: string, mime: string, bytes: Buffer): Promise<string> {
     const hash = createHash('sha256').update(bytes).digest('hex');
     const request = { workspaceId: tenant.workspaceId, userId: tenant.userId, hash, mime, size: bytes.byteLength, name: `${label}.${mime.split('/')[1]}` };
-    const prepared = await withKnowledgeTenant(pool, tenant.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, request));
+    const prepared = await withWorkspaceTenant(pool, tenant.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, request));
     if (prepared.action !== 'upload') throw new Error('expected an upload grant');
     const response = await fetch(prepared.url, { method: 'PUT', headers: { 'content-type': mime }, body: bytes });
     if (response.status !== 200) throw new Error(`upload failed: ${response.status}`);
     objects.push({ workspaceId: tenant.workspaceId, hash });
-    const confirmed = await withKnowledgeTenant(pool, tenant.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, request));
+    const confirmed = await withWorkspaceTenant(pool, tenant.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, request));
     if (confirmed.status !== 'ready') throw new Error('expected a ready asset');
     return hash;
   }
@@ -116,7 +116,7 @@ describe('asset media derivation orchestration (W05)', () => {
     await initializeKnowledgeJobs(database.admin, pool);
     const client = await database.admin.connect();
     try {
-      const db = drizzle(client, { schema: tables.knowledgeSchema });
+      const db = drizzle(client, { schema: tables.workspaceTenantSchema });
       await db.insert(authUser).values({ id: tenant.userId, name: 'W05 Uploader', email: `${tenant.userId}@media.test` });
       await db.insert(tables.workspace).values({ id: tenant.workspaceId, name: 'W05 Workspace', kind: 'team' });
       await db.insert(tables.member).values({ workspaceId: tenant.workspaceId, userId: tenant.userId, role: 'owner' });
@@ -141,11 +141,11 @@ describe('asset media derivation orchestration (W05)', () => {
     const audioHash = await upload('meeting', 'audio/mpeg', Buffer.from('fake audio bytes for hashing'));
     // A page whose indexed block references the audio asset must re-enter indexing.
     const refPage = randomUUID();
-    await withKnowledgeTenant(pool, tenant.workspaceId, (db) => db.insert(page).values({
+    await withWorkspaceTenant(pool, tenant.workspaceId, (db) => db.insert(page).values({
       workspaceId: tenant.workspaceId, id: refPage, teamspaceId: tenant.workspaceId, parentId: null, kind: 'doc', databaseId: null,
       title: '会议记录', position: 'a', path: refPage.replaceAll('-', '_'), createdBy: tenant.userId, deletedAt: null,
     }));
-    await withKnowledgeTenant(pool, tenant.workspaceId, (db) => db.insert(blockIndex).values({
+    await withWorkspaceTenant(pool, tenant.workspaceId, (db) => db.insert(blockIndex).values({
       workspaceId: tenant.workspaceId, pageId: refPage, blockId: 'b1', blockType: 'audio', contentMd: `![录音](asset:${audioHash})`, contentHash: 'a'.repeat(64),
     }));
 
@@ -154,7 +154,7 @@ describe('asset media derivation orchestration (W05)', () => {
       derived: { status: 'ready', transcript: [{ start: 0, end: 2.5, text: '第一段转写' }] },
       processor: 'whisper-x', elapsedMs: 10,
     });
-    await withKnowledgeTenant(pool, tenant.workspaceId, (db) => appendKnowledgeOutbox(db, { workspaceId: tenant.workspaceId, topic: 'asset.created', hash: audioHash, initiatedBy: tenant.userId }));
+    await withWorkspaceTenant(pool, tenant.workspaceId, (db) => appendKnowledgeOutbox(db, { workspaceId: tenant.workspaceId, topic: 'asset.created', hash: audioHash, initiatedBy: tenant.userId }));
     await until(async () => (await derivedOf(audioHash))?.status === 'ready');
 
     const request = requests.find((item) => item.operation === 'transcribe')!;
@@ -184,7 +184,7 @@ describe('asset media derivation orchestration (W05)', () => {
       processor: 'docling-1', elapsedMs: 12,
       attachments: [{ sha256: imageHash, mime: 'image/png', size: image.byteLength, width: 64, height: 48, dataBase64: image.toString('base64') }],
     });
-    await withKnowledgeTenant(pool, tenant.workspaceId, (db) => appendKnowledgeOutbox(db, { workspaceId: tenant.workspaceId, topic: 'asset.created', hash: docHash, initiatedBy: tenant.userId }));
+    await withWorkspaceTenant(pool, tenant.workspaceId, (db) => appendKnowledgeOutbox(db, { workspaceId: tenant.workspaceId, topic: 'asset.created', hash: docHash, initiatedBy: tenant.userId }));
     await until(async () => (await derivedOf(docHash))?.status === 'ready');
     expect((await derivedOf(docHash))?.markdown).toContain('规格说明');
 
@@ -193,7 +193,7 @@ describe('asset media derivation orchestration (W05)', () => {
     await until(async () => (await derivedOf(imageHash)) !== undefined);
     const stat = await storage.statObject({ workspaceId: tenant.workspaceId, hash: imageHash });
     expect(stat?.size).toBe(image.byteLength);
-    const row = await database.admin.query<{ meta: JSON; derived: AssetDerived }>('SELECT meta, derived FROM knowledge.asset WHERE workspace_id=$1 AND hash=$2', [tenant.workspaceId, imageHash]);
+    const row = await database.admin.query<{ meta: JSON; derived: AssetDerived }>('SELECT meta, derived FROM workspace.asset WHERE workspace_id=$1 AND hash=$2', [tenant.workspaceId, imageHash]);
     expect(row.rows[0]?.derived.status).toBe('pending');
     expect((row.rows[0]?.meta as { source?: string }).source).toBe('document_extraction');
   }, 30_000);
@@ -202,7 +202,7 @@ describe('asset media derivation orchestration (W05)', () => {
     const failedHash = await upload('broken', 'application/pdf', Buffer.from('%PDF-truncated'));
     const { MediaWorkerError } = await import('../media/client');
     nextResponse = async () => { throw new MediaWorkerError('processing_failed', 422, false); };
-    await withKnowledgeTenant(pool, tenant.workspaceId, (db) => appendKnowledgeOutbox(db, { workspaceId: tenant.workspaceId, topic: 'asset.created', hash: failedHash, initiatedBy: tenant.userId }));
+    await withWorkspaceTenant(pool, tenant.workspaceId, (db) => appendKnowledgeOutbox(db, { workspaceId: tenant.workspaceId, topic: 'asset.created', hash: failedHash, initiatedBy: tenant.userId }));
     await until(async () => (await derivedOf(failedHash))?.status === 'failed');
     expect((await derivedOf(failedHash))?.error).toBe('processing_failed');
   }, 30_000);

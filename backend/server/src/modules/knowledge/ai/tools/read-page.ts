@@ -4,8 +4,8 @@ import type { AgentReadPageToolInput, AgentReadPageToolResult } from '@fouc/shar
 import { agentReadPageToolResultSchema } from '@fouc/shared/knowledge/contracts';
 import { createMarkdownPipeline } from '@fouc/shared/knowledge/markdown';
 import { KnowledgeMarkdownError } from '@fouc/shared/knowledge/markdown';
-import { docState, page } from '../../../../platform/database/knowledge/schema';
-import { withKnowledgeTenant } from '../../../../platform/database/knowledge/tenant';
+import { docState, page } from '../../../../platform/database/workspace/schema';
+import { withWorkspaceTenant } from '../../../../platform/database/workspace/tenant';
 import { authorizePageAccess } from '../../permissions';
 import { PAGE_BODY_FRAGMENT } from '../../search/backlinks';
 import { decodePageBody } from '../../search/indexer';
@@ -30,7 +30,7 @@ function decodeStoredBody(state: Uint8Array) {
  */
 export async function executeAgentReadPage(input: AgentReadPageToolInput, context: KnowledgeAgentToolContext): Promise<AgentReadPageToolResult> {
   const scope = { workspaceId: context.authority.workspaceId, pageId: input.pageId };
-  const snapshot = await withKnowledgeTenant(context.pool, scope.workspaceId, async (db) => {
+  const snapshot = await withWorkspaceTenant(context.pool, scope.workspaceId, async (db) => {
     const decision = await authorizePageAccess(db, { userId: context.authority.userId, scope, required: 'view' });
     // 回收页与围栏期在此一并折叠：拒绝、不存在、重建中不可区分。
     if (decision.decision !== 'allow') return null;

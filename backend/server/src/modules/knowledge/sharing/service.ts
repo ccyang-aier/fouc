@@ -4,7 +4,7 @@ import {
   setShareLinkLevelInputSchema,
   shareLinkAccessInputSchema,
 } from '@fouc/shared/knowledge/contracts';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { verifiedRequestSession, activeSessionMember } from '../access/session-access';
 import type { KnowledgeAccessDependencies } from '../access/session-access';
 import { sanitizedSharing } from './errors';
@@ -21,7 +21,7 @@ export function createShareLinkService(dependencies: KnowledgeAccessDependencies
         const parsed = createShareLinkInputSchema.safeParse(input);
         if (!parsed.success) throw new KnowledgeSharingError('INVALID_SHARING_INPUT');
         const { workspaceId } = parsed.data;
-        return withKnowledgeTenant(dependencies.pool, workspaceId, async (db) => {
+        return withWorkspaceTenant(dependencies.pool, workspaceId, async (db) => {
           await activeSessionMember(db, workspaceId, identity, true);
           return createAuthorizedShareLink(db, identity.userId, parsed.data);
         });
@@ -33,7 +33,7 @@ export function createShareLinkService(dependencies: KnowledgeAccessDependencies
         const parsed = revokeShareLinkInputSchema.safeParse(input);
         if (!parsed.success) throw new KnowledgeSharingError('INVALID_SHARING_INPUT');
         const { workspaceId } = parsed.data;
-        return withKnowledgeTenant(dependencies.pool, workspaceId, async (db) => {
+        return withWorkspaceTenant(dependencies.pool, workspaceId, async (db) => {
           await activeSessionMember(db, workspaceId, identity, true);
           return revokeAuthorizedShareLink(db, identity.userId, parsed.data);
         });
@@ -45,7 +45,7 @@ export function createShareLinkService(dependencies: KnowledgeAccessDependencies
         const parsed = setShareLinkLevelInputSchema.safeParse(input);
         if (!parsed.success) throw new KnowledgeSharingError('INVALID_SHARING_INPUT');
         const { workspaceId } = parsed.data;
-        return withKnowledgeTenant(dependencies.pool, workspaceId, async (db) => {
+        return withWorkspaceTenant(dependencies.pool, workspaceId, async (db) => {
           await activeSessionMember(db, workspaceId, identity, true);
           return setAuthorizedShareLinkLevel(db, identity.userId, parsed.data);
         });
@@ -63,7 +63,7 @@ export function createShareLinkService(dependencies: KnowledgeAccessDependencies
         const { pageId, action } = parsed.data;
         const locator = shareLinkLocator(parsed.data.token);
         if (!locator) throw new KnowledgeSharingError('INVALID_SHARING_INPUT');
-        return withKnowledgeTenant(dependencies.pool, locator.workspaceId, async (db) => {
+        return withWorkspaceTenant(dependencies.pool, locator.workspaceId, async (db) => {
           const denied = { workspaceId: locator.workspaceId, pageId, authorized: false as const, level: null };
           const link = await verifyShareLink(db, locator);
           if (!link) return denied;

@@ -1,3 +1,6 @@
+import { createWorkspaceRoutes } from '../../workspaces/http';
+import { createWorkspaceService } from '../../workspaces/service';
+import type { WorkspaceService } from '../../workspaces/service';
 import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 import { and, eq } from 'drizzle-orm';
@@ -8,8 +11,8 @@ import { createTRPCClient, httpLink } from '@trpc/client';
 import type { OutboxEvent, PageScope, PermissionLevel, Principal, Teamspace } from '@fouc/shared/knowledge/contracts';
 import { createKnowledgeApiRoutes } from '../api/http';
 import { knowledgeApiRouter } from '../api/router';
-import { blockIndex, groupMember, member, page } from '../../../platform/database/knowledge/schema';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { blockIndex, groupMember, member, page } from '../../../platform/database/workspace/schema';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { createAuthTestServer, responseCookie, testPassword } from '../../../platform/identity/auth-test-server';
 import { createKnowledgeRequestAuthenticator, createKnowledgeTokenService } from '../access';
 import type { KnowledgeRequestAuthenticator, KnowledgeTokenScope } from '../access';
@@ -17,9 +20,9 @@ import type { FoucAuth } from '../../../platform/identity/service';
 import type { FoucIdentity } from '../../../platform/identity/identity';
 
 type KnowledgeTokenService = ReturnType<typeof createKnowledgeTokenService>;
-import { createOrganizationRoutes } from '../organization/http';
-import { createOrganizationService } from '../organization/service';
-import type { OrganizationService } from '../organization/service';
+import { createKnowledgeCatalogRoutes } from '../organization/http';
+import { createKnowledgeCatalogService } from '../organization/service';
+import type { KnowledgeCatalogService } from '../organization/service';
 import type { RunningRole } from '../../../platform/runtime/lifecycle';
 import { initializeKnowledgeJobs } from '../workers/initialize';
 import { startKnowledgeWorker } from '../workers/runner';
@@ -53,7 +56,7 @@ export type PermissionsFixtureMount = (app: Hono, context: { auth: FoucAuth; poo
 
 export async function createPermissionsFixture(options: { mount?: PermissionsFixtureMount } = {}) {
   let pool!: Pool;
-  let organization!: OrganizationService;
+  let organization!: WorkspaceService & KnowledgeCatalogService;
   let authenticator!: KnowledgeRequestAuthenticator;
   let tokens!: KnowledgeTokenService;
   const errors: Error[] = [];
@@ -62,8 +65,9 @@ export async function createPermissionsFixture(options: { mount?: PermissionsFix
     pool.on('error', (error) => errors.push(error));
     authenticator = createKnowledgeRequestAuthenticator({ auth, pool });
     tokens = createKnowledgeTokenService({ auth, pool });
-    organization = createOrganizationService(pool, { permissions: teamspacePermissionInvalidator });
-    app.route('/', createOrganizationRoutes(auth, organization));
+    organization = { ...createWorkspaceService(pool), ...createKnowledgeCatalogService(pool, { permissions: teamspacePermissionInvalidator }) };
+    app.route('/', createWorkspaceRoutes(auth, organization));
+    app.route('/', createKnowledgeCatalogRoutes(auth, organization));
     app.route('/', createKnowledgeApiRoutes({ auth, pool }));
     options.mount?.(app, { auth, pool, authenticator });
   } });
@@ -105,7 +109,7 @@ export async function createPermissionsFixture(options: { mount?: PermissionsFix
   async function resetJobs() {
     for (const runner of runners) await runner.close();
     runners.clear();
-    await admin.query('DELETE FROM knowledge_jobs._private_jobs; DELETE FROM knowledge.outbox');
+    await admin.query('DELETE FROM knowledge_jobs._private_jobs; DELETE FROM workspace.outbox');
   }
   async function tree(options: { teamspace?: Teamspace; tenant?: 'alpha' | 'beta'; defaultAccess?: PermissionLevel | null; parents?: (number | null)[]; breaks?: number[]; recycled?: number[]; ids?: string[] } = {}) {
     const workspaceId = options.tenant === 'beta' ? beta.id : alpha.id;
@@ -120,7 +124,7 @@ export async function createPermissionsFixture(options: { mount?: PermissionsFix
       pages.push({ workspaceId, pageId: id, parentId: parent?.pageId ?? null, path: `${parent ? `${parent.path}.` : ''}${id.replaceAll('-', '_')}` });
     }
     const root = { workspaceId, pageId: pages[0]!.pageId };
-    await withKnowledgeTenant(pool, workspaceId, (db) => withAuthorizedPageTreeMutation(db, root, async () => {
+    await withWorkspaceTenant(pool, workspaceId, (db) => withAuthorizedPageTreeMutation(db, root, async () => {
       for (let offset = 0; offset < pages.length; offset += 250) {
         const batch = pages.slice(offset, offset + 250);
         await db.insert(page).values(batch.map((node, batchIndex) => ({ workspaceId, id: node.pageId, parentId: node.parentId, path: node.path, teamspaceId: space.id, position: `a${offset + batchIndex}`, createdBy: author.identity.userId,
@@ -131,18 +135,18 @@ export async function createPermissionsFixture(options: { mount?: PermissionsFix
     return { root, pages, teamspace: space };
   }
   async function latestEvent(scope: PageScope): Promise<AclEvent> {
-    const result = await admin.query<{ payload: AclEvent }>("SELECT payload FROM knowledge.outbox WHERE workspace_id=$1 AND topic='acl.changed' AND payload->>'rootPageId'=$2 ORDER BY (payload->>'revision')::bigint DESC LIMIT 1", [scope.workspaceId, scope.pageId]);
+    const result = await admin.query<{ payload: AclEvent }>("SELECT payload FROM workspace.outbox WHERE workspace_id=$1 AND topic='acl.changed' AND payload->>'rootPageId'=$2 ORDER BY (payload->>'revision')::bigint DESC LIMIT 1", [scope.workspaceId, scope.pageId]);
     if (!result.rows[0]) throw new Error('Expected an ACL event');
     return result.rows[0].payload;
   }
   async function access(scope: PageScope, principals: Principal[], required: PermissionLevel = 'view') {
-    return withKnowledgeTenant(pool, scope.workspaceId, async (db) => ({
+    return withWorkspaceTenant(pool, scope.workspaceId, async (db) => ({
       pages: (await db.select({ id: page.id }).from(page).where(and(eq(page.id, scope.pageId), effectivePageAccessCondition({ workspaceId: scope.workspaceId, principals, required })))).length,
       blocks: (await db.select({ id: blockIndex.id }).from(blockIndex).where(and(eq(blockIndex.pageId, scope.pageId), indexedBlockAccessCondition({ workspaceId: scope.workspaceId, principals })))).length,
     }));
   }
   async function subjects(userId: string, workspaceId = alpha.id) {
-    return withKnowledgeTenant(pool, workspaceId, async (db) => {
+    return withWorkspaceTenant(pool, workspaceId, async (db) => {
       const [membership] = await db.select().from(member).where(and(eq(member.workspaceId, workspaceId), eq(member.userId, userId)));
       if (!membership) return [];
       const groups = await db.select().from(groupMember).where(and(eq(groupMember.workspaceId, workspaceId), eq(groupMember.userId, userId)));

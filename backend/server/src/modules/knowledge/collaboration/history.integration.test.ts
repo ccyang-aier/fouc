@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 import { eq } from 'drizzle-orm';
 import { knowledgeSchema } from '@fouc/shared/knowledge/schema';
-import { docState } from '../../../platform/database/knowledge/schema';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { docState } from '../../../platform/database/workspace/schema';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { createKnowledgeCheckpointRoutes } from '../api/checkpoint-routes';
 import { createPermissionsFixture, until, type PermissionTestActor, type PermissionsFixture } from '../permissions/permissions-test-fixture';
 import { PAGE_BODY_FRAGMENT, insertProseMirrorBlocks } from '../import-export/y-encoding';
@@ -65,7 +65,7 @@ describe('page history service and checkpoint routes (V03)', () => {
 
     const author = await connect(pageDocumentName(scope), bearer);
     insertProseMirrorBlocks(author.document.getXmlFragment(PAGE_BODY_FRAGMENT), 0, [paragraph('Version A'), paragraph('Version B')]);
-    await until(async () => Boolean(await withKnowledgeTenant(fixture.pool, scope.workspaceId, (db) =>
+    await until(async () => Boolean(await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) =>
       db.select({ state: docState.state }).from(docState).where(eq(docState.pageId, scope.pageId)).then((rows) => rows[0]?.state?.byteLength ?? 0 > 0))));
 
     // A named version pins the current state and attributes the editor.

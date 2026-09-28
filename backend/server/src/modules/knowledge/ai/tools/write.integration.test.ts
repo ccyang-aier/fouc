@@ -3,8 +3,8 @@ import { eq } from 'drizzle-orm';
 import { knowledgeSchema } from '@fouc/shared/knowledge/schema';
 import { collectSuggestions } from '@fouc/shared/knowledge/schema/suggestions';
 import { principal } from '@fouc/shared/knowledge/contracts';
-import { docState, page } from '../../../../platform/database/knowledge/schema';
-import { withKnowledgeTenant } from '../../../../platform/database/knowledge/tenant';
+import { docState, page } from '../../../../platform/database/workspace/schema';
+import { withWorkspaceTenant } from '../../../../platform/database/workspace/tenant';
 import { replaceAuthorizedPageAcl } from '../../permissions/mutations';
 import { createPermissionsFixture, until, type PermissionsFixture } from '../../permissions/permissions-test-fixture';
 import { createPageCollaborationListener } from '../../collaboration/page-collaboration-bun';
@@ -47,14 +47,14 @@ describe('agent suggestion write tools', () => {
     const blocks: import('@tiptap/pm/model').Node[] = [];
     document.forEach((block) => blocks.push(block));
     const encoded = prosemirrorDocToYDoc(document.type.schema.topNodeType.createChecked(null, blocks));
-    await withKnowledgeTenant(fixture.pool, scope.workspaceId, async (db) => {
+    await withWorkspaceTenant(fixture.pool, scope.workspaceId, async (db) => {
       await db.insert(docState).values({ ...scope, state: Buffer.from(encoded.state), stateVector: Buffer.from(encoded.stateVector) });
     });
     return encoded;
   }
 
   async function currentSuggestions(scope: { workspaceId: string; pageId: string }) {
-    const [row] = await withKnowledgeTenant(fixture.pool, scope.workspaceId, (db) => db.select({ state: docState.state }).from(docState).where(eq(docState.pageId, scope.pageId)));
+    const [row] = await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) => db.select({ state: docState.state }).from(docState).where(eq(docState.pageId, scope.pageId)));
     const document = row ? yStateToProseMirrorDoc(new Uint8Array(row.state), knowledgeSchema) : null;
     return document ? collectSuggestions(document) : [];
   }
@@ -62,7 +62,7 @@ describe('agent suggestion write tools', () => {
   test('insert proposes annotated blocks with fresh ids at the anchor', async () => {
     const { pages } = await fixture.tree({ defaultAccess: null });
     const scope = { workspaceId: fixture.alpha.id, pageId: pages[1].pageId };
-    await withKnowledgeTenant(fixture.pool, fixture.alpha.id, (db) => replaceAuthorizedPageAcl(db, { workspaceId: fixture.alpha.id, pageId: pages[0].pageId, grants: [{ principal: principal('user', fixture.reader.identity.userId), level: 'edit' }] }));
+    await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => replaceAuthorizedPageAcl(db, { workspaceId: fixture.alpha.id, pageId: pages[0].pageId, grants: [{ principal: principal('user', fixture.reader.identity.userId), level: 'edit' }] }));
     await seedBody(scope, '# 标题一\n\n第一段内容');
     await fixture.drain();
     const authority = await createTokenAuthority();
@@ -86,7 +86,7 @@ describe('agent suggestion write tools', () => {
   test('replace marks the original deleted and inserts alongside', async () => {
     const { pages } = await fixture.tree({ defaultAccess: null });
     const scope = { workspaceId: fixture.alpha.id, pageId: pages[2].pageId };
-    await withKnowledgeTenant(fixture.pool, fixture.alpha.id, (db) => replaceAuthorizedPageAcl(db, { workspaceId: fixture.alpha.id, pageId: pages[0].pageId, grants: [{ principal: principal('user', fixture.reader.identity.userId), level: 'edit' }] }));
+    await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => replaceAuthorizedPageAcl(db, { workspaceId: fixture.alpha.id, pageId: pages[0].pageId, grants: [{ principal: principal('user', fixture.reader.identity.userId), level: 'edit' }] }));
     await seedBody(scope, '旧标题\n\n旧正文');
     await fixture.drain();
     const authority = await createTokenAuthority();
@@ -107,7 +107,7 @@ describe('agent suggestion write tools', () => {
   test('view-level principals and foreign actors are rejected indistinguishably', async () => {
     const { pages } = await fixture.tree({ defaultAccess: null });
     const scope = { workspaceId: fixture.alpha.id, pageId: pages[3].pageId };
-    await withKnowledgeTenant(fixture.pool, fixture.alpha.id, (db) => replaceAuthorizedPageAcl(db, { workspaceId: fixture.alpha.id, pageId: pages[0].pageId, grants: [{ principal: principal('user', fixture.reader.identity.userId), level: 'view' }] }));
+    await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => replaceAuthorizedPageAcl(db, { workspaceId: fixture.alpha.id, pageId: pages[0].pageId, grants: [{ principal: principal('user', fixture.reader.identity.userId), level: 'view' }] }));
     await seedBody(scope, '仅可读正文');
     await fixture.drain();
     const viewer = await createTokenAuthority();
@@ -118,28 +118,28 @@ describe('agent suggestion write tools', () => {
 
   test('create_page and update_properties run through the tree service under authorization', async () => {
     const { pages, teamspace } = await fixture.tree({ defaultAccess: null });
-    await withKnowledgeTenant(fixture.pool, fixture.alpha.id, (db) => replaceAuthorizedPageAcl(db, { workspaceId: fixture.alpha.id, pageId: pages[0].pageId, grants: [{ principal: principal('user', fixture.reader.identity.userId), level: 'edit' }] }));
+    await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => replaceAuthorizedPageAcl(db, { workspaceId: fixture.alpha.id, pageId: pages[0].pageId, grants: [{ principal: principal('user', fixture.reader.identity.userId), level: 'edit' }] }));
     await fixture.drain();
     const authority = await createTokenAuthority();
 
     const created = await writeTool('create_page').execute({
       workspaceId: fixture.alpha.id, teamspaceId: teamspace.id, parentId: pages[0].pageId, title: '代理新建页', kind: 'doc',
     }, { ...context, authority }) as { pageId: string };
-    const [row] = await withKnowledgeTenant(fixture.pool, fixture.alpha.id, (db) => db.select().from(page).where(eq(page.id, created.pageId)));
+    const [row] = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => db.select().from(page).where(eq(page.id, created.pageId)));
     expect(row?.title).toBe('代理新建页');
     expect(row?.createdBy).toBe(authority.userId);
     // 建页围栏后子树 ACL 处于 pending;重算落地后才能对其实施属性写。
     await fixture.drain();
 
     await writeTool('update_properties').execute({ workspaceId: fixture.alpha.id, pageId: created.pageId, patch: { title: '更新后的标题' } }, { ...context, authority });
-    const [renamed] = await withKnowledgeTenant(fixture.pool, fixture.alpha.id, (db) => db.select().from(page).where(eq(page.id, created.pageId)));
+    const [renamed] = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => db.select().from(page).where(eq(page.id, created.pageId)));
     expect(renamed?.title).toBe('更新后的标题');
   });
 
   test('the headless fallback writes doc_state and a doc.changed event with the agent actor', async () => {
     const { pages } = await fixture.tree({ defaultAccess: null });
     const scope = { workspaceId: fixture.alpha.id, pageId: pages[1].pageId };
-    await withKnowledgeTenant(fixture.pool, fixture.alpha.id, (db) => replaceAuthorizedPageAcl(db, { workspaceId: fixture.alpha.id, pageId: pages[0].pageId, grants: [{ principal: principal('user', fixture.reader.identity.userId), level: 'edit' }] }));
+    await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => replaceAuthorizedPageAcl(db, { workspaceId: fixture.alpha.id, pageId: pages[0].pageId, grants: [{ principal: principal('user', fixture.reader.identity.userId), level: 'edit' }] }));
     await seedBody(scope, '无宿主正文');
     await fixture.drain();
     const authority = await createTokenAuthority();
@@ -147,7 +147,7 @@ describe('agent suggestion write tools', () => {
 
     await writeTool('delete').execute({ ...scope, blockId: await blockIdAt(scope, 0) }, headless);
     const events = await fixture.server.database.admin.query(
-      "SELECT payload FROM knowledge.outbox WHERE workspace_id=$1 AND topic='doc.changed' AND payload->>'pageId'=$2", [scope.workspaceId, scope.pageId]);
+      "SELECT payload FROM workspace.outbox WHERE workspace_id=$1 AND topic='doc.changed' AND payload->>'pageId'=$2", [scope.workspaceId, scope.pageId]);
     expect(events.rows.length).toBeGreaterThan(0);
     expect((events.rows.at(-1) as { payload: { actor: unknown } }).payload.actor).toEqual({ kind: 'agent', userId: authority.userId, taskId: TASK_ID });
     expect((await currentSuggestions(scope)).length).toBeGreaterThan(0);
@@ -156,7 +156,7 @@ describe('agent suggestion write tools', () => {
   test('invoke dispatches write tools by name with the same guard', async () => {
     const { pages } = await fixture.tree({ defaultAccess: null });
     const scope = { workspaceId: fixture.alpha.id, pageId: pages[2].pageId };
-    await withKnowledgeTenant(fixture.pool, fixture.alpha.id, (db) => replaceAuthorizedPageAcl(db, { workspaceId: fixture.alpha.id, pageId: pages[0].pageId, grants: [{ principal: principal('user', fixture.reader.identity.userId), level: 'edit' }] }));
+    await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => replaceAuthorizedPageAcl(db, { workspaceId: fixture.alpha.id, pageId: pages[0].pageId, grants: [{ principal: principal('user', fixture.reader.identity.userId), level: 'edit' }] }));
     await seedBody(scope, '分发正文');
     await fixture.drain();
     const bearer = await fixture.createToken(fixture.reader, ['read']);
@@ -172,7 +172,7 @@ describe('agent suggestion write tools', () => {
     return fixture.authenticator.authenticate(new Request(`${fixture.server.origin}/`, { headers: { authorization: bearer, origin: fixture.server.webOrigin } }), fixture.alpha.id, ['read', 'write']);
   }
   async function currentDocument(scope: { workspaceId: string; pageId: string }) {
-    const [row] = await withKnowledgeTenant(fixture.pool, scope.workspaceId, (db) => db.select({ state: docState.state }).from(docState).where(eq(docState.pageId, scope.pageId)));
+    const [row] = await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) => db.select({ state: docState.state }).from(docState).where(eq(docState.pageId, scope.pageId)));
     return yStateToProseMirrorDoc(new Uint8Array(row.state), knowledgeSchema)!;
   }
   async function blockIdAt(scope: { workspaceId: string; pageId: string }, index: number): Promise<string> {

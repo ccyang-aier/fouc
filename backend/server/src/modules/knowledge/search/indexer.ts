@@ -7,9 +7,9 @@ import type { PageScope } from '@fouc/shared/knowledge/contracts';
 import { createMarkdownPipeline } from '@fouc/shared/knowledge/markdown';
 import { isKnowledgeBlock, planBlockIdRepairs } from '@fouc/shared/knowledge/schema';
 import type { BlockIdRepair } from '@fouc/shared/knowledge/schema';
-import { blockIndex, docState, page } from '../../../platform/database/knowledge/schema';
-import type { KnowledgeTenantTransaction } from '../../../platform/database/knowledge/tenant';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { blockIndex, docState, page } from '../../../platform/database/workspace/schema';
+import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { withPermissionIndexWrite } from '../permissions/projection';
 import type { KnowledgeConsumer } from '../workers/types';
 import { PAGE_BODY_FRAGMENT, refreshPageBacklinks } from './backlinks';
@@ -179,7 +179,7 @@ function projectBlocks(document: KnowledgeNode, pageTitlePath: readonly string[]
 }
 
 /** 从页面自身沿 parentId 上溯收集标题（去空），构成短块的页面标题路径。 */
-async function readPageTitlePath(db: KnowledgeTenantTransaction, scope: PageScope): Promise<string[]> {
+async function readPageTitlePath(db: WorkspaceTenantTransaction, scope: PageScope): Promise<string[]> {
   const titles: string[] = [];
   const seen = new Set<string>();
   let cursor: string | null = scope.pageId;
@@ -215,7 +215,7 @@ export interface PageBlockIndexRefresh {
  * block_index 产生任何写。修复改变了权威状态时同事务重算反链，使两个
  * doc.changed 消费者的任意执行顺序都收敛到修复后的同一结果。
  */
-export async function refreshPageBlockIndex(db: KnowledgeTenantTransaction, scope: PageScope, signal?: AbortSignal): Promise<PageBlockIndexRefresh> {
+export async function refreshPageBlockIndex(db: WorkspaceTenantTransaction, scope: PageScope, signal?: AbortSignal): Promise<PageBlockIndexRefresh> {
   if (!pageScopeSchema.safeParse(scope).success) throw new TypeError('Invalid page scope');
   signal?.throwIfAborted();
   const [stored] = await db.select({ state: docState.state }).from(docState)
@@ -284,14 +284,14 @@ export function createBlockIndexConsumer(pool: Pool): KnowledgeConsumer {
     topic: 'doc.changed',
     async handle(event, context) {
       if (event.topic !== 'doc.changed') throw new TypeError('Unexpected event topic');
-      await withKnowledgeTenant(pool, event.workspaceId, (db) =>
+      await withWorkspaceTenant(pool, event.workspaceId, (db) =>
         refreshPageBlockIndex(db, { workspaceId: event.workspaceId, pageId: event.pageId }, context.signal));
     },
   };
 }
 
 /** 测试与验收脚本使用的行级观察口；生产检索走 H03 的权限过滤查询。 */
-export async function readPageBlockIndexRows(db: KnowledgeTenantTransaction, scope: PageScope) {
+export async function readPageBlockIndexRows(db: WorkspaceTenantTransaction, scope: PageScope) {
   if (!pageScopeSchema.safeParse(scope).success) throw new TypeError('Invalid page scope');
   return db.select({
     blockId: blockIndex.blockId, blockType: blockIndex.blockType, contentMd: blockIndex.contentMd,

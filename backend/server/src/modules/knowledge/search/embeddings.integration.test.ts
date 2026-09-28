@@ -7,10 +7,10 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import * as Y from 'yjs';
 import type { OutboxEvent } from '@fouc/shared/knowledge/contracts';
-import * as tables from '../../../platform/database/knowledge/schema';
-import { createTenantTestDatabase } from '../../../platform/database/knowledge/tenant-test-database';
-import type { TenantTestDatabase } from '../../../platform/database/knowledge/tenant-test-database';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import * as tables from '../../../platform/database/workspace/schema';
+import { createTenantTestDatabase } from '../../../platform/database/workspace/tenant-test-database';
+import type { TenantTestDatabase } from '../../../platform/database/workspace/tenant-test-database';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { createModelGateway } from '../ai/gateway';
 import type { GatewayFetch, ModelGateway } from '../ai/gateway';
 import { createAiUsageRecorder } from '../observability';
@@ -72,7 +72,7 @@ describe('block embedding generation and model switch', () => {
   /** The same atomic commit onStoreDocument performs: state, vector, doc.changed. */
   async function writeBody(node: { workspaceId: string; pageId: string }, blocks: readonly DraftBlock[]) {
     const { state, stateVector } = encodeBody(blocks);
-    await withKnowledgeTenant(pool, node.workspaceId, async (db) => {
+    await withWorkspaceTenant(pool, node.workspaceId, async (db) => {
       await db.insert(tables.docState).values({ workspaceId: node.workspaceId, pageId: node.pageId, state, stateVector })
         .onConflictDoUpdate({ target: [tables.docState.workspaceId, tables.docState.pageId], set: { state, stateVector, updatedAt: sql`clock_timestamp()` } });
       const event: OutboxEvent = { workspaceId: node.workspaceId, topic: 'doc.changed', pageId: node.pageId, actor: { kind: 'human', userId }, occurredAt: new Date().toISOString() };
@@ -85,7 +85,7 @@ describe('block embedding generation and model switch', () => {
     const client = await database.admin.connect();
     try {
       await client.query('BEGIN');
-      const db = drizzle(client, { schema: tables.knowledgeSchema });
+      const db = drizzle(client, { schema: tables.workspaceTenantSchema });
       await db.insert(tables.workspace).values({ id: workspaceId, name: 'Embeddings Workspace', kind: 'team' });
       await db.insert(tables.member).values({ workspaceId, userId, role: 'owner' });
       const knowledgeBaseId = randomUUID();
@@ -112,7 +112,7 @@ describe('block embedding generation and model switch', () => {
       SELECT block_id, embed_model, embed_dimensions, embedded_hash, content_hash,
              vector_dims(embedding) AS dims, embedding::text AS vector, updated_at::text AS updated_at,
              title_path, content_md
-      FROM knowledge.block_index WHERE workspace_id=$1 AND page_id=$2 ORDER BY block_id`,
+      FROM workspace.block_index WHERE workspace_id=$1 AND page_id=$2 ORDER BY block_id`,
     [node.workspaceId, node.pageId])).rows;
   }
 
@@ -131,13 +131,13 @@ describe('block embedding generation and model switch', () => {
 
   async function markerOf(workspaceId: string) {
     const result = await database.admin.query<{ embed_model: string; embed_dimensions: number }>(
-      'SELECT embed_model, embed_dimensions FROM knowledge.block_embedding_model WHERE workspace_id=$1', [workspaceId]);
+      'SELECT embed_model, embed_dimensions FROM workspace.block_embedding_model WHERE workspace_id=$1', [workspaceId]);
     return result.rows[0] ? { model: result.rows[0].embed_model, dimensions: result.rows[0].embed_dimensions } : null;
   }
 
   async function stagingCount(workspaceId: string, model?: string) {
     const result = await database.admin.query<{ count: number }>(
-      'SELECT count(*)::int AS count FROM knowledge.block_embedding_staging WHERE workspace_id=$1 AND ($2::text IS NULL OR embed_model=$2)', [workspaceId, model ?? null]);
+      'SELECT count(*)::int AS count FROM workspace.block_embedding_staging WHERE workspace_id=$1 AND ($2::text IS NULL OR embed_model=$2)', [workspaceId, model ?? null]);
     return result.rows[0].count;
   }
 
@@ -214,7 +214,7 @@ describe('block embedding generation and model switch', () => {
     await initializeKnowledgeJobs(database.admin, pool);
     const client = await database.admin.connect();
     try {
-      const db = drizzle(client, { schema: tables.knowledgeSchema });
+      const db = drizzle(client, { schema: tables.workspaceTenantSchema });
       await db.insert(authUser).values({ id: userId, name: 'Embeddings Owner', email: `${userId}@embeddings.test` });
     } finally {
       client.release();
@@ -224,7 +224,7 @@ describe('block embedding generation and model switch', () => {
   beforeEach(async () => {
     for (const runner of runners) await runner.close();
     runners.clear();
-    await database.admin.query('DELETE FROM knowledge_jobs._private_jobs; DELETE FROM knowledge.outbox');
+    await database.admin.query('DELETE FROM knowledge_jobs._private_jobs; DELETE FROM workspace.outbox');
   });
 
   afterAll(async () => {
@@ -267,7 +267,7 @@ describe('block embedding generation and model switch', () => {
     expect(new Set(rows.map((row) => row.vector)).size).toBe(4);
     expect(await markerOf(node.workspaceId)).toEqual({ model: 'all-minilm', dimensions: 384 });
     const usageRows = (await database.admin.query<{ operation: string; status: string; model: string; input_tokens: number | null }>(
-      "SELECT operation, status, model, input_tokens FROM knowledge.ai_usage WHERE workspace_id=$1 AND operation='embed'", [node.workspaceId])).rows;
+      "SELECT operation, status, model, input_tokens FROM workspace.ai_usage WHERE workspace_id=$1 AND operation='embed'", [node.workspaceId])).rows;
     expect(usageRows).toHaveLength(1);
     expect(usageRows[0]).toMatchObject({ status: 'success', model: 'all-minilm' });
     expect(usageRows[0].input_tokens).toBeGreaterThan(0);
@@ -310,7 +310,7 @@ describe('block embedding generation and model switch', () => {
     await writeBody(node, initial);
 
     // Before the first rebuild the query side has no active model to filter by.
-    expect(await withKnowledgeTenant(pool, node.workspaceId, (db) => readActiveEmbeddingModel(db, node.workspaceId))).toBeNull();
+    expect(await withWorkspaceTenant(pool, node.workspaceId, (db) => readActiveEmbeddingModel(db, node.workspaceId))).toBeNull();
     const alpha = syntheticEmbedGateway('alpha-embed', 8);
     // The queue indexes the page first; with no active model yet nothing is embedded.
     await process([createBlockEmbeddingConsumer({ pool, gateway: alpha.gateway, binding: alpha.binding })]);
@@ -340,7 +340,7 @@ describe('block embedding generation and model switch', () => {
         if (mutateOnEmbed) {
           mutateOnEmbed = false;
           await database.admin.query(
-            `UPDATE knowledge.block_index SET content_md=$3, content_hash=$4, updated_at=clock_timestamp()
+            `UPDATE workspace.block_index SET content_md=$3, content_hash=$4, updated_at=clock_timestamp()
              WHERE workspace_id=$1 AND page_id=$2 AND block_id='b003'`,
             [node.workspaceId, node.pageId, mutated, sha256(mutated)],
           );

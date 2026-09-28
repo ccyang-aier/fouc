@@ -19,13 +19,18 @@ import { ProjectOutputsCanvas } from "./project-outputs-canvas"
 import { ProjectWorkCanvas } from "./project-work-canvas"
 import { workObjectDetails } from "./project-workobject-detail-data"
 import { WorkObjectDetailCanvas } from "./project-workobject-detail"
+import { demonstrationProjectId } from "./project-resources"
 
 export function ProjectHomeCanvas({
+  projectId,
+  projectName,
   favorited,
   onFavoriteChange,
   managementPanel,
   onManagementPanelChange,
 }: {
+  projectId: string
+  projectName: string
   favorited: boolean
   onFavoriteChange: (favorited: boolean) => void
   managementPanel: ProjectManagementPanelId | null
@@ -36,6 +41,7 @@ export function ProjectHomeCanvas({
   const [workPanelOpen, setWorkPanelOpen] = useState(true)
   const [outputsPanelOpen, setOutputsPanelOpen] = useState(true)
   const [workObjectDetailId, setWorkObjectDetailId] = useState<string | null>(null)
+  if (projectId !== demonstrationProjectId) return <section aria-label={`${projectName}项目`} className="flex h-full flex-col bg-panel px-8 py-9"><p className="text-[11px] text-[var(--accent-ink)]">项目工作台</p><h1 className="mt-2 text-[26px] font-semibold tracking-[-0.04em]">{projectName}</h1><div className="mt-10 flex min-h-[260px] items-center justify-center rounded-[12px] border border-dashed border-[var(--line-strong)] bg-[var(--surface-subtle)] text-[12px] text-[var(--muted-strong)]">这个项目还没有工作项。项目数据只属于当前工作空间。</div></section>
 
   // 工作对象详情页接管整个项目区域，面包屑可返回项目空间
   const workObjectDetail = workObjectDetailId ? workObjectDetails[workObjectDetailId] : null

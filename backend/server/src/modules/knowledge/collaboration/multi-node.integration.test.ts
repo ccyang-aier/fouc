@@ -4,8 +4,8 @@ import * as Y from 'yjs';
 import { principal } from '@fouc/shared/knowledge/contracts';
 import { Redis as RedisBroadcastExtension } from '@hocuspocus/extension-redis';
 import RedisClient from 'ioredis';
-import { docState } from '../../../platform/database/knowledge/schema';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { docState } from '../../../platform/database/workspace/schema';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { replaceAuthorizedPageAcl } from '../permissions/mutations';
 import { createPermissionsFixture, until, type PermissionsFixture } from '../permissions/permissions-test-fixture';
 import { pageDocumentName } from '@fouc/shared/knowledge/collaboration';
@@ -47,13 +47,13 @@ describe('redis multi-node broadcast', () => {
   });
 
   async function grant(node: { workspaceId: string; pageId: string }, grants: { principal: string; level: 'view' | 'comment' | 'edit' | 'full' }[]) {
-    return withKnowledgeTenant(fixture.pool, node.workspaceId, (db) => replaceAuthorizedPageAcl(db, { workspaceId: node.workspaceId, pageId: node.pageId, grants }));
+    return withWorkspaceTenant(fixture.pool, node.workspaceId, (db) => replaceAuthorizedPageAcl(db, { workspaceId: node.workspaceId, pageId: node.pageId, grants }));
   }
   function client(port: number, name: string, cookie = fixture.reader.cookie): CollaborationClient {
     return connectCollaborationClient({ port, origin: fixture.server.webOrigin, name, authorization: cookie });
   }
   async function persistedBody(pageId: string): Promise<string | undefined> {
-    const rows = await withKnowledgeTenant(fixture.pool, fixture.alpha.id, (db) => db.select({ state: docState.state })
+    const rows = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => db.select({ state: docState.state })
       .from(docState).where(and(eq(docState.workspaceId, fixture.alpha.id), eq(docState.pageId, pageId))));
     if (!rows[0]) return undefined;
     const decoded = new Y.Doc();
@@ -62,7 +62,7 @@ describe('redis multi-node broadcast', () => {
   }
   async function docChangedEvents(pageId: string) {
     const result = await fixture.server.database.admin.query(
-      "SELECT payload FROM knowledge.outbox WHERE workspace_id=$1 AND topic='doc.changed' AND payload->>'pageId'=$2", [fixture.alpha.id, pageId]);
+      "SELECT payload FROM workspace.outbox WHERE workspace_id=$1 AND topic='doc.changed' AND payload->>'pageId'=$2", [fixture.alpha.id, pageId]);
     return result.rows as { payload: { actor: { kind: string; userId: string } } }[];
   }
 

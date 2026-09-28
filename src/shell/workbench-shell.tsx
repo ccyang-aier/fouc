@@ -1,7 +1,7 @@
 "use client"
 
 import { useWorkbenchView } from "./workbench-view"
-import { useEffect, useRef, useState, useSyncExternalStore } from "react"
+import { useEffect, useRef, useState } from "react"
 import { AnimatePresence, MotionConfig, motion, type Variants } from "motion/react"
 
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -42,55 +42,21 @@ import { CommunityCanvas } from "@/features/community/community-canvas"
 import { ConnectorsCanvas } from "@/features/connectors/connectors-canvas"
 import { KnowledgePage } from "@/features/knowledge/knowledge-page"
 import { NavigationSidebar, type WorkbenchView } from "./navigation-sidebar"
-import type { ProjectManagementPanelId } from "@/features/project/project-management-model"
+import { useProjectResources } from "@/features/project/project-resources"
 import { ProjectHomeCanvas } from "@/features/project/project-home-canvas"
+import { ProjectIndexCanvas } from "@/features/project/project-index-canvas"
 import "./sidebar-material.css"
 import { SettingsCanvas } from "@/features/settings/settings-canvas"
 import { SystemBar } from "./system-bar"
 import { WorkspaceRail } from "./workspace-rail"
 import { useWorkspace } from "@/features/workspaces/workspace-provider"
 
-const PROJECT_FAVORITE_STORAGE_KEY = "fouc.project.fouc-desktop.favorite"
-const PROJECT_FAVORITE_EVENT = "fouc-project-favorite-change"
-let fallbackProjectFavorite = false
-
-function subscribeProjectFavorite(onStoreChange: () => void) {
-  window.addEventListener("storage", onStoreChange)
-  window.addEventListener(PROJECT_FAVORITE_EVENT, onStoreChange)
-
-  return () => {
-    window.removeEventListener("storage", onStoreChange)
-    window.removeEventListener(PROJECT_FAVORITE_EVENT, onStoreChange)
-  }
-}
-
-function readProjectFavorite() {
-  try {
-    return window.localStorage.getItem(PROJECT_FAVORITE_STORAGE_KEY) === "true"
-  } catch {
-    return fallbackProjectFavorite
-  }
-}
-
-function writeProjectFavorite(favorited: boolean) {
-  fallbackProjectFavorite = favorited
-
-  try {
-    window.localStorage.setItem(PROJECT_FAVORITE_STORAGE_KEY, String(favorited))
-  } catch {
-    // localStorage 不可用时回退到当前会话状态。
-  }
-
-  window.dispatchEvent(new Event(PROJECT_FAVORITE_EVENT))
-}
-
 export function WorkbenchShell() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [view, setView] = useWorkbenchView()
   const { spaces, activeSpace, updateSpaces, selectWorkspace, createWorkspace } = useWorkspace()
-  // 项目管理面板状态由壳层持有：左侧项目菜单与项目画布共享同一开合来源
-  const [managementPanel, setManagementPanel] = useState<ProjectManagementPanelId | null>(null)
-  const projectFavorited = useSyncExternalStore(subscribeProjectFavorite, readProjectFavorite, () => false)
+  const { selectedProject, favorites, managementPanel, setManagementPanel, setFavorite } = useProjectResources()
+  const projectFavorited = selectedProject !== null && favorites.includes(selectedProject.id)
   // 应用面板根：桌面端作为自绘外框的内层与弹层宿主
   const frameRef = useRef<HTMLDivElement>(null)
 
@@ -111,10 +77,6 @@ export function WorkbenchShell() {
       setOverlayRoot(null)
     }
   }, [])
-
-  function updateProjectFavorite(favorited: boolean) {
-    writeProjectFavorite(favorited)
-  }
 
   function changeView(nextView: WorkbenchView) {
     if (nextView !== "projects") setManagementPanel(null)
@@ -157,10 +119,6 @@ export function WorkbenchShell() {
                     }}
                     view={view}
                     onViewChange={changeView}
-                    projectFavorited={projectFavorited}
-                    onProjectFavoriteChange={updateProjectFavorite}
-                    managementPanel={managementPanel}
-                    onManagementPanelChange={setManagementPanel}
                   />
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col">
@@ -180,20 +138,22 @@ export function WorkbenchShell() {
                           {view === "home" ? (
                             <HomeCanvas />
                           ) : view === "project-home" ? (
-                            <div className="h-full bg-panel" aria-label="项目首页" />
+                            <ProjectIndexCanvas onOpenProject={() => changeView("projects")} />
                           ) : view === "projects" ? (
-                            <ProjectHomeCanvas
+                            selectedProject ? <ProjectHomeCanvas key={`${activeSpace.id}:${selectedProject.id}`}
+                              projectId={selectedProject.id}
+                              projectName={selectedProject.name}
                               favorited={projectFavorited}
-                              onFavoriteChange={updateProjectFavorite}
+                              onFavoriteChange={(favorite) => setFavorite(selectedProject.id, favorite)}
                               managementPanel={managementPanel}
                               onManagementPanelChange={setManagementPanel}
-                            />
+                            /> : <ProjectIndexCanvas onOpenProject={() => changeView("projects")} />
                           ) : view === "community" ? (
                             <CommunityCanvas />
                           ) : view === "automation" ? (
-                            <AutomationCanvas />
+                            <AutomationCanvas key={activeSpace.id} workspaceId={activeSpace.id} workspaceName={activeSpace.label} />
                           ) : view === "connectors" ? (
-                            <ConnectorsCanvas onWorkbenchFocus={() => setSidebarCollapsed(true)} />
+                            <ConnectorsCanvas key={activeSpace.id} onWorkbenchFocus={() => setSidebarCollapsed(true)} />
                           ) : view === "knowledge" ? (
                             <KnowledgePage key={activeSpace.id} onOpenSettings={() => changeView("settings")} />
                           ) : (

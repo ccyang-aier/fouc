@@ -1,8 +1,8 @@
 import { and, eq, isNull, sql } from 'drizzle-orm';
 import { pageScopeSchema, permissionLevelSchema, principalSchema, workspaceScopeSchema } from '@fouc/shared/knowledge/contracts';
 import type { EffectivePermissions, PageScope, PermissionLevel, Principal } from '@fouc/shared/knowledge/contracts';
-import { blockIndex, page, pageEffectiveAcl } from '../../../platform/database/knowledge/schema';
-import type { KnowledgeTenantTransaction } from '../../../platform/database/knowledge/tenant';
+import { blockIndex, page, pageEffectiveAcl } from '../../../platform/database/workspace/schema';
+import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
 import { KnowledgePermissionError } from './errors';
 
 export type MaterializedPagePermissions =
@@ -11,7 +11,7 @@ export type MaterializedPagePermissions =
   | { status: 'unavailable' };
 
 /** Internal input to P03, not an access decision or a page-existence HTTP oracle. */
-export async function readMaterializedPagePermissions(db: KnowledgeTenantTransaction, scope: PageScope): Promise<MaterializedPagePermissions> {
+export async function readMaterializedPagePermissions(db: WorkspaceTenantTransaction, scope: PageScope): Promise<MaterializedPagePermissions> {
   if (!pageScopeSchema.safeParse(scope).success) throw new KnowledgePermissionError('INVALID_PERMISSION_INPUT');
   const [record] = await db.select({ revision: page.aclRevision, effective: pageEffectiveAcl }).from(page)
     .leftJoin(pageEffectiveAcl, and(eq(pageEffectiveAcl.workspaceId, page.workspaceId), eq(pageEffectiveAcl.pageId, page.id)))

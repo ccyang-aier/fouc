@@ -1,7 +1,7 @@
 import type { Pool } from 'pg';
 import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { getFoucIdentity } from '../../../platform/identity/identity';
 import { activeSessionMember } from '../access/session-access';
 import {
@@ -164,7 +164,7 @@ export function createKnowledgeMcpAuthorizationRoutes(options: KnowledgeMcpOAuth
     const identity = await getFoucIdentity(options.auth, request.headers);
     if (!identity) return 'signin';
     try {
-      await withKnowledgeTenant(options.pool, workspaceId, (db) => activeSessionMember(db, workspaceId, identity));
+      await withWorkspaceTenant(options.pool, workspaceId, (db) => activeSessionMember(db, workspaceId, identity));
       return identity;
     } catch (error) {
       if (error instanceof KnowledgeAccessError) return 'forbidden';

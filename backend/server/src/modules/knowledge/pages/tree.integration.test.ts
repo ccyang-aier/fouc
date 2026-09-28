@@ -4,12 +4,12 @@ import { and, eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import type { OutboxEvent, PageScope, Principal } from '@fouc/shared/knowledge/contracts';
-import { knowledgeBase, knowledgeSchema, member, page, teamspace, workspace } from '../../../platform/database/knowledge/schema';
+import { knowledgeBase, workspaceTenantSchema, member, page, teamspace, workspace } from '../../../platform/database/workspace/schema';
 import { authUser } from '../../../platform/database/identity/schema';
-import { createTenantTestDatabase } from '../../../platform/database/knowledge/tenant-test-database';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
-import type { KnowledgeTenantTransaction } from '../../../platform/database/knowledge/tenant';
-import type { TenantTestDatabase } from '../../../platform/database/knowledge/tenant-test-database';
+import { createTenantTestDatabase } from '../../../platform/database/workspace/tenant-test-database';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
+import type { TenantTestDatabase } from '../../../platform/database/workspace/tenant-test-database';
 import { effectivePageAccessCondition, readMaterializedPagePermissions } from '../permissions/queries';
 import { rebuildPermissionSubtree } from '../permissions/rebuild';
 import { initializeKnowledgeJobs } from '../workers/initialize';
@@ -46,8 +46,8 @@ async function rejects(operation: () => Promise<unknown>, code: PageErrorCode) {
   expect((failure as KnowledgePageError).code).toBe(code);
 }
 
-const tenant = <T>(operation: (db: KnowledgeTenantTransaction) => Promise<T>, pool?: Pool) =>
-  withKnowledgeTenant(pool ?? database.pool, alpha.workspaceId, operation);
+const tenant = <T>(operation: (db: WorkspaceTenantTransaction) => Promise<T>, pool?: Pool) =>
+  withWorkspaceTenant(pool ?? database.pool, alpha.workspaceId, operation);
 
 async function create(seed: { id?: string; parentId?: string | null; teamspaceId?: string; afterPageId?: string | null; title?: string } = {}) {
   return tenant((db) => createAuthorizedPage(db, {
@@ -78,27 +78,27 @@ async function rows<T extends Record<string, unknown>>(query: string, values: un
 }
 
 const pageRows = () => rows<PageRow>(
-  'SELECT id::text, parent_id::text AS parent_id, path::text AS path, position, acl_revision::text AS revision, deleted_at::text AS deleted FROM knowledge.page WHERE workspace_id=$1 ORDER BY id',
+  'SELECT id::text, parent_id::text AS parent_id, path::text AS path, position, acl_revision::text AS revision, deleted_at::text AS deleted FROM workspace.page WHERE workspace_id=$1 ORDER BY id',
   [alpha.workspaceId],
 );
 
 async function childOrder(parentId: string | null) {
   return rows<{ id: string; position: string }>(
-    `SELECT id::text, position FROM knowledge.page WHERE workspace_id=$1 AND parent_id ${parentId === null ? 'IS NULL' : '= $2'} AND deleted_at IS NULL ORDER BY position, id`,
+    `SELECT id::text, position FROM workspace.page WHERE workspace_id=$1 AND parent_id ${parentId === null ? 'IS NULL' : '= $2'} AND deleted_at IS NULL ORDER BY position, id`,
     parentId === null ? [alpha.workspaceId] : [alpha.workspaceId, parentId],
   );
 }
 
 async function subtree(scope: PageScope) {
   return rows<{ id: string; path: string; depth: string }>(
-    `SELECT id::text, path::text AS path, nlevel(path)::text AS depth FROM knowledge.page WHERE workspace_id=$1 AND path <@ (SELECT path FROM knowledge.page WHERE workspace_id=$1 AND id=$2)::ltree`,
+    `SELECT id::text, path::text AS path, nlevel(path)::text AS depth FROM workspace.page WHERE workspace_id=$1 AND path <@ (SELECT path FROM workspace.page WHERE workspace_id=$1 AND id=$2)::ltree`,
     [scope.workspaceId, scope.pageId],
   );
 }
 
 async function latestAclEvent(scope: PageScope): Promise<AclEvent> {
   const result = await rows<{ payload: AclEvent }>(
-    "SELECT payload FROM knowledge.outbox WHERE workspace_id=$1 AND topic='acl.changed' AND payload->>'rootPageId'=$2 ORDER BY (payload->>'revision')::bigint DESC LIMIT 1",
+    "SELECT payload FROM workspace.outbox WHERE workspace_id=$1 AND topic='acl.changed' AND payload->>'rootPageId'=$2 ORDER BY (payload->>'revision')::bigint DESC LIMIT 1",
     [scope.workspaceId, scope.pageId],
   );
   if (!result[0]) throw new Error('Expected an acl.changed event');
@@ -124,7 +124,7 @@ beforeAll(async () => {
   const client = await database.admin.connect();
   try {
     await client.query('BEGIN');
-    const db = drizzle(client, { schema: knowledgeSchema });
+    const db = drizzle(client, { schema: workspaceTenantSchema });
     for (const [workspaceId, userId, name] of [[alpha.workspaceId, alpha.userId, 'Tree Alpha'], [beta.workspaceId, beta.userId, 'Tree Beta']] as const) {
       await db.insert(authUser).values({ id: userId, name, email: `${userId}@tree.test` });
       await db.insert(workspace).values({ id: workspaceId, name, kind: 'team' });
@@ -158,7 +158,7 @@ describe('T01 offline UUID creation and idempotency', () => {
     expect(created).toMatchObject({ pageId: id, parentId: null, teamspaceId: alpha.main, path: label(id) });
     expect(created.position).toMatch(canonical);
     const [row] = await rows<{ position: string; path: string; created_by: string; title: string }>(
-      'SELECT position, path::text AS path, created_by::text AS created_by, title FROM knowledge.page WHERE workspace_id=$1 AND id=$2', [alpha.workspaceId, id]);
+      'SELECT position, path::text AS path, created_by::text AS created_by, title FROM workspace.page WHERE workspace_id=$1 AND id=$2', [alpha.workspaceId, id]);
     expect(row).toMatchObject({ path: label(id), created_by: alpha.userId, title: '离线页面' });
   });
 
@@ -171,8 +171,8 @@ describe('T01 offline UUID creation and idempotency', () => {
     expect(replay).toEqual(first);
     expect(conflict.pageId).toBe(id);
     const [row] = await rows<{ title: string; parent_id: string | null }>(
-      'SELECT title, parent_id::text AS parent_id FROM knowledge.page WHERE workspace_id=$1 AND id=$2', [alpha.workspaceId, id]);
-    const [count] = await rows<{ n: string }>('SELECT count(*)::text AS n FROM knowledge.page WHERE workspace_id=$1 AND id=$2', [alpha.workspaceId, id]);
+      'SELECT title, parent_id::text AS parent_id FROM workspace.page WHERE workspace_id=$1 AND id=$2', [alpha.workspaceId, id]);
+    const [count] = await rows<{ n: string }>('SELECT count(*)::text AS n FROM workspace.page WHERE workspace_id=$1 AND id=$2', [alpha.workspaceId, id]);
     expect(row).toEqual({ title: '第一次', parent_id: null });
     expect(count!.n).toBe('1');
   });
@@ -227,13 +227,13 @@ describe('T01 fractional sibling ordering', () => {
       { workspaceId: alpha.workspaceId, id: badOne, teamspaceId: alpha.main, parentId: parent.pageId, position: `ghflao${'1'.repeat(250)}`, path: `${parent.path}.${label(badOne)}`, createdBy: alpha.userId },
       { workspaceId: alpha.workspaceId, id: badTwo, teamspaceId: alpha.main, parentId: parent.pageId, position: `ghflao${'1'.repeat(249)}2`, path: `${parent.path}.${label(badTwo)}`, createdBy: alpha.userId },
     ]));
-    const outsiderBefore = await rows<{ id: string; position: string }>('SELECT id::text, position FROM knowledge.page WHERE workspace_id=$1 AND id=$2', [alpha.workspaceId, outsider.pageId]);
+    const outsiderBefore = await rows<{ id: string; position: string }>('SELECT id::text, position FROM workspace.page WHERE workspace_id=$1 AND id=$2', [alpha.workspaceId, outsider.pageId]);
     const mover = await create({ parentId: parent.pageId, afterPageId: badOne });
     const stored = await childOrder(parent.pageId);
     expect(stored.map((row) => row.id)).toEqual([legacy, badOne, mover.pageId, badTwo]);
     expect(stored.every((row) => canonical.test(row.position) && row.position.length <= 256)).toBe(true);
     expect(new Set(stored.map((row) => row.position)).size).toBe(4);
-    expect(await rows<{ id: string; position: string }>('SELECT id::text, position FROM knowledge.page WHERE workspace_id=$1 AND id=$2', [alpha.workspaceId, outsider.pageId])).toEqual(outsiderBefore);
+    expect(await rows<{ id: string; position: string }>('SELECT id::text, position FROM workspace.page WHERE workspace_id=$1 AND id=$2', [alpha.workspaceId, outsider.pageId])).toEqual(outsiderBefore);
   });
 });
 
@@ -246,7 +246,7 @@ describe('T01 ltree subtree moves', () => {
     const grand = await create({ parentId: childOne.pageId });
     const target = await create();
     const revisions = new Map((await rows<{ id: string; revision: string }>(
-      'SELECT id::text, acl_revision::text AS revision FROM knowledge.page WHERE workspace_id=$1 AND path <@ $2::ltree', [alpha.workspaceId, node.path])).map((row) => [row.id, Number(row.revision)]));
+      'SELECT id::text, acl_revision::text AS revision FROM workspace.page WHERE workspace_id=$1 AND path <@ $2::ltree', [alpha.workspaceId, node.path])).map((row) => [row.id, Number(row.revision)]));
 
     const moved = await move({ pageId: node.pageId, parentId: target.pageId });
 
@@ -264,7 +264,7 @@ describe('T01 ltree subtree moves', () => {
       expect(row.depth).toBe(String((row.path.match(/\./g) ?? []).length + 1));
     }
     const after = new Map((await rows<{ id: string; revision: string }>(
-      'SELECT id::text, acl_revision::text AS revision FROM knowledge.page WHERE workspace_id=$1 AND path <@ $2::ltree', [alpha.workspaceId, moved.path])).map((row) => [row.id, Number(row.revision)]));
+      'SELECT id::text, acl_revision::text AS revision FROM workspace.page WHERE workspace_id=$1 AND path <@ $2::ltree', [alpha.workspaceId, moved.path])).map((row) => [row.id, Number(row.revision)]));
     for (const [id, revision] of after) expect(revision).toBe(revisions.get(id)! + 1);
     const event = await latestAclEvent({ workspaceId: alpha.workspaceId, pageId: node.pageId });
     expect(event).toMatchObject({ rootPageId: node.pageId, revision: after.get(node.pageId)! });
@@ -277,9 +277,9 @@ describe('T01 ltree subtree moves', () => {
     const promoted = await move({ pageId: node.pageId, parentId: null });
     expect(promoted).toMatchObject({ parentId: null, path: label(node.pageId) });
     const [level] = await rows<{ depth: string; parent_id: string | null }>(
-      'SELECT nlevel(path)::text AS depth, parent_id::text AS parent_id FROM knowledge.page WHERE workspace_id=$1 AND id=$2', [alpha.workspaceId, node.pageId]);
+      'SELECT nlevel(path)::text AS depth, parent_id::text AS parent_id FROM workspace.page WHERE workspace_id=$1 AND id=$2', [alpha.workspaceId, node.pageId]);
     expect(level).toEqual({ depth: '1', parent_id: null });
-    const [childRow] = await rows<{ path: string }>('SELECT path::text AS path FROM knowledge.page WHERE workspace_id=$1 AND id=$2', [alpha.workspaceId, child.pageId]);
+    const [childRow] = await rows<{ path: string }>('SELECT path::text AS path FROM workspace.page WHERE workspace_id=$1 AND id=$2', [alpha.workspaceId, child.pageId]);
     expect(childRow.path).toBe(`${label(node.pageId)}.${label(child.pageId)}`);
     const demoted = await move({ pageId: node.pageId, parentId: root.pageId });
     expect(demoted.path).toBe(`${root.path}.${label(node.pageId)}`);
@@ -367,7 +367,7 @@ describe('T01 transactional rollback', () => {
     const node = await create();
     await create({ parentId: node.pageId });
     const before = await pageRows();
-    const outboxBefore = (await rows<{ n: string }>('SELECT count(*)::text AS n FROM knowledge.outbox WHERE workspace_id=$1', [alpha.workspaceId]))[0]!.n;
+    const outboxBefore = (await rows<{ n: string }>('SELECT count(*)::text AS n FROM workspace.outbox WHERE workspace_id=$1', [alpha.workspaceId]))[0]!.n;
     let failure: unknown;
     try {
       await tenant(async (db) => {
@@ -379,7 +379,7 @@ describe('T01 transactional rollback', () => {
     }
     expect((failure as Error).message).toBe('caller aborted after the move');
     expect(await pageRows()).toEqual(before);
-    expect((await rows<{ n: string }>('SELECT count(*)::text AS n FROM knowledge.outbox WHERE workspace_id=$1', [alpha.workspaceId]))[0]!.n).toBe(outboxBefore);
+    expect((await rows<{ n: string }>('SELECT count(*)::text AS n FROM workspace.outbox WHERE workspace_id=$1', [alpha.workspaceId]))[0]!.n).toBe(outboxBefore);
   });
 });
 
@@ -410,11 +410,11 @@ describe('T01 concurrent moves', () => {
     ]);
     expect(results).not.toContain('failed');
     const [stored] = await rows<{ parent_id: string; path: string }>(
-      'SELECT parent_id::text AS parent_id, path::text AS path FROM knowledge.page WHERE workspace_id=$1 AND id=$2', [alpha.workspaceId, node.pageId]);
+      'SELECT parent_id::text AS parent_id, path::text AS path FROM workspace.page WHERE workspace_id=$1 AND id=$2', [alpha.workspaceId, node.pageId]);
     expect([left.pageId, right.pageId]).toContain(stored.parent_id);
     const expectedParent = stored.parent_id === left.pageId ? left : right;
     expect(stored.path).toBe(`${expectedParent.path}.${label(node.pageId)}`);
-    const [childRow] = await rows<{ path: string }>('SELECT path::text AS path FROM knowledge.page WHERE workspace_id=$1 AND id=$2', [alpha.workspaceId, child.pageId]);
+    const [childRow] = await rows<{ path: string }>('SELECT path::text AS path FROM workspace.page WHERE workspace_id=$1 AND id=$2', [alpha.workspaceId, child.pageId]);
     expect(childRow.path).toBe(`${stored.path}.${label(child.pageId)}`);
   });
 });
@@ -445,7 +445,7 @@ describe('T01 large subtrees', () => {
     const moved = await move({ pageId: spine[1]!, parentId: target.pageId });
     expect(moved.path).toBe(`${target.path}.${label(spine[1]!)}`);
     const stored = new Map((await rows<{ id: string; path: string }>(
-      'SELECT id::text, path::text AS path FROM knowledge.page WHERE workspace_id=$1 AND id = ANY($2::uuid[])', [alpha.workspaceId, [...spine, ...leaves]])).map((row) => [row.id, row.path]));
+      'SELECT id::text, path::text AS path FROM workspace.page WHERE workspace_id=$1 AND id = ANY($2::uuid[])', [alpha.workspaceId, [...spine, ...leaves]])).map((row) => [row.id, row.path]));
     for (const seed of seeds) {
       const tail = seed.path.split('.').slice(1).join('.');
       expect(stored.get(seed.id)).toBe(seed.parentId === null ? seed.path : `${target.path}.${tail}`);

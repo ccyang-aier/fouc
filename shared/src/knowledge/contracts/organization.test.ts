@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { randomUUID } from 'node:crypto';
-import { acceptWorkspaceInvitationInputSchema, createWorkspaceInputSchema, createWorkspaceInvitationInputSchema, changeMemberRoleInputSchema, listOrganizationInputSchema } from './organization';
+import { acceptWorkspaceInvitationInputSchema, createWorkspaceInputSchema, createWorkspaceInvitationInputSchema, changeMemberRoleInputSchema, listOrganizationInputSchema } from '../../workspaces';
 import { createTeamspaceInputSchema, teamspaceScopeSchema, updateTeamspaceInputSchema } from './organization';
+
 
 test('organization mutations reject injected actor identity and owner invitations', () => {
   const workspaceId = randomUUID();

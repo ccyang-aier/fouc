@@ -2,8 +2,8 @@ import { and, desc, eq } from 'drizzle-orm';
 import type { Pool } from 'pg';
 import { knowledgeSchema } from '@fouc/shared/knowledge/schema';
 import type { PageScope } from '@fouc/shared/knowledge/contracts';
-import { docCheckpoint } from '../../../platform/database/knowledge/schema';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { docCheckpoint } from '../../../platform/database/workspace/schema';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { yStateToProseMirrorDoc } from '../import-export/y-encoding';
 
 /** A checkpoint row as the history panel sees it; the state blob never leaves the server. */
@@ -24,7 +24,7 @@ export class PageHistoryError extends Error {
 
 /** §5.3 history: newest first; 200 entries is far beyond any real review session. */
 export async function listPageCheckpoints(pool: Pool, scope: PageScope): Promise<PageCheckpointSummary[]> {
-  const rows = await withKnowledgeTenant(pool, scope.workspaceId, (db) => db
+  const rows = await withWorkspaceTenant(pool, scope.workspaceId, (db) => db
     .select({ id: docCheckpoint.id, pageId: docCheckpoint.pageId, label: docCheckpoint.label, authors: docCheckpoint.authors, createdAt: docCheckpoint.createdAt })
     .from(docCheckpoint)
     .where(and(eq(docCheckpoint.workspaceId, scope.workspaceId), eq(docCheckpoint.pageId, scope.pageId)))
@@ -43,7 +43,7 @@ export async function listPageCheckpoints(pool: Pool, scope: PageScope): Promise
  * (B08) and an ordinary remote update for everyone else.
  */
 export async function readPageCheckpoint(pool: Pool, scope: PageScope, checkpointId: string): Promise<PageCheckpointSummary & { body: unknown }> {
-  const [row] = await withKnowledgeTenant(pool, scope.workspaceId, (db) => db
+  const [row] = await withWorkspaceTenant(pool, scope.workspaceId, (db) => db
     .select({ id: docCheckpoint.id, pageId: docCheckpoint.pageId, label: docCheckpoint.label, authors: docCheckpoint.authors, createdAt: docCheckpoint.createdAt, state: docCheckpoint.state })
     .from(docCheckpoint)
     .where(and(eq(docCheckpoint.workspaceId, scope.workspaceId), eq(docCheckpoint.pageId, scope.pageId), eq(docCheckpoint.id, checkpointId))));

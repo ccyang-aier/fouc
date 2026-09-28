@@ -4,11 +4,11 @@ import { readFile } from 'node:fs/promises';
 import { parseEnv } from 'node:util';
 import { createModelCredentialStore, createModelGateway, ModelGatewayError } from '../src/modules/knowledge/ai/gateway';
 import type { GatewayOptions, ModelCallRecord, TextCall } from '../src/modules/knowledge/ai/gateway';
-import { createTenantTestDatabase, seedTenantTestData } from '../src/platform/database/knowledge/tenant-test-database';
+import { createTenantTestDatabase, seedTenantTestData } from '../src/platform/database/workspace/tenant-test-database';
 
 /** Deliberate opt-in live probe: sends synthetic content, prints metadata only. */
 async function main() {
-  const local = parseEnv(await readFile(new URL('../../../.env.knowledge.models.local', import.meta.url), 'utf8'));
+  const local = parseEnv(await readFile(new URL('../../../.env.workspace.models.local', import.meta.url), 'utf8'));
   const environment = { ...local, ...process.env };
   const apiKey = environment.KNOWLEDGE_AI_API_KEY;
   const endpoint = environment.KNOWLEDGE_AI_CHAT_BASE_URL;

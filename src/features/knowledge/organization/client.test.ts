@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { createOrganizationClient } from '@/features/workspaces/organization-client';
+import { createKnowledgeCatalogClient } from '../data/knowledge-catalog-client';
 import type { OrganizationClientDeps } from '@/features/workspaces/organization-client';
 import { isOrganizationDataError, organizationErrorText } from '@/features/workspaces/organization-errors';
 
@@ -37,7 +38,7 @@ function recordingFetch(status: number, body: unknown) {
 
 function clientWith(impl: typeof fetch) {
   const deps: OrganizationClientDeps = { origin: async () => ORIGIN, fetchImpl: impl as typeof fetch };
-  return createOrganizationClient(deps);
+  return { ...createOrganizationClient(deps), ...createKnowledgeCatalogClient(deps) };
 }
 
 function lastCall(calls: Recorded[]): Recorded {

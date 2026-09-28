@@ -3,7 +3,7 @@ import type { SQL } from 'drizzle-orm';
 import { z } from 'zod';
 import { entityIdSchema } from '@fouc/shared/knowledge/contracts';
 import type { DatabaseFilter, Properties, PropertyDefinition, PropertyValue } from '@fouc/shared/knowledge/contracts';
-import { page } from '../../../platform/database/knowledge/schema';
+import { page } from '../../../platform/database/workspace/schema';
 import { FoucDatabaseError } from './errors';
 
 export interface RowSortKey { propertyId: string; direction: 'asc' | 'desc' }

@@ -1,5 +1,6 @@
 import { permissionLevels, principal } from '@fouc/shared/knowledge/contracts';
-import type { EffectivePermissions, Member, PageAcl, PermissionLevel, Principal } from '@fouc/shared/knowledge/contracts';
+import type { EffectivePermissions, PageAcl, PermissionLevel, Principal } from '@fouc/shared/knowledge/contracts';
+import type { Member } from '@fouc/shared/workspaces';
 
 export interface PermissionNode {
   id: string;

@@ -100,7 +100,7 @@ describe('Hono + tRPC over real HTTP and isolated PostgreSQL', () => {
     await expect(readClient.writeScope.mutate(input)).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
     await expect(writeClient.access.query(input)).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
     expect((await writeClient.writeScope.mutate(input)).actor.userId).toBe(fixture.alpha.userId);
-    await fixture.server.database.admin.query("UPDATE knowledge.personal_access_token SET scopes=ARRAY['read'] WHERE workspace_id=$1 AND id=$2", [fixture.alpha.workspaceId, write.metadata.id]);
+    await fixture.server.database.admin.query("UPDATE workspace.personal_access_token SET scopes=ARRAY['read'] WHERE workspace_id=$1 AND id=$2", [fixture.alpha.workspaceId, write.metadata.id]);
     await expect(writeClient.writeScope.mutate(input)).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
     expect((await writeClient.access.query(input)).scopes).toEqual(['read']);
   });
@@ -111,7 +111,7 @@ describe('Hono + tRPC over real HTTP and isolated PostgreSQL', () => {
       const pat = await fixture.createToken();
       const client = fixture.client({ authorization: `Bearer ${pat.token}` });
       await client.access.query(input);
-      await fixture.server.database.admin.query(`UPDATE knowledge.personal_access_token SET ${change} WHERE workspace_id=$1 AND id=$2`, [fixture.alpha.workspaceId, pat.metadata.id]);
+      await fixture.server.database.admin.query(`UPDATE workspace.personal_access_token SET ${change} WHERE workspace_id=$1 AND id=$2`, [fixture.alpha.workspaceId, pat.metadata.id]);
       await expect(client.access.query(input)).rejects.toMatchObject({ data: { code: 'UNAUTHORIZED' } });
     }
     const pat = await fixture.createToken();
@@ -119,12 +119,12 @@ describe('Hono + tRPC over real HTTP and isolated PostgreSQL', () => {
     await fixture.server.database.admin.query('UPDATE auth."user" SET email_verified=false WHERE id=$1', [fixture.alpha.userId]);
     try { await expect(client.access.query(input)).rejects.toMatchObject({ data: { code: 'UNAUTHORIZED' } }); }
     finally { await fixture.server.database.admin.query('UPDATE auth."user" SET email_verified=true WHERE id=$1', [fixture.alpha.userId]); }
-    await fixture.server.database.admin.query('DELETE FROM knowledge.member WHERE workspace_id=$1 AND user_id=$2', [fixture.alpha.workspaceId, fixture.alpha.userId]);
+    await fixture.server.database.admin.query('DELETE FROM workspace.member WHERE workspace_id=$1 AND user_id=$2', [fixture.alpha.workspaceId, fixture.alpha.userId]);
     try {
       await expect(client.access.query(input)).rejects.toMatchObject({ data: { code: 'UNAUTHORIZED' } });
       await expect(fixture.client(headers()).access.query(input)).rejects.toMatchObject({ data: { code: 'UNAUTHORIZED' } });
     } finally {
-      await fixture.server.database.admin.query("INSERT INTO knowledge.member(workspace_id,user_id,role) VALUES($1,$2,'owner')", [fixture.alpha.workspaceId, fixture.alpha.userId]);
+      await fixture.server.database.admin.query("INSERT INTO workspace.member(workspace_id,user_id,role) VALUES($1,$2,'owner')", [fixture.alpha.workspaceId, fixture.alpha.userId]);
     }
   });
 
@@ -140,7 +140,7 @@ describe('Hono + tRPC over real HTTP and isolated PostgreSQL', () => {
       client.delayedRead.query({ workspaceId: fixture.alpha.workspaceId, operationId }),
     ]);
     await within(gate.entered.promise);
-    await fixture.server.database.admin.query('UPDATE knowledge.personal_access_token SET revoked_at=clock_timestamp() WHERE workspace_id=$1 AND id=$2', [fixture.alpha.workspaceId, pat.metadata.id]);
+    await fixture.server.database.admin.query('UPDATE workspace.personal_access_token SET revoked_at=clock_timestamp() WHERE workspace_id=$1 AND id=$2', [fixture.alpha.workspaceId, pat.metadata.id]);
     gate.release.resolve();
     const settled = await results;
     expect(fixture.requests.slice(before)).toHaveLength(1);
@@ -159,7 +159,7 @@ describe('Hono + tRPC over real HTTP and isolated PostgreSQL', () => {
     fixture.inputGates.set(operationId, gate);
     const results = Promise.allSettled([fixture.client({ authorization: `Bearer ${pat.token}` }).laterTransaction.query({ workspaceId: fixture.alpha.workspaceId, operationId })]);
     await within(gate.entered.promise);
-    await fixture.server.database.admin.query("UPDATE knowledge.personal_access_token SET scopes=ARRAY['write'] WHERE workspace_id=$1 AND id=$2", [fixture.alpha.workspaceId, pat.metadata.id]);
+    await fixture.server.database.admin.query("UPDATE workspace.personal_access_token SET scopes=ARRAY['write'] WHERE workspace_id=$1 AND id=$2", [fixture.alpha.workspaceId, pat.metadata.id]);
     gate.release.resolve();
     const [result] = await within(results);
     expect(result!.status).toBe('rejected');
@@ -174,12 +174,12 @@ describe('Hono + tRPC over real HTTP and isolated PostgreSQL', () => {
     const result = fixture.client(headers()).laterTransaction.query({ workspaceId: fixture.alpha.workspaceId, operationId });
     await within(gate.entered.promise);
     try {
-      await fixture.server.database.admin.query("UPDATE knowledge.member SET role='guest' WHERE workspace_id=$1 AND user_id=$2", [fixture.alpha.workspaceId, fixture.alpha.userId]);
+      await fixture.server.database.admin.query("UPDATE workspace.member SET role='guest' WHERE workspace_id=$1 AND user_id=$2", [fixture.alpha.workspaceId, fixture.alpha.userId]);
       gate.release.resolve();
       expect(await within(result)).toBe('guest');
     } finally {
       gate.release.resolve();
-      await fixture.server.database.admin.query("UPDATE knowledge.member SET role='owner' WHERE workspace_id=$1 AND user_id=$2", [fixture.alpha.workspaceId, fixture.alpha.userId]);
+      await fixture.server.database.admin.query("UPDATE workspace.member SET role='owner' WHERE workspace_id=$1 AND user_id=$2", [fixture.alpha.workspaceId, fixture.alpha.userId]);
       fixture.inputGates.delete(operationId);
     }
   });
@@ -310,7 +310,7 @@ describe('Hono + tRPC over real HTTP and isolated PostgreSQL', () => {
     expect(response.status).toBe(503);
     await error(response, 'SERVICE_UNAVAILABLE');
     expect((await fixture.pool.query('SELECT 1 AS alive')).rows[0].alive).toBe(1);
-    const restored = await fixture.server.database.admin.query('SELECT name FROM knowledge.workspace WHERE workspace_id=$1', [fixture.alpha.workspaceId]);
+    const restored = await fixture.server.database.admin.query('SELECT name FROM workspace.workspace WHERE workspace_id=$1', [fixture.alpha.workspaceId]);
     expect(restored.rows[0].name).toBe(fixture.alpha.name);
     fixture.held.delete(operationId);
   });

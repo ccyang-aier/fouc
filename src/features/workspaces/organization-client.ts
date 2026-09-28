@@ -11,17 +11,11 @@
  */
 
 import { authenticatedFetch } from '@/lib/authenticated-fetch';
-import type {
-  Group,
-  MemberRole,
-  Teamspace,
-  Workspace,
-  WorkspaceMemberSummary,
-} from '@fouc/shared/knowledge/contracts';
+import type { Group, MemberRole, Workspace, WorkspaceMemberSummary } from '@fouc/shared/workspaces';
 import { getFoucApiOrigin } from '@/lib/fouc-api-endpoint';
 import { OrganizationDataError, normalizeOrganizationError, organizationErrorFromBody } from './organization-errors';
 
-export type { Group, MemberRole, Teamspace, Workspace, WorkspaceMemberSummary };
+export type { Group, MemberRole, Workspace, WorkspaceMemberSummary };
 /** Backend row of `group_member`: identity only; names resolve against the member directory. */
 export type GroupMemberRow = { workspaceId: string; groupId: string; userId: string };
 
@@ -29,13 +23,10 @@ export type WorkspaceWithRole = Workspace & { role: MemberRole };
 export type MemberRecord = Pick<WorkspaceMemberSummary, 'workspaceId' | 'userId' | 'role'>;
 export type OrganizationPage<T> = { items: T[]; nextCursor: string | null };
 export type RemovedResult = { removed: true };
-export type TeamspaceAccess = Teamspace['defaultAccess'];
-export type TeamspacePatch = { name?: string; defaultAccess?: TeamspaceAccess };
 export type GroupMember = GroupMemberRow;
 
 export const memberRoles: readonly MemberRole[] = ['owner', 'admin', 'member', 'guest'];
 export const workspaceKinds: readonly Workspace['kind'][] = ['personal', 'team'];
-export const teamspaceAccessValues: readonly NonNullable<TeamspaceAccess>[] = ['view', 'comment', 'edit', 'full'];
 
 const organizationPathPrefix = '/api/workspaces';
 
@@ -49,12 +40,12 @@ export function validateOrganizationName(raw: string): { ok: true; value: string
   return { ok: true, value };
 }
 
-function requireUuid(value: string, field: string): string {
+export function requireUuid(value: string, field: string): string {
   if (!uuidPattern.test(value)) throw new OrganizationDataError('INVALID_INPUT', { message: `${field} 必须是 UUID` });
   return value;
 }
 
-function requireName(value: string): string {
+export function requireName(value: string): string {
   const parsed = validateOrganizationName(value);
   if (!parsed.ok) throw new OrganizationDataError('INVALID_INPUT', { message: parsed.reason });
   return parsed.value;
@@ -62,13 +53,6 @@ function requireName(value: string): string {
 
 function requireRole(value: MemberRole): MemberRole {
   if (!memberRoles.includes(value)) throw new OrganizationDataError('INVALID_INPUT', { message: '未知成员角色' });
-  return value;
-}
-
-function requireAccess(value: TeamspaceAccess): TeamspaceAccess {
-  if (value !== null && !teamspaceAccessValues.includes(value)) {
-    throw new OrganizationDataError('INVALID_INPUT', { message: '未知的默认权限级别' });
-  }
   return value;
 }
 
@@ -80,7 +64,7 @@ export type OrganizationClientDeps = {
   fetchImpl: typeof fetch;
 };
 
-type RequestOptions = {
+export type RequestOptions = {
   method: 'GET' | 'POST' | 'PATCH' | 'DELETE';
   path: string;
   body?: unknown;
@@ -96,8 +80,8 @@ function buildUrl(origin: string, request: RequestOptions): string {
   return url.toString();
 }
 
-export function createOrganizationClient(deps: OrganizationClientDeps) {
-  async function request<T>(request: RequestOptions): Promise<T> {
+export function createOrganizationRequest(deps: OrganizationClientDeps) {
+  return async function request<T>(request: RequestOptions): Promise<T> {
     let origin: string;
     try {
       origin = await deps.origin();
@@ -127,9 +111,10 @@ export function createOrganizationClient(deps: OrganizationClientDeps) {
     }
     const body = await response.json().catch(() => null);
     throw normalizeOrganizationError(organizationErrorFromBody(response.status, body), request.signal);
-  }
+  };
+}
 
-  function listQuery(options: OrganizationListOptions): Record<string, string | number | undefined> {
+export function listQuery(options: OrganizationListOptions): Record<string, string | number | undefined> {
     if (options.cursor !== undefined && options.cursor !== null && !uuidPattern.test(options.cursor)) {
       throw new OrganizationDataError('INVALID_INPUT', { message: 'cursor 必须是 UUID' });
     }
@@ -137,8 +122,10 @@ export function createOrganizationClient(deps: OrganizationClientDeps) {
       throw new OrganizationDataError('INVALID_INPUT', { message: 'limit 必须是 1..100 的整数' });
     }
     return { cursor: options.cursor ?? undefined, limit: options.limit };
-  }
+}
 
+export function createOrganizationClient(deps: OrganizationClientDeps) {
+  const request = createOrganizationRequest(deps);
   return {
     listWorkspaces(options: OrganizationListOptions = {}) {
       return request<OrganizationPage<WorkspaceWithRole>>({ method: 'GET', path: organizationPathPrefix, query: listQuery(options), signal: options.signal });
@@ -196,38 +183,6 @@ export function createOrganizationClient(deps: OrganizationClientDeps) {
       const group = requireUuid(groupId, 'groupId');
       const member = requireUuid(userId, 'userId');
       return request<RemovedResult>({ method: 'DELETE', path: `${organizationPathPrefix}/${scope}/groups/${group}/members/${member}`, body: {} });
-    },
-    listKnowledgeBases(workspaceId: string, options: OrganizationListOptions = {}) {
-      const scope = requireUuid(workspaceId, 'workspaceId');
-      return request<OrganizationPage<import('@fouc/shared/knowledge/contracts').KnowledgeBase>>({ method: 'GET', path: `${organizationPathPrefix}/${scope}/knowledge-bases`, query: listQuery(options), signal: options.signal });
-    },
-    createKnowledgeBase(workspaceId: string, input: { name: string }) {
-      const scope = requireUuid(workspaceId, 'workspaceId');
-      return request<import('@fouc/shared/knowledge/contracts').KnowledgeBase>({ method: 'POST', path: `${organizationPathPrefix}/${scope}/knowledge-bases`, body: { name: requireName(input.name) } });
-    },
-    listTeamspaces(workspaceId: string, options: OrganizationListOptions & { knowledgeBaseId?: string } = {}) {
-      const scope = requireUuid(workspaceId, 'workspaceId');
-      return request<OrganizationPage<Teamspace>>({ method: 'GET', path: `${organizationPathPrefix}/${scope}/teamspaces`, query: { ...listQuery(options), knowledgeBaseId: options.knowledgeBaseId ? requireUuid(options.knowledgeBaseId, 'knowledgeBaseId') : undefined }, signal: options.signal });
-    },
-    createTeamspace(workspaceId: string, input: { knowledgeBaseId: string; name: string; defaultAccess: TeamspaceAccess }) {
-      const scope = requireUuid(workspaceId, 'workspaceId');
-      return request<Teamspace>({ method: 'POST', path: `${organizationPathPrefix}/${scope}/teamspaces`, body: { knowledgeBaseId: requireUuid(input.knowledgeBaseId, 'knowledgeBaseId'), name: requireName(input.name), defaultAccess: requireAccess(input.defaultAccess) } });
-    },
-    updateTeamspace(workspaceId: string, teamspaceId: string, patch: TeamspacePatch) {
-      const scope = requireUuid(workspaceId, 'workspaceId');
-      const target = requireUuid(teamspaceId, 'teamspaceId');
-      if (patch.name === undefined && patch.defaultAccess === undefined) {
-        throw new OrganizationDataError('INVALID_INPUT', { message: '至少提供 name 或 defaultAccess 之一' });
-      }
-      const body: TeamspacePatch = {};
-      if (patch.name !== undefined) body.name = requireName(patch.name);
-      if (patch.defaultAccess !== undefined) body.defaultAccess = requireAccess(patch.defaultAccess);
-      return request<Teamspace>({ method: 'PATCH', path: `${organizationPathPrefix}/${scope}/teamspaces/${target}`, body });
-    },
-    removeTeamspace(workspaceId: string, teamspaceId: string) {
-      const scope = requireUuid(workspaceId, 'workspaceId');
-      const target = requireUuid(teamspaceId, 'teamspaceId');
-      return request<RemovedResult>({ method: 'DELETE', path: `${organizationPathPrefix}/${scope}/teamspaces/${target}`, body: {} });
     },
   };
 }

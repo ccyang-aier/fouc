@@ -3,7 +3,7 @@ import { WebSocket } from 'ws';
 import { randomUUID } from 'node:crypto';
 import { principal } from '@fouc/shared/knowledge/contracts';
 import type { WorkspaceEvent } from '@fouc/shared/knowledge/contracts';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { replaceAuthorizedPageAcl } from '../permissions/mutations';
 import { createPermissionsFixture, until, type PermissionsFixture } from '../permissions/permissions-test-fixture';
 import { createPageCollaborationListener } from './page-collaboration-bun';
@@ -60,7 +60,7 @@ describe('workspace event channel', () => {
 
   test('members receive published workspace events; every subscriber sees them', async () => {
     const { pages } = await fixture.tree({ defaultAccess: null });
-    await withKnowledgeTenant(fixture.pool, fixture.alpha.id, (db) => replaceAuthorizedPageAcl(db, { workspaceId: fixture.alpha.id, pageId: pages[0].pageId, grants: [{ principal: principal('user', fixture.reader.identity.userId), level: 'view' }] }));
+    await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => replaceAuthorizedPageAcl(db, { workspaceId: fixture.alpha.id, pageId: pages[0].pageId, grants: [{ principal: principal('user', fixture.reader.identity.userId), level: 'view' }] }));
     await fixture.drain();
 
     const first = subscriber(fixture.reader.cookie);
@@ -86,7 +86,7 @@ describe('workspace event channel', () => {
     const event = workspaceEvent(fixture.alpha.id, pages[1].pageId);
     const runner = await fixture.start({ consumer: runtime.consumer });
     try {
-      await withKnowledgeTenant(fixture.pool, fixture.alpha.id, async (db) => {
+      await withWorkspaceTenant(fixture.pool, fixture.alpha.id, async (db) => {
         const { appendKnowledgeOutbox } = await import('../workers/outbox');
         await appendKnowledgeOutbox(db, { topic: 'workspace.event', workspaceId: fixture.alpha.id, event });
       });
@@ -125,7 +125,7 @@ describe('workspace event channel', () => {
 
   test('page document connections keep working alongside the events channel', async () => {
     const { pages } = await fixture.tree({ defaultAccess: null });
-    await withKnowledgeTenant(fixture.pool, fixture.alpha.id, (db) => replaceAuthorizedPageAcl(db, { workspaceId: fixture.alpha.id, pageId: pages[0].pageId, grants: [{ principal: principal('user', fixture.reader.identity.userId), level: 'edit' }] }));
+    await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => replaceAuthorizedPageAcl(db, { workspaceId: fixture.alpha.id, pageId: pages[0].pageId, grants: [{ principal: principal('user', fixture.reader.identity.userId), level: 'edit' }] }));
     await fixture.drain();
 
     const { connectCollaborationClient } = await import('../../../../../../qa/helpers/collaboration-client');

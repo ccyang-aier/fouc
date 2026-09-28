@@ -1,9 +1,9 @@
 import { and, eq, gt, sql } from 'drizzle-orm';
-import type { MemberRole } from '@fouc/shared/knowledge/contracts';
+import type { MemberRole } from '@fouc/shared/workspaces';
 import type { Pool } from 'pg';
-import { member } from '../../../platform/database/knowledge/schema';
+import { member } from '../../../platform/database/workspace/schema';
 import { authSession, authUser } from '../../../platform/database/identity/schema';
-import type { KnowledgeTenantTransaction } from '../../../platform/database/knowledge/tenant';
+import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
 import { hasTrustedFoucOrigin } from '../../../platform/identity/config';
 import { KnowledgeAccessError } from './access-policy';
 import type { KnowledgeAccessDiagnostic } from './access-policy';
@@ -31,7 +31,7 @@ export async function verifiedRequestSession(auth: FoucAuth, request: Request, m
 }
 
 /** Recheck live state inside the tenant transaction; never trust a cached role/email. */
-export async function activeSessionMember(db: KnowledgeTenantTransaction, workspaceId: string, identity: Pick<FoucIdentity, 'userId' | 'sessionId'>, lock = false): Promise<MemberRole> {
+export async function activeSessionMember(db: WorkspaceTenantTransaction, workspaceId: string, identity: Pick<FoucIdentity, 'userId' | 'sessionId'>, lock = false): Promise<MemberRole> {
   let query = db.select({ role: member.role }).from(authSession)
     .innerJoin(authUser, eq(authUser.id, authSession.userId))
     .innerJoin(member, and(eq(member.workspaceId, workspaceId), eq(member.userId, authUser.id)))

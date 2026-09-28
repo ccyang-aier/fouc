@@ -2,9 +2,9 @@ import { createHash } from 'node:crypto';
 import { and, asc, eq, sql } from 'drizzle-orm';
 import type { Pool } from 'pg';
 import type { ModelBinding, PageScope } from '@fouc/shared/knowledge/contracts';
-import { blockEmbeddingModel, blockEmbeddingStaging, blockIndex } from '../../../platform/database/knowledge/schema';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
-import type { KnowledgeTenantTransaction } from '../../../platform/database/knowledge/tenant';
+import { blockEmbeddingModel, blockEmbeddingStaging, blockIndex } from '../../../platform/database/workspace/schema';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
 import type { ModelGateway } from '../ai/gateway';
 import { KnowledgeJobError } from '../workers/types';
 import type { KnowledgeConsumer } from '../workers/types';
@@ -47,7 +47,7 @@ function targetOf(binding: EmbeddingBinding): EmbeddingModelTarget {
 }
 
 /** The (embed_model, embed_dimensions) the query side must filter by; null = no vector leg yet (§7.1). */
-export async function readActiveEmbeddingModel(db: KnowledgeTenantTransaction, workspaceId: string): Promise<EmbeddingModelTarget | null> {
+export async function readActiveEmbeddingModel(db: WorkspaceTenantTransaction, workspaceId: string): Promise<EmbeddingModelTarget | null> {
   const [row] = await db.select({ model: blockEmbeddingModel.embedModel, dimensions: blockEmbeddingModel.embedDimensions })
     .from(blockEmbeddingModel).where(eq(blockEmbeddingModel.workspaceId, workspaceId));
   return row ? { model: row.model, dimensions: row.dimensions } : null;
@@ -148,7 +148,7 @@ async function embedBlocks(gateway: EmbeddingGateway, input: {
  * wins without being overwritten, and the queued event for that change converges.
  */
 async function storeBlockEmbeddings(pool: Pool, workspaceId: string, target: EmbeddingModelTarget, vectors: readonly EmbeddedVector[], signal?: AbortSignal): Promise<number> {
-  return withKnowledgeTenant(pool, workspaceId, async (db) => {
+  return withWorkspaceTenant(pool, workspaceId, async (db) => {
     let stored = 0;
     for (const { row, vector } of vectors) {
       signal?.throwIfAborted();
@@ -201,7 +201,7 @@ export async function refreshPageEmbeddings(pool: Pool, options: {
 }): Promise<PageEmbeddingRefresh> {
   const { gateway, binding, scope, userId, signal } = options;
   signal?.throwIfAborted();
-  const planned = await withKnowledgeTenant(pool, scope.workspaceId, async (db) => {
+  const planned = await withWorkspaceTenant(pool, scope.workspaceId, async (db) => {
     await refreshPageBlockIndex(db, scope, signal);
     const active = await readActiveEmbeddingModel(db, scope.workspaceId);
     if (!active || active.model !== binding.model || active.dimensions !== binding.dimensions) {
@@ -266,7 +266,7 @@ async function stageWorkspaceVectors(pool: Pool, input: {
   signal?: AbortSignal;
 }): Promise<number> {
   const target = targetOf(input.binding);
-  const pending = await withKnowledgeTenant(pool, input.workspaceId, async (db) => db.select({
+  const pending = await withWorkspaceTenant(pool, input.workspaceId, async (db) => db.select({
     pageId: blockIndex.pageId, blockId: blockIndex.blockId, titlePath: blockIndex.titlePath,
     contentHash: blockIndex.contentHash, contentMd: blockIndex.contentMd,
   }).from(blockIndex).where(and(
@@ -282,7 +282,7 @@ async function stageWorkspaceVectors(pool: Pool, input: {
     signal: input.signal,
     sink: async (vectors) => {
       for (let offset = 0; offset < vectors.length; offset += stagingBatchSize) {
-        await withKnowledgeTenant(pool, input.workspaceId, (db) => db.insert(blockEmbeddingStaging).values(
+        await withWorkspaceTenant(pool, input.workspaceId, (db) => db.insert(blockEmbeddingStaging).values(
           vectors.slice(offset, offset + stagingBatchSize).map(({ row, vector }) => ({
             workspaceId: input.workspaceId, pageId: row.pageId, blockId: row.blockId,
             embedModel: target.model, embedDimensions: target.dimensions,
@@ -312,7 +312,7 @@ interface EmbeddingSwitchAttempt {
  * vectors and marker byte-identical, so the old index keeps serving queries.
  */
 async function switchActiveEmbeddingModel(pool: Pool, workspaceId: string, target: EmbeddingModelTarget, signal?: AbortSignal): Promise<EmbeddingSwitchAttempt> {
-  return withKnowledgeTenant(pool, workspaceId, async (db) => {
+  return withWorkspaceTenant(pool, workspaceId, async (db) => {
     signal?.throwIfAborted();
     // Freeze the comparison set; concurrent index writers block until commit or rollback.
     const frozen = await db.select({ id: blockIndex.id }).from(blockIndex)
@@ -378,7 +378,7 @@ export async function rebuildWorkspaceEmbeddings(pool: Pool, options: {
   const { gateway, binding, workspaceId, userId, signal } = options;
   signal?.throwIfAborted();
   const target = targetOf(binding);
-  const activeBefore = await withKnowledgeTenant(pool, workspaceId, (db) => readActiveEmbeddingModel(db, workspaceId));
+  const activeBefore = await withWorkspaceTenant(pool, workspaceId, (db) => readActiveEmbeddingModel(db, workspaceId));
   let embedded = 0;
   for (let pass = 0; ; pass++) {
     signal?.throwIfAborted();

@@ -4,8 +4,8 @@ import type { Pool } from 'pg';
 import { z } from 'zod';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { entityIdSchema } from '@fouc/shared/knowledge/contracts';
-import { asset, docState, page } from '../../../platform/database/knowledge/schema';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { asset, docState, page } from '../../../platform/database/workspace/schema';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { expandRequestPrincipals } from '../permissions/authorization';
 import { effectivePageAccessCondition } from '../permissions/queries';
 import type { KnowledgeAssetStorage } from '../assets/storage';
@@ -82,7 +82,7 @@ export async function exportObsidianVault(deps: { pool: Pool; storage: Knowledge
   const items: VaultItemResult[] = [];
 
   recorder.phase('planning', 0, 0);
-  const visible = await withKnowledgeTenant(deps.pool, parsed.workspaceId, async (db) => {
+  const visible = await withWorkspaceTenant(deps.pool, parsed.workspaceId, async (db) => {
     const principals = await expandRequestPrincipals(db, parsed.workspaceId, parsed.userId);
     if (!principals.length) throw new KnowledgeVaultError('VAULT_ACCESS_DENIED', '发起者不是工作区成员');
     const conditions = [eq(page.workspaceId, parsed.workspaceId), isNull(page.deletedAt), eq(page.kind, 'doc'),
@@ -109,7 +109,7 @@ export async function exportObsidianVault(deps: { pool: Pool; storage: Knowledge
   const noteOf = (pageId: string) => `${vaultPaths.get(pageId) ?? pageId}.md`;
 
   const states = new Map<string, Uint8Array>();
-  await withKnowledgeTenant(deps.pool, parsed.workspaceId, async (db) => {
+  await withWorkspaceTenant(deps.pool, parsed.workspaceId, async (db) => {
     const rows = await db.select({ pageId: docState.pageId, state: docState.state }).from(docState)
       .where(and(eq(docState.workspaceId, parsed.workspaceId), inArray(docState.pageId, visible.map((row) => row.id))));
     for (const row of rows) states.set(row.pageId, new Uint8Array(row.state));
@@ -134,7 +134,7 @@ export async function exportObsidianVault(deps: { pool: Pool; storage: Knowledge
   const anchors = new Set(planned.flatMap((entry) => (entry.document ? collectAnchorReferences(entry.document) : [])));
   const allHashes = [...new Set(planned.flatMap((entry) => entry.hashes))];
   const assetRows = allHashes.length
-    ? await withKnowledgeTenant(deps.pool, parsed.workspaceId, (db) => db
+    ? await withWorkspaceTenant(deps.pool, parsed.workspaceId, (db) => db
       .select({ hash: asset.hash, mime: asset.mime, status: asset.status })
       .from(asset).where(and(eq(asset.workspaceId, parsed.workspaceId), inArray(asset.hash, allHashes))))
     : [];

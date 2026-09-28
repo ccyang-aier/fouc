@@ -3,9 +3,9 @@ import { createHash, randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import type { Pool } from 'pg';
-import { createTenantTestDatabase, type TenantTestDatabase } from '../../../platform/database/knowledge/tenant-test-database';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
-import * as tables from '../../../platform/database/knowledge/schema';
+import { createTenantTestDatabase, type TenantTestDatabase } from '../../../platform/database/workspace/tenant-test-database';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import * as tables from '../../../platform/database/workspace/schema';
 import { initializeKnowledgeJobs } from '../workers/initialize';
 import { confirmWorkspaceAssetUpload, prepareWorkspaceAssetUpload, presignWorkspaceAssetDownload, revokeWorkspaceAsset } from './service';
 import { createKnowledgeAssetStorage, readKnowledgeAssetStorageConfig, type KnowledgeAssetStorage } from './storage';
@@ -34,12 +34,12 @@ describe('workspace asset upload, confirmation and presigned access', () => {
   }
   async function assetRow(pool: Pool, workspaceId: string, hash: string) {
     return (await pool.query<{ status: string; size: string; mime: string; meta: { name?: string } }>(
-      'SELECT status, size::text, mime, meta FROM knowledge.asset WHERE workspace_id=$1 AND hash=$2', [workspaceId, hash],
+      'SELECT status, size::text, mime, meta FROM workspace.asset WHERE workspace_id=$1 AND hash=$2', [workspaceId, hash],
     )).rows[0];
   }
   async function outboxCount(pool: Pool, topic: string, hash?: string) {
     const result = await pool.query<{ count: string }>(
-      `SELECT count(*)::text FROM knowledge.outbox WHERE topic=$1 AND ($2::text IS NULL OR payload->>'hash'=$2)`, [topic, hash ?? null],
+      `SELECT count(*)::text FROM workspace.outbox WHERE topic=$1 AND ($2::text IS NULL OR payload->>'hash'=$2)`, [topic, hash ?? null],
     );
     return Number(result.rows[0]!.count);
   }
@@ -53,7 +53,7 @@ describe('workspace asset upload, confirmation and presigned access', () => {
     await initializeKnowledgeJobs(database.admin, database.pool);
     const client = await database.admin.connect();
     try {
-      const db = drizzle(client, { schema: tables.knowledgeSchema });
+      const db = drizzle(client, { schema: tables.workspaceTenantSchema });
       await db.insert(authUser).values([
         { id: alpha.userId, name: 'Alpha Owner', email: `${alpha.userId}@assets.test` },
         { id: beta.userId, name: 'Beta Owner', email: `${beta.userId}@assets.test` },
@@ -82,7 +82,7 @@ describe('workspace asset upload, confirmation and presigned access', () => {
     const content = file('round-trip');
     register(alpha.workspaceId, content);
     const request = intent(alpha, content);
-    const prepared = await withKnowledgeTenant(database.pool, alpha.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, request));
+    const prepared = await withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, request));
     expect(prepared.action).toBe('upload');
     if (prepared.action !== 'upload') throw new Error('unreachable');
     expect(prepared.method).toBe('PUT');
@@ -92,7 +92,7 @@ describe('workspace asset upload, confirmation and presigned access', () => {
 
     expect((await clientPut(prepared.url, content.mime, content.bytes)).status).toBe(200);
     const jobsBefore = await jobCount(database.admin);
-    const confirmed = await withKnowledgeTenant(database.pool, alpha.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, request));
+    const confirmed = await withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, request));
     expect(confirmed).toEqual({ status: 'ready', created: true });
 
     const row = await assetRow(database.admin, alpha.workspaceId, content.hash);
@@ -100,7 +100,7 @@ describe('workspace asset upload, confirmation and presigned access', () => {
     await expect(outboxCount(database.admin, 'asset.created', content.hash)).resolves.toBe(1);
     expect(await jobCount(database.admin)).toBe(jobsBefore + 1);
 
-    const grant = await withKnowledgeTenant(database.pool, alpha.workspaceId, (db) => presignWorkspaceAssetDownload(storage, db, { workspaceId: alpha.workspaceId, userId: alpha.userId, hash: content.hash }));
+    const grant = await withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => presignWorkspaceAssetDownload(storage, db, { workspaceId: alpha.workspaceId, userId: alpha.userId, hash: content.hash }));
     const response = await fetch(grant.url);
     expect(response.status).toBe(200);
     expect(new Uint8Array(await response.arrayBuffer())).toEqual(content.bytes);
@@ -110,14 +110,14 @@ describe('workspace asset upload, confirmation and presigned access', () => {
     const content = file('dedupe');
     register(alpha.workspaceId, content);
     const request = intent(alpha, content);
-    const prepared = await withKnowledgeTenant(database.pool, alpha.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, request));
+    const prepared = await withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, request));
     if (prepared.action !== 'upload') throw new Error('expected an upload grant');
     expect((await clientPut(prepared.url, content.mime, content.bytes)).status).toBe(200);
-    await withKnowledgeTenant(database.pool, alpha.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, request));
+    await withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, request));
 
-    expect(await withKnowledgeTenant(database.pool, alpha.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, request))).toEqual({ action: 'reuse' });
+    expect(await withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, request))).toEqual({ action: 'reuse' });
     const jobsBefore = await jobCount(database.admin);
-    expect(await withKnowledgeTenant(database.pool, alpha.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, request))).toEqual({ status: 'ready', created: false });
+    expect(await withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, request))).toEqual({ status: 'ready', created: false });
     await expect(outboxCount(database.admin, 'asset.created', content.hash)).resolves.toBe(1);
     expect(await jobCount(database.admin)).toBe(jobsBefore);
   });
@@ -127,10 +127,10 @@ describe('workspace asset upload, confirmation and presigned access', () => {
     register(alpha.workspaceId, wrongHash);
     const lyingIntent = { ...intent(alpha, wrongHash), hash: createHash('sha256').update(`not ${wrongHash.name}`).digest('hex') };
     register(alpha.workspaceId, { hash: lyingIntent.hash });
-    const prepared = await withKnowledgeTenant(database.pool, alpha.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, lyingIntent));
+    const prepared = await withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, lyingIntent));
     if (prepared.action !== 'upload') throw new Error('expected an upload grant');
     expect((await clientPut(prepared.url, wrongHash.mime, wrongHash.bytes)).status).toBe(200);
-    await expect(withKnowledgeTenant(database.pool, alpha.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, lyingIntent)))
+    await expect(withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, lyingIntent)))
       .rejects.toMatchObject({ code: 'ASSET_HASH_MISMATCH' });
     expect(await storage.statObject({ workspaceId: alpha.workspaceId, hash: lyingIntent.hash })).toBeUndefined();
     expect(await assetRow(database.admin, alpha.workspaceId, lyingIntent.hash)).toBeUndefined();
@@ -138,25 +138,25 @@ describe('workspace asset upload, confirmation and presigned access', () => {
     const wrongSize = file('size-mismatch');
     register(alpha.workspaceId, wrongSize);
     const sizeIntent = { ...intent(alpha, wrongSize), size: wrongSize.size + 8 };
-    const granted = await withKnowledgeTenant(database.pool, alpha.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, sizeIntent));
+    const granted = await withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, sizeIntent));
     if (granted.action !== 'upload') throw new Error('expected an upload grant');
     expect((await clientPut(granted.url, wrongSize.mime, wrongSize.bytes)).status).toBe(200);
-    await expect(withKnowledgeTenant(database.pool, alpha.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, sizeIntent)))
+    await expect(withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, sizeIntent)))
       .rejects.toMatchObject({ code: 'ASSET_SIZE_MISMATCH' });
     expect(await storage.statObject({ workspaceId: alpha.workspaceId, hash: wrongSize.hash })).toBeUndefined();
 
     const wrongMime = file('mime-mismatch');
     register(alpha.workspaceId, wrongMime);
     const mimeRequest = intent(alpha, wrongMime);
-    const mimeGrant = await withKnowledgeTenant(database.pool, alpha.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, mimeRequest));
+    const mimeGrant = await withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, mimeRequest));
     if (mimeGrant.action !== 'upload') throw new Error('expected an upload grant');
     expect((await clientPut(mimeGrant.url, 'application/octet-stream', wrongMime.bytes)).status).toBe(200);
-    await expect(withKnowledgeTenant(database.pool, alpha.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, mimeRequest)))
+    await expect(withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, mimeRequest)))
       .rejects.toMatchObject({ code: 'ASSET_MIME_MISMATCH' });
     expect(await storage.statObject({ workspaceId: alpha.workspaceId, hash: wrongMime.hash })).toBeUndefined();
 
     const ghost = file('never-uploaded');
-    await expect(withKnowledgeTenant(database.pool, alpha.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, intent(alpha, ghost))))
+    await expect(withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, intent(alpha, ghost))))
       .rejects.toMatchObject({ code: 'ASSET_OBJECT_MISSING' });
     expect(await assetRow(database.admin, alpha.workspaceId, ghost.hash)).toBeUndefined();
     await expect(outboxCount(database.admin, 'asset.created')).resolves.toBe(2);
@@ -165,34 +165,34 @@ describe('workspace asset upload, confirmation and presigned access', () => {
   test('hash addressing never crosses workspaces and outsiders cannot fetch', async () => {
     const shared = file('shared-content');
     const alphaRequest = intent(alpha, shared);
-    const alphaUpload = await withKnowledgeTenant(database.pool, alpha.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, alphaRequest));
+    const alphaUpload = await withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, alphaRequest));
     if (alphaUpload.action !== 'upload') throw new Error('expected an upload grant');
     expect((await clientPut(alphaUpload.url, shared.mime, shared.bytes)).status).toBe(200);
-    await withKnowledgeTenant(database.pool, alpha.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, alphaRequest));
+    await withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, alphaRequest));
     register(alpha.workspaceId, shared);
 
     // Beta's probe must not reveal Alpha's confirmed object: it gets its own upload grant.
     const betaRequest = intent(beta, shared);
-    const betaUpload = await withKnowledgeTenant(database.pool, beta.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, betaRequest));
+    const betaUpload = await withWorkspaceTenant(database.pool, beta.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, betaRequest));
     expect(betaUpload.action).toBe('upload');
     if (betaUpload.action !== 'upload') throw new Error('unreachable');
     expect(new URL(betaUpload.url).pathname).toBe(`/fouc-knowledge/${beta.workspaceId}/${shared.hash}`);
     expect((await clientPut(betaUpload.url, shared.mime, shared.bytes)).status).toBe(200);
-    expect(await withKnowledgeTenant(database.pool, beta.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, betaRequest))).toEqual({ status: 'ready', created: true });
+    expect(await withWorkspaceTenant(database.pool, beta.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, betaRequest))).toEqual({ status: 'ready', created: true });
     register(beta.workspaceId, shared);
 
     expect(await storage.statObject({ workspaceId: alpha.workspaceId, hash: shared.hash })).toBeDefined();
     expect(await storage.statObject({ workspaceId: beta.workspaceId, hash: shared.hash })).toBeDefined();
-    const betaGrant = await withKnowledgeTenant(database.pool, beta.workspaceId, (db) => presignWorkspaceAssetDownload(storage, db, { workspaceId: beta.workspaceId, userId: beta.userId, hash: shared.hash }));
+    const betaGrant = await withWorkspaceTenant(database.pool, beta.workspaceId, (db) => presignWorkspaceAssetDownload(storage, db, { workspaceId: beta.workspaceId, userId: beta.userId, hash: shared.hash }));
     expect((await fetch(betaGrant.url)).status).toBe(200);
 
-    await expect(withKnowledgeTenant(database.pool, alpha.workspaceId, (db) => presignWorkspaceAssetDownload(storage, db, { workspaceId: alpha.workspaceId, userId: beta.userId, hash: shared.hash })))
+    await expect(withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => presignWorkspaceAssetDownload(storage, db, { workspaceId: alpha.workspaceId, userId: beta.userId, hash: shared.hash })))
       .rejects.toMatchObject({ code: 'ASSET_ACCESS_DENIED' });
-    await expect(withKnowledgeTenant(database.pool, alpha.workspaceId, (db) => presignWorkspaceAssetDownload(storage, db, { workspaceId: alpha.workspaceId, userId: outsider, hash: shared.hash })))
+    await expect(withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => presignWorkspaceAssetDownload(storage, db, { workspaceId: alpha.workspaceId, userId: outsider, hash: shared.hash })))
       .rejects.toMatchObject({ code: 'ASSET_ACCESS_DENIED' });
-    await expect(withKnowledgeTenant(database.pool, alpha.workspaceId, (db) => presignWorkspaceAssetDownload(storage, db, { workspaceId: alpha.workspaceId, userId: alpha.userId, hash: '0'.repeat(64) })))
+    await expect(withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => presignWorkspaceAssetDownload(storage, db, { workspaceId: alpha.workspaceId, userId: alpha.userId, hash: '0'.repeat(64) })))
       .rejects.toMatchObject({ code: 'ASSET_NOT_FOUND' });
-    await expect(withKnowledgeTenant(database.pool, alpha.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, intent(alpha, shared))))
+    await expect(withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, intent(alpha, shared))))
       .resolves.toEqual({ action: 'reuse' });
   });
 
@@ -200,31 +200,31 @@ describe('workspace asset upload, confirmation and presigned access', () => {
     const content = file('revocation');
     register(beta.workspaceId, content);
     const request = intent(beta, content);
-    const prepared = await withKnowledgeTenant(database.pool, beta.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, request));
+    const prepared = await withWorkspaceTenant(database.pool, beta.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, request));
     if (prepared.action !== 'upload') throw new Error('expected an upload grant');
     expect((await clientPut(prepared.url, content.mime, content.bytes)).status).toBe(200);
-    await withKnowledgeTenant(database.pool, beta.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, request));
-    const download = (db: Parameters<Parameters<typeof withKnowledgeTenant>[2]>[0]) =>
+    await withWorkspaceTenant(database.pool, beta.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, request));
+    const download = (db: Parameters<Parameters<typeof withWorkspaceTenant>[2]>[0]) =>
       presignWorkspaceAssetDownload(storage, db, { workspaceId: beta.workspaceId, userId: beta.userId, hash: content.hash });
-    await expect(withKnowledgeTenant(database.pool, beta.workspaceId, download)).resolves.toMatchObject({ method: 'GET' });
+    await expect(withWorkspaceTenant(database.pool, beta.workspaceId, download)).resolves.toMatchObject({ method: 'GET' });
 
-    expect(await withKnowledgeTenant(database.pool, beta.workspaceId, (db) => revokeWorkspaceAsset(db, { workspaceId: beta.workspaceId, userId: beta.userId, hash: content.hash })))
+    expect(await withWorkspaceTenant(database.pool, beta.workspaceId, (db) => revokeWorkspaceAsset(db, { workspaceId: beta.workspaceId, userId: beta.userId, hash: content.hash })))
       .toEqual({ status: 'revoked', changed: true });
     expect(await assetRow(database.admin, beta.workspaceId, content.hash)).toMatchObject({ status: 'revoked' });
     // The object itself is retained (soft revocation), but every grant path is closed.
     expect(await storage.statObject({ workspaceId: beta.workspaceId, hash: content.hash })).toMatchObject({ size: content.size });
-    await expect(withKnowledgeTenant(database.pool, beta.workspaceId, download)).rejects.toMatchObject({ code: 'ASSET_NOT_READY' });
-    await expect(withKnowledgeTenant(database.pool, beta.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, request))).rejects.toMatchObject({ code: 'ASSET_NOT_READY' });
-    await expect(withKnowledgeTenant(database.pool, beta.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, request))).rejects.toMatchObject({ code: 'ASSET_NOT_READY' });
-    expect(await withKnowledgeTenant(database.pool, beta.workspaceId, (db) => revokeWorkspaceAsset(db, { workspaceId: beta.workspaceId, userId: beta.userId, hash: content.hash })))
+    await expect(withWorkspaceTenant(database.pool, beta.workspaceId, download)).rejects.toMatchObject({ code: 'ASSET_NOT_READY' });
+    await expect(withWorkspaceTenant(database.pool, beta.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, request))).rejects.toMatchObject({ code: 'ASSET_NOT_READY' });
+    await expect(withWorkspaceTenant(database.pool, beta.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, request))).rejects.toMatchObject({ code: 'ASSET_NOT_READY' });
+    expect(await withWorkspaceTenant(database.pool, beta.workspaceId, (db) => revokeWorkspaceAsset(db, { workspaceId: beta.workspaceId, userId: beta.userId, hash: content.hash })))
       .toEqual({ status: 'revoked', changed: false });
 
     const announced = (await database.admin.query<{ event: { type: string; hash: string; workspaceId: string } }>(
-      "SELECT payload->'event' AS event FROM knowledge.outbox WHERE topic='workspace.event' AND payload->'event'->>'hash'=$1", [content.hash],
+      "SELECT payload->'event' AS event FROM workspace.outbox WHERE topic='workspace.event' AND payload->'event'->>'hash'=$1", [content.hash],
     )).rows;
     expect(announced.map((row) => ({ type: row.event.type, hash: row.event.hash, workspaceId: row.event.workspaceId })))
       .toEqual([{ type: 'asset.updated', hash: content.hash, workspaceId: beta.workspaceId }]);
-    await expect(withKnowledgeTenant(database.pool, beta.workspaceId, (db) => revokeWorkspaceAsset(db, { workspaceId: beta.workspaceId, userId: beta.userId, hash: '1'.repeat(64) })))
+    await expect(withWorkspaceTenant(database.pool, beta.workspaceId, (db) => revokeWorkspaceAsset(db, { workspaceId: beta.workspaceId, userId: beta.userId, hash: '1'.repeat(64) })))
       .rejects.toMatchObject({ code: 'ASSET_NOT_FOUND' });
   });
 
@@ -232,11 +232,11 @@ describe('workspace asset upload, confirmation and presigned access', () => {
     const content = file('grant-limits');
     register(alpha.workspaceId, content);
     const request = intent(alpha, content);
-    const prepared = await withKnowledgeTenant(database.pool, alpha.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, request));
+    const prepared = await withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, request));
     if (prepared.action !== 'upload') throw new Error('expected an upload grant');
     expect((await clientPut(prepared.url, content.mime, content.bytes)).status).toBe(200);
-    await withKnowledgeTenant(database.pool, alpha.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, request));
-    const grant = await withKnowledgeTenant(database.pool, alpha.workspaceId, (db) => presignWorkspaceAssetDownload(storage, db, { workspaceId: alpha.workspaceId, userId: alpha.userId, hash: content.hash }));
+    await withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, request));
+    const grant = await withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => presignWorkspaceAssetDownload(storage, db, { workspaceId: alpha.workspaceId, userId: alpha.userId, hash: content.hash }));
 
     expect((await fetch(grant.url, { method: 'PUT', headers: { 'content-type': content.mime }, body: content.bytes })).status).toBe(403);
     expect((await fetch(prepared.url)).status).toBe(403);
@@ -249,12 +249,12 @@ describe('workspace asset upload, confirmation and presigned access', () => {
     const content = file('atomic-abort');
     register(alpha.workspaceId, content);
     const request = intent(alpha, content);
-    const prepared = await withKnowledgeTenant(database.pool, alpha.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, request));
+    const prepared = await withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, request));
     if (prepared.action !== 'upload') throw new Error('expected an upload grant');
     expect((await clientPut(prepared.url, content.mime, content.bytes)).status).toBe(200);
     const jobsBefore = await jobCount(database.admin);
 
-    await expect(withKnowledgeTenant(database.pool, alpha.workspaceId, async (db) => {
+    await expect(withWorkspaceTenant(database.pool, alpha.workspaceId, async (db) => {
       await confirmWorkspaceAssetUpload(storage, db, request);
       throw new Error('caller aborts after confirm');
     })).rejects.toThrow('caller aborts after confirm');
@@ -264,7 +264,7 @@ describe('workspace asset upload, confirmation and presigned access', () => {
     expect(await jobCount(database.admin)).toBe(jobsBefore);
     // The verified object survives, so the client can retry confirmation.
     expect(await storage.statObject({ workspaceId: alpha.workspaceId, hash: content.hash })).toMatchObject({ size: content.size });
-    expect(await withKnowledgeTenant(database.pool, alpha.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, request))).toEqual({ status: 'ready', created: true });
+    expect(await withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, request))).toEqual({ status: 'ready', created: true });
   });
 
   test('an enqueue failure inside confirm rolls the asset row and outbox back', async () => {
@@ -276,7 +276,7 @@ describe('workspace asset upload, confirmation and presigned access', () => {
     try {
       const client = await bare.admin.connect();
       try {
-        const db = drizzle(client, { schema: tables.knowledgeSchema });
+        const db = drizzle(client, { schema: tables.workspaceTenantSchema });
         await db.insert(authUser).values({ id: gamma.userId, name: 'Gamma Owner', email: `${gamma.userId}@assets.test` });
         await db.insert(tables.workspace).values({ id: gamma.workspaceId, name: 'Assets Gamma', kind: 'team' });
         await db.insert(tables.member).values({ workspaceId: gamma.workspaceId, userId: gamma.userId, role: 'owner' });
@@ -284,13 +284,13 @@ describe('workspace asset upload, confirmation and presigned access', () => {
         client.release();
       }
       const request = intent(gamma, content);
-      const prepared = await withKnowledgeTenant(bare.pool, gamma.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, request));
+      const prepared = await withWorkspaceTenant(bare.pool, gamma.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, request));
       if (prepared.action !== 'upload') throw new Error('expected an upload grant');
       expect((await clientPut(prepared.url, content.mime, content.bytes)).status).toBe(200);
 
-      await expect(withKnowledgeTenant(bare.pool, gamma.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, request))).rejects.toThrow();
+      await expect(withWorkspaceTenant(bare.pool, gamma.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, request))).rejects.toThrow();
       expect(await assetRow(bare.admin, gamma.workspaceId, content.hash)).toBeUndefined();
-      expect((await bare.admin.query<{ count: string }>('SELECT count(*)::text FROM knowledge.outbox')).rows[0]!.count).toBe('0');
+      expect((await bare.admin.query<{ count: string }>('SELECT count(*)::text FROM workspace.outbox')).rows[0]!.count).toBe('0');
       expect(await storage.statObject({ workspaceId: gamma.workspaceId, hash: content.hash })).toMatchObject({ size: content.size });
     } finally {
       expect(bare.idleErrors).toEqual([]);
@@ -303,14 +303,14 @@ describe('workspace asset upload, confirmation and presigned access', () => {
     register(alpha.workspaceId, content);
     const request = intent(alpha, content);
     const foreignRequest = { ...request, userId: outsider };
-    await expect(withKnowledgeTenant(database.pool, alpha.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, foreignRequest)))
+    await expect(withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, foreignRequest)))
       .rejects.toMatchObject({ code: 'ASSET_ACCESS_DENIED' });
-    await expect(withKnowledgeTenant(database.pool, alpha.workspaceId, (db) => revokeWorkspaceAsset(db, { workspaceId: alpha.workspaceId, userId: outsider, hash: content.hash })))
+    await expect(withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => revokeWorkspaceAsset(db, { workspaceId: alpha.workspaceId, userId: outsider, hash: content.hash })))
       .rejects.toMatchObject({ code: 'ASSET_ACCESS_DENIED' });
-    const prepared = await withKnowledgeTenant(database.pool, alpha.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, request));
+    const prepared = await withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, request));
     if (prepared.action !== 'upload') throw new Error('expected an upload grant');
     expect((await clientPut(prepared.url, content.mime, content.bytes)).status).toBe(200);
-    await expect(withKnowledgeTenant(database.pool, alpha.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, foreignRequest)))
+    await expect(withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, foreignRequest)))
       .rejects.toMatchObject({ code: 'ASSET_ACCESS_DENIED' });
     expect(await assetRow(database.admin, alpha.workspaceId, content.hash)).toBeUndefined();
   });

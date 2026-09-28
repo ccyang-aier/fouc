@@ -13,11 +13,11 @@ import {
   replyCommentThreadResultSchema,
 } from '@fouc/shared/knowledge/comments';
 import { Pool } from 'pg';
-import { blockIndex, page } from '../../../platform/database/knowledge/schema';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { blockIndex, page } from '../../../platform/database/workspace/schema';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { createAuthTestServer, responseCookie, testPassword } from '../../../platform/identity/auth-test-server';
 import type { FoucIdentity } from '../../../platform/identity/identity';
-import { createOrganizationService } from '../organization/service';
+import { createKnowledgeCatalogService } from '../organization/service';
 import { teamspacePermissionInvalidator } from '../permissions/fence';
 import { replaceAuthorizedPageAcl, withAuthorizedPageTreeMutation } from '../permissions/mutations';
 import { createPermissionRebuildConsumer } from '../permissions/rebuild';
@@ -92,10 +92,10 @@ async function createCommentRoutesFixture() {
   const reader = await actor('reader');
   const foreign = await actor('foreign');
   const workspaceId = randomUUID();
-  await admin.query("INSERT INTO knowledge.workspace(workspace_id,name,kind) VALUES ($1,'Comment Routes','team')", [workspaceId]);
-  await admin.query("INSERT INTO knowledge.member(workspace_id,user_id,role) VALUES ($1,$2,'owner'),($1,$3,'member')", [workspaceId, owner.identity.userId, reader.identity.userId]);
+  await admin.query("INSERT INTO workspace.workspace(workspace_id,name,kind) VALUES ($1,'Comment Routes','team')", [workspaceId]);
+  await admin.query("INSERT INTO workspace.member(workspace_id,user_id,role) VALUES ($1,$2,'owner'),($1,$3,'member')", [workspaceId, owner.identity.userId, reader.identity.userId]);
   await initializeKnowledgeJobs(admin as never, pool);
-  const organization = createOrganizationService(pool, { permissions: teamspacePermissionInvalidator });
+  const organization = createKnowledgeCatalogService(pool, { permissions: teamspacePermissionInvalidator });
 
   async function jobCount(): Promise<number> {
     return (await admin.query('SELECT j.id FROM knowledge_jobs._private_jobs j')).rowCount ?? 0;
@@ -119,8 +119,8 @@ async function createCommentRoutesFixture() {
           stableSince = Date.now();
         } else if (Date.now() - stableSince > 1_500) {
           await admin.query(`DELETE FROM knowledge_jobs._private_jobs j
-            USING knowledge.outbox o, knowledge_jobs._private_tasks t
-            WHERE t.id = j.task_id AND t.identifier='knowledge.dispatch'
+            USING workspace.outbox o, knowledge_jobs._private_tasks t
+            WHERE t.id = j.task_id AND t.identifier='workspace.dispatch'
               AND (j.payload->>'outboxId')::uuid = o.id AND o.topic='workspace.event'`);
           if ((await jobCount()) === 0) break;
           stableSince = Date.now();
@@ -138,7 +138,7 @@ async function createCommentRoutesFixture() {
     const base = await organization.createKnowledgeBase(owner.identity, { workspaceId, name: 'Comment library' });
     const space = await organization.createTeamspace(owner.identity, { workspaceId, knowledgeBaseId: base.id, name: `Comment tree ${defaultAccess}`, defaultAccess });
     const pageId = randomUUID();
-    await withKnowledgeTenant(pool, workspaceId, (db) => withAuthorizedPageTreeMutation(db, { workspaceId, pageId }, async () => {
+    await withWorkspaceTenant(pool, workspaceId, (db) => withAuthorizedPageTreeMutation(db, { workspaceId, pageId }, async () => {
       await db.insert(page).values({ workspaceId, id: pageId, parentId: null, path: pageId.replaceAll('-', '_'), teamspaceId: space.id, position: 'a0', createdBy: owner.identity.userId, inheritsPermissions: true, deletedAt: null });
       await db.insert(blockIndex).values({ workspaceId, pageId, blockId: 'text', blockType: 'paragraph', contentMd: 'Comment routes content', contentHash: 'b'.repeat(64) });
     }));
@@ -148,7 +148,7 @@ async function createCommentRoutesFixture() {
 
   /** Replaces the root ACL and waits for the subtree rematerialization. */
   async function grantRootDefault(root: PageRef, grants: { principal: string; level: PermissionLevel }[]): Promise<void> {
-    await withKnowledgeTenant(pool, workspaceId, (db) => replaceAuthorizedPageAcl(db, { workspaceId, pageId: root.pageId, grants }));
+    await withWorkspaceTenant(pool, workspaceId, (db) => replaceAuthorizedPageAcl(db, { workspaceId, pageId: root.pageId, grants }));
     await drain();
   }
 
@@ -163,7 +163,7 @@ async function createCommentRoutesFixture() {
       await runner.close();
       runners.delete(runner);
     }
-    await admin.query('DELETE FROM knowledge_jobs._private_jobs; DELETE FROM knowledge.outbox');
+    await admin.query('DELETE FROM knowledge_jobs._private_jobs; DELETE FROM workspace.outbox');
   }
 
   return {

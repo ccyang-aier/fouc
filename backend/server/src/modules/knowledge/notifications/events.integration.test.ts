@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 import { principal } from '@fouc/shared/knowledge/contracts';
 import type { PermissionLevel, WorkspaceEvent } from '@fouc/shared/knowledge/contracts';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { responseCookie, testPassword } from '../../../platform/identity/auth-test-server';
 import type { FoucIdentity } from '../../../platform/identity/identity';
 import { createWorkspaceEventRuntime } from '../collaboration/events';
@@ -33,12 +33,12 @@ describe('notification workspace events', () => {
 
   /** The actor needs comment access; the recipient's view comes from the teamspace default. Settled before the consumer starts, so the runner only ever sees comment events. */
   async function grantCommentAccess(workspaceId: string, pageId: string, actorId: string) {
-    await withKnowledgeTenant(fixture.pool, workspaceId, (db) =>
+    await withWorkspaceTenant(fixture.pool, workspaceId, (db) =>
       replaceAuthorizedPageAcl(db, { workspaceId, pageId, grants: [{ principal: principal('user', actorId), level: 'full' as PermissionLevel }] }));
     await fixture.drain();
   }
   function commentWithMention(workspaceId: string, pageId: string, actorId: string, mentioned: string) {
-    return withKnowledgeTenant(fixture.pool, workspaceId, (db) =>
+    return withWorkspaceTenant(fixture.pool, workspaceId, (db) =>
       createCommentThread(db, { workspaceId, pageId, userId: actorId, bodyMd: 'Live notice', mentions: [mentioned] }));
   }
 
@@ -71,7 +71,7 @@ describe('notification workspace events', () => {
       const notices = alpha.events.filter((event) => event.type === 'notification.created');
       expect(notices).toHaveLength(1);
       const [row] = (await fixture.admin.query<{ id: string }>(
-        'SELECT id::text FROM knowledge.notification WHERE workspace_id=$1 AND user_id=$2 AND payload->>\'threadId\'=$3',
+        'SELECT id::text FROM workspace.notification WHERE workspace_id=$1 AND user_id=$2 AND payload->>\'threadId\'=$3',
         [fixture.alpha.id, reader, created.thread.id])).rows;
       expect(row).toBeDefined();
       // The event names the recipient and the exact row — clients invalidate ['notifications'] off it.

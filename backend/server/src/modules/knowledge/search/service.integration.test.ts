@@ -4,8 +4,8 @@ import { and, eq, inArray, sql } from 'drizzle-orm';
 import * as Y from 'yjs';
 import type { PageScope, Principal } from '@fouc/shared/knowledge/contracts';
 import { hybridSearchResultSchema } from '@fouc/shared/knowledge/search';
-import { blockIndex, docState, page } from '../../../platform/database/knowledge/schema';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { blockIndex, docState, page } from '../../../platform/database/workspace/schema';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { createModelGateway } from '../ai/gateway';
 import type { GatewayFetch } from '../ai/gateway';
 import { createPermissionsFixture } from '../permissions/permissions-test-fixture';
@@ -37,7 +37,7 @@ describe('hybrid search fusion and rerank', () => {
   beforeEach(async () => {
     await fixture.resetJobs();
     await fixture.server.database.admin.query(
-      'DELETE FROM knowledge.block_embedding_staging; DELETE FROM knowledge.block_embedding_model; DELETE FROM knowledge.block_index',
+      'DELETE FROM workspace.block_embedding_staging; DELETE FROM workspace.block_embedding_model; DELETE FROM workspace.block_index',
     );
   });
 
@@ -58,7 +58,7 @@ describe('hybrid search fusion and rerank', () => {
 
   async function writeBody(node: { workspaceId: string; pageId: string }, blocks: readonly DraftBlock[]) {
     const { state, stateVector } = encodeBody(blocks);
-    await withKnowledgeTenant(fixture.pool, node.workspaceId, async (db) => {
+    await withWorkspaceTenant(fixture.pool, node.workspaceId, async (db) => {
       await db.insert(docState).values({ workspaceId: node.workspaceId, pageId: node.pageId, state, stateVector })
         .onConflictDoUpdate({ target: [docState.workspaceId, docState.pageId], set: { state, stateVector, updatedAt: sql`clock_timestamp()` } });
     });
@@ -68,7 +68,7 @@ describe('hybrid search fusion and rerank', () => {
   async function tree(options: Parameters<typeof fixture.tree>[0] = { parents: [null] }) {
     const created = await fixture.tree(options);
     await fixture.drain();
-    await withKnowledgeTenant(fixture.pool, created.root.workspaceId, (db) => db.delete(blockIndex).where(and(
+    await withWorkspaceTenant(fixture.pool, created.root.workspaceId, (db) => db.delete(blockIndex).where(and(
       eq(blockIndex.workspaceId, created.root.workspaceId),
       inArray(blockIndex.pageId, created.pages.map((node) => node.pageId)),
     )));
@@ -76,7 +76,7 @@ describe('hybrid search fusion and rerank', () => {
   }
 
   async function retitle(scope: PageScope, title: string) {
-    await withKnowledgeTenant(fixture.pool, scope.workspaceId, (db) =>
+    await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) =>
       db.update(page).set({ title }).where(and(eq(page.workspaceId, scope.workspaceId), eq(page.id, scope.pageId))));
   }
 
@@ -185,11 +185,11 @@ describe('hybrid search fusion and rerank', () => {
     // transient state) — the keyword-only member of the disjoint-leg corpus.
     await writeBody(late, [{ attrs: { blockId: 'b-kw-only' }, text: '氦闪现象的远端附录补充说明文档' }]);
     const { refreshPageBlockIndex } = await import('./indexer');
-    await withKnowledgeTenant(fixture.pool, late.workspaceId, (db) =>
+    await withWorkspaceTenant(fixture.pool, late.workspaceId, (db) =>
       refreshPageBlockIndex(db, { workspaceId: late.workspaceId, pageId: late.pageId }));
 
     // Ground truth for the keyword leg's own ranking before fusing.
-    const keywordOnly = await withKnowledgeTenant(fixture.pool, body.workspaceId, (db) =>
+    const keywordOnly = await withWorkspaceTenant(fixture.pool, body.workspaceId, (db) =>
       searchBlocksByKeyword(db, { workspaceId: body.workspaceId, principals: owner, query: '氦闪 探测', limit: 50 }));
     expect(keywordOnly.map((hit) => hit.blockId)).toEqual(['b-both', 'b-kw-a', 'b-kw-b', 'b-kw-only']);
 
@@ -242,7 +242,7 @@ describe('hybrid search fusion and rerank', () => {
     // The active model flipped but the rows still carry alpha vectors (H02's atomic switch
     // forbids this state persisting; the query-side filter is the defense criterion 1 demands).
     await fixture.server.database.admin.query(
-      'UPDATE knowledge.block_embedding_model SET embed_model=$2, embed_dimensions=$3 WHERE workspace_id=$1',
+      'UPDATE workspace.block_embedding_model SET embed_model=$2, embed_dimensions=$3 WHERE workspace_id=$1',
       [body.workspaceId, 'beta-embed', 16],
     );
     const beta = steeredEmbedGateway('beta-embed', 16, [
@@ -271,7 +271,7 @@ describe('hybrid search fusion and rerank', () => {
     expect(betaView.hits[0]!.semanticScore).toBeCloseTo(1, 12);
 
     // No embedding model at all: the vector leg reports why and the keyword leg still serves.
-    await fixture.server.database.admin.query('DELETE FROM knowledge.block_embedding_model WHERE workspace_id=$1', [body.workspaceId]);
+    await fixture.server.database.admin.query('DELETE FROM workspace.block_embedding_model WHERE workspace_id=$1', [body.workspaceId]);
     const none = await search(body.workspaceId, owner, '普通内容', { gateway: alpha.gateway, embedBinding: alpha.binding });
     expect(none.vectorLeg).toEqual({ status: 'skipped', reason: 'no_active_model' });
     expect(none.hits.map((hit) => hit.blockId)).toEqual(['k1']);
@@ -282,7 +282,7 @@ describe('hybrid search fusion and rerank', () => {
     const [ownerPage] = ownerTree.pages;
     const readerTree = await tree({ parents: [null], defaultAccess: null });
     const [readerPage] = readerTree.pages;
-    await withKnowledgeTenant(fixture.pool, readerPage.workspaceId, (db) => Promise.all([
+    await withWorkspaceTenant(fixture.pool, readerPage.workspaceId, (db) => Promise.all([
       replaceAuthorizedPageAcl(db, { workspaceId: readerPage.workspaceId, pageId: ownerPage.pageId, grants: [{ principal: `user:${fixture.owner.identity.userId}` as Principal, level: 'full' }] }),
       replaceAuthorizedPageAcl(db, { workspaceId: readerPage.workspaceId, pageId: readerPage.pageId, grants: [
         { principal: `user:${fixture.owner.identity.userId}` as Principal, level: 'full' },

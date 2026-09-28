@@ -1,9 +1,8 @@
 import { z } from 'zod';
-
-export const entityIdSchema = z.uuid();
+import { entityIdSchema, workspaceScopeSchema } from '../../workspaces/primitives';
+export { entityIdSchema, timestampSchema, workspaceScopeSchema, paginationSchema } from '../../workspaces/primitives';
+export type { WorkspaceScope } from '../../workspaces/primitives';
 export const blockIdSchema = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/);
-export const timestampSchema = z.iso.datetime({ offset: true });
-export const workspaceScopeSchema = z.strictObject({ workspaceId: entityIdSchema });
 export const pageScopeSchema = workspaceScopeSchema.extend({ pageId: entityIdSchema });
 export const assetHashSchema = z.string().regex(/^[a-f0-9]{64}$/);
 export const assetSourceSchema = z.string().regex(/^asset:[a-f0-9]{64}$/);
@@ -26,10 +25,4 @@ export function principal(kind: PrincipalKind, id: string): Principal {
   return principalSchema.parse(`${kind}:${id}`);
 }
 
-export const paginationSchema = z.strictObject({
-  cursor: entityIdSchema.optional(),
-  limit: z.number().int().min(1).max(100).default(50),
-});
-
-export type WorkspaceScope = z.infer<typeof workspaceScopeSchema>;
 export type PageScope = z.infer<typeof pageScopeSchema>;

@@ -13,7 +13,8 @@ import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { organizationClient } from '@/features/workspaces/organization-client';
-import type { MemberRole, OrganizationPage, TeamspaceAccess, WorkspaceWithRole } from '@/features/workspaces/organization-client';
+import type { MemberRole, OrganizationPage, WorkspaceWithRole } from '@/features/workspaces/organization-client';
+import { knowledgeCatalogClient, type TeamspaceAccess } from '../data/knowledge-catalog-client';
 import { applyOptimisticList, restoreOptimisticList } from './cache';
 import type { OptimisticSnapshot } from './cache';
 import { isRetryableOrganizationError } from '@/features/workspaces/organization-errors';
@@ -90,7 +91,7 @@ export function useGroupMembersQuery(workspaceId: string | null, groupId: string
 export function useTeamspacesQuery(workspaceId: string | null) {
   return useWorkspaceListQuery(
     organizationQueryKeys.teamspaces(workspaceId ?? 'none'),
-    (cursor, signal) => organizationClient.listTeamspaces(workspaceId!, { cursor, signal }),
+    (cursor, signal) => knowledgeCatalogClient.listTeamspaces(workspaceId!, { cursor, signal }),
     workspaceId !== null,
   );
 }
@@ -207,7 +208,7 @@ export function useCreateTeamspaceMutation(workspaceId: string) {
   const queryClient = useQueryClient();
   const key = organizationQueryKeys.teamspaces(workspaceId);
   return useMutation({
-    mutationFn: (input: { knowledgeBaseId: string; name: string; defaultAccess: TeamspaceAccess }) => organizationClient.createTeamspace(workspaceId, input),
+    mutationFn: (input: { knowledgeBaseId: string; name: string; defaultAccess: TeamspaceAccess }) => knowledgeCatalogClient.createTeamspace(workspaceId, input),
     onMutate: ({ knowledgeBaseId, name, defaultAccess }) => {
       const optimistic: TeamspaceRow = { workspaceId, knowledgeBaseId, id: pendingId(), name: name.trim(), defaultAccess };
       return { tempId: optimistic.id, snapshot: applyOptimisticList<TeamspaceRow>(queryClient, key, (items) => [...items, optimistic]) };
@@ -223,7 +224,7 @@ export function useCreateTeamspaceMutation(workspaceId: string) {
 export function useUpdateTeamspaceMutation(workspaceId: string) {
   return useOptimisticListMutation(
     organizationQueryKeys.teamspaces(workspaceId),
-    (input: { id: string; patch: { name?: string; defaultAccess?: TeamspaceAccess } }) => organizationClient.updateTeamspace(workspaceId, input.id, input.patch),
+    (input: { id: string; patch: { name?: string; defaultAccess?: TeamspaceAccess } }) => knowledgeCatalogClient.updateTeamspace(workspaceId, input.id, input.patch),
     ({ id, patch }) => (items: TeamspaceRow[]) => applyTeamspacePatch(items, id, patch),
     (teamspace, queryClient) => {
       applyOptimisticList<TeamspaceRow>(queryClient, organizationQueryKeys.teamspaces(workspaceId), (items) => patchByKey(items, (row) => row.id, teamspace.id, { name: teamspace.name, defaultAccess: teamspace.defaultAccess }));
@@ -234,7 +235,7 @@ export function useUpdateTeamspaceMutation(workspaceId: string) {
 export function useRemoveTeamspaceMutation(workspaceId: string) {
   return useOptimisticListMutation(
     organizationQueryKeys.teamspaces(workspaceId),
-    (teamspaceId: string) => organizationClient.removeTeamspace(workspaceId, teamspaceId),
+    (teamspaceId: string) => knowledgeCatalogClient.removeTeamspace(workspaceId, teamspaceId),
     (teamspaceId) => (items: TeamspaceRow[]) => removeByKey(items, (row) => row.id, teamspaceId),
   );
 }

@@ -36,9 +36,11 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
-import type { ProjectManagementPanelId } from "@/features/project/project-management-model"
+import { useProjectResources } from "@/features/project/project-resources"
+import { useWorkspace } from "@/features/workspaces/workspace-provider"
 import { SidebarAgentSection } from "./sidebar-agent-section"
 import { ProjectSidebarPane } from "./sidebar-project-pane"
+import { demonstrationProjectId } from "@/features/project/project-resources"
 
 export type WorkbenchView =
   | "home"
@@ -208,25 +210,20 @@ export function NavigationSidebar({
   onExpand,
   view,
   onViewChange,
-  projectFavorited,
-  onProjectFavoriteChange,
-  managementPanel,
-  onManagementPanelChange,
 }: {
   open: boolean
   onCollapse: () => void
   onExpand: () => void
   view: WorkbenchView
   onViewChange: (view: WorkbenchView) => void
-  projectFavorited: boolean
-  onProjectFavoriteChange: (favorited: boolean) => void
-  managementPanel: ProjectManagementPanelId | null
-  onManagementPanelChange: (panel: ProjectManagementPanelId | null) => void
 }) {
+  const { activeSpace } = useWorkspace()
+  const { projects: scopedProjects, selectedProject, favorites, selectProject, createProject: addProject, renameProject, removeProject, setFavorite, managementPanel, setManagementPanel } = useProjectResources()
+  const projectFavorited = selectedProject !== null && favorites.includes(selectedProject.id)
+  const projects: ManagedSidebarEntry[] = scopedProjects.map((project) => ({ id: project.id, name: project.name, kind: "project", marked: favorites.includes(project.id) }))
   const { width, dragging, startResize } = useSidebarWidth()
-  const projectsMode = view === "projects"
-  const [projects, setProjects] = useState<ManagedSidebarEntry[]>([{ id: "fouc-desktop-v1", name: "Fouc 桌面端 V1", kind: "project", marked: projectFavorited }])
-  const [recentChats, setRecentChats] = useState<ManagedSidebarEntry[]>([{ id: "fouc-desktop-chat", name: "Fouc 桌面端", kind: "chat", marked: false, time: "2 小时前" }])
+  const projectsMode = view === "projects" && selectedProject !== null
+  const [recentChats, setRecentChats] = useState<ManagedSidebarEntry[]>([])
   const [creatingProject, setCreatingProject] = useState(false)
   const [newProjectDraft, setNewProjectDraft] = useState("")
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null)
@@ -235,13 +232,15 @@ export function NavigationSidebar({
   const pinnedChats = recentChats.filter((entry) => entry.marked)
 
   function updateEntry(entry: ManagedSidebarEntry, update: (current: ManagedSidebarEntry) => ManagedSidebarEntry) {
-    const setter = entry.kind === "project" ? setProjects : setRecentChats
-    setter((current) => current.map((item) => item.id === entry.id ? update(item) : item))
+    if (entry.kind === "project") {
+      const next = update(entry)
+      if (next.name !== entry.name) void renameProject(entry.id, next.name)
+      if (next.marked !== entry.marked) setFavorite(entry.id, next.marked)
+    } else setRecentChats((current) => current.map((item) => item.id === entry.id ? update(item) : item))
   }
 
   function toggleMarked(entry: ManagedSidebarEntry) {
     updateEntry(entry, (current) => ({ ...current, marked: !current.marked }))
-    if (entry.kind === "project" && entry.id === "fouc-desktop-v1") onProjectFavoriteChange(!entry.marked)
   }
 
   function renameEntry(entry: ManagedSidebarEntry, name: string) {
@@ -251,29 +250,33 @@ export function NavigationSidebar({
   }
 
   function deleteEntry(entry: ManagedSidebarEntry) {
-    const setter = entry.kind === "project" ? setProjects : setRecentChats
-    setter((current) => current.filter((item) => item.id !== entry.id))
+    if (entry.kind === "project") void removeProject(entry.id)
+    else setRecentChats((current) => current.filter((item) => item.id !== entry.id))
     setEditingEntryId(null)
   }
 
-  function createProject() {
+  async function createProject() {
     const name = newProjectDraft.trim()
     if (!name) return
-    setProjects((current) => [...current, { id: `project-${Date.now()}`, name, kind: "project", marked: false }])
+    const created = await addProject(name)
+    if (!created) return
     setNewProjectDraft("")
     setCreatingProject(false)
   }
 
   function renderManagedEntry(entry: ManagedSidebarEntry, keyPrefix = "") {
     const itemKey = `${keyPrefix}${entry.kind}-${entry.id}`
-    return <ManagedSidebarRow key={itemKey} entry={entry} active={activeItemKey === itemKey} editing={editingEntryId === entry.id && !keyPrefix} onSelect={() => { setActiveItemKey(itemKey); if (!keyPrefix && entry.kind === "project") onViewChange("projects") }} onBeginRename={() => setEditingEntryId(entry.id)} onRename={(name) => renameEntry(entry, name)} onDelete={() => deleteEntry(entry)} onToggleMark={() => toggleMarked(entry)} />
+    return <ManagedSidebarRow key={itemKey} entry={entry} active={entry.kind === "project" ? selectedProject?.id === entry.id && view === "projects" : activeItemKey === itemKey} editing={editingEntryId === entry.id && !keyPrefix} onSelect={() => { setActiveItemKey(itemKey); if (entry.kind === "project") { selectProject(entry.id); onViewChange("projects") } }} onBeginRename={() => setEditingEntryId(entry.id)} onRename={(name) => renameEntry(entry, name)} onDelete={() => deleteEntry(entry)} onToggleMark={() => toggleMarked(entry)} />
   }
 
   const paneProps = {
     activePanel: managementPanel,
-    onPanelChange: onManagementPanelChange,
+    onPanelChange: setManagementPanel,
     favorited: projectFavorited,
-    onFavoriteChange: onProjectFavoriteChange,
+    onFavoriteChange: (favorited: boolean) => { if (selectedProject) setFavorite(selectedProject.id, favorited) },
+    projectName: selectedProject?.name ?? '',
+    hasDemoContent: selectedProject?.id === demonstrationProjectId,
+    workspaceName: activeSpace.label,
     onExit: () => onViewChange("home"),
   }
 

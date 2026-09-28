@@ -1,8 +1,8 @@
 import { and, asc, eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { entityIdSchema, pageScopeSchema } from '@fouc/shared/knowledge/contracts';
-import { comment, commentThread } from '../../../platform/database/knowledge/schema';
-import type { KnowledgeTenantTransaction } from '../../../platform/database/knowledge/tenant';
+import { comment, commentThread } from '../../../platform/database/workspace/schema';
+import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
 import { requireCommentAccess } from './access';
 import { KnowledgeCommentError } from './errors';
 
@@ -25,7 +25,7 @@ function parse<S extends z.ZodType>(schema: S, input: unknown): z.output<S> {
  * equal microsecond timestamps cannot occur through this one-comment-per-
  * transaction service.
  */
-export async function listPageCommentThreads(db: KnowledgeTenantTransaction, input: unknown): Promise<CommentThreadWithComments[]> {
+export async function listPageCommentThreads(db: WorkspaceTenantTransaction, input: unknown): Promise<CommentThreadWithComments[]> {
   const parsed = parse(listInputSchema, input);
   const scope = { workspaceId: parsed.workspaceId, pageId: parsed.pageId };
   await requireCommentAccess(db, { userId: parsed.userId, scope, required: 'view' });

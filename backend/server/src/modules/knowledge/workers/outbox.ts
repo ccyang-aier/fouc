@@ -2,17 +2,17 @@ import { randomUUID } from 'node:crypto';
 import { entityIdSchema, outboxEventSchema } from '@fouc/shared/knowledge/contracts';
 import type { OutboxEvent } from '@fouc/shared/knowledge/contracts';
 import { and, eq, sql } from 'drizzle-orm';
-import type { KnowledgeTenantTransaction } from '../../../platform/database/knowledge/tenant';
-import { outbox } from '../../../platform/database/knowledge/schema';
+import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
+import { outbox } from '../../../platform/database/workspace/schema';
 import { KnowledgeJobError } from './types';
 import type { OutboxReference } from './types';
 
-export const DISPATCH_TASK = 'knowledge.dispatch';
-export const consumerTask = (name: string) => `knowledge.consume.${name}`;
+export const DISPATCH_TASK = 'workspace.dispatch';
+export const consumerTask = (name: string) => `workspace.consume.${name}`;
 export const jobKey = (task: string, reference: OutboxReference) => `${task}:${reference.workspaceId}:${reference.outboxId}`;
 
 /** Must use the same transaction as the domain write and outbox insert. */
-export async function enqueueKnowledgeJob(db: KnowledgeTenantTransaction, task: string, reference: OutboxReference): Promise<string> {
+export async function enqueueKnowledgeJob(db: WorkspaceTenantTransaction, task: string, reference: OutboxReference): Promise<string> {
   const result = await db.execute<{ id: string | null }>(sql`
     SELECT (knowledge_jobs.add_job(
       identifier => ${task}::text,
@@ -28,7 +28,7 @@ export async function enqueueKnowledgeJob(db: KnowledgeTenantTransaction, task: 
 }
 
 export async function appendKnowledgeOutbox(
-  db: KnowledgeTenantTransaction,
+  db: WorkspaceTenantTransaction,
   input: OutboxEvent,
   id = randomUUID(),
 ): Promise<{ id: string; created: boolean }> {

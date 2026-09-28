@@ -4,8 +4,8 @@ import { knowledgeSchema } from '@fouc/shared/knowledge/schema';
 import { collectSuggestions } from '@fouc/shared/knowledge/schema/suggestions';
 import { principal } from '@fouc/shared/knowledge/contracts';
 import type { KnowledgeRequestContext } from '../access';
-import { docState } from '../../../platform/database/knowledge/schema';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { docState } from '../../../platform/database/workspace/schema';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { replaceAuthorizedPageAcl } from '../permissions/mutations';
 import { createPermissionsFixture, until, type PermissionsFixture } from '../permissions/permissions-test-fixture';
 import { createPageCollaborationListener } from '../collaboration/page-collaboration-bun';
@@ -54,7 +54,7 @@ describe('block-by-block streaming AI tasks', () => {
   });
 
   async function grantEdit(pageId: string) {
-    await withKnowledgeTenant(fixture.pool, fixture.alpha.id, (db) => replaceAuthorizedPageAcl(db, {
+    await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => replaceAuthorizedPageAcl(db, {
       workspaceId: fixture.alpha.id, pageId,
       grants: [{ principal: principal('user', fixture.reader.identity.userId), level: 'edit' }],
     }));
@@ -69,14 +69,14 @@ describe('block-by-block streaming AI tasks', () => {
     const blocks: import('@tiptap/pm/model').Node[] = [];
     document.forEach((block) => blocks.push(block));
     const encoded = prosemirrorDocToYDoc(document.type.schema.topNodeType.createChecked(null, blocks));
-    await withKnowledgeTenant(fixture.pool, scope.workspaceId, async (db) => {
+    await withWorkspaceTenant(fixture.pool, scope.workspaceId, async (db) => {
       await db.insert(docState).values({ ...scope, state: Buffer.from(encoded.state), stateVector: Buffer.from(encoded.stateVector) });
     });
     return encoded;
   }
 
   async function currentDocument(scope: { workspaceId: string; pageId: string }) {
-    const [row] = await withKnowledgeTenant(fixture.pool, scope.workspaceId, (db) => db.select({ state: docState.state }).from(docState).where(eq(docState.pageId, scope.pageId)));
+    const [row] = await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) => db.select({ state: docState.state }).from(docState).where(eq(docState.pageId, scope.pageId)));
     return row ? yStateToProseMirrorDoc(new Uint8Array(row.state), knowledgeSchema) : null;
   }
 
@@ -233,7 +233,7 @@ describe('block-by-block streaming AI tasks', () => {
     steered.delta('第一块\n\n');
     await until(async () => (await service.get(authority, { workspaceId: scope.workspaceId, taskId: task.taskId })).blocksWritten === 1);
 
-    await withKnowledgeTenant(fixture.pool, fixture.alpha.id, (db) => replaceAuthorizedPageAcl(db, {
+    await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => replaceAuthorizedPageAcl(db, {
       workspaceId: fixture.alpha.id, pageId: pages[0].pageId,
       grants: [{ principal: principal('user', fixture.reader.identity.userId), level: 'view' }],
     }));
@@ -303,7 +303,7 @@ describe('block-by-block streaming AI tasks', () => {
     expect(document.textContent).toContain('离线块');
     expect((await currentSuggestions(scope)).at(0)!.author).toBe(`agent:${task.taskId}`);
     const events = await fixture.server.database.admin.query(
-      "SELECT payload FROM knowledge.outbox WHERE workspace_id=$1 AND topic='doc.changed' AND payload->>'pageId'=$2", [scope.workspaceId, scope.pageId]);
+      "SELECT payload FROM workspace.outbox WHERE workspace_id=$1 AND topic='doc.changed' AND payload->>'pageId'=$2", [scope.workspaceId, scope.pageId]);
     expect(events.rows.length).toBeGreaterThan(0);
     expect((events.rows.at(-1) as { payload: { actor: unknown } }).payload.actor).toEqual({ kind: 'agent', userId: authority.userId, taskId: task.taskId });
   }, 30_000);

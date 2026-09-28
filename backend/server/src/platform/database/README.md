@@ -1,6 +1,6 @@
 # Fouc PostgreSQL schema
 
-`identity/schema.ts` 与 `knowledge/schema/` 中的 Drizzle 表定义是唯一 DDL 来源。`current.sql` 是当前空库初始化结果，不是版本迁移链；禁止手工维护另一套 SQL 表结构。
+`identity/schema.ts` 与 `workspace/schema/` 中的 Drizzle 表定义是唯一 DDL 来源。`current.sql` 是当前空库初始化结果，不是版本迁移链；禁止手工维护另一套 SQL 表结构。
 
 ```powershell
 bun backend/server/scripts/database-schema.ts --write
@@ -13,7 +13,7 @@ pnpm exec tsc --noEmit -p backend/server/tsconfig.json
 
 ## 边界
 
-- `knowledge` 包含所有租户业务表，每张表都有 `workspace_id`。根 `workspace.id` TypeScript 属性直接映射物理 `workspace_id`，不重复保存租户 ID。
+- `workspace` 包含所有租户业务表，每张表都有 `workspace_id`。根 `workspace.id` TypeScript 属性直接映射物理 `workspace_id`，不重复保存租户 ID。项目和知识库分别直接归属工作空间；文件夹通过复合外键归属同一空间内的知识库。
 - `auth` 仅包含 Better Auth 全局身份表：`user`、`session`、`account`、`verification`。身份与成员资格分离；删除成员不会破坏其历史页面和评论作者记录。Better Auth 必须配置 UUID ID 生成器。
 - 所有业务表之间的外键都包含 `workspace_id`。页面、父页面和所属数据库还必须处于相同 Teamspace。`database_definition` 的类型 CHECK 和复合外键保证只有 `kind=database` 页可以拥有行。
 - `page.path` 为 `ltree`；单页标签为 UUID 的 `-` 替换成 `_`。父页面为空时路径深度为 1，末尾标签始终等于自身 ID。完整祖先路径和防环由页面树事务服务维护。
@@ -45,13 +45,13 @@ bun backend/server/scripts/database.ts check
 - `init` 在单一事务中执行当前生成 SQL、全部业务表的强制 RLS、应用角色最小表和序列授权，并在提交前核验实际目录。任一步失败均回滚，初始化不会写入示例业务或身份数据。
 - 任一目标 schema 已存在时，`init` 明确拒绝；没有重置、升级或迁移分支。发生结构差异时先调查检查结果，不要对已有库重复初始化。
 - `check` 核对表和列类型、约束名称与有效性、索引名称与方法、RLS 完整策略、扩展及有效权限。它不是任意数据库对象的完整语义 diff，也不验证后续 H02/H03 管理的检索索引。
-- 业务操作使用 `withKnowledgeTenant(pool, workspaceId, callback)`，通过同一借出连接上的事务局部租户上下文访问 Drizzle。服务必须在回调内验证身份和工作区成员资格后才执行业务操作；无上下文默认不可访问业务行。不要在回调中改用 `pool.query`。
+- 业务操作使用 `withWorkspaceTenant(pool, workspaceId, callback)`，通过同一借出连接上的事务局部租户上下文访问 Drizzle。服务必须在回调内验证身份和工作区成员资格后才执行业务操作；无上下文默认不可访问业务行。不要在回调中改用 `pool.query`。
 - 跨工作区发现只使用 `withFoucIdentity(pool, sessionId, callback)` 的 `BEGIN READ ONLY`。`member`、`workspace` 各有一条 `FOR SELECT` 的 `own_identity` policy，只允许有效、未撤销且邮箱已验证会话发现自身成员关系。sessionId 必须来自服务端认证，不能来自请求 body；PAT 不能使用这一路径。业务写入仍由 `tenant_scope` 保护，没有 BYPASSRLS 或 SECURITY DEFINER。两种事务都显式清空另一种作用域。
 
 真实数据库回归只创建带随机 UUID 的一次性测试库，确认创建归属后清理并验证不存在；不会删除开发主库。
 
 ```powershell
-bun test backend/server/src/platform/database/knowledge
+bun test backend/server/src/platform/database/workspace
 ```
 
 D02/D03 实测覆盖两个租户在全部业务表上的隔离、无上下文拒绝、连接复用与失败回收、初始化原子性、复合外键和数据库行约束，以及真实 Y.Doc 的二进制保存、检查点恢复和并发收敛。CLI 用例以独立进程执行真实部署命令。

@@ -46,8 +46,8 @@ describe('Better Auth with real PostgreSQL and HTTP', () => {
     expect(stored.rows[0]?.name).toBe('Person');
     expect(stored.rows[0]?.provider).toBe('credential');
     expect(stored.rows[0]?.account).toBe(userId);
-    expect((await server.database.admin.query('SELECT count(*)::int AS count FROM knowledge.workspace')).rows[0].count).toBe(0);
-    expect((await server.database.admin.query('SELECT count(*)::int AS count FROM knowledge.member')).rows[0].count).toBe(0);
+    expect((await server.database.admin.query('SELECT count(*)::int AS count FROM workspace.workspace')).rows[0].count).toBe(0);
+    expect((await server.database.admin.query('SELECT count(*)::int AS count FROM workspace.member')).rows[0].count).toBe(0);
     expect(server.captured).toHaveLength(1);
     const verificationUrl = server.captured[0]!.text.match(/https?:\/\/\S+/)![0];
     expect(new URL(verificationUrl).origin).toBe(server.origin);

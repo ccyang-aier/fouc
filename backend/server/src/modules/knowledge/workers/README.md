@@ -1,11 +1,11 @@
 # Transactional knowledge workers
 
-`appendKnowledgeOutbox(db, event, id?)` runs **inside the same `withKnowledgeTenant` transaction as the domain mutation**. It validates C01, inserts the tenant-scoped outbox and calls Graphile's SQL `add_job` through that same connection. Never call it using an unrelated pool query or outside the domain transaction. An enqueue error rolls back the entire operation.
+`appendKnowledgeOutbox(db, event, id?)` runs **inside the same `withWorkspaceTenant` transaction as the domain mutation**. It validates C01, inserts the tenant-scoped outbox and calls Graphile's SQL `add_job` through that same connection. Never call it using an unrelated pool query or outside the domain transaction. An enqueue error rolls back the entire operation.
 
 The queue payload is only `{workspaceId, outboxId}`. The dispatcher locks that exact tenant outbox row, validates its event, schedules the statically registered topic consumers and sets `dispatchedAt` in one transaction. An unregistered topic fails visibly instead of being discarded. Consumer handlers fetch the validated event under tenant RLS and perform slow external work outside the read transaction. Consumer names are fixed server code, not file paths supplied in requests.
 
 ```ts
-await withKnowledgeTenant(pool, trustedWorkspaceId, async (db) => {
+await withWorkspaceTenant(pool, trustedWorkspaceId, async (db) => {
   await updateDomainState(db);
   await appendKnowledgeOutbox(db, validatedEvent, stableMutationEventId);
 });

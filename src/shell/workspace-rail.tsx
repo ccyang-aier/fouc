@@ -56,11 +56,12 @@ export function WorkspaceRail({
   activeSpaceId: string
   onSpacesChange: React.Dispatch<React.SetStateAction<RailSpace[]>>
   onActiveSpaceChange: (id: string) => void
-  onCreateSpace: () => string
+  onCreateSpace: () => Promise<string>
 }) {
   const [spaceMenu, setSpaceMenu] = useState<SpaceMenuState | null>(null)
   const [renameValue, setRenameValue] = useState("")
   const [feedback, setFeedback] = useState("")
+  const [creating, setCreating] = useState(false)
   const renameRef = useRef<HTMLInputElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -111,10 +112,18 @@ export function WorkspaceRail({
     if (view === "projects") onViewChange("project-home")
   }
 
-  function createSpace() {
-    const label = onCreateSpace()
-    setFeedback(`已创建「${label}」`)
-    onViewChange("project-home")
+  async function createSpace() {
+    if (creating) return
+    setCreating(true)
+    try {
+      const label = await onCreateSpace()
+      setFeedback(`已创建「${label}」`)
+      onViewChange("project-home")
+    } catch {
+      setFeedback("创建工作空间失败，请检查账户权限和服务状态后重试")
+    } finally {
+      setCreating(false)
+    }
   }
 
   function openSpaceMenu(event: React.MouseEvent, space: RailSpace) {
@@ -178,7 +187,7 @@ export function WorkspaceRail({
             </DropdownMenuItem>
           ))}
           <DropdownMenuSeparator />
-          <DropdownMenuItem onSelect={createSpace}>
+          <DropdownMenuItem disabled={creating} onSelect={createSpace}>
             <Plus aria-hidden className="size-4" weight="bold" />
             新建空间
           </DropdownMenuItem>
@@ -190,8 +199,9 @@ export function WorkspaceRail({
           <button
             type="button"
             aria-label="新建工作空间"
+            disabled={creating}
             onClick={createSpace}
-            className="mt-3 grid size-7 place-items-center rounded-md border border-[var(--line-strong)] bg-ink text-background outline-none transition-[background-color,transform] hover:bg-ink-secondary focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-90"
+            className="mt-3 grid size-7 place-items-center rounded-md border border-[var(--line-strong)] bg-ink text-background outline-none transition-[background-color,transform] hover:bg-ink-secondary focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-90 disabled:cursor-wait disabled:opacity-60"
           >
             <Plus aria-hidden className="size-4" weight="bold" />
           </button>

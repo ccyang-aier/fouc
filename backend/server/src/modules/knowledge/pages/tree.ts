@@ -9,8 +9,8 @@ import {
   restorePageInputSchema,
 } from '@fouc/shared/knowledge/contracts';
 import type { PageLifecycleState, PagePlacement } from '@fouc/shared/knowledge/contracts';
-import { page } from '../../../platform/database/knowledge/schema';
-import type { KnowledgeTenantTransaction } from '../../../platform/database/knowledge/tenant';
+import { page } from '../../../platform/database/workspace/schema';
+import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
 import { lockPermissionPage } from '../permissions/locking';
 import { withAuthorizedPageTreeMutation } from '../permissions/mutations';
 import { KnowledgePageError } from './errors';
@@ -32,7 +32,7 @@ type PlacementScope = { workspaceId: string; teamspaceId: string; parentId: stri
 type ParentRow = { id: string; teamspaceId: string; path: string; deletedAt: Date | null };
 
 /** 跨租户/跨 teamspace/已回收/不存在的父页面统一为 INVALID_PAGE_PARENT;租户上下文之外的父页在事务内不可见。 */
-async function loadParent(db: KnowledgeTenantTransaction, scope: { workspaceId: string; teamspaceId: string; parentId: string | null }): Promise<ParentRow | null> {
+async function loadParent(db: WorkspaceTenantTransaction, scope: { workspaceId: string; teamspaceId: string; parentId: string | null }): Promise<ParentRow | null> {
   if (scope.parentId === null) return null;
   const [parent] = await db.select({ id: page.id, teamspaceId: page.teamspaceId, path: page.path, deletedAt: page.deletedAt })
     .from(page).where(and(eq(page.workspaceId, scope.workspaceId), eq(page.id, scope.parentId)));
@@ -45,7 +45,7 @@ async function loadParent(db: KnowledgeTenantTransaction, scope: { workspaceId: 
  * 工作区锁内,并发插入串行化后总能看到最新兄弟集合;相邻中点插入不触发兄弟更新,
  * 仅在排序键耗尽或遇到非规范键时对该父节点的兄弟集合局部重排。
  */
-async function allocatePosition(db: KnowledgeTenantTransaction, scope: PlacementScope, afterPageId: string | null, movingPageId: string): Promise<string> {
+async function allocatePosition(db: WorkspaceTenantTransaction, scope: PlacementScope, afterPageId: string | null, movingPageId: string): Promise<string> {
   const parent = scope.parentId === null ? isNull(page.parentId) : eq(page.parentId, scope.parentId);
   const current = await db.select({ id: page.id, position: page.position }).from(page)
     .where(and(eq(page.workspaceId, scope.workspaceId), eq(page.teamspaceId, scope.teamspaceId), parent, isNull(page.deletedAt), ne(page.id, movingPageId)))
@@ -70,7 +70,7 @@ async function allocatePosition(db: KnowledgeTenantTransaction, scope: Placement
  * 服务端不生成 id;重复提交同一 id 按已存在处理并返回现有落位。落位发生在
  * withAuthorizedPageTreeMutation 边界内,新子树在同一事务中被围栏失效。
  */
-export async function createAuthorizedPage(db: KnowledgeTenantTransaction, input: unknown, createdBy: string): Promise<PagePlacement> {
+export async function createAuthorizedPage(db: WorkspaceTenantTransaction, input: unknown, createdBy: string): Promise<PagePlacement> {
   const parsed = parse(createPageInputSchema, input);
   if (!entityIdSchema.safeParse(createdBy).success) throw new KnowledgePageError('INVALID_PAGE_INPUT');
   const { value } = await withAuthorizedPageTreeMutation(db, { workspaceId: parsed.workspaceId, pageId: parsed.id }, async () => {
@@ -121,7 +121,7 @@ const pagePatchSchema = z.strictObject({
   }).refine((value) => Object.keys(value).length > 0, 'at least one field'),
 });
 
-export async function updateAuthorizedPage(db: KnowledgeTenantTransaction, input: unknown): Promise<PagePlacement> {
+export async function updateAuthorizedPage(db: WorkspaceTenantTransaction, input: unknown): Promise<PagePlacement> {
   const parsed = parse(pagePatchSchema, input);
   const scope = { workspaceId: parsed.workspaceId, pageId: parsed.pageId };
   const node = await lockPermissionPage(db, scope);
@@ -131,7 +131,7 @@ export async function updateAuthorizedPage(db: KnowledgeTenantTransaction, input
   return placement({ ...node, ...parsed.patch });
 }
 
-export async function moveAuthorizedPage(db: KnowledgeTenantTransaction, input: unknown): Promise<PagePlacement> {
+export async function moveAuthorizedPage(db: WorkspaceTenantTransaction, input: unknown): Promise<PagePlacement> {
   const parsed = parse(movePageInputSchema, input);
   const scope = { workspaceId: parsed.workspaceId, pageId: parsed.pageId };
   const { value } = await withAuthorizedPageTreeMutation(db, scope, async () => {
@@ -159,7 +159,7 @@ export async function moveAuthorizedPage(db: KnowledgeTenantTransaction, input: 
  * P03 授权前置同上。软删除仅标记根节点:子孙行保持原位,回收后整棵子树经 P02
  * 物化为空并 fail closed;恢复清除标记并在同一事务内重新围栏,等待重算后重新可见。
  */
-export async function recycleAuthorizedPage(db: KnowledgeTenantTransaction, input: unknown): Promise<PageLifecycleState> {
+export async function recycleAuthorizedPage(db: WorkspaceTenantTransaction, input: unknown): Promise<PageLifecycleState> {
   const parsed = parse(recyclePageInputSchema, input);
   const scope = { workspaceId: parsed.workspaceId, pageId: parsed.pageId };
   const { value } = await withAuthorizedPageTreeMutation(db, scope, async () => {
@@ -174,7 +174,7 @@ export async function recycleAuthorizedPage(db: KnowledgeTenantTransaction, inpu
 }
 
 /** P03 授权前置同上;恢复被回收的页面,谱系中仍有回收祖先时可见性由 P02 决定。 */
-export async function restoreAuthorizedPage(db: KnowledgeTenantTransaction, input: unknown): Promise<PageLifecycleState> {
+export async function restoreAuthorizedPage(db: WorkspaceTenantTransaction, input: unknown): Promise<PageLifecycleState> {
   const parsed = parse(restorePageInputSchema, input);
   const scope = { workspaceId: parsed.workspaceId, pageId: parsed.pageId };
   const { value } = await withAuthorizedPageTreeMutation(db, scope, async () => {

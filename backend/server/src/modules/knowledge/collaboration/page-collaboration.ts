@@ -1,7 +1,7 @@
 import type { Pool } from 'pg';
 import type { Extension, onConnectPayload } from '@hocuspocus/server';
 import type { PermissionLevel } from '@fouc/shared/knowledge/contracts';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import type { KnowledgeRequestAuthenticator, KnowledgeRequestContext } from '../access';
 import { authorizePageAccess } from '../permissions';
 import { parsePageDocument } from '@fouc/shared/knowledge/collaboration';
@@ -36,7 +36,7 @@ export function pageCollaborationExtension(deps: { authenticator: KnowledgeReque
       const scope = parsePageDocument(data.documentName);
       if (!scope) throw new PageCollaborationRejected();
       const authority = await deps.authenticator.authenticate(data.request, scope.workspaceId, ['read']);
-      const decision = await withKnowledgeTenant(deps.pool, scope.workspaceId, (db) =>
+      const decision = await withWorkspaceTenant(deps.pool, scope.workspaceId, (db) =>
         authorizePageAccess(db, { userId: authority.userId, scope, required: 'view' }));
       if (decision.decision !== 'allow') throw new PageCollaborationRejected();
       data.connectionConfig.isAuthenticated = true;

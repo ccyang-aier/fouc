@@ -9,7 +9,7 @@ import type { PageCollaborationBroadcast } from './page-collaboration-redis';
 import type { PageCheckpointExtension } from './checkpoints';
 import type { WorkspaceEventsChannel } from './events';
 
-const log = createLogger('knowledge.collaboration');
+const log = createLogger('workspace.collaboration');
 
 /**
  * Bun's ServerWebSocket rejects method calls made through the detached object

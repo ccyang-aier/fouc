@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { useCreateTeamspaceMutation } from '../organization/hooks';
 import { DialogButton, ModalDialog, NameField } from '../organization/ui';
 import { organizationErrorTextOf } from '@/features/workspaces/organization-errors';
-import type { Teamspace } from '@/features/workspaces/organization-client';
-import type { TeamspaceAccess } from '@/features/workspaces/organization-client';
+import type { Teamspace } from '@fouc/shared/knowledge/contracts';
+import type { TeamspaceAccess } from '../data/knowledge-catalog-client';
 import { DefaultAccessField } from '../organization/default-access-field';
 
 export function CreateTeamspaceDialog({ workspaceId, knowledgeBaseId, open, onClose, onCreated }: {

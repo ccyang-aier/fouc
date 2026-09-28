@@ -3,8 +3,8 @@ import { and, eq } from 'drizzle-orm';
 import type { Pool } from 'pg';
 import { z } from 'zod';
 import { entityIdSchema } from '@fouc/shared/knowledge/contracts';
-import { docState, page } from '../../../platform/database/knowledge/schema';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { docState, page } from '../../../platform/database/workspace/schema';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { prepareWorkspaceAssetUpload, confirmWorkspaceAssetUpload } from '../assets/service';
 import type { KnowledgeAssetStorage } from '../assets/storage';
 import { authorizePageAccess } from '../permissions/authorization';
@@ -71,12 +71,12 @@ export function mimeOfAttachment(path: string): string {
 /** AS01 流程:prepare(租户事务)→ 预签名 PUT(无事务)→ confirm(新事务)。 */
 async function uploadAttachment(storage: KnowledgeAssetStorage, pool: Pool, input: { workspaceId: string; userId: string }, attachment: { path: string; bytes: Uint8Array; mime: string; hash: string }) {
   const intent = { workspaceId: input.workspaceId, userId: input.userId, hash: attachment.hash, mime: attachment.mime, size: attachment.bytes.byteLength, name: attachment.path.split('/').at(-1)! };
-  const prepared = await withKnowledgeTenant(pool, input.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, intent));
+  const prepared = await withWorkspaceTenant(pool, input.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, intent));
   if (prepared.action === 'upload') {
     const response = await fetch(prepared.url, { method: 'PUT', headers: prepared.headers, body: attachment.bytes });
     if (!response.ok) throw new Error(`asset_upload_http_${response.status}`);
   }
-  await withKnowledgeTenant(pool, input.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, intent));
+  await withWorkspaceTenant(pool, input.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, intent));
 }
 
 export async function importObsidianVault(deps: { pool: Pool; storage: KnowledgeAssetStorage; onEvent?: VaultEventSink }, input: unknown): Promise<VaultImportResult> {
@@ -89,7 +89,7 @@ export async function importObsidianVault(deps: { pool: Pool; storage: Knowledge
   const items: VaultItemResult[] = [];
 
   // 目标父页面:P03 edit 校验 + 读取落位信息(teamspace 以父页面为准)。
-  const target = await withKnowledgeTenant(deps.pool, parsed.workspaceId, async (db) => {
+  const target = await withWorkspaceTenant(deps.pool, parsed.workspaceId, async (db) => {
     const decision = await authorizePageAccess(db, { userId: parsed.userId, scope: { workspaceId: parsed.workspaceId, pageId: parsed.parentPageId }, required: 'edit' });
     if (decision.decision !== 'allow') throw new KnowledgeVaultError('VAULT_ACCESS_DENIED', '发起者对导入目标没有编辑权限');
     const [parent] = await db.select({ id: page.id, teamspaceId: page.teamspaceId }).from(page)
@@ -142,7 +142,7 @@ export async function importObsidianVault(deps: { pool: Pool; storage: Knowledge
     try {
       const document = importVaultBody(entry.markdown, entry.path, resolver);
       const encoded = prosemirrorDocToYDoc(document);
-      await withKnowledgeTenant(deps.pool, parsed.workspaceId, async (db) => {
+      await withWorkspaceTenant(deps.pool, parsed.workspaceId, async (db) => {
         await createAuthorizedPage(db, {
           id: entry.pageId,
           workspaceId: parsed.workspaceId,

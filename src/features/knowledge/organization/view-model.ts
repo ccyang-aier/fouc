@@ -5,7 +5,7 @@
  */
 
 import type { MemberRole } from '@/features/workspaces/organization-client';
-import type { TeamspaceAccess } from '@/features/workspaces/organization-client';
+import type { TeamspaceAccess } from '../data/knowledge-catalog-client';
 
 /** The four observable list states plus the ready state they lead to. */
 export type OrganizationListState = 'loading' | 'unauthenticated' | 'forbidden' | 'error' | 'empty' | 'ready';

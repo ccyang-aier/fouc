@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import type { PageScope, PermissionLevel, Principal } from '@fouc/shared/knowledge/contracts';
-import { groupMember, member } from '../../../platform/database/knowledge/schema';
-import type { KnowledgeTenantTransaction } from '../../../platform/database/knowledge/tenant';
+import { groupMember, member } from '../../../platform/database/workspace/schema';
+import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
 import { canAccess, expandPrincipals, permissionFor } from './effective';
 import { readMaterializedPagePermissions } from './queries';
 
@@ -13,7 +13,7 @@ export type PageAccessDecision =
   | { decision: 'rebuilding'; pageId: string };
 
 /** Principals come from verified rows in this transaction, never from request bodies. */
-export async function expandRequestPrincipals(db: KnowledgeTenantTransaction, workspaceId: string, userId: string): Promise<Principal[]> {
+export async function expandRequestPrincipals(db: WorkspaceTenantTransaction, workspaceId: string, userId: string): Promise<Principal[]> {
   const [membership] = await db.select().from(member).where(and(eq(member.workspaceId, workspaceId), eq(member.userId, userId)));
   if (!membership) return [];
   const groups = await db.select().from(groupMember).where(and(eq(groupMember.workspaceId, workspaceId), eq(groupMember.userId, userId)));
@@ -25,7 +25,7 @@ export async function expandRequestPrincipals(db: KnowledgeTenantTransaction, wo
  * Run inside the domain tenant transaction with the operation's freshly
  * refreshed authority; it is not an HTTP endpoint and performs no locking.
  */
-export async function authorizePageAccess(db: KnowledgeTenantTransaction, input: { userId: string; scope: PageScope; required: PermissionLevel }): Promise<PageAccessDecision> {
+export async function authorizePageAccess(db: WorkspaceTenantTransaction, input: { userId: string; scope: PageScope; required: PermissionLevel }): Promise<PageAccessDecision> {
   const { scope } = input;
   const principals = await expandRequestPrincipals(db, scope.workspaceId, input.userId);
   if (!principals.length) return { decision: 'deny', pageId: scope.pageId };

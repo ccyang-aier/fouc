@@ -2,9 +2,9 @@ import { and, eq, sql } from 'drizzle-orm';
 import type { Pool } from 'pg';
 import { z } from 'zod';
 import type { AssetDerived, OutboxEvent } from '@fouc/shared/knowledge/contracts';
-import { asset } from '../../../platform/database/knowledge/schema';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
-import type { KnowledgeTenantTransaction } from '../../../platform/database/knowledge/tenant';
+import { asset } from '../../../platform/database/workspace/schema';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
 import { ModelGatewayError } from '../ai/gateway';
 import type { ModelGateway } from '../ai/gateway';
 import type { GatewayErrorCode } from '../ai/gateway/errors';
@@ -74,9 +74,9 @@ export function createAssetVisionConsumer(options: KnowledgeVisionWorkerOptions)
       // Topic narrowing is runtime-checked like every Q01 consumer; the payload shape is re-validated on read.
       if (event.topic !== 'asset.created') throw new KnowledgeJobError('invalid_event');
       context.signal.throwIfAborted();
-      const mime = await withKnowledgeTenant(pool, event.workspaceId, (db) => selectPendingImage(db, event));
+      const mime = await withWorkspaceTenant(pool, event.workspaceId, (db) => selectPendingImage(db, event));
       if (!mime) return;
-      const claimed = await withKnowledgeTenant(pool, event.workspaceId, (db) => claimProcessing(db, event));
+      const claimed = await withWorkspaceTenant(pool, event.workspaceId, (db) => claimProcessing(db, event));
       if (!claimed) return;
       try {
         context.signal.throwIfAborted();
@@ -93,10 +93,10 @@ export function createAssetVisionConsumer(options: KnowledgeVisionWorkerOptions)
           signal: context.signal,
         });
         const derived: AssetDerived = { ...parseVisionOutput(result.text), model: result.model.model, generatedAt: new Date().toISOString() };
-        await withKnowledgeTenant(pool, event.workspaceId, (db) => storeOutcome(db, event, derived));
+        await withWorkspaceTenant(pool, event.workspaceId, (db) => storeOutcome(db, event, derived));
       } catch (error) {
         const failure = derivationFailure(error);
-        await withKnowledgeTenant(pool, event.workspaceId, (db) => storeOutcome(db, event, { status: 'failed', error: failure.code }));
+        await withWorkspaceTenant(pool, event.workspaceId, (db) => storeOutcome(db, event, { status: 'failed', error: failure.code }));
         // Retryable failures rethrow so the queue retries with backoff; exhausted
         // jobs stay retained by Graphile (dead-letter) while derived stays queryable.
         if (failure.retryable) throw new KnowledgeJobError('consumer_failed');
@@ -106,7 +106,7 @@ export function createAssetVisionConsumer(options: KnowledgeVisionWorkerOptions)
 }
 
 /** Returns the mime of an image still needing derivation; null is a permanent no-op. */
-async function selectPendingImage(db: KnowledgeTenantTransaction, event: AssetCreatedEvent): Promise<string | null> {
+async function selectPendingImage(db: WorkspaceTenantTransaction, event: AssetCreatedEvent): Promise<string | null> {
   const [row] = await db.select({ status: asset.status, mime: asset.mime, derived: asset.derived }).from(asset).where(scoped(event));
   if (!row) throw new KnowledgeJobError('invalid_event');
   if (row.status !== 'ready' || row.derived.status === 'ready' || !imageMime.test(row.mime)) return null;
@@ -114,7 +114,7 @@ async function selectPendingImage(db: KnowledgeTenantTransaction, event: AssetCr
 }
 
 /** pending/failed/processing → processing. A lost race (already finished) is a no-op. */
-async function claimProcessing(db: KnowledgeTenantTransaction, event: AssetCreatedEvent): Promise<boolean> {
+async function claimProcessing(db: WorkspaceTenantTransaction, event: AssetCreatedEvent): Promise<boolean> {
   const claimed = await db.update(asset).set({ derived: { status: 'processing' }, updatedAt: new Date() })
     .where(and(scoped(event), sql`${asset.derived}->>'status' IN ('pending', 'failed', 'processing')`))
     .returning({ hash: asset.hash });
@@ -122,7 +122,7 @@ async function claimProcessing(db: KnowledgeTenantTransaction, event: AssetCreat
 }
 
 /** Only the claimant's processing state may be completed; stale replays never clobber results. */
-async function storeOutcome(db: KnowledgeTenantTransaction, event: AssetCreatedEvent, derived: AssetDerived): Promise<boolean> {
+async function storeOutcome(db: WorkspaceTenantTransaction, event: AssetCreatedEvent, derived: AssetDerived): Promise<boolean> {
   const stored = await db.update(asset).set({ derived, updatedAt: new Date() })
     .where(and(scoped(event), sql`${asset.derived}->>'status' = 'processing'`))
     .returning({ hash: asset.hash });

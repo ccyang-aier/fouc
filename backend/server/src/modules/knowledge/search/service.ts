@@ -2,9 +2,9 @@ import { and, asc, eq, or, sql } from 'drizzle-orm';
 import type { Pool } from 'pg';
 import type { ModelBinding, Principal } from '@fouc/shared/knowledge/contracts';
 import type { HybridSearchHit, HybridSearchResult } from '@fouc/shared/knowledge/search';
-import { blockIndex } from '../../../platform/database/knowledge/schema';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
-import type { KnowledgeTenantTransaction } from '../../../platform/database/knowledge/tenant';
+import { blockIndex } from '../../../platform/database/workspace/schema';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
 import { ModelGatewayError } from '../ai/gateway';
 import type { ModelGateway } from '../ai/gateway';
 import { indexedBlockAccessCondition } from '../permissions/queries';
@@ -117,7 +117,7 @@ interface VectorRow {
  * 表达式退化为精确距离扫描，语义不变。绑定参数的模型谓词在自定义计划中被代入
  * 常量，部分索引可用性不受参数化影响（实测 pgvector 0.8.x）。
  */
-async function searchBlocksByVector(db: KnowledgeTenantTransaction, input: HybridSearchInput & {
+async function searchBlocksByVector(db: WorkspaceTenantTransaction, input: HybridSearchInput & {
   target: EmbeddingModelTarget;
   queryVector: readonly number[];
 }): Promise<VectorRow[]> {
@@ -145,7 +145,7 @@ async function searchBlocksByVector(db: KnowledgeTenantTransaction, input: Hybri
 
 /** Full text for keyword-only candidates: rerank documents and vector-only snippets need it. */
 async function loadCandidateContent(pool: Pool, input: HybridSearchInput, keys: readonly { pageId: string; blockId: string }[]): Promise<Map<string, { titlePath: string | null; contentMd: string }>> {
-  const rows = await withKnowledgeTenant(pool, input.workspaceId, (db) => db.select({
+  const rows = await withWorkspaceTenant(pool, input.workspaceId, (db) => db.select({
     pageId: blockIndex.pageId,
     blockId: blockIndex.blockId,
     titlePath: blockIndex.titlePath,
@@ -172,7 +172,7 @@ async function loadCandidateContent(pool: Pool, input: HybridSearchInput, keys: 
  * 静态索引不可表达（pgvector 拒绝在无维度列上建 HNSW，实测），且 H02 的原子
  * 切换事务不能容纳 `CREATE INDEX CONCURRENTLY`。唯一正确形态是查询侧拥有的
  * `CREATE INDEX CONCURRENTLY block_index_hnsw_{model}_{dims}_idx ON
- * knowledge.block_index USING hnsw ((embedding::vector({dims})) vector_cosine_ops)
+ * workspace.block_index USING hnsw ((embedding::vector({dims})) vector_cosine_ops)
  * WHERE embed_model = '{model}' AND embed_dimensions = {dims}`——建索引起点是
  * 持有管理 DDL 权限的部署/维护通道（与 knowledge-db init/check 同级，不进 schema
  * 源与初始化事务，应用角色无 DDL 授权），在 H02 切换提交后为生效模型创建。
@@ -188,7 +188,7 @@ export async function searchHybrid(pool: Pool, options: HybridSearchOptions): Pr
   const base = { workspaceId: options.workspaceId, principals: options.principals, query };
 
   // Stage 1: which model owns this workspace's vectors (§7.1 filter source).
-  const active = await withKnowledgeTenant(pool, options.workspaceId, (db) => readActiveEmbeddingModel(db, options.workspaceId));
+  const active = await withWorkspaceTenant(pool, options.workspaceId, (db) => readActiveEmbeddingModel(db, options.workspaceId));
 
   // Stage 2: the query vector, generated outside any transaction by the ACTIVE model only.
   type VectorLeg = HybridSearchResult['vectorLeg'];
@@ -222,7 +222,7 @@ export async function searchHybrid(pool: Pool, options: HybridSearchOptions): Pr
 
   // Stage 3: both legs share one tenant transaction (consistent snapshot), each inside the
   // access predicate, each capped at 50 (§7.2).
-  const { keywordHits, vectorRows } = await withKnowledgeTenant(pool, options.workspaceId, async (db) => {
+  const { keywordHits, vectorRows } = await withWorkspaceTenant(pool, options.workspaceId, async (db) => {
     const keywordHits = await searchBlocksByKeyword(db, { ...base, limit: LEG_LIMIT });
     const vectorRows = queryVector && active ? await searchBlocksByVector(db, { ...base, target: active, queryVector }) : [];
     return { keywordHits, vectorRows };

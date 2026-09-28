@@ -14,8 +14,8 @@ import type {
 import type { Principal } from '@fouc/shared/knowledge/contracts';
 import { hybridSearchResultSchema } from '@fouc/shared/knowledge/search';
 import type { HybridSearchResult } from '@fouc/shared/knowledge/search';
-import { blockIndex, docState } from '../../../../platform/database/knowledge/schema';
-import { withKnowledgeTenant } from '../../../../platform/database/knowledge/tenant';
+import { blockIndex, docState } from '../../../../platform/database/workspace/schema';
+import { withWorkspaceTenant } from '../../../../platform/database/workspace/tenant';
 import type { KnowledgeRequestContext } from '../../access';
 import { createModelGateway } from '../gateway';
 import { createAuthorizedDatabase, createAuthorizedRow } from '../../databases/service';
@@ -65,7 +65,7 @@ describe('read-only knowledge agent tools', () => {
   beforeEach(async () => {
     await fixture.resetJobs();
     await fixture.server.database.admin.query(
-      'DELETE FROM knowledge.block_embedding_staging; DELETE FROM knowledge.block_embedding_model; DELETE FROM knowledge.block_index; DELETE FROM knowledge.backlink',
+      'DELETE FROM workspace.block_embedding_staging; DELETE FROM workspace.block_embedding_model; DELETE FROM workspace.block_index; DELETE FROM workspace.backlink',
     );
   });
 
@@ -122,7 +122,7 @@ describe('read-only knowledge agent tools', () => {
     const encoded = options.corrupt
       ? { state: Buffer.from([0x02, 0xff, 0xff, 0xff]), stateVector: Buffer.alloc(0) }
       : encodeBody(blocks);
-    await withKnowledgeTenant(fixture.pool, node.workspaceId, (db) =>
+    await withWorkspaceTenant(fixture.pool, node.workspaceId, (db) =>
       db.insert(docState).values({ ...scope, ...encoded })
         .onConflictDoUpdate({ target: [docState.workspaceId, docState.pageId], set: { ...encoded, updatedAt: sql`clock_timestamp()` } }));
   }
@@ -130,7 +130,7 @@ describe('read-only knowledge agent tools', () => {
   /** L01+H01 的直接重算：本文件不依赖队列消费者。 */
   async function indexPage(node: { workspaceId: string; pageId: string }, options: { backlinks?: boolean } = { backlinks: true }) {
     const scope = { workspaceId: node.workspaceId, pageId: node.pageId };
-    await withKnowledgeTenant(fixture.pool, node.workspaceId, async (db) => {
+    await withWorkspaceTenant(fixture.pool, node.workspaceId, async (db) => {
       if (options.backlinks) await refreshPageBacklinks(db, scope);
       await refreshPageBlockIndex(db, scope);
     });
@@ -140,7 +140,7 @@ describe('read-only knowledge agent tools', () => {
   async function tree(options: Parameters<typeof fixture.tree>[0]) {
     const created = await fixture.tree(options);
     await fixture.drain();
-    await withKnowledgeTenant(fixture.pool, created.root.workspaceId, (db) => db.delete(blockIndex).where(and(
+    await withWorkspaceTenant(fixture.pool, created.root.workspaceId, (db) => db.delete(blockIndex).where(and(
       eq(blockIndex.workspaceId, created.root.workspaceId),
       inArray(blockIndex.pageId, created.pages.map((node) => node.pageId)),
     )));
@@ -148,7 +148,7 @@ describe('read-only knowledge agent tools', () => {
   }
 
   async function grant(node: { workspaceId: string; pageId: string }, principalText: string, level: 'view' | 'edit' | 'full') {
-    await withKnowledgeTenant(fixture.pool, node.workspaceId, (db) =>
+    await withWorkspaceTenant(fixture.pool, node.workspaceId, (db) =>
       replaceAuthorizedPageAcl(db, { workspaceId: node.workspaceId, pageId: node.pageId, grants: [{ principal: principalText as Principal, level }] }));
     await fixture.drain();
   }
@@ -159,12 +159,12 @@ describe('read-only knowledge agent tools', () => {
    */
   async function rebuildLatest(rootPageId: string, workspaceId = fixture.alpha.id) {
     const result = await fixture.server.database.admin.query<{ payload: OutboxEvent }>(
-      "SELECT payload FROM knowledge.outbox WHERE workspace_id=$1 AND topic='acl.changed' AND payload->>'rootPageId'=$2 ORDER BY (payload->>'revision')::bigint DESC LIMIT 1",
+      "SELECT payload FROM workspace.outbox WHERE workspace_id=$1 AND topic='acl.changed' AND payload->>'rootPageId'=$2 ORDER BY (payload->>'revision')::bigint DESC LIMIT 1",
       [workspaceId, rootPageId],
     );
     if (!result.rows[0]) throw new Error('Expected an acl.changed event');
     const payload = result.rows[0].payload as Extract<OutboxEvent, { topic: 'acl.changed' }>;
-    await withKnowledgeTenant(fixture.pool, workspaceId, (db) => rebuildPermissionSubtree(db, payload));
+    await withWorkspaceTenant(fixture.pool, workspaceId, (db) => rebuildPermissionSubtree(db, payload));
   }
 
   const ownerPrincipal = () => `user:${fixture.owner.identity.userId}` as Principal;
@@ -310,7 +310,7 @@ describe('read-only knowledge agent tools', () => {
       expect(`${denied.code}:${denied.message}`).toBe(`${recycled.code}:${recycled.message}`);
 
       // 分享链接只授予 link 主体；成员工具路径从不展开它。
-      const shared = await withKnowledgeTenant(fixture.pool, fixture.alpha.id, (db) =>
+      const shared = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) =>
         createAuthorizedShareLink(db, fixture.owner.identity.userId, { workspaceId: fixture.alpha.id, pageId: privatePage.pageId, level: 'view', expiresAt: null }));
       expect(shared.share.id).toBeTruthy();
       await fixture.drain();
@@ -339,7 +339,7 @@ describe('read-only knowledge agent tools', () => {
 
     async function seededDatabase(space: Teamspace, options: { private?: boolean } = {}) {
       const databaseId = randomUUID();
-      await withKnowledgeTenant(fixture.pool, fixture.alpha.id, async (db) => {
+      await withWorkspaceTenant(fixture.pool, fixture.alpha.id, async (db) => {
         await createAuthorizedDatabase(db, {
           id: databaseId, workspaceId: fixture.alpha.id, teamspaceId: space.id, parentId: null, title: '工具数据库', columns,
         }, fixture.owner.identity.userId);

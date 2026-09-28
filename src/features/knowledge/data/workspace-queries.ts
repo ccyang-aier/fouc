@@ -12,7 +12,9 @@
 
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { organizationClient } from '@/features/workspaces/organization-client';
-import type { Teamspace, WorkspaceWithRole } from '@/features/workspaces/organization-client';
+import type { WorkspaceWithRole } from '@/features/workspaces/organization-client';
+import type { Teamspace } from '@fouc/shared/knowledge/contracts';
+import { knowledgeCatalogClient } from './knowledge-catalog-client';
 import { organizationQueryKeys } from '../organization/keys';
 
 const firstCursor = null as string | null;
@@ -31,7 +33,7 @@ export function useKnowledgeWorkspacesQuery(enabled: boolean) {
 export function useKnowledgeBasesQuery(workspaceId: string | null) {
   return useInfiniteQuery({
     queryKey: organizationQueryKeys.knowledgeBases(workspaceId ?? 'none'),
-    queryFn: ({ signal, pageParam }) => organizationClient.listKnowledgeBases(workspaceId!, { cursor: pageParam, signal }),
+    queryFn: ({ signal, pageParam }) => knowledgeCatalogClient.listKnowledgeBases(workspaceId!, { cursor: pageParam, signal }),
     enabled: workspaceId !== null,
     initialPageParam: firstCursor,
     getNextPageParam: nextCursor,
@@ -41,7 +43,7 @@ export function useKnowledgeBasesQuery(workspaceId: string | null) {
 export function useKnowledgeTeamspacesQuery(workspaceId: string | null, knowledgeBaseId: string | null) {
   return useInfiniteQuery({
     queryKey: [...organizationQueryKeys.teamspaces(workspaceId ?? 'none'), knowledgeBaseId],
-    queryFn: ({ signal, pageParam }) => organizationClient.listTeamspaces(workspaceId!, { knowledgeBaseId: knowledgeBaseId!, cursor: pageParam, signal }),
+    queryFn: ({ signal, pageParam }) => knowledgeCatalogClient.listTeamspaces(workspaceId!, { knowledgeBaseId: knowledgeBaseId!, cursor: pageParam, signal }),
     enabled: workspaceId !== null && knowledgeBaseId !== null,
     initialPageParam: firstCursor,
     getNextPageParam: nextCursor,

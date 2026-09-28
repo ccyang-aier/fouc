@@ -1,7 +1,7 @@
 import type { Pool } from 'pg';
-import { aiUsage } from '../../../platform/database/knowledge/schema';
+import { aiUsage } from '../../../platform/database/workspace/schema';
 import { foucDatabaseErrorMessage } from '../../../platform/database/initialize-config';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import type { ModelCallRecord } from '../ai/gateway';
 
 /** Only safe call metadata; never SQL errors, provider bodies or credentials. */
@@ -29,7 +29,7 @@ export function createAiUsageRecorder(pool: Pool, onDiagnostic: (event: Observab
   return {
     async persist(record: ModelCallRecord, traceId: string | null): Promise<boolean> {
       try {
-        await withKnowledgeTenant(pool, record.context.workspaceId, async (db) => {
+        await withWorkspaceTenant(pool, record.context.workspaceId, async (db) => {
           await db.insert(aiUsage).values({
             workspaceId: record.context.workspaceId,
             id: record.callId,

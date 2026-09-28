@@ -1,6 +1,6 @@
-export { createOrganizationService } from './service';
-export type { OrganizationService } from './service';
-export { createOrganizationRoutes } from './http';
-export { OrganizationError } from './errors';
+export { createKnowledgeCatalogService } from './service';
+export type { KnowledgeCatalogService } from './service';
+export { createKnowledgeCatalogRoutes } from './http';
+export { OrganizationError } from '../../workspaces/errors';
 export { readTeamspacePermissionRoot } from './teamspaces';
 export type { TeamspacePermissionInvalidator } from './teamspaces';

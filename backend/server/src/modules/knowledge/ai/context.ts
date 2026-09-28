@@ -22,9 +22,9 @@ import type { HybridSearchHit } from '@fouc/shared/knowledge/search';
 import { createMarkdownPipeline } from '@fouc/shared/knowledge/markdown';
 import type { AiBlockBinding, AiMarkdownContext } from '@fouc/shared/knowledge/markdown';
 import { isKnowledgeBlock } from '@fouc/shared/knowledge/schema';
-import { blockIndex, docState, page } from '../../../platform/database/knowledge/schema';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
-import type { KnowledgeTenantTransaction } from '../../../platform/database/knowledge/tenant';
+import { blockIndex, docState, page } from '../../../platform/database/workspace/schema';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
 import { authorizePageAccess, expandRequestPrincipals } from '../permissions/authorization';
 import { indexedBlockAccessCondition } from '../permissions/queries';
 import { PAGE_BODY_FRAGMENT } from '../search/backlinks';
@@ -92,7 +92,7 @@ function decodePageBody(document: Y.Doc): KnowledgeNode | null {
  * 从未持久化或页面已删）返回 null；解码或锚点校验失败同样返回 null——读取路径对
  * 损坏正文 fail closed（留待 doc.changed 消费者修复），不阻塞其余分段。
  */
-async function loadPageAiContext(db: KnowledgeTenantTransaction, scope: { workspaceId: string; pageId: string }): Promise<{ document: KnowledgeNode; context: AiMarkdownContext } | null> {
+async function loadPageAiContext(db: WorkspaceTenantTransaction, scope: { workspaceId: string; pageId: string }): Promise<{ document: KnowledgeNode; context: AiMarkdownContext } | null> {
   const [stored] = await db.select({ state: docState.state }).from(docState)
     .where(and(eq(docState.workspaceId, scope.workspaceId), eq(docState.pageId, scope.pageId)));
   if (!stored) return null;
@@ -120,7 +120,7 @@ function collectOutlineEntries(document: KnowledgeNode): ContextOutlineEntry[] {
 }
 
 /** 从页面自身沿 parentId 上溯收集标题（去空），构成大纲段的页面路径。 */
-async function readPageTitlePath(db: KnowledgeTenantTransaction, scope: { workspaceId: string; pageId: string }): Promise<string[]> {
+async function readPageTitlePath(db: WorkspaceTenantTransaction, scope: { workspaceId: string; pageId: string }): Promise<string[]> {
   const titles: string[] = [];
   const seen = new Set<string>();
   let cursor: string | null = scope.pageId;
@@ -182,7 +182,7 @@ interface FocusLegs {
  * 权威取标题树与邻块——邻块经 M02 `createAiContext().read()` 按锚点读取，切片自带
  * `{#b:id}`；焦点块不存在于权威文档（已删除）时仅跳过邻块腿。
  */
-async function loadFocusLegs(db: KnowledgeTenantTransaction, input: { workspaceId: string; userId: string; focus: AssembleContextFocus }): Promise<FocusLegs | null> {
+async function loadFocusLegs(db: WorkspaceTenantTransaction, input: { workspaceId: string; userId: string; focus: AssembleContextFocus }): Promise<FocusLegs | null> {
   const scope = { workspaceId: input.workspaceId, pageId: input.focus.pageId };
   const decision = await authorizePageAccess(db, { userId: input.userId, scope, required: 'view' });
   if (decision.decision !== 'allow') return null;
@@ -215,7 +215,7 @@ async function loadFocusLegs(db: KnowledgeTenantTransaction, input: { workspaceI
 }
 
 /** 检索腿正文回读：与 H04 同一 `indexedBlockAccessCondition` 谓词（先于任何装配）。 */
-async function enrichRetrieval(db: KnowledgeTenantTransaction, input: {
+async function enrichRetrieval(db: WorkspaceTenantTransaction, input: {
   workspaceId: string;
   userId: string;
   hits: readonly HybridSearchHit[];
@@ -307,7 +307,7 @@ export async function assembleContext(pool: Pool, input: AssembleContextInput): 
   if (!Number.isInteger(budgetBytes) || budgetBytes < 1) throw new TypeError('Invalid context budget');
   const hits = query && input.searchHits?.length ? input.searchHits : [];
 
-  const { focusLegs, retrieval } = await withKnowledgeTenant(pool, input.workspaceId, async (db) => {
+  const { focusLegs, retrieval } = await withWorkspaceTenant(pool, input.workspaceId, async (db) => {
     const focusLegs = input.focus ? await loadFocusLegs(db, { workspaceId: input.workspaceId, userId: input.userId, focus: input.focus }) : null;
     const retrieval = hits.length ? await enrichRetrieval(db, { workspaceId: input.workspaceId, userId: input.userId, hits }) : { items: [], unavailable: 0 };
     return { focusLegs, retrieval };
@@ -396,7 +396,7 @@ export async function validateCitations(pool: Pool, input: ValidateCitationsInpu
     throw new TypeError('Invalid citation candidates');
   }
 
-  return withKnowledgeTenant(pool, input.workspaceId, async (db) => {
+  return withWorkspaceTenant(pool, input.workspaceId, async (db) => {
     // 首次出现顺序去重；按 pageId 分组，逐页一次授权 + 一次权威读取。
     const order: string[] = [];
     const byPage = new Map<string, { pageId: string; blockId: string }[]>();

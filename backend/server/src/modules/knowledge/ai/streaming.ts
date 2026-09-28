@@ -17,8 +17,8 @@ import type { KnowledgeRequestContext } from '../access';
 import type { NodeAnnotation } from '@fouc/shared/knowledge/schema/suggestions';
 import { newSuggestion } from '@fouc/shared/knowledge/schema/suggestions';
 import { createMarkdownPipeline } from '@fouc/shared/knowledge/markdown';
-import { docState } from '../../../platform/database/knowledge/schema';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { docState } from '../../../platform/database/workspace/schema';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { authorizePageAccess } from '../permissions/authorization';
 import { pageDocumentName } from '@fouc/shared/knowledge/collaboration';
 import { createAgentAwarenessSession } from '../collaboration/agent-awareness';
@@ -227,7 +227,7 @@ class PageWriteSession {
         located ? located.parent : fragment, located ? 'after' : 'inside', located?.element ?? null);
     }
     const mirror = new Y.Doc();
-    const loaded = await withKnowledgeTenant(input.pool, input.scope.workspaceId, async (db) => {
+    const loaded = await withWorkspaceTenant(input.pool, input.scope.workspaceId, async (db) => {
       const [row] = await db.select({ state: docState.state }).from(docState).where(eq(docState.pageId, input.scope.pageId));
       return row?.state ?? null;
     });
@@ -317,7 +317,7 @@ class PageWriteSession {
     const state = Buffer.from(Y.encodeStateAsUpdate(this.mirror!));
     const stateVector = Buffer.from(Y.encodeStateVector(this.mirror!));
     const { userId, taskId } = this.identity;
-    await withKnowledgeTenant(this.pool, this.scope.workspaceId, async (db) => {
+    await withWorkspaceTenant(this.pool, this.scope.workspaceId, async (db) => {
       await db.insert(docState).values({ ...this.scope, state, stateVector })
         .onConflictDoUpdate({ target: [docState.workspaceId, docState.pageId], set: { state, stateVector, updatedAt: new Date() } });
       await appendKnowledgeOutbox(db, {
@@ -371,7 +371,7 @@ function requireInitiator(task: StreamingTask, authority: KnowledgeRequestContex
 }
 
 async function requirePageEdit(pool: Pool, userId: string, scope: PageScope): Promise<void> {
-  const allowed = await withKnowledgeTenant(pool, scope.workspaceId, async (db) => {
+  const allowed = await withWorkspaceTenant(pool, scope.workspaceId, async (db) => {
     const decision = await authorizePageAccess(db, { userId, scope, required: 'edit' });
     return decision.decision === 'allow';
   });

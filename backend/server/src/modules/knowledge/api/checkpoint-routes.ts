@@ -10,7 +10,7 @@ import { listPageCheckpoints, readPageCheckpoint } from '../collaboration/histor
 import { PageHistoryError } from '../collaboration/history';
 import { CheckpointLabelError } from '../collaboration/checkpoints';
 import type { PageCheckpointExtension } from '../collaboration/checkpoints';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 
 type CheckpointEnvironment = { Variables: { identity: FoucIdentity } };
 const base = '/api/knowledge/:workspaceId/pages/:pageId/checkpoints';
@@ -41,7 +41,7 @@ export function createKnowledgeCheckpointRoutes(dependencies: {
   async function authorize(context: Context<CheckpointEnvironment>, required: 'view' | 'edit') {
     const { workspaceId, pageId } = context.req.param();
     const scope = { workspaceId: workspaceId!, pageId: pageId! };
-    const decision = await withKnowledgeTenant(dependencies.pool, workspaceId!, (db) =>
+    const decision = await withWorkspaceTenant(dependencies.pool, workspaceId!, (db) =>
       authorizePageAccess(db, { userId: context.get('identity').userId, scope, required }));
     if (decision.decision !== 'allow') return context.json({ code: 'FORBIDDEN', message: 'This page history is not available at this permission level.' }, 403);
     return scope;

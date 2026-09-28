@@ -20,6 +20,7 @@ import {
 import { cn } from "@/lib/utils"
 
 import { projectTabs, type ProjectTab } from "./project-data"
+import { useProjectResources } from "./project-resources"
 
 type ProjectHeaderProps = {
   tab: ProjectTab
@@ -38,13 +39,14 @@ export function ProjectHeader({
   panelOpen,
   onTogglePanel,
 }: ProjectHeaderProps) {
+  const { selectedProject } = useProjectResources()
   return (
     <header className="shrink-0 bg-panel px-5 pt-[14px] max-[900px]:px-4">
       <div className="flex min-h-[68px] items-start justify-between gap-5">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
             <h1 className="truncate text-[22px] font-semibold leading-7 tracking-[-0.035em] text-[var(--ink)]">
-              Fouc 桌面端 V1
+              {selectedProject?.name ?? '项目'}
             </h1>
             <button
               type="button"

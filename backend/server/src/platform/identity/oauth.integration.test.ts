@@ -88,7 +88,7 @@ describe('real OAuth/OIDC HTTP identity flow', () => {
     expect(idp.exchanges.at(-1)).toEqual({ accepted: true, confidential: true, pkce: true });
     const rows = await server.database.pool.query('SELECT provider_id, account_id, user_id, access_token, refresh_token, id_token FROM auth.account WHERE user_id=$1', [primaryUserId]);
     expect(rows.rows).toEqual([{ provider_id: 'company', account_id: JSON.stringify([idp.origin, 'employee-123']), user_id: primaryUserId, access_token: null, refresh_token: null, id_token: null }]);
-    expect((await server.database.admin.query('SELECT count(*)::int AS count FROM knowledge.workspace')).rows[0].count).toBe(0);
+    expect((await server.database.admin.query('SELECT count(*)::int AS count FROM workspace.workspace')).rows[0].count).toBe(0);
   });
   test('returning immutable subject maps to the same user without replacing local email', async () => {
     idp.selectIdentity({ email: 'changed@example.test' });

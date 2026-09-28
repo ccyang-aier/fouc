@@ -1,6 +1,6 @@
 import type { AgentGetBacklinksToolInput, AgentGetBacklinksToolResult } from '@fouc/shared/knowledge/contracts';
 import { agentGetBacklinksToolResultSchema } from '@fouc/shared/knowledge/contracts';
-import { withKnowledgeTenant } from '../../../../platform/database/knowledge/tenant';
+import { withWorkspaceTenant } from '../../../../platform/database/workspace/tenant';
 import { authorizePageAccess, expandRequestPrincipals } from '../../permissions';
 import { readPageBacklinks } from '../../search/backlinks';
 import { KnowledgeAgentToolError } from './errors';
@@ -14,7 +14,7 @@ import type { KnowledgeAgentToolContext } from './types';
 export async function executeAgentGetBacklinks(input: AgentGetBacklinksToolInput, context: KnowledgeAgentToolContext): Promise<AgentGetBacklinksToolResult> {
   const workspaceId = context.authority.workspaceId;
   const scope = { workspaceId, pageId: input.pageId };
-  return withKnowledgeTenant(context.pool, workspaceId, async (db) => {
+  return withWorkspaceTenant(context.pool, workspaceId, async (db) => {
     const decision = await authorizePageAccess(db, { userId: context.authority.userId, scope, required: 'view' });
     if (decision.decision !== 'allow') throw new KnowledgeAgentToolError('TARGET_NOT_ACCESSIBLE', 'get_backlinks');
     const principals = await expandRequestPrincipals(db, workspaceId, context.authority.userId);

@@ -4,12 +4,12 @@ import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import type { OutboxEvent, PagePlacement, PageScope, Principal, PropertyDefinition } from '@fouc/shared/knowledge/contracts';
-import { knowledgeBase, knowledgeSchema, member, page, teamspace, workspace } from '../../../platform/database/knowledge/schema';
+import { knowledgeBase, workspaceTenantSchema, member, page, teamspace, workspace } from '../../../platform/database/workspace/schema';
 import { authUser } from '../../../platform/database/identity/schema';
-import { createTenantTestDatabase } from '../../../platform/database/knowledge/tenant-test-database';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
-import type { KnowledgeTenantTransaction } from '../../../platform/database/knowledge/tenant';
-import type { TenantTestDatabase } from '../../../platform/database/knowledge/tenant-test-database';
+import { createTenantTestDatabase } from '../../../platform/database/workspace/tenant-test-database';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
+import type { TenantTestDatabase } from '../../../platform/database/workspace/tenant-test-database';
 import { recycleAuthorizedPage } from '../pages/tree';
 import { authorizePageAccess, expandRequestPrincipals } from '../permissions/authorization';
 import { replaceAuthorizedPageAcl, setAuthorizedPageInheritance } from '../permissions/mutations';
@@ -46,21 +46,21 @@ async function rows<T extends Record<string, unknown>>(query: string, values: un
 
 async function rebuild(scope: PageScope) {
   const result = await rows<{ payload: AclEvent }>(
-    "SELECT payload FROM knowledge.outbox WHERE workspace_id=$1 AND topic='acl.changed' AND payload->>'rootPageId'=$2 ORDER BY (payload->>'revision')::bigint DESC LIMIT 1",
+    "SELECT payload FROM workspace.outbox WHERE workspace_id=$1 AND topic='acl.changed' AND payload->>'rootPageId'=$2 ORDER BY (payload->>'revision')::bigint DESC LIMIT 1",
     [scope.workspaceId, scope.pageId],
   );
   if (!result[0]) throw new Error('Expected an acl.changed event');
-  await withKnowledgeTenant(database.pool, scope.workspaceId, (db) => rebuildPermissionSubtree(db, result[0]!.payload));
+  await withWorkspaceTenant(database.pool, scope.workspaceId, (db) => rebuildPermissionSubtree(db, result[0]!.payload));
 }
 
-const tenant = <T>(operation: (db: KnowledgeTenantTransaction) => Promise<T>, pool?: Pool) =>
-  withKnowledgeTenant(pool ?? database.pool, alpha.workspaceId, operation);
+const tenant = <T>(operation: (db: WorkspaceTenantTransaction) => Promise<T>, pool?: Pool) =>
+  withWorkspaceTenant(pool ?? database.pool, alpha.workspaceId, operation);
 
 const workspacePrincipal = () => `workspace:${alpha.workspaceId}` as Principal;
 
 async function storedRow(scope: PageScope) {
   const [row] = await rows<{ kind: string; parent_id: string | null; database_id: string | null; path: string; position: string; properties: Record<string, unknown> }>(
-    'SELECT kind, parent_id::text AS parent_id, database_id::text AS database_id, path::text AS path, position, properties FROM knowledge.page WHERE workspace_id=$1 AND id=$2',
+    'SELECT kind, parent_id::text AS parent_id, database_id::text AS database_id, path::text AS path, position, properties FROM workspace.page WHERE workspace_id=$1 AND id=$2',
     [scope.workspaceId, scope.pageId],
   );
   return row!;
@@ -69,7 +69,7 @@ async function storedRow(scope: PageScope) {
 function createDatabase(seed: { id?: string; columns?: PropertyDefinition[]; title?: string; tenant?: 'alpha' | 'beta' } = {}) {
   const foreign = seed.tenant === 'beta';
   const scope = foreign ? beta : alpha;
-  return withKnowledgeTenant(database.pool, scope.workspaceId, (db) => createAuthorizedDatabase(db, {
+  return withWorkspaceTenant(database.pool, scope.workspaceId, (db) => createAuthorizedDatabase(db, {
     id: seed.id ?? randomUUID(),
     workspaceId: scope.workspaceId,
     teamspaceId: foreign ? beta.teamspace : alpha.main,
@@ -82,7 +82,7 @@ function createDatabase(seed: { id?: string; columns?: PropertyDefinition[]; tit
 function createRow(seed: { id?: string; databaseId: string; properties?: Record<string, unknown>; title?: string; tenant?: 'alpha' | 'beta'; pool?: Pool }): Promise<PagePlacement> {
   const foreign = seed.tenant === 'beta';
   const scope = foreign ? beta : alpha;
-  return withKnowledgeTenant(seed.pool ?? database.pool, scope.workspaceId, (db) => createAuthorizedRow(db, {
+  return withWorkspaceTenant(seed.pool ?? database.pool, scope.workspaceId, (db) => createAuthorizedRow(db, {
     id: seed.id ?? randomUUID(),
     workspaceId: scope.workspaceId,
     title: seed.title ?? '行',
@@ -95,7 +95,7 @@ function createRow(seed: { id?: string; databaseId: string; properties?: Record<
 function listRows(seed: { databaseId: string; viewer: Principal[]; filters?: unknown[]; sort?: { propertyId: string; direction: 'asc' | 'desc' }[]; cursor?: string; limit?: number; tenant?: 'alpha' | 'beta' }) {
   const foreign = seed.tenant === 'beta';
   const scope = foreign ? beta : alpha;
-  return withKnowledgeTenant(database.pool, scope.workspaceId, (db) => listDatabaseRows(db, {
+  return withWorkspaceTenant(database.pool, scope.workspaceId, (db) => listDatabaseRows(db, {
     workspaceId: scope.workspaceId,
     databaseId: seed.databaseId,
     viewer: seed.viewer,
@@ -113,7 +113,7 @@ beforeAll(async () => {
   const client = await database.admin.connect();
   try {
     await client.query('BEGIN');
-    const db = drizzle(client, { schema: knowledgeSchema });
+    const db = drizzle(client, { schema: workspaceTenantSchema });
     await db.insert(authUser).values([
       { id: alpha.owner, name: 'Alpha Owner', email: `${alpha.owner}@databases.test` },
       { id: alpha.editor, name: 'Alpha Editor', email: `${alpha.editor}@databases.test` },
@@ -163,7 +163,7 @@ describe('T02 databases and rows are pages', () => {
     expect(stored.path).toBe(label(id));
     expect(stored.position).toMatch(canonical);
     const [definition] = await rows<{ properties: PropertyDefinition[] }>(
-      'SELECT properties FROM knowledge.database_definition WHERE workspace_id=$1 AND page_id=$2', [alpha.workspaceId, id]);
+      'SELECT properties FROM workspace.database_definition WHERE workspace_id=$1 AND page_id=$2', [alpha.workspaceId, id]);
     expect(definition!.properties).toEqual(columns);
   });
 
@@ -185,7 +185,7 @@ describe('T02 databases and rows are pages', () => {
     const first = await createRow({ id: rowId, databaseId: owner.pageId, properties: { a: '初值' } });
     const replay = await createRow({ id: rowId, databaseId: owner.pageId, properties: { a: '重放' } });
     expect(replay).toEqual(first);
-    const [count] = await rows<{ n: string }>('SELECT count(*)::text AS n FROM knowledge.page WHERE workspace_id=$1 AND id=$2', [alpha.workspaceId, rowId]);
+    const [count] = await rows<{ n: string }>('SELECT count(*)::text AS n FROM workspace.page WHERE workspace_id=$1 AND id=$2', [alpha.workspaceId, rowId]);
     expect(count!.n).toBe('1');
 
     const replayed = await createDatabase({ id: owner.pageId, columns: [{ id: 'b', name: 'B', type: 'number' }] });
@@ -487,7 +487,7 @@ describe('T02 column lifecycle', () => {
       columns: [{ id: 'name', name: '名称', type: 'number' }, countColumn, prioColumn],
     })), 'INVALID_DATABASE_COLUMNS');
     const [afterReject] = await rows<{ properties: PropertyDefinition[] }>(
-      'SELECT properties FROM knowledge.database_definition WHERE workspace_id=$1 AND page_id=$2', [alpha.workspaceId, owner.pageId]);
+      'SELECT properties FROM workspace.database_definition WHERE workspace_id=$1 AND page_id=$2', [alpha.workspaceId, owner.pageId]);
     expect(afterReject!.properties.find((entry) => entry.id === 'name')).toMatchObject({ type: 'text', name: '标题' });
     expect((await storedRow({ workspaceId: alpha.workspaceId, pageId: first.pageId })).properties).toEqual({ name: '一', count: 1 });
 
@@ -521,7 +521,7 @@ describe('T02 tenant isolation and concurrent row creation', () => {
     await rebuild({ workspaceId: beta.workspaceId, pageId: foreign.pageId });
     const seen = await listRows({ tenant: 'beta', databaseId: foreign.pageId, viewer: [`workspace:${beta.workspaceId}`] });
     expect(seen.rows.map((row) => row.properties.n)).toEqual(['beta row']);
-    expect((await withKnowledgeTenant(database.pool, beta.workspaceId, (db) => db.select({ id: page.id }).from(page).where(eq(page.workspaceId, alpha.workspaceId)))).length).toBe(0);
+    expect((await withWorkspaceTenant(database.pool, beta.workspaceId, (db) => db.select({ id: page.id }).from(page).where(eq(page.workspaceId, alpha.workspaceId)))).length).toBe(0);
   });
 
   test('concurrent creations of the same row id converge on one stored page', async () => {
@@ -532,7 +532,7 @@ describe('T02 tenant isolation and concurrent row creation', () => {
       createRow({ id, databaseId: owner.pageId, properties: { a: '并发' }, title: '第二次', pool: concurrent }),
     ]);
     expect(one).toEqual(two);
-    const [count] = await rows<{ n: string }>('SELECT count(*)::text AS n FROM knowledge.page WHERE workspace_id=$1 AND id=$2', [alpha.workspaceId, id]);
+    const [count] = await rows<{ n: string }>('SELECT count(*)::text AS n FROM workspace.page WHERE workspace_id=$1 AND id=$2', [alpha.workspaceId, id]);
     expect(count!.n).toBe('1');
     expect((await storedRow({ workspaceId: alpha.workspaceId, pageId: id })).properties).toEqual({ a: '并发' });
   });

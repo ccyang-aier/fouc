@@ -61,6 +61,9 @@ const agentItem: SidebarRowItem & { id: "agent" } = {
 }
 
 type ProjectSidebarPaneProps = {
+  projectName: string
+  workspaceName: string
+  hasDemoContent: boolean
   collapsed: boolean
   activePanel: ProjectManagementPanelId | null
   onPanelChange: (panel: ProjectManagementPanelId | null) => void
@@ -70,6 +73,9 @@ type ProjectSidebarPaneProps = {
 }
 
 export function ProjectSidebarPane({
+  projectName,
+  workspaceName,
+  hasDemoContent,
   collapsed,
   activePanel,
   onPanelChange,
@@ -121,16 +127,16 @@ export function ProjectSidebarPane({
                 className="flex size-8 shrink-0 items-center justify-center rounded-md text-[12px] font-bold tracking-[-0.02em] text-white"
                 style={{ backgroundColor: "var(--accent)" }}
               >
-                F1
+                {hasDemoContent ? "F1" : projectName.slice(0, 2).toUpperCase()}
               </span>
               {collapsed ? null : (
                 <>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[12px] font-semibold tracking-[-0.015em] text-[var(--ink)]">
-                      Fouc 桌面端 V1
+                      {projectName}
                     </span>
                     <span className="mt-0.5 block truncate text-[10px] text-[var(--muted)]">
-                      产品研发空间 · 3 个任务运行中
+                      {workspaceName} · 项目工作台
                     </span>
                   </span>
                   <CaretDown
@@ -142,7 +148,7 @@ export function ProjectSidebarPane({
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-52">
-            <DropdownMenuLabel>Fouc 桌面端 V1</DropdownMenuLabel>
+            <DropdownMenuLabel>{projectName}</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={onExit}>
               <CaretLeft weight="bold" />返回工作台
@@ -166,6 +172,8 @@ export function ProjectSidebarPane({
       </div>
 
       <div aria-hidden className="my-2 h-px shrink-0 bg-[var(--wt-sidebar-edge)]" />
+
+      {hasDemoContent ? <>
 
       <nav
         className={cn(collapsed ? "flex flex-col gap-1" : "space-y-1")}
@@ -259,6 +267,7 @@ export function ProjectSidebarPane({
           "project-settings",
         )}
       </div>
+      </> : collapsed ? null : <p className="px-2 py-2 text-[11px] leading-5 text-[var(--muted)]">这个项目还没有工作项。</p>}
     </div>
   )
 }

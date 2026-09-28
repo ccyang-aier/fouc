@@ -9,8 +9,8 @@ import {
   shareLinkSummarySchema,
 } from '@fouc/shared/knowledge/contracts';
 import type { PageScope, PermissionLevel, Principal, ShareLinkLevel, ShareLinkSummary } from '@fouc/shared/knowledge/contracts';
-import { pageAcl, shareLink } from '../../../platform/database/knowledge/schema';
-import type { KnowledgeTenantTransaction } from '../../../platform/database/knowledge/tenant';
+import { pageAcl, shareLink } from '../../../platform/database/workspace/schema';
+import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
 import { authorizePageAccess } from '../permissions/authorization';
 import type { PageAccessDecision } from '../permissions/authorization';
 import { canAccess, expandPrincipals, permissionFor } from '../permissions/effective';
@@ -38,14 +38,14 @@ function summary(value: StoredShareLink): ShareLinkSummary {
  * link (view/comment) can never exceed its creator's own authority. The actor's
  * membership rows are re-verified inside this transaction.
  */
-async function requireManagerAuthority(db: KnowledgeTenantTransaction, actorUserId: string, scope: PageScope) {
+async function requireManagerAuthority(db: WorkspaceTenantTransaction, actorUserId: string, scope: PageScope) {
   const decision = await authorizePageAccess(db, { userId: actorUserId, scope, required: 'full' });
   if (decision.decision === 'deny') throw new KnowledgeSharingError('SHARING_FORBIDDEN');
   if (decision.decision === 'rebuilding') throw new KnowledgeSharingError('SHARING_REBUILDING');
   return decision;
 }
 
-async function lockedLink(db: KnowledgeTenantTransaction, workspaceId: string, shareId: string) {
+async function lockedLink(db: WorkspaceTenantTransaction, workspaceId: string, shareId: string) {
   const [link] = await db.select().from(shareLink)
     .where(and(eq(shareLink.workspaceId, workspaceId), eq(shareLink.id, shareId))).for('update');
   if (!link) throw new KnowledgeSharingError('SHARING_LINK_NOT_FOUND');
@@ -53,7 +53,7 @@ async function lockedLink(db: KnowledgeTenantTransaction, workspaceId: string, s
 }
 
 /** Recycled or hard-missing pages are not shareable targets. */
-async function lockedLivePage(db: KnowledgeTenantTransaction, scope: PageScope) {
+async function lockedLivePage(db: WorkspaceTenantTransaction, scope: PageScope) {
   const record = await lockPermissionPage(db, scope);
   if (!record || record.deletedAt) throw new KnowledgeSharingError('SHARING_SCOPE_NOT_FOUND');
   return record;
@@ -62,7 +62,7 @@ async function lockedLivePage(db: KnowledgeTenantTransaction, scope: PageScope) 
 export interface IssuedShareLink { token: string; share: ShareLinkSummary; fence: PermissionFence }
 
 /** Authorized internal service: create a link credential plus its link-principal ACL grant. */
-export async function createAuthorizedShareLink(db: KnowledgeTenantTransaction, actorUserId: string, input: unknown): Promise<IssuedShareLink> {
+export async function createAuthorizedShareLink(db: WorkspaceTenantTransaction, actorUserId: string, input: unknown): Promise<IssuedShareLink> {
   const parsed = createShareLinkInputSchema.safeParse(input);
   if (!parsed.success) throw new KnowledgeSharingError('INVALID_SHARING_INPUT');
   const { workspaceId, pageId, level, expiresAt } = parsed.data;
@@ -87,7 +87,7 @@ export async function createAuthorizedShareLink(db: KnowledgeTenantTransaction, 
 }
 
 /** Authorized internal service: revoke kills the credential AND removes its grant, fenced in one transaction. */
-export async function revokeAuthorizedShareLink(db: KnowledgeTenantTransaction, actorUserId: string, input: unknown): Promise<{ share: ShareLinkSummary; fence: PermissionFence }> {
+export async function revokeAuthorizedShareLink(db: WorkspaceTenantTransaction, actorUserId: string, input: unknown): Promise<{ share: ShareLinkSummary; fence: PermissionFence }> {
   const parsed = revokeShareLinkInputSchema.safeParse(input);
   if (!parsed.success) throw new KnowledgeSharingError('INVALID_SHARING_INPUT');
   const { workspaceId, shareId } = parsed.data;
@@ -109,7 +109,7 @@ export async function revokeAuthorizedShareLink(db: KnowledgeTenantTransaction, 
 }
 
 /** Authorized internal service: change the level within view/comment; the subtree is re-fenced. */
-export async function setAuthorizedShareLinkLevel(db: KnowledgeTenantTransaction, actorUserId: string, input: unknown): Promise<{ share: ShareLinkSummary; fence: PermissionFence }> {
+export async function setAuthorizedShareLinkLevel(db: WorkspaceTenantTransaction, actorUserId: string, input: unknown): Promise<{ share: ShareLinkSummary; fence: PermissionFence }> {
   const parsed = setShareLinkLevelInputSchema.safeParse(input);
   if (!parsed.success) throw new KnowledgeSharingError('INVALID_SHARING_INPUT');
   const { workspaceId, shareId, level } = parsed.data;
@@ -139,7 +139,7 @@ export interface VerifiedShareLink {
 }
 
 /** Credential check only: secret, revocation and expiry. It reads no page ACL. */
-export async function verifyShareLink(db: KnowledgeTenantTransaction, locator: ShareTokenProof): Promise<VerifiedShareLink | null> {
+export async function verifyShareLink(db: WorkspaceTenantTransaction, locator: ShareTokenProof): Promise<VerifiedShareLink | null> {
   const [found] = await db.select({
     link: shareLink,
     active: sql<boolean>`${shareLink.revokedAt} IS NULL AND (${shareLink.expiresAt} IS NULL OR ${shareLink.expiresAt} > clock_timestamp())`,
@@ -162,7 +162,7 @@ export async function verifyShareLink(db: KnowledgeTenantTransaction, locator: S
  * authorizePageAccess with a {link:id}-only principal set. Tenant transactions
  * come from the token locator's workspace; page scopes are tenant-scoped rows.
  */
-export async function authorizeShareLinkPageAccess(db: KnowledgeTenantTransaction, input: {
+export async function authorizeShareLinkPageAccess(db: WorkspaceTenantTransaction, input: {
   link: VerifiedShareLink;
   pageId: string;
   required: PermissionLevel;

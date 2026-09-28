@@ -15,8 +15,8 @@ const statusMeta: Record<AutomationStatus, { label: string; dot: string; text: s
   paused: { label: "已暂停", dot: "bg-[#9298a3]", text: "text-[var(--muted-strong)]" },
 }
 
-export function AutomationTable({ items, selectedId, onSelect }: { items: AutomationDefinition[]; selectedId: string | null; onSelect: (id: string) => void }) {
-  if (items.length === 0) return <AutomationEmptyState />
+export function AutomationTable({ items, selectedId, onSelect, hasAutomations }: { items: AutomationDefinition[]; selectedId: string | null; onSelect: (id: string) => void; hasAutomations: boolean }) {
+  if (items.length === 0) return <AutomationEmptyState hasAutomations={hasAutomations} />
 
   return (
     <div className="min-w-[720px] max-[1380px]:min-w-[650px]">
@@ -63,12 +63,12 @@ export function RunRecordsTable({ records }: { records: RunRecord[] }) {
   )
 }
 
-function AutomationEmptyState() {
+function AutomationEmptyState({ hasAutomations }: { hasAutomations: boolean }) {
   return (
     <div className="flex min-h-[330px] flex-col items-center justify-center text-center">
       <span className="flex size-10 items-center justify-center rounded-[9px] border border-[var(--line)] bg-panel text-[var(--muted-strong)]"><ShieldCheck className="size-[18px]" /></span>
-      <h2 className="mt-3 text-[11px] font-semibold text-[var(--ink)]">没有匹配的自动化</h2>
-      <p className="mt-1 text-[9.5px] text-[var(--muted)]">调整搜索或筛选条件后再试。</p>
+      <h2 className="mt-3 text-[11px] font-semibold text-[var(--ink)]">{hasAutomations ? "没有匹配的自动化" : "这个工作空间还没有自动化"}</h2>
+      <p className="mt-1 text-[9.5px] text-[var(--muted)]">{hasAutomations ? "调整搜索或筛选条件后再试。" : "创建后，它只会出现在当前工作空间中。"}</p>
     </div>
   )
 }

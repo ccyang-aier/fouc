@@ -1,9 +1,9 @@
 import { and, eq, or, sql } from 'drizzle-orm';
 import type { Pool } from 'pg';
 import type { EffectivePermissions, OutboxEvent, PageAcl } from '@fouc/shared/knowledge/contracts';
-import { blockIndex, page, pageAcl, pageEffectiveAcl } from '../../../platform/database/knowledge/schema';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
-import type { KnowledgeTenantTransaction } from '../../../platform/database/knowledge/tenant';
+import { blockIndex, page, pageAcl, pageEffectiveAcl } from '../../../platform/database/workspace/schema';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
 import { readTeamspacePermissionRoot } from '../organization/teamspaces';
 import type { KnowledgeConsumer } from '../workers/types';
 import { computeEffectivePermissions } from './effective';
@@ -19,7 +19,7 @@ const batchSize = 250;
  * changes coalesce: the first job repairs the latest generations; later jobs
  * whose whole subtree is current do no writes. No external work in this TX.
  */
-export async function rebuildPermissionSubtree(db: KnowledgeTenantTransaction, event: AclEvent, signal?: AbortSignal) {
+export async function rebuildPermissionSubtree(db: WorkspaceTenantTransaction, event: AclEvent, signal?: AbortSignal) {
   signal?.throwIfAborted();
   await lockPermissionWorkspace(db, event.workspaceId);
   const root = await lockPermissionPage(db, { workspaceId: event.workspaceId, pageId: event.rootPageId });
@@ -83,6 +83,6 @@ export async function rebuildPermissionSubtree(db: KnowledgeTenantTransaction, e
 export function createPermissionRebuildConsumer(pool: Pool): KnowledgeConsumer {
   return { name: 'rebuild_permissions', topic: 'acl.changed', handle: async (event, context) => {
     if (event.topic !== 'acl.changed') throw new KnowledgePermissionError('INVALID_PERMISSION_INPUT');
-    await withKnowledgeTenant(pool, event.workspaceId, (db) => rebuildPermissionSubtree(db, event, context.signal));
+    await withWorkspaceTenant(pool, event.workspaceId, (db) => rebuildPermissionSubtree(db, event, context.signal));
   } };
 }

@@ -4,11 +4,11 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { unzipSync, zipSync } from 'fflate';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import type { OutboxEvent } from '@fouc/shared/knowledge/contracts';
-import { knowledgeBase, knowledgeSchema, member, teamspace, workspace } from '../../../platform/database/knowledge/schema';
+import { knowledgeBase, workspaceTenantSchema, member, teamspace, workspace } from '../../../platform/database/workspace/schema';
 import { authUser } from '../../../platform/database/identity/schema';
-import { createTenantTestDatabase } from '../../../platform/database/knowledge/tenant-test-database';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
-import type { TenantTestDatabase } from '../../../platform/database/knowledge/tenant-test-database';
+import { createTenantTestDatabase } from '../../../platform/database/workspace/tenant-test-database';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import type { TenantTestDatabase } from '../../../platform/database/workspace/tenant-test-database';
 import type { KnowledgeAssetStorage } from '../assets/storage';
 import { createKnowledgeAssetStorage, readKnowledgeAssetStorageConfig } from '../assets/storage';
 import { createAuthorizedPage } from '../pages/tree';
@@ -66,25 +66,25 @@ type AclEvent = Extract<OutboxEvent, { topic: 'acl.changed' }>;
 /** P02 消费者语义:取每个根的最新 revision 做当前态重建,物化有效权限。 */
 async function materializePermissions() {
   const events = await rows<{ payload: AclEvent }>(
-    `SELECT DISTINCT ON (payload->>'rootPageId') payload FROM knowledge.outbox
+    `SELECT DISTINCT ON (payload->>'rootPageId') payload FROM workspace.outbox
      WHERE workspace_id=$1 AND topic='acl.changed' ORDER BY payload->>'rootPageId', (payload->>'revision')::bigint DESC`,
     [owner.workspaceId],
   );
   for (const { payload } of events) {
-    await withKnowledgeTenant(database.pool, owner.workspaceId, (db) => rebuildPermissionSubtree(db, payload));
+    await withWorkspaceTenant(database.pool, owner.workspaceId, (db) => rebuildPermissionSubtree(db, payload));
   }
 }
 
 async function pageRow(pageId: string) {
   const [row] = await rows<{ id: string; parent_id: string | null; title: string; icon: string | null; properties: Record<string, unknown>; teamspace_id: string }>(
-    'SELECT id::text, parent_id::text AS parent_id, title, icon, properties, teamspace_id::text AS teamspace_id FROM knowledge.page WHERE workspace_id=$1 AND id=$2',
+    'SELECT id::text, parent_id::text AS parent_id, title, icon, properties, teamspace_id::text AS teamspace_id FROM workspace.page WHERE workspace_id=$1 AND id=$2',
     [owner.workspaceId, pageId],
   );
   return row;
 }
 
 async function pageBody(pageId: string): Promise<ProseMirrorNode | null> {
-  const [row] = await rows<{ state: Buffer }>('SELECT state FROM knowledge.doc_state WHERE workspace_id=$1 AND page_id=$2', [owner.workspaceId, pageId]);
+  const [row] = await rows<{ state: Buffer }>('SELECT state FROM workspace.doc_state WHERE workspace_id=$1 AND page_id=$2', [owner.workspaceId, pageId]);
   return row ? yStateToProseMirrorDoc(new Uint8Array(row.state), markdownSchema()) : null;
 }
 
@@ -120,7 +120,7 @@ beforeAll(async () => {
   const client = await database.admin.connect();
   try {
     await client.query('BEGIN');
-    const db = drizzle(client, { schema: knowledgeSchema });
+    const db = drizzle(client, { schema: workspaceTenantSchema });
     await db.insert(authUser).values([
       { id: owner.userId, name: 'M03 Owner', email: `${owner.userId}@m03.test` },
       { id: outsider, name: 'M03 Outsider', email: `${outsider}@m03.test` },
@@ -137,7 +137,7 @@ beforeAll(async () => {
   } finally {
     client.release();
   }
-  await withKnowledgeTenant(database.pool, owner.workspaceId, async (db) => {
+  await withWorkspaceTenant(database.pool, owner.workspaceId, async (db) => {
     const targets: [string, string][] = [[targetA, TARGET_TITLE], [targetB, TARGET_TITLE], [targetC, '失败样本']];
     for (const [id, title] of targets) {
       await createAuthorizedPage(db, { id, workspaceId: owner.workspaceId, teamspaceId, parentId: null, kind: 'doc', databaseId: null, title, icon: null, cover: null, properties: {}, inheritsPermissions: true, afterPageId: null }, owner.userId);
@@ -184,7 +184,7 @@ describe('M03 importObsidianVault: tree, attachments, frontmatter and progress',
 
     // 附件经 AS01 完整流程入湖。
     const [asset] = await rows<{ status: string; mime: string; size: string }>(
-      'SELECT status, mime, size::text FROM knowledge.asset WHERE workspace_id=$1 AND hash=$2', [owner.workspaceId, PHOTO_HASH]);
+      'SELECT status, mime, size::text FROM workspace.asset WHERE workspace_id=$1 AND hash=$2', [owner.workspaceId, PHOTO_HASH]);
     expect(asset).toMatchObject({ status: 'ready', mime: 'image/png', size: String(PHOTO.byteLength) });
 
     // 正文以 Y.Doc 初始状态写入 doc_state,可解码回知识文档。
@@ -197,7 +197,7 @@ describe('M03 importObsidianVault: tree, attachments, frontmatter and progress',
     expect(wikiLinks.length).toBe(2);
 
     const docChanged = await rows<{ count: string }>(
-      "SELECT count(*)::text AS count FROM knowledge.outbox WHERE workspace_id=$1 AND topic='doc.changed'", [owner.workspaceId]);
+      "SELECT count(*)::text AS count FROM workspace.outbox WHERE workspace_id=$1 AND topic='doc.changed'", [owner.workspaceId]);
     expect(Number(docChanged[0]!.count)).toBeGreaterThanOrEqual(3);
   });
 
@@ -211,7 +211,7 @@ describe('M03 importObsidianVault: tree, attachments, frontmatter and progress',
       expect(second.items).toContainEqual(item);
     }
     const count = await rows<{ count: string }>(
-      'SELECT count(*)::text AS count FROM knowledge.page WHERE workspace_id=$1 AND parent_id=$2 AND deleted_at IS NULL',
+      'SELECT count(*)::text AS count FROM workspace.page WHERE workspace_id=$1 AND parent_id=$2 AND deleted_at IS NULL',
       [owner.workspaceId, targetA]);
     expect(Number(count[0]!.count)).toBe(2); // Welcome 与 Projects;roadmap 挂在 Projects 下
   });

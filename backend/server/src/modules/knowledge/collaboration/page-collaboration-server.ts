@@ -3,8 +3,8 @@ import { Hocuspocus } from '@hocuspocus/server';
 import type { Configuration } from '@hocuspocus/server';
 import { and, eq, sql } from 'drizzle-orm';
 import type { Pool } from 'pg';
-import { docState } from '../../../platform/database/knowledge/schema';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { docState } from '../../../platform/database/workspace/schema';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { appendKnowledgeOutbox } from '../workers/outbox';
 import type { KnowledgeRequestAuthenticator } from '../access';
 import { pageCollaborationExtension } from './page-collaboration';
@@ -44,7 +44,7 @@ export function pageCollaborationConfiguration(deps: { authenticator: KnowledgeR
     async onLoadDocument(data) {
       const scope = parsePageDocument(data.documentName);
       if (!scope) return data.document;
-      const row = await withKnowledgeTenant(deps.pool, scope.workspaceId, (db) => db.select({ state: docState.state })
+      const row = await withWorkspaceTenant(deps.pool, scope.workspaceId, (db) => db.select({ state: docState.state })
         .from(docState).where(and(eq(docState.workspaceId, scope.workspaceId), eq(docState.pageId, scope.pageId))));
       if (row[0]) Y.applyUpdate(data.document, new Uint8Array(row[0].state));
       return data.document;
@@ -57,7 +57,7 @@ export function pageCollaborationConfiguration(deps: { authenticator: KnowledgeR
       // Server-internal stores without a connection context persist the body
       // but emit no event: actor attribution must never be fabricated.
       const actor = data.lastContext?.authority?.actor;
-      await withKnowledgeTenant(deps.pool, scope.workspaceId, async (db) => {
+      await withWorkspaceTenant(deps.pool, scope.workspaceId, async (db) => {
         await db.insert(docState).values({ ...scope, state, stateVector })
           .onConflictDoUpdate({ target: [docState.workspaceId, docState.pageId], set: { state, stateVector, updatedAt: sql`clock_timestamp()` } });
         if (actor) await appendKnowledgeOutbox(db, { topic: 'doc.changed', ...scope, actor, occurredAt: new Date().toISOString() });

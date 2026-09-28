@@ -2,7 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:tes
 import { principal } from '@fouc/shared/knowledge/contracts';
 import type { PermissionLevel } from '@fouc/shared/knowledge/contracts';
 import { markAllNotificationsReadResultSchema, markNotificationReadResultSchema, notificationListResultSchema, notificationUnreadCountResultSchema } from '@fouc/shared/knowledge/notifications';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { createCommentThread } from '../comments/mutations';
 import { replaceAuthorizedPageAcl } from '../permissions/mutations';
 import { createPermissionsFixture, type PermissionsFixture } from '../permissions/permissions-test-fixture';
@@ -29,11 +29,11 @@ describe('notification inbox routes', () => {
   beforeEach(async () => {
     await fixture.resetJobs();
     // Mailboxes are user-wide queries; each case starts from a clean slate.
-    await fixture.admin.query('DELETE FROM knowledge.notification');
+    await fixture.admin.query('DELETE FROM workspace.notification');
   });
 
   function request(path: string, actor = fixture.reader, init: RequestInit = {}) {
-    return app.fetch(new Request(`http://knowledge.test${path}`, {
+    return app.fetch(new Request(`http://workspace.test${path}`, {
       ...init,
       headers: { origin: fixture.server.webOrigin, ...(init.body ? { 'content-type': 'application/json' } : {}), ...init.headers, cookie: actor.cookie },
     }));
@@ -43,14 +43,14 @@ describe('notification inbox routes', () => {
   async function seed(): Promise<{ readerItemId: string }> {
     const { pages } = await fixture.tree();
     const scope = { workspaceId: fixture.alpha.id, pageId: pages[1].pageId };
-    await withKnowledgeTenant(fixture.pool, scope.workspaceId, (db) =>
+    await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) =>
       replaceAuthorizedPageAcl(db, { workspaceId: scope.workspaceId, pageId: pages[0].pageId, grants: [
         { principal: principal('user', fixture.owner.identity.userId), level: 'full' as PermissionLevel },
       ] }));
     await fixture.drain();
-    await withKnowledgeTenant(fixture.pool, scope.workspaceId, (db) =>
+    await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) =>
       createCommentThread(db, { ...scope, userId: fixture.owner.identity.userId, bodyMd: 'Route seed', mentions: [fixture.reader.identity.userId] }));
-    const inbox = await withKnowledgeTenant(fixture.pool, scope.workspaceId, (db) =>
+    const inbox = await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) =>
       listNotificationInbox(db, { workspaceId: scope.workspaceId, userId: fixture.reader.identity.userId }));
     return { readerItemId: inbox.items[0]!.id };
   }
@@ -85,11 +85,11 @@ describe('notification inbox routes', () => {
   test('credentials and origin are enforced; foreign mailboxes and bad inputs map to clean errors', async () => {
     const { readerItemId } = await seed();
     // No cookie: 401 with the challenge header.
-    const anonymous = await app.fetch(new Request(`http://knowledge.test${listPath()}`, { headers: { origin: fixture.server.webOrigin } }));
+    const anonymous = await app.fetch(new Request(`http://workspace.test${listPath()}`, { headers: { origin: fixture.server.webOrigin } }));
     expect(anonymous.status).toBe(401);
     expect(anonymous.headers.get('www-authenticate')).toContain('Bearer');
     // A cookie session without an Origin header is a cross-site write: refused.
-    const crossSite = await app.fetch(new Request(`http://knowledge.test${listPath()}/${readerItemId}/read`, {
+    const crossSite = await app.fetch(new Request(`http://workspace.test${listPath()}/${readerItemId}/read`, {
       method: 'POST', headers: { 'content-type': 'application/json', cookie: fixture.reader.cookie },
     }));
     expect(crossSite.status).toBe(403);

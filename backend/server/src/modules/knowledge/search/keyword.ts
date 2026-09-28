@@ -2,8 +2,8 @@ import { and, or, asc, desc, sql } from 'drizzle-orm';
 import type { SQL } from 'drizzle-orm';
 import type { Principal } from '@fouc/shared/knowledge/contracts';
 import type { KeywordSearchHit } from '@fouc/shared/knowledge/search';
-import { blockIndex } from '../../../platform/database/knowledge/schema';
-import type { KnowledgeTenantTransaction } from '../../../platform/database/knowledge/tenant';
+import { blockIndex } from '../../../platform/database/workspace/schema';
+import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
 import { indexedBlockAccessCondition } from '../permissions/queries';
 
 /** 参与检索的词数上限：约束 SQL 谓词数量与查询膨胀。 */
@@ -84,7 +84,7 @@ export interface KeywordSearchInput {
  * LIMIT 生效——无权行既不进结果，也不挤占有权行的名次（§7.2）。结果携带
  * pageId/blockId/titlePath/摘要片段与 BM25 得分，供 H05 融合与 AI 引用。
  */
-export async function searchBlocksByKeyword(db: KnowledgeTenantTransaction, input: KeywordSearchInput): Promise<KeywordSearchHit[]> {
+export async function searchBlocksByKeyword(db: WorkspaceTenantTransaction, input: KeywordSearchInput): Promise<KeywordSearchHit[]> {
   if (typeof input.query !== 'string') throw new TypeError('Invalid keyword search query');
   const query = input.query.trim();
   if (query.length > MAX_QUERY_LENGTH) throw new TypeError('Invalid keyword search query');

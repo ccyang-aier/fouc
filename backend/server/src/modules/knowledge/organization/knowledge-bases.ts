@@ -2,10 +2,10 @@ import { randomUUID } from 'node:crypto';
 import { and, asc, eq, gt } from 'drizzle-orm';
 import type { Pool } from 'pg';
 import { createKnowledgeBaseInputSchema, listKnowledgeBasesInputSchema } from '@fouc/shared/knowledge/contracts';
-import { knowledgeBase, teamspace } from '../../../platform/database/knowledge/schema';
+import { knowledgeBase, teamspace } from '../../../platform/database/workspace/schema';
 import type { FoucIdentity } from '../../../platform/identity/identity';
-import { inWorkspace, pageOf, requireDirectory, requireManager } from './context';
-import { parseInput } from './errors';
+import { inWorkspace, pageOf, requireDirectory, requireManager } from '../../workspaces/context';
+import { parseInput } from '../../workspaces/errors';
 
 const view = (row: typeof knowledgeBase.$inferSelect) => ({ id: row.id, workspaceId: row.workspaceId, name: row.name });
 

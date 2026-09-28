@@ -2,8 +2,8 @@ import { createCipheriv, createDecipheriv, randomBytes, randomUUID } from 'node:
 import { and, eq, isNull } from 'drizzle-orm';
 import type { Pool } from 'pg';
 import { entityIdSchema, modelEndpointSchema, modelProviderSchema } from '@fouc/shared/knowledge/contracts';
-import { modelCredential } from '../../../../platform/database/knowledge/schema';
-import { withKnowledgeTenant } from '../../../../platform/database/knowledge/tenant';
+import { modelCredential } from '../../../../platform/database/workspace/schema';
+import { withWorkspaceTenant } from '../../../../platform/database/workspace/tenant';
 import { ModelGatewayError } from './errors';
 import type { ModelCallContext } from './types';
 
@@ -50,7 +50,7 @@ export function createModelCredentialStore(pool: Pool, key: Uint8Array) {
       const endpoint = input.endpoint === undefined ? null : modelEndpointSchema.safeParse(input.endpoint);
       if (!provider.success || (endpoint !== null && !endpoint.success)) throw new ModelGatewayError('invalid_request');
       const identity = { workspaceId: context.workspaceId, userId: context.userId, id: randomUUID(), provider: provider.data, endpoint: endpoint === null ? null : endpoint.data };
-      await withKnowledgeTenant(pool, context.workspaceId, async (db) => {
+      await withWorkspaceTenant(pool, context.workspaceId, async (db) => {
         await db.insert(modelCredential).values({ ...identity, encryptedSecret: cipher.encrypt(input.apiKey, identity) });
       });
       return { id: identity.id, provider: identity.provider, endpoint: identity.endpoint };
@@ -58,7 +58,7 @@ export function createModelCredentialStore(pool: Pool, key: Uint8Array) {
     async find(context: ModelCallContext, id: string, provider: string) {
       scope(context);
       if (!entityIdSchema.safeParse(id).success || !modelProviderSchema.safeParse(provider).success) throw new ModelGatewayError('invalid_request');
-      const row = await withKnowledgeTenant(pool, context.workspaceId, async (db) => (await db.select().from(modelCredential).where(and(
+      const row = await withWorkspaceTenant(pool, context.workspaceId, async (db) => (await db.select().from(modelCredential).where(and(
         eq(modelCredential.workspaceId, context.workspaceId), eq(modelCredential.userId, context.userId),
         eq(modelCredential.id, id), eq(modelCredential.provider, provider), isNull(modelCredential.revokedAt),
       )))[0]);
@@ -69,7 +69,7 @@ export function createModelCredentialStore(pool: Pool, key: Uint8Array) {
     async revoke(context: ModelCallContext, id: string) {
       scope(context);
       if (!entityIdSchema.safeParse(id).success) throw new ModelGatewayError('invalid_request');
-      return withKnowledgeTenant(pool, context.workspaceId, async (db) => (await db.update(modelCredential).set({ revokedAt: new Date(), updatedAt: new Date() }).where(and(
+      return withWorkspaceTenant(pool, context.workspaceId, async (db) => (await db.update(modelCredential).set({ revokedAt: new Date(), updatedAt: new Date() }).where(and(
         eq(modelCredential.workspaceId, context.workspaceId), eq(modelCredential.userId, context.userId), eq(modelCredential.id, id), isNull(modelCredential.revokedAt),
       )).returning({ id: modelCredential.id })).length === 1);
     },

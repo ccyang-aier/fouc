@@ -1,7 +1,8 @@
 import { createMiddleware } from 'hono/factory';
 import type { Context } from 'hono';
-import type { Actor, MemberRole } from '@fouc/shared/knowledge/contracts';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import type { Actor } from '@fouc/shared/knowledge/contracts';
+import type { MemberRole } from '@fouc/shared/workspaces';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { KnowledgeAccessError, knowledgeAccessErrorResponse, knowledgeTokenScopes, sanitizedAccess, tokenWorkspaceSchema } from './access-policy';
 import type { KnowledgeTokenScope } from './access-policy';
 import { activeSessionMember, verifiedRequestSession } from './session-access';
@@ -61,7 +62,7 @@ export function createKnowledgeRequestAuthenticator(dependencies: KnowledgeAcces
           proof = { kind: 'pat', token: pat.proof };
         } else {
           const session = await verifiedRequestSession(dependencies.auth, request);
-          const role = await withKnowledgeTenant(dependencies.pool, target.data, (db) => activeSessionMember(db, target.data, session));
+          const role = await withWorkspaceTenant(dependencies.pool, target.data, (db) => activeSessionMember(db, target.data, session));
           identity = { userId: session.userId, role, scopes: knowledgeTokenScopes, credential: { kind: 'session', sessionId: session.sessionId } };
           proof = { kind: 'session', userId: session.userId, sessionId: session.sessionId };
         }
@@ -80,7 +81,7 @@ export function createKnowledgeRequestAuthenticator(dependencies: KnowledgeAcces
           if (pat.userId !== context.userId) throw new KnowledgeAccessError('UNAUTHENTICATED');
           identity = { userId: pat.userId, role: pat.role, scopes: pat.scopes, credential: { kind: 'pat', tokenId: pat.tokenId } };
         } else {
-          const role = await withKnowledgeTenant(dependencies.pool, context.workspaceId, (db) => activeSessionMember(db, context.workspaceId, proof));
+          const role = await withWorkspaceTenant(dependencies.pool, context.workspaceId, (db) => activeSessionMember(db, context.workspaceId, proof));
           identity = { userId: proof.userId, role, scopes: knowledgeTokenScopes, credential: { kind: 'session', sessionId: proof.sessionId } };
         }
         return issue(context.workspaceId, identity, proof, requiredScopes);

@@ -4,7 +4,7 @@ import { cors } from 'hono/cors';
 import type { Pool } from 'pg';
 import { knowledgeAccessErrorResponse } from '../access';
 import type { KnowledgeRequestAuthenticator } from '../access';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { KnowledgeNotificationError } from './errors';
 import { countUnreadNotifications, listNotificationInbox, markAllNotificationsRead, markNotificationRead } from './service';
 
@@ -81,7 +81,7 @@ export function createKnowledgeNotificationRoutes(dependencies: KnowledgeNotific
 
   app.get('/api/knowledge/:workspaceId/notifications', async (context) => {
     const query = context.req.query();
-    const result = await withKnowledgeTenant(dependencies.pool, context.get('workspaceId'), (db) =>
+    const result = await withWorkspaceTenant(dependencies.pool, context.get('workspaceId'), (db) =>
       listNotificationInbox(db, {
         workspaceId: context.get('workspaceId'),
         userId: context.get('userId'),
@@ -93,19 +93,19 @@ export function createKnowledgeNotificationRoutes(dependencies: KnowledgeNotific
   });
 
   app.get('/api/knowledge/:workspaceId/notifications/unread-count', async (context) => {
-    const unreadCount = await withKnowledgeTenant(dependencies.pool, context.get('workspaceId'), (db) =>
+    const unreadCount = await withWorkspaceTenant(dependencies.pool, context.get('workspaceId'), (db) =>
       countUnreadNotifications(db, { workspaceId: context.get('workspaceId'), userId: context.get('userId') }));
     return context.json({ unreadCount });
   });
 
   app.post('/api/knowledge/:workspaceId/notifications/read-all', async (context) => {
-    const updated = await withKnowledgeTenant(dependencies.pool, context.get('workspaceId'), (db) =>
+    const updated = await withWorkspaceTenant(dependencies.pool, context.get('workspaceId'), (db) =>
       markAllNotificationsRead(db, { workspaceId: context.get('workspaceId'), userId: context.get('userId') }));
     return context.json({ updated });
   });
 
   app.post('/api/knowledge/:workspaceId/notifications/:notificationId/read', async (context) => {
-    const notification = await withKnowledgeTenant(dependencies.pool, context.get('workspaceId'), (db) =>
+    const notification = await withWorkspaceTenant(dependencies.pool, context.get('workspaceId'), (db) =>
       markNotificationRead(db, {
         workspaceId: context.get('workspaceId'),
         userId: context.get('userId'),

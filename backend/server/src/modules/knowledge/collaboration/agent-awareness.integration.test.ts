@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 import { principal } from '@fouc/shared/knowledge/contracts';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { replaceAuthorizedPageAcl } from '../permissions/mutations';
 import { createPermissionsFixture, until, type PermissionsFixture } from '../permissions/permissions-test-fixture';
 import { pageDocumentName } from '@fouc/shared/knowledge/collaboration';
@@ -30,7 +30,7 @@ describe('server-side agent awareness publication', () => {
   });
 
   async function grantEdit(pageId: string) {
-    await withKnowledgeTenant(fixture.pool, fixture.alpha.id, (db) => replaceAuthorizedPageAcl(db, {
+    await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => replaceAuthorizedPageAcl(db, {
       workspaceId: fixture.alpha.id, pageId, grants: [{ principal: principal('user', fixture.reader.identity.userId), level: 'edit' }],
     }));
     await fixture.drain();

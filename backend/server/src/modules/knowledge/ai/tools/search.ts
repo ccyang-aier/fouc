@@ -1,5 +1,5 @@
 import type { HybridSearchResult } from '@fouc/shared/knowledge/search';
-import { withKnowledgeTenant } from '../../../../platform/database/knowledge/tenant';
+import { withWorkspaceTenant } from '../../../../platform/database/workspace/tenant';
 import { expandRequestPrincipals } from '../../permissions';
 import { searchHybrid } from '../../search/service';
 import { KnowledgeAgentToolError } from './errors';
@@ -20,7 +20,7 @@ export async function executeAgentSearch(input: {
 }, context: KnowledgeAgentToolContext): Promise<HybridSearchResult> {
   if (!context.search) throw new KnowledgeAgentToolError('MODEL_DEPENDENCY_UNAVAILABLE', 'search');
   const { authority } = context;
-  const principals = await withKnowledgeTenant(context.pool, authority.workspaceId, (db) =>
+  const principals = await withWorkspaceTenant(context.pool, authority.workspaceId, (db) =>
     expandRequestPrincipals(db, authority.workspaceId, authority.userId));
   const result = await searchHybrid(context.pool, {
     gateway: context.search.gateway,

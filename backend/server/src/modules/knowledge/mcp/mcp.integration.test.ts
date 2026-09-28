@@ -6,8 +6,8 @@ import { parseKnowledgeOrigin } from '@fouc/shared/knowledge/collaboration';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { principal } from '@fouc/shared/knowledge/contracts';
 import { eq } from 'drizzle-orm';
-import { docState } from '../../../platform/database/knowledge/schema';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { docState } from '../../../platform/database/workspace/schema';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { replaceAuthorizedPageAcl } from '../permissions/mutations';
 import { createPermissionsFixture, until, type PermissionsFixture } from '../permissions/permissions-test-fixture';
 import { createPageCollaborationListener } from '../collaboration/page-collaboration-bun';
@@ -77,7 +77,7 @@ describe('knowledge mcp streamable http service', () => {
 
   test('write calls attribute suggestions with the mcp client name', async () => {
     const { pages } = await fixture.tree({ defaultAccess: null });
-    await withKnowledgeTenant(fixture.pool, fixture.alpha.id, (db) => replaceAuthorizedPageAcl(db, {
+    await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => replaceAuthorizedPageAcl(db, {
       workspaceId: fixture.alpha.id, pageId: pages[0].pageId,
       grants: [{ principal: principal('user', fixture.reader.identity.userId), level: 'edit' }],
     }));
@@ -88,7 +88,7 @@ describe('knowledge mcp streamable http service', () => {
     const blocks: import('@tiptap/pm/model').Node[] = [];
     parsed.forEach((block) => blocks.push(block));
     const encoded = prosemirrorDocToYDoc(parsed.type.schema.topNodeType.createChecked(null, blocks));
-    await withKnowledgeTenant(fixture.pool, fixture.alpha.id, async (db) => {
+    await withWorkspaceTenant(fixture.pool, fixture.alpha.id, async (db) => {
       await db.insert(docState).values({ workspaceId: fixture.alpha.id, pageId: pages[1].pageId, state: Buffer.from(encoded.state), stateVector: Buffer.from(encoded.stateVector) });
     });
     await fixture.drain();
@@ -122,7 +122,7 @@ describe('knowledge mcp streamable http service', () => {
   });
 
   async function blockIdAt(pageId: string): Promise<string> {
-    const [row] = await withKnowledgeTenant(fixture.pool, fixture.alpha.id, (db) => db.select({ state: docState.state }).from(docState).where(eq(docState.pageId, pageId)));
+    const [row] = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => db.select({ state: docState.state }).from(docState).where(eq(docState.pageId, pageId)));
     const document = yStateToProseMirrorDoc(new Uint8Array(row.state), knowledgeSchema)!;
     let found = '';
     document.descendants((node) => {
@@ -131,7 +131,7 @@ describe('knowledge mcp streamable http service', () => {
     return found;
   }
   async function suggestionsOf(pageId: string) {
-    const [row] = await withKnowledgeTenant(fixture.pool, fixture.alpha.id, (db) => db.select({ state: docState.state }).from(docState).where(eq(docState.pageId, pageId)));
+    const [row] = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => db.select({ state: docState.state }).from(docState).where(eq(docState.pageId, pageId)));
     if (!row) return [];
     const document = yStateToProseMirrorDoc(new Uint8Array(row.state), knowledgeSchema);
     return document ? collectSuggestions(document) : [];

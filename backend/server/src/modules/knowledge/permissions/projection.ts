@@ -1,7 +1,7 @@
 import { and, eq, sql } from 'drizzle-orm';
 import type { PageScope, Principal } from '@fouc/shared/knowledge/contracts';
-import { blockIndex } from '../../../platform/database/knowledge/schema';
-import type { KnowledgeTenantTransaction } from '../../../platform/database/knowledge/tenant';
+import { blockIndex } from '../../../platform/database/workspace/schema';
+import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
 import { KnowledgePermissionError } from './errors';
 import { lockPermissionPage, lockPermissionWorkspace } from './locking';
 import { readMaterializedPagePermissions } from './queries';
@@ -13,7 +13,7 @@ export interface IndexPermissionProjection { principals: Principal[]; aclRevisio
  * callback. Taking the SAME write lock prevents a late index insert from restoring
  * pre-revocation principals. No body/page authorization is implied by this helper.
  */
-export async function withPermissionIndexWrite<T>(db: KnowledgeTenantTransaction, scope: PageScope, write: (projection: IndexPermissionProjection) => Promise<T>): Promise<T> {
+export async function withPermissionIndexWrite<T>(db: WorkspaceTenantTransaction, scope: PageScope, write: (projection: IndexPermissionProjection) => Promise<T>): Promise<T> {
   await lockPermissionWorkspace(db, scope.workspaceId);
   const record = await lockPermissionPage(db, scope);
   if (!record) throw new KnowledgePermissionError('PERMISSION_SCOPE_NOT_FOUND');

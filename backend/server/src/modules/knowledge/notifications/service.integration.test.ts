@@ -3,8 +3,8 @@ import { eq } from 'drizzle-orm';
 import { principal } from '@fouc/shared/knowledge/contracts';
 import type { PermissionLevel } from '@fouc/shared/knowledge/contracts';
 import { notificationListResultSchema, notificationItemSchema } from '@fouc/shared/knowledge/notifications';
-import { page } from '../../../platform/database/knowledge/schema';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { page } from '../../../platform/database/workspace/schema';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { createCommentThread, replyCommentThread } from '../comments/mutations';
 import { replaceAuthorizedPageAcl, withAuthorizedPageTreeMutation } from '../permissions/mutations';
 import { createPermissionsFixture, type PermissionsFixture } from '../permissions/permissions-test-fixture';
@@ -25,7 +25,7 @@ describe('notification inbox service', () => {
   beforeEach(async () => {
     await fixture.resetJobs();
     // Mailboxes are user-wide queries; each case starts from a clean slate.
-    await fixture.admin.query('DELETE FROM knowledge.notification');
+    await fixture.admin.query('DELETE FROM workspace.notification');
   });
 
   /**
@@ -37,27 +37,27 @@ describe('notification inbox service', () => {
   async function dropCommentEventArtifacts() {
     await fixture.admin.query(`
       DELETE FROM knowledge_jobs._private_jobs j
-      USING knowledge.outbox o
+      USING workspace.outbox o
       WHERE o.topic = 'workspace.event'
         AND j.payload->>'workspaceId' = o.workspace_id::text
         AND j.payload->>'outboxId' = o.id::text`);
-    await fixture.admin.query("DELETE FROM knowledge.outbox WHERE topic='workspace.event'");
+    await fixture.admin.query("DELETE FROM workspace.outbox WHERE topic='workspace.event'");
   }
 
   async function grant(node: { workspaceId: string; pageId: string }, grants: { principal: string; level: PermissionLevel }[]) {
-    await withKnowledgeTenant(fixture.pool, node.workspaceId, (db) =>
+    await withWorkspaceTenant(fixture.pool, node.workspaceId, (db) =>
       replaceAuthorizedPageAcl(db, { workspaceId: node.workspaceId, pageId: node.pageId, grants }));
     await dropCommentEventArtifacts();
     await fixture.drain();
   }
 
   const inbox = (userId: string, options: { workspaceId?: string; limit?: number; before?: string; beforeId?: string } = {}) =>
-    withKnowledgeTenant(fixture.pool, options.workspaceId ?? fixture.alpha.id, (db) =>
+    withWorkspaceTenant(fixture.pool, options.workspaceId ?? fixture.alpha.id, (db) =>
       listNotificationInbox(db, { workspaceId: options.workspaceId ?? fixture.alpha.id, userId, limit: options.limit ?? 30, ...(options.before ? { before: options.before, beforeId: options.beforeId! } : {}) }));
   const unread = (userId: string, workspaceId = fixture.alpha.id) =>
-    withKnowledgeTenant(fixture.pool, workspaceId, (db) => countUnreadNotifications(db, { workspaceId, userId }));
+    withWorkspaceTenant(fixture.pool, workspaceId, (db) => countUnreadNotifications(db, { workspaceId, userId }));
   const mention = (scope: { workspaceId: string; pageId: string }, actorId: string, mentioned: string[], body = 'Ping') =>
-    withKnowledgeTenant(fixture.pool, scope.workspaceId, (db) =>
+    withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) =>
       createCommentThread(db, { ...scope, userId: actorId, bodyMd: body, mentions: mentioned }));
 
   test('inbox lists comment notices with joined page and actor, newest first, unread counted', async () => {
@@ -97,10 +97,10 @@ describe('notification inbox service', () => {
       { principal: principal('user', reader), level: 'comment' },
     ]);
 
-    const created = await withKnowledgeTenant(fixture.pool, scope.workspaceId, (db) =>
+    const created = await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) =>
       createCommentThread(db, { ...scope, userId: owner, bodyMd: 'Root of the thread' }));
     expect(created.notified).toEqual([]);
-    const reply = await withKnowledgeTenant(fixture.pool, scope.workspaceId, (db) =>
+    const reply = await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) =>
       replyCommentThread(db, { workspaceId: scope.workspaceId, threadId: created.thread.id, userId: reader, bodyMd: 'A reply mentioning the author', mentions: [owner] }));
     // owner is both participant and mentioned: exactly one notification, of the mention kind.
     expect(reply.notified).toEqual([owner]);
@@ -124,7 +124,7 @@ describe('notification inbox service', () => {
     // Revoke the reader's view: the row stays, but neither list nor badge reveals it.
     await grant(pages[0], [{ principal: principal('user', owner), level: 'full' }]);
     expect(await inbox(reader)).toMatchObject({ items: [], unreadCount: 0, nextCursor: null });
-    const rows = await fixture.admin.query('SELECT id::text FROM knowledge.notification WHERE workspace_id=$1', [scope.workspaceId]);
+    const rows = await fixture.admin.query('SELECT id::text FROM workspace.notification WHERE workspace_id=$1', [scope.workspaceId]);
     expect(rows.rows).toHaveLength(1);
 
     // Recycle the page for a viewer who still holds access: same fail-closed outcome.
@@ -133,7 +133,7 @@ describe('notification inbox service', () => {
       { principal: principal('user', reader), level: 'view' },
     ]);
     expect((await inbox(reader)).unreadCount).toBe(1);
-    await withKnowledgeTenant(fixture.pool, scope.workspaceId, (db) =>
+    await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) =>
       withAuthorizedPageTreeMutation(db, { workspaceId: scope.workspaceId, pageId: scope.pageId }, async () =>
         db.update(page).set({ deletedAt: new Date() }).where(eq(page.id, scope.pageId))));
     expect(await inbox(reader)).toMatchObject({ items: [], unreadCount: 0 });
@@ -150,7 +150,7 @@ describe('notification inbox service', () => {
     const readerInbox = await inbox(reader);
     expect(readerInbox.unreadCount).toBe(2);
 
-    const read = await withKnowledgeTenant(fixture.pool, scope.workspaceId, (db) =>
+    const read = await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) =>
       markNotificationRead(db, { workspaceId: scope.workspaceId, userId: reader, notificationId: readerInbox.items[0]!.id }));
     expect(read.readAt).not.toBeNull();
     const afterOne = await inbox(reader);
@@ -159,16 +159,16 @@ describe('notification inbox service', () => {
     expect(afterOne.items[1]!.readAt).toBeNull();
 
     // Re-marking the same notification returns the same row, never a second read stamp.
-    const again = await withKnowledgeTenant(fixture.pool, scope.workspaceId, (db) =>
+    const again = await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) =>
       markNotificationRead(db, { workspaceId: scope.workspaceId, userId: reader, notificationId: read.id }));
     expect(again.readAt).toBe(read.readAt);
 
     // A notification addressed to nobody here is a plain 404 without an existence oracle.
-    await expect(withKnowledgeTenant(fixture.pool, scope.workspaceId, (db) =>
+    await expect(withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) =>
       markNotificationRead(db, { workspaceId: scope.workspaceId, userId: owner, notificationId: read.id })))
       .rejects.toMatchObject({ code: 'NOTIFICATION_NOT_FOUND' });
 
-    const markedAll = await withKnowledgeTenant(fixture.pool, scope.workspaceId, (db) =>
+    const markedAll = await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) =>
       markAllNotificationsRead(db, { workspaceId: scope.workspaceId, userId: reader }));
     expect(markedAll).toBe(1);
     expect(await unread(reader)).toBe(0);
@@ -223,12 +223,12 @@ describe('notification inbox service', () => {
     // Mentioning an alpha member from beta is skipped — no membership row, no cross-tenant row.
     const betaMention = await mention({ workspaceId: fixture.beta.id, pageId: betaTree.pages[1].pageId }, foreign, [reader, owner]);
     expect(betaMention.notified).toEqual([]);
-    const crossRows = await fixture.admin.query('SELECT count(*)::int AS count FROM knowledge.notification WHERE user_id=$1', [reader]);
+    const crossRows = await fixture.admin.query('SELECT count(*)::int AS count FROM workspace.notification WHERE user_id=$1', [reader]);
     expect(crossRows.rows[0].count).toBe(0);
 
     // Alpha traffic stays alpha-only.
     await mention({ workspaceId: fixture.alpha.id, pageId: alphaTree.pages[1].pageId }, owner, [reader]);
-    const readerRows = await fixture.admin.query<{ workspace_id: string }>('SELECT DISTINCT workspace_id::text FROM knowledge.notification WHERE user_id=$1', [reader]);
+    const readerRows = await fixture.admin.query<{ workspace_id: string }>('SELECT DISTINCT workspace_id::text FROM workspace.notification WHERE user_id=$1', [reader]);
     expect(readerRows.rows.map((row) => row.workspace_id)).toEqual([fixture.alpha.id]);
   });
 });

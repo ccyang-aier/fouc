@@ -5,18 +5,18 @@ CREATE EXTENSION IF NOT EXISTS vector;
 CREATE EXTENSION IF NOT EXISTS pg_search;
 CREATE SCHEMA "auth";
 
-CREATE SCHEMA "knowledge";
+CREATE SCHEMA "workspace";
 
-CREATE TYPE "knowledge"."ai_task_kind" AS ENUM('inline', 'continue', 'chat', 'aiBlock', 'organize', 'report', 'mcp');
-CREATE TYPE "knowledge"."ai_task_status" AS ENUM('running', 'awaiting_approval', 'done', 'failed');
-CREATE TYPE "knowledge"."asset_status" AS ENUM('ready', 'revoked');
-CREATE TYPE "knowledge"."comment_thread_status" AS ENUM('open', 'resolved');
-CREATE TYPE "knowledge"."member_role" AS ENUM('owner', 'admin', 'member', 'guest');
-CREATE TYPE "knowledge"."model_tier" AS ENUM('fast', 'smart', 'embed', 'rerank', 'vision');
-CREATE TYPE "knowledge"."outbox_topic" AS ENUM('doc.changed', 'acl.changed', 'asset.created', 'workspace.event');
-CREATE TYPE "knowledge"."page_kind" AS ENUM('doc', 'database', 'row');
-CREATE TYPE "knowledge"."permission_level" AS ENUM('view', 'comment', 'edit', 'full');
-CREATE TYPE "knowledge"."workspace_kind" AS ENUM('personal', 'team');
+CREATE TYPE "workspace"."ai_task_kind" AS ENUM('inline', 'continue', 'chat', 'aiBlock', 'organize', 'report', 'mcp');
+CREATE TYPE "workspace"."ai_task_status" AS ENUM('running', 'awaiting_approval', 'done', 'failed');
+CREATE TYPE "workspace"."asset_status" AS ENUM('ready', 'revoked');
+CREATE TYPE "workspace"."comment_thread_status" AS ENUM('open', 'resolved');
+CREATE TYPE "workspace"."member_role" AS ENUM('owner', 'admin', 'member', 'guest');
+CREATE TYPE "workspace"."model_tier" AS ENUM('fast', 'smart', 'embed', 'rerank', 'vision');
+CREATE TYPE "workspace"."outbox_topic" AS ENUM('doc.changed', 'acl.changed', 'asset.created', 'workspace.event');
+CREATE TYPE "workspace"."page_kind" AS ENUM('doc', 'database', 'row');
+CREATE TYPE "workspace"."permission_level" AS ENUM('view', 'comment', 'edit', 'full');
+CREATE TYPE "workspace"."workspace_kind" AS ENUM('personal', 'team');
 CREATE TABLE "auth"."account" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"user_id" uuid NOT NULL,
@@ -67,27 +67,27 @@ CREATE TABLE "auth"."verification" (
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 
-CREATE TABLE "knowledge"."ai_task" (
+CREATE TABLE "workspace"."ai_task" (
 	"workspace_id" uuid NOT NULL,
 	"id" uuid NOT NULL,
 	"initiated_by" uuid NOT NULL,
-	"kind" "knowledge"."ai_task_kind" NOT NULL,
-	"status" "knowledge"."ai_task_status" DEFAULT 'running' NOT NULL,
+	"kind" "workspace"."ai_task_kind" NOT NULL,
+	"status" "workspace"."ai_task_status" DEFAULT 'running' NOT NULL,
 	"state" jsonb DEFAULT '{}'::jsonb NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "ai_task_workspace_id_id_pk" PRIMARY KEY("workspace_id","id"),
-	CONSTRAINT "ai_task_state_object" CHECK (jsonb_typeof("knowledge"."ai_task"."state") = 'object')
+	CONSTRAINT "ai_task_state_object" CHECK (jsonb_typeof("workspace"."ai_task"."state") = 'object')
 );
 
-CREATE TABLE "knowledge"."ai_usage" (
+CREATE TABLE "workspace"."ai_usage" (
 	"workspace_id" uuid NOT NULL,
 	"id" uuid NOT NULL,
 	"user_id" uuid NOT NULL,
 	"task_id" uuid,
 	"operation" varchar(16) NOT NULL,
 	"status" varchar(16) NOT NULL,
-	"tier" "knowledge"."model_tier" NOT NULL,
+	"tier" "workspace"."model_tier" NOT NULL,
 	"provider" text,
 	"model" text,
 	"input_tokens" integer,
@@ -97,48 +97,48 @@ CREATE TABLE "knowledge"."ai_usage" (
 	"trace_id" varchar(32),
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "ai_usage_workspace_id_id_pk" PRIMARY KEY("workspace_id","id"),
-	CONSTRAINT "ai_usage_nonnegative" CHECK ("knowledge"."ai_usage"."input_tokens" >= 0 AND "knowledge"."ai_usage"."output_tokens" >= 0 AND "knowledge"."ai_usage"."duration_ms" >= 0),
-	CONSTRAINT "ai_usage_outcome_valid" CHECK ("knowledge"."ai_usage"."operation" IN ('generate', 'stream', 'embed', 'rerank') AND "knowledge"."ai_usage"."status" IN ('success', 'error', 'cancelled'))
+	CONSTRAINT "ai_usage_nonnegative" CHECK ("workspace"."ai_usage"."input_tokens" >= 0 AND "workspace"."ai_usage"."output_tokens" >= 0 AND "workspace"."ai_usage"."duration_ms" >= 0),
+	CONSTRAINT "ai_usage_outcome_valid" CHECK ("workspace"."ai_usage"."operation" IN ('generate', 'stream', 'embed', 'rerank') AND "workspace"."ai_usage"."status" IN ('success', 'error', 'cancelled'))
 );
 
-CREATE TABLE "knowledge"."asset" (
+CREATE TABLE "workspace"."asset" (
 	"workspace_id" uuid NOT NULL,
 	"hash" varchar(64) NOT NULL,
 	"mime" varchar(200) NOT NULL,
 	"size" bigint NOT NULL,
-	"status" "knowledge"."asset_status" DEFAULT 'ready' NOT NULL,
+	"status" "workspace"."asset_status" DEFAULT 'ready' NOT NULL,
 	"meta" jsonb DEFAULT '{}'::jsonb NOT NULL,
 	"derived" jsonb DEFAULT '{"status":"pending"}'::jsonb NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "asset_workspace_id_hash_pk" PRIMARY KEY("workspace_id","hash"),
-	CONSTRAINT "asset_hash_valid" CHECK ("knowledge"."asset"."hash" ~ '^[a-f0-9]{64}$'),
-	CONSTRAINT "asset_size_nonnegative" CHECK ("knowledge"."asset"."size" >= 0),
-	CONSTRAINT "asset_mime_valid" CHECK ("knowledge"."asset"."mime" ~ '^[A-Za-z0-9_.+-]+/[A-Za-z0-9_.+-]+$'),
-	CONSTRAINT "asset_meta_object" CHECK (jsonb_typeof("knowledge"."asset"."meta") = 'object'),
-	CONSTRAINT "asset_derived_object" CHECK (jsonb_typeof("knowledge"."asset"."derived") = 'object' AND "knowledge"."asset"."derived"->>'status' IS NOT NULL AND "knowledge"."asset"."derived"->>'status' IN ('pending', 'processing', 'ready', 'failed'))
+	CONSTRAINT "asset_hash_valid" CHECK ("workspace"."asset"."hash" ~ '^[a-f0-9]{64}$'),
+	CONSTRAINT "asset_size_nonnegative" CHECK ("workspace"."asset"."size" >= 0),
+	CONSTRAINT "asset_mime_valid" CHECK ("workspace"."asset"."mime" ~ '^[A-Za-z0-9_.+-]+/[A-Za-z0-9_.+-]+$'),
+	CONSTRAINT "asset_meta_object" CHECK (jsonb_typeof("workspace"."asset"."meta") = 'object'),
+	CONSTRAINT "asset_derived_object" CHECK (jsonb_typeof("workspace"."asset"."derived") = 'object' AND "workspace"."asset"."derived"->>'status' IS NOT NULL AND "workspace"."asset"."derived"->>'status' IN ('pending', 'processing', 'ready', 'failed'))
 );
 
-CREATE TABLE "knowledge"."backlink" (
+CREATE TABLE "workspace"."backlink" (
 	"workspace_id" uuid NOT NULL,
 	"src_page_id" uuid NOT NULL,
 	"src_block_id" varchar(128) NOT NULL,
 	"dst_page_id" uuid NOT NULL,
 	"dst_block_id" varchar(128),
 	CONSTRAINT "backlink_source_target_unique" UNIQUE NULLS NOT DISTINCT("workspace_id","src_page_id","src_block_id","dst_page_id","dst_block_id"),
-	CONSTRAINT "backlink_source_block_valid" CHECK ("knowledge"."backlink"."src_block_id" ~ '^[A-Za-z0-9_-]+$'),
-	CONSTRAINT "backlink_destination_block_valid" CHECK ("knowledge"."backlink"."dst_block_id" IS NULL OR "knowledge"."backlink"."dst_block_id" ~ '^[A-Za-z0-9_-]+$')
+	CONSTRAINT "backlink_source_block_valid" CHECK ("workspace"."backlink"."src_block_id" ~ '^[A-Za-z0-9_-]+$'),
+	CONSTRAINT "backlink_destination_block_valid" CHECK ("workspace"."backlink"."dst_block_id" IS NULL OR "workspace"."backlink"."dst_block_id" ~ '^[A-Za-z0-9_-]+$')
 );
 
-CREATE TABLE "knowledge"."block_embedding_model" (
+CREATE TABLE "workspace"."block_embedding_model" (
 	"workspace_id" uuid PRIMARY KEY NOT NULL,
 	"embed_model" text NOT NULL,
 	"embed_dimensions" integer NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "block_embedding_model_valid" CHECK (length("knowledge"."block_embedding_model"."embed_model") > 0 AND "knowledge"."block_embedding_model"."embed_dimensions" > 0)
+	CONSTRAINT "block_embedding_model_valid" CHECK (length("workspace"."block_embedding_model"."embed_model") > 0 AND "workspace"."block_embedding_model"."embed_dimensions" > 0)
 );
 
-CREATE TABLE "knowledge"."block_embedding_staging" (
+CREATE TABLE "workspace"."block_embedding_staging" (
 	"workspace_id" uuid NOT NULL,
 	"page_id" uuid NOT NULL,
 	"block_id" varchar(128) NOT NULL,
@@ -148,12 +148,12 @@ CREATE TABLE "knowledge"."block_embedding_staging" (
 	"embedding" vector NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "block_embedding_staging_pk" PRIMARY KEY("workspace_id","page_id","block_id","embed_model","embed_dimensions"),
-	CONSTRAINT "block_embedding_staging_hash_valid" CHECK ("knowledge"."block_embedding_staging"."content_hash" ~ '^[a-f0-9]{64}$'),
-	CONSTRAINT "block_embedding_staging_metadata" CHECK (length("knowledge"."block_embedding_staging"."embed_model") > 0 AND "knowledge"."block_embedding_staging"."embed_dimensions" > 0 AND vector_dims("knowledge"."block_embedding_staging"."embedding") = "knowledge"."block_embedding_staging"."embed_dimensions")
+	CONSTRAINT "block_embedding_staging_hash_valid" CHECK ("workspace"."block_embedding_staging"."content_hash" ~ '^[a-f0-9]{64}$'),
+	CONSTRAINT "block_embedding_staging_metadata" CHECK (length("workspace"."block_embedding_staging"."embed_model") > 0 AND "workspace"."block_embedding_staging"."embed_dimensions" > 0 AND vector_dims("workspace"."block_embedding_staging"."embedding") = "workspace"."block_embedding_staging"."embed_dimensions")
 );
 
-CREATE TABLE "knowledge"."block_index" (
-	"id" bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY (sequence name "knowledge"."block_index_id_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1),
+CREATE TABLE "workspace"."block_index" (
+	"id" bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY (sequence name "workspace"."block_index_id_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1 CACHE 1),
 	"workspace_id" uuid NOT NULL,
 	"page_id" uuid NOT NULL,
 	"block_id" varchar(128) NOT NULL,
@@ -169,13 +169,13 @@ CREATE TABLE "knowledge"."block_index" (
 	"acl_revision" bigint DEFAULT 0 NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "block_index_workspace_page_block_unique" UNIQUE("workspace_id","page_id","block_id"),
-	CONSTRAINT "block_index_block_id_valid" CHECK ("knowledge"."block_index"."block_id" ~ '^[A-Za-z0-9_-]+$'),
-	CONSTRAINT "block_index_content_hash_valid" CHECK ("knowledge"."block_index"."content_hash" ~ '^[a-f0-9]{64}$'),
-	CONSTRAINT "block_index_embedding_metadata" CHECK (("knowledge"."block_index"."embedding" IS NULL AND "knowledge"."block_index"."embed_model" IS NULL AND "knowledge"."block_index"."embed_dimensions" IS NULL AND "knowledge"."block_index"."embedded_hash" IS NULL) OR ("knowledge"."block_index"."embedding" IS NOT NULL AND "knowledge"."block_index"."embed_model" IS NOT NULL AND length("knowledge"."block_index"."embed_model") > 0 AND "knowledge"."block_index"."embed_dimensions" IS NOT NULL AND "knowledge"."block_index"."embed_dimensions" > 0 AND vector_dims("knowledge"."block_index"."embedding") = "knowledge"."block_index"."embed_dimensions" AND "knowledge"."block_index"."embedded_hash" IS NOT NULL AND "knowledge"."block_index"."embedded_hash" ~ '^[a-f0-9]{64}$')),
-	CONSTRAINT "block_index_acl_revision_nonnegative" CHECK ("knowledge"."block_index"."acl_revision" >= 0)
+	CONSTRAINT "block_index_block_id_valid" CHECK ("workspace"."block_index"."block_id" ~ '^[A-Za-z0-9_-]+$'),
+	CONSTRAINT "block_index_content_hash_valid" CHECK ("workspace"."block_index"."content_hash" ~ '^[a-f0-9]{64}$'),
+	CONSTRAINT "block_index_embedding_metadata" CHECK (("workspace"."block_index"."embedding" IS NULL AND "workspace"."block_index"."embed_model" IS NULL AND "workspace"."block_index"."embed_dimensions" IS NULL AND "workspace"."block_index"."embedded_hash" IS NULL) OR ("workspace"."block_index"."embedding" IS NOT NULL AND "workspace"."block_index"."embed_model" IS NOT NULL AND length("workspace"."block_index"."embed_model") > 0 AND "workspace"."block_index"."embed_dimensions" IS NOT NULL AND "workspace"."block_index"."embed_dimensions" > 0 AND vector_dims("workspace"."block_index"."embedding") = "workspace"."block_index"."embed_dimensions" AND "workspace"."block_index"."embedded_hash" IS NOT NULL AND "workspace"."block_index"."embedded_hash" ~ '^[a-f0-9]{64}$')),
+	CONSTRAINT "block_index_acl_revision_nonnegative" CHECK ("workspace"."block_index"."acl_revision" >= 0)
 );
 
-CREATE TABLE "knowledge"."comment" (
+CREATE TABLE "workspace"."comment" (
 	"workspace_id" uuid NOT NULL,
 	"id" uuid NOT NULL,
 	"thread_id" uuid NOT NULL,
@@ -184,33 +184,33 @@ CREATE TABLE "knowledge"."comment" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "comment_workspace_id_id_pk" PRIMARY KEY("workspace_id","id"),
-	CONSTRAINT "comment_body_valid" CHECK (length(btrim("knowledge"."comment"."body_md")) BETWEEN 1 AND 50000)
+	CONSTRAINT "comment_body_valid" CHECK (length(btrim("workspace"."comment"."body_md")) BETWEEN 1 AND 50000)
 );
 
-CREATE TABLE "knowledge"."comment_thread" (
+CREATE TABLE "workspace"."comment_thread" (
 	"workspace_id" uuid NOT NULL,
 	"id" uuid NOT NULL,
 	"page_id" uuid NOT NULL,
-	"status" "knowledge"."comment_thread_status" DEFAULT 'open' NOT NULL,
+	"status" "workspace"."comment_thread_status" DEFAULT 'open' NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "comment_thread_workspace_id_id_pk" PRIMARY KEY("workspace_id","id")
 );
 
-CREATE TABLE "knowledge"."database_definition" (
+CREATE TABLE "workspace"."database_definition" (
 	"workspace_id" uuid NOT NULL,
 	"page_id" uuid NOT NULL,
 	"teamspace_id" uuid NOT NULL,
-	"page_kind" "knowledge"."page_kind" DEFAULT 'database' NOT NULL,
+	"page_kind" "workspace"."page_kind" DEFAULT 'database' NOT NULL,
 	"properties" jsonb DEFAULT '[]'::jsonb NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "database_definition_workspace_id_page_id_pk" PRIMARY KEY("workspace_id","page_id"),
 	CONSTRAINT "database_definition_teamspace_page_unique" UNIQUE("workspace_id","teamspace_id","page_id"),
-	CONSTRAINT "database_definition_database_kind" CHECK ("knowledge"."database_definition"."page_kind" = 'database'),
-	CONSTRAINT "database_definition_properties_array" CHECK (jsonb_typeof("knowledge"."database_definition"."properties") = 'array' AND jsonb_array_length("knowledge"."database_definition"."properties") <= 100)
+	CONSTRAINT "database_definition_database_kind" CHECK ("workspace"."database_definition"."page_kind" = 'database'),
+	CONSTRAINT "database_definition_properties_array" CHECK (jsonb_typeof("workspace"."database_definition"."properties") = 'array' AND jsonb_array_length("workspace"."database_definition"."properties") <= 100)
 );
 
-CREATE TABLE "knowledge"."doc_checkpoint" (
+CREATE TABLE "workspace"."doc_checkpoint" (
 	"workspace_id" uuid NOT NULL,
 	"id" uuid NOT NULL,
 	"page_id" uuid NOT NULL,
@@ -222,7 +222,7 @@ CREATE TABLE "knowledge"."doc_checkpoint" (
 	CONSTRAINT "doc_checkpoint_workspace_id_id_pk" PRIMARY KEY("workspace_id","id")
 );
 
-CREATE TABLE "knowledge"."doc_state" (
+CREATE TABLE "workspace"."doc_state" (
 	"workspace_id" uuid NOT NULL,
 	"page_id" uuid NOT NULL,
 	"state" "bytea" NOT NULL,
@@ -231,42 +231,42 @@ CREATE TABLE "knowledge"."doc_state" (
 	CONSTRAINT "doc_state_workspace_id_page_id_pk" PRIMARY KEY("workspace_id","page_id")
 );
 
-CREATE TABLE "knowledge"."group" (
+CREATE TABLE "workspace"."group" (
 	"workspace_id" uuid NOT NULL,
 	"id" uuid NOT NULL,
 	"name" varchar(120) NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "group_workspace_id_id_pk" PRIMARY KEY("workspace_id","id"),
 	CONSTRAINT "group_workspace_name_unique" UNIQUE("workspace_id","name"),
-	CONSTRAINT "group_name_not_empty" CHECK (length(btrim("knowledge"."group"."name")) > 0)
+	CONSTRAINT "group_name_not_empty" CHECK (length(btrim("workspace"."group"."name")) > 0)
 );
 
-CREATE TABLE "knowledge"."group_member" (
+CREATE TABLE "workspace"."group_member" (
 	"workspace_id" uuid NOT NULL,
 	"group_id" uuid NOT NULL,
 	"user_id" uuid NOT NULL,
 	CONSTRAINT "group_member_workspace_id_group_id_user_id_pk" PRIMARY KEY("workspace_id","group_id","user_id")
 );
 
-CREATE TABLE "knowledge"."knowledge_base" (
+CREATE TABLE "workspace"."knowledge_base" (
 	"workspace_id" uuid NOT NULL,
 	"id" uuid NOT NULL,
 	"name" varchar(120) NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "knowledge_base_workspace_id_id_pk" PRIMARY KEY("workspace_id","id"),
-	CONSTRAINT "knowledge_base_name_not_empty" CHECK (length(btrim("knowledge"."knowledge_base"."name")) > 0)
+	CONSTRAINT "knowledge_base_name_not_empty" CHECK (length(btrim("workspace"."knowledge_base"."name")) > 0)
 );
 
-CREATE TABLE "knowledge"."member" (
+CREATE TABLE "workspace"."member" (
 	"workspace_id" uuid NOT NULL,
 	"user_id" uuid NOT NULL,
-	"role" "knowledge"."member_role" NOT NULL,
+	"role" "workspace"."member_role" NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "member_workspace_id_user_id_pk" PRIMARY KEY("workspace_id","user_id")
 );
 
-CREATE TABLE "knowledge"."model_credential" (
+CREATE TABLE "workspace"."model_credential" (
 	"workspace_id" uuid NOT NULL,
 	"id" uuid NOT NULL,
 	"user_id" uuid NOT NULL,
@@ -277,10 +277,10 @@ CREATE TABLE "knowledge"."model_credential" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "model_credential_workspace_id_id_pk" PRIMARY KEY("workspace_id","id"),
-	CONSTRAINT "model_credential_secret_not_empty" CHECK (octet_length("knowledge"."model_credential"."encrypted_secret") > 0)
+	CONSTRAINT "model_credential_secret_not_empty" CHECK (octet_length("workspace"."model_credential"."encrypted_secret") > 0)
 );
 
-CREATE TABLE "knowledge"."notification" (
+CREATE TABLE "workspace"."notification" (
 	"workspace_id" uuid NOT NULL,
 	"id" uuid NOT NULL,
 	"user_id" uuid NOT NULL,
@@ -290,28 +290,28 @@ CREATE TABLE "knowledge"."notification" (
 	"read_at" timestamp with time zone,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "notification_workspace_id_id_pk" PRIMARY KEY("workspace_id","id"),
-	CONSTRAINT "notification_payload_object" CHECK (jsonb_typeof("knowledge"."notification"."payload") = 'object')
+	CONSTRAINT "notification_payload_object" CHECK (jsonb_typeof("workspace"."notification"."payload") = 'object')
 );
 
-CREATE TABLE "knowledge"."outbox" (
+CREATE TABLE "workspace"."outbox" (
 	"workspace_id" uuid NOT NULL,
 	"id" uuid NOT NULL,
-	"topic" "knowledge"."outbox_topic" NOT NULL,
+	"topic" "workspace"."outbox_topic" NOT NULL,
 	"payload" jsonb NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"dispatched_at" timestamp with time zone,
 	CONSTRAINT "outbox_workspace_id_id_pk" PRIMARY KEY("workspace_id","id"),
-	CONSTRAINT "outbox_payload_scope" CHECK (jsonb_typeof("knowledge"."outbox"."payload") = 'object' AND "knowledge"."outbox"."payload"->>'workspaceId' IS NOT DISTINCT FROM "knowledge"."outbox"."workspace_id"::text AND "knowledge"."outbox"."payload"->>'topic' IS NOT DISTINCT FROM "knowledge"."outbox"."topic"::text)
+	CONSTRAINT "outbox_payload_scope" CHECK (jsonb_typeof("workspace"."outbox"."payload") = 'object' AND "workspace"."outbox"."payload"->>'workspaceId' IS NOT DISTINCT FROM "workspace"."outbox"."workspace_id"::text AND "workspace"."outbox"."payload"->>'topic' IS NOT DISTINCT FROM "workspace"."outbox"."topic"::text)
 );
 
-CREATE TABLE "knowledge"."page" (
+CREATE TABLE "workspace"."page" (
 	"workspace_id" uuid NOT NULL,
 	"id" uuid NOT NULL,
 	"teamspace_id" uuid NOT NULL,
 	"parent_id" uuid,
 	"position" varchar(256) NOT NULL,
 	"path" "ltree" NOT NULL,
-	"kind" "knowledge"."page_kind" DEFAULT 'doc' NOT NULL,
+	"kind" "workspace"."page_kind" DEFAULT 'doc' NOT NULL,
 	"database_id" uuid,
 	"properties" jsonb DEFAULT '{}'::jsonb NOT NULL,
 	"title" varchar(500) DEFAULT '' NOT NULL,
@@ -327,27 +327,27 @@ CREATE TABLE "knowledge"."page" (
 	CONSTRAINT "page_workspace_teamspace_id_unique" UNIQUE("workspace_id","teamspace_id","id"),
 	CONSTRAINT "page_workspace_teamspace_id_kind_unique" UNIQUE("workspace_id","teamspace_id","id","kind"),
 	CONSTRAINT "page_workspace_path_unique" UNIQUE("workspace_id","path"),
-	CONSTRAINT "page_not_own_parent" CHECK ("knowledge"."page"."parent_id" IS NULL OR "knowledge"."page"."parent_id" <> "knowledge"."page"."id"),
-	CONSTRAINT "page_row_database_relation" CHECK (("knowledge"."page"."kind" = 'row') = ("knowledge"."page"."database_id" IS NOT NULL)),
-	CONSTRAINT "page_not_own_database" CHECK ("knowledge"."page"."database_id" IS NULL OR "knowledge"."page"."database_id" <> "knowledge"."page"."id"),
-	CONSTRAINT "page_position_valid" CHECK ("knowledge"."page"."position" ~ '^[A-Za-z0-9]+$'),
-	CONSTRAINT "page_path_valid" CHECK (nlevel("knowledge"."page"."path") > 0 AND subpath("knowledge"."page"."path", -1)::text = replace("knowledge"."page"."id"::text, '-', '_')),
-	CONSTRAINT "page_root_path_depth" CHECK (("knowledge"."page"."parent_id" IS NULL) = (nlevel("knowledge"."page"."path") = 1)),
-	CONSTRAINT "page_properties_object" CHECK (jsonb_typeof("knowledge"."page"."properties") = 'object'),
-	CONSTRAINT "page_acl_revision_nonnegative" CHECK ("knowledge"."page"."acl_revision" >= 0)
+	CONSTRAINT "page_not_own_parent" CHECK ("workspace"."page"."parent_id" IS NULL OR "workspace"."page"."parent_id" <> "workspace"."page"."id"),
+	CONSTRAINT "page_row_database_relation" CHECK (("workspace"."page"."kind" = 'row') = ("workspace"."page"."database_id" IS NOT NULL)),
+	CONSTRAINT "page_not_own_database" CHECK ("workspace"."page"."database_id" IS NULL OR "workspace"."page"."database_id" <> "workspace"."page"."id"),
+	CONSTRAINT "page_position_valid" CHECK ("workspace"."page"."position" ~ '^[A-Za-z0-9]+$'),
+	CONSTRAINT "page_path_valid" CHECK (nlevel("workspace"."page"."path") > 0 AND subpath("workspace"."page"."path", -1)::text = replace("workspace"."page"."id"::text, '-', '_')),
+	CONSTRAINT "page_root_path_depth" CHECK (("workspace"."page"."parent_id" IS NULL) = (nlevel("workspace"."page"."path") = 1)),
+	CONSTRAINT "page_properties_object" CHECK (jsonb_typeof("workspace"."page"."properties") = 'object'),
+	CONSTRAINT "page_acl_revision_nonnegative" CHECK ("workspace"."page"."acl_revision" >= 0)
 );
 
-CREATE TABLE "knowledge"."page_acl" (
+CREATE TABLE "workspace"."page_acl" (
 	"workspace_id" uuid NOT NULL,
 	"page_id" uuid NOT NULL,
 	"principal" text NOT NULL,
-	"level" "knowledge"."permission_level" NOT NULL,
+	"level" "workspace"."permission_level" NOT NULL,
 	"inherited" boolean DEFAULT false NOT NULL,
 	CONSTRAINT "page_acl_workspace_id_page_id_principal_pk" PRIMARY KEY("workspace_id","page_id","principal"),
-	CONSTRAINT "page_acl_principal_valid" CHECK ("knowledge"."page_acl"."principal" ~ '^(user|group|workspace|link):[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')
+	CONSTRAINT "page_acl_principal_valid" CHECK ("workspace"."page_acl"."principal" ~ '^(user|group|workspace|link):[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')
 );
 
-CREATE TABLE "knowledge"."page_effective_acl" (
+CREATE TABLE "workspace"."page_effective_acl" (
 	"workspace_id" uuid NOT NULL,
 	"page_id" uuid NOT NULL,
 	"view_principals" text[] DEFAULT ARRAY[]::text[] NOT NULL,
@@ -357,11 +357,11 @@ CREATE TABLE "knowledge"."page_effective_acl" (
 	"revision" bigint DEFAULT 0 NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "page_effective_acl_workspace_id_page_id_pk" PRIMARY KEY("workspace_id","page_id"),
-	CONSTRAINT "page_effective_acl_level_hierarchy" CHECK ("knowledge"."page_effective_acl"."view_principals" @> "knowledge"."page_effective_acl"."comment_principals" AND "knowledge"."page_effective_acl"."comment_principals" @> "knowledge"."page_effective_acl"."edit_principals" AND "knowledge"."page_effective_acl"."edit_principals" @> "knowledge"."page_effective_acl"."full_principals"),
-	CONSTRAINT "page_effective_acl_revision_nonnegative" CHECK ("knowledge"."page_effective_acl"."revision" >= 0)
+	CONSTRAINT "page_effective_acl_level_hierarchy" CHECK ("workspace"."page_effective_acl"."view_principals" @> "workspace"."page_effective_acl"."comment_principals" AND "workspace"."page_effective_acl"."comment_principals" @> "workspace"."page_effective_acl"."edit_principals" AND "workspace"."page_effective_acl"."edit_principals" @> "workspace"."page_effective_acl"."full_principals"),
+	CONSTRAINT "page_effective_acl_revision_nonnegative" CHECK ("workspace"."page_effective_acl"."revision" >= 0)
 );
 
-CREATE TABLE "knowledge"."personal_access_token" (
+CREATE TABLE "workspace"."personal_access_token" (
 	"workspace_id" uuid NOT NULL,
 	"id" uuid NOT NULL,
 	"user_id" uuid NOT NULL,
@@ -373,52 +373,63 @@ CREATE TABLE "knowledge"."personal_access_token" (
 	"last_used_at" timestamp with time zone,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "personal_access_token_workspace_id_id_pk" PRIMARY KEY("workspace_id","id"),
-	CONSTRAINT "personal_access_token_hash_valid" CHECK ("knowledge"."personal_access_token"."token_hash" ~ '^[a-f0-9]{64}$'),
-	CONSTRAINT "personal_access_token_scopes_nonempty" CHECK (cardinality("knowledge"."personal_access_token"."scopes") > 0)
+	CONSTRAINT "personal_access_token_hash_valid" CHECK ("workspace"."personal_access_token"."token_hash" ~ '^[a-f0-9]{64}$'),
+	CONSTRAINT "personal_access_token_scopes_nonempty" CHECK (cardinality("workspace"."personal_access_token"."scopes") > 0)
 );
 
-CREATE TABLE "knowledge"."share_link" (
+CREATE TABLE "workspace"."project" (
+	"workspace_id" uuid NOT NULL,
+	"id" uuid NOT NULL,
+	"name" varchar(120) NOT NULL,
+	"created_by" uuid,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "project_workspace_id_id_pk" PRIMARY KEY("workspace_id","id"),
+	CONSTRAINT "project_name_not_empty" CHECK (length(btrim("workspace"."project"."name")) > 0)
+);
+
+CREATE TABLE "workspace"."share_link" (
 	"workspace_id" uuid NOT NULL,
 	"id" uuid NOT NULL,
 	"page_id" uuid NOT NULL,
 	"token_hash" varchar(64) NOT NULL,
-	"level" "knowledge"."permission_level" DEFAULT 'view' NOT NULL,
+	"level" "workspace"."permission_level" DEFAULT 'view' NOT NULL,
 	"created_by" uuid NOT NULL,
 	"expires_at" timestamp with time zone,
 	"revoked_at" timestamp with time zone,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "share_link_workspace_id_id_pk" PRIMARY KEY("workspace_id","id"),
-	CONSTRAINT "share_link_token_hash_valid" CHECK ("knowledge"."share_link"."token_hash" ~ '^[a-f0-9]{64}$')
+	CONSTRAINT "share_link_token_hash_valid" CHECK ("workspace"."share_link"."token_hash" ~ '^[a-f0-9]{64}$')
 );
 
-CREATE TABLE "knowledge"."teamspace" (
+CREATE TABLE "workspace"."teamspace" (
 	"workspace_id" uuid NOT NULL,
 	"id" uuid NOT NULL,
 	"knowledge_base_id" uuid NOT NULL,
 	"name" varchar(120) NOT NULL,
-	"default_access" "knowledge"."permission_level",
+	"default_access" "workspace"."permission_level",
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "teamspace_workspace_id_id_pk" PRIMARY KEY("workspace_id","id"),
-	CONSTRAINT "teamspace_name_not_empty" CHECK (length(btrim("knowledge"."teamspace"."name")) > 0)
+	CONSTRAINT "teamspace_name_not_empty" CHECK (length(btrim("workspace"."teamspace"."name")) > 0)
 );
 
-CREATE TABLE "knowledge"."workspace" (
+CREATE TABLE "workspace"."workspace" (
 	"workspace_id" uuid PRIMARY KEY NOT NULL,
 	"name" varchar(120) NOT NULL,
-	"kind" "knowledge"."workspace_kind" NOT NULL,
+	"kind" "workspace"."workspace_kind" NOT NULL,
 	"settings" jsonb DEFAULT '{}'::jsonb NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "workspace_name_not_empty" CHECK (length(btrim("knowledge"."workspace"."name")) > 0),
-	CONSTRAINT "workspace_settings_object" CHECK (jsonb_typeof("knowledge"."workspace"."settings") = 'object')
+	CONSTRAINT "workspace_name_not_empty" CHECK (length(btrim("workspace"."workspace"."name")) > 0),
+	CONSTRAINT "workspace_settings_object" CHECK (jsonb_typeof("workspace"."workspace"."settings") = 'object')
 );
 
-CREATE TABLE "knowledge"."workspace_invitation" (
+CREATE TABLE "workspace"."workspace_invitation" (
 	"workspace_id" uuid NOT NULL,
 	"id" uuid NOT NULL,
 	"email" text NOT NULL,
-	"role" "knowledge"."member_role" NOT NULL,
+	"role" "workspace"."member_role" NOT NULL,
 	"token_hash" varchar(64) NOT NULL,
 	"invited_by" uuid NOT NULL,
 	"expires_at" timestamp with time zone NOT NULL,
@@ -428,100 +439,103 @@ CREATE TABLE "knowledge"."workspace_invitation" (
 	"revoked_at" timestamp with time zone,
 	CONSTRAINT "workspace_invitation_workspace_id_id_pk" PRIMARY KEY("workspace_id","id"),
 	CONSTRAINT "workspace_invitation_token_unique" UNIQUE("workspace_id","token_hash"),
-	CONSTRAINT "workspace_invitation_role" CHECK ("knowledge"."workspace_invitation"."role" <> 'owner'),
-	CONSTRAINT "workspace_invitation_email" CHECK ("knowledge"."workspace_invitation"."email" = lower(btrim("knowledge"."workspace_invitation"."email")) AND position('@' IN "knowledge"."workspace_invitation"."email") > 1),
-	CONSTRAINT "workspace_invitation_token_hash" CHECK ("knowledge"."workspace_invitation"."token_hash" ~ '^[a-f0-9]{64}$'),
-	CONSTRAINT "workspace_invitation_expiry" CHECK ("knowledge"."workspace_invitation"."expires_at" > "knowledge"."workspace_invitation"."created_at"),
-	CONSTRAINT "workspace_invitation_state" CHECK (("knowledge"."workspace_invitation"."accepted_at" IS NULL OR "knowledge"."workspace_invitation"."revoked_at" IS NULL) AND ("knowledge"."workspace_invitation"."accepted_by" IS NULL OR "knowledge"."workspace_invitation"."accepted_at" IS NOT NULL))
+	CONSTRAINT "workspace_invitation_role" CHECK ("workspace"."workspace_invitation"."role" <> 'owner'),
+	CONSTRAINT "workspace_invitation_email" CHECK ("workspace"."workspace_invitation"."email" = lower(btrim("workspace"."workspace_invitation"."email")) AND position('@' IN "workspace"."workspace_invitation"."email") > 1),
+	CONSTRAINT "workspace_invitation_token_hash" CHECK ("workspace"."workspace_invitation"."token_hash" ~ '^[a-f0-9]{64}$'),
+	CONSTRAINT "workspace_invitation_expiry" CHECK ("workspace"."workspace_invitation"."expires_at" > "workspace"."workspace_invitation"."created_at"),
+	CONSTRAINT "workspace_invitation_state" CHECK (("workspace"."workspace_invitation"."accepted_at" IS NULL OR "workspace"."workspace_invitation"."revoked_at" IS NULL) AND ("workspace"."workspace_invitation"."accepted_by" IS NULL OR "workspace"."workspace_invitation"."accepted_at" IS NOT NULL))
 );
 
 ALTER TABLE "auth"."account" ADD CONSTRAINT "account_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "auth"."session" ADD CONSTRAINT "session_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."ai_task" ADD CONSTRAINT "ai_task_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "knowledge"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."ai_task" ADD CONSTRAINT "ai_task_initiated_by_user_id_fk" FOREIGN KEY ("initiated_by") REFERENCES "auth"."user"("id") ON DELETE no action ON UPDATE no action;
-ALTER TABLE "knowledge"."ai_usage" ADD CONSTRAINT "ai_usage_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "knowledge"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."ai_usage" ADD CONSTRAINT "ai_usage_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE no action ON UPDATE no action;
-ALTER TABLE "knowledge"."ai_usage" ADD CONSTRAINT "ai_usage_workspace_id_task_id_ai_task_workspace_id_id_fk" FOREIGN KEY ("workspace_id","task_id") REFERENCES "knowledge"."ai_task"("workspace_id","id") ON DELETE no action ON UPDATE no action;
-ALTER TABLE "knowledge"."asset" ADD CONSTRAINT "asset_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "knowledge"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."backlink" ADD CONSTRAINT "backlink_workspace_id_src_page_id_page_workspace_id_id_fk" FOREIGN KEY ("workspace_id","src_page_id") REFERENCES "knowledge"."page"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."backlink" ADD CONSTRAINT "backlink_workspace_id_dst_page_id_page_workspace_id_id_fk" FOREIGN KEY ("workspace_id","dst_page_id") REFERENCES "knowledge"."page"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."block_embedding_model" ADD CONSTRAINT "block_embedding_model_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "knowledge"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."block_embedding_staging" ADD CONSTRAINT "block_embedding_staging_block_fk" FOREIGN KEY ("workspace_id","page_id","block_id") REFERENCES "knowledge"."block_index"("workspace_id","page_id","block_id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."block_index" ADD CONSTRAINT "block_index_workspace_id_page_id_page_workspace_id_id_fk" FOREIGN KEY ("workspace_id","page_id") REFERENCES "knowledge"."page"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."comment" ADD CONSTRAINT "comment_author_id_user_id_fk" FOREIGN KEY ("author_id") REFERENCES "auth"."user"("id") ON DELETE no action ON UPDATE no action;
-ALTER TABLE "knowledge"."comment" ADD CONSTRAINT "comment_thread_fk" FOREIGN KEY ("workspace_id","thread_id") REFERENCES "knowledge"."comment_thread"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."comment_thread" ADD CONSTRAINT "comment_thread_workspace_id_page_id_page_workspace_id_id_fk" FOREIGN KEY ("workspace_id","page_id") REFERENCES "knowledge"."page"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."database_definition" ADD CONSTRAINT "database_definition_page_fk" FOREIGN KEY ("workspace_id","teamspace_id","page_id","page_kind") REFERENCES "knowledge"."page"("workspace_id","teamspace_id","id","kind") ON DELETE cascade ON UPDATE cascade;
-ALTER TABLE "knowledge"."doc_checkpoint" ADD CONSTRAINT "doc_checkpoint_workspace_id_page_id_page_workspace_id_id_fk" FOREIGN KEY ("workspace_id","page_id") REFERENCES "knowledge"."page"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."doc_state" ADD CONSTRAINT "doc_state_workspace_id_page_id_page_workspace_id_id_fk" FOREIGN KEY ("workspace_id","page_id") REFERENCES "knowledge"."page"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."group" ADD CONSTRAINT "group_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "knowledge"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."group_member" ADD CONSTRAINT "group_member_workspace_id_group_id_group_workspace_id_id_fk" FOREIGN KEY ("workspace_id","group_id") REFERENCES "knowledge"."group"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."group_member" ADD CONSTRAINT "group_member_membership_fk" FOREIGN KEY ("workspace_id","user_id") REFERENCES "knowledge"."member"("workspace_id","user_id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."knowledge_base" ADD CONSTRAINT "knowledge_base_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "knowledge"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."member" ADD CONSTRAINT "member_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "knowledge"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."member" ADD CONSTRAINT "member_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."model_credential" ADD CONSTRAINT "model_credential_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "knowledge"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."model_credential" ADD CONSTRAINT "model_credential_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."notification" ADD CONSTRAINT "notification_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "knowledge"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."notification" ADD CONSTRAINT "notification_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."notification" ADD CONSTRAINT "notification_workspace_id_page_id_page_workspace_id_id_fk" FOREIGN KEY ("workspace_id","page_id") REFERENCES "knowledge"."page"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."outbox" ADD CONSTRAINT "outbox_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "knowledge"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."page" ADD CONSTRAINT "page_created_by_user_id_fk" FOREIGN KEY ("created_by") REFERENCES "auth"."user"("id") ON DELETE no action ON UPDATE no action;
-ALTER TABLE "knowledge"."page" ADD CONSTRAINT "page_teamspace_fk" FOREIGN KEY ("workspace_id","teamspace_id") REFERENCES "knowledge"."teamspace"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."page" ADD CONSTRAINT "page_parent_fk" FOREIGN KEY ("workspace_id","teamspace_id","parent_id") REFERENCES "knowledge"."page"("workspace_id","teamspace_id","id") ON DELETE no action ON UPDATE cascade;
-ALTER TABLE "knowledge"."page" ADD CONSTRAINT "page_database_fk" FOREIGN KEY ("workspace_id","teamspace_id","database_id") REFERENCES "knowledge"."database_definition"("workspace_id","teamspace_id","page_id") ON DELETE no action ON UPDATE cascade;
-ALTER TABLE "knowledge"."page_acl" ADD CONSTRAINT "page_acl_workspace_id_page_id_page_workspace_id_id_fk" FOREIGN KEY ("workspace_id","page_id") REFERENCES "knowledge"."page"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."page_effective_acl" ADD CONSTRAINT "page_effective_acl_workspace_id_page_id_page_workspace_id_id_fk" FOREIGN KEY ("workspace_id","page_id") REFERENCES "knowledge"."page"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."personal_access_token" ADD CONSTRAINT "personal_access_token_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "knowledge"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."personal_access_token" ADD CONSTRAINT "personal_access_token_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."share_link" ADD CONSTRAINT "share_link_created_by_user_id_fk" FOREIGN KEY ("created_by") REFERENCES "auth"."user"("id") ON DELETE no action ON UPDATE no action;
-ALTER TABLE "knowledge"."share_link" ADD CONSTRAINT "share_link_workspace_id_page_id_page_workspace_id_id_fk" FOREIGN KEY ("workspace_id","page_id") REFERENCES "knowledge"."page"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."teamspace" ADD CONSTRAINT "teamspace_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "knowledge"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."teamspace" ADD CONSTRAINT "teamspace_knowledge_base_fk" FOREIGN KEY ("workspace_id","knowledge_base_id") REFERENCES "knowledge"."knowledge_base"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."workspace_invitation" ADD CONSTRAINT "workspace_invitation_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "knowledge"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "knowledge"."workspace_invitation" ADD CONSTRAINT "workspace_invitation_invited_by_user_id_fk" FOREIGN KEY ("invited_by") REFERENCES "auth"."user"("id") ON DELETE no action ON UPDATE no action;
-ALTER TABLE "knowledge"."workspace_invitation" ADD CONSTRAINT "workspace_invitation_accepted_by_user_id_fk" FOREIGN KEY ("accepted_by") REFERENCES "auth"."user"("id") ON DELETE set null ON UPDATE no action;
+ALTER TABLE "workspace"."ai_task" ADD CONSTRAINT "ai_task_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "workspace"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."ai_task" ADD CONSTRAINT "ai_task_initiated_by_user_id_fk" FOREIGN KEY ("initiated_by") REFERENCES "auth"."user"("id") ON DELETE no action ON UPDATE no action;
+ALTER TABLE "workspace"."ai_usage" ADD CONSTRAINT "ai_usage_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "workspace"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."ai_usage" ADD CONSTRAINT "ai_usage_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE no action ON UPDATE no action;
+ALTER TABLE "workspace"."ai_usage" ADD CONSTRAINT "ai_usage_workspace_id_task_id_ai_task_workspace_id_id_fk" FOREIGN KEY ("workspace_id","task_id") REFERENCES "workspace"."ai_task"("workspace_id","id") ON DELETE no action ON UPDATE no action;
+ALTER TABLE "workspace"."asset" ADD CONSTRAINT "asset_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "workspace"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."backlink" ADD CONSTRAINT "backlink_workspace_id_src_page_id_page_workspace_id_id_fk" FOREIGN KEY ("workspace_id","src_page_id") REFERENCES "workspace"."page"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."backlink" ADD CONSTRAINT "backlink_workspace_id_dst_page_id_page_workspace_id_id_fk" FOREIGN KEY ("workspace_id","dst_page_id") REFERENCES "workspace"."page"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."block_embedding_model" ADD CONSTRAINT "block_embedding_model_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "workspace"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."block_embedding_staging" ADD CONSTRAINT "block_embedding_staging_block_fk" FOREIGN KEY ("workspace_id","page_id","block_id") REFERENCES "workspace"."block_index"("workspace_id","page_id","block_id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."block_index" ADD CONSTRAINT "block_index_workspace_id_page_id_page_workspace_id_id_fk" FOREIGN KEY ("workspace_id","page_id") REFERENCES "workspace"."page"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."comment" ADD CONSTRAINT "comment_author_id_user_id_fk" FOREIGN KEY ("author_id") REFERENCES "auth"."user"("id") ON DELETE no action ON UPDATE no action;
+ALTER TABLE "workspace"."comment" ADD CONSTRAINT "comment_thread_fk" FOREIGN KEY ("workspace_id","thread_id") REFERENCES "workspace"."comment_thread"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."comment_thread" ADD CONSTRAINT "comment_thread_workspace_id_page_id_page_workspace_id_id_fk" FOREIGN KEY ("workspace_id","page_id") REFERENCES "workspace"."page"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."database_definition" ADD CONSTRAINT "database_definition_page_fk" FOREIGN KEY ("workspace_id","teamspace_id","page_id","page_kind") REFERENCES "workspace"."page"("workspace_id","teamspace_id","id","kind") ON DELETE cascade ON UPDATE cascade;
+ALTER TABLE "workspace"."doc_checkpoint" ADD CONSTRAINT "doc_checkpoint_workspace_id_page_id_page_workspace_id_id_fk" FOREIGN KEY ("workspace_id","page_id") REFERENCES "workspace"."page"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."doc_state" ADD CONSTRAINT "doc_state_workspace_id_page_id_page_workspace_id_id_fk" FOREIGN KEY ("workspace_id","page_id") REFERENCES "workspace"."page"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."group" ADD CONSTRAINT "group_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "workspace"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."group_member" ADD CONSTRAINT "group_member_workspace_id_group_id_group_workspace_id_id_fk" FOREIGN KEY ("workspace_id","group_id") REFERENCES "workspace"."group"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."group_member" ADD CONSTRAINT "group_member_membership_fk" FOREIGN KEY ("workspace_id","user_id") REFERENCES "workspace"."member"("workspace_id","user_id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."knowledge_base" ADD CONSTRAINT "knowledge_base_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "workspace"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."member" ADD CONSTRAINT "member_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "workspace"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."member" ADD CONSTRAINT "member_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."model_credential" ADD CONSTRAINT "model_credential_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "workspace"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."model_credential" ADD CONSTRAINT "model_credential_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."notification" ADD CONSTRAINT "notification_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "workspace"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."notification" ADD CONSTRAINT "notification_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."notification" ADD CONSTRAINT "notification_workspace_id_page_id_page_workspace_id_id_fk" FOREIGN KEY ("workspace_id","page_id") REFERENCES "workspace"."page"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."outbox" ADD CONSTRAINT "outbox_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "workspace"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."page" ADD CONSTRAINT "page_created_by_user_id_fk" FOREIGN KEY ("created_by") REFERENCES "auth"."user"("id") ON DELETE no action ON UPDATE no action;
+ALTER TABLE "workspace"."page" ADD CONSTRAINT "page_teamspace_fk" FOREIGN KEY ("workspace_id","teamspace_id") REFERENCES "workspace"."teamspace"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."page" ADD CONSTRAINT "page_parent_fk" FOREIGN KEY ("workspace_id","teamspace_id","parent_id") REFERENCES "workspace"."page"("workspace_id","teamspace_id","id") ON DELETE no action ON UPDATE cascade;
+ALTER TABLE "workspace"."page" ADD CONSTRAINT "page_database_fk" FOREIGN KEY ("workspace_id","teamspace_id","database_id") REFERENCES "workspace"."database_definition"("workspace_id","teamspace_id","page_id") ON DELETE no action ON UPDATE cascade;
+ALTER TABLE "workspace"."page_acl" ADD CONSTRAINT "page_acl_workspace_id_page_id_page_workspace_id_id_fk" FOREIGN KEY ("workspace_id","page_id") REFERENCES "workspace"."page"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."page_effective_acl" ADD CONSTRAINT "page_effective_acl_workspace_id_page_id_page_workspace_id_id_fk" FOREIGN KEY ("workspace_id","page_id") REFERENCES "workspace"."page"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."personal_access_token" ADD CONSTRAINT "personal_access_token_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "workspace"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."personal_access_token" ADD CONSTRAINT "personal_access_token_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."project" ADD CONSTRAINT "project_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "workspace"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."project" ADD CONSTRAINT "project_created_by_user_id_fk" FOREIGN KEY ("created_by") REFERENCES "auth"."user"("id") ON DELETE no action ON UPDATE no action;
+ALTER TABLE "workspace"."share_link" ADD CONSTRAINT "share_link_created_by_user_id_fk" FOREIGN KEY ("created_by") REFERENCES "auth"."user"("id") ON DELETE no action ON UPDATE no action;
+ALTER TABLE "workspace"."share_link" ADD CONSTRAINT "share_link_workspace_id_page_id_page_workspace_id_id_fk" FOREIGN KEY ("workspace_id","page_id") REFERENCES "workspace"."page"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."teamspace" ADD CONSTRAINT "teamspace_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "workspace"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."teamspace" ADD CONSTRAINT "teamspace_knowledge_base_fk" FOREIGN KEY ("workspace_id","knowledge_base_id") REFERENCES "workspace"."knowledge_base"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."workspace_invitation" ADD CONSTRAINT "workspace_invitation_workspace_id_workspace_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "workspace"."workspace"("workspace_id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."workspace_invitation" ADD CONSTRAINT "workspace_invitation_invited_by_user_id_fk" FOREIGN KEY ("invited_by") REFERENCES "auth"."user"("id") ON DELETE no action ON UPDATE no action;
+ALTER TABLE "workspace"."workspace_invitation" ADD CONSTRAINT "workspace_invitation_accepted_by_user_id_fk" FOREIGN KEY ("accepted_by") REFERENCES "auth"."user"("id") ON DELETE set null ON UPDATE no action;
 CREATE INDEX "account_user_idx" ON "auth"."account" USING btree ("user_id");
 CREATE INDEX "session_user_idx" ON "auth"."session" USING btree ("user_id");
 CREATE INDEX "session_expiry_idx" ON "auth"."session" USING btree ("expires_at");
 CREATE INDEX "verification_identifier_idx" ON "auth"."verification" USING btree ("identifier");
 CREATE INDEX "verification_expiry_idx" ON "auth"."verification" USING btree ("expires_at");
-CREATE INDEX "ai_task_workspace_status_idx" ON "knowledge"."ai_task" USING btree ("workspace_id","status","updated_at");
-CREATE INDEX "ai_task_initiator_idx" ON "knowledge"."ai_task" USING btree ("initiated_by");
-CREATE INDEX "ai_usage_workspace_time_idx" ON "knowledge"."ai_usage" USING btree ("workspace_id","created_at");
-CREATE INDEX "ai_usage_task_idx" ON "knowledge"."ai_usage" USING btree ("workspace_id","task_id");
-CREATE INDEX "ai_usage_user_idx" ON "knowledge"."ai_usage" USING btree ("user_id");
-CREATE INDEX "ai_usage_outcome_idx" ON "knowledge"."ai_usage" USING btree ("workspace_id","status","created_at");
-CREATE INDEX "backlink_destination_idx" ON "knowledge"."backlink" USING btree ("workspace_id","dst_page_id","dst_block_id");
-CREATE INDEX "block_embedding_staging_model_idx" ON "knowledge"."block_embedding_staging" USING btree ("workspace_id","embed_model","embed_dimensions");
-CREATE INDEX "block_index_principals_gin_idx" ON "knowledge"."block_index" USING gin ("principals");
-CREATE INDEX "block_index_embedding_model_idx" ON "knowledge"."block_index" USING btree ("workspace_id","embed_model","embed_dimensions");
-CREATE INDEX "block_index_bm25_idx" ON "knowledge"."block_index" USING paradedb ("id",("content_md"::pdb.jieba)) WITH (key_field='id');
-CREATE INDEX "comment_thread_time_idx" ON "knowledge"."comment" USING btree ("workspace_id","thread_id","created_at");
-CREATE INDEX "comment_author_idx" ON "knowledge"."comment" USING btree ("author_id");
-CREATE INDEX "comment_thread_page_idx" ON "knowledge"."comment_thread" USING btree ("workspace_id","page_id","status");
-CREATE INDEX "doc_checkpoint_page_time_idx" ON "knowledge"."doc_checkpoint" USING btree ("workspace_id","page_id","created_at");
-CREATE INDEX "group_member_user_idx" ON "knowledge"."group_member" USING btree ("workspace_id","user_id");
-CREATE INDEX "member_user_idx" ON "knowledge"."member" USING btree ("user_id","workspace_id");
-CREATE INDEX "model_credential_user_idx" ON "knowledge"."model_credential" USING btree ("user_id");
-CREATE INDEX "notification_user_time_idx" ON "knowledge"."notification" USING btree ("workspace_id","user_id","created_at");
-CREATE INDEX "notification_user_idx" ON "knowledge"."notification" USING btree ("user_id");
-CREATE INDEX "notification_page_idx" ON "knowledge"."notification" USING btree ("workspace_id","page_id");
-CREATE INDEX "outbox_pending_idx" ON "knowledge"."outbox" USING btree ("created_at","workspace_id","id") WHERE "knowledge"."outbox"."dispatched_at" IS NULL;
-CREATE INDEX "page_tree_idx" ON "knowledge"."page" USING btree ("workspace_id","teamspace_id","parent_id","position") WHERE "knowledge"."page"."deleted_at" IS NULL;
-CREATE INDEX "page_parent_idx" ON "knowledge"."page" USING btree ("workspace_id","teamspace_id","parent_id");
-CREATE INDEX "page_database_idx" ON "knowledge"."page" USING btree ("workspace_id","teamspace_id","database_id");
-CREATE INDEX "page_path_gist_idx" ON "knowledge"."page" USING gist ("path");
-CREATE INDEX "page_created_by_idx" ON "knowledge"."page" USING btree ("created_by");
-CREATE INDEX "page_acl_principal_idx" ON "knowledge"."page_acl" USING btree ("workspace_id","principal");
-CREATE INDEX "page_effective_acl_view_gin_idx" ON "knowledge"."page_effective_acl" USING gin ("view_principals");
-CREATE INDEX "page_effective_acl_comment_gin_idx" ON "knowledge"."page_effective_acl" USING gin ("comment_principals");
-CREATE INDEX "page_effective_acl_edit_gin_idx" ON "knowledge"."page_effective_acl" USING gin ("edit_principals");
-CREATE INDEX "page_effective_acl_full_gin_idx" ON "knowledge"."page_effective_acl" USING gin ("full_principals");
-CREATE INDEX "personal_access_token_hash_idx" ON "knowledge"."personal_access_token" USING btree ("workspace_id","token_hash");
-CREATE INDEX "personal_access_token_user_idx" ON "knowledge"."personal_access_token" USING btree ("user_id");
-CREATE INDEX "share_link_page_idx" ON "knowledge"."share_link" USING btree ("workspace_id","page_id");
-CREATE INDEX "share_link_token_idx" ON "knowledge"."share_link" USING btree ("workspace_id","token_hash");
-CREATE INDEX "share_link_created_by_idx" ON "knowledge"."share_link" USING btree ("created_by");
-CREATE UNIQUE INDEX "workspace_invitation_pending_email_idx" ON "knowledge"."workspace_invitation" USING btree ("workspace_id","email") WHERE "knowledge"."workspace_invitation"."accepted_at" IS NULL AND "knowledge"."workspace_invitation"."revoked_at" IS NULL;
-CREATE INDEX "workspace_invitation_expiry_idx" ON "knowledge"."workspace_invitation" USING btree ("workspace_id","expires_at");
+CREATE INDEX "ai_task_workspace_status_idx" ON "workspace"."ai_task" USING btree ("workspace_id","status","updated_at");
+CREATE INDEX "ai_task_initiator_idx" ON "workspace"."ai_task" USING btree ("initiated_by");
+CREATE INDEX "ai_usage_workspace_time_idx" ON "workspace"."ai_usage" USING btree ("workspace_id","created_at");
+CREATE INDEX "ai_usage_task_idx" ON "workspace"."ai_usage" USING btree ("workspace_id","task_id");
+CREATE INDEX "ai_usage_user_idx" ON "workspace"."ai_usage" USING btree ("user_id");
+CREATE INDEX "ai_usage_outcome_idx" ON "workspace"."ai_usage" USING btree ("workspace_id","status","created_at");
+CREATE INDEX "backlink_destination_idx" ON "workspace"."backlink" USING btree ("workspace_id","dst_page_id","dst_block_id");
+CREATE INDEX "block_embedding_staging_model_idx" ON "workspace"."block_embedding_staging" USING btree ("workspace_id","embed_model","embed_dimensions");
+CREATE INDEX "block_index_principals_gin_idx" ON "workspace"."block_index" USING gin ("principals");
+CREATE INDEX "block_index_embedding_model_idx" ON "workspace"."block_index" USING btree ("workspace_id","embed_model","embed_dimensions");
+CREATE INDEX "block_index_bm25_idx" ON "workspace"."block_index" USING paradedb ("id",("content_md"::pdb.jieba)) WITH (key_field='id');
+CREATE INDEX "comment_thread_time_idx" ON "workspace"."comment" USING btree ("workspace_id","thread_id","created_at");
+CREATE INDEX "comment_author_idx" ON "workspace"."comment" USING btree ("author_id");
+CREATE INDEX "comment_thread_page_idx" ON "workspace"."comment_thread" USING btree ("workspace_id","page_id","status");
+CREATE INDEX "doc_checkpoint_page_time_idx" ON "workspace"."doc_checkpoint" USING btree ("workspace_id","page_id","created_at");
+CREATE INDEX "group_member_user_idx" ON "workspace"."group_member" USING btree ("workspace_id","user_id");
+CREATE INDEX "member_user_idx" ON "workspace"."member" USING btree ("user_id","workspace_id");
+CREATE INDEX "model_credential_user_idx" ON "workspace"."model_credential" USING btree ("user_id");
+CREATE INDEX "notification_user_time_idx" ON "workspace"."notification" USING btree ("workspace_id","user_id","created_at");
+CREATE INDEX "notification_user_idx" ON "workspace"."notification" USING btree ("user_id");
+CREATE INDEX "notification_page_idx" ON "workspace"."notification" USING btree ("workspace_id","page_id");
+CREATE INDEX "outbox_pending_idx" ON "workspace"."outbox" USING btree ("created_at","workspace_id","id") WHERE "workspace"."outbox"."dispatched_at" IS NULL;
+CREATE INDEX "page_tree_idx" ON "workspace"."page" USING btree ("workspace_id","teamspace_id","parent_id","position") WHERE "workspace"."page"."deleted_at" IS NULL;
+CREATE INDEX "page_parent_idx" ON "workspace"."page" USING btree ("workspace_id","teamspace_id","parent_id");
+CREATE INDEX "page_database_idx" ON "workspace"."page" USING btree ("workspace_id","teamspace_id","database_id");
+CREATE INDEX "page_path_gist_idx" ON "workspace"."page" USING gist ("path");
+CREATE INDEX "page_created_by_idx" ON "workspace"."page" USING btree ("created_by");
+CREATE INDEX "page_acl_principal_idx" ON "workspace"."page_acl" USING btree ("workspace_id","principal");
+CREATE INDEX "page_effective_acl_view_gin_idx" ON "workspace"."page_effective_acl" USING gin ("view_principals");
+CREATE INDEX "page_effective_acl_comment_gin_idx" ON "workspace"."page_effective_acl" USING gin ("comment_principals");
+CREATE INDEX "page_effective_acl_edit_gin_idx" ON "workspace"."page_effective_acl" USING gin ("edit_principals");
+CREATE INDEX "page_effective_acl_full_gin_idx" ON "workspace"."page_effective_acl" USING gin ("full_principals");
+CREATE INDEX "personal_access_token_hash_idx" ON "workspace"."personal_access_token" USING btree ("workspace_id","token_hash");
+CREATE INDEX "personal_access_token_user_idx" ON "workspace"."personal_access_token" USING btree ("user_id");
+CREATE INDEX "project_workspace_name_idx" ON "workspace"."project" USING btree ("workspace_id","name");
+CREATE INDEX "share_link_page_idx" ON "workspace"."share_link" USING btree ("workspace_id","page_id");
+CREATE INDEX "share_link_token_idx" ON "workspace"."share_link" USING btree ("workspace_id","token_hash");
+CREATE INDEX "share_link_created_by_idx" ON "workspace"."share_link" USING btree ("created_by");
+CREATE UNIQUE INDEX "workspace_invitation_pending_email_idx" ON "workspace"."workspace_invitation" USING btree ("workspace_id","email") WHERE "workspace"."workspace_invitation"."accepted_at" IS NULL AND "workspace"."workspace_invitation"."revoked_at" IS NULL;
+CREATE INDEX "workspace_invitation_expiry_idx" ON "workspace"."workspace_invitation" USING btree ("workspace_id","expires_at");

@@ -1,8 +1,8 @@
 import { and, asc, eq, isNull, ne, sql } from 'drizzle-orm';
 import type { AgentListPagesToolInput, AgentListPagesToolResult } from '@fouc/shared/knowledge/contracts';
 import { agentListPagesToolResultSchema } from '@fouc/shared/knowledge/contracts';
-import { page } from '../../../../platform/database/knowledge/schema';
-import { withKnowledgeTenant } from '../../../../platform/database/knowledge/tenant';
+import { page } from '../../../../platform/database/workspace/schema';
+import { withWorkspaceTenant } from '../../../../platform/database/workspace/tenant';
 import { authorizePageAccess, effectivePageAccessCondition, expandRequestPrincipals } from '../../permissions';
 import { KnowledgeAgentToolError } from './errors';
 import type { KnowledgeAgentToolContext } from './types';
@@ -15,7 +15,7 @@ import type { KnowledgeAgentToolContext } from './types';
  */
 export async function executeAgentListPages(input: AgentListPagesToolInput, context: KnowledgeAgentToolContext): Promise<AgentListPagesToolResult> {
   const workspaceId = context.authority.workspaceId;
-  return withKnowledgeTenant(context.pool, workspaceId, async (db) => {
+  return withWorkspaceTenant(context.pool, workspaceId, async (db) => {
     const principals = await expandRequestPrincipals(db, workspaceId, context.authority.userId);
     const conditions = [effectivePageAccessCondition({ workspaceId, principals, required: 'view' })];
     if (input.teamspaceId) conditions.push(eq(page.teamspaceId, input.teamspaceId));

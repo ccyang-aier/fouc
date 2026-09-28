@@ -2,16 +2,8 @@ import { Buffer } from 'node:buffer';
 import { readFile } from 'node:fs/promises';
 import { describe, expect, test } from 'bun:test';
 import { getTableConfig } from 'drizzle-orm/pg-core';
-import {
-  aiTaskSchema,
-  assetStatusSchema,
-  commentThreadSchema,
-  memberRoleSchema,
-  modelTiers,
-  pageKindSchema,
-  permissionLevels,
-  workspaceKindSchema,
-} from '@fouc/shared/knowledge/contracts';
+import { aiTaskSchema, assetStatusSchema, commentThreadSchema, modelTiers, pageKindSchema, permissionLevels } from '@fouc/shared/knowledge/contracts';
+import { memberRoleSchema, workspaceKindSchema } from '@fouc/shared/workspaces';
 import { generateDatabaseSchemaSql, databaseSchemaSqlPath } from '../../../scripts/database-schema';
 import {
   aiTaskKind,
@@ -25,22 +17,26 @@ import {
   databaseDefinition,
   docCheckpoint,
   docState,
-  knowledgeBusinessTables,
+  workspaceTenantTables,
   identityTables,
+  knowledgeBase,
   memberRole,
   modelTier,
   page,
   pageEffectiveAcl,
   pageKind,
   permissionLevel,
+  project,
+  teamspace,
+  workspace,
   workspaceKind,
 } from './schema';
 
-describe('knowledge current Drizzle schema', () => {
+describe('workspace-owned current Drizzle schema', () => {
   test('covers all designed business tables and keeps global identity separate', () => {
-    const names = knowledgeBusinessTables.map((table) => getTableConfig(table).name);
+    const names = workspaceTenantTables.map((table) => getTableConfig(table).name);
     for (const name of [
-      'workspace', 'member', 'workspace_invitation', 'group', 'group_member', 'teamspace', 'page',
+      'workspace', 'member', 'workspace_invitation', 'group', 'group_member', 'project', 'knowledge_base', 'teamspace', 'page',
       'database_definition', 'doc_state', 'doc_checkpoint', 'page_acl',
       'page_effective_acl', 'block_index', 'backlink', 'asset', 'comment_thread',
       'comment', 'outbox', 'ai_task', 'ai_usage', 'notification',
@@ -52,14 +48,14 @@ describe('knowledge current Drizzle schema', () => {
   });
 
   test('all business tables carry a non-null workspace key and tenant-safe foreign keys', () => {
-    for (const table of knowledgeBusinessTables) {
+    for (const table of workspaceTenantTables) {
       const config = getTableConfig(table);
       const scope = config.columns.find((column) => column.name === 'workspace_id');
       expect(scope, `${config.name} tenant key`).toBeDefined();
       expect(scope?.notNull, `${config.name} nullable tenant key`).toBe(true);
       for (const foreignKey of config.foreignKeys) {
         const reference = foreignKey.reference();
-        if (getTableConfig(reference.foreignTable).schema !== 'knowledge') continue;
+        if (getTableConfig(reference.foreignTable).schema !== 'workspace') continue;
         const localScopeIndex = reference.columns.findIndex((column) => column.name === 'workspace_id');
         expect(localScopeIndex, `${config.name}.${foreignKey.getName()} missing tenant scope`).toBeGreaterThanOrEqual(0);
         expect(reference.foreignColumns[localScopeIndex]?.name).toBe('workspace_id');
@@ -72,12 +68,25 @@ describe('knowledge current Drizzle schema', () => {
       if (visited.has(table)) return false;
       visited.add(table);
       const config = getTableConfig(table);
-      if (config.schema !== 'knowledge') return false;
+      if (config.schema !== 'workspace') return false;
       return config.name === 'workspace' || config.foreignKeys.some((key) => reachesRoot(key.reference().foreignTable, visited));
     }
-    for (const table of knowledgeBusinessTables) {
+    for (const table of workspaceTenantTables) {
       expect(reachesRoot(table), `${getTableConfig(table).name} has no workspace root`).toBe(true);
     }
+  });
+
+  test('projects and knowledge bases are siblings; folders belong to one knowledge base in the same workspace', () => {
+    const parentsOf = (table: typeof project | typeof knowledgeBase | typeof teamspace) =>
+      getTableConfig(table).foreignKeys.map((key) => key.reference().foreignTable);
+    expect(parentsOf(project)).toContain(workspace);
+    expect(parentsOf(project)).not.toContain(knowledgeBase);
+    expect(parentsOf(knowledgeBase)).toContain(workspace);
+    expect(parentsOf(knowledgeBase)).not.toContain(project);
+    const folderBase = getTableConfig(teamspace).foreignKeys.find((key) => key.getName() === 'teamspace_knowledge_base_fk')?.reference();
+    expect(folderBase?.foreignTable).toBe(knowledgeBase);
+    expect(folderBase?.columns.map((column) => column.name)).toEqual(['workspace_id', 'knowledge_base_id']);
+    expect(folderBase?.foreignColumns.map((column) => column.name)).toEqual(['workspace_id', 'id']);
   });
 
   test('SQL enum values derive from the shared domain contracts', () => {
@@ -201,7 +210,7 @@ describe('knowledge current Drizzle schema', () => {
     expect(sql).toContain('CREATE EXTENSION IF NOT EXISTS pg_search;');
     expect(sql).toContain('GENERATED ALWAYS AS IDENTITY');
     for (const enumType of [workspaceKind, memberRole, pageKind, permissionLevel, modelTier, commentThreadStatus, aiTaskKind, aiTaskStatus]) {
-      expect(sql).toContain(`"knowledge"."${enumType.enumName}"`);
+      expect(sql).toContain(`"workspace"."${enumType.enumName}"`);
       expect(sql).not.toMatch(new RegExp(`\\t"[a-z_]+" "${enumType.enumName}"(?: |,)`));
     }
     expect(sql).not.toContain('vector(1536)');

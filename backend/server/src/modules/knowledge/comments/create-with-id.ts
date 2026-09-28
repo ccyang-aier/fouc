@@ -2,8 +2,8 @@ import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { entityIdSchema } from '@fouc/shared/knowledge/contracts';
 import { createCommentThreadInputSchema } from '@fouc/shared/knowledge/comments';
-import { comment, commentThread } from '../../../platform/database/knowledge/schema';
-import type { KnowledgeTenantTransaction } from '../../../platform/database/knowledge/tenant';
+import { comment, commentThread } from '../../../platform/database/workspace/schema';
+import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
 import { requireCommentAccess } from './access';
 import { KnowledgeCommentError } from './errors';
 import { emitCommentThreadChanged, notifyCommentRecipients } from './notifications';
@@ -31,7 +31,7 @@ export interface CreateCommentThreadWithIdResult {
 }
 
 export async function createCommentThreadWithId(
-  db: KnowledgeTenantTransaction,
+  db: WorkspaceTenantTransaction,
   input: unknown,
 ): Promise<CreateCommentThreadWithIdResult> {
   const parsed = createWithIdInputSchema.safeParse(input);

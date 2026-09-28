@@ -21,8 +21,8 @@ import type {
   RowPropertiesState,
 } from '@fouc/shared/knowledge/contracts';
 import { z } from 'zod';
-import { databaseDefinition, page } from '../../../platform/database/knowledge/schema';
-import type { KnowledgeTenantTransaction } from '../../../platform/database/knowledge/tenant';
+import { databaseDefinition, page } from '../../../platform/database/workspace/schema';
+import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
 import { createAuthorizedPage } from '../pages/tree';
 import { lockPermissionPage } from '../permissions/locking';
 import { effectivePageAccessCondition } from '../permissions/queries';
@@ -40,7 +40,7 @@ const placement = (row: { id: string; parentId: string | null; teamspaceId: stri
   pagePlacementSchema.parse({ pageId: row.id, parentId: row.parentId, teamspaceId: row.teamspaceId, position: row.position, path: row.path });
 
 /** 租户内可见(未回收)的数据库定义;跨租户/不存在/已回收统一为 DATABASE_NOT_FOUND。 */
-async function loadDatabase(db: KnowledgeTenantTransaction, scope: { workspaceId: string; pageId: string }) {
+async function loadDatabase(db: WorkspaceTenantTransaction, scope: { workspaceId: string; pageId: string }) {
   const [record] = await db.select({ teamspaceId: page.teamspaceId, columns: databaseDefinition.properties })
     .from(databaseDefinition)
     .innerJoin(page, and(eq(page.workspaceId, databaseDefinition.workspaceId), eq(page.id, databaseDefinition.pageId)))
@@ -50,7 +50,7 @@ async function loadDatabase(db: KnowledgeTenantTransaction, scope: { workspaceId
 }
 
 /** relation 列的目标必须是本租户内未回收的数据库页面。 */
-async function assertRelationTargets(db: KnowledgeTenantTransaction, workspaceId: string, columns: PropertyDefinition[]): Promise<void> {
+async function assertRelationTargets(db: WorkspaceTenantTransaction, workspaceId: string, columns: PropertyDefinition[]): Promise<void> {
   const targets = [...new Set(columns.filter((column) => column.type === 'relation').map((column) => column.relationDatabaseId!))];
   if (!targets.length) return;
   const found = await db.select({ id: page.id }).from(page)
@@ -59,7 +59,7 @@ async function assertRelationTargets(db: KnowledgeTenantTransaction, workspaceId
 }
 
 /** relation 属性值引用的每个页面都必须是目标数据库下未回收的行页面。 */
-async function assertRelationValues(db: KnowledgeTenantTransaction, workspaceId: string, columns: PropertyDefinition[], properties: Properties): Promise<void> {
+async function assertRelationValues(db: WorkspaceTenantTransaction, workspaceId: string, columns: PropertyDefinition[], properties: Properties): Promise<void> {
   for (const [target, ids] of relationReferences(columns, properties)) {
     const unique = [...new Set(ids)];
     const found = await db.select({ id: page.id }).from(page)
@@ -69,7 +69,7 @@ async function assertRelationValues(db: KnowledgeTenantTransaction, workspaceId:
 }
 
 /** §5.3 工作区频道事件与业务写入同事务落 outbox,由既有 dispatch 管道消费。 */
-async function emitRowsChanged(db: KnowledgeTenantTransaction, input: { workspaceId: string; databaseId: string; ids: string[] }): Promise<void> {
+async function emitRowsChanged(db: WorkspaceTenantTransaction, input: { workspaceId: string; databaseId: string; ids: string[] }): Promise<void> {
   const event: Extract<OutboxEvent, { topic: 'workspace.event' }> = {
     workspaceId: input.workspaceId,
     topic: 'workspace.event',
@@ -78,7 +78,7 @@ async function emitRowsChanged(db: KnowledgeTenantTransaction, input: { workspac
   await appendKnowledgeOutbox(db, event);
 }
 
-async function emitColumnsChanged(db: KnowledgeTenantTransaction, scope: PageScope): Promise<void> {
+async function emitColumnsChanged(db: WorkspaceTenantTransaction, scope: PageScope): Promise<void> {
   const event: Extract<OutboxEvent, { topic: 'workspace.event' }> = {
     workspaceId: scope.workspaceId,
     topic: 'workspace.event',
@@ -93,7 +93,7 @@ async function emitColumnsChanged(db: KnowledgeTenantTransaction, scope: PageSco
  * 定义同事务创建;显式 id 由客户端生成,重复提交同一 id 返回现有数据库与已存储
  * 的列定义。列 schema 中 relation 列的目标数据库必须已存在。
  */
-export async function createAuthorizedDatabase(db: KnowledgeTenantTransaction, input: unknown, createdBy: string): Promise<DatabaseColumnsState> {
+export async function createAuthorizedDatabase(db: WorkspaceTenantTransaction, input: unknown, createdBy: string): Promise<DatabaseColumnsState> {
   const parsed = parse(createDatabaseInputSchema, input);
   if (!entityIdSchema.safeParse(createdBy).success) throw new FoucDatabaseError('INVALID_DATABASE_INPUT');
   await assertRelationTargets(db, parsed.workspaceId, parsed.columns);
@@ -126,7 +126,7 @@ export async function createAuthorizedDatabase(db: KnowledgeTenantTransaction, i
  * 现存行),再经 T01 创建路径落库(幂等 UUID、分数排序、权限围栏)。重复提交同一
  * id 返回现有落位;同 id 但指向其他数据库或非行页面被拒绝。
  */
-export async function createAuthorizedRow(db: KnowledgeTenantTransaction, input: unknown, createdBy: string): Promise<PagePlacement> {
+export async function createAuthorizedRow(db: WorkspaceTenantTransaction, input: unknown, createdBy: string): Promise<PagePlacement> {
   const parsed = parse(createRowInputSchema, input);
   if (!entityIdSchema.safeParse(createdBy).success) throw new FoucDatabaseError('INVALID_DATABASE_INPUT');
   const database = await loadDatabase(db, { workspaceId: parsed.workspaceId, pageId: parsed.databaseId });
@@ -159,7 +159,7 @@ export async function createAuthorizedRow(db: KnowledgeTenantTransaction, input:
  * P03 必须先在行页面上校验至少 edit。属性整体替换,先按当前列 schema 验证再写入;
  * 与列变更在数据库页面行锁上串行,保证存储的行属性始终符合当前 schema。
  */
-export async function updateAuthorizedRowProperties(db: KnowledgeTenantTransaction, input: unknown): Promise<RowPropertiesState> {
+export async function updateAuthorizedRowProperties(db: WorkspaceTenantTransaction, input: unknown): Promise<RowPropertiesState> {
   const parsed = parse(updatePropertiesInputSchema, input);
   const [row] = await db.select({ id: page.id, kind: page.kind, databaseId: page.databaseId, deletedAt: page.deletedAt }).from(page)
     .where(and(eq(page.workspaceId, parsed.workspaceId), eq(page.id, parsed.pageId)));
@@ -185,7 +185,7 @@ export async function updateAuthorizedRowProperties(db: KnowledgeTenantTransacti
  * 的属性中丢弃;改类型被显式拒绝;同类型的改名/选项调整接受,存量行中已失效的
  * 选项值保留原样、在下一次写入时被验证拒绝。
  */
-export async function updateAuthorizedDatabaseColumns(db: KnowledgeTenantTransaction, input: unknown): Promise<DatabaseColumnsState> {
+export async function updateAuthorizedDatabaseColumns(db: WorkspaceTenantTransaction, input: unknown): Promise<DatabaseColumnsState> {
   const parsed = parse(updateDatabaseColumnsInputSchema, input);
   await lockPermissionPage(db, { workspaceId: parsed.workspaceId, pageId: parsed.pageId });
   const database = await loadDatabase(db, parsed);
@@ -214,7 +214,7 @@ export async function updateAuthorizedDatabaseColumns(db: KnowledgeTenantTransac
  * 行可见性走 effectivePageAccessCondition:物化权限滞后的行 fail closed。游标是行
  * 页面 ID,seek 谓词与排序全序同构;筛选与排序的列必须存在于当前列 schema。
  */
-export async function listDatabaseRows(db: KnowledgeTenantTransaction, input: unknown): Promise<DatabaseRowsPage> {
+export async function listDatabaseRows(db: WorkspaceTenantTransaction, input: unknown): Promise<DatabaseRowsPage> {
   const parsed = parse(listDatabaseRowsInputSchema, input);
   const database = await loadDatabase(db, { workspaceId: parsed.workspaceId, pageId: parsed.databaseId });
   const conditions = [eq(page.databaseId, parsed.databaseId), effectivePageAccessCondition({ workspaceId: parsed.workspaceId, principals: parsed.viewer, required: 'view' })];

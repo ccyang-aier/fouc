@@ -2,8 +2,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:tes
 import { and, asc, eq, sql } from 'drizzle-orm';
 import * as Y from 'yjs';
 import type { OutboxEvent, PageScope, Principal } from '@fouc/shared/knowledge/contracts';
-import { backlink, docState, page } from '../../../platform/database/knowledge/schema';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { backlink, docState, page } from '../../../platform/database/workspace/schema';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { replaceAuthorizedPageAcl } from '../permissions/mutations';
 import { createPermissionsFixture, until } from '../permissions/permissions-test-fixture';
 import type { PermissionsFixture } from '../permissions/permissions-test-fixture';
@@ -29,7 +29,7 @@ describe('page backlink derivation', () => {
   }, 30_000);
   beforeEach(async () => {
     await fixture.resetJobs();
-    await fixture.server.database.admin.query('DELETE FROM knowledge.backlink');
+    await fixture.server.database.admin.query('DELETE FROM workspace.backlink');
   });
 
   interface DraftLink { target?: string; targetBlockId?: string; pageId?: string }
@@ -71,7 +71,7 @@ describe('page backlink derivation', () => {
   async function writeBody(node: { workspaceId: string; pageId: string }, blocks: readonly DraftBlock[], userId = fixture.owner.identity.userId) {
     const scope = scopeOf(node);
     const { state, stateVector } = encodeBody(blocks);
-    await withKnowledgeTenant(fixture.pool, scope.workspaceId, async (db) => {
+    await withWorkspaceTenant(fixture.pool, scope.workspaceId, async (db) => {
       await db.insert(docState).values({ ...scope, state, stateVector })
         .onConflictDoUpdate({ target: [docState.workspaceId, docState.pageId], set: { state, stateVector, updatedAt: sql`clock_timestamp()` } });
       const event: OutboxEvent = { workspaceId: scope.workspaceId, topic: 'doc.changed', pageId: scope.pageId, actor: { kind: 'human', userId }, occurredAt: new Date().toISOString() };
@@ -82,7 +82,7 @@ describe('page backlink derivation', () => {
   async function writeCorruptBody(node: { workspaceId: string; pageId: string }) {
     const scope = scopeOf(node);
     const state = Buffer.from([0x02, 0xff, 0xff, 0xff]);
-    await withKnowledgeTenant(fixture.pool, scope.workspaceId, async (db) => {
+    await withWorkspaceTenant(fixture.pool, scope.workspaceId, async (db) => {
       await db.insert(docState).values({ ...scope, state, stateVector: Buffer.alloc(0) })
         .onConflictDoUpdate({ target: [docState.workspaceId, docState.pageId], set: { state, stateVector: Buffer.alloc(0), updatedAt: sql`clock_timestamp()` } });
       const event: OutboxEvent = { workspaceId: scope.workspaceId, topic: 'doc.changed', pageId: scope.pageId, actor: { kind: 'human', userId: fixture.owner.identity.userId }, occurredAt: new Date().toISOString() };
@@ -113,22 +113,22 @@ describe('page backlink derivation', () => {
   }
 
   async function retitle(scope: PageScope, title: string) {
-    await withKnowledgeTenant(fixture.pool, scope.workspaceId, (db) =>
+    await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) =>
       db.update(page).set({ title }).where(and(eq(page.workspaceId, scope.workspaceId), eq(page.id, scope.pageId))));
   }
 
   async function recycle(scope: PageScope) {
-    await withKnowledgeTenant(fixture.pool, scope.workspaceId, (db) =>
+    await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) =>
       db.update(page).set({ deletedAt: new Date() }).where(and(eq(page.workspaceId, scope.workspaceId), eq(page.id, scope.pageId))));
   }
 
   async function grant(scope: PageScope, principalText: string, level: 'view' | 'comment' | 'edit' | 'full') {
-    await withKnowledgeTenant(fixture.pool, scope.workspaceId, (db) =>
+    await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) =>
       replaceAuthorizedPageAcl(db, { workspaceId: scope.workspaceId, pageId: scope.pageId, grants: [{ principal: principalText, level }] }));
   }
 
   async function sourceRows(scope: PageScope) {
-    return withKnowledgeTenant(fixture.pool, scope.workspaceId, (db) => db.select({ srcPageId: backlink.srcPageId, srcBlockId: backlink.srcBlockId, dstPageId: backlink.dstPageId, dstBlockId: backlink.dstBlockId })
+    return withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) => db.select({ srcPageId: backlink.srcPageId, srcBlockId: backlink.srcBlockId, dstPageId: backlink.dstPageId, dstBlockId: backlink.dstBlockId })
       .from(backlink)
       .where(and(eq(backlink.workspaceId, scope.workspaceId), eq(backlink.srcPageId, scope.pageId)))
       .orderBy(asc(backlink.srcBlockId), asc(backlink.dstBlockId)));
@@ -141,11 +141,11 @@ describe('page backlink derivation', () => {
 
   function outgoing(node: { workspaceId: string; pageId: string }) {
     const scope = scopeOf(node);
-    return withKnowledgeTenant(fixture.pool, scope.workspaceId, (db) => readPageOutgoingReferences(db, scope));
+    return withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) => readPageOutgoingReferences(db, scope));
   }
 
   function incoming(node: { workspaceId: string; pageId: string }, principals: readonly Principal[]) {
-    return withKnowledgeTenant(fixture.pool, node.workspaceId, (db) => readPageBacklinks(db, { workspaceId: node.workspaceId, pageId: node.pageId, principals }));
+    return withWorkspaceTenant(fixture.pool, node.workspaceId, (db) => readPageBacklinks(db, { workspaceId: node.workspaceId, pageId: node.pageId, principals }));
   }
 
   function subjects(userId: string) {
@@ -272,7 +272,7 @@ describe('page backlink derivation', () => {
       { srcPageId: index.pageId, srcBlockId: 'blkB', dstPageId: notes.pageId, dstBlockId: null },
       { srcPageId: index.pageId, srcBlockId: 'blkC', dstPageId: guide.pageId, dstBlockId: 'blk_9' },
     ]);
-    expect(await withKnowledgeTenant(fixture.pool, fixture.alpha.id, (db) => countPageBacklinkRows(db, fixture.alpha.id))).toBe(3);
+    expect(await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => countPageBacklinkRows(db, fixture.alpha.id))).toBe(3);
 
     const owner = await subjects(fixture.owner.identity.userId);
     expect(await incoming(guide, owner)).toEqual([
@@ -331,7 +331,7 @@ describe('page backlink derivation', () => {
       // Duplicate links inside one block collapse into a single row.
       { blockId: 'blk2', links: [{ target: 'Two' }, { target: 'Two' }] },
     ]);
-    await withKnowledgeTenant(fixture.pool, scope.workspaceId, async (db) => {
+    await withWorkspaceTenant(fixture.pool, scope.workspaceId, async (db) => {
       await expect(refreshPageBacklinks(db, scope)).resolves.toEqual({ linked: 2, dangling: 0 });
     });
     expect(await sourceRows(index)).toEqual([
@@ -350,7 +350,7 @@ describe('page backlink derivation', () => {
     ]);
 
     // Replaying the same state - directly and through another queued event - is a no-op.
-    await withKnowledgeTenant(fixture.pool, scope.workspaceId, async (db) => {
+    await withWorkspaceTenant(fixture.pool, scope.workspaceId, async (db) => {
       await expect(refreshPageBacklinks(db, scope)).resolves.toEqual({ linked: 1, dangling: 1 });
       await expect(refreshPageBacklinks(db, scope)).resolves.toEqual({ linked: 1, dangling: 1 });
     });
@@ -423,7 +423,7 @@ describe('page backlink derivation', () => {
     try {
       // The healthy page finishes while the broken derivation keeps failing.
       await until(async () => (await sourceRows(healthy)).length === 1);
-      await until(async () => (await fixture.jobs()).some((job) => job.task === 'knowledge.consume.update_backlinks' && job.attempts >= 1 && job.last_error !== null));
+      await until(async () => (await fixture.jobs()).some((job) => job.task === 'workspace.consume.update_backlinks' && job.attempts >= 1 && job.last_error !== null));
       expect(diagnostics.some((item) => item.type === 'job_failed' && item.code === 'consumer_failed')).toBe(true);
 
       // Repairing the authoritative state lets the retried job complete.

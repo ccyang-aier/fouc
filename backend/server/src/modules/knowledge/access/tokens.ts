@@ -1,8 +1,9 @@
 import { and, desc, eq, isNull, or, sql } from 'drizzle-orm';
-import type { KnowledgePatSummary, MemberRole } from '@fouc/shared/knowledge/contracts';
-import { member, personalAccessToken } from '../../../platform/database/knowledge/schema';
+import type { KnowledgePatSummary } from '@fouc/shared/knowledge/contracts';
+import type { MemberRole } from '@fouc/shared/workspaces';
+import { member, personalAccessToken } from '../../../platform/database/workspace/schema';
 import { authUser } from '../../../platform/database/identity/schema';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { createKnowledgeTokenInputSchema, KnowledgeAccessError, revokeKnowledgeTokenInputSchema, sanitizedAccess, tokenScopesSchema, tokenWorkspaceSchema } from './access-policy';
 import type { KnowledgeTokenScope } from './access-policy';
 import { activeSessionMember, verifiedRequestSession } from './session-access';
@@ -37,7 +38,7 @@ export function createKnowledgeTokenService(dependencies: KnowledgeAccessDepende
         const parsed = createKnowledgeTokenInputSchema.safeParse(input);
         if (!parsed.success) throw new KnowledgeAccessError('INVALID_TOKEN_INPUT');
         const value = parsed.data;
-        return withKnowledgeTenant(dependencies.pool, value.workspaceId, async (db) => {
+        return withWorkspaceTenant(dependencies.pool, value.workspaceId, async (db) => {
           await activeSessionMember(db, value.workspaceId, identity, true);
           if (value.expiresAt !== null) {
             const result = await db.execute<{ valid: boolean }>(sql`SELECT ${value.expiresAt}::timestamptz > clock_timestamp() AS valid`);
@@ -58,7 +59,7 @@ export function createKnowledgeTokenService(dependencies: KnowledgeAccessDepende
         const identity = await verifiedRequestSession(dependencies.auth, request);
         const parsed = tokenWorkspaceSchema.safeParse(workspaceId);
         if (!parsed.success) throw new KnowledgeAccessError('INVALID_TOKEN_INPUT');
-        return withKnowledgeTenant(dependencies.pool, parsed.data, async (db) => {
+        return withWorkspaceTenant(dependencies.pool, parsed.data, async (db) => {
           await activeSessionMember(db, parsed.data, identity, true);
           const tokens = await db.select(metadataColumns).from(personalAccessToken)
             .where(and(eq(personalAccessToken.workspaceId, parsed.data), eq(personalAccessToken.userId, identity.userId)))
@@ -73,7 +74,7 @@ export function createKnowledgeTokenService(dependencies: KnowledgeAccessDepende
         const parsed = revokeKnowledgeTokenInputSchema.safeParse(input);
         if (!parsed.success) throw new KnowledgeAccessError('INVALID_TOKEN_INPUT');
         const { workspaceId, tokenId } = parsed.data;
-        await withKnowledgeTenant(dependencies.pool, workspaceId, async (db) => {
+        await withWorkspaceTenant(dependencies.pool, workspaceId, async (db) => {
           await activeSessionMember(db, workspaceId, identity, true);
           await db.update(personalAccessToken).set({ revokedAt: sql`clock_timestamp()` }).where(and(
             eq(personalAccessToken.workspaceId, workspaceId), eq(personalAccessToken.id, tokenId),
@@ -105,7 +106,7 @@ export async function verifyKnowledgeToken(dependencies: KnowledgeAccessDependen
 /** Internal only: refresh receives this proof from the authenticator's private WeakMap. */
 export async function verifyKnowledgeTokenProof(dependencies: KnowledgeAccessDependencies, locator: KnowledgeTokenProof): Promise<VerifiedKnowledgeToken> {
   const workspaceId = locator.workspaceId;
-  return withKnowledgeTenant(dependencies.pool, locator.workspaceId, async (db) => {
+  return withWorkspaceTenant(dependencies.pool, locator.workspaceId, async (db) => {
     // Only the token's composite locator is queried under its RLS tenant. A public
     // locator is not authorization; the secret and live user/membership are mandatory.
     const [found] = await db.select({ token: personalAccessToken,

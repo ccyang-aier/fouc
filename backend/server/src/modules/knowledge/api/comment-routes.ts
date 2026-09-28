@@ -20,7 +20,7 @@ import {
 } from '../comments/mutations';
 import { listPageCommentThreads } from '../comments/queries';
 import type { CommentRow, CommentThreadRow, CommentThreadWithComments } from '../comments/queries';
-import type { KnowledgeTenantTransaction } from '../../../platform/database/knowledge/tenant';
+import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
 import { apiError } from './errors';
 import { knowledgeMutation, knowledgeQuery } from './procedures';
 
@@ -90,7 +90,7 @@ function serializeThread(row: CommentThreadRow & { comments?: CommentRow[] }, co
  * wire contract carries the full thread, so mutation results re-read the one
  * thread inside the same transaction (its own visibility already granted).
  */
-async function serializeFullThread(db: KnowledgeTenantTransaction, input: { workspaceId: string; pageId: string }, userId: string, threadId: string): Promise<CommentThread> {
+async function serializeFullThread(db: WorkspaceTenantTransaction, input: { workspaceId: string; pageId: string }, userId: string, threadId: string): Promise<CommentThread> {
   const threads: CommentThreadWithComments[] = await listPageCommentThreads(db, { ...input, userId });
   const found = threads.find((thread) => thread.id === threadId);
   if (!found) throw new TRPCError({ code: 'NOT_FOUND' });

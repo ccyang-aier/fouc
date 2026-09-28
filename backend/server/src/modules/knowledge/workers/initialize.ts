@@ -34,7 +34,7 @@ export async function initializeKnowledgeJobs(admin: Pool, application: Pool): P
     `);
     // Graphile enables RLS with no policies because it normally runs as owner.
     // Queue infrastructure is server-global; only the named runtime role can use
-    // these tables. Actual event bodies remain behind knowledge.* tenant RLS.
+    // these tables. Actual event bodies remain behind workspace.* tenant RLS.
     const queueTables = await client.query<{ name: string }>(`
       SELECT c.relname AS name FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
       WHERE n.nspname='knowledge_jobs' AND c.relkind='r' AND c.relrowsecurity

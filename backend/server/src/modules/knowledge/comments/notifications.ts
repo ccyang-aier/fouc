@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { OutboxEvent, PageScope } from '@fouc/shared/knowledge/contracts';
-import { groupMember, member, notification } from '../../../platform/database/knowledge/schema';
-import type { KnowledgeTenantTransaction } from '../../../platform/database/knowledge/tenant';
+import { groupMember, member, notification } from '../../../platform/database/workspace/schema';
+import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
 import { canAccess, expandPrincipals } from '../permissions/effective';
 import { readMaterializedPagePermissions } from '../permissions/queries';
 import { appendKnowledgeOutbox } from '../workers/outbox';
@@ -13,7 +13,7 @@ export type CommentNotificationKind = (typeof commentNotificationKinds)[number];
 export interface CommentNotice { kind: CommentNotificationKind; userId: string }
 
 /** Publishes the §5.3 workspace channel event with the business write, in this transaction. */
-export async function emitCommentThreadChanged(db: KnowledgeTenantTransaction, scope: PageScope, threadId: string): Promise<void> {
+export async function emitCommentThreadChanged(db: WorkspaceTenantTransaction, scope: PageScope, threadId: string): Promise<void> {
   const event: Extract<OutboxEvent, { topic: 'workspace.event' }> = {
     workspaceId: scope.workspaceId,
     topic: 'workspace.event',
@@ -30,7 +30,7 @@ export async function emitCommentThreadChanged(db: KnowledgeTenantTransaction, s
  * and actors are never notified about their own comments.
  */
 export async function notifyCommentRecipients(
-  db: KnowledgeTenantTransaction,
+  db: WorkspaceTenantTransaction,
   input: { scope: PageScope; threadId: string; commentId: string; actorId: string; notices: CommentNotice[] },
 ): Promise<string[]> {
   const candidates = new Map<string, CommentNotificationKind>();

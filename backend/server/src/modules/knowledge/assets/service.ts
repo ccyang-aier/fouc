@@ -3,8 +3,8 @@ import { and, eq } from 'drizzle-orm';
 import { assetDownloadInputSchema, assetRevokeInputSchema, assetUploadInputSchema } from '@fouc/shared/knowledge/contracts';
 import type { AssetConfirmResult, AssetDownloadResult, AssetDownloadInput, AssetRevokeInput, AssetRevokeResult, AssetUploadInput, AssetUploadPrepareResult } from '@fouc/shared/knowledge/contracts';
 import { z } from 'zod';
-import { asset } from '../../../platform/database/knowledge/schema';
-import type { KnowledgeTenantTransaction } from '../../../platform/database/knowledge/tenant';
+import { asset } from '../../../platform/database/workspace/schema';
+import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
 import { expandRequestPrincipals } from '../permissions/authorization';
 import { appendKnowledgeOutbox } from '../workers/outbox';
 import { KnowledgeAssetError } from './errors';
@@ -20,7 +20,7 @@ function parse<S extends z.ZodType>(schema: S, input: unknown): z.output<S> {
 }
 
 /** Workspace membership is the asset-level authorization boundary; userId comes from a verified session. */
-async function requireWorkspaceMembership(db: KnowledgeTenantTransaction, workspaceId: string, userId: string) {
+async function requireWorkspaceMembership(db: WorkspaceTenantTransaction, workspaceId: string, userId: string) {
   const principals = await expandRequestPrincipals(db, workspaceId, userId);
   if (!principals.length) throw new KnowledgeAssetError('ASSET_ACCESS_DENIED');
 }
@@ -34,7 +34,7 @@ const normalizeMime = (value: string) => value.split(';', 1)[0]!.trim().toLowerC
  * A ready asset is reused (秒传); probing another workspace is invisible
  * because storage keys and this query are both workspace-scoped.
  */
-export async function prepareWorkspaceAssetUpload(storage: KnowledgeAssetStorage, db: KnowledgeTenantTransaction, input: AssetUploadInput): Promise<AssetUploadPrepareResult> {
+export async function prepareWorkspaceAssetUpload(storage: KnowledgeAssetStorage, db: WorkspaceTenantTransaction, input: AssetUploadInput): Promise<AssetUploadPrepareResult> {
   const parsed = parse(assetUploadInputSchema, input);
   await requireWorkspaceMembership(db, parsed.workspaceId, parsed.userId);
   const [existing] = await db.select({ status: asset.status }).from(asset).where(scopedBy(parsed));
@@ -51,7 +51,7 @@ export async function prepareWorkspaceAssetUpload(storage: KnowledgeAssetStorage
  * The verified row and the asset.created outbox event commit in this one
  * transaction; a concurrent confirm of the same hash stays a single event.
  */
-export async function confirmWorkspaceAssetUpload(storage: KnowledgeAssetStorage, db: KnowledgeTenantTransaction, input: AssetUploadInput): Promise<AssetConfirmResult> {
+export async function confirmWorkspaceAssetUpload(storage: KnowledgeAssetStorage, db: WorkspaceTenantTransaction, input: AssetUploadInput): Promise<AssetConfirmResult> {
   const parsed = parse(assetUploadInputSchema, input);
   await requireWorkspaceMembership(db, parsed.workspaceId, parsed.userId);
   const [existing] = await db.select({ status: asset.status }).from(asset).where(scopedBy(parsed));
@@ -108,7 +108,7 @@ async function reject(storage: KnowledgeAssetStorage, intent: AssetUploadInput, 
 }
 
 /** Presigned GET for confirmed, non-revoked assets; membership is the asset-level grant (§8.1 has no asset ACL model). */
-export async function presignWorkspaceAssetDownload(storage: KnowledgeAssetStorage, db: KnowledgeTenantTransaction, input: AssetDownloadInput): Promise<AssetDownloadResult> {
+export async function presignWorkspaceAssetDownload(storage: KnowledgeAssetStorage, db: WorkspaceTenantTransaction, input: AssetDownloadInput): Promise<AssetDownloadResult> {
   const parsed = parse(assetDownloadInputSchema, input);
   await requireWorkspaceMembership(db, parsed.workspaceId, parsed.userId);
   const [record] = await db.select({ status: asset.status }).from(asset).where(scopedBy(parsed));
@@ -119,7 +119,7 @@ export async function presignWorkspaceAssetDownload(storage: KnowledgeAssetStora
 }
 
 /** Soft revocation: the object stays in S3, but new download grants and re-uploads of this hash are refused. */
-export async function revokeWorkspaceAsset(db: KnowledgeTenantTransaction, input: AssetRevokeInput): Promise<AssetRevokeResult> {
+export async function revokeWorkspaceAsset(db: WorkspaceTenantTransaction, input: AssetRevokeInput): Promise<AssetRevokeResult> {
   const parsed = parse(assetRevokeInputSchema, input);
   await requireWorkspaceMembership(db, parsed.workspaceId, parsed.userId);
   const predicate = scopedBy(parsed);

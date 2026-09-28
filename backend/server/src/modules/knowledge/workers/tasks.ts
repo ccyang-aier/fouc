@@ -3,8 +3,8 @@ import { and, eq } from 'drizzle-orm';
 import type { Pool } from 'pg';
 import type { Task, TaskList } from 'graphile-worker';
 import { z } from 'zod';
-import { outbox } from '../../../platform/database/knowledge/schema';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { outbox } from '../../../platform/database/workspace/schema';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { consumerTask, DISPATCH_TASK, enqueueKnowledgeJob, jobKey } from './outbox';
 import { observeWorker } from './logger';
 import { KnowledgeJobError } from './types';
@@ -43,7 +43,7 @@ export function createKnowledgeTaskList(pool: Pool, consumers: readonly Knowledg
   const tasks: TaskList = Object.create(null);
   tasks[DISPATCH_TASK] = guarded(async (input, helpers) => {
     const key = reference(input);
-    await withKnowledgeTenant(pool, key.workspaceId, async (db) => {
+    await withWorkspaceTenant(pool, key.workspaceId, async (db) => {
       helpers.abortSignal.throwIfAborted();
       const [row] = await db.select().from(outbox)
         .where(and(eq(outbox.workspaceId, key.workspaceId), eq(outbox.id, key.outboxId))).for('update');
@@ -62,7 +62,7 @@ export function createKnowledgeTaskList(pool: Pool, consumers: readonly Knowledg
     const task = consumerTask(consumer.name);
     tasks[task] = guarded(async (input, helpers) => {
       const key = reference(input);
-      const event = await withKnowledgeTenant(pool, key.workspaceId, async (db) => {
+      const event = await withWorkspaceTenant(pool, key.workspaceId, async (db) => {
         const [row] = await db.select().from(outbox).where(and(eq(outbox.workspaceId, key.workspaceId), eq(outbox.id, key.outboxId)));
         // No long network/model work is allowed inside this short read transaction.
         if (!row) throw new KnowledgeJobError('event_missing');

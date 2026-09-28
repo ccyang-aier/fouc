@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils"
 
 export type AutomationTab = "automations" | "runs"
 
-export function AutomationHeader({ tab, onTabChange, onCreate }: { tab: AutomationTab; onTabChange: (tab: AutomationTab) => void; onCreate: () => void }) {
+export function AutomationHeader({ tab, onTabChange, onCreate, enabledCount, todayRunCount, attentionCount }: { tab: AutomationTab; onTabChange: (tab: AutomationTab) => void; onCreate: () => void; enabledCount: number; todayRunCount: number; attentionCount: number }) {
   return (
     <header className="shrink-0 bg-panel px-5 pt-[14px] max-[900px]:px-4">
       <div className="flex min-h-[68px] items-start justify-between gap-5">
@@ -21,11 +21,11 @@ export function AutomationHeader({ tab, onTabChange, onCreate }: { tab: Automati
           <h1 className="truncate text-[22px] leading-7 font-semibold tracking-[-0.035em] text-[var(--ink)]">自动化</h1>
           <div className="mt-2 flex h-7 items-center gap-2 text-[10.5px] text-[var(--muted-strong)]">
             <Circle className="size-[11px] text-[#59719d]" weight="fill" />
-            <span>3 个已启用</span>
+            <span>{enabledCount} 个已启用</span>
             <span aria-hidden className="text-[var(--muted)]">·</span>
-            <span>今日运行 8 次</span>
+            <span>今日运行 {todayRunCount} 次</span>
             <span aria-hidden className="text-[var(--muted)]">·</span>
-            <span className="text-[var(--warn-ink)]">1 个需要处理</span>
+            <span className="text-[var(--warn-ink)]">{attentionCount} 个需要处理</span>
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">

@@ -1,10 +1,10 @@
 import { getTableConfig } from 'drizzle-orm/pg-core';
-import { allApplicationTables, knowledgeBusinessTables } from './schema';
-import { knowledgePoliciesForTable } from './knowledge/rls';
+import { allApplicationTables, workspaceTenantTables } from './schema';
+import { workspacePoliciesForTable } from './workspace/rls';
 import { assertFoucApplicationRole } from './initialize-role';
 import type { FoucSqlConnection } from './initialize-role';
 
-export const foucDatabaseSchemas = ['knowledge', 'auth'] as const;
+export const foucDatabaseSchemas = ['workspace', 'auth'] as const;
 const requiredExtensions = ['ltree', 'pg_search', 'vector'];
 
 export interface FoucDatabaseStatus {
@@ -25,7 +25,7 @@ function normalizePolicy(value: string): string {
 }
 
 function normalizeType(value: string): string {
-  return value.replaceAll('"', '').replace(/\b(?:knowledge|public)\./g, '').replace(/^varchar\(/, 'character varying(');
+  return value.replaceAll('"', '').replace(/\b(?:workspace|public)\./g, '').replace(/^varchar\(/, 'character varying(');
 }
 
 /** Read-only structural, RLS, extension and runtime-grant verification. */
@@ -36,7 +36,7 @@ export async function inspectFoucDatabase(admin: FoucSqlConnection, application:
   const issues: string[] = [];
   const status: FoucDatabaseStatus = {
     state: 'empty', schemas: namespaces.rows.map((row) => row.name), tables: 0, expectedTables: allApplicationTables.length,
-    forcedTenantTables: 0, expectedTenantTables: knowledgeBusinessTables.length,
+    forcedTenantTables: 0, expectedTenantTables: workspaceTenantTables.length,
     extensions: extensions.rows.map((row) => row.name), issues,
   };
   if (!status.schemas.length) return status;
@@ -78,18 +78,18 @@ export async function inspectFoucDatabase(admin: FoucSqlConnection, application:
 
   const key = (schema: string, name: string) => `${schema}.${name}`;
   const expectedTables = new Set(allApplicationTables.map((table) => { const config = getTableConfig(table); return key(config.schema!, config.name); }));
-  for (const relation of relations.rows) if (!expectedTables.has(key(relation.schema, relation.name))) issues.push('Unexpected table in knowledge schemas');
+  for (const relation of relations.rows) if (!expectedTables.has(key(relation.schema, relation.name))) issues.push('Unexpected table in Fouc schemas');
   for (const table of allApplicationTables) {
     const config = getTableConfig(table);
     const target = key(config.schema!, config.name);
     const relation = relations.rows.find((row) => key(row.schema, row.name) === target);
     if (!relation) { issues.push(`Missing table: ${target}`); continue; }
     if (relation.owner === role.name) issues.push(`Application role owns table: ${target}`);
-    if (config.schema === 'knowledge') {
+    if (config.schema === 'workspace') {
       if (relation.enabled && relation.forced) status.forcedTenantTables += 1;
       else issues.push(`RLS not enabled and forced: ${target}`);
       const tablePolicies = policies.rows.filter((row) => key(row.schema, row.table) === target);
-      const expectedPolicies = knowledgePoliciesForTable(table);
+      const expectedPolicies = workspacePoliciesForTable(table);
       if (tablePolicies.length !== expectedPolicies.length || expectedPolicies.some((expected) => {
         const policy = tablePolicies.find((item) => item.name === expected.name);
         return !policy || policy.command !== (expected.command === 'ALL' ? '*' : 'r') || !policy.permissive || policy.roles.length !== 1 || policy.roles[0] !== 0

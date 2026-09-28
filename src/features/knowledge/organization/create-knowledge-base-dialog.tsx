@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { organizationClient } from '@/features/workspaces/organization-client';
+import { knowledgeCatalogClient } from '../data/knowledge-catalog-client';
 import { organizationErrorTextOf } from '@/features/workspaces/organization-errors';
 import { organizationQueryKeys } from './keys';
 import { DialogButton, ModalDialog, NameField } from './ui';
@@ -16,7 +16,7 @@ export function CreateKnowledgeBaseDialog({ workspaceId, open, onClose, onCreate
   const [name, setName] = useState('');
   const queryClient = useQueryClient();
   const mutation = useMutation({
-    mutationFn: () => organizationClient.createKnowledgeBase(workspaceId, { name: name.trim() }),
+    mutationFn: () => knowledgeCatalogClient.createKnowledgeBase(workspaceId, { name: name.trim() }),
     onSuccess: async (base) => {
       await queryClient.invalidateQueries({ queryKey: organizationQueryKeys.knowledgeBases(workspaceId) });
       onCreated(base.id);

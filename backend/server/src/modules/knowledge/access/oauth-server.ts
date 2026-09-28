@@ -3,9 +3,9 @@ import type { Pool } from 'pg';
 import { and, eq, sql } from 'drizzle-orm';
 import { entityIdSchema } from '@fouc/shared/knowledge/contracts';
 import { z } from 'zod';
-import { member, personalAccessToken } from '../../../platform/database/knowledge/schema';
+import { member, personalAccessToken } from '../../../platform/database/workspace/schema';
 import { authUser } from '../../../platform/database/identity/schema';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { isLoopbackHost } from '../../../platform/identity/oauth-config';
 import { tokenScopesSchema, tokenWorkspaceSchema } from './access-policy';
 import type { KnowledgeTokenScope } from './access-policy';
@@ -189,7 +189,7 @@ export function createKnowledgeMcpOAuthServer(options: KnowledgeMcpOAuthServerOp
      * later request re-verifies the token against the database.
      */
     async issueAccessToken(grant: McpAuthorizationGrant): Promise<{ token: string; scopes: readonly KnowledgeTokenScope[] } | null> {
-      return withKnowledgeTenant(pool, grant.workspaceId, async (db) => {
+      return withWorkspaceTenant(pool, grant.workspaceId, async (db) => {
         const [membership] = await db.select({ userId: member.userId }).from(member)
           .innerJoin(authUser, eq(authUser.id, member.userId))
           .where(and(eq(member.workspaceId, grant.workspaceId), eq(member.userId, grant.userId), eq(authUser.emailVerified, true)))
@@ -209,7 +209,7 @@ export function createKnowledgeMcpOAuthServer(options: KnowledgeMcpOAuthServerOp
     async revokeAccessToken(workspaceId: string, token: string): Promise<void> {
       const locator = parseKnowledgeToken(token);
       if (!locator || locator.workspaceId !== workspaceId) return;
-      await withKnowledgeTenant(pool, workspaceId, (db) => db.update(personalAccessToken)
+      await withWorkspaceTenant(pool, workspaceId, (db) => db.update(personalAccessToken)
         .set({ revokedAt: sql`clock_timestamp()` })
         .where(and(
           eq(personalAccessToken.workspaceId, workspaceId),

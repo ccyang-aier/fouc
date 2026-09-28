@@ -23,6 +23,14 @@ Fouc 是一套构建于 AI Agent 之上的超级工作台，面向个人与企�
 - `pnpm dev:all` 启动或复用本仓库的 Web、设备运行时和业务服务；服务在命令退出后保持运行并自动刷新源码。
 - `pnpm architecture:verify` 验证依赖边界与依赖声明；后端分别使用 `device:*`、`server:*` 命令检查、测试与构建。
 
+## 产品资源模型（必须先于代码命名理解）
+
+- **工作空间是全产品的资源隔离根**。左侧最外层工作空间栏切换当前 `workspaceId`；同一用户可以创建或加入多个工作空间，但当前空间的资源读取、搜索、引用、执行与缓存不得隐式跨到另一空间。身份和平台公开目录不是某个工作空间的私有资源。
+- **项目与知识库是工作空间下的同级、多实例资源**：`workspace → projects[]` 与 `workspace → knowledgeBases[]`；项目不包含知识库，知识库也不包含项目。知识库下才有文件夹（现存内部名 `teamspace`）与文档。任何目录名、旧变量名或演示数据的一一对应关系都不能改变该模型。
+- 全局工作空间选择归 `features/workspaces`；项目列表、选择及管理状态归 `features/project`；知识库目录、文件夹和文档归 `features/knowledge`。`src/shell/` 只负责组合与呈现。后端 `modules/workspaces`、`modules/projects`、`modules/knowledge` 分别拥有这些用例，数据库业务表统一位于 `platform/database/workspace` 租户边界。
+- 登录态决定主体身份和具体操作权限，不决定整套知识库页面或整个产品的数据模式。访客也能使用允许的功能；本机、服务端和设备能力应按资源与操作明确选择，不因登录、退出自动迁移或替换内容。
+- 现有项目详情、自动化、连接器目录与社区部分页面使用演示数据；渲染了某项能力不等于已有对应的服务端持久化、空间绑定或授权。先核对实际用例与数据所有者，再扩展该能力；当前实现状态见 `docs/product/V1/design/arch/fouc-project-structure-design.md` §2.3。
+
 ## 开发理念
 
 - **纯净原则**：始终保持架构与实现纯净，当前产品尚未发布，不存在生产版本、真实用户存量数据或必须兼容的历史格式。架构和数据模型调整必须直接重写为当前唯一正确实现，并清理对应的开发测试数据；禁止为旧开发数据保留 migration、legacy adapter、双轨 schema、兼容分支或过渡开关等。
@@ -34,7 +42,7 @@ Fouc 是一套构建于 AI Agent 之上的超级工作台，面向个人与企�
 ## 工作流
 
 - 任务完成并通过验证后执行 Git 提交，提交信息使用规范、清晰的格式。
-- 提交后执行 `pnpm tauri build` 刷新桌面端构建产物，确保客户端始终运行最新代码。
+- 开发任务默认保持 `pnpm dev:all` 启动或复用的 Web 开发服务常驻并自动刷新源码。仅在用户明确要求桌面验证、发布或打包时执行 `pnpm tauri build`；Web 改动按需运行 `pnpm build`。
 
 ### 桌面端构建
 
@@ -43,7 +51,7 @@ Fouc 是一套构建于 AI Agent 之上的超级工作台，面向个人与企�
 - pnpm：`corepack enable --install-directory <目录> pnpm` 生成 shim（现成于 `C:\Users\y00013075\.local\corepack-shims`）
 - bun：`C:\Users\y00013075\.bun-tool\node_modules\bun\bin`
 
-构建前先结束残留的 fouc / fouc-backend 进程：运行中的 sidecar 会锁住 `src-tauri/binaries/` 下旧 exe，`build-backend.mjs` 覆盖时报 EPERM。
+仅执行桌面构建时，先结束残留的 fouc / fouc-backend 进程：运行中的 sidecar 会锁住 `src-tauri/binaries/` 下旧 exe，`build-backend.mjs` 覆盖时报 EPERM。
 
 ```bash
 export PATH="/c/Users/y00013075/.local/corepack-shims:/c/Users/y00013075/.bun-tool/node_modules/bun/bin:/d/Nodejs:$PATH"

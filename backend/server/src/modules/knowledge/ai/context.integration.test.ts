@@ -5,8 +5,8 @@ import type { Principal } from '@fouc/shared/knowledge/contracts';
 import { assembledContextSchema, citationVerdictSchema } from '@fouc/shared/knowledge/contracts';
 import type { ContextSegment, ContextTaskKind } from '@fouc/shared/knowledge/contracts';
 import type { HybridSearchHit } from '@fouc/shared/knowledge/search';
-import { docState, page } from '../../../platform/database/knowledge/schema';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { docState, page } from '../../../platform/database/workspace/schema';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { assembleContext, validateCitations } from './context';
 import { createPermissionsFixture } from '../permissions/permissions-test-fixture';
 import type { PermissionsFixture } from '../permissions/permissions-test-fixture';
@@ -34,7 +34,7 @@ describe('context assembly and citation validation', () => {
   beforeEach(async () => {
     await fixture.resetJobs();
     await fixture.server.database.admin.query(
-      'DELETE FROM knowledge.block_embedding_staging; DELETE FROM knowledge.block_embedding_model; DELETE FROM knowledge.block_index',
+      'DELETE FROM workspace.block_embedding_staging; DELETE FROM workspace.block_embedding_model; DELETE FROM workspace.block_index',
     );
   });
 
@@ -58,7 +58,7 @@ describe('context assembly and citation validation', () => {
 
   async function writeBody(node: { workspaceId: string; pageId: string }, blocks: readonly DraftBlock[]) {
     const { state, stateVector } = encodeBody(blocks);
-    await withKnowledgeTenant(fixture.pool, node.workspaceId, async (db) => {
+    await withWorkspaceTenant(fixture.pool, node.workspaceId, async (db) => {
       await db.insert(docState).values({ workspaceId: node.workspaceId, pageId: node.pageId, state, stateVector })
         .onConflictDoUpdate({ target: [docState.workspaceId, docState.pageId], set: { state, stateVector, updatedAt: sql`clock_timestamp()` } });
     });
@@ -71,19 +71,19 @@ describe('context assembly and citation validation', () => {
   }
 
   async function retitle(scope: { workspaceId: string; pageId: string }, title: string) {
-    await withKnowledgeTenant(fixture.pool, scope.workspaceId, (db) =>
+    await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) =>
       db.update(page).set({ title }).where(and(eq(page.workspaceId, scope.workspaceId), eq(page.id, scope.pageId))));
   }
 
   async function indexPage(node: { workspaceId: string; pageId: string }) {
-    await withKnowledgeTenant(fixture.pool, node.workspaceId, (db) =>
+    await withWorkspaceTenant(fixture.pool, node.workspaceId, (db) =>
       refreshPageBlockIndex(db, { workspaceId: node.workspaceId, pageId: node.pageId }));
   }
 
   /** The real keyword leg at the H04 hit contract; rank feeds a real RRF-shaped score. */
   async function keywordHits(workspaceId: string, userId: string, query: string): Promise<HybridSearchHit[]> {
     const principals = await fixture.subjects(userId, workspaceId);
-    const hits = await withKnowledgeTenant(fixture.pool, workspaceId, (db) =>
+    const hits = await withWorkspaceTenant(fixture.pool, workspaceId, (db) =>
       searchBlocksByKeyword(db, { workspaceId, principals, query, limit: 50 }));
     return hits.map((hit, index) => ({
       pageId: hit.pageId,
@@ -220,7 +220,7 @@ describe('context assembly and citation validation', () => {
   test('citations validate against the authoritative doc: valid, denied, missing, recycled, malformed', async () => {
     const created = await tree({ parents: [null, 0, 0], defaultAccess: null });
     const [ownerPage, readerPage, recycledPage] = created.pages;
-    await withKnowledgeTenant(fixture.pool, ownerPage.workspaceId, (db) => Promise.all([
+    await withWorkspaceTenant(fixture.pool, ownerPage.workspaceId, (db) => Promise.all([
       replaceAuthorizedPageAcl(db, { workspaceId: ownerPage.workspaceId, pageId: ownerPage.pageId, grants: [{ principal: `user:${fixture.owner.identity.userId}` as Principal, level: 'full' }] }),
       replaceAuthorizedPageAcl(db, { workspaceId: readerPage.workspaceId, pageId: readerPage.pageId, grants: [
         { principal: `user:${fixture.owner.identity.userId}` as Principal, level: 'full' },
@@ -240,7 +240,7 @@ describe('context assembly and citation validation', () => {
     await writeBody(recycledPage, [{ attrs: { blockId: 'b-dead-1' }, text: '已回收页面的残余段落' }]);
     await indexPage(ownerPage);
     // b-list 是布局容器（index.mode=skip），不落 block_index，但存在于权威文档。
-    const indexed = await withKnowledgeTenant(fixture.pool, ownerPage.workspaceId, (db) => readPageBlockIndexRows(db, { workspaceId: ownerPage.workspaceId, pageId: ownerPage.pageId }));
+    const indexed = await withWorkspaceTenant(fixture.pool, ownerPage.workspaceId, (db) => readPageBlockIndexRows(db, { workspaceId: ownerPage.workspaceId, pageId: ownerPage.pageId }));
     expect(indexed.map((row) => row.blockId)).not.toContain('b-list');
 
     const reader = fixture.reader.identity.userId;
@@ -308,7 +308,7 @@ describe('context assembly and citation validation', () => {
   test('an unauthorized focus page fails closed for its legs; stale hits drop after revocation; empty search leg', async () => {
     const created = await tree({ parents: [null, 0], defaultAccess: null });
     const [ownerPage, sharedPage] = created.pages;
-    await withKnowledgeTenant(fixture.pool, ownerPage.workspaceId, (db) => Promise.all([
+    await withWorkspaceTenant(fixture.pool, ownerPage.workspaceId, (db) => Promise.all([
       replaceAuthorizedPageAcl(db, { workspaceId: ownerPage.workspaceId, pageId: ownerPage.pageId, grants: [{ principal: `user:${fixture.owner.identity.userId}` as Principal, level: 'full' }] }),
       replaceAuthorizedPageAcl(db, { workspaceId: sharedPage.workspaceId, pageId: sharedPage.pageId, grants: [
         { principal: `user:${fixture.owner.identity.userId}` as Principal, level: 'full' },
@@ -340,7 +340,7 @@ describe('context assembly and citation validation', () => {
     // 检索后收权：读者以旧命中组装，全部命中被权限谓词剔除并如实计数。
     const staleHits = await keywordHits(sharedPage.workspaceId, reader, '氦闪 共享');
     expect(staleHits).toHaveLength(2);
-    await withKnowledgeTenant(fixture.pool, sharedPage.workspaceId, (db) =>
+    await withWorkspaceTenant(fixture.pool, sharedPage.workspaceId, (db) =>
       replaceAuthorizedPageAcl(db, { workspaceId: sharedPage.workspaceId, pageId: sharedPage.pageId, grants: [{ principal: `user:${fixture.owner.identity.userId}` as Principal, level: 'full' }] }));
     await fixture.drain();
     const revoked = await assembleContext(fixture.pool, { workspaceId: sharedPage.workspaceId, userId: reader, taskKind: 'ask', query: '氦闪 共享', searchHits: staleHits });

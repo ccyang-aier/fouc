@@ -2,8 +2,8 @@ import { randomUUID } from 'node:crypto';
 import { and, eq, ne } from 'drizzle-orm';
 import { z } from 'zod';
 import { entityIdSchema, pageScopeSchema, workspaceScopeSchema } from '@fouc/shared/knowledge/contracts';
-import { comment, commentThread, member } from '../../../platform/database/knowledge/schema';
-import type { KnowledgeTenantTransaction } from '../../../platform/database/knowledge/tenant';
+import { comment, commentThread, member } from '../../../platform/database/workspace/schema';
+import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
 import { requireCommentAccess } from './access';
 import { KnowledgeCommentError } from './errors';
 import { emitCommentThreadChanged, notifyCommentRecipients } from './notifications';
@@ -38,7 +38,7 @@ function parse<S extends z.ZodType>(schema: S, input: unknown): z.output<S> {
 }
 
 /** Serializes lifecycle operations (reply/resolve/reopen/delete) on one thread. */
-async function lockedThread(db: KnowledgeTenantTransaction, workspaceId: string, threadId: string): Promise<CommentThreadRow> {
+async function lockedThread(db: WorkspaceTenantTransaction, workspaceId: string, threadId: string): Promise<CommentThreadRow> {
   const [thread] = await db.select().from(commentThread)
     .where(and(eq(commentThread.workspaceId, workspaceId), eq(commentThread.id, threadId)))
     .for('update');
@@ -47,7 +47,7 @@ async function lockedThread(db: KnowledgeTenantTransaction, workspaceId: string,
 }
 
 /** userId comes from verified session authority. The whole lifecycle shares one transaction. */
-export async function createCommentThread(db: KnowledgeTenantTransaction, input: unknown): Promise<{ thread: CommentThreadRow; comment: CommentRow; notified: string[] }> {
+export async function createCommentThread(db: WorkspaceTenantTransaction, input: unknown): Promise<{ thread: CommentThreadRow; comment: CommentRow; notified: string[] }> {
   const parsed = parse(createInputSchema, input);
   const scope = { workspaceId: parsed.workspaceId, pageId: parsed.pageId };
   await requireCommentAccess(db, { userId: parsed.userId, scope, required: 'comment' });
@@ -63,7 +63,7 @@ export async function createCommentThread(db: KnowledgeTenantTransaction, input:
 }
 
 /** Replying requires an open thread; reopening is the explicit way out of a resolved one. */
-export async function replyCommentThread(db: KnowledgeTenantTransaction, input: unknown): Promise<{ thread: CommentThreadRow; comment: CommentRow; notified: string[] }> {
+export async function replyCommentThread(db: WorkspaceTenantTransaction, input: unknown): Promise<{ thread: CommentThreadRow; comment: CommentRow; notified: string[] }> {
   const parsed = parse(replyInputSchema, input);
   const thread = await lockedThread(db, parsed.workspaceId, parsed.threadId);
   const scope = { workspaceId: parsed.workspaceId, pageId: thread.pageId };
@@ -87,7 +87,7 @@ export async function replyCommentThread(db: KnowledgeTenantTransaction, input: 
 }
 
 /** Resolve/reopen transition. Re-applying the current status is an idempotent no-op without events. */
-async function transitionThread(db: KnowledgeTenantTransaction, input: unknown, status: CommentThreadRow['status']): Promise<{ thread: CommentThreadRow; changed: boolean }> {
+async function transitionThread(db: WorkspaceTenantTransaction, input: unknown, status: CommentThreadRow['status']): Promise<{ thread: CommentThreadRow; changed: boolean }> {
   const parsed = parse(threadTargetSchema, input);
   const thread = await lockedThread(db, parsed.workspaceId, parsed.threadId);
   const scope = { workspaceId: parsed.workspaceId, pageId: thread.pageId };
@@ -101,16 +101,16 @@ async function transitionThread(db: KnowledgeTenantTransaction, input: unknown, 
   return { thread: updated, changed: true };
 }
 
-export function resolveCommentThread(db: KnowledgeTenantTransaction, input: unknown) {
+export function resolveCommentThread(db: WorkspaceTenantTransaction, input: unknown) {
   return transitionThread(db, input, 'resolved');
 }
 
-export function reopenCommentThread(db: KnowledgeTenantTransaction, input: unknown) {
+export function reopenCommentThread(db: WorkspaceTenantTransaction, input: unknown) {
   return transitionThread(db, input, 'open');
 }
 
 /** Authors may remove their own comments; a thread whose last comment is gone is removed with it. */
-export async function deleteOwnComment(db: KnowledgeTenantTransaction, input: unknown): Promise<{ threadDeleted: boolean }> {
+export async function deleteOwnComment(db: WorkspaceTenantTransaction, input: unknown): Promise<{ threadDeleted: boolean }> {
   const parsed = parse(commentTargetSchema, input);
   const [entry] = await db.select().from(comment)
     .where(and(eq(comment.workspaceId, parsed.workspaceId), eq(comment.id, parsed.commentId)));
@@ -134,7 +134,7 @@ export async function deleteOwnComment(db: KnowledgeTenantTransaction, input: un
  * Workspace owners/admins moderate threads on any page they can still view;
  * recycled or otherwise inaccessible pages stay off limits like everywhere else.
  */
-export async function deleteCommentThreadAsAdmin(db: KnowledgeTenantTransaction, input: unknown): Promise<void> {
+export async function deleteCommentThreadAsAdmin(db: WorkspaceTenantTransaction, input: unknown): Promise<void> {
   const parsed = parse(threadTargetSchema, input);
   const thread = await lockedThread(db, parsed.workspaceId, parsed.threadId);
   const scope = { workspaceId: parsed.workspaceId, pageId: thread.pageId };

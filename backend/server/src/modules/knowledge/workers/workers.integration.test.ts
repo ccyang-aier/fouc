@@ -8,10 +8,10 @@ import { and, eq } from 'drizzle-orm';
 import { makeWorkerUtils } from 'graphile-worker';
 import { Pool } from 'pg';
 import type { OutboxEvent } from '@fouc/shared/knowledge/contracts';
-import { createTenantTestDatabase, seedTenantTestData } from '../../../platform/database/knowledge/tenant-test-database';
-import type { TenantTestDatabase } from '../../../platform/database/knowledge/tenant-test-database';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
-import { notification, page } from '../../../platform/database/knowledge/schema';
+import { createTenantTestDatabase, seedTenantTestData } from '../../../platform/database/workspace/tenant-test-database';
+import type { TenantTestDatabase } from '../../../platform/database/workspace/tenant-test-database';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import { notification, page } from '../../../platform/database/workspace/schema';
 import type { RunningRole } from '../../../platform/runtime/lifecycle';
 import { appendKnowledgeOutbox, consumerTask, DISPATCH_TASK, jobKey } from './outbox';
 import { initializeKnowledgeJobs, KNOWLEDGE_JOBS_SCHEMA } from './initialize';
@@ -31,12 +31,12 @@ beforeAll(async () => {
   pool = new Pool({ ...fixture.pool.options, max: 6 });
   pool.on('error', () => {});
   await initializeKnowledgeJobs(fixture.admin, pool);
-  await fixture.admin.query('DELETE FROM knowledge.outbox');
+  await fixture.admin.query('DELETE FROM workspace.outbox');
 }, 30_000);
 afterEach(async () => {
   for (const runner of runners) await runner.close();
   runners.clear();
-  await fixture.admin.query('DELETE FROM knowledge_jobs._private_jobs; DELETE FROM knowledge.outbox');
+  await fixture.admin.query('DELETE FROM knowledge_jobs._private_jobs; DELETE FROM workspace.outbox');
 }, 15_000);
 afterAll(async () => { await pool?.end(); await fixture?.dispose(); }, 30_000);
 
@@ -45,7 +45,7 @@ const sourceEvent = (tenant: { workspaceId: string; userId: string } = data.tena
   actor: { kind: 'human', userId: tenant.userId }, occurredAt: new Date().toISOString(),
 });
 async function publish(event = sourceEvent(), id = randomUUID()) {
-  return withKnowledgeTenant(pool, event.workspaceId, (db) => appendKnowledgeOutbox(db, event, id));
+  return withWorkspaceTenant(pool, event.workspaceId, (db) => appendKnowledgeOutbox(db, event, id));
 }
 async function until(check: () => Promise<boolean>, timeout = 10_000) {
   const start = Date.now();
@@ -79,15 +79,15 @@ describe('transactional knowledge queue on real PostgreSQL', () => {
 
   test('domain write, outbox and scheduling roll back together and cross-tenant writes fail', async () => {
     const event = sourceEvent();
-    await expect(withKnowledgeTenant(pool, event.workspaceId, async (db) => {
+    await expect(withWorkspaceTenant(pool, event.workspaceId, async (db) => {
       await db.update(page).set({ title: 'must roll back' }).where(and(eq(page.workspaceId, event.workspaceId), eq(page.id, data.ids.page)));
       await appendKnowledgeOutbox(db, event);
       throw new Error('abort transaction');
     })).rejects.toThrow('abort transaction');
     expect(await jobs()).toEqual([]);
-    expect((await fixture.admin.query('SELECT count(*)::int AS n FROM knowledge.outbox')).rows[0].n).toBe(0);
-    expect((await fixture.admin.query('SELECT title FROM knowledge.page WHERE workspace_id=$1 AND id=$2', [event.workspaceId, data.ids.page])).rows[0].title).not.toBe('must roll back');
-    await expect(withKnowledgeTenant(pool, event.workspaceId, (db) => appendKnowledgeOutbox(db, sourceEvent(data.tenants[1])))).rejects.toBeDefined();
+    expect((await fixture.admin.query('SELECT count(*)::int AS n FROM workspace.outbox')).rows[0].n).toBe(0);
+    expect((await fixture.admin.query('SELECT title FROM workspace.page WHERE workspace_id=$1 AND id=$2', [event.workspaceId, data.ids.page])).rows[0].title).not.toBe('must roll back');
+    await expect(withWorkspaceTenant(pool, event.workspaceId, (db) => appendKnowledgeOutbox(db, sourceEvent(data.tenants[1])))).rejects.toBeDefined();
     expect(await jobs()).toEqual([]);
   });
 
@@ -96,7 +96,7 @@ describe('transactional knowledge queue on real PostgreSQL', () => {
     await fixture.admin.query(`REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA knowledge_jobs FROM ${role}`);
     try { await expect(publish()).rejects.toBeDefined(); }
     finally { await fixture.admin.query(`GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA knowledge_jobs TO ${role}`); }
-    expect((await fixture.admin.query('SELECT count(*)::int AS n FROM knowledge.outbox')).rows[0].n).toBe(0);
+    expect((await fixture.admin.query('SELECT count(*)::int AS n FROM workspace.outbox')).rows[0].n).toBe(0);
     expect(await jobs()).toEqual([]);
   });
 
@@ -129,7 +129,7 @@ describe('transactional knowledge queue on real PostgreSQL', () => {
       { name: 'retriable', topic: 'doc.changed', handle: async (received, context) => {
         expect(received).toEqual(event);
         attempts.push(context.attempt); keys.push(context.idempotencyKey);
-        await withKnowledgeTenant(pool, received.workspaceId, (db) => db.insert(notification).values({
+        await withWorkspaceTenant(pool, received.workspaceId, (db) => db.insert(notification).values({
           workspaceId: received.workspaceId, id: notificationId, userId: data.tenants[0].userId, kind: 'queue-acceptance', payload: {},
         }).onConflictDoNothing().then(() => {}));
         if (context.attempt === 1) throw new Error('PRIVATE KEY OR PROVIDER BODY MUST NOT BE LOGGED');
@@ -143,8 +143,8 @@ describe('transactional knowledge queue on real PostgreSQL', () => {
     expect(attempts).toEqual([1, 2]);
     expect(new Set(keys).size).toBe(1);
     expect(secondary).toBe(1);
-    expect((await fixture.admin.query('SELECT count(*)::int AS n FROM knowledge.notification WHERE id=$1', [notificationId])).rows[0].n).toBe(1);
-    expect((await fixture.admin.query('SELECT dispatched_at FROM knowledge.outbox WHERE id=$1', [id])).rows[0].dispatched_at).not.toBeNull();
+    expect((await fixture.admin.query('SELECT count(*)::int AS n FROM workspace.notification WHERE id=$1', [notificationId])).rows[0].n).toBe(1);
+    expect((await fixture.admin.query('SELECT dispatched_at FROM workspace.outbox WHERE id=$1', [id])).rows[0].dispatched_at).not.toBeNull();
   }, 15_000);
 
   test('missing routes remain recoverable and malformed/cross-tenant references never invoke a handler', async () => {
@@ -153,7 +153,7 @@ describe('transactional knowledge queue on real PostgreSQL', () => {
     const runner = await start([]);
     await until(async () => (await jobs()).some((job) => job.last_error !== null));
     expect((await jobs())[0].last_error).toContain('unhandled_topic');
-    expect((await fixture.admin.query('SELECT dispatched_at FROM knowledge.outbox WHERE id=$1', [id])).rows[0].dispatched_at).toBeNull();
+    expect((await fixture.admin.query('SELECT dispatched_at FROM workspace.outbox WHERE id=$1', [id])).rows[0].dispatched_at).toBeNull();
     await runner.close(); runners.delete(runner);
     const utils = await makeWorkerUtils({ pgPool: pool, schema: KNOWLEDGE_JOBS_SCHEMA, logger: knowledgeWorkerLogger() });
     try {
@@ -176,7 +176,7 @@ describe('transactional knowledge queue on real PostgreSQL', () => {
     await fixture.admin.query(`
       CREATE FUNCTION knowledge_jobs.acceptance_reject_second() RETURNS trigger LANGUAGE plpgsql AS $$
       BEGIN
-        IF NEW.task_id=(SELECT id FROM knowledge_jobs._private_tasks WHERE identifier='knowledge.consume.second') THEN
+        IF NEW.task_id=(SELECT id FROM knowledge_jobs._private_tasks WHERE identifier='workspace.consume.second') THEN
           RAISE EXCEPTION 'Injected scheduling failure';
         END IF;
         RETURN NEW;
@@ -193,7 +193,7 @@ describe('transactional knowledge queue on real PostgreSQL', () => {
       expect(pending).toHaveLength(1);
       expect(pending[0].task).toBe(DISPATCH_TASK);
       expect(delivered).toBe(0);
-      expect((await fixture.admin.query('SELECT dispatched_at FROM knowledge.outbox WHERE id=$1', [id])).rows[0].dispatched_at).toBeNull();
+      expect((await fixture.admin.query('SELECT dispatched_at FROM workspace.outbox WHERE id=$1', [id])).rows[0].dispatched_at).toBeNull();
     } finally {
       await runner.close(); runners.delete(runner);
       await fixture.admin.query('DROP TRIGGER acceptance_reject_second ON knowledge_jobs._private_jobs; DROP FUNCTION knowledge_jobs.acceptance_reject_second()');
@@ -215,7 +215,7 @@ describe('transactional knowledge queue on real PostgreSQL', () => {
       await until(async () => (await jobs()).some((job) => job.last_error));
       await runner.close(); runners.delete(runner);
       expect((await jobs())[0].attempts).toBe(1);
-      expect((await fixture.admin.query('SELECT count(*)::int AS n FROM knowledge.outbox')).rows[0].n).toBe(1);
+      expect((await fixture.admin.query('SELECT count(*)::int AS n FROM workspace.outbox')).rows[0].n).toBe(1);
       await utils.rescheduleJobs((await jobs()).map((job) => job.id), { maxAttempts: 25, attempts: 0, runAt: new Date() });
       let delivered = 0;
       await start([{ name: 'after_retry', topic: 'doc.changed', handle: async () => { delivered++; } }]);

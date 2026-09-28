@@ -49,7 +49,7 @@ export async function createApiTestServer() {
         const rows = await db.execute<{ workspaceId: string; name: string; pid: number; tenant: string; identity: string }>(sql`
           SELECT workspace_id AS "workspaceId", name, pg_backend_pid() AS pid,
             current_setting('app.workspace_id', true) AS tenant, current_setting('app.auth_session_id', true) AS identity
-          FROM knowledge.workspace`);
+          FROM workspace.workspace`);
         successfulSignals.push(ctx.signal);
         return { rows: rows.rows, actor: authority.actor, role: authority.role };
       }),
@@ -61,7 +61,7 @@ export async function createApiTestServer() {
     failure: knowledgeMutation({
       input: workspaceScopeSchema, scopes: ['write'],
       resolve: ({ ctx }) => ctx.withTenant(async (db) => {
-        await db.execute(sql`UPDATE knowledge.workspace SET name='should-roll-back'`);
+        await db.execute(sql`UPDATE workspace.workspace SET name='should-roll-back'`);
         throw new Error(privateErrorCanary);
       }),
     }),
@@ -72,7 +72,7 @@ export async function createApiTestServer() {
         if (!control) throw new TRPCError({ code: 'BAD_REQUEST' });
         try {
           return await ctx.withTenant(async (db) => {
-            await db.execute(sql`UPDATE knowledge.workspace SET name=${input.operationId}`);
+            await db.execute(sql`UPDATE workspace.workspace SET name=${input.operationId}`);
             const release = () => control.release.resolve();
             ctx.signal.addEventListener('abort', release, { once: true });
             if (ctx.signal.aborted) release();
@@ -133,8 +133,8 @@ export async function createApiTestServer() {
   try {
     const alpha = { ...await account('api-alpha@example.test'), workspaceId: randomUUID(), name: 'API Alpha' };
     const beta = { ...await account('api-beta@example.test'), workspaceId: randomUUID(), name: 'API Beta' };
-    await server.database.admin.query("INSERT INTO knowledge.workspace(workspace_id,name,kind) VALUES ($1,$2,'team'),($3,$4,'team')", [alpha.workspaceId, alpha.name, beta.workspaceId, beta.name]);
-    await server.database.admin.query("INSERT INTO knowledge.member(workspace_id,user_id,role) VALUES ($1,$3,'owner'),($2,$4,'owner'),($2,$3,'member')", [alpha.workspaceId, beta.workspaceId, alpha.userId, beta.userId]);
+    await server.database.admin.query("INSERT INTO workspace.workspace(workspace_id,name,kind) VALUES ($1,$2,'team'),($3,$4,'team')", [alpha.workspaceId, alpha.name, beta.workspaceId, beta.name]);
+    await server.database.admin.query("INSERT INTO workspace.member(workspace_id,user_id,role) VALUES ($1,$3,'owner'),($2,$4,'owner'),($2,$3,'member')", [alpha.workspaceId, beta.workspaceId, alpha.userId, beta.userId]);
     const url = (workspaceId: string = alpha.workspaceId) => `${server.origin}/api/knowledge/${workspaceId}/trpc`;
     return {
       server, alpha, beta, pool, shutdown, diagnostics, requests, successfulSignals, held, inputGates, router, url,

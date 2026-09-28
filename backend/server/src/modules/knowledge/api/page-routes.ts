@@ -5,10 +5,10 @@ import {
   recyclePageInputSchema, restorePageInputSchema, updatePageInputSchema, principal,
 } from '@fouc/shared/knowledge/contracts';
 import type { PageScope, PermissionLevel } from '@fouc/shared/knowledge/contracts';
-import { member, page, pageAcl } from '../../../platform/database/knowledge/schema';
-import type { KnowledgeTenantTransaction } from '../../../platform/database/knowledge/tenant';
+import { member, page, pageAcl } from '../../../platform/database/workspace/schema';
+import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
 import { readTeamspacePermissionRoot } from '../organization/teamspaces';
-import { OrganizationError } from '../organization/errors';
+import { OrganizationError } from '../../workspaces/errors';
 import { authorizePageAccess, effectivePageAccessCondition, expandRequestPrincipals, lockPermissionWorkspace } from '../permissions';
 import { rebuildPermissionSubtree } from '../permissions/rebuild';
 import { createAuthorizedPage, moveAuthorizedPage, recycleAuthorizedPage, restoreAuthorizedPage, updateAuthorizedPage } from '../pages/tree';
@@ -16,12 +16,12 @@ import { KnowledgePageError } from '../pages/errors';
 import { apiError } from './errors';
 import { knowledgeMutation, knowledgeQuery } from './procedures';
 
-async function requirePage(db: KnowledgeTenantTransaction, userId: string, scope: PageScope, required: PermissionLevel) {
+async function requirePage(db: WorkspaceTenantTransaction, userId: string, scope: PageScope, required: PermissionLevel) {
   const result = await authorizePageAccess(db, { userId, scope: { workspaceId: scope.workspaceId, pageId: scope.pageId }, required });
   if (result.decision !== 'allow') throw new TRPCError({ code: 'FORBIDDEN' });
 }
 
-async function requireDestination(db: KnowledgeTenantTransaction, userId: string, input: { workspaceId: string; teamspaceId: string; parentId: string | null }) {
+async function requireDestination(db: WorkspaceTenantTransaction, userId: string, input: { workspaceId: string; teamspaceId: string; parentId: string | null }) {
   if (input.parentId) return requirePage(db, userId, { workspaceId: input.workspaceId, pageId: input.parentId }, 'edit');
   const root = await readTeamspacePermissionRoot(db, { workspaceId: input.workspaceId, teamspaceId: input.teamspaceId });
   const [membership] = await db.select({ role: member.role }).from(member).where(and(eq(member.workspaceId, input.workspaceId), eq(member.userId, userId)));
@@ -40,7 +40,7 @@ function serializePage(row: typeof page.$inferSelect) {
   return pageSchema.parse({ ...record, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString(), deletedAt: row.deletedAt?.toISOString() ?? null });
 }
 
-async function refreshPermissions(db: KnowledgeTenantTransaction, scope: PageScope) {
+async function refreshPermissions(db: WorkspaceTenantTransaction, scope: PageScope) {
   const [record] = await db.select({ revision: page.aclRevision }).from(page).where(and(eq(page.workspaceId, scope.workspaceId), eq(page.id, scope.pageId)));
   if (record) await rebuildPermissionSubtree(db, { topic: 'acl.changed', workspaceId: scope.workspaceId, rootPageId: scope.pageId, revision: record.revision });
 }

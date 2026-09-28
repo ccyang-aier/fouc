@@ -3,9 +3,9 @@ import { z } from 'zod';
 import type { Principal } from '@fouc/shared/knowledge/contracts';
 import { entityIdSchema, timestampSchema, workspaceScopeSchema } from '@fouc/shared/knowledge/contracts';
 import type { NotificationItem } from '@fouc/shared/knowledge/notifications';
-import { groupMember, member, notification, page } from '../../../platform/database/knowledge/schema';
+import { groupMember, member, notification, page } from '../../../platform/database/workspace/schema';
 import { authUser } from '../../../platform/database/identity/schema';
-import type { KnowledgeTenantTransaction } from '../../../platform/database/knowledge/tenant';
+import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
 import { expandPrincipals } from '../permissions/effective';
 import { effectivePageAccessCondition } from '../permissions/queries';
 import { KnowledgeNotificationError } from './errors';
@@ -34,7 +34,7 @@ function parse<S extends z.ZodType>(schema: S, input: unknown): z.output<S> {
  * read from rows in this transaction, never from the request. Without a
  * membership row the inbox is empty — an ex-member keeps nothing.
  */
-async function recipientPrincipals(db: KnowledgeTenantTransaction, workspaceId: string, userId: string): Promise<Principal[] | null> {
+async function recipientPrincipals(db: WorkspaceTenantTransaction, workspaceId: string, userId: string): Promise<Principal[] | null> {
   const [membership] = await db.select().from(member)
     .where(and(eq(member.workspaceId, workspaceId), eq(member.userId, userId)));
   if (!membership) return null;
@@ -49,7 +49,7 @@ async function recipientPrincipals(db: KnowledgeTenantTransaction, workspaceId: 
  * (recycled pages and a still-rebuilding materialized ACL fail closed).
  * Page-less kinds stay visible by definition.
  */
-function inboxCondition(db: KnowledgeTenantTransaction, workspaceId: string, userId: string, principals: readonly Principal[]) {
+function inboxCondition(db: WorkspaceTenantTransaction, workspaceId: string, userId: string, principals: readonly Principal[]) {
   const viewablePages = db.select({ id: page.id }).from(page)
     .where(effectivePageAccessCondition({ workspaceId, principals, required: 'view' }));
   return and(
@@ -60,7 +60,7 @@ function inboxCondition(db: KnowledgeTenantTransaction, workspaceId: string, use
 }
 
 /** Joins the display fields (page title, actor name) for one fetched page of rows. */
-async function decorate(db: KnowledgeTenantTransaction, workspaceId: string, rows: NotificationRow[]): Promise<NotificationItem[]> {
+async function decorate(db: WorkspaceTenantTransaction, workspaceId: string, rows: NotificationRow[]): Promise<NotificationItem[]> {
   const pageIds = [...new Set(rows.map((row) => row.pageId).filter((id): id is string => id !== null))];
   const actorIds = [...new Set(rows.map((row) => (row.payload as { actorId?: unknown }).actorId).filter((id): id is string => typeof id === 'string'))];
   const pages = pageIds.length
@@ -87,7 +87,7 @@ async function decorate(db: KnowledgeTenantTransaction, workspaceId: string, row
 }
 
 /** The inbox list plus the badge count, one keyset page at a time (newest first). */
-export async function listNotificationInbox(db: KnowledgeTenantTransaction, input: unknown): Promise<{
+export async function listNotificationInbox(db: WorkspaceTenantTransaction, input: unknown): Promise<{
   items: NotificationItem[];
   unreadCount: number;
   nextCursor: { before: string; beforeId: string } | null;
@@ -115,7 +115,7 @@ export async function listNotificationInbox(db: KnowledgeTenantTransaction, inpu
 }
 
 /** The badge-only read; the same visibility rule as the list. */
-export async function countUnreadNotifications(db: KnowledgeTenantTransaction, input: unknown): Promise<number> {
+export async function countUnreadNotifications(db: WorkspaceTenantTransaction, input: unknown): Promise<number> {
   const parsed = parse(targetInputSchema, input);
   const principals = await recipientPrincipals(db, parsed.workspaceId, parsed.userId);
   if (!principals) return 0;
@@ -125,7 +125,7 @@ export async function countUnreadNotifications(db: KnowledgeTenantTransaction, i
 }
 
 /** Marks one of the caller's own notifications read; a foreign id is a plain 404 (no existence oracle). */
-export async function markNotificationRead(db: KnowledgeTenantTransaction, input: unknown): Promise<NotificationItem> {
+export async function markNotificationRead(db: WorkspaceTenantTransaction, input: unknown): Promise<NotificationItem> {
   const parsed = parse(readTargetInputSchema, input);
   const [updated] = await db.update(notification)
     .set({ readAt: new Date() })
@@ -155,7 +155,7 @@ export async function markNotificationRead(db: KnowledgeTenantTransaction, input
  * turned invisible (they neither list nor count, so leaving them unread could
  * never be observed anyway, and a re-grant must not resurrect a stale badge).
  */
-export async function markAllNotificationsRead(db: KnowledgeTenantTransaction, input: unknown): Promise<number> {
+export async function markAllNotificationsRead(db: WorkspaceTenantTransaction, input: unknown): Promise<number> {
   const parsed = parse(targetInputSchema, input);
   const updated = await db.update(notification)
     .set({ readAt: new Date() })

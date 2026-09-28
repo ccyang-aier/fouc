@@ -1,3 +1,5 @@
+import { createWorkspaceService } from '../../workspaces/service';
+import type { WorkspaceService } from '../../workspaces/service';
 import { createHash, randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
@@ -5,12 +7,12 @@ import { and, eq } from 'drizzle-orm';
 import { Pool } from 'pg';
 import { principal } from '@fouc/shared/knowledge/contracts';
 import type { OutboxEvent, PageScope, PermissionLevel, Principal, Teamspace } from '@fouc/shared/knowledge/contracts';
-import { blockIndex, page, pageAcl, pageEffectiveAcl } from '../../../platform/database/knowledge/schema';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { blockIndex, page, pageAcl, pageEffectiveAcl } from '../../../platform/database/workspace/schema';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { createAuthTestServer, responseCookie, testPassword } from '../../../platform/identity/auth-test-server';
 import type { FoucIdentity } from '../../../platform/identity/identity';
-import { createOrganizationService } from '../organization/service';
-import type { OrganizationService } from '../organization/service';
+import { createKnowledgeCatalogService } from '../organization/service';
+import type { KnowledgeCatalogService } from '../organization/service';
 import { teamspacePermissionInvalidator } from '../permissions/fence';
 import { replaceAuthorizedPageAcl, withAuthorizedPageTreeMutation } from '../permissions/mutations';
 import { createPermissionRebuildConsumer } from '../permissions/rebuild';
@@ -29,12 +31,12 @@ type CreateReply = { token: string; share: { id: string; pageId: string; level: 
 /** Real HTTP identities/organization, real queue worker, ordinary-role tenant transactions. */
 async function createSharingFixture() {
   let pool!: Pool;
-  let organization!: OrganizationService;
+  let organization!: WorkspaceService & KnowledgeCatalogService;
   const errors: Error[] = [];
   const server = await createAuthTestServer({ mount(app, { auth, database }) {
     pool = new Pool({ ...database.pool.options, max: 8 });
     pool.on('error', (error) => errors.push(error));
-    organization = createOrganizationService(pool, { permissions: teamspacePermissionInvalidator });
+    organization = { ...createWorkspaceService(pool), ...createKnowledgeCatalogService(pool, { permissions: teamspacePermissionInvalidator }) };
     const sharing = createShareLinkService({ auth, pool });
     app.onError(sharingErrorResponse);
     app.use('/test/share*', async (context, next) => { context.header('Cache-Control', 'no-store'); context.header('Referrer-Policy', 'no-referrer'); await next(); });
@@ -85,7 +87,7 @@ async function createSharingFixture() {
   async function resetJobs() {
     for (const runner of runners) await runner.close();
     runners.clear();
-    await admin.query('DELETE FROM knowledge_jobs._private_jobs; DELETE FROM knowledge.outbox');
+    await admin.query('DELETE FROM knowledge_jobs._private_jobs; DELETE FROM workspace.outbox');
   }
   async function tree(options: { tenant?: 'alpha' | 'beta'; defaultAccess?: PermissionLevel | null; breaks?: number[] } = {}) {
     const tenant = options.tenant === 'beta' ? { workspaceId: beta.id, author: foreign } : { workspaceId: alpha.id, author: owner };
@@ -102,7 +104,7 @@ async function createSharingFixture() {
       nodes.push({ workspaceId: tenant.workspaceId, pageId: id, parentId: parent?.pageId ?? null, path: `${parent ? `${parent.path}.` : ''}${id.replaceAll('-', '_')}` });
     }
     const root = { workspaceId: tenant.workspaceId, pageId: nodes[0]!.pageId };
-    await withKnowledgeTenant(pool, tenant.workspaceId, (db) => withAuthorizedPageTreeMutation(db, root, async () => {
+    await withWorkspaceTenant(pool, tenant.workspaceId, (db) => withAuthorizedPageTreeMutation(db, root, async () => {
       await db.insert(page).values(nodes.map((node, index) => ({ workspaceId: tenant.workspaceId, id: node.pageId, parentId: node.parentId, path: node.path,
         teamspaceId: space.id, position: `a${index}`, createdBy: tenant.author.identity.userId,
         inheritsPermissions: !options.breaks?.includes(index) })));
@@ -113,10 +115,10 @@ async function createSharingFixture() {
   }
   /** P03-style authorized caller prepares authority; fences coalesce into the next drain. */
   function grant(node: PageScope, grants: { principal: Principal; level: PermissionLevel }[]) {
-    return withKnowledgeTenant(pool, node.workspaceId, (db) => replaceAuthorizedPageAcl(db, { workspaceId: node.workspaceId, pageId: node.pageId, grants }));
+    return withWorkspaceTenant(pool, node.workspaceId, (db) => replaceAuthorizedPageAcl(db, { workspaceId: node.workspaceId, pageId: node.pageId, grants }));
   }
   async function accessible(scope: PageScope, subjects: readonly Principal[], required: PermissionLevel = 'view') {
-    return withKnowledgeTenant(pool, scope.workspaceId, async (db) => ({
+    return withWorkspaceTenant(pool, scope.workspaceId, async (db) => ({
       pages: (await db.select({ id: page.id }).from(page).where(and(eq(page.id, scope.pageId), effectivePageAccessCondition({ workspaceId: scope.workspaceId, principals: [...subjects], required })))).length,
       blocks: (await db.select({ id: blockIndex.id }).from(blockIndex).where(and(eq(blockIndex.pageId, scope.pageId), indexedBlockAccessCondition({ workspaceId: scope.workspaceId, principals: [...subjects] })))).length,
     }));
@@ -138,7 +140,7 @@ async function createSharingFixture() {
     return response.json() as Promise<LinkDecision>;
   }
   async function aclEvents(workspaceId: string) {
-    const result = await admin.query<{ payload: AclEvent }>("SELECT payload FROM knowledge.outbox WHERE workspace_id=$1 AND topic='acl.changed'", [workspaceId]);
+    const result = await admin.query<{ payload: AclEvent }>("SELECT payload FROM workspace.outbox WHERE workspace_id=$1 AND topic='acl.changed'", [workspaceId]);
     return result.rows.map((row) => row.payload);
   }
   return { server, admin, pool, owner, reader, foreign, alpha, beta, organization, errors,
@@ -172,7 +174,7 @@ describe('share link permissions with real PostgreSQL, HTTP and sessions', () =>
     // The plaintext appears exactly once, in the creation response.
     expect(body.split(created.token)).toHaveLength(2);
 
-    const row = (await fixture.admin.query('SELECT * FROM knowledge.share_link WHERE workspace_id=$1 AND id=$2', [fixture.alpha.id, created.share.id])).rows[0];
+    const row = (await fixture.admin.query('SELECT * FROM workspace.share_link WHERE workspace_id=$1 AND id=$2', [fixture.alpha.id, created.share.id])).rows[0];
     expect(row.token_hash).toBe(createHash('sha256').update(created.token, 'utf8').digest('hex'));
     expect(JSON.stringify(row)).not.toContain(created.token);
     expect(row.level).toBe('comment');
@@ -199,7 +201,7 @@ describe('share link permissions with real PostgreSQL, HTTP and sessions', () =>
     const elevated = await fixture.linkAccess({ token: created.token, pageId: pages[2].pageId, action: 'edit' });
     expect(await elevated.json()).toMatchObject({ authorized: false, level: null });
 
-    const materialized = await withKnowledgeTenant(fixture.pool, fixture.alpha.id, (db) =>
+    const materialized = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) =>
       db.select().from(pageEffectiveAcl).where(and(eq(pageEffectiveAcl.workspaceId, fixture.alpha.id), eq(pageEffectiveAcl.pageId, pages[1].pageId))));
     expect(materialized[0]!.view).toContain(`link:${created.share.id}`);
   }, 60_000);
@@ -212,7 +214,7 @@ describe('share link permissions with real PostgreSQL, HTTP and sessions', () =>
     const created = await (await fixture.create(fixture.owner.cookie, { workspaceId: fixture.alpha.id, pageId: shared.pages[1].pageId, level: 'view', expiresAt: null })).json() as CreateReply;
     await fixture.drain();
 
-    const principals = await withKnowledgeTenant(fixture.pool, fixture.alpha.id, async (db) =>
+    const principals = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, async (db) =>
       verifyShareLink(db, shareLinkLocator(created.token)!));
     expect(principals?.principals).toEqual([`link:${created.share.id}`]);
     expect(principals?.workspaceId).toBe(fixture.alpha.id);
@@ -253,17 +255,17 @@ describe('share link permissions with real PostgreSQL, HTTP and sessions', () =>
     expect((await fixture.resolve({ token: created.token, pageId: root.pageId, action: 'view' })).authorized).toBe(true);
 
     const before = await fixture.aclEvents(fixture.alpha.id);
-    await fixture.admin.query("UPDATE knowledge.share_link SET expires_at = now() - interval '1 second' WHERE workspace_id=$1 AND id=$2", [fixture.alpha.id, created.share.id]);
+    await fixture.admin.query("UPDATE workspace.share_link SET expires_at = now() - interval '1 second' WHERE workspace_id=$1 AND id=$2", [fixture.alpha.id, created.share.id]);
     const denied = await fixture.linkAccess({ token: created.token, pageId: root.pageId, action: 'view' });
     expect(await denied.json()).toEqual({ workspaceId: fixture.alpha.id, pageId: root.pageId, authorized: false, level: null });
     // Time-based expiry needs no fence: the credential check alone fails closed.
     expect(await fixture.aclEvents(fixture.alpha.id)).toEqual(before);
 
-    const count = (await fixture.admin.query('SELECT count(*)::int AS n FROM knowledge.share_link')).rows[0].n;
+    const count = (await fixture.admin.query('SELECT count(*)::int AS n FROM workspace.share_link')).rows[0].n;
     const stale = await fixture.create(fixture.owner.cookie, { workspaceId: fixture.alpha.id, pageId: root.pageId, level: 'view', expiresAt: '2000-01-01T00:00:00Z' });
     expect(stale.status).toBe(400);
     expect(((await stale.json()) as { code: string }).code).toBe('INVALID_SHARING_INPUT');
-    expect((await fixture.admin.query('SELECT count(*)::int AS n FROM knowledge.share_link')).rows[0].n).toBe(count);
+    expect((await fixture.admin.query('SELECT count(*)::int AS n FROM workspace.share_link')).rows[0].n).toBe(count);
   }, 60_000);
 
   test('revocation takes effect immediately and idempotently removes the grant', async () => {
@@ -291,7 +293,7 @@ describe('share link permissions with real PostgreSQL, HTTP and sessions', () =>
     await fixture.drain();
     expect((await fixture.resolve({ token: created.token, pageId: pages[2].pageId, action: 'view' })).authorized).toBe(false);
 
-    const persisted = await withKnowledgeTenant(fixture.pool, fixture.alpha.id, async (db) => {
+    const persisted = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, async (db) => {
       const [grant] = await db.select().from(pageAcl).where(and(eq(pageAcl.workspaceId, fixture.alpha.id), eq(pageAcl.principal, `link:${created.share.id}`)));
       const [effective] = await db.select().from(pageEffectiveAcl).where(and(eq(pageEffectiveAcl.workspaceId, fixture.alpha.id), eq(pageEffectiveAcl.pageId, pages[2].pageId)));
       return { grant, effective };
@@ -351,13 +353,13 @@ describe('share link permissions with real PostgreSQL, HTTP and sessions', () =>
     const promoted = await fixture.create(fixture.reader.cookie, body);
     expect(promoted.status).toBe(201);
 
-    const count = (await fixture.admin.query('SELECT count(*)::int AS n FROM knowledge.share_link')).rows[0].n;
+    const count = (await fixture.admin.query('SELECT count(*)::int AS n FROM workspace.share_link')).rows[0].n;
     // The shareable ceiling is comment, and only the declared fields exist.
     for (const invalid of [{ ...body, level: 'edit' }, { ...body, level: 'full' }, { ...body, level: 'admin' },
       { ...body, extra: 1 }, { workspaceId: fixture.alpha.id, pageId: root.pageId, level: 'view' }]) {
       expect((await fixture.create(fixture.owner.cookie, invalid)).status).toBe(400);
     }
-    expect((await fixture.admin.query('SELECT count(*)::int AS n FROM knowledge.share_link')).rows[0].n).toBe(count);
+    expect((await fixture.admin.query('SELECT count(*)::int AS n FROM workspace.share_link')).rows[0].n).toBe(count);
     const missing = await fixture.create(fixture.owner.cookie, { ...body, pageId: randomUUID() });
     expect(missing.status).toBe(404);
 
@@ -387,7 +389,7 @@ describe('share link permissions with real PostgreSQL, HTTP and sessions', () =>
 
     // Repeating a link ID in another tenant cannot import the first tenant's access.
     const forged = betaLink.token.replace(betaLink.share.id, alphaLink.share.id);
-    await fixture.admin.query('UPDATE knowledge.share_link SET id=$3, token_hash=$4 WHERE workspace_id=$1 AND id=$2',
+    await fixture.admin.query('UPDATE workspace.share_link SET id=$3, token_hash=$4 WHERE workspace_id=$1 AND id=$2',
       [fixture.beta.id, betaLink.share.id, alphaLink.share.id, createHash('sha256').update(forged, 'utf8').digest('hex')]);
     expect((await fixture.resolve({ token: forged, pageId: alphaTree.root.pageId, action: 'view' })).authorized).toBe(false);
     expect((await fixture.resolve({ token: alphaLink.token, pageId: alphaTree.root.pageId, action: 'view' })).authorized).toBe(true);
@@ -413,16 +415,16 @@ describe('share link permissions with real PostgreSQL, HTTP and sessions', () =>
     await fixture.grant(root, [{ principal: principal('user', fixture.owner.identity.userId), level: 'full' }]);
     await fixture.drain();
     const canary = 'private-database-error-canary';
-    await fixture.admin.query(`CREATE FUNCTION knowledge.reject_share_test() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION '${canary}'; END $$`);
-    await fixture.admin.query('CREATE TRIGGER reject_share_test BEFORE INSERT ON knowledge.share_link FOR EACH ROW EXECUTE FUNCTION knowledge.reject_share_test()');
+    await fixture.admin.query(`CREATE FUNCTION workspace.reject_share_test() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION '${canary}'; END $$`);
+    await fixture.admin.query('CREATE TRIGGER reject_share_test BEFORE INSERT ON workspace.share_link FOR EACH ROW EXECUTE FUNCTION workspace.reject_share_test()');
     try {
       const response = await fixture.create(fixture.owner.cookie, { workspaceId: fixture.alpha.id, pageId: root.pageId, level: 'view', expiresAt: null });
       expect(response.status).toBe(503);
       expect(await response.text()).not.toContain(canary);
       expect(response.headers.get('cache-control')).toBe('no-store');
     } finally {
-      await fixture.admin.query('DROP TRIGGER reject_share_test ON knowledge.share_link');
-      await fixture.admin.query('DROP FUNCTION knowledge.reject_share_test()');
+      await fixture.admin.query('DROP TRIGGER reject_share_test ON workspace.share_link');
+      await fixture.admin.query('DROP FUNCTION workspace.reject_share_test()');
     }
     expect(fixture.server.database.idleErrors).toHaveLength(0);
     // Malformed tokens never reach the database.

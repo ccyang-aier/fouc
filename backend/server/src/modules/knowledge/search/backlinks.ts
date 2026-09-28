@@ -3,9 +3,9 @@ import { and, asc, eq, inArray, isNull, or, sql } from 'drizzle-orm';
 import type { Pool } from 'pg';
 import { blockIdSchema, entityIdSchema, pageScopeSchema, principalSchema } from '@fouc/shared/knowledge/contracts';
 import type { PageScope, Principal } from '@fouc/shared/knowledge/contracts';
-import { backlink, docState, page } from '../../../platform/database/knowledge/schema';
-import type { KnowledgeTenantTransaction } from '../../../platform/database/knowledge/tenant';
-import { withKnowledgeTenant } from '../../../platform/database/knowledge/tenant';
+import { backlink, docState, page } from '../../../platform/database/workspace/schema';
+import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
+import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { effectivePageAccessCondition } from '../permissions/queries';
 import { KnowledgePermissionError } from '../permissions/errors';
 import type { KnowledgeConsumer } from '../workers/types';
@@ -96,7 +96,7 @@ export function extractPageBodyReferences(document: Y.Doc): PageBodyReference[] 
  *    悬链，由编辑器通过显式 pageId 消歧。
  * 块引用的 dstBlockId 只记录锚点文本；该块是否仍存在由渲染时的来源页定位（L02）。
  */
-export async function resolvePageReferences(db: KnowledgeTenantTransaction, scope: PageScope, references: readonly PageBodyReference[]): Promise<ResolvedPageReference[]> {
+export async function resolvePageReferences(db: WorkspaceTenantTransaction, scope: PageScope, references: readonly PageBodyReference[]): Promise<ResolvedPageReference[]> {
   if (!pageScopeSchema.safeParse(scope).success) throw new TypeError('Invalid page scope');
   const explicitIds = [...new Set(references.flatMap((reference) => (reference.explicitPageId ? [reference.explicitPageId] : [])))];
   const titles = [...new Set(references.filter((reference) => !reference.explicitPageId && reference.target).map((reference) => reference.target))];
@@ -141,7 +141,7 @@ export interface PageBacklinkRefresh {
  * doc_state 行 FOR UPDATE 串行化同页并发重算；无 doc_state（正文从未持久化或页面
  * 已删除）时清空该页出链。删除+插入同事务提交，重跑结果恒等（幂等）。
  */
-export async function refreshPageBacklinks(db: KnowledgeTenantTransaction, scope: PageScope, signal?: AbortSignal): Promise<PageBacklinkRefresh> {
+export async function refreshPageBacklinks(db: WorkspaceTenantTransaction, scope: PageScope, signal?: AbortSignal): Promise<PageBacklinkRefresh> {
   if (!pageScopeSchema.safeParse(scope).success) throw new TypeError('Invalid page scope');
   signal?.throwIfAborted();
   const [stored] = await db.select({ state: docState.state }).from(docState)
@@ -170,14 +170,14 @@ export function createBacklinkConsumer(pool: Pool): KnowledgeConsumer {
     topic: 'doc.changed',
     async handle(event, context) {
       if (event.topic !== 'doc.changed') throw new TypeError('Unexpected event topic');
-      await withKnowledgeTenant(pool, event.workspaceId, (db) =>
+      await withWorkspaceTenant(pool, event.workspaceId, (db) =>
         refreshPageBacklinks(db, { workspaceId: event.workspaceId, pageId: event.pageId }, context.signal));
     },
   };
 }
 
 /** 某页当前的出链视图（含悬链状态），从 doc_state 即时计算，不读缓存表。 */
-export async function readPageOutgoingReferences(db: KnowledgeTenantTransaction, scope: PageScope, signal?: AbortSignal): Promise<ResolvedPageReference[]> {
+export async function readPageOutgoingReferences(db: WorkspaceTenantTransaction, scope: PageScope, signal?: AbortSignal): Promise<ResolvedPageReference[]> {
   if (!pageScopeSchema.safeParse(scope).success) throw new TypeError('Invalid page scope');
   signal?.throwIfAborted();
   const [stored] = await db.select({ state: docState.state }).from(docState)
@@ -201,7 +201,7 @@ export interface PageBacklink {
  * 不可见；悬链不落表，因此也从不泄漏目标存在性。调用方自行完成对目标页本身的
  * 授权（本查询不是目标页的访问判断）。principals 必须来自服务端已验证身份展开。
  */
-export async function readPageBacklinks(db: KnowledgeTenantTransaction, input: { workspaceId: string; pageId: string; principals: readonly Principal[] }): Promise<PageBacklink[]> {
+export async function readPageBacklinks(db: WorkspaceTenantTransaction, input: { workspaceId: string; pageId: string; principals: readonly Principal[] }): Promise<PageBacklink[]> {
   const scope = pageScopeSchema.safeParse({ workspaceId: input.workspaceId, pageId: input.pageId });
   if (!scope.success || !input.principals.every((value) => principalSchema.safeParse(value).success)) {
     throw new KnowledgePermissionError('INVALID_PERMISSION_INPUT');
@@ -220,7 +220,7 @@ export async function readPageBacklinks(db: KnowledgeTenantTransaction, input: {
 }
 
 /** 测试与验收脚本使用的行级观察口；生产读取一律走上方权限过滤查询。 */
-export async function countPageBacklinkRows(db: KnowledgeTenantTransaction, workspaceId: string): Promise<number> {
+export async function countPageBacklinkRows(db: WorkspaceTenantTransaction, workspaceId: string): Promise<number> {
   const [row] = await db.select({ total: sql<number>`count(*)::int` }).from(backlink).where(eq(backlink.workspaceId, workspaceId));
   return row?.total ?? 0;
 }

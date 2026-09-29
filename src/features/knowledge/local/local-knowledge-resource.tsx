@@ -151,8 +151,7 @@ function LocalCreationDialog({ kind, onClose, onCreate }: { kind: 'document' | '
   useEffect(() => { if (kind) dialog.current?.showModal(); else dialog.current?.close(); }, [kind]);
   return <dialog ref={dialog} aria-label={kind === 'base' ? '新建本机知识库' : kind === 'folder' ? '新建文件夹' : '新建本机文档'} onCancel={onClose} onClose={onClose} className="m-auto w-[400px] max-w-[calc(100vw-32px)] rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-7 text-[var(--ink)] shadow-xl backdrop:bg-black/25 backdrop:backdrop-blur-sm">
     <form onSubmit={(event) => { event.preventDefault(); if (name.trim()) { onCreate(name.trim()); setName(''); } }}>
-      <h2 className="mb-2 text-base font-semibold">{kind === 'base' ? '新建本机知识库' : kind === 'folder' ? '新建文件夹' : '新建文档'}</h2>
-      <p className="mb-5 text-xs text-[var(--muted)]">仅保存在本机，无需设置团队权限。</p>
+      <h2 className="mb-5 text-base font-semibold">{kind === 'base' ? '新建本机知识库' : kind === 'folder' ? '新建文件夹' : '新建文档'}</h2>
       <label className="block text-xs">名称<input autoFocus required value={name} onChange={(event) => setName(event.target.value)} className="mt-2 h-10 w-full rounded-lg border border-[var(--line)] bg-transparent px-3 outline-none focus:border-[var(--accent)]" /></label>
       <div className="mt-6 flex justify-end gap-2"><Button type="button" variant="ghost" onClick={() => { setName(''); onClose(); }}>取消</Button><Button type="submit" disabled={!name.trim()}>创建</Button></div>
     </form>

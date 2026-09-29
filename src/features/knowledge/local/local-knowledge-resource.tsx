@@ -6,7 +6,6 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { FilePlus } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { useIdentity } from '@/features/identity/identity-provider';
-import { CanvasState } from '../canvas-states';
 import { KnowledgeWorkbench } from '../knowledge-workbench';
 import { PageTreeSidebar } from '../navigation/page-tree-sidebar';
 import { SIDEBAR_MAIN_ITEMS } from '../dense-sidebar/sidebar-navigation';
@@ -15,6 +14,7 @@ import { useI18n } from '../dense-sidebar/use-i18n';
 import { createLocalLibraryStore, emptyLocalLibrary, newLocalDocument, type LocalDocument } from './local-library';
 import { LocalDocumentEditor } from './local-document-editor';
 import { LocalLibraryNavigation } from './local-library-navigation';
+import { LocalLibraryEmptyState } from './local-library-empty-state';
 import { DocumentsPage } from '../documents/documents-page';
 import { LocalDocumentImport } from '../documents/local-document-import';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuCheckboxItem } from '@/components/ui/dropdown-menu';
@@ -94,7 +94,7 @@ function LocalKnowledgeContent({ workspaceId, store, onOpenSettings, onOpenWorks
         onRemoveTag={(id) => { write((current) => ({ ...current, tags: current.tags.filter((tag) => tag.id !== id) })); if (activeTagId === id) setActiveTagId(null); }}
       />}
     />}
-    onExpandSidebar={collapsed && (selected || view !== 'all-documents') ? () => setCollapsed(false) : undefined}
+    onExpandSidebar={collapsed ? () => setCollapsed(false) : undefined}
     overlays={<LocalCreationDialog kind={creation} onClose={() => setCreation(null)} onCreate={(name) => {
       if (creation === 'base') {
         const id = crypto.randomUUID();
@@ -117,7 +117,7 @@ function LocalKnowledgeContent({ workspaceId, store, onOpenSettings, onOpenWorks
       setCreation(null);
     }} />}
   >
-      {!base ? <CanvasState title="还没有知识库" hint="在当前工作空间新建知识库，开始整理资料。" actions={<Button onClick={() => setCreation('base')}>新建知识库</Button>} /> : selected ? <LocalDocumentEditor key={selected.id} document={selected} onChange={(patch) => updateDocument(selected.id, patch)} onBack={() => setSelectedId(null)} /> : view === 'all-documents' ? <DocumentsPage key={`${base.id}:${folderId ?? activeTagId ?? 'all'}`}
+      {!base ? <LocalLibraryEmptyState onCreate={() => setCreation('base')} /> : selected ? <LocalDocumentEditor key={selected.id} document={selected} onChange={(patch) => updateDocument(selected.id, patch)} onBack={() => setSelectedId(null)} /> : view === 'all-documents' ? <DocumentsPage key={`${base.id}:${folderId ?? activeTagId ?? 'all'}`}
         onExpandSidebar={collapsed ? () => setCollapsed(false) : undefined}
         documents={listed.map((item) => ({ id: item.id, title: item.title, updatedAt: item.updatedAt, creator: item.creator ?? '我', source: item.source ?? '本机文档', status: item.indexStatus ?? '暂无状态', starred: item.starred, folderId: item.folderId }))}
         folders={activeTagId ? [] : folders.map((folder) => ({ id: folder.id, name: folder.name, count: live.filter((item) => item.folderId === folder.id).length, updatedAt: live.filter((item) => item.folderId === folder.id).map((item) => item.updatedAt).sort().at(-1) }))}

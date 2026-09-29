@@ -214,7 +214,7 @@ function WorkspaceKnowledgeResource({ onOpenSettings, onOpenLocal, onOpenWorkspa
         createLabel="新建知识库"
         treeArea={stageActive ? treeArea : null}
       />}
-      onExpandSidebar={sidebarCollapsed && (selectedPageId || libraryView !== 'all-documents' || !stageActive) ? () => setSidebarCollapsed(false) : undefined}
+      onExpandSidebar={sidebarCollapsed ? () => setSidebarCollapsed(false) : undefined}
       overlays={<>
         {activeId ? <CreateKnowledgeBaseDialog workspaceId={activeId} open={createKnowledgeBaseOpen} onClose={() => setCreateKnowledgeBaseOpen(false)} onCreated={(id) => { setChosenBaseId(id); setSelectedTeamspaceId(null); setSelectedPageId(null); setLibraryView('all-documents'); notify('success', '知识库已创建'); }} /> : null}
         {activeWorkspace && activeBase ? <CreateTeamspaceDialog knowledgeBaseId={activeBase.id} workspaceId={activeWorkspace.id} open={createTeamspaceOpen} onClose={() => setCreateTeamspaceOpen(false)} onCreated={(teamspace) => { setSelectedTeamspaceId(teamspace.id); setSelectedPageId(null); setLibraryView('overview'); }} /> : null}

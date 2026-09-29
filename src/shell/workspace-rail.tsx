@@ -317,7 +317,7 @@ export function WorkspaceRail({
         </div>
       ) : null}
 
-      <div className="mt-auto flex flex-col items-center gap-2 border-t border-[var(--wt-sidebar-edge)] pt-3">
+      <div className="mt-auto flex flex-col items-center gap-2 pt-3">
         <Tooltip>
           <TooltipTrigger asChild>
             <button

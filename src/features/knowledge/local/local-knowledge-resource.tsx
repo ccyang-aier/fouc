@@ -79,15 +79,12 @@ function LocalKnowledgeContent({ workspaceId, store, onOpenSettings, onOpenWorks
         view={view}
         counts={counts}
         selectedId={selectedId}
-        folderId={folderId}
         activeTagId={activeTagId}
         folders={folders}
         documents={live}
         tags={tags}
         onSelectMain={(next) => { setView(next); setSelectedId(null); setFolderId(null); setActiveTagId(null); }}
-        onSelectFolder={(id) => { setFolderId(id); setActiveTagId(null); setSelectedId(null); setView('all-documents'); }}
         onSelectDocument={setSelectedId}
-        onSelectTag={(id) => { setActiveTagId(id); setFolderId(null); setSelectedId(null); setView('all-documents'); }}
         onCreateFolder={() => setCreation(base ? 'folder' : 'base')}
         onCreateDocument={() => setCreation(base ? 'document' : 'base')}
         onCreateDocumentInFolder={(id) => { setFolderId(id); setActiveTagId(null); setSelectedId(null); setView('all-documents'); setCreation('document'); }}

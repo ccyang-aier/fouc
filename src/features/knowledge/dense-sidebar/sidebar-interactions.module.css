@@ -58,6 +58,11 @@
   color: var(--foreground);
 }
 
+.transientRow:not(:hover):focus-within {
+  background: transparent;
+  color: var(--sidebar-text);
+}
+
 .actions {
   position: absolute;
   right: 4px;

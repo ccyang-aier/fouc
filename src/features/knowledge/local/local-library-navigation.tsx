@@ -9,6 +9,7 @@ import { useI18n } from '../dense-sidebar/use-i18n';
 import type { LocalDocument, LocalLibrary, LocalTag } from './local-library';
 
 type MainView = 'all-documents' | 'starred' | 'drafts' | 'trash';
+const emptyHintClassName = 'block w-full py-1 pl-10 pr-2 text-left text-[10px] leading-4 text-[var(--muted)]';
 
 export function LocalLibraryNavigation({
   view, counts, selectedId, folderId, activeTagId, folders, documents, tags,
@@ -67,7 +68,7 @@ export function LocalLibraryNavigation({
       {foldersOpen ? <div className="mt-1 space-y-0.5">
         {folders.map((folder) => <SidebarRow key={folder.id} icon={Folder} label={folder.name} count={documents.filter((doc) => doc.folderId === folder.id).length} selected={folderId === folder.id && !selectedId && !activeTagId} onClick={() => onSelectFolder(folder.id)} />)}
         {documents.filter((doc) => !doc.folderId).map((doc) => <SidebarRow key={doc.id} icon={sidebarIconMap.file} label={doc.title || '无标题文档'} selected={selectedId === doc.id} onClick={() => onSelectDocument(doc.id)} />)}
-        {!documents.length ? <button type="button" onClick={onCreateDocument} className="w-full rounded-md px-2 py-1.5 text-left text-[11px] text-[var(--muted)] hover:bg-[var(--surface-hover)]">暂无文档 · 新建第一个文档</button> : null}
+        {!documents.length ? <button type="button" onClick={onCreateDocument} className={`${emptyHintClassName} rounded-md hover:bg-[var(--surface-hover)]`}>暂无文档 · 新建第一个文档</button> : null}
       </div> : null}
     </section>
 
@@ -76,7 +77,7 @@ export function LocalLibraryNavigation({
       {tagsOpen ? <div className="mt-1 space-y-0.5">
         {creatingTag ? <form onSubmit={submitTag} className="flex items-center gap-1 px-1 py-1"><input autoFocus aria-label="标签名称" value={tagDraft} onChange={(event) => setTagDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Escape') { setCreatingTag(false); setTagDraft(''); } }} className="min-w-0 flex-1 rounded border border-[var(--line)] bg-transparent px-1.5 py-1 text-xs outline-none focus:border-[var(--accent)]" /><button type="submit" disabled={!tagDraft.trim()} className="text-[11px] text-[var(--accent-ink)] disabled:opacity-40">创建</button></form> : null}
         {tags.map((tag) => <div key={tag.id} className="group/tag flex items-center"><div className="min-w-0 flex-1"><SidebarRow icon={Tag} label={tag.name} count={tag.pageIds.filter((id) => documents.some((doc) => doc.id === id)).length} selected={activeTagId === tag.id && !selectedId} onClick={() => onSelectTag(tag.id)} /></div><button type="button" aria-label={`删除标签 ${tag.name}`} onClick={() => onRemoveTag(tag.id)} className="hidden p-1 text-[var(--muted)] hover:text-[var(--err-ink)] group-hover/tag:block focus-visible:block"><Trash size={13} /></button></div>)}
-        {!tags.length && !creatingTag ? <p className="px-2 py-1 text-[11px] text-[var(--muted)]">暂无标签</p> : null}
+        {!tags.length && !creatingTag ? <p className={emptyHintClassName}>暂无标签</p> : null}
       </div> : null}
     </section>
 
@@ -84,7 +85,7 @@ export function LocalLibraryNavigation({
       <SidebarSectionHeader icon={Clock} label="最近" count={recent.length} expanded={recentOpen} onToggle={() => setRecentOpen((open) => !open)} />
       {recentOpen ? <div className="mt-1 space-y-0.5">
         {recent.map((doc) => <SidebarRow key={doc.id} icon={sidebarIconMap.file} label={doc.title || '无标题文档'} selected={selectedId === doc.id} onClick={() => onSelectDocument(doc.id)} />)}
-        {!recent.length ? <p className="px-2 py-1 text-[11px] text-[var(--muted)]">暂无最近文档</p> : null}
+        {!recent.length ? <p className={emptyHintClassName}>暂无最近文档</p> : null}
       </div> : null}
     </section>
   </div>;

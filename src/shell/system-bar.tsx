@@ -36,6 +36,7 @@ const SEARCH_ITEMS: Array<{ label: string; detail: string; view: WorkbenchView }
   { label: "知识库", detail: "查看沉淀的知识", view: "knowledge" },
   { label: "连接器", detail: "管理外部服务", view: "connectors" },
   { label: "设置", detail: "调整 Fouc 偏好", view: "settings" },
+  { label: "帮助与反馈", detail: "查看使用帮助并反馈问题", view: "help" },
 ]
 
 export function SystemBar({ onNavigate }: { onNavigate: (view: WorkbenchView) => void }) {

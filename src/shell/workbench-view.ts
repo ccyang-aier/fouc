@@ -3,7 +3,7 @@
 import { useSyncExternalStore } from 'react';
 import type { WorkbenchView } from './navigation-sidebar';
 
-const views: readonly WorkbenchView[] = ['home', 'settings', 'project-home', 'projects', 'community', 'automation', 'knowledge', 'connectors'];
+const views: readonly WorkbenchView[] = ['home', 'settings', 'help', 'project-home', 'projects', 'community', 'automation', 'knowledge', 'connectors'];
 const viewChanged = 'fouc:view-changed';
 function readView(): WorkbenchView {
   const value = new URLSearchParams(window.location.search).get('view');

@@ -18,6 +18,7 @@ import {
   DotsThree,
   FolderOpen,
   GearSix,
+  Question,
   Lightning,
   PencilSimple,
   Planet,
@@ -45,6 +46,7 @@ import { demonstrationProjectId } from "@/features/project/project-resources"
 export type WorkbenchView =
   | "home"
   | "settings"
+  | "help"
   | "project-home"
   | "projects"
   | "community"
@@ -390,20 +392,25 @@ export function NavigationSidebar({
       {projectsMode ? null : (
         <div
           className={cn(
-            "shrink-0 pb-[9px] pl-[11px] pr-[10px] pt-2 transition-opacity duration-150",
+            "shrink-0 pb-1 pl-[11px] pr-[10px] pt-2 transition-opacity duration-150",
             open ? "delay-100 opacity-100" : "pointer-events-none opacity-0",
           )}
         >
-          <div className="grid gap-1">
+          <div className="grid gap-0.5">
             <NavButton
               item={{ id: "settings", label: "设置", icon: GearSix }}
               active={view === "settings"}
               onSelect={() => onViewChange("settings")}
             />
+            <NavButton
+              item={{ id: "help", label: "帮助与反馈", icon: Question }}
+              active={view === "help"}
+              onSelect={() => onViewChange("help")}
+            />
           </div>
         </div>
       )}
-      {open ? <div className="shrink-0 border-t border-[var(--line)] px-2 py-1"><AccountItem /></div> : null}
+      {open ? <div className="shrink-0 border-t border-[var(--line)] px-2 py-0.5"><AccountItem /></div> : null}
 
       {/* 收起态图标轨道：工作台导航 / 项目管理菜单（折叠形态） */}
       <ScrollArea

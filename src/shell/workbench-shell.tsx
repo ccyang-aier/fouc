@@ -47,6 +47,7 @@ import { ProjectHomeCanvas } from "@/features/project/project-home-canvas"
 import { ProjectIndexCanvas } from "@/features/project/project-index-canvas"
 import "./sidebar-material.css"
 import { SettingsCanvas } from "@/features/settings/settings-canvas"
+import { HelpFeedbackCanvas } from "@/features/help/help-feedback-canvas"
 import { SystemBar } from "./system-bar"
 import { WorkspaceRail } from "./workspace-rail"
 import { useWorkspace } from "@/features/workspaces/workspace-provider"
@@ -156,6 +157,8 @@ export function WorkbenchShell() {
                             <ConnectorsCanvas key={activeSpace.id} onWorkbenchFocus={() => setSidebarCollapsed(true)} />
                           ) : view === "knowledge" ? (
                             <KnowledgePage key={activeSpace.id} onOpenSettings={() => changeView("settings")} />
+                          ) : view === "help" ? (
+                            <HelpFeedbackCanvas onNavigate={changeView} />
                           ) : (
                             <div className="flex h-full items-center justify-center text-[13px] text-[var(--ink-soft)]">
                               该空间已在 V1 规划中，尚未开放

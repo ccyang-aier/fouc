@@ -410,7 +410,7 @@ export function NavigationSidebar({
           </div>
         </div>
       )}
-      {open ? <div className="shrink-0 border-t border-[var(--line)] px-2 py-0.5"><AccountItem /></div> : null}
+      {open ? <div className="shrink-0 border-t border-[var(--line)] px-2 pb-1 pt-2"><AccountItem /></div> : null}
 
       {/* 收起态图标轨道：工作台导航 / 项目管理菜单（折叠形态） */}
       <ScrollArea

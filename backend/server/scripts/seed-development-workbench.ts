@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
+import { eq } from 'drizzle-orm';
 import { generateDrizzleJson, generateMigration } from 'drizzle-kit/api';
 import { createDevelopmentWorkspaces, developmentId } from '@fouc/shared/development-workbench';
 import { repairBlockIds } from '@fouc/shared/knowledge/schema';
@@ -21,7 +22,8 @@ export async function seedDevelopmentWorkbench() {
   const connections = await readFoucDatabaseConnections();
   const target = new URL(connections.admin);
   // The development PostgreSQL instance may run in the local WSL private network.
-  if (target.pathname !== '/fouc' || !/^(localhost|127\.0\.0\.1|172\.17\.\d+\.\d+)$/.test(target.hostname)) {
+  const localHost = target.hostname === 'localhost' || target.hostname === '127.0.0.1' || /^172\.(1[6-9]|2\d|3[01])\.\d+\.\d+$/.test(target.hostname);
+  if (target.pathname !== '/fouc' || !localHost) {
     throw new Error('This command only resets the local fouc development database.');
   }
   const admin = new Pool({ connectionString: connections.admin, max: 1 });
@@ -41,23 +43,24 @@ export async function seedDevelopmentWorkbench() {
     await client.query(`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA workspace TO ${name}`);
     await client.query(`GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA workspace TO ${name}`);
     const db = drizzle(client);
-    const users = await db.select({ id: authUser.id }).from(authUser);
+    const adminEmail = (process.env.FOUC_ADMIN_EMAIL ?? 'admin@fouc.local').toLowerCase();
+    const [adminUser] = await db.select({ id: authUser.id }).from(authUser).where(eq(authUser.email, adminEmail));
+    if (!adminUser) throw new Error(`Create the built-in admin account before seeding development workspaces: ${adminEmail}`);
     const fixtures = createDevelopmentWorkspaces();
     const schema = markdownSchema();
     for (const [index, space] of fixtures.entries()) {
       await db.insert(tables.workspace).values({ id: space.id, name: space.name, kind: index === 1 ? 'personal' : 'team' });
-      if (users.length) await db.insert(tables.member).values(users.map((user) => ({ workspaceId: space.id, userId: user.id, role: 'owner' as const })));
-      if (index === 0) await db.insert(tables.project).values({ workspaceId: space.id, id: developmentId(0x50000000, 1), name: 'Fouc 桌面端 V1', createdBy: users[0]?.id });
+      await db.insert(tables.member).values({ workspaceId: space.id, userId: adminUser.id, role: 'owner' });
+      if (index === 0) await db.insert(tables.project).values({ workspaceId: space.id, id: developmentId(0x50000000, 1), name: 'Fouc 桌面端 V1', createdBy: adminUser.id });
       for (const base of space.bases) {
         await db.insert(tables.knowledgeBase).values({ id: base.id, workspaceId: space.id, name: base.name });
         if (base.folders.length) await db.insert(tables.teamspace).values(base.folders.map((folder) => ({ ...folder, defaultAccess: 'edit' as const })));
         for (const [position, document] of base.documents.entries()) {
-          if (!users[0]) continue;
           const scope = { workspaceId: space.id, pageId: document.id };
           const principals = [`workspace:${space.id}` as const];
           await db.insert(tables.page).values({ workspaceId: space.id, id: document.id, teamspaceId: document.folderId,
             path: document.id.replaceAll('-', '_'), position: `a${String(position).padStart(4, '0')}`, title: document.title,
-            createdBy: users[0].id, updatedAt: new Date(document.updatedAt),
+            createdBy: adminUser.id, updatedAt: new Date(document.updatedAt),
             properties: { displayCreator: document.creator, fileSource: document.source, indexStatus: document.indexStatus },
           });
           const node = repairBlockIds(schema.nodeFromJSON(document.body)).doc;
@@ -79,7 +82,7 @@ export async function seedDevelopmentWorkbench() {
     const queue = await client.query("SELECT to_regclass('knowledge_jobs._private_jobs') AS table_name");
     if (queue.rows[0].table_name) await client.query('DELETE FROM knowledge_jobs._private_jobs');
     await client.query('COMMIT');
-    const documentCount = users.length ? fixtures.reduce((sum, space) => sum + space.bases.reduce((count, base) => count + base.documents.length, 0), 0) : 0;
+    const documentCount = fixtures.reduce((sum, space) => sum + space.bases.reduce((count, base) => count + base.documents.length, 0), 0);
     console.log(`Development workbench ready: ${fixtures.length} workspaces, ${fixtures.reduce((sum, space) => sum + space.bases.length, 0)} knowledge bases, ${documentCount} documents. Accounts preserved.`);
   } catch (error) {
     await client.query('ROLLBACK');

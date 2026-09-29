@@ -1,15 +1,12 @@
-import { createDevelopmentWorkspaces } from '@fouc/shared/development-workbench';
-
 export type RailSpace = { id: string; label: string; pinned: boolean; kind: 'local' | 'server' };
 export type WorkspaceSelection = { localSpaces: RailSpace[]; activeId: string; serverPins: Record<string, boolean> };
-export const workspaceSelectionKey = 'fouc.workspaces.current';
-export const DEFAULT_SPACES: RailSpace[] = process.env.NODE_ENV === 'development'
-  ? createDevelopmentWorkspaces().map((space) => ({ id: space.id, label: space.name, pinned: true, kind: 'local' }))
-  : [{ id: 'personal-workspace', label: '个人工作台', pinned: true, kind: 'local' }];
+export const workspaceSelectionKey = 'fouc.workspaces.selection';
+export const DEFAULT_SPACE: RailSpace = { id: 'personal-workspace', label: '默认工作区', pinned: true, kind: 'local' };
+export const DEFAULT_SPACES: RailSpace[] = [DEFAULT_SPACE];
 
 /** Application selection, not identity, owns the active resource boundary. */
 export function createWorkspaceStore(storage: Pick<Storage, 'getItem' | 'setItem'> | null) {
-  let snapshot: WorkspaceSelection = { localSpaces: DEFAULT_SPACES, activeId: DEFAULT_SPACES[0].id, serverPins: {} };
+  let snapshot: WorkspaceSelection = { localSpaces: DEFAULT_SPACES, activeId: DEFAULT_SPACE.id, serverPins: {} };
   try {
     const saved = storage?.getItem(workspaceSelectionKey);
     if (saved) snapshot = JSON.parse(saved) as WorkspaceSelection;
@@ -31,7 +28,7 @@ export function createWorkspaceStore(storage: Pick<Storage, 'getItem' | 'setItem
     },
     updateSpaces(spaces: RailSpace[]) {
       const serverIds = new Set(spaces.filter((space) => space.kind === 'server').map((space) => space.id));
-      const localSpaces = [...spaces.filter((space) => space.kind === 'local'), ...snapshot.localSpaces.filter((space) => serverIds.has(space.id))];
+      const localSpaces = [DEFAULT_SPACE, ...spaces.filter((space) => space.kind === 'local' && space.id !== DEFAULT_SPACE.id), ...snapshot.localSpaces.filter((space) => serverIds.has(space.id) && space.id !== DEFAULT_SPACE.id)];
       const serverPins = { ...snapshot.serverPins };
       for (const space of spaces) if (space.kind === 'server') serverPins[space.id] = space.pinned;
       update({ ...snapshot, localSpaces, serverPins });

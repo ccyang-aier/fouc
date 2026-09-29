@@ -3,22 +3,21 @@
 /** Local storage is a resource capability, independent of account identity. */
 
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { FilePlus, Folder, LockSimple, Plus } from '@phosphor-icons/react';
+import { FilePlus } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { useIdentity } from '@/features/identity/identity-provider';
 import { CanvasState } from '../canvas-states';
 import { KnowledgeWorkbench } from '../knowledge-workbench';
 import { PageTreeSidebar } from '../navigation/page-tree-sidebar';
-import { IconButton } from '../dense-sidebar/icon-button';
-import { SidebarRow, SidebarSectionHeader, sidebarIconMap } from '../dense-sidebar/sidebar-navigation-primitives';
 import { SIDEBAR_MAIN_ITEMS } from '../dense-sidebar/sidebar-navigation';
 import { useKnowledgeBaseSelection } from '../use-knowledge-base-selection';
 import { useI18n } from '../dense-sidebar/use-i18n';
 import { createLocalLibraryStore, emptyLocalLibrary, newLocalDocument, type LocalDocument } from './local-library';
 import { LocalDocumentEditor } from './local-document-editor';
+import { LocalLibraryNavigation } from './local-library-navigation';
 import { DocumentsPage } from '../documents/documents-page';
 import { LocalDocumentImport } from '../documents/local-document-import';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuCheckboxItem } from '@/components/ui/dropdown-menu';
 import { DotsThree } from '@phosphor-icons/react';
 
 type View = 'all-documents' | 'starred' | 'drafts' | 'trash';
@@ -42,14 +41,16 @@ function LocalKnowledgeContent({ workspaceId, store, onOpenSettings, onOpenWorks
   const [folderId, setFolderId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(false);
-  const [foldersOpen, setFoldersOpen] = useState(true);
+  const [activeTagId, setActiveTagId] = useState<string | null>(null);
   const [creation, setCreation] = useState<'document' | 'base' | 'folder' | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const base = library.bases.find((item) => item.id === baseId) ?? library.bases[0];
   const documents = library.documents.filter((item) => item.baseId === base?.id);
   const folders = library.folders.filter((folder) => folder.knowledgeBaseId === base?.id);
-  const listed = documents.filter((item) => !item.deleted && (!folderId || item.folderId === folderId));
   const live = documents.filter((item) => !item.deleted);
+  const tags = library.tags.filter((tag) => tag.baseId === base?.id);
+  const activeTag = tags.find((tag) => tag.id === activeTagId);
+  const listed = live.filter((item) => activeTag ? activeTag.pageIds.includes(item.id) : !folderId || item.folderId === folderId);
   const visible = documents.filter((item) => view === 'trash' ? item.deleted : !item.deleted && (view === 'starred' ? item.starred : view === 'drafts' ? item.draft : true));
   const selected = live.find((item) => item.id === selectedId);
   const counts = { 'all-documents': live.length, starred: live.filter((item) => item.starred).length, drafts: live.filter((item) => item.draft).length, trash: documents.filter((item) => item.deleted).length };
@@ -60,35 +61,69 @@ function LocalKnowledgeContent({ workspaceId, store, onOpenSettings, onOpenWorks
   function updateDocument(id: string, patch: Partial<LocalDocument>) {
     write((current) => ({ ...current, documents: current.documents.map((item) => item.id === id ? { ...item, ...patch, updatedAt: new Date().toISOString() } : item) }));
   }
+  function toggleDocumentTag(tagId: string, documentId: string) {
+    write((current) => ({ ...current, tags: current.tags.map((tag) => tag.id === tagId ? { ...tag, pageIds: tag.pageIds.includes(documentId) ? tag.pageIds.filter((id) => id !== documentId) : [...tag.pageIds, documentId] } : tag) }));
+  }
   const title = selected ? selected.title : SIDEBAR_MAIN_ITEMS.find((item) => item.id === view)?.labelKey;
   return <KnowledgeWorkbench
-    sidebar={<PageTreeSidebar collapsed={collapsed} onCollapse={() => setCollapsed(true)} knowledgeBases={library.bases} activeKnowledgeBaseId={base?.id ?? null} onSelectKnowledgeBase={(id) => { setBaseId(id); setSelectedId(null); setFolderId(null); setView('all-documents'); }} onCreateKnowledgeBase={() => setCreation('base')} onOpenSettings={onOpenSettings} onOpenWorkspace={onOpenWorkspace} treeArea={<div className="min-h-0 flex-1 overflow-auto px-3 py-3">
-        <div className="space-y-1">{SIDEBAR_MAIN_ITEMS.map((item) => <SidebarRow key={item.id} icon={sidebarIconMap[item.icon]} iconTone={item.tone} label={t(item.labelKey)} count={counts[item.id as View]} selected={!selected && item.id === view} onClick={() => { setView(item.id as View); setSelectedId(null); setFolderId(null); }} />)}</div>
-        <div className="mt-5"><SidebarSectionHeader icon={Folder} label="文件夹" count={folders.length} expanded={foldersOpen} onToggle={() => setFoldersOpen((value) => !value)} actions={<IconButton label="新建文件夹" onClick={() => setCreation(base ? 'folder' : 'base')} className="rounded p-1 hover:bg-[var(--surface-hover)]"><Plus size={15} /></IconButton>} />
-          {foldersOpen ? <div className="mt-2 space-y-1">{folders.map((folder) => <SidebarRow key={folder.id} icon={Folder} label={folder.name} count={live.filter((item) => item.folderId === folder.id).length} selected={folderId === folder.id && !selectedId} onClick={() => { setFolderId(folder.id); setSelectedId(null); setView('all-documents'); }} />)}{live.filter((item) => !item.folderId).map((item) => <SidebarRow key={item.id} icon={sidebarIconMap.file} label={item.title || '无标题文档'} selected={selectedId === item.id} onClick={() => setSelectedId(item.id)} />)}{!live.length ? <button type="button" onClick={() => setCreation('document')} className="w-full rounded-md p-2 text-left text-xs text-[var(--muted)] hover:bg-[var(--surface-hover)]">暂无文档 · 新建第一个文档</button> : null}</div> : null}
-        </div>
-      </div>} footer={<button type="button" onClick={session.status === 'authenticated' ? onOpenWorkspace : openSignIn} className="m-3 flex items-center gap-2 rounded-lg border border-[var(--line)] px-3 py-2.5 text-left text-xs text-[var(--muted-strong)] hover:bg-[var(--surface-hover)]"><LockSimple size={15} />{session.status === 'authenticated' ? '打开工作空间知识库' : '登录以开启团队协作'}</button>} />}
+    sidebar={<PageTreeSidebar
+      collapsed={collapsed}
+      onCollapse={() => setCollapsed(true)}
+      knowledgeBases={library.bases}
+      activeKnowledgeBaseId={base?.id ?? null}
+      onSelectKnowledgeBase={(id) => { setBaseId(id); setSelectedId(null); setFolderId(null); setActiveTagId(null); setView('all-documents'); }}
+      onCreateKnowledgeBase={() => setCreation('base')}
+      onOpenSettings={onOpenSettings}
+      onOpenWorkspace={onOpenWorkspace}
+      treeArea={<LocalLibraryNavigation
+        view={view}
+        counts={counts}
+        selectedId={selectedId}
+        folderId={folderId}
+        activeTagId={activeTagId}
+        folders={folders}
+        documents={live}
+        tags={tags}
+        onSelectMain={(next) => { setView(next); setSelectedId(null); setFolderId(null); setActiveTagId(null); }}
+        onSelectFolder={(id) => { setFolderId(id); setActiveTagId(null); setSelectedId(null); setView('all-documents'); }}
+        onSelectDocument={setSelectedId}
+        onSelectTag={(id) => { setActiveTagId(id); setFolderId(null); setSelectedId(null); setView('all-documents'); }}
+        onCreateFolder={() => setCreation(base ? 'folder' : 'base')}
+        onCreateDocument={() => setCreation(base ? 'document' : 'base')}
+        onCreateTag={(name) => { if (base) write((current) => ({ ...current, tags: [...current.tags, { id: crypto.randomUUID(), baseId: base.id, name, pageIds: [] }] })); }}
+        onRemoveTag={(id) => { write((current) => ({ ...current, tags: current.tags.filter((tag) => tag.id !== id) })); if (activeTagId === id) setActiveTagId(null); }}
+      />}
+    />}
     onExpandSidebar={collapsed && (selected || view !== 'all-documents') ? () => setCollapsed(false) : undefined}
     overlays={<LocalCreationDialog kind={creation} onClose={() => setCreation(null)} onCreate={(name) => {
       if (creation === 'base') {
         const id = crypto.randomUUID();
         if (!write((current) => ({ ...current, bases: [...current.bases, { id, name }] }))) return;
         setBaseId(id); setSelectedId(null);
+      } else if (creation === 'folder' && base) {
+        const id = crypto.randomUUID();
+        if (!write((current) => ({ ...current, folders: [...current.folders, { id, knowledgeBaseId: base.id, name }] }))) return;
+        setFolderId(id); setSelectedId(null); setActiveTagId(null);
       } else {
+        if (!base) return;
         const document = { ...newLocalDocument(base.id, name), folderId: folderId ?? folders[0]?.id };
-        if (!write((current) => ({ ...current, documents: [...current.documents, document] }))) return;
+        if (!write((current) => ({
+          ...current,
+          documents: [...current.documents, document],
+          tags: activeTagId ? current.tags.map((tag) => tag.id === activeTagId ? { ...tag, pageIds: [...tag.pageIds, document.id] } : tag) : current.tags,
+        }))) return;
         setSelectedId(document.id);
       }
       setCreation(null);
     }} />}
   >
-      {!base ? <CanvasState title="还没有知识库" hint="在当前工作空间新建知识库，开始整理资料。" actions={<Button onClick={() => setCreation('base')}>新建知识库</Button>} /> : selected ? <LocalDocumentEditor key={selected.id} document={selected} onChange={(patch) => updateDocument(selected.id, patch)} onBack={() => setSelectedId(null)} /> : view === 'all-documents' ? <DocumentsPage key={`${base.id}:${folderId ?? 'all'}`}
+      {!base ? <CanvasState title="还没有知识库" hint="在当前工作空间新建知识库，开始整理资料。" actions={<Button onClick={() => setCreation('base')}>新建知识库</Button>} /> : selected ? <LocalDocumentEditor key={selected.id} document={selected} onChange={(patch) => updateDocument(selected.id, patch)} onBack={() => setSelectedId(null)} /> : view === 'all-documents' ? <DocumentsPage key={`${base.id}:${folderId ?? activeTagId ?? 'all'}`}
         onExpandSidebar={collapsed ? () => setCollapsed(false) : undefined}
         documents={listed.map((item) => ({ id: item.id, title: item.title, updatedAt: item.updatedAt, creator: item.creator ?? '我', source: item.source ?? '本机文档', status: item.indexStatus ?? '暂无状态', starred: item.starred, folderId: item.folderId }))}
-        folders={folders.map((folder) => ({ id: folder.id, name: folder.name, count: live.filter((item) => item.folderId === folder.id).length, updatedAt: live.filter((item) => item.folderId === folder.id).map((item) => item.updatedAt).sort().at(-1) }))}
+        folders={activeTagId ? [] : folders.map((folder) => ({ id: folder.id, name: folder.name, count: live.filter((item) => item.folderId === folder.id).length, updatedAt: live.filter((item) => item.folderId === folder.id).map((item) => item.updatedAt).sort().at(-1) }))}
         onOpen={setSelectedId} onOpenFolder={setFolderId} onCreate={() => setCreation('document')} onCreateFolder={() => setCreation('folder')}
         upload={<LocalDocumentImport onImport={(items) => write((current) => ({ ...current, documents: [...current.documents, ...items.map((item) => ({ ...newLocalDocument(base.id, item.name), folderId: folderId ?? folders[0]?.id, body: { type: 'doc', content: item.text.split(/\r?\n/).map((text) => ({ type: 'paragraph', ...(text ? { content: [{ type: 'text', text }] } : {}) })) } }))] }))} />}
-        renderMenu={(id) => <DropdownMenu><DropdownMenuTrigger asChild><button type="button" aria-label="文档操作" className="p-2 text-slate-500"><DotsThree size={17} weight="bold" /></button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onSelect={() => setSelectedId(id)}>打开 / 编辑</DropdownMenuItem><DropdownMenuItem onSelect={() => { const item = live.find((doc) => doc.id === id); if (item) updateDocument(id, { starred: !item.starred }); }}>切换星标</DropdownMenuItem><DropdownMenuItem onSelect={() => { const item = live.find((doc) => doc.id === id); if (item) updateDocument(id, { draft: !item.draft }); }}>切换草稿</DropdownMenuItem><DropdownMenuItem onSelect={() => updateDocument(id, { deleted: true })} className="text-red-600">移至回收站</DropdownMenuItem></DropdownMenuContent></DropdownMenu>}
+        renderMenu={(id) => <DropdownMenu><DropdownMenuTrigger asChild><button type="button" aria-label="文档操作" className="p-2 text-slate-500"><DotsThree size={17} weight="bold" /></button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onSelect={() => setSelectedId(id)}>打开 / 编辑</DropdownMenuItem><DropdownMenuItem onSelect={() => { const item = live.find((doc) => doc.id === id); if (item) updateDocument(id, { starred: !item.starred }); }}>切换星标</DropdownMenuItem><DropdownMenuItem onSelect={() => { const item = live.find((doc) => doc.id === id); if (item) updateDocument(id, { draft: !item.draft }); }}>切换草稿</DropdownMenuItem><DropdownMenuSub><DropdownMenuSubTrigger>标签</DropdownMenuSubTrigger><DropdownMenuSubContent>{tags.length ? tags.map((tag) => <DropdownMenuCheckboxItem key={tag.id} checked={tag.pageIds.includes(id)} onCheckedChange={() => toggleDocumentTag(tag.id, id)}>{tag.name}</DropdownMenuCheckboxItem>) : <DropdownMenuItem disabled>暂无标签</DropdownMenuItem>}</DropdownMenuSubContent></DropdownMenuSub><DropdownMenuItem onSelect={() => updateDocument(id, { deleted: true })} className="text-red-600">移至回收站</DropdownMenuItem></DropdownMenuContent></DropdownMenu>}
       /> : <section className="h-full overflow-auto px-8 py-12 sm:px-14">
         <div className="mx-auto max-w-[860px]">
           <p className="mb-4 text-xs text-[var(--muted)]">{base?.name} <span className="ml-2 rounded-full bg-[var(--surface-subtle)] px-2 py-1 text-[10px]">本机 · 个人</span></p>

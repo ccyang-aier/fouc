@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { createDevelopmentWorkspaces, developmentId } from '@fouc/shared/development-workbench';
+import { developmentId } from '@fouc/shared/development-workbench';
 import type { Project } from '@fouc/shared/projects';
 import { useIdentity } from '@/features/identity/identity-provider';
 import { useWorkspace } from '@/features/workspaces/workspace-provider';
@@ -28,11 +28,6 @@ const Context = createContext<ResourceContext | null>(null);
 
 const projectStorageKey = (workspaceId: string) => `fouc.workspace.${workspaceId}.projects`;
 const preferenceKey = (principal: string, workspaceId: string) => `fouc.project.selection.${principal}.${workspaceId}`;
-function localSeed(workspaceId: string): Project[] {
-  return process.env.NODE_ENV === 'development' && createDevelopmentWorkspaces()[0]?.id === workspaceId
-    ? [{ id: demonstrationProjectId, workspaceId, name: 'Fouc 桌面端 V1' }]
-    : [];
-}
 function readStorage<T>(key: string, fallback: T): T {
   try { const saved = window.localStorage.getItem(key); return saved ? JSON.parse(saved) as T : fallback; }
   catch { return fallback; }
@@ -59,7 +54,7 @@ function ProjectResourceScope({ children, workspaceId, kind, principal }: { chil
     const controller = new AbortController();
     const selected = readStorage<{ selectedId: string | null; favorites: string[] }>(prefs, { selectedId: null, favorites: [] });
     if (kind === 'local') {
-      const projects = readStorage<Project[]>(projectStorageKey(workspaceId), localSeed(workspaceId)).filter((project) => project.workspaceId === workspaceId);
+      const projects = readStorage<Project[]>(projectStorageKey(workspaceId), []).filter((project) => project.workspaceId === workspaceId);
       queueMicrotask(() => { if (!controller.signal.aborted) { setState({ projects, selectedId: selected.selectedId, favorites: selected.favorites }); setStatus('ready'); } });
     } else if (principal === 'guest') {
       queueMicrotask(() => { if (!controller.signal.aborted) { setState({ projects: [], selectedId: null, favorites: [] }); setStatus('error'); setError('登录并加入此工作空间后，才能查看其中的项目。'); } });

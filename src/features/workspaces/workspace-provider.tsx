@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState, useSyncExternalStore, type ReactNode, type SetStateAction } from 'react';
 import { useIdentity } from '@/features/identity/identity-provider';
 import { organizationClient, type WorkspaceWithRole } from '@/features/workspaces/organization-client';
-import { createWorkspaceStore, type RailSpace } from './workspace-store';
+import { createWorkspaceStore, DEFAULT_SPACE, type RailSpace } from './workspace-store';
 
 type ServerDirectory = { owner: string | null; revision: number; status: 'pending' | 'success' | 'error'; items: WorkspaceWithRole[]; error: unknown };
 type WorkspaceContextValue = {
@@ -56,8 +56,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   // A known server scope cannot turn into an unprotected device workspace on
   // sign-out or membership loss, including development fixtures with shared IDs.
   const spaces: RailSpace[] = [...selection.localSpaces.filter((space) => !serverIds.has(space.id)).map((space) => space.id in selection.serverPins ? { ...space, kind: 'server' as const, pinned: selection.serverPins[space.id] } : space), ...serverDirectory.items.map((space) => ({ id: space.id, label: space.name, kind: 'server' as const, pinned: selection.serverPins[space.id] ?? true }))];
-  const activeSpace = spaces.find((space) => space.id === selection.activeId)
-    ?? { id: selection.activeId, label: '工作空间', kind: 'server' as const, pinned: true };
+  const activeSpace = spaces.find((space) => space.id === selection.activeId) ?? DEFAULT_SPACE;
   return <WorkspaceContext.Provider value={{
     activeSpace, spaces, serverDirectory,
     selectWorkspace: store.select,

@@ -1,5 +1,12 @@
 import { expect, test } from 'bun:test';
-import { createWorkspaceStore } from './workspace-store';
+import { createWorkspaceStore, DEFAULT_SPACE } from './workspace-store';
+
+test('the real local default workspace remains available without an account', () => {
+  const store = createWorkspaceStore(null);
+  expect(store.getSnapshot().localSpaces).toEqual([DEFAULT_SPACE]);
+  store.updateSpaces([]);
+  expect(store.getSnapshot().localSpaces).toEqual([DEFAULT_SPACE]);
+});
 
 test('global workspace selection and local workspace management survive reload', () => {
   const values = new Map<string, string>();

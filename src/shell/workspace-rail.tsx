@@ -31,6 +31,7 @@ import { cn } from "@/lib/utils"
 import type { WorkbenchView } from "./navigation-sidebar"
 
 import type { RailSpace } from "@/features/workspaces/workspace-store"
+import { DEFAULT_SPACE } from "@/features/workspaces/workspace-store"
 
 const WORKSPACE_COLORS = ["#5367D8", "#B36D50", "#408C7A", "#9465B6", "#AA8241", "#477EA8"] as const
 
@@ -128,6 +129,7 @@ export function WorkspaceRail({
 
   function openSpaceMenu(event: React.MouseEvent, space: RailSpace) {
     event.preventDefault()
+    if (space.id === DEFAULT_SPACE.id) return
     setRenameValue(space.label)
     setSpaceMenu({
       spaceId: space.id,
@@ -154,6 +156,7 @@ export function WorkspaceRail({
 
   function deleteSpace() {
     if (!menuSpace) return
+    if (menuSpace.id === DEFAULT_SPACE.id) { setFeedback("默认工作区不可删除"); setSpaceMenu(null); return }
     const remaining = spaces.filter((space) => space.id !== menuSpace.id)
     if (!remaining.length) { setFeedback("请保留至少一个工作空间"); setSpaceMenu(null); return }
     onSpacesChange(remaining)

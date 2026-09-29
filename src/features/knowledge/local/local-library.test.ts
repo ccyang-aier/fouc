@@ -29,3 +29,13 @@ test('workspace switching isolates libraries and keeps edits in their original w
   expect(createLocalLibraryStore(storage, 'a').getSnapshot().documents.map((doc) => doc.title)).toEqual(['A 的文档']);
   expect(createLocalLibraryStore(storage, 'b').getSnapshot().documents.map((doc) => doc.title)).toEqual(['B 的文档']);
 });
+
+test('a new local library is empty and tags stay within its workspace', () => {
+  const values = new Map<string, string>();
+  const storage = { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => { values.set(key, value); } };
+  const first = createLocalLibraryStore(storage, 'a');
+  expect(first.getSnapshot()).toEqual({ bases: [], folders: [], documents: [], tags: [] });
+  first.update((current) => ({ ...current, tags: [{ id: 'tag-a', baseId: 'base-a', name: '研究', pageIds: ['page-a'] }] }));
+  expect(createLocalLibraryStore(storage, 'a').getSnapshot().tags[0].pageIds).toEqual(['page-a']);
+  expect(createLocalLibraryStore(storage, 'b').getSnapshot().tags).toEqual([]);
+});

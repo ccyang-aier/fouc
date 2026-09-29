@@ -410,13 +410,14 @@ export function NavigationSidebar({
           </div>
         </div>
       )}
-      {open ? <div className="shrink-0 border-t border-[var(--line)] px-2 pb-1 pt-2"><AccountItem /></div> : null}
+      {open ? <div className="shrink-0 border-t border-[var(--line)] px-2 pb-1.5 pt-2.5"><AccountItem /></div> : null}
 
       {/* 收起态图标轨道：工作台导航 / 项目管理菜单（折叠形态） */}
       <ScrollArea
         aria-hidden={open}
         className={cn(
-          "absolute inset-x-0 bottom-12 top-11 z-[5] min-h-0 transition-[opacity,transform] duration-200",
+          "absolute inset-x-0 top-11 z-[5] min-h-0 transition-[opacity,transform] duration-200",
+          projectsMode ? "bottom-12" : "bottom-[120px]",
           open ? "pointer-events-none translate-x-1 opacity-0" : "delay-100 translate-x-0 opacity-100",
         )}
         viewportClassName={cn(
@@ -447,7 +448,13 @@ export function NavigationSidebar({
         )}
       </ScrollArea>
 
-      {!open ? <div className="absolute inset-x-0 bottom-0 z-10 bg-[var(--shell)] p-1"><AccountItem compact /></div> : null}
+      {!open ? <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col items-center gap-1 border-t border-[var(--line)] p-1">
+        {!projectsMode ? <>
+          <Tooltip><TooltipTrigger asChild><NavButton item={{ id: "settings", label: "设置", icon: GearSix }} active={view === "settings"} compact onSelect={() => onViewChange("settings")} /></TooltipTrigger><TooltipContent side="right" sideOffset={10}>设置</TooltipContent></Tooltip>
+          <Tooltip><TooltipTrigger asChild><NavButton item={{ id: "help", label: "帮助与反馈", icon: Question }} active={view === "help"} compact onSelect={() => onViewChange("help")} /></TooltipTrigger><TooltipContent side="right" sideOffset={10}>帮助与反馈</TooltipContent></Tooltip>
+        </> : null}
+        <AccountItem compact />
+      </div> : null}
       {open ? <SidebarResizeHandle dragging={dragging} onPointerDown={startResize} /> : null}
     </aside>
   )

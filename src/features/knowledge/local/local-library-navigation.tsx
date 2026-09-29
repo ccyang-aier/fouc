@@ -13,7 +13,7 @@ import type { LocalDocument, LocalLibrary, LocalTag } from './local-library';
 
 type MainView = 'all-documents' | 'starred' | 'drafts' | 'trash';
 const tagColors = ['#5582c4', '#cb805c', '#5d9d83', '#a87ac0', '#d6a24c', '#688aab'] as const;
-const emptyHintClassName = 'px-2 py-1 text-[11px] leading-4 text-[var(--muted)]';
+const emptyHintClassName = 'px-1 py-1 text-[11px] leading-4 text-[var(--muted)]';
 
 export function LocalLibraryNavigation({
   view, counts, selectedId, folderId, activeTagId, folders, documents, tags,
@@ -41,6 +41,7 @@ export function LocalLibraryNavigation({
 }) {
   const { t } = useI18n();
   const [foldersOpen, setFoldersOpen] = useState(true);
+  const [expandedFolderIds, setExpandedFolderIds] = useState<string[]>([]);
   const [tagsOpen, setTagsOpen] = useState(true);
   const [recentOpen, setRecentOpen] = useState(true);
   const [creatingTag, setCreatingTag] = useState(false);
@@ -92,9 +93,23 @@ export function LocalLibraryNavigation({
     <section className="mt-5" aria-label="文件夹">
       <SidebarSectionHeader icon={Folder} label="文件夹" count={folders.length} expanded={foldersOpen} onToggle={() => setFoldersOpen((open) => !open)} actions={<IconButton label="新建文件夹" onClick={onCreateFolder} className="rounded p-1 hover:bg-[var(--surface-hover)]"><Plus size={15} /></IconButton>} />
       {foldersOpen ? <div className="mt-1 space-y-0.5">
-        {folders.map((folder) => <SidebarRow key={folder.id} depth={1} icon={Folder} label={folder.name} count={documents.filter((doc) => doc.folderId === folder.id).length} selected={folderId === folder.id && !selectedId && !activeTagId} onClick={() => onSelectFolder(folder.id)} />)}
+        {folders.map((folder) => {
+          const folderDocuments = documents.filter((doc) => doc.folderId === folder.id);
+          const expanded = expandedFolderIds.includes(folder.id);
+          return <div key={folder.id}>
+            <div className={cn(styles.row, 'group flex h-[30px] items-center rounded-[6px] pl-[14px] pr-1 text-[13px] text-[var(--sidebar-text)]')} data-selected={folderId === folder.id && !selectedId && !activeTagId ? 'true' : undefined}>
+              <button type="button" aria-label={`${expanded ? '收起' : '展开'}文件夹 ${folder.name}`} aria-expanded={expanded} onClick={() => setExpandedFolderIds((current) => expanded ? current.filter((id) => id !== folder.id) : [...current, folder.id])} className="mr-1 flex size-4 shrink-0 items-center justify-center rounded text-[var(--muted)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)]"><CaretRight size={11} weight="bold" className={cn('transition-transform', expanded && 'rotate-90')} /></button>
+              <button type="button" onClick={() => onSelectFolder(folder.id)} className="flex h-full min-w-0 flex-1 items-center gap-2 text-left focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)]"><Folder aria-hidden size={15} weight="fill" className="shrink-0 text-[#7c8387]" /><span className="truncate">{folder.name}</span></button>
+              <span className="pl-2 pr-0.5 text-[10.5px] tabular-nums text-[#8b9093]">{folderDocuments.length}</span>
+            </div>
+            {expanded ? <div className="space-y-0.5">
+              {folderDocuments.map((doc) => <SidebarRow key={doc.id} depth={2} icon={sidebarIconMap.file} label={doc.title || '无标题文档'} selected={selectedId === doc.id} onClick={() => onSelectDocument(doc.id)} />)}
+              {!folderDocuments.length ? <p className="py-1 pl-9 text-[11px] leading-4 text-[var(--muted)]">暂无文档</p> : null}
+            </div> : null}
+          </div>;
+        })}
         {documents.filter((doc) => !doc.folderId).map((doc) => <SidebarRow key={doc.id} depth={1} icon={sidebarIconMap.file} label={doc.title || '无标题文档'} selected={selectedId === doc.id} onClick={() => onSelectDocument(doc.id)} />)}
-        {!documents.length ? <p className={emptyHintClassName}><button type="button" onClick={onCreateDocument} className="rounded text-left [font:inherit] hover:text-[var(--ink)]">暂无文档 · 新建第一个文档</button></p> : null}
+        {!folders.length && !documents.length ? <p className={emptyHintClassName}><button type="button" onClick={onCreateDocument} className="rounded text-left [font:inherit] hover:text-[var(--ink)]">暂无文档 · 新建第一个文档</button></p> : null}
       </div> : null}
     </section>
 
@@ -107,7 +122,7 @@ export function LocalLibraryNavigation({
           const expanded = expandedTagIds.includes(tag.id);
           const selected = activeTagId === tag.id && !selectedId;
           return <div key={tag.id}>
-            <div data-selected={selected ? 'true' : undefined} className={cn(styles.row, 'group flex h-[30px] items-center rounded-[6px] pl-[22px] pr-1 text-[12px] text-[var(--sidebar-text)]')}>
+            <div data-selected={selected ? 'true' : undefined} className={cn(styles.row, 'group flex h-[30px] items-center rounded-[6px] pl-[16px] pr-1 text-[12px] text-[var(--sidebar-text)]')}>
               <button type="button" aria-label={`${expanded ? '收起' : '展开'}标签 ${tag.name}`} aria-expanded={expanded} onClick={() => toggleTag(tag.id)} className="mr-1 flex size-4 shrink-0 items-center justify-center rounded text-[var(--muted)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)]"><CaretRight size={11} weight="bold" className={cn('transition-transform', expanded && 'rotate-90')} /></button>
               {renamingTagId === tag.id ? <form onSubmit={(event) => { event.preventDefault(); renameTag(tag.id); }} className="min-w-0 flex-1"><input ref={renameInputRef} aria-label={`重命名标签 ${tag.name}`} value={renameDraft} onChange={(event) => setRenameDraft(event.target.value)} onBlur={() => renameTag(tag.id)} onKeyDown={(event) => { if (event.key === 'Escape') { setRenamingTagId(null); event.stopPropagation(); } }} className="h-6 w-full rounded border border-[var(--focus-ring)] bg-[var(--panel)] px-1 text-[12px] outline-none" /></form> : <button type="button" aria-current={selected ? 'page' : undefined} onClick={() => { onSelectTag(tag.id); setExpandedTagIds((current) => current.includes(tag.id) ? current : [...current, tag.id]); }} className="flex h-full min-w-0 flex-1 items-center gap-2 text-left focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)]"><span aria-hidden className="size-2 shrink-0 rounded-full" style={{ backgroundColor: tagColors[index % tagColors.length] }} /><span className="truncate">{tag.name}</span></button>}
               <div className={styles.trailing}>
@@ -119,7 +134,7 @@ export function LocalLibraryNavigation({
               </div>
             </div>
             {expanded ? <div className="space-y-0.5">
-              {taggedDocuments.map((doc) => <SidebarRow key={doc.id} depth={2} icon={sidebarIconMap.file} label={doc.title || '无标题文档'} selected={selectedId === doc.id} onClick={() => onSelectDocument(doc.id)} />)}
+              {taggedDocuments.map((doc) => <SidebarRow key={doc.id} depth={1} icon={sidebarIconMap.file} label={doc.title || '无标题文档'} selected={selectedId === doc.id} onClick={() => onSelectDocument(doc.id)} />)}
               {!taggedDocuments.length ? <p className={emptyHintClassName}>暂无文档</p> : null}
             </div> : null}
           </div>;

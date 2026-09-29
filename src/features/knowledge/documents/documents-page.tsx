@@ -56,7 +56,7 @@ export function DocumentsPage({ documents, folders, onOpen, onOpenFolder, onCrea
         setFilterOpen(false);
         setNewOpen(false);
     } }}>
-    <header className={styles.toolbar}><div className={styles.heading}>{onExpandSidebar ? <IconButton label="展开知识库侧边栏" onClick={onExpandSidebar} className={styles.sidebarToggle}><SidebarSimple size={18}/></IconButton> : null}<h1>文档</h1><span>{documents.length}</span></div>
+    <header className={styles.toolbar}><div className={styles.heading}>{onExpandSidebar ? <IconButton label="展开知识库侧边栏" tooltip="展开侧栏" onClick={onExpandSidebar} className={styles.sidebarToggle}><SidebarSimple size={18}/></IconButton> : null}<h1>文档</h1><span>{documents.length}</span></div>
       <div className={styles.tools}><label className={styles.search}><MagnifyingGlass size={16}/><input aria-label="搜索文档" placeholder="搜索文档" value={search} onChange={(event) => setSearch(event.target.value)}/>{search ? <button aria-label="清除搜索" onClick={() => setSearch('')}><X size={13}/></button> : null}</label>
         <div className={styles.popoverAnchor} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) {
         setNewOpen(false);

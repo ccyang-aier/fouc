@@ -88,6 +88,7 @@ export function SidebarProjectTreeNode({
           <IconButton
             type="button"
             label={t(isExpanded ? "sidebar.collapseSection" : "sidebar.expandSection", { section: label })}
+            tooltip={isExpanded ? "收起" : "展开"}
             aria-expanded={isExpanded}
             onClick={() => onToggle(node.id)}
             className="mr-0.5 inline-flex size-[17px] shrink-0 items-center justify-center rounded-[4px] outline-none transition-colors hover:text-foreground focus-visible:text-foreground"
@@ -128,6 +129,7 @@ export function SidebarProjectTreeNode({
                 <IconButton
                   type="button"
                   label={t("sidebar.projectMenu", { project: label })}
+                  tooltip="更多"
                   className={styles.actionButton}
                   onClick={(event) => event.stopPropagation()}
                 >

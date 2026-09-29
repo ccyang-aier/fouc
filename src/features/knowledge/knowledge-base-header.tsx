@@ -63,7 +63,7 @@ export function KnowledgeBaseHeader({
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-    <IconButton className={styles.knowledgeCollapse} label="收起知识库侧边栏" onClick={onCollapse}>
+    <IconButton className={styles.knowledgeCollapse} label="收起知识库侧边栏" tooltip="收起侧栏" onClick={onCollapse}>
       <SidebarSimple aria-hidden="true" weight="regular" />
     </IconButton>
   </div>;

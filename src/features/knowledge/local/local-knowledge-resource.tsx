@@ -90,6 +90,9 @@ function LocalKnowledgeContent({ workspaceId, store, onOpenSettings, onOpenWorks
         onSelectTag={(id) => { setActiveTagId(id); setFolderId(null); setSelectedId(null); setView('all-documents'); }}
         onCreateFolder={() => setCreation(base ? 'folder' : 'base')}
         onCreateDocument={() => setCreation(base ? 'document' : 'base')}
+        onCreateDocumentInFolder={(id) => { setFolderId(id); setActiveTagId(null); setSelectedId(null); setView('all-documents'); setCreation('document'); }}
+        onRenameFolder={(id, name) => write((current) => ({ ...current, folders: current.folders.map((folder) => folder.id === id ? { ...folder, name } : folder) }))}
+        onRemoveFolder={(id) => { if (write((current) => ({ ...current, folders: current.folders.filter((folder) => folder.id !== id), documents: current.documents.map((doc) => doc.folderId === id ? { ...doc, folderId: undefined } : doc) })) && folderId === id) setFolderId(null); }}
         onCreateDocumentInTag={(id) => { setActiveTagId(id); setFolderId(null); setSelectedId(null); setView('all-documents'); setCreation('document'); }}
         onCreateTag={(name) => { if (base) write((current) => ({ ...current, tags: [...current.tags, { id: crypto.randomUUID(), baseId: base.id, name, pageIds: [] }] })); }}
         onRenameTag={(id, name) => write((current) => ({ ...current, tags: current.tags.map((tag) => tag.id === id ? { ...tag, name } : tag) }))}

@@ -16,7 +16,7 @@ export function KnowledgeWorkbench({ sidebar, children, overlays, onExpandSideba
     <div className="flex h-full min-h-0">
       {sidebar}
       <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-        {onExpandSidebar ? <IconButton label="展开知识库侧边栏" onClick={onExpandSidebar} className="absolute left-2 top-2 z-10 flex size-7 items-center justify-center rounded-md text-[var(--muted-strong)] hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><SidebarSimple size={18} /></IconButton> : null}
+        {onExpandSidebar ? <IconButton label="展开知识库侧边栏" tooltip="展开侧栏" onClick={onExpandSidebar} className="absolute left-2 top-2 z-10 flex size-7 items-center justify-center rounded-md text-[var(--muted-strong)] hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><SidebarSimple size={18} /></IconButton> : null}
         {children}
       </div>
     </div>

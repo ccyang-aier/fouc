@@ -68,6 +68,7 @@ export function SidebarTagTreeNode({
           <IconButton
             type="button"
             label={t(expanded ? "sidebar.collapseSection" : "sidebar.expandSection", { section: tag.name })}
+            tooltip={expanded ? "收起" : "展开"}
             aria-expanded={expanded}
             onClick={() => onToggle(tag.id)}
             className="mr-0.5 inline-flex size-[17px] shrink-0 items-center justify-center rounded-[4px] outline-none transition-colors hover:text-foreground focus-visible:text-foreground"
@@ -94,6 +95,7 @@ export function SidebarTagTreeNode({
           <IconButton
             type="button"
             label={t("sidebar.newDocumentInTag", { tag: tag.name })}
+            tooltip="新建文档"
             className={styles.actionButton}
             onClick={() => onTagAction(tag.id, "new-document")}
           >
@@ -104,6 +106,7 @@ export function SidebarTagTreeNode({
               <IconButton
                 type="button"
                 label={t("sidebar.tagMenu", { tag: tag.name })}
+                tooltip="更多"
                 className={styles.actionButton}
                 onClick={(event) => event.stopPropagation()}
               >

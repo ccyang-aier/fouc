@@ -1,8 +1,8 @@
 /**
  * The slash menu item model (E06): the pure layer between the shared E01
  * block registry and the '/' floating menu. The list is generated from every
- * registry definition that publishes `slash` metadata — the menu never
- * hardcodes its items — and each entry is paired with an insert command from
+ * registry definition that publishes `slash` metadata. Heading expands into
+ * its four supported levels; each entry is paired with an insert command from
  * the extensible INSERT_COMMANDS record (future entries such as a J05 /ai
  * register through `registerSlashInsert`).
  *
@@ -55,6 +55,9 @@ export interface SlashMenuItem {
   readonly keywords: readonly string[];
   readonly group: SlashGroup;
   readonly icon?: SlashItemIcon;
+  /** Compact glyph or shortcut shown by the menu; commands still belong to the model. */
+  readonly marker?: string;
+  readonly shortcut?: string;
   /** Runs the insertion; returns whether the editor accepted it. */
   run(editor: Editor): boolean;
 }
@@ -124,11 +127,13 @@ const INSERT_COMMANDS: Record<string, SlashInsertCommand> = {
   callout: insertBuiltNodes((nodes) => [nodes.callout.create(null, [nodes.paragraph.create()])]),
   table: insertBuiltNodes((nodes) => {
     const header = cell(nodes.tableHeader, nodes);
+    const secondHeader = cell(nodes.tableHeader, nodes);
     const body = cell(nodes.tableCell, nodes);
-    if (!header || !body) throw new TypeError('table cell types missing');
+    const secondBody = cell(nodes.tableCell, nodes);
+    if (!header || !secondHeader || !body || !secondBody) throw new TypeError('table cell types missing');
     return [nodes.table.create(null, [
-      nodes.tableRow.create(null, [header]),
-      nodes.tableRow.create(null, [body]),
+      nodes.tableRow.create(null, [header, secondHeader]),
+      nodes.tableRow.create(null, [body, secondBody]),
     ])];
   }),
   columns: insertBuiltNodes((nodes) => [nodes.columns.create(null, [
@@ -183,24 +188,43 @@ const SLASH_ICONS: Record<string, SlashItemIcon> = {
 /* ------------------------------------------------------------------ model */
 
 /**
- * The menu items of a registry: every definition with `slash` metadata, in
- * registry order, paired with its insert command. Entries without a
- * registered command render but insert nothing (they fail honestly).
+ * The menu items of a registry: every definition with `slash` metadata is
+ * paired with its insert command. Heading expands to the four supported
+ * levels, and familiar text/media choices lead the picker. Entries without
+ * a registered command render but insert nothing (they fail honestly).
  */
 export function buildSlashItems(registry: BlockRegistry = createKnowledgeRegistry()): SlashMenuItem[] {
-  return registry.getDefinitions()
+  const items = registry.getDefinitions()
     .filter((definition) => definition.slash)
-    .map((definition) => {
+    .flatMap((definition): SlashMenuItem[] => {
       const { title, keywords, group } = definition.slash!;
-      return {
+      const item: SlashMenuItem = {
         name: definition.name,
-        title,
+        title: definition.name === 'taskList' ? '任务列表' : title,
         keywords,
         group: group ?? 'text',
         icon: SLASH_ICONS[definition.name] ?? FALLBACK_ICON,
+        shortcut: ({ taskList: '⌃ ⇧ 7', bulletList: '⌃ ⇧ 8', orderedList: '⌃ ⇧ 9' } as Record<string, string>)[definition.name],
         run: INSERT_COMMANDS[definition.name] ?? (() => false),
       };
+      if (definition.name !== 'heading') return [item];
+      return [1, 2, 3, 4].map((level) => ({
+        ...item,
+        name: level === 2 ? 'heading' : `heading${level}`,
+        title: ['主标题', '次标题', '小标题', '附加小标题'][level - 1],
+        marker: `H${level}`,
+        shortcut: `⌃ ⇧ ${level}`,
+        keywords: [...keywords, `h${level}`],
+        run: level === 2 ? item.run : (editor) => editor.chain().command(setBlockFormat({ kind: 'heading', level })).run(),
+      }));
     });
+  const priority: Record<string, number> = {
+    heading1: 0, heading: 1, heading3: 2, heading4: 3,
+    taskList: 4, bulletList: 5, orderedList: 6,
+    image: 7, video: 8, audio: 9, file: 10,
+    paragraph: 11,
+  };
+  return items.sort((a, b) => (priority[a.name] ?? 100) - (priority[b.name] ?? 100));
 }
 
 /**

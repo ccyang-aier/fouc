@@ -23,7 +23,7 @@ import { AwarenessMembers, createAwarenessExtension } from './awareness';
 import { applyBlockNodeViews } from './blocks';
 import { applyBlockReferenceView } from './blocks/block-reference';
 import { createSlashPasteExtensions, SlashMenuLayer } from './commands';
-import { DocumentEditorBody, DocumentEditorFrame, DocumentEditorHeader } from './editor-layout';
+import { DocumentEditorBody, DocumentEditorFrame, DocumentEditorHeader, DocumentHeading } from './editor-layout';
 import { ReadonlyBanner } from './components/readonly-banner';
 import { SyncIndicator } from './components/sync-indicator';
 import type { PageEditorViewModel } from './editor-state';
@@ -33,6 +33,7 @@ import { createPageReviewExtension, PageReviewRail } from './review-integration'
 import { createBlockEditingExtensions } from './extensions';
 import { HistoryPanel } from '../history/history-panel';
 import { createCommentsEditorExtension, PageCommentsLayer } from './comments-integration';
+import { usePageTitle } from './use-page-title';
 
 export function PageEditorSurface({
   scope,
@@ -117,10 +118,14 @@ export function PageEditorSurface({
   }, [editor, scope.pageId]);
 
   const [historyOpen, setHistoryOpen] = useState(false);
+  const pageTitle = usePageTitle(scope);
+  const updatedLabel = pageTitle.updatedAt
+    ? `更新于 ${new Date(pageTitle.updatedAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+    : '文档';
 
   return (
     <DocumentEditorFrame>
-      <DocumentEditorHeader editor={editor} pageUndo={pageUndo} editable={view.editable} trailing={<>
+      <DocumentEditorHeader editor={editor} pageUndo={pageUndo} editable={view.editable} title={pageTitle.title} trailing={<>
           <AwarenessMembers awareness={session.awareness} />
           <button
             type="button"
@@ -132,11 +137,23 @@ export function PageEditorSurface({
           >
             <ClockCounterClockwise aria-hidden className="size-4" />
           </button>
-          <SyncIndicator view={view.sync} />
       </>} />
       {view.readonlyReason ? <ReadonlyBanner reason={view.readonlyReason} level={level} /> : null}
       <PageCommentsLayer scope={scope} editor={editor} level={level}>
-        <DocumentEditorBody editor={editor} />
+        <DocumentEditorBody editor={editor} before={<DocumentHeading
+          title={pageTitle.title}
+          editable={view.editable && pageTitle.loaded}
+          onTitleChange={pageTitle.setTitle}
+          onTitleCommit={() => { void pageTitle.save(); }}
+          metadata={<>
+            <span>{updatedLabel}</span>
+            <SyncIndicator view={view.sync} />
+            <span>{level === 'view' ? '仅可查看' : level === 'comment' ? '可评论' : '可编辑'}</span>
+            {pageTitle.fetchError ? <span role="alert" className="text-[var(--err-ink)]">标题暂不可用</span> : null}
+            {pageTitle.saving ? <span>正在保存标题</span> : null}
+            {pageTitle.error ? <span role="alert" className="text-[var(--err-ink)]">{pageTitle.error}</span> : null}
+          </>}
+        />} />
         <PageReviewRail editor={editor} editable={view.editable} />
         {historyOpen && (
           <aside className="flex h-full w-[320px] shrink-0 flex-col border-l border-[var(--line)] bg-[var(--panel)]">

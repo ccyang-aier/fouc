@@ -6,7 +6,7 @@
  * highlight, running an item — lives in the plugin; this layer only positions
  * and renders. The menu portals to the overlay root, never takes focus
  * (keyboard stays in the editor), follows the caret of the '/query' trigger,
- * and groups the registry-generated items with Chinese section labels.
+ * and renders the registry-backed commands as a compact block picker.
  */
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -16,19 +16,11 @@ import type { Editor } from '@tiptap/react';
 import { getOverlayRoot } from '@/lib/overlay-root';
 import { cn } from '@/lib/utils';
 import { filterSlashItems } from './slash-items';
-import type { SlashGroup, SlashMenuItem } from './slash-items';
 import { closeSlashMenu, runSlashItem, setActiveSlashItem, slashItemsOfEditor, slashMenuPluginKey } from './slash-paste';
+import styles from './slash-menu.module.css';
 
-const GROUP_LABELS: Record<SlashGroup, string> = {
-  text: '文本',
-  layout: '布局',
-  media: '媒体',
-  knowledge: '知识',
-  ai: 'AI',
-};
-
-const MENU_WIDTH = 280;
-const MENU_MAX_HEIGHT = 320;
+const MENU_WIDTH = 360;
+const MENU_MAX_HEIGHT = 460;
 const VIEWPORT_MARGIN = 8;
 
 interface OpenMenuState {
@@ -79,17 +71,6 @@ export function SlashMenuLayer({ editor }: { editor: Editor | null }) {
   const activeIndex = Math.min(menu?.active ?? 0, filtered.length - 1);
   const activeItem = activeIndex >= 0 ? filtered[activeIndex] : null;
 
-  // Group the filtered items by first appearance (registry display order).
-  const sections = useMemo(() => {
-    const grouped = new Map<SlashGroup, SlashMenuItem[]>();
-    for (const item of filtered) {
-      const list = grouped.get(item.group);
-      if (list) list.push(item);
-      else grouped.set(item.group, [item]);
-    }
-    return [...grouped.entries()];
-  }, [filtered]);
-
   // Position at the caret (viewport coords), clamped and flipped above when
   // near the bottom. The panel renders hidden first; measuring then revealing
   // is imperative because React never re-manages this style after mount.
@@ -124,10 +105,18 @@ export function SlashMenuLayer({ editor }: { editor: Editor | null }) {
   // The editor's contenteditable owns the menu semantics for screen readers.
   useEffect(() => {
     if (!editor) return undefined;
-    const dom = editor.view.dom;
-    if (menu && activeItem) dom.setAttribute('aria-activedescendant', `fouc-slash-item-${activeItem.name}`);
-    else dom.removeAttribute('aria-activedescendant');
-    return () => dom.removeAttribute('aria-activedescendant');
+    const update = () => {
+      if (editor.isDestroyed) return;
+      const dom = editor.view.dom;
+      if (menu && activeItem) dom.setAttribute('aria-activedescendant', `fouc-slash-item-${activeItem.name}`);
+      else dom.removeAttribute('aria-activedescendant');
+    };
+    update();
+    editor.on('create', update);
+    return () => {
+      editor.off('create', update);
+      if (!editor.isDestroyed) editor.view.dom.removeAttribute('aria-activedescendant');
+    };
   }, [editor, menu, activeItem]);
 
   if (!editor || typeof document === 'undefined') return null;
@@ -146,47 +135,33 @@ export function SlashMenuLayer({ editor }: { editor: Editor | null }) {
           style={{ visibility: 'hidden', width: MENU_WIDTH }}
           onMouseEnter={() => { pointerInsideRef.current = true; }}
           onMouseLeave={() => { pointerInsideRef.current = false; }}
-          className="fixed z-50 max-h-[320px] overflow-y-auto rounded-[10px] border border-[var(--line)] bg-[var(--panel)] p-1 shadow-[0_8px_28px_rgba(0,0,0,0.14)]"
+          className={styles.menu}
         >
           {filtered.length === 0 ? (
-            <p className="flex h-16 items-center justify-center text-[12px] text-[var(--muted)]">无匹配的块</p>
-          ) : sections.map(([group, groupItems]) => (
-            <div key={group}>
-              <p aria-hidden className="px-2.5 pb-1 pt-2 text-[10.5px] font-medium tracking-[0.04em] text-[var(--muted)]">
-                {GROUP_LABELS[group]}
-              </p>
-              {groupItems.map((item) => {
-                const active = item === activeItem;
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.name}
-                    id={`fouc-slash-item-${item.name}`}
-                    type="button"
-                    role="menuitem"
-                    data-slash-active={active || undefined}
-                    // mousedown would drag focus out of the editor; the click still lands.
-                    onMouseDown={(event) => event.preventDefault()}
-                    onMouseEnter={() => setActiveSlashItem(editor.view, filtered.indexOf(item))}
-                    onClick={() => runSlashItem(editor.view, item)}
-                    className={cn(
-                      'relative flex w-full items-center gap-2.5 rounded-[7px] px-2.5 py-1.5 text-left text-[12.5px] outline-none transition-colors',
-                      active ? 'bg-[var(--accent-soft)] text-[var(--ink)]' : 'text-[var(--ink-soft)] hover:bg-[var(--raise)]',
-                    )}
-                  >
-                    {active ? <span aria-hidden className="absolute left-0 top-1/2 h-4 w-[2.5px] -translate-y-1/2 rounded-full bg-[var(--accent)]" /> : null}
-                    {Icon ? <Icon aria-hidden className="size-4 shrink-0 text-[var(--muted-strong)]" /> : null}
-                    <span className="min-w-0 flex-1 truncate">{item.title}</span>
-                    {item.keywords.length ? (
-                      <span aria-hidden className="max-w-[96px] shrink-0 truncate text-[10.5px] text-[var(--muted)]">
-                        {item.keywords.join(' ')}
-                      </span>
-                    ) : null}
-                  </button>
-                );
-              })}
-            </div>
-          ))}
+            <p className={styles.empty}>无匹配的块</p>
+          ) : filtered.map((item, index) => {
+            const active = item === activeItem;
+            const Icon = item.icon;
+            const separated = index > 0 && (item.name === 'taskList' || item.name === 'image' || item.group !== filtered[index - 1]?.group);
+            return (
+              <button
+                key={item.name}
+                id={`fouc-slash-item-${item.name}`}
+                type="button"
+                role="menuitem"
+                data-slash-active={active || undefined}
+                // mousedown would drag focus out of the editor; the click still lands.
+                onMouseDown={(event) => event.preventDefault()}
+                onMouseEnter={() => setActiveSlashItem(editor.view, index)}
+                onClick={() => runSlashItem(editor.view, item)}
+                className={cn(styles.item, active && styles.active, separated && styles.separated)}
+              >
+                {item.marker ? <span aria-hidden className={styles.marker}>{item.marker}</span> : Icon ? <Icon aria-hidden className={styles.icon} /> : null}
+                <span className={styles.title}>{item.title}</span>
+                {item.shortcut ? <span aria-hidden className={styles.shortcut}>{item.shortcut}</span> : null}
+              </button>
+            );
+          })}
         </motion.div>
       ) : null}
     </AnimatePresence>,

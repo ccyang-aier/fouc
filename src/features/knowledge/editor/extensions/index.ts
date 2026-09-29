@@ -19,10 +19,12 @@ import { TaskListInputRule } from './input-rules/task-list-input-rule';
 import { BlockBackspaceKey } from './keyboard/block-backspace';
 import { BlockEnterKey } from './keyboard/block-enter';
 import { BlockMoveKey } from './keyboard/block-move';
+import { BlockFormatShortcuts } from './keyboard/block-format-shortcuts';
+import { TaskItemToggle } from './keyboard/task-item-toggle';
 import { ListIndentKey } from './keyboard/list-indent';
 
 export { BlockquoteInputRule, CodeBlockInputRule, DividerInputRule, HeadingInputRule, ListInputRules, MarkInputRules, TaskListInputRule };
-export { BlockBackspaceKey, BlockEnterKey, BlockMoveKey, ListIndentKey };
+export { BlockBackspaceKey, BlockEnterKey, BlockMoveKey, BlockFormatShortcuts, ListIndentKey, TaskItemToggle };
 export { moveBlock } from './keyboard/block-move';
 export { currentBlockFormat, insertMathBlock, setBlockFormat } from './format/block-format';
 export type { BlockFormat, ListKind } from './format/block-format';
@@ -42,5 +44,7 @@ export function createBlockEditingExtensions(): Extensions {
     BlockBackspaceKey,
     ListIndentKey,
     BlockMoveKey,
+    BlockFormatShortcuts,
+    TaskItemToggle,
   ];
 }

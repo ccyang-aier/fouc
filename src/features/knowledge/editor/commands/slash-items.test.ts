@@ -4,8 +4,8 @@
  * on a real Tiptap Editor over the shared schema (producing a node of its own
  * type — atom blocks included, with E02 blockIds minted by the blockId
  * plugin), `registerSlashInsert` extends/overrides the command map, and the
- * query filter ranks prefix > substring > keyword while keeping registry
- * order otherwise.
+ * query filter ranks prefix > substring > keyword while keeping menu order
+ * otherwise.
  */
 
 import { Window } from 'happy-dom';
@@ -55,9 +55,9 @@ describe('slash menu items', () => {
   test('the menu is generated from the registry slash metadata', () => {
     const items = buildSlashItems();
     const expected = KNOWLEDGE_BLOCKS.filter((definition) => definition.slash);
-    expect(items.map((item) => item.name)).toEqual(expected.map((definition) => definition.name));
-    expect(items.map((item) => item.title)).toEqual(expected.map((definition) => definition.slash!.title));
-    expect(items.map((item) => item.group)).toEqual(expected.map((definition) => definition.slash!.group ?? 'text'));
+    expect(new Set(items.map((item) => item.name.replace(/^heading[134]$/, 'heading')))).toEqual(new Set(expected.map((definition) => definition.name)));
+    expect(items.slice(0, 4).map((item) => item.marker)).toEqual(['H1', 'H2', 'H3', 'H4']);
+    expect(items.filter((item) => item.name.startsWith('heading')).map((item) => item.group)).toEqual(['text', 'text', 'text', 'text']);
     // No structural child (listItem, tableRow, column…) ever shows in the menu.
     for (const hidden of ['listItem', 'taskItem', 'tableRow', 'tableCell', 'tableHeader', 'column']) {
       expect(items.some((item) => item.name === hidden)).toBe(false);
@@ -71,7 +71,7 @@ describe('slash menu items', () => {
       const editor = mountEditor(); // one empty paragraph, caret at its end
       expect(item.run(editor)).toBe(true);
       const names = nodeNames(editor);
-      expect(names).toContain(item.name);
+      expect(names).toContain(item.name.startsWith('heading') ? 'heading' : item.name);
       editor.state.doc.check(); // every insertion leaves a valid document
       editor.destroy();
     }
@@ -87,6 +87,28 @@ describe('slash menu items', () => {
     items.get('paragraph')!.run(editor);
     expect(editor.state.doc.firstChild?.type.name).toBe('paragraph');
     expect(editor.state.doc.childCount).toBe(1);
+    editor.destroy();
+  });
+
+  test('heading choices apply all four real heading levels', () => {
+    const items = buildSlashItems().filter((item) => item.name.startsWith('heading'));
+    for (const [index, item] of items.entries()) {
+      const editor = mountEditor();
+      expect(item.run(editor)).toBe(true);
+      expect(editor.state.doc.firstChild?.attrs.level).toBe(index + 1);
+      editor.destroy();
+    }
+  });
+
+  test('table insertion starts with two columns and a header row', () => {
+    const editor = mountEditor();
+    expect(buildSlashItems().find((item) => item.name === 'table')!.run(editor)).toBe(true);
+    const table = editor.state.doc.firstChild!;
+    expect(table.type.name).toBe('table');
+    expect(table.childCount).toBe(2);
+    expect(table.firstChild?.childCount).toBe(2);
+    expect(table.lastChild?.childCount).toBe(2);
+    expect(table.firstChild?.firstChild?.type.name).toBe('tableHeader');
     editor.destroy();
   });
 
@@ -135,7 +157,7 @@ describe('slash menu items', () => {
 describe('filterSlashItems', () => {
   const items: SlashMenuItem[] = buildSlashItems();
 
-  test('an empty query returns every item in registry order', () => {
+  test('an empty query returns every item in menu order', () => {
     expect(filterSlashItems(items, '')).toEqual(items);
     expect(filterSlashItems(items, '   ')).toEqual(items);
   });
@@ -145,7 +167,7 @@ describe('filterSlashItems', () => {
     expect(filterSlashItems(items, '表格').map((item) => item.name)).toEqual(['table']);
     // '列' hits three list titles — all substring rank, registry order kept.
     const lists = filterSlashItems(items, '列');
-    expect(lists.map((item) => item.name)).toEqual(['bulletList', 'orderedList', 'taskList']);
+    expect(lists.map((item) => item.name)).toEqual(['taskList', 'bulletList', 'orderedList']);
     expect(lists.every((item) => item.title.includes('列'))).toBe(true);
     // 'code' is a keyword of 代码 (no title matches it).
     expect(filterSlashItems(items, 'code').map((item) => item.name)).toEqual(['codeBlock']);

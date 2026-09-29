@@ -20,9 +20,9 @@ import { NodeViewWrapper } from '@tiptap/react';
 import type { NodeViewProps } from '@tiptap/react';
 import type { PageScope } from '@fouc/shared/knowledge/contracts';
 import { ArrowSquareOut, ArrowsClockwise, Link, Prohibit, Trash, Warning } from '@phosphor-icons/react';
-import { withNodeView } from '../extensions/with-node-view';
-import { PAGE_BODY_FRAGMENT } from '../page-collaboration';
-import { requestOpenPageBlock } from '../open-target';
+import { withNodeView } from '../../extensions/with-node-view';
+import { PAGE_BODY_FRAGMENT } from '../../page-collaboration';
+import { requestOpenPageBlock } from '../../open-target';
 import {
   createBlockReferenceSources,
   watchSourceBlock,

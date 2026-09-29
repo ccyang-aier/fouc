@@ -9,22 +9,16 @@
  */
 
 import type { Extensions } from '@tiptap/core';
-import { BlockquoteInputRule } from './input-rules/blockquote-input-rule';
-import { CodeBlockInputRule } from './input-rules/code-block-input-rule';
-import { DividerInputRule } from './input-rules/divider-input-rule';
-import { HeadingInputRule } from './input-rules/heading-input-rule';
-import { ListInputRules } from './input-rules/list-input-rules';
+import { EDITOR_BLOCK_MODULES } from '../block-modules';
 import { MarkInputRules } from './input-rules/mark-input-rules';
-import { TaskListInputRule } from './input-rules/task-list-input-rule';
 import { BlockBackspaceKey } from './keyboard/block-backspace';
 import { BlockEnterKey } from './keyboard/block-enter';
 import { BlockMoveKey } from './keyboard/block-move';
 import { BlockFormatShortcuts } from './keyboard/block-format-shortcuts';
-import { TaskItemToggle } from './keyboard/task-item-toggle';
 import { ListIndentKey } from './keyboard/list-indent';
 
-export { BlockquoteInputRule, CodeBlockInputRule, DividerInputRule, HeadingInputRule, ListInputRules, MarkInputRules, TaskListInputRule };
-export { BlockBackspaceKey, BlockEnterKey, BlockMoveKey, BlockFormatShortcuts, ListIndentKey, TaskItemToggle };
+export { MarkInputRules };
+export { BlockBackspaceKey, BlockEnterKey, BlockMoveKey, BlockFormatShortcuts, ListIndentKey };
 export { moveBlock } from './keyboard/block-move';
 export { currentBlockFormat, insertMathBlock, setBlockFormat } from './format/block-format';
 export type { BlockFormat, ListKind } from './format/block-format';
@@ -33,18 +27,12 @@ export { nearestAncestor, nearestListItem } from './prose-context';
 /** All E04 behaviors as one extension list (input rules, keyboard editing). */
 export function createBlockEditingExtensions(): Extensions {
   return [
-    HeadingInputRule,
-    ListInputRules,
-    TaskListInputRule,
-    BlockquoteInputRule,
-    CodeBlockInputRule,
-    DividerInputRule,
+    ...EDITOR_BLOCK_MODULES.flatMap((module) => module.extensions ?? []),
     MarkInputRules,
     BlockEnterKey,
     BlockBackspaceKey,
     ListIndentKey,
     BlockMoveKey,
     BlockFormatShortcuts,
-    TaskItemToggle,
   ];
 }

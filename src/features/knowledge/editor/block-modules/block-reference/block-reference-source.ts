@@ -18,9 +18,9 @@ import { DOMSerializer } from '@tiptap/pm/model';
 import type { PageScope } from '@fouc/shared/knowledge/contracts';
 import { isValidBlockId } from '@fouc/shared/knowledge/schema';
 import { yXmlFragmentToProseMirrorRootNode } from 'y-prosemirror';
-import type { PageDocumentSession } from '../../collaboration/page-provider';
-import { connectPageDocument } from '../../collaboration/page-provider';
-import type { PageDocumentStatus } from '../../collaboration/page-sync-state';
+import type { PageDocumentSession } from '../../../collaboration/page-provider';
+import { connectPageDocument } from '../../../collaboration/page-provider';
+import type { PageDocumentStatus } from '../../../collaboration/page-sync-state';
 
 /** Opens one source page document; the default connector is B04's `connectPageDocument`. */
 export type SourceConnector = (options: { scope: PageScope; signal: AbortSignal }) => PromiseLike<PageDocumentSession>;

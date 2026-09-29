@@ -46,6 +46,7 @@ import { useProjectResources } from "@/features/project/project-resources"
 import { ProjectHomeCanvas } from "@/features/project/project-home-canvas"
 import { ProjectIndexCanvas } from "@/features/project/project-index-canvas"
 import "./sidebar-material.css"
+import styles from "./workbench-shell.module.css"
 import { SettingsCanvas } from "@/features/settings/settings-canvas"
 import { HelpFeedbackCanvas } from "@/features/help/help-feedback-canvas"
 import { SystemBar } from "./system-bar"
@@ -96,7 +97,7 @@ export function WorkbenchShell() {
         <div className="h-dvh w-full p-[var(--win-frame-inset)]">
           <div
             ref={frameRef}
-            className="flex h-full w-full min-w-[660px] min-h-[540px] flex-col overflow-hidden bg-background text-[var(--ink)] shadow-[var(--win-shadow)]"
+            className={`${styles.frame} flex h-full w-full min-w-[660px] min-h-[540px] flex-col overflow-hidden bg-background text-[var(--ink)] shadow-[var(--win-shadow)]`}
           >
             {view === "settings" ? (
               // 设置为全窗页面：接管全部空间且不显示系统顶行；
@@ -108,7 +109,7 @@ export function WorkbenchShell() {
               // 双层侧栏（工作区轨道 + 主导航）顶行全高，共用同一块材质底座；
               // 系统底层行只在主区顶部、与主导航 header 等高并接
               <div className="flex min-h-0 flex-1">
-                <div className="sidebar-material flex shrink-0">
+                <div className={`${styles.navigation} sidebar-material flex shrink-0`}>
                   <WorkspaceRail view={view} onViewChange={changeView} spaces={spaces} activeSpaceId={activeSpace.id} onSpacesChange={updateSpaces} onActiveSpaceChange={selectWorkspace} onCreateSpace={createWorkspace} />
                   <NavigationSidebar
                     open={!sidebarCollapsed}
@@ -123,7 +124,7 @@ export function WorkbenchShell() {
                   />
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col">
-                  <SystemBar onNavigate={changeView} />
+                  <div className={styles.systemBar}><SystemBar onNavigate={changeView} /></div>
                   <main className="relative min-w-0 flex-1 overflow-hidden bg-panel">
                     <div className="relative h-full min-h-0" style={{ perspective: 1600 }}>
                       <AnimatePresence initial={false} custom={view === "projects" ? 1 : -1}>

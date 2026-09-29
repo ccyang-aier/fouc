@@ -1,0 +1,23 @@
+.header { display: flex; flex: none; align-items: center; justify-content: space-between; gap: 20px; height: 58px; padding: 0 8px 0 22px; background: #fff; color: #191d25; }
+.leading, .actions { display: flex; align-items: center; min-width: 0; }
+.leading { gap: 4px; }
+.actions { flex: none; gap: 9px; }
+.libraryButton, .iconButton, .moreButton { display: grid; flex: none; place-items: center; border: 0; background: transparent; color: #202833; cursor: pointer; }
+.libraryButton { width: 22px; height: 32px; padding: 0; color: #9b52ef; }
+.collectionName { max-width: 160px; overflow: hidden; padding: 3px 0; border: 0; background: transparent; color: #181d26; font-size: 15px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.divider { padding: 0 7px; color: #d6dfea; font-size: 21px; font-weight: 350; }
+.iconButton { width: 28px; height: 32px; border-radius: 6px; }
+.iconButton:hover, .moreButton:hover, .libraryButton:hover { background: #f3f5f8; }
+.avatar { display: grid; flex: none; width: 28px; height: 28px; place-items: center; border-radius: 50%; background: #3034ed; color: white; font-size: 15px; font-weight: 500; }
+.outlineButton { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 32px; padding: 0 10px; border: 1px solid #d7e0ec; border-radius: 6px; background: #fff; box-shadow: 0 1px 2px rgb(20 32 52 / 9%); color: #1a202b; font-size: 14px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.outlineButton:hover { background: #f9fbfd; border-color: #b6c5d9; }
+.outlineButton:disabled { opacity: .48; cursor: not-allowed; }
+.moreButton { width: 28px; height: 32px; border-radius: 6px; }
+.header button:focus-visible { outline: 2px solid #0869cf; outline-offset: 2px; }
+.shareMenu, .moreMenu { width: 240px; padding: 8px; border: 1px solid #e2e7ef; border-radius: 9px; background: #fff; box-shadow: 0 12px 30px rgb(25 35 52 / 13%); }
+.shareTitle, .moreHeading { padding: 5px 7px; color: #1d2634; font-size: 13px; font-weight: 650; }
+.shareDescription { padding: 0 7px 8px; color: #718096; font-size: 12px; line-height: 1.5; }
+.shareStatus { padding: 5px 7px; color: #0869cf; font-size: 12px; }
+.moreMenu [role='toolbar'] { padding: 4px 2px; }
+.extraActions { display: grid; gap: 2px; }
+@media (max-width: 700px) { .header { height: 56px; padding: 0 12px; gap: 8px; } .leading { gap: 3px; } .collectionName { max-width: 72px; font-size: 13px; } .divider { padding: 0 2px; } .actions { gap: 4px; } .avatar { display: none; } .outlineButton { padding: 0 7px; font-size: 12px; } .outlineButton svg { width: 15px; } }

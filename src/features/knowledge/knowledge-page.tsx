@@ -37,6 +37,11 @@ import { KnowledgeWorkbench } from './knowledge-workbench';
 import { createBrowserKnowledgeResourceSelection } from './resource-selection';
 import { useKnowledgeBaseSelection } from './use-knowledge-base-selection';
 import { useWorkspace } from '@/features/workspaces/workspace-provider';
+import { CreateDocumentDialog, type DocumentCreation } from './navigation/create-document-dialog';
+import { NavigationDialogPortal } from './navigation/navigation-dialog-portal';
+import { usePageTreeOperations } from './navigation/page-operations';
+import { canEditTree } from './navigation/tree-actions';
+import { useCreateTeamspaceMutation } from './organization/hooks';
 
 const LocalKnowledgeResource = dynamic(() => import('./local/local-knowledge-resource').then((module) => module.LocalKnowledgeResource), { ssr: false, loading: () => <CanvasSpinner label="正在加载知识资源" /> });
 
@@ -159,7 +164,21 @@ function WorkspaceKnowledgeResource({ onOpenSettings, onOpenLocal, onOpenWorkspa
   const [createKnowledgeBaseOpen, setCreateKnowledgeBaseOpen] = useState(false);
   const [createTeamspaceOpen, setCreateTeamspaceOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [editorSidebarOpen, setEditorSidebarOpen] = useState(false);
+  const [createDocumentOpen, setCreateDocumentOpen] = useState(false);
   const { toast, notify } = useOrganizationToast();
+  const pageOperations = usePageTreeOperations(activeId, { canEdit: canEditTree(accessQuery.data), notify });
+  const createTeamspace = useCreateTeamspaceMutation(activeId ?? '');
+
+  async function createDocument(input: DocumentCreation): Promise<string | null> {
+    if (!activeBase || !activeId) return null;
+    try {
+      const teamspaceId = input.teamspaceId || (await createTeamspace.mutateAsync({ knowledgeBaseId: activeBase.id, name: '文档', defaultAccess: 'edit' })).id;
+      const id = await pageOperations.createPage({ ...input, teamspaceId });
+      if (id) { setSelectedPageId(id); setCreateDocumentOpen(false); }
+      return id;
+    } catch { notify('error', '创建文档失败，请重试'); return null; }
+  }
 
   const retryTeamspaces = () => void teamspacesQuery.refetch();
 
@@ -202,9 +221,12 @@ function WorkspaceKnowledgeResource({ onOpenSettings, onOpenLocal, onOpenWorkspa
 
   return (
     <KnowledgeWorkbench
+      documentOpen={Boolean(selectedPageId)}
+      sidebarOpen={Boolean(selectedPageId) && editorSidebarOpen}
+      onCloseSidebar={() => setEditorSidebarOpen(false)}
       sidebar={<PageTreeSidebar
-        collapsed={sidebarCollapsed}
-        onCollapse={() => setSidebarCollapsed(true)}
+        collapsed={selectedPageId ? false : sidebarCollapsed}
+        onCollapse={() => selectedPageId ? setEditorSidebarOpen(false) : setSidebarCollapsed(true)}
         onOpenSettings={onOpenSettings}
         onOpenLocal={onOpenLocal}
         knowledgeBases={knowledgeBases}
@@ -216,6 +238,7 @@ function WorkspaceKnowledgeResource({ onOpenSettings, onOpenLocal, onOpenWorkspa
       />}
       onExpandSidebar={sidebarCollapsed ? () => setSidebarCollapsed(false) : undefined}
       overlays={<>
+        {createDocumentOpen && activeBase ? <NavigationDialogPortal><CreateDocumentDialog teamspaces={teamspaces} target={{ teamspaceId: selectedTeamspaceId ?? undefined, parentId: null }} onClose={() => setCreateDocumentOpen(false)} onCreate={createDocument} /></NavigationDialogPortal> : null}
         {activeId ? <CreateKnowledgeBaseDialog workspaceId={activeId} open={createKnowledgeBaseOpen} onClose={() => setCreateKnowledgeBaseOpen(false)} onCreated={(id) => { setChosenBaseId(id); setSelectedTeamspaceId(null); setSelectedPageId(null); setLibraryView('all-documents'); notify('success', '知识库已创建'); }} /> : null}
         {activeWorkspace && activeBase ? <CreateTeamspaceDialog knowledgeBaseId={activeBase.id} workspaceId={activeWorkspace.id} open={createTeamspaceOpen} onClose={() => setCreateTeamspaceOpen(false)} onCreated={(teamspace) => { setSelectedTeamspaceId(teamspace.id); setSelectedPageId(null); setLibraryView('overview'); }} /> : null}
         <ToastRegion toast={toast} />
@@ -265,7 +288,16 @@ function WorkspaceKnowledgeResource({ onOpenSettings, onOpenLocal, onOpenWorkspa
       ) : activeWorkspace && session.status === 'authenticated' ? (
         <>
           {selectedPageId && activeId ? (
-            <KnowledgePageEditor scope={{ workspaceId: activeId, pageId: selectedPageId }} user={session.user} />
+            <KnowledgePageEditor
+              scope={{ workspaceId: activeId, pageId: selectedPageId }}
+              user={session.user}
+              collectionName={activeBase?.name ?? '知识库'}
+              knowledgeBaseId={activeBase?.id ?? ''}
+              onBack={() => { setSelectedPageId(null); setEditorSidebarOpen(false); setLibraryView('all-documents'); }}
+              onToggleSidebar={() => setEditorSidebarOpen((value) => !value)}
+              onCreateDocument={() => setCreateDocumentOpen(true)}
+              canCreateDocument={canEditTree(accessQuery.data)}
+            />
           ) : activeId ? (
             <LibraryCanvas knowledgeBaseId={activeBase?.id ?? ''} key={`${activeId}:${activeBase?.id}`} workspaceId={activeId} userId={session.user.id} name={activeBase?.name ?? ''} view={libraryView} access={accessQuery.data} teamspaces={teamspaces} folder={selectedTeamspace} onOpenPage={setSelectedPageId} onSelectFolder={(id) => { setSelectedTeamspaceId(id); setLibraryView('overview'); }} onCreateFolder={() => setCreateTeamspaceOpen(true)} onExpandSidebar={sidebarCollapsed ? () => setSidebarCollapsed(false) : undefined} notify={notify} />
           ) : null}

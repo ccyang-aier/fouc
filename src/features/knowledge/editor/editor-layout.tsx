@@ -3,36 +3,10 @@
 import type { ReactNode } from 'react';
 import { EditorContent } from '@tiptap/react';
 import type { Editor } from '@tiptap/react';
-import { FileText } from '@phosphor-icons/react';
-import type { PageUndo } from '../collaboration/page-undo';
-import { EditorToolbar } from './components/editor-toolbar';
 import styles from './editor-layout.module.css';
 
 export function DocumentEditorFrame({ children }: { children: ReactNode }) {
   return <section aria-label="页面编辑器" className={styles.frame}>{children}</section>;
-}
-
-export function DocumentEditorHeader({ editor, pageUndo, editable, title, leading, trailing }: {
-  editor: Editor | null;
-  pageUndo?: PageUndo;
-  editable: boolean;
-  title: string;
-  leading?: ReactNode;
-  trailing?: ReactNode;
-}) {
-  return <header className={styles.header}>
-    <div className={styles.breadcrumb}>
-      {leading}
-      <FileText size={20} weight="duotone" aria-hidden className={styles.breadcrumbIcon} />
-      <span className={styles.breadcrumbRoot}>文档</span>
-      <span aria-hidden className={styles.breadcrumbDivider}>/</span>
-      <span className={styles.breadcrumbCurrent} title={title}>{title || '无标题文档'}</span>
-    </div>
-    <div className={styles.headerActions}>
-      <EditorToolbar editor={editor} pageUndo={pageUndo} editable={editable} />
-      {trailing}
-    </div>
-  </header>;
 }
 
 export function DocumentHeading({ title, onTitleChange, onTitleCommit, editable = true, metadata }: {

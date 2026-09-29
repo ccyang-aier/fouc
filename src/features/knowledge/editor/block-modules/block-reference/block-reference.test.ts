@@ -11,8 +11,8 @@ import * as Y from 'yjs';
 import { prosemirrorJSONToYDoc } from 'y-prosemirror';
 import { knowledgeSchema } from '@fouc/shared/knowledge/schema';
 import type { PageScope } from '@fouc/shared/knowledge/contracts';
-import type { PageDocumentSession } from '../../collaboration/page-provider';
-import type { PageDocumentStatus } from '../../collaboration/page-sync-state';
+import type { PageDocumentSession } from '../../../collaboration/page-provider';
+import type { PageDocumentStatus } from '../../../collaboration/page-sync-state';
 import {
   createBlockReferenceSources,
   locateSourceBlock,

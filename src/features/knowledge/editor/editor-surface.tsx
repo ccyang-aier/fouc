@@ -20,10 +20,10 @@ import type { FoucAuthUser } from '../../identity/auth-api';
 import type { PageUndo } from '../collaboration/page-undo';
 import type { PageDocumentSession } from '../collaboration/page-provider';
 import { AwarenessMembers, createAwarenessExtension } from './awareness';
-import { applyBlockNodeViews } from './blocks';
-import { applyBlockReferenceView } from './blocks/block-reference';
+import { applyEditorBlockModules } from './block-modules';
 import { createSlashPasteExtensions, SlashMenuLayer } from './commands';
-import { DocumentEditorBody, DocumentEditorFrame, DocumentEditorHeader, DocumentHeading } from './editor-layout';
+import { DocumentEditorBody, DocumentEditorFrame, DocumentHeading } from './editor-layout';
+import { DocumentEditorHeader } from './components/document-editor-header';
 import { ReadonlyBanner } from './components/readonly-banner';
 import { SyncIndicator } from './components/sync-indicator';
 import type { PageEditorViewModel } from './editor-state';
@@ -34,6 +34,8 @@ import { createBlockEditingExtensions } from './extensions';
 import { HistoryPanel } from '../history/history-panel';
 import { createCommentsEditorExtension, PageCommentsLayer } from './comments-integration';
 import { usePageTitle } from './use-page-title';
+import { useSidebarCollections } from '../navigation/sidebar-collections';
+import { TaskProgress } from './block-modules/task-list/task-progress';
 
 export function PageEditorSurface({
   scope,
@@ -43,6 +45,12 @@ export function PageEditorSurface({
   pageUndo,
   level,
   view,
+  collectionName,
+  knowledgeBaseId,
+  onBack,
+  onToggleSidebar,
+  onCreateDocument,
+  canCreateDocument,
 }: {
   scope: PageScope;
   /** The live B04 page session — its document is the only body authority. */
@@ -54,6 +62,12 @@ export function PageEditorSurface({
   pageUndo: PageUndo;
   level: PermissionLevel;
   view: PageEditorViewModel;
+  collectionName: string;
+  knowledgeBaseId: string;
+  onBack: () => void;
+  onToggleSidebar: () => void;
+  onCreateDocument: () => void;
+  canCreateDocument: boolean;
 }) {
   const document = session.document;
   // One extension set per page session: shared registry (E01) with the
@@ -62,10 +76,7 @@ export function PageEditorSurface({
   // marks (S01), comments (N02), markdown/keyboard block editing (E04), the
   // slash menu + paste pipeline (E06) and presence cursors (B07).
   const extensions = useMemo(() => {
-    const registry = applyBlockReferenceView(applyBlockNodeViews(createKnowledgeExtensions()), {
-      scope,
-      origin: origin ?? '',
-    });
+    const registry = applyEditorBlockModules(createKnowledgeExtensions(), { scope, origin: origin ?? '' });
     return [
       ...registry,
       createBlockIdExtension({ pageId: scope.pageId }),
@@ -118,26 +129,40 @@ export function PageEditorSurface({
   }, [editor, scope.pageId]);
 
   const [historyOpen, setHistoryOpen] = useState(false);
+  const { collections, toggleStar } = useSidebarCollections(user?.id ?? '', scope.workspaceId, knowledgeBaseId);
   const pageTitle = usePageTitle(scope);
   const updatedLabel = pageTitle.updatedAt
-    ? `更新于 ${new Date(pageTitle.updatedAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+    ? `你已更新 ${new Date(pageTitle.updatedAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
     : '文档';
 
   return (
     <DocumentEditorFrame>
-      <DocumentEditorHeader editor={editor} pageUndo={pageUndo} editable={view.editable} title={pageTitle.title} trailing={<>
-          <AwarenessMembers awareness={session.awareness} />
-          <button
+      <DocumentEditorHeader
+        editor={editor}
+        pageUndo={pageUndo}
+        editable={view.editable}
+        collectionName={collectionName}
+        title={pageTitle.title}
+        avatarName={user?.name ?? '我'}
+        starred={collections.starred.includes(scope.pageId)}
+        onBack={onBack}
+        onToggleSidebar={onToggleSidebar}
+        onToggleStar={() => toggleStar(scope.pageId)}
+        onCreateDocument={onCreateDocument}
+        canCreateDocument={canCreateDocument}
+        shareDescription="复制文档标题和正文后，可以粘贴到其他应用。页面访问权限由知识库管理。"
+        presence={<AwarenessMembers awareness={session.awareness} />}
+        menuActions={<button
             type="button"
             onClick={() => setHistoryOpen((open) => !open)}
             aria-expanded={historyOpen}
             aria-label="历史版本"
             title="历史版本"
-            className="flex size-7 items-center justify-center rounded-[6px] text-[var(--muted)] transition-colors hover:bg-[var(--overlay)] hover:text-[var(--ink)]"
+            className="flex w-full items-center gap-2 rounded px-2 py-2 text-left text-xs hover:bg-[var(--raise)]"
           >
-            <ClockCounterClockwise aria-hidden className="size-4" />
-          </button>
-      </>} />
+            <ClockCounterClockwise aria-hidden className="size-4" />历史版本
+          </button>}
+      />
       {view.readonlyReason ? <ReadonlyBanner reason={view.readonlyReason} level={level} /> : null}
       <PageCommentsLayer scope={scope} editor={editor} level={level}>
         <DocumentEditorBody editor={editor} before={<DocumentHeading
@@ -147,8 +172,9 @@ export function PageEditorSurface({
           onTitleCommit={() => { void pageTitle.save(); }}
           metadata={<>
             <span>{updatedLabel}</span>
+            <TaskProgress editor={editor} />
             <SyncIndicator view={view.sync} />
-            <span>{level === 'view' ? '仅可查看' : level === 'comment' ? '可评论' : '可编辑'}</span>
+            <span>{level === 'view' ? '仅可查看' : level === 'comment' ? '可评论' : '可编辑'} · 已被浏览</span>
             {pageTitle.fetchError ? <span role="alert" className="text-[var(--err-ink)]">标题暂不可用</span> : null}
             {pageTitle.saving ? <span>正在保存标题</span> : null}
             {pageTitle.error ? <span role="alert" className="text-[var(--err-ink)]">{pageTitle.error}</span> : null}

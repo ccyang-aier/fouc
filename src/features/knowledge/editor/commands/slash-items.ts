@@ -1,237 +1,65 @@
-/**
- * The slash menu item model (E06): the pure layer between the shared E01
- * block registry and the '/' floating menu. The list is generated from every
- * registry definition that publishes `slash` metadata. Heading expands into
- * its four supported levels; each entry is paired with an insert command from
- * the extensible INSERT_COMMANDS record (future entries such as a J05 /ai
- * register through `registerSlashInsert`).
- *
- * Insert commands reuse the E04 `setBlockFormat` / `insertMathBlock`
- * vocabulary where it fits; structural blocks (callout, table, columns, atoms)
- * are created from the live schema and land through the same
- * empty-paragraph-replace flow as `insertMathBlock`, so the E02 plugin mints
- * their blockIds.
- */
-
-import type { ComponentType } from 'react';
-import {
-  Article,
-  CheckSquare,
-  Code,
-  Columns,
-  Database,
-  Function as FunctionIcon,
-  Globe,
-  Image as ImageIcon,
-  Info,
-  Link as LinkIcon,
-  List,
-  ListNumbers,
-  Minus,
-  Quotes,
-  Sparkle,
-  SpeakerHigh,
-  Table as TableIcon,
-  TextHOne,
-  TextT,
-  Video as VideoIcon,
-} from '@phosphor-icons/react';
-import type { Editor } from '@tiptap/core';
-import { TextSelection } from '@tiptap/pm/state';
-import type { NodeType, Node as ProseMirrorNode } from '@tiptap/pm/model';
+/** The slash picker is only a view of the shared schema and browser block modules. */
+import { Article } from '@phosphor-icons/react';
 import { createKnowledgeRegistry } from '@fouc/shared/knowledge/schema';
 import type { BlockRegistry } from '@fouc/shared/knowledge/schema';
-import { insertMathBlock, setBlockFormat } from '../extensions/format/block-format';
+import { editorBlockModuleByName } from '../block-modules';
+import type { BlockIcon, BlockInsertCommand } from '../block-modules/types';
 
 export type SlashGroup = 'text' | 'layout' | 'media' | 'knowledge' | 'ai';
-
-/** Render-only surface an item's icon needs (Phosphor components satisfy it). */
-export type SlashItemIcon = ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
+export type SlashItemIcon = BlockIcon;
+export type SlashInsertCommand = BlockInsertCommand;
 
 export interface SlashMenuItem {
-  /** The registry block name (or a registered custom entry name). */
   readonly name: string;
   readonly title: string;
   readonly keywords: readonly string[];
   readonly group: SlashGroup;
   readonly icon?: SlashItemIcon;
-  /** Compact glyph or shortcut shown by the menu; commands still belong to the model. */
   readonly marker?: string;
   readonly shortcut?: string;
-  /** Runs the insertion; returns whether the editor accepted it. */
-  run(editor: Editor): boolean;
+  run: SlashInsertCommand;
 }
 
-/** The insert side of one menu entry; extensions and tests register custom ones. */
-export type SlashInsertCommand = (editor: Editor) => boolean;
-
-/* ------------------------------------------------------------- insertions */
-
-const sizeOf = (nodes: readonly ProseMirrorNode[]): number => nodes.reduce((total, node) => total + node.nodeSize, 0);
-
-/**
- * Insert block nodes with `insertMathBlock` semantics: an empty top-level
- * paragraph is replaced by the nodes plus a fresh caret paragraph; otherwise
- * they land after the caret's top-level block.
- */
-function insertBlockNodes(nodes: readonly ProseMirrorNode[]): SlashInsertCommand {
-  return (editor) => {
-    const paragraph = editor.schema.nodes.paragraph;
-    if (!paragraph || !nodes.length) return false;
-    const { $anchor } = editor.state.selection;
-    const trail = paragraph.create();
-    const tr = editor.state.tr;
-    if ($anchor.parent.type === paragraph && $anchor.parent.content.size === 0 && $anchor.depth === 1) {
-      const before = $anchor.before();
-      tr.replaceWith(before, $anchor.after(), [...nodes, trail]);
-      tr.setSelection(TextSelection.near(tr.doc.resolve(before + sizeOf(nodes) + 1), 1));
-    } else {
-      const after = $anchor.before(1) + $anchor.node(1).nodeSize;
-      tr.insert(after, [...nodes, trail]);
-      tr.setSelection(TextSelection.near(tr.doc.resolve(after + sizeOf(nodes) + 1), 1));
-    }
-    editor.view.dispatch(tr.scrollIntoView());
-    return true;
-  };
-}
-
-/** Build an insert command from a node factory; unknown schema types fail honestly. */
-function insertBuiltNodes(build: (nodes: Record<string, NodeType>) => readonly ProseMirrorNode[]): SlashInsertCommand {
-  return (editor) => {
-    try {
-      return insertBlockNodes(build(editor.schema.nodes))(editor);
-    } catch {
-      return false;
-    }
-  };
-}
-
-const cell = (type: NodeType | undefined, nodes: Record<string, NodeType>): ProseMirrorNode | null =>
-  type && nodes.paragraph ? type.create(null, [nodes.paragraph.create()]) : null;
-
-/**
- * The built-in insert commands, keyed by registry block name. Converters reuse
- * the E04 toggle vocabulary (they run on the empty trigger paragraph, so a
- * toggle at rest is a plain conversion).
- */
-const INSERT_COMMANDS: Record<string, SlashInsertCommand> = {
-  paragraph: (editor) => editor.chain().command(setBlockFormat({ kind: 'paragraph' })).run(),
-  heading: (editor) => editor.chain().command(setBlockFormat({ kind: 'heading', level: 2 })).run(),
-  bulletList: (editor) => editor.chain().command(setBlockFormat({ kind: 'bulletList' })).run(),
-  orderedList: (editor) => editor.chain().command(setBlockFormat({ kind: 'orderedList' })).run(),
-  taskList: (editor) => editor.chain().command(setBlockFormat({ kind: 'taskList' })).run(),
-  blockquote: (editor) => editor.chain().command(setBlockFormat({ kind: 'blockquote' })).run(),
-  codeBlock: (editor) => editor.chain().command(setBlockFormat({ kind: 'codeBlock' })).run(),
-  math: (editor) => editor.chain().command(insertMathBlock).run(),
-  horizontalRule: insertBuiltNodes((nodes) => [nodes.horizontalRule.create()]),
-  callout: insertBuiltNodes((nodes) => [nodes.callout.create(null, [nodes.paragraph.create()])]),
-  table: insertBuiltNodes((nodes) => {
-    const header = cell(nodes.tableHeader, nodes);
-    const secondHeader = cell(nodes.tableHeader, nodes);
-    const body = cell(nodes.tableCell, nodes);
-    const secondBody = cell(nodes.tableCell, nodes);
-    if (!header || !secondHeader || !body || !secondBody) throw new TypeError('table cell types missing');
-    return [nodes.table.create(null, [
-      nodes.tableRow.create(null, [header, secondHeader]),
-      nodes.tableRow.create(null, [body, secondBody]),
-    ])];
-  }),
-  columns: insertBuiltNodes((nodes) => [nodes.columns.create(null, [
-    nodes.column.create(null, [nodes.paragraph.create()]),
-    nodes.column.create(null, [nodes.paragraph.create()]),
-  ])]),
-  image: insertBuiltNodes((nodes) => [nodes.image.create()]),
-  video: insertBuiltNodes((nodes) => [nodes.video.create()]),
-  audio: insertBuiltNodes((nodes) => [nodes.audio.create()]),
-  file: insertBuiltNodes((nodes) => [nodes.file.create()]),
-  embed: insertBuiltNodes((nodes) => [nodes.embed.create()]),
-  blockReference: insertBuiltNodes((nodes) => [nodes.blockReference.create()]),
-  pageLink: insertBuiltNodes((nodes) => [nodes.pageLink.create()]),
-  databaseView: insertBuiltNodes((nodes) => [nodes.databaseView.create()]),
-  aiBlock: insertBuiltNodes((nodes) => [nodes.aiBlock.create(null, [nodes.paragraph.create()])]),
-};
-
-/** Register (or override) the insert command of one menu entry name. */
+/** Additional product modules can replace a command without changing the shared schema. */
+const registeredCommands = new Map<string, SlashInsertCommand>();
 export function registerSlashInsert(name: string, run: SlashInsertCommand): void {
-  INSERT_COMMANDS[name] = run;
+  registeredCommands.set(name, run);
 }
 
-/* ------------------------------------------------------------------ icons */
-
-const FALLBACK_ICON: SlashItemIcon = Article;
-
-/** One icon per registry block; unknown blocks fall back to a document glyph. */
-const SLASH_ICONS: Record<string, SlashItemIcon> = {
-  paragraph: TextT,
-  heading: TextHOne,
-  bulletList: List,
-  orderedList: ListNumbers,
-  taskList: CheckSquare,
-  blockquote: Quotes,
-  callout: Info,
-  codeBlock: Code,
-  math: FunctionIcon,
-  horizontalRule: Minus,
-  table: TableIcon,
-  columns: Columns,
-  image: ImageIcon,
-  video: VideoIcon,
-  audio: SpeakerHigh,
-  file: Article,
-  embed: Globe,
-  blockReference: LinkIcon,
-  pageLink: Article,
-  databaseView: Database,
-  aiBlock: Sparkle,
+const priority: Record<string, number> = {
+  heading1: 0, heading: 1, heading3: 2, heading4: 3,
+  taskList: 4, bulletList: 5, orderedList: 6,
+  image: 7, video: 8, audio: 9, file: 10, paragraph: 11,
 };
 
-/* ------------------------------------------------------------------ model */
-
-/**
- * The menu items of a registry: every definition with `slash` metadata is
- * paired with its insert command. Heading expands to the four supported
- * levels, and familiar text/media choices lead the picker. Entries without
- * a registered command render but insert nothing (they fail honestly).
- */
 export function buildSlashItems(registry: BlockRegistry = createKnowledgeRegistry()): SlashMenuItem[] {
   const items = registry.getDefinitions()
     .filter((definition) => definition.slash)
     .flatMap((definition): SlashMenuItem[] => {
-      const { title, keywords, group } = definition.slash!;
-      const item: SlashMenuItem = {
-        name: definition.name,
-        title: definition.name === 'taskList' ? '任务列表' : title,
-        keywords,
-        group: group ?? 'text',
-        icon: SLASH_ICONS[definition.name] ?? FALLBACK_ICON,
-        shortcut: ({ taskList: '⌃ ⇧ 7', bulletList: '⌃ ⇧ 8', orderedList: '⌃ ⇧ 9' } as Record<string, string>)[definition.name],
-        run: INSERT_COMMANDS[definition.name] ?? (() => false),
-      };
-      if (definition.name !== 'heading') return [item];
-      return [1, 2, 3, 4].map((level) => ({
-        ...item,
-        name: level === 2 ? 'heading' : `heading${level}`,
-        title: ['主标题', '次标题', '小标题', '附加小标题'][level - 1],
-        marker: `H${level}`,
-        shortcut: `⌃ ⇧ ${level}`,
-        keywords: [...keywords, `h${level}`],
-        run: level === 2 ? item.run : (editor) => editor.chain().command(setBlockFormat({ kind: 'heading', level })).run(),
+      const slash = definition.slash!;
+      const blockModule = editorBlockModuleByName.get(definition.name);
+      const base = { group: slash.group ?? 'text', icon: blockModule?.icon ?? Article };
+      if (blockModule?.choices) return blockModule.choices.map((choice) => ({
+        ...base,
+        name: choice.name,
+        title: choice.title,
+        keywords: [...slash.keywords, ...(choice.keywords ?? [])],
+        marker: choice.marker,
+        shortcut: choice.shortcut,
+        run: registeredCommands.get(choice.name) ?? choice.insert,
       }));
+      return [{
+        ...base,
+        name: definition.name,
+        title: blockModule?.title ?? slash.title,
+        keywords: slash.keywords,
+        shortcut: blockModule?.shortcut,
+        run: registeredCommands.get(definition.name) ?? blockModule?.insert ?? (() => false),
+      }];
     });
-  const priority: Record<string, number> = {
-    heading1: 0, heading: 1, heading3: 2, heading4: 3,
-    taskList: 4, bulletList: 5, orderedList: 6,
-    image: 7, video: 8, audio: 9, file: 10,
-    paragraph: 11,
-  };
   return items.sort((a, b) => (priority[a.name] ?? 100) - (priority[b.name] ?? 100));
 }
 
-/**
- * Case-insensitive query filter: a title prefix outranks a title substring,
- * which outranks a keyword hit; equal ranks keep registry order. An empty
- * query returns every item unchanged.
- */
 export function filterSlashItems(items: readonly SlashMenuItem[], query: string): SlashMenuItem[] {
   const needle = query.trim().toLowerCase();
   if (!needle) return [...items];

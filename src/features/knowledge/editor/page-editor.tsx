@@ -37,7 +37,7 @@ function pageAccessErrorText(error: unknown): string {
 }
 
 /** The page editor of one open page; mounts inside the U02 canvas main column. */
-export function PageEditor({ scope, user }: { scope: PageScope; user: FoucAuthUser | null }) {
+export function PageEditor({ scope, user, collectionName, knowledgeBaseId, onBack, onToggleSidebar, onCreateDocument, canCreateDocument }: { scope: PageScope; user: FoucAuthUser | null; collectionName: string; knowledgeBaseId: string; onBack: () => void; onToggleSidebar: () => void; onCreateDocument: () => void; canCreateDocument: boolean }) {
   const { gate, error: gateError, retry } = usePageEditorGate(scope.workspaceId, scope.pageId);
   // The collaboration session only exists once view access has been granted —
   // a denied page never opens a WebSocket or an IndexedDB copy.
@@ -79,6 +79,12 @@ export function PageEditor({ scope, user }: { scope: PageScope; user: FoucAuthUs
       pageUndo={session.undo}
       level={gate.level}
       view={view}
+      collectionName={collectionName}
+      knowledgeBaseId={knowledgeBaseId}
+      onBack={onBack}
+      onToggleSidebar={onToggleSidebar}
+      onCreateDocument={onCreateDocument}
+      canCreateDocument={canCreateDocument}
     />
   );
 }

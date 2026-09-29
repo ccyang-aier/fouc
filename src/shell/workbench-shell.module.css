@@ -1,0 +1,8 @@
+.frame:has([data-document-editor='true']) .navigation,
+.frame:has([data-document-editor='true']) .systemBar {
+  display: none;
+}
+
+.frame:has([data-document-editor='true']) {
+  min-width: 0;
+}

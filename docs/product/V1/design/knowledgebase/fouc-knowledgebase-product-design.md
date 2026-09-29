@@ -116,7 +116,7 @@ Web 端的 IndexedDB 与桌面端的 SQLite 可作为明确资源的本地副本
 
 ## 4. 编辑器
 
-编辑页采用开放的白色文档画布：顶部保留轻量路径与真实可用的编辑操作，正文列居中并留出宽松边距。文档标题是画布中的第一视觉层级，更新时间、同步状态与访问级别在标题下方以一行弱化的元信息呈现；正文使用清晰的段落、列表、待办与表格排版，不再把文档放进层层卡片。斜杠菜单贴近光标，按常用顺序展示 H1–H4、任务与普通列表、媒体等块，蓝色高亮与键盘提示明确当前选择；提示的快捷键必须真实可用。本机文档与协作文档共用画布和菜单样式，数据来源、标题保存与同步反馈各由自己的资源适配层负责。
+打开文档时采用独立的白色全屏画布，工作台导航与系统顶栏收起，知识库目录通过文档顶栏按需展开。顶栏左侧是知识库路径、目录与星标，右侧是成员、分享、新建文档与更多操作；格式工具置于更多操作中，避免常驻工具栏挤占画面。正文列居中并留出宽松边距。文档标题是画布中的第一视觉层级，更新时间、同步状态与访问级别在标题下方以一行弱化的元信息呈现；正文使用清晰的段落、列表、待办与表格排版。斜杠菜单贴近光标，按常用顺序展示 H1–H4、任务与普通列表、媒体等块，蓝色高亮与键盘提示明确当前选择；提示的快捷键必须真实可用。本机文档与协作文档共用画布和菜单样式，数据来源、标题保存与同步反馈各由自己的资源适配层负责。
 
 ### 4.1 块模型
 
@@ -125,24 +125,28 @@ Web 端的 IndexedDB 与桌面端的 SQLite 可作为明确资源的本地副本
 
 ### 4.2 块注册表
 
-每种块只需要注册一个定义对象，不用改编辑器内核：
+编辑器分为运行时无关的文档协议和浏览器交互两层。`shared/src/knowledge/schema/` 定义块名、属性、ProseMirror schema、Markdown、索引与斜杠元数据，可由服务端、设备端和 Web 共同读取，不引用 React。`src/features/knowledge/editor/block-modules/<块名>/` 是对应块的浏览器模块，独立拥有插入命令、输入规则、NodeView、块内工具与样式；复杂块的实现和测试也放在该目录。编辑器只从显式模块清单装配行为，斜杠菜单从同一清单读取，不维护另一份集中式插入命令表。跨块的撤销、协作、粘贴与键盘导航保持在编辑器核心。
+
+例如提示框的协议定义和浏览器模块分别位于两层：
 
 ```ts
 defineBlock({
   name: 'callout',
   schema: { content: 'block+', attrs: { emoji: { default: '💡' } } },
-  view: CalloutNodeView,                        // React NodeView
-  markdown: {                                   // 双向转换
-    toMd: (node, ctx) => directive('callout', node.attrs, ctx.children()),
-    fromMd: { directive: 'callout' },
-  },
-  ai: { describe: n => `提示框：${n.textContent}` }, // 给 AI 的表示（可选，默认输出 Markdown）
-  index: { mode: 'text' },                      // 索引方式：text | media | skip
+  markdown: { fromMd: { directive: 'callout', kind: 'container' } },
+  index: { mode: 'text' },
   slash: { title: '提示框', keywords: ['callout', 'tip'] },
 })
+
+export const CalloutModule = {
+  name: 'callout',
+  icon: Info,
+  insert: insertBuiltNodes(/* 用当前 schema 创建提示框 */),
+  decorate: (extensions) => withNodeView(extensions, 'callout', () => ReactNodeViewRenderer(CalloutNodeView)),
+}
 ```
 
-扩展能力以一方包的形式注册。编辑器不执行第三方代码，这样可以避开沙箱带来的复杂度和安全风险。
+扩展能力由一方代码显式注册；编辑器不执行第三方代码。未来的视频、音频、画板、表单或脑图应各自拥有模块目录，并在同一协议和模块清单注册，不能把复杂 NodeView 塞回页面容器或斜杠菜单。
 
 ### 4.3 blockId 完整性
 

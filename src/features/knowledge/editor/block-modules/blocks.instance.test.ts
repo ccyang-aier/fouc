@@ -1,7 +1,7 @@
 /**
  * Instance tests of the E05 block NodeViews (callout / columns / table) under
  * happy-dom: a real Tiptap Editor over the shared registry schema, the E02
- * blockId extension and the E04 keyboard set, with `applyBlockNodeViews`
+ * blockId extension and the E04 keyboard set, with `applyEditorBlockModules`
  * layering the React NodeViews. Because ReactNodeViewRenderer only renders
  * once React's EditorContent attaches the portal host, the editor is mounted
  * through a real React root — the same shell the page surface uses.
@@ -32,8 +32,8 @@ import {
   reidentifyPastedSlice,
 } from '@fouc/shared/knowledge/schema';
 import { createBlockEditingExtensions } from '../extensions';
-import { applyBlockNodeViews } from '.';
-import { insertColumnRight, insertRowBelow, removeTableRow, toggleTableHeaderRow } from './table-commands';
+import { applyEditorBlockModules } from '.';
+import { insertColumnRight, insertRowBelow, removeTableRow, toggleTableHeaderRow } from './table/table-commands';
 
 const pageId = '00000000-0000-4000-8000-000000000001';
 
@@ -64,7 +64,7 @@ function mountEditor(): Mounted {
   const editor = new Editor({
     element: host as unknown as HTMLElement,
     extensions: [
-      ...applyBlockNodeViews([...createKnowledgeExtensions(), createBlockIdExtension({ pageId })]),
+      ...applyEditorBlockModules([...createKnowledgeExtensions(), createBlockIdExtension({ pageId })]),
       ...createBlockEditingExtensions(),
     ],
   });
@@ -167,8 +167,8 @@ function tableJson(): JSONContent {
 }
 
 describe('block NodeView schema layer', () => {
-  testWithTimeout('applyBlockNodeViews keeps the shared registry schema byte-identical', () => {
-    const schema = getSchema(applyBlockNodeViews(createKnowledgeExtensions()));
+  testWithTimeout('applyEditorBlockModules keeps the shared registry schema byte-identical', () => {
+    const schema = getSchema(applyEditorBlockModules(createKnowledgeExtensions()));
     expect(Object.keys(schema.nodes).sort()).toEqual(Object.keys(knowledgeSchema.nodes).sort());
     expect(Object.keys(schema.marks).sort()).toEqual(Object.keys(knowledgeSchema.marks).sort());
     for (const name of Object.keys(knowledgeSchema.nodes)) {

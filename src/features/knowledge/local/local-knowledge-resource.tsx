@@ -13,6 +13,7 @@ import { useKnowledgeBaseSelection } from '../use-knowledge-base-selection';
 import { useI18n } from '../dense-sidebar/use-i18n';
 import { createLocalLibraryStore, emptyLocalLibrary, newLocalDocument, type LocalDocument } from './local-library';
 import { LocalDocumentEditor } from './local-document-editor';
+import { subscribeOpenPageTarget } from '../editor/open-target';
 import { LocalLibraryNavigation } from './local-library-navigation';
 import { LocalLibraryEmptyState } from './local-library-empty-state';
 import { DocumentsPage } from '../documents/documents-page';
@@ -45,6 +46,13 @@ function LocalKnowledgeContent({ workspaceId, store, onOpenSettings, onOpenWorks
   const [activeTagId, setActiveTagId] = useState<string | null>(null);
   const [creation, setCreation] = useState<'document' | 'base' | 'folder' | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
+  useEffect(() => subscribeOpenPageTarget((target) => {
+    if (target.workspaceId !== workspaceId) return;
+    const page = store.getSnapshot().documents.find((item) => item.id === target.pageId && !item.deleted);
+    if (!page) return;
+    setBaseId(page.baseId);
+    setSelectedId(page.id);
+  }), [store, workspaceId, setBaseId]);
   const base = library.bases.find((item) => item.id === baseId) ?? library.bases[0];
   const documents = library.documents.filter((item) => item.baseId === base?.id);
   const folders = library.folders.filter((folder) => folder.knowledgeBaseId === base?.id);
@@ -123,7 +131,7 @@ function LocalKnowledgeContent({ workspaceId, store, onOpenSettings, onOpenWorks
       setCreation(null);
     }} />}
   >
-      {!base ? <LocalLibraryEmptyState onCreate={() => setCreation('base')} /> : selected ? <LocalDocumentEditor key={selected.id} document={selected} collectionName={base.name} onChange={(patch) => updateDocument(selected.id, patch)} onBack={() => { setSelectedId(null); setEditorSidebarOpen(false); }} onToggleSidebar={() => setEditorSidebarOpen((open) => !open)} onCreateDocument={() => setCreation('document')} /> : view === 'all-documents' ? <DocumentsPage key={`${base.id}:${folderId ?? activeTagId ?? 'all'}`}
+      {!base ? <LocalLibraryEmptyState onCreate={() => setCreation('base')} /> : selected ? <LocalDocumentEditor key={selected.id} workspaceId={workspaceId} store={store} document={selected} collectionName={base.name} onChange={(patch) => updateDocument(selected.id, patch)} onBack={() => { setSelectedId(null); setEditorSidebarOpen(false); }} onToggleSidebar={() => setEditorSidebarOpen((open) => !open)} onCreateDocument={() => setCreation('document')} /> : view === 'all-documents' ? <DocumentsPage key={`${base.id}:${folderId ?? activeTagId ?? 'all'}`}
         onExpandSidebar={collapsed ? () => setCollapsed(false) : undefined}
         documents={listed.map((item) => ({ id: item.id, title: item.title, updatedAt: item.updatedAt, creator: item.creator ?? '我', source: item.source ?? '本机文档', status: item.indexStatus ?? '暂无状态', starred: item.starred, folderId: item.folderId }))}
         folders={activeTagId ? [] : folders.map((folder) => ({ id: folder.id, name: folder.name, count: live.filter((item) => item.folderId === folder.id).length, updatedAt: live.filter((item) => item.folderId === folder.id).map((item) => item.updatedAt).sort().at(-1) }))}

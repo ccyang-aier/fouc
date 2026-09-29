@@ -11,6 +11,15 @@ const textBlock = (tag: string): NodeSpec => ({
   toDOM: () => [tag, 0],
 });
 
+const colorAttribute = {
+  default: null,
+  validate(value: unknown) {
+    if (value !== null && (typeof value !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(value))) {
+      throw new TypeError('Expected a six-digit hex color or null');
+    }
+  },
+};
+
 const cellAttributes: NodeSpec['attrs'] = {
   align: {
     default: null,
@@ -28,7 +37,15 @@ const cellAttributes: NodeSpec['attrs'] = {
       }
     },
   },
+  background: colorAttribute,
 };
+
+const choice = (values: readonly string[], fallback: string) => ({
+  default: fallback,
+  validate(value: unknown) {
+    if (typeof value !== 'string' || !values.includes(value)) throw new RangeError(`Unknown choice: ${String(value)}`);
+  },
+});
 
 function mediaBlock(name: 'image' | 'video' | 'audio' | 'file', title: string): BlockDefinition {
   return defineBlock({
@@ -121,13 +138,33 @@ export const KNOWLEDGE_BLOCKS: readonly BlockDefinition[] = Object.freeze([
     name: 'codeBlock',
     schema: {
       content: 'text*', marks: 'comment suggestion_insert suggestion_delete', code: true, defining: true,
-      attrs: { language: nullableString }, parseDOM: [{ tag: 'pre', preserveWhitespace: 'full' }], toDOM: (node) => ['pre', ['code', { class: node.attrs.language ? `language-${node.attrs.language}` : null }, 0]],
+      attrs: {
+        language: nullableString,
+        theme: choice(['light', 'dark', 'paper'], 'light'),
+        font: choice(['mono', 'serif'], 'mono'),
+        lineNumbers: { default: true, validate: 'boolean' },
+        wrap: { default: false, validate: 'boolean' },
+      },
+      parseDOM: [{ tag: 'pre', preserveWhitespace: 'full', getAttrs: (element) => ({
+        language: element.getAttribute('data-language') || element.querySelector('code')?.className.match(/language-([\w-]+)/)?.[1] || null,
+        theme: element.getAttribute('data-theme') || 'light',
+        font: element.getAttribute('data-font') || 'mono',
+        lineNumbers: element.getAttribute('data-line-numbers') !== 'false',
+        wrap: element.getAttribute('data-wrap') === 'true',
+      }) }],
+      toDOM: (node) => ['pre', {
+        'data-language': node.attrs.language,
+        'data-theme': node.attrs.theme,
+        'data-font': node.attrs.font,
+        'data-line-numbers': String(node.attrs.lineNumbers),
+        'data-wrap': String(node.attrs.wrap),
+      }, ['code', { class: node.attrs.language ? `language-${node.attrs.language}` : null }, 0]],
     },
     markdown: { fromMd: { type: 'code' } }, index: { mode: 'text' },
     slash: { title: '代码', keywords: ['code', '代码'], group: 'text' },
   }),
   defineBlock({
-    name: 'math', schema: { atom: true, attrs: { latex: stringAttribute }, toDOM: (node) => ['div', { 'data-math': '' }, node.attrs.latex] },
+    name: 'math', schema: { atom: true, attrs: { latex: stringAttribute }, parseDOM: [{ tag: 'div[data-math]', getAttrs: (element) => ({ latex: element.getAttribute('data-latex') ?? element.textContent ?? '' }) }], toDOM: (node) => ['div', { 'data-math': '', 'data-latex': node.attrs.latex }, node.attrs.latex] },
     markdown: { fromMd: { type: 'math' } }, index: { mode: 'text' },
     slash: { title: '数学公式', keywords: ['math', 'latex', '公式'], group: 'text' },
   }),
@@ -137,20 +174,20 @@ export const KNOWLEDGE_BLOCKS: readonly BlockDefinition[] = Object.freeze([
     slash: { title: '分隔线', keywords: ['divider', '分隔线'], group: 'layout' },
   }),
   defineBlock({
-    name: 'table', schema: { content: 'tableRow+', isolating: true, tableRole: 'table', parseDOM: [{ tag: 'table' }], toDOM: () => ['table', ['tbody', 0]] },
+    name: 'table', schema: { content: 'tableRow+', isolating: true, tableRole: 'table', attrs: { variant: choice(['plain', 'striped', 'minimal'], 'plain'), background: colorAttribute }, parseDOM: [{ tag: 'table', getAttrs: (element) => ({ variant: element.getAttribute('data-variant') || 'plain', background: element.getAttribute('data-background') }) }], toDOM: (node) => ['table', { 'data-variant': node.attrs.variant, 'data-background': node.attrs.background, style: node.attrs.background ? `background-color:${node.attrs.background}` : null }, ['tbody', 0]] },
     markdown: { fromMd: { type: 'table' } }, index: { mode: 'skip' },
     slash: { title: '表格', keywords: ['table', '表格'], group: 'layout' },
   }),
   defineBlock({
-    name: 'tableRow', schema: { group: '', content: '(tableCell | tableHeader)+', tableRole: 'row', parseDOM: [{ tag: 'tr' }], toDOM: () => ['tr', 0] },
+    name: 'tableRow', schema: { group: '', content: '(tableCell | tableHeader)+', tableRole: 'row', attrs: { background: colorAttribute }, parseDOM: [{ tag: 'tr', getAttrs: (element) => ({ background: element.getAttribute('data-background') }) }], toDOM: (node) => ['tr', { 'data-background': node.attrs.background, style: node.attrs.background ? `background-color:${node.attrs.background}` : null }, 0] },
     markdown: { fromMd: { type: 'tableRow' } }, index: { mode: 'skip' },
   }),
   ...(['tableCell', 'tableHeader'] as const).map((name) => defineBlock({
     name,
     schema: {
       group: '', content: 'block+', isolating: true, tableRole: name === 'tableCell' ? 'cell' : 'header_cell', attrs: cellAttributes,
-      parseDOM: [{ tag: name === 'tableCell' ? 'td' : 'th', getAttrs: (element) => ({ colspan: Number(element.getAttribute('colspan') ?? 1), rowspan: Number(element.getAttribute('rowspan') ?? 1), align: element.getAttribute('align') }) }],
-      toDOM: (node) => [name === 'tableCell' ? 'td' : 'th', { colspan: node.attrs.colspan, rowspan: node.attrs.rowspan, align: node.attrs.align }, 0],
+      parseDOM: [{ tag: name === 'tableCell' ? 'td' : 'th', getAttrs: (element) => ({ colspan: Number(element.getAttribute('colspan') ?? 1), rowspan: Number(element.getAttribute('rowspan') ?? 1), align: element.getAttribute('align'), background: element.getAttribute('data-background') }) }],
+      toDOM: (node) => [name === 'tableCell' ? 'td' : 'th', { colspan: node.attrs.colspan, rowspan: node.attrs.rowspan, align: node.attrs.align, 'data-background': node.attrs.background, style: node.attrs.background ? `background-color:${node.attrs.background}` : null }, 0],
     },
     markdown: { fromMd: { type: 'tableCell', variant: name === 'tableHeader' ? 'header' : 'cell' } }, index: { mode: 'text' },
   })),
@@ -160,7 +197,7 @@ export const KNOWLEDGE_BLOCKS: readonly BlockDefinition[] = Object.freeze([
     slash: { title: '分栏', keywords: ['columns', '分栏'], group: 'layout' },
   }),
   defineBlock({
-    name: 'column', schema: { group: '', content: 'block+', isolating: true, attrs: { width: integerAttribute(1, 1) }, toDOM: () => ['div', { 'data-column': '' }, 0] },
+    name: 'column', schema: { group: '', content: 'block+', isolating: true, attrs: { width: integerAttribute(1, 1) }, parseDOM: [{ tag: 'div[data-column]', getAttrs: (element) => ({ width: Number(element.getAttribute('data-width') ?? 1) }) }], toDOM: (node) => ['div', { 'data-column': '', 'data-width': node.attrs.width, style: `--column-width:${node.attrs.width}` }, 0] },
     markdown: { fromMd: { directive: 'column', kind: 'container' } }, index: { mode: 'skip' },
   }),
   mediaBlock('image', '图片'), mediaBlock('video', '视频'), mediaBlock('audio', '音频'), mediaBlock('file', '文件'),
@@ -193,7 +230,7 @@ export const KNOWLEDGE_BLOCKS: readonly BlockDefinition[] = Object.freeze([
     name: 'aiBlock',
     schema: {
       content: 'block+', defining: true, isolating: true,
-      attrs: { prompt: stringAttribute, scope: nullableObject, schedule: nullableString, taskId: nullableString },
+      attrs: { prompt: stringAttribute, scope: nullableObject, schedule: nullableString, taskId: nullableString, tier: choice(['fast', 'smart'], 'fast') },
       toDOM: () => ['section', { 'data-ai-block': '' }, 0],
     },
     markdown: { fromMd: { directive: 'ai', kind: 'container' } }, index: { mode: 'text' },

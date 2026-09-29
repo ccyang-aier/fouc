@@ -14,8 +14,8 @@
  * 类型安全来自契约,而非对线路的信任。
  */
 
-import { assetConfirmResultSchema, uploadIntentSchema } from '@fouc/shared/knowledge/contracts';
-import type { AssetConfirmResult, AssetUploadPrepareResult } from '@fouc/shared/knowledge/contracts';
+import { assetConfirmResultSchema, assetDownloadResultSchema, uploadIntentSchema } from '@fouc/shared/knowledge/contracts';
+import type { AssetConfirmResult, AssetDownloadResult, AssetUploadPrepareResult } from '@fouc/shared/knowledge/contracts';
 import { assetUploadPrepareResultSchema } from '@fouc/shared/knowledge/contracts';
 import { getFoucApiOrigin } from '@/lib/fouc-api-endpoint';
 import { KnowledgeDataError, normalizeKnowledgeError } from '../data/errors';
@@ -34,6 +34,7 @@ export type KnowledgeAssetsApi = {
   prepareUpload(workspaceId: string, intent: AssetIntentInput, signal?: AbortSignal): Promise<AssetUploadPrepareResult>;
   /** `asset.confirm`:服务端按实际存储对象复验哈希/大小/类型后落库并出 asset.created。 */
   confirmUpload(workspaceId: string, intent: AssetIntentInput, signal?: AbortSignal): Promise<AssetConfirmResult>;
+  download(workspaceId: string, hash: string, signal?: AbortSignal): Promise<AssetDownloadResult>;
 };
 
 function assertIntent(intent: AssetIntentInput, procedure: string): void {
@@ -71,6 +72,10 @@ export function createKnowledgeAssetsApi(deps: { resolveOrigin: () => Promise<st
       assertIntent(intent, 'asset.confirm');
       const payload = await run(workspaceId, signal, (client) => client.mutation('asset.confirm', { workspaceId, ...intent }, { signal }));
       return parsePayload(assetConfirmResultSchema, payload, 'asset.confirm');
+    },
+    async download(workspaceId, hash, signal) {
+      const payload = await run(workspaceId, signal, (client) => client.query('asset.download', { workspaceId, hash }, { signal }));
+      return parsePayload(assetDownloadResultSchema, payload, 'asset.download');
     },
   };
 }

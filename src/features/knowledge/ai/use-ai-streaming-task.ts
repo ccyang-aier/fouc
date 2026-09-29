@@ -32,8 +32,9 @@ export interface UseAiStreamingTaskResult {
   reset(): void;
 }
 
-export function useAiStreamingTask(workspaceId: string): UseAiStreamingTaskResult {
-  const [taskId, setTaskId] = useState<string | null>(null);
+export function useAiStreamingTask(workspaceId: string, initialTaskId: string | null = null): UseAiStreamingTaskResult {
+  const [tracking, setTracking] = useState<{ base: string | null; taskId: string | null } | null>(null);
+  const taskId = tracking?.base === initialTaskId ? tracking.taskId : initialTaskId;
   const queryClient = useQueryClient();
   const taskKey = useMemo(() => [...knowledgeQueryKeys.aiTasks(workspaceId), taskId] as const, [workspaceId, taskId]);
 
@@ -53,9 +54,9 @@ export function useAiStreamingTask(workspaceId: string): UseAiStreamingTaskResul
   const start = useCallback(async (input: AiStreamingTaskStartInput) => {
     const snapshot = await runKnowledgeCall(workspaceId, undefined, (client) =>
       client.aiTask.start.mutate({ ...input, workspaceId }));
-    setTaskId(snapshot.taskId);
+    setTracking({ base: initialTaskId, taskId: snapshot.taskId });
     return snapshot;
-  }, [workspaceId]);
+  }, [workspaceId, initialTaskId]);
 
   const cancel = useCallback(async () => {
     if (!taskId) return null;
@@ -73,7 +74,7 @@ export function useAiStreamingTask(workspaceId: string): UseAiStreamingTaskResul
     return result;
   }, [refresh, taskId, workspaceId]);
 
-  const reset = useCallback(() => setTaskId(null), []);
+  const reset = useCallback(() => setTracking({ base: initialTaskId, taskId: null }), [initialTaskId]);
 
   return {
     snapshot: statusQuery.data ?? null,

@@ -3,6 +3,7 @@ import { setBlockFormat } from '../../extensions/format/block-format';
 import type { EditorBlockModule } from '../types';
 import { TaskListInputRule } from './input-rule';
 import { TaskItemToggle } from './task-item-toggle';
+import './task-list.css';
 
 export const TaskListModule: EditorBlockModule = {
   name: 'taskList',

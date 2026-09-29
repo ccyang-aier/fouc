@@ -14,6 +14,8 @@ import { createProjectRoutes, createProjectService } from '../modules/projects';
 import { createKnowledgeCatalogRoutes, createKnowledgeCatalogService } from '../modules/knowledge/organization';
 import { teamspacePermissionInvalidator } from '../modules/knowledge/permissions/fence';
 import { createKnowledgeApiRoutes, createKnowledgePatRoutes } from '../modules/knowledge/api';
+import { createKnowledgeAssetStorage } from '../modules/knowledge/assets/storage';
+import { bindKnowledgeAssetStorage } from '../modules/knowledge/assets/runtime';
 import { createKnowledgeCheckpointRoutes } from '../modules/knowledge/api/checkpoint-routes';
 import { createKnowledgeNotificationRoutes } from '../modules/knowledge/notifications';
 import { bindKnowledgeStreamingTasks, createKnowledgeStreamingTasks } from '../modules/knowledge/ai';
@@ -52,6 +54,7 @@ export async function startFoucService(config: FoucServiceConfig, environment: N
       : createVerificationEmailTransport('noreply@fouc.dev', async (message: { to: string; subject: string; text: string }) => { console.log(`[auth] ${message.subject} → ${message.to}\n${message.text}`); }),
   });
   const authenticator = createKnowledgeRequestAuthenticator({ auth, pool });
+  bindKnowledgeAssetStorage(config.roles.includes('api') && config.storage ? createKnowledgeAssetStorage(config.storage) : undefined);
   const externalOrigin = new URL(config.auth.baseUrl).origin;
   const events = createWorkspaceEventRuntime({ authenticator });
   const checkpoints = config.roles.includes('collab') ? pageCheckpointExtension({ pool }) : undefined;

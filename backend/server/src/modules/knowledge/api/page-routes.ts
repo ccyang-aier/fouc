@@ -4,45 +4,19 @@ import {
   createPageInputSchema, listPagesInputSchema, movePageInputSchema, pageSchema,
   recyclePageInputSchema, restorePageInputSchema, updatePageInputSchema, principal,
 } from '@fouc/shared/knowledge/contracts';
-import type { PageScope, PermissionLevel } from '@fouc/shared/knowledge/contracts';
-import { member, page, pageAcl } from '../../../platform/database/workspace/schema';
-import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
-import { readTeamspacePermissionRoot } from '../organization/teamspaces';
+import { page, pageAcl } from '../../../platform/database/workspace/schema';
 import { OrganizationError } from '../../workspaces/errors';
-import { authorizePageAccess, effectivePageAccessCondition, expandRequestPrincipals, lockPermissionWorkspace } from '../permissions';
-import { rebuildPermissionSubtree } from '../permissions/rebuild';
+import { effectivePageAccessCondition, expandRequestPrincipals, lockPermissionWorkspace } from '../permissions';
+import { requirePageAccess, requirePageDestination, refreshPagePermissions } from './page-route-guards';
 import { createAuthorizedPage, moveAuthorizedPage, recycleAuthorizedPage, restoreAuthorizedPage, updateAuthorizedPage } from '../pages/tree';
 import { KnowledgePageError } from '../pages/errors';
 import { apiError } from './errors';
 import { knowledgeMutation, knowledgeQuery } from './procedures';
 
-async function requirePage(db: WorkspaceTenantTransaction, userId: string, scope: PageScope, required: PermissionLevel) {
-  const result = await authorizePageAccess(db, { userId, scope: { workspaceId: scope.workspaceId, pageId: scope.pageId }, required });
-  if (result.decision !== 'allow') throw new TRPCError({ code: 'FORBIDDEN' });
-}
-
-async function requireDestination(db: WorkspaceTenantTransaction, userId: string, input: { workspaceId: string; teamspaceId: string; parentId: string | null }) {
-  if (input.parentId) return requirePage(db, userId, { workspaceId: input.workspaceId, pageId: input.parentId }, 'edit');
-  const root = await readTeamspacePermissionRoot(db, { workspaceId: input.workspaceId, teamspaceId: input.teamspaceId });
-  const [membership] = await db.select({ role: member.role }).from(member).where(and(eq(member.workspaceId, input.workspaceId), eq(member.userId, userId)));
-  // Directory managers can seed a restricted folder without granting edit to all members.
-  if (membership?.role === 'owner' || membership?.role === 'admin') return;
-  const principals = await expandRequestPrincipals(db, input.workspaceId, userId);
-  const allowed = root.defaultAccess === 'edit' || root.defaultAccess === 'full';
-  if (!allowed || !principals.includes(principal('workspace', input.workspaceId))) {
-    throw new TRPCError({ code: 'FORBIDDEN' });
-  }
-}
-
 function serializePage(row: typeof page.$inferSelect) {
   const record = { ...row };
   Reflect.deleteProperty(record, 'aclRevision');
   return pageSchema.parse({ ...record, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString(), deletedAt: row.deletedAt?.toISOString() ?? null });
-}
-
-async function refreshPermissions(db: WorkspaceTenantTransaction, scope: PageScope) {
-  const [record] = await db.select({ revision: page.aclRevision }).from(page).where(and(eq(page.workspaceId, scope.workspaceId), eq(page.id, scope.pageId)));
-  if (record) await rebuildPermissionSubtree(db, { topic: 'acl.changed', workspaceId: scope.workspaceId, rootPageId: scope.pageId, revision: record.revision });
 }
 
 async function guarded<T>(operation: () => Promise<T>): Promise<T> {
@@ -78,11 +52,11 @@ export const knowledgePageRouterRecord = {
     resolve: ({ ctx, input }) => guarded(() => ctx.withTenant(async (db, authority) => {
       await lockPermissionWorkspace(db, input.workspaceId);
       const [existing] = await db.select().from(page).where(and(eq(page.workspaceId, input.workspaceId), eq(page.id, input.id)));
-      if (existing) await requirePage(db, authority.userId, { workspaceId: input.workspaceId, pageId: input.id }, 'edit');
-      else await requireDestination(db, authority.userId, input);
+      if (existing) await requirePageAccess(db, authority.userId, { workspaceId: input.workspaceId, pageId: input.id }, 'edit');
+      else await requirePageDestination(db, authority.userId, input);
       const result = await createAuthorizedPage(db, input, authority.userId);
       if (!existing) await db.insert(pageAcl).values({ workspaceId: input.workspaceId, pageId: input.id, principal: principal('user', authority.userId), level: 'full', inherited: false });
-      await refreshPermissions(db, { workspaceId: input.workspaceId, pageId: input.id });
+      await refreshPagePermissions(db, { workspaceId: input.workspaceId, pageId: input.id });
       return result;
     })),
   }),
@@ -90,7 +64,7 @@ export const knowledgePageRouterRecord = {
     input: updatePageInputSchema, scopes: ['read', 'write'],
     resolve: ({ ctx, input }) => guarded(() => ctx.withTenant(async (db, authority) => {
       await lockPermissionWorkspace(db, input.workspaceId);
-      await requirePage(db, authority.userId, input, 'edit');
+      await requirePageAccess(db, authority.userId, input, 'edit');
       const { workspaceId, pageId, ...patch } = input;
       await updateAuthorizedPage(db, { workspaceId, pageId, patch });
       const [updated] = await db.select().from(page).where(and(eq(page.workspaceId, workspaceId), eq(page.id, pageId)));
@@ -101,10 +75,10 @@ export const knowledgePageRouterRecord = {
     input: movePageInputSchema, scopes: ['read', 'write'],
     resolve: ({ ctx, input }) => guarded(() => ctx.withTenant(async (db, authority) => {
       await lockPermissionWorkspace(db, input.workspaceId);
-      await requirePage(db, authority.userId, input, 'edit');
-      await requireDestination(db, authority.userId, input);
+      await requirePageAccess(db, authority.userId, input, 'edit');
+      await requirePageDestination(db, authority.userId, input);
       const result = await moveAuthorizedPage(db, input);
-      await refreshPermissions(db, input);
+      await refreshPagePermissions(db, input);
       return result;
     })),
   }),
@@ -112,9 +86,9 @@ export const knowledgePageRouterRecord = {
     input: recyclePageInputSchema, scopes: ['read', 'write'],
     resolve: ({ ctx, input }) => guarded(() => ctx.withTenant(async (db, authority) => {
       await lockPermissionWorkspace(db, input.workspaceId);
-      await requirePage(db, authority.userId, input, 'full');
+      await requirePageAccess(db, authority.userId, input, 'full');
       const result = await recycleAuthorizedPage(db, input);
-      await refreshPermissions(db, input);
+      await refreshPagePermissions(db, input);
       return result;
     })),
   }),
@@ -129,9 +103,9 @@ export const knowledgePageRouterRecord = {
       const principals = await expandRequestPrincipals(db, input.workspaceId, authority.userId);
       const grants = await db.select().from(pageAcl).where(and(eq(pageAcl.workspaceId, input.workspaceId), eq(pageAcl.pageId, input.pageId), eq(pageAcl.level, 'full')));
       if (!grants.some((grant) => principals.includes(grant.principal))) throw new TRPCError({ code: 'FORBIDDEN' });
-      await requireDestination(db, authority.userId, record);
+      await requirePageDestination(db, authority.userId, record);
       const result = await restoreAuthorizedPage(db, input);
-      await refreshPermissions(db, input);
+      await refreshPagePermissions(db, input);
       return result;
     })),
   }),

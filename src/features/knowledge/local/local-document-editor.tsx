@@ -13,6 +13,7 @@ import { DocumentEditorHeader } from '../editor/components/document-editor-heade
 import { createBlockEditingExtensions } from '../editor/extensions';
 import { TaskProgress } from '../editor/block-modules/task-list/task-progress';
 import type { LocalDocument } from './local-library';
+import type { createLocalLibraryStore } from './local-library';
 
 const localHistory = Extension.create({
   name: 'localHistory',
@@ -26,14 +27,19 @@ const localHistory = Extension.create({
   },
 });
 
-export function LocalDocumentEditor({ document, collectionName, onChange, onBack, onToggleSidebar, onCreateDocument }: { document: LocalDocument; collectionName: string; onChange: (patch: Partial<LocalDocument>) => void; onBack: () => void; onToggleSidebar: () => void; onCreateDocument: () => void }) {
+export function LocalDocumentEditor({ workspaceId, store, document, collectionName, onChange, onBack, onToggleSidebar, onCreateDocument }: { workspaceId: string; store: ReturnType<typeof createLocalLibraryStore>; document: LocalDocument; collectionName: string; onChange: (patch: Partial<LocalDocument>) => void; onBack: () => void; onToggleSidebar: () => void; onCreateDocument: () => void }) {
   const extensions = useMemo(() => [
-    ...applyEditorBlockModules(createKnowledgeExtensions()),
+    ...applyEditorBlockModules(createKnowledgeExtensions(), {
+      localWorkspaceId: workspaceId,
+      localPageId: document.id,
+      getLocalPages: () => store.getSnapshot().documents.filter((item) => item.baseId === document.baseId && !item.deleted),
+      subscribeLocalPages: store.subscribe,
+    }),
     createBlockIdExtension({ pageId: document.id }),
     ...createBlockEditingExtensions(),
     ...createSlashPasteExtensions(),
     localHistory,
-  ], [document.id]);
+  ], [document.id, document.baseId, workspaceId, store]);
   const editor = useEditor({
     extensions,
     immediatelyRender: false,

@@ -61,6 +61,7 @@ function scriptApi(options: { prepareResults: ('upload' | 'reuse' | 'fail')[]; u
       calls.push({ kind: 'confirm', hash: intent.hash });
       return { status: 'ready', created: true };
     },
+    async download() { throw new Error('download is outside this upload fixture'); },
   };
   return { api, calls };
 }

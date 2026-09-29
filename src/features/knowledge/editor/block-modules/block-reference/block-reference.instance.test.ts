@@ -182,7 +182,7 @@ describe('block reference card in a real editor', () => {
     insertReference(editor, { pageId: null, targetBlockId: null });
     await flush();
 
-    expect(card(editor, 'unconfigured')?.textContent).toContain('未配置引用');
+    expect(card(editor, 'picker')?.textContent).toContain('引用文档内容');
     expect(fixture.calls.connects).toBe(0);
   }, 15_000);
 

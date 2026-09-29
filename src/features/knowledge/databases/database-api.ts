@@ -13,6 +13,7 @@
 
 import {
   createRowInputSchema,
+  createDatabaseInputSchema,
   databaseColumnsStateSchema,
   databaseRowsPageSchema,
   pagePlacementSchema,
@@ -23,6 +24,7 @@ import {
 } from '@fouc/shared/knowledge/contracts';
 import type {
   CreateRowInput,
+  CreateDatabaseInput,
   DatabaseColumnsState,
   DatabaseRowsPage,
   DatabaseQuery,
@@ -53,6 +55,7 @@ export type UpdateRowPropertiesInput = { pageId: string; properties: RowProperti
 export type UpdateColumnsInput = Omit<UpdateDatabaseColumnsInput, 'workspaceId'>;
 
 export type KnowledgeDatabasesApi = {
+  createDatabase(workspaceId: string, input: CreateDatabaseInput, signal?: AbortSignal): Promise<DatabaseColumnsState>;
   getColumns(workspaceId: string, input: { pageId: string }, signal?: AbortSignal): Promise<DatabaseColumnsState>;
   listRows(workspaceId: string, input: Omit<DatabaseQuery, 'workspaceId'>, signal?: AbortSignal): Promise<DatabaseRowsPage>;
   createRow(workspaceId: string, input: CreateRowInput, signal?: AbortSignal): Promise<PagePlacement>;
@@ -73,6 +76,11 @@ export function createKnowledgeDatabasesApi(deps: { resolveOrigin: () => Promise
   };
 
   return {
+    async createDatabase(workspaceId, input, signal) {
+      assertInput(createDatabaseInputSchema, input, 'database.create');
+      const payload = await run(workspaceId, signal, (client) => client.mutation('database.create', input, { signal }));
+      return parsePayload(databaseColumnsStateSchema, payload, 'database.create');
+    },
     async getColumns(workspaceId, input, signal) {
       const payload = await run(workspaceId, signal, (client) =>
         client.query('database.getColumns', { workspaceId, ...input }, { signal }),

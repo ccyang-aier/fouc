@@ -18,6 +18,8 @@ import type { Extensions } from '@tiptap/core';
 import { ReactNodeViewRenderer } from '@tiptap/react';
 import { NodeViewWrapper } from '@tiptap/react';
 import type { NodeViewProps } from '@tiptap/react';
+import type { Schema } from '@tiptap/pm/model';
+import { yXmlFragmentToProseMirrorRootNode } from 'y-prosemirror';
 import type { PageScope } from '@fouc/shared/knowledge/contracts';
 import { ArrowSquareOut, ArrowsClockwise, Link, Prohibit, Trash, Warning } from '@phosphor-icons/react';
 import { withNodeView } from '../../extensions/with-node-view';
@@ -33,6 +35,8 @@ import type {
   BlockReferenceViewState,
   SourceHandle,
 } from './block-reference-source';
+import { BlockReferencePicker, listReferenceBlocks } from './block-reference-picker';
+import type { ReferenceBlockChoice } from './block-reference-picker';
 
 export interface BlockReferenceViewOptions {
   /** The page the editor shows — cyclic references are decided against it. */
@@ -150,7 +154,25 @@ function ensureBlockReferenceStyles(): void {
   document.head.append(style);
 }
 
-function BlockReferenceCard({ node, editor }: NodeViewProps) {
+async function loadRemoteBlocks(sources: BlockReferenceSources, scope: PageScope, schema: Schema): Promise<ReferenceBlockChoice[]> {
+  const handle = await sources.acquire(scope);
+  try {
+    const fragment = handle.document.getXmlFragment(PAGE_BODY_FRAGMENT);
+    const ready = () => handle.status().phase === 'synced' || (handle.status().localReady && fragment.length > 0);
+    if (!ready()) await new Promise<void>((resolve, reject) => {
+      let stop = () => {};
+      const timer = setTimeout(() => { stop(); reject(new Error('来源页同步超时')); }, 8_000);
+      stop = handle.subscribe(() => {
+        if (handle.status().phase === 'error') { clearTimeout(timer); stop(); reject(new Error('无权读取来源页')); }
+        else if (ready()) { clearTimeout(timer); stop(); resolve(); }
+      });
+      if (ready()) { clearTimeout(timer); stop(); resolve(); }
+    });
+    return listReferenceBlocks(yXmlFragmentToProseMirrorRootNode(fragment, schema));
+  } finally { await handle.release(); }
+}
+
+function BlockReferenceCard({ node, editor, updateAttributes }: NodeViewProps) {
   const context = useContext(BlockReferenceContext);
   const attrs = node.attrs as ReferenceAttrs;
   const pageId = attrs.pageId;
@@ -159,6 +181,7 @@ function BlockReferenceCard({ node, editor }: NodeViewProps) {
   // session status pushes, throttled watcher notifications) — never a
   // synchronous setState inside an effect.
   const [source, setSource] = useState<BlockReferenceSnapshot>(() => ({ state: 'loading', element: null, dom: null }));
+  const [editing, setEditing] = useState(false);
   const contentHost = useRef<HTMLDivElement | null>(null);
 
   const state = (context ? localViewState(attrs, context.scope) : 'unconfigured') ?? source.state;
@@ -216,6 +239,16 @@ function BlockReferenceCard({ node, editor }: NodeViewProps) {
     requestOpenPageBlock({ workspaceId: context.scope.workspaceId, pageId, blockId: targetBlockId });
   };
 
+  if (editor.isEditable && context && (editing || state === 'unconfigured')) return <NodeViewWrapper draggable={false} data-block-reference="picker">
+    <BlockReferencePicker
+      workspaceId={context.scope.workspaceId}
+      excludePageId={context.scope.pageId}
+      loadBlocks={(sourcePageId) => loadRemoteBlocks(context.sources, { workspaceId: context.scope.workspaceId, pageId: sourcePageId }, editor.schema)}
+      onChoose={(nextPageId, blockId) => { updateAttributes({ pageId: nextPageId, targetBlockId: blockId }); setEditing(false); }}
+      onCancel={pageId && targetBlockId ? () => setEditing(false) : undefined}
+    />
+  </NodeViewWrapper>;
+
   return (
     <NodeViewWrapper draggable={false} contentEditable={false} className="my-3 select-none" data-block-reference={state}>
       <div
@@ -260,6 +293,7 @@ function BlockReferenceCard({ node, editor }: NodeViewProps) {
             跳转到原文
           </span>
         ) : null}
+        {editor.isEditable ? <button type="button" aria-label="更换引用" title="更换引用" onClick={(event) => { event.stopPropagation(); setEditing(true); }} className="absolute bottom-2.5 right-2.5 rounded px-1.5 py-1 text-[11px] text-[var(--muted-strong)] opacity-0 hover:bg-[var(--raise)] group-hover:opacity-100 focus-visible:opacity-100">更换引用</button> : null}
       </div>
     </NodeViewWrapper>
   );

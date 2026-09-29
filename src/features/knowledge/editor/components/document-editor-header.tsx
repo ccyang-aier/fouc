@@ -42,18 +42,18 @@ export function DocumentEditorHeader({
   return <header className={styles.header}>
     <div className={styles.leading}>
       <button type="button" className={styles.libraryButton} aria-label="返回文档列表" title="返回文档列表" onClick={onBack}>
-        <BookOpen aria-hidden size={22} weight="duotone" />
+        <BookOpen aria-hidden size={18} weight="duotone" />
       </button>
       <button type="button" className={styles.collectionName} onClick={onBack} title={collectionName}>{collectionName}</button>
       <span className={styles.divider} aria-hidden>/</span>
-      <button type="button" className={styles.iconButton} aria-label="打开知识库导航" title="打开知识库导航" onClick={onToggleSidebar}><List aria-hidden size={20} weight="bold" /></button>
-      <button type="button" className={styles.iconButton} aria-label={starred ? '取消星标' : '添加星标'} title={starred ? '取消星标' : '添加星标'} onClick={onToggleStar}><Star aria-hidden size={20} weight={starred ? 'fill' : 'bold'} /></button>
+      <button type="button" className={styles.iconButton} aria-label="打开知识库导航" title="打开知识库导航" onClick={onToggleSidebar}><List aria-hidden size={16} weight="bold" /></button>
+      <button type="button" className={styles.iconButton} aria-label={starred ? '取消星标' : '添加星标'} title={starred ? '取消星标' : '添加星标'} onClick={onToggleStar}><Star aria-hidden size={16} weight={starred ? 'fill' : 'bold'} /></button>
     </div>
     <div className={styles.actions}>
       {presence}
       <span className={styles.avatar} title={avatarName || '我'}>{Array.from(avatarName || '我')[0]?.toUpperCase()}</span>
       <DropdownMenu onOpenChange={(open) => { if (open) setCopyState('idle'); }}>
-        <DropdownMenuTrigger asChild><button type="button" className={styles.outlineButton}>分享</button></DropdownMenuTrigger>
+        <DropdownMenuTrigger asChild><button type="button" className={`${styles.outlineButton} ${styles.shareButton}`}>分享</button></DropdownMenuTrigger>
         <DropdownMenuContent align="end" className={styles.shareMenu}>
           <div className={styles.shareTitle}>分享文档</div>
           <p className={styles.shareDescription}>{shareDescription}</p>
@@ -61,7 +61,7 @@ export function DocumentEditorHeader({
           {copyState !== 'idle' ? <p role="status" className={styles.shareStatus}>{copyState === 'copied' ? '已复制到剪贴板' : '复制失败，请检查浏览器权限'}</p> : null}
         </DropdownMenuContent>
       </DropdownMenu>
-      <button type="button" className={styles.outlineButton} disabled={!canCreateDocument} title={canCreateDocument ? '新建文档' : '没有创建文档的权限'} onClick={onCreateDocument}><Plus aria-hidden size={20} weight="bold" />新建文档</button>
+      <button type="button" className={`${styles.outlineButton} ${styles.createButton}`} disabled={!canCreateDocument} title={canCreateDocument ? '新建文档' : '没有创建文档的权限'} onClick={onCreateDocument}><Plus aria-hidden size={20} weight="bold" />新建文档</button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild><button type="button" className={styles.moreButton} aria-label="更多文档操作" title="更多文档操作"><DotsThree aria-hidden size={24} weight="bold" /></button></DropdownMenuTrigger>
         <DropdownMenuContent align="end" className={styles.moreMenu}>

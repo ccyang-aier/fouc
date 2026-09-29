@@ -7,12 +7,16 @@ import type { KnowledgeStreamingTasks } from '../ai/streaming';
 import { createKnowledgeRouter, knowledgeQuery, knowledgeMutation } from './procedures';
 import { knowledgeCommentRouterRecord } from './comment-routes';
 import { knowledgePageRouterRecord } from './page-routes';
+import { knowledgeDatabaseRouterRecord } from './database-routes';
+import { knowledgeAssetRouterRecord } from './asset-routes';
 import type { KnowledgeProcedureContext } from './context';
 
 /** Authenticated page metadata, ACL, comments and AI tasks. Body edits use Y.Doc. */
 /** N02 (§4.6): the sidebar's comment thread lifecycle over the shared comment contracts. */
 export const knowledgeApiRouter = createKnowledgeRouter({
   comment: knowledgeCommentRouterRecord,
+  database: knowledgeDatabaseRouterRecord,
+  asset: knowledgeAssetRouterRecord,
   access: knowledgeQuery({
     input: workspaceScopeSchema,
     scopes: ['read'],

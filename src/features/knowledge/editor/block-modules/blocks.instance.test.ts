@@ -230,7 +230,7 @@ describe('callout NodeView', () => {
 });
 
 describe('columns NodeView', () => {
-  testWithTimeout('renders the flex wrap layout with schema-rendered column children; width attrs preserved', async () => {
+  testWithTimeout('renders weighted columns with schema-rendered children and editable layout controls', async () => {
     const { editor, dispose } = mountEditor();
     try {
       editor.commands.insertContent(COLUMNS_JSON);
@@ -241,13 +241,13 @@ describe('columns NodeView', () => {
       expect(wrapper!.hasAttribute('data-columns')).toBe(true);
       const hole = wrapper!.querySelector('[data-node-view-content]');
       expect(hole).not.toBeNull();
-      expect(hole!.className).toContain('flex-wrap');
-      expect(hole!.className).toContain('[&>*]:min-w-[300px]');
       expect(hole!.querySelectorAll('[data-column]')).toHaveLength(2);
+      expect(hole!.querySelector('[data-column]')?.getAttribute('data-width')).toBe('2');
+      expect(wrapper!.querySelector('button[aria-label="分栏布局"]')).not.toBeNull();
       expect(hole!.querySelectorAll('[data-column] > p')).toHaveLength(4);
       expect(hole!.textContent).toContain('左二');
 
-      // v1 renders equal columns but never touches the width attrs.
+      // Browser presentation respects the shared column weights.
       const widths: number[] = [];
       editor.state.doc.descendants((node) => {
         if (node.type.name === 'column') widths.push(node.attrs.width as number);
@@ -275,8 +275,9 @@ describe('table NodeView', () => {
       await settle();
       const toolbar = editor.view.dom.querySelector('div[role="toolbar"]');
       expect(toolbar).not.toBeNull();
-      expect(toolbar!.className).toContain('opacity-100');
+      expect(toolbar!.getAttribute('data-visible')).toBe('true');
       expect(toolbar!.querySelector('button[aria-label="上方插入行"]')).not.toBeNull();
+      expect(toolbar!.querySelector('button[aria-label="表格样式"]')).not.toBeNull();
       expect(toolbar!.querySelector('button[aria-label="删除表格"]')).not.toBeNull();
 
       editor.commands.command(insertRowBelow);

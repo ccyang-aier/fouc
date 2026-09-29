@@ -1,9 +1,10 @@
 import type { ComponentType } from 'react';
-import type { Editor, Extensions } from '@tiptap/core';
+import type { Editor, Extensions, JSONContent } from '@tiptap/core';
 import type { PageScope } from '@fouc/shared/knowledge/contracts';
 
 export type BlockInsertCommand = (editor: Editor) => boolean;
 export type BlockIcon = ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
+export interface EditorBlockContext { scope?: PageScope; origin?: string; localWorkspaceId?: string; localPageId?: string; getLocalPages?: () => readonly { id: string; title: string; body?: JSONContent }[]; subscribeLocalPages?: (listener: () => void) => () => void }
 
 export interface BlockChoice {
   name: string;
@@ -23,5 +24,5 @@ export interface EditorBlockModule {
   shortcut?: string;
   choices?: readonly BlockChoice[];
   extensions?: Extensions;
-  decorate?: (extensions: Extensions, context: { scope?: PageScope; origin?: string }) => Extensions;
+  decorate?: (extensions: Extensions, context: EditorBlockContext) => Extensions;
 }

@@ -12,9 +12,10 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import type { NodeViewProps } from '@tiptap/react';
 import { NodeViewContent, NodeViewWrapper } from '@tiptap/react';
-import { cn } from '@/lib/utils';
+import styles from './callout.module.css';
 
 const CALLOUT_EMOJI = ['💡', '✅', '⚠️', 'ℹ️', '🔥', '⭐', '📌', '📝', '❗', '❓', '🎯', '🚀', '✨', '💬', '🔍', '🧠', '📎', '🗓️', '⚙️', '🛠️', '💼', '🎉', '👀', '🧪'] as const;
 
@@ -27,11 +28,11 @@ interface CalloutTone {
 }
 
 const CALLOUT_TONES: Record<string, CalloutTone> = {
-  neutral: { label: '中性', accent: 'var(--muted-strong)', wash: 'var(--surface-subtle)' },
-  info: { label: '信息', accent: 'var(--accent)', wash: 'color-mix(in srgb, var(--accent) 6%, var(--surface-subtle))' },
-  success: { label: '成功', accent: 'var(--ok-ink)', wash: 'color-mix(in srgb, var(--ok-ink) 6%, var(--surface-subtle))' },
-  warn: { label: '警告', accent: 'var(--warn-ink)', wash: 'color-mix(in srgb, var(--warn-ink) 7%, var(--surface-subtle))' },
-  danger: { label: '危险', accent: 'var(--err-ink)', wash: 'color-mix(in srgb, var(--err-ink) 6%, var(--surface-subtle))' },
+  neutral: { label: '普通', accent: '#6d7d92', wash: '#f7f9fc' },
+  info: { label: '提示', accent: '#3077cc', wash: '#f2f7ff' },
+  success: { label: '成功', accent: '#2e916d', wash: '#f0faf5' },
+  warn: { label: '警告', accent: '#c18a31', wash: '#fff9ed' },
+  danger: { label: '错误', accent: '#c65652', wash: '#fff4f3' },
 };
 
 export function CalloutNodeView({ node, editor, updateAttributes, HTMLAttributes }: NodeViewProps) {
@@ -67,10 +68,10 @@ export function CalloutNodeView({ node, editor, updateAttributes, HTMLAttributes
       data-emoji={node.attrs.emoji}
       data-tone={node.attrs.tone}
       data-block-id={node.attrs.blockId}
-      className={cn('my-3 rounded-[10px] border border-l-[3px] transition-colors', 'hover:border-[var(--line-strong)]')}
-      style={{ background: tone.wash, borderLeftColor: tone.accent }}
+      className={styles.root}
+      style={{ '--callout-accent': tone.accent, '--callout-wash': tone.wash } as CSSProperties}
     >
-      <div ref={rootRef} className="relative flex items-start gap-3 px-4 py-3">
+      <div ref={rootRef} className={styles.inner}>
         <button
           ref={chipRef}
           type="button"
@@ -81,11 +82,14 @@ export function CalloutNodeView({ node, editor, updateAttributes, HTMLAttributes
           disabled={!editor.isEditable}
           onMouseDown={(event) => event.preventDefault()}
           onClick={() => (editor.isEditable ? setOpen((value) => !value) : undefined)}
-          className="mt-[1px] grid size-7 shrink-0 place-items-center rounded-[8px] border border-[var(--line)] bg-[var(--panel)] text-[15px] leading-none outline-none transition-colors hover:border-[var(--line-strong)] focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] disabled:opacity-60"
+          className={styles.iconButton}
         >
           <span aria-hidden>{emoji}</span>
         </button>
-        <NodeViewContent className="min-w-0 flex-1" />
+        <div className={styles.content}>
+          <span contentEditable={false} className={styles.toneLabel}>{tone.label}</span>
+          <NodeViewContent className={styles.editable} />
+        </div>
         {open ? (
           <div
             role="dialog"
@@ -96,9 +100,10 @@ export function CalloutNodeView({ node, editor, updateAttributes, HTMLAttributes
                 closeAndFocusChip();
               }
             }}
-            className="overlay-surface absolute left-0 top-[calc(100%+8px)] z-30 w-[272px] rounded-[10px] bg-[var(--elevated)] p-2"
+            className={styles.menu}
           >
-            <div className="grid grid-cols-8 gap-0.5">
+            <div className={styles.menuTitle}>图标</div>
+            <div className={styles.emojiGrid}>
               {CALLOUT_EMOJI.map((candidate) => (
                 <button
                   key={candidate}
@@ -109,16 +114,14 @@ export function CalloutNodeView({ node, editor, updateAttributes, HTMLAttributes
                     updateAttributes({ emoji: candidate });
                     closeAndFocusChip();
                   }}
-                  className={cn(
-                    'grid size-7 place-items-center rounded-[6px] text-[15px] leading-none outline-none transition-colors hover:bg-[var(--raise)] focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)]',
-                    candidate === emoji && 'bg-[var(--raise)]',
-                  )}
+                  className={styles.emojiOption}
                 >
                   <span aria-hidden>{candidate}</span>
                 </button>
               ))}
             </div>
-            <div className="mt-2 flex flex-wrap gap-1 border-t border-[var(--line)] pt-2">
+            <div className={styles.menuTitle}>提示等级</div>
+            <div className={styles.toneGrid}>
               {Object.entries(CALLOUT_TONES).map(([name, candidate]) => (
                 <button
                   key={name}
@@ -129,12 +132,9 @@ export function CalloutNodeView({ node, editor, updateAttributes, HTMLAttributes
                     updateAttributes({ tone: name });
                     closeAndFocusChip();
                   }}
-                  className={cn(
-                    'flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[11px] text-[var(--ink-soft)] outline-none transition-colors hover:bg-[var(--raise)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)]',
-                    name === String(node.attrs.tone) && 'bg-[var(--raise)] text-[var(--ink)]',
-                  )}
+                  className={styles.toneOption}
                 >
-                  <span aria-hidden className="size-2.5 rounded-full" style={{ background: candidate.accent }} />
+                  <span aria-hidden className={styles.swatch} style={{ background: candidate.accent }} />
                   {candidate.label}
                 </button>
               ))}

@@ -10,6 +10,8 @@
 .iconButton:hover, .moreButton:hover, .libraryButton:hover { background: #f3f5f8; }
 .avatar { display: grid; flex: none; width: 28px; height: 28px; place-items: center; border-radius: 50%; background: #3034ed; color: white; font-size: 15px; font-weight: 500; }
 .outlineButton { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 32px; padding: 0 10px; border: 1px solid #d7e0ec; border-radius: 6px; background: #fff; box-shadow: 0 1px 2px rgb(20 32 52 / 9%); color: #1a202b; font-size: 14px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.shareButton { padding-inline: 6px; }
+.createButton { padding-inline: 7px; }
 .outlineButton:hover { background: #f9fbfd; border-color: #b6c5d9; }
 .outlineButton:disabled { opacity: .48; cursor: not-allowed; }
 .moreButton { width: 28px; height: 32px; border-radius: 6px; }

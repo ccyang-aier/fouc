@@ -1,6 +1,5 @@
 import type { Extensions } from '@tiptap/core';
-import type { PageScope } from '@fouc/shared/knowledge/contracts';
-import type { EditorBlockModule } from './types';
+import type { EditorBlockContext, EditorBlockModule } from './types';
 import { ParagraphModule } from './paragraph';
 import { HeadingModule } from './heading';
 import { BulletListModule } from './bullet-list';
@@ -34,6 +33,6 @@ export const EDITOR_BLOCK_MODULES: readonly EditorBlockModule[] = [
 export const editorBlockModuleByName = new Map(EDITOR_BLOCK_MODULES.map((module) => [module.name, module]));
 
 /** Browser decoration of the shared schema; the registry itself stays transport-neutral. */
-export function applyEditorBlockModules(extensions: Extensions, context: { scope?: PageScope; origin?: string } = {}): Extensions {
+export function applyEditorBlockModules(extensions: Extensions, context: EditorBlockContext = {}): Extensions {
   return EDITOR_BLOCK_MODULES.reduce((current, module) => module.decorate?.(current, context) ?? current, extensions);
 }

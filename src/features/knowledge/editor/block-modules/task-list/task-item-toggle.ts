@@ -14,8 +14,8 @@ export const TaskItemToggle = Extension.create({
           const item = target instanceof Element ? target.closest('li[data-task-item]') : null;
           if (!item) return false;
           const bounds = item.getBoundingClientRect();
-          // The visual checkbox sits just left of the list item's text box.
-          if (event.clientX < bounds.left - 28 || event.clientX > bounds.left + 6 || event.clientY > bounds.top + 32) return false;
+          // The marker sits inside the item's 32px leading gutter.
+          if (event.clientX < bounds.left || event.clientX > bounds.left + 25 || event.clientY < bounds.top || event.clientY > bounds.top + 32) return false;
           view.dispatch(view.state.tr.setNodeMarkup(nodePos, undefined, { ...node.attrs, checked: !node.attrs.checked }));
           event.preventDefault();
           return true;

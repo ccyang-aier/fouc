@@ -158,7 +158,7 @@ export function LocalLibraryNavigation({
     <section className="mt-4" aria-label="最近">
       <SidebarSectionHeader icon={Clock} label="最近" count={recent.length} expanded={recentOpen} onToggle={() => setRecentOpen((open) => !open)} />
       {recentOpen ? <div className="mt-1 space-y-0.5">
-        {recent.map((doc) => <SidebarRow key={doc.id} icon={sidebarIconMap.file} label={doc.title || '无标题文档'} selected={selectedId === doc.id} onClick={() => onSelectDocument(doc.id)} />)}
+        {recent.map((doc) => <SidebarRow key={doc.id} depth={1} icon={sidebarIconMap.file} label={doc.title || '无标题文档'} selected={selectedId === doc.id} onClick={() => onSelectDocument(doc.id)} />)}
         {!recent.length ? <p className={cn(emptyHintTextClassName, 'pl-4 pr-1')}>暂无文档</p> : null}
       </div> : null}
     </section>

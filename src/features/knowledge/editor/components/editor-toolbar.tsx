@@ -14,6 +14,7 @@ import { useEffect, useState } from 'react';
 import { ArrowClockwise, ArrowCounterClockwise } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import type { Editor } from '@tiptap/react';
+import { undo, redo, undoDepth, redoDepth } from '@tiptap/pm/history';
 import type { PageUndo } from '../../collaboration/page-undo';
 import { BlockFormatMenu } from './block-format-menu';
 
@@ -48,17 +49,24 @@ function ToolbarButton({
   );
 }
 
-export function EditorToolbar({ editor, pageUndo, editable }: { editor: Editor | null; pageUndo: PageUndo; editable: boolean }) {
+export function EditorToolbar({ editor, pageUndo, editable }: { editor: Editor | null; pageUndo?: PageUndo; editable: boolean }) {
   // The undo stacks change outside React; subscribe so the disabled states
   // always reflect the B08 manager, not a stale render.
   const [, bump] = useState(0);
   useEffect(() => {
+    if (!pageUndo) return;
     const refresh = () => bump((tick) => tick + 1);
     for (const event of undoEvents) pageUndo.local.on(event, refresh);
     return () => {
       for (const event of undoEvents) pageUndo.local.off(event, refresh);
     };
   }, [pageUndo]);
+  useEffect(() => {
+    if (!editor || pageUndo) return;
+    const refresh = () => bump((tick) => tick + 1);
+    editor.on('transaction', refresh);
+    return () => { editor.off('transaction', refresh); };
+  }, [editor, pageUndo]);
 
   const blocked = !editable;
 
@@ -66,9 +74,10 @@ export function EditorToolbar({ editor, pageUndo, editable }: { editor: Editor |
     <div role="toolbar" aria-label="页面编辑工具" className="flex items-center gap-0.5">
       <ToolbarButton
         label="撤销"
-        disabled={blocked || !pageUndo.canUndo()}
+        disabled={blocked || (pageUndo ? !pageUndo.canUndo() : !editor || undoDepth(editor.state) === 0)}
         onClick={() => {
-          pageUndo.undo();
+          if (pageUndo) pageUndo.undo();
+          else if (editor) undo(editor.state, editor.view.dispatch);
           // DOM focus only — a focus transaction here would (via the Y
           // binding) clear the redo stack that this button just filled.
           editor?.view.focus();
@@ -78,9 +87,10 @@ export function EditorToolbar({ editor, pageUndo, editable }: { editor: Editor |
       </ToolbarButton>
       <ToolbarButton
         label="重做"
-        disabled={blocked || !pageUndo.canRedo()}
+        disabled={blocked || (pageUndo ? !pageUndo.canRedo() : !editor || redoDepth(editor.state) === 0)}
         onClick={() => {
-          pageUndo.redo();
+          if (pageUndo) pageUndo.redo();
+          else if (editor) redo(editor.state, editor.view.dispatch);
           editor?.view.focus();
         }}
       >

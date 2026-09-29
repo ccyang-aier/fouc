@@ -448,11 +448,12 @@ export function NavigationSidebar({
         )}
       </ScrollArea>
 
-      {!open ? <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col items-center gap-1 border-t border-[var(--line)] p-1">
+      {!open ? <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col items-center gap-1 p-1">
         {!projectsMode ? <>
           <Tooltip><TooltipTrigger asChild><NavButton item={{ id: "settings", label: "设置", icon: GearSix }} active={view === "settings"} compact onSelect={() => onViewChange("settings")} /></TooltipTrigger><TooltipContent side="right" sideOffset={10}>设置</TooltipContent></Tooltip>
           <Tooltip><TooltipTrigger asChild><NavButton item={{ id: "help", label: "帮助与反馈", icon: Question }} active={view === "help"} compact onSelect={() => onViewChange("help")} /></TooltipTrigger><TooltipContent side="right" sideOffset={10}>帮助与反馈</TooltipContent></Tooltip>
         </> : null}
+        <div aria-hidden className="w-full border-t border-[var(--line)]" />
         <AccountItem compact />
       </div> : null}
       {open ? <SidebarResizeHandle dragging={dragging} onPointerDown={startResize} /> : null}

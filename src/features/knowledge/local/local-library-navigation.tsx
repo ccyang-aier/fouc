@@ -110,7 +110,7 @@ export function LocalLibraryNavigation({
 
     <section className="mt-5" aria-label="文件夹">
       <SidebarSectionHeader icon={Folder} label="文件夹" count={folders.length} expanded={foldersOpen} onToggle={() => setFoldersOpen((open) => !open)} actions={<IconButton label="新建文件夹" onClick={onCreateFolder} className="rounded p-1 hover:bg-[var(--surface-hover)]"><Plus size={15} /></IconButton>} />
-      {foldersOpen ? <div className="mt-1 space-y-0.5">
+      {foldersOpen ? <div className="mt-0.5 space-y-0.5">
         {folders.map((folder) => {
           const folderDocuments = documents.filter((doc) => doc.folderId === folder.id);
           const expanded = expandedFolderIds.includes(folder.id);
@@ -171,7 +171,7 @@ export function LocalLibraryNavigation({
       <SidebarSectionHeader icon={Clock} label="最近" count={recent.length} expanded={recentOpen} onToggle={() => setRecentOpen((open) => !open)} />
       {recentOpen ? <div className="mt-1 space-y-0.5">
         {recent.map((doc) => <SidebarRow key={doc.id} icon={sidebarIconMap.file} label={doc.title || '无标题文档'} selected={selectedId === doc.id} onClick={() => onSelectDocument(doc.id)} />)}
-        {!recent.length ? <p className={emptyHintClassName}>暂无最近文档</p> : null}
+        {!recent.length ? <p className="py-1 pl-1.5 pr-1 text-[11px] leading-4 text-[var(--muted)]">暂无最近文档</p> : null}
       </div> : null}
     </section>
   </div>;

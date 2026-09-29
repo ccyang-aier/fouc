@@ -21,7 +21,7 @@ export function AccountItem({ compact = false }: { compact?: boolean }) {
       {user ? <span className="text-sm font-semibold text-[var(--accent-ink)]">{Array.from(user.name)[0]?.toUpperCase()}</span> : session.status === 'checking' ? <CircleNotch className="size-4 animate-spin" /> : <UserCircle size={24} weight="duotone" />}
       {user ? <span className="absolute -bottom-px -right-px flex size-2.5 items-center justify-center rounded-full ring-2 ring-[var(--shell)]" style={{ backgroundColor: status.color }}>{presence === 'do-not-disturb' ? <span className="h-px w-1.5 bg-white" /> : presence === 'away' ? <span className="size-1 rounded-full bg-[var(--panel)]" /> : null}</span> : null}
     </span>
-    {!compact ? <><span className="min-w-0 flex-1"><span className="block truncate text-[11.5px] font-medium leading-4 text-[var(--muted)]">{label}</span><span className="mt-0.5 block truncate text-[9.5px] leading-3 text-[var(--muted)]">{detail}</span></span><CaretRight className="size-3.5 shrink-0 text-[var(--muted)]" /></> : null}
+    {!compact ? <><span className="min-w-0 flex-1"><span className="block truncate text-[10.5px] font-medium leading-4 text-[var(--muted)]">{label}</span><span className="mt-0.5 block truncate text-[9.5px] leading-3 text-[var(--muted)]">{detail}</span></span><CaretRight className="size-3.5 shrink-0 text-[var(--muted)]" /></> : null}
   </button>;
   const trigger = compact ? <Tooltip><TooltipTrigger asChild>{button}</TooltipTrigger><TooltipContent side="right">{label}{user ? ` · ${status.label}` : ''}</TooltipContent></Tooltip> : button;
   if (!user) return trigger;

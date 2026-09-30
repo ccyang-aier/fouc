@@ -125,6 +125,7 @@ export function createAwarenessExtension(options: AwarenessExtensionOptions): Ex
         ? buildRemoteCursorDecorations(state, awareness, {
           cursorWidget: remoteCursorWidget,
           selectionAttributes: remoteSelectionAttributes,
+          ownUserId: identity.userId,
         }, ySyncStateFrom).decorations
         : DecorationSet.empty;
       return [new Plugin<DecorationSet>({

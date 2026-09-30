@@ -2,18 +2,18 @@
 
 /**
  * The online-members bar of the page header (B07): a compact avatar stack of
- * everyone the shared awareness reports — people and agents alike — fed by
- * `useAwarenessMembers`. Presence data is read from the B04 session's
- * awareness exactly as the pure module shapes it; nothing is kept in local
- * state beyond the subscribed snapshot. An empty page renders nothing.
+ * unique accounts and agent tasks, plus the current user. The dropdown
+ * exposes names and live editing status without crowding the document.
  */
 
 import { useCallback, useSyncExternalStore } from 'react';
 import { Sparkle } from '@phosphor-icons/react';
 import type { Awareness } from 'y-protocols/awareness';
 import { cn } from '@/lib/utils';
-import { readAwarenessMembers } from '../../collaboration/awareness';
-import type { AwarenessMember } from '../../collaboration/awareness';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { awarenessColorFor, readAwarenessMembers } from '../../collaboration/awareness';
+import type { AwarenessIdentity, AwarenessMember } from '../../collaboration/awareness';
+import styles from './awareness-members.module.css';
 
 interface AwarenessMembersSnapshot {
   members: AwarenessMember[];
@@ -41,6 +41,7 @@ function awarenessSnapshot(awareness: Awareness): AwarenessMembersSnapshot {
 export function useAwarenessMembers(awareness: Awareness | null): AwarenessMembersSnapshot {
   const subscribe = useCallback((notify: () => void) => {
     if (!awareness) return () => {};
+    snapshotCache.delete(awareness);
     const onChange = () => {
       snapshotCache.delete(awareness);
       notify();
@@ -54,7 +55,7 @@ export function useAwarenessMembers(awareness: Awareness | null): AwarenessMembe
   return useSyncExternalStore(subscribe, getSnapshot, () => emptySnapshot);
 }
 
-const MAX_VISIBLE = 5;
+const MAX_VISIBLE = 3;
 
 function memberInitial(name: string): string {
   const trimmed = name.trim();
@@ -65,54 +66,83 @@ function memberTitle(member: AwarenessMember): string {
   return `${member.user.name} · ${member.isEditing ? '正在编辑' : '在线'}`;
 }
 
-function MemberAvatar({ member }: { member: AwarenessMember }) {
+function memberKey(member: AwarenessMember): string {
+  return JSON.stringify([member.kind, member.user.id, member.kind === 'agent' ? member.taskId ?? member.clientId : null]);
+}
+
+function MemberAvatar({ member, large = false }: { member: AwarenessMember; large?: boolean }) {
   const image = member.user.image;
   return (
     <span
       title={memberTitle(member)}
-      className="relative inline-flex size-[22px] shrink-0 items-center justify-center overflow-visible rounded-full border-2 bg-[var(--raise)] text-[10px] font-semibold text-[var(--ink)]"
-      style={{ borderColor: member.color }}
+      className={cn(styles.avatar, large && styles.largeAvatar)}
     >
+      {memberInitial(member.user.name)}
       {typeof image === 'string' && image
         ? (
             <span
               aria-hidden
-              className="size-full rounded-full bg-cover bg-center"
+              className={styles.image}
               style={{ backgroundImage: `url(${JSON.stringify(image)})` }}
             />
           )
-        : memberInitial(member.user.name)}
+        : null}
       {member.kind === 'agent' && (
         <span
           aria-hidden
-          className="absolute -bottom-[3px] -right-[3px] inline-flex size-[11px] items-center justify-center rounded-full bg-[var(--panel)] text-[var(--accent-ink)] shadow-[0_0_0_1px_var(--line)]"
+          className={styles.agentBadge}
         >
-          <Sparkle aria-hidden className="size-[7px]" weight="fill" />
+          <Sparkle aria-hidden size={9} weight="fill" />
         </span>
       )}
     </span>
   );
 }
 
-/** The header's presence stack: at most five avatars, then “+N”. */
-export function AwarenessMembers({ awareness }: { awareness: Awareness | null }) {
+/** One unified header stack, with a keyboard-accessible live member list. */
+export function AwarenessMembers({ awareness, identity }: { awareness: Awareness | null; identity: AwarenessIdentity }) {
   const { members } = useAwarenessMembers(awareness);
-  if (members.length === 0) return null;
-  const visible = members.slice(0, MAX_VISIBLE);
-  const overflow = members.length - visible.length;
+  const own: AwarenessMember = {
+    clientId: awareness?.clientID ?? 0,
+    user: { id: identity.userId, name: identity.name, image: identity.image },
+    color: awarenessColorFor(identity.userId),
+    kind: 'human',
+    isEditing: false,
+  };
+  const participants = [own, ...members.filter((member) => member.kind !== 'human' || member.user.id !== identity.userId)];
+  const visible = participants.slice(0, MAX_VISIBLE);
+  const overflow = participants.length - visible.length;
+  const label = awareness ? `${participants.length} 位在线成员` : '当前文档成员';
   return (
-    <div role="group" aria-label="在线成员" className="flex items-center">
-      <div className={cn('flex items-center -space-x-1.5', overflow > 0 && 'mr-1.5')}>
-        {visible.map((member) => <MemberAvatar key={member.clientId} member={member} />)}
-        {overflow > 0 && (
-          <span
-            title={`还有 ${overflow} 位在线成员`}
-            className="inline-flex size-[22px] shrink-0 items-center justify-center rounded-full border-2 border-[var(--line-strong)] bg-[var(--surface-subtle)] text-[9px] font-semibold text-[var(--muted-strong)]"
-          >
-            +{overflow}
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button type="button" aria-label={label} title="查看文档成员" className={styles.trigger}>
+          <span aria-hidden className={styles.stack}>
+            {visible.map((member) => <MemberAvatar key={memberKey(member)} member={member} />)}
+            {overflow > 0 ? <span className={styles.overflow} title={`还有 ${overflow} 位在线成员`}>{overflow > 99 ? '99+' : `+${overflow}`}</span> : null}
           </span>
-        )}
-      </div>
-    </div>
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" sideOffset={9} className={styles.menu} aria-label="文档成员">
+        <div className={styles.menuHeading}>
+          <span>文档成员</span>
+          <span className={styles.total}>{participants.length}</span>
+        </div>
+        <div className={styles.members}>
+          {participants.map((member, index) => (
+            <DropdownMenuItem key={memberKey(member)} className={styles.memberRow} onSelect={(event) => event.preventDefault()}>
+              <MemberAvatar member={member} large />
+              <span className={styles.memberInfo}>
+                <span className={styles.memberName}><span className={styles.name}>{member.user.name}</span>{index === 0 ? <span className={styles.you}>你</span> : null}{member.kind === 'agent' ? <span className={styles.agentLabel}>AI</span> : null}</span>
+                <span className={cn(styles.memberStatus, member.isEditing && styles.editing)}>
+                  <span aria-hidden className={styles.statusDot} />
+                  {index === 0 ? '当前文档' : member.isEditing ? '正在编辑' : '在线浏览'}
+                </span>
+              </span>
+            </DropdownMenuItem>
+          ))}
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

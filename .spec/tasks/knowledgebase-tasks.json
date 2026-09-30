@@ -659,6 +659,11 @@
       "acceptance": "user/color/cursor/selection/kind 完整；两客户端能见光标、AI 正在编辑状态；断开自动移除",
       "evidence": [
         {
+          "summary": "B07 与 page-provider 回归 21 pass / 0 fail：同账号双 Editor 同步正文但不重复成员或自有远端光标；其他账号多连接按账号合并并保持编辑状态；AI 任务独立。Web 实测 admin 双窗口均只显示 1 位成员；实际组件测试 3/8/120 人头像收纳、完整名单滚动与 390px 窄屏；typecheck、修改文件 eslint 与架构/文档检查通过。",
+          "command": "bun test --isolate src/features/knowledge/collaboration/awareness.test.ts src/features/knowledge/editor/awareness/awareness-extension.instance.test.ts src/features/knowledge/collaboration/page-provider.test.ts; pnpm typecheck; pnpm architecture:verify; pnpm docs:verify",
+          "verifiedAt": "2026-09-30"
+        },
+        {
           "summary": "bun test B07 套件 16 pass / 0 fail：契约形态 schema 校验、双 Editor 光标/选区互见、Agent blockId 光标兼容渲染与正在编辑脉冲、状态移除与销毁清理、惰性挂接、page-provider 生命周期",
           "command": "bun test src/features/knowledge/collaboration/awareness.test.ts src/features/knowledge/editor/awareness/ src/features/knowledge/collaboration/page-provider.test.ts",
           "verifiedAt": "2026-09-27"

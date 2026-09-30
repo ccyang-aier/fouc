@@ -30,6 +30,7 @@ export type FoucAuthUser = {
   email: string;
   name: string;
   emailVerified: boolean;
+  image?: string | null;
 };
 
 /** `GET /api/auth/get-session` — `{session, user}` or `null` without a session. */

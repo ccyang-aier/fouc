@@ -80,7 +80,7 @@ export function buildLocalAwarenessState(
   };
 }
 
-/** A peer as the members bar shows it; own client and malformed states are skipped. */
+/** A participant as the members bar shows it, aggregated across connections. */
 export interface AwarenessMember {
   clientId: number;
   user: { id: string; name: string; image?: string | null };
@@ -103,9 +103,12 @@ function isAwarenessStateShape(state: unknown): state is AwarenessState {
 }
 
 export function readAwarenessMembers(awareness: Awareness, excludeClientId: number): AwarenessMember[] {
-  const members: AwarenessMember[] = [];
+  const ownState = awareness.getStates().get(excludeClientId);
+  const ownUserId = isAwarenessStateShape(ownState) && ownState.kind === 'human' ? ownState.user.id : null;
+  const participants = new Map<string, AwarenessMember>();
   awareness.getStates().forEach((state, clientId) => {
     if (clientId === excludeClientId || state === null || !isAwarenessStateShape(state)) return;
+    if (state.kind === 'human' && state.user.id === ownUserId) return;
     const member: AwarenessMember = {
       clientId,
       user: { id: state.user.id, name: state.user.name, image: state.user.image ?? null },
@@ -114,10 +117,19 @@ export function readAwarenessMembers(awareness: Awareness, excludeClientId: numb
       isEditing: state.isEditing === true,
     };
     if (typeof state.taskId === 'string') member.taskId = state.taskId;
-    members.push(member);
+    // Human identity is the account, not the tab. Agent tasks remain separate
+    // participants even when they run on behalf of the same account.
+    const key = JSON.stringify([member.kind, member.user.id, member.kind === 'agent' ? member.taskId ?? clientId : null]);
+    const existing = participants.get(key);
+    if (existing) {
+      existing.isEditing ||= member.isEditing;
+    } else {
+      participants.set(key, member);
+    }
   });
-  // Stable bar order: people first, then agents, each by connection id.
-  members.sort((a, b) => (a.kind === b.kind ? a.clientId - b.clientId : a.kind === 'human' ? -1 : 1));
+  const members = [...participants.values()];
+  // Account/task order stays stable when one of a participant's tabs leaves.
+  members.sort((a, b) => (a.kind === b.kind ? a.user.id.localeCompare(b.user.id) || (a.taskId ?? '').localeCompare(b.taskId ?? '') : a.kind === 'human' ? -1 : 1));
   return members;
 }
 
@@ -140,6 +152,8 @@ export type RemoteSelectionAttrsBuilder = (resolved: ResolvedRemoteCursor) => De
 export interface RemoteCursorDecorationOptions {
   cursorWidget: RemoteCursorWidgetBuilder;
   selectionAttributes: RemoteSelectionAttrsBuilder;
+  /** The signed-in account, also available before local awareness publishes. */
+  ownUserId?: string;
 }
 
 export interface RemoteCursorDecorations {
@@ -213,8 +227,11 @@ export function buildRemoteCursorDecorations(
   }
   const decorations: Decoration[] = [];
   const resolved: ResolvedRemoteCursor[] = [];
+  const ownState = awareness.getLocalState();
+  const ownUserId = options.ownUserId ?? (isAwarenessStateShape(ownState) && ownState.kind === 'human' ? ownState.user.id : null);
   awareness.getStates().forEach((remote, clientId) => {
     if (clientId === awareness.clientID || remote === null || !isAwarenessStateShape(remote) || remote.cursor === null) return;
+    if (remote.kind === 'human' && remote.user.id === ownUserId) return;
     const anchor = resolveCursorEnd(state.doc, (remote.cursor as { anchor?: unknown }).anchor, ystate);
     const head = resolveCursorEnd(state.doc, (remote.cursor as { head?: unknown }).head, ystate);
     if (anchor === null || head === null) return;

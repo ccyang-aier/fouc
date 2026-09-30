@@ -23,3 +23,5 @@
 .moreMenu [role='toolbar'] { padding: 4px 2px; }
 .extraActions { display: grid; gap: 2px; }
 @media (max-width: 700px) { .header { height: 56px; padding: 0 12px; gap: 8px; } .leading { gap: 3px; } .collectionName { max-width: 72px; font-size: 13px; } .divider { padding: 0 2px; } .actions { gap: 4px; } .avatar { display: none; } .outlineButton { padding: 0 7px; font-size: 12px; } .outlineButton svg { width: 15px; } }
+@media (max-width: 540px) { .createLabel { display: none; } .createButton { width: 32px; padding: 0; } }
+@media (max-width: 380px) { .header { padding-inline: 8px; gap: 6px; } .collectionName { max-width: 48px; } .divider { display: none; } }

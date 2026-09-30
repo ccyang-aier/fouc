@@ -89,7 +89,7 @@ export function PageEditorSurface({
         ? [createAwarenessExtension({
           getAwareness: () => session.awareness,
           subscribeAwareness: session.subscribe,
-          identity: { userId: user.id, name: user.name },
+          identity: { userId: user.id, name: user.name, image: user.image },
         })]
         : []),
     ];
@@ -151,7 +151,7 @@ export function PageEditorSurface({
         onCreateDocument={onCreateDocument}
         canCreateDocument={canCreateDocument}
         shareDescription="复制文档标题和正文后，可以粘贴到其他应用。页面访问权限由知识库管理。"
-        presence={<AwarenessMembers awareness={session.awareness} />}
+        presence={user ? <AwarenessMembers awareness={session.awareness} identity={{ userId: user.id, name: user.name, image: user.image }} /> : undefined}
         menuActions={<button
             type="button"
             onClick={() => setHistoryOpen((open) => !open)}

@@ -24,7 +24,7 @@ import { ySyncPluginKey } from 'y-prosemirror';
 import { TextSelection } from '@tiptap/pm/state';
 import { createBlockIdExtension, createKnowledgeExtensions } from '@fouc/shared/knowledge/schema';
 import type { AwarenessState } from '@fouc/shared/knowledge/contracts';
-import { awarenessColorFor } from '../../collaboration/awareness';
+import { awarenessColorFor, readAwarenessMembers } from '../../collaboration/awareness';
 import type { AwarenessIdentity } from '../../collaboration/awareness';
 import { createPageUndo } from '../../collaboration/page-undo';
 import { pageCollaborationExtension } from '../page-collaboration';
@@ -101,6 +101,31 @@ function caretsOf(editor: Editor, selector: string): HTMLElement[] {
 }
 
 describe('awareness cursors across two real editors', () => {
+  test('two editors for the same account sync content without duplicate presence or own remote cursors', async () => {
+    const shared = new Y.Doc();
+    const [awarenessA, awarenessB] = connectAwarenessExchange(2);
+    const identity = { userId: crypto.randomUUID(), name: 'Admin' };
+    const a = mountEditor(shared, awarenessA, identity);
+    const b = mountEditor(shared, awarenessB, identity);
+    try {
+      a.commands.setContent('<p>same account, two windows</p>');
+      a.view.dispatch(a.state.tr.setSelection(TextSelection.create(a.state.doc, 2, 7)).setMeta('addToHistory', false));
+      await until(() => Boolean(awarenessB.getStates().get(awarenessA.clientID)?.cursor));
+      expect(b.state.doc.textContent).toBe('same account, two windows');
+      expect(readAwarenessMembers(awarenessA, awarenessA.clientID)).toEqual([]);
+      expect(readAwarenessMembers(awarenessB, awarenessB.clientID)).toEqual([]);
+      expect(caretsOf(a, '[data-awareness-kind="human"]')).toHaveLength(0);
+      expect(caretsOf(b, '[data-awareness-kind="human"]')).toHaveLength(0);
+      expect(b.view.dom.querySelector('.fouc-awareness-selection')).toBe(null);
+    } finally {
+      a.destroy();
+      b.destroy();
+      awarenessA.destroy();
+      awarenessB.destroy();
+      shared.destroy();
+    }
+  });
+
   test('a selection change on A renders A\'s caret flag and selection on B', async () => {
     const shared = new Y.Doc();
     const [awarenessA, awarenessB] = connectAwarenessExchange(2);

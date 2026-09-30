@@ -168,6 +168,42 @@ describe('buildLocalAwarenessState against the shared contract', () => {
 });
 
 describe('readAwarenessMembers', () => {
+  test('the same account in another window is not a second member', () => {
+    const [tabA, tabB] = connectedAwareness(2);
+    const identity = { userId: crypto.randomUUID(), name: 'Admin' };
+    tabA.setLocalState(buildLocalAwarenessState(identity, null, null, false));
+    tabB.setLocalState(buildLocalAwarenessState(identity, null, null, true));
+    expect(readAwarenessMembers(tabA, tabA.clientID)).toEqual([]);
+    expect(readAwarenessMembers(tabB, tabB.clientID)).toEqual([]);
+    tabA.destroy();
+    tabB.destroy();
+  });
+
+  test('remote accounts merge tabs and retain presence until their last connection leaves', () => {
+    const [tabA, tabB, receiver] = connectedAwareness(3);
+    const identity = { userId: crypto.randomUUID(), name: 'Alice' };
+    tabA.setLocalState(buildLocalAwarenessState(identity, null, null, false));
+    tabB.setLocalState(buildLocalAwarenessState(identity, null, null, true));
+    expect(readAwarenessMembers(receiver, receiver.clientID)).toHaveLength(1);
+    expect(readAwarenessMembers(receiver, receiver.clientID)[0]?.isEditing).toBe(true);
+    tabB.setLocalState(null);
+    expect(readAwarenessMembers(receiver, receiver.clientID)).toHaveLength(1);
+    expect(readAwarenessMembers(receiver, receiver.clientID)[0]?.isEditing).toBe(false);
+    tabA.setLocalState(null);
+    expect(readAwarenessMembers(receiver, receiver.clientID)).toEqual([]);
+    for (const awareness of [tabA, tabB, receiver]) awareness.destroy();
+  });
+
+  test('agent tasks are distinct from their human owner and from each other', () => {
+    const [agentA, agentB, receiver] = connectedAwareness(3);
+    const userId = crypto.randomUUID();
+    receiver.setLocalState(buildLocalAwarenessState({ userId, name: 'Admin' }, null, null, false));
+    agentA.setLocalState(agentState(userId, crypto.randomUUID(), { anchor: 'a', head: 'a' }));
+    agentB.setLocalState(agentState(userId, crypto.randomUUID(), { anchor: 'b', head: 'b' }));
+    expect(readAwarenessMembers(receiver, receiver.clientID).map((member) => member.kind)).toEqual(['agent', 'agent']);
+    for (const awareness of [agentA, agentB, receiver]) awareness.destroy();
+  });
+
   test('includes remote humans and agents, excludes own client, null and malformed states', () => {
     const [humanA, agentB, receiver] = connectedAwareness(3);
     const humanId = crypto.randomUUID();
@@ -206,6 +242,20 @@ describe('buildRemoteCursorDecorations', () => {
       { text: 'second block', blockId: 'blk-2' },
     ]);
   }
+
+  test('own-account cursors and selections are hidden, but agent tasks still render', () => {
+    const bound = fixture();
+    const [ownTab, agent, receiver] = connectedAwareness(3);
+    const userId = crypto.randomUUID();
+    receiver.setLocalState(buildLocalAwarenessState({ userId, name: 'Admin' }, null, null, false));
+    ownTab.setLocalState(humanState(userId, 'Admin', { anchor: relativeJson(3, bound), head: relativeJson(7, bound) }, true));
+    agent.setLocalState(agentState(userId, crypto.randomUUID(), { anchor: 'blk-2', head: 'blk-2' }));
+    const result = buildRemoteCursorDecorations(bound.state, receiver, { cursorWidget: headlessCursorWidget, selectionAttributes: headlessSelectionAttrs });
+    expect(result.resolved.map((cursor) => cursor.kind)).toEqual(['agent']);
+    expect(result.decorations.find()).toHaveLength(1);
+    for (const awareness of [ownTab, agent, receiver]) awareness.destroy();
+    bound.ydoc.destroy();
+  });
 
   test('relative-position and blockId cursors both resolve; garbage is skipped', () => {
     const bound = fixture();

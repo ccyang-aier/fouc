@@ -14,9 +14,7 @@
 }
 .button:hover { background: var(--surface-hover); }
 .button[aria-pressed='true'] { color: #bd861b; }
-.button[aria-pressed='true']:hover { background: #f9f1df; color: #a87311; }
 :global(html[data-theme='dark']) .button[aria-pressed='true'] { color: #f1be55; }
-:global(html[data-theme='dark']) .button[aria-pressed='true']:hover { background: #f1be5514; }
 .button:active .star { transform: scale(.9); }
 .star { position: relative; z-index: 1; transform-origin: center; }
 .button[data-celebrating] .star { animation: star-reveal 620ms cubic-bezier(.16, 1, .3, 1); }

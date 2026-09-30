@@ -10,6 +10,13 @@
 .root .table :global(th) { font-weight: 600; background: #f5f6f8; }
 .root .table :global(tr[data-background] th) { background: transparent; }
 .root .table :global([data-background]) { background-color: inherit; }
+.shell:has(.table[data-background], .table :global([data-background])) { border-color: #a5b3c4; }
+.root .table[data-background] :global(th), .root .table[data-background] :global(td),
+.root .table :global(tr[data-background] > th), .root .table :global(tr[data-background] > td),
+.root .table :global(th[data-background]), .root .table :global(td[data-background]) {
+  border-color: #a5b3c4;
+  box-shadow: inset 0 1px 0 #ffffff80, inset 1px 0 0 #ffffff80;
+}
 .root .table :global([align="center"]) { text-align: center; }
 .root .table :global([align="right"]) { text-align: right; }
 .table[data-variant="striped"] :global(tr:nth-child(even)) { background: #f7f9fc; }

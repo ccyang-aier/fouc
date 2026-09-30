@@ -5,8 +5,9 @@ import { EditorContent } from '@tiptap/react';
 import type { Editor } from '@tiptap/react';
 import styles from './editor-layout.module.css';
 import { DocumentAppearanceProvider, useDocumentAppearance } from './components/document-appearance';
-import { documentFonts, documentSizes, documentParagraphSpacings } from '@/lib/editor-appearance-options';
+import { documentFonts, documentCodeFonts, documentSizes, documentParagraphSpacings } from '@/lib/editor-appearance-options';
 import './document-fonts.css';
+import './code-fonts.css';
 
 export function DocumentEditorFrame({ children, appearanceScope }: { children: ReactNode; appearanceScope: string }) {
   return <DocumentAppearanceProvider key={appearanceScope} scope={appearanceScope}><section aria-label="页面编辑器" className={styles.frame}>{children}</section></DocumentAppearanceProvider>;
@@ -39,9 +40,10 @@ export function DocumentHeading({ title, onTitleChange, onTitleCommit, editable 
 export function DocumentEditorBody({ editor, before }: { editor: Editor | null; before?: ReactNode }) {
   const { appearance } = useDocumentAppearance();
   const font = documentFonts.find(({ id }) => id === appearance.font)!;
+  const codeFont = documentCodeFonts.find(({ id }) => id === appearance.codeFont)!;
   const size = documentSizes.find(({ id }) => id === appearance.size)!;
   const spacing = documentParagraphSpacings.find(({ id }) => id === appearance.paragraphSpacing)!;
   return <div className={styles.scrollArea}>
-    <div className={styles.document} data-width={appearance.width} data-font={appearance.font} data-size={appearance.size} style={{ '--document-width': `${appearance.width}%`, '--document-font': font.family, '--document-size': `${size.pixels}px`, '--document-line-height': appearance.lineHeight, '--document-paragraph-gap': `${spacing.pixels}px` } as CSSProperties}>{before}<EditorContent editor={editor} /></div>
+    <div className={styles.document} data-width={appearance.width} data-font={appearance.font} data-size={appearance.size} style={{ '--document-width': `${appearance.width}%`, '--document-font': font.family, '--document-code-font': codeFont.family, '--document-size': `${size.pixels}px`, '--document-line-height': appearance.lineHeight, '--document-paragraph-gap': `${spacing.pixels}px` } as CSSProperties}>{before}<EditorContent editor={editor} /></div>
   </div>;
 }

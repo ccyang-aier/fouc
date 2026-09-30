@@ -34,6 +34,7 @@ import {
 import { createBlockEditingExtensions } from '../extensions';
 import { applyEditorBlockModules } from '.';
 import { insertColumnRight, insertRowBelow, removeTableRow, selectTableAxis, tableNodeAt, toggleTableHeaderRow } from './table/table-commands';
+import { addColumn, removeLastColumn, setColumnWidths } from './columns/columns-commands';
 
 const pageId = '00000000-0000-4000-8000-000000000001';
 
@@ -230,6 +231,69 @@ describe('callout NodeView', () => {
 });
 
 describe('columns NodeView', () => {
+  testWithTimeout('drag previews widths without transactions; release persists and cancellation restores them', async () => {
+    const { editor, dispose } = mountEditor();
+    try {
+      editor.commands.insertContent(COLUMNS_JSON);
+      await settle();
+      const handle = editor.view.dom.querySelector<HTMLButtonElement>('[role="separator"]')!;
+      const layout = handle.parentElement!;
+      Object.defineProperty(layout, 'clientWidth', { value: 600 });
+      let captured = false;
+      handle.setPointerCapture = () => { captured = true; };
+      handle.hasPointerCapture = () => captured;
+      handle.releasePointerCapture = () => { captured = false; };
+      let transactions = 0;
+      const count = () => { transactions += 1; };
+      editor.on('transaction', count);
+      const pointer = (type: string, x: number) => handle.dispatchEvent(new window.PointerEvent(type, { bubbles: true, pointerId: 1, button: 0, clientX: x }) as unknown as Event);
+      const initialLeft = handle.style.left;
+      pointer('pointerdown', 400);
+      pointer('pointermove', 450);
+      expect(transactions).toBe(0);
+      expect(handle.style.left).not.toBe(initialLeft);
+      const columns = editor.view.dom.querySelectorAll<HTMLElement>('[data-column]');
+      expect(Number(columns[0].style.getPropertyValue('--column-width'))).toBeGreaterThan(6667);
+      pointer('pointerup', 450);
+      expect(transactions).toBe(1);
+      await settle();
+      const persisted = editor.view.dom.querySelector('[data-column]')!.getAttribute('data-width');
+      expect(Number(persisted)).toBeGreaterThan(6667);
+      const persistedLeft = handle.style.left;
+      pointer('pointerdown', 450);
+      pointer('pointermove', 380);
+      pointer('pointercancel', 380);
+      expect(transactions).toBe(1);
+      expect(editor.view.dom.querySelector<HTMLElement>('[data-column]')!.style.getPropertyValue('--column-width')).toBe(persisted);
+      expect(handle.style.left).toBe(persistedLeft);
+      editor.off('transaction', count);
+      assertValidBlockIds(editor.state.doc);
+    } finally { dispose(); }
+  }, 15000);
+
+  testWithTimeout('adding and removing resized columns preserves weights and all content', async () => {
+    const { editor, dispose } = mountEditor();
+    try {
+      editor.commands.insertContent(COLUMNS_JSON);
+      await settle();
+      let pos = -1;
+      editor.state.doc.descendants((node, position) => { if (node.type.name === 'columns') pos = position; });
+      const current = () => editor.state.doc.nodeAt(pos)!;
+      expect(setColumnWidths(editor, current(), pos, [7000, 3000])).toBe(true);
+      expect(setColumnWidths(editor, current(), pos, [0, 10000])).toBe(false);
+      expect(addColumn(editor, current(), pos)).toBe(true);
+      expect(current().lastChild?.attrs.width).toBe(5000);
+      const lastPos = pos + current().nodeSize - current().lastChild!.nodeSize;
+      editor.view.dispatch(editor.state.tr.insertText('新增栏的内容', lastPos + 1));
+      const allText = current().textContent;
+      expect(removeLastColumn(editor, current(), pos)).toBe(true);
+      expect(current().childCount).toBe(2);
+      expect(current().textContent).toBe(allText);
+      expect(current().child(1).attrs.width).toBe(8000);
+      assertValidBlockIds(editor.state.doc);
+    } finally { dispose(); }
+  }, 15000);
+
   testWithTimeout('renders weighted columns with schema-rendered children and editable layout controls', async () => {
     const { editor, dispose } = mountEditor();
     try {

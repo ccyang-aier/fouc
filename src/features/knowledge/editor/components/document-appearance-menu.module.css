@@ -5,5 +5,9 @@
   padding: 18px;
   border-radius: 10px;
 }
-.heading { margin: 0 0 18px; color: var(--ink); font-size: 16px; font-weight: 650; letter-spacing: -.025em; }
-.controls { display: grid; gap: 18px; }
+.header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.heading { margin: 0; color: var(--ink); font-size: 16px; font-weight: 650; letter-spacing: -.025em; }
+.header button { display: grid; place-items: center; width: 25px; height: 25px; border-radius: 5px; color: var(--muted-strong); cursor: pointer; }
+.header button:hover { background: var(--surface-hover); color: var(--ink); }
+.header button:focus-visible { outline: 2px solid var(--focus-ring); }
+.controls { display: grid; gap: 14px; }

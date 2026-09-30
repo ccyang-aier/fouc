@@ -1,106 +1,75 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import type { FC } from 'react';
-import { Check, Copy, DotsThree, TextAlignLeft } from '@phosphor-icons/react';
+import { useEffect, useRef, useState, type FC } from 'react';
+import { CaretDown, Check, Copy, DotsThree } from '@phosphor-icons/react';
 import type { NodeViewProps } from '@tiptap/react';
 import { NodeViewContent, NodeViewWrapper } from '@tiptap/react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { AppearanceSelect } from '@/components/editor-appearance-controls';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { CODE_LANGUAGES, detectedCodeLanguage } from './highlight';
+import './code-themes.css';
 import styles from './code-block.module.css';
 
 const CodeContent = NodeViewContent as unknown as FC<{ as: 'pre'; className?: string }>;
+const THEMES = [
+  { id: 'light', label: 'GitHub Light' }, { id: 'dark', label: 'GitHub Dark' },
+  { id: 'monokai', label: 'Monokai' }, { id: 'idea', label: 'IntelliJ Light' },
+  { id: 'darcula', label: 'Darcula' }, { id: 'one-dark', label: 'One Dark' },
+  { id: 'nord', label: 'Nord' }, { id: 'paper', label: 'Stack Overflow Light' },
+] as const;
 
 export function CodeBlockNodeView({ node, editor, updateAttributes, HTMLAttributes }: NodeViewProps) {
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const language = String(node.attrs.language || 'auto');
   const detected = language === 'auto' ? detectedCodeLanguage(node.textContent) : null;
   const lines = Math.max(1, node.textContent.split('\n').length);
-
-  useEffect(() => {
-    if (!settingsOpen) return;
-    const close = (event: PointerEvent) => {
-      if (!menuRef.current?.contains(event.target as Node)) setSettingsOpen(false);
-    };
-    document.addEventListener('pointerdown', close);
-    return () => document.removeEventListener('pointerdown', close);
-  }, [settingsOpen]);
-
   useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
-
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(node.textContent);
       setCopied(true);
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => setCopied(false), 1800);
-    } catch {
-      setCopied(false);
-    }
+    } catch { setCopied(false); }
   };
-
-  return (
-    <NodeViewWrapper
-      as="div"
-      {...HTMLAttributes}
-      data-fouc-node="code-block"
-      data-block-id={node.attrs.blockId}
-      data-code-theme={node.attrs.theme}
-      data-code-font={node.attrs.font}
-      data-code-wrap={String(node.attrs.wrap)}
-      className={styles.root}
-    >
-      <div className={styles.header} contentEditable={false}>
-        <div className={styles.languageRow}>
-          <span aria-hidden className={styles.languageDot} />
-          <select
-            aria-label="代码语言"
-            value={language}
-            disabled={!editor.isEditable}
-            onChange={(event) => updateAttributes({ language: event.target.value === 'auto' ? null : event.target.value })}
-            className={styles.languageSelect}
-          >
-            {CODE_LANGUAGES.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
-          </select>
-          {detected ? <span className={styles.detected}>{CODE_LANGUAGES.find((option) => option.value === detected)?.label ?? detected}</span> : null}
-        </div>
-        <div className={styles.actions} data-document-export-omit>
-          <button type="button" className={styles.iconButton} onClick={copy} aria-label={copied ? '已复制代码' : '复制代码'} title={copied ? '已复制' : '复制代码'}>
-            {copied ? <Check aria-hidden size={15} /> : <Copy aria-hidden size={15} />}
-            <span>{copied ? '已复制' : '复制'}</span>
-          </button>
-          {editor.isEditable ? (
-            <div ref={menuRef} className={styles.menuAnchor}>
-              <button type="button" className={styles.iconButton} aria-label="代码块显示设置" aria-expanded={settingsOpen} aria-haspopup="menu" onClick={() => setSettingsOpen((value) => !value)}>
-                <DotsThree aria-hidden size={19} weight="bold" />
-              </button>
-              {settingsOpen ? (
-                <div role="menu" aria-label="代码块显示设置" className={styles.menu} onKeyDown={(event) => { if (event.key === 'Escape') setSettingsOpen(false); }}>
-                  <div className={styles.menuTitle}>外观</div>
-                  <div className={styles.themeRow}>
-                    {(['light', 'dark', 'paper'] as const).map((theme) => (
-                      <button key={theme} type="button" aria-label={`${{ light: '浅色', dark: '深色', paper: '纸张' }[theme]}主题`} aria-pressed={node.attrs.theme === theme} className={styles.themeOption} data-theme={theme} onClick={() => updateAttributes({ theme })}>
-                        <span aria-hidden>Aa</span>
-                        <small>{{ light: '浅色', dark: '深色', paper: '纸张' }[theme]}</small>
-                      </button>
-                    ))}
-                  </div>
-                  <div className={styles.menuDivider} />
-                  <label className={styles.menuRow}>字体<select aria-label="代码字体" value={node.attrs.font} onChange={(event) => updateAttributes({ font: event.target.value })}><option value="mono">等宽</option><option value="serif">衬线</option></select></label>
-                  <button type="button" role="menuitemcheckbox" aria-checked={Boolean(node.attrs.lineNumbers)} className={styles.menuRow} onClick={() => updateAttributes({ lineNumbers: !node.attrs.lineNumbers })}><span>显示行号</span><span className={styles.toggle} data-on={String(node.attrs.lineNumbers)} /></button>
-                  <button type="button" role="menuitemcheckbox" aria-checked={Boolean(node.attrs.wrap)} className={styles.menuRow} onClick={() => updateAttributes({ wrap: !node.attrs.wrap })}><span className={styles.wrapLabel}><TextAlignLeft aria-hidden size={15} />自动换行</span><span className={styles.toggle} data-on={String(node.attrs.wrap)} /></button>
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
+  return <NodeViewWrapper as="div" {...HTMLAttributes} data-fouc-node="code-block" data-block-id={node.attrs.blockId}
+    data-code-theme={node.attrs.theme} data-code-wrap={String(node.attrs.wrap)} className={styles.root + ' fouc-code-theme'}>
+    <div className={styles.header} contentEditable={false}>
+      <div className={styles.languageRow}>
+        <DropdownMenu modal={false}>
+          <DropdownMenuTrigger className={styles.languageSelect} aria-label="代码语言" data-document-export-text disabled={!editor.isEditable}>
+            {CODE_LANGUAGES.find(item => item.value === language)?.label ?? language}<CaretDown size={12} aria-hidden />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className={styles.languageMenu} align="start">
+            <ScrollArea className={styles.languageScroll}>{CODE_LANGUAGES.map(item => <DropdownMenuItem key={item.value} onSelect={() => updateAttributes({ language: item.value === 'auto' ? null : item.value })}>
+              {item.label}{language === item.value && <Check className="ml-auto" aria-hidden />}
+            </DropdownMenuItem>)}</ScrollArea>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        {detected && <span className={styles.detected}>{CODE_LANGUAGES.find(item => item.value === detected)?.label ?? detected}</span>}
       </div>
-      <div className={styles.body}>
-        {node.attrs.lineNumbers ? <div className={styles.gutter} contentEditable={false} aria-hidden>{Array.from({ length: lines }, (_, index) => <span key={index}>{index + 1}</span>)}</div> : null}
-        <CodeContent as="pre" className={styles.code} />
+      <div className={styles.actions} data-document-export-omit>
+        <button type="button" className={styles.iconButton} onClick={copy} aria-label={copied ? '已复制代码' : '复制代码'}>
+          {copied ? <Check size={15} aria-hidden /> : <Copy size={15} aria-hidden />}
+        </button>
+        {editor.isEditable && <DropdownMenu modal={false}>
+          <DropdownMenuTrigger className={styles.iconButton} aria-label="代码块显示设置"><DotsThree size={20} weight="bold" aria-hidden /></DropdownMenuTrigger>
+          <DropdownMenuContent className={styles.menu} align="end"
+            onFocusOutside={event => { if ((event.target as Element)?.closest('[data-editor-appearance-dropdown]')) event.preventDefault(); }}
+            onInteractOutside={event => { if ((event.target as Element)?.closest('[data-editor-appearance-dropdown]')) event.preventDefault(); }}>
+            <AppearanceSelect label="外观" value={String(node.attrs.theme)} options={THEMES} onChange={theme => updateAttributes({ theme })} />
+            <DropdownMenuSeparator />
+            <DropdownMenuCheckboxItem checked={Boolean(node.attrs.lineNumbers)} onSelect={event => event.preventDefault()} onCheckedChange={lineNumbers => updateAttributes({ lineNumbers })}>显示行号</DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem checked={Boolean(node.attrs.wrap)} onSelect={event => event.preventDefault()} onCheckedChange={wrap => updateAttributes({ wrap })}>自动换行</DropdownMenuCheckboxItem>
+          </DropdownMenuContent>
+        </DropdownMenu>}
       </div>
-    </NodeViewWrapper>
-  );
+    </div>
+    <div className={styles.body}>
+      {node.attrs.lineNumbers && <div className={styles.gutter} contentEditable={false} aria-hidden>{Array.from({ length: lines }, (_, index) => <span key={index}>{index + 1}</span>)}</div>}
+      <CodeContent as="pre" className={styles.code} />
+    </div>
+  </NodeViewWrapper>;
 }

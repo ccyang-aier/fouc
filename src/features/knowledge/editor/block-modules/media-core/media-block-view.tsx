@@ -1,14 +1,15 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { DragEvent as ReactDragEvent, ReactNode } from 'react';
-import { ArrowSquareOut, CloudArrowUp, LinkSimple, PencilSimple, Trash } from '@phosphor-icons/react';
+import { ArrowSquareOut, Image as ImageIcon, MusicNotes, Paperclip, PencilSimple, Video } from '@phosphor-icons/react';
 import type { NodeViewProps } from '@tiptap/react';
 import { NodeViewWrapper } from '@tiptap/react';
 import { safeKnowledgeUrl } from '@fouc/shared/knowledge/schema';
 import { readLocalAsset, saveLocalAsset } from '../../../assets/local-assets';
 import { knowledgeAssetsApi } from '../../../assets/assets-api';
 import { useAssetUploads } from '../../../assets/use-asset-uploads';
+import { takeInsertedMedia } from './insert-media';
 import styles from './media-block.module.css';
 
 export type MediaKind = 'image' | 'video' | 'audio' | 'file';
@@ -52,90 +53,75 @@ function useResolvedMedia(source: string, localWorkspaceId?: string, workspaceId
 }
 
 export function MediaBlockView({ kind, localWorkspaceId, workspaceId, renderPreview, ...props }: NodeViewProps & {
-  kind: MediaKind;
-  localWorkspaceId?: string;
-  workspaceId?: string;
+  kind: MediaKind; localWorkspaceId?: string; workspaceId?: string;
   renderPreview: (source: ResolvedMedia) => ReactNode;
 }) {
   const { node, editor, updateAttributes, HTMLAttributes } = props;
-  const [editing, setEditing] = useState(false);
-  const [urlDraft, setUrlDraft] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const source = String(node.attrs.src ?? '');
   const resolved = useResolvedMedia(source, localWorkspaceId, workspaceId);
-  const uploads = useAssetUploads({ workspaceId: workspaceId ?? '', onUploaded: (asset) => {
-    updateAttributes({ src: `asset:${asset.hash}`, title: asset.name, mime: asset.mime, alt: kind === 'image' ? asset.name : node.attrs.alt });
-    setEditing(false);
-  } });
+  const uploaded = useCallback((asset: { hash: string; name: string; mime: string }) => {
+    updateAttributes({ src: 'asset:' + asset.hash, title: asset.name, mime: asset.mime, ...(kind === 'image' ? { alt: asset.name } : {}) });
+  }, [updateAttributes, kind]);
+  const uploads = useAssetUploads({ workspaceId: workspaceId ?? '', onUploaded: uploaded });
+  const { addFiles } = uploads;
   const latestUpload = uploads.items.at(-1);
-
-  const importFile = async (file: File) => {
-    if (!localWorkspaceId && !workspaceId) return;
-    if (kind !== 'file' && !file.type.startsWith(`${kind}/`)) { setError(`请选择${LABELS[kind]}文件`); return; }
+  const importFile = useCallback(async (file: File) => {
+    if (!localWorkspaceId && !workspaceId) { setError('文档尚未连接资源存储。'); return; }
+    if (kind !== 'file' && !file.type.startsWith(kind + '/')) { setError('请选择' + LABELS[kind] + '文件'); return; }
     setError(null);
-    if (workspaceId && !localWorkspaceId) { uploads.addFiles([file]); return; }
+    if (workspaceId && !localWorkspaceId) { addFiles([file]); return; }
     setProgress(0);
     try {
-      const stored = await saveLocalAsset(localWorkspaceId!, file, (ratio) => setProgress(ratio));
-      updateAttributes({ src: stored, title: file.name, mime: file.type || null, alt: kind === 'image' ? file.name : node.attrs.alt });
-      setEditing(false);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : '文件保存失败');
-    } finally { setProgress(null); }
-  };
-
-  const saveUrl = () => {
-    const safe = safeKnowledgeUrl(urlDraft, 'media');
-    if (!safe || !/^https?:\/\//i.test(safe)) { setError('请输入完整的 http:// 或 https:// 地址'); return; }
-    updateAttributes({ src: safe, title: node.attrs.title || new URL(safe).pathname.split('/').at(-1) || LABELS[kind] });
-    setError(null);
-    setEditing(false);
-  };
-
+      const stored = await saveLocalAsset(localWorkspaceId!, file, ratio => setProgress(ratio));
+      updateAttributes({ src: stored, title: file.name, mime: file.type || null, ...(kind === 'image' ? { alt: file.name } : {}) });
+    } catch (cause) { setError(cause instanceof Error ? cause.message : '文件保存失败'); }
+    finally { setProgress(null); }
+  }, [localWorkspaceId, workspaceId, kind, updateAttributes, addFiles]);
+  useEffect(() => {
+    const file = takeInsertedMedia(String(node.attrs.blockId));
+    if (file) queueMicrotask(() => { void importFile(file); });
+  }, [node.attrs.blockId, importFile]);
+  const busy = progress !== null || !!(latestUpload && !['done', 'error', 'canceled'].includes(latestUpload.phase));
   const title = String(node.attrs.title || resolved.value?.name || LABELS[kind]);
   const caption = String(node.attrs.caption || '');
-
-  return (
-    <NodeViewWrapper as="figure" {...HTMLAttributes} data-fouc-node={kind} data-block-id={node.attrs.blockId} data-kind={kind} className={styles.root}
-      onDragOver={(event: ReactDragEvent<HTMLElement>) => { if ((!localWorkspaceId && !workspaceId) || !editor.isEditable || !event.dataTransfer.types.includes('Files')) return; event.preventDefault(); setDragging(true); }}
-      onDragLeave={(event: ReactDragEvent<HTMLElement>) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false); }}
-      onDrop={(event: ReactDragEvent<HTMLElement>) => { if ((!localWorkspaceId && !workspaceId) || !editor.isEditable) return; event.preventDefault(); setDragging(false); const file = event.dataTransfer.files[0]; if (file) void importFile(file); }}
-    >
-      <div className={styles.header} contentEditable={false}>
-        <span className={styles.kind}><span aria-hidden className={styles.kindDot} />{LABELS[kind]}</span>
-        <div className={styles.actions} data-document-export-omit>
-          {source && resolved.value ? <a href={resolved.value.url} target="_blank" rel="noopener noreferrer" aria-label={`打开${LABELS[kind]}`} title={`打开${LABELS[kind]}`} className={styles.action}><ArrowSquareOut aria-hidden size={15} /></a> : null}
-          {editor.isEditable && source ? <button type="button" className={styles.action} title="更换资源" aria-label="更换资源" onClick={() => { setUrlDraft(/^https?:/.test(source) ? source : ''); setEditing(true); }}><PencilSimple aria-hidden size={15} /></button> : null}
-          {editor.isEditable && source ? <button type="button" className={styles.action} title="清除资源" aria-label="清除资源" onClick={() => updateAttributes({ src: '' })}><Trash aria-hidden size={15} /></button> : null}
-        </div>
-      </div>
-      {source && resolved.value && !editing ? <div className={styles.preview} contentEditable={false}>{renderPreview(resolved.value)}</div> : null}
-      {source && resolved.error && !editing ? <div className={styles.errorState} role="status">{resolved.error}{editor.isEditable ? <button type="button" onClick={() => setEditing(true)}>更换资源</button> : null}</div> : null}
-      {(!source || editing) && editor.isEditable ? (
-        <div className={styles.setup} data-dragging={String(dragging)} contentEditable={false} data-document-export-omit>
-          <div className={styles.setupIcon}><CloudArrowUp aria-hidden size={23} weight="duotone" /></div>
-          <strong>{source ? `更换${LABELS[kind]}` : `添加${LABELS[kind]}`}</strong>
-          <p>{localWorkspaceId || workspaceId ? '拖入文件，或从本机选择' : '粘贴可访问的网络地址'}</p>
-          {localWorkspaceId || workspaceId ? <><button type="button" className={styles.primary} disabled={progress !== null} onClick={() => inputRef.current?.click()}>选择文件</button><input ref={inputRef} type="file" accept={ACCEPT[kind]} className={styles.hiddenInput} aria-label={`选择${LABELS[kind]}文件`} onChange={(event) => { const file = event.target.files?.[0]; if (file) void importFile(file); event.target.value = ''; }} /></> : null}
-          {progress !== null ? <div className={styles.progress} role="status">正在保存 · {Math.round(progress * 100)}%<span style={{ width: `${progress * 100}%` }} /></div> : null}
-          {latestUpload && latestUpload.phase !== 'done' ? <div className={styles.progress} role="status">
-            {latestUpload.phase === 'error' ? latestUpload.error?.detail || '上传失败，请重试' : latestUpload.phase === 'hashing' ? '正在计算文件指纹' : latestUpload.phase === 'preparing' ? '正在准备上传' : latestUpload.phase === 'uploading' ? '正在上传' : latestUpload.phase === 'confirming' ? '正在确认文件' : '已取消'}
-            {latestUpload.phase === 'hashing' || latestUpload.phase === 'uploading' ? ` · ${Math.round(latestUpload.progress * 100)}%` : null}
-            <span style={{ width: `${latestUpload.progress * 100}%` }} />
-            {latestUpload.phase === 'error' || latestUpload.phase === 'canceled' ? <button type="button" onClick={() => uploads.retry(latestUpload.id)}>重试</button> : <button type="button" onClick={() => uploads.cancel(latestUpload.id)}>取消</button>}
-          </div> : null}
-          <div className={styles.urlRow}><LinkSimple aria-hidden size={15} /><input type="url" aria-label={`${LABELS[kind]}网络地址`} placeholder="https://…" value={urlDraft} onChange={(event) => setUrlDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') saveUrl(); }} /><button type="button" onClick={saveUrl}>使用地址</button></div>
-          {editing ? <button type="button" className={styles.cancel} onClick={() => { setEditing(false); setError(null); }}>取消</button> : null}
-          {error ? <p className={styles.error} role="alert">{error}</p> : null}
-        </div>
-      ) : null}
-      {source && !editing ? <div className={styles.meta} contentEditable={false}>
-        {kind === 'image' ? <input aria-label="图片替代文本" disabled={!editor.isEditable} placeholder="图片替代文本" value={String(node.attrs.alt || '')} onChange={(event) => updateAttributes({ alt: event.target.value })} /> : <span className={styles.title}>{title}</span>}
-        {editor.isEditable ? <input aria-label={`${LABELS[kind]}说明`} placeholder="添加说明…" value={caption} onChange={(event) => updateAttributes({ caption: event.target.value })} /> : caption ? <span>{caption}</span> : null}
-      </div> : null}
-    </NodeViewWrapper>
-  );
+  const percentage = Math.round((progress ?? latestUpload?.progress ?? 0) * 100);
+  return <NodeViewWrapper as="figure" {...HTMLAttributes} data-fouc-node={kind} data-kind={kind} data-block-id={node.attrs.blockId}
+    data-empty={String(!source)} data-dragging={String(dragging)} className={styles.root}
+    onDragOver={(event: ReactDragEvent<HTMLElement>) => { if (!editor.isEditable || !event.dataTransfer.types.includes('Files')) return; event.preventDefault(); setDragging(true); }}
+    onDragLeave={(event: ReactDragEvent<HTMLElement>) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false); }}
+    onDrop={(event: ReactDragEvent<HTMLElement>) => { if (!editor.isEditable) return; event.preventDefault(); setDragging(false); const file = event.dataTransfer.files[0]; if (file) void importFile(file); }}>
+    <input ref={inputRef} type="file" accept={ACCEPT[kind]} className={styles.hiddenInput} aria-label={'选择' + LABELS[kind] + '文件'} data-document-export-omit
+      onChange={event => { const file = event.target.files?.[0]; if (file) void importFile(file); event.target.value = ''; }} />
+    {source && resolved.value && <div className={styles.preview} contentEditable={false}>
+      {kind === 'audio' && <div className={styles.audioTitle}><MusicNotes size={20} aria-hidden /><span>{title}</span></div>}
+      {renderPreview(resolved.value)}
+    </div>}
+    {source && !resolved.value && !resolved.error && <div className={styles.loading} role="status">正在加载{LABELS[kind]}…</div>}
+    {source && resolved.value && <div className={styles.actions} contentEditable={false} data-document-export-omit>
+      <a href={resolved.value.url} target="_blank" rel="noopener noreferrer" aria-label={'打开' + LABELS[kind]} className={styles.action}><ArrowSquareOut size={15} aria-hidden /></a>
+      {editor.isEditable && <button type="button" className={styles.action} aria-label={'更换' + LABELS[kind]} onClick={() => inputRef.current?.click()}><PencilSimple size={15} aria-hidden /></button>}
+    </div>}
+    {!source && editor.isEditable && !busy && <button type="button" className={styles.pick} contentEditable={false} data-document-export-omit onClick={() => inputRef.current?.click()}>
+      <IconForMedia kind={kind} />添加{LABELS[kind]}
+    </button>}
+    {busy && <div className={styles.progress} contentEditable={false} data-document-export-omit role="status">
+      <span>正在保存{LABELS[kind]} · {percentage}%</span><progress max={100} value={percentage} />
+      {latestUpload && <button type="button" onClick={() => uploads.cancel(latestUpload.id)}>取消</button>}
+    </div>}
+    {(error || resolved.error || latestUpload?.phase === 'error' || latestUpload?.phase === 'canceled') && <div className={styles.error} contentEditable={false} role="status" data-document-export-omit>
+      {error || resolved.error || latestUpload?.error?.detail || '上传已取消'}
+      <button type="button" onClick={() => { if (latestUpload && ['error', 'canceled'].includes(latestUpload.phase)) uploads.retry(latestUpload.id); else inputRef.current?.click(); }}>重试</button>
+    </div>}
+    {source && (editor.isEditable || caption) && <figcaption className={styles.caption} contentEditable={false}>
+      {editor.isEditable ? <input aria-label={LABELS[kind] + '说明'} placeholder="添加说明…" value={caption} onChange={event => updateAttributes({ caption: event.target.value })} /> : caption}
+    </figcaption>}
+  </NodeViewWrapper>;
+}
+function IconForMedia({ kind }: { kind: MediaKind }) {
+  const Icon = { image: ImageIcon, video: Video, audio: MusicNotes, file: Paperclip }[kind];
+  return <Icon size={18} aria-hidden />;
 }

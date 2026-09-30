@@ -140,22 +140,19 @@ export const KNOWLEDGE_BLOCKS: readonly BlockDefinition[] = Object.freeze([
       content: 'text*', marks: 'comment suggestion_insert suggestion_delete', code: true, defining: true,
       attrs: {
         language: nullableString,
-        theme: choice(['light', 'dark', 'paper'], 'light'),
-        font: choice(['mono', 'serif'], 'mono'),
+        theme: choice(['light', 'dark', 'paper', 'monokai', 'idea', 'darcula', 'nord', 'one-dark'], 'light'),
         lineNumbers: { default: true, validate: 'boolean' },
         wrap: { default: false, validate: 'boolean' },
       },
       parseDOM: [{ tag: 'pre', preserveWhitespace: 'full', getAttrs: (element) => ({
         language: element.getAttribute('data-language') || element.querySelector('code')?.className.match(/language-([\w-]+)/)?.[1] || null,
         theme: element.getAttribute('data-theme') || 'light',
-        font: element.getAttribute('data-font') || 'mono',
         lineNumbers: element.getAttribute('data-line-numbers') !== 'false',
         wrap: element.getAttribute('data-wrap') === 'true',
       }) }],
       toDOM: (node) => ['pre', {
         'data-language': node.attrs.language,
         'data-theme': node.attrs.theme,
-        'data-font': node.attrs.font,
         'data-line-numbers': String(node.attrs.lineNumbers),
         'data-wrap': String(node.attrs.wrap),
       }, ['code', { class: node.attrs.language ? `language-${node.attrs.language}` : null }, 0]],
@@ -192,7 +189,7 @@ export const KNOWLEDGE_BLOCKS: readonly BlockDefinition[] = Object.freeze([
     markdown: { fromMd: { type: 'tableCell', variant: name === 'tableHeader' ? 'header' : 'cell' } }, index: { mode: 'text' },
   })),
   defineBlock({
-    name: 'columns', schema: { content: 'column{2,}', isolating: true, toDOM: () => ['div', { 'data-columns': '' }, 0] },
+    name: 'columns', schema: { content: 'column{2,}', isolating: true, attrs: { variant: choice(['cards', 'dividers', 'plain'], 'cards') }, parseDOM: [{ tag: 'div[data-columns]', getAttrs: element => ({ variant: element.getAttribute('data-variant') || 'cards' }) }], toDOM: node => ['div', { 'data-columns': '', 'data-variant': node.attrs.variant }, 0] },
     markdown: { fromMd: { directive: 'columns', kind: 'container' } }, index: { mode: 'skip' },
     slash: { title: '分栏', keywords: ['columns', '分栏'], group: 'layout' },
   }),

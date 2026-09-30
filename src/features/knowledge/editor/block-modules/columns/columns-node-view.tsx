@@ -1,64 +1,106 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState, type PointerEvent } from 'react';
 import { Columns, Minus, Plus } from '@phosphor-icons/react';
 import type { NodeViewProps } from '@tiptap/react';
 import { NodeViewContent, NodeViewWrapper } from '@tiptap/react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { AppearanceSelect } from '@/components/editor-appearance-controls';
 import { addColumn, removeLastColumn, setColumnWidths } from './columns-commands';
 import styles from './columns.module.css';
 
-const PRESETS: Record<number, { label: string; widths: number[] }[]> = {
-  2: [{ label: '等宽', widths: [1, 1] }, { label: '左宽', widths: [2, 1] }, { label: '右宽', widths: [1, 2] }],
-  3: [{ label: '等宽', widths: [1, 1, 1] }, { label: '重点在左', widths: [2, 1, 1] }, { label: '重点居中', widths: [1, 2, 1] }],
-  4: [{ label: '等宽', widths: [1, 1, 1, 1] }, { label: '重点在左', widths: [2, 1, 1, 1] }],
-};
+const VARIANTS = [{ id: 'cards', label: '卡片' }, { id: 'dividers', label: '分割线' }, { id: 'plain', label: '无边框' }] as const;
+type Resize = { pointer: number; x: number; available: number; widths: number[]; next: number[] };
 
-export function ColumnsNodeView({ node, editor, getPos, selected, HTMLAttributes }: NodeViewProps) {
+export function ColumnsNodeView({ node, editor, getPos, selected, updateAttributes, HTMLAttributes }: NodeViewProps) {
   const [open, setOpen] = useState(false);
-  const [hovered, setHovered] = useState(false);
-  const controlsRef = useRef<HTMLDivElement>(null);
-  const pos = getPos();
+  const [dragging, setDragging] = useState(false);
+  const layoutRef = useRef<HTMLDivElement>(null);
+  const resizeRef = useRef<Resize | null>(null);
+  const widths = Array.from({ length: node.childCount }, (_, index) => Number(node.child(index).attrs.width));
+  const sum = widths.reduce((total, width) => total + width, 0);
+  const normalized = widths.map(width => Math.max(1, Math.round(width / sum * 10000)));
+  const columns = () => Array.from(layoutRef.current?.querySelectorAll<HTMLElement>(':scope > [data-node-view-content] > [data-node-view-content-react] > [data-column], :scope > [data-node-view-content] > [data-column]') ?? []);
+  const previewWidths = (values: number[]) => columns().forEach((column, index) => column.style.setProperty('--column-width', String(values[index])));
+  const handleLeft = (values: number[], index: number) => {
+    const fraction = values.slice(0, index + 1).reduce((total, width) => total + width, 0) / values.reduce((total, width) => total + width, 0);
+    return 'calc(' + fraction * 100 + '% + ' + (16 * (index + .5 - (values.length - 1) * fraction)) + 'px)';
+  };
+  const commit = (values: number[]) => {
+    const pos = getPos();
+    const current = typeof pos === 'number' ? editor.state.doc.nodeAt(pos) : null;
+    if (current?.type.name === 'columns' && values.length === current.childCount) setColumnWidths(editor, current, pos!, values);
+  };
+  const adjust = (index: number, initial: number[], available: number, delta: number) => {
+    const next = [...initial];
+    const pair = initial[index] + initial[index + 1];
+    const min = Math.min(Math.ceil(96 / available * 10000), Math.floor(pair / 3));
+    next[index] = Math.max(min, Math.min(pair - min, initial[index] + Math.round(delta / available * 10000)));
+    next[index + 1] = pair - next[index];
+    return next;
+  };
+  const beginResize = (event: PointerEvent<HTMLButtonElement>) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    const available = Math.max(1, (layoutRef.current?.clientWidth ?? 1) - 16 * (node.childCount - 1));
+    resizeRef.current = { pointer: event.pointerId, x: event.clientX, available, widths: normalized, next: normalized };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setDragging(true);
+  };
+  const finishResize = (event: PointerEvent<HTMLButtonElement>, cancel = false) => {
+    const resize = resizeRef.current;
+    if (!resize || resize.pointer !== event.pointerId) return;
+    resizeRef.current = null;
+    if (cancel) {
+      previewWidths(resize.widths);
+      event.currentTarget.style.left = handleLeft(resize.widths, Number(event.currentTarget.dataset.resizeIndex));
+    } else commit(resize.next);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    setDragging(false);
+  };
+  const moveResize = (event: PointerEvent<HTMLButtonElement>) => {
+    const resize = resizeRef.current;
+    if (!resize || resize.pointer !== event.pointerId) return;
+    resize.next = adjust(Number(event.currentTarget.dataset.resizeIndex), resize.widths, resize.available, event.clientX - resize.x);
+    previewWidths(resize.next);
+    event.currentTarget.style.left = handleLeft(resize.next, Number(event.currentTarget.dataset.resizeIndex));
+  };
 
-  useEffect(() => {
-    if (!open) return;
-    const close = (event: PointerEvent) => { if (!controlsRef.current?.contains(event.target as Node)) setOpen(false); };
-    document.addEventListener('pointerdown', close);
-    return () => document.removeEventListener('pointerdown', close);
-  }, [open]);
-
-  const widths = Array.from({ length: node.childCount }, (_, index) => node.child(index).attrs.width as number);
-
-  return (
-    <NodeViewWrapper
-      as="div" {...HTMLAttributes} data-fouc-node="columns" data-columns="" data-block-id={node.attrs.blockId}
-      className={styles.root} data-active={String(selected || hovered || open)}
-      onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
-    >
-      {editor.isEditable ? (
-        <div ref={controlsRef} className={styles.controls} contentEditable={false} data-document-export-omit>
-          <button type="button" className={styles.trigger} aria-label="分栏布局" aria-expanded={open} onClick={() => setOpen((value) => !value)}><Columns aria-hidden size={15} /> {node.childCount} 栏</button>
-          {open ? <div role="dialog" aria-label="分栏布局" className={styles.menu} onMouseDown={(event) => event.preventDefault()} onKeyDown={(event) => { if (event.key === 'Escape') setOpen(false); }}>
-            <div className={styles.menuTitle}>列宽比例</div>
-            <div className={styles.presets}>
-              {(PRESETS[node.childCount] ?? []).map((preset) => <button key={preset.label} type="button" aria-label={preset.label} aria-pressed={widths.join(':') === preset.widths.join(':')} onClick={() => { if (typeof pos === 'number') setColumnWidths(editor, node, pos, preset.widths); }}>
-                <span className={styles.presetPreview}>{preset.widths.map((width, index) => <span key={index} style={{ flex: width }} />)}</span>
-                {preset.label}
-              </button>)}
-            </div>
-            <div className={styles.menuDivider} />
-            <div className={styles.countRow}>
-              <span>栏数 <small>最多 4 栏</small></span>
-              <div>
-                <button type="button" aria-label="减少一栏并保留内容" disabled={node.childCount <= 2} onClick={() => { if (typeof pos === 'number') removeLastColumn(editor, node, pos); }}><Minus aria-hidden size={14} /></button>
-                <strong>{node.childCount}</strong>
-                <button type="button" aria-label="增加一栏" disabled={node.childCount >= 4} onClick={() => { if (typeof pos === 'number') addColumn(editor, node, pos); }}><Plus aria-hidden size={14} /></button>
-              </div>
-            </div>
-            <p className={styles.hint}>小屏幕下会自动垂直排列。</p>
-          </div> : null}
-        </div>
-      ) : null}
-      <NodeViewContent as="div" className={styles.layout} />
-    </NodeViewWrapper>
-  );
+  return <NodeViewWrapper as="div" {...HTMLAttributes} data-fouc-node="columns" data-columns="" data-block-id={node.attrs.blockId}
+    data-variant={node.attrs.variant} className={styles.root} data-active={String(selected || open || dragging)}>
+    {editor.isEditable && <div className={styles.controls} contentEditable={false} data-document-export-omit>
+      <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
+        <DropdownMenuTrigger className={styles.trigger} aria-label="分栏布局"><Columns size={15} aria-hidden />{node.childCount} 栏</DropdownMenuTrigger>
+        <DropdownMenuContent className={styles.menu} align="end"
+          onFocusOutside={event => { if ((event.target as Element)?.closest('[data-editor-appearance-dropdown]')) event.preventDefault(); }}
+          onInteractOutside={event => { if ((event.target as Element)?.closest('[data-editor-appearance-dropdown]')) event.preventDefault(); }}>
+          <AppearanceSelect label="分栏样式" value={String(node.attrs.variant)} options={VARIANTS} onChange={variant => updateAttributes({ variant })} />
+          <div className={styles.countRow} data-menu-reveal><span>栏数</span><div>
+            <button type="button" aria-label="减少一栏并保留内容" disabled={node.childCount <= 2} onClick={() => { const pos = getPos(); if (typeof pos === 'number') removeLastColumn(editor, node, pos); }}><Minus size={14} aria-hidden /></button>
+            <strong>{node.childCount}</strong>
+            <button type="button" aria-label="增加一栏" disabled={node.childCount >= 4} onClick={() => { const pos = getPos(); if (typeof pos === 'number') addColumn(editor, node, pos); }}><Plus size={14} aria-hidden /></button>
+          </div></div>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>}
+    <div className={styles.layout} ref={layoutRef}>
+      <NodeViewContent as="div" />
+      {editor.isEditable && widths.slice(0, -1).map((_, index) => {
+        const fraction = widths.slice(0, index + 1).reduce((total, width) => total + width, 0) / sum;
+        return <button key={index} type="button" role="separator" aria-orientation="vertical" aria-label={'调整第 ' + (index + 1) + ' 与第 ' + (index + 2) + ' 栏宽度'} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(fraction * 100)}
+          contentEditable={false} data-document-export-omit data-resize-index={index} className={styles.resizeHandle}
+          style={{ left: 'calc(' + fraction * 100 + '% + ' + (16 * (index + .5 - (node.childCount - 1) * fraction)) + 'px)' }}
+          onPointerDown={beginResize}
+          onPointerMove={moveResize}
+          onPointerUp={event => finishResize(event)} onPointerCancel={event => finishResize(event, true)}
+          onLostPointerCapture={event => finishResize(event, true)}
+          onKeyDown={event => {
+            if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+            event.preventDefault(); event.stopPropagation();
+            const available = Math.max(1, (layoutRef.current?.clientWidth ?? 1) - 16 * (node.childCount - 1));
+            commit(adjust(index, normalized, available, (event.key === 'ArrowLeft' ? -1 : 1) * (event.shiftKey ? 40 : 12)));
+          }} />;
+      })}
+    </div>
+  </NodeViewWrapper>;
 }

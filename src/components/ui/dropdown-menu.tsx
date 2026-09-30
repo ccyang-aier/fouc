@@ -27,6 +27,7 @@ const DropdownMenuGroup = DropdownMenuPrimitive.Group
 function DropdownMenuContent({
   className,
   sideOffset = 6,
+  onCloseAutoFocus,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Content>) {
   return (
@@ -38,6 +39,12 @@ function DropdownMenuContent({
           className,
         )}
         {...props}
+        onCloseAutoFocus={event => {
+          onCloseAutoFocus?.(event)
+          const active = document.activeElement
+          // Preserve a newer interaction while the previous menu finishes closing.
+          if (!event.defaultPrevented && active && active !== document.body && !(event.target as HTMLElement).contains(active)) event.preventDefault()
+        }}
       />
     </DropdownMenuPrimitive.Portal>
   )

@@ -16,6 +16,13 @@ export const documentSizes = [
 ] as const;
 
 export const documentWidth = { min: 40, max: 100, default: 80 };
+export const documentCodeFonts = [
+  { id: 'default', label: '默认等宽', family: 'var(--font-code)' },
+  { id: 'jetbrains-mono', label: 'JetBrains Mono', family: '"JetBrains Mono", var(--font-code)' },
+  { id: 'fira-code', label: 'Fira Code', family: '"Fira Code", var(--font-code)' },
+  { id: 'source-code-pro', label: 'Source Code Pro', family: '"Source Code Pro", var(--font-code)' },
+  { id: 'ibm-plex-mono', label: 'IBM Plex Mono', family: '"IBM Plex Mono", var(--font-code)' },
+] as const;
 export const documentLineHeights = [1.5, 1.8, 2] as const;
 export const documentParagraphSpacings = [
   { id: 'compact', label: '紧凑', pixels: 8 },

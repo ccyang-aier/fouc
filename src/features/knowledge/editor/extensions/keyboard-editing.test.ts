@@ -259,6 +259,35 @@ describe('Backspace downgrades, exits and merges', () => {
   });
 });
 
+describe('code Tab / Shift+Tab indentation', () => {
+  test('outdenting an empty first line does not alter the following line', () => {
+    const editor = mount('<pre><code>placeholder</code></pre>');
+    editor.commands.setContent({ type: 'doc', content: [{ type: 'codeBlock', content: [{ type: 'text', text: '\n  next' }] }] });
+    editor.commands.setTextSelection(1);
+    press(editor, 'Tab', { shift: true });
+    expect(editor.state.doc.firstChild?.textContent).toBe('\n  next');
+    editor.destroy();
+  });
+  test('Tab inserts indentation at the caret and Shift+Tab removes line indentation', () => {
+    const editor = mount('<pre><code>const value = 1;</code></pre>');
+    caretInText(editor, 'const value', 'start');
+    press(editor, 'Tab');
+    expect(editor.state.doc.firstChild?.textContent).toBe('  const value = 1;');
+    press(editor, 'Tab', { shift: true });
+    expect(editor.state.doc.firstChild?.textContent).toBe('const value = 1;');
+    editor.destroy();
+  });
+  test('multiline selection indents and outdents each line, excluding a trailing unselected line', () => {
+    const editor = mount('<pre><code>one\ntwo\nthree</code></pre>');
+    editor.commands.setTextSelection({ from: 1, to: 9 });
+    press(editor, 'Tab');
+    expect(editor.state.doc.firstChild?.textContent).toBe('  one\n  two\nthree');
+    press(editor, 'Tab', { shift: true });
+    expect(editor.state.doc.firstChild?.textContent).toBe('one\ntwo\nthree');
+    editor.destroy();
+  });
+});
+
 describe('list Tab / Shift+Tab indentation', () => {
   test('Tab sinks the item under its previous sibling; Shift+Tab lifts it back', () => {
     const editor = mount('<ul><li><p>one</p></li><li><p>two</p></li></ul>');

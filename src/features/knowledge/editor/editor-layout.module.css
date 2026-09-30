@@ -73,7 +73,7 @@
 .document :global(.ProseMirror li) { margin: 4px 0; padding-left: 2px; }
 .document :global(.ProseMirror li::marker) { color: var(--ink); }
 .document :global(.ProseMirror blockquote) { border-left: 3px solid var(--line-strong); padding-left: 18px; color: var(--muted-strong); }
-.document :global(.ProseMirror code) { border-radius: 4px; background: var(--raise); padding: 2px 4px; font-family: var(--font-code); font-size: .88em; }
+.document :global(.ProseMirror code) { border-radius: 4px; background: var(--raise); padding: 2px 4px; font-family: var(--document-code-font, var(--font-code)); font-size: .88em; }
 .document :global(.ProseMirror hr) { border: 0; border-top: 1px solid var(--line-strong); margin: 32px 0; }
 .document :global(.ProseMirror a) { color: #0869cf; text-decoration: underline; text-underline-offset: 3px; }
 .document :global(.ProseMirror mark) { background: #e6f0ff; }

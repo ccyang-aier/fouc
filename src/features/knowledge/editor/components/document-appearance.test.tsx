@@ -26,14 +26,14 @@ async function render(scope: string) {
 }
 function current() { return JSON.parse(document.querySelector('output')!.textContent!); }
 
-test('persists all five personal controls without changing another document', async () => {
+test('persists all six personal controls without changing another document', async () => {
   await render('first');
-  expect(current()).toEqual({ font: 'default', width: 80, size: 'standard', lineHeight: 1.8, paragraphSpacing: 'standard' });
+  expect(current()).toEqual({ font: 'default', codeFont: 'default', width: 80, size: 'standard', lineHeight: 1.8, paragraphSpacing: 'standard' });
   await act(async () => document.querySelector('button')!.click());
-  expect(current()).toEqual({ width: 65, font: 'wenkai', size: 'standard', lineHeight: 2, paragraphSpacing: 'relaxed' });
+  expect(current()).toEqual({ width: 65, font: 'wenkai', codeFont: 'default', size: 'standard', lineHeight: 2, paragraphSpacing: 'relaxed' });
   expect(JSON.parse(localStorage.getItem('fouc.document.appearance:first')!)).toEqual(current());
   await render('second');
-  expect(current()).toEqual({ font: 'default', width: 80, size: 'standard', lineHeight: 1.8, paragraphSpacing: 'standard' });
+  expect(current()).toEqual({ font: 'default', codeFont: 'default', width: 80, size: 'standard', lineHeight: 1.8, paragraphSpacing: 'standard' });
   await render('first');
   expect(current()).toMatchObject({ width: 65, font: 'wenkai', lineHeight: 2, paragraphSpacing: 'relaxed' });
 });

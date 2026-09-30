@@ -68,9 +68,9 @@ export async function exportDocumentHtml(editor: Editor, title: string): Promise
   };
 
   const snapshot = (original: Element, copy: Element) => {
-    const calloutIcon = original.matches('button[aria-label="设置提示框图标与语气"]');
-    if (original.matches(OMIT) && !calloutIcon) { copy.remove(); return; }
-    if (calloutIcon) {
+    const staticControl = original.matches('button[aria-label="设置提示框图标与语气"],button[data-document-export-text]');
+    if (original.matches(OMIT) && !staticControl) { copy.remove(); return; }
+    if (staticControl) {
       const icon = owner.createElement('span');
       for (const attribute of Array.from(copy.attributes)) icon.setAttribute(attribute.name, attribute.value);
       icon.append(...Array.from(copy.childNodes));

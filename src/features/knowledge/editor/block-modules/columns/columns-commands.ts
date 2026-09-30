@@ -11,7 +11,9 @@ export function setColumnWidths(editor: Editor, node: ProseMirrorNode, pos: numb
 
 export function addColumn(editor: Editor, node: ProseMirrorNode, pos: number): boolean {
   if (node.childCount >= 4) return false;
-  const column = editor.schema.nodes.column.create(null, [editor.schema.nodes.paragraph.create()]);
+  let sum = 0;
+  node.forEach(column => { sum += Number(column.attrs.width); });
+  const column = editor.schema.nodes.column.create({ width: Math.max(1, Math.round(sum / node.childCount)) }, [editor.schema.nodes.paragraph.create()]);
   editor.view.dispatch(editor.state.tr.insert(pos + node.nodeSize - 1, column));
   return true;
 }
@@ -26,6 +28,7 @@ export function removeLastColumn(editor: Editor, node: ProseMirrorNode, pos: num
   const previousPos = pos + 1 + previousOffset;
   const lastPos = previousPos + previous.nodeSize;
   const tr = editor.state.tr;
+  tr.setNodeMarkup(previousPos, undefined, { ...previous.attrs, width: Number(previous.attrs.width) + Number(last.attrs.width) });
   const content = last.content;
   const onlyEmptyParagraph = last.childCount === 1 && last.firstChild?.type.name === 'paragraph' && !last.firstChild.content.size;
   if (!onlyEmptyParagraph) tr.insert(previousPos + previous.nodeSize - 1, content);

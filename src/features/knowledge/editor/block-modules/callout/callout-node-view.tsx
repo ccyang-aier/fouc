@@ -2,7 +2,7 @@
 
 /**
  * The callout NodeView (E05): a light tinted card over the shared schema's
- * `callout` node — 3px tone-colored left edge, tone-derived color-mix wash,
+ * `callout` node — a quiet tone-derived surface,
  * and an emoji chip that opens a compact popover (curated emoji grid + tone
  * swatches). `tone` is a free string attr in the schema; unknown values fall
  * back to the neutral rendering, and the editable state gates the chip.
@@ -21,7 +21,7 @@ const CALLOUT_EMOJI = ['💡', '✅', '⚠️', 'ℹ️', '🔥', '⭐', '📌',
 
 interface CalloutTone {
   label: string;
-  /** Left edge / swatch color (a design token). */
+  /** Icon and swatch color. */
   accent: string;
   /** Card wash; color-mix keeps both themes coherent. */
   wash: string;
@@ -87,7 +87,6 @@ export function CalloutNodeView({ node, editor, updateAttributes, HTMLAttributes
           <span aria-hidden>{emoji}</span>
         </button>
         <div className={styles.content}>
-          <span contentEditable={false} className={styles.toneLabel}>{tone.label}</span>
           <NodeViewContent className={styles.editable} />
         </div>
         {open ? (

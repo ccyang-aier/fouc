@@ -9,18 +9,19 @@ import styles from './editor-appearance-controls.module.css';
 
 type SelectOption<T> = { id: T; label: string; family?: string };
 
-export function AppearanceSelect<T extends string | number>({ label, value, options, onChange }: {
+export function AppearanceSelect<T extends string | number>({ label, value, options, onChange, disabled }: {
   label: string;
   value: T;
   options: readonly SelectOption<T>[];
   onChange: (value: T) => void;
+  disabled?: boolean;
 }) {
   const labelId = useId();
   const selected = options.find(option => option.id === value);
   return <div className={styles.field} data-menu-reveal>
     <span id={labelId} className={styles.label}>{label}</span>
     <DropdownMenu modal={false}>
-      <DropdownMenuTrigger className={styles.select} aria-labelledby={labelId}>
+      <DropdownMenuTrigger className={styles.select} aria-labelledby={labelId} disabled={disabled}>
         <span style={{ fontFamily: selected?.family }}>{selected?.label}</span>
         <CaretDown size={16} aria-hidden />
       </DropdownMenuTrigger>

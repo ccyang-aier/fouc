@@ -32,11 +32,12 @@ import { isKnowledgeDataError } from '../data/errors';
 import { useKnowledgeAccessQuery } from '../data/hooks';
 import {
   anchorExcerpt,
-  buildAddCommentAnchorTransaction,
+  buildAddCommentSelectionTransaction,
   buildRemoveCommentAnchorTransaction,
   collectCommentAnchors,
 } from './comment-anchors';
 import type { CommentAnchor } from './comment-anchors';
+import { bindSelectionCommentComposer, type CommentComposePoint } from './comment-compose-bridge';
 import {
   activeCommentThreadId,
   commentsPluginKey,
@@ -219,18 +220,23 @@ export function PageComments({ scope, editor, canComment }: PageCommentsProps) {
   }, [editor]);
 
   // ── 划词评论: optimistic anchor, then persist under the same ids ──
-  const beginCompose = useCallback(() => {
-    if (!editor || composing || !selectionAt) return;
-    const { from, to } = editor.state.selection;
+  const beginComposeAt = useCallback((point: CommentComposePoint) => {
+    if (!editor || !canComment || composing || !editor.isEditable) return;
     const threadId = crypto.randomUUID();
     const commentId = crypto.randomUUID();
-    const tr = buildAddCommentAnchorTransaction(editor.state, { from, to }, threadId);
+    const ranges = editor.state.selection.ranges.map(({ $from, $to }) => ({ from: $from.pos, to: $to.pos }));
+    const tr = buildAddCommentSelectionTransaction(editor.state, threadId);
     if (!tr) return;
     editor.view.dispatch(tr);
-    setComposing({ threadId, commentId, excerpt: anchorExcerpt(editor.state.doc, [{ from, to }]) });
+    setComposing({ threadId, commentId, excerpt: anchorExcerpt(editor.state.doc, ranges) });
     setComposerError(null);
-    setComposerAt(selectionAt);
-  }, [editor, composing, selectionAt]);
+    setComposerAt(point);
+  }, [editor, canComment, composing]);
+  const beginCompose = () => { if (selectionAt) beginComposeAt(selectionAt); };
+  useEffect(() => {
+    if (!editor || !editor.isEditable || !canComment || composing) return;
+    return bindSelectionCommentComposer(editor, beginComposeAt);
+  }, [editor, canComment, composing, beginComposeAt]);
 
   const submitCompose = useCallback(async (bodyMd: string) => {
     if (!composing) return;

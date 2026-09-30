@@ -1,6 +1,6 @@
 .root { position: relative; margin: 32px 0 26px; padding-top: 20px; }
 .shell { overflow-x: auto; border: 1px solid #d7dfed; border-radius: 7px; background: #fff; scrollbar-width: thin; }
-.table { width: 100%; border-collapse: collapse; table-layout: fixed; color: #3e4859; font-size: 14px; line-height: 22px; cursor: pointer; }
+.table { width: 100%; border-collapse: collapse; table-layout: fixed; color: #3e4859; font-size: 14px; line-height: 22px; cursor: text; }
 .root .table :global(th), .root .table :global(td) { position: relative; min-width: 90px; height: 43px; border: 1px solid #d7dfed; padding: 10px 12px; background: transparent; text-align: left; vertical-align: top; }
 .root .table :global(p) { margin: 0; min-height: 22px; line-height: 22px; }
 .root .table :global(th:first-child), .root .table :global(td:first-child) { border-left: 0; }
@@ -21,14 +21,14 @@
 .root .table :global(.column-resize-dragging) { user-select: none; }
 :global(.ProseMirror.resize-cursor), :global(.ProseMirror.resize-cursor *) { cursor: col-resize !important; }
 .controls { pointer-events: none; }
-.corner { position: absolute; z-index: 4; width: 14px; height: 14px; padding: 0; border: 0; border-radius: 50%; background: #dbe1ea; cursor: grab; pointer-events: auto; }
+.corner { position: absolute; z-index: 4; width: 14px; height: 14px; padding: 0; border: 0; border-radius: 50%; background: #dbe1ea; cursor: pointer; pointer-events: auto; }
 .columnRail, .rowRail { position: absolute; z-index: 3; overflow: hidden; border-radius: 4px; background: #dbe1ea; pointer-events: auto; }
 .columnRail { height: 12px; }
 .rowRail { width: 12px; }
 .columnHandle, .rowHandle { position: absolute; border: 0; padding: 0; background: #dbe1ea; cursor: grab; touch-action: none; }
 .columnHandle { top: 0; height: 12px; border-right: 1px solid #fff; }
 .rowHandle { left: 0; width: 12px; border-bottom: 1px solid #fff; }
-.columnHandle:active, .rowHandle:active, .corner:active { cursor: grabbing; }
+.columnHandle:active, .rowHandle:active { cursor: grabbing; }
 .columnHandle:last-child, .rowHandle:last-child { border: 0; }
 .columnHandle:hover, .rowHandle:hover, .corner:hover { background: #c9d4e7; }
 .columnHandle[data-selected], .rowHandle[data-selected], .corner[data-selected] { background: #2863dc; }
@@ -42,6 +42,27 @@
 .insertLine { position: absolute; z-index: 5; background: #2868ff; pointer-events: none; }
 .insertLine[data-axis="column"] { width: 2px; }
 .insertLine[data-axis="row"] { height: 2px; }
+.root[data-reordering], .root[data-reordering] * { cursor: grabbing !important; }
+.dropLine { position: absolute; z-index: 8; background: #2868e6; pointer-events: none; }
+.dropLine[data-axis="column"] { width: 2px; transform: translateX(-1px); }
+.dropLine[data-axis="row"] { height: 2px; transform: translateY(-1px); }
+.dropLine[data-invalid] { background: #c66c6c; }
+.dropLabel { position: absolute; left: 6px; top: -28px; padding: 2px 8px; border-radius: 5px; background: #2868e6; color: #fff; font-size: 12px; line-height: 20px; white-space: nowrap; }
+.dropLabel[data-left] { left: -6px; transform: translateX(-100%); }
+.dropLine[data-invalid] .dropLabel { background: #aa5e5e; }
+.selectionToolbar { position: absolute; z-index: 90; display: flex; flex-wrap: wrap; justify-content: center; width: 444px; max-width: calc(100vw - 24px); padding: 4px 6px; border-radius: 6px; background: #fff; color: #414348; box-shadow: 0 1px 3px #00000012, 0 10px 20px #00000012; transform: translate(-50%, -50%); cursor: default; }
+.toolbarGroup { display: contents; }
+.toolbarButton { display: grid; width: 36px; height: 36px; place-items: center; padding: 0; border: 0; border-radius: 4px; background: transparent; color: inherit; cursor: pointer; }
+.toolbarButton:hover, .toolbarButton[data-on] { background: #edf3fc; color: #2863dc; }
+.toolbarButton:disabled { color: #b6bdc8; cursor: default; }
+.toolbarButton:focus-visible { outline: 2px solid #2863dc; outline-offset: -2px; }
+.toolbarArrow { position: absolute; bottom: -10px; left: calc(50% - 8px); color: #fff; transform: rotate(180deg); pointer-events: none; }
+.menu.linkMenu { width: 300px; max-width: calc(100vw - 24px); padding: 12px; }
+.linkLabel { display: block; margin-bottom: 8px; font-size: 13px; }
+.linkMenu input { width: 100%; }
+.linkActions { display: flex; justify-content: space-between; margin-top: 10px; }
+.linkActions button { border: 0; border-radius: 4px; padding: 4px 10px; color: #2863dc; background: #edf3fc; font-size: 13px; cursor: pointer; }
+.linkActions button[type="submit"] { color: #fff; background: #2863dc; }
 .menuAnchor { position: absolute; pointer-events: none; opacity: 0; border: 0; padding: 0; }
 .menu { z-index: 100; width: 202px; padding: 6px; border: 0; border-radius: 11px; background: #fff; color: #414b5d; font-family: Arial, "Microsoft YaHei", sans-serif; font-size: 15px; font-weight: 400; line-height: 24px; box-shadow: 0 0 0 1px #eeeeef, 0 22px 38px rgba(0,0,0,.10), 0 3px 8px rgba(0,0,0,.05); outline: none; }
 .menuItem { display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 12px; border-radius: 6px; outline: none; white-space: nowrap; user-select: none; cursor: pointer; }

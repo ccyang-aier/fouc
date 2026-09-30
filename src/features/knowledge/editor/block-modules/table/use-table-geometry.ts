@@ -3,7 +3,7 @@ import { useLayoutEffect, useState, type RefObject } from 'react';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { TableMap, updateColumnsOnResize } from '@tiptap/pm/tables';
 
-export interface TableGeometry { left: number; top: number; width: number; height: number; viewportLeft: number; viewportWidth: number; columns: number[]; rows: number[] }
+export interface TableGeometry { left: number; top: number; width: number; height: number; viewportLeft: number; viewportWidth: number; rootLeft: number; rootTop: number; pageWidth: number; pageHeight: number; columns: number[]; rows: number[] }
 
 export function useTableGeometry(shellRef: RefObject<HTMLDivElement | null>, node: ProseMirrorNode): TableGeometry | null {
   const [geometry, setGeometry] = useState<TableGeometry | null>(null);
@@ -35,7 +35,7 @@ export function useTableGeometry(shellRef: RefObject<HTMLDivElement | null>, nod
         rows[rowIndex] = rowBounds.top - bounds.top;
         rows[rowIndex + 1] = rowBounds.bottom - bounds.top;
       });
-      const next = { left: bounds.left - root.left, top: bounds.top - root.top, width: bounds.width, height: bounds.height, viewportLeft: shell.getBoundingClientRect().left - root.left + 1, viewportWidth: shell.clientWidth, columns, rows };
+      const next = { left: bounds.left - root.left, top: bounds.top - root.top, width: bounds.width, height: bounds.height, viewportLeft: shell.getBoundingClientRect().left - root.left + 1, viewportWidth: shell.clientWidth, rootLeft: root.left, rootTop: root.top, pageWidth: shell.ownerDocument.documentElement.clientWidth, pageHeight: shell.ownerDocument.documentElement.clientHeight, columns, rows };
       setGeometry(current => JSON.stringify(current) === JSON.stringify(next) ? current : next);
     };
     const schedule = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(measure); };
@@ -43,8 +43,9 @@ export function useTableGeometry(shellRef: RefObject<HTMLDivElement | null>, nod
     observer.observe(table);
     observer.observe(shell);
     shell.addEventListener('scroll', schedule);
+    shell.ownerDocument.addEventListener('scroll', schedule, true);
     schedule();
-    return () => { cancelAnimationFrame(frame); observer.disconnect(); shell.removeEventListener('scroll', schedule); };
+    return () => { cancelAnimationFrame(frame); observer.disconnect(); shell.removeEventListener('scroll', schedule); shell.ownerDocument.removeEventListener('scroll', schedule, true); };
   }, [shellRef, node]);
   return geometry;
 }

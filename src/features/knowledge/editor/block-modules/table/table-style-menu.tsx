@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, type CSSProperties } from 'react';
+import type { CSSProperties } from 'react';
 import * as Menu from '@radix-ui/react-dropdown-menu';
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ArrowLineDown, ArrowLineLeft, ArrowLineRight, ArrowLineUp, ArrowsInLineHorizontal, ArrowsOutLineHorizontal, CaretRight, Check, DownloadSimple, Palette, SortAscending, SortDescending, Table, TextAlignCenter, TextAlignLeft, TextAlignRight, Trash } from '@phosphor-icons/react';
 import type { Editor } from '@tiptap/core';
 import { mergeCells, splitCell } from '@tiptap/pm/tables';
 import { addColumn, addRow, deleteColumn, deleteRow, deleteTable, moveTableAxis, sortTableColumn, tableNodeAt, toggleSelectedHeader, toggleAxisHeader, type TableCommand } from './table-commands';
-import { TABLE_COLORS, setTableAlignment, setTableColor, type TableAlignment, type TableStyleTarget } from './table-style';
+import { setTableAlignment, setTableColor, type TableAlignment, type TableStyleTarget } from './table-style';
 import styles from './table.module.css';
-import { TableColorPicker } from './table-color-picker';
+import { TableColorMenuItems } from './table-color-menu-items';
 import { downloadTableCsv } from './table-csv';
 
 export interface TableMenuAnchor { target: TableStyleTarget; style: CSSProperties; side: 'top' | 'left' | 'bottom' }
@@ -26,13 +26,6 @@ export function TableStyleMenu({ tableId, anchor, editor, run, onClose, align, b
   const column = target === 'column';
   const row = target === 'row';
   const structure = row || column;
-  const [pickerOffset, setPickerOffset] = useState(-8);
-  const placePicker = (element: HTMLElement) => {
-    const bounds = element.getBoundingClientRect();
-    const viewport = element.ownerDocument.documentElement.clientWidth;
-    const width = Math.min(286, viewport - 24);
-    setPickerOffset(viewport - bounds.right - 12 >= width || bounds.left - 12 >= width ? -8 : Math.min(-8, viewport - 12 - width - bounds.right));
-  };
   const item = (label: string, Icon: typeof ArrowDown, command: TableCommand, danger = false) =>
     <Menu.Item className={styles.menuItem} data-danger={danger || undefined} disabled={!command(editor.state)} onSelect={() => run(command)}><Icon size={18} weight="bold" aria-hidden /><span>{label}</span></Menu.Item>;
   return <Menu.Root open modal={false} onOpenChange={open => { if (!open) onClose(); }}>
@@ -52,13 +45,7 @@ export function TableStyleMenu({ tableId, anchor, editor, run, onClose, align, b
         <Menu.Sub>
           <Menu.SubTrigger className={styles.menuItem}><Palette size={18} weight="fill" aria-hidden /><span>背景</span><CaretRight size={12} weight="fill" className={styles.caret} aria-hidden /></Menu.SubTrigger>
           <Menu.Portal><Menu.SubContent data-fouc-table-menu={tableId} className={styles.menu} sideOffset={-8} collisionPadding={12} aria-label="背景">
-            {TABLE_COLORS.map(color => <Menu.Item key={color.name} className={styles.menuItem} onSelect={() => run((s, d) => setTableColor(s, d, target, color.value))}><span aria-hidden className={styles.swatch} data-empty={!color.value || undefined} style={{ backgroundColor: color.value ?? undefined }} /><span>{color.name}</span>{background?.toLowerCase() === color.value?.toLowerCase() && background !== undefined ? <Check size={18} weight="bold" className={styles.caret} aria-hidden /> : null}</Menu.Item>)}
-            <Menu.Sub>
-              <Menu.SubTrigger className={styles.menuItem} onPointerEnter={event => placePicker(event.currentTarget)} onFocus={event => placePicker(event.currentTarget)}><span className={`${styles.swatch} ${styles.customSwatch}`} aria-hidden /><span>Custom</span><CaretRight size={12} weight="fill" className={styles.caret} aria-hidden /></Menu.SubTrigger>
-              <Menu.Portal><Menu.SubContent data-fouc-table-menu={tableId} className={`${styles.menu} ${styles.pickerMenu}`} sideOffset={pickerOffset} collisionPadding={12} aria-label="自定义背景">
-                <TableColorPicker value={background ?? null} onChange={hex => run((s, d) => setTableColor(s, d, target, hex))} />
-              </Menu.SubContent></Menu.Portal>
-            </Menu.Sub>
+            <TableColorMenuItems tableId={tableId} background={background} onChange={color => run((s, d) => setTableColor(s, d, target, color))} />
           </Menu.SubContent></Menu.Portal>
         </Menu.Sub>
         <Menu.Separator className={styles.menuSeparator} />

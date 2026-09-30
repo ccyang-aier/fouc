@@ -773,6 +773,11 @@
           "summary": "按最终视觉要求移除有色区域特殊边框与内侧高光，统一外框和单元格分隔线为 1px #d7dfed，保留六种预置配色。独立内存页面验证无背景、六种预置背景、整行及整表背景的边框计算样式一致，均无 box-shadow，浏览器无错误；临时页面已清理，用户文档未改动。lint、前端类型、文档与任务验证通过；热更新服务持续运行，未执行 Tauri 构建。",
           "command": "pnpm exec eslint src/features/knowledge/editor/block-modules/table --max-warnings=0; pnpm typecheck; pnpm docs:verify; pnpm knowledge:verify; pnpm dev:all; browser isolated uniform border validation",
           "verifiedAt": "2026-09-30"
+        },
+        {
+          "summary": "表格内容改为 text 光标、整表圆点 pointer、控制条 grab。控制条只选择单行或单列，拖拽移动任意位置并显示 2px 落点线，保护首行表头和合并单元格，支持 Escape/失焦取消、边缘滚动、并发文档变化中止和撤销重做；内容、列宽、样式与 blockId 保留。任意矩形单元格选区显示 H1/H2/H3、合并拆分、粗体/斜体/删除线/代码、背景、链接和评论工具栏；按最终要求移除分割线、统一 36px 图标间距和 6px 左右留白，尺寸为 444×44px。选区评论复用现有权限与持久化控制器，以独立单元格范围绑定锚点。73 项表格/NodeView/评论回归通过。独立内存浏览器样例验证行列拖拽与撤销、Shift 单列选择、禁止移动表头、Escape 取消、自由列宽、3×3 范围格式/链接/背景/合并拆分/评论取消；390px 下工具栏 366×80px、无页面溢出，自定义 RGBA 色板只修改选中两格。用户原文档未操作，浏览器无错误，临时验收页面和报告已清理。类型、lint、架构、文档、任务验证及 Web 构建通过；热更新服务继续复用，不执行 Tauri 构建。",
+          "command": "bun test --isolate src/features/knowledge/editor/block-modules/table src/features/knowledge/editor/block-modules/blocks.instance.test.ts src/features/knowledge/comments/comments-plugin.instance.test.ts src/features/knowledge/comments/comment-anchors.test.ts; pnpm typecheck; pnpm exec eslint src/features/knowledge/editor/block-modules/table src/features/knowledge/comments/comment-anchors.ts src/features/knowledge/comments/comment-compose-bridge.ts src/features/knowledge/comments/comments-controller.tsx --max-warnings=0; pnpm architecture:verify; pnpm docs:verify; pnpm knowledge:verify; pnpm build; pnpm dev:all; browser isolated memory fixture 1280px and 390px",
+          "verifiedAt": "2026-09-30"
         }
       ]
     },

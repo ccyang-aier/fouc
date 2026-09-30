@@ -10,6 +10,9 @@ import { NodeViewContent, NodeViewWrapper, useEditorState } from '@tiptap/react'
 import { insertTableAxis, selectTableAxis, tableNodeAt, type TableCommand } from './table-commands';
 import { TableStyleMenu, type TableMenuAnchor } from './table-style-menu';
 import { useTableGeometry } from './use-table-geometry';
+import { useTableReorder } from './use-table-reorder';
+import { TableSelectionToolbar } from './table-selection-toolbar';
+import { canComposeSelectionComment } from '../../../comments/comment-compose-bridge';
 import styles from './table.module.css';
 
 const TableContent = NodeViewContent as unknown as FC<{ as: 'table'; className?: string; 'data-variant'?: string; style?: CSSProperties }>;
@@ -22,9 +25,8 @@ export function TableNodeView({ node, editor, getPos, HTMLAttributes }: NodeView
   const [menu, setMenu] = useState<TableMenuAnchor | null>(null);
   const [active, setActive] = useState(false);
   const [insertion, setInsertion] = useState<{ axis: Axis; index: number } | null>(null);
-  const dragRef = useRef(false);
-  const stopDrag = useRef<(() => void) | null>(null);
-  useEffect(() => () => stopDrag.current?.(), []);
+  const [selectionSource, setSelectionSource] = useState<'cells' | 'axis'>('cells');
+  const [selectingCells, setSelectingCells] = useState(false);
   useEffect(() => {
     const ownerDocument = shellRef.current!.ownerDocument;
     const close = (event: PointerEvent) => {
@@ -35,9 +37,16 @@ export function TableNodeView({ node, editor, getPos, HTMLAttributes }: NodeView
       setInsertion(null);
     };
     ownerDocument.addEventListener('pointerdown', close);
-    return () => ownerDocument.removeEventListener('pointerdown', close);
+    const finishSelection = () => setSelectingCells(false);
+    ownerDocument.addEventListener('pointerup', finishSelection);
+    ownerDocument.addEventListener('pointercancel', finishSelection);
+    return () => {
+      ownerDocument.removeEventListener('pointerdown', close);
+      ownerDocument.removeEventListener('pointerup', finishSelection);
+      ownerDocument.removeEventListener('pointercancel', finishSelection);
+    };
   }, [node.attrs.blockId]);
-  const selectionAnchor = useRef<{ axis: Axis; index: number } | null>(null);
+
   const selection = useEditorState({ editor, selector: ({ editor: current }) => {
     const pos = getPos();
     const hit = tableNodeAt(current.state.selection.$from);
@@ -47,6 +56,7 @@ export function TableNodeView({ node, editor, getPos, HTMLAttributes }: NodeView
     return {
       ...rect, map: undefined, table: undefined,
       cells: current.state.selection instanceof CellSelection,
+      canComment: canComposeSelectionComment(current),
       rowsSelected: current.state.selection instanceof CellSelection && current.state.selection.isRowSelection(),
       columnsSelected: current.state.selection instanceof CellSelection && current.state.selection.isColSelection(),
       row: hit.row?.index,
@@ -70,9 +80,10 @@ export function TableNodeView({ node, editor, getPos, HTMLAttributes }: NodeView
     const resize = columnResizingPluginKey.getState(editor.state);
     if (resize && resize.activeHandle >= 0 && !resize.dragging) editor.view.dispatch(editor.state.tr.setMeta(columnResizingPluginKey, { setHandle: -1 }));
   };
-  const open = (axis: Axis | 'table', index: number, extend = false) => {
+  const open = (axis: Axis | 'table', index: number) => {
     if (!geometry) return;
-    if (!extend || !selection?.cells) select(axis, index);
+    setSelectionSource('axis');
+    select(axis, index);
     setInsertion(null);
     setMenu({
       target: axis,
@@ -84,36 +95,9 @@ export function TableNodeView({ node, editor, getPos, HTMLAttributes }: NodeView
           : { left: geometry.viewportLeft - 18, top: geometry.top - 18, width: 14, height: 14 },
     });
   };
-  const startDrag = (event: ReactPointerEvent<HTMLButtonElement>, axis: Axis, index: number) => {
-    if (event.button !== 0 || !geometry) return;
-    event.preventDefault();
-    stopDrag.current?.();
-    setMenu(null);
-    setInsertion(null);
-    dragRef.current = false;
-    const anchor = event.shiftKey && selectionAnchor.current?.axis === axis ? selectionAnchor.current.index : index;
-    selectionAnchor.current = { axis, index: anchor };
-    select(axis, anchor, index);
-    const rootBounds = shellRef.current!.parentElement!.getBoundingClientRect();
-    let currentIndex = index;
-    const move = (event: PointerEvent) => {
-      const coordinate = axis === 'column' ? event.clientX - rootBounds.left - geometry.left : event.clientY - rootBounds.top - geometry.top;
-      const edges = axis === 'column' ? geometry.columns : geometry.rows;
-      const next = coordinate >= edges.at(-1)! ? edges.length - 2 : Math.max(0, edges.findIndex((edge, i) => coordinate >= edge && coordinate < edges[i + 1]));
-      if (next !== currentIndex) { currentIndex = next; dragRef.current = true; select(axis, anchor, next); }
-    };
-    const ownerDocument = shellRef.current!.ownerDocument;
-    const end = () => {
-      ownerDocument.removeEventListener('pointermove', move);
-      ownerDocument.removeEventListener('pointerup', end);
-      ownerDocument.removeEventListener('pointercancel', end);
-      stopDrag.current = null;
-    };
-    stopDrag.current = end;
-    ownerDocument.addEventListener('pointermove', move);
-    ownerDocument.addEventListener('pointerup', end, { once: true });
-    ownerDocument.addEventListener('pointercancel', end, { once: true });
-  };
+  const reorder = useTableReorder({ editor, getPos, shellRef, geometry, select, onStart: () => {
+    setSelectionSource('axis'); setMenu(null); setInsertion(null);
+  } });
   const insert = (axis: Axis, index: number) => {
     const pos = getPos();
     if (typeof pos !== 'number') return;
@@ -123,9 +107,26 @@ export function TableNodeView({ node, editor, getPos, HTMLAttributes }: NodeView
     editor.view.focus();
   };
 
-  return <NodeViewWrapper as="div" {...HTMLAttributes} data-fouc-node="table" data-block-id={node.attrs.blockId} data-active={active && !!selection || !!menu || undefined} className={styles.root}
-    onPointerDownCapture={() => { if (editor.isEditable) setActive(true); }}
+  const viewportWidth = geometry?.pageWidth ?? 1024;
+  const toolbarWidth = Math.min(444, viewportWidth - 24);
+  const toolbarHeight = 8 + 36 * Math.ceil(12 / Math.max(1, Math.floor((toolbarWidth - 12) / 36)));
+  const center = geometry && selection ? geometry.left + (geometry.columns[selection.left] + geometry.columns[selection.right]) / 2 : 0;
+  const toolbarLeft = Math.max(12 + toolbarWidth / 2 - (geometry?.rootLeft ?? 0), Math.min(center, viewportWidth - 12 - toolbarWidth / 2 - (geometry?.rootLeft ?? 0)));
+  const selectionTop = geometry && selection ? geometry.top + geometry.rows[selection.top] : 0;
+  const selectionBottom = geometry && selection ? geometry.top + geometry.rows[selection.bottom] : 0;
+  const selectionVisible = geometry && geometry.rootTop + selectionBottom > 0 && geometry.rootTop + selectionTop < geometry.pageHeight;
+  const toolbarTop = geometry ? Math.max(12 + toolbarHeight / 2 - geometry.rootTop, Math.min((selectionTop + selectionBottom) / 2, geometry.pageHeight - 12 - toolbarHeight / 2 - geometry.rootTop)) : 0;
+  const dropLeft = geometry && reorder.drop ? reorder.drop.axis === 'column' ? geometry.left + geometry.columns[reorder.drop.boundary] : geometry.viewportLeft - 17 : 0;
+  return <NodeViewWrapper as="div" {...HTMLAttributes} data-fouc-node="table" data-block-id={node.attrs.blockId} data-active={active && !!selection || !!menu || undefined} data-reordering={!!reorder.drop || undefined} className={styles.root}
+    onPointerDownCapture={(event: ReactPointerEvent<HTMLDivElement>) => {
+      if (!editor.isEditable) return;
+      setActive(true);
+      if (event.target instanceof Element && event.target.closest('td,th')) { setSelectionSource('cells'); setSelectingCells(true); setMenu(null); }
+    }}
     onMouseLeave={() => { setInsertion(null); clearResizeHover(); }}
+    onDragStart={(event: ReactMouseEvent<HTMLDivElement>) => {
+      if (selectingCells && event.target instanceof Element && event.target.closest('td,th')) event.preventDefault();
+    }}
     onContextMenu={(event: ReactMouseEvent<HTMLDivElement>) => {
       if (!editor.isEditable || !(event.target instanceof Element)) return;
       const cell = event.target.closest('td,th');
@@ -145,23 +146,23 @@ export function TableNodeView({ node, editor, getPos, HTMLAttributes }: NodeView
       <button type="button" className={styles.corner} aria-label="选择整个表格" aria-haspopup="menu" aria-pressed={!!selection?.rowsSelected && !!selection?.columnsSelected} data-selected={selection?.rowsSelected && selection?.columnsSelected || undefined} style={{ left: geometry.viewportLeft - 18, top: geometry.top - 18 }} onMouseDown={event => event.preventDefault()} onClick={() => open('table', 0)} />
       <div className={styles.columnRail} style={{ left: geometry.viewportLeft, top: geometry.top - 17, width: geometry.viewportWidth }}>
         {geometry.columns.slice(0, -1).map((left, index) => <button key={index} type="button" className={styles.columnHandle} aria-label={`第 ${index + 1} 列操作`} aria-haspopup="menu" aria-expanded={menu?.target === 'column' && menu.style.left === geometry.left + left}
-          data-selected={selection?.columnsSelected && index >= selection.left && index < selection.right || undefined}
+          data-selected={selectionSource === 'axis' && selection?.columnsSelected && index >= selection.left && index < selection.right || undefined}
           style={{ left: geometry.left - geometry.viewportLeft + left, width: geometry.columns[index + 1] - left }}
-          onPointerDown={event => startDrag(event, 'column', index)}
-          onClick={event => { if (!dragRef.current) open('column', index, event.shiftKey); }} />)}
+          onPointerDown={event => reorder.start(event, 'column', index)}
+          onClick={() => { if (!reorder.suppressClick()) open('column', index); }} />)}
       </div>
       <div className={styles.rowRail} style={{ left: geometry.viewportLeft - 17, top: geometry.top, height: geometry.height }}>
         {geometry.rows.slice(0, -1).map((top, index) => <button key={index} type="button" className={styles.rowHandle} aria-label={`第 ${index + 1} 行操作`} aria-haspopup="menu" aria-expanded={menu?.target === 'row' && menu.style.top === geometry.top + top}
-          data-selected={selection?.rowsSelected && index >= selection.top && index < selection.bottom || undefined}
+          data-selected={selectionSource === 'axis' && selection?.rowsSelected && index >= selection.top && index < selection.bottom || undefined}
           style={{ top, height: geometry.rows[index + 1] - top }}
-          onPointerDown={event => startDrag(event, 'row', index)}
-          onClick={event => { if (!dragRef.current) open('row', index, event.shiftKey); }} />)}
+          onPointerDown={event => reorder.start(event, 'row', index)}
+          onClick={() => { if (!reorder.suppressClick()) open('row', index); }} />)}
       </div>
       {(['column', 'row'] as const).map(axis => (axis === 'column' ? geometry.columns : geometry.rows).map((offset, index) =>
         axis === 'column' && (geometry.left + offset < geometry.viewportLeft - 1 || geometry.left + offset > geometry.viewportLeft + geometry.viewportWidth + 1) ? null : <button key={axis + index} type="button" className={styles.insertButton} aria-label={`在第 ${index + 1} ${axis === 'column' ? '列' : '行'}位置插入`}
           data-active={insertion?.axis === axis && insertion.index === index || undefined}
           style={axis === 'column' ? { left: geometry.left + offset - 10, top: geometry.top - 40 } : { left: geometry.viewportLeft - 40, top: geometry.top + offset - 10 }}
-          onPointerEnter={() => { if (!menu) setInsertion({ axis, index }); }} onPointerLeave={() => setInsertion(null)}
+          onPointerEnter={() => { if (!menu && !reorder.drop) setInsertion({ axis, index }); }} onPointerLeave={() => setInsertion(null)}
           onFocus={() => setInsertion({ axis, index })} onBlur={() => setInsertion(null)}
           onMouseDown={event => event.preventDefault()} onClick={() => insert(axis, index)}>
           <span className={styles.boundaryDot} /><Plus size={16} weight="bold" aria-hidden />
@@ -169,7 +170,11 @@ export function TableNodeView({ node, editor, getPos, HTMLAttributes }: NodeView
       {insertion ? <div aria-hidden className={styles.insertLine} data-axis={insertion.axis} style={insertion.axis === 'column'
         ? { left: geometry.left + geometry.columns[insertion.index], top: geometry.top - 30, height: geometry.height + 30 }
         : { left: geometry.viewportLeft - 30, top: geometry.top + geometry.rows[insertion.index], width: geometry.viewportWidth + 30 }} /> : null}
+      {reorder.drop ? <div className={styles.dropLine} data-axis={reorder.drop.axis} data-invalid={!reorder.drop.valid || undefined} style={reorder.drop.axis === 'column'
+        ? { left: geometry.left + geometry.columns[reorder.drop.boundary], top: geometry.top - 17, height: geometry.height + 17 }
+        : { left: geometry.viewportLeft - 17, top: geometry.top + geometry.rows[reorder.drop.boundary], width: geometry.viewportWidth + 17 }}><span className={styles.dropLabel} data-left={geometry.rootLeft + dropLeft > geometry.pageWidth - 140 || undefined} role="status">{reorder.drop.valid ? `移动到此${reorder.drop.axis === 'row' ? '行' : '列'}位置` : '此处不可放置'}</span></div> : null}
     </div> : null}
+    {editor.isEditable && active && geometry && selectionVisible && selection?.cells && selectionSource === 'cells' && !selectingCells && !menu && !reorder.drop ? <TableSelectionToolbar editor={editor} tableId={node.attrs.blockId} run={run} background={selection.background} canComment={selection.canComment} style={{ left: toolbarLeft, top: toolbarTop }} /> : null}
     {menu ? <TableStyleMenu tableId={node.attrs.blockId} anchor={menu} editor={editor} run={run} onClose={() => setMenu(null)} align={selection ? selection.align : null}
       background={menu.target === 'row' ? selection?.rowBackground : menu.target === 'table' ? node.attrs.background : selection?.background} /> : null}
   </NodeViewWrapper>;

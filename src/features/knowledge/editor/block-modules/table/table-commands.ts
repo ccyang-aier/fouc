@@ -5,10 +5,12 @@ import { TextSelection } from '@tiptap/pm/state';
 import {
   addColumnAfter, addColumnBefore, CellSelection,
   deleteColumn as removeColumn, deleteRow as removeRow, deleteTable as removeWholeTable,
-  TableMap, toggleHeader, toggleHeaderCell, moveTableColumn, moveTableRow,
+  TableMap, toggleHeader, toggleHeaderCell,
   addRow as insertRowAt, addColumn as insertColumnAt,
   selectedRect,
 } from '@tiptap/pm/tables';
+
+import { moveTableAxisTo } from './table-move';
 
 export type RowWhere = 'above' | 'below';
 export type ColumnWhere = 'left' | 'right';
@@ -128,36 +130,10 @@ export function insertTableAxis(state: EditorState, dispatch: ((tr: Transaction)
 export function moveTableAxis(state: EditorState, dispatch: ((tr: Transaction) => void) | undefined, axis: 'row' | 'column', direction: -1 | 1): boolean {
   const hit = tableNodeAt(state.selection.$from);
   if (!hit?.cell || !hit.row) return false;
-  const map = TableMap.get(hit.table);
   const from = axis === 'row' ? hit.row.index : hit.cell.column;
-  const to = from + direction;
-  if (to < 0 || to >= (axis === 'row' ? map.height : map.width)) return false;
-  if (axis === 'row' && hasHeaderRow(hit.table) && (from === 0 || to === 0)) return false;
-  if (axis === 'column') return moveTableColumn({ from, to, select: true })(state, dispatch);
-  const range = (index: number) => {
-    let top = index, bottom = index + 1;
-    for (let row = top; row < bottom; row++) {
-      for (let col = 0; col < map.width; col++) {
-        const rect = map.findCell(map.map[row * map.width + col]);
-        if (rect.top < top) { top = rect.top; row = top - 1; }
-        bottom = Math.max(bottom, rect.bottom);
-      }
-    }
-    return Array.from({ length: bottom - top }, (_, i) => top + i);
-  };
-  const origin = range(from), destination = range(to);
-  if (origin.includes(to) || hasHeaderRow(hit.table) && (origin.includes(0) || destination.includes(0))) return false;
-  const order = Array.from({ length: map.height }, (_, i) => i);
-  const extracted = order.splice(origin[0], origin.length);
-  const target = from > to ? destination[0] : destination.at(-1)! - (extracted.length % 2 === 0 ? 1 : 0);
-  order.splice(target, 0, ...extracted);
-  return moveTableRow({ from, to, select: true })(state, dispatch ? tr => {
-    const next = tr.doc.nodeAt(hit.pos)!;
-    next.forEach((row, offset, index) => tr.setNodeMarkup(hit.pos + 1 + offset, undefined, hit.table.child(order[index]).attrs));
-    dispatch(tr);
-  } : undefined);
+  const boundary = direction === 1 ? from + 2 : from - 1;
+  return moveTableAxisTo(state, dispatch, hit.pos, axis, from, boundary);
 }
-
 /** Stable natural ordering; keep the header and every row's identities/content intact. */
 export function sortTableColumn(state: EditorState, dispatch: ((tr: Transaction) => void) | undefined, descending: boolean): boolean {
   const hit = tableNodeAt(state.selection.$from);

@@ -79,6 +79,15 @@ export function buildAddCommentAnchorTransaction(state: EditorState, range: Comm
   return state.tr.addMark(from, to, type.create({ threadId }));
 }
 
+/** A rectangular cell selection has disjoint ranges; never anchor the cells between them. */
+export function buildAddCommentSelectionTransaction(state: EditorState, threadId: string): Transaction | null {
+  const type = commentMarkType(state.doc);
+  if (!type || state.selection.empty) return null;
+  const tr = state.tr;
+  for (const { $from, $to } of state.selection.ranges) tr.addMark($from.pos, $to.pos, type.create({ threadId }));
+  return tr.docChanged ? tr : null;
+}
+
 /**
  * Strips every range of one thread's anchor. Mark equality is attribute
  * equality in ProseMirror, so the synthetic mark removes exactly this

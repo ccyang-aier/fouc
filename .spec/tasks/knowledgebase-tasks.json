@@ -721,6 +721,11 @@
           "summary": "编辑器全树 104 项测试/601 断言(E04 48 项):7 类输入规则、Enter/Backspace/Tab/块移动键盘语义、IME 合成守卫、格式命令 toggle 与菜单模型;装配进 editor-surface 与工具栏;scratch 草稿清零",
           "command": "bun test src/features/knowledge/editor; bunx eslint --no-ignore src/features/knowledge/editor/extensions; bunx tsc --noEmit",
           "verifiedAt": "2026-09-27"
+        },
+        {
+          "summary": "任务 checkbox hover 由厚描边式光圈改为轻柔弥散阴影；主动勾选完成时播放约一秒的 40 枚彩色纸屑/星形亮片，不包含扩散光环。动画独立于正文，不拦截交互，不在初始化、协作更新或取消勾选时触发；遵循减少动态效果偏好，动画结束和编辑器卸载自动清理。15 项任务动画/输入规则回归通过，覆盖连续动画、结束与卸载清理、只读及非 checkbox 点击、非本地状态更新与 reduced-motion。独立内存页面浏览器验证正常勾选、40 个动画元素、完成清理、reduce 模式无粒子、390px 无页面溢出及零错误；临时页面已清理，用户文档未修改。lint、前端类型、架构、文档与任务验证通过；开发服务保持热更新，未执行 Tauri 构建。",
+          "command": "bun test --isolate src/features/knowledge/editor/block-modules/task-list/task-celebration.test.ts src/features/knowledge/editor/extensions/input-rules.test.ts; pnpm exec eslint src/features/knowledge/editor/block-modules/task-list --max-warnings=0; pnpm typecheck; pnpm architecture:verify; pnpm docs:verify; pnpm knowledge:verify; pnpm dev:all; browser isolated checkbox animation and reduced-motion validation",
+          "verifiedAt": "2026-09-30"
         }
       ]
     },

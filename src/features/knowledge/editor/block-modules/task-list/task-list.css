@@ -6,7 +6,7 @@
   box-shadow: 0 1px 2px rgba(28, 43, 66, .07); cursor: pointer;
   transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
-.ProseMirror li[data-task-item]:hover::before { border-color: #0869cf; box-shadow: 0 0 0 3px rgba(8, 105, 207, .1); }
+.ProseMirror li[data-task-item]:hover::before { border-color: #0869cf; box-shadow: 0 2px 8px rgba(8, 105, 207, .16); }
 .ProseMirror li[data-task-item][data-checked="true"]::before { border-color: #0869cf; background: #0869cf; animation: task-check-pop 220ms ease-out; }
 .ProseMirror li[data-task-item][data-checked="true"]::after {
   position: absolute; top: calc(.4em + 5px); left: 6px; width: 10px; height: 6px;

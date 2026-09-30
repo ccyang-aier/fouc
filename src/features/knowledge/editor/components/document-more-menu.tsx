@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { Editor } from '@tiptap/core';
-import { Bell, ChatCircleDots, ClockCounterClockwise, Copy, DotsThree, DownloadSimple, FileArrowUp, FileCode, FilePdf, FileText, LinkSimple, LockSimple, MagnifyingGlass, Printer, PushPin, SlidersHorizontal, SplitHorizontal, Star, Trash, Presentation, FolderSimple, SquaresFour } from '@phosphor-icons/react';
+import { Bell, ChatCircleDots, ClockCounterClockwise, Copy, DotsThree, DownloadSimple, FileArrowUp, FileCode, FilePdf, FileText, LinkSimple, LockSimple, MagnifyingGlass, MarkdownLogo, Printer, PushPin, SlidersHorizontal, SplitHorizontal, Star, Trash, Presentation, FolderSimple, SquaresFour } from '@phosphor-icons/react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger, DropdownMenuCheckboxItem } from '@/components/ui/dropdown-menu';
 import { ModalDialog } from '../../organization/ui';
 import { documentLink, type DocumentLinkTarget } from '../document-link';
@@ -57,7 +57,7 @@ export function DocumentMoreMenu({ editor, title, starred, onToggleStar, actions
             <DropdownMenuSubContent className={styles.submenu}>
               <DropdownMenuItem className={styles.item} disabled={busy} onSelect={() => void copy('link')}><LinkSimple aria-hidden />复制为链接</DropdownMenuItem>
               <DropdownMenuItem className={styles.item} disabled={!editor || busy} onSelect={() => void copy('text')}><FileText aria-hidden />复制为文本</DropdownMenuItem>
-              <DropdownMenuItem className={styles.item} disabled={!editor || busy} onSelect={() => void copy('markdown')}><FileCode aria-hidden />复制为 Markdown</DropdownMenuItem>
+              <DropdownMenuItem className={styles.item} disabled={!editor || busy} onSelect={() => void copy('markdown')}><MarkdownLogo aria-hidden />复制为 Markdown</DropdownMenuItem>
               <DropdownMenuItem className={styles.item} disabled={!editor || busy} onSelect={() => void copy('html')}><FileCode aria-hidden />复制为 HTML</DropdownMenuItem>
               {actions.target.source === 'local' ? <p className={styles.hint}>本机链接仅在保存该文档的浏览器中可访问。</p> : null}
             </DropdownMenuSubContent>

@@ -12,7 +12,7 @@ import { TableStyleMenu, type TableMenuAnchor } from './table-style-menu';
 import { useTableGeometry } from './use-table-geometry';
 import styles from './table.module.css';
 
-const TableContent = NodeViewContent as unknown as FC<{ as: 'table'; className?: string; 'data-variant'?: string; 'data-background'?: string; style?: CSSProperties }>;
+const TableContent = NodeViewContent as unknown as FC<{ as: 'table'; className?: string; 'data-variant'?: string; style?: CSSProperties }>;
 type Axis = 'row' | 'column';
 const uniform = <T,>(values: T[]): T | undefined => values.every(value => value === values[0]) ? values[0] : undefined;
 
@@ -139,7 +139,7 @@ export function TableNodeView({ node, editor, getPos, HTMLAttributes }: NodeView
       setMenu({ target: 'cell', side: 'bottom', style: { left: event.clientX - bounds.left, top: event.clientY - bounds.top, width: 1, height: 1 } });
     }}>
     <div ref={shellRef} className={styles.shell}>
-      <TableContent as="table" className={styles.table} data-variant={node.attrs.variant} data-background={node.attrs.background ?? undefined} style={{ backgroundColor: node.attrs.background ?? undefined }} />
+      <TableContent as="table" className={styles.table} data-variant={node.attrs.variant} style={{ backgroundColor: node.attrs.background ?? undefined }} />
     </div>
     {editor.isEditable && geometry && active && (selection || menu) ? <div contentEditable={false} className={styles.controls} aria-label="表格行列控制" onPointerEnter={clearResizeHover}>
       <button type="button" className={styles.corner} aria-label="选择整个表格" aria-haspopup="menu" aria-pressed={!!selection?.rowsSelected && !!selection?.columnsSelected} data-selected={selection?.rowsSelected && selection?.columnsSelected || undefined} style={{ left: geometry.viewportLeft - 18, top: geometry.top - 18 }} onMouseDown={event => event.preventDefault()} onClick={() => open('table', 0)} />

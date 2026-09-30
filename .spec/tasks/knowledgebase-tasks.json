@@ -758,6 +758,11 @@
           "summary": "预置莫兰迪颜色拉开为麦黄、杏橙、玫瑰、鼠尾草绿、雾紫和浅蓝六种色相；有色区域使用 1px 灰蓝边框和内侧浅色高光提升网格可辨性，支持单元格、列、整行与整表背景，已有蓝色背景同样生效。52 项表格/NodeView 回归、lint、前端类型、文档与任务验证通过。独立内存页面在 1280px 验证六色并排、已有有色列、无色区域、整行/整表网格及菜单更换列背景；浏览器无错误。390px 页面无横向溢出，六列表格在自身容器滚动。临时页面已清理，用户文档内容保留，开发服务继续热更新，未执行 Tauri 构建。",
           "command": "bun test --isolate src/features/knowledge/editor/block-modules/table src/features/knowledge/editor/block-modules/blocks.instance.test.ts; pnpm exec eslint src/features/knowledge/editor/block-modules/table --max-warnings=0; pnpm typecheck; pnpm docs:verify; pnpm knowledge:verify; pnpm dev:all; browser isolated color and grid validation 1280px and 390px",
           "verifiedAt": "2026-09-30"
+        },
+        {
+          "summary": "按最终视觉要求移除有色区域特殊边框与内侧高光，统一外框和单元格分隔线为 1px #d7dfed，保留六种预置配色。独立内存页面验证无背景、六种预置背景、整行及整表背景的边框计算样式一致，均无 box-shadow，浏览器无错误；临时页面已清理，用户文档未改动。lint、前端类型、文档与任务验证通过；热更新服务持续运行，未执行 Tauri 构建。",
+          "command": "pnpm exec eslint src/features/knowledge/editor/block-modules/table --max-warnings=0; pnpm typecheck; pnpm docs:verify; pnpm knowledge:verify; pnpm dev:all; browser isolated uniform border validation",
+          "verifiedAt": "2026-09-30"
         }
       ]
     },

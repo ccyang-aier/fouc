@@ -10,6 +10,8 @@ PostgreSQL 数据库统一命名为 `fouc`；账户表位于全局 `auth` schema
 
 前端 `src/features/identity` 挂载于应用根布局。所有模块通过 `useIdentity()` 获取同一会话，不自行发起模块登录流程。侧栏设置下方是账户入口；展开时显示头像、名称与邮箱，收起时保留头像和内置提示。登录模态框和独立 `/auth` 页面共用同一表单，验证与 SSO 回调仍有独立页面。
 
+本机开发内置账户包括 `admin@fouc.local`（Fouc Admin，默认密码 `FoucAdmin-2026-mK7qXz`）与 `collaborator@fouc.local`（林沐，默认密码 `FoucCollab-2026-pN8rVz`）。创建后者时，在运行 `bun backend/server/scripts/auth-admin.ts` 的进程中设置 `FOUC_ADMIN_EMAIL=collaborator@fouc.local`、`FOUC_ADMIN_NAME=林沐`、`FOUC_ADMIN_PASSWORD=FoucCollab-2026-pN8rVz`，只初始化该邮箱，不改动其他账户。协作账户作为普通成员加入产品研发工作空间，文档能力仍由实际 ACL 决定；内置账户没有绕过资源权限的特权。
+
 登录后的账户入口打开操作菜单，提供个人信息、状态选择及退出登录。个人信息的显示名称通过全局 `/api/auth/update-user` 保存，服务端校验与会话刷新沿用身份模块。当前设备状态包含在线、离开、勿扰、忙碌；按用户 UUID 保存本机偏好，同源窗口同步。在线时五分钟无输入自动显示离开，重新操作恢复在线；浏览器断网显示离线，重连恢复偏好。设备状态不代表其它设备的在线情况，不参与权限判断，勿扰目前仅表示用户状态，不改变通知策略。
 
 ## 会话闭环

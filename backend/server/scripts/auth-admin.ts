@@ -23,6 +23,7 @@ function databaseUrl(): string {
 
 const email = (process.env.FOUC_ADMIN_EMAIL ?? 'admin@fouc.local').toLowerCase();
 const password = process.env.FOUC_ADMIN_PASSWORD ?? 'FoucAdmin-2026-mK7qXz';
+const name = process.env.FOUC_ADMIN_NAME ?? 'Fouc Admin';
 
 async function main() {
   if (password.length < 12) throw new Error('Admin password must be at least 12 characters.');
@@ -34,7 +35,7 @@ async function main() {
        VALUES ($1, $2, $3, true)
        ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, email_verified = true, updated_at = clock_timestamp()
        RETURNING id`,
-      [randomUUID(), 'Fouc Admin', email],
+      [randomUUID(), name, email],
     );
     await pool.query(
       `INSERT INTO auth.account (id, user_id, account_id, provider_id, password)
@@ -42,7 +43,7 @@ async function main() {
        ON CONFLICT (provider_id, account_id) DO UPDATE SET password = EXCLUDED.password, updated_at = clock_timestamp()`,
       [randomUUID(), user.rows[0].id, await hashPassword(password)],
     );
-    console.log(`admin account ready: ${email}`);
+    console.log(`development account ready: ${email} (${name})`);
   } finally {
     await pool.end();
   }

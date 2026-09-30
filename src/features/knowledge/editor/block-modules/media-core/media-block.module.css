@@ -34,4 +34,3 @@
 .meta input { min-width: 160px; flex: 1; border: 0; outline: 0; background: transparent; color: #53657e; font-size: 11px; }
 .meta input::placeholder { color: #a5b1c0; }
 .title { min-width: 0; max-width: 50%; overflow: hidden; color: #34465e; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
-@media (prefers-reduced-motion: reduce) { .setup { transition: none; } }

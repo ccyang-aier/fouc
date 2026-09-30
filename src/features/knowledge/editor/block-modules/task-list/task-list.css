@@ -16,7 +16,3 @@
 .ProseMirror li[data-task-item][data-checked="true"] > p { color: #8b99ad; text-decoration: line-through; text-decoration-color: #a7b3c2; transition: color 180ms ease; }
 @keyframes task-check-pop { 50% { transform: scale(1.13); } }
 @keyframes task-check-mark { from { opacity: 0; transform: rotate(-45deg) scale(.55); } to { opacity: 1; transform: rotate(-45deg) scale(1); } }
-@media (prefers-reduced-motion: reduce) {
-  .ProseMirror li[data-task-item]::before,
-  .ProseMirror li[data-task-item]::after { animation: none; transition: none; }
-}

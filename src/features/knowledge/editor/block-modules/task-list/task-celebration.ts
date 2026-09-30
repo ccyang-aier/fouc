@@ -5,7 +5,6 @@ export function createTaskCelebration(document: Document) {
   const bursts = new Set<() => void>();
   return {
     burst(x: number, y: number) {
-      if (document.defaultView?.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       const layer = document.createElement('div');
       layer.dataset.taskCelebration = '';
       layer.setAttribute('aria-hidden', 'true');

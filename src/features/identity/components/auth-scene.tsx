@@ -52,7 +52,7 @@ export function AuthScene({
   'aria-label'?: string;
 }) {
   return (
-    <MotionConfig reducedMotion="user">
+    <MotionConfig reducedMotion="never">
       <main aria-label={ariaLabel} className="relative h-full min-h-full overflow-y-auto bg-[var(--shell)]">
         {/* Quiet stage: one soft accent glow above the card, a faint dot grid below. */}
         <div

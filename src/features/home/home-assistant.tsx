@@ -56,7 +56,6 @@ function AssistantVisual({ celebrating = false }: HomeAssistantProps) {
   const [ambientExpression, setAmbientExpression] = useState<ExpressionFrame>("neutral")
 
   useEffect(() => {
-    const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)")
     let timer: number | null = null
     let cancelled = false
 
@@ -79,7 +78,7 @@ function AssistantVisual({ celebrating = false }: HomeAssistantProps) {
       timer = window.setTimeout(() => playSequence(sequence, index + 1), step.duration)
     }
 
-    if (!reducedMotionQuery.matches) scheduleNextSequence()
+    scheduleNextSequence()
 
     return () => {
       cancelled = true

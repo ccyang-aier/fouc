@@ -116,8 +116,6 @@
 .fileGrid{grid-template-columns:1fr}
 .sectionHeading{flex-wrap:wrap}
 }
-@media(prefers-reduced-motion:reduce){.page *{transition:none!important;transform:none!important}
-}
 
 
 .uploadDialog::backdrop{background:#17243c55;backdrop-filter:blur(3px)}

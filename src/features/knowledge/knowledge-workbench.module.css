@@ -15,4 +15,3 @@
 }
 .documentSidebar[data-open='true'] { transform: translateX(0); visibility: visible; }
 .sidebarScrim { position: absolute; z-index: 31; inset: 0; width: 100%; border: 0; background: rgb(24 33 49 / 14%); }
-@media (prefers-reduced-motion: reduce) { .documentSidebar { transition: none; } }

@@ -36,12 +36,16 @@ test('celebrations stay outside the editor and clean up after completion and dis
   expect(window.document.querySelectorAll('[data-task-celebration]')).toHaveLength(0);
 });
 
-test('reduced motion suppresses celebration particles', () => {
+test('celebrations retain the full effect regardless of system motion preference', () => {
   const reducedWindow = new Window({ settings: { device: { prefersReducedMotion: 'reduce' } } });
+  Object.defineProperty(reducedWindow.HTMLElement.prototype, 'animate', Object.getOwnPropertyDescriptor(window.HTMLElement.prototype, 'animate')!);
+  finish = [];
   const effect = createTaskCelebration(reducedWindow.document as unknown as Document);
   effect.burst(10, 20);
-  expect(reducedWindow.document.querySelector('[data-task-celebration]')).toBeNull();
+  expect(reducedWindow.document.querySelectorAll('[data-task-celebration]')).toHaveLength(1);
+  expect(finish).toHaveLength(40);
   effect.destroy();
+  expect(reducedWindow.document.querySelector('[data-task-celebration]')).toBeNull();
 });
 
 test('only checking a local editable marker celebrates; state updates and unchecking do not', () => {

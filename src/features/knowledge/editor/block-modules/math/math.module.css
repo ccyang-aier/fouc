@@ -17,4 +17,3 @@
 .hint,.error { margin: 6px 1px 0 !important; font-size: 10px; line-height: 1.5; }
 .hint { color: #9aa8b9; }
 .error { color: #c14845; }
-@media (prefers-reduced-motion: reduce) { .root { transition: none; } }

@@ -28,4 +28,3 @@
 .toneOption:hover,.toneOption[aria-pressed="true"] { border-color: #d6e4f4; background: #eef5fd; color: #243c5c; }
 .swatch { width: 10px; height: 10px; border-radius: 50%; }
 .iconButton:focus-visible,.menu button:focus-visible { outline: 2px solid #2674d1; outline-offset: 2px; }
-@media (prefers-reduced-motion: reduce) { .iconButton { transition: none; } }

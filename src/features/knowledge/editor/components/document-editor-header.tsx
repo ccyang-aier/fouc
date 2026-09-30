@@ -3,11 +3,12 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import type { Editor } from '@tiptap/react';
-import { BookOpen, List, Plus, Star } from '@phosphor-icons/react';
+import { BookOpen, List, Plus } from '@phosphor-icons/react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { DocumentMoreMenu, type DocumentMenuActions } from './document-more-menu';
+import { DocumentStarButton } from './document-star-button';
 import styles from './document-editor-header.module.css';
 
 export function DocumentEditorHeader({
@@ -44,7 +45,7 @@ export function DocumentEditorHeader({
       <button type="button" className={styles.collectionName} onClick={onBack} title={collectionName}>{collectionName}</button>
       <span className={styles.divider} aria-hidden>/</span>
       <button type="button" className={styles.iconButton} aria-label="打开知识库导航" title="打开知识库导航" onClick={onToggleSidebar}><List aria-hidden size={16} weight="bold" /></button>
-      <button type="button" className={styles.iconButton} aria-label={starred ? '取消星标' : '添加星标'} title={starred ? '取消星标' : '添加星标'} onClick={onToggleStar}><Star aria-hidden size={16} weight={starred ? 'fill' : 'bold'} /></button>
+      <DocumentStarButton starred={starred} onToggle={onToggleStar} />
     </div>
     <div className={styles.actions}>
       {presence ?? <span className={styles.avatar} title={avatarName || '我'}>{Array.from(avatarName || '我')[0]?.toUpperCase()}</span>}

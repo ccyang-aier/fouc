@@ -64,7 +64,7 @@ export function WorkbenchShell() {
   // 应用面板根：桌面端作为自绘外框的内层与弹层宿主
   const frameRef = useRef<HTMLDivElement>(null)
 
-  // 启动时恢复外观偏好（主题 / 字体 / 动效）
+  // 启动时恢复外观偏好（主题 / 字体）
   useEffect(() => {
     applyAppearancePrefs(readAppearancePrefs())
   }, [])
@@ -93,7 +93,7 @@ export function WorkbenchShell() {
   }
 
   return (
-    <MotionConfig reducedMotion="user">
+    <MotionConfig reducedMotion="never">
       <TooltipProvider>
         {/* 外层透明边距承载自绘阴影；应用面板根绘环境画布并作为弹层宿主 */}
         <div className="h-dvh w-full p-[var(--win-frame-inset)]">

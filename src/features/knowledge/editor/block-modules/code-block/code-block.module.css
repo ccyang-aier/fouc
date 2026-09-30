@@ -53,4 +53,3 @@
 .root[data-code-theme="dark"] :global(.hljs-string),.root[data-code-theme="dark"] :global(.hljs-attr) { color: #90d6ac; }
 .root[data-code-theme="dark"] :global(.hljs-number),.root[data-code-theme="dark"] :global(.hljs-literal) { color: #f0b181; }
 .root[data-code-theme="dark"] :global(.hljs-title),.root[data-code-theme="dark"] :global(.hljs-built_in),.root[data-code-theme="dark"] :global(.hljs-type) { color: #89bef4; }
-@media (prefers-reduced-motion: reduce) { .iconButton,.toggle,.toggle::after { transition: none; } }

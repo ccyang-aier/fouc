@@ -26,4 +26,3 @@
 .content { min-height: 24px; color: #2c3a4f; font-size: 13px; line-height: 1.7; }
 .spin { animation: ai-spin 1s linear infinite; }
 @keyframes ai-spin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .spin { animation: none; } }

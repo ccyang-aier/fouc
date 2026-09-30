@@ -37,4 +37,3 @@
 .layout :global([data-column]:hover),.layout :global([data-column]:focus-within) { border-color: #b8d0ec; background: #fff; }
 .layout :global([data-column]:has(> p:only-child > br.ProseMirror-trailingBreak))::after { position: absolute; top: 11px; left: 12px; color: #a4b2c3; font-size: 13px; pointer-events: none; content: '在此输入内容…'; }
 @media (max-width: 700px) { .layout > :global([data-node-view-content-react]) { flex-direction: column; gap: 11px; } .layout :global([data-column]) { width: 100%; min-height: 62px; } }
-@media (prefers-reduced-motion: reduce) { .root,.trigger { transition: none; } }

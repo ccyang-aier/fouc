@@ -709,6 +709,11 @@
           "summary": "editor 20 项/122 断言+全套回归:shared PM schema 逐字节一致、Y.Doc 唯一正文(刷新经 y-indexeddb 回归实测)、Client Boundary 懒加载+首屏隔离测试钉死、六态指示+只读/无权/鉴权横幅闭环、无水合异常;修复 E02 修复事务逃逸撤销栈的集成缺陷;浏览器 7 场景核验",
           "command": "bun test src/features/knowledge/editor; pnpm typecheck; pnpm exec eslint --max-warnings=0 src/features/knowledge/editor; node scripts/verify-knowledge-boundaries.mjs",
           "verifiedAt": "2026-09-26"
+        },
+        {
+          "summary": "文档更多菜单改为五组紧凑图标操作与组间分割线，移除旧编辑工具及其未使用组件/菜单模型。接通四种复制、HTML/Markdown 导出、独立正文快照打印、个人页宽/字体/字号偏好、收藏、协作文档评论/历史侧栏和确认后移至回收站；本机保存失败保留页面并提示，服务端删除失败可重试。文档链接携带工作空间/知识库/页面/资源来源，只导航到当前主体可访问的空间，之后不覆盖主动空间切换。演示、订阅、权限、模板化、PDF、导入、移动、固定、拆分、搜索先标注待实现，本机评论/历史按能力预留。35 项内容转换、实际 React/Radix 菜单交互、编辑器及评论锚点回归通过（202 断言）。Computer Use 因无法可靠识别当前浏览器 URL 自动停止，未完成真实浏览器视觉与原生打印验证；临时页面已清理，用户文档未操作。类型、lint、架构、文档、任务与 Web 构建检查通过；三项热更新服务返回 200，未执行 Tauri 构建。",
+          "command": "bun test --isolate src/features/knowledge/editor/components/document-content-actions.test.ts src/features/knowledge/editor/components/document-more-menu.test.tsx src/features/knowledge/editor/page-editor.instance.test.ts src/features/knowledge/editor/extensions/block-format.test.ts src/features/knowledge/comments/comment-anchors.test.ts; pnpm typecheck; pnpm exec eslint changed frontend files --max-warnings=0; pnpm architecture:verify; pnpm docs:verify; pnpm knowledge:verify; pnpm build; pnpm dev:all; HTTP service readiness probes",
+          "verifiedAt": "2026-09-30"
         }
       ]
     },

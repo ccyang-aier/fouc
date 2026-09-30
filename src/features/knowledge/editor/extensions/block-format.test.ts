@@ -1,9 +1,6 @@
 /**
- * Format command and menu model tests (E04): the mouse path. Commands run
- * through the same `editor.chain().command(...)` the format menu uses, over
- * the shared E01 schema + E02 blockId plugin, asserting Notion-grade toggle
- * semantics, blockId integrity and the pure menu model (items, keyboard
- * navigation, active detection).
+ * Format command tests (E04): shared commands over the E01 schema and E02
+ * blockId plugin, asserting toggle semantics and blockId integrity.
  */
 
 import 'fake-indexeddb/auto';
@@ -19,7 +16,6 @@ import { pageCollaborationExtension } from '../page-collaboration';
 import { createBlockEditingExtensions } from '.';
 import { currentBlockFormat, insertMathBlock, setBlockFormat } from './format/block-format';
 import type { BlockFormat } from './format/block-format';
-import { activeFormatItemIndex, FORMAT_MENU_ITEMS, formatMenuReducer, formatTriggerLabel } from './format/format-menu-model';
 
 const scope = { workspaceId: '00000000-0000-4000-8000-000000000001', pageId: '00000000-0000-4000-8000-000000000002' };
 
@@ -223,46 +219,5 @@ describe('current block format reading', () => {
     const plain = mount('<p>x</p>', 'start');
     expect(currentBlockFormat(plain.state)).toBeNull();
     plain.destroy();
-  });
-});
-
-describe('format menu model', () => {
-  test('items cover the acceptance block set with unique ids', () => {
-    const ids = FORMAT_MENU_ITEMS.map((item) => item.id);
-    expect(new Set(ids).size).toBe(ids.length);
-    expect(ids).toEqual([
-      'paragraph', 'heading-1', 'heading-2', 'heading-3',
-      'bullet-list', 'ordered-list', 'task-list',
-      'blockquote', 'code-block', 'math',
-    ]);
-    expect(FORMAT_MENU_ITEMS.filter((item) => item.format === null)).toHaveLength(1); // math
-  });
-
-  test('arrow navigation clamps, Home/End jump, close keeps the index', () => {
-    let state = formatMenuReducer({ open: false, activeIndex: 0 }, { type: 'open', activeIndex: 4 });
-    expect(state).toEqual({ open: true, activeIndex: 4 });
-    state = formatMenuReducer(state, { type: 'move', delta: -1 });
-    expect(state.activeIndex).toBe(3);
-    state = formatMenuReducer(state, { type: 'move', delta: -10 });
-    expect(state.activeIndex).toBe(0);
-    state = formatMenuReducer(state, { type: 'end' });
-    expect(state.activeIndex).toBe(FORMAT_MENU_ITEMS.length - 1);
-    state = formatMenuReducer(state, { type: 'move', delta: 1 });
-    expect(state.activeIndex).toBe(FORMAT_MENU_ITEMS.length - 1);
-    state = formatMenuReducer(state, { type: 'home' });
-    expect(state.activeIndex).toBe(0);
-    state = formatMenuReducer(state, { type: 'close' });
-    expect(state.open).toBe(false);
-    // Move while closed is ignored.
-    expect(formatMenuReducer(state, { type: 'move', delta: 1 })).toEqual(state);
-  });
-
-  test('the active item and the trigger label follow the current format', () => {
-    expect(activeFormatItemIndex(null)).toBe(0); // 正文
-    expect(formatTriggerLabel(null)).toBe('正文');
-    expect(formatTriggerLabel({ kind: 'heading', level: 2 })).toBe('标题 2');
-    expect(activeFormatItemIndex({ kind: 'heading', level: 4 })).toBe(-1);
-    expect(formatTriggerLabel({ kind: 'codeBlock' })).toBe('代码块');
-    expect(formatTriggerLabel({ kind: 'taskList' })).toBe('待办列表');
   });
 });

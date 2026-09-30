@@ -20,6 +20,7 @@ import { DocumentsPage } from '../documents/documents-page';
 import { LocalDocumentImport } from '../documents/local-document-import';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuCheckboxItem } from '@/components/ui/dropdown-menu';
 import { DotsThree } from '@phosphor-icons/react';
+import { currentDocumentLinkTarget } from '../editor/document-link';
 
 type View = 'all-documents' | 'starred' | 'drafts' | 'trash';
 type Store = ReturnType<typeof createLocalLibraryStore>;
@@ -37,10 +38,10 @@ function LocalKnowledgeContent({ workspaceId, store, onOpenSettings, onOpenWorks
   const library = useSyncExternalStore(store.subscribe, store.getSnapshot, () => emptyLocalLibrary);
   const { session, openSignIn } = useIdentity();
   const { t } = useI18n();
-  const [baseId, setBaseId] = useKnowledgeBaseSelection(`${workspaceId}:local`);
+  const [baseId, setBaseId] = useKnowledgeBaseSelection(`${workspaceId}:local`, currentDocumentLinkTarget(workspaceId, 'local')?.knowledgeBaseId);
   const [view, setView] = useState<View>('all-documents');
   const [folderId, setFolderId] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(() => currentDocumentLinkTarget(workspaceId, 'local')?.pageId ?? null);
   const [collapsed, setCollapsed] = useState(false);
   const [editorSidebarOpen, setEditorSidebarOpen] = useState(false);
   const [activeTagId, setActiveTagId] = useState<string | null>(null);
@@ -68,7 +69,7 @@ function LocalKnowledgeContent({ workspaceId, store, onOpenSettings, onOpenWorks
     catch { setFailure('本机保存失败，修改未保存。请检查存储空间后重试。'); return false; }
   }
   function updateDocument(id: string, patch: Partial<LocalDocument>) {
-    write((current) => ({ ...current, documents: current.documents.map((item) => item.id === id ? { ...item, ...patch, updatedAt: new Date().toISOString() } : item) }));
+    return write((current) => ({ ...current, documents: current.documents.map((item) => item.id === id ? { ...item, ...patch, updatedAt: new Date().toISOString() } : item) }));
   }
   function toggleDocumentTag(tagId: string, documentId: string) {
     write((current) => ({ ...current, tags: current.tags.map((tag) => tag.id === tagId ? { ...tag, pageIds: tag.pageIds.includes(documentId) ? tag.pageIds.filter((id) => id !== documentId) : [...tag.pageIds, documentId] } : tag) }));

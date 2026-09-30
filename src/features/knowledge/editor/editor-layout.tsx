@@ -4,9 +4,10 @@ import type { ReactNode } from 'react';
 import { EditorContent } from '@tiptap/react';
 import type { Editor } from '@tiptap/react';
 import styles from './editor-layout.module.css';
+import { DocumentAppearanceProvider, useDocumentAppearance } from './components/document-appearance';
 
-export function DocumentEditorFrame({ children }: { children: ReactNode }) {
-  return <section aria-label="页面编辑器" className={styles.frame}>{children}</section>;
+export function DocumentEditorFrame({ children, appearanceScope }: { children: ReactNode; appearanceScope: string }) {
+  return <DocumentAppearanceProvider key={appearanceScope} scope={appearanceScope}><section aria-label="页面编辑器" className={styles.frame}>{children}</section></DocumentAppearanceProvider>;
 }
 
 export function DocumentHeading({ title, onTitleChange, onTitleCommit, editable = true, metadata }: {
@@ -34,7 +35,8 @@ export function DocumentHeading({ title, onTitleChange, onTitleCommit, editable 
 }
 
 export function DocumentEditorBody({ editor, before }: { editor: Editor | null; before?: ReactNode }) {
+  const { appearance } = useDocumentAppearance();
   return <div className={styles.scrollArea}>
-    <div className={styles.document}>{before}<EditorContent editor={editor} /></div>
+    <div className={styles.document} data-width={appearance.width} data-font={appearance.font} data-size={appearance.size}>{before}<EditorContent editor={editor} /></div>
   </div>;
 }

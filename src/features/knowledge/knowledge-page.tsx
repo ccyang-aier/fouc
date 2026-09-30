@@ -42,13 +42,19 @@ import { NavigationDialogPortal } from './navigation/navigation-dialog-portal';
 import { usePageTreeOperations } from './navigation/page-operations';
 import { canEditTree } from './navigation/tree-actions';
 import { useCreateTeamspaceMutation } from './organization/hooks';
+import { currentDocumentLinkTarget, readDocumentLink } from './editor/document-link';
 
 const LocalKnowledgeResource = dynamic(() => import('./local/local-knowledge-resource').then((module) => module.LocalKnowledgeResource), { ssr: false, loading: () => <CanvasSpinner label="正在加载知识资源" /> });
 
 export function KnowledgePage({ onOpenSettings }: { onOpenSettings: () => void }) {
   const { session } = useIdentity();
   const { activeSpace } = useWorkspace();
-  const [selection] = useState(() => createBrowserKnowledgeResourceSelection(activeSpace.id, activeSpace.kind === 'server' ? 'workspace' : 'local'));
+  const [selection] = useState(() => {
+    const store = createBrowserKnowledgeResourceSelection(activeSpace.id, activeSpace.kind === 'server' ? 'workspace' : 'local');
+    const target = typeof window === 'undefined' ? null : readDocumentLink(window.location.href);
+    if (target?.workspaceId === activeSpace.id) store.select(target.source);
+    return store;
+  });
   const resource = useSyncExternalStore(selection.subscribe, selection.getSnapshot, selection.getServerSnapshot);
   if (!resource) return <CanvasSpinner label="正在加载知识资源" />;
   if (resource === 'local' && activeSpace.kind === 'local') return <LocalKnowledgeResource workspaceId={activeSpace.id} onOpenSettings={onOpenSettings} onOpenWorkspace={() => selection.select('workspace')} />;
@@ -74,7 +80,7 @@ function WorkspaceKnowledgeResource({ onOpenSettings, onOpenLocal, onOpenWorkspa
   const accessQuery = useKnowledgeAccessQuery(activeId ?? '', { enabled: activeId !== null });
   const basesQuery = useKnowledgeBasesQuery(localSelected ? null : activeId);
   const knowledgeBases = flattenWorkspaceList(basesQuery.data);
-  const [chosenBaseId, setChosenBaseId] = useKnowledgeBaseSelection(`${activeSpace.id}:${authenticated ? session.user.id : 'anonymous'}:server`);
+  const [chosenBaseId, setChosenBaseId] = useKnowledgeBaseSelection(`${activeSpace.id}:${authenticated ? session.user.id : 'anonymous'}:server`, currentDocumentLinkTarget(activeSpace.id, 'workspace')?.knowledgeBaseId);
   const activeBase = knowledgeBases.find((base) => base.id === chosenBaseId) ?? knowledgeBases[0] ?? null;
   const teamspacesQuery = useKnowledgeTeamspacesQuery(localSelected ? null : activeId, activeBase?.id ?? null);
   const teamspaces = flattenWorkspaceList(teamspacesQuery.data);
@@ -145,7 +151,7 @@ function WorkspaceKnowledgeResource({ onOpenSettings, onOpenLocal, onOpenWorkspa
   // editor, folder and filter state and disposing the old event subscription.
   const [libraryView, setLibraryView] = useState<LibraryView>('all-documents');
   const [selectedTeamspaceId, setSelectedTeamspaceId] = useState<string | null>(null);
-  const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
+  const [selectedPageId, setSelectedPageId] = useState<string | null>(() => currentDocumentLinkTarget(activeSpace.id, 'workspace')?.pageId ?? null);
 
   // ── N03: publish the live inbox (unread badge, rows, jump) to the shell bell ──
   useKnowledgeNotificationsBridge({ active: stageActive, workspaceId: activeId, openPage: setSelectedPageId });

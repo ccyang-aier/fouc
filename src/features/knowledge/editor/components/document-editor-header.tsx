@@ -3,21 +3,18 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import type { Editor } from '@tiptap/react';
-import { BookOpen, DotsThree, List, Plus, Star } from '@phosphor-icons/react';
+import { BookOpen, List, Plus, Star } from '@phosphor-icons/react';
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import type { PageUndo } from '../../collaboration/page-undo';
-import { EditorToolbar } from './editor-toolbar';
+import { DocumentMoreMenu, type DocumentMenuActions } from './document-more-menu';
 import styles from './document-editor-header.module.css';
 
 export function DocumentEditorHeader({
-  editor, pageUndo, editable, collectionName, title, avatarName, starred, onBack, onToggleSidebar,
+  editor, collectionName, title, avatarName, starred, onBack, onToggleSidebar,
   onToggleStar, onCreateDocument, canCreateDocument = true, shareDescription, menuActions, presence,
 }: {
   editor: Editor | null;
-  pageUndo?: PageUndo;
-  editable: boolean;
   collectionName: string;
   title: string;
   avatarName: string;
@@ -28,7 +25,7 @@ export function DocumentEditorHeader({
   onCreateDocument: () => void;
   canCreateDocument?: boolean;
   shareDescription: string;
-  menuActions?: ReactNode;
+  menuActions: DocumentMenuActions;
   presence?: ReactNode;
 }) {
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
@@ -61,14 +58,7 @@ export function DocumentEditorHeader({
         </DropdownMenuContent>
       </DropdownMenu>
       <button type="button" aria-label="新建文档" className={`${styles.outlineButton} ${styles.createButton}`} disabled={!canCreateDocument} title={canCreateDocument ? '新建文档' : '没有创建文档的权限'} onClick={onCreateDocument}><Plus aria-hidden size={20} weight="bold" /><span className={styles.createLabel}>新建文档</span></button>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild><button type="button" className={styles.moreButton} aria-label="更多文档操作" title="更多文档操作"><DotsThree aria-hidden size={24} weight="bold" /></button></DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className={styles.moreMenu}>
-          <div className={styles.moreHeading}>编辑工具</div>
-          <EditorToolbar editor={editor} pageUndo={pageUndo} editable={editable} />
-          {menuActions ? <><DropdownMenuSeparator /><div className={styles.extraActions}>{menuActions}</div></> : null}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <DocumentMoreMenu editor={editor} title={title} starred={starred} onToggleStar={onToggleStar} actions={menuActions} />
     </div>
   </header>;
 }

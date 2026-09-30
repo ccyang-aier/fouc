@@ -41,6 +41,7 @@ import { AutomationCanvas } from "@/features/automation/automation-canvas"
 import { CommunityCanvas } from "@/features/community/community-canvas"
 import { ConnectorsCanvas } from "@/features/connectors/connectors-canvas"
 import { KnowledgePage } from "@/features/knowledge/knowledge-page"
+import { useDocumentLinkNavigation } from "@/features/knowledge/editor/use-document-link-navigation"
 import { NavigationSidebar, type WorkbenchView } from "./navigation-sidebar"
 import { useProjectResources } from "@/features/project/project-resources"
 import { ProjectHomeCanvas } from "@/features/project/project-home-canvas"
@@ -54,6 +55,7 @@ import { WorkspaceRail } from "./workspace-rail"
 import { useWorkspace } from "@/features/workspaces/workspace-provider"
 
 export function WorkbenchShell() {
+  useDocumentLinkNavigation()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [view, setView] = useWorkbenchView()
   const { spaces, activeSpace, updateSpaces, selectWorkspace, createWorkspace } = useWorkspace()

@@ -37,16 +37,20 @@ export function PageCommentsLayer({
   editor,
   level,
   children,
+  railOpen,
+  onRailOpenChange,
 }: {
   scope: PageScope;
   editor: Editor | null;
   level: PermissionLevel;
   children: ReactNode;
+  railOpen?: boolean;
+  onRailOpenChange?: (open: boolean) => void;
 }) {
   return (
     <div className="relative flex min-h-0 flex-1">
       {children}
-      <PageComments scope={scope} editor={editor} canComment={levelSatisfies(level, 'comment')} />
+      <PageComments scope={scope} editor={editor} canComment={levelSatisfies(level, 'comment')} railOpen={railOpen} onRailOpenChange={onRailOpenChange} />
     </div>
   );
 }

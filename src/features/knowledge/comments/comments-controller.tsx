@@ -85,9 +85,11 @@ export interface PageCommentsProps {
   /** The live Tiptap instance of the page editor (null while it mounts). */
   editor: Editor | null;
   canComment: boolean;
+  railOpen?: boolean;
+  onRailOpenChange?: (open: boolean) => void;
 }
 
-export function PageComments({ scope, editor, canComment }: PageCommentsProps) {
+export function PageComments({ scope, editor, canComment, railOpen: controlledRailOpen, onRailOpenChange }: PageCommentsProps) {
   const threadsQuery = usePageCommentThreads(scope.workspaceId, scope.pageId);
   const accessQuery = useKnowledgeAccessQuery(scope.workspaceId);
   const currentUserId = accessQuery.data?.userId ?? null;
@@ -108,7 +110,9 @@ export function PageComments({ scope, editor, canComment }: PageCommentsProps) {
   const [composerError, setComposerError] = useState<string | null>(null);
   const [composerAt, setComposerAt] = useState<{ x: number; y: number } | null>(null);
   const [selectionAt, setSelectionAt] = useState<{ x: number; y: number } | null>(null);
-  const [railOpen, setRailOpen] = useState(false);
+  const [localRailOpen, setLocalRailOpen] = useState(false);
+  const railOpen = controlledRailOpen ?? localRailOpen;
+  const setRailOpen = onRailOpenChange ?? setLocalRailOpen;
   const [replyingThreadId, setReplyingThreadId] = useState<string | null>(null);
   const activeThreadIdRef = useRef<string | null>(null);
   const lastDocRef = useRef<unknown>(null);
@@ -164,7 +168,7 @@ export function PageComments({ scope, editor, canComment }: PageCommentsProps) {
       editor.off('focus', refreshSelection);
       editor.off('blur', hideSelection);
     };
-  }, [editor, canComment, composing]);
+  }, [editor, canComment, composing, setRailOpen]);
 
   // The active thread's card scrolls into view inside the rail.
   useEffect(() => {
@@ -251,7 +255,7 @@ export function PageComments({ scope, editor, canComment }: PageCommentsProps) {
       // The optimistic anchor stays; retry resubmits the exact same ids.
       setComposerError(commentErrorText(error, '评论发送失败，请重试。'));
     }
-  }, [composing, createMutation, scope.pageId, editor]);
+  }, [composing, createMutation, scope.pageId, editor, setRailOpen]);
 
   const cancelCompose = useCallback(() => {
     if (!composing) return;

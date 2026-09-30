@@ -15,7 +15,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useEditor } from '@tiptap/react';
 import type { PageScope, PermissionLevel } from '@fouc/shared/knowledge/contracts';
 import { createBlockIdExtension, createKnowledgeExtensions } from '@fouc/shared/knowledge/schema';
-import { ClockCounterClockwise } from '@phosphor-icons/react';
+import { useQueryClient } from '@tanstack/react-query';
 import type { FoucAuthUser } from '../../identity/auth-api';
 import type { PageUndo } from '../collaboration/page-undo';
 import type { PageDocumentSession } from '../collaboration/page-provider';
@@ -36,6 +36,8 @@ import { createCommentsEditorExtension, PageCommentsLayer } from './comments-int
 import { usePageTitle } from './use-page-title';
 import { useSidebarCollections } from '../navigation/sidebar-collections';
 import { TaskProgress } from './block-modules/task-list/task-progress';
+import { recycleKnowledgePage } from '../data/pages-api';
+import { knowledgeQueryKeys } from '../data/query-keys';
 
 export function PageEditorSurface({
   scope,
@@ -129,6 +131,8 @@ export function PageEditorSurface({
   }, [editor, scope.pageId]);
 
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const queryClient = useQueryClient();
   const { collections, toggleStar } = useSidebarCollections(user?.id ?? '', scope.workspaceId, knowledgeBaseId);
   const pageTitle = usePageTitle(scope);
   const updatedLabel = pageTitle.updatedAt
@@ -136,11 +140,9 @@ export function PageEditorSurface({
     : '文档';
 
   return (
-    <DocumentEditorFrame>
+    <DocumentEditorFrame appearanceScope={`workspace:${user?.id ?? 'guest'}:${scope.workspaceId}:${scope.pageId}`}>
       <DocumentEditorHeader
         editor={editor}
-        pageUndo={pageUndo}
-        editable={view.editable}
         collectionName={collectionName}
         title={pageTitle.title}
         avatarName={user?.name ?? '我'}
@@ -152,19 +154,19 @@ export function PageEditorSurface({
         canCreateDocument={canCreateDocument}
         shareDescription="复制文档标题和正文后，可以粘贴到其他应用。页面访问权限由知识库管理。"
         presence={user ? <AwarenessMembers awareness={session.awareness} identity={{ userId: user.id, name: user.name, image: user.image }} /> : undefined}
-        menuActions={<button
-            type="button"
-            onClick={() => setHistoryOpen((open) => !open)}
-            aria-expanded={historyOpen}
-            aria-label="历史版本"
-            title="历史版本"
-            className="flex w-full items-center gap-2 rounded px-2 py-2 text-left text-xs hover:bg-[var(--raise)]"
-          >
-            <ClockCounterClockwise aria-hidden className="size-4" />历史版本
-          </button>}
+        menuActions={{
+          target: { workspaceId: scope.workspaceId, knowledgeBaseId, pageId: scope.pageId, source: 'workspace' },
+          onComments: () => { setHistoryOpen(false); setCommentsOpen(true); },
+          onHistory: () => { setCommentsOpen(false); setHistoryOpen(true); },
+          onDelete: view.editable ? async () => {
+            await recycleKnowledgePage(scope.workspaceId, { pageId: scope.pageId });
+            void queryClient.invalidateQueries({ queryKey: knowledgeQueryKeys.pages(scope.workspaceId) });
+            onBack();
+          } : undefined,
+        }}
       />
       {view.readonlyReason ? <ReadonlyBanner reason={view.readonlyReason} level={level} /> : null}
-      <PageCommentsLayer scope={scope} editor={editor} level={level}>
+      <PageCommentsLayer scope={scope} editor={editor} level={level} railOpen={commentsOpen} onRailOpenChange={setCommentsOpen}>
         <DocumentEditorBody editor={editor} before={<DocumentHeading
           title={pageTitle.title}
           editable={view.editable && pageTitle.loaded}

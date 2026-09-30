@@ -5,7 +5,6 @@ import { Extension } from '@tiptap/core';
 import { useEditor } from '@tiptap/react';
 import { history, redo, undo } from '@tiptap/pm/history';
 import { createBlockIdExtension, createKnowledgeExtensions } from '@fouc/shared/knowledge/schema';
-import { Trash } from '@phosphor-icons/react';
 import { applyEditorBlockModules } from '../editor/block-modules';
 import { createSlashPasteExtensions, SlashMenuLayer } from '../editor/commands';
 import { DocumentEditorBody, DocumentEditorFrame, DocumentHeading } from '../editor/editor-layout';
@@ -27,7 +26,7 @@ const localHistory = Extension.create({
   },
 });
 
-export function LocalDocumentEditor({ workspaceId, store, document, collectionName, onChange, onBack, onToggleSidebar, onCreateDocument }: { workspaceId: string; store: ReturnType<typeof createLocalLibraryStore>; document: LocalDocument; collectionName: string; onChange: (patch: Partial<LocalDocument>) => void; onBack: () => void; onToggleSidebar: () => void; onCreateDocument: () => void }) {
+export function LocalDocumentEditor({ workspaceId, store, document, collectionName, onChange, onBack, onToggleSidebar, onCreateDocument }: { workspaceId: string; store: ReturnType<typeof createLocalLibraryStore>; document: LocalDocument; collectionName: string; onChange: (patch: Partial<LocalDocument>) => boolean; onBack: () => void; onToggleSidebar: () => void; onCreateDocument: () => void }) {
   const extensions = useMemo(() => [
     ...applyEditorBlockModules(createKnowledgeExtensions(), {
       localWorkspaceId: workspaceId,
@@ -48,10 +47,9 @@ export function LocalDocumentEditor({ workspaceId, store, document, collectionNa
     onUpdate: ({ editor: current }) => onChange({ body: current.getJSON() }),
   }, [extensions]);
 
-  return <DocumentEditorFrame>
+  return <DocumentEditorFrame appearanceScope={`local:${workspaceId}:${document.id}`}>
     <DocumentEditorHeader
       editor={editor}
-      editable
       collectionName={collectionName}
       title={document.title}
       avatarName="我"
@@ -61,11 +59,7 @@ export function LocalDocumentEditor({ workspaceId, store, document, collectionNa
       onToggleStar={() => onChange({ starred: !document.starred })}
       onCreateDocument={onCreateDocument}
       shareDescription="本机文档仅保存在当前浏览器。你可以复制标题和正文，通过其他应用分享。"
-      menuActions={<button
-        type="button"
-        className="flex w-full items-center gap-2 rounded px-2 py-2 text-left text-xs hover:bg-[var(--raise)]"
-        onClick={() => { onChange({ deleted: true }); onBack(); }}
-      ><Trash size={15} />移至回收站</button>}
+      menuActions={{ target: { workspaceId, knowledgeBaseId: document.baseId, pageId: document.id, source: 'local' }, onDelete: () => { if (!onChange({ deleted: true })) throw new Error('save-failed'); onBack(); } }}
     />
     <DocumentEditorBody editor={editor} before={<DocumentHeading
       title={document.title}

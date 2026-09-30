@@ -16,12 +16,10 @@
 .outlineButton:disabled { opacity: .48; cursor: not-allowed; }
 .moreButton { width: 28px; height: 32px; border-radius: 6px; }
 .header button:focus-visible { outline: 2px solid #0869cf; outline-offset: 2px; }
-.shareMenu, .moreMenu { width: 240px; padding: 8px; border: 1px solid #e2e7ef; border-radius: 9px; background: #fff; box-shadow: 0 12px 30px rgb(25 35 52 / 13%); }
-.shareTitle, .moreHeading { padding: 5px 7px; color: #1d2634; font-size: 13px; font-weight: 650; }
+.shareMenu { width: 240px; padding: 8px; border: 1px solid #e2e7ef; border-radius: 9px; background: #fff; box-shadow: 0 12px 30px rgb(25 35 52 / 13%); }
+.shareTitle { padding: 5px 7px; color: #1d2634; font-size: 13px; font-weight: 650; }
 .shareDescription { padding: 0 7px 8px; color: #718096; font-size: 12px; line-height: 1.5; }
 .shareStatus { padding: 5px 7px; color: #0869cf; font-size: 12px; }
-.moreMenu [role='toolbar'] { padding: 4px 2px; }
-.extraActions { display: grid; gap: 2px; }
 @media (max-width: 700px) { .header { height: 56px; padding: 0 12px; gap: 8px; } .leading { gap: 3px; } .collectionName { max-width: 72px; font-size: 13px; } .divider { padding: 0 2px; } .actions { gap: 4px; } .avatar { display: none; } .outlineButton { padding: 0 7px; font-size: 12px; } .outlineButton svg { width: 15px; } }
 @media (max-width: 540px) { .createLabel { display: none; } .createButton { width: 32px; padding: 0; } }
 @media (max-width: 380px) { .header { padding-inline: 8px; gap: 6px; } .collectionName { max-width: 48px; } .divider { display: none; } }

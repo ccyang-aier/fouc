@@ -22,7 +22,8 @@ const roundTrip = (doc: ProseMirrorNode) => {
 const representativeAttributes: Record<string, Record<string, unknown>> = {
   heading: { level: 4 }, orderedList: { start: 9 }, taskList: { ordered: true, start: 3 }, taskItem: { checked: true },
   callout: { emoji: '⚠️', tone: 'warning' }, codeBlock: { language: 'typescript' }, math: { latex: '\\int_0^1 x^2 dx' },
-  tableCell: { align: 'center', colspan: 2, rowspan: 3, colwidth: [100, 150] }, tableHeader: { align: 'right', colwidth: [240] }, column: { width: 3 },
+  table: { background: '#7e3d3db3' }, tableRow: { background: '#d8e4ea80' },
+  tableCell: { align: 'center', colspan: 2, rowspan: 3, colwidth: [100, 150], background: '#e3dcebb3' }, tableHeader: { align: 'right', colwidth: [240], background: '#7e3d3d00' }, column: { width: 3 },
   image: { src: `asset:${'a'.repeat(64)}`, alt: '架构 [A]', title: '设计', caption: '图 1', mime: 'image/png' },
   video: { src: 'https://example.com/demo.mp4', alt: '演示', title: '项目演示', caption: '评审版', mime: 'video/mp4' },
   audio: { src: 'asset:recording', title: '访谈', caption: '原始素材', mime: 'audio/wav' },

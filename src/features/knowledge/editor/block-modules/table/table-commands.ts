@@ -1,266 +1,187 @@
-/**
- * Table structure commands (E05) as plain ProseMirror commands — no
- * prosemirror-tables dependency. Everything resolves the shared E01 registry
- * node types through the `tableRole` spec metadata the registry preserves, so
- * no second schema knowledge exists here.
- *
- * Structural choices (documented for tests and reviewers):
- * - New cells never preset `blockId`: the E02 plugin mints valid ids on its
- *   repair pass, and preset ids would leak duplicates across copy operations.
- * - Deleting the last row or the last column removes the whole table: the
- *   schema forbids empty tables (`tableRow+` / `(tableCell | tableHeader)+`),
- *   so an honest deletion replaces the husk instead of leaving an invalid one.
- * - Rows/colspans: structural edits keep spanning cells consistent where they
- *   can (a column born inside a span grows it, a column removed from a span
- *   shrinks it); inserting a row clones the current row's column layout with
- *   colspan 1 cells.
- */
-
 import type { Command } from '@tiptap/core';
-import type { Node as ProseMirrorNode, ResolvedPos } from '@tiptap/pm/model';
-import { TextSelection } from '@tiptap/pm/state';
+import { Fragment, type Node as ProseMirrorNode, type ResolvedPos } from '@tiptap/pm/model';
 import type { EditorState, Transaction } from '@tiptap/pm/state';
+import { TextSelection } from '@tiptap/pm/state';
+import {
+  addColumnAfter, addColumnBefore, CellSelection,
+  deleteColumn as removeColumn, deleteRow as removeRow, deleteTable as removeWholeTable,
+  TableMap, toggleHeader, toggleHeaderCell, moveTableColumn, moveTableRow,
+  addRow as insertRowAt, addColumn as insertColumnAt,
+  selectedRect,
+} from '@tiptap/pm/tables';
 
 export type RowWhere = 'above' | 'below';
 export type ColumnWhere = 'left' | 'right';
-
-export interface TableRowHit {
-  node: ProseMirrorNode;
-  /** Document position directly before the row. */
-  pos: number;
-  /** Index of the row within its table. */
-  index: number;
-}
-
-export interface TableCellHit {
-  node: ProseMirrorNode;
-  /** Document position directly before the cell. */
-  pos: number;
-  /** Index of the cell within its row. */
-  index: number;
-  /** Column the cell starts at — preceding colspans each count as one column. */
-  column: number;
-}
-
+export type TableCommand = (state: EditorState, dispatch?: (tr: Transaction) => void) => boolean;
 export interface TableHit {
-  table: ProseMirrorNode;
-  /** Document position directly before the table. */
-  pos: number;
-  /** The row around the position, when the position is inside a row. */
-  row: TableRowHit | null;
-  /** The cell around the position, when the position is inside a cell. */
-  cell: TableCellHit | null;
+  table: ProseMirrorNode; pos: number;
+  row: { node: ProseMirrorNode; pos: number; index: number } | null;
+  cell: { node: ProseMirrorNode; pos: number; index: number; column: number } | null;
 }
 
-const role = (node: ProseMirrorNode): string | undefined => node.type.spec.tableRole;
-
-function colspanOf(node: ProseMirrorNode): number {
-  return node.attrs.colspan as number;
-}
-
-/** Sum of colspans of the cells before `index` — the cell's start column. */
-function columnOf(row: ProseMirrorNode, index: number): number {
-  let column = 0;
-  for (let i = 0; i < index; i += 1) column += colspanOf(row.child(i));
-  return column;
-}
-
-/**
- * Resolve the table around `$pos` plus the row and cell around it (when any).
- * Positions are document positions directly before the respective node; tests
- * use them to locate structure without duplicating the walk.
- */
 export function tableNodeAt($pos: ResolvedPos): TableHit | null {
-  for (let depth = $pos.depth; depth > 0; depth -= 1) {
+  for (let depth = $pos.depth; depth > 0; depth--) {
     const table = $pos.node(depth);
-    if (role(table) !== 'table') continue;
-    const hit: TableHit = { table, pos: $pos.before(depth), row: null, cell: null };
-    for (let inner = $pos.depth; inner > depth; inner -= 1) {
+    if (table.type.spec.tableRole !== 'table') continue;
+    const pos = $pos.before(depth);
+    const hit: TableHit = { table, pos, row: null, cell: null };
+    for (let inner = depth + 1; inner <= $pos.depth; inner++) {
       const node = $pos.node(inner);
-      // `$pos.index(d)` indexes the content of the node AT depth d, so the
-      // node's own index among its siblings is `index(d - 1)`.
-      if (!hit.row && role(node) === 'row') hit.row = { node, pos: $pos.before(inner), index: $pos.index(inner - 1) };
-      const cellRole = role(node);
-      if (!hit.cell && (cellRole === 'cell' || cellRole === 'header_cell')) {
-        hit.cell = { node, pos: $pos.before(inner), index: $pos.index(inner - 1), column: 0 };
+      if (node.type.spec.tableRole === 'row') hit.row = { node, pos: $pos.before(inner), index: $pos.index(inner - 1) };
+      if (['cell', 'header_cell'].includes(node.type.spec.tableRole ?? '')) {
+        const cellPos = $pos.before(inner);
+        hit.cell = { node, pos: cellPos, index: $pos.index(inner - 1), column: TableMap.get(table).findCell(cellPos - pos - 1).left };
       }
     }
-    if (hit.row && hit.cell) hit.cell.column = columnOf(hit.row.node, hit.cell.index);
     return hit;
   }
   return null;
 }
 
-function createCell(state: EditorState, header: boolean, align: string | null): ProseMirrorNode {
-  const type = header ? state.schema.nodes.tableHeader : state.schema.nodes.tableCell;
-  return type.createAndFill(
-    { align, colspan: 1, rowspan: 1, colwidth: null },
-    state.schema.nodes.paragraph.create(),
-  )!;
-}
-
-/** The row is a header row when its first cell is — how new column cells pick their type. */
-function isHeaderRow(row: ProseMirrorNode): boolean {
-  return role(row.child(0)) === 'header_cell';
-}
-
-/** Insert a row above/below the row around the selection, cloning its column layout. */
-export function addRow(state: EditorState, dispatch?: (tr: Transaction) => void, where: RowWhere = 'below'): boolean {
+export const addRow = (state: EditorState, dispatch?: (tr: Transaction) => void, where: RowWhere = 'below') => {
   const hit = tableNodeAt(state.selection.$from);
   if (!hit?.row) return false;
-  const { schema } = state;
-  const cells: ProseMirrorNode[] = [];
-  hit.row.node.forEach((cell) => {
-    const header = role(cell) === 'header_cell';
-    // colspan cells split into colspan single cells: the row keeps its column
-    // count while the new cells stay minimal (empty paragraph, align kept).
-    for (let n = 0; n < colspanOf(cell); n += 1) cells.push(createCell(state, header, cell.attrs.align));
-  });
-  if (!cells.length) return false;
+  const rect = selectedRect(state);
+  return insertTableAxis(state, dispatch, hit.pos, 'row', where === 'above' ? rect.top : rect.bottom);
+};
+export const addColumn = (state: EditorState, dispatch?: (tr: Transaction) => void, where: ColumnWhere = 'right') => (where === 'left' ? addColumnBefore : addColumnAfter)(state, dispatch);
+export const deleteRow: TableCommand = (state, dispatch) => {
+  if (!tableNodeAt(state.selection.$from)) return false;
+  const rect = selectedRect(state);
+  return rect.top === 0 && rect.bottom === rect.map.height ? removeWholeTable(state, dispatch) : removeRow(state, dispatch);
+};
+export const deleteColumn: TableCommand = (state, dispatch) => {
+  if (!tableNodeAt(state.selection.$from)) return false;
+  const rect = selectedRect(state);
+  return rect.left === 0 && rect.right === rect.map.width ? removeWholeTable(state, dispatch) : removeColumn(state, dispatch);
+};
+export const deleteTable: TableCommand = removeWholeTable;
+export const toggleHeaderRow: TableCommand = toggleHeader('row');
+
+/** Rail selections cover complete logical rows/columns, including spanning cells. */
+export function selectTableAxis(state: EditorState, pos: number, axis: 'row' | 'column' | 'table', index: number, end = index): Transaction | null {
+  const table = state.doc.nodeAt(pos);
+  if (table?.type.spec.tableRole !== 'table') return null;
+  const map = TableMap.get(table);
+  const start = pos + 1;
+  if (!map.width || !map.height) return null;
+  const first = axis === 'row' ? map.map[Math.min(index, map.height - 1) * map.width] : axis === 'column' ? map.map[Math.min(index, map.width - 1)] : map.map[0];
+  const last = axis === 'row' ? map.map[Math.min(end, map.height - 1) * map.width + map.width - 1] : axis === 'column' ? map.map[(map.height - 1) * map.width + Math.min(end, map.width - 1)] : map.map.at(-1)!;
+  return state.tr.setSelection(CellSelection.create(state.doc, start + first, start + last));
+}
+
+export const toggleSelectedHeader: TableCommand = toggleHeaderCell;
+
+export function toggleAxisHeader(state: EditorState, dispatch: ((tr: Transaction) => void) | undefined, axis: 'row' | 'column'): boolean {
+  if (axis === 'row') return toggleHeaderRow(state, dispatch);
+  const hit = tableNodeAt(state.selection.$from);
+  if (!hit?.cell) return false;
+  const rect = selectedRect(state);
+  const fixedHeader = hasHeaderRow(hit.table);
+  const positions = rect.map.cellsInRect({ top: fixedHeader ? 1 : 0, bottom: rect.map.height, left: rect.left, right: rect.right });
+  if (!positions.length) return false;
+  const enable = positions.some(pos => hit.table.nodeAt(pos)!.type.spec.tableRole === 'cell');
   if (dispatch) {
     const tr = state.tr;
-    const insertAt = where === 'above' ? hit.row.pos : hit.row.pos + hit.row.node.nodeSize;
-    tr.insert(insertAt, schema.nodes.tableRow.createAndFill(null, cells)!);
-    // Caret lands in the new row's first cell (row → cell → paragraph).
-    tr.setSelection(TextSelection.near(tr.doc.resolve(insertAt + 2)));
-    tr.scrollIntoView();
+    for (const relative of positions) {
+      const cell = hit.table.nodeAt(relative)!;
+      tr.setNodeMarkup(hit.pos + 1 + relative, enable ? state.schema.nodes.tableHeader : state.schema.nodes.tableCell, cell.attrs);
+    }
     dispatch(tr);
   }
   return true;
 }
 
-/** Insert a column left/right of the cell around the selection, in every row. */
-export function addColumn(state: EditorState, dispatch?: (tr: Transaction) => void, where: ColumnWhere = 'right'): boolean {
-  const hit = tableNodeAt(state.selection.$from);
-  if (!hit?.cell) return false;
-  const target = where === 'left' ? hit.cell.column : hit.cell.column + colspanOf(hit.cell.node);
+export function hasHeaderRow(table: ProseMirrorNode): boolean {
+  return !!table.firstChild?.childCount && Array.from({ length: table.firstChild.childCount }, (_, i) => table.firstChild!.child(i)).every(cell => cell.type.spec.tableRole === 'header_cell');
+}
+
+export function insertTableAxis(state: EditorState, dispatch: ((tr: Transaction) => void) | undefined, pos: number, axis: 'row' | 'column', index: number): boolean {
+  const table = state.doc.nodeAt(pos);
+  if (table?.type.spec.tableRole !== 'table') return false;
+  const map = TableMap.get(table);
+  if (index < 0 || index > (axis === 'row' ? map.height : map.width)) return false;
+  // Inserting at the top of a headed table adds a body row below the pinned header.
+  if (axis === 'row' && index === 0 && hasHeaderRow(table)) index = 1;
   if (dispatch) {
-    const tr = state.tr;
-    hit.table.forEach((row, rowOffset) => {
-      const rowPos = hit.pos + 1 + rowOffset;
-      const header = isHeaderRow(row);
-      let column = 0;
-      let placed = false;
-      row.forEach((cell, cellOffset) => {
-        if (placed) return;
-        const colspan = colspanOf(cell);
-        if (column === target) {
-          tr.insert(tr.mapping.map(rowPos + 1 + cellOffset), createCell(state, header, null));
-          placed = true;
-        } else if (target > column && target < column + colspan) {
-          // The new column is born inside a spanning cell: the span grows.
-          tr.setNodeMarkup(tr.mapping.map(rowPos + 1 + cellOffset), undefined, { ...cell.attrs, colspan: colspan + 1 });
-          placed = true;
-        }
-        column += colspan;
-      });
-      if (!placed) {
-        // Shorter row: append at the end so it also gains the column.
-        tr.insert(tr.mapping.map(rowPos + row.nodeSize - 1), createCell(state, header, null));
+    const rect = { table, map, tableStart: pos + 1, top: 0, left: 0, bottom: map.height, right: map.width };
+    const tr = axis === 'row' ? insertRowAt(state.tr, rect, index) : insertColumnAt(state.tr, rect, index);
+    const nextMap = TableMap.get(tr.doc.nodeAt(pos)!);
+    const source = tableNodeAt(state.selection.$from);
+    if (axis === 'row') {
+      const sourceRow = source?.pos === pos ? source.row?.index ?? Math.max(0, index - 1) : Math.max(0, index - 1);
+      for (const relative of new Set(nextMap.map.slice(index * nextMap.width, (index + 1) * nextMap.width))) {
+        const cellRect = nextMap.findCell(relative);
+        if (cellRect.top !== index) continue;
+        const original = table.nodeAt(map.map[Math.min(sourceRow, map.height - 1) * map.width + cellRect.left]);
+        const created = tr.doc.nodeAt(pos + 1 + relative)!;
+        tr.setNodeMarkup(pos + 1 + relative, undefined, { ...created.attrs, align: original?.attrs.align ?? null, colwidth: original?.attrs.colwidth ?? null });
       }
-    });
-    tr.scrollIntoView();
+    }
+    const cell = nextMap.map[axis === 'row' ? index * nextMap.width : index];
+    tr.setSelection(TextSelection.near(tr.doc.resolve(pos + 2 + cell))).scrollIntoView();
     dispatch(tr);
   }
   return true;
 }
 
-/** Convert the first row's cells tableHeader ↔ tableCell, keeping content and attrs. */
-export function toggleHeaderRow(state: EditorState, dispatch?: (tr: Transaction) => void): boolean {
+export function moveTableAxis(state: EditorState, dispatch: ((tr: Transaction) => void) | undefined, axis: 'row' | 'column', direction: -1 | 1): boolean {
   const hit = tableNodeAt(state.selection.$from);
-  if (!hit) return false;
-  const first = hit.table.firstChild;
-  if (!first) return false;
-  const { schema } = state;
-  const toHeader = !isHeaderRow(first);
-  if (dispatch) {
-    const tr = state.tr;
-    const rowPos = hit.pos + 1;
-    let changed = false;
-    first.forEach((cell, offset) => {
-      const target = toHeader ? schema.nodes.tableHeader : schema.nodes.tableCell;
-      if (cell.type === target) return;
-      tr.setNodeMarkup(rowPos + 1 + offset, target, cell.attrs);
-      changed = true;
-    });
-    if (changed) dispatch(tr);
-  }
-  return true;
-}
-
-/** Delete the whole table around the selection. */
-export function deleteTable(state: EditorState, dispatch?: (tr: Transaction) => void): boolean {
-  const hit = tableNodeAt(state.selection.$from);
-  if (!hit) return false;
-  if (dispatch) {
-    const tr = state.tr;
-    tr.delete(hit.pos, hit.pos + hit.table.nodeSize);
-    if (!tr.doc.content.size) tr.insert(0, state.schema.nodes.paragraph.create());
-    tr.setSelection(TextSelection.near(tr.doc.resolve(Math.min(hit.pos, tr.doc.content.size))));
-    tr.scrollIntoView();
+  if (!hit?.cell || !hit.row) return false;
+  const map = TableMap.get(hit.table);
+  const from = axis === 'row' ? hit.row.index : hit.cell.column;
+  const to = from + direction;
+  if (to < 0 || to >= (axis === 'row' ? map.height : map.width)) return false;
+  if (axis === 'row' && hasHeaderRow(hit.table) && (from === 0 || to === 0)) return false;
+  if (axis === 'column') return moveTableColumn({ from, to, select: true })(state, dispatch);
+  const range = (index: number) => {
+    let top = index, bottom = index + 1;
+    for (let row = top; row < bottom; row++) {
+      for (let col = 0; col < map.width; col++) {
+        const rect = map.findCell(map.map[row * map.width + col]);
+        if (rect.top < top) { top = rect.top; row = top - 1; }
+        bottom = Math.max(bottom, rect.bottom);
+      }
+    }
+    return Array.from({ length: bottom - top }, (_, i) => top + i);
+  };
+  const origin = range(from), destination = range(to);
+  if (origin.includes(to) || hasHeaderRow(hit.table) && (origin.includes(0) || destination.includes(0))) return false;
+  const order = Array.from({ length: map.height }, (_, i) => i);
+  const extracted = order.splice(origin[0], origin.length);
+  const target = from > to ? destination[0] : destination.at(-1)! - (extracted.length % 2 === 0 ? 1 : 0);
+  order.splice(target, 0, ...extracted);
+  return moveTableRow({ from, to, select: true })(state, dispatch ? tr => {
+    const next = tr.doc.nodeAt(hit.pos)!;
+    next.forEach((row, offset, index) => tr.setNodeMarkup(hit.pos + 1 + offset, undefined, hit.table.child(order[index]).attrs));
     dispatch(tr);
-  }
-  return true;
+  } : undefined);
 }
 
-/** Delete the row around the selection; the last row takes the table with it. */
-export function deleteRow(state: EditorState, dispatch?: (tr: Transaction) => void): boolean {
-  const hit = tableNodeAt(state.selection.$from);
-  if (!hit?.row) return false;
-  if (hit.table.childCount <= 1) return deleteTable(state, dispatch);
-  if (dispatch) {
-    const tr = state.tr;
-    tr.delete(hit.row.pos, hit.row.pos + hit.row.node.nodeSize);
-    tr.setSelection(TextSelection.near(tr.doc.resolve(tr.mapping.map(hit.row.pos, -1))));
-    tr.scrollIntoView();
-    dispatch(tr);
-  }
-  return true;
-}
-
-/** Delete the column of the cell around the selection; the last column takes the table with it. */
-export function deleteColumn(state: EditorState, dispatch?: (tr: Transaction) => void): boolean {
+/** Stable natural ordering; keep the header and every row's identities/content intact. */
+export function sortTableColumn(state: EditorState, dispatch: ((tr: Transaction) => void) | undefined, descending: boolean): boolean {
   const hit = tableNodeAt(state.selection.$from);
   if (!hit?.cell) return false;
-  const target = hit.cell.column;
-  let width = 0;
-  hit.table.forEach((row) => {
-    let columns = 0;
-    row.forEach((cell) => { columns += colspanOf(cell); });
-    width = Math.max(width, columns);
-  });
-  if (width <= 1) return deleteTable(state, dispatch);
+  const map = TableMap.get(hit.table);
+  let spans = false;
+  hit.table.forEach(row => row.forEach(cell => { if (cell.attrs.rowspan > 1) spans = true; }));
+  if (spans) return false;
+  const rows: ProseMirrorNode[] = [];
+  hit.table.forEach(row => rows.push(row));
+  const texts = new Map<ProseMirrorNode, string>();
+  hit.table.forEach((row, _offset, index) => texts.set(row, hit.table.nodeAt(map.map[index * map.width + hit.cell!.column])!.textContent));
+  const header = hasHeaderRow(hit.table) ? rows.shift() : undefined;
+  const collator = new Intl.Collator('zh-CN', { numeric: true, sensitivity: 'base' });
+  rows.sort((a, b) => collator.compare(texts.get(a)!, texts.get(b)!) * (descending ? -1 : 1));
+  if (header) rows.unshift(header);
   if (dispatch) {
-    const tr = state.tr;
-    hit.table.forEach((row, rowOffset) => {
-      const rowPos = hit.pos + 1 + rowOffset;
-      let column = 0;
-      row.forEach((cell, cellOffset) => {
-        const colspan = colspanOf(cell);
-        if (column <= target && target < column + colspan) {
-          if (colspan > 1) {
-            // Removing a column a span covers: shrink the span, keep the cell.
-            tr.setNodeMarkup(tr.mapping.map(rowPos + 1 + cellOffset), undefined, { ...cell.attrs, colspan: colspan - 1 });
-          } else if (row.childCount <= 1) {
-            // The row would end up with zero cells, which the schema forbids;
-            // at least one other row keeps cells (width > 1), so remove the row.
-            tr.delete(tr.mapping.map(rowPos), tr.mapping.map(rowPos + row.nodeSize));
-          } else {
-            const from = tr.mapping.map(rowPos + 1 + cellOffset);
-            tr.delete(from, from + cell.nodeSize);
-          }
-        }
-        column += colspan;
-      });
-    });
-    tr.setSelection(TextSelection.near(tr.doc.resolve(tr.mapping.map(hit.cell.pos, -1))));
-    tr.scrollIntoView();
+    const tr = state.tr.replaceWith(hit.pos, hit.pos + hit.table.nodeSize, hit.table.copy(Fragment.fromArray(rows)));
+    tr.setSelection(TextSelection.near(tr.doc.resolve(hit.pos + 3)));
     dispatch(tr);
   }
   return true;
 }
 
-/** Tiptap `Command` adapters so toolbars/tests run these via `editor.commands.command(...)`. */
 export const insertRowAbove: Command = ({ state, dispatch }) => addRow(state, dispatch, 'above');
 export const insertRowBelow: Command = ({ state, dispatch }) => addRow(state, dispatch, 'below');
 export const insertColumnLeft: Command = ({ state, dispatch }) => addColumn(state, dispatch, 'left');

@@ -27,6 +27,7 @@ import { ChatCircleDots, ChatsCircle } from '@phosphor-icons/react';
 import { motion } from 'motion/react';
 import type { Editor } from '@tiptap/react';
 import type { PageScope } from '@fouc/shared/knowledge/contracts';
+import { TextSelection } from '@tiptap/pm/state';
 import { isKnowledgeDataError } from '../data/errors';
 import { useKnowledgeAccessQuery } from '../data/hooks';
 import {
@@ -126,7 +127,7 @@ export function PageComments({ scope, editor, canComment }: PageCommentsProps) {
         return;
       }
       const { from, to, empty } = editor.state.selection;
-      if (empty) {
+      if (empty || !(editor.state.selection instanceof TextSelection)) {
         setSelectionAt(null);
         return;
       }

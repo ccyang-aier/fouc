@@ -45,7 +45,7 @@ let window: Window;
 beforeAll(() => {
   window = new Window({ url: 'https://knowledge.fouc.test/page' });
   const globals = window as unknown as Record<string, unknown>;
-  for (const key of ['document', 'DOMParser', 'MutationObserver', 'Range', 'getSelection', 'HTMLElement', 'Element', 'Node', 'Text', 'Comment', 'customElements', 'requestAnimationFrame']) {
+  for (const key of ['document', 'DOMParser', 'MutationObserver', 'ResizeObserver', 'Range', 'getSelection', 'HTMLElement', 'Element', 'Node', 'Text', 'Comment', 'customElements', 'requestAnimationFrame', 'cancelAnimationFrame']) {
     if (globals[key] !== undefined) (globalThis as Record<string, unknown>)[key] = globals[key];
   }
   (globalThis as Record<string, unknown>).window = window;
@@ -260,7 +260,7 @@ describe('columns NodeView', () => {
 });
 
 describe('table NodeView', () => {
-  testWithTimeout('renders real tr/td, shows the toolbar with the selection inside, and the commands reshape the DOM', async () => {
+  testWithTimeout('renders real tr/td and row/column controls, and the commands reshape the DOM', async () => {
     const { editor, dispose } = mountEditor();
     try {
       editor.commands.insertContent(tableJson());
@@ -273,12 +273,14 @@ describe('table NodeView', () => {
 
       caretInText(editor, 'R1C1');
       await settle();
-      const toolbar = editor.view.dom.querySelector('div[role="toolbar"]');
-      expect(toolbar).not.toBeNull();
-      expect(toolbar!.getAttribute('data-visible')).toBe('true');
-      expect(toolbar!.querySelector('button[aria-label="上方插入行"]')).not.toBeNull();
-      expect(toolbar!.querySelector('button[aria-label="表格样式"]')).not.toBeNull();
-      expect(toolbar!.querySelector('button[aria-label="删除表格"]')).not.toBeNull();
+      expect(editor.view.dom.querySelector('[aria-label="表格行列控制"]')).toBeNull();
+      tableEl!.dispatchEvent(new window.PointerEvent('pointerdown', { bubbles: true }) as unknown as Event);
+      await settle();
+      const controls = editor.view.dom.querySelector('[aria-label="表格行列控制"]');
+      expect(controls).not.toBeNull();
+      expect(controls!.querySelector('button[aria-label="第 1 行操作"]')).not.toBeNull();
+      expect(controls!.querySelector('button[aria-label="第 1 列操作"]')).not.toBeNull();
+      expect(controls!.querySelector('button[aria-label="选择整个表格"]')).not.toBeNull();
 
       editor.commands.command(insertRowBelow);
       await settle();
@@ -296,6 +298,9 @@ describe('table NodeView', () => {
       editor.commands.command(removeTableRow);
       await settle();
       expect(tableEl!.querySelectorAll('tr')).toHaveLength(2);
+      window.document.body.dispatchEvent(new window.PointerEvent('pointerdown', { bubbles: true }));
+      await settle();
+      expect(editor.view.dom.querySelector('[aria-label="表格行列控制"]')).toBeNull();
     } finally {
       dispose();
     }

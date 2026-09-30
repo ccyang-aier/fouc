@@ -731,7 +731,7 @@
         "E03"
       ],
       "status": "accepted",
-      "deliverables": "src/features/knowledge/editor/blocks/",
+      "deliverables": "src/features/knowledge/editor/block-modules/",
       "acceptance": "嵌套编辑/增删/拖拽/键盘不损坏 blockId；表格编辑、分栏自适应、callout 风格精致；共享 schema 一致",
       "evidence": [
         {
@@ -743,6 +743,11 @@
           "summary": "整仓 bunx tsc --noEmit --incremental false 0 错误；blocks 目录 eslint clean",
           "command": "bunx tsc --noEmit --incremental false && bunx eslint src/features/knowledge/editor/blocks",
           "verifiedAt": "2026-09-27"
+        },
+        {
+          "summary": "表格点击后显示 12px 行列控制条、外部点击收起，列宽指示线 1.5px；多级紧凑菜单、范围拖选回退、合并拆分、自然排序、表头固定、列宽拖拽完成。莫兰迪浅色预置与二维自定义色板支持色相、透明度、HEX 和复制；CSV 实际下载验证中文 BOM、引号及逗号转义。表格/NodeView/评论 56 项、schema/Markdown 147 项回归通过。Web 文档验证表头文字、样式、排序、合并拆分、独立列宽、撤销/重做及重开；并发编辑内容保留，后续色板验证使用不连接文档数据的临时页面，已清理。390px 窗口的菜单和色板无越界；最终浏览器无错误。Web 构建、前端/共享类型、lint、文档和架构验证通过；Web/device/server 及数据库、Redis、MinIO 持续运行，未执行 Tauri 构建。",
+          "command": "bun test --isolate src/features/knowledge/editor/block-modules/table src/features/knowledge/editor/block-modules/blocks.instance.test.ts src/features/knowledge/comments/comments-plugin.instance.test.ts; bun test --isolate shared/src/knowledge/schema shared/src/knowledge/markdown; pnpm typecheck; pnpm shared:typecheck; pnpm exec eslint src/features/knowledge/editor/block-modules/table src/features/knowledge/editor/block-modules/blocks.instance.test.ts src/features/knowledge/comments/comments-controller.tsx --max-warnings=0; pnpm architecture:verify; pnpm docs:verify; pnpm knowledge:verify; pnpm build; pnpm dev:all; browser localhost:3000 isolated validation",
+          "verifiedAt": "2026-09-30"
         }
       ]
     },

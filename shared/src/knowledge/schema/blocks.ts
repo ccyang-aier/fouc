@@ -14,8 +14,8 @@ const textBlock = (tag: string): NodeSpec => ({
 const colorAttribute = {
   default: null,
   validate(value: unknown) {
-    if (value !== null && (typeof value !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(value))) {
-      throw new TypeError('Expected a six-digit hex color or null');
+    if (value !== null && (typeof value !== 'string' || !/^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?$/.test(value))) {
+      throw new TypeError('Expected a six- or eight-digit hex color or null');
     }
   },
 };
@@ -179,7 +179,7 @@ export const KNOWLEDGE_BLOCKS: readonly BlockDefinition[] = Object.freeze([
     slash: { title: '表格', keywords: ['table', '表格'], group: 'layout' },
   }),
   defineBlock({
-    name: 'tableRow', schema: { group: '', content: '(tableCell | tableHeader)+', tableRole: 'row', attrs: { background: colorAttribute }, parseDOM: [{ tag: 'tr', getAttrs: (element) => ({ background: element.getAttribute('data-background') }) }], toDOM: (node) => ['tr', { 'data-background': node.attrs.background, style: node.attrs.background ? `background-color:${node.attrs.background}` : null }, 0] },
+    name: 'tableRow', schema: { group: '', content: '(tableCell | tableHeader)*', tableRole: 'row', attrs: { background: colorAttribute }, parseDOM: [{ tag: 'tr', getAttrs: (element) => ({ background: element.getAttribute('data-background') }) }], toDOM: (node) => ['tr', { 'data-background': node.attrs.background, style: node.attrs.background ? `background-color:${node.attrs.background}` : null }, 0] },
     markdown: { fromMd: { type: 'tableRow' } }, index: { mode: 'skip' },
   }),
   ...(['tableCell', 'tableHeader'] as const).map((name) => defineBlock({

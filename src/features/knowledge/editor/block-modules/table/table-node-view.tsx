@@ -2,136 +2,175 @@
 
 import type { CSSProperties, FC, MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import type { EditorState, Transaction } from '@tiptap/pm/state';
+import { CellSelection, columnResizingPluginKey, selectedRect } from '@tiptap/pm/tables';
 import { TextSelection } from '@tiptap/pm/state';
-import { Columns, ColumnsPlusLeft, ColumnsPlusRight, DotsThree, PaintBucket, Rows, RowsPlusBottom, RowsPlusTop, TextB, Trash } from '@phosphor-icons/react';
-import type { Icon } from '@phosphor-icons/react';
+import { Plus } from '@phosphor-icons/react';
 import type { NodeViewProps } from '@tiptap/react';
-import { NodeViewContent, NodeViewWrapper } from '@tiptap/react';
-import { addColumn, addRow, deleteColumn, deleteRow, deleteTable, tableNodeAt, toggleHeaderRow } from './table-commands';
-import type { TableStyleTarget } from './table-style';
-import { TableStyleMenu } from './table-style-menu';
+import { NodeViewContent, NodeViewWrapper, useEditorState } from '@tiptap/react';
+import { insertTableAxis, selectTableAxis, tableNodeAt, type TableCommand } from './table-commands';
+import { TableStyleMenu, type TableMenuAnchor } from './table-style-menu';
+import { useTableGeometry } from './use-table-geometry';
 import styles from './table.module.css';
 
-type TableCommand = (state: EditorState, dispatch?: (tr: Transaction) => void) => boolean;
-
-interface TableAction { label: string; icon: Icon; command: TableCommand; danger?: boolean }
-
-const STRUCTURE_ACTIONS: TableAction[] = [
-  { label: '上方插入行', icon: RowsPlusTop, command: (state, dispatch) => addRow(state, dispatch, 'above') },
-  { label: '下方插入行', icon: RowsPlusBottom, command: (state, dispatch) => addRow(state, dispatch, 'below') },
-  { label: '左侧插入列', icon: ColumnsPlusLeft, command: (state, dispatch) => addColumn(state, dispatch, 'left') },
-  { label: '右侧插入列', icon: ColumnsPlusRight, command: (state, dispatch) => addColumn(state, dispatch, 'right') },
-  { label: '切换表头行', icon: TextB, command: (state, dispatch) => toggleHeaderRow(state, dispatch) },
-];
-const DELETE_ACTIONS: TableAction[] = [
-  { label: '删除行', icon: Rows, command: (state, dispatch) => deleteRow(state, dispatch), danger: true },
-  { label: '删除列', icon: Columns, command: (state, dispatch) => deleteColumn(state, dispatch), danger: true },
-  { label: '删除表格', icon: Trash, command: (state, dispatch) => deleteTable(state, dispatch), danger: true },
-];
-
 const TableContent = NodeViewContent as unknown as FC<{ as: 'table'; className?: string; 'data-variant'?: string; style?: CSSProperties }>;
+type Axis = 'row' | 'column';
+const uniform = <T,>(values: T[]): T | undefined => values.every(value => value === values[0]) ? values[0] : undefined;
 
-interface HoverCell { top: number; left: number; width: number; height: number }
-
-export function TableNodeView({ node, editor, getPos, selected, HTMLAttributes }: NodeViewProps) {
-  const [hovered, setHovered] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [menuAbove, setMenuAbove] = useState(false);
-  const [target, setTarget] = useState<TableStyleTarget>('cell');
-  const [hoverCell, setHoverCell] = useState<HoverCell | null>(null);
-  const hoveredCellRef = useRef<HTMLTableCellElement | null>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-
+export function TableNodeView({ node, editor, getPos, HTMLAttributes }: NodeViewProps) {
+  const shellRef = useRef<HTMLDivElement>(null);
+  const geometry = useTableGeometry(shellRef, node);
+  const [menu, setMenu] = useState<TableMenuAnchor | null>(null);
+  const [active, setActive] = useState(false);
+  const [insertion, setInsertion] = useState<{ axis: Axis; index: number } | null>(null);
+  const dragRef = useRef(false);
+  const stopDrag = useRef<(() => void) | null>(null);
+  useEffect(() => () => stopDrag.current?.(), []);
   useEffect(() => {
-    if (!menuOpen) return;
+    const ownerDocument = shellRef.current!.ownerDocument;
     const close = (event: PointerEvent) => {
-      if (!menuRef.current?.contains(event.target as Node)) setMenuOpen(false);
+      const target = event.target;
+      if (!(target instanceof Element) || shellRef.current?.parentElement?.contains(target) || target.closest('[data-fouc-table-menu]')?.getAttribute('data-fouc-table-menu') === node.attrs.blockId) return;
+      setActive(false);
+      setMenu(null);
+      setInsertion(null);
     };
-    document.addEventListener('pointerdown', close);
-    return () => document.removeEventListener('pointerdown', close);
-  }, [menuOpen]);
+    ownerDocument.addEventListener('pointerdown', close);
+    return () => ownerDocument.removeEventListener('pointerdown', close);
+  }, [node.attrs.blockId]);
+  const selectionAnchor = useRef<{ axis: Axis; index: number } | null>(null);
+  const selection = useEditorState({ editor, selector: ({ editor: current }) => {
+    const pos = getPos();
+    const hit = tableNodeAt(current.state.selection.$from);
+    if (!hit || hit.pos !== pos) return null;
+    const rect = selectedRect(current.state);
+    const selectedCells = rect.map.cellsInRect(rect).map(pos => hit.table.nodeAt(pos)!);
+    return {
+      ...rect, map: undefined, table: undefined,
+      cells: current.state.selection instanceof CellSelection,
+      rowsSelected: current.state.selection instanceof CellSelection && current.state.selection.isRowSelection(),
+      columnsSelected: current.state.selection instanceof CellSelection && current.state.selection.isColSelection(),
+      row: hit.row?.index,
+      align: uniform(selectedCells.map(cell => cell.attrs.align ?? 'left')),
+      background: uniform(selectedCells.map(cell => cell.attrs.background ?? null)),
+      rowBackground: uniform(Array.from({ length: rect.bottom - rect.top }, (_, index) => hit.table.child(rect.top + index).attrs.background ?? null)),
+    };
+  } });
 
-  const focusCell = (cell: HTMLTableCellElement) => {
-    try {
-      const pos = editor.view.posAtDOM(cell, 0);
-      editor.view.dispatch(editor.state.tr.setSelection(TextSelection.near(editor.state.doc.resolve(pos))));
-    } catch { /* Detached cells can disappear during a collaborative row edit. */ }
-  };
-
-  const run = (command: TableCommand) => {
+  const select = (axis: Axis | 'table', index: number, end = index) => {
     const pos = getPos();
     if (typeof pos !== 'number') return;
-    const { from, to } = editor.state.selection;
-    if (from < pos || to > pos + node.nodeSize) editor.commands.setTextSelection(pos + 3);
-    editor.chain().focus().command(({ state, dispatch }) => command(state, dispatch)).run();
+    const tr = selectTableAxis(editor.state, pos, axis, index, end);
+    if (tr) editor.view.dispatch(tr);
+  };
+  const run = (command: TableCommand) => {
+    if (!editor.isEditable) return;
+    editor.commands.command(({ state, dispatch }) => command(state, dispatch));
+  };
+  const clearResizeHover = () => {
+    const resize = columnResizingPluginKey.getState(editor.state);
+    if (resize && resize.activeHandle >= 0 && !resize.dragging) editor.view.dispatch(editor.state.tr.setMeta(columnResizingPluginKey, { setHandle: -1 }));
+  };
+  const open = (axis: Axis | 'table', index: number, extend = false) => {
+    if (!geometry) return;
+    if (!extend || !selection?.cells) select(axis, index);
+    setInsertion(null);
+    setMenu({
+      target: axis,
+      side: axis === 'row' ? 'left' : 'top',
+      style: axis === 'row'
+        ? { left: geometry.viewportLeft - 17, top: geometry.top + geometry.rows[index], width: 12, height: geometry.rows[index + 1] - geometry.rows[index] }
+        : axis === 'column'
+          ? { left: geometry.left + geometry.columns[index], top: geometry.top - 17, width: geometry.columns[index + 1] - geometry.columns[index], height: 12 }
+          : { left: geometry.viewportLeft - 18, top: geometry.top - 18, width: 14, height: 14 },
+    });
+  };
+  const startDrag = (event: ReactPointerEvent<HTMLButtonElement>, axis: Axis, index: number) => {
+    if (event.button !== 0 || !geometry) return;
+    event.preventDefault();
+    stopDrag.current?.();
+    setMenu(null);
+    setInsertion(null);
+    dragRef.current = false;
+    const anchor = event.shiftKey && selectionAnchor.current?.axis === axis ? selectionAnchor.current.index : index;
+    selectionAnchor.current = { axis, index: anchor };
+    select(axis, anchor, index);
+    const rootBounds = shellRef.current!.parentElement!.getBoundingClientRect();
+    let currentIndex = index;
+    const move = (event: PointerEvent) => {
+      const coordinate = axis === 'column' ? event.clientX - rootBounds.left - geometry.left : event.clientY - rootBounds.top - geometry.top;
+      const edges = axis === 'column' ? geometry.columns : geometry.rows;
+      const next = coordinate >= edges.at(-1)! ? edges.length - 2 : Math.max(0, edges.findIndex((edge, i) => coordinate >= edge && coordinate < edges[i + 1]));
+      if (next !== currentIndex) { currentIndex = next; dragRef.current = true; select(axis, anchor, next); }
+    };
+    const ownerDocument = shellRef.current!.ownerDocument;
+    const end = () => {
+      ownerDocument.removeEventListener('pointermove', move);
+      ownerDocument.removeEventListener('pointerup', end);
+      ownerDocument.removeEventListener('pointercancel', end);
+      stopDrag.current = null;
+    };
+    stopDrag.current = end;
+    ownerDocument.addEventListener('pointermove', move);
+    ownerDocument.addEventListener('pointerup', end, { once: true });
+    ownerDocument.addEventListener('pointercancel', end, { once: true });
+  };
+  const insert = (axis: Axis, index: number) => {
+    const pos = getPos();
+    if (typeof pos !== 'number') return;
+    setInsertion(null);
+    setMenu(null);
+    run((state, dispatch) => insertTableAxis(state, dispatch, pos, axis, index));
+    editor.view.focus();
   };
 
-  const onPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const hit = event.target instanceof Element ? event.target.closest('td, th') : null;
-    if (!(hit instanceof HTMLTableCellElement) || hoveredCellRef.current === hit) return;
-    hoveredCellRef.current = hit;
-    const cell = hit.getBoundingClientRect();
-    const root = event.currentTarget.getBoundingClientRect();
-    setHoverCell({ top: cell.top - root.top, left: cell.left - root.left, width: cell.width, height: cell.height });
-  };
-
-  const openFor = (styleTarget: TableStyleTarget) => {
-    if (hoveredCellRef.current) focusCell(hoveredCellRef.current);
-    setTarget(styleTarget);
-    setMenuAbove(window.innerHeight - (menuRef.current?.getBoundingClientRect().bottom ?? 0) < 330);
-    setMenuOpen(true);
-  };
-
-  const active = tableNodeAt(editor.state.selection.$from);
-  const align = active?.cell?.node.attrs.align ?? null;
-  const visible = selected || hovered || menuOpen;
-
-  return (
-    <NodeViewWrapper
-      as="div"
-      {...HTMLAttributes}
-      data-fouc-node="table"
-      data-block-id={node.attrs.blockId}
-      className={styles.root}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => { setHovered(false); if (!menuOpen) { setHoverCell(null); hoveredCellRef.current = null; } }}
-      onPointerMove={onPointerMove}
-      onContextMenu={(event: ReactMouseEvent<HTMLDivElement>) => {
-        const cell = event.target instanceof Element ? event.target.closest('td, th') : null;
-        if (!(cell instanceof HTMLTableCellElement) || !editor.isEditable) return;
-        event.preventDefault();
-        hoveredCellRef.current = cell;
-        focusCell(cell);
-        setTarget('cell');
-        setMenuOpen(true);
-      }}
-    >
-      {editor.isEditable ? (
-        <>
-          <div role="toolbar" aria-label="表格操作" className={styles.toolbar} data-visible={String(visible)} onMouseDown={(event) => event.preventDefault()}>
-            {STRUCTURE_ACTIONS.map((action) => <ActionButton key={action.label} action={action} run={run} />)}
-            <span aria-hidden className={styles.separator} />
-            <div ref={menuRef} className={styles.menuAnchor}>
-              <button type="button" className={styles.toolbarButton} title="表格样式" aria-label="表格样式" aria-expanded={menuOpen} onClick={() => { setTarget('cell'); setMenuAbove(window.innerHeight - (menuRef.current?.getBoundingClientRect().bottom ?? 0) < 330); setMenuOpen((value) => !value); }}><PaintBucket aria-hidden size={16} /></button>
-              {menuOpen ? <TableStyleMenu target={target} onTargetChange={setTarget} run={run} variant={node.attrs.variant} align={align} above={menuAbove} /> : null}
-            </div>
-            <span aria-hidden className={styles.separator} />
-            {DELETE_ACTIONS.map((action) => <ActionButton key={action.label} action={action} run={run} />)}
-          </div>
-          {hoverCell && visible ? <>
-            <button type="button" className={styles.handle} title="行样式" aria-label="当前行样式" style={{ top: hoverCell.top + hoverCell.height / 2 - 10, left: -24 }} onMouseDown={(event) => event.preventDefault()} onClick={() => openFor('row')}><DotsThree aria-hidden size={15} weight="bold" /></button>
-            <button type="button" className={styles.handle} title="列样式" aria-label="当前列样式" style={{ top: -24, left: hoverCell.left + hoverCell.width / 2 - 10 }} onMouseDown={(event) => event.preventDefault()} onClick={() => openFor('column')}><DotsThree aria-hidden size={15} weight="bold" /></button>
-          </> : null}
-        </>
-      ) : null}
-      <div className={styles.shell}>
-        <TableContent as="table" className={styles.table} data-variant={node.attrs.variant} style={{ backgroundColor: node.attrs.background ?? undefined }} />
+  return <NodeViewWrapper as="div" {...HTMLAttributes} data-fouc-node="table" data-block-id={node.attrs.blockId} data-active={active && !!selection || !!menu || undefined} className={styles.root}
+    onPointerDownCapture={() => { if (editor.isEditable) setActive(true); }}
+    onMouseLeave={() => { setInsertion(null); clearResizeHover(); }}
+    onContextMenu={(event: ReactMouseEvent<HTMLDivElement>) => {
+      if (!editor.isEditable || !(event.target instanceof Element)) return;
+      const cell = event.target.closest('td,th');
+      if (!(cell instanceof HTMLTableCellElement)) return;
+      event.preventDefault();
+      const pos = editor.view.posAtDOM(cell, 0);
+      if (!(editor.state.selection instanceof CellSelection) || !cell.classList.contains('selectedCell')) {
+        editor.view.dispatch(editor.state.tr.setSelection(TextSelection.near(editor.state.doc.resolve(pos))));
+      }
+      const bounds = shellRef.current!.parentElement!.getBoundingClientRect();
+      setMenu({ target: 'cell', side: 'bottom', style: { left: event.clientX - bounds.left, top: event.clientY - bounds.top, width: 1, height: 1 } });
+    }}>
+    <div ref={shellRef} className={styles.shell}>
+      <TableContent as="table" className={styles.table} data-variant={node.attrs.variant} style={{ backgroundColor: node.attrs.background ?? undefined }} />
+    </div>
+    {editor.isEditable && geometry && active && (selection || menu) ? <div contentEditable={false} className={styles.controls} aria-label="表格行列控制" onPointerEnter={clearResizeHover}>
+      <button type="button" className={styles.corner} aria-label="选择整个表格" aria-haspopup="menu" style={{ left: geometry.viewportLeft - 18, top: geometry.top - 18 }} onMouseDown={event => event.preventDefault()} onClick={() => open('table', 0)} />
+      <div className={styles.columnRail} style={{ left: geometry.viewportLeft, top: geometry.top - 17, width: geometry.viewportWidth }}>
+        {geometry.columns.slice(0, -1).map((left, index) => <button key={index} type="button" className={styles.columnHandle} aria-label={`第 ${index + 1} 列操作`} aria-haspopup="menu" aria-expanded={menu?.target === 'column' && menu.style.left === geometry.left + left}
+          data-selected={selection?.columnsSelected && index >= selection.left && index < selection.right || undefined}
+          style={{ left: geometry.left - geometry.viewportLeft + left, width: geometry.columns[index + 1] - left }}
+          onPointerDown={event => startDrag(event, 'column', index)}
+          onClick={event => { if (!dragRef.current) open('column', index, event.shiftKey); }} />)}
       </div>
-    </NodeViewWrapper>
-  );
-}
-
-function ActionButton({ action, run }: { action: TableAction; run: (command: TableCommand) => void }) {
-  return <button type="button" className={styles.toolbarButton} data-danger={String(Boolean(action.danger))} title={action.label} aria-label={action.label} onClick={() => run(action.command)}><action.icon aria-hidden size={16} /></button>;
+      <div className={styles.rowRail} style={{ left: geometry.viewportLeft - 17, top: geometry.top, height: geometry.height }}>
+        {geometry.rows.slice(0, -1).map((top, index) => <button key={index} type="button" className={styles.rowHandle} aria-label={`第 ${index + 1} 行操作`} aria-haspopup="menu" aria-expanded={menu?.target === 'row' && menu.style.top === geometry.top + top}
+          data-selected={selection?.rowsSelected && index >= selection.top && index < selection.bottom || undefined}
+          style={{ top, height: geometry.rows[index + 1] - top }}
+          onPointerDown={event => startDrag(event, 'row', index)}
+          onClick={event => { if (!dragRef.current) open('row', index, event.shiftKey); }} />)}
+      </div>
+      {(['column', 'row'] as const).map(axis => (axis === 'column' ? geometry.columns : geometry.rows).map((offset, index) =>
+        axis === 'column' && (geometry.left + offset < geometry.viewportLeft - 1 || geometry.left + offset > geometry.viewportLeft + geometry.viewportWidth + 1) ? null : <button key={axis + index} type="button" className={styles.insertButton} aria-label={`在第 ${index + 1} ${axis === 'column' ? '列' : '行'}位置插入`}
+          data-active={insertion?.axis === axis && insertion.index === index || undefined}
+          style={axis === 'column' ? { left: geometry.left + offset - 10, top: geometry.top - 40 } : { left: geometry.viewportLeft - 40, top: geometry.top + offset - 10 }}
+          onPointerEnter={() => { if (!menu) setInsertion({ axis, index }); }} onPointerLeave={() => setInsertion(null)}
+          onFocus={() => setInsertion({ axis, index })} onBlur={() => setInsertion(null)}
+          onMouseDown={event => event.preventDefault()} onClick={() => insert(axis, index)}>
+          <span className={styles.boundaryDot} /><Plus size={16} weight="bold" aria-hidden />
+        </button>))}
+      {insertion ? <div aria-hidden className={styles.insertLine} data-axis={insertion.axis} style={insertion.axis === 'column'
+        ? { left: geometry.left + geometry.columns[insertion.index], top: geometry.top - 30, height: geometry.height + 30 }
+        : { left: geometry.viewportLeft - 30, top: geometry.top + geometry.rows[insertion.index], width: geometry.viewportWidth + 30 }} /> : null}
+    </div> : null}
+    {menu ? <TableStyleMenu tableId={node.attrs.blockId} anchor={menu} editor={editor} run={run} onClose={() => setMenu(null)} align={selection ? selection.align : null}
+      background={menu.target === 'row' ? selection?.rowBackground : menu.target === 'table' ? node.attrs.background : selection?.background} /> : null}
+  </NodeViewWrapper>;
 }

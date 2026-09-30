@@ -1,19 +1,19 @@
 import type { EditorState, Transaction } from '@tiptap/pm/state';
 import { tableNodeAt } from './table-commands';
+import { CellSelection, TableMap, selectedRect } from '@tiptap/pm/tables';
 
 export type TableStyleTarget = 'cell' | 'row' | 'column' | 'table';
 export type TableAlignment = 'left' | 'center' | 'right';
 export type TableVariant = 'plain' | 'striped' | 'minimal';
 
 export const TABLE_COLORS = [
-  { name: '无填充', value: null },
-  { name: '珊瑚', value: '#FCE8E5' },
-  { name: '杏色', value: '#FFF0DF' },
-  { name: '日落', value: '#FBE8D9' },
-  { name: '薄荷', value: '#E6F3EC' },
-  { name: '海盐', value: '#E5F1F9' },
-  { name: '薰衣草', value: '#EEEAFB' },
-  { name: '云灰', value: '#EDF1F5' },
+  { name: '空', value: null },
+  { name: 'Coral', value: '#EAE2D2' },
+  { name: 'Apricot', value: '#ECDDD2' },
+  { name: 'Sunset', value: '#E9D5D1' },
+  { name: 'Smoothie', value: '#DCE4D5' },
+  { name: 'Bubblegum', value: '#E3DCEB' },
+  { name: 'Neon', value: '#D8E4EA' },
 ] as const;
 
 export function setTableColor(state: EditorState, dispatch: ((tr: Transaction) => void) | undefined, target: TableStyleTarget, background: string | null): boolean {
@@ -23,18 +23,17 @@ export function setTableColor(state: EditorState, dispatch: ((tr: Transaction) =
   if (!dispatch) return true;
   const tr = state.tr;
   if (target === 'table') tr.setNodeMarkup(hit.pos, undefined, { ...hit.table.attrs, background });
-  if (target === 'row' && hit.row) tr.setNodeMarkup(hit.row.pos, undefined, { ...hit.row.node.attrs, background });
-  if (target === 'cell' && hit.cell) tr.setNodeMarkup(hit.cell.pos, undefined, { ...hit.cell.node.attrs, background });
-  if (target === 'column' && hit.cell) {
-    const targetColumn = hit.cell.column;
-    hit.table.forEach((row, rowOffset) => {
-      let column = 0;
-      row.forEach((cell, cellOffset) => {
-        if (column <= targetColumn && targetColumn < column + cell.attrs.colspan) {
-          tr.setNodeMarkup(hit.pos + 2 + rowOffset + cellOffset, undefined, { ...cell.attrs, background });
-        }
-        column += cell.attrs.colspan;
-      });
+  if (target === 'cell' || target === 'column') for (const pos of tableTargetCells(state, target)) {
+    const cell = state.doc.nodeAt(pos)!;
+    tr.setNodeMarkup(pos, undefined, { ...cell.attrs, background });
+  }
+  if (target === 'row') {
+    const rect = selectedRect(state);
+    hit.table.forEach((row, offset, index) => {
+      if (index >= rect.top && index < rect.bottom) {
+        tr.setNodeMarkup(hit.pos + 1 + offset, undefined, { ...row.attrs, background });
+        row.forEach((cell, cellOffset) => tr.setNodeMarkup(hit.pos + 2 + offset + cellOffset, undefined, { ...cell.attrs, background: null }));
+      }
     });
   }
   dispatch(tr);
@@ -48,21 +47,21 @@ export function setTableAlignment(state: EditorState, dispatch: ((tr: Transactio
   if (!dispatch) return true;
   const tr = state.tr;
   const setCell = (cell: typeof hit.table, pos: number) => tr.setNodeMarkup(pos, undefined, { ...cell.attrs, align });
-  if (target === 'cell' && hit.cell) setCell(hit.cell.node, hit.cell.pos);
-  if (target === 'row' && hit.row) hit.row.node.forEach((cell, offset) => setCell(cell, hit.row!.pos + 1 + offset));
-  if (target === 'column' && hit.cell) {
-    const targetColumn = hit.cell.column;
-    hit.table.forEach((row, rowOffset) => {
-      let column = 0;
-      row.forEach((cell, cellOffset) => {
-        if (column <= targetColumn && targetColumn < column + cell.attrs.colspan) setCell(cell, hit.pos + 2 + rowOffset + cellOffset);
-        column += cell.attrs.colspan;
-      });
-    });
-  }
-  if (target === 'table') hit.table.forEach((row, rowOffset) => row.forEach((cell, cellOffset) => setCell(cell, hit.pos + 2 + rowOffset + cellOffset)));
+  for (const pos of tableTargetCells(state, target)) setCell(state.doc.nodeAt(pos)!, pos);
   dispatch(tr);
   return true;
+}
+
+export function tableTargetCells(state: EditorState, target: TableStyleTarget): number[] {
+  const hit = tableNodeAt(state.selection.$from);
+  if (!hit?.cell) return [];
+  if (target === 'cell' && !(state.selection instanceof CellSelection)) return [hit.cell.pos];
+  const map = TableMap.get(hit.table);
+  const rect = selectedRect(state);
+  const area = target === 'table' ? { top: 0, bottom: map.height, left: 0, right: map.width }
+    : target === 'row' ? { ...rect, left: 0, right: map.width }
+    : target === 'column' ? { ...rect, top: 0, bottom: map.height } : rect;
+  return map.cellsInRect(area).map(pos => hit.pos + 1 + pos);
 }
 
 export function setTableVariant(state: EditorState, dispatch: ((tr: Transaction) => void) | undefined, variant: TableVariant): boolean {

@@ -8,6 +8,16 @@ import { BlockRegistry, KNOWLEDGE_BLOCKS, KNOWLEDGE_MARKS, createKnowledgeExtens
 const expectedBlocks = ['paragraph', 'heading', 'bulletList', 'orderedList', 'listItem', 'taskList', 'taskItem', 'blockquote', 'callout', 'codeBlock', 'math', 'horizontalRule', 'table', 'tableRow', 'tableCell', 'tableHeader', 'columns', 'column', 'image', 'video', 'audio', 'file', 'embed', 'blockReference', 'pageLink', 'databaseView', 'aiBlock'];
 
 describe('first-party knowledge schema', () => {
+  it('accepts opaque and alpha table backgrounds while rejecting unsafe or malformed colors', () => {
+    for (const name of ['table', 'tableRow', 'tableCell', 'tableHeader']) {
+      for (const background of ['#7e3d3db3', '#AABBCC00', '#d8e4ea', null]) {
+        const node = knowledgeSchema.nodes[name].createAndFill({ background })!;
+        assert.doesNotThrow(() => node.check());
+        assert.ok(knowledgeSchema.nodeFromJSON(node.toJSON()).eq(node));
+      }
+      for (const background of ['#123', '#1234567', 'red', 'url(https://example.com)']) assert.throws(() => knowledgeSchema.nodes[name].createAndFill({ background })!.check(), /hex color/);
+    }
+  });
   it('constructs and serializes every designed block including structural children', () => {
     assert.deepEqual(KNOWLEDGE_BLOCKS.map(({ name }) => name).sort(), [...expectedBlocks].sort());
     for (const name of expectedBlocks) {

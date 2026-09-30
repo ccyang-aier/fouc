@@ -16,7 +16,7 @@
 .outlineButton:disabled { opacity: .48; cursor: not-allowed; }
 .moreButton { width: 28px; height: 32px; border-radius: 6px; }
 .header button:focus-visible { outline: 2px solid #0869cf; outline-offset: 2px; }
-.shareMenu { width: 240px; padding: 8px; border: 1px solid #e2e7ef; border-radius: 9px; background: #fff; box-shadow: 0 12px 30px rgb(25 35 52 / 13%); }
+.shareMenu { width: 240px; padding: 8px; border-radius: 9px; }
 .shareTitle { padding: 5px 7px; color: #1d2634; font-size: 13px; font-weight: 650; }
 .shareDescription { padding: 0 7px 8px; color: #718096; font-size: 12px; line-height: 1.5; }
 .shareStatus { padding: 5px 7px; color: #0869cf; font-size: 12px; }

@@ -89,7 +89,7 @@ export function AnchoredPanel({
       aria-label={label}
       style={{ left: anchor.left, top: anchor.bottom + 6, width, visibility: measured ? undefined : 'hidden' }}
       className={cn(
-        'overlay-surface fixed z-50 rounded-[8px] border bg-elevated p-1.5 text-[12px] text-[var(--ink)]',
+        'menu-surface fixed z-50 rounded-[8px] border bg-elevated p-1.5 text-[12px] text-[var(--ink)]',
         className,
       )}
     >

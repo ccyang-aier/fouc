@@ -93,7 +93,7 @@
 .mw-new-tab { width: 37px; flex: none; display: grid; place-items: center; color: #6b7e96; }
 .mw-new-tab:hover, .mw-tabs-more:hover { background: var(--surface-hover); }
 .mw-tabs-more { display: grid; place-items: center; width: 25px; height: 25px; flex: none; margin: 5px 7px 0 auto; border: 1px solid var(--mw-line); border-radius: 5px; color: #53647b; background: var(--panel); }
-.mw-tabs-popover { position: absolute; z-index: 8; right: 7px; top: 32px; width: 180px; padding: 5px; border: 1px solid var(--mw-strong-line); border-radius: 6px; background: var(--elevated); box-shadow: var(--floating-shadow); }
+.mw-tabs-popover { position: absolute; z-index: 8; right: 7px; top: 32px; width: 180px; padding: 5px; border: 1px solid var(--menu-border); border-radius: 6px; background: var(--elevated); box-shadow: var(--menu-shadow); }
 .mw-tabs-popover button { display: flex; width: 100%; align-items: center; gap: 7px; padding: 7px; border-radius: 4px; text-align: left; }
 .mw-tabs-popover button:hover { background: var(--surface-hover); }
 .mw-grid-workspace { display: flex; min-height: 0; flex: 1; flex-direction: column; }
@@ -106,7 +106,7 @@
 .mw-field-search { height: 30px; width: 173px; display: flex; align-items: center; gap: 6px; padding: 0 8px; border: 1px solid var(--mw-line); border-radius: 5px; color: #8e9bae; }
 .mw-tool-button { display: inline-flex; height: 30px; flex: none; align-items: center; justify-content: center; gap: 6px; padding: 0 9px; border: 1px solid var(--mw-line); border-radius: 5px; color: #28384d; white-space: nowrap; background: var(--panel); font-size: 11px; }
 .mw-tool-button:hover, .mw-plain-tool:hover, .mw-row-filter:hover { background: var(--surface-hover); }
-.mw-tool-popover { position: absolute; right: 9px; top: 42px; width: 155px; padding: 5px; border: 1px solid var(--mw-strong-line); border-radius: 7px; background: var(--elevated); box-shadow: var(--floating-shadow); }
+.mw-tool-popover { position: absolute; right: 9px; top: 42px; width: 155px; padding: 5px; border: 1px solid var(--menu-border); border-radius: 7px; background: var(--elevated); box-shadow: var(--menu-shadow); }
 .mw-tool-popover button { display: block; width: 100%; padding: 8px; text-align: left; border-radius: 4px; }
 .mw-tool-popover button:hover { background: var(--surface-hover); }
 .mw-grid-toolbar { position: relative; z-index: 2; height: 44px; flex: none; display: flex; align-items: center; min-width: 0; gap: 0; border-bottom: 1px solid var(--mw-line); }
@@ -123,12 +123,12 @@
 .mw-canvas-on { background: var(--mw-blue-soft); color: var(--mw-blue); }
 .mw-submit { height: 29px; flex: none; display: flex; align-items: center; gap: 5px; margin: 0 3px; padding: 0 9px; border-radius: 5px; background: #2d73d9; color: white; white-space: nowrap; font-size: 11px; }
 .mw-submit:hover, .mw-run:hover { background: #1e5fc0; }
-.mw-scope-menu { position: absolute; z-index: 10; top: 39px; left: 5px; width: 154px; padding: 5px; border: 1px solid var(--mw-strong-line); border-radius: 6px; background: var(--elevated); box-shadow: var(--floating-shadow); }
+.mw-scope-menu { position: absolute; z-index: 10; top: 39px; left: 5px; width: 154px; padding: 5px; border: 1px solid var(--menu-border); border-radius: 6px; background: var(--elevated); box-shadow: var(--menu-shadow); }
 .mw-scope-menu button { display: flex; width: 100%; height: 29px; align-items: center; justify-content: space-between; padding: 0 8px; border-radius: 4px; text-align: left; }
 .mw-scope-menu button:hover { background: var(--mw-blue-soft); }
 .mw-scope-menu svg { color: var(--mw-blue); }
 .mw-submit:disabled { opacity: 1; background: #3b76ca; }
-.mw-filter-popover { position: absolute; left: 87px; top: 38px; z-index: 10; width: 220px; display: grid; gap: 8px; padding: 12px; border: 1px solid var(--mw-strong-line); border-radius: 7px; background: var(--elevated); box-shadow: var(--floating-shadow); }
+.mw-filter-popover { position: absolute; left: 87px; top: 38px; z-index: 10; width: 220px; display: grid; gap: 8px; padding: 12px; border: 1px solid var(--menu-border); border-radius: 7px; background: var(--elevated); box-shadow: var(--menu-shadow); }
 .mw-filter-popover strong { font-size: 12px; }
 .mw-filter-popover select, .mw-filter-popover input { height: 29px; width: 100%; padding: 0 7px; border: 1px solid var(--mw-line); border-radius: 4px; background: var(--panel); }
 .mw-filter-popover div { display: flex; justify-content: flex-end; gap: 6px; }
@@ -174,7 +174,7 @@
 .mw-pagination button:hover { background: var(--surface-hover); }
 .mw-pagination button.mw-page-current { border-color: var(--mw-blue); background: var(--mw-blue); color: white; }
 .mw-pagination select { min-width: 84px; margin-left: 5px; }
-.mw-context-menu { position: absolute; z-index: 5; width: 174px; padding: 5px; border: 1px solid var(--mw-strong-line); border-radius: 8px; background: var(--elevated); box-shadow: 0 7px 20px #23334a29; }
+.mw-context-menu { position: absolute; z-index: 5; width: 174px; padding: 5px; border: 1px solid var(--menu-border); border-radius: 8px; background: var(--elevated); box-shadow: var(--menu-shadow); }
 .mw-menu-action { display: flex; width: 100%; height: 29px; align-items: center; gap: 9px; padding: 0 8px; border-radius: 4px; text-align: left; white-space: nowrap; font-size: 11px; }
 .mw-menu-action:hover { background: var(--mw-blue-soft); }
 .mw-menu-action > svg { flex: none; color: #38475d; }

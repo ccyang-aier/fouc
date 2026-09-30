@@ -108,7 +108,7 @@ export function SystemBar({ onNavigate }: { onNavigate: (view: WorkbenchView) =>
           <div
             id="global-search-results"
             role="listbox"
-            className="overlay-surface absolute left-0 top-[34px] z-50 w-full overflow-hidden rounded-[7px] border bg-elevated p-1"
+            className="menu-surface absolute left-0 top-[34px] z-50 w-full overflow-hidden rounded-[7px] border bg-elevated p-1"
           >
             {results.length > 0 ? results.slice(0, 6).map((item) => (
               <button

@@ -311,7 +311,7 @@ function ConnectionStatusMenu({ detail, connected, busy, onHeartbeat, onReconnec
           <Broadcast className="size-4" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[264px] rounded-[10px] p-1.5 shadow-[0_18px_48px_-22px_rgba(20,32,58,0.48)]">
+      <DropdownMenuContent align="end" className="w-[264px] rounded-[10px] p-1.5">
         <div className="rounded-[8px] bg-[var(--surface-subtle)] p-3">
           <div className={cn('flex items-center gap-2', connected ? 'text-[var(--ok-ink)]' : 'text-[var(--warn-ink)]')}>
             {connected ? <CheckCircle className="size-4" weight="fill" /> : <WarningCircle className="size-4" weight="fill" />}

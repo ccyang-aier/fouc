@@ -64,7 +64,20 @@
 .linkActions button { border: 0; border-radius: 4px; padding: 4px 10px; color: #2863dc; background: #edf3fc; font-size: 13px; cursor: pointer; }
 .linkActions button[type="submit"] { color: #fff; background: #2863dc; }
 .menuAnchor { position: absolute; pointer-events: none; opacity: 0; border: 0; padding: 0; }
-.menu { z-index: 100; width: 202px; padding: 6px; border: 0; border-radius: 11px; background: #fff; color: #414b5d; font-family: Arial, "Microsoft YaHei", sans-serif; font-size: 15px; font-weight: 400; line-height: 24px; box-shadow: 0 0 0 1px #eeeeef, 0 22px 38px rgba(0,0,0,.10), 0 3px 8px rgba(0,0,0,.05); outline: none; }
+.menu {
+  composes: menu-surface from global;
+  border: 1px solid var(--menu-border);
+  z-index: 100;
+  width: 202px;
+  padding: 6px;
+  border-radius: 11px;
+  color: var(--ink);
+  font-family: Arial, "Microsoft YaHei", sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 24px;
+  outline: none;
+}
 .menuItem { display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 12px; border-radius: 6px; outline: none; white-space: nowrap; user-select: none; cursor: pointer; }
 .menuItem svg { flex-shrink: 0; }
 .menuItem[data-highlighted], .menuItem[data-state="open"] { background: #2666e4; color: #fff; }

@@ -5,7 +5,17 @@
 .root[data-active="true"] .trigger { opacity: 1; }
 .trigger:hover,.trigger[aria-expanded="true"] { border-color: #bbd3ef; color: #1669c6; }
 .trigger:focus-visible,.menu button:focus-visible { outline: 2px solid #2674d1; outline-offset: 2px; }
-.menu { position: absolute; top: calc(100% + 8px); right: 0; width: 260px; padding: 13px; border: 1px solid #dde6f0; border-radius: 10px; background: #fff; color: #2b394f; box-shadow: 0 16px 40px rgba(23,43,68,.17); }
+.menu {
+  composes: menu-surface from global;
+  border: 1px solid var(--menu-border);
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 260px;
+  padding: 13px;
+  border-radius: 10px;
+  color: var(--ink);
+}
 .menuTitle { margin-bottom: 10px; color: #75869b; font-size: 11px; font-weight: 650; }
 .presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .presets button { display: grid; gap: 7px; min-height: 59px; padding: 8px 4px 6px; border: 1px solid #e2e8f1; border-radius: 7px; background: #fff; color: #66778f; font-size: 10px; cursor: pointer; }

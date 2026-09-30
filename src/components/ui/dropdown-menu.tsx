@@ -34,7 +34,7 @@ function DropdownMenuContent({
       <DropdownMenuPrimitive.Content
         sideOffset={sideOffset}
         className={cn(
-          "overlay-surface z-50 min-w-44 overflow-hidden rounded-[7px] border bg-elevated p-1 text-[12px] text-[var(--ink)] animate-in fade-in-0 zoom-in-95",
+          "menu-surface z-50 min-w-44 overflow-hidden rounded-[7px] border bg-elevated p-1 text-[12px] text-[var(--ink)] animate-in fade-in-0 zoom-in-95 motion-reduce:animate-none",
           className,
         )}
         {...props}
@@ -146,7 +146,7 @@ function DropdownMenuSubContent({
         sideOffset={sideOffset}
         alignOffset={alignOffset}
         className={cn(
-          "overlay-surface z-50 min-w-40 overflow-hidden rounded-[8px] border bg-elevated p-1 text-[12px] text-[var(--ink)] shadow-[0_14px_36px_-18px_rgba(20,32,58,0.38)] animate-in fade-in-0 zoom-in-95 data-[side=right]:slide-in-from-left-1 data-[side=left]:slide-in-from-right-1",
+          "menu-surface z-50 min-w-40 overflow-hidden rounded-[8px] border bg-elevated p-1 text-[12px] text-[var(--ink)] animate-in fade-in-0 zoom-in-95 data-[side=right]:slide-in-from-left-1 data-[side=left]:slide-in-from-right-1 motion-reduce:animate-none",
           className,
         )}
         {...props}

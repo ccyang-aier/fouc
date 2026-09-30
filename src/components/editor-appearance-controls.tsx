@@ -17,7 +17,7 @@ export function AppearanceSelect<T extends string | number>({ label, value, opti
 }) {
   const labelId = useId();
   const selected = options.find(option => option.id === value);
-  return <div className={styles.field}>
+  return <div className={styles.field} data-menu-reveal>
     <span id={labelId} className={styles.label}>{label}</span>
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger className={styles.select} aria-labelledby={labelId}>
@@ -37,7 +37,7 @@ export function AppearanceSelect<T extends string | number>({ label, value, opti
 export function AppearanceWidthControl({ value, onChange, label = '页宽' }: { value: number; onChange: (value: number) => void; label?: string }) {
   const id = useId();
   const percentage = (value - documentWidth.min) / (documentWidth.max - documentWidth.min) * 100;
-  return <div className={styles.field}>
+  return <div className={styles.field} data-menu-reveal>
     <div className={styles.widthHeading}><label htmlFor={id} className={styles.label}>{label}</label><output htmlFor={id}>{value}%</output></div>
     <input id={id} className={styles.range} type="range" min={documentWidth.min} max={documentWidth.max} step={1} value={value}
       style={{ '--range-progress': `${percentage}%` } as CSSProperties} onChange={event => onChange(Number(event.target.value))}
@@ -47,7 +47,7 @@ export function AppearanceWidthControl({ value, onChange, label = '页宽' }: { 
 
 export function AppearanceSizeControl({ value, onChange }: { value: typeof documentSizes[number]['id']; onChange: (value: typeof documentSizes[number]['id']) => void }) {
   const labelId = useId();
-  return <div className={styles.field}>
+  return <div className={styles.field} data-menu-reveal>
     <span className={styles.label} id={labelId}>字号</span>
     <div className={styles.sizes} role="group" aria-labelledby={labelId}>
       {documentSizes.map(option => <button type="button" key={option.id} aria-pressed={option.id === value} onClick={() => onChange(option.id)}>{option.label}</button>)}

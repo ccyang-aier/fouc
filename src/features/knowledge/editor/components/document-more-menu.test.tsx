@@ -72,7 +72,15 @@ describe('document menu rendered interaction', () => {
     expect(document.querySelector('[aria-haspopup="menu"][aria-labelledby]')!.textContent).toContain('霞鹜臻楷');
     const size = Array.from(document.querySelectorAll('button')).find(button => button.textContent === '更大')!;
     await act(async () => size.dispatchEvent(new MouseEvent('click', { bubbles: true })));
-    expect(JSON.parse(localStorage.getItem('fouc.document.appearance:test-menu')!)).toEqual({ font: 'zhenkai', size: 'extra-large' });
+    const lineTrigger = Array.from(document.querySelectorAll('[aria-haspopup="menu"][aria-labelledby]')).find(element => element.textContent === '1.8 倍')!;
+    await key(lineTrigger, 'Enter');
+    await act(async () => item('2 倍').dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    const spacingTrigger = Array.from(document.querySelectorAll('[aria-haspopup="menu"][aria-labelledby]')).find(element => element.textContent === '标准')!;
+    await key(spacingTrigger, 'Enter');
+    await act(async () => item('宽松').dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(JSON.parse(localStorage.getItem('fouc.document.appearance:test-menu')!)).toEqual({ width: 80, font: 'zhenkai', size: 'extra-large', lineHeight: 2, paragraphSpacing: 'relaxed' });
+    expect(document.querySelector('[role="menu"][aria-label="个性化"]')?.textContent).not.toContain('更多编辑器设置');
+    expect(document.querySelector('[role="menu"][aria-label="个性化"]')?.textContent).not.toContain('页面背景');
     expect(document.querySelector('[role="menu"][aria-label="个性化"]')).not.toBeNull();
     await key(document.querySelector('[aria-label="更多文档操作"]')!, 'Escape');
     await open();

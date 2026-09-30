@@ -8,7 +8,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
 import { ModalDialog } from '../../organization/ui';
 import { documentLink, type DocumentLinkTarget } from '../document-link';
 import { DocumentAppearanceMenu } from './document-appearance-menu';
-import { openEditorSettings } from '@/lib/editor-settings-navigation';
 import { DocumentStarMenuItem } from './document-star-menu-item';
 import { documentContent, downloadDocument, printDocument, type ContentFormat } from './document-content-actions';
 import styles from './document-more-menu.module.css';
@@ -68,7 +67,7 @@ export function DocumentMoreMenu({ editor, title, starred, onToggleStar, actions
               {actions.target.source === 'local' ? <p className={styles.hint}>本机链接仅在保存该文档的浏览器中可访问。</p> : null}
             </DropdownMenuSubContent>
           </DropdownMenuSub>
-          <DocumentAppearanceMenu triggerClassName={styles.item} onOpenSettings={() => openEditorSettings(documentLink(window.location.href, actions.target))} />
+          <DocumentAppearanceMenu triggerClassName={styles.item} />
           <ReservedItem icon={<Presentation aria-hidden />}>演示</ReservedItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />

@@ -1,7 +1,8 @@
 "use client"
 
 import { useWorkbenchView } from "./workbench-view"
-import { closeSettings, setSettingsSection, useSettingsSection } from "@/lib/editor-settings-navigation"
+import { closeSettings, setSettingsSection, useSettingsSection } from "@/lib/settings-navigation"
+import { useMenuMotion } from "@/lib/use-menu-motion"
 import { useEffect, useRef, useState } from "react"
 import { AnimatePresence, MotionConfig, motion, type Variants } from "motion/react"
 
@@ -56,6 +57,7 @@ import { WorkspaceRail } from "./workspace-rail"
 import { useWorkspace } from "@/features/workspaces/workspace-provider"
 
 export function WorkbenchShell() {
+  useMenuMotion()
   useDocumentLinkNavigation()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [view, setView] = useWorkbenchView()

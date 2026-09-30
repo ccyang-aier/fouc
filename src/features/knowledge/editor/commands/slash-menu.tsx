@@ -11,7 +11,6 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { AnimatePresence, motion } from 'motion/react';
 import type { Editor } from '@tiptap/react';
 import { getOverlayRoot } from '@/lib/overlay-root';
 import { cn } from '@/lib/utils';
@@ -122,16 +121,12 @@ export function SlashMenuLayer({ editor }: { editor: Editor | null }) {
   if (!editor || typeof document === 'undefined') return null;
 
   return createPortal(
-    <AnimatePresence initial={false}>
+    <>
       {menu ? (
-        <motion.div
+        <div
           ref={panelRef}
           role="menu"
           aria-label="插入块"
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.14, ease: 'easeOut' }}
           style={{ visibility: 'hidden', width: MENU_WIDTH }}
           onMouseEnter={() => { pointerInsideRef.current = true; }}
           onMouseLeave={() => { pointerInsideRef.current = false; }}
@@ -162,9 +157,9 @@ export function SlashMenuLayer({ editor }: { editor: Editor | null }) {
               </button>
             );
           })}
-        </motion.div>
+        </div>
       ) : null}
-    </AnimatePresence>,
+    </>,
     getOverlayRoot() ?? document.body,
   );
 }

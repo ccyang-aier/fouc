@@ -6,18 +6,10 @@ import type { Editor } from '@tiptap/react';
 import styles from './editor-layout.module.css';
 import { DocumentAppearanceProvider, useDocumentAppearance } from './components/document-appearance';
 import { documentFonts, documentSizes, documentParagraphSpacings } from '@/lib/editor-appearance-options';
-import { useEditorBackgrounds } from '@/lib/editor-appearance';
 import './document-fonts.css';
 
 export function DocumentEditorFrame({ children, appearanceScope }: { children: ReactNode; appearanceScope: string }) {
-  return <DocumentAppearanceProvider key={appearanceScope} scope={appearanceScope}><EditorSurface>{children}</EditorSurface></DocumentAppearanceProvider>;
-}
-
-function EditorSurface({ children }: { children: ReactNode }) {
-  const { appearance } = useDocumentAppearance();
-  const { backgrounds } = useEditorBackgrounds();
-  const background = backgrounds.find(item => item.id === appearance.background);
-  return <section aria-label="页面编辑器" className={styles.frame} style={{ backgroundColor: background?.color ?? '#fff', backgroundImage: background?.image ? `url("${background.image}")` : undefined, backgroundSize: 'cover', backgroundPosition: 'center' }}>{children}</section>;
+  return <DocumentAppearanceProvider key={appearanceScope} scope={appearanceScope}><section aria-label="页面编辑器" className={styles.frame}>{children}</section></DocumentAppearanceProvider>;
 }
 
 export function DocumentHeading({ title, onTitleChange, onTitleCommit, editable = true, metadata }: {

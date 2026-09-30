@@ -7,7 +7,3 @@
 }
 .heading { margin: 0 0 18px; color: var(--ink); font-size: 16px; font-weight: 650; letter-spacing: -.025em; }
 .controls { display: grid; gap: 18px; }
-.settings { display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 18px; border-top: 1px solid var(--line); padding: 14px 0 0; color: var(--muted-strong); font-size: 12px; cursor: pointer; transition: color .16s; }
-.settings span { flex: 1; text-align: left; }
-.settings:hover { color: var(--ink); }
-.settings:focus-visible { outline: 2px solid var(--accent); outline-offset: 6px; border-radius: 3px; }

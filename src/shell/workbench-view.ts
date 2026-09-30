@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from 'react';
 import type { WorkbenchView } from './navigation-sidebar';
-import { WORKBENCH_VIEW_CHANGED } from '@/lib/editor-settings-navigation';
+import { WORKBENCH_VIEW_CHANGED } from '@/lib/settings-navigation';
 
 const views: readonly WorkbenchView[] = ['home', 'settings', 'help', 'project-home', 'projects', 'community', 'automation', 'knowledge', 'connectors'];
 const viewChanged = WORKBENCH_VIEW_CHANGED;

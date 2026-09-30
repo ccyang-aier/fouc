@@ -8,7 +8,6 @@
 import { useState } from "react"
 import {
   ArrowLeft,
-  FileText,
   Info,
   MagnifyingGlass,
   PaintBrush,
@@ -25,14 +24,12 @@ import { AboutSettings } from "./about-settings"
 import { AgentSettings } from "./agent-settings"
 import { AppearanceSettings } from "./appearance-settings"
 import { GeneralSettings } from "./general-settings"
-import { EditorSettings } from "./editor-settings"
 
-export type SettingsSection = "appearance" | "general" | "editor" | "agents" | "about"
+export type SettingsSection = "appearance" | "general" | "agents" | "about"
 
 const SECTIONS: Array<SidebarRowItem & { id: SettingsSection }> = [
   { id: "appearance", label: "外观", icon: PaintBrush },
   { id: "general", label: "通用", icon: SlidersHorizontal },
-  { id: "editor", label: "编辑器", icon: FileText },
   { id: "agents", label: "Agent", icon: Robot },
   { id: "about", label: "关于", icon: Info },
 ]
@@ -133,8 +130,6 @@ export function SettingsCanvas({
           <AppearanceSettings />
         ) : section === "general" ? (
           <GeneralSettings />
-        ) : section === "editor" ? (
-          <EditorSettings />
         ) : section === "agents" ? (
           <AgentSettings />
         ) : (

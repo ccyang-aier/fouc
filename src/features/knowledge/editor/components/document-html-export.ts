@@ -103,11 +103,14 @@ export async function exportDocumentHtml(editor: Editor, title: string): Promise
       if (original.tagName === 'INPUT' && ['file', 'hidden', 'checkbox'].includes((control as HTMLInputElement).type)) { copy.remove(); return; }
       const heading = original.getAttribute('aria-label') === '文档标题';
       const replacement = owner.createElement(heading ? 'h1' : 'span');
+      replacement.setAttribute('data-export-id', id);
       replacement.textContent = heading ? (title.trim() || '无标题文档') : original.tagName === 'SELECT'
         ? (original as HTMLSelectElement).selectedOptions[0]?.textContent ?? '' : control.value;
       if (!replacement.textContent) { copy.remove(); return; }
       // Wait for resource expansion before moving the presentation onto the static text.
-      pending.push(inlineUrls(visual).then(style => { replacement.setAttribute('style', `${style}white-space:pre-wrap;`); }));
+      pending.push(inlineUrls(visual).then(style => {
+        replacement.setAttribute('style', `${style}white-space:pre-wrap;${heading ? 'display:block;max-width:100%;overflow-wrap:anywhere;' : ''}`);
+      }));
       copy.replaceWith(replacement);
       return;
     }

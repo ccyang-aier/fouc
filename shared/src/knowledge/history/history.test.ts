@@ -110,8 +110,8 @@ describe('stable block history comparison', () => {
   it('all 27 first-party blocks and nested IDs survive real Markdown snapshot roundtrip', () => {
     let next = 0;
     const roots = KNOWLEDGE_BLOCKS.filter(({ name }) => schema.nodes[name].isInGroup('block')).map(({ name }) => schema.nodes[name].createAndFill()!);
-    // createAndFill chooses tableCell; explicitly include the other legal cell type.
-    roots.push(schema.nodes.table.create(null, schema.nodes.tableRow.create(null, schema.nodes.tableHeader.createAndFill()!)));
+    // Cover both cell types independently of the schema's default fill order.
+    roots.push(schema.nodes.table.create(null, ['tableCell', 'tableHeader'].map(type => schema.nodes.tableRow.create(null, schema.nodes[type].createAndFill()!))));
     const original = repairBlockIds(doc(...roots), { generateId: () => `block_${++next}` }).doc;
     const pipeline = createMarkdownPipeline();
     const restored = pipeline.parse(pipeline.serialize(original));

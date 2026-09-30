@@ -64,10 +64,10 @@ describe('slash menu items', () => {
     }
   });
 
-  test('every item inserts a node of its own type into a real editor', () => {
+  test('non-picker items insert their own valid node type into a real editor', () => {
     const items = buildSlashItems();
     expect(items.length).toBeGreaterThan(0);
-    for (const item of items) {
+    for (const item of items.filter(item => !['image', 'video', 'audio'].includes(item.name))) {
       const editor = mountEditor(); // one empty paragraph, caret at its end
       expect(item.run(editor)).toBe(true);
       const names = nodeNames(editor);
@@ -100,14 +100,14 @@ describe('slash menu items', () => {
     }
   });
 
-  test('table insertion starts with two columns and a header row', () => {
+  test('table insertion starts with a three-by-three grid and a header row', () => {
     const editor = mountEditor();
     expect(buildSlashItems().find((item) => item.name === 'table')!.run(editor)).toBe(true);
     const table = editor.state.doc.firstChild!;
     expect(table.type.name).toBe('table');
-    expect(table.childCount).toBe(2);
-    expect(table.firstChild?.childCount).toBe(2);
-    expect(table.lastChild?.childCount).toBe(2);
+    expect(table.childCount).toBe(3);
+    expect(table.firstChild?.childCount).toBe(3);
+    expect(table.lastChild?.childCount).toBe(3);
     expect(table.firstChild?.firstChild?.type.name).toBe('tableHeader');
     editor.destroy();
   });

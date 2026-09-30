@@ -55,7 +55,7 @@ export type ListKnowledgePagesInput = { teamspaceId?: string; parentId?: string 
 
 export type CreateKnowledgePageInput = CreatePageInput;
 /** Mirror of `updatePageInputSchema` (the shared barrel exports no inferred type for it). */
-export type UpdateKnowledgePageInput = { pageId: string; title?: string; icon?: string | null; cover?: string | null };
+export type UpdateKnowledgePageInput = { pageId: string; title?: string; icon?: string | null; cover?: string | null; properties?: Page["properties"] };
 export type RecycleKnowledgePageInput = { pageId: string };
 export type RestoreKnowledgePageInput = { pageId: string };
 export type MoveKnowledgePageInput = {

@@ -83,3 +83,8 @@
   .heading { margin-bottom: 28px; }
   .metadata > * + *::before { display: none; }
 }
+
+.frame:fullscreen { width:100vw; height:100dvh; background:var(--panel); }
+.document :global(.document-search-match) { background:#fff0a3; border-radius:2px; }
+.document :global(.document-search-current) { background:#ffc764; outline:1px solid #d89635; }
+.document :global(.ProseMirror h1),.document :global(.ProseMirror h2),.document :global(.ProseMirror h3),.document :global(.ProseMirror h4) { scroll-margin-top:28px; }

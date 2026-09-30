@@ -170,7 +170,7 @@ function WorkspaceKnowledgeResource({ onOpenSettings, onOpenLocal, onOpenWorkspa
   const [createKnowledgeBaseOpen, setCreateKnowledgeBaseOpen] = useState(false);
   const [createTeamspaceOpen, setCreateTeamspaceOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [editorSidebarOpen, setEditorSidebarOpen] = useState(false);
+  const [editorSidebarOpen, setEditorSidebarOpen] = useState(true);
   const [createDocumentOpen, setCreateDocumentOpen] = useState(false);
   const { toast, notify } = useOrganizationToast();
   const pageOperations = usePageTreeOperations(activeId, { canEdit: canEditTree(accessQuery.data), notify });
@@ -227,6 +227,7 @@ function WorkspaceKnowledgeResource({ onOpenSettings, onOpenLocal, onOpenWorkspa
 
   return (
     <KnowledgeWorkbench
+      navigationScope={`workspace:${authenticated ? session.user.id : "guest"}:${activeSpace.id}:${activeBase?.id ?? "none"}`}
       documentOpen={Boolean(selectedPageId)}
       sidebarOpen={Boolean(selectedPageId) && editorSidebarOpen}
       onCloseSidebar={() => setEditorSidebarOpen(false)}
@@ -299,7 +300,7 @@ function WorkspaceKnowledgeResource({ onOpenSettings, onOpenLocal, onOpenWorkspa
               user={session.user}
               collectionName={activeBase?.name ?? '知识库'}
               knowledgeBaseId={activeBase?.id ?? ''}
-              onBack={() => { setSelectedPageId(null); setEditorSidebarOpen(false); setLibraryView('all-documents'); }}
+              onBack={() => { setSelectedPageId(null); setLibraryView('all-documents'); }}
               onToggleSidebar={() => setEditorSidebarOpen((value) => !value)}
               onCreateDocument={() => setCreateDocumentOpen(true)}
               canCreateDocument={canEditTree(accessQuery.data)}

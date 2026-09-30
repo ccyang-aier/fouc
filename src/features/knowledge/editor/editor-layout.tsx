@@ -43,7 +43,7 @@ export function DocumentEditorBody({ editor, before }: { editor: Editor | null; 
   const codeFont = documentCodeFonts.find(({ id }) => id === appearance.codeFont)!;
   const size = documentSizes.find(({ id }) => id === appearance.size)!;
   const spacing = documentParagraphSpacings.find(({ id }) => id === appearance.paragraphSpacing)!;
-  return <div className={styles.scrollArea}>
+  return <div className={styles.scrollArea} data-document-scroll>
     <div className={styles.document} data-width={appearance.width} data-font={appearance.font} data-size={appearance.size} style={{ '--document-width': `${appearance.width}%`, '--document-font': font.family, '--document-code-font': codeFont.family, '--document-size': `${size.pixels}px`, '--document-line-height': appearance.lineHeight, '--document-paragraph-gap': `${spacing.pixels}px` } as CSSProperties}>{before}<EditorContent editor={editor} /></div>
   </div>;
 }

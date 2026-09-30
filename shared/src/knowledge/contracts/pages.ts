@@ -69,9 +69,10 @@ export const createPageInputSchema = z.strictObject({
 }).superRefine(validatePageRelation);
 export const updatePageInputSchema = pageScopeSchema.extend({
   title: pageFields.title.optional(),
+  properties: propertiesSchema.optional(),
   icon: pageFields.icon.optional(),
   cover: pageFields.cover.optional(),
-}).refine((value) => value.title !== undefined || value.icon !== undefined || value.cover !== undefined, '至少提供一个待更新字段');
+}).refine((value) => value.title !== undefined || value.icon !== undefined || value.cover !== undefined || value.properties !== undefined, '至少提供一个待更新字段');
 export const movePageInputSchema = pageScopeSchema.extend({
   parentId: entityIdSchema.nullable(),
   teamspaceId: entityIdSchema,

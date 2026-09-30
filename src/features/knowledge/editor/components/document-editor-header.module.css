@@ -23,3 +23,7 @@
 @media (max-width: 700px) { .header { height: 56px; padding: 0 12px; gap: 8px; } .leading { gap: 3px; } .collectionName { max-width: 72px; font-size: 13px; } .divider { padding: 0 2px; } .actions { gap: 4px; } .avatar { display: none; } .outlineButton { padding: 0 7px; font-size: 12px; } .outlineButton svg { width: 15px; } }
 @media (max-width: 540px) { .createLabel { display: none; } .createButton { width: 32px; padding: 0; } }
 @media (max-width: 380px) { .header { padding-inline: 8px; gap: 6px; } .collectionName { max-width: 48px; } .divider { display: none; } }
+
+@container (max-width:620px) { .header{gap:8px;padding-left:12px}.collectionName{max-width:72px;font-size:13px}.actions{gap:4px}.avatar{display:none}.outlineButton{padding-inline:6px;font-size:12px}.divider{padding-inline:3px} }
+@container (max-width:430px) { .createLabel{display:none}.createButton{width:28px;padding:0}.divider{display:none}.collectionName{max-width:64px} }
+@container (max-width:330px) { .collectionName,.outlineButton{display:none}.header{padding-left:8px;gap:4px}.leading{gap:2px} }

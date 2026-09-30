@@ -8,6 +8,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { DocumentMoreMenu, type DocumentMenuActions } from './document-more-menu';
+import { DocumentNavigationTools } from '../document-tools';
 import { DocumentStarButton } from './document-star-button';
 import styles from './document-editor-header.module.css';
 
@@ -37,7 +38,7 @@ export function DocumentEditorHeader({
     } catch { setCopyState('failed'); }
   };
 
-  return <header className={styles.header}>
+  return <DocumentNavigationTools editor={editor} title={title} target={menuActions.target}><header className={styles.header}>
     <div className={styles.leading}>
       <button type="button" className={styles.libraryButton} aria-label="返回文档列表" title="返回文档列表" onClick={onBack}>
         <BookOpen aria-hidden size={18} weight="duotone" />
@@ -61,5 +62,5 @@ export function DocumentEditorHeader({
       <button type="button" aria-label="新建文档" className={`${styles.outlineButton} ${styles.createButton}`} disabled={!canCreateDocument} title={canCreateDocument ? '新建文档' : '没有创建文档的权限'} onClick={onCreateDocument}><Plus aria-hidden size={20} weight="bold" /><span className={styles.createLabel}>新建文档</span></button>
       <DocumentMoreMenu editor={editor} title={title} starred={starred} onToggleStar={onToggleStar} actions={menuActions} />
     </div>
-  </header>;
+  </header></DocumentNavigationTools>;
 }

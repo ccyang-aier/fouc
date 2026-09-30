@@ -15,6 +15,7 @@ import { BlockBackspaceKey } from './keyboard/block-backspace';
 import { BlockEnterKey } from './keyboard/block-enter';
 import { BlockMoveKey } from './keyboard/block-move';
 import { BlockFormatShortcuts } from './keyboard/block-format-shortcuts';
+import { DocumentSearch } from './document-search';
 import { ListIndentKey } from './keyboard/list-indent';
 
 export { MarkInputRules };
@@ -28,6 +29,7 @@ export { nearestAncestor, nearestListItem } from './prose-context';
 export function createBlockEditingExtensions(): Extensions {
   return [
     ...EDITOR_BLOCK_MODULES.flatMap((module) => module.extensions ?? []),
+    DocumentSearch,
     MarkInputRules,
     BlockEnterKey,
     BlockBackspaceKey,

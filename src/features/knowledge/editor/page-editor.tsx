@@ -1,4 +1,7 @@
 'use client';
+import { useKnowledgePagesQuery } from '../data/pages-queries';
+import { documentFileFormat } from '../documents/file-format';
+import { WorkspaceFileDocument } from '../documents/file-document-surface';
 
 /**
  * The page editor container (E03, design §4/§5.1) — the state closed loop in
@@ -38,10 +41,14 @@ function pageAccessErrorText(error: unknown): string {
 
 /** The page editor of one open page; mounts inside the U02 canvas main column. */
 export function PageEditor({ scope, user, collectionName, knowledgeBaseId, onBack, onToggleSidebar, onCreateDocument, canCreateDocument }: { scope: PageScope; user: FoucAuthUser | null; collectionName: string; knowledgeBaseId: string; onBack: () => void; onToggleSidebar: () => void; onCreateDocument: () => void; canCreateDocument: boolean }) {
+  const pages = useKnowledgePagesQuery(scope.workspaceId);
+  const page = pages.data?.find(item => item.id === scope.pageId);
+  const format = page ? documentFileFormat(page.title) : null;
+  const isFile = Boolean(page?.properties.fileAsset || format && format !== "markdown");
   const { gate, error: gateError, retry } = usePageEditorGate(scope.workspaceId, scope.pageId);
   // The collaboration session only exists once view access has been granted —
   // a denied page never opens a WebSocket or an IndexedDB copy.
-  const session = usePageEditorSession(gate.status === 'granted' ? scope : null);
+  const session = usePageEditorSession(gate.status === 'granted' && pages.isSuccess && !isFile ? scope : null);
   const view = derivePageEditorView(gate, session.status);
 
   if (gate.status === 'pending') {
@@ -64,6 +71,9 @@ export function PageEditor({ scope, user, collectionName, knowledgeBaseId, onBac
       />
     );
   }
+  if (pages.isPending) return <CanvasSpinner label="正在读取文档信息" />;
+  if (pages.isError) return <CanvasError title="无法读取文档信息" detail="请检查网络后重试。" onRetry={() => { void pages.refetch(); }} />;
+  if (gate.status === "granted" && isFile && page) return <WorkspaceFileDocument workspaceId={scope.workspaceId} knowledgeBaseId={knowledgeBaseId} page={page} canEdit={gate.level === "edit" || gate.level === "full"} avatarName={user?.name ?? "我"} collectionName={collectionName} onBack={onBack} onToggleSidebar={onToggleSidebar} onCreateDocument={onCreateDocument} />;
   if (session.failure) {
     return <CanvasError title="无法打开页面文档" detail={session.failure} onRetry={session.retry} />;
   }

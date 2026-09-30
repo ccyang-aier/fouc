@@ -3,11 +3,13 @@
 import type { ReactNode } from 'react';
 import { SidebarSimple } from '@phosphor-icons/react';
 import { motion } from 'motion/react';
+import { DocumentReferenceWorkspace } from './editor/document-reference';
 import { IconButton } from './dense-sidebar/icon-button';
 import styles from './knowledge-workbench.module.css';
 
 /** One presentation for all knowledge resources; adapters own data and actions. */
-export function KnowledgeWorkbench({ sidebar, children, overlays, onExpandSidebar, documentOpen = false, sidebarOpen = false, onCloseSidebar }: {
+export function KnowledgeWorkbench({ sidebar, children, overlays, onExpandSidebar, documentOpen = false, sidebarOpen = true, onCloseSidebar, navigationScope }: {
+  navigationScope: string;
   sidebar: ReactNode;
   children: ReactNode;
   overlays?: ReactNode;
@@ -22,7 +24,7 @@ export function KnowledgeWorkbench({ sidebar, children, overlays, onExpandSideba
       <div className={documentOpen ? styles.documentSidebar : styles.standardSidebar} data-open={sidebarOpen || undefined}>{sidebar}</div>
       <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
         {!documentOpen && onExpandSidebar ? <IconButton label="展开知识库侧边栏" tooltip="展开侧栏" onClick={onExpandSidebar} className="absolute left-2 top-2 z-10 flex size-7 items-center justify-center rounded-md text-[var(--muted-strong)] hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><SidebarSimple size={18} /></IconButton> : null}
-        {children}
+        <DocumentReferenceWorkspace key={navigationScope} scope={navigationScope}>{children}</DocumentReferenceWorkspace>
       </div>
     </div>
     {overlays}

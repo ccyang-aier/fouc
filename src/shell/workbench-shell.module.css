@@ -1,8 +1,3 @@
-.frame:has([data-document-editor='true']) .navigation,
-.frame:has([data-document-editor='true']) .systemBar {
-  display: none;
-}
-
-.frame:has([data-document-editor='true']) {
-  min-width: 0;
-}
+/* Explicit document fullscreen uses the native Fullscreen API. */
+.frame { min-width:0; }
+.navigation,.systemBar { flex-shrink:0; }

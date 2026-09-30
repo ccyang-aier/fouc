@@ -1,0 +1,49 @@
+'use client';
+import { useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import type { Page } from '@fouc/shared/knowledge/contracts';
+import { DocumentEditorFrame } from '../editor/editor-layout';
+import { DocumentEditorHeader } from '../editor/components/document-editor-header';
+import { useSidebarCollections } from '../navigation/sidebar-collections';
+import { useIdentity } from '@/features/identity/identity-provider';
+import { FileDocumentPreview } from './file-document-preview';
+import { AssetUploader } from '../assets/components/asset-uploader';
+import type { UploadedAsset } from '../assets/use-asset-uploads';
+import { fileFromProperties, fileProperties, documentFileFormat, type DocumentFile } from './file-format';
+import { updateKnowledgePage, recycleKnowledgePage } from '../data/pages-api';
+import { knowledgeQueryKeys } from '../data/query-keys';
+import type { LocalDocument } from '../local/local-library';
+
+type SurfaceProps = { workspaceId: string; collectionName: string; onBack: () => void; onToggleSidebar: () => void; onCreateDocument: () => void };
+export function WorkspaceFileDocument({ workspaceId, knowledgeBaseId, page, canEdit, avatarName, collectionName, onBack, onToggleSidebar, onCreateDocument }: SurfaceProps & { knowledgeBaseId: string; page: Page; canEdit: boolean; avatarName: string }) {
+  const client = useQueryClient();
+  const { session } = useIdentity();
+  const { collections, toggleStar } = useSidebarCollections(session.status === "authenticated" ? session.user.id : "guest", workspaceId, knowledgeBaseId);
+  const [associate, setAssociate] = useState(false);
+  const [error, setError] = useState('');
+  const file = useMemo(() => fileFromProperties(page.properties), [page.properties]);
+  async function uploaded(asset: UploadedAsset) {
+    setError('');
+    try {
+      const uploadedFile = { source: `asset:${asset.hash}`, name: asset.name, mime: asset.mime, size: asset.size };
+      if (!documentFileFormat(asset.name)) throw new Error('请选择支持预览的文档格式。');
+      const updated = await updateKnowledgePage(workspaceId, { pageId: page.id, properties: { ...page.properties, ...fileProperties(uploadedFile) } });
+      client.setQueryData<Page[]>(knowledgeQueryKeys.pages(workspaceId), current => current?.map(item => item.id === updated.id ? updated : item));
+      setAssociate(false);
+    } catch (error) { setError(error instanceof Error ? error.message : '文件关联失败，请重试。'); }
+  }
+  return <DocumentEditorFrame appearanceScope={`file:${workspaceId}:${page.id}`}>
+    <DocumentEditorHeader editor={null} collectionName={collectionName} title={page.title} avatarName={avatarName} starred={collections.starred.includes(page.id)} onBack={onBack} onToggleSidebar={onToggleSidebar} onToggleStar={() => toggleStar(page.id)} canCreateDocument={canEdit} onCreateDocument={onCreateDocument} shareDescription="原文件的访问权限与当前知识库一致。" menuActions={{ target: { workspaceId, knowledgeBaseId, pageId: page.id, source: 'workspace' }, onDelete: canEdit ? async () => { await recycleKnowledgePage(workspaceId, { pageId: page.id }); void client.invalidateQueries({ queryKey: knowledgeQueryKeys.pages(workspaceId) }); onBack(); } : undefined }} />
+    <FileDocumentPreview workspaceId={workspaceId} source="workspace" file={file} name={page.title} attach={canEdit ? <button type="button" onClick={() => setAssociate(true)}>选择原文件</button> : undefined} />
+    {associate && <div className="absolute inset-0 z-40 flex items-center justify-center bg-[var(--panel)] p-8"><div className="w-full max-w-[440px]"><div className="mb-5 flex justify-between text-sm"><strong>关联原文件</strong><button aria-label="关闭文件关联" onClick={() => setAssociate(false)}>关闭</button></div><AssetUploader workspaceId={workspaceId} onUploaded={asset => { void uploaded(asset); }} />{error && <p role="alert" className="mt-4 text-xs text-[var(--err-ink)]">{error}</p>}</div></div>}
+  </DocumentEditorFrame>;
+}
+
+export function LocalFileDocument({ workspaceId, document, collectionName, onBack, onToggleSidebar, onCreateDocument, onChange, attach }: SurfaceProps & { document: LocalDocument; onChange: (patch: Partial<LocalDocument>) => boolean; attach: (setFile: (file: DocumentFile) => boolean) => React.ReactNode }) {
+  const [associate, setAssociate] = useState(false);
+  return <DocumentEditorFrame appearanceScope={`local-file:${workspaceId}:${document.id}`}>
+    <DocumentEditorHeader editor={null} collectionName={collectionName} title={document.title} avatarName="我" starred={document.starred} onBack={onBack} onToggleSidebar={onToggleSidebar} onToggleStar={() => onChange({ starred: !document.starred })} onCreateDocument={onCreateDocument} shareDescription="原文件仅保存在当前浏览器。" menuActions={{ target: { workspaceId, knowledgeBaseId: document.baseId, pageId: document.id, source: 'local' }, onDelete: () => { if (onChange({ deleted: true })) onBack(); else throw new Error('保存失败'); } }} />
+    <FileDocumentPreview workspaceId={workspaceId} source="local" file={document.file} name={document.title} attach={<button type="button" onClick={() => setAssociate(true)}>选择原文件</button>} />
+    {associate && <div className="absolute inset-0 z-40 flex items-center justify-center bg-[var(--panel)] p-8"><div className="w-full max-w-[440px]"><div className="mb-5 flex justify-between text-sm"><strong>关联原文件</strong><button aria-label="关闭文件关联" onClick={() => setAssociate(false)}>关闭</button></div>{attach(file => { const saved = onChange({ file }); if (saved) setAssociate(false); return saved; })}</div></div>}
+  </DocumentEditorFrame>;
+}

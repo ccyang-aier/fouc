@@ -12,6 +12,8 @@ import { SIDEBAR_MAIN_ITEMS } from '../dense-sidebar/sidebar-navigation';
 import { useKnowledgeBaseSelection } from '../use-knowledge-base-selection';
 import { useI18n } from '../dense-sidebar/use-i18n';
 import { createLocalLibraryStore, emptyLocalLibrary, newLocalDocument, type LocalDocument } from './local-library';
+import { LocalFileDocument } from '../documents/file-document-surface';
+import { documentFileFormat } from '../documents/file-format';
 import { LocalDocumentEditor } from './local-document-editor';
 import { subscribeOpenPageTarget } from '../editor/open-target';
 import { LocalLibraryNavigation } from './local-library-navigation';
@@ -43,7 +45,7 @@ function LocalKnowledgeContent({ workspaceId, store, onOpenSettings, onOpenWorks
   const [folderId, setFolderId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(() => currentDocumentLinkTarget(workspaceId, 'local')?.pageId ?? null);
   const [collapsed, setCollapsed] = useState(false);
-  const [editorSidebarOpen, setEditorSidebarOpen] = useState(false);
+  const [editorSidebarOpen, setEditorSidebarOpen] = useState(true);
   const [activeTagId, setActiveTagId] = useState<string | null>(null);
   const [creation, setCreation] = useState<'document' | 'base' | 'folder' | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
@@ -76,6 +78,7 @@ function LocalKnowledgeContent({ workspaceId, store, onOpenSettings, onOpenWorks
   }
   const title = selected ? selected.title : SIDEBAR_MAIN_ITEMS.find((item) => item.id === view)?.labelKey;
   return <KnowledgeWorkbench
+    navigationScope={`local:${workspaceId}:${base?.id ?? "none"}`}
     documentOpen={Boolean(selected)}
     sidebarOpen={Boolean(selected) && editorSidebarOpen}
     onCloseSidebar={() => setEditorSidebarOpen(false)}
@@ -132,12 +135,12 @@ function LocalKnowledgeContent({ workspaceId, store, onOpenSettings, onOpenWorks
       setCreation(null);
     }} />}
   >
-      {!base ? <LocalLibraryEmptyState onCreate={() => setCreation('base')} /> : selected ? <LocalDocumentEditor key={selected.id} workspaceId={workspaceId} store={store} document={selected} collectionName={base.name} onChange={(patch) => updateDocument(selected.id, patch)} onBack={() => { setSelectedId(null); setEditorSidebarOpen(false); }} onToggleSidebar={() => setEditorSidebarOpen((open) => !open)} onCreateDocument={() => setCreation('document')} /> : view === 'all-documents' ? <DocumentsPage key={`${base.id}:${folderId ?? activeTagId ?? 'all'}`}
+      {!base ? <LocalLibraryEmptyState onCreate={() => setCreation('base')} /> : selected ? (selected.file || documentFileFormat(selected.title) && documentFileFormat(selected.title) !== "markdown") ? <LocalFileDocument key={selected.id} workspaceId={workspaceId} document={selected} collectionName={base.name} onChange={(patch) => updateDocument(selected.id, patch)} onBack={() => setSelectedId(null)} onToggleSidebar={() => setEditorSidebarOpen(open => !open)} onCreateDocument={() => setCreation("document")} attach={setFile => <LocalDocumentImport workspaceId={workspaceId} onImport={items => { return items[0] ? setFile(items[0].file) : false; }} />} /> : <LocalDocumentEditor key={selected.id} workspaceId={workspaceId} store={store} document={selected} collectionName={base.name} onChange={(patch) => updateDocument(selected.id, patch)} onBack={() => { setSelectedId(null); }} onToggleSidebar={() => setEditorSidebarOpen((open) => !open)} onCreateDocument={() => setCreation('document')} /> : view === 'all-documents' ? <DocumentsPage key={`${base.id}:${folderId ?? activeTagId ?? 'all'}`}
         onExpandSidebar={collapsed ? () => setCollapsed(false) : undefined}
         documents={listed.map((item) => ({ id: item.id, title: item.title, updatedAt: item.updatedAt, creator: item.creator ?? '我', source: item.source ?? '本机文档', status: item.indexStatus ?? '暂无状态', starred: item.starred, folderId: item.folderId }))}
         folders={activeTagId ? [] : folders.map((folder) => ({ id: folder.id, name: folder.name, count: live.filter((item) => item.folderId === folder.id).length, updatedAt: live.filter((item) => item.folderId === folder.id).map((item) => item.updatedAt).sort().at(-1) }))}
         onOpen={setSelectedId} onOpenFolder={setFolderId} onCreate={() => setCreation('document')} onCreateFolder={() => setCreation('folder')}
-        upload={<LocalDocumentImport onImport={(items) => write((current) => ({ ...current, documents: [...current.documents, ...items.map((item) => ({ ...newLocalDocument(base.id, item.name), folderId: folderId ?? folders[0]?.id, body: { type: 'doc', content: item.text.split(/\r?\n/).map((text) => ({ type: 'paragraph', ...(text ? { content: [{ type: 'text', text }] } : {}) })) } }))] }))} />}
+        upload={<LocalDocumentImport workspaceId={workspaceId} onImport={(items) => write((current) => ({ ...current, documents: [...current.documents, ...items.map((item) => ({ ...newLocalDocument(base.id, item.name), folderId: folderId ?? folders[0]?.id, file: item.file, body: { type: 'doc', content: item.text.split(/\r?\n/).map((text) => ({ type: 'paragraph', ...(text ? { content: [{ type: 'text', text }] } : {}) })) } }))] }))} />}
         renderMenu={(id) => <DropdownMenu><DropdownMenuTrigger asChild><button type="button" aria-label="文档操作" className="p-2 text-slate-500"><DotsThree size={17} weight="bold" /></button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onSelect={() => setSelectedId(id)}>打开 / 编辑</DropdownMenuItem><DropdownMenuItem onSelect={() => { const item = live.find((doc) => doc.id === id); if (item) updateDocument(id, { starred: !item.starred }); }}>切换星标</DropdownMenuItem><DropdownMenuItem onSelect={() => { const item = live.find((doc) => doc.id === id); if (item) updateDocument(id, { draft: !item.draft }); }}>切换草稿</DropdownMenuItem><DropdownMenuSub><DropdownMenuSubTrigger>标签</DropdownMenuSubTrigger><DropdownMenuSubContent>{tags.length ? tags.map((tag) => <DropdownMenuCheckboxItem key={tag.id} checked={tag.pageIds.includes(id)} onCheckedChange={() => toggleDocumentTag(tag.id, id)}>{tag.name}</DropdownMenuCheckboxItem>) : <DropdownMenuItem disabled>暂无标签</DropdownMenuItem>}</DropdownMenuSubContent></DropdownMenuSub><DropdownMenuItem onSelect={() => updateDocument(id, { deleted: true })} className="text-red-600">移至回收站</DropdownMenuItem></DropdownMenuContent></DropdownMenu>}
       /> : <section className="h-full overflow-auto px-8 py-12 sm:px-14">
         <div className="mx-auto max-w-[860px]">

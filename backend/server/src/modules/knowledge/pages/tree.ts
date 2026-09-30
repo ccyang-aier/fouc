@@ -5,6 +5,7 @@ import {
   entityIdSchema,
   movePageInputSchema,
   pagePlacementSchema,
+  propertiesSchema,
   recyclePageInputSchema,
   restorePageInputSchema,
 } from '@fouc/shared/knowledge/contracts';
@@ -116,6 +117,7 @@ const pagePatchSchema = z.strictObject({
   pageId: z.string().uuid(),
   patch: z.strictObject({
     title: z.string().max(500).optional(),
+    properties: propertiesSchema.optional(),
     icon: z.string().max(200).nullable().optional(),
     cover: z.string().max(2048).nullable().optional(),
   }).refine((value) => Object.keys(value).length > 0, 'at least one field'),

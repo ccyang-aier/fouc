@@ -7,6 +7,7 @@ import { Bell, ChatCircleDots, ClockCounterClockwise, Copy, DotsThree, DownloadS
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ModalDialog } from '../../organization/ui';
 import { documentLink, type DocumentLinkTarget } from '../document-link';
+import { useDocumentNavigation } from '../document-tools';
 import { DocumentAppearanceMenu } from './document-appearance-menu';
 import { DocumentStarMenuItem } from './document-star-menu-item';
 import { documentContent, downloadDocument, printDocument, type ContentFormat } from './document-content-actions';
@@ -27,6 +28,7 @@ function ReservedItem({ children, icon }: { children: string; icon: ReactNode })
 export function DocumentMoreMenu({ editor, title, starred, onToggleStar, actions }: {
   editor: Editor | null; title: string; starred: boolean; onToggleStar: () => void; actions: DocumentMenuActions;
 }) {
+  const navigation = useDocumentNavigation();
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
@@ -68,7 +70,7 @@ export function DocumentMoreMenu({ editor, title, starred, onToggleStar, actions
             </DropdownMenuSubContent>
           </DropdownMenuSub>
           <DocumentAppearanceMenu triggerClassName={styles.item} />
-          <ReservedItem icon={<Presentation aria-hidden />}>演示</ReservedItem>
+          <DropdownMenuItem className={styles.item} disabled={!editor || !navigation} onSelect={navigation?.onPresent}><Presentation aria-hidden />演示</DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup aria-label="关注与协作">
@@ -95,9 +97,9 @@ export function DocumentMoreMenu({ editor, title, starred, onToggleStar, actions
         <DropdownMenuSeparator />
         <DropdownMenuGroup aria-label="组织与浏览">
           <ReservedItem icon={<FolderSimple aria-hidden />}>移动</ReservedItem>
-          <ReservedItem icon={<PushPin aria-hidden />}>固定</ReservedItem>
-          <ReservedItem icon={<SplitHorizontal aria-hidden />}>在拆分视图打开</ReservedItem>
-          <ReservedItem icon={<MagnifyingGlass aria-hidden />}>在文档中搜索</ReservedItem>
+          <DropdownMenuItem className={styles.item} disabled={!navigation?.onTogglePin} onSelect={event => { event.preventDefault(); navigation?.onTogglePin?.(); }}><PushPin aria-hidden weight={navigation?.pinned ? "fill" : "regular"} />{navigation?.pinned ? "取消固定" : "固定"}</DropdownMenuItem>
+          <DropdownMenuItem className={styles.item} disabled={!editor || !navigation?.onSplit} onSelect={navigation?.onSplit}><SplitHorizontal aria-hidden />在拆分视图打开</DropdownMenuItem>
+          <DropdownMenuItem className={styles.item} disabled={!editor || !navigation} onSelect={navigation?.onSearch}><MagnifyingGlass aria-hidden />在文档中搜索</DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup aria-label="删除文档">

@@ -8,12 +8,12 @@ export type TableVariant = 'plain' | 'striped' | 'minimal';
 
 export const TABLE_COLORS = [
   { name: '空', value: null },
-  { name: 'Coral', value: '#EAE2D2' },
-  { name: 'Apricot', value: '#ECDDD2' },
-  { name: 'Sunset', value: '#E9D5D1' },
-  { name: 'Smoothie', value: '#DCE4D5' },
-  { name: 'Bubblegum', value: '#E3DCEB' },
-  { name: 'Neon', value: '#D8E4EA' },
+  { name: 'Coral', value: '#E2D8C6' },
+  { name: 'Apricot', value: '#E4D1C3' },
+  { name: 'Sunset', value: '#DFC8C3' },
+  { name: 'Smoothie', value: '#CEDAC5' },
+  { name: 'Bubblegum', value: '#D7CEE2' },
+  { name: 'Neon', value: '#C9DBE3' },
 ] as const;
 
 export function setTableColor(state: EditorState, dispatch: ((tr: Transaction) => void) | undefined, target: TableStyleTarget, background: string | null): boolean {

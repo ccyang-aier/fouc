@@ -1,4 +1,4 @@
-.root { position: relative; margin: 32px 0 26px; padding: 20px 0 0 20px; }
+.root { position: relative; margin: 32px 0 26px; padding-top: 20px; }
 .shell { overflow-x: auto; border: 1px solid #d7dfed; border-radius: 7px; background: #fff; scrollbar-width: thin; }
 .table { width: 100%; border-collapse: collapse; table-layout: fixed; color: #3e4859; font-size: 14px; line-height: 22px; cursor: pointer; }
 .root .table :global(th), .root .table :global(td) { position: relative; min-width: 90px; height: 43px; border: 1px solid #d7dfed; padding: 10px 12px; background: transparent; text-align: left; vertical-align: top; }
@@ -16,7 +16,7 @@
 .table[data-variant="minimal"] :global(th), .table[data-variant="minimal"] :global(td) { border-left: 0; border-right: 0; }
 .root .table :global(.selectedCell)::after { position: absolute; inset: 0; z-index: 2; background: rgba(38,101,222,.10); content: ''; pointer-events: none; }
 .root .table :global(.selectedCell)::selection { background: transparent; }
-.root .table :global(.column-resize-handle) { position: absolute; top: 0; right: -.75px; bottom: 0; z-index: 7; width: 1.5px; background: #2868e6; pointer-events: none; }
+.root .table :global(.column-resize-handle) { position: absolute; top: 0; right: -1px; bottom: 0; z-index: 7; width: 2px; background: #2868e6; pointer-events: none; }
 .root:not([data-active]) :global(.column-resize-handle) { display: none; }
 .root .table :global(.column-resize-dragging) { user-select: none; }
 :global(.ProseMirror.resize-cursor), :global(.ProseMirror.resize-cursor *) { cursor: col-resize !important; }
@@ -31,7 +31,7 @@
 .columnHandle:active, .rowHandle:active, .corner:active { cursor: grabbing; }
 .columnHandle:last-child, .rowHandle:last-child { border: 0; }
 .columnHandle:hover, .rowHandle:hover, .corner:hover { background: #c9d4e7; }
-.columnHandle[data-selected], .rowHandle[data-selected] { background: #2863dc; }
+.columnHandle[data-selected], .rowHandle[data-selected], .corner[data-selected] { background: #2863dc; }
 .corner:focus-visible, .columnHandle:focus-visible, .rowHandle:focus-visible { outline: 2px solid #2863dc; outline-offset: -2px; }
 .insertButton { position: absolute; z-index: 6; display: grid; width: 20px; height: 20px; padding: 0; place-items: center; border: 0; border-radius: 50%; background: transparent; color: white; cursor: pointer; pointer-events: auto; }
 .boundaryDot { width: 5px; height: 5px; border-radius: 50%; background: #dbe1ea; }
@@ -77,4 +77,4 @@
 .copyColor:hover { background: #f5f6f8; }
 .copyColor:focus-visible { outline: 2px solid #2868e6; outline-offset: 2px; }
 .copyError { margin-top: 8px; font-size: 12px; color: #b64d4d; }
-@media (max-width: 600px) { .root { padding-left: 20px; } .menu { width: 170px; font-size: 14px; } .pickerMenu { width: 286px; } }
+@media (max-width: 600px) { .menu { width: 170px; font-size: 14px; } .pickerMenu { width: 286px; } }

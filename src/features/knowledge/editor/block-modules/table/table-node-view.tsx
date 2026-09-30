@@ -142,7 +142,7 @@ export function TableNodeView({ node, editor, getPos, HTMLAttributes }: NodeView
       <TableContent as="table" className={styles.table} data-variant={node.attrs.variant} style={{ backgroundColor: node.attrs.background ?? undefined }} />
     </div>
     {editor.isEditable && geometry && active && (selection || menu) ? <div contentEditable={false} className={styles.controls} aria-label="表格行列控制" onPointerEnter={clearResizeHover}>
-      <button type="button" className={styles.corner} aria-label="选择整个表格" aria-haspopup="menu" style={{ left: geometry.viewportLeft - 18, top: geometry.top - 18 }} onMouseDown={event => event.preventDefault()} onClick={() => open('table', 0)} />
+      <button type="button" className={styles.corner} aria-label="选择整个表格" aria-haspopup="menu" aria-pressed={!!selection?.rowsSelected && !!selection?.columnsSelected} data-selected={selection?.rowsSelected && selection?.columnsSelected || undefined} style={{ left: geometry.viewportLeft - 18, top: geometry.top - 18 }} onMouseDown={event => event.preventDefault()} onClick={() => open('table', 0)} />
       <div className={styles.columnRail} style={{ left: geometry.viewportLeft, top: geometry.top - 17, width: geometry.viewportWidth }}>
         {geometry.columns.slice(0, -1).map((left, index) => <button key={index} type="button" className={styles.columnHandle} aria-label={`第 ${index + 1} 列操作`} aria-haspopup="menu" aria-expanded={menu?.target === 'column' && menu.style.left === geometry.left + left}
           data-selected={selection?.columnsSelected && index >= selection.left && index < selection.right || undefined}

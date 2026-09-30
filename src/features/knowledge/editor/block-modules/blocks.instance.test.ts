@@ -33,7 +33,7 @@ import {
 } from '@fouc/shared/knowledge/schema';
 import { createBlockEditingExtensions } from '../extensions';
 import { applyEditorBlockModules } from '.';
-import { insertColumnRight, insertRowBelow, removeTableRow, toggleTableHeaderRow } from './table/table-commands';
+import { insertColumnRight, insertRowBelow, removeTableRow, selectTableAxis, tableNodeAt, toggleTableHeaderRow } from './table/table-commands';
 
 const pageId = '00000000-0000-4000-8000-000000000001';
 
@@ -281,6 +281,19 @@ describe('table NodeView', () => {
       expect(controls!.querySelector('button[aria-label="第 1 行操作"]')).not.toBeNull();
       expect(controls!.querySelector('button[aria-label="第 1 列操作"]')).not.toBeNull();
       expect(controls!.querySelector('button[aria-label="选择整个表格"]')).not.toBeNull();
+
+      const corner = controls!.querySelector('button[aria-label="选择整个表格"]')!;
+      expect(corner.getAttribute('aria-pressed')).toBe('false');
+      const tablePos = tableNodeAt(editor.state.selection.$from)!.pos;
+      editor.view.dispatch(selectTableAxis(editor.state, tablePos, 'table', 0)!);
+      await settle();
+      expect(corner.getAttribute('aria-pressed')).toBe('true');
+      expect(corner.hasAttribute('data-selected')).toBe(true);
+      editor.view.dispatch(selectTableAxis(editor.state, tablePos, 'column', 0)!);
+      await settle();
+      expect(corner.getAttribute('aria-pressed')).toBe('false');
+      expect(corner.hasAttribute('data-selected')).toBe(false);
+      caretInText(editor, 'R1C1');
 
       editor.commands.command(insertRowBelow);
       await settle();

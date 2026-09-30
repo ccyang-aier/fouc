@@ -748,6 +748,11 @@
           "summary": "表格点击后显示 12px 行列控制条、外部点击收起，列宽指示线 1.5px；多级紧凑菜单、范围拖选回退、合并拆分、自然排序、表头固定、列宽拖拽完成。莫兰迪浅色预置与二维自定义色板支持色相、透明度、HEX 和复制；CSV 实际下载验证中文 BOM、引号及逗号转义。表格/NodeView/评论 56 项、schema/Markdown 147 项回归通过。Web 文档验证表头文字、样式、排序、合并拆分、独立列宽、撤销/重做及重开；并发编辑内容保留，后续色板验证使用不连接文档数据的临时页面，已清理。390px 窗口的菜单和色板无越界；最终浏览器无错误。Web 构建、前端/共享类型、lint、文档和架构验证通过；Web/device/server 及数据库、Redis、MinIO 持续运行，未执行 Tauri 构建。",
           "command": "bun test --isolate src/features/knowledge/editor/block-modules/table src/features/knowledge/editor/block-modules/blocks.instance.test.ts src/features/knowledge/comments/comments-plugin.instance.test.ts; bun test --isolate shared/src/knowledge/schema shared/src/knowledge/markdown; pnpm typecheck; pnpm shared:typecheck; pnpm exec eslint src/features/knowledge/editor/block-modules/table src/features/knowledge/editor/block-modules/blocks.instance.test.ts src/features/knowledge/comments/comments-controller.tsx --max-warnings=0; pnpm architecture:verify; pnpm docs:verify; pnpm knowledge:verify; pnpm build; pnpm dev:all; browser localhost:3000 isolated validation",
           "verifiedAt": "2026-09-30"
+        },
+        {
+          "summary": "表格本体恢复正文全宽，控制条位于正文边界外；莫兰迪预置色略加深，列宽拖拽线调整为 2px，整表选区的左上圆点保持蓝色激活。52 项表格/NodeView 回归通过，包含整表与单列选区圆点状态切换；lint、前端类型、文档和任务验证通过。独立内存页面验证 1280px 下正文与表格均宽 960px，真实列宽拖拽后仍对齐；390px 下正文与表格均宽 310px，页面无横向溢出；整表背景应用、菜单关闭后圆点激活、2px 指示线和浏览器零错误通过。临时页面已清理，保留用户正在编辑的文档；开发服务与 DB/Redis/MinIO 复用且健康，未执行 Tauri 构建。",
+          "command": "bun test --isolate src/features/knowledge/editor/block-modules/table src/features/knowledge/editor/block-modules/blocks.instance.test.ts; pnpm exec eslint src/features/knowledge/editor/block-modules/table src/features/knowledge/editor/block-modules/blocks.instance.test.ts --max-warnings=0; pnpm typecheck; pnpm docs:verify; pnpm knowledge:verify; pnpm dev:all; node backend/server/scripts/knowledge-infra.mjs verify; browser isolated validation 1280px and 390px",
+          "verifiedAt": "2026-09-30"
         }
       ]
     },

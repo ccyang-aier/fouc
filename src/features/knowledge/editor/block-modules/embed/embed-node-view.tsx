@@ -52,7 +52,7 @@ export function EmbedNodeView({ node, editor, updateAttributes, HTMLAttributes }
       </span>
     </div>
     {preview && !editing ? <div className={styles.preview} contentEditable={false}><iframe title={title} src={preview} loading="lazy" referrerPolicy="no-referrer" sandbox="allow-scripts allow-forms allow-popups allow-presentation" allowFullScreen /></div> : null}
-    {(!source || editing) && editor.isEditable ? <div className={styles.setup} contentEditable={false}>
+    {(!source || editing) && editor.isEditable ? <div className={styles.setup} contentEditable={false} data-document-export-omit>
       <span className={styles.setupIcon}><LinkSimple aria-hidden size={22} /></span>
       <strong>嵌入网页</strong>
       <p>支持网页、YouTube 和 Vimeo 链接。</p>

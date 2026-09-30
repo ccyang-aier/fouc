@@ -35,7 +35,7 @@ export function ColumnsNodeView({ node, editor, getPos, selected, HTMLAttributes
       onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
     >
       {editor.isEditable ? (
-        <div ref={controlsRef} className={styles.controls} contentEditable={false}>
+        <div ref={controlsRef} className={styles.controls} contentEditable={false} data-document-export-omit>
           <button type="button" className={styles.trigger} aria-label="分栏布局" aria-expanded={open} onClick={() => setOpen((value) => !value)}><Columns aria-hidden size={15} /> {node.childCount} 栏</button>
           {open ? <div role="dialog" aria-label="分栏布局" className={styles.menu} onMouseDown={(event) => event.preventDefault()} onKeyDown={(event) => { if (event.key === 'Escape') setOpen(false); }}>
             <div className={styles.menuTitle}>列宽比例</div>

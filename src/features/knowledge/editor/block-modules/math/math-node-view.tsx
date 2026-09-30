@@ -61,7 +61,7 @@ export function MathNodeView({ node, editor, updateAttributes, selected, HTMLAtt
         {rendered.html ? <div dangerouslySetInnerHTML={{ __html: rendered.html }} /> : <span className={styles.previewPlaceholder}>{latex ? '修正语法后会显示预览' : '输入 LaTeX 公式，预览会实时显示在这里'}</span>}
       </div>
       {editor.isEditable ? (
-        <div className={styles.editArea} contentEditable={false}>
+        <div className={styles.editArea} contentEditable={false} data-document-export-omit>
           <div className={styles.symbols} role="toolbar" aria-label="插入公式符号">
             {SYMBOLS.map((symbol) => <button key={symbol.label} type="button" title={symbol.label} aria-label={`插入${symbol.label}`} onMouseDown={(event) => event.preventDefault()} onClick={() => insertSymbol(symbol)}>{symbol.latex}</button>)}
           </div>

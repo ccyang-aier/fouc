@@ -1,34 +1,17 @@
 import type { Editor } from '@tiptap/core';
+import { exportDocumentHtml } from './document-html-export';
 
 export type ContentFormat = 'text' | 'markdown' | 'html';
-export function escapeDocumentHtml(value: string) {
-  return value.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]!);
-}
-
-export const documentExportStyles = `
-body{max-width:830px;margin:48px auto;padding:0 24px;color:#202833;font:16px/1.8 system-ui,sans-serif;overflow-wrap:anywhere}
-h1,h2,h3,h4{line-height:1.35}h1{font-size:32px}p{margin:0 0 18px}a{color:#0869cf}img,video{max-width:100%}
-table{width:100%;border-collapse:collapse;table-layout:fixed}td,th{border:1px solid #d7dfed;padding:9px 12px;vertical-align:top}th{background:#f5f7fa;text-align:left}td p,th p{margin:0}
-pre{white-space:pre-wrap;background:#f5f7fa;padding:16px;border-radius:8px}code{font-family:monospace}blockquote{border-left:3px solid #c6d2e2;margin-left:0;padding-left:18px}
-[data-columns]{display:flex;gap:24px}[data-column]{min-width:0;flex:var(--column-width,1)}aside[data-emoji]{position:relative;padding:16px 16px 16px 46px;background:#f5f7fa;border-radius:8px;margin-bottom:18px}aside[data-emoji]::before{position:absolute;left:16px;content:attr(data-emoji)}
-[data-task-list]{list-style:none;padding-left:0}[data-task-item]{position:relative;padding-left:26px}[data-task-item]::before{position:absolute;left:0;content:'☐';color:#718096}[data-task-item][data-checked=true]::before{content:'☑';color:#0869cf}
-@media print{body{max-width:none;margin:0;padding:0}*{print-color-adjust:exact}img,tr,pre{break-inside:avoid}thead{display:table-header-group}}
-@page{margin:18mm}
-`;
 
 /** Reads the live editor on demand; it never writes a second copy of the body. */
 export async function documentContent(editor: Editor, title: string, format: ContentFormat): Promise<string> {
   const name = title.trim() || '无标题文档';
   if (format === 'text') return `${name}\n\n${editor.getText({ blockSeparator: '\n' })}`;
   if (format === 'markdown') {
-    const schema = editor.schema;
-    const body = editor.state.doc;
-    const { createMarkdownPipeline } = await import('@fouc/shared/knowledge/markdown');
-    const pipeline = createMarkdownPipeline({ schema });
-    const heading = schema.nodes.heading.create({ level: 1 }, schema.text(name));
-    return pipeline.serialize(schema.nodes.doc.create(null, [heading, ...Array.from({ length: body.childCount }, (_, index) => body.child(index))]));
+    const { exportDocumentMarkdown } = await import('./document-markdown-export');
+    return exportDocumentMarkdown(editor.state.doc, name);
   }
-  return `<!doctype html>\n<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeDocumentHtml(name)}</title><style>${documentExportStyles}</style></head><body><h1>${escapeDocumentHtml(name)}</h1>${editor.getHTML()}</body></html>`;
+  return exportDocumentHtml(editor, name);
 }
 
 export function downloadDocument(content: string, title: string, format: 'markdown' | 'html') {

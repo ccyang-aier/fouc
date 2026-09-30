@@ -1,7 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import type { Editor } from '@tiptap/core';
 import { knowledgeSchema as schema } from '@fouc/shared/knowledge/schema';
-import { createMarkdownPipeline } from '@fouc/shared/knowledge/markdown';
+import { Window } from 'happy-dom';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import ReactMarkdown from 'react-markdown';
 import { documentContent } from './document-content-actions';
 import { documentLink, readDocumentLink } from '../document-link';
 
@@ -15,22 +18,29 @@ describe('document content operations', () => {
     ]);
     const editor = { schema, state: { doc: body } } as Editor;
     const markdown = await documentContent(editor, '# 标题 [链接](javascript:alert(1))', 'markdown');
-    const parsed = createMarkdownPipeline().parse(markdown);
-    expect(parsed.child(0).type.name).toBe('heading');
-    expect(parsed.child(0).textContent).toBe('# 标题 [链接](javascript:alert(1))');
-    expect(parsed.child(0).firstChild!.marks).toEqual([]);
-    expect(parsed.child(1).firstChild!.marks[0].type.name).toBe('bold');
-    expect(parsed.child(2).firstChild!.attrs.checked).toBe(true);
-    expect(parsed.child(3).child(1).child(1).textContent).toBe('A | B');
+    const parsed = new Window().document;
+    parsed.write(renderToStaticMarkup(createElement(ReactMarkdown, null, markdown)));
+    expect(parsed.querySelector('h1')?.textContent).toBe('# 标题 [链接](javascript:alert(1))');
+    expect(parsed.querySelector('h1 a')).toBeNull();
+    expect(parsed.querySelector('strong')?.textContent).toBe('加粗文本');
+    expect(markdown).toContain('- [x] 已完成');
+    expect(markdown).toContain('| 内容 | A \\| B |');
+    expect(markdown).not.toMatch(/fouc-block|blockId|:::/);
     expect(editor.state.doc).toBe(body);
   });
   test('HTML escapes title and includes a complete UTF-8 document without changing the body', async () => {
-    const editor = { getHTML: () => '<p>正文</p>' } as Editor;
+    const window = new Window();
+    window.document.body.innerHTML = '<article data-width="65" data-font="default" data-size="standard"><input aria-label="文档标题"><div class="ProseMirror"><p>正文</p></div></article>';
+    const editor = { view: { dom: window.document.querySelector('.ProseMirror') } } as unknown as Editor;
     const html = await documentContent(editor, '</h1><script>alert("x")</script>', 'html');
     expect(html).toContain('<meta charset="utf-8">');
-    expect(html).toContain('<h1>&lt;/h1&gt;&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;</h1><p>正文</p>');
+    const parsed = new Window().document;
+    parsed.write(html);
+    expect(parsed.querySelector('h1')?.textContent).toBe('</h1><script>alert("x")</script>');
+    expect(parsed.querySelector('p')?.textContent).toBe('正文');
     expect(html).not.toContain('<script>');
-    expect(html).toContain('td,th{border:1px solid #d7dfed');
+    expect(window.document.querySelector('p')?.textContent).toBe('正文');
+    window.happyDOM.abort();
   });
   test('plain text reads the latest body and includes the title', async () => {
     let body = '首行\n次行';

@@ -66,7 +66,7 @@ export function CodeBlockNodeView({ node, editor, updateAttributes, HTMLAttribut
           </select>
           {detected ? <span className={styles.detected}>{CODE_LANGUAGES.find((option) => option.value === detected)?.label ?? detected}</span> : null}
         </div>
-        <div className={styles.actions}>
+        <div className={styles.actions} data-document-export-omit>
           <button type="button" className={styles.iconButton} onClick={copy} aria-label={copied ? '已复制代码' : '复制代码'} title={copied ? '已复制' : '复制代码'}>
             {copied ? <Check aria-hidden size={15} /> : <Copy aria-hidden size={15} />}
             <span>{copied ? '已复制' : '复制'}</span>

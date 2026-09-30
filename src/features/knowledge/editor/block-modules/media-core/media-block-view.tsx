@@ -106,7 +106,7 @@ export function MediaBlockView({ kind, localWorkspaceId, workspaceId, renderPrev
     >
       <div className={styles.header} contentEditable={false}>
         <span className={styles.kind}><span aria-hidden className={styles.kindDot} />{LABELS[kind]}</span>
-        <div className={styles.actions}>
+        <div className={styles.actions} data-document-export-omit>
           {source && resolved.value ? <a href={resolved.value.url} target="_blank" rel="noopener noreferrer" aria-label={`打开${LABELS[kind]}`} title={`打开${LABELS[kind]}`} className={styles.action}><ArrowSquareOut aria-hidden size={15} /></a> : null}
           {editor.isEditable && source ? <button type="button" className={styles.action} title="更换资源" aria-label="更换资源" onClick={() => { setUrlDraft(/^https?:/.test(source) ? source : ''); setEditing(true); }}><PencilSimple aria-hidden size={15} /></button> : null}
           {editor.isEditable && source ? <button type="button" className={styles.action} title="清除资源" aria-label="清除资源" onClick={() => updateAttributes({ src: '' })}><Trash aria-hidden size={15} /></button> : null}
@@ -115,7 +115,7 @@ export function MediaBlockView({ kind, localWorkspaceId, workspaceId, renderPrev
       {source && resolved.value && !editing ? <div className={styles.preview} contentEditable={false}>{renderPreview(resolved.value)}</div> : null}
       {source && resolved.error && !editing ? <div className={styles.errorState} role="status">{resolved.error}{editor.isEditable ? <button type="button" onClick={() => setEditing(true)}>更换资源</button> : null}</div> : null}
       {(!source || editing) && editor.isEditable ? (
-        <div className={styles.setup} data-dragging={String(dragging)} contentEditable={false}>
+        <div className={styles.setup} data-dragging={String(dragging)} contentEditable={false} data-document-export-omit>
           <div className={styles.setupIcon}><CloudArrowUp aria-hidden size={23} weight="duotone" /></div>
           <strong>{source ? `更换${LABELS[kind]}` : `添加${LABELS[kind]}`}</strong>
           <p>{localWorkspaceId || workspaceId ? '拖入文件，或从本机选择' : '粘贴可访问的网络地址'}</p>

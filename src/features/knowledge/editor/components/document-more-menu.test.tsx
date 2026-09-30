@@ -47,7 +47,7 @@ describe('document menu rendered interaction', () => {
     await open();
     expect(document.querySelector('[role="menu"]')).not.toBeNull();
     expect(document.querySelectorAll('[role="separator"]').length).toBe(4);
-    for (const text of ['复制', '个性化设置', '演示', '收藏', '订阅', '权限', '模板化', '评论', '历史记录', '导出', '打印', '删除', '导入', '移动', '固定', '在拆分视图打开', '在文档中搜索']) expect(document.querySelector('[role="menu"]')!.textContent).toContain(text);
+    for (const text of ['复制', '个性化', '演示', '收藏', '订阅', '权限', '模板化', '评论', '历史记录', '导出', '打印', '删除', '导入', '移动', '固定', '在拆分视图打开', '在文档中搜索']) expect(document.querySelector('[role="menu"]')!.textContent).toContain(text);
     expect(document.querySelector('[role="toolbar"]')).toBeNull();
     expect(document.querySelector('[role="menu"]')!.textContent).not.toContain('历史版本');
     expect(item('收藏').hasAttribute('data-disabled')).toBe(false);
@@ -62,16 +62,23 @@ describe('document menu rendered interaction', () => {
   });
   test('appearance updates persist as view preferences, and favorite toggles its label', async () => {
     await open();
-    await key(item('个性化设置'), 'ArrowRight');
-    const wide = Array.from(document.querySelectorAll('[role="menuitemcheckbox"]')).find((element) => element.textContent === '宽版')!;
-    await act(async () => wide.dispatchEvent(new MouseEvent('click', { bubbles: true })));
-    expect(wide.getAttribute('aria-checked')).toBe('true');
-    expect(JSON.parse(localStorage.getItem('fouc.document.appearance:test-menu')!).width).toBe('wide');
+    await key(item('个性化'), 'ArrowRight');
+    const width = document.querySelector('input[type="range"]')!;
+    await key(width, 'Tab');
+    const fontTrigger = document.querySelector('[aria-haspopup="menu"][aria-labelledby]')!;
+    await key(fontTrigger, 'Enter');
+    const font = item('霞鹜臻楷');
+    await act(async () => font.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(document.querySelector('[aria-haspopup="menu"][aria-labelledby]')!.textContent).toContain('霞鹜臻楷');
+    const size = Array.from(document.querySelectorAll('button')).find(button => button.textContent === '更大')!;
+    await act(async () => size.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(JSON.parse(localStorage.getItem('fouc.document.appearance:test-menu')!)).toEqual({ font: 'zhenkai', size: 'extra-large' });
+    expect(document.querySelector('[role="menu"][aria-label="个性化"]')).not.toBeNull();
     await key(document.querySelector('[aria-label="更多文档操作"]')!, 'Escape');
     await open();
     await act(async () => item('收藏').dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(star).toBe(true);
-    await open();
+    expect(document.querySelector('[role="menu"]')).not.toBeNull();
     expect(item('取消收藏')).not.toBeUndefined();
   });
   test('comments and history invoke the resource callbacks', async () => {

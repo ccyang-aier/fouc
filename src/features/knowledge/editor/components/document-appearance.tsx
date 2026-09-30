@@ -2,9 +2,12 @@
 
 import { createContext, useContext, useState, useSyncExternalStore } from 'react';
 import type { ReactNode } from 'react';
+import { documentFonts, documentSizes, documentWidth } from '@/lib/editor-appearance-options';
+import { useEditorAppearance, type EditorAppearance } from '@/lib/editor-appearance';
 
-export type DocumentAppearance = { width: 'standard' | 'wide' | 'compact'; font: 'default' | 'serif' | 'mono'; size: 'small' | 'standard' | 'large' };
-const defaults: DocumentAppearance = { width: 'standard', font: 'default', size: 'standard' };
+type DocumentOverrides = Partial<Pick<EditorAppearance, 'width' | 'font' | 'size'>>;
+export type DocumentAppearance = EditorAppearance;
+const defaults: DocumentOverrides = {};
 
 function createAppearanceStore(key: string) {
   let value = defaults;
@@ -17,13 +20,14 @@ function createAppearanceStore(key: string) {
       if (!loaded) {
         loaded = true;
         try {
-          const saved = JSON.parse(localStorage.getItem(key) ?? 'null') as DocumentAppearance | null;
-          if (saved && ['standard', 'wide', 'compact'].includes(saved.width) && ['default', 'serif', 'mono'].includes(saved.font) && ['small', 'standard', 'large'].includes(saved.size)) value = saved;
+          const saved = JSON.parse(localStorage.getItem(key) ?? 'null') as DocumentOverrides | null;
+          if (saved && (saved.width === undefined || (Number.isInteger(saved.width) && saved.width >= documentWidth.min && saved.width <= documentWidth.max)) && (saved.font === undefined || documentFonts.some(({ id }) => id === saved.font)) && (saved.size === undefined || documentSizes.some(({ id }) => id === saved.size))) value = saved;
+          else if (saved) localStorage.removeItem(key);
         } catch { /* View preferences remain available in memory. */ }
       }
       return value;
     },
-    update(patch: Partial<DocumentAppearance>) {
+    update(patch: DocumentOverrides) {
       value = { ...value, ...patch };
       try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* No document content depends on this preference. */ }
       listeners.forEach((listener) => listener());
@@ -31,10 +35,12 @@ function createAppearanceStore(key: string) {
   };
 }
 
-const AppearanceContext = createContext<{ appearance: DocumentAppearance; update: (patch: Partial<DocumentAppearance>) => void } | null>(null);
+const AppearanceContext = createContext<{ appearance: DocumentAppearance; update: (patch: DocumentOverrides) => void } | null>(null);
 export function DocumentAppearanceProvider({ scope, children }: { scope: string; children: ReactNode }) {
   const [store] = useState(() => createAppearanceStore(`fouc.document.appearance:${scope}`));
-  const appearance = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getServerSnapshot);
+  const overrides = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getServerSnapshot);
+  const { appearance: globalAppearance } = useEditorAppearance();
+  const appearance = { ...globalAppearance, ...overrides };
   return <AppearanceContext.Provider value={{ appearance, update: store.update }}>{children}</AppearanceContext.Provider>;
 }
 export function useDocumentAppearance() {

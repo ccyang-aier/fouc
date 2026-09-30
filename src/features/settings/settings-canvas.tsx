@@ -8,6 +8,7 @@
 import { useState } from "react"
 import {
   ArrowLeft,
+  FileText,
   Info,
   MagnifyingGlass,
   PaintBrush,
@@ -24,12 +25,14 @@ import { AboutSettings } from "./about-settings"
 import { AgentSettings } from "./agent-settings"
 import { AppearanceSettings } from "./appearance-settings"
 import { GeneralSettings } from "./general-settings"
+import { EditorSettings } from "./editor-settings"
 
-export type SettingsSection = "appearance" | "general" | "agents" | "about"
+export type SettingsSection = "appearance" | "general" | "editor" | "agents" | "about"
 
 const SECTIONS: Array<SidebarRowItem & { id: SettingsSection }> = [
   { id: "appearance", label: "外观", icon: PaintBrush },
   { id: "general", label: "通用", icon: SlidersHorizontal },
+  { id: "editor", label: "编辑器", icon: FileText },
   { id: "agents", label: "Agent", icon: Robot },
   { id: "about", label: "关于", icon: Info },
 ]
@@ -37,11 +40,18 @@ const SECTIONS: Array<SidebarRowItem & { id: SettingsSection }> = [
 export function SettingsCanvas({
   initialSection = "appearance",
   onBack,
+  onSectionChange,
 }: {
   initialSection?: SettingsSection
   onBack?: () => void
+  onSectionChange?: (section: SettingsSection) => void
 }) {
   const [section, setSection] = useState<SettingsSection>(initialSection)
+  const [previousInitialSection, setPreviousInitialSection] = useState(initialSection)
+  if (previousInitialSection !== initialSection) {
+    setPreviousInitialSection(initialSection)
+    setSection(initialSection)
+  }
   const [query, setQuery] = useState("")
   const { width, dragging, startResize } = useSidebarWidth()
   const normalizedQuery = query.trim().toLocaleLowerCase("zh-CN")
@@ -102,7 +112,7 @@ export function SettingsCanvas({
                 key={item.id}
                 item={item}
                 active={section === item.id}
-                onSelect={() => setSection(item.id as SettingsSection)}
+                onSelect={() => { setSection(item.id as SettingsSection); onSectionChange?.(item.id as SettingsSection); }}
               />
             ))}
           </div>
@@ -123,6 +133,8 @@ export function SettingsCanvas({
           <AppearanceSettings />
         ) : section === "general" ? (
           <GeneralSettings />
+        ) : section === "editor" ? (
+          <EditorSettings />
         ) : section === "agents" ? (
           <AgentSettings />
         ) : (

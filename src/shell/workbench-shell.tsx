@@ -1,6 +1,7 @@
 "use client"
 
 import { useWorkbenchView } from "./workbench-view"
+import { closeSettings, setSettingsSection, useSettingsSection } from "@/lib/editor-settings-navigation"
 import { useEffect, useRef, useState } from "react"
 import { AnimatePresence, MotionConfig, motion, type Variants } from "motion/react"
 
@@ -58,6 +59,7 @@ export function WorkbenchShell() {
   useDocumentLinkNavigation()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [view, setView] = useWorkbenchView()
+  const settingsSection = useSettingsSection()
   const { spaces, activeSpace, updateSpaces, selectWorkspace, createWorkspace } = useWorkspace()
   const { selectedProject, favorites, managementPanel, setManagementPanel, setFavorite } = useProjectResources()
   const projectFavorited = selectedProject !== null && favorites.includes(selectedProject.id)
@@ -105,7 +107,7 @@ export function WorkbenchShell() {
               // 设置为全窗页面：接管全部空间且不显示系统顶行；
               // 窗口拖拽由设置侧栏的 drag region 承担（见 settings-canvas）
               <div className="min-h-0 flex-1">
-                <SettingsCanvas initialSection="appearance" onBack={() => changeView("home")} />
+                <SettingsCanvas initialSection={settingsSection} onSectionChange={setSettingsSection} onBack={closeSettings} />
               </div>
             ) : (
               // 双层侧栏（工作区轨道 + 主导航）顶行全高，共用同一块材质底座；

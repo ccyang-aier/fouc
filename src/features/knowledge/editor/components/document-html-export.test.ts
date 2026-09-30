@@ -59,6 +59,17 @@ describe('standalone HTML export', () => {
     expect(fetched).toHaveLength(5);
   });
 
+  test('keeps the selected page background self-contained for HTML and PDF', async () => {
+    window.document.body.innerHTML = `<section aria-label="页面编辑器" style="background-color:rgb(250,248,242);background-image:url('/background.png');background-size:cover;background-position:center"><article data-width="80" data-font="default" data-size="standard"><div class="ProseMirror"><p>正文</p></div></article></section>`;
+    globalThis.fetch = (async () => ({ ok: true, blob: async () => new window.Blob(['background'], { type: 'image/png' }) })) as unknown as typeof fetch;
+    const html = await exportDocumentHtml(editor(), '背景');
+    expect(html).toContain('background-color:rgb(250, 248, 242)');
+    expect(html).toContain('background-image:url("data:image/png;base64,');
+    expect(html).toContain('background-size:cover');
+    expect(html).not.toContain('background:white');
+    expect(html).not.toContain('/background.png');
+  });
+
   test('preserves local SVG references, neutralizes active content and replaces remote frames with a link', async () => {
     window.document.body.innerHTML = `<article data-width="65" data-font="default" data-size="standard"><div class="ProseMirror"><svg><defs><clipPath id="clip"><rect width="10" height="10"></rect></clipPath></defs><path clip-path="url(#clip)" d="M0 0"/><use href="#clip"/></svg><p onclick="alert(1)"><a href="javascript:alert(1)">内容</a></p><iframe src="https://example.com/embedded" title="原网页"></iframe></div></article>`;
     globalThis.fetch = (() => { throw new Error('no resource should be fetched'); }) as typeof fetch;

@@ -10,18 +10,13 @@
 
 .scrollArea { min-height: 0; flex: 1; overflow-y: auto; overscroll-behavior: contain; }
 .document {
-  width: min(calc(100% - 48px), 830px);
+  width: min(calc(100% - 48px), max(min(100% - 48px, 360px), var(--document-width)));
+  font-family: var(--document-font);
   min-height: 100%;
   margin: 0 auto;
   padding: clamp(56px, 7vh, 84px) 0 160px;
 }
 .heading { margin-bottom: 25px; }
-.document[data-width='wide'] { width: calc(100% - 80px); }
-.document[data-width='compact'] { max-width: 640px; }
-.document[data-font='serif'] { font-family: Georgia, 'Noto Serif SC', 'SimSun', serif; }
-.document[data-font='mono'] { font-family: var(--font-code), 'SFMono-Regular', Consolas, monospace; }
-.document[data-size='small'] :global(.ProseMirror) { font-size: 14px; }
-.document[data-size='large'] :global(.ProseMirror) { font-size: 18px; }
 .title,
 .titleInput {
   width: 100%;
@@ -51,10 +46,11 @@
 }
 .metadata > * + *::before { display: inline-block; margin-right: 8px; color: #8999ae; content: '•'; }
 
-.document :global(.ProseMirror) { min-height: 48vh; outline: none; color: var(--ink); font-size: 16px; line-height: 1.8; }
+.document :global(.ProseMirror) { min-height: 48vh; outline: none; color: var(--ink); font-size: var(--document-size); line-height: var(--document-line-height); }
 .document :global(.ProseMirror > *) { margin-top: 0; margin-bottom: 18px; }
 .document :global(.ProseMirror > *:last-child) { margin-bottom: 0; }
 .document :global(.ProseMirror p) { margin-top: 0; margin-bottom: 0; }
+.document :global(.ProseMirror > p:not(:last-child)) { margin-bottom: var(--document-paragraph-gap); }
 .document :global(.ProseMirror > p:first-child:last-child:has(> br.ProseMirror-trailingBreak)::before) {
   float: left;
   height: 0;
@@ -83,8 +79,7 @@
 .document :global(.ProseMirror mark) { background: #e6f0ff; }
 
 @media (max-width: 700px) {
-  .document, .document[data-width='wide'] { width: calc(100% - 44px); padding: 48px 0 120px; }
+  .document { padding: 48px 0 120px; }
   .heading { margin-bottom: 28px; }
   .metadata > * + *::before { display: none; }
-  .document :global(.ProseMirror) { font-size: 16px; }
 }

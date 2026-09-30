@@ -4,7 +4,7 @@ import type { Browser } from 'puppeteer';
 const TIMEOUT = 45_000;
 const PRINT_CSS = `
 @page { size: A4; margin: 18mm 18mm 20mm }
-html,body { height:auto!important; min-height:0!important; background:white!important }
+html,body { height:auto!important; min-height:0!important }
 body > :first-child { width:100%!important; max-width:none!important; margin:0!important; padding-top:0!important; padding-bottom:0!important }
 * { -webkit-print-color-adjust:exact!important; print-color-adjust:exact!important }
 h1,h2,h3,h4,h5,h6 { width:auto!important; max-width:100%!important; height:auto!important; break-after:avoid-page!important; break-inside:avoid!important }

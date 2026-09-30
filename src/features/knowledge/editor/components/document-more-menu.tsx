@@ -3,11 +3,13 @@
 import { useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { Editor } from '@tiptap/core';
-import { Bell, ChatCircleDots, ClockCounterClockwise, Copy, DotsThree, DownloadSimple, FileArrowUp, FileCode, FilePdf, FileText, LinkSimple, LockSimple, MagnifyingGlass, MarkdownLogo, Printer, PushPin, SlidersHorizontal, SplitHorizontal, Star, Trash, Presentation, FolderSimple, SquaresFour } from '@phosphor-icons/react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger, DropdownMenuCheckboxItem } from '@/components/ui/dropdown-menu';
+import { Bell, ChatCircleDots, ClockCounterClockwise, Copy, DotsThree, DownloadSimple, FileArrowUp, FileCode, FilePdf, FileText, LinkSimple, LockSimple, MagnifyingGlass, MarkdownLogo, Printer, PushPin, SplitHorizontal, Trash, Presentation, FolderSimple, SquaresFour } from '@phosphor-icons/react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ModalDialog } from '../../organization/ui';
 import { documentLink, type DocumentLinkTarget } from '../document-link';
-import { useDocumentAppearance } from './document-appearance';
+import { DocumentAppearanceMenu } from './document-appearance-menu';
+import { openEditorSettings } from '@/lib/editor-settings-navigation';
+import { DocumentStarMenuItem } from './document-star-menu-item';
 import { documentContent, downloadDocument, printDocument, type ContentFormat } from './document-content-actions';
 import styles from './document-more-menu.module.css';
 import headerStyles from './document-editor-header.module.css';
@@ -26,7 +28,6 @@ function ReservedItem({ children, icon }: { children: string; icon: ReactNode })
 export function DocumentMoreMenu({ editor, title, starred, onToggleStar, actions }: {
   editor: Editor | null; title: string; starred: boolean; onToggleStar: () => void; actions: DocumentMenuActions;
 }) {
-  const { appearance, update } = useDocumentAppearance();
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
@@ -67,24 +68,12 @@ export function DocumentMoreMenu({ editor, title, starred, onToggleStar, actions
               {actions.target.source === 'local' ? <p className={styles.hint}>本机链接仅在保存该文档的浏览器中可访问。</p> : null}
             </DropdownMenuSubContent>
           </DropdownMenuSub>
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger className={styles.item}><SlidersHorizontal aria-hidden />个性化设置</DropdownMenuSubTrigger>
-            <DropdownMenuSubContent className={styles.submenu}>
-              <DropdownMenuLabel>页宽</DropdownMenuLabel>
-              {([['compact', '紧凑'], ['standard', '标准'], ['wide', '宽版']] as const).map(([width, label]) => <DropdownMenuCheckboxItem key={width} checked={appearance.width === width} onSelect={(event) => event.preventDefault()} onCheckedChange={() => update({ width })}>{label}</DropdownMenuCheckboxItem>)}
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel>字体</DropdownMenuLabel>
-              {([['default', '默认'], ['serif', '衬线'], ['mono', '等宽']] as const).map(([font, label]) => <DropdownMenuCheckboxItem key={font} checked={appearance.font === font} onSelect={(event) => event.preventDefault()} onCheckedChange={() => update({ font })}>{label}</DropdownMenuCheckboxItem>)}
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel>字号</DropdownMenuLabel>
-              {([['small', '小'], ['standard', '标准'], ['large', '大']] as const).map(([size, label]) => <DropdownMenuCheckboxItem key={size} checked={appearance.size === size} onSelect={(event) => event.preventDefault()} onCheckedChange={() => update({ size })}>{label}</DropdownMenuCheckboxItem>)}
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
+          <DocumentAppearanceMenu triggerClassName={styles.item} onOpenSettings={() => openEditorSettings(documentLink(window.location.href, actions.target))} />
           <ReservedItem icon={<Presentation aria-hidden />}>演示</ReservedItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup aria-label="关注与协作">
-          <DropdownMenuItem className={styles.item} onSelect={onToggleStar}><Star aria-hidden weight={starred ? 'fill' : 'regular'} />{starred ? '取消收藏' : '收藏'}</DropdownMenuItem>
+          <DocumentStarMenuItem className={styles.item} starred={starred} onToggleStar={onToggleStar} />
           <ReservedItem icon={<Bell aria-hidden />}>订阅</ReservedItem>
           <ReservedItem icon={<LockSimple aria-hidden />}>权限</ReservedItem>
           <ReservedItem icon={<SquaresFour aria-hidden />}>模板化</ReservedItem>

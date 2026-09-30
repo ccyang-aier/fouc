@@ -26,6 +26,8 @@ import { pageCheckpointExtension } from '../modules/knowledge/collaboration/chec
 import { createKnowledgeMcpAuthorizationRoutes } from '../modules/knowledge/mcp/oauth';
 import { createKnowledgeMcpRequestHandler } from '../modules/knowledge/mcp/server';
 import { handleKnowledgeMcpOnBun } from '../modules/knowledge/mcp/bun-adapter';
+import { createDocumentPdfRenderer } from '../modules/knowledge/export/pdf';
+import { createDocumentPdfRoutes } from '../modules/knowledge/export/http';
 
 const mcpPathPattern = /^\/api\/knowledge\/[a-zA-Z0-9-]+\/mcp\/?$/;
 
@@ -59,6 +61,8 @@ export async function startFoucService(config: FoucServiceConfig, environment: N
   const events = createWorkspaceEventRuntime({ authenticator });
   const checkpoints = config.roles.includes('collab') ? pageCheckpointExtension({ pool }) : undefined;
   const app = new Hono();
+  const documentPdf = createDocumentPdfRenderer();
+  app.route('/', createDocumentPdfRoutes(auth.options.trustedOrigins as string[], html => documentPdf.render(html)));
   const socketTickets = createFoucSocketTickets();
   app.route('/', createFoucAuthRoutes(auth, (context) => context.env.clientAddress as string, socketTickets));
   app.route('/', createWorkspaceRoutes(auth, createWorkspaceService(pool)));
@@ -107,6 +111,7 @@ export async function startFoucService(config: FoucServiceConfig, environment: N
   return {
     port: listener.port as number,
     async close() {
+      await documentPdf.close();
       await listener.close();
       await pool.end();
     },

@@ -15,13 +15,18 @@ export async function documentContent(editor: Editor, title: string, format: Con
 }
 
 export function downloadDocument(content: string, title: string, format: 'markdown' | 'html') {
+  downloadDocumentBlob(new Blob([content], { type: format === 'html' ? 'text/html;charset=utf-8' : 'text/markdown;charset=utf-8' }), title, format === 'html' ? 'html' : 'md');
+}
+
+export function downloadDocumentBlob(blob: Blob, title: string, extension: 'md' | 'html' | 'pdf') {
   const filename = (title.trim() || '无标题文档').replace(/[<>:"/\\|?*\u0000-\u001f]/g, '_').replace(/[. ]+$/g, '').slice(0, 120) || '文档';
-  const blob = new Blob([content], { type: format === 'html' ? 'text/html;charset=utf-8' : 'text/markdown;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
   anchor.href = url;
-  anchor.download = `${filename}.${format === 'html' ? 'html' : 'md'}`;
+  anchor.download = `${filename}.${extension}`;
+  document.body.append(anchor);
   anchor.click();
+  anchor.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 

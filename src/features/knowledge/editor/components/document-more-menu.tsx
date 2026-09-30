@@ -32,13 +32,13 @@ export function DocumentMoreMenu({ editor, title, starred, onToggleStar, actions
   const busyRef = useRef(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteError, setDeleteError] = useState('');
-  const action = async (work: () => Promise<void> | void, success: string) => {
+  const action = async (work: () => Promise<void> | void, success: string, failure?: string) => {
     if (busyRef.current) return;
     busyRef.current = true;
     setBusy(true);
     setStatus('');
     try { await work(); setStatus(success); }
-    catch { setStatus('操作失败，请检查浏览器权限或稍后重试'); }
+    catch (error) { setStatus(failure ? (error instanceof Error ? error.message : failure) : '操作失败，请检查浏览器权限或稍后重试'); }
     finally { busyRef.current = false; setBusy(false); }
   };
   const copy = (format: ContentFormat | 'link') => action(async () => {
@@ -46,6 +46,11 @@ export function DocumentMoreMenu({ editor, title, starred, onToggleStar, actions
     await navigator.clipboard.writeText(content);
   }, '已复制到剪贴板');
   const exportContent = (format: 'markdown' | 'html') => action(async () => downloadDocument(await documentContent(editor!, title, format), title, format), '已导出文档');
+  const exportPdf = () => action(async () => {
+    setStatus('正在生成 PDF…');
+    const { exportDocumentPdf } = await import('./document-pdf-export');
+    await exportDocumentPdf(editor!, title);
+  }, '已导出 PDF', 'PDF 导出失败，请稍后重试');
 
   return <>
     <DropdownMenu>
@@ -93,7 +98,7 @@ export function DocumentMoreMenu({ editor, title, starred, onToggleStar, actions
             <DropdownMenuSubContent className={styles.submenu}>
               <DropdownMenuItem className={styles.item} disabled={!editor || busy} onSelect={() => void exportContent('html')}><FileCode aria-hidden />导出为 HTML</DropdownMenuItem>
               <DropdownMenuItem className={styles.item} disabled={!editor || busy} onSelect={() => void exportContent('markdown')}><FileText aria-hidden />导出为 Markdown</DropdownMenuItem>
-              <ReservedItem icon={<FilePdf aria-hidden />}>导出为 PDF</ReservedItem>
+              <DropdownMenuItem className={styles.item} disabled={!editor || busy} onSelect={() => void exportPdf()}><FilePdf aria-hidden />导出为 PDF</DropdownMenuItem>
             </DropdownMenuSubContent>
           </DropdownMenuSub>
           <DropdownMenuItem className={styles.item} disabled={!editor || busy} onSelect={() => void action(async () => printDocument(await documentContent(editor!, title, 'html')), '已打开打印窗口')}><Printer aria-hidden />打印</DropdownMenuItem>

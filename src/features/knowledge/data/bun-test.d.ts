@@ -39,6 +39,7 @@ declare module 'bun:test' {
   function beforeEach(fn: () => void | Promise<void>): void
   function afterEach(fn: () => void | Promise<void>): void
   function expect<T>(actual: T): Expectation<T>
+  const mock: { module(specifier: string, factory: () => Record<string, unknown>): void }
 }
 
 /** The one Bun global the bundle test uses: the build API for the browser-target check. */

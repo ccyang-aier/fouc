@@ -5,6 +5,7 @@
   "type": "module",
   "main": "./src/entrypoints/server.ts",
   "scripts": {
+    "pdf:prepare": "node scripts/prepare-document-pdf.mjs",
     "dev": "bun --watch --env-file=../../.env.fouc.local --env-file=../../.env.knowledge.models.local src/entrypoints/server.ts",
     "start": "bun src/entrypoints/server.ts",
     "typecheck": "tsc --noEmit",
@@ -38,6 +39,7 @@
     "node-html-parser": "^9.0.4",
     "nodemailer": "10.0.10",
     "pg": "8.23.0",
+    "puppeteer": "25.12.0",
     "remark-directive": "4.0.0",
     "remark-gfm": "4.0.1",
     "remark-math": "6.0.0",

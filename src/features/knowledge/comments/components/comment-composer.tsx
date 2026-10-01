@@ -1,121 +1,70 @@
 'use client';
 
-/**
- * The comment composer (N02): one compact write surface reused by the
- * selection popover (new thread) and the reply box of a thread card. It owns
- * exactly the text — sending state, failure and the retry/discard affordances
- * arrive as props so every lifecycle decision stays with the controller.
- */
-
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { PaperPlaneTilt, WarningCircle } from '@phosphor-icons/react';
-import { commentBodySchema } from '@fouc/shared/knowledge/comments';
+import { PaperPlaneTilt, WarningCircle, CircleNotch } from '@phosphor-icons/react';
+import { commentBodySchema, type CommentThreadKind } from '@fouc/shared/knowledge/comments';
+import styles from './comments.module.css';
 
 export interface CommentComposerProps {
   placeholder: string;
   submitLabel: string;
-  /** The in-flight label while the mutation runs ('发送中…'). */
   sendingLabel: string;
   sending: boolean;
-  /** Failure copy of the last attempt; the anchor stays until resolved. */
   error?: string | null;
-  onSubmit: (bodyMd: string) => void;
-  onCancel: () => void;
-  /** Extra row rendered under the textarea (the popover's discard action). */
-  extraAction?: React.ReactNode;
+  onSubmit: (bodyMd: string, kind: CommentThreadKind) => void | Promise<boolean>;
+  onCancel?: () => void;
   autoFocus?: boolean;
   minHeight?: number;
+  allowIssue?: boolean;
+  persistent?: boolean;
 }
 
-export function CommentComposer({
-  placeholder,
-  submitLabel,
-  sendingLabel,
-  sending,
-  error,
-  onSubmit,
-  onCancel,
-  extraAction,
-  autoFocus = true,
-  minHeight = 64,
-}: CommentComposerProps) {
+/** One write surface for page comments, quoted comments and replies. Drafts survive failed sends. */
+export function CommentComposer({ placeholder, submitLabel, sendingLabel, sending, error, onSubmit, onCancel, autoFocus = true, minHeight = 64, allowIssue = false, persistent = false }: CommentComposerProps) {
   const [body, setBody] = useState('');
+  const [issue, setIssue] = useState(false);
   const [touched, setTouched] = useState(false);
   const ref = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    if (autoFocus) ref.current?.focus();
-  }, [autoFocus]);
-
+  const submitting = useRef(false);
+  useEffect(() => { if (autoFocus) ref.current?.focus(); }, [autoFocus]);
   useLayoutEffect(() => {
     const element = ref.current;
     if (!element) return;
     element.style.height = 'auto';
     element.style.height = `${Math.max(element.scrollHeight, minHeight)}px`;
   }, [body, minHeight]);
-
-  const trimmed = body.trim();
-  const invalid = touched && !commentBodySchema.safeParse(trimmed).success;
-
-  const submit = () => {
+  const valid = commentBodySchema.safeParse(body.trim()).success;
+  const submit = async () => {
     setTouched(true);
-    if (!commentBodySchema.safeParse(trimmed).success || sending) return;
-    onSubmit(trimmed);
+    if (!valid || sending || submitting.current) return;
+    submitting.current = true;
+    try {
+      if (await onSubmit(body.trim(), issue ? 'issue' : 'comment')) {
+        setBody(''); setIssue(false); setTouched(false);
+      }
+    } finally { submitting.current = false; }
   };
-
-  return (
-    <div className="flex flex-col gap-1.5">
-      <textarea
-        ref={ref}
-        value={body}
-        onChange={(event) => setBody(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === 'Escape') {
-            event.preventDefault();
-            onCancel();
-          } else if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
-            event.preventDefault();
-            submit();
-          }
-        }}
-        placeholder={placeholder}
-        aria-label={placeholder}
-        rows={2}
-        className="w-full resize-none rounded-[7px] border border-[var(--line)] bg-[var(--panel)] px-2.5 py-2 text-[12.5px] leading-relaxed text-[var(--ink)] outline-none transition-colors placeholder:text-[var(--muted)] focus:border-[var(--accent-soft-line)] focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)]"
-      />
-      {invalid ? (
-        <p className="flex items-center gap-1 text-[11px] text-[var(--err-ink)]">
-          <WarningCircle aria-hidden className="size-3" weight="fill" />
-          评论内容不能为空，且不超过 50000 字符。
-        </p>
-      ) : null}
-      {error ? (
-        <p className="flex items-start gap-1 text-[11px] leading-relaxed text-[var(--err-ink)]" role="alert">
-          <WarningCircle aria-hidden className="mt-0.5 size-3 shrink-0" weight="fill" />
-          {error}
-        </p>
-      ) : null}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5">{extraAction}</div>
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="h-7 rounded-[6px] px-2.5 text-[11.5px] font-medium text-[var(--muted-strong)] outline-none transition-colors hover:bg-[var(--raise)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)]"
-          >
-            取消
-          </button>
-          <button
-            type="button"
-            onClick={submit}
-            disabled={sending}
-            className="flex h-7 items-center gap-1.5 rounded-[6px] bg-[var(--accent)] px-2.5 text-[11.5px] font-medium text-white outline-none transition-colors hover:bg-[var(--accent-strong)] focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-55"
-          >
-            <PaperPlaneTilt aria-hidden className="size-3" weight="bold" />
-            {sending ? sendingLabel : submitLabel}
-          </button>
-        </div>
+  return <div className={styles.composer} data-persistent={persistent}>
+    <textarea ref={ref} value={body} disabled={sending} rows={2}
+      onChange={event => setBody(event.target.value)}
+      onKeyDown={event => {
+        if (event.nativeEvent.isComposing) return;
+        if (event.key === 'Escape' && onCancel && !sending) { event.preventDefault(); onCancel(); }
+        else if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) { event.preventDefault(); void submit(); }
+      }}
+      placeholder={placeholder} aria-label={placeholder} aria-invalid={touched && !valid}
+      className={styles.composerInput} />
+    {touched && !valid && <p className={styles.composerError}><WarningCircle size={12} aria-hidden />评论内容不能为空，且不超过 50000 字符。</p>}
+    {error && <p className={styles.composerError} role="alert"><WarningCircle size={12} aria-hidden />{error}</p>}
+    <div className={styles.composerActions}>
+      {allowIssue ? <label className={styles.issueChoice} title="只有问题才需要标记解决状态"><input type="checkbox" checked={issue} disabled={sending} onChange={event => setIssue(event.target.checked)} />作为问题</label> : <span />}
+      <div className={styles.sendActions}>
+        {onCancel && <button type="button" className={styles.textButton} disabled={sending} onClick={onCancel}>取消</button>}
+        <button type="button" className={styles.sendButton} onClick={() => void submit()} disabled={sending || !valid} aria-label={sending ? sendingLabel : submitLabel} title={`${submitLabel} · Ctrl / ⌘ + Enter`}>
+          {sending ? <CircleNotch size={16} className="animate-spin" aria-hidden /> : <PaperPlaneTilt size={16} weight="fill" aria-hidden />}
+          {!persistent && <span>{sending ? sendingLabel : submitLabel}</span>}
+        </button>
       </div>
     </div>
-  );
+  </div>;
 }

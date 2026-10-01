@@ -218,7 +218,7 @@ describe('comment tRPC routes over the real HTTP boundary', () => {
     const threadId = randomUUID();
     const commentId = randomUUID();
     const created = await ownerClient.comment.create.mutate({
-      workspaceId: scope.workspaceId, pageId: scope.pageId, threadId, commentId, bodyMd: '  Anchored observation  ', mentions: [],
+      workspaceId: scope.workspaceId, pageId: scope.pageId, threadId, commentId, kind: 'issue', anchorKind: 'selection', bodyMd: '  Anchored observation  ', mentions: [],
     });
     expect(createCommentThreadResultSchema.parse(created)).toEqual(created);
     expect(created.existing).toBe(false);
@@ -228,7 +228,7 @@ describe('comment tRPC routes over the real HTTP boundary', () => {
 
     // The retry of a lost response replays the exact same ids over the wire.
     const retried = await ownerClient.comment.create.mutate({
-      workspaceId: scope.workspaceId, pageId: scope.pageId, threadId, commentId, bodyMd: 'Anchored observation', mentions: [],
+      workspaceId: scope.workspaceId, pageId: scope.pageId, threadId, commentId, kind: 'issue', anchorKind: 'selection', bodyMd: 'Anchored observation', mentions: [],
     });
     expect(retried.existing).toBe(true);
     expect(retried.thread.id).toBe(threadId);
@@ -252,9 +252,9 @@ describe('comment tRPC routes over the real HTTP boundary', () => {
     // Re-applying is the documented idempotent no-op.
     expect(await readerClient.comment.resolve.mutate({ workspaceId: scope.workspaceId, threadId })).toMatchObject({ changed: false });
 
-    // Replying to a resolved thread arrives as CONFLICT, the sidebar's reopen cue.
-    await expect(readerClient.comment.reply.mutate({ workspaceId: scope.workspaceId, threadId, bodyMd: 'While resolved', mentions: [] }))
-      .rejects.toMatchObject({ data: { code: 'CONFLICT' } });
+    // Resolution affects issue tracking, not the ability to continue a discussion.
+    const afterResolution = await readerClient.comment.reply.mutate({ workspaceId: scope.workspaceId, threadId, bodyMd: 'While resolved', mentions: [] });
+    await readerClient.comment.delete.mutate({ workspaceId: scope.workspaceId, commentId: afterResolution.comment.id });
     expect(await readerClient.comment.reopen.mutate({ workspaceId: scope.workspaceId, threadId })).toMatchObject({ changed: true, thread: { status: 'open' } });
 
     // Deleting the other author's comment is FORBIDDEN over the wire.
@@ -268,12 +268,29 @@ describe('comment tRPC routes over the real HTTP boundary', () => {
     expect(await ownerClient.comment.list.query(scope)).toEqual([]);
   });
 
+  test('free comments and optional issues share one wire API with real per-user likes', async () => {
+    const { commentPage: scope } = await fixture.seed();
+    const owner = client(fixture.owner);
+    const reader = client(fixture.reader);
+    const created = await owner.comment.create.mutate({ ...scope, threadId: randomUUID(), commentId: randomUUID(), kind: 'comment', anchorKind: 'page', bodyMd: 'Free discussion' });
+    expect(created.thread).toMatchObject({ kind: 'comment', anchorKind: 'page', status: null });
+    expect(created.comment).toMatchObject({ liked: false, likeCount: 0 });
+    await expect(owner.comment.resolve.mutate({ workspaceId: scope.workspaceId, threadId: created.thread.id })).rejects.toMatchObject({ data: { code: 'BAD_REQUEST' } });
+    expect(await reader.comment.like.mutate({ workspaceId: scope.workspaceId, commentId: created.comment.id, liked: true })).toMatchObject({ liked: true, likeCount: 1 });
+    expect(await reader.comment.like.mutate({ workspaceId: scope.workspaceId, commentId: created.comment.id, liked: true })).toMatchObject({ likeCount: 1 });
+    const ownView = await owner.comment.list.query(scope);
+    const readerView = await reader.comment.list.query(scope);
+    expect(ownView[0].comments[0]).toMatchObject({ liked: false, likeCount: 1 });
+    expect(readerView[0].comments[0]).toMatchObject({ liked: true, likeCount: 1 });
+    expect(await reader.comment.like.mutate({ workspaceId: scope.workspaceId, commentId: created.comment.id, liked: false })).toMatchObject({ liked: false, likeCount: 0 });
+  });
+
   test('the page ACL gates each procedure: view reads, comment writes, strangers nothing', async () => {
     const { viewPage: scope } = await fixture.seed();
     const readerClient = client(fixture.reader);
     await expect(readerClient.comment.list.query(scope)).resolves.toEqual([]);
     await expect(readerClient.comment.create.mutate({
-      workspaceId: scope.workspaceId, pageId: scope.pageId, threadId: randomUUID(), commentId: randomUUID(), bodyMd: 'View cannot comment', mentions: [],
+      workspaceId: scope.workspaceId, pageId: scope.pageId, threadId: randomUUID(), commentId: randomUUID(), kind: 'comment', anchorKind: 'page', bodyMd: 'View cannot comment', mentions: [],
     })).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
 
     // A non-member cannot even establish a workspace credential here.
@@ -295,7 +312,7 @@ describe('comment tRPC routes over the real HTTP boundary', () => {
 
     // The strict input contract rejects a blank body before any SQL runs.
     await expect(ownerClient.comment.create.mutate({
-      workspaceId: scope.workspaceId, pageId: scope.pageId, threadId: randomUUID(), commentId: randomUUID(), bodyMd: '   ', mentions: [],
+      workspaceId: scope.workspaceId, pageId: scope.pageId, threadId: randomUUID(), commentId: randomUUID(), kind: 'comment', anchorKind: 'page', bodyMd: '   ', mentions: [],
     })).rejects.toMatchObject({ data: { code: 'BAD_REQUEST' } });
   });
 
@@ -306,14 +323,14 @@ describe('comment tRPC routes over the real HTTP boundary', () => {
 
     // Default view cannot comment; an explicit user grant lifts the reader.
     await expect(readerClient.comment.create.mutate({
-      workspaceId: scope.workspaceId, pageId: scope.pageId, threadId: randomUUID(), commentId: randomUUID(), bodyMd: 'Before grant', mentions: [],
+      workspaceId: scope.workspaceId, pageId: scope.pageId, threadId: randomUUID(), commentId: randomUUID(), kind: 'comment', anchorKind: 'page', bodyMd: 'Before grant', mentions: [],
     })).rejects.toMatchObject({ data: { code: 'FORBIDDEN' } });
     await fixture.grantRootDefault(scope, [
       { principal: principal('user', fixture.owner.identity.userId), level: 'full' },
       { principal: principal('user', fixture.reader.identity.userId), level: 'comment' },
     ]);
     const created = await ownerClient.comment.create.mutate({
-      workspaceId: scope.workspaceId, pageId: scope.pageId, threadId: randomUUID(), commentId: randomUUID(), bodyMd: 'After grant', mentions: [],
+      workspaceId: scope.workspaceId, pageId: scope.pageId, threadId: randomUUID(), commentId: randomUUID(), kind: 'comment', anchorKind: 'page', bodyMd: 'After grant', mentions: [],
     });
     await expect(readerClient.comment.reply.mutate({ workspaceId: scope.workspaceId, threadId: created.thread.id, bodyMd: 'Allowed', mentions: [] }))
       .resolves.toMatchObject({ comment: { bodyMd: 'Allowed' } });

@@ -119,6 +119,7 @@ export async function seedTenantTestData(admin: Pool) {
       await db.insert(tables.asset).values({ workspaceId, hash: 'f'.repeat(64), mime: 'text/plain', size: 4 });
       await db.insert(tables.commentThread).values({ ...scope, id: ids.thread });
       await db.insert(tables.comment).values({ workspaceId, id: ids.comment, threadId: ids.thread, authorId: userId, bodyMd: `${name} comment` });
+      await db.insert(tables.commentLike).values({ workspaceId, commentId: ids.comment, userId });
       await db.insert(tables.outbox).values({
         workspaceId, id: ids.outbox, topic: 'doc.changed',
         payload: { ...scope, topic: 'doc.changed', actor: { kind: 'human', userId }, occurredAt: new Date().toISOString() },

@@ -1,13 +1,14 @@
 .workspace,.primary { display:flex; flex:1; min-width:0; min-height:0; flex-direction:column; }
-.workspaceBody { display:flex; flex:1; min-width:0; min-height:0; }
+.workspaceBody { position:relative; display:flex; flex:1; min-width:0; min-height:0; }
 .toolsWorkspace { display:flex; flex:1; flex-direction:column; min-width:0; min-height:0; container-type:inline-size; }
 .toolbarHost { position:relative; flex:none; }
+.documentWorkspace { display:flex; flex:1; flex-direction:column; min-width:0; min-height:0; container-type:inline-size; }
 .readingWorkspace { display:flex; flex:1; min-width:0; min-height:0; }
 .readingCanvas { position:relative; display:flex; flex:1; flex-direction:column; min-width:0; min-height:0; }
 .readingRail { display:flex; flex:none; flex-direction:column; min-height:0; width:216px; padding:clamp(56px,7vh,84px) 12px 24px 22px; color:var(--ink); }
 .railHeader { display:flex; align-items:center; flex:none; min-height:20px; }
-.railLabel { display:flex; align-items:baseline; gap:8px; padding-inline-start:10px; }
-.railLabel strong { font-size:11px; font-weight:600; letter-spacing:.04em; color:var(--muted-strong); }
+.railLabel { display:flex; align-items:baseline; gap:8px; padding-inline-start:2px; }
+.railLabel strong { font-size:14px; font-weight:600; color:var(--ink-soft); }
 .railLabel>span { font-size:10px; color:var(--muted); font-variant-numeric:tabular-nums; }
 .railButton { display:flex; align-items:center; justify-content:center; gap:8px; flex:none; height:30px; min-width:30px; padding:0 6px; border:0; border-radius:5px; background:transparent; color:var(--muted-strong); font-size:11px; cursor:pointer; transition:color 160ms ease-out,background 160ms ease-out; }
 .railButton:hover { background:var(--surface-hover); color:var(--ink); }

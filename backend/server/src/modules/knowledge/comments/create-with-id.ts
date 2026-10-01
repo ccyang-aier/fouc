@@ -1,5 +1,4 @@
 import { and, eq } from 'drizzle-orm';
-import { z } from 'zod';
 import { entityIdSchema } from '@fouc/shared/knowledge/contracts';
 import { createCommentThreadInputSchema } from '@fouc/shared/knowledge/comments';
 import { comment, commentThread } from '../../../platform/database/workspace/schema';
@@ -18,9 +17,7 @@ import type { CommentRow, CommentThreadRow } from './queries';
  * network response must not fork the thread either, so an existing
  * (workspace, threadId, pageId, commentId) match is an idempotent success.
  */
-const createWithIdInputSchema = createCommentThreadInputSchema.and(
-  z.strictObject({ userId: entityIdSchema }),
-);
+const createWithIdInputSchema = createCommentThreadInputSchema.safeExtend({ userId: entityIdSchema });
 
 export interface CreateCommentThreadWithIdResult {
   thread: CommentThreadRow;
@@ -36,23 +33,23 @@ export async function createCommentThreadWithId(
 ): Promise<CreateCommentThreadWithIdResult> {
   const parsed = createWithIdInputSchema.safeParse(input);
   if (!parsed.success) throw new KnowledgeCommentError('INVALID_COMMENT_INPUT');
-  const { workspaceId, pageId, threadId, commentId, bodyMd, mentions, userId } = parsed.data;
+  const { workspaceId, pageId, threadId, commentId, bodyMd, mentions, kind, anchorKind, userId } = parsed.data;
   const scope = { workspaceId, pageId };
+  await requireCommentAccess(db, { userId, scope, required: 'comment' });
 
   const [existingThread] = await db.select().from(commentThread)
     .where(and(eq(commentThread.workspaceId, workspaceId), eq(commentThread.id, threadId)));
   if (existingThread) {
     // A retry of the same client operation: same page and same first comment
     // is success; anything else is id misuse, not a race to paper over.
-    if (existingThread.pageId !== pageId) throw new KnowledgeCommentError('INVALID_COMMENT_INPUT');
+    if (existingThread.pageId !== pageId || existingThread.kind !== kind || existingThread.anchorKind !== anchorKind) throw new KnowledgeCommentError('INVALID_COMMENT_INPUT');
     const [existingComment] = await db.select().from(comment)
       .where(and(eq(comment.workspaceId, workspaceId), eq(comment.id, commentId)));
-    if (!existingComment || existingComment.threadId !== threadId) throw new KnowledgeCommentError('INVALID_COMMENT_INPUT');
+    if (!existingComment || existingComment.threadId !== threadId || existingComment.authorId !== userId || existingComment.bodyMd !== bodyMd) throw new KnowledgeCommentError('INVALID_COMMENT_INPUT');
     return { thread: existingThread, comment: existingComment, notified: [], existing: true };
   }
 
-  await requireCommentAccess(db, { userId, scope, required: 'comment' });
-  const [thread] = await db.insert(commentThread).values({ workspaceId, id: threadId, pageId }).returning();
+  const [thread] = await db.insert(commentThread).values({ workspaceId, id: threadId, pageId, kind, anchorKind, status: kind === 'issue' ? 'open' : null }).returning();
   const [entry] = await db.insert(comment).values({
     workspaceId, id: commentId, threadId, authorId: userId, bodyMd,
   }).returning();

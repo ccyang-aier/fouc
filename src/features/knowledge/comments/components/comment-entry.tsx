@@ -1,55 +1,47 @@
 'use client';
 
-/**
- * One persisted comment entry of a thread card (N02): avatar hue derived from
- * the author id (identities stay distinguishable), the body, the creation
- * time and the author's own remove affordance with its pending state.
- */
-
-import { TrashSimple } from '@phosphor-icons/react';
+import type { ReactNode } from 'react';
+import Image from 'next/image';
+import { DotsThree, TrashSimple, User, ThumbsUp } from '@phosphor-icons/react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import type { CommentEntry } from '@fouc/shared/knowledge/comments';
-import { authorHueOf, formatCommentTime } from '../comments-view-model';
+import { formatCommentTime } from '../comments-view-model';
+import styles from './comments.module.css';
+
+export type CommentAuthor = { name: string; image?: string | null };
 
 export interface CommentEntryItemProps {
   entry: CommentEntry;
+  author?: CommentAuthor;
   isOwn: boolean;
   deleting: boolean;
   canComment: boolean;
+  isReply?: boolean;
+  action?: ReactNode;
   onDelete: (commentId: string) => void;
+  onLike: (commentId: string, liked: boolean) => void;
+  liking: boolean;
 }
 
-export function CommentEntryItem({ entry, isOwn, deleting, canComment, onDelete }: CommentEntryItemProps) {
-  const hue = authorHueOf(entry.authorId);
-  return (
-    <article className="group/entry flex gap-2">
-      <span
-        aria-hidden
-        className="mt-[7px] size-[8px] shrink-0 select-none rounded-full"
-        style={{ background: `hsl(${hue} 46% 52%)` }}
-      />
-      <div className="min-w-0 flex-1">
-        <div className="flex items-baseline gap-2">
-          <span className="text-[11px] font-medium text-[var(--ink-soft)]">{isOwn ? '我' : '成员'}</span>
-          <time className="text-[10.5px] text-[var(--muted)]" dateTime={entry.createdAt}>
-            {formatCommentTime(entry.createdAt)}
-          </time>
-          {isOwn && canComment ? (
-            <button
-              type="button"
-              aria-label={deleting ? '正在删除评论' : '删除我的评论'}
-              title={deleting ? '正在删除…' : '删除我的评论'}
-              disabled={deleting}
-              onClick={() => onDelete(entry.id)}
-              className="ml-auto flex size-5 items-center justify-center rounded-[4px] text-[var(--muted)] opacity-0 outline-none transition-colors hover:bg-[var(--raise)] hover:text-[var(--err-ink)] focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] group-hover/entry:opacity-100 disabled:cursor-wait disabled:opacity-60"
-            >
-              <TrashSimple aria-hidden className="size-3" />
-            </button>
-          ) : null}
+export function CommentEntryItem({ entry, author, isOwn, deleting, canComment, isReply, action, onDelete, onLike, liking }: CommentEntryItemProps) {
+  return <article className={styles.entry} data-reply={isReply}>
+    {author?.image
+      ? <Image className={styles.avatar} src={author.image} alt="" width={30} height={30} unoptimized />
+      : <span className={styles.avatar} aria-hidden><User size={18} /></span>}
+    <div className={styles.entryContent}>
+      <div className={styles.entryHeader}>
+        <span className={styles.author} title={author?.name}>{author?.name || (isOwn ? '我' : '成员')}</span>
+        <time className={styles.time} dateTime={entry.createdAt}>{formatCommentTime(entry.createdAt)}</time>
+        <div className={styles.entryActions}>
+          {action}
+          {isOwn && canComment && <DropdownMenu>
+            <DropdownMenuTrigger asChild><button type="button" className={styles.iconButton} aria-label={deleting ? '正在删除评论' : '我的评论操作'} disabled={deleting}><DotsThree size={18} weight="bold" aria-hidden /></button></DropdownMenuTrigger>
+            <DropdownMenuContent align="end"><DropdownMenuItem onSelect={() => onDelete(entry.id)} disabled={deleting} aria-label="删除我的评论"><TrashSimple size={14} aria-hidden />删除我的评论</DropdownMenuItem></DropdownMenuContent>
+          </DropdownMenu>}
         </div>
-        <p className="mt-0.5 whitespace-pre-wrap break-words text-[12.5px] leading-relaxed text-[var(--ink-soft)]">
-          {entry.bodyMd}
-        </p>
       </div>
-    </article>
-  );
+      <p className={styles.entryBody}>{entry.bodyMd}</p>
+      <button type="button" className={styles.likeButton} aria-label={entry.liked ? '取消点赞' : '点赞'} aria-pressed={entry.liked} disabled={!canComment || liking} onClick={() => onLike(entry.id, !entry.liked)}><ThumbsUp size={13} weight={entry.liked ? 'fill' : 'regular'} aria-hidden /><span>{entry.likeCount || '赞'}</span></button>
+    </div>
+  </article>;
 }

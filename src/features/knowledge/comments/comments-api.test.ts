@@ -35,7 +35,7 @@ function fullThread(overrides: Partial<CommentThread> = {}): CommentThread {
     workspaceId: workspace,
     id: threadId,
     pageId: page,
-    status: 'open',
+    kind: 'issue', anchorKind: 'selection', status: 'open',
     createdAt: '2026-09-26T00:00:00Z',
     updatedAt: '2026-09-26T00:00:00Z',
     comments: [{
@@ -43,6 +43,7 @@ function fullThread(overrides: Partial<CommentThread> = {}): CommentThread {
       id: commentId,
       threadId,
       authorId: '50000000-0000-4000-8000-000000000000',
+      likeCount: 0, liked: false,
       bodyMd: '第一条',
       createdAt: '2026-09-26T00:00:00Z',
       updatedAt: '2026-09-26T00:00:00Z',
@@ -98,12 +99,12 @@ describe('comments api · listThreads', () => {
 describe('comments api · mutations', () => {
   test('create posts the client thread and comment ids the CRDT anchor already carries', async () => {
     const { requests, fetchImpl } = capturingFetch(() => ({ status: 200, body: JSON.stringify([{ result: { data: createdResult() } }]) }));
-    const result = await apiWith(fetchImpl).createThread(workspace, { pageId: page, threadId, commentId, bodyMd: '锚点评论' });
+    const result = await apiWith(fetchImpl).createThread(workspace, { pageId: page, threadId, commentId, kind: 'issue', anchorKind: 'selection', bodyMd: '锚点评论' });
     expect(result.existing).toBe(false);
     expect(result.thread.id).toBe(threadId);
     expect(requests[0]!.method).toBe('POST');
     expect(requests[0]!.url.startsWith(`${knowledgeTrpcUrl(origin, workspace)}/comment.create?`)).toBe(true);
-    expect(JSON.parse(requests[0]!.body!)).toEqual({ 0: { workspaceId: workspace, pageId: page, threadId, commentId, bodyMd: '锚点评论', mentions: [] } });
+    expect(JSON.parse(requests[0]!.body!)).toEqual({ 0: { workspaceId: workspace, pageId: page, threadId, commentId, kind: 'issue', anchorKind: 'selection', bodyMd: '锚点评论', mentions: [] } });
   });
 
   test('reply, resolve, reopen and delete send their contract shapes', async () => {
@@ -129,14 +130,14 @@ describe('comments api · mutations', () => {
     const partial = createdResult() as { existing?: boolean };
     delete partial.existing;
     const { fetchImpl } = capturingFetch(() => ({ status: 200, body: JSON.stringify([{ result: { data: partial } }]) }));
-    const error = await apiWith(fetchImpl).createThread(workspace, { pageId: page, threadId, commentId, bodyMd: 'x' }).catch((cause: unknown) => cause);
+    const error = await apiWith(fetchImpl).createThread(workspace, { pageId: page, threadId, commentId, kind: 'issue', anchorKind: 'selection', bodyMd: 'x' }).catch((cause: unknown) => cause);
     expect(isKnowledgeDataError(error)).toBe(true);
     expect((error as { code: string }).code).toBe('UNAVAILABLE');
   });
 
   test('invalid client input fails fast as INVALID_REQUEST without a request', async () => {
     const { requests, fetchImpl } = capturingFetch(() => ({ status: 200, body: '[]' }));
-    const error = await apiWith(fetchImpl).createThread(workspace, { pageId: page, threadId: 'not-a-uuid', commentId, bodyMd: 'x' }).catch((cause: unknown) => cause);
+    const error = await apiWith(fetchImpl).createThread(workspace, { pageId: page, threadId: 'not-a-uuid', commentId, kind: 'issue', anchorKind: 'selection', bodyMd: 'x' }).catch((cause: unknown) => cause);
     expect(isKnowledgeDataError(error)).toBe(true);
     expect((error as { code: string }).code).toBe('INVALID_REQUEST');
     expect(requests).toHaveLength(0);

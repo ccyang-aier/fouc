@@ -19,7 +19,13 @@ export const insertBlocksInputSchema = blockWriteInputSchema.extend({ afterBlock
 export const replaceBlocksInputSchema = blockWriteInputSchema.extend({ blockIds: z.array(blockIdSchema).min(1).max(1000) });
 export const deleteBlocksInputSchema = pageScopeSchema.extend({ blockIds: z.array(blockIdSchema).min(1).max(1000) });
 
-export const commentThreadSchema = pageScopeSchema.extend({ id: entityIdSchema, status: z.enum(['open', 'resolved']), createdAt: timestampSchema });
+export const commentThreadKindSchema = z.enum(['comment', 'issue']);
+export const commentAnchorKindSchema = z.enum(['page', 'selection']);
+export const commentThreadStatusSchema = z.enum(['open', 'resolved']);
+export const commentThreadSchema = pageScopeSchema.extend({
+  id: entityIdSchema, kind: commentThreadKindSchema, anchorKind: commentAnchorKindSchema,
+  status: commentThreadStatusSchema.nullable(), createdAt: timestampSchema,
+}).refine(thread => thread.kind === 'issue' ? thread.status !== null : thread.status === null);
 export const commentSchema = workspaceScopeSchema.extend({
   id: entityIdSchema, threadId: entityIdSchema, authorId: entityIdSchema,
   bodyMd: z.string().trim().min(1).max(50_000), createdAt: timestampSchema, updatedAt: timestampSchema,

@@ -1,27 +1,9 @@
 'use client';
 
 /**
- * The comments integration of the page editor (N02) — the single assembly
- * adapter the E03 surface needs, kept as one independent file so wiring it
- * stays a two-line change:
- *
- * ```tsx
- * // editor-surface.tsx
- * const extensions = useMemo(() => [
- *   ...createKnowledgeExtensions(),
- *   createBlockIdExtension({ pageId: scope.pageId }),
- *   pageCollaborationExtension(document, pageUndo),
- *   createCommentsEditorExtension(),            // ← anchor decorations
- * ], [...]);
- *
- * <PageCommentsLayer scope={scope} editor={editor} level={level}>   // ← rail + overlays
- *   <div className="min-h-0 flex-1 overflow-y-auto">…EditorContent…</div>
- * </PageCommentsLayer>
- * ```
- *
- * The layer derives the write permission from the P03 level (comment and
- * above may comment; view renders the sidebar read-only) and renders the
- * floating 划词评论 button, the composer popover and the rail column.
+ * Comments wiring for the document frame's independent sidebar slot. The
+ * controller owns anchors and mutations; this layer combines its overlays
+ * and full-height rail with review/history panels beside the document.
  */
 
 import type { ReactNode } from 'react';
@@ -50,6 +32,7 @@ export function PageCommentsLayer({
   children,
   railOpen,
   onRailOpenChange,
+  currentUser,
 }: {
   scope: PageScope;
   editor: Editor | null;
@@ -57,11 +40,12 @@ export function PageCommentsLayer({
   children: ReactNode;
   railOpen?: boolean;
   onRailOpenChange?: (open: boolean) => void;
+  currentUser: { id: string; name: string; image?: string | null } | null;
 }) {
   return (
-    <div className="relative flex min-h-0 flex-1">
+    <div className={styles.rail} data-document-sidebar>
       {children}
-      <PageComments scope={scope} editor={editor} canComment={levelSatisfies(level, 'comment')} railOpen={railOpen} onRailOpenChange={onRailOpenChange} />
+      <PageComments scope={scope} editor={editor} currentUser={currentUser} canComment={levelSatisfies(level, 'comment')} railOpen={railOpen} onRailOpenChange={onRailOpenChange} />
     </div>
   );
 }

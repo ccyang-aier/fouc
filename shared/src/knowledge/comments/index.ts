@@ -1,22 +1,11 @@
 import { z } from 'zod';
 import { entityIdSchema, pageScopeSchema, timestampSchema, workspaceScopeSchema } from '../contracts/primitives';
 
-/**
- * Comment wire contracts (N02, design §4.6).
- *
- * The thread body lives in Postgres (N01 service); the CRDT `comment` mark
- * carries only the `threadId`. These are the wire shapes of the future
- * `comment.*` tRPC procedures: inputs are client-friendly (thread/comment ids
- * arrive from the client so the mark applied while composing and the persisted
- * thread share one id), outputs are the N01 rows with dates serialized as
- * ISO strings.
- *
- * Kept as a standalone module (not re-exported by `contracts/index.ts`) until
- * the router task owns the merge; import as `@fouc/shared/knowledge/comments`.
- */
-
-export const commentThreadStatuses = ['open', 'resolved'] as const;
-export const commentThreadStatusSchema = z.enum(commentThreadStatuses);
+import { commentThreadKindSchema, commentAnchorKindSchema, commentThreadStatusSchema, commentThreadSchema as threadResourceSchema } from '../contracts/content';
+export { commentThreadKindSchema, commentAnchorKindSchema, commentThreadStatusSchema };
+export const commentThreadStatuses = commentThreadStatusSchema.options;
+/** Postgres owns threads/replies/likes; optional selection anchors live in Y.Doc. */
+export type CommentThreadKind = z.infer<typeof commentThreadKindSchema>;
 export type CommentThreadStatus = z.infer<typeof commentThreadStatusSchema>;
 
 /** Mirrors the comment body CHECK (btrim length 1..50000); the service trims first. */
@@ -33,15 +22,12 @@ export const commentEntrySchema = z.strictObject({
   bodyMd: z.string(),
   createdAt: timestampSchema,
   updatedAt: timestampSchema,
+  likeCount: z.number().int().nonnegative(),
+  liked: z.boolean(),
 });
 export type CommentEntry = z.infer<typeof commentEntrySchema>;
 
-export const commentThreadSchema = z.strictObject({
-  workspaceId: entityIdSchema,
-  id: entityIdSchema,
-  pageId: entityIdSchema,
-  status: commentThreadStatusSchema,
-  createdAt: timestampSchema,
+export const commentThreadSchema = threadResourceSchema.safeExtend({
   updatedAt: timestampSchema,
   comments: z.array(commentEntrySchema),
 });
@@ -54,6 +40,8 @@ export const createCommentThreadInputSchema = pageScopeSchema.extend({
   /** Client-generated so the optimistic CRDT anchor and the persisted thread share one id. */
   threadId: entityIdSchema,
   commentId: entityIdSchema,
+  kind: commentThreadKindSchema,
+  anchorKind: commentAnchorKindSchema,
   bodyMd: commentBodySchema,
   mentions: commentMentionsSchema.default([]),
 }).refine((input) => new Set(input.mentions).size === input.mentions.length);
@@ -100,3 +88,7 @@ export const deleteOwnCommentResultSchema = z.strictObject({
   threadDeleted: z.boolean(),
 });
 export type DeleteOwnCommentResult = z.infer<typeof deleteOwnCommentResultSchema>;
+
+export const setCommentLikeInputSchema = workspaceScopeSchema.extend({ commentId: entityIdSchema, liked: z.boolean() });
+export const setCommentLikeResultSchema = z.strictObject({ commentId: entityIdSchema, likeCount: z.number().int().nonnegative(), liked: z.boolean() });
+export type SetCommentLikeResult = z.infer<typeof setCommentLikeResultSchema>;

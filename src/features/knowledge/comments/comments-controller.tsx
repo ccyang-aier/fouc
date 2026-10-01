@@ -1,31 +1,16 @@
 'use client';
 
-/**
- * The page comments controller (N02): one component owning the whole comment
- * closed loop over the live editor and the U01 cache —
- *
- * - 划词评论: a non-empty selection in an editable editor raises the floating
- *   comment button; opening the composer applies the optimistic `comment`
- *   mark under a freshly generated threadId (the anchor the CRDT will carry),
- *   and the thread is persisted under that exact id, so submit, retry and
- *   cancel never rebind the anchor;
- * - the sidebar joins the thread list with the document's anchors through the
- *   pure view-model, including the explainable 未锚定 / 孤立锚点 states;
- * - the plugin's styling context (resolved / orphan / pending / counts /
- *   active) is refreshed on every data change through a history-free meta
- *   transaction, so editor and sidebar can never disagree;
- * - other members' threads arrive live through the B06 `comment.changed`
- *   invalidation of the `comments` segment.
- *
- * The component renders overlays (fixed-position selection button and
- * composer) plus the rail column; it must sit inside a `relative` flex row
- * next to the editor's scroll column (see editor/comments-integration.tsx).
+/** Joins PostgreSQL threads/likes with CRDT selection anchors and owns authorized mutations.
+ * Page comments can be written independently of the editor selection; quoted
+ * comments share client IDs with their optimistic anchors. Live events and
+ * local mutations invalidate the same workspace/page comment query.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChatsCircle } from '@phosphor-icons/react';
 import { motion } from 'motion/react';
 import type { Editor } from '@tiptap/react';
+import type { CommentThreadKind } from '@fouc/shared/knowledge/comments';
 import type { PageScope } from '@fouc/shared/knowledge/contracts';
 import { TextSelection } from '@tiptap/pm/state';
 import { isKnowledgeDataError } from '../data/errors';
@@ -52,10 +37,13 @@ import {
   useReplyCommentThread,
   useReopenCommentThread,
   useResolveCommentThread,
+  useSetCommentLike,
 } from './comments-queries';
 import { deriveCommentSidebarModel } from './comments-view-model';
 import { CommentsSidebar } from './components/comments-sidebar';
 import { CommentComposer } from './components/comment-composer';
+import type { CommentAuthor } from './components/comment-entry';
+import { useMembersQuery } from '../organization/hooks';
 
 const EMPTY_THREAD_IDS: ReadonlySet<string> = new Set();
 const EMPTY_ANCHORS: CommentAnchor[] = [];
@@ -87,9 +75,10 @@ export interface PageCommentsProps {
   canComment: boolean;
   railOpen?: boolean;
   onRailOpenChange?: (open: boolean) => void;
+  currentUser?: { id: string; name: string; image?: string | null } | null;
 }
 
-export function PageComments({ scope, editor, canComment, railOpen: controlledRailOpen, onRailOpenChange }: PageCommentsProps) {
+export function PageComments({ scope, editor, canComment, currentUser, railOpen: controlledRailOpen, onRailOpenChange }: PageCommentsProps) {
   const threadsQuery = usePageCommentThreads(scope.workspaceId, scope.pageId);
   const accessQuery = useKnowledgeAccessQuery(scope.workspaceId);
   const currentUserId = accessQuery.data?.userId ?? null;
@@ -100,6 +89,9 @@ export function PageComments({ scope, editor, canComment, railOpen: controlledRa
   const resolveMutation = useResolveCommentThread(scope.workspaceId);
   const reopenMutation = useReopenCommentThread(scope.workspaceId);
   const deleteMutation = useDeleteComment(scope.workspaceId);
+  const likeMutation = useSetCommentLike(scope.workspaceId);
+  const pageCommentMutation = useCreateCommentThread(scope.workspaceId);
+  const pageDraft = useRef<{ threadId: string; commentId: string; bodyMd: string; kind: CommentThreadKind } | null>(null);
 
   // Anchors belong to one editor instance; a stale editor's anchors never
   // render after a scope switch (derived, not reset in an effect).
@@ -112,6 +104,13 @@ export function PageComments({ scope, editor, canComment, railOpen: controlledRa
   const [selectionAt, setSelectionAt] = useState<{ x: number; y: number } | null>(null);
   const [localRailOpen, setLocalRailOpen] = useState(false);
   const railOpen = controlledRailOpen ?? localRailOpen;
+  const membersQuery = useMembersQuery(railOpen ? scope.workspaceId : null);
+  const authors = useMemo(() => {
+    const names = new Map<string, CommentAuthor>();
+    for (const page of membersQuery.data?.pages ?? []) for (const member of page.items) names.set(member.userId, { name: member.name });
+    if (currentUser) names.set(currentUser.id, { name: currentUser.name, image: currentUser.image });
+    return names;
+  }, [membersQuery.data, currentUser]);
   const setRailOpen = onRailOpenChange ?? setLocalRailOpen;
   const [replyingThreadId, setReplyingThreadId] = useState<string | null>(null);
   const activeThreadIdRef = useRef<string | null>(null);
@@ -242,11 +241,11 @@ export function PageComments({ scope, editor, canComment, railOpen: controlledRa
     return bindSelectionCommentComposer(editor, beginComposeAt);
   }, [editor, canComment, composing, beginComposeAt]);
 
-  const submitCompose = useCallback(async (bodyMd: string) => {
+  const submitCompose = useCallback(async (bodyMd: string, kind: CommentThreadKind) => {
     if (!composing) return;
     setComposerError(null);
     try {
-      await createMutation.mutateAsync({ pageId: scope.pageId, threadId: composing.threadId, commentId: composing.commentId, bodyMd });
+      await createMutation.mutateAsync({ pageId: scope.pageId, threadId: composing.threadId, commentId: composing.commentId, bodyMd, kind, anchorKind: 'selection' });
       setComposing(null);
       setComposerAt(null);
       if (editor) selectCommentThread(editor.view, composing.threadId, { flash: true });
@@ -264,6 +263,25 @@ export function PageComments({ scope, editor, canComment, railOpen: controlledRa
     setComposerAt(null);
     setComposerError(null);
   }, [composing, dispatchRemoveAnchor]);
+
+  const submitPageComment = useCallback(async (bodyMd: string, kind: CommentThreadKind) => {
+    if (!canComment) return false;
+    if (!pageDraft.current || pageDraft.current.bodyMd !== bodyMd || pageDraft.current.kind !== kind) {
+      pageDraft.current = { threadId: crypto.randomUUID(), commentId: crypto.randomUUID(), bodyMd, kind };
+    }
+    pageCommentMutation.reset();
+    try {
+      await pageCommentMutation.mutateAsync({ ...pageDraft.current, pageId: scope.pageId, anchorKind: 'page' });
+      pageDraft.current = null;
+      return true;
+    } catch { return false; }
+  }, [canComment, pageCommentMutation, scope.pageId]);
+
+  const handleLike = useCallback(async (commentId: string, liked: boolean) => {
+    likeMutation.reset();
+    try { await likeMutation.mutateAsync({ commentId, liked }); }
+    catch { /* The entry retains its current value and shows a retryable error. */ }
+  }, [likeMutation]);
 
   // ── Sidebar actions ──
   const locateThread = useCallback((threadId: string) => {
@@ -289,22 +307,24 @@ export function PageComments({ scope, editor, canComment, railOpen: controlledRa
   }, [replyMutation]);
 
   const handleResolve = useCallback(async (threadId: string) => {
+    reopenMutation.reset();
     resolveMutation.reset();
     try {
       await resolveMutation.mutateAsync(threadId);
     } catch {
       // Rendered on the card.
     }
-  }, [resolveMutation]);
+  }, [resolveMutation, reopenMutation]);
 
   const handleReopen = useCallback(async (threadId: string) => {
+    resolveMutation.reset();
     reopenMutation.reset();
     try {
       await reopenMutation.mutateAsync(threadId);
     } catch {
       // Rendered on the card.
     }
-  }, [reopenMutation]);
+  }, [reopenMutation, resolveMutation]);
 
   const handleDeleteComment = useCallback(async (commentId: string) => {
     deleteMutation.reset();
@@ -379,7 +399,8 @@ export function PageComments({ scope, editor, canComment, railOpen: controlledRa
             sendingLabel="发送中…"
             sending={createMutation.isPending}
             error={composerError}
-            onSubmit={(bodyMd) => void submitCompose(bodyMd)}
+            allowIssue
+            onSubmit={(bodyMd, kind) => void submitCompose(bodyMd, kind)}
             onCancel={cancelCompose}
           />
         </motion.div>
@@ -397,15 +418,21 @@ export function PageComments({ scope, editor, canComment, railOpen: controlledRa
           onClose={() => setRailOpen(false)}
           canComment={canComment}
           currentUserId={currentUserId}
+          authors={authors}
+          create={{ pending: pageCommentMutation.isPending, error: pageCommentMutation.isError ? commentErrorText(pageCommentMutation.error, '评论发送失败，请重试。') : null }}
+          onCreate={submitPageComment}
+          like={{ pending: likeMutation.isPending, commentId: likeMutation.variables?.commentId ?? null, error: likeMutation.isError ? commentErrorText(likeMutation.error, '点赞失败，请重试。') : null }}
+          onLike={(commentId, liked) => void handleLike(commentId, liked)}
           reply={replyState}
           resolve={resolveState}
-          deletingCommentId={(deleteMutation.variables ?? null) as string | null}
+          deletingCommentId={deleteMutation.isPending ? deleteMutation.variables ?? null : null}
+          deleteError={deleteMutation.isError ? { commentId: deleteMutation.variables ?? null, message: commentErrorText(deleteMutation.error, '删除失败，评论已保留，请重试。') } : null}
           onLocate={locateThread}
           onReply={(threadId, bodyMd) => void handleReply(threadId, bodyMd)}
           onResolve={(threadId) => void handleResolve(threadId)}
           onReopen={(threadId) => void handleReopen(threadId)}
           onDeleteComment={(commentId) => void handleDeleteComment(commentId)}
-          onToggleReply={setReplyingThreadId}
+          onToggleReply={(threadId, open) => setReplyingThreadId(open ? threadId : null)}
         />
       ) : null}
     </>

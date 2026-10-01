@@ -1,14 +1,15 @@
-import { and, asc, eq, inArray } from 'drizzle-orm';
+import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { entityIdSchema, pageScopeSchema } from '@fouc/shared/knowledge/contracts';
-import { comment, commentThread } from '../../../platform/database/workspace/schema';
+import { comment, commentThread, commentLike } from '../../../platform/database/workspace/schema';
 import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
 import { requireCommentAccess } from './access';
 import { KnowledgeCommentError } from './errors';
 
 export type CommentThreadRow = typeof commentThread.$inferSelect;
 export type CommentRow = typeof comment.$inferSelect;
-export type CommentThreadWithComments = CommentThreadRow & { comments: CommentRow[] };
+export type CommentWithLikes = CommentRow & { likeCount: number; liked: boolean };
+export type CommentThreadWithComments = CommentThreadRow & { comments: CommentWithLikes[] };
 
 const listInputSchema = pageScopeSchema.extend({ userId: entityIdSchema });
 
@@ -36,5 +37,18 @@ export async function listPageCommentThreads(db: WorkspaceTenantTransaction, inp
   const entries = await db.select().from(comment)
     .where(and(eq(comment.workspaceId, scope.workspaceId), inArray(comment.threadId, threads.map((thread) => thread.id))))
     .orderBy(asc(comment.createdAt), asc(comment.id));
-  return threads.map((thread) => ({ ...thread, comments: entries.filter((entry) => entry.threadId === thread.id) }));
+  const likes = entries.length ? await db.select({
+    commentId: commentLike.commentId,
+    likeCount: sql<number>`count(*)::int`,
+    liked: sql<boolean>`bool_or(${commentLike.userId} = ${parsed.userId})`,
+  }).from(commentLike).where(and(eq(commentLike.workspaceId, scope.workspaceId), inArray(commentLike.commentId, entries.map(entry => entry.id)))).groupBy(commentLike.commentId) : [];
+  const likesByComment = new Map(likes.map(like => [like.commentId, like]));
+  const entriesByThread = new Map<string, CommentWithLikes[]>();
+  for (const entry of entries) {
+    const like = likesByComment.get(entry.id);
+    const chain = entriesByThread.get(entry.threadId) ?? [];
+    chain.push({ ...entry, likeCount: like?.likeCount ?? 0, liked: like?.liked ?? false });
+    entriesByThread.set(entry.threadId, chain);
+  }
+  return threads.map(thread => ({ ...thread, comments: entriesByThread.get(thread.id) ?? [] }));
 }

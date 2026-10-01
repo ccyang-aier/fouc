@@ -22,9 +22,10 @@ function subscribeFullscreen(onChange: () => void) {
 const fullscreenSnapshot = () => Boolean(document.fullscreenElement);
 const serverFullscreenSnapshot = () => false;
 
-export function DocumentNavigationTools({ editor, title, target, header, children }: { editor: Editor | null; title: string; target: DocumentLinkTarget; header: ReactNode; children: ReactNode }) {
+export function DocumentNavigationTools({ editor, title, target, header, sidebar, children }: { editor: Editor | null; title: string; target: DocumentLinkTarget; header: ReactNode; sidebar?: ReactNode; children: ReactNode }) {
   const reference = useDocumentReference();
   const host = useRef<HTMLDivElement>(null);
+  const documentHost = useRef<HTMLDivElement>(null);
   const outlineTrigger = useRef<HTMLButtonElement>(null);
   const outlineId = useId();
   const [outlinePreference, setOutlineOpen] = useState<boolean | null>(null);
@@ -49,9 +50,9 @@ export function DocumentNavigationTools({ editor, title, target, header, childre
   const headings: { pos: number; level: number; title: string }[] = [];
   if (editor) editor.state.doc.descendants((node, pos) => { if (node.type.name === 'heading') headings.push({ pos, level: node.attrs.level as number, title: node.textContent || '无标题章节' }); });
   useEffect(() => {
-    if (!host.current) return;
+    if (!documentHost.current) return;
     const observer = new ResizeObserver(([entry]) => setCompact(entry.contentRect.width < 760));
-    observer.observe(host.current);
+    observer.observe(documentHost.current);
     return () => observer.disconnect();
   }, []);
   useEffect(() => {
@@ -129,23 +130,28 @@ export function DocumentNavigationTools({ editor, title, target, header, childre
         <button type="button" aria-label="关闭文档搜索" onClick={() => setSearchOpen(false)}><X size={16} /></button>
       </div>}
       </div>
-      <div className={styles.readingWorkspace} data-outline-open={Boolean(editor) && outlineOpen}>
-        {editor && outlineOpen && <aside className={styles.readingRail} aria-label="文档阅读导航">
-          <div className={styles.railHeader}>
-            <div className={styles.railLabel}><strong>目录</strong><span>{headings.length}</span></div>
+      <div className={styles.workspaceBody}>
+        <div ref={documentHost} className={styles.documentWorkspace}>
+          <div className={styles.readingWorkspace} data-outline-open={Boolean(editor) && outlineOpen}>
+            {editor && outlineOpen && <aside className={styles.readingRail} aria-label="文档阅读导航">
+              <div className={styles.railHeader}>
+                <div className={styles.railLabel}><strong>目录</strong><span>{headings.length}</span></div>
+              </div>
+              <DocumentOutline id={outlineId} headings={headings} activeHeading={activeHeading} onNavigate={index => {
+                const element = editor.view.nodeDOM(headings[index].pos);
+                if (compact) closeOutline();
+                requestAnimationFrame(() => { if (element instanceof HTMLElement) element.scrollIntoView({ block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' }); });
+                setActiveHeading(index);
+              }} onClose={() => { closeOutline(); outlineTrigger.current?.focus(); }} />
+            </aside>}
+            <div className={styles.readingCanvas}>{children}</div>
           </div>
-          <DocumentOutline id={outlineId} headings={headings} activeHeading={activeHeading} onNavigate={index => {
-            const element = editor.view.nodeDOM(headings[index].pos);
-            if (compact) closeOutline();
-            requestAnimationFrame(() => { if (element instanceof HTMLElement) element.scrollIntoView({ block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' }); });
-            setActiveHeading(index);
-          }} onClose={() => { closeOutline(); outlineTrigger.current?.focus(); }} />
-        </aside>}
-        <div className={styles.readingCanvas}>{children}</div>
+          <footer className={styles.actionBar} aria-label="文档底部操作">
+            <button type="button" className={styles.railButton} aria-label={fullscreen ? '退出全屏' : '全屏'} title={fullscreen ? '退出全屏' : '全屏'} aria-pressed={fullscreen} onClick={() => { setFullscreenError(''); const request = fullscreen ? document.exitFullscreen() : host.current?.closest<HTMLElement>('[aria-label="页面编辑器"]')?.requestFullscreen(); void request?.catch(() => setFullscreenError('浏览器未允许全屏，请检查浏览器权限。')); }}>{fullscreen ? <ArrowsIn aria-hidden size={16} /> : <ArrowsOut aria-hidden size={16} />}<span>{fullscreen ? '退出全屏' : '全屏'}</span></button>
+          </footer>
+        </div>
+        {sidebar}
       </div>
-      <footer className={styles.actionBar} aria-label="文档底部操作">
-        <button type="button" className={styles.railButton} aria-label={fullscreen ? '退出全屏' : '全屏'} title={fullscreen ? '退出全屏' : '全屏'} aria-pressed={fullscreen} onClick={() => { setFullscreenError(''); const request = fullscreen ? document.exitFullscreen() : host.current?.closest<HTMLElement>('[aria-label="页面编辑器"]')?.requestFullscreen(); void request?.catch(() => setFullscreenError('浏览器未允许全屏，请检查浏览器权限。')); }}>{fullscreen ? <ArrowsIn aria-hidden size={16} /> : <ArrowsOut aria-hidden size={16} />}<span>{fullscreen ? '退出全屏' : '全屏'}</span></button>
-      </footer>
       <dialog ref={presentation} className={styles.presentation} aria-label="文档演示" onCancel={closePresentation} onKeyDown={navigatePresentation}>
         {presenting && <><header><span>{title || '无标题文档'}</span><button type="button" aria-label="退出演示" onClick={closePresentation}><X size={20} /></button></header>
           <div className={styles.stage}>{slides.length ? <iframe key={slide} title={`演示第 ${slide + 1} 页`} srcDoc={slides[slide]} sandbox="allow-same-origin" onLoad={event => { const document = event.currentTarget.contentDocument; document?.addEventListener('keydown', navigatePresentation); if (document) { document.body.tabIndex = 0; document.body.focus(); } }} /> : <div role={presentError ? 'alert' : 'status'}>{presentError || '正在准备演示…'}</div>}</div>

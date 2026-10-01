@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import { and, eq, ne } from 'drizzle-orm';
+import { and, eq, ne, count } from 'drizzle-orm';
 import { z } from 'zod';
-import { entityIdSchema, pageScopeSchema, workspaceScopeSchema } from '@fouc/shared/knowledge/contracts';
-import { comment, commentThread, member } from '../../../platform/database/workspace/schema';
+import { commentThreadKindSchema, commentAnchorKindSchema, entityIdSchema, pageScopeSchema, workspaceScopeSchema } from '@fouc/shared/knowledge/contracts';
+import { comment, commentThread, commentLike, member } from '../../../platform/database/workspace/schema';
 import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
 import { requireCommentAccess } from './access';
 import { KnowledgeCommentError } from './errors';
@@ -18,6 +18,8 @@ const mentionsSchema = z.array(entityIdSchema).max(100);
 const createInputSchema = pageScopeSchema.extend({
   userId: entityIdSchema,
   bodyMd: bodySchema,
+  kind: commentThreadKindSchema.default('comment'),
+  anchorKind: commentAnchorKindSchema.default('page'),
   mentions: mentionsSchema.default([]),
 }).refine((input) => new Set(input.mentions).size === input.mentions.length);
 
@@ -52,7 +54,7 @@ export async function createCommentThread(db: WorkspaceTenantTransaction, input:
   const scope = { workspaceId: parsed.workspaceId, pageId: parsed.pageId };
   await requireCommentAccess(db, { userId: parsed.userId, scope, required: 'comment' });
   const threadId = randomUUID();
-  const [thread] = await db.insert(commentThread).values({ workspaceId: scope.workspaceId, id: threadId, pageId: scope.pageId }).returning();
+  const [thread] = await db.insert(commentThread).values({ workspaceId: scope.workspaceId, id: threadId, pageId: scope.pageId, kind: parsed.kind, anchorKind: parsed.anchorKind, status: parsed.kind === 'issue' ? 'open' : null }).returning();
   const [entry] = await db.insert(comment).values({
     workspaceId: scope.workspaceId, id: randomUUID(), threadId, authorId: parsed.userId, bodyMd: parsed.bodyMd,
   }).returning();
@@ -62,13 +64,12 @@ export async function createCommentThread(db: WorkspaceTenantTransaction, input:
   return { thread, comment: entry, notified };
 }
 
-/** Replying requires an open thread; reopening is the explicit way out of a resolved one. */
+/** Replies remain available for ordinary comments and issues, including resolved issues. */
 export async function replyCommentThread(db: WorkspaceTenantTransaction, input: unknown): Promise<{ thread: CommentThreadRow; comment: CommentRow; notified: string[] }> {
   const parsed = parse(replyInputSchema, input);
   const thread = await lockedThread(db, parsed.workspaceId, parsed.threadId);
   const scope = { workspaceId: parsed.workspaceId, pageId: thread.pageId };
   await requireCommentAccess(db, { userId: parsed.userId, scope, required: 'comment' });
-  if (thread.status === 'resolved') throw new KnowledgeCommentError('COMMENT_THREAD_RESOLVED');
   const commentId = randomUUID();
   const [entry] = await db.insert(comment).values({
     workspaceId: parsed.workspaceId, id: commentId, threadId: thread.id, authorId: parsed.userId, bodyMd: parsed.bodyMd,
@@ -92,6 +93,7 @@ async function transitionThread(db: WorkspaceTenantTransaction, input: unknown, 
   const thread = await lockedThread(db, parsed.workspaceId, parsed.threadId);
   const scope = { workspaceId: parsed.workspaceId, pageId: thread.pageId };
   await requireCommentAccess(db, { userId: parsed.userId, scope, required: 'comment' });
+  if (thread.kind !== 'issue') throw new KnowledgeCommentError('INVALID_COMMENT_INPUT');
   if (thread.status === status) return { thread, changed: false };
   const [updated] = await db.update(commentThread).set({ status, updatedAt: new Date() })
     .where(and(eq(commentThread.workspaceId, parsed.workspaceId), eq(commentThread.id, thread.id)))
@@ -147,4 +149,24 @@ export async function deleteCommentThreadAsAdmin(db: WorkspaceTenantTransaction,
   await db.delete(commentThread)
     .where(and(eq(commentThread.workspaceId, parsed.workspaceId), eq(commentThread.id, thread.id)));
   await emitCommentThreadChanged(db, scope, thread.id);
+}
+
+/** Idempotent like/unlike; serialized with deletion and protected by the page ACL. */
+export async function setCommentLike(db: WorkspaceTenantTransaction, input: unknown) {
+  const parsed = parse(commentTargetSchema.extend({ liked: z.boolean() }), input);
+  const [entry] = await db.select().from(comment).where(and(eq(comment.workspaceId, parsed.workspaceId), eq(comment.id, parsed.commentId)));
+  if (!entry) throw new KnowledgeCommentError('COMMENT_NOT_FOUND');
+  const thread = await lockedThread(db, parsed.workspaceId, entry.threadId);
+  const scope = { workspaceId: parsed.workspaceId, pageId: thread.pageId };
+  await requireCommentAccess(db, { userId: parsed.userId, scope, required: 'comment' });
+  // Deletion may have committed between the first lookup and acquiring the thread lock.
+  const [currentEntry] = await db.select({ id: comment.id }).from(comment).where(and(eq(comment.workspaceId, parsed.workspaceId), eq(comment.id, entry.id)));
+  if (!currentEntry) throw new KnowledgeCommentError('COMMENT_NOT_FOUND');
+  const ownLike = and(eq(commentLike.workspaceId, parsed.workspaceId), eq(commentLike.commentId, entry.id), eq(commentLike.userId, parsed.userId));
+  const changed = parsed.liked
+    ? await db.insert(commentLike).values({ workspaceId: parsed.workspaceId, commentId: entry.id, userId: parsed.userId }).onConflictDoNothing().returning()
+    : await db.delete(commentLike).where(ownLike).returning();
+  if (changed.length) await emitCommentThreadChanged(db, scope, thread.id);
+  const [total] = await db.select({ value: count() }).from(commentLike).where(and(eq(commentLike.workspaceId, parsed.workspaceId), eq(commentLike.commentId, entry.id)));
+  return { commentId: entry.id, liked: parsed.liked, likeCount: total.value };
 }

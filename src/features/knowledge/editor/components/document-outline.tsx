@@ -15,7 +15,7 @@ export function DocumentOutline({ id, headings, activeHeading, onClose, onNaviga
     if (event.key === 'Escape') { event.preventDefault(); onClose(); }
   }}>
     {headings.length ? <nav className={styles.chapters} aria-label="文档章节">
-      {headings.map((heading, index) => <button type="button" key={heading.pos} className={styles.chapter} data-active={index === activeHeading} data-root={heading.level === baseLevel} aria-current={index === activeHeading ? 'location' : undefined} style={{ paddingInlineStart: `${10 + (heading.level - baseLevel) * 12}px` }} onClick={() => onNavigate(index)} title={heading.title}>
+      {headings.map((heading, index) => <button type="button" key={heading.pos} className={styles.chapter} data-active={index === activeHeading} data-root={heading.level === baseLevel} aria-current={index === activeHeading ? 'location' : undefined} style={{ paddingInlineStart: `${2 + (heading.level - baseLevel) * 14}px` }} onClick={() => onNavigate(index)} title={heading.title}>
         <span className={styles.chapterTitle}>{heading.title}</span>
       </button>)}
     </nav> : <div className={styles.empty} role="status">

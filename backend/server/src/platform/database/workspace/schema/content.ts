@@ -2,7 +2,7 @@ import { sql } from 'drizzle-orm';
 import { bigint, check, foreignKey, index, integer, jsonb, primaryKey, text, unique, uuid, varchar } from 'drizzle-orm/pg-core';
 import type { Asset, Principal } from '@fouc/shared/knowledge/contracts';
 import { assetDerivedSchema } from '@fouc/shared/knowledge/contracts';
-import { assetStatus, commentThreadStatus } from './enums';
+import { assetStatus, commentThreadStatus, commentThreadKind, commentAnchorKind } from './enums';
 import { authUser } from '../../identity/schema';
 import { workspaceNamespace } from './namespaces';
 import { workspace } from './organization';
@@ -118,13 +118,16 @@ export const commentThread = workspaceNamespace.table('comment_thread', {
   workspaceId: uuid('workspace_id').notNull(),
   id: uuid('id').notNull(),
   pageId: uuid('page_id').notNull(),
-  status: commentThreadStatus('status').notNull().default('open'),
+  kind: commentThreadKind('kind').notNull().default('comment'),
+  anchorKind: commentAnchorKind('anchor_kind').notNull().default('page'),
+  status: commentThreadStatus('status'),
   createdAt: instant('created_at').notNull().defaultNow(),
   updatedAt: instant('updated_at').notNull().defaultNow(),
 }, (table) => [
   primaryKey({ columns: [table.workspaceId, table.id] }),
   foreignKey({ columns: [table.workspaceId, table.pageId], foreignColumns: [page.workspaceId, page.id] }).onDelete('cascade'),
   index('comment_thread_page_idx').on(table.workspaceId, table.pageId, table.status),
+  check('comment_thread_issue_status', sql`(${table.kind} = 'comment' AND ${table.status} IS NULL) OR (${table.kind} = 'issue' AND ${table.status} IS NOT NULL)`),
 ]);
 
 export const comment = workspaceNamespace.table('comment', {
@@ -141,4 +144,14 @@ export const comment = workspaceNamespace.table('comment', {
   check('comment_body_valid', sql`length(btrim(${table.bodyMd})) BETWEEN 1 AND 50000`),
   index('comment_thread_time_idx').on(table.workspaceId, table.threadId, table.createdAt),
   index('comment_author_idx').on(table.authorId),
+]);
+
+export const commentLike = workspaceNamespace.table('comment_like', {
+  workspaceId: uuid('workspace_id').notNull(),
+  commentId: uuid('comment_id').notNull(),
+  userId: uuid('user_id').notNull().references(() => authUser.id, { onDelete: 'cascade' }),
+  createdAt: instant('created_at').notNull().defaultNow(),
+}, (table) => [
+  primaryKey({ columns: [table.workspaceId, table.commentId, table.userId] }),
+  foreignKey({ name: 'comment_like_comment_fk', columns: [table.workspaceId, table.commentId], foreignColumns: [comment.workspaceId, comment.id] }).onDelete('cascade'),
 ]);

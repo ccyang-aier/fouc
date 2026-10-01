@@ -39,13 +39,13 @@ afterEach(async () => {
   }
 });
 
-function thread(id: string, options: { status?: 'open' | 'resolved'; comments?: { id: string; authorId: string; bodyMd: string; minutesAgo?: number }[] } = {}): CommentThread {
+function thread(id: string, options: { kind?: 'comment' | 'issue'; anchorKind?: 'page' | 'selection'; status?: 'open' | 'resolved'; comments?: { id: string; authorId: string; bodyMd: string; minutesAgo?: number }[] } = {}): CommentThread {
   const entries = options.comments ?? [{ id: `${id}-c1`, authorId: 'author-1', bodyMd: '首条评论' }];
   const createdAt = new Date(Date.now() - 30 * 60_000).toISOString();
   return {
-    workspaceId: 'ws', id, pageId: 'page', status: options.status ?? 'open', createdAt, updatedAt: createdAt,
+    workspaceId: 'ws', id, pageId: 'page', kind: options.kind ?? 'issue', anchorKind: options.anchorKind ?? 'selection', status: options.kind === 'comment' ? null : options.status ?? 'open', createdAt, updatedAt: createdAt,
     comments: entries.map((entry, index) => ({
-      workspaceId: 'ws', id: entry.id, threadId: id, authorId: entry.authorId, bodyMd: entry.bodyMd,
+      workspaceId: 'ws', id: entry.id, threadId: id, authorId: entry.authorId, bodyMd: entry.bodyMd, likeCount: 0, liked: false,
       createdAt: new Date(Date.now() - (entry.minutesAgo ?? 30 - index) * 60_000).toISOString(),
       updatedAt: new Date(Date.now() - (entry.minutesAgo ?? 30 - index) * 60_000).toISOString(),
     })),
@@ -67,6 +67,7 @@ interface MountOptions {
 /** The controller-owned callbacks the tests stub — the sidebar's own prop types. */
 type SidebarHandlers = Pick<CommentsSidebarProps,
   'onRetry' | 'onClose' | 'onLocate' | 'onReply' | 'onResolve' | 'onReopen' | 'onDeleteComment' | 'onRemoveOrphan' | 'onToggleReply'
+  | 'onCreate' | 'onLike'
 >;
 
 async function mountSidebar(options: MountOptions, handlers: Partial<SidebarHandlers> = {}): Promise<HTMLElement> {
@@ -93,6 +94,10 @@ async function mountSidebar(options: MountOptions, handlers: Partial<SidebarHand
         errorText={options.errorText ?? null}
         onRetry={handlers.onRetry ?? (() => {})}
         onClose={handlers.onClose ?? (() => {})}
+        onCreate={handlers.onCreate ?? (async () => true)}
+        create={{ pending: false, error: null }}
+        like={{ pending: false, commentId: null, error: null }}
+        onLike={handlers.onLike ?? (() => {})}
         canComment={canComment}
         currentUserId={options.currentUserId ?? 'me'}
         reply={options.reply ?? { pending: false, threadId: null, error: null }}
@@ -128,23 +133,21 @@ describe('CommentsSidebar states and interactions', () => {
     const loading = await mountSidebar({ threads: [], status: 'loading' });
     expect(loading.querySelector('[role="status"]')).not.toBeNull();
 
-    const failed = await mountSidebar({ threads: [], status: 'error', errorText: '无法连接知识服务，请检查网络后重试。' });
-    expect(failed.querySelector('[role="alert"]')?.textContent).toContain('无法连接知识服务');
     let retries = 0;
+    const failed = await mountSidebar({ threads: [], status: 'error', errorText: '无法连接知识服务，请检查网络后重试。' }, { onRetry: () => { retries++; } });
+    expect(failed.querySelector('[role="alert"]')?.textContent).toContain('无法连接知识服务');
     await click(buttonByText(failed, '重试'));
-    // The retry handler is wired through props; the loading sidebar proves render, the count proves the callback.
-    retries += 1;
     expect(retries).toBe(1);
 
     const empty = await mountSidebar({ threads: [] });
     expect(empty.textContent).toContain('还没有评论');
-    expect(empty.textContent).toContain('选中一段文字');
+    expect(empty.textContent).toContain('分享想法');
 
     const emptyReadonly = await mountSidebar({ threads: [], canComment: false });
-    expect(emptyReadonly.textContent).toContain('页面出现评论后');
+    expect(emptyReadonly.textContent).toContain('页面的讨论');
   });
 
-  test('threads render in anchor reading order with reply chains, and resolved ones fold away', async () => {
+  test('threads render in anchor reading order with replies and filter by resolution status', async () => {
     const anchors: CommentAnchor[] = [
       { threadId: 'late-but-first-in-text', ranges: [{ from: 2, to: 6 }] },
       { threadId: 'early-created-but-later-in-text', ranges: [{ from: 40, to: 44 }] },
@@ -162,19 +165,11 @@ describe('CommentsSidebar states and interactions', () => {
       anchors,
     });
     const cards = [...sidebar.querySelectorAll<HTMLElement>('[data-comment-card]')];
-    // The anchor at pos 2 comes before the anchor at pos 40; the resolved thread folds.
-    expect(cards.map((card) => card.dataset.commentCard)).toEqual(['late-but-first-in-text', 'early-created-but-later-in-text']);
+    expect(cards.map(card => card.dataset.commentCard)).toEqual(['late-but-first-in-text', 'early-created-but-later-in-text', 'resolved-one']);
     expect(sidebar.textContent).toContain('第一条');
-
-    // The resolved section discloses on demand.
-    expect(sidebar.querySelector('[aria-label="已解决的评论"]')).not.toBeNull();
-    await click(buttonByText(sidebar, '已解决（1）'));
-    const resolvedCards = [...sidebar.querySelectorAll<HTMLElement>('[data-comment-card="resolved-one"]')];
-    expect(resolvedCards).toHaveLength(1);
-
-    // Only one's own entry ('me' wrote c-b) carries the delete affordance.
-    const deleteButtons = [...sidebar.querySelectorAll('button[aria-label*="删除我的评论"]')];
-    expect(deleteButtons).toHaveLength(1);
+    expect(sidebar.querySelectorAll('button[aria-label="我的评论操作"]')).toHaveLength(1);
+    expect(sidebar.querySelector('[role="tab"]')).toBeNull();
+    expect(sidebar.querySelectorAll('[aria-label="评论筛选"] button')).toHaveLength(3);
   });
 
   test('unanchored threads and orphan anchors render with their explanations and actions', async () => {
@@ -242,7 +237,7 @@ describe('CommentsSidebar states and interactions', () => {
       { threads: [thread('t-open')] },
       { onResolve: (threadId: string) => { resolved = threadId; } },
     );
-    await click(buttonByText(sidebar, '标记解决'));
+    await click(sidebar.querySelector<HTMLButtonElement>('button[aria-label="标记解决"]')!);
     expect(resolved).toBe('t-open');
 
     const readonly = await mountSidebar({ threads: [thread('t-open')], canComment: false });
@@ -250,5 +245,25 @@ describe('CommentsSidebar states and interactions', () => {
     for (const label of ['回复', '标记解决']) {
       expect([...readonly.querySelectorAll('button')].some((button) => button.textContent === label)).toBe(false);
     }
+  });
+
+  test('ordinary page comments have no resolution control or missing-anchor warning, and support likes', async () => {
+    const likes: Array<[string, boolean]> = [];
+    const sidebar = await mountSidebar({ threads: [thread('free', { kind: 'comment', anchorKind: 'page' })] }, { onLike: (id, liked) => { likes.push([id, liked]); } });
+    expect(sidebar.querySelector('[aria-label="标记解决"]')).toBeNull();
+    expect(sidebar.textContent).not.toContain('原文已不存在');
+    await click(sidebar.querySelector<HTMLButtonElement>('[aria-label="点赞"]')!);
+    expect(likes).toEqual([['free-c1', true]]);
+    expect(sidebar.querySelector('textarea[placeholder="写下评论，分享你的想法…"]')).not.toBeNull();
+    expect(sidebar.textContent).toContain('作为问题');
+  });
+
+  test('resolved issues may still receive replies and read-only users cannot create or like comments', async () => {
+    const sidebar = await mountSidebar({ threads: [thread('done', { status: 'resolved' })] });
+    expect(sidebar.querySelector('button[aria-label="重新打开"]')).not.toBeNull();
+    expect(buttonByText(sidebar, '回复')).not.toBeNull();
+    const readonly = await mountSidebar({ threads: [thread('free', { kind: 'comment', anchorKind: 'page' })], canComment: false });
+    expect(readonly.querySelector('textarea')).toBeNull();
+    expect(readonly.querySelector<HTMLButtonElement>('[aria-label="点赞"]')?.disabled).toBe(true);
   });
 });

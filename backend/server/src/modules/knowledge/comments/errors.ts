@@ -2,8 +2,7 @@ export type CommentErrorCode =
   | 'INVALID_COMMENT_INPUT'
   | 'COMMENT_ACCESS_DENIED'
   | 'COMMENT_THREAD_NOT_FOUND'
-  | 'COMMENT_NOT_FOUND'
-  | 'COMMENT_THREAD_RESOLVED';
+  | 'COMMENT_NOT_FOUND';
 
 /** Internal service errors: HTTP authentication/authorization folding belongs to the API layer. */
 export class KnowledgeCommentError extends Error {

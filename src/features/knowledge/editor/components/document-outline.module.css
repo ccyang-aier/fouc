@@ -1,10 +1,10 @@
 .panel { display:flex; flex:1; flex-direction:column; min-height:0; margin-top:8px; }
 .chapters { display:flex; flex-direction:column; gap:1px; overflow:auto; min-height:0; padding:0 0 12px; }
-.chapter { display:flex; align-items:baseline; flex:none; width:100%; padding:4px 8px; border:0; border-inline-start:2px solid var(--line); border-radius:0 4px 4px 0; background:transparent; color:var(--muted-strong); text-align:start; font-size:12px; line-height:1.55; cursor:pointer; transition:color 160ms ease-out,background 160ms ease-out,border-color 160ms ease-out; }
+.chapter { display:flex; align-items:baseline; flex:none; width:100%; padding:5px 8px; border:0; border-radius:4px; background:transparent; color:var(--muted-strong); text-align:start; font-size:12px; line-height:1.55; cursor:pointer; transition:color 160ms ease-out,background 160ms ease-out; }
 .chapterTitle { min-width:0; overflow:hidden; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow-wrap:anywhere; }
-.chapter[data-root=true] { color:var(--ink-soft); font-weight:550; }
+.chapter[data-root=true] { color:var(--ink-soft); font-size:13px; font-weight:550; }
 .chapter:hover { background:var(--surface-hover); color:var(--ink); }
-.chapter[data-active=true] { border-inline-start-color:var(--accent-ink); background:color-mix(in srgb,var(--accent-ink) 4%,transparent); color:var(--accent-ink); font-weight:600; }
+.chapter[data-active=true] { color:var(--accent-ink); font-weight:600; }
 .chapter:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
 .empty { padding:4px 10px; color:var(--muted-strong); }
 .empty strong { color:var(--ink-soft); font-size:12px; font-weight:500; }

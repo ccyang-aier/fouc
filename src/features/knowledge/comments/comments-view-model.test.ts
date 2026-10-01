@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import type { CommentThread } from '@fouc/shared/knowledge/comments';
 import type { CommentAnchor } from './comment-anchors';
-import { authorHueOf, deriveCommentSidebarModel, formatCommentTime } from './comments-view-model';
+import { deriveCommentSidebarModel, formatCommentTime, filterCommentGroups, defaultCommentFilters } from './comments-view-model';
 
 /**
  * Sidebar derivations (N02): the join of database threads with CRDT anchors
@@ -22,7 +22,7 @@ function thread(id: string, overrides: Partial<CommentThread> = {}): CommentThre
     workspaceId: WORKSPACE,
     id,
     pageId: PAGE,
-    status: 'open',
+    kind: 'issue', anchorKind: 'selection', status: 'open',
     createdAt: `2026-09-2${id.endsWith('1') ? '4' : id.endsWith('2') ? '5' : '6'}T08:00:00Z`,
     updatedAt: '2026-09-26T08:00:00Z',
     comments: [{
@@ -30,6 +30,7 @@ function thread(id: string, overrides: Partial<CommentThread> = {}): CommentThre
       id: `40000000-0000-4000-8000-${id.slice(-12)}`,
       threadId: id,
       authorId: '50000000-0000-4000-8000-000000000000',
+      likeCount: 0, liked: false,
       bodyMd: '一条评论',
       createdAt: '2026-09-26T08:00:00Z',
       updatedAt: '2026-09-26T08:00:00Z',
@@ -96,12 +97,28 @@ describe('comments view-model · formatting', () => {
     expect(formatCommentTime('not-a-date', now)).toBe('');
   });
 
-  test('author hues are stable and inside the color wheel', () => {
-    expect(authorHueOf(T1)).toBe(authorHueOf(T1));
-    expect(authorHueOf(T1)).not.toBe(authorHueOf(T2));
-    for (const hue of [authorHueOf(T1), authorHueOf(T2), authorHueOf(T3)]) {
-      expect(hue).toBeGreaterThanOrEqual(0);
-      expect(hue).toBeLessThanOrEqual(359);
-    }
+});
+
+describe('free comments and composable filters', () => {
+  test('page comments without anchors remain ordinary groups and do not contribute issue counts', () => {
+    const model = derive({ threads: [thread(T1, { kind: 'comment', anchorKind: 'page', status: null })], anchors: [] });
+    expect(model.groups).toHaveLength(1);
+    expect(model.unanchored).toHaveLength(0);
+    expect(model.counts).toMatchObject({ total: 1, open: 0, resolved: 0 });
+  });
+  test('type, personal likes and date filters intersect; popularity and time order are deterministic', () => {
+    const ordinary = thread(T1, { kind: 'comment', anchorKind: 'page', status: null, createdAt: '2026-09-01T08:00:00Z' });
+    const issue = thread(T2, { kind: 'issue', anchorKind: 'page', status: 'open', createdAt: '2026-09-28T08:00:00Z' });
+    issue.comments[0] = { ...issue.comments[0], liked: true, likeCount: 3 };
+    const resolved = thread(T3, { kind: 'issue', anchorKind: 'page', status: 'resolved', createdAt: '2026-09-29T08:00:00Z' });
+    const { groups } = derive({ threads: [ordinary, issue, resolved], anchors: [] });
+    const now = Date.parse('2026-10-02T08:00:00Z');
+    expect(filterCommentGroups(groups, { kind: 'issue', likes: 'mine', time: 'week' }, now).map(group => group.threadId)).toEqual([T2]);
+    expect(filterCommentGroups(groups, { ...defaultCommentFilters, kind: 'comment' }, now).map(group => group.threadId)).toEqual([T1]);
+    expect(filterCommentGroups(groups, { ...defaultCommentFilters, kind: 'resolved' }, now).map(group => group.threadId)).toEqual([T3]);
+    expect(filterCommentGroups(groups, { ...defaultCommentFilters, likes: 'popular' }, now).map(group => group.threadId)).toEqual([T2, T3, T1]);
+    expect(filterCommentGroups(groups, { ...defaultCommentFilters, time: 'newest' }, now).map(group => group.threadId)).toEqual([T3, T2, T1]);
+    expect(filterCommentGroups(groups, { ...defaultCommentFilters, time: 'oldest' }, now).map(group => group.threadId)).toEqual([T1, T2, T3]);
+    expect(filterCommentGroups(groups, { ...defaultCommentFilters, time: 'month' }, now).map(group => group.threadId)).toEqual([T2, T3]);
   });
 });

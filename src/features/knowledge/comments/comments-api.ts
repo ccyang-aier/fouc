@@ -1,17 +1,9 @@
 'use client';
 
-/**
- * Comment thread client surface (N02) on the U01 tRPC transport.
- *
- * Same contract as the pages client: the shared `comment` contracts own every
- * input and output shape, the `comment.*` HTTP routes are mounted by the API
- * task, so until then each call fails honestly with the transport's NOT_FOUND
- * — never with fabricated threads. Calls go through the tRPC client's dynamic
- * entry points and every response is re-validated at this boundary.
- */
-
 import {
   commentThreadSchema,
+  setCommentLikeInputSchema,
+  setCommentLikeResultSchema,
   commentThreadTransitionResultSchema,
   createCommentThreadInputSchema,
   createCommentThreadResultSchema,
@@ -23,6 +15,8 @@ import {
 } from '@fouc/shared/knowledge/comments';
 import type {
   CommentThread,
+  CommentThreadKind,
+  SetCommentLikeResult,
   CommentThreadTransitionResult,
   CreateCommentThreadResult,
   DeleteOwnCommentResult,
@@ -51,9 +45,10 @@ function assertCommentInput(schema: { safeParse(payload: unknown): { success: tr
 }
 
 export type ReplyKnowledgeCommentInput = { threadId: string; bodyMd: string; mentions?: string[] };
-export type CreateKnowledgeCommentInput = { pageId: string; threadId: string; commentId: string; bodyMd: string; mentions?: string[] };
+export type CreateKnowledgeCommentInput = { pageId: string; threadId: string; commentId: string; kind: CommentThreadKind; anchorKind: 'page' | 'selection'; bodyMd: string; mentions?: string[] };
 
 export type KnowledgeCommentsApi = {
+  setLike(workspaceId: string, commentId: string, liked: boolean): Promise<SetCommentLikeResult>;
   listThreads(workspaceId: string, pageId: string, signal?: AbortSignal): Promise<CommentThread[]>;
   createThread(workspaceId: string, input: CreateKnowledgeCommentInput, signal?: AbortSignal): Promise<CreateCommentThreadResult>;
   replyThread(workspaceId: string, input: ReplyKnowledgeCommentInput, signal?: AbortSignal): Promise<ReplyCommentThreadResult>;
@@ -75,13 +70,18 @@ export function createKnowledgeCommentsApi(deps: { resolveOrigin: () => Promise<
   };
 
   return {
+    async setLike(workspaceId, commentId, liked) {
+      const wire = setCommentLikeInputSchema.parse({ workspaceId, commentId, liked });
+      const payload = await run(workspaceId, undefined, client => client.mutation('comment.like', wire));
+      return parseCommentPayload(setCommentLikeResultSchema, payload, 'comment.like');
+    },
     async listThreads(workspaceId, pageId, signal) {
       const input = listCommentThreadsInputSchema.parse({ workspaceId, pageId });
       const payload = await run(workspaceId, signal, (client) => client.query('comment.list', input, { signal }));
       return parseCommentPayload(threadListResultSchema, payload, 'comment.list');
     },
     async createThread(workspaceId, input, signal) {
-      const wire = { workspaceId, pageId: input.pageId, threadId: input.threadId, commentId: input.commentId, bodyMd: input.bodyMd, mentions: input.mentions ?? [] };
+      const wire = { workspaceId, pageId: input.pageId, threadId: input.threadId, commentId: input.commentId, kind: input.kind, anchorKind: input.anchorKind, bodyMd: input.bodyMd, mentions: input.mentions ?? [] };
       assertCommentInput(createCommentThreadInputSchema, wire, 'comment.create');
       const payload = await run(workspaceId, signal, (client) => client.mutation('comment.create', wire, { signal }));
       return parseCommentPayload(createCommentThreadResultSchema, payload, 'comment.create');

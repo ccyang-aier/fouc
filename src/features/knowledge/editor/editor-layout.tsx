@@ -11,13 +11,14 @@ import './code-fonts.css';
 import { DocumentNavigationTools } from './document-tools';
 import type { DocumentLinkTarget } from './document-link';
 
-export function DocumentEditorFrame({ children, header, navigation, appearanceScope }: {
+export function DocumentEditorFrame({ children, header, sidebar, navigation, appearanceScope }: {
   children: ReactNode;
   header: ReactNode;
+  sidebar?: ReactNode;
   navigation: { editor: Editor | null; title: string; target: DocumentLinkTarget };
   appearanceScope: string;
 }) {
-  return <DocumentAppearanceProvider key={appearanceScope} scope={appearanceScope}><section aria-label="页面编辑器" className={styles.frame}><DocumentNavigationTools {...navigation} header={header}>{children}</DocumentNavigationTools></section></DocumentAppearanceProvider>;
+  return <DocumentAppearanceProvider key={appearanceScope} scope={appearanceScope}><section aria-label="页面编辑器" className={styles.frame}><DocumentNavigationTools {...navigation} header={header} sidebar={sidebar}>{children}</DocumentNavigationTools></section></DocumentAppearanceProvider>;
 }
 
 export function DocumentHeading({ title, onTitleChange, onTitleCommit, editable = true, metadata }: {

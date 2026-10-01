@@ -2,7 +2,7 @@ import { Buffer } from 'node:buffer';
 import { readFile } from 'node:fs/promises';
 import { describe, expect, test } from 'bun:test';
 import { getTableConfig } from 'drizzle-orm/pg-core';
-import { aiTaskSchema, assetStatusSchema, commentThreadSchema, modelTiers, pageKindSchema, permissionLevels } from '@fouc/shared/knowledge/contracts';
+import { aiTaskSchema, assetStatusSchema, commentThreadStatusSchema, modelTiers, pageKindSchema, permissionLevels } from '@fouc/shared/knowledge/contracts';
 import { memberRoleSchema, workspaceKindSchema } from '@fouc/shared/workspaces';
 import { generateDatabaseSchemaSql, databaseSchemaSqlPath } from '../../../scripts/database-schema';
 import {
@@ -39,7 +39,7 @@ describe('workspace-owned current Drizzle schema', () => {
       'workspace', 'member', 'workspace_invitation', 'group', 'group_member', 'project', 'knowledge_base', 'teamspace', 'page',
       'database_definition', 'doc_state', 'doc_checkpoint', 'page_acl',
       'page_effective_acl', 'block_index', 'backlink', 'asset', 'comment_thread',
-      'comment', 'outbox', 'ai_task', 'ai_usage', 'notification',
+      'comment', 'comment_like', 'outbox', 'ai_task', 'ai_usage', 'notification',
       'personal_access_token', 'share_link', 'model_credential', 'block_embedding_staging',
     ]) expect(names).toContain(name);
     expect(identityTables.map((table) => getTableConfig(table).name).sort())
@@ -95,7 +95,7 @@ describe('workspace-owned current Drizzle schema', () => {
     expect([...pageKind.enumValues]).toEqual(pageKindSchema.options);
     expect(permissionLevel.enumValues).toEqual([...permissionLevels]);
     expect(modelTier.enumValues).toEqual([...modelTiers]);
-    expect([...commentThreadStatus.enumValues]).toEqual(commentThreadSchema.shape.status.options);
+    expect([...commentThreadStatus.enumValues]).toEqual(commentThreadStatusSchema.options);
     expect([...assetStatus.enumValues]).toEqual(assetStatusSchema.options);
     expect([...aiTaskKind.enumValues]).toEqual(aiTaskSchema.shape.kind.options);
     expect([...aiTaskStatus.enumValues]).toEqual(aiTaskSchema.shape.status.options);

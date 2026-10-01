@@ -31,7 +31,7 @@ export function usePageCommentThreads(workspaceId: string | null, pageId: string
 function useCommentInvalidation(workspaceId: string) {
   const queryClient = useQueryClient();
   return () => {
-    void invalidateKnowledgeQueries(queryClient, knowledgeQueryKeys.comments(workspaceId));
+    return invalidateKnowledgeQueries(queryClient, knowledgeQueryKeys.comments(workspaceId));
   };
 }
 
@@ -71,6 +71,14 @@ export function useDeleteComment(workspaceId: string) {
   const invalidate = useCommentInvalidation(workspaceId);
   return useMutation({
     mutationFn: (commentId: string) => knowledgeCommentsApi.deleteComment(workspaceId, commentId),
+    onSuccess: invalidate,
+  });
+}
+
+export function useSetCommentLike(workspaceId: string) {
+  const invalidate = useCommentInvalidation(workspaceId);
+  return useMutation({
+    mutationFn: (input: { commentId: string; liked: boolean }) => knowledgeCommentsApi.setLike(workspaceId, input.commentId, input.liked),
     onSuccess: invalidate,
   });
 }

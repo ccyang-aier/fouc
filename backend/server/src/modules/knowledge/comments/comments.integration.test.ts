@@ -17,6 +17,7 @@ import {
   reopenCommentThread,
   replyCommentThread,
   resolveCommentThread,
+  setCommentLike,
 } from './mutations';
 import { listPageCommentThreads } from './queries';
 
@@ -97,6 +98,7 @@ describe('comment thread persistence and permissions', () => {
     ]);
 
     const created = await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) => createCommentThread(db, {
+      kind: 'issue', anchorKind: 'selection',
       ...scope, userId: owner, bodyMd: '  First observation  ',
     }));
     expect(created.thread).toMatchObject({ status: 'open', pageId: scope.pageId, workspaceId: scope.workspaceId });
@@ -114,10 +116,12 @@ describe('comment thread persistence and permissions', () => {
     }));
     expect(resolved).toMatchObject({ changed: true, thread: { status: 'resolved' } });
 
-    // Resolved threads refuse replies; reopening is the explicit way back to open.
-    await expectCode(() => withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) => replyCommentThread(db, {
+    // A resolved issue may still be discussed.
+    const whileResolved = await withWorkspaceTenant(fixture.pool, scope.workspaceId, db => replyCommentThread(db, {
       workspaceId: scope.workspaceId, threadId: created.thread.id, userId: reader, bodyMd: 'While resolved',
-    })), 'COMMENT_THREAD_RESOLVED');
+    }));
+    expect(whileResolved.thread.status).toBe('resolved');
+    await withWorkspaceTenant(fixture.pool, scope.workspaceId, db => deleteOwnComment(db, { workspaceId: scope.workspaceId, userId: reader, commentId: whileResolved.comment.id }));
     const reopened = await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) => reopenCommentThread(db, {
       workspaceId: scope.workspaceId, threadId: created.thread.id, userId: reader,
     }));
@@ -162,6 +166,7 @@ describe('comment thread persistence and permissions', () => {
 
     // A thread whose last comment is deleted disappears with it.
     const solo = await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) => createCommentThread(db, {
+      kind: 'issue', anchorKind: 'selection',
       ...scope, userId: owner, bodyMd: 'Solo',
     }));
     const soloRemoved = await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) => deleteOwnComment(db, {
@@ -176,6 +181,38 @@ describe('comment thread persistence and permissions', () => {
     })), 'COMMENT_THREAD_NOT_FOUND');
   });
 
+  test('page comments have no issue status; likes are persisted, idempotent, tenant-scoped and cascade on deletion', async () => {
+    const { pages } = await fixture.tree();
+    const scope = { workspaceId: fixture.alpha.id, pageId: pages[1].pageId };
+    const owner = fixture.owner.identity.userId;
+    const reader = fixture.reader.identity.userId;
+    await grant(pages[0], [
+      { principal: principal('user', owner), level: 'full' },
+      { principal: principal('user', reader), level: 'comment' },
+    ]);
+    const created = await withWorkspaceTenant(fixture.pool, scope.workspaceId, db => createCommentThread(db, { ...scope, userId: owner, bodyMd: 'A free observation' }));
+    expect(created.thread).toMatchObject({ kind: 'comment', anchorKind: 'page', status: null });
+    await expectCode(() => withWorkspaceTenant(fixture.pool, scope.workspaceId, db => resolveCommentThread(db, { workspaceId: scope.workspaceId, threadId: created.thread.id, userId: owner })), 'INVALID_COMMENT_INPUT');
+    const like = (userId: string, liked: boolean) => withWorkspaceTenant(fixture.pool, scope.workspaceId, db => setCommentLike(db, { workspaceId: scope.workspaceId, commentId: created.comment.id, userId, liked }));
+    expect(await like(owner, true)).toMatchObject({ liked: true, likeCount: 1 });
+    expect(await like(owner, true)).toMatchObject({ liked: true, likeCount: 1 });
+    expect(await like(reader, true)).toMatchObject({ liked: true, likeCount: 2 });
+    const listed = await withWorkspaceTenant(fixture.pool, scope.workspaceId, db => listPageCommentThreads(db, { ...scope, userId: reader }));
+    expect(listed[0].comments[0]).toMatchObject({ likeCount: 2, liked: true });
+    expect(await like(reader, false)).toMatchObject({ liked: false, likeCount: 1 });
+    expect(await like(reader, false)).toMatchObject({ liked: false, likeCount: 1 });
+    await expectCode(() => withWorkspaceTenant(fixture.pool, fixture.beta.id, db => setCommentLike(db, { workspaceId: fixture.beta.id, commentId: created.comment.id, userId: owner, liked: true })), 'COMMENT_NOT_FOUND');
+    // This fixture runs only the ACL consumer; discard delivered comment events before rebuilding ACLs.
+    await fixture.resetJobs();
+    await grant(pages[0], [
+      { principal: principal('user', owner), level: 'full' },
+      { principal: principal('user', reader), level: 'view' },
+    ]);
+    await expectCode(() => like(reader, true), 'COMMENT_ACCESS_DENIED');
+    await withWorkspaceTenant(fixture.pool, scope.workspaceId, db => deleteOwnComment(db, { workspaceId: scope.workspaceId, userId: owner, commentId: created.comment.id }));
+    expect((await fixture.admin.query('SELECT count(*)::int AS count FROM workspace.comment_like WHERE comment_id=$1', [created.comment.id])).rows[0].count).toBe(0);
+  });
+
   test('view level is read-only: reads pass and every write path is denied', async () => {
     const { pages } = await fixture.tree();
     const scope = { workspaceId: fixture.alpha.id, pageId: pages[1].pageId };
@@ -183,11 +220,13 @@ describe('comment thread persistence and permissions', () => {
     const reader = fixture.reader.identity.userId;
     await grant(pages[0], [{ principal: principal('user', owner), level: 'full' }]);
     const { thread } = await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) => createCommentThread(db, {
+      kind: 'issue', anchorKind: 'selection',
       ...scope, userId: owner, bodyMd: 'Viewers see this',
     }));
 
     expect(await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) => listPageCommentThreads(db, { ...scope, userId: reader }))).toHaveLength(1);
     await expectCode(() => withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) => createCommentThread(db, {
+      kind: 'issue', anchorKind: 'selection',
       ...scope, userId: reader, bodyMd: 'No writes',
     })), 'COMMENT_ACCESS_DENIED');
     await expectCode(() => withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) => replyCommentThread(db, {
@@ -209,9 +248,11 @@ describe('comment thread persistence and permissions', () => {
     })), 'COMMENT_ACCESS_DENIED');
     // Strict inputs: blank bodies and duplicate mentions never reach the database.
     await expectCode(() => withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) => createCommentThread(db, {
+      kind: 'issue', anchorKind: 'selection',
       ...scope, userId: owner, bodyMd: '   ',
     })), 'INVALID_COMMENT_INPUT');
     await expectCode(() => withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) => createCommentThread(db, {
+      kind: 'issue', anchorKind: 'selection',
       ...scope, userId: owner, bodyMd: 'x', mentions: [reader, reader],
     })), 'INVALID_COMMENT_INPUT');
   });
@@ -231,6 +272,7 @@ describe('comment thread persistence and permissions', () => {
 
     // comment level on the root grant
     const atComment = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => createCommentThread(db, {
+      kind: 'issue', anchorKind: 'selection',
       workspaceId: fixture.alpha.id, pageId: pages[0].pageId, userId: reader, bodyMd: 'Comment level',
     }));
     await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => resolveCommentThread(db, {
@@ -245,6 +287,7 @@ describe('comment thread persistence and permissions', () => {
 
     // edit level inherited on the deeper subtree
     const atEdit = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => createCommentThread(db, {
+      kind: 'issue', anchorKind: 'selection',
       workspaceId: fixture.alpha.id, pageId: pages[2].pageId, userId: reader, bodyMd: 'Edit level',
     }));
     await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => resolveCommentThread(db, {
@@ -253,6 +296,7 @@ describe('comment thread persistence and permissions', () => {
 
     // full level on the explicit leaf grant
     const atFull = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => createCommentThread(db, {
+      kind: 'issue', anchorKind: 'selection',
       workspaceId: fixture.alpha.id, pageId: pages[3].pageId, userId: reader, bodyMd: 'Full level',
     }));
     expect(atFull.thread.pageId).toBe(pages[3].pageId);
@@ -268,6 +312,7 @@ describe('comment thread persistence and permissions', () => {
       { principal: principal('user', reader), level: 'comment' },
     ]);
     const { thread, comment: entry } = await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) => createCommentThread(db, {
+      kind: 'issue', anchorKind: 'selection',
       ...scope, userId: owner, bodyMd: 'Before recycle',
     }));
 
@@ -307,6 +352,7 @@ describe('comment thread persistence and permissions', () => {
 
     // Mentions of a member without page access and of a non-member notify nobody.
     const { thread } = await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) => createCommentThread(db, {
+      kind: 'issue', anchorKind: 'selection',
       ...scope, userId: owner, bodyMd: 'Root comment', mentions: [ghost.userId, fixture.foreign.identity.userId],
     }));
     expect(await notificationsFor(scope.pageId)).toEqual([]);
@@ -355,6 +401,7 @@ describe('comment thread persistence and permissions', () => {
     const foreign = fixture.foreign.identity.userId;
     await grant(pages[0], [{ principal: principal('user', owner), level: 'full' }]);
     const { thread, comment: entry } = await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) => createCommentThread(db, {
+      kind: 'issue', anchorKind: 'selection',
       ...scope, userId: owner, bodyMd: 'Alpha only',
     }));
 

@@ -10,6 +10,8 @@ CREATE SCHEMA "workspace";
 CREATE TYPE "workspace"."ai_task_kind" AS ENUM('inline', 'continue', 'chat', 'aiBlock', 'organize', 'report', 'mcp');
 CREATE TYPE "workspace"."ai_task_status" AS ENUM('running', 'awaiting_approval', 'done', 'failed');
 CREATE TYPE "workspace"."asset_status" AS ENUM('ready', 'revoked');
+CREATE TYPE "workspace"."comment_anchor_kind" AS ENUM('page', 'selection');
+CREATE TYPE "workspace"."comment_thread_kind" AS ENUM('comment', 'issue');
 CREATE TYPE "workspace"."comment_thread_status" AS ENUM('open', 'resolved');
 CREATE TYPE "workspace"."member_role" AS ENUM('owner', 'admin', 'member', 'guest');
 CREATE TYPE "workspace"."model_tier" AS ENUM('fast', 'smart', 'embed', 'rerank', 'vision');
@@ -187,14 +189,25 @@ CREATE TABLE "workspace"."comment" (
 	CONSTRAINT "comment_body_valid" CHECK (length(btrim("workspace"."comment"."body_md")) BETWEEN 1 AND 50000)
 );
 
+CREATE TABLE "workspace"."comment_like" (
+	"workspace_id" uuid NOT NULL,
+	"comment_id" uuid NOT NULL,
+	"user_id" uuid NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "comment_like_workspace_id_comment_id_user_id_pk" PRIMARY KEY("workspace_id","comment_id","user_id")
+);
+
 CREATE TABLE "workspace"."comment_thread" (
 	"workspace_id" uuid NOT NULL,
 	"id" uuid NOT NULL,
 	"page_id" uuid NOT NULL,
-	"status" "workspace"."comment_thread_status" DEFAULT 'open' NOT NULL,
+	"kind" "workspace"."comment_thread_kind" DEFAULT 'comment' NOT NULL,
+	"anchor_kind" "workspace"."comment_anchor_kind" DEFAULT 'page' NOT NULL,
+	"status" "workspace"."comment_thread_status",
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "comment_thread_workspace_id_id_pk" PRIMARY KEY("workspace_id","id")
+	CONSTRAINT "comment_thread_workspace_id_id_pk" PRIMARY KEY("workspace_id","id"),
+	CONSTRAINT "comment_thread_issue_status" CHECK (("workspace"."comment_thread"."kind" = 'comment' AND "workspace"."comment_thread"."status" IS NULL) OR ("workspace"."comment_thread"."kind" = 'issue' AND "workspace"."comment_thread"."status" IS NOT NULL))
 );
 
 CREATE TABLE "workspace"."database_definition" (
@@ -461,6 +474,8 @@ ALTER TABLE "workspace"."block_embedding_staging" ADD CONSTRAINT "block_embeddin
 ALTER TABLE "workspace"."block_index" ADD CONSTRAINT "block_index_workspace_id_page_id_page_workspace_id_id_fk" FOREIGN KEY ("workspace_id","page_id") REFERENCES "workspace"."page"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "workspace"."comment" ADD CONSTRAINT "comment_author_id_user_id_fk" FOREIGN KEY ("author_id") REFERENCES "auth"."user"("id") ON DELETE no action ON UPDATE no action;
 ALTER TABLE "workspace"."comment" ADD CONSTRAINT "comment_thread_fk" FOREIGN KEY ("workspace_id","thread_id") REFERENCES "workspace"."comment_thread"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."comment_like" ADD CONSTRAINT "comment_like_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."comment_like" ADD CONSTRAINT "comment_like_comment_fk" FOREIGN KEY ("workspace_id","comment_id") REFERENCES "workspace"."comment"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "workspace"."comment_thread" ADD CONSTRAINT "comment_thread_workspace_id_page_id_page_workspace_id_id_fk" FOREIGN KEY ("workspace_id","page_id") REFERENCES "workspace"."page"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "workspace"."database_definition" ADD CONSTRAINT "database_definition_page_fk" FOREIGN KEY ("workspace_id","teamspace_id","page_id","page_kind") REFERENCES "workspace"."page"("workspace_id","teamspace_id","id","kind") ON DELETE cascade ON UPDATE cascade;
 ALTER TABLE "workspace"."doc_checkpoint" ADD CONSTRAINT "doc_checkpoint_workspace_id_page_id_page_workspace_id_id_fk" FOREIGN KEY ("workspace_id","page_id") REFERENCES "workspace"."page"("workspace_id","id") ON DELETE cascade ON UPDATE no action;

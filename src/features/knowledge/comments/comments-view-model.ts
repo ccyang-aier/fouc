@@ -33,7 +33,7 @@ export interface CommentSidebarModel {
   unanchored: CommentThreadGroup[];
   /** Anchors with no thread and no pending creation. */
   orphans: OrphanAnchorGroup[];
-  counts: { open: number; resolved: number; unanchored: number; orphan: number };
+  counts: { total: number; open: number; resolved: number; unanchored: number; orphan: number };
   /** Inputs for the editor plugin's styling context. */
   resolvedThreadIds: ReadonlySet<string>;
   orphanThreadIds: ReadonlySet<string>;
@@ -60,11 +60,11 @@ export function deriveCommentSidebarModel(input: {
       excerpt: anchor ? input.excerptOf(anchor) : '',
       resolved: thread.status === 'resolved',
     };
-    (anchor ? groups : unanchored).push(group);
+    (thread.anchorKind === 'page' || anchor ? groups : unanchored).push(group);
   }
   groups.sort((left, right) => {
-    const leftFrom = Math.min(...left.anchor!.ranges.map((range) => range.from));
-    const rightFrom = Math.min(...right.anchor!.ranges.map((range) => range.from));
+    const leftFrom = left.anchor ? Math.min(...left.anchor.ranges.map(range => range.from)) : Number.MAX_SAFE_INTEGER;
+    const rightFrom = right.anchor ? Math.min(...right.anchor.ranges.map(range => range.from)) : Number.MAX_SAFE_INTEGER;
     return leftFrom - rightFrom || left.thread.createdAt.localeCompare(right.thread.createdAt) || left.thread.id.localeCompare(right.thread.id);
   });
   unanchored.sort((left, right) => left.thread.createdAt.localeCompare(right.thread.createdAt) || left.thread.id.localeCompare(right.thread.id));
@@ -83,8 +83,9 @@ export function deriveCommentSidebarModel(input: {
     unanchored,
     orphans,
     counts: {
-      open: groups.filter((group) => !group.resolved).length + unanchored.filter((group) => !group.resolved).length,
-      resolved: groups.filter((group) => group.resolved).length + unanchored.filter((group) => group.resolved).length,
+      total: input.threads.length,
+      open: input.threads.filter(thread => thread.kind === 'issue' && thread.status === 'open').length,
+      resolved: input.threads.filter(thread => thread.status === 'resolved').length,
       unanchored: unanchored.length,
       orphan: orphans.length,
     },
@@ -107,11 +108,24 @@ export function formatCommentTime(iso: string, now: Date = new Date()): string {
   return `${at.getFullYear()}年${at.getMonth() + 1}月${at.getDate()}日`;
 }
 
-/** Stable avatar hue per author id — identities stay distinguishable without names. */
-export function authorHueOf(userId: string): number {
-  let hash = 0;
-  for (let index = 0; index < userId.length; index += 1) {
-    hash = (hash * 31 + userId.charCodeAt(index)) >>> 0;
-  }
-  return hash % 360;
+
+export interface CommentFilters {
+  kind: 'all' | 'comment' | 'issue' | 'open' | 'resolved';
+  likes: 'all' | 'mine' | 'popular';
+  time: 'all' | 'week' | 'month' | 'newest' | 'oldest';
+}
+export const defaultCommentFilters: CommentFilters = { kind: 'all', likes: 'all', time: 'all' };
+
+/** All filters compose; default order follows document anchors, then page comments. */
+export function filterCommentGroups(groups: readonly CommentThreadGroup[], filters: CommentFilters, now = Date.now()): CommentThreadGroup[] {
+  const days = filters.time === 'week' ? 7 : filters.time === 'month' ? 30 : null;
+  const filtered = groups.filter(({ thread }) => {
+    if (filters.kind !== 'all' && (filters.kind === 'open' || filters.kind === 'resolved' ? thread.status !== filters.kind : thread.kind !== filters.kind)) return false;
+    if (filters.likes === 'mine' && !thread.comments.some(entry => entry.liked)) return false;
+    return days === null || new Date(thread.createdAt).getTime() >= now - days * 86_400_000;
+  });
+  const likeCount = (group: CommentThreadGroup) => group.thread.comments.reduce((sum, entry) => sum + entry.likeCount, 0);
+  if (filters.likes === 'popular') filtered.sort((a, b) => likeCount(b) - likeCount(a) || b.thread.createdAt.localeCompare(a.thread.createdAt) || a.threadId.localeCompare(b.threadId));
+  else if (filters.time === 'newest' || filters.time === 'oldest') filtered.sort((a, b) => (filters.time === 'newest' ? -1 : 1) * (a.thread.createdAt.localeCompare(b.thread.createdAt) || a.threadId.localeCompare(b.threadId)));
+  return filtered;
 }

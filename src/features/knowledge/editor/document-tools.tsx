@@ -1,8 +1,9 @@
 'use client';
 
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import type { Editor } from '@tiptap/core';
-import { ArrowsIn, ArrowsOut, CaretDown, CaretLeft, CaretRight, CaretUp, ListBullets, MagnifyingGlass, TextAa, X } from '@phosphor-icons/react';
+import { ArrowsIn, ArrowsOut, CaretDown, CaretLeft, CaretRight, CaretUp, ListDashes, MagnifyingGlass, TextAa, X } from '@phosphor-icons/react';
+import { DocumentOutline } from './components/document-outline';
 import { documentSearchKey, findDocumentMatches } from './extensions/document-search';
 import type { DocumentLinkTarget } from './document-link';
 import { useDocumentReference } from './document-reference';
@@ -14,16 +15,26 @@ type Navigation = { onPresent: () => void; onSearch: () => void; onSplit?: () =>
 const Context = createContext<Navigation | null>(null);
 export const useDocumentNavigation = () => useContext(Context);
 
-export function DocumentNavigationTools({ editor, title, target, children }: { editor: Editor | null; title: string; target: DocumentLinkTarget; children: ReactNode }) {
+function subscribeFullscreen(onChange: () => void) {
+  document.addEventListener('fullscreenchange', onChange);
+  return () => document.removeEventListener('fullscreenchange', onChange);
+}
+const fullscreenSnapshot = () => Boolean(document.fullscreenElement);
+const serverFullscreenSnapshot = () => false;
+
+export function DocumentNavigationTools({ editor, title, target, children }: { editor: Editor | null; title: string; target: DocumentLinkTarget; children: (tools: ReactNode) => ReactNode }) {
   const reference = useDocumentReference();
   const host = useRef<HTMLDivElement>(null);
+  const outlineTrigger = useRef<HTMLButtonElement>(null);
+  const outlineId = useId();
   const [outlineOpen, setOutlineOpen] = useState(false);
+  const closeOutline = useCallback(() => setOutlineOpen(false), []);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [matchCase, setMatchCase] = useState(false);
   const [current, setCurrent] = useState(0);
   const [revision, setRevision] = useState(0);
-  const [fullscreen, setFullscreen] = useState(false);
+  const fullscreen = useSyncExternalStore(subscribeFullscreen, fullscreenSnapshot, serverFullscreenSnapshot);
   const input = useRef<HTMLInputElement>(null);
   const presentation = useRef<HTMLDialogElement>(null);
   const [slides, setSlides] = useState<string[]>([]);
@@ -73,13 +84,12 @@ export function DocumentNavigationTools({ editor, title, target, children }: { e
   useEffect(() => {
     function keydown(event: KeyboardEvent) {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f' && host.current?.closest('[aria-label="页面编辑器"]')?.contains(document.activeElement)) { event.preventDefault(); openSearch(); }
-      if (event.key === 'Escape') { setSearchOpen(false); setOutlineOpen(false); }
+      if (event.key === 'Escape') setSearchOpen(false);
     }
-    const changed = () => setFullscreen(Boolean(document.fullscreenElement));
-    document.addEventListener('keydown', keydown); document.addEventListener('fullscreenchange', changed);
+    document.addEventListener('keydown', keydown);
     // This is a request counter, not a DOM ref: invalidate pending snapshots on unmount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    return () => { document.removeEventListener('keydown', keydown); document.removeEventListener('fullscreenchange', changed); pending.current++; };
+    return () => { document.removeEventListener('keydown', keydown); pending.current++; };
   }, []);
   async function onPresent() {
     if (!editor) return;
@@ -99,16 +109,12 @@ export function DocumentNavigationTools({ editor, title, target, children }: { e
   }
   return <Context.Provider value={{ onPresent: () => { void onPresent(); }, onSearch: openSearch, onSplit: reference && editor ? () => reference.openReference(editor, title) : undefined,
     onTogglePin: reference ? () => reference.togglePin({ title, target }) : undefined, pinned: reference?.pins.some(pin => pin.target.pageId === target.pageId) ?? false }}>
-    <div ref={host} className={styles.toolbarHost}>{children}
-      <div className={styles.navigation}>
-        <button type="button" aria-label="文档目录" title="文档目录" aria-expanded={outlineOpen} disabled={!editor} onClick={() => { setSearchOpen(false); setOutlineOpen(value => !value); }} data-active={outlineOpen}><ListBullets size={18} /></button>
-        <button type="button" aria-label={fullscreen ? '退出全屏' : '全屏编辑'} title={fullscreen ? '退出全屏' : '全屏编辑'} onClick={() => { if (fullscreen) void document.exitFullscreen(); else void host.current?.closest<HTMLElement>('[aria-label="页面编辑器"]')?.requestFullscreen().catch(() => setFullscreenError('浏览器未允许全屏，请检查浏览器权限。')); }}>{fullscreen ? <ArrowsIn size={17} /> : <ArrowsOut size={17} />}</button>
-      </div>
+    <div ref={host} className={styles.toolbarHost}>{children(<div className={styles.navigation}>
+        <button ref={outlineTrigger} type="button" className={styles.outlineTrigger} aria-label="文档目录" title="文档目录" aria-expanded={outlineOpen} aria-controls={outlineId} disabled={!editor} onClick={() => { setSearchOpen(false); setOutlineOpen(value => !value); }} data-active={outlineOpen}><ListDashes aria-hidden size={18} /><span>目录</span><CaretDown aria-hidden className={styles.outlineCaret} size={11} /></button>
+        <button type="button" aria-label={fullscreen ? '退出全屏' : '全屏编辑'} title={fullscreen ? '退出全屏' : '全屏编辑'} aria-pressed={fullscreen} onClick={() => { setFullscreenError(''); const request = fullscreen ? document.exitFullscreen() : host.current?.closest<HTMLElement>('[aria-label="页面编辑器"]')?.requestFullscreen(); void request?.catch(() => setFullscreenError('浏览器未允许全屏，请检查浏览器权限。')); }}>{fullscreen ? <ArrowsIn aria-hidden size={17} /> : <ArrowsOut aria-hidden size={17} />}</button>
+      </div>)}
       {fullscreenError && <div role="alert" className={styles.search}>{fullscreenError}<button aria-label="关闭提示" onClick={() => setFullscreenError('')}><X size={16} /></button></div>}
-      {outlineOpen && <aside className={`${styles.outline} menu-surface`} aria-label="文档目录">
-        <header><strong>目录</strong><button type="button" aria-label="关闭目录" onClick={() => setOutlineOpen(false)}><X size={16} /></button></header>
-        <nav>{headings.length ? headings.map((heading, index) => <button type="button" key={heading.pos} data-active={index === activeHeading} style={{ paddingLeft: `${12 + (heading.level - 1) * 12}px` }} onClick={() => { const element = editor!.view.nodeDOM(heading.pos); if (element instanceof HTMLElement) element.scrollIntoView({ block: 'start', behavior: 'smooth' }); setActiveHeading(index); }} title={heading.title}>{heading.title}</button>) : <p>添加标题后，章节会显示在这里。</p>}</nav>
-      </aside>}
+      {outlineOpen && <DocumentOutline id={outlineId} title={title} headings={headings} activeHeading={activeHeading} trigger={outlineTrigger} onClose={closeOutline} onNavigate={index => { const element = editor?.view.nodeDOM(headings[index].pos); if (element instanceof HTMLElement) element.scrollIntoView({ block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' }); setActiveHeading(index); }} />}
       {searchOpen && <div className={`${styles.search} menu-surface`} role="search" aria-label="在文档中搜索">
         <MagnifyingGlass size={17} /><input ref={input} aria-label="文档内搜索词" placeholder="在文档中搜索" value={query} onChange={event => { setQuery(event.target.value); setCurrent(0); }} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); moveMatch(event.shiftKey ? -1 : 1); } }} />
         <span role="status">{matches.length ? `${Math.min(current + 1, matches.length)}/${matches.length}` : query ? '无结果' : '0/0'}</span>

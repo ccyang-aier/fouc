@@ -38,7 +38,7 @@ export function DocumentEditorHeader({
     } catch { setCopyState('failed'); }
   };
 
-  return <DocumentNavigationTools editor={editor} title={title} target={menuActions.target}><header className={styles.header}>
+  return <DocumentNavigationTools editor={editor} title={title} target={menuActions.target}>{tools => <header className={styles.header}>
     <div className={styles.leading}>
       <button type="button" className={styles.libraryButton} aria-label="返回文档列表" title="返回文档列表" onClick={onBack}>
         <BookOpen aria-hidden size={18} weight="duotone" />
@@ -60,7 +60,8 @@ export function DocumentEditorHeader({
         </DropdownMenuContent>
       </DropdownMenu>
       <button type="button" aria-label="新建文档" className={`${styles.outlineButton} ${styles.createButton}`} disabled={!canCreateDocument} title={canCreateDocument ? '新建文档' : '没有创建文档的权限'} onClick={onCreateDocument}><Plus aria-hidden size={20} weight="bold" /><span className={styles.createLabel}>新建文档</span></button>
+      {tools}
       <DocumentMoreMenu editor={editor} title={title} starred={starred} onToggleStar={onToggleStar} actions={menuActions} />
     </div>
-  </header></DocumentNavigationTools>;
+  </header>}</DocumentNavigationTools>;
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type KeyboardEvent } from 'react';
-import { SlidersHorizontal, X } from '@phosphor-icons/react';
+import { SlidersHorizontal } from '@phosphor-icons/react';
 import { AppearanceSelect, AppearanceSizeControl, AppearanceWidthControl } from '@/components/editor-appearance-controls';
 import { DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from '@/components/ui/dropdown-menu';
 import { documentFonts, documentCodeFonts, documentLineHeights, documentParagraphSpacings } from '@/lib/editor-appearance-options';
@@ -25,7 +25,7 @@ export function DocumentAppearanceMenu({ triggerClassName }: { triggerClassName:
     <DropdownMenuSubContent className={styles.panel} onKeyDownCapture={navigateControls} aria-label="个性化"
       onFocusOutside={event => { if ((event.target as Element)?.closest('[data-editor-appearance-dropdown]')) event.preventDefault(); }}
       onInteractOutside={event => { if ((event.target as Element)?.closest('[data-editor-appearance-dropdown]')) event.preventDefault(); }}>
-      <div className={styles.header} data-menu-reveal><h2 className={styles.heading}>个性化</h2><button type="button" aria-label="关闭个性化" onClick={() => setOpen(false)}><X size={15} /></button></div>
+      <div className={styles.header} data-menu-reveal><h2 className={styles.heading}>个性化</h2></div>
       <div className={styles.controls}>
         <AppearanceWidthControl value={appearance.width} onChange={width => update({ width })} />
         <AppearanceSelect label="字体" value={appearance.font} options={documentFonts} onChange={font => update({ font })} />

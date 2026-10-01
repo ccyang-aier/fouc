@@ -89,7 +89,8 @@ describe('document menu rendered interaction', () => {
     expect(document.querySelector('[role="menu"][aria-label="个性化"]')?.textContent).not.toContain('更多编辑器设置');
     expect(document.querySelector('[role="menu"][aria-label="个性化"]')?.textContent).not.toContain('页面背景');
     expect(document.querySelector('[role="menu"][aria-label="个性化"]')).not.toBeNull();
-    await act(async () => document.querySelector<HTMLButtonElement>('[aria-label="关闭个性化"]')!.click());
+    expect(document.querySelector('[aria-label="关闭个性化"]')).toBeNull();
+    await act(async () => item('个性化').dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(document.querySelector('[role="menu"][aria-label="个性化"]')).toBeNull();
     expect(document.querySelector('[role="menu"]')).not.toBeNull();
     await key(document.querySelector('[aria-label="更多文档操作"]')!, 'Escape');

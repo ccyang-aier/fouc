@@ -8,7 +8,6 @@
 .folderButton svg { flex:none; color:#9b52ef; }
 .folderName { max-width:160px; overflow:hidden; font-size:15px; font-weight:650; text-overflow:ellipsis; white-space:nowrap; }
 .folderButton:hover { background:#f3f5f8; }
-.iconButton[aria-expanded=true] { background:var(--surface-hover); color:var(--accent-ink); }
 .iconButton:disabled { opacity:.4; cursor:default; }
 .divider { padding: 0 7px; color: #d6dfea; font-size: 21px; font-weight: 350; }
 .iconButton { width: 28px; height: 32px; border-radius: 6px; }

@@ -1,8 +1,8 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode, type RefObject } from 'react';
 import type { Editor } from '@tiptap/core';
-import { ArrowsIn, ArrowsOut, CaretDown, CaretLeft, CaretRight, CaretUp, ListDashes, MagnifyingGlass, TextAa, X } from '@phosphor-icons/react';
+import { ArrowsIn, ArrowsOut, CaretDown, CaretLeft, CaretRight, CaretUp, MagnifyingGlass, TextAa, X } from '@phosphor-icons/react';
 import { DocumentOutline } from './components/document-outline';
 import { documentSearchKey, findDocumentMatches } from './extensions/document-search';
 import type { DocumentLinkTarget } from './document-link';
@@ -11,7 +11,7 @@ import { exportDocumentHtml } from './components/document-html-export';
 import { presentationSlides } from './presentation-slides';
 import styles from './document-tools.module.css';
 
-type Navigation = { onPresent: () => void; onSearch: () => void; onSplit?: () => void; onTogglePin?: () => void; pinned: boolean };
+type Navigation = { onPresent: () => void; onSearch: () => void; onSplit?: () => void; onTogglePin?: () => void; pinned: boolean; outlineOpen: boolean; outlineId: string; outlineTrigger: RefObject<HTMLButtonElement | null>; onToggleOutline?: () => void };
 const Context = createContext<Navigation | null>(null);
 export const useDocumentNavigation = () => useContext(Context);
 
@@ -22,12 +22,14 @@ function subscribeFullscreen(onChange: () => void) {
 const fullscreenSnapshot = () => Boolean(document.fullscreenElement);
 const serverFullscreenSnapshot = () => false;
 
-export function DocumentNavigationTools({ editor, title, target, children }: { editor: Editor | null; title: string; target: DocumentLinkTarget; children: (tools: ReactNode) => ReactNode }) {
+export function DocumentNavigationTools({ editor, title, target, header, children }: { editor: Editor | null; title: string; target: DocumentLinkTarget; header: ReactNode; children: ReactNode }) {
   const reference = useDocumentReference();
   const host = useRef<HTMLDivElement>(null);
   const outlineTrigger = useRef<HTMLButtonElement>(null);
   const outlineId = useId();
-  const [outlineOpen, setOutlineOpen] = useState(false);
+  const [outlinePreference, setOutlineOpen] = useState<boolean | null>(null);
+  const [compact, setCompact] = useState(true);
+  const outlineOpen = outlinePreference ?? !compact;
   const closeOutline = useCallback(() => setOutlineOpen(false), []);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -47,6 +49,12 @@ export function DocumentNavigationTools({ editor, title, target, children }: { e
   const headings: { pos: number; level: number; title: string }[] = [];
   if (editor) editor.state.doc.descendants((node, pos) => { if (node.type.name === 'heading') headings.push({ pos, level: node.attrs.level as number, title: node.textContent || '无标题章节' }); });
   useEffect(() => {
+    if (!host.current) return;
+    const observer = new ResizeObserver(([entry]) => setCompact(entry.contentRect.width < 760));
+    observer.observe(host.current);
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => {
     if (!editor) return;
     const update = () => setRevision(value => value + 1);
     editor.on('update', update);
@@ -56,7 +64,7 @@ export function DocumentNavigationTools({ editor, title, target, children }: { e
     const frame = host.current?.closest('[aria-label="页面编辑器"]');
     const scroll = frame?.querySelector('[data-document-scroll]');
     const update = () => {
-      if (!editor || !scroll) return;
+      if (!editor?.isInitialized || editor.isDestroyed || !scroll) return;
       let active = -1;
       const top = scroll.getBoundingClientRect().top + 90;
       editor.state.doc.descendants((node, pos) => { if (node.type.name === 'heading') { const index = headings.findIndex(heading => heading.pos === pos); const element = editor.view.nodeDOM(pos); if (element instanceof HTMLElement && element.getBoundingClientRect().top <= top) active = index; } });
@@ -68,7 +76,7 @@ export function DocumentNavigationTools({ editor, title, target, children }: { e
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor, revision]);
   useEffect(() => {
-    if (!editor) return;
+    if (!editor?.isInitialized || editor.isDestroyed) return;
     editor.view.dispatch(editor.state.tr.setMeta(documentSearchKey, { query: searchOpen ? query : '', matchCase, current }));
     const active = documentSearchKey.getState(editor.state);
     const match = searchOpen ? active?.matches[active.current] : undefined;
@@ -80,7 +88,7 @@ export function DocumentNavigationTools({ editor, title, target, children }: { e
     const index = (current + delta + matches.length) % matches.length;
     setCurrent(index);
   }
-  function openSearch() { setOutlineOpen(false); setSearchOpen(true); requestAnimationFrame(() => input.current?.focus()); }
+  function openSearch() { setSearchOpen(true); requestAnimationFrame(() => input.current?.focus()); }
   useEffect(() => {
     function keydown(event: KeyboardEvent) {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f' && host.current?.closest('[aria-label="页面编辑器"]')?.contains(document.activeElement)) { event.preventDefault(); openSearch(); }
@@ -108,13 +116,11 @@ export function DocumentNavigationTools({ editor, title, target, children }: { e
     if (event.key === 'Escape') closePresentation();
   }
   return <Context.Provider value={{ onPresent: () => { void onPresent(); }, onSearch: openSearch, onSplit: reference && editor ? () => reference.openReference(editor, title) : undefined,
-    onTogglePin: reference ? () => reference.togglePin({ title, target }) : undefined, pinned: reference?.pins.some(pin => pin.target.pageId === target.pageId) ?? false }}>
-    <div ref={host} className={styles.toolbarHost}>{children(<div className={styles.navigation}>
-        <button ref={outlineTrigger} type="button" className={styles.outlineTrigger} aria-label="文档目录" title="文档目录" aria-expanded={outlineOpen} aria-controls={outlineId} disabled={!editor} onClick={() => { setSearchOpen(false); setOutlineOpen(value => !value); }} data-active={outlineOpen}><ListDashes aria-hidden size={18} /><span>目录</span><CaretDown aria-hidden className={styles.outlineCaret} size={11} /></button>
-        <button type="button" aria-label={fullscreen ? '退出全屏' : '全屏编辑'} title={fullscreen ? '退出全屏' : '全屏编辑'} aria-pressed={fullscreen} onClick={() => { setFullscreenError(''); const request = fullscreen ? document.exitFullscreen() : host.current?.closest<HTMLElement>('[aria-label="页面编辑器"]')?.requestFullscreen(); void request?.catch(() => setFullscreenError('浏览器未允许全屏，请检查浏览器权限。')); }}>{fullscreen ? <ArrowsIn aria-hidden size={17} /> : <ArrowsOut aria-hidden size={17} />}</button>
-      </div>)}
+    onTogglePin: reference ? () => reference.togglePin({ title, target }) : undefined, pinned: reference?.pins.some(pin => pin.target.pageId === target.pageId) ?? false,
+    outlineOpen: Boolean(editor) && outlineOpen, outlineId, outlineTrigger, onToggleOutline: editor ? () => setOutlineOpen(!outlineOpen) : undefined }}>
+    <div ref={host} className={styles.toolsWorkspace}>
+      <div className={styles.toolbarHost}>{header}
       {fullscreenError && <div role="alert" className={styles.search}>{fullscreenError}<button aria-label="关闭提示" onClick={() => setFullscreenError('')}><X size={16} /></button></div>}
-      {outlineOpen && <DocumentOutline id={outlineId} title={title} headings={headings} activeHeading={activeHeading} trigger={outlineTrigger} onClose={closeOutline} onNavigate={index => { const element = editor?.view.nodeDOM(headings[index].pos); if (element instanceof HTMLElement) element.scrollIntoView({ block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' }); setActiveHeading(index); }} />}
       {searchOpen && <div className={`${styles.search} menu-surface`} role="search" aria-label="在文档中搜索">
         <MagnifyingGlass size={17} /><input ref={input} aria-label="文档内搜索词" placeholder="在文档中搜索" value={query} onChange={event => { setQuery(event.target.value); setCurrent(0); }} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); moveMatch(event.shiftKey ? -1 : 1); } }} />
         <span role="status">{matches.length ? `${Math.min(current + 1, matches.length)}/${matches.length}` : query ? '无结果' : '0/0'}</span>
@@ -122,6 +128,24 @@ export function DocumentNavigationTools({ editor, title, target, children }: { e
         <button type="button" aria-label="上一个匹配" disabled={!matches.length} onClick={() => moveMatch(-1)}><CaretUp size={16} /></button><button type="button" aria-label="下一个匹配" disabled={!matches.length} onClick={() => moveMatch(1)}><CaretDown size={16} /></button>
         <button type="button" aria-label="关闭文档搜索" onClick={() => setSearchOpen(false)}><X size={16} /></button>
       </div>}
+      </div>
+      <div className={styles.readingWorkspace} data-outline-open={Boolean(editor) && outlineOpen}>
+        {editor && outlineOpen && <aside className={styles.readingRail} aria-label="文档阅读导航">
+          <div className={styles.railHeader}>
+            <div className={styles.railLabel}><strong>目录</strong><span>{headings.length}</span></div>
+          </div>
+          <DocumentOutline id={outlineId} headings={headings} activeHeading={activeHeading} onNavigate={index => {
+            const element = editor.view.nodeDOM(headings[index].pos);
+            if (compact) closeOutline();
+            requestAnimationFrame(() => { if (element instanceof HTMLElement) element.scrollIntoView({ block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' }); });
+            setActiveHeading(index);
+          }} onClose={() => { closeOutline(); outlineTrigger.current?.focus(); }} />
+        </aside>}
+        <div className={styles.readingCanvas}>{children}</div>
+      </div>
+      <footer className={styles.actionBar} aria-label="文档底部操作">
+        <button type="button" className={styles.railButton} aria-label={fullscreen ? '退出全屏' : '全屏'} title={fullscreen ? '退出全屏' : '全屏'} aria-pressed={fullscreen} onClick={() => { setFullscreenError(''); const request = fullscreen ? document.exitFullscreen() : host.current?.closest<HTMLElement>('[aria-label="页面编辑器"]')?.requestFullscreen(); void request?.catch(() => setFullscreenError('浏览器未允许全屏，请检查浏览器权限。')); }}>{fullscreen ? <ArrowsIn aria-hidden size={16} /> : <ArrowsOut aria-hidden size={16} />}<span>{fullscreen ? '退出全屏' : '全屏'}</span></button>
+      </footer>
       <dialog ref={presentation} className={styles.presentation} aria-label="文档演示" onCancel={closePresentation} onKeyDown={navigatePresentation}>
         {presenting && <><header><span>{title || '无标题文档'}</span><button type="button" aria-label="退出演示" onClick={closePresentation}><X size={20} /></button></header>
           <div className={styles.stage}>{slides.length ? <iframe key={slide} title={`演示第 ${slide + 1} 页`} srcDoc={slides[slide]} sandbox="allow-same-origin" onLoad={event => { const document = event.currentTarget.contentDocument; document?.addEventListener('keydown', navigatePresentation); if (document) { document.body.tabIndex = 0; document.body.focus(); } }} /> : <div role={presentError ? 'alert' : 'status'}>{presentError || '正在准备演示…'}</div>}</div>

@@ -27,10 +27,21 @@
 import type { ReactNode } from 'react';
 import type { Editor } from '@tiptap/react';
 import type { PageScope, PermissionLevel } from '@fouc/shared/knowledge/contracts';
+import { ChatCircleDots } from '@phosphor-icons/react';
 import { PageComments } from '../comments/comments-controller';
+import { usePageCommentThreads } from '../comments/comments-queries';
 import { levelSatisfies } from './editor-state';
+import styles from './comments-integration.module.css';
 
 export { createCommentsEditorExtension } from '../comments/comments-plugin';
+
+export function PageCommentsTrigger({ scope, open, onToggle }: { scope: PageScope; open: boolean; onToggle: () => void }) {
+  const threads = usePageCommentThreads(scope.workspaceId, scope.pageId);
+  const count = threads.data?.length ?? 0;
+  return <span><button type="button" className={styles.trigger} aria-label={open ? '收起评论栏' : '展开评论栏'} aria-expanded={open} onClick={onToggle}>
+    <ChatCircleDots aria-hidden size={15} /><span>评论{count > 0 ? ` ${count}` : ''}</span>
+  </button></span>;
+}
 
 export function PageCommentsLayer({
   scope,

@@ -32,7 +32,7 @@ import { pageCollaborationExtension } from './page-collaboration';
 import { createPageReviewExtension, PageReviewRail } from './review-integration';
 import { createBlockEditingExtensions } from './extensions';
 import { HistoryPanel } from '../history/history-panel';
-import { createCommentsEditorExtension, PageCommentsLayer } from './comments-integration';
+import { createCommentsEditorExtension, PageCommentsLayer, PageCommentsTrigger } from './comments-integration';
 import { usePageTitle } from './use-page-title';
 import { useSidebarCollections } from '../navigation/sidebar-collections';
 import { TaskProgress } from './block-modules/task-list/task-progress';
@@ -47,10 +47,10 @@ export function PageEditorSurface({
   pageUndo,
   level,
   view,
-  collectionName,
+  folderName,
   knowledgeBaseId,
   onBack,
-  onToggleSidebar,
+  onOpenSidebar,
   onCreateDocument,
   canCreateDocument,
 }: {
@@ -64,10 +64,10 @@ export function PageEditorSurface({
   pageUndo: PageUndo;
   level: PermissionLevel;
   view: PageEditorViewModel;
-  collectionName: string;
+  folderName: string;
   knowledgeBaseId: string;
   onBack: () => void;
-  onToggleSidebar: () => void;
+  onOpenSidebar: () => void;
   onCreateDocument: () => void;
   canCreateDocument: boolean;
 }) {
@@ -140,15 +140,16 @@ export function PageEditorSurface({
     : '文档';
 
   return (
-    <DocumentEditorFrame appearanceScope={`workspace:${user?.id ?? 'guest'}:${scope.workspaceId}:${scope.pageId}`}>
+    <DocumentEditorFrame appearanceScope={`workspace:${user?.id ?? 'guest'}:${scope.workspaceId}:${scope.pageId}`}
+      navigation={{ editor, title: pageTitle.title, target: { workspaceId: scope.workspaceId, knowledgeBaseId, pageId: scope.pageId, source: 'workspace' } }}
+      header={
       <DocumentEditorHeader
         editor={editor}
-        collectionName={collectionName}
+        folderName={folderName}
         title={pageTitle.title}
         avatarName={user?.name ?? '我'}
         starred={collections.starred.includes(scope.pageId)}
-        onBack={onBack}
-        onToggleSidebar={onToggleSidebar}
+        onOpenSidebar={onOpenSidebar}
         onToggleStar={() => toggleStar(scope.pageId)}
         onCreateDocument={onCreateDocument}
         canCreateDocument={canCreateDocument}
@@ -164,7 +165,7 @@ export function PageEditorSurface({
             onBack();
           } : undefined,
         }}
-      />
+      />}>
       {view.readonlyReason ? <ReadonlyBanner reason={view.readonlyReason} level={level} /> : null}
       <PageCommentsLayer scope={scope} editor={editor} level={level} railOpen={commentsOpen} onRailOpenChange={setCommentsOpen}>
         <DocumentEditorBody editor={editor} before={<DocumentHeading
@@ -177,6 +178,7 @@ export function PageEditorSurface({
             <TaskProgress editor={editor} />
             <SyncIndicator view={view.sync} />
             <span>{level === 'view' ? '仅可查看' : level === 'comment' ? '可评论' : '可编辑'} · 已被浏览</span>
+            <PageCommentsTrigger scope={scope} open={commentsOpen} onToggle={() => { setHistoryOpen(false); setCommentsOpen(value => !value); }} />
             {pageTitle.fetchError ? <span role="alert" className="text-[var(--err-ink)]">标题暂不可用</span> : null}
             {pageTitle.saving ? <span>正在保存标题</span> : null}
             {pageTitle.error ? <span role="alert" className="text-[var(--err-ink)]">{pageTitle.error}</span> : null}

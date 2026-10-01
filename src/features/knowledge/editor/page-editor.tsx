@@ -2,6 +2,7 @@
 import { useKnowledgePagesQuery } from '../data/pages-queries';
 import { documentFileFormat } from '../documents/file-format';
 import { WorkspaceFileDocument } from '../documents/file-document-surface';
+import { flattenWorkspaceList, useKnowledgeTeamspacesQuery } from '../data/workspace-queries';
 
 /**
  * The page editor container (E03, design §4/§5.1) — the state closed loop in
@@ -40,9 +41,11 @@ function pageAccessErrorText(error: unknown): string {
 }
 
 /** The page editor of one open page; mounts inside the U02 canvas main column. */
-export function PageEditor({ scope, user, collectionName, knowledgeBaseId, onBack, onToggleSidebar, onCreateDocument, canCreateDocument }: { scope: PageScope; user: FoucAuthUser | null; collectionName: string; knowledgeBaseId: string; onBack: () => void; onToggleSidebar: () => void; onCreateDocument: () => void; canCreateDocument: boolean }) {
+export function PageEditor({ scope, user, knowledgeBaseId, onBack, onOpenSidebar, onCreateDocument, canCreateDocument }: { scope: PageScope; user: FoucAuthUser | null; knowledgeBaseId: string; onBack: () => void; onOpenSidebar: () => void; onCreateDocument: () => void; canCreateDocument: boolean }) {
   const pages = useKnowledgePagesQuery(scope.workspaceId);
+  const folders = useKnowledgeTeamspacesQuery(scope.workspaceId, knowledgeBaseId);
   const page = pages.data?.find(item => item.id === scope.pageId);
+  const folderName = flattenWorkspaceList(folders.data).find(folder => folder.id === page?.teamspaceId)?.name ?? '所属文件夹';
   const format = page ? documentFileFormat(page.title) : null;
   const isFile = Boolean(page?.properties.fileAsset || format && format !== "markdown");
   const { gate, error: gateError, retry } = usePageEditorGate(scope.workspaceId, scope.pageId);
@@ -73,7 +76,7 @@ export function PageEditor({ scope, user, collectionName, knowledgeBaseId, onBac
   }
   if (pages.isPending) return <CanvasSpinner label="正在读取文档信息" />;
   if (pages.isError) return <CanvasError title="无法读取文档信息" detail="请检查网络后重试。" onRetry={() => { void pages.refetch(); }} />;
-  if (gate.status === "granted" && isFile && page) return <WorkspaceFileDocument workspaceId={scope.workspaceId} knowledgeBaseId={knowledgeBaseId} page={page} canEdit={gate.level === "edit" || gate.level === "full"} avatarName={user?.name ?? "我"} collectionName={collectionName} onBack={onBack} onToggleSidebar={onToggleSidebar} onCreateDocument={onCreateDocument} />;
+  if (gate.status === "granted" && isFile && page) return <WorkspaceFileDocument workspaceId={scope.workspaceId} knowledgeBaseId={knowledgeBaseId} page={page} canEdit={gate.level === "edit" || gate.level === "full"} avatarName={user?.name ?? "我"} folderName={folderName} onBack={onBack} onOpenSidebar={onOpenSidebar} onCreateDocument={onCreateDocument} />;
   if (session.failure) {
     return <CanvasError title="无法打开页面文档" detail={session.failure} onRetry={session.retry} />;
   }
@@ -89,10 +92,10 @@ export function PageEditor({ scope, user, collectionName, knowledgeBaseId, onBac
       pageUndo={session.undo}
       level={gate.level}
       view={view}
-      collectionName={collectionName}
+      folderName={folderName}
       knowledgeBaseId={knowledgeBaseId}
       onBack={onBack}
-      onToggleSidebar={onToggleSidebar}
+      onOpenSidebar={onOpenSidebar}
       onCreateDocument={onCreateDocument}
       canCreateDocument={canCreateDocument}
     />

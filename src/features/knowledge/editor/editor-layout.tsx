@@ -8,9 +8,16 @@ import { DocumentAppearanceProvider, useDocumentAppearance } from './components/
 import { documentFonts, documentCodeFonts, documentSizes, documentParagraphSpacings } from '@/lib/editor-appearance-options';
 import './document-fonts.css';
 import './code-fonts.css';
+import { DocumentNavigationTools } from './document-tools';
+import type { DocumentLinkTarget } from './document-link';
 
-export function DocumentEditorFrame({ children, appearanceScope }: { children: ReactNode; appearanceScope: string }) {
-  return <DocumentAppearanceProvider key={appearanceScope} scope={appearanceScope}><section aria-label="页面编辑器" className={styles.frame}>{children}</section></DocumentAppearanceProvider>;
+export function DocumentEditorFrame({ children, header, navigation, appearanceScope }: {
+  children: ReactNode;
+  header: ReactNode;
+  navigation: { editor: Editor | null; title: string; target: DocumentLinkTarget };
+  appearanceScope: string;
+}) {
+  return <DocumentAppearanceProvider key={appearanceScope} scope={appearanceScope}><section aria-label="页面编辑器" className={styles.frame}><DocumentNavigationTools {...navigation} header={header}>{children}</DocumentNavigationTools></section></DocumentAppearanceProvider>;
 }
 
 export function DocumentHeading({ title, onTitleChange, onTitleCommit, editable = true, metadata }: {

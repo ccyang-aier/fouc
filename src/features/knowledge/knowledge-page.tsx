@@ -2,7 +2,7 @@
 
 /** Identity controls resource access, never the selected knowledge resource. */
 
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { FolderPlus, LockSimple, XCircle } from '@phosphor-icons/react';
 
@@ -152,25 +152,26 @@ function WorkspaceKnowledgeResource({ onOpenSettings, onOpenLocal, onOpenWorkspa
   const [libraryView, setLibraryView] = useState<LibraryView>('all-documents');
   const [selectedTeamspaceId, setSelectedTeamspaceId] = useState<string | null>(null);
   const [selectedPageId, setSelectedPageId] = useState<string | null>(() => currentDocumentLinkTarget(activeSpace.id, 'workspace')?.pageId ?? null);
+  const [editorSidebarOpen, setEditorSidebarOpen] = useState(false);
+  const openPage = useCallback((id: string | null) => { setSelectedPageId(id); setEditorSidebarOpen(false); }, [setSelectedPageId, setEditorSidebarOpen]);
 
   // ── N03: publish the live inbox (unread badge, rows, jump) to the shell bell ──
-  useKnowledgeNotificationsBridge({ active: stageActive, workspaceId: activeId, openPage: setSelectedPageId });
+  useKnowledgeNotificationsBridge({ active: stageActive, workspaceId: activeId, openPage });
 
   // ── L02: block-reference cards ask the shell to open their source page ──
   // (the highlight itself rides the staged one-shot channel the editor consumes).
   useEffect(() => {
     if (!stageActive) return undefined;
     return subscribeOpenPageTarget((target) => {
-      if (target.workspaceId === activeId) setSelectedPageId(target.pageId);
+      if (target.workspaceId === activeId) openPage(target.pageId);
     });
-  }, [stageActive, activeId]);
+  }, [stageActive, activeId, openPage]);
 
   const selectedTeamspace = teamspaces.find((teamspace) => teamspace.id === selectedTeamspaceId) ?? null;
 
   const [createKnowledgeBaseOpen, setCreateKnowledgeBaseOpen] = useState(false);
   const [createTeamspaceOpen, setCreateTeamspaceOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [editorSidebarOpen, setEditorSidebarOpen] = useState(true);
   const [createDocumentOpen, setCreateDocumentOpen] = useState(false);
   const { toast, notify } = useOrganizationToast();
   const pageOperations = usePageTreeOperations(activeId, { canEdit: canEditTree(accessQuery.data), notify });
@@ -181,7 +182,7 @@ function WorkspaceKnowledgeResource({ onOpenSettings, onOpenLocal, onOpenWorkspa
     try {
       const teamspaceId = input.teamspaceId || (await createTeamspace.mutateAsync({ knowledgeBaseId: activeBase.id, name: '文档', defaultAccess: 'edit' })).id;
       const id = await pageOperations.createPage({ ...input, teamspaceId });
-      if (id) { setSelectedPageId(id); setCreateDocumentOpen(false); }
+      if (id) { openPage(id); setCreateDocumentOpen(false); }
       return id;
     } catch { notify('error', '创建文档失败，请重试'); return null; }
   }
@@ -212,7 +213,7 @@ function WorkspaceKnowledgeResource({ onOpenSettings, onOpenLocal, onOpenWorkspa
       selectedSectionId={selectedTeamspaceId}
       selectedPageId={selectedPageId}
       onSelectSection={(id) => { setSelectedTeamspaceId(id); setSelectedPageId(null); setLibraryView('overview'); }}
-      onSelectPage={setSelectedPageId}
+      onSelectPage={openPage}
       onRetryTeamspaces={retryTeamspaces}
       onCreateTeamspace={() => setCreateTeamspaceOpen(true)}
       notify={notify}
@@ -296,17 +297,17 @@ function WorkspaceKnowledgeResource({ onOpenSettings, onOpenLocal, onOpenWorkspa
         <>
           {selectedPageId && activeId ? (
             <KnowledgePageEditor
+              key={selectedPageId}
               scope={{ workspaceId: activeId, pageId: selectedPageId }}
               user={session.user}
-              collectionName={activeBase?.name ?? '知识库'}
               knowledgeBaseId={activeBase?.id ?? ''}
               onBack={() => { setSelectedPageId(null); setLibraryView('all-documents'); }}
-              onToggleSidebar={() => setEditorSidebarOpen((value) => !value)}
+              onOpenSidebar={() => setEditorSidebarOpen(true)}
               onCreateDocument={() => setCreateDocumentOpen(true)}
               canCreateDocument={canEditTree(accessQuery.data)}
             />
           ) : activeId ? (
-            <LibraryCanvas knowledgeBaseId={activeBase?.id ?? ''} key={`${activeId}:${activeBase?.id}`} workspaceId={activeId} userId={session.user.id} name={activeBase?.name ?? ''} view={libraryView} access={accessQuery.data} teamspaces={teamspaces} folder={selectedTeamspace} onOpenPage={setSelectedPageId} onSelectFolder={(id) => { setSelectedTeamspaceId(id); setLibraryView('overview'); }} onCreateFolder={() => setCreateTeamspaceOpen(true)} onExpandSidebar={sidebarCollapsed ? () => setSidebarCollapsed(false) : undefined} notify={notify} />
+            <LibraryCanvas knowledgeBaseId={activeBase?.id ?? ''} key={`${activeId}:${activeBase?.id}`} workspaceId={activeId} userId={session.user.id} name={activeBase?.name ?? ''} view={libraryView} access={accessQuery.data} teamspaces={teamspaces} folder={selectedTeamspace} onOpenPage={openPage} onSelectFolder={(id) => { setSelectedTeamspaceId(id); setLibraryView('overview'); }} onCreateFolder={() => setCreateTeamspaceOpen(true)} onExpandSidebar={sidebarCollapsed ? () => setSidebarCollapsed(false) : undefined} notify={notify} />
           ) : null}
         </>
       ) : null}

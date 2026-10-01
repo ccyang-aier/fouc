@@ -1,17 +1,28 @@
 .workspace,.primary { display:flex; flex:1; min-width:0; min-height:0; flex-direction:column; }
 .workspaceBody { display:flex; flex:1; min-width:0; min-height:0; }
-.toolbarHost { position:relative; flex:none; container-type:inline-size; }
-.navigation { display:flex; align-items:center; flex:none; gap:3px; }
-.navigation button,.search button,.reference header button { display:grid; place-items:center; flex:none; width:30px; height:32px; padding:0; border:0; border-radius:6px; background:transparent; color:var(--muted-strong); cursor:pointer; }
-.navigation button:hover,.search button:hover,.reference header button:hover { background:var(--surface-hover); color:var(--ink); }
-.navigation button[data-active=true],.search button[aria-pressed=true] { background:var(--accent-soft); color:var(--accent-ink); }
-.navigation .outlineTrigger { display:flex; width:auto; gap:5px; padding:0 8px; font-size:12px; font-weight:550; }
-.outlineCaret { transition:transform 160ms ease-out; }
-.outlineTrigger[data-active=true] .outlineCaret { transform:rotate(180deg); }
-.navigation button:disabled { opacity:.4; cursor:not-allowed; }
-.navigation button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
-@container (max-width:620px) { .navigation .outlineTrigger { width:30px; padding:0; justify-content:center; }.outlineTrigger span,.outlineCaret { display:none; } }
-@media (prefers-reduced-motion:reduce) { .outlineCaret { transition:none; } }
+.toolsWorkspace { display:flex; flex:1; flex-direction:column; min-width:0; min-height:0; container-type:inline-size; }
+.toolbarHost { position:relative; flex:none; }
+.readingWorkspace { display:flex; flex:1; min-width:0; min-height:0; }
+.readingCanvas { position:relative; display:flex; flex:1; flex-direction:column; min-width:0; min-height:0; }
+.readingRail { display:flex; flex:none; flex-direction:column; min-height:0; width:216px; padding:clamp(56px,7vh,84px) 12px 24px 22px; color:var(--ink); }
+.railHeader { display:flex; align-items:center; justify-content:space-between; gap:12px; flex:none; min-height:28px; }
+.railLabel { display:flex; align-items:center; gap:10px; padding-inline-start:8px; }
+.railLabel strong { font-size:12px; font-weight:600; color:var(--muted-strong); }
+.railLabel>span { font-size:11px; color:var(--muted-strong); font-variant-numeric:tabular-nums; }
+.railButton { display:flex; align-items:center; justify-content:center; gap:8px; flex:none; height:30px; min-width:30px; padding:0 6px; border:0; border-radius:5px; background:transparent; color:var(--muted-strong); font-size:11px; cursor:pointer; transition:color 160ms ease-out,background 160ms ease-out; }
+.railButton:hover { background:var(--surface-hover); color:var(--ink); }
+.railButton:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.railButton[aria-pressed=true] { color:var(--accent-ink); }
+.actionBar { display:flex; flex:none; align-items:center; justify-content:flex-end; gap:4px; min-height:40px; padding:4px 20px; border-top:1px solid var(--line); background:var(--panel); }
+.actionBar .railButton { padding-inline:8px; }
+.search button,.reference header button { display:grid; place-items:center; flex:none; width:30px; height:32px; padding:0; border:0; border-radius:6px; background:transparent; color:var(--muted-strong); cursor:pointer; }
+.search button:hover,.reference header button:hover { background:var(--surface-hover); color:var(--ink); }
+.search button[aria-pressed=true] { background:var(--accent-soft); color:var(--accent-ink); }
+@container (width < 760px) {
+  .readingWorkspace[data-outline-open=true] .readingCanvas { display:none; }
+  .readingRail { flex:1; width:100%; padding:32px 24px 22px; }
+}
+@media (prefers-reduced-motion:reduce) { .railButton { transition:none; } }
 .search { position:absolute; top:58px; right:14px; z-index:35; display:flex; align-items:center; gap:5px; padding:8px 10px; width:min(438px,calc(100cqw - 28px)); }
 .search input { min-width:0; flex:1; width:100px; background:transparent; border:0; outline:none; font-size:12px; }
 .search>span { flex:none; font-size:10px; color:var(--muted-strong); }

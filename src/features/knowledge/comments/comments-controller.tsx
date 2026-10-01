@@ -23,7 +23,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ChatCircleDots, ChatsCircle } from '@phosphor-icons/react';
+import { ChatsCircle } from '@phosphor-icons/react';
 import { motion } from 'motion/react';
 import type { Editor } from '@tiptap/react';
 import type { PageScope } from '@fouc/shared/knowledge/contracts';
@@ -340,27 +340,10 @@ export function PageComments({ scope, editor, canComment, railOpen: controlledRa
         : null,
   };
 
-  const totalThreads = model.counts.open + model.counts.resolved;
   const popoverX = composerAt ? Math.min(Math.max(composerAt.x, 156), (typeof window === 'undefined' ? 1024 : window.innerWidth) - 156) : 0;
 
   return (
     <>
-      {!railOpen ? (
-        <button
-          type="button"
-          aria-label={totalThreads > 0 ? `展开评论栏（${totalThreads} 条线程）` : '展开评论栏'}
-          title="页面评论"
-          onClick={() => setRailOpen(true)}
-          className="absolute right-3 top-[50px] z-10 flex h-7 items-center gap-1.5 rounded-[6px] border border-[var(--line)] bg-[var(--chip)] px-2 text-[11px] font-medium text-[var(--muted-strong)] shadow-[var(--floating-shadow)] outline-none backdrop-blur transition-colors hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)]"
-        >
-          <ChatCircleDots aria-hidden className="size-3.5" />
-          评论
-          {totalThreads > 0 ? (
-            <span className="rounded-full bg-[var(--warn-soft)] px-1.5 text-[10px] font-semibold text-[var(--warn-ink)]">{totalThreads}</span>
-          ) : null}
-        </button>
-      ) : null}
-
       {selectionAt && !composing && canComment && editor ? (
         <motion.button
           type="button"

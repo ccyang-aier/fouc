@@ -26,7 +26,7 @@ const localHistory = Extension.create({
   },
 });
 
-export function LocalDocumentEditor({ workspaceId, store, document, collectionName, onChange, onBack, onToggleSidebar, onCreateDocument }: { workspaceId: string; store: ReturnType<typeof createLocalLibraryStore>; document: LocalDocument; collectionName: string; onChange: (patch: Partial<LocalDocument>) => boolean; onBack: () => void; onToggleSidebar: () => void; onCreateDocument: () => void }) {
+export function LocalDocumentEditor({ workspaceId, store, document, folderName, onChange, onBack, onOpenSidebar, onCreateDocument }: { workspaceId: string; store: ReturnType<typeof createLocalLibraryStore>; document: LocalDocument; folderName: string; onChange: (patch: Partial<LocalDocument>) => boolean; onBack: () => void; onOpenSidebar: () => void; onCreateDocument: () => void }) {
   const extensions = useMemo(() => [
     ...applyEditorBlockModules(createKnowledgeExtensions(), {
       localWorkspaceId: workspaceId,
@@ -47,20 +47,21 @@ export function LocalDocumentEditor({ workspaceId, store, document, collectionNa
     onUpdate: ({ editor: current }) => onChange({ body: current.getJSON() }),
   }, [extensions]);
 
-  return <DocumentEditorFrame appearanceScope={`local:${workspaceId}:${document.id}`}>
+  return <DocumentEditorFrame appearanceScope={`local:${workspaceId}:${document.id}`}
+    navigation={{ editor, title: document.title, target: { workspaceId, knowledgeBaseId: document.baseId, pageId: document.id, source: 'local' } }}
+    header={
     <DocumentEditorHeader
       editor={editor}
-      collectionName={collectionName}
+      folderName={folderName}
       title={document.title}
       avatarName="我"
       starred={document.starred}
-      onBack={onBack}
-      onToggleSidebar={onToggleSidebar}
+      onOpenSidebar={onOpenSidebar}
       onToggleStar={() => onChange({ starred: !document.starred })}
       onCreateDocument={onCreateDocument}
       shareDescription="本机文档仅保存在当前浏览器。你可以复制标题和正文，通过其他应用分享。"
       menuActions={{ target: { workspaceId, knowledgeBaseId: document.baseId, pageId: document.id, source: 'local' }, onDelete: () => { if (!onChange({ deleted: true })) throw new Error('save-failed'); onBack(); } }}
-    />
+    />}>
     <DocumentEditorBody editor={editor} before={<DocumentHeading
       title={document.title}
       onTitleChange={(title) => onChange({ title })}

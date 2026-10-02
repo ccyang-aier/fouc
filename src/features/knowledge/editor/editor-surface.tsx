@@ -23,6 +23,7 @@ import { AwarenessMembers, createAwarenessExtension } from './awareness';
 import { applyEditorBlockModules } from './block-modules';
 import { createSlashPasteExtensions, SlashMenuLayer } from './commands';
 import { DocumentEditorBody, DocumentEditorFrame, DocumentHeading } from './editor-layout';
+import { PageIconPicker } from '../navigation/page-icon-picker';
 import { DocumentEditorHeader } from './components/document-editor-header';
 import { ReadonlyBanner } from './components/readonly-banner';
 import { SyncIndicator } from './components/sync-indicator';
@@ -33,7 +34,7 @@ import { createPageReviewExtension, PageReviewRail } from './review-integration'
 import { createBlockEditingExtensions } from './extensions';
 import { HistoryPanel } from '../history/history-panel';
 import { createCommentsEditorExtension, PageCommentsLayer, PageCommentsTrigger } from './comments-integration';
-import { usePageTitle } from './use-page-title';
+import { usePageMetadata } from './use-page-metadata';
 import { useSidebarCollections } from '../navigation/sidebar-collections';
 import { TaskProgress } from './block-modules/task-list/task-progress';
 import { recycleKnowledgePage } from '../data/pages-api';
@@ -134,7 +135,7 @@ export function PageEditorSurface({
   const [commentsOpen, setCommentsOpen] = useState(false);
   const queryClient = useQueryClient();
   const { collections, toggleStar } = useSidebarCollections(user?.id ?? '', scope.workspaceId, knowledgeBaseId);
-  const pageTitle = usePageTitle(scope);
+  const pageTitle = usePageMetadata(scope);
   const updatedLabel = pageTitle.updatedAt
     ? `你已更新 ${new Date(pageTitle.updatedAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
     : '文档';
@@ -175,6 +176,7 @@ export function PageEditorSurface({
       {view.readonlyReason ? <ReadonlyBanner reason={view.readonlyReason} level={level} /> : null}
         <DocumentEditorBody editor={editor} before={<DocumentHeading
           title={pageTitle.title}
+          icon={<PageIconPicker value={pageTitle.icon} editable={view.editable && pageTitle.loaded} onChange={pageTitle.saveIcon} />}
           editable={view.editable && pageTitle.loaded}
           onTitleChange={pageTitle.setTitle}
           onTitleCommit={() => { void pageTitle.save(); }}

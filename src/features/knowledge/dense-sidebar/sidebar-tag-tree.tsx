@@ -23,7 +23,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { FileText } from "@phosphor-icons/react";
+import { PageIcon } from '../navigation/page-icon';
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/features/knowledge/dense-sidebar/use-i18n";
 import { IconButton } from "./icon-button";
@@ -152,7 +152,7 @@ export function SidebarTagTreeNode({
                   onClick={() => onSelectDocument(document.id)}
                   className="flex h-full min-w-0 flex-1 items-center text-left outline-none"
                 >
-                  <FileText aria-hidden="true" size={13} className={sidebarDocumentIconClass} />
+                  <PageIcon value={document.icon} size={13} className={sidebarDocumentIconClass} />
                   <span className="my-auto inline-flex h-4 min-w-0 items-center truncate leading-4">{document.title}</span>
                 </button>
                 <SidebarDocumentActions

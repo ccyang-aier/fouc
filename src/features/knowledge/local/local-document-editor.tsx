@@ -13,6 +13,7 @@ import { createBlockEditingExtensions } from '../editor/extensions';
 import { TaskProgress } from '../editor/block-modules/task-list/task-progress';
 import type { LocalDocument } from './local-library';
 import type { createLocalLibraryStore } from './local-library';
+import { PageIconPicker } from '../navigation/page-icon-picker';
 
 const localHistory = Extension.create({
   name: 'localHistory',
@@ -64,6 +65,7 @@ export function LocalDocumentEditor({ workspaceId, store, document, folderName, 
     />}>
     <DocumentEditorBody editor={editor} before={<DocumentHeading
       title={document.title}
+      icon={<PageIconPicker value={document.icon} onChange={async icon => { if (!onChange({ icon })) throw new Error('Icon save failed'); }} />}
       onTitleChange={(title) => onChange({ title })}
       metadata={<>
         <span>你已更新 · 保存在本机</span>

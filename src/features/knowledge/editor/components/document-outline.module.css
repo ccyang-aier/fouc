@@ -10,7 +10,11 @@
 .branch::after { content:""; position:absolute; top:14px; inset-inline-start:0; width:7px; border-top:1px solid color-mix(in srgb,var(--ink) 13%,transparent); }
 .branch[data-last=true] { bottom:auto; height:14px; }
 .chapter[data-active=true] .branch,.chapter[data-active=true] .branch::after { border-color:color-mix(in srgb,var(--accent) 45%,transparent); }
-.chapter:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
+.chapterLink { display:flex; align-items:center; flex:1; min-width:0; height:100%; border:0; padding:0; background:transparent; color:inherit; font:inherit; text-align:start; cursor:pointer; }
+.fold,.foldSpace { display:grid; place-items:center; flex:none; width:14px; height:16px; margin-inline-end:4px; }
+.fold { position:relative; border:0; border-radius:3px; padding:0; background:transparent; color:var(--muted-strong); cursor:pointer; }
+.fold:hover { background:var(--panel); color:var(--accent-ink); }
+.fold:focus-visible,.chapterLink:focus-visible { outline:2px solid var(--accent); outline-offset:1px; border-radius:3px; }
 .empty { padding:4px 8px; color:var(--muted-strong); }
 .empty strong { color:var(--ink-soft); font-size:12px; font-weight:500; }
 .empty p { margin:6px 0 0; font-size:12px; line-height:1.7; }

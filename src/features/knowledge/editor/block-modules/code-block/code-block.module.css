@@ -6,15 +6,15 @@
 .languageSelect:focus-visible,.iconButton:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 .detected { color: var(--code-muted); font-size: 11px; }
 .iconButton { display: grid; place-items: center; width: 27px; height: 27px; border: 0; border-radius: 5px; background: transparent; color: var(--code-muted); cursor: pointer; transition: color 160ms ease, background 160ms ease; }
-.menu { width:208px; min-width:208px; padding:4px; }
+.menu { width:192px; min-width:192px; padding:4px; }
 .setting { justify-content:space-between; padding:0 10px; cursor:pointer; }
 .setting[role=menuitemcheckbox] { padding-inline-end:34px; }
 .setting[role=menuitemcheckbox]>span { left:auto; right:10px; }
 .setting>svg { margin-inline-start:0; color:var(--muted); }
 .themeValue { min-width:0; max-width:112px; margin-inline-start:auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--muted-strong); font-size:11px; }
-.themeMenu { width:200px; min-width:0; max-width:var(--radix-dropdown-menu-content-available-width); }
+.themeMenu { width:184px; min-width:0; max-width:var(--radix-dropdown-menu-content-available-width); }
 .themeMenu [role=menuitemradio] { height:auto; min-height:32px; white-space:normal; }
-.languageMenu { width: 204px; }
+.languageMenu { width:176px; min-width:0; max-width:var(--radix-dropdown-menu-content-available-width); }
 .languageScroll { max-height: 300px; }
 .body { display: flex; min-width: 0; overflow-x: auto; padding: 16px 0 18px; }
 .gutter { display: flex; flex-direction: column; min-width: 43px; padding: 0 12px; color: var(--code-muted); font: 13px/1.75 var(--document-code-font, var(--font-code)); text-align: right; user-select: none; }

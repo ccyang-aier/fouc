@@ -1,7 +1,7 @@
 import type { DocumentFile } from '../documents/file-format';
 import type { JSONContent } from '@tiptap/core';
 
-export type LocalDocument = { id: string; baseId: string; folderId?: string; title: string; body: JSONContent; file?: DocumentFile; starred: boolean; draft: boolean; deleted: boolean; updatedAt: string; creator?: string; source?: string; indexStatus?: string };
+export type LocalDocument = { id: string; baseId: string; folderId?: string; icon?: string | null; title: string; body: JSONContent; file?: DocumentFile; starred: boolean; draft: boolean; deleted: boolean; updatedAt: string; creator?: string; source?: string; indexStatus?: string };
 export type LocalTag = { id: string; baseId: string; name: string; pageIds: string[] };
 export type LocalLibrary = { bases: { id: string; name: string }[]; folders: { id: string; knowledgeBaseId: string; name: string }[]; documents: LocalDocument[]; tags: LocalTag[] };
 export const localLibraryKey = (workspaceId: string) => `fouc.local-library.${workspaceId}`;

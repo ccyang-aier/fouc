@@ -62,6 +62,7 @@ export function SidebarRecentNotes({
         <RecentNoteRow
           key={note.id}
           documentId={note.id}
+          icon={note.icon}
           label={note.label ?? (note.labelKey ? t(note.labelKey) : "")}
           starred={note.starred}
           selected={activeRecentId === note.id}

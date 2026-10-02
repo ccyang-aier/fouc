@@ -5,9 +5,10 @@ test('local documents survive reload without inventing a server user', () => {
   const values = new Map<string, string>();
   const storage = { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => { values.set(key, value); } };
   const first = createLocalLibraryStore(storage, 'workspace-a');
-  first.update((current) => ({ ...current, documents: [newLocalDocument('personal', '本机文档')] }));
+  first.update((current) => ({ ...current, documents: [{ ...newLocalDocument('personal', '本机文档'), icon: 'glyph:graduation-cap:#9955e8' }] }));
   const second = createLocalLibraryStore(storage, 'workspace-a');
   expect(second.getSnapshot().documents[0].title).toBe('本机文档');
+  expect(second.getSnapshot().documents[0].icon).toBe('glyph:graduation-cap:#9955e8');
   expect(values.size).toBe(1);
 });
 

@@ -1,6 +1,7 @@
 export type DocumentItem = {
     id: string;
     title: string;
+    icon?: string | null;
     updatedAt: string;
     creator: string;
     source: string;

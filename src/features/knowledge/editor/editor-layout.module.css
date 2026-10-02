@@ -17,6 +17,7 @@
   padding: clamp(56px, 7vh, 84px) 0 160px;
 }
 .heading { margin-bottom: 25px; }
+.titleRow { display:flex; align-items:center; gap:12px; min-width:0; }
 .title,
 .titleInput {
   width: 100%;

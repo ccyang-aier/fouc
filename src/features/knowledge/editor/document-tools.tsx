@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode, type RefObject } from 'react';
+import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type ReactNode, type RefObject } from 'react';
 import type { Editor } from '@tiptap/core';
 import { ArrowsIn, ArrowsOut, CaretDown, CaretLeft, CaretRight, CaretUp, MagnifyingGlass, TextAa, X } from '@phosphor-icons/react';
 import { DocumentOutline } from './components/document-outline';
@@ -47,8 +47,13 @@ export function DocumentNavigationTools({ editor, title, target, header, sidebar
   const [fullscreenError, setFullscreenError] = useState('');
   const pending = useRef(0);
   const [activeHeading, setActiveHeading] = useState(-1);
-  const headings: { pos: number; level: number; title: string }[] = [];
-  if (editor) editor.state.doc.descendants((node, pos) => { if (node.type.name === 'heading') headings.push({ pos, level: node.attrs.level as number, title: node.textContent || '无标题章节' }); });
+  const headings = useMemo(() => {
+    const result: { id: string; pos: number; level: number; title: string }[] = [];
+    if (editor) editor.state.doc.descendants((node, pos) => { if (node.type.name === 'heading') result.push({ id: node.attrs.blockId as string, pos, level: node.attrs.level as number, title: node.textContent || '无标题章节' }); });
+    return result;
+    // Rebuild only when document content changes, never during scrolling.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editor, revision]);
   useEffect(() => {
     if (!documentHost.current) return;
     const observer = new ResizeObserver(([entry]) => setCompact(entry.contentRect.width < 760));
@@ -64,18 +69,25 @@ export function DocumentNavigationTools({ editor, title, target, header, sidebar
   useEffect(() => {
     const frame = host.current?.closest('[aria-label="页面编辑器"]');
     const scroll = frame?.querySelector('[data-document-scroll]');
+    if (!editor?.isInitialized || editor.isDestroyed || !scroll) return;
+    let animationFrame = 0;
     const update = () => {
-      if (!editor?.isInitialized || editor.isDestroyed || !scroll) return;
+      animationFrame = 0;
+      if (editor.isDestroyed || !editor.view.dom.getClientRects().length) return;
       let active = -1;
       const top = scroll.getBoundingClientRect().top + 90;
-      editor.state.doc.descendants((node, pos) => { if (node.type.name === 'heading') { const index = headings.findIndex(heading => heading.pos === pos); const element = editor.view.nodeDOM(pos); if (element instanceof HTMLElement && element.getBoundingClientRect().top <= top) active = index; } });
+      headings.forEach((heading, index) => {
+        const element = editor.view.nodeDOM(heading.pos);
+        if (element instanceof HTMLElement && element.isConnected && element.getBoundingClientRect().top <= top) active = index;
+      });
       setActiveHeading(active);
     };
-    scroll?.addEventListener('scroll', update, { passive: true }); update();
-    return () => { scroll?.removeEventListener('scroll', update); };
-    // Heading positions are rebuilt after each document update.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editor, revision]);
+    const schedule = () => { if (!animationFrame) animationFrame = requestAnimationFrame(update); };
+    const observer = new ResizeObserver(schedule);
+    observer.observe(editor.view.dom);
+    scroll.addEventListener('scroll', schedule, { passive: true }); update();
+    return () => { scroll.removeEventListener('scroll', schedule); observer.disconnect(); cancelAnimationFrame(animationFrame); };
+  }, [editor, headings]);
   useEffect(() => {
     if (!editor?.isInitialized || editor.isDestroyed) return;
     editor.view.dispatch(editor.state.tr.setMeta(documentSearchKey, { query: searchOpen ? query : '', matchCase, current }));
@@ -140,7 +152,10 @@ export function DocumentNavigationTools({ editor, title, target, header, sidebar
               <DocumentOutline id={outlineId} headings={headings} activeHeading={activeHeading} onNavigate={index => {
                 const element = editor.view.nodeDOM(headings[index].pos);
                 if (compact) closeOutline();
-                requestAnimationFrame(() => { if (element instanceof HTMLElement) element.scrollIntoView({ block: 'start', behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' }); });
+                requestAnimationFrame(() => {
+                  const scroll = host.current?.closest('[aria-label="页面编辑器"]')?.querySelector<HTMLElement>('[data-document-scroll]');
+                  if (scroll && element instanceof HTMLElement) scroll.scrollTo({ top: scroll.scrollTop + element.getBoundingClientRect().top - scroll.getBoundingClientRect().top - 28, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+                });
                 setActiveHeading(index);
               }} onClose={() => { closeOutline(); outlineTrigger.current?.focus(); }} />
             </aside>}

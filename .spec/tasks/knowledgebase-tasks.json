@@ -714,6 +714,11 @@
           "summary": "文档更多菜单改为五组紧凑图标操作与组间分割线，移除旧编辑工具及其未使用组件/菜单模型。接通四种复制、HTML/Markdown 导出、独立正文快照打印、个人页宽/字体/字号偏好、收藏、协作文档评论/历史侧栏和确认后移至回收站；本机保存失败保留页面并提示，服务端删除失败可重试。文档链接携带工作空间/知识库/页面/资源来源，只导航到当前主体可访问的空间，之后不覆盖主动空间切换。演示、订阅、权限、模板化、PDF、导入、移动、固定、拆分、搜索先标注待实现，本机评论/历史按能力预留。35 项内容转换、实际 React/Radix 菜单交互、编辑器及评论锚点回归通过（202 断言）。Computer Use 因无法可靠识别当前浏览器 URL 自动停止，未完成真实浏览器视觉与原生打印验证；临时页面已清理，用户文档未操作。类型、lint、架构、文档、任务与 Web 构建检查通过；三项热更新服务返回 200，未执行 Tauri 构建。",
           "command": "bun test --isolate src/features/knowledge/editor/components/document-content-actions.test.ts src/features/knowledge/editor/components/document-more-menu.test.tsx src/features/knowledge/editor/page-editor.instance.test.ts src/features/knowledge/editor/extensions/block-format.test.ts src/features/knowledge/comments/comment-anchors.test.ts; pnpm typecheck; pnpm exec eslint changed frontend files --max-warnings=0; pnpm architecture:verify; pnpm docs:verify; pnpm knowledge:verify; pnpm build; pnpm dev:all; HTTP service readiness probes",
           "verifiedAt": "2026-09-30"
+        },
+        {
+          "summary": "代码语言菜单 176px、主题菜单 184px、显示设置 192px；目录使用左侧加减号折叠真实子树，按稳定块身份保留折叠状态，正文容器平滑定位并按帧跟踪标题，隐藏画布不误判当前章节。标题支持 36 种命名图标、30 种表情、中文/英文搜索、11 色和移除，复用页面 icon 元数据及工作空间权限，与文件夹树、最近、标签和文档列表一致；本机图标可持久化，失败保留面板并提示。36 项相关测试（265 断言）、类型、修改文件 lint、架构、文档与任务检查通过。1363px/390px 浏览器验证折叠、28px 定位、菜单边界、图标保存/刷新/搜索/表情/移除与键盘导航，无浏览器错误；测试图标恢复为空，开发服务继续常驻且三端点均 200。",
+          "command": "bun test --isolate src/features/knowledge/navigation/page-icon.test.tsx src/features/knowledge/navigation/tree-model.test.ts src/features/knowledge/local/local-library.test.ts src/features/knowledge/editor/components/document-more-menu.test.tsx src/features/knowledge/editor/block-modules/blocks.instance.test.ts; pnpm typecheck; eslint 修改文件; architecture/docs/knowledge verify; 浏览器 1363×871 和 390×844",
+          "verifiedAt": "2026-10-02"
         }
       ]
     },

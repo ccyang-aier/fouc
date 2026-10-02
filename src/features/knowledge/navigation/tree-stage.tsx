@@ -60,10 +60,10 @@ export function KnowledgeTreeStage({ knowledgeBaseId, userId, workspaceId, teams
     onSelectPage(id);
   }
   const actions = useDocumentNavigationActions({ knowledgeBaseId, workspaceId: workspaceId ?? '', userId, pages, teamspaces, canEdit: canEditTree(access), onOpenPage: openPage, notify });
-  const toNode = (node: NavigationPageNode): SidebarProjectNode => ({ id: node.id, kind: 'document', label: node.title, icon: 'file', starred: collections.starred.includes(node.id), expandable: node.children.length > 0, defaultExpanded: true, children: node.children.map(toNode) });
+  const toNode = (node: NavigationPageNode): SidebarProjectNode => ({ id: node.id, kind: 'document', label: node.title, icon: 'file', documentIcon: node.icon, starred: collections.starred.includes(node.id), expandable: node.children.length > 0, defaultExpanded: true, children: node.children.map(toNode) });
   const projects: SidebarProjectNode[] = sections.map((section) => ({ id: section.id, kind: 'project', label: section.title, count: documents.filter((page) => page.teamspaceId === section.id).length, projectIconId: 'folder', starred: collections.starred.includes(section.id), expandable: section.pages.length > 0, defaultExpanded: true, children: section.pages.map(toNode) }));
   const tags = collections.tags.map((tag) => ({ id: tag.id, name: tag.name, color: '#ada34e' }));
-  const tagDocuments = Object.fromEntries(collections.tags.map((tag) => [tag.id, documents.filter((page) => tag.pageIds.includes(page.id)).map((page) => ({ id: page.id, title: page.title || '无标题页面', starred: collections.starred.includes(page.id) }))]));
+  const tagDocuments = Object.fromEntries(collections.tags.map((tag) => [tag.id, documents.filter((page) => tag.pageIds.includes(page.id)).map((page) => ({ id: page.id, title: page.title || '无标题页面', icon: page.icon, starred: collections.starred.includes(page.id) }))]));
   function addTag(name: string, pageIds: string[] = []) {
     setCollections((current) => ({ ...current, tags: [...current.tags, { id: crypto.randomUUID(), name, pageIds }] }));
   }
@@ -87,7 +87,7 @@ export function KnowledgeTreeStage({ knowledgeBaseId, userId, workspaceId, teams
         projects={projects}
         tags={tags}
         tagDocuments={tagDocuments}
-        recentNotes={documents.slice(0, 10).map((page) => ({ id: page.id, label: page.title || '无标题页面', starred: collections.starred.includes(page.id) }))}
+        recentNotes={documents.slice(0, 10).map((page) => ({ id: page.id, label: page.title || '无标题页面', icon: page.icon, starred: collections.starred.includes(page.id) }))}
         expandedSections={expandedSections}
         expandedProjects={expandedProjects}
         expandedTags={expandedTags}

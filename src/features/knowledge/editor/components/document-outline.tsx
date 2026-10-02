@@ -1,14 +1,17 @@
 'use client';
 
+import { useState } from 'react';
+import { Minus, Plus } from '@phosphor-icons/react';
 import styles from './document-outline.module.css';
 
 export function DocumentOutline({ id, headings, activeHeading, onClose, onNavigate }: {
   id: string;
-  headings: { pos: number; level: number; title: string }[];
+  headings: { id: string; pos: number; level: number; title: string }[];
   activeHeading: number;
   onClose: () => void;
   onNavigate: (index: number) => void;
 }) {
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
   const rows: { heading: typeof headings[number]; index: number; ancestors: number[]; hasNext: boolean }[] = [];
   const ancestors: number[] = [];
   const lastChild = new Map<number | undefined, typeof rows[number]>();
@@ -27,15 +30,25 @@ export function DocumentOutline({ id, headings, activeHeading, onClose, onNaviga
   }}>
     {headings.length ? <nav className={styles.chapters} aria-label="文档章节">
       {rows.map(({ heading, index, ancestors: parents, hasNext }) => {
+        if (parents.some(parent => collapsed.has(headings[parent].id))) return null;
         const depth = parents.length;
-        return <button type="button" key={heading.pos} className={styles.chapter} data-root={depth === 0} data-active={index === activeHeading}
-            aria-current={index === activeHeading ? 'location' : undefined}
-            style={{ paddingInlineStart: `${8 + depth * 16}px` }}
-            onClick={() => onNavigate(index)} title={heading.title}>
+        const hasChildren = rows[index + 1]?.ancestors.includes(index) ?? false;
+        const isCollapsed = collapsed.has(heading.id);
+        const active = index === activeHeading || (isCollapsed && rows[activeHeading]?.ancestors.includes(index));
+        return <div key={heading.id} className={styles.chapter} data-root={depth === 0} data-active={Boolean(active)}
+            style={{ paddingInlineStart: `${8 + depth * 16}px` }}>
             {parents.slice(1).map((parent, level) => rows[parent].hasNext && <span key={parent} aria-hidden className={styles.guide} style={{ insetInlineStart: `${12 + level * 16}px` }} />)}
             {depth > 0 && <span aria-hidden className={styles.branch} data-last={!hasNext} style={{ insetInlineStart: `${12 + (depth - 1) * 16}px` }} />}
+            {hasChildren ? <button type="button" className={styles.fold} aria-label={`${isCollapsed ? '展开' : '折叠'}章节 ${heading.title}`} aria-expanded={!isCollapsed} onClick={() => setCollapsed(current => {
+              const next = new Set(current);
+              if (next.has(heading.id)) next.delete(heading.id); else next.add(heading.id);
+              return next;
+            })}>{isCollapsed ? <Plus size={11} /> : <Minus size={11} />}</button> : <span className={styles.foldSpace} />}
+            <button type="button" className={styles.chapterLink}
+            aria-current={index === activeHeading ? 'location' : undefined}
+            onClick={() => onNavigate(index)} title={heading.title}>
             <span className={styles.chapterTitle}>{heading.title}</span>
-          </button>;
+          </button></div>;
       })}
     </nav> : <div className={styles.empty} role="status"><strong>暂无章节</strong><p>添加正文标题后，即可在这里快速定位。</p></div>}
   </div>;

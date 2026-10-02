@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { PageIcon } from '../navigation/page-icon';
 import {
   Archive,
   CalendarDots,
@@ -215,6 +216,7 @@ export function SidebarDocumentActions({
 }
 
 export function RecentNoteRow({
+  icon,
   documentId,
   label,
   selected,
@@ -224,6 +226,7 @@ export function RecentNoteRow({
 }: {
   documentId: string;
   label: string;
+  icon?: string | null;
   selected?: boolean;
   starred?: boolean;
   onClick: () => void;
@@ -239,12 +242,7 @@ export function RecentNoteRow({
       )}
     >
       <button type="button" onClick={onClick} className="flex h-full min-w-0 flex-1 items-center text-left outline-none">
-        <FileText
-          aria-hidden="true"
-          size={13}
-          weight="fill"
-          className={sidebarDocumentIconClass}
-        />
+        <PageIcon value={icon} size={13} className={sidebarDocumentIconClass} />
         <span className="my-auto inline-flex h-4 min-w-0 items-center truncate leading-4">{label}</span>
       </button>
       <SidebarDocumentActions documentId={documentId} starred={Boolean(starred)} onAction={onAction} />

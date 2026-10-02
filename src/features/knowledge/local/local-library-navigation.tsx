@@ -9,6 +9,7 @@ import { SidebarRow, SidebarSectionHeader, sidebarIconMap } from '../dense-sideb
 import { SIDEBAR_MAIN_ITEMS } from '../dense-sidebar/sidebar-navigation';
 import { useI18n } from '../dense-sidebar/use-i18n';
 import styles from '../dense-sidebar/sidebar-interactions.module.css';
+import { PageIcon } from '../navigation/page-icon';
 import type { LocalDocument, LocalLibrary, LocalTag } from './local-library';
 
 type MainView = 'all-documents' | 'starred' | 'drafts' | 'trash';
@@ -120,12 +121,12 @@ export function LocalLibraryNavigation({
               </div>
             </div>
             {expanded ? <div className="space-y-0.5">
-              {folderDocuments.map((doc) => <SidebarRow key={doc.id} depth={2} icon={sidebarIconMap.file} label={doc.title || '无标题文档'} selected={selectedId === doc.id} onClick={() => onSelectDocument(doc.id)} />)}
+              {folderDocuments.map((doc) => <SidebarRow key={doc.id} depth={2} leading={<PageIcon value={doc.icon} size={15} className="mr-2 shrink-0" />} label={doc.title || '无标题文档'} selected={selectedId === doc.id} onClick={() => onSelectDocument(doc.id)} />)}
               {!folderDocuments.length ? <p className={cn(emptyHintTextClassName, 'pl-9')}>暂无文档</p> : null}
             </div> : null}
           </div>;
         })}
-        {documents.filter((doc) => !doc.folderId).map((doc) => <SidebarRow key={doc.id} depth={1} icon={sidebarIconMap.file} label={doc.title || '无标题文档'} selected={selectedId === doc.id} onClick={() => onSelectDocument(doc.id)} />)}
+        {documents.filter((doc) => !doc.folderId).map((doc) => <SidebarRow key={doc.id} depth={1} leading={<PageIcon value={doc.icon} size={15} className="mr-2 shrink-0" />} label={doc.title || '无标题文档'} selected={selectedId === doc.id} onClick={() => onSelectDocument(doc.id)} />)}
         {!folders.length && !documents.length ? <p className={cn(emptyHintTextClassName, 'px-1')}><button type="button" onClick={onCreateDocument} className="rounded text-left [font:inherit] hover:text-[var(--ink)]">暂无文档 · 新建第一个文档</button></p> : null}
       </div> : null}
     </section>
@@ -146,7 +147,7 @@ export function LocalLibraryNavigation({
               </div>
             </div>
             {expanded ? <div className="space-y-0.5">
-              {taggedDocuments.map((doc) => <SidebarRow key={doc.id} depth={1} icon={sidebarIconMap.file} label={doc.title || '无标题文档'} selected={selectedId === doc.id} onClick={() => onSelectDocument(doc.id)} />)}
+              {taggedDocuments.map((doc) => <SidebarRow key={doc.id} depth={1} leading={<PageIcon value={doc.icon} size={15} className="mr-2 shrink-0" />} label={doc.title || '无标题文档'} selected={selectedId === doc.id} onClick={() => onSelectDocument(doc.id)} />)}
               {!taggedDocuments.length ? <p className={cn(emptyHintTextClassName, 'pl-9')}>暂无文档</p> : null}
             </div> : null}
           </div>;
@@ -158,7 +159,7 @@ export function LocalLibraryNavigation({
     <section className="mt-4" aria-label="最近">
       <SidebarSectionHeader icon={Clock} label="最近" count={recent.length} expanded={recentOpen} onToggle={() => setRecentOpen((open) => !open)} />
       {recentOpen ? <div className="mt-1 space-y-0.5">
-        {recent.map((doc) => <SidebarRow key={doc.id} depth={1} icon={sidebarIconMap.file} label={doc.title || '无标题文档'} selected={selectedId === doc.id} onClick={() => onSelectDocument(doc.id)} />)}
+        {recent.map((doc) => <SidebarRow key={doc.id} depth={1} leading={<PageIcon value={doc.icon} size={15} className="mr-2 shrink-0" />} label={doc.title || '无标题文档'} selected={selectedId === doc.id} onClick={() => onSelectDocument(doc.id)} />)}
         {!recent.length ? <p className={cn(emptyHintTextClassName, 'pl-4 pr-1')}>暂无文档</p> : null}
       </div> : null}
     </section>

@@ -16,7 +16,6 @@ import {
   SidebarCreateIcon,
   SidebarDocumentActions,
   sidebarDocumentIconClass,
-  sidebarIconMap,
 } from "@/features/knowledge/dense-sidebar/sidebar-navigation-primitives";
 import type { DocumentAction } from "@/features/knowledge/dense-sidebar/document-action-menu-content";
 import type { SidebarProjectNode } from "@/features/knowledge/dense-sidebar/sidebar-navigation";
@@ -31,6 +30,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { IconButton } from "./icon-button";
 import styles from "./sidebar-interactions.module.css";
+import { PageIcon } from '../navigation/page-icon';
 
 export type SidebarProjectAction =
   | "new-document"
@@ -70,7 +70,6 @@ export function SidebarProjectTreeNode({
   const selected = isDocument
     ? activeDocumentLocation === "project" && activeDocumentId === node.id
     : selectedProjectId === `project:${node.id}`;
-  const Icon = node.icon ? sidebarIconMap[node.icon] : sidebarIconMap.file;
   const label = node.label ?? (node.labelKey ? t(node.labelKey) : "");
 
   return (
@@ -105,7 +104,7 @@ export function SidebarProjectTreeNode({
           className="flex h-full min-w-0 flex-1 items-center text-left outline-none"
         >
           {isDocument ? (
-            <Icon aria-hidden="true" size={13} weight="fill" className={sidebarDocumentIconClass} />
+            <PageIcon value={node.documentIcon} size={13} className={sidebarDocumentIconClass} />
           ) : (
             <ProjectGlyph iconId={node.projectIconId} />
           )}

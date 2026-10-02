@@ -21,14 +21,16 @@ export function DocumentEditorFrame({ children, header, sidebar, navigation, app
   return <DocumentAppearanceProvider key={appearanceScope} scope={appearanceScope}><section aria-label="页面编辑器" className={styles.frame}><DocumentNavigationTools {...navigation} header={header} sidebar={sidebar}>{children}</DocumentNavigationTools></section></DocumentAppearanceProvider>;
 }
 
-export function DocumentHeading({ title, onTitleChange, onTitleCommit, editable = true, metadata }: {
+export function DocumentHeading({ title, onTitleChange, onTitleCommit, editable = true, metadata, icon }: {
   title: string;
   onTitleChange?: (title: string) => void;
   onTitleCommit?: () => void;
   editable?: boolean;
   metadata?: ReactNode;
+  icon?: ReactNode;
 }) {
   return <div className={styles.heading}>
+    <div className={styles.titleRow}>{icon}
     {onTitleChange && editable
       ? <input
           aria-label="文档标题"
@@ -40,7 +42,7 @@ export function DocumentHeading({ title, onTitleChange, onTitleCommit, editable 
           onBlur={onTitleCommit}
           onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur(); }}
         />
-      : <h1 className={styles.title}>{title || '无标题文档'}</h1>}
+      : <h1 className={styles.title}>{title || '无标题文档'}</h1>}</div>
     {metadata ? <div className={styles.metadata}>{metadata}</div> : null}
   </div>;
 }

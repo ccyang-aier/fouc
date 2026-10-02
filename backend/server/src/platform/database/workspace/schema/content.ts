@@ -120,13 +120,14 @@ export const commentThread = workspaceNamespace.table('comment_thread', {
   pageId: uuid('page_id').notNull(),
   kind: commentThreadKind('kind').notNull().default('comment'),
   anchorKind: commentAnchorKind('anchor_kind').notNull().default('page'),
-  status: commentThreadStatus('status').notNull().default('open'),
+  status: commentThreadStatus('status'),
   createdAt: instant('created_at').notNull().defaultNow(),
   updatedAt: instant('updated_at').notNull().defaultNow(),
 }, (table) => [
   primaryKey({ columns: [table.workspaceId, table.id] }),
   foreignKey({ columns: [table.workspaceId, table.pageId], foreignColumns: [page.workspaceId, page.id] }).onDelete('cascade'),
   index('comment_thread_page_idx').on(table.workspaceId, table.pageId, table.status),
+  check('comment_thread_issue_status', sql`(${table.kind} = 'comment' AND ${table.status} IS NULL) OR (${table.kind} = 'issue' AND ${table.status} IS NOT NULL)`),
 ]);
 
 export const comment = workspaceNamespace.table('comment', {

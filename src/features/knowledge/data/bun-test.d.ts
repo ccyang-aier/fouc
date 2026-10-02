@@ -34,7 +34,7 @@ declare module 'bun:test' {
   }
   function describe(name: string, fn: () => void): void
   function test(name: string, fn: TestFn): void
-  function beforeAll(fn: () => void | Promise<void>): void
+  function beforeAll(fn: () => void | Promise<void>, timeout?: number): void
   function afterAll(fn: () => void | Promise<void>): void
   function beforeEach(fn: () => void | Promise<void>): void
   function afterEach(fn: () => void | Promise<void>): void

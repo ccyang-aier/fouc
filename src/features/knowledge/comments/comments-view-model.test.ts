@@ -101,14 +101,14 @@ describe('comments view-model · formatting', () => {
 });
 
 describe('free comments and composable filters', () => {
-  test('page comments without anchors remain ordinary groups and contribute to open thread counts', () => {
-    const model = derive({ threads: [thread(T1, { kind: 'comment', anchorKind: 'page', status: 'open' })], anchors: [] });
+  test('page comments without anchors remain ordinary groups and do not contribute to issue status counts', () => {
+    const model = derive({ threads: [thread(T1, { kind: 'comment', anchorKind: 'page', status: null })], anchors: [] });
     expect(model.groups).toHaveLength(1);
     expect(model.unanchored).toHaveLength(0);
-    expect(model.counts).toMatchObject({ total: 1, open: 1, resolved: 0 });
+    expect(model.counts).toMatchObject({ total: 1, open: 0, resolved: 0 });
   });
   test('type, personal likes and date filters intersect; popularity and time order are deterministic', () => {
-    const ordinary = thread(T1, { kind: 'comment', anchorKind: 'page', status: 'open', createdAt: '2026-09-01T08:00:00Z' });
+    const ordinary = thread(T1, { kind: 'comment', anchorKind: 'page', status: null, createdAt: '2026-09-01T08:00:00Z' });
     const issue = thread(T2, { kind: 'issue', anchorKind: 'page', status: 'open', createdAt: '2026-09-28T08:00:00Z' });
     issue.comments[0] = { ...issue.comments[0], liked: true, likeCount: 3 };
     const resolved = thread(T3, { kind: 'issue', anchorKind: 'page', status: 'resolved', createdAt: '2026-09-29T08:00:00Z' });
@@ -122,11 +122,5 @@ describe('free comments and composable filters', () => {
     expect(filterCommentGroups(groups, { ...defaultCommentFilters, sort: 'oldest' }, now).map(group => group.threadId)).toEqual([T1, T2, T3]);
     expect(filterCommentGroups(groups, { ...defaultCommentFilters, time: 'month' }, now).map(group => group.threadId)).toEqual([T2, T3]);
   });
-  test('resolved filters and anchor styling include ordinary comments without changing their kind', () => {
-    const model = derive({ threads: [thread(T1, { kind: 'comment', status: 'resolved' }), thread(T2)], anchors: [anchor(T1, 4), anchor(T2, 8)] });
-    expect(model.counts).toMatchObject({ total: 2, open: 1, resolved: 1 });
-    expect(model.resolvedThreadIds.has(T1)).toBe(true);
-    expect(filterCommentGroups(model.groups, { ...defaultCommentFilters, kind: 'resolved' }).map(group => group.threadId)).toEqual([T1]);
-    expect(filterCommentGroups(model.groups, { ...defaultCommentFilters, kind: 'open' }).map(group => group.threadId)).toEqual([T2]);
-  });
+
 });

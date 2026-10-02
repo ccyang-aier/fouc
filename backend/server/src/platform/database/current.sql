@@ -204,10 +204,11 @@ CREATE TABLE "workspace"."comment_thread" (
 	"page_id" uuid NOT NULL,
 	"kind" "workspace"."comment_thread_kind" DEFAULT 'comment' NOT NULL,
 	"anchor_kind" "workspace"."comment_anchor_kind" DEFAULT 'page' NOT NULL,
-	"status" "workspace"."comment_thread_status" DEFAULT 'open' NOT NULL,
+	"status" "workspace"."comment_thread_status",
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "comment_thread_workspace_id_id_pk" PRIMARY KEY("workspace_id","id")
+	CONSTRAINT "comment_thread_workspace_id_id_pk" PRIMARY KEY("workspace_id","id"),
+	CONSTRAINT "comment_thread_issue_status" CHECK (("workspace"."comment_thread"."kind" = 'comment' AND "workspace"."comment_thread"."status" IS NULL) OR ("workspace"."comment_thread"."kind" = 'issue' AND "workspace"."comment_thread"."status" IS NOT NULL))
 );
 
 CREATE TABLE "workspace"."database_definition" (

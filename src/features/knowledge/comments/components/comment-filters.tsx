@@ -5,7 +5,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { defaultCommentFilters, type CommentFilters } from '../comments-view-model';
 import styles from './comments.module.css';
 
-const kinds = [['all', '全部评论'], ['comment', '普通评论'], ['issue', '全部问题'], ['open', '未解决评论'], ['resolved', '已解决评论']] as const;
+const kinds = [['all', '全部评论'], ['comment', '普通评论'], ['issue', '全部问题'], ['open', '未解决问题'], ['resolved', '已解决问题']] as const;
 const likes = [['all', '不限点赞'], ['mine', '我赞过的'], ['popular', '最多点赞']] as const;
 const times = [['all', '不限时间'], ['week', '近 7 天'], ['month', '近 30 天']] as const;
 const sorts = [['all', '按正文位置'], ['newest', '最新发表'], ['oldest', '最早发表']] as const;

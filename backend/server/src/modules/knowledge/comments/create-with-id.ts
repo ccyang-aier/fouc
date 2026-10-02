@@ -49,7 +49,7 @@ export async function createCommentThreadWithId(
     return { thread: existingThread, comment: existingComment, notified: [], existing: true };
   }
 
-  const [thread] = await db.insert(commentThread).values({ workspaceId, id: threadId, pageId, kind, anchorKind }).returning();
+  const [thread] = await db.insert(commentThread).values({ workspaceId, id: threadId, pageId, kind, anchorKind, status: kind === 'issue' ? 'open' : null }).returning();
   const [entry] = await db.insert(comment).values({
     workspaceId, id: commentId, threadId, authorId: userId, bodyMd,
   }).returning();

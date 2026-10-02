@@ -25,15 +25,16 @@ const roots: Root[] = [];
 
 beforeAll(async () => {
   window = new Window({ url: 'https://knowledge.fouc.test/page' });
+  window.document.write('<!doctype html><html><body></body></html>');
   const globals = window as unknown as Record<string, unknown>;
-  for (const key of ['document', 'DOMParser', 'MutationObserver', 'ResizeObserver', 'Range', 'getSelection', 'getComputedStyle', 'HTMLElement', 'Element', 'Node', 'Text', 'Comment', 'customElements', 'requestAnimationFrame', 'Event', 'CustomEvent', 'InputEvent', 'KeyboardEvent', 'MouseEvent', 'PointerEvent']) {
+  for (const key of ['document', 'DOMParser', 'MutationObserver', 'ResizeObserver', 'Range', 'getSelection', 'getComputedStyle', 'HTMLElement', 'Element', 'Node', 'Text', 'Comment', 'customElements', 'requestAnimationFrame', 'navigator', 'ClipboardEvent', 'DataTransfer', 'Event', 'CustomEvent', 'InputEvent', 'KeyboardEvent', 'MouseEvent', 'PointerEvent']) {
     if (globals[key] !== undefined) (globalThis as Record<string, unknown>)[key] = globals[key];
   }
   (globalThis as Record<string, unknown>).window = window;
   (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   ({ createRoot } = await import('react-dom/client'));
   ({ CommentsSidebar } = await import('./comments-sidebar'));
-});
+}, 30_000);
 
 afterEach(async () => {
   for (const root of roots.splice(0)) {
@@ -47,7 +48,7 @@ function thread(id: string, options: { kind?: 'comment' | 'issue'; anchorKind?: 
   const entries = options.comments ?? [{ id: `${id}-c1`, authorId: 'author-1', bodyMd: '首条评论' }];
   const createdAt = new Date(Date.now() - 30 * 60_000).toISOString();
   return {
-    workspaceId: 'ws', id, pageId: 'page', kind: options.kind ?? 'issue', anchorKind: options.anchorKind ?? 'selection', status: options.status ?? 'open', createdAt, updatedAt: createdAt,
+    workspaceId: 'ws', id, pageId: 'page', kind: options.kind ?? 'issue', anchorKind: options.anchorKind ?? 'selection', status: options.kind === 'comment' ? null : options.status ?? 'open', createdAt, updatedAt: createdAt,
     comments: entries.map((entry, index) => ({
       workspaceId: 'ws', id: entry.id, threadId: id, authorId: entry.authorId, replyToCommentId: index > 0 ? entries[index - 1].id : null, bodyMd: entry.bodyMd, likeCount: 0, liked: false,
       createdAt: new Date(Date.now() - (entry.minutesAgo ?? 30 - index) * 60_000).toISOString(),
@@ -91,6 +92,7 @@ async function mountSidebar(options: MountOptions, handlers: Partial<SidebarHand
   await act(async () => {
     root.render(
       <CommentsSidebar
+        workspaceId="ws"
         model={model}
         replyTarget={options.replyTarget ?? null}
         activeThreadId={null}
@@ -237,20 +239,20 @@ describe('CommentsSidebar states and interactions', () => {
       onReply: async (target, body) => { replies.push([target, body]); return false; },
       onReplyTargetChange: target => { targets.push(target); },
     });
-    const composer = sidebar.querySelector<HTMLTextAreaElement>('[data-comment-id="t1-c1"] textarea[placeholder^="回复"]')!;
+    const composer = sidebar.querySelector<HTMLElement>('[data-comment-id="t1-c1"] [role="textbox"][aria-label^="回复"]')!;
     expect(composer).not.toBeNull();
-    expect(sidebar.querySelector('footer textarea[placeholder^="回复"]')).toBeNull();
-    expect(sidebar.querySelector('footer textarea[placeholder^="写下评论"]')).not.toBeNull();
+    expect(sidebar.querySelector('footer [role="textbox"][aria-label^="回复"]')).toBeNull();
+    expect(sidebar.querySelector('footer [role="textbox"][aria-label^="写下评论"]')).not.toBeNull();
     const send = sidebar.querySelector<HTMLButtonElement>('[aria-label="发送回复"]')!;
     await click(send);
     expect(replies).toEqual([]);
     await act(async () => {
-      Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')!.set!.call(composer, '保留的草稿');
-      composer.dispatchEvent(new window.Event('input', { bubbles: true }) as unknown as Event);
+      const data = new window.DataTransfer(); data.setData('text/plain', '保留的草稿');
+      composer.dispatchEvent(new window.ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }) as unknown as Event);
     });
     await act(async () => { composer.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true }) as unknown as Event); });
     expect(replies).toEqual([[{ threadId: 't1', commentId: 't1-c1' }, '保留的草稿']]);
-    expect(composer.value).toBe('保留的草稿');
+    expect(composer.textContent).toBe('保留的草稿');
     expect(sidebar.querySelector('[data-comment-id="t1-c1"] [role="alert"]')?.textContent).toContain('请求过于频繁');
     await click(buttonByText(sidebar, '取消'));
     expect(targets.at(-1)).toBeNull();
@@ -275,15 +277,17 @@ describe('CommentsSidebar states and interactions', () => {
     expect(menuItem(await openEntryMenu(readonly), '标记为已解决')).toBeUndefined();
   });
 
-  test('ordinary page comments support resolution in the root menu and likes without a missing-anchor warning', async () => {
+  test('ordinary page comments have no resolution operation and support likes without a missing-anchor warning', async () => {
     const likes: Array<[string, boolean]> = [];
     const sidebar = await mountSidebar({ threads: [thread('free', { kind: 'comment', anchorKind: 'page' })] }, { onLike: (id, liked) => { likes.push([id, liked]); } });
-    expect(menuItem(await openEntryMenu(sidebar), '标记为已解决')).toBeDefined();
+    expect(menuItem(await openEntryMenu(sidebar), '标记为已解决')).toBeUndefined();
     expect(sidebar.textContent).not.toContain('原文已不存在');
     await click(sidebar.querySelector<HTMLButtonElement>('[aria-label="点赞"]')!);
     expect(likes).toEqual([['free-c1', true]]);
-    expect(sidebar.querySelector('textarea[placeholder="写下评论，分享你的想法…"]')).not.toBeNull();
-    expect(sidebar.querySelector('[aria-label="评论发表类型"]')).not.toBeNull();
+    expect(sidebar.querySelector('[role="textbox"][aria-label="写下评论，分享你的想法…"]')).not.toBeNull();
+    expect(sidebar.querySelector('input[type="checkbox"]')?.parentElement?.textContent).toContain('作为问题');
+    expect(sidebar.querySelector('[aria-label="加粗评论文字"]')).toBeNull();
+    expect(sidebar.querySelector('[aria-label="上传评论图片"]')).not.toBeNull();
   });
 
   test('resolved issues may still receive replies and read-only users cannot create or like comments', async () => {
@@ -291,13 +295,13 @@ describe('CommentsSidebar states and interactions', () => {
     expect(menuItem(await openEntryMenu(sidebar), '重新打开')).toBeDefined();
     expect(buttonByText(sidebar, '回复')).not.toBeNull();
     const readonly = await mountSidebar({ threads: [thread('free', { kind: 'comment', anchorKind: 'page' })], canComment: false });
-    expect(readonly.querySelector('textarea')).toBeNull();
+    expect(readonly.querySelector('[role="textbox"]')).toBeNull();
     expect(readonly.querySelector<HTMLButtonElement>('[aria-label="点赞"]')?.disabled).toBe(true);
   });
 
-  test('resolved ordinary threads show a badge and reopen from the root menu, while replies have no thread action', async () => {
+  test('resolved issues show a badge and reopen from the root menu, while replies have no thread action', async () => {
     let reopened: string | null = null;
-    const sidebar = await mountSidebar({ threads: [thread('done', { kind: 'comment', status: 'resolved', comments: [
+    const sidebar = await mountSidebar({ threads: [thread('done', { kind: 'issue', status: 'resolved', comments: [
       { id: 'root', authorId: 'me', bodyMd: '根评论' }, { id: 'reply', authorId: 'me', bodyMd: '回复' },
     ] })] }, { onReopen: id => { reopened = id; } });
     expect(sidebar.querySelector('[data-comment-id="root"] [data-resolved="true"]')?.textContent).toContain('已解决');
@@ -313,5 +317,60 @@ describe('CommentsSidebar states and interactions', () => {
     expect(menuItem(await openEntryMenu(pending), '标记中…')?.hasAttribute('data-disabled')).toBe(true);
     const failed = await mountSidebar({ threads: [thread('t2')], resolve: { pending: false, threadId: 't2', error: '无法保存解决状态，请重试。' } });
     expect(failed.querySelector('[role="alert"]')?.textContent).toContain('无法保存解决状态');
+  });
+
+  test('Markdown is rendered inside the composer and the issue checkbox controls the submitted kind', async () => {
+    const submissions: Array<[string, string]> = [];
+    const sidebar = await mountSidebar({ threads: [] }, { onCreate: async (body, kind) => { submissions.push([body, kind]); return true; } });
+    const input = sidebar.querySelector<HTMLElement>('footer [role="textbox"]')!;
+    await act(async () => {
+      const data = new window.DataTransfer(); data.setData('text/plain', '**加粗** *斜体*\n\n1. 第一项\n2. 第二项\n\n- 无序项');
+      input.dispatchEvent(new window.ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }) as unknown as Event);
+    });
+    expect(input.querySelector('strong')?.textContent).toBe('加粗');
+    expect(input.querySelector('em')?.textContent).toBe('斜体');
+    expect(input.querySelectorAll('ol li')).toHaveLength(2);
+    expect(input.querySelector('ul li')?.textContent).toBe('无序项');
+    await click(sidebar.querySelector('input[type="checkbox"]')!);
+    await click(buttonByText(sidebar, '发表'));
+    expect(submissions).toHaveLength(1);
+    expect(submissions[0][1]).toBe('issue');
+    expect(submissions[0][0]).toContain('**加粗**');
+    expect(submissions[0][0]).toContain('1. 第一项');
+    expect(input.textContent).toBe('');
+    expect(sidebar.querySelector<HTMLInputElement>('input[type="checkbox"]')?.checked).toBe(false);
+  });
+
+  test('the root quote follows user information and replies have no repeated quote or issue badge', async () => {
+    const sidebar = await mountSidebar({ threads: [thread('t1', { comments: [
+      { id: 'root', authorId: 'me', bodyMd: '根评论' }, { id: 'reply', authorId: 'me', bodyMd: '回复内容' },
+    ] })], anchors: [{ threadId: 't1', ranges: [{ from: 10, to: 20 }] }] });
+    const root = sidebar.querySelector('[data-comment-id="root"]')!;
+    const rootQuote = root.querySelector('p[title="pos10"]')!;
+    const rootBody = [...root.querySelectorAll('p')].find(element => element.textContent === '根评论')!;
+    expect(rootQuote.compareDocumentPosition(rootBody) & window.Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(root.querySelector('[data-resolved="false"]')?.textContent).toContain('待解决');
+    expect(root.querySelector('[aria-label="解决问题"]')).not.toBeNull();
+    const reply = sidebar.querySelector('[data-comment-id="reply"]')!;
+    expect(reply.querySelector('[data-resolved]')).toBeNull();
+    expect(reply.querySelector('p[title]')).toBeNull();
+    expect(reply.querySelector('[aria-label="解决问题"]')).toBeNull();
+  });
+
+  test('images and editing paragraphs serialize as standard comment Markdown', async () => {
+    const { getSchema } = await import('@tiptap/core');
+    const { commentEditorExtensions, serializeCommentDocument } = await import('./comment-editor');
+    const schema = getSchema(commentEditorExtensions('ws'));
+    const hash = 'a'.repeat(64);
+    const doc = schema.nodeFromJSON({ type: 'doc', content: [
+      { type: 'paragraph', content: [{ type: 'text', text: '加粗', marks: [{ type: 'bold' }] }] },
+      { type: 'image', attrs: { src: `asset:${hash}`, alt: '示例图片.png' } },
+      { type: 'paragraph' },
+    ] });
+    const body = serializeCommentDocument(doc);
+    expect(body).toContain('**加粗**');
+    expect(body).toContain(`![示例图片.png](asset\\:${hash})`);
+    expect(body).not.toContain('fouc-');
+    expect(serializeCommentDocument(schema.nodeFromJSON({ type: 'doc', content: [{ type: 'paragraph' }] }))).toBe('');
   });
 });

@@ -24,8 +24,8 @@ export const commentAnchorKindSchema = z.enum(['page', 'selection']);
 export const commentThreadStatusSchema = z.enum(['open', 'resolved']);
 export const commentThreadSchema = pageScopeSchema.extend({
   id: entityIdSchema, kind: commentThreadKindSchema, anchorKind: commentAnchorKindSchema,
-  status: commentThreadStatusSchema, createdAt: timestampSchema,
-});
+  status: commentThreadStatusSchema.nullable(), createdAt: timestampSchema,
+}).refine(thread => thread.kind === 'issue' ? thread.status !== null : thread.status === null);
 export const commentSchema = workspaceScopeSchema.extend({
   id: entityIdSchema, threadId: entityIdSchema, authorId: entityIdSchema,
   replyToCommentId: entityIdSchema.nullable(),

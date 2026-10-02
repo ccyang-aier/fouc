@@ -84,7 +84,7 @@ export function deriveCommentSidebarModel(input: {
     orphans,
     counts: {
       total: input.threads.length,
-      open: input.threads.filter(thread => thread.status === 'open').length,
+      open: input.threads.filter(thread => thread.kind === 'issue' && thread.status === 'open').length,
       resolved: input.threads.filter(thread => thread.status === 'resolved').length,
       unanchored: unanchored.length,
       orphan: orphans.length,

@@ -385,6 +385,7 @@ export function PageComments({ scope, knowledgeBaseId, editor, canComment, curre
             {composing.excerpt}
           </p>
           <CommentComposer
+            workspaceId={scope.workspaceId}
             placeholder="写下评论…（Ctrl+Enter 发送）"
             submitLabel={createMutation.isPending ? '发送中…' : '发送'}
             sendingLabel="发送中…"
@@ -400,6 +401,7 @@ export function PageComments({ scope, knowledgeBaseId, editor, canComment, curre
 
       {railOpen ? (
         <CommentsSidebar
+          workspaceId={scope.workspaceId}
           model={model}
           replyTarget={replyTarget}
           activeThreadId={activeThreadId}

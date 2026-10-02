@@ -11,6 +11,7 @@ export type CommentReplyTarget = { threadId: string; commentId: string };
 
 export interface CommentThreadCardProps {
   group: CommentThreadGroup;
+  workspaceId: string;
   active: boolean;
   canComment: boolean;
   currentUserId: string | null;
@@ -33,25 +34,28 @@ export interface CommentThreadCardProps {
   replyComposer?: ReactNode;
 }
 
-export function CommentThreadCard({ group, active, canComment, currentUserId, authors, onStartReply, reply, resolve, deletingCommentId, deleteError, like, onLike, onLocate, onResolve, onReopen, onDeleteComment, edit, onEdit, onCopyLink, replyTarget, replyComposer }: CommentThreadCardProps) {
+export function CommentThreadCard({ group, workspaceId, active, canComment, currentUserId, authors, onStartReply, reply, resolve, deletingCommentId, deleteError, like, onLike, onLocate, onResolve, onReopen, onDeleteComment, edit, onEdit, onCopyLink, replyTarget, replyComposer }: CommentThreadCardProps) {
   const resolved = group.resolved;
   const resolvePending = resolve.pending && resolve.threadId === group.threadId;
-  return <article className={styles.thread} data-comment-card={group.threadId} data-active={active} aria-label={`评论线程：${group.excerpt || (group.thread.anchorKind === 'page' ? '页面评论' : '原文已不存在')}`}>
-    {group.thread.anchorKind === 'selection' && <div className={styles.excerpt} data-unavailable={!group.anchor}>
+  const issue = group.thread.kind === 'issue';
+  const quote = group.thread.anchorKind === 'selection' ? <div className={styles.excerpt} data-unavailable={!group.anchor}>
       <Quotes size={16} weight="fill" aria-hidden />
       <div><div className={styles.excerptHeading}><span className={styles.excerptLabel}>引用正文</span><button type="button" className={styles.locate} disabled={!group.anchor} onClick={() => onLocate(group.threadId)} title={group.anchor ? '在正文中定位该评论' : '原文已不存在'}>定位原文<ArrowUpRight size={13} aria-hidden /></button></div><p title={group.excerpt}>{group.excerpt || '该评论的原文已不存在'}</p></div>
-    </div>}
+    </div> : undefined;
+  return <article className={styles.thread} data-comment-card={group.threadId} data-active={active} aria-label={`评论线程：${group.excerpt || (group.thread.anchorKind === 'page' ? '页面评论' : '原文已不存在')}`}>
     <div className={styles.entries}>
       {group.thread.comments.map((entry, index) => {
         const target = group.thread.comments.find(comment => comment.id === entry.replyToCommentId);
         const replyTo = index > 0 ? target ? authors?.get(target.authorId)?.name || (currentUserId === target.authorId ? '我' : '成员') : '已删除的评论' : undefined;
-        return <CommentEntryItem key={entry.id} entry={entry} author={authors?.get(entry.authorId)} isOwn={currentUserId === entry.authorId} deleting={deletingCommentId === entry.id} canComment={canComment} isReply={index > 0} replyTo={replyTo} onDelete={onDeleteComment} onLike={onLike} liking={like.pending && like.commentId === entry.id}
+        return <CommentEntryItem key={entry.id} entry={entry} workspaceId={workspaceId} author={authors?.get(entry.authorId)} isOwn={currentUserId === entry.authorId} deleting={deletingCommentId === entry.id} canComment={canComment} isReply={index > 0} replyTo={replyTo} onDelete={onDeleteComment} onLike={onLike} liking={like.pending && like.commentId === entry.id}
           edit={{ pending: edit.pending && edit.commentId === entry.id, error: edit.commentId === entry.id ? edit.error : null }} onEdit={onEdit} onCopyLink={onCopyLink}
           composer={replyTarget?.threadId === group.threadId && replyTarget.commentId === entry.id ? replyComposer : undefined}
-          badge={index === 0 && (resolved || group.thread.kind === 'issue') ? <span className={styles.issueBadge} data-resolved={resolved}>{resolved ? <CheckCircle size={14} /> : <WarningCircle size={14} />}{resolved ? '已解决' : '待解决'}</span> : undefined}
-          threadAction={index === 0 && canComment ? <DropdownMenuItem disabled={resolvePending} onSelect={() => (resolved ? onReopen : onResolve)(group.threadId)}><CheckCircle size={14} aria-hidden />{resolvePending ? (resolved ? '重新打开中…' : '标记中…') : resolved ? '重新打开' : '标记为已解决'}</DropdownMenuItem> : undefined}
+          quote={index === 0 ? quote : undefined}
+          badge={index === 0 && issue ? <span className={styles.issueBadge} data-resolved={resolved}>{resolved ? <CheckCircle size={14} weight="fill" /> : <WarningCircle size={14} weight="fill" />}{resolved ? '已解决' : '待解决'}</span> : undefined}
+          threadAction={index === 0 && issue && canComment ? <DropdownMenuItem disabled={resolvePending} onSelect={() => (resolved ? onReopen : onResolve)(group.threadId)}><CheckCircle size={16} weight="bold" aria-hidden />{resolvePending ? (resolved ? '重新打开中…' : '标记中…') : resolved ? '重新打开' : '标记为已解决'}</DropdownMenuItem> : undefined}
           action={<>
             {canComment && <button type="button" className={styles.replyButton} disabled={reply.pending} onClick={() => onStartReply({ threadId: group.threadId, commentId: entry.id })}><Chat size={16} aria-hidden />回复</button>}
+            {index === 0 && issue && canComment && <button type="button" className={styles.resolve} disabled={resolvePending} aria-label={resolved ? '重新打开问题' : '解决问题'} onClick={() => (resolved ? onReopen : onResolve)(group.threadId)}><CheckCircle size={17} weight="bold" aria-hidden />{resolvePending ? '处理中…' : resolved ? '重新打开' : '解决'}</button>}
           </>} />;
       })}
     </div>

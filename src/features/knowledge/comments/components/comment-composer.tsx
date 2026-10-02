@@ -1,14 +1,14 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { ArrowBendUpLeft, At, CircleNotch, Image as ImageIcon, LinkSimple, WarningCircle } from '@phosphor-icons/react';
+import { At, CircleNotch, Image as ImageIcon, LinkSimple, WarningCircle } from '@phosphor-icons/react';
 import { commentBodySchema, type CommentThreadKind } from '@fouc/shared/knowledge/comments';
 import { CommentEditor, type CommentEditorHandle } from './comment-editor';
 import { useAssetUploads } from '../../assets/use-asset-uploads';
 import { UploadQueueItem } from '../../assets/components/upload-queue-item';
 import { safeKnowledgeUrl } from '@fouc/shared/knowledge/schema';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { CommentAvatar, type CommentAuthor } from './comment-avatar';
+import type { CommentAuthor } from './comment-avatar';
 import styles from './comments.module.css';
 
 export interface CommentComposerProps {
@@ -63,7 +63,7 @@ export function CommentComposer({ workspaceId, placeholder, submitLabel, sending
     } finally { submitting.current = false; }
   };
   return <div className={styles.composer} data-persistent={persistent}>
-    {replyTo && <div className={styles.composerHeading}><ArrowBendUpLeft size={17} aria-hidden /><CommentAvatar author={replyTo} /><span>回复 <strong>{replyTo.name}</strong></span><button type="button" className={styles.cancelReply} disabled={sending} onClick={onCancel}>取消</button></div>}
+    {replyTo && <div className={styles.composerHeading}><span>回复 <strong>{replyTo.name}</strong></span><button type="button" className={styles.cancelReply} disabled={sending} onClick={onCancel}>取消</button></div>}
     <div className={styles.composerBox}>
       <CommentEditor ref={ref} workspaceId={workspaceId} initialBody={initialBodyMd} placeholder={placeholder} disabled={sending} autoFocus={autoFocus} focusKey={focusKey} minHeight={minHeight} onChange={setBody} onSubmit={() => void submit()} onCancel={onCancel} />
       <div className={styles.composerActions}>

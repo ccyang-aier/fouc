@@ -105,6 +105,13 @@ describe('comment anchors in a real editor instance', () => {
     refreshContext(editor);
     expect(badgeOf(editor, THREAD_A)?.textContent).toBe('2');
     expect(anchorElements(editor, THREAD_A)[0]!.className).toContain('fouc-comment-active');
+    // The count follows the referenced text instead of interrupting its start.
+    expect(editor.view.dom.querySelector('p')?.textContent).toBe('hello collaborative2 world');
+    expect(editor.getHTML()).not.toContain('fouc-comment-badge');
+
+    selectCommentThread(editor.view, null);
+    badgeOf(editor, THREAD_A)!.querySelector('span')!.click();
+    expect(activeCommentThreadId(editor.state)).toBe(THREAD_A);
 
     editor.destroy();
   });

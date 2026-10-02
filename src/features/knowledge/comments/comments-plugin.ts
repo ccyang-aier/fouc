@@ -2,8 +2,8 @@
  * The comment anchor rendering layer of the editor (N02, design §4.6).
  *
  * One ProseMirror plugin paints every `comment` mark in the document: an
- * amber underline that rides the CRDT, plus a compact count badge at the
- * anchor's start so long pages stay navigable. The React controller owns the
+ * blue underline that rides the CRDT, plus a raised count badge at the
+ * anchor's end so long pages stay navigable. The React controller owns the
  * *meaning* of each thread (resolved / pending / orphan / active) and pushes
  * it through meta transactions; the plugin only renders what it is told, so
  * remote CRDT updates and local data refreshes converge on the same pass.
@@ -68,7 +68,10 @@ function badgeElement(threadId: string, context: CommentAnchorContext): HTMLElem
   badge.className = 'fouc-comment-badge';
   badge.dataset.commentThread = threadId;
   if (context.resolved.has(threadId)) badge.dataset.resolved = 'true';
-  badge.textContent = context.resolved.has(threadId) ? '✓' : String(Math.max(count ?? 1, 1));
+  const label = document.createElement('span');
+  label.className = 'fouc-comment-badge-label';
+  label.textContent = context.resolved.has(threadId) ? '✓' : String(Math.max(count ?? 1, 1));
+  badge.append(label);
   badge.title = context.resolved.has(threadId) ? '已解决的评论' : `${Math.max(count ?? 1, 1)} 条评论`;
   return badge;
 }
@@ -76,12 +79,12 @@ function badgeElement(threadId: string, context: CommentAnchorContext): HTMLElem
 function buildDecorations(doc: ProseMirrorNode, context: CommentAnchorContext, plugin: CommentAnchorPluginState): DecorationSet {
   const decorations: Decoration[] = [];
   for (const anchor of collectCommentAnchors(doc)) {
-    const first = anchor.ranges.reduce((min, range) => (range.from < min.from ? range : min));
+    const end = Math.max(...anchor.ranges.map(range => range.to));
     // The badge content follows the live context (count / resolved): a key
     // change replaces the widget, so a new reply re-renders the count.
     const count = Math.max(context.counts.get(anchor.threadId) ?? 1, 1);
     const resolved = context.resolved.has(anchor.threadId);
-    decorations.push(Decoration.widget(first.from, () => badgeElement(anchor.threadId, context), {
+    decorations.push(Decoration.widget(end, () => badgeElement(anchor.threadId, context), {
       side: -1,
       key: `fouc-comment-badge-${anchor.threadId}-${count}-${resolved ? 'r' : 'o'}`,
     }));
@@ -209,24 +212,25 @@ export function selectCommentThread(view: EditorView, threadId: string | null, o
 
 const commentStylesId = 'fouc-comment-anchor-styles';
 
-/** Injects the anchor presentation CSS once per document (no-op on SSR). */
+/** Reuses one style element per document, refreshing its rules on editor mount. */
 export function ensureCommentAnchorStyles(): void {
-  if (typeof document === 'undefined' || document.getElementById(commentStylesId)) return;
-  const style = document.createElement('style');
+  if (typeof document === 'undefined') return;
+  const existing = document.getElementById(commentStylesId);
+  const style = existing ?? document.createElement('style');
   style.id = commentStylesId;
   style.textContent = `
 .ProseMirror .fouc-comment-anchor{
-  background:color-mix(in srgb,var(--warn-ink) 10%,transparent);
-  border-bottom:1.5px solid color-mix(in srgb,var(--warn-ink) 55%,transparent);
-  border-radius:2px;padding:0 1px;
+  background:color-mix(in srgb,var(--accent) 7%,transparent);
+  border-bottom:1px solid color-mix(in srgb,var(--accent) 35%,transparent);
+  border-radius:3px;
   box-decoration-break:clone;-webkit-box-decoration-break:clone;
   cursor:pointer;
   transition:background-color .16s ease,box-shadow .16s ease;
 }
-.ProseMirror .fouc-comment-anchor:hover{background:color-mix(in srgb,var(--warn-ink) 17%,transparent);}
+.ProseMirror .fouc-comment-anchor:hover{background:color-mix(in srgb,var(--accent) 12%,transparent);}
 .ProseMirror .fouc-comment-active{
-  background:color-mix(in srgb,var(--warn-ink) 18%,transparent);
-  box-shadow:0 0 0 1px color-mix(in srgb,var(--warn-ink) 45%,transparent);
+  background:color-mix(in srgb,var(--accent) 16%,transparent);
+  border-bottom-color:var(--accent);
 }
 .ProseMirror .fouc-comment-resolved{
   background:transparent;
@@ -234,15 +238,15 @@ export function ensureCommentAnchorStyles(): void {
   border-bottom-color:color-mix(in srgb,var(--muted-strong) 45%,transparent);
 }
 .ProseMirror .fouc-comment-resolved.fouc-comment-active{
-  background:color-mix(in srgb,var(--warn-ink) 10%,transparent);
+  background:color-mix(in srgb,var(--accent) 10%,transparent);
 }
 .ProseMirror .fouc-comment-orphan{
   border-bottom-color:color-mix(in srgb,var(--err-ink) 55%,transparent);
   background:color-mix(in srgb,var(--err-ink) 7%,transparent);
 }
 .ProseMirror .fouc-comment-pending{
-  background:color-mix(in srgb,var(--warn-ink) 6%,transparent);
-  border-bottom-color:color-mix(in srgb,var(--warn-ink) 35%,transparent);
+  background:color-mix(in srgb,var(--accent) 6%,transparent);
+  border-bottom-color:color-mix(in srgb,var(--accent) 35%,transparent);
 }
 .ProseMirror .fouc-comment-flash{animation:fouc-comment-flash 1.1s ease-out 1;}
 @keyframes fouc-comment-flash{
@@ -250,20 +254,26 @@ export function ensureCommentAnchorStyles(): void {
   30%{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 32%,transparent);}
 }
 .ProseMirror .fouc-comment-badge{
+  position:relative;display:inline-block;width:0;height:0;
+  vertical-align:baseline;line-height:0;overflow:visible;
+  user-select:none;cursor:pointer;
+}
+.ProseMirror .fouc-comment-badge-label{
+  position:absolute;inset-inline-start:1px;bottom:1.6em;
   display:inline-flex;align-items:center;justify-content:center;
-  height:15px;min-width:14px;padding:0 4px;margin:0 3px 0 1px;
-  border-radius:4px;border:1px solid var(--warn-soft-line);
-  background:var(--warn-soft);color:var(--warn-ink);
+  height:12px;min-width:12px;padding:0 2px;
+  border-radius:5px;border:1px solid color-mix(in srgb,var(--accent) 25%,var(--panel));
+  background:var(--panel);color:var(--accent-ink);
   font-size:9px;font-weight:600;letter-spacing:.03em;line-height:1;
-  vertical-align:2px;user-select:none;cursor:pointer;white-space:nowrap;
+  white-space:nowrap;
   transition:box-shadow .15s ease,background-color .15s ease;
 }
-.ProseMirror .fouc-comment-badge:hover{box-shadow:0 1px 5px rgba(18,23,31,.16);}
-.ProseMirror .fouc-comment-badge[data-resolved="true"]{
+.ProseMirror .fouc-comment-badge:hover .fouc-comment-badge-label{background:var(--accent);color:#fff;}
+.ProseMirror .fouc-comment-badge[data-resolved="true"] .fouc-comment-badge-label{
   border-color:var(--line-strong);background:var(--surface-subtle);color:var(--muted-strong);
 }
 `;
-  document.head.append(style);
+  if (!existing) document.head.append(style);
 }
 
 /** The Tiptap extension the page editor's extension set gains for comments. */

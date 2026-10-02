@@ -126,7 +126,7 @@
 .entryMenu[role=menu] [role=menuitem] svg { color:var(--ink-soft); }
 .entryMenu[role=menu] .deleteMenuItem { color:var(--ink); background:transparent; }
 .entryMenu[role=menu] .deleteMenuItem svg { color:currentColor; }
-.entryMenu[role=menu] .deleteMenuItem[data-highlighted] { color:#fff; background:var(--err-ink); }
+.entryMenu[role=menu] .deleteMenuItem[data-highlighted] { color:#fff; background:var(--danger-action-bg); }
 .commentImage { display:block; max-width:100%; max-height:220px; margin:6px 0; border-radius:6px; object-fit:contain; }
 .imageStatus { display:inline-flex; gap:8px; padding:8px; color:var(--muted-strong); font-size:11px; }
 .imageStatus button { color:var(--accent-ink); cursor:pointer; }

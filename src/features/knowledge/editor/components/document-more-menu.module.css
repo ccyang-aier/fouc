@@ -10,7 +10,7 @@
 .pending { margin-left: auto; color: var(--muted-strong); font-size: 10px; font-weight: 400; }
 .hint { padding: 5px 10px; color: var(--muted-strong); font-size: 11px; line-height: 1.5; }
 .danger, .danger > svg { color: var(--err-ink); }
-.danger[data-highlighted] { background: #e44747; color: white; }
+.danger[data-highlighted] { background: var(--danger-action-bg); color: white; }
 .danger[data-highlighted] > svg { color: white; }
 .menu [role='separator'], .submenu [role='separator'] { display: block; flex: none; height: 1px; min-height: 1px; margin: 6px 4px; padding: 0; border: 0; border-top: 1px solid var(--line); background: transparent; }
 .submenu [role='menuitemcheckbox'] { cursor: pointer; }

@@ -220,16 +220,14 @@ export function ensureCommentAnchorStyles(): void {
   style.id = commentStylesId;
   style.textContent = `
 .ProseMirror .fouc-comment-anchor{
-  background:color-mix(in srgb,var(--accent) 7%,transparent);
+  background:color-mix(in srgb,var(--accent) 16%,transparent);
   border-bottom:1px solid color-mix(in srgb,var(--accent) 35%,transparent);
   border-radius:3px;
   box-decoration-break:clone;-webkit-box-decoration-break:clone;
   cursor:pointer;
   transition:background-color .16s ease,box-shadow .16s ease;
 }
-.ProseMirror .fouc-comment-anchor:hover{background:color-mix(in srgb,var(--accent) 12%,transparent);}
 .ProseMirror .fouc-comment-active{
-  background:color-mix(in srgb,var(--accent) 16%,transparent);
   border-bottom-color:var(--accent);
 }
 .ProseMirror .fouc-comment-resolved{
@@ -238,14 +236,13 @@ export function ensureCommentAnchorStyles(): void {
   border-bottom-color:color-mix(in srgb,var(--muted-strong) 45%,transparent);
 }
 .ProseMirror .fouc-comment-resolved.fouc-comment-active{
-  background:color-mix(in srgb,var(--accent) 10%,transparent);
+  background:color-mix(in srgb,var(--accent) 16%,transparent);
 }
 .ProseMirror .fouc-comment-orphan{
   border-bottom-color:color-mix(in srgb,var(--err-ink) 55%,transparent);
   background:color-mix(in srgb,var(--err-ink) 7%,transparent);
 }
 .ProseMirror .fouc-comment-pending{
-  background:color-mix(in srgb,var(--accent) 6%,transparent);
   border-bottom-color:color-mix(in srgb,var(--accent) 35%,transparent);
 }
 .ProseMirror .fouc-comment-flash{animation:fouc-comment-flash 1.1s ease-out 1;}

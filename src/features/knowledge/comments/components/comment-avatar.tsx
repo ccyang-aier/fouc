@@ -1,11 +1,8 @@
-import Image from 'next/image';
-import { User } from '@phosphor-icons/react';
+import { UserAvatar } from '@/components/user-avatar';
 import styles from './comments.module.css';
 
 export type CommentAuthor = { name: string; image?: string | null };
 
 export function CommentAvatar({ author }: { author?: CommentAuthor }) {
-  return author?.image
-    ? <Image className={styles.avatar} src={author.image} alt="" width={32} height={32} unoptimized />
-    : <span className={styles.avatar} aria-hidden><User size={18} /></span>;
+  return <UserAvatar name={author?.name} image={author?.image} className={styles.avatar} />;
 }

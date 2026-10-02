@@ -11,6 +11,7 @@ import { Sparkle } from '@phosphor-icons/react';
 import type { Awareness } from 'y-protocols/awareness';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { UserAvatar } from '@/components/user-avatar';
 import { awarenessColorFor, readAwarenessMembers } from '../../collaboration/awareness';
 import type { AwarenessIdentity, AwarenessMember } from '../../collaboration/awareness';
 import styles from './awareness-members.module.css';
@@ -57,11 +58,6 @@ export function useAwarenessMembers(awareness: Awareness | null): AwarenessMembe
 
 const MAX_VISIBLE = 3;
 
-function memberInitial(name: string): string {
-  const trimmed = name.trim();
-  return trimmed ? [...trimmed][0]!.toUpperCase() : '?';
-}
-
 function memberTitle(member: AwarenessMember): string {
   return `${member.user.name} · ${member.isEditing ? '正在编辑' : '在线'}`;
 }
@@ -77,16 +73,7 @@ function MemberAvatar({ member, large = false }: { member: AwarenessMember; larg
       title={memberTitle(member)}
       className={cn(styles.avatar, large && styles.largeAvatar)}
     >
-      {memberInitial(member.user.name)}
-      {typeof image === 'string' && image
-        ? (
-            <span
-              aria-hidden
-              className={styles.image}
-              style={{ backgroundImage: `url(${JSON.stringify(image)})` }}
-            />
-          )
-        : null}
+      <UserAvatar name={member.user.name} image={image} className="size-full" />
       {member.kind === 'agent' && (
         <span
           aria-hidden

@@ -8,7 +8,7 @@ PostgreSQL 数据库统一命名为 `fouc`；账户表位于全局 `auth` schema
 
 `backend/server/src/platform/database/schema.ts` 组合各模块的表定义；全局初始化、检查与当前 DDL 位于 `backend/server/src/platform/database/initialize*.ts`、`current.sql`。命令为 `bun backend/server/scripts/database.ts [init|status|check]`、`bun backend/server/scripts/database-schema.ts [--write|--check]`。初始化只接受空数据库，没有迁移链、旧 schema 分支或兼容适配器。开发环境集中配置在忽略提交的 `.env.fouc.local`；内置开发账户由 `backend/server/scripts/auth-admin.ts` 创建。
 
-前端 `src/features/identity` 挂载于应用根布局。所有模块通过 `useIdentity()` 获取同一会话，不自行发起模块登录流程。侧栏设置下方是账户入口；展开时显示头像、名称与邮箱，收起时保留头像和内置提示。登录模态框和独立 `/auth` 页面共用同一表单，验证与 SSO 回调仍有独立页面。
+前端 `src/features/identity` 挂载于应用根布局。所有模块通过 `useIdentity()` 获取同一会话，不自行发起模块登录流程。侧栏设置下方是账户入口；展开时显示头像、名称与邮箱，收起时保留头像和内置提示。账户入口、评论与在线成员列表共用头像组件：已设置图片时显示真实头像，默认采用强调色圆形背景、白色姓名首字母；账户入口保留在线状态角标。登录模态框和独立 `/auth` 页面共用同一表单，验证与 SSO 回调仍有独立页面。
 
 本机开发内置账户包括 `admin@fouc.local`（Fouc Admin，默认密码 `FoucAdmin-2026-mK7qXz`）与 `collaborator@fouc.local`（林沐，默认密码 `FoucCollab-2026-pN8rVz`）。创建后者时，在运行 `bun backend/server/scripts/auth-admin.ts` 的进程中设置 `FOUC_ADMIN_EMAIL=collaborator@fouc.local`、`FOUC_ADMIN_NAME=林沐`、`FOUC_ADMIN_PASSWORD=FoucCollab-2026-pN8rVz`，只初始化该邮箱，不改动其他账户。协作账户作为普通成员加入产品研发工作空间，文档能力仍由实际 ACL 决定；内置账户没有绕过资源权限的特权。
 

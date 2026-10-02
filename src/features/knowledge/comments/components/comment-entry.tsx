@@ -37,6 +37,7 @@ export interface CommentEntryItemProps {
 export function CommentEntryItem({ entry, workspaceId, author, isOwn, deleting, canComment, isReply, action, threadAction, badge, quote, composer, replyTo, onDelete, onLike, liking, edit, onEdit, onCopyLink }: CommentEntryItemProps) {
   const [editing, setEditing] = useState(false);
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
+  const [likePulse, setLikePulse] = useState(0);
   const entryRef = useRef<HTMLElement>(null);
   return <article ref={entryRef} className={styles.entry} data-reply={isReply} data-comment-id={entry.id}>
     <CommentAvatar author={author} />
@@ -65,7 +66,7 @@ export function CommentEntryItem({ entry, workspaceId, author, isOwn, deleting, 
         return success;
       }} minHeight={36} /></div> : <div className={styles.entryBody}><CommentMarkdown body={entry.bodyMd} workspaceId={workspaceId} /></div>}
       <div className={styles.entryToolbar}>
-        <button type="button" className={styles.likeButton} aria-label={entry.liked ? '取消点赞' : '点赞'} aria-pressed={entry.liked} disabled={!canComment || liking} onClick={() => onLike(entry.id, !entry.liked)}><ThumbsUp size={16} weight={entry.liked ? 'fill' : 'regular'} aria-hidden /><span>{entry.likeCount || '赞'}</span></button>
+        <button type="button" className={styles.likeButton} aria-label={entry.liked ? '取消点赞' : '点赞'} aria-pressed={entry.liked} disabled={!canComment || liking} onClick={() => { setLikePulse(pulse => entry.liked ? 0 : pulse + 1); onLike(entry.id, !entry.liked); }}><span key={likePulse} className={styles.likeIcon} data-pulse={likePulse > 0} aria-hidden><ThumbsUp size={16} weight={entry.liked ? 'fill' : 'regular'} /></span><span>{entry.likeCount || '赞'}</span></button>
         {action}
       </div>
       {copyStatus !== 'idle' && <p className={copyStatus === 'error' ? styles.composerError : styles.copyStatus} role={copyStatus === 'error' ? 'alert' : 'status'}>{copyStatus === 'copied' ? '链接已复制' : '复制失败，请重试。'}</p>}

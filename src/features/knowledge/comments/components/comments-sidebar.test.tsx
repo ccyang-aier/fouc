@@ -282,8 +282,10 @@ describe('CommentsSidebar states and interactions', () => {
     const sidebar = await mountSidebar({ threads: [thread('free', { kind: 'comment', anchorKind: 'page' })] }, { onLike: (id, liked) => { likes.push([id, liked]); } });
     expect(menuItem(await openEntryMenu(sidebar), '标记为已解决')).toBeUndefined();
     expect(sidebar.textContent).not.toContain('原文已不存在');
+    expect(sidebar.querySelector('[data-pulse="true"]')).toBeNull();
     await click(sidebar.querySelector<HTMLButtonElement>('[aria-label="点赞"]')!);
     expect(likes).toEqual([['free-c1', true]]);
+    expect(sidebar.querySelector('[data-pulse="true"]')).not.toBeNull();
     expect(sidebar.querySelector('[role="textbox"][aria-label="写下评论，分享你的想法…"]')).not.toBeNull();
     expect(sidebar.querySelector('input[type="checkbox"]')?.parentElement?.textContent).toContain('作为问题');
     expect(sidebar.querySelector('[aria-label="加粗评论文字"]')).toBeNull();

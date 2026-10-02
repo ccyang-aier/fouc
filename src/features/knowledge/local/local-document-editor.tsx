@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Extension } from '@tiptap/core';
 import { useEditor } from '@tiptap/react';
 import { history, redo, undo } from '@tiptap/pm/history';
@@ -47,6 +47,11 @@ export function LocalDocumentEditor({ workspaceId, store, document, folderName, 
     editorProps: { attributes: { 'aria-label': '页面正文' } },
     onUpdate: ({ editor: current }) => onChange({ body: current.getJSON() }),
   }, [extensions]);
+
+  // Two panes can display the same local document; external edits must reach both.
+  useEffect(() => {
+    if (editor && JSON.stringify(editor.getJSON()) !== JSON.stringify(document.body)) editor.commands.setContent(document.body, { emitUpdate: false });
+  }, [editor, document.body]);
 
   return <DocumentEditorFrame appearanceScope={`local:${workspaceId}:${document.id}`}
     navigation={{ editor, title: document.title, target: { workspaceId, knowledgeBaseId: document.baseId, pageId: document.id, source: 'local' } }}

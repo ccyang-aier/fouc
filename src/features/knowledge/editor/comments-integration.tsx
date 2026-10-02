@@ -13,6 +13,7 @@ import { ChatCircleDots } from '@phosphor-icons/react';
 import { PageComments } from '../comments/comments-controller';
 import { usePageCommentThreads } from '../comments/comments-queries';
 import { levelSatisfies } from './editor-state';
+import { useDocumentReference } from './document-reference';
 import styles from './comments-integration.module.css';
 
 export { createCommentsEditorExtension } from '../comments/comments-plugin';
@@ -44,10 +45,11 @@ export function PageCommentsLayer({
   onRailOpenChange?: (open: boolean) => void;
   currentUser: { id: string; name: string; image?: string | null } | null;
 }) {
+  const reference = useDocumentReference();
   return (
     <div className={styles.rail} data-document-sidebar>
       {children}
-      <PageComments scope={scope} knowledgeBaseId={knowledgeBaseId} editor={editor} currentUser={currentUser} canComment={levelSatisfies(level, 'comment')} railOpen={railOpen} onRailOpenChange={onRailOpenChange} />
+      <PageComments scope={scope} knowledgeBaseId={knowledgeBaseId} editor={editor} currentUser={currentUser} canComment={levelSatisfies(level, 'comment')} railOpen={railOpen} onRailOpenChange={onRailOpenChange} followDocumentLink={!reference?.fixed} />
     </div>
   );
 }

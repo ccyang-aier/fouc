@@ -71,6 +71,7 @@ function commentErrorText(error: unknown, fallback: string): string {
 }
 
 export interface PageCommentsProps {
+  followDocumentLink?: boolean;
   scope: PageScope;
   knowledgeBaseId: string;
   /** The live Tiptap instance of the page editor (null while it mounts). */
@@ -81,7 +82,7 @@ export interface PageCommentsProps {
   currentUser?: { id: string; name: string; image?: string | null } | null;
 }
 
-export function PageComments({ scope, knowledgeBaseId, editor, canComment, currentUser, railOpen: controlledRailOpen, onRailOpenChange }: PageCommentsProps) {
+export function PageComments({ scope, knowledgeBaseId, editor, canComment, currentUser, railOpen: controlledRailOpen, onRailOpenChange, followDocumentLink = true }: PageCommentsProps) {
   const threadsQuery = usePageCommentThreads(scope.workspaceId, scope.pageId);
   const accessQuery = useKnowledgeAccessQuery(scope.workspaceId);
   const currentUserId = accessQuery.data?.userId ?? null;
@@ -148,8 +149,8 @@ export function PageComments({ scope, knowledgeBaseId, editor, canComment, curre
   // The active thread's card scrolls into view inside the rail.
   useEffect(() => {
     if (!activeThreadId || !railOpen) return;
-    document.querySelector(`[data-comment-card="${activeThreadId}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  }, [activeThreadId, railOpen]);
+    editor?.view.dom.closest('[aria-label="页面编辑器"]')?.querySelector(`[data-comment-card="${activeThreadId}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [activeThreadId, railOpen, editor]);
 
   const excerptOf = useCallback(
     (anchor: CommentAnchor) => (editor ? anchorExcerpt(editor.state.doc, anchor.ranges) : ''),
@@ -192,6 +193,7 @@ export function PageComments({ scope, knowledgeBaseId, editor, canComment, curre
   // A document link selects the discussion through the same editor event as
   // an anchor click, including page comments that have no text selection.
   useEffect(() => {
+    if (!followDocumentLink) return;
     const target = readCommentLink(window.location.href);
     if (!editor || !target || target.source !== 'workspace' || target.workspaceId !== scope.workspaceId || target.pageId !== scope.pageId || target.knowledgeBaseId !== knowledgeBaseId || followedLink.current === target.commentId) return;
     const thread = threads.find(thread => thread.comments.some(entry => entry.id === target.commentId));
@@ -201,8 +203,8 @@ export function PageComments({ scope, knowledgeBaseId, editor, canComment, curre
     }
     if (!railOpen) return;
     followedLink.current = target.commentId;
-    document.querySelector(`[data-comment-id="${target.commentId}"]`)?.scrollIntoView({ block: 'nearest' });
-  }, [scope.workspaceId, scope.pageId, knowledgeBaseId, threads, railOpen, editor]);
+    editor.view.dom.closest('[aria-label="页面编辑器"]')?.querySelector(`[data-comment-id="${target.commentId}"]`)?.scrollIntoView({ block: 'nearest' });
+  }, [scope.workspaceId, scope.pageId, knowledgeBaseId, threads, railOpen, editor, followDocumentLink]);
 
   const dispatchRemoveAnchor = useCallback((threadId: string, options: { userAction: boolean }) => {
     if (!editor) return;

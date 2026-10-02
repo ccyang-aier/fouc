@@ -81,6 +81,16 @@ function LocalKnowledgeContent({ workspaceId, store, onOpenSettings, onOpenWorks
   }
   const title = selected ? selected.title : SIDEBAR_MAIN_ITEMS.find((item) => item.id === view)?.labelKey;
   return <KnowledgeWorkbench
+    renderFixedDocument={(fixed, onClose) => {
+      const document = live.find(item => item.id === fixed.target.pageId);
+      if (!document || fixed.target.source !== 'local' || fixed.target.workspaceId !== workspaceId) return <div role="status" className="p-8 text-sm text-[var(--muted-strong)]">文档已删除或无法访问</div>;
+      const folderName = folders.find(folder => folder.id === document.folderId)?.name ?? '未归档';
+      const onChange = (patch: Partial<LocalDocument>) => updateDocument(document.id, patch);
+      const fileProps = { workspaceId, document, folderName, onChange, onBack: onClose, onOpenSidebar: () => setEditorSidebarOpen(true), onCreateDocument: () => setCreation('document') };
+      return document.file || documentFileFormat(document.title) && documentFileFormat(document.title) !== 'markdown'
+        ? <LocalFileDocument key={document.id} {...fileProps} attach={setFile => <LocalDocumentImport workspaceId={workspaceId} onImport={items => items[0] ? setFile(items[0].file) : false} />} />
+        : <LocalDocumentEditor key={document.id} {...fileProps} store={store} />;
+    }}
     navigationScope={`local:${workspaceId}:${base?.id ?? "none"}`}
     documentOpen={Boolean(selected)}
     sidebarOpen={Boolean(selected) && editorSidebarOpen}

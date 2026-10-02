@@ -128,7 +128,9 @@ export function DocumentNavigationTools({ editor, title, target, header, sidebar
     if (event.key === 'End') { event.preventDefault(); setSlide(Math.max(0, slides.length - 1)); }
     if (event.key === 'Escape') closePresentation();
   }
-  return <Context.Provider value={{ onPresent: () => { void onPresent(); }, onSearch: openSearch, onSplit: reference && editor ? () => reference.openReference(editor, title) : undefined,
+  const reportTitle = reference?.reportTitle;
+  useEffect(() => { reportTitle?.(title); }, [title, reportTitle]);
+  return <Context.Provider value={{ onPresent: () => { void onPresent(); }, onSearch: openSearch, onSplit: reference?.openReference ? () => reference.openReference!({ target, title }) : undefined,
     onTogglePin: reference ? () => reference.togglePin({ title, target }) : undefined, pinned: reference?.pins.some(pin => pin.target.pageId === target.pageId) ?? false,
     outlineOpen: Boolean(editor) && outlineOpen, outlineId, outlineTrigger, onToggleOutline: editor ? () => setOutlineOpen(!outlineOpen) : undefined }}>
     <div ref={host} className={styles.toolsWorkspace}>
@@ -151,7 +153,6 @@ export function DocumentNavigationTools({ editor, title, target, header, sidebar
               </div>
               <DocumentOutline id={outlineId} headings={headings} activeHeading={activeHeading} onNavigate={index => {
                 const element = editor.view.nodeDOM(headings[index].pos);
-                if (compact) closeOutline();
                 requestAnimationFrame(() => {
                   const scroll = host.current?.closest('[aria-label="页面编辑器"]')?.querySelector<HTMLElement>('[data-document-scroll]');
                   if (scroll && element instanceof HTMLElement) scroll.scrollTo({ top: scroll.scrollTop + element.getBoundingClientRect().top - scroll.getBoundingClientRect().top - 28, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });

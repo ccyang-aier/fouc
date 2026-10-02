@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Check, MagnifyingGlass, Plus } from '@phosphor-icons/react';
+import { Check, MagnifyingGlass, Smiley } from '@phosphor-icons/react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { decodePageIcon, encodePageIcon, PageIcon, pageIconColors, pageIcons, pageEmojis } from './page-icon';
 import styles from './page-icon-picker.module.css';
@@ -37,7 +37,7 @@ export function PageIconPicker({ value, editable = true, onChange }: { value?: s
     setOpen(next);
   }}>
     <DropdownMenuTrigger className={styles.trigger} data-empty={!value} aria-label={value ? '更改文档图标' : '添加文档图标'} title={value ? '更改图标' : '添加图标'}>
-      {value ? <PageIcon value={value} size={32} /> : <Plus size={22} aria-hidden />}
+      {value ? <PageIcon value={value} size={32} /> : <Smiley size={32} weight="fill" aria-hidden />}
     </DropdownMenuTrigger>
     <DropdownMenuContent role="dialog" aria-label="文档图标选择" aria-labelledby={undefined} align="start" collisionPadding={12} className={styles.panel}>
       <div onKeyDown={event => { if (event.key === 'Tab') event.stopPropagation(); }}>

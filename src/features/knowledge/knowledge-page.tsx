@@ -228,6 +228,16 @@ function WorkspaceKnowledgeResource({ onOpenSettings, onOpenLocal, onOpenWorkspa
 
   return (
     <KnowledgeWorkbench
+      renderFixedDocument={(document, onClose) => stageActive && authenticated && document.target.source === 'workspace' && document.target.workspaceId === activeId ? <KnowledgePageEditor
+        key={document.target.pageId}
+        scope={{ workspaceId: activeId, pageId: document.target.pageId }}
+        user={session.user}
+        knowledgeBaseId={document.target.knowledgeBaseId}
+        onBack={onClose}
+        onOpenSidebar={() => setEditorSidebarOpen(true)}
+        onCreateDocument={() => setCreateDocumentOpen(true)}
+        canCreateDocument={canEditTree(accessQuery.data)}
+      /> : <CanvasState title="无法访问此文档" hint="请确认当前工作空间和文档访问权限。" />}
       navigationScope={`workspace:${authenticated ? session.user.id : "guest"}:${activeSpace.id}:${activeBase?.id ?? "none"}`}
       documentOpen={Boolean(selectedPageId)}
       sidebarOpen={Boolean(selectedPageId) && editorSidebarOpen}

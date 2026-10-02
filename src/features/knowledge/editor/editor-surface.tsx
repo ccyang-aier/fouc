@@ -39,6 +39,7 @@ import { useSidebarCollections } from '../navigation/sidebar-collections';
 import { TaskProgress } from './block-modules/task-list/task-progress';
 import { recycleKnowledgePage } from '../data/pages-api';
 import { knowledgeQueryKeys } from '../data/query-keys';
+import { useDocumentReference } from './document-reference';
 
 export function PageEditorSurface({
   scope,
@@ -72,6 +73,7 @@ export function PageEditorSurface({
   onCreateDocument: () => void;
   canCreateDocument: boolean;
 }) {
+  const fixedPane = Boolean(useDocumentReference()?.fixed);
   const document = session.document;
   // One extension set per page session: shared registry (E01) with the
   // block/callout/table and block-reference NodeViews layered on (E05/L02),
@@ -123,13 +125,13 @@ export function PageEditorSurface({
   // a pre-mount navigation consumes its staged highlight, later targets ride
   // the open-target channel (both selection-free).
   useEffect(() => {
-    if (!editor) return undefined;
+    if (!editor || fixedPane) return undefined;
     const staged = takeStagedBlockHighlight(scope.pageId);
     if (staged) revealBlockInEditor(editor.view, staged.blockId);
     return subscribeOpenPageTarget((target) => {
       if (target.pageId === scope.pageId && target.blockId) revealBlockInEditor(editor.view, target.blockId);
     });
-  }, [editor, scope.pageId]);
+  }, [editor, scope.pageId, fixedPane]);
 
   const [historyOpen, setHistoryOpen] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);

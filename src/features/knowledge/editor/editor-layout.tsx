@@ -30,7 +30,8 @@ export function DocumentHeading({ title, onTitleChange, onTitleCommit, editable 
   icon?: ReactNode;
 }) {
   return <div className={styles.heading}>
-    <div className={styles.titleRow}>{icon}
+    {icon ? <div className={styles.titleIcon}>{icon}</div> : null}
+    <div className={styles.titleRow}>
     {onTitleChange && editable
       ? <input
           aria-label="文档标题"

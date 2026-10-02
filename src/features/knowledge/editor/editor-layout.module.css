@@ -10,13 +10,14 @@
 
 .scrollArea { min-height: 0; flex: 1; overflow-y: auto; overscroll-behavior: contain; }
 .document {
-  width: min(calc(100% - 48px), max(min(100% - 48px, 360px), var(--document-width)));
+  width: min(calc(100% - 112px), max(min(100% - 112px, 360px), var(--document-width)));
   font-family: var(--document-font);
   min-height: 100%;
   margin: 0 auto;
   padding: clamp(56px, 7vh, 84px) 0 160px;
 }
-.heading { margin-bottom: 25px; }
+.heading { position:relative; margin-bottom: 25px; }
+.titleIcon { position:absolute; inset-inline-end:calc(100% + 12px); top:0; }
 .titleRow { display:flex; align-items:center; gap:12px; min-width:0; }
 .title,
 .titleInput {

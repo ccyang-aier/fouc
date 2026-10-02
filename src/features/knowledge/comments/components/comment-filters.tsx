@@ -15,11 +15,11 @@ export function CommentFilterControls({ value, onChange }: { value: CommentFilte
   return <div className={styles.filters} role="group" aria-label="评论筛选">
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild><button type="button" className={styles.scopeButton} data-filtered={value.kind !== 'all'} aria-label="评论类型"><span>{kinds.find(option => option[0] === value.kind)?.[1]}</span><CaretDown size={13} aria-hidden /></button></DropdownMenuTrigger>
-      <DropdownMenuContent align="start"><DropdownMenuRadioGroup value={value.kind} onValueChange={kind => onChange({ ...value, kind: kind as CommentFilters['kind'] })}>{kinds.map(([id, label]) => <DropdownMenuRadioItem key={id} value={id}>{label}</DropdownMenuRadioItem>)}</DropdownMenuRadioGroup></DropdownMenuContent>
+      <DropdownMenuContent className={styles.filterMenu} align="start"><DropdownMenuRadioGroup value={value.kind} onValueChange={kind => onChange({ ...value, kind: kind as CommentFilters['kind'] })}>{kinds.map(([id, label]) => <DropdownMenuRadioItem key={id} value={id}>{label}</DropdownMenuRadioItem>)}</DropdownMenuRadioGroup></DropdownMenuContent>
     </DropdownMenu>
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild><button type="button" className={styles.filterButton} data-filtered={filtered} aria-label="筛选评论"><SlidersHorizontal size={16} aria-hidden />筛选{filtered && <span className={styles.filterDot} />}</button></DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent className={styles.filterMenu} align="end">
         <DropdownMenuLabel>点赞筛选</DropdownMenuLabel>
         <DropdownMenuRadioGroup value={value.likes} onValueChange={next => onChange({ ...value, likes: next as CommentFilters['likes'] })}>{likes.map(([id, label]) => <DropdownMenuRadioItem key={id} value={id}>{label}</DropdownMenuRadioItem>)}</DropdownMenuRadioGroup>
         <DropdownMenuSeparator /><DropdownMenuLabel>时间范围</DropdownMenuLabel>
@@ -29,7 +29,7 @@ export function CommentFilterControls({ value, onChange }: { value: CommentFilte
     </DropdownMenu>
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild><button type="button" className={styles.sortButton} data-filtered={value.sort !== 'all'} aria-label="评论排序" title="评论排序"><ArrowsDownUp size={16} aria-hidden /></button></DropdownMenuTrigger>
-      <DropdownMenuContent align="end"><DropdownMenuRadioGroup value={value.sort} onValueChange={next => onChange({ ...value, sort: next as CommentFilters['sort'] })}>{sorts.map(([id, label]) => <DropdownMenuRadioItem key={id} value={id}>{label}</DropdownMenuRadioItem>)}</DropdownMenuRadioGroup></DropdownMenuContent>
+      <DropdownMenuContent className={styles.filterMenu} align="end"><DropdownMenuRadioGroup value={value.sort} onValueChange={next => onChange({ ...value, sort: next as CommentFilters['sort'] })}>{sorts.map(([id, label]) => <DropdownMenuRadioItem key={id} value={id}>{label}</DropdownMenuRadioItem>)}</DropdownMenuRadioGroup></DropdownMenuContent>
     </DropdownMenu>
   </div>;
 }

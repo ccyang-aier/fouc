@@ -69,7 +69,7 @@
 .sectionLabel { margin:22px 0 0; color:var(--muted); font-size:11px; }
 .orphan { padding:20px 0; }
 .orphan p { margin:0 0 8px; color:var(--muted-strong); font-size:12px; line-height:1.75; }
-.footer { flex:none; padding:10px 11px; border-top:1px solid var(--comment-line); }
+.footer { flex:none; padding:10px 11px; }
 .startHint { margin:0; color:var(--muted-strong); font-size:11px; line-height:1.6; }
 .composer { display:flex; flex-direction:column; gap:8px; }
 .inlineReply { grid-column:1 / -1; margin-top:12px; animation:replyReveal 180ms cubic-bezier(.22,1,.36,1); transform-origin:top; }
@@ -137,3 +137,6 @@
 .likeIcon[data-pulse=true]::after { content:""; position:absolute; left:7px; top:4px; width:3px; height:3px; border-radius:50%; color:var(--comment-accent); box-shadow:-9px -2px 0 -.5px currentColor,9px -5px 0 -.5px currentColor,1px -10px 0 -.5px currentColor; opacity:0; pointer-events:none; animation:commentLikeSpark 520ms ease-out forwards; }
 @keyframes commentLikeLift { 0% { transform:translateY(0) scale(1); } 25% { transform:translateY(-3px) scale(1.18); } 55% { transform:translateY(1px) scale(.98); } 100% { transform:translateY(0) scale(1); } }
 @keyframes commentLikeSpark { 0%,15% { opacity:0; transform:scale(.5); } 35% { opacity:.75; } 100% { opacity:0; transform:translateY(-3px) scale(1.25); } }
+
+.entryMenu[role=menu] { width:148px; min-width:148px; }
+.filterMenu[role=menu] { width:152px; min-width:152px; }

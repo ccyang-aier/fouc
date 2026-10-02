@@ -1,5 +1,5 @@
-.menu, .submenu { width: 232px; max-width: calc(100vw - 24px); max-height: var(--radix-dropdown-menu-content-available-height); overflow-y: auto; overscroll-behavior: contain; padding: 6px; border-radius: 8px; color: var(--ink); }
-.submenu { width: 202px; }
+.menu, .submenu { width: 208px; max-width: calc(100vw - 24px); max-height: var(--radix-dropdown-menu-content-available-height); overflow-y: auto; overscroll-behavior: contain; padding: 6px; border-radius: 8px; color: var(--ink); }
+.submenu { width: 196px; }
 .item { height: 33px; gap: 10px; padding: 0 10px; font-size: 13px; font-weight: 500; cursor: pointer; }
 .item > svg, .icon > svg { width: 16px; height: 16px; flex: none; color: var(--ink-soft); }
 .icon { display: flex; }

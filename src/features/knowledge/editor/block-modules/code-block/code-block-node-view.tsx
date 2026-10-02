@@ -4,8 +4,7 @@ import { useEffect, useRef, useState, type FC } from 'react';
 import { CaretDown, Check, Copy, DotsThree } from '@phosphor-icons/react';
 import type { NodeViewProps } from '@tiptap/react';
 import { NodeViewContent, NodeViewWrapper } from '@tiptap/react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { AppearanceSelect } from '@/components/editor-appearance-controls';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuRadioGroup, DropdownMenuRadioItem } from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CODE_LANGUAGES, detectedCodeLanguage } from './highlight';
 import './code-themes.css';
@@ -56,13 +55,18 @@ export function CodeBlockNodeView({ node, editor, updateAttributes, HTMLAttribut
         </button>
         {editor.isEditable && <DropdownMenu modal={false}>
           <DropdownMenuTrigger className={styles.iconButton} aria-label="代码块显示设置"><DotsThree size={20} weight="bold" aria-hidden /></DropdownMenuTrigger>
-          <DropdownMenuContent className={styles.menu} align="end"
-            onFocusOutside={event => { if ((event.target as Element)?.closest('[data-editor-appearance-dropdown]')) event.preventDefault(); }}
-            onInteractOutside={event => { if ((event.target as Element)?.closest('[data-editor-appearance-dropdown]')) event.preventDefault(); }}>
-            <AppearanceSelect label="外观" value={String(node.attrs.theme)} options={THEMES} onChange={theme => updateAttributes({ theme })} />
+          <DropdownMenuContent className={styles.menu} align="end">
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger className={styles.setting}>外观<span className={styles.themeValue} title={THEMES.find(theme => theme.id === node.attrs.theme)?.label}>{THEMES.find(theme => theme.id === node.attrs.theme)?.label}</span></DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className={styles.themeMenu} collisionPadding={8}>
+                <DropdownMenuRadioGroup value={String(node.attrs.theme)} onValueChange={theme => updateAttributes({ theme })}>
+                  {THEMES.map(theme => <DropdownMenuRadioItem key={theme.id} value={theme.id}>{theme.label}</DropdownMenuRadioItem>)}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
             <DropdownMenuSeparator />
-            <DropdownMenuCheckboxItem checked={Boolean(node.attrs.lineNumbers)} onSelect={event => event.preventDefault()} onCheckedChange={lineNumbers => updateAttributes({ lineNumbers })}>显示行号</DropdownMenuCheckboxItem>
-            <DropdownMenuCheckboxItem checked={Boolean(node.attrs.wrap)} onSelect={event => event.preventDefault()} onCheckedChange={wrap => updateAttributes({ wrap })}>自动换行</DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem className={styles.setting} checked={Boolean(node.attrs.lineNumbers)} onSelect={event => event.preventDefault()} onCheckedChange={lineNumbers => updateAttributes({ lineNumbers })}>显示行号</DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem className={styles.setting} checked={Boolean(node.attrs.wrap)} onSelect={event => event.preventDefault()} onCheckedChange={wrap => updateAttributes({ wrap })}>自动换行</DropdownMenuCheckboxItem>
           </DropdownMenuContent>
         </DropdownMenu>}
       </div>

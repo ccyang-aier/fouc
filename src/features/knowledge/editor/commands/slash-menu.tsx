@@ -18,7 +18,7 @@ import { filterSlashItems } from './slash-items';
 import { closeSlashMenu, runSlashItem, setActiveSlashItem, slashItemsOfEditor, slashMenuPluginKey } from './slash-paste';
 import styles from './slash-menu.module.css';
 
-const MENU_WIDTH = 280;
+const MENU_WIDTH = 240;
 const MENU_MAX_HEIGHT = 324;
 const VIEWPORT_MARGIN = 8;
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { ArrowBendUpLeft, ArrowUpRight, At, CircleNotch, Image as ImageIcon, LinkSimple, WarningCircle } from '@phosphor-icons/react';
+import { ArrowBendUpLeft, At, CircleNotch, Image as ImageIcon, LinkSimple, WarningCircle } from '@phosphor-icons/react';
 import { commentBodySchema, type CommentThreadKind } from '@fouc/shared/knowledge/comments';
 import { CommentEditor, type CommentEditorHandle } from './comment-editor';
 import { useAssetUploads } from '../../assets/use-asset-uploads';
@@ -69,12 +69,12 @@ export function CommentComposer({ workspaceId, placeholder, submitLabel, sending
       <div className={styles.composerActions}>
         <div className={styles.composeTools}>
           <DropdownMenu modal={false}>
-            <DropdownMenuTrigger asChild><button type="button" className={styles.iconButton} disabled={sending || !authors?.size} aria-label="提及成员" title="提及成员"><At size={18} aria-hidden /></button></DropdownMenuTrigger>
+            <DropdownMenuTrigger asChild><button type="button" className={styles.iconButton} disabled={sending || !authors?.size} aria-label="提及成员" title="提及成员"><At size={18} weight="regular" aria-hidden /></button></DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="max-h-60 overflow-y-auto" onCloseAutoFocus={event => { event.preventDefault(); ref.current?.focus(); }}>
               {Array.from(authors ?? []).map(([id, author]) => <DropdownMenuItem key={id} onSelect={() => { ref.current?.insertText(`@${author.name} `); setMentioned(value => [...new Set([...value, id])]); }}>@{author.name}</DropdownMenuItem>)}
             </DropdownMenuContent>
           </DropdownMenu>
-          <button type="button" className={styles.iconButton} disabled={sending || !workspaceId} aria-label="上传评论图片" title="上传图片" onClick={() => input.current?.click()}><ImageIcon size={18} weight="bold" aria-hidden /></button>
+          <button type="button" className={styles.iconButton} disabled={sending || !workspaceId} aria-label="上传评论图片" title="上传图片" onClick={() => input.current?.click()}><ImageIcon size={18} weight="regular" aria-hidden /></button>
           <input ref={input} type="file" accept="image/*" multiple hidden aria-label="选择评论图片" onChange={event => {
             const files = Array.from(event.target.files ?? []);
             if (files.some(file => !file.type.startsWith('image/'))) { setImageError('请选择图片文件。'); }
@@ -82,7 +82,7 @@ export function CommentComposer({ workspaceId, placeholder, submitLabel, sending
             event.target.value = '';
           }} />
           <DropdownMenu modal={false} open={linkOpen} onOpenChange={open => { setLinkOpen(open); if (open) { setLink(''); setLinkInvalid(false); } }}>
-            <DropdownMenuTrigger asChild><button type="button" className={styles.iconButton} disabled={sending} aria-label="插入评论链接" title="插入链接"><LinkSimple size={18} aria-hidden /></button></DropdownMenuTrigger>
+            <DropdownMenuTrigger asChild><button type="button" className={styles.iconButton} disabled={sending} aria-label="插入评论链接" title="插入链接"><LinkSimple size={18} weight="regular" aria-hidden /></button></DropdownMenuTrigger>
             <DropdownMenuContent align="start" onCloseAutoFocus={event => { event.preventDefault(); ref.current?.focus(); }}>
               <form className={styles.linkForm} onSubmit={event => { event.preventDefault(); const href = safeKnowledgeUrl(link.trim(), 'link'); if (!href) { setLinkInvalid(true); return; } ref.current?.insertLink(href); setLinkOpen(false); }} onKeyDown={event => { if (event.key !== 'Escape') event.stopPropagation(); }}>
                 <label>链接地址<input autoFocus aria-label="评论链接地址" placeholder="https://" value={link} onChange={event => { setLink(event.target.value); setLinkInvalid(false); }} aria-invalid={linkInvalid} /></label>
@@ -94,7 +94,7 @@ export function CommentComposer({ workspaceId, placeholder, submitLabel, sending
         </div>
         <span className={styles.sendHint}>Ctrl / ⌘ + Enter 发送</span>
         <button type="button" className={styles.sendButton} onClick={() => void submit()} disabled={sending || uploading || !valid} aria-label={sending ? sendingLabel : submitLabel} title={`${submitLabel} · Ctrl / ⌘ + Enter`}>
-          <span>{sending ? sendingLabel : submitLabel}</span>{sending ? <CircleNotch size={15} className="animate-spin" aria-hidden /> : <ArrowUpRight size={15} aria-hidden />}
+          <span>{sending ? sendingLabel : submitLabel}</span>{sending && <CircleNotch size={15} className="animate-spin" aria-hidden />}
         </button>
       </div>
     </div>

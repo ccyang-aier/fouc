@@ -228,6 +228,7 @@ function WorkspaceKnowledgeResource({ onOpenSettings, onOpenLocal, onOpenWorkspa
 
   return (
     <KnowledgeWorkbench
+      onCloseDocument={() => { setSelectedPageId(null); setLibraryView('all-documents'); }}
       renderFixedDocument={(document, onClose) => stageActive && authenticated && document.target.source === 'workspace' && document.target.workspaceId === activeId ? <KnowledgePageEditor
         key={document.target.pageId}
         scope={{ workspaceId: activeId, pageId: document.target.pageId }}

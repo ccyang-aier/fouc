@@ -130,6 +130,12 @@ export function DocumentNavigationTools({ editor, title, target, header, sidebar
   }
   const reportTitle = reference?.reportTitle;
   useEffect(() => { reportTitle?.(title); }, [title, reportTitle]);
+  const reportPrimaryDocument = reference?.reportPrimaryDocument;
+  const { workspaceId, knowledgeBaseId, pageId, source } = target;
+  useEffect(() => {
+    reportPrimaryDocument?.({ title, target: { workspaceId, knowledgeBaseId, pageId, source } });
+    return () => reportPrimaryDocument?.(null);
+  }, [reportPrimaryDocument, title, workspaceId, knowledgeBaseId, pageId, source]);
   return <Context.Provider value={{ onPresent: () => { void onPresent(); }, onSearch: openSearch, onSplit: reference?.openReference ? () => reference.openReference!({ target, title }) : undefined,
     onTogglePin: reference ? () => reference.togglePin({ title, target }) : undefined, pinned: reference?.pins.some(pin => pin.target.pageId === target.pageId) ?? false,
     outlineOpen: Boolean(editor) && outlineOpen, outlineId, outlineTrigger, onToggleOutline: editor ? () => setOutlineOpen(!outlineOpen) : undefined }}>

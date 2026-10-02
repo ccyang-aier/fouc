@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test';
 import { Window } from 'happy-dom';
-import { act, useState } from 'react';
+import { act, useEffect, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import type { DocumentReferenceWorkspace as Workspace, useDocumentReference as Reference } from './document-reference';
 import type { DocumentNavigationTools as Navigation } from './document-tools';
@@ -26,17 +26,29 @@ const target = { workspaceId: 'workspace', knowledgeBaseId: 'base', pageId: 'one
 async function click(label: string) { await act(async () => document.querySelector<HTMLElement>(`[aria-label="${label}"]`)!.click()); }
 
 test('fixed pane keeps its real document while the primary navigates; close disposes it', async () => {
+  let primaryCloses = 0;
   function Primary() {
     const reference = useDocumentReference();
     const [pageId, setPageId] = useState('one');
+    const report = reference?.reportPrimaryDocument;
+    useEffect(() => { report?.({ target: { ...target, pageId }, title: `Document ${pageId}` }); return () => report?.(null); }, [report, pageId]);
     return <><p data-primary-page>{pageId}</p><button aria-label="split" onClick={() => reference?.openReference?.({ target: { ...target, pageId }, title: 'Document one' })} /><button aria-label="navigate" onClick={() => setPageId('two')} /></>;
   }
   function Fixed({ pageId }: { pageId: string }) {
     const reference = useDocumentReference();
     return <><article data-live-page={pageId}>Live document content</article><button aria-label="rename" onClick={() => reference?.reportTitle?.('Renamed document')} /><p data-nested-split>{String(Boolean(reference?.openReference))}</p></>;
   }
-  await act(async () => root.render(<DocumentReferenceWorkspace scope="test-fixed" renderDocument={document => <Fixed pageId={document.target.pageId} />}><Primary /></DocumentReferenceWorkspace>));
-  await click('split'); await click('navigate');
+  await act(async () => root.render(<DocumentReferenceWorkspace scope="test-fixed" onCloseDocument={() => { primaryCloses++; }} renderDocument={document => <Fixed pageId={document.target.pageId} />}><Primary /></DocumentReferenceWorkspace>));
+  expect(document.querySelector('[aria-label="主栏文档标签"]')).toBeNull();
+  await click('split');
+  expect(document.querySelector('[aria-label="主栏文档标签"]')?.textContent).toContain('Document one');
+  expect(document.querySelector('[aria-label="固定栏文档标签"]')?.textContent).toContain('Document one');
+  await click('navigate');
+  expect(document.querySelector('[aria-label="主栏文档标签"]')?.textContent).toContain('Document two');
+  expect(document.querySelector('[aria-label="固定栏文档标签"]')?.textContent).toContain('Document one');
+  await click('关闭文档标签 Document two');
+  expect(primaryCloses).toBe(1);
+  expect(document.querySelector('[data-live-page]')).not.toBeNull();
   expect(document.querySelector('[data-primary-page]')?.textContent).toBe('two');
   expect(document.querySelector('[data-live-page]')?.getAttribute('data-live-page')).toBe('one');
   expect(document.querySelector('iframe')).toBeNull();
@@ -52,6 +64,7 @@ test('fixed pane keeps its real document while the primary navigates; close disp
   expect(divider.getAttribute('aria-valuenow')).toBe('80');
   await click('关闭拆分视图');
   expect(document.querySelector('[data-live-page]')).toBeNull();
+  expect(document.querySelector('[aria-label="主栏文档标签"]')).toBeNull();
   expect(document.querySelector('[data-primary-page]')?.textContent).toBe('two');
 });
 

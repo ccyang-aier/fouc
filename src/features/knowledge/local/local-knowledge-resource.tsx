@@ -81,6 +81,7 @@ function LocalKnowledgeContent({ workspaceId, store, onOpenSettings, onOpenWorks
   }
   const title = selected ? selected.title : SIDEBAR_MAIN_ITEMS.find((item) => item.id === view)?.labelKey;
   return <KnowledgeWorkbench
+    onCloseDocument={() => setSelectedId(null)}
     renderFixedDocument={(fixed, onClose) => {
       const document = live.find(item => item.id === fixed.target.pageId);
       if (!document || fixed.target.source !== 'local' || fixed.target.workspaceId !== workspaceId) return <div role="status" className="p-8 text-sm text-[var(--muted-strong)]">文档已删除或无法访问</div>;

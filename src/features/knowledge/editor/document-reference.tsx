@@ -1,14 +1,14 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from 'react';
-import { PushPin, X } from '@phosphor-icons/react';
+import { FileText, PushPin, X } from '@phosphor-icons/react';
 import type { DocumentLinkTarget } from './document-link';
 import { requestOpenPageBlock } from './open-target';
 import styles from './document-tools.module.css';
 
 export type FixedDocument = { target: DocumentLinkTarget; title: string };
 export type RenderFixedDocument = (document: FixedDocument, onClose: () => void) => ReactNode;
-type ReferenceContext = { fixed: boolean; pins: FixedDocument[]; togglePin: (pin: FixedDocument) => void; openReference?: (document: FixedDocument) => void; reportTitle?: (title: string) => void };
+type ReferenceContext = { fixed: boolean; pins: FixedDocument[]; togglePin: (pin: FixedDocument) => void; openReference?: (document: FixedDocument) => void; reportTitle?: (title: string) => void; reportPrimaryDocument?: (document: FixedDocument | null) => void };
 const pinSnapshots = new Map<string, FixedDocument[]>();
 const pinListeners = new Map<string, Set<() => void>>();
 const emptyPins: FixedDocument[] = [];
@@ -17,7 +17,8 @@ export const useDocumentReference = () => useContext(Context);
 const clampSize = (value: number) => Math.max(20, Math.min(80, value));
 
 /** Resource adapters supply a real editor with its existing access and storage boundaries. */
-export function DocumentReferenceWorkspace({ scope, children, renderDocument }: { scope: string; children: ReactNode; renderDocument?: RenderFixedDocument }) {
+export function DocumentReferenceWorkspace({ scope, children, renderDocument, onCloseDocument }: { scope: string; children: ReactNode; renderDocument?: RenderFixedDocument; onCloseDocument?: () => void }) {
+  const [primaryDocument, setPrimaryDocument] = useState<FixedDocument | null>(null);
   const [reference, setReference] = useState<FixedDocument | null>(null);
   const [size, setSize] = useState(50);
   const [stacked, setStacked] = useState(false);
@@ -49,14 +50,14 @@ export function DocumentReferenceWorkspace({ scope, children, renderDocument }: 
   }, [getPins, key]);
   const close = useCallback(() => setReference(null), []);
   const reportTitle = useCallback((title: string) => setReference(current => current && current.title !== title ? { ...current, title } : current), []);
-  const primaryContext = useMemo(() => ({ fixed: false, pins, togglePin, openReference: renderDocument ? setReference : undefined }), [pins, togglePin, renderDocument]);
+  const primaryContext = useMemo(() => ({ fixed: false, pins, togglePin, openReference: renderDocument ? setReference : undefined, reportPrimaryDocument: setPrimaryDocument }), [pins, togglePin, renderDocument]);
   const fixedContext = useMemo(() => ({ fixed: true, pins, togglePin, reportTitle }), [pins, togglePin, reportTitle]);
   const document = useMemo(() => reference && renderDocument?.(reference, close), [reference, renderDocument, close]);
   return <div className={styles.workspace}>
     <div className={`${styles.workspaceBody} ${styles.splitWorkspace}`} ref={host} data-split={Boolean(reference)} data-stacked={stacked} style={{ '--reference-size': `${size}%` } as CSSProperties}>
       <Context.Provider value={primaryContext}>
         <div className={styles.primary}>
-          {pins.length > 0 && <nav className={styles.pins} aria-label="固定文档">{pins.map(pin => <span key={pin.target.pageId}>
+          {reference ? <DocumentPaneTabs label="主栏文档标签" documents={primaryDocument ? [...pins.filter(pin => pin.target.pageId !== primaryDocument.target.pageId), primaryDocument] : pins} activePageId={primaryDocument?.target.pageId} isPinned={document => pins.some(pin => pin.target.pageId === document.target.pageId)} onSelect={document => requestOpenPageBlock(document.target)} onClose={document => document.target.pageId === primaryDocument?.target.pageId ? onCloseDocument?.() : togglePin(document)} /> : pins.length > 0 && <nav className={styles.pins} aria-label="固定文档">{pins.map(pin => <span key={pin.target.pageId}>
             <button type="button" onClick={() => requestOpenPageBlock(pin.target)} title={pin.title}><PushPin size={13} weight="fill" /><span>{pin.title || '无标题文档'}</span></button>
             <button type="button" aria-label={`取消固定${pin.title}`} onClick={() => togglePin(pin)}><X size={12} /></button>
           </span>)}</nav>}
@@ -80,12 +81,28 @@ export function DocumentReferenceWorkspace({ scope, children, renderDocument }: 
           }}
           onPointerUp={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); }} />
         <aside className={styles.reference} aria-label="拆分文档" data-page-id={reference.target.pageId}>
-          <div className={styles.referenceTabs}>
-            <div className={styles.referenceTab}><PushPin size={14} weight="fill" aria-hidden /><span title={reference.title}>{reference.title || '无标题文档'}</span><button type="button" aria-label="关闭拆分视图" onClick={close}><X size={14} /></button></div>
-          </div>
+          <DocumentPaneTabs label="固定栏文档标签" documents={[reference]} activePageId={reference.target.pageId} isPinned={() => true} onClose={close} closeLabel="关闭拆分视图" />
           <Context.Provider value={fixedContext}>{document}</Context.Provider>
         </aside>
       </>}
     </div>
   </div>;
+}
+
+function DocumentPaneTabs({ label, documents, activePageId, isPinned, onSelect, onClose, closeLabel }: {
+  label: string;
+  documents: FixedDocument[];
+  activePageId?: string;
+  isPinned: (document: FixedDocument) => boolean;
+  onSelect?: (document: FixedDocument) => void;
+  onClose: (document: FixedDocument) => void;
+  closeLabel?: string;
+}) {
+  return <nav className={styles.referenceTabs} aria-label={label}>
+    {documents.map(document => <div key={document.target.pageId} className={styles.referenceTab} data-active={document.target.pageId === activePageId}>
+      {isPinned(document) ? <PushPin size={14} weight="fill" aria-hidden /> : <FileText size={14} aria-hidden />}
+      {onSelect ? <button type="button" className={styles.tabTitle} title={document.title} onClick={() => onSelect(document)}>{document.title || '无标题文档'}</button> : <span title={document.title}>{document.title || '无标题文档'}</span>}
+      <button type="button" aria-label={closeLabel ?? `关闭文档标签 ${document.title || '无标题文档'}`} onClick={() => onClose(document)}><X size={14} /></button>
+    </div>)}
+  </nav>;
 }

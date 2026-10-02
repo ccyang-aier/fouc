@@ -48,13 +48,15 @@
 @keyframes document-stage-in { from {opacity:.3} to {opacity:1} }
 .splitWorkspace[data-stacked=true] { flex-direction:column; }
 .reference { display:flex; flex:none; flex-basis:var(--reference-size,50%); min-width:0; min-height:0; flex-direction:column; background:var(--panel); overflow:hidden; }
-.referenceTabs { display:flex; flex:none; align-items:center; height:38px; padding:5px 12px; border-bottom:1px solid var(--line); }
-.referenceTab { display:flex; align-items:center; gap:7px; min-width:0; max-width:100%; padding:3px 5px 3px 9px; border-radius:6px; background:var(--surface-subtle); color:var(--accent-ink); font-size:11px; }
+.referenceTabs { display:flex; flex:none; align-items:center; gap:6px; height:38px; padding:5px 12px; border-bottom:1px solid var(--line); overflow-x:auto; scrollbar-width:none; }
+.referenceTab { display:flex; flex:none; align-items:center; gap:7px; min-width:0; max-width:100%; padding:3px 5px 3px 9px; border-radius:6px; color:var(--muted-strong); font-size:11px; }
+.referenceTab[data-active=true] { background:var(--surface-subtle); color:var(--accent-ink); }
 .referenceTab>svg { flex:none; }
 .referenceTab>span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .referenceTab button { display:grid; place-items:center; flex:none; width:23px; height:23px; padding:0; border:0; border-radius:4px; background:transparent; color:var(--muted-strong); cursor:pointer; }
 .referenceTab button:hover { background:var(--surface-hover); color:var(--ink); }
 .referenceTab button:focus-visible { outline:2px solid var(--accent); }
+.referenceTab .tabTitle { display:block; width:auto; min-width:0; height:23px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font:inherit; color:inherit; }
 .resizer { position:relative; z-index:1; flex:none; width:5px; padding:0; border:0; border-left:1px solid var(--line); background:var(--panel); cursor:col-resize; touch-action:none; }
 .resizer::after { position:absolute; inset:0 -3px; content:''; }
 .resizer:hover,.resizer:focus-visible,.resizer:active { background:var(--accent-soft); border-color:var(--accent-soft-line); outline:none; }

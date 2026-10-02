@@ -28,6 +28,7 @@ export const commentThreadSchema = pageScopeSchema.extend({
 }).refine(thread => thread.kind === 'issue' ? thread.status !== null : thread.status === null);
 export const commentSchema = workspaceScopeSchema.extend({
   id: entityIdSchema, threadId: entityIdSchema, authorId: entityIdSchema,
+  replyToCommentId: entityIdSchema.nullable(),
   bodyMd: z.string().trim().min(1).max(50_000), createdAt: timestampSchema, updatedAt: timestampSchema,
 });
 export const checkpointSummarySchema = pageScopeSchema.extend({

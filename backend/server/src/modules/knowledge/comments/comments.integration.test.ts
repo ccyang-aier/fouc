@@ -18,6 +18,7 @@ import {
   replyCommentThread,
   resolveCommentThread,
   setCommentLike,
+  updateOwnComment,
 } from './mutations';
 import { listPageCommentThreads } from './queries';
 
@@ -179,6 +180,54 @@ describe('comment thread persistence and permissions', () => {
     await expectCode(() => withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) => replyCommentThread(db, {
       workspaceId: scope.workspaceId, threadId: randomUUID(), userId: owner, bodyMd: 'Missing thread',
     })), 'COMMENT_THREAD_NOT_FOUND');
+  });
+
+  test('editing persists only for the author, obeys page ACL and tenant scope, and preserves replies and likes', async () => {
+    const { pages } = await fixture.tree();
+    const scope = { workspaceId: fixture.alpha.id, pageId: pages[1].pageId };
+    const owner = fixture.owner.identity.userId;
+    const reader = fixture.reader.identity.userId;
+    await grant(pages[0], [{ principal: principal('user', owner), level: 'full' }, { principal: principal('user', reader), level: 'comment' }]);
+    const created = await withWorkspaceTenant(fixture.pool, scope.workspaceId, db => createCommentThread(db, { ...scope, userId: owner, bodyMd: 'Original' }));
+    await withWorkspaceTenant(fixture.pool, scope.workspaceId, db => replyCommentThread(db, { workspaceId: scope.workspaceId, threadId: created.thread.id, userId: reader, bodyMd: 'Reply' }));
+    await withWorkspaceTenant(fixture.pool, scope.workspaceId, db => setCommentLike(db, { workspaceId: scope.workspaceId, commentId: created.comment.id, userId: reader, liked: true }));
+    const update = (workspaceId: string, userId: string, bodyMd: string) => withWorkspaceTenant(fixture.pool, workspaceId, db => updateOwnComment(db, { workspaceId, userId, commentId: created.comment.id, bodyMd }));
+    await expectCode(() => update(scope.workspaceId, reader, 'Other author'), 'COMMENT_ACCESS_DENIED');
+    await expectCode(() => update(fixture.beta.id, fixture.foreign.identity.userId, 'Cross tenant'), 'COMMENT_NOT_FOUND');
+    await expectCode(() => update(scope.workspaceId, owner, ' '), 'INVALID_COMMENT_INPUT');
+    const result = await update(scope.workspaceId, owner, '  Edited  ');
+    expect(result.comment).toMatchObject({ bodyMd: 'Edited', createdAt: created.comment.createdAt, authorId: owner, threadId: created.thread.id });
+    const saved = await fixture.apiClient({ cookie: fixture.owner.cookie, origin: fixture.server.webOrigin }).comment.update.mutate({ workspaceId: scope.workspaceId, commentId: created.comment.id, bodyMd: 'Edited through HTTP' });
+    expect(saved.comment).toMatchObject({ bodyMd: 'Edited through HTTP', likeCount: 1, liked: false });
+    const listed = await withWorkspaceTenant(fixture.pool, scope.workspaceId, db => listPageCommentThreads(db, { ...scope, userId: reader }));
+    expect(listed[0].comments.map(entry => entry.bodyMd)).toEqual(['Edited through HTTP', 'Reply']);
+    expect(listed[0].comments[0]).toMatchObject({ likeCount: 1, liked: true });
+    expect((await workspaceEvents(scope.workspaceId)).some(event => event.event?.type === 'comment.changed' && event.event.threadId === created.thread.id)).toBe(true);
+    // The ACL-only fixture cannot consume the reply notification job.
+    await fixture.resetJobs();
+    await grant(pages[0], [{ principal: principal('user', owner), level: 'view' }]);
+    await expectCode(() => update(scope.workspaceId, owner, 'No comment permission'), 'COMMENT_ACCESS_DENIED');
+  });
+
+  test('reply targets persist within one thread and deletion clears references without deleting replies', async () => {
+    const { pages } = await fixture.tree();
+    const scope = { workspaceId: fixture.alpha.id, pageId: pages[1].pageId };
+    const userId = fixture.owner.identity.userId;
+    await grant(pages[0], [{ principal: principal('user', userId), level: 'full' }]);
+    const root = await withWorkspaceTenant(fixture.pool, scope.workspaceId, db => createCommentThread(db, { ...scope, userId, bodyMd: 'Root' }));
+    const other = await withWorkspaceTenant(fixture.pool, scope.workspaceId, db => createCommentThread(db, { ...scope, userId, bodyMd: 'Other thread' }));
+    const first = await withWorkspaceTenant(fixture.pool, scope.workspaceId, db => replyCommentThread(db, { workspaceId: scope.workspaceId, threadId: root.thread.id, userId, bodyMd: 'First reply' }));
+    expect(first.comment.replyToCommentId).toBe(root.comment.id);
+    const second = await withWorkspaceTenant(fixture.pool, scope.workspaceId, db => replyCommentThread(db, { workspaceId: scope.workspaceId, threadId: root.thread.id, replyToCommentId: first.comment.id, userId, bodyMd: 'Reply to reply' }));
+    expect(second.comment.replyToCommentId).toBe(first.comment.id);
+    await expectCode(() => withWorkspaceTenant(fixture.pool, scope.workspaceId, db => replyCommentThread(db, { workspaceId: scope.workspaceId, threadId: root.thread.id, replyToCommentId: other.comment.id, userId, bodyMd: 'Wrong thread' })), 'COMMENT_NOT_FOUND');
+    await expectCode(() => withWorkspaceTenant(fixture.pool, scope.workspaceId, db => replyCommentThread(db, { workspaceId: scope.workspaceId, threadId: root.thread.id, replyToCommentId: randomUUID(), userId, bodyMd: 'Missing target' })), 'COMMENT_NOT_FOUND');
+    const read = () => withWorkspaceTenant(fixture.pool, scope.workspaceId, db => listPageCommentThreads(db, { ...scope, userId }));
+    expect((await read()).find(thread => thread.id === root.thread.id)?.comments.map(entry => entry.replyToCommentId)).toEqual([null, root.comment.id, first.comment.id]);
+    await withWorkspaceTenant(fixture.pool, scope.workspaceId, db => deleteOwnComment(db, { workspaceId: scope.workspaceId, userId, commentId: first.comment.id }));
+    expect((await read()).find(thread => thread.id === root.thread.id)?.comments.map(entry => [entry.bodyMd, entry.replyToCommentId])).toEqual([['Root', null], ['Reply to reply', null]]);
+    await withWorkspaceTenant(fixture.pool, scope.workspaceId, db => deleteCommentThreadAsAdmin(db, { workspaceId: scope.workspaceId, threadId: root.thread.id, userId }));
+    expect((await read()).some(thread => thread.id === root.thread.id)).toBe(false);
   });
 
   test('page comments have no issue status; likes are persisted, idempotent, tenant-scoped and cascade on deletion', async () => {

@@ -7,12 +7,10 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ChatsCircle } from '@phosphor-icons/react';
 import { motion } from 'motion/react';
 import type { Editor } from '@tiptap/react';
 import type { CommentThreadKind } from '@fouc/shared/knowledge/comments';
 import type { PageScope } from '@fouc/shared/knowledge/contracts';
-import { TextSelection } from '@tiptap/pm/state';
 import { isKnowledgeDataError } from '../data/errors';
 import { useKnowledgeAccessQuery } from '../data/hooks';
 import {
@@ -38,12 +36,15 @@ import {
   useReopenCommentThread,
   useResolveCommentThread,
   useSetCommentLike,
+  useUpdateComment,
 } from './comments-queries';
 import { deriveCommentSidebarModel } from './comments-view-model';
 import { CommentsSidebar } from './components/comments-sidebar';
 import { CommentComposer } from './components/comment-composer';
 import type { CommentAuthor } from './components/comment-entry';
+import type { CommentReplyTarget } from './components/comment-thread-card';
 import { useMembersQuery } from '../organization/hooks';
+import { commentLink, readCommentLink } from './comment-link';
 
 const EMPTY_THREAD_IDS: ReadonlySet<string> = new Set();
 const EMPTY_ANCHORS: CommentAnchor[] = [];
@@ -70,6 +71,7 @@ function commentErrorText(error: unknown, fallback: string): string {
 
 export interface PageCommentsProps {
   scope: PageScope;
+  knowledgeBaseId: string;
   /** The live Tiptap instance of the page editor (null while it mounts). */
   editor: Editor | null;
   canComment: boolean;
@@ -78,7 +80,7 @@ export interface PageCommentsProps {
   currentUser?: { id: string; name: string; image?: string | null } | null;
 }
 
-export function PageComments({ scope, editor, canComment, currentUser, railOpen: controlledRailOpen, onRailOpenChange }: PageCommentsProps) {
+export function PageComments({ scope, knowledgeBaseId, editor, canComment, currentUser, railOpen: controlledRailOpen, onRailOpenChange }: PageCommentsProps) {
   const threadsQuery = usePageCommentThreads(scope.workspaceId, scope.pageId);
   const accessQuery = useKnowledgeAccessQuery(scope.workspaceId);
   const currentUserId = accessQuery.data?.userId ?? null;
@@ -90,6 +92,7 @@ export function PageComments({ scope, editor, canComment, currentUser, railOpen:
   const reopenMutation = useReopenCommentThread(scope.workspaceId);
   const deleteMutation = useDeleteComment(scope.workspaceId);
   const likeMutation = useSetCommentLike(scope.workspaceId);
+  const editMutation = useUpdateComment(scope.workspaceId);
   const pageCommentMutation = useCreateCommentThread(scope.workspaceId);
   const pageDraft = useRef<{ threadId: string; commentId: string; bodyMd: string; kind: CommentThreadKind } | null>(null);
 
@@ -101,7 +104,6 @@ export function PageComments({ scope, editor, canComment, currentUser, railOpen:
   const [composing, setComposing] = useState<ComposingDraft | null>(null);
   const [composerError, setComposerError] = useState<string | null>(null);
   const [composerAt, setComposerAt] = useState<{ x: number; y: number } | null>(null);
-  const [selectionAt, setSelectionAt] = useState<{ x: number; y: number } | null>(null);
   const [localRailOpen, setLocalRailOpen] = useState(false);
   const railOpen = controlledRailOpen ?? localRailOpen;
   const membersQuery = useMembersQuery(railOpen ? scope.workspaceId : null);
@@ -112,11 +114,12 @@ export function PageComments({ scope, editor, canComment, currentUser, railOpen:
     return names;
   }, [membersQuery.data, currentUser]);
   const setRailOpen = onRailOpenChange ?? setLocalRailOpen;
-  const [replyingThreadId, setReplyingThreadId] = useState<string | null>(null);
+  const [replyTarget, setReplyTarget] = useState<CommentReplyTarget | null>(null);
   const activeThreadIdRef = useRef<string | null>(null);
   const lastDocRef = useRef<unknown>(null);
+  const followedLink = useRef<string | null>(null);
 
-  // ── Editor wiring: anchors, active thread, selection geometry ──
+  // ── Editor wiring: anchors and active thread ──
   useEffect(() => {
     if (!editor) return undefined;
     const readAnchors = () => {
@@ -125,26 +128,6 @@ export function PageComments({ scope, editor, canComment, currentUser, railOpen:
       lastDocRef.current = doc;
       setAnchorState({ editor, value: collectCommentAnchors(doc) });
     };
-    const refreshSelection = () => {
-      if (!editor.isEditable || !canComment || composing) {
-        setSelectionAt(null);
-        return;
-      }
-      const { from, to, empty } = editor.state.selection;
-      if (empty || !(editor.state.selection instanceof TextSelection)) {
-        setSelectionAt(null);
-        return;
-      }
-      try {
-        const start = editor.view.coordsAtPos(from);
-        const end = editor.view.coordsAtPos(to, -1);
-        const x = (Math.min(start.left, end.left) + Math.max(start.right, end.right)) / 2;
-        setSelectionAt({ x, y: Math.min(start.top, end.top) });
-      } catch {
-        setSelectionAt(null);
-      }
-    };
-    const hideSelection = () => setSelectionAt(null);
     const onTransaction = () => {
       const id = activeCommentThreadId(editor.state);
       // A newly picked anchor (text or badge click) is a request to read the
@@ -154,20 +137,13 @@ export function PageComments({ scope, editor, canComment, currentUser, railOpen:
       setActiveThreadId(id);
     };
     readAnchors();
-    refreshSelection();
     editor.on('transaction', onTransaction);
     editor.on('update', readAnchors);
-    editor.on('selectionUpdate', refreshSelection);
-    editor.on('focus', refreshSelection);
-    editor.on('blur', hideSelection);
     return () => {
       editor.off('transaction', onTransaction);
       editor.off('update', readAnchors);
-      editor.off('selectionUpdate', refreshSelection);
-      editor.off('focus', refreshSelection);
-      editor.off('blur', hideSelection);
     };
-  }, [editor, canComment, composing, setRailOpen]);
+  }, [editor, setRailOpen]);
 
   // The active thread's card scrolls into view inside the rail.
   useEffect(() => {
@@ -214,6 +190,21 @@ export function PageComments({ scope, editor, canComment, currentUser, railOpen:
     }
   }, [editor, model, pendingThreadIds, threads]);
 
+  // A document link selects the discussion through the same editor event as
+  // an anchor click, including page comments that have no text selection.
+  useEffect(() => {
+    const target = readCommentLink(window.location.href);
+    if (!editor || !target || target.source !== 'workspace' || target.workspaceId !== scope.workspaceId || target.pageId !== scope.pageId || target.knowledgeBaseId !== knowledgeBaseId || followedLink.current === target.commentId) return;
+    const thread = threads.find(thread => thread.comments.some(entry => entry.id === target.commentId));
+    if (!thread) return;
+    if (activeCommentThreadId(editor.state) !== thread.id) {
+      editor.view.dispatch(editor.state.tr.setMeta(commentsPluginKey, { type: 'select', id: thread.id }).setMeta('addToHistory', false));
+    }
+    if (!railOpen) return;
+    followedLink.current = target.commentId;
+    document.querySelector(`[data-comment-id="${target.commentId}"]`)?.scrollIntoView({ block: 'nearest' });
+  }, [scope.workspaceId, scope.pageId, knowledgeBaseId, threads, railOpen, editor]);
+
   const dispatchRemoveAnchor = useCallback((threadId: string, options: { userAction: boolean }) => {
     if (!editor) return;
     const tr = buildRemoveCommentAnchorTransaction(editor.state, threadId);
@@ -235,24 +226,25 @@ export function PageComments({ scope, editor, canComment, currentUser, railOpen:
     setComposerError(null);
     setComposerAt(point);
   }, [editor, canComment, composing]);
-  const beginCompose = () => { if (selectionAt) beginComposeAt(selectionAt); };
   useEffect(() => {
     if (!editor || !editor.isEditable || !canComment || composing) return;
     return bindSelectionCommentComposer(editor, beginComposeAt);
   }, [editor, canComment, composing, beginComposeAt]);
 
-  const submitCompose = useCallback(async (bodyMd: string, kind: CommentThreadKind) => {
-    if (!composing) return;
+  const submitCompose = useCallback(async (bodyMd: string, kind: CommentThreadKind, mentions: string[]) => {
+    if (!composing) return false;
     setComposerError(null);
     try {
-      await createMutation.mutateAsync({ pageId: scope.pageId, threadId: composing.threadId, commentId: composing.commentId, bodyMd, kind, anchorKind: 'selection' });
+      await createMutation.mutateAsync({ pageId: scope.pageId, threadId: composing.threadId, commentId: composing.commentId, bodyMd, kind, mentions, anchorKind: 'selection' });
       setComposing(null);
       setComposerAt(null);
       if (editor) selectCommentThread(editor.view, composing.threadId, { flash: true });
       setRailOpen(true);
+      return true;
     } catch (error: unknown) {
       // The optimistic anchor stays; retry resubmits the exact same ids.
       setComposerError(commentErrorText(error, '评论发送失败，请重试。'));
+      return false;
     }
   }, [composing, createMutation, scope.pageId, editor, setRailOpen]);
 
@@ -264,14 +256,14 @@ export function PageComments({ scope, editor, canComment, currentUser, railOpen:
     setComposerError(null);
   }, [composing, dispatchRemoveAnchor]);
 
-  const submitPageComment = useCallback(async (bodyMd: string, kind: CommentThreadKind) => {
+  const submitPageComment = useCallback(async (bodyMd: string, kind: CommentThreadKind, mentions: string[]) => {
     if (!canComment) return false;
     if (!pageDraft.current || pageDraft.current.bodyMd !== bodyMd || pageDraft.current.kind !== kind) {
       pageDraft.current = { threadId: crypto.randomUUID(), commentId: crypto.randomUUID(), bodyMd, kind };
     }
     pageCommentMutation.reset();
     try {
-      await pageCommentMutation.mutateAsync({ ...pageDraft.current, pageId: scope.pageId, anchorKind: 'page' });
+      await pageCommentMutation.mutateAsync({ ...pageDraft.current, pageId: scope.pageId, mentions, anchorKind: 'page' });
       pageDraft.current = null;
       return true;
     } catch { return false; }
@@ -282,6 +274,19 @@ export function PageComments({ scope, editor, canComment, currentUser, railOpen:
     try { await likeMutation.mutateAsync({ commentId, liked }); }
     catch { /* The entry retains its current value and shows a retryable error. */ }
   }, [likeMutation]);
+
+  const handleEdit = useCallback(async (commentId: string, bodyMd: string) => {
+    editMutation.reset();
+    try { await editMutation.mutateAsync({ commentId, bodyMd }); return true; }
+    catch { return false; }
+  }, [editMutation]);
+
+  const handleCopyLink = useCallback(async (commentId: string) => {
+    try {
+      await navigator.clipboard.writeText(commentLink(window.location.href, { ...scope, knowledgeBaseId, source: 'workspace' }, commentId));
+      return true;
+    } catch { return false; }
+  }, [scope, knowledgeBaseId]);
 
   // ── Sidebar actions ──
   const locateThread = useCallback((threadId: string) => {
@@ -296,13 +301,15 @@ export function PageComments({ scope, editor, canComment, currentUser, railOpen:
     setActiveThreadId(threadId);
   }, [editor]);
 
-  const handleReply = useCallback(async (threadId: string, bodyMd: string) => {
+  const handleReply = useCallback(async (target: CommentReplyTarget, bodyMd: string, mentions: string[]) => {
     replyMutation.reset();
     try {
-      await replyMutation.mutateAsync({ threadId, bodyMd });
-      setReplyingThreadId(null);
+      await replyMutation.mutateAsync({ threadId: target.threadId, replyToCommentId: target.commentId, bodyMd, mentions });
+      setReplyTarget(null);
+      return true;
     } catch {
-      // The card renders the failure with its own retry affordance.
+      // Keep the reply draft and target available for retry.
+      return false;
     }
   }, [replyMutation]);
 
@@ -364,22 +371,6 @@ export function PageComments({ scope, editor, canComment, currentUser, railOpen:
 
   return (
     <>
-      {selectionAt && !composing && canComment && editor ? (
-        <motion.button
-          type="button"
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.14, ease: [0.22, 1, 0.36, 1] }}
-          style={{ left: Math.min(Math.max(selectionAt.x, 56), (typeof window === 'undefined' ? 1024 : window.innerWidth) - 56), top: selectionAt.y - 36 }}
-          className="fixed z-30 flex h-7 -translate-x-1/2 items-center gap-1.5 rounded-[6px] border border-[var(--floating-border)] bg-[var(--panel)] px-2.5 text-[11.5px] font-medium text-[var(--ink-soft)] shadow-[var(--floating-shadow)] outline-none transition-colors hover:bg-[var(--surface-subtle)] focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)]"
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={beginCompose}
-        >
-          <ChatsCircle aria-hidden className="size-3.5 text-[var(--warn-ink)]" />
-          评论
-        </motion.button>
-      ) : null}
-
       {composing && composerAt ? (
         <motion.div
           role="dialog"
@@ -390,7 +381,7 @@ export function PageComments({ scope, editor, canComment, currentUser, railOpen:
           style={{ left: popoverX, top: composerAt.y > 240 ? undefined : composerAt.y + 22, bottom: composerAt.y > 240 ? (typeof window === 'undefined' ? 480 : window.innerHeight) - composerAt.y + 14 : undefined }}
           className="fixed z-30 w-[292px] -translate-x-1/2 rounded-[10px] border border-[var(--floating-border)] bg-[var(--panel)] p-3 shadow-[var(--floating-shadow)]"
         >
-          <p className="mb-2 line-clamp-2 rounded-[5px] bg-[color-mix(in_srgb,var(--warn-ink)_7%,transparent)] px-1.5 py-1 text-[11.5px] leading-relaxed text-[var(--ink-soft)]">
+          <p className="mb-2 line-clamp-2 border-b border-[var(--line)] px-1.5 py-2 text-[11.5px] leading-relaxed text-[var(--ink-soft)]">
             {composing.excerpt}
           </p>
           <CommentComposer
@@ -400,7 +391,8 @@ export function PageComments({ scope, editor, canComment, currentUser, railOpen:
             sending={createMutation.isPending}
             error={composerError}
             allowIssue
-            onSubmit={(bodyMd, kind) => void submitCompose(bodyMd, kind)}
+            onSubmit={submitCompose}
+            authors={authors}
             onCancel={cancelCompose}
           />
         </motion.div>
@@ -409,7 +401,7 @@ export function PageComments({ scope, editor, canComment, currentUser, railOpen:
       {railOpen ? (
         <CommentsSidebar
           model={model}
-          replyingThreadId={replyingThreadId}
+          replyTarget={replyTarget}
           activeThreadId={activeThreadId}
           onRemoveOrphan={handleRemoveOrphan}
           status={threadsQuery.isPending ? 'loading' : threadsQuery.isError ? 'error' : 'ready'}
@@ -423,16 +415,19 @@ export function PageComments({ scope, editor, canComment, currentUser, railOpen:
           onCreate={submitPageComment}
           like={{ pending: likeMutation.isPending, commentId: likeMutation.variables?.commentId ?? null, error: likeMutation.isError ? commentErrorText(likeMutation.error, '点赞失败，请重试。') : null }}
           onLike={(commentId, liked) => void handleLike(commentId, liked)}
+          edit={{ pending: editMutation.isPending, commentId: editMutation.variables?.commentId ?? null, error: editMutation.isError ? commentErrorText(editMutation.error, '保存失败，请重试。') : null }}
+          onEdit={handleEdit}
+          onCopyLink={handleCopyLink}
           reply={replyState}
           resolve={resolveState}
           deletingCommentId={deleteMutation.isPending ? deleteMutation.variables ?? null : null}
           deleteError={deleteMutation.isError ? { commentId: deleteMutation.variables ?? null, message: commentErrorText(deleteMutation.error, '删除失败，评论已保留，请重试。') } : null}
           onLocate={locateThread}
-          onReply={(threadId, bodyMd) => void handleReply(threadId, bodyMd)}
+          onReply={handleReply}
           onResolve={(threadId) => void handleResolve(threadId)}
           onReopen={(threadId) => void handleReopen(threadId)}
           onDeleteComment={(commentId) => void handleDeleteComment(commentId)}
-          onToggleReply={(threadId, open) => setReplyingThreadId(open ? threadId : null)}
+          onReplyTargetChange={target => { if (!replyMutation.isPending) { replyMutation.reset(); setReplyTarget(target); } }}
         />
       ) : null}
     </>

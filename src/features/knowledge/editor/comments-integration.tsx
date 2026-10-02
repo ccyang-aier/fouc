@@ -27,6 +27,7 @@ export function PageCommentsTrigger({ scope, open, onToggle }: { scope: PageScop
 
 export function PageCommentsLayer({
   scope,
+  knowledgeBaseId,
   editor,
   level,
   children,
@@ -35,6 +36,7 @@ export function PageCommentsLayer({
   currentUser,
 }: {
   scope: PageScope;
+  knowledgeBaseId: string;
   editor: Editor | null;
   level: PermissionLevel;
   children: ReactNode;
@@ -45,7 +47,7 @@ export function PageCommentsLayer({
   return (
     <div className={styles.rail} data-document-sidebar>
       {children}
-      <PageComments scope={scope} editor={editor} currentUser={currentUser} canComment={levelSatisfies(level, 'comment')} railOpen={railOpen} onRailOpenChange={onRailOpenChange} />
+      <PageComments scope={scope} knowledgeBaseId={knowledgeBaseId} editor={editor} currentUser={currentUser} canComment={levelSatisfies(level, 'comment')} railOpen={railOpen} onRailOpenChange={onRailOpenChange} />
     </div>
   );
 }

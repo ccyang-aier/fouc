@@ -142,7 +142,7 @@ export function PageEditorSurface({
   return (
     <DocumentEditorFrame appearanceScope={`workspace:${user?.id ?? 'guest'}:${scope.workspaceId}:${scope.pageId}`}
       navigation={{ editor, title: pageTitle.title, target: { workspaceId: scope.workspaceId, knowledgeBaseId, pageId: scope.pageId, source: 'workspace' } }}
-      sidebar={<PageCommentsLayer scope={scope} editor={editor} level={level} currentUser={user} railOpen={commentsOpen} onRailOpenChange={setCommentsOpen}>
+      sidebar={<PageCommentsLayer scope={scope} knowledgeBaseId={knowledgeBaseId} editor={editor} level={level} currentUser={user} railOpen={commentsOpen} onRailOpenChange={setCommentsOpen}>
         <PageReviewRail editor={editor} editable={view.editable} />
         {historyOpen && <aside className="flex h-full w-[320px] shrink-0 flex-col border-l border-[var(--line)] bg-[var(--panel)]">
           <HistoryPanel workspaceId={scope.workspaceId} pageId={scope.pageId} editor={editor} canEdit={view.editable} onClose={() => setHistoryOpen(false)} />

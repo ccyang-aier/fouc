@@ -112,9 +112,10 @@ export function formatCommentTime(iso: string, now: Date = new Date()): string {
 export interface CommentFilters {
   kind: 'all' | 'comment' | 'issue' | 'open' | 'resolved';
   likes: 'all' | 'mine' | 'popular';
-  time: 'all' | 'week' | 'month' | 'newest' | 'oldest';
+  time: 'all' | 'week' | 'month';
+  sort: 'all' | 'newest' | 'oldest';
 }
-export const defaultCommentFilters: CommentFilters = { kind: 'all', likes: 'all', time: 'all' };
+export const defaultCommentFilters: CommentFilters = { kind: 'all', likes: 'all', time: 'all', sort: 'all' };
 
 /** All filters compose; default order follows document anchors, then page comments. */
 export function filterCommentGroups(groups: readonly CommentThreadGroup[], filters: CommentFilters, now = Date.now()): CommentThreadGroup[] {
@@ -126,6 +127,6 @@ export function filterCommentGroups(groups: readonly CommentThreadGroup[], filte
   });
   const likeCount = (group: CommentThreadGroup) => group.thread.comments.reduce((sum, entry) => sum + entry.likeCount, 0);
   if (filters.likes === 'popular') filtered.sort((a, b) => likeCount(b) - likeCount(a) || b.thread.createdAt.localeCompare(a.thread.createdAt) || a.threadId.localeCompare(b.threadId));
-  else if (filters.time === 'newest' || filters.time === 'oldest') filtered.sort((a, b) => (filters.time === 'newest' ? -1 : 1) * (a.thread.createdAt.localeCompare(b.thread.createdAt) || a.threadId.localeCompare(b.threadId)));
+  else if (filters.sort === 'newest' || filters.sort === 'oldest') filtered.sort((a, b) => (filters.sort === 'newest' ? -1 : 1) * (a.thread.createdAt.localeCompare(b.thread.createdAt) || a.threadId.localeCompare(b.threadId)));
   return filtered;
 }

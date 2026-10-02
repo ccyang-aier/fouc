@@ -10,6 +10,7 @@ import {
   listCommentThreadsInputSchema,
   replyCommentThreadInputSchema,
   setCommentLikeInputSchema,
+  updateOwnCommentInputSchema,
 } from '@fouc/shared/knowledge/comments';
 import { KnowledgeCommentError } from '../comments/errors';
 import { createCommentThreadWithId } from '../comments/create-with-id';
@@ -19,6 +20,7 @@ import {
   replyCommentThread,
   resolveCommentThread,
   setCommentLike,
+  updateOwnComment,
 } from '../comments/mutations';
 import { listPageCommentThreads } from '../comments/queries';
 import type { CommentRow, CommentWithLikes, CommentThreadRow, CommentThreadWithComments } from '../comments/queries';
@@ -46,6 +48,7 @@ function serializeEntry(row: CommentRow & Partial<Pick<CommentWithLikes, 'likeCo
     id: row.id,
     threadId: row.threadId,
     authorId: row.authorId,
+    replyToCommentId: row.replyToCommentId,
     bodyMd: row.bodyMd,
     likeCount: row.likeCount ?? 0,
     liked: row.liked ?? false,
@@ -81,6 +84,17 @@ async function serializeFullThread(db: WorkspaceTenantTransaction, input: { work
 }
 
 export const knowledgeCommentRouterRecord = {
+  update: knowledgeMutation({
+    input: updateOwnCommentInputSchema,
+    scopes: ['write'],
+    resolve: ({ ctx, input }) => ctx.withTenant(async (db, authority) => {
+      try {
+        const updated = await updateOwnComment(db, { ...input, userId: authority.userId });
+        const thread = await serializeFullThread(db, { workspaceId: input.workspaceId, pageId: updated.pageId }, authority.userId, updated.comment.threadId);
+        return { comment: thread.comments.find(entry => entry.id === input.commentId)! };
+      } catch (error) { throw toCommentTrpcError(error); }
+    }),
+  }),
   like: knowledgeMutation({
     input: setCommentLikeInputSchema,
     scopes: ['write'],

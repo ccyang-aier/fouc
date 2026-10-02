@@ -30,6 +30,7 @@ function thread(id: string, overrides: Partial<CommentThread> = {}): CommentThre
       id: `40000000-0000-4000-8000-${id.slice(-12)}`,
       threadId: id,
       authorId: '50000000-0000-4000-8000-000000000000',
+      replyToCommentId: null,
       likeCount: 0, liked: false,
       bodyMd: '一条评论',
       createdAt: '2026-09-26T08:00:00Z',
@@ -113,12 +114,12 @@ describe('free comments and composable filters', () => {
     const resolved = thread(T3, { kind: 'issue', anchorKind: 'page', status: 'resolved', createdAt: '2026-09-29T08:00:00Z' });
     const { groups } = derive({ threads: [ordinary, issue, resolved], anchors: [] });
     const now = Date.parse('2026-10-02T08:00:00Z');
-    expect(filterCommentGroups(groups, { kind: 'issue', likes: 'mine', time: 'week' }, now).map(group => group.threadId)).toEqual([T2]);
+    expect(filterCommentGroups(groups, { kind: 'issue', likes: 'mine', time: 'week', sort: 'all' }, now).map(group => group.threadId)).toEqual([T2]);
     expect(filterCommentGroups(groups, { ...defaultCommentFilters, kind: 'comment' }, now).map(group => group.threadId)).toEqual([T1]);
     expect(filterCommentGroups(groups, { ...defaultCommentFilters, kind: 'resolved' }, now).map(group => group.threadId)).toEqual([T3]);
     expect(filterCommentGroups(groups, { ...defaultCommentFilters, likes: 'popular' }, now).map(group => group.threadId)).toEqual([T2, T3, T1]);
-    expect(filterCommentGroups(groups, { ...defaultCommentFilters, time: 'newest' }, now).map(group => group.threadId)).toEqual([T3, T2, T1]);
-    expect(filterCommentGroups(groups, { ...defaultCommentFilters, time: 'oldest' }, now).map(group => group.threadId)).toEqual([T1, T2, T3]);
+    expect(filterCommentGroups(groups, { ...defaultCommentFilters, sort: 'newest' }, now).map(group => group.threadId)).toEqual([T3, T2, T1]);
+    expect(filterCommentGroups(groups, { ...defaultCommentFilters, sort: 'oldest' }, now).map(group => group.threadId)).toEqual([T1, T2, T3]);
     expect(filterCommentGroups(groups, { ...defaultCommentFilters, time: 'month' }, now).map(group => group.threadId)).toEqual([T2, T3]);
   });
 });

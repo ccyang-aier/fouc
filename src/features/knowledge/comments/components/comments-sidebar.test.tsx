@@ -10,18 +10,20 @@
 
 import { Window } from 'happy-dom';
 import { act } from 'react';
-import { createRoot, type Root } from 'react-dom/client';
+import type { Root } from 'react-dom/client';
 import { afterEach, beforeAll, describe, expect, test } from 'bun:test';
 import type { CommentThread } from '@fouc/shared/knowledge/comments';
 import { deriveCommentSidebarModel } from '../comments-view-model';
 import type { CommentAnchor } from '../comment-anchors';
-import { CommentsSidebar } from './comments-sidebar';
 import type { CommentsSidebarProps } from './comments-sidebar';
+import type { CommentReplyTarget } from './comment-thread-card';
 
 let window: Window;
+let createRoot: typeof import('react-dom/client')['createRoot'];
+let CommentsSidebar: typeof import('./comments-sidebar')['CommentsSidebar'];
 const roots: Root[] = [];
 
-beforeAll(() => {
+beforeAll(async () => {
   window = new Window({ url: 'https://knowledge.fouc.test/page' });
   const globals = window as unknown as Record<string, unknown>;
   for (const key of ['document', 'DOMParser', 'MutationObserver', 'Range', 'getSelection', 'HTMLElement', 'Element', 'Node', 'Text', 'Comment', 'customElements', 'requestAnimationFrame', 'Event', 'InputEvent', 'KeyboardEvent', 'MouseEvent', 'PointerEvent']) {
@@ -29,6 +31,8 @@ beforeAll(() => {
   }
   (globalThis as Record<string, unknown>).window = window;
   (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  ({ createRoot } = await import('react-dom/client'));
+  ({ CommentsSidebar } = await import('./comments-sidebar'));
 });
 
 afterEach(async () => {
@@ -45,7 +49,7 @@ function thread(id: string, options: { kind?: 'comment' | 'issue'; anchorKind?: 
   return {
     workspaceId: 'ws', id, pageId: 'page', kind: options.kind ?? 'issue', anchorKind: options.anchorKind ?? 'selection', status: options.kind === 'comment' ? null : options.status ?? 'open', createdAt, updatedAt: createdAt,
     comments: entries.map((entry, index) => ({
-      workspaceId: 'ws', id: entry.id, threadId: id, authorId: entry.authorId, bodyMd: entry.bodyMd, likeCount: 0, liked: false,
+      workspaceId: 'ws', id: entry.id, threadId: id, authorId: entry.authorId, replyToCommentId: index > 0 ? entries[index - 1].id : null, bodyMd: entry.bodyMd, likeCount: 0, liked: false,
       createdAt: new Date(Date.now() - (entry.minutesAgo ?? 30 - index) * 60_000).toISOString(),
       updatedAt: new Date(Date.now() - (entry.minutesAgo ?? 30 - index) * 60_000).toISOString(),
     })),
@@ -59,15 +63,16 @@ interface MountOptions {
   errorText?: string;
   canComment?: boolean;
   currentUserId?: string | null;
-  replyingThreadId?: string | null;
+  replyTarget?: CommentReplyTarget | null;
+  authors?: CommentsSidebarProps['authors'];
   reply?: { pending: boolean; threadId: string | null; error: string | null };
   resolve?: { pending: boolean; threadId: string | null; error: string | null };
 }
 
 /** The controller-owned callbacks the tests stub — the sidebar's own prop types. */
 type SidebarHandlers = Pick<CommentsSidebarProps,
-  'onRetry' | 'onClose' | 'onLocate' | 'onReply' | 'onResolve' | 'onReopen' | 'onDeleteComment' | 'onRemoveOrphan' | 'onToggleReply'
-  | 'onCreate' | 'onLike'
+  'onRetry' | 'onClose' | 'onLocate' | 'onReply' | 'onResolve' | 'onReopen' | 'onDeleteComment' | 'onRemoveOrphan' | 'onReplyTargetChange'
+  | 'onCreate' | 'onLike' | 'onEdit' | 'onCopyLink'
 >;
 
 async function mountSidebar(options: MountOptions, handlers: Partial<SidebarHandlers> = {}): Promise<HTMLElement> {
@@ -87,7 +92,7 @@ async function mountSidebar(options: MountOptions, handlers: Partial<SidebarHand
     root.render(
       <CommentsSidebar
         model={model}
-        replyingThreadId={options.replyingThreadId ?? null}
+        replyTarget={options.replyTarget ?? null}
         activeThreadId={null}
         onRemoveOrphan={handlers.onRemoveOrphan ?? (() => {})}
         status={options.status ?? 'ready'}
@@ -98,17 +103,21 @@ async function mountSidebar(options: MountOptions, handlers: Partial<SidebarHand
         create={{ pending: false, error: null }}
         like={{ pending: false, commentId: null, error: null }}
         onLike={handlers.onLike ?? (() => {})}
+        edit={{ pending: false, commentId: null, error: null }}
+        onEdit={handlers.onEdit ?? (async () => true)}
+        onCopyLink={handlers.onCopyLink ?? (async () => true)}
         canComment={canComment}
         currentUserId={options.currentUserId ?? 'me'}
+        authors={options.authors}
         reply={options.reply ?? { pending: false, threadId: null, error: null }}
         resolve={options.resolve ?? { pending: false, threadId: null, error: null }}
         deletingCommentId={null}
         onLocate={handlers.onLocate ?? (() => {})}
-        onReply={handlers.onReply ?? (() => {})}
+        onReply={handlers.onReply ?? (async () => true)}
         onResolve={handlers.onResolve ?? (() => {})}
         onReopen={handlers.onReopen ?? (() => {})}
         onDeleteComment={handlers.onDeleteComment ?? (() => {})}
-        onToggleReply={handlers.onToggleReply ?? (() => {})}
+        onReplyTargetChange={handlers.onReplyTargetChange ?? (() => {})}
       />,
     );
     await new Promise((resolve) => setTimeout(resolve, 0));
@@ -167,7 +176,7 @@ describe('CommentsSidebar states and interactions', () => {
     const cards = [...sidebar.querySelectorAll<HTMLElement>('[data-comment-card]')];
     expect(cards.map(card => card.dataset.commentCard)).toEqual(['late-but-first-in-text', 'early-created-but-later-in-text', 'resolved-one']);
     expect(sidebar.textContent).toContain('第一条');
-    expect(sidebar.querySelectorAll('button[aria-label="我的评论操作"]')).toHaveLength(1);
+    expect(sidebar.querySelectorAll('button[aria-label="评论操作"]')).toHaveLength(4);
     expect(sidebar.querySelector('[role="tab"]')).toBeNull();
     expect(sidebar.querySelectorAll('[aria-label="评论筛选"] button')).toHaveLength(3);
   });
@@ -190,45 +199,53 @@ describe('CommentsSidebar states and interactions', () => {
     expect(removed).toBe('ghost-anchor');
   });
 
-  test('the reply toggle asks the controller, empty submissions are guarded, failures render inline', async () => {
-    const toggles: Array<[string, boolean]> = [];
-    const requested = await mountSidebar(
-      { threads: [thread('t1')] },
-      { onToggleReply: (threadId: string, open: boolean) => { toggles.push([threadId, open]); } },
-    );
-    await click(buttonByText(requested, '回复'));
-    expect(toggles.at(-1)).toEqual(['t1', true]);
-
-    // The controller answers by remounting with the thread's composer open.
-    const replies: Array<[string, string]> = [];
-    const sidebar = await mountSidebar(
-      { threads: [thread('t1')], replyingThreadId: 't1' },
-      { onReply: (threadId: string, bodyMd: string) => { replies.push([threadId, bodyMd]); }, onToggleReply: (threadId: string, open: boolean) => { toggles.push([threadId, open]); } },
-    );
-    const composer = sidebar.querySelector('textarea');
+  test('replies address real entries, appear below their target, retain failed drafts and guard empty submissions', async () => {
+    const targets: Array<CommentReplyTarget | null> = [];
+    const entries = [
+      { id: 'root', authorId: 'alice', bodyMd: '根评论' },
+      { id: 'second', authorId: 'bob', bodyMd: '回复根' },
+      { id: 'third', authorId: 'alice', bodyMd: '回复第二条' },
+    ];
+    const requested = await mountSidebar({ threads: [thread('t1', { comments: entries })], authors: new Map([['alice', { name: 'Alice' }], ['bob', { name: 'Bob' }]]) }, {
+      onReplyTargetChange: target => { targets.push(target); },
+    });
+    const cards = requested.querySelectorAll('article article');
+    expect(cards.length).toBe(3);
+    expect(cards[0].getAttribute('data-reply')).toBe('false');
+    expect(cards[1].getAttribute('data-reply')).toBe('true');
+    expect(cards[2].getAttribute('data-reply')).toBe('true');
+    expect(cards[2].parentElement).toBe(cards[1].parentElement);
+    expect(cards[1].textContent).toContain('回复 Alice');
+    expect(cards[2].textContent).toContain('回复 Bob');
+    await click(buttonByText(cards[2] as HTMLElement, '回复'));
+    expect(targets.at(-1)).toEqual({ threadId: 't1', commentId: 'third' });
+    const replies: Array<[CommentReplyTarget, string]> = [];
+    const sidebar = await mountSidebar({
+      threads: [thread('t1')], replyTarget: { threadId: 't1', commentId: 't1-c1' },
+      reply: { pending: false, threadId: 't1', error: '请求过于频繁，请稍后重试。' },
+    }, {
+      onReply: async (target, body) => { replies.push([target, body]); return false; },
+      onReplyTargetChange: target => { targets.push(target); },
+    });
+    const composer = sidebar.querySelector<HTMLTextAreaElement>('[data-comment-id="t1-c1"] textarea[placeholder^="回复"]')!;
     expect(composer).not.toBeNull();
-    expect(composer!.getAttribute('placeholder')).toContain('回复');
-    // An untouched composer never submits: the send control is inert for an
-    // empty body even before its inline validation message appears.
-    const send = [...sidebar.querySelectorAll('button')].filter((button) => button.textContent === '回复').at(-1)!;
+    expect(sidebar.querySelector('footer textarea[placeholder^="回复"]')).toBeNull();
+    expect(sidebar.querySelector('footer textarea[placeholder^="写下评论"]')).not.toBeNull();
+    const send = sidebar.querySelector<HTMLButtonElement>('[aria-label="发送回复"]')!;
     await click(send);
     expect(replies).toEqual([]);
-    // Cancel hands the close decision back to the controller.
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')!.set!.call(composer, '保留的草稿');
+      composer.dispatchEvent(new window.Event('input', { bubbles: true }) as unknown as Event);
+    });
+    await act(async () => { composer.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true }) as unknown as Event); });
+    expect(replies).toEqual([[{ threadId: 't1', commentId: 't1-c1' }, '保留的草稿']]);
+    expect(composer.value).toBe('保留的草稿');
+    expect(sidebar.querySelector('[data-comment-id="t1-c1"] [role="alert"]')?.textContent).toContain('请求过于频繁');
     await click(buttonByText(sidebar, '取消'));
-    expect(toggles.at(-1)).toEqual(['t1', false]);
-
-    // While the mutation runs, the send control shows the pending state.
-    const pending = await mountSidebar({
-      threads: [thread('t1')], replyingThreadId: 't1',
-      reply: { pending: true, threadId: 't1', error: null },
-    });
-    expect(pending.textContent).toContain('发送中…');
-
-    const failed = await mountSidebar({
-      threads: [thread('t1')],
-      reply: { pending: false, threadId: 't1', error: '请求过于频繁，请稍后重试。' },
-    });
-    expect(failed.querySelector('[role="alert"]')?.textContent).toContain('请求过于频繁');
+    expect(targets.at(-1)).toBeNull();
+    const pending = await mountSidebar({ threads: [thread('t1')], replyTarget: { threadId: 't1', commentId: 't1-c1' }, reply: { pending: true, threadId: 't1', error: null } });
+    expect(pending.querySelector<HTMLButtonElement>('[aria-label="发送中…"]')?.disabled).toBe(true);
   });
 
   test('resolve calls back per thread and read-only sessions get no mutating controls', async () => {
@@ -241,7 +258,7 @@ describe('CommentsSidebar states and interactions', () => {
     expect(resolved).toBe('t-open');
 
     const readonly = await mountSidebar({ threads: [thread('t-open')], canComment: false });
-    expect(readonly.textContent).toContain('只读：当前权限不能评论');
+    expect(readonly.textContent).toContain('当前权限仅可查看评论');
     for (const label of ['回复', '标记解决']) {
       expect([...readonly.querySelectorAll('button')].some((button) => button.textContent === label)).toBe(false);
     }
@@ -255,7 +272,7 @@ describe('CommentsSidebar states and interactions', () => {
     await click(sidebar.querySelector<HTMLButtonElement>('[aria-label="点赞"]')!);
     expect(likes).toEqual([['free-c1', true]]);
     expect(sidebar.querySelector('textarea[placeholder="写下评论，分享你的想法…"]')).not.toBeNull();
-    expect(sidebar.textContent).toContain('作为问题');
+    expect(sidebar.querySelector('[aria-label="评论发表类型"]')).not.toBeNull();
   });
 
   test('resolved issues may still receive replies and read-only users cannot create or like comments', async () => {

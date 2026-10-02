@@ -43,6 +43,7 @@ function fullThread(overrides: Partial<CommentThread> = {}): CommentThread {
       id: commentId,
       threadId,
       authorId: '50000000-0000-4000-8000-000000000000',
+      replyToCommentId: null,
       likeCount: 0, liked: false,
       bodyMd: '第一条',
       createdAt: '2026-09-26T00:00:00Z',
@@ -97,6 +98,16 @@ describe('comments api · listThreads', () => {
 });
 
 describe('comments api · mutations', () => {
+  test('editing sends the workspace-scoped body and validates the saved entry', async () => {
+    const saved = { ...fullThread().comments[0], bodyMd: '已编辑' };
+    const { requests, fetchImpl } = capturingFetch(() => ({ status: 200, body: JSON.stringify([{ result: { data: { comment: saved } } }]) }));
+    expect((await apiWith(fetchImpl).updateComment(workspace, commentId, '已编辑')).comment).toEqual(saved);
+    expect(requests[0]!.url.startsWith(`${knowledgeTrpcUrl(origin, workspace)}/comment.update?`)).toBe(true);
+    expect(JSON.parse(requests[0]!.body!)).toEqual({ 0: { workspaceId: workspace, commentId, bodyMd: '已编辑' } });
+    const before = requests.length;
+    await expect(apiWith(fetchImpl).updateComment(workspace, commentId, ' ')).rejects.toMatchObject({ code: 'INVALID_REQUEST' });
+    expect(requests).toHaveLength(before);
+  });
   test('create posts the client thread and comment ids the CRDT anchor already carries', async () => {
     const { requests, fetchImpl } = capturingFetch(() => ({ status: 200, body: JSON.stringify([{ result: { data: createdResult() } }]) }));
     const result = await apiWith(fetchImpl).createThread(workspace, { pageId: page, threadId, commentId, kind: 'issue', anchorKind: 'selection', bodyMd: '锚点评论' });

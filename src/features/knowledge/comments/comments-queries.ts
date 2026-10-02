@@ -82,3 +82,11 @@ export function useSetCommentLike(workspaceId: string) {
     onSuccess: invalidate,
   });
 }
+
+export function useUpdateComment(workspaceId: string) {
+  const invalidate = useCommentInvalidation(workspaceId);
+  return useMutation({
+    mutationFn: (input: { commentId: string; bodyMd: string }) => knowledgeCommentsApi.updateComment(workspaceId, input.commentId, input.bodyMd),
+    onSuccess: invalidate,
+  });
+}

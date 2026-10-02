@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { and, eq, ne, count } from 'drizzle-orm';
+import { and, asc, eq, ne, count } from 'drizzle-orm';
 import { z } from 'zod';
 import { commentThreadKindSchema, commentAnchorKindSchema, entityIdSchema, pageScopeSchema, workspaceScopeSchema } from '@fouc/shared/knowledge/contracts';
 import { comment, commentThread, commentLike, member } from '../../../platform/database/workspace/schema';
@@ -25,6 +25,7 @@ const createInputSchema = pageScopeSchema.extend({
 
 const replyInputSchema = workspaceScopeSchema.extend({
   threadId: entityIdSchema,
+  replyToCommentId: entityIdSchema.optional(),
   userId: entityIdSchema,
   bodyMd: bodySchema,
   mentions: mentionsSchema.default([]),
@@ -70,9 +71,14 @@ export async function replyCommentThread(db: WorkspaceTenantTransaction, input: 
   const thread = await lockedThread(db, parsed.workspaceId, parsed.threadId);
   const scope = { workspaceId: parsed.workspaceId, pageId: thread.pageId };
   await requireCommentAccess(db, { userId: parsed.userId, scope, required: 'comment' });
+  const [target] = await db.select({ id: comment.id }).from(comment).where(and(
+    eq(comment.workspaceId, parsed.workspaceId), eq(comment.threadId, thread.id),
+    parsed.replyToCommentId ? eq(comment.id, parsed.replyToCommentId) : undefined,
+  )).orderBy(asc(comment.createdAt), asc(comment.id)).limit(1);
+  if (!target) throw new KnowledgeCommentError('COMMENT_NOT_FOUND');
   const commentId = randomUUID();
   const [entry] = await db.insert(comment).values({
-    workspaceId: parsed.workspaceId, id: commentId, threadId: thread.id, authorId: parsed.userId, bodyMd: parsed.bodyMd,
+    workspaceId: parsed.workspaceId, id: commentId, threadId: thread.id, authorId: parsed.userId, replyToCommentId: target.id, bodyMd: parsed.bodyMd,
   }).returning();
   const [activeThread] = await db.update(commentThread).set({ updatedAt: new Date() })
     .where(and(eq(commentThread.workspaceId, parsed.workspaceId), eq(commentThread.id, thread.id))).returning();
@@ -111,6 +117,26 @@ export function reopenCommentThread(db: WorkspaceTenantTransaction, input: unkno
   return transitionThread(db, input, 'open');
 }
 
+/** Editing uses the same thread lock, page ACL and author boundary as deletion. */
+export async function updateOwnComment(db: WorkspaceTenantTransaction, input: unknown): Promise<{ comment: CommentRow; pageId: string }> {
+  const parsed = parse(commentTargetSchema.extend({ bodyMd: bodySchema }), input);
+  const [entry] = await db.select().from(comment)
+    .where(and(eq(comment.workspaceId, parsed.workspaceId), eq(comment.id, parsed.commentId)));
+  if (!entry) throw new KnowledgeCommentError('COMMENT_NOT_FOUND');
+  const thread = await lockedThread(db, parsed.workspaceId, entry.threadId);
+  const scope = { workspaceId: parsed.workspaceId, pageId: thread.pageId };
+  await requireCommentAccess(db, { userId: parsed.userId, scope, required: 'comment' });
+  if (entry.authorId !== parsed.userId) throw new KnowledgeCommentError('COMMENT_ACCESS_DENIED');
+  const updatedAt = new Date();
+  const [updated] = await db.update(comment).set({ bodyMd: parsed.bodyMd, updatedAt })
+    .where(and(eq(comment.workspaceId, parsed.workspaceId), eq(comment.id, entry.id))).returning();
+  if (!updated) throw new KnowledgeCommentError('COMMENT_NOT_FOUND');
+  await db.update(commentThread).set({ updatedAt })
+    .where(and(eq(commentThread.workspaceId, parsed.workspaceId), eq(commentThread.id, thread.id)));
+  await emitCommentThreadChanged(db, scope, thread.id);
+  return { comment: updated, pageId: thread.pageId };
+}
+
 /** Authors may remove their own comments; a thread whose last comment is gone is removed with it. */
 export async function deleteOwnComment(db: WorkspaceTenantTransaction, input: unknown): Promise<{ threadDeleted: boolean }> {
   const parsed = parse(commentTargetSchema, input);
@@ -121,6 +147,7 @@ export async function deleteOwnComment(db: WorkspaceTenantTransaction, input: un
   const scope = { workspaceId: parsed.workspaceId, pageId: thread.pageId };
   await requireCommentAccess(db, { userId: parsed.userId, scope, required: 'comment' });
   if (entry.authorId !== parsed.userId) throw new KnowledgeCommentError('COMMENT_ACCESS_DENIED');
+  await db.update(comment).set({ replyToCommentId: null }).where(and(eq(comment.workspaceId, parsed.workspaceId), eq(comment.replyToCommentId, entry.id)));
   await db.delete(comment).where(and(eq(comment.workspaceId, parsed.workspaceId), eq(comment.id, entry.id)));
   const remaining = await db.select({ id: comment.id }).from(comment)
     .where(and(eq(comment.workspaceId, parsed.workspaceId), eq(comment.threadId, thread.id)));

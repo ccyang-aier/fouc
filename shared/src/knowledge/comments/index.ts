@@ -19,6 +19,7 @@ export const commentEntrySchema = z.strictObject({
   id: entityIdSchema,
   threadId: entityIdSchema,
   authorId: entityIdSchema,
+  replyToCommentId: entityIdSchema.nullable(),
   bodyMd: z.string(),
   createdAt: timestampSchema,
   updatedAt: timestampSchema,
@@ -49,6 +50,7 @@ export type CreateCommentThreadInput = z.input<typeof createCommentThreadInputSc
 
 export const replyCommentThreadInputSchema = workspaceScopeSchema.extend({
   threadId: entityIdSchema,
+  replyToCommentId: entityIdSchema.optional(),
   bodyMd: commentBodySchema,
   mentions: commentMentionsSchema.default([]),
 }).refine((input) => new Set(input.mentions).size === input.mentions.length);
@@ -59,6 +61,10 @@ export type CommentThreadTargetInput = z.infer<typeof commentThreadTargetInputSc
 
 export const deleteOwnCommentInputSchema = workspaceScopeSchema.extend({ commentId: entityIdSchema });
 export type DeleteOwnCommentInput = z.infer<typeof deleteOwnCommentInputSchema>;
+
+export const updateOwnCommentInputSchema = workspaceScopeSchema.extend({ commentId: entityIdSchema, bodyMd: commentBodySchema });
+export const updateOwnCommentResultSchema = z.strictObject({ comment: commentEntrySchema });
+export type UpdateOwnCommentResult = z.infer<typeof updateOwnCommentResultSchema>;
 
 /** Service results as they cross the wire (dates serialized, ids untouched). */
 export const createCommentThreadResultSchema = z.strictObject({

@@ -12,6 +12,8 @@ import {
   listCommentThreadsInputSchema,
   replyCommentThreadInputSchema,
   replyCommentThreadResultSchema,
+  updateOwnCommentInputSchema,
+  updateOwnCommentResultSchema,
 } from '@fouc/shared/knowledge/comments';
 import type {
   CommentThread,
@@ -21,6 +23,7 @@ import type {
   CreateCommentThreadResult,
   DeleteOwnCommentResult,
   ReplyCommentThreadResult,
+  UpdateOwnCommentResult,
 } from '@fouc/shared/knowledge/comments';
 import { getFoucApiOrigin } from '@/lib/fouc-api-endpoint';
 import { KnowledgeDataError, normalizeKnowledgeError } from '../data/errors';
@@ -44,10 +47,11 @@ function assertCommentInput(schema: { safeParse(payload: unknown): { success: tr
   }
 }
 
-export type ReplyKnowledgeCommentInput = { threadId: string; bodyMd: string; mentions?: string[] };
+export type ReplyKnowledgeCommentInput = { threadId: string; replyToCommentId?: string; bodyMd: string; mentions?: string[] };
 export type CreateKnowledgeCommentInput = { pageId: string; threadId: string; commentId: string; kind: CommentThreadKind; anchorKind: 'page' | 'selection'; bodyMd: string; mentions?: string[] };
 
 export type KnowledgeCommentsApi = {
+  updateComment(workspaceId: string, commentId: string, bodyMd: string): Promise<UpdateOwnCommentResult>;
   setLike(workspaceId: string, commentId: string, liked: boolean): Promise<SetCommentLikeResult>;
   listThreads(workspaceId: string, pageId: string, signal?: AbortSignal): Promise<CommentThread[]>;
   createThread(workspaceId: string, input: CreateKnowledgeCommentInput, signal?: AbortSignal): Promise<CreateCommentThreadResult>;
@@ -70,6 +74,12 @@ export function createKnowledgeCommentsApi(deps: { resolveOrigin: () => Promise<
   };
 
   return {
+    async updateComment(workspaceId, commentId, bodyMd) {
+      const wire = { workspaceId, commentId, bodyMd };
+      assertCommentInput(updateOwnCommentInputSchema, wire, 'comment.update');
+      const payload = await run(workspaceId, undefined, client => client.mutation('comment.update', wire));
+      return parseCommentPayload(updateOwnCommentResultSchema, payload, 'comment.update');
+    },
     async setLike(workspaceId, commentId, liked) {
       const wire = setCommentLikeInputSchema.parse({ workspaceId, commentId, liked });
       const payload = await run(workspaceId, undefined, client => client.mutation('comment.like', wire));
@@ -87,7 +97,7 @@ export function createKnowledgeCommentsApi(deps: { resolveOrigin: () => Promise<
       return parseCommentPayload(createCommentThreadResultSchema, payload, 'comment.create');
     },
     async replyThread(workspaceId, input, signal) {
-      const wire = { workspaceId, threadId: input.threadId, bodyMd: input.bodyMd, mentions: input.mentions ?? [] };
+      const wire = { workspaceId, threadId: input.threadId, replyToCommentId: input.replyToCommentId, bodyMd: input.bodyMd, mentions: input.mentions ?? [] };
       assertCommentInput(replyCommentThreadInputSchema, wire, 'comment.reply');
       const payload = await run(workspaceId, signal, (client) => client.mutation('comment.reply', wire, { signal }));
       return parseCommentPayload(replyCommentThreadResultSchema, payload, 'comment.reply');

@@ -182,6 +182,7 @@ CREATE TABLE "workspace"."comment" (
 	"id" uuid NOT NULL,
 	"thread_id" uuid NOT NULL,
 	"author_id" uuid NOT NULL,
+	"reply_to_comment_id" uuid,
 	"body_md" text NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
@@ -474,6 +475,7 @@ ALTER TABLE "workspace"."block_embedding_staging" ADD CONSTRAINT "block_embeddin
 ALTER TABLE "workspace"."block_index" ADD CONSTRAINT "block_index_workspace_id_page_id_page_workspace_id_id_fk" FOREIGN KEY ("workspace_id","page_id") REFERENCES "workspace"."page"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "workspace"."comment" ADD CONSTRAINT "comment_author_id_user_id_fk" FOREIGN KEY ("author_id") REFERENCES "auth"."user"("id") ON DELETE no action ON UPDATE no action;
 ALTER TABLE "workspace"."comment" ADD CONSTRAINT "comment_thread_fk" FOREIGN KEY ("workspace_id","thread_id") REFERENCES "workspace"."comment_thread"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspace"."comment" ADD CONSTRAINT "comment_reply_target_fk" FOREIGN KEY ("workspace_id","reply_to_comment_id") REFERENCES "workspace"."comment"("workspace_id","id") ON DELETE no action ON UPDATE no action;
 ALTER TABLE "workspace"."comment_like" ADD CONSTRAINT "comment_like_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "workspace"."comment_like" ADD CONSTRAINT "comment_like_comment_fk" FOREIGN KEY ("workspace_id","comment_id") REFERENCES "workspace"."comment"("workspace_id","id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "workspace"."comment_thread" ADD CONSTRAINT "comment_thread_workspace_id_page_id_page_workspace_id_id_fk" FOREIGN KEY ("workspace_id","page_id") REFERENCES "workspace"."page"("workspace_id","id") ON DELETE cascade ON UPDATE no action;

@@ -113,6 +113,15 @@ function anchorStorageOf(editor: { storage?: unknown }): CommentAnchorStorage | 
   return mine ?? undefined;
 }
 
+/** Keep all fragments of a discussion connected to its raised badge on hover. */
+function updateHoveredBadge(view: EditorView, target: EventTarget | null): void {
+  const anchor = target instanceof Element ? target.closest('.fouc-comment-anchor, .fouc-comment-badge') : null;
+  const id = anchor && view.dom.contains(anchor) ? anchor.getAttribute('data-comment-thread') : null;
+  view.dom.querySelectorAll<HTMLElement>('.fouc-comment-badge').forEach(badge => {
+    badge.toggleAttribute('data-hovered', id !== null && badge.dataset.commentThread === id);
+  });
+}
+
 /** Reads the live context of an editor (null before the extension mounts). */
 export function commentAnchorContextOfEditor(editor: { storage?: unknown }): CommentAnchorContext | null {
   const storage = anchorStorageOf(editor);
@@ -169,6 +178,8 @@ function createCommentAnchorPlugin(storage: CommentAnchorStorage): Plugin<Commen
         return false;
       },
       handleDOMEvents: {
+        mouseover(view, event) { updateHoveredBadge(view, event.target); return false; },
+        mouseout(view, event) { updateHoveredBadge(view, event.relatedTarget); return false; },
         // Read the decorated target directly, including nested formatted text.
         // Consuming its click also prevents default caret placement from
         // overriding this explicit selection at the anchor boundary.
@@ -267,10 +278,11 @@ export function ensureCommentAnchorStyles(): void {
   white-space:nowrap;
   transition:box-shadow .15s ease,background-color .15s ease;
 }
-.ProseMirror .fouc-comment-badge:hover .fouc-comment-badge-label{background:var(--accent);color:#fff;}
 .ProseMirror .fouc-comment-badge[data-resolved="true"] .fouc-comment-badge-label{
   border-color:var(--line-strong);background:var(--surface-subtle);color:var(--muted-strong);
 }
+.ProseMirror .fouc-comment-badge:hover .fouc-comment-badge-label,
+.ProseMirror .fouc-comment-badge[data-hovered] .fouc-comment-badge-label{background:var(--accent);color:#fff;}
 `;
   if (!existing) document.head.append(style);
 }

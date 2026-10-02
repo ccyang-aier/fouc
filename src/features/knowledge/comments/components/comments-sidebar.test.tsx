@@ -26,7 +26,7 @@ const roots: Root[] = [];
 beforeAll(async () => {
   window = new Window({ url: 'https://knowledge.fouc.test/page' });
   const globals = window as unknown as Record<string, unknown>;
-  for (const key of ['document', 'DOMParser', 'MutationObserver', 'Range', 'getSelection', 'HTMLElement', 'Element', 'Node', 'Text', 'Comment', 'customElements', 'requestAnimationFrame', 'Event', 'InputEvent', 'KeyboardEvent', 'MouseEvent', 'PointerEvent']) {
+  for (const key of ['document', 'DOMParser', 'MutationObserver', 'ResizeObserver', 'Range', 'getSelection', 'getComputedStyle', 'HTMLElement', 'Element', 'Node', 'Text', 'Comment', 'customElements', 'requestAnimationFrame', 'Event', 'CustomEvent', 'InputEvent', 'KeyboardEvent', 'MouseEvent', 'PointerEvent']) {
     if (globals[key] !== undefined) (globalThis as Record<string, unknown>)[key] = globals[key];
   }
   (globalThis as Record<string, unknown>).window = window;
@@ -47,7 +47,7 @@ function thread(id: string, options: { kind?: 'comment' | 'issue'; anchorKind?: 
   const entries = options.comments ?? [{ id: `${id}-c1`, authorId: 'author-1', bodyMd: '首条评论' }];
   const createdAt = new Date(Date.now() - 30 * 60_000).toISOString();
   return {
-    workspaceId: 'ws', id, pageId: 'page', kind: options.kind ?? 'issue', anchorKind: options.anchorKind ?? 'selection', status: options.kind === 'comment' ? null : options.status ?? 'open', createdAt, updatedAt: createdAt,
+    workspaceId: 'ws', id, pageId: 'page', kind: options.kind ?? 'issue', anchorKind: options.anchorKind ?? 'selection', status: options.status ?? 'open', createdAt, updatedAt: createdAt,
     comments: entries.map((entry, index) => ({
       workspaceId: 'ws', id: entry.id, threadId: id, authorId: entry.authorId, replyToCommentId: index > 0 ? entries[index - 1].id : null, bodyMd: entry.bodyMd, likeCount: 0, liked: false,
       createdAt: new Date(Date.now() - (entry.minutesAgo ?? 30 - index) * 60_000).toISOString(),
@@ -135,6 +135,16 @@ async function click(element: HTMLElement) {
   await act(async () => {
     element.click();
   });
+}
+
+async function openEntryMenu(scope: HTMLElement) {
+  const trigger = scope.querySelector<HTMLButtonElement>('[aria-label="评论操作"]')!;
+  await act(async () => { trigger.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Enter', bubbles: true }) as unknown as Event); });
+  return window.document.querySelector('[role="menu"]') as unknown as HTMLElement;
+}
+
+function menuItem(menu: HTMLElement, text: string) {
+  return [...menu.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(item => item.textContent === text);
 }
 
 describe('CommentsSidebar states and interactions', () => {
@@ -254,20 +264,21 @@ describe('CommentsSidebar states and interactions', () => {
       { threads: [thread('t-open')] },
       { onResolve: (threadId: string) => { resolved = threadId; } },
     );
-    await click(sidebar.querySelector<HTMLButtonElement>('button[aria-label="标记解决"]')!);
+    await click(menuItem(await openEntryMenu(sidebar), '标记为已解决')!);
     expect(resolved).toBe('t-open');
 
     const readonly = await mountSidebar({ threads: [thread('t-open')], canComment: false });
     expect(readonly.textContent).toContain('当前权限仅可查看评论');
-    for (const label of ['回复', '标记解决']) {
+    for (const label of ['回复', '标记为已解决']) {
       expect([...readonly.querySelectorAll('button')].some((button) => button.textContent === label)).toBe(false);
     }
+    expect(menuItem(await openEntryMenu(readonly), '标记为已解决')).toBeUndefined();
   });
 
-  test('ordinary page comments have no resolution control or missing-anchor warning, and support likes', async () => {
+  test('ordinary page comments support resolution in the root menu and likes without a missing-anchor warning', async () => {
     const likes: Array<[string, boolean]> = [];
     const sidebar = await mountSidebar({ threads: [thread('free', { kind: 'comment', anchorKind: 'page' })] }, { onLike: (id, liked) => { likes.push([id, liked]); } });
-    expect(sidebar.querySelector('[aria-label="标记解决"]')).toBeNull();
+    expect(menuItem(await openEntryMenu(sidebar), '标记为已解决')).toBeDefined();
     expect(sidebar.textContent).not.toContain('原文已不存在');
     await click(sidebar.querySelector<HTMLButtonElement>('[aria-label="点赞"]')!);
     expect(likes).toEqual([['free-c1', true]]);
@@ -277,10 +288,30 @@ describe('CommentsSidebar states and interactions', () => {
 
   test('resolved issues may still receive replies and read-only users cannot create or like comments', async () => {
     const sidebar = await mountSidebar({ threads: [thread('done', { status: 'resolved' })] });
-    expect(sidebar.querySelector('button[aria-label="重新打开"]')).not.toBeNull();
+    expect(menuItem(await openEntryMenu(sidebar), '重新打开')).toBeDefined();
     expect(buttonByText(sidebar, '回复')).not.toBeNull();
     const readonly = await mountSidebar({ threads: [thread('free', { kind: 'comment', anchorKind: 'page' })], canComment: false });
     expect(readonly.querySelector('textarea')).toBeNull();
     expect(readonly.querySelector<HTMLButtonElement>('[aria-label="点赞"]')?.disabled).toBe(true);
+  });
+
+  test('resolved ordinary threads show a badge and reopen from the root menu, while replies have no thread action', async () => {
+    let reopened: string | null = null;
+    const sidebar = await mountSidebar({ threads: [thread('done', { kind: 'comment', status: 'resolved', comments: [
+      { id: 'root', authorId: 'me', bodyMd: '根评论' }, { id: 'reply', authorId: 'me', bodyMd: '回复' },
+    ] })] }, { onReopen: id => { reopened = id; } });
+    expect(sidebar.querySelector('[data-comment-id="root"] [data-resolved="true"]')?.textContent).toContain('已解决');
+    const rootMenu = await openEntryMenu(sidebar);
+    expect([...rootMenu.querySelectorAll('[role="menuitem"]')].map(item => item.textContent)).toEqual(['编辑', '重新打开', '复制链接', '删除']);
+    await click(menuItem(rootMenu, '重新打开')!);
+    expect(reopened).toBe('done');
+    expect(menuItem(await openEntryMenu(sidebar.querySelector('[data-comment-id="reply"]')!), '重新打开')).toBeUndefined();
+  });
+
+  test('resolution requests disable the menu action and surface server failures at their thread', async () => {
+    const pending = await mountSidebar({ threads: [thread('t1')], resolve: { pending: true, threadId: 't1', error: null } });
+    expect(menuItem(await openEntryMenu(pending), '标记中…')?.hasAttribute('data-disabled')).toBe(true);
+    const failed = await mountSidebar({ threads: [thread('t2')], resolve: { pending: false, threadId: 't2', error: '无法保存解决状态，请重试。' } });
+    expect(failed.querySelector('[role="alert"]')?.textContent).toContain('无法保存解决状态');
   });
 });

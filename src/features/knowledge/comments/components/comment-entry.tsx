@@ -21,6 +21,7 @@ export interface CommentEntryItemProps {
   canComment: boolean;
   isReply?: boolean;
   action?: ReactNode;
+  threadAction?: ReactNode;
   badge?: ReactNode;
   composer?: ReactNode;
   replyTo?: string;
@@ -32,7 +33,7 @@ export interface CommentEntryItemProps {
   onCopyLink: (commentId: string) => Promise<boolean>;
 }
 
-export function CommentEntryItem({ entry, author, isOwn, deleting, canComment, isReply, action, badge, composer, replyTo, onDelete, onLike, liking, edit, onEdit, onCopyLink }: CommentEntryItemProps) {
+export function CommentEntryItem({ entry, author, isOwn, deleting, canComment, isReply, action, threadAction, badge, composer, replyTo, onDelete, onLike, liking, edit, onEdit, onCopyLink }: CommentEntryItemProps) {
   const [editing, setEditing] = useState(false);
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
   const entryRef = useRef<HTMLElement>(null);
@@ -49,6 +50,7 @@ export function CommentEntryItem({ entry, author, isOwn, deleting, canComment, i
             <DropdownMenuTrigger asChild><button type="button" className={styles.iconButton} aria-label="评论操作" disabled={deleting || edit.pending}><DotsThree size={18} weight="bold" aria-hidden /></button></DropdownMenuTrigger>
             <DropdownMenuContent align="end" onCloseAutoFocus={event => { if (editing) { event.preventDefault(); entryRef.current?.querySelector('textarea')?.focus(); } }}>
               {isOwn && canComment && <DropdownMenuItem onSelect={() => { setEditing(true); setCopyStatus('idle'); }}><PencilSimple size={14} aria-hidden />编辑</DropdownMenuItem>}
+              {threadAction}
               <DropdownMenuItem onSelect={() => { void onCopyLink(entry.id).then(success => setCopyStatus(success ? 'copied' : 'error')); }}><LinkSimple size={14} aria-hidden />复制链接</DropdownMenuItem>
               {isOwn && canComment && <DropdownMenuItem className="text-[var(--err-ink)]" onSelect={() => onDelete(entry.id)} disabled={deleting}><TrashSimple size={14} aria-hidden />删除</DropdownMenuItem>}
             </DropdownMenuContent>

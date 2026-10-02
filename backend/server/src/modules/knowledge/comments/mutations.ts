@@ -55,7 +55,7 @@ export async function createCommentThread(db: WorkspaceTenantTransaction, input:
   const scope = { workspaceId: parsed.workspaceId, pageId: parsed.pageId };
   await requireCommentAccess(db, { userId: parsed.userId, scope, required: 'comment' });
   const threadId = randomUUID();
-  const [thread] = await db.insert(commentThread).values({ workspaceId: scope.workspaceId, id: threadId, pageId: scope.pageId, kind: parsed.kind, anchorKind: parsed.anchorKind, status: parsed.kind === 'issue' ? 'open' : null }).returning();
+  const [thread] = await db.insert(commentThread).values({ workspaceId: scope.workspaceId, id: threadId, pageId: scope.pageId, kind: parsed.kind, anchorKind: parsed.anchorKind }).returning();
   const [entry] = await db.insert(comment).values({
     workspaceId: scope.workspaceId, id: randomUUID(), threadId, authorId: parsed.userId, bodyMd: parsed.bodyMd,
   }).returning();
@@ -65,7 +65,7 @@ export async function createCommentThread(db: WorkspaceTenantTransaction, input:
   return { thread, comment: entry, notified };
 }
 
-/** Replies remain available for ordinary comments and issues, including resolved issues. */
+/** Replies remain available for ordinary comments and issues, including resolved threads. */
 export async function replyCommentThread(db: WorkspaceTenantTransaction, input: unknown): Promise<{ thread: CommentThreadRow; comment: CommentRow; notified: string[] }> {
   const parsed = parse(replyInputSchema, input);
   const thread = await lockedThread(db, parsed.workspaceId, parsed.threadId);
@@ -99,7 +99,6 @@ async function transitionThread(db: WorkspaceTenantTransaction, input: unknown, 
   const thread = await lockedThread(db, parsed.workspaceId, parsed.threadId);
   const scope = { workspaceId: parsed.workspaceId, pageId: thread.pageId };
   await requireCommentAccess(db, { userId: parsed.userId, scope, required: 'comment' });
-  if (thread.kind !== 'issue') throw new KnowledgeCommentError('INVALID_COMMENT_INPUT');
   if (thread.status === status) return { thread, changed: false };
   const [updated] = await db.update(commentThread).set({ status, updatedAt: new Date() })
     .where(and(eq(commentThread.workspaceId, parsed.workspaceId), eq(commentThread.id, thread.id)))

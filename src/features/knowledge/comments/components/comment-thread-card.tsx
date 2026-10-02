@@ -2,6 +2,7 @@
 
 import { ArrowUpRight, Chat, CheckCircle, WarningCircle, Quotes } from '@phosphor-icons/react';
 import type { ReactNode } from 'react';
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import type { CommentThreadGroup, OrphanAnchorGroup } from '../comments-view-model';
 import { CommentEntryItem, type CommentAuthor } from './comment-entry';
 import styles from './comments.module.css';
@@ -47,10 +48,10 @@ export function CommentThreadCard({ group, active, canComment, currentUserId, au
         return <CommentEntryItem key={entry.id} entry={entry} author={authors?.get(entry.authorId)} isOwn={currentUserId === entry.authorId} deleting={deletingCommentId === entry.id} canComment={canComment} isReply={index > 0} replyTo={replyTo} onDelete={onDeleteComment} onLike={onLike} liking={like.pending && like.commentId === entry.id}
           edit={{ pending: edit.pending && edit.commentId === entry.id, error: edit.commentId === entry.id ? edit.error : null }} onEdit={onEdit} onCopyLink={onCopyLink}
           composer={replyTarget?.threadId === group.threadId && replyTarget.commentId === entry.id ? replyComposer : undefined}
-          badge={index === 0 && group.thread.kind === 'issue' ? <span className={styles.issueBadge} data-resolved={resolved}>{resolved ? <CheckCircle size={14} /> : <WarningCircle size={14} />}{resolved ? '已解决' : '待解决'}</span> : undefined}
+          badge={index === 0 && (resolved || group.thread.kind === 'issue') ? <span className={styles.issueBadge} data-resolved={resolved}>{resolved ? <CheckCircle size={14} /> : <WarningCircle size={14} />}{resolved ? '已解决' : '待解决'}</span> : undefined}
+          threadAction={index === 0 && canComment ? <DropdownMenuItem disabled={resolvePending} onSelect={() => (resolved ? onReopen : onResolve)(group.threadId)}><CheckCircle size={14} aria-hidden />{resolvePending ? (resolved ? '重新打开中…' : '标记中…') : resolved ? '重新打开' : '标记为已解决'}</DropdownMenuItem> : undefined}
           action={<>
             {canComment && <button type="button" className={styles.replyButton} disabled={reply.pending} onClick={() => onStartReply({ threadId: group.threadId, commentId: entry.id })}><Chat size={16} aria-hidden />回复</button>}
-            {index === 0 && group.thread.kind === 'issue' && <button type="button" className={styles.resolve} aria-pressed={resolved} aria-label={resolved ? '重新打开' : '标记解决'} disabled={resolvePending || !canComment} onClick={() => (resolved ? onReopen : onResolve)(group.threadId)}><CheckCircle size={17} aria-hidden /><span>{resolvePending ? (resolved ? '重开中…' : '解决中…') : resolved ? '重开' : '解决'}</span></button>}
           </>} />;
       })}
     </div>

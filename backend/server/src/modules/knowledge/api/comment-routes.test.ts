@@ -273,9 +273,12 @@ describe('comment tRPC routes over the real HTTP boundary', () => {
     const owner = client(fixture.owner);
     const reader = client(fixture.reader);
     const created = await owner.comment.create.mutate({ ...scope, threadId: randomUUID(), commentId: randomUUID(), kind: 'comment', anchorKind: 'page', bodyMd: 'Free discussion' });
-    expect(created.thread).toMatchObject({ kind: 'comment', anchorKind: 'page', status: null });
+    expect(created.thread).toMatchObject({ kind: 'comment', anchorKind: 'page', status: 'open' });
     expect(created.comment).toMatchObject({ liked: false, likeCount: 0 });
-    await expect(owner.comment.resolve.mutate({ workspaceId: scope.workspaceId, threadId: created.thread.id })).rejects.toMatchObject({ data: { code: 'BAD_REQUEST' } });
+    const target = { workspaceId: scope.workspaceId, threadId: created.thread.id };
+    expect(await reader.comment.resolve.mutate(target)).toMatchObject({ thread: { kind: 'comment', status: 'resolved' }, changed: true });
+    expect((await owner.comment.list.query(scope))[0].status).toBe('resolved');
+    expect(await owner.comment.reopen.mutate(target)).toMatchObject({ thread: { kind: 'comment', status: 'open' }, changed: true });
     expect(await reader.comment.like.mutate({ workspaceId: scope.workspaceId, commentId: created.comment.id, liked: true })).toMatchObject({ liked: true, likeCount: 1 });
     expect(await reader.comment.like.mutate({ workspaceId: scope.workspaceId, commentId: created.comment.id, liked: true })).toMatchObject({ likeCount: 1 });
     const ownView = await owner.comment.list.query(scope);

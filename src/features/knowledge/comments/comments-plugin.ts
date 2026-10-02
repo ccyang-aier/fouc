@@ -169,11 +169,13 @@ function createCommentAnchorPlugin(storage: CommentAnchorStorage): Plugin<Commen
         return false;
       },
       handleDOMEvents: {
-        // The badge widget is not text; consuming its click keeps the caret put.
+        // Read the decorated target directly, including nested formatted text.
+        // Consuming its click also prevents default caret placement from
+        // overriding this explicit selection at the anchor boundary.
         click(view, event) {
           const target = event.target as HTMLElement | null;
-          const badge = target?.closest?.('.fouc-comment-badge');
-          const id = badge?.getAttribute('data-comment-thread');
+          const anchor = target?.closest?.('.fouc-comment-badge, .fouc-comment-anchor');
+          const id = anchor?.getAttribute('data-comment-thread');
           if (id) {
             selectCommentThread(view, id);
             return true;

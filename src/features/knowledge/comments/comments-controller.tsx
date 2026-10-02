@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import type { Editor } from '@tiptap/react';
+import type { Transaction } from '@tiptap/pm/state';
 import type { CommentThreadKind } from '@fouc/shared/knowledge/comments';
 import type { PageScope } from '@fouc/shared/knowledge/contracts';
 import { isKnowledgeDataError } from '../data/errors';
@@ -115,7 +116,6 @@ export function PageComments({ scope, knowledgeBaseId, editor, canComment, curre
   }, [membersQuery.data, currentUser]);
   const setRailOpen = onRailOpenChange ?? setLocalRailOpen;
   const [replyTarget, setReplyTarget] = useState<CommentReplyTarget | null>(null);
-  const activeThreadIdRef = useRef<string | null>(null);
   const lastDocRef = useRef<unknown>(null);
   const followedLink = useRef<string | null>(null);
 
@@ -128,12 +128,12 @@ export function PageComments({ scope, knowledgeBaseId, editor, canComment, curre
       lastDocRef.current = doc;
       setAnchorState({ editor, value: collectCommentAnchors(doc) });
     };
-    const onTransaction = () => {
+    const onTransaction = ({ transaction }: { transaction: Transaction }) => {
       const id = activeCommentThreadId(editor.state);
-      // A newly picked anchor (text or badge click) is a request to read the
-      // thread; an unchanged active id must never reopen a closed rail.
-      if (id !== null && id !== activeThreadIdRef.current) setRailOpen(true);
-      activeThreadIdRef.current = id;
+      // Explicit picks reopen even the same discussion; typing and context
+      // refreshes must leave a deliberately closed rail alone.
+      const selection = transaction.getMeta(commentsPluginKey) as { type?: string } | undefined;
+      if (id !== null && selection?.type === 'select') setRailOpen(true);
       setActiveThreadId(id);
     };
     readAnchors();
@@ -147,7 +147,6 @@ export function PageComments({ scope, knowledgeBaseId, editor, canComment, curre
 
   // The active thread's card scrolls into view inside the rail.
   useEffect(() => {
-    activeThreadIdRef.current = activeThreadId;
     if (!activeThreadId || !railOpen) return;
     document.querySelector(`[data-comment-card="${activeThreadId}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }, [activeThreadId, railOpen]);

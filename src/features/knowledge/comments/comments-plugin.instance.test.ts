@@ -137,6 +137,27 @@ describe('comment anchors in a real editor instance', () => {
     editor.destroy();
   });
 
+  test('text and count clicks request the same discussion again without waiting for an active-id change', () => {
+    const editor = mountEditor(new Y.Doc());
+    editor.commands.setContent('<p>hello world</p>');
+    anchorSelection(editor, 1, 6, THREAD_A);
+    const requests: string[] = [];
+    editor.on('transaction', ({ transaction }) => {
+      const meta = transaction.getMeta(commentsPluginKey);
+      if (meta?.type === 'select') requests.push(meta.id);
+    });
+
+    anchorElements(editor, THREAD_A)[0]!.click();
+    anchorElements(editor, THREAD_A)[0]!.click();
+    badgeOf(editor, THREAD_A)!.querySelector('span')!.click();
+    badgeOf(editor, THREAD_A)!.querySelector('span')!.click();
+    expect(requests).toEqual([THREAD_A, THREAD_A, THREAD_A, THREAD_A]);
+    expect(activeCommentThreadId(editor.state)).toBe(THREAD_A);
+    refreshContext(editor);
+    expect(requests).toHaveLength(4);
+    editor.destroy();
+  });
+
   test('selectCommentThread activates the anchor, moves the caret and flashes', () => {
     const editor = mountEditor(new Y.Doc());
     editor.commands.setContent('<p>hello world</p>');

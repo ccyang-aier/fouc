@@ -13,7 +13,8 @@ import {
   replyCommentThreadResultSchema,
 } from '@fouc/shared/knowledge/comments';
 import { Pool } from 'pg';
-import { blockIndex, page } from '../../../platform/database/workspace/schema';
+import { blockIndex, page, asset } from '../../../platform/database/workspace/schema';
+import { and, eq } from 'drizzle-orm';
 import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
 import { createAuthTestServer, responseCookie, testPassword } from '../../../platform/identity/auth-test-server';
 import type { FoucIdentity } from '../../../platform/identity/identity';
@@ -176,6 +177,10 @@ async function createCommentRoutesFixture() {
     seed: async () => ({ commentPage: await tree('comment'), viewPage: await tree('view') }),
     grantRootDefault,
     resetJobs,
+    attachPdf: (scope: PageRef, hash: string) => withWorkspaceTenant(pool, scope.workspaceId, async db => {
+      await db.insert(asset).values({ workspaceId: scope.workspaceId, hash, mime: 'application/pdf', size: 100 });
+      await db.update(page).set({ properties: { fileAsset: `asset:${hash}`, fileName: 'fixture.pdf' } }).where(and(eq(page.workspaceId, scope.workspaceId), eq(page.id, scope.pageId)));
+    }),
     async close() {
       for (const runner of runners) await runner.close();
       await new Promise<void>((resolve) => apiServer.close(() => resolve()));
@@ -208,6 +213,23 @@ describe('comment tRPC routes over the real HTTP boundary', () => {
       links: [httpLink({ url: `${fixture.origin}/api/knowledge/${targetWorkspace}/trpc`, headers })],
     });
   }
+
+  test('PDF annotations round-trip exact page coordinates and authorize comment-only users through the same wire API', async () => {
+    const { commentPage: scope } = await fixture.seed();
+    const hash = 'c'.repeat(64);
+    await fixture.attachPdf(scope, hash);
+    const reader = client(fixture.reader), owner = client(fixture.owner);
+    const pdfAnchor = { assetHash: hash, quote: 'Across two PDF pages', pages: [{ page: 2, rects: [{ x: .1, y: .8, width: .6, height: .03 }] }, { page: 3, rects: [{ x: .1, y: .1, width: .3, height: .03 }] }] };
+    const input = { ...scope, threadId: randomUUID(), commentId: randomUUID(), kind: 'comment' as const, anchorKind: 'selection' as const, pdfAnchor, bodyMd: 'PDF comment' };
+    const created = await reader.comment.create.mutate(input);
+    expect(createCommentThreadResultSchema.parse(created).thread.pdfAnchor).toEqual(pdfAnchor);
+    expect((await owner.comment.list.query(scope))[0].pdfAnchor).toEqual(pdfAnchor);
+    expect((await reader.comment.create.mutate(input)).existing).toBe(true);
+    await expect(reader.comment.create.mutate({ ...input, anchorKind: 'page' })).rejects.toMatchObject({ data: { code: 'BAD_REQUEST' } });
+    await expect(client(fixture.foreign).comment.create.mutate(input)).rejects.toMatchObject({ data: { code: 'UNAUTHORIZED' } });
+    expect(await reader.comment.delete.mutate({ workspaceId: scope.workspaceId, commentId: input.commentId })).toEqual({ threadDeleted: true });
+    expect(await owner.comment.list.query(scope)).toEqual([]);
+  });
 
   test('full wire lifecycle: create with client ids, reply chain, resolve/reopen, delete', async () => {
     const { commentPage: scope } = await fixture.seed();

@@ -204,6 +204,7 @@ CREATE TABLE "workspace"."comment_thread" (
 	"page_id" uuid NOT NULL,
 	"kind" "workspace"."comment_thread_kind" DEFAULT 'comment' NOT NULL,
 	"anchor_kind" "workspace"."comment_anchor_kind" DEFAULT 'page' NOT NULL,
+	"pdf_anchor" jsonb,
 	"status" "workspace"."comment_thread_status",
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,

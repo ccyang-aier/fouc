@@ -1,7 +1,12 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import type { Page } from '@fouc/shared/knowledge/contracts';
+import type { Page, PdfCommentAnchor } from '@fouc/shared/knowledge/contracts';
+import { PageComments, type PdfCommentBridge } from '../comments/comments-controller';
+import { usePageCommentThreads } from '../comments/comments-queries';
+import { PageCommentsTrigger } from '../editor/comments-integration';
+import { useDocumentReference } from '../editor/document-reference';
+import type { PdfComments } from './pdf-file-view';
 import { DocumentEditorFrame } from '../editor/editor-layout';
 import { DocumentEditorHeader } from '../editor/components/document-editor-header';
 import { useSidebarCollections } from '../navigation/sidebar-collections';
@@ -15,13 +20,28 @@ import { knowledgeQueryKeys } from '../data/query-keys';
 import type { LocalDocument } from '../local/local-library';
 
 type SurfaceProps = { workspaceId: string; folderName: string; onBack: () => void; onOpenSidebar: () => void; onCreateDocument: () => void };
-export function WorkspaceFileDocument({ workspaceId, knowledgeBaseId, page, canEdit, avatarName, folderName, onBack, onOpenSidebar, onCreateDocument }: SurfaceProps & { knowledgeBaseId: string; page: Page; canEdit: boolean; avatarName: string }) {
+export function WorkspaceFileDocument({ workspaceId, knowledgeBaseId, page, canEdit, canComment, avatarName, folderName, onBack, onOpenSidebar, onCreateDocument }: SurfaceProps & { knowledgeBaseId: string; page: Page; canEdit: boolean; canComment: boolean; avatarName: string }) {
   const client = useQueryClient();
   const { session } = useIdentity();
   const { collections, toggleStar } = useSidebarCollections(session.status === "authenticated" ? session.user.id : "guest", workspaceId, knowledgeBaseId);
   const [associate, setAssociate] = useState(false);
   const [error, setError] = useState('');
   const file = useMemo(() => fileFromProperties(page.properties), [page.properties]);
+  const pdf = file && documentFileFormat(file.name) === 'pdf';
+  const reference = useDocumentReference();
+  const [railOpen, setRailOpen] = useState(false), [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+  const composer = useRef<Parameters<PdfCommentBridge['bindCompose']>[0] | null>(null);
+  const bindCompose = useCallback<PdfCommentBridge['bindCompose']>(handler => { composer.current = handler; return () => { composer.current = null; }; }, []);
+  const [locate, setLocate] = useState<PdfComments['locate']>(null);
+  const scope = { workspaceId, pageId: page.id };
+  const threads = usePageCommentThreads(pdf ? workspaceId : null, pdf ? page.id : null);
+  const selectThread = (id: string) => { setActiveThreadId(id); setRailOpen(true); };
+  const locateAnchor = (anchor: PdfCommentAnchor) => setLocate(previous => ({ anchor, sequence: (previous?.sequence ?? 0) + 1 }));
+  const comments: PdfComments | undefined = pdf ? {
+    assetHash: file.source.slice(6), canComment, activeThreadId, onSelect: selectThread, onCompose: selection => composer.current?.(selection), locate,
+    highlights: (threads.data ?? []).filter(thread => thread.pdfAnchor?.assetHash === file.source.slice(6)).map(thread => ({ id: thread.id, anchor: thread.pdfAnchor!, count: thread.comments.length, resolved: thread.status === 'resolved' })),
+  } : undefined;
+  const bridge: PdfCommentBridge | undefined = pdf ? { assetHash: file.source.slice(6), bindCompose, onLocate: locateAnchor, activeThreadId, onSelectThread: selectThread } : undefined;
   async function uploaded(asset: UploadedAsset) {
     setError('');
     try {
@@ -32,10 +52,10 @@ export function WorkspaceFileDocument({ workspaceId, knowledgeBaseId, page, canE
       setAssociate(false);
     } catch (error) { setError(error instanceof Error ? error.message : '文件关联失败，请重试。'); }
   }
-  return <DocumentEditorFrame appearanceScope={`file:${workspaceId}:${page.id}`}
+  return <DocumentEditorFrame appearanceScope={`file:${workspaceId}:${page.id}`} sidebar={pdf ? <PageComments scope={scope} knowledgeBaseId={knowledgeBaseId} editor={null} pdf={bridge} canComment={canComment} currentUser={session.status === 'authenticated' ? session.user : null} railOpen={railOpen} onRailOpenChange={setRailOpen} followDocumentLink={!reference?.fixed} /> : undefined}
     navigation={{ editor: null, title: page.title, target: { workspaceId, knowledgeBaseId, pageId: page.id, source: 'workspace' } }} header={
-    <DocumentEditorHeader editor={null} folderName={folderName} title={page.title} avatarName={avatarName} starred={collections.starred.includes(page.id)} onOpenSidebar={onOpenSidebar} onToggleStar={() => toggleStar(page.id)} canCreateDocument={canEdit} onCreateDocument={onCreateDocument} shareDescription="原文件的访问权限与当前知识库一致。" menuActions={{ target: { workspaceId, knowledgeBaseId, pageId: page.id, source: 'workspace' }, onDelete: canEdit ? async () => { await recycleKnowledgePage(workspaceId, { pageId: page.id }); void client.invalidateQueries({ queryKey: knowledgeQueryKeys.pages(workspaceId) }); onBack(); } : undefined }} />}>
-    <FileDocumentPreview workspaceId={workspaceId} source="workspace" file={file} name={page.title} attach={canEdit ? <button type="button" onClick={() => setAssociate(true)}>选择原文件</button> : undefined} />
+    <DocumentEditorHeader editor={null} folderName={folderName} title={page.title} avatarName={avatarName} starred={collections.starred.includes(page.id)} onOpenSidebar={onOpenSidebar} onToggleStar={() => toggleStar(page.id)} canCreateDocument={canEdit} onCreateDocument={onCreateDocument} shareDescription="原文件的访问权限与当前知识库一致。" menuActions={{ onComments: pdf ? () => setRailOpen(value => !value) : undefined, target: { workspaceId, knowledgeBaseId, pageId: page.id, source: 'workspace' }, onDelete: canEdit ? async () => { await recycleKnowledgePage(workspaceId, { pageId: page.id }); void client.invalidateQueries({ queryKey: knowledgeQueryKeys.pages(workspaceId) }); onBack(); } : undefined }} />}>
+    <FileDocumentPreview workspaceId={workspaceId} source="workspace" file={file} name={page.title} pdfComments={comments} commentTrigger={pdf ? <PageCommentsTrigger scope={scope} open={railOpen} onToggle={() => setRailOpen(value => !value)} /> : undefined} attach={canEdit ? <button type="button" onClick={() => setAssociate(true)}>选择原文件</button> : undefined} />
     {associate && <div className="absolute inset-0 z-40 flex items-center justify-center bg-[var(--panel)] p-8"><div className="w-full max-w-[440px]"><div className="mb-5 flex justify-between text-sm"><strong>关联原文件</strong><button aria-label="关闭文件关联" onClick={() => setAssociate(false)}>关闭</button></div><AssetUploader workspaceId={workspaceId} onUploaded={asset => { void uploaded(asset); }} />{error && <p role="alert" className="mt-4 text-xs text-[var(--err-ink)]">{error}</p>}</div></div>}
   </DocumentEditorFrame>;
 }

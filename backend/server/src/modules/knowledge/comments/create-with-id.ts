@@ -1,7 +1,8 @@
 import { and, eq } from 'drizzle-orm';
 import { entityIdSchema } from '@fouc/shared/knowledge/contracts';
 import { createCommentThreadInputSchema } from '@fouc/shared/knowledge/comments';
-import { comment, commentThread } from '../../../platform/database/workspace/schema';
+import { asset, page, comment, commentThread } from '../../../platform/database/workspace/schema';
+import { isDeepStrictEqual } from 'node:util';
 import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
 import { requireCommentAccess } from './access';
 import { KnowledgeCommentError } from './errors';
@@ -33,23 +34,28 @@ export async function createCommentThreadWithId(
 ): Promise<CreateCommentThreadWithIdResult> {
   const parsed = createWithIdInputSchema.safeParse(input);
   if (!parsed.success) throw new KnowledgeCommentError('INVALID_COMMENT_INPUT');
-  const { workspaceId, pageId, threadId, commentId, bodyMd, mentions, kind, anchorKind, userId } = parsed.data;
+  const { workspaceId, pageId, threadId, commentId, bodyMd, mentions, kind, anchorKind, pdfAnchor, userId } = parsed.data;
   const scope = { workspaceId, pageId };
   await requireCommentAccess(db, { userId, scope, required: 'comment' });
+  if (pdfAnchor) {
+    const [document] = await db.select({ properties: page.properties }).from(page).where(and(eq(page.workspaceId, workspaceId), eq(page.id, pageId)));
+    const [file] = await db.select({ mime: asset.mime }).from(asset).where(and(eq(asset.workspaceId, workspaceId), eq(asset.hash, pdfAnchor.assetHash)));
+    if (document?.properties.fileAsset !== `asset:${pdfAnchor.assetHash}` || file?.mime !== 'application/pdf') throw new KnowledgeCommentError('INVALID_COMMENT_INPUT');
+  }
 
   const [existingThread] = await db.select().from(commentThread)
     .where(and(eq(commentThread.workspaceId, workspaceId), eq(commentThread.id, threadId)));
   if (existingThread) {
     // A retry of the same client operation: same page and same first comment
     // is success; anything else is id misuse, not a race to paper over.
-    if (existingThread.pageId !== pageId || existingThread.kind !== kind || existingThread.anchorKind !== anchorKind) throw new KnowledgeCommentError('INVALID_COMMENT_INPUT');
+    if (existingThread.pageId !== pageId || existingThread.kind !== kind || existingThread.anchorKind !== anchorKind || !isDeepStrictEqual(existingThread.pdfAnchor ?? undefined, pdfAnchor)) throw new KnowledgeCommentError('INVALID_COMMENT_INPUT');
     const [existingComment] = await db.select().from(comment)
       .where(and(eq(comment.workspaceId, workspaceId), eq(comment.id, commentId)));
     if (!existingComment || existingComment.threadId !== threadId || existingComment.authorId !== userId || existingComment.bodyMd !== bodyMd) throw new KnowledgeCommentError('INVALID_COMMENT_INPUT');
     return { thread: existingThread, comment: existingComment, notified: [], existing: true };
   }
 
-  const [thread] = await db.insert(commentThread).values({ workspaceId, id: threadId, pageId, kind, anchorKind, status: kind === 'issue' ? 'open' : null }).returning();
+  const [thread] = await db.insert(commentThread).values({ workspaceId, id: threadId, pageId, kind, anchorKind, pdfAnchor, status: kind === 'issue' ? 'open' : null }).returning();
   const [entry] = await db.insert(comment).values({
     workspaceId, id: commentId, threadId, authorId: userId, bodyMd,
   }).returning();

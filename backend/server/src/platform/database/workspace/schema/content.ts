@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { bigint, check, foreignKey, index, integer, jsonb, primaryKey, text, unique, uuid, varchar } from 'drizzle-orm/pg-core';
-import type { Asset, Principal } from '@fouc/shared/knowledge/contracts';
+import type { Asset, Principal, PdfCommentAnchor } from '@fouc/shared/knowledge/contracts';
 import { assetDerivedSchema } from '@fouc/shared/knowledge/contracts';
 import { assetStatus, commentThreadStatus, commentThreadKind, commentAnchorKind } from './enums';
 import { authUser } from '../../identity/schema';
@@ -120,6 +120,7 @@ export const commentThread = workspaceNamespace.table('comment_thread', {
   pageId: uuid('page_id').notNull(),
   kind: commentThreadKind('kind').notNull().default('comment'),
   anchorKind: commentAnchorKind('anchor_kind').notNull().default('page'),
+  pdfAnchor: jsonb('pdf_anchor').$type<PdfCommentAnchor>(),
   status: commentThreadStatus('status'),
   createdAt: instant('created_at').notNull().defaultNow(),
   updatedAt: instant('updated_at').notNull().defaultNow(),

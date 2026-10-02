@@ -21,11 +21,25 @@ export const deleteBlocksInputSchema = pageScopeSchema.extend({ blockIds: z.arra
 
 export const commentThreadKindSchema = z.enum(['comment', 'issue']);
 export const commentAnchorKindSchema = z.enum(['page', 'selection']);
+/** Coordinates are relative to each unrotated PDF page, independent of zoom. */
+export const pdfCommentAnchorSchema = z.strictObject({
+  assetHash: assetHashSchema,
+  quote: z.string().trim().min(1).max(50_000),
+  pages: z.array(z.strictObject({
+    page: z.number().int().min(1).max(100_000),
+    rects: z.array(z.strictObject({
+      x: z.number().finite().min(0).max(1), y: z.number().finite().min(0).max(1),
+      width: z.number().finite().positive().max(1), height: z.number().finite().positive().max(1),
+    }).refine(rect => rect.x + rect.width <= 1.00001 && rect.y + rect.height <= 1.00001)).min(1).max(200),
+  })).min(1).max(32),
+}).refine(anchor => new Set(anchor.pages.map(item => item.page)).size === anchor.pages.length);
+export type PdfCommentAnchor = z.infer<typeof pdfCommentAnchorSchema>;
 export const commentThreadStatusSchema = z.enum(['open', 'resolved']);
 export const commentThreadSchema = pageScopeSchema.extend({
   id: entityIdSchema, kind: commentThreadKindSchema, anchorKind: commentAnchorKindSchema,
+  pdfAnchor: pdfCommentAnchorSchema.optional(),
   status: commentThreadStatusSchema.nullable(), createdAt: timestampSchema,
-}).refine(thread => thread.kind === 'issue' ? thread.status !== null : thread.status === null);
+}).refine(thread => (thread.kind === 'issue' ? thread.status !== null : thread.status === null) && (!thread.pdfAnchor || thread.anchorKind === 'selection'));
 export const commentSchema = workspaceScopeSchema.extend({
   id: entityIdSchema, threadId: entityIdSchema, authorId: entityIdSchema,
   replyToCommentId: entityIdSchema.nullable(),

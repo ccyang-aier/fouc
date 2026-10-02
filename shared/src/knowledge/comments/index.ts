@@ -1,10 +1,10 @@
 import { z } from 'zod';
 import { entityIdSchema, pageScopeSchema, timestampSchema, workspaceScopeSchema } from '../contracts/primitives';
 
-import { commentThreadKindSchema, commentAnchorKindSchema, commentThreadStatusSchema, commentThreadSchema as threadResourceSchema } from '../contracts/content';
+import { commentThreadKindSchema, commentAnchorKindSchema, commentThreadStatusSchema, pdfCommentAnchorSchema, commentThreadSchema as threadResourceSchema } from '../contracts/content';
 export { commentThreadKindSchema, commentAnchorKindSchema, commentThreadStatusSchema };
 export const commentThreadStatuses = commentThreadStatusSchema.options;
-/** Postgres owns threads/replies/likes; optional selection anchors live in Y.Doc. */
+/** Postgres owns threads/replies/likes and PDF geometry; editable text anchors live in Y.Doc. */
 export type CommentThreadKind = z.infer<typeof commentThreadKindSchema>;
 export type CommentThreadStatus = z.infer<typeof commentThreadStatusSchema>;
 
@@ -43,9 +43,10 @@ export const createCommentThreadInputSchema = pageScopeSchema.extend({
   commentId: entityIdSchema,
   kind: commentThreadKindSchema,
   anchorKind: commentAnchorKindSchema,
+  pdfAnchor: pdfCommentAnchorSchema.optional(),
   bodyMd: commentBodySchema,
   mentions: commentMentionsSchema.default([]),
-}).refine((input) => new Set(input.mentions).size === input.mentions.length);
+}).refine((input) => new Set(input.mentions).size === input.mentions.length && (!input.pdfAnchor || input.anchorKind === 'selection'));
 export type CreateCommentThreadInput = z.input<typeof createCommentThreadInputSchema>;
 
 export const replyCommentThreadInputSchema = workspaceScopeSchema.extend({

@@ -11,7 +11,7 @@ import { motion } from 'motion/react';
 import type { Editor } from '@tiptap/react';
 import type { Transaction } from '@tiptap/pm/state';
 import type { CommentThreadKind } from '@fouc/shared/knowledge/comments';
-import type { PageScope } from '@fouc/shared/knowledge/contracts';
+import type { PageScope, PdfCommentAnchor } from '@fouc/shared/knowledge/contracts';
 import { isKnowledgeDataError } from '../data/errors';
 import { useKnowledgeAccessQuery } from '../data/hooks';
 import {
@@ -54,6 +54,15 @@ interface ComposingDraft {
   threadId: string;
   commentId: string;
   excerpt: string;
+  pdfAnchor?: PdfCommentAnchor;
+}
+
+export interface PdfCommentBridge {
+  assetHash: string;
+  bindCompose: (compose: (selection: { anchor: PdfCommentAnchor; x: number; y: number }) => void) => () => void;
+  onLocate: (anchor: PdfCommentAnchor) => void;
+  activeThreadId: string | null;
+  onSelectThread: (id: string) => void;
 }
 
 function commentErrorText(error: unknown, fallback: string): string {
@@ -71,6 +80,7 @@ function commentErrorText(error: unknown, fallback: string): string {
 }
 
 export interface PageCommentsProps {
+  pdf?: PdfCommentBridge;
   followDocumentLink?: boolean;
   scope: PageScope;
   knowledgeBaseId: string;
@@ -82,7 +92,7 @@ export interface PageCommentsProps {
   currentUser?: { id: string; name: string; image?: string | null } | null;
 }
 
-export function PageComments({ scope, knowledgeBaseId, editor, canComment, currentUser, railOpen: controlledRailOpen, onRailOpenChange, followDocumentLink = true }: PageCommentsProps) {
+export function PageComments({ scope, knowledgeBaseId, editor, pdf, canComment, currentUser, railOpen: controlledRailOpen, onRailOpenChange, followDocumentLink = true }: PageCommentsProps) {
   const threadsQuery = usePageCommentThreads(scope.workspaceId, scope.pageId);
   const accessQuery = useKnowledgeAccessQuery(scope.workspaceId);
   const currentUserId = accessQuery.data?.userId ?? null;
@@ -102,7 +112,8 @@ export function PageComments({ scope, knowledgeBaseId, editor, canComment, curre
   // render after a scope switch (derived, not reset in an effect).
   const [anchorState, setAnchorState] = useState<{ editor: Editor | null; value: CommentAnchor[] }>({ editor: null, value: [] });
   const anchors = anchorState.editor === editor ? anchorState.value : EMPTY_ANCHORS;
-  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+  const [editorActiveThreadId, setActiveThreadId] = useState<string | null>(null);
+  const activeThreadId = pdf?.activeThreadId ?? editorActiveThreadId;
   const [composing, setComposing] = useState<ComposingDraft | null>(null);
   const [composerError, setComposerError] = useState<string | null>(null);
   const [composerAt, setComposerAt] = useState<{ x: number; y: number } | null>(null);
@@ -119,6 +130,7 @@ export function PageComments({ scope, knowledgeBaseId, editor, canComment, curre
   const [replyTarget, setReplyTarget] = useState<CommentReplyTarget | null>(null);
   const lastDocRef = useRef<unknown>(null);
   const followedLink = useRef<string | null>(null);
+  const sidebarHost = useRef<HTMLDivElement>(null);
 
   // ── Editor wiring: anchors and active thread ──
   useEffect(() => {
@@ -149,8 +161,9 @@ export function PageComments({ scope, knowledgeBaseId, editor, canComment, curre
   // The active thread's card scrolls into view inside the rail.
   useEffect(() => {
     if (!activeThreadId || !railOpen) return;
-    editor?.view.dom.closest('[aria-label="页面编辑器"]')?.querySelector(`[data-comment-card="${activeThreadId}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  }, [activeThreadId, railOpen, editor]);
+    const root = editor?.view.dom.closest('[aria-label="页面编辑器"]') ?? sidebarHost.current?.closest('[aria-label="页面编辑器"]');
+    root?.querySelector(`[data-comment-card="${activeThreadId}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [activeThreadId, railOpen, editor, threads]);
 
   const excerptOf = useCallback(
     (anchor: CommentAnchor) => (editor ? anchorExcerpt(editor.state.doc, anchor.ranges) : ''),
@@ -169,8 +182,9 @@ export function PageComments({ scope, knowledgeBaseId, editor, canComment, curre
       anchors: threadsQuery.error ? [] : anchors,
       excerptOf,
       pending: pendingThreadIds,
+      pdfAssetHash: pdf?.assetHash,
     }),
-    [threads, anchors, threadsQuery.error, excerptOf, pendingThreadIds],
+    [threads, anchors, threadsQuery.error, excerptOf, pendingThreadIds, pdf?.assetHash],
   );
 
   // ── Plugin styling context: editor and sidebar share one truth ──
@@ -195,16 +209,27 @@ export function PageComments({ scope, knowledgeBaseId, editor, canComment, curre
   useEffect(() => {
     if (!followDocumentLink) return;
     const target = readCommentLink(window.location.href);
-    if (!editor || !target || target.source !== 'workspace' || target.workspaceId !== scope.workspaceId || target.pageId !== scope.pageId || target.knowledgeBaseId !== knowledgeBaseId || followedLink.current === target.commentId) return;
+    if ((!editor && !pdf) || !target || target.source !== 'workspace' || target.workspaceId !== scope.workspaceId || target.pageId !== scope.pageId || target.knowledgeBaseId !== knowledgeBaseId || followedLink.current === target.commentId) return;
     const thread = threads.find(thread => thread.comments.some(entry => entry.id === target.commentId));
     if (!thread) return;
-    if (activeCommentThreadId(editor.state) !== thread.id) {
+    if (pdf && pdf.activeThreadId !== thread.id) { pdf.onSelectThread(thread.id); setRailOpen(true); }
+    if (editor && activeCommentThreadId(editor.state) !== thread.id) {
       editor.view.dispatch(editor.state.tr.setMeta(commentsPluginKey, { type: 'select', id: thread.id }).setMeta('addToHistory', false));
     }
     if (!railOpen) return;
     followedLink.current = target.commentId;
-    editor.view.dom.closest('[aria-label="页面编辑器"]')?.querySelector(`[data-comment-id="${target.commentId}"]`)?.scrollIntoView({ block: 'nearest' });
-  }, [scope.workspaceId, scope.pageId, knowledgeBaseId, threads, railOpen, editor, followDocumentLink]);
+    if (thread.pdfAnchor?.assetHash === pdf?.assetHash && thread.pdfAnchor) pdf?.onLocate(thread.pdfAnchor);
+    editor?.view.dom.closest('[aria-label="页面编辑器"]')?.querySelector(`[data-comment-id="${target.commentId}"]`)?.scrollIntoView({ block: 'nearest' });
+  }, [scope.workspaceId, scope.pageId, knowledgeBaseId, threads, railOpen, editor, pdf, followDocumentLink, setRailOpen]);
+
+  const bindPdfCompose = pdf?.bindCompose;
+  useEffect(() => {
+    if (!bindPdfCompose || !canComment || composing) return;
+    return bindPdfCompose(({ anchor, x, y }) => {
+      setComposing({ threadId: crypto.randomUUID(), commentId: crypto.randomUUID(), excerpt: anchor.quote, pdfAnchor: anchor });
+      setComposerAt({ x, y }); setComposerError(null);
+    });
+  }, [bindPdfCompose, canComment, composing]);
 
   const dispatchRemoveAnchor = useCallback((threadId: string, options: { userAction: boolean }) => {
     if (!editor) return;
@@ -236,10 +261,11 @@ export function PageComments({ scope, knowledgeBaseId, editor, canComment, curre
     if (!composing) return false;
     setComposerError(null);
     try {
-      await createMutation.mutateAsync({ pageId: scope.pageId, threadId: composing.threadId, commentId: composing.commentId, bodyMd, kind, mentions, anchorKind: 'selection' });
+      await createMutation.mutateAsync({ pageId: scope.pageId, threadId: composing.threadId, commentId: composing.commentId, bodyMd, kind, mentions, anchorKind: 'selection', ...(composing.pdfAnchor ? { pdfAnchor: composing.pdfAnchor } : {}) });
       setComposing(null);
       setComposerAt(null);
       if (editor) selectCommentThread(editor.view, composing.threadId, { flash: true });
+      pdf?.onSelectThread(composing.threadId);
       setRailOpen(true);
       return true;
     } catch (error: unknown) {
@@ -247,7 +273,7 @@ export function PageComments({ scope, knowledgeBaseId, editor, canComment, curre
       setComposerError(commentErrorText(error, '评论发送失败，请重试。'));
       return false;
     }
-  }, [composing, createMutation, scope.pageId, editor, setRailOpen]);
+  }, [composing, createMutation, scope.pageId, editor, pdf, setRailOpen]);
 
   const cancelCompose = useCallback(() => {
     if (!composing) return;
@@ -291,6 +317,11 @@ export function PageComments({ scope, knowledgeBaseId, editor, canComment, curre
 
   // ── Sidebar actions ──
   const locateThread = useCallback((threadId: string) => {
+    if (pdf) {
+      const anchor = threads.find(thread => thread.id === threadId)?.pdfAnchor;
+      if (anchor?.assetHash === pdf.assetHash) { pdf.onSelectThread(threadId); pdf.onLocate(anchor); }
+      return;
+    }
     if (!editor) return;
     const anchor = collectCommentAnchors(editor.state.doc).find((candidate) => candidate.threadId === threadId);
     if (!anchor) return;
@@ -300,7 +331,7 @@ export function PageComments({ scope, knowledgeBaseId, editor, canComment, curre
     const element = located.node.nodeType === 1 ? located.node as HTMLElement : located.node.parentElement;
     element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     setActiveThreadId(threadId);
-  }, [editor]);
+  }, [editor, pdf, threads]);
 
   const handleReply = useCallback(async (target: CommentReplyTarget, bodyMd: string, mentions: string[]) => {
     replyMutation.reset();
@@ -371,7 +402,7 @@ export function PageComments({ scope, knowledgeBaseId, editor, canComment, curre
   const popoverX = composerAt ? Math.min(Math.max(composerAt.x, 156), (typeof window === 'undefined' ? 1024 : window.innerWidth) - 156) : 0;
 
   return (
-    <>
+    <div ref={sidebarHost} style={{ display: 'contents' }}>
       {composing && composerAt ? (
         <motion.div
           role="dialog"
@@ -433,6 +464,6 @@ export function PageComments({ scope, knowledgeBaseId, editor, canComment, curre
           onReplyTargetChange={target => { if (!replyMutation.isPending) { replyMutation.reset(); setReplyTarget(target); } }}
         />
       ) : null}
-    </>
+    </div>
   );
 }

@@ -17,7 +17,7 @@ import {
 } from '@fouc/shared/knowledge/comments';
 import type {
   CommentThread,
-  CommentThreadKind,
+  CreateCommentThreadInput,
   SetCommentLikeResult,
   CommentThreadTransitionResult,
   CreateCommentThreadResult,
@@ -48,7 +48,7 @@ function assertCommentInput(schema: { safeParse(payload: unknown): { success: tr
 }
 
 export type ReplyKnowledgeCommentInput = { threadId: string; replyToCommentId?: string; bodyMd: string; mentions?: string[] };
-export type CreateKnowledgeCommentInput = { pageId: string; threadId: string; commentId: string; kind: CommentThreadKind; anchorKind: 'page' | 'selection'; bodyMd: string; mentions?: string[] };
+export type CreateKnowledgeCommentInput = Omit<CreateCommentThreadInput, 'workspaceId'>;
 
 export type KnowledgeCommentsApi = {
   updateComment(workspaceId: string, commentId: string, bodyMd: string): Promise<UpdateOwnCommentResult>;
@@ -91,7 +91,7 @@ export function createKnowledgeCommentsApi(deps: { resolveOrigin: () => Promise<
       return parseCommentPayload(threadListResultSchema, payload, 'comment.list');
     },
     async createThread(workspaceId, input, signal) {
-      const wire = { workspaceId, pageId: input.pageId, threadId: input.threadId, commentId: input.commentId, kind: input.kind, anchorKind: input.anchorKind, bodyMd: input.bodyMd, mentions: input.mentions ?? [] };
+      const wire = { workspaceId, ...input, mentions: input.mentions ?? [] };
       assertCommentInput(createCommentThreadInputSchema, wire, 'comment.create');
       const payload = await run(workspaceId, signal, (client) => client.mutation('comment.create', wire, { signal }));
       return parseCommentPayload(createCommentThreadResultSchema, payload, 'comment.create');

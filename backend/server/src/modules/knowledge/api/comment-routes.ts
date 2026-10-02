@@ -64,6 +64,7 @@ function serializeThread(row: CommentThreadRow & { comments?: CommentRow[] }, co
     pageId: row.pageId,
     kind: row.kind,
     anchorKind: row.anchorKind,
+    ...(row.pdfAnchor ? { pdfAnchor: row.pdfAnchor } : {}),
     status: row.status,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),

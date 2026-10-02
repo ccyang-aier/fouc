@@ -27,7 +27,7 @@ export function PageIconPicker({ value, editable = true, onChange }: { value?: s
     catch { setError('图标保存失败，请重试'); }
     finally { setSaving(false); }
   }
-  if (!editable) return value ? <span className={styles.trigger}><PageIcon value={value} size={32} /></span> : null;
+  if (!editable) return value ? <span className={styles.trigger}><PageIcon value={value} size={24} /></span> : null;
   const match = query.trim().toLowerCase();
   const icons = pageIcons.filter(icon => `${icon.id} ${icon.label}`.toLowerCase().includes(match));
   const emojis = pageEmojis.filter(([emoji, label]) => `${emoji} ${label}`.toLowerCase().includes(match));
@@ -37,7 +37,7 @@ export function PageIconPicker({ value, editable = true, onChange }: { value?: s
     setOpen(next);
   }}>
     <DropdownMenuTrigger className={styles.trigger} data-empty={!value} aria-label={value ? '更改文档图标' : '添加文档图标'} title={value ? '更改图标' : '添加图标'}>
-      {value ? <PageIcon value={value} size={32} /> : <Smiley size={32} weight="fill" aria-hidden />}
+      {value ? <PageIcon value={value} size={24} /> : <Smiley size={24} weight="fill" aria-hidden />}
     </DropdownMenuTrigger>
     <DropdownMenuContent role="dialog" aria-label="文档图标选择" aria-labelledby={undefined} align="start" collisionPadding={12} className={styles.panel}>
       <div onKeyDown={event => { if (event.key === 'Tab') event.stopPropagation(); }}>

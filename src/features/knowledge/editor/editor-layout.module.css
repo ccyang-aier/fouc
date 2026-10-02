@@ -17,7 +17,7 @@
   padding: clamp(56px, 7vh, 84px) 0 160px;
 }
 .heading { position:relative; margin-bottom: 25px; }
-.titleIcon { position:absolute; inset-inline-end:calc(100% + 12px); top:0; }
+.titleIcon { position:absolute; inset-inline-end:calc(100% + 12px); top:4px; }
 .titleRow { display:flex; align-items:center; gap:12px; min-width:0; }
 .title,
 .titleInput {

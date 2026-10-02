@@ -76,7 +76,7 @@ export function PageEditor({ scope, user, knowledgeBaseId, onBack, onOpenSidebar
   }
   if (pages.isPending) return <CanvasSpinner label="正在读取文档信息" />;
   if (pages.isError) return <CanvasError title="无法读取文档信息" detail="请检查网络后重试。" onRetry={() => { void pages.refetch(); }} />;
-  if (gate.status === "granted" && isFile && page) return <WorkspaceFileDocument workspaceId={scope.workspaceId} knowledgeBaseId={knowledgeBaseId} page={page} canEdit={gate.level === "edit" || gate.level === "full"} avatarName={user?.name ?? "我"} folderName={folderName} onBack={onBack} onOpenSidebar={onOpenSidebar} onCreateDocument={onCreateDocument} />;
+  if (gate.status === "granted" && isFile && page) return <WorkspaceFileDocument workspaceId={scope.workspaceId} knowledgeBaseId={knowledgeBaseId} page={page} canComment={gate.level !== "view"} canEdit={gate.level === "edit" || gate.level === "full"} avatarName={user?.name ?? "我"} folderName={folderName} onBack={onBack} onOpenSidebar={onOpenSidebar} onCreateDocument={onCreateDocument} />;
   if (session.failure) {
     return <CanvasError title="无法打开页面文档" detail={session.failure} onRetry={session.retry} />;
   }

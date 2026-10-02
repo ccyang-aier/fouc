@@ -8,6 +8,8 @@ import type { CommentErrorCode } from './errors';
 import { createCommentThreadWithId } from './create-with-id';
 import { listPageCommentThreads } from './queries';
 import { replyCommentThread } from './mutations';
+import { and, eq } from 'drizzle-orm';
+import { page, asset } from '../../../platform/database/workspace/schema';
 
 async function expectCode(run: () => Promise<unknown>, code: CommentErrorCode) {
   await expect(run()).rejects.toMatchObject({ code });
@@ -26,6 +28,29 @@ describe('comment thread creation with client ids', () => {
   });
   beforeEach(async () => {
     await fixture.resetJobs();
+  });
+
+  test('PDF selection persists, exact retries succeed, and cross-resource or unauthorized anchors are rejected', async () => {
+    const { pages } = await fixture.tree();
+    const scope = { workspaceId: fixture.alpha.id, pageId: pages[1].pageId }, owner = fixture.owner.identity.userId;
+    await withWorkspaceTenant(fixture.pool, scope.workspaceId, db => replaceAuthorizedPageAcl(db, { workspaceId: scope.workspaceId, pageId: pages[0].pageId, grants: [{ principal: principal('user', owner), level: 'full' }, { principal: principal('user', fixture.reader.identity.userId), level: 'comment' }] }));
+    await fixture.drain();
+    const hash = 'a'.repeat(64), otherHash = 'b'.repeat(64);
+    await withWorkspaceTenant(fixture.pool, scope.workspaceId, async db => {
+      await db.insert(asset).values({ workspaceId: scope.workspaceId, hash, mime: 'application/pdf', size: 100 });
+      await db.update(page).set({ properties: { fileAsset: `asset:${hash}`, fileName: 'test.pdf' } }).where(and(eq(page.workspaceId, scope.workspaceId), eq(page.id, scope.pageId)));
+    });
+    const pdfAnchor = { assetHash: hash, quote: 'GPU architecture', pages: [{ page: 3, rects: [{ x: .1, y: .4, width: .5, height: .03 }] }] };
+    const input = { ...scope, userId: owner, threadId: randomUUID(), commentId: randomUUID(), kind: 'comment', anchorKind: 'selection', pdfAnchor, bodyMd: 'PDF observation' };
+    const create = (value: unknown) => withWorkspaceTenant(fixture.pool, scope.workspaceId, db => createCommentThreadWithId(db, value));
+    expect((await create(input)).thread.pdfAnchor).toEqual(pdfAnchor);
+    expect((await create(input)).existing).toBe(true);
+    const listed = await withWorkspaceTenant(fixture.pool, scope.workspaceId, db => listPageCommentThreads(db, { ...scope, userId: owner }));
+    expect(listed[0].pdfAnchor).toEqual(pdfAnchor);
+    await expectCode(() => create({ ...input, pdfAnchor: { ...pdfAnchor, quote: 'changed' } }), 'INVALID_COMMENT_INPUT');
+    await expectCode(() => create({ ...input, threadId: randomUUID(), commentId: randomUUID(), pdfAnchor: { ...pdfAnchor, assetHash: otherHash } }), 'INVALID_COMMENT_INPUT');
+    await expectCode(() => create({ ...input, threadId: randomUUID(), commentId: randomUUID(), pageId: pages[2].pageId }), 'INVALID_COMMENT_INPUT');
+    await expectCode(() => create({ ...input, userId: fixture.foreign.identity.userId }), 'COMMENT_ACCESS_DENIED');
   });
 
   test('creates the thread under the client ids, integrates with the N01 lifecycle, and retries are idempotent', async () => {

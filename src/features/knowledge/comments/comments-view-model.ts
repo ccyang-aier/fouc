@@ -1,6 +1,6 @@
 /**
  * The comments sidebar view-model (N02): pure derivations joining the page's
- * threads (Postgres truth) with the document's CRDT anchors. No React, no
+ * threads (Postgres truth) with CRDT anchors or persisted PDF geometry. No React, no
  * DOM — grouping, ordering, the explainable orphan states and the plugin
  * styling context are all decidable in a plain test:
  *
@@ -11,12 +11,13 @@
  */
 
 import type { CommentThread } from '@fouc/shared/knowledge/comments';
+import type { PdfCommentAnchor } from '@fouc/shared/knowledge/contracts';
 import type { CommentAnchor } from './comment-anchors';
 
 export interface CommentThreadGroup {
   threadId: string;
   thread: CommentThread;
-  anchor: CommentAnchor | null;
+  anchor: CommentAnchor | PdfCommentAnchor | null;
   excerpt: string;
   resolved: boolean;
 }
@@ -45,6 +46,7 @@ export function deriveCommentSidebarModel(input: {
   excerptOf: (anchor: CommentAnchor) => string;
   /** Locally composing thread ids — optimistic anchors, neither orphan nor listed. */
   pending: ReadonlySet<string>;
+  pdfAssetHash?: string;
 }): CommentSidebarModel {
   const anchorsByThread = new Map(input.anchors.map((anchor) => [anchor.threadId, anchor]));
   const threadsById = new Map(input.threads.map((thread) => [thread.id, thread]));
@@ -52,19 +54,21 @@ export function deriveCommentSidebarModel(input: {
   const groups: CommentThreadGroup[] = [];
   const unanchored: CommentThreadGroup[] = [];
   for (const thread of input.threads) {
-    const anchor = anchorsByThread.get(thread.id) ?? null;
+    const pdfAnchor = thread.pdfAnchor?.assetHash === input.pdfAssetHash ? thread.pdfAnchor : undefined;
+    const anchor = pdfAnchor ?? anchorsByThread.get(thread.id) ?? null;
     const group: CommentThreadGroup = {
       threadId: thread.id,
       thread,
       anchor,
-      excerpt: anchor ? input.excerptOf(anchor) : '',
+      excerpt: pdfAnchor ? `第 ${pdfAnchor.pages.map(item => item.page).join('、')} 页 · ${pdfAnchor.quote}` : anchor && 'ranges' in anchor ? input.excerptOf(anchor) : '',
       resolved: thread.status === 'resolved',
     };
     (thread.anchorKind === 'page' || anchor ? groups : unanchored).push(group);
   }
   groups.sort((left, right) => {
-    const leftFrom = left.anchor ? Math.min(...left.anchor.ranges.map(range => range.from)) : Number.MAX_SAFE_INTEGER;
-    const rightFrom = right.anchor ? Math.min(...right.anchor.ranges.map(range => range.from)) : Number.MAX_SAFE_INTEGER;
+    const position = (anchor: CommentThreadGroup['anchor']) => !anchor ? Number.MAX_SAFE_INTEGER : 'ranges' in anchor ? Math.min(...anchor.ranges.map(range => range.from)) : Math.min(...anchor.pages.map(item => item.page * 1_000_000 + item.rects[0].y * 100_000 + item.rects[0].x));
+    const leftFrom = position(left.anchor);
+    const rightFrom = position(right.anchor);
     return leftFrom - rightFrom || left.thread.createdAt.localeCompare(right.thread.createdAt) || left.thread.id.localeCompare(right.thread.id);
   });
   unanchored.sort((left, right) => left.thread.createdAt.localeCompare(right.thread.createdAt) || left.thread.id.localeCompare(right.thread.id));

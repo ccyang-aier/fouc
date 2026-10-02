@@ -29,3 +29,29 @@
 .markdown { flex:1; overflow:auto; padding:40px max(24px,8%); font-size:15px; line-height:1.8; }.markdown h1{font-size:30px;margin-bottom:24px}.markdown h2{font-size:24px;margin-top:28px}.markdown h3{font-size:20px}.markdown p{margin:16px 0}.markdown ul{list-style:disc;padding-left:24px}.markdown ol{list-style:decimal;padding-left:24px}.markdown pre{padding:16px;background:var(--surface-subtle);border-radius:6px;overflow:auto;font-size:13px}.markdown table{width:100%;border-collapse:collapse}.markdown th,.markdown td{padding:9px 12px;border:1px solid var(--line)}.markdown img{max-width:100%}
 
 @container(max-width:550px){.toolbar{padding:0 8px;gap:5px}.filename{display:none}}
+.pdfReader { display:flex; position:relative; flex:1; min-width:0; min-height:0; }
+.pdfViewport { position:relative; flex:1; min-width:0; padding:24px; outline:none; overscroll-behavior:contain; scrollbar-gutter:stable; }
+.pdfViewport:focus-visible { outline:1px solid var(--accent-soft-line); outline-offset:-1px; }
+.pdfPages { display:flex; flex-direction:column; align-items:center; gap:24px; width:max-content; min-width:100%; }
+.pdfPage { flex:none; display:block; }
+.pdfMode { height:27px; min-width:0; max-width:94px; border:0; border-radius:5px; background:var(--surface-subtle); color:var(--muted-strong); font:inherit; cursor:pointer; }
+.toolbar button[aria-pressed=true] { background:var(--accent-soft); color:var(--accent-ink); }
+.pdfThumbnails { display:flex; flex-direction:column; flex:none; width:154px; min-height:0; border-right:1px solid var(--line); background:var(--surface-subtle); }
+.pdfThumbnails>header { display:flex; flex:none; align-items:center; justify-content:space-between; height:36px; padding:0 12px; color:var(--muted-strong); font-size:11px; }
+.pdfThumbnails>header button { display:grid; place-items:center; padding:4px; border:0; border-radius:4px; background:transparent; cursor:pointer; }
+.pdfThumbnailList { flex:1; overflow:auto; min-height:0; padding:4px 12px 16px; scrollbar-width:thin; }
+.pdfThumbnailList>button { display:flex; flex-direction:column; align-items:center; gap:8px; width:100%; margin:0 0 12px; padding:8px 4px; border:1px solid transparent; border-radius:6px; background:transparent; font-size:10px; color:var(--muted-strong); cursor:pointer; }
+.pdfThumbnailList>button:hover { background:var(--surface-hover); }
+.pdfThumbnailList>button[data-active=true] { border-color:var(--accent-soft-line); background:var(--accent-soft); color:var(--accent-ink); }
+.thumbnailImage { position:relative; pointer-events:none; }
+.thumbnailVisible { position:absolute; inset-inline:0; border:1px solid var(--accent); background:color-mix(in srgb,var(--accent) 7%,transparent); pointer-events:none; }
+.pdfAnnotations { position:absolute; inset:0; z-index:3; pointer-events:none; }
+.pdfAnnotation>span { position:absolute; background:color-mix(in srgb,var(--accent) 16%,transparent); border-bottom:1px solid var(--accent-soft-line); mix-blend-mode:multiply; }
+.pdfAnnotation>button { position:absolute; transform:translateY(-100%); min-width:15px; height:15px; padding:0 3px; border:1px solid var(--accent-soft-line); border-radius:5px; background:var(--panel); color:var(--accent-ink); font:10px/13px var(--font-sans); cursor:pointer; pointer-events:auto; }
+.pdfAnnotation[data-active=true]>button,.pdfAnnotation>button:hover { background:var(--accent); color:white; }
+.pdfAnnotation[data-active=true]>span { border-color:var(--accent); }
+.pdfAnnotation[data-resolved=true] { opacity:.55; }
+.pdfSelectionAction { position:fixed; display:flex; align-items:center; gap:6px; z-index:25; height:30px; padding:0 10px; border:1px solid var(--floating-border); border-radius:6px; background:var(--panel); box-shadow:var(--floating-shadow); color:var(--accent-ink); font-size:12px; cursor:pointer; }
+.pageError { position:absolute; inset:0; display:grid; place-items:center; color:var(--err-ink); font-size:12px; }
+@container(max-width:640px){.toolbar{gap:3px;padding-inline:6px}.filename{display:none}.pdfMode{max-width:80px}.pdfThumbnails{width:140px}.pdfViewport{padding:16px}.pdfPages{gap:16px}}
+@container(max-width:400px){.pdfThumbnails{position:absolute;inset:0 auto 0 0;z-index:5;box-shadow:3px 0 8px #202b3d14}.toolbar{flex-wrap:wrap;height:auto;min-height:44px;padding-block:4px}.zoom{gap:0}}

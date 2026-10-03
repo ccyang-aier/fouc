@@ -104,11 +104,11 @@ export function SidebarProjectTreeNode({
           className="flex h-full min-w-0 flex-1 items-center text-left outline-none"
         >
           {isDocument ? (
-            <PageIcon value={node.documentIcon} size={13} className={sidebarDocumentIconClass} />
+            <PageIcon value={node.documentIcon} size={15} className={sidebarDocumentIconClass} />
           ) : (
             <ProjectGlyph iconId={node.projectIconId} />
           )}
-          <span className="my-auto inline-flex h-4 min-w-0 items-center truncate leading-4">{label}</span>
+          <span className={styles.documentLabel} title={label}>{label}</span>
         </button>
         {isDocument ? (
           <SidebarDocumentActions documentId={node.id} starred={Boolean(node.starred)} onAction={onDocumentAction} />

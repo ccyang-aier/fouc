@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check, MagnifyingGlass, Smiley } from '@phosphor-icons/react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { decodePageIcon, encodePageIcon, PageIcon, pageIconColors, pageIcons, pageEmojis } from './page-icon';
+import { decodePageIcon, encodePageIcon, PageIcon, pageIconColors, pageIcons, pageEmojiGroups } from './page-icon';
 import styles from './page-icon-picker.module.css';
 
 export function PageIconPicker({ value, editable = true, onChange }: { value?: string | null; editable?: boolean; onChange: (icon: string | null) => Promise<void> }) {
@@ -30,7 +30,7 @@ export function PageIconPicker({ value, editable = true, onChange }: { value?: s
   if (!editable) return value ? <span className={styles.trigger}><PageIcon value={value} size={24} /></span> : null;
   const match = query.trim().toLowerCase();
   const icons = pageIcons.filter(icon => `${icon.id} ${icon.label}`.toLowerCase().includes(match));
-  const emojis = pageEmojis.filter(([emoji, label]) => `${emoji} ${label}`.toLowerCase().includes(match));
+  const emojiGroups = pageEmojiGroups.map(group => ({ ...group, items: group.items.filter(([emoji, label]) => `${emoji} ${label}`.toLowerCase().includes(match)) })).filter(group => group.items.length);
   return <DropdownMenu open={open} onOpenChange={next => {
     if (saving && !next) return;
     if (next) { setColor(selected?.color ?? pageIconColors[0]); setTab(value && !selected ? 'emoji' : 'icons'); setQuery(''); setError(''); }
@@ -59,10 +59,8 @@ export function PageIconPicker({ value, editable = true, onChange }: { value?: s
         {tab === 'icons' && <div className={styles.colors} role="group" aria-label="图标颜色">
           {pageIconColors.map(option => <button type="button" key={option} aria-label={`图标颜色 ${option}`} aria-pressed={color === option} disabled={saving} style={{ backgroundColor: option }} onClick={() => { setColor(option); if (selected) void apply(encodePageIcon(selected.id, option), false); }}>{color === option && <Check size={13} weight="bold" aria-hidden />}</button>)}
         </div>}
-        <div className={styles.grid} role="group" aria-label={tab === 'icons' ? '全部图标' : '全部表情'}>
-          {tab === 'icons' ? icons.map(({ id, label, glyph: Glyph }) => <DropdownMenuItem asChild key={id} disabled={saving} onSelect={event => { event.preventDefault(); void apply(encodePageIcon(id, color)); }}><button type="button" className={styles.choice} aria-label={label} title={label} data-selected={selected?.id === id}><Glyph size={24} weight="fill" style={{ color }} aria-hidden /></button></DropdownMenuItem>) : emojis.map(([emoji, label]) => <DropdownMenuItem asChild key={emoji} disabled={saving} onSelect={event => { event.preventDefault(); void apply(emoji); }}><button type="button" className={styles.choice} aria-label={label} title={label} data-selected={value === emoji}>{emoji}</button></DropdownMenuItem>)}
-        </div>
-        {!(tab === 'icons' ? icons.length : emojis.length) && <p className={styles.status}>没有匹配的图标</p>}
+        {tab === 'icons' ? <div className={styles.grid} role="group" aria-label="全部图标">{icons.map(({ id, label, glyph: Glyph }) => <DropdownMenuItem asChild key={id} disabled={saving} onSelect={event => { event.preventDefault(); void apply(encodePageIcon(id, color)); }}><button type="button" className={styles.choice} aria-label={label} title={label} data-selected={selected?.id === id}><Glyph size={24} weight="fill" style={{ color }} aria-hidden /></button></DropdownMenuItem>)}</div> : <div className={styles.emojiList} role="group" aria-label="全部表情">{emojiGroups.map(group => <section key={group.label}><h3 className={styles.category}>{group.label}</h3><div className={styles.grid}>{group.items.map(([emoji, label]) => <DropdownMenuItem asChild key={emoji} disabled={saving} onSelect={event => { event.preventDefault(); void apply(emoji); }}><button type="button" className={styles.choice} aria-label={label} title={label} data-selected={value === emoji}>{emoji}</button></DropdownMenuItem>)}</div></section>)}</div>}
+        {!(tab === 'icons' ? icons.length : emojiGroups.length) && <p className={styles.status}>{tab === 'icons' ? '没有匹配的图标' : '没有匹配的表情'}</p>}
         {saving && <p role="status" className={styles.status}>正在保存…</p>}
         {error && <p role="alert" className={styles.error}>{error}</p>}
       </div>

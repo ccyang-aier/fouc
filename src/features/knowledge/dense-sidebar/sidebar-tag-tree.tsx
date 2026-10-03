@@ -152,8 +152,8 @@ export function SidebarTagTreeNode({
                   onClick={() => onSelectDocument(document.id)}
                   className="flex h-full min-w-0 flex-1 items-center text-left outline-none"
                 >
-                  <PageIcon value={document.icon} size={13} className={sidebarDocumentIconClass} />
-                  <span className="my-auto inline-flex h-4 min-w-0 items-center truncate leading-4">{document.title}</span>
+                  <PageIcon value={document.icon} size={15} className={sidebarDocumentIconClass} />
+                  <span className={styles.documentLabel} title={document.title}>{document.title}</span>
                 </button>
                 <SidebarDocumentActions
                   documentId={document.id}

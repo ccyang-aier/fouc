@@ -1,5 +1,7 @@
 'use client';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { getOverlayRoot } from '@/lib/overlay-root';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import type { PdfCommentAnchor } from '@fouc/shared/knowledge/contracts';
 import { ChatCircleDots, X } from '@phosphor-icons/react';
@@ -7,15 +9,14 @@ import 'pdfjs-dist/web/pdf_viewer.css';
 import { PdfPageSurface, type PdfHighlight } from './pdf-page-surface';
 import { readPdfSelection } from './pdf-selection';
 import styles from './file-preview.module.css';
-export type PdfViewMode = 'continuous' | 'paged';
 export interface PdfComments {
   assetHash: string; canComment: boolean; highlights: PdfHighlight[]; activeThreadId: string | null;
   onSelect: (id: string) => void;
   onCompose: (selection: { anchor: PdfCommentAnchor; x: number; y: number }) => void;
   locate: { anchor: PdfCommentAnchor; sequence: number } | null;
 }
-export function PdfFileView({ blob, page, zoom, mode, thumbnails, onThumbnailsChange, onPages, onPageChange, onZoomChange, comments }: {
-  blob: Blob; page: number; zoom: number; mode: PdfViewMode; thumbnails: boolean;
+export function PdfFileView({ blob, page, zoom, thumbnails, thumbnailsId, onThumbnailsChange, onPages, onPageChange, onZoomChange, comments }: {
+  blob: Blob; page: number; zoom: number; thumbnails: boolean; thumbnailsId: string;
   onThumbnailsChange: (open: boolean) => void; onPages: (count: number) => void;
   onPageChange: (page: number) => void; onZoomChange: (zoom: number) => void; comments?: PdfComments;
 }) {
@@ -24,15 +25,14 @@ export function PdfFileView({ blob, page, zoom, mode, thumbnails, onThumbnailsCh
   const [error, setError] = useState(''), [width, setWidth] = useState(800);
   const [selection, setSelection] = useState<ReturnType<typeof readPdfSelection>>(null);
   const [visiblePart, setVisiblePart] = useState({ top: 0, height: 1 });
-  const reportedPage = useRef(page), wheel = useRef({ amount: 0, last: 0 });
-  const lastMode = useRef(mode), enterAtBottom = useRef(false);
+  const reportedPage = useRef(page);
   const callbacks = useRef({ onPageChange, onZoomChange, onPages });
   const zoomPoint = useRef<{ x: number; y: number; zoom: number; left: number; top: number; page?: number; pageX?: number; pageY?: number } | null>(null);
   const scrollFrame = useRef(0);
   const readingPoint = useRef({ page, fraction: 0 });
   useLayoutEffect(() => { callbacks.current = { onPageChange, onZoomChange, onPages }; });
   useEffect(() => {
-    const observer = new ResizeObserver(entries => setWidth(entries[0].contentRect.width));
+    const observer = new ResizeObserver(entries => { setWidth(entries[0].contentRect.width); setSelection(null); });
     if (viewport.current) observer.observe(viewport.current);
     return () => { observer.disconnect(); cancelAnimationFrame(scrollFrame.current); };
   }, []);
@@ -63,14 +63,11 @@ export function PdfFileView({ blob, page, zoom, mode, thumbnails, onThumbnailsCh
   useEffect(() => {
     const host = viewport.current;
     if (!host || !pdf) return;
-    const modeChanged = lastMode.current !== mode;
-    lastMode.current = mode;
-    if (mode === 'paged') { host.scrollTop = enterAtBottom.current ? host.scrollHeight - host.clientHeight : 0; enterAtBottom.current = false; reportedPage.current = page; return; }
-    if (!modeChanged && reportedPage.current === page && host.querySelector('[data-pdf-page]')) return;
+    if (reportedPage.current === page && host.querySelector('[data-pdf-page]')) return;
     reportedPage.current = page;
     const target = host.querySelector<HTMLElement>(`[data-pdf-page="${page}"]`);
     if (target) host.scrollTo({ top: target.offsetTop - 24, behavior: 'instant' });
-  }, [page, mode, pdf]);
+  }, [page, pdf]);
   useLayoutEffect(() => {
     const point = zoomPoint.current, host = viewport.current;
     if (!host) return;
@@ -99,20 +96,10 @@ export function PdfFileView({ blob, page, zoom, mode, thumbnails, onThumbnailsCh
         callbacks.current.onZoomChange(Math.min(300, Math.max(50, zoom + (event.deltaY > 0 ? -10 : 10))));
         return;
       }
-      if (mode !== 'paged' || !pdf || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
-      const atEdge = event.deltaY > 0 ? host.scrollTop + host.clientHeight >= host.scrollHeight - 2 : host.scrollTop <= 1;
-      if (!atEdge) { wheel.current.amount = 0; return; }
-      event.preventDefault();
-      const now = performance.now(), delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? host.clientHeight : 1);
-      wheel.current.amount = Math.sign(delta) === Math.sign(wheel.current.amount) ? wheel.current.amount + delta : delta;
-      if (Math.abs(wheel.current.amount) < 45 || now - wheel.current.last < 300) return;
-      const next = Math.min(pdf.numPages, Math.max(1, page + (delta > 0 ? 1 : -1)));
-      enterAtBottom.current = delta < 0;
-      wheel.current = { amount: 0, last: now }; callbacks.current.onPageChange(next);
     }
     host.addEventListener('wheel', handleWheel, { passive: false });
     return () => host.removeEventListener('wheel', handleWheel);
-  }, [pdf, page, mode, zoom]);
+  }, [zoom]);
   useEffect(() => {
     const target = comments?.locate;
     if (!target || !pdf) return;
@@ -147,18 +134,18 @@ export function PdfFileView({ blob, page, zoom, mode, thumbnails, onThumbnailsCh
       const box = current.getBoundingClientRect(), number = Number(current.dataset.pdfPage);
       readingPoint.current = { page: number, fraction: (bounds.top - box.top) / box.height };
       setVisiblePart({ top: Math.max(0, (bounds.top - box.top) / box.height), height: Math.max(0, Math.min(1, (Math.min(bounds.bottom, box.bottom) - Math.max(bounds.top, box.top)) / box.height)) });
-      if (mode === 'continuous' && reportedPage.current !== number) { reportedPage.current = number; callbacks.current.onPageChange(number); }
+      if (reportedPage.current !== number) { reportedPage.current = number; callbacks.current.onPageChange(number); }
     });
-  }, [pdf, mode]);
+  }, [pdf]);
   useEffect(() => { trackPage(); }, [trackPage, width, zoom, page]);
   return <div className={styles.pdfReader}>
-    {thumbnails && pdf && <aside className={styles.pdfThumbnails} aria-label="PDF 缩略图">
+    {thumbnails && pdf && <aside id={thumbnailsId} className={styles.pdfThumbnails} aria-label="PDF 缩略图">
       <header><strong>缩略图</strong><button aria-label="收起缩略图" onClick={() => onThumbnailsChange(false)}><X size={15} /></button></header>
       <div ref={thumbs} className={styles.pdfThumbnailList}>{Array.from({ length: pdf.numPages }, (_, index) => <button key={index} data-thumbnail={index + 1} data-active={page === index + 1} aria-label={`跳转到第 ${index + 1} 页`} aria-current={page === index + 1 ? 'page' : undefined} onClick={() => onPageChange(index + 1)}>
         <div className={styles.thumbnailImage}><PdfPageSurface pdf={pdf} page={index + 1} width={112} zoom={100} aspect={aspect} root={thumbs} thumbnail />{page === index + 1 && <span className={styles.thumbnailVisible} style={{ top: `${visiblePart.top * 100}%`, height: `${Math.max(.04, visiblePart.height) * 100}%` }} />}</div><span>第 {index + 1} 页</span>
       </button>)}</div>
     </aside>}
-    <div ref={viewport} className={styles.pdfViewport} tabIndex={0} aria-label={mode === 'continuous' ? '连续滚动 PDF' : '分页阅读 PDF'} onScroll={() => { setSelection(null); trackPage(); }} onPointerUp={() => { if (comments?.canComment && viewport.current) setSelection(readPdfSelection(viewport.current, comments.assetHash)); }} onKeyUp={() => { if (comments?.canComment && viewport.current) setSelection(readPdfSelection(viewport.current, comments.assetHash)); }} onClick={event => {
+    <div ref={viewport} className={styles.pdfViewport} tabIndex={0} aria-label="连续滚动 PDF" onScroll={() => { setSelection(null); trackPage(); }} onPointerUp={() => { if (comments?.canComment && viewport.current) setSelection(readPdfSelection(viewport.current, comments.assetHash)); }} onKeyUp={() => { if (comments?.canComment && viewport.current) setSelection(readPdfSelection(viewport.current, comments.assetHash)); }} onClick={event => {
       if (!comments || !window.getSelection()?.isCollapsed) return;
       const element = (event.target as HTMLElement).closest<HTMLElement>('[data-pdf-page]');
       if (!element) return;
@@ -166,8 +153,8 @@ export function PdfFileView({ blob, page, zoom, mode, thumbnails, onThumbnailsCh
       const highlight = comments.highlights.find(item => item.anchor.pages.some(part => part.page === Number(element.dataset.pdfPage) && part.rects.some(rect => x >= rect.x && x <= rect.x + rect.width && y >= rect.y && y <= rect.y + rect.height)));
       if (highlight) comments.onSelect(highlight.id);
     }}>
-      {error ? <div role="alert" className={styles.state}>{error}</div> : !pdf ? <div role="status" className={styles.state}>正在读取 PDF…</div> : <div className={styles.pdfPages}>{(mode === 'continuous' ? Array.from({ length: pdf.numPages }, (_, index) => index + 1) : [page]).map(number => <PdfPageSurface key={number} pdf={pdf} page={number} width={width} zoom={zoom} aspect={aspect} root={viewport} highlights={comments?.highlights} activeThreadId={comments?.activeThreadId} onSelect={comments?.onSelect} />)}</div>}
+      {error ? <div role="alert" className={styles.state}>{error}</div> : !pdf ? <div role="status" className={styles.state}>正在读取 PDF…</div> : <div className={styles.pdfPages}>{Array.from({ length: pdf.numPages }, (_, index) => index + 1).map(number => <PdfPageSurface key={number} pdf={pdf} page={number} width={width} zoom={zoom} aspect={aspect} root={viewport} highlights={comments?.highlights} activeThreadId={comments?.activeThreadId} onSelect={comments?.onSelect} />)}</div>}
     </div>
-    {selection && comments?.canComment && <button className={styles.pdfSelectionAction} aria-label="评论所选 PDF 文字" style={{ left: Math.max(12, Math.min(selection.x - 38, window.innerWidth - 100)), top: Math.max(8, Math.min(selection.y + 8, window.innerHeight - 42)) }} onPointerDown={event => event.preventDefault()} onClick={() => { comments.onCompose(selection); setSelection(null); window.getSelection()?.removeAllRanges(); }}><ChatCircleDots size={15} />评论</button>}
+    {selection && comments?.canComment && createPortal(<button className={styles.pdfSelectionAction} aria-label="评论所选 PDF 文字" style={selection.button} onPointerDown={event => event.preventDefault()} onClick={() => { comments.onCompose(selection); setSelection(null); window.getSelection()?.removeAllRanges(); }}><ChatCircleDots size={15} />评论</button>, getOverlayRoot() ?? document.body)}
   </div>;
 }

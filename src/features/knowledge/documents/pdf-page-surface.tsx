@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { PDFDocumentProxy } from 'pdfjs-dist';
 import type { PdfCommentAnchor } from '@fouc/shared/knowledge/contracts';
+import { orderPdfText } from './pdf-text-order';
 import styles from './file-preview.module.css';
 export type PdfHighlight = { id: string; anchor: PdfCommentAnchor; count: number; resolved: boolean };
 /** Nearby pages alone allocate a high-resolution canvas and selectable TextLayer. */
@@ -36,7 +37,8 @@ export function PdfPageSurface({ pdf, page, width, zoom, root, thumbnail = false
       await render.promise;
       if (cancelled || !text) return;
       const engine = await import('pdfjs-dist');
-      textLayer = new engine.TextLayer({ textContentSource: await content.getTextContent(), container: text, viewport });
+      const textContent = orderPdfText(await content.getTextContent({ disableNormalization: true }), (x, y) => viewport.convertToViewportPoint(x, y));
+      textLayer = new engine.TextLayer({ textContentSource: textContent, container: text, viewport });
       await textLayer.render();
     })().catch(error => { if (!cancelled && error?.name !== 'RenderingCancelledException') setError('此页无法渲染，请重新打开。'); });
     return () => { cancelled = true; render?.cancel(); textLayer?.cancel(); };

@@ -52,7 +52,7 @@ export function SidebarCreateIcon() {
 }
 
 export const sidebarDocumentIconClass =
-  "mr-2 shrink-0 text-[#7c8387] transition-colors duration-150 ease-out group-hover:text-foreground group-focus-within:text-foreground group-data-[selected=true]:text-foreground";
+  "mr-2 shrink-0 text-[#626d7a] transition-colors duration-150 ease-out group-hover:text-foreground group-focus-within:text-foreground group-data-[selected=true]:text-foreground";
 
 export const sidebarIconToneClasses: Record<
   NonNullable<SidebarNavigationItem["tone"]>,
@@ -198,7 +198,7 @@ export function SidebarDocumentActions({
   onAction: (documentId: string, action: DocumentAction) => void;
 }) {
   return (
-    <div className={cn(styles.actions, "ml-auto flex shrink-0 items-center gap-0.5")} data-starred={starred ? "true" : undefined}>
+    <div className={cn(styles.actions, styles.documentActions, "ml-auto flex shrink-0 items-center gap-0.5")} data-starred={starred ? "true" : undefined}>
       <IconButton
         className={styles.actionButton}
         label={starred ? "取消收藏文档" : "收藏文档"}
@@ -242,8 +242,8 @@ export function RecentNoteRow({
       )}
     >
       <button type="button" onClick={onClick} className="flex h-full min-w-0 flex-1 items-center text-left outline-none">
-        <PageIcon value={icon} size={13} className={sidebarDocumentIconClass} />
-        <span className="my-auto inline-flex h-4 min-w-0 items-center truncate leading-4">{label}</span>
+        <PageIcon value={icon} size={15} className={sidebarDocumentIconClass} />
+        <span className={styles.documentLabel} title={label}>{label}</span>
       </button>
       <SidebarDocumentActions documentId={documentId} starred={Boolean(starred)} onAction={onAction} />
     </div>

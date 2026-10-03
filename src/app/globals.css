@@ -456,7 +456,7 @@ html[data-theme="dark"] .dropdown-menu-trigger[data-state="open"] {
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
 /* 滚动容器统一由 ui/scroll-area 的自绘滚动条接管，全局隐藏原生滚动条 */

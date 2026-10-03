@@ -1,6 +1,7 @@
 import { Article, Bicycle, BookOpen, BookmarkSimple, Briefcase, CalendarBlank, Camera, ChartBar, CheckCircle, Cloud, Code, Compass, Database, Envelope, FileText, Flag, Flask, Folder, Globe, GraduationCap, Hash, Heart, House, Image, Lightbulb, Lightning, Lock, MusicNote, Palette, Rocket, Star, Target, Terminal, Tree, Trophy, Users, type Icon } from '@phosphor-icons/react';
 
 export const pageIconColors = ['#526175', '#0863d1', '#20b9eb', '#9955e8', '#ff845e', '#ee5684', '#ecae12', '#2bc4b6', '#09ac7b', '#d940e8', '#303a33'] as const;
+export { pageEmojis, pageEmojiGroups } from './page-emojis';
 export const pageIcons: { id: string; label: string; glyph: Icon }[] = [
   { id: 'graduation-cap', label: '学士帽 Education', glyph: GraduationCap },
   { id: 'bicycle', label: '自行车 Bicycle', glyph: Bicycle },
@@ -39,10 +40,6 @@ export const pageIcons: { id: string; label: string; glyph: Icon }[] = [
   { id: 'trophy', label: '奖杯 Trophy', glyph: Trophy },
   { id: 'file', label: '文档 File', glyph: FileText },
 ];
-export const pageEmojis = [
-  ['📄', '文档 document'], ['📝', '笔记 note'], ['📘', '书 book'], ['📌', '固定 pin'], ['🗂️', '文件夹 folder'], ['📊', '图表 chart'], ['📈', '增长 growth'], ['🧭', '指南 compass'], ['🧩', '拼图 puzzle'], ['🛠️', '工具 tools'], ['💡', '灵感 idea'], ['🎯', '目标 target'], ['🚀', '火箭 rocket'], ['🏗️', '建设 build'], ['🧪', '实验 test'], ['🔬', '研究 research'], ['🎨', '设计 art'], ['🗓️', '日历 calendar'], ['✅', '完成 done'], ['⚖️', '法律 law'], ['🔒', '安全 lock'], ['🌍', '地球 globe'], ['🌱', '成长 plant'], ['⭐', '星星 star'], ['🔥', '火 fire'], ['💬', '讨论 chat'], ['📦', '包 package'], ['🧠', '大脑 brain'], ['🎓', '学士帽 education'], ['🏁', '终点 finish'],
-] as const;
-
 /** Page metadata holds either an emoji or a named glyph with a literal RGB color. */
 export function encodePageIcon(id: string, color: string) {
   if (!pageIcons.some(icon => icon.id === id) || !/^#[0-9a-f]{6}$/i.test(color)) throw new Error('Invalid page icon');
@@ -57,5 +54,5 @@ export function PageIcon({ value, size = 16, className }: { value?: string | nul
   const icon = decodePageIcon(value);
   if (icon) { const Glyph = icon.glyph; return <Glyph aria-hidden size={size} weight="fill" className={className} style={{ color: icon.color }} data-page-icon={value} />; }
   if (value && !value.startsWith('glyph:')) return <span aria-hidden className={className} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: size, height: size, flexShrink: 0, fontSize: size, lineHeight: 1 }} data-page-icon={value}>{value}</span>;
-  return <FileText aria-hidden size={size} weight="fill" className={className} />;
+  return <FileText aria-hidden size={size} weight="duotone" className={className} />;
 }

@@ -16,7 +16,7 @@ export function mergePdfRects(rects: PdfRect[]): PdfRect[] {
   }
   return result;
 }
-export function readPdfSelection(host: HTMLElement, assetHash: string): { anchor: PdfCommentAnchor; x: number; y: number } | null {
+export function readPdfSelection(host: HTMLElement, assetHash: string): { anchor: PdfCommentAnchor; x: number; y: number; button: { left: number; top: number } } | null {
   const selection = host.ownerDocument.getSelection();
   if (!selection || selection.isCollapsed || !selection.rangeCount || !selection.anchorNode || !selection.focusNode) return null;
   const textLayer = (node: Node) => (node.nodeType === 1 ? node as Element : node.parentElement)?.closest('[data-pdf-text]');
@@ -24,24 +24,36 @@ export function readPdfSelection(host: HTMLElement, assetHash: string): { anchor
   const quote = selection.toString().trim();
   if (!quote || quote.length > 50_000) return null;
   const range = selection.getRangeAt(0);
-  let lastRect: DOMRect | undefined;
+  const visibleBounds = host.getBoundingClientRect();
+  let firstVisibleRect: DOMRect | undefined;
+  let firstRect: DOMRect | undefined;
   const pages: PdfCommentAnchor['pages'] = [];
   for (const element of host.querySelectorAll<HTMLElement>('[data-pdf-page]')) {
     const text = element.querySelector('[data-pdf-text]');
     if (!text || !range.intersectsNode(text)) continue;
-    // Clip to the text layer so a cross-page selection never includes canvas,
-    // page containers or annotation badges in its persisted highlight geometry.
-    const contents = host.ownerDocument.createRange(); contents.selectNodeContents(text);
-    const fragment = range.cloneRange();
-    if (range.compareBoundaryPoints(range.START_TO_START, contents) < 0) fragment.setStart(contents.startContainer, contents.startOffset);
-    if (range.compareBoundaryPoints(range.END_TO_END, contents) > 0) fragment.setEnd(contents.endContainer, contents.endOffset);
-    const clientRects = [...fragment.getClientRects()];
-    lastRect = clientRects.at(-1) ?? lastRect;
+    // Read leaf text ranges only. A range spanning multiple runs also reports
+    // enclosing span/container boxes, which would highlight unselected content.
+    const clientRects: DOMRect[] = [];
+    const walker = host.ownerDocument.createTreeWalker(text, 4);
+    while (walker.nextNode()) {
+      const node = walker.currentNode;
+      if (!node.textContent?.trim() || !range.intersectsNode(node)) continue;
+      const fragment = host.ownerDocument.createRange(); fragment.selectNodeContents(node);
+      if (node === range.startContainer) fragment.setStart(node, range.startOffset);
+      if (node === range.endContainer) fragment.setEnd(node, range.endOffset);
+      if (!fragment.collapsed) clientRects.push(...fragment.getClientRects());
+    }
+    firstRect ??= clientRects[0];
+    firstVisibleRect ??= clientRects.find(rect => rect.bottom > visibleBounds.top && rect.top < visibleBounds.bottom && rect.right > visibleBounds.left && rect.left < visibleBounds.right);
     const bounds = element.getBoundingClientRect();
     const rects = mergePdfRects(clientRects.map(rect => normalizePdfRect(rect, bounds)).filter((rect): rect is PdfRect => rect !== null));
     if (rects.length && rects.length <= 200) pages.push({ page: Number(element.dataset.pdfPage), rects });
   }
   if (!pages.length || pages.length > 32) return null;
-  const rect = lastRect!;
-  return { anchor: { assetHash, quote, pages }, x: (rect.left + rect.right) / 2, y: rect.bottom };
+  const rect = firstVisibleRect ?? firstRect!;
+  const x = (rect.left + rect.right) / 2;
+  return { anchor: { assetHash, quote, pages }, x, y: rect.top, button: {
+    left: Math.max(visibleBounds.left + 8, Math.min(x - 38, visibleBounds.right - 84)),
+    top: Math.max(visibleBounds.top + 8, Math.min(rect.top - 38, visibleBounds.bottom - 38)),
+  } };
 }

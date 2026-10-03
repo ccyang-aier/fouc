@@ -4,6 +4,39 @@ import { pdfCommentAnchorSchema } from '@fouc/shared/knowledge/contracts';
 import { createCommentThreadInputSchema } from '@fouc/shared/knowledge/comments';
 import { normalizePdfRect, mergePdfRects, readPdfSelection } from './pdf-selection';
 import { deriveCommentSidebarModel } from '../comments/comments-view-model';
+import { orderPdfText } from './pdf-text-order';
+
+test('PDF selection follows visual lines even when the callout is painted after the body', () => {
+  const item = (str: string, x: number, y: number) => ({ str, dir: 'ltr', width: 40, height: 12, transform: [12, 0, 0, 12, x, y], fontName: 'test', hasEOL: false });
+  const content = { items: [item('Body', 20, 200), item('Heading', 20, 300), item('second', 80, 400.5), item('Callout', 20, 400)], styles: {}, lang: null };
+  for (const scale of [1, 3]) {
+    const ordered = orderPdfText(content, (x, y) => [x * scale, (500 - y) * scale]);
+    expect(ordered.items.map(run => 'str' in run ? run.str : '')).toEqual(['Callout', 'second', 'Heading', 'Body']);
+    expect(ordered.items.map(run => 'hasEOL' in run && run.hasEOL)).toEqual([false, true, true, true]);
+  }
+  expect(content.items[0].str).toBe('Body');
+});
+
+test('only the selected leaf text contributes geometry, never the enclosing span box', async () => {
+  const browser = new Window();
+  const doc = browser.document as unknown as Document;
+  const host = doc.createElement('div'); doc.body.append(host);
+  host.innerHTML = '<div data-pdf-page="1"><div data-pdf-text><span>First</span><span>Second</span></div></div>';
+  host.getBoundingClientRect = () => ({ left: 0, top: 0, right: 200, bottom: 400, width: 200, height: 400 } as DOMRect);
+  const page = host.firstElementChild as HTMLElement; page.getBoundingClientRect = host.getBoundingClientRect;
+  const nodes = [...host.querySelectorAll('span')].map(span => span.firstChild!);
+  Object.defineProperty(browser.Range.prototype, 'getClientRects', { value: function(this: Range) {
+    if (this.startContainer !== this.endContainer || this.startContainer.nodeType !== 3) return [{ left: 0, top: 0, right: 200, bottom: 400 }];
+    const x = this.startContainer === nodes[0] ? 20 : 70;
+    return [{ left: x + this.startOffset * 5, top: 40, right: x + this.endOffset * 5, bottom: 60 }];
+  } });
+  const range = doc.createRange(); range.setStart(nodes[0], 2); range.setEnd(nodes[1], 3); doc.getSelection()!.addRange(range);
+  const selected = readPdfSelection(host, anchor.assetHash)!;
+  expect(selected.anchor.quote).toBe('rstSec');
+  expect(selected.anchor.pages[0].rects).toEqual([{ x: .15, y: .1, width: .075, height: .05 }, { x: .35, y: .1, width: .075, height: .05 }]);
+  expect(selected.y).toBe(40);
+  await browser.happyDOM.abort();
+});
 
 const anchor = { assetHash: 'a'.repeat(64), quote: 'Selected PDF text', pages: [{ page: 2, rects: [{ x: .1, y: .2, width: .3, height: .02 }] }] };
 test('cross-page selection clips each range to its text layer instead of highlighting canvases', async () => {
@@ -29,7 +62,7 @@ test('cross-page selection clips each range to its text layer instead of highlig
   const selected = readPdfSelection(host, anchor.assetHash);
   expect(selected?.anchor.pages).toEqual([1, 2].map(page => ({ page, rects: [{ x: .1, y: .1, width: .3, height: .05 }] })));
   expect(selected?.anchor.quote).toContain('First page');
-  expect(selected?.y).toBe(660);
+  expect(selected?.y).toBe(140);
   await browser.happyDOM.abort();
 });
 test('PDF coordinates clip to page bounds and remain equal across zoom levels', () => {

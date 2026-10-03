@@ -86,6 +86,15 @@
   transition-delay: 0ms;
 }
 
+.documentActions { position:static; width:46px; margin-left:6px; }
+.documentLabel { display:block; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; line-height:18px; }
+.documentMenu { width:196px; }
+.documentMenu svg { width:16px; height:16px; color:currentColor; }
+
+@media (prefers-reduced-motion:reduce) {
+  .row,.iconButton,.actionButton,.actions { transition:none; }
+}
+
 .actionButton {
   display: inline-flex;
   height: 22px;

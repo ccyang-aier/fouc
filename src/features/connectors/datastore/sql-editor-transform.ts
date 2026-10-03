@@ -11,7 +11,7 @@ export async function transformSqlEditor(current: () => EditorView | null, trans
   const original = state.sliceDoc(from, to)
   if (!original.trim()) return 'unchanged'
   const formatted = await transform(original)
-  if (current() !== view || view.state !== state) return 'stale'
+  if (current() !== view || view.state.doc !== state.doc || !view.state.selection.eq(state.selection) || view.state.readOnly) return 'stale'
   if (formatted === original) return 'unchanged'
   view.dispatch({
     changes: { from, to, insert: formatted },

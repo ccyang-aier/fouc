@@ -15,6 +15,9 @@ import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirro
 import { MySQL, PostgreSQL, SQLite, sql } from "@codemirror/lang-sql"
 import { sqlKeywordCompletion } from './sql-metadata-completion'
 import { sqlSnippetCompletion } from './sql-snippet-completion'
+import { MAX_SQL_ASSISTANCE_DOCUMENT_CHARS, sqlFunctionCompletion, sqlFunctionReplacesKeyword, sqlFunctionSignatureExtensions } from './sql-assistance/functions'
+import { sqlDiagnosticsExtensions } from './sql-assistance/diagnostics'
+import './sql-assistance/functions/theme.css'
 import { Compartment, EditorState, StateEffect } from "@codemirror/state"
 import { getOverlayRoot } from '@/lib/overlay-root'
 import type { SqlEditorPosition, SqlExecutionMode, SqlFormatterCase, SqlSnippet } from '@fouc/shared'
@@ -50,7 +53,7 @@ const sqlHighlight = HighlightStyle.define([
 
 const tooltipParent = new Compartment()
 
-type SqlEditorHandlers = { onChange: (value: string) => void; onRun: (mode?: SqlExecutionMode) => void; onSave?: () => void; onFormat?: () => void; onPositionChange?: (id: string, position: SqlEditorPosition) => void; complete?: CompletionSource; snippets?: SqlSnippet[]; keywordCase?: SqlFormatterCase }
+type SqlEditorHandlers = { onChange: (value: string) => void; onRun: (mode?: SqlExecutionMode) => void; onSave?: () => void; onFormat?: () => void; onPositionChange?: (id: string, position: SqlEditorPosition) => void; complete?: CompletionSource; snippets?: SqlSnippet[]; keywordCase?: SqlFormatterCase; functionCase?: SqlFormatterCase }
 class SqlEditorCallbacks {
   private positionReporter: ((view: EditorView) => void) | null = null
   constructor(private handlers: SqlEditorHandlers) {}
@@ -68,6 +71,7 @@ type Props = {
   onFormat?: () => void
   snippets?: SqlSnippet[]
   keywordCase?: SqlFormatterCase
+  functionCase?: SqlFormatterCase
   editorRef: RefObject<EditorView | null>
   provider?: "mysql" | "postgres" | "sqlite"
   readOnly?: boolean
@@ -86,7 +90,7 @@ export function SqlEditor({
   onChange,
   onRun,
   onSave,
-  onFormat, snippets, keywordCase,
+  onFormat, snippets, keywordCase, functionCase,
   editorRef,
   provider = "mysql",
   readOnly = false,
@@ -96,15 +100,15 @@ export function SqlEditor({
   const host = useRef<HTMLDivElement>(null)
   const initialValue = useRef(value)
   const initialPosition = useRef(positions)
-  const handlers = useRef({ onChange, onRun, onSave, onFormat, onPositionChange, complete, snippets, keywordCase })
+  const handlers = useRef({ onChange, onRun, onSave, onFormat, onPositionChange, complete, snippets, keywordCase, functionCase })
   const activeCallbacks = useRef<SqlEditorCallbacks | null>(null)
 
   useEffect(() => {
-    handlers.current = { onChange, onRun, onSave, onFormat, onPositionChange, complete, snippets, keywordCase }
+    handlers.current = { onChange, onRun, onSave, onFormat, onPositionChange, complete, snippets, keywordCase, functionCase }
     activeCallbacks.current?.update(handlers.current)
     initialValue.current = value
     initialPosition.current = positions
-  }, [onChange, onRun, onSave, onFormat, onPositionChange, complete, snippets, keywordCase, value, positions])
+  }, [onChange, onRun, onSave, onFormat, onPositionChange, complete, snippets, keywordCase, functionCase, value, positions])
   useEffect(() => { if (editorRef.current) closeCompletion(editorRef.current) }, [editorRef, completionScope])
 
   useEffect(() => {
@@ -116,6 +120,15 @@ export function SqlEditor({
     const savedLeft = cached?.scrollLeft ?? initialPosition.current?.scrollLeft ?? 0
     let restoringViewport = true
     callbacks.setPositionReporter(reportPosition)
+    const bounded = (source: CompletionSource): CompletionSource => (context) => context.state.doc.length > MAX_SQL_ASSISTANCE_DOCUMENT_CHARS ? null : source(context)
+    const keywordSource = sqlKeywordCompletion(provider)
+    const keywords: CompletionSource = (context) => {
+      const result = keywordSource(context)
+      if (!result || !('options' in result)) return result
+      // Built-in functions use argument fields and documentation below; real
+      // keyword entries and metadata columns retain their distinct sources.
+      return { ...result, options: result.options.filter((option) => !sqlFunctionReplacesKeyword(option.label, provider)) }
+    }
     const extensions = [
         tooltipParent.of(tooltips({ parent: getOverlayRoot() ?? document.body })),
         EditorState.readOnly.of(readOnly),
@@ -134,7 +147,8 @@ export function SqlEditor({
         sql({
           dialect: provider === "postgres" ? PostgreSQL : provider === "sqlite" ? SQLite : MySQL
         }),
-        ...(readOnly ? [] : [autocompletion({ tooltipClass: () => 'fouc-sql-completion', override: [sqlKeywordCompletion(provider), sqlSnippetCompletion(provider, () => callbacks.get()), (context) => callbacks.get().complete?.(context) ?? null] })]),
+        ...(readOnly ? [] : [autocompletion({ tooltipClass: () => 'fouc-sql-completion', override: [bounded(keywords), bounded(sqlSnippetCompletion(provider, () => callbacks.get())), sqlFunctionCompletion(provider, () => callbacks.get()), bounded((context) => callbacks.get().complete?.(context) ?? null)] }),
+          ...sqlFunctionSignatureExtensions(provider), ...sqlDiagnosticsExtensions(provider)]),
         highlightSelectionMatches(),
         EditorView.lineWrapping,
         EditorView.contentAttributes.of({

@@ -3,6 +3,7 @@ import { compileSqlTemplate, sqlSourceEnd, sqlSourcePosition, sqlVariableContext
 import { SqlExecutionRegistry, sqlExecutionError } from './sql-execution-registry';
 import {
   DATABASE_CAPABILITIES,
+  SQL_FILE_MAX_BYTES,
   type DatabaseCapabilities,
   type DatabaseColumnInfo,
   type DatabaseObjectInfo,
@@ -374,7 +375,7 @@ export class RelationalSessionManager {
     if (!input || typeof input.sql !== 'string' || Buffer.byteLength(input.sql, 'utf8') > 1_000_000 ||
       input.schema !== null && typeof input.schema !== 'string' ||
       !Number.isInteger(input.maxRows ?? 500) || Number(input.maxRows ?? 500) < 1 || Number(input.maxRows ?? 500) > 5000 ||
-      !Number.isInteger(input.offset ?? 0) || Number(input.offset ?? 0) < 0 || Number(input.offset ?? 0) > 1_000_000 ||
+      !Number.isInteger(input.offset ?? 0) || Number(input.offset ?? 0) < 0 || Number(input.offset ?? 0) + input.sql.length > SQL_FILE_MAX_BYTES ||
       input.declarationSql !== undefined && (typeof input.declarationSql !== 'string' || Buffer.byteLength(input.declarationSql, 'utf8') > 1_000_000) ||
       input.parameters !== undefined && (!input.parameters || typeof input.parameters !== 'object' || Array.isArray(input.parameters)))
       throw new DatabaseInputError('查询执行参数无效');

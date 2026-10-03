@@ -12,6 +12,11 @@ import { SqlExecutionResults } from './sql-execution-results'
 import { useSqlExecutions } from './use-sql-executions'
 import { SqlParameterDialog, rememberSqlParameters, type SqlParameterRecents } from './sql-parameter-dialog'
 import { SqlEditorSplit } from './sql-editor-split'
+import { SqlFileActions } from './sql-file-actions'
+import { SqlQuickActions } from './sql-quick-actions'
+import type { OpenSqlFile } from './sql-files'
+import { SQL_DRAFT_MAX_BYTES } from '@fouc/shared'
+import { sqlVariableContext } from '@fouc/shared'
 import { SqlEditorPreferencesDialog } from './sql-editor-preferences-dialog'
 import { transformSqlEditor } from './sql-editor-transform'
 import { compressSqlText, formatSqlForEditing } from './sql-format/formatter'
@@ -96,6 +101,13 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
     const tab = newSqlTab(session.provider === 'mysql' ? schema || session.database : session.database, schema || null, `查询 ${number}`)
     controller.update((snapshot) => ({ tabs: [...snapshot.tabs, tab], activeTabId: tab.id })); setPanel(null)
   }
+  function openSqlFiles(files: OpenSqlFile[]) {
+    const snapshot = controller.getSnapshot()
+    const imported = files.map((file) => ({ ...newSqlTab(session.provider === 'mysql' ? schema || session.database : session.database, schema || null, [...file.name].slice(0, 180).join('')), sql: file.sql, originalSql: '', customTitle: true }))
+    const next = { tabs: [...snapshot.tabs, ...imported], activeTabId: imported.at(-1)?.id ?? snapshot.activeTabId }
+    if (new TextEncoder().encode(JSON.stringify(next)).byteLength > SQL_DRAFT_MAX_BYTES) throw new Error('完整 SQL 草稿最多 64 MiB，请先保存或关闭部分查询标签。')
+    controller.edit(next); setPanel(null); setNotice(`已打开 ${files.length} 个 SQL 文件，完整内容已加载。`)
+  }
   async function formatText(sql: string): Promise<string> {
     const settings = preferences.data?.formatter
     if (!settings || preferences.busy || preferences.error) throw new Error('编辑器设置尚未加载，请先重试读取设置。')
@@ -167,7 +179,7 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
     const document = view?.state.doc.toString() ?? current.sql
     const target = resolveSqlExecutionTarget(document, session.provider, mode, selection)
     if (!target) { setNotice(mode === 'current' ? '光标所在位置没有可执行语句，请移到 SQL 内或选择全部语句。' : '没有可执行的 SQL。'); return }
-    const declarationSql = document.slice(0, target.to)
+    const declarationSql = sqlVariableContext(document.slice(0, target.to), session.provider)
     let inspected
     try { inspected = inspectSqlTemplate(target.sql, session.provider, declarationSql) }
     catch (reason) { setNotice(reason instanceof Error ? reason.message : String(reason)); return }
@@ -247,6 +259,8 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
         <button type="button" aria-label="压缩 SQL" title="压缩选区或完整 SQL，保留字面量与执行提示" disabled={!current || running || formatting} onClick={() => void transformCurrent(true)}><ArrowsInLineHorizontal size={17} /></button>
         <button type="button" aria-label="SQL 编辑器设置" title="格式化、保存与代码片段" disabled={preferences.busy || !preferences.data || Boolean(preferences.error)} onClick={() => setEditorSettingsOpen(true)}><SlidersHorizontal size={17} /></button>
         <span className={styles.toolDivider} />
+        <SqlQuickActions editorRef={editor} provider={session.provider} disabled={!current || running || formatting} keywordCase={preferences.data?.formatter.keywordCase} onFormatSql={formatText} onNotice={setNotice} />
+        <SqlFileActions provider={session.provider} disabled={!state.ready || running} getDocument={() => current ? { sql: editor.current?.state.doc.toString() ?? current.sql, title: current.title } : null} onOpen={openSqlFiles} onNotice={setNotice} />
         <button type="button" aria-label="历史" title="查询历史" aria-pressed={panel === 'history'} onClick={() => setPanel((value) => value === 'history' ? null : 'history')}><ClockCounterClockwise size={17} /><span>历史</span></button>
         <button type="button" aria-label="SQL 库" aria-pressed={panel === 'library'} disabled={!libraryBase} title={!libraryBase ? '保存连接后可使用 SQL 库' : 'SQL 库'} onClick={() => setPanel((value) => value === 'library' ? null : 'library')}><FolderOpen size={17} /><span>SQL 库</span></button>
         <button type="button" aria-label="保存 SQL" title="保存 SQL · Ctrl / ⌘ + S" disabled={!current || running || formatting || preferences.busy || !libraryBase || library.busy || !sqlTabSaveable(current)} onClick={() => void saveCurrent()}><FloppyDisk size={17} /><span>保存 SQL</span></button>
@@ -261,7 +275,7 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
       {(notice || library.error) && <p role={library.error ? 'alert' : 'status'} className={library.error ? styles.error : styles.notice}>{library.error || notice}{!library.error && <button type="button" aria-label="关闭 SQL 提示" onClick={() => setNotice('')}><X size={14} /></button>}</p>}
       {current ? <SqlEditorSplit editor={<div className="mw-editor" id="fouc-sql-query-document" role="tabpanel" aria-label={current.title}><SqlEditor provider={session.provider} documentId={current.id} value={current.sql} positions={current.editorPosition} cache={editorCache.current} complete={complete} completionScope={`${targetSchema}:${metadataRevision}:${preferences.data?.version ?? "default"}`}
           onChange={(sql) => updateTab(current.id, { sql })} onPositionChange={(id, editorPosition) => { const tab = controller.getSnapshot().tabs.find((item) => item.id === id); if (tab && JSON.stringify(tab.editorPosition) !== JSON.stringify(editorPosition)) updateTab(id, { editorPosition }) }}
-          onRun={(mode) => void run(mode ?? executionMode)} onSave={() => void saveCurrent()} onFormat={() => void transformCurrent()} snippets={preferences.data?.snippets} keywordCase={preferences.data?.formatter.keywordCase} editorRef={editor} /></div>}
+          onRun={(mode) => void run(mode ?? executionMode)} onSave={() => void saveCurrent()} onFormat={() => void transformCurrent()} snippets={preferences.data?.snippets} keywordCase={preferences.data?.formatter.keywordCase} functionCase={preferences.data?.formatter.functionCase} editorRef={editor} /></div>}
         status={<div className={styles.document}><span className={styles.language}>SQL</span><span title={current.database}>{displayDatabase}{current.schema && session.provider !== 'mysql' ? ` / ${current.schema}` : ''}</span><small><Lock size={12} />只读 · {executionMode === 'current' ? '当前语句' : '全部语句'} · 选区优先</small>{draftStatus}</div>}
         result={<SqlExecutionResults key={`${current.id}:${execution?.snapshot?.id ?? 'empty'}`} execution={execution} onSelect={(index) => selectResult(current.id, index)} view={current.resultView} onViewChange={(resultView) => updateTab(current.id, { resultView })} onCancel={() => void cancel(current.id)} onReveal={(statement) => {
           const view = editor.current; if (!view) return

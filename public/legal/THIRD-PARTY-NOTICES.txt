@@ -120,6 +120,16 @@ sql-formatter 15.8.0 is an independently declared MIT dependency, pinned to the
 reference version for its internal AST interfaces. Its complete license is in
 SQL-FORMATTER-LICENSE.txt. Third-party package code is excluded from migration credit.
 
+SQL function completion/signature fields, native function documentation, alias/CTE
+diagnostics and definition navigation follow sqlCompletion.ts, sqlDiagnostics.ts
+and sql/semantic/{diagnostics,aliasHighlights,cteNavigation,references}. Fouc's
+sql-assistance modules use its own scope model and CodeMirror lifecycle.
+Quick intentions, selection quoting/case, IN-list paste and table query templates
+follow lib/editor/sqlIntentionActions.ts and lib/sql/{sqlSelectionCase,sqlQuoteCaret,
+sqlInListPaste,sqlShortcutTableTarget,sqlShortcutFormBodies}. Browser SQL file IO
+adapts sqlFileOpen.ts into strict decoding and current-connection document tabs;
+desktop path APIs and DBX runtime imports are not used.
+
 redis-parser 3.0.0
 Copyright (c) 2015 NodeRedis; MIT License.
 Fouc's dedicated Pub/Sub connection uses this RESP parser. The full license

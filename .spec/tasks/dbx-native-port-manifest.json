@@ -361,6 +361,53 @@
         "src/features/connectors/datastore/sql-editor-snippet-settings.tsx",
         "src/features/connectors/datastore/sql-snippet-completion.ts"
       ]
+    },
+    {
+      "area": "native-relational-sql-assistance-and-browser-files",
+      "status": "partial",
+      "sourceReferences": [
+        "apps/desktop/src/lib/sql/sqlCompletion.ts",
+        "apps/desktop/src/lib/sql/sqlDiagnostics.ts",
+        "apps/desktop/src/lib/sql/semantic/diagnostics.ts",
+        "apps/desktop/src/lib/sql/semantic/aliasHighlights.ts",
+        "apps/desktop/src/lib/sql/semantic/cteNavigation.ts",
+        "apps/desktop/src/lib/sql/semantic/references.ts",
+        "apps/desktop/src/lib/editor/sqlIntentionActions.ts",
+        "apps/desktop/src/lib/sql/sqlSelectionCase.ts",
+        "apps/desktop/src/lib/sql/sqlQuoteCaret.ts",
+        "apps/desktop/src/lib/sql/sqlInListPaste.ts",
+        "apps/desktop/src/lib/sql/sqlShortcutTableTarget.ts",
+        "apps/desktop/src/lib/sql/sqlShortcutFormBodies.ts",
+        "apps/desktop/src/lib/sql/sqlFileOpen.ts"
+      ],
+      "runtimeFiles": [
+        "src/features/connectors/datastore/sql-assistance/actions/action-edits.ts",
+        "src/features/connectors/datastore/sql-assistance/actions/editor-actions.ts",
+        "src/features/connectors/datastore/sql-assistance/actions/in-list-paste.ts",
+        "src/features/connectors/datastore/sql-assistance/actions/intention-actions.ts",
+        "src/features/connectors/datastore/sql-assistance/actions/quote-caret.ts",
+        "src/features/connectors/datastore/sql-assistance/actions/selection-case.ts",
+        "src/features/connectors/datastore/sql-assistance/actions/semantic-context.ts",
+        "src/features/connectors/datastore/sql-assistance/actions/table-shortcuts.ts",
+        "src/features/connectors/datastore/sql-assistance/diagnostics.ts",
+        "src/features/connectors/datastore/sql-assistance/diagnostics/alias-highlights.ts",
+        "src/features/connectors/datastore/sql-assistance/diagnostics/cte-navigation.ts",
+        "src/features/connectors/datastore/sql-assistance/diagnostics/error-locations.ts",
+        "src/features/connectors/datastore/sql-assistance/diagnostics/extension.ts",
+        "src/features/connectors/datastore/sql-assistance/diagnostics/model-context.ts",
+        "src/features/connectors/datastore/sql-assistance/diagnostics/references.ts",
+        "src/features/connectors/datastore/sql-assistance/diagnostics/semantic-diagnostics.ts",
+        "src/features/connectors/datastore/sql-assistance/functions.ts",
+        "src/features/connectors/datastore/sql-assistance/functions/completion.ts",
+        "src/features/connectors/datastore/sql-assistance/functions/descriptions.ts",
+        "src/features/connectors/datastore/sql-assistance/functions/extensions.ts",
+        "src/features/connectors/datastore/sql-assistance/functions/registry.ts",
+        "src/features/connectors/datastore/sql-assistance/functions/signature.ts",
+        "src/features/connectors/datastore/sql-assistance/functions/tooltip-dom.ts",
+        "src/features/connectors/datastore/sql-file-actions.tsx",
+        "src/features/connectors/datastore/sql-files.ts",
+        "src/features/connectors/datastore/sql-quick-actions.tsx"
+      ]
     }
   ],
   "knownRemainingScope": [
@@ -368,7 +415,7 @@
     "common driver lifecycle, cancellation, reconnect and streaming",
     "cross-entry-point write grants, scope restrictions and shared policy integration",
     "full grid selection/copy/paste/undo, keyless guards, complex types, structure editing, cancellation and distributed transactions",
-    "full SQL dialect parsing/completion/parameters, broader snippet/formatter driver and entry-point matrices, external-file IO, editor split groups/detached windows and broader history scopes/driver-entry matrices",
+    "full SQL dialect parsing/completion/parameters and metadata diagnostics, broader formatter/function/intention driver and entry-point matrices, streaming large SQL files/ZIP/task restoration, editor split groups/detached windows and broader history scopes",
     "import/export/transfer/schema and data comparison/backup",
     "remaining DBX drivers and specialized surfaces",
     "CLI/MCP and applicable desktop entry points",

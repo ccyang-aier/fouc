@@ -48,6 +48,9 @@ describe('real SQLite connection and API', () => {
       const failed = await settle(manager.startExecution('execution-space', session.id, { sql: 'SELECT 1; SELECT missing FROM items; SELECT 3', schema: 'main', offset: 4 }).id);
       expect(failed.statements.map((item) => item.status)).toEqual(['succeeded', 'failed', 'skipped']);
       expect(failed.statements[0].from).toBe(4); expect(failed.statements[0].result?.rows).toEqual([[1]]);
+      const offset = 2_000_000, tail = await settle(manager.startExecution('execution-space', session.id, { sql: 'SELECT 42 AS selected_tail', schema: 'main', offset }).id);
+      expect(tail.statements[0].from).toBe(offset); expect(tail.statements[0].result?.rows).toEqual([[42]]);
+      expect(() => manager.startExecution('execution-space', session.id, { sql: 'SELECT 42', schema: 'main', offset: 64 * 1024 * 1024 })).toThrow();
       const running = manager.startExecution('execution-space', session.id, { sql: 'WITH RECURSIVE seq(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM seq WHERE n<100000000) SELECT COUNT(*) FROM seq', schema: 'main' });
       expect(() => manager.cancelExecution('other-space', session.id, running.id)).toThrow();
       await new Promise((resolve) => setTimeout(resolve, 100));

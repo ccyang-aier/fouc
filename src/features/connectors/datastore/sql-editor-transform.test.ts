@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { EditorState, Transaction, type TransactionSpec } from '@codemirror/state'
+import { EditorState, StateEffect, Transaction, type TransactionSpec } from '@codemirror/state'
 import type { EditorView } from '@codemirror/view'
 import { history, undo } from '@codemirror/commands'
 import { transformSqlEditor } from './sql-editor-transform'
@@ -16,6 +16,18 @@ test('selection format leaves surrounding SQL and restores the exact document wi
   undo(view)
   expect(view.state.doc.toString()).toBe('before; select 1; after;')
 })
+test('background tooltip effects permit formatting but a changed selection does not', async () => {
+  const view = editor('select 1')
+  expect(await transformSqlEditor(() => view, async () => {
+    view.dispatch({ effects: StateEffect.define<boolean>().of(false) })
+    return 'SELECT 1'
+  })).toBe('applied')
+  expect(await transformSqlEditor(() => view, async () => {
+    view.dispatch({ selection: { anchor: 1 } })
+    return 'SELECT 2'
+  })).toBe('stale')
+})
+
 test('an asynchronous formatter cannot overwrite typing or a different document', async () => {
   const view = editor('select 1')
   let resolve!: (text: string) => void

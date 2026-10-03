@@ -11,12 +11,19 @@ import {
 import { DatabaseInputError } from '../input-error';
 import { postgresStructure } from './postgres-structure';
 
+export function postgresReadErrorPosition(error: unknown, sql: string, prefix = ''): void {
+  if (!error || typeof error !== 'object' || !('position' in error)) return;
+  const offset = Number(error.position) - 1 - prefix.length;
+  // PostgreSQL counts code points; CodeMirror and our public source ranges use UTF-16.
+  error.position = Number.isInteger(offset) && offset >= 0 ? String(Array.from(sql).slice(0, offset).join('').length + 1) : undefined;
+}
+
 // Adapted from DBX dbx-drivers/src/db/postgres.rs: catalog-backed metadata,
 // connection-local search_path, read-only transactions and bounded cursors.
 export async function connectPostgres(
   input: Extract<RelationalConnectInput, { provider: 'postgres' }>,
 ): Promise<RelationalDriver> {
-  const pool = new Pool({
+  const options = {
     host: input.host,
     port: input.port,
     user: input.username,
@@ -27,8 +34,11 @@ export async function connectPostgres(
     connectionTimeoutMillis: 10000,
     idleTimeoutMillis: 30000,
     options: '-c standard_conforming_strings=on',
-  });
+  };
+  const pool = new Pool(options);
+  const control = new Pool({ ...options, max: 1 });
   pool.on('error', () => {});
+  control.on('error', () => {});
   const parser = {
     getTypeParser: (oid: number, format?: string) =>
       [1082, 1114, 1184, 1700, 20].includes(oid)
@@ -44,27 +54,41 @@ export async function connectPostgres(
       schema: string | null,
       maxRows: number,
       values: SqlParameter[] = [],
+      signal?: AbortSignal,
     ): Promise<DriverResult> {
+      signal?.throwIfAborted();
       const client = await pool.connect();
       let broken = false;
+      let cancellation: Promise<unknown> | null = null;
+      let backendId: number | null = null;
+      const abort = () => {
+        if (backendId !== null) cancellation ??= control.query('SELECT pg_cancel_backend($1)', [backendId]).catch(() => undefined);
+      };
+      signal?.addEventListener('abort', abort, { once: true });
       try {
+        signal?.throwIfAborted();
+        backendId = Number((await client.query('SELECT pg_backend_pid() AS id')).rows[0].id);
+        signal?.throwIfAborted();
         await client.query('BEGIN READ ONLY');
         await client.query("SET LOCAL statement_timeout = '30s'");
         if (schema)
           await client.query("SELECT set_config('search_path', $1, true)", [quote(schema)]);
+        signal?.throwIfAborted();
         let result: QueryResult<unknown[]>;
-        if (/^\s*EXPLAIN\b/i.test(sql))
-          result = await client.query({
+        if (/^\s*EXPLAIN\b/i.test(sql)) {
+          try { result = await client.query({
             text: sql,
             values,
             rowMode: 'array',
             types: parser,
-          });
+          }); } catch (error) { postgresReadErrorPosition(error, sql); throw error; }
+        }
         else {
-          await client.query({
-            text: `DECLARE fouc_result NO SCROLL CURSOR FOR ${sql}`,
+          const prefix = 'DECLARE fouc_result NO SCROLL CURSOR FOR ';
+          try { await client.query({
+            text: prefix + sql,
             values,
-          });
+          }); } catch (error) { postgresReadErrorPosition(error, sql, prefix); throw error; }
           result = await client.query({
             text: `FETCH FORWARD ${maxRows + 1} FROM fouc_result`,
             rowMode: 'array',
@@ -78,6 +102,8 @@ export async function connectPostgres(
           hasMore: result.rows.length > maxRows,
         };
       } finally {
+        signal?.removeEventListener('abort', abort);
+        await cancellation;
         await client.query('ROLLBACK').catch(() => {
           broken = true;
         });
@@ -197,10 +223,10 @@ export async function connectPostgres(
           client.release(broken);
         }
       },
-      close: () => pool.end(),
+      close: async () => { await Promise.all([pool.end(), control.end()]); },
     };
   } catch (error) {
-    await pool.end();
+    await Promise.all([pool.end(), control.end()]);
     throw error;
   }
 }

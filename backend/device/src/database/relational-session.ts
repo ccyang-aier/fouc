@@ -1,4 +1,6 @@
 import { DatabaseInputError } from './input-error';
+import { splitSqlExecutionRanges } from '@fouc/shared';
+import { SqlExecutionRegistry } from './sql-execution-registry';
 import {
   DATABASE_CAPABILITIES,
   type DatabaseCapabilities,
@@ -40,6 +42,7 @@ type Entry = {
   connectionName: string;
 };
 export class RelationalSessionManager {
+  private executions = new SqlExecutionRegistry();
   private readonly entries = new Map<string, Entry>();
   private readonly transientSql = new RelationalSqlRepository();
   constructor(private readonly capabilities: DatabaseCapabilityRegistry, readonly sqlRepository = new RelationalSqlRepository()) {}
@@ -325,6 +328,7 @@ export class RelationalSessionManager {
     sql: unknown,
     schema: string | null,
     maxRows = 500,
+    signal?: AbortSignal,
   ): Promise<DatabaseQueryResult> {
     if (
       !Number.isInteger(maxRows) ||
@@ -349,7 +353,7 @@ export class RelationalSessionManager {
       catch (reason) { return `查询历史保存失败：${reason instanceof Error ? reason.message : String(reason)}`; }
     };
     let result;
-    try { result = await driver.read(statement, schema, maxRows); }
+    try { result = await driver.read(statement, schema, maxRows, [], signal); }
     catch (error) { record(false, error instanceof Error ? error.message : String(error), 0, false); throw error; }
     const historyWarning = record(true, null, result.rows.length, result.hasMore);
     return {
@@ -363,6 +367,31 @@ export class RelationalSessionManager {
     };
   }
   private historyRepository(entry: Entry): RelationalSqlRepository { return entry.session.connectionId ? this.sqlRepository : this.transientSql; }
+  startExecution(workspaceId: string, id: string, value: unknown) {
+    const { session } = this.entry(workspaceId, id);
+    const input = value as { sql?: unknown; schema?: unknown; maxRows?: unknown; offset?: unknown } | null;
+    if (!input || typeof input.sql !== 'string' || Buffer.byteLength(input.sql, 'utf8') > 1_000_000 ||
+      input.schema !== null && typeof input.schema !== 'string' ||
+      !Number.isInteger(input.maxRows ?? 500) || Number(input.maxRows ?? 500) < 1 || Number(input.maxRows ?? 500) > 5000 ||
+      !Number.isInteger(input.offset ?? 0) || Number(input.offset ?? 0) < 0 || Number(input.offset ?? 0) > 1_000_000)
+      throw new DatabaseInputError('查询执行参数无效');
+    const sql = input.sql, schema = input.schema as string | null, maxRows = Number(input.maxRows ?? 500), offset = Number(input.offset ?? 0);
+    const ranges = splitSqlExecutionRanges(sql, session.provider);
+    if (!ranges.length || ranges.length > 50) throw new DatabaseInputError('每次执行须包含 1 至 50 条语句');
+    // Validate the entire batch before any statement runs; the drivers also enforce read isolation.
+    for (const range of ranges) session.provider === 'mysql' ? assertMysqlReadOnlySql(range.sql) : assertRelationalReadSql(range.sql, session.provider);
+    return this.executions.start(workspaceId, id, session.provider === 'mysql' ? schema ?? session.database : session.database, schema,
+      ranges.map((range) => ({ ...range, from: range.from + offset, to: range.to + offset })),
+      (statement, signal) => this.query(workspaceId, id, statement, schema, maxRows, signal));
+  }
+  execution(workspaceId: string, id: string, executionId: string, revision: number) {
+    this.entry(workspaceId, id);
+    return this.executions.poll(workspaceId, id, executionId, revision);
+  }
+  cancelExecution(workspaceId: string, id: string, executionId: string) {
+    this.entry(workspaceId, id);
+    return this.executions.cancel(workspaceId, id, executionId);
+  }
   historySearch(workspaceId: string, id: string, value: unknown) {
     const entry = this.entry(workspaceId, id); return this.historyRepository(entry).search(workspaceId, value, entry.session.connectionId ?? id);
   }
@@ -384,6 +413,7 @@ export class RelationalSessionManager {
   async disconnect(workspaceId: string, id: string): Promise<void> {
     const entry = this.entry(workspaceId, id);
     this.entries.delete(id);
+    await this.executions.closeSession(id);
     if (!entry.session.connectionId) this.transientSql.clearHistory(workspaceId, id);
     this.capabilities.disconnect(id, id);
     await entry.driver.close();

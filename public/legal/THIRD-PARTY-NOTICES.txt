@@ -97,6 +97,13 @@ shared/src/json-source.ts; unused Number-wrapper/stringify helpers are omitted.
 Fouc's React CodeMirror editor and existing single-use mutation plans preserve
 raw request numbers, byte keys, exact expiry and conflict/permission guards.
 
+SQL statement targeting, per-statement execution/result status and cancellation
+follow sqlStatementRanges.ts, sqlExecutionTarget.ts, queryExecutionState.ts and
+crates/dbx-core/src/query/query_cancel.rs. Fouc implements scoped registrations,
+native MySQL/PostgreSQL interrupts and an isolated read-only SQLite query process
+in shared/src/sql-execution.ts and backend/device/src/database/sql-execution* /
+sqlite-query*. React result tabs use the existing native result renderer.
+
 redis-parser 3.0.0
 Copyright (c) 2015 NodeRedis; MIT License.
 Fouc's dedicated Pub/Sub connection uses this RESP parser. The full license

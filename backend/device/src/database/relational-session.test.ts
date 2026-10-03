@@ -31,6 +31,31 @@ afterAll(() => {
 });
 
 describe('real SQLite connection and API', () => {
+  test('execution endpoints keep partial results, preflight the full batch, scope cancellation and interrupt real SQLite work', async () => {
+    const manager = new RelationalSessionManager(new DatabaseCapabilityRegistry());
+    const session = await manager.connect('execution-space', { provider: 'sqlite', path: dbFile });
+    const settle = async (id: string) => {
+      for (let count = 0; count < 80; count++) {
+        const snapshot = manager.execution('execution-space', session.id, id, 0).execution!;
+        if (!['running', 'cancelling'].includes(snapshot.status)) return snapshot;
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+      throw new Error('SQLite execution did not finish');
+    };
+    try {
+      expect(() => manager.startExecution('execution-space', session.id, { sql: 'SELECT 1; DELETE FROM items', schema: 'main' })).toThrow();
+      expect(manager.historySearch('execution-space', session.id, {}).total).toBe(0);
+      const failed = await settle(manager.startExecution('execution-space', session.id, { sql: 'SELECT 1; SELECT missing FROM items; SELECT 3', schema: 'main', offset: 4 }).id);
+      expect(failed.statements.map((item) => item.status)).toEqual(['succeeded', 'failed', 'skipped']);
+      expect(failed.statements[0].from).toBe(4); expect(failed.statements[0].result?.rows).toEqual([[1]]);
+      const running = manager.startExecution('execution-space', session.id, { sql: 'WITH RECURSIVE seq(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM seq WHERE n<100000000) SELECT COUNT(*) FROM seq', schema: 'main' });
+      expect(() => manager.cancelExecution('other-space', session.id, running.id)).toThrow();
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(manager.cancelExecution('execution-space', session.id, running.id).status).toBe('cancelling');
+      expect((await settle(running.id)).status).toBe('cancelled');
+      expect((await manager.query('execution-space', session.id, 'SELECT 2', 'main')).rows).toEqual([[2]]);
+    } finally { await manager.shutdown(); }
+  });
   test('native SQL history records actual outcomes, leaves blocked SQL out and keeps direct sessions transient', async () => {
     const store = new RelationalSqlRepository(), manager = new RelationalSessionManager(new DatabaseCapabilityRegistry(), store);
     try {

@@ -1,0 +1,34 @@
+.results { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.summary { display: flex; align-items: center; gap: 16px; min-height: 33px; padding: 5px 12px; background: var(--panel); color: var(--muted-strong); font-size: 11px; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.state, .elapsed { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.state { font-weight: 500; color: var(--ink-soft); }
+.summary[data-status=completed] .state { color: var(--ok-ink); }
+.summary[data-status=failed] .state { color: var(--err-ink); }
+.elapsed { margin-left: auto; }
+.cancel { display: inline-flex; align-items: center; gap: 5px; color: var(--err-ink); padding: 3px 7px; border: 1px solid color-mix(in srgb,var(--err-ink) 22%,transparent); border-radius: 4px; cursor: pointer; }
+.cancel:hover { background: color-mix(in srgb,var(--err-ink) 7%,var(--panel)); }
+.cancel:disabled { opacity: .6; cursor: wait; }
+.progress { height: 2px; background: var(--accent-soft); flex-shrink: 0; }
+.progress i { display: block; height: 100%; background: var(--accent-ink); transition: width .2s ease; }
+.tabs { display: flex; flex-shrink: 0; overflow-x: auto; scrollbar-width: thin; min-height: 34px; border-block: 1px solid var(--line); background: var(--surface-subtle); }
+.tabs button { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-right: 1px solid var(--line); font-size: 12px; white-space: nowrap; color: var(--muted-strong); cursor: pointer; position: relative; }
+.tabs button:hover { background: var(--surface-hover); }
+.tabs button[aria-selected=true] { color: var(--ink); background: var(--panel); }
+.tabs button[aria-selected=true]::before { content: ''; position: absolute; inset: 0 0 auto; height: 2px; background: var(--accent-ink); }
+.tabs button[data-status=failed] > svg { color: var(--err-ink); }
+.tabs small { font-size: 10px; padding: 1px 4px; background: var(--surface-hover); border-radius: 3px; font-variant-numeric: tabular-nums; }
+.body { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.connectionError { padding: 7px 12px; color: var(--err-ink); background: color-mix(in srgb,var(--err-ink) 7%,var(--panel)); font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.connectionError button { text-decoration: underline; cursor: pointer; margin-left: 8px; }
+.failure { padding: 18px 20px; display: grid; align-content: start; gap: 10px; overflow: auto; font-size: 13px; line-height: 1.7; }
+.failure summary { color: var(--muted-strong); font-size: 12px; cursor: pointer; }
+.failure pre { margin-top: 8px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface-subtle); white-space: pre-wrap; overflow-wrap: anywhere; font: 13px/1.7 var(--font-code); }
+.failure > div { display: flex; align-items: center; gap: 7px; color: var(--err-ink); }
+.failure strong { font-size: 13px; font-weight: 600; }
+.failure code { color: var(--muted-strong); margin-left: auto; }
+.failure p { color: var(--ink-soft); white-space: pre-wrap; overflow-wrap: anywhere; }
+.failure small, .failure > span { color: var(--muted-strong); font-size: 11px; }
+.failure button { justify-self: start; border: 1px solid var(--line); padding: 4px 9px; border-radius: 4px; cursor: pointer; color: var(--accent-ink); }
+.mode { height: 30px; max-width: 104px; padding: 0 5px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); color: var(--ink-soft); font-size: 11px; }
+@media(max-width:760px) { .summary { gap: 10px; padding-inline: 9px; flex-wrap: wrap; } .tabs button { padding-inline: 10px; } .mode { max-width: 84px; } }
+@media(prefers-reduced-motion:reduce) { .progress i { transition: none; } }

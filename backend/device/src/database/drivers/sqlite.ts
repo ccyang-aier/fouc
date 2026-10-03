@@ -6,6 +6,7 @@ import { quoteRelationalIdentifier as quote } from '../relational-sql';
 import { DatabaseInputError } from '../input-error';
 import { relationalCell, type Relation, type RelationalDriver } from './relational-driver';
 import { sqliteStructure } from './sqlite-structure';
+import { readSqliteInProcess } from '../sqlite-query-process';
 
 // DBX sqlite.rs: existing local file, single connection, xinfo (including
 // generated columns), composite primary keys and explicit read-only opening.
@@ -89,33 +90,9 @@ export async function connectSqlite(
           columns,
         );
       },
-      async read(sql, schema, maxRows, values = []) {
+      async read(sql, schema, maxRows, values = [], signal) {
         if (schema && schema !== 'main') throw new DatabaseInputError('SQLite 会话仅支持 main');
-        const statement = db.prepare(sql);
-        statement.setReadBigInts(true);
-        statement.setReturnArrays(true);
-        const fields = statement.columns();
-        const rows = [];
-        for (const row of statement.iterate(
-          ...values.map((value) => (typeof value === 'boolean' ? Number(value) : value)),
-        )) {
-          rows.push(
-            (row as unknown as unknown[]).map((value) =>
-              typeof value === 'bigint' &&
-              value <= BigInt(Number.MAX_SAFE_INTEGER) &&
-              value >= BigInt(Number.MIN_SAFE_INTEGER)
-                ? Number(value)
-                : relationalCell(value),
-            ),
-          );
-          if (rows.length > maxRows) break;
-        }
-        return {
-          columns: fields.map((field) => field.name),
-          columnTypes: fields.map((field) => field.type ?? 'dynamic'),
-          rows: rows.slice(0, maxRows),
-          hasMore: rows.length > maxRows,
-        };
+        return readSqliteInProcess(input.path, sql, maxRows, values, signal);
       },
       async assertEditable(schema, table) {
         if (

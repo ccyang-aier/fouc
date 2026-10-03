@@ -40,6 +40,7 @@ export interface RelationalDriver {
     schema: string | null,
     maxRows: number,
     values?: SqlParameter[],
+    signal?: AbortSignal,
   ): Promise<DriverResult>;
   assertEditable(schema: string, table: string): Promise<void>;
   transaction<T>(

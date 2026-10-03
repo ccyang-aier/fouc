@@ -288,6 +288,28 @@
         "src/features/connectors/datastore/sql-semantic/source-columns.ts",
         "src/features/connectors/datastore/sql-semantic/statement-window.ts"
       ]
+    },
+    {
+      "area": "native-relational-sql-execution-workflow",
+      "status": "partial",
+      "sourceReferences": [
+        "apps/desktop/src/lib/sql/sqlStatementRanges.ts",
+        "apps/desktop/src/lib/sql/sqlExecutionTarget.ts",
+        "apps/desktop/src/lib/sql/queryExecutionState.ts",
+        "crates/dbx-core/src/query/query_cancel.rs",
+        "crates/dbx-drivers/src/db/mysql.rs",
+        "crates/dbx-drivers/src/db/postgres.rs",
+        "crates/dbx-drivers/src/db/sqlite.rs"
+      ],
+      "runtimeFiles": [
+        "shared/src/sql-execution.ts",
+        "backend/device/src/database/sql-execution-registry.ts",
+        "backend/device/src/database/sqlite-query-process.ts",
+        "backend/device/src/database/sqlite-query-child.ts",
+        "backend/device/src/entrypoints/sqlite-query.ts",
+        "src/features/connectors/datastore/use-sql-executions.ts",
+        "src/features/connectors/datastore/sql-execution-results.tsx"
+      ]
     }
   ],
   "knownRemainingScope": [

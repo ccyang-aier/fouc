@@ -4,6 +4,8 @@
 
 ## 进度与证据
 
+- SQL 执行工作流：三种原生数据库已支持词法当前语句 / 全部 / 选区、顺序多结果标签、完整只读批次预检、错误后停止、UTF-16 原始来源、驱动取消确认 / 部分结果保留 / 连接复用和断开中断。`node scripts/verify-sql-executions-live.mjs` 为真实接口回归；103 项作用域测试 / 751 个断言通过。浏览器以 DBX 布局验收浅深主题、1440×1000 / 390×844、结果键盘导航、跨查询标签取消、失败定位和轮询恢复。Q06 仅编辑器中的分段执行 / 进度 / 取消部分进入进行中，文件编码与流式大文件尚未迁移；全部涉及任务保持未完成。
+
 - RedisJSON 验证入口：`node scripts/redis-json-lab.mjs up|status` 维护独立官方 Redis 8.2.2 / ReJSON 8.2.1 实验室（56381），`node scripts/verify-redis-json-live.mjs` 只操作 DB 15 的命名 Key / 一次性 ACL 用户。完整原始 JSON、整数精度、null / 根数组 / 二进制 Key、NX 新建 / XX 编辑、预览不写入、一次性计划、精确 TTL、内容 / 期限冲突与重新锁定撤销通过；MODULE / MEMORY 可选权限、COMMAND 未知、GET / SET 权限失败恢复、2 MiB 完整读取限制、7.4 无模块、空间与历史边界均有真实证据。六类型写入原生回归通过，44 项 Redis 作用域测试 / 348 个断言通过。Chrome 1440×844、760×844、390×844 验证 Unicode / 原始转义、格式化 / 压缩、折叠 / 搜索 / 撤销 / 重做 / 换行 / 复制、无效草稿 / 丢弃 / 导航保护、Ctrl+S / 预览取消 / 参数确认、TTL 保留、JSON 新建 / 返回编辑及真实冲突 / ACL 失败恢复 / 模块缺失。两次预期 HTTP 400，无其他页面 / 控制台错误；编辑器和弹窗操作均可见。X01 / R07 保持进行中，其他 JSON 模块版本 / 拓扑和全入口矩阵待验收。
 
 每个任务的记录状态见下表和 [迁移跟踪矩阵](dbx-migration-tracker.json)。矩阵记录负责人、DBX 来源、适用驱动与桌面/Web/CLI/MCP 入口、回归用例和验证摘要；[DBX 目录源](../../shared/catalog/dbx-catalog.json) 包含已复制进 Fouc 的驱动、Profile 和 SQL 方言元数据。运行 `pnpm dbx:verify` 检查任务、状态及目录映射；若本机有 `opensource/dbx` 源码，还会核对源文件哈希。状态只有「待实施」「进行中」「已完成」；通过实际验收并填写摘要后才能改为已完成。
@@ -25,8 +27,8 @@
 - Redis 观测验证入口：`node scripts/redis-observability-lab.mjs up|status` 复用或启动独立 Redis 7.4.8 实验室（56380，启动时阈值 0、保留 512 条），`node scripts/verify-redis-observability-live.mjs` 验证 INFO 分区与有界慢日志读取、原始二进制参数 / 客户端字段、数量校验、空间隔离、只读状态和命令历史保留、可选 CONFIG / LEN 权限降级及 GET / INFO 拒绝。实验室不会修改或重置业务 Redis 的日志配置。50 个作用域测试通过，涵盖 64 位计数 / 命中率 / 数值排序、旧版本缺失字段和响应截断。Playwright + Chrome 在 1440×1000、760×844、390×844 验证指标折叠 / 搜索 / 复制、真实定时刷新及离开视图后停止、慢日志数量 / 排序 / 筛选 / 分页 / 二进制详情 / JSON 复制、权限失败保留旧指标和错误恢复；两次预期 HTTP 502，无其他页面 / 控制台错误。Cluster 逐节点、其他版本与权限矩阵仍未完整交付。
 
 - 源码已恢复至固定 commit；[源码审计](dbx-source-audit.json) 与 [实质迁移文件清单](dbx-native-port-manifest.json) 可由 `node scripts/audit-dbx-source.mjs --write` 重算。约 133.4 万有效源码行；排除独立测试、翻译资源、工具与账户/云模块后的核心范围估算为 91.4 万行。词法统计仍包含 Rust 内嵌测试，不能把这个估算当成已迁移量。
-- 第一阶段目标仍为约 50,000 行 Fouc 核心运行逻辑；当前清单为 119 个运行文件、13,696 行有效代码。不计样式、目录 JSON、测试、参考仓库或演示工作台，且必须逐能力验收，当前未完成。MySQL 已合并到共享会话与工作台，移除的重复逻辑不保留行数信用。MONITOR / Pub/Sub 共享生命周期与流解码，删除的重复实现同样不保留信用。RedisJSON 仅计已适配且实际运行的 token 格式化 / Unicode 编辑映射子集，未使用的 Number 包装 / stringify 代码不计入。统计受代码格式影响，不能以行数代替功能覆盖。固定源码基线未变化时，可用 `node scripts/audit-dbx-source.mjs --native-only --write` 快速重算原生清单。
-- MySQL / PostgreSQL / SQLite 的连接配置 CRUD、测试与会话打开、Schema/表/视图/字段发现、主键分页、只读 SQL、大整数/重复列名及空间隔离已有真实 HTTP 和浏览器证据。R01/R02/R03 保持进行中；完整对象管理、导入导出、比较/备份、取消/重连、CLI/MCP 等仍须推进。SQLite 当前同步查询，尚未交付长查询取消与 worker 隔离。
+- 第一阶段目标仍为约 50,000 行 Fouc 核心运行逻辑；当前清单为 126 个运行文件、14,125 行有效代码。不计样式、目录 JSON、测试、参考仓库或演示工作台，且必须逐能力验收，当前未完成。MySQL 已合并到共享会话与工作台，移除的重复逻辑不保留行数信用。MONITOR / Pub/Sub 共享生命周期与流解码，删除的重复实现同样不保留信用。RedisJSON 仅计已适配且实际运行的 token 格式化 / Unicode 编辑映射子集，未使用的 Number 包装 / stringify 代码不计入。统计受代码格式影响，不能以行数代替功能覆盖。固定源码基线未变化时，可用 `node scripts/audit-dbx-source.mjs --native-only --write` 快速重算原生清单。
+- MySQL / PostgreSQL / SQLite 的连接配置 CRUD、测试与会话打开、Schema/表/视图/字段发现、主键分页、只读 SQL、大整数/重复列名及空间隔离已有真实 HTTP 和浏览器证据。R01/R02/R03 保持进行中；完整对象管理、导入导出、比较/备份、取消/重连、CLI/MCP 等仍须推进。SQLite 读取已改为只读子进程隔离，注册批次的长查询取消已通过真实验收；写入取消、结果磁盘缓存与完整版本矩阵仍待推进。
 - 验证入口：`bun test --isolate backend/device/src/database backend/device/src/api/server.database.test.ts src/features/connectors/datastore/result-format.test.ts`、`node scripts/verify-relational-live.mjs`、`node scripts/verify-mysql-live.mjs`、`node scripts/verify-table-save-live.mjs`。真实服务验证使用独立 `fouc_datastore_lab` 数据库、专用 `dbx_save_fixture` / `dbx_unique_fixture` 表与 `.runtime/dbx-lab/relational.sqlite`，不访问 Fouc 账户/业务表。MySQL 实验室通过 `node scripts/datastore-lab.mjs up|status` 运行，容器有认证健康检查，随机凭据只写入被 Git 忽略的运行目录。
 - Web 验证：Playwright + Chrome，1440×1000 完成上述 PostgreSQL / SQLite 流程；390×844、760×844 检查连接目录、导航收起及溢出。两次故意写入产生预期 HTTP 400，未出现其他控制台或页面错误；窄窗口工作台操作矩阵仍待补齐。
 - Redis 的独立连接器已接入共享配置 CRUD 与设备会话；原始字节/字符串游标、SCAN、String/List/Set/Hash/ZSet/Stream 读取、TTL、缺失 Key、只读命令台、消费组 / 消费者 / Pending / Lag 观测、实时 MONITOR、Pub/Sub 和 RedisJSON 文档读写已有真实 HTTP 与 Web 证据。X01/R07 保持进行中，尚未交付大 Key / 批量写入、完整命令执行 / 补全 / 历史搜索、其他 RedisJSON 模块版本、Sentinel/Cluster（含逐节点概览 / 慢日志）、大 keyspace 虚拟列表及全入口 / 版本 / 权限矩阵。
@@ -118,7 +120,7 @@
 | Q03 | 查询目标连接/数据库/Schema 切换，多目标组执行、单/多结果导航、消息、受影响行、耗时、可取消执行、异常定位及历史重跑。 | `components/layout/SqlEditorWorkspace.vue`、`query.rs`、`history.rs` | 进行中 |
 | Q04 | SQL 风险诊断、执行计划/Explain 可视化、优化提示、目标环境提示与可审查执行入口。 | `components/explain/`、`crates/dbx-sql/src/` | 待实施 |
 | Q05 | 查询历史、收藏/保存、搜索过滤、执行时间/目标/状态；保留可恢复的编辑内容和连接上下文。 | `historyStore.ts`、`history.rs` | 进行中 |
-| Q06 | 大 SQL 文件预览、编码/路径校验、分段执行、进度、失败定位/重试/取消；SQL 文件导入/恢复与 ZIP 包。 | `components/sql-file/`、`data/sql_file_import.rs` | 待实施 |
+| Q06 | 大 SQL 文件预览、编码/路径校验、分段执行、进度、失败定位/重试/取消；SQL 文件导入/恢复与 ZIP 包。 | `components/sql-file/`、`data/sql_file_import.rs` | 进行中 |
 | Q07 | 查询结果的表格、文本、JSON、图表/指标切换；图表维度/指标配置、结果复制和导出。 | `components/chart/`、`QueryResultViewSwitcher.vue` | 进行中 |
 | Q08 | SQL 方言解析、标识符引用、日期/二进制/NULL 格式、只读/可编辑结果判定、语句拆分及多数据库特例。 | `crates/dbx-sql/`、`crates/dbx-formats/` | 进行中 |
 | Q09 | 编辑器悬停提示、代码折叠、别名/CTE/JOIN 补全、`Ctrl/Cmd+Click` 对象跳转；占位符 `?`、`:name`、`${name}`、`#{name}`、`@name` 与 `@set` 输入；执行范围选择器和「在新结果中执行」。 | `query-editor.cn.mdx`、`components/editor/` | 进行中 |

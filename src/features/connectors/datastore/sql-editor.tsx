@@ -14,7 +14,7 @@ import { MySQL, PostgreSQL, SQLite, sql } from "@codemirror/lang-sql"
 import { sqlKeywordCompletion } from './sql-metadata-completion'
 import { Compartment, EditorState, StateEffect } from "@codemirror/state"
 import { getOverlayRoot } from '@/lib/overlay-root'
-import type { SqlEditorPosition } from '@fouc/shared'
+import type { SqlEditorPosition, SqlExecutionMode } from '@fouc/shared'
 import {
   bracketMatching,
   HighlightStyle,
@@ -47,7 +47,7 @@ const sqlHighlight = HighlightStyle.define([
 
 const tooltipParent = new Compartment()
 
-type SqlEditorHandlers = { onChange: (value: string) => void; onRun: () => void; onSave?: () => void; onPositionChange?: (id: string, position: SqlEditorPosition) => void; complete?: CompletionSource }
+type SqlEditorHandlers = { onChange: (value: string) => void; onRun: (mode?: SqlExecutionMode) => void; onSave?: () => void; onPositionChange?: (id: string, position: SqlEditorPosition) => void; complete?: CompletionSource }
 class SqlEditorCallbacks {
   private positionReporter: ((view: EditorView) => void) | null = null
   constructor(private handlers: SqlEditorHandlers) {}
@@ -60,7 +60,7 @@ export type SqlEditorCache = Map<string, { state: EditorState; scrollTop: number
 type Props = {
   value: string
   onChange: (value: string) => void
-  onRun: () => void
+  onRun: (mode?: SqlExecutionMode) => void
   onSave?: () => void
   editorRef: RefObject<EditorView | null>
   provider?: "mysql" | "postgres" | "sqlite"
@@ -140,6 +140,7 @@ export function SqlEditor({
           ...(readOnly ? { tabindex: "0" } : {})
         }),
         keymap.of([
+          { key: 'Mod-Shift-Enter', run: () => { if (!readOnly) callbacks.get().onRun('all'); return true } },
           { key: 'Mod-s', run: () => { if (!readOnly) callbacks.get().onSave?.(); return true } },
           {
             key: "Mod-Enter",

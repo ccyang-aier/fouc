@@ -189,6 +189,15 @@ export function relationalRoutes(
       ),
     });
   });
+  app.post(base + '/:id/executions', async (c) => c.json({ ok: true,
+    data: sessions.startExecution(c.req.param('workspaceId')!, c.req.param('id')!, await c.req.json().catch(() => null)) }, 201));
+  app.get(base + '/:id/executions/:executionId', (c) => {
+    const revision = Number(c.req.query('revision') ?? 0);
+    if (!Number.isInteger(revision) || revision < 0) throw new DatabaseInputError('执行版本参数无效');
+    return c.json({ ok: true, data: sessions.execution(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('executionId')!, revision) });
+  });
+  app.post(base + '/:id/executions/:executionId/cancel', (c) => c.json({ ok: true,
+    data: sessions.cancelExecution(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('executionId')!) }));
   app.delete(base + '/:id', async (c) => {
     await sessions.disconnect(c.req.param('workspaceId')!, c.req.param('id')!);
     return c.json({ ok: true, data: { disconnected: true } });

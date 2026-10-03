@@ -444,3 +444,4 @@ export * from './json-source';
 export * from './relational-sql-library';
 export * from './relational-sql-drafts';
 export * from './sql-semantic-tokens';
+export * from './sql-execution';

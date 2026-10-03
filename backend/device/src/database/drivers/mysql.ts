@@ -25,7 +25,7 @@ function optionalNumber(value: unknown): number | null {
 export async function connectMysql(
   input: Extract<RelationalConnectInput, { provider: 'mysql' }>,
 ): Promise<RelationalDriver> {
-  const pool = mysql.createPool({
+  const options = {
     host: input.host,
     port: input.port,
     user: input.username,
@@ -39,7 +39,9 @@ export async function connectMysql(
     bigNumberStrings: true,
     dateStrings: true,
     decimalNumbers: false,
-  });
+  };
+  const pool = mysql.createPool(options);
+  const control = mysql.createPool({ ...options, connectionLimit: 1 });
   async function query(sql: string, values?: unknown[]): Promise<Row[]> {
     return (await pool.query<Row[]>(sql, values))[0];
   }
@@ -158,10 +160,16 @@ export async function connectMysql(
           if (!broken) connection.release();
         }
       },
-      async read(sql, schema, maxRows, values = []): Promise<DriverResult> {
+      async read(sql, schema, maxRows, values = [], signal): Promise<DriverResult> {
+        signal?.throwIfAborted();
         const connection = await pool.getConnection();
         let destroyed = false;
+        let cancellation: Promise<unknown> | null = null;
+        // The connection remains checked out until KILL has finished, so its id cannot be reused.
+        const abort = () => { cancellation ??= control.query(`KILL QUERY ${connection.threadId}`).catch(() => undefined); };
+        signal?.addEventListener('abort', abort, { once: true });
         try {
+          signal?.throwIfAborted();
           // Fix the two quote modes the safety scanner assumes, preserving all
           // unrelated modes and the server's strictness settings.
           const [mode] = await connection.query<Row[]>('SELECT @@SESSION.sql_mode AS mode');
@@ -172,6 +180,7 @@ export async function connectMysql(
           await connection.query('SET SESSION max_execution_time = 30000');
           if (schema) await connection.query(`USE ${quoteMysqlIdentifier(schema)}`);
           await connection.query('START TRANSACTION READ ONLY');
+          signal?.throwIfAborted();
           const raw = connection.connection as unknown as RawConnection;
           const request = raw.query(
             { sql, rowsAsArray: true, timeout: 30000 },
@@ -185,6 +194,7 @@ export async function connectMysql(
           const rows: unknown[][] = [];
           let hasMore = false;
           for await (const row of stream) {
+            signal?.throwIfAborted();
             if (rows.length === maxRows) {
               hasMore = true;
               stream.destroy();
@@ -206,6 +216,8 @@ export async function connectMysql(
             hasMore,
           };
         } finally {
+          signal?.removeEventListener('abort', abort);
+          await cancellation;
           if (!destroyed) {
             await connection.query('ROLLBACK').catch(() => {
               connection.destroy();
@@ -215,10 +227,10 @@ export async function connectMysql(
           }
         }
       },
-      close: () => pool.end(),
+      close: async () => { await Promise.all([pool.end(), control.end()]); },
     };
   } catch (error) {
-    await pool.end();
+    await Promise.all([pool.end(), control.end()]);
     throw error;
   }
 }

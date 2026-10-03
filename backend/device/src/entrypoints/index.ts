@@ -44,7 +44,10 @@ const INTERNAL_TOKEN = process.env.FOUC_INTERNAL_TOKEN ?? (DEV_NO_AUTH ? 'dev-in
 const rawArgv = process.argv.slice(1);
 const bridgeFlag = rawArgv.indexOf('--bridge');
 
-if (bridgeFlag >= 0) {
+if (rawArgv.includes('--sqlite-query')) {
+  const { runSqliteQueryChild } = await import('../database/sqlite-query-child');
+  await runSqliteQueryChild();
+} else if (bridgeFlag >= 0) {
   const providerId = rawArgv[bridgeFlag + 1];
   const loaders: Record<string, () => Promise<unknown>> = {
     'claude-code': () => import('../bridges/claude-acp'),

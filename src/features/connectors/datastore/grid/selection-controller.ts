@@ -108,6 +108,17 @@ export function* selectedGridCells(selection: ResultGridSelection, result: Pick<
 }
 /** Export may use the row/column product only when it exactly matches the real selected cells. */
 export function gridSelectionScope(selection: ResultGridSelection, result: Pick<DatabaseQueryResult, 'columns' | 'rows'>, visibleColumns?: readonly number[]): ResultGridSelectionScope | null {
+  const visible = visibleColumns ?? result.columns.map((_, index) => index)
+  if (!result.rows.length || !visible.length || selection.mode === 'none') return null
+  if (selection.mode === 'range' && selection.range) {
+    const range = selection.range, rows = Array.from({ length: Math.max(0, Math.min(result.rows.length - 1, range.endRow) - Math.max(0, range.startRow) + 1) }, (_, index) => Math.max(0, range.startRow) + index), columns = visible.slice(Math.max(0, range.startCol), Math.min(visible.length, range.endCol + 1))
+    return rows.length && columns.length ? { rows, columns, rectangular: true } : null
+  }
+  if (selection.mode === 'rows' || selection.mode === 'columns') {
+    const rows = selection.mode === 'rows' ? [...selection.rows].filter(index => index >= 0 && index < result.rows.length).sort((a, b) => a - b) : result.rows.map((_, index) => index)
+    const columns = selection.mode === 'columns' ? visible.filter((_, index) => selection.columns.has(index)) : [...visible]
+    return rows.length && columns.length ? { rows, columns, rectangular: true } : null
+  }
   const rows = new Set<number>(), columns = new Set<number>(); let cellCount = 0
   for (const cell of selectedGridCells(selection, result, visibleColumns)) { rows.add(cell.rowIndex); columns.add(cell.colIndex); cellCount++ }
   return cellCount ? { rows: [...rows], columns: [...columns], rectangular: rows.size * columns.size === cellCount } : null

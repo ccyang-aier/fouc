@@ -41,15 +41,23 @@ type Restore = { sql: string; schema: string | null; database: string; file: Sav
 type Saving = { tabId: string | null; sql: string; schema: string | null; database: string; file: SqlDraftTab['savedFile'] }
 function binding(file: SavedSqlDocument): NonNullable<SqlDraftTab['savedFile']> { return { id: file.id, version: file.version, name: file.name, folderId: file.folderId } }
 
-export function RelationalQuery({ session, schema, schemas, metadataRevision, schemaLocked, onSchemaChange, beforeLeaveRef, onLeaveReady }: {
+export function RelationalQuery({ session, schema, schemas, metadataRevision, schemaLocked, onSchemaChange, beforeLeaveRef, onLeaveReady, openRequest }: {
   session: RelationalSession; schema: string; schemas: string[]; metadataRevision: number; schemaLocked: boolean; onSchemaChange: (schema: string) => void;
   beforeLeaveRef: RefObject<(() => Promise<void>) | null>
   onLeaveReady: () => void
+  openRequest?: { id: string; sql: string; schema: string } | null
 }) {
   const root = `/api/database/workspaces/${encodeURIComponent(session.workspaceId)}/relational`
   const base = `${root}/sessions/${session.id}`, libraryBase = session.connectionId ? `${root}/connections/${session.connectionId}/sql-library` : null
   const { state, controller } = useSqlDrafts(libraryBase, () => { const tab = newSqlTab(session.database, schema || null); return { tabs: [tab], activeTabId: tab.id } })
   const current = state.tabs.find((tab) => tab.id === state.activeTabId) ?? null
+  const openedRequest = useRef<string | null>(null)
+  useEffect(() => {
+    if (!state.ready || !openRequest || openedRequest.current === openRequest.id) return
+    const tab = { ...newSqlTab(session.provider === 'mysql' ? openRequest.schema : session.database, openRequest.schema, '外键关联查询'), sql: openRequest.sql, originalSql: '', customTitle: true }
+    controller.update(snapshot => ({ tabs: [...snapshot.tabs, tab], activeTabId: tab.id }))
+    openedRequest.current = openRequest.id
+  }, [state.ready, controller, openRequest, session.provider, session.database])
   const [panel, setPanel] = useState<'history' | 'library' | null>(null), [revision, setRevision] = useState(0)
   const { executions, locks, run: execute, cancel, forget, selectResult } = useSqlExecutions(base, () => setRevision((value) => value + 1))
   const [executionMode, setExecutionMode] = useState<SqlExecutionMode>('current')

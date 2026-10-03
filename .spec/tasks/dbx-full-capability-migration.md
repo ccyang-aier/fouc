@@ -4,6 +4,8 @@
 
 ## 进度与证据
 
+- 批量网格 / 原生元数据 / 传输 / 图表：2026-10-04：开发仅新增P0与一次实际入口流程，已通过模块不重复矩阵。G04批量粘贴/复制/填充、100层撤销/重做及原始行保护，10项71断言及JSON null边界；实际两行中文单引号粘贴→原值预览0写入→撤销重做→提交回读，大整数保持精确、提交后清空历史。S04/S05三库原生视图/函数/过程/触发器/序列目录、精确Pg OID/重载、源码DDL/参数/引用，4项34断言及原生三库；修正真实MySQL VIEW_ROUTINE_USAGE字段。D02追加传输7项45断言、六方向原生类型往返，根接口验证空间/只读/重新锁定/一次性计划/结构指纹；实际MySQL→SQLite大整数和中文回读。Q07动态ECharts五图/多指标/分组/精确聚合/范围和持久设置，11项59断言，实际SVG与SUM 20保存设置。S03当前连接有界原生对象字段搜索10项55断言，实际字段定位结构过滤；S06实际外键/复合JOIN/布局缩放导出8项63断言，生成JOIN打开新SQL标签实际执行；S07原生文档、本地Markdown笔记/彩色分组/CAS/DBML导出5项48断言，真实设备持久保存并验证空间和版本冲突。前后端定向TS和自有lint通过，1440与390实际查看；窄屏文档改上下分区、ER图可滚动详情与resize保持中心、图表内部滚动/操作标题修正。跨连接全局搜索、写入对象管理、全类型批量编辑、建表/清表/断点传输、更多驱动/CLI/MCP及完整入口矩阵继续实施/阶段末回归。
+
 - MongoDB / 表格布局 / 结构编辑：2026-10-04：开发阶段仅新增P0与一次实际流程。MongoDB8原生库/集合/筛选排序分页/聚合/索引/元数据和Canonical EJSON精度，读取6项57断言、窄写入5项56断言；原始完整BSON CAS、类型/权限/空间/一次性计划与取消。Chrome真实创建连接、筛选文档、只读解锁、预览0写入、确认后大整数原值回读。网格列隐藏/NULL列、左右冻结/排序/宽度/密度/日期/JSON路径/掩码/模板，22项95断言及刷新选择映射P0；实际原始复制、显示格式与重新执行布局保留。结构编辑9项64断言、三库实际DDL，权限与计划撤销/结构变化/原生提交接口P0，真实MySQL中文含单引号注释预览0写入后确认回读。1440与390实际视觉检查，修正Mongo窄屏资源导航、结构审查局部滚动与固定操作区、主按钮对比度；自有TS/lint通过。不重复此前通过矩阵。Mongo GridFS/导入导出/dump、批量更新/其他拓扑，网格转置/自动刷新，结构外键/约束完整编辑及全入口矩阵仍未完成。
 
 - 表导入 / 数据与结构比较：2026-10-04：开发阶段仅必要P0。CSV/TSV/JSON/NDJSON严格解码、原始数字、字段映射、默认值/NULL和原生三库参数化追加；预览0写入，一次性计划、重新锁定、空间隔离、字段变更和事务失败回滚。数据比较14项P0覆盖显式键/字段映射、重复键冲突、缺失与NULL、精确数值/JSON/二进制、选择性SQL审查。结构比较10项P0及真实三库DDL回放核对字段/索引/生成列/SQLite重建数据；依赖顺序与不支持项明确标示。实际Chrome完成CSV两条大整数/中文导入回读、两次查询结果差异→新SQL审查标签、真实双表结构→DDL审查；比较不自动执行。1440×1000与390×844实际视觉检查并修正结构比较窄屏操作区。自有类型/lint检查通过；Excel/SQL导入、流式大批量、多目标同步、自动结构部署/OSC、其他驱动和全入口矩阵留到后续实现与阶段集中回归。
@@ -39,7 +41,7 @@
 - Redis 观测验证入口：`node scripts/redis-observability-lab.mjs up|status` 复用或启动独立 Redis 7.4.8 实验室（56380，启动时阈值 0、保留 512 条），`node scripts/verify-redis-observability-live.mjs` 验证 INFO 分区与有界慢日志读取、原始二进制参数 / 客户端字段、数量校验、空间隔离、只读状态和命令历史保留、可选 CONFIG / LEN 权限降级及 GET / INFO 拒绝。实验室不会修改或重置业务 Redis 的日志配置。50 个作用域测试通过，涵盖 64 位计数 / 命中率 / 数值排序、旧版本缺失字段和响应截断。Playwright + Chrome 在 1440×1000、760×844、390×844 验证指标折叠 / 搜索 / 复制、真实定时刷新及离开视图后停止、慢日志数量 / 排序 / 筛选 / 分页 / 二进制详情 / JSON 复制、权限失败保留旧指标和错误恢复；两次预期 HTTP 502，无其他页面 / 控制台错误。Cluster 逐节点、其他版本与权限矩阵仍未完整交付。
 
 - 源码已恢复至固定 commit；[源码审计](dbx-source-audit.json) 与 [实质迁移文件清单](dbx-native-port-manifest.json) 可由 `node scripts/audit-dbx-source.mjs --write` 重算。约 133.4 万有效源码行；排除独立测试、翻译资源、工具与账户/云模块后的核心范围估算为 91.4 万行。词法统计仍包含 Rust 内嵌测试，不能把这个估算当成已迁移量。
-- 第一阶段目标仍为约 50,000 行 Fouc 核心运行逻辑；当前清单为 280 个运行文件、27,461 行有效代码。不计样式、目录 JSON、测试、参考仓库或演示工作台，且必须逐能力验收，当前未完成。MySQL 已合并到共享会话与工作台，移除的重复逻辑不保留行数信用。MONITOR / Pub/Sub 共享生命周期与流解码，删除的重复实现同样不保留信用。RedisJSON 仅计已适配且实际运行的 token 格式化 / Unicode 编辑映射子集，未使用的 Number 包装 / stringify 代码不计入。统计受代码格式影响，不能以行数代替功能覆盖。固定源码基线未变化时，可用 `node scripts/audit-dbx-source.mjs --native-only --write` 快速重算原生清单。
+- 第一阶段目标仍为约 50,000 行 Fouc 核心运行逻辑；当前清单为 355 个运行文件、30,481 行有效代码。不计样式、目录 JSON、测试、参考仓库或演示工作台，且必须逐能力验收，当前未完成。MySQL 已合并到共享会话与工作台，移除的重复逻辑不保留行数信用。MONITOR / Pub/Sub 共享生命周期与流解码，删除的重复实现同样不保留信用。RedisJSON 仅计已适配且实际运行的 token 格式化 / Unicode 编辑映射子集，未使用的 Number 包装 / stringify 代码不计入。统计受代码格式影响，不能以行数代替功能覆盖。固定源码基线未变化时，可用 `node scripts/audit-dbx-source.mjs --native-only --write` 快速重算原生清单。
 - MySQL / PostgreSQL / SQLite 的连接配置 CRUD、测试与会话打开、Schema/表/视图/字段发现、主键分页、只读 SQL、大整数/重复列名及空间隔离已有真实 HTTP 和浏览器证据。R01/R02/R03 保持进行中；完整对象管理、导入导出、比较/备份、取消/重连、CLI/MCP 等仍须推进。SQLite 读取已改为只读子进程隔离，注册批次的长查询取消已通过真实验收；写入取消、结果磁盘缓存与完整版本矩阵仍待推进。
 - 验证入口：`bun test --isolate backend/device/src/database backend/device/src/api/server.database.test.ts src/features/connectors/datastore/result-format.test.ts`、`node scripts/verify-relational-live.mjs`、`node scripts/verify-mysql-live.mjs`、`node scripts/verify-table-save-live.mjs`。真实服务验证使用独立 `fouc_datastore_lab` 数据库、专用 `dbx_save_fixture` / `dbx_unique_fixture` 表与 `.runtime/dbx-lab/relational.sqlite`，不访问 Fouc 账户/业务表。MySQL 实验室通过 `node scripts/datastore-lab.mjs up|status` 运行，容器有认证健康检查，随机凭据只写入被 Git 忽略的运行目录。
 - Web 验证：Playwright + Chrome，1440×1000 完成上述 PostgreSQL / SQLite 流程；390×844、760×844 检查连接目录、导航收起及溢出。两次故意写入产生预期 HTTP 400，未出现其他控制台或页面错误；窄窗口工作台操作矩阵仍待补齐。
@@ -118,11 +120,11 @@
 | --- | --- | --- | --- |
 | S01 | 在 Fouc 公共顶栏/导航内实现可折叠数据库资源栏、主区和 AI/信息详情右栏；多标签、拆分/分组、拖拽、关闭确认、标签恢复与独立窗口行为。 | `components/layout/`、`tabs/` | 进行中 |
 | S02 | 连接→数据库→Schema→表/视图/字段/索引/外键/触发器等树；异步展开/全展开/全折叠、搜索过滤与可见范围（隐藏系统 Schema/前缀）、计数、刷新、固定/粘性行、标签反向定位、权限/错误提示和上下文菜单；嵌套连接分组、多选批量管理、对象复制粘贴及拖入 SQL 编辑器逐项验收。 | `components/sidebar/`、`schema-browser.cn.mdx` | 进行中 |
-| S03 | 全局快速打开/搜索与数据库对象搜索，跨连接、数据库、Schema 的命中定位和打开。 | `components/quick-open/`、`search/`、`global_search.rs` | 待实施 |
+| S03 | 全局快速打开/搜索与数据库对象搜索，跨连接、数据库、Schema 的命中定位和打开。 | `components/quick-open/`、`search/`、`global_search.rs` | 进行中 |
 | S04 | 对象浏览器覆盖表、视图、过程、函数、序列、事件、扩展、类型及特定数据库对象；列表、详情、源码/DDL、创建/修改/删除及能力门控。 | `components/objects/`、`object-browser.cn.mdx` | 进行中 |
 | S05 | 表结构视图和编辑：列、主键、索引、约束、外键、注释、存储选项，生成/预览 DDL；SQLite 重建等方言特例正确处理。 | `components/structure/`、`schema/table_structure_sql.rs` | 进行中 |
-| S06 | ER 图、表间关系、布局、搜索/缩放/导出；字段血缘、上下游依赖和字段来源解释。 | `components/diagram/`、`lineage/` | 待实施 |
-| S07 | 数据库文档快照、双向关系、表/字段 Markdown 笔记与彩色分组、自动保存/失败重试、本地笔记和数据库注释并存、DBML/文档导出与刷新；孤儿笔记、缺失元数据及不支持 DBML 的结构明确告警；支持 CLI/MCP 同源文档上下文。 | `crates/dbx-core/src/data/docs/`、`database-docs.cn.mdx` | 待实施 |
+| S06 | ER 图、表间关系、布局、搜索/缩放/导出；字段血缘、上下游依赖和字段来源解释。 | `components/diagram/`、`lineage/` | 进行中 |
+| S07 | 数据库文档快照、双向关系、表/字段 Markdown 笔记与彩色分组、自动保存/失败重试、本地笔记和数据库注释并存、DBML/文档导出与刷新；孤儿笔记、缺失元数据及不支持 DBML 的结构明确告警；支持 CLI/MCP 同源文档上下文。 | `crates/dbx-core/src/data/docs/`、`database-docs.cn.mdx` | 进行中 |
 | S08 | 数据库/Schema 创建与管理、对象复制/粘贴、跨库作用域、菜单权限和危险操作确认。 | `components/objects/`、`schema/` | 待实施 |
 
 ## 3. SQL 编辑、执行与结果分析
@@ -161,7 +163,7 @@
 | ID | 任务 / 可验收交付 | DBX 对照 | 状态 |
 | --- | --- | --- | --- |
 | D01 | CSV/TSV/自定义分隔文本、JSON、XLS/XLSX/XLSM、字面量 INSERT SQL 的预览与导入；编码、行范围、空值/空白、工作表、字段映射与类型推断；现有表追加/清空或多文件多工作表批量建表，逐任务进度、部分成功与取消。 | `components/import/`、`data/table_import.rs`、`table-import.cn.mdx` | 进行中 |
-| D02 | 跨连接/跨引擎数据传输：源目标映射、类型转换、建表/清表/追加、批量流式处理、进度/失败重试/断点与任务记录。 | `components/transfer/`、`data/transfer.rs` | 待实施 |
+| D02 | 跨连接/跨引擎数据传输：源目标映射、类型转换、建表/清表/追加、批量流式处理、进度/失败重试/断点与任务记录。 | `components/transfer/`、`data/transfer.rs` | 进行中 |
 | D03 | 数据比较与同步：键列选择、差异行、字段映射、冲突矩阵、修改预览、选择性同步与风险提示。 | `components/diff/DataCompareDialog.vue`、`data/data_compare.rs` | 进行中 |
 | D04 | Schema diff：对象树、差异/DDL、依赖排序、选项、影响报告、部署/回滚或重试；原生在线结构变更/OSC 仅在适用驱动开放。 | `components/diff/SchemaDiff*`、`schema_diff.rs` | 进行中 |
 | D05 | 数据库/表结构与数据导出、SQL 脚本生成、格式选择、拆分包、进度/取消；区分轻量导出与数据库原生备份。 | `data/database_export.rs`、`script_generator.rs` | 待实施 |

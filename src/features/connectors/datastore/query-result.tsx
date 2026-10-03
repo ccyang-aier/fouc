@@ -5,8 +5,8 @@ import { BracketsCurly, ChartBar, ChatText, CheckCircle, Clock, Copy, DownloadSi
 import type { DatabaseQueryResult, RelationalProvider } from "@fouc/shared"
 import type { SqlResultView } from '@fouc/shared'
 
-import { databaseCellText } from "./cell-format"
-import { chartableColumns, chartNumber, columnLabel, formatDelimited, formatJson } from "./result-format"
+import { formatDelimited, formatJson } from "./result-format"
+import { QueryChartBuilder } from './charts'
 import { ResultGrid, type ResultGridSelectionScope } from './grid/result-grid'
 import { ResultExportDialog, type ResultExportDialogProps } from './result-export'
 
@@ -21,171 +21,6 @@ const views = [
   { id: "messages", label: "消息", icon: ChatText }
 ] as const
 
-
-function ResultChart({ result }: { result: DatabaseQueryResult }) {
-  const numericColumns = chartableColumns(result)
-  const [dimension, setDimension] = useState(() =>
-    result.columns.findIndex((_, index) => !numericColumns.includes(index)) === -1
-      ? 0
-      : result.columns.findIndex((_, index) => !numericColumns.includes(index))
-  )
-  const [metric, setMetric] = useState(numericColumns[0] ?? 0)
-  const [chartType, setChartType] = useState<"bar" | "line" | "pie" | "metric">("bar")
-  const currentMetric = numericColumns.includes(metric) ? metric : numericColumns[0]
-  const points = result.rows
-    .slice(0, 40)
-    .map((row, index) => ({
-      label: databaseCellText(row[dimension] ?? null) || String(index + 1),
-      value: chartNumber(row[currentMetric])
-    }))
-    .filter((point): point is { label: string; value: number } => point.value !== null)
-  const maximum = Math.max(1, ...points.map((point) => Math.abs(point.value)))
-  const minimum = Math.min(0, ...points.map((point) => point.value))
-  const lineMaximum = Math.max(1, ...points.map((point) => point.value))
-  const lineY = (value: number) => 170 - ((value - minimum) / (lineMaximum - minimum || 1)) * 145
-  const piePoints = points.filter((point) => point.value > 0)
-  const pieTotal = piePoints.reduce((total, point) => total + point.value, 0)
-  const colors = ["#3b75d7", "#68a3e8", "#6ac3a1", "#e8ad68", "#a087da", "#d57e93"]
-  const pieGradient = piePoints
-    .map((point, index) => {
-      const start =
-        (piePoints.slice(0, index).reduce((total, previous) => total + previous.value, 0) / pieTotal) * 100
-      const end = start + (point.value / pieTotal) * 100
-      return `${colors[index % colors.length]} ${start}% ${end}%`
-    })
-    .join(", ")
-
-  return (
-    <div className="mw-result-chart">
-      <div className="mw-live-chart-controls">
-        <label>
-          图表类型
-          <select
-            aria-label="图表类型"
-            value={chartType}
-            onChange={(event) => setChartType(event.target.value as typeof chartType)}
-          >
-            <option value="bar">柱状图</option>
-            <option value="line">趋势图</option>
-            <option value="pie">饼图</option>
-            <option value="metric">指标</option>
-          </select>
-        </label>
-        <label>
-          维度
-          <select
-            aria-label="图表维度"
-            value={dimension}
-            onChange={(event) => setDimension(Number(event.target.value))}
-          >
-            {result.columns.map((_, index) => (
-              <option key={index} value={index}>
-                {columnLabel(result.columns, index)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          指标
-          <select
-            aria-label="图表指标"
-            value={currentMetric ?? ""}
-            disabled={!numericColumns.length}
-            onChange={(event) => setMetric(Number(event.target.value))}
-          >
-            {numericColumns.map((index) => (
-              <option key={index} value={index}>
-                {columnLabel(result.columns, index)}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-      {!numericColumns.length ? (
-        <p className="mw-live-result-empty">结果中没有可用于绘图的数值列。</p>
-      ) : !points.length ? (
-        <p className="mw-live-result-empty">没有可绘制的数值。</p>
-      ) : chartType === "metric" ? (
-        <div className="mw-live-metrics">
-          {points.map((point, index) => (
-            <div key={index}>
-              <span title={point.label}>{point.label}</span>
-              <strong>{point.value.toLocaleString()}</strong>
-            </div>
-          ))}
-        </div>
-      ) : chartType === "pie" ? (
-        pieTotal > 0 ? (
-          <div className="mw-live-pie-layout">
-            <div
-              className="mw-live-pie"
-              role="img"
-              aria-label={`${columnLabel(result.columns, currentMetric)} 饼图`}
-              style={{ background: `conic-gradient(${pieGradient})` }}
-            />
-            <div className="mw-live-pie-legend">
-              {piePoints.map((point, index) => (
-                <div key={index}>
-                  <i style={{ background: colors[index % colors.length] }} />
-                  <span title={point.label}>{point.label}</span>
-                  <strong>{point.value}</strong>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <p className="mw-live-result-empty">饼图需要大于零的数值。</p>
-        )
-      ) : chartType === "line" ? (
-        <svg
-          className="mw-live-line-chart"
-          viewBox="0 0 700 190"
-          role="img"
-          aria-label={`${columnLabel(result.columns, currentMetric)} 趋势图`}
-          preserveAspectRatio="none"
-        >
-          <polyline
-            fill="none"
-            stroke="#3b75d7"
-            strokeWidth="2"
-            points={points
-              .map(
-                (point, index) =>
-                  `${20 + (index * 660) / Math.max(1, points.length - 1)},${lineY(point.value)}`
-              )
-              .join(" ")}
-          />
-          {points.map((point, index) => (
-            <circle
-              key={index}
-              cx={20 + (index * 660) / Math.max(1, points.length - 1)}
-              cy={lineY(point.value)}
-              r="3"
-              fill="#3b75d7"
-            >
-              <title>
-                {point.label}: {point.value}
-              </title>
-            </circle>
-          ))}
-        </svg>
-      ) : (
-        <div className="mw-live-bars">
-          {points.map((point, index) => (
-            <div className="mw-chart-row" key={index}>
-              <span title={point.label}>{point.label}</span>
-              <div>
-                <i style={{ width: `${(Math.abs(point.value) / maximum) * 100}%` }} />
-              </div>
-              <strong title={String(point.value)}>{point.value}</strong>
-            </div>
-          ))}
-        </div>
-      )}
-      <p className="mw-live-chart-note">图表显示本次返回结果中的前 {Math.min(result.rows.length, 40)} 行。</p>
-    </div>
-  )
-}
 
 export function SqlQueryResult({ result, provider, scopeKey, layoutScopeKey, view: controlledView, onViewChange }: { result: DatabaseQueryResult; provider: RelationalProvider; scopeKey: string; layoutScopeKey?: string; view?: ResultView; onViewChange?: (view: ResultView) => void }) {
   const [localView, setLocalView] = useState<ResultView>("table")
@@ -237,7 +72,7 @@ export function SqlQueryResult({ result, provider, scopeKey, layoutScopeKey, vie
           {formatJson(result)}
         </pre>
       )}
-      {view === "chart" && <ResultChart result={result} />}
+      {view === "chart" && <QueryChartBuilder result={result} scopeKey={layoutScopeKey} />}
       {view === "summary" && (
         <div className="mw-result-summary" role="tabpanel">
           <strong>执行摘要</strong>

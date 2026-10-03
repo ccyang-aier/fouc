@@ -599,6 +599,150 @@
         "src/features/connectors/datastore/structure-edit/index.ts",
         "src/features/connectors/datastore/structure-edit/panel.tsx"
       ]
+    },
+    {
+      "area": "native-grid-batch-drafts-and-history",
+      "status": "partial",
+      "sourceReferences": [
+        "apps/desktop/src/components/grid/",
+        "crates/dbx-sql/src/"
+      ],
+      "runtimeFiles": [
+        "src/features/connectors/datastore/grid-editing/actions.tsx",
+        "src/features/connectors/datastore/grid-editing/clipboard.ts",
+        "src/features/connectors/datastore/grid-editing/edit-dialog.tsx",
+        "src/features/connectors/datastore/grid-editing/history.ts",
+        "src/features/connectors/datastore/grid-editing/index.ts",
+        "src/features/connectors/datastore/grid-editing/model.ts",
+        "src/features/connectors/datastore/grid-editing/operations.ts",
+        "src/features/connectors/datastore/grid-editing/shortcuts.ts",
+        "src/features/connectors/datastore/grid-editing/use-grid-draft-history.ts",
+        "src/features/connectors/datastore/grid-editing/values.ts"
+      ]
+    },
+    {
+      "area": "native-schema-object-catalog-and-source",
+      "status": "partial",
+      "sourceReferences": [
+        "apps/desktop/src/components/objects/",
+        "crates/dbx-core/src/schema/"
+      ],
+      "runtimeFiles": [
+        "backend/device/src/database/relational-metadata.ts",
+        "backend/device/src/database/schema-objects-common.ts",
+        "backend/device/src/database/schema-objects-input.ts",
+        "backend/device/src/database/schema-objects-list.ts",
+        "backend/device/src/database/schema-objects-mysql.ts",
+        "backend/device/src/database/schema-objects-postgres.ts",
+        "backend/device/src/database/schema-objects-sqlite.ts",
+        "backend/device/src/database/schema-objects-types.ts",
+        "backend/device/src/database/schema-objects.ts",
+        "shared/src/schema-objects.ts",
+        "src/features/connectors/datastore/schema-objects/details.tsx",
+        "src/features/connectors/datastore/schema-objects/index.ts",
+        "src/features/connectors/datastore/schema-objects/panel.tsx",
+        "src/features/connectors/datastore/schema-objects/resource.ts",
+        "src/features/connectors/datastore/schema-objects/sql-source.tsx"
+      ]
+    },
+    {
+      "area": "native-query-chart-builder",
+      "status": "partial",
+      "sourceReferences": [
+        "apps/desktop/src/components/chart/"
+      ],
+      "runtimeFiles": [
+        "src/features/connectors/datastore/charts/chart-canvas.tsx",
+        "src/features/connectors/datastore/charts/config-storage.ts",
+        "src/features/connectors/datastore/charts/index.ts",
+        "src/features/connectors/datastore/charts/model.ts",
+        "src/features/connectors/datastore/charts/numbers.ts",
+        "src/features/connectors/datastore/charts/options.ts",
+        "src/features/connectors/datastore/charts/query-chart-builder.tsx",
+        "src/features/connectors/datastore/charts/transform.ts"
+      ]
+    },
+    {
+      "area": "native-cross-engine-table-transfer",
+      "status": "partial",
+      "sourceReferences": [
+        "crates/dbx-core/src/data/transfer.rs",
+        "apps/desktop/src/components/transfer/"
+      ],
+      "runtimeFiles": [
+        "backend/device/src/database/transfer-execute.ts",
+        "backend/device/src/database/transfer-plans.ts",
+        "backend/device/src/database/transfer-prepare.ts",
+        "backend/device/src/database/transfer-values.ts",
+        "shared/src/table-transfer-types.ts",
+        "shared/src/table-transfer.ts",
+        "src/features/connectors/datastore/table-transfer-action.tsx",
+        "src/features/connectors/datastore/table-transfer/index.ts",
+        "src/features/connectors/datastore/table-transfer/mapping.tsx",
+        "src/features/connectors/datastore/table-transfer/panel.tsx"
+      ]
+    },
+    {
+      "area": "native-schema-quick-open-search",
+      "status": "partial",
+      "sourceReferences": [
+        "apps/desktop/src/components/quick-open/",
+        "src-tauri/src/commands/global_search.rs"
+      ],
+      "runtimeFiles": [
+        "backend/device/src/database/schema-search-concurrency.ts",
+        "backend/device/src/database/schema-search-input.ts",
+        "backend/device/src/database/schema-search.ts",
+        "shared/src/schema-search.ts",
+        "src/features/connectors/datastore/schema-search/index.ts",
+        "src/features/connectors/datastore/schema-search/schema-search-action.tsx"
+      ]
+    },
+    {
+      "area": "native-schema-er-diagram-and-join-navigation",
+      "status": "partial",
+      "sourceReferences": [
+        "apps/desktop/src/lib/diagram/",
+        "apps/desktop/src/components/diagram/"
+      ],
+      "runtimeFiles": [
+        "backend/device/src/database/diagram-metadata.ts",
+        "shared/src/er-diagram-geometry.ts",
+        "shared/src/er-diagram-layout.ts",
+        "shared/src/er-diagram-model.ts",
+        "shared/src/er-diagram.ts",
+        "src/features/connectors/datastore/diagram/canvas.tsx",
+        "src/features/connectors/datastore/diagram/export.ts",
+        "src/features/connectors/datastore/diagram/index.ts",
+        "src/features/connectors/datastore/diagram/inspector.tsx",
+        "src/features/connectors/datastore/diagram/node.tsx",
+        "src/features/connectors/datastore/diagram/panel.tsx",
+        "src/features/connectors/datastore/schema-diagram-action.tsx"
+      ]
+    },
+    {
+      "area": "native-database-documents-and-local-annotations",
+      "status": "partial",
+      "sourceReferences": [
+        "crates/dbx-core/src/data/docs/",
+        "apps/desktop/src/components/docs/"
+      ],
+      "runtimeFiles": [
+        "backend/device/src/database/database-docs-repository.ts",
+        "backend/device/src/database/database-docs.ts",
+        "shared/src/database-docs-edits.ts",
+        "shared/src/database-docs-export.ts",
+        "shared/src/database-docs-model.ts",
+        "shared/src/database-docs-validation.ts",
+        "shared/src/database-docs.ts",
+        "src/features/connectors/datastore/database-docs/groups.tsx",
+        "src/features/connectors/datastore/database-docs/index.ts",
+        "src/features/connectors/datastore/database-docs/note-editor.tsx",
+        "src/features/connectors/datastore/database-docs/panel.tsx",
+        "src/features/connectors/datastore/database-docs/relationships.tsx",
+        "src/features/connectors/datastore/database-docs/table-page.tsx",
+        "src/features/connectors/datastore/database-docs/use-docs.ts"
+      ]
     }
   ],
   "knownRemainingScope": [

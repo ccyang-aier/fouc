@@ -1,6 +1,6 @@
 "use client"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { ArrowLeft, Database, FileCode, GridFour, Info, Lock, LockOpen } from "@phosphor-icons/react"
+import { ArrowLeft, BookOpenText, Database, FileCode, Graph, GridFour, Info, Lock, LockOpen } from "@phosphor-icons/react"
 import type {
   DatabaseObjectInfo,
   RelationalTablePage,
@@ -12,11 +12,18 @@ import { ResourceTree } from "./resource-tree"
 import { TableView, RowInspector } from "./table-view"
 import { RelationalQuery } from "./relational-query"
 import { TableEditing } from "./table-editing"
+import type { GridEditDraft, GridEditCell, GridEditSelection } from './grid-editing'
 import { TableQueryControls } from "./table-query-controls"
 import { TableStructure } from "./table-structure"
 import { TableImportAction } from './table-import-action'
 import { SchemaCompareAction } from './schema-compare-action'
 import { StructureEditAction } from './structure-edit-action'
+import { SchemaObjectsPanel } from './schema-objects'
+import { TableTransferAction } from './table-transfer-action'
+import { DatabaseDocsPanel } from './database-docs'
+import { SchemaSearchAction } from './schema-search'
+import { SchemaDiagramView } from './schema-diagram-action'
+import type { SchemaObject, SchemaSearchHit } from '@fouc/shared'
 import styles from "./relational.module.css"
 import "./workbench.css"
 
@@ -37,10 +44,16 @@ export function RelationalWorkbench({
   const [page, setPage] = useState<RelationalTablePage | null>(null)
   const [offset, setOffset] = useState(0)
   const [search, setSearch] = useState("")
-  const [mode, setMode] = useState<"data" | "structure" | "sql">("data")
+  const [mode, setMode] = useState<"data" | "structure" | "sql" | "objects" | "diagram" | "docs">("data")
+  const [initialObject, setInitialObject] = useState<SchemaObject | null>(null)
+  const [initialColumn, setInitialColumn] = useState<string | undefined>()
+  const [openRequest, setOpenRequest] = useState<{ id: string; sql: string; schema: string } | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState("")
   const [revision, setRevision] = useState(0)
+  const [drafts, setDrafts] = useState<GridEditDraft[]>([])
+  const [selection, setSelection] = useState<GridEditSelection | null>(null), [activeCell, setActiveCell] = useState<GridEditCell | null>(null)
+  const gridHost = useRef<HTMLElement>(null)
   const [selectedRow, setSelectedRow] = useState<number | null>(null)
   const [inspectorOpen, setInspectorOpen] = useState(false)
   const [currentSession, setCurrentSession] = useState(session)
@@ -196,6 +209,20 @@ export function RelationalWorkbench({
     setFeedback("")
     setPageSearch("")
   }
+  function openSearchHit(hit: SchemaSearchHit) {
+    if (pending) return
+    selectSchema(hit.schema)
+    setInspectorOpen(false)
+    setInitialColumn(undefined)
+    if (hit.kind === 'schema') { setInitialObject(null); setMode('objects'); return }
+    if (hit.kind === 'table' || hit.kind === 'column') {
+      openTable(hit.kind === 'column' ? hit.parentName! : hit.name)
+      if (hit.kind === 'column') { setInitialColumn(hit.column ?? hit.name); setMode('structure') }
+      return
+    }
+    if (hit.object) { setInitialObject(hit.object); setMode('objects') }
+    else if (hit.relation) openTable(hit.relation.name)
+  }
   function sortColumn(column: string, additive: boolean) {
     const existing = query.sort.find((item) => item.column === column)
     const next =
@@ -232,6 +259,7 @@ export function RelationalWorkbench({
         <span className={styles.providerLabel}>{session.info.productName}</span>
         <span className={styles.connected}><i />已连接</span>
         <span className="mw-sql-spacer" />
+        <SchemaSearchAction base={base} session={session} connectionLabel={name} currentSchema={schema} disabled={pending || leaving} onOpen={openSearchHit} onNotice={setFeedback} />
         <button
           type="button"
           className={styles.writeAccess}
@@ -262,7 +290,7 @@ export function RelationalWorkbench({
           onRefresh={refresh}
           disabled={pending}
         />
-        <main className="mw-center">
+        <main className="mw-center" ref={gridHost}>
           <div className={styles.mobileResources}>
             <select
               aria-label="Schema"
@@ -291,8 +319,8 @@ export function RelationalWorkbench({
           <div className="mw-tab-strip">
             <div className="mw-document-tabs">
               <button
-                aria-pressed={mode !== "sql"}
-                className={`mw-document-tab ${mode !== "sql" ? "mw-document-active" : ""}`}
+                aria-pressed={mode === "data" || mode === "structure"}
+                className={`mw-document-tab ${mode === "data" || mode === "structure" ? "mw-document-active" : ""}`}
                 type="button"
                 onClick={() => setMode("data")}
               >
@@ -303,11 +331,14 @@ export function RelationalWorkbench({
                 aria-pressed={mode === "sql"}
                 className={`mw-document-tab ${mode === "sql" ? "mw-document-active" : ""}`}
                 type="button"
-                onClick={() => setMode("sql")}
+                onClick={() => { setInspectorOpen(false); setMode("sql") }}
               >
                 <FileCode size={15} />
                 SQL 查询
               </button>
+              <button type="button" disabled={pending || !schema} aria-pressed={mode === "objects"} className={`mw-document-tab ${mode === "objects" ? "mw-document-active" : ""}`} onClick={() => { setInitialObject(null); setInspectorOpen(false); setMode("objects") }}><Database size={15} />Schema 对象</button>
+              <button type="button" disabled={pending || !schema} aria-pressed={mode === "diagram"} className={`mw-document-tab ${mode === "diagram" ? "mw-document-active" : ""}`} onClick={() => { setInspectorOpen(false); setMode("diagram") }}><Graph size={15} />关系图</button>
+              <button type="button" disabled={pending || !schema} aria-pressed={mode === "docs"} className={`mw-document-tab ${mode === "docs" ? "mw-document-active" : ""}`} onClick={() => { setInspectorOpen(false); setMode("docs") }}><BookOpenText size={15} />数据库文档</button>
             </div>
           </div>
           {error && (
@@ -325,7 +356,7 @@ export function RelationalWorkbench({
             </p>
           )}
           <div hidden={mode !== "sql"} className={styles.queryPanel}>
-            <RelationalQuery key={session.id} session={session} schema={schema} schemas={schemas} metadataRevision={revision} schemaLocked={pending} onSchemaChange={selectSchema} beforeLeaveRef={sqlBeforeLeave} onLeaveReady={clearLeaveError} />
+            <RelationalQuery key={session.id} session={session} schema={schema} schemas={schemas} metadataRevision={revision} schemaLocked={pending} onSchemaChange={selectSchema} beforeLeaveRef={sqlBeforeLeave} onLeaveReady={clearLeaveError} openRequest={openRequest} />
           </div>
           {page && (
             <div hidden={mode !== "data"}>
@@ -360,6 +391,7 @@ export function RelationalWorkbench({
                 schema={schema}
                 page={page}
                 selectedRow={selectedRow}
+                provider={session.provider} selection={selection} activeCell={activeCell} shortcutTarget={gridHost} onDraftsChange={setDrafts}
                 writable={writable}
                 disabled={busy || tables.find((item) => item.name === table)?.kind !== "table"}
                 onPending={setPending}
@@ -371,7 +403,10 @@ export function RelationalWorkbench({
               />
             </div>
           )}
-          {mode !== "sql" && (
+          {mode === "objects" && schema && <SchemaObjectsPanel base={base} provider={session.provider} schema={schema} initialObject={initialObject} onOpenReference={reference => { if (reference.kind === "table" || reference.kind === "view" || reference.kind === "materialized-view") { if (reference.schema) selectSchema(reference.schema); openTable(reference.name) } }} />}
+          {mode === 'diagram' && schema && <SchemaDiagramView key={`${base}:${schema}`} base={base} schema={schema} onOpenTable={node => { selectSchema(node.schema); openTable(node.table) }} onOpenQuery={sql => { setOpenRequest({ id: crypto.randomUUID(), sql, schema }); setMode('sql') }} />}
+          {mode === 'docs' && schema && <DatabaseDocsPanel base={base} schemas={[schema]} persistent={Boolean(session.connectionId)} onOpenTable={(nextSchema, nextTable) => { selectSchema(nextSchema); openTable(nextTable) }} />}
+          {(mode === 'data' || mode === 'structure') && (
             <>
               <div className="mw-sql-toolbar">
                 <button
@@ -392,6 +427,7 @@ export function RelationalWorkbench({
                   结构
                 </button>
                 <span className="mw-sql-spacer" />
+                <TableTransferAction session={session} name={name} schema={schema} table={table} disabled={pending || busy || writeBusy} />
                 <TableImportAction base={base} sessionId={session.id} provider={session.provider} schema={schema} page={page} disabled={!writable || pending || busy || writeBusy} onImported={refresh} />
                 <SchemaCompareAction base={base} provider={session.provider} schema={schema} table={table} tables={tables} schemas={schemas} disabled={pending || busy} />
                 <StructureEditAction base={base} schema={schema} table={table} disabled={!writable || !table || pending || busy || writeBusy} onApplied={refresh} />
@@ -402,12 +438,13 @@ export function RelationalWorkbench({
               </div>
               {mode === "structure" && table ? (
                 <TableStructure
-                  key={`${schema}:${table}`}
+                  key={`${schema}:${table}:${initialColumn ?? ''}`}
                   base={base}
                   schema={schema}
                   table={table}
                   revision={revision}
                   pending={pending}
+                  initialColumn={initialColumn}
                   onOpenTable={(nextSchema, nextTable) => {
                     selectSchema(nextSchema)
                     openTable(nextTable)
@@ -426,6 +463,7 @@ export function RelationalWorkbench({
               ) : (
                 <TableView
                   page={page}
+                  drafts={drafts} onSelectionChange={setSelection} onCellSelect={setActiveCell}
                   provider={session.provider}
                   schema={schema}
                   scopeKey={`${base}:${schema}:${table}:${page.offset}:${JSON.stringify(query)}:${pageSearch}`}

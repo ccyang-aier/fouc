@@ -1559,7 +1559,7 @@
     {
       "id": "S03",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "available",
       "applicableDriverTypes": [
         "mysql",
@@ -1657,7 +1657,13 @@
         "action": "全局快速打开/搜索与数据库对象搜索，跨连接、数据库、Schema 的命中定位和打开。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "backend/device/src/database/schema-search.ts",
+          "check": "2026-10-04：开发仅新增P0与一次实际入口流程，已通过模块不重复矩阵。G04批量粘贴/复制/填充、100层撤销/重做及原始行保护，10项71断言及JSON null边界；实际两行中文单引号粘贴→原值预览0写入→撤销重做→提交回读，大整数保持精确、提交后清空历史。S04/S05三库原生视图/函数/过程/触发器/序列目录、精确Pg OID/重载、源码DDL/参数/引用，4项34断言及原生三库；修正真实MySQL VIEW_ROUTINE_USAGE字段。D02追加传输7项45断言、六方向原生类型往返，根接口验证空间/只读/重新锁定/一次性计划/结构指纹；实际MySQL→SQLite大整数和中文回读。Q07动态ECharts五图/多指标/分组/精确聚合/范围和持久设置，11项59断言，实际SVG与SUM 20保存设置。S03当前连接有界原生对象字段搜索10项55断言，实际字段定位结构过滤；S06实际外键/复合JOIN/布局缩放导出8项63断言，生成JOIN打开新SQL标签实际执行；S07原生文档、本地Markdown笔记/彩色分组/CAS/DBML导出5项48断言，真实设备持久保存并验证空间和版本冲突。前后端定向TS和自有lint通过，1440与390实际查看；窄屏文档改上下分区、ER图可滚动详情与resize保持中心、图表内部滚动/操作标题修正。跨连接全局搜索、写入对象管理、全类型批量编辑、建表/清表/断点传输、更多驱动/CLI/MCP及完整入口矩阵继续实施/阶段末回归。"
+        }
+      ],
       "scopeKind": "driver"
     },
     {
@@ -1749,6 +1755,11 @@
           "kind": "partial-native-validation",
           "path": "scripts/verify-table-structure-live.mjs",
           "check": "2026-10-03: native PostgreSQL17/MySQL8.4/SQLite structure catalogs, ordered composite FK actions, expression/INCLUDE/prefix/invisible indexes, constraints, triggers, views and source DDL; Pg rolled-back reconstruction and SQLite in-memory recreation passed. Chrome 1440/760/390 verifies six structure tabs/search/empty/FK navigation/readonly highlighted DDL/copy/download/refresh with no errors. Object mutation, other object kinds, complete restoration and full driver/version matrix remain open."
+        },
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "backend/device/src/database/schema-objects.ts",
+          "check": "2026-10-04：开发仅新增P0与一次实际入口流程，已通过模块不重复矩阵。G04批量粘贴/复制/填充、100层撤销/重做及原始行保护，10项71断言及JSON null边界；实际两行中文单引号粘贴→原值预览0写入→撤销重做→提交回读，大整数保持精确、提交后清空历史。S04/S05三库原生视图/函数/过程/触发器/序列目录、精确Pg OID/重载、源码DDL/参数/引用，4项34断言及原生三库；修正真实MySQL VIEW_ROUTINE_USAGE字段。D02追加传输7项45断言、六方向原生类型往返，根接口验证空间/只读/重新锁定/一次性计划/结构指纹；实际MySQL→SQLite大整数和中文回读。Q07动态ECharts五图/多指标/分组/精确聚合/范围和持久设置，11项59断言，实际SVG与SUM 20保存设置。S03当前连接有界原生对象字段搜索10项55断言，实际字段定位结构过滤；S06实际外键/复合JOIN/布局缩放导出8项63断言，生成JOIN打开新SQL标签实际执行；S07原生文档、本地Markdown笔记/彩色分组/CAS/DBML导出5项48断言，真实设备持久保存并验证空间和版本冲突。前后端定向TS和自有lint通过，1440与390实际查看；窄屏文档改上下分区、ER图可滚动详情与resize保持中心、图表内部滚动/操作标题修正。跨连接全局搜索、写入对象管理、全类型批量编辑、建表/清表/断点传输、更多驱动/CLI/MCP及完整入口矩阵继续实施/阶段末回归。"
         }
       ],
       "scopeKind": "driver"
@@ -1819,6 +1830,11 @@
           "kind": "partial-native-p0-and-browser-smoke",
           "path": "backend/device/src/database/structure-edit-plans.ts",
           "check": "2026-10-04：开发阶段仅新增P0与一次实际流程。MongoDB8原生库/集合/筛选排序分页/聚合/索引/元数据和Canonical EJSON精度，读取6项57断言、窄写入5项56断言；原始完整BSON CAS、类型/权限/空间/一次性计划与取消。Chrome真实创建连接、筛选文档、只读解锁、预览0写入、确认后大整数原值回读。网格列隐藏/NULL列、左右冻结/排序/宽度/密度/日期/JSON路径/掩码/模板，22项95断言及刷新选择映射P0；实际原始复制、显示格式与重新执行布局保留。结构编辑9项64断言、三库实际DDL，权限与计划撤销/结构变化/原生提交接口P0，真实MySQL中文含单引号注释预览0写入后确认回读。1440与390实际视觉检查，修正Mongo窄屏资源导航、结构审查局部滚动与固定操作区、主按钮对比度；自有TS/lint通过。不重复此前通过矩阵。Mongo GridFS/导入导出/dump、批量更新/其他拓扑，网格转置/自动刷新，结构外键/约束完整编辑及全入口矩阵仍未完成。"
+        },
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "src/features/connectors/datastore/schema-objects/panel.tsx",
+          "check": "2026-10-04：开发仅新增P0与一次实际入口流程，已通过模块不重复矩阵。G04批量粘贴/复制/填充、100层撤销/重做及原始行保护，10项71断言及JSON null边界；实际两行中文单引号粘贴→原值预览0写入→撤销重做→提交回读，大整数保持精确、提交后清空历史。S04/S05三库原生视图/函数/过程/触发器/序列目录、精确Pg OID/重载、源码DDL/参数/引用，4项34断言及原生三库；修正真实MySQL VIEW_ROUTINE_USAGE字段。D02追加传输7项45断言、六方向原生类型往返，根接口验证空间/只读/重新锁定/一次性计划/结构指纹；实际MySQL→SQLite大整数和中文回读。Q07动态ECharts五图/多指标/分组/精确聚合/范围和持久设置，11项59断言，实际SVG与SUM 20保存设置。S03当前连接有界原生对象字段搜索10项55断言，实际字段定位结构过滤；S06实际外键/复合JOIN/布局缩放导出8项63断言，生成JOIN打开新SQL标签实际执行；S07原生文档、本地Markdown笔记/彩色分组/CAS/DBML导出5项48断言，真实设备持久保存并验证空间和版本冲突。前后端定向TS和自有lint通过，1440与390实际查看；窄屏文档改上下分区、ER图可滚动详情与resize保持中心、图表内部滚动/操作标题修正。跨连接全局搜索、写入对象管理、全类型批量编辑、建表/清表/断点传输、更多驱动/CLI/MCP及完整入口矩阵继续实施/阶段末回归。"
         }
       ],
       "scopeKind": "driver"
@@ -1826,7 +1842,7 @@
     {
       "id": "S06",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql",
@@ -1875,13 +1891,19 @@
         "action": "ER 图、表间关系、布局、搜索/缩放/导出；字段血缘、上下游依赖和字段来源解释。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "backend/device/src/database/diagram-metadata.ts",
+          "check": "2026-10-04：开发仅新增P0与一次实际入口流程，已通过模块不重复矩阵。G04批量粘贴/复制/填充、100层撤销/重做及原始行保护，10项71断言及JSON null边界；实际两行中文单引号粘贴→原值预览0写入→撤销重做→提交回读，大整数保持精确、提交后清空历史。S04/S05三库原生视图/函数/过程/触发器/序列目录、精确Pg OID/重载、源码DDL/参数/引用，4项34断言及原生三库；修正真实MySQL VIEW_ROUTINE_USAGE字段。D02追加传输7项45断言、六方向原生类型往返，根接口验证空间/只读/重新锁定/一次性计划/结构指纹；实际MySQL→SQLite大整数和中文回读。Q07动态ECharts五图/多指标/分组/精确聚合/范围和持久设置，11项59断言，实际SVG与SUM 20保存设置。S03当前连接有界原生对象字段搜索10项55断言，实际字段定位结构过滤；S06实际外键/复合JOIN/布局缩放导出8项63断言，生成JOIN打开新SQL标签实际执行；S07原生文档、本地Markdown笔记/彩色分组/CAS/DBML导出5项48断言，真实设备持久保存并验证空间和版本冲突。前后端定向TS和自有lint通过，1440与390实际查看；窄屏文档改上下分区、ER图可滚动详情与resize保持中心、图表内部滚动/操作标题修正。跨连接全局搜索、写入对象管理、全类型批量编辑、建表/清表/断点传输、更多驱动/CLI/MCP及完整入口矩阵继续实施/阶段末回归。"
+        }
+      ],
       "scopeKind": "driver"
     },
     {
       "id": "S07",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql",
@@ -1969,7 +1991,13 @@
         "action": "数据库文档快照、双向关系、表/字段 Markdown 笔记与彩色分组、自动保存/失败重试、本地笔记和数据库注释并存、DBML/文档导出与刷新；孤儿笔记、缺失元数据及不支持 DBML 的结构明确告警；支持 CLI/MCP 同源文档上下文。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "backend/device/src/database/database-docs.ts",
+          "check": "2026-10-04：开发仅新增P0与一次实际入口流程，已通过模块不重复矩阵。G04批量粘贴/复制/填充、100层撤销/重做及原始行保护，10项71断言及JSON null边界；实际两行中文单引号粘贴→原值预览0写入→撤销重做→提交回读，大整数保持精确、提交后清空历史。S04/S05三库原生视图/函数/过程/触发器/序列目录、精确Pg OID/重载、源码DDL/参数/引用，4项34断言及原生三库；修正真实MySQL VIEW_ROUTINE_USAGE字段。D02追加传输7项45断言、六方向原生类型往返，根接口验证空间/只读/重新锁定/一次性计划/结构指纹；实际MySQL→SQLite大整数和中文回读。Q07动态ECharts五图/多指标/分组/精确聚合/范围和持久设置，11项59断言，实际SVG与SUM 20保存设置。S03当前连接有界原生对象字段搜索10项55断言，实际字段定位结构过滤；S06实际外键/复合JOIN/布局缩放导出8项63断言，生成JOIN打开新SQL标签实际执行；S07原生文档、本地Markdown笔记/彩色分组/CAS/DBML导出5项48断言，真实设备持久保存并验证空间和版本冲突。前后端定向TS和自有lint通过，1440与390实际查看；窄屏文档改上下分区、ER图可滚动详情与resize保持中心、图表内部滚动/操作标题修正。跨连接全局搜索、写入对象管理、全类型批量编辑、建表/清表/断点传输、更多驱动/CLI/MCP及完整入口矩阵继续实施/阶段末回归。"
+        }
+      ],
       "scopeKind": "driver"
     },
     {
@@ -2723,6 +2751,11 @@
           "kind": "partial-native-sql-execution-validation",
           "path": "scripts/verify-sql-executions-live.mjs",
           "check": "2026-10-04: MySQL/PostgreSQL/SQLite native sequential read-only batches, independent result/status/source ranges, exact integers, stop-on-error/skipped tails, confirmed native query cancellation, prior-result retention, pool reuse, disconnect interruption, device event-loop availability and workspace ownership passed. PostgreSQL Unicode diagnostics normalize internal cursor prefixes to UTF-16. Chrome desktop light/dark and narrow viewport, current/all/selection execution, result keyboard navigation, cross-tab cancellation, error reveal and polling retry exercised. Full file streaming, writable execution, cross-connection groups, result store and other entry points remain open."
+        },
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "src/features/connectors/datastore/charts/query-chart-builder.tsx",
+          "check": "2026-10-04：开发仅新增P0与一次实际入口流程，已通过模块不重复矩阵。G04批量粘贴/复制/填充、100层撤销/重做及原始行保护，10项71断言及JSON null边界；实际两行中文单引号粘贴→原值预览0写入→撤销重做→提交回读，大整数保持精确、提交后清空历史。S04/S05三库原生视图/函数/过程/触发器/序列目录、精确Pg OID/重载、源码DDL/参数/引用，4项34断言及原生三库；修正真实MySQL VIEW_ROUTINE_USAGE字段。D02追加传输7项45断言、六方向原生类型往返，根接口验证空间/只读/重新锁定/一次性计划/结构指纹；实际MySQL→SQLite大整数和中文回读。Q07动态ECharts五图/多指标/分组/精确聚合/范围和持久设置，11项59断言，实际SVG与SUM 20保存设置。S03当前连接有界原生对象字段搜索10项55断言，实际字段定位结构过滤；S06实际外键/复合JOIN/布局缩放导出8项63断言，生成JOIN打开新SQL标签实际执行；S07原生文档、本地Markdown笔记/彩色分组/CAS/DBML导出5项48断言，真实设备持久保存并验证空间和版本冲突。前后端定向TS和自有lint通过，1440与390实际查看；窄屏文档改上下分区、ER图可滚动详情与resize保持中心、图表内部滚动/操作标题修正。跨连接全局搜索、写入对象管理、全类型批量编辑、建表/清表/断点传输、更多驱动/CLI/MCP及完整入口矩阵继续实施/阶段末回归。"
         }
       ],
       "scopeKind": "driver"
@@ -3373,6 +3406,11 @@
           "kind": "partial-native-validation",
           "path": "src/features/connectors/datastore/table-editing.tsx",
           "check": "2026-10-03: Web staged insert/update/delete, typed null/default/value editing, generated-field omission, preview/cancel/confirm/relock and conflict feedback validated on PostgreSQL/MySQL/SQLite. Full cell selection/paste/undo/copy/keyless/complex-type scope remains open."
+        },
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "src/features/connectors/datastore/grid-editing/actions.tsx",
+          "check": "2026-10-04：开发仅新增P0与一次实际入口流程，已通过模块不重复矩阵。G04批量粘贴/复制/填充、100层撤销/重做及原始行保护，10项71断言及JSON null边界；实际两行中文单引号粘贴→原值预览0写入→撤销重做→提交回读，大整数保持精确、提交后清空历史。S04/S05三库原生视图/函数/过程/触发器/序列目录、精确Pg OID/重载、源码DDL/参数/引用，4项34断言及原生三库；修正真实MySQL VIEW_ROUTINE_USAGE字段。D02追加传输7项45断言、六方向原生类型往返，根接口验证空间/只读/重新锁定/一次性计划/结构指纹；实际MySQL→SQLite大整数和中文回读。Q07动态ECharts五图/多指标/分组/精确聚合/范围和持久设置，11项59断言，实际SVG与SUM 20保存设置。S03当前连接有界原生对象字段搜索10项55断言，实际字段定位结构过滤；S06实际外键/复合JOIN/布局缩放导出8项63断言，生成JOIN打开新SQL标签实际执行；S07原生文档、本地Markdown笔记/彩色分组/CAS/DBML导出5项48断言，真实设备持久保存并验证空间和版本冲突。前后端定向TS和自有lint通过，1440与390实际查看；窄屏文档改上下分区、ER图可滚动详情与resize保持中心、图表内部滚动/操作标题修正。跨连接全局搜索、写入对象管理、全类型批量编辑、建表/清表/断点传输、更多驱动/CLI/MCP及完整入口矩阵继续实施/阶段末回归。"
         }
       ],
       "scopeKind": "driver"
@@ -4016,7 +4054,7 @@
     {
       "id": "D02",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql",
@@ -4060,7 +4098,13 @@
         "action": "跨连接/跨引擎数据传输：源目标映射、类型转换、建表/清表/追加、批量流式处理、进度/失败重试/断点与任务记录。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "backend/device/src/database/transfer-plans.ts",
+          "check": "2026-10-04：开发仅新增P0与一次实际入口流程，已通过模块不重复矩阵。G04批量粘贴/复制/填充、100层撤销/重做及原始行保护，10项71断言及JSON null边界；实际两行中文单引号粘贴→原值预览0写入→撤销重做→提交回读，大整数保持精确、提交后清空历史。S04/S05三库原生视图/函数/过程/触发器/序列目录、精确Pg OID/重载、源码DDL/参数/引用，4项34断言及原生三库；修正真实MySQL VIEW_ROUTINE_USAGE字段。D02追加传输7项45断言、六方向原生类型往返，根接口验证空间/只读/重新锁定/一次性计划/结构指纹；实际MySQL→SQLite大整数和中文回读。Q07动态ECharts五图/多指标/分组/精确聚合/范围和持久设置，11项59断言，实际SVG与SUM 20保存设置。S03当前连接有界原生对象字段搜索10项55断言，实际字段定位结构过滤；S06实际外键/复合JOIN/布局缩放导出8项63断言，生成JOIN打开新SQL标签实际执行；S07原生文档、本地Markdown笔记/彩色分组/CAS/DBML导出5项48断言，真实设备持久保存并验证空间和版本冲突。前后端定向TS和自有lint通过，1440与390实际查看；窄屏文档改上下分区、ER图可滚动详情与resize保持中心、图表内部滚动/操作标题修正。跨连接全局搜索、写入对象管理、全类型批量编辑、建表/清表/断点传输、更多驱动/CLI/MCP及完整入口矩阵继续实施/阶段末回归。"
+        }
+      ],
       "scopeKind": "driver"
     },
     {

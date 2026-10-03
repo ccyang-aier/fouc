@@ -200,15 +200,15 @@
         "area": "shared-relational-runtime-and-postgres-sqlite-drivers",
         "status": "partial",
         "files": 7,
-        "physical": 1365,
-        "effective": 1337
+        "physical": 1423,
+        "effective": 1395
       },
       {
         "area": "shared-sql-workbench-and-connection-management",
         "status": "partial",
         "files": 10,
-        "physical": 2114,
-        "effective": 2059
+        "physical": 2000,
+        "effective": 1947
       },
       {
         "area": "native-redis-and-specialized-surface",
@@ -228,8 +228,8 @@
         "area": "native-table-change-plans-and-editing",
         "status": "partial",
         "files": 4,
-        "physical": 641,
-        "effective": 627
+        "physical": 649,
+        "effective": 635
       },
       {
         "area": "native-database-table-filters-and-sort",
@@ -242,8 +242,8 @@
         "area": "native-relational-structure-and-source-browser",
         "status": "partial",
         "files": 6,
-        "physical": 1204,
-        "effective": 1187
+        "physical": 1206,
+        "effective": 1189
       },
       {
         "area": "native-sql-history-and-library",
@@ -305,8 +305,8 @@
         "area": "native-relational-explain-grid-selection-and-result-export",
         "status": "partial",
         "files": 29,
-        "physical": 2674,
-        "effective": 2399
+        "physical": 2684,
+        "effective": 2409
       },
       {
         "area": "native-table-import",
@@ -349,12 +349,61 @@
         "files": 13,
         "physical": 852,
         "effective": 827
+      },
+      {
+        "area": "native-grid-batch-drafts-and-history",
+        "status": "partial",
+        "files": 10,
+        "physical": 357,
+        "effective": 338
+      },
+      {
+        "area": "native-schema-object-catalog-and-source",
+        "status": "partial",
+        "files": 15,
+        "physical": 541,
+        "effective": 516
+      },
+      {
+        "area": "native-query-chart-builder",
+        "status": "partial",
+        "files": 8,
+        "physical": 386,
+        "effective": 366
+      },
+      {
+        "area": "native-cross-engine-table-transfer",
+        "status": "partial",
+        "files": 10,
+        "physical": 610,
+        "effective": 595
+      },
+      {
+        "area": "native-schema-quick-open-search",
+        "status": "partial",
+        "files": 6,
+        "physical": 291,
+        "effective": 274
+      },
+      {
+        "area": "native-schema-er-diagram-and-join-navigation",
+        "status": "partial",
+        "files": 12,
+        "physical": 499,
+        "effective": 483
+      },
+      {
+        "area": "native-database-documents-and-local-annotations",
+        "status": "partial",
+        "files": 14,
+        "physical": 496,
+        "effective": 482
       }
     ],
     "runtime": {
-      "files": 280,
-      "physical": 30105,
-      "effective": 27461
+      "files": 355,
+      "physical": 33249,
+      "effective": 30481
     },
     "targetEffectiveRuntimeLines": 50000,
     "milestoneVerified": false

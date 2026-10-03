@@ -2142,3 +2142,4 @@ html[data-theme="dark"] .mw {
     width: 230px;
   }
 }
+.mw-breadcrumb > button[aria-label="搜索对象"] { display: inline-flex; width: auto; min-width: 30px; gap: 6px; padding: 5px 8px; white-space: nowrap; }

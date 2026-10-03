@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState, type RefObject } from "react"
 import { Plus, PencilSimple, Trash, FileCode, X } from "@phosphor-icons/react"
 import type {
   DatabaseTablePage,
@@ -14,12 +14,13 @@ import { SavePreviewDialog } from "./save-preview-dialog"
 import styles from "./table-editing.module.css"
 import common from "./relational.module.css"
 
-type Draft = { id: string; row: number | null; change: RelationalRowChange }
+import { GridEditingActions, useGridDraftHistory, type GridEditDraft as Draft, type GridEditCell, type GridEditSelection } from './grid-editing'
 export function TableEditing({
   base,
   schema,
   page,
   selectedRow,
+  provider, selection, activeCell, shortcutTarget, onDraftsChange,
   writable,
   disabled,
   onPending,
@@ -29,12 +30,19 @@ export function TableEditing({
   schema: string
   page: DatabaseTablePage
   selectedRow: number | null
+  provider: import('@fouc/shared').RelationalProvider
+  selection: GridEditSelection | null
+  activeCell: GridEditCell | null
+  shortcutTarget: RefObject<HTMLElement | null>
+  onDraftsChange: (drafts: Draft[]) => void
   writable: boolean
   disabled: boolean
   onPending: (pending: boolean) => void
   onSaved: (message: string) => void
 }) {
-  const [drafts, setDrafts] = useState<Draft[]>([])
+  const history = useGridDraftHistory()
+  const { drafts } = history
+  useEffect(() => { onPending(drafts.length > 0); onDraftsChange(drafts) }, [drafts, onPending, onDraftsChange])
   const [editing, setEditing] = useState<{ row: number | null } | null>(null)
   const [preview, setPreview] = useState<RelationalSavePreview | null>(null)
   const [busy, setBusy] = useState(false)
@@ -42,8 +50,7 @@ export function TableEditing({
   const selected = selectedRow === null ? null : page.rows[selectedRow]
   const identifiable = page.columns.some((column) => column.isPrimaryKey || column.isUnique)
   function update(next: Draft[]) {
-    setDrafts(next)
-    onPending(next.length > 0)
+    history.apply(next)
     setError("")
   }
   function stage(change: RelationalRowChange, row: number | null) {
@@ -84,7 +91,7 @@ export function TableEditing({
         method: "POST",
         body: JSON.stringify({ confirm: true })
       })
-      update([])
+      history.reset()
       setPreview(null)
       onSaved(`已提交 ${result.affectedRows} 项变更 · ${result.executionTimeMs} ms`)
     } catch (reason) {
@@ -126,6 +133,7 @@ export function TableEditing({
         </button>
         <span>{writable ? "变更须预览确认" : "解锁表格写入后可编辑"}</span>
       </div>
+      <GridEditingActions page={page} provider={provider} selection={selection} activeCell={activeCell} shortcutTarget={shortcutTarget} writable={writable} disabled={disabled || busy || !!preview || !!editing} history={history} />
       {drafts.length > 0 && (
         <div className={styles.drafts}>
           <div className={styles.draftHead}>

@@ -52,6 +52,18 @@ export function relationalRoutes(
     ),
   );
   app.route('/', sqlLibraryRoutes(sessions, connections));
+  app.post(base + '/:id/transfer/plans', async c => c.json({ ok: true, data: await sessions.prepareTransfer(c.req.param('workspaceId')!, c.req.param('id')!, await c.req.json().catch(() => null), c.req.raw.signal) }, 201));
+  app.delete(base + '/:id/transfer/plans/:planId', c => { sessions.discardTransfer(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('planId')!); return c.json({ ok: true, data: { discarded: true } }); });
+  app.post(base + '/:id/transfer/plans/:planId/start', async c => { const body = await c.req.json().catch(() => null); if (body?.confirm !== true) throw new DatabaseInputError('请明确确认传输计划'); return c.json({ ok: true, data: sessions.startTransfer(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('planId')!) }, 201); });
+  app.get(base + '/:id/transfer/tasks/:taskId', c => c.json({ ok: true, data: sessions.transferTask(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('taskId')!) }));
+  app.delete(base + '/:id/transfer/tasks/:taskId', c => c.json({ ok: true, data: sessions.cancelTransfer(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('taskId')!) }));
+  app.post(base + '/:id/schema-objects/list', async c => c.json({ ok: true, data: await sessions.metadata.objects(c.req.param('workspaceId')!, c.req.param('id')!, await c.req.json().catch(() => null), c.req.raw.signal) }));
+  app.post(base + '/:id/schema-objects/details', async c => c.json({ ok: true, data: await sessions.metadata.details(c.req.param('workspaceId')!, c.req.param('id')!, await c.req.json().catch(() => null), c.req.raw.signal) }));
+  app.post(base + '/:id/schema-search', async c => c.json({ ok: true, data: await sessions.metadata.search(c.req.param('workspaceId')!, c.req.param('id')!, await c.req.json().catch(() => null), c.req.raw.signal) }));
+  app.post(base + '/:id/diagram', async c => c.json({ ok: true, data: await sessions.metadata.diagram(c.req.param('workspaceId')!, c.req.param('id')!, await c.req.json().catch(() => null), c.req.raw.signal) }));
+  app.post(base + '/:id/database-docs/snapshot', async c => c.json({ ok: true, data: await sessions.metadata.snapshot(c.req.param('workspaceId')!, c.req.param('id')!, await c.req.json().catch(() => null), c.req.raw.signal) }));
+  app.get(base + '/:id/database-docs/annotations', c => c.json({ ok: true, data: sessions.metadata.annotations(c.req.param('workspaceId')!, c.req.param('id')!) }));
+  app.put(base + '/:id/database-docs/annotations', async c => c.json({ ok: true, data: sessions.metadata.saveAnnotations(c.req.param('workspaceId')!, c.req.param('id')!, await c.req.json().catch(() => null)) }));
   app.get(base + '/:id', (c) =>
     c.json({
       ok: true,

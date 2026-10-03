@@ -22,7 +22,7 @@ import styles from './result-grid.module.css'
 
 export type ResultGridCellSelection = { rowIndex: number; columnIndex: number; columnName: string; value: DatabaseCell }
 export type { ResultGridSelectionScope } from './selection-controller'
-export type ResultGridProps = { result: DatabaseQueryResult; onCellSelect?: (cell: ResultGridCellSelection | null) => void; onSelectionChange?: (scope: ResultGridSelectionScope | null) => void; onNotice?: (message: string) => void; readOnly?: boolean; rowOffset?: number; rowNumbers?: readonly number[]; scopeLabel?: string; emptyLabel?: string; scopeKey?: string; layoutScopeKey?: string; primaryKeys?: readonly string[]; showCellDetails?: boolean; sort?: readonly RelationalSort[]; sortDisabled?: boolean; onSort?: (column: string, additive: boolean) => void; toolbarActions?: ReactNode }
+export type ResultGridProps = { result: DatabaseQueryResult; displayRows?: DatabaseCell[][]; editedCells?: ReadonlySet<string>; onCellSelect?: (cell: ResultGridCellSelection | null) => void; onSelectionChange?: (scope: ResultGridSelectionScope | null) => void; onNotice?: (message: string) => void; readOnly?: boolean; rowOffset?: number; rowNumbers?: readonly number[]; scopeLabel?: string; emptyLabel?: string; scopeKey?: string; layoutScopeKey?: string; primaryKeys?: readonly string[]; showCellDetails?: boolean; sort?: readonly RelationalSort[]; sortDisabled?: boolean; onSort?: (column: string, additive: boolean) => void; toolbarActions?: ReactNode }
 
 const HEADER_HEIGHT = 44, OVERSCAN = 8
 const resultKeys = new WeakMap<DatabaseQueryResult, string>()
@@ -42,7 +42,7 @@ function selectionTarget(element: EventTarget | null): GridSelectionTarget | nul
   return { kind, rowIndex: Number(cell.dataset.gridRow), colIndex: Number(cell.dataset.gridColumn) }
 }
 
-function ResultGridContent({ result, onCellSelect, onSelectionChange, onNotice, readOnly = true, rowOffset = 0, rowNumbers, scopeLabel, emptyLabel = '查询成功，没有返回记录', primaryKeys = [], showCellDetails = true, sort = [], sortDisabled = false, onSort, toolbarActions, layoutScopeKey }: ResultGridProps) {
+function ResultGridContent({ result, displayRows, editedCells, onCellSelect, onSelectionChange, onNotice, readOnly = true, rowOffset = 0, rowNumbers, scopeLabel, emptyLabel = '查询成功，没有返回记录', primaryKeys = [], showCellDetails = true, sort = [], sortDisabled = false, onSort, toolbarActions, layoutScopeKey }: ResultGridProps) {
   const [feedback, setFeedback] = useState(''), [layoutColumn, setLayoutColumn] = useState<number | null>(null)
   function notice(message: string) { setFeedback(message); onNotice?.(message) }
   const { layout, changeLayout } = useGridLayout(layoutScopeKey, notice)
@@ -79,7 +79,7 @@ function ResultGridContent({ result, onCellSelect, onSelectionChange, onNotice, 
   const frames = useMemo(() => gridSelectionFrames(selection, dimensions), [selection, dimensions])
   const firstRow = Math.max(0, Math.floor((viewportSize.top - HEADER_HEIGHT) / rowHeight) - OVERSCAN)
   const endRow = Math.min(result.rows.length, firstRow + Math.ceil(viewportSize.height / rowHeight) + OVERSCAN * 2 + 2)
-  const displayValues = useMemo(() => result.rows.slice(firstRow, endRow).map((row) => visible.map((column) => applyColumnFormatter(row[column] ?? null, layout.formatters[keys[column]]))), [result.rows, firstRow, endRow, visible, layout.formatters, keys])
+  const displayValues = useMemo(() => (displayRows ?? result.rows).slice(firstRow, endRow).map((row) => visible.map((column) => applyColumnFormatter(row[column] ?? null, layout.formatters[keys[column]]))), [displayRows, result.rows, firstRow, endRow, visible, layout.formatters, keys])
   const focus = selection.focus, focusSelected = focus !== null && gridCellSelected(selection, focus.rowIndex, focus.colIndex)
   const cell = focusSelected && focus ? { rowIndex: focus.rowIndex, columnIndex: visible[focus.colIndex], columnName: columnLabel(result.columns, visible[focus.colIndex]), value: result.rows[focus.rowIndex]?.[visible[focus.colIndex]] ?? null } : null
   const notifyCell = useEffectEvent(() => onCellSelect?.(cell))
@@ -94,12 +94,11 @@ function ResultGridContent({ result, onCellSelect, onSelectionChange, onNotice, 
     return () => observer.disconnect()
   }, [])
   useEffect(() => {
-    // Clear the previous export scope while a newly changed selection is being measured.
-    if (selectionNotificationEnabled) notifySelection(null)
+    // Editing captures the current selection immediately; only statistics are deferred.
+    if (selectionNotificationEnabled) notifySelection(gridSelectionScope(selection, result, visible))
     const timer = setTimeout(() => {
       function* values() { for (const selected of selectedGridCells(selection, result, visible)) yield selected.value }
       setStatistics({ selection, summary: summarizeExactValues(values()) })
-      if (selectionNotificationEnabled) notifySelection(gridSelectionScope(selection, result, visible))
     }, 90)
     return () => clearTimeout(timer)
   }, [selection, result, visible, selectionNotificationEnabled])
@@ -209,8 +208,8 @@ function ResultGridContent({ result, onCellSelect, onSelectionChange, onNotice, 
         })}</tr></thead>
           <tbody role="rowgroup">{firstRow > 0 && <tr aria-hidden="true" className={styles.spacer}><td colSpan={visible.length + 1} style={{ height: firstRow * rowHeight }} /></tr>}
             {result.rows.slice(firstRow, endRow).map((row, localIndex) => { const rowIndex = firstRow + localIndex; return <tr key={rowIndex} role="row" aria-rowindex={rowIndex + 2}><th role="rowheader" aria-selected={selection.mode === 'rows' && selection.rows.has(rowIndex)} data-grid-target="row" data-grid-row={rowIndex} data-grid-column={focus?.colIndex ?? 0} className={styles.rowNumber}>{rowNumbers?.[rowIndex] ?? rowOffset + rowIndex + 1}</th>{visible.map((columnIndex, visibleIndex) => {
-              const value = row[columnIndex] ?? null, columnKey = keys[columnIndex], selected = gridCellSelected(selection, rowIndex, visibleIndex), active = focusSelected && focus?.rowIndex === rowIndex && focus.colIndex === visibleIndex, formatted = displayValues[localIndex][visibleIndex]
-              return <td key={columnKey} style={columnPositions[visibleIndex]} id={`${id}-${rowIndex}-${visibleIndex}`} role="gridcell" aria-colindex={visibleIndex + 2} aria-selected={selected} data-grid-target="cell" data-grid-row={rowIndex} data-grid-column={visibleIndex} data-pinned={layout.pins[columnKey]} data-selected={selected || undefined} data-active={active || undefined} data-edge={cellEdge(rowIndex, visibleIndex)} data-format-error={!!formatted.error || undefined} className={value === null ? styles.nullCell : typeof value === 'number' && !layout.formatters[columnKey] ? styles.numericCell : undefined} title={(formatted.error ? `${formatted.error}\n保持原始值：${databaseCellText(value)}` : layout.formatters[columnKey] ? `显示值：${formatted.text}\n原始值：${databaseCellText(value)}` : formatted.text).slice(0, 4096)}><span>{value === '' && !layout.formatters[columnKey] ? <i className={styles.emptyString}>空字符串</i> : formatted.text.slice(0, 512)}</span></td>
+              const value = displayRows ? displayRows[rowIndex]?.[columnIndex] ?? null : row[columnIndex] ?? null, columnKey = keys[columnIndex], selected = gridCellSelected(selection, rowIndex, visibleIndex), active = focusSelected && focus?.rowIndex === rowIndex && focus.colIndex === visibleIndex, formatted = displayValues[localIndex][visibleIndex]
+              return <td key={columnKey} style={columnPositions[visibleIndex]} id={`${id}-${rowIndex}-${visibleIndex}`} role="gridcell" aria-colindex={visibleIndex + 2} aria-selected={selected} data-grid-target="cell" data-grid-row={rowIndex} data-grid-column={visibleIndex} data-pinned={layout.pins[columnKey]} data-selected={selected || undefined} data-active={active || undefined} data-edge={cellEdge(rowIndex, visibleIndex)} data-format-error={!!formatted.error || undefined} data-dirty={editedCells?.has(`${rowIndex}:${columnIndex}`) || undefined} className={value === null ? styles.nullCell : typeof value === 'number' && !layout.formatters[columnKey] ? styles.numericCell : undefined} title={(formatted.error ? `${formatted.error}\n保持原始值：${databaseCellText(value)}` : layout.formatters[columnKey] ? `显示值：${formatted.text}\n原始值：${databaseCellText(value)}` : formatted.text).slice(0, 4096)}><span>{value === '' && !layout.formatters[columnKey] ? <i className={styles.emptyString}>空字符串</i> : formatted.text.slice(0, 512)}</span></td>
             })}</tr> })}
             {endRow < result.rows.length && <tr aria-hidden="true" className={styles.spacer}><td colSpan={visible.length + 1} style={{ height: (result.rows.length - endRow) * rowHeight }} /></tr>}
           </tbody></table>

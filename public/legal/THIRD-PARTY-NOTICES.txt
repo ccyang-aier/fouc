@@ -159,3 +159,8 @@ Grid layout/formatting adapts useDataGridColumnLayout, useDataGridColumnFormatte
 and DataGridColumnLayoutPopover. Relational structure editing adapts DBX native
 table_structure_sql and TableStructureEditor into typed plans and React review.
 MongoDB connector icon derives from DBX apps/desktop/public/connector-logos.
+
+Native metadata, quick-open, ER diagram and database documents adapt DBX object,
+quick-open, lib/diagram and data/docs workflows. Grid drafts, table transfer and
+query chart configuration adapt DBX grid, data/transfer and chart workflows.
+ECharts 6.1.0 is used under the Apache License 2.0.

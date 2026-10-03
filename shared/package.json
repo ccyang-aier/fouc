@@ -15,6 +15,11 @@
     "./mongo": "./src/mongo.ts",
     "./mongo-connections": "./src/mongo-connections.ts",
     "./mongo-mutation": "./src/mongo-mutation.ts",
+    "./schema-objects": "./src/schema-objects.ts",
+    "./schema-search": "./src/schema-search.ts",
+    "./table-transfer": "./src/table-transfer.ts",
+    "./er-diagram": "./src/er-diagram.ts",
+    "./database-docs": "./src/database-docs.ts",
     "./relational-structure-edit": "./src/relational-structure-edit.ts",
     "./development-workbench": "./src/development-workbench.ts",
     "./catalog/dbx-catalog.json": "./catalog/dbx-catalog.json"

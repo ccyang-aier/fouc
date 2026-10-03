@@ -44,6 +44,7 @@ export function TableStructure({
   table,
   revision,
   pending,
+  initialColumn,
   onOpenTable
 }: {
   base: string
@@ -51,11 +52,12 @@ export function TableStructure({
   table: string
   revision: number
   pending: boolean
+  initialColumn?: string
   onOpenTable: (schema: string, table: string) => void
 }) {
   const [structure, setStructure] = useState<RelationalTableStructure | null>(null)
   const [tab, setTab] = useState<StructureTab>("columns")
-  const [search, setSearch] = useState("")
+  const [search, setSearch] = useState(initialColumn ?? "")
   const [loadedKey, setLoadedKey] = useState("")
   const [error, setError] = useState("")
   const [reload, setReload] = useState(0)

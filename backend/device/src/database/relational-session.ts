@@ -1,9 +1,17 @@
 import { DatabaseInputError } from './input-error';
+import path from 'node:path';
+import { z } from 'zod';
+import { tableTransferInputSchema } from '@fouc/shared/table-transfer';
+import { TableTransferPlans, transferStructureSignature } from './transfer-plans';
+import { prepareTableTransfer } from './transfer-prepare';
+import { executeTableTransfer } from './transfer-execute';
 import { compileSqlTemplate, sqlSourceEnd, sqlSourcePosition, sqlVariableContext, stripSqlVariableDeclarations, splitSqlExecutionRanges, type SqlTemplateInput } from '@fouc/shared';
 import { SqlExecutionRegistry, sqlExecutionError } from './sql-execution-registry';
 import { explainSqlPlan } from './sql-explain';
 import { TableImportPlans } from './table-import-plans';
 import { StructureEditPlans } from './structure-edit-plans';
+import { RelationalMetadataService } from './relational-metadata';
+import { DatabaseDocsRepository } from './database-docs-repository';
 import {
   DATABASE_CAPABILITIES,
   SQL_FILE_MAX_BYTES,
@@ -46,12 +54,17 @@ type Entry = {
   structureEdits: StructureEditPlans;
   saving: boolean;
   connectionName: string;
+  sourceIdentity: string;
 };
 export class RelationalSessionManager {
   private executions = new SqlExecutionRegistry();
+  private readonly transfers = new TableTransferPlans();
   private readonly entries = new Map<string, Entry>();
   private readonly transientSql = new RelationalSqlRepository();
-  constructor(private readonly capabilities: DatabaseCapabilityRegistry, readonly sqlRepository = new RelationalSqlRepository()) {}
+  readonly metadata: RelationalMetadataService;
+  constructor(private readonly capabilities: DatabaseCapabilityRegistry, readonly sqlRepository = new RelationalSqlRepository(), documents = new DatabaseDocsRepository()) {
+    this.metadata = new RelationalMetadataService((workspaceId, id) => this.entry(workspaceId, id), documents);
+  }
 
   async connect(workspaceId: string, value: unknown, connection: { id: string; name: string } | null = null): Promise<RelationalSession> {
     if (!workspaceId.trim() || workspaceId.length > 128)
@@ -111,6 +124,7 @@ export class RelationalSessionManager {
         imports: new TableImportPlans(),
         structureEdits: new StructureEditPlans(),
         saving: false,
+        sourceIdentity: input.provider === 'sqlite' ? JSON.stringify(['sqlite', path.resolve(input.path).toLowerCase()]) : JSON.stringify([input.provider, input.host.toLowerCase(), input.port, input.provider === 'postgres' ? input.database : null]),
         connectionName: connection?.name ?? `${input.provider} · ${session.database}`,
       });
       return session;
@@ -156,6 +170,7 @@ export class RelationalSessionManager {
     entry.plans.clear();
     entry.imports.clear();
     entry.structureEdits.clear();
+    this.transfers.clearSession(id);
     return entry.session;
   }
   private writable(workspaceId: string, id: string): Entry {
@@ -244,6 +259,36 @@ export class RelationalSessionManager {
     }
   }
 
+  async prepareTransfer(workspaceId: string, id: string, value: unknown, signal?: AbortSignal) {
+    const parsed = z.object({ sourceSchema: z.string().min(1).max(256), sourceTable: z.string().min(1).max(256), targetSessionId: z.string().uuid(), targetSchema: z.string().min(1).max(256), targetTable: z.string().min(1).max(256), input: tableTransferInputSchema }).strict().safeParse(value);
+    if (!parsed.success) throw new DatabaseInputError('表传输参数无效');
+    const input = parsed.data, source = this.entry(workspaceId, id), target = this.writable(workspaceId, input.targetSessionId);
+    if (source === target || source.sourceIdentity === target.sourceIdentity && input.sourceSchema === input.targetSchema && input.sourceTable === input.targetTable) throw new DatabaseInputError('传输源和目标不能是同一张物理表；请选择独立目标连接与表');
+    if (source.saving || target.saving) throw new DatabaseInputError('连接正在提交变更，请稍后准备');
+    signal?.throwIfAborted();
+    const [sourceStructure, targetStructure] = await Promise.all([this.structure(workspaceId, id, input.sourceSchema, input.sourceTable), this.structure(workspaceId, target.session.id, input.targetSchema, input.targetTable)]);
+    if (this.entry(workspaceId, id) !== source || this.writable(workspaceId, target.session.id) !== target || source.saving || target.saving) throw new DatabaseInputError('传输会话已变化，请重新准备');
+    signal?.throwIfAborted();
+    return this.transfers.prepare(workspaceId, id, target.session.id, prepareTableTransfer(sourceStructure, targetStructure, input.input), sourceStructure, targetStructure);
+  }
+  discardTransfer(workspaceId: string, id: string, planId: string) { this.entry(workspaceId, id); this.transfers.discard(workspaceId, id, planId); }
+  startTransfer(workspaceId: string, id: string, planId: string) {
+    const source = this.entry(workspaceId, id), prepared = this.transfers.consume(workspaceId, id, planId), target = this.writable(workspaceId, prepared.targetId);
+    if (source.saving || target.saving) throw new DatabaseInputError('连接正在提交变更，请重新准备传输');
+    source.saving = true; target.saving = true;
+    try { return this.transfers.start(prepared, async (signal, onProgress) => {
+      try {
+        signal.throwIfAborted();
+        const [a, b] = await Promise.all([this.structure(workspaceId, id, prepared.plan.source.schema, prepared.plan.source.table), this.structure(workspaceId, target.session.id, prepared.plan.target.schema, prepared.plan.target.table)]);
+        if (this.entry(workspaceId, id) !== source || this.writable(workspaceId, target.session.id) !== target) throw new DatabaseInputError('传输连接已变化');
+        signal.throwIfAborted();
+        if (transferStructureSignature(a) !== prepared.sourceSignature || transferStructureSignature(b) !== prepared.targetSignature) throw new DatabaseInputError('源或目标结构已变化，请重新准备');
+        return await executeTableTransfer(source.driver, target.driver, prepared.plan, { signal, onProgress });
+      } finally { source.saving = false; target.saving = false; }
+    }); } catch (reason) { source.saving = false; target.saving = false; throw reason; }
+  }
+  transferTask(workspaceId: string, id: string, taskId: string) { this.entry(workspaceId, id); return this.transfers.poll(workspaceId, id, taskId); }
+  cancelTransfer(workspaceId: string, id: string, taskId: string) { this.entry(workspaceId, id); return this.transfers.cancel(workspaceId, id, taskId); }
   async schemas(workspaceId: string, id: string): Promise<string[]> {
     return this.entry(workspaceId, id).driver.schemas();
   }
@@ -479,15 +524,15 @@ export class RelationalSessionManager {
   saveEditorPreferences(workspaceId: string, id: string, value: unknown) {
     const entry = this.entry(workspaceId, id); return this.historyRepository(entry).saveEditorPreferences(workspaceId, entry.session.connectionId ?? id, value);
   }
-  removeConnection(workspaceId: string, connectionId: string): void {
-    for (const entry of this.entries.values()) if (entry.session.workspaceId === workspaceId && entry.session.connectionId === connectionId) {
-      void this.disconnect(workspaceId, entry.session.id).catch(() => undefined);
-    }
+  async removeConnection(workspaceId: string, connectionId: string): Promise<void> {
+    await Promise.all([...this.entries.values()].filter(entry => entry.session.workspaceId === workspaceId && entry.session.connectionId === connectionId).map(entry => this.disconnect(workspaceId, entry.session.id)));
     this.sqlRepository.removeConnection(workspaceId, connectionId);
+    this.metadata.documents.deleteConnection(workspaceId, connectionId);
   }
   async disconnect(workspaceId: string, id: string): Promise<void> {
     const entry = this.entry(workspaceId, id);
     this.entries.delete(id);
+    this.transfers.clearSession(id);
     entry.imports.clear();
     entry.structureEdits.clear();
     await this.executions.closeSession(id);
@@ -503,5 +548,6 @@ export class RelationalSessionManager {
     );
     this.sqlRepository.close();
     this.transientSql.close();
+    this.metadata.documents.close();
   }
 }

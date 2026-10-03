@@ -47,6 +47,7 @@
 .header button:hover {
   background: var(--surface-hover);
 }
+.header .databaseButton { font: 11px/1.5 ui-monospace, monospace; border: 1px solid var(--line); background: var(--surface); padding: 3px 7px; white-space: nowrap; }
 .tabs {
   display: flex;
   height: 38px;
@@ -119,7 +120,7 @@
 .mutationToolbar > div { display: flex; flex-wrap: wrap; gap: 5px; }
 .mutationToolbar button { display: inline-flex; align-items: center; gap: 5px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel); cursor: pointer; color: var(--muted-strong); white-space: nowrap; }
 .mutationToolbar .dangerButton { color: #b73340; }
-.table .rowActions { width: 85px; padding: 8px; white-space: nowrap; }
+.table .rowActions { width: 102px; padding: 8px; white-space: nowrap; }
 .rowActions button { padding: 5px; cursor: pointer; color: var(--muted-strong); border-radius: 4px; }
 .rowActions button:hover { background: var(--surface-hover); color: var(--ink); }
 .keyList {
@@ -388,12 +389,6 @@
   background: var(--accent);
   color: white;
   cursor: pointer;
-}
-.commandStatus {
-  padding: 12px 20px;
-  font-size: 11px;
-  color: var(--muted-strong);
-  border-bottom: 1px solid var(--line);
 }
 .workbench button:disabled {
   opacity: 0.5;

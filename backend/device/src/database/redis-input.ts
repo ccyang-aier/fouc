@@ -14,7 +14,7 @@ export function redisConfig(value: unknown): RedisConnectionConfig {
     typeof input.username !== 'string' ||
     !Number.isInteger(input.database) ||
     Number(input.database) < 0 ||
-    Number(input.database) > 1023 ||
+    Number(input.database) > 2147483646 ||
     typeof input.tls !== 'boolean'
   )
     throw new DatabaseInputError('主机、端口、用户名、数据库或 TLS 参数无效');

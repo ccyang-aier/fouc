@@ -140,7 +140,9 @@ function ConnectionDirectory({
   }
   if (active?.session.provider === "redis")
     return (
-      <RedisWorkbench session={active.session} name={active.connection.name} onBack={() => setActive(null)} />
+      <RedisWorkbench key={active.session.id} session={active.session} name={active.connection.name} onBack={() => setActive(null)} onSessionChange={(session) => {
+        setActive({ connection: active.connection, session })
+      }} />
     )
   if (active)
     return (

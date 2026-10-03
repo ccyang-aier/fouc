@@ -53,6 +53,7 @@ if action == 'hash-set' then
   end
 end
 if action == 'hash-remove' and redis.call('HEXISTS', key, first[3]) ~= 1 then return fail('Hash 字段已不存在') end
+if action == 'hash-expiry' and redis.call('HEXISTS', key, first[#first]) ~= 1 then return fail('Hash 字段已不存在') end
 if action == 'set-add' and redis.call('SISMEMBER', key, first[3]) ~= 0 then return fail('Set 成员已存在') end
 if action == 'set-remove' and redis.call('SISMEMBER', key, first[3]) ~= 1 then return fail('Set 成员已不存在') end
 if action == 'zset-add' and redis.call('ZSCORE', key, first[4]) ~= false then return fail('ZSet 成员已存在') end
@@ -70,7 +71,7 @@ end
 if action == 'stream-remove' and #redis.call('XRANGE', key, first[3], first[3], 'COUNT', 1) ~= 1 then
   return fail('Stream 消息已不存在')
 end
-if action == 'expiry' and first[1] == 'PEXPIREAT' then
+if (action == 'expiry' or action == 'hash-expiry') and (first[1] == 'PEXPIREAT' or first[1] == 'HPEXPIREAT') then
   local now = redis.call('TIME')
   if tonumber(first[3]) <= tonumber(now[1]) * 1000 + math.floor(tonumber(now[2]) / 1000) then
     return fail('指定过期时间已过去，请重新选择')
@@ -95,6 +96,12 @@ for i, command in ipairs(commands) do
       if type(restored) == 'table' and restored.err then return redis.error_reply('FOUC_UNKNOWN 编辑和补偿均失败，必须刷新核对 Key：' .. restored.err) end
     end
     return reply
+  end
+  if action == 'hash-expiry' then
+    local code = type(reply) == 'table' and tonumber(reply[1]) or nil
+    if code ~= 1 and not (command[1] == 'HPERSIST' and code == -1) then
+      return redis.error_reply('FOUC_UNKNOWN 字段期限未按预期应用，请刷新核对字段')
+    end
   end
   result = type(reply) == 'table' and (reply.ok or 'OK') or tostring(reply)
 end

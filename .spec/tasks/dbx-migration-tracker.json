@@ -5206,6 +5206,16 @@
           "kind": "partial-web-validation",
           "path": "src/features/connectors/redis/redis-mutation-dialog.tsx",
           "check": "2026-10-03: Playwright + Chrome 1440/760/390: six type creation, binary and collection edits/add/delete, TTL/persist, rename/delete, cancel/review/confirmation, conflict feedback and relock. One intentional HTTP400 conflict; no other page/console errors. 39 scoped tests include BOM roundtrip, auth and in-flight write revocation."
+        },
+        {
+          "kind": "partial-runtime-validation",
+          "path": "scripts/verify-redis-management-live.mjs",
+          "check": "2026-10-03: Redis7.4.8 named DB14/15 fixtures verify SELECT acknowledgement, isolated session switching/failure/no-op and old-plan revocation; CONFIG/INFO denied metadata remains unknown; HPTTL binary fields and relative/exact absolute/persist updates retain Key TTL, ACL denies writes; saved-connection/workspace history survives reconnect, records exact DB/failures, excludes locally rejected AUTH, releases history and sessions on config deletion. 43 scoped tests include auth and bounded persistent history reload."
+        },
+        {
+          "kind": "partial-web-validation",
+          "path": "src/features/connectors/redis/redis-database-selector.tsx",
+          "check": "2026-10-03: Chrome1440/760/390 verifies field relative/absolute/persist expiry, DB14/15 switching/relock/failed selection, terminal history draft recall/reuse/copy/DB filter/reconnect/clear. Current DB scrolls into view; dialog actions remain visible. One intentional HTTP502 switch rejection, no other page/console errors. RedisJSON/Cluster/Sentinel/consumer groups/PubSub/Slowlog/MONITOR, large/batch operations and broader version/entry-point matrix remain pending."
         }
       ],
       "scopeKind": "driver"
@@ -6120,6 +6130,16 @@
           "kind": "partial-web-validation",
           "path": "src/features/connectors/redis/redis-mutation-dialog.tsx",
           "check": "2026-10-03: Playwright + Chrome 1440/760/390: six type creation, binary and collection edits/add/delete, TTL/persist, rename/delete, cancel/review/confirmation, conflict feedback and relock. One intentional HTTP400 conflict; no other page/console errors. 39 scoped tests include BOM roundtrip, auth and in-flight write revocation."
+        },
+        {
+          "kind": "partial-runtime-validation",
+          "path": "scripts/verify-redis-management-live.mjs",
+          "check": "2026-10-03: Redis7.4.8 named DB14/15 fixtures verify SELECT acknowledgement, isolated session switching/failure/no-op and old-plan revocation; CONFIG/INFO denied metadata remains unknown; HPTTL binary fields and relative/exact absolute/persist updates retain Key TTL, ACL denies writes; saved-connection/workspace history survives reconnect, records exact DB/failures, excludes locally rejected AUTH, releases history and sessions on config deletion. 43 scoped tests include auth and bounded persistent history reload."
+        },
+        {
+          "kind": "partial-web-validation",
+          "path": "src/features/connectors/redis/redis-database-selector.tsx",
+          "check": "2026-10-03: Chrome1440/760/390 verifies field relative/absolute/persist expiry, DB14/15 switching/relock/failed selection, terminal history draft recall/reuse/copy/DB filter/reconnect/clear. Current DB scrolls into view; dialog actions remain visible. One intentional HTTP502 switch rejection, no other page/console errors. RedisJSON/Cluster/Sentinel/consumer groups/PubSub/Slowlog/MONITOR, large/batch operations and broader version/entry-point matrix remain pending."
         }
       ],
       "scopeKind": "driver"

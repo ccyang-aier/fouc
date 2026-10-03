@@ -56,17 +56,19 @@ export function redisMutation(value: unknown): RedisMutation {
       if (destination === key) throw new DatabaseInputError('新 Key 与原 Key 相同');
       result = { kind, key, destination }; break;
     }
-    case 'expiry':
-      if (input.mode === 'persist') result = { kind, key, mode: 'persist' };
+    case 'expiry': case 'hash-expiry': {
+      const target = kind === 'hash-expiry' ? { kind, key, field: blob(input.field) } : { kind, key };
+      if (input.mode === 'persist') result = { ...target, mode: 'persist' };
       else if (input.mode === 'relative' || input.mode === 'absolute') {
         const milliseconds = integer(input.milliseconds);
         if (input.mode === 'relative' && Number(milliseconds) > Number.MAX_SAFE_INTEGER - Date.now())
           throw new DatabaseInputError('TTL 对应的绝对时间超出精确编辑范围');
         if (input.mode === 'absolute' && Number(milliseconds) <= Date.now())
           throw new DatabaseInputError('指定过期时间必须晚于当前时间');
-        result = { kind, key, mode: input.mode, milliseconds };
+        result = { ...target, mode: input.mode, milliseconds };
       } else throw new DatabaseInputError('过期时间方式无效');
       break;
+    }
     case 'string-set': result = { kind, key, value: blob(input.value) }; break;
     case 'list-push':
       if (input.side !== 'left' && input.side !== 'right') throw new DatabaseInputError('List 插入方向无效');

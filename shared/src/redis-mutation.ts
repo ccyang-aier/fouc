@@ -19,6 +19,8 @@ export type RedisMutation =
   | { kind: 'hash-add'; key: string; field: string; value: string }
   | { kind: 'hash-set'; key: string; field: string; destination: string; value: string }
   | { kind: 'hash-remove'; key: string; field: string }
+  | { kind: 'hash-expiry'; key: string; field: string; mode: 'persist' }
+  | { kind: 'hash-expiry'; key: string; field: string; mode: 'relative' | 'absolute'; milliseconds: string }
   | { kind: 'zset-add'; key: string; member: string; score: string }
   | { kind: 'zset-set'; key: string; member: string; destination: string; score: string }
   | { kind: 'zset-remove'; key: string; member: string }

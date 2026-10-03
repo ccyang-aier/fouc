@@ -18,16 +18,19 @@ import { RedisValueViewer, redisTtl } from "./redis-value-viewer"
 import { RedisConsole } from "./redis-console"
 import { RedisMutationDialog } from "./redis-mutation-dialog"
 import type { RedisEditIntent } from "./redis-mutation-model"
+import { RedisDatabaseSelector } from "./redis-database-selector"
 import styles from "./redis.module.css"
 
 export function RedisWorkbench({
   session,
   name,
-  onBack
+  onBack,
+  onSessionChange
 }: {
   session: RedisSession
   name: string
   onBack: () => void
+  onSessionChange: (session: RedisSession) => void
 }) {
   const base = `/api/database/workspaces/${encodeURIComponent(session.workspaceId)}/redis/sessions/${session.id}`
   const [pattern, setPattern] = useState("*")
@@ -48,6 +51,8 @@ export function RedisWorkbench({
   const [writeError, setWriteError] = useState("")
   const [feedback, setFeedback] = useState("")
   const [intent, setIntent] = useState<RedisEditIntent | null>(null)
+  const [databaseSelector, setDatabaseSelector] = useState(false)
+  const [consoleBusy, setConsoleBusy] = useState(false)
   useEffect(() => {
     const controller = new AbortController()
     void backendFetch<RedisScanPage>(`${base}/scan`, {
@@ -150,14 +155,15 @@ export function RedisWorkbench({
   return (
     <section className={styles.workbench} aria-label="Redis 工作台">
       <header className={styles.header}>
-        <button type="button" aria-label="返回数据库连接列表" disabled={writeBusy} onClick={onBack}>
+        <button type="button" aria-label="返回数据库连接列表" disabled={writeBusy || consoleBusy} onClick={onBack}>
           <ArrowLeft size={17} />
         </button>
         <Database size={17} />
         <strong>{name}</strong>
         <span>
-          Redis {session.version ?? ""} · DB {session.database}
+          Redis {session.version ?? ""}
         </span>
+        <button type="button" className={styles.databaseButton} disabled={writeBusy || consoleBusy || Boolean(intent)} onClick={() => setDatabaseSelector(true)}>DB {session.database} ▾</button>
         <button type="button" className={styles.writeMode} disabled={writeBusy || Boolean(intent)} onClick={() => void toggleWriteMode()}>
           {readOnly ? <Lock size={13} /> : <LockOpen size={13} />}{writeBusy ? "处理中…" : readOnly ? "解锁写入" : "重新锁定"}
         </button>
@@ -171,6 +177,7 @@ export function RedisWorkbench({
         <button
           type="button"
           aria-current={mode === "keys" ? "page" : undefined}
+          disabled={consoleBusy}
           onClick={() => setMode("keys")}
         >
           <Key size={14} />
@@ -186,7 +193,7 @@ export function RedisWorkbench({
         </button>
       </nav>
       {mode === "console" ? (
-        <RedisConsole base={base} />
+        <RedisConsole base={base} database={session.database} onBusyChange={setConsoleBusy} />
       ) : (
         <div className={styles.body}>
           <aside className={styles.keyPanel} aria-label="Redis Key 列表">
@@ -318,6 +325,10 @@ export function RedisWorkbench({
         Standalone · 当前设备 · Key 与值保留原始字节 · 扫描期间数据可能变化
       </footer>
       {intent && <RedisMutationDialog base={base} intent={intent} onClose={() => setIntent(null)} onSaved={saved} />}
+      {databaseSelector && <RedisDatabaseSelector base={base} current={session.database} onClose={() => { setDatabaseSelector(false); refresh() }} onSwitch={(updated) => {
+        setDatabaseSelector(false)
+        if (updated.id !== session.id) onSessionChange(updated)
+      }} />}
     </section>
   )
 }

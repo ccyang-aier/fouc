@@ -38,7 +38,7 @@ export function RedisValueViewer({
   const next = "nextCursor" in data ? data.nextCursor : null
   let columns: string[] = [],
     rows: RedisBlob[][] = []
-  const actions: { edit?: RedisMutation; remove?: RedisMutation }[] = []
+  const actions: { edit?: RedisMutation; remove?: RedisMutation; expiry?: RedisMutation }[] = []
   const key = value.key.rawBase64
   const editable = !readOnly && Boolean(value.writeVersion) && !busy
   const text = (display: string): RedisBlob => ({ display, encoding: "utf8", rawBase64: "" })
@@ -56,11 +56,12 @@ export function RedisValueViewer({
     actions.push(...data.items.map((item) => ({ remove: { kind: "set-remove" as const, key, member: item.rawBase64 } })))
   }
   if (data.kind === "hash") {
-    columns = ["字段", "值"]
-    rows = data.items.map((item) => [item.field, item.value])
+    columns = ["字段", "值", "字段 TTL"]
+    rows = data.items.map((item) => [item.field, item.value, text(item.ttlMs === null ? "未知" : item.ttlMs === -2 ? "已过期" : item.ttlMs === -1 ? "永久" : `${item.ttlMs} ms`)])
     actions.push(...data.items.map((item) => ({
       edit: { kind: "hash-set" as const, key, field: item.field.rawBase64, destination: item.field.rawBase64, value: item.value.rawBase64 },
-      remove: { kind: "hash-remove" as const, key, field: item.field.rawBase64 }
+      remove: { kind: "hash-remove" as const, key, field: item.field.rawBase64 },
+      ...(data.fieldExpiry.available && item.ttlMs !== null && item.ttlMs !== -2 ? { expiry: { kind: "hash-expiry" as const, key, field: item.field.rawBase64, mode: "persist" as const } } : {})
     })))
   }
   if (data.kind === "zset") {
@@ -127,6 +128,7 @@ export function RedisValueViewer({
         </div>
         {value.writeUnavailable && <p role="status" className={styles.notice}>{value.writeUnavailable}</p>}
       </>}
+      {data.kind === "hash" && !data.fieldExpiry.available && data.fieldExpiry.reason && <p role="status" className={styles.notice}>字段 TTL 不可读取：{data.fieldExpiry.reason}</p>}
       {data.kind === "none" ? (
         <div className={styles.empty}>Key 已过期或被删除，请刷新列表。</div>
       ) : data.kind === "unsupported" ? (
@@ -188,6 +190,7 @@ export function RedisValueViewer({
                     </td>
                   ))}
                   {!readOnly && <td className={styles.rowActions}>
+                    {actions[index]?.expiry && <button type="button" aria-label={`设置第 ${index + 1} 项字段过期时间`} disabled={!editable} onClick={() => onMutation(actions[index]!.expiry!)}><Clock size={14} /></button>}
                     {actions[index]?.edit && <button type="button" aria-label={`编辑第 ${index + 1} 项`} disabled={!editable} onClick={() => onMutation(actions[index]!.edit!)}><PencilSimple size={14} /></button>}
                     {actions[index]?.remove && <button type="button" aria-label={`删除第 ${index + 1} 项`} disabled={!editable} onClick={() => onMutation(actions[index]!.remove!)}><Trash size={14} /></button>}
                   </td>}

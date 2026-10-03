@@ -5,7 +5,8 @@ import type { DeviceConnectionRepository } from '../database/connection-reposito
 export function savedConnectionRoutes<Config, Session>(
   base: string,
   connections: DeviceConnectionRepository<Config>,
-  connect: (workspaceId: string, input: unknown) => Promise<Session>,
+  connect: (workspaceId: string, input: unknown, connectionId: string) => Promise<Session>,
+  beforeRemove?: (workspaceId: string, connectionId: string) => void,
 ) {
   const app = new Hono();
   app.get(base, (c) => c.json({ ok: true, data: connections.list(c.req.param('workspaceId')!) }));
@@ -27,6 +28,8 @@ export function savedConnectionRoutes<Config, Session>(
     });
   });
   app.delete(base + '/:id', (c) => {
+    connections.get(c.req.param('workspaceId')!, c.req.param('id')!);
+    beforeRemove?.(c.req.param('workspaceId')!, c.req.param('id')!);
     connections.remove(c.req.param('workspaceId')!, c.req.param('id')!);
     return c.json({ ok: true, data: { deleted: true } });
   });
@@ -34,7 +37,7 @@ export function savedConnectionRoutes<Config, Session>(
     const entry = connections.get(c.req.param('workspaceId')!, c.req.param('id')!);
     const body = await c.req.json().catch(() => null);
     return c.json(
-      { ok: true, data: await connect(entry.workspaceId, { ...entry.config, password: body?.password }) },
+      { ok: true, data: await connect(entry.workspaceId, { ...entry.config, password: body?.password }, entry.id) },
       201,
     );
   });

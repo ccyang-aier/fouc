@@ -26,8 +26,8 @@ export function redisRoutes(
   if (connections)
     app.route(
       '/',
-      savedConnectionRoutes(root + '/connections', connections, (workspace, input) =>
-        sessions.connect(workspace, input),
+      savedConnectionRoutes(root + '/connections', connections, (workspace, input, connectionId) =>
+        sessions.connect(workspace, input, connectionId), (workspace, connectionId) => sessions.removeConnection(workspace, connectionId),
       ),
     );
   const base = root + '/sessions';
@@ -64,6 +64,17 @@ export function redisRoutes(
   app.post(base + '/:id/write-mode', async (c) => {
     const body = await c.req.json().catch(() => null);
     return c.json({ ok: true, data: await sessions.setReadOnly(c.req.param('workspaceId')!, c.req.param('id')!, body?.readOnly) });
+  });
+  app.get(base + '/:id/databases', async (c) => c.json({ ok: true,
+    data: await sessions.databases(c.req.param('workspaceId')!, c.req.param('id')!, Number(c.req.query('offset') ?? 0)) }));
+  app.post(base + '/:id/database', async (c) => {
+    const body = await c.req.json().catch(() => null);
+    return c.json({ ok: true, data: await sessions.switchDatabase(c.req.param('workspaceId')!, c.req.param('id')!, body?.database) });
+  });
+  app.get(base + '/:id/history', (c) => c.json({ ok: true, data: sessions.history(c.req.param('workspaceId')!, c.req.param('id')!) }));
+  app.delete(base + '/:id/history', (c) => {
+    sessions.clearHistory(c.req.param('workspaceId')!, c.req.param('id')!);
+    return c.json({ ok: true, data: { cleared: true } });
   });
   app.post(base + '/:id/edit-string', async (c) => {
     const body = await c.req.json().catch(() => null);

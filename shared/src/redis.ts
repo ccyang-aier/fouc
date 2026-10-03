@@ -20,6 +20,7 @@ export interface RedisSession {
   id: string;
   workspaceId: string;
   database: number;
+  connectionId: string | null;
   version: string | null;
   mode: 'standalone';
   readOnly: boolean;
@@ -45,7 +46,8 @@ export type RedisValueData =
   | { kind: 'set'; items: RedisBlob[]; total: string; nextCursor: string | null }
   | {
       kind: 'hash';
-      items: { field: RedisBlob; value: RedisBlob }[];
+      items: { field: RedisBlob; value: RedisBlob; ttlMs: number | null }[];
+      fieldExpiry: { available: boolean; reason: string | null };
       total: string;
       nextCursor: string | null;
     }
@@ -67,4 +69,28 @@ export interface RedisCommandResult {
   command: string;
   result: unknown;
   executionTimeMs: number;
+  historyWarning: string | null;
 }
+export interface RedisDatabaseInfo {
+  database: number;
+  keys: string | null;
+  expires: string | null;
+  averageTtlMs: string | null;
+}
+export interface RedisDatabaseList {
+  databases: RedisDatabaseInfo[];
+  configuredCount: number | null;
+  nextOffset: number | null;
+  warnings: string[];
+}
+export interface RedisHistoryEntry {
+  id: string;
+  database: number;
+  command: string;
+  executedAt: number;
+  executionTimeMs: number;
+  success: boolean;
+  output: string;
+  outputTruncated: boolean;
+}
+export interface RedisHistoryPage { entries: RedisHistoryEntry[]; persistent: boolean; limit: number }

@@ -29,6 +29,7 @@ export function redisMutationTitle(mutation: RedisMutation): string {
     'string-set': '编辑 String', 'list-push': '添加 List 元素', 'list-set': '编辑 List 元素', 'list-remove': '删除 List 元素',
     'set-add': '添加 Set 成员', 'set-remove': '删除 Set 成员', 'hash-add': '添加 Hash 字段', 'hash-set': '编辑 Hash 字段',
     'hash-remove': '删除 Hash 字段', 'zset-add': '添加 ZSet 成员', 'zset-set': '编辑 ZSet 成员',
+    'hash-expiry': '设置字段过期时间',
     'zset-remove': '删除 ZSet 成员', 'stream-add': '添加 Stream 消息', 'stream-remove': '删除 Stream 消息'
   }
   return titles[mutation.kind]

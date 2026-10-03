@@ -207,22 +207,22 @@
         "area": "shared-sql-workbench-and-connection-management",
         "status": "partial",
         "files": 10,
-        "physical": 1852,
-        "effective": 1808
+        "physical": 1854,
+        "effective": 1810
       },
       {
         "area": "native-redis-and-specialized-surface",
         "status": "partial",
-        "files": 16,
-        "physical": 1991,
-        "effective": 1947
+        "files": 19,
+        "physical": 2372,
+        "effective": 2317
       },
       {
         "area": "shared-device-connection-management",
         "status": "partial",
         "files": 3,
-        "physical": 98,
-        "effective": 93
+        "physical": 101,
+        "effective": 96
       },
       {
         "area": "native-table-change-plans-and-editing",
@@ -247,9 +247,9 @@
       }
     ],
     "runtime": {
-      "files": 59,
-      "physical": 8883,
-      "effective": 8627
+      "files": 62,
+      "physical": 9269,
+      "effective": 9002
     },
     "targetEffectiveRuntimeLines": 50000,
     "milestoneVerified": false

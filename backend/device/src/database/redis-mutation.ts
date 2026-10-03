@@ -45,6 +45,8 @@ function commandsFor(mutation: RedisMutation): Command[] {
       ...(mutation.field === mutation.destination ? [] : [['HDEL', key, bytes(mutation.field)] as Command]),
     ];
     case 'hash-remove': return [['HDEL', key, bytes(mutation.field)]];
+    case 'hash-expiry': return mutation.mode === 'persist' ? [['HPERSIST', key, 'FIELDS', '1', bytes(mutation.field)]] :
+      [[mutation.mode === 'relative' ? 'HPEXPIRE' : 'HPEXPIREAT', key, mutation.milliseconds, 'FIELDS', '1', bytes(mutation.field)]];
     case 'zset-add': return [['ZADD', key, mutation.score, bytes(mutation.member)]];
     case 'zset-set': return [
       ['ZADD', key, mutation.score, bytes(mutation.destination)],
@@ -144,7 +146,7 @@ export class RedisMutationManager {
       notes: [
         '预览不会写入。确认时再次检查完整内容与绝对过期时间；发生变化则拒绝提交。',
         ...(mutation.kind === 'create' ? ['新 Key 初始为永久；创建后可单独设置过期时间。'] :
-          mutation.kind === 'expiry' ? ['相对 TTL 从确认执行时起算；永久表示移除过期时间。'] : ['保留 Key 当前过期时间；删除最后一个集合成员时 Key 可能消失。']),
+          mutation.kind === 'expiry' || mutation.kind === 'hash-expiry' ? ['相对 TTL 从确认执行时起算；永久表示移除对应过期时间。'] : ['保留 Key 当前过期时间；删除最后一个集合成员时 Key 可能消失。']),
         ...(mutation.kind === 'hash-set' ? ['若 Redis 支持字段过期时间，则保留原字段期限；所需权限不足时拒绝提交。'] : []),
         ...(commands.length > 1 || mutation.kind === 'hash-set' ? ['多步操作先核对命令权限；执行错误会尝试恢复原始快照，恢复失败将要求核对结果。'] : []),
       ],

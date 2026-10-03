@@ -55,15 +55,16 @@ export function RedisMutationDialog({ base, intent, onClose, onSaved }: {
     switch (kind) {
       case 'delete': case 'list-remove': case 'set-remove': case 'hash-remove': case 'zset-remove': case 'stream-remove': return initial
       case 'rename': return { kind, key: rawKey, destination: draftToBytes(destination) }
-      case 'expiry': {
-        if (expiryMode === 'persist') return { kind, key: rawKey, mode: 'persist' }
+      case 'expiry': case 'hash-expiry': {
+        const target = kind === 'hash-expiry' ? { kind, key: rawKey, field: initial.field } : { kind, key: rawKey }
+        if (expiryMode === 'persist') return { ...target, mode: 'persist' }
         if (expiryMode === 'absolute') {
           const milliseconds = new Date(date).getTime()
           if (!Number.isFinite(milliseconds) || milliseconds <= Date.now()) throw new Error('请选择未来的过期时间。')
-          return { kind, key: rawKey, mode: 'absolute', milliseconds: String(milliseconds) }
+          return { ...target, mode: 'absolute', milliseconds: String(milliseconds) }
         }
         if (!/^[1-9]\d*$/.test(seconds)) throw new Error('TTL 秒数必须为正整数。')
-        return { kind, key: rawKey, mode: 'relative', milliseconds: (BigInt(seconds) * 1000n).toString() }
+        return { ...target, mode: 'relative', milliseconds: (BigInt(seconds) * 1000n).toString() }
       }
       case 'string-set': return { kind, key: rawKey, value: draftToBytes(value) }
       case 'list-push': return { kind, key: rawKey, side, value: draftToBytes(value) }
@@ -129,7 +130,8 @@ export function RedisMutationDialog({ base, intent, onClose, onSaved }: {
             <span>{'index' in initial ? `List 索引 ${initial.index}` : 'entryId' in initial && removing ? `消息 ${initial.entryId}` : '保留原始 Key 字节'}</span></div>}
           {removing ? <p className={styles.danger}>确认后删除{kind === 'delete' ? '整个 Key 及其全部内容' : '所选项'}。请核对下一步的精确参数。</p> : <>
             {kind === 'rename' && <RedisByteField label="新 Key" value={destination} onChange={setDestination} />}
-            {kind === 'expiry' && <>
+            {(kind === 'expiry' || kind === 'hash-expiry') && <>
+              {kind === 'hash-expiry' && <div className={styles.summary}><strong>{bytesToDraft(initial.field).text || '（空字段）'}</strong><span>只修改所选字段的期限；保留 Key TTL</span></div>}
               <label className={styles.field}>过期方式<select aria-label="过期方式" value={expiryMode} onChange={(event) => setExpiryMode(event.target.value as typeof expiryMode)}>
                 <option value="relative">相对 TTL</option><option value="absolute">指定时间</option><option value="persist">永久</option>
               </select></label>
@@ -137,10 +139,10 @@ export function RedisMutationDialog({ base, intent, onClose, onSaved }: {
               {expiryMode === 'absolute' && <label className={styles.field}>本地过期时间<input aria-label="本地过期时间" type="datetime-local" step="1" value={date} onChange={(event) => setDate(event.target.value)} /></label>}
               <p className={styles.hint}>相对 TTL 从确认时起算；指定时间使用当前设备的本地时区。</p>
             </>}
-            {type === 'hash' && <RedisByteField label={kind === 'hash-set' ? '字段名称' : '字段'} value={kind === 'hash-set' ? destination : field} onChange={kind === 'hash-set' ? setDestination : setField} />}
+            {type === 'hash' && kind !== 'hash-expiry' && <RedisByteField label={kind === 'hash-set' ? '字段名称' : '字段'} value={kind === 'hash-set' ? destination : field} onChange={kind === 'hash-set' ? setDestination : setField} />}
             {(type === 'set' || type === 'zset') && <RedisByteField label="成员" value={kind === 'zset-set' ? destination : member} onChange={kind === 'zset-set' ? setDestination : setMember} />}
             {type === 'zset' && <label className={styles.field}>分数<input aria-label="分数" value={score} spellCheck={false} onChange={(event) => setScore(event.target.value)} /></label>}
-            {(type === 'string' || type === 'list' || type === 'hash') && <RedisByteField label="值" value={value} onChange={setValue} multiline />}
+            {(type === 'string' || type === 'list' || (type === 'hash' && kind !== 'hash-expiry')) && <RedisByteField label="值" value={value} onChange={setValue} multiline />}
             {kind === 'list-push' && <label className={styles.field}>插入位置<select aria-label="插入位置" value={side} onChange={(event) => setSide(event.target.value as typeof side)}>
               <option value="right">尾部 RPUSH</option><option value="left">头部 LPUSH</option>
             </select></label>}

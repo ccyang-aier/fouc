@@ -22,6 +22,7 @@ import { RelationalSessionManager } from '../database/relational-session';
 import { RelationalConnectionRepository } from '../database/relational-connections';
 import { DeviceConnectionRepository } from '../database/connection-repository';
 import { RedisSessionManager } from '../database/redis-session';
+import { RedisHistoryRepository } from '../database/redis-history';
 import { redisConfig } from '../database/redis-input';
 import path from 'node:path';
 import { homedir } from 'node:os';
@@ -73,7 +74,7 @@ async function main(): Promise<void> {
   const databaseCapabilities = new DatabaseCapabilityRegistry();
   const relationalSessions = new RelationalSessionManager(databaseCapabilities);
   const relationalConnections = new RelationalConnectionRepository(path.join(process.env.FOUC_DATA_DIR ?? path.join(homedir(), '.fouc'), 'database', 'connections'));
-  const redisSessions = new RedisSessionManager();
+  const redisSessions = new RedisSessionManager(new RedisHistoryRepository(path.join(process.env.FOUC_DATA_DIR ?? path.join(homedir(), '.fouc'), 'database', 'redis-history')));
   const redisConnections = new DeviceConnectionRepository(path.join(process.env.FOUC_DATA_DIR ?? path.join(homedir(), '.fouc'), 'database', 'redis-connections'), redisConfig);
   const knowledge = new KnowledgeRepository(db);
 

@@ -43,10 +43,15 @@ afterAll(() => {
 test('Redis routes require device authentication before config or session access', async () => {
   for (const route of ['/connections', '/sessions'])
     expect((await app.request(base + route)).status).toBe(401);
-  for (const suffix of ['scan', 'value', 'command'])
+  for (const suffix of ['scan', 'value', 'command', 'database', 'write-mode', 'edit-string', 'mutations/preview', 'mutations/commit'])
     expect(
       (await app.request(base + '/sessions/unknown/' + suffix, { method: 'POST', body: '{}' })).status,
     ).toBe(401);
+  for (const suffix of ['databases', 'history']) {
+    expect((await app.request(base + '/sessions/unknown/' + suffix)).status).toBe(401);
+    expect((await app.request(base + '/sessions/unknown/' + suffix, { headers: { authorization: 'Bearer frontend-token' } })).status).toBe(400);
+  }
+  expect((await app.request(base + '/sessions/unknown/history', { method: 'DELETE' })).status).toBe(401);
 });
 test('Redis config CRUD stays scoped and never persists the supplied secret', async () => {
   const headers = { authorization: 'Bearer frontend-token', 'content-type': 'application/json' };

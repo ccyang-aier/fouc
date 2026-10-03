@@ -6,22 +6,27 @@ import type {
   RedisSession,
   RedisValueData,
   RedisValuePage,
+  RedisHistoryPage,
+  RedisHistoryEntry,
 } from '@fouc/shared';
 import { DatabaseInputError } from './input-error';
 import { redisCommand, redisConfig, redisCursor, redisKey } from './redis-input';
 import { redisBlob } from './redis-blob';
 import { RedisMutationManager, sameRedisSnapshot } from './redis-mutation';
 import { REDIS_WRITE_BYTES } from './redis-mutation-input';
+import { redisDatabase, redisDatabases, redisHashExpiries } from './redis-metadata';
+import { RedisHistoryRepository, REDIS_HISTORY_LIMIT, redisHistoryEntry } from './redis-history';
 export { redisBlob } from './redis-blob';
 
 const PAGE_SIZE = 100;
 const STRING_BYTES = 65536;
-type Entry = { session: RedisSession; client: Redis; mutations: RedisMutationManager; changingMode: boolean };
+type Entry = { session: RedisSession; client: Redis; mutations: RedisMutationManager; changingMode: boolean; history: RedisHistoryEntry[] };
 
-/** Standalone sessions keep SELECT immutable; no business Redis configuration is read. */
+/** Each client keeps its verified DB immutable; switching creates a new session. */
 export class RedisSessionManager {
   private readonly entries = new Map<string, Entry>();
-  async connect(workspaceId: string, value: unknown): Promise<RedisSession> {
+  constructor(private readonly historyRepository?: RedisHistoryRepository) {}
+  async connect(workspaceId: string, value: unknown, connectionId: string | null = null): Promise<RedisSession> {
     if (!workspaceId.trim() || workspaceId.length > 128) throw new DatabaseInputError('工作空间无效');
     const config = redisConfig(value);
     const password = (value as Record<string, unknown>).password;
@@ -45,6 +50,9 @@ export class RedisSessionManager {
     client.on('error', () => {});
     try {
       await client.connect();
+      // ioredis emits constructor SELECT errors but can still become ready.
+      // Await the acknowledgement so an invalid DB never falls through to DB 0.
+      await client.select(config.database);
       await client.ping();
       const info = await client.info('server').catch(() => '');
       const mode = /^redis_mode:([^\r\n]+)/m.exec(info)?.[1];
@@ -55,11 +63,12 @@ export class RedisSessionManager {
         id: crypto.randomUUID(),
         workspaceId,
         database: config.database,
+        connectionId,
         version: /^redis_version:([^\r\n]+)/m.exec(info)?.[1] ?? null,
         mode: 'standalone',
         readOnly: true,
       };
-      this.entries.set(session.id, { session, client, mutations: new RedisMutationManager(client), changingMode: false });
+      this.entries.set(session.id, { session, client, mutations: new RedisMutationManager(client), changingMode: false, history: [] });
       return session;
     } catch (error) {
       client.disconnect();
@@ -92,6 +101,60 @@ export class RedisSessionManager {
     if (entry.changingMode) throw new DatabaseInputError('Redis 写入模式正在切换');
     if (entry.session.readOnly) throw new DatabaseInputError('请先解锁当前 Redis 会话的写入');
     return entry;
+  }
+  databases(workspaceId: string, id: string, offset: unknown) {
+    const { client, session } = this.entry(workspaceId, id);
+    return redisDatabases(client, session.database, offset);
+  }
+  async switchDatabase(workspaceId: string, id: string, rawDatabase: unknown): Promise<RedisSession> {
+    const database = redisDatabase(rawDatabase);
+    const entry = this.entry(workspaceId, id);
+    if (entry.changingMode) throw new DatabaseInputError('Redis 会话正在切换，请等待结果');
+    if (database === entry.session.database) return { ...entry.session };
+    entry.mutations.clear();
+    entry.changingMode = true;
+    const client = entry.client.duplicate({ db: database, lazyConnect: true });
+    client.on('error', () => {});
+    try {
+      await client.connect();
+      await client.select(database);
+      await client.ping();
+      const session = { ...entry.session, id: crypto.randomUUID(), database, readOnly: true };
+      this.entries.set(session.id, { session, client, mutations: new RedisMutationManager(client), changingMode: false, history: [] });
+      this.entries.delete(id);
+      entry.client.disconnect();
+      return session;
+    } catch (error) { client.disconnect(); throw error; }
+    finally { entry.changingMode = false; }
+  }
+  history(workspaceId: string, id: string): RedisHistoryPage {
+    const entry = this.entry(workspaceId, id);
+    const persistent = Boolean(this.historyRepository && entry.session.connectionId);
+    const entries = persistent ? this.historyRepository!.list(workspaceId, entry.session.connectionId!) : entry.history;
+    return { entries: [...entries].reverse(), persistent, limit: REDIS_HISTORY_LIMIT };
+  }
+  clearHistory(workspaceId: string, id: string): void {
+    const entry = this.entry(workspaceId, id);
+    if (this.historyRepository && entry.session.connectionId) this.historyRepository.clear(workspaceId, entry.session.connectionId);
+    entry.history = [];
+  }
+  removeConnection(workspaceId: string, connectionId: string): void {
+    const entries = [...this.entries.values()].filter((entry) => entry.session.workspaceId === workspaceId && entry.session.connectionId === connectionId);
+    for (const entry of entries) {
+      if (entry.changingMode) throw new DatabaseInputError('连接正在切换，请等待后再删除');
+      entry.mutations.clear();
+    }
+    for (const entry of entries) this.disconnect(workspaceId, entry.session.id);
+    this.historyRepository?.clear(workspaceId, connectionId);
+  }
+  private recordHistory(entry: Entry, record: RedisHistoryEntry): string | null {
+    if (this.entries.get(entry.session.id) !== entry) return null;
+    try {
+      if (this.historyRepository && entry.session.connectionId)
+        this.historyRepository.append(entry.session.workspaceId, entry.session.connectionId, record);
+      else entry.history = [...entry.history, record].slice(-REDIS_HISTORY_LIMIT);
+      return null;
+    } catch (error) { return `记录历史失败：${error instanceof Error ? error.message : String(error)}`; }
   }
   prepare(workspaceId: string, id: string, mutation: unknown, version: unknown) {
     return this.writable(workspaceId, id).mutations.prepare(mutation, version);
@@ -204,20 +267,16 @@ export class RedisSessionManager {
         : client.hscanBuffer(key, cursor, 'COUNT', PAGE_SIZE));
       const nextCursor = next.toString() === '0' ? null : next.toString();
       const total = String(await (type === 'set' ? client.scard(key) : client.hlen(key)));
-      data =
-        type === 'set'
-          ? { kind: 'set', total, nextCursor, items: items.map(redisBlob) }
-          : {
-              kind: 'hash',
-              total,
-              nextCursor,
-              items: items
-                .filter((_, index) => index % 2 === 0)
-                .map((bytes, index) => ({
-                  field: redisBlob(bytes),
-                  value: redisBlob(items[index * 2 + 1]!),
-                })),
-            };
+      if (type === 'set') data = { kind: 'set', total, nextCursor, items: items.map(redisBlob) };
+      else {
+        const fields = items.filter((_, index) => index % 2 === 0);
+        const expiries = await redisHashExpiries(client, key, fields);
+        data = {
+          kind: 'hash', total, nextCursor,
+          fieldExpiry: { available: expiries.available, reason: expiries.reason },
+          items: fields.map((bytes, index) => ({ field: redisBlob(bytes), value: redisBlob(items[index * 2 + 1]!), ttlMs: expiries.values[index] ?? null })),
+        };
+      }
     } else if (type === 'stream') {
       // Stream IDs have two independent 64-bit parts, so use a separate API cursor.
       const start = cursor === '0' ? '-' : cursor;
@@ -244,14 +303,25 @@ export class RedisSessionManager {
     return { key: redisBlob(key), type, ttl, data, writeVersion, writeUnavailable };
   }
   async command(workspaceId: string, id: string, value: unknown): Promise<RedisCommandResult> {
-    const { client } = this.entry(workspaceId, id);
+    const entry = this.entry(workspaceId, id);
     const [command, ...args] = redisCommand(value);
     const start = performance.now();
-    const result = await client.call(command!, ...args);
-    return { command: command!, result, executionTimeMs: Math.round(performance.now() - start) };
+    const timestamp = Date.now();
+    try {
+      const result = await entry.client.call(command!, ...args);
+      const historyWarning = this.recordHistory(entry, redisHistoryEntry(entry.session.database, String(value).trim(), timestamp, true, result));
+      return { command: command!, result, executionTimeMs: Math.round(performance.now() - start), historyWarning };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const warning = this.recordHistory(entry, redisHistoryEntry(entry.session.database, String(value).trim(), timestamp, false, message));
+      throw new Error(warning ? `${message}；${warning}` : message);
+    }
   }
   disconnect(workspaceId: string, id: string): void {
+    // Session replacement and view cleanup may both close the same session.
+    if (!this.entries.has(id)) return;
     const { client, mutations } = this.entry(workspaceId, id);
+    if (this.entry(workspaceId, id).changingMode) throw new DatabaseInputError('Redis 会话正在切换，请等待后断开');
     mutations.clear();
     this.entries.delete(id);
     client.disconnect();

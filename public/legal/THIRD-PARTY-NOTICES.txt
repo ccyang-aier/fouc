@@ -24,6 +24,11 @@ layout,grid}. Fouc's corresponding implementation is independently written in
 backend/device/src/database/{drivers,relational-*}, shared/src/relational.ts and
 src/features/connectors/datastore/ using TypeScript, React and Node-compatible APIs.
 The SQLite connector SVG is an original Fouc illustration.
+SQL query tab lifecycle, navigation history, pin/order/close/reopen actions,
+editor-state preservation and durable drafts adapt queryStore.ts and
+lib/{app/openTabsPersistence,tabs/*}.ts. Fouc stores workspace/connection-scoped
+drafts in its own SQLite repository and serializes version-checked saves through
+its React controller; no DBX runtime modules are imported.
 SQL history storage, stable time/ID pagination, literal search and connection-qualified
 database filtering follow crates/dbx-core/src/persistence/{history,storage}.rs
 and apps/desktop/src/stores/historyStore.ts. Saved SQL folders, lazy document

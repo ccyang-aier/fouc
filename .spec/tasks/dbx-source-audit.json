@@ -207,8 +207,8 @@
         "area": "shared-sql-workbench-and-connection-management",
         "status": "partial",
         "files": 10,
-        "physical": 1858,
-        "effective": 1814
+        "physical": 2080,
+        "effective": 2031
       },
       {
         "area": "native-redis-and-specialized-surface",
@@ -249,14 +249,21 @@
         "area": "native-sql-history-and-library",
         "status": "partial",
         "files": 8,
-        "physical": 513,
-        "effective": 498
+        "physical": 540,
+        "effective": 525
+      },
+      {
+        "area": "native-relational-sql-tabs-and-drafts",
+        "status": "partial",
+        "files": 7,
+        "physical": 337,
+        "effective": 317
       }
     ],
     "runtime": {
-      "files": 101,
-      "physical": 12074,
-      "effective": 11625
+      "files": 108,
+      "physical": 12660,
+      "effective": 12186
     },
     "targetEffectiveRuntimeLines": 50000,
     "milestoneVerified": false

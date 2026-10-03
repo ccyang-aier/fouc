@@ -13,7 +13,7 @@ export function SqlDialog({ title, busy = false, role = 'dialog', onClose, child
     <header className={common.dialogHead}><h2>{title}</h2><button type="button" disabled={busy} aria-label={`关闭${title}`} onClick={onClose}><X size={18} /></button></header>{children}</dialog>
 }
 export function SaveSqlDialog({ base, sql, database, schema, library, file, onClose, onSaved }: {
-  base: string; sql: string; database: string; schema: string | null; library: SavedSqlLibrary | null; file: SavedSqlDocument | null;
+  base: string; sql: string; database: string; schema: string | null; library: SavedSqlLibrary | null; file: Pick<SavedSqlDocument, 'id' | 'name' | 'folderId' | 'version'> | null;
   onClose: () => void; onSaved: (document: SavedSqlDocument) => void
 }) {
   const [name, setName] = useState(file?.name ?? '查询.sql'), [folder, setFolder] = useState(file?.folderId ?? ''), [saveAs, setSaveAs] = useState(false)

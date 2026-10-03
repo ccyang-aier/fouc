@@ -1,6 +1,6 @@
 "use client"
-import { useEffect, useState } from "react"
-import { ArrowLeft, Database, FileCode, GridFour } from "@phosphor-icons/react"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { ArrowLeft, Database, FileCode, GridFour, Info, Lock, LockOpen } from "@phosphor-icons/react"
 import type {
   DatabaseObjectInfo,
   RelationalTablePage,
@@ -39,9 +39,21 @@ export function RelationalWorkbench({
   const [error, setError] = useState("")
   const [revision, setRevision] = useState(0)
   const [selectedRow, setSelectedRow] = useState<number | null>(null)
+  const [inspectorOpen, setInspectorOpen] = useState(false)
   const [currentSession, setCurrentSession] = useState(session)
   const [pending, setPending] = useState(false)
   const [writeBusy, setWriteBusy] = useState(false)
+  const sqlBeforeLeave = useRef<(() => Promise<void>) | null>(null)
+  const [leaving, setLeaving] = useState(false)
+  const [leaveError, setLeaveError] = useState('')
+  const clearLeaveError = useCallback(() => setLeaveError(''), [])
+  async function leave() {
+    if (leaving || pending) return
+    setLeaving(true); setLeaveError('')
+    try { await sqlBeforeLeave.current?.(); onBack() }
+    catch (reason) { setLeaveError(reason instanceof Error ? reason.message : '草稿保存失败，当前工作台保持打开') }
+    finally { setLeaving(false) }
+  }
   const [feedback, setFeedback] = useState("")
   const [limit, setLimit] = useState(100)
   const [query, setQuery] = useState<RelationalTableQuery>({
@@ -204,30 +216,34 @@ export function RelationalWorkbench({
         <button
           type="button"
           aria-label="返回数据库连接列表"
-          disabled={pending}
+          disabled={pending || leaving}
           title={pending ? "先提交或放弃待提交变更" : "返回连接列表"}
-          onClick={onBack}
+          onClick={() => void leave()}
         >
           <ArrowLeft size={16} />
         </button>
-        <span className={styles.providerLabel}>{session.info.productName}</span>
-        <span className={styles.providerLabel}>/</span>
+        <span className={styles.connectionMark}><Database size={17} /></span>
         <strong className={styles.breadcrumbName} title={name}>
           {name}
         </strong>
+        <span className={styles.providerLabel}>{session.info.productName}</span>
+        <span className={styles.connected}><i />已连接</span>
+        <span className="mw-sql-spacer" />
         <button
           type="button"
           className={styles.writeAccess}
+          aria-label={writeBusy ? "切换中…" : writable ? "锁定表格写入" : "解锁表格写入"}
           disabled={pending || writeBusy}
           onClick={() => void toggleWriteAccess()}
         >
-          {writeBusy ? "切换中…" : writable ? "锁定表格写入" : "解锁表格写入"}
+          {writable ? <LockOpen size={14} /> : <Lock size={14} />}
+          <span>{writeBusy ? "切换中…" : writable ? "锁定表格写入" : "解锁表格写入"}</span>
         </button>
         {pending && <small className={styles.pendingLabel}>有待提交变更</small>}
-        <span className="mw-sql-spacer" />
         <span className={styles.databaseLabel} title={session.database}>
           {session.database}
         </span>
+        <button type="button" aria-label="连接信息与行详情" aria-pressed={inspectorOpen} title="连接信息与行详情" onClick={() => setInspectorOpen((value) => !value)}><Info size={17} /></button>
       </header>
       <div className="mw-body">
         <ResourceTree
@@ -272,6 +288,7 @@ export function RelationalWorkbench({
           <div className="mw-tab-strip">
             <div className="mw-document-tabs">
               <button
+                aria-pressed={mode !== "sql"}
                 className={`mw-document-tab ${mode !== "sql" ? "mw-document-active" : ""}`}
                 type="button"
                 onClick={() => setMode("data")}
@@ -280,6 +297,7 @@ export function RelationalWorkbench({
                 {table || "数据浏览"}
               </button>
               <button
+                aria-pressed={mode === "sql"}
                 className={`mw-document-tab ${mode === "sql" ? "mw-document-active" : ""}`}
                 type="button"
                 onClick={() => setMode("sql")}
@@ -297,13 +315,14 @@ export function RelationalWorkbench({
               </button>
             </p>
           )}
+          {leaveError && <p role="alert" className={styles.error}>暂时无法返回：{leaveError}。</p>}
           {feedback && (
             <p className={styles.saveFeedback} role="status">
               {feedback}
             </p>
           )}
           <div hidden={mode !== "sql"} className={styles.queryPanel}>
-            <RelationalQuery session={session} schema={schema} schemas={schemas} schemaLocked={pending} onSchemaChange={selectSchema} />
+            <RelationalQuery session={session} schema={schema} schemas={schemas} schemaLocked={pending} onSchemaChange={selectSchema} beforeLeaveRef={sqlBeforeLeave} onLeaveReady={clearLeaveError} />
           </div>
           {page && (
             <div hidden={mode !== "data"}>
@@ -354,7 +373,8 @@ export function RelationalWorkbench({
               <div className="mw-sql-toolbar">
                 <button
                   type="button"
-                  className={mode === "data" ? "mw-active-button" : ""}
+                  aria-pressed={mode === "data"}
+                  className="mw-data-view-button"
                   onClick={() => setMode("data")}
                 >
                   数据
@@ -362,7 +382,8 @@ export function RelationalWorkbench({
                 <button
                   type="button"
                   disabled={!table}
-                  className={mode === "structure" ? "mw-active-button" : ""}
+                  aria-pressed={mode === "structure"}
+                  className="mw-data-view-button"
                   onClick={() => setMode("structure")}
                 >
                   结构
@@ -400,7 +421,7 @@ export function RelationalWorkbench({
                 <TableView
                   page={page}
                   selectedRow={selectedRow}
-                  onSelect={setSelectedRow}
+                  onSelect={(row) => { setSelectedRow(row); setInspectorOpen(true) }}
                   search={pageSearch}
                   sort={query.sort}
                   sortDisabled={busy || pending}
@@ -447,11 +468,13 @@ export function RelationalWorkbench({
             </>
           )}
         </main>
-        <RowInspector
+        {inspectorOpen && <RowInspector
           session={session}
+          name={name}
+          onClose={() => setInspectorOpen(false)}
           page={page}
           selectedRow={mode === "sql" ? null : selectedRow}
-        />
+        />}
       </div>
     </section>
   )

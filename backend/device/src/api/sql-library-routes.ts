@@ -18,6 +18,12 @@ export function sqlLibraryRoutes(sessions: RelationalSessionManager, connections
   const library = root + '/connections/:connectionId/sql-library';
   app.use(library + '/*', async (c, next) => { connections.get(c.req.param('workspaceId')!, c.req.param('connectionId')!); await next(); });
   app.get(library, (c) => { connections.get(c.req.param('workspaceId')!, c.req.param('connectionId')!); return c.json({ ok: true, data: store.library(c.req.param('workspaceId')!, c.req.param('connectionId')!) }); });
+  app.get(library + '/drafts', (c) => c.json({ ok: true, data: store.drafts(c.req.param('workspaceId')!, c.req.param('connectionId')!) }));
+  app.put(library + '/drafts', async (c) => {
+    const body = await c.req.json().catch(() => null);
+    connections.get(c.req.param('workspaceId')!, c.req.param('connectionId')!);
+    return c.json({ ok: true, data: store.saveDrafts(c.req.param('workspaceId')!, c.req.param('connectionId')!, body) });
+  });
   app.post(library + '/folders', async (c) => c.json({ ok: true, data: store.saveFolder(c.req.param('workspaceId')!, c.req.param('connectionId')!, await c.req.json().catch(() => null)) }, 201));
   app.put(library + '/folders/:id', async (c) => c.json({ ok: true, data: store.saveFolder(c.req.param('workspaceId')!, c.req.param('connectionId')!, await c.req.json().catch(() => null), c.req.param('id')!) }));
   app.delete(library + '/folders/:id', async (c) => { if ((await c.req.json().catch(() => null))?.confirmed !== true) throw new DatabaseInputError('请确认删除 SQL 文件夹及其所有内容'); store.deleteFolder(c.req.param('workspaceId')!, c.req.param('connectionId')!, c.req.param('id')!); return c.json({ ok: true, data: { deleted: true } }); });

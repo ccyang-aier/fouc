@@ -1,22 +1,26 @@
 .workbench {
+  --surface: var(--surface-subtle);
   display: flex;
   flex-direction: column;
   height: 100%;
   min-height: 0;
   background: var(--panel);
   color: var(--ink);
-  font-size: 12px;
+  font-size: max(13px, var(--ui-size));
+  line-height: 1.5;
 }
+.workbench button { transition: background-color 140ms ease, color 140ms ease, border-color 140ms ease; }
 .header {
   display: flex;
   align-items: center;
   gap: 10px;
-  height: 44px;
+  min-height: 48px;
   padding: 0 16px;
   border-bottom: 1px solid var(--line);
   flex-shrink: 0;
 }
 .header strong {
+  min-width: 0;
   font-weight: 600;
   max-width: 220px;
   overflow: hidden;
@@ -24,7 +28,7 @@
   white-space: nowrap;
 }
 .header span {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted-strong);
 }
 .header .writeMode {
@@ -50,7 +54,7 @@
 .header .databaseButton { font: 11px/1.5 ui-monospace, monospace; border: 1px solid var(--line); background: var(--surface); padding: 3px 7px; white-space: nowrap; }
 .tabs {
   display: flex;
-  height: 38px;
+  height: 42px;
   border-bottom: 1px solid var(--line);
   padding: 0 15px;
   flex-shrink: 0;
@@ -69,7 +73,8 @@
 }
 .tabs button[aria-current] {
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--ink);
+  font-weight: 600;
 }
 .body {
   display: flex;
@@ -79,8 +84,8 @@
 .keyPanel {
   display: flex;
   flex-direction: column;
-  width: 280px;
-  min-width: 220px;
+  width: 260px;
+  min-width: 230px;
   border-right: 1px solid var(--line);
   background: var(--surface);
 }
@@ -110,7 +115,7 @@
 }
 .keyCount {
   padding: 9px 13px;
-  font-size: 10px;
+  font-size: 11px;
   color: var(--muted-strong);
   display: flex;
   gap: 8px;
@@ -148,8 +153,9 @@
   background: var(--surface-hover);
 }
 .keyList > button[aria-pressed="true"] {
-  background: color-mix(in srgb, var(--accent) 7%, var(--panel));
-  border-color: color-mix(in srgb, var(--accent) 20%, var(--line));
+  background: var(--accent-soft);
+  border-color: var(--accent-soft-line);
+  color: var(--accent-ink);
 }
 .keyList > button div {
   display: flex;
@@ -168,11 +174,11 @@
   justify-content: space-between;
   padding-left: 20px;
   color: var(--muted-strong);
-  font-size: 10px;
+  font-size: 11px;
 }
 .type {
   font:
-    10px/1.5 ui-monospace,
+    11px/1.5 ui-monospace,
     monospace;
   letter-spacing: 0.03em;
   padding: 1px 5px;
@@ -216,7 +222,7 @@
   color: var(--muted);
 }
 .status {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--muted-strong);
   padding: 6px 15px;
   border-top: 1px solid var(--line);
@@ -233,7 +239,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 17px 20px;
+  padding: 18px 20px;
   border-bottom: 1px solid var(--line);
 }
 .valueHead > div {
@@ -243,7 +249,8 @@
   align-items: center;
 }
 .valueHead strong {
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 14px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -279,7 +286,7 @@
   margin: 0;
   padding: 20px;
   font:
-    12px/1.8 ui-monospace,
+    13px/1.8 ui-monospace,
     monospace;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -293,7 +300,7 @@
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
-  font-size: 11px;
+  font-size: 13px;
 }
 .table th {
   position: sticky;
@@ -342,8 +349,8 @@
 }
 .error {
   padding: 12px 16px;
-  background: #ffeded;
-  color: #b72f39;
+  background: color-mix(in srgb, var(--err-ink) 8%, var(--panel));
+  color: var(--err-ink);
   font-size: 12px;
   overflow-wrap: anywhere;
 }
@@ -440,6 +447,10 @@
   }
 }
 @media (max-width: 600px) {
+  .header strong { flex: 1; }
+  .header .writeMode { margin-left: 0; min-width: 28px; min-height: 28px; justify-content: center; }
+  .header .writeMode span { display: none; }
   .tabs { padding: 0 6px; }
-  .tabs button { padding: 0 6px; gap: 4px; font-size: 11px; }
+  .tabs button { padding: 0 8px; gap: 5px; font-size: 12px; }
 }
+@media (prefers-reduced-motion: reduce) { .workbench button { transition: none; } }

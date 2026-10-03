@@ -21,6 +21,7 @@ test('SQL history and library API require device authentication before resource 
     ['GET', library], ['POST', library + '/folders'], ['PUT', library + '/folders/missing'], ['DELETE', library + '/folders/missing'],
     ['POST', library + '/files'], ['GET', library + '/files/missing'], ['POST', library + '/files/missing/open'],
     ['PUT', library + '/files/missing'], ['DELETE', library + '/files/missing'], ['PUT', library + '/order'],
+    ['GET', library + '/drafts'], ['PUT', library + '/drafts'],
   ];
   try {
     for (const [method, route] of routes) {

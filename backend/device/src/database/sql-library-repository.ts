@@ -5,6 +5,8 @@ import { DatabaseSync, type SQLInputValue } from 'node:sqlite';
 import { SQL_HISTORY_LIMIT, type SavedSqlDocument, type SavedSqlFile, type SavedSqlFolder, type SavedSqlLibrary, type SqlHistoryEntry, type SqlHistoryPage, type SqlHistorySearch } from '@fouc/shared';
 import { DatabaseInputError } from './input-error';
 import { historySearch, sqlDocument, sqlName, sqlNullable, sqlObject, sqlText } from './sql-library-input';
+import { sqlDraftSnapshot } from './sql-draft-input';
+import type { SqlDraftState } from '@fouc/shared';
 
 type Row = Record<string, unknown>;
 const folderColumns = 'id, connectionId, parentFolderId, name, orderIndex, createdAt, updatedAt';
@@ -39,7 +41,9 @@ export class RelationalSqlRepository {
           id TEXT PRIMARY KEY, connectionId TEXT NOT NULL, folderId TEXT REFERENCES sql_folders(id) ON DELETE CASCADE,
           name TEXT NOT NULL, nameKey TEXT NOT NULL, database TEXT NOT NULL, schema TEXT, sql TEXT NOT NULL, sqlBytes INTEGER NOT NULL,
           orderIndex INTEGER NOT NULL, openCount INTEGER NOT NULL, openedAt INTEGER, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL, version TEXT NOT NULL);
-        CREATE UNIQUE INDEX IF NOT EXISTS sql_file_name ON sql_files(connectionId, database, COALESCE(folderId,''), nameKey);`);
+        CREATE UNIQUE INDEX IF NOT EXISTS sql_file_name ON sql_files(connectionId, database, COALESCE(folderId,''), nameKey);
+        CREATE TABLE IF NOT EXISTS sql_drafts (
+          connectionId TEXT PRIMARY KEY, version TEXT NOT NULL, updatedAt INTEGER NOT NULL, snapshot TEXT NOT NULL);`);
       this.databases.set(workspaceId, db); return db;
     } catch (error) { db.close(); throw error; }
   }
@@ -163,7 +167,24 @@ export class RelationalSqlRepository {
   }
   removeConnection(workspaceId: string, connectionId: string): void {
     const db = this.db(workspaceId); this.transaction(db, () => {
-      for (const table of ['query_history', 'sql_files', 'sql_folders']) db.prepare(`DELETE FROM ${table} WHERE connectionId=?`).run(connectionId);
+      for (const table of ['query_history', 'sql_files', 'sql_folders', 'sql_drafts']) db.prepare(`DELETE FROM ${table} WHERE connectionId=?`).run(connectionId);
+    });
+  }
+  drafts(workspaceId: string, connectionId: string): SqlDraftState {
+    const row = this.db(workspaceId).prepare('SELECT version,updatedAt,snapshot FROM sql_drafts WHERE connectionId=?').get(connectionId);
+    return row ? { ...sqlDraftSnapshot(JSON.parse(String(row.snapshot))), version: String(row.version), updatedAt: Number(row.updatedAt) }
+      : { tabs: [], activeTabId: null, version: null, updatedAt: null };
+  }
+  saveDrafts(workspaceId: string, connectionId: string, value: unknown): SqlDraftState {
+    const input = sqlObject(value), expected = input.version === null ? null : sqlText(input.version, 'SQL 草稿版本', 128);
+    const snapshot = sqlDraftSnapshot(input), db = this.db(workspaceId);
+    return this.transaction(db, () => {
+      const current = db.prepare('SELECT version FROM sql_drafts WHERE connectionId=?').get(connectionId);
+      if ((current ? String(current.version) : null) !== expected) throw new DatabaseInputError('其他窗口已修改设备草稿，当前内容已保留；请查看设备版本后再决定如何处理');
+      const version = crypto.randomUUID(), updatedAt = Date.now();
+      db.prepare('INSERT INTO sql_drafts(connectionId,version,updatedAt,snapshot) VALUES(?,?,?,?) ON CONFLICT(connectionId) DO UPDATE SET version=excluded.version,updatedAt=excluded.updatedAt,snapshot=excluded.snapshot')
+        .run(connectionId, version, updatedAt, JSON.stringify(snapshot));
+      return { ...snapshot, version, updatedAt };
     });
   }
   close(): void { for (const db of this.databases.values()) db.close(); this.databases.clear(); }

@@ -1,22 +1,24 @@
 "use client"
 
 import { useState } from "react"
+import { BracketsCurly, ChartBar, ChatText, CheckCircle, Clock, Copy, ListChecks, Table, TextAlignLeft } from '@phosphor-icons/react'
 import type { DatabaseQueryResult } from "@fouc/shared"
+import type { SqlResultView } from '@fouc/shared'
 
 import { databaseCellText } from "./cell-format"
 import { chartableColumns, chartNumber, columnLabel, formatDelimited, formatJson } from "./result-format"
 
-type ResultView = "table" | "text" | "json" | "chart" | "summary" | "messages"
+type ResultView = SqlResultView
 type ExportFormat = "csv" | "tsv" | "json"
 
-const views: { id: ResultView; label: string }[] = [
-  { id: "table", label: "数据表" },
-  { id: "text", label: "文本" },
-  { id: "json", label: "JSON" },
-  { id: "chart", label: "图表" },
-  { id: "summary", label: "执行摘要" },
-  { id: "messages", label: "消息" }
-]
+const views = [
+  { id: "table", label: "数据表", icon: Table },
+  { id: "text", label: "文本", icon: TextAlignLeft },
+  { id: "json", label: "JSON", icon: BracketsCurly },
+  { id: "chart", label: "图表", icon: ChartBar },
+  { id: "summary", label: "执行摘要", icon: ListChecks },
+  { id: "messages", label: "消息", icon: ChatText }
+] as const
 
 function resultContent(result: DatabaseQueryResult, format: ExportFormat): string {
   return format === "json" ? formatJson(result) : formatDelimited(result, format === "csv" ? "," : "\t")
@@ -187,8 +189,10 @@ function ResultChart({ result }: { result: DatabaseQueryResult }) {
   )
 }
 
-export function SqlQueryResult({ result }: { result: DatabaseQueryResult }) {
-  const [view, setView] = useState<ResultView>("table")
+export function SqlQueryResult({ result, view: controlledView, onViewChange }: { result: DatabaseQueryResult; view?: ResultView; onViewChange?: (view: ResultView) => void }) {
+  const [localView, setLocalView] = useState<ResultView>("table")
+  const view = controlledView ?? localView
+  const setView = onViewChange ?? setLocalView
   const [feedback, setFeedback] = useState("")
   const hasRows = result.rows.length > 0
 
@@ -230,33 +234,11 @@ export function SqlQueryResult({ result }: { result: DatabaseQueryResult }) {
               className={view === item.id ? "mw-result-active" : ""}
               onClick={() => setView(item.id)}
             >
+              <item.icon size={14} />
               {item.label}
               {item.id === "messages" && result.messages.length > 0 ? ` ${result.messages.length}` : ""}
             </button>
           ))}
-        </div>
-        <div className="mw-live-result-actions">
-          <span>
-            {result.rows.length} 行 · {result.executionTimeMs} ms
-            {result.truncated || result.hasMore ? " · 仅显示已返回行" : ""}
-          </span>
-          <button type="button" disabled={!hasRows} onClick={() => void copy()}>
-            复制
-          </button>
-          <select
-            aria-label="导出查询结果"
-            value=""
-            disabled={!hasRows}
-            onChange={(event) => {
-              if (event.target.value) download(event.target.value as ExportFormat)
-              event.target.value = ""
-            }}
-          >
-            <option value="">导出…</option>
-            <option value="csv">CSV</option>
-            <option value="tsv">TSV</option>
-            <option value="json">JSON</option>
-          </select>
         </div>
       </div>
       {view === "table" && (
@@ -348,6 +330,11 @@ export function SqlQueryResult({ result }: { result: DatabaseQueryResult }) {
           )}
         </div>
       )}
+      <footer className="mw-query-result-footer"><span><CheckCircle size={14} color="var(--ok-ink)" />{result.rows.length} 行<Clock size={13} />{result.executionTimeMs} ms{result.truncated || result.hasMore ? ' · 仅显示已返回行' : ''}</span><div className="mw-live-result-actions">
+        <button type="button" disabled={!hasRows} onClick={() => void copy()}><Copy size={14} />复制</button>
+        <select aria-label="导出查询结果" value="" disabled={!hasRows} onChange={(event) => { if (event.target.value) download(event.target.value as ExportFormat); event.target.value = '' }}>
+          <option value="">导出…</option><option value="csv">CSV</option><option value="tsv">TSV</option><option value="json">JSON</option>
+        </select></div></footer>
       {feedback && (
         <span className="mw-live-result-feedback" role="status">
           {feedback}

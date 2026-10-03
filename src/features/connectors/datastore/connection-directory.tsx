@@ -16,6 +16,7 @@ import { useWorkspace } from "@/features/workspaces/workspace-provider"
 import { ConnectorDetailHeader } from "../connector-detail-header"
 import { RelationalDialog } from "./relational-dialog"
 import { RelationalWorkbench } from "./relational-workbench"
+import { forgetSqlDrafts } from './use-sql-drafts'
 import { RedisDialog } from "../redis/redis-dialog"
 import { RedisWorkbench } from "../redis/redis-workbench"
 import styles from "./relational.module.css"
@@ -130,6 +131,7 @@ function ConnectionDirectory({
     setError("")
     try {
       await backendFetch(`${base}/connections/${removing.id}`, { method: "DELETE" })
+      if (provider !== 'redis') forgetSqlDrafts(`${base}/connections/${removing.id}`)
       setConnections((items) => items.filter((item) => item.id !== removing.id))
       setRemoving(null)
     } catch (reason) {
@@ -147,6 +149,7 @@ function ConnectionDirectory({
   if (active)
     return (
       <RelationalWorkbench
+        key={active.session.id}
         session={active.session}
         name={active.connection.name}
         onBack={() => setActive(null)}
@@ -249,9 +252,7 @@ function ConnectionDirectory({
               {visible.map((item) => (
                 <tr key={item.id}>
                   <td>
-                    <Database size={17} />
-                    <strong>{item.name}</strong>
-                    <small>只读</small>
+                    <div className={styles.connectionIdentity}><span className={styles.connectionMark}><Database size={19} /></span><div><strong>{item.name}</strong><small>{label} · 只读连接</small></div></div>
                   </td>
                   <td title={item.config.provider !== "sqlite" ? item.config.host : item.config.path}>
                     {item.config.provider !== "sqlite"
@@ -259,7 +260,7 @@ function ConnectionDirectory({
                       : item.config.path}
                   </td>
                   <td>{item.config.provider !== "sqlite" ? item.config.database : "main"}</td>
-                  <td>
+                  <td><div className={styles.connectionActions}>
                     <button
                       type="button"
                       className={styles.open}
@@ -281,7 +282,7 @@ function ConnectionDirectory({
                     <button type="button" aria-label={`删除 ${item.name}`} onClick={() => setRemoving(item)}>
                       <Trash size={15} />
                     </button>
-                  </td>
+                  </div></td>
                 </tr>
               ))}
             </tbody>

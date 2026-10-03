@@ -1,0 +1,27 @@
+"use client"
+
+import { useRef, useState, type CSSProperties, type ReactNode } from 'react'
+
+/** DBX's editor/result divider adapted to pointer and keyboard input in the Web workbench. */
+export function SqlEditorSplit({ editor, status, result }: { editor: ReactNode; status: ReactNode; result: ReactNode }) {
+  const root = useRef<HTMLDivElement>(null)
+  const [size, setSize] = useState(58)
+  const [resizing, setResizing] = useState(false)
+  function resize(clientY: number) {
+    const bounds = root.current?.getBoundingClientRect()
+    if (bounds?.height) setSize(Math.max(20, Math.min(80, ((clientY - bounds.top) / bounds.height) * 100)))
+  }
+  return <div ref={root} className="mw-editor-split" data-resizing={resizing || undefined} style={{ '--editor-share': `${size}%` } as CSSProperties}>
+    <div className="mw-editor-pane">{editor}{status}</div>
+    <div role="separator" aria-label="调整 SQL 编辑器与结果区高度" aria-orientation="horizontal" aria-valuemin={20} aria-valuemax={80} aria-valuenow={Math.round(size)} tabIndex={0} className="mw-editor-divider"
+      onPointerDown={(event) => { if (event.button !== 0) return; event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); setResizing(true); resize(event.clientY) }}
+      onPointerMove={(event) => { if (event.currentTarget.hasPointerCapture(event.pointerId)) resize(event.clientY) }}
+      onPointerUp={(event) => { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); setResizing(false) }}
+      onLostPointerCapture={() => setResizing(false)}
+      onKeyDown={(event) => {
+        if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return
+        event.preventDefault(); setSize((value) => event.key === 'Home' ? 20 : event.key === 'End' ? 80 : Math.max(20, Math.min(80, value + (event.key === 'ArrowUp' ? -5 : 5))))
+      }}><span /></div>
+    <div className="mw-result">{result}</div>
+  </div>
+}

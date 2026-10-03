@@ -1,7 +1,7 @@
 "use client"
 
 import type { DatabaseTablePage, RelationalSession, RelationalSort } from "@fouc/shared"
-import { CaretUp, CaretDown } from "@phosphor-icons/react"
+import { CaretUp, CaretDown, Database, X } from "@phosphor-icons/react"
 import { databaseCellText } from "./cell-format"
 import styles from "./relational.module.css"
 
@@ -106,10 +106,14 @@ export function TableView({
 
 export function RowInspector({
   session,
+  name,
+  onClose,
   page,
   selectedRow
 }: {
   session: RelationalSession
+  name: string
+  onClose: () => void
   page: DatabaseTablePage | null
   selectedRow: number | null
 }) {
@@ -118,6 +122,7 @@ export function RowInspector({
     <aside className={`mw-inspector ${styles.inspector}`} aria-label="行详情">
       <div className="mw-explorer-head">
         <strong>{selected ? "行详情" : "连接信息"}</strong>
+        <button type="button" aria-label="关闭详情面板" className="mw-icon-button" onClick={onClose}><X size={16} /></button>
       </div>
       {selected ? (
         page?.columns.map((column, index) => (
@@ -127,13 +132,14 @@ export function RowInspector({
           </div>
         ))
       ) : (
-        <div className={styles.detailField}>
-          <small>数据库</small>
-          <p>{session.info.productName}</p>
-          <small>驱动</small>
-          <p>{session.info.driverName}</p>
-          <small>版本</small>
-          <p>{session.info.productVersion}</p>
+        <div className={styles.connectionDetails}>
+          <span className={styles.connectionMark}><Database size={23} /></span>
+          <strong>{name}</strong><small>{session.info.productName}</small>
+          <dl>
+            <div><dt>数据库</dt><dd title={session.database}>{session.provider === 'sqlite' ? session.database.replace(/^.*[\\/]/, '') : session.database}</dd></div>
+            <div><dt>驱动</dt><dd>{session.info.driverName}</dd></div>
+            <div><dt>版本</dt><dd>{session.info.productVersion}</dd></div>
+          </dl>
         </div>
       )}
     </aside>

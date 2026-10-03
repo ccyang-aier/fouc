@@ -640,6 +640,11 @@
         {
           "kind": "partial-profile-ui",
           "check": "Native MySQL connection dialog uses shared relational fields and verified defaults; authenticated catalog/Profile descriptors remain available. All Profile forms/options, recent/pinned/group/color management remain open."
+        },
+        {
+          "kind": "partial-dbx-visual-validation",
+          "path": "src/features/connectors/datastore/connection-directory.tsx",
+          "check": "2026-10-03：按固定 DBX screenshot-light / screenshot-grid 与资源树、SqlEditorWorkspace 源码复核真实渲染。MySQL8.4、PostgreSQL17、SQLite、Redis7.4 的连接目录、SQL / 表格 / 行详情、Key / PING 命令台 / INFO 概览在 Chrome 1440×1000、390×844 完成浅深主题和真实内容检查（SQL 标签功能另在760×844验收）；控制台、页面和 HTTP 无意外错误。五项对照：资源树灰底 / 类型颜色 / 实际计数，40px文档标签与中性工具栏，13px资源与表格正文及14px SQL语法 / 行号基线，指针和键盘编辑器结果分隔线及独立统计导出栏，浅深主题 / 可关闭详情 / 窄屏目标行与可见草稿状态。保留 Fouc 原导航、主题字体和当前能力的只读默认，不复制 DBX 图片或账户/云界面；AI 面板、全部专项页面、编辑器分组 / 独立窗口与全入口仍待实现验收。"
         }
       ],
       "scopeKind": "driver"
@@ -1309,7 +1314,7 @@
     {
       "id": "S01",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "available",
       "applicableDriverTypes": [
         "mysql",
@@ -1407,7 +1412,18 @@
         "action": "在 Fouc 公共顶栏/导航内实现可折叠数据库资源栏、主区和 AI/信息详情右栏；多标签、拆分/分组、拖拽、关闭确认、标签恢复与独立窗口行为。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-sql-tabs-drafts-validation",
+          "path": "scripts/verify-sql-drafts-live.mjs",
+          "check": "2026-10-03：MySQL8.4 / PostgreSQL17 / SQLite 的设备草稿 API、精确 Unicode / 大整数、64 MiB 白名单持久化、标签顺序 / 固定 / 活动目标 / 空文件 / 选区 / 滚动 / 结果视图、CAS 与工作空间 / 连接隔离、重连恢复 / 显式空状态和删除连接清理通过真实接口验证。Chrome 1440×1000、760×844、390×844 验证独立 SQL / 撤销 / 选区 / 结果、固定 / 改名 / 复制 / 关闭确认 / 最近关闭恢复 / 前后访问 / 拖动、异步真实查询迟到不覆盖其他标签、返回等待草稿与刷新恢复、空文件保存、干净文件读取最新正文和 Schema / 脏文件保留旧基线并由 CAS 拒绝覆盖、文件重命名与原上下文恢复、真实第二写入者草稿冲突 / 查看完整设备版本 / 保留双方合并和错误恢复。SQLite 另验长文档与隐藏挂载后的滚动 / 选区恢复（视口变高时按新范围正常裁切）、全部关闭的持久空状态、重开与编辑器重新挂载后的实际执行；仅预期的文件 / 草稿 CAS 失败，无其他页面 / 控制台错误。格式化 / 参数 / snippets / 元数据补全 / 当前语句 / 多语句 / 多结果 / 取消、分组 / 独立窗口、外部文件与结果磁盘缓存、其他驱动和全入口仍未完成。 另验草稿冲突期间的真实在途查询：响应到达前替换 / 合并保持禁用，结束后才允许恢复，避免旧结果污染导入标签；失败状态不再显示保存动画。"
+        },
+        {
+          "kind": "partial-dbx-visual-validation",
+          "path": "src/features/connectors/datastore/relational-workbench.tsx",
+          "check": "2026-10-03：按固定 DBX screenshot-light / screenshot-grid 与资源树、SqlEditorWorkspace 源码复核真实渲染。MySQL8.4、PostgreSQL17、SQLite、Redis7.4 的连接目录、SQL / 表格 / 行详情、Key / PING 命令台 / INFO 概览在 Chrome 1440×1000、390×844 完成浅深主题和真实内容检查（SQL 标签功能另在760×844验收）；控制台、页面和 HTTP 无意外错误。五项对照：资源树灰底 / 类型颜色 / 实际计数，40px文档标签与中性工具栏，13px资源与表格正文及14px SQL语法 / 行号基线，指针和键盘编辑器结果分隔线及独立统计导出栏，浅深主题 / 可关闭详情 / 窄屏目标行与可见草稿状态。保留 Fouc 原导航、主题字体和当前能力的只读默认，不复制 DBX 图片或账户/云界面；AI 面板、全部专项页面、编辑器分组 / 独立窗口与全入口仍待实现验收。"
+        }
+      ],
       "scopeKind": "driver"
     },
     {
@@ -1516,6 +1532,11 @@
           "kind": "partial-native-validation",
           "path": "scripts/verify-table-structure-live.mjs",
           "check": "2026-10-03: native PostgreSQL17/MySQL8.4/SQLite structure catalogs, ordered composite FK actions, expression/INCLUDE/prefix/invisible indexes, constraints, triggers, views and source DDL; Pg rolled-back reconstruction and SQLite in-memory recreation passed. Chrome 1440/760/390 verifies six structure tabs/search/empty/FK navigation/readonly highlighted DDL/copy/download/refresh with no errors. Object mutation, other object kinds, complete restoration and full driver/version matrix remain open."
+        },
+        {
+          "kind": "partial-dbx-visual-validation",
+          "path": "src/features/connectors/datastore/resource-tree.tsx",
+          "check": "2026-10-03：按固定 DBX screenshot-light / screenshot-grid 与资源树、SqlEditorWorkspace 源码复核真实渲染。MySQL8.4、PostgreSQL17、SQLite、Redis7.4 的连接目录、SQL / 表格 / 行详情、Key / PING 命令台 / INFO 概览在 Chrome 1440×1000、390×844 完成浅深主题和真实内容检查（SQL 标签功能另在760×844验收）；控制台、页面和 HTTP 无意外错误。五项对照：资源树灰底 / 类型颜色 / 实际计数，40px文档标签与中性工具栏，13px资源与表格正文及14px SQL语法 / 行号基线，指针和键盘编辑器结果分隔线及独立统计导出栏，浅深主题 / 可关闭详情 / 窄屏目标行与可见草稿状态。保留 Fouc 原导航、主题字体和当前能力的只读默认，不复制 DBX 图片或账户/云界面；AI 面板、全部专项页面、编辑器分组 / 独立窗口与全入口仍待实现验收。"
         }
       ],
       "scopeKind": "driver"
@@ -2063,7 +2084,17 @@
         },
         {
           "kind": "partial-editor-smoke",
-          "check": "DBX-aligned CodeMirror stack with readable selection, MySQL syntax, selected/current statement execution; full Q01 scope remains open"
+          "check": "DBX-aligned CodeMirror SQL stack with MySQL/PostgreSQL/SQLite syntax, readable selection, selected/editor content execution; current-statement selection and full Q01 scope remain open"
+        },
+        {
+          "kind": "partial-native-sql-tabs-drafts-validation",
+          "path": "scripts/verify-sql-drafts-live.mjs",
+          "check": "2026-10-03：MySQL8.4 / PostgreSQL17 / SQLite 的设备草稿 API、精确 Unicode / 大整数、64 MiB 白名单持久化、标签顺序 / 固定 / 活动目标 / 空文件 / 选区 / 滚动 / 结果视图、CAS 与工作空间 / 连接隔离、重连恢复 / 显式空状态和删除连接清理通过真实接口验证。Chrome 1440×1000、760×844、390×844 验证独立 SQL / 撤销 / 选区 / 结果、固定 / 改名 / 复制 / 关闭确认 / 最近关闭恢复 / 前后访问 / 拖动、异步真实查询迟到不覆盖其他标签、返回等待草稿与刷新恢复、空文件保存、干净文件读取最新正文和 Schema / 脏文件保留旧基线并由 CAS 拒绝覆盖、文件重命名与原上下文恢复、真实第二写入者草稿冲突 / 查看完整设备版本 / 保留双方合并和错误恢复。SQLite 另验长文档与隐藏挂载后的滚动 / 选区恢复（视口变高时按新范围正常裁切）、全部关闭的持久空状态、重开与编辑器重新挂载后的实际执行；仅预期的文件 / 草稿 CAS 失败，无其他页面 / 控制台错误。格式化 / 参数 / snippets / 元数据补全 / 当前语句 / 多语句 / 多结果 / 取消、分组 / 独立窗口、外部文件与结果磁盘缓存、其他驱动和全入口仍未完成。 另验草稿冲突期间的真实在途查询：响应到达前替换 / 合并保持禁用，结束后才允许恢复，避免旧结果污染导入标签；失败状态不再显示保存动画。"
+        },
+        {
+          "kind": "partial-dbx-visual-validation",
+          "path": "src/features/connectors/datastore/relational-workbench.tsx",
+          "check": "2026-10-03：按固定 DBX screenshot-light / screenshot-grid 与资源树、SqlEditorWorkspace 源码复核真实渲染。MySQL8.4、PostgreSQL17、SQLite、Redis7.4 的连接目录、SQL / 表格 / 行详情、Key / PING 命令台 / INFO 概览在 Chrome 1440×1000、390×844 完成浅深主题和真实内容检查（SQL 标签功能另在760×844验收）；控制台、页面和 HTTP 无意外错误。五项对照：资源树灰底 / 类型颜色 / 实际计数，40px文档标签与中性工具栏，13px资源与表格正文及14px SQL语法 / 行号基线，指针和键盘编辑器结果分隔线及独立统计导出栏，浅深主题 / 可关闭详情 / 窄屏目标行与可见草稿状态。保留 Fouc 原导航、主题字体和当前能力的只读默认，不复制 DBX 图片或账户/云界面；AI 面板、全部专项页面、编辑器分组 / 独立窗口与全入口仍待实现验收。"
         }
       ],
       "scopeKind": "driver"
@@ -2155,7 +2186,17 @@
         {
           "kind": "partial-native-sql-history-library-validation",
           "path": "scripts/verify-sql-library-live.mjs",
-          "check": "2026-10-03：MySQL8.4 / PostgreSQL17 / SQLite 真实执行成功与失败历史、策略阻断不记为执行、完整 SQL / 目标 / 精确整数、字面和连接限定搜索、空间隔离、懒加载 SQL 库、嵌套移动 / 循环阻断、版本冲突与确认删除、断线重连持久化通过。Chrome 1440×1000、760×844、390×844 验证筛选 / 分页追加、执行新查询回到首页与重置、详情 / 复制 / 保存收藏、保留或替换编辑内容且恢复不执行、Ctrl+S / 另存为 / 改名移动 / 常用与最近 / 递归删除、改名保留草稿 / 删除当前文件保留编辑内容、不可用目标在恢复窗口明确反馈、真实版本冲突保持本地草稿并重新打开恢复；全部失败请求对应故意 SQL 策略、不存在表、循环或版本冲突，无其他页面 / 控制台错误。鉴权、存储失败独立警告、在途查询和连接删除清理有回归。跨连接筛选 UI、多目标和取消、外部文件 / 格式化 / snippets / 标签草稿恢复、其他驱动 / 版本与全入口仍未完成。"
+          "check": "2026-10-03：MySQL8.4 / PostgreSQL17 / SQLite 真实执行成功与失败历史、策略阻断不记为执行、完整 SQL / 目标 / 精确整数、字面和连接限定搜索、空间隔离、懒加载 SQL 库、嵌套移动 / 循环阻断、版本冲突与确认删除、断线重连持久化通过。Chrome 1440×1000、760×844、390×844 验证筛选 / 分页追加、执行新查询回到首页与重置、详情 / 复制 / 保存收藏、保留或替换编辑内容且恢复不执行、Ctrl+S / 另存为 / 改名移动 / 常用与最近 / 递归删除、改名保留草稿 / 删除当前文件保留编辑内容、不可用目标在恢复窗口明确反馈、真实版本冲突保持本地草稿并重新打开恢复；全部失败请求对应故意 SQL 策略、不存在表、循环或版本冲突，无其他页面 / 控制台错误。鉴权、存储失败独立警告、在途查询和连接删除清理有回归。跨连接筛选 UI、多目标和取消、外部文件 / 格式化 / snippets / 编辑器分组和独立窗口、其他驱动 / 版本与全入口仍未完成。"
+        },
+        {
+          "kind": "partial-native-sql-tabs-drafts-validation",
+          "path": "scripts/verify-sql-drafts-live.mjs",
+          "check": "2026-10-03：MySQL8.4 / PostgreSQL17 / SQLite 的设备草稿 API、精确 Unicode / 大整数、64 MiB 白名单持久化、标签顺序 / 固定 / 活动目标 / 空文件 / 选区 / 滚动 / 结果视图、CAS 与工作空间 / 连接隔离、重连恢复 / 显式空状态和删除连接清理通过真实接口验证。Chrome 1440×1000、760×844、390×844 验证独立 SQL / 撤销 / 选区 / 结果、固定 / 改名 / 复制 / 关闭确认 / 最近关闭恢复 / 前后访问 / 拖动、异步真实查询迟到不覆盖其他标签、返回等待草稿与刷新恢复、空文件保存、干净文件读取最新正文和 Schema / 脏文件保留旧基线并由 CAS 拒绝覆盖、文件重命名与原上下文恢复、真实第二写入者草稿冲突 / 查看完整设备版本 / 保留双方合并和错误恢复。SQLite 另验长文档与隐藏挂载后的滚动 / 选区恢复（视口变高时按新范围正常裁切）、全部关闭的持久空状态、重开与编辑器重新挂载后的实际执行；仅预期的文件 / 草稿 CAS 失败，无其他页面 / 控制台错误。格式化 / 参数 / snippets / 元数据补全 / 当前语句 / 多语句 / 多结果 / 取消、分组 / 独立窗口、外部文件与结果磁盘缓存、其他驱动和全入口仍未完成。 另验草稿冲突期间的真实在途查询：响应到达前替换 / 合并保持禁用，结束后才允许恢复，避免旧结果污染导入标签；失败状态不再显示保存动画。"
+        },
+        {
+          "kind": "partial-dbx-visual-validation",
+          "path": "src/features/connectors/datastore/relational-workbench.tsx",
+          "check": "2026-10-03：按固定 DBX screenshot-light / screenshot-grid 与资源树、SqlEditorWorkspace 源码复核真实渲染。MySQL8.4、PostgreSQL17、SQLite、Redis7.4 的连接目录、SQL / 表格 / 行详情、Key / PING 命令台 / INFO 概览在 Chrome 1440×1000、390×844 完成浅深主题和真实内容检查（SQL 标签功能另在760×844验收）；控制台、页面和 HTTP 无意外错误。五项对照：资源树灰底 / 类型颜色 / 实际计数，40px文档标签与中性工具栏，13px资源与表格正文及14px SQL语法 / 行号基线，指针和键盘编辑器结果分隔线及独立统计导出栏，浅深主题 / 可关闭详情 / 窄屏目标行与可见草稿状态。保留 Fouc 原导航、主题字体和当前能力的只读默认，不复制 DBX 图片或账户/云界面；AI 面板、全部专项页面、编辑器分组 / 独立窗口与全入口仍待实现验收。"
         }
       ],
       "scopeKind": "driver"
@@ -2247,7 +2288,12 @@
         {
           "kind": "partial-native-sql-history-library-validation",
           "path": "scripts/verify-sql-library-live.mjs",
-          "check": "2026-10-03：MySQL8.4 / PostgreSQL17 / SQLite 真实执行成功与失败历史、策略阻断不记为执行、完整 SQL / 目标 / 精确整数、字面和连接限定搜索、空间隔离、懒加载 SQL 库、嵌套移动 / 循环阻断、版本冲突与确认删除、断线重连持久化通过。Chrome 1440×1000、760×844、390×844 验证筛选 / 分页追加、执行新查询回到首页与重置、详情 / 复制 / 保存收藏、保留或替换编辑内容且恢复不执行、Ctrl+S / 另存为 / 改名移动 / 常用与最近 / 递归删除、改名保留草稿 / 删除当前文件保留编辑内容、不可用目标在恢复窗口明确反馈、真实版本冲突保持本地草稿并重新打开恢复；全部失败请求对应故意 SQL 策略、不存在表、循环或版本冲突，无其他页面 / 控制台错误。鉴权、存储失败独立警告、在途查询和连接删除清理有回归。跨连接筛选 UI、多目标和取消、外部文件 / 格式化 / snippets / 标签草稿恢复、其他驱动 / 版本与全入口仍未完成。"
+          "check": "2026-10-03：MySQL8.4 / PostgreSQL17 / SQLite 真实执行成功与失败历史、策略阻断不记为执行、完整 SQL / 目标 / 精确整数、字面和连接限定搜索、空间隔离、懒加载 SQL 库、嵌套移动 / 循环阻断、版本冲突与确认删除、断线重连持久化通过。Chrome 1440×1000、760×844、390×844 验证筛选 / 分页追加、执行新查询回到首页与重置、详情 / 复制 / 保存收藏、保留或替换编辑内容且恢复不执行、Ctrl+S / 另存为 / 改名移动 / 常用与最近 / 递归删除、改名保留草稿 / 删除当前文件保留编辑内容、不可用目标在恢复窗口明确反馈、真实版本冲突保持本地草稿并重新打开恢复；全部失败请求对应故意 SQL 策略、不存在表、循环或版本冲突，无其他页面 / 控制台错误。鉴权、存储失败独立警告、在途查询和连接删除清理有回归。跨连接筛选 UI、多目标和取消、外部文件 / 格式化 / snippets / 编辑器分组和独立窗口、其他驱动 / 版本与全入口仍未完成。"
+        },
+        {
+          "kind": "partial-native-sql-tabs-drafts-validation",
+          "path": "scripts/verify-sql-drafts-live.mjs",
+          "check": "2026-10-03：MySQL8.4 / PostgreSQL17 / SQLite 的设备草稿 API、精确 Unicode / 大整数、64 MiB 白名单持久化、标签顺序 / 固定 / 活动目标 / 空文件 / 选区 / 滚动 / 结果视图、CAS 与工作空间 / 连接隔离、重连恢复 / 显式空状态和删除连接清理通过真实接口验证。Chrome 1440×1000、760×844、390×844 验证独立 SQL / 撤销 / 选区 / 结果、固定 / 改名 / 复制 / 关闭确认 / 最近关闭恢复 / 前后访问 / 拖动、异步真实查询迟到不覆盖其他标签、返回等待草稿与刷新恢复、空文件保存、干净文件读取最新正文和 Schema / 脏文件保留旧基线并由 CAS 拒绝覆盖、文件重命名与原上下文恢复、真实第二写入者草稿冲突 / 查看完整设备版本 / 保留双方合并和错误恢复。SQLite 另验长文档与隐藏挂载后的滚动 / 选区恢复（视口变高时按新范围正常裁切）、全部关闭的持久空状态、重开与编辑器重新挂载后的实际执行；仅预期的文件 / 草稿 CAS 失败，无其他页面 / 控制台错误。格式化 / 参数 / snippets / 元数据补全 / 当前语句 / 多语句 / 多结果 / 取消、分组 / 独立窗口、外部文件与结果磁盘缓存、其他驱动和全入口仍未完成。 另验草稿冲突期间的真实在途查询：响应到达前替换 / 合并保持禁用，结束后才允许恢复，避免旧结果污染导入标签；失败状态不再显示保存动画。"
         }
       ],
       "scopeKind": "driver"
@@ -2425,7 +2471,12 @@
         {
           "kind": "partial-native-sql-history-library-validation",
           "path": "scripts/verify-sql-library-live.mjs",
-          "check": "2026-10-03：MySQL8.4 / PostgreSQL17 / SQLite 真实执行成功与失败历史、策略阻断不记为执行、完整 SQL / 目标 / 精确整数、字面和连接限定搜索、空间隔离、懒加载 SQL 库、嵌套移动 / 循环阻断、版本冲突与确认删除、断线重连持久化通过。Chrome 1440×1000、760×844、390×844 验证筛选 / 分页追加、执行新查询回到首页与重置、详情 / 复制 / 保存收藏、保留或替换编辑内容且恢复不执行、Ctrl+S / 另存为 / 改名移动 / 常用与最近 / 递归删除、改名保留草稿 / 删除当前文件保留编辑内容、不可用目标在恢复窗口明确反馈、真实版本冲突保持本地草稿并重新打开恢复；全部失败请求对应故意 SQL 策略、不存在表、循环或版本冲突，无其他页面 / 控制台错误。鉴权、存储失败独立警告、在途查询和连接删除清理有回归。跨连接筛选 UI、多目标和取消、外部文件 / 格式化 / snippets / 标签草稿恢复、其他驱动 / 版本与全入口仍未完成。"
+          "check": "2026-10-03：MySQL8.4 / PostgreSQL17 / SQLite 真实执行成功与失败历史、策略阻断不记为执行、完整 SQL / 目标 / 精确整数、字面和连接限定搜索、空间隔离、懒加载 SQL 库、嵌套移动 / 循环阻断、版本冲突与确认删除、断线重连持久化通过。Chrome 1440×1000、760×844、390×844 验证筛选 / 分页追加、执行新查询回到首页与重置、详情 / 复制 / 保存收藏、保留或替换编辑内容且恢复不执行、Ctrl+S / 另存为 / 改名移动 / 常用与最近 / 递归删除、改名保留草稿 / 删除当前文件保留编辑内容、不可用目标在恢复窗口明确反馈、真实版本冲突保持本地草稿并重新打开恢复；全部失败请求对应故意 SQL 策略、不存在表、循环或版本冲突，无其他页面 / 控制台错误。鉴权、存储失败独立警告、在途查询和连接删除清理有回归。跨连接筛选 UI、多目标和取消、外部文件 / 格式化 / snippets / 编辑器分组和独立窗口、其他驱动 / 版本与全入口仍未完成。"
+        },
+        {
+          "kind": "partial-native-sql-tabs-drafts-validation",
+          "path": "scripts/verify-sql-drafts-live.mjs",
+          "check": "2026-10-03：MySQL8.4 / PostgreSQL17 / SQLite 的设备草稿 API、精确 Unicode / 大整数、64 MiB 白名单持久化、标签顺序 / 固定 / 活动目标 / 空文件 / 选区 / 滚动 / 结果视图、CAS 与工作空间 / 连接隔离、重连恢复 / 显式空状态和删除连接清理通过真实接口验证。Chrome 1440×1000、760×844、390×844 验证独立 SQL / 撤销 / 选区 / 结果、固定 / 改名 / 复制 / 关闭确认 / 最近关闭恢复 / 前后访问 / 拖动、异步真实查询迟到不覆盖其他标签、返回等待草稿与刷新恢复、空文件保存、干净文件读取最新正文和 Schema / 脏文件保留旧基线并由 CAS 拒绝覆盖、文件重命名与原上下文恢复、真实第二写入者草稿冲突 / 查看完整设备版本 / 保留双方合并和错误恢复。SQLite 另验长文档与隐藏挂载后的滚动 / 选区恢复（视口变高时按新范围正常裁切）、全部关闭的持久空状态、重开与编辑器重新挂载后的实际执行；仅预期的文件 / 草稿 CAS 失败，无其他页面 / 控制台错误。格式化 / 参数 / snippets / 元数据补全 / 当前语句 / 多语句 / 多结果 / 取消、分组 / 独立窗口、外部文件与结果磁盘缓存、其他驱动和全入口仍未完成。 另验草稿冲突期间的真实在途查询：响应到达前替换 / 合并保持禁用，结束后才允许恢复，避免旧结果污染导入标签；失败状态不再显示保存动画。"
         }
       ],
       "scopeKind": "driver"
@@ -2950,7 +3001,13 @@
         "action": "真实表数据按页/虚拟滚动加载、行号、斑马纹、空值/类型展示、列宽行高拖拽、自适应少列填满、宽表横向滚动；字体/字号/行高/密度设置和连接、结果来源、字段类型/注释信息可见。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-dbx-visual-validation",
+          "path": "src/features/connectors/datastore/table-view.tsx",
+          "check": "2026-10-03：按固定 DBX screenshot-light / screenshot-grid 与资源树、SqlEditorWorkspace 源码复核真实渲染。MySQL8.4、PostgreSQL17、SQLite、Redis7.4 的连接目录、SQL / 表格 / 行详情、Key / PING 命令台 / INFO 概览在 Chrome 1440×1000、390×844 完成浅深主题和真实内容检查（SQL 标签功能另在760×844验收）；控制台、页面和 HTTP 无意外错误。五项对照：资源树灰底 / 类型颜色 / 实际计数，40px文档标签与中性工具栏，13px资源与表格正文及14px SQL语法 / 行号基线，指针和键盘编辑器结果分隔线及独立统计导出栏，浅深主题 / 可关闭详情 / 窄屏目标行与可见草稿状态。保留 Fouc 原导航、主题字体和当前能力的只读默认，不复制 DBX 图片或账户/云界面；AI 面板、全部专项页面、编辑器分组 / 独立窗口与全入口仍待实现验收。"
+        }
+      ],
       "scopeKind": "driver"
     },
     {
@@ -5284,6 +5341,11 @@
           "kind": "partial-web-validation",
           "path": "src/features/connectors/redis/redis-json-view.tsx",
           "check": "2026-10-03: bundled Playwright/Chrome1440/760/390 (Browser plugin unavailable): real null/root-array/int64 fidelity, readonly/unlock; Unicode/raw/format/compact/copy/history/search/folding/wrap; malformed draft/discard/navigation guards, Ctrl+S/cancel/review/confirm exact TTL; JSON NX creation/return editor, native concurrent change and ACL rejection with recovery, module absence. Editor/search/copy and dialog actions visible; two intentional HTTP400, no other console/page errors. Source token formatting/Unicode bounded diff and capability/read validation have dedicated tests. X01/R07 remain in progress."
+        },
+        {
+          "kind": "partial-dbx-visual-validation",
+          "path": "src/features/connectors/redis/redis-workbench.tsx",
+          "check": "2026-10-03：按固定 DBX screenshot-light / screenshot-grid 与资源树、SqlEditorWorkspace 源码复核真实渲染。MySQL8.4、PostgreSQL17、SQLite、Redis7.4 的连接目录、SQL / 表格 / 行详情、Key / PING 命令台 / INFO 概览在 Chrome 1440×1000、390×844 完成浅深主题和真实内容检查（SQL 标签功能另在760×844验收）；控制台、页面和 HTTP 无意外错误。五项对照：资源树灰底 / 类型颜色 / 实际计数，40px文档标签与中性工具栏，13px资源与表格正文及14px SQL语法 / 行号基线，指针和键盘编辑器结果分隔线及独立统计导出栏，浅深主题 / 可关闭详情 / 窄屏目标行与可见草稿状态。保留 Fouc 原导航、主题字体和当前能力的只读默认，不复制 DBX 图片或账户/云界面；AI 面板、全部专项页面、编辑器分组 / 独立窗口与全入口仍待实现验收。"
         }
       ],
       "scopeKind": "driver"
@@ -5976,6 +6038,11 @@
           "kind": "partial-native-sql-history-library-validation",
           "path": "scripts/verify-sql-library-live.mjs",
           "check": "2026-10-03：MySQL8.4 / PostgreSQL17 / SQLite 真实执行成功与失败历史、策略阻断不记为执行、完整 SQL / 目标 / 精确整数、字面和连接限定搜索、空间隔离、懒加载 SQL 库、嵌套移动 / 循环阻断、版本冲突与确认删除、断线重连持久化通过。Chrome 1440×1000、760×844、390×844 验证筛选 / 分页追加、执行新查询回到首页与重置、详情 / 复制 / 保存收藏、保留或替换编辑内容且恢复不执行、Ctrl+S / 另存为 / 改名移动 / 常用与最近 / 递归删除、改名保留草稿 / 删除当前文件保留编辑内容、不可用目标在恢复窗口明确反馈、真实版本冲突保持本地草稿并重新打开恢复；全部失败请求对应故意 SQL 策略、不存在表、循环或版本冲突，无其他页面 / 控制台错误。鉴权、存储失败独立警告、在途查询和连接删除清理有回归。跨连接筛选 UI、多目标和取消、外部文件 / 格式化 / snippets / 标签草稿恢复、其他驱动 / 版本与全入口仍未完成。"
+        },
+        {
+          "kind": "partial-dbx-visual-validation",
+          "path": "src/features/connectors/datastore/relational-workbench.tsx",
+          "check": "2026-10-03：按固定 DBX screenshot-light / screenshot-grid 与资源树、SqlEditorWorkspace 源码复核真实渲染。MySQL8.4、PostgreSQL17、SQLite、Redis7.4 的连接目录、SQL / 表格 / 行详情、Key / PING 命令台 / INFO 概览在 Chrome 1440×1000、390×844 完成浅深主题和真实内容检查（SQL 标签功能另在760×844验收）；控制台、页面和 HTTP 无意外错误。五项对照：资源树灰底 / 类型颜色 / 实际计数，40px文档标签与中性工具栏，13px资源与表格正文及14px SQL语法 / 行号基线，指针和键盘编辑器结果分隔线及独立统计导出栏，浅深主题 / 可关闭详情 / 窄屏目标行与可见草稿状态。保留 Fouc 原导航、主题字体和当前能力的只读默认，不复制 DBX 图片或账户/云界面；AI 面板、全部专项页面、编辑器分组 / 独立窗口与全入口仍待实现验收。"
         }
       ],
       "scopeKind": "driver"
@@ -6036,6 +6103,11 @@
           "kind": "partial-native-sql-history-library-validation",
           "path": "scripts/verify-sql-library-live.mjs",
           "check": "2026-10-03：MySQL8.4 / PostgreSQL17 / SQLite 真实执行成功与失败历史、策略阻断不记为执行、完整 SQL / 目标 / 精确整数、字面和连接限定搜索、空间隔离、懒加载 SQL 库、嵌套移动 / 循环阻断、版本冲突与确认删除、断线重连持久化通过。Chrome 1440×1000、760×844、390×844 验证筛选 / 分页追加、执行新查询回到首页与重置、详情 / 复制 / 保存收藏、保留或替换编辑内容且恢复不执行、Ctrl+S / 另存为 / 改名移动 / 常用与最近 / 递归删除、改名保留草稿 / 删除当前文件保留编辑内容、不可用目标在恢复窗口明确反馈、真实版本冲突保持本地草稿并重新打开恢复；全部失败请求对应故意 SQL 策略、不存在表、循环或版本冲突，无其他页面 / 控制台错误。鉴权、存储失败独立警告、在途查询和连接删除清理有回归。跨连接筛选 UI、多目标和取消、外部文件 / 格式化 / snippets / 标签草稿恢复、其他驱动 / 版本与全入口仍未完成。"
+        },
+        {
+          "kind": "partial-dbx-visual-validation",
+          "path": "src/features/connectors/datastore/relational-workbench.tsx",
+          "check": "2026-10-03：按固定 DBX screenshot-light / screenshot-grid 与资源树、SqlEditorWorkspace 源码复核真实渲染。MySQL8.4、PostgreSQL17、SQLite、Redis7.4 的连接目录、SQL / 表格 / 行详情、Key / PING 命令台 / INFO 概览在 Chrome 1440×1000、390×844 完成浅深主题和真实内容检查（SQL 标签功能另在760×844验收）；控制台、页面和 HTTP 无意外错误。五项对照：资源树灰底 / 类型颜色 / 实际计数，40px文档标签与中性工具栏，13px资源与表格正文及14px SQL语法 / 行号基线，指针和键盘编辑器结果分隔线及独立统计导出栏，浅深主题 / 可关闭详情 / 窄屏目标行与可见草稿状态。保留 Fouc 原导航、主题字体和当前能力的只读默认，不复制 DBX 图片或账户/云界面；AI 面板、全部专项页面、编辑器分组 / 独立窗口与全入口仍待实现验收。"
         }
       ],
       "scopeKind": "driver"
@@ -6096,6 +6168,11 @@
           "kind": "partial-native-sql-history-library-validation",
           "path": "scripts/verify-sql-library-live.mjs",
           "check": "2026-10-03：MySQL8.4 / PostgreSQL17 / SQLite 真实执行成功与失败历史、策略阻断不记为执行、完整 SQL / 目标 / 精确整数、字面和连接限定搜索、空间隔离、懒加载 SQL 库、嵌套移动 / 循环阻断、版本冲突与确认删除、断线重连持久化通过。Chrome 1440×1000、760×844、390×844 验证筛选 / 分页追加、执行新查询回到首页与重置、详情 / 复制 / 保存收藏、保留或替换编辑内容且恢复不执行、Ctrl+S / 另存为 / 改名移动 / 常用与最近 / 递归删除、改名保留草稿 / 删除当前文件保留编辑内容、不可用目标在恢复窗口明确反馈、真实版本冲突保持本地草稿并重新打开恢复；全部失败请求对应故意 SQL 策略、不存在表、循环或版本冲突，无其他页面 / 控制台错误。鉴权、存储失败独立警告、在途查询和连接删除清理有回归。跨连接筛选 UI、多目标和取消、外部文件 / 格式化 / snippets / 标签草稿恢复、其他驱动 / 版本与全入口仍未完成。"
+        },
+        {
+          "kind": "partial-dbx-visual-validation",
+          "path": "src/features/connectors/datastore/relational-workbench.tsx",
+          "check": "2026-10-03：按固定 DBX screenshot-light / screenshot-grid 与资源树、SqlEditorWorkspace 源码复核真实渲染。MySQL8.4、PostgreSQL17、SQLite、Redis7.4 的连接目录、SQL / 表格 / 行详情、Key / PING 命令台 / INFO 概览在 Chrome 1440×1000、390×844 完成浅深主题和真实内容检查（SQL 标签功能另在760×844验收）；控制台、页面和 HTTP 无意外错误。五项对照：资源树灰底 / 类型颜色 / 实际计数，40px文档标签与中性工具栏，13px资源与表格正文及14px SQL语法 / 行号基线，指针和键盘编辑器结果分隔线及独立统计导出栏，浅深主题 / 可关闭详情 / 窄屏目标行与可见草稿状态。保留 Fouc 原导航、主题字体和当前能力的只读默认，不复制 DBX 图片或账户/云界面；AI 面板、全部专项页面、编辑器分组 / 独立窗口与全入口仍待实现验收。"
         }
       ],
       "scopeKind": "driver"
@@ -6273,6 +6350,11 @@
           "kind": "partial-web-validation",
           "path": "src/features/connectors/redis/redis-json-view.tsx",
           "check": "2026-10-03: bundled Playwright/Chrome1440/760/390 (Browser plugin unavailable): real null/root-array/int64 fidelity, readonly/unlock; Unicode/raw/format/compact/copy/history/search/folding/wrap; malformed draft/discard/navigation guards, Ctrl+S/cancel/review/confirm exact TTL; JSON NX creation/return editor, native concurrent change and ACL rejection with recovery, module absence. Editor/search/copy and dialog actions visible; two intentional HTTP400, no other console/page errors. Source token formatting/Unicode bounded diff and capability/read validation have dedicated tests. X01/R07 remain in progress."
+        },
+        {
+          "kind": "partial-dbx-visual-validation",
+          "path": "src/features/connectors/redis/redis-workbench.tsx",
+          "check": "2026-10-03：按固定 DBX screenshot-light / screenshot-grid 与资源树、SqlEditorWorkspace 源码复核真实渲染。MySQL8.4、PostgreSQL17、SQLite、Redis7.4 的连接目录、SQL / 表格 / 行详情、Key / PING 命令台 / INFO 概览在 Chrome 1440×1000、390×844 完成浅深主题和真实内容检查（SQL 标签功能另在760×844验收）；控制台、页面和 HTTP 无意外错误。五项对照：资源树灰底 / 类型颜色 / 实际计数，40px文档标签与中性工具栏，13px资源与表格正文及14px SQL语法 / 行号基线，指针和键盘编辑器结果分隔线及独立统计导出栏，浅深主题 / 可关闭详情 / 窄屏目标行与可见草稿状态。保留 Fouc 原导航、主题字体和当前能力的只读默认，不复制 DBX 图片或账户/云界面；AI 面板、全部专项页面、编辑器分组 / 独立窗口与全入口仍待实现验收。"
         }
       ],
       "scopeKind": "driver"

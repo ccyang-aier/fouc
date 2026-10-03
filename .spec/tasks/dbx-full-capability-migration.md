@@ -10,6 +10,10 @@
 
 ## 代码规模与当前验证
 
+- 工作台视觉验证：2026-10-03：按固定 DBX screenshot-light / screenshot-grid 与资源树、SqlEditorWorkspace 源码复核真实渲染。MySQL8.4、PostgreSQL17、SQLite、Redis7.4 的连接目录、SQL / 表格 / 行详情、Key / PING 命令台 / INFO 概览在 Chrome 1440×1000、390×844 完成浅深主题和真实内容检查（SQL 标签功能另在760×844验收）；控制台、页面和 HTTP 无意外错误。五项对照：资源树灰底 / 类型颜色 / 实际计数，40px文档标签与中性工具栏，13px资源与表格正文及14px SQL语法 / 行号基线，指针和键盘编辑器结果分隔线及独立统计导出栏，浅深主题 / 可关闭详情 / 窄屏目标行与可见草稿状态。保留 Fouc 原导航、主题字体和当前能力的只读默认，不复制 DBX 图片或账户/云界面；AI 面板、全部专项页面、编辑器分组 / 独立窗口与全入口仍待实现验收。
+
+- SQL 标签 / 草稿验证入口：`node scripts/verify-sql-drafts-live.mjs`；作用域测试与 Chrome 1440×1000、760×844、390×844 验证三种原生数据库的独立内容 / 撤销 / 选区 / 结果 / 上下文、固定 / 改名 / 复制 / 关闭确认 / 最近关闭恢复 / 导航 / 拖动、异步查询归属、串行保存与返回等待、文件基线 / 原目标恢复、真实版本冲突 / 完整设备预览 / 保留双方合并、重连 / 刷新和明确空状态。SQLite 长文档与首次隐藏挂载的选区 / 滚动恢复、全部关闭后重开与再次执行通过；新视口对旧像素偏移按实际滚动范围裁切。文件与草稿冲突是预期 HTTP 400，无其他页面 / 控制台错误。Q01/Q02/Q03/Q05 保持进行中；编辑器分组 / 独立窗口、外部文件、格式化 / snippets / 参数 / 元数据补全、多语句 / 多结果 / 取消及其他驱动 / 全入口仍未完成。
+
 - Pub/Sub 验证入口：`node scripts/verify-redis-pubsub-live.mjs` 使用独立 Redis 7.4.8 实验室（56380），真实 HTTP NDJSON 与 RESP2 独立订阅连接验证空 / 二进制频道、消息和模式，跨 DB、频道和模式重复投递、四类订阅操作及批次中先成功后被 ACL 拒绝的确认状态。64 KiB 截断、捕获 ID / 会话 / 空间隔离、写入解锁 / 预览确认对应的发布授权、精确接收计数、无历史 / 无 Key 写入和权限恢复通过；实际投递后响应丢失明确显示结果未确认且无自动重试。通过实际 CLIENT LIST 验证 HTTP 取消（含真实 PING 确认前）、DB 切换、会话关闭与意外断开释放连接。38 项 Redis 作用域测试 / 289 个断言通过。Chrome 1440×844、760×844、390×844 验证订阅 / 取消、二进制 / 空值、ACL 失败恢复、重连恢复与断开消息不补发、最新 500 条保留、筛选 / 无匹配 / 复制 / 跟随 / 清空 / 详情截断、发布预览 / 返回编辑 / 确认 / 重新锁定；弹窗正文局部滚动且操作始终可见。两次预期 HTTP 502，无其他浏览器错误；共享连接生命周期和流解码抽取后 MONITOR 真实接口 / 三宽度浏览器回归通过。X01 / R07 保持进行中，其他版本、TLS 矩阵及全入口 / 拓扑验收未完成。
 
 - MONITOR 验证入口：`node scripts/verify-redis-monitor-live.mjs` 使用独立 Redis 7.4.8 实验室（56380），真实 HTTP NDJSON 流验证独立客户端、微秒时间 / 所有 DB / 来源 / 二进制转义、16 KiB 截断、正常会话和历史保留。通过实际 CLIENT LIST 计数验证 HTTP 取消（包含 TCP 夹具延迟服务端确认前取消）、停止、会话关闭、DB 切换、ACL 拒绝 / 恢复、意外断开均释放客户端；路由鉴权和跨空间拒绝已覆盖。60 项作用域测试、421 个断言通过，包含缓冲条数 / 字节压力、分片 UTF-8 / JSON 帧、格式错误与迟到确认。Chrome 1440×1000、760×844、390×844 验证命令台入口、真实 DB14 / 15 和字节转义、筛选 / 无匹配 / 复制 / 跟随、最新 1000 条保留、可见停止按钮、离开视图 / 返回列表释放客户端、普通 PING / 历史、断开与 ACL 错误恢复；一次预期 HTTP 502，无其他页面 / 控制台错误。仍须推进其他 Redis 版本、完整入口与 Sentinel/Cluster / PubSub 矩阵。
@@ -19,7 +23,7 @@
 - Redis 观测验证入口：`node scripts/redis-observability-lab.mjs up|status` 复用或启动独立 Redis 7.4.8 实验室（56380，启动时阈值 0、保留 512 条），`node scripts/verify-redis-observability-live.mjs` 验证 INFO 分区与有界慢日志读取、原始二进制参数 / 客户端字段、数量校验、空间隔离、只读状态和命令历史保留、可选 CONFIG / LEN 权限降级及 GET / INFO 拒绝。实验室不会修改或重置业务 Redis 的日志配置。50 个作用域测试通过，涵盖 64 位计数 / 命中率 / 数值排序、旧版本缺失字段和响应截断。Playwright + Chrome 在 1440×1000、760×844、390×844 验证指标折叠 / 搜索 / 复制、真实定时刷新及离开视图后停止、慢日志数量 / 排序 / 筛选 / 分页 / 二进制详情 / JSON 复制、权限失败保留旧指标和错误恢复；两次预期 HTTP 502，无其他页面 / 控制台错误。Cluster 逐节点、其他版本与权限矩阵仍未完整交付。
 
 - 源码已恢复至固定 commit；[源码审计](dbx-source-audit.json) 与 [实质迁移文件清单](dbx-native-port-manifest.json) 可由 `node scripts/audit-dbx-source.mjs --write` 重算。约 133.4 万有效源码行；排除独立测试、翻译资源、工具与账户/云模块后的核心范围估算为 91.4 万行。词法统计仍包含 Rust 内嵌测试，不能把这个估算当成已迁移量。
-- 第一阶段目标仍为约 50,000 行 Fouc 核心运行逻辑；当前清单为 101 个运行文件、11,625 行有效代码。不计样式、目录 JSON、测试、参考仓库或演示工作台，且必须逐能力验收，当前未完成。MySQL 已合并到共享会话与工作台，移除的重复逻辑不保留行数信用。MONITOR / Pub/Sub 共享生命周期与流解码，删除的重复实现同样不保留信用。RedisJSON 仅计已适配且实际运行的 token 格式化 / Unicode 编辑映射子集，未使用的 Number 包装 / stringify 代码不计入。统计受代码格式影响，不能以行数代替功能覆盖。固定源码基线未变化时，可用 `node scripts/audit-dbx-source.mjs --native-only --write` 快速重算原生清单。
+- 第一阶段目标仍为约 50,000 行 Fouc 核心运行逻辑；当前清单为 108 个运行文件、12,186 行有效代码。不计样式、目录 JSON、测试、参考仓库或演示工作台，且必须逐能力验收，当前未完成。MySQL 已合并到共享会话与工作台，移除的重复逻辑不保留行数信用。MONITOR / Pub/Sub 共享生命周期与流解码，删除的重复实现同样不保留信用。RedisJSON 仅计已适配且实际运行的 token 格式化 / Unicode 编辑映射子集，未使用的 Number 包装 / stringify 代码不计入。统计受代码格式影响，不能以行数代替功能覆盖。固定源码基线未变化时，可用 `node scripts/audit-dbx-source.mjs --native-only --write` 快速重算原生清单。
 - MySQL / PostgreSQL / SQLite 的连接配置 CRUD、测试与会话打开、Schema/表/视图/字段发现、主键分页、只读 SQL、大整数/重复列名及空间隔离已有真实 HTTP 和浏览器证据。R01/R02/R03 保持进行中；完整对象管理、导入导出、比较/备份、取消/重连、CLI/MCP 等仍须推进。SQLite 当前同步查询，尚未交付长查询取消与 worker 隔离。
 - 验证入口：`bun test --isolate backend/device/src/database backend/device/src/api/server.database.test.ts src/features/connectors/datastore/result-format.test.ts`、`node scripts/verify-relational-live.mjs`、`node scripts/verify-mysql-live.mjs`、`node scripts/verify-table-save-live.mjs`。真实服务验证使用独立 `fouc_datastore_lab` 数据库、专用 `dbx_save_fixture` / `dbx_unique_fixture` 表与 `.runtime/dbx-lab/relational.sqlite`，不访问 Fouc 账户/业务表。MySQL 实验室通过 `node scripts/datastore-lab.mjs up|status` 运行，容器有认证健康检查，随机凭据只写入被 Git 忽略的运行目录。
 - Web 验证：Playwright + Chrome，1440×1000 完成上述 PostgreSQL / SQLite 流程；390×844、760×844 检查连接目录、导航收起及溢出。两次故意写入产生预期 HTTP 400，未出现其他控制台或页面错误；窄窗口工作台操作矩阵仍待补齐。
@@ -42,6 +46,7 @@
 - **全量范围**：DBX 本地源码和中文产品文档中已实现且可使用的桌面、Web、CLI、MCP、插件、驱动与专项工作台能力；包括下文 81 个驱动类型与 104 个连接 Profile。实验性、默认关闭的能力也列入，并保留同等安全开关。不可把连接成功、静态演示、空按钮或仅有 UI 当作完成。
 - **功能等价**：按 DBX 的 capability、数据库类型、运行入口和账号权限逐项验收。DBX 本身没有声明的能力不强行开放；不同版本/Edition/驱动的动态差异要保留。桌面特有功能可用 Tauri 桥接，Web 的文件路径与网络按服务器环境解释。
 - **Fouc 架构**：React/Next.js 实现 UI，设备侧连接与执行归 `backend/device/`，账户、工作空间与共享业务归 `backend/server/`，公开契约置于 `shared/`，Tauri v2 只保留系统薄壳。DBX 的 Rust/Vue/Go 实现是行为与算法参考，迁移前记录许可证与第三方依赖；不把业务逻辑搬入 Fouc Rust 壳。
+- **视觉优先级**：用户要求将前端视觉作为重点；持续对照固定 DBX 的截图、资源树、文档标签、SQL / 结果区和专项工作台，按 Fouc 主题令牌统一排版、字号、密度与状态反馈。功能通过不代替视觉验收，须检查真实内容下的桌面 / 窄屏、浅色 / 深色及可访问操作。本会话复用常驻 dev Web / 设备 / 业务服务，不构建 Tauri。
 - **任务完成定义**：每行须具备真实后端通路、前端交互及加载/空/错误/取消/成功反馈、只读和生产保护、适用数据库矩阵验证、桌面及 Web 适用入口验证、必要的集成测试。数据库专属任务用对应服务实例或可重复的协议测试验证。**一行中用顿号、斜杠或分号列出的能力必须逐项留证**，不能只验收其中一个按钮或一种数据库。功能与 DBX 有意差异时记录差异和验收依据。
 - **依赖顺序**：`F00 → F01/F02/F03/F04 → C/S/Q/G → D/X/A/P/R`；任务可并行，但不得用一个通用模拟驱动宣称完成全部类型。MySQL、PostgreSQL、SQLite 已复用原生关系型会话与共享工作台；旧 MySQL 演示和无空间会话路由已移除。所有尚未验收的能力仍按逐项矩阵推进。
 
@@ -93,7 +98,7 @@
 
 | ID | 任务 / 可验收交付 | DBX 对照 | 状态 |
 | --- | --- | --- | --- |
-| S01 | 在 Fouc 公共顶栏/导航内实现可折叠数据库资源栏、主区和 AI/信息详情右栏；多标签、拆分/分组、拖拽、关闭确认、标签恢复与独立窗口行为。 | `components/layout/`、`tabs/` | 待实施 |
+| S01 | 在 Fouc 公共顶栏/导航内实现可折叠数据库资源栏、主区和 AI/信息详情右栏；多标签、拆分/分组、拖拽、关闭确认、标签恢复与独立窗口行为。 | `components/layout/`、`tabs/` | 进行中 |
 | S02 | 连接→数据库→Schema→表/视图/字段/索引/外键/触发器等树；异步展开/全展开/全折叠、搜索过滤与可见范围（隐藏系统 Schema/前缀）、计数、刷新、固定/粘性行、标签反向定位、权限/错误提示和上下文菜单；嵌套连接分组、多选批量管理、对象复制粘贴及拖入 SQL 编辑器逐项验收。 | `components/sidebar/`、`schema-browser.cn.mdx` | 进行中 |
 | S03 | 全局快速打开/搜索与数据库对象搜索，跨连接、数据库、Schema 的命中定位和打开。 | `components/quick-open/`、`search/`、`global_search.rs` | 待实施 |
 | S04 | 对象浏览器覆盖表、视图、过程、函数、序列、事件、扩展、类型及特定数据库对象；列表、详情、源码/DDL、创建/修改/删除及能力门控。 | `components/objects/`、`object-browser.cn.mdx` | 进行中 |
@@ -404,4 +409,4 @@ Profile 来源：`opensource/dbx/plugins/connection-types/profiles/catalog.yaml`
 - [ ] 只读、生产确认、Agent 执行和 MCP 权限不能被任意入口绕过；失败和取消可恢复。
 - [ ] 导入/导出/备份/传输在大数据量、编码错误、网络中断和部分失败下通过回归。
 - [ ] Fouc 公共组件与最终 MySQL 工作台 UX 保持一致；专项界面保留 DBX 功能且符合 Fouc 视觉系统。
-- [ ] 文档与实际能力矩阵同步；所有功能任务实施后按仓库流程测试、提交，桌面版构建产物刷新。
+- [ ] 文档与实际能力矩阵同步；所有功能任务实施后按仓库流程测试、提交。本会话保持开发服务常驻，Tauri 构建按用户后续明确要求执行。

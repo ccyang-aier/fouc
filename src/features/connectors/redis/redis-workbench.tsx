@@ -172,8 +172,8 @@ export function RedisWorkbench({
           Redis {session.version ?? ""}
         </span>
         <button type="button" className={styles.databaseButton} disabled={writeBusy || consoleBusy || Boolean(intent) || jsonDirty} onClick={() => setDatabaseSelector(true)}>DB {session.database} ▾</button>
-        <button type="button" className={styles.writeMode} disabled={writeBusy || Boolean(intent) || jsonDirty} onClick={() => void toggleWriteMode()}>
-          {readOnly ? <Lock size={13} /> : <LockOpen size={13} />}{writeBusy ? "处理中…" : readOnly ? "解锁写入" : "重新锁定"}
+        <button type="button" className={styles.writeMode} aria-label={writeBusy ? "处理中…" : readOnly ? "解锁写入" : "重新锁定"} title={readOnly ? '解锁写入' : '重新锁定'} disabled={writeBusy || Boolean(intent) || jsonDirty} onClick={() => void toggleWriteMode()}>
+          {readOnly ? <Lock size={14} /> : <LockOpen size={14} />}<span>{writeBusy ? "处理中…" : readOnly ? "解锁写入" : "重新锁定"}</span>
         </button>
         <button type="button" aria-label="刷新 Redis 数据" onClick={refresh} disabled={scanBusy || valueBusy || writeBusy || jsonDirty || mode !== "keys"}>
           <ArrowsClockwise size={16} />

@@ -225,6 +225,30 @@
         "src/features/connectors/datastore/sql-library-dialog.tsx",
         "src/features/connectors/datastore/sql-library-panel.tsx"
       ]
+    },
+    {
+      "area": "native-relational-sql-tabs-and-drafts",
+      "status": "partial",
+      "sourceReferences": [
+        "apps/desktop/src/lib/app/openTabsPersistence.ts",
+        "apps/desktop/src/stores/queryStore.ts",
+        "apps/desktop/src/lib/tabs/tabNavigationHistory.ts",
+        "apps/desktop/src/lib/tabs/tabDrag.ts",
+        "apps/desktop/src/lib/tabs/tabMenu.ts",
+        "apps/desktop/src/lib/tabs/sqlTabSaveTarget.ts",
+        "apps/desktop/src/lib/tabs/tabUiState.ts",
+        "apps/desktop/src/components/layout/SqlEditorWorkspace.vue",
+        "crates/dbx-core/src/persistence/storage.rs"
+      ],
+      "runtimeFiles": [
+        "shared/src/relational-sql-drafts.ts",
+        "backend/device/src/database/sql-draft-input.ts",
+        "src/features/connectors/datastore/sql-tabs.ts",
+        "src/features/connectors/datastore/sql-draft-controller.ts",
+        "src/features/connectors/datastore/use-sql-drafts.ts",
+        "src/features/connectors/datastore/sql-tab-strip.tsx",
+        "src/features/connectors/datastore/sql-editor-split.tsx"
+      ]
     }
   ],
   "knownRemainingScope": [
@@ -232,7 +256,7 @@
     "common driver lifecycle, cancellation, reconnect and streaming",
     "cross-entry-point write grants, scope restrictions and shared policy integration",
     "full grid selection/copy/paste/undo, keyless guards, complex types, structure editing, cancellation and distributed transactions",
-    "full SQL dialect parsing/completion/parameters, snippets/formatting, external-file IO, query tabs/drafts and broader history scopes/driver-entry matrices",
+    "full SQL dialect parsing/completion/parameters, snippets/formatting, external-file IO, editor split groups/detached windows and broader history scopes/driver-entry matrices",
     "import/export/transfer/schema and data comparison/backup",
     "remaining DBX drivers and specialized surfaces",
     "CLI/MCP and applicable desktop entry points",

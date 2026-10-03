@@ -26,7 +26,7 @@ const config = {
   port: 6379,
   username: '',
   database: 0,
-  tls: false,
+  connectionOptions: { tls: { enabled: false } },
   password: 'discard-me',
 };
 afterAll(() => {

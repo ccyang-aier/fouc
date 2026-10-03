@@ -55,7 +55,7 @@ describe('native Redis input policy', () => {
       port: 6379,
       username: '',
       database: 0,
-      tls: false,
+      connectionOptions: { tls: { enabled: false } },
       password: 'never-persist',
     };
     expect(redisConfig(input)).toEqual({
@@ -64,9 +64,9 @@ describe('native Redis input policy', () => {
       port: 6379,
       username: '',
       database: 0,
-      tls: false,
+      connectionOptions: { connectTimeoutMs: 10000, queryTimeoutMs: 10000, idleTimeoutMs: null, tls: { enabled: false, minVersion: 'TLSv1.2', serverName: '', caRequired: false, clientCertificateRequired: false } },
     });
-    for (const change of [{ database: -1 }, { database: 1.5 }, { port: 0 }, { tls: 'false' }])
+    for (const change of [{ database: -1 }, { database: 1.5 }, { port: 0 }, { connectionOptions: { tls: { enabled: 'false' } } }])
       expect(() => redisConfig({ ...input, ...change })).toThrow();
   });
 });

@@ -10,6 +10,7 @@ import {
 } from './relational-driver';
 import { DatabaseInputError } from '../input-error';
 import { postgresStructure } from './postgres-structure';
+import { postgresNativeConnectionOptions } from '../connection-options';
 
 export function postgresReadErrorPosition(error: unknown, sql: string, prefix = ''): void {
   if (!error || typeof error !== 'object' || !('position' in error)) return;
@@ -23,16 +24,15 @@ export function postgresReadErrorPosition(error: unknown, sql: string, prefix = 
 export async function connectPostgres(
   input: Extract<RelationalConnectInput, { provider: 'postgres' }>,
 ): Promise<RelationalDriver> {
+  const advanced = postgresNativeConnectionOptions(input.connectionOptions, input.host);
   const options = {
     host: input.host,
     port: input.port,
     user: input.username,
     password: input.password,
     database: input.database,
-    ssl: input.ssl ? { rejectUnauthorized: true } : undefined,
+    ...advanced.options,
     max: 4,
-    connectionTimeoutMillis: 10000,
-    idleTimeoutMillis: 30000,
     options: '-c standard_conforming_strings=on',
   };
   const pool = new Pool(options);
@@ -70,7 +70,7 @@ export async function connectPostgres(
         backendId = Number((await client.query('SELECT pg_backend_pid() AS id')).rows[0].id);
         signal?.throwIfAborted();
         await client.query('BEGIN READ ONLY');
-        await client.query("SET LOCAL statement_timeout = '30s'");
+        await client.query(`SET LOCAL statement_timeout = '${advanced.settings.queryTimeoutMs}ms'`);
         await client.query('SET LOCAL standard_conforming_strings = on');
         if (schema)
           await client.query("SELECT set_config('search_path', $1, true)", [quote(schema)]);
@@ -191,7 +191,7 @@ export async function connectPostgres(
         let broken = false;
         try {
           await client.query('BEGIN');
-          await client.query("SET LOCAL statement_timeout = '30s'");
+          await client.query(`SET LOCAL statement_timeout = '${advanced.settings.queryTimeoutMs}ms'`);
           await client.query("SET LOCAL lock_timeout = '5s'");
           await client.query("SELECT set_config('search_path', $1, true)", [quote(schema)]);
           const result = await run({

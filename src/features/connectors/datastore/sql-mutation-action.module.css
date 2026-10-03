@@ -1,0 +1,7 @@
+.dialog { width: min(1080px, calc(100vw - 32px)); max-width: none; max-height: min(900px, calc(100dvh - 32px)); }
+.dialog[open] { display: flex; flex-direction: column; overflow: hidden; }
+.body { min-height: 0; overflow: auto; padding: 12px; }
+@media (max-width: 620px) {
+  .dialog { width: calc(100vw - 12px); max-height: calc(100dvh - 12px); }
+  .body { padding: 5px; }
+}

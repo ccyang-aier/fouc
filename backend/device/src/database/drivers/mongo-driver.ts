@@ -3,6 +3,7 @@ import { MONGO_LIMITS, type MongoCollectionInfo, type MongoCollectionList, type 
 import { DatabaseInputError } from '../input-error';
 import { mongoConnection, mongoDatabase, mongoEjson, mongoFindInput, mongoInteger, mongoNamespace, mongoObject } from '../mongo-input';
 import { assertMongoReadValue, mongoReadCommand } from '../mongo-read-policy';
+import { mongoNativeConnectionOptions } from '../connection-options';
 
 export interface MongoDriver {
   readonly database: string; readonly host: string; readonly version: string | null;
@@ -16,7 +17,6 @@ export interface MongoDriver {
   mutationClient?(): MongoClient;
   close(): Promise<void>;
 }
-const OPTIONS = { promoteValues: false, promoteLongs: false, maxTimeMS: MONGO_LIMITS.maxTimeMs } as const;
 export function mongoCanonical(value: unknown): string { return BSON.EJSON.stringify(value, { relaxed: false }); }
 export function mongoNumeric(value: unknown): string | null {
   if (value instanceof BSON.Long || value instanceof BSON.Int32 || value instanceof BSON.Double || value instanceof BSON.Decimal128) return value.toString();
@@ -44,17 +44,20 @@ export async function readMongoCursor(cursor: ReadCursor, limit: number, signal?
 }
 
 class NativeMongoDriver implements MongoDriver {
-  constructor(private readonly client: MongoClient, readonly database: string, readonly host: string, readonly version: string | null) {}
+  private readonly readOptions;
+  constructor(private readonly client: MongoClient, readonly database: string, readonly host: string, readonly version: string | null, queryTimeoutMs: number) {
+    this.readOptions = { promoteValues: false, promoteLongs: false, maxTimeMS: queryTimeoutMs } as const;
+  }
   mutationClient() { return this.client; }
   async databases(signal?: AbortSignal): Promise<MongoDatabaseList> {
     signal?.throwIfAborted();
-    const result = await this.client.db('admin').command({ listDatabases: 1, authorizedDatabases: true }, { ...OPTIONS, signal });
+    const result = await this.client.db('admin').command({ listDatabases: 1, authorizedDatabases: true }, { ...this.readOptions, signal });
     const all = Array.isArray(result.databases) ? result.databases as Document[] : [];
     return { databases: all.slice(0, MONGO_LIMITS.directory).map(item => ({ name: String(item.name), sizeBytes: mongoNumeric(item.sizeOnDisk), empty: typeof item.empty === 'boolean' ? item.empty : null })), truncated: all.length > MONGO_LIMITS.directory };
   }
   async collections(value: unknown, signal?: AbortSignal): Promise<MongoCollectionList> {
     const database = mongoDatabase(mongoObject(value).database);
-    const page = await readMongoCursor(this.client.db(database).listCollections({}, { ...OPTIONS, signal, nameOnly: false, batchSize: 100 }), MONGO_LIMITS.directory, signal);
+    const page = await readMongoCursor(this.client.db(database).listCollections({}, { ...this.readOptions, signal, nameOnly: false, batchSize: 100 }), MONGO_LIMITS.directory, signal);
     return { database, collections: page.documents.map(text => {
       const item = BSON.EJSON.parse(text, { relaxed: false }) as Document;
       const kind: 'collection' | 'view' | 'timeseries' | 'unknown' = ['collection', 'view', 'timeseries'].includes(item.type) ? item.type as 'collection' | 'view' | 'timeseries' : 'unknown';
@@ -65,7 +68,7 @@ class NativeMongoDriver implements MongoDriver {
     const input = mongoFindInput(value), start = performance.now();
     assertMongoReadValue(input.parsedFilter);
     const offset = input.offset!, limit = input.limit!;
-    const cursor = this.client.db(input.database).collection(input.collection).find(input.parsedFilter, { ...OPTIONS, signal, sort: input.parsedSort, projection: input.parsedProjection, skip: offset, limit: limit + 1, batchSize: Math.min(limit + 1, 100) });
+    const cursor = this.client.db(input.database).collection(input.collection).find(input.parsedFilter, { ...this.readOptions, signal, sort: input.parsedSort, projection: input.parsedProjection, skip: offset, limit: limit + 1, batchSize: Math.min(limit + 1, 100) });
     const page = await readMongoCursor(cursor, limit, signal);
     const next = offset + page.documents.length;
     return { database: input.database, collection: input.collection, ...page, offset, limit, nextOffset: page.hasMore && next <= MONGO_LIMITS.offset ? next : null, elapsedMs: performance.now() - start, warnings: next > MONGO_LIMITS.offset ? ['分页达到当前 1000000 条偏移限制，请收窄筛选。'] : [] };
@@ -73,7 +76,7 @@ class NativeMongoDriver implements MongoDriver {
   async count(value: unknown, signal?: AbortSignal): Promise<MongoCountResult> {
     const namespace = mongoNamespace(value), filter = mongoEjson(mongoObject(value).filter), start = performance.now();
     assertMongoReadValue(filter);
-    const cursor = this.client.db(namespace.database).collection(namespace.collection).aggregate([{ $match: filter }, { $count: 'count' }], { ...OPTIONS, signal, allowDiskUse: false });
+    const cursor = this.client.db(namespace.database).collection(namespace.collection).aggregate([{ $match: filter }, { $count: 'count' }], { ...this.readOptions, signal, allowDiskUse: false });
     const page = await readMongoCursor(cursor, 1, signal);
     const result = page.documents.length ? BSON.EJSON.parse(page.documents[0], { relaxed: false }) as Document : null;
     const count = result ? mongoNumeric(result.count) : '0';
@@ -83,7 +86,7 @@ class NativeMongoDriver implements MongoDriver {
   async indexes(value: unknown, signal?: AbortSignal): Promise<MongoIndexList> {
     const namespace = mongoNamespace(value);
     // 7.7 public ListIndexesOptions omits Abortable; its AbstractCursor consumes signal.
-    const options: ListIndexesOptions & Abortable = { ...OPTIONS, signal, batchSize: 100 };
+    const options: ListIndexesOptions & Abortable = { ...this.readOptions, signal, batchSize: 100 };
     const page = await readMongoCursor(this.client.db(namespace.database).collection(namespace.collection).listIndexes(options), MONGO_LIMITS.directory, signal);
     const indexes: MongoIndex[] = page.documents.map(raw => {
       const item = BSON.EJSON.parse(raw, { relaxed: false }) as Document;
@@ -95,7 +98,7 @@ class NativeMongoDriver implements MongoDriver {
     const namespace = mongoNamespace(value);
     const result: MongoCollectionInfo = { ...namespace, count: null, sizeBytes: null, storageBytes: null, averageDocumentBytes: null, indexBytes: null, indexCount: null, raw: null, warnings: [] };
     try {
-      const stats = await this.client.db(namespace.database).command({ collStats: namespace.collection, scale: 1 }, { ...OPTIONS, signal });
+      const stats = await this.client.db(namespace.database).command({ collStats: namespace.collection, scale: 1 }, { ...this.readOptions, signal });
       result.count = mongoNumeric(stats.count); result.sizeBytes = mongoNumeric(stats.size); result.storageBytes = mongoNumeric(stats.storageSize);
       result.averageDocumentBytes = mongoNumeric(stats.avgObjSize); result.indexBytes = mongoNumeric(stats.totalIndexSize); result.indexCount = mongoNumeric(stats.nindexes); result.raw = mongoCanonical(stats);
     } catch (error) {
@@ -118,15 +121,15 @@ class NativeMongoDriver implements MongoDriver {
     }
     if (name === 'aggregate') {
       for (const key of Object.keys(command)) if (!['aggregate', 'pipeline', 'cursor', 'maxTimeMS', 'comment', 'allowDiskUse'].includes(key)) throw new DatabaseInputError(`aggregate 选项未开放：${key}`);
-      const options: AggregateOptions & Abortable = { ...OPTIONS, signal, allowDiskUse: false, batchSize: 100 };
+      const options: AggregateOptions & Abortable = { ...this.readOptions, signal, allowDiskUse: false, batchSize: 100 };
       cursor = typeof command.aggregate === 'string'
         ? db.collection(command.aggregate).aggregate(command.pipeline, options)
         : db.aggregate(command.pipeline, options);
       warnings.push(`聚合最多展示 ${limit} 个文档；更多结果请收窄 pipeline。`);
     } else if (name === 'listCollections') {
-      cursor = db.listCollections(command.filter ?? {}, { ...OPTIONS, signal, batchSize: 100 });
+      cursor = db.listCollections(command.filter ?? {}, { ...this.readOptions, signal, batchSize: 100 });
     } else if (name === 'listIndexes') {
-      const options: ListIndexesOptions & Abortable = { ...OPTIONS, signal, batchSize: 100 };
+      const options: ListIndexesOptions & Abortable = { ...this.readOptions, signal, batchSize: 100 };
       cursor = db.collection(command.listIndexes).listIndexes(options);
     }
     if (cursor) {
@@ -134,8 +137,8 @@ class NativeMongoDriver implements MongoDriver {
       return { database, commandName: name, value: null, documents: page.documents, hasMore: page.hasMore, elapsedMs: performance.now() - start, warnings };
     }
     if (name === 'explain') command.verbosity = 'queryPlanner';
-    command.maxTimeMS = MONGO_LIMITS.maxTimeMs;
-    const raw = await db.command(command, { ...OPTIONS, signal });
+    command.maxTimeMS = this.readOptions.maxTimeMS;
+    const raw = await db.command(command, { ...this.readOptions, signal });
     const text = mongoCanonical(raw);
     if (Buffer.byteLength(text) > MONGO_LIMITS.responseBytes) throw new DatabaseInputError('命令结果超过 32 MiB 展示限制，请使用有界的 find / aggregate');
     return { database, commandName: name, value: text, documents: [], hasMore: false, elapsedMs: performance.now() - start, warnings };
@@ -145,16 +148,18 @@ class NativeMongoDriver implements MongoDriver {
 
 export async function connectMongo(value: unknown, signal?: AbortSignal): Promise<MongoDriver> {
   const input = mongoConnection(value);
-  const client = new MongoClient(input.uri, { serverSelectionTimeoutMS: 10_000, connectTimeoutMS: 10_000, maxPoolSize: 5, minPoolSize: 0, maxIdleTimeMS: 60_000, promoteValues: false, promoteLongs: false });
+  const advanced = mongoNativeConnectionOptions(value, input.uri);
+  const readOptions = { promoteValues: false, promoteLongs: false, maxTimeMS: advanced.settings.queryTimeoutMs } as const;
+  const client = new MongoClient(input.uri, { ...advanced.options, maxPoolSize: 5, minPoolSize: 0, promoteValues: false, promoteLongs: false });
   const abort = () => { void client.close(true); };
   signal?.throwIfAborted(); signal?.addEventListener('abort', abort, { once: true });
   try {
     await client.connect(); signal?.throwIfAborted();
     const db = client.db(input.database);
-    await db.command({ ping: 1 }, { ...OPTIONS, signal });
-    const build = await db.command({ buildInfo: 1 }, { ...OPTIONS, signal }).catch(() => null);
+    await db.command({ ping: 1 }, { ...readOptions, signal });
+    const build = await db.command({ buildInfo: 1 }, { ...readOptions, signal }).catch(() => null);
     signal?.throwIfAborted();
-    return new NativeMongoDriver(client, input.database, input.host, typeof build?.version === 'string' ? build.version : null);
+    return new NativeMongoDriver(client, input.database, input.host, typeof build?.version === 'string' ? build.version : null, advanced.settings.queryTimeoutMs);
   } catch (error) { await client.close(true); throw error; }
   finally { signal?.removeEventListener('abort', abort); }
 }

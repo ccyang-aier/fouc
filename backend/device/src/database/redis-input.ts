@@ -1,9 +1,11 @@
 import type { RedisConnectionConfig } from '@fouc/shared';
 import { DatabaseInputError } from './input-error';
+import { publicNativeConnectionOptions } from './connection-options';
 
 export function redisConfig(value: unknown): RedisConnectionConfig {
   if (!value || typeof value !== 'object') throw new DatabaseInputError('Redis 连接参数无效');
   const input = value as Record<string, unknown>;
+  if ('ssl' in input || 'tls' in input) throw new DatabaseInputError('TLS 设置请使用统一的高级连接参数');
   if (
     input.provider !== 'redis' ||
     typeof input.host !== 'string' ||
@@ -14,8 +16,7 @@ export function redisConfig(value: unknown): RedisConnectionConfig {
     typeof input.username !== 'string' ||
     !Number.isInteger(input.database) ||
     Number(input.database) < 0 ||
-    Number(input.database) > 2147483646 ||
-    typeof input.tls !== 'boolean'
+    Number(input.database) > 2147483646
   )
     throw new DatabaseInputError('主机、端口、用户名、数据库或 TLS 参数无效');
   return {
@@ -24,7 +25,7 @@ export function redisConfig(value: unknown): RedisConnectionConfig {
     port: Number(input.port),
     username: input.username.trim(),
     database: Number(input.database),
-    tls: input.tls,
+    connectionOptions: publicNativeConnectionOptions('redis', input.connectionOptions),
   };
 }
 

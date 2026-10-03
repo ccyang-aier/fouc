@@ -10,6 +10,7 @@ import { RelationalDialog } from './relational-dialog'
 import { TableTransferPanel } from './table-transfer'
 import common from './relational.module.css'
 import styles from './table-transfer-action.module.css'
+import type { DatabaseConnectionOptionsInput } from '@fouc/shared/connection-options'
 
 export function TableTransferAction({ session, schema, table, name, disabled }: { session: RelationalSession; schema: string; table: string; name: string; disabled: boolean }) {
   const [source, setSource] = useState<{ schema: string; table: string } | null>(null)
@@ -56,8 +57,8 @@ function TransferDialog({ session, schema, table, name, onClose }: { session: Re
     void backendFetch<RelationalTableStructure>(`${targetBase}/schemas/${encodeURIComponent(targetSchema)}/tables/${encodeURIComponent(targetTable)}/structure`, { signal: controller.signal }).then(value => { if (!controller.signal.aborted) setTargetStructure(value) }).catch(reason => { if (!controller.signal.aborted) setError(String(reason)) })
     return () => controller.abort()
   }, [targetBase, targetSchema, targetTable, revision])
-  async function connect(password: string) {
-    const value = await backendFetch<RelationalSession>(`${directory}/connections/${connectionId}/connect`, { method: 'POST', body: JSON.stringify({ password }) })
+  async function connect(password: string, connectionOptions?: DatabaseConnectionOptionsInput) {
+    const value = await backendFetch<RelationalSession>(`${directory}/connections/${connectionId}/connect`, { method: 'POST', body: JSON.stringify({ password, connectionOptions }) })
     if (!live.current) { await backendFetch(`${directory}/sessions/${value.id}`, { method: 'DELETE' }); return }
     ownedTarget.current = value.id; setTarget(value); setConnecting(false); setError('')
   }

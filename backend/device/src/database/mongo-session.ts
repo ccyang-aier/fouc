@@ -2,6 +2,7 @@ import type { MongoSession } from '@fouc/shared/mongo';
 import { DatabaseInputError } from './input-error';
 import { connectMongo, type MongoDriver } from './drivers/mongo-driver';
 import { MongoMutationPlans } from './mongo-mutation-plans';
+import { listMongoGridFsBuckets, listMongoGridFsFiles, openMongoGridFsDownload, summarizeMongoGridFs, type MongoGridFsDownload } from './mongo-gridfs';
 
 type Entry = { session: MongoSession; driver: MongoDriver; requests: Set<AbortController>; touched: number; mutations: MongoMutationPlans; saving: boolean };
 type DriverFactory = (value: unknown, signal?: AbortSignal) => Promise<MongoDriver>;
@@ -48,6 +49,43 @@ export class MongoSessionManager {
   indexes(workspaceId: string, id: string, value: unknown, signal?: AbortSignal) { return this.run(workspaceId, id, signal, (driver, request) => driver.indexes(value, request)); }
   information(workspaceId: string, id: string, value: unknown, signal?: AbortSignal) { return this.run(workspaceId, id, signal, (driver, request) => driver.information(value, request)); }
   command(workspaceId: string, id: string, value: unknown, signal?: AbortSignal) { return this.run(workspaceId, id, signal, (driver, request) => driver.command(value, request)); }
+  gridFsBuckets(workspaceId: string, id: string, value: unknown, signal?: AbortSignal) {
+    return this.run(workspaceId, id, signal, (driver, request) => listMongoGridFsBuckets(this.gridFsClient(driver), value, request));
+  }
+  gridFsFiles(workspaceId: string, id: string, value: unknown, signal?: AbortSignal) {
+    return this.run(workspaceId, id, signal, (driver, request) => listMongoGridFsFiles(this.gridFsClient(driver), value, request));
+  }
+  gridFsSummary(workspaceId: string, id: string, value: unknown, signal?: AbortSignal) {
+    return this.run(workspaceId, id, signal, (driver, request) => summarizeMongoGridFs(this.gridFsClient(driver), value, request));
+  }
+  private gridFsClient(driver: MongoDriver) {
+    if (!driver.mutationClient) throw new DatabaseInputError('当前驱动未提供原生 GridFS 读取客户端');
+    return driver.mutationClient();
+  }
+  async gridFsDownload(workspaceId: string, id: string, value: unknown, signal?: AbortSignal): Promise<MongoGridFsDownload> {
+    const entry = this.entry(workspaceId, id);
+    const controller = new AbortController();
+    const abort = () => controller.abort(signal?.reason);
+    signal?.throwIfAborted();
+    signal?.addEventListener('abort', abort, { once: true });
+    entry.requests.add(controller);
+    const release = () => {
+      entry.requests.delete(controller);
+      entry.touched = Date.now();
+      signal?.removeEventListener('abort', abort);
+    };
+    try {
+      const download = await openMongoGridFsDownload(this.gridFsClient(entry.driver), value, controller.signal);
+      download.stream.once('close', release);
+      // Observing errors does not consume data; toWeb/HTTP owns stream backpressure.
+      download.stream.on('error', () => undefined);
+      if (controller.signal.aborted) {
+        download.stream.destroy();
+        controller.signal.throwIfAborted();
+      }
+      return download;
+    } catch (error) { release(); throw error; }
+  }
   setWriteAccess(workspaceId: string, id: string, enabled: boolean): MongoSession {
     const entry = this.entry(workspaceId, id);
     if (entry.saving) throw new DatabaseInputError('请等待 MongoDB 当前写入确认');

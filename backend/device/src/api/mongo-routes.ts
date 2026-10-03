@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { Readable } from 'node:stream';
 import type { MongoConnectionConfig } from '@fouc/shared/mongo-connections';
 import type { DeviceConnectionRepository } from '../database/connection-repository';
 import type { MongoSessionManager } from '../database/mongo-session';
@@ -35,6 +36,25 @@ export function mongoRoutes(sessions: MongoSessionManager, connections?: DeviceC
   for (const operation of ['collections', 'find', 'count', 'indexes', 'information', 'command'] as const) {
     app.post(base + '/:id/' + operation, async c => c.json({ ok: true, data: await sessions[operation](c.req.param('workspaceId')!, c.req.param('id')!, await c.req.json().catch(() => null), c.req.raw.signal) }));
   }
+  for (const [path, operation] of [['buckets', 'gridFsBuckets'], ['files', 'gridFsFiles'], ['summary', 'gridFsSummary']] as const) {
+    app.post(base + '/:id/gridfs/' + path, async c => c.json({ ok: true, data: await sessions[operation](c.req.param('workspaceId')!, c.req.param('id')!, await c.req.json().catch(() => null), c.req.raw.signal) }));
+  }
+  app.post(base + '/:id/gridfs/download', async c => {
+    const download = await sessions.gridFsDownload(c.req.param('workspaceId')!, c.req.param('id')!, await c.req.json().catch(() => null), c.req.raw.signal);
+    const ascii = download.filename.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_');
+    const encoded = encodeURIComponent(download.filename).replace(/['()*]/g, char => '%' + char.charCodeAt(0).toString(16).toUpperCase());
+    try {
+      return new Response(Readable.toWeb(download.stream) as ReadableStream<Uint8Array>, {
+        headers: {
+          'content-type': 'application/octet-stream',
+          'content-length': String(download.bytes),
+          'content-disposition': `attachment; filename="${ascii}"; filename*=UTF-8''${encoded}`,
+          'cache-control': 'no-store',
+          'x-content-type-options': 'nosniff',
+        },
+      });
+    } catch (error) { download.stream.destroy(); throw error; }
+  });
   app.delete(base + '/:id', async c => {
     await sessions.disconnect(c.req.param('workspaceId')!, c.req.param('id')!);
     return c.json({ ok: true, data: { disconnected: true } });

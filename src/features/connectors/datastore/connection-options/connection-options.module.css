@@ -1,0 +1,422 @@
+.options,
+.assistant {
+  color: var(--ink-soft);
+  font: 13px var(--font-sans);
+}
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted-strong);
+}
+.sectionTitle strong {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.sectionTitle > span {
+  margin-left: auto;
+  font-size: 10px;
+}
+.durationGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  font-size: 12px;
+}
+.field > span {
+  display: flex;
+  gap: 7px;
+  align-items: baseline;
+}
+.field small {
+  color: var(--muted-strong);
+  font-size: 10px;
+  font-weight: 400;
+}
+.field input,
+.field select,
+.generated textarea,
+.sourceActions select {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--panel);
+  color: var(--ink);
+  padding: 8px 9px;
+  font: 12px var(--font-sans);
+}
+.field input::placeholder {
+  color: var(--muted-strong);
+}
+.field input:focus-visible,
+.field select:focus-visible,
+.generated textarea:focus-visible,
+.sourceActions select:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 32%, transparent);
+  outline-offset: 1px;
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+}
+.unitInput,
+.secretInput {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--panel);
+  overflow: hidden;
+}
+.unitInput input,
+.secretInput input {
+  border: 0;
+  background: transparent;
+  border-radius: 0;
+}
+.unitInput:focus-within,
+.secretInput:focus-within {
+  outline: 2px solid color-mix(in srgb, var(--accent) 32%, transparent);
+  outline-offset: 1px;
+}
+.unitInput input:focus-visible,
+.secretInput input:focus-visible {
+  outline: 0;
+}
+.unitInput > span {
+  padding-right: 9px;
+  flex-shrink: 0;
+  color: var(--muted-strong);
+  font-size: 10px;
+}
+.secretInput input {
+  font-family: var(--font-code);
+}
+.secretInput > button {
+  align-self: stretch;
+  flex-shrink: 0;
+  border: 0;
+  border-left: 1px solid var(--line);
+  background: var(--surface-subtle);
+  color: var(--muted-strong);
+  padding: 6px 10px;
+  font: 10px var(--font-sans);
+  cursor: pointer;
+}
+.tlsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.checkbox input {
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: var(--accent);
+  width: 13px;
+  height: 13px;
+}
+.twoColumns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: 10px;
+}
+.requirements {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.files {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.file {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 11px 12px;
+  background: var(--surface-subtle);
+}
+.file + .file {
+  border-top: 1px solid var(--line);
+}
+.file > div {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.file strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.file > div > span {
+  color: var(--muted-strong);
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+.fileButton,
+.iconButton,
+.assistant button:not(.secretInput button) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--panel);
+  color: var(--ink-soft);
+  padding: 6px 8px;
+  font: 11px var(--font-sans);
+  cursor: pointer;
+}
+.fileButton {
+  position: relative;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.fileButton input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+}
+.fileButton:focus-within,
+.iconButton:focus-visible,
+.assistant button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  outline-offset: 2px;
+}
+.fileButton[aria-disabled='true'],
+.options input:disabled,
+.options select:disabled,
+.options button:disabled,
+.assistant button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.iconButton {
+  padding: 6px;
+}
+.fileError {
+  margin: 0;
+  width: 100%;
+  color: var(--err-ink);
+  font-size: 11px;
+  line-height: 1.6;
+}
+.hint,
+.secureNote,
+.error,
+.success,
+.warning {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--muted-strong);
+  overflow-wrap: anywhere;
+}
+.secureNote,
+.error,
+.success,
+.warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.secureNote svg,
+.error svg,
+.success svg,
+.warning svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+.secureNote {
+  padding: 9px 10px;
+  border-radius: 5px;
+  background: var(--surface-subtle);
+}
+.error,
+.field small.error {
+  color: var(--err-ink);
+}
+.success {
+  color: var(--ok-ink);
+}
+.warning {
+  color: var(--warn-ink);
+}
+.assistant {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.assistant > summary {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 11px 12px;
+  cursor: pointer;
+  background: var(--surface-subtle);
+  list-style: none;
+}
+.assistant > summary::-webkit-details-marker {
+  display: none;
+}
+.assistant > summary strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.assistant > summary > span {
+  margin-left: auto;
+  color: var(--muted-strong);
+  font-size: 10px;
+}
+.assistant[open] > summary {
+  border-bottom: 1px solid var(--line);
+}
+.assistant > summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.assistantBody {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding: 12px;
+}
+.sourceActions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.sourceActions small {
+  color: var(--muted-strong);
+  font-size: 10px;
+  line-height: 1.7;
+  margin-right: auto;
+}
+.sourceActions button {
+  flex-shrink: 0;
+}
+.sourceActions strong {
+  font-size: 11px;
+  font-weight: 500;
+  margin-right: auto;
+}
+.sourceActions select {
+  width: auto;
+  padding: 5px 7px;
+  font-size: 11px;
+}
+.parsed {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 11px;
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--line));
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--accent) 3%, var(--panel));
+}
+.parsed dl {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+.parsed dl > div {
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr);
+  gap: 8px;
+  align-items: baseline;
+}
+.parsed dt {
+  color: var(--muted-strong);
+  font-size: 10px;
+}
+.parsed dd {
+  margin: 0;
+  font: 12px var(--font-code);
+  overflow-wrap: anywhere;
+}
+.parsed .applyButton {
+  margin-left: auto;
+  color: var(--accent-ink);
+}
+.generated {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.generated textarea {
+  resize: vertical;
+  min-height: 76px;
+  max-height: 200px;
+  font: 11px/1.7 var(--font-code);
+  overflow-wrap: anywhere;
+}
+.generated > button {
+  align-self: flex-end;
+}
+.assistant button:hover:not(:disabled),
+.iconButton:hover:not(:disabled),
+.fileButton:hover:not([aria-disabled='true']) {
+  background: var(--surface-hover);
+}
+@media (max-width: 540px) {
+  .durationGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .twoColumns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .requirements {
+    gap: 9px;
+  }
+  .file {
+    padding: 10px;
+    gap: 6px;
+  }
+  .fileButton {
+    padding: 6px;
+    font-size: 10px;
+  }
+  .file > div {
+    min-width: 115px;
+  }
+  .sourceActions {
+    flex-wrap: wrap;
+  }
+  .sourceActions small {
+    flex: 1;
+    min-width: 130px;
+  }
+  .assistantBody {
+    padding: 10px;
+  }
+}

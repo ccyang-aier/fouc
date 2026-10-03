@@ -10,6 +10,7 @@ import type { DatabaseColumnInfo, RelationalConnectInput } from '@fouc/shared';
 import { DatabaseInputError } from '../input-error';
 import { relationalCell, type DriverResult, type RelationalDriver } from './relational-driver';
 import { mysqlStructure } from './mysql-structure';
+import { mysqlNativeConnectionOptions } from '../connection-options';
 
 type Row = RowDataPacket & Record<string, unknown>;
 export function quoteMysqlIdentifier(value: string): string {
@@ -25,15 +26,14 @@ function optionalNumber(value: unknown): number | null {
 export async function connectMysql(
   input: Extract<RelationalConnectInput, { provider: 'mysql' }>,
 ): Promise<RelationalDriver> {
+  const advanced = mysqlNativeConnectionOptions(input.connectionOptions, input.host, input.port);
   const options = {
-    host: input.host,
     port: input.port,
     user: input.username,
     password: input.password,
     database: input.database || undefined,
-    ssl: input.ssl ? { rejectUnauthorized: true } : undefined,
+    ...advanced.options,
     connectionLimit: 4,
-    connectTimeout: 10000,
     multipleStatements: false,
     supportBigNumbers: true,
     bigNumberStrings: true,
@@ -43,7 +43,7 @@ export async function connectMysql(
   const pool = mysql.createPool(options);
   const control = mysql.createPool({ ...options, connectionLimit: 1 });
   async function query(sql: string, values?: unknown[]): Promise<Row[]> {
-    return (await pool.query<Row[]>(sql, values))[0];
+    return (await pool.query<Row[]>({ sql, timeout: advanced.settings.queryTimeoutMs }, values))[0];
   }
   try {
     const identity = (
@@ -133,7 +133,7 @@ export async function connectMysql(
           const result = await run({
             async query(sql, values) {
               const [response, fields] = await connection.execute(
-                { sql, rowsAsArray: true, timeout: 30000 },
+                { sql, rowsAsArray: true, timeout: advanced.settings.queryTimeoutMs },
                 values.map((value) => (value instanceof Uint8Array ? Buffer.from(value) : value)),
               );
               const rows = Array.isArray(response) ? (response as unknown[][]) : [];
@@ -177,13 +177,13 @@ export async function connectMysql(
             .split(',')
             .filter((item) => !['ANSI_QUOTES', 'NO_BACKSLASH_ESCAPES'].includes(item));
           await connection.query('SET SESSION sql_mode = ?', [normalized.join(',')]);
-          await connection.query('SET SESSION max_execution_time = 30000');
+          await connection.query(`SET SESSION max_execution_time = ${advanced.settings.queryTimeoutMs}`);
           if (schema) await connection.query(`USE ${quoteMysqlIdentifier(schema)}`);
           await connection.query('START TRANSACTION READ ONLY');
           signal?.throwIfAborted();
           const raw = connection.connection as unknown as RawConnection;
           const request = raw.query(
-            { sql, rowsAsArray: true, timeout: 30000 },
+            { sql, rowsAsArray: true, timeout: advanced.settings.queryTimeoutMs },
             values.map((value) => (value instanceof Uint8Array ? Buffer.from(value) : value)),
           );
           let fields: FieldPacket[] = [];

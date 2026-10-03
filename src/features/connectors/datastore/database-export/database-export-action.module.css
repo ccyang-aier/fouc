@@ -1,0 +1,6 @@
+.dialog { width:min(860px,calc(100vw - 28px)); height:min(870px,calc(100dvh - 28px)); max-height:calc(100dvh - 28px); overflow:hidden; }
+.dialog[open] { display:flex; flex-direction:column; }
+.dialog>header { flex-shrink:0; }
+.body { display:flex; flex:1; min-height:0; overflow:hidden; }
+.body>section { flex:1; min-height:0; max-height:none; }
+@media(max-width:640px) { .dialog { width:calc(100vw - 16px); height:calc(100dvh - 16px); max-height:calc(100dvh - 16px); } }

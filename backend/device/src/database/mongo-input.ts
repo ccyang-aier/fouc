@@ -1,6 +1,7 @@
 import { BSON, type Document } from 'mongodb';
 import { MONGO_LIMITS, type MongoConnectionInput, type MongoFindInput, type MongoNamespace } from '@fouc/shared/mongo';
 import { DatabaseInputError } from './input-error';
+import { buildConnectionSource, parseConnectionSource } from '@fouc/shared/connection-options-url';
 
 export function mongoObject(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new DatabaseInputError('MongoDB 参数须为对象');
@@ -105,22 +106,21 @@ export function mongoFindInput(value: unknown): MongoFindInput & { parsedFilter:
 export function mongoConnection(value: unknown): { uri: string; database: string; host: string } {
   const input = mongoObject(value) as MongoConnectionInput;
   if (input.provider !== undefined && input.provider !== 'mongodb') throw new DatabaseInputError('MongoDB Provider 无效');
+  if ('tls' in input || 'ssl' in input) throw new DatabaseInputError('TLS 设置请使用统一的高级连接参数');
   let uri: string;
   if (input.uri !== undefined) {
     if (typeof input.uri !== 'string' || input.uri.length > 8192 || !/^mongodb(?:\+srv)?:\/\//.test(input.uri) || /[\r\n\0]/.test(input.uri)) throw new DatabaseInputError('MongoDB URI 无效');
+    try { parseConnectionSource(input.uri, 'mongodb'); } catch (error) { throw new DatabaseInputError(error instanceof Error ? error.message : 'MongoDB URI 无效'); }
     uri = input.uri;
   } else {
     const host = input.host;
     if (typeof host !== 'string' || !host.trim() || host.length > 253 || /[\s/@?#\0]/.test(host)) throw new DatabaseInputError('MongoDB 主机无效');
     const port = mongoInteger(input.port, 27017, 1, 65535);
-    if ((input.username !== undefined && typeof input.username !== 'string') || (input.password !== undefined && typeof input.password !== 'string') || (input.tls !== undefined && typeof input.tls !== 'boolean')) throw new DatabaseInputError('MongoDB 身份或 TLS 参数无效');
-    const user = input.username ? `${encodeURIComponent(input.username)}:${encodeURIComponent(input.password ?? '')}@` : '';
+    if ((input.username !== undefined && typeof input.username !== 'string') || (input.password !== undefined && typeof input.password !== 'string')) throw new DatabaseInputError('MongoDB 身份参数无效');
     if (!input.username && input.password) throw new DatabaseInputError('密码需要用户名');
-    const authority = host.includes(':') && !host.startsWith('[') ? `[${host}]` : host;
-    const params = new URLSearchParams({ directConnection: 'true' });
-    if (input.authSource !== undefined) params.set('authSource', mongoDatabase(input.authSource));
-    if (input.tls) params.set('tls', 'true');
-    uri = `mongodb://${user}${authority}:${port}/?${params}`;
+    try {
+      uri = buildConnectionSource({ provider: 'mongodb', host: host.trim(), port, username: input.username ?? '', password: input.password ?? '', database: mongoDatabase(input.database || 'admin'), connectionOptions: input.connectionOptions ?? {}, mongo: { ...(input.mongo ?? { srv: false, hosts: [{ host: host.trim(), port }], directConnection: true }), authSource: input.authSource !== undefined ? mongoDatabase(input.authSource) : input.mongo?.authSource } }, 'url', true).text;
+    } catch (error) { throw new DatabaseInputError(error instanceof Error ? error.message : 'MongoDB 连接参数无效'); }
   }
   // URL's authority is used solely for a credential-free display; MongoClient parses the URI.
   const withoutScheme = uri.replace(/^mongodb(?:\+srv)?:\/\//, ''), authority = withoutScheme.split(/[/?]/)[0];

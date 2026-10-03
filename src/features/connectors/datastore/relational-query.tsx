@@ -15,6 +15,7 @@ import { SqlEditorSplit } from './sql-editor-split'
 import { SqlFileActions } from './sql-file-actions'
 import { SqlQuickActions } from './sql-quick-actions'
 import { SqlExplainAction } from './sql-explain-action'
+import { SqlMutationAction } from './sql-mutation-action'
 import { SqlQueryCompareAction } from './data-compare/query-action'
 import type { OpenSqlFile } from './sql-files'
 import { SQL_DRAFT_MAX_BYTES } from '@fouc/shared'
@@ -41,11 +42,14 @@ type Restore = { sql: string; schema: string | null; database: string; file: Sav
 type Saving = { tabId: string | null; sql: string; schema: string | null; database: string; file: SqlDraftTab['savedFile'] }
 function binding(file: SavedSqlDocument): NonNullable<SqlDraftTab['savedFile']> { return { id: file.id, version: file.version, name: file.name, folderId: file.folderId } }
 
-export function RelationalQuery({ session, schema, schemas, metadataRevision, schemaLocked, onSchemaChange, beforeLeaveRef, onLeaveReady, openRequest }: {
+export function RelationalQuery({ session, schema, schemas, metadataRevision, schemaLocked, onSchemaChange, beforeLeaveRef, onLeaveReady, openRequest, onUnlockWrite, onMutated, onMutationBusy }: {
   session: RelationalSession; schema: string; schemas: string[]; metadataRevision: number; schemaLocked: boolean; onSchemaChange: (schema: string) => void;
   beforeLeaveRef: RefObject<(() => Promise<void>) | null>
   onLeaveReady: () => void
   openRequest?: { id: string; sql: string; schema: string } | null
+  onUnlockWrite: () => Promise<void>
+  onMutated: () => void
+  onMutationBusy: (busy: boolean) => void
 }) {
   const root = `/api/database/workspaces/${encodeURIComponent(session.workspaceId)}/relational`
   const base = `${root}/sessions/${session.id}`, libraryBase = session.connectionId ? `${root}/connections/${session.connectionId}/sql-library` : null
@@ -274,6 +278,7 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
         <button type="button" aria-label="SQL 编辑器设置" title="格式化、保存与代码片段" disabled={preferences.busy || !preferences.data || Boolean(preferences.error)} onClick={() => setEditorSettingsOpen(true)}><SlidersHorizontal size={17} /></button>
         <span className={styles.toolDivider} />
         <SqlExplainAction key={`${base}:${current?.id}:${targetSchema}`} base={base} provider={session.provider} schema={targetSchema || null} targetLabel={displayDatabase ?? session.database} editorRef={editor} disabled={!current || running || formatting} contextIssue={current ? targetIssue(current) : ''} onNotice={setNotice} />
+        <SqlMutationAction key={`${base}:${current?.id}:${targetSchema}`} base={base} session={session} schema={targetSchema} editorRef={editor} disabled={!current || busyIds.size > 0 || formatting || schemaLocked} contextIssue={current ? targetIssue(current) : ''} onNotice={setNotice} onUnlock={onUnlockWrite} onBusyChange={onMutationBusy} onCommitted={() => { onMutated(); setNotice('SQL 事务已提交。已有查询结果保留，重新运行可读取最新数据。') }} />
         <SqlQueryCompareAction tabs={state.tabs} executions={executions} provider={session.provider} activeTabId={state.activeTabId} onNotice={setNotice} onSqlPreview={openComparisonReview} />
         <SqlQuickActions editorRef={editor} provider={session.provider} disabled={!current || running || formatting} keywordCase={preferences.data?.formatter.keywordCase} onFormatSql={formatText} onNotice={setNotice} />
         <SqlFileActions provider={session.provider} disabled={!state.ready || running} getDocument={() => current ? { sql: editor.current?.state.doc.toString() ?? current.sql, title: current.title } : null} onOpen={openSqlFiles} onNotice={setNotice} />

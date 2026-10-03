@@ -37,7 +37,7 @@ export function savedConnectionRoutes<Config, Session>(
     const entry = connections.get(c.req.param('workspaceId')!, c.req.param('id')!);
     const body = await c.req.json().catch(() => null);
     return c.json(
-      { ok: true, data: await connect(entry.workspaceId, { ...entry.config, password: body?.password }, entry.id) },
+      { ok: true, data: await connect(entry.workspaceId, { ...entry.config, password: body?.password, ...(body?.connectionOptions !== undefined ? { connectionOptions: body.connectionOptions } : {}) }, entry.id) },
       201,
     );
   });

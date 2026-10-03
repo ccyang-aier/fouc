@@ -2,10 +2,12 @@ import path from 'node:path';
 import type { RelationalConnectionConfig } from '@fouc/shared';
 import { DeviceConnectionRepository } from './connection-repository';
 import { DatabaseInputError } from './input-error';
+import { publicNativeConnectionOptions } from './connection-options';
 
 function normalize(value: unknown): RelationalConnectionConfig {
   if (!value || typeof value !== 'object') throw new DatabaseInputError('连接参数无效');
   const raw = value as Record<string, unknown>;
+  if ('ssl' in raw || 'tls' in raw) throw new DatabaseInputError('TLS 设置请使用统一的高级连接参数');
   if (
     (raw.provider === 'postgres' || raw.provider === 'mysql') &&
     typeof raw.host === 'string' &&
@@ -16,8 +18,7 @@ function normalize(value: unknown): RelationalConnectionConfig {
     typeof raw.username === 'string' &&
     raw.username.trim() &&
     typeof raw.database === 'string' &&
-    (raw.provider === 'mysql' || raw.database.trim()) &&
-    (raw.ssl === undefined || typeof raw.ssl === 'boolean')
+    (raw.provider === 'mysql' || raw.database.trim())
   ) {
     return {
       provider: raw.provider,
@@ -25,7 +26,7 @@ function normalize(value: unknown): RelationalConnectionConfig {
       port: Number(raw.port),
       username: raw.username.trim(),
       database: raw.database.trim(),
-      ssl: raw.ssl === true,
+      connectionOptions: publicNativeConnectionOptions(raw.provider, raw.connectionOptions),
     };
   }
   if (raw.provider === 'sqlite' && typeof raw.path === 'string' && path.isAbsolute(raw.path))

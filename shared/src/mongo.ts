@@ -1,7 +1,11 @@
 /** Native MongoDB transport. BSON values travel as canonical Extended JSON text. */
+import type { DatabaseConnectionOptionsInput } from './connection-options';
+import type { ConnectionUrlFields } from './connection-options-url';
 export type MongoConnectionInput = {
   provider?: 'mongodb'; uri?: string; host?: string; port?: number;
-  username?: string; password?: string; database?: string; authSource?: string; tls?: boolean;
+  username?: string; password?: string; database?: string; authSource?: string;
+  connectionOptions?: DatabaseConnectionOptionsInput;
+  mongo?: ConnectionUrlFields['mongo'];
 };
 export interface MongoSession {
   provider: 'mongodb'; id: string; workspaceId: string; connectionId: string | null;

@@ -1,0 +1,125 @@
+.dialog {
+  width: min(620px, calc(100vw - 32px));
+  max-width: 620px;
+  max-height: calc(100dvh - 56px);
+  padding: 0;
+}
+.dialog[open] {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.dialog > header {
+  flex-shrink: 0;
+}
+.form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 22px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.body > label,
+.body > div > label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  min-width: 0;
+}
+.body > label > input,
+.body > div > label > input {
+  height: 34px;
+  width: 100%;
+  min-width: 0;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 6px 9px;
+  color: var(--ink);
+  font: 13px var(--font-sans);
+}
+.body input:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  outline-offset: 1px;
+}
+.body input:disabled {
+  opacity: 0.55;
+}
+.body > label > small {
+  color: var(--muted-strong);
+  font-size: 11px;
+  line-height: 1.7;
+}
+.body > p {
+  margin: 0;
+}
+.body + footer {
+  flex-shrink: 0;
+}
+.columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.hostList {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--surface-subtle);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+.hostList strong {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+.hostList code {
+  font: 11px/1.8 var(--font-code);
+  color: var(--muted-strong);
+  overflow-wrap: anywhere;
+}
+.hostList > button {
+  align-self: flex-end;
+  padding: 5px 8px;
+  font: 10px var(--font-sans);
+  color: var(--ink-soft);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 4px;
+  cursor: pointer;
+}
+@media (max-width: 540px) {
+  .dialog {
+    width: calc(100vw - 16px);
+    max-height: calc(100dvh - 24px);
+  }
+  .body {
+    padding: 15px 13px;
+    gap: 14px;
+  }
+  .columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .body + footer {
+    padding: 13px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .body + footer > button {
+    padding: 7px 9px;
+    font-size: 11px;
+  }
+}

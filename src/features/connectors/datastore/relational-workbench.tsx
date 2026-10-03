@@ -20,6 +20,7 @@ import { SchemaCompareAction } from './schema-compare-action'
 import { StructureEditAction } from './structure-edit-action'
 import { SchemaObjectsPanel } from './schema-objects'
 import { TableTransferAction } from './table-transfer-action'
+import { DatabaseExportAction } from './database-export'
 import { DatabaseDocsPanel } from './database-docs'
 import { SchemaSearchAction } from './schema-search'
 import { SchemaDiagramView } from './schema-diagram-action'
@@ -57,7 +58,9 @@ export function RelationalWorkbench({
   const [selectedRow, setSelectedRow] = useState<number | null>(null)
   const [inspectorOpen, setInspectorOpen] = useState(false)
   const [currentSession, setCurrentSession] = useState(session)
-  const [pending, setPending] = useState(false)
+  const [gridPending, setPending] = useState(false)
+  const [mutationBusy, setMutationBusy] = useState(false)
+  const pending = gridPending || mutationBusy
   const [writeBusy, setWriteBusy] = useState(false)
   const sqlBeforeLeave = useRef<(() => Promise<void>) | null>(null)
   const [leaving, setLeaving] = useState(false)
@@ -96,6 +99,14 @@ export function RelationalWorkbench({
     } finally {
       setWriteBusy(false)
     }
+  }
+  async function unlockSqlWrite(): Promise<void> {
+    setWriteBusy(true)
+    try {
+      setCurrentSession(await backendFetch<RelationalSession>(`${base}/write-access`, {
+        method: 'PUT', body: JSON.stringify({ enabled: true })
+      }))
+    } finally { setWriteBusy(false) }
   }
   useEffect(() => {
     const controller = new AbortController()
@@ -356,7 +367,7 @@ export function RelationalWorkbench({
             </p>
           )}
           <div hidden={mode !== "sql"} className={styles.queryPanel}>
-            <RelationalQuery key={session.id} session={session} schema={schema} schemas={schemas} metadataRevision={revision} schemaLocked={pending} onSchemaChange={selectSchema} beforeLeaveRef={sqlBeforeLeave} onLeaveReady={clearLeaveError} openRequest={openRequest} />
+            <RelationalQuery key={session.id} session={currentSession} schema={schema} schemas={schemas} metadataRevision={revision} schemaLocked={pending} onSchemaChange={selectSchema} beforeLeaveRef={sqlBeforeLeave} onLeaveReady={clearLeaveError} openRequest={openRequest} onUnlockWrite={unlockSqlWrite} onMutated={refresh} onMutationBusy={setMutationBusy} />
           </div>
           {page && (
             <div hidden={mode !== "data"}>
@@ -427,6 +438,7 @@ export function RelationalWorkbench({
                   结构
                 </button>
                 <span className="mw-sql-spacer" />
+                <DatabaseExportAction session={session} schemas={schemas} schema={schema} table={table} tables={tables} disabled={pending || busy || writeBusy} />
                 <TableTransferAction session={session} name={name} schema={schema} table={table} disabled={pending || busy || writeBusy} />
                 <TableImportAction base={base} sessionId={session.id} provider={session.provider} schema={schema} page={page} disabled={!writable || pending || busy || writeBusy} onImported={refresh} />
                 <SchemaCompareAction base={base} provider={session.provider} schema={schema} table={table} tables={tables} schemas={schemas} disabled={pending || busy} />

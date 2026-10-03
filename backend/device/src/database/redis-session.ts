@@ -22,6 +22,7 @@ import { RedisMonitor } from './redis-monitor';
 import { RedisPubSub, redisPubSubBytes } from './redis-pubsub';
 import { redisUnsigned } from './redis-protocol';
 import { isRedisJsonType, redisJsonCapability, redisJsonValue } from './redis-json';
+import { redisNativeConnectionOptions } from './connection-options';
 export { redisBlob } from './redis-blob';
 
 const PAGE_SIZE = 100;
@@ -37,20 +38,19 @@ export class RedisSessionManager {
     const config = redisConfig(value);
     const password = (value as Record<string, unknown>).password;
     if (typeof password !== 'string') throw new DatabaseInputError('Redis 密码参数无效');
+    const advanced = redisNativeConnectionOptions((value as Record<string, unknown>).connectionOptions, config.host);
     const client = new Redis({
       host: config.host,
       port: config.port,
       db: config.database,
       username: config.username || undefined,
       password: password || undefined,
-      tls: config.tls ? { rejectUnauthorized: true } : undefined,
+      ...advanced.options,
       lazyConnect: true,
       enableOfflineQueue: false,
       enableReadyCheck: false,
       retryStrategy: () => null,
       maxRetriesPerRequest: 0,
-      connectTimeout: 10000,
-      commandTimeout: 10000,
       stringNumbers: true,
     });
     client.on('error', () => {});

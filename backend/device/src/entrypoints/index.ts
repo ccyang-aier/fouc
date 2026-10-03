@@ -22,6 +22,7 @@ import { RelationalSessionManager } from '../database/relational-session';
 import { RelationalConnectionRepository } from '../database/relational-connections';
 import { RelationalSqlRepository } from '../database/sql-library-repository';
 import { DatabaseDocsRepository } from '../database/database-docs-repository';
+import { DatabaseExportJobs } from '../database/database-export';
 import { DeviceConnectionRepository } from '../database/connection-repository';
 import { RedisSessionManager } from '../database/redis-session';
 import { RedisHistoryRepository } from '../database/redis-history';
@@ -80,7 +81,7 @@ async function main(): Promise<void> {
   const connectors = new ConnectorService(connectorRepo);
   const databaseCapabilities = new DatabaseCapabilityRegistry();
   const databaseDirectory = path.join(process.env.FOUC_DATA_DIR ?? path.join(homedir(), '.fouc'), 'database');
-  const relationalSessions = new RelationalSessionManager(databaseCapabilities, new RelationalSqlRepository(path.join(databaseDirectory, 'sql-library')), new DatabaseDocsRepository(path.join(databaseDirectory, 'database-docs')));
+  const relationalSessions = new RelationalSessionManager(databaseCapabilities, new RelationalSqlRepository(path.join(databaseDirectory, 'sql-library')), new DatabaseDocsRepository(path.join(databaseDirectory, 'database-docs')), new DatabaseExportJobs(path.join(databaseDirectory, 'export-cache')));
   const relationalConnections = new RelationalConnectionRepository(path.join(process.env.FOUC_DATA_DIR ?? path.join(homedir(), '.fouc'), 'database', 'connections'));
   const redisSessions = new RedisSessionManager(new RedisHistoryRepository(path.join(process.env.FOUC_DATA_DIR ?? path.join(homedir(), '.fouc'), 'database', 'redis-history')));
   const redisConnections = new DeviceConnectionRepository(path.join(process.env.FOUC_DATA_DIR ?? path.join(homedir(), '.fouc'), 'database', 'redis-connections'), redisConfig);

@@ -24,6 +24,7 @@ import { MongoDialog } from '../mongo/mongo-dialog'
 import type { MongoSession } from '@fouc/shared/mongo'
 import type { MongoConnectionConfig, MongoSavedConnection } from '@fouc/shared/mongo-connections'
 import styles from "./relational.module.css"
+import type { DatabaseConnectionOptionsInput } from '@fouc/shared/connection-options'
 
 type SavedConnection = RelationalSavedConnection | RedisSavedConnection | MongoSavedConnection
 
@@ -106,12 +107,12 @@ function ConnectionDirectory({
     setConnections((current) => [...current.filter((entry) => entry.id !== item.id), item])
     setDialog(null)
   }
-  async function open(connection: SavedConnection, password = "") {
+  async function open(connection: SavedConnection, password = "", connectionOptions?: DatabaseConnectionOptionsInput) {
     const session = await backendFetch<RelationalSession | RedisSession | MongoSession>(
       `${base}/connections/${connection.id}/connect`,
       {
         method: "POST",
-        body: JSON.stringify({ password })
+        body: JSON.stringify({ password, connectionOptions })
       }
     )
     setDialog(null)
@@ -302,9 +303,9 @@ function ConnectionDirectory({
           intent={dialog.intent}
           onClose={() => setDialog(null)}
           onSave={save}
-          onConnect={(password) => open(dialog.connection!, password)}
+          onConnect={(password, options) => open(dialog.connection!, password, options)}
         />
-      ) : dialog && provider === 'mongodb' ? <MongoDialog workspaceId={workspaceId} connection={dialog.connection as MongoSavedConnection | undefined} intent={dialog.intent} onClose={() => setDialog(null)} onSave={save} onConnect={password => open(dialog.connection!, password)} /> : (
+      ) : dialog && provider === 'mongodb' ? <MongoDialog workspaceId={workspaceId} connection={dialog.connection as MongoSavedConnection | undefined} intent={dialog.intent} onClose={() => setDialog(null)} onSave={save} onConnect={(password, options) => open(dialog.connection!, password, options)} /> : (
         dialog &&
         provider !== "redis" && provider !== 'mongodb' && (
           <RelationalDialog
@@ -315,7 +316,7 @@ function ConnectionDirectory({
             intent={dialog.intent}
             onClose={() => setDialog(null)}
             onSave={save}
-            onConnect={(password) => open(dialog.connection!, password)}
+            onConnect={(password, options) => open(dialog.connection!, password, options)}
           />
         )
       )}

@@ -662,7 +662,7 @@
     {
       "id": "C02",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "available",
       "applicableDriverTypes": [
         "mysql",
@@ -760,7 +760,13 @@
         "action": "支持 URL/DSN 解析与反向填表、多认证方式、TLS/CA/客户端证书、超时与连接参数；敏感项与普通配置分离。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "backend/device/src/database/connection-options.ts",
+          "check": "2026-10-04：C02唯一connectionOptions贯通MySQL/Pg/Redis/Mongo原生TLS/严格证书/主机名和timeout，URL/libpq DSN反向填表、PEM Web上传、敏感值仅临时重传；20项新增P0/160独立断言，自有TS/lint及真实MySQL URL填表→连接测试通过。Q10原生三库单表确定性INSERT/UPDATE/DELETE只读改写与旧新值/COUNT，五分钟一次性计划、权限/结构/WHERE/原值再核对、真实事务锁与取消回滚，COMMIT回应丢失标记unknown；8项P0/83断言，真实页面预览0写入→解锁撤销旧计划→重新预览→确认提交。D05/G06原生三库多对象SQL/CSV/JSON/NDJSON导出、精确游标/无主键offset、ZIP STORE+CRC/完整分包、设备磁盘预算/进度/取消/恢复/流式附件；4项P0/86断言及三库SQL回放，真实页面全表NDJSON下载精确大整数/中文、关闭重开恢复并清理。根API另验证空间隔离/只读/确认/计划失效/两页导出和附件字节。1440与390实际视觉检查，SQL审查窄屏固定操作区和select标签修正；类型/lint通过。本批未重复旧矩阵，实际TLS服务/多认证/其他驱动、完整入口及FS Access保存分支仍待阶段验收，语句子集/隐藏元数据权限/独立读取非快照明确限制。"
+        }
+      ],
       "scopeKind": "driver"
     },
     {
@@ -2971,7 +2977,7 @@
     {
       "id": "Q10",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql",
@@ -3051,7 +3057,13 @@
         "action": "对 `INSERT/UPDATE/DELETE` 提供执行前变更预览：只读改写、旧/新值对照、受影响行展示；无法安全改写时明确拒绝预览而不误报执行结果。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "backend/device/src/database/sql-mutation-plans.ts",
+          "check": "2026-10-04：C02唯一connectionOptions贯通MySQL/Pg/Redis/Mongo原生TLS/严格证书/主机名和timeout，URL/libpq DSN反向填表、PEM Web上传、敏感值仅临时重传；20项新增P0/160独立断言，自有TS/lint及真实MySQL URL填表→连接测试通过。Q10原生三库单表确定性INSERT/UPDATE/DELETE只读改写与旧新值/COUNT，五分钟一次性计划、权限/结构/WHERE/原值再核对、真实事务锁与取消回滚，COMMIT回应丢失标记unknown；8项P0/83断言，真实页面预览0写入→解锁撤销旧计划→重新预览→确认提交。D05/G06原生三库多对象SQL/CSV/JSON/NDJSON导出、精确游标/无主键offset、ZIP STORE+CRC/完整分包、设备磁盘预算/进度/取消/恢复/流式附件；4项P0/86断言及三库SQL回放，真实页面全表NDJSON下载精确大整数/中文、关闭重开恢复并清理。根API另验证空间隔离/只读/确认/计划失效/两页导出和附件字节。1440与390实际视觉检查，SQL审查窄屏固定操作区和select标签修正；类型/lint通过。本批未重复旧矩阵，实际TLS服务/多认证/其他驱动、完整入口及FS Access保存分支仍待阶段验收，语句子集/隐藏元数据权限/独立读取非快照明确限制。"
+        }
+      ],
       "scopeKind": "driver"
     },
     {
@@ -3595,6 +3607,11 @@
           "kind": "partial-native-p0-and-browser-smoke",
           "path": "src/features/connectors/datastore/sql-explain-action.tsx",
           "check": "2026-10-04：开发阶段仅P0。MySQL JSON/标准、PostgreSQL JSON、SQLite QUERY PLAN 真实计划；8项原生计划P0、15项选择/精度P0、12项导出P0（原生三库字面量往返）。Chrome实际流程验证EXPLAIN接口/图形/树/原始计划、大整数详情/范围选择/精确求和/复制、选定两行一列CSV下载；1440×1000和390×844实际视觉检查。修复网格遮挡导出栏与浏览器计时器非法this绑定。仅本次已加载结果；ANALYZE、其他驱动/全入口、写入粘贴/布局设置、XLSX/ZIP/全表流式导出仍待阶段回归或实现。"
+        },
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "src/features/connectors/datastore/database-export/panel.tsx",
+          "check": "2026-10-04：C02唯一connectionOptions贯通MySQL/Pg/Redis/Mongo原生TLS/严格证书/主机名和timeout，URL/libpq DSN反向填表、PEM Web上传、敏感值仅临时重传；20项新增P0/160独立断言，自有TS/lint及真实MySQL URL填表→连接测试通过。Q10原生三库单表确定性INSERT/UPDATE/DELETE只读改写与旧新值/COUNT，五分钟一次性计划、权限/结构/WHERE/原值再核对、真实事务锁与取消回滚，COMMIT回应丢失标记unknown；8项P0/83断言，真实页面预览0写入→解锁撤销旧计划→重新预览→确认提交。D05/G06原生三库多对象SQL/CSV/JSON/NDJSON导出、精确游标/无主键offset、ZIP STORE+CRC/完整分包、设备磁盘预算/进度/取消/恢复/流式附件；4项P0/86断言及三库SQL回放，真实页面全表NDJSON下载精确大整数/中文、关闭重开恢复并清理。根API另验证空间隔离/只读/确认/计划失效/两页导出和附件字节。1440与390实际视觉检查，SQL审查窄屏固定操作区和select标签修正；类型/lint通过。本批未重复旧矩阵，实际TLS服务/多认证/其他驱动、完整入口及FS Access保存分支仍待阶段验收，语句子集/隐藏元数据权限/独立读取非快照明确限制。"
         }
       ],
       "scopeKind": "driver"
@@ -4231,7 +4248,7 @@
     {
       "id": "D05",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql",
@@ -4311,7 +4328,13 @@
         "action": "数据库/表结构与数据导出、SQL 脚本生成、格式选择、拆分包、进度/取消；区分轻量导出与数据库原生备份。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "backend/device/src/database/database-export-jobs.ts",
+          "check": "2026-10-04：C02唯一connectionOptions贯通MySQL/Pg/Redis/Mongo原生TLS/严格证书/主机名和timeout，URL/libpq DSN反向填表、PEM Web上传、敏感值仅临时重传；20项新增P0/160独立断言，自有TS/lint及真实MySQL URL填表→连接测试通过。Q10原生三库单表确定性INSERT/UPDATE/DELETE只读改写与旧新值/COUNT，五分钟一次性计划、权限/结构/WHERE/原值再核对、真实事务锁与取消回滚，COMMIT回应丢失标记unknown；8项P0/83断言，真实页面预览0写入→解锁撤销旧计划→重新预览→确认提交。D05/G06原生三库多对象SQL/CSV/JSON/NDJSON导出、精确游标/无主键offset、ZIP STORE+CRC/完整分包、设备磁盘预算/进度/取消/恢复/流式附件；4项P0/86断言及三库SQL回放，真实页面全表NDJSON下载精确大整数/中文、关闭重开恢复并清理。根API另验证空间隔离/只读/确认/计划失效/两页导出和附件字节。1440与390实际视觉检查，SQL审查窄屏固定操作区和select标签修正；类型/lint通过。本批未重复旧矩阵，实际TLS服务/多认证/其他驱动、完整入口及FS Access保存分支仍待阶段验收，语句子集/隐藏元数据权限/独立读取非快照明确限制。"
+        }
+      ],
       "scopeKind": "driver"
     },
     {
@@ -5582,6 +5605,11 @@
           "kind": "partial-native-p0-and-browser-smoke",
           "path": "src/features/connectors/mongo/mongo-workbench.tsx",
           "check": "2026-10-04：开发阶段仅新增P0与一次实际流程。MongoDB8原生库/集合/筛选排序分页/聚合/索引/元数据和Canonical EJSON精度，读取6项57断言、窄写入5项56断言；原始完整BSON CAS、类型/权限/空间/一次性计划与取消。Chrome真实创建连接、筛选文档、只读解锁、预览0写入、确认后大整数原值回读。网格列隐藏/NULL列、左右冻结/排序/宽度/密度/日期/JSON路径/掩码/模板，22项95断言及刷新选择映射P0；实际原始复制、显示格式与重新执行布局保留。结构编辑9项64断言、三库实际DDL，权限与计划撤销/结构变化/原生提交接口P0，真实MySQL中文含单引号注释预览0写入后确认回读。1440与390实际视觉检查，修正Mongo窄屏资源导航、结构审查局部滚动与固定操作区、主按钮对比度；自有TS/lint通过。不重复此前通过矩阵。Mongo GridFS/导入导出/dump、批量更新/其他拓扑，网格转置/自动刷新，结构外键/约束完整编辑及全入口矩阵仍未完成。"
+        },
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "backend/device/src/database/mongo-gridfs.ts",
+          "check": "2026-10-04：X02原生Mongo GridFS桶/孤儿目录、文件分页筛选排序、精确Long容量与EJSON详情、lazy原生流鉴权下载/断开取消均接实际工作台。4项新增P0/45断言，真实Mongo上传独立夹具→原生读取→HTTP字节一致及custom BSON scalar ID；实际Chrome只读浏览→下载65637字节与源逐字节相同，1440/390已查看/无外溢或pageerror，修正窄屏桶选择和内部滚动。native下载1GiB，Web无FS Access时64MiB回退；原生流5min并保持controller直到close。前后端定向TS/lint通过，不重复旧CRUD回归；FS Access系统保存、上传/删除/ZIP/dump及完整入口仍待后续。"
         }
       ],
       "scopeKind": "driver"

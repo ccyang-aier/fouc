@@ -1,19 +1,9 @@
 import type { ResultExportControl } from './model'
+import { textPieces } from '@fouc/shared/database-export'
+export { textPieces } from '@fouc/shared/database-export'
 
-const PIECE_CHARS = 16_384
 const CHUNK_CHARS = 65_536
 const encoder = new TextEncoder()
-
-/** Keep UTF-16 pairs together: Blob encodes each string part independently. */
-export function* textPieces(text: string): Generator<string> {
-  for (let start = 0; start < text.length;) {
-    let end = Math.min(start + PIECE_CHARS, text.length)
-    const last = text.charCodeAt(end - 1)
-    if (end < text.length && (last >= 0xd800 && last <= 0xdbff || last === 13 && text.charCodeAt(end) === 10)) end--
-    yield text.slice(start, end)
-    start = end
-  }
-}
 
 export class PreviewComplete extends Error {}
 

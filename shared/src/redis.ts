@@ -1,13 +1,14 @@
 /** DBX Redis blob, key and cursor semantics adapted to the Fouc boundary. */
+import type { DatabaseConnectionOptions, DatabaseConnectionOptionsInput } from './connection-options';
 export interface RedisConnectionConfig {
   provider: 'redis';
   host: string;
   port: number;
   username: string;
   database: number;
-  tls: boolean;
+  connectionOptions: DatabaseConnectionOptions;
 }
-export type RedisConnectInput = RedisConnectionConfig & { password: string };
+export type RedisConnectInput = Omit<RedisConnectionConfig, 'connectionOptions'> & { password: string; connectionOptions?: DatabaseConnectionOptionsInput };
 export interface RedisSavedConnection {
   id: string;
   workspaceId: string;

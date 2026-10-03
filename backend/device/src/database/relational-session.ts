@@ -9,9 +9,12 @@ import { compileSqlTemplate, sqlSourceEnd, sqlSourcePosition, sqlVariableContext
 import { SqlExecutionRegistry, sqlExecutionError } from './sql-execution-registry';
 import { explainSqlPlan } from './sql-explain';
 import { TableImportPlans } from './table-import-plans';
+import { SqlMutationPlans } from './sql-mutation-plans';
 import { StructureEditPlans } from './structure-edit-plans';
 import { RelationalMetadataService } from './relational-metadata';
 import { DatabaseDocsRepository } from './database-docs-repository';
+import { DatabaseExportJobs } from './database-export';
+import { RelationalExportService } from './relational-export-service';
 import {
   DATABASE_CAPABILITIES,
   SQL_FILE_MAX_BYTES,
@@ -52,6 +55,7 @@ type Entry = {
   plans: Map<string, SavePlan>;
   imports: TableImportPlans;
   structureEdits: StructureEditPlans;
+  sqlMutations: SqlMutationPlans;
   saving: boolean;
   connectionName: string;
   sourceIdentity: string;
@@ -62,8 +66,10 @@ export class RelationalSessionManager {
   private readonly entries = new Map<string, Entry>();
   private readonly transientSql = new RelationalSqlRepository();
   readonly metadata: RelationalMetadataService;
-  constructor(private readonly capabilities: DatabaseCapabilityRegistry, readonly sqlRepository = new RelationalSqlRepository(), documents = new DatabaseDocsRepository()) {
+  readonly exports: RelationalExportService;
+  constructor(private readonly capabilities: DatabaseCapabilityRegistry, readonly sqlRepository = new RelationalSqlRepository(), documents = new DatabaseDocsRepository(), exports?: DatabaseExportJobs) {
     this.metadata = new RelationalMetadataService((workspaceId, id) => this.entry(workspaceId, id), documents);
+    this.exports = new RelationalExportService((workspaceId, id) => this.entry(workspaceId, id), exports);
   }
 
   async connect(workspaceId: string, value: unknown, connection: { id: string; name: string } | null = null): Promise<RelationalSession> {
@@ -83,7 +89,7 @@ export class RelationalSessionManager {
         typeof input.password !== 'string' ||
         typeof input.database !== 'string' ||
         (input.provider === 'postgres' && !input.database.trim()) ||
-        (input.ssl !== undefined && typeof input.ssl !== 'boolean')
+        'ssl' in input || 'tls' in input
       ) {
         throw new DatabaseInputError('主机、端口、用户、密码或数据库无效');
       }
@@ -123,6 +129,7 @@ export class RelationalSessionManager {
         plans: new Map(),
         imports: new TableImportPlans(),
         structureEdits: new StructureEditPlans(),
+        sqlMutations: new SqlMutationPlans(),
         saving: false,
         sourceIdentity: input.provider === 'sqlite' ? JSON.stringify(['sqlite', path.resolve(input.path).toLowerCase()]) : JSON.stringify([input.provider, input.host.toLowerCase(), input.port, input.provider === 'postgres' ? input.database : null]),
         connectionName: connection?.name ?? `${input.provider} · ${session.database}`,
@@ -170,6 +177,7 @@ export class RelationalSessionManager {
     entry.plans.clear();
     entry.imports.clear();
     entry.structureEdits.clear();
+    entry.sqlMutations.clear();
     this.transfers.clearSession(id);
     return entry.session;
   }
@@ -208,6 +216,29 @@ export class RelationalSessionManager {
     }, signal);
   }
   discardImport(workspaceId: string, id: string, planId: string) { this.entry(workspaceId, id).imports.discard(planId); }
+  prepareSqlMutation(workspaceId: string, id: string, value: unknown, signal?: AbortSignal) {
+    const entry = this.entry(workspaceId, id);
+    return entry.sqlMutations.prepare(entry.driver, entry.session.provider, value, () => {
+      if (this.entry(workspaceId, id) !== entry || entry.saving)
+        throw new DatabaseInputError('连接正在提交变更，请稍后重新预览');
+    }, signal);
+  }
+  discardSqlMutation(workspaceId: string, id: string, planId: string): void {
+    this.entry(workspaceId, id).sqlMutations.discard(planId);
+  }
+  async commitSqlMutation(workspaceId: string, id: string, planId: string, signal?: AbortSignal) {
+    const entry = this.writable(workspaceId, id);
+    if (entry.saving) throw new DatabaseInputError('当前连接正在提交变更');
+    entry.saving = true;
+    try {
+      return await entry.sqlMutations.commit(entry.driver, planId, () => {
+        if (this.writable(workspaceId, id) !== entry)
+          throw new DatabaseInputError('连接已变化，请重新预览');
+      }, signal);
+    } finally {
+      entry.saving = false;
+    }
+  }
   prepareStructureEdit(workspaceId: string, id: string, value: unknown, signal?: AbortSignal) {
     const entry = this.writable(workspaceId, id);
     return entry.structureEdits.prepare((schema, table) => this.structure(workspaceId, id, schema, table), value, () => {
@@ -535,10 +566,12 @@ export class RelationalSessionManager {
     this.transfers.clearSession(id);
     entry.imports.clear();
     entry.structureEdits.clear();
+    entry.sqlMutations.clear();
     await this.executions.closeSession(id);
     if (!entry.session.connectionId) this.transientSql.removeConnection(workspaceId, id);
     this.capabilities.disconnect(id, id);
-    await entry.driver.close();
+    try { await this.exports.closeSession({ workspaceId, sessionId: id }); }
+    finally { await entry.driver.close(); }
   }
   async shutdown(): Promise<void> {
     await Promise.all(
@@ -549,5 +582,6 @@ export class RelationalSessionManager {
     this.sqlRepository.close();
     this.transientSql.close();
     this.metadata.documents.close();
+    await this.exports.close();
   }
 }

@@ -4,9 +4,10 @@ import type {
   DatabaseConnectionInfo,
   DatabaseTablePage,
 } from './database';
+import type { DatabaseConnectionOptions, DatabaseConnectionOptionsInput } from './connection-options';
 
 export type RelationalProvider = 'postgres' | 'mysql' | 'sqlite';
-type NetworkConfig = { host: string; port: number; username: string; database: string; ssl: boolean };
+type NetworkConfig = { host: string; port: number; username: string; database: string; connectionOptions: DatabaseConnectionOptions };
 export type RelationalConnectionConfig =
   | ({ provider: 'postgres' } & NetworkConfig)
   | ({ provider: 'mysql' } & NetworkConfig)
@@ -18,7 +19,7 @@ export type RelationalSavedConnection = {
   updatedAt: number;
   config: RelationalConnectionConfig;
 };
-type NetworkInput = Omit<NetworkConfig, 'ssl'> & { password: string; ssl?: boolean };
+type NetworkInput = Omit<NetworkConfig, 'connectionOptions'> & { password: string; connectionOptions?: DatabaseConnectionOptionsInput };
 export type RelationalConnectInput =
   | ({ provider: 'postgres' } & NetworkInput)
   | ({ provider: 'mysql' } & NetworkInput)

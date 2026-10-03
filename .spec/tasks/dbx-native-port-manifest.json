@@ -743,6 +743,96 @@
         "src/features/connectors/datastore/database-docs/table-page.tsx",
         "src/features/connectors/datastore/database-docs/use-docs.ts"
       ]
+    },
+    {
+      "area": "native-network-options-url-dsn-and-certificate-input",
+      "status": "partial",
+      "sourceReferences": [
+        "crates/dbx-core/src/connection/runtime_config.rs",
+        "apps/desktop/src/components/connection/"
+      ],
+      "runtimeFiles": [
+        "backend/device/src/database/connection-options.ts",
+        "shared/src/connection-options-url.ts",
+        "shared/src/connection-options.ts",
+        "src/features/connectors/datastore/connection-options/connection-options-fields.tsx",
+        "src/features/connectors/datastore/connection-options/connection-source-assistant.tsx",
+        "src/features/connectors/datastore/connection-options/duration-field.tsx",
+        "src/features/connectors/datastore/connection-options/index.ts",
+        "src/features/connectors/datastore/connection-options/pem-file.ts"
+      ]
+    },
+    {
+      "area": "native-database-streaming-export-and-job-artifacts",
+      "status": "partial",
+      "sourceReferences": [
+        "crates/dbx-core/src/data/database_export.rs",
+        "apps/desktop/src/components/export/"
+      ],
+      "runtimeFiles": [
+        "backend/device/src/api/database-export-routes.ts",
+        "backend/device/src/database/database-export-jobs.ts",
+        "backend/device/src/database/database-export-plan.ts",
+        "backend/device/src/database/database-export-query.ts",
+        "backend/device/src/database/database-export-run.ts",
+        "backend/device/src/database/database-export-serialize.ts",
+        "backend/device/src/database/database-export-types.ts",
+        "backend/device/src/database/database-export-writer.ts",
+        "backend/device/src/database/database-export.ts",
+        "backend/device/src/database/relational-export-service.ts",
+        "shared/src/database-export-input.ts",
+        "shared/src/database-export-text.ts",
+        "shared/src/database-export-values.ts",
+        "shared/src/database-export.ts",
+        "src/features/connectors/datastore/database-export/action.tsx",
+        "src/features/connectors/datastore/database-export/download.ts",
+        "src/features/connectors/datastore/database-export/index.ts",
+        "src/features/connectors/datastore/database-export/options.tsx",
+        "src/features/connectors/datastore/database-export/panel.tsx",
+        "src/features/connectors/datastore/database-export/progress.tsx",
+        "src/features/connectors/datastore/database-export/use-export-catalogue.ts",
+        "src/features/connectors/datastore/database-export/use-export-job.ts"
+      ]
+    },
+    {
+      "area": "native-sql-mutation-readonly-preview-and-confirmed-transaction",
+      "status": "partial",
+      "sourceReferences": [
+        "crates/dbx-sql/src/dml_preview_sql.rs",
+        "apps/desktop/src/lib/sql/dmlChangePreview.ts"
+      ],
+      "runtimeFiles": [
+        "backend/device/src/api/sql-mutation-routes.ts",
+        "backend/device/src/database/sql-mutation-commit.ts",
+        "backend/device/src/database/sql-mutation-compile.ts",
+        "backend/device/src/database/sql-mutation-parser.ts",
+        "backend/device/src/database/sql-mutation-plans.ts",
+        "backend/device/src/database/sql-mutation-preview.ts",
+        "backend/device/src/database/sql-mutation-safety.ts",
+        "shared/src/sql-mutation.ts",
+        "src/features/connectors/datastore/sql-mutation-action.tsx",
+        "src/features/connectors/datastore/sql-mutation/index.ts",
+        "src/features/connectors/datastore/sql-mutation/panel.tsx",
+        "src/features/connectors/datastore/sql-mutation/row-diff.tsx"
+      ]
+    },
+    {
+      "area": "native-mongo-gridfs-file-browser-and-streamed-download",
+      "status": "partial",
+      "sourceReferences": [
+        "crates/dbx-drivers/src/db/mongo_driver.rs",
+        "apps/desktop/src/lib/document/gridfsFiles.ts",
+        "apps/desktop/src/lib/document/gridfsPagination.ts"
+      ],
+      "runtimeFiles": [
+        "backend/device/src/database/mongo-gridfs-input.ts",
+        "backend/device/src/database/mongo-gridfs.ts",
+        "shared/src/mongo-gridfs.ts",
+        "src/features/connectors/mongo/gridfs/download.ts",
+        "src/features/connectors/mongo/gridfs/files.tsx",
+        "src/features/connectors/mongo/gridfs/index.ts",
+        "src/features/connectors/mongo/gridfs/panel.tsx"
+      ]
     }
   ],
   "knownRemainingScope": [

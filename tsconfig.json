@@ -25,6 +25,9 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "sql-formatter/dist/*": [
+        "./node_modules/sql-formatter/dist/*"
       ]
     }
   },

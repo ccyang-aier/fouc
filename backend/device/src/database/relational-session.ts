@@ -420,6 +420,12 @@ export class RelationalSessionManager {
   clearHistory(workspaceId: string, id: string) {
     const entry = this.entry(workspaceId, id); this.historyRepository(entry).clearHistory(workspaceId, entry.session.connectionId ?? id);
   }
+  editorPreferences(workspaceId: string, id: string) {
+    const entry = this.entry(workspaceId, id); return this.historyRepository(entry).editorPreferences(workspaceId, entry.session.connectionId ?? id);
+  }
+  saveEditorPreferences(workspaceId: string, id: string, value: unknown) {
+    const entry = this.entry(workspaceId, id); return this.historyRepository(entry).saveEditorPreferences(workspaceId, entry.session.connectionId ?? id, value);
+  }
   removeConnection(workspaceId: string, connectionId: string): void {
     for (const entry of this.entries.values()) if (entry.session.workspaceId === workspaceId && entry.session.connectionId === connectionId) {
       void this.disconnect(workspaceId, entry.session.id).catch(() => undefined);
@@ -430,7 +436,7 @@ export class RelationalSessionManager {
     const entry = this.entry(workspaceId, id);
     this.entries.delete(id);
     await this.executions.closeSession(id);
-    if (!entry.session.connectionId) this.transientSql.clearHistory(workspaceId, id);
+    if (!entry.session.connectionId) this.transientSql.removeConnection(workspaceId, id);
     this.capabilities.disconnect(id, id);
     await entry.driver.close();
   }

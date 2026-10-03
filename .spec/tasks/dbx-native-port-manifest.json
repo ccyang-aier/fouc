@@ -327,6 +327,40 @@
         "shared/src/sql-template.ts",
         "src/features/connectors/datastore/sql-parameter-dialog.tsx"
       ]
+    },
+    {
+      "area": "native-relational-sql-formatting-and-editor-preferences",
+      "status": "partial",
+      "sourceReferences": [
+        "apps/desktop/src/lib/sql/sqlFormatter.ts",
+        "apps/desktop/src/lib/sql/sqlFormatterConfig.ts",
+        "apps/desktop/src/lib/sql/layout/",
+        "apps/desktop/src/lib/sql/sqlFormatOnSave.ts",
+        "apps/desktop/src/lib/sql/sqlSnippetTemplates.ts",
+        "apps/desktop/src/lib/sql/sqlCompletion.ts",
+        "apps/desktop/src/lib/sql/autoFormat.ts",
+        "apps/desktop/src/lib/common/xmlFormat.ts",
+        "apps/desktop/src/components/editor/QueryEditor.vue"
+      ],
+      "runtimeFiles": [
+        "shared/src/sql-formatter-config.ts",
+        "shared/src/sql-snippets.ts",
+        "shared/src/sql-editor-preferences.ts",
+        "src/features/connectors/datastore/sql-format/formatter.ts",
+        "src/features/connectors/datastore/sql-format/structured.ts",
+        "src/features/connectors/datastore/sql-format/xml.ts",
+        "src/features/connectors/datastore/sql-format/format-on-save.ts",
+        "src/features/connectors/datastore/sql-format/layout/index.ts",
+        "src/features/connectors/datastore/sql-format/layout/internals.ts",
+        "src/features/connectors/datastore/sql-format/layout/primitives.ts",
+        "src/features/connectors/datastore/sql-format/layout/printer.ts",
+        "src/features/connectors/datastore/sql-format/layout/ddl.ts",
+        "src/features/connectors/datastore/sql-editor-transform.ts",
+        "src/features/connectors/datastore/sql-editor-formatter-settings.tsx",
+        "src/features/connectors/datastore/sql-editor-preferences-dialog.tsx",
+        "src/features/connectors/datastore/sql-editor-snippet-settings.tsx",
+        "src/features/connectors/datastore/sql-snippet-completion.ts"
+      ]
     }
   ],
   "knownRemainingScope": [
@@ -334,7 +368,7 @@
     "common driver lifecycle, cancellation, reconnect and streaming",
     "cross-entry-point write grants, scope restrictions and shared policy integration",
     "full grid selection/copy/paste/undo, keyless guards, complex types, structure editing, cancellation and distributed transactions",
-    "full SQL dialect parsing/completion/parameters, snippets/formatting, external-file IO, editor split groups/detached windows and broader history scopes/driver-entry matrices",
+    "full SQL dialect parsing/completion/parameters, broader snippet/formatter driver and entry-point matrices, external-file IO, editor split groups/detached windows and broader history scopes/driver-entry matrices",
     "import/export/transfer/schema and data comparison/backup",
     "remaining DBX drivers and specialized surfaces",
     "CLI/MCP and applicable desktop entry points",

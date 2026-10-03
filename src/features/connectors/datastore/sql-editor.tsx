@@ -6,15 +6,18 @@ import {
   closeCompletion,
   closeBrackets,
   closeBracketsKeymap,
-  completionKeymap
+  completionKeymap,
+  nextSnippetField,
+  prevSnippetField
 } from "@codemirror/autocomplete"
 import type { CompletionSource } from '@codemirror/autocomplete'
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands"
 import { MySQL, PostgreSQL, SQLite, sql } from "@codemirror/lang-sql"
 import { sqlKeywordCompletion } from './sql-metadata-completion'
+import { sqlSnippetCompletion } from './sql-snippet-completion'
 import { Compartment, EditorState, StateEffect } from "@codemirror/state"
 import { getOverlayRoot } from '@/lib/overlay-root'
-import type { SqlEditorPosition, SqlExecutionMode } from '@fouc/shared'
+import type { SqlEditorPosition, SqlExecutionMode, SqlFormatterCase, SqlSnippet } from '@fouc/shared'
 import {
   bracketMatching,
   HighlightStyle,
@@ -47,7 +50,7 @@ const sqlHighlight = HighlightStyle.define([
 
 const tooltipParent = new Compartment()
 
-type SqlEditorHandlers = { onChange: (value: string) => void; onRun: (mode?: SqlExecutionMode) => void; onSave?: () => void; onPositionChange?: (id: string, position: SqlEditorPosition) => void; complete?: CompletionSource }
+type SqlEditorHandlers = { onChange: (value: string) => void; onRun: (mode?: SqlExecutionMode) => void; onSave?: () => void; onFormat?: () => void; onPositionChange?: (id: string, position: SqlEditorPosition) => void; complete?: CompletionSource; snippets?: SqlSnippet[]; keywordCase?: SqlFormatterCase }
 class SqlEditorCallbacks {
   private positionReporter: ((view: EditorView) => void) | null = null
   constructor(private handlers: SqlEditorHandlers) {}
@@ -62,6 +65,9 @@ type Props = {
   onChange: (value: string) => void
   onRun: (mode?: SqlExecutionMode) => void
   onSave?: () => void
+  onFormat?: () => void
+  snippets?: SqlSnippet[]
+  keywordCase?: SqlFormatterCase
   editorRef: RefObject<EditorView | null>
   provider?: "mysql" | "postgres" | "sqlite"
   readOnly?: boolean
@@ -80,6 +86,7 @@ export function SqlEditor({
   onChange,
   onRun,
   onSave,
+  onFormat, snippets, keywordCase,
   editorRef,
   provider = "mysql",
   readOnly = false,
@@ -89,15 +96,15 @@ export function SqlEditor({
   const host = useRef<HTMLDivElement>(null)
   const initialValue = useRef(value)
   const initialPosition = useRef(positions)
-  const handlers = useRef({ onChange, onRun, onSave, onPositionChange, complete })
+  const handlers = useRef({ onChange, onRun, onSave, onFormat, onPositionChange, complete, snippets, keywordCase })
   const activeCallbacks = useRef<SqlEditorCallbacks | null>(null)
 
   useEffect(() => {
-    handlers.current = { onChange, onRun, onSave, onPositionChange, complete }
+    handlers.current = { onChange, onRun, onSave, onFormat, onPositionChange, complete, snippets, keywordCase }
     activeCallbacks.current?.update(handlers.current)
     initialValue.current = value
     initialPosition.current = positions
-  }, [onChange, onRun, onSave, onPositionChange, complete, value, positions])
+  }, [onChange, onRun, onSave, onFormat, onPositionChange, complete, snippets, keywordCase, value, positions])
   useEffect(() => { if (editorRef.current) closeCompletion(editorRef.current) }, [editorRef, completionScope])
 
   useEffect(() => {
@@ -109,11 +116,7 @@ export function SqlEditor({
     const savedLeft = cached?.scrollLeft ?? initialPosition.current?.scrollLeft ?? 0
     let restoringViewport = true
     callbacks.setPositionReporter(reportPosition)
-    const view = new EditorView({
-      parent: host.current!,
-      ...(cached ? { state: cached.state } : { doc: initialValue.current,
-      selection: { anchor: Math.min(initialValue.current.length, initialPosition.current?.anchor ?? 0), head: Math.min(initialValue.current.length, initialPosition.current?.head ?? 0) },
-      extensions: [
+    const extensions = [
         tooltipParent.of(tooltips({ parent: getOverlayRoot() ?? document.body })),
         EditorState.readOnly.of(readOnly),
         EditorView.editable.of(!readOnly),
@@ -131,7 +134,7 @@ export function SqlEditor({
         sql({
           dialect: provider === "postgres" ? PostgreSQL : provider === "sqlite" ? SQLite : MySQL
         }),
-        ...(readOnly ? [] : [autocompletion({ tooltipClass: () => 'fouc-sql-completion', override: [sqlKeywordCompletion(provider), (context) => callbacks.get().complete?.(context) ?? null] })]),
+        ...(readOnly ? [] : [autocompletion({ tooltipClass: () => 'fouc-sql-completion', override: [sqlKeywordCompletion(provider), sqlSnippetCompletion(provider, () => callbacks.get()), (context) => callbacks.get().complete?.(context) ?? null] })]),
         highlightSelectionMatches(),
         EditorView.lineWrapping,
         EditorView.contentAttributes.of({
@@ -142,6 +145,7 @@ export function SqlEditor({
         keymap.of([
           { key: 'Mod-Shift-Enter', run: () => { if (!readOnly) callbacks.get().onRun('all'); return true } },
           { key: 'Mod-s', run: () => { if (!readOnly) callbacks.get().onSave?.(); return true } },
+          { key: 'Mod-Shift-f', run: () => { if (readOnly || !callbacks.get().onFormat) return false; callbacks.get().onFormat?.(); return true } },
           {
             key: "Mod-Enter",
             run: () => {
@@ -149,6 +153,8 @@ export function SqlEditor({
               return true
             }
           },
+          { key: 'Tab', run: nextSnippetField },
+          { key: 'Shift-Tab', run: prevSnippetField },
           indentWithTab,
           ...closeBracketsKeymap,
           ...defaultKeymap,
@@ -161,13 +167,15 @@ export function SqlEditor({
           if (update.docChanged) callbacks.get().onChange(update.state.doc.toString())
           if (update.docChanged || update.selectionSet) callbacks.reportPosition(update.view)
         })
-      ] })
+    ]
+    // Reconfigure extensions while retaining document/history fields: hot reload and
+    // returning tabs must receive current snippet sources, keymaps and overlay host.
+    const state = cached ? cached.state.update({ effects: StateEffect.reconfigure.of(extensions) }).state : EditorState.create({
+      doc: initialValue.current,
+      selection: { anchor: Math.min(initialValue.current.length, initialPosition.current?.anchor ?? 0), head: Math.min(initialValue.current.length, initialPosition.current?.head ?? 0) },
+      extensions
     })
-    // Rebind restored states to the current overlay host, including pre-refresh editor caches.
-    if (cached) {
-      const overlay = tooltips({ parent: getOverlayRoot() ?? document.body })
-      view.dispatch({ effects: tooltipParent.get(view.state) ? tooltipParent.reconfigure(overlay) : StateEffect.appendConfig.of(tooltipParent.of(overlay)) })
-    }
+    const view = new EditorView({ parent: host.current!, state })
     function reportPosition(current: EditorView) {
       if (restoringViewport) return
       const { anchor, head } = current.state.selection.main

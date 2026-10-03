@@ -4,6 +4,8 @@
 
 ## 进度与证据
 
+- SQL 格式化 / 片段：DBX AST 排版层、保留注释与引用、选区优先格式化 / 压缩、一次撤销、异步陈旧结果拒绝、完整文档保存时格式化已接入三种原生数据库；`bun scripts/verify-sql-format-live.ts` 验证格式化 / 压缩前后的实际结果一致（大整数、Unicode / 多行字符串、MySQL 注释、Pg 相邻字符串 / E / dollar、SQLite 方括号）。十一种默认片段与自定义编辑 / 搜索 / 启停 / 重排 / 删除、字段导航及配置导入导出均有运行实现。偏好按 workspace + connection 保存，严格完整快照校验与版本比较，临时会话 / 删除清理；P0 覆盖隔离、冲突不覆盖、陈旧格式化不覆写。Chrome 一次流程完成格式化 / 撤销 / 实际执行、设置保存、动态片段插入与选区下完整文档保存；浅深 1440×1000 与 390×844 实际视觉检查。Q02 保持进行中，其他方言 / 入口矩阵仍待阶段集中回归。
+
 - SQL 参数工作流：三种原生数据库已接入五种占位符、五种参数类型、引用 / 字符串插值、MyBatis 集合 / where / 索引 / 实体、`@set` 前缀上下文与可恢复历史。共享编译、输入诊断 / 精度 / 展开限制、完整只读批次预检及 UTF-16 原始定位均有真实接口证据：`node scripts/verify-sql-parameters-live.mjs`。弹窗沿 DBX 的紧凑参数表格 + 高亮预览布局，浅深主题 / 1440×1000 / 390×844 验证焦点、类型错误、复制反馈、键盘执行、Escape 取消及标签内最近值隔离；实际三库返回参数 / 集合结果。196 项数据库 / SQL 工作台 / 原始 JSON 作用域测试、892 个断言通过；原生多结果 / 取消回归仍通过。语法开关、其他方言与全部模板入口仍待覆盖；Q01 / Q03 / Q05 / Q08 / Q09 保持进行中。
 
 - SQL 执行工作流：三种原生数据库已支持词法当前语句 / 全部 / 选区、顺序多结果标签、完整只读批次预检、错误后停止、UTF-16 原始来源、驱动取消确认 / 部分结果保留 / 连接复用和断开中断。`node scripts/verify-sql-executions-live.mjs` 为真实接口回归；103 项作用域测试 / 751 个断言通过。浏览器以 DBX 布局验收浅深主题、1440×1000 / 390×844、结果键盘导航、跨查询标签取消、失败定位和轮询恢复。Q06 仅编辑器中的分段执行 / 进度 / 取消部分进入进行中，文件编码与流式大文件尚未迁移；全部涉及任务保持未完成。
@@ -29,7 +31,7 @@
 - Redis 观测验证入口：`node scripts/redis-observability-lab.mjs up|status` 复用或启动独立 Redis 7.4.8 实验室（56380，启动时阈值 0、保留 512 条），`node scripts/verify-redis-observability-live.mjs` 验证 INFO 分区与有界慢日志读取、原始二进制参数 / 客户端字段、数量校验、空间隔离、只读状态和命令历史保留、可选 CONFIG / LEN 权限降级及 GET / INFO 拒绝。实验室不会修改或重置业务 Redis 的日志配置。50 个作用域测试通过，涵盖 64 位计数 / 命中率 / 数值排序、旧版本缺失字段和响应截断。Playwright + Chrome 在 1440×1000、760×844、390×844 验证指标折叠 / 搜索 / 复制、真实定时刷新及离开视图后停止、慢日志数量 / 排序 / 筛选 / 分页 / 二进制详情 / JSON 复制、权限失败保留旧指标和错误恢复；两次预期 HTTP 502，无其他页面 / 控制台错误。Cluster 逐节点、其他版本与权限矩阵仍未完整交付。
 
 - 源码已恢复至固定 commit；[源码审计](dbx-source-audit.json) 与 [实质迁移文件清单](dbx-native-port-manifest.json) 可由 `node scripts/audit-dbx-source.mjs --write` 重算。约 133.4 万有效源码行；排除独立测试、翻译资源、工具与账户/云模块后的核心范围估算为 91.4 万行。词法统计仍包含 Rust 内嵌测试，不能把这个估算当成已迁移量。
-- 第一阶段目标仍为约 50,000 行 Fouc 核心运行逻辑；当前清单为 131 个运行文件、15,692 行有效代码。不计样式、目录 JSON、测试、参考仓库或演示工作台，且必须逐能力验收，当前未完成。MySQL 已合并到共享会话与工作台，移除的重复逻辑不保留行数信用。MONITOR / Pub/Sub 共享生命周期与流解码，删除的重复实现同样不保留信用。RedisJSON 仅计已适配且实际运行的 token 格式化 / Unicode 编辑映射子集，未使用的 Number 包装 / stringify 代码不计入。统计受代码格式影响，不能以行数代替功能覆盖。固定源码基线未变化时，可用 `node scripts/audit-dbx-source.mjs --native-only --write` 快速重算原生清单。
+- 第一阶段目标仍为约 50,000 行 Fouc 核心运行逻辑；当前清单为 148 个运行文件、17,835 行有效代码。不计样式、目录 JSON、测试、参考仓库或演示工作台，且必须逐能力验收，当前未完成。MySQL 已合并到共享会话与工作台，移除的重复逻辑不保留行数信用。MONITOR / Pub/Sub 共享生命周期与流解码，删除的重复实现同样不保留信用。RedisJSON 仅计已适配且实际运行的 token 格式化 / Unicode 编辑映射子集，未使用的 Number 包装 / stringify 代码不计入。统计受代码格式影响，不能以行数代替功能覆盖。固定源码基线未变化时，可用 `node scripts/audit-dbx-source.mjs --native-only --write` 快速重算原生清单。
 - MySQL / PostgreSQL / SQLite 的连接配置 CRUD、测试与会话打开、Schema/表/视图/字段发现、主键分页、只读 SQL、大整数/重复列名及空间隔离已有真实 HTTP 和浏览器证据。R01/R02/R03 保持进行中；完整对象管理、导入导出、比较/备份、取消/重连、CLI/MCP 等仍须推进。SQLite 读取已改为只读子进程隔离，注册批次的长查询取消已通过真实验收；写入取消、结果磁盘缓存与完整版本矩阵仍待推进。
 - 验证入口：`bun test --isolate backend/device/src/database backend/device/src/api/server.database.test.ts src/features/connectors/datastore/result-format.test.ts`、`node scripts/verify-relational-live.mjs`、`node scripts/verify-mysql-live.mjs`、`node scripts/verify-table-save-live.mjs`。真实服务验证使用独立 `fouc_datastore_lab` 数据库、专用 `dbx_save_fixture` / `dbx_unique_fixture` 表与 `.runtime/dbx-lab/relational.sqlite`，不访问 Fouc 账户/业务表。MySQL 实验室通过 `node scripts/datastore-lab.mjs up|status` 运行，容器有认证健康检查，随机凭据只写入被 Git 忽略的运行目录。
 - Web 验证：Playwright + Chrome，1440×1000 完成上述 PostgreSQL / SQLite 流程；390×844、760×844 检查连接目录、导航收起及溢出。两次故意写入产生预期 HTTP 400，未出现其他控制台或页面错误；窄窗口工作台操作矩阵仍待补齐。
@@ -48,6 +50,8 @@
 - 结构验证入口：`node scripts/verify-table-structure-live.mjs` 仅重建独立 `dbx_structure_*` 夹具；PostgreSQL 17 实验室中重建脚本经回滚事务验证，MySQL 8.4 验证复合外键、表达式 / 前缀 / 降序 / 不可见索引与 CHECK，SQLite 验证隐式主键映射、STRICT 与内存库重建。独立 MySQL 实验室关闭 binlog，以普通夹具用户创建触发器，不给产品数据源账号增加 SUPER。34 个测试通过，API 鉴权 / 空间隔离 / 缺失对象均有证据。Chrome 三数据源在 1440×1000、760×844、390×844 完成结构 / 搜索 / 空状态 / 引用表跳转 / 只读 DDL / 复制 / 下载 / 刷新 / 视图流程，无浏览器错误。
 
 ## 范围与验收规则
+
+- **开发效率**：依照用户要求，无依赖模块由多 agent 并行实现，约定契约及互斥文件范围；开发阶段只做必要 P0 功能 / 安全检查与一次实际视觉验收。完整跨驱动 / 入口 / 权限矩阵集中在阶段末尾，已有通过证据不因例行提交反复全量回归；新错误及代码修复仍做定向复核。最终阶段验收前不标记完整任务完成。
 
 - **全量范围**：DBX 本地源码和中文产品文档中已实现且可使用的桌面、Web、CLI、MCP、插件、驱动与专项工作台能力；包括下文 81 个驱动类型与 104 个连接 Profile。实验性、默认关闭的能力也列入，并保留同等安全开关。不可把连接成功、静态演示、空按钮或仅有 UI 当作完成。
 - **功能等价**：按 DBX 的 capability、数据库类型、运行入口和账号权限逐项验收。DBX 本身没有声明的能力不强行开放；不同版本/Edition/驱动的动态差异要保留。桌面特有功能可用 Tauri 桥接，Web 的文件路径与网络按服务器环境解释。

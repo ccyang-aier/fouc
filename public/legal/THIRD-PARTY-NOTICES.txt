@@ -111,6 +111,15 @@ implements common MySQL/PostgreSQL/SQLite rules, dialect string escaping, input
 validation, bounded expansion and original-source diagnostics. React parameter
 UI keeps recent values in the current session/document rather than global storage.
 
+SQL formatting/layout, compression, structured auto-format, save snapshots and
+snippet defaults/fields follow apps/desktop/src/lib/sql/{sqlFormatter,
+sqlFormatterConfig,sqlFormatOnSave,sqlSnippetTemplates,sqlCompletion,autoFormat},
+sql/layout and common/xmlFormat. Fouc ports them into its native React editor
+and workspace-owned preference storage; it loads no DBX runtime module.
+sql-formatter 15.8.0 is an independently declared MIT dependency, pinned to the
+reference version for its internal AST interfaces. Its complete license is in
+SQL-FORMATTER-LICENSE.txt. Third-party package code is excluded from migration credit.
+
 redis-parser 3.0.0
 Copyright (c) 2015 NodeRedis; MIT License.
 Fouc's dedicated Pub/Sub connection uses this RESP parser. The full license

@@ -7,6 +7,7 @@ import { DatabaseInputError } from './input-error';
 import { historySearch, sqlDocument, sqlName, sqlNullable, sqlObject, sqlText } from './sql-library-input';
 import { sqlDraftSnapshot } from './sql-draft-input';
 import type { SqlDraftState } from '@fouc/shared';
+import { defaultSqlEditorPreferences, validateSqlEditorPreferencesUpdate, type SqlEditorPreferences } from '@fouc/shared';
 
 type Row = Record<string, unknown>;
 const folderColumns = 'id, connectionId, parentFolderId, name, orderIndex, createdAt, updatedAt';
@@ -43,6 +44,8 @@ export class RelationalSqlRepository {
           orderIndex INTEGER NOT NULL, openCount INTEGER NOT NULL, openedAt INTEGER, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL, version TEXT NOT NULL);
         CREATE UNIQUE INDEX IF NOT EXISTS sql_file_name ON sql_files(connectionId, database, COALESCE(folderId,''), nameKey);
         CREATE TABLE IF NOT EXISTS sql_drafts (
+          connectionId TEXT PRIMARY KEY, version TEXT NOT NULL, updatedAt INTEGER NOT NULL, snapshot TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS editor_preferences (
           connectionId TEXT PRIMARY KEY, version TEXT NOT NULL, updatedAt INTEGER NOT NULL, snapshot TEXT NOT NULL);`);
       this.databases.set(workspaceId, db); return db;
     } catch (error) { db.close(); throw error; }
@@ -167,7 +170,7 @@ export class RelationalSqlRepository {
   }
   removeConnection(workspaceId: string, connectionId: string): void {
     const db = this.db(workspaceId); this.transaction(db, () => {
-      for (const table of ['query_history', 'sql_files', 'sql_folders', 'sql_drafts']) db.prepare(`DELETE FROM ${table} WHERE connectionId=?`).run(connectionId);
+      for (const table of ['query_history', 'sql_files', 'sql_folders', 'sql_drafts', 'editor_preferences']) db.prepare(`DELETE FROM ${table} WHERE connectionId=?`).run(connectionId);
     });
   }
   drafts(workspaceId: string, connectionId: string): SqlDraftState {
@@ -183,6 +186,29 @@ export class RelationalSqlRepository {
       if ((current ? String(current.version) : null) !== expected) throw new DatabaseInputError('其他窗口已修改设备草稿，当前内容已保留；请查看设备版本后再决定如何处理');
       const version = crypto.randomUUID(), updatedAt = Date.now();
       db.prepare('INSERT INTO sql_drafts(connectionId,version,updatedAt,snapshot) VALUES(?,?,?,?) ON CONFLICT(connectionId) DO UPDATE SET version=excluded.version,updatedAt=excluded.updatedAt,snapshot=excluded.snapshot')
+        .run(connectionId, version, updatedAt, JSON.stringify(snapshot));
+      return { ...snapshot, version, updatedAt };
+    });
+  }
+  editorPreferences(workspaceId: string, connectionId: string): SqlEditorPreferences {
+    sqlText(connectionId, '连接 ID', 128);
+    const row = this.db(workspaceId).prepare('SELECT version,updatedAt,snapshot FROM editor_preferences WHERE connectionId=?').get(connectionId);
+    return row ? { ...JSON.parse(String(row.snapshot)), version: String(row.version), updatedAt: Number(row.updatedAt) } : defaultSqlEditorPreferences();
+  }
+  saveEditorPreferences(workspaceId: string, connectionId: string, value: unknown): SqlEditorPreferences {
+    sqlText(connectionId, '连接 ID', 128);
+    let input;
+    try { input = validateSqlEditorPreferencesUpdate(value); }
+    catch (reason) { throw new DatabaseInputError(reason instanceof Error ? reason.message : String(reason)); }
+    const db = this.db(workspaceId);
+    return this.transaction(db, () => {
+      const current = db.prepare('SELECT version FROM editor_preferences WHERE connectionId=?').get(connectionId);
+      if ((current ? String(current.version) : null) !== input.version) {
+        throw new DatabaseInputError('其他窗口已修改 SQL 编辑器设置，当前编辑已保留；请重新载入后核对');
+      }
+      const version = crypto.randomUUID(), updatedAt = Date.now();
+      const snapshot = { formatter: input.formatter, formatOnSave: input.formatOnSave, snippets: input.snippets };
+      db.prepare('INSERT INTO editor_preferences(connectionId,version,updatedAt,snapshot) VALUES(?,?,?,?) ON CONFLICT(connectionId) DO UPDATE SET version=excluded.version,updatedAt=excluded.updatedAt,snapshot=excluded.snapshot')
         .run(connectionId, version, updatedAt, JSON.stringify(snapshot));
       return { ...snapshot, version, updatedAt };
     });

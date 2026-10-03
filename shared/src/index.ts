@@ -449,3 +449,7 @@ export * from './sql-parameters';
 export * from './sql-variables';
 export * from './sql-source-map';
 export * from './sql-template';
+
+export * from './sql-formatter-config';
+export * from './sql-snippets';
+export * from './sql-editor-preferences';

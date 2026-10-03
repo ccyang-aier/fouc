@@ -36,13 +36,19 @@ export function relationalRoutes(
     c.json(
       {
         ok: true,
-        data: await sessions.connect(c.req.param('workspaceId')!, await c.req.json().catch(() => null)),
+        data: await sessions.connect(
+          c.req.param('workspaceId')!,
+          await c.req.json().catch(() => null),
+        ),
       },
       201,
     ),
   );
   app.get(base + '/:id', (c) =>
-    c.json({ ok: true, data: sessions.details(c.req.param('workspaceId')!, c.req.param('id')!) }),
+    c.json({
+      ok: true,
+      data: sessions.details(c.req.param('workspaceId')!, c.req.param('id')!),
+    }),
   );
   app.put(base + '/:id/write-access', async (c) => {
     const body = await c.req.json().catch(() => null);
@@ -74,16 +80,38 @@ export function relationalRoutes(
     if (body?.confirm !== true) throw new DatabaseInputError('请明确确认预览中的变更');
     return c.json({
       ok: true,
-      data: await sessions.commit(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('planId')!),
+      data: await sessions.commit(
+        c.req.param('workspaceId')!,
+        c.req.param('id')!,
+        c.req.param('planId')!,
+      ),
     });
   });
   app.get(base + '/:id/schemas', async (c) =>
-    c.json({ ok: true, data: await sessions.schemas(c.req.param('workspaceId')!, c.req.param('id')!) }),
+    c.json({
+      ok: true,
+      data: await sessions.schemas(c.req.param('workspaceId')!, c.req.param('id')!),
+    }),
   );
   app.get(base + '/:id/schemas/:schema/tables', async (c) =>
     c.json({
       ok: true,
-      data: await sessions.tables(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('schema')!),
+      data: await sessions.tables(
+        c.req.param('workspaceId')!,
+        c.req.param('id')!,
+        c.req.param('schema')!,
+      ),
+    }),
+  );
+  app.get(base + '/:id/schemas/:schema/tables/:table/structure', async (c) =>
+    c.json({
+      ok: true,
+      data: await sessions.structure(
+        c.req.param('workspaceId')!,
+        c.req.param('id')!,
+        c.req.param('schema')!,
+        c.req.param('table')!,
+      ),
     }),
   );
   app.get(base + '/:id/schemas/:schema/tables/:table/rows', async (c) =>
@@ -133,7 +161,11 @@ export function relationalRoutes(
   });
   app.post(base + '/:id/query', async (c) => {
     const body = await c.req.json().catch(() => null);
-    if (!body || typeof body.sql !== 'string' || (body.schema !== null && typeof body.schema !== 'string'))
+    if (
+      !body ||
+      typeof body.sql !== 'string' ||
+      (body.schema !== null && typeof body.schema !== 'string')
+    )
       throw new DatabaseInputError('查询参数无效');
     return c.json({
       ok: true,

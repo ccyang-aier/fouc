@@ -6,6 +6,7 @@ import {
   type DatabaseQueryResult,
   type RelationalTablePage,
   type RelationalTableQueryPreview,
+  type RelationalTableStructure,
   type RelationalConnectInput,
   type RelationalSession,
   type RelationalSavePreview,
@@ -19,7 +20,13 @@ import { connectMysql } from './drivers/mysql';
 import { assertMysqlReadOnlySql } from './mysql-read-only-sql';
 import type { RelationalDriver } from './drivers/relational-driver';
 import { assertRelationalReadSql } from './relational-sql';
-import { columnSignature, executeSave, prepareSave, saveInput, type SavePlan } from './relational-save';
+import {
+  columnSignature,
+  executeSave,
+  prepareSave,
+  saveInput,
+  type SavePlan,
+} from './relational-save';
 import { compileTableQuery, tableQueryInput } from './relational-table-query';
 
 type Entry = {
@@ -33,7 +40,8 @@ export class RelationalSessionManager {
   constructor(private readonly capabilities: DatabaseCapabilityRegistry) {}
 
   async connect(workspaceId: string, value: unknown): Promise<RelationalSession> {
-    if (!workspaceId.trim() || workspaceId.length > 128) throw new DatabaseInputError('工作空间无效');
+    if (!workspaceId.trim() || workspaceId.length > 128)
+      throw new DatabaseInputError('工作空间无效');
     if (!value || typeof value !== 'object') throw new DatabaseInputError('连接参数无效');
     const input = value as RelationalConnectInput;
     if (input.provider === 'postgres' || input.provider === 'mysql') {
@@ -64,7 +72,10 @@ export class RelationalSessionManager {
     try {
       await driver.schemas();
       const observed = Object.fromEntries(
-        DATABASE_CAPABILITIES.map((key) => [key, key === 'metadataBrowse' || key === 'queryExecution']),
+        DATABASE_CAPABILITIES.map((key) => [
+          key,
+          key === 'metadataBrowse' || key === 'queryExecution',
+        ]),
       ) as DatabaseCapabilities;
       this.capabilities.begin(id, id);
       const snapshot = this.capabilities.confirm(id, id, declared.capabilities, observed, {
@@ -79,7 +90,12 @@ export class RelationalSessionManager {
         info: driver.info,
         capabilities: snapshot,
       };
-      this.entries.set(id, { session, driver, plans: new Map(), saving: false });
+      this.entries.set(id, {
+        session,
+        driver,
+        plans: new Map(),
+        saving: false,
+      });
       return session;
     } catch (error) {
       this.capabilities.disconnect(id, id);
@@ -103,7 +119,9 @@ export class RelationalSessionManager {
     const observed = Object.fromEntries(
       DATABASE_CAPABILITIES.map((key) => [
         key,
-        key === 'metadataBrowse' || key === 'queryExecution' || (enabled && key === 'tableDataEdit'),
+        key === 'metadataBrowse' ||
+          key === 'queryExecution' ||
+          (enabled && key === 'tableDataEdit'),
       ]),
     ) as DatabaseCapabilities;
     const snapshot = this.capabilities.confirm(
@@ -134,8 +152,10 @@ export class RelationalSessionManager {
     if (!columns.length) throw new DatabaseInputError('无法读取目标字段');
     const plan = prepareSave(input, columns, entry.session.provider, entry.driver.quoteIdentifier);
     // A disconnect/lock during metadata loading must invalidate this request.
-    if (this.writable(workspaceId, id) !== entry) throw new DatabaseInputError('会话已变化，请重新预览');
-    for (const [key, item] of entry.plans) if (item.preview.expiresAt <= Date.now()) entry.plans.delete(key);
+    if (this.writable(workspaceId, id) !== entry)
+      throw new DatabaseInputError('会话已变化，请重新预览');
+    for (const [key, item] of entry.plans)
+      if (item.preview.expiresAt <= Date.now()) entry.plans.delete(key);
     if (entry.plans.size >= 20) throw new DatabaseInputError('未提交的预览过多，请关闭预览后重试');
     entry.plans.set(plan.preview.id, plan);
     return plan.preview;
@@ -146,7 +166,8 @@ export class RelationalSessionManager {
   async commit(workspaceId: string, id: string, planId: string): Promise<RelationalSaveResult> {
     const entry = this.writable(workspaceId, id);
     const plan = entry.plans.get(planId);
-    if (!plan || plan.preview.expiresAt <= Date.now()) throw new DatabaseInputError('预览已失效，请重新生成');
+    if (!plan || plan.preview.expiresAt <= Date.now())
+      throw new DatabaseInputError('预览已失效，请重新生成');
     if (entry.saving) throw new DatabaseInputError('当前连接正在提交变更');
     entry.plans.delete(planId);
     entry.saving = true;
@@ -159,7 +180,10 @@ export class RelationalSessionManager {
       const affectedRows = await entry.driver.transaction(schema, (transaction) =>
         executeSave(plan, transaction),
       );
-      return { affectedRows, executionTimeMs: Math.round(performance.now() - start) };
+      return {
+        affectedRows,
+        executionTimeMs: Math.round(performance.now() - start),
+      };
     } finally {
       entry.saving = false;
     }
@@ -175,6 +199,22 @@ export class RelationalSessionManager {
       database: session.provider === 'mysql' ? schema : session.database,
       connectionId: id,
     }));
+  }
+  async structure(
+    workspaceId: string,
+    id: string,
+    schema: string,
+    table: string,
+  ): Promise<RelationalTableStructure> {
+    const { session, driver } = this.entry(workspaceId, id);
+    const columns = await driver.columns(schema, table);
+    if (!columns.length) throw new DatabaseInputError('对象不存在或当前账号无权读取字段');
+    return {
+      ...(await driver.structure(schema, table, columns)),
+      connectionId: id,
+      provider: session.provider,
+      columns,
+    };
   }
   private async planPage(
     workspaceId: string,
@@ -306,7 +346,9 @@ export class RelationalSessionManager {
   }
   async shutdown(): Promise<void> {
     await Promise.all(
-      [...this.entries.values()].map(({ session }) => this.disconnect(session.workspaceId, session.id)),
+      [...this.entries.values()].map(({ session }) =>
+        this.disconnect(session.workspaceId, session.id),
+      ),
     );
   }
 }

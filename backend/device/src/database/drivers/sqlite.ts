@@ -5,6 +5,7 @@ import type { DatabaseColumnInfo, RelationalConnectInput } from '@fouc/shared';
 import { quoteRelationalIdentifier as quote } from '../relational-sql';
 import { DatabaseInputError } from '../input-error';
 import { relationalCell, type Relation, type RelationalDriver } from './relational-driver';
+import { sqliteStructure } from './sqlite-structure';
 
 // DBX sqlite.rs: existing local file, single connection, xinfo (including
 // generated columns), composite primary keys and explicit read-only opening.
@@ -80,6 +81,14 @@ export async function connectSqlite(
             }),
           );
       },
+      async structure(schema, table, columns) {
+        return sqliteStructure(
+          { all: (sql, ...values) => db.prepare(sql).all(...values) },
+          schema,
+          table,
+          columns,
+        );
+      },
       async read(sql, schema, maxRows, values = []) {
         if (schema && schema !== 'main') throw new DatabaseInputError('SQLite 会话仅支持 main');
         const statement = db.prepare(sql);
@@ -117,7 +126,10 @@ export async function connectSqlite(
       },
       async transaction(schema, run) {
         if (schema !== 'main') throw new DatabaseInputError('SQLite 会话仅支持 main');
-        const writer = new DatabaseSync(input.path, { open: true, readOnly: false });
+        const writer = new DatabaseSync(input.path, {
+          open: true,
+          readOnly: false,
+        });
         try {
           writer.exec('PRAGMA busy_timeout=5000; PRAGMA foreign_keys=ON; BEGIN IMMEDIATE');
           const result = await run({
@@ -126,7 +138,9 @@ export async function connectSqlite(
               statement.setReadBigInts(true);
               statement.setReturnArrays(true);
               const fields = statement.columns();
-              const parameters = values.map((value) => (typeof value === 'boolean' ? Number(value) : value));
+              const parameters = values.map((value) =>
+                typeof value === 'boolean' ? Number(value) : value,
+              );
               if (!fields.length)
                 return {
                   columns: [],

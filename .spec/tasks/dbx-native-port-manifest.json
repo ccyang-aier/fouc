@@ -135,6 +135,24 @@
         "src/features/connectors/datastore/table-sort-builder.tsx",
         "src/features/connectors/datastore/table-query-controls.tsx"
       ]
+    },
+    {
+      "area": "native-relational-structure-and-source-browser",
+      "status": "partial",
+      "sourceReferences": [
+        "crates/dbx-drivers/src/db/postgres.rs",
+        "crates/dbx-drivers/src/db/mysql.rs",
+        "crates/dbx-drivers/src/db/sqlite.rs",
+        "apps/desktop/src/components/structure/TableStructureEditor.vue"
+      ],
+      "runtimeFiles": [
+        "shared/src/relational-structure.ts",
+        "backend/device/src/database/drivers/postgres-structure.ts",
+        "backend/device/src/database/drivers/mysql-structure.ts",
+        "backend/device/src/database/drivers/sqlite-structure.ts",
+        "src/features/connectors/datastore/structure-metadata.tsx",
+        "src/features/connectors/datastore/table-structure.tsx"
+      ]
     }
   ],
   "knownRemainingScope": [

@@ -449,6 +449,11 @@
           "kind": "partial-native-validation",
           "path": "scripts/verify-table-save-live.mjs",
           "check": "2026-10-03: Real PostgreSQL/MySQL/SQLite API matrix: one-time confirmed write plans, typed values, rollback/conflicts, generated metadata and unique-key guards; additional drivers/faults/desktop matrix remain open."
+        },
+        {
+          "kind": "partial-native-validation",
+          "path": "scripts/verify-table-structure-live.mjs",
+          "check": "2026-10-03: native PostgreSQL17/MySQL8.4/SQLite structure catalogs, ordered composite FK actions, expression/INCLUDE/prefix/invisible indexes, constraints, triggers, views and source DDL; Pg rolled-back reconstruction and SQLite in-memory recreation passed. Chrome 1440/760/390 verifies six structure tabs/search/empty/FK navigation/readonly highlighted DDL/copy/download/refresh with no errors. Object mutation, other object kinds, complete restoration and full driver/version matrix remain open."
         }
       ],
       "scopeKind": "platform"
@@ -521,6 +526,11 @@
           "kind": "partial-native-validation",
           "path": "compose.datastore-lab.yaml",
           "check": "2026-10-03: Pinned MySQL lab container recipe with health check and ignored random credentials; scripts/datastore-lab.mjs up/status passed. PostgreSQL/Redis existing lab used; complete versions/port-conflict/one-command matrix remains open."
+        },
+        {
+          "kind": "partial-native-validation",
+          "path": "scripts/verify-table-structure-live.mjs",
+          "check": "2026-10-03: native PostgreSQL17/MySQL8.4/SQLite structure catalogs, ordered composite FK actions, expression/INCLUDE/prefix/invisible indexes, constraints, triggers, views and source DDL; Pg rolled-back reconstruction and SQLite in-memory recreation passed. Chrome 1440/760/390 verifies six structure tabs/search/empty/FK navigation/readonly highlighted DDL/copy/download/refresh with no errors. Object mutation, other object kinds, complete restoration and full driver/version matrix remain open."
         }
       ],
       "scopeKind": "platform"
@@ -1501,7 +1511,13 @@
         "action": "连接→数据库→Schema→表/视图/字段/索引/外键/触发器等树；异步展开/全展开/全折叠、搜索过滤与可见范围（隐藏系统 Schema/前缀）、计数、刷新、固定/粘性行、标签反向定位、权限/错误提示和上下文菜单；嵌套连接分组、多选批量管理、对象复制粘贴及拖入 SQL 编辑器逐项验收。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-validation",
+          "path": "scripts/verify-table-structure-live.mjs",
+          "check": "2026-10-03: native PostgreSQL17/MySQL8.4/SQLite structure catalogs, ordered composite FK actions, expression/INCLUDE/prefix/invisible indexes, constraints, triggers, views and source DDL; Pg rolled-back reconstruction and SQLite in-memory recreation passed. Chrome 1440/760/390 verifies six structure tabs/search/empty/FK navigation/readonly highlighted DDL/copy/download/refresh with no errors. Object mutation, other object kinds, complete restoration and full driver/version matrix remain open."
+        }
+      ],
       "scopeKind": "driver"
     },
     {
@@ -1611,7 +1627,7 @@
     {
       "id": "S04",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql",
@@ -1692,7 +1708,13 @@
         "action": "对象浏览器覆盖表、视图、过程、函数、序列、事件、扩展、类型及特定数据库对象；列表、详情、源码/DDL、创建/修改/删除及能力门控。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-validation",
+          "path": "scripts/verify-table-structure-live.mjs",
+          "check": "2026-10-03: native PostgreSQL17/MySQL8.4/SQLite structure catalogs, ordered composite FK actions, expression/INCLUDE/prefix/invisible indexes, constraints, triggers, views and source DDL; Pg rolled-back reconstruction and SQLite in-memory recreation passed. Chrome 1440/760/390 verifies six structure tabs/search/empty/FK navigation/readonly highlighted DDL/copy/download/refresh with no errors. Object mutation, other object kinds, complete restoration and full driver/version matrix remain open."
+        }
+      ],
       "scopeKind": "driver"
     },
     {
@@ -1751,7 +1773,13 @@
         "action": "表结构视图和编辑：列、主键、索引、约束、外键、注释、存储选项，生成/预览 DDL；SQLite 重建等方言特例正确处理。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-validation",
+          "path": "scripts/verify-table-structure-live.mjs",
+          "check": "2026-10-03: native PostgreSQL17/MySQL8.4/SQLite structure catalogs, ordered composite FK actions, expression/INCLUDE/prefix/invisible indexes, constraints, triggers, views and source DDL; Pg rolled-back reconstruction and SQLite in-memory recreation passed. Chrome 1440/760/390 verifies six structure tabs/search/empty/FK navigation/readonly highlighted DDL/copy/download/refresh with no errors. Object mutation, other object kinds, complete restoration and full driver/version matrix remain open."
+        }
+      ],
       "scopeKind": "driver"
     },
     {
@@ -3248,7 +3276,13 @@
         "action": "单元格/行/列详情、字段元数据、关联数据跳转、值大文本查看、行详情动态展示与字段筛选。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-validation",
+          "path": "scripts/verify-table-structure-live.mjs",
+          "check": "2026-10-03: native PostgreSQL17/MySQL8.4/SQLite structure catalogs, ordered composite FK actions, expression/INCLUDE/prefix/invisible indexes, constraints, triggers, views and source DDL; Pg rolled-back reconstruction and SQLite in-memory recreation passed. Chrome 1440/760/390 verifies six structure tabs/search/empty/FK navigation/readonly highlighted DDL/copy/download/refresh with no errors. Object mutation, other object kinds, complete restoration and full driver/version matrix remain open."
+        }
+      ],
       "scopeKind": "driver"
     },
     {
@@ -5844,6 +5878,11 @@
           "kind": "partial-native-validation",
           "path": "scripts/verify-table-query-live.mjs",
           "check": "2026-10-03: PostgreSQL/MySQL/SQLite live 18 operators, nested AND/OR, exact bigint/JSON/binary binding, NULL-aware IN/NOT IN, multicolumn ordering/NULL placement, primary-key tie ordering, pagination, SQL preview and workspace isolation. Chrome 1440/760/390 verifies search preserves edited row identity, filters/sort/preview/copy/reset/empty/page controls; no browser errors. Current-result value filters/local sorting and other-driver matrix remain open."
+        },
+        {
+          "kind": "partial-native-validation",
+          "path": "scripts/verify-table-structure-live.mjs",
+          "check": "2026-10-03: native PostgreSQL17/MySQL8.4/SQLite structure catalogs, ordered composite FK actions, expression/INCLUDE/prefix/invisible indexes, constraints, triggers, views and source DDL; Pg rolled-back reconstruction and SQLite in-memory recreation passed. Chrome 1440/760/390 verifies six structure tabs/search/empty/FK navigation/readonly highlighted DDL/copy/download/refresh with no errors. Object mutation, other object kinds, complete restoration and full driver/version matrix remain open."
         }
       ],
       "scopeKind": "driver"
@@ -5894,6 +5933,11 @@
           "kind": "partial-native-validation",
           "path": "scripts/verify-table-query-live.mjs",
           "check": "2026-10-03: PostgreSQL/MySQL/SQLite live 18 operators, nested AND/OR, exact bigint/JSON/binary binding, NULL-aware IN/NOT IN, multicolumn ordering/NULL placement, primary-key tie ordering, pagination, SQL preview and workspace isolation. Chrome 1440/760/390 verifies search preserves edited row identity, filters/sort/preview/copy/reset/empty/page controls; no browser errors. Current-result value filters/local sorting and other-driver matrix remain open."
+        },
+        {
+          "kind": "partial-native-validation",
+          "path": "scripts/verify-table-structure-live.mjs",
+          "check": "2026-10-03: native PostgreSQL17/MySQL8.4/SQLite structure catalogs, ordered composite FK actions, expression/INCLUDE/prefix/invisible indexes, constraints, triggers, views and source DDL; Pg rolled-back reconstruction and SQLite in-memory recreation passed. Chrome 1440/760/390 verifies six structure tabs/search/empty/FK navigation/readonly highlighted DDL/copy/download/refresh with no errors. Object mutation, other object kinds, complete restoration and full driver/version matrix remain open."
         }
       ],
       "scopeKind": "driver"
@@ -5944,6 +5988,11 @@
           "kind": "partial-native-validation",
           "path": "scripts/verify-table-query-live.mjs",
           "check": "2026-10-03: PostgreSQL/MySQL/SQLite live 18 operators, nested AND/OR, exact bigint/JSON/binary binding, NULL-aware IN/NOT IN, multicolumn ordering/NULL placement, primary-key tie ordering, pagination, SQL preview and workspace isolation. Chrome 1440/760/390 verifies search preserves edited row identity, filters/sort/preview/copy/reset/empty/page controls; no browser errors. Current-result value filters/local sorting and other-driver matrix remain open."
+        },
+        {
+          "kind": "partial-native-validation",
+          "path": "scripts/verify-table-structure-live.mjs",
+          "check": "2026-10-03: native PostgreSQL17/MySQL8.4/SQLite structure catalogs, ordered composite FK actions, expression/INCLUDE/prefix/invisible indexes, constraints, triggers, views and source DDL; Pg rolled-back reconstruction and SQLite in-memory recreation passed. Chrome 1440/760/390 verifies six structure tabs/search/empty/FK navigation/readonly highlighted DDL/copy/download/refresh with no errors. Object mutation, other object kinds, complete restoration and full driver/version matrix remain open."
         }
       ],
       "scopeKind": "driver"

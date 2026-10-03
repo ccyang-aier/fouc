@@ -9,6 +9,7 @@ import {
   type SqlParameter,
 } from './relational-driver';
 import { DatabaseInputError } from '../input-error';
+import { postgresStructure } from './postgres-structure';
 
 // Adapted from DBX dbx-drivers/src/db/postgres.rs: catalog-backed metadata,
 // connection-local search_path, read-only transactions and bounded cursors.
@@ -35,8 +36,9 @@ export async function connectPostgres(
         : types.getTypeParser(oid, format as 'text' | 'binary'),
   };
   try {
-    const identity = (await pool.query('SELECT current_database() AS database, version() AS version'))
-      .rows[0]!;
+    const identity = (
+      await pool.query('SELECT current_database() AS database, version() AS version')
+    ).rows[0]!;
     async function read(
       sql: string,
       schema: string | null,
@@ -48,12 +50,21 @@ export async function connectPostgres(
       try {
         await client.query('BEGIN READ ONLY');
         await client.query("SET LOCAL statement_timeout = '30s'");
-        if (schema) await client.query("SELECT set_config('search_path', $1, true)", [quote(schema)]);
+        if (schema)
+          await client.query("SELECT set_config('search_path', $1, true)", [quote(schema)]);
         let result: QueryResult<unknown[]>;
         if (/^\s*EXPLAIN\b/i.test(sql))
-          result = await client.query({ text: sql, values, rowMode: 'array', types: parser });
+          result = await client.query({
+            text: sql,
+            values,
+            rowMode: 'array',
+            types: parser,
+          });
         else {
-          await client.query({ text: `DECLARE fouc_result NO SCROLL CURSOR FOR ${sql}`, values });
+          await client.query({
+            text: `DECLARE fouc_result NO SCROLL CURSOR FOR ${sql}`,
+            values,
+          });
           result = await client.query({
             text: `FETCH FORWARD ${maxRows + 1} FROM fouc_result`,
             rowMode: 'array',
@@ -98,7 +109,8 @@ export async function connectPostgres(
           (row): Relation => ({
             name: row.relname,
             schema,
-            kind: row.relkind === 'v' ? 'view' : row.relkind === 'm' ? 'materialized_view' : 'table',
+            kind:
+              row.relkind === 'v' ? 'view' : row.relkind === 'm' ? 'materialized_view' : 'table',
             comment: row.comment,
           }),
         );
@@ -131,6 +143,13 @@ export async function connectPostgres(
           }),
         );
       },
+      structure: (schema, table, columns) =>
+        postgresStructure(
+          async (sql, values) => (await pool.query(sql, values)).rows,
+          schema,
+          table,
+          columns,
+        ),
       read,
       async assertEditable(schema, table) {
         const result = await pool.query(
@@ -152,7 +171,9 @@ export async function connectPostgres(
             async query(sql, values) {
               const response = await client.query({
                 text: sql,
-                values: values.map((value) => (value instanceof Uint8Array ? Buffer.from(value) : value)),
+                values: values.map((value) =>
+                  value instanceof Uint8Array ? Buffer.from(value) : value,
+                ),
                 rowMode: 'array',
                 types: parser,
               });

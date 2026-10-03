@@ -9,6 +9,7 @@ import {
 import type { DatabaseColumnInfo, RelationalConnectInput } from '@fouc/shared';
 import { DatabaseInputError } from '../input-error';
 import { relationalCell, type DriverResult, type RelationalDriver } from './relational-driver';
+import { mysqlStructure } from './mysql-structure';
 
 type Row = RowDataPacket & Record<string, unknown>;
 export function quoteMysqlIdentifier(value: string): string {
@@ -43,12 +44,15 @@ export async function connectMysql(
     return (await pool.query<Row[]>(sql, values))[0];
   }
   try {
-    const identity = (await query('SELECT VERSION() AS version, DATABASE() AS current_database'))[0]!;
+    const identity = (
+      await query('SELECT VERSION() AS version, DATABASE() AS current_database')
+    )[0]!;
     return {
       info: {
         productName: 'MySQL',
         productVersion: String(identity.version),
-        currentDatabase: identity.current_database == null ? undefined : String(identity.current_database),
+        currentDatabase:
+          identity.current_database == null ? undefined : String(identity.current_database),
         driverName: 'mysql2',
       },
       quoteIdentifier: quoteMysqlIdentifier,
@@ -57,7 +61,9 @@ export async function connectMysql(
         try {
           rows = await query('SHOW DATABASES');
         } catch {
-          rows = await query('SELECT SCHEMA_NAME FROM information_schema.SCHEMATA ORDER BY SCHEMA_NAME');
+          rows = await query(
+            'SELECT SCHEMA_NAME FROM information_schema.SCHEMATA ORDER BY SCHEMA_NAME',
+          );
         }
         return rows.map((row) => String(Object.values(row)[0])).sort();
       },
@@ -106,6 +112,7 @@ export async function connectMysql(
           }),
         );
       },
+      structure: (schema, table) => mysqlStructure(query, quoteMysqlIdentifier, schema, table),
       async assertEditable(schema, table) {
         const rows = await query(
           "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA=? AND TABLE_NAME=? AND TABLE_TYPE='BASE TABLE'",

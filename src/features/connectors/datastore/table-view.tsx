@@ -7,7 +7,6 @@ import styles from "./relational.module.css"
 
 export function TableView({
   page,
-  structure,
   selectedRow,
   onSelect,
   search = "",
@@ -17,7 +16,6 @@ export function TableView({
   onSort
 }: {
   page: DatabaseTablePage
-  structure: boolean
   selectedRow: number | null
   onSelect: (row: number) => void
   search?: string
@@ -26,35 +24,6 @@ export function TableView({
   filtered?: boolean
   onSort?: (column: string, additive: boolean) => void
 }) {
-  if (structure)
-    return (
-      <div className="mw-result-grid">
-        <table>
-          <thead>
-            <tr>
-              <th>字段</th>
-              <th>类型</th>
-              <th>可为空</th>
-              <th>主键</th>
-              <th>默认值</th>
-              <th>注释</th>
-            </tr>
-          </thead>
-          <tbody>
-            {page.columns.map((column) => (
-              <tr key={column.name}>
-                <td>{column.name}</td>
-                <td>{column.dataType}</td>
-                <td>{column.isNullable ? "YES" : "NO"}</td>
-                <td>{column.isPrimaryKey ? "PK" : ""}</td>
-                <td>{column.columnDefault ?? "—"}</td>
-                <td>{column.comment ?? "—"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    )
   return (
     <div className="mw-result-grid">
       <table>
@@ -119,11 +88,17 @@ export function TableView({
             ))}
         </tbody>
       </table>
-      {!page.rows.length && <p className="mw-live-result-empty">{filtered ? "没有符合数据库筛选的记录。" : "表中没有记录。"}</p>}
+      {!page.rows.length && (
+        <p className="mw-live-result-empty">
+          {filtered ? "没有符合数据库筛选的记录。" : "表中没有记录。"}
+        </p>
+      )}
       {page.rows.length > 0 &&
         search &&
         !page.rows.some((row) =>
-          row.some((cell) => databaseCellText(cell).toLocaleLowerCase().includes(search.toLocaleLowerCase()))
+          row.some((cell) =>
+            databaseCellText(cell).toLocaleLowerCase().includes(search.toLocaleLowerCase())
+          )
         ) && <p className="mw-live-result-empty">当前页没有匹配记录。</p>}
     </div>
   )

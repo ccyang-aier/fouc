@@ -13,6 +13,7 @@ import { TableView, RowInspector } from "./table-view"
 import { RelationalQuery } from "./relational-query"
 import { TableEditing } from "./table-editing"
 import { TableQueryControls } from "./table-query-controls"
+import { TableStructure } from "./table-structure"
 import styles from "./relational.module.css"
 import "./workbench.css"
 
@@ -43,7 +44,10 @@ export function RelationalWorkbench({
   const [writeBusy, setWriteBusy] = useState(false)
   const [feedback, setFeedback] = useState("")
   const [limit, setLimit] = useState(100)
-  const [query, setQuery] = useState<RelationalTableQuery>({ filter: null, sort: [] })
+  const [query, setQuery] = useState<RelationalTableQuery>({
+    filter: null,
+    sort: []
+  })
   const [pageSearch, setPageSearch] = useState("")
   const [filtersOpen, setFiltersOpen] = useState(false)
   const writable =
@@ -67,7 +71,9 @@ export function RelationalWorkbench({
   }
   useEffect(() => {
     const controller = new AbortController()
-    void backendFetch<string[]>(`${base}/schemas`, { signal: controller.signal })
+    void backendFetch<string[]>(`${base}/schemas`, {
+      signal: controller.signal
+    })
       .then((items) => {
         if (!controller.signal.aborted) {
           setSchemas(items)
@@ -90,9 +96,12 @@ export function RelationalWorkbench({
   useEffect(() => {
     if (!schema) return
     const controller = new AbortController()
-    void backendFetch<DatabaseObjectInfo[]>(`${base}/schemas/${encodeURIComponent(schema)}/tables`, {
-      signal: controller.signal
-    })
+    void backendFetch<DatabaseObjectInfo[]>(
+      `${base}/schemas/${encodeURIComponent(schema)}/tables`,
+      {
+        signal: controller.signal
+      }
+    )
       .then((items) => {
         if (!controller.signal.aborted) setTables(items)
       })
@@ -106,7 +115,11 @@ export function RelationalWorkbench({
     const controller = new AbortController()
     void backendFetch<RelationalTablePage>(
       `${base}/schemas/${encodeURIComponent(schema)}/tables/${encodeURIComponent(table)}/rows`,
-      { method: "POST", body: JSON.stringify({ ...query, offset, limit }), signal: controller.signal }
+      {
+        method: "POST",
+        body: JSON.stringify({ ...query, offset, limit }),
+        signal: controller.signal
+      }
     )
       .then((value) => {
         if (!controller.signal.aborted) {
@@ -173,7 +186,11 @@ export function RelationalWorkbench({
     const next =
       existing?.direction === "desc"
         ? null
-        : { column, direction: existing ? ("desc" as const) : ("asc" as const), nulls: "last" as const }
+        : {
+            column,
+            direction: existing ? ("desc" as const) : ("asc" as const),
+            nulls: "last" as const
+          }
     const others = additive ? query.sort.filter((item) => item.column !== column) : []
     if (next && others.length >= 8) {
       setError("最多按 8 个字段排序，请先移除已有规则")
@@ -356,7 +373,20 @@ export function RelationalWorkbench({
                   {table ? `.${table}` : ""}
                 </span>
               </div>
-              {busy ? (
+              {mode === "structure" && table ? (
+                <TableStructure
+                  key={`${schema}:${table}`}
+                  base={base}
+                  schema={schema}
+                  table={table}
+                  revision={revision}
+                  pending={pending}
+                  onOpenTable={(nextSchema, nextTable) => {
+                    selectSchema(nextSchema)
+                    openTable(nextTable)
+                  }}
+                />
+              ) : busy ? (
                 <p className="mw-live-result-empty" role="status">
                   正在读取表数据…
                 </p>
@@ -369,7 +399,6 @@ export function RelationalWorkbench({
               ) : (
                 <TableView
                   page={page}
-                  structure={mode === "structure"}
                   selectedRow={selectedRow}
                   onSelect={setSelectedRow}
                   search={pageSearch}
@@ -379,7 +408,7 @@ export function RelationalWorkbench({
                   onSort={sortColumn}
                 />
               )}
-              {page && (
+              {page && mode === "data" && (
                 <footer className="mw-result-footer">
                   <span>
                     {page.rows.length} 行{page.rows.length ? ` · 从第 ${offset + 1} 行开始` : ""}
@@ -418,7 +447,11 @@ export function RelationalWorkbench({
             </>
           )}
         </main>
-        <RowInspector session={session} page={page} selectedRow={mode === "sql" ? null : selectedRow} />
+        <RowInspector
+          session={session}
+          page={page}
+          selectedRow={mode === "sql" ? null : selectedRow}
+        />
       </div>
     </section>
   )

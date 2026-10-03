@@ -165,7 +165,7 @@ function ConnectionDirectory({
           <h1>{label} 连接</h1>
           <p>管理当前工作空间的数据库连接，在工作台中浏览与查询。</p>
         </div>
-        <button className={styles.primary} type="button" onClick={() => setDialog({ intent: "save" })}>
+        <button className={styles.primary} type="button" disabled={loading} onClick={() => setDialog({ intent: "save" })}>
           <Plus size={15} />
           新建连接
         </button>

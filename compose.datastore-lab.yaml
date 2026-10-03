@@ -4,6 +4,8 @@ name: fouc-datastore-lab
 services:
   mysql:
     image: mysql:8.4.11
+    # Standalone lab; binary logging would require SUPER for trigger fixtures.
+    command: ["--skip-log-bin"]
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${FOUC_MYSQL_LAB_ROOT_PASSWORD:?Run node scripts/datastore-lab.mjs up}

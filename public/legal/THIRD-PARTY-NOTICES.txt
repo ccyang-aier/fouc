@@ -24,6 +24,11 @@ layout,grid}. Fouc's corresponding implementation is independently written in
 backend/device/src/database/{drivers,relational-*}, shared/src/relational.ts and
 src/features/connectors/datastore/ using TypeScript, React and Node-compatible APIs.
 The SQLite connector SVG is an original Fouc illustration.
+Table structure metadata, ordinal composite foreign keys, expression/INCLUDE
+indexes, constraints, triggers and source browsing follow the corresponding
+native driver catalog routines and TableStructureEditor.vue. The adapted
+TypeScript implementations are drivers/*-structure.ts and the React structure
+browser. Database-provided SQL remains source data, not executable UI code.
 
 Redis binary blob transport, cursor/key scans, bounded string/list/stream reads,
 collection browsing and command quoting are adapted from

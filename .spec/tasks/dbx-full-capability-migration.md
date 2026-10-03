@@ -9,7 +9,7 @@
 ## 代码规模与当前验证
 
 - 源码已恢复至固定 commit；[源码审计](dbx-source-audit.json) 与 [实质迁移文件清单](dbx-native-port-manifest.json) 可由 `node scripts/audit-dbx-source.mjs --write` 重算。约 133.4 万有效源码行；排除独立测试、翻译资源、工具与账户/云模块后的核心范围估算为 91.4 万行。词法统计仍包含 Rust 内嵌测试，不能把这个估算当成已迁移量。
-- 第一阶段目标仍为约 50,000 行 Fouc 核心运行逻辑；当前清单为 45 个运行文件、6,455 行有效代码。不计样式、目录 JSON、测试、参考仓库或演示工作台，且必须逐能力验收，当前未完成。MySQL 已合并到共享会话与工作台，移除的重复逻辑不保留行数信用。统计受代码格式影响，不能以行数代替功能覆盖。固定源码基线未变化时，可用 `node scripts/audit-dbx-source.mjs --native-only --write` 快速重算原生清单。
+- 第一阶段目标仍为约 50,000 行 Fouc 核心运行逻辑；当前清单为 51 个运行文件、7,808 行有效代码。不计样式、目录 JSON、测试、参考仓库或演示工作台，且必须逐能力验收，当前未完成。MySQL 已合并到共享会话与工作台，移除的重复逻辑不保留行数信用。统计受代码格式影响，不能以行数代替功能覆盖。固定源码基线未变化时，可用 `node scripts/audit-dbx-source.mjs --native-only --write` 快速重算原生清单。
 - MySQL / PostgreSQL / SQLite 的连接配置 CRUD、测试与会话打开、Schema/表/视图/字段发现、主键分页、只读 SQL、大整数/重复列名及空间隔离已有真实 HTTP 和浏览器证据。R01/R02/R03 保持进行中；完整对象管理、导入导出、比较/备份、取消/重连、CLI/MCP 等仍须推进。SQLite 当前同步查询，尚未交付长查询取消与 worker 隔离。
 - 验证入口：`bun test --isolate backend/device/src/database backend/device/src/api/server.database.test.ts src/features/connectors/datastore/result-format.test.ts`、`node scripts/verify-relational-live.mjs`、`node scripts/verify-mysql-live.mjs`、`node scripts/verify-table-save-live.mjs`。真实服务验证使用独立 `fouc_datastore_lab` 数据库、专用 `dbx_save_fixture` / `dbx_unique_fixture` 表与 `.runtime/dbx-lab/relational.sqlite`，不访问 Fouc 账户/业务表。MySQL 实验室通过 `node scripts/datastore-lab.mjs up|status` 运行，容器有认证健康检查，随机凭据只写入被 Git 忽略的运行目录。
 - Web 验证：Playwright + Chrome，1440×1000 完成上述 PostgreSQL / SQLite 流程；390×844、760×844 检查连接目录、导航收起及溢出。两次故意写入产生预期 HTTP 400，未出现其他控制台或页面错误；窄窗口工作台操作矩阵仍待补齐。
@@ -20,6 +20,9 @@
 
 - 三种关系型数据源新增数据库侧参数化筛选与多列排序：18 种操作符、嵌套 AND/OR、含 NULL 的 IN/NOT IN、范围条件、JSON/Base64/大整数、NULL 位置与主键补充排序；提供 SQL/参数预览复制、草稿重置、条件清除、页大小与前后翻页。当前页搜索保留原始行索引，搜索后编辑不会写到另一行；暂存写入时阻止改变数据库查询。无主键时提示顺序可能变化，主键排序不表示跨请求快照一致。G03 保持进行中；当前结果值过滤/本地排序及其他驱动仍待覆盖。
 - 筛选验证入口：`node scripts/verify-table-query-live.mjs` 使用独立 `dbx_filter_fixture` / `dbx_page_fixture`；33 个作用域单元/集成测试和 4 个架构边界测试通过。Playwright + Chrome 三种数据源在 1440×1000、760×844、390×844 验证真实搜索后写入、组合筛选、SQL 复制、多列/表头排序、NULL 列表、错误/重置/空结果与分页，无页面或控制台错误。窄屏搜索独占一行，筛选面板滚动时底部操作可见。
+
+- 关系型结构浏览新增独立字段 / 索引 / 外键 / 约束 / 触发器 / DDL 页签，真实目录搜索、空状态、刷新与外键跳转；SQLite 缺失的约束属性返回未知并指向原始 DDL，独立唯一索引不会误报为表约束。MySQL / SQLite 提供原始 DDL，PostgreSQL 提供明确标示来源和限制的目录重建脚本，覆盖 Identity 方式 / 序列参数、列排序规则、生成字段、索引、触发器状态与注释。只读 CodeMirror 支持复制与 SQL 下载，不开放执行或结构变更。S04/S05 保持进行中，过程 / 函数等其他对象、结构编辑、完整恢复与版本矩阵未交付。
+- 结构验证入口：`node scripts/verify-table-structure-live.mjs` 仅重建独立 `dbx_structure_*` 夹具；PostgreSQL 17 实验室中重建脚本经回滚事务验证，MySQL 8.4 验证复合外键、表达式 / 前缀 / 降序 / 不可见索引与 CHECK，SQLite 验证隐式主键映射、STRICT 与内存库重建。独立 MySQL 实验室关闭 binlog，以普通夹具用户创建触发器，不给产品数据源账号增加 SUPER。34 个测试通过，API 鉴权 / 空间隔离 / 缺失对象均有证据。Chrome 三数据源在 1440×1000、760×844、390×844 完成结构 / 搜索 / 空状态 / 引用表跳转 / 只读 DDL / 复制 / 下载 / 刷新 / 视图流程，无浏览器错误。
 
 ## 范围与验收规则
 
@@ -80,7 +83,7 @@
 | S01 | 在 Fouc 公共顶栏/导航内实现可折叠数据库资源栏、主区和 AI/信息详情右栏；多标签、拆分/分组、拖拽、关闭确认、标签恢复与独立窗口行为。 | `components/layout/`、`tabs/` | 待实施 |
 | S02 | 连接→数据库→Schema→表/视图/字段/索引/外键/触发器等树；异步展开/全展开/全折叠、搜索过滤与可见范围（隐藏系统 Schema/前缀）、计数、刷新、固定/粘性行、标签反向定位、权限/错误提示和上下文菜单；嵌套连接分组、多选批量管理、对象复制粘贴及拖入 SQL 编辑器逐项验收。 | `components/sidebar/`、`schema-browser.cn.mdx` | 进行中 |
 | S03 | 全局快速打开/搜索与数据库对象搜索，跨连接、数据库、Schema 的命中定位和打开。 | `components/quick-open/`、`search/`、`global_search.rs` | 待实施 |
-| S04 | 对象浏览器覆盖表、视图、过程、函数、序列、事件、扩展、类型及特定数据库对象；列表、详情、源码/DDL、创建/修改/删除及能力门控。 | `components/objects/`、`object-browser.cn.mdx` | 待实施 |
+| S04 | 对象浏览器覆盖表、视图、过程、函数、序列、事件、扩展、类型及特定数据库对象；列表、详情、源码/DDL、创建/修改/删除及能力门控。 | `components/objects/`、`object-browser.cn.mdx` | 进行中 |
 | S05 | 表结构视图和编辑：列、主键、索引、约束、外键、注释、存储选项，生成/预览 DDL；SQLite 重建等方言特例正确处理。 | `components/structure/`、`schema/table_structure_sql.rs` | 进行中 |
 | S06 | ER 图、表间关系、布局、搜索/缩放/导出；字段血缘、上下游依赖和字段来源解释。 | `components/diagram/`、`lineage/` | 待实施 |
 | S07 | 数据库文档快照、双向关系、表/字段 Markdown 笔记与彩色分组、自动保存/失败重试、本地笔记和数据库注释并存、DBML/文档导出与刷新；孤儿笔记、缺失元数据及不支持 DBML 的结构明确告警；支持 CLI/MCP 同源文档上下文。 | `crates/dbx-core/src/data/docs/`、`database-docs.cn.mdx` | 待实施 |

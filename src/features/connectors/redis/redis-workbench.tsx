@@ -10,7 +10,9 @@ import {
   Lock,
   LockOpen,
   Plus,
-  CheckCircle
+  CheckCircle,
+  ChartLineUp,
+  ClockCounterClockwise
 } from "@phosphor-icons/react"
 import type { RedisBlob, RedisKeyInfo, RedisMutation, RedisMutationResult, RedisScanPage, RedisSession, RedisValuePage } from "@fouc/shared"
 import { backendFetch } from "@/lib/backend"
@@ -19,6 +21,8 @@ import { RedisConsole } from "./redis-console"
 import { RedisMutationDialog } from "./redis-mutation-dialog"
 import type { RedisEditIntent } from "./redis-mutation-model"
 import { RedisDatabaseSelector } from "./redis-database-selector"
+import { RedisDashboard } from "./redis-dashboard"
+import { RedisSlowlog } from "./redis-slowlog"
 import styles from "./redis.module.css"
 
 export function RedisWorkbench({
@@ -39,7 +43,7 @@ export function RedisWorkbench({
   const [keys, setKeys] = useState<RedisKeyInfo[]>([])
   const [selected, setSelected] = useState<string | null>(null)
   const [value, setValue] = useState<RedisValuePage | null>(null)
-  const [mode, setMode] = useState<"keys" | "console">("keys")
+  const [mode, setMode] = useState<"keys" | "console" | "dashboard" | "slowlog">("keys")
   const [scanBusy, setScanBusy] = useState(true)
   const [valueBusy, setValueBusy] = useState(false)
   const [scanError, setScanError] = useState("")
@@ -159,7 +163,7 @@ export function RedisWorkbench({
           <ArrowLeft size={17} />
         </button>
         <Database size={17} />
-        <strong>{name}</strong>
+        <strong title={name}>{name}</strong>
         <span>
           Redis {session.version ?? ""}
         </span>
@@ -167,7 +171,7 @@ export function RedisWorkbench({
         <button type="button" className={styles.writeMode} disabled={writeBusy || Boolean(intent)} onClick={() => void toggleWriteMode()}>
           {readOnly ? <Lock size={13} /> : <LockOpen size={13} />}{writeBusy ? "处理中…" : readOnly ? "解锁写入" : "重新锁定"}
         </button>
-        <button type="button" aria-label="刷新 Redis 数据" onClick={refresh} disabled={scanBusy || valueBusy || writeBusy}>
+        <button type="button" aria-label="刷新 Redis 数据" onClick={refresh} disabled={scanBusy || valueBusy || writeBusy || mode !== "keys"}>
           <ArrowsClockwise size={16} />
         </button>
       </header>
@@ -191,8 +195,10 @@ export function RedisWorkbench({
           <TerminalWindow size={14} />
           命令台
         </button>
+        <button type="button" aria-current={mode === "dashboard" ? "page" : undefined} disabled={consoleBusy} onClick={() => setMode("dashboard")}><ChartLineUp size={14} />运行概览</button>
+        <button type="button" aria-current={mode === "slowlog" ? "page" : undefined} disabled={consoleBusy} onClick={() => setMode("slowlog")}><ClockCounterClockwise size={14} />慢日志</button>
       </nav>
-      {mode === "console" ? (
+      {mode === "dashboard" ? <RedisDashboard base={base} /> : mode === "slowlog" ? <RedisSlowlog base={base} /> : mode === "console" ? (
         <RedisConsole base={base} database={session.database} onBusyChange={setConsoleBusy} />
       ) : (
         <div className={styles.body}>

@@ -47,7 +47,7 @@ test('Redis routes require device authentication before config or session access
     expect(
       (await app.request(base + '/sessions/unknown/' + suffix, { method: 'POST', body: '{}' })).status,
     ).toBe(401);
-  for (const suffix of ['databases', 'history']) {
+  for (const suffix of ['databases', 'history', 'info', 'slowlog']) {
     expect((await app.request(base + '/sessions/unknown/' + suffix)).status).toBe(401);
     expect((await app.request(base + '/sessions/unknown/' + suffix, { headers: { authorization: 'Bearer frontend-token' } })).status).toBe(400);
   }

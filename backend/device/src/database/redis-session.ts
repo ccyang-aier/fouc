@@ -16,6 +16,7 @@ import { RedisMutationManager, sameRedisSnapshot } from './redis-mutation';
 import { REDIS_WRITE_BYTES } from './redis-mutation-input';
 import { redisDatabase, redisDatabases, redisHashExpiries } from './redis-metadata';
 import { RedisHistoryRepository, REDIS_HISTORY_LIMIT, redisHistoryEntry } from './redis-history';
+import { redisInformation, redisSlowlog } from './redis-observability';
 export { redisBlob } from './redis-blob';
 
 const PAGE_SIZE = 100;
@@ -105,6 +106,12 @@ export class RedisSessionManager {
   databases(workspaceId: string, id: string, offset: unknown) {
     const { client, session } = this.entry(workspaceId, id);
     return redisDatabases(client, session.database, offset);
+  }
+  information(workspaceId: string, id: string) {
+    return redisInformation(this.entry(workspaceId, id).client);
+  }
+  slowlog(workspaceId: string, id: string, count: unknown) {
+    return redisSlowlog(this.entry(workspaceId, id).client, count);
   }
   async switchDatabase(workspaceId: string, id: string, rawDatabase: unknown): Promise<RedisSession> {
     const database = redisDatabase(rawDatabase);

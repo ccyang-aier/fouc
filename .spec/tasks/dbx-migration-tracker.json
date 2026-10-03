@@ -5216,6 +5216,16 @@
           "kind": "partial-web-validation",
           "path": "src/features/connectors/redis/redis-database-selector.tsx",
           "check": "2026-10-03: Chrome1440/760/390 verifies field relative/absolute/persist expiry, DB14/15 switching/relock/failed selection, terminal history draft recall/reuse/copy/DB filter/reconnect/clear. Current DB scrolls into view; dialog actions remain visible. One intentional HTTP502 switch rejection, no other page/console errors. RedisJSON/Cluster/Sentinel/consumer groups/PubSub/Slowlog/MONITOR, large/batch operations and broader version/entry-point matrix remain pending."
+        },
+        {
+          "kind": "partial-runtime-validation",
+          "path": "scripts/verify-redis-observability-live.mjs",
+          "check": "2026-10-03: dedicated Redis7.4.8 lab port56380 (startup threshold0/capacity512) validates real INFO sections and SLOWLOG GET, binary argument boundaries/client fields, counts/workspace ownership, read-only/history preservation; denied optional CONFIG/LEN remain unknown, denied GET/INFO return errors. 50 scoped tests include exact 64-bit metrics/sort, optional protocol fields, serialized response bound and route authentication."
+        },
+        {
+          "kind": "partial-web-validation",
+          "path": "src/features/connectors/redis/redis-dashboard.tsx",
+          "check": "2026-10-03: Playwright+Chrome at1440/760/390 verifies overview sections/search/copy, actual timed refresh and view cleanup; slowlog counts/sort/filter/paging/binary detail/Base64/JSON copy and dialog close; denied INFO retains labeled stale metrics, denied GET shows error instead of empty logs, permission recovery retries. Two intentional HTTP502, no other console/page errors. Browser plugin not available. Cluster node observability and complete version/permission matrix remain pending."
         }
       ],
       "scopeKind": "driver"
@@ -6140,6 +6150,16 @@
           "kind": "partial-web-validation",
           "path": "src/features/connectors/redis/redis-database-selector.tsx",
           "check": "2026-10-03: Chrome1440/760/390 verifies field relative/absolute/persist expiry, DB14/15 switching/relock/failed selection, terminal history draft recall/reuse/copy/DB filter/reconnect/clear. Current DB scrolls into view; dialog actions remain visible. One intentional HTTP502 switch rejection, no other page/console errors. RedisJSON/Cluster/Sentinel/consumer groups/PubSub/Slowlog/MONITOR, large/batch operations and broader version/entry-point matrix remain pending."
+        },
+        {
+          "kind": "partial-runtime-validation",
+          "path": "scripts/verify-redis-observability-live.mjs",
+          "check": "2026-10-03: dedicated Redis7.4.8 lab port56380 (startup threshold0/capacity512) validates real INFO sections and SLOWLOG GET, binary argument boundaries/client fields, counts/workspace ownership, read-only/history preservation; denied optional CONFIG/LEN remain unknown, denied GET/INFO return errors. 50 scoped tests include exact 64-bit metrics/sort, optional protocol fields, serialized response bound and route authentication."
+        },
+        {
+          "kind": "partial-web-validation",
+          "path": "src/features/connectors/redis/redis-dashboard.tsx",
+          "check": "2026-10-03: Playwright+Chrome at1440/760/390 verifies overview sections/search/copy, actual timed refresh and view cleanup; slowlog counts/sort/filter/paging/binary detail/Base64/JSON copy and dialog close; denied INFO retains labeled stale metrics, denied GET shows error instead of empty logs, permission recovery retries. Two intentional HTTP502, no other console/page errors. Browser plugin not available. Cluster node observability and complete version/permission matrix remain pending."
         }
       ],
       "scopeKind": "driver"

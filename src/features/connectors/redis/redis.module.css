@@ -54,6 +54,7 @@
   border-bottom: 1px solid var(--line);
   padding: 0 15px;
   flex-shrink: 0;
+  overflow-x: auto;
 }
 .tabs button {
   display: flex;
@@ -63,6 +64,8 @@
   border-bottom: 2px solid transparent;
   cursor: pointer;
   color: var(--muted-strong);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .tabs button[aria-current] {
   border-color: var(--accent);
@@ -435,4 +438,8 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+}
+@media (max-width: 600px) {
+  .tabs { padding: 0 6px; }
+  .tabs button { padding: 0 6px; gap: 4px; font-size: 11px; }
 }

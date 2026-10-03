@@ -45,6 +45,10 @@ Redis database discovery, optional hash-field TTL metadata and expiry commands,
 terminal history/recall and DB selection also follow redis_driver.rs and
 RedisKeyBrowser.vue. Fouc verifies SELECT acknowledgements on isolated clients
 and stores bounded history under the owning workspace and saved connection.
+INFO section browsing, metric cards, refresh/search/copy and sortable slowlog
+details follow RedisDashboard.vue, RedisSlowlogPanel.vue and redis_driver.rs.
+Fouc adapts them in redis-observability.ts, redis-dashboard.tsx and
+redis-slowlog.tsx with lossless counters/arguments and scoped polling cleanup.
 
 This notice covers DBX-derived material. Other dependency notices remain
 subject to the separate F06 license audit.

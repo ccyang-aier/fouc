@@ -72,6 +72,10 @@ export function redisRoutes(
     return c.json({ ok: true, data: await sessions.switchDatabase(c.req.param('workspaceId')!, c.req.param('id')!, body?.database) });
   });
   app.get(base + '/:id/history', (c) => c.json({ ok: true, data: sessions.history(c.req.param('workspaceId')!, c.req.param('id')!) }));
+  app.get(base + '/:id/info', async (c) => c.json({ ok: true,
+    data: await sessions.information(c.req.param('workspaceId')!, c.req.param('id')!) }));
+  app.get(base + '/:id/slowlog', async (c) => c.json({ ok: true,
+    data: await sessions.slowlog(c.req.param('workspaceId')!, c.req.param('id')!, Number(c.req.query('count') ?? 100)) }));
   app.delete(base + '/:id/history', (c) => {
     sessions.clearHistory(c.req.param('workspaceId')!, c.req.param('id')!);
     return c.json({ ok: true, data: { cleared: true } });

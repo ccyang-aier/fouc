@@ -436,3 +436,4 @@ export * from './relational';
 export * from './relational-structure';
 export * from './redis';
 export * from './redis-mutation';
+export * from './redis-observability';

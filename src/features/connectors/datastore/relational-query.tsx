@@ -1,7 +1,9 @@
 "use client"
-import { useEffect, useRef, useState, type RefObject } from 'react'
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
+import type { CompletionContext } from '@codemirror/autocomplete'
+import { closeCompletion, startCompletion } from '@codemirror/autocomplete'
 import type { EditorView } from '@codemirror/view'
-import { Play, ClockCounterClockwise, FolderOpen, FloppyDisk, FilePlus, CheckCircle, CircleNotch, Database, Lock, Table, WarningCircle, X } from '@phosphor-icons/react'
+import { Play, ClockCounterClockwise, FolderOpen, FloppyDisk, FilePlus, CheckCircle, CircleNotch, Database, Lock, Table, WarningCircle, X, ArrowsClockwise } from '@phosphor-icons/react'
 import type { DatabaseQueryResult, RelationalSession, SavedSqlDocument, SavedSqlLibrary, SqlDraftState, SqlDraftTab, SqlHistoryEntry } from '@fouc/shared'
 import { backendFetch } from '@/lib/backend'
 import { SqlEditor, type SqlEditorCache } from './sql-editor'
@@ -12,6 +14,7 @@ import { SqlLibraryPanel } from './sql-library-panel'
 import { SaveSqlDialog, SqlDialog } from './sql-library-dialog'
 import { useSqlResource } from './use-sql-resource'
 import { useSqlDrafts } from './use-sql-drafts'
+import { useSqlMetadata } from './use-sql-metadata'
 import { SqlTabStrip, type SqlTabAction } from './sql-tab-strip'
 import { closeSqlTabs, mergeSqlDrafts, navigateSqlTabs, newSqlTab, pinSqlTab, reorderSqlTab, sqlTabDirty, sqlTabSaveable, visitSqlTab, type SqlTabVisits } from './sql-tabs'
 import common from './relational.module.css'
@@ -23,8 +26,8 @@ type Saving = { tabId: string | null; sql: string; schema: string | null; databa
 type Execution = { running: boolean; result: DatabaseQueryResult | null; error: string }
 function binding(file: SavedSqlDocument): NonNullable<SqlDraftTab['savedFile']> { return { id: file.id, version: file.version, name: file.name, folderId: file.folderId } }
 
-export function RelationalQuery({ session, schema, schemas, schemaLocked, onSchemaChange, beforeLeaveRef, onLeaveReady }: {
-  session: RelationalSession; schema: string; schemas: string[]; schemaLocked: boolean; onSchemaChange: (schema: string) => void;
+export function RelationalQuery({ session, schema, schemas, metadataRevision, schemaLocked, onSchemaChange, beforeLeaveRef, onLeaveReady }: {
+  session: RelationalSession; schema: string; schemas: string[]; metadataRevision: number; schemaLocked: boolean; onSchemaChange: (schema: string) => void;
   beforeLeaveRef: RefObject<(() => Promise<void>) | null>
   onLeaveReady: () => void
 }) {
@@ -169,6 +172,9 @@ export function RelationalQuery({ session, schema, schemas, schemaLocked, onSche
   }
   const restoreError = restore ? targetIssue(restore.target) : ''
   const targetSchema = current ? session.provider === 'mysql' ? current.database : current.schema ?? schema : schema
+  const { metadata, state: metadataState } = useSqlMetadata(session, metadataRevision)
+  const complete = useCallback((context: CompletionContext) => metadata.complete(context, { schema: targetSchema, schemas }), [metadata, targetSchema, schemas])
+  function refreshMetadata() { metadata.clear(); if (editor.current) { closeCompletion(editor.current); startCompletion(editor.current) } }
   const displayDatabase = current && session.provider === 'sqlite' ? current.database.replace(/^.*[\\/]/, '') : current?.database
   const draftStatus = <span className={tabsStyle.status} data-state={state.status} role="status">{state.status === 'error' ? <WarningCircle size={12} /> : !state.ready || state.status === 'saving' || state.pending ? <CircleNotch size={12} className="mw-spin" /> : <CheckCircle size={12} />}{!libraryBase ? '临时连接 · 草稿保留至离开' : state.status === 'error' ? state.ready ? '草稿保存失败 · 本地内容已保留' : '草稿读取失败 · 点击重试' : !state.ready ? '正在恢复设备草稿…' : state.status === 'saving' ? '正在保存草稿…' : state.pending ? '草稿待保存' : '草稿已保存到设备'}</span>
   return <div className={styles.workspace}>
@@ -183,11 +189,12 @@ export function RelationalQuery({ session, schema, schemas, schemaLocked, onSche
         <button type="button" aria-label="新建查询" title="新建查询" disabled={!state.ready} onClick={add}><FilePlus size={17} /><span>新建查询</span></button></div>
         {current && <label className={tabsStyle.target}><Database size={15} /><select aria-label="SQL 目标 Schema" value={targetSchema} disabled={running || schemaLocked} onChange={(event) => {
           const next = event.target.value; updateTab(current.id, session.provider === 'mysql' ? { database: next, schema: next } : { schema: next }); if (next !== schema) onSchemaChange(next)
-        }}>{targetSchema && !schemas.includes(targetSchema) && <option value={targetSchema}>{targetSchema}（当前不可用）</option>}{schemas.map((item) => <option key={item}>{item}</option>)}</select></label>}
+        }}>{targetSchema && !schemas.includes(targetSchema) && <option value={targetSchema}>{targetSchema}（当前不可用）</option>}{schemas.map((item) => <option key={item}>{item}</option>)}</select><button type="button" aria-label="刷新 SQL 元数据" title={metadataState.pending ? '正在读取 SQL 元数据' : '刷新表与字段补全'} onClick={refreshMetadata}>{metadataState.pending ? <CircleNotch size={15} className="mw-spin" /> : <ArrowsClockwise size={15} />}</button></label>}
       </div>
       {state.error && <p role="alert" className={styles.error}>{state.error}<button type="button" onClick={() => void (state.ready ? controller.flush() : controller.load()).catch(() => undefined)}>重试草稿存储</button>{state.ready && <button type="button" disabled={inspectBusy} onClick={() => void inspect()}>查看设备版本</button>}</p>}
+      {metadataState.error && <p role="alert" className={styles.error}>SQL 元数据读取失败：{metadataState.error}<button type="button" onClick={refreshMetadata}>重试元数据</button></p>}
       {(notice || library.error) && <p role={library.error ? 'alert' : 'status'} className={library.error ? styles.error : styles.notice}>{library.error || notice}{!library.error && <button type="button" aria-label="关闭 SQL 提示" onClick={() => setNotice('')}><X size={14} /></button>}</p>}
-      {current ? <SqlEditorSplit editor={<div className="mw-editor" id="fouc-sql-query-document" role="tabpanel" aria-label={current.title}><SqlEditor provider={session.provider} documentId={current.id} value={current.sql} positions={current.editorPosition} cache={editorCache.current}
+      {current ? <SqlEditorSplit editor={<div className="mw-editor" id="fouc-sql-query-document" role="tabpanel" aria-label={current.title}><SqlEditor provider={session.provider} documentId={current.id} value={current.sql} positions={current.editorPosition} cache={editorCache.current} complete={complete} completionScope={`${targetSchema}:${metadataRevision}`}
           onChange={(sql) => updateTab(current.id, { sql })} onPositionChange={(id, editorPosition) => { const tab = controller.getSnapshot().tabs.find((item) => item.id === id); if (tab && JSON.stringify(tab.editorPosition) !== JSON.stringify(editorPosition)) updateTab(id, { editorPosition }) }}
           onRun={() => void run()} onSave={saveCurrent} editorRef={editor} /></div>}
         status={<div className={styles.document}><span className={styles.language}>SQL</span><span title={current.database}>{displayDatabase}{current.schema && session.provider !== 'mysql' ? ` / ${current.schema}` : ''}</span><small><Lock size={12} />只读 · 选区优先执行</small>{draftStatus}</div>}

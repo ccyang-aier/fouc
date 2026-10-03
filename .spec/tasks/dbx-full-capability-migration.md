@@ -10,9 +10,11 @@
 
 ## 代码规模与当前验证
 
+- SQL 元数据补全验证：`node scripts/verify-sql-drafts-live.mjs` 与 `sql-metadata-completion.test.ts`。2026-10-03：按固定 DBX completionMetadataPolicy / completionTreeIndex、sqlCompletionLookupTarget、semantic/tokens 与 QueryEditor 的懒加载 / completionEpoch 行为适配原生 SQL 元数据补全。真实 MySQL8.4 / PostgreSQL17 / SQLite 字段接口与完整结构一致，含特殊字符对象名、缺失对象、设备认证和工作空间隔离，读取不产生命令历史。作用域测试覆盖限定 Schema / 对象、字段别名、当前语句、兄弟子查询和内部别名遮蔽、CTE 名称遮蔽真实对象、歧义字段插入完整限定名、Unicode / 方言引号与字符串 / 注释保护；失败缓存可重试，刷新撤销并丢弃旧响应。Chrome 1440×1000 浅深主题与390×844 验证三种数据库 Ctrl+Space 表 / 别名字段补全，选择实际字段后 Ctrl+Enter 返回真实 Alpha 行；刷新失败保留 SQL、显式重试恢复，读取中切换新标签不复活旧结果，MySQL 切到 information_schema 只提供实际新目标对象。三次故意 HTTP503，无其他页面 / 控制台或 HTTP 错误。浮层保留清晰字段名 / 来源 / 类型，别名点号后抑制关键字噪声，窄屏无溢出。CTE / 派生表字段推导、外键 JOIN / 函数 / snippets / 参数、完整语义诊断、当前语句 / 多语句执行、大文件补全性能与其他驱动 / 全入口仍待验收。最终数据库 / 编辑器 / 连接能力作用域回归80项、582个断言通过；千次 SQLite 磁盘提交用例使用命令级30秒时限，源测试时限保持原值，独立运行默认5秒时限也通过。前端类型与零警告 ESLint、架构 / 文档 / DBX矩阵检查通过。
+
 - 工作台视觉验证：2026-10-03：按固定 DBX screenshot-light / screenshot-grid 与资源树、SqlEditorWorkspace 源码复核真实渲染。MySQL8.4、PostgreSQL17、SQLite、Redis7.4 的连接目录、SQL / 表格 / 行详情、Key / PING 命令台 / INFO 概览在 Chrome 1440×1000、390×844 完成浅深主题和真实内容检查（SQL 标签功能另在760×844验收）；控制台、页面和 HTTP 无意外错误。五项对照：资源树灰底 / 类型颜色 / 实际计数，40px文档标签与中性工具栏，13px资源与表格正文及14px SQL语法 / 行号基线，指针和键盘编辑器结果分隔线及独立统计导出栏，浅深主题 / 可关闭详情 / 窄屏目标行与可见草稿状态。保留 Fouc 原导航、主题字体和当前能力的只读默认，不复制 DBX 图片或账户/云界面；AI 面板、全部专项页面、编辑器分组 / 独立窗口与全入口仍待实现验收。
 
-- SQL 标签 / 草稿验证入口：`node scripts/verify-sql-drafts-live.mjs`；作用域测试与 Chrome 1440×1000、760×844、390×844 验证三种原生数据库的独立内容 / 撤销 / 选区 / 结果 / 上下文、固定 / 改名 / 复制 / 关闭确认 / 最近关闭恢复 / 导航 / 拖动、异步查询归属、串行保存与返回等待、文件基线 / 原目标恢复、真实版本冲突 / 完整设备预览 / 保留双方合并、重连 / 刷新和明确空状态。SQLite 长文档与首次隐藏挂载的选区 / 滚动恢复、全部关闭后重开与再次执行通过；新视口对旧像素偏移按实际滚动范围裁切。文件与草稿冲突是预期 HTTP 400，无其他页面 / 控制台错误。Q01/Q02/Q03/Q05 保持进行中；编辑器分组 / 独立窗口、外部文件、格式化 / snippets / 参数 / 元数据补全、多语句 / 多结果 / 取消及其他驱动 / 全入口仍未完成。
+- SQL 标签 / 草稿验证入口：`node scripts/verify-sql-drafts-live.mjs`；作用域测试与 Chrome 1440×1000、760×844、390×844 验证三种原生数据库的独立内容 / 撤销 / 选区 / 结果 / 上下文、固定 / 改名 / 复制 / 关闭确认 / 最近关闭恢复 / 导航 / 拖动、异步查询归属、串行保存与返回等待、文件基线 / 原目标恢复、真实版本冲突 / 完整设备预览 / 保留双方合并、重连 / 刷新和明确空状态。SQLite 长文档与首次隐藏挂载的选区 / 滚动恢复、全部关闭后重开与再次执行通过；新视口对旧像素偏移按实际滚动范围裁切。文件与草稿冲突是预期 HTTP 400，无其他页面 / 控制台错误。Q01/Q02/Q03/Q05 保持进行中；编辑器分组 / 独立窗口、外部文件、格式化 / snippets / 参数 / 完整语义补全、多语句 / 多结果 / 取消及其他驱动 / 全入口仍未完成。
 
 - Pub/Sub 验证入口：`node scripts/verify-redis-pubsub-live.mjs` 使用独立 Redis 7.4.8 实验室（56380），真实 HTTP NDJSON 与 RESP2 独立订阅连接验证空 / 二进制频道、消息和模式，跨 DB、频道和模式重复投递、四类订阅操作及批次中先成功后被 ACL 拒绝的确认状态。64 KiB 截断、捕获 ID / 会话 / 空间隔离、写入解锁 / 预览确认对应的发布授权、精确接收计数、无历史 / 无 Key 写入和权限恢复通过；实际投递后响应丢失明确显示结果未确认且无自动重试。通过实际 CLIENT LIST 验证 HTTP 取消（含真实 PING 确认前）、DB 切换、会话关闭与意外断开释放连接。38 项 Redis 作用域测试 / 289 个断言通过。Chrome 1440×844、760×844、390×844 验证订阅 / 取消、二进制 / 空值、ACL 失败恢复、重连恢复与断开消息不补发、最新 500 条保留、筛选 / 无匹配 / 复制 / 跟随 / 清空 / 详情截断、发布预览 / 返回编辑 / 确认 / 重新锁定；弹窗正文局部滚动且操作始终可见。两次预期 HTTP 502，无其他浏览器错误；共享连接生命周期和流解码抽取后 MONITOR 真实接口 / 三宽度浏览器回归通过。X01 / R07 保持进行中，其他版本、TLS 矩阵及全入口 / 拓扑验收未完成。
 
@@ -23,7 +25,7 @@
 - Redis 观测验证入口：`node scripts/redis-observability-lab.mjs up|status` 复用或启动独立 Redis 7.4.8 实验室（56380，启动时阈值 0、保留 512 条），`node scripts/verify-redis-observability-live.mjs` 验证 INFO 分区与有界慢日志读取、原始二进制参数 / 客户端字段、数量校验、空间隔离、只读状态和命令历史保留、可选 CONFIG / LEN 权限降级及 GET / INFO 拒绝。实验室不会修改或重置业务 Redis 的日志配置。50 个作用域测试通过，涵盖 64 位计数 / 命中率 / 数值排序、旧版本缺失字段和响应截断。Playwright + Chrome 在 1440×1000、760×844、390×844 验证指标折叠 / 搜索 / 复制、真实定时刷新及离开视图后停止、慢日志数量 / 排序 / 筛选 / 分页 / 二进制详情 / JSON 复制、权限失败保留旧指标和错误恢复；两次预期 HTTP 502，无其他页面 / 控制台错误。Cluster 逐节点、其他版本与权限矩阵仍未完整交付。
 
 - 源码已恢复至固定 commit；[源码审计](dbx-source-audit.json) 与 [实质迁移文件清单](dbx-native-port-manifest.json) 可由 `node scripts/audit-dbx-source.mjs --write` 重算。约 133.4 万有效源码行；排除独立测试、翻译资源、工具与账户/云模块后的核心范围估算为 91.4 万行。词法统计仍包含 Rust 内嵌测试，不能把这个估算当成已迁移量。
-- 第一阶段目标仍为约 50,000 行 Fouc 核心运行逻辑；当前清单为 108 个运行文件、12,186 行有效代码。不计样式、目录 JSON、测试、参考仓库或演示工作台，且必须逐能力验收，当前未完成。MySQL 已合并到共享会话与工作台，移除的重复逻辑不保留行数信用。MONITOR / Pub/Sub 共享生命周期与流解码，删除的重复实现同样不保留信用。RedisJSON 仅计已适配且实际运行的 token 格式化 / Unicode 编辑映射子集，未使用的 Number 包装 / stringify 代码不计入。统计受代码格式影响，不能以行数代替功能覆盖。固定源码基线未变化时，可用 `node scripts/audit-dbx-source.mjs --native-only --write` 快速重算原生清单。
+- 第一阶段目标仍为约 50,000 行 Fouc 核心运行逻辑；当前清单为 111 个运行文件、12,507 行有效代码。不计样式、目录 JSON、测试、参考仓库或演示工作台，且必须逐能力验收，当前未完成。MySQL 已合并到共享会话与工作台，移除的重复逻辑不保留行数信用。MONITOR / Pub/Sub 共享生命周期与流解码，删除的重复实现同样不保留信用。RedisJSON 仅计已适配且实际运行的 token 格式化 / Unicode 编辑映射子集，未使用的 Number 包装 / stringify 代码不计入。统计受代码格式影响，不能以行数代替功能覆盖。固定源码基线未变化时，可用 `node scripts/audit-dbx-source.mjs --native-only --write` 快速重算原生清单。
 - MySQL / PostgreSQL / SQLite 的连接配置 CRUD、测试与会话打开、Schema/表/视图/字段发现、主键分页、只读 SQL、大整数/重复列名及空间隔离已有真实 HTTP 和浏览器证据。R01/R02/R03 保持进行中；完整对象管理、导入导出、比较/备份、取消/重连、CLI/MCP 等仍须推进。SQLite 当前同步查询，尚未交付长查询取消与 worker 隔离。
 - 验证入口：`bun test --isolate backend/device/src/database backend/device/src/api/server.database.test.ts src/features/connectors/datastore/result-format.test.ts`、`node scripts/verify-relational-live.mjs`、`node scripts/verify-mysql-live.mjs`、`node scripts/verify-table-save-live.mjs`。真实服务验证使用独立 `fouc_datastore_lab` 数据库、专用 `dbx_save_fixture` / `dbx_unique_fixture` 表与 `.runtime/dbx-lab/relational.sqlite`，不访问 Fouc 账户/业务表。MySQL 实验室通过 `node scripts/datastore-lab.mjs up|status` 运行，容器有认证健康检查，随机凭据只写入被 Git 忽略的运行目录。
 - Web 验证：Playwright + Chrome，1440×1000 完成上述 PostgreSQL / SQLite 流程；390×844、760×844 检查连接目录、导航收起及溢出。两次故意写入产生预期 HTTP 400，未出现其他控制台或页面错误；窄窗口工作台操作矩阵仍待补齐。
@@ -119,7 +121,7 @@
 | Q06 | 大 SQL 文件预览、编码/路径校验、分段执行、进度、失败定位/重试/取消；SQL 文件导入/恢复与 ZIP 包。 | `components/sql-file/`、`data/sql_file_import.rs` | 待实施 |
 | Q07 | 查询结果的表格、文本、JSON、图表/指标切换；图表维度/指标配置、结果复制和导出。 | `components/chart/`、`QueryResultViewSwitcher.vue` | 进行中 |
 | Q08 | SQL 方言解析、标识符引用、日期/二进制/NULL 格式、只读/可编辑结果判定、语句拆分及多数据库特例。 | `crates/dbx-sql/`、`crates/dbx-formats/` | 进行中 |
-| Q09 | 编辑器悬停提示、代码折叠、别名/CTE/JOIN 补全、`Ctrl/Cmd+Click` 对象跳转；占位符 `?`、`:name`、`${name}`、`#{name}`、`@name` 与 `@set` 输入；执行范围选择器和「在新结果中执行」。 | `query-editor.cn.mdx`、`components/editor/` | 待实施 |
+| Q09 | 编辑器悬停提示、代码折叠、别名/CTE/JOIN 补全、`Ctrl/Cmd+Click` 对象跳转；占位符 `?`、`:name`、`${name}`、`#{name}`、`@name` 与 `@set` 输入；执行范围选择器和「在新结果中执行」。 | `query-editor.cn.mdx`、`components/editor/` | 进行中 |
 | Q10 | 对 `INSERT/UPDATE/DELETE` 提供执行前变更预览：只读改写、旧/新值对照、受影响行展示；无法安全改写时明确拒绝预览而不误报执行结果。 | `query-editor.cn.mdx`、`crates/dbx-sql/src/` | 待实施 |
 
 ## 4. 数据表格与数据编辑

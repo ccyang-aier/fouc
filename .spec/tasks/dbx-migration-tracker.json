@@ -280,6 +280,11 @@
           "kind": "partial-native-validation",
           "path": "backend/device/src/database/relational-session.ts",
           "check": "Native scoped PostgreSQL/MySQL/SQLite sessions, bounded reads, parameter bindings, paged typed filters, metadata and atomic row-save transactions passed real HTTP tests. Cancellation, reconnect, streaming and full driver lifecycle matrix remain open."
+        },
+        {
+          "kind": "partial-native-sql-metadata-completion-validation",
+          "path": "src/features/connectors/datastore/sql-metadata-completion.test.ts",
+          "check": "2026-10-03：按固定 DBX completionMetadataPolicy / completionTreeIndex、sqlCompletionLookupTarget、semantic/tokens 与 QueryEditor 的懒加载 / completionEpoch 行为适配原生 SQL 元数据补全。真实 MySQL8.4 / PostgreSQL17 / SQLite 字段接口与完整结构一致，含特殊字符对象名、缺失对象、设备认证和工作空间隔离，读取不产生命令历史。作用域测试覆盖限定 Schema / 对象、字段别名、当前语句、兄弟子查询和内部别名遮蔽、CTE 名称遮蔽真实对象、歧义字段插入完整限定名、Unicode / 方言引号与字符串 / 注释保护；失败缓存可重试，刷新撤销并丢弃旧响应。Chrome 1440×1000 浅深主题与390×844 验证三种数据库 Ctrl+Space 表 / 别名字段补全，选择实际字段后 Ctrl+Enter 返回真实 Alpha 行；刷新失败保留 SQL、显式重试恢复，读取中切换新标签不复活旧结果，MySQL 切到 information_schema 只提供实际新目标对象。三次故意 HTTP503，无其他页面 / 控制台或 HTTP 错误。浮层保留清晰字段名 / 来源 / 类型，别名点号后抑制关键字噪声，窄屏无溢出。CTE / 派生表字段推导、外键 JOIN / 函数 / snippets / 参数、完整语义诊断、当前语句 / 多语句执行、大文件补全性能与其他驱动 / 全入口仍待验收。最终数据库 / 编辑器 / 连接能力作用域回归80项、582个断言通过；千次 SQLite 磁盘提交用例使用命令级30秒时限，源测试时限保持原值，独立运行默认5秒时限也通过。前端类型与零警告 ESLint、架构 / 文档 / DBX矩阵检查通过。"
         }
       ],
       "scopeKind": "driver"
@@ -2080,7 +2085,7 @@
       "acceptanceEvidence": [
         {
           "kind": "partial-live-smoke",
-          "check": "Web SQL tab executes selected text or editor content through live MySQL read-only API; editor completion, dialect and multi-statement scope remain open"
+          "check": "Web SQL tab executes selected text or editor content through live MySQL read-only API; full semantic completion, dialect coverage and multi-statement scope remain open"
         },
         {
           "kind": "partial-editor-smoke",
@@ -2089,12 +2094,17 @@
         {
           "kind": "partial-native-sql-tabs-drafts-validation",
           "path": "scripts/verify-sql-drafts-live.mjs",
-          "check": "2026-10-03：MySQL8.4 / PostgreSQL17 / SQLite 的设备草稿 API、精确 Unicode / 大整数、64 MiB 白名单持久化、标签顺序 / 固定 / 活动目标 / 空文件 / 选区 / 滚动 / 结果视图、CAS 与工作空间 / 连接隔离、重连恢复 / 显式空状态和删除连接清理通过真实接口验证。Chrome 1440×1000、760×844、390×844 验证独立 SQL / 撤销 / 选区 / 结果、固定 / 改名 / 复制 / 关闭确认 / 最近关闭恢复 / 前后访问 / 拖动、异步真实查询迟到不覆盖其他标签、返回等待草稿与刷新恢复、空文件保存、干净文件读取最新正文和 Schema / 脏文件保留旧基线并由 CAS 拒绝覆盖、文件重命名与原上下文恢复、真实第二写入者草稿冲突 / 查看完整设备版本 / 保留双方合并和错误恢复。SQLite 另验长文档与隐藏挂载后的滚动 / 选区恢复（视口变高时按新范围正常裁切）、全部关闭的持久空状态、重开与编辑器重新挂载后的实际执行；仅预期的文件 / 草稿 CAS 失败，无其他页面 / 控制台错误。格式化 / 参数 / snippets / 元数据补全 / 当前语句 / 多语句 / 多结果 / 取消、分组 / 独立窗口、外部文件与结果磁盘缓存、其他驱动和全入口仍未完成。 另验草稿冲突期间的真实在途查询：响应到达前替换 / 合并保持禁用，结束后才允许恢复，避免旧结果污染导入标签；失败状态不再显示保存动画。"
+          "check": "2026-10-03：MySQL8.4 / PostgreSQL17 / SQLite 的设备草稿 API、精确 Unicode / 大整数、64 MiB 白名单持久化、标签顺序 / 固定 / 活动目标 / 空文件 / 选区 / 滚动 / 结果视图、CAS 与工作空间 / 连接隔离、重连恢复 / 显式空状态和删除连接清理通过真实接口验证。Chrome 1440×1000、760×844、390×844 验证独立 SQL / 撤销 / 选区 / 结果、固定 / 改名 / 复制 / 关闭确认 / 最近关闭恢复 / 前后访问 / 拖动、异步真实查询迟到不覆盖其他标签、返回等待草稿与刷新恢复、空文件保存、干净文件读取最新正文和 Schema / 脏文件保留旧基线并由 CAS 拒绝覆盖、文件重命名与原上下文恢复、真实第二写入者草稿冲突 / 查看完整设备版本 / 保留双方合并和错误恢复。SQLite 另验长文档与隐藏挂载后的滚动 / 选区恢复（视口变高时按新范围正常裁切）、全部关闭的持久空状态、重开与编辑器重新挂载后的实际执行；仅预期的文件 / 草稿 CAS 失败，无其他页面 / 控制台错误。格式化 / 参数 / snippets / 完整语义补全 / 当前语句 / 多语句 / 多结果 / 取消、分组 / 独立窗口、外部文件与结果磁盘缓存、其他驱动和全入口仍未完成。 另验草稿冲突期间的真实在途查询：响应到达前替换 / 合并保持禁用，结束后才允许恢复，避免旧结果污染导入标签；失败状态不再显示保存动画。"
         },
         {
           "kind": "partial-dbx-visual-validation",
           "path": "src/features/connectors/datastore/relational-workbench.tsx",
           "check": "2026-10-03：按固定 DBX screenshot-light / screenshot-grid 与资源树、SqlEditorWorkspace 源码复核真实渲染。MySQL8.4、PostgreSQL17、SQLite、Redis7.4 的连接目录、SQL / 表格 / 行详情、Key / PING 命令台 / INFO 概览在 Chrome 1440×1000、390×844 完成浅深主题和真实内容检查（SQL 标签功能另在760×844验收）；控制台、页面和 HTTP 无意外错误。五项对照：资源树灰底 / 类型颜色 / 实际计数，40px文档标签与中性工具栏，13px资源与表格正文及14px SQL语法 / 行号基线，指针和键盘编辑器结果分隔线及独立统计导出栏，浅深主题 / 可关闭详情 / 窄屏目标行与可见草稿状态。保留 Fouc 原导航、主题字体和当前能力的只读默认，不复制 DBX 图片或账户/云界面；AI 面板、全部专项页面、编辑器分组 / 独立窗口与全入口仍待实现验收。"
+        },
+        {
+          "kind": "partial-native-sql-metadata-completion-validation",
+          "path": "src/features/connectors/datastore/sql-metadata-completion.test.ts",
+          "check": "2026-10-03：按固定 DBX completionMetadataPolicy / completionTreeIndex、sqlCompletionLookupTarget、semantic/tokens 与 QueryEditor 的懒加载 / completionEpoch 行为适配原生 SQL 元数据补全。真实 MySQL8.4 / PostgreSQL17 / SQLite 字段接口与完整结构一致，含特殊字符对象名、缺失对象、设备认证和工作空间隔离，读取不产生命令历史。作用域测试覆盖限定 Schema / 对象、字段别名、当前语句、兄弟子查询和内部别名遮蔽、CTE 名称遮蔽真实对象、歧义字段插入完整限定名、Unicode / 方言引号与字符串 / 注释保护；失败缓存可重试，刷新撤销并丢弃旧响应。Chrome 1440×1000 浅深主题与390×844 验证三种数据库 Ctrl+Space 表 / 别名字段补全，选择实际字段后 Ctrl+Enter 返回真实 Alpha 行；刷新失败保留 SQL、显式重试恢复，读取中切换新标签不复活旧结果，MySQL 切到 information_schema 只提供实际新目标对象。三次故意 HTTP503，无其他页面 / 控制台或 HTTP 错误。浮层保留清晰字段名 / 来源 / 类型，别名点号后抑制关键字噪声，窄屏无溢出。CTE / 派生表字段推导、外键 JOIN / 函数 / snippets / 参数、完整语义诊断、当前语句 / 多语句执行、大文件补全性能与其他驱动 / 全入口仍待验收。最终数据库 / 编辑器 / 连接能力作用域回归80项、582个断言通过；千次 SQLite 磁盘提交用例使用命令级30秒时限，源测试时限保持原值，独立运行默认5秒时限也通过。前端类型与零警告 ESLint、架构 / 文档 / DBX矩阵检查通过。"
         }
       ],
       "scopeKind": "driver"
@@ -2749,7 +2759,7 @@
     {
       "id": "Q09",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql",
@@ -2829,7 +2839,13 @@
         "action": "编辑器悬停提示、代码折叠、别名/CTE/JOIN 补全、`Ctrl/Cmd+Click` 对象跳转；占位符 `?`、`:name`、`${name}`、`#{name}`、`@name` 与 `@set` 输入；执行范围选择器和「在新结果中执行」。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-sql-metadata-completion-validation",
+          "path": "src/features/connectors/datastore/sql-metadata-completion.test.ts",
+          "check": "2026-10-03：按固定 DBX completionMetadataPolicy / completionTreeIndex、sqlCompletionLookupTarget、semantic/tokens 与 QueryEditor 的懒加载 / completionEpoch 行为适配原生 SQL 元数据补全。真实 MySQL8.4 / PostgreSQL17 / SQLite 字段接口与完整结构一致，含特殊字符对象名、缺失对象、设备认证和工作空间隔离，读取不产生命令历史。作用域测试覆盖限定 Schema / 对象、字段别名、当前语句、兄弟子查询和内部别名遮蔽、CTE 名称遮蔽真实对象、歧义字段插入完整限定名、Unicode / 方言引号与字符串 / 注释保护；失败缓存可重试，刷新撤销并丢弃旧响应。Chrome 1440×1000 浅深主题与390×844 验证三种数据库 Ctrl+Space 表 / 别名字段补全，选择实际字段后 Ctrl+Enter 返回真实 Alpha 行；刷新失败保留 SQL、显式重试恢复，读取中切换新标签不复活旧结果，MySQL 切到 information_schema 只提供实际新目标对象。三次故意 HTTP503，无其他页面 / 控制台或 HTTP 错误。浮层保留清晰字段名 / 来源 / 类型，别名点号后抑制关键字噪声，窄屏无溢出。CTE / 派生表字段推导、外键 JOIN / 函数 / snippets / 参数、完整语义诊断、当前语句 / 多语句执行、大文件补全性能与其他驱动 / 全入口仍待验收。最终数据库 / 编辑器 / 连接能力作用域回归80项、582个断言通过；千次 SQLite 磁盘提交用例使用命令级30秒时限，源测试时限保持原值，独立运行默认5秒时限也通过。前端类型与零警告 ESLint、架构 / 文档 / DBX矩阵检查通过。"
+        }
+      ],
       "scopeKind": "driver"
     },
     {
@@ -6043,6 +6059,11 @@
           "kind": "partial-dbx-visual-validation",
           "path": "src/features/connectors/datastore/relational-workbench.tsx",
           "check": "2026-10-03：按固定 DBX screenshot-light / screenshot-grid 与资源树、SqlEditorWorkspace 源码复核真实渲染。MySQL8.4、PostgreSQL17、SQLite、Redis7.4 的连接目录、SQL / 表格 / 行详情、Key / PING 命令台 / INFO 概览在 Chrome 1440×1000、390×844 完成浅深主题和真实内容检查（SQL 标签功能另在760×844验收）；控制台、页面和 HTTP 无意外错误。五项对照：资源树灰底 / 类型颜色 / 实际计数，40px文档标签与中性工具栏，13px资源与表格正文及14px SQL语法 / 行号基线，指针和键盘编辑器结果分隔线及独立统计导出栏，浅深主题 / 可关闭详情 / 窄屏目标行与可见草稿状态。保留 Fouc 原导航、主题字体和当前能力的只读默认，不复制 DBX 图片或账户/云界面；AI 面板、全部专项页面、编辑器分组 / 独立窗口与全入口仍待实现验收。"
+        },
+        {
+          "kind": "partial-native-sql-metadata-completion-validation",
+          "path": "src/features/connectors/datastore/sql-metadata-completion.test.ts",
+          "check": "2026-10-03：按固定 DBX completionMetadataPolicy / completionTreeIndex、sqlCompletionLookupTarget、semantic/tokens 与 QueryEditor 的懒加载 / completionEpoch 行为适配原生 SQL 元数据补全。真实 MySQL8.4 / PostgreSQL17 / SQLite 字段接口与完整结构一致，含特殊字符对象名、缺失对象、设备认证和工作空间隔离，读取不产生命令历史。作用域测试覆盖限定 Schema / 对象、字段别名、当前语句、兄弟子查询和内部别名遮蔽、CTE 名称遮蔽真实对象、歧义字段插入完整限定名、Unicode / 方言引号与字符串 / 注释保护；失败缓存可重试，刷新撤销并丢弃旧响应。Chrome 1440×1000 浅深主题与390×844 验证三种数据库 Ctrl+Space 表 / 别名字段补全，选择实际字段后 Ctrl+Enter 返回真实 Alpha 行；刷新失败保留 SQL、显式重试恢复，读取中切换新标签不复活旧结果，MySQL 切到 information_schema 只提供实际新目标对象。三次故意 HTTP503，无其他页面 / 控制台或 HTTP 错误。浮层保留清晰字段名 / 来源 / 类型，别名点号后抑制关键字噪声，窄屏无溢出。CTE / 派生表字段推导、外键 JOIN / 函数 / snippets / 参数、完整语义诊断、当前语句 / 多语句执行、大文件补全性能与其他驱动 / 全入口仍待验收。最终数据库 / 编辑器 / 连接能力作用域回归80项、582个断言通过；千次 SQLite 磁盘提交用例使用命令级30秒时限，源测试时限保持原值，独立运行默认5秒时限也通过。前端类型与零警告 ESLint、架构 / 文档 / DBX矩阵检查通过。"
         }
       ],
       "scopeKind": "driver"
@@ -6108,6 +6129,11 @@
           "kind": "partial-dbx-visual-validation",
           "path": "src/features/connectors/datastore/relational-workbench.tsx",
           "check": "2026-10-03：按固定 DBX screenshot-light / screenshot-grid 与资源树、SqlEditorWorkspace 源码复核真实渲染。MySQL8.4、PostgreSQL17、SQLite、Redis7.4 的连接目录、SQL / 表格 / 行详情、Key / PING 命令台 / INFO 概览在 Chrome 1440×1000、390×844 完成浅深主题和真实内容检查（SQL 标签功能另在760×844验收）；控制台、页面和 HTTP 无意外错误。五项对照：资源树灰底 / 类型颜色 / 实际计数，40px文档标签与中性工具栏，13px资源与表格正文及14px SQL语法 / 行号基线，指针和键盘编辑器结果分隔线及独立统计导出栏，浅深主题 / 可关闭详情 / 窄屏目标行与可见草稿状态。保留 Fouc 原导航、主题字体和当前能力的只读默认，不复制 DBX 图片或账户/云界面；AI 面板、全部专项页面、编辑器分组 / 独立窗口与全入口仍待实现验收。"
+        },
+        {
+          "kind": "partial-native-sql-metadata-completion-validation",
+          "path": "src/features/connectors/datastore/sql-metadata-completion.test.ts",
+          "check": "2026-10-03：按固定 DBX completionMetadataPolicy / completionTreeIndex、sqlCompletionLookupTarget、semantic/tokens 与 QueryEditor 的懒加载 / completionEpoch 行为适配原生 SQL 元数据补全。真实 MySQL8.4 / PostgreSQL17 / SQLite 字段接口与完整结构一致，含特殊字符对象名、缺失对象、设备认证和工作空间隔离，读取不产生命令历史。作用域测试覆盖限定 Schema / 对象、字段别名、当前语句、兄弟子查询和内部别名遮蔽、CTE 名称遮蔽真实对象、歧义字段插入完整限定名、Unicode / 方言引号与字符串 / 注释保护；失败缓存可重试，刷新撤销并丢弃旧响应。Chrome 1440×1000 浅深主题与390×844 验证三种数据库 Ctrl+Space 表 / 别名字段补全，选择实际字段后 Ctrl+Enter 返回真实 Alpha 行；刷新失败保留 SQL、显式重试恢复，读取中切换新标签不复活旧结果，MySQL 切到 information_schema 只提供实际新目标对象。三次故意 HTTP503，无其他页面 / 控制台或 HTTP 错误。浮层保留清晰字段名 / 来源 / 类型，别名点号后抑制关键字噪声，窄屏无溢出。CTE / 派生表字段推导、外键 JOIN / 函数 / snippets / 参数、完整语义诊断、当前语句 / 多语句执行、大文件补全性能与其他驱动 / 全入口仍待验收。最终数据库 / 编辑器 / 连接能力作用域回归80项、582个断言通过；千次 SQLite 磁盘提交用例使用命令级30秒时限，源测试时限保持原值，独立运行默认5秒时限也通过。前端类型与零警告 ESLint、架构 / 文档 / DBX矩阵检查通过。"
         }
       ],
       "scopeKind": "driver"
@@ -6173,6 +6199,11 @@
           "kind": "partial-dbx-visual-validation",
           "path": "src/features/connectors/datastore/relational-workbench.tsx",
           "check": "2026-10-03：按固定 DBX screenshot-light / screenshot-grid 与资源树、SqlEditorWorkspace 源码复核真实渲染。MySQL8.4、PostgreSQL17、SQLite、Redis7.4 的连接目录、SQL / 表格 / 行详情、Key / PING 命令台 / INFO 概览在 Chrome 1440×1000、390×844 完成浅深主题和真实内容检查（SQL 标签功能另在760×844验收）；控制台、页面和 HTTP 无意外错误。五项对照：资源树灰底 / 类型颜色 / 实际计数，40px文档标签与中性工具栏，13px资源与表格正文及14px SQL语法 / 行号基线，指针和键盘编辑器结果分隔线及独立统计导出栏，浅深主题 / 可关闭详情 / 窄屏目标行与可见草稿状态。保留 Fouc 原导航、主题字体和当前能力的只读默认，不复制 DBX 图片或账户/云界面；AI 面板、全部专项页面、编辑器分组 / 独立窗口与全入口仍待实现验收。"
+        },
+        {
+          "kind": "partial-native-sql-metadata-completion-validation",
+          "path": "src/features/connectors/datastore/sql-metadata-completion.test.ts",
+          "check": "2026-10-03：按固定 DBX completionMetadataPolicy / completionTreeIndex、sqlCompletionLookupTarget、semantic/tokens 与 QueryEditor 的懒加载 / completionEpoch 行为适配原生 SQL 元数据补全。真实 MySQL8.4 / PostgreSQL17 / SQLite 字段接口与完整结构一致，含特殊字符对象名、缺失对象、设备认证和工作空间隔离，读取不产生命令历史。作用域测试覆盖限定 Schema / 对象、字段别名、当前语句、兄弟子查询和内部别名遮蔽、CTE 名称遮蔽真实对象、歧义字段插入完整限定名、Unicode / 方言引号与字符串 / 注释保护；失败缓存可重试，刷新撤销并丢弃旧响应。Chrome 1440×1000 浅深主题与390×844 验证三种数据库 Ctrl+Space 表 / 别名字段补全，选择实际字段后 Ctrl+Enter 返回真实 Alpha 行；刷新失败保留 SQL、显式重试恢复，读取中切换新标签不复活旧结果，MySQL 切到 information_schema 只提供实际新目标对象。三次故意 HTTP503，无其他页面 / 控制台或 HTTP 错误。浮层保留清晰字段名 / 来源 / 类型，别名点号后抑制关键字噪声，窄屏无溢出。CTE / 派生表字段推导、外键 JOIN / 函数 / snippets / 参数、完整语义诊断、当前语句 / 多语句执行、大文件补全性能与其他驱动 / 全入口仍待验收。最终数据库 / 编辑器 / 连接能力作用域回归80项、582个断言通过；千次 SQLite 磁盘提交用例使用命令级30秒时限，源测试时限保持原值，独立运行默认5秒时限也通过。前端类型与零警告 ESLint、架构 / 文档 / DBX矩阵检查通过。"
         }
       ],
       "scopeKind": "driver"

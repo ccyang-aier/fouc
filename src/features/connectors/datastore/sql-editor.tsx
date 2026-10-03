@@ -3,12 +3,15 @@
 import { useEffect, useRef, type RefObject } from "react"
 import {
   autocompletion,
+  closeCompletion,
   closeBrackets,
   closeBracketsKeymap,
   completionKeymap
 } from "@codemirror/autocomplete"
+import type { CompletionSource } from '@codemirror/autocomplete'
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands"
 import { MySQL, PostgreSQL, SQLite, sql } from "@codemirror/lang-sql"
+import { sqlKeywordCompletion } from './sql-metadata-completion'
 import { EditorState } from "@codemirror/state"
 import type { SqlEditorPosition } from '@fouc/shared'
 import {
@@ -40,7 +43,7 @@ const sqlHighlight = HighlightStyle.define([
   { tag: [tags.operator, tags.punctuation], color: 'var(--ink-soft)' }
 ])
 
-type SqlEditorHandlers = { onChange: (value: string) => void; onRun: () => void; onSave?: () => void; onPositionChange?: (id: string, position: SqlEditorPosition) => void }
+type SqlEditorHandlers = { onChange: (value: string) => void; onRun: () => void; onSave?: () => void; onPositionChange?: (id: string, position: SqlEditorPosition) => void; complete?: CompletionSource }
 class SqlEditorCallbacks {
   private positionReporter: ((view: EditorView) => void) | null = null
   constructor(private handlers: SqlEditorHandlers) {}
@@ -63,6 +66,8 @@ type Props = {
   positions?: SqlEditorPosition
   cache?: SqlEditorCache
   onPositionChange?: (documentId: string, position: SqlEditorPosition) => void
+  complete?: CompletionSource
+  completionScope?: string
 }
 
 /** DBX's CodeMirror SQL stack adapted to Fouc's React workbench shell. */
@@ -75,20 +80,21 @@ export function SqlEditor({
   provider = "mysql",
   readOnly = false,
   label = "SQL 编辑器",
-  documentId = 'sql', positions, cache, onPositionChange
+  documentId = 'sql', positions, cache, onPositionChange, complete, completionScope
 }: Props) {
   const host = useRef<HTMLDivElement>(null)
   const initialValue = useRef(value)
   const initialPosition = useRef(positions)
-  const handlers = useRef({ onChange, onRun, onSave, onPositionChange })
+  const handlers = useRef({ onChange, onRun, onSave, onPositionChange, complete })
   const activeCallbacks = useRef<SqlEditorCallbacks | null>(null)
 
   useEffect(() => {
-    handlers.current = { onChange, onRun, onSave, onPositionChange }
+    handlers.current = { onChange, onRun, onSave, onPositionChange, complete }
     activeCallbacks.current?.update(handlers.current)
     initialValue.current = value
     initialPosition.current = positions
-  }, [onChange, onRun, onSave, onPositionChange, value, positions])
+  }, [onChange, onRun, onSave, onPositionChange, complete, value, positions])
+  useEffect(() => { if (editorRef.current) closeCompletion(editorRef.current) }, [editorRef, completionScope])
 
   useEffect(() => {
     const cached = cache?.get(documentId)
@@ -120,7 +126,7 @@ export function SqlEditor({
         sql({
           dialect: provider === "postgres" ? PostgreSQL : provider === "sqlite" ? SQLite : MySQL
         }),
-        ...(readOnly ? [] : [autocompletion()]),
+        ...(readOnly ? [] : [autocompletion({ override: [sqlKeywordCompletion(provider), (context) => callbacks.get().complete?.(context) ?? null] })]),
         highlightSelectionMatches(),
         EditorView.lineWrapping,
         EditorView.contentAttributes.of({
@@ -169,6 +175,8 @@ export function SqlEditor({
     const visibility = new ResizeObserver(restoreViewport)
     visibility.observe(host.current!); restoreViewport()
     view.scrollDOM.addEventListener('scroll', scroll)
+    // A returning tab must not revive a popup captured before metadata refresh.
+    closeCompletion(view)
     editorRef.current = view
     return () => {
       cache?.set(documentId, { state: view.state, scrollTop: restoringViewport ? savedTop : view.scrollDOM.scrollTop, scrollLeft: restoringViewport ? savedLeft : view.scrollDOM.scrollLeft, callbacks })

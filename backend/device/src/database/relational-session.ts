@@ -2,6 +2,7 @@ import { DatabaseInputError } from './input-error';
 import {
   DATABASE_CAPABILITIES,
   type DatabaseCapabilities,
+  type DatabaseColumnInfo,
   type DatabaseObjectInfo,
   type DatabaseQueryResult,
   type RelationalTablePage,
@@ -205,6 +206,11 @@ export class RelationalSessionManager {
       database: session.provider === 'mysql' ? schema : session.database,
       connectionId: id,
     }));
+  }
+  async columns(workspaceId: string, id: string, schema: string, table: string): Promise<DatabaseColumnInfo[]> {
+    const columns = await this.entry(workspaceId, id).driver.columns(schema, table);
+    if (!columns.length) throw new DatabaseInputError('对象不存在或当前账号无权读取字段');
+    return columns;
   }
   async structure(
     workspaceId: string,

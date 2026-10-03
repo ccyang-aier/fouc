@@ -111,6 +111,9 @@ export function relationalRoutes(
       ),
     }),
   );
+  app.get(base + '/:id/schemas/:schema/tables/:table/columns', async (c) =>
+    c.json({ ok: true, data: await sessions.columns(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('schema')!, c.req.param('table')!) }),
+  );
   app.get(base + '/:id/schemas/:schema/tables/:table/structure', async (c) =>
     c.json({
       ok: true,

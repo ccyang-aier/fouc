@@ -322,7 +322,7 @@ export function RelationalWorkbench({
             </p>
           )}
           <div hidden={mode !== "sql"} className={styles.queryPanel}>
-            <RelationalQuery session={session} schema={schema} schemas={schemas} schemaLocked={pending} onSchemaChange={selectSchema} beforeLeaveRef={sqlBeforeLeave} onLeaveReady={clearLeaveError} />
+            <RelationalQuery session={session} schema={schema} schemas={schemas} metadataRevision={revision} schemaLocked={pending} onSchemaChange={selectSchema} beforeLeaveRef={sqlBeforeLeave} onLeaveReady={clearLeaveError} />
           </div>
           {page && (
             <div hidden={mode !== "data"}>

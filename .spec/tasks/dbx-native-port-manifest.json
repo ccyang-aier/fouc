@@ -249,6 +249,21 @@
         "src/features/connectors/datastore/sql-tab-strip.tsx",
         "src/features/connectors/datastore/sql-editor-split.tsx"
       ]
+    },
+    {
+      "area": "native-relational-sql-metadata-completion",
+      "status": "partial",
+      "sourceReferences": [
+        "apps/desktop/src/components/editor/QueryEditor.vue",
+        "apps/desktop/src/lib/sql/sqlCompletion.ts",
+        "apps/desktop/src/lib/sql/sqlCompletionLookupTarget.ts",
+        "apps/desktop/src/lib/sql/semantic/tokens.ts"
+      ],
+      "runtimeFiles": [
+        "src/features/connectors/datastore/sql-completion-context.ts",
+        "src/features/connectors/datastore/sql-metadata-completion.ts",
+        "src/features/connectors/datastore/use-sql-metadata.ts"
+      ]
     }
   ],
   "knownRemainingScope": [

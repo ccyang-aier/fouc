@@ -17,6 +17,7 @@ type Props = {
   tables: DatabaseObjectInfo[]
   table: string
   search: string
+  disabled?: boolean
   onSearch: (value: string) => void
   onSchema: (value: string) => void
   onTable: (value: string) => void
@@ -32,14 +33,21 @@ export function ResourceTree({
   onSearch,
   onSchema,
   onTable,
-  onRefresh
+  onRefresh,
+  disabled = false
 }: Props) {
   const visible = tables.filter((item) => item.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()))
   return (
     <aside className="mw-explorer" aria-label="数据库资源">
       <div className="mw-explorer-head">
         <strong>数据库资源</strong>
-        <button className="mw-icon-button" type="button" aria-label="刷新数据库资源" onClick={onRefresh}>
+        <button
+          className="mw-icon-button"
+          type="button"
+          aria-label="刷新数据库资源"
+          disabled={disabled}
+          onClick={onRefresh}
+        >
           <ArrowsClockwise size={15} />
         </button>
       </div>
@@ -61,7 +69,7 @@ export function ResourceTree({
         </div>
         {schemas.map((item) => (
           <div key={item}>
-            <button className="mw-tree-row" type="button" onClick={() => onSchema(item)}>
+            <button className="mw-tree-row" type="button" disabled={disabled} onClick={() => onSchema(item)}>
               {schema === item ? <CaretDown size={12} /> : <CaretRight size={12} />}
               <Database size={15} />
               {item}
@@ -70,6 +78,7 @@ export function ResourceTree({
               visible.map((entry) => (
                 <button
                   type="button"
+                  disabled={disabled}
                   key={entry.name}
                   className={`mw-tree-row mw-table-row ${table === entry.name ? "mw-tree-selected" : ""}`}
                   onClick={() => onTable(entry.name)}

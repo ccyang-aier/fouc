@@ -33,19 +33,20 @@ export function RelationalDialog({
   const dialog = useRef<HTMLDialogElement>(null)
   const [name, setName] = useState(connection?.name ?? "")
   const previous = connection?.config
-  const [host, setHost] = useState(previous?.provider === "postgres" ? previous.host : "127.0.0.1")
-  const [port, setPort] = useState(previous?.provider === "postgres" ? String(previous.port) : "5432")
-  const [username, setUsername] = useState(previous?.provider === "postgres" ? previous.username : "postgres")
-  const [database, setDatabase] = useState(previous?.provider === "postgres" ? previous.database : "postgres")
+  const network = previous?.provider !== "sqlite" ? previous : undefined
+  const [host, setHost] = useState(network?.host ?? "127.0.0.1")
+  const [port, setPort] = useState(String(network?.port ?? (provider === "mysql" ? 3306 : 5432)))
+  const [username, setUsername] = useState(network?.username ?? (provider === "mysql" ? "root" : "postgres"))
+  const [database, setDatabase] = useState(network?.database ?? (provider === "mysql" ? "" : "postgres"))
   const [path, setPath] = useState(previous?.provider === "sqlite" ? previous.path : "")
-  const [ssl, setSsl] = useState(previous?.provider === "postgres" && previous.ssl)
+  const [ssl, setSsl] = useState(network?.ssl ?? false)
   const [password, setPassword] = useState("")
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState("")
   const [feedback, setFeedback] = useState("")
-  const label = provider === "postgres" ? "PostgreSQL" : "SQLite"
+  const label = provider === "postgres" ? "PostgreSQL" : provider === "mysql" ? "MySQL" : "SQLite"
   const config: RelationalConnectionConfig =
-    provider === "postgres"
+    provider !== "sqlite"
       ? { provider, host, port: Number(port), username, database, ssl }
       : { provider, path }
 
@@ -117,7 +118,7 @@ export function RelationalDialog({
                   placeholder="例如：本地开发数据库"
                 />
               </label>
-              {provider === "postgres" ? (
+              {provider !== "sqlite" ? (
                 <>
                   <div className={styles.formColumns}>
                     <label>
@@ -138,7 +139,12 @@ export function RelationalDialog({
                   </div>
                   <label>
                     数据库
-                    <input required value={database} onChange={(event) => setDatabase(event.target.value)} />
+                    <input
+                      required={provider === "postgres"}
+                      placeholder={provider === "mysql" ? "可留空，在工作台选择数据库" : undefined}
+                      value={database}
+                      onChange={(event) => setDatabase(event.target.value)}
+                    />
                   </label>
                   <label>
                     用户名
@@ -168,7 +174,7 @@ export function RelationalDialog({
               )}
             </>
           )}
-          {provider === "postgres" && (
+          {provider !== "sqlite" && (
             <label>
               密码
               <input

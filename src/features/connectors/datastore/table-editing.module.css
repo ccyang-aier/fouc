@@ -1,0 +1,252 @@
+.editing {
+  flex: none;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 12px;
+}
+.toolbar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 5px;
+  color: var(--ink);
+  font-size: 11px;
+  cursor: pointer;
+}
+.toolbar button:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+.toolbar button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.toolbar span {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--muted-strong);
+}
+.drafts {
+  padding: 10px 16px;
+  background: color-mix(in srgb, var(--accent) 5%, var(--panel));
+  border-top: 1px solid var(--line);
+}
+.draftHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+}
+.draftHead strong {
+  margin-right: auto;
+  font-weight: 500;
+  color: var(--ink);
+}
+.draftHead > button {
+  cursor: pointer;
+}
+.draftList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.draftList > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--panel);
+  color: var(--muted-strong);
+  font-size: 10px;
+}
+.draftList b {
+  color: var(--ink);
+  font-weight: 500;
+}
+.draftList button {
+  cursor: pointer;
+}
+.rowDialog {
+  width: min(620px, calc(100vw - 24px));
+}
+.rowDialog form {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 48px);
+}
+.fields {
+  display: grid;
+  gap: 16px;
+  overflow: auto;
+  padding: 20px 22px;
+}
+.field {
+  display: grid;
+  grid-template-columns: 1fr 155px;
+  gap: 7px 14px;
+}
+.field label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.field strong {
+  font-size: 12px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.field label span {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+.field small {
+  font-size: 10px;
+  color: var(--muted-strong);
+}
+.field b {
+  padding: 2px 4px;
+  background: var(--surface);
+  color: var(--accent);
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 500;
+}
+.field select {
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--panel);
+  color: var(--ink);
+  padding: 5px;
+  font-size: 11px;
+}
+.field textarea {
+  grid-column: 1 / -1;
+  width: 100%;
+  resize: vertical;
+  min-height: 34px;
+  max-height: 240px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--ink);
+  font:
+    12px/1.6 var(--font-geist-mono),
+    monospace;
+  outline: none;
+}
+.field textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.field textarea:disabled {
+  background: var(--surface);
+  color: var(--muted);
+}
+.generated {
+  grid-column: 1 / -1;
+  color: var(--muted-strong);
+  background: var(--surface);
+  border-radius: 5px;
+  padding: 8px 10px;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.previewDialog {
+  width: min(720px, calc(100vw - 24px));
+  max-height: calc(100dvh - 48px);
+  display: flex;
+  flex-direction: column;
+}
+.previewDialog:not([open]) {
+  display: none;
+}
+.previewBody {
+  min-height: 0;
+  overflow: auto;
+  padding: 20px 22px;
+}
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+.summary strong {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.summary span {
+  color: var(--muted-strong);
+  font-size: 11px;
+}
+.statement {
+  margin: 16px 0;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  overflow: hidden;
+  background: var(--surface);
+}
+.statement header {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  font-size: 11px;
+}
+.statement header b {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: var(--surface);
+  font-weight: 500;
+  color: var(--muted-strong);
+}
+.statement pre {
+  margin: 0;
+  padding: 10px 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font:
+    11px/1.7 var(--font-geist-mono),
+    monospace;
+}
+.statement > small {
+  padding: 0 12px;
+  color: var(--muted-strong);
+  font-size: 10px;
+}
+@media (max-width: 600px) {
+  .field {
+    grid-template-columns: 1fr;
+  }
+  .draftHead {
+    flex-wrap: wrap;
+  }
+  .toolbar span {
+    flex-basis: 100%;
+    margin: 4px 8px;
+  }
+  .fields,
+  .previewBody {
+    padding: 16px;
+  }
+}

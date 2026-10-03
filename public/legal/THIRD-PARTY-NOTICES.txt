@@ -7,6 +7,12 @@ SQL dialect metadata in shared/catalog/dbx-catalog.json. The YAML dialect
 descriptors were converted to JSON. The MySQL metadata lookup sequence was
 adapted for the Fouc Bun sidecar.
 
+MySQL workspace sessions, bounded array-row reads and metadata fallback are
+adapted from crates/dbx-drivers/src/db/mysql.rs. Table-change plans, generated
+column omission, key predicates and row guards follow
+crates/dbx-sql/src/data_grid_sql.rs. Fouc uses parameter bindings and native
+driver transactions in relational-save.ts; it does not load DBX runtime code.
+
 PostgreSQL catalog discovery and bounded read-only cursors, SQLite file opening
 and table_xinfo metadata, and relational query guards are behavior adaptations
 of crates/dbx-drivers/src/db/{postgres.rs,sqlite.rs} and dbx-core/src/query/.

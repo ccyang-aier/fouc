@@ -6,6 +6,7 @@ import { backendFetch } from "@/lib/backend"
 import { ResourceTree } from "./resource-tree"
 import { TableView, RowInspector } from "./table-view"
 import { RelationalQuery } from "./relational-query"
+import { TableEditing } from "./table-editing"
 import styles from "./relational.module.css"
 import "./workbench.css"
 
@@ -31,6 +32,29 @@ export function RelationalWorkbench({
   const [error, setError] = useState("")
   const [revision, setRevision] = useState(0)
   const [selectedRow, setSelectedRow] = useState<number | null>(null)
+  const [currentSession, setCurrentSession] = useState(session)
+  const [pending, setPending] = useState(false)
+  const [writeBusy, setWriteBusy] = useState(false)
+  const [feedback, setFeedback] = useState("")
+  const writable =
+    currentSession.capabilities.capabilities.tableDataEdit &&
+    !currentSession.capabilities.restrictions.readOnly
+  async function toggleWriteAccess() {
+    setWriteBusy(true)
+    setError("")
+    try {
+      setCurrentSession(
+        await backendFetch<RelationalSession>(`${base}/write-access`, {
+          method: "PUT",
+          body: JSON.stringify({ enabled: !writable })
+        })
+      )
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "切换写入权限失败")
+    } finally {
+      setWriteBusy(false)
+    }
+  }
   useEffect(() => {
     const controller = new AbortController()
     void backendFetch<string[]>(`${base}/schemas`, { signal: controller.signal })
@@ -38,7 +62,13 @@ export function RelationalWorkbench({
         if (!controller.signal.aborted) {
           setSchemas(items)
           setSchema((current) =>
-            items.includes(current) ? current : items.includes("public") ? "public" : (items[0] ?? "")
+            items.includes(current)
+              ? current
+              : session.provider === "mysql" && items.includes(session.database)
+                ? session.database
+                : items.includes("public")
+                  ? "public"
+                  : (items[0] ?? "")
           )
         }
       })
@@ -46,7 +76,7 @@ export function RelationalWorkbench({
         if (!controller.signal.aborted) setError(reason.message)
       })
     return () => controller.abort()
-  }, [base, revision])
+  }, [base, revision, session.database, session.provider])
   useEffect(() => {
     if (!schema) return
     const controller = new AbortController()
@@ -91,6 +121,7 @@ export function RelationalWorkbench({
     setPage(null)
     setBusy(true)
     setError("")
+    setFeedback("")
   }
   function refresh() {
     setError("")
@@ -113,15 +144,33 @@ export function RelationalWorkbench({
   return (
     <section aria-label={`${name} 数据库工作台`} className="mw">
       <header className="mw-breadcrumb">
-        <button type="button" aria-label="返回数据库连接列表" onClick={onBack}>
+        <button
+          type="button"
+          aria-label="返回数据库连接列表"
+          disabled={pending}
+          title={pending ? "先提交或放弃待提交变更" : "返回连接列表"}
+          onClick={onBack}
+        >
           <ArrowLeft size={16} />
         </button>
-        <span>{session.info.productName}</span>
-        <span>/</span>
-        <strong>{name}</strong>
-        <span className={styles.readonly}>只读</span>
+        <span className={styles.providerLabel}>{session.info.productName}</span>
+        <span className={styles.providerLabel}>/</span>
+        <strong className={styles.breadcrumbName} title={name}>
+          {name}
+        </strong>
+        <button
+          type="button"
+          className={styles.writeAccess}
+          disabled={pending || writeBusy}
+          onClick={() => void toggleWriteAccess()}
+        >
+          {writeBusy ? "切换中…" : writable ? "锁定表格写入" : "解锁表格写入"}
+        </button>
+        {pending && <small className={styles.pendingLabel}>有待提交变更</small>}
         <span className="mw-sql-spacer" />
-        <span>{session.database}</span>
+        <span className={styles.databaseLabel} title={session.database}>
+          {session.database}
+        </span>
       </header>
       <div className="mw-body">
         <ResourceTree
@@ -135,11 +184,33 @@ export function RelationalWorkbench({
           onSchema={selectSchema}
           onTable={openTable}
           onRefresh={refresh}
+          disabled={pending}
         />
         <main className="mw-center">
           <div className={styles.mobileResources}>
-            <select aria-label="Schema" value={schema} onChange={(event) => selectSchema(event.target.value)}>{schemas.map((item) => <option key={item}>{item}</option>)}</select>
-            <select aria-label="数据表" value={table} onChange={(event) => openTable(event.target.value)}><option value="" disabled>选择表或视图</option>{tables.map((item) => <option key={item.name}>{item.name}</option>)}</select>
+            <select
+              aria-label="Schema"
+              disabled={pending}
+              value={schema}
+              onChange={(event) => selectSchema(event.target.value)}
+            >
+              {schemas.map((item) => (
+                <option key={item}>{item}</option>
+              ))}
+            </select>
+            <select
+              aria-label="数据表"
+              disabled={pending}
+              value={table}
+              onChange={(event) => openTable(event.target.value)}
+            >
+              <option value="" disabled>
+                选择表或视图
+              </option>
+              {tables.map((item) => (
+                <option key={item.name}>{item.name}</option>
+              ))}
+            </select>
           </div>
           <div className="mw-tab-strip">
             <div className="mw-document-tabs">
@@ -169,9 +240,33 @@ export function RelationalWorkbench({
               </button>
             </p>
           )}
+          {feedback && (
+            <p className={styles.saveFeedback} role="status">
+              {feedback}
+            </p>
+          )}
           <div hidden={mode !== "sql"} className={styles.queryPanel}>
             <RelationalQuery session={session} schema={schema} />
           </div>
+          {page && (
+            <div hidden={mode !== "data"}>
+              <TableEditing
+                key={`${schema}:${page.table}`}
+                base={base}
+                schema={schema}
+                page={page}
+                selectedRow={selectedRow}
+                writable={writable}
+                disabled={busy || tables.find((item) => item.name === table)?.kind !== "table"}
+                onPending={setPending}
+                onSaved={(message) => {
+                  setFeedback(message)
+                  setSelectedRow(null)
+                  refresh()
+                }}
+              />
+            </div>
+          )}
           {mode !== "sql" && (
             <>
               <div className="mw-sql-toolbar">
@@ -222,7 +317,7 @@ export function RelationalWorkbench({
                   <div className={styles.paging}>
                     <button
                       type="button"
-                      disabled={!offset || busy}
+                      disabled={!offset || busy || pending}
                       onClick={() => {
                         setBusy(true)
                         setSelectedRow(null)
@@ -233,7 +328,7 @@ export function RelationalWorkbench({
                     </button>
                     <button
                       type="button"
-                      disabled={!page.hasMore || busy}
+                      disabled={!page.hasMore || busy || pending}
                       onClick={() => {
                         setBusy(true)
                         setSelectedRow(null)

@@ -13,7 +13,10 @@ const dbFile = path.join(directory, 'fixture.sqlite');
 const db = new DatabaseSync(dbFile);
 db.exec(`CREATE TABLE items (tenant TEXT NOT NULL, id INTEGER NOT NULL, value TEXT, computed TEXT GENERATED ALWAYS AS (tenant || id) VIRTUAL, PRIMARY KEY(tenant,id));
   INSERT INTO items VALUES ('a', 2, NULL), ('a', 1, 'hello'), ('b', 1, '世界');
-  CREATE VIEW item_names AS SELECT tenant, value FROM items;`);
+  CREATE VIEW item_names AS SELECT tenant, value FROM items;
+  CREATE TABLE unique_items (code TEXT UNIQUE, a INTEGER, b INTEGER, "null" TEXT, UNIQUE(a,b));
+  CREATE UNIQUE INDEX expression_key ON unique_items(lower(a));
+  INSERT INTO unique_items VALUES('unique',1,2,'value');`);
 db.close();
 afterAll(() => {
   Bun.gc(true);
@@ -22,6 +25,89 @@ afterAll(() => {
 });
 
 describe('real SQLite connection and API', () => {
+  test('a real single-column unique key identifies a keyless row; composite/expression indices do not', async () => {
+    const manager = new RelationalSessionManager(new DatabaseCapabilityRegistry());
+    const session = await manager.connect('space-unique', { provider: 'sqlite', path: dbFile });
+    try {
+      manager.setWriteAccess('space-unique', session.id, true);
+      const page = await manager.page('space-unique', session.id, 'main', 'unique_items');
+      expect(page.columns.map((column) => column.isUnique)).toEqual([true, false, false, false]);
+      const plan = await manager.prepare('space-unique', session.id, {
+        schema: 'main',
+        table: 'unique_items',
+        changes: [{ kind: 'update', original: page.rows[0], values: { b: 3 } }],
+      });
+      await manager.commit('space-unique', session.id, plan.id);
+      expect((await manager.page('space-unique', session.id, 'main', 'unique_items')).rows[0]?.[2]).toBe(3);
+    } finally {
+      await manager.shutdown();
+    }
+  });
+  test('writes require an explicit unlock and single-use plan; conflicts roll back the whole batch', async () => {
+    const manager = new RelationalSessionManager(new DatabaseCapabilityRegistry());
+    const session = await manager.connect('space-write', { provider: 'sqlite', path: dbFile });
+    const scope = 'space-write';
+    try {
+      const insert = {
+        schema: 'main',
+        table: 'items',
+        changes: [
+          { kind: 'insert', values: { tenant: 'write-test', id: '9007199254740993', value: 'first' } },
+        ],
+      };
+      await expect(manager.prepare(scope, session.id, insert)).rejects.toThrow('只读');
+      expect(manager.setWriteAccess(scope, session.id, true).capabilities.capabilities.tableDataEdit).toBe(
+        true,
+      );
+      const plan = await manager.prepare(scope, session.id, insert);
+      await expect(manager.commit('other-space', session.id, plan.id)).rejects.toThrow();
+      expect((await manager.commit(scope, session.id, plan.id)).affectedRows).toBe(1);
+      await expect(manager.commit(scope, session.id, plan.id)).rejects.toThrow('失效');
+      const original = (await manager.page(scope, session.id, 'main', 'items')).rows.find(
+        (row) => row[0] === 'write-test',
+      )!;
+      expect(original[1]).toBe('9007199254740993');
+      const pending = await manager.prepare(scope, session.id, {
+        schema: 'main',
+        table: 'items',
+        changes: [
+          { kind: 'insert', values: { tenant: 'rollback-test', id: 1, value: 'must disappear' } },
+          { kind: 'update', original, values: { value: 'stale' } },
+        ],
+      });
+      const changed = await manager.prepare(scope, session.id, {
+        schema: 'main',
+        table: 'items',
+        changes: [{ kind: 'update', original, values: { value: 'fresh' } }],
+      });
+      await manager.commit(scope, session.id, changed.id);
+      await expect(manager.commit(scope, session.id, pending.id)).rejects.toThrow('回滚');
+      const after = await manager.page(scope, session.id, 'main', 'items');
+      expect(after.rows.some((row) => row[0] === 'rollback-test')).toBe(false);
+      expect(after.rows.find((row) => row[0] === 'write-test')?.[2]).toBe('fresh');
+      await expect(
+        manager.prepare(scope, session.id, {
+          schema: 'main',
+          table: 'items',
+          changes: [{ kind: 'update', original, values: { computed: 'invalid' } }],
+        }),
+      ).rejects.toThrow('数据库生成');
+      const invalidated = await manager.prepare(scope, session.id, insert);
+      manager.setWriteAccess(scope, session.id, false);
+      manager.setWriteAccess(scope, session.id, true);
+      await expect(manager.commit(scope, session.id, invalidated.id)).rejects.toThrow('失效');
+      await expect(manager.query(scope, session.id, 'DELETE FROM items', 'main')).rejects.toThrow();
+      const current = after.rows.find((row) => row[0] === 'write-test')!;
+      const deleted = await manager.prepare(scope, session.id, {
+        schema: 'main',
+        table: 'items',
+        changes: [{ kind: 'delete', original: current }],
+      });
+      await manager.commit(scope, session.id, deleted.id);
+    } finally {
+      await manager.shutdown();
+    }
+  });
   test('discovers views/generated columns, paginates by composite primary key and retains duplicate result columns', async () => {
     const manager = new RelationalSessionManager(new DatabaseCapabilityRegistry());
     const session = await manager.connect('space-a', { provider: 'sqlite', path: dbFile });
@@ -99,6 +185,38 @@ describe('real SQLite connection and API', () => {
     expect(created.status).toBe(201);
     const { data } = (await created.json()) as { data: { id: string } };
     try {
+      expect(
+        (await app.request(`${base}/${data.id}/write-access`, { method: 'PUT', body: '{"enabled":true}' }))
+          .status,
+      ).toBe(401);
+      expect(
+        (
+          await app.request(`${base}/${data.id}/write-access`, {
+            method: 'PUT',
+            headers,
+            body: '{"enabled":true}',
+          })
+        ).status,
+      ).toBe(200);
+      const prepared = await app.request(`${base}/${data.id}/save-plans`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          schema: 'main',
+          table: 'items',
+          changes: [{ kind: 'insert', values: { tenant: 'api-test', id: 1, value: 'ok' } }],
+        }),
+      });
+      expect(prepared.status).toBe(201);
+      const plan = (await prepared.json()) as { data: { id: string } };
+      const commitPath = `${base}/${data.id}/save-plans/${plan.data.id}/commit`;
+      expect((await app.request(commitPath, { method: 'POST', headers, body: '{}' })).status).toBe(400);
+      expect(
+        (await app.request(commitPath, { method: 'POST', headers, body: '{"confirm":true}' })).status,
+      ).toBe(200);
+      expect(
+        (await app.request(commitPath, { method: 'POST', headers, body: '{"confirm":true}' })).status,
+      ).toBe(400);
       expect(
         (await app.request(`${base}/${data.id}/schemas/main/tables/items/rows?limit=501`, { headers }))
           .status,

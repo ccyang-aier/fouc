@@ -15,8 +15,6 @@ import { normalizeError } from '../connectors/service';
 import type { CookieHandoff } from '../connectors/dts/provider';
 import type { DtsTicketListInput } from '@fouc/shared';
 import { DatabaseCapabilityRegistry } from '../database/capability-registry';
-import type { MysqlSessionManager } from '../database/mysql-session';
-import { MysqlReadOnlySqlError } from '../database/mysql-read-only-sql';
 import type { RelationalSessionManager } from '../database/relational-session';
 import { relationalRoutes } from './relational-routes';
 import type { RelationalConnectionRepository } from '../database/relational-connections';
@@ -32,7 +30,6 @@ export type ServerContext = {
   supervisor: SessionSupervisor;
   connectors: ConnectorService;
   databaseCapabilities?: DatabaseCapabilityRegistry;
-  mysqlSessions?: MysqlSessionManager;
   relationalSessions?: RelationalSessionManager;
   relationalConnections?: RelationalConnectionRepository;
   redisSessions?: RedisSessionManager;
@@ -203,84 +200,8 @@ export function createApp(context: ServerContext): { app: Hono; hub: BroadcastHu
       : c.json({ ok: false, error: { code: 'not_found', message: '连接 Profile 不存在' } }, 404);
   });
 
-  app.post('/api/database/mysql/sessions', async (c) => {
-    if (!context.mysqlSessions) return c.json({ ok: false, error: { code: 'unavailable', message: 'MySQL 驱动未启用' } }, 503);
-    const body = await readJson<unknown>(c);
-    if (!body) return c.json({ ok: false, error: { code: 'invalid_input', message: '请求体无效' } }, 400);
-    try {
-      return c.json({ ok: true, data: await context.mysqlSessions.connect(body) }, 201);
-    } catch (error) {
-      return c.json({ ok: false, error: { code: 'connect_failed', message: error instanceof Error ? error.message : '连接失败' } }, 400);
-    }
-  });
-
   if (context.relationalSessions) app.route('/', relationalRoutes(context.relationalSessions, context.relationalConnections));
   if (context.redisSessions) app.route('/', redisRoutes(context.redisSessions, context.redisConnections));
-
-  app.get('/api/database/connections/:id/capabilities', async (c) => {
-    const id = c.req.param('id');
-    const snapshot = (await context.mysqlSessions?.refresh(id)) ?? context.databaseCapabilities?.get(id) ?? null;
-    if (!snapshot) return c.json({ ok: false, error: { code: 'not_connected', message: '数据库尚未建立已验证连接' } }, 404);
-    return c.json({ ok: true, data: snapshot });
-  });
-
-  app.get('/api/database/mysql/sessions/:id/databases', async (c) => {
-    try {
-      const data = await context.mysqlSessions?.databases(c.req.param('id')) ?? null;
-      return data ? c.json({ ok: true, data }) : c.json({ ok: false, error: { code: 'not_connected', message: '连接已断开' } }, 404);
-    } catch (error) {
-      return c.json({ ok: false, error: { code: 'metadata_failed', message: error instanceof Error ? error.message : '数据库列表读取失败' } }, 502);
-    }
-  });
-
-  app.get('/api/database/mysql/sessions/:id/databases/:database/tables', async (c) => {
-    try {
-      const data = await context.mysqlSessions?.tables(c.req.param('id'), c.req.param('database')) ?? null;
-      return data ? c.json({ ok: true, data }) : c.json({ ok: false, error: { code: 'not_connected', message: '连接已断开' } }, 404);
-    } catch (error) {
-      return c.json({ ok: false, error: { code: 'metadata_failed', message: error instanceof Error ? error.message : '表列表读取失败' } }, 502);
-    }
-  });
-
-  app.get('/api/database/mysql/sessions/:id/databases/:database/tables/:table/rows', async (c) => {
-    const offset = Number(c.req.query('offset') ?? 0);
-    const limit = Number(c.req.query('limit') ?? 100);
-    if (!Number.isInteger(offset) || offset < 0 || offset > 10_000_000 || !Number.isInteger(limit) || limit < 1 || limit > 500) {
-      return c.json({ ok: false, error: { code: 'invalid_input', message: '分页范围无效' } }, 400);
-    }
-    try {
-      const data = await context.mysqlSessions?.tablePage(c.req.param('id'), c.req.param('database'), c.req.param('table'), offset, limit) ?? null;
-      return data ? c.json({ ok: true, data }) : c.json({ ok: false, error: { code: 'not_connected', message: '连接已断开' } }, 404);
-    } catch (error) {
-      return c.json({ ok: false, error: { code: 'query_failed', message: error instanceof Error ? error.message : '表数据读取失败' } }, 502);
-    }
-  });
-
-  app.post('/api/database/mysql/sessions/:id/query', async (c) => {
-    const body = await readJson<unknown>(c);
-    const fields = body && typeof body === 'object' ? body as Record<string, unknown> : null;
-    if (!fields || typeof fields.sql !== 'string' || (fields.database !== null && typeof fields.database !== 'string')) {
-      return c.json({ ok: false, error: { code: 'invalid_input', message: '查询参数无效' } }, 400);
-    }
-    const input = fields as { database: string | null; sql: string; maxRows?: number };
-    if (input.maxRows !== undefined && (!Number.isInteger(input.maxRows) || input.maxRows < 1 || input.maxRows > 5_000)) {
-      return c.json({ ok: false, error: { code: 'invalid_input', message: '最大返回行数必须为 1–5000' } }, 400);
-    }
-    try {
-      const result = await context.mysqlSessions?.executeReadOnly(c.req.param('id'), input.database, input.sql, input.maxRows) ?? null;
-      return result ? c.json({ ok: true, data: result })
-        : c.json({ ok: false, error: { code: 'not_connected', message: '连接已断开或只读查询不可用' } }, 404);
-    } catch (error) {
-      const invalid = error instanceof MysqlReadOnlySqlError;
-      return c.json({ ok: false, error: { code: invalid ? 'unsafe_sql' : 'query_failed', message: error instanceof Error ? error.message : '查询失败' } }, invalid ? 400 : 502);
-    }
-  });
-
-  app.delete('/api/database/mysql/sessions/:id', async (c) => {
-    const closed = await context.mysqlSessions?.disconnect(c.req.param('id')) ?? false;
-    return closed ? c.json({ ok: true, data: { disconnected: true } })
-      : c.json({ ok: false, error: { code: 'not_connected', message: '连接已断开' } }, 404);
-  });
 
   app.post('/api/connectors/instances/:id/connect', (c) => connectorReply(c, () => connectors.beginConnect(c.req.param('id'))));
   app.post('/api/connectors/instances/:id/disconnect', (c) => connectorReply(c, () => connectors.disconnect(c.req.param('id'))));

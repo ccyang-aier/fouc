@@ -7,7 +7,7 @@ function normalize(value: unknown): RelationalConnectionConfig {
   if (!value || typeof value !== 'object') throw new DatabaseInputError('连接参数无效');
   const raw = value as Record<string, unknown>;
   if (
-    raw.provider === 'postgres' &&
+    (raw.provider === 'postgres' || raw.provider === 'mysql') &&
     typeof raw.host === 'string' &&
     raw.host.trim() &&
     Number.isInteger(raw.port) &&
@@ -16,11 +16,11 @@ function normalize(value: unknown): RelationalConnectionConfig {
     typeof raw.username === 'string' &&
     raw.username.trim() &&
     typeof raw.database === 'string' &&
-    raw.database.trim() &&
+    (raw.provider === 'mysql' || raw.database.trim()) &&
     (raw.ssl === undefined || typeof raw.ssl === 'boolean')
   ) {
     return {
-      provider: 'postgres',
+      provider: raw.provider,
       host: raw.host.trim(),
       port: Number(raw.port),
       username: raw.username.trim(),

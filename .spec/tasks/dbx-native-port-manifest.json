@@ -19,7 +19,7 @@
       ]
     },
     {
-      "area": "mysql-native-runtime-and-live-ui",
+      "area": "mysql-native-driver",
       "status": "partial",
       "sourceReferences": [
         "crates/dbx-drivers/src/db/mysql.rs",
@@ -28,17 +28,12 @@
         "apps/desktop/src/components/layout/"
       ],
       "runtimeFiles": [
-        "backend/device/src/database/mysql-session.ts",
-        "backend/device/src/database/mysql-read-only-sql.ts",
-        "src/features/connectors/mysql/mysql-connection-list.tsx",
-        "src/features/connectors/mysql/mysql-connection-dialog.tsx",
-        "src/features/connectors/mysql/mysql-connection-table.tsx",
-        "src/features/connectors/mysql/workbench/mysql-live-workbench.tsx",
-        "src/features/connectors/mysql/workbench/mysql-live-sql.tsx"
+        "backend/device/src/database/drivers/mysql.ts",
+        "backend/device/src/database/mysql-read-only-sql.ts"
       ]
     },
     {
-      "area": "postgres-sqlite-native-runtime",
+      "area": "shared-relational-runtime-and-postgres-sqlite-drivers",
       "status": "partial",
       "sourceReferences": [
         "crates/dbx-drivers/src/db/postgres.rs",
@@ -109,13 +104,27 @@
         "backend/device/src/database/connection-repository.ts",
         "backend/device/src/api/saved-connection-routes.ts"
       ]
+    },
+    {
+      "area": "native-table-change-plans-and-editing",
+      "status": "partial",
+      "sourceReferences": [
+        "crates/dbx-sql/src/data_grid_sql.rs",
+        "apps/desktop/src/components/grid/"
+      ],
+      "runtimeFiles": [
+        "backend/device/src/database/relational-save.ts",
+        "src/features/connectors/datastore/row-edit-dialog.tsx",
+        "src/features/connectors/datastore/save-preview-dialog.tsx",
+        "src/features/connectors/datastore/table-editing.tsx"
+      ]
     }
   ],
   "knownRemainingScope": [
     "Redis mutation/expiry, database selection, RedisJSON, Sentinel/Cluster, stream consumer groups/Pending/Lag, PubSub/MONITOR/Slowlog, large-keyspace virtualization and result stores",
     "common driver lifecycle, cancellation, reconnect and streaming",
-    "workspace-aware MySQL persistence and shared policy integration",
-    "row/structure editing and transactions",
+    "cross-entry-point write grants, scope restrictions and shared policy integration",
+    "full grid selection/copy/paste/undo, keyless guards, complex types, structure editing, cancellation and distributed transactions",
     "full SQL dialect parsing, completion, parameters, history and saved SQL",
     "import/export/transfer/schema and data comparison/backup",
     "remaining DBX drivers and specialized surfaces",

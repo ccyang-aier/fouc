@@ -47,10 +47,20 @@ function listenerCommands(port) {
 
 async function ready(service) {
   try {
-    const response = await fetch(`http://127.0.0.1:${service.port}${service.health}`, { signal: AbortSignal.timeout(2_000) });
+    const response = await fetch(`http://127.0.0.1:${service.port}${service.health}`, { signal: AbortSignal.timeout(service.name === 'Web' ? 15_000 : 2_000) });
     if (!response.ok) return false;
     return service.name === 'Web' || (await response.json()).ok === true;
   } catch { return false; }
+}
+
+async function waitForReady(service, child) {
+  const deadline = Date.now() + 45_000;
+  while (Date.now() < deadline) {
+    if (await ready(service)) return true;
+    if (child && child.exitCode !== null) break;
+    await delay(500);
+  }
+  return false;
 }
 
 for (const service of services) {
@@ -58,7 +68,7 @@ for (const service of services) {
   const owned = service.owner ?? ((command) => normalize(command).includes(normalize(service.args.at(-1))));
   if (commands.length) {
     if (!commands.every(owned)) throw new Error(`${service.name}: port ${service.port} belongs to another process or checkout. Stop that process or select a different port.`);
-    if (!await ready(service)) throw new Error(`${service.name}: existing process is not ready. Check its logs before restarting.`);
+    if (!await waitForReady(service)) throw new Error(`${service.name}: existing process is not ready. Check its logs before restarting.`);
     console.log(`${service.name}: reusing http://localhost:${service.port}`);
     continue;
   }
@@ -70,14 +80,7 @@ for (const service of services) {
   closeSync(stderr);
   await new Promise((resolve, reject) => { child.once('spawn', resolve); child.once('error', reject); });
   child.unref();
-  let available = false;
-  const deadline = Date.now() + 45_000;
-  while (Date.now() < deadline) {
-    if (await ready(service)) { available = true; break; }
-    if (child.exitCode !== null) break;
-    await delay(500);
-  }
-  if (!available) throw new Error(`${service.name} failed to become ready; inspect ${logDirectory}.`);
+  if (!await waitForReady(service, child)) throw new Error(`${service.name} failed to become ready; inspect ${logDirectory}.`);
   console.log(`${service.name}: started http://localhost:${service.port} (PID ${child.pid})`);
 }
 console.log('Development services remain running. Next.js and Bun watch source changes automatically.');

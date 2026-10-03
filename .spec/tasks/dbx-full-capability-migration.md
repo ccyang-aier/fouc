@@ -9,12 +9,14 @@
 ## 代码规模与当前验证
 
 - 源码已恢复至固定 commit；[源码审计](dbx-source-audit.json) 与 [实质迁移文件清单](dbx-native-port-manifest.json) 可由 `node scripts/audit-dbx-source.mjs --write` 重算。约 133.4 万有效源码行；排除独立测试、翻译资源、工具与账户/云模块后的核心范围估算为 91.4 万行。词法统计仍包含 Rust 内嵌测试，不能把这个估算当成已迁移量。
-- 第一阶段目标仍为约 50,000 行 Fouc 核心运行逻辑；当前清单为 40 个运行文件、5,099 行有效代码。不计样式、目录 JSON、测试、参考仓库或演示工作台，且必须逐能力验收，当前未完成。统计受代码格式影响，不能以行数代替功能覆盖。
-- PostgreSQL / SQLite 的连接配置 CRUD、测试与会话打开、Schema/表/视图/字段发现、主键分页、只读 SQL、大整数/重复列名及空间隔离已有真实 HTTP 和浏览器证据。R02/R03 保持进行中；写入、完整对象管理、导入导出、比较/备份、取消/重连、CLI/MCP 等仍须推进。SQLite 当前同步查询，尚未交付长查询取消与 worker 隔离。
-- 验证入口：`bun test --isolate backend/device/src/database backend/device/src/api/server.database.test.ts`、`node scripts/verify-relational-live.mjs`。真实服务验证使用独立 `fouc_datastore_lab` 数据库与 `.runtime/dbx-lab/relational.sqlite`，不访问 Fouc 账户/业务表。
+- 第一阶段目标仍为约 50,000 行 Fouc 核心运行逻辑；当前清单为 39 个运行文件、5,342 行有效代码。不计样式、目录 JSON、测试、参考仓库或演示工作台，且必须逐能力验收，当前未完成。MySQL 已合并到共享会话与工作台，移除的重复逻辑不保留行数信用。统计受代码格式影响，不能以行数代替功能覆盖。固定源码基线未变化时，可用 `node scripts/audit-dbx-source.mjs --native-only --write` 快速重算原生清单。
+- MySQL / PostgreSQL / SQLite 的连接配置 CRUD、测试与会话打开、Schema/表/视图/字段发现、主键分页、只读 SQL、大整数/重复列名及空间隔离已有真实 HTTP 和浏览器证据。R01/R02/R03 保持进行中；完整对象管理、导入导出、比较/备份、取消/重连、CLI/MCP 等仍须推进。SQLite 当前同步查询，尚未交付长查询取消与 worker 隔离。
+- 验证入口：`bun test --isolate backend/device/src/database backend/device/src/api/server.database.test.ts src/features/connectors/datastore/result-format.test.ts`、`node scripts/verify-relational-live.mjs`、`node scripts/verify-mysql-live.mjs`、`node scripts/verify-table-save-live.mjs`。真实服务验证使用独立 `fouc_datastore_lab` 数据库、专用 `dbx_save_fixture` / `dbx_unique_fixture` 表与 `.runtime/dbx-lab/relational.sqlite`，不访问 Fouc 账户/业务表。MySQL 实验室通过 `node scripts/datastore-lab.mjs up|status` 运行，容器有认证健康检查，随机凭据只写入被 Git 忽略的运行目录。
 - Web 验证：Playwright + Chrome，1440×1000 完成上述 PostgreSQL / SQLite 流程；390×844、760×844 检查连接目录、导航收起及溢出。两次故意写入产生预期 HTTP 400，未出现其他控制台或页面错误；窄窗口工作台操作矩阵仍待补齐。
 - Redis 的独立连接器已接入共享配置 CRUD 与设备会话；原始字节/字符串游标、SCAN、String/List/Set/Hash/ZSet/Stream 读取、TTL、缺失 Key、只读命令台已有真实 HTTP 与 Web 证据。X01/R07 保持进行中，尚未交付写入/TTL 修改、完整数据库切换、RedisJSON、Sentinel/Cluster、消费组/Pending/Lag、Pub/Sub、MONITOR、Slowlog、大 keyspace 虚拟列表及全入口矩阵。
 - Redis 验证入口：`node scripts/verify-redis-live.mjs` 使用独立 DB 15 与 `fouc:dbx-lab:` 前缀，只重置明确命名的验证 Key，不清空数据库、不访问业务缓存 Key。Playwright + Chrome 1440×1000、760×844 已验收创建/测试/保存/连接、六种类型、JSON、List/Stream 翻页、空状态/搜索、命令成功/错误及编辑/刷新持久化/复制/删除。一次故意写入产生预期 HTTP 400，无其他控制台或页面错误。
+- 三种关系型数据源的暂存新增/修改/删除、NULL/默认值/JSON/Base64 编辑、计算字段保护、SQL/参数预览、取消/确认与重新锁定已有真实 HTTP 和 Web 证据。计划绑定工作空间/会话并只消费一次；完整原始行冲突与重复键均回滚前序写入。复合/表达式索引及 PostgreSQL INCLUDE 列不会误判成单列唯一键。C05/C06/G04 均保持进行中，无键行、复制/粘贴/撤销、复杂类型、生产范围、Agent/CLI/MCP 授权、取消/未知提交结果与分布式事务未交付。
+- 表编辑 Web 验证：Playwright + Chrome，三种数据源均完成 1440×1000 的写入闭环、暂存时表/页/连接导航保护与 SQL 页签保留；760×844 操作无溢出，390×844 编辑弹窗可滚动且操作区可见。提交后回读数据、结果反馈与重新锁定通过，无页面或控制台错误；其他工作台窄窗口功能矩阵仍未整体完成。
 
 ## 范围与验收规则
 
@@ -22,7 +24,7 @@
 - **功能等价**：按 DBX 的 capability、数据库类型、运行入口和账号权限逐项验收。DBX 本身没有声明的能力不强行开放；不同版本/Edition/驱动的动态差异要保留。桌面特有功能可用 Tauri 桥接，Web 的文件路径与网络按服务器环境解释。
 - **Fouc 架构**：React/Next.js 实现 UI，设备侧连接与执行归 `backend/device/`，账户、工作空间与共享业务归 `backend/server/`，公开契约置于 `shared/`，Tauri v2 只保留系统薄壳。DBX 的 Rust/Vue/Go 实现是行为与算法参考，迁移前记录许可证与第三方依赖；不把业务逻辑搬入 Fouc Rust 壳。
 - **任务完成定义**：每行须具备真实后端通路、前端交互及加载/空/错误/取消/成功反馈、只读和生产保护、适用数据库矩阵验证、桌面及 Web 适用入口验证、必要的集成测试。数据库专属任务用对应服务实例或可重复的协议测试验证。**一行中用顿号、斜杠或分号列出的能力必须逐项留证**，不能只验收其中一个按钮或一种数据库。功能与 DBX 有意差异时记录差异和验收依据。
-- **依赖顺序**：`F00 → F01/F02/F03/F04 → C/S/Q/G → D/X/A/P/R`；任务可并行，但不得用一个通用模拟驱动宣称完成全部类型。现有 MySQL 工作台主要为本地样例数据，作为视觉骨架而非后端完成基线。
+- **依赖顺序**：`F00 → F01/F02/F03/F04 → C/S/Q/G → D/X/A/P/R`；任务可并行，但不得用一个通用模拟驱动宣称完成全部类型。MySQL、PostgreSQL、SQLite 已复用原生关系型会话与共享工作台；旧 MySQL 演示和无空间会话路由已移除。所有尚未验收的能力仍按逐项矩阵推进。
 
 ## 核心功能覆盖复核（2026-09-24）
 
@@ -50,10 +52,10 @@
 | F02 | 在 Bun sidecar 实现驱动注册、生命周期、连接池/单连接、超时、取消、自动重连、元数据缓存/失效、长任务和流式结果；隔离各连接。 | `crates/dbx-core/src/connection/`、`query/`、`schema/` | 进行中 |
 | F03 | 桌面 HTTP/WS 桥与 Web API/SSE 共用服务层；鉴权、会话、下载、进度、错误语义一致，Web 服务可部署。 | `crates/dbx-web/src/`、`src-tauri/src/commands/` | 待实施 |
 | F04 | 将 DBX 能力标记、SQL 方言和连接 Profile 转为 Fouc 单一目录源；启动时校验 Profile→驱动→能力映射，未知/缺失能力不误开放。 | `plugins/connection-types/`、`plugins/dialects/` | 进行中 |
-| F05 | 引入可重复的数据库测试矩阵、容器/测试服务、协议夹具和桌面/Web 端到端用例；每个驱动至少验证连接、故障、声明能力和只读阻断。 | `crates/*/tests/`、`apps/desktop/src/**/__tests__/` | 待实施 |
+| F05 | 引入可重复的数据库测试矩阵、容器/测试服务、协议夹具和桌面/Web 端到端用例；每个驱动至少验证连接、故障、声明能力和只读阻断。 | `crates/*/tests/`、`apps/desktop/src/**/__tests__/` | 进行中 |
 | F06 | 审核 DBX Apache-2.0、复用代码/素材、第三方驱动与插件许可证；保留所需 NOTICE 和依赖清单。 | `opensource/dbx/LICENSE`、`agents/`、`plugins/` | 待实施 |
 | F07 | Web 首次设置、登录/登出、修改密码、会话 Cookie、API 鉴权与部署在子路径时的路由；桌面本地访问和 Web 登录边界分别验收。 | `crates/dbx-web/src/auth.rs`、`components/auth/LoginPage.vue` | 待实施 |
-| F08 | 为主要数据库及版本建立可重复的本地测试实验室：容器配方、健康检查、冒烟数据、连接字段输出、端口冲突检查与一键验证；作为 Rxx 验收基础。 | `docs/content/docs/database-lab.cn.mdx`、`opensource/dbx/deploy/` | 待实施 |
+| F08 | 为主要数据库及版本建立可重复的本地测试实验室：容器配方、健康检查、冒烟数据、连接字段输出、端口冲突检查与一键验证；作为 Rxx 验收基础。 | `docs/content/docs/database-lab.cn.mdx`、`opensource/dbx/deploy/` | 进行中 |
 
 ## 1. 连接、网络、配置与安全
 
@@ -64,7 +66,7 @@
 | C03 | SSH 隧道、跳板/密钥/口令提示、SSH config 导入、隧道 Profile、SOCKS5、HTTP 代理/隧道、网络失败诊断和安全关闭。 | `components/ssh/`、`tunnel_profiles.rs`、`ssh-tunnel.cn.mdx` | 待实施 |
 | C04 | 本地凭据安全存储、解锁和密码提示；配置导出 AES-GCM 加密、导入/合并/冲突处理，支持从 DBeaver、Navicat、DataGrip 导入连接。 | `connection_secrets.rs`、`keychain.rs`、`config_cmd.rs`、`connection-import.cn.mdx` | 待实施 |
 | C05 | 连接与数据库级只读、写入解锁、SQL/命令风险分类、每次生产写入确认、危险语句/目标组保护；所有 UI、CLI、MCP 和专项 API 走同一策略。 | `crates/dbx-core/src/safety/`、`crates/dbx-sql/src/` | 进行中 |
-| C06 | 写入前 SQL/请求预览、影响范围和失败反馈；事务提交/回滚、部分成功标识、取消行为，不以客户端禁用按钮代替服务端拦截。 | `production-safety.cn.mdx`、`query/two_phase_commit.rs` | 待实施 |
+| C06 | 写入前 SQL/请求预览、影响范围和失败反馈；事务提交/回滚、部分成功标识、取消行为，不以客户端禁用按钮代替服务端拦截。 | `production-safety.cn.mdx`、`query/two_phase_commit.rs` | 进行中 |
 | C07 | Agent/JDBC/外部驱动下载、安装、版本/运行时检测、更新/卸载、缺失提示和驱动商店；系统/托管/多版本 JRE、离线 ZIP/JRE 包导入、运行时 PID/CPU/内存/Session 监控及停止/重启；兼容各驱动的 Agent 进程协议。 | `agents/`、`driver-management.cn.mdx` | 待实施 |
 | C08 | 连接设置和 SQL 库的 WebDAV/Gist/Gitee 同步、冲突处理、手动/自动同步状态及恢复。 | `cloud_sync.rs`、`cloud-sync.cn.mdx` | 待实施 |
 
@@ -103,7 +105,7 @@
 | G01 | 真实表数据按页/虚拟滚动加载、行号、斑马纹、空值/类型展示、列宽行高拖拽、自适应少列填满、宽表横向滚动；字体/字号/行高/密度设置和连接、结果来源、字段类型/注释信息可见。 | `components/grid/`、`data-grid.cn.mdx` | 进行中 |
 | G02 | 单格、连续矩形、多行/列选择；键盘导航、复制/粘贴、上下文菜单、选择状态与右侧详情同步，首次打开不预选。 | `components/grid/` | 待实施 |
 | G03 | 分清数据库侧 WHERE/ORDER BY 与客户端的当前结果搜索、值过滤、当前页排序；提供列筛选、LIKE/NOT LIKE、多字段排序、刷新/重置、页大小与分页，并明确显示条件的执行位置与范围。 | `components/grid/`、`data-grid.cn.mdx` | 待实施 |
-| G04 | 单元格编辑、批量改单元格、新增/复制/删除行、脏数据标记、撤销/回滚、提交前 SQL 预览与冲突/部分失败反馈。 | `components/grid/`、`crates/dbx-sql/src/` | 待实施 |
+| G04 | 单元格编辑、批量改单元格、新增/复制/删除行、脏数据标记、撤销/回滚、提交前 SQL 预览与冲突/部分失败反馈。 | `components/grid/`、`crates/dbx-sql/src/` | 进行中 |
 | G05 | 单元格/行/列详情、字段元数据、关联数据跳转、值大文本查看、行详情动态展示与字段筛选。 | `components/grid/`、`components/objects/` | 进行中 |
 | G06 | CSV、TSV、JSON、Markdown、XLSX、INSERT SQL 的选择/全表复制及导出；大结果分片/ZIP、进度/取消和正确转义。 | `crates/dbx-formats/`、`table_export.rs` | 待实施 |
 | G07 | 表结构筛选、列显示/隐藏/固定、自动适宽、数据/结构工具栏、Canvas 编辑模式和上下文操作完整可用。 | `components/grid/` | 待实施 |

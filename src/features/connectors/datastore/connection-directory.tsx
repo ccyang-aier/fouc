@@ -44,7 +44,14 @@ function ConnectionDirectory({
   onBack,
   onWorkbenchFocus
 }: Props & { workspaceId: string }) {
-  const label = provider === "postgres" ? "PostgreSQL" : provider === "redis" ? "Redis" : "SQLite"
+  const label =
+    provider === "postgres"
+      ? "PostgreSQL"
+      : provider === "mysql"
+        ? "MySQL"
+        : provider === "redis"
+          ? "Redis"
+          : "SQLite"
   const base = `/api/database/workspaces/${encodeURIComponent(workspaceId)}/${provider === "redis" ? "redis" : "relational"}`
   const [connections, setConnections] = useState<SavedConnection[]>([])
   const [loading, setLoading] = useState(true)

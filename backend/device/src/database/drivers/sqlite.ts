@@ -18,6 +18,7 @@ export async function connectSqlite(
     db.exec('PRAGMA query_only=ON');
     const identity = db.prepare('SELECT sqlite_version() AS version').get()!;
     return {
+      quoteIdentifier: quote,
       info: {
         productName: 'SQLite',
         productVersion: String(identity.version),
@@ -52,7 +53,11 @@ export async function connectSqlite(
         const unique = new Set(
           indices.flatMap((index) => {
             const columns = db.prepare(`PRAGMA index_info(${quote(String(index.name))})`).all();
-            return columns.length === 1 ? [String(columns[0]!.name)] : [];
+            return columns.length === 1 &&
+              Number(columns[0]!.cid) >= 0 &&
+              typeof columns[0]!.name === 'string'
+              ? [columns[0]!.name]
+              : [];
           }),
         );
         return db
@@ -100,6 +105,64 @@ export async function connectSqlite(
           rows: rows.slice(0, maxRows),
           hasMore: rows.length > maxRows,
         };
+      },
+      async assertEditable(schema, table) {
+        if (
+          schema !== 'main' ||
+          db.prepare('SELECT type FROM sqlite_schema WHERE name=?').get(table)?.type !== 'table'
+        )
+          throw new DatabaseInputError('只能编辑 main 中的表');
+      },
+      async transaction(schema, run) {
+        if (schema !== 'main') throw new DatabaseInputError('SQLite 会话仅支持 main');
+        const writer = new DatabaseSync(input.path, { open: true, readOnly: false });
+        try {
+          writer.exec('PRAGMA busy_timeout=5000; PRAGMA foreign_keys=ON; BEGIN IMMEDIATE');
+          const result = await run({
+            async query(sql, values) {
+              const statement = writer.prepare(sql);
+              statement.setReadBigInts(true);
+              statement.setReturnArrays(true);
+              const fields = statement.columns();
+              const parameters = values.map((value) => (typeof value === 'boolean' ? Number(value) : value));
+              if (!fields.length)
+                return {
+                  columns: [],
+                  columnTypes: [],
+                  rows: [],
+                  hasMore: false,
+                  affectedRows: Number(statement.run(...parameters).changes),
+                };
+              const rows = statement.all(...parameters) as unknown as unknown[][];
+              return {
+                columns: fields.map((field) => field.name),
+                columnTypes: fields.map((field) => field.type ?? 'dynamic'),
+                rows: rows.map((row) =>
+                  row.map((value) =>
+                    typeof value === 'bigint' &&
+                    value <= BigInt(Number.MAX_SAFE_INTEGER) &&
+                    value >= BigInt(Number.MIN_SAFE_INTEGER)
+                      ? Number(value)
+                      : relationalCell(value),
+                  ),
+                ),
+                hasMore: false,
+                affectedRows: rows.length,
+              };
+            },
+          });
+          writer.exec('COMMIT');
+          return result;
+        } catch (error) {
+          try {
+            writer.exec('ROLLBACK');
+          } catch {
+            /* BEGIN can fail before a transaction exists. */
+          }
+          throw error;
+        } finally {
+          writer.close();
+        }
       },
       async close() {
         db.close();

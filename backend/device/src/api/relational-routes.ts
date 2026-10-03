@@ -41,6 +41,42 @@ export function relationalRoutes(
       201,
     ),
   );
+  app.get(base + '/:id', (c) =>
+    c.json({ ok: true, data: sessions.details(c.req.param('workspaceId')!, c.req.param('id')!) }),
+  );
+  app.put(base + '/:id/write-access', async (c) => {
+    const body = await c.req.json().catch(() => null);
+    if (typeof body?.enabled !== 'boolean') throw new DatabaseInputError('写入权限参数无效');
+    return c.json({
+      ok: true,
+      data: sessions.setWriteAccess(c.req.param('workspaceId')!, c.req.param('id')!, body.enabled),
+    });
+  });
+  app.post(base + '/:id/save-plans', async (c) =>
+    c.json(
+      {
+        ok: true,
+        data: await sessions.prepare(
+          c.req.param('workspaceId')!,
+          c.req.param('id')!,
+          await c.req.json().catch(() => null),
+        ),
+      },
+      201,
+    ),
+  );
+  app.delete(base + '/:id/save-plans/:planId', (c) => {
+    sessions.discard(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('planId')!);
+    return c.json({ ok: true, data: { discarded: true } });
+  });
+  app.post(base + '/:id/save-plans/:planId/commit', async (c) => {
+    const body = await c.req.json().catch(() => null);
+    if (body?.confirm !== true) throw new DatabaseInputError('请明确确认预览中的变更');
+    return c.json({
+      ok: true,
+      data: await sessions.commit(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('planId')!),
+    });
+  });
   app.get(base + '/:id/schemas', async (c) =>
     c.json({ ok: true, data: await sessions.schemas(c.req.param('workspaceId')!, c.req.param('id')!) }),
   );

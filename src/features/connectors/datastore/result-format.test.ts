@@ -1,17 +1,29 @@
 import { describe, expect, test } from "bun:test"
 import type { DatabaseQueryResult } from "@fouc/shared"
 
-import { chartableColumns, chartNumber, columnLabel, formatDelimited, formatJson } from "../src/features/connectors/mysql/workbench/mysql-live-result-format"
+import { chartableColumns, chartNumber, columnLabel, formatDelimited, formatJson } from "./result-format"
 
 const result: DatabaseQueryResult = {
-  columns: ["name", "amount", "name"], columnTypes: ["text", "int", "text"], columnSortables: [true, true, true],
-  rows: [["a,\"b", 12, null], ["line\nbreak", "15", "x\ty"]], affectedRows: 0, executionTimeMs: 8,
-  truncated: false, sessionId: null, hasMore: false, messages: [],
+  columns: ["name", "amount", "name"],
+  columnTypes: ["text", "int", "text"],
+  columnSortables: [true, true, true],
+  rows: [
+    ['a,"b', 12, null],
+    ["line\nbreak", "15", "x\ty"]
+  ],
+  affectedRows: 0,
+  executionTimeMs: 8,
+  truncated: false,
+  sessionId: null,
+  hasMore: false,
+  messages: []
 }
 
 describe("DBX-compatible query result formatting", () => {
   test("CSV quotes headers and values, preserving null as an empty field", () => {
-    expect(formatDelimited(result, ",")).toBe('"name","amount","name"\n"a,""b","12",\n"line\nbreak","15","x\ty"')
+    expect(formatDelimited(result, ",")).toBe(
+      '"name","amount","name"\n"a,""b","12",\n"line\nbreak","15","x\ty"'
+    )
   })
 
   test("TSV quotes only values that need escaping", () => {

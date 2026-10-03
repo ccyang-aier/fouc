@@ -18,7 +18,6 @@ import { createLogger } from '../platform/logger';
 import { ConnectorRepository } from '../connectors/repository';
 import { ConnectorService } from '../connectors/service';
 import { DatabaseCapabilityRegistry } from '../database/capability-registry';
-import { MysqlSessionManager } from '../database/mysql-session';
 import { RelationalSessionManager } from '../database/relational-session';
 import { RelationalConnectionRepository } from '../database/relational-connections';
 import { DeviceConnectionRepository } from '../database/connection-repository';
@@ -72,7 +71,6 @@ async function main(): Promise<void> {
   const connectorRepo = new ConnectorRepository(db);
   const connectors = new ConnectorService(connectorRepo);
   const databaseCapabilities = new DatabaseCapabilityRegistry();
-  const mysqlSessions = new MysqlSessionManager(databaseCapabilities);
   const relationalSessions = new RelationalSessionManager(databaseCapabilities);
   const relationalConnections = new RelationalConnectionRepository(path.join(process.env.FOUC_DATA_DIR ?? path.join(homedir(), '.fouc'), 'database', 'connections'));
   const redisSessions = new RedisSessionManager();
@@ -86,7 +84,7 @@ async function main(): Promise<void> {
   const registry = new AgentRegistry(providerRepo, installationRepo, (event) => emitter.emit(event));
   const supervisor = new SessionSupervisor(registry, sessionRepo, runRepo, eventRepo, (event) => emitter.emit(event));
 
-  const { app, hub } = createApp({ registry, supervisor, connectors, databaseCapabilities, mysqlSessions, relationalSessions, relationalConnections, redisSessions, redisConnections, knowledge, token: TOKEN || 'dev', internalToken: INTERNAL_TOKEN, devNoAuth: DEV_NO_AUTH });
+  const { app, hub } = createApp({ registry, supervisor, connectors, databaseCapabilities, relationalSessions, relationalConnections, redisSessions, redisConnections, knowledge, token: TOKEN || 'dev', internalToken: INTERNAL_TOKEN, devNoAuth: DEV_NO_AUTH });
   const forwarder = createEventForwarder(hub);
   emitter.emit = (event) => forwarder(event);
   for (const event of buffered.splice(0)) forwarder(event);
@@ -124,7 +122,6 @@ async function main(): Promise<void> {
   const shutdown = async () => {
     log.info('Shutting down: suspending sessions…');
     connectors.stopHeartbeat();
-    await mysqlSessions.shutdown().catch((error) => log.error('MySQL shutdown failed:', error));
     await relationalSessions.shutdown().catch((error) => log.error('Relational sessions shutdown failed:', error));
     redisSessions.shutdown();
     await supervisor.shutdown().catch((error) => log.error('shutdown failed:', error));

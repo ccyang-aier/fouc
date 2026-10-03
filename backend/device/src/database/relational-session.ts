@@ -7,18 +7,25 @@ import {
   type DatabaseTablePage,
   type RelationalConnectInput,
   type RelationalSession,
+  type RelationalSavePreview,
+  type RelationalSaveResult,
 } from '@fouc/shared';
 import { getDatabaseDriver } from '@fouc/shared/database-catalog';
 import { DatabaseCapabilityRegistry } from './capability-registry';
 import { connectPostgres } from './drivers/postgres';
 import { connectSqlite } from './drivers/sqlite';
+import { connectMysql } from './drivers/mysql';
+import { assertMysqlReadOnlySql } from './mysql-read-only-sql';
 import type { RelationalDriver } from './drivers/relational-driver';
-import {
-  assertRelationalReadSql,
-  quoteRelationalIdentifier as quote,
-} from './relational-sql';
+import { assertRelationalReadSql } from './relational-sql';
+import { columnSignature, executeSave, prepareSave, saveInput, type SavePlan } from './relational-save';
 
-type Entry = { session: RelationalSession; driver: RelationalDriver };
+type Entry = {
+  session: RelationalSession;
+  driver: RelationalDriver;
+  plans: Map<string, SavePlan>;
+  saving: boolean;
+};
 export class RelationalSessionManager {
   private readonly entries = new Map<string, Entry>();
   constructor(private readonly capabilities: DatabaseCapabilityRegistry) {}
@@ -27,7 +34,7 @@ export class RelationalSessionManager {
     if (!workspaceId.trim() || workspaceId.length > 128) throw new DatabaseInputError('工作空间无效');
     if (!value || typeof value !== 'object') throw new DatabaseInputError('连接参数无效');
     const input = value as RelationalConnectInput;
-    if (input.provider === 'postgres') {
+    if (input.provider === 'postgres' || input.provider === 'mysql') {
       if (
         typeof input.host !== 'string' ||
         !input.host.trim() ||
@@ -38,7 +45,7 @@ export class RelationalSessionManager {
         !input.username.trim() ||
         typeof input.password !== 'string' ||
         typeof input.database !== 'string' ||
-        !input.database.trim() ||
+        (input.provider === 'postgres' && !input.database.trim()) ||
         (input.ssl !== undefined && typeof input.ssl !== 'boolean')
       ) {
         throw new DatabaseInputError('主机、端口、用户、密码或数据库无效');
@@ -46,7 +53,11 @@ export class RelationalSessionManager {
     } else if (input.provider !== 'sqlite' || typeof input.path !== 'string' || !input.path.trim())
       throw new DatabaseInputError('请选择有效数据源');
     const declared = getDatabaseDriver(input.provider)!;
-    const driver = await (input.provider === 'postgres' ? connectPostgres(input) : connectSqlite(input));
+    const driver = await (input.provider === 'postgres'
+      ? connectPostgres(input)
+      : input.provider === 'mysql'
+        ? connectMysql(input)
+        : connectSqlite(input));
     const id = crypto.randomUUID();
     try {
       await driver.schemas();
@@ -62,11 +73,11 @@ export class RelationalSessionManager {
         id,
         workspaceId,
         provider: input.provider,
-        database: input.provider === 'postgres' ? input.database : input.path,
+        database: input.provider === 'sqlite' ? input.path : input.database,
         info: driver.info,
         capabilities: snapshot,
       };
-      this.entries.set(id, { session, driver });
+      this.entries.set(id, { session, driver, plans: new Map(), saving: false });
       return session;
     } catch (error) {
       this.capabilities.disconnect(id, id);
@@ -81,6 +92,76 @@ export class RelationalSessionManager {
       throw new DatabaseInputError('当前工作空间中的连接已断开');
     return entry;
   }
+  details(workspaceId: string, id: string): RelationalSession {
+    return this.entry(workspaceId, id).session;
+  }
+  setWriteAccess(workspaceId: string, id: string, enabled: boolean): RelationalSession {
+    const entry = this.entry(workspaceId, id);
+    if (entry.saving) throw new DatabaseInputError('请等待当前事务结束');
+    const observed = Object.fromEntries(
+      DATABASE_CAPABILITIES.map((key) => [
+        key,
+        key === 'metadataBrowse' || key === 'queryExecution' || (enabled && key === 'tableDataEdit'),
+      ]),
+    ) as DatabaseCapabilities;
+    const snapshot = this.capabilities.confirm(
+      id,
+      id,
+      getDatabaseDriver(entry.session.provider)!.capabilities,
+      observed,
+      { readOnly: !enabled, production: false },
+    )!;
+    entry.session = { ...entry.session, capabilities: snapshot };
+    entry.plans.clear();
+    return entry.session;
+  }
+  private writable(workspaceId: string, id: string): Entry {
+    const entry = this.entry(workspaceId, id);
+    if (
+      entry.session.capabilities.restrictions.readOnly ||
+      !entry.session.capabilities.capabilities.tableDataEdit
+    )
+      throw new DatabaseInputError('当前会话只读，请先解锁表格写入');
+    return entry;
+  }
+  async prepare(workspaceId: string, id: string, value: unknown): Promise<RelationalSavePreview> {
+    const entry = this.writable(workspaceId, id);
+    const input = saveInput(value);
+    await entry.driver.assertEditable(input.schema, input.table);
+    const columns = await entry.driver.columns(input.schema, input.table);
+    if (!columns.length) throw new DatabaseInputError('无法读取目标字段');
+    const plan = prepareSave(input, columns, entry.session.provider, entry.driver.quoteIdentifier);
+    // A disconnect/lock during metadata loading must invalidate this request.
+    if (this.writable(workspaceId, id) !== entry) throw new DatabaseInputError('会话已变化，请重新预览');
+    for (const [key, item] of entry.plans) if (item.preview.expiresAt <= Date.now()) entry.plans.delete(key);
+    if (entry.plans.size >= 20) throw new DatabaseInputError('未提交的预览过多，请关闭预览后重试');
+    entry.plans.set(plan.preview.id, plan);
+    return plan.preview;
+  }
+  discard(workspaceId: string, id: string, planId: string): void {
+    this.entry(workspaceId, id).plans.delete(planId);
+  }
+  async commit(workspaceId: string, id: string, planId: string): Promise<RelationalSaveResult> {
+    const entry = this.writable(workspaceId, id);
+    const plan = entry.plans.get(planId);
+    if (!plan || plan.preview.expiresAt <= Date.now()) throw new DatabaseInputError('预览已失效，请重新生成');
+    if (entry.saving) throw new DatabaseInputError('当前连接正在提交变更');
+    entry.plans.delete(planId);
+    entry.saving = true;
+    const start = performance.now();
+    try {
+      const { schema, table } = plan.preview;
+      await entry.driver.assertEditable(schema, table);
+      if (columnSignature(await entry.driver.columns(schema, table)) !== plan.columnSignature)
+        throw new DatabaseInputError('表结构已变化，请刷新后重新编辑');
+      const affectedRows = await entry.driver.transaction(schema, (transaction) =>
+        executeSave(plan, transaction),
+      );
+      return { affectedRows, executionTimeMs: Math.round(performance.now() - start) };
+    } finally {
+      entry.saving = false;
+    }
+  }
 
   async schemas(workspaceId: string, id: string): Promise<string[]> {
     return this.entry(workspaceId, id).driver.schemas();
@@ -89,7 +170,7 @@ export class RelationalSessionManager {
     const { session, driver } = this.entry(workspaceId, id);
     return (await driver.tables(schema)).map((table) => ({
       ...table,
-      database: session.database,
+      database: session.provider === 'mysql' ? schema : session.database,
       connectionId: id,
     }));
   }
@@ -111,6 +192,7 @@ export class RelationalSessionManager {
     )
       throw new DatabaseInputError('分页范围无效');
     const { session, driver } = this.entry(workspaceId, id);
+    const quote = driver.quoteIdentifier;
     const columns = await driver.columns(schema, table);
     if (!columns.length) throw new DatabaseInputError('对象不存在或当前账号无权读取字段');
     const primary = columns.filter((column) => column.isPrimaryKey);
@@ -122,7 +204,7 @@ export class RelationalSessionManager {
     );
     return {
       connectionId: id,
-      database: session.database,
+      database: session.provider === 'mysql' ? schema : session.database,
       table,
       columns,
       rows: result.rows,
@@ -146,7 +228,10 @@ export class RelationalSessionManager {
     )
       throw new DatabaseInputError('查询参数无效');
     const { driver, session } = this.entry(workspaceId, id);
-    const statement = assertRelationalReadSql(sql, session.provider);
+    const statement =
+      session.provider === 'mysql'
+        ? assertMysqlReadOnlySql(sql as string)
+        : assertRelationalReadSql(sql, session.provider);
     const start = performance.now();
     const result = await driver.read(statement, schema, maxRows);
     return {

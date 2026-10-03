@@ -30,6 +30,8 @@ describe('MySQL read-only preflight adapted from DBX', () => {
       'SELECT custom_udf()',
       'SELECT `custom_udf`()',
       'SELECT "custom_udf"()',
+      'SELECT 1--1 + GET_LOCK("users", 1)',
+      'SELECT application.ABS(1)',
       'EXPLAIN ANALYZE DELETE FROM users',
       "SELECT 'unterminated",
     ]) expect(() => assertMysqlReadOnlySql(sql)).toThrow();

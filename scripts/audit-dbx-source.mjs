@@ -6,7 +6,8 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const source = path.join(root, 'opensource/dbx');
 const revision = execFileSync('git', ['-C', source, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
-const files = execFileSync('git', ['-C', source, 'ls-files', '-z'], { maxBuffer: 16 * 1024 * 1024 }).toString().split('\0').filter(Boolean);
+const nativeOnly = process.argv.includes('--native-only');
+const files = nativeOnly ? [] : execFileSync('git', ['-C', source, 'ls-files', '-z'], { maxBuffer: 16 * 1024 * 1024 }).toString().split('\0').filter(Boolean);
 const extensions = new Set(['.rs', '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.vue', '.go', '.java', '.py', '.sql', '.css', '.scss', '.sh', '.ps1']);
 
 // Count nonblank lines after removing comment-only lines. This is a lexical
@@ -77,7 +78,7 @@ for (const file of files) {
   if (group.startsWith('core-')) topFiles.push({ path: file, ...count });
 }
 const sum = (entries) => entries.reduce((total, entry) => ({ files: total.files + entry.files, physical: total.physical + entry.physical, effective: total.effective + entry.effective }), { files: 0, physical: 0, effective: 0 });
-const audit = {
+const audit = nativeOnly ? JSON.parse(readFileSync(path.join(root, '.spec/tasks/dbx-source-audit.json'), 'utf8')) : {
   sourceRevision: revision,
   method: 'Tracked source files; lexical nonblank/non-comment LOC. Excludes vendored, generated, declarations and fixtures. Tests and noncore account/cloud code reported separately. Embedded Rust tests and template/string lines remain in their containing source file; counts are a scope estimate, not migration credit.',
   extensions: [...extensions],
@@ -87,6 +88,7 @@ const audit = {
   phaseOneTargetEffectiveLines: 50000,
   largestCoreFiles: topFiles.sort((a, b) => b.effective - a.effective).slice(0, 20),
 };
+if (audit.sourceRevision !== revision) throw new Error('Cached source audit and DBX revision differ; run a full audit first.');
 const manifestPath = path.join(root, '.spec/tasks/dbx-native-port-manifest.json');
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
 if (manifest.sourceRevision !== revision) throw new Error('Native port manifest and DBX revision differ.');

@@ -281,12 +281,28 @@
   flex: 1;
 }
 .readonly {
+  cursor: pointer;
   font-size: 10px;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 4px;
   padding: 2px 6px;
   color: var(--muted-strong);
+}
+.readonly:hover:not(:disabled) {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.readonly:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.saveFeedback {
+  padding: 8px 16px;
+  border-bottom: 1px solid #cce3d6;
+  background: #f1faf5;
+  color: #277950;
+  font-size: 11px;
 }
 .queryPanel {
   display: flex;
@@ -306,8 +322,9 @@
 .paging button {
   cursor: pointer;
 }
-.inspector {
+:global(.mw-inspector).inspector {
   width: 245px;
+  flex-basis: 245px;
 }
 .detailField {
   margin: 12px 16px;
@@ -327,7 +344,7 @@
   font-size: 11px;
 }
 @media (max-width: 1000px) {
-  .inspector {
+  :global(.mw-inspector).inspector {
     display: none;
   }
   .directoryHead {
@@ -339,6 +356,45 @@
   .connections th,
   .connections td {
     padding: 0 7px;
+  }
+}
+:global(.mw-breadcrumb) > .writeAccess {
+  width: auto;
+  height: 26px;
+  flex: none;
+  padding: 3px 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+  white-space: nowrap;
+  font-size: 10px;
+}
+.breadcrumbName {
+  min-width: 0;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.databaseLabel {
+  min-width: 0;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 760px) {
+  .databaseLabel {
+    display: none;
+  }
+}
+@media (max-width: 600px) {
+  .providerLabel,
+  .pendingLabel {
+    display: none;
+  }
+  .breadcrumbName {
+    max-width: 140px;
   }
 }
 @media (max-width: 600px) {
@@ -359,12 +415,31 @@
   .search {
     width: 100%;
   }
-  .directoryToolbar { flex-wrap: wrap; gap: 8px; }
-  .empty { padding: 20px 10px; }
+  .directoryToolbar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .empty {
+    padding: 20px 10px;
+  }
 }
 
-.mobileResources { display: none; }
+.mobileResources {
+  display: none;
+}
 @media (max-width: 760px) {
-  .mobileResources { display: flex; gap: 8px; padding: 8px; border-bottom: 1px solid var(--line); }
-  .mobileResources select { min-width: 0; flex: 1; border: 1px solid var(--line); border-radius: 5px; padding: 6px; background: var(--panel); }
+  .mobileResources {
+    display: flex;
+    gap: 8px;
+    padding: 8px;
+    border-bottom: 1px solid var(--line);
+  }
+  .mobileResources select {
+    min-width: 0;
+    flex: 1;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 6px;
+    background: var(--panel);
+  }
 }

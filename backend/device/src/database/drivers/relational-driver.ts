@@ -12,12 +12,20 @@ export type DriverResult = {
   rows: DatabaseCell[][];
   hasMore: boolean;
 };
+export type SqlParameter = string | number | boolean | null | Uint8Array | bigint;
+export type TransactionResult = DriverResult & { affectedRows: number };
+export interface RelationalTransaction {
+  query(sql: string, values: SqlParameter[]): Promise<TransactionResult>;
+}
 export interface RelationalDriver {
   info: DatabaseConnectionInfo;
+  quoteIdentifier(value: string): string;
   schemas(): Promise<string[]>;
   tables(schema: string): Promise<Relation[]>;
   columns(schema: string, table: string): Promise<DatabaseColumnInfo[]>;
   read(sql: string, schema: string | null, maxRows: number): Promise<DriverResult>;
+  assertEditable(schema: string, table: string): Promise<void>;
+  transaction<T>(schema: string, run: (transaction: RelationalTransaction) => Promise<T>): Promise<T>;
   close(): Promise<void>;
 }
 

@@ -431,7 +431,7 @@
     {
       "id": "F05",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "platform-or-planning",
       "applicableDriverTypes": [],
       "entryPoints": {
@@ -447,7 +447,13 @@
         "action": "引入可重复的数据库测试矩阵、容器/测试服务、协议夹具和桌面/Web 端到端用例；每个驱动至少验证连接、故障、声明能力和只读阻断。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-validation",
+          "path": "scripts/verify-table-save-live.mjs",
+          "check": "2026-10-03: Real PostgreSQL/MySQL/SQLite API matrix: one-time confirmed write plans, typed values, rollback/conflicts, generated metadata and unique-key guards; additional drivers/faults/desktop matrix remain open."
+        }
+      ],
       "scopeKind": "platform"
     },
     {
@@ -497,7 +503,7 @@
     {
       "id": "F08",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "platform-or-planning",
       "applicableDriverTypes": [],
       "entryPoints": {
@@ -513,7 +519,13 @@
         "action": "为主要数据库及版本建立可重复的本地测试实验室：容器配方、健康检查、冒烟数据、连接字段输出、端口冲突检查与一键验证；作为 Rxx 验收基础。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-validation",
+          "path": "compose.datastore-lab.yaml",
+          "check": "2026-10-03: Pinned MySQL lab container recipe with health check and ignored random credentials; scripts/datastore-lab.mjs up/status passed. PostgreSQL/Redis existing lab used; complete versions/port-conflict/one-command matrix remains open."
+        }
+      ],
       "scopeKind": "platform"
     },
     {
@@ -620,7 +632,7 @@
       "acceptanceEvidence": [
         {
           "kind": "partial-profile-ui",
-          "check": "MySQL connection dialog loads port and user from authenticated Profile API; remaining 103 Profile forms and lifecycle actions open"
+          "check": "Native MySQL connection dialog uses shared relational fields and verified defaults; authenticated catalog/Profile descriptors remain available. All Profile forms/options, recent/pinned/group/color management remain open."
         }
       ],
       "scopeKind": "driver"
@@ -1042,6 +1054,11 @@
         {
           "kind": "partial-live-smoke",
           "check": "MySQL single-statement read-only preflight and server-enforced read-only transaction; writes and other entry points remain open"
+        },
+        {
+          "kind": "partial-table-save-validation",
+          "path": "scripts/verify-table-save-live.mjs",
+          "check": "2026-10-03: Read-only default, explicit table unlock, workspace/session-bound immutable single-use plan, generated/unique metadata checks, exact scalar/binary values, real insert/update/delete, conflict/constraint full rollback and relock invalidation passed. Raw SQL remains read-only; Agent/CLI/MCP policy, keyless writes, structure operations and cancellations remain open."
         }
       ],
       "scopeKind": "driver"
@@ -1049,7 +1066,7 @@
     {
       "id": "C06",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "available",
       "applicableDriverTypes": [
         "mysql",
@@ -1147,7 +1164,13 @@
         "action": "写入前 SQL/请求预览、影响范围和失败反馈；事务提交/回滚、部分成功标识、取消行为，不以客户端禁用按钮代替服务端拦截。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-validation",
+          "path": "backend/device/src/database/relational-save.ts",
+          "check": "2026-10-03: Immutable workspace/session-bound previews, exact parameter bindings, explicit single-use confirmation and native atomic rollback. Three real drivers and Web 1440/760/390 validated. Distributed commit, cancellation and unknown-outcome reconciliation remain open."
+        }
+      ],
       "scopeKind": "driver"
     },
     {
@@ -2534,7 +2557,7 @@
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
       "acceptanceEvidence": [
-        "MySQL 实时只读查询结果支持表格/文本/JSON/柱状图/趋势图/指标/摘要/消息、维度指标选择、复制和 CSV/TSV/JSON 导出；qa/mysql-live-result-format.test.ts 的 4 项格式测试及真实 MySQL 浏览器验收通过。仍需其他适用驱动、完整数据集导出及桌面验收。"
+        "MySQL 实时只读查询结果支持表格/文本/JSON/柱状图/趋势图/指标/摘要/消息、维度指标选择、复制和 CSV/TSV/JSON 导出；src/features/connectors/datastore/result-format.test.ts 的 4 项格式测试及真实 MySQL 浏览器验收通过。仍需其他适用驱动、完整数据集导出及桌面验收。"
       ],
       "scopeKind": "driver"
     },
@@ -3062,7 +3085,7 @@
     {
       "id": "G04",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql",
@@ -3130,7 +3153,13 @@
         "action": "单元格编辑、批量改单元格、新增/复制/删除行、脏数据标记、撤销/回滚、提交前 SQL 预览与冲突/部分失败反馈。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-validation",
+          "path": "src/features/connectors/datastore/table-editing.tsx",
+          "check": "2026-10-03: Web staged insert/update/delete, typed null/default/value editing, generated-field omission, preview/cancel/confirm/relock and conflict feedback validated on PostgreSQL/MySQL/SQLite. Full cell selection/paste/undo/copy/keyless/complex-type scope remains open."
+        }
+      ],
       "scopeKind": "driver"
     },
     {
@@ -5792,7 +5821,23 @@
         "action": "`mysql`",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-validation",
+          "path": "scripts/verify-mysql-live.mjs",
+          "check": "2026-10-03: MySQL 8.4 lab: workspace saved connection CRUD, native schema/table/view/generated metadata, quoted identifiers, exact bigint/decimal/binary, read-only guards and session isolation. Shares native workbench; old demo and unscoped MySQL routes removed. Remaining driver capability matrix stays open."
+        },
+        {
+          "kind": "partial-table-save-validation",
+          "path": "scripts/verify-table-save-live.mjs",
+          "check": "2026-10-03: Read-only default, explicit table unlock, workspace/session-bound immutable single-use plan, generated/unique metadata checks, exact scalar/binary values, real insert/update/delete, conflict/constraint full rollback and relock invalidation passed. Raw SQL remains read-only; Agent/CLI/MCP policy, keyless writes, structure operations and cancellations remain open."
+        },
+        {
+          "kind": "partial-shared-web-regression",
+          "path": "src/features/connectors/datastore/connection-directory.tsx",
+          "check": "2026-10-03: Playwright + Chrome: create/test/save/connect, data/structure/reopen, SQL/JSON, read-only error, edit/reload persistence, copy/delete passed for MySQL/PostgreSQL/SQLite. Three intentional query HTTP 400 responses, no other page/console errors. Row editing separately passed 1440/760/390. Full source capability/entry-point scope remains open."
+        }
+      ],
       "scopeKind": "driver"
     },
     {
@@ -5820,12 +5865,22 @@
         {
           "kind": "partial-runtime-validation",
           "path": "scripts/verify-relational-live.mjs",
-          "check": "2026-10-03: PostgreSQL 17 real container and SQLite real file; connect, schemas/tables/columns, primary-key pagination, bigint, duplicate columns, read-only rejection, workspace isolation, disconnect. Only queryExecution/metadataBrowse are granted; remaining declared capabilities are unimplemented."
+          "check": "2026-10-03: PostgreSQL 17 real container and SQLite real file; connect, schemas/tables/columns, primary-key pagination, bigint, duplicate columns, read-only rejection, workspace isolation, disconnect. Default read-only sessions grant queryExecution/metadataBrowse; explicit table unlock grants the separately validated tableDataEdit subset. Other driver capability scope remains open."
         },
         {
           "kind": "partial-web-validation",
           "path": "src/features/connectors/datastore/relational-workbench.tsx",
           "check": "2026-10-03: Playwright + Chrome 1440x1000 full flows: create/test/save/connect, data/structure, repeated table opening, SQL/JSON, rejected write feedback, edit/reload, copy/delete. Connection-directory collapse and overflow checked at 390x844 and 760x844; narrow workbench flows remain unverified. No unexpected console/page errors; two intentional HTTP 400 query rejections."
+        },
+        {
+          "kind": "partial-table-save-validation",
+          "path": "scripts/verify-table-save-live.mjs",
+          "check": "2026-10-03: Read-only default, explicit table unlock, workspace/session-bound immutable single-use plan, generated/unique metadata checks, exact scalar/binary values, real insert/update/delete, conflict/constraint full rollback and relock invalidation passed. Raw SQL remains read-only; Agent/CLI/MCP policy, keyless writes, structure operations and cancellations remain open."
+        },
+        {
+          "kind": "partial-shared-web-regression",
+          "path": "src/features/connectors/datastore/connection-directory.tsx",
+          "check": "2026-10-03: Playwright + Chrome: create/test/save/connect, data/structure/reopen, SQL/JSON, read-only error, edit/reload persistence, copy/delete passed for MySQL/PostgreSQL/SQLite. Three intentional query HTTP 400 responses, no other page/console errors. Row editing separately passed 1440/760/390. Full source capability/entry-point scope remains open."
         }
       ],
       "scopeKind": "driver"
@@ -5855,12 +5910,22 @@
         {
           "kind": "partial-runtime-validation",
           "path": "scripts/verify-relational-live.mjs",
-          "check": "2026-10-03: PostgreSQL 17 real container and SQLite real file; connect, schemas/tables/columns, primary-key pagination, bigint, duplicate columns, read-only rejection, workspace isolation, disconnect. Only queryExecution/metadataBrowse are granted; remaining declared capabilities are unimplemented."
+          "check": "2026-10-03: PostgreSQL 17 real container and SQLite real file; connect, schemas/tables/columns, primary-key pagination, bigint, duplicate columns, read-only rejection, workspace isolation, disconnect. Default read-only sessions grant queryExecution/metadataBrowse; explicit table unlock grants the separately validated tableDataEdit subset. Other driver capability scope remains open."
         },
         {
           "kind": "partial-web-validation",
           "path": "src/features/connectors/datastore/relational-workbench.tsx",
           "check": "2026-10-03: Playwright + Chrome 1440x1000 full flows: create/test/save/connect, data/structure, repeated table opening, SQL/JSON, rejected write feedback, edit/reload, copy/delete. Connection-directory collapse and overflow checked at 390x844 and 760x844; narrow workbench flows remain unverified. No unexpected console/page errors; two intentional HTTP 400 query rejections."
+        },
+        {
+          "kind": "partial-table-save-validation",
+          "path": "scripts/verify-table-save-live.mjs",
+          "check": "2026-10-03: Read-only default, explicit table unlock, workspace/session-bound immutable single-use plan, generated/unique metadata checks, exact scalar/binary values, real insert/update/delete, conflict/constraint full rollback and relock invalidation passed. Raw SQL remains read-only; Agent/CLI/MCP policy, keyless writes, structure operations and cancellations remain open."
+        },
+        {
+          "kind": "partial-shared-web-regression",
+          "path": "src/features/connectors/datastore/connection-directory.tsx",
+          "check": "2026-10-03: Playwright + Chrome: create/test/save/connect, data/structure/reopen, SQL/JSON, read-only error, edit/reload persistence, copy/delete passed for MySQL/PostgreSQL/SQLite. Three intentional query HTTP 400 responses, no other page/console errors. Row editing separately passed 1440/760/390. Full source capability/entry-point scope remains open."
         }
       ],
       "scopeKind": "driver"

@@ -14,6 +14,8 @@ import { RelationalQuery } from "./relational-query"
 import { TableEditing } from "./table-editing"
 import { TableQueryControls } from "./table-query-controls"
 import { TableStructure } from "./table-structure"
+import { TableImportAction } from './table-import-action'
+import { SchemaCompareAction } from './schema-compare-action'
 import styles from "./relational.module.css"
 import "./workbench.css"
 
@@ -389,6 +391,8 @@ export function RelationalWorkbench({
                   结构
                 </button>
                 <span className="mw-sql-spacer" />
+                <TableImportAction base={base} sessionId={session.id} provider={session.provider} schema={schema} page={page} disabled={!writable || pending || busy || writeBusy} onImported={refresh} />
+                <SchemaCompareAction base={base} provider={session.provider} schema={schema} table={table} tables={tables} schemas={schemas} disabled={pending || busy} />
                 <span>
                   {schema}
                   {table ? `.${table}` : ""}

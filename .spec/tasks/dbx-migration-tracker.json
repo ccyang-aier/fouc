@@ -3934,7 +3934,7 @@
     {
       "id": "D01",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql",
@@ -3977,7 +3977,13 @@
         "action": "CSV/TSV/自定义分隔文本、JSON、XLS/XLSX/XLSM、字面量 INSERT SQL 的预览与导入；编码、行范围、空值/空白、工作表、字段映射与类型推断；现有表追加/清空或多文件多工作表批量建表，逐任务进度、部分成功与取消。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "backend/device/src/database/table-import-plans.ts",
+          "check": "2026-10-04：开发阶段仅必要P0。CSV/TSV/JSON/NDJSON严格解码、原始数字、字段映射、默认值/NULL和原生三库参数化追加；预览0写入，一次性计划、重新锁定、空间隔离、字段变更和事务失败回滚。数据比较14项P0覆盖显式键/字段映射、重复键冲突、缺失与NULL、精确数值/JSON/二进制、选择性SQL审查。结构比较10项P0及真实三库DDL回放核对字段/索引/生成列/SQLite重建数据；依赖顺序与不支持项明确标示。实际Chrome完成CSV两条大整数/中文导入回读、两次查询结果差异→新SQL审查标签、真实双表结构→DDL审查；比较不自动执行。1440×1000与390×844实际视觉检查并修正结构比较窄屏操作区。自有类型/lint检查通过；Excel/SQL导入、流式大批量、多目标同步、自动结构部署/OSC、其他驱动和全入口矩阵留到后续实现与阶段集中回归。"
+        }
+      ],
       "scopeKind": "driver"
     },
     {
@@ -4033,7 +4039,7 @@
     {
       "id": "D03",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql",
@@ -4077,13 +4083,19 @@
         "action": "数据比较与同步：键列选择、差异行、字段映射、冲突矩阵、修改预览、选择性同步与风险提示。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "src/features/connectors/datastore/data-compare/query-action.tsx",
+          "check": "2026-10-04：开发阶段仅必要P0。CSV/TSV/JSON/NDJSON严格解码、原始数字、字段映射、默认值/NULL和原生三库参数化追加；预览0写入，一次性计划、重新锁定、空间隔离、字段变更和事务失败回滚。数据比较14项P0覆盖显式键/字段映射、重复键冲突、缺失与NULL、精确数值/JSON/二进制、选择性SQL审查。结构比较10项P0及真实三库DDL回放核对字段/索引/生成列/SQLite重建数据；依赖顺序与不支持项明确标示。实际Chrome完成CSV两条大整数/中文导入回读、两次查询结果差异→新SQL审查标签、真实双表结构→DDL审查；比较不自动执行。1440×1000与390×844实际视觉检查并修正结构比较窄屏操作区。自有类型/lint检查通过；Excel/SQL导入、流式大批量、多目标同步、自动结构部署/OSC、其他驱动和全入口矩阵留到后续实现与阶段集中回归。"
+        }
+      ],
       "scopeKind": "driver"
     },
     {
       "id": "D04",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql",
@@ -4136,7 +4148,13 @@
         "action": "Schema diff：对象树、差异/DDL、依赖排序、选项、影响报告、部署/回滚或重试；原生在线结构变更/OSC 仅在适用驱动开放。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "src/features/connectors/datastore/schema-compare-action.tsx",
+          "check": "2026-10-04：开发阶段仅必要P0。CSV/TSV/JSON/NDJSON严格解码、原始数字、字段映射、默认值/NULL和原生三库参数化追加；预览0写入，一次性计划、重新锁定、空间隔离、字段变更和事务失败回滚。数据比较14项P0覆盖显式键/字段映射、重复键冲突、缺失与NULL、精确数值/JSON/二进制、选择性SQL审查。结构比较10项P0及真实三库DDL回放核对字段/索引/生成列/SQLite重建数据；依赖顺序与不支持项明确标示。实际Chrome完成CSV两条大整数/中文导入回读、两次查询结果差异→新SQL审查标签、真实双表结构→DDL审查；比较不自动执行。1440×1000与390×844实际视觉检查并修正结构比较窄屏操作区。自有类型/lint检查通过；Excel/SQL导入、流式大批量、多目标同步、自动结构部署/OSC、其他驱动和全入口矩阵留到后续实现与阶段集中回归。"
+        }
+      ],
       "scopeKind": "driver"
     },
     {

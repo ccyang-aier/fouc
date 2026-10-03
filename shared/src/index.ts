@@ -453,3 +453,4 @@ export * from './sql-template';
 export * from './sql-formatter-config';
 export * from './sql-snippets';
 export * from './sql-editor-preferences';
+export * from './table-import';

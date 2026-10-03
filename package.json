@@ -32,7 +32,7 @@
     "backend:build": "node scripts/build-backend.mjs",
     "verify:approval": "bun backend/device/scripts/verify-approval.ts",
     "verify:dbx-catalog": "bun scripts/verify-dbx-catalog.ts",
-    "device:dev": "bun --hot backend/device/src/entrypoints/index.ts",
+    "device:dev": "bun --watch backend/device/src/entrypoints/index.ts",
     "device:start": "bun backend/device/src/entrypoints/index.ts",
     "device:typecheck": "pnpm --filter @fouc/device typecheck",
     "device:test": "pnpm --filter @fouc/device test",

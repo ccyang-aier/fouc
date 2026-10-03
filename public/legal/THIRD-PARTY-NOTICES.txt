@@ -144,3 +144,11 @@ Grid range/row/column selection, keyboard movement and exact summaries follow
 useDataGridSelection.ts and grid helpers; result export adapts useDataGridExport.ts,
 dbx-formats CSV writing and core data/table_export.rs. React result grids and
 chunked browser exports preserve native values and remain scoped to Fouc sessions.
+
+Table import parsing/mapping/review adapts core data/table_import.rs and
+components/import/TableImportDialog.vue into Fouc shared table-import contracts,
+native transaction-bound append and a React preview workflow. Data comparison
+adapts data/data_compare.rs and DataCompareDialog.vue; schema comparison adapts
+dbx-sql/schema_diff.rs, SchemaDiffObjectTree.vue and SchemaDiffDdlPanel.vue.
+Fouc compares immutable native snapshots and produces selected SQL/DDL review
+without importing DBX runtime modules or automatically executing comparison SQL.

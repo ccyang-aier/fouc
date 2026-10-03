@@ -11,6 +11,7 @@
     "./projects": "./src/projects/index.ts",
     "./workspaces": "./src/workspaces/index.ts",
     "./database-catalog": "./src/database-catalog.ts",
+    "./table-import": "./src/table-import.ts",
     "./development-workbench": "./src/development-workbench.ts",
     "./catalog/dbx-catalog.json": "./catalog/dbx-catalog.json"
   },

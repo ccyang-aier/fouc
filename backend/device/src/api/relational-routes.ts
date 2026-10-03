@@ -101,6 +101,17 @@ export function relationalRoutes(
       data: await sessions.schemas(c.req.param('workspaceId')!, c.req.param('id')!),
     }),
   );
+  app.post(base + '/:id/table-import/plans', async (c) => c.json({ ok: true,
+    data: await sessions.prepareImport(c.req.param('workspaceId')!, c.req.param('id')!, await c.req.json().catch(() => null), c.req.raw.signal) }, 201));
+  app.delete(base + '/:id/table-import/plans/:planId', (c) => {
+    sessions.discardImport(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('planId')!);
+    return c.json({ ok: true, data: { discarded: true } });
+  });
+  app.post(base + '/:id/table-import/plans/:planId/commit', async (c) => {
+    const body = await c.req.json().catch(() => null);
+    if (body?.confirm !== true) throw new DatabaseInputError('请明确确认本次追加导入。');
+    return c.json({ ok: true, data: await sessions.commitImport(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('planId')!, c.req.raw.signal) });
+  });
   app.get(base + '/:id/schemas/:schema/tables', async (c) =>
     c.json({
       ok: true,

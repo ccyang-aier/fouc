@@ -15,6 +15,7 @@ import { SqlEditorSplit } from './sql-editor-split'
 import { SqlFileActions } from './sql-file-actions'
 import { SqlQuickActions } from './sql-quick-actions'
 import { SqlExplainAction } from './sql-explain-action'
+import { SqlQueryCompareAction } from './data-compare/query-action'
 import type { OpenSqlFile } from './sql-files'
 import { SQL_DRAFT_MAX_BYTES } from '@fouc/shared'
 import { sqlVariableContext } from '@fouc/shared'
@@ -102,12 +103,16 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
     const tab = newSqlTab(session.provider === 'mysql' ? schema || session.database : session.database, schema || null, `查询 ${number}`)
     controller.update((snapshot) => ({ tabs: [...snapshot.tabs, tab], activeTabId: tab.id })); setPanel(null)
   }
-  function openSqlFiles(files: OpenSqlFile[]) {
+  function openSqlFiles(files: Pick<OpenSqlFile, 'name' | 'sql'>[]) {
     const snapshot = controller.getSnapshot()
     const imported = files.map((file) => ({ ...newSqlTab(session.provider === 'mysql' ? schema || session.database : session.database, schema || null, [...file.name].slice(0, 180).join('')), sql: file.sql, originalSql: '', customTitle: true }))
     const next = { tabs: [...snapshot.tabs, ...imported], activeTabId: imported.at(-1)?.id ?? snapshot.activeTabId }
     if (new TextEncoder().encode(JSON.stringify(next)).byteLength > SQL_DRAFT_MAX_BYTES) throw new Error('完整 SQL 草稿最多 64 MiB，请先保存或关闭部分查询标签。')
     controller.edit(next); setPanel(null); setNotice(`已打开 ${files.length} 个 SQL 文件，完整内容已加载。`)
+  }
+  function openComparisonReview(sql: string) {
+    try { openSqlFiles([{ name: '数据比较审查.sql', sql }]); setNotice('修改建议已放入新查询标签，可继续审查。') }
+    catch (reason) { setNotice(reason instanceof Error ? reason.message : String(reason)) }
   }
   async function formatText(sql: string): Promise<string> {
     const settings = preferences.data?.formatter
@@ -261,6 +266,7 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
         <button type="button" aria-label="SQL 编辑器设置" title="格式化、保存与代码片段" disabled={preferences.busy || !preferences.data || Boolean(preferences.error)} onClick={() => setEditorSettingsOpen(true)}><SlidersHorizontal size={17} /></button>
         <span className={styles.toolDivider} />
         <SqlExplainAction key={`${base}:${current?.id}:${targetSchema}`} base={base} provider={session.provider} schema={targetSchema || null} targetLabel={displayDatabase ?? session.database} editorRef={editor} disabled={!current || running || formatting} contextIssue={current ? targetIssue(current) : ''} onNotice={setNotice} />
+        <SqlQueryCompareAction tabs={state.tabs} executions={executions} provider={session.provider} activeTabId={state.activeTabId} onNotice={setNotice} onSqlPreview={openComparisonReview} />
         <SqlQuickActions editorRef={editor} provider={session.provider} disabled={!current || running || formatting} keywordCase={preferences.data?.formatter.keywordCase} onFormatSql={formatText} onNotice={setNotice} />
         <SqlFileActions provider={session.provider} disabled={!state.ready || running} getDocument={() => current ? { sql: editor.current?.state.doc.toString() ?? current.sql, title: current.title } : null} onOpen={openSqlFiles} onNotice={setNotice} />
         <button type="button" aria-label="历史" title="查询历史" aria-pressed={panel === 'history'} onClick={() => setPanel((value) => value === 'history' ? null : 'history')}><ClockCounterClockwise size={17} /><span>历史</span></button>

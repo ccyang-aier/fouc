@@ -455,6 +455,70 @@
         "src/features/connectors/datastore/result-export/writer.ts",
         "src/features/connectors/datastore/sql-explain-action.tsx"
       ]
+    },
+    {
+      "area": "native-table-import",
+      "status": "partial",
+      "sourceReferences": [
+        "crates/dbx-core/src/data/table_import.rs",
+        "apps/desktop/src/components/import/TableImportDialog.vue",
+        "crates/dbx-formats/src/"
+      ],
+      "runtimeFiles": [
+        "backend/device/src/database/table-import-plans.ts",
+        "backend/device/src/database/table-import-values.ts",
+        "backend/device/src/database/table-import.ts",
+        "shared/src/table-import.ts",
+        "shared/src/table-import/encoding.ts",
+        "shared/src/table-import/inference.ts",
+        "shared/src/table-import/mapping.ts",
+        "shared/src/table-import/parse.ts",
+        "shared/src/table-import/types.ts",
+        "src/features/connectors/datastore/table-import-action.tsx",
+        "src/features/connectors/datastore/table-import/index.ts",
+        "src/features/connectors/datastore/table-import/mapping-editor.tsx",
+        "src/features/connectors/datastore/table-import/parse-options.tsx",
+        "src/features/connectors/datastore/table-import/preview-grid.tsx",
+        "src/features/connectors/datastore/table-import/table-import-panel.tsx"
+      ]
+    },
+    {
+      "area": "native-query-data-comparison",
+      "status": "partial",
+      "sourceReferences": [
+        "crates/dbx-core/src/data/data_compare.rs",
+        "apps/desktop/src/components/diff/DataCompareDialog.vue"
+      ],
+      "runtimeFiles": [
+        "src/features/connectors/datastore/data-compare/compare.ts",
+        "src/features/connectors/datastore/data-compare/entry-detail.tsx",
+        "src/features/connectors/datastore/data-compare/mapping-editor.tsx",
+        "src/features/connectors/datastore/data-compare/model.ts",
+        "src/features/connectors/datastore/data-compare/panel.tsx",
+        "src/features/connectors/datastore/data-compare/query-action.tsx",
+        "src/features/connectors/datastore/data-compare/sql-preview.ts",
+        "src/features/connectors/datastore/data-compare/values.ts"
+      ]
+    },
+    {
+      "area": "native-relational-schema-comparison",
+      "status": "partial",
+      "sourceReferences": [
+        "crates/dbx-sql/src/schema_diff.rs",
+        "apps/desktop/src/components/diff/SchemaDiffObjectTree.vue",
+        "apps/desktop/src/components/diff/SchemaDiffDdlPanel.vue"
+      ],
+      "runtimeFiles": [
+        "src/features/connectors/datastore/schema-compare-action.tsx",
+        "src/features/connectors/datastore/schema-diff/compare.ts",
+        "src/features/connectors/datastore/schema-diff/ddl-source.ts",
+        "src/features/connectors/datastore/schema-diff/ddl.ts",
+        "src/features/connectors/datastore/schema-diff/index.ts",
+        "src/features/connectors/datastore/schema-diff/model.ts",
+        "src/features/connectors/datastore/schema-diff/panel.tsx",
+        "src/features/connectors/datastore/schema-diff/script.ts",
+        "src/features/connectors/datastore/schema-diff/sqlite-rebuild.ts"
+      ]
     }
   ],
   "knownRemainingScope": [

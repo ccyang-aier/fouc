@@ -6,17 +6,24 @@ import type {
   RelationalConnectionConfig,
   RelationalProvider,
   RelationalSavedConnection,
-  RelationalSession
+  RelationalSession,
+  RedisConnectionConfig,
+  RedisSavedConnection,
+  RedisSession
 } from "@fouc/shared"
 import { backendFetch } from "@/lib/backend"
 import { useWorkspace } from "@/features/workspaces/workspace-provider"
 import { ConnectorDetailHeader } from "../connector-detail-header"
 import { RelationalDialog } from "./relational-dialog"
 import { RelationalWorkbench } from "./relational-workbench"
+import { RedisDialog } from "../redis/redis-dialog"
+import { RedisWorkbench } from "../redis/redis-workbench"
 import styles from "./relational.module.css"
 
-type Props = { provider: RelationalProvider; onBack: () => void; onWorkbenchFocus?: () => void }
-export function RelationalConnections(props: Props) {
+type SavedConnection = RelationalSavedConnection | RedisSavedConnection
+
+type Props = { provider: RelationalProvider | "redis"; onBack: () => void; onWorkbenchFocus?: () => void }
+export function DatastoreConnections(props: Props) {
   const { activeSpace } = useWorkspace()
   const { onWorkbenchFocus } = props
   useEffect(() => {
@@ -37,26 +44,26 @@ function ConnectionDirectory({
   onBack,
   onWorkbenchFocus
 }: Props & { workspaceId: string }) {
-  const label = provider === "postgres" ? "PostgreSQL" : "SQLite"
-  const base = `/api/database/workspaces/${encodeURIComponent(workspaceId)}/relational`
-  const [connections, setConnections] = useState<RelationalSavedConnection[]>([])
+  const label = provider === "postgres" ? "PostgreSQL" : provider === "redis" ? "Redis" : "SQLite"
+  const base = `/api/database/workspaces/${encodeURIComponent(workspaceId)}/${provider === "redis" ? "redis" : "relational"}`
+  const [connections, setConnections] = useState<SavedConnection[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [search, setSearch] = useState("")
   const [revision, setRevision] = useState(0)
   const [dialog, setDialog] = useState<{
     intent: "save" | "connect"
-    connection?: RelationalSavedConnection
+    connection?: SavedConnection
   } | null>(null)
-  const [removing, setRemoving] = useState<RelationalSavedConnection | null>(null)
+  const [removing, setRemoving] = useState<SavedConnection | null>(null)
   const [busy, setBusy] = useState(false)
   const [active, setActive] = useState<{
-    connection: RelationalSavedConnection
-    session: RelationalSession
+    connection: SavedConnection
+    session: RelationalSession | RedisSession
   } | null>(null)
   useEffect(() => {
     const controller = new AbortController()
-    void backendFetch<RelationalSavedConnection[]>(`${base}/connections`, { signal: controller.signal })
+    void backendFetch<SavedConnection[]>(`${base}/connections`, { signal: controller.signal })
       .then((items) => {
         if (!controller.signal.aborted) {
           setConnections(items)
@@ -77,28 +84,31 @@ function ConnectionDirectory({
       void backendFetch(`${base}/sessions/${active.session.id}`, { method: "DELETE" }).catch(() => undefined)
     }
   }, [active, base])
-  async function save(name: string, config: RelationalConnectionConfig) {
+  async function save(name: string, config: RelationalConnectionConfig | RedisConnectionConfig) {
     const id = dialog?.connection?.id
-    const item = await backendFetch<RelationalSavedConnection>(`${base}/connections${id ? `/${id}` : ""}`, {
+    const item = await backendFetch<SavedConnection>(`${base}/connections${id ? `/${id}` : ""}`, {
       method: id ? "PUT" : "POST",
       body: JSON.stringify({ name, config })
     })
     setConnections((current) => [...current.filter((entry) => entry.id !== item.id), item])
     setDialog(null)
   }
-  async function open(connection: RelationalSavedConnection, password = "") {
-    const session = await backendFetch<RelationalSession>(`${base}/connections/${connection.id}/connect`, {
-      method: "POST",
-      body: JSON.stringify({ password })
-    })
+  async function open(connection: SavedConnection, password = "") {
+    const session = await backendFetch<RelationalSession | RedisSession>(
+      `${base}/connections/${connection.id}/connect`,
+      {
+        method: "POST",
+        body: JSON.stringify({ password })
+      }
+    )
     setDialog(null)
     setActive({ connection, session })
     onWorkbenchFocus?.()
   }
-  async function copy(connection: RelationalSavedConnection) {
+  async function copy(connection: SavedConnection) {
     setError("")
     try {
-      const item = await backendFetch<RelationalSavedConnection>(`${base}/connections`, {
+      const item = await backendFetch<SavedConnection>(`${base}/connections`, {
         method: "POST",
         body: JSON.stringify({ name: `${connection.name} 副本`, config: connection.config })
       })
@@ -121,6 +131,10 @@ function ConnectionDirectory({
       setBusy(false)
     }
   }
+  if (active?.session.provider === "redis")
+    return (
+      <RedisWorkbench session={active.session} name={active.connection.name} onBack={() => setActive(null)} />
+    )
   if (active)
     return (
       <RelationalWorkbench
@@ -230,12 +244,12 @@ function ConnectionDirectory({
                     <strong>{item.name}</strong>
                     <small>只读</small>
                   </td>
-                  <td title={item.config.provider === "postgres" ? item.config.host : item.config.path}>
-                    {item.config.provider === "postgres"
+                  <td title={item.config.provider !== "sqlite" ? item.config.host : item.config.path}>
+                    {item.config.provider !== "sqlite"
                       ? `${item.config.host}:${item.config.port}`
                       : item.config.path}
                   </td>
-                  <td>{item.config.provider === "postgres" ? item.config.database : "main"}</td>
+                  <td>{item.config.provider !== "sqlite" ? item.config.database : "main"}</td>
                   <td>
                     <button
                       type="button"
@@ -265,17 +279,29 @@ function ConnectionDirectory({
           </table>
         )}
       </div>
-      {dialog && (
-        <RelationalDialog
-          key={`${dialog.intent}:${dialog.connection?.id ?? "new"}`}
+      {dialog && provider === "redis" ? (
+        <RedisDialog
           workspaceId={workspaceId}
-          provider={provider}
-          connection={dialog.connection}
+          connection={dialog.connection as RedisSavedConnection | undefined}
           intent={dialog.intent}
           onClose={() => setDialog(null)}
           onSave={save}
           onConnect={(password) => open(dialog.connection!, password)}
         />
+      ) : (
+        dialog &&
+        provider !== "redis" && (
+          <RelationalDialog
+            key={`${dialog.intent}:${dialog.connection?.id ?? "new"}`}
+            workspaceId={workspaceId}
+            provider={provider}
+            connection={dialog.connection as RelationalSavedConnection | undefined}
+            intent={dialog.intent}
+            onClose={() => setDialog(null)}
+            onSave={save}
+            onConnect={(password) => open(dialog.connection!, password)}
+          />
+        )
       )}
     </section>
   )

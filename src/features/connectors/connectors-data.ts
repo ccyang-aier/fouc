@@ -33,6 +33,7 @@ export const initialConnectors: Connector[] = [
   { id: "connector-shimo", name: "石墨文档", logo: "/connector-logos/shimo.png", category: "办公协同", description: "文档与表格轻量接入，评论与 @ 事件可驱动任务。", version: "1.9.0", updated: "2 周前", updatedDays: 14, connected: false },
   { id: "connector-postgres", name: "PostgreSQL", logo: "/connector-logos/postgresql.svg", category: "数据源", description: "管理 PostgreSQL 连接，浏览 Schema、表结构与数据，执行只读 SQL。", version: "0.1.0", updated: "刚刚", updatedDays: 0, connected: false },
   { id: "connector-sqlite", name: "SQLite", logo: "/connector-logos/sqlite.svg", category: "数据源", description: "打开当前设备上的 SQLite 文件，浏览结构与数据，执行只读查询。", version: "0.1.0", updated: "刚刚", updatedDays: 0, connected: false },
+  { id: "connector-redis", name: "Redis", logo: "/connector-logos/redis.svg", category: "数据源", description: "管理 Redis 连接，扫描 Key，查看类型、TTL 与集合，使用只读命令台。", version: "0.1.0", updated: "刚刚", updatedDays: 0, connected: false },
   { id: "connector-mysql", name: "MySQL", logo: "/connector-logos/mysql.svg", category: "数据源", description: "安全连接 MySQL 实例，慢查询与表结构随时可查。", version: "4.7.2", updated: "1 周前", updatedDays: 7, connected: false },
   { id: "connector-figma", name: "Figma", logo: "/connector-logos/figma.svg", category: "设计资产", description: "把设计稿版本与标注挂接到工作对象，改动自动提醒。", version: "3.3.4", updated: "3 天前", updatedDays: 3, connected: false },
   { id: "connector-jsdesign", name: "即时设计", logo: "/connector-logos/jsdesign.png", category: "设计资产", description: "国产设计工具文件接入，标注与切图直连任务。", version: "2.0.1", updated: "5 天前", updatedDays: 5, connected: false },

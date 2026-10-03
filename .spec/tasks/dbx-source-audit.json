@@ -200,21 +200,35 @@
         "area": "postgres-sqlite-native-runtime",
         "status": "partial",
         "files": 7,
-        "physical": 760,
-        "effective": 737
+        "physical": 693,
+        "effective": 671
       },
       {
         "area": "shared-sql-workbench-and-connection-management",
         "status": "partial",
         "files": 10,
-        "physical": 1559,
-        "effective": 1516
+        "physical": 1585,
+        "effective": 1541
+      },
+      {
+        "area": "native-redis-and-specialized-surface",
+        "status": "partial",
+        "files": 8,
+        "physical": 1149,
+        "effective": 1128
+      },
+      {
+        "area": "shared-device-connection-management",
+        "status": "partial",
+        "files": 3,
+        "physical": 98,
+        "effective": 93
       }
     ],
     "runtime": {
-      "files": 29,
-      "physical": 4171,
-      "effective": 3919
+      "files": 40,
+      "physical": 5377,
+      "effective": 5099
     },
     "targetEffectiveRuntimeLines": 50000,
     "milestoneVerified": false

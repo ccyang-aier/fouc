@@ -9,10 +9,12 @@
 ## 代码规模与当前验证
 
 - 源码已恢复至固定 commit；[源码审计](dbx-source-audit.json) 与 [实质迁移文件清单](dbx-native-port-manifest.json) 可由 `node scripts/audit-dbx-source.mjs --write` 重算。约 133.4 万有效源码行；排除独立测试、翻译资源、工具与账户/云模块后的核心范围估算为 91.4 万行。词法统计仍包含 Rust 内嵌测试，不能把这个估算当成已迁移量。
-- 第一阶段目标仍为约 50,000 行 Fouc 核心运行逻辑；当前清单为 29 个运行文件、3,919 行有效代码。不计样式、目录 JSON、测试、参考仓库或演示工作台，且必须逐能力验收，当前未完成。统计受代码格式影响，不能以行数代替功能覆盖。
+- 第一阶段目标仍为约 50,000 行 Fouc 核心运行逻辑；当前清单为 40 个运行文件、5,099 行有效代码。不计样式、目录 JSON、测试、参考仓库或演示工作台，且必须逐能力验收，当前未完成。统计受代码格式影响，不能以行数代替功能覆盖。
 - PostgreSQL / SQLite 的连接配置 CRUD、测试与会话打开、Schema/表/视图/字段发现、主键分页、只读 SQL、大整数/重复列名及空间隔离已有真实 HTTP 和浏览器证据。R02/R03 保持进行中；写入、完整对象管理、导入导出、比较/备份、取消/重连、CLI/MCP 等仍须推进。SQLite 当前同步查询，尚未交付长查询取消与 worker 隔离。
 - 验证入口：`bun test --isolate backend/device/src/database backend/device/src/api/server.database.test.ts`、`node scripts/verify-relational-live.mjs`。真实服务验证使用独立 `fouc_datastore_lab` 数据库与 `.runtime/dbx-lab/relational.sqlite`，不访问 Fouc 账户/业务表。
 - Web 验证：Playwright + Chrome，1440×1000 完成上述 PostgreSQL / SQLite 流程；390×844、760×844 检查连接目录、导航收起及溢出。两次故意写入产生预期 HTTP 400，未出现其他控制台或页面错误；窄窗口工作台操作矩阵仍待补齐。
+- Redis 的独立连接器已接入共享配置 CRUD 与设备会话；原始字节/字符串游标、SCAN、String/List/Set/Hash/ZSet/Stream 读取、TTL、缺失 Key、只读命令台已有真实 HTTP 与 Web 证据。X01/R07 保持进行中，尚未交付写入/TTL 修改、完整数据库切换、RedisJSON、Sentinel/Cluster、消费组/Pending/Lag、Pub/Sub、MONITOR、Slowlog、大 keyspace 虚拟列表及全入口矩阵。
+- Redis 验证入口：`node scripts/verify-redis-live.mjs` 使用独立 DB 15 与 `fouc:dbx-lab:` 前缀，只重置明确命名的验证 Key，不清空数据库、不访问业务缓存 Key。Playwright + Chrome 1440×1000、760×844 已验收创建/测试/保存/连接、六种类型、JSON、List/Stream 翻页、空状态/搜索、命令成功/错误及编辑/刷新持久化/复制/删除。一次故意写入产生预期 HTTP 400，无其他控制台或页面错误。
 
 ## 范围与验收规则
 
@@ -142,7 +144,7 @@
 
 | ID | 任务 / 可验收交付 | DBX 对照 | 状态 |
 | --- | --- | --- | --- |
-| X01 | Redis：库/Key 前缀与类型浏览、String/Hash/List/Set/ZSet/Stream 等查看编辑、TTL、命令台与历史、PubSub、Dashboard/Key 统计/Slowlog、Stream 消费组/Pending/Lag、批量 Key/TTL 操作、危险命令保护；独立连接的实时 `MONITOR` 含停止/关闭释放、记录上限和 Sentinel/Cluster 限制。 | `components/redis/`、`redis_cmd.rs`、`redis.cn.mdx` | 待实施 |
+| X01 | Redis：库/Key 前缀与类型浏览、String/Hash/List/Set/ZSet/Stream 等查看编辑、TTL、命令台与历史、PubSub、Dashboard/Key 统计/Slowlog、Stream 消费组/Pending/Lag、批量 Key/TTL 操作、危险命令保护；独立连接的实时 `MONITOR` 含停止/关闭释放、记录上限和 Sentinel/Cluster 限制。 | `components/redis/`、`redis_cmd.rs`、`redis.cn.mdx` | 进行中 |
 | X02 | MongoDB：库/集合/文档 CRUD、筛选/排序/分页/聚合、索引、JSON 编辑、GridFS、导入导出与 dump；CSV 嵌套字段路径/数组索引和 ObjectId 类型识别、JSON/NDJSON Extended JSON 往返、采样推断与字段映射逐项验收。 | `components/document/`、`mongo_cmd.rs`、`mongodb.cn.mdx` | 待实施 |
 | X03 | Elasticsearch/Easysearch/Meilisearch/Manticore：索引/文档/Schema 浏览、搜索/原始请求、响应与 Profile 视图、适用的写入。 | `components/meilisearch/`、`Elasticsearch*` | 待实施 |
 | X04 | Qdrant/Milvus/Weaviate/ChromaDB：集合/维度/Schema、Top-K 检索、请求预览、Upsert、删除及引擎专属参数。 | `components/vector/`、`vector_cmd.rs` | 待实施 |
@@ -186,7 +188,7 @@
 | R04 | `rqlite` | native | operate | queryExecution, metadataBrowse, objectBrowser, schemaSearch, diagram, tableDataEdit, tableStructureEdit, tableImport, dataTransfer, sqlFileExecution, fieldLineage | 待实施 |
 | R05 | `turso` | native | operate | queryExecution, metadataBrowse, objectBrowser, objectSource, schemaSearch, diagram, tableDataEdit, tableStructureEdit, tableImport, dataTransfer, sqlFileExecution, fieldLineage | 待实施 |
 | R06 | `cloudflare-d1` | native | operate | queryExecution, metadataBrowse, objectBrowser, objectSource, schemaSearch, diagram, tableDataEdit, tableImport, dataTransfer, sqlFileExecution, fieldLineage | 待实施 |
-| R07 | `redis` | native | connect | queryExecution | 待实施 |
+| R07 | `redis` | native | connect | queryExecution | 进行中 |
 | R08 | `duckdb` | file | operate | queryExecution, metadataBrowse, objectBrowser, objectSource, schemaSearch, tableDataEdit, tableStructureEdit, tableImport, dataTransfer, sqlFileExecution, driverManagement | 待实施 |
 | R09 | `clickhouse` | native | operate | queryExecution, metadataBrowse, objectBrowser, schemaSearch, tableStructureEdit, tableImport, dataTransfer, sqlFileExecution, databaseCreate | 待实施 |
 | R10 | `sqlserver` | native | operate | queryExecution, metadataBrowse, objectBrowser, objectSource, schemaSearch, diagram, tableDataEdit, tableStructureEdit, tableImport, dataTransfer, sqlFileExecution, databaseCreate, fieldLineage, sqlExplain | 待实施 |

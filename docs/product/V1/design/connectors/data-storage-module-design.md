@@ -28,6 +28,7 @@ Connector Control Plane
 - **Provider 不是驱动。** Provider 是用户和 Agent 可见的能力与治理边界；Driver 是 Provider 内部的连接实现；Instance 是某个工作空间保存的一条连接。个人凭据仍可由用户持有，访问与执行必须另行授权。
 - **dbx 应作为产品行为和测试语料来源，而不是作为第二个应用嵌入 Fouc。** Fouc 不引入 dbx 的 Rust/Tauri 业务层，不运行一套平行控制面，也不复制其单体前端；应按 Fouc 的 Next.js + TypeScript sidecar 边界重写核心能力。
 - **设备侧数据源驱动与 Fouc 业务数据库保持独立。** PostgreSQL 驱动可在 `backend/device/src/database/drivers/postgres.ts` 使用 `pg`，只消费用户显式提交的数据源配置，不读取 Fouc 业务服务的 `DATABASE_URL`，不导入服务端数据库、账户或租户表。连接配置与会话按 `workspaceId` 隔离，密码只在当前连接请求中使用，不能混入配置文件；后续持久凭据统一接入 Credential Broker。
+- **Redis 数据源与业务缓存保持独立。** 设备驱动使用用户显式提供的地址、ACL 用户、数据库编号与 TLS 配置，不读取业务服务的 Redis 环境变量。会话中的数据库编号不可通过命令台更改；Key/值保留原始 Base64 字节，扫描游标以十进制字符串传输，Stream 游标保留完整消息 ID。首批只读实现不宣称交付写入、Sentinel/Cluster、RedisJSON、消费组、Pub/Sub、MONITOR 或 Slowlog。Redis `COUNT` 是批次提示，集合扫描不得截掉返回项造成下一页缺失；后续 Result Store 与虚拟列表须覆盖大集合和大 keyspace。
 - **“移植所有核心能力”指目标能力完整，不代表首个版本一次支持 dbx 的 81 个连接类型。** 第一阶段以约 5 万行实质核心逻辑迁移为目标，优先建立 MySQL、PostgreSQL、SQLite、Redis 四种常用数据源的完整能力，再扩展 etcd、MongoDB 与兼容 profiles。行数是规模门槛，不能替代逐功能、逐驱动的真实验收；样例界面、目录元数据、样式、测试和参考源码不计入这一核心逻辑门槛。
 
 这个方案与现有 Connector 文档的“一平台一 Provider、多 Instance”“通用控制面、独立数据适配器”一致，同时避免每个数据库连接器重复建设一个数据库客户端。

@@ -5102,7 +5102,7 @@
     {
       "id": "X01",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "redis"
@@ -5120,7 +5120,18 @@
         "action": "Redis：库/Key 前缀与类型浏览、String/Hash/List/Set/ZSet/Stream 等查看编辑、TTL、命令台与历史、PubSub、Dashboard/Key 统计/Slowlog、Stream 消费组/Pending/Lag、批量 Key/TTL 操作、危险命令保护；独立连接的实时 `MONITOR` 含停止/关闭释放、记录上限和 Sentinel/Cluster 限制。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-runtime-validation",
+          "path": "scripts/verify-redis-live.mjs",
+          "check": "2026-10-03: real Redis DB 15, isolated verifier prefix: scoped config/sessions, SCAN with binary keys, six core types, 64KB string cap, list/stream pages, TTL/missing keys, command policy. Dedicated route tests validate authentication and cross-workspace metadata."
+        },
+        {
+          "kind": "partial-web-validation",
+          "path": "src/features/connectors/redis/redis-workbench.tsx",
+          "check": "2026-10-03: Playwright + Chrome 1440x1000 and 760x844: test/save/connect, six value types, JSON, list/stream pages, empty/search, command success/rejected write, edit/reload/copy/delete. No unexpected page/console errors; one intentional HTTP 400 command rejection. Write, advanced operations and full matrix remain unverified."
+        }
+      ],
       "scopeKind": "driver"
     },
     {
@@ -5929,7 +5940,7 @@
     {
       "id": "R07",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "redis"
@@ -5947,7 +5958,18 @@
         "action": "`redis`",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-runtime-validation",
+          "path": "scripts/verify-redis-live.mjs",
+          "check": "2026-10-03: real Redis DB 15, isolated verifier prefix: scoped config/sessions, SCAN with binary keys, six core types, 64KB string cap, list/stream pages, TTL/missing keys, command policy. Dedicated route tests validate authentication and cross-workspace metadata."
+        },
+        {
+          "kind": "partial-web-validation",
+          "path": "src/features/connectors/redis/redis-workbench.tsx",
+          "check": "2026-10-03: Playwright + Chrome 1440x1000 and 760x844: test/save/connect, six value types, JSON, list/stream pages, empty/search, command success/rejected write, edit/reload/copy/delete. No unexpected page/console errors; one intentional HTTP 400 command rejection. Write, advanced operations and full matrix remain unverified."
+        }
+      ],
       "scopeKind": "driver"
     },
     {

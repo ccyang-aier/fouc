@@ -20,6 +20,10 @@ import { MysqlReadOnlySqlError } from '../database/mysql-read-only-sql';
 import type { RelationalSessionManager } from '../database/relational-session';
 import { relationalRoutes } from './relational-routes';
 import type { RelationalConnectionRepository } from '../database/relational-connections';
+import type { RedisSessionManager } from '../database/redis-session';
+import type { DeviceConnectionRepository } from '../database/connection-repository';
+import type { RedisConnectionConfig } from '@fouc/shared';
+import { redisRoutes } from './redis-routes';
 import type { KnowledgeRepository } from '../knowledge/repository';
 import { DATABASE_CATALOG_REVISION, getDatabaseDialect, getDatabaseProfile, listDatabaseDrivers, listDatabaseProfiles } from '@fouc/shared/database-catalog';
 
@@ -31,6 +35,8 @@ export type ServerContext = {
   mysqlSessions?: MysqlSessionManager;
   relationalSessions?: RelationalSessionManager;
   relationalConnections?: RelationalConnectionRepository;
+  redisSessions?: RedisSessionManager;
+  redisConnections?: DeviceConnectionRepository<RedisConnectionConfig>;
   knowledge?: KnowledgeRepository;
   token: string;
   internalToken: string;
@@ -209,6 +215,7 @@ export function createApp(context: ServerContext): { app: Hono; hub: BroadcastHu
   });
 
   if (context.relationalSessions) app.route('/', relationalRoutes(context.relationalSessions, context.relationalConnections));
+  if (context.redisSessions) app.route('/', redisRoutes(context.redisSessions, context.redisConnections));
 
   app.get('/api/database/connections/:id/capabilities', async (c) => {
     const id = c.req.param('id');

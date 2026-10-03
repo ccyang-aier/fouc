@@ -18,6 +18,7 @@
     "@hocuspocus/server": "^4.7.0",
     "@zed-industries/codex-acp-win32-x64": "0.9.5",
     "hono": "^4.13.5",
+    "ioredis": "5.6.1",
     "mysql2": "3.24.4",
     "pg": "8.23.0",
     "yjs": "13.6.33"

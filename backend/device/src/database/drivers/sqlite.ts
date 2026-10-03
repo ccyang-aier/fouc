@@ -2,7 +2,8 @@ import { DatabaseSync } from 'node:sqlite';
 import { stat } from 'node:fs/promises';
 import path from 'node:path';
 import type { DatabaseColumnInfo, RelationalConnectInput } from '@fouc/shared';
-import { quoteRelationalIdentifier as quote, RelationalInputError } from '../relational-sql';
+import { quoteRelationalIdentifier as quote } from '../relational-sql';
+import { DatabaseInputError } from '../input-error';
 import { relationalCell, type Relation, type RelationalDriver } from './relational-driver';
 
 // DBX sqlite.rs: existing local file, single connection, xinfo (including
@@ -11,7 +12,7 @@ export async function connectSqlite(
   input: Extract<RelationalConnectInput, { provider: 'sqlite' }>,
 ): Promise<RelationalDriver> {
   if (!path.isAbsolute(input.path) || !(await stat(input.path)).isFile())
-    throw new RelationalInputError('请选择设备上已有 SQLite 文件的绝对路径');
+    throw new DatabaseInputError('请选择设备上已有 SQLite 文件的绝对路径');
   const db = new DatabaseSync(input.path, { readOnly: true });
   try {
     db.exec('PRAGMA query_only=ON');
@@ -27,7 +28,7 @@ export async function connectSqlite(
         return ['main'];
       },
       async tables(schema) {
-        if (schema !== 'main') throw new RelationalInputError('SQLite 会话仅支持 main');
+        if (schema !== 'main') throw new DatabaseInputError('SQLite 会话仅支持 main');
         return db
           .prepare(
             "SELECT name, type FROM sqlite_schema WHERE type IN ('table','view') AND name NOT LIKE 'sqlite_%' ORDER BY name",
@@ -43,7 +44,7 @@ export async function connectSqlite(
           );
       },
       async columns(schema, table) {
-        if (schema !== 'main') throw new RelationalInputError('SQLite 会话仅支持 main');
+        if (schema !== 'main') throw new DatabaseInputError('SQLite 会话仅支持 main');
         const indices = db
           .prepare(`PRAGMA index_list(${quote(table)})`)
           .all()
@@ -75,7 +76,7 @@ export async function connectSqlite(
           );
       },
       async read(sql, schema, maxRows) {
-        if (schema && schema !== 'main') throw new RelationalInputError('SQLite 会话仅支持 main');
+        if (schema && schema !== 'main') throw new DatabaseInputError('SQLite 会话仅支持 main');
         const statement = db.prepare(sql);
         statement.setReadBigInts(true);
         statement.setReturnArrays(true);

@@ -1,5 +1,5 @@
+import { DatabaseInputError } from './input-error';
 /** DBX query_execution_sql: one statement, with server-enforced read isolation. */
-export class RelationalInputError extends Error {}
 // DBX sql_risk.rs POSTGRES_PROOF_SAFE_FUNCTIONS. User functions, sequence
 // mutators, advisory locks, notifications and large-object I/O need separate
 // capability/policy approval and cannot inherit a read-only query grant.
@@ -18,7 +18,7 @@ const SQL_GROUPS = new Set(
 );
 export function assertRelationalReadSql(sql: unknown, provider: 'postgres' | 'sqlite' = 'postgres'): string {
   if (typeof sql !== 'string' || !sql.trim() || sql.length > 1_000_000)
-    throw new RelationalInputError('SQL 不能为空且不得超过 1 MB');
+    throw new DatabaseInputError('SQL 不能为空且不得超过 1 MB');
   let code = '';
   let i = 0;
   while (i < sql.length) {
@@ -40,7 +40,7 @@ export function assertRelationalReadSql(sql: unknown, provider: 'postgres' | 'sq
           i += 2;
         } else i++;
       }
-      if (depth) throw new RelationalInputError('SQL 注释未闭合');
+      if (depth) throw new DatabaseInputError('SQL 注释未闭合');
       code += ' ';
       continue;
     }
@@ -50,7 +50,7 @@ export function assertRelationalReadSql(sql: unknown, provider: 'postgres' | 'sq
         : undefined;
     if (dollar) {
       const end = sql.indexOf(dollar, i + dollar.length);
-      if (end < 0) throw new RelationalInputError('SQL 文本未闭合');
+      if (end < 0) throw new DatabaseInputError('SQL 文本未闭合');
       i = end + dollar.length;
       code += ' ';
       continue;
@@ -74,16 +74,16 @@ export function assertRelationalReadSql(sql: unknown, provider: 'postgres' | 'sq
         if (escaped && sql[i] === '\\') i++;
         i++;
       }
-      if (!closed) throw new RelationalInputError('SQL 文本未闭合');
+      if (!closed) throw new DatabaseInputError('SQL 文本未闭合');
       if (provider === 'postgres' && quote === '"' && /^\s*\(/.test(sql.slice(i)))
-        throw new RelationalInputError('引用函数尚未证明只读');
+        throw new DatabaseInputError('引用函数尚未证明只读');
       code += quote === '"' ? '__quoted_identifier__' : ' ';
       continue;
     }
     code += sql[i++];
   }
   const statements = code.split(';').filter((entry) => entry.trim());
-  if (statements.length !== 1) throw new RelationalInputError('每次只能执行一条 SQL');
+  if (statements.length !== 1) throw new DatabaseInputError('每次只能执行一条 SQL');
   const statement = statements[0]!;
   if (
     !/^\s*(SELECT|WITH|EXPLAIN)\b/i.test(statement) ||
@@ -91,7 +91,7 @@ export function assertRelationalReadSql(sql: unknown, provider: 'postgres' | 'sq
       statement,
     )
   ) {
-    throw new RelationalInputError('只读会话禁止写入、事务控制和管理语句');
+    throw new DatabaseInputError('只读会话禁止写入、事务控制和管理语句');
   }
   if (provider === 'postgres') {
     for (const match of statement.matchAll(/\b((?:[a-zA-Z_][\w$]*\s*\.\s*)?)([a-zA-Z_][\w$]*)\s*\(/g)) {
@@ -101,7 +101,7 @@ export function assertRelationalReadSql(sql: unknown, provider: 'postgres' | 'sq
         (scope && scope !== 'pg_catalog.') ||
         (!POSTGRES_PURE_FUNCTIONS.has(name) && !SQL_GROUPS.has(name))
       ) {
-        throw new RelationalInputError(`函数 ${name} 尚未证明只读`);
+        throw new DatabaseInputError(`函数 ${name} 尚未证明只读`);
       }
     }
   }
@@ -109,12 +109,12 @@ export function assertRelationalReadSql(sql: unknown, provider: 'postgres' | 'sq
   // statement separator cannot reach the driver's simple-query protocol.
   const separator = code.indexOf(';');
   if (separator >= 0 && code.slice(separator + 1).trim())
-    throw new RelationalInputError('每次只能执行一条 SQL');
+    throw new DatabaseInputError('每次只能执行一条 SQL');
   return sql.trim().replace(/;\s*$/, '');
 }
 
 export function quoteRelationalIdentifier(value: string): string {
   if (!value.trim() || value.includes('\0') || value.length > 255)
-    throw new RelationalInputError('数据库对象名称无效');
+    throw new DatabaseInputError('数据库对象名称无效');
   return '"' + value.replaceAll('"', '""') + '"';
 }

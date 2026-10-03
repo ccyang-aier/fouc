@@ -1,6 +1,7 @@
+import { savedConnectionRoutes } from './saved-connection-routes';
+import { DatabaseInputError } from '../database/input-error';
 import { Hono } from 'hono';
 import type { RelationalSessionManager } from '../database/relational-session';
-import { RelationalInputError } from '../database/relational-sql';
 import type { RelationalConnectionRepository } from '../database/relational-connections';
 
 /** Mounted beneath device authentication; every operation includes workspace. */
@@ -15,52 +16,22 @@ export function relationalRoutes(
       {
         ok: false,
         error: {
-          code: error instanceof RelationalInputError ? 'invalid_input' : 'database_failed',
+          code: error instanceof DatabaseInputError ? 'invalid_input' : 'database_failed',
           message: error.message,
         },
       },
-      error instanceof RelationalInputError ? 400 : 502,
+      error instanceof DatabaseInputError ? 400 : 502,
     ),
   );
-  if (connections) {
-    const saved = '/api/database/workspaces/:workspaceId/relational/connections';
-    app.get(saved, (c) => c.json({ ok: true, data: connections.list(c.req.param('workspaceId')!) }));
-    app.post(saved, async (c) =>
-      c.json(
-        {
-          ok: true,
-          data: connections.save(c.req.param('workspaceId')!, await c.req.json().catch(() => null)),
-        },
-        201,
+  if (connections)
+    app.route(
+      '/',
+      savedConnectionRoutes(
+        '/api/database/workspaces/:workspaceId/relational/connections',
+        connections,
+        (workspace, input) => sessions.connect(workspace, input),
       ),
     );
-    app.put(saved + '/:id', async (c) => {
-      connections.get(c.req.param('workspaceId')!, c.req.param('id')!);
-      return c.json({
-        ok: true,
-        data: connections.save(
-          c.req.param('workspaceId')!,
-          await c.req.json().catch(() => null),
-          c.req.param('id')!,
-        ),
-      });
-    });
-    app.delete(saved + '/:id', (c) => {
-      connections.remove(c.req.param('workspaceId')!, c.req.param('id')!);
-      return c.json({ ok: true, data: { deleted: true } });
-    });
-    app.post(saved + '/:id/connect', async (c) => {
-      const entry = connections.get(c.req.param('workspaceId')!, c.req.param('id')!);
-      const body = await c.req.json().catch(() => null);
-      return c.json(
-        {
-          ok: true,
-          data: await sessions.connect(entry.workspaceId, { ...entry.config, password: body?.password }),
-        },
-        201,
-      );
-    });
-  }
   app.post(base, async (c) =>
     c.json(
       {
@@ -95,7 +66,7 @@ export function relationalRoutes(
   app.post(base + '/:id/query', async (c) => {
     const body = await c.req.json().catch(() => null);
     if (!body || typeof body.sql !== 'string' || (body.schema !== null && typeof body.schema !== 'string'))
-      throw new RelationalInputError('查询参数无效');
+      throw new DatabaseInputError('查询参数无效');
     return c.json({
       ok: true,
       data: await sessions.query(

@@ -1,3 +1,4 @@
+import { DatabaseInputError } from './input-error';
 import {
   DATABASE_CAPABILITIES,
   type DatabaseCapabilities,
@@ -15,7 +16,6 @@ import type { RelationalDriver } from './drivers/relational-driver';
 import {
   assertRelationalReadSql,
   quoteRelationalIdentifier as quote,
-  RelationalInputError,
 } from './relational-sql';
 
 type Entry = { session: RelationalSession; driver: RelationalDriver };
@@ -24,8 +24,8 @@ export class RelationalSessionManager {
   constructor(private readonly capabilities: DatabaseCapabilityRegistry) {}
 
   async connect(workspaceId: string, value: unknown): Promise<RelationalSession> {
-    if (!workspaceId.trim() || workspaceId.length > 128) throw new RelationalInputError('工作空间无效');
-    if (!value || typeof value !== 'object') throw new RelationalInputError('连接参数无效');
+    if (!workspaceId.trim() || workspaceId.length > 128) throw new DatabaseInputError('工作空间无效');
+    if (!value || typeof value !== 'object') throw new DatabaseInputError('连接参数无效');
     const input = value as RelationalConnectInput;
     if (input.provider === 'postgres') {
       if (
@@ -41,10 +41,10 @@ export class RelationalSessionManager {
         !input.database.trim() ||
         (input.ssl !== undefined && typeof input.ssl !== 'boolean')
       ) {
-        throw new RelationalInputError('主机、端口、用户、密码或数据库无效');
+        throw new DatabaseInputError('主机、端口、用户、密码或数据库无效');
       }
     } else if (input.provider !== 'sqlite' || typeof input.path !== 'string' || !input.path.trim())
-      throw new RelationalInputError('请选择有效数据源');
+      throw new DatabaseInputError('请选择有效数据源');
     const declared = getDatabaseDriver(input.provider)!;
     const driver = await (input.provider === 'postgres' ? connectPostgres(input) : connectSqlite(input));
     const id = crypto.randomUUID();
@@ -78,7 +78,7 @@ export class RelationalSessionManager {
   private entry(workspaceId: string, id: string): Entry {
     const entry = this.entries.get(id);
     if (!entry || entry.session.workspaceId !== workspaceId)
-      throw new RelationalInputError('当前工作空间中的连接已断开');
+      throw new DatabaseInputError('当前工作空间中的连接已断开');
     return entry;
   }
 
@@ -109,10 +109,10 @@ export class RelationalSessionManager {
       limit < 1 ||
       limit > 500
     )
-      throw new RelationalInputError('分页范围无效');
+      throw new DatabaseInputError('分页范围无效');
     const { session, driver } = this.entry(workspaceId, id);
     const columns = await driver.columns(schema, table);
-    if (!columns.length) throw new RelationalInputError('对象不存在或当前账号无权读取字段');
+    if (!columns.length) throw new DatabaseInputError('对象不存在或当前账号无权读取字段');
     const primary = columns.filter((column) => column.isPrimaryKey);
     const order = primary.length ? ` ORDER BY ${primary.map((column) => quote(column.name)).join(', ')}` : '';
     const result = await driver.read(
@@ -144,7 +144,7 @@ export class RelationalSessionManager {
       maxRows > 5000 ||
       (schema !== null && typeof schema !== 'string')
     )
-      throw new RelationalInputError('查询参数无效');
+      throw new DatabaseInputError('查询参数无效');
     const { driver, session } = this.entry(workspaceId, id);
     const statement = assertRelationalReadSql(sql, session.provider);
     const start = performance.now();

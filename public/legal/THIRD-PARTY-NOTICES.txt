@@ -16,5 +16,13 @@ backend/device/src/database/{drivers,relational-*}, shared/src/relational.ts and
 src/features/connectors/datastore/ using TypeScript, React and Node-compatible APIs.
 The SQLite connector SVG is an original Fouc illustration.
 
+Redis binary blob transport, cursor/key scans, bounded string/list/stream reads,
+collection browsing and command quoting are adapted from
+crates/dbx-drivers/src/db/redis_driver.rs. The Redis surface follows
+apps/desktop/src/components/redis/{RedisKeyBrowser,RedisValueViewer}.vue.
+Fouc's native implementation lives in backend/device/src/database/redis-*,
+shared/src/redis.ts and src/features/connectors/redis/. The Redis connector SVG
+is an original Fouc illustration. No DBX runtime module is loaded.
+
 This notice covers DBX-derived material. Other dependency notices remain
 subject to the separate F06 license audit.

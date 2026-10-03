@@ -433,3 +433,4 @@ export interface DtsFilterDefinition {
   count: number | null;
 }
 export * from './relational';
+export * from './redis';

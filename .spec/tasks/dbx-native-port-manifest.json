@@ -6,27 +6,120 @@
     {
       "area": "contracts-and-capabilities",
       "status": "partial",
-      "sourceReferences": ["crates/dbx-core/src/models/", "crates/dbx-core/assets/database-drivers.manifest.json"],
-      "runtimeFiles": ["shared/src/database.ts", "shared/src/database-catalog.ts", "shared/src/mysql-query-ranges.ts", "shared/src/relational.ts", "backend/device/src/database/capability-registry.ts"]
+      "sourceReferences": [
+        "crates/dbx-core/src/models/",
+        "crates/dbx-core/assets/database-drivers.manifest.json"
+      ],
+      "runtimeFiles": [
+        "shared/src/database.ts",
+        "shared/src/database-catalog.ts",
+        "shared/src/mysql-query-ranges.ts",
+        "shared/src/relational.ts",
+        "backend/device/src/database/capability-registry.ts"
+      ]
     },
     {
       "area": "mysql-native-runtime-and-live-ui",
       "status": "partial",
-      "sourceReferences": ["crates/dbx-drivers/src/db/mysql.rs", "crates/dbx-sql/src/sql_risk.rs", "apps/desktop/src/components/connection/", "apps/desktop/src/components/layout/"],
-      "runtimeFiles": ["backend/device/src/database/mysql-session.ts", "backend/device/src/database/mysql-read-only-sql.ts", "src/features/connectors/mysql/mysql-connection-list.tsx", "src/features/connectors/mysql/mysql-connection-dialog.tsx", "src/features/connectors/mysql/mysql-connection-table.tsx", "src/features/connectors/mysql/workbench/mysql-live-workbench.tsx", "src/features/connectors/mysql/workbench/mysql-live-sql.tsx"]
+      "sourceReferences": [
+        "crates/dbx-drivers/src/db/mysql.rs",
+        "crates/dbx-sql/src/sql_risk.rs",
+        "apps/desktop/src/components/connection/",
+        "apps/desktop/src/components/layout/"
+      ],
+      "runtimeFiles": [
+        "backend/device/src/database/mysql-session.ts",
+        "backend/device/src/database/mysql-read-only-sql.ts",
+        "src/features/connectors/mysql/mysql-connection-list.tsx",
+        "src/features/connectors/mysql/mysql-connection-dialog.tsx",
+        "src/features/connectors/mysql/mysql-connection-table.tsx",
+        "src/features/connectors/mysql/workbench/mysql-live-workbench.tsx",
+        "src/features/connectors/mysql/workbench/mysql-live-sql.tsx"
+      ]
     },
     {
       "area": "postgres-sqlite-native-runtime",
       "status": "partial",
-      "sourceReferences": ["crates/dbx-drivers/src/db/postgres.rs", "crates/dbx-drivers/src/db/sqlite.rs", "crates/dbx-sql/src/sql_risk.rs", "crates/dbx-core/src/connection/"],
-      "runtimeFiles": ["backend/device/src/database/drivers/relational-driver.ts", "backend/device/src/database/drivers/postgres.ts", "backend/device/src/database/drivers/sqlite.ts", "backend/device/src/database/relational-session.ts", "backend/device/src/database/relational-connections.ts", "backend/device/src/database/relational-sql.ts", "backend/device/src/api/relational-routes.ts"]
+      "sourceReferences": [
+        "crates/dbx-drivers/src/db/postgres.rs",
+        "crates/dbx-drivers/src/db/sqlite.rs",
+        "crates/dbx-sql/src/sql_risk.rs",
+        "crates/dbx-core/src/connection/"
+      ],
+      "runtimeFiles": [
+        "backend/device/src/database/drivers/relational-driver.ts",
+        "backend/device/src/database/drivers/postgres.ts",
+        "backend/device/src/database/drivers/sqlite.ts",
+        "backend/device/src/database/relational-session.ts",
+        "backend/device/src/database/relational-connections.ts",
+        "backend/device/src/database/relational-sql.ts",
+        "backend/device/src/api/relational-routes.ts"
+      ]
     },
     {
       "area": "shared-sql-workbench-and-connection-management",
       "status": "partial",
-      "sourceReferences": ["apps/desktop/src/components/connection/", "apps/desktop/src/components/layout/", "apps/desktop/src/components/editor/", "apps/desktop/src/components/grid/", "apps/desktop/src/components/chart/"],
-      "runtimeFiles": ["src/features/connectors/datastore/cell-format.ts", "src/features/connectors/datastore/result-format.ts", "src/features/connectors/datastore/query-result.tsx", "src/features/connectors/datastore/sql-editor.tsx", "src/features/connectors/datastore/relational-connections.tsx", "src/features/connectors/datastore/relational-dialog.tsx", "src/features/connectors/datastore/relational-workbench.tsx", "src/features/connectors/datastore/relational-query.tsx", "src/features/connectors/datastore/resource-tree.tsx", "src/features/connectors/datastore/table-view.tsx"]
+      "sourceReferences": [
+        "apps/desktop/src/components/connection/",
+        "apps/desktop/src/components/layout/",
+        "apps/desktop/src/components/editor/",
+        "apps/desktop/src/components/grid/",
+        "apps/desktop/src/components/chart/"
+      ],
+      "runtimeFiles": [
+        "src/features/connectors/datastore/cell-format.ts",
+        "src/features/connectors/datastore/result-format.ts",
+        "src/features/connectors/datastore/query-result.tsx",
+        "src/features/connectors/datastore/sql-editor.tsx",
+        "src/features/connectors/datastore/connection-directory.tsx",
+        "src/features/connectors/datastore/relational-dialog.tsx",
+        "src/features/connectors/datastore/relational-workbench.tsx",
+        "src/features/connectors/datastore/relational-query.tsx",
+        "src/features/connectors/datastore/resource-tree.tsx",
+        "src/features/connectors/datastore/table-view.tsx"
+      ]
+    },
+    {
+      "area": "native-redis-and-specialized-surface",
+      "status": "partial",
+      "sourceReferences": [
+        "crates/dbx-drivers/src/db/redis_driver.rs",
+        "apps/desktop/src/components/redis/"
+      ],
+      "runtimeFiles": [
+        "shared/src/redis.ts",
+        "backend/device/src/database/redis-input.ts",
+        "backend/device/src/database/redis-session.ts",
+        "backend/device/src/api/redis-routes.ts",
+        "src/features/connectors/redis/redis-dialog.tsx",
+        "src/features/connectors/redis/redis-workbench.tsx",
+        "src/features/connectors/redis/redis-value-viewer.tsx",
+        "src/features/connectors/redis/redis-console.tsx"
+      ]
+    },
+    {
+      "area": "shared-device-connection-management",
+      "status": "partial",
+      "sourceReferences": [
+        "crates/dbx-core/src/connection/",
+        "crates/dbx-core/src/persistence/"
+      ],
+      "runtimeFiles": [
+        "backend/device/src/database/input-error.ts",
+        "backend/device/src/database/connection-repository.ts",
+        "backend/device/src/api/saved-connection-routes.ts"
+      ]
     }
   ],
-  "knownRemainingScope": ["Redis connector and specialized workbench", "common driver lifecycle, cancellation, reconnect and streaming", "workspace-aware MySQL persistence and shared policy integration", "row/structure editing and transactions", "full SQL dialect parsing, completion, parameters, history and saved SQL", "import/export/transfer/schema and data comparison/backup", "remaining DBX drivers and specialized surfaces", "CLI/MCP and applicable desktop entry points", "full capability-by-driver acceptance matrix"]
+  "knownRemainingScope": [
+    "Redis mutation/expiry, database selection, RedisJSON, Sentinel/Cluster, stream consumer groups/Pending/Lag, PubSub/MONITOR/Slowlog, large-keyspace virtualization and result stores",
+    "common driver lifecycle, cancellation, reconnect and streaming",
+    "workspace-aware MySQL persistence and shared policy integration",
+    "row/structure editing and transactions",
+    "full SQL dialect parsing, completion, parameters, history and saved SQL",
+    "import/export/transfer/schema and data comparison/backup",
+    "remaining DBX drivers and specialized surfaces",
+    "CLI/MCP and applicable desktop entry points",
+    "full capability-by-driver acceptance matrix"
+  ]
 }

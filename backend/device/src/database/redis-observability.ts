@@ -2,6 +2,7 @@ import type Redis from 'ioredis';
 import type { RedisInfoSection, RedisInfoSnapshot, RedisSlowlogEntry, RedisSlowlogPage } from '@fouc/shared';
 import { DatabaseInputError } from './input-error';
 import { redisBlob } from './redis-blob';
+import { redisUnsigned as unsigned, redisProtocolBytes as bytes } from './redis-protocol';
 
 const INFO_BYTES = 2 * 1024 * 1024;
 const SLOWLOG_RESPONSE_BYTES = 2 * 1024 * 1024;
@@ -35,17 +36,6 @@ export function redisSlowlogCount(raw: unknown): number {
   if (typeof raw !== 'number' || !Number.isInteger(raw) || raw < 1 || raw > 10000)
     throw new DatabaseInputError('慢日志数量必须是 1–10000 的整数');
   return raw;
-}
-function unsigned(raw: unknown): string {
-  if (typeof raw === 'number' && (!Number.isSafeInteger(raw) || raw < 0)) throw new Error('慢日志数值已丢失精度');
-  const value = Buffer.isBuffer(raw) ? raw.toString() : String(raw);
-  if (!/^\d+$/.test(value) || BigInt(value) > 18446744073709551615n) throw new Error('慢日志数值格式无效');
-  return BigInt(value).toString();
-}
-function bytes(raw: unknown): Buffer {
-  if (Buffer.isBuffer(raw)) return raw;
-  if (typeof raw === 'string') return Buffer.from(raw);
-  throw new Error('慢日志参数格式无效');
 }
 function optionalBlob(raw: unknown) {
   if (raw === null || raw === undefined) return null;

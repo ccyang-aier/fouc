@@ -17,6 +17,7 @@ import { REDIS_WRITE_BYTES } from './redis-mutation-input';
 import { redisDatabase, redisDatabases, redisHashExpiries } from './redis-metadata';
 import { RedisHistoryRepository, REDIS_HISTORY_LIMIT, redisHistoryEntry } from './redis-history';
 import { redisInformation, redisSlowlog } from './redis-observability';
+import { redisStreamGroups, redisStreamConsumers, redisStreamPending } from './redis-stream';
 export { redisBlob } from './redis-blob';
 
 const PAGE_SIZE = 100;
@@ -112,6 +113,15 @@ export class RedisSessionManager {
   }
   slowlog(workspaceId: string, id: string, count: unknown) {
     return redisSlowlog(this.entry(workspaceId, id).client, count);
+  }
+  streamGroups(workspaceId: string, id: string, key: unknown) {
+    return redisStreamGroups(this.entry(workspaceId, id).client, key);
+  }
+  streamConsumers(workspaceId: string, id: string, key: unknown, group: unknown) {
+    return redisStreamConsumers(this.entry(workspaceId, id).client, key, group);
+  }
+  streamPending(workspaceId: string, id: string, key: unknown, group: unknown, cursor: unknown, consumer: unknown) {
+    return redisStreamPending(this.entry(workspaceId, id).client, key, group, cursor, consumer);
   }
   async switchDatabase(workspaceId: string, id: string, rawDatabase: unknown): Promise<RedisSession> {
     const database = redisDatabase(rawDatabase);

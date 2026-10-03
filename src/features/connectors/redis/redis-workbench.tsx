@@ -306,6 +306,7 @@ export function RedisWorkbench({
             )}
             {value ? (
               <RedisValueViewer
+                base={base}
                 key={`${selected}:${valueRequest.cursor}`}
                 value={value}
                 busy={valueBusy || writeBusy}

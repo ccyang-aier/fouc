@@ -106,7 +106,13 @@
         "src/features/connectors/redis/redis-mutation-model.ts",
         "src/features/connectors/redis/redis-byte-field.tsx",
         "src/features/connectors/redis/redis-database-selector.tsx",
-        "src/features/connectors/redis/redis-mutation-dialog.tsx"
+        "src/features/connectors/redis/redis-mutation-dialog.tsx",
+        "shared/src/redis-stream.ts",
+        "backend/device/src/database/redis-protocol.ts",
+        "backend/device/src/database/redis-stream.ts",
+        "src/features/connectors/redis/redis-stream-groups.tsx",
+        "src/features/connectors/redis/redis-stream-model.ts",
+        "src/features/connectors/redis/use-redis-stream-read.ts"
       ]
     },
     {
@@ -173,7 +179,7 @@
     }
   ],
   "knownRemainingScope": [
-    "Redis large/batch mutations and full version/permission matrix, broader console execution/completion and history/search, RedisJSON, Sentinel/Cluster including node metrics/slowlog, stream consumer groups/Pending/Lag, PubSub/MONITOR, large-keyspace virtualization and result stores",
+    "Redis large/batch mutations and full version/permission matrix, broader console execution/completion and history/search, RedisJSON, Sentinel/Cluster including node metrics/slowlog, PubSub/MONITOR, large-keyspace virtualization and result stores",
     "common driver lifecycle, cancellation, reconnect and streaming",
     "cross-entry-point write grants, scope restrictions and shared policy integration",
     "full grid selection/copy/paste/undo, keyless guards, complex types, structure editing, cancellation and distributed transactions",

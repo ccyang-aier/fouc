@@ -54,6 +54,18 @@ export function redisRoutes(
       data: await sessions.value(c.req.param('workspaceId')!, c.req.param('id')!, body?.key, body?.cursor),
     });
   });
+  app.post(base + '/:id/stream/groups', async (c) => {
+    const body = await c.req.json().catch(() => null);
+    return c.json({ ok: true, data: await sessions.streamGroups(c.req.param('workspaceId')!, c.req.param('id')!, body?.key) });
+  });
+  app.post(base + '/:id/stream/consumers', async (c) => {
+    const body = await c.req.json().catch(() => null);
+    return c.json({ ok: true, data: await sessions.streamConsumers(c.req.param('workspaceId')!, c.req.param('id')!, body?.key, body?.group) });
+  });
+  app.post(base + '/:id/stream/pending', async (c) => {
+    const body = await c.req.json().catch(() => null);
+    return c.json({ ok: true, data: await sessions.streamPending(c.req.param('workspaceId')!, c.req.param('id')!, body?.key, body?.group, body?.cursor, body?.consumer) });
+  });
   app.post(base + '/:id/command', async (c) => {
     const body = await c.req.json().catch(() => null);
     return c.json({

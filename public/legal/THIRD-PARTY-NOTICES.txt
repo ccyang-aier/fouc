@@ -49,6 +49,11 @@ INFO section browsing, metric cards, refresh/search/copy and sortable slowlog
 details follow RedisDashboard.vue, RedisSlowlogPanel.vue and redis_driver.rs.
 Fouc adapts them in redis-observability.ts, redis-dashboard.tsx and
 redis-slowlog.tsx with lossless counters/arguments and scoped polling cleanup.
+Stream groups, consumers, Pending, optional Lag and inclusive cursor lookahead
+follow redis_driver.rs, redis_ops.rs and RedisValueViewer.vue. Fouc adapts the
+read commands in redis-stream.ts and the drill-down surface in
+redis-stream-groups.tsx, preserving byte names and 64-bit IDs with request
+cancellation and explicit unknown/stale/error states.
 
 This notice covers DBX-derived material. Other dependency notices remain
 subject to the separate F06 license audit.

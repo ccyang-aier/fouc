@@ -1,0 +1,94 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { parseEnv } from 'node:util';
+import { createRequire } from 'node:module';
+
+const Redis = createRequire(new URL('../backend/device/package.json', import.meta.url))('ioredis');
+const endpoint = new URL(parseEnv(readFileSync('.env.fouc.local', 'utf8')).REDIS_URL);
+const host = process.env.FOUC_REDIS_OBSERVABILITY_HOST || endpoint.hostname;
+const port = Number(process.env.FOUC_REDIS_OBSERVABILITY_PORT || 56380);
+const config = { provider: 'redis', host, port, username: '', database: 15, tls: false, password: '' };
+const client = new Redis({ host, port, db: 15, retryStrategy: () => null, stringNumbers: true });
+client.on('error', () => {});
+const workspace = 'dbx-redis-stream-verification';
+const base = `http://127.0.0.1:8710/api/database/workspaces/${workspace}/redis`;
+const prefix = 'fouc:dbx-stream-lab:', key = prefix + 'orders';
+const encode = (value) => Buffer.from(value).toString('base64');
+const binaryGroup = Buffer.from([0, 255]), binaryConsumer = Buffer.from([255, 0]);
+const aclName = 'fouc_dbx_stream_verifier', aclPassword = crypto.randomUUID();
+let session, limited, otherDb;
+async function request(path, { body, method = body ? 'POST' : 'GET', status = 200, otherWorkspace = false } = {}) {
+  const response = await fetch((otherWorkspace ? base.replace(workspace, 'other-workspace') : base) + path, {
+    method, headers: { 'content-type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(20000),
+  });
+  const result = await response.json();
+  assert.equal(response.status, status, `${path}: ${result.error?.message}`);
+  assert.equal(result.ok, status < 400);
+  return result.ok ? result.data : result.error;
+}
+try {
+  await client.ping();
+  await client.del(key, prefix + 'empty', prefix + 'string');
+  for (let index = 0; index < 240; index++) await client.xadd(key, `9007199254740993-${index}`, 'order', String(index), 'payload', Buffer.from([0, 255, index % 256]));
+  for (const group of ['orders', 'unknown-lag', binaryGroup, '']) await client.xgroup('CREATE', key, group, group === 'unknown-lag' ? '9007199254740993-99' : '0-0');
+  await client.xreadgroup('GROUP', 'orders', 'worker-a', 'COUNT', 120, 'STREAMS', key, '>');
+  await client.xreadgroup('GROUP', 'orders', 'worker-b', 'COUNT', 100, 'STREAMS', key, '>');
+  await client.xreadgroup('GROUP', 'orders', binaryConsumer, 'COUNT', 20, 'STREAMS', key, '>');
+  await client.xgroup('CREATECONSUMER', key, 'orders', '');
+  await client.xreadgroup('GROUP', binaryGroup, binaryConsumer, 'COUNT', 10, 'STREAMS', key, '>');
+  await client.xgroup('CREATE', prefix + 'empty', 'empty-workers', '0-0', 'MKSTREAM');
+  await client.set(prefix + 'string', 'wrong type');
+  await client.pexpire(key, 3600000);
+  session = await request('/sessions', { body: config, status: 201 });
+  assert.equal(session.readOnly, true);
+  const path = (suffix) => `/sessions/${session.id}/stream/${suffix}`;
+  const body = { key: encode(key), group: encode('orders') };
+  const groups = await request(path('groups'), { body });
+  assert.equal(groups.groups.length, 4);
+  const orders = groups.groups.find((group) => group.name.display === 'orders');
+  assert.equal(orders.pending, '240'); assert.equal(orders.consumers, '4');
+  assert.equal(orders.lastDeliveredId, '9007199254740993-239'); assert.equal(orders.entriesRead, '240'); assert.equal(orders.lag, '0');
+  assert.equal(groups.groups.find((group) => group.name.display === 'unknown-lag').lag, null);
+  assert.ok(groups.groups.some((group) => group.name.rawBase64 === encode(binaryGroup)));
+  assert.ok(groups.groups.some((group) => group.name.rawBase64 === ''));
+  const consumers = await request(path('consumers'), { body });
+  assert.equal(consumers.consumers.find((item) => item.name.display === 'worker-a').pending, '120');
+  assert.ok(consumers.consumers.some((item) => item.name.rawBase64 === encode(binaryConsumer)));
+  assert.equal(consumers.consumers.find((item) => item.name.rawBase64 === '').inactiveMs, null);
+  const first = await request(path('pending'), { body: { ...body, consumer: encode('worker-a') } });
+  assert.equal(first.entries.length, 100); assert.equal(first.nextCursor, '9007199254740993-99');
+  assert.ok(first.entries.every((entry) => entry.consumer.rawBase64 === encode('worker-a') && entry.deliveries === '1'));
+  await client.xack(key, 'orders', first.nextCursor);
+  const second = await request(path('pending'), { body: { ...body, consumer: encode('worker-a'), cursor: first.nextCursor } });
+  assert.equal(second.entries.length, 20); assert.equal(second.entries[0].id, '9007199254740993-100'); assert.equal(second.nextCursor, null);
+  const binary = await request(path('pending'), { body: { key: encode(key), group: encode(binaryGroup), consumer: encode(binaryConsumer) } });
+  assert.equal(binary.entries.length, 10); assert.ok(binary.entries.every((entry) => entry.consumer.rawBase64 === encode(binaryConsumer)));
+  assert.equal((await request(path('pending'), { body: { ...body, consumer: '' } })).entries.length, 0);
+  assert.equal((await request(path('consumers'), { body: { key: encode(key), group: '' } })).consumers.length, 0);
+  assert.equal((await request(path('pending'), { body: { ...body, key: encode(prefix + 'empty'), group: encode('empty-workers') } })).entries.length, 0);
+  const dump = await client.dumpBuffer(key), expiry = await client.call('PEXPIRETIME', key);
+  let cursor = null, collected = [];
+  do { const page = await request(path('pending'), { body: { ...body, cursor } }); collected.push(...page.entries); cursor = page.nextCursor; } while (cursor);
+  assert.equal(collected.length, 239); assert.equal(new Set(collected.map((entry) => entry.id)).size, 239);
+  await request(path('groups'), { body }); await request(path('consumers'), { body });
+  assert.deepEqual(await client.dumpBuffer(key), dump, 'XINFO / XPENDING do not acknowledge, claim, deliver or mutate the Stream');
+  assert.equal(await client.call('PEXPIRETIME', key), expiry);
+  assert.equal((await request(`/sessions/${session.id}/history`)).entries.length, 0);
+  for (const suffix of ['groups', 'consumers', 'pending']) await request(path(suffix), { body, otherWorkspace: true, status: 400 });
+  for (const cursor of ['1', '(1-0', '18446744073709551616-0']) await request(path('pending'), { body: { ...body, cursor }, status: 400 });
+  await request(path('groups'), { body: { key: encode(prefix + 'string') }, status: 502 });
+  await request(path('consumers'), { body: { ...body, group: encode('absent-group') }, status: 502 });
+  otherDb = await request('/sessions', { body: { ...config, database: 14 }, status: 201 });
+  await request(`/sessions/${otherDb.id}/stream/groups`, { body, status: 502 });
+  await client.acl('SETUSER', aclName, 'reset', 'on', `>${aclPassword}`, `~${prefix}*`, '+@all', '-xinfo', '-xpending');
+  limited = await request('/sessions', { body: { ...config, username: aclName, password: aclPassword }, status: 201 });
+  for (const suffix of ['groups', 'consumers', 'pending']) await request(`/sessions/${limited.id}/stream/${suffix}`, { body, status: 502 });
+  await client.acl('SETUSER', aclName, '+xinfo', '+xpending');
+  assert.equal((await request(`/sessions/${limited.id}/stream/groups`, { body })).groups.length, 4);
+  assert.deepEqual(await client.dumpBuffer(key), dump);
+  console.log('PASS Redis Stream: real 64-bit IDs, binary/empty group and consumer names, unknown Lag/Inactive, 100-row cursor ACK race, server consumer filter, empty PEL, unchanged DUMP/expiry/history/read-only session, DB/workspace isolation, malformed cursor/WRONGTYPE/missing group/ACL denial and recovery; dedicated lab port ' + port + '.');
+} finally {
+  for (const entry of [session, limited, otherDb]) if (entry) await request(`/sessions/${entry.id}`, { method: 'DELETE' }).catch(() => {});
+  await client.acl('DELUSER', aclName).catch(() => {});
+  await client.quit().catch(() => client.disconnect());
+}

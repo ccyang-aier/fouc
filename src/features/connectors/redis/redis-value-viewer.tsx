@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Copy, Check, PencilSimple, Trash, Plus, Clock, TextAa } from "@phosphor-icons/react"
 import type { RedisBlob, RedisMutation, RedisValuePage } from "@fouc/shared"
 import styles from "./redis.module.css"
+import { RedisStreamGroupsView } from "./redis-stream-groups"
 
 export function redisTtl(ttl: number): string {
   return ttl === -2 ? "已过期" : ttl === -1 ? "永久" : `${ttl}s`
@@ -22,7 +23,8 @@ export function RedisValueViewer({
   onNext,
   readOnly,
   onMutation,
-  onEditString
+  onEditString,
+  base
 }: {
   value: RedisValuePage
   busy: boolean
@@ -30,10 +32,12 @@ export function RedisValueViewer({
   readOnly: boolean
   onMutation: (mutation: RedisMutation) => void
   onEditString: () => void
+  base: string
 }) {
   const [format, setFormat] = useState<"text" | "json" | "base64">("text")
   const [copied, setCopied] = useState(false)
   const [copyError, setCopyError] = useState("")
+  const [streamTab, setStreamTab] = useState<"entries" | "groups">("entries")
   const data = value.data
   const next = "nextCursor" in data ? data.nextCursor : null
   let columns: string[] = [],
@@ -129,7 +133,11 @@ export function RedisValueViewer({
         {value.writeUnavailable && <p role="status" className={styles.notice}>{value.writeUnavailable}</p>}
       </>}
       {data.kind === "hash" && !data.fieldExpiry.available && data.fieldExpiry.reason && <p role="status" className={styles.notice}>字段 TTL 不可读取：{data.fieldExpiry.reason}</p>}
-      {data.kind === "none" ? (
+      {data.kind === "stream" && <div className={styles.valueToolbar}><div role="tablist" aria-label="Stream 视图">
+        <button type="button" role="tab" aria-selected={streamTab === "entries"} onClick={() => setStreamTab("entries")}>消息</button>
+        <button type="button" role="tab" aria-selected={streamTab === "groups"} onClick={() => setStreamTab("groups")}>消费组</button>
+      </div></div>}
+      {data.kind === "stream" && streamTab === "groups" ? <RedisStreamGroupsView base={base} rawKey={key} /> : data.kind === "none" ? (
         <div className={styles.empty}>Key 已过期或被删除，请刷新列表。</div>
       ) : data.kind === "unsupported" ? (
         <div className={styles.empty}>此 Redis 模块类型尚未开放值读取。</div>
@@ -201,7 +209,7 @@ export function RedisValueViewer({
           {!rows.length && <p className={styles.notice}>当前批次为空{next ? "，可继续扫描。" : "。"}</p>}
         </div>
       )}
-      {next && (
+      {next && !(data.kind === "stream" && streamTab === "groups") && (
         <footer className={styles.footer}>
           <span>游标分页 · 集合变化可能产生重复项</span>
           <button type="button" disabled={busy} onClick={() => onNext(next)}>

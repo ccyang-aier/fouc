@@ -171,3 +171,7 @@ dml_preview_sql and dmlChangePreview workflows under Apache License 2.0.
 
 Mongo GridFS native file browsing and streamed download adapt DBX mongo_driver.rs
 and lib/document/gridfsFiles.ts/gridfsPagination.ts under Apache License 2.0.
+
+Connection config transfer, seeded table data generation and native binary
+HEX detail adapt DBX connection, test_data and binaryHexViewer workflows
+under Apache License 2.0.

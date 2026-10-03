@@ -16,6 +16,7 @@ import type { GridEditDraft, GridEditCell, GridEditSelection } from './grid-edit
 import { TableQueryControls } from "./table-query-controls"
 import { TableStructure } from "./table-structure"
 import { TableImportAction } from './table-import-action'
+import { TestDataAction } from './test-data-action'
 import { SchemaCompareAction } from './schema-compare-action'
 import { StructureEditAction } from './structure-edit-action'
 import { SchemaObjectsPanel } from './schema-objects'
@@ -441,6 +442,7 @@ export function RelationalWorkbench({
                 <DatabaseExportAction session={session} schemas={schemas} schema={schema} table={table} tables={tables} disabled={pending || busy || writeBusy} />
                 <TableTransferAction session={session} name={name} schema={schema} table={table} disabled={pending || busy || writeBusy} />
                 <TableImportAction base={base} sessionId={session.id} provider={session.provider} schema={schema} page={page} disabled={!writable || pending || busy || writeBusy} onImported={refresh} />
+                <TestDataAction session={currentSession} base={base} schema={schema} table={table} writable={writable} disabled={pending || busy || writeBusy} onUnlock={unlockSqlWrite} onImported={refresh} onBusyChange={setMutationBusy} />
                 <SchemaCompareAction base={base} provider={session.provider} schema={schema} table={table} tables={tables} schemas={schemas} disabled={pending || busy} />
                 <StructureEditAction base={base} schema={schema} table={table} disabled={!writable || !table || pending || busy || writeBusy} onApplied={refresh} />
                 <span>

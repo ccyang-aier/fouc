@@ -207,8 +207,8 @@
         "area": "shared-sql-workbench-and-connection-management",
         "status": "partial",
         "files": 10,
-        "physical": 2123,
-        "effective": 2070
+        "physical": 2128,
+        "effective": 2075
       },
       {
         "area": "native-redis-and-specialized-surface",
@@ -305,8 +305,8 @@
         "area": "native-relational-explain-grid-selection-and-result-export",
         "status": "partial",
         "files": 29,
-        "physical": 2500,
-        "effective": 2249
+        "physical": 2507,
+        "effective": 2256
       },
       {
         "area": "native-table-import",
@@ -426,12 +426,33 @@
         "files": 7,
         "physical": 575,
         "effective": 532
+      },
+      {
+        "area": "native-public-connection-config-import-export-and-encryption",
+        "status": "partial",
+        "files": 10,
+        "physical": 1629,
+        "effective": 1605
+      },
+      {
+        "area": "native-seeded-table-test-data-generation-and-confirmed-import",
+        "status": "partial",
+        "files": 12,
+        "physical": 951,
+        "effective": 881
+      },
+      {
+        "area": "native-binary-cell-hex-text-raster-and-original-download",
+        "status": "partial",
+        "files": 3,
+        "physical": 323,
+        "effective": 301
       }
     ],
     "runtime": {
-      "files": 404,
-      "physical": 39287,
-      "effective": 36258
+      "files": 429,
+      "physical": 42202,
+      "effective": 39057
     },
     "targetEffectiveRuntimeLines": 50000,
     "milestoneVerified": false

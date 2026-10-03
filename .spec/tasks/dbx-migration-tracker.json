@@ -876,7 +876,7 @@
     {
       "id": "C04",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "available",
       "applicableDriverTypes": [
         "mysql",
@@ -974,7 +974,13 @@
         "action": "本地凭据安全存储、解锁和密码提示；配置导出 AES-GCM 加密、导入/合并/冲突处理，支持从 DBeaver、Navicat、DataGrip 导入连接。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "shared/src/connection-config-transfer.ts",
+          "check": "2026-10-04：C04当前公开配置JSON完整预览→串行CRUD，空间/provider范围、同名默认改名/跳过/显式更新、真实部分失败/取消；PBKDF2-SHA256 600000+AES-256-GCM认证头/randomsalt/IV加密，秘密与资源ID不导出。7项P0/48断言、定向TS/lint，一次Chrome实际文件加解密与创建/更新/跳过通过。D09种子可重复5000行/5MiB/100000cells、逐字段生成与原始精确BIGINT/DECIMAL、FK与默认/生成列边界；5项P0/198断言，真实SQLite/MySQL样本与prepare0写入、confirm:false拒绝、一次追加5行及默认/生成值回读；复用原生导入引擎。G10原生binary envelope严格字节解码、有界HEX/ASCII分页/偏移搜索、UTF8/只读原值、栅格头部/像素预算/原文件下载；3项P0/26断言和一次原生SQLite BLOB页面下载逐字节一致、PNG实际解码。1440/390实际视觉检查，修复二进制详情被缩小结果区与窄屏祖先裁切，使用统一overlay宿主。第三方配置/vault、FK采样与多表生成、更多复杂类型继续后续。开发不重复旧模块矩阵；临时数据清理，服务常驻。"
+        }
+      ],
       "scopeKind": "driver"
     },
     {
@@ -3985,6 +3991,11 @@
           "kind": "partial-native-p0-and-browser-smoke",
           "path": "src/features/connectors/datastore/sql-explain-action.tsx",
           "check": "2026-10-04：开发阶段仅P0。MySQL JSON/标准、PostgreSQL JSON、SQLite QUERY PLAN 真实计划；8项原生计划P0、15项选择/精度P0、12项导出P0（原生三库字面量往返）。Chrome实际流程验证EXPLAIN接口/图形/树/原始计划、大整数详情/范围选择/精确求和/复制、选定两行一列CSV下载；1440×1000和390×844实际视觉检查。修复网格遮挡导出栏与浏览器计时器非法this绑定。仅本次已加载结果；ANALYZE、其他驱动/全入口、写入粘贴/布局设置、XLSX/ZIP/全表流式导出仍待阶段回归或实现。"
+        },
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "src/features/connectors/datastore/grid/binary/view.tsx",
+          "check": "2026-10-04：C04当前公开配置JSON完整预览→串行CRUD，空间/provider范围、同名默认改名/跳过/显式更新、真实部分失败/取消；PBKDF2-SHA256 600000+AES-256-GCM认证头/randomsalt/IV加密，秘密与资源ID不导出。7项P0/48断言、定向TS/lint，一次Chrome实际文件加解密与创建/更新/跳过通过。D09种子可重复5000行/5MiB/100000cells、逐字段生成与原始精确BIGINT/DECIMAL、FK与默认/生成列边界；5项P0/198断言，真实SQLite/MySQL样本与prepare0写入、confirm:false拒绝、一次追加5行及默认/生成值回读；复用原生导入引擎。G10原生binary envelope严格字节解码、有界HEX/ASCII分页/偏移搜索、UTF8/只读原值、栅格头部/像素预算/原文件下载；3项P0/26断言和一次原生SQLite BLOB页面下载逐字节一致、PNG实际解码。1440/390实际视觉检查，修复二进制详情被缩小结果区与窄屏祖先裁切，使用统一overlay宿主。第三方配置/vault、FK采样与多表生成、更多复杂类型继续后续。开发不重复旧模块矩阵；临时数据清理，服务常驻。"
         }
       ],
       "scopeKind": "driver"
@@ -4477,7 +4488,7 @@
     {
       "id": "D09",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql",
@@ -4545,7 +4556,13 @@
         "action": "测试数据生成：按字段配置姓名、地址、日期、数字、枚举、正则、外键等生成器，预览、批量写入、进度和生产写入保护。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "shared/src/test-data.ts",
+          "check": "2026-10-04：C04当前公开配置JSON完整预览→串行CRUD，空间/provider范围、同名默认改名/跳过/显式更新、真实部分失败/取消；PBKDF2-SHA256 600000+AES-256-GCM认证头/randomsalt/IV加密，秘密与资源ID不导出。7项P0/48断言、定向TS/lint，一次Chrome实际文件加解密与创建/更新/跳过通过。D09种子可重复5000行/5MiB/100000cells、逐字段生成与原始精确BIGINT/DECIMAL、FK与默认/生成列边界；5项P0/198断言，真实SQLite/MySQL样本与prepare0写入、confirm:false拒绝、一次追加5行及默认/生成值回读；复用原生导入引擎。G10原生binary envelope严格字节解码、有界HEX/ASCII分页/偏移搜索、UTF8/只读原值、栅格头部/像素预算/原文件下载；3项P0/26断言和一次原生SQLite BLOB页面下载逐字节一致、PNG实际解码。1440/390实际视觉检查，修复二进制详情被缩小结果区与窄屏祖先裁切，使用统一overlay宿主。第三方配置/vault、FK采样与多表生成、更多复杂类型继续后续。开发不重复旧模块矩阵；临时数据清理，服务常驻。"
+        }
+      ],
       "scopeKind": "driver"
     },
     {

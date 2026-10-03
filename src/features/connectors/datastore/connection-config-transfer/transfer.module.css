@@ -1,0 +1,427 @@
+.actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.directoryToolbar {
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.directoryToolbar > label {
+  flex: 1;
+  min-width: min(220px, 100%);
+}
+.directoryToolbar > span {
+  white-space: nowrap;
+  font-size: 11px;
+}
+.directoryToolbar > .actions {
+  margin-left: auto;
+}
+.actions button,
+.reviewHead button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 6px 8px;
+  background: var(--panel);
+  color: var(--ink-soft);
+  font: 11px var(--font-sans);
+  cursor: pointer;
+}
+.actions button:hover:not(:disabled),
+.reviewHead button:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+.actions button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.dialog {
+  width: min(770px, calc(100vw - 32px));
+  max-width: 770px;
+  max-height: calc(100dvh - 56px);
+  padding: 0;
+}
+.dialog[open] {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.dialog > header {
+  flex-shrink: 0;
+}
+.body {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  font: 13px var(--font-sans);
+  color: var(--ink-soft);
+  scrollbar-width: thin;
+}
+.scope {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 10px 11px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--surface-subtle);
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--muted-strong);
+}
+.scope svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.listHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11px;
+}
+.listHead small {
+  font-size: 10px;
+  color: var(--muted-strong);
+}
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.checkbox input,
+.exportRow > input {
+  margin: 0;
+  accent-color: var(--accent);
+  flex-shrink: 0;
+  width: 13px;
+  height: 13px;
+}
+.connectionList {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  scrollbar-width: thin;
+}
+.exportRow {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px;
+  cursor: pointer;
+}
+.exportRow + .exportRow {
+  border-top: 1px solid var(--line);
+}
+.exportRow > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  flex: 1;
+}
+.exportRow strong {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.exportRow span {
+  font: 11px/1.6 var(--font-code);
+  color: var(--muted-strong);
+  overflow-wrap: anywhere;
+}
+.exportRow > small {
+  font-size: 10px;
+  color: var(--muted-strong);
+}
+.protection {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.columns label,
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  font-size: 12px;
+}
+.columns input,
+.field input,
+.reviewControls input,
+.reviewControls select {
+  min-width: 0;
+  width: 100%;
+  color: var(--ink);
+  font: 12px var(--font-sans);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 8px 9px;
+}
+.columns input:focus-visible,
+.field input:focus-visible,
+.reviewControls input:focus-visible,
+.reviewControls select:focus-visible,
+.actions button:focus-visible,
+.reviewHead button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  outline-offset: 1px;
+}
+.hint,
+.warning,
+.error,
+.success,
+.progress {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.8;
+  color: var(--muted-strong);
+  overflow-wrap: anywhere;
+}
+.warning {
+  color: var(--warn-ink);
+}
+.error {
+  color: var(--err-ink);
+}
+.success {
+  color: var(--ok-ink);
+}
+.success,
+.progress {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+}
+.success svg,
+.progress svg {
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+.footer {
+  flex-shrink: 0;
+  align-items: center;
+  background: var(--surface-subtle);
+}
+.footer > span {
+  font-size: 10px;
+  color: var(--muted-strong);
+}
+.footer button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.upload {
+  display: flex;
+  position: relative;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 35px 20px;
+  border: 1px dashed color-mix(in srgb, var(--accent) 25%, var(--line));
+  border-radius: 6px;
+  background: var(--surface-subtle);
+  text-align: center;
+  cursor: pointer;
+  overflow: hidden;
+}
+.upload strong {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.upload > span {
+  color: var(--muted-strong);
+  font-size: 11px;
+}
+.upload input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.upload:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.reviewHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.reviewHead > div {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.reviewHead strong {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.reviewHead small {
+  font-size: 10px;
+  color: var(--muted-strong);
+  overflow-wrap: anywhere;
+}
+.reviewHead button {
+  flex-shrink: 0;
+}
+.reviewList {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.reviewRow {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 12px;
+}
+.reviewRow + .reviewRow {
+  border-top: 1px solid var(--line);
+}
+.reviewTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.reviewTitle > strong {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.reviewTitle > span {
+  font-size: 10px;
+  color: var(--muted-strong);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 2px 4px;
+}
+.reviewTitle > small {
+  color: var(--warn-ink);
+  font-size: 10px;
+}
+.reviewTitle > b {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--muted-strong);
+}
+.reviewTitle > b[data-status='saved'] {
+  color: var(--ok-ink);
+}
+.reviewTitle > b[data-status='failed'] {
+  color: var(--err-ink);
+}
+.reviewRow > p {
+  margin: 0;
+  font: 11px/1.7 var(--font-code);
+  color: var(--muted-strong);
+  overflow-wrap: anywhere;
+}
+.reviewRow > p.error {
+  color: var(--err-ink);
+}
+.reviewRow > p.warning {
+  color: var(--warn-ink);
+  font-family: var(--font-sans);
+}
+.fileRequired {
+  color: var(--muted-strong);
+  font-size: 10px;
+}
+.reviewControls {
+  display: grid;
+  grid-template-columns: minmax(0, 190px) minmax(0, 1fr);
+  gap: 8px;
+}
+.spin {
+  animation: rotate 1s linear infinite;
+}
+@keyframes rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (max-width: 600px) {
+  .dialog {
+    width: calc(100vw - 16px);
+    max-height: calc(100dvh - 24px);
+  }
+  .body {
+    padding: 13px;
+    gap: 13px;
+  }
+  .columns,
+  .reviewControls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .reviewTitle {
+    gap: 6px;
+  }
+  .reviewRow {
+    padding: 11px;
+  }
+  .footer {
+    padding: 12px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .footer > span {
+    width: 100%;
+    flex-basis: 100%;
+  }
+  .footer button {
+    font-size: 11px;
+    padding: 7px 10px;
+  }
+  .footer > button:first-of-type {
+    margin-left: auto;
+  }
+  .actions {
+    gap: 4px;
+  }
+  .actions button {
+    font-size: 10px;
+    padding: 5px 6px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
+}

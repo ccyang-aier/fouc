@@ -833,6 +833,62 @@
         "src/features/connectors/mongo/gridfs/index.ts",
         "src/features/connectors/mongo/gridfs/panel.tsx"
       ]
+    },
+    {
+      "area": "native-public-connection-config-import-export-and-encryption",
+      "status": "partial",
+      "sourceReferences": [
+        "apps/desktop/src/components/connection/",
+        "crates/dbx-core/src/connection/"
+      ],
+      "runtimeFiles": [
+        "shared/src/connection-config-transfer-crypto.ts",
+        "shared/src/connection-config-transfer-plan.ts",
+        "shared/src/connection-config-transfer.ts",
+        "src/features/connectors/datastore/connection-config-transfer/actions.tsx",
+        "src/features/connectors/datastore/connection-config-transfer/export-dialog.tsx",
+        "src/features/connectors/datastore/connection-config-transfer/import-dialog.tsx",
+        "src/features/connectors/datastore/connection-config-transfer/import-review.tsx",
+        "src/features/connectors/datastore/connection-config-transfer/index.ts",
+        "src/features/connectors/datastore/connection-config-transfer/operations.ts",
+        "src/features/connectors/datastore/connection-config-transfer/transport.ts"
+      ]
+    },
+    {
+      "area": "native-seeded-table-test-data-generation-and-confirmed-import",
+      "status": "partial",
+      "sourceReferences": [
+        "apps/desktop/src/components/generate/DataGenerateDialog.vue",
+        "apps/desktop/src/components/generate/params/",
+        "crates/dbx-core/src/data/script_generator.rs"
+      ],
+      "runtimeFiles": [
+        "shared/src/test-data-generate.ts",
+        "shared/src/test-data-model.ts",
+        "shared/src/test-data-random.ts",
+        "shared/src/test-data-types.ts",
+        "shared/src/test-data-validation.ts",
+        "shared/src/test-data.ts",
+        "src/features/connectors/datastore/test-data-action.tsx",
+        "src/features/connectors/datastore/test-data/column-editor.tsx",
+        "src/features/connectors/datastore/test-data/generator-options.tsx",
+        "src/features/connectors/datastore/test-data/index.ts",
+        "src/features/connectors/datastore/test-data/panel.tsx",
+        "src/features/connectors/datastore/test-data/use-test-data-plan.ts"
+      ]
+    },
+    {
+      "area": "native-binary-cell-hex-text-raster-and-original-download",
+      "status": "partial",
+      "sourceReferences": [
+        "apps/desktop/src/lib/dataGrid/binaryHexViewer.ts",
+        "apps/desktop/src/components/grid/DataGridCellDetailHexViewer.vue"
+      ],
+      "runtimeFiles": [
+        "src/features/connectors/datastore/grid/binary/image.ts",
+        "src/features/connectors/datastore/grid/binary/model.ts",
+        "src/features/connectors/datastore/grid/binary/view.tsx"
+      ]
     }
   ],
   "knownRemainingScope": [

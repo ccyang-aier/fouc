@@ -25,6 +25,8 @@ import type { MongoSession } from '@fouc/shared/mongo'
 import type { MongoConnectionConfig, MongoSavedConnection } from '@fouc/shared/mongo-connections'
 import styles from "./relational.module.css"
 import type { DatabaseConnectionOptionsInput } from '@fouc/shared/connection-options'
+import { ConnectionConfigTransferActions } from './connection-config-transfer'
+import transferStyles from './connection-config-transfer/transfer.module.css'
 
 type SavedConnection = RelationalSavedConnection | RedisSavedConnection | MongoSavedConnection
 
@@ -182,7 +184,7 @@ function ConnectionDirectory({
           新建连接
         </button>
       </div>
-      <div className={styles.directoryToolbar}>
+      <div className={`${styles.directoryToolbar} ${transferStyles.directoryToolbar}`}>
         <label className={styles.search}>
           <MagnifyingGlass size={15} />
           <input
@@ -193,6 +195,7 @@ function ConnectionDirectory({
           />
         </label>
         <span>{visible.length} 个连接</span>
+        <ConnectionConfigTransferActions workspaceId={workspaceId} provider={provider} connections={connections} disabled={loading || busy} onImported={() => setRevision((value) => value + 1)} />
       </div>
       {error && (
         <div className={styles.error} role="alert">

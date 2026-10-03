@@ -4,6 +4,8 @@
 
 ## 进度与证据
 
+- 配置文件 / 测试数据 / 字节详情：2026-10-04：C04当前公开配置JSON完整预览→串行CRUD，空间/provider范围、同名默认改名/跳过/显式更新、真实部分失败/取消；PBKDF2-SHA256 600000+AES-256-GCM认证头/randomsalt/IV加密，秘密与资源ID不导出。7项P0/48断言、定向TS/lint，一次Chrome实际文件加解密与创建/更新/跳过通过。D09种子可重复5000行/5MiB/100000cells、逐字段生成与原始精确BIGINT/DECIMAL、FK与默认/生成列边界；5项P0/198断言，真实SQLite/MySQL样本与prepare0写入、confirm:false拒绝、一次追加5行及默认/生成值回读；复用原生导入引擎。G10原生binary envelope严格字节解码、有界HEX/ASCII分页/偏移搜索、UTF8/只读原值、栅格头部/像素预算/原文件下载；3项P0/26断言和一次原生SQLite BLOB页面下载逐字节一致、PNG实际解码。1440/390实际视觉检查，修复二进制详情被缩小结果区与窄屏祖先裁切，使用统一overlay宿主。第三方配置/vault、FK采样与多表生成、更多复杂类型继续后续。开发不重复旧模块矩阵；临时数据清理，服务常驻。
+
 - MongoDB GridFS 文件：2026-10-04：X02原生Mongo GridFS桶/孤儿目录、文件分页筛选排序、精确Long容量与EJSON详情、lazy原生流鉴权下载/断开取消均接实际工作台。4项新增P0/45断言，真实Mongo上传独立夹具→原生读取→HTTP字节一致及custom BSON scalar ID；实际Chrome只读浏览→下载65637字节与源逐字节相同，1440/390已查看/无外溢或pageerror，修正窄屏桶选择和内部滚动。native下载1GiB，Web无FS Access时64MiB回退；原生流5min并保持controller直到close。前后端定向TS/lint通过，不重复旧CRUD回归；FS Access系统保存、上传/删除/ZIP/dump及完整入口仍待后续。
 
 - 连接参数 / SQL变更审查 / 全表导出：2026-10-04：C02唯一connectionOptions贯通MySQL/Pg/Redis/Mongo原生TLS/严格证书/主机名和timeout，URL/libpq DSN反向填表、PEM Web上传、敏感值仅临时重传；20项新增P0/160独立断言，自有TS/lint及真实MySQL URL填表→连接测试通过。Q10原生三库单表确定性INSERT/UPDATE/DELETE只读改写与旧新值/COUNT，五分钟一次性计划、权限/结构/WHERE/原值再核对、真实事务锁与取消回滚，COMMIT回应丢失标记unknown；8项P0/83断言，真实页面预览0写入→解锁撤销旧计划→重新预览→确认提交。D05/G06原生三库多对象SQL/CSV/JSON/NDJSON导出、精确游标/无主键offset、ZIP STORE+CRC/完整分包、设备磁盘预算/进度/取消/恢复/流式附件；4项P0/86断言及三库SQL回放，真实页面全表NDJSON下载精确大整数/中文、关闭重开恢复并清理。根API另验证空间隔离/只读/确认/计划失效/两页导出和附件字节。1440与390实际视觉检查，SQL审查窄屏固定操作区和select标签修正；类型/lint通过。本批未重复旧矩阵，实际TLS服务/多认证/其他驱动、完整入口及FS Access保存分支仍待阶段验收，语句子集/隐藏元数据权限/独立读取非快照明确限制。
@@ -45,7 +47,7 @@
 - Redis 观测验证入口：`node scripts/redis-observability-lab.mjs up|status` 复用或启动独立 Redis 7.4.8 实验室（56380，启动时阈值 0、保留 512 条），`node scripts/verify-redis-observability-live.mjs` 验证 INFO 分区与有界慢日志读取、原始二进制参数 / 客户端字段、数量校验、空间隔离、只读状态和命令历史保留、可选 CONFIG / LEN 权限降级及 GET / INFO 拒绝。实验室不会修改或重置业务 Redis 的日志配置。50 个作用域测试通过，涵盖 64 位计数 / 命中率 / 数值排序、旧版本缺失字段和响应截断。Playwright + Chrome 在 1440×1000、760×844、390×844 验证指标折叠 / 搜索 / 复制、真实定时刷新及离开视图后停止、慢日志数量 / 排序 / 筛选 / 分页 / 二进制详情 / JSON 复制、权限失败保留旧指标和错误恢复；两次预期 HTTP 502，无其他页面 / 控制台错误。Cluster 逐节点、其他版本与权限矩阵仍未完整交付。
 
 - 源码已恢复至固定 commit；[源码审计](dbx-source-audit.json) 与 [实质迁移文件清单](dbx-native-port-manifest.json) 可由 `node scripts/audit-dbx-source.mjs --write` 重算。约 133.4 万有效源码行；排除独立测试、翻译资源、工具与账户/云模块后的核心范围估算为 91.4 万行。词法统计仍包含 Rust 内嵌测试，不能把这个估算当成已迁移量。
-- 第一阶段目标仍为约 50,000 行 Fouc 核心运行逻辑；当前清单为 404 个运行文件、36,258 行有效代码。不计样式、目录 JSON、测试、参考仓库或演示工作台，且必须逐能力验收，当前未完成。MySQL 已合并到共享会话与工作台，移除的重复逻辑不保留行数信用。MONITOR / Pub/Sub 共享生命周期与流解码，删除的重复实现同样不保留信用。RedisJSON 仅计已适配且实际运行的 token 格式化 / Unicode 编辑映射子集，未使用的 Number 包装 / stringify 代码不计入。统计受代码格式影响，不能以行数代替功能覆盖。固定源码基线未变化时，可用 `node scripts/audit-dbx-source.mjs --native-only --write` 快速重算原生清单。
+- 第一阶段目标仍为约 50,000 行 Fouc 核心运行逻辑；当前清单为 429 个运行文件、39,057 行有效代码。不计样式、目录 JSON、测试、参考仓库或演示工作台，且必须逐能力验收，当前未完成。MySQL 已合并到共享会话与工作台，移除的重复逻辑不保留行数信用。MONITOR / Pub/Sub 共享生命周期与流解码，删除的重复实现同样不保留信用。RedisJSON 仅计已适配且实际运行的 token 格式化 / Unicode 编辑映射子集，未使用的 Number 包装 / stringify 代码不计入。统计受代码格式影响，不能以行数代替功能覆盖。固定源码基线未变化时，可用 `node scripts/audit-dbx-source.mjs --native-only --write` 快速重算原生清单。
 - MySQL / PostgreSQL / SQLite 的连接配置 CRUD、测试与会话打开、Schema/表/视图/字段发现、主键分页、只读 SQL、大整数/重复列名及空间隔离已有真实 HTTP 和浏览器证据。R01/R02/R03 保持进行中；完整对象管理、导入导出、比较/备份、取消/重连、CLI/MCP 等仍须推进。SQLite 读取已改为只读子进程隔离，注册批次的长查询取消已通过真实验收；写入取消、结果磁盘缓存与完整版本矩阵仍待推进。
 - 验证入口：`bun test --isolate backend/device/src/database backend/device/src/api/server.database.test.ts src/features/connectors/datastore/result-format.test.ts`、`node scripts/verify-relational-live.mjs`、`node scripts/verify-mysql-live.mjs`、`node scripts/verify-table-save-live.mjs`。真实服务验证使用独立 `fouc_datastore_lab` 数据库、专用 `dbx_save_fixture` / `dbx_unique_fixture` 表与 `.runtime/dbx-lab/relational.sqlite`，不访问 Fouc 账户/业务表。MySQL 实验室通过 `node scripts/datastore-lab.mjs up|status` 运行，容器有认证健康检查，随机凭据只写入被 Git 忽略的运行目录。
 - Web 验证：Playwright + Chrome，1440×1000 完成上述 PostgreSQL / SQLite 流程；390×844、760×844 检查连接目录、导航收起及溢出。两次故意写入产生预期 HTTP 400，未出现其他控制台或页面错误；窄窗口工作台操作矩阵仍待补齐。
@@ -112,7 +114,7 @@
 | C01 | 迁移全部 104 个 Profile 的分类、搜索、默认字段、图标、默认端口、URL 模板、特色选项与动态表单；增删改复制、测试、最近/置顶/分组/颜色完整闭环。 | `plugins/connection-types/profiles/catalog.yaml`、`components/connection/` | 进行中 |
 | C02 | 支持 URL/DSN 解析与反向填表、多认证方式、TLS/CA/客户端证书、超时与连接参数；敏感项与普通配置分离。 | `plugins/connection-types/*.yaml`、`connection/` | 进行中 |
 | C03 | SSH 隧道、跳板/密钥/口令提示、SSH config 导入、隧道 Profile、SOCKS5、HTTP 代理/隧道、网络失败诊断和安全关闭。 | `components/ssh/`、`tunnel_profiles.rs`、`ssh-tunnel.cn.mdx` | 待实施 |
-| C04 | 本地凭据安全存储、解锁和密码提示；配置导出 AES-GCM 加密、导入/合并/冲突处理，支持从 DBeaver、Navicat、DataGrip 导入连接。 | `connection_secrets.rs`、`keychain.rs`、`config_cmd.rs`、`connection-import.cn.mdx` | 待实施 |
+| C04 | 本地凭据安全存储、解锁和密码提示；配置导出 AES-GCM 加密、导入/合并/冲突处理，支持从 DBeaver、Navicat、DataGrip 导入连接。 | `connection_secrets.rs`、`keychain.rs`、`config_cmd.rs`、`connection-import.cn.mdx` | 进行中 |
 | C05 | 连接与数据库级只读、写入解锁、SQL/命令风险分类、每次生产写入确认、危险语句/目标组保护；所有 UI、CLI、MCP 和专项 API 走同一策略。 | `crates/dbx-core/src/safety/`、`crates/dbx-sql/src/` | 进行中 |
 | C06 | 写入前 SQL/请求预览、影响范围和失败反馈；事务提交/回滚、部分成功标识、取消行为，不以客户端禁用按钮代替服务端拦截。 | `production-safety.cn.mdx`、`query/two_phase_commit.rs` | 进行中 |
 | C07 | Agent/JDBC/外部驱动下载、安装、版本/运行时检测、更新/卸载、缺失提示和驱动商店；系统/托管/多版本 JRE、离线 ZIP/JRE 包导入、运行时 PID/CPU/内存/Session 监控及停止/重启；兼容各驱动的 Agent 进程协议。 | `agents/`、`driver-management.cn.mdx` | 待实施 |
@@ -174,7 +176,7 @@
 | D06 | SQLite 备份、MongoDB dump/import/export；MySQL/PostgreSQL 桌面一次性与小时/日/周定时逻辑备份，库/表模式、结构/数据/对象、路径模板、只读一致性快照、保留/历史/取消清理和 MySQL 指定表恢复。 | `sqlite_backup.rs`、`mongodb_dump.rs`、`components/backup/`、`database-backup.cn.mdx` | 待实施 |
 | D07 | 桌面文件拖放生成 DuckDB 文件查询及 CSV/JSON/Parquet 读取入口；Web 上传与服务器路径、临时文件清理分别处理。 | `useFileDrop.ts`、`buildDroppedFilePreviewSql` | 待实施 |
 | D08 | 传输、导入、导出任务持久化与重新打开；文件下载校验、出错详情、取消和完成通知。 | `transferTaskStore.ts`、`crates/dbx-web/src/routes/` | 待实施 |
-| D09 | 测试数据生成：按字段配置姓名、地址、日期、数字、枚举、正则、外键等生成器，预览、批量写入、进度和生产写入保护。 | `components/generate/` | 待实施 |
+| D09 | 测试数据生成：按字段配置姓名、地址、日期、数字、枚举、正则、外键等生成器，预览、批量写入、进度和生产写入保护。 | `components/generate/` | 进行中 |
 
 ## 6. AI 与自动化入口
 

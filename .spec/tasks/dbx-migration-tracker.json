@@ -5256,6 +5256,16 @@
           "kind": "partial-web-validation",
           "path": "src/features/connectors/redis/redis-pubsub.tsx",
           "check": "2026-10-03: Playwright+Chrome1440/760/390 verifies real binary/empty channels/messages and binary pattern matching, duplicate subscriptions without duplicate chips, duplicate channel/pattern deliveries, denied subscribe with retained ACK state/retry, reconnect restores subscriptions without offline replay, newest500 retention, copy/filter/no-match/follow/clear/detail and clipping. Publish locked/review/back/confirm/binary bytes/zero-byte messages and ACL failure/retry work; publication/detail dialog bodies scroll while actions stay visible. Actual Redis subscriber sockets released on disconnect/view exit/DB switch/back/transport loss. Two expected HTTP502, no other page/console errors; browser plugin unavailable, bundled Playwright fallback. Other Redis versions/TLS transport matrix, Sentinel/Cluster, batch/large key operations and complete desktop/CLI/MCP matrix remain pending."
+        },
+        {
+          "kind": "partial-runtime-validation",
+          "path": "scripts/verify-redis-json-live.mjs",
+          "check": "2026-10-03: dedicated official Redis8.2.2/ReJSON8.2.1 lab port56381, owned DB15 fixtures: full raw JSON document/numeric tokens, scalar/null/root-array and binary keys, no-write NX/XX preview and single-use plans, exact TTL/content/expiry conflicts/relock/wrong-type/grammar guards; optional MODULE/MEMORY denial and unknown COMMAND metadata, GET/SET ACL failure/recovery, 2MiB complete-read bound, module absence on standalone7.4 and workspace/history guards. Redis6-type native mutation regression remains green. Other JSON module versions, topology and full entry-point matrix remain unverified."
+        },
+        {
+          "kind": "partial-web-validation",
+          "path": "src/features/connectors/redis/redis-json-view.tsx",
+          "check": "2026-10-03: bundled Playwright/Chrome1440/760/390 (Browser plugin unavailable): real null/root-array/int64 fidelity, readonly/unlock; Unicode/raw/format/compact/copy/history/search/folding/wrap; malformed draft/discard/navigation guards, Ctrl+S/cancel/review/confirm exact TTL; JSON NX creation/return editor, native concurrent change and ACL rejection with recovery, module absence. Editor/search/copy and dialog actions visible; two intentional HTTP400, no other console/page errors. Source token formatting/Unicode bounded diff and capability/read validation have dedicated tests. X01/R07 remain in progress."
         }
       ],
       "scopeKind": "driver"
@@ -6220,6 +6230,16 @@
           "kind": "partial-web-validation",
           "path": "src/features/connectors/redis/redis-pubsub.tsx",
           "check": "2026-10-03: Playwright+Chrome1440/760/390 verifies real binary/empty channels/messages and binary pattern matching, duplicate subscriptions without duplicate chips, duplicate channel/pattern deliveries, denied subscribe with retained ACK state/retry, reconnect restores subscriptions without offline replay, newest500 retention, copy/filter/no-match/follow/clear/detail and clipping. Publish locked/review/back/confirm/binary bytes/zero-byte messages and ACL failure/retry work; publication/detail dialog bodies scroll while actions stay visible. Actual Redis subscriber sockets released on disconnect/view exit/DB switch/back/transport loss. Two expected HTTP502, no other page/console errors; browser plugin unavailable, bundled Playwright fallback. Other Redis versions/TLS transport matrix, Sentinel/Cluster, batch/large key operations and complete desktop/CLI/MCP matrix remain pending."
+        },
+        {
+          "kind": "partial-runtime-validation",
+          "path": "scripts/verify-redis-json-live.mjs",
+          "check": "2026-10-03: dedicated official Redis8.2.2/ReJSON8.2.1 lab port56381, owned DB15 fixtures: full raw JSON document/numeric tokens, scalar/null/root-array and binary keys, no-write NX/XX preview and single-use plans, exact TTL/content/expiry conflicts/relock/wrong-type/grammar guards; optional MODULE/MEMORY denial and unknown COMMAND metadata, GET/SET ACL failure/recovery, 2MiB complete-read bound, module absence on standalone7.4 and workspace/history guards. Redis6-type native mutation regression remains green. Other JSON module versions, topology and full entry-point matrix remain unverified."
+        },
+        {
+          "kind": "partial-web-validation",
+          "path": "src/features/connectors/redis/redis-json-view.tsx",
+          "check": "2026-10-03: bundled Playwright/Chrome1440/760/390 (Browser plugin unavailable): real null/root-array/int64 fidelity, readonly/unlock; Unicode/raw/format/compact/copy/history/search/folding/wrap; malformed draft/discard/navigation guards, Ctrl+S/cancel/review/confirm exact TTL; JSON NX creation/return editor, native concurrent change and ACL rejection with recovery, module absence. Editor/search/copy and dialog actions visible; two intentional HTTP400, no other console/page errors. Source token formatting/Unicode bounded diff and capability/read validation have dedicated tests. X01/R07 remain in progress."
         }
       ],
       "scopeKind": "driver"

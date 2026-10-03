@@ -4,6 +4,7 @@ import { DatabaseInputError } from './input-error';
 import { redisBlob } from './redis-blob';
 import { redisMutation, REDIS_WRITE_BYTES } from './redis-mutation-input';
 import { REDIS_MUTATION_SCRIPT, REDIS_SNAPSHOT_SCRIPT } from './redis-mutation-script';
+import { isRedisJsonType } from './redis-json';
 
 const LIFETIME = 5 * 60 * 1000;
 type Snapshot = { key: Buffer; type: string; dump: Buffer; expiry: string; expiresAt: number; generation: number };
@@ -30,6 +31,7 @@ function commandsFor(mutation: RedisMutation): Command[] {
     case 'expiry': return mutation.mode === 'persist' ? [['PERSIST', key]] :
       [[mutation.mode === 'relative' ? 'PEXPIRE' : 'PEXPIREAT', key, mutation.milliseconds]];
     case 'string-set': return [['SET', key, bytes(mutation.value), 'KEEPTTL']];
+    case 'json-set': return [['JSON.SET', key, '$', mutation.json, 'XX']];
     case 'list-push': return [[mutation.side === 'left' ? 'LPUSH' : 'RPUSH', key, bytes(mutation.value)]];
     case 'list-set': return [['LSET', key, mutation.index, bytes(mutation.value)]];
     case 'list-remove': {
@@ -57,6 +59,7 @@ function commandsFor(mutation: RedisMutation): Command[] {
     case 'stream-remove': return [['XDEL', key, mutation.entryId]];
     case 'create':
       switch (mutation.type) {
+        case 'json': return [['JSON.SET', key, '$', mutation.json, 'NX']];
         case 'string': return [['SET', key, bytes(mutation.value), 'NX']];
         case 'list': return [['RPUSH', key, bytes(mutation.value)]];
         case 'set': return [['SADD', key, bytes(mutation.value)]];
@@ -124,7 +127,7 @@ export class RedisMutationManager {
       if (snapshot.type === 'none') throw new DatabaseInputError('Key 已不存在');
     }
     const type = requiredType(mutation);
-    if (type !== null && snapshot.type !== type) throw new DatabaseInputError('目标 Key 已存在或类型与变更不一致');
+    if (type !== null && (type === 'json' ? !isRedisJsonType(snapshot.type) : snapshot.type !== type)) throw new DatabaseInputError('目标 Key 已存在或类型与变更不一致');
     const commands = commandsFor(mutation);
     const id = crypto.randomUUID();
     const expiresAt = Math.min(snapshot.expiresAt, Date.now() + LIFETIME);
@@ -146,7 +149,8 @@ export class RedisMutationManager {
       notes: [
         '预览不会写入。确认时再次检查完整内容与绝对过期时间；发生变化则拒绝提交。',
         ...(mutation.kind === 'create' ? ['新 Key 初始为永久；创建后可单独设置过期时间。'] :
-          mutation.kind === 'expiry' || mutation.kind === 'hash-expiry' ? ['相对 TTL 从确认执行时起算；永久表示移除对应过期时间。'] : ['保留 Key 当前过期时间；删除最后一个集合成员时 Key 可能消失。']),
+          mutation.kind === 'expiry' || mutation.kind === 'hash-expiry' ? ['相对 TTL 从确认执行时起算；永久表示移除对应过期时间。'] :
+          mutation.kind === 'json-set' ? ['替换完整 JSON 文档，保留 Key 当前过期时间。'] : ['保留 Key 当前过期时间；删除最后一个集合成员时 Key 可能消失。']),
         ...(mutation.kind === 'hash-set' ? ['若 Redis 支持字段过期时间，则保留原字段期限；所需权限不足时拒绝提交。'] : []),
         ...(commands.length > 1 || mutation.kind === 'hash-set' ? ['多步操作先核对命令权限；执行错误会尝试恢复原始快照，恢复失败将要求核对结果。'] : []),
       ],

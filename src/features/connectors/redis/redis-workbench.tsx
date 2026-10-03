@@ -59,6 +59,7 @@ export function RedisWorkbench({
   const [intent, setIntent] = useState<RedisEditIntent | null>(null)
   const [databaseSelector, setDatabaseSelector] = useState(false)
   const [consoleBusy, setConsoleBusy] = useState(false)
+  const [jsonDirty, setJsonDirty] = useState(false)
   useEffect(() => {
     const controller = new AbortController()
     void backendFetch<RedisScanPage>(`${base}/scan`, {
@@ -132,6 +133,7 @@ export function RedisWorkbench({
     finally { setWriteBusy(false) }
   }
   function openMutation(mutation: RedisMutation) {
+    if (jsonDirty && mutation.kind !== 'json-set') { setWriteError('请先丢弃或保存 RedisJSON 草稿'); return }
     setWriteError("")
     setFeedback("")
     setIntent({ mutation, writeVersion: value?.writeVersion ?? null })
@@ -161,7 +163,7 @@ export function RedisWorkbench({
   return (
     <section className={styles.workbench} aria-label="Redis 工作台">
       <header className={styles.header}>
-        <button type="button" aria-label="返回数据库连接列表" disabled={writeBusy || consoleBusy} onClick={onBack}>
+        <button type="button" aria-label="返回数据库连接列表" disabled={writeBusy || consoleBusy || jsonDirty} onClick={onBack}>
           <ArrowLeft size={17} />
         </button>
         <Database size={17} />
@@ -169,11 +171,11 @@ export function RedisWorkbench({
         <span>
           Redis {session.version ?? ""}
         </span>
-        <button type="button" className={styles.databaseButton} disabled={writeBusy || consoleBusy || Boolean(intent)} onClick={() => setDatabaseSelector(true)}>DB {session.database} ▾</button>
-        <button type="button" className={styles.writeMode} disabled={writeBusy || Boolean(intent)} onClick={() => void toggleWriteMode()}>
+        <button type="button" className={styles.databaseButton} disabled={writeBusy || consoleBusy || Boolean(intent) || jsonDirty} onClick={() => setDatabaseSelector(true)}>DB {session.database} ▾</button>
+        <button type="button" className={styles.writeMode} disabled={writeBusy || Boolean(intent) || jsonDirty} onClick={() => void toggleWriteMode()}>
           {readOnly ? <Lock size={13} /> : <LockOpen size={13} />}{writeBusy ? "处理中…" : readOnly ? "解锁写入" : "重新锁定"}
         </button>
-        <button type="button" aria-label="刷新 Redis 数据" onClick={refresh} disabled={scanBusy || valueBusy || writeBusy || mode !== "keys"}>
+        <button type="button" aria-label="刷新 Redis 数据" onClick={refresh} disabled={scanBusy || valueBusy || writeBusy || jsonDirty || mode !== "keys"}>
           <ArrowsClockwise size={16} />
         </button>
       </header>
@@ -183,7 +185,7 @@ export function RedisWorkbench({
         <button
           type="button"
           aria-current={mode === "keys" ? "page" : undefined}
-          disabled={consoleBusy}
+          disabled={consoleBusy || jsonDirty}
           onClick={() => setMode("keys")}
         >
           <Key size={14} />
@@ -192,14 +194,15 @@ export function RedisWorkbench({
         <button
           type="button"
           aria-current={mode === "console" ? "page" : undefined}
+          disabled={jsonDirty}
           onClick={() => setMode("console")}
         >
           <TerminalWindow size={14} />
           命令台
         </button>
-        <button type="button" aria-current={mode === "dashboard" ? "page" : undefined} disabled={consoleBusy} onClick={() => setMode("dashboard")}><ChartLineUp size={14} />运行概览</button>
-        <button type="button" aria-current={mode === "slowlog" ? "page" : undefined} disabled={consoleBusy} onClick={() => setMode("slowlog")}><ClockCounterClockwise size={14} />慢日志</button>
-        <button type="button" aria-current={mode === "pubsub" ? "page" : undefined} disabled={consoleBusy} onClick={() => setMode("pubsub")}><Broadcast size={14} />Pub/Sub</button>
+        <button type="button" aria-current={mode === "dashboard" ? "page" : undefined} disabled={consoleBusy || jsonDirty} onClick={() => setMode("dashboard")}><ChartLineUp size={14} />运行概览</button>
+        <button type="button" aria-current={mode === "slowlog" ? "page" : undefined} disabled={consoleBusy || jsonDirty} onClick={() => setMode("slowlog")}><ClockCounterClockwise size={14} />慢日志</button>
+        <button type="button" aria-current={mode === "pubsub" ? "page" : undefined} disabled={consoleBusy || jsonDirty} onClick={() => setMode("pubsub")}><Broadcast size={14} />Pub/Sub</button>
       </nav>
       {mode === "pubsub" ? <RedisPubSubView base={base} readOnly={readOnly} onBusyChange={setWriteBusy} /> : mode === "dashboard" ? <RedisDashboard base={base} /> : mode === "slowlog" ? <RedisSlowlog base={base} /> : mode === "console" ? (
         <RedisConsole base={base} database={session.database} onBusyChange={setConsoleBusy} />
@@ -210,6 +213,7 @@ export function RedisWorkbench({
               className={styles.search}
               onSubmit={(event) => {
                 event.preventDefault()
+                if (jsonDirty) return
                 setApplied(pattern || "*")
                 requestScan()
                 setSelected(null)
@@ -226,13 +230,13 @@ export function RedisWorkbench({
                 onChange={(event) => setPattern(event.target.value)}
                 placeholder="前缀:*"
               />
-              <button type="submit" disabled={scanBusy || writeBusy}>
+              <button type="submit" disabled={scanBusy || writeBusy || jsonDirty}>
                 搜索
               </button>
             </form>
             <div className={styles.keyCount}>
               DB {session.database} · {scan?.totalKeys ?? "…"} 个 Key · 已加载 {keys.length}
-              {!readOnly && <button type="button" disabled={writeBusy} onClick={() => openMutation({ kind: "create", key: "", type: "string", value: "" })}><Plus size={12} />新建 Key</button>}
+              {!readOnly && <button type="button" disabled={writeBusy || jsonDirty} onClick={() => openMutation({ kind: "create", key: "", type: "string", value: "" })}><Plus size={12} />新建 Key</button>}
             </div>
             {scanError && (
               <div role="alert" className={styles.error}>
@@ -251,7 +255,7 @@ export function RedisWorkbench({
                   key={key.key.rawBase64}
                   type="button"
                   aria-pressed={selected === key.key.rawBase64}
-                  disabled={writeBusy}
+                  disabled={writeBusy || jsonDirty}
                   onClick={() => {
                     setSelected(key.key.rawBase64)
                     setValue(null)
@@ -309,6 +313,7 @@ export function RedisWorkbench({
             )}
             {value ? (
               <RedisValueViewer
+                onDraftChange={setJsonDirty}
                 base={base}
                 key={`${selected}:${valueRequest.cursor}`}
                 value={value}

@@ -68,6 +68,8 @@ export function redisRoutes(
   });
   app.get(base + '/:id/pubsub/:captureId/subscriptions', (c) => c.json({ ok: true,
     data: sessions.pubsubSubscriptions(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('captureId')!) }));
+  app.get(base + '/:id/json-capability', async (c) => c.json({ ok: true,
+    data: await sessions.jsonCapability(c.req.param('workspaceId')!, c.req.param('id')!) }));
   app.post(base + '/:id/pubsub/:captureId/subscriptions', async (c) => c.json({ ok: true,
     data: await sessions.pubsubChange(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('captureId')!, await c.req.json().catch(() => null)) }));
   app.post(base + '/:id/pubsub/publish', async (c) => c.json({ ok: true,

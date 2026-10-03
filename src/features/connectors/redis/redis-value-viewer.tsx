@@ -5,6 +5,8 @@ import { Copy, Check, PencilSimple, Trash, Plus, Clock, TextAa } from "@phosphor
 import type { RedisBlob, RedisMutation, RedisValuePage } from "@fouc/shared"
 import styles from "./redis.module.css"
 import { RedisStreamGroupsView } from "./redis-stream-groups"
+import { RedisJsonView } from './redis-json-view'
+import { formatJsonSource } from '@fouc/shared'
 
 export function redisTtl(ttl: number): string {
   return ttl === -2 ? "已过期" : ttl === -1 ? "永久" : `${ttl}s`
@@ -24,7 +26,8 @@ export function RedisValueViewer({
   readOnly,
   onMutation,
   onEditString,
-  base
+  base,
+  onDraftChange
 }: {
   value: RedisValuePage
   busy: boolean
@@ -33,6 +36,7 @@ export function RedisValueViewer({
   onMutation: (mutation: RedisMutation) => void
   onEditString: () => void
   base: string
+  onDraftChange: (dirty: boolean) => void
 }) {
   const [format, setFormat] = useState<"text" | "json" | "base64">("text")
   const [copied, setCopied] = useState(false)
@@ -94,7 +98,7 @@ export function RedisValueViewer({
   if (data.kind === "string" && format === "base64") content = data.content.rawBase64
   if (data.kind === "string" && format === "json") {
     try {
-      content = JSON.stringify(JSON.parse(data.content.display), null, 2)
+      content = formatJsonSource(data.content.display, 2)
     } catch {
       jsonError = "当前值不是有效 JSON，显示原始内容。"
     }
@@ -124,7 +128,7 @@ export function RedisValueViewer({
         <div className={styles.mutationToolbar}>
           <div>
             {data.kind === "string" ? <button type="button" disabled={busy || !value.writeVersion} onClick={onEditString}><PencilSimple size={14} />编辑值</button> :
-              data.kind !== "unsupported" && <button type="button" disabled={!editable} onClick={add}><Plus size={14} />添加项</button>}
+              data.kind !== "unsupported" && data.kind !== 'json' && <button type="button" disabled={!editable} onClick={add}><Plus size={14} />添加项</button>}
             <button type="button" disabled={!editable} onClick={() => onMutation({ kind: "expiry", key, mode: "persist" })}><Clock size={14} />过期时间</button>
             <button type="button" disabled={!editable} onClick={() => onMutation({ kind: "rename", key, destination: key })}><TextAa size={14} />重命名</button>
           </div>
@@ -141,7 +145,7 @@ export function RedisValueViewer({
         <div className={styles.empty}>Key 已过期或被删除，请刷新列表。</div>
       ) : data.kind === "unsupported" ? (
         <div className={styles.empty}>此 Redis 模块类型尚未开放值读取。</div>
-      ) : data.kind === "string" ? (
+      ) : data.kind === 'json' ? <RedisJsonView key={`${key}:${value.writeVersion ?? data.content}`} content={data.content} editable={editable} onDraftChange={onDraftChange} onPreview={(json) => onMutation({ kind: 'json-set', key, json })} /> : data.kind === "string" ? (
         <>
           <div className={styles.valueToolbar}>
             <div role="tablist" aria-label="值显示方式">

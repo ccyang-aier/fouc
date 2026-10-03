@@ -3,6 +3,7 @@ import type { RedisBlob } from './redis';
 /** All byte arguments use canonical Base64; indexes and stream IDs stay strings. */
 export type RedisMutation =
   | { kind: 'create'; key: string; type: 'string'; value: string }
+  | { kind: 'create'; key: string; type: 'json'; json: string }
   | { kind: 'create'; key: string; type: 'list' | 'set'; value: string }
   | { kind: 'create'; key: string; type: 'hash'; field: string; value: string }
   | { kind: 'create'; key: string; type: 'zset'; member: string; score: string }
@@ -12,6 +13,7 @@ export type RedisMutation =
   | { kind: 'expiry'; key: string; mode: 'persist' }
   | { kind: 'expiry'; key: string; mode: 'relative' | 'absolute'; milliseconds: string }
   | { kind: 'string-set'; key: string; value: string }
+  | { kind: 'json-set'; key: string; json: string }
   | { kind: 'list-push'; key: string; side: 'left' | 'right'; value: string }
   | { kind: 'list-set'; key: string; index: string; value: string }
   | { kind: 'list-remove'; key: string; index: string }

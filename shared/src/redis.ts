@@ -42,6 +42,7 @@ export interface RedisScanPage {
 }
 export type RedisValueData =
   | { kind: 'string'; content: RedisBlob; total: string; truncated: boolean }
+  | { kind: 'json'; content: string; byteLength: number }
   | { kind: 'list'; items: { index: string; value: RedisBlob }[]; total: string; nextCursor: string | null }
   | { kind: 'set'; items: RedisBlob[]; total: string; nextCursor: string | null }
   | {
@@ -94,3 +95,4 @@ export interface RedisHistoryEntry {
   outputTruncated: boolean;
 }
 export interface RedisHistoryPage { entries: RedisHistoryEntry[]; persistent: boolean; limit: number }
+export interface RedisJsonCapability { available: boolean | null; reason: string | null }

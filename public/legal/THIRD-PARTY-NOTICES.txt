@@ -64,6 +64,13 @@ retention and publication follow RedisPubSubPanel.vue, redis_ops.rs,
 redis_driver.rs and redis_pubsub_ws.rs. Fouc adapts them in redis-pubsub*.ts/tsx
 with acknowledged subscription state, byte-preserving RESP2 parsing, scoped
 NDJSON capture IDs and explicit publication review through the existing write grant.
+RedisJSON root document reads/sets and inline draft/review behavior follow
+redis_driver.rs, RedisValueViewer.vue and RedisJsonEditor.vue. The JSON token
+formatter, Unicode display decoder and bounded display-to-source edit mapping
+are adapted from apps/desktop/src/lib/common/safeJsonFormat.ts into
+shared/src/json-source.ts; unused Number-wrapper/stringify helpers are omitted.
+Fouc's React CodeMirror editor and existing single-use mutation plans preserve
+raw request numbers, byte keys, exact expiry and conflict/permission guards.
 
 redis-parser 3.0.0
 Copyright (c) 2015 NodeRedis; MIT License.

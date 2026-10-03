@@ -213,9 +213,9 @@
       {
         "area": "native-redis-and-specialized-surface",
         "status": "partial",
-        "files": 46,
-        "physical": 3872,
-        "effective": 3766
+        "files": 50,
+        "physical": 4611,
+        "effective": 4389
       },
       {
         "area": "shared-device-connection-management",
@@ -247,9 +247,9 @@
       }
     ],
     "runtime": {
-      "files": 89,
-      "physical": 10769,
-      "effective": 10451
+      "files": 93,
+      "physical": 11508,
+      "effective": 11074
     },
     "targetEffectiveRuntimeLines": 50000,
     "milestoneVerified": false

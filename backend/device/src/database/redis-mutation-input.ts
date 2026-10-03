@@ -1,6 +1,7 @@
 import type { RedisMutation } from '@fouc/shared';
 import { DatabaseInputError } from './input-error';
 import { redisKey } from './redis-input';
+import { redisJsonDraft } from './redis-json';
 
 export const REDIS_WRITE_BYTES = 1024 * 1024;
 const BASE64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
@@ -70,6 +71,7 @@ export function redisMutation(value: unknown): RedisMutation {
       break;
     }
     case 'string-set': result = { kind, key, value: blob(input.value) }; break;
+    case 'json-set': result = { kind, key, json: redisJsonDraft(input.json) }; break;
     case 'list-push':
       if (input.side !== 'left' && input.side !== 'right') throw new DatabaseInputError('List 插入方向无效');
       result = { kind, key, side: input.side, value: blob(input.value) }; break;
@@ -86,6 +88,7 @@ export function redisMutation(value: unknown): RedisMutation {
     case 'stream-remove': result = { kind, key, entryId: redisStreamId(input.entryId) }; break;
     case 'create':
       switch (input.type) {
+        case 'json': result = { kind, key, type: 'json', json: redisJsonDraft(input.json) }; break;
         case 'string': case 'list': case 'set': result = { kind, key, type: input.type, value: blob(input.value) }; break;
         case 'hash': result = { kind, key, type: 'hash', field: blob(input.field), value: blob(input.value) }; break;
         case 'zset': result = { kind, key, type: 'zset', member: blob(input.member), score: score(input.score) }; break;

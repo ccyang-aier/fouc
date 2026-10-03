@@ -82,7 +82,9 @@
         "apps/desktop/src/components/redis/",
         "apps/desktop/src/lib/redis/redisMonitor.ts",
         "crates/dbx-core/src/query/redis_ops.rs",
-        "crates/dbx-web/src/routes/redis_pubsub_ws.rs"
+        "crates/dbx-web/src/routes/redis_pubsub_ws.rs",
+        "apps/desktop/src/components/redis/RedisJsonEditor.vue",
+        "apps/desktop/src/lib/common/safeJsonFormat.ts"
       ],
       "runtimeFiles": [
         "shared/src/redis.ts",
@@ -130,7 +132,11 @@
         "src/features/connectors/redis/use-redis-pubsub.ts",
         "src/features/connectors/redis/redis-pubsub.tsx",
         "src/features/connectors/redis/redis-pubsub-publish.tsx",
-        "src/features/connectors/redis/redis-pubsub-messages.tsx"
+        "src/features/connectors/redis/redis-pubsub-messages.tsx",
+        "shared/src/json-source.ts",
+        "backend/device/src/database/redis-json.ts",
+        "src/features/connectors/redis/redis-json-editor.tsx",
+        "src/features/connectors/redis/redis-json-view.tsx"
       ]
     },
     {
@@ -197,7 +203,7 @@
     }
   ],
   "knownRemainingScope": [
-    "Redis large/batch mutations and full version/permission matrix, broader console execution/completion and history/search, RedisJSON, Sentinel/Cluster including node metrics/slowlog, PubSub, large-keyspace virtualization and result stores",
+    "Redis large/batch mutations and full version/permission matrix, broader console execution/completion and history/search, RedisJSON module/version matrix, Sentinel/Cluster including node metrics/slowlog, large-keyspace virtualization and result stores",
     "common driver lifecycle, cancellation, reconnect and streaming",
     "cross-entry-point write grants, scope restrictions and shared policy integration",
     "full grid selection/copy/paste/undo, keyless guards, complex types, structure editing, cancellation and distributed transactions",

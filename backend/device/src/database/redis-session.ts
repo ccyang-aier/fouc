@@ -21,6 +21,7 @@ import { redisStreamGroups, redisStreamConsumers, redisStreamPending } from './r
 import { RedisMonitor } from './redis-monitor';
 import { RedisPubSub, redisPubSubBytes } from './redis-pubsub';
 import { redisUnsigned } from './redis-protocol';
+import { isRedisJsonType, redisJsonCapability, redisJsonValue } from './redis-json';
 export { redisBlob } from './redis-blob';
 
 const PAGE_SIZE = 100;
@@ -114,6 +115,7 @@ export class RedisSessionManager {
   information(workspaceId: string, id: string) {
     return redisInformation(this.entry(workspaceId, id).client);
   }
+  jsonCapability(workspaceId: string, id: string) { return redisJsonCapability(this.entry(workspaceId, id).client); }
   slowlog(workspaceId: string, id: string, count: unknown) {
     return redisSlowlog(this.entry(workspaceId, id).client, count);
   }
@@ -353,7 +355,8 @@ export class RedisSessionManager {
             .map((bytes, index) => ({ field: redisBlob(bytes), value: redisBlob(fields[index * 2 + 1]!) })),
         })),
       };
-    } else data = { kind: type === 'none' ? 'none' : 'unsupported' };
+    } else if (isRedisJsonType(type)) data = await redisJsonValue(client, key);
+    else data = { kind: type === 'none' ? 'none' : 'unsupported' };
     if (before) {
       try {
         const after = await mutations.snapshot(key);

@@ -2,12 +2,14 @@
 
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { X, ArrowLeft, FileCode, Plus, Trash } from '@phosphor-icons/react'
-import type { RedisMutation, RedisMutationPreview, RedisMutationResult } from '@fouc/shared'
+import { formatJsonSource, type RedisJsonCapability, type RedisMutation, type RedisMutationPreview, type RedisMutationResult } from '@fouc/shared'
 import { backendFetch } from '@/lib/backend'
 import { RedisByteField } from './redis-byte-field'
 import { bytesToDraft, draftToBytes, redisMutationTitle, type RedisByteDraft, type RedisEditIntent } from './redis-mutation-model'
 import common from '../datastore/relational.module.css'
 import styles from './redis-editing.module.css'
+import jsonStyles from './redis-json.module.css'
+import { RedisJsonEditor } from './redis-json-editor'
 
 type NewType = Extract<RedisMutation, { kind: 'create' }>['type']
 type DraftFields = { field: RedisByteDraft; value: RedisByteDraft }[]
@@ -33,17 +35,39 @@ export function RedisMutationDialog({ base, intent, onClose, onSaved }: {
   const [seconds, setSeconds] = useState('3600')
   const [date, setDate] = useState('')
   const [preview, setPreview] = useState<RedisMutationPreview | null>(null)
-  const [busy, setBusy] = useState(false)
+  const [busy, setBusy] = useState(initial.kind === 'json-set')
   const [error, setError] = useState('')
+  const [json, setJson] = useState('json' in initial ? initial.json : '{}')
+  const [jsonCapability, setJsonCapability] = useState<RedisJsonCapability | null>(null)
   useEffect(() => { dialog.current?.showModal() }, [])
   const kind = initial.kind
   const type = kind === 'create' ? newType : kind.split('-')[0]
+  const checkingJson = kind === 'create' && newType === 'json' && jsonCapability === null
+  useEffect(() => {
+    if (kind !== 'create' || newType !== 'json') return
+    const controller = new AbortController()
+    void backendFetch<RedisJsonCapability>(`${base}/json-capability`, { signal: controller.signal })
+      .then((capability) => { if (!controller.signal.aborted) setJsonCapability(capability) })
+      .catch((reason) => { if (!controller.signal.aborted) setJsonCapability({ available: null, reason: reason.message }) })
+    return () => controller.abort()
+  }, [base, kind, newType])
+  useEffect(() => {
+    if (initial.kind !== 'json-set') return
+    const controller = new AbortController()
+    void backendFetch<RedisMutationPreview>(`${base}/mutations/preview`, { method: 'POST', signal: controller.signal,
+      body: JSON.stringify({ mutation: initial, writeVersion: intent.writeVersion }) })
+      .then((result) => { if (!controller.signal.aborted) setPreview(result) })
+      .catch((reason) => { if (!controller.signal.aborted) setError(reason.message) })
+      .finally(() => { if (!controller.signal.aborted) setBusy(false) })
+    return () => controller.abort()
+  }, [base, initial, intent.writeVersion])
   const removing = kind === 'delete' || kind.endsWith('-remove')
   const rawFields = () => fields.map((item) => ({ field: draftToBytes(item.field), value: draftToBytes(item.value) }))
   function mutation(): RedisMutation {
     if (kind === 'create') {
       const rawKey = draftToBytes(key)
       switch (newType) {
+        case 'json': return { kind, key: rawKey, type: 'json', json: formatJsonSource(json) }
         case 'string': case 'list': return { kind, key: rawKey, type: newType, value: draftToBytes(value) }
         case 'set': return { kind, key: rawKey, type: 'set', value: draftToBytes(member) }
         case 'hash': return { kind, key: rawKey, type: 'hash', field: draftToBytes(field), value: draftToBytes(value) }
@@ -67,6 +91,7 @@ export function RedisMutationDialog({ base, intent, onClose, onSaved }: {
         return { ...target, mode: 'relative', milliseconds: (BigInt(seconds) * 1000n).toString() }
       }
       case 'string-set': return { kind, key: rawKey, value: draftToBytes(value) }
+      case 'json-set': return { kind, key: rawKey, json: formatJsonSource(json) }
       case 'list-push': return { kind, key: rawKey, side, value: draftToBytes(value) }
       case 'list-set': return { kind, key: rawKey, index: initial.index, value: draftToBytes(value) }
       case 'set-add': return { kind, key: rawKey, member: draftToBytes(member) }
@@ -79,6 +104,7 @@ export function RedisMutationDialog({ base, intent, onClose, onSaved }: {
   }
   async function submit(event: FormEvent) {
     event.preventDefault()
+    if (busy || (type === 'json' && (checkingJson || jsonCapability?.available === false))) return
     setError('')
     setBusy(true)
     try {
@@ -123,12 +149,18 @@ export function RedisMutationDialog({ base, intent, onClose, onSaved }: {
         </> : <>
           {kind === 'create' ? <>
             <RedisByteField label="Key" value={key} onChange={setKey} />
-            <label className={styles.field}>数据类型<select aria-label="新 Key 类型" value={newType} onChange={(event) => setNewType(event.target.value as NewType)}>
-              {(['string', 'list', 'set', 'hash', 'zset', 'stream'] as const).map((item) => <option key={item} value={item}>{item.toUpperCase()}</option>)}
+            <label className={styles.field}>数据类型<select aria-label="新 Key 类型" value={newType} onChange={(event) => { setNewType(event.target.value as NewType); setJsonCapability(null) }}>
+              {(['string', 'list', 'set', 'hash', 'zset', 'stream', 'json'] as const).map((item) => <option key={item} value={item}>{item.toUpperCase()}</option>)}
             </select></label>
           </> : <div className={styles.summary}><strong>{bytesToDraft(initial.key).text || '（空 Key）'}</strong>
             <span>{'index' in initial ? `List 索引 ${initial.index}` : 'entryId' in initial && removing ? `消息 ${initial.entryId}` : '保留原始 Key 字节'}</span></div>}
           {removing ? <p className={styles.danger}>确认后删除{kind === 'delete' ? '整个 Key 及其全部内容' : '所选项'}。请核对下一步的精确参数。</p> : <>
+            {type === 'json' && <>
+              {checkingJson && <p role="status" className={styles.hint}>正在确认 RedisJSON 命令…</p>}
+              {jsonCapability?.reason && <p role="status" className={styles.hint}>{jsonCapability.reason}</p>}
+              <div className={jsonStyles.creation}><RedisJsonEditor value={json} onChange={setJson} readOnly={busy} wrap onSave={() => { if (!busy && !checkingJson && jsonCapability?.available !== false) dialog.current?.querySelector('form')?.requestSubmit() }} label="RedisJSON 新建或修改文档" /></div>
+              <p className={styles.hint}>完整 JSON 文档最多 1 MiB；原始数值不经过 JavaScript Number 转换。</p>
+            </>}
             {kind === 'rename' && <RedisByteField label="新 Key" value={destination} onChange={setDestination} />}
             {(kind === 'expiry' || kind === 'hash-expiry') && <>
               {kind === 'hash-expiry' && <div className={styles.summary}><strong>{bytesToDraft(initial.field).text || '（空字段）'}</strong><span>只修改所选字段的期限；保留 Key TTL</span></div>}
@@ -157,7 +189,7 @@ export function RedisMutationDialog({ base, intent, onClose, onSaved }: {
               <button className={styles.addField} type="button" disabled={fields.length >= 100} onClick={() => setFields((current) => [...current, { field: empty(), value: empty() }])}><Plus size={14} />添加字段</button>
             </>}
           </>}
-          <p className={styles.hint}>编辑文本使用 UTF-8；二进制使用 Base64。当前单 Key 编辑上限为 1 MiB，List 索引上限为 9999。</p>
+          {type !== 'json' && <p className={styles.hint}>编辑文本使用 UTF-8；二进制使用 Base64。当前单 Key 编辑上限为 1 MiB，List 索引上限为 9999。</p>}
         </>}
         {error && <p role="alert" className={common.error}>{error}</p>}
         {busy && <p role="status" className={styles.hint}>{preview ? '正在执行，请等待明确结果…' : '正在检查 Key 并生成预览…'}</p>}
@@ -166,7 +198,7 @@ export function RedisMutationDialog({ base, intent, onClose, onSaved }: {
         <button type="button" className={common.secondary} disabled={busy} onClick={() => { if (preview) { setPreview(null); setError('') } else onClose() }}>
           {preview ? <><ArrowLeft size={13} /> 返回编辑</> : '取消'}
         </button><span />
-        <button type="submit" className={common.primary} disabled={busy || Boolean(preview && error)}>{busy ? '处理中…' : preview ? '确认执行' : '预览变更'}</button>
+        <button type="submit" className={common.primary} disabled={busy || Boolean(preview && error) || (!preview && type === 'json' && (checkingJson || jsonCapability?.available === false))}>{busy ? '处理中…' : preview ? '确认执行' : '预览变更'}</button>
       </footer>
     </form>
   </dialog>

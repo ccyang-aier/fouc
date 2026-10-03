@@ -73,6 +73,7 @@ const SQL_GROUPS = new Set([
 type ScanResult = { code: string; executableComment: boolean; quotedCall: boolean; closed: boolean };
 
 import { DatabaseInputError } from './input-error';
+import { maskSqlReadDeclarations } from './sql-read-structure';
 
 function reject(message: string): never {
   throw new DatabaseInputError(message);
@@ -148,7 +149,7 @@ function scan(sql: string): ScanResult {
 
 export function assertMysqlReadOnlySql(sql: string): string {
   if (typeof sql !== 'string' || !sql.trim() || sql.length > 1_000_000) reject('SQL 不能为空且不得超过 1 MB');
-  const { code, executableComment, quotedCall, closed } = scan(sql);
+  const { code, executableComment, quotedCall, closed } = scan(maskSqlReadDeclarations(sql, 'mysql'));
   if (!closed || executableComment || quotedCall) reject('SQL 包含未闭合文本或无法验证的可执行语法');
   const semicolon = code.indexOf(';');
   if (semicolon >= 0 && (code.slice(semicolon + 1).trim() || code.slice(0, semicolon).includes(';'))) {

@@ -2,7 +2,8 @@ import { expect, test } from 'bun:test'
 import { EditorState } from '@codemirror/state'
 import { CompletionContext } from '@codemirror/autocomplete'
 import type { DatabaseColumnInfo, DatabaseObjectInfo } from '@fouc/shared'
-import { sqlCompletionPosition, sqlTokens } from './sql-completion-context'
+import { sqlCompletionPosition } from './sql-completion-context'
+import { tokenizeSqlSemantic } from '@fouc/shared'
 import { quoteCompletionIdentifier, SqlMetadataCompletion, sqlKeywordCompletion } from './sql-metadata-completion'
 
 function context(source: string) { const pos = source.indexOf('|'); return new CompletionContext(EditorState.create({ doc: source.replace('|', '') }), pos, true) }
@@ -67,8 +68,8 @@ test('strings/comments are suppressed with dialect-specific escapes and Unicode 
   const { model, calls } = fixture()
   for (const source of ["SELECT 'na|me' FROM items", 'SELECT $tag$ na|me $tag$', 'SELECT 1 /* nested /* na|me */ comment */', 'SELECT 1 -- na|me']) expect(await model.complete(context(source), target)).toBeNull()
   expect(calls).toHaveLength(0)
-  expect(sqlTokens("SELECT 'C:\\' AS name FROM items", 'postgres').filter((token) => token.kind === 'string')).toHaveLength(1)
-  expect(sqlTokens("SELECT 'a\\'b' FROM items", 'mysql').find((token) => token.kind === 'string')?.text).toBe("'a\\'b'")
+  expect(tokenizeSqlSemantic("SELECT 'C:\\' AS name FROM items", 'postgres').filter((token) => token.kind === 'string')).toHaveLength(1)
+  expect(tokenizeSqlSemantic("SELECT 'a\\'b' FROM items", 'mysql').find((token) => token.kind === 'string')?.text).toBe("'a\\'b'")
   const unicode = 'SELECT 科研数据.字段 FROM 科研数据'
   const parsed = sqlCompletionPosition(unicode, unicode.indexOf('字段') + 1, 'sqlite')!
   expect(parsed.qualifier).toEqual(['科研数据']); expect(parsed.prefix).toBe('字')

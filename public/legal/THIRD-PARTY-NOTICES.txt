@@ -33,6 +33,12 @@ SQL metadata completion adapts QueryEditor.vue's lazy metadata and request epoch
 lib/sql/sqlCompletionLookupTarget.ts and lib/sql/semantic/tokens.ts for native
 MySQL/PostgreSQL/SQLite scopes. Fouc owns the React controller, native column
 endpoint and CodeMirror completion source; metadata remains device/session scoped.
+Native SQL token spans, query-block sources, CTE/derived projection lineage and
+incremental statement lookup adapt semantic/{model,types,dialect,tokens,completion},
+cteNavigation.ts and sqlSyntaxTreeWindow.ts. Fouc shares its pure lexer contract
+between React completion and Bun read preflight; unsupported driver paths are
+omitted. The CTE/derived declaration guards follow sql_risk.rs structural proof
+behavior while retaining the existing native function/write restrictions.
 SQL history storage, stable time/ID pagination, literal search and connection-qualified
 database filtering follow crates/dbx-core/src/persistence/{history,storage}.rs
 and apps/desktop/src/stores/historyStore.ts. Saved SQL folders, lazy document

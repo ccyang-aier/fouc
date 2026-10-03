@@ -264,6 +264,30 @@
         "src/features/connectors/datastore/sql-metadata-completion.ts",
         "src/features/connectors/datastore/use-sql-metadata.ts"
       ]
+    },
+    {
+      "area": "native-relational-sql-semantic-projections",
+      "status": "partial",
+      "sourceReferences": [
+        "apps/desktop/src/lib/sql/semantic/types.ts",
+        "apps/desktop/src/lib/sql/semantic/dialect.ts",
+        "apps/desktop/src/lib/sql/semantic/tokens.ts",
+        "apps/desktop/src/lib/sql/semantic/model.ts",
+        "apps/desktop/src/lib/sql/semantic/completion.ts",
+        "apps/desktop/src/lib/sql/cteNavigation.ts",
+        "apps/desktop/src/lib/sql/sqlSyntaxTreeWindow.ts",
+        "crates/dbx-sql/src/sql_risk.rs"
+      ],
+      "runtimeFiles": [
+        "shared/src/sql-semantic-tokens.ts",
+        "backend/device/src/database/sql-read-structure.ts",
+        "src/features/connectors/datastore/sql-semantic/types.ts",
+        "src/features/connectors/datastore/sql-semantic/dialect.ts",
+        "src/features/connectors/datastore/sql-semantic/model.ts",
+        "src/features/connectors/datastore/sql-semantic/sources.ts",
+        "src/features/connectors/datastore/sql-semantic/source-columns.ts",
+        "src/features/connectors/datastore/sql-semantic/statement-window.ts"
+      ]
     }
   ],
   "knownRemainingScope": [

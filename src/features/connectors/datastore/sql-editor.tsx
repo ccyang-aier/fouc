@@ -12,7 +12,8 @@ import type { CompletionSource } from '@codemirror/autocomplete'
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands"
 import { MySQL, PostgreSQL, SQLite, sql } from "@codemirror/lang-sql"
 import { sqlKeywordCompletion } from './sql-metadata-completion'
-import { EditorState } from "@codemirror/state"
+import { Compartment, EditorState, StateEffect } from "@codemirror/state"
+import { getOverlayRoot } from '@/lib/overlay-root'
 import type { SqlEditorPosition } from '@fouc/shared'
 import {
   bracketMatching,
@@ -30,7 +31,8 @@ import {
   highlightActiveLineGutter,
   highlightSpecialChars,
   keymap,
-  lineNumbers
+  lineNumbers,
+  tooltips
 } from "@codemirror/view"
 import { tags } from '@lezer/highlight'
 
@@ -42,6 +44,8 @@ const sqlHighlight = HighlightStyle.define([
   { tag: [tags.typeName, tags.className], color: 'var(--accent-ink)' },
   { tag: [tags.operator, tags.punctuation], color: 'var(--ink-soft)' }
 ])
+
+const tooltipParent = new Compartment()
 
 type SqlEditorHandlers = { onChange: (value: string) => void; onRun: () => void; onSave?: () => void; onPositionChange?: (id: string, position: SqlEditorPosition) => void; complete?: CompletionSource }
 class SqlEditorCallbacks {
@@ -110,6 +114,7 @@ export function SqlEditor({
       ...(cached ? { state: cached.state } : { doc: initialValue.current,
       selection: { anchor: Math.min(initialValue.current.length, initialPosition.current?.anchor ?? 0), head: Math.min(initialValue.current.length, initialPosition.current?.head ?? 0) },
       extensions: [
+        tooltipParent.of(tooltips({ parent: getOverlayRoot() ?? document.body })),
         EditorState.readOnly.of(readOnly),
         EditorView.editable.of(!readOnly),
         lineNumbers(),
@@ -126,7 +131,7 @@ export function SqlEditor({
         sql({
           dialect: provider === "postgres" ? PostgreSQL : provider === "sqlite" ? SQLite : MySQL
         }),
-        ...(readOnly ? [] : [autocompletion({ override: [sqlKeywordCompletion(provider), (context) => callbacks.get().complete?.(context) ?? null] })]),
+        ...(readOnly ? [] : [autocompletion({ tooltipClass: () => 'fouc-sql-completion', override: [sqlKeywordCompletion(provider), (context) => callbacks.get().complete?.(context) ?? null] })]),
         highlightSelectionMatches(),
         EditorView.lineWrapping,
         EditorView.contentAttributes.of({
@@ -157,6 +162,11 @@ export function SqlEditor({
         })
       ] })
     })
+    // Rebind restored states to the current overlay host, including pre-refresh editor caches.
+    if (cached) {
+      const overlay = tooltips({ parent: getOverlayRoot() ?? document.body })
+      view.dispatch({ effects: tooltipParent.get(view.state) ? tooltipParent.reconfigure(overlay) : StateEffect.appendConfig.of(tooltipParent.of(overlay)) })
+    }
     function reportPosition(current: EditorView) {
       if (restoringViewport) return
       const { anchor, head } = current.state.selection.main

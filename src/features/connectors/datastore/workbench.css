@@ -1678,13 +1678,14 @@ html[data-theme="dark"] .mw {
 .mw-live-code-editor .cm-cursor {
   border-left-color: var(--ink);
 }
-.mw-live-code-editor .cm-tooltip-autocomplete { border: 1px solid var(--line-strong); border-radius: 6px; background: var(--panel); color: var(--ink); box-shadow: var(--side-panel-shadow); font: 13px/1.5 var(--font-sans); overflow: hidden; max-width: min(560px, calc(100vw - 24px)); }
-.mw-live-code-editor .cm-tooltip-autocomplete > ul > li { padding: 5px 10px; display: flex; align-items: center; gap: 8px; }
-.mw-live-code-editor .cm-tooltip-autocomplete > ul > li[aria-selected] { color: var(--accent-ink); background: var(--accent-soft); }
-.mw-live-code-editor .cm-completionLabel { font: 13px/1.5 var(--font-code); }
-.mw-live-code-editor .cm-completionDetail { margin-left: auto; font-size: 11px; font-style: normal; color: var(--muted-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mw-live-code-editor .cm-completionIcon-property { color: var(--ok-ink); }
-.mw-live-code-editor .cm-completionInfo { padding: 10px 12px; border: 1px solid var(--line); border-radius: 5px; font: 12px/1.6 var(--font-sans); color: var(--ink); background: var(--panel); max-width: min(320px, calc(100vw - 24px)); white-space: pre-wrap; overflow-wrap: anywhere; }
+.fouc-sql-completion.cm-tooltip-autocomplete { z-index: 100; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--panel); color: var(--ink); box-shadow: var(--side-panel-shadow); font: 13px/1.5 var(--font-sans); max-width: min(560px, calc(100vw - 24px)); }
+.fouc-sql-completion.cm-tooltip-autocomplete > ul { border-radius: 5px; }
+.fouc-sql-completion.cm-tooltip-autocomplete > ul > li { padding: 5px 10px; display: flex; align-items: center; gap: 8px; }
+.fouc-sql-completion.cm-tooltip-autocomplete > ul > li[aria-selected] { color: var(--accent-ink); background: var(--accent-soft); }
+.fouc-sql-completion .cm-completionLabel { font: 13px/1.5 var(--font-code); }
+.fouc-sql-completion .cm-completionDetail { margin-left: auto; font-size: 11px; font-style: normal; color: var(--muted-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fouc-sql-completion .cm-completionIcon-property { color: var(--ok-ink); }
+.fouc-sql-completion .cm-completionInfo { padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 6px; box-shadow: var(--side-panel-shadow); font: 12px/1.6 var(--font-sans); color: var(--ink); background: var(--panel); max-width: min(320px, calc(100vw - 24px)); white-space: pre-wrap; overflow-wrap: anywhere; }
 .mw-live-result-title {
   display: flex;
   align-items: center;

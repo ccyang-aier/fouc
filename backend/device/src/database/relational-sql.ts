@@ -1,4 +1,5 @@
 import { DatabaseInputError } from './input-error';
+import { maskSqlReadDeclarations } from './sql-read-structure';
 /** DBX query_execution_sql: one statement, with server-enforced read isolation. */
 // DBX sql_risk.rs POSTGRES_PROOF_SAFE_FUNCTIONS. User functions, sequence
 // mutators, advisory locks, notifications and large-object I/O need separate
@@ -16,9 +17,10 @@ const POSTGRES_PURE_FUNCTIONS = new Set(
 const SQL_GROUPS = new Set(
   'as cast exists filter from in not on over partition select values when where with'.split(' '),
 );
-export function assertRelationalReadSql(sql: unknown, provider: 'postgres' | 'sqlite' = 'postgres'): string {
-  if (typeof sql !== 'string' || !sql.trim() || sql.length > 1_000_000)
+export function assertRelationalReadSql(input: unknown, provider: 'postgres' | 'sqlite' = 'postgres'): string {
+  if (typeof input !== 'string' || !input.trim() || input.length > 1_000_000)
     throw new DatabaseInputError('SQL 不能为空且不得超过 1 MB');
+  const sql = maskSqlReadDeclarations(input, provider);
   let code = '';
   let i = 0;
   while (i < sql.length) {
@@ -110,7 +112,7 @@ export function assertRelationalReadSql(sql: unknown, provider: 'postgres' | 'sq
   const separator = code.indexOf(';');
   if (separator >= 0 && code.slice(separator + 1).trim())
     throw new DatabaseInputError('每次只能执行一条 SQL');
-  return sql.trim().replace(/;\s*$/, '');
+  return input.trim().replace(/;\s*$/, '');
 }
 
 export function quoteRelationalIdentifier(value: string): string {

@@ -43,7 +43,7 @@ export function tokenizeSqlSemantic(text: string, provider: RelationalProvider =
     const char = String.fromCodePoint(text.codePointAt(position)!);
     const next = text[position + 1];
     if (/\s/u.test(char)) { position += char.length; continue; }
-    if ((char === '-' && next === '-' && (provider !== 'mysql' || position + 2 === text.length || /\s/.test(text[position + 2]))) || (provider === 'mysql' && char === '#')) {
+    if ((char === '-' && next === '-' && (provider !== 'mysql' || position + 2 === text.length || /\s/.test(text[position + 2]))) || (provider === 'mysql' && char === '#' && next !== '{')) {
       while (position < text.length && !/[\r\n]/.test(text[position])) position++;
       push('comment', from); continue;
     }

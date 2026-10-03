@@ -71,6 +71,7 @@ export async function connectPostgres(
         signal?.throwIfAborted();
         await client.query('BEGIN READ ONLY');
         await client.query("SET LOCAL statement_timeout = '30s'");
+        await client.query('SET LOCAL standard_conforming_strings = on');
         if (schema)
           await client.query("SELECT set_config('search_path', $1, true)", [quote(schema)]);
         signal?.throwIfAborted();

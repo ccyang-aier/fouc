@@ -4,10 +4,11 @@ import type { CompletionContext } from '@codemirror/autocomplete'
 import { closeCompletion, startCompletion } from '@codemirror/autocomplete'
 import type { EditorView } from '@codemirror/view'
 import { Play, Stop, ClockCounterClockwise, FolderOpen, FloppyDisk, FilePlus, CheckCircle, CircleNotch, Database, Lock, WarningCircle, X, ArrowsClockwise } from '@phosphor-icons/react'
-import { resolveSqlExecutionTarget, type SqlExecutionMode, type RelationalSession, type SavedSqlDocument, type SavedSqlLibrary, type SqlDraftState, type SqlDraftTab, type SqlHistoryEntry } from '@fouc/shared'
+import { inspectSqlTemplate, resolveSqlExecutionTarget, type SqlExecutionMode, type SqlStatementRange, type SqlParameterDescriptor, type RelationalSession, type SavedSqlDocument, type SavedSqlLibrary, type SqlDraftState, type SqlDraftTab, type SqlHistoryEntry } from '@fouc/shared'
 import { SqlEditor, type SqlEditorCache } from './sql-editor'
 import { SqlExecutionResults } from './sql-execution-results'
 import { useSqlExecutions } from './use-sql-executions'
+import { SqlParameterDialog, rememberSqlParameters, type SqlParameterRecents } from './sql-parameter-dialog'
 import { SqlEditorSplit } from './sql-editor-split'
 import { SqlHistoryPanel } from './sql-history-panel'
 import { SqlLibraryPanel } from './sql-library-panel'
@@ -38,6 +39,8 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
   const [panel, setPanel] = useState<'history' | 'library' | null>(null), [revision, setRevision] = useState(0)
   const { executions, locks, run: execute, cancel, forget, selectResult } = useSqlExecutions(base, () => setRevision((value) => value + 1))
   const [executionMode, setExecutionMode] = useState<SqlExecutionMode>('current')
+  const [parameterRequest, setParameterRequest] = useState<{ tabId: string; title: string; target: SqlStatementRange; schema: string | null; declarationSql: string; descriptors: SqlParameterDescriptor[] } | null>(null)
+  const parameterHistories = useRef(new Map<string, SqlParameterRecents>())
   const [saving, setSaving] = useState<Saving | null>(null), [restore, setRestore] = useState<{ target: Restore; tabId: string | null } | null>(null), [notice, setNotice] = useState('')
   const [closing, setClosing] = useState<SqlDraftTab[] | null>(null), [closed, setClosed] = useState<SqlDraftTab[]>([])
   const [renaming, setRenaming] = useState<SqlDraftTab | null>(null), [title, setTitle] = useState('')
@@ -120,10 +123,21 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
     const issue = targetIssue(current)
     if (issue) { setNotice(issue); return }
     const view = editor.current, selection = view?.state.selection.main ?? { from: 0, to: 0, head: 0 }
-    const target = resolveSqlExecutionTarget(view?.state.doc.toString() ?? current.sql, session.provider, mode, selection)
+    const document = view?.state.doc.toString() ?? current.sql
+    const target = resolveSqlExecutionTarget(document, session.provider, mode, selection)
     if (!target) { setNotice(mode === 'current' ? '光标所在位置没有可执行语句，请移到 SQL 内或选择全部语句。' : '没有可执行的 SQL。'); return }
+    const declarationSql = document.slice(0, target.to)
+    let inspected
+    try { inspected = inspectSqlTemplate(target.sql, session.provider, declarationSql) }
+    catch (reason) { setNotice(reason instanceof Error ? reason.message : String(reason)); return }
+    const targetSchema = session.provider === 'mysql' ? current.database : current.schema ?? (schema || null)
+    if (!inspected.source.sql.trim()) { setNotice('当前只有变量定义；请将光标移到查询语句或选择全部语句。'); return }
+    if (inspected.descriptors.length > 128) { setNotice('每次参数输入最多支持 128 个参数，请分段执行。'); return }
     setNotice('')
-    await execute(current.id, target, session.provider === 'mysql' ? current.database : current.schema ?? (schema || null))
+    if (inspected.descriptors.length) {
+      if (!parameterHistories.current.has(current.id)) parameterHistories.current.set(current.id, new Map())
+      setParameterRequest({ tabId: current.id, title: current.title, target, schema: targetSchema, declarationSql, descriptors: inspected.descriptors })
+    } else await execute(current.id, target, targetSchema, { declarationSql })
   }
   function finishClose(tabs: SqlDraftTab[]) {
     const ids = tabs.map((tab) => tab.id)
@@ -135,6 +149,7 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
     })
     controller.update((snapshot) => closeSqlTabs(snapshot, ids)); setClosing(null)
     forget(ids)
+    for (const id of ids) parameterHistories.current.delete(id)
   }
   function action(action: SqlTabAction, tab: SqlDraftTab | null) {
     const snapshot = controller.getSnapshot()
@@ -174,6 +189,12 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
   const displayDatabase = current && session.provider === 'sqlite' ? current.database.replace(/^.*[\\/]/, '') : current?.database
   const draftStatus = <span className={tabsStyle.status} data-state={state.status} role="status">{state.status === 'error' ? <WarningCircle size={12} /> : !state.ready || state.status === 'saving' || state.pending ? <CircleNotch size={12} className="mw-spin" /> : <CheckCircle size={12} />}{!libraryBase ? '临时连接 · 草稿保留至离开' : state.status === 'error' ? state.ready ? '草稿保存失败 · 本地内容已保留' : '草稿读取失败 · 点击重试' : !state.ready ? '正在恢复设备草稿…' : state.status === 'saving' ? '正在保存草稿…' : state.pending ? '草稿待保存' : '草稿已保存到设备'}</span>
   return <div className={styles.workspace}>
+    {parameterRequest && <SqlParameterDialog key={parameterRequest.tabId} sql={parameterRequest.target.sql} declarationSql={parameterRequest.declarationSql} provider={session.provider} descriptors={parameterRequest.descriptors} history={parameterHistories.current.get(parameterRequest.tabId)!} targetLabel={parameterRequest.title}
+      onClose={() => { setParameterRequest(null); editor.current?.focus() }} onExecute={(parameters) => {
+        rememberSqlParameters(parameterHistories.current.get(parameterRequest.tabId)!, parameters)
+        setParameterRequest(null)
+        void execute(parameterRequest.tabId, parameterRequest.target, parameterRequest.schema, { parameters, declarationSql: parameterRequest.declarationSql })
+      }} />}
     <div className={`${styles.query} mw-sql-workspace mw-live-sql`}>
       {state.ready && <SqlTabStrip snapshot={state} scope={libraryBase ?? base} busyIds={busyIds} canBack={Boolean(navigateSqlTabs(visits, -1, state))} canForward={Boolean(navigateSqlTabs(visits, 1, state))} canReopen={closed.length > 0} onSelect={select} onNew={add} onAction={action}
         onNavigate={(direction) => { const next = navigateSqlTabs(visits, direction, state); if (next) { setVisits(next.visits); select(next.id) } }} onReorder={(id, beforeId) => controller.update((snapshot) => reorderSqlTab(snapshot, id, beforeId))} />}

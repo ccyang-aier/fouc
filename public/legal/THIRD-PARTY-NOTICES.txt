@@ -104,6 +104,13 @@ native MySQL/PostgreSQL interrupts and an isolated read-only SQLite query proces
 in shared/src/sql-execution.ts and backend/device/src/database/sql-execution* /
 sqlite-query*. React result tabs use the existing native result renderer.
 
+SQL template parameters, MyBatis where/foreach handling and @set expressions
+are adapted from sqlParameters.ts, sqlVariables.ts, sqlParameterHistory.ts and
+SqlParameterDialog.vue. Fouc shared/src/sql-{parameters,variables,template,source-map}
+implements common MySQL/PostgreSQL/SQLite rules, dialect string escaping, input
+validation, bounded expansion and original-source diagnostics. React parameter
+UI keeps recent values in the current session/document rather than global storage.
+
 redis-parser 3.0.0
 Copyright (c) 2015 NodeRedis; MIT License.
 Fouc's dedicated Pub/Sub connection uses this RESP parser. The full license

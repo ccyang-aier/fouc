@@ -2120,6 +2120,11 @@
           "kind": "partial-native-sql-execution-validation",
           "path": "scripts/verify-sql-executions-live.mjs",
           "check": "2026-10-04: MySQL/PostgreSQL/SQLite native sequential read-only batches, independent result/status/source ranges, exact integers, stop-on-error/skipped tails, confirmed native query cancellation, prior-result retention, pool reuse, disconnect interruption, device event-loop availability and workspace ownership passed. PostgreSQL Unicode diagnostics normalize internal cursor prefixes to UTF-16. Chrome desktop light/dark and narrow viewport, current/all/selection execution, result keyboard navigation, cross-tab cancellation, error reveal and polling retry exercised. Full file streaming, writable execution, cross-connection groups, result store and other entry points remain open."
+        },
+        {
+          "kind": "partial-native-sql-parameter-validation",
+          "path": "scripts/verify-sql-parameters-live.mjs",
+          "check": "2026-10-04: Native MySQL/PostgreSQL/SQLite typed and quoted parameters, Unicode/dotted names, exact integer values, @set prefix scope and history replay, MyBatis collections/where/entities, explicit raw multi-reads, UTF-16 source diagnostics, backend input validation and full-batch read policy passed. DBX-derived common-dialect regressions and Fouc bounds/source tests pass. Chrome desktop light/dark and 390px dialog states, validation, focus, copy feedback, Ctrl+Enter, Escape without execution, per-document recent isolation and real multi-result queries passed. Syntax preferences, other drivers and complete template/entry matrices remain open."
         }
       ],
       "scopeKind": "driver"
@@ -2324,6 +2329,11 @@
           "kind": "partial-native-sql-execution-validation",
           "path": "scripts/verify-sql-executions-live.mjs",
           "check": "2026-10-04: MySQL/PostgreSQL/SQLite native sequential read-only batches, independent result/status/source ranges, exact integers, stop-on-error/skipped tails, confirmed native query cancellation, prior-result retention, pool reuse, disconnect interruption, device event-loop availability and workspace ownership passed. PostgreSQL Unicode diagnostics normalize internal cursor prefixes to UTF-16. Chrome desktop light/dark and narrow viewport, current/all/selection execution, result keyboard navigation, cross-tab cancellation, error reveal and polling retry exercised. Full file streaming, writable execution, cross-connection groups, result store and other entry points remain open."
+        },
+        {
+          "kind": "partial-native-sql-parameter-validation",
+          "path": "scripts/verify-sql-parameters-live.mjs",
+          "check": "2026-10-04: Native MySQL/PostgreSQL/SQLite typed and quoted parameters, Unicode/dotted names, exact integer values, @set prefix scope and history replay, MyBatis collections/where/entities, explicit raw multi-reads, UTF-16 source diagnostics, backend input validation and full-batch read policy passed. DBX-derived common-dialect regressions and Fouc bounds/source tests pass. Chrome desktop light/dark and 390px dialog states, validation, focus, copy feedback, Ctrl+Enter, Escape without execution, per-document recent isolation and real multi-result queries passed. Syntax preferences, other drivers and complete template/entry matrices remain open."
         }
       ],
       "scopeKind": "driver"
@@ -2507,6 +2517,11 @@
           "kind": "partial-native-sql-tabs-drafts-validation",
           "path": "scripts/verify-sql-drafts-live.mjs",
           "check": "2026-10-03：MySQL8.4 / PostgreSQL17 / SQLite 的设备草稿 API、精确 Unicode / 大整数、64 MiB 白名单持久化、标签顺序 / 固定 / 活动目标 / 空文件 / 选区 / 滚动 / 结果视图、CAS 与工作空间 / 连接隔离、重连恢复 / 显式空状态和删除连接清理通过真实接口验证。Chrome 1440×1000、760×844、390×844 验证独立 SQL / 撤销 / 选区 / 结果、固定 / 改名 / 复制 / 关闭确认 / 最近关闭恢复 / 前后访问 / 拖动、异步真实查询迟到不覆盖其他标签、返回等待草稿与刷新恢复、空文件保存、干净文件读取最新正文和 Schema / 脏文件保留旧基线并由 CAS 拒绝覆盖、文件重命名与原上下文恢复、真实第二写入者草稿冲突 / 查看完整设备版本 / 保留双方合并和错误恢复。SQLite 另验长文档与隐藏挂载后的滚动 / 选区恢复（视口变高时按新范围正常裁切）、全部关闭的持久空状态、重开与编辑器重新挂载后的实际执行；仅预期的文件 / 草稿 CAS 失败，无其他页面 / 控制台错误。格式化 / 参数 / snippets / 元数据补全 / 当前语句 / 多语句 / 多结果 / 取消、分组 / 独立窗口、外部文件与结果磁盘缓存、其他驱动和全入口仍未完成。 另验草稿冲突期间的真实在途查询：响应到达前替换 / 合并保持禁用，结束后才允许恢复，避免旧结果污染导入标签；失败状态不再显示保存动画。"
+        },
+        {
+          "kind": "partial-native-sql-parameter-validation",
+          "path": "scripts/verify-sql-parameters-live.mjs",
+          "check": "2026-10-04: Native MySQL/PostgreSQL/SQLite typed and quoted parameters, Unicode/dotted names, exact integer values, @set prefix scope and history replay, MyBatis collections/where/entities, explicit raw multi-reads, UTF-16 source diagnostics, backend input validation and full-batch read policy passed. DBX-derived common-dialect regressions and Fouc bounds/source tests pass. Chrome desktop light/dark and 390px dialog states, validation, focus, copy feedback, Ctrl+Enter, Escape without execution, per-document recent isolation and real multi-result queries passed. Syntax preferences, other drivers and complete template/entry matrices remain open."
         }
       ],
       "scopeKind": "driver"
@@ -2788,6 +2803,11 @@
           "kind": "partial-native-sql-execution-validation",
           "path": "scripts/verify-sql-executions-live.mjs",
           "check": "2026-10-04: MySQL/PostgreSQL/SQLite native sequential read-only batches, independent result/status/source ranges, exact integers, stop-on-error/skipped tails, confirmed native query cancellation, prior-result retention, pool reuse, disconnect interruption, device event-loop availability and workspace ownership passed. PostgreSQL Unicode diagnostics normalize internal cursor prefixes to UTF-16. Chrome desktop light/dark and narrow viewport, current/all/selection execution, result keyboard navigation, cross-tab cancellation, error reveal and polling retry exercised. Full file streaming, writable execution, cross-connection groups, result store and other entry points remain open."
+        },
+        {
+          "kind": "partial-native-sql-parameter-validation",
+          "path": "scripts/verify-sql-parameters-live.mjs",
+          "check": "2026-10-04: Native MySQL/PostgreSQL/SQLite typed and quoted parameters, Unicode/dotted names, exact integer values, @set prefix scope and history replay, MyBatis collections/where/entities, explicit raw multi-reads, UTF-16 source diagnostics, backend input validation and full-batch read policy passed. DBX-derived common-dialect regressions and Fouc bounds/source tests pass. Chrome desktop light/dark and 390px dialog states, validation, focus, copy feedback, Ctrl+Enter, Escape without execution, per-document recent isolation and real multi-result queries passed. Syntax preferences, other drivers and complete template/entry matrices remain open."
         }
       ],
       "scopeKind": "driver"
@@ -2890,6 +2910,11 @@
           "kind": "partial-native-sql-execution-validation",
           "path": "scripts/verify-sql-executions-live.mjs",
           "check": "2026-10-04: MySQL/PostgreSQL/SQLite native sequential read-only batches, independent result/status/source ranges, exact integers, stop-on-error/skipped tails, confirmed native query cancellation, prior-result retention, pool reuse, disconnect interruption, device event-loop availability and workspace ownership passed. PostgreSQL Unicode diagnostics normalize internal cursor prefixes to UTF-16. Chrome desktop light/dark and narrow viewport, current/all/selection execution, result keyboard navigation, cross-tab cancellation, error reveal and polling retry exercised. Full file streaming, writable execution, cross-connection groups, result store and other entry points remain open."
+        },
+        {
+          "kind": "partial-native-sql-parameter-validation",
+          "path": "scripts/verify-sql-parameters-live.mjs",
+          "check": "2026-10-04: Native MySQL/PostgreSQL/SQLite typed and quoted parameters, Unicode/dotted names, exact integer values, @set prefix scope and history replay, MyBatis collections/where/entities, explicit raw multi-reads, UTF-16 source diagnostics, backend input validation and full-batch read policy passed. DBX-derived common-dialect regressions and Fouc bounds/source tests pass. Chrome desktop light/dark and 390px dialog states, validation, focus, copy feedback, Ctrl+Enter, Escape without execution, per-document recent isolation and real multi-result queries passed. Syntax preferences, other drivers and complete template/entry matrices remain open."
         }
       ],
       "scopeKind": "driver"

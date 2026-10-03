@@ -9,7 +9,7 @@ type Registration = {
   snapshot: SqlExecutionSnapshot;
   done: Promise<void>;
 };
-function executionError(value: unknown): SqlExecutionError {
+export function sqlExecutionError(value: unknown): SqlExecutionError {
   const error = value as Record<string, unknown> | null;
   const text = (key: string) => typeof error?.[key] === 'string' ? (error[key] as string).slice(0, 16384) : null;
   const position = Number(error?.position);
@@ -22,7 +22,8 @@ function executionError(value: unknown): SqlExecutionError {
 export class SqlExecutionRegistry {
   private entries = new Map<string, Registration>();
   start(workspaceId: string, sessionId: string, database: string, schema: string | null, ranges: SqlStatementRange[],
-    run: (statement: string, signal: AbortSignal) => Promise<DatabaseQueryResult>): SqlExecutionSnapshot {
+    run: (statement: string, signal: AbortSignal, index: number) => Promise<DatabaseQueryResult>,
+    mapError: (error: unknown, index: number) => SqlExecutionError = sqlExecutionError): SqlExecutionSnapshot {
     const active = [...this.entries.values()].filter((entry) => sqlExecutionActive(entry.snapshot));
     if (active.length >= 8 || active.filter((entry) => entry.sessionId === sessionId).length >= 2)
       throw new DatabaseInputError('并行查询已达上限，请等待或取消正在执行的查询');
@@ -32,22 +33,22 @@ export class SqlExecutionRegistry {
       currentIndex: null, completedCount: 0, startedAt: Date.now(), finishedAt: null, revision: 1 };
     const entry: Registration = { workspaceId, sessionId, controller: new AbortController(), snapshot, done: Promise.resolve() };
     this.entries.set(snapshot.id, entry);
-    entry.done = this.execute(entry, run);
+    entry.done = this.execute(entry, run, mapError);
     return this.copy(snapshot);
   }
-  private async execute(entry: Registration, run: (statement: string, signal: AbortSignal) => Promise<DatabaseQueryResult>): Promise<void> {
+  private async execute(entry: Registration, run: (statement: string, signal: AbortSignal, index: number) => Promise<DatabaseQueryResult>, mapError: (error: unknown, index: number) => SqlExecutionError): Promise<void> {
     const { snapshot, controller } = entry;
     for (let index = 0; index < snapshot.statements.length; index++) {
       if (controller.signal.aborted) break;
       const statement = snapshot.statements[index];
       snapshot.currentIndex = index; statement.status = 'running'; statement.startedAt = Date.now(); snapshot.revision++;
       try {
-        statement.result = await run(statement.sql, controller.signal);
+        statement.result = await run(statement.sql, controller.signal, index);
         // A completed driver result wins over a late cancellation request.
         statement.status = 'succeeded'; snapshot.completedCount++;
       } catch (reason) {
         statement.status = controller.signal.aborted ? 'cancelled' : 'failed';
-        if (!controller.signal.aborted) statement.error = executionError(reason);
+        if (!controller.signal.aborted) statement.error = mapError(reason, index);
       }
       statement.finishedAt = Date.now(); snapshot.revision++;
       if (statement.status !== 'succeeded') break;

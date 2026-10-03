@@ -445,3 +445,7 @@ export * from './relational-sql-library';
 export * from './relational-sql-drafts';
 export * from './sql-semantic-tokens';
 export * from './sql-execution';
+export * from './sql-parameters';
+export * from './sql-variables';
+export * from './sql-source-map';
+export * from './sql-template';

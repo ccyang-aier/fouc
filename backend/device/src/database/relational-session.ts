@@ -1,6 +1,6 @@
 import { DatabaseInputError } from './input-error';
-import { splitSqlExecutionRanges } from '@fouc/shared';
-import { SqlExecutionRegistry } from './sql-execution-registry';
+import { compileSqlTemplate, sqlSourceEnd, sqlSourcePosition, sqlVariableContext, stripSqlVariableDeclarations, splitSqlExecutionRanges, type SqlTemplateInput } from '@fouc/shared';
+import { SqlExecutionRegistry, sqlExecutionError } from './sql-execution-registry';
 import {
   DATABASE_CAPABILITIES,
   type DatabaseCapabilities,
@@ -329,6 +329,7 @@ export class RelationalSessionManager {
     schema: string | null,
     maxRows = 500,
     signal?: AbortSignal,
+    sourceSql?: string,
   ): Promise<DatabaseQueryResult> {
     if (
       !Number.isInteger(maxRows) ||
@@ -347,7 +348,7 @@ export class RelationalSessionManager {
       if (this.entries.get(id) !== entry) return;
       const history: SqlHistoryEntry = { id: crypto.randomUUID(), connectionId: session.connectionId ?? session.id,
         connectionName: entry.connectionName, provider: session.provider, database: session.provider === 'mysql' ? schema ?? session.database : session.database,
-        schema, sql: sql as string, executedAt, executionTimeMs: Math.round(performance.now() - start), success,
+        schema, sql: sourceSql ?? sql as string, executedAt, executionTimeMs: Math.round(performance.now() - start), success,
         error: error === null ? null : error.slice(0, 16384), rowCount, truncated };
       try { this.historyRepository(entry).append(workspaceId, history); }
       catch (reason) { return `查询历史保存失败：${reason instanceof Error ? reason.message : String(reason)}`; }
@@ -369,20 +370,35 @@ export class RelationalSessionManager {
   private historyRepository(entry: Entry): RelationalSqlRepository { return entry.session.connectionId ? this.sqlRepository : this.transientSql; }
   startExecution(workspaceId: string, id: string, value: unknown) {
     const { session } = this.entry(workspaceId, id);
-    const input = value as { sql?: unknown; schema?: unknown; maxRows?: unknown; offset?: unknown } | null;
+    const input = value as { sql?: unknown; schema?: unknown; maxRows?: unknown; offset?: unknown; parameters?: unknown; declarationSql?: unknown } | null;
     if (!input || typeof input.sql !== 'string' || Buffer.byteLength(input.sql, 'utf8') > 1_000_000 ||
       input.schema !== null && typeof input.schema !== 'string' ||
       !Number.isInteger(input.maxRows ?? 500) || Number(input.maxRows ?? 500) < 1 || Number(input.maxRows ?? 500) > 5000 ||
-      !Number.isInteger(input.offset ?? 0) || Number(input.offset ?? 0) < 0 || Number(input.offset ?? 0) > 1_000_000)
+      !Number.isInteger(input.offset ?? 0) || Number(input.offset ?? 0) < 0 || Number(input.offset ?? 0) > 1_000_000 ||
+      input.declarationSql !== undefined && (typeof input.declarationSql !== 'string' || Buffer.byteLength(input.declarationSql, 'utf8') > 1_000_000) ||
+      input.parameters !== undefined && (!input.parameters || typeof input.parameters !== 'object' || Array.isArray(input.parameters)))
       throw new DatabaseInputError('查询执行参数无效');
     const sql = input.sql, schema = input.schema as string | null, maxRows = Number(input.maxRows ?? 500), offset = Number(input.offset ?? 0);
-    const ranges = splitSqlExecutionRanges(sql, session.provider);
+    let compiled;
+    try { compiled = compileSqlTemplate(sql, session.provider, input as SqlTemplateInput); }
+    catch (reason) { throw new DatabaseInputError(reason instanceof Error ? reason.message : String(reason)); }
+    if (Buffer.byteLength(compiled.sql, 'utf8') > 1_000_000) throw new DatabaseInputError('展开后的 SQL 超过 1 MB');
+    const ranges = splitSqlExecutionRanges(compiled.sql, session.provider);
     if (!ranges.length || ranges.length > 50) throw new DatabaseInputError('每次执行须包含 1 至 50 条语句');
     // Validate the entire batch before any statement runs; the drivers also enforce read isolation.
     for (const range of ranges) session.provider === 'mysql' ? assertMysqlReadOnlySql(range.sql) : assertRelationalReadSql(range.sql, session.provider);
-    return this.executions.start(workspaceId, id, session.provider === 'mysql' ? schema ?? session.database : session.database, schema,
-      ranges.map((range) => ({ ...range, from: range.from + offset, to: range.to + offset })),
-      (statement, signal) => this.query(workspaceId, id, statement, schema, maxRows, signal));
+    const originals = ranges.map((range) => {
+      const from = sqlSourcePosition(compiled, range.from), to = sqlSourceEnd(compiled, range.to);
+      return { sql: sql.slice(from, to), from: from + offset, to: to + offset };
+    });
+    const context = sqlVariableContext(typeof input.declarationSql === 'string' ? input.declarationSql : sql, session.provider);
+    return this.executions.start(workspaceId, id, session.provider === 'mysql' ? schema ?? session.database : session.database, schema, originals,
+      (statement, signal, index) => this.query(workspaceId, id, ranges[index].sql, schema, maxRows, signal, context ? `${context}\n${stripSqlVariableDeclarations(statement, session.provider)}` : statement),
+      (reason, index) => {
+        const error = sqlExecutionError(reason);
+        if (error.position !== null) error.position = Math.max(0, sqlSourcePosition(compiled, ranges[index].from + error.position) + offset - originals[index].from);
+        return error;
+      });
   }
   execution(workspaceId: string, id: string, executionId: string, revision: number) {
     this.entry(workspaceId, id);

@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useRef, useState } from 'react'
-import { sqlExecutionActive, type SqlExecutionPoll, type SqlExecutionSnapshot, type SqlStatementRange } from '@fouc/shared'
+import { sqlExecutionActive, type SqlExecutionPoll, type SqlExecutionSnapshot, type SqlStatementRange, type SqlTemplateInput } from '@fouc/shared'
 import { backendFetch, BackendRequestError } from '@/lib/backend'
 
 export type SqlExecutionUI = { running: boolean; snapshot: SqlExecutionSnapshot | null; error: string; connectionError: string; selectedResult: number }
@@ -46,14 +46,14 @@ export function useSqlExecutions(base: string, onFinished: () => void) {
       if (alive.current && registrations.current.get(tabId) === registration) setExecutions((items) => ({ ...items, [tabId]: { ...items[tabId], connectionError: `取消请求未确认：${reason instanceof Error ? reason.message : String(reason)}。可重试取消。` } }))
     }
   }
-  async function run(tabId: string, target: SqlStatementRange, schema: string | null) {
+  async function run(tabId: string, target: SqlStatementRange, schema: string | null, template: SqlTemplateInput = {}) {
     if (locks.current.has(tabId)) return
     locks.current.add(tabId)
     const registration = { id: null as string | null, cancelRequested: false, terminal: false }
     registrations.current.set(tabId, registration)
     setExecutions((items) => ({ ...items, [tabId]: { running: true, snapshot: null, error: '', connectionError: '', selectedResult: 0 } }))
     try {
-      let snapshot = await backendFetch<SqlExecutionSnapshot>(`${base}/executions`, { method: 'POST', body: JSON.stringify({ sql: target.sql, offset: target.from, schema, maxRows: 500 }) })
+      let snapshot = await backendFetch<SqlExecutionSnapshot>(`${base}/executions`, { method: 'POST', body: JSON.stringify({ sql: target.sql, offset: target.from, schema, maxRows: 500, ...template }) })
       registration.id = snapshot.id
       if (registration.cancelRequested || !alive.current) {
         snapshot = await backendFetch<SqlExecutionSnapshot>(`${base}/executions/${snapshot.id}/cancel`, { method: 'POST' })

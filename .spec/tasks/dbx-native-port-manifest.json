@@ -310,6 +310,23 @@
         "src/features/connectors/datastore/use-sql-executions.ts",
         "src/features/connectors/datastore/sql-execution-results.tsx"
       ]
+    },
+    {
+      "area": "native-relational-sql-parameters",
+      "status": "partial",
+      "sourceReferences": [
+        "apps/desktop/src/lib/sql/sqlParameters.ts",
+        "apps/desktop/src/lib/sql/sqlVariables.ts",
+        "apps/desktop/src/lib/sql/sqlParameterHistory.ts",
+        "apps/desktop/src/components/editor/SqlParameterDialog.vue"
+      ],
+      "runtimeFiles": [
+        "shared/src/sql-parameters.ts",
+        "shared/src/sql-variables.ts",
+        "shared/src/sql-source-map.ts",
+        "shared/src/sql-template.ts",
+        "src/features/connectors/datastore/sql-parameter-dialog.tsx"
+      ]
     }
   ],
   "knownRemainingScope": [

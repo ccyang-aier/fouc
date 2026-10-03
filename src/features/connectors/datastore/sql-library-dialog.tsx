@@ -6,10 +6,10 @@ import { backendFetch } from '@/lib/backend'
 import common from './relational.module.css'
 import styles from './sql-library.module.css'
 
-export function SqlDialog({ title, busy = false, role = 'dialog', onClose, children }: { title: string; busy?: boolean; role?: 'dialog' | 'alertdialog'; onClose: () => void; children: ReactNode }) {
+export function SqlDialog({ title, busy = false, role = 'dialog', className = '', onClose, children }: { title: string; busy?: boolean; role?: 'dialog' | 'alertdialog'; className?: string; onClose: () => void; children: ReactNode }) {
   const dialog = useRef<HTMLDialogElement>(null)
   useEffect(() => { dialog.current?.showModal() }, [])
-  return <dialog ref={dialog} role={role} className={`${common.dialog} ${styles.dialog}`} aria-label={title} onCancel={(event) => { event.preventDefault(); if (!busy) onClose() }}>
+  return <dialog ref={dialog} role={role} className={`${common.dialog} ${styles.dialog} ${className}`} aria-label={title} onCancel={(event) => { event.preventDefault(); if (!busy) onClose() }}>
     <header className={common.dialogHead}><h2>{title}</h2><button type="button" disabled={busy} aria-label={`关闭${title}`} onClick={onClose}><X size={18} /></button></header>{children}</dialog>
 }
 export function SaveSqlDialog({ base, sql, database, schema, library, file, onClose, onSaved }: {

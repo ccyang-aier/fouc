@@ -33,6 +33,7 @@ type Props = {
   value: string
   onChange: (value: string) => void
   onRun: () => void
+  onSave?: () => void
   editorRef: RefObject<EditorView | null>
   provider?: "mysql" | "postgres" | "sqlite"
   readOnly?: boolean
@@ -44,6 +45,7 @@ export function SqlEditor({
   value,
   onChange,
   onRun,
+  onSave,
   editorRef,
   provider = "mysql",
   readOnly = false,
@@ -51,11 +53,12 @@ export function SqlEditor({
 }: Props) {
   const host = useRef<HTMLDivElement>(null)
   const initialValue = useRef(value)
-  const handlers = useRef({ onChange, onRun })
+  const handlers = useRef({ onChange, onRun, onSave })
 
   useEffect(() => {
-    handlers.current = { onChange, onRun }
-  }, [onChange, onRun])
+    handlers.current = { onChange, onRun, onSave }
+    initialValue.current = value
+  }, [onChange, onRun, onSave, value])
 
   useEffect(() => {
     const view = new EditorView({
@@ -87,6 +90,7 @@ export function SqlEditor({
           ...(readOnly ? { tabindex: "0" } : {})
         }),
         keymap.of([
+          { key: 'Mod-s', run: () => { if (!readOnly) handlers.current.onSave?.(); return true } },
           {
             key: "Mod-Enter",
             run: () => {

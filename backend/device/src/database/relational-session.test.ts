@@ -7,6 +7,7 @@ import { DatabaseCapabilityRegistry } from './capability-registry';
 import { RelationalSessionManager } from './relational-session';
 import { RelationalConnectionRepository } from './relational-connections';
 import { createApp } from '../api/server';
+import { RelationalSqlRepository } from './sql-library-repository';
 
 const directory = mkdtempSync(path.join(tmpdir(), 'fouc-relational-test-'));
 const dbFile = path.join(directory, 'fixture.sqlite');
@@ -30,6 +31,36 @@ afterAll(() => {
 });
 
 describe('real SQLite connection and API', () => {
+  test('native SQL history records actual outcomes, leaves blocked SQL out and keeps direct sessions transient', async () => {
+    const store = new RelationalSqlRepository(), manager = new RelationalSessionManager(new DatabaseCapabilityRegistry(), store);
+    try {
+      const direct = await manager.connect('history-space', { provider: 'sqlite', path: dbFile });
+      await manager.query('history-space', direct.id, '-- exact source\nSELECT 9223372036854775807 AS value;', 'main');
+      await expect(manager.query('history-space', direct.id, 'SELECT * FROM nonexistent_sql_history', 'main')).rejects.toThrow('nonexistent_sql_history');
+      await expect(manager.query('history-space', direct.id, 'DELETE FROM items', 'main')).rejects.toThrow();
+      const history = manager.historySearch('history-space', direct.id, {});
+      expect(history.persistent).toBe(false); expect(history.total).toBe(2); expect(store.search('history-space', {}).total).toBe(0);
+      const success = history.entries.find((entry) => entry.success)!;
+      expect(manager.historyEntry('history-space', direct.id, success.id).sql).toBe('-- exact source\nSELECT 9223372036854775807 AS value;');
+      expect(() => manager.historySearch('foreign', direct.id, {})).toThrow();
+      await manager.disconnect('history-space', direct.id);
+      const saved = await manager.connect('history-space', { provider: 'sqlite', path: dbFile }, { id: 'saved', name: 'SQLite source' });
+      const query = manager.query('history-space', saved.id, 'SELECT 1', 'main');
+      manager.removeConnection('history-space', 'saved');
+      expect((await query).rows).toEqual([[1]]); expect(store.search('history-space', {}).total).toBe(0);
+      expect(() => manager.details('history-space', saved.id)).toThrow();
+    } finally { await manager.shutdown(); }
+  });
+  test('a history storage failure reports a warning without turning a successful native query into a failure', async () => {
+    class FailingHistory extends RelationalSqlRepository { override append(): void { throw new Error('history disk full'); } }
+    const manager = new RelationalSessionManager(new DatabaseCapabilityRegistry(), new FailingHistory());
+    try {
+      const session = await manager.connect('history-error', { provider: 'sqlite', path: dbFile }, { id: 'saved', name: 'SQLite source' });
+      const result = await manager.query('history-error', session.id, 'SELECT 2 AS value', 'main');
+      expect(result.rows).toEqual([[2]]); expect(result.messages).toEqual([{ severity: 'warning', message: '查询历史保存失败：history disk full' }]);
+      await expect(manager.query('history-error', session.id, 'SELECT * FROM nonexistent_sql_history', 'main')).rejects.toThrow('nonexistent_sql_history');
+    } finally { await manager.shutdown(); }
+  });
   test('structure metadata groups implicit composite foreign keys and retains expression and trigger source', async () => {
     const manager = new RelationalSessionManager(new DatabaseCapabilityRegistry());
     const session = await manager.connect('space-structure', { provider: 'sqlite', path: dbFile });

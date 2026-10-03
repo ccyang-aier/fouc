@@ -2071,7 +2071,7 @@
     {
       "id": "Q02",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql",
@@ -2151,13 +2151,19 @@
         "action": "SQL 格式化、快速操作、参数输入、SQL snippet/模板/SQL 库、搜索、保存/打开/重命名、SQL 文件树及标签恢复。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-sql-history-library-validation",
+          "path": "scripts/verify-sql-library-live.mjs",
+          "check": "2026-10-03：MySQL8.4 / PostgreSQL17 / SQLite 真实执行成功与失败历史、策略阻断不记为执行、完整 SQL / 目标 / 精确整数、字面和连接限定搜索、空间隔离、懒加载 SQL 库、嵌套移动 / 循环阻断、版本冲突与确认删除、断线重连持久化通过。Chrome 1440×1000、760×844、390×844 验证筛选 / 分页追加、执行新查询回到首页与重置、详情 / 复制 / 保存收藏、保留或替换编辑内容且恢复不执行、Ctrl+S / 另存为 / 改名移动 / 常用与最近 / 递归删除、改名保留草稿 / 删除当前文件保留编辑内容、不可用目标在恢复窗口明确反馈、真实版本冲突保持本地草稿并重新打开恢复；全部失败请求对应故意 SQL 策略、不存在表、循环或版本冲突，无其他页面 / 控制台错误。鉴权、存储失败独立警告、在途查询和连接删除清理有回归。跨连接筛选 UI、多目标和取消、外部文件 / 格式化 / snippets / 标签草稿恢复、其他驱动 / 版本与全入口仍未完成。"
+        }
+      ],
       "scopeKind": "driver"
     },
     {
       "id": "Q03",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql",
@@ -2237,7 +2243,13 @@
         "action": "查询目标连接/数据库/Schema 切换，多目标组执行、单/多结果导航、消息、受影响行、耗时、可取消执行、异常定位及历史重跑。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-sql-history-library-validation",
+          "path": "scripts/verify-sql-library-live.mjs",
+          "check": "2026-10-03：MySQL8.4 / PostgreSQL17 / SQLite 真实执行成功与失败历史、策略阻断不记为执行、完整 SQL / 目标 / 精确整数、字面和连接限定搜索、空间隔离、懒加载 SQL 库、嵌套移动 / 循环阻断、版本冲突与确认删除、断线重连持久化通过。Chrome 1440×1000、760×844、390×844 验证筛选 / 分页追加、执行新查询回到首页与重置、详情 / 复制 / 保存收藏、保留或替换编辑内容且恢复不执行、Ctrl+S / 另存为 / 改名移动 / 常用与最近 / 递归删除、改名保留草稿 / 删除当前文件保留编辑内容、不可用目标在恢复窗口明确反馈、真实版本冲突保持本地草稿并重新打开恢复；全部失败请求对应故意 SQL 策略、不存在表、循环或版本冲突，无其他页面 / 控制台错误。鉴权、存储失败独立警告、在途查询和连接删除清理有回归。跨连接筛选 UI、多目标和取消、外部文件 / 格式化 / snippets / 标签草稿恢复、其他驱动 / 版本与全入口仍未完成。"
+        }
+      ],
       "scopeKind": "driver"
     },
     {
@@ -2329,7 +2341,7 @@
     {
       "id": "Q05",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql",
@@ -2409,7 +2421,13 @@
         "action": "查询历史、收藏/保存、搜索过滤、执行时间/目标/状态；保留可恢复的编辑内容和连接上下文。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-sql-history-library-validation",
+          "path": "scripts/verify-sql-library-live.mjs",
+          "check": "2026-10-03：MySQL8.4 / PostgreSQL17 / SQLite 真实执行成功与失败历史、策略阻断不记为执行、完整 SQL / 目标 / 精确整数、字面和连接限定搜索、空间隔离、懒加载 SQL 库、嵌套移动 / 循环阻断、版本冲突与确认删除、断线重连持久化通过。Chrome 1440×1000、760×844、390×844 验证筛选 / 分页追加、执行新查询回到首页与重置、详情 / 复制 / 保存收藏、保留或替换编辑内容且恢复不执行、Ctrl+S / 另存为 / 改名移动 / 常用与最近 / 递归删除、改名保留草稿 / 删除当前文件保留编辑内容、不可用目标在恢复窗口明确反馈、真实版本冲突保持本地草稿并重新打开恢复；全部失败请求对应故意 SQL 策略、不存在表、循环或版本冲突，无其他页面 / 控制台错误。鉴权、存储失败独立警告、在途查询和连接删除清理有回归。跨连接筛选 UI、多目标和取消、外部文件 / 格式化 / snippets / 标签草稿恢复、其他驱动 / 版本与全入口仍未完成。"
+        }
+      ],
       "scopeKind": "driver"
     },
     {
@@ -5953,6 +5971,11 @@
           "kind": "partial-native-validation",
           "path": "scripts/verify-table-structure-live.mjs",
           "check": "2026-10-03: native PostgreSQL17/MySQL8.4/SQLite structure catalogs, ordered composite FK actions, expression/INCLUDE/prefix/invisible indexes, constraints, triggers, views and source DDL; Pg rolled-back reconstruction and SQLite in-memory recreation passed. Chrome 1440/760/390 verifies six structure tabs/search/empty/FK navigation/readonly highlighted DDL/copy/download/refresh with no errors. Object mutation, other object kinds, complete restoration and full driver/version matrix remain open."
+        },
+        {
+          "kind": "partial-native-sql-history-library-validation",
+          "path": "scripts/verify-sql-library-live.mjs",
+          "check": "2026-10-03：MySQL8.4 / PostgreSQL17 / SQLite 真实执行成功与失败历史、策略阻断不记为执行、完整 SQL / 目标 / 精确整数、字面和连接限定搜索、空间隔离、懒加载 SQL 库、嵌套移动 / 循环阻断、版本冲突与确认删除、断线重连持久化通过。Chrome 1440×1000、760×844、390×844 验证筛选 / 分页追加、执行新查询回到首页与重置、详情 / 复制 / 保存收藏、保留或替换编辑内容且恢复不执行、Ctrl+S / 另存为 / 改名移动 / 常用与最近 / 递归删除、改名保留草稿 / 删除当前文件保留编辑内容、不可用目标在恢复窗口明确反馈、真实版本冲突保持本地草稿并重新打开恢复；全部失败请求对应故意 SQL 策略、不存在表、循环或版本冲突，无其他页面 / 控制台错误。鉴权、存储失败独立警告、在途查询和连接删除清理有回归。跨连接筛选 UI、多目标和取消、外部文件 / 格式化 / snippets / 标签草稿恢复、其他驱动 / 版本与全入口仍未完成。"
         }
       ],
       "scopeKind": "driver"
@@ -6008,6 +6031,11 @@
           "kind": "partial-native-validation",
           "path": "scripts/verify-table-structure-live.mjs",
           "check": "2026-10-03: native PostgreSQL17/MySQL8.4/SQLite structure catalogs, ordered composite FK actions, expression/INCLUDE/prefix/invisible indexes, constraints, triggers, views and source DDL; Pg rolled-back reconstruction and SQLite in-memory recreation passed. Chrome 1440/760/390 verifies six structure tabs/search/empty/FK navigation/readonly highlighted DDL/copy/download/refresh with no errors. Object mutation, other object kinds, complete restoration and full driver/version matrix remain open."
+        },
+        {
+          "kind": "partial-native-sql-history-library-validation",
+          "path": "scripts/verify-sql-library-live.mjs",
+          "check": "2026-10-03：MySQL8.4 / PostgreSQL17 / SQLite 真实执行成功与失败历史、策略阻断不记为执行、完整 SQL / 目标 / 精确整数、字面和连接限定搜索、空间隔离、懒加载 SQL 库、嵌套移动 / 循环阻断、版本冲突与确认删除、断线重连持久化通过。Chrome 1440×1000、760×844、390×844 验证筛选 / 分页追加、执行新查询回到首页与重置、详情 / 复制 / 保存收藏、保留或替换编辑内容且恢复不执行、Ctrl+S / 另存为 / 改名移动 / 常用与最近 / 递归删除、改名保留草稿 / 删除当前文件保留编辑内容、不可用目标在恢复窗口明确反馈、真实版本冲突保持本地草稿并重新打开恢复；全部失败请求对应故意 SQL 策略、不存在表、循环或版本冲突，无其他页面 / 控制台错误。鉴权、存储失败独立警告、在途查询和连接删除清理有回归。跨连接筛选 UI、多目标和取消、外部文件 / 格式化 / snippets / 标签草稿恢复、其他驱动 / 版本与全入口仍未完成。"
         }
       ],
       "scopeKind": "driver"
@@ -6063,6 +6091,11 @@
           "kind": "partial-native-validation",
           "path": "scripts/verify-table-structure-live.mjs",
           "check": "2026-10-03: native PostgreSQL17/MySQL8.4/SQLite structure catalogs, ordered composite FK actions, expression/INCLUDE/prefix/invisible indexes, constraints, triggers, views and source DDL; Pg rolled-back reconstruction and SQLite in-memory recreation passed. Chrome 1440/760/390 verifies six structure tabs/search/empty/FK navigation/readonly highlighted DDL/copy/download/refresh with no errors. Object mutation, other object kinds, complete restoration and full driver/version matrix remain open."
+        },
+        {
+          "kind": "partial-native-sql-history-library-validation",
+          "path": "scripts/verify-sql-library-live.mjs",
+          "check": "2026-10-03：MySQL8.4 / PostgreSQL17 / SQLite 真实执行成功与失败历史、策略阻断不记为执行、完整 SQL / 目标 / 精确整数、字面和连接限定搜索、空间隔离、懒加载 SQL 库、嵌套移动 / 循环阻断、版本冲突与确认删除、断线重连持久化通过。Chrome 1440×1000、760×844、390×844 验证筛选 / 分页追加、执行新查询回到首页与重置、详情 / 复制 / 保存收藏、保留或替换编辑内容且恢复不执行、Ctrl+S / 另存为 / 改名移动 / 常用与最近 / 递归删除、改名保留草稿 / 删除当前文件保留编辑内容、不可用目标在恢复窗口明确反馈、真实版本冲突保持本地草稿并重新打开恢复；全部失败请求对应故意 SQL 策略、不存在表、循环或版本冲突，无其他页面 / 控制台错误。鉴权、存储失败独立警告、在途查询和连接删除清理有回归。跨连接筛选 UI、多目标和取消、外部文件 / 格式化 / snippets / 标签草稿恢复、其他驱动 / 版本与全入口仍未完成。"
         }
       ],
       "scopeKind": "driver"

@@ -26,6 +26,7 @@ export type RelationalConnectInput =
 
 export interface RelationalSession {
   id: string;
+  connectionId: string | null;
   workspaceId: string;
   provider: RelationalProvider;
   database: string;

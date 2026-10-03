@@ -200,6 +200,31 @@
         "src/features/connectors/datastore/structure-metadata.tsx",
         "src/features/connectors/datastore/table-structure.tsx"
       ]
+    },
+    {
+      "area": "native-sql-history-and-library",
+      "status": "partial",
+      "sourceReferences": [
+        "crates/dbx-core/src/persistence/history.rs",
+        "crates/dbx-core/src/persistence/storage.rs",
+        "crates/dbx-core/src/persistence/saved_sql.rs",
+        "apps/desktop/src/stores/historyStore.ts",
+        "apps/desktop/src/stores/savedSqlStore.ts",
+        "apps/desktop/src/components/editor/QueryHistory.vue",
+        "apps/desktop/src/components/layout/SqlFilePanel.vue",
+        "apps/desktop/src/lib/savedSql/savedSqlHistory.ts",
+        "apps/desktop/src/lib/savedSql/savedSqlFileName.ts"
+      ],
+      "runtimeFiles": [
+        "shared/src/relational-sql-library.ts",
+        "backend/device/src/database/sql-library-input.ts",
+        "backend/device/src/database/sql-library-repository.ts",
+        "backend/device/src/api/sql-library-routes.ts",
+        "src/features/connectors/datastore/use-sql-resource.ts",
+        "src/features/connectors/datastore/sql-history-panel.tsx",
+        "src/features/connectors/datastore/sql-library-dialog.tsx",
+        "src/features/connectors/datastore/sql-library-panel.tsx"
+      ]
     }
   ],
   "knownRemainingScope": [
@@ -207,7 +232,7 @@
     "common driver lifecycle, cancellation, reconnect and streaming",
     "cross-entry-point write grants, scope restrictions and shared policy integration",
     "full grid selection/copy/paste/undo, keyless guards, complex types, structure editing, cancellation and distributed transactions",
-    "full SQL dialect parsing, completion, parameters, history and saved SQL",
+    "full SQL dialect parsing/completion/parameters, snippets/formatting, external-file IO, query tabs/drafts and broader history scopes/driver-entry matrices",
     "import/export/transfer/schema and data comparison/backup",
     "remaining DBX drivers and specialized surfaces",
     "CLI/MCP and applicable desktop entry points",

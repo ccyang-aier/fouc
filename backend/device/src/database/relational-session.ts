@@ -11,6 +11,7 @@ import {
   type RelationalSession,
   type RelationalSavePreview,
   type RelationalSaveResult,
+  type SqlHistoryEntry,
 } from '@fouc/shared';
 import { getDatabaseDriver } from '@fouc/shared/database-catalog';
 import { DatabaseCapabilityRegistry } from './capability-registry';
@@ -28,18 +29,21 @@ import {
   type SavePlan,
 } from './relational-save';
 import { compileTableQuery, tableQueryInput } from './relational-table-query';
+import { RelationalSqlRepository } from './sql-library-repository';
 
 type Entry = {
   session: RelationalSession;
   driver: RelationalDriver;
   plans: Map<string, SavePlan>;
   saving: boolean;
+  connectionName: string;
 };
 export class RelationalSessionManager {
   private readonly entries = new Map<string, Entry>();
-  constructor(private readonly capabilities: DatabaseCapabilityRegistry) {}
+  private readonly transientSql = new RelationalSqlRepository();
+  constructor(private readonly capabilities: DatabaseCapabilityRegistry, readonly sqlRepository = new RelationalSqlRepository()) {}
 
-  async connect(workspaceId: string, value: unknown): Promise<RelationalSession> {
+  async connect(workspaceId: string, value: unknown, connection: { id: string; name: string } | null = null): Promise<RelationalSession> {
     if (!workspaceId.trim() || workspaceId.length > 128)
       throw new DatabaseInputError('工作空间无效');
     if (!value || typeof value !== 'object') throw new DatabaseInputError('连接参数无效');
@@ -84,6 +88,7 @@ export class RelationalSessionManager {
       })!;
       const session: RelationalSession = {
         id,
+        connectionId: connection?.id ?? null,
         workspaceId,
         provider: input.provider,
         database: input.provider === 'sqlite' ? input.path : input.database,
@@ -95,6 +100,7 @@ export class RelationalSessionManager {
         driver,
         plans: new Map(),
         saving: false,
+        connectionName: connection?.name ?? `${input.provider} · ${session.database}`,
       });
       return session;
     } catch (error) {
@@ -326,8 +332,20 @@ export class RelationalSessionManager {
       session.provider === 'mysql'
         ? assertMysqlReadOnlySql(sql as string)
         : assertRelationalReadSql(sql, session.provider);
-    const start = performance.now();
-    const result = await driver.read(statement, schema, maxRows);
+    const entry = this.entry(workspaceId, id), start = performance.now(), executedAt = Date.now();
+    const record = (success: boolean, error: string | null, rowCount: number, truncated: boolean) => {
+      if (this.entries.get(id) !== entry) return;
+      const history: SqlHistoryEntry = { id: crypto.randomUUID(), connectionId: session.connectionId ?? session.id,
+        connectionName: entry.connectionName, provider: session.provider, database: session.provider === 'mysql' ? schema ?? session.database : session.database,
+        schema, sql: sql as string, executedAt, executionTimeMs: Math.round(performance.now() - start), success,
+        error: error === null ? null : error.slice(0, 16384), rowCount, truncated };
+      try { this.historyRepository(entry).append(workspaceId, history); }
+      catch (reason) { return `查询历史保存失败：${reason instanceof Error ? reason.message : String(reason)}`; }
+    };
+    let result;
+    try { result = await driver.read(statement, schema, maxRows); }
+    catch (error) { record(false, error instanceof Error ? error.message : String(error), 0, false); throw error; }
+    const historyWarning = record(true, null, result.rows.length, result.hasMore);
     return {
       ...result,
       columnSortables: result.columns.map(() => false),
@@ -335,12 +353,32 @@ export class RelationalSessionManager {
       executionTimeMs: Math.round(performance.now() - start),
       truncated: result.hasMore,
       sessionId: null,
-      messages: [],
+      messages: historyWarning ? [{ severity: 'warning', message: historyWarning }] : [],
     };
+  }
+  private historyRepository(entry: Entry): RelationalSqlRepository { return entry.session.connectionId ? this.sqlRepository : this.transientSql; }
+  historySearch(workspaceId: string, id: string, value: unknown) {
+    const entry = this.entry(workspaceId, id); return this.historyRepository(entry).search(workspaceId, value, entry.session.connectionId ?? id);
+  }
+  historyEntry(workspaceId: string, id: string, historyId: string) {
+    const entry = this.entry(workspaceId, id); return this.historyRepository(entry).history(workspaceId, historyId, entry.session.connectionId ?? id);
+  }
+  deleteHistory(workspaceId: string, id: string, historyId: string) {
+    const entry = this.entry(workspaceId, id); this.historyRepository(entry).deleteHistory(workspaceId, historyId, entry.session.connectionId ?? id);
+  }
+  clearHistory(workspaceId: string, id: string) {
+    const entry = this.entry(workspaceId, id); this.historyRepository(entry).clearHistory(workspaceId, entry.session.connectionId ?? id);
+  }
+  removeConnection(workspaceId: string, connectionId: string): void {
+    for (const entry of this.entries.values()) if (entry.session.workspaceId === workspaceId && entry.session.connectionId === connectionId) {
+      void this.disconnect(workspaceId, entry.session.id).catch(() => undefined);
+    }
+    this.sqlRepository.removeConnection(workspaceId, connectionId);
   }
   async disconnect(workspaceId: string, id: string): Promise<void> {
     const entry = this.entry(workspaceId, id);
     this.entries.delete(id);
+    if (!entry.session.connectionId) this.transientSql.clearHistory(workspaceId, id);
     this.capabilities.disconnect(id, id);
     await entry.driver.close();
   }
@@ -350,5 +388,7 @@ export class RelationalSessionManager {
         this.disconnect(session.workspaceId, session.id),
       ),
     );
+    this.sqlRepository.close();
+    this.transientSql.close();
   }
 }

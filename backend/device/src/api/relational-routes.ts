@@ -3,6 +3,7 @@ import { DatabaseInputError } from '../database/input-error';
 import { Hono } from 'hono';
 import type { RelationalSessionManager } from '../database/relational-session';
 import type { RelationalConnectionRepository } from '../database/relational-connections';
+import { sqlLibraryRoutes } from './sql-library-routes';
 
 /** Mounted beneath device authentication; every operation includes workspace. */
 export function relationalRoutes(
@@ -29,7 +30,13 @@ export function relationalRoutes(
       savedConnectionRoutes(
         '/api/database/workspaces/:workspaceId/relational/connections',
         connections,
-        (workspace, input) => sessions.connect(workspace, input),
+        async (workspace, input, connectionId) => {
+          const session = await sessions.connect(workspace, input, { id: connectionId, name: connections.get(workspace, connectionId).name });
+          try { connections.get(workspace, connectionId); }
+          catch (error) { await sessions.disconnect(workspace, session.id).catch(() => undefined); throw error; }
+          return session;
+        },
+        (workspace, connectionId) => sessions.removeConnection(workspace, connectionId),
       ),
     );
   app.post(base, async (c) =>
@@ -44,6 +51,7 @@ export function relationalRoutes(
       201,
     ),
   );
+  app.route('/', sqlLibraryRoutes(sessions, connections));
   app.get(base + '/:id', (c) =>
     c.json({
       ok: true,

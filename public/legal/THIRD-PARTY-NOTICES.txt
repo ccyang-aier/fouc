@@ -24,6 +24,16 @@ layout,grid}. Fouc's corresponding implementation is independently written in
 backend/device/src/database/{drivers,relational-*}, shared/src/relational.ts and
 src/features/connectors/datastore/ using TypeScript, React and Node-compatible APIs.
 The SQLite connector SVG is an original Fouc illustration.
+SQL history storage, stable time/ID pagination, literal search and connection-qualified
+database filtering follow crates/dbx-core/src/persistence/{history,storage}.rs
+and apps/desktop/src/stores/historyStore.ts. Saved SQL folders, lazy document
+loading, rename/move behavior and recent/frequent ranking follow saved_sql.rs,
+storage.rs, savedSqlStore.ts and lib/savedSql/{savedSqlFileName,savedSqlHistory}.ts.
+The history detail/reuse and SQL library surfaces follow QueryHistory.vue and
+the desktop file tree. Fouc adapts them in sql-library-repository.ts,
+shared/src/relational-sql-library.ts and the React sql-history/library panels;
+workspace-owned SQLite files and transactional document versions replace DBX's
+global storage and Vue store. No legacy storage adapter or DBX runtime is loaded.
 Table structure metadata, ordinal composite foreign keys, expression/INCLUDE
 indexes, constraints, triggers and source browsing follow the corresponding
 native driver catalog routines and TableStructureEditor.vue. The adapted

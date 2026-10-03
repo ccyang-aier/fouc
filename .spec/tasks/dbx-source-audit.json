@@ -186,8 +186,8 @@
         "area": "contracts-and-capabilities",
         "status": "partial",
         "files": 5,
-        "physical": 623,
-        "effective": 545
+        "physical": 624,
+        "effective": 546
       },
       {
         "area": "mysql-native-driver",
@@ -200,15 +200,15 @@
         "area": "shared-relational-runtime-and-postgres-sqlite-drivers",
         "status": "partial",
         "files": 7,
-        "physical": 1162,
-        "effective": 1138
+        "physical": 1210,
+        "effective": 1186
       },
       {
         "area": "shared-sql-workbench-and-connection-management",
         "status": "partial",
         "files": 10,
-        "physical": 1854,
-        "effective": 1810
+        "physical": 1858,
+        "effective": 1814
       },
       {
         "area": "native-redis-and-specialized-surface",
@@ -244,12 +244,19 @@
         "files": 6,
         "physical": 1204,
         "effective": 1187
+      },
+      {
+        "area": "native-sql-history-and-library",
+        "status": "partial",
+        "files": 8,
+        "physical": 513,
+        "effective": 498
       }
     ],
     "runtime": {
-      "files": 93,
-      "physical": 11508,
-      "effective": 11074
+      "files": 101,
+      "physical": 12074,
+      "effective": 11625
     },
     "targetEffectiveRuntimeLines": 50000,
     "milestoneVerified": false

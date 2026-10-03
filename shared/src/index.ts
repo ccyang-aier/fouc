@@ -439,3 +439,4 @@ export * from './redis-mutation';
 export * from './redis-observability';
 export * from './redis-stream';
 export * from './redis-monitor';
+export * from './redis-pubsub';

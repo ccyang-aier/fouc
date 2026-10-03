@@ -5246,6 +5246,16 @@
           "kind": "partial-web-validation",
           "path": "src/features/connectors/redis/redis-monitor-output.tsx",
           "check": "2026-10-03: Playwright+Chrome1440/760/390: native MONITOR command stream, global DB14/15 and binary escaped data, search/no match/copy/follow control, newest1000-row retention; Stop/view exit/back release real Redis clients. Normal PING and history remain usable; unexpected socket close and denied ACL show explicit retained-data error, retry recovers. Stop visible and record overflow local at all widths; one expected HTTP502, no other page/console errors. Browser plugin unavailable. Other Redis versions/full transport/entry-point acceptance, Sentinel/Cluster and PubSub remain pending."
+        },
+        {
+          "kind": "partial-runtime-validation",
+          "path": "scripts/verify-redis-pubsub-live.mjs",
+          "check": "2026-10-03: dedicated Redis7.4.8 lab56380, real scoped NDJSON Pub/Sub capture and independent RESP2 socket: AUTH/binary and empty channels/payloads/binary patterns, channel+pattern duplicate deliveries, cross-DB messages, subscribe/psubscribe/unsubscribe/punsubscribe ACK truth including earlier accepted names before ACL denial, permission recovery, 64KiB clipped observations. Publication requires current write grant and confirmation, preserves receiver count and excludes payloads from history; delivered publication with lost ACK reports unknown without retry. No keys created. Workspace/session/capture guards and actual socket release on HTTP abort (including delayed real PING acknowledgement), DB switch, session close and socket kill. 38 Redis scoped tests across15 files/289 assertions pass; count/encoded-byte caps, canonical Base64, byte lengths, malformed/fragmented frames and distinct capture sequences covered. MONITOR native and browser regression passed after shared lifetime/decoder extraction."
+        },
+        {
+          "kind": "partial-web-validation",
+          "path": "src/features/connectors/redis/redis-pubsub.tsx",
+          "check": "2026-10-03: Playwright+Chrome1440/760/390 verifies real binary/empty channels/messages and binary pattern matching, duplicate subscriptions without duplicate chips, duplicate channel/pattern deliveries, denied subscribe with retained ACK state/retry, reconnect restores subscriptions without offline replay, newest500 retention, copy/filter/no-match/follow/clear/detail and clipping. Publish locked/review/back/confirm/binary bytes/zero-byte messages and ACL failure/retry work; publication/detail dialog bodies scroll while actions stay visible. Actual Redis subscriber sockets released on disconnect/view exit/DB switch/back/transport loss. Two expected HTTP502, no other page/console errors; browser plugin unavailable, bundled Playwright fallback. Other Redis versions/TLS transport matrix, Sentinel/Cluster, batch/large key operations and complete desktop/CLI/MCP matrix remain pending."
         }
       ],
       "scopeKind": "driver"
@@ -6200,6 +6210,16 @@
           "kind": "partial-web-validation",
           "path": "src/features/connectors/redis/redis-monitor-output.tsx",
           "check": "2026-10-03: Playwright+Chrome1440/760/390: native MONITOR command stream, global DB14/15 and binary escaped data, search/no match/copy/follow control, newest1000-row retention; Stop/view exit/back release real Redis clients. Normal PING and history remain usable; unexpected socket close and denied ACL show explicit retained-data error, retry recovers. Stop visible and record overflow local at all widths; one expected HTTP502, no other page/console errors. Browser plugin unavailable. Other Redis versions/full transport/entry-point acceptance, Sentinel/Cluster and PubSub remain pending."
+        },
+        {
+          "kind": "partial-runtime-validation",
+          "path": "scripts/verify-redis-pubsub-live.mjs",
+          "check": "2026-10-03: dedicated Redis7.4.8 lab56380, real scoped NDJSON Pub/Sub capture and independent RESP2 socket: AUTH/binary and empty channels/payloads/binary patterns, channel+pattern duplicate deliveries, cross-DB messages, subscribe/psubscribe/unsubscribe/punsubscribe ACK truth including earlier accepted names before ACL denial, permission recovery, 64KiB clipped observations. Publication requires current write grant and confirmation, preserves receiver count and excludes payloads from history; delivered publication with lost ACK reports unknown without retry. No keys created. Workspace/session/capture guards and actual socket release on HTTP abort (including delayed real PING acknowledgement), DB switch, session close and socket kill. 38 Redis scoped tests across15 files/289 assertions pass; count/encoded-byte caps, canonical Base64, byte lengths, malformed/fragmented frames and distinct capture sequences covered. MONITOR native and browser regression passed after shared lifetime/decoder extraction."
+        },
+        {
+          "kind": "partial-web-validation",
+          "path": "src/features/connectors/redis/redis-pubsub.tsx",
+          "check": "2026-10-03: Playwright+Chrome1440/760/390 verifies real binary/empty channels/messages and binary pattern matching, duplicate subscriptions without duplicate chips, duplicate channel/pattern deliveries, denied subscribe with retained ACK state/retry, reconnect restores subscriptions without offline replay, newest500 retention, copy/filter/no-match/follow/clear/detail and clipping. Publish locked/review/back/confirm/binary bytes/zero-byte messages and ACL failure/retry work; publication/detail dialog bodies scroll while actions stay visible. Actual Redis subscriber sockets released on disconnect/view exit/DB switch/back/transport loss. Two expected HTTP502, no other page/console errors; browser plugin unavailable, bundled Playwright fallback. Other Redis versions/TLS transport matrix, Sentinel/Cluster, batch/large key operations and complete desktop/CLI/MCP matrix remain pending."
         }
       ],
       "scopeKind": "driver"

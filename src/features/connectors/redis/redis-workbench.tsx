@@ -12,7 +12,8 @@ import {
   Plus,
   CheckCircle,
   ChartLineUp,
-  ClockCounterClockwise
+  ClockCounterClockwise,
+  Broadcast
 } from "@phosphor-icons/react"
 import type { RedisBlob, RedisKeyInfo, RedisMutation, RedisMutationResult, RedisScanPage, RedisSession, RedisValuePage } from "@fouc/shared"
 import { backendFetch } from "@/lib/backend"
@@ -23,6 +24,7 @@ import type { RedisEditIntent } from "./redis-mutation-model"
 import { RedisDatabaseSelector } from "./redis-database-selector"
 import { RedisDashboard } from "./redis-dashboard"
 import { RedisSlowlog } from "./redis-slowlog"
+import { RedisPubSubView } from './redis-pubsub'
 import styles from "./redis.module.css"
 
 export function RedisWorkbench({
@@ -43,7 +45,7 @@ export function RedisWorkbench({
   const [keys, setKeys] = useState<RedisKeyInfo[]>([])
   const [selected, setSelected] = useState<string | null>(null)
   const [value, setValue] = useState<RedisValuePage | null>(null)
-  const [mode, setMode] = useState<"keys" | "console" | "dashboard" | "slowlog">("keys")
+  const [mode, setMode] = useState<"keys" | "console" | "dashboard" | "slowlog" | "pubsub">("keys")
   const [scanBusy, setScanBusy] = useState(true)
   const [valueBusy, setValueBusy] = useState(false)
   const [scanError, setScanError] = useState("")
@@ -197,8 +199,9 @@ export function RedisWorkbench({
         </button>
         <button type="button" aria-current={mode === "dashboard" ? "page" : undefined} disabled={consoleBusy} onClick={() => setMode("dashboard")}><ChartLineUp size={14} />运行概览</button>
         <button type="button" aria-current={mode === "slowlog" ? "page" : undefined} disabled={consoleBusy} onClick={() => setMode("slowlog")}><ClockCounterClockwise size={14} />慢日志</button>
+        <button type="button" aria-current={mode === "pubsub" ? "page" : undefined} disabled={consoleBusy} onClick={() => setMode("pubsub")}><Broadcast size={14} />Pub/Sub</button>
       </nav>
-      {mode === "dashboard" ? <RedisDashboard base={base} /> : mode === "slowlog" ? <RedisSlowlog base={base} /> : mode === "console" ? (
+      {mode === "pubsub" ? <RedisPubSubView base={base} readOnly={readOnly} onBusyChange={setWriteBusy} /> : mode === "dashboard" ? <RedisDashboard base={base} /> : mode === "slowlog" ? <RedisSlowlog base={base} /> : mode === "console" ? (
         <RedisConsole base={base} database={session.database} onBusyChange={setConsoleBusy} />
       ) : (
         <div className={styles.body}>

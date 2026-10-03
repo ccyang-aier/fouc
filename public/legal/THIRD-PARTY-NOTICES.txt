@@ -59,6 +59,16 @@ failed states, 1000-row retention and per-line bounds follow lib/redis/redisMoni
 query/redis_ops.rs, redis_driver.rs and dbx-web/routes/redis_pubsub_ws.rs. Fouc's
 redis-monitor.ts and use-redis-monitor.ts use an authenticated NDJSON stream,
 bounded pending batches and scoped cancellation instead of DBX WebSockets.
+Pub/Sub channel/pattern subscriptions, disconnect/reconnect restoration, message
+retention and publication follow RedisPubSubPanel.vue, redis_ops.rs,
+redis_driver.rs and redis_pubsub_ws.rs. Fouc adapts them in redis-pubsub*.ts/tsx
+with acknowledged subscription state, byte-preserving RESP2 parsing, scoped
+NDJSON capture IDs and explicit publication review through the existing write grant.
+
+redis-parser 3.0.0
+Copyright (c) 2015 NodeRedis; MIT License.
+Fouc's dedicated Pub/Sub connection uses this RESP parser. The full license
+is retained in REDIS-PARSER-LICENSE.txt in this directory.
 
 This notice covers DBX-derived material. Other dependency notices remain
 subject to the separate F06 license audit.

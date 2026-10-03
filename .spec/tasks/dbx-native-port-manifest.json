@@ -120,7 +120,17 @@
         "backend/device/src/database/redis-monitor.ts",
         "src/features/connectors/redis/redis-monitor-model.ts",
         "src/features/connectors/redis/redis-monitor-output.tsx",
-        "src/features/connectors/redis/use-redis-monitor.ts"
+        "src/features/connectors/redis/use-redis-monitor.ts",
+        "shared/src/redis-pubsub.ts",
+        "backend/device/src/database/redis-live.ts",
+        "backend/device/src/database/redis-pubsub-wire.ts",
+        "backend/device/src/database/redis-pubsub.ts",
+        "src/features/connectors/redis/redis-live-stream.ts",
+        "src/features/connectors/redis/redis-pubsub-model.ts",
+        "src/features/connectors/redis/use-redis-pubsub.ts",
+        "src/features/connectors/redis/redis-pubsub.tsx",
+        "src/features/connectors/redis/redis-pubsub-publish.tsx",
+        "src/features/connectors/redis/redis-pubsub-messages.tsx"
       ]
     },
     {

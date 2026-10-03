@@ -62,6 +62,16 @@ export function redisRoutes(
     const stream = await sessions.monitor(c.req.param('workspaceId')!, c.req.param('id')!, c.req.raw.signal);
     return new Response(stream, { headers: { 'content-type': 'application/x-ndjson; charset=utf-8', 'cache-control': 'no-store' } });
   });
+  app.post(base + '/:id/pubsub', async (c) => {
+    const stream = await sessions.pubsub(c.req.param('workspaceId')!, c.req.param('id')!, c.req.raw.signal);
+    return new Response(stream, { headers: { 'content-type': 'application/x-ndjson; charset=utf-8', 'cache-control': 'no-store' } });
+  });
+  app.get(base + '/:id/pubsub/:captureId/subscriptions', (c) => c.json({ ok: true,
+    data: sessions.pubsubSubscriptions(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('captureId')!) }));
+  app.post(base + '/:id/pubsub/:captureId/subscriptions', async (c) => c.json({ ok: true,
+    data: await sessions.pubsubChange(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('captureId')!, await c.req.json().catch(() => null)) }));
+  app.post(base + '/:id/pubsub/publish', async (c) => c.json({ ok: true,
+    data: await sessions.pubsubPublish(c.req.param('workspaceId')!, c.req.param('id')!, await c.req.json().catch(() => null)) }));
   app.post(base + '/:id/stream/consumers', async (c) => {
     const body = await c.req.json().catch(() => null);
     return c.json({ ok: true, data: await sessions.streamConsumers(c.req.param('workspaceId')!, c.req.param('id')!, body?.key, body?.group) });

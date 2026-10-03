@@ -19,11 +19,13 @@ import { RedisHistoryRepository, REDIS_HISTORY_LIMIT, redisHistoryEntry } from '
 import { redisInformation, redisSlowlog } from './redis-observability';
 import { redisStreamGroups, redisStreamConsumers, redisStreamPending } from './redis-stream';
 import { RedisMonitor } from './redis-monitor';
+import { RedisPubSub, redisPubSubBytes } from './redis-pubsub';
+import { redisUnsigned } from './redis-protocol';
 export { redisBlob } from './redis-blob';
 
 const PAGE_SIZE = 100;
 const STRING_BYTES = 65536;
-type Entry = { session: RedisSession; client: Redis; mutations: RedisMutationManager; changingMode: boolean; history: RedisHistoryEntry[]; monitors: Set<RedisMonitor> };
+type Entry = { session: RedisSession; client: Redis; mutations: RedisMutationManager; changingMode: boolean; history: RedisHistoryEntry[]; monitors: Set<RedisMonitor>; pubsubs: Map<string, RedisPubSub> };
 
 /** Each client keeps its verified DB immutable; switching creates a new session. */
 export class RedisSessionManager {
@@ -71,7 +73,7 @@ export class RedisSessionManager {
         mode: 'standalone',
         readOnly: true,
       };
-      this.entries.set(session.id, { session, client, mutations: new RedisMutationManager(client), changingMode: false, history: [], monitors: new Set() });
+      this.entries.set(session.id, { session, client, mutations: new RedisMutationManager(client), changingMode: false, history: [], monitors: new Set(), pubsubs: new Map() });
       return session;
     } catch (error) {
       client.disconnect();
@@ -130,6 +132,39 @@ export class RedisSessionManager {
     entry.monitors.add(monitor);
     return monitor.open(signal);
   }
+  pubsub(workspaceId: string, id: string, signal: AbortSignal) {
+    const entry = this.entry(workspaceId, id);
+    const capture = new RedisPubSub(entry.client, () => entry.pubsubs.delete(capture.id));
+    entry.pubsubs.set(capture.id, capture);
+    return capture.open(signal);
+  }
+  private pubsubCapture(workspaceId: string, id: string, captureId: string) {
+    const capture = this.entry(workspaceId, id).pubsubs.get(captureId);
+    if (!capture) throw new DatabaseInputError('当前 Redis 会话中的 Pub/Sub 连接已断开');
+    return capture;
+  }
+  pubsubSubscriptions(workspaceId: string, id: string, captureId: string) {
+    return this.pubsubCapture(workspaceId, id, captureId).subscriptions();
+  }
+  pubsubChange(workspaceId: string, id: string, captureId: string, input: unknown) {
+    return this.pubsubCapture(workspaceId, id, captureId).change(input);
+  }
+  async pubsubPublish(workspaceId: string, id: string, input: unknown) {
+    const entry = this.writable(workspaceId, id);
+    if (!input || typeof input !== 'object' || (input as Record<string, unknown>).confirmed !== true)
+      throw new DatabaseInputError('发布消息需要明确确认');
+    const value = input as Record<string, unknown>;
+    const channel = redisPubSubBytes(value.channel), payload = redisPubSubBytes(value.payload, REDIS_WRITE_BYTES);
+    try {
+      const count = await entry.client.callBuffer('PUBLISH', channel, payload);
+      return { receivers: redisUnsigned(count), publishedAt: Date.now() };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (/timeout|timed out|connection.*closed|socket|ECONNRESET|EPIPE/i.test(message))
+        throw new Error(`发布结果未确认，请核对接收端后再决定是否重发；${message}`);
+      throw error;
+    }
+  }
   async switchDatabase(workspaceId: string, id: string, rawDatabase: unknown): Promise<RedisSession> {
     const database = redisDatabase(rawDatabase);
     const entry = this.entry(workspaceId, id);
@@ -144,9 +179,10 @@ export class RedisSessionManager {
       await client.select(database);
       await client.ping();
       const session = { ...entry.session, id: crypto.randomUUID(), database, readOnly: true };
-      this.entries.set(session.id, { session, client, mutations: new RedisMutationManager(client), changingMode: false, history: [], monitors: new Set() });
+      this.entries.set(session.id, { session, client, mutations: new RedisMutationManager(client), changingMode: false, history: [], monitors: new Set(), pubsubs: new Map() });
       this.entries.delete(id);
       for (const monitor of entry.monitors) monitor.stop('Redis 数据库已切换，MONITOR 已停止');
+      for (const capture of entry.pubsubs.values()) capture.stop('Redis 数据库已切换，Pub/Sub 已断开');
       entry.client.disconnect();
       return session;
     } catch (error) { client.disconnect(); throw error; }
@@ -345,10 +381,11 @@ export class RedisSessionManager {
   disconnect(workspaceId: string, id: string): void {
     // Session replacement and view cleanup may both close the same session.
     if (!this.entries.has(id)) return;
-    const { client, mutations, monitors } = this.entry(workspaceId, id);
+    const { client, mutations, monitors, pubsubs } = this.entry(workspaceId, id);
     if (this.entry(workspaceId, id).changingMode) throw new DatabaseInputError('Redis 会话正在切换，请等待后断开');
     mutations.clear();
     for (const monitor of monitors) monitor.stop('Redis 会话已断开，MONITOR 已停止');
+    for (const capture of pubsubs.values()) capture.stop('Redis 会话已断开，Pub/Sub 已断开');
     this.entries.delete(id);
     client.disconnect();
   }

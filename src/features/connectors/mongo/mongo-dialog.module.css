@@ -1,0 +1,5 @@
+.dialog { width: min(540px, calc(100vw - 32px)); }
+.form { display: flex; flex-direction: column; min-height: 0; }
+.body { min-height: 0; overflow-y: auto; }
+.columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.columns > label { min-width: 0; }

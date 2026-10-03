@@ -6,7 +6,7 @@ export function savedConnectionRoutes<Config, Session>(
   base: string,
   connections: DeviceConnectionRepository<Config>,
   connect: (workspaceId: string, input: unknown, connectionId: string) => Promise<Session>,
-  beforeRemove?: (workspaceId: string, connectionId: string) => void,
+  beforeRemove?: (workspaceId: string, connectionId: string) => void | Promise<void>,
 ) {
   const app = new Hono();
   app.get(base, (c) => c.json({ ok: true, data: connections.list(c.req.param('workspaceId')!) }));
@@ -27,9 +27,9 @@ export function savedConnectionRoutes<Config, Session>(
       ),
     });
   });
-  app.delete(base + '/:id', (c) => {
+  app.delete(base + '/:id', async (c) => {
     connections.get(c.req.param('workspaceId')!, c.req.param('id')!);
-    beforeRemove?.(c.req.param('workspaceId')!, c.req.param('id')!);
+    await beforeRemove?.(c.req.param('workspaceId')!, c.req.param('id')!);
     connections.remove(c.req.param('workspaceId')!, c.req.param('id')!);
     return c.json({ ok: true, data: { deleted: true } });
   });

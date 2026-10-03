@@ -1191,6 +1191,11 @@
           "kind": "partial-native-validation",
           "path": "backend/device/src/database/relational-save.ts",
           "check": "2026-10-03: Immutable workspace/session-bound previews, exact parameter bindings, explicit single-use confirmation and native atomic rollback. Three real drivers and Web 1440/760/390 validated. Distributed commit, cancellation and unknown-outcome reconciliation remain open."
+        },
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "src/features/connectors/datastore/structure-edit-action.tsx",
+          "check": "2026-10-04：开发阶段仅新增P0与一次实际流程。MongoDB8原生库/集合/筛选排序分页/聚合/索引/元数据和Canonical EJSON精度，读取6项57断言、窄写入5项56断言；原始完整BSON CAS、类型/权限/空间/一次性计划与取消。Chrome真实创建连接、筛选文档、只读解锁、预览0写入、确认后大整数原值回读。网格列隐藏/NULL列、左右冻结/排序/宽度/密度/日期/JSON路径/掩码/模板，22项95断言及刷新选择映射P0；实际原始复制、显示格式与重新执行布局保留。结构编辑9项64断言、三库实际DDL，权限与计划撤销/结构变化/原生提交接口P0，真实MySQL中文含单引号注释预览0写入后确认回读。1440与390实际视觉检查，修正Mongo窄屏资源导航、结构审查局部滚动与固定操作区、主按钮对比度；自有TS/lint通过。不重复此前通过矩阵。Mongo GridFS/导入导出/dump、批量更新/其他拓扑，网格转置/自动刷新，结构外键/约束完整编辑及全入口矩阵仍未完成。"
         }
       ],
       "scopeKind": "driver"
@@ -1809,6 +1814,11 @@
           "kind": "partial-native-validation",
           "path": "scripts/verify-table-structure-live.mjs",
           "check": "2026-10-03: native PostgreSQL17/MySQL8.4/SQLite structure catalogs, ordered composite FK actions, expression/INCLUDE/prefix/invisible indexes, constraints, triggers, views and source DDL; Pg rolled-back reconstruction and SQLite in-memory recreation passed. Chrome 1440/760/390 verifies six structure tabs/search/empty/FK navigation/readonly highlighted DDL/copy/download/refresh with no errors. Object mutation, other object kinds, complete restoration and full driver/version matrix remain open."
+        },
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "backend/device/src/database/structure-edit-plans.ts",
+          "check": "2026-10-04：开发阶段仅新增P0与一次实际流程。MongoDB8原生库/集合/筛选排序分页/聚合/索引/元数据和Canonical EJSON精度，读取6项57断言、窄写入5项56断言；原始完整BSON CAS、类型/权限/空间/一次性计划与取消。Chrome真实创建连接、筛选文档、只读解锁、预览0写入、确认后大整数原值回读。网格列隐藏/NULL列、左右冻结/排序/宽度/密度/日期/JSON路径/掩码/模板，22项95断言及刷新选择映射P0；实际原始复制、显示格式与重新执行布局保留。结构编辑9项64断言、三库实际DDL，权限与计划撤销/结构变化/原生提交接口P0，真实MySQL中文含单引号注释预览0写入后确认回读。1440与390实际视觉检查，修正Mongo窄屏资源导航、结构审查局部滚动与固定操作区、主按钮对比度；自有TS/lint通过。不重复此前通过矩阵。Mongo GridFS/导入导出/dump、批量更新/其他拓扑，网格转置/自动刷新，结构外键/约束完整编辑及全入口矩阵仍未完成。"
         }
       ],
       "scopeKind": "driver"
@@ -3554,7 +3564,7 @@
     {
       "id": "G07",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql",
@@ -3634,13 +3644,19 @@
         "action": "表结构筛选、列显示/隐藏/固定、自动适宽、数据/结构工具栏、Canvas 编辑模式和上下文操作完整可用。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "src/features/connectors/datastore/grid/layout/model.ts",
+          "check": "2026-10-04：开发阶段仅新增P0与一次实际流程。MongoDB8原生库/集合/筛选排序分页/聚合/索引/元数据和Canonical EJSON精度，读取6项57断言、窄写入5项56断言；原始完整BSON CAS、类型/权限/空间/一次性计划与取消。Chrome真实创建连接、筛选文档、只读解锁、预览0写入、确认后大整数原值回读。网格列隐藏/NULL列、左右冻结/排序/宽度/密度/日期/JSON路径/掩码/模板，22项95断言及刷新选择映射P0；实际原始复制、显示格式与重新执行布局保留。结构编辑9项64断言、三库实际DDL，权限与计划撤销/结构变化/原生提交接口P0，真实MySQL中文含单引号注释预览0写入后确认回读。1440与390实际视觉检查，修正Mongo窄屏资源导航、结构审查局部滚动与固定操作区、主按钮对比度；自有TS/lint通过。不重复此前通过矩阵。Mongo GridFS/导入导出/dump、批量更新/其他拓扑，网格转置/自动刷新，结构外键/约束完整编辑及全入口矩阵仍未完成。"
+        }
+      ],
       "scopeKind": "driver"
     },
     {
       "id": "G08",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql",
@@ -3720,7 +3736,13 @@
         "action": "转置视图、列头拖拽排序、左右冻结、字段注释搜索、表/查询级布局记忆与重置、自动刷新和多次运行结果固定；未提交编辑时防止自动刷新覆盖。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "src/features/connectors/datastore/grid/layout/use-layout.ts",
+          "check": "2026-10-04：开发阶段仅新增P0与一次实际流程。MongoDB8原生库/集合/筛选排序分页/聚合/索引/元数据和Canonical EJSON精度，读取6项57断言、窄写入5项56断言；原始完整BSON CAS、类型/权限/空间/一次性计划与取消。Chrome真实创建连接、筛选文档、只读解锁、预览0写入、确认后大整数原值回读。网格列隐藏/NULL列、左右冻结/排序/宽度/密度/日期/JSON路径/掩码/模板，22项95断言及刷新选择映射P0；实际原始复制、显示格式与重新执行布局保留。结构编辑9项64断言、三库实际DDL，权限与计划撤销/结构变化/原生提交接口P0，真实MySQL中文含单引号注释预览0写入后确认回读。1440与390实际视觉检查，修正Mongo窄屏资源导航、结构审查局部滚动与固定操作区、主按钮对比度；自有TS/lint通过。不重复此前通过矩阵。Mongo GridFS/导入导出/dump、批量更新/其他拓扑，网格转置/自动刷新，结构外键/约束完整编辑及全入口矩阵仍未完成。"
+        }
+      ],
       "scopeKind": "driver"
     },
     {
@@ -3811,6 +3833,11 @@
           "kind": "partial-native-p0-and-browser-smoke",
           "path": "src/features/connectors/datastore/sql-explain-action.tsx",
           "check": "2026-10-04：开发阶段仅P0。MySQL JSON/标准、PostgreSQL JSON、SQLite QUERY PLAN 真实计划；8项原生计划P0、15项选择/精度P0、12项导出P0（原生三库字面量往返）。Chrome实际流程验证EXPLAIN接口/图形/树/原始计划、大整数详情/范围选择/精确求和/复制、选定两行一列CSV下载；1440×1000和390×844实际视觉检查。修复网格遮挡导出栏与浏览器计时器非法this绑定。仅本次已加载结果；ANALYZE、其他驱动/全入口、写入粘贴/布局设置、XLSX/ZIP/全表流式导出仍待阶段回归或实现。"
+        },
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "src/features/connectors/datastore/grid/layout/formatter.ts",
+          "check": "2026-10-04：开发阶段仅新增P0与一次实际流程。MongoDB8原生库/集合/筛选排序分页/聚合/索引/元数据和Canonical EJSON精度，读取6项57断言、窄写入5项56断言；原始完整BSON CAS、类型/权限/空间/一次性计划与取消。Chrome真实创建连接、筛选文档、只读解锁、预览0写入、确认后大整数原值回读。网格列隐藏/NULL列、左右冻结/排序/宽度/密度/日期/JSON路径/掩码/模板，22项95断言及刷新选择映射P0；实际原始复制、显示格式与重新执行布局保留。结构编辑9项64断言、三库实际DDL，权限与计划撤销/结构变化/原生提交接口P0，真实MySQL中文含单引号注释预览0写入后确认回读。1440与390实际视觉检查，修正Mongo窄屏资源导航、结构审查局部滚动与固定操作区、主按钮对比度；自有TS/lint通过。不重复此前通过矩阵。Mongo GridFS/导入导出/dump、批量更新/其他拓扑，网格转置/自动刷新，结构外键/约束完整编辑及全入口矩阵仍未完成。"
         }
       ],
       "scopeKind": "driver"
@@ -5488,7 +5515,7 @@
     {
       "id": "X02",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mongodb"
@@ -5506,7 +5533,13 @@
         "action": "MongoDB：库/集合/文档 CRUD、筛选/排序/分页/聚合、索引、JSON 编辑、GridFS、导入导出与 dump；CSV 嵌套字段路径/数组索引和 ObjectId 类型识别、JSON/NDJSON Extended JSON 往返、采样推断与字段映射逐项验收。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "src/features/connectors/mongo/mongo-workbench.tsx",
+          "check": "2026-10-04：开发阶段仅新增P0与一次实际流程。MongoDB8原生库/集合/筛选排序分页/聚合/索引/元数据和Canonical EJSON精度，读取6项57断言、窄写入5项56断言；原始完整BSON CAS、类型/权限/空间/一次性计划与取消。Chrome真实创建连接、筛选文档、只读解锁、预览0写入、确认后大整数原值回读。网格列隐藏/NULL列、左右冻结/排序/宽度/密度/日期/JSON路径/掩码/模板，22项95断言及刷新选择映射P0；实际原始复制、显示格式与重新执行布局保留。结构编辑9项64断言、三库实际DDL，权限与计划撤销/结构变化/原生提交接口P0，真实MySQL中文含单引号注释预览0写入后确认回读。1440与390实际视觉检查，修正Mongo窄屏资源导航、结构审查局部滚动与固定操作区、主按钮对比度；自有TS/lint通过。不重复此前通过矩阵。Mongo GridFS/导入导出/dump、批量更新/其他拓扑，网格转置/自动刷新，结构外键/约束完整编辑及全入口矩阵仍未完成。"
+        }
+      ],
       "scopeKind": "driver"
     },
     {
@@ -6599,7 +6632,7 @@
     {
       "id": "R11",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mongodb"
@@ -6617,7 +6650,13 @@
         "action": "`mongodb`",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "backend/device/src/database/drivers/mongo-driver.ts",
+          "check": "2026-10-04：开发阶段仅新增P0与一次实际流程。MongoDB8原生库/集合/筛选排序分页/聚合/索引/元数据和Canonical EJSON精度，读取6项57断言、窄写入5项56断言；原始完整BSON CAS、类型/权限/空间/一次性计划与取消。Chrome真实创建连接、筛选文档、只读解锁、预览0写入、确认后大整数原值回读。网格列隐藏/NULL列、左右冻结/排序/宽度/密度/日期/JSON路径/掩码/模板，22项95断言及刷新选择映射P0；实际原始复制、显示格式与重新执行布局保留。结构编辑9项64断言、三库实际DDL，权限与计划撤销/结构变化/原生提交接口P0，真实MySQL中文含单引号注释预览0写入后确认回读。1440与390实际视觉检查，修正Mongo窄屏资源导航、结构审查局部滚动与固定操作区、主按钮对比度；自有TS/lint通过。不重复此前通过矩阵。Mongo GridFS/导入导出/dump、批量更新/其他拓扑，网格转置/自动刷新，结构外键/约束完整编辑及全入口矩阵仍未完成。"
+        }
+      ],
       "scopeKind": "driver"
     },
     {

@@ -16,21 +16,33 @@
 .viewport { flex: 1; min-width: 0; min-height: 0; overflow: auto; position: relative; scrollbar-width: thin; outline: none; overscroll-behavior: contain; }
 .viewport:focus-visible { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent); }
 .viewport:global(.fouc-data-grid-native-selection-blocked) { user-select: none; -webkit-user-select: none; }
-.table { border-collapse: separate; border-spacing: 0; width: max-content; min-width: 100%; table-layout: fixed; font-size: 13px; }
-.table thead { position: sticky; top: 0; z-index: 3; }
+.table { border-collapse: separate; border-spacing: 0; table-layout: fixed; font-size: 13px; }
+.table thead { position: sticky; top: 0; z-index: 7; }
 .table th, .table td { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 0 10px; box-sizing: border-box; }
-.table thead th { position: relative; height: 44px; text-align: left; background: var(--surface-subtle); font-weight: 500; width: 180px; min-width: 144px; max-width: 280px; cursor: pointer; color: var(--ink); user-select: none; }
-.table thead th > span { display: block; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 16px; }
-.table thead small { display: block; color: var(--muted-strong); font: 9px/13px var(--font-code); overflow: hidden; text-overflow: ellipsis; max-width: 250px; white-space: nowrap; }
-.table thead th:has(.sortButton) > span { padding-right: 23px; }
-.table .sortButton { position: absolute; top: 9px; right: 5px; color: var(--muted-strong); padding: 4px 3px; gap: 2px; }
+.table thead th { position: relative; height: 44px; text-align: left; background: var(--surface-subtle); font-weight: 500; cursor: pointer; color: var(--ink); user-select: none; }
+.table thead th > span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 16px; padding-left: 7px; padding-right: 31px; }
+.table thead small { display: flex; align-items: center; gap: 4px; color: var(--muted-strong); font: 9px/13px var(--font-code); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 7px; padding-right: 24px; }
+.table thead small i { color: var(--accent-ink); font: italic 11px var(--font-code); }
+.table thead th:has(.sortButton) > span { padding-right: 48px; }
+.columnActions { display: flex; align-items: center; gap: 1px; position: absolute; top: 8px; right: 7px; }
+.table .sortButton { color: var(--muted-strong); padding: 4px 2px; gap: 2px; }
+.table .columnSettings { padding: 4px 2px; color: var(--muted-strong); opacity: 0; }
+.table th:hover .columnSettings, .table th:focus-within .columnSettings { opacity: 1; }
+.table .moveHandle { position: absolute; left: 1px; top: 5px; padding: 0; height: 32px; width: 10px; color: var(--muted-strong); cursor: grab; opacity: .35; touch-action: none; }
+.table th:hover .moveHandle, .table .moveHandle:focus-visible { opacity: 1; }.table .moveHandle:active { cursor: grabbing; }
+.table .resizeHandle { position: absolute; right: -3px; top: 0; bottom: 0; width: 7px; padding: 0; background: transparent; border: 0; border-radius: 0; cursor: col-resize; z-index: 3; touch-action: none; }
+.table .resizeHandle:hover, .table .resizeHandle:focus-visible { background: color-mix(in srgb, var(--accent) 35%, transparent); }
+.table th[data-drop] { box-shadow: inset 2px 0 var(--accent); }.table th[data-moving] { opacity: .58; }
 .sortButton b { font: 8px var(--font-code); color: var(--accent-ink); }
-.table tbody td { height: 32px; position: relative; font: 13px/31px var(--font-code); width: 180px; min-width: 144px; max-width: 280px; cursor: cell; white-space: nowrap; }
-.table tbody td > span { display: block; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.table tbody tr:hover > td:not([data-selected]) { background: color-mix(in srgb, var(--surface-hover) 45%, transparent); }
-.table th.corner { position: sticky; left: 0; width: 48px; min-width: 48px; max-width: 48px; padding: 0; z-index: 4; text-align: center; }
+.table tbody td { height: var(--grid-row-height, 32px); position: relative; font: var(--grid-font-size, 13px)/calc(var(--grid-row-height, 32px) - 1px) var(--grid-value-font, var(--font-code)); cursor: cell; white-space: nowrap; background: var(--panel); }
+.table tbody td > span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.table tbody tr:hover > td:not([data-selected]) { background: color-mix(in srgb, var(--surface-hover) 45%, var(--panel)); }
+.table th.corner { position: sticky; left: 0; width: var(--grid-row-number-width, 48px); padding: 0; z-index: 8; text-align: center; }
 .corner button { width: 100%; height: 44px; border: 0; border-radius: 0; color: var(--muted-strong); font: 10px var(--font-code); }
-.table th.rowNumber { position: sticky; left: 0; z-index: 2; width: 48px; min-width: 48px; max-width: 48px; text-align: right; font: 10px/31px var(--font-code); color: var(--muted-strong); background: var(--surface-subtle); cursor: pointer; user-select: none; height: 32px; }
+.table th.rowNumber { position: sticky; left: 0; z-index: 5; width: var(--grid-row-number-width, 48px); text-align: right; font: 10px/calc(var(--grid-row-height, 32px) - 1px) var(--font-code); color: var(--muted-strong); background: var(--surface-subtle); cursor: pointer; user-select: none; height: var(--grid-row-height, 32px); }
+.table thead th[data-pinned] { z-index: 5; }.table td[data-pinned] { z-index: 2; }.table td[data-pinned][data-active] { z-index: 4; }
+.table [data-pinned="left"] { box-shadow: 1px 0 0 var(--line); }.table [data-pinned="right"] { box-shadow: -1px 0 0 var(--line); }
+.table td[data-format-error] > span { text-decoration: underline dotted var(--warn-ink); text-underline-offset: 3px; }
 .table th[aria-selected="true"] { color: var(--accent-ink); background: color-mix(in srgb, var(--accent) 12%, var(--surface-subtle)); }
 .table td[data-selected] { background: color-mix(in srgb, var(--accent) 9%, var(--panel)); }
 .table td[data-active] { outline: 1.5px solid var(--accent); outline-offset: -1.5px; z-index: 1; }

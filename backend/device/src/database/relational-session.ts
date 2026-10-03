@@ -3,6 +3,7 @@ import { compileSqlTemplate, sqlSourceEnd, sqlSourcePosition, sqlVariableContext
 import { SqlExecutionRegistry, sqlExecutionError } from './sql-execution-registry';
 import { explainSqlPlan } from './sql-explain';
 import { TableImportPlans } from './table-import-plans';
+import { StructureEditPlans } from './structure-edit-plans';
 import {
   DATABASE_CAPABILITIES,
   SQL_FILE_MAX_BYTES,
@@ -42,6 +43,7 @@ type Entry = {
   driver: RelationalDriver;
   plans: Map<string, SavePlan>;
   imports: TableImportPlans;
+  structureEdits: StructureEditPlans;
   saving: boolean;
   connectionName: string;
 };
@@ -107,6 +109,7 @@ export class RelationalSessionManager {
         driver,
         plans: new Map(),
         imports: new TableImportPlans(),
+        structureEdits: new StructureEditPlans(),
         saving: false,
         connectionName: connection?.name ?? `${input.provider} · ${session.database}`,
       });
@@ -152,6 +155,7 @@ export class RelationalSessionManager {
     entry.session = { ...entry.session, capabilities: snapshot };
     entry.plans.clear();
     entry.imports.clear();
+    entry.structureEdits.clear();
     return entry.session;
   }
   private writable(workspaceId: string, id: string): Entry {
@@ -189,6 +193,22 @@ export class RelationalSessionManager {
     }, signal);
   }
   discardImport(workspaceId: string, id: string, planId: string) { this.entry(workspaceId, id).imports.discard(planId); }
+  prepareStructureEdit(workspaceId: string, id: string, value: unknown, signal?: AbortSignal) {
+    const entry = this.writable(workspaceId, id);
+    return entry.structureEdits.prepare((schema, table) => this.structure(workspaceId, id, schema, table), value, () => {
+      if (this.writable(workspaceId, id) !== entry || entry.saving) throw new DatabaseInputError('连接正在提交变更，请稍后重新预览');
+    }, signal);
+  }
+  discardStructureEdit(workspaceId: string, id: string, planId: string) { this.entry(workspaceId, id).structureEdits.discard(planId); }
+  async commitStructureEdit(workspaceId: string, id: string, planId: string, signal?: AbortSignal) {
+    const entry = this.writable(workspaceId, id);
+    if (entry.saving) throw new DatabaseInputError('当前连接正在提交变更');
+    entry.saving = true;
+    try { return await entry.structureEdits.commit(entry.driver, (schema, table) => this.structure(workspaceId, id, schema, table), planId, () => {
+      if (this.writable(workspaceId, id) !== entry) throw new DatabaseInputError('连接已变化，请重新预览');
+    }, signal); }
+    finally { entry.saving = false; }
+  }
   async commitImport(workspaceId: string, id: string, planId: string, signal?: AbortSignal) {
     const entry = this.writable(workspaceId, id);
     if (entry.saving) throw new DatabaseInputError('当前连接正在提交变更。');
@@ -469,6 +489,7 @@ export class RelationalSessionManager {
     const entry = this.entry(workspaceId, id);
     this.entries.delete(id);
     entry.imports.clear();
+    entry.structureEdits.clear();
     await this.executions.closeSession(id);
     if (!entry.session.connectionId) this.transientSql.removeConnection(workspaceId, id);
     this.capabilities.disconnect(id, id);

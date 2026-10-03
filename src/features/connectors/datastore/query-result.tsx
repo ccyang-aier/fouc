@@ -187,7 +187,7 @@ function ResultChart({ result }: { result: DatabaseQueryResult }) {
   )
 }
 
-export function SqlQueryResult({ result, provider, scopeKey, view: controlledView, onViewChange }: { result: DatabaseQueryResult; provider: RelationalProvider; scopeKey: string; view?: ResultView; onViewChange?: (view: ResultView) => void }) {
+export function SqlQueryResult({ result, provider, scopeKey, layoutScopeKey, view: controlledView, onViewChange }: { result: DatabaseQueryResult; provider: RelationalProvider; scopeKey: string; layoutScopeKey?: string; view?: ResultView; onViewChange?: (view: ResultView) => void }) {
   const [localView, setLocalView] = useState<ResultView>("table")
   const view = controlledView ?? localView
   const [exportSnapshot, setExportSnapshot] = useState<Omit<ResultExportDialogProps, 'onClose'> | null>(null), [selectionScope, setSelectionScope] = useState<ResultGridSelectionScope | null>(null)
@@ -226,7 +226,7 @@ export function SqlQueryResult({ result, provider, scopeKey, view: controlledVie
           ))}
         </div>
       </div>
-      {view === "table" && <ResultGrid result={result} scopeKey={scopeKey} onSelectionChange={setSelectionScope} />}
+      {view === "table" && <ResultGrid result={result} scopeKey={scopeKey} layoutScopeKey={layoutScopeKey} onSelectionChange={setSelectionScope} />}
       {view === "text" && (
         <pre className="mw-live-result-pre" role="tabpanel">
           {formatDelimited(result, "\t")}

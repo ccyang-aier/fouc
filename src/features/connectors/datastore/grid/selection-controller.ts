@@ -102,14 +102,14 @@ export function moveGridSelection(selection: ResultGridSelection, key: string, m
   return selectGridTarget(selection, { kind: 'cell', rowIndex: row, colIndex: column }, { shift: modifiers.shift }, dimensions)
 }
 
-export function* selectedGridCells(selection: ResultGridSelection, result: Pick<DatabaseQueryResult, 'columns' | 'rows'>): Generator<{ rowIndex: number; colIndex: number; value: DatabaseCell }> {
+export function* selectedGridCells(selection: ResultGridSelection, result: Pick<DatabaseQueryResult, 'columns' | 'rows'>, visibleColumns: readonly number[] = result.columns.map((_, index) => index)): Generator<{ rowIndex: number; colIndex: number; visibleColIndex: number; value: DatabaseCell }> {
   if (selection.mode === 'none') return
-  for (let row = 0; row < result.rows.length; row++) for (let column = 0; column < result.columns.length; column++) if (gridCellSelected(selection, row, column)) yield { rowIndex: row, colIndex: column, value: result.rows[row][column] ?? null }
+  for (let row = 0; row < result.rows.length; row++) for (let column = 0; column < visibleColumns.length; column++) if (gridCellSelected(selection, row, column)) yield { rowIndex: row, colIndex: visibleColumns[column], visibleColIndex: column, value: result.rows[row][visibleColumns[column]] ?? null }
 }
 /** Export may use the row/column product only when it exactly matches the real selected cells. */
-export function gridSelectionScope(selection: ResultGridSelection, result: Pick<DatabaseQueryResult, 'columns' | 'rows'>): ResultGridSelectionScope | null {
+export function gridSelectionScope(selection: ResultGridSelection, result: Pick<DatabaseQueryResult, 'columns' | 'rows'>, visibleColumns?: readonly number[]): ResultGridSelectionScope | null {
   const rows = new Set<number>(), columns = new Set<number>(); let cellCount = 0
-  for (const cell of selectedGridCells(selection, result)) { rows.add(cell.rowIndex); columns.add(cell.colIndex); cellCount++ }
+  for (const cell of selectedGridCells(selection, result, visibleColumns)) { rows.add(cell.rowIndex); columns.add(cell.colIndex); cellCount++ }
   return cellCount ? { rows: [...rows], columns: [...columns], rectangular: rows.size * columns.size === cellCount } : null
 }
 export function gridSelectionCounts(selection: ResultGridSelection, dimensions: GridDimensions): { cells: number; rows: number } {
@@ -122,15 +122,15 @@ export function gridSelectionCounts(selection: ResultGridSelection, dimensions: 
   return { cells, rows }
 }
 
-export function captureResultGridSelection(selection: ResultGridSelection, result: DatabaseQueryResult, primaryKeys: readonly string[] = []): PersistedDataGridSelection | null {
-  const cells = selection.mode === 'cells' ? new Set([...selectedGridCells(selection, result)].map((cell) => gridCellKey(cell.rowIndex, cell.colIndex))) : new Set<string>()
-  return captureDataGridSelection({ columns: result.columns, rows: result.rows, primaryKeys, visibleColumnIndexes: result.columns.map((_, index) => index), displayItems: result.rows.map((_, index) => ({ id: index, sourceIndex: index })),
+export function captureResultGridSelection(selection: ResultGridSelection, result: DatabaseQueryResult, primaryKeys: readonly string[] = [], visibleColumnIndexes: readonly number[] = result.columns.map((_, index) => index)): PersistedDataGridSelection | null {
+  const cells = selection.mode === 'cells' ? new Set([...selectedGridCells(selection, result, visibleColumnIndexes)].map((cell) => gridCellKey(cell.rowIndex, cell.visibleColIndex))) : new Set<string>()
+  return captureDataGridSelection({ columns: result.columns, rows: result.rows, primaryKeys, visibleColumnIndexes, displayItems: result.rows.map((_, index) => ({ id: index, sourceIndex: index })),
     selectedRowIds: selection.rows, selectedColumnIndexes: selection.columns, selectedCellKeys: cells, selectionAnchor: selection.mode === 'range' ? selection.anchor : null, selectionFocus: selection.mode === 'range' ? selection.focus : null,
-    selectingAll: selection.mode === 'range' && selection.range?.startRow === 0 && selection.range.startCol === 0 && selection.range.endRow === result.rows.length - 1 && selection.range.endCol === result.columns.length - 1, lastClickedRowIndex: selection.anchor?.rowIndex })
+    selectingAll: selection.mode === 'range' && selection.range?.startRow === 0 && selection.range.startCol === 0 && selection.range.endRow === result.rows.length - 1 && selection.range.endCol === visibleColumnIndexes.length - 1, lastClickedRowIndex: selection.anchor?.rowIndex })
 }
-export function restoreResultGridSelection(snapshot: PersistedDataGridSelection | null, result: DatabaseQueryResult): ResultGridSelection {
+export function restoreResultGridSelection(snapshot: PersistedDataGridSelection | null, result: DatabaseQueryResult, visibleColumnIndexes: readonly number[] = result.columns.map((_, index) => index)): ResultGridSelection {
   if (!snapshot) return emptyGridSelection()
-  const restored = restoreDataGridSelection({ snapshot, columns: result.columns, rows: result.rows, visibleColumnIndexes: result.columns.map((_, index) => index), displayItems: result.rows.map((_, index) => ({ id: index, sourceIndex: index })) })
+  const restored = restoreDataGridSelection({ snapshot, columns: result.columns, rows: result.rows, visibleColumnIndexes, displayItems: result.rows.map((_, index) => ({ id: index, sourceIndex: index })) })
   if (!restored) return emptyGridSelection()
   if (restored.kind === 'range') return rangeSelection(restored.anchor, restored.focus)
   if (restored.kind === 'rows') { const point = { rowIndex: restored.anchorRowIndex ?? restored.rowIds[0], colIndex: 0 }; return { ...emptyGridSelection(), mode: 'rows', rows: new Set(restored.rowIds), anchor: point, focus: point } }

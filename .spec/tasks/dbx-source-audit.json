@@ -200,15 +200,15 @@
         "area": "shared-relational-runtime-and-postgres-sqlite-drivers",
         "status": "partial",
         "files": 7,
-        "physical": 1334,
-        "effective": 1306
+        "physical": 1365,
+        "effective": 1337
       },
       {
         "area": "shared-sql-workbench-and-connection-management",
         "status": "partial",
         "files": 10,
-        "physical": 2105,
-        "effective": 2050
+        "physical": 2114,
+        "effective": 2059
       },
       {
         "area": "native-redis-and-specialized-surface",
@@ -305,8 +305,8 @@
         "area": "native-relational-explain-grid-selection-and-result-export",
         "status": "partial",
         "files": 29,
-        "physical": 2640,
-        "effective": 2365
+        "physical": 2674,
+        "effective": 2399
       },
       {
         "area": "native-table-import",
@@ -328,12 +328,33 @@
         "files": 9,
         "physical": 996,
         "effective": 950
+      },
+      {
+        "area": "native-mongo-document-and-mutation-workbench",
+        "status": "partial",
+        "files": 25,
+        "physical": 1259,
+        "effective": 1214
+      },
+      {
+        "area": "native-grid-layout-and-column-formatting",
+        "status": "partial",
+        "files": 7,
+        "physical": 419,
+        "effective": 395
+      },
+      {
+        "area": "native-relational-structure-editing",
+        "status": "partial",
+        "files": 13,
+        "physical": 852,
+        "effective": 827
       }
     ],
     "runtime": {
-      "files": 235,
-      "physical": 27501,
-      "effective": 24951
+      "files": 280,
+      "physical": 30105,
+      "effective": 27461
     },
     "targetEffectiveRuntimeLines": 50000,
     "milestoneVerified": false

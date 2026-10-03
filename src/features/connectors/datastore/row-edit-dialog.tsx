@@ -83,7 +83,7 @@ export function RowEditDialog({
       const changes: Record<string, DatabaseCell> = {}
       columns.forEach((column, index) => {
         const field = fields[index]!
-        if (/generated|identity/i.test(column.extra ?? "") || field.mode === "default") return
+        if (/\b(?:generated|identity)\b/i.test(column.extra ?? "") || field.mode === "default") return
         if (
           original &&
           field.mode === (original[index] === null ? "null" : "value") &&
@@ -122,7 +122,7 @@ export function RowEditDialog({
           <p className={common.hint}>变更先加入待提交列表，预览并确认后才写入数据库。</p>
           {columns.map((column, index) => {
             const field = fields[index]!
-            const generated = /generated|identity/i.test(column.extra ?? "")
+            const generated = /\b(?:generated|identity)\b/i.test(column.extra ?? "")
             return (
               <div className={styles.field} key={column.name}>
                 <label htmlFor={`row-field-${index}`}>

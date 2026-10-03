@@ -152,3 +152,10 @@ adapts data/data_compare.rs and DataCompareDialog.vue; schema comparison adapts
 dbx-sql/schema_diff.rs, SchemaDiffObjectTree.vue and SchemaDiffDdlPanel.vue.
 Fouc compares immutable native snapshots and produces selected SQL/DDL review
 without importing DBX runtime modules or automatically executing comparison SQL.
+
+MongoDB native document and mutation workflows adapt mongo_driver.rs, mongo_ops.rs,
+mongo_cmd.rs and document components, with Fouc workspace sessions and EJSON.
+Grid layout/formatting adapts useDataGridColumnLayout, useDataGridColumnFormatter
+and DataGridColumnLayoutPopover. Relational structure editing adapts DBX native
+table_structure_sql and TableStructureEditor into typed plans and React review.
+MongoDB connector icon derives from DBX apps/desktop/public/connector-logos.

@@ -25,6 +25,8 @@ import { DeviceConnectionRepository } from '../database/connection-repository';
 import { RedisSessionManager } from '../database/redis-session';
 import { RedisHistoryRepository } from '../database/redis-history';
 import { redisConfig } from '../database/redis-input';
+import { MongoSessionManager } from '../database/mongo-session';
+import { mongoConfig } from '../database/mongo-connections';
 import path from 'node:path';
 import { homedir } from 'node:os';
 import { KnowledgeRepository } from '../knowledge/repository';
@@ -80,6 +82,8 @@ async function main(): Promise<void> {
   const relationalConnections = new RelationalConnectionRepository(path.join(process.env.FOUC_DATA_DIR ?? path.join(homedir(), '.fouc'), 'database', 'connections'));
   const redisSessions = new RedisSessionManager(new RedisHistoryRepository(path.join(process.env.FOUC_DATA_DIR ?? path.join(homedir(), '.fouc'), 'database', 'redis-history')));
   const redisConnections = new DeviceConnectionRepository(path.join(process.env.FOUC_DATA_DIR ?? path.join(homedir(), '.fouc'), 'database', 'redis-connections'), redisConfig);
+  const mongoSessions = new MongoSessionManager();
+  const mongoConnections = new DeviceConnectionRepository(path.join(process.env.FOUC_DATA_DIR ?? path.join(homedir(), '.fouc'), 'database', 'mongo-connections'), mongoConfig);
   const knowledge = new KnowledgeRepository(db);
 
   // 事件出口：装配期缓冲，服务器就绪后切换为 WS 广播并冲放积压
@@ -89,7 +93,7 @@ async function main(): Promise<void> {
   const registry = new AgentRegistry(providerRepo, installationRepo, (event) => emitter.emit(event));
   const supervisor = new SessionSupervisor(registry, sessionRepo, runRepo, eventRepo, (event) => emitter.emit(event));
 
-  const { app, hub } = createApp({ registry, supervisor, connectors, databaseCapabilities, relationalSessions, relationalConnections, redisSessions, redisConnections, knowledge, token: TOKEN || 'dev', internalToken: INTERNAL_TOKEN, devNoAuth: DEV_NO_AUTH });
+  const { app, hub } = createApp({ registry, supervisor, connectors, databaseCapabilities, relationalSessions, relationalConnections, redisSessions, redisConnections, mongoSessions, mongoConnections, knowledge, token: TOKEN || 'dev', internalToken: INTERNAL_TOKEN, devNoAuth: DEV_NO_AUTH });
   const forwarder = createEventForwarder(hub);
   emitter.emit = (event) => forwarder(event);
   for (const event of buffered.splice(0)) forwarder(event);
@@ -129,6 +133,7 @@ async function main(): Promise<void> {
     connectors.stopHeartbeat();
     await relationalSessions.shutdown().catch((error) => log.error('Relational sessions shutdown failed:', error));
     redisSessions.shutdown();
+    await mongoSessions.dispose().catch((error) => log.error('Mongo sessions shutdown failed:', error));
     await supervisor.shutdown().catch((error) => log.error('shutdown failed:', error));
     server.stop(true);
     process.exit(0);

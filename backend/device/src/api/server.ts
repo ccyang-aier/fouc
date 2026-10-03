@@ -22,6 +22,9 @@ import type { RedisSessionManager } from '../database/redis-session';
 import type { DeviceConnectionRepository } from '../database/connection-repository';
 import type { RedisConnectionConfig } from '@fouc/shared';
 import { redisRoutes } from './redis-routes';
+import { mongoRoutes } from './mongo-routes';
+import type { MongoSessionManager } from '../database/mongo-session';
+import type { MongoConnectionConfig } from '@fouc/shared/mongo-connections';
 import type { KnowledgeRepository } from '../knowledge/repository';
 import { DATABASE_CATALOG_REVISION, getDatabaseDialect, getDatabaseProfile, listDatabaseDrivers, listDatabaseProfiles } from '@fouc/shared/database-catalog';
 
@@ -34,6 +37,8 @@ export type ServerContext = {
   relationalConnections?: RelationalConnectionRepository;
   redisSessions?: RedisSessionManager;
   redisConnections?: DeviceConnectionRepository<RedisConnectionConfig>;
+  mongoSessions?: MongoSessionManager;
+  mongoConnections?: DeviceConnectionRepository<MongoConnectionConfig>;
   knowledge?: KnowledgeRepository;
   token: string;
   internalToken: string;
@@ -202,6 +207,7 @@ export function createApp(context: ServerContext): { app: Hono; hub: BroadcastHu
 
   if (context.relationalSessions) app.route('/', relationalRoutes(context.relationalSessions, context.relationalConnections));
   if (context.redisSessions) app.route('/', redisRoutes(context.redisSessions, context.redisConnections));
+  if (context.mongoSessions) app.route('/', mongoRoutes(context.mongoSessions, context.mongoConnections));
 
   app.post('/api/connectors/instances/:id/connect', (c) => connectorReply(c, () => connectors.beginConnect(c.req.param('id'))));
   app.post('/api/connectors/instances/:id/disconnect', (c) => connectorReply(c, () => connectors.disconnect(c.req.param('id'))));

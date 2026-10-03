@@ -103,6 +103,16 @@ export function relationalRoutes(
   );
   app.post(base + '/:id/table-import/plans', async (c) => c.json({ ok: true,
     data: await sessions.prepareImport(c.req.param('workspaceId')!, c.req.param('id')!, await c.req.json().catch(() => null), c.req.raw.signal) }, 201));
+  app.post(base + '/:id/structure-edit/plans', async c => c.json({ ok: true, data: await sessions.prepareStructureEdit(c.req.param('workspaceId')!, c.req.param('id')!, await c.req.json().catch(() => null), c.req.raw.signal) }, 201));
+  app.delete(base + '/:id/structure-edit/plans/:planId', c => {
+    sessions.discardStructureEdit(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('planId')!);
+    return c.json({ ok: true, data: { discarded: true } });
+  });
+  app.post(base + '/:id/structure-edit/plans/:planId/commit', async c => {
+    const body = await c.req.json().catch(() => null);
+    if (body?.confirm !== true) throw new DatabaseInputError('请明确确认已审查的表结构变化');
+    return c.json({ ok: true, data: await sessions.commitStructureEdit(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('planId')!, c.req.raw.signal) });
+  });
   app.delete(base + '/:id/table-import/plans/:planId', (c) => {
     sessions.discardImport(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('planId')!);
     return c.json({ ok: true, data: { discarded: true } });

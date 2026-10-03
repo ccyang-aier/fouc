@@ -19,11 +19,15 @@ import { RelationalWorkbench } from "./relational-workbench"
 import { forgetSqlDrafts } from './use-sql-drafts'
 import { RedisDialog } from "../redis/redis-dialog"
 import { RedisWorkbench } from "../redis/redis-workbench"
+import { MongoWorkbench } from '../mongo'
+import { MongoDialog } from '../mongo/mongo-dialog'
+import type { MongoSession } from '@fouc/shared/mongo'
+import type { MongoConnectionConfig, MongoSavedConnection } from '@fouc/shared/mongo-connections'
 import styles from "./relational.module.css"
 
-type SavedConnection = RelationalSavedConnection | RedisSavedConnection
+type SavedConnection = RelationalSavedConnection | RedisSavedConnection | MongoSavedConnection
 
-type Props = { provider: RelationalProvider | "redis"; onBack: () => void; onWorkbenchFocus?: () => void }
+type Props = { provider: RelationalProvider | "redis" | 'mongodb'; onBack: () => void; onWorkbenchFocus?: () => void }
 export function DatastoreConnections(props: Props) {
   const { activeSpace } = useWorkspace()
   const { onWorkbenchFocus } = props
@@ -52,8 +56,8 @@ function ConnectionDirectory({
         ? "MySQL"
         : provider === "redis"
           ? "Redis"
-          : "SQLite"
-  const base = `/api/database/workspaces/${encodeURIComponent(workspaceId)}/${provider === "redis" ? "redis" : "relational"}`
+          : provider === 'mongodb' ? 'MongoDB' : "SQLite"
+  const base = `/api/database/workspaces/${encodeURIComponent(workspaceId)}/${provider === "redis" ? "redis" : provider === 'mongodb' ? 'mongo' : "relational"}`
   const [connections, setConnections] = useState<SavedConnection[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
@@ -67,7 +71,7 @@ function ConnectionDirectory({
   const [busy, setBusy] = useState(false)
   const [active, setActive] = useState<{
     connection: SavedConnection
-    session: RelationalSession | RedisSession
+    session: RelationalSession | RedisSession | MongoSession
   } | null>(null)
   useEffect(() => {
     const controller = new AbortController()
@@ -86,13 +90,14 @@ function ConnectionDirectory({
       })
     return () => controller.abort()
   }, [base, revision])
+  const activeSessionId = active?.session.id
   useEffect(() => {
-    if (!active) return
+    if (!activeSessionId) return
     return () => {
-      void backendFetch(`${base}/sessions/${active.session.id}`, { method: "DELETE" }).catch(() => undefined)
+      void backendFetch(`${base}/sessions/${activeSessionId}`, { method: "DELETE" }).catch(() => undefined)
     }
-  }, [active, base])
-  async function save(name: string, config: RelationalConnectionConfig | RedisConnectionConfig) {
+  }, [activeSessionId, base])
+  async function save(name: string, config: RelationalConnectionConfig | RedisConnectionConfig | MongoConnectionConfig) {
     const id = dialog?.connection?.id
     const item = await backendFetch<SavedConnection>(`${base}/connections${id ? `/${id}` : ""}`, {
       method: id ? "PUT" : "POST",
@@ -102,7 +107,7 @@ function ConnectionDirectory({
     setDialog(null)
   }
   async function open(connection: SavedConnection, password = "") {
-    const session = await backendFetch<RelationalSession | RedisSession>(
+    const session = await backendFetch<RelationalSession | RedisSession | MongoSession>(
       `${base}/connections/${connection.id}/connect`,
       {
         method: "POST",
@@ -131,7 +136,7 @@ function ConnectionDirectory({
     setError("")
     try {
       await backendFetch(`${base}/connections/${removing.id}`, { method: "DELETE" })
-      if (provider !== 'redis') forgetSqlDrafts(`${base}/connections/${removing.id}`)
+      if (provider !== 'redis' && provider !== 'mongodb') forgetSqlDrafts(`${base}/connections/${removing.id}`)
       setConnections((items) => items.filter((item) => item.id !== removing.id))
       setRemoving(null)
     } catch (reason) {
@@ -146,6 +151,7 @@ function ConnectionDirectory({
         setActive({ connection: active.connection, session })
       }} />
     )
+  if (active?.session.provider === 'mongodb') return <MongoWorkbench key={active.session.id} session={active.session} name={active.connection.name} onBack={() => setActive(null)} onSessionChange={session => setActive({ connection: active.connection, session })} />
   if (active)
     return (
       <RelationalWorkbench
@@ -298,9 +304,9 @@ function ConnectionDirectory({
           onSave={save}
           onConnect={(password) => open(dialog.connection!, password)}
         />
-      ) : (
+      ) : dialog && provider === 'mongodb' ? <MongoDialog workspaceId={workspaceId} connection={dialog.connection as MongoSavedConnection | undefined} intent={dialog.intent} onClose={() => setDialog(null)} onSave={save} onConnect={password => open(dialog.connection!, password)} /> : (
         dialog &&
-        provider !== "redis" && (
+        provider !== "redis" && provider !== 'mongodb' && (
           <RelationalDialog
             key={`${dialog.intent}:${dialog.connection?.id ?? "new"}`}
             workspaceId={workspaceId}

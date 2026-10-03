@@ -12,6 +12,10 @@
     "./workspaces": "./src/workspaces/index.ts",
     "./database-catalog": "./src/database-catalog.ts",
     "./table-import": "./src/table-import.ts",
+    "./mongo": "./src/mongo.ts",
+    "./mongo-connections": "./src/mongo-connections.ts",
+    "./mongo-mutation": "./src/mongo-mutation.ts",
+    "./relational-structure-edit": "./src/relational-structure-edit.ts",
     "./development-workbench": "./src/development-workbench.ts",
     "./catalog/dbx-catalog.json": "./catalog/dbx-catalog.json"
   },

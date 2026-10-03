@@ -16,6 +16,7 @@ import { TableQueryControls } from "./table-query-controls"
 import { TableStructure } from "./table-structure"
 import { TableImportAction } from './table-import-action'
 import { SchemaCompareAction } from './schema-compare-action'
+import { StructureEditAction } from './structure-edit-action'
 import styles from "./relational.module.css"
 import "./workbench.css"
 
@@ -393,6 +394,7 @@ export function RelationalWorkbench({
                 <span className="mw-sql-spacer" />
                 <TableImportAction base={base} sessionId={session.id} provider={session.provider} schema={schema} page={page} disabled={!writable || pending || busy || writeBusy} onImported={refresh} />
                 <SchemaCompareAction base={base} provider={session.provider} schema={schema} table={table} tables={tables} schemas={schemas} disabled={pending || busy} />
+                <StructureEditAction base={base} schema={schema} table={table} disabled={!writable || !table || pending || busy || writeBusy} onApplied={refresh} />
                 <span>
                   {schema}
                   {table ? `.${table}` : ""}
@@ -427,6 +429,7 @@ export function RelationalWorkbench({
                   provider={session.provider}
                   schema={schema}
                   scopeKey={`${base}:${schema}:${table}:${page.offset}:${JSON.stringify(query)}:${pageSearch}`}
+                  layoutScopeKey={`${session.workspaceId}:${session.connectionId ?? session.id}:${session.database}:${schema}:${table}`}
                   onSelect={(row) => { setSelectedRow(row); if (row !== null) setInspectorOpen(true) }}
                   search={pageSearch}
                   sort={query.sort}

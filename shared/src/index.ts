@@ -454,3 +454,7 @@ export * from './sql-formatter-config';
 export * from './sql-snippets';
 export * from './sql-editor-preferences';
 export * from './table-import';
+export * from './mongo';
+export * from './mongo-connections';
+export * from './mongo-mutation';
+export * from './relational-structure-edit';

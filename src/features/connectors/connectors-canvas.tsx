@@ -67,7 +67,7 @@ export function ConnectorsCanvas({ onWorkbenchFocus }: { onWorkbenchFocus?: () =
   }
 
   function connectConnector(id: string) {
-    if (["connector-dts", "connector-mysql", "connector-postgres", "connector-sqlite", "connector-redis"].includes(id)) {
+    if (["connector-dts", "connector-mysql", "connector-postgres", "connector-sqlite", "connector-redis", 'connector-mongodb'].includes(id)) {
       setDetailId(id)
       return
     }

@@ -8,8 +8,8 @@ import { ResultGrid, type ResultGridSelectionScope } from './grid/result-grid'
 import { ResultExportDialog, type ResultExportDialogProps } from './result-export'
 import styles from './relational.module.css'
 
-export function TableView({ page, provider, schema, onSelect, scopeKey, search = '', sort = [], sortDisabled = false, filtered = false, onSort }: {
-  page: DatabaseTablePage; provider: RelationalProvider; schema: string; scopeKey: string; onSelect: (row: number | null) => void; search?: string;
+export function TableView({ page, provider, schema, onSelect, scopeKey, layoutScopeKey, search = '', sort = [], sortDisabled = false, filtered = false, onSort }: {
+  page: DatabaseTablePage; provider: RelationalProvider; schema: string; scopeKey: string; layoutScopeKey?: string; onSelect: (row: number | null) => void; search?: string;
   sort?: RelationalSort[]; sortDisabled?: boolean; filtered?: boolean; onSort?: (column: string, additive: boolean) => void
 }) {
   const [exportSnapshot, setExportSnapshot] = useState<Omit<ResultExportDialogProps, 'onClose'> | null>(null), [selectionScope, setSelectionScope] = useState<ResultGridSelectionScope | null>(null)
@@ -21,7 +21,7 @@ export function TableView({ page, provider, schema, onSelect, scopeKey, search =
       hasMore: page.hasMore, truncated: page.hasMore, sessionId: page.connectionId, messages: [] }
     return { result, indices: rows.map(({ index }) => index), rowNumbers: rows.map(({ index }) => page.offset + index + 1), primaryKeys: page.columns.filter((column) => column.isPrimaryKey).map((column) => column.name) }
   }, [page, search])
-  return <><ResultGrid result={model.result} scopeKey={scopeKey} rowOffset={page.offset} rowNumbers={model.rowNumbers} primaryKeys={model.primaryKeys} onSelectionChange={setSelectionScope}
+  return <><ResultGrid result={model.result} scopeKey={scopeKey} layoutScopeKey={layoutScopeKey} rowOffset={page.offset} rowNumbers={model.rowNumbers} primaryKeys={model.primaryKeys} onSelectionChange={setSelectionScope}
     showCellDetails={false} sort={sort} sortDisabled={sortDisabled} onSort={onSort}
     scopeLabel={search ? '当前页匹配 ' + model.indices.length + ' / 已加载 ' + page.rows.length + ' 行' : '当前页已加载 ' + page.rows.length + ' 行'}
     emptyLabel={page.rows.length ? '当前页没有匹配记录' : filtered ? '没有符合数据库筛选的记录' : '表中没有记录'}

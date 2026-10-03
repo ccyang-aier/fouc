@@ -35,6 +35,7 @@ export const initialConnectors: Connector[] = [
   { id: "connector-sqlite", name: "SQLite", logo: "/connector-logos/sqlite.svg", category: "数据源", description: "打开当前设备上的 SQLite 文件，浏览结构与数据，执行只读查询。", version: "0.1.0", updated: "刚刚", updatedDays: 0, connected: false },
   { id: "connector-redis", name: "Redis", logo: "/connector-logos/redis.svg", category: "数据源", description: "管理 Redis 连接，扫描 Key，查看类型、TTL 与集合，使用只读命令台。", version: "0.1.0", updated: "刚刚", updatedDays: 0, connected: false },
   { id: "connector-mysql", name: "MySQL", logo: "/connector-logos/mysql.svg", category: "数据源", description: "管理 MySQL 连接，浏览数据库、表结构与数据，执行只读 SQL。", version: "0.1.0", updated: "刚刚", updatedDays: 0, connected: false },
+  { id: 'connector-mongodb', name: 'MongoDB', logo: '/connector-logos/mongodb.svg', category: '数据源', description: '浏览原生 BSON 文档、索引与集合统计，使用 Extended JSON 筛选及只读命令。', version: '0.1.0', updated: '刚刚', updatedDays: 0, connected: false },
   { id: "connector-figma", name: "Figma", logo: "/connector-logos/figma.svg", category: "设计资产", description: "把设计稿版本与标注挂接到工作对象，改动自动提醒。", version: "3.3.4", updated: "3 天前", updatedDays: 3, connected: false },
   { id: "connector-jsdesign", name: "即时设计", logo: "/connector-logos/jsdesign.png", category: "设计资产", description: "国产设计工具文件接入，标注与切图直连任务。", version: "2.0.1", updated: "5 天前", updatedDays: 5, connected: false },
 ]

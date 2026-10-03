@@ -14,12 +14,12 @@ function delimitedCell(value: DatabaseCell, separator: ',' | '\t'): string {
 }
 
 /** Sparse selections preserve their layout; unselected intersections are blank, never copied values. */
-export function formatGridSelection(result: Pick<DatabaseQueryResult, 'columns' | 'rows'>, selection: ResultGridSelection, separator: ',' | '\t', includeHeaders = false): string {
+export function formatGridSelection(result: Pick<DatabaseQueryResult, 'columns' | 'rows'>, selection: ResultGridSelection, separator: ',' | '\t', includeHeaders = false, visibleColumns: readonly number[] = result.columns.map((_, index) => index)): string {
   const rows = new Set<number>(), columns = new Set<number>()
-  for (const cell of selectedGridCells(selection, result)) { rows.add(cell.rowIndex); columns.add(cell.colIndex) }
+  for (const cell of selectedGridCells(selection, result, visibleColumns)) { rows.add(cell.rowIndex); columns.add(cell.visibleColIndex) }
   if (!rows.size || !columns.size) return ''
   const rowIndexes = [...rows].sort((a, b) => a - b), columnIndexes = [...columns].sort((a, b) => a - b)
-  const lines = rowIndexes.map((row) => columnIndexes.map((column) => gridCellSelected(selection, row, column) ? delimitedCell(result.rows[row][column] ?? null, separator) : '').join(separator))
-  if (includeHeaders) lines.unshift(columnIndexes.map((column) => delimitedCell(result.columns[column], separator)).join(separator))
+  const lines = rowIndexes.map((row) => columnIndexes.map((column) => gridCellSelected(selection, row, column) ? delimitedCell(result.rows[row][visibleColumns[column]] ?? null, separator) : '').join(separator))
+  if (includeHeaders) lines.unshift(columnIndexes.map((column) => delimitedCell(result.columns[visibleColumns[column]], separator)).join(separator))
   return lines.join('\n')
 }

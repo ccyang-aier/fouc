@@ -112,7 +112,7 @@ export function prepareSave(
       const fields = Object.entries(change.values).map(([name, value]) => {
         const column = columns.find((item) => item.name === name);
         if (!column) throw new DatabaseInputError(`字段 ${name} 不存在`);
-        if (/generated|identity/i.test(column.extra ?? ''))
+        if (/\b(?:generated|identity)\b/i.test(column.extra ?? ''))
           throw new DatabaseInputError(`字段 ${name} 由数据库生成，不能直接赋值`);
         if (value === null && !column.isNullable) throw new DatabaseInputError(`字段 ${name} 不允许 NULL`);
         return { column, binding: bind(value, column) };

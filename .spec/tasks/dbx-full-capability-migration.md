@@ -4,6 +4,8 @@
 
 ## 进度与证据
 
+- MongoDB / 表格布局 / 结构编辑：2026-10-04：开发阶段仅新增P0与一次实际流程。MongoDB8原生库/集合/筛选排序分页/聚合/索引/元数据和Canonical EJSON精度，读取6项57断言、窄写入5项56断言；原始完整BSON CAS、类型/权限/空间/一次性计划与取消。Chrome真实创建连接、筛选文档、只读解锁、预览0写入、确认后大整数原值回读。网格列隐藏/NULL列、左右冻结/排序/宽度/密度/日期/JSON路径/掩码/模板，22项95断言及刷新选择映射P0；实际原始复制、显示格式与重新执行布局保留。结构编辑9项64断言、三库实际DDL，权限与计划撤销/结构变化/原生提交接口P0，真实MySQL中文含单引号注释预览0写入后确认回读。1440与390实际视觉检查，修正Mongo窄屏资源导航、结构审查局部滚动与固定操作区、主按钮对比度；自有TS/lint通过。不重复此前通过矩阵。Mongo GridFS/导入导出/dump、批量更新/其他拓扑，网格转置/自动刷新，结构外键/约束完整编辑及全入口矩阵仍未完成。
+
 - 表导入 / 数据与结构比较：2026-10-04：开发阶段仅必要P0。CSV/TSV/JSON/NDJSON严格解码、原始数字、字段映射、默认值/NULL和原生三库参数化追加；预览0写入，一次性计划、重新锁定、空间隔离、字段变更和事务失败回滚。数据比较14项P0覆盖显式键/字段映射、重复键冲突、缺失与NULL、精确数值/JSON/二进制、选择性SQL审查。结构比较10项P0及真实三库DDL回放核对字段/索引/生成列/SQLite重建数据；依赖顺序与不支持项明确标示。实际Chrome完成CSV两条大整数/中文导入回读、两次查询结果差异→新SQL审查标签、真实双表结构→DDL审查；比较不自动执行。1440×1000与390×844实际视觉检查并修正结构比较窄屏操作区。自有类型/lint检查通过；Excel/SQL导入、流式大批量、多目标同步、自动结构部署/OSC、其他驱动和全入口矩阵留到后续实现与阶段集中回归。
 
 - 执行计划 / 网格选区 / 导出：2026-10-04：开发阶段仅P0。MySQL JSON/标准、PostgreSQL JSON、SQLite QUERY PLAN 真实计划；8项原生计划P0、15项选择/精度P0、12项导出P0（原生三库字面量往返）。Chrome实际流程验证EXPLAIN接口/图形/树/原始计划、大整数详情/范围选择/精确求和/复制、选定两行一列CSV下载；1440×1000和390×844实际视觉检查。修复网格遮挡导出栏与浏览器计时器非法this绑定。仅本次已加载结果；ANALYZE、其他驱动/全入口、写入粘贴/布局设置、XLSX/ZIP/全表流式导出仍待阶段回归或实现。
@@ -37,7 +39,7 @@
 - Redis 观测验证入口：`node scripts/redis-observability-lab.mjs up|status` 复用或启动独立 Redis 7.4.8 实验室（56380，启动时阈值 0、保留 512 条），`node scripts/verify-redis-observability-live.mjs` 验证 INFO 分区与有界慢日志读取、原始二进制参数 / 客户端字段、数量校验、空间隔离、只读状态和命令历史保留、可选 CONFIG / LEN 权限降级及 GET / INFO 拒绝。实验室不会修改或重置业务 Redis 的日志配置。50 个作用域测试通过，涵盖 64 位计数 / 命中率 / 数值排序、旧版本缺失字段和响应截断。Playwright + Chrome 在 1440×1000、760×844、390×844 验证指标折叠 / 搜索 / 复制、真实定时刷新及离开视图后停止、慢日志数量 / 排序 / 筛选 / 分页 / 二进制详情 / JSON 复制、权限失败保留旧指标和错误恢复；两次预期 HTTP 502，无其他页面 / 控制台错误。Cluster 逐节点、其他版本与权限矩阵仍未完整交付。
 
 - 源码已恢复至固定 commit；[源码审计](dbx-source-audit.json) 与 [实质迁移文件清单](dbx-native-port-manifest.json) 可由 `node scripts/audit-dbx-source.mjs --write` 重算。约 133.4 万有效源码行；排除独立测试、翻译资源、工具与账户/云模块后的核心范围估算为 91.4 万行。词法统计仍包含 Rust 内嵌测试，不能把这个估算当成已迁移量。
-- 第一阶段目标仍为约 50,000 行 Fouc 核心运行逻辑；当前清单为 235 个运行文件、24,951 行有效代码。不计样式、目录 JSON、测试、参考仓库或演示工作台，且必须逐能力验收，当前未完成。MySQL 已合并到共享会话与工作台，移除的重复逻辑不保留行数信用。MONITOR / Pub/Sub 共享生命周期与流解码，删除的重复实现同样不保留信用。RedisJSON 仅计已适配且实际运行的 token 格式化 / Unicode 编辑映射子集，未使用的 Number 包装 / stringify 代码不计入。统计受代码格式影响，不能以行数代替功能覆盖。固定源码基线未变化时，可用 `node scripts/audit-dbx-source.mjs --native-only --write` 快速重算原生清单。
+- 第一阶段目标仍为约 50,000 行 Fouc 核心运行逻辑；当前清单为 280 个运行文件、27,461 行有效代码。不计样式、目录 JSON、测试、参考仓库或演示工作台，且必须逐能力验收，当前未完成。MySQL 已合并到共享会话与工作台，移除的重复逻辑不保留行数信用。MONITOR / Pub/Sub 共享生命周期与流解码，删除的重复实现同样不保留信用。RedisJSON 仅计已适配且实际运行的 token 格式化 / Unicode 编辑映射子集，未使用的 Number 包装 / stringify 代码不计入。统计受代码格式影响，不能以行数代替功能覆盖。固定源码基线未变化时，可用 `node scripts/audit-dbx-source.mjs --native-only --write` 快速重算原生清单。
 - MySQL / PostgreSQL / SQLite 的连接配置 CRUD、测试与会话打开、Schema/表/视图/字段发现、主键分页、只读 SQL、大整数/重复列名及空间隔离已有真实 HTTP 和浏览器证据。R01/R02/R03 保持进行中；完整对象管理、导入导出、比较/备份、取消/重连、CLI/MCP 等仍须推进。SQLite 读取已改为只读子进程隔离，注册批次的长查询取消已通过真实验收；写入取消、结果磁盘缓存与完整版本矩阵仍待推进。
 - 验证入口：`bun test --isolate backend/device/src/database backend/device/src/api/server.database.test.ts src/features/connectors/datastore/result-format.test.ts`、`node scripts/verify-relational-live.mjs`、`node scripts/verify-mysql-live.mjs`、`node scripts/verify-table-save-live.mjs`。真实服务验证使用独立 `fouc_datastore_lab` 数据库、专用 `dbx_save_fixture` / `dbx_unique_fixture` 表与 `.runtime/dbx-lab/relational.sqlite`，不访问 Fouc 账户/业务表。MySQL 实验室通过 `node scripts/datastore-lab.mjs up|status` 运行，容器有认证健康检查，随机凭据只写入被 Git 忽略的运行目录。
 - Web 验证：Playwright + Chrome，1440×1000 完成上述 PostgreSQL / SQLite 流程；390×844、760×844 检查连接目录、导航收起及溢出。两次故意写入产生预期 HTTP 400，未出现其他控制台或页面错误；窄窗口工作台操作矩阵仍待补齐。
@@ -148,8 +150,8 @@
 | G04 | 单元格编辑、批量改单元格、新增/复制/删除行、脏数据标记、撤销/回滚、提交前 SQL 预览与冲突/部分失败反馈。 | `components/grid/`、`crates/dbx-sql/src/` | 进行中 |
 | G05 | 单元格/行/列详情、字段元数据、关联数据跳转、值大文本查看、行详情动态展示与字段筛选。 | `components/grid/`、`components/objects/` | 进行中 |
 | G06 | CSV、TSV、JSON、Markdown、XLSX、INSERT SQL 的选择/全表复制及导出；大结果分片/ZIP、进度/取消和正确转义。 | `crates/dbx-formats/`、`table_export.rs` | 进行中 |
-| G07 | 表结构筛选、列显示/隐藏/固定、自动适宽、数据/结构工具栏、Canvas 编辑模式和上下文操作完整可用。 | `components/grid/` | 待实施 |
-| G08 | 转置视图、列头拖拽排序、左右冻结、字段注释搜索、表/查询级布局记忆与重置、自动刷新和多次运行结果固定；未提交编辑时防止自动刷新覆盖。 | `data-grid.cn.mdx`、`useDataGridAutoRefresh.ts`、`useDataGridColumnLayout.ts` | 待实施 |
+| G07 | 表结构筛选、列显示/隐藏/固定、自动适宽、数据/结构工具栏、Canvas 编辑模式和上下文操作完整可用。 | `components/grid/` | 进行中 |
+| G08 | 转置视图、列头拖拽排序、左右冻结、字段注释搜索、表/查询级布局记忆与重置、自动刷新和多次运行结果固定；未提交编辑时防止自动刷新覆盖。 | `data-grid.cn.mdx`、`useDataGridAutoRefresh.ts`、`useDataGridColumnLayout.ts` | 进行中 |
 | G09 | 列格式化器（日期/时间、JSON 路径、掩码、模板）、选择区数量/求和摘要、复制为批量 INSERT/UPDATE、可选注释表头与标识符引用；显示格式不改变原始值。 | `data-grid.cn.mdx`、`useDataGridColumnFormatter.ts` | 进行中 |
 | G10 | 复杂值详情支持长文本/JSON、二进制十六进制与 ASCII、图像、日期时区、空间数据与 SRID；编辑时区分 NULL、空字符串、默认值和生成值。 | `data-grid.cn.mdx`、`useDataGridLargeValues.ts` | 进行中 |
 | G11 | MySQL 单字段按 WHERE 跨未加载分页批量更新：条件构造、预计影响行数、完整 SQL 确认与实际影响行反馈；不得伪装成可可靠回滚的逐行编辑。 | `data-grid.cn.mdx`、`components/grid/` | 待实施 |
@@ -187,7 +189,7 @@
 | ID | 任务 / 可验收交付 | DBX 对照 | 状态 |
 | --- | --- | --- | --- |
 | X01 | Redis：库/Key 前缀与类型浏览、String/Hash/List/Set/ZSet/Stream 等查看编辑、TTL、命令台与历史、PubSub、Dashboard/Key 统计/Slowlog、Stream 消费组/Pending/Lag、批量 Key/TTL 操作、危险命令保护；独立连接的实时 `MONITOR` 含停止/关闭释放、记录上限和 Sentinel/Cluster 限制。 | `components/redis/`、`redis_cmd.rs`、`redis.cn.mdx` | 进行中 |
-| X02 | MongoDB：库/集合/文档 CRUD、筛选/排序/分页/聚合、索引、JSON 编辑、GridFS、导入导出与 dump；CSV 嵌套字段路径/数组索引和 ObjectId 类型识别、JSON/NDJSON Extended JSON 往返、采样推断与字段映射逐项验收。 | `components/document/`、`mongo_cmd.rs`、`mongodb.cn.mdx` | 待实施 |
+| X02 | MongoDB：库/集合/文档 CRUD、筛选/排序/分页/聚合、索引、JSON 编辑、GridFS、导入导出与 dump；CSV 嵌套字段路径/数组索引和 ObjectId 类型识别、JSON/NDJSON Extended JSON 往返、采样推断与字段映射逐项验收。 | `components/document/`、`mongo_cmd.rs`、`mongodb.cn.mdx` | 进行中 |
 | X03 | Elasticsearch/Easysearch/Meilisearch/Manticore：索引/文档/Schema 浏览、搜索/原始请求、响应与 Profile 视图、适用的写入。 | `components/meilisearch/`、`Elasticsearch*` | 待实施 |
 | X04 | Qdrant/Milvus/Weaviate/ChromaDB：集合/维度/Schema、Top-K 检索、请求预览、Upsert、删除及引擎专属参数。 | `components/vector/`、`vector_cmd.rs` | 待实施 |
 | X05 | HBase：Namespace、表、Column Family、Row Key/范围扫描、行数据和结构管理；限制大扫描。 | `components/hbase/`、`hbase_cmd.rs` | 待实施 |
@@ -234,7 +236,7 @@
 | R08 | `duckdb` | file | operate | queryExecution, metadataBrowse, objectBrowser, objectSource, schemaSearch, tableDataEdit, tableStructureEdit, tableImport, dataTransfer, sqlFileExecution, driverManagement | 待实施 |
 | R09 | `clickhouse` | native | operate | queryExecution, metadataBrowse, objectBrowser, schemaSearch, tableStructureEdit, tableImport, dataTransfer, sqlFileExecution, databaseCreate | 待实施 |
 | R10 | `sqlserver` | native | operate | queryExecution, metadataBrowse, objectBrowser, objectSource, schemaSearch, diagram, tableDataEdit, tableStructureEdit, tableImport, dataTransfer, sqlFileExecution, databaseCreate, fieldLineage, sqlExplain | 待实施 |
-| R11 | `mongodb` | agent | connect | queryExecution, objectBrowser, dataTransfer | 待实施 |
+| R11 | `mongodb` | agent | connect | queryExecution, objectBrowser, dataTransfer | 进行中 |
 | R12 | `dynamodb` | native | operate | metadataBrowse, tableDataEdit | 待实施 |
 | R13 | `oracle` | agent | operate | queryExecution, metadataBrowse, objectBrowser, objectSource, schemaSearch, diagram, tableDataEdit, tableStructureEdit, tableImport, dataTransfer, sqlFileExecution, fieldLineage, sqlExplain, driverManagement | 待实施 |
 | R14 | `elasticsearch` | native | connect | queryExecution | 待实施 |
@@ -323,7 +325,7 @@ Profile 来源：`opensource/dbx/plugins/connection-types/profiles/catalog.yaml`
 | `cloudflare-d1` | `cloudflare-d1` | lightweight | 待实施 |
 | `duckdb` | `duckdb` | lightweight | 待实施 |
 | `access` | `access` | lightweight | 待实施 |
-| `mongodb` | `mongodb` | document | 待实施 |
+| `mongodb` | `mongodb` | document | 进行中 |
 | `mongodb-legacy` | `mongodb` | 未标注 | 待实施 |
 | `dynamodb` | `dynamodb` | document | 待实施 |
 | `clickhouse` | `clickhouse` | analytics | 待实施 |

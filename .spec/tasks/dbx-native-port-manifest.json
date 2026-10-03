@@ -519,6 +519,86 @@
         "src/features/connectors/datastore/schema-diff/script.ts",
         "src/features/connectors/datastore/schema-diff/sqlite-rebuild.ts"
       ]
+    },
+    {
+      "area": "native-mongo-document-and-mutation-workbench",
+      "status": "partial",
+      "sourceReferences": [
+        "crates/dbx-drivers/src/db/mongo_driver.rs",
+        "crates/dbx-core/src/query/mongo_ops.rs",
+        "src-tauri/src/commands/mongo_cmd.rs",
+        "apps/desktop/src/components/document/"
+      ],
+      "runtimeFiles": [
+        "backend/device/src/api/mongo-routes.ts",
+        "backend/device/src/database/drivers/mongo-driver.ts",
+        "backend/device/src/database/mongo-connections.ts",
+        "backend/device/src/database/mongo-input.ts",
+        "backend/device/src/database/mongo-mutation-input.ts",
+        "backend/device/src/database/mongo-mutation-plans.ts",
+        "backend/device/src/database/mongo-mutation-snapshot.ts",
+        "backend/device/src/database/mongo-mutation.ts",
+        "backend/device/src/database/mongo-read-policy.ts",
+        "backend/device/src/database/mongo-session.ts",
+        "shared/src/mongo-connections.ts",
+        "shared/src/mongo-mutation.ts",
+        "shared/src/mongo.ts",
+        "src/features/connectors/mongo/index.ts",
+        "src/features/connectors/mongo/mongo-console.tsx",
+        "src/features/connectors/mongo/mongo-dialog.tsx",
+        "src/features/connectors/mongo/mongo-document-view.tsx",
+        "src/features/connectors/mongo/mongo-metadata.tsx",
+        "src/features/connectors/mongo/mongo-mutation-action.tsx",
+        "src/features/connectors/mongo/mongo-resource.ts",
+        "src/features/connectors/mongo/mongo-workbench.tsx",
+        "src/features/connectors/mongo/mutation/dialog.tsx",
+        "src/features/connectors/mongo/mutation/editor.tsx",
+        "src/features/connectors/mongo/mutation/index.ts",
+        "src/features/connectors/mongo/mutation/review.tsx"
+      ]
+    },
+    {
+      "area": "native-grid-layout-and-column-formatting",
+      "status": "partial",
+      "sourceReferences": [
+        "apps/desktop/src/composables/useDataGridColumnLayout.ts",
+        "apps/desktop/src/composables/useDataGridColumnFormatter.ts",
+        "apps/desktop/src/components/grid/DataGridColumnLayoutPopover.vue"
+      ],
+      "runtimeFiles": [
+        "src/features/connectors/datastore/grid/layout/column-interactions.ts",
+        "src/features/connectors/datastore/grid/layout/formatter.ts",
+        "src/features/connectors/datastore/grid/layout/layout-dialog.tsx",
+        "src/features/connectors/datastore/grid/layout/model.ts",
+        "src/features/connectors/datastore/grid/layout/selection-map.ts",
+        "src/features/connectors/datastore/grid/layout/use-layout.ts",
+        "src/features/connectors/datastore/grid/layout/width.ts"
+      ]
+    },
+    {
+      "area": "native-relational-structure-editing",
+      "status": "partial",
+      "sourceReferences": [
+        "crates/dbx-sql/src/table_structure_sql/",
+        "crates/dbx-core/src/schema/table_structure_sql.rs",
+        "apps/desktop/src/components/structure/TableStructureEditor.vue",
+        "apps/desktop/src/lib/table/tableStructureEditorState.ts"
+      ],
+      "runtimeFiles": [
+        "backend/device/src/database/structure-edit-commit.ts",
+        "backend/device/src/database/structure-edit-ddl.ts",
+        "backend/device/src/database/structure-edit-plans.ts",
+        "backend/device/src/database/structure-edit-preview.ts",
+        "shared/src/relational-structure-edit-metadata.ts",
+        "shared/src/relational-structure-edit-validation.ts",
+        "shared/src/relational-structure-edit.ts",
+        "src/features/connectors/datastore/structure-edit-action.tsx",
+        "src/features/connectors/datastore/structure-edit/column-form.tsx",
+        "src/features/connectors/datastore/structure-edit/draft.ts",
+        "src/features/connectors/datastore/structure-edit/index-form.tsx",
+        "src/features/connectors/datastore/structure-edit/index.ts",
+        "src/features/connectors/datastore/structure-edit/panel.tsx"
+      ]
     }
   ],
   "knownRemainingScope": [

@@ -1,0 +1,11 @@
+import type { MongoCollectionInfo, MongoIndexList } from '@fouc/shared/mongo';
+import { formatJsonSource } from '@fouc/shared';
+import styles from './mongo.module.css';
+
+export function MongoIndexes({ data }: { data: MongoIndexList }) {
+  return <div className={styles.metadata}><div className={styles.sectionTitle}><h3>索引</h3><span>{data.indexes.length} 个{data.truncated ? ' · 已截断' : ''}</span></div>{!data.indexes.length ? <p className={styles.muted}>当前集合没有索引。</p> : <table className={styles.indexTable}><thead><tr><th>名称 / 字段</th><th>属性</th><th>定义</th></tr></thead><tbody>{data.indexes.map(index => <tr key={index.name}><td><strong>{index.name}</strong><div className={styles.indexKeys}>{index.keys.map(key => <code key={key.field}>{key.field} <span>{key.direction === '1' ? '↑' : key.direction === '-1' ? '↓' : key.direction}</span></code>)}</div></td><td><div className={styles.badges}>{index.primary && <span>主键</span>}{index.unique && <span>唯一</span>}{index.sparse && <span>稀疏</span>}{index.hidden && <span>隐藏</span>}{index.expiresAfterSeconds !== null && <span>TTL {index.expiresAfterSeconds}s</span>}{index.partialFilter && <span>部分索引</span>}{index.collation && <span>Collation</span>}</div></td><td><details><summary>完整 EJSON</summary><pre className={styles.json}>{formatJsonSource(index.raw, 2)}</pre></details></td></tr>)}</tbody></table>}</div>;
+}
+export function MongoInformation({ data }: { data: MongoCollectionInfo }) {
+  const values: Array<[string, string | null]> = [['文档数', data.count], ['数据大小 / bytes', data.sizeBytes], ['存储大小 / bytes', data.storageBytes], ['平均文档 / bytes', data.averageDocumentBytes], ['索引大小 / bytes', data.indexBytes], ['索引数量', data.indexCount]];
+  return <div className={styles.metadata}><div className={styles.sectionTitle}><h3>集合信息</h3><span>实时 collStats</span></div><dl className={styles.stats}>{values.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value ?? '未知'}</dd></div>)}</dl>{data.warnings.map(warning => <p key={warning} role="status" className={styles.notice}>{warning}</p>)}{data.raw && <details className={styles.rawStats}><summary>原始统计 · Extended JSON</summary><pre className={styles.json}>{formatJsonSource(data.raw, 2)}</pre></details>}</div>;
+}

@@ -18,9 +18,9 @@ export function rememberSqlParameters(history: SqlParameterRecents, values: Reco
     history.set(key, [{ ...input }, ...(history.get(key) ?? []).filter((item) => item.kind !== input.kind || item.value !== input.value)].slice(0, 8))
   }
 }
-export function SqlParameterDialog({ sql, declarationSql, provider, descriptors, history, targetLabel, onClose, onExecute }: {
+export function SqlParameterDialog({ sql, declarationSql, provider, descriptors, history, targetLabel, onClose, onExecute, action = 'execute' }: {
   sql: string; declarationSql: string; provider: RelationalProvider; descriptors: SqlParameterDescriptor[];
-  history: SqlParameterRecents; targetLabel: string; onClose: () => void; onExecute: (values: Record<string, SqlParameterInput>) => void
+  history: SqlParameterRecents; targetLabel: string; onClose: () => void; onExecute: (values: Record<string, SqlParameterInput>) => void; action?: 'execute' | 'explain'
 }) {
   const [values, setValues] = useState<Record<string, SqlParameterInput>>(() => Object.fromEntries(descriptors.map((item) => [item.key, { ...(history.get(item.key)?.[0] ?? { kind: 'string', value: '' }) }])))
   const [copied, setCopied] = useState(false), [copyError, setCopyError] = useState('')
@@ -57,10 +57,10 @@ export function SqlParameterDialog({ sql, declarationSql, provider, descriptors,
         </div>
         <div className={styles.sectionHead}><span>SQL 预览</span><small>展开后的执行语句</small><button type="button" disabled={Boolean(preview.error)} onClick={() => void copy()}>{copied ? <Check size={13} /> : <Copy size={13} />}{copied ? '已复制' : '复制 SQL'}</button></div>
         <div className={styles.preview}>{preview.error ? <p role="alert" className={styles.error}><WarningCircle size={15} />{preview.error}</p> : <SqlEditor value={preview.sql} onChange={() => {}} onRun={() => { if (!preview.error) onExecute(values) }} editorRef={previewEditor} provider={provider} readOnly label="SQL 参数预览" />}</div>
-        <p className={styles.note}>{hasRaw ? <><WarningCircle size={14} />原始 SQL 会直接展开为表达式。执行前仍会校验整批语句的只读范围。</> : '字符串自动转义；数字保留精度；集合支持 JSON 数组。最近值仅保留在当前会话和查询标签内。'}</p>
+        <p className={styles.note}>{hasRaw ? <><WarningCircle size={14} />原始 SQL 会直接展开为表达式。{action === 'explain' ? '生成计划前仍会校验查询的只读范围，查询不会实际执行。' : '执行前仍会校验整批语句的只读范围。'}</> : '字符串自动转义；数字保留精度；集合支持 JSON 数组。最近值仅保留在当前会话和查询标签内。'}</p>
         {copyError && <p role="alert" className={styles.error}>{copyError}</p>}
       </div>
-      <footer className={`${common.dialogFooter} ${styles.footer}`}><small>Ctrl / ⌘ + Enter 执行</small><button type="button" className={common.secondary} onClick={onClose}>取消</button><button type="submit" className={common.primary} disabled={Boolean(preview.error)}><Play size={14} weight="fill" />应用参数并执行</button></footer>
+      <footer className={`${common.dialogFooter} ${styles.footer}`}><small>Ctrl / ⌘ + Enter {action === 'explain' ? '生成计划' : '执行'}</small><button type="button" className={common.secondary} onClick={onClose}>取消</button><button type="submit" className={common.primary} disabled={Boolean(preview.error)}><Play size={14} weight="fill" />{action === 'explain' ? '应用参数并生成计划' : '应用参数并执行'}</button></footer>
     </form>
   </SqlDialog>
 }

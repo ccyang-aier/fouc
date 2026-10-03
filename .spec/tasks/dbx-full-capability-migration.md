@@ -4,6 +4,8 @@
 
 ## 进度与证据
 
+- 执行计划 / 网格选区 / 导出：2026-10-04：开发阶段仅P0。MySQL JSON/标准、PostgreSQL JSON、SQLite QUERY PLAN 真实计划；8项原生计划P0、15项选择/精度P0、12项导出P0（原生三库字面量往返）。Chrome实际流程验证EXPLAIN接口/图形/树/原始计划、大整数详情/范围选择/精确求和/复制、选定两行一列CSV下载；1440×1000和390×844实际视觉检查。修复网格遮挡导出栏与浏览器计时器非法this绑定。仅本次已加载结果；ANALYZE、其他驱动/全入口、写入粘贴/布局设置、XLSX/ZIP/全表流式导出仍待阶段回归或实现。
+
 - SQL 辅助 / 浏览器文件：从固定 DBX 源码并行移植原生三方言函数补全 / 参数提示 / 文档悬停、别名与 CTE 诊断 / 高亮 / 定义跳转、限定字段 / 通配符 / 文本引用 / 注释 / IN 列表 / 表查询快速操作、SQL 文件编码读取与 UTF-8 下载。开发 P0 覆盖语义作用域、原始字面量 / 整数精度、单次撤销和陈旧内容保护；实际 Chrome 流程完成诊断纠正、函数字段插入 / 参数提示、大小写 / 撤销、IN 列表真实 MySQL 执行、UTF-16 BOM 中文 / emoji 文件执行与无损下载。1440×1000 与390×844 实际检查快捷弹窗和函数提示。大于 1 MB 文档尾部的短语句真实执行通过：原始偏移按文件上限校验，变量声明上下文不会误带整段文件。焦点 / 提示状态变化不误拒绝编辑。前端 / 设备类型、架构 / 文档 / 迁移矩阵与自有 ESLint 检查；完整方言、版本和入口组合继续留到阶段集中回归，Q01/Q02/Q06/Q09 保持进行中。
 
 - SQL 格式化 / 片段：DBX AST 排版层、保留注释与引用、选区优先格式化 / 压缩、一次撤销、异步陈旧结果拒绝、完整文档保存时格式化已接入三种原生数据库；`bun scripts/verify-sql-format-live.ts` 验证格式化 / 压缩前后的实际结果一致（大整数、Unicode / 多行字符串、MySQL 注释、Pg 相邻字符串 / E / dollar、SQLite 方括号）。十一种默认片段与自定义编辑 / 搜索 / 启停 / 重排 / 删除、字段导航及配置导入导出均有运行实现。偏好按 workspace + connection 保存，严格完整快照校验与版本比较，临时会话 / 删除清理；P0 覆盖隔离、冲突不覆盖、陈旧格式化不覆写。Chrome 一次流程完成格式化 / 撤销 / 实际执行、设置保存、动态片段插入与选区下完整文档保存；浅深 1440×1000 与 390×844 实际视觉检查。Q02 保持进行中，其他方言 / 入口矩阵仍待阶段集中回归。
@@ -33,7 +35,7 @@
 - Redis 观测验证入口：`node scripts/redis-observability-lab.mjs up|status` 复用或启动独立 Redis 7.4.8 实验室（56380，启动时阈值 0、保留 512 条），`node scripts/verify-redis-observability-live.mjs` 验证 INFO 分区与有界慢日志读取、原始二进制参数 / 客户端字段、数量校验、空间隔离、只读状态和命令历史保留、可选 CONFIG / LEN 权限降级及 GET / INFO 拒绝。实验室不会修改或重置业务 Redis 的日志配置。50 个作用域测试通过，涵盖 64 位计数 / 命中率 / 数值排序、旧版本缺失字段和响应截断。Playwright + Chrome 在 1440×1000、760×844、390×844 验证指标折叠 / 搜索 / 复制、真实定时刷新及离开视图后停止、慢日志数量 / 排序 / 筛选 / 分页 / 二进制详情 / JSON 复制、权限失败保留旧指标和错误恢复；两次预期 HTTP 502，无其他页面 / 控制台错误。Cluster 逐节点、其他版本与权限矩阵仍未完整交付。
 
 - 源码已恢复至固定 commit；[源码审计](dbx-source-audit.json) 与 [实质迁移文件清单](dbx-native-port-manifest.json) 可由 `node scripts/audit-dbx-source.mjs --write` 重算。约 133.4 万有效源码行；排除独立测试、翻译资源、工具与账户/云模块后的核心范围估算为 91.4 万行。词法统计仍包含 Rust 内嵌测试，不能把这个估算当成已迁移量。
-- 第一阶段目标仍为约 50,000 行 Fouc 核心运行逻辑；当前清单为 174 个运行文件、20,547 行有效代码。不计样式、目录 JSON、测试、参考仓库或演示工作台，且必须逐能力验收，当前未完成。MySQL 已合并到共享会话与工作台，移除的重复逻辑不保留行数信用。MONITOR / Pub/Sub 共享生命周期与流解码，删除的重复实现同样不保留信用。RedisJSON 仅计已适配且实际运行的 token 格式化 / Unicode 编辑映射子集，未使用的 Number 包装 / stringify 代码不计入。统计受代码格式影响，不能以行数代替功能覆盖。固定源码基线未变化时，可用 `node scripts/audit-dbx-source.mjs --native-only --write` 快速重算原生清单。
+- 第一阶段目标仍为约 50,000 行 Fouc 核心运行逻辑；当前清单为 203 个运行文件、22,809 行有效代码。不计样式、目录 JSON、测试、参考仓库或演示工作台，且必须逐能力验收，当前未完成。MySQL 已合并到共享会话与工作台，移除的重复逻辑不保留行数信用。MONITOR / Pub/Sub 共享生命周期与流解码，删除的重复实现同样不保留信用。RedisJSON 仅计已适配且实际运行的 token 格式化 / Unicode 编辑映射子集，未使用的 Number 包装 / stringify 代码不计入。统计受代码格式影响，不能以行数代替功能覆盖。固定源码基线未变化时，可用 `node scripts/audit-dbx-source.mjs --native-only --write` 快速重算原生清单。
 - MySQL / PostgreSQL / SQLite 的连接配置 CRUD、测试与会话打开、Schema/表/视图/字段发现、主键分页、只读 SQL、大整数/重复列名及空间隔离已有真实 HTTP 和浏览器证据。R01/R02/R03 保持进行中；完整对象管理、导入导出、比较/备份、取消/重连、CLI/MCP 等仍须推进。SQLite 读取已改为只读子进程隔离，注册批次的长查询取消已通过真实验收；写入取消、结果磁盘缓存与完整版本矩阵仍待推进。
 - 验证入口：`bun test --isolate backend/device/src/database backend/device/src/api/server.database.test.ts src/features/connectors/datastore/result-format.test.ts`、`node scripts/verify-relational-live.mjs`、`node scripts/verify-mysql-live.mjs`、`node scripts/verify-table-save-live.mjs`。真实服务验证使用独立 `fouc_datastore_lab` 数据库、专用 `dbx_save_fixture` / `dbx_unique_fixture` 表与 `.runtime/dbx-lab/relational.sqlite`，不访问 Fouc 账户/业务表。MySQL 实验室通过 `node scripts/datastore-lab.mjs up|status` 运行，容器有认证健康检查，随机凭据只写入被 Git 忽略的运行目录。
 - Web 验证：Playwright + Chrome，1440×1000 完成上述 PostgreSQL / SQLite 流程；390×844、760×844 检查连接目录、导航收起及溢出。两次故意写入产生预期 HTTP 400，未出现其他控制台或页面错误；窄窗口工作台操作矩阵仍待补齐。
@@ -126,7 +128,7 @@
 | Q01 | SQL 编辑器语法高亮、方言切换、元数据补全、括号/缩进、诊断、主题、快捷键及选中/当前语句/全文件执行；中文输入与选区显示正常。 | `components/editor/`、`query-editor.cn.mdx` | 进行中 |
 | Q02 | SQL 格式化、快速操作、参数输入、SQL snippet/模板/SQL 库、搜索、保存/打开/重命名、SQL 文件树及标签恢复。 | `sql-formatter.cn.mdx`、`sql-snippets.cn.mdx`、`saved_sql.rs` | 进行中 |
 | Q03 | 查询目标连接/数据库/Schema 切换，多目标组执行、单/多结果导航、消息、受影响行、耗时、可取消执行、异常定位及历史重跑。 | `components/layout/SqlEditorWorkspace.vue`、`query.rs`、`history.rs` | 进行中 |
-| Q04 | SQL 风险诊断、执行计划/Explain 可视化、优化提示、目标环境提示与可审查执行入口。 | `components/explain/`、`crates/dbx-sql/src/` | 待实施 |
+| Q04 | SQL 风险诊断、执行计划/Explain 可视化、优化提示、目标环境提示与可审查执行入口。 | `components/explain/`、`crates/dbx-sql/src/` | 进行中 |
 | Q05 | 查询历史、收藏/保存、搜索过滤、执行时间/目标/状态；保留可恢复的编辑内容和连接上下文。 | `historyStore.ts`、`history.rs` | 进行中 |
 | Q06 | 大 SQL 文件预览、编码/路径校验、分段执行、进度、失败定位/重试/取消；SQL 文件导入/恢复与 ZIP 包。 | `components/sql-file/`、`data/sql_file_import.rs` | 进行中 |
 | Q07 | 查询结果的表格、文本、JSON、图表/指标切换；图表维度/指标配置、结果复制和导出。 | `components/chart/`、`QueryResultViewSwitcher.vue` | 进行中 |
@@ -139,15 +141,15 @@
 | ID | 任务 / 可验收交付 | DBX 对照 | 状态 |
 | --- | --- | --- | --- |
 | G01 | 真实表数据按页/虚拟滚动加载、行号、斑马纹、空值/类型展示、列宽行高拖拽、自适应少列填满、宽表横向滚动；字体/字号/行高/密度设置和连接、结果来源、字段类型/注释信息可见。 | `components/grid/`、`data-grid.cn.mdx` | 进行中 |
-| G02 | 单格、连续矩形、多行/列选择；键盘导航、复制/粘贴、上下文菜单、选择状态与右侧详情同步，首次打开不预选。 | `components/grid/` | 待实施 |
+| G02 | 单格、连续矩形、多行/列选择；键盘导航、复制/粘贴、上下文菜单、选择状态与右侧详情同步，首次打开不预选。 | `components/grid/` | 进行中 |
 | G03 | 分清数据库侧 WHERE/ORDER BY 与客户端的当前结果搜索、值过滤、当前页排序；提供列筛选、LIKE/NOT LIKE、多字段排序、刷新/重置、页大小与分页，并明确显示条件的执行位置与范围。 | `components/grid/`、`data-grid.cn.mdx` | 进行中 |
 | G04 | 单元格编辑、批量改单元格、新增/复制/删除行、脏数据标记、撤销/回滚、提交前 SQL 预览与冲突/部分失败反馈。 | `components/grid/`、`crates/dbx-sql/src/` | 进行中 |
 | G05 | 单元格/行/列详情、字段元数据、关联数据跳转、值大文本查看、行详情动态展示与字段筛选。 | `components/grid/`、`components/objects/` | 进行中 |
-| G06 | CSV、TSV、JSON、Markdown、XLSX、INSERT SQL 的选择/全表复制及导出；大结果分片/ZIP、进度/取消和正确转义。 | `crates/dbx-formats/`、`table_export.rs` | 待实施 |
+| G06 | CSV、TSV、JSON、Markdown、XLSX、INSERT SQL 的选择/全表复制及导出；大结果分片/ZIP、进度/取消和正确转义。 | `crates/dbx-formats/`、`table_export.rs` | 进行中 |
 | G07 | 表结构筛选、列显示/隐藏/固定、自动适宽、数据/结构工具栏、Canvas 编辑模式和上下文操作完整可用。 | `components/grid/` | 待实施 |
 | G08 | 转置视图、列头拖拽排序、左右冻结、字段注释搜索、表/查询级布局记忆与重置、自动刷新和多次运行结果固定；未提交编辑时防止自动刷新覆盖。 | `data-grid.cn.mdx`、`useDataGridAutoRefresh.ts`、`useDataGridColumnLayout.ts` | 待实施 |
-| G09 | 列格式化器（日期/时间、JSON 路径、掩码、模板）、选择区数量/求和摘要、复制为批量 INSERT/UPDATE、可选注释表头与标识符引用；显示格式不改变原始值。 | `data-grid.cn.mdx`、`useDataGridColumnFormatter.ts` | 待实施 |
-| G10 | 复杂值详情支持长文本/JSON、二进制十六进制与 ASCII、图像、日期时区、空间数据与 SRID；编辑时区分 NULL、空字符串、默认值和生成值。 | `data-grid.cn.mdx`、`useDataGridLargeValues.ts` | 待实施 |
+| G09 | 列格式化器（日期/时间、JSON 路径、掩码、模板）、选择区数量/求和摘要、复制为批量 INSERT/UPDATE、可选注释表头与标识符引用；显示格式不改变原始值。 | `data-grid.cn.mdx`、`useDataGridColumnFormatter.ts` | 进行中 |
+| G10 | 复杂值详情支持长文本/JSON、二进制十六进制与 ASCII、图像、日期时区、空间数据与 SRID；编辑时区分 NULL、空字符串、默认值和生成值。 | `data-grid.cn.mdx`、`useDataGridLargeValues.ts` | 进行中 |
 | G11 | MySQL 单字段按 WHERE 跨未加载分页批量更新：条件构造、预计影响行数、完整 SQL 确认与实际影响行反馈；不得伪装成可可靠回滚的逐行编辑。 | `data-grid.cn.mdx`、`components/grid/` | 待实施 |
 
 ## 5. 导入、传输、差异、备份

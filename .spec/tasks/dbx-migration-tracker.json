@@ -2341,7 +2341,7 @@
     {
       "id": "Q04",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql",
@@ -2421,7 +2421,13 @@
         "action": "SQL 风险诊断、执行计划/Explain 可视化、优化提示、目标环境提示与可审查执行入口。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "src/features/connectors/datastore/sql-explain-action.tsx",
+          "check": "2026-10-04：开发阶段仅P0。MySQL JSON/标准、PostgreSQL JSON、SQLite QUERY PLAN 真实计划；8项原生计划P0、15项选择/精度P0、12项导出P0（原生三库字面量往返）。Chrome实际流程验证EXPLAIN接口/图形/树/原始计划、大整数详情/范围选择/精确求和/复制、选定两行一列CSV下载；1440×1000和390×844实际视觉检查。修复网格遮挡导出栏与浏览器计时器非法this绑定。仅本次已加载结果；ANALYZE、其他驱动/全入口、写入粘贴/布局设置、XLSX/ZIP/全表流式导出仍待阶段回归或实现。"
+        }
+      ],
       "scopeKind": "driver"
     },
     {
@@ -3100,7 +3106,7 @@
     {
       "id": "G02",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql",
@@ -3180,7 +3186,13 @@
         "action": "单格、连续矩形、多行/列选择；键盘导航、复制/粘贴、上下文菜单、选择状态与右侧详情同步，首次打开不预选。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "src/features/connectors/datastore/sql-explain-action.tsx",
+          "check": "2026-10-04：开发阶段仅P0。MySQL JSON/标准、PostgreSQL JSON、SQLite QUERY PLAN 真实计划；8项原生计划P0、15项选择/精度P0、12项导出P0（原生三库字面量往返）。Chrome实际流程验证EXPLAIN接口/图形/树/原始计划、大整数详情/范围选择/精确求和/复制、选定两行一列CSV下载；1440×1000和390×844实际视觉检查。修复网格遮挡导出栏与浏览器计时器非法this绑定。仅本次已加载结果；ANALYZE、其他驱动/全入口、写入粘贴/布局设置、XLSX/ZIP/全表流式导出仍待阶段回归或实现。"
+        }
+      ],
       "scopeKind": "driver"
     },
     {
@@ -3450,7 +3462,7 @@
     {
       "id": "G06",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql",
@@ -3530,7 +3542,13 @@
         "action": "CSV、TSV、JSON、Markdown、XLSX、INSERT SQL 的选择/全表复制及导出；大结果分片/ZIP、进度/取消和正确转义。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "src/features/connectors/datastore/sql-explain-action.tsx",
+          "check": "2026-10-04：开发阶段仅P0。MySQL JSON/标准、PostgreSQL JSON、SQLite QUERY PLAN 真实计划；8项原生计划P0、15项选择/精度P0、12项导出P0（原生三库字面量往返）。Chrome实际流程验证EXPLAIN接口/图形/树/原始计划、大整数详情/范围选择/精确求和/复制、选定两行一列CSV下载；1440×1000和390×844实际视觉检查。修复网格遮挡导出栏与浏览器计时器非法this绑定。仅本次已加载结果；ANALYZE、其他驱动/全入口、写入粘贴/布局设置、XLSX/ZIP/全表流式导出仍待阶段回归或实现。"
+        }
+      ],
       "scopeKind": "driver"
     },
     {
@@ -3708,7 +3726,7 @@
     {
       "id": "G09",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql",
@@ -3788,13 +3806,19 @@
         "action": "列格式化器（日期/时间、JSON 路径、掩码、模板）、选择区数量/求和摘要、复制为批量 INSERT/UPDATE、可选注释表头与标识符引用；显示格式不改变原始值。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "src/features/connectors/datastore/sql-explain-action.tsx",
+          "check": "2026-10-04：开发阶段仅P0。MySQL JSON/标准、PostgreSQL JSON、SQLite QUERY PLAN 真实计划；8项原生计划P0、15项选择/精度P0、12项导出P0（原生三库字面量往返）。Chrome实际流程验证EXPLAIN接口/图形/树/原始计划、大整数详情/范围选择/精确求和/复制、选定两行一列CSV下载；1440×1000和390×844实际视觉检查。修复网格遮挡导出栏与浏览器计时器非法this绑定。仅本次已加载结果；ANALYZE、其他驱动/全入口、写入粘贴/布局设置、XLSX/ZIP/全表流式导出仍待阶段回归或实现。"
+        }
+      ],
       "scopeKind": "driver"
     },
     {
       "id": "G10",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql",
@@ -3874,7 +3898,13 @@
         "action": "复杂值详情支持长文本/JSON、二进制十六进制与 ASCII、图像、日期时区、空间数据与 SRID；编辑时区分 NULL、空字符串、默认值和生成值。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "src/features/connectors/datastore/sql-explain-action.tsx",
+          "check": "2026-10-04：开发阶段仅P0。MySQL JSON/标准、PostgreSQL JSON、SQLite QUERY PLAN 真实计划；8项原生计划P0、15项选择/精度P0、12项导出P0（原生三库字面量往返）。Chrome实际流程验证EXPLAIN接口/图形/树/原始计划、大整数详情/范围选择/精确求和/复制、选定两行一列CSV下载；1440×1000和390×844实际视觉检查。修复网格遮挡导出栏与浏览器计时器非法this绑定。仅本次已加载结果；ANALYZE、其他驱动/全入口、写入粘贴/布局设置、XLSX/ZIP/全表流式导出仍待阶段回归或实现。"
+        }
+      ],
       "scopeKind": "driver"
     },
     {

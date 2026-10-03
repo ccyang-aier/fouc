@@ -1,15 +1,16 @@
 "use client"
 
 import { useState } from "react"
-import { BracketsCurly, ChartBar, ChatText, CheckCircle, Clock, Copy, ListChecks, Table, TextAlignLeft } from '@phosphor-icons/react'
-import type { DatabaseQueryResult } from "@fouc/shared"
+import { BracketsCurly, ChartBar, ChatText, CheckCircle, Clock, Copy, DownloadSimple, ListChecks, Table, TextAlignLeft } from '@phosphor-icons/react'
+import type { DatabaseQueryResult, RelationalProvider } from "@fouc/shared"
 import type { SqlResultView } from '@fouc/shared'
 
 import { databaseCellText } from "./cell-format"
 import { chartableColumns, chartNumber, columnLabel, formatDelimited, formatJson } from "./result-format"
+import { ResultGrid, type ResultGridSelectionScope } from './grid/result-grid'
+import { ResultExportDialog, type ResultExportDialogProps } from './result-export'
 
 type ResultView = SqlResultView
-type ExportFormat = "csv" | "tsv" | "json"
 
 const views = [
   { id: "table", label: "数据表", icon: Table },
@@ -20,9 +21,6 @@ const views = [
   { id: "messages", label: "消息", icon: ChatText }
 ] as const
 
-function resultContent(result: DatabaseQueryResult, format: ExportFormat): string {
-  return format === "json" ? formatJson(result) : formatDelimited(result, format === "csv" ? "," : "\t")
-}
 
 function ResultChart({ result }: { result: DatabaseQueryResult }) {
   const numericColumns = chartableColumns(result)
@@ -189,10 +187,11 @@ function ResultChart({ result }: { result: DatabaseQueryResult }) {
   )
 }
 
-export function SqlQueryResult({ result, view: controlledView, onViewChange }: { result: DatabaseQueryResult; view?: ResultView; onViewChange?: (view: ResultView) => void }) {
+export function SqlQueryResult({ result, provider, scopeKey, view: controlledView, onViewChange }: { result: DatabaseQueryResult; provider: RelationalProvider; scopeKey: string; view?: ResultView; onViewChange?: (view: ResultView) => void }) {
   const [localView, setLocalView] = useState<ResultView>("table")
   const view = controlledView ?? localView
-  const setView = onViewChange ?? setLocalView
+  const [exportSnapshot, setExportSnapshot] = useState<Omit<ResultExportDialogProps, 'onClose'> | null>(null), [selectionScope, setSelectionScope] = useState<ResultGridSelectionScope | null>(null)
+  function setView(next: ResultView) { setSelectionScope(null); (onViewChange ?? setLocalView)(next) }
   const [feedback, setFeedback] = useState("")
   const hasRows = result.rows.length > 0
 
@@ -206,20 +205,6 @@ export function SqlQueryResult({ result, view: controlledView, onViewChange }: {
     }
   }
 
-  function download(format: ExportFormat) {
-    const blob = new Blob([resultContent(result, format)], {
-      type: format === "json" ? "application/json;charset=utf-8" : "text/plain;charset=utf-8"
-    })
-    const url = URL.createObjectURL(blob)
-    const anchor = document.createElement("a")
-    anchor.href = url
-    anchor.download = `query-result.${format}`
-    document.body.append(anchor)
-    anchor.click()
-    anchor.remove()
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000)
-    setFeedback(`已导出本次返回的 ${result.rows.length} 行`)
-  }
 
   return (
     <>
@@ -241,36 +226,7 @@ export function SqlQueryResult({ result, view: controlledView, onViewChange }: {
           ))}
         </div>
       </div>
-      {view === "table" && (
-        <div className="mw-result-grid">
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                {result.columns.map((name, index) => (
-                  <th key={`${name}-${index}`}>
-                    {name}
-                    <small>{result.columnTypes[index]}</small>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {result.rows.map((row, rowIndex) => (
-                <tr key={rowIndex}>
-                  <td>{rowIndex + 1}</td>
-                  {result.columns.map((_, columnIndex) => (
-                    <td key={columnIndex} title={databaseCellText(row[columnIndex] ?? null)}>
-                      {databaseCellText(row[columnIndex] ?? null)}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {!hasRows && <p className="mw-live-result-empty">查询成功，没有返回记录。</p>}
-        </div>
-      )}
+      {view === "table" && <ResultGrid result={result} scopeKey={scopeKey} onSelectionChange={setSelectionScope} />}
       {view === "text" && (
         <pre className="mw-live-result-pre" role="tabpanel">
           {formatDelimited(result, "\t")}
@@ -332,9 +288,8 @@ export function SqlQueryResult({ result, view: controlledView, onViewChange }: {
       )}
       <footer className="mw-query-result-footer"><span><CheckCircle size={14} color="var(--ok-ink)" />{result.rows.length} 行<Clock size={13} />{result.executionTimeMs} ms{result.truncated || result.hasMore ? ' · 仅显示已返回行' : ''}</span><div className="mw-live-result-actions">
         <button type="button" disabled={!hasRows} onClick={() => void copy()}><Copy size={14} />复制</button>
-        <select aria-label="导出查询结果" value="" disabled={!hasRows} onChange={(event) => { if (event.target.value) download(event.target.value as ExportFormat); event.target.value = '' }}>
-          <option value="">导出…</option><option value="csv">CSV</option><option value="tsv">TSV</option><option value="json">JSON</option>
-        </select></div></footer>
+        <button type="button" aria-label="导出查询结果" disabled={!hasRows} onClick={() => setExportSnapshot({ result, provider, title: 'query-result', selectedRows: selectionScope?.rectangular ? selectionScope.rows : undefined, selectedColumns: selectionScope?.rectangular ? selectionScope.columns : undefined })}><DownloadSimple size={14} />导出…</button></div></footer>
+      {exportSnapshot && <ResultExportDialog {...exportSnapshot} onClose={() => setExportSnapshot(null)} />}
       {feedback && (
         <span className="mw-live-result-feedback" role="status">
           {feedback}

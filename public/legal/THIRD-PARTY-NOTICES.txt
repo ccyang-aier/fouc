@@ -137,3 +137,10 @@ is retained in REDIS-PARSER-LICENSE.txt in this directory.
 
 This notice covers DBX-derived material. Other dependency notices remain
 subject to the separate F06 license audit.
+
+Native estimated EXPLAIN and plan rendering adapt query/plugin_plan.rs,
+query_execution_sql.rs, components/explain and lib/diagram/explainPlan.ts.
+Grid range/row/column selection, keyboard movement and exact summaries follow
+useDataGridSelection.ts and grid helpers; result export adapts useDataGridExport.ts,
+dbx-formats CSV writing and core data/table_export.rs. React result grids and
+chunked browser exports preserve native values and remain scoped to Fouc sessions.

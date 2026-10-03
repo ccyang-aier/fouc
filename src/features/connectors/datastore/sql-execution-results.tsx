@@ -1,7 +1,7 @@
 "use client"
 import { useEffect, useState } from 'react'
 import { Check, CircleNotch, Clock, SkipForward, Stop, Table, WarningCircle, X } from '@phosphor-icons/react'
-import { sqlExecutionActive, type SqlExecutionSnapshot, type SqlStatementExecution, type SqlResultView as ResultView } from '@fouc/shared'
+import { sqlExecutionActive, type RelationalProvider, type SqlExecutionSnapshot, type SqlStatementExecution, type SqlResultView as ResultView } from '@fouc/shared'
 import type { SqlExecutionUI } from './use-sql-executions'
 import { SqlQueryResult } from './query-result'
 import styles from './sql-execution.module.css'
@@ -23,8 +23,8 @@ function Elapsed({ execution, active }: { execution: SqlExecutionSnapshot; activ
 }
 
 /** DBX's per-statement result tabs and terminal feedback, using Fouc's native result renderer. */
-export function SqlExecutionResults({ execution, view, onViewChange, onCancel, onReveal, onSelect }: {
-  execution?: SqlExecutionUI; view: ResultView; onViewChange: (view: ResultView) => void; onCancel: () => void;
+export function SqlExecutionResults({ execution, provider, view, onViewChange, onCancel, onReveal, onSelect }: {
+  execution?: SqlExecutionUI; provider: RelationalProvider; view: ResultView; onViewChange: (view: ResultView) => void; onCancel: () => void;
   onReveal: (statement: SqlStatementExecution) => void
   onSelect: (index: number) => void
 }) {
@@ -51,7 +51,7 @@ export function SqlExecutionResults({ execution, view, onViewChange, onCancel, o
         }}><StatementIcon statement={item} /><span>结果 {index + 1}</span>{item.result && <small>{item.result.rows.length.toLocaleString()} 行{item.result.truncated ? '+' : ''}</small>}</button>)}
     </div>
     {statement && <div className={styles.body} role="tabpanel" id={`sql-result-panel-${snapshot.id}`} aria-labelledby={`sql-result-${snapshot.id}-${selected}`}>
-      {statement.result ? <>{statement.result.messages.filter((message) => message.severity === 'warning').map((message, index) => <p key={index} className={styles.connectionError} role="alert">{message.message}</p>)}<SqlQueryResult key={`${snapshot.id}:${selected}`} result={statement.result} view={view} onViewChange={onViewChange} /></>
+      {statement.result ? <>{statement.result.messages.filter((message) => message.severity === 'warning').map((message, index) => <p key={index} className={styles.connectionError} role="alert">{message.message}</p>)}<SqlQueryResult key={`${snapshot.id}:${selected}`} scopeKey={`${snapshot.id}:${selected}`} provider={provider} result={statement.result} view={view} onViewChange={onViewChange} /></>
         : statement.error ? <div className={styles.failure} role="alert"><div><WarningCircle size={19} /><strong>语句 {selected + 1} 执行失败</strong>{statement.error.code && <code>{statement.error.code}</code>}</div><p>{statement.error.message}</p>{statement.error.detail && <p>{statement.error.detail}</p>}{statement.error.hint && <small>{statement.error.hint}</small>}<button type="button" onClick={() => onReveal(statement)}>定位到 SQL</button><details><summary>查看本次执行的 SQL</summary><pre>{statement.sql}</pre></details><span>前面已完成的结果仍可查看，后续语句未执行。</span></div>
         : <div className="mw-result-state">{lost ? <WarningCircle size={26} /> : statement.status === 'running' ? <CircleNotch size={26} className="mw-spin" /> : statement.status === 'cancelled' ? <X size={26} /> : <SkipForward size={26} />}<strong>{lost ? '无法确认此语句的结果' : statement.status === 'running' ? '正在执行此语句' : statement.status === 'cancelled' ? '此语句已取消' : statement.status === 'skipped' ? '此语句未执行' : '等待前面的语句完成'}</strong><span>{statement.status === 'cancelled' || statement.status === 'skipped' ? '编辑内容和已完成的结果已保留，可重新运行。' : '可查看已完成的结果或切换其他查询标签。'}</span></div>}
     </div>}

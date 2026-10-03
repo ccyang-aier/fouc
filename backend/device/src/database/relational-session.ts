@@ -1,6 +1,7 @@
 import { DatabaseInputError } from './input-error';
 import { compileSqlTemplate, sqlSourceEnd, sqlSourcePosition, sqlVariableContext, stripSqlVariableDeclarations, splitSqlExecutionRanges, type SqlTemplateInput } from '@fouc/shared';
 import { SqlExecutionRegistry, sqlExecutionError } from './sql-execution-registry';
+import { explainSqlPlan } from './sql-explain';
 import {
   DATABASE_CAPABILITIES,
   SQL_FILE_MAX_BYTES,
@@ -71,7 +72,6 @@ export class RelationalSessionManager {
       }
     } else if (input.provider !== 'sqlite' || typeof input.path !== 'string' || !input.path.trim())
       throw new DatabaseInputError('请选择有效数据源');
-    const declared = getDatabaseDriver(input.provider)!;
     const driver = await (input.provider === 'postgres'
       ? connectPostgres(input)
       : input.provider === 'mysql'
@@ -83,11 +83,11 @@ export class RelationalSessionManager {
       const observed = Object.fromEntries(
         DATABASE_CAPABILITIES.map((key) => [
           key,
-          key === 'metadataBrowse' || key === 'queryExecution',
+          key === 'metadataBrowse' || key === 'queryExecution' || key === 'sqlExplain',
         ]),
       ) as DatabaseCapabilities;
       this.capabilities.begin(id, id);
-      const snapshot = this.capabilities.confirm(id, id, declared.capabilities, observed, {
+      const snapshot = this.capabilities.confirm(id, id, this.nativeCapabilities(input.provider), observed, {
         readOnly: true,
         production: false,
       })!;
@@ -121,6 +121,10 @@ export class RelationalSessionManager {
       throw new DatabaseInputError('当前工作空间中的连接已断开');
     return entry;
   }
+  private nativeCapabilities(provider: RelationalSession['provider']): DatabaseCapabilities {
+    // The reference catalog describes DBX; Fouc also implements native SQLite QUERY PLAN.
+    return { ...getDatabaseDriver(provider)!.capabilities, sqlExplain: true };
+  }
   details(workspaceId: string, id: string): RelationalSession {
     return this.entry(workspaceId, id).session;
   }
@@ -131,14 +135,14 @@ export class RelationalSessionManager {
       DATABASE_CAPABILITIES.map((key) => [
         key,
         key === 'metadataBrowse' ||
-          key === 'queryExecution' ||
+          key === 'queryExecution' || key === 'sqlExplain' ||
           (enabled && key === 'tableDataEdit'),
       ]),
     ) as DatabaseCapabilities;
     const snapshot = this.capabilities.confirm(
       id,
       id,
-      getDatabaseDriver(entry.session.provider)!.capabilities,
+      this.nativeCapabilities(entry.session.provider),
       observed,
       { readOnly: !enabled, production: false },
     )!;
@@ -369,6 +373,14 @@ export class RelationalSessionManager {
     };
   }
   private historyRepository(entry: Entry): RelationalSqlRepository { return entry.session.connectionId ? this.sqlRepository : this.transientSql; }
+  async explain(workspaceId: string, id: string, value: unknown, signal?: AbortSignal): Promise<DatabaseQueryResult> {
+    const entry = this.entry(workspaceId, id), start = performance.now();
+    const plan = await explainSqlPlan(entry.driver, entry.session.provider, value, signal);
+    this.entry(workspaceId, id);
+    return { columns: plan.columns, columnTypes: plan.columnTypes, rows: plan.rows, hasMore: plan.hasMore,
+      columnSortables: plan.columns.map(() => false), affectedRows: 0, executionTimeMs: Math.round(performance.now() - start),
+      truncated: plan.hasMore, sessionId: null, messages: plan.warnings.map((message) => ({ severity: 'warning', message })) };
+  }
   startExecution(workspaceId: string, id: string, value: unknown) {
     const { session } = this.entry(workspaceId, id);
     const input = value as { sql?: unknown; schema?: unknown; maxRows?: unknown; offset?: unknown; parameters?: unknown; declarationSql?: unknown } | null;

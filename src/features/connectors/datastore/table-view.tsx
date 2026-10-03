@@ -1,107 +1,32 @@
 "use client"
 
-import type { DatabaseTablePage, RelationalSession, RelationalSort } from "@fouc/shared"
-import { CaretUp, CaretDown, Database, X } from "@phosphor-icons/react"
-import { databaseCellText } from "./cell-format"
-import styles from "./relational.module.css"
+import { useMemo, useState } from 'react'
+import type { DatabaseQueryResult, DatabaseTablePage, RelationalProvider, RelationalSession, RelationalSort } from '@fouc/shared'
+import { Database, DownloadSimple, X } from '@phosphor-icons/react'
+import { databaseCellText } from './cell-format'
+import { ResultGrid, type ResultGridSelectionScope } from './grid/result-grid'
+import { ResultExportDialog, type ResultExportDialogProps } from './result-export'
+import styles from './relational.module.css'
 
-export function TableView({
-  page,
-  selectedRow,
-  onSelect,
-  search = "",
-  sort = [],
-  sortDisabled = false,
-  filtered = false,
-  onSort
-}: {
-  page: DatabaseTablePage
-  selectedRow: number | null
-  onSelect: (row: number) => void
-  search?: string
-  sort?: RelationalSort[]
-  sortDisabled?: boolean
-  filtered?: boolean
-  onSort?: (column: string, additive: boolean) => void
+export function TableView({ page, provider, schema, onSelect, scopeKey, search = '', sort = [], sortDisabled = false, filtered = false, onSort }: {
+  page: DatabaseTablePage; provider: RelationalProvider; schema: string; scopeKey: string; onSelect: (row: number | null) => void; search?: string;
+  sort?: RelationalSort[]; sortDisabled?: boolean; filtered?: boolean; onSort?: (column: string, additive: boolean) => void
 }) {
-  return (
-    <div className="mw-result-grid">
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            {page.columns.map((column) => (
-              <th
-                key={column.name}
-                aria-sort={
-                  sort[0]?.column === column.name
-                    ? sort[0].direction === "asc"
-                      ? "ascending"
-                      : "descending"
-                    : undefined
-                }
-              >
-                <button
-                  type="button"
-                  className={styles.sortHeader}
-                  disabled={sortDisabled}
-                  aria-label={`按 ${column.name} 排序`}
-                  title="点击切换数据库排序；Shift + 点击添加多字段排序"
-                  onClick={(event) => onSort?.(column.name, event.shiftKey)}
-                >
-                  {column.name}
-                  {sort.find((item) => item.column === column.name)?.direction === "asc" ? (
-                    <CaretUp size={11} />
-                  ) : sort.some((item) => item.column === column.name) ? (
-                    <CaretDown size={11} />
-                  ) : null}
-                </button>
-                <small>{column.dataType}</small>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {page.rows
-            .map((row, index) => ({ row, index }))
-            .filter(
-              ({ row }) =>
-                !search ||
-                row.some((cell) =>
-                  databaseCellText(cell).toLocaleLowerCase().includes(search.toLocaleLowerCase())
-                )
-            )
-            .map(({ row, index }) => (
-              <tr
-                key={index}
-                aria-selected={selectedRow === index}
-                className={selectedRow === index ? styles.selected : ""}
-                onClick={() => onSelect(index)}
-              >
-                <td>{page.offset + index + 1}</td>
-                {row.map((cell, column) => (
-                  <td key={column} title={databaseCellText(cell)}>
-                    {databaseCellText(cell)}
-                  </td>
-                ))}
-              </tr>
-            ))}
-        </tbody>
-      </table>
-      {!page.rows.length && (
-        <p className="mw-live-result-empty">
-          {filtered ? "没有符合数据库筛选的记录。" : "表中没有记录。"}
-        </p>
-      )}
-      {page.rows.length > 0 &&
-        search &&
-        !page.rows.some((row) =>
-          row.some((cell) =>
-            databaseCellText(cell).toLocaleLowerCase().includes(search.toLocaleLowerCase())
-          )
-        ) && <p className="mw-live-result-empty">当前页没有匹配记录。</p>}
-    </div>
-  )
+  const [exportSnapshot, setExportSnapshot] = useState<Omit<ResultExportDialogProps, 'onClose'> | null>(null), [selectionScope, setSelectionScope] = useState<ResultGridSelectionScope | null>(null)
+  const model = useMemo(() => {
+    const needle = search.toLocaleLowerCase()
+    const rows = page.rows.map((row, index) => ({ row, index })).filter(({ row }) => !needle || row.some((cell) => databaseCellText(cell).toLocaleLowerCase().includes(needle)))
+    const result: DatabaseQueryResult = { columns: page.columns.map((column) => column.name), columnTypes: page.columns.map((column) => column.dataType),
+      rows: rows.map(({ row }) => row), columnSortables: page.columns.map(() => true), affectedRows: 0, executionTimeMs: 0,
+      hasMore: page.hasMore, truncated: page.hasMore, sessionId: page.connectionId, messages: [] }
+    return { result, indices: rows.map(({ index }) => index), rowNumbers: rows.map(({ index }) => page.offset + index + 1), primaryKeys: page.columns.filter((column) => column.isPrimaryKey).map((column) => column.name) }
+  }, [page, search])
+  return <><ResultGrid result={model.result} scopeKey={scopeKey} rowOffset={page.offset} rowNumbers={model.rowNumbers} primaryKeys={model.primaryKeys} onSelectionChange={setSelectionScope}
+    showCellDetails={false} sort={sort} sortDisabled={sortDisabled} onSort={onSort}
+    scopeLabel={search ? '当前页匹配 ' + model.indices.length + ' / 已加载 ' + page.rows.length + ' 行' : '当前页已加载 ' + page.rows.length + ' 行'}
+    emptyLabel={page.rows.length ? '当前页没有匹配记录' : filtered ? '没有符合数据库筛选的记录' : '表中没有记录'}
+    onCellSelect={(cell) => onSelect(cell ? model.indices[cell.rowIndex] : null)} toolbarActions={<button type="button" aria-label="导出当前页数据" disabled={!model.result.rows.length} onClick={() => setExportSnapshot({ result: model.result, provider, title: page.table, target: { schema, table: page.table }, selectedRows: selectionScope?.rectangular ? selectionScope.rows : undefined, selectedColumns: selectionScope?.rectangular ? selectionScope.columns : undefined })}><DownloadSimple size={13} />导出</button>} />
+    {exportSnapshot && <ResultExportDialog {...exportSnapshot} onClose={() => setExportSnapshot(null)} />}</>
 }
 
 export function RowInspector({

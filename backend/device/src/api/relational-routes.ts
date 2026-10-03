@@ -191,6 +191,8 @@ export function relationalRoutes(
   });
   app.post(base + '/:id/executions', async (c) => c.json({ ok: true,
     data: sessions.startExecution(c.req.param('workspaceId')!, c.req.param('id')!, await c.req.json().catch(() => null)) }, 201));
+  app.post(base + '/:id/explain', async (c) => c.json({ ok: true,
+    data: await sessions.explain(c.req.param('workspaceId')!, c.req.param('id')!, await c.req.json().catch(() => null), c.req.raw.signal) }));
   app.get(base + '/:id/executions/:executionId', (c) => {
     const revision = Number(c.req.query('revision') ?? 0);
     if (!Number.isInteger(revision) || revision < 0) throw new DatabaseInputError('执行版本参数无效');

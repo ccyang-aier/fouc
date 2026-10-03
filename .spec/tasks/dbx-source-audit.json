@@ -200,15 +200,15 @@
         "area": "shared-relational-runtime-and-postgres-sqlite-drivers",
         "status": "partial",
         "files": 7,
-        "physical": 1288,
-        "effective": 1261
+        "physical": 1302,
+        "effective": 1274
       },
       {
         "area": "shared-sql-workbench-and-connection-management",
         "status": "partial",
         "files": 10,
-        "physical": 2211,
-        "effective": 2156
+        "physical": 2095,
+        "effective": 2040
       },
       {
         "area": "native-redis-and-specialized-surface",
@@ -300,12 +300,19 @@
         "files": 26,
         "physical": 3155,
         "effective": 2685
+      },
+      {
+        "area": "native-relational-explain-grid-selection-and-result-export",
+        "status": "partial",
+        "files": 29,
+        "physical": 2640,
+        "effective": 2365
       }
     ],
     "runtime": {
-      "files": 174,
-      "physical": 22697,
-      "effective": 20547
+      "files": 203,
+      "physical": 25235,
+      "effective": 22809
     },
     "targetEffectiveRuntimeLines": 50000,
     "milestoneVerified": false

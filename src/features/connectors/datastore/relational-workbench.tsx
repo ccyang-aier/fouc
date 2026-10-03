@@ -420,8 +420,10 @@ export function RelationalWorkbench({
               ) : (
                 <TableView
                   page={page}
-                  selectedRow={selectedRow}
-                  onSelect={(row) => { setSelectedRow(row); setInspectorOpen(true) }}
+                  provider={session.provider}
+                  schema={schema}
+                  scopeKey={`${base}:${schema}:${table}:${page.offset}:${JSON.stringify(query)}:${pageSearch}`}
+                  onSelect={(row) => { setSelectedRow(row); if (row !== null) setInspectorOpen(true) }}
                   search={pageSearch}
                   sort={query.sort}
                   sortDisabled={busy || pending}

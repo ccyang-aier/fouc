@@ -408,6 +408,53 @@
         "src/features/connectors/datastore/sql-files.ts",
         "src/features/connectors/datastore/sql-quick-actions.tsx"
       ]
+    },
+    {
+      "area": "native-relational-explain-grid-selection-and-result-export",
+      "status": "partial",
+      "sourceReferences": [
+        "crates/dbx-core/src/query/plugin_plan.rs",
+        "crates/dbx-core/src/query_execution_sql.rs",
+        "apps/desktop/src/components/explain/",
+        "apps/desktop/src/lib/diagram/explainPlan.ts",
+        "apps/desktop/src/composables/useDataGridSelection.ts",
+        "apps/desktop/src/composables/useDataGridExport.ts",
+        "apps/desktop/src/composables/useDataGridLargeValues.ts",
+        "apps/desktop/src/lib/common/clipboard.ts",
+        "crates/dbx-formats/src/csv_export.rs",
+        "crates/dbx-core/src/data/table_export.rs"
+      ],
+      "runtimeFiles": [
+        "backend/device/src/database/sql-explain-compatibility.ts",
+        "backend/device/src/database/sql-explain.ts",
+        "src/features/connectors/datastore/explain/explain-plan-viewer.tsx",
+        "src/features/connectors/datastore/explain/index.ts",
+        "src/features/connectors/datastore/explain/parse-plan.ts",
+        "src/features/connectors/datastore/explain/plan-canvas.ts",
+        "src/features/connectors/datastore/explain/plan-details.tsx",
+        "src/features/connectors/datastore/explain/plan-diagram.tsx",
+        "src/features/connectors/datastore/explain/plan-presentation.ts",
+        "src/features/connectors/datastore/explain/plan-tree.tsx",
+        "src/features/connectors/datastore/explain/types.ts",
+        "src/features/connectors/datastore/grid/cell-detail.tsx",
+        "src/features/connectors/datastore/grid/clipboard.ts",
+        "src/features/connectors/datastore/grid/detail-navigation.ts",
+        "src/features/connectors/datastore/grid/detail-selection.ts",
+        "src/features/connectors/datastore/grid/exact-summary.ts",
+        "src/features/connectors/datastore/grid/native-selection.ts",
+        "src/features/connectors/datastore/grid/result-grid.tsx",
+        "src/features/connectors/datastore/grid/selection-controller.ts",
+        "src/features/connectors/datastore/grid/selection-frames.ts",
+        "src/features/connectors/datastore/grid/selection-persistence.ts",
+        "src/features/connectors/datastore/grid/selection.ts",
+        "src/features/connectors/datastore/result-export/dialog.tsx",
+        "src/features/connectors/datastore/result-export/export.ts",
+        "src/features/connectors/datastore/result-export/index.ts",
+        "src/features/connectors/datastore/result-export/model.ts",
+        "src/features/connectors/datastore/result-export/values.ts",
+        "src/features/connectors/datastore/result-export/writer.ts",
+        "src/features/connectors/datastore/sql-explain-action.tsx"
+      ]
     }
   ],
   "knownRemainingScope": [

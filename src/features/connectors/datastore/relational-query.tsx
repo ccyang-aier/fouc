@@ -14,6 +14,7 @@ import { SqlParameterDialog, rememberSqlParameters, type SqlParameterRecents } f
 import { SqlEditorSplit } from './sql-editor-split'
 import { SqlFileActions } from './sql-file-actions'
 import { SqlQuickActions } from './sql-quick-actions'
+import { SqlExplainAction } from './sql-explain-action'
 import type { OpenSqlFile } from './sql-files'
 import { SQL_DRAFT_MAX_BYTES } from '@fouc/shared'
 import { sqlVariableContext } from '@fouc/shared'
@@ -259,6 +260,7 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
         <button type="button" aria-label="压缩 SQL" title="压缩选区或完整 SQL，保留字面量与执行提示" disabled={!current || running || formatting} onClick={() => void transformCurrent(true)}><ArrowsInLineHorizontal size={17} /></button>
         <button type="button" aria-label="SQL 编辑器设置" title="格式化、保存与代码片段" disabled={preferences.busy || !preferences.data || Boolean(preferences.error)} onClick={() => setEditorSettingsOpen(true)}><SlidersHorizontal size={17} /></button>
         <span className={styles.toolDivider} />
+        <SqlExplainAction key={`${base}:${current?.id}:${targetSchema}`} base={base} provider={session.provider} schema={targetSchema || null} targetLabel={displayDatabase ?? session.database} editorRef={editor} disabled={!current || running || formatting} contextIssue={current ? targetIssue(current) : ''} onNotice={setNotice} />
         <SqlQuickActions editorRef={editor} provider={session.provider} disabled={!current || running || formatting} keywordCase={preferences.data?.formatter.keywordCase} onFormatSql={formatText} onNotice={setNotice} />
         <SqlFileActions provider={session.provider} disabled={!state.ready || running} getDocument={() => current ? { sql: editor.current?.state.doc.toString() ?? current.sql, title: current.title } : null} onOpen={openSqlFiles} onNotice={setNotice} />
         <button type="button" aria-label="历史" title="查询历史" aria-pressed={panel === 'history'} onClick={() => setPanel((value) => value === 'history' ? null : 'history')}><ClockCounterClockwise size={17} /><span>历史</span></button>
@@ -277,7 +279,7 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
           onChange={(sql) => updateTab(current.id, { sql })} onPositionChange={(id, editorPosition) => { const tab = controller.getSnapshot().tabs.find((item) => item.id === id); if (tab && JSON.stringify(tab.editorPosition) !== JSON.stringify(editorPosition)) updateTab(id, { editorPosition }) }}
           onRun={(mode) => void run(mode ?? executionMode)} onSave={() => void saveCurrent()} onFormat={() => void transformCurrent()} snippets={preferences.data?.snippets} keywordCase={preferences.data?.formatter.keywordCase} functionCase={preferences.data?.formatter.functionCase} editorRef={editor} /></div>}
         status={<div className={styles.document}><span className={styles.language}>SQL</span><span title={current.database}>{displayDatabase}{current.schema && session.provider !== 'mysql' ? ` / ${current.schema}` : ''}</span><small><Lock size={12} />只读 · {executionMode === 'current' ? '当前语句' : '全部语句'} · 选区优先</small>{draftStatus}</div>}
-        result={<SqlExecutionResults key={`${current.id}:${execution?.snapshot?.id ?? 'empty'}`} execution={execution} onSelect={(index) => selectResult(current.id, index)} view={current.resultView} onViewChange={(resultView) => updateTab(current.id, { resultView })} onCancel={() => void cancel(current.id)} onReveal={(statement) => {
+        result={<SqlExecutionResults key={`${current.id}:${execution?.snapshot?.id ?? 'empty'}`} provider={session.provider} execution={execution} onSelect={(index) => selectResult(current.id, index)} view={current.resultView} onViewChange={(resultView) => updateTab(current.id, { resultView })} onCancel={() => void cancel(current.id)} onReveal={(statement) => {
           const view = editor.current; if (!view) return
           if (view.state.sliceDoc(statement.from, statement.to) !== statement.sql) { setNotice('本次执行后 SQL 已修改，无法精确定位。可在错误详情中查看本次执行的原始 SQL。'); return }
           const position = Math.min(view.state.doc.length, statement.from + (statement.error?.position ?? 0))

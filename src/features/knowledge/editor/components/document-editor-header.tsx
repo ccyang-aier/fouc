@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import type { Editor } from '@tiptap/react';
-import { FolderSimple, GridFour, List, Plus, ShareNetwork } from '@phosphor-icons/react';
+import { FolderSimple, List, Plus, ShareNetwork } from '@phosphor-icons/react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -46,7 +46,7 @@ export function DocumentEditorHeader({
         <span className={styles.folderName}>{folderName}</span>
       </button>
       <span className={styles.divider} aria-hidden>/</span>
-      <button ref={navigation?.outlineTrigger} type="button" className={styles.iconButton} aria-label={pdfNavigation ? 'PDF 缩略图' : '文档目录'} title={pdfNavigation ? (pdfNavigation.open ? '收起缩略图' : '展开缩略图') : (navigation?.outlineOpen ? '收起目录' : '展开目录')} aria-expanded={pdfNavigation?.open ?? navigation?.outlineOpen ?? false} aria-controls={pdfNavigation?.id ?? navigation?.outlineId} disabled={!pdfNavigation && !navigation?.onToggleOutline} onClick={pdfNavigation?.onToggle ?? navigation?.onToggleOutline}>{pdfNavigation ? <GridFour aria-hidden size={17} weight="duotone" /> : <List aria-hidden size={16} weight="bold" />}</button>
+      <button ref={navigation?.outlineTrigger} type="button" className={styles.iconButton} aria-label={pdfNavigation ? 'PDF 缩略图' : '文档目录'} title={pdfNavigation ? (pdfNavigation.open ? '收起缩略图' : '展开缩略图') : (navigation?.outlineOpen ? '收起目录' : '展开目录')} aria-expanded={pdfNavigation?.open ?? navigation?.outlineOpen ?? false} aria-controls={pdfNavigation?.id ?? navigation?.outlineId} disabled={!pdfNavigation && !navigation?.onToggleOutline} onClick={pdfNavigation?.onToggle ?? navigation?.onToggleOutline}><List aria-hidden size={16} weight="bold" /></button>
       <DocumentStarButton starred={starred} onToggle={onToggleStar} />
     </div>
     <div className={styles.actions}>

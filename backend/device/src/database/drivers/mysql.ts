@@ -151,7 +151,7 @@ export async function connectMysql(
           if (!broken) connection.release();
         }
       },
-      async read(sql, schema, maxRows): Promise<DriverResult> {
+      async read(sql, schema, maxRows, values = []): Promise<DriverResult> {
         const connection = await pool.getConnection();
         let destroyed = false;
         try {
@@ -166,7 +166,10 @@ export async function connectMysql(
           if (schema) await connection.query(`USE ${quoteMysqlIdentifier(schema)}`);
           await connection.query('START TRANSACTION READ ONLY');
           const raw = connection.connection as unknown as RawConnection;
-          const request = raw.query({ sql, rowsAsArray: true, timeout: 30000 });
+          const request = raw.query(
+            { sql, rowsAsArray: true, timeout: 30000 },
+            values.map((value) => (value instanceof Uint8Array ? Buffer.from(value) : value)),
+          );
           let fields: FieldPacket[] = [];
           request.on('fields', (metadata: FieldPacket[]) => {
             fields = metadata;

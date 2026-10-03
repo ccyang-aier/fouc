@@ -25,6 +25,21 @@ afterAll(() => {
 });
 
 describe('real SQLite connection and API', () => {
+  test('typed database filters preserve NULL/list semantics and deterministic composite-key pagination', async () => {
+    const manager = new RelationalSessionManager(new DatabaseCapabilityRegistry());
+    const session = await manager.connect('space-filter', { provider: 'sqlite', path: dbFile });
+    try {
+      const query = { filter: { kind: 'group', join: 'and', children: [{ kind: 'condition', column: 'tenant', operator: 'equals', value: 'a' }, { kind: 'condition', column: 'value', operator: 'in', values: [null, 'hello'] }] }, sort: [{ column: 'value', direction: 'desc', nulls: 'first' }] };
+      const first = await manager.page('space-filter', session.id, 'main', 'items', 0, 1, query);
+      const second = await manager.page('space-filter', session.id, 'main', 'items', 1, 1, query);
+      expect(first.rows[0]?.slice(0, 3)).toEqual(['a', 2, null]);
+      expect(second.rows[0]?.slice(0, 3)).toEqual(['a', 1, 'hello']);
+      expect(first.hasMore).toBe(true); expect(second.hasMore).toBe(false); expect(first.stableOrder).toBe(true);
+      expect(first.statement.sql).not.toContain('hello'); expect(first.statement.parameters).toEqual(['a','hello']);
+      await expect(manager.page('space-filter', session.id, 'main', 'items', 0, 100, { filter: { kind: 'condition', column: 'id; DELETE', operator: 'equals', value: 1 }, sort: [] })).rejects.toThrow('不存在');
+      await expect(manager.previewPage('other-space', session.id, 'main', 'items', 0, 100, query)).rejects.toThrow();
+    } finally { await manager.shutdown(); }
+  });
   test('a real single-column unique key identifies a keyless row; composite/expression indices do not', async () => {
     const manager = new RelationalSessionManager(new DatabaseCapabilityRegistry());
     const session = await manager.connect('space-unique', { provider: 'sqlite', path: dbFile });

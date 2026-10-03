@@ -80,14 +80,16 @@ export async function connectSqlite(
             }),
           );
       },
-      async read(sql, schema, maxRows) {
+      async read(sql, schema, maxRows, values = []) {
         if (schema && schema !== 'main') throw new DatabaseInputError('SQLite 会话仅支持 main');
         const statement = db.prepare(sql);
         statement.setReadBigInts(true);
         statement.setReturnArrays(true);
         const fields = statement.columns();
         const rows = [];
-        for (const row of statement.iterate()) {
+        for (const row of statement.iterate(
+          ...values.map((value) => (typeof value === 'boolean' ? Number(value) : value)),
+        )) {
           rows.push(
             (row as unknown as unknown[]).map((value) =>
               typeof value === 'bigint' &&

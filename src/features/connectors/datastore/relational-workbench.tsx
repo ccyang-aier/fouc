@@ -1,12 +1,18 @@
 "use client"
 import { useEffect, useState } from "react"
 import { ArrowLeft, Database, FileCode, GridFour } from "@phosphor-icons/react"
-import type { DatabaseObjectInfo, DatabaseTablePage, RelationalSession } from "@fouc/shared"
+import type {
+  DatabaseObjectInfo,
+  RelationalTablePage,
+  RelationalTableQuery,
+  RelationalSession
+} from "@fouc/shared"
 import { backendFetch } from "@/lib/backend"
 import { ResourceTree } from "./resource-tree"
 import { TableView, RowInspector } from "./table-view"
 import { RelationalQuery } from "./relational-query"
 import { TableEditing } from "./table-editing"
+import { TableQueryControls } from "./table-query-controls"
 import styles from "./relational.module.css"
 import "./workbench.css"
 
@@ -24,7 +30,7 @@ export function RelationalWorkbench({
   const [schema, setSchema] = useState("")
   const [tables, setTables] = useState<DatabaseObjectInfo[]>([])
   const [table, setTable] = useState("")
-  const [page, setPage] = useState<DatabaseTablePage | null>(null)
+  const [page, setPage] = useState<RelationalTablePage | null>(null)
   const [offset, setOffset] = useState(0)
   const [search, setSearch] = useState("")
   const [mode, setMode] = useState<"data" | "structure" | "sql">("data")
@@ -36,6 +42,10 @@ export function RelationalWorkbench({
   const [pending, setPending] = useState(false)
   const [writeBusy, setWriteBusy] = useState(false)
   const [feedback, setFeedback] = useState("")
+  const [limit, setLimit] = useState(100)
+  const [query, setQuery] = useState<RelationalTableQuery>({ filter: null, sort: [] })
+  const [pageSearch, setPageSearch] = useState("")
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const writable =
     currentSession.capabilities.capabilities.tableDataEdit &&
     !currentSession.capabilities.restrictions.readOnly
@@ -94,9 +104,9 @@ export function RelationalWorkbench({
   useEffect(() => {
     if (!schema || !table) return
     const controller = new AbortController()
-    void backendFetch<DatabaseTablePage>(
-      `${base}/schemas/${encodeURIComponent(schema)}/tables/${encodeURIComponent(table)}/rows?offset=${offset}&limit=100`,
-      { signal: controller.signal }
+    void backendFetch<RelationalTablePage>(
+      `${base}/schemas/${encodeURIComponent(schema)}/tables/${encodeURIComponent(table)}/rows`,
+      { method: "POST", body: JSON.stringify({ ...query, offset, limit }), signal: controller.signal }
     )
       .then((value) => {
         if (!controller.signal.aborted) {
@@ -111,7 +121,7 @@ export function RelationalWorkbench({
         }
       })
     return () => controller.abort()
-  }, [base, schema, table, offset, revision])
+  }, [base, schema, table, offset, limit, query, revision])
   function openTable(value: string) {
     if (value === table && offset === 0) setRevision((current) => current + 1)
     setTable(value)
@@ -122,6 +132,11 @@ export function RelationalWorkbench({
     setBusy(true)
     setError("")
     setFeedback("")
+    if (value !== table) {
+      setQuery({ filter: null, sort: [] })
+      setPageSearch("")
+      setFiltersOpen(false)
+    }
   }
   function refresh() {
     setError("")
@@ -140,6 +155,31 @@ export function RelationalWorkbench({
     setSelectedRow(null)
     setError("")
     setBusy(false)
+    setQuery({ filter: null, sort: [] })
+    setPageSearch("")
+    setFiltersOpen(false)
+  }
+  function applyQuery(value: RelationalTableQuery) {
+    setQuery(value)
+    setOffset(0)
+    setBusy(true)
+    setSelectedRow(null)
+    setError("")
+    setFeedback("")
+    setPageSearch("")
+  }
+  function sortColumn(column: string, additive: boolean) {
+    const existing = query.sort.find((item) => item.column === column)
+    const next =
+      existing?.direction === "desc"
+        ? null
+        : { column, direction: existing ? ("desc" as const) : ("asc" as const), nulls: "last" as const }
+    const others = additive ? query.sort.filter((item) => item.column !== column) : []
+    if (next && others.length >= 8) {
+      setError("最多按 8 个字段排序，请先移除已有规则")
+      return
+    }
+    applyQuery({ ...query, sort: next ? [...others, next] : others })
   }
   return (
     <section aria-label={`${name} 数据库工作台`} className="mw">
@@ -250,6 +290,31 @@ export function RelationalWorkbench({
           </div>
           {page && (
             <div hidden={mode !== "data"}>
+              <TableQueryControls
+                key={`${schema}:${page.table}:${JSON.stringify(query)}`}
+                base={base}
+                schema={schema}
+                page={page}
+                query={query}
+                limit={limit}
+                search={pageSearch}
+                open={filtersOpen}
+                disabled={pending}
+                busy={busy}
+                onToggle={() => setFiltersOpen((value) => !value)}
+                onSearch={(value) => {
+                  setPageSearch(value)
+                  setSelectedRow(null)
+                }}
+                onApply={applyQuery}
+                onLimit={(value) => {
+                  setLimit(value)
+                  setOffset(0)
+                  setBusy(true)
+                  setSelectedRow(null)
+                }}
+                onRefresh={refresh}
+              />
               <TableEditing
                 key={`${schema}:${page.table}`}
                 base={base}
@@ -307,12 +372,22 @@ export function RelationalWorkbench({
                   structure={mode === "structure"}
                   selectedRow={selectedRow}
                   onSelect={setSelectedRow}
+                  search={pageSearch}
+                  sort={query.sort}
+                  sortDisabled={busy || pending}
+                  filtered={query.filter !== null}
+                  onSort={sortColumn}
                 />
               )}
               {page && (
                 <footer className="mw-result-footer">
                   <span>
-                    {page.rows.length} 行 · 从第 {offset + 1} 行开始
+                    {page.rows.length} 行{page.rows.length ? ` · 从第 ${offset + 1} 行开始` : ""}
+                    {pageSearch
+                      ? " · 搜索仅作用于当前页"
+                      : page.stableOrder
+                        ? " · 已包含主键排序"
+                        : " · 无主键，分页顺序可能变化"}
                   </span>
                   <div className={styles.paging}>
                     <button
@@ -321,7 +396,7 @@ export function RelationalWorkbench({
                       onClick={() => {
                         setBusy(true)
                         setSelectedRow(null)
-                        setOffset((value) => Math.max(0, value - 100))
+                        setOffset((value) => Math.max(0, value - limit))
                       }}
                     >
                       上一页
@@ -332,7 +407,7 @@ export function RelationalWorkbench({
                       onClick={() => {
                         setBusy(true)
                         setSelectedRow(null)
-                        setOffset((value) => value + 100)
+                        setOffset((value) => value + limit)
                       }}
                     >
                       下一页

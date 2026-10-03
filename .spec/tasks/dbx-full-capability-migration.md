@@ -9,7 +9,7 @@
 ## 代码规模与当前验证
 
 - 源码已恢复至固定 commit；[源码审计](dbx-source-audit.json) 与 [实质迁移文件清单](dbx-native-port-manifest.json) 可由 `node scripts/audit-dbx-source.mjs --write` 重算。约 133.4 万有效源码行；排除独立测试、翻译资源、工具与账户/云模块后的核心范围估算为 91.4 万行。词法统计仍包含 Rust 内嵌测试，不能把这个估算当成已迁移量。
-- 第一阶段目标仍为约 50,000 行 Fouc 核心运行逻辑；当前清单为 39 个运行文件、5,342 行有效代码。不计样式、目录 JSON、测试、参考仓库或演示工作台，且必须逐能力验收，当前未完成。MySQL 已合并到共享会话与工作台，移除的重复逻辑不保留行数信用。统计受代码格式影响，不能以行数代替功能覆盖。固定源码基线未变化时，可用 `node scripts/audit-dbx-source.mjs --native-only --write` 快速重算原生清单。
+- 第一阶段目标仍为约 50,000 行 Fouc 核心运行逻辑；当前清单为 45 个运行文件、6,455 行有效代码。不计样式、目录 JSON、测试、参考仓库或演示工作台，且必须逐能力验收，当前未完成。MySQL 已合并到共享会话与工作台，移除的重复逻辑不保留行数信用。统计受代码格式影响，不能以行数代替功能覆盖。固定源码基线未变化时，可用 `node scripts/audit-dbx-source.mjs --native-only --write` 快速重算原生清单。
 - MySQL / PostgreSQL / SQLite 的连接配置 CRUD、测试与会话打开、Schema/表/视图/字段发现、主键分页、只读 SQL、大整数/重复列名及空间隔离已有真实 HTTP 和浏览器证据。R01/R02/R03 保持进行中；完整对象管理、导入导出、比较/备份、取消/重连、CLI/MCP 等仍须推进。SQLite 当前同步查询，尚未交付长查询取消与 worker 隔离。
 - 验证入口：`bun test --isolate backend/device/src/database backend/device/src/api/server.database.test.ts src/features/connectors/datastore/result-format.test.ts`、`node scripts/verify-relational-live.mjs`、`node scripts/verify-mysql-live.mjs`、`node scripts/verify-table-save-live.mjs`。真实服务验证使用独立 `fouc_datastore_lab` 数据库、专用 `dbx_save_fixture` / `dbx_unique_fixture` 表与 `.runtime/dbx-lab/relational.sqlite`，不访问 Fouc 账户/业务表。MySQL 实验室通过 `node scripts/datastore-lab.mjs up|status` 运行，容器有认证健康检查，随机凭据只写入被 Git 忽略的运行目录。
 - Web 验证：Playwright + Chrome，1440×1000 完成上述 PostgreSQL / SQLite 流程；390×844、760×844 检查连接目录、导航收起及溢出。两次故意写入产生预期 HTTP 400，未出现其他控制台或页面错误；窄窗口工作台操作矩阵仍待补齐。
@@ -17,6 +17,9 @@
 - Redis 验证入口：`node scripts/verify-redis-live.mjs` 使用独立 DB 15 与 `fouc:dbx-lab:` 前缀，只重置明确命名的验证 Key，不清空数据库、不访问业务缓存 Key。Playwright + Chrome 1440×1000、760×844 已验收创建/测试/保存/连接、六种类型、JSON、List/Stream 翻页、空状态/搜索、命令成功/错误及编辑/刷新持久化/复制/删除。一次故意写入产生预期 HTTP 400，无其他控制台或页面错误。
 - 三种关系型数据源的暂存新增/修改/删除、NULL/默认值/JSON/Base64 编辑、计算字段保护、SQL/参数预览、取消/确认与重新锁定已有真实 HTTP 和 Web 证据。计划绑定工作空间/会话并只消费一次；完整原始行冲突与重复键均回滚前序写入。复合/表达式索引及 PostgreSQL INCLUDE 列不会误判成单列唯一键。C05/C06/G04 均保持进行中，无键行、复制/粘贴/撤销、复杂类型、生产范围、Agent/CLI/MCP 授权、取消/未知提交结果与分布式事务未交付。
 - 表编辑 Web 验证：Playwright + Chrome，三种数据源均完成 1440×1000 的写入闭环、暂存时表/页/连接导航保护与 SQL 页签保留；760×844 操作无溢出，390×844 编辑弹窗可滚动且操作区可见。提交后回读数据、结果反馈与重新锁定通过，无页面或控制台错误；其他工作台窄窗口功能矩阵仍未整体完成。
+
+- 三种关系型数据源新增数据库侧参数化筛选与多列排序：18 种操作符、嵌套 AND/OR、含 NULL 的 IN/NOT IN、范围条件、JSON/Base64/大整数、NULL 位置与主键补充排序；提供 SQL/参数预览复制、草稿重置、条件清除、页大小与前后翻页。当前页搜索保留原始行索引，搜索后编辑不会写到另一行；暂存写入时阻止改变数据库查询。无主键时提示顺序可能变化，主键排序不表示跨请求快照一致。G03 保持进行中；当前结果值过滤/本地排序及其他驱动仍待覆盖。
+- 筛选验证入口：`node scripts/verify-table-query-live.mjs` 使用独立 `dbx_filter_fixture` / `dbx_page_fixture`；33 个作用域单元/集成测试和 4 个架构边界测试通过。Playwright + Chrome 三种数据源在 1440×1000、760×844、390×844 验证真实搜索后写入、组合筛选、SQL 复制、多列/表头排序、NULL 列表、错误/重置/空结果与分页，无页面或控制台错误。窄屏搜索独占一行，筛选面板滚动时底部操作可见。
 
 ## 范围与验收规则
 
@@ -104,7 +107,7 @@
 | --- | --- | --- | --- |
 | G01 | 真实表数据按页/虚拟滚动加载、行号、斑马纹、空值/类型展示、列宽行高拖拽、自适应少列填满、宽表横向滚动；字体/字号/行高/密度设置和连接、结果来源、字段类型/注释信息可见。 | `components/grid/`、`data-grid.cn.mdx` | 进行中 |
 | G02 | 单格、连续矩形、多行/列选择；键盘导航、复制/粘贴、上下文菜单、选择状态与右侧详情同步，首次打开不预选。 | `components/grid/` | 待实施 |
-| G03 | 分清数据库侧 WHERE/ORDER BY 与客户端的当前结果搜索、值过滤、当前页排序；提供列筛选、LIKE/NOT LIKE、多字段排序、刷新/重置、页大小与分页，并明确显示条件的执行位置与范围。 | `components/grid/`、`data-grid.cn.mdx` | 待实施 |
+| G03 | 分清数据库侧 WHERE/ORDER BY 与客户端的当前结果搜索、值过滤、当前页排序；提供列筛选、LIKE/NOT LIKE、多字段排序、刷新/重置、页大小与分页，并明确显示条件的执行位置与范围。 | `components/grid/`、`data-grid.cn.mdx` | 进行中 |
 | G04 | 单元格编辑、批量改单元格、新增/复制/删除行、脏数据标记、撤销/回滚、提交前 SQL 预览与冲突/部分失败反馈。 | `components/grid/`、`crates/dbx-sql/src/` | 进行中 |
 | G05 | 单元格/行/列详情、字段元数据、关联数据跳转、值大文本查看、行详情动态展示与字段筛选。 | `components/grid/`、`components/objects/` | 进行中 |
 | G06 | CSV、TSV、JSON、Markdown、XLSX、INSERT SQL 的选择/全表复制及导出；大结果分片/ZIP、进度/取消和正确转义。 | `crates/dbx-formats/`、`table_export.rs` | 待实施 |

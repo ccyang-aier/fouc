@@ -315,6 +315,16 @@
 .selected {
   background: #eaf3ff;
 }
+.sortHeader {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: inherit;
+  white-space: nowrap;
+}
+.sortHeader:hover {
+  color: var(--accent);
+}
 .paging {
   display: flex;
   gap: 12px;

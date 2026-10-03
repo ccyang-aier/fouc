@@ -23,7 +23,7 @@ export interface RelationalDriver {
   schemas(): Promise<string[]>;
   tables(schema: string): Promise<Relation[]>;
   columns(schema: string, table: string): Promise<DatabaseColumnInfo[]>;
-  read(sql: string, schema: string | null, maxRows: number): Promise<DriverResult>;
+  read(sql: string, schema: string | null, maxRows: number, values?: SqlParameter[]): Promise<DriverResult>;
   assertEditable(schema: string, table: string): Promise<void>;
   transaction<T>(schema: string, run: (transaction: RelationalTransaction) => Promise<T>): Promise<T>;
   close(): Promise<void>;

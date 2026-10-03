@@ -118,6 +118,23 @@
         "src/features/connectors/datastore/save-preview-dialog.tsx",
         "src/features/connectors/datastore/table-editing.tsx"
       ]
+    },
+    {
+      "area": "native-database-table-filters-and-sort",
+      "status": "partial",
+      "sourceReferences": [
+        "crates/dbx-sql/src/data_grid_sql.rs",
+        "apps/desktop/src/components/grid/",
+        "docs/content/docs/data-grid.cn.mdx"
+      ],
+      "runtimeFiles": [
+        "backend/device/src/database/relational-values.ts",
+        "backend/device/src/database/relational-table-query.ts",
+        "src/features/connectors/datastore/table-filter-model.ts",
+        "src/features/connectors/datastore/table-filter-builder.tsx",
+        "src/features/connectors/datastore/table-sort-builder.tsx",
+        "src/features/connectors/datastore/table-query-controls.tsx"
+      ]
     }
   ],
   "knownRemainingScope": [

@@ -1,4 +1,9 @@
-import type { DatabaseCapabilitySnapshot, DatabaseCell, DatabaseConnectionInfo } from './database';
+import type {
+  DatabaseCapabilitySnapshot,
+  DatabaseCell,
+  DatabaseConnectionInfo,
+  DatabaseTablePage,
+} from './database';
 
 export type RelationalProvider = 'postgres' | 'mysql' | 'sqlite';
 type NetworkConfig = { host: string; port: number; username: string; database: string; ssl: boolean };
@@ -58,3 +63,46 @@ export interface RelationalSaveResult {
   affectedRows: number;
   executionTimeMs: number;
 }
+
+export const RELATIONAL_FILTER_OPERATORS = [
+  'equals',
+  'not-equals',
+  'is-null',
+  'is-not-null',
+  'is-blank',
+  'is-not-blank',
+  'like',
+  'not-like',
+  'begins-with',
+  'ends-with',
+  'less-than',
+  'less-than-or-equal',
+  'greater-than',
+  'greater-than-or-equal',
+  'in',
+  'not-in',
+  'between',
+  'not-between',
+] as const;
+export type RelationalFilterOperator = (typeof RELATIONAL_FILTER_OPERATORS)[number];
+export type RelationalFilter =
+  | {
+      kind: 'condition';
+      column: string;
+      operator: RelationalFilterOperator;
+      value?: DatabaseCell;
+      values?: DatabaseCell[];
+      endValue?: DatabaseCell;
+    }
+  | { kind: 'group'; join: 'and' | 'or'; children: RelationalFilter[] };
+export type RelationalSort = { column: string; direction: 'asc' | 'desc'; nulls: 'first' | 'last' };
+export interface RelationalTableQuery {
+  filter: RelationalFilter | null;
+  sort: RelationalSort[];
+}
+export interface RelationalTablePage extends DatabaseTablePage {
+  query: RelationalTableQuery;
+  statement: { sql: string; parameters: DatabaseCell[] };
+  stableOrder: boolean;
+}
+export type RelationalTableQueryPreview = Pick<RelationalTablePage, 'statement' | 'query' | 'stableOrder'>;

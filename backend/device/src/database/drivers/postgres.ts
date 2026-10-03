@@ -1,7 +1,13 @@
 import { Pool, types, type QueryResult } from 'pg';
 import type { DatabaseColumnInfo, RelationalConnectInput } from '@fouc/shared';
 import { quoteRelationalIdentifier as quote } from '../relational-sql';
-import { relationalCell, type DriverResult, type Relation, type RelationalDriver } from './relational-driver';
+import {
+  relationalCell,
+  type DriverResult,
+  type Relation,
+  type RelationalDriver,
+  type SqlParameter,
+} from './relational-driver';
 import { DatabaseInputError } from '../input-error';
 
 // Adapted from DBX dbx-drivers/src/db/postgres.rs: catalog-backed metadata,
@@ -31,7 +37,12 @@ export async function connectPostgres(
   try {
     const identity = (await pool.query('SELECT current_database() AS database, version() AS version'))
       .rows[0]!;
-    async function read(sql: string, schema: string | null, maxRows: number): Promise<DriverResult> {
+    async function read(
+      sql: string,
+      schema: string | null,
+      maxRows: number,
+      values: SqlParameter[] = [],
+    ): Promise<DriverResult> {
       const client = await pool.connect();
       let broken = false;
       try {
@@ -40,9 +51,9 @@ export async function connectPostgres(
         if (schema) await client.query("SELECT set_config('search_path', $1, true)", [quote(schema)]);
         let result: QueryResult<unknown[]>;
         if (/^\s*EXPLAIN\b/i.test(sql))
-          result = await client.query({ text: sql, rowMode: 'array', types: parser });
+          result = await client.query({ text: sql, values, rowMode: 'array', types: parser });
         else {
-          await client.query(`DECLARE fouc_result NO SCROLL CURSOR FOR ${sql}`);
+          await client.query({ text: `DECLARE fouc_result NO SCROLL CURSOR FOR ${sql}`, values });
           result = await client.query({
             text: `FETCH FORWARD ${maxRows + 1} FROM fouc_result`,
             rowMode: 'array',

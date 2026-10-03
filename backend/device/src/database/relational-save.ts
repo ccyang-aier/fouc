@@ -7,6 +7,7 @@ import type {
   RelationalSavePreview,
 } from '@fouc/shared';
 import { DatabaseInputError } from './input-error';
+import { canonicalCell, validateCell, relationalParameter as parameter } from './relational-values';
 import type { RelationalDriver, RelationalTransaction, SqlParameter } from './drivers/relational-driver';
 
 type Statement = {
@@ -21,64 +22,6 @@ export const columnSignature = (columns: DatabaseColumnInfo[]) =>
 // DBX data_grid_sql.rs: generated columns, key predicates, exact parameter
 // values, required-field checks and single-row guards. Fouc executes bindings
 // rather than interpolating SQL literals; keyless tables remain a later step.
-export function canonicalCell(value: DatabaseCell): string {
-  if (Array.isArray(value)) return '[' + value.map(canonicalCell).join(',') + ']';
-  if (value && typeof value === 'object')
-    return (
-      '{' +
-      Object.keys(value)
-        .sort()
-        .map((key) => JSON.stringify(key) + ':' + canonicalCell(value[key]!))
-        .join(',') +
-      '}'
-    );
-  return JSON.stringify(value);
-}
-function validateCell(value: unknown): asserts value is DatabaseCell {
-  if (value === null || typeof value === 'string' || typeof value === 'boolean') return;
-  if (
-    typeof value === 'number' &&
-    Number.isFinite(value) &&
-    (!Number.isInteger(value) || Number.isSafeInteger(value))
-  )
-    return;
-  if (Array.isArray(value)) {
-    value.forEach(validateCell);
-    return;
-  }
-  if (value && typeof value === 'object') {
-    Object.values(value).forEach(validateCell);
-    return;
-  }
-  throw new DatabaseInputError('字段值无效；大整数须使用十进制字符串');
-}
-function parameter(
-  value: DatabaseCell,
-  column: DatabaseColumnInfo,
-  provider: RelationalProvider,
-): SqlParameter {
-  if (value === null) return null;
-  const json = /\bjsonb?\b/i.test(column.dataType);
-  if (json) return JSON.stringify(value);
-  if (value && typeof value === 'object') {
-    if (
-      !Array.isArray(value) &&
-      value.type === 'binary' &&
-      typeof value.base64 === 'string' &&
-      /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(value.base64)
-    )
-      return Buffer.from(value.base64, 'base64');
-    throw new DatabaseInputError(`${column.name} 仅接受标量或二进制值，复杂类型请使用相应编辑器`);
-  }
-  if (
-    provider === 'sqlite' &&
-    /INT/i.test(column.dataType) &&
-    typeof value === 'string' &&
-    /^-?\d+$/.test(value)
-  )
-    return BigInt(value);
-  return value;
-}
 function validateInput(value: unknown): RelationalSaveInput {
   if (!value || typeof value !== 'object') throw new DatabaseInputError('变更参数无效');
   const input = value as RelationalSaveInput;
@@ -125,7 +68,7 @@ export function prepareSave(
     if (change.kind !== 'insert') {
       if (!Array.isArray(change.original) || change.original.length !== columns.length)
         throw new DatabaseInputError('原始行与字段结构不匹配，请刷新数据');
-      change.original.forEach(validateCell);
+      change.original.forEach((value) => validateCell(value));
       identifiers = keys.length
         ? keys
         : columns

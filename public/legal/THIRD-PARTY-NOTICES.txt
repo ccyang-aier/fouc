@@ -12,6 +12,9 @@ adapted from crates/dbx-drivers/src/db/mysql.rs. Table-change plans, generated
 column omission, key predicates and row guards follow
 crates/dbx-sql/src/data_grid_sql.rs. Fouc uses parameter bindings and native
 driver transactions in relational-save.ts; it does not load DBX runtime code.
+Typed table filters, NULL-aware membership/ranges and multicolumn sorting also
+follow data_grid_sql.rs and the desktop grid interaction model. Fouc compiles
+validated field metadata and bound values in relational-table-query.ts.
 
 PostgreSQL catalog discovery and bounded read-only cursors, SQLite file opening
 and table_xinfo metadata, and relational query guards are behavior adaptations

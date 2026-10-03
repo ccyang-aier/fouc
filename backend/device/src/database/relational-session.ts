@@ -4,7 +4,8 @@ import {
   type DatabaseCapabilities,
   type DatabaseObjectInfo,
   type DatabaseQueryResult,
-  type DatabaseTablePage,
+  type RelationalTablePage,
+  type RelationalTableQueryPreview,
   type RelationalConnectInput,
   type RelationalSession,
   type RelationalSavePreview,
@@ -19,6 +20,7 @@ import { assertMysqlReadOnlySql } from './mysql-read-only-sql';
 import type { RelationalDriver } from './drivers/relational-driver';
 import { assertRelationalReadSql } from './relational-sql';
 import { columnSignature, executeSave, prepareSave, saveInput, type SavePlan } from './relational-save';
+import { compileTableQuery, tableQueryInput } from './relational-table-query';
 
 type Entry = {
   session: RelationalSession;
@@ -174,14 +176,15 @@ export class RelationalSessionManager {
       connectionId: id,
     }));
   }
-  async page(
+  private async planPage(
     workspaceId: string,
     id: string,
     schema: string,
     table: string,
     offset = 0,
     limit = 100,
-  ): Promise<DatabaseTablePage> {
+    queryValue: unknown = { filter: null, sort: [] },
+  ) {
     if (
       !Number.isInteger(offset) ||
       offset < 0 ||
@@ -192,16 +195,64 @@ export class RelationalSessionManager {
     )
       throw new DatabaseInputError('分页范围无效');
     const { session, driver } = this.entry(workspaceId, id);
-    const quote = driver.quoteIdentifier;
     const columns = await driver.columns(schema, table);
     if (!columns.length) throw new DatabaseInputError('对象不存在或当前账号无权读取字段');
-    const primary = columns.filter((column) => column.isPrimaryKey);
-    const order = primary.length ? ` ORDER BY ${primary.map((column) => quote(column.name)).join(', ')}` : '';
-    const result = await driver.read(
-      `SELECT * FROM ${quote(schema)}.${quote(table)}${order} LIMIT ${limit + 1} OFFSET ${offset}`,
+    const query = tableQueryInput(queryValue);
+    const compiled = compileTableQuery(
+      session.provider,
       schema,
+      table,
+      columns,
+      query,
+      offset,
       limit,
+      driver.quoteIdentifier,
     );
+    return { session, driver, query, columns, compiled };
+  }
+  async previewPage(
+    workspaceId: string,
+    id: string,
+    schema: string,
+    table: string,
+    offset = 0,
+    limit = 100,
+    queryValue: unknown = { filter: null, sort: [] },
+  ): Promise<RelationalTableQueryPreview> {
+    const { query, compiled } = await this.planPage(
+      workspaceId,
+      id,
+      schema,
+      table,
+      offset,
+      limit,
+      queryValue,
+    );
+    return {
+      query,
+      statement: { sql: compiled.sql, parameters: compiled.displayParameters },
+      stableOrder: compiled.stableOrder,
+    };
+  }
+  async page(
+    workspaceId: string,
+    id: string,
+    schema: string,
+    table: string,
+    offset = 0,
+    limit = 100,
+    queryValue: unknown = { filter: null, sort: [] },
+  ): Promise<RelationalTablePage> {
+    const { session, driver, query, columns, compiled } = await this.planPage(
+      workspaceId,
+      id,
+      schema,
+      table,
+      offset,
+      limit,
+      queryValue,
+    );
+    const result = await driver.read(compiled.sql, schema, limit, compiled.parameters);
     return {
       connectionId: id,
       database: session.provider === 'mysql' ? schema : session.database,
@@ -211,6 +262,9 @@ export class RelationalSessionManager {
       offset,
       limit,
       hasMore: result.hasMore,
+      query,
+      statement: { sql: compiled.sql, parameters: compiled.displayParameters },
+      stableOrder: compiled.stableOrder,
     };
   }
   async query(

@@ -18,11 +18,12 @@ import { redisDatabase, redisDatabases, redisHashExpiries } from './redis-metada
 import { RedisHistoryRepository, REDIS_HISTORY_LIMIT, redisHistoryEntry } from './redis-history';
 import { redisInformation, redisSlowlog } from './redis-observability';
 import { redisStreamGroups, redisStreamConsumers, redisStreamPending } from './redis-stream';
+import { RedisMonitor } from './redis-monitor';
 export { redisBlob } from './redis-blob';
 
 const PAGE_SIZE = 100;
 const STRING_BYTES = 65536;
-type Entry = { session: RedisSession; client: Redis; mutations: RedisMutationManager; changingMode: boolean; history: RedisHistoryEntry[] };
+type Entry = { session: RedisSession; client: Redis; mutations: RedisMutationManager; changingMode: boolean; history: RedisHistoryEntry[]; monitors: Set<RedisMonitor> };
 
 /** Each client keeps its verified DB immutable; switching creates a new session. */
 export class RedisSessionManager {
@@ -70,7 +71,7 @@ export class RedisSessionManager {
         mode: 'standalone',
         readOnly: true,
       };
-      this.entries.set(session.id, { session, client, mutations: new RedisMutationManager(client), changingMode: false, history: [] });
+      this.entries.set(session.id, { session, client, mutations: new RedisMutationManager(client), changingMode: false, history: [], monitors: new Set() });
       return session;
     } catch (error) {
       client.disconnect();
@@ -123,6 +124,12 @@ export class RedisSessionManager {
   streamPending(workspaceId: string, id: string, key: unknown, group: unknown, cursor: unknown, consumer: unknown) {
     return redisStreamPending(this.entry(workspaceId, id).client, key, group, cursor, consumer);
   }
+  monitor(workspaceId: string, id: string, signal: AbortSignal) {
+    const entry = this.entry(workspaceId, id);
+    const monitor = new RedisMonitor(entry.client, () => entry.monitors.delete(monitor));
+    entry.monitors.add(monitor);
+    return monitor.open(signal);
+  }
   async switchDatabase(workspaceId: string, id: string, rawDatabase: unknown): Promise<RedisSession> {
     const database = redisDatabase(rawDatabase);
     const entry = this.entry(workspaceId, id);
@@ -137,8 +144,9 @@ export class RedisSessionManager {
       await client.select(database);
       await client.ping();
       const session = { ...entry.session, id: crypto.randomUUID(), database, readOnly: true };
-      this.entries.set(session.id, { session, client, mutations: new RedisMutationManager(client), changingMode: false, history: [] });
+      this.entries.set(session.id, { session, client, mutations: new RedisMutationManager(client), changingMode: false, history: [], monitors: new Set() });
       this.entries.delete(id);
+      for (const monitor of entry.monitors) monitor.stop('Redis 数据库已切换，MONITOR 已停止');
       entry.client.disconnect();
       return session;
     } catch (error) { client.disconnect(); throw error; }
@@ -337,9 +345,10 @@ export class RedisSessionManager {
   disconnect(workspaceId: string, id: string): void {
     // Session replacement and view cleanup may both close the same session.
     if (!this.entries.has(id)) return;
-    const { client, mutations } = this.entry(workspaceId, id);
+    const { client, mutations, monitors } = this.entry(workspaceId, id);
     if (this.entry(workspaceId, id).changingMode) throw new DatabaseInputError('Redis 会话正在切换，请等待后断开');
     mutations.clear();
+    for (const monitor of monitors) monitor.stop('Redis 会话已断开，MONITOR 已停止');
     this.entries.delete(id);
     client.disconnect();
   }

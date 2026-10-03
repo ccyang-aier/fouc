@@ -54,6 +54,11 @@ follow redis_driver.rs, redis_ops.rs and RedisValueViewer.vue. Fouc adapts the
 read commands in redis-stream.ts and the drill-down surface in
 redis-stream-groups.tsx, preserving byte names and 64-bit IDs with request
 cancellation and explicit unknown/stale/error states.
+Realtime MONITOR command detection, dedicated connection lifetime, stopped and
+failed states, 1000-row retention and per-line bounds follow lib/redis/redisMonitor.ts,
+query/redis_ops.rs, redis_driver.rs and dbx-web/routes/redis_pubsub_ws.rs. Fouc's
+redis-monitor.ts and use-redis-monitor.ts use an authenticated NDJSON stream,
+bounded pending batches and scoped cancellation instead of DBX WebSockets.
 
 This notice covers DBX-derived material. Other dependency notices remain
 subject to the separate F06 license audit.

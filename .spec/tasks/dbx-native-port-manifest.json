@@ -79,7 +79,10 @@
       "status": "partial",
       "sourceReferences": [
         "crates/dbx-drivers/src/db/redis_driver.rs",
-        "apps/desktop/src/components/redis/"
+        "apps/desktop/src/components/redis/",
+        "apps/desktop/src/lib/redis/redisMonitor.ts",
+        "crates/dbx-core/src/query/redis_ops.rs",
+        "crates/dbx-web/src/routes/redis_pubsub_ws.rs"
       ],
       "runtimeFiles": [
         "shared/src/redis.ts",
@@ -112,7 +115,12 @@
         "backend/device/src/database/redis-stream.ts",
         "src/features/connectors/redis/redis-stream-groups.tsx",
         "src/features/connectors/redis/redis-stream-model.ts",
-        "src/features/connectors/redis/use-redis-stream-read.ts"
+        "src/features/connectors/redis/use-redis-stream-read.ts",
+        "shared/src/redis-monitor.ts",
+        "backend/device/src/database/redis-monitor.ts",
+        "src/features/connectors/redis/redis-monitor-model.ts",
+        "src/features/connectors/redis/redis-monitor-output.tsx",
+        "src/features/connectors/redis/use-redis-monitor.ts"
       ]
     },
     {
@@ -179,7 +187,7 @@
     }
   ],
   "knownRemainingScope": [
-    "Redis large/batch mutations and full version/permission matrix, broader console execution/completion and history/search, RedisJSON, Sentinel/Cluster including node metrics/slowlog, PubSub/MONITOR, large-keyspace virtualization and result stores",
+    "Redis large/batch mutations and full version/permission matrix, broader console execution/completion and history/search, RedisJSON, Sentinel/Cluster including node metrics/slowlog, PubSub, large-keyspace virtualization and result stores",
     "common driver lifecycle, cancellation, reconnect and streaming",
     "cross-entry-point write grants, scope restrictions and shared policy integration",
     "full grid selection/copy/paste/undo, keyless guards, complex types, structure editing, cancellation and distributed transactions",

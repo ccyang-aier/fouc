@@ -5236,6 +5236,16 @@
           "kind": "partial-web-validation",
           "path": "src/features/connectors/redis/redis-stream-groups.tsx",
           "check": "2026-10-03: Playwright+Chrome1440/760/390: real groups/consumers/Pending, binary/empty names, unknown Lag, exact IDs, 100-to119 paging/copy, refresh retains selection, removed consumer/group reset with feedback, denied reads retain old data and recover. Delayed group response discarded after navigation; narrow tables scroll locally without page overflow. Two expected HTTP502, no other page/console errors. Browser plugin unavailable. Sentinel/Cluster, PubSub/MONITOR, batch/large operations and full version/entry-point matrix remain pending."
+        },
+        {
+          "kind": "partial-runtime-validation",
+          "path": "scripts/verify-redis-monitor-live.mjs",
+          "check": "2026-10-03: dedicated Redis7.4.8 port56380, real scoped HTTP NDJSON route owns a separate monitor client; route tests verify authentication; preserves microsecond timestamp/all DB/source/quotes/binary escapes, 16KiB truncation, normal session command and history. Actual CLIENT LIST monitor counts return to baseline on HTTP abort (including before delayed server acknowledgement through a TCP gate), session disconnect, DB switch, denied ACL setup, permission recovery and unexpected socket kill; foreign workspace denied. 60 scoped tests across21 files pass (421 assertions); unit tests also cover byte/count buffer pressure, fragmented UTF-8/frames, malformed responses and late setup cancellation."
+        },
+        {
+          "kind": "partial-web-validation",
+          "path": "src/features/connectors/redis/redis-monitor-output.tsx",
+          "check": "2026-10-03: Playwright+Chrome1440/760/390: native MONITOR command stream, global DB14/15 and binary escaped data, search/no match/copy/follow control, newest1000-row retention; Stop/view exit/back release real Redis clients. Normal PING and history remain usable; unexpected socket close and denied ACL show explicit retained-data error, retry recovers. Stop visible and record overflow local at all widths; one expected HTTP502, no other page/console errors. Browser plugin unavailable. Other Redis versions/full transport/entry-point acceptance, Sentinel/Cluster and PubSub remain pending."
         }
       ],
       "scopeKind": "driver"
@@ -6180,6 +6190,16 @@
           "kind": "partial-web-validation",
           "path": "src/features/connectors/redis/redis-stream-groups.tsx",
           "check": "2026-10-03: Playwright+Chrome1440/760/390: real groups/consumers/Pending, binary/empty names, unknown Lag, exact IDs, 100-to119 paging/copy, refresh retains selection, removed consumer/group reset with feedback, denied reads retain old data and recover. Delayed group response discarded after navigation; narrow tables scroll locally without page overflow. Two expected HTTP502, no other page/console errors. Browser plugin unavailable. Sentinel/Cluster, PubSub/MONITOR, batch/large operations and full version/entry-point matrix remain pending."
+        },
+        {
+          "kind": "partial-runtime-validation",
+          "path": "scripts/verify-redis-monitor-live.mjs",
+          "check": "2026-10-03: dedicated Redis7.4.8 port56380, real scoped HTTP NDJSON route owns a separate monitor client; route tests verify authentication; preserves microsecond timestamp/all DB/source/quotes/binary escapes, 16KiB truncation, normal session command and history. Actual CLIENT LIST monitor counts return to baseline on HTTP abort (including before delayed server acknowledgement through a TCP gate), session disconnect, DB switch, denied ACL setup, permission recovery and unexpected socket kill; foreign workspace denied. 60 scoped tests across21 files pass (421 assertions); unit tests also cover byte/count buffer pressure, fragmented UTF-8/frames, malformed responses and late setup cancellation."
+        },
+        {
+          "kind": "partial-web-validation",
+          "path": "src/features/connectors/redis/redis-monitor-output.tsx",
+          "check": "2026-10-03: Playwright+Chrome1440/760/390: native MONITOR command stream, global DB14/15 and binary escaped data, search/no match/copy/follow control, newest1000-row retention; Stop/view exit/back release real Redis clients. Normal PING and history remain usable; unexpected socket close and denied ACL show explicit retained-data error, retry recovers. Stop visible and record overflow local at all widths; one expected HTTP502, no other page/console errors. Browser plugin unavailable. Other Redis versions/full transport/entry-point acceptance, Sentinel/Cluster and PubSub remain pending."
         }
       ],
       "scopeKind": "driver"

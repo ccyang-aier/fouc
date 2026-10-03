@@ -43,7 +43,7 @@ afterAll(() => {
 test('Redis routes require device authentication before config or session access', async () => {
   for (const route of ['/connections', '/sessions'])
     expect((await app.request(base + route)).status).toBe(401);
-  for (const suffix of ['scan', 'value', 'command', 'database', 'write-mode', 'edit-string', 'mutations/preview', 'mutations/commit', 'stream/groups', 'stream/consumers', 'stream/pending']) {
+  for (const suffix of ['scan', 'value', 'command', 'database', 'write-mode', 'edit-string', 'mutations/preview', 'mutations/commit', 'stream/groups', 'stream/consumers', 'stream/pending', 'monitor']) {
     expect(
       (await app.request(base + '/sessions/unknown/' + suffix, { method: 'POST', body: '{}' })).status,
     ).toBe(401);

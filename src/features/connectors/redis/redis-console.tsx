@@ -5,6 +5,9 @@ import type { RedisCommandResult, RedisHistoryPage } from "@fouc/shared"
 import { backendFetch } from "@/lib/backend"
 import styles from "./redis.module.css"
 import historyStyles from "./redis-history.module.css"
+import { isRedisMonitorCommand } from './redis-monitor-model'
+import { useRedisMonitor } from './use-redis-monitor'
+import { RedisMonitorOutput } from './redis-monitor-output'
 
 export function RedisConsole({ base, database, onBusyChange }: { base: string; database: number; onBusyChange: (busy: boolean) => void }) {
   const [command, setCommand] = useState("PING")
@@ -23,6 +26,10 @@ export function RedisConsole({ base, database, onBusyChange }: { base: string; d
   const [recallIndex, setRecallIndex] = useState(-1)
   const draft = useRef("")
   const commandInput = useRef<HTMLInputElement>(null)
+  const monitor = useRedisMonitor(base)
+  const monitoring = monitor.state.status === 'connecting' || monitor.state.status === 'listening'
+  const monitorVisible = monitor.state.status !== 'idle'
+  const executing = busy || monitoring
   useEffect(() => {
     const controller = new AbortController()
     void backendFetch<RedisHistoryPage>(`${base}/history`, { signal: controller.signal })
@@ -34,7 +41,12 @@ export function RedisConsole({ base, database, onBusyChange }: { base: string; d
   function refreshHistory() { setHistoryBusy(true); setHistoryError(""); setHistoryRevision((current) => current + 1) }
   async function run(event: FormEvent) {
     event.preventDefault()
-    if (busy || !command.trim()) return
+    if (executing || !command.trim()) return
+    if (isRedisMonitorCommand(command)) {
+      setResult(null); setSelected(null); setError(''); setCopied(false)
+      void monitor.start(); return
+    }
+    monitor.clear()
     setBusy(true)
     onBusyChange(true)
     setError("")
@@ -79,15 +91,16 @@ export function RedisConsole({ base, database, onBusyChange }: { base: string; d
   }
   return <section className={styles.console} aria-label="Redis 命令台">
     <form onSubmit={(event) => void run(event)}>
-      <label><TerminalWindow size={16} /><input ref={commandInput} aria-label="Redis 命令" value={command} disabled={busy}
+      <label><TerminalWindow size={16} /><input ref={commandInput} aria-label="Redis 命令" value={command} disabled={executing}
         onChange={(event) => { setCommand(event.target.value); setRecallIndex(-1) }} onKeyDown={recall} spellCheck={false} /></label>
-      <button type="submit" disabled={busy || !command.trim()}><Play size={13} />{busy ? "执行中…" : "运行命令"}</button>
+      <button type="submit" disabled={executing || !command.trim()}><Play size={13} />{executing ? "执行中…" : "运行命令"}</button>
     </form>
     <div className={historyStyles.toolbar}><span>DB {database} · 只读命令 · ↑ ↓ 召回历史草稿</span>
-      <button type="button" aria-pressed={historyVisible} onClick={() => setHistoryVisible((current) => !current)}><ClockCounterClockwise size={14} />历史</button></div>
-    <p className={styles.notice}>PING · DBSIZE · TYPE · TTL / PTTL · STRLEN · LLEN · SCARD · HLEN · ZCARD · XLEN · EXISTS · INFO 单个分区。被本地规则拦截的命令不保存。</p>
+      <button type="button" aria-pressed={historyVisible && !monitorVisible} disabled={monitoring} onClick={() => { if (monitorVisible) { monitor.clear(); setHistoryVisible(true) } else setHistoryVisible((current) => !current) }}><ClockCounterClockwise size={14} />历史</button></div>
+    <p className={styles.notice}>PING · DBSIZE · TYPE · TTL / PTTL · STRLEN · LLEN · SCARD · HLEN · ZCARD · XLEN · EXISTS · INFO 单个分区 · MONITOR。MONITOR 监听整个实例的所有 DB，有性能成本；停止或关闭命令台会释放监听连接。监听内容不存入历史。</p>
     <div className={historyStyles.body}>
       <main className={historyStyles.output}>
+        {monitorVisible && <RedisMonitorOutput state={monitor.state} onStop={monitor.stop} />}
         {busy && <p role="status" className={styles.notice}>正在 DB {database} 执行只读命令…</p>}
         {error && <div role="alert" className={styles.error}>{error}</div>}
         {(result || historical) && <>
@@ -98,9 +111,9 @@ export function RedisConsole({ base, database, onBusyChange }: { base: string; d
           <pre className={styles.content}>{output}</pre>
           {historical?.outputTruncated && <p className={styles.notice}>历史仅保留前 16 KiB 输出；重用命令可重新查询当前结果。</p>}
         </>}
-        {!busy && !result && !historical && !error && <div className={styles.empty}><TerminalWindow size={26} /><strong>运行一个只读命令</strong><span>结果显示在此处，也可查看本连接的历史输出。</span></div>}
+        {!busy && !monitorVisible && !result && !historical && !error && <div className={styles.empty}><TerminalWindow size={26} /><strong>运行一个只读命令</strong><span>结果显示在此处，也可查看本连接的历史输出。</span></div>}
       </main>
-      {historyVisible && <aside className={historyStyles.history} aria-label="Redis 命令历史">
+      {historyVisible && !monitorVisible && <aside className={historyStyles.history} aria-label="Redis 命令历史">
         <header><strong>最近 {history?.limit ?? 100} 条</strong><button type="button" aria-label="清空命令历史" disabled={busy || historyBusy || !history?.entries.length} onClick={() => setConfirmClear(true)}><Trash size={14} /></button></header>
         <div className={historyStyles.filter}><select aria-label="历史数据库范围" value={scope} onChange={(event) => { setScope(event.target.value as typeof scope); setRecallIndex(-1) }}><option value="current">当前 DB {database}</option><option value="all">本连接全部 DB</option></select>
           <small>{history?.persistent ? "保存在当前设备与工作空间" : "临时会话 · 断开后清除"}</small></div>

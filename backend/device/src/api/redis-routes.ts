@@ -58,6 +58,10 @@ export function redisRoutes(
     const body = await c.req.json().catch(() => null);
     return c.json({ ok: true, data: await sessions.streamGroups(c.req.param('workspaceId')!, c.req.param('id')!, body?.key) });
   });
+  app.post(base + '/:id/monitor', async (c) => {
+    const stream = await sessions.monitor(c.req.param('workspaceId')!, c.req.param('id')!, c.req.raw.signal);
+    return new Response(stream, { headers: { 'content-type': 'application/x-ndjson; charset=utf-8', 'cache-control': 'no-store' } });
+  });
   app.post(base + '/:id/stream/consumers', async (c) => {
     const body = await c.req.json().catch(() => null);
     return c.json({ ok: true, data: await sessions.streamConsumers(c.req.param('workspaceId')!, c.req.param('id')!, body?.key, body?.group) });

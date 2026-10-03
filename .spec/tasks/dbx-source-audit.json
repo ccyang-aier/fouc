@@ -1,0 +1,222 @@
+{
+  "sourceRevision": "f909f85075e12beb78dffe5942f7d039bede25de",
+  "method": "Tracked source files; lexical nonblank/non-comment LOC. Excludes vendored, generated, declarations and fixtures. Tests and noncore account/cloud code reported separately. Embedded Rust tests and template/string lines remain in their containing source file; counts are a scope estimate, not migration credit.",
+  "extensions": [
+    ".rs",
+    ".ts",
+    ".tsx",
+    ".js",
+    ".jsx",
+    ".mjs",
+    ".cjs",
+    ".vue",
+    ".go",
+    ".java",
+    ".py",
+    ".sql",
+    ".css",
+    ".scss",
+    ".sh",
+    ".ps1"
+  ],
+  "groups": {
+    "tooling-other": {
+      "files": 176,
+      "physical": 27184,
+      "effective": 23760
+    },
+    "tests": {
+      "files": 1700,
+      "physical": 328288,
+      "effective": 283933
+    },
+    "core-driver-agents": {
+      "files": 281,
+      "physical": 125392,
+      "effective": 113269
+    },
+    "core-ui": {
+      "files": 1484,
+      "physical": 422949,
+      "effective": 367239
+    },
+    "noncore-account-cloud": {
+      "files": 6,
+      "physical": 4202,
+      "effective": 3746
+    },
+    "localization-support": {
+      "files": 38,
+      "physical": 108751,
+      "effective": 108605
+    },
+    "core-entrypoints": {
+      "files": 179,
+      "physical": 101050,
+      "effective": 89620
+    },
+    "core-backend": {
+      "files": 309,
+      "physical": 370264,
+      "effective": 326693
+    },
+    "core-plugins": {
+      "files": 49,
+      "physical": 18875,
+      "effective": 17212
+    }
+  },
+  "all": {
+    "files": 4222,
+    "physical": 1506955,
+    "effective": 1334077
+  },
+  "core": {
+    "files": 2302,
+    "physical": 1038530,
+    "effective": 914033
+  },
+  "phaseOneTargetEffectiveLines": 50000,
+  "largestCoreFiles": [
+    {
+      "path": "crates/dbx-core/src/data/transfer.rs",
+      "physical": 16761,
+      "effective": 14642
+    },
+    {
+      "path": "apps/desktop/src/components/grid/DataGrid.vue",
+      "physical": 14769,
+      "effective": 13348
+    },
+    {
+      "path": "crates/dbx-drivers/src/db/postgres.rs",
+      "physical": 14764,
+      "effective": 12921
+    },
+    {
+      "path": "crates/dbx-sql/src/schema_diff.rs",
+      "physical": 13791,
+      "effective": 12410
+    },
+    {
+      "path": "crates/dbx-core/src/schema/mod.rs",
+      "physical": 13555,
+      "effective": 12178
+    },
+    {
+      "path": "crates/dbx-core/src/data/table_import.rs",
+      "physical": 11589,
+      "effective": 10685
+    },
+    {
+      "path": "apps/desktop/src/components/editor/EditorSettingsDialog.vue",
+      "physical": 10954,
+      "effective": 10081
+    },
+    {
+      "path": "crates/dbx-core/src/query/mod.rs",
+      "physical": 11450,
+      "effective": 10050
+    },
+    {
+      "path": "crates/dbx-core/src/connection/mod.rs",
+      "physical": 10962,
+      "effective": 9722
+    },
+    {
+      "path": "apps/desktop/src/components/connection/ConnectionDialog.vue",
+      "physical": 9874,
+      "effective": 9161
+    },
+    {
+      "path": "apps/desktop/src/stores/connectionStore.ts",
+      "physical": 9802,
+      "effective": 8680
+    },
+    {
+      "path": "crates/dbx-sql/src/data_grid_sql.rs",
+      "physical": 9280,
+      "effective": 8577
+    },
+    {
+      "path": "crates/dbx-ai-provider/src/ai.rs",
+      "physical": 9565,
+      "effective": 8148
+    },
+    {
+      "path": "crates/dbx-core/src/admin/nacos/http.rs",
+      "physical": 8677,
+      "effective": 7890
+    },
+    {
+      "path": "apps/desktop/src/stores/queryStore.ts",
+      "physical": 9020,
+      "effective": 7883
+    },
+    {
+      "path": "crates/dbx-core/src/persistence/storage.rs",
+      "physical": 8867,
+      "effective": 7757
+    },
+    {
+      "path": "crates/dbx-drivers/src/db/mysql.rs",
+      "physical": 8784,
+      "effective": 7739
+    },
+    {
+      "path": "apps/desktop/src/components/editor/QueryEditor.vue",
+      "physical": 8669,
+      "effective": 7561
+    },
+    {
+      "path": "crates/dbx-sql/src/table_structure_sql/tests.rs",
+      "physical": 8473,
+      "effective": 7473
+    },
+    {
+      "path": "crates/dbx-drivers/src/db/redis_driver.rs",
+      "physical": 7458,
+      "effective": 6529
+    }
+  ],
+  "nativePort": {
+    "rule": "Count Fouc TypeScript/TSX runtime files with actual DBX-derived functionality. Styles, tests, tooling, generated catalogs, demo workbenches and the reference checkout do not count toward the 50000-line core-logic milestone. A source reference never grants credit for the entire DBX source file.",
+    "groups": [
+      {
+        "area": "contracts-and-capabilities",
+        "status": "partial",
+        "files": 5,
+        "physical": 573,
+        "effective": 498
+      },
+      {
+        "area": "mysql-native-runtime-and-live-ui",
+        "status": "partial",
+        "files": 7,
+        "physical": 1279,
+        "effective": 1168
+      },
+      {
+        "area": "postgres-sqlite-native-runtime",
+        "status": "partial",
+        "files": 7,
+        "physical": 760,
+        "effective": 737
+      },
+      {
+        "area": "shared-sql-workbench-and-connection-management",
+        "status": "partial",
+        "files": 10,
+        "physical": 1559,
+        "effective": 1516
+      }
+    ],
+    "runtime": {
+      "files": 29,
+      "physical": 4171,
+      "effective": 3919
+    },
+    "targetEffectiveRuntimeLines": 50000,
+    "milestoneVerified": false
+  }
+}

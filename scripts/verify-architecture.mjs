@@ -33,7 +33,8 @@ export function checkArchitectureImports(file, content) {
     if (target.startsWith('.') && targetOwner && targetOwner !== sourceOwner) fail('禁止通过相对路径导入另一工程的内部代码');
     if (target.startsWith('.') && resolved.startsWith('qa/') && !testing) fail('测试夹具不能进入运行时代码');
     if (sourceOwner === 'frontend' && builtins.test(target) && !testing) fail('前端不得依赖后端运行时');
-    if (sourceOwner === 'device' && /^(pg|drizzle-orm|better-auth|graphile-worker)(\/|$)/.test(target)) fail('设备运行时不得加载共享业务数据库与账户基础设施');
+    const userPostgresDriver = file === 'backend/device/src/database/drivers/postgres.ts' && target === 'pg';
+    if (sourceOwner === 'device' && !userPostgresDriver && /^(pg|drizzle-orm|better-auth|graphile-worker)(\/|$)/.test(target)) fail('设备运行时不得加载共享业务数据库与账户基础设施；pg 仅限用户数据源驱动');
     if (sourceOwner === 'shared' && !testing && /^(node:|bun:|react(?:\/|$)|react-dom(?:\/|$)|next(?:\/|$)|@tauri-apps\/|pg$|mysql2|drizzle-orm|hono|better-auth|@fouc\/(device|server))/.test(target)) fail('共享代码必须可在各宿主使用，不得依赖具体 UI 或服务运行时');
     if (target.startsWith('@fouc/server') && !(sourceOwner === 'frontend' && target === '@fouc/server/knowledge-api' && typeOnly)) fail('业务服务只向前端公开类型契约，禁止运行时或跨后端导入');
     if (target.startsWith('@fouc/device')) fail('设备实现不向其他工程导出');

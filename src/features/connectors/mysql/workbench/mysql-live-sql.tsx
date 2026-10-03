@@ -6,8 +6,8 @@ import type { EditorView } from "@codemirror/view"
 import { mysqlQueryAtCursor, type DatabaseQueryResult, type MysqlReadOnlyQueryInput } from "@fouc/shared"
 
 import { backendFetch } from "@/lib/backend"
-import { MysqlLiveQueryResult } from "./mysql-live-query-result"
-import { MysqlLiveSqlEditor } from "./mysql-live-sql-editor"
+import { SqlQueryResult } from "../../datastore/query-result"
+import { SqlEditor } from "../../datastore/sql-editor"
 
 type Props = {
   sessionId: string
@@ -58,12 +58,12 @@ export function MysqlLiveSql({ sessionId, database, query, onQueryChange }: Prop
       <span className="mw-sql-spacer" />
       <span className="mw-sql-select" title="当前数据库">{database || "未指定数据库"}</span>
     </div>
-    <div className="mw-editor"><MysqlLiveSqlEditor value={query} onChange={onQueryChange} onRun={() => void run()} editorRef={editor} /></div>
+    <div className="mw-editor"><SqlEditor value={query} onChange={onQueryChange} onRun={() => void run()} editorRef={editor} /></div>
     <div className="mw-result">
       {!result && <div className="mw-result-tabs"><div><span className="mw-live-result-title">查询结果</span></div><span>{running ? "正在查询…" : ""}</span></div>}
       {error ? <div role="alert" className="mw-result-error">{error}</div>
         : running ? <div className="p-4 text-[11px] text-[var(--muted-strong)]">正在执行只读查询…</div>
-          : result ? <MysqlLiveQueryResult result={result} />
+          : result ? <SqlQueryResult result={result} />
             : <div className="p-4 text-[11px] text-[var(--muted-strong)]">输入 SQL 并运行，结果会显示在这里。</div>}
       <div className="mw-result-footer"><span>{result ? `返回 ${result.rows.length} 行${result.hasMore ? "，后续行未加载" : ""}` : error ? "执行失败" : running ? "执行中" : "尚未运行"}</span><span className="mw-ellipsis" title={attemptedSql}>{attemptedSql || "服务端只读事务"}</span></div>
     </div>

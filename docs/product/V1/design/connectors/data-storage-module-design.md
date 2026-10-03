@@ -27,7 +27,8 @@ Connector Control Plane
 - **兼容产品不应机械拆成 Provider。** MariaDB/TiDB/OceanBase MySQL 模式等优先作为 MySQL Provider 的 `profile`；只有协议、认证、能力或工作面不能安全复用时才升级为独立 Provider。
 - **Provider 不是驱动。** Provider 是用户和 Agent 可见的能力与治理边界；Driver 是 Provider 内部的连接实现；Instance 是某个工作空间保存的一条连接。个人凭据仍可由用户持有，访问与执行必须另行授权。
 - **dbx 应作为产品行为和测试语料来源，而不是作为第二个应用嵌入 Fouc。** Fouc 不引入 dbx 的 Rust/Tauri 业务层，不运行一套平行控制面，也不复制其单体前端；应按 Fouc 的 Next.js + TypeScript sidecar 边界重写核心能力。
-- **“移植所有核心能力”指目标能力完整，不代表首个版本一次支持 dbx 的 81 个连接类型。** 先建立正确内核和 MySQL、Redis、etcd 三种差异足够大的垂直切片，再扩展 PostgreSQL、MongoDB 与兼容 profiles。
+- **设备侧数据源驱动与 Fouc 业务数据库保持独立。** PostgreSQL 驱动可在 `backend/device/src/database/drivers/postgres.ts` 使用 `pg`，只消费用户显式提交的数据源配置，不读取 Fouc 业务服务的 `DATABASE_URL`，不导入服务端数据库、账户或租户表。连接配置与会话按 `workspaceId` 隔离，密码只在当前连接请求中使用，不能混入配置文件；后续持久凭据统一接入 Credential Broker。
+- **“移植所有核心能力”指目标能力完整，不代表首个版本一次支持 dbx 的 81 个连接类型。** 第一阶段以约 5 万行实质核心逻辑迁移为目标，优先建立 MySQL、PostgreSQL、SQLite、Redis 四种常用数据源的完整能力，再扩展 etcd、MongoDB 与兼容 profiles。行数是规模门槛，不能替代逐功能、逐驱动的真实验收；样例界面、目录元数据、样式、测试和参考源码不计入这一核心逻辑门槛。
 
 这个方案与现有 Connector 文档的“一平台一 Provider、多 Instance”“通用控制面、独立数据适配器”一致，同时避免每个数据库连接器重复建设一个数据库客户端。
 
@@ -772,6 +773,8 @@ P1：
 使用版本固定的容器配方验证：
 
 - MySQL：正常/TLS/只读账号/锁等待/大结果/取消/跨库引用；
+- PostgreSQL：Schema 隔离、只读事务、游标截断、大整数/精确数值、复合主键、重复列名、生成列与权限；
+- SQLite：已有文件的只读打开、单连接、生成列与主键、文件锁、整数精度、查询取消与文件备份；
 - Redis：standalone/Sentinel/Cluster、所有数据类型、过期、二进制值、大 keyspace；
 - etcd：TLS/auth、revision/watch/lease、compact 后历史、权限拒绝；
 - 网络：离线、DNS、代理、证书、半开连接、sidecar 重启。

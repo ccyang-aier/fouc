@@ -6,6 +6,14 @@
 
 每个任务的记录状态见下表和 [迁移跟踪矩阵](dbx-migration-tracker.json)。矩阵记录负责人、DBX 来源、适用驱动与桌面/Web/CLI/MCP 入口、回归用例和验证摘要；[DBX 目录源](../../shared/catalog/dbx-catalog.json) 包含已复制进 Fouc 的驱动、Profile 和 SQL 方言元数据。运行 `pnpm dbx:verify` 检查任务、状态及目录映射；若本机有 `opensource/dbx` 源码，还会核对源文件哈希。状态只有「待实施」「进行中」「已完成」；通过实际验收并填写摘要后才能改为已完成。
 
+## 代码规模与当前验证
+
+- 源码已恢复至固定 commit；[源码审计](dbx-source-audit.json) 与 [实质迁移文件清单](dbx-native-port-manifest.json) 可由 `node scripts/audit-dbx-source.mjs --write` 重算。约 133.4 万有效源码行；排除独立测试、翻译资源、工具与账户/云模块后的核心范围估算为 91.4 万行。词法统计仍包含 Rust 内嵌测试，不能把这个估算当成已迁移量。
+- 第一阶段目标仍为约 50,000 行 Fouc 核心运行逻辑；当前清单为 29 个运行文件、3,919 行有效代码。不计样式、目录 JSON、测试、参考仓库或演示工作台，且必须逐能力验收，当前未完成。统计受代码格式影响，不能以行数代替功能覆盖。
+- PostgreSQL / SQLite 的连接配置 CRUD、测试与会话打开、Schema/表/视图/字段发现、主键分页、只读 SQL、大整数/重复列名及空间隔离已有真实 HTTP 和浏览器证据。R02/R03 保持进行中；写入、完整对象管理、导入导出、比较/备份、取消/重连、CLI/MCP 等仍须推进。SQLite 当前同步查询，尚未交付长查询取消与 worker 隔离。
+- 验证入口：`bun test --isolate backend/device/src/database backend/device/src/api/server.database.test.ts`、`node scripts/verify-relational-live.mjs`。真实服务验证使用独立 `fouc_datastore_lab` 数据库与 `.runtime/dbx-lab/relational.sqlite`，不访问 Fouc 账户/业务表。
+- Web 验证：Playwright + Chrome，1440×1000 完成上述 PostgreSQL / SQLite 流程；390×844、760×844 检查连接目录、导航收起及溢出。两次故意写入产生预期 HTTP 400，未出现其他控制台或页面错误；窄窗口工作台操作矩阵仍待补齐。
+
 ## 范围与验收规则
 
 - **全量范围**：DBX 本地源码和中文产品文档中已实现且可使用的桌面、Web、CLI、MCP、插件、驱动与专项工作台能力；包括下文 81 个驱动类型与 104 个连接 Profile。实验性、默认关闭的能力也列入，并保留同等安全开关。不可把连接成功、静态演示、空按钮或仅有 UI 当作完成。
@@ -63,10 +71,10 @@
 | ID | 任务 / 可验收交付 | DBX 对照 | 状态 |
 | --- | --- | --- | --- |
 | S01 | 在 Fouc 公共顶栏/导航内实现可折叠数据库资源栏、主区和 AI/信息详情右栏；多标签、拆分/分组、拖拽、关闭确认、标签恢复与独立窗口行为。 | `components/layout/`、`tabs/` | 待实施 |
-| S02 | 连接→数据库→Schema→表/视图/字段/索引/外键/触发器等树；异步展开/全展开/全折叠、搜索过滤与可见范围（隐藏系统 Schema/前缀）、计数、刷新、固定/粘性行、标签反向定位、权限/错误提示和上下文菜单；嵌套连接分组、多选批量管理、对象复制粘贴及拖入 SQL 编辑器逐项验收。 | `components/sidebar/`、`schema-browser.cn.mdx` | 待实施 |
+| S02 | 连接→数据库→Schema→表/视图/字段/索引/外键/触发器等树；异步展开/全展开/全折叠、搜索过滤与可见范围（隐藏系统 Schema/前缀）、计数、刷新、固定/粘性行、标签反向定位、权限/错误提示和上下文菜单；嵌套连接分组、多选批量管理、对象复制粘贴及拖入 SQL 编辑器逐项验收。 | `components/sidebar/`、`schema-browser.cn.mdx` | 进行中 |
 | S03 | 全局快速打开/搜索与数据库对象搜索，跨连接、数据库、Schema 的命中定位和打开。 | `components/quick-open/`、`search/`、`global_search.rs` | 待实施 |
 | S04 | 对象浏览器覆盖表、视图、过程、函数、序列、事件、扩展、类型及特定数据库对象；列表、详情、源码/DDL、创建/修改/删除及能力门控。 | `components/objects/`、`object-browser.cn.mdx` | 待实施 |
-| S05 | 表结构视图和编辑：列、主键、索引、约束、外键、注释、存储选项，生成/预览 DDL；SQLite 重建等方言特例正确处理。 | `components/structure/`、`schema/table_structure_sql.rs` | 待实施 |
+| S05 | 表结构视图和编辑：列、主键、索引、约束、外键、注释、存储选项，生成/预览 DDL；SQLite 重建等方言特例正确处理。 | `components/structure/`、`schema/table_structure_sql.rs` | 进行中 |
 | S06 | ER 图、表间关系、布局、搜索/缩放/导出；字段血缘、上下游依赖和字段来源解释。 | `components/diagram/`、`lineage/` | 待实施 |
 | S07 | 数据库文档快照、双向关系、表/字段 Markdown 笔记与彩色分组、自动保存/失败重试、本地笔记和数据库注释并存、DBML/文档导出与刷新；孤儿笔记、缺失元数据及不支持 DBML 的结构明确告警；支持 CLI/MCP 同源文档上下文。 | `crates/dbx-core/src/data/docs/`、`database-docs.cn.mdx` | 待实施 |
 | S08 | 数据库/Schema 创建与管理、对象复制/粘贴、跨库作用域、菜单权限和危险操作确认。 | `components/objects/`、`schema/` | 待实施 |
@@ -90,11 +98,11 @@
 
 | ID | 任务 / 可验收交付 | DBX 对照 | 状态 |
 | --- | --- | --- | --- |
-| G01 | 真实表数据按页/虚拟滚动加载、行号、斑马纹、空值/类型展示、列宽行高拖拽、自适应少列填满、宽表横向滚动；字体/字号/行高/密度设置和连接、结果来源、字段类型/注释信息可见。 | `components/grid/`、`data-grid.cn.mdx` | 待实施 |
+| G01 | 真实表数据按页/虚拟滚动加载、行号、斑马纹、空值/类型展示、列宽行高拖拽、自适应少列填满、宽表横向滚动；字体/字号/行高/密度设置和连接、结果来源、字段类型/注释信息可见。 | `components/grid/`、`data-grid.cn.mdx` | 进行中 |
 | G02 | 单格、连续矩形、多行/列选择；键盘导航、复制/粘贴、上下文菜单、选择状态与右侧详情同步，首次打开不预选。 | `components/grid/` | 待实施 |
 | G03 | 分清数据库侧 WHERE/ORDER BY 与客户端的当前结果搜索、值过滤、当前页排序；提供列筛选、LIKE/NOT LIKE、多字段排序、刷新/重置、页大小与分页，并明确显示条件的执行位置与范围。 | `components/grid/`、`data-grid.cn.mdx` | 待实施 |
 | G04 | 单元格编辑、批量改单元格、新增/复制/删除行、脏数据标记、撤销/回滚、提交前 SQL 预览与冲突/部分失败反馈。 | `components/grid/`、`crates/dbx-sql/src/` | 待实施 |
-| G05 | 单元格/行/列详情、字段元数据、关联数据跳转、值大文本查看、行详情动态展示与字段筛选。 | `components/grid/`、`components/objects/` | 待实施 |
+| G05 | 单元格/行/列详情、字段元数据、关联数据跳转、值大文本查看、行详情动态展示与字段筛选。 | `components/grid/`、`components/objects/` | 进行中 |
 | G06 | CSV、TSV、JSON、Markdown、XLSX、INSERT SQL 的选择/全表复制及导出；大结果分片/ZIP、进度/取消和正确转义。 | `crates/dbx-formats/`、`table_export.rs` | 待实施 |
 | G07 | 表结构筛选、列显示/隐藏/固定、自动适宽、数据/结构工具栏、Canvas 编辑模式和上下文操作完整可用。 | `components/grid/` | 待实施 |
 | G08 | 转置视图、列头拖拽排序、左右冻结、字段注释搜索、表/查询级布局记忆与重置、自动刷新和多次运行结果固定；未提交编辑时防止自动刷新覆盖。 | `data-grid.cn.mdx`、`useDataGridAutoRefresh.ts`、`useDataGridColumnLayout.ts` | 待实施 |
@@ -172,9 +180,9 @@
 
 | ID | DBX 驱动类型 | 运行模式 | 支持级别 | 验收范围 | 状态 |
 | --- | --- | --- | --- | --- | --- | --- |
-| R01 | `mysql` | native | operate | queryExecution, metadataBrowse, objectBrowser, objectSource, schemaSearch, diagram, tableDataEdit, tableStructureEdit, tableImport, dataTransfer, sqlFileExecution, databaseCreate, fieldLineage, sqlExplain, userAdmin | 待实施 |
-| R02 | `postgres` | native | operate | queryExecution, metadataBrowse, objectBrowser, objectSource, schemaSearch, diagram, tableDataEdit, tableStructureEdit, tableImport, dataTransfer, sqlFileExecution, databaseCreate, fieldLineage, sqlExplain, userAdmin | 待实施 |
-| R03 | `sqlite` | file | operate | queryExecution, metadataBrowse, objectBrowser, schemaSearch, diagram, tableDataEdit, tableStructureEdit, tableImport, dataTransfer, sqlFileExecution, fieldLineage | 待实施 |
+| R01 | `mysql` | native | operate | queryExecution, metadataBrowse, objectBrowser, objectSource, schemaSearch, diagram, tableDataEdit, tableStructureEdit, tableImport, dataTransfer, sqlFileExecution, databaseCreate, fieldLineage, sqlExplain, userAdmin | 进行中 |
+| R02 | `postgres` | native | operate | queryExecution, metadataBrowse, objectBrowser, objectSource, schemaSearch, diagram, tableDataEdit, tableStructureEdit, tableImport, dataTransfer, sqlFileExecution, databaseCreate, fieldLineage, sqlExplain, userAdmin | 进行中 |
+| R03 | `sqlite` | file | operate | queryExecution, metadataBrowse, objectBrowser, schemaSearch, diagram, tableDataEdit, tableStructureEdit, tableImport, dataTransfer, sqlFileExecution, fieldLineage | 进行中 |
 | R04 | `rqlite` | native | operate | queryExecution, metadataBrowse, objectBrowser, schemaSearch, diagram, tableDataEdit, tableStructureEdit, tableImport, dataTransfer, sqlFileExecution, fieldLineage | 待实施 |
 | R05 | `turso` | native | operate | queryExecution, metadataBrowse, objectBrowser, objectSource, schemaSearch, diagram, tableDataEdit, tableStructureEdit, tableImport, dataTransfer, sqlFileExecution, fieldLineage | 待实施 |
 | R06 | `cloudflare-d1` | native | operate | queryExecution, metadataBrowse, objectBrowser, objectSource, schemaSearch, diagram, tableDataEdit, tableImport, dataTransfer, sqlFileExecution, fieldLineage | 待实施 |

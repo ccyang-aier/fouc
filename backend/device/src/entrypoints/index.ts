@@ -19,6 +19,10 @@ import { ConnectorRepository } from '../connectors/repository';
 import { ConnectorService } from '../connectors/service';
 import { DatabaseCapabilityRegistry } from '../database/capability-registry';
 import { MysqlSessionManager } from '../database/mysql-session';
+import { RelationalSessionManager } from '../database/relational-session';
+import { RelationalConnectionRepository } from '../database/relational-connections';
+import path from 'node:path';
+import { homedir } from 'node:os';
 import { KnowledgeRepository } from '../knowledge/repository';
 
 const log = createLogger('main');
@@ -66,6 +70,8 @@ async function main(): Promise<void> {
   const connectors = new ConnectorService(connectorRepo);
   const databaseCapabilities = new DatabaseCapabilityRegistry();
   const mysqlSessions = new MysqlSessionManager(databaseCapabilities);
+  const relationalSessions = new RelationalSessionManager(databaseCapabilities);
+  const relationalConnections = new RelationalConnectionRepository(path.join(process.env.FOUC_DATA_DIR ?? path.join(homedir(), '.fouc'), 'database', 'connections'));
   const knowledge = new KnowledgeRepository(db);
 
   // 事件出口：装配期缓冲，服务器就绪后切换为 WS 广播并冲放积压
@@ -75,7 +81,7 @@ async function main(): Promise<void> {
   const registry = new AgentRegistry(providerRepo, installationRepo, (event) => emitter.emit(event));
   const supervisor = new SessionSupervisor(registry, sessionRepo, runRepo, eventRepo, (event) => emitter.emit(event));
 
-  const { app, hub } = createApp({ registry, supervisor, connectors, databaseCapabilities, mysqlSessions, knowledge, token: TOKEN || 'dev', internalToken: INTERNAL_TOKEN, devNoAuth: DEV_NO_AUTH });
+  const { app, hub } = createApp({ registry, supervisor, connectors, databaseCapabilities, mysqlSessions, relationalSessions, relationalConnections, knowledge, token: TOKEN || 'dev', internalToken: INTERNAL_TOKEN, devNoAuth: DEV_NO_AUTH });
   const forwarder = createEventForwarder(hub);
   emitter.emit = (event) => forwarder(event);
   for (const event of buffered.splice(0)) forwarder(event);
@@ -114,6 +120,7 @@ async function main(): Promise<void> {
     log.info('Shutting down: suspending sessions…');
     connectors.stopHeartbeat();
     await mysqlSessions.shutdown().catch((error) => log.error('MySQL shutdown failed:', error));
+    await relationalSessions.shutdown().catch((error) => log.error('Relational sessions shutdown failed:', error));
     await supervisor.shutdown().catch((error) => log.error('shutdown failed:', error));
     server.stop(true);
     process.exit(0);

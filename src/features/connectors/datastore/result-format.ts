@@ -9,7 +9,9 @@ export function chartNumber(value: DatabaseCell): number | null {
 }
 
 export function chartableColumns(result: DatabaseQueryResult): number[] {
-  return result.columns.map((_, index) => index).filter((index) => result.rows.some((row) => chartNumber(row[index]) !== null))
+  return result.columns
+    .map((_, index) => index)
+    .filter((index) => result.rows.some((row) => chartNumber(row[index]) !== null))
 }
 
 export function columnLabel(columns: string[], index: number): string {
@@ -22,13 +24,17 @@ function exportCell(value: DatabaseCell | undefined): string {
 }
 
 function quoted(value: string, separator: "," | "\t"): string {
-  if (separator === "," || value.includes(separator) || /["\r\n]/.test(value)) return `"${value.replace(/"/g, '""')}"`
+  if (separator === "," || value.includes(separator) || /["\r\n]/.test(value))
+    return `"${value.replace(/"/g, '""')}"`
   return value
 }
 
 export function formatDelimited(result: DatabaseQueryResult, separator: "," | "\t"): string {
   const line = (cells: string[]) => cells.map((cell) => quoted(cell, separator)).join(separator)
-  const dataLine = (row: DatabaseCell[]) => result.columns.map((_, index) => row[index] == null ? "" : quoted(exportCell(row[index]), separator)).join(separator)
+  const dataLine = (row: DatabaseCell[]) =>
+    result.columns
+      .map((_, index) => (row[index] == null ? "" : quoted(exportCell(row[index]), separator)))
+      .join(separator)
   return [line(result.columns), ...result.rows.map(dataLine)].join("\n")
 }
 

@@ -1,0 +1,32 @@
+{
+  "sourceRevision": "f909f85075e12beb78dffe5942f7d039bede25de",
+  "targetEffectiveRuntimeLines": 50000,
+  "countingRule": "Count Fouc TypeScript/TSX runtime files with actual DBX-derived functionality. Styles, tests, tooling, generated catalogs, demo workbenches and the reference checkout do not count toward the 50000-line core-logic milestone. A source reference never grants credit for the entire DBX source file.",
+  "groups": [
+    {
+      "area": "contracts-and-capabilities",
+      "status": "partial",
+      "sourceReferences": ["crates/dbx-core/src/models/", "crates/dbx-core/assets/database-drivers.manifest.json"],
+      "runtimeFiles": ["shared/src/database.ts", "shared/src/database-catalog.ts", "shared/src/mysql-query-ranges.ts", "shared/src/relational.ts", "backend/device/src/database/capability-registry.ts"]
+    },
+    {
+      "area": "mysql-native-runtime-and-live-ui",
+      "status": "partial",
+      "sourceReferences": ["crates/dbx-drivers/src/db/mysql.rs", "crates/dbx-sql/src/sql_risk.rs", "apps/desktop/src/components/connection/", "apps/desktop/src/components/layout/"],
+      "runtimeFiles": ["backend/device/src/database/mysql-session.ts", "backend/device/src/database/mysql-read-only-sql.ts", "src/features/connectors/mysql/mysql-connection-list.tsx", "src/features/connectors/mysql/mysql-connection-dialog.tsx", "src/features/connectors/mysql/mysql-connection-table.tsx", "src/features/connectors/mysql/workbench/mysql-live-workbench.tsx", "src/features/connectors/mysql/workbench/mysql-live-sql.tsx"]
+    },
+    {
+      "area": "postgres-sqlite-native-runtime",
+      "status": "partial",
+      "sourceReferences": ["crates/dbx-drivers/src/db/postgres.rs", "crates/dbx-drivers/src/db/sqlite.rs", "crates/dbx-sql/src/sql_risk.rs", "crates/dbx-core/src/connection/"],
+      "runtimeFiles": ["backend/device/src/database/drivers/relational-driver.ts", "backend/device/src/database/drivers/postgres.ts", "backend/device/src/database/drivers/sqlite.ts", "backend/device/src/database/relational-session.ts", "backend/device/src/database/relational-connections.ts", "backend/device/src/database/relational-sql.ts", "backend/device/src/api/relational-routes.ts"]
+    },
+    {
+      "area": "shared-sql-workbench-and-connection-management",
+      "status": "partial",
+      "sourceReferences": ["apps/desktop/src/components/connection/", "apps/desktop/src/components/layout/", "apps/desktop/src/components/editor/", "apps/desktop/src/components/grid/", "apps/desktop/src/components/chart/"],
+      "runtimeFiles": ["src/features/connectors/datastore/cell-format.ts", "src/features/connectors/datastore/result-format.ts", "src/features/connectors/datastore/query-result.tsx", "src/features/connectors/datastore/sql-editor.tsx", "src/features/connectors/datastore/relational-connections.tsx", "src/features/connectors/datastore/relational-dialog.tsx", "src/features/connectors/datastore/relational-workbench.tsx", "src/features/connectors/datastore/relational-query.tsx", "src/features/connectors/datastore/resource-tree.tsx", "src/features/connectors/datastore/table-view.tsx"]
+    }
+  ],
+  "knownRemainingScope": ["Redis connector and specialized workbench", "common driver lifecycle, cancellation, reconnect and streaming", "workspace-aware MySQL persistence and shared policy integration", "row/structure editing and transactions", "full SQL dialect parsing, completion, parameters, history and saved SQL", "import/export/transfer/schema and data comparison/backup", "remaining DBX drivers and specialized surfaces", "CLI/MCP and applicable desktop entry points", "full capability-by-driver acceptance matrix"]
+}

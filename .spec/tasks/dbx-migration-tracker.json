@@ -1383,7 +1383,7 @@
     {
       "id": "S02",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "available",
       "applicableDriverTypes": [
         "mysql",
@@ -1678,7 +1678,7 @@
     {
       "id": "S05",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql",
@@ -2804,7 +2804,7 @@
     {
       "id": "G01",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql",
@@ -3136,7 +3136,7 @@
     {
       "id": "G05",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql",
@@ -5763,7 +5763,7 @@
     {
       "id": "R01",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql"
@@ -5787,7 +5787,7 @@
     {
       "id": "R02",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "postgres"
@@ -5805,13 +5805,24 @@
         "action": "`postgres`",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-runtime-validation",
+          "path": "scripts/verify-relational-live.mjs",
+          "check": "2026-10-03: PostgreSQL 17 real container and SQLite real file; connect, schemas/tables/columns, primary-key pagination, bigint, duplicate columns, read-only rejection, workspace isolation, disconnect. Only queryExecution/metadataBrowse are granted; remaining declared capabilities are unimplemented."
+        },
+        {
+          "kind": "partial-web-validation",
+          "path": "src/features/connectors/datastore/relational-workbench.tsx",
+          "check": "2026-10-03: Playwright + Chrome 1440x1000 full flows: create/test/save/connect, data/structure, repeated table opening, SQL/JSON, rejected write feedback, edit/reload, copy/delete. Connection-directory collapse and overflow checked at 390x844 and 760x844; narrow workbench flows remain unverified. No unexpected console/page errors; two intentional HTTP 400 query rejections."
+        }
+      ],
       "scopeKind": "driver"
     },
     {
       "id": "R03",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "sqlite"
@@ -5829,7 +5840,18 @@
         "action": "`sqlite`",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-runtime-validation",
+          "path": "scripts/verify-relational-live.mjs",
+          "check": "2026-10-03: PostgreSQL 17 real container and SQLite real file; connect, schemas/tables/columns, primary-key pagination, bigint, duplicate columns, read-only rejection, workspace isolation, disconnect. Only queryExecution/metadataBrowse are granted; remaining declared capabilities are unimplemented."
+        },
+        {
+          "kind": "partial-web-validation",
+          "path": "src/features/connectors/datastore/relational-workbench.tsx",
+          "check": "2026-10-03: Playwright + Chrome 1440x1000 full flows: create/test/save/connect, data/structure, repeated table opening, SQL/JSON, rejected write feedback, edit/reload, copy/delete. Connection-directory collapse and overflow checked at 390x844 and 760x844; narrow workbench flows remain unverified. No unexpected console/page errors; two intentional HTTP 400 query rejections."
+        }
+      ],
       "scopeKind": "driver"
     },
     {
@@ -7705,5 +7727,7 @@
       "scopeKind": "driver"
     }
   ],
-  "scopeInterpretation": "Entry points describe DBX product applicability or required migration surface, not proof that Fouc has implemented the task. Driver scopes come from declared capabilities; service version and user permissions can narrow them."
+  "scopeInterpretation": "Entry points describe DBX product applicability or required migration surface, not proof that Fouc has implemented the task. Driver scopes come from declared capabilities; service version and user permissions can narrow them.",
+  "sourceAudit": ".spec/tasks/dbx-source-audit.json",
+  "nativePortManifest": ".spec/tasks/dbx-native-port-manifest.json"
 }

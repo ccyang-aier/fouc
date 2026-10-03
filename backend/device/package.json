@@ -19,10 +19,12 @@
     "@zed-industries/codex-acp-win32-x64": "0.9.5",
     "hono": "^4.13.5",
     "mysql2": "3.24.4",
+    "pg": "8.23.0",
     "yjs": "13.6.33"
   },
   "devDependencies": {
     "@types/bun": "^1.4.0",
+    "@types/pg": "8.23.1",
     "@types/ws": "^8.18.1",
     "typescript": "5.9.3"
   }

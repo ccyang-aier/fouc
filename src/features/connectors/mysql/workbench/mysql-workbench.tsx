@@ -10,7 +10,7 @@ import { MysqlWorkbenchExplorer } from "./mysql-workbench-explorer"
 import { MysqlWorkbenchGrid } from "./mysql-workbench-grid"
 import { MysqlWorkbenchInspector } from "./mysql-workbench-inspector"
 import { MysqlWorkbenchSql } from "./mysql-workbench-sql"
-import "./mysql-workbench.css"
+import "../../datastore/workbench.css"
 
 const INITIAL_TABS: WorkbenchTab[] = [
   { id: "table-customers", kind: "table", title: "customers", table: "customers" },

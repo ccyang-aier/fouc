@@ -17,6 +17,9 @@ import type { DtsTicketListInput } from '@fouc/shared';
 import { DatabaseCapabilityRegistry } from '../database/capability-registry';
 import type { MysqlSessionManager } from '../database/mysql-session';
 import { MysqlReadOnlySqlError } from '../database/mysql-read-only-sql';
+import type { RelationalSessionManager } from '../database/relational-session';
+import { relationalRoutes } from './relational-routes';
+import type { RelationalConnectionRepository } from '../database/relational-connections';
 import type { KnowledgeRepository } from '../knowledge/repository';
 import { DATABASE_CATALOG_REVISION, getDatabaseDialect, getDatabaseProfile, listDatabaseDrivers, listDatabaseProfiles } from '@fouc/shared/database-catalog';
 
@@ -26,6 +29,8 @@ export type ServerContext = {
   connectors: ConnectorService;
   databaseCapabilities?: DatabaseCapabilityRegistry;
   mysqlSessions?: MysqlSessionManager;
+  relationalSessions?: RelationalSessionManager;
+  relationalConnections?: RelationalConnectionRepository;
   knowledge?: KnowledgeRepository;
   token: string;
   internalToken: string;
@@ -202,6 +207,8 @@ export function createApp(context: ServerContext): { app: Hono; hub: BroadcastHu
       return c.json({ ok: false, error: { code: 'connect_failed', message: error instanceof Error ? error.message : '连接失败' } }, 400);
     }
   });
+
+  if (context.relationalSessions) app.route('/', relationalRoutes(context.relationalSessions, context.relationalConnections));
 
   app.get('/api/database/connections/:id/capabilities', async (c) => {
     const id = c.req.param('id');

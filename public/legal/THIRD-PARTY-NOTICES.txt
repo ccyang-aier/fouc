@@ -7,5 +7,14 @@ SQL dialect metadata in shared/catalog/dbx-catalog.json. The YAML dialect
 descriptors were converted to JSON. The MySQL metadata lookup sequence was
 adapted for the Fouc Bun sidecar.
 
+PostgreSQL catalog discovery and bounded read-only cursors, SQLite file opening
+and table_xinfo metadata, and relational query guards are behavior adaptations
+of crates/dbx-drivers/src/db/{postgres.rs,sqlite.rs} and dbx-core/src/query/.
+The connection/workbench layout follows apps/desktop/src/components/{connection,
+layout,grid}. Fouc's corresponding implementation is independently written in
+backend/device/src/database/{drivers,relational-*}, shared/src/relational.ts and
+src/features/connectors/datastore/ using TypeScript, React and Node-compatible APIs.
+The SQLite connector SVG is an original Fouc illustration.
+
 This notice covers DBX-derived material. Other dependency notices remain
 subject to the separate F06 license audit.

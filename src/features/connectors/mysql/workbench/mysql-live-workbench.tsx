@@ -9,9 +9,9 @@ import { canUseDatabaseCapability, type DatabaseCapabilitySnapshot, type Databas
 
 import { backendFetch } from "@/lib/backend"
 import type { MysqlConnection } from "../mysql-connections-data"
-import { databaseCellText } from "./mysql-live-format"
+import { databaseCellText } from "../../datastore/cell-format"
 import { MysqlLiveSql } from "./mysql-live-sql"
-import "./mysql-workbench.css"
+import "../../datastore/workbench.css"
 
 type Props = { connection: MysqlConnection; onBack: () => void; onConnectorBack: () => void }
 type SqlTab = { id: number; title: string; database: string; query: string }

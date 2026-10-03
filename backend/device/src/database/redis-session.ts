@@ -9,22 +9,14 @@ import type {
 } from '@fouc/shared';
 import { DatabaseInputError } from './input-error';
 import { redisCommand, redisConfig, redisCursor, redisKey } from './redis-input';
+import { redisBlob } from './redis-blob';
+import { RedisMutationManager, sameRedisSnapshot } from './redis-mutation';
+import { REDIS_WRITE_BYTES } from './redis-mutation-input';
+export { redisBlob } from './redis-blob';
 
 const PAGE_SIZE = 100;
 const STRING_BYTES = 65536;
-type Entry = { session: RedisSession; client: Redis };
-
-/** Lossless bytes, including binary keys and values, following DBX RedisBlob. */
-export function redisBlob(bytes: Buffer): RedisBlob {
-  const text = bytes.toString('utf8');
-  const utf8 =
-    Buffer.from(text, 'utf8').equals(bytes) && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(text);
-  return {
-    rawBase64: bytes.toString('base64'),
-    encoding: utf8 ? 'utf8' : 'binary',
-    display: utf8 ? text : `0x${bytes.toString('hex')}`,
-  };
-}
+type Entry = { session: RedisSession; client: Redis; mutations: RedisMutationManager; changingMode: boolean };
 
 /** Standalone sessions keep SELECT immutable; no business Redis configuration is read. */
 export class RedisSessionManager {
@@ -67,7 +59,7 @@ export class RedisSessionManager {
         mode: 'standalone',
         readOnly: true,
       };
-      this.entries.set(session.id, { session, client });
+      this.entries.set(session.id, { session, client, mutations: new RedisMutationManager(client), changingMode: false });
       return session;
     } catch (error) {
       client.disconnect();
@@ -79,6 +71,44 @@ export class RedisSessionManager {
     if (!entry || entry.session.workspaceId !== workspaceId)
       throw new DatabaseInputError('当前工作空间中的 Redis 连接已断开');
     return entry;
+  }
+  async setReadOnly(workspaceId: string, id: string, readOnly: unknown): Promise<RedisSession> {
+    if (typeof readOnly !== 'boolean') throw new DatabaseInputError('Redis 写入开关无效');
+    const entry = this.entry(workspaceId, id);
+    if (entry.changingMode) throw new DatabaseInputError('Redis 写入模式正在切换，请等待结果');
+    entry.mutations.clear();
+    entry.changingMode = true;
+    try {
+      if (!readOnly) {
+        const available = await entry.client.eval('return redis.acl_check_cmd ~= nil and 1 or 0', 0);
+        if (String(available) !== '1') throw new DatabaseInputError('当前写入流程需要 Redis 7 或更高版本');
+      }
+      entry.session.readOnly = readOnly;
+      return { ...entry.session };
+    } finally { entry.changingMode = false; }
+  }
+  private writable(workspaceId: string, id: string): Entry {
+    const entry = this.entry(workspaceId, id);
+    if (entry.changingMode) throw new DatabaseInputError('Redis 写入模式正在切换');
+    if (entry.session.readOnly) throw new DatabaseInputError('请先解锁当前 Redis 会话的写入');
+    return entry;
+  }
+  prepare(workspaceId: string, id: string, mutation: unknown, version: unknown) {
+    return this.writable(workspaceId, id).mutations.prepare(mutation, version);
+  }
+  commit(workspaceId: string, id: string, planId: unknown, confirmed: unknown) {
+    return this.writable(workspaceId, id).mutations.commit(planId, confirmed);
+  }
+  async editString(workspaceId: string, id: string, rawKey: unknown): Promise<{ content: RedisBlob; writeVersion: string }> {
+    const { client, mutations } = this.writable(workspaceId, id);
+    const key = redisKey(rawKey);
+    const before = await mutations.snapshot(key);
+    if (before.type !== 'string') throw new DatabaseInputError('Key 类型已变化，请刷新');
+    const content = await client.getrangeBuffer(key, 0, REDIS_WRITE_BYTES);
+    if (content.length > REDIS_WRITE_BYTES) throw new DatabaseInputError('字符串超过当前 1 MiB 编辑上限');
+    const after = await mutations.snapshot(key);
+    if (!sameRedisSnapshot(before, after)) throw new DatabaseInputError('读取期间 Key 已变化，请重新读取');
+    return { content: redisBlob(content), writeVersion: mutations.remember(after) };
   }
   async scan(workspaceId: string, id: string, cursor: unknown, pattern: unknown): Promise<RedisScanPage> {
     const { client } = this.entry(workspaceId, id);
@@ -111,8 +141,15 @@ export class RedisSessionManager {
     rawKey: unknown,
     rawCursor: unknown = '0',
   ): Promise<RedisValuePage> {
-    const { client } = this.entry(workspaceId, id);
+    const { client, session, mutations } = this.entry(workspaceId, id);
     const key = redisKey(rawKey);
+    let before: Awaited<ReturnType<RedisMutationManager['snapshot']>> | null = null;
+    let writeVersion: string | null = null;
+    let writeUnavailable: string | null = session.readOnly ? '解锁写入后可编辑' : null;
+    if (!session.readOnly) {
+      try { before = await mutations.snapshot(key); }
+      catch (error) { writeUnavailable = error instanceof Error ? error.message : String(error); }
+    }
     const type = await client.type(key);
     let cursor: string;
     if (type === 'stream') {
@@ -197,7 +234,14 @@ export class RedisSessionManager {
         })),
       };
     } else data = { kind: type === 'none' ? 'none' : 'unsupported' };
-    return { key: redisBlob(key), type, ttl, data };
+    if (before) {
+      try {
+        const after = await mutations.snapshot(key);
+        if (sameRedisSnapshot(before, after)) writeVersion = mutations.remember(after);
+        else writeUnavailable = '读取期间 Key 已变化，请刷新后编辑';
+      } catch (error) { writeUnavailable = error instanceof Error ? error.message : String(error); }
+    }
+    return { key: redisBlob(key), type, ttl, data, writeVersion, writeUnavailable };
   }
   async command(workspaceId: string, id: string, value: unknown): Promise<RedisCommandResult> {
     const { client } = this.entry(workspaceId, id);
@@ -207,7 +251,8 @@ export class RedisSessionManager {
     return { command: command!, result, executionTimeMs: Math.round(performance.now() - start) };
   }
   disconnect(workspaceId: string, id: string): void {
-    const { client } = this.entry(workspaceId, id);
+    const { client, mutations } = this.entry(workspaceId, id);
+    mutations.clear();
     this.entries.delete(id);
     client.disconnect();
   }

@@ -61,6 +61,22 @@ export function redisRoutes(
       data: await sessions.command(c.req.param('workspaceId')!, c.req.param('id')!, body?.command),
     });
   });
+  app.post(base + '/:id/write-mode', async (c) => {
+    const body = await c.req.json().catch(() => null);
+    return c.json({ ok: true, data: await sessions.setReadOnly(c.req.param('workspaceId')!, c.req.param('id')!, body?.readOnly) });
+  });
+  app.post(base + '/:id/edit-string', async (c) => {
+    const body = await c.req.json().catch(() => null);
+    return c.json({ ok: true, data: await sessions.editString(c.req.param('workspaceId')!, c.req.param('id')!, body?.key) });
+  });
+  app.post(base + '/:id/mutations/preview', async (c) => {
+    const body = await c.req.json().catch(() => null);
+    return c.json({ ok: true, data: await sessions.prepare(c.req.param('workspaceId')!, c.req.param('id')!, body?.mutation, body?.writeVersion) });
+  });
+  app.post(base + '/:id/mutations/commit', async (c) => {
+    const body = await c.req.json().catch(() => null);
+    return c.json({ ok: true, data: await sessions.commit(c.req.param('workspaceId')!, c.req.param('id')!, body?.planId, body?.confirmed) });
+  });
   app.delete(base + '/:id', (c) => {
     sessions.disconnect(c.req.param('workspaceId')!, c.req.param('id')!);
     return c.json({ ok: true, data: { disconnected: true } });

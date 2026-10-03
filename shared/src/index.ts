@@ -435,3 +435,4 @@ export interface DtsFilterDefinition {
 export * from './relational';
 export * from './relational-structure';
 export * from './redis';
+export * from './redis-mutation';

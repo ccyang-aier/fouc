@@ -37,6 +37,10 @@ apps/desktop/src/components/redis/{RedisKeyBrowser,RedisValueViewer}.vue.
 Fouc's native implementation lives in backend/device/src/database/redis-*,
 shared/src/redis.ts and src/features/connectors/redis/. The Redis connector SVG
 is an original Fouc illustration. No DBX runtime module is loaded.
+Redis mutation commands, collision guards, expiry preservation and hash/ZSet
+rename semantics also follow redis_driver.rs and RedisValueViewer.vue. Fouc's
+TypeScript/Lua plans add complete-value guards, ACL preflight and snapshot
+compensation; the List deletion marker is generated and checked per operation.
 
 This notice covers DBX-derived material. Other dependency notices remain
 subject to the separate F06 license audit.

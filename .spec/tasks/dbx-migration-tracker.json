@@ -5195,7 +5195,17 @@
         {
           "kind": "partial-web-validation",
           "path": "src/features/connectors/redis/redis-workbench.tsx",
-          "check": "2026-10-03: Playwright + Chrome 1440x1000 and 760x844: test/save/connect, six value types, JSON, list/stream pages, empty/search, command success/rejected write, edit/reload/copy/delete. No unexpected page/console errors; one intentional HTTP 400 command rejection. Write, advanced operations and full matrix remain unverified."
+          "check": "2026-10-03: Playwright + Chrome 1440x1000 and 760x844: test/save/connect, six value types, JSON, list/stream pages, empty/search, command success/rejected write, edit/reload/copy/delete. No unexpected page/console errors; one intentional HTTP 400 command rejection. Advanced operations and full version/entry-point matrix remain unverified."
+        },
+        {
+          "kind": "partial-runtime-validation",
+          "path": "scripts/verify-redis-mutations-live.mjs",
+          "check": "2026-10-03: Redis 7.4.8 DB15 isolated named keys: six-type creation/mutations, precise byte transport and full string read, TTL preservation/persist/absolute, collision and stale guards, single-use workspace/session plans, revocation, ACL rejection without writes and runtime-error snapshot compensation. Redis 7+ bounded editor; large/batch values, field TTL management and version matrix remain pending."
+        },
+        {
+          "kind": "partial-web-validation",
+          "path": "src/features/connectors/redis/redis-mutation-dialog.tsx",
+          "check": "2026-10-03: Playwright + Chrome 1440/760/390: six type creation, binary and collection edits/add/delete, TTL/persist, rename/delete, cancel/review/confirmation, conflict feedback and relock. One intentional HTTP400 conflict; no other page/console errors. 39 scoped tests include BOM roundtrip, auth and in-flight write revocation."
         }
       ],
       "scopeKind": "driver"
@@ -6099,7 +6109,17 @@
         {
           "kind": "partial-web-validation",
           "path": "src/features/connectors/redis/redis-workbench.tsx",
-          "check": "2026-10-03: Playwright + Chrome 1440x1000 and 760x844: test/save/connect, six value types, JSON, list/stream pages, empty/search, command success/rejected write, edit/reload/copy/delete. No unexpected page/console errors; one intentional HTTP 400 command rejection. Write, advanced operations and full matrix remain unverified."
+          "check": "2026-10-03: Playwright + Chrome 1440x1000 and 760x844: test/save/connect, six value types, JSON, list/stream pages, empty/search, command success/rejected write, edit/reload/copy/delete. No unexpected page/console errors; one intentional HTTP 400 command rejection. Advanced operations and full version/entry-point matrix remain unverified."
+        },
+        {
+          "kind": "partial-runtime-validation",
+          "path": "scripts/verify-redis-mutations-live.mjs",
+          "check": "2026-10-03: Redis 7.4.8 DB15 isolated named keys: six-type creation/mutations, precise byte transport and full string read, TTL preservation/persist/absolute, collision and stale guards, single-use workspace/session plans, revocation, ACL rejection without writes and runtime-error snapshot compensation. Redis 7+ bounded editor; large/batch values, field TTL management and version matrix remain pending."
+        },
+        {
+          "kind": "partial-web-validation",
+          "path": "src/features/connectors/redis/redis-mutation-dialog.tsx",
+          "check": "2026-10-03: Playwright + Chrome 1440/760/390: six type creation, binary and collection edits/add/delete, TTL/persist, rename/delete, cancel/review/confirmation, conflict feedback and relock. One intentional HTTP400 conflict; no other page/console errors. 39 scoped tests include BOM roundtrip, auth and in-flight write revocation."
         }
       ],
       "scopeKind": "driver"

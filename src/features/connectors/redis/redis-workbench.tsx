@@ -6,12 +6,18 @@ import {
   Database,
   Key,
   MagnifyingGlass,
-  TerminalWindow
+  TerminalWindow,
+  Lock,
+  LockOpen,
+  Plus,
+  CheckCircle
 } from "@phosphor-icons/react"
-import type { RedisKeyInfo, RedisScanPage, RedisSession, RedisValuePage } from "@fouc/shared"
+import type { RedisBlob, RedisKeyInfo, RedisMutation, RedisMutationResult, RedisScanPage, RedisSession, RedisValuePage } from "@fouc/shared"
 import { backendFetch } from "@/lib/backend"
 import { RedisValueViewer, redisTtl } from "./redis-value-viewer"
 import { RedisConsole } from "./redis-console"
+import { RedisMutationDialog } from "./redis-mutation-dialog"
+import type { RedisEditIntent } from "./redis-mutation-model"
 import styles from "./redis.module.css"
 
 export function RedisWorkbench({
@@ -37,6 +43,11 @@ export function RedisWorkbench({
   const [valueError, setValueError] = useState("")
   const [scanRequest, setScanRequest] = useState({ cursor: "0", revision: 0 })
   const [valueRequest, setValueRequest] = useState({ cursor: "0", revision: 0 })
+  const [readOnly, setReadOnly] = useState(session.readOnly)
+  const [writeBusy, setWriteBusy] = useState(false)
+  const [writeError, setWriteError] = useState("")
+  const [feedback, setFeedback] = useState("")
+  const [intent, setIntent] = useState<RedisEditIntent | null>(null)
   useEffect(() => {
     const controller = new AbortController()
     void backendFetch<RedisScanPage>(`${base}/scan`, {
@@ -95,10 +106,51 @@ export function RedisWorkbench({
     requestScan()
     if (selected !== null) requestValue()
   }
+  async function toggleWriteMode() {
+    setWriteBusy(true)
+    setWriteError("")
+    setFeedback("")
+    try {
+      const updated = await backendFetch<RedisSession>(`${base}/write-mode`, { method: "POST", body: JSON.stringify({ readOnly: !readOnly }) })
+      setReadOnly(updated.readOnly)
+      setIntent(null)
+      setValue(null)
+      if (selected !== null) requestValue()
+      setFeedback(updated.readOnly ? "已重新锁定写入" : "当前会话写入已解锁；每项变更均需预览确认")
+    } catch (reason) { setWriteError(reason instanceof Error ? reason.message : String(reason)) }
+    finally { setWriteBusy(false) }
+  }
+  function openMutation(mutation: RedisMutation) {
+    setWriteError("")
+    setFeedback("")
+    setIntent({ mutation, writeVersion: value?.writeVersion ?? null })
+  }
+  async function editString() {
+    if (selected === null) return
+    setWriteBusy(true)
+    setWriteError("")
+    try {
+      const full = await backendFetch<{ content: RedisBlob; writeVersion: string }>(`${base}/edit-string`, {
+        method: "POST", body: JSON.stringify({ key: selected })
+      })
+      setIntent({ mutation: { kind: "string-set", key: selected, value: full.content.rawBase64 }, writeVersion: full.writeVersion })
+    } catch (reason) { setWriteError(reason instanceof Error ? reason.message : String(reason)) }
+    finally { setWriteBusy(false) }
+  }
+  function saved(result: RedisMutationResult) {
+    setIntent(null)
+    setFeedback(`变更已执行 · ${result.executionTimeMs} ms`)
+    setWriteError("")
+    setSelected(result.deleted ? null : result.key.rawBase64)
+    setValue(null)
+    setValueBusy(false)
+    requestScan()
+    if (!result.deleted) requestValue()
+  }
   return (
     <section className={styles.workbench} aria-label="Redis 工作台">
       <header className={styles.header}>
-        <button type="button" aria-label="返回数据库连接列表" onClick={onBack}>
+        <button type="button" aria-label="返回数据库连接列表" disabled={writeBusy} onClick={onBack}>
           <ArrowLeft size={17} />
         </button>
         <Database size={17} />
@@ -106,11 +158,15 @@ export function RedisWorkbench({
         <span>
           Redis {session.version ?? ""} · DB {session.database}
         </span>
-        <small>只读</small>
-        <button type="button" aria-label="刷新 Redis 数据" onClick={refresh} disabled={scanBusy || valueBusy}>
+        <button type="button" className={styles.writeMode} disabled={writeBusy || Boolean(intent)} onClick={() => void toggleWriteMode()}>
+          {readOnly ? <Lock size={13} /> : <LockOpen size={13} />}{writeBusy ? "处理中…" : readOnly ? "解锁写入" : "重新锁定"}
+        </button>
+        <button type="button" aria-label="刷新 Redis 数据" onClick={refresh} disabled={scanBusy || valueBusy || writeBusy}>
           <ArrowsClockwise size={16} />
         </button>
       </header>
+      {writeError && <div role="alert" className={styles.error}>{writeError}</div>}
+      {feedback && <div role="status" className={styles.feedback}><CheckCircle size={14} />{feedback}</div>}
       <nav className={styles.tabs} aria-label="Redis 工作台视图">
         <button
           type="button"
@@ -154,12 +210,13 @@ export function RedisWorkbench({
                 onChange={(event) => setPattern(event.target.value)}
                 placeholder="前缀:*"
               />
-              <button type="submit" disabled={scanBusy}>
+              <button type="submit" disabled={scanBusy || writeBusy}>
                 搜索
               </button>
             </form>
             <div className={styles.keyCount}>
               DB {session.database} · {scan?.totalKeys ?? "…"} 个 Key · 已加载 {keys.length}
+              {!readOnly && <button type="button" disabled={writeBusy} onClick={() => openMutation({ kind: "create", key: "", type: "string", value: "" })}><Plus size={12} />新建 Key</button>}
             </div>
             {scanError && (
               <div role="alert" className={styles.error}>
@@ -178,6 +235,7 @@ export function RedisWorkbench({
                   key={key.key.rawBase64}
                   type="button"
                   aria-pressed={selected === key.key.rawBase64}
+                  disabled={writeBusy}
                   onClick={() => {
                     setSelected(key.key.rawBase64)
                     setValue(null)
@@ -237,8 +295,11 @@ export function RedisWorkbench({
               <RedisValueViewer
                 key={`${selected}:${valueRequest.cursor}`}
                 value={value}
-                busy={valueBusy}
+                busy={valueBusy || writeBusy}
                 onNext={requestValue}
+                readOnly={readOnly}
+                onMutation={openMutation}
+                onEditString={() => void editString()}
               />
             ) : (
               !valueBusy &&
@@ -256,6 +317,7 @@ export function RedisWorkbench({
       <footer className={styles.status}>
         Standalone · 当前设备 · Key 与值保留原始字节 · 扫描期间数据可能变化
       </footer>
+      {intent && <RedisMutationDialog base={base} intent={intent} onClose={() => setIntent(null)} onSaved={saved} />}
     </section>
   )
 }

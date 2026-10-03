@@ -27,13 +27,17 @@
   font-size: 11px;
   color: var(--muted-strong);
 }
-.header small {
+.header .writeMode {
   margin-left: auto;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 4px;
   padding: 2px 7px;
   color: var(--muted-strong);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
 }
 .header button {
   padding: 5px;
@@ -104,7 +108,20 @@
   padding: 9px 13px;
   font-size: 10px;
   color: var(--muted-strong);
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: space-between;
 }
+.keyCount button { display: inline-flex; align-items: center; gap: 3px; color: var(--accent); cursor: pointer; }
+.feedback { display: flex; align-items: center; gap: 7px; padding: 8px 16px; font-size: 11px; color: var(--muted-strong); background: color-mix(in srgb, var(--accent) 4%, var(--panel)); border-bottom: 1px solid var(--line); }
+.mutationToolbar { display: flex; align-items: center; justify-content: space-between; padding: 9px 16px; gap: 10px; border-bottom: 1px solid var(--line); flex-shrink: 0; flex-wrap: wrap; }
+.mutationToolbar > div { display: flex; flex-wrap: wrap; gap: 5px; }
+.mutationToolbar button { display: inline-flex; align-items: center; gap: 5px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel); cursor: pointer; color: var(--muted-strong); white-space: nowrap; }
+.mutationToolbar .dangerButton { color: #b73340; }
+.table .rowActions { width: 85px; padding: 8px; white-space: nowrap; }
+.rowActions button { padding: 5px; cursor: pointer; color: var(--muted-strong); border-radius: 4px; }
+.rowActions button:hover { background: var(--surface-hover); color: var(--ink); }
 .keyList {
   flex: 1;
   min-height: 0;

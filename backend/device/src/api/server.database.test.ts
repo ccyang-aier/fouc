@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { DatabaseCapabilityRegistry } from '../database/capability-registry';
 import { createApp } from './server';
+import { RedisSessionManager } from '../database/redis-session';
 
 
 function testApp(registry: DatabaseCapabilityRegistry) {
@@ -9,6 +10,7 @@ function testApp(registry: DatabaseCapabilityRegistry) {
     supervisor: {} as never,
     connectors: {} as never,
     databaseCapabilities: registry,
+    redisSessions: new RedisSessionManager(),
     token: 'frontend-token',
     internalToken: 'native-only-token',
   }).app;
@@ -32,6 +34,16 @@ describe('database capability API', () => {
     expect(profile.status).toBe(200);
     expect((await profile.json() as { data: { port: number; user: string } }).data).toMatchObject({ port: 3306, user: 'root' });
     expect((await app.request('/api/database/catalog/profiles/unknown', { headers })).status).toBe(404);
+  });
+
+  test('Redis write endpoints require device authentication and an owned active session', async () => {
+    const app = testApp(new DatabaseCapabilityRegistry());
+    const base = '/api/database/workspaces/w/redis/sessions/missing';
+    for (const path of ['/write-mode', '/edit-string', '/mutations/preview', '/mutations/commit']) {
+      const options = { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' };
+      expect((await app.request(base + path, options)).status).toBe(401);
+      expect((await app.request(base + path, { ...options, headers: { ...options.headers, authorization: 'Bearer frontend-token' } })).status).toBe(400);
+    }
   });
 
 });

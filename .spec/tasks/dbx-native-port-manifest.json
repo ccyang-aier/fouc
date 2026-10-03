@@ -83,13 +83,21 @@
       ],
       "runtimeFiles": [
         "shared/src/redis.ts",
+        "shared/src/redis-mutation.ts",
         "backend/device/src/database/redis-input.ts",
+        "backend/device/src/database/redis-blob.ts",
+        "backend/device/src/database/redis-mutation-input.ts",
+        "backend/device/src/database/redis-mutation-script.ts",
+        "backend/device/src/database/redis-mutation.ts",
         "backend/device/src/database/redis-session.ts",
         "backend/device/src/api/redis-routes.ts",
         "src/features/connectors/redis/redis-dialog.tsx",
         "src/features/connectors/redis/redis-workbench.tsx",
         "src/features/connectors/redis/redis-value-viewer.tsx",
-        "src/features/connectors/redis/redis-console.tsx"
+        "src/features/connectors/redis/redis-console.tsx",
+        "src/features/connectors/redis/redis-mutation-model.ts",
+        "src/features/connectors/redis/redis-byte-field.tsx",
+        "src/features/connectors/redis/redis-mutation-dialog.tsx"
       ]
     },
     {
@@ -156,7 +164,7 @@
     }
   ],
   "knownRemainingScope": [
-    "Redis mutation/expiry, database selection, RedisJSON, Sentinel/Cluster, stream consumer groups/Pending/Lag, PubSub/MONITOR/Slowlog, large-keyspace virtualization and result stores",
+    "Redis large/batch mutations, field TTL management and full version/permission matrix, database selection, RedisJSON, Sentinel/Cluster, stream consumer groups/Pending/Lag, PubSub/MONITOR/Slowlog, large-keyspace virtualization and result stores",
     "common driver lifecycle, cancellation, reconnect and streaming",
     "cross-entry-point write grants, scope restrictions and shared policy integration",
     "full grid selection/copy/paste/undo, keyless guards, complex types, structure editing, cancellation and distributed transactions",

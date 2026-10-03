@@ -22,7 +22,7 @@ export interface RedisSession {
   database: number;
   version: string | null;
   mode: 'standalone';
-  readOnly: true;
+  readOnly: boolean;
 }
 export interface RedisBlob {
   rawBase64: string;
@@ -59,6 +59,9 @@ export type RedisValueData =
   | { kind: 'none' | 'unsupported' };
 export interface RedisValuePage extends RedisKeyInfo {
   data: RedisValueData;
+  /** Opaque session-local snapshot, never a client-supplied value hash. */
+  writeVersion: string | null;
+  writeUnavailable: string | null;
 }
 export interface RedisCommandResult {
   command: string;

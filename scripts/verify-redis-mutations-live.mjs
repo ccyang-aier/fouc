@@ -1,0 +1,172 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { parseEnv } from 'node:util';
+import { createRequire } from 'node:module';
+import { REDIS_MUTATION_SCRIPT } from '../backend/device/src/database/redis-mutation-script.ts';
+
+// Only dedicated DB 15, exact owned keys and a disposable named ACL user.
+const environment = parseEnv(readFileSync('.env.fouc.local', 'utf8'));
+const endpoint = new URL(environment.REDIS_URL);
+const require = createRequire(new URL('../backend/device/package.json', import.meta.url));
+const Redis = require('ioredis');
+const config = { provider: 'redis', host: endpoint.hostname, port: Number(endpoint.port || 6379), username: decodeURIComponent(endpoint.username), database: 15, tls: endpoint.protocol === 'rediss:' };
+const password = decodeURIComponent(endpoint.password);
+const client = new Redis({ host: config.host, port: config.port, username: config.username || undefined, password: password || undefined, db: 15, retryStrategy: () => null, commandTimeout: 10000 });
+client.on('error', () => {});
+const prefix = 'fouc:dbx-write-lab:';
+const base = 'http://127.0.0.1:8710/api/database/workspaces/dbx-redis-write-verification/redis';
+const raw = (value) => Buffer.from(value).toString('base64');
+const key = (suffix) => prefix + suffix;
+const named = ['string', 'list', 'set', 'hash', 'zset', 'stream', 'renamed', 'collision', 'large', 'create-race', 'expires', 'ttl-change', 'restore', 'field-ttl', 'ui-string', 'ui-list', 'ui-set', 'ui-hash', 'ui-zset', 'ui-stream'];
+const aclName = 'fouc_dbx_write_verifier';
+const aclPassword = crypto.randomUUID();
+let session, restricted;
+async function request(route, body, { status = 200, workspace, method = 'POST' } = {}) {
+  const url = (workspace ? base.replace('dbx-redis-write-verification', workspace) : base) + route;
+  const response = await fetch(url, { method, headers: { 'content-type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(20000) });
+  const result = await response.json();
+  assert.equal(response.status, status, `${route}: ${result.error?.message}`);
+  assert.equal(result.ok, status < 400, route);
+  return result.ok ? result.data : result.error;
+}
+const route = (suffix) => `/sessions/${session.id}/${suffix}`;
+const value = (suffix) => request(route('value'), { key: raw(key(suffix)), cursor: '0' });
+async function preview(mutation, options = {}) {
+  const writeVersion = mutation.kind === 'create' ? null : (await request(route('value'), { key: mutation.key, cursor: '0' })).writeVersion;
+  return request(route('mutations/preview'), { mutation, writeVersion }, options);
+}
+const commit = (plan, options = {}) => request(route('mutations/commit'), { planId: plan.id, confirmed: true }, options);
+const mutate = async (mutation) => commit(await preview(mutation));
+try {
+  await client.ping();
+  await client.del(...named.map(key));
+  session = await request('/sessions', { ...config, password }, { status: 201 });
+  await request(route('mutations/preview'), { mutation: { kind: 'create', key: raw(key('string')), type: 'string', value: raw('x') } }, { status: 400 });
+  await request(route('write-mode'), { readOnly: false });
+  const binary = Buffer.from([0, 255, 1]);
+  const created = await preview({ kind: 'create', key: raw(key('string')), type: 'string', value: raw(binary) });
+  assert.equal(await client.exists(key('string')), 0, 'preview must not write');
+  assert.equal(created.commands[0].arguments[1].rawBase64, raw(binary));
+  await request(route('mutations/commit'), { planId: created.id, confirmed: false }, { status: 400 });
+  await commit(created);
+  await commit(created, { status: 400 });
+  assert.deepEqual(await client.getBuffer(key('string')), binary);
+  await client.pexpire(key('string'), 600000);
+  const expiry = String(await client.call('PEXPIRETIME', key('string')));
+  await mutate({ kind: 'string-set', key: raw(key('string')), value: raw('改为 UTF-8') });
+  assert.equal(await client.get(key('string')), '改为 UTF-8');
+  assert.equal(String(await client.call('PEXPIRETIME', key('string'))), expiry);
+  const stale = await value('string');
+  await client.set(key('string'), 'concurrent');
+  await request(route('mutations/preview'), { mutation: { kind: 'string-set', key: raw(key('string')), value: raw('overwrite') }, writeVersion: stale.writeVersion }, { status: 400 });
+  const plan = await preview({ kind: 'string-set', key: raw(key('string')), value: raw('overwrite') });
+  await client.set(key('string'), 'after-preview');
+  await commit(plan, { status: 400 });
+  assert.equal(await client.get(key('string')), 'after-preview');
+  await client.set(key('ttl-change'), 'x', 'PX', 60000);
+  const ttlPlan = await preview({ kind: 'delete', key: raw(key('ttl-change')) });
+  await client.pexpire(key('ttl-change'), 120000);
+  await commit(ttlPlan, { status: 400 });
+  assert.equal(await client.exists(key('ttl-change')), 1);
+  await client.set(key('expires'), 'x', 'PX', 60000);
+  const expiryPlan = await preview({ kind: 'delete', key: raw(key('expires')) });
+  await client.pexpire(key('expires'), 1);
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.equal(await client.exists(key('expires')), 0);
+  await commit(expiryPlan, { status: 400 });
+  await client.set(key('large'), '中文'.repeat(35000));
+  const large = await value('large'); assert.equal(large.data.truncated, true);
+  const full = await request(route('edit-string'), { key: raw(key('large')) });
+  assert.equal(Buffer.from(full.content.rawBase64, 'base64').length, 210000);
+  const fullPlan = await request(route('mutations/preview'), { mutation: { kind: 'string-set', key: raw(key('large')), value: full.content.rawBase64 }, writeVersion: full.writeVersion });
+  await commit(fullPlan); assert.equal(await client.strlen(key('large')), 210000);
+  await mutate({ kind: 'create', key: raw(key('list')), type: 'list', value: raw('__DELETED_PLACEHOLDER__') });
+  await mutate({ kind: 'list-push', key: raw(key('list')), side: 'right', value: raw('duplicate') });
+  await mutate({ kind: 'list-push', key: raw(key('list')), side: 'right', value: raw('duplicate') });
+  await mutate({ kind: 'list-push', key: raw(key('list')), side: 'left', value: raw('head') });
+  await mutate({ kind: 'list-set', key: raw(key('list')), index: '1', value: raw('__DELETED_PLACEHOLDER__') });
+  await mutate({ kind: 'list-remove', key: raw(key('list')), index: '2' });
+  assert.deepEqual(await client.lrange(key('list'), 0, -1), ['head', '__DELETED_PLACEHOLDER__', 'duplicate']);
+  await mutate({ kind: 'create', key: raw(key('set')), type: 'set', value: raw(binary) });
+  await mutate({ kind: 'set-add', key: raw(key('set')), member: raw('next') });
+  await mutate({ kind: 'set-remove', key: raw(key('set')), member: raw(binary) });
+  assert.deepEqual(await client.smembers(key('set')), ['next']);
+  await mutate({ kind: 'create', key: raw(key('hash')), type: 'hash', field: raw(binary), value: raw('first') });
+  await mutate({ kind: 'hash-add', key: raw(key('hash')), field: raw('other'), value: raw(binary) });
+  await mutate({ kind: 'hash-set', key: raw(key('hash')), field: raw(binary), destination: raw('renamed'), value: raw('edited') });
+  assert.equal(await client.hget(key('hash'), 'renamed'), 'edited');
+  await preview({ kind: 'hash-set', key: raw(key('hash')), field: raw('renamed'), destination: raw('other'), value: raw('collision') }, { status: 502 });
+  assert.equal(await client.hget(key('hash'), 'renamed'), 'edited');
+  await mutate({ kind: 'hash-remove', key: raw(key('hash')), field: raw('other') });
+  await mutate({ kind: 'create', key: raw(key('zset')), type: 'zset', member: raw('first'), score: '9007199254740992' });
+  await mutate({ kind: 'zset-add', key: raw(key('zset')), member: raw(binary), score: '1.25' });
+  await mutate({ kind: 'zset-set', key: raw(key('zset')), member: raw('first'), destination: raw('renamed'), score: '9007199254740992' });
+  assert.equal(await client.zscore(key('zset'), 'renamed'), '9007199254740992');
+  await mutate({ kind: 'zset-remove', key: raw(key('zset')), member: raw(binary) });
+  await mutate({ kind: 'create', key: raw(key('stream')), type: 'stream', entryId: '9007199254740993-9007199254740994', fields: [{ field: raw(binary), value: raw('event') }] });
+  await mutate({ kind: 'stream-add', key: raw(key('stream')), entryId: '*', fields: [{ field: raw('event'), value: raw(binary) }, { field: raw('event'), value: raw('duplicate-field') }] });
+  await mutate({ kind: 'stream-remove', key: raw(key('stream')), entryId: '9007199254740993-9007199254740994' });
+  assert.equal(await client.xlen(key('stream')), 1);
+  await mutate({ kind: 'expiry', key: raw(key('string')), mode: 'relative', milliseconds: '600000' });
+  assert.ok((await client.pttl(key('string'))) > 590000);
+  const absolute = String(Date.now() + 400000);
+  await mutate({ kind: 'expiry', key: raw(key('string')), mode: 'absolute', milliseconds: absolute });
+  assert.equal(String(await client.call('PEXPIRETIME', key('string'))), absolute);
+  await mutate({ kind: 'expiry', key: raw(key('string')), mode: 'persist' });
+  assert.equal(await client.pttl(key('string')), -1);
+  await client.set(key('collision'), 'destination');
+  await preview({ kind: 'rename', key: raw(key('string')), destination: raw(key('collision')) }, { status: 502 });
+  await mutate({ kind: 'rename', key: raw(key('string')), destination: raw(key('renamed')) });
+  assert.equal(await client.get(key('renamed')), 'after-preview');
+  const crossPlan = await preview({ kind: 'delete', key: raw(key('renamed')) });
+  await commit(crossPlan, { status: 400, workspace: 'other-workspace' });
+  await request(route('write-mode'), { readOnly: true });
+  await request(route('write-mode'), { readOnly: false });
+  await commit(crossPlan, { status: 400 });
+  await mutate({ kind: 'delete', key: raw(key('renamed')) });
+  assert.equal(await client.exists(key('renamed')), 0);
+  const createRace = await preview({ kind: 'create', key: raw(key('create-race')), type: 'string', value: raw('planned') });
+  await client.set(key('create-race'), 'concurrent');
+  await commit(createRace, { status: 400 });
+  assert.equal(await client.get(key('create-race')), 'concurrent');
+  await request(route('command'), { command: 'SET forbidden x' }, { status: 400 });
+  await client.acl('SETUSER', aclName, 'reset', 'on', `>${aclPassword}`, `~${prefix}*`, '+@all', '-hdel');
+  restricted = await request('/sessions', { ...config, username: aclName, password: aclPassword }, { status: 201 });
+  await request(`/sessions/${restricted.id}/write-mode`, { readOnly: false });
+  const restrictedValue = await request(`/sessions/${restricted.id}/value`, { key: raw(key('hash')), cursor: '0' });
+  await request(`/sessions/${restricted.id}/mutations/preview`, { mutation: { kind: 'hash-set', key: raw(key('hash')), field: raw('renamed'), destination: raw('must-not-exist'), value: raw('write') }, writeVersion: restrictedValue.writeVersion }, { status: 502 });
+  assert.equal(await client.hexists(key('hash'), 'must-not-exist'), 0);
+  assert.equal(await client.hget(key('hash'), 'renamed'), 'edited');
+  // Inject a server-owned script runtime failure after the first write, outside
+  // the public API, to verify compensation instead of assuming Lua rollback.
+  await client.hset(key('restore'), 'before', 'original');
+  const dump = await client.dumpBuffer(key('restore'));
+  await assert.rejects(client.eval(REDIS_MUTATION_SCRIPT, 1, key('restore'), 'hash', dump, '-1', 'hash-set', '2',
+    '4', 'HSET', key('restore'), 'before', 'changed', '4', 'HINCRBY', key('restore'), 'before', '1', 'before', 'commit'));
+  assert.equal(await client.hget(key('restore'), 'before'), 'original');
+  // Redis 7.4+ field-expiry path gets precise milliseconds, never a seconds roundtrip.
+  const version = /^redis_version:([^\r\n]+)/m.exec(await client.info('server'))?.[1];
+  const [major, minor] = version.split('.').map(Number);
+  if (major > 7 || (major === 7 && minor >= 4)) {
+    await client.hset(key('field-ttl'), 'before', 'value');
+    const fieldExpiry = Date.now() + 600123;
+    await client.call('HPEXPIREAT', key('field-ttl'), String(fieldExpiry), 'FIELDS', '1', 'before');
+    const fieldPlan = await preview({ kind: 'hash-set', key: raw(key('field-ttl')), field: raw('before'), destination: raw('after'), value: raw('edited') });
+    assert.equal(fieldPlan.commands.at(-1).command, 'HPEXPIREAT');
+    await commit(fieldPlan);
+    assert.equal(String((await client.call('HPEXPIRETIME', key('field-ttl'), 'FIELDS', '1', 'after'))[0]), String(fieldExpiry));
+  }
+  // Persistent exact named fixtures for browser QA; no config or password saved.
+  await client.set(key('ui-string'), '初始内容', 'PX', 600000);
+  await client.rpush(key('ui-list'), '__DELETED_PLACEHOLDER__', 'duplicate', 'duplicate');
+  await client.sadd(key('ui-set'), 'initial');
+  await client.hset(key('ui-hash'), 'initial', 'before');
+  await client.zadd(key('ui-zset'), '1.25', 'initial');
+  await client.xadd(key('ui-stream'), '*', 'event', 'before');
+  console.log(`PASS Redis ${version} mutations: six types, exact binary arguments, full string editor, preserved TTL, stale/expiry/create collisions, list duplicates, 64-bit Stream IDs, single-use scoped plans, relock, ACL rejection before writes and runtime-error compensation.`);
+} finally {
+  if (restricted) await request(`/sessions/${restricted.id}`, undefined, { method: 'DELETE' });
+  if (session) await request(`/sessions/${session.id}`, undefined, { method: 'DELETE' });
+  await client.acl('DELUSER', aclName).catch(() => {});
+  client.disconnect();
+}

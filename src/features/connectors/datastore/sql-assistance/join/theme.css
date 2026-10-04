@@ -1,0 +1,13 @@
+.fouc-sql-join-info { box-sizing: border-box; width: min(380px, calc(100vw - 32px)); padding: 14px; color: var(--ink); background: var(--panel); font: 13px/1.5 var(--font-sans); }
+.fouc-sql-join-heading { margin-bottom: 8px; color: var(--accent-ink); font-size: 11px; font-weight: 600; letter-spacing: .04em; }
+.fouc-sql-join-info strong { display: block; overflow-wrap: anywhere; font-weight: 600; }
+.fouc-sql-join-info p { margin: 7px 0; overflow-wrap: anywhere; }
+.fouc-sql-join-pairs { display: grid; gap: 3px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-hover); }
+.fouc-sql-join-info code, .fouc-sql-join-info pre { font-family: var(--font-code, monospace); font-size: 12px; }
+.fouc-sql-join-info pre { max-height: 132px; margin: 10px 0; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+.fouc-sql-join-info .fouc-sql-join-coverage { margin-bottom: 0; color: var(--muted-strong); font-size: 11px; }
+.fouc-sql-completion .cm-completionInfo:has(> .fouc-sql-join-info) { padding: 0; max-width: min(380px, calc(100vw - 32px)); white-space: normal; }
+@media (max-width: 640px) {
+  .fouc-sql-completion .cm-completionInfo:has(> .fouc-sql-join-info) { position: fixed !important; inset: auto 12px 12px !important; width: auto !important; max-width: none; max-height: min(360px, 44dvh); overflow: auto; border-radius: 9px; box-shadow: var(--side-panel-shadow); }
+  .fouc-sql-join-info { width: 100%; }
+}

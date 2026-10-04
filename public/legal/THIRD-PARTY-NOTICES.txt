@@ -183,3 +183,8 @@ datastore CLI adapt the fixed DBX admin/data/CLI workflows under Apache 2.0.
 Native result transpose/pins, Redis reviewed bulk actions, table creation,
 Mongo tabular mapping, readonly MCP and SQLite consistent backup adapt the
 fixed DBX grid/data/admin/MCP workflows under Apache 2.0.
+
+Reviewed native index/foreign-key DDL, table clearing, real-FK JOIN completion,
+account/role security and MySQL events/PostgreSQL extensions adapt the fixed
+DBX structure, sqlCompletion, db_admin_sql and object/admin workflows under
+Apache License 2.0.

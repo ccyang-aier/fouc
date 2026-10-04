@@ -200,15 +200,15 @@
         "area": "shared-relational-runtime-and-postgres-sqlite-drivers",
         "status": "partial",
         "files": 7,
-        "physical": 1538,
-        "effective": 1510
+        "physical": 1641,
+        "effective": 1613
       },
       {
         "area": "shared-sql-workbench-and-connection-management",
         "status": "partial",
         "files": 10,
-        "physical": 2152,
-        "effective": 2099
+        "physical": 2169,
+        "effective": 2116
       },
       {
         "area": "native-redis-and-specialized-surface",
@@ -242,8 +242,8 @@
         "area": "native-relational-structure-and-source-browser",
         "status": "partial",
         "files": 6,
-        "physical": 1206,
-        "effective": 1189
+        "physical": 1222,
+        "effective": 1205
       },
       {
         "area": "native-sql-history-and-library",
@@ -263,8 +263,8 @@
         "area": "native-relational-sql-metadata-completion",
         "status": "partial",
         "files": 3,
-        "physical": 197,
-        "effective": 189
+        "physical": 205,
+        "effective": 197
       },
       {
         "area": "native-relational-sql-semantic-projections",
@@ -480,8 +480,8 @@
         "area": "native-workspace-scoped-readonly-datastore-cli",
         "status": "partial",
         "files": 10,
-        "physical": 705,
-        "effective": 655
+        "physical": 709,
+        "effective": 658
       },
       {
         "area": "native-result-transpose-and-bounded-immutable-pins",
@@ -515,8 +515,8 @@
         "area": "native-standard-readonly-mcp-stdio-and-streamable-http",
         "status": "partial",
         "files": 8,
-        "physical": 722,
-        "effective": 691
+        "physical": 723,
+        "effective": 692
       },
       {
         "area": "native-sqlite-consistent-wal-backup-and-owned-artifact",
@@ -524,14 +524,56 @@
         "files": 8,
         "physical": 1230,
         "effective": 1185
+      },
+      {
+        "area": "native-reviewed-index-create-drop",
+        "status": "partial",
+        "files": 12,
+        "physical": 731,
+        "effective": 697
+      },
+      {
+        "area": "native-reviewed-composite-foreign-key-create-drop",
+        "status": "partial",
+        "files": 9,
+        "physical": 1662,
+        "effective": 1636
+      },
+      {
+        "area": "native-real-foreign-key-sql-join-completion",
+        "status": "partial",
+        "files": 5,
+        "physical": 360,
+        "effective": 337
+      },
+      {
+        "area": "native-reviewed-table-clear",
+        "status": "partial",
+        "files": 9,
+        "physical": 547,
+        "effective": 515
+      },
+      {
+        "area": "native-user-role-security-directory",
+        "status": "partial",
+        "files": 8,
+        "physical": 403,
+        "effective": 385
+      },
+      {
+        "area": "native-mysql-events-and-postgres-extensions-directory",
+        "status": "partial",
+        "files": 14,
+        "physical": 695,
+        "effective": 668
       }
     ],
     "runtime": {
-      "files": 517,
-      "physical": 49930,
-      "effective": 46398
+      "files": 574,
+      "physical": 54477,
+      "effective": 50784
     },
     "targetEffectiveRuntimeLines": 50000,
-    "milestoneVerified": false
+    "milestoneVerified": true
   }
 }

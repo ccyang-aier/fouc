@@ -1,11 +1,9 @@
 /**
  * Minimal local type surface for 'bun:test'.
  *
- * The root program has no @types/bun (backend ships its own), and these are the
- * first frontend tests in the repo. This ambient declaration keeps `pnpm
- * typecheck` honest for the tests below without adding a dependency or touching
- * shared config; delete it when the workspace types bun tests centrally. It
- * covers exactly the API used by the *.test.ts files in this directory.
+ * Frontend tests share this declaration; the backend uses its own @types/bun.
+ * Keep the browser program's test API here without importing Bun's runtime
+ * globals into production DOM types.
  */
 declare module 'bun:test' {
   type TestFn = () => void | Promise<void>
@@ -27,6 +25,8 @@ declare module 'bun:test' {
     toBeGreaterThanOrEqual(expected: number): T
     toBeLessThan(expected: number): T
     toBeLessThanOrEqual(expected: number): T
+    toBeCloseTo(expected: number, precision?: number): T
+    toStartWith(expected: string): T
   }
   interface Expectation<T> extends Matchers<T> {
     not: Matchers<T>
@@ -34,6 +34,7 @@ declare module 'bun:test' {
   }
   function describe(name: string, fn: () => void): void
   function test(name: string, fn: TestFn): void
+  const it: typeof test
   function beforeAll(fn: () => void | Promise<void>, timeout?: number): void
   function afterAll(fn: () => void | Promise<void>): void
   function beforeEach(fn: () => void | Promise<void>): void

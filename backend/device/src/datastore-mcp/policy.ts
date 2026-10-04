@@ -61,7 +61,7 @@ export class DatastoreMcpAccess {
   options(command: string[], connectionId: string, targets: Partial<CliOptions> = {}): CliOptions {
     this.connection(connectionId);
     const base = parseDatastoreCliArgs(command, { FOUC_DEVICE_URL: this.environment.FOUC_DEVICE_URL });
-    return { ...base, ...targets, workspace: this.policy.workspaceId, connection: connectionId, session: null, timeout: Math.min(targets.timeout ?? 30_000, 120_000), limit: Math.min(targets.limit ?? 100, 1000), format: 'json', output: null, overwrite: false };
+    return { ...base, ...targets, workspace: this.policy.workspaceId, connection: connectionId, connectionResolution: 'id', session: null, timeout: Math.min(targets.timeout ?? 30_000, 120_000), limit: Math.min(targets.limit ?? 100, 1000), format: 'json', output: null, overwrite: false };
   }
 }
 

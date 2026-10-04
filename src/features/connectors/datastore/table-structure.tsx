@@ -9,10 +9,12 @@ import {
   DownloadSimple,
   MagnifyingGlass
 } from "@phosphor-icons/react"
-import type { RelationalTableStructure } from "@fouc/shared"
+import type { RelationalSession, RelationalTableStructure } from "@fouc/shared"
 import { backendFetch } from "@/lib/backend"
 import { StructureMetadata, type StructureTab } from "./structure-metadata"
 import { SqlEditor } from "./sql-editor"
+import { IndexEditAction } from "./index-edit"
+import { ForeignKeyEditAction } from "./foreign-key-edit/action"
 import styles from "./table-structure.module.css"
 
 const tabs: { key: StructureTab; label: string }[] = [
@@ -45,7 +47,13 @@ export function TableStructure({
   revision,
   pending,
   initialColumn,
-  onOpenTable
+  onOpenTable,
+  onStructureChanged,
+  onWriteAccessChanged,
+  session,
+  writable,
+  onUnlock,
+  onBusyChange
 }: {
   base: string
   schema: string
@@ -54,6 +62,12 @@ export function TableStructure({
   pending: boolean
   initialColumn?: string
   onOpenTable: (schema: string, table: string) => void
+  onStructureChanged?: () => void
+  onWriteAccessChanged?: (session: RelationalSession) => void
+  session: RelationalSession
+  writable: boolean
+  onUnlock: () => Promise<void>
+  onBusyChange: (busy: boolean) => void
 }) {
   const [structure, setStructure] = useState<RelationalTableStructure | null>(null)
   const [tab, setTab] = useState<StructureTab>("columns")
@@ -130,6 +144,8 @@ export function TableStructure({
             </button>
           ))}
         </div>
+        <IndexEditAction base={base} schema={schema} table={table} disabled={pending || loading || structure?.kind !== "table"} onWriteAccessChanged={onWriteAccessChanged} onChanged={() => { setReload(value => value + 1); setFeedback("索引变更已请求刷新，既有数据未修改。"); onStructureChanged?.() }} />
+        {tab === "foreignKeys" && <ForeignKeyEditAction base={base} provider={session.provider} schema={schema} table={table} writable={writable} disabled={pending || loading || structure?.kind !== "table"} onUnlock={onUnlock} onBusyChange={onBusyChange} onChanged={() => { setReload(value => value + 1); setFeedback("外键变更已请求刷新，请以原生目录为准。"); onStructureChanged?.() }} />}
         <button
           type="button"
           aria-label="刷新表结构"

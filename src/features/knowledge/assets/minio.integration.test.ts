@@ -63,7 +63,7 @@ try {
   minioAvailable = false;
 }
 
-/** data/bun-test.d.ts 的最小 'bun:test' 类型未覆盖 skip;运行时存在。 */
+/** 公共前端测试声明尚未覆盖 skip；运行时存在。 */
 const skipTest = (name: string, fn: () => void | Promise<void>) =>
   (test as unknown as { skip: (name: string, fn: () => void | Promise<void>) => void }).skip(name, fn);
 /** 条件注册:可用时执行,不可达时以 skip 呈现。 */

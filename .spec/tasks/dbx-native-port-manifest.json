@@ -1099,6 +1099,129 @@
         "src/features/connectors/datastore/sqlite-backup/action.tsx",
         "src/features/connectors/datastore/sqlite-backup/use-sqlite-backup.ts"
       ]
+    },
+    {
+      "area": "native-reviewed-index-create-drop",
+      "status": "partial",
+      "sourceReferences": [
+        "crates/dbx-sql/src/table_structure_sql/indexes.rs",
+        "apps/desktop/src/components/structure/TableStructureEditor.vue"
+      ],
+      "runtimeFiles": [
+        "backend/device/src/api/index-edit-routes.ts",
+        "backend/device/src/database/index-edit-metadata.ts",
+        "backend/device/src/database/index-edit-plans.ts",
+        "backend/device/src/database/index-edit-sql.ts",
+        "shared/src/index-edit-types.ts",
+        "shared/src/index-edit-validation.ts",
+        "shared/src/index-edit.ts",
+        "src/features/connectors/datastore/index-edit/action.tsx",
+        "src/features/connectors/datastore/index-edit/designer.tsx",
+        "src/features/connectors/datastore/index-edit/index.ts",
+        "src/features/connectors/datastore/index-edit/key-row.tsx",
+        "src/features/connectors/datastore/index-edit/use-index-edit.ts"
+      ]
+    },
+    {
+      "area": "native-reviewed-composite-foreign-key-create-drop",
+      "status": "partial",
+      "sourceReferences": [
+        "crates/dbx-sql/src/table_structure_sql/foreign_keys.rs",
+        "apps/desktop/src/components/structure/TableStructureEditor.vue"
+      ],
+      "runtimeFiles": [
+        "backend/device/src/api/foreign-key-edit-routes.ts",
+        "backend/device/src/database/foreign-key-edit-metadata.ts",
+        "backend/device/src/database/foreign-key-edit-plans.ts",
+        "backend/device/src/database/foreign-key-edit-review.ts",
+        "shared/src/foreign-key-edit.ts",
+        "src/features/connectors/datastore/foreign-key-edit/action.tsx",
+        "src/features/connectors/datastore/foreign-key-edit/designer.tsx",
+        "src/features/connectors/datastore/foreign-key-edit/review.tsx",
+        "src/features/connectors/datastore/foreign-key-edit/use-foreign-key-edit.ts"
+      ]
+    },
+    {
+      "area": "native-real-foreign-key-sql-join-completion",
+      "status": "partial",
+      "sourceReferences": [
+        "apps/desktop/src/lib/sql/sqlCompletion.ts"
+      ],
+      "runtimeFiles": [
+        "shared/src/sql-join.ts",
+        "src/features/connectors/datastore/sql-assistance/join/completion.ts",
+        "src/features/connectors/datastore/sql-assistance/join/context.ts",
+        "src/features/connectors/datastore/sql-assistance/join/items.ts",
+        "src/features/connectors/datastore/sql-assistance/join/tooltip.ts"
+      ]
+    },
+    {
+      "area": "native-reviewed-table-clear",
+      "status": "partial",
+      "sourceReferences": [
+        "crates/dbx-sql/src/db_admin_sql.rs",
+        "crates/dbx-core/src/data/table_import.rs",
+        "apps/desktop/src/components/sidebar/SidebarTreeRuntimeHost.vue"
+      ],
+      "runtimeFiles": [
+        "backend/device/src/api/table-clear-routes.ts",
+        "backend/device/src/database/table-clear-metadata.ts",
+        "backend/device/src/database/table-clear-plans.ts",
+        "backend/device/src/database/table-clear-postgres.ts",
+        "shared/src/table-clear.ts",
+        "src/features/connectors/datastore/table-clear/action.tsx",
+        "src/features/connectors/datastore/table-clear/result.tsx",
+        "src/features/connectors/datastore/table-clear/review.tsx",
+        "src/features/connectors/datastore/table-clear/use-table-clear.ts"
+      ]
+    },
+    {
+      "area": "native-user-role-security-directory",
+      "status": "partial",
+      "sourceReferences": [
+        "apps/desktop/src/lib/database/databaseUserAdmin.ts",
+        "apps/desktop/src/components/admin/DatabaseUserAdmin.vue"
+      ],
+      "runtimeFiles": [
+        "backend/device/src/api/database-security-routes.ts",
+        "backend/device/src/database/security/read.ts",
+        "backend/device/src/database/security/service.ts",
+        "backend/device/src/database/security/sql.ts",
+        "shared/src/database-security.ts",
+        "src/features/connectors/datastore/security/action.tsx",
+        "src/features/connectors/datastore/security/detail.tsx",
+        "src/features/connectors/datastore/security/use-security.ts"
+      ]
+    },
+    {
+      "area": "native-mysql-events-and-postgres-extensions-directory",
+      "status": "partial",
+      "sourceReferences": [
+        "apps/desktop/src/components/objects/MySqlEventEditor.vue",
+        "apps/desktop/src/components/objects/ExtensionDetailsDialog.vue",
+        "apps/desktop/src/components/objects/InstallExtensionDialog.vue",
+        "crates/dbx-types/src/mysql_event.rs",
+        "crates/dbx-drivers/src/db/mysql.rs",
+        "crates/dbx-drivers/src/db/postgres.rs",
+        "crates/dbx-core/src/schema/mod.rs",
+        "crates/dbx-sql/src/mysql_event_sql.rs"
+      ],
+      "runtimeFiles": [
+        "backend/device/src/api/database-admin-object-routes.ts",
+        "backend/device/src/database/admin-objects/common.ts",
+        "backend/device/src/database/admin-objects/input.ts",
+        "backend/device/src/database/admin-objects/mysql-events.ts",
+        "backend/device/src/database/admin-objects/postgres-extensions.ts",
+        "backend/device/src/database/admin-objects/service.ts",
+        "shared/src/database-admin-objects-types.ts",
+        "shared/src/database-admin-objects.ts",
+        "src/features/connectors/datastore/admin-objects/action.tsx",
+        "src/features/connectors/datastore/admin-objects/event-details.tsx",
+        "src/features/connectors/datastore/admin-objects/extension-details.tsx",
+        "src/features/connectors/datastore/admin-objects/index.ts",
+        "src/features/connectors/datastore/admin-objects/panel.tsx",
+        "src/features/connectors/datastore/admin-objects/source.tsx"
+      ]
     }
   ],
   "knownRemainingScope": [

@@ -1,0 +1,351 @@
+.dialog {
+  width: min(770px, calc(100vw - 28px));
+  max-height: min(850px, calc(100dvh - 28px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.context {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 20px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-subtle);
+  flex-shrink: 0;
+}
+.context > svg {
+  color: var(--muted-strong);
+}
+.context > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+.context strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  font-weight: 550;
+}
+.context span {
+  color: var(--muted-strong);
+  font-size: 11px;
+}
+.body {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  overflow-y: auto;
+  min-height: 0;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.mode {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.mode button,
+.unlock button,
+.reviewHead button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.mode button[aria-pressed="true"] {
+  background: var(--surface-subtle);
+  color: var(--ink);
+}
+.mode small {
+  color: var(--muted-strong);
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  font-size: 12px;
+}
+.field input,
+.field select,
+.pair select {
+  min-width: 0;
+  height: 34px;
+  padding: 0 8px;
+  background: var(--panel);
+  color: var(--ink-soft);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-size: 12px;
+}
+.fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.mapping {
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  overflow: hidden;
+}
+.mapping header {
+  padding: 9px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-subtle);
+}
+.mapping strong {
+  font-size: 12px;
+  font-weight: 550;
+}
+.mapping header span {
+  font-size: 10px;
+  color: var(--muted-strong);
+}
+.pair {
+  padding: 9px 12px;
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) 16px minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+  border-top: 1px solid var(--line);
+}
+.pair > small {
+  font: 10px var(--font-code);
+  color: var(--muted-strong);
+}
+.pair > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pair code {
+  font: 12px var(--font-code);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pair div small {
+  font-size: 10px;
+  color: var(--muted-strong);
+}
+.hint {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--muted-strong);
+  line-height: 1.7;
+}
+.existing {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  background: var(--surface-subtle);
+}
+.existing strong {
+  font-size: 13px;
+  font-weight: 500;
+}
+.existing code {
+  font: 12px/1.6 var(--font-code);
+  overflow-wrap: anywhere;
+}
+.existing small {
+  color: var(--muted-strong);
+  font-size: 11px;
+}
+.reviewHead {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.reviewHead strong {
+  font-size: 13px;
+  font-weight: 550;
+}
+.reviewHead small {
+  font-size: 10px;
+  color: var(--muted-strong);
+  margin-left: auto;
+}
+.sql {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--surface-subtle);
+  font: 14px/1.7 var(--font-code);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.warnings {
+  margin-left: 16px;
+  list-style: disc;
+  color: var(--muted-strong);
+  font-size: 11px;
+  line-height: 1.75;
+}
+.warnings li + li {
+  margin-top: 5px;
+}
+.unlock {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--surface-subtle);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  font-size: 11px;
+}
+.unlock span {
+  flex: 1;
+}
+.unlock button {
+  white-space: nowrap;
+}
+.confirm {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 9px 0;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.confirm input {
+  margin-top: 4px;
+}
+.confirm small {
+  display: block;
+  color: var(--muted-strong);
+  font-size: 11px;
+}
+.result {
+  padding: 13px;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+.result svg {
+  flex-shrink: 0;
+}
+.result strong {
+  font-size: 13px;
+  font-weight: 550;
+}
+.result p {
+  font-size: 12px;
+  line-height: 1.7;
+  margin-top: 5px;
+  overflow-wrap: anywhere;
+}
+.success {
+  color: var(--ok-ink);
+}
+.uncertain {
+  color: var(--warn-ink);
+}
+.error {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--err-ink);
+  overflow-wrap: anywhere;
+}
+.error button {
+  margin-left: 6px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.footer {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 8px;
+  padding: 13px 18px;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+}
+.footer span {
+  flex: 1;
+}
+.footer button {
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--ink-soft);
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.footer .primary {
+  color: var(--panel);
+  background: var(--ink);
+  border-color: var(--ink);
+}
+.footer .danger {
+  color: var(--err-ink);
+  border-color: color-mix(in srgb, var(--err-ink) 40%, var(--line));
+}
+.footer button:hover:not(:disabled) {
+  filter: brightness(0.96);
+}
+.dialog button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.dialog input:focus-visible,
+.dialog select:focus-visible,
+.dialog button:focus-visible {
+  outline: 2px solid var(--accent-ink);
+  outline-offset: 2px;
+}
+@media (max-width: 640px) {
+  .context {
+    padding: 11px 14px;
+  }
+  .body {
+    padding: 14px;
+  }
+  .fields {
+    gap: 8px;
+  }
+  .pair {
+    padding: 8px;
+    gap: 5px;
+    grid-template-columns: 12px minmax(0, 1.2fr) 12px minmax(0, 1fr);
+  }
+  .mapping header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .unlock {
+    flex-wrap: wrap;
+  }
+  .unlock button {
+    margin-left: auto;
+  }
+  .footer {
+    padding: 10px 12px;
+    gap: 5px;
+  }
+  .footer button {
+    padding-inline: 7px;
+  }
+}

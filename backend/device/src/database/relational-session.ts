@@ -19,6 +19,12 @@ import { DatabaseActivityService } from './activity/service';
 import { SchemaCreatePlans } from './schema-create-plans';
 import { TableCreatePlans } from './table-create-plans';
 import { SqliteBackupService } from './sqlite-backup/service';
+import { IndexEditPlans } from './index-edit-plans';
+import { DatabaseSecurityService } from './security/service';
+import { ForeignKeyEditPlans } from './foreign-key-edit-plans';
+import { foreignKeyEditRequestSchema } from '@fouc/shared/foreign-key-edit';
+import { TableClearPlans } from './table-clear-plans';
+import { DatabaseAdminObjectService } from './admin-objects/service';
 import {
   DATABASE_CAPABILITIES,
   SQL_FILE_MAX_BYTES,
@@ -62,6 +68,9 @@ type Entry = {
   sqlMutations: SqlMutationPlans;
   schemaCreates: SchemaCreatePlans;
   tableCreates: TableCreatePlans;
+  indexEdits: IndexEditPlans;
+  foreignKeyEdits: ForeignKeyEditPlans;
+  tableClears: TableClearPlans;
   saving: boolean;
   connectionName: string;
   sourceIdentity: string;
@@ -75,11 +84,15 @@ export class RelationalSessionManager {
   readonly exports: RelationalExportService;
   readonly activity: DatabaseActivityService;
   readonly sqliteBackups: SqliteBackupService;
+  readonly security: DatabaseSecurityService;
+  readonly adminObjects: DatabaseAdminObjectService;
   constructor(private readonly capabilities: DatabaseCapabilityRegistry, readonly sqlRepository = new RelationalSqlRepository(), documents = new DatabaseDocsRepository(), exports?: DatabaseExportJobs) {
     this.metadata = new RelationalMetadataService((workspaceId, id) => this.entry(workspaceId, id), documents);
     this.exports = new RelationalExportService((workspaceId, id) => this.entry(workspaceId, id), exports);
     this.activity = new DatabaseActivityService((workspaceId, id) => this.entry(workspaceId, id));
     this.sqliteBackups = new SqliteBackupService((workspaceId, id) => this.entry(workspaceId, id).session);
+    this.security = new DatabaseSecurityService((workspaceId, id) => this.entry(workspaceId, id));
+    this.adminObjects = new DatabaseAdminObjectService((workspaceId, id) => this.entry(workspaceId, id));
   }
 
   async connect(workspaceId: string, value: unknown, connection: { id: string; name: string } | null = null): Promise<RelationalSession> {
@@ -142,6 +155,9 @@ export class RelationalSessionManager {
         sqlMutations: new SqlMutationPlans(),
         schemaCreates: new SchemaCreatePlans(),
         tableCreates: new TableCreatePlans(),
+        indexEdits: new IndexEditPlans(),
+        foreignKeyEdits: new ForeignKeyEditPlans(),
+        tableClears: new TableClearPlans(),
         saving: false,
         sourceIdentity: input.provider === 'sqlite' ? JSON.stringify(['sqlite', path.resolve(input.path).toLowerCase()]) : JSON.stringify([input.provider, input.host.toLowerCase(), input.port, input.provider === 'postgres' ? input.database : null]),
         connectionName: connection?.name ?? `${input.provider} · ${session.database}`,
@@ -192,6 +208,9 @@ export class RelationalSessionManager {
     entry.sqlMutations.clear();
     if (!enabled) entry.schemaCreates.clear();
     if (!enabled) entry.tableCreates.clear();
+    if (!enabled) entry.indexEdits.clear();
+    if (!enabled) entry.foreignKeyEdits.clear();
+    entry.tableClears.clear();
     this.transfers.clearSession(id);
     return entry.session;
   }
@@ -209,6 +228,77 @@ export class RelationalSessionManager {
     return entry.schemaCreates.options(entry.driver, entry.session.provider, entry.session.database, () => {
       if (this.entry(workspaceId, id) !== entry || entry.saving) throw new DatabaseInputError('连接忙或已变化，请稍后重试。');
     }, signal);
+  }
+  prepareTableClear(workspaceId: string, id: string, value: unknown, signal?: AbortSignal) {
+    const entry = this.entry(workspaceId, id);
+    return entry.tableClears.prepare(entry.driver, entry.session.provider, value, () => {
+      if (this.entry(workspaceId, id) !== entry || entry.saving) throw new DatabaseInputError('连接忙或已变化，请重新审查。');
+    }, signal);
+  }
+  discardTableClear(workspaceId: string, id: string, planId: string): void { this.entry(workspaceId, id).tableClears.discard(planId); }
+  async commitTableClear(workspaceId: string, id: string, planId: string, value: unknown, signal?: AbortSignal) {
+    const entry = this.writable(workspaceId, id);
+    if (entry.saving) throw new DatabaseInputError('请等待当前事务结束。');
+    entry.saving = true;
+    try {
+      return await entry.tableClears.commit(entry.driver, planId, value, () => {
+        if (this.writable(workspaceId, id) !== entry) throw new DatabaseInputError('连接已变化，请重新审查。');
+      }, signal);
+    } finally { entry.saving = false; }
+  }
+  foreignKeyEditOptions(workspaceId: string, id: string, schema: string, table: string, signal?: AbortSignal) {
+    const entry = this.entry(workspaceId, id);
+    return entry.foreignKeyEdits.options(entry.driver, entry.session.provider, schema, table, () => {
+      if (this.entry(workspaceId, id) !== entry || entry.saving) throw new DatabaseInputError('连接忙或已变化，请稍后重试。');
+    }, signal);
+  }
+  foreignKeyEditTarget(workspaceId: string, id: string, schema: string, table: string, signal?: AbortSignal) {
+    const entry = this.entry(workspaceId, id);
+    return entry.foreignKeyEdits.target(entry.driver, entry.session.provider, schema, table, () => {
+      if (this.entry(workspaceId, id) !== entry || entry.saving) throw new DatabaseInputError('连接忙或已变化，请稍后重试。');
+    }, signal);
+  }
+  prepareForeignKeyEdit(workspaceId: string, id: string, value: unknown, signal?: AbortSignal) {
+    const input = foreignKeyEditRequestSchema.safeParse(value);
+    if (!input.success) throw new DatabaseInputError(input.error.issues[0]?.message ?? '外键审查请求无效。');
+    const entry = this.entry(workspaceId, id);
+    return entry.foreignKeyEdits.prepare(entry.driver, entry.session.provider, input.data.schema, input.data.table, input.data.input, () => {
+      if (this.entry(workspaceId, id) !== entry || entry.saving) throw new DatabaseInputError('连接忙或已变化，请重新审查。');
+    }, signal);
+  }
+  discardForeignKeyEdit(workspaceId: string, id: string, planId: string): void { this.entry(workspaceId, id).foreignKeyEdits.discard(planId); }
+  async commitForeignKeyEdit(workspaceId: string, id: string, planId: string, signal?: AbortSignal) {
+    const entry = this.writable(workspaceId, id);
+    if (entry.saving) throw new DatabaseInputError('请等待当前事务结束。');
+    entry.saving = true;
+    try {
+      return await entry.foreignKeyEdits.commit(entry.driver, planId, () => {
+        if (this.writable(workspaceId, id) !== entry) throw new DatabaseInputError('连接已变化，请重新审查。');
+      }, signal);
+    } finally { entry.saving = false; }
+  }
+  indexEditOptions(workspaceId: string, id: string, schema: string, table: string, signal?: AbortSignal) {
+    const entry = this.entry(workspaceId, id);
+    return entry.indexEdits.options(entry.driver, entry.session.provider, schema, table, () => {
+      if (this.entry(workspaceId, id) !== entry || entry.saving) throw new DatabaseInputError('连接忙或已变化，请稍后重试。');
+    }, signal);
+  }
+  prepareIndexEdit(workspaceId: string, id: string, value: unknown, signal?: AbortSignal) {
+    const entry = this.entry(workspaceId, id);
+    return entry.indexEdits.prepare(entry.driver, entry.session.provider, value, () => {
+      if (this.entry(workspaceId, id) !== entry || entry.saving) throw new DatabaseInputError('连接忙或已变化，请重新审查。');
+    }, signal);
+  }
+  discardIndexEdit(workspaceId: string, id: string, planId: string): void { this.entry(workspaceId, id).indexEdits.discard(planId); }
+  async commitIndexEdit(workspaceId: string, id: string, planId: string, signal?: AbortSignal) {
+    const entry = this.writable(workspaceId, id);
+    if (entry.saving) throw new DatabaseInputError('请等待当前事务结束。');
+    entry.saving = true;
+    try {
+      return await entry.indexEdits.commit(entry.driver, planId, () => {
+        if (this.writable(workspaceId, id) !== entry) throw new DatabaseInputError('连接已变化，请重新审查。');
+      }, signal);
+    } finally { entry.saving = false; }
   }
   tableCreateOptions(workspaceId: string, id: string, signal?: AbortSignal) {
     const entry = this.entry(workspaceId, id);
@@ -631,6 +721,9 @@ export class RelationalSessionManager {
     entry.sqlMutations.clear();
     entry.schemaCreates.clear();
     entry.tableCreates.clear();
+    entry.indexEdits.clear();
+    entry.foreignKeyEdits.clear();
+    entry.tableClears.clear();
     await this.executions.closeSession(id);
     if (!entry.session.connectionId) this.transientSql.removeConnection(workspaceId, id);
     this.capabilities.disconnect(id, id);

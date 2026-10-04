@@ -38,7 +38,13 @@
     "./redis-bulk": "./src/redis-bulk.ts",
     "./table-create": "./src/table-create.ts",
     "./mongo-tabular": "./src/mongo-tabular.ts",
-    "./sqlite-backup": "./src/sqlite-backup.ts"
+    "./sqlite-backup": "./src/sqlite-backup.ts",
+    "./index-edit": "./src/index-edit.ts",
+    "./sql-join": "./src/sql-join.ts",
+    "./database-security": "./src/database-security.ts",
+    "./foreign-key-edit": "./src/foreign-key-edit.ts",
+    "./table-clear": "./src/table-clear.ts",
+    "./database-admin-objects": "./src/database-admin-objects.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

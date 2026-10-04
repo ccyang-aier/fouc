@@ -20,8 +20,9 @@ export class DatastoreMcpSessions {
     await Promise.all(ids.map(id => this.close(id).catch(error => this.report(error.message))));
   }
   async open(connectionId: string, options: CliOptions) {
+    if (options.connection !== connectionId || options.session) throw new DatastoreCliError('Pinned sessions require the exact granted connection ID', 3, 'session_denied');
     if (this.closed || this.sessions.size + this.opening.size >= 8) throw new DatastoreCliError('MCP session limit reached or process is closing');
-    const opening = openCliSession(this.client, options, this.environment);
+    const opening = openCliSession(this.client, { ...options, connectionResolution: 'id' }, this.environment);
     this.opening.add(opening);
     try {
       const session = await opening;

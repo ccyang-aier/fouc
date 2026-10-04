@@ -40,6 +40,7 @@ export async function resolveCliConnection(client: DatastoreHttpClient, options:
   const connections = await listCliConnections(client, options);
   const exact = connections.find(connection => connection.id === options.connection);
   if (exact) return exact;
+  if (options.connectionResolution === 'id') throw new DatastoreCliError('Granted connection ID does not exist in this workspace/provider', 3, 'connection_not_found');
   const named = connections.filter(connection => connection.name === options.connection);
   if (named.length !== 1) throw new DatastoreCliError(named.length ? 'Connection name is ambiguous; select its exact ID' : 'Connection does not exist in this workspace/provider', 2, 'connection_not_found');
   return named[0];
@@ -58,6 +59,7 @@ function credentials(environment: CliEnvironment): Record<string, unknown> {
 
 export async function openCliSession(client: DatastoreHttpClient, options: CliOptions, environment: CliEnvironment, owned = true): Promise<CliSession> {
   if (options.session) {
+    if (options.connectionResolution === 'id') throw new DatastoreCliError('ID-scoped callers cannot borrow an existing session', 3, 'session_denied');
     if (!options.provider) throw new DatastoreCliError('--session requires an explicit --provider', 2, 'missing_provider');
     const root = workspaceRoot(options, providerFamily(options.provider));
     return { id: options.session, provider: options.provider, database: options.database, root, base: root + '/sessions/' + resourceSegment(options.session), owned: false, raw: null };

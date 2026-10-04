@@ -10,6 +10,11 @@ import { databaseActivityRoutes } from './database-activity-routes';
 import { schemaCreateRoutes } from './schema-create-routes';
 import { tableCreateRoutes } from './table-create-routes';
 import { sqliteBackupRoutes } from './sqlite-backup-routes';
+import { indexEditRoutes } from './index-edit-routes';
+import { databaseSecurityRoutes } from './database-security-routes';
+import { foreignKeyEditRoutes } from './foreign-key-edit-routes';
+import { tableClearRoutes } from './table-clear-routes';
+import { databaseAdminObjectRoutes } from './database-admin-object-routes';
 
 /** Mounted beneath device authentication; every operation includes workspace. */
 export function relationalRoutes(
@@ -63,6 +68,11 @@ export function relationalRoutes(
   app.route('/', databaseActivityRoutes(sessions.activity));
   app.route('/', schemaCreateRoutes(sessions));
   app.route('/', tableCreateRoutes(sessions));
+  app.route('/', indexEditRoutes(sessions));
+  app.route('/', databaseSecurityRoutes(sessions.security));
+  app.route('/', foreignKeyEditRoutes(sessions));
+  app.route('/', tableClearRoutes(sessions));
+  app.route('/', databaseAdminObjectRoutes(sessions.adminObjects));
   app.route('/', sqliteBackupRoutes(sessions.sqliteBackups));
   app.post(base + '/:id/transfer/plans', async c => c.json({ ok: true, data: await sessions.prepareTransfer(c.req.param('workspaceId')!, c.req.param('id')!, await c.req.json().catch(() => null), c.req.raw.signal) }, 201));
   app.delete(base + '/:id/transfer/plans/:planId', c => { sessions.discardTransfer(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('planId')!); return c.json({ ok: true, data: { discarded: true } }); });

@@ -1852,6 +1852,16 @@
           "kind": "partial-native-p0-and-browser-smoke",
           "path": "src/features/connectors/datastore/schema-objects/panel.tsx",
           "check": "2026-10-04：开发仅新增P0与一次实际入口流程，已通过模块不重复矩阵。G04批量粘贴/复制/填充、100层撤销/重做及原始行保护，10项71断言及JSON null边界；实际两行中文单引号粘贴→原值预览0写入→撤销重做→提交回读，大整数保持精确、提交后清空历史。S04/S05三库原生视图/函数/过程/触发器/序列目录、精确Pg OID/重载、源码DDL/参数/引用，4项34断言及原生三库；修正真实MySQL VIEW_ROUTINE_USAGE字段。D02追加传输7项45断言、六方向原生类型往返，根接口验证空间/只读/重新锁定/一次性计划/结构指纹；实际MySQL→SQLite大整数和中文回读。Q07动态ECharts五图/多指标/分组/精确聚合/范围和持久设置，11项59断言，实际SVG与SUM 20保存设置。S03当前连接有界原生对象字段搜索10项55断言，实际字段定位结构过滤；S06实际外键/复合JOIN/布局缩放导出8项63断言，生成JOIN打开新SQL标签实际执行；S07原生文档、本地Markdown笔记/彩色分组/CAS/DBML导出5项48断言，真实设备持久保存并验证空间和版本冲突。前后端定向TS和自有lint通过，1440与390实际查看；窄屏文档改上下分区、ER图可滚动详情与resize保持中心、图表内部滚动/操作标题修正。跨连接全局搜索、写入对象管理、全类型批量编辑、建表/清表/断点传输、更多驱动/CLI/MCP及完整入口矩阵继续实施/阶段末回归。"
+        },
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "backend/device/src/database/foreign-key-edit-plans.ts",
+          "check": "快速开发批次：三库复合索引创建/删除（5P0/56）与MySQL/Pg复合外键创建/删除（3P0/28），真实原生目录/引用顺序/权限/受控DDL/5分钟一次性计划；真实三库索引及两库外键创建→回读→删除、1440/390通过。外键入口拆为hook/设计器/审查/对话框；SQLite外键重建尚未开放。"
+        },
+        {
+          "kind": "phase-one-regression",
+          "path": ".spec/tasks/dbx-source-audit.json",
+          "check": "首阶段集中验收：DBX Bun --isolate 602通过、5个真实环境条件测试跳过、0失败/4647断言；上述环境条件能力已有分模块真实MySQL/Pg/SQLite/Redis/Mongo流程证据。shared/device完整类型、修改前端ESLint、Web production build（含前端类型）、architecture/docs/DBX任务检查通过；无Tauri构建。三个dev端点200，PostgreSQL/Redis容器healthy并保持后台watch。"
         }
       ],
       "scopeKind": "driver"
@@ -2880,6 +2890,16 @@
           "kind": "partial-native-sql-parameter-validation",
           "path": "scripts/verify-sql-parameters-live.mjs",
           "check": "2026-10-04: Native MySQL/PostgreSQL/SQLite typed and quoted parameters, Unicode/dotted names, exact integer values, @set prefix scope and history replay, MyBatis collections/where/entities, explicit raw multi-reads, UTF-16 source diagnostics, backend input validation and full-batch read policy passed. DBX-derived common-dialect regressions and Fouc bounds/source tests pass. Chrome desktop light/dark and 390px dialog states, validation, focus, copy feedback, Ctrl+Enter, Escape without execution, per-document recent isolation and real multi-result queries passed. Syntax preferences, other drivers and complete template/entry matrices remain open."
+        },
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "src/features/connectors/datastore/sql-assistance/join/completion.ts",
+          "check": "快速开发批次：基于真实双向复合FK生成ON/合法USING，当前SQL语义块/别名/引号与元数据缓存隔离；5P0/37、定向TS/lint和真实三库双表JOIN执行、Chrome实际补全→两行查询1440/390通过。"
+        },
+        {
+          "kind": "phase-one-regression",
+          "path": ".spec/tasks/dbx-source-audit.json",
+          "check": "首阶段集中验收：DBX Bun --isolate 602通过、5个真实环境条件测试跳过、0失败/4647断言；上述环境条件能力已有分模块真实MySQL/Pg/SQLite/Redis/Mongo流程证据。shared/device完整类型、修改前端ESLint、Web production build（含前端类型）、architecture/docs/DBX任务检查通过；无Tauri构建。三个dev端点200，PostgreSQL/Redis容器healthy并保持后台watch。"
         }
       ],
       "scopeKind": "driver"
@@ -2987,6 +3007,16 @@
           "kind": "partial-native-sql-parameter-validation",
           "path": "scripts/verify-sql-parameters-live.mjs",
           "check": "2026-10-04: Native MySQL/PostgreSQL/SQLite typed and quoted parameters, Unicode/dotted names, exact integer values, @set prefix scope and history replay, MyBatis collections/where/entities, explicit raw multi-reads, UTF-16 source diagnostics, backend input validation and full-batch read policy passed. DBX-derived common-dialect regressions and Fouc bounds/source tests pass. Chrome desktop light/dark and 390px dialog states, validation, focus, copy feedback, Ctrl+Enter, Escape without execution, per-document recent isolation and real multi-result queries passed. Syntax preferences, other drivers and complete template/entry matrices remain open."
+        },
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "src/features/connectors/datastore/sql-assistance/join/tooltip.ts",
+          "check": "快速开发批次：真实JOIN来源卡显示关系/字段/生成条件，不虚构无FK关系；复用Q08必要P0及1440/390实际流程，窄屏来源卡裁切已修正。更多SQL语法与完整方言补全仍待后续。"
+        },
+        {
+          "kind": "phase-one-regression",
+          "path": ".spec/tasks/dbx-source-audit.json",
+          "check": "首阶段集中验收：DBX Bun --isolate 602通过、5个真实环境条件测试跳过、0失败/4647断言；上述环境条件能力已有分模块真实MySQL/Pg/SQLite/Redis/Mongo流程证据。shared/device完整类型、修改前端ESLint、Web production build（含前端类型）、architecture/docs/DBX任务检查通过；无Tauri构建。三个dev端点200，PostgreSQL/Redis容器healthy并保持后台watch。"
         }
       ],
       "scopeKind": "driver"
@@ -4096,6 +4126,16 @@
           "kind": "partial-native-p0-and-browser-smoke",
           "path": "shared/src/table-import/sql-parse.ts",
           "check": "2026-10-04：字面量INSERT SQL原生方言解析、完整文件拒绝脚本/DDL/表达式、显式列映射与一致来源目录、保持BIGINT/DECIMAL原文本，复用服务端事务导入。4项P0/78断言、定向TS/前端lint与真实SQLite local/server review0写入→confirm2行精确回读，1440/390已查看。"
+        },
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "backend/device/src/database/table-clear-plans.ts",
+          "check": "快速开发批次：原生三库清空审查/行数/权限/入向FK/触发器/identity策略，全名危险确认后一次提交；5P0/56，真实三库2行→0、readonly0写入、FK阻断、lock/旧计划/scope/single-use拒绝和SQLite实际UI/表页刷新1440/390通过。修复unlock未撤销旧计划与Pg ACCESS EXCLUSIVE后外部collector自身锁阻塞；锁内同事务固定catalog/count复核。"
+        },
+        {
+          "kind": "phase-one-regression",
+          "path": ".spec/tasks/dbx-source-audit.json",
+          "check": "首阶段集中验收：DBX Bun --isolate 602通过、5个真实环境条件测试跳过、0失败/4647断言；上述环境条件能力已有分模块真实MySQL/Pg/SQLite/Redis/Mongo流程证据。shared/device完整类型、修改前端ESLint、Web production build（含前端类型）、architecture/docs/DBX任务检查通过；无Tauri构建。三个dev端点200，PostgreSQL/Redis容器healthy并保持后台watch。"
         }
       ],
       "scopeKind": "driver"
@@ -5005,6 +5045,16 @@
           "kind": "partial-native-p0-and-browser-smoke",
           "path": "backend/device/src/datastore-mcp/server.ts",
           "check": "2026-10-04快速开发：标准SDK stdio与显式开启loopback StreamableHTTP、strict连接/Schema/表/namespace范围与tools白名单、只读会话工具及16原生tools/resources/prompt。6项新P0/38断言、薄TS通过；实际标准stdio SQLite握手/精确查询/分页/固定会话/close/写入与越界拒绝，HTTP标准客户端双隔离会话/Token/Host/Origin/DELETE通过。"
+        },
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "backend/device/src/datastore-mcp/policy.ts",
+          "check": "快速开发批次：修复精确授权ID被删除后CLI名称回退可能打开未授权连接；内部强制ID解析，command/native/query/pinned及目录删除竞态均拒绝，未经授权connect0，固定会话不得借浏览器session。MCP核心5P0/36、完整device类型通过；stdio/HTTP真实标准客户端证据保持有效。"
+        },
+        {
+          "kind": "phase-one-regression",
+          "path": ".spec/tasks/dbx-source-audit.json",
+          "check": "首阶段集中验收：DBX Bun --isolate 602通过、5个真实环境条件测试跳过、0失败/4647断言；上述环境条件能力已有分模块真实MySQL/Pg/SQLite/Redis/Mongo流程证据。shared/device完整类型、修改前端ESLint、Web production build（含前端类型）、architecture/docs/DBX任务检查通过；无Tauri构建。三个dev端点200，PostgreSQL/Redis容器healthy并保持后台watch。"
         }
       ],
       "scopeKind": "driver"
@@ -5428,6 +5478,16 @@
           "kind": "partial-native-p0-and-browser-smoke",
           "path": "backend/device/src/datastore-mcp/bridge.ts",
           "check": "2026-10-04快速开发：16只读MCP tools复用设备原生目录/注册SQLcancel/immutable capture/scope UUID固定会话/context/文档/Schema对象/Redis/Mongo；细粒度资源范围不能授权任意SQL，SQL须完整连接grant。真实标准客户端和新P0通过；写入/显式事务/桌面打开与全DBX工具仍待后续。"
+        },
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "backend/device/src/datastore-cli/connections.ts",
+          "check": "快速开发批次：MCP所有只读工具按精确ID解析授权，普通CLI仍保留唯一显示名选择；新增删除ID/同名连接/目录竞态/参数覆盖/借会话回归，原查询/immutable capture范围保持。"
+        },
+        {
+          "kind": "phase-one-regression",
+          "path": ".spec/tasks/dbx-source-audit.json",
+          "check": "首阶段集中验收：DBX Bun --isolate 602通过、5个真实环境条件测试跳过、0失败/4647断言；上述环境条件能力已有分模块真实MySQL/Pg/SQLite/Redis/Mongo流程证据。shared/device完整类型、修改前端ESLint、Web production build（含前端类型）、architecture/docs/DBX任务检查通过；无Tauri构建。三个dev端点200，PostgreSQL/Redis容器healthy并保持后台watch。"
         }
       ],
       "scopeKind": "driver"
@@ -6086,7 +6146,7 @@
     {
       "id": "P02",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql",
@@ -6107,7 +6167,18 @@
         "action": "用户/角色/权限管理，达梦用户/角色/Job、Oracle DB Link、PostgreSQL 扩展、MySQL Event 等专属对象操作。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "backend/device/src/database/admin-objects/service.ts",
+          "check": "快速开发批次：MySQL/Pg只读账户/角色/可见权限与快照JSON（4P0/27、两库native、Pg实际1440/390）；MySQL事件/Pg扩展原生目录/定义/版本/OID成员/权限，只读copy/download（5P0/52，真实DISABLED event时区/大数正文与SHOW CREATE EVENT、既有plpgsql1version/4members、两库1440/390，0mutation/0pageerror）。SQLite不适用；账户变更、事件编辑、扩展安装/升级仍待后续。"
+        },
+        {
+          "kind": "phase-one-regression",
+          "path": ".spec/tasks/dbx-source-audit.json",
+          "check": "首阶段集中验收：DBX Bun --isolate 602通过、5个真实环境条件测试跳过、0失败/4647断言；上述环境条件能力已有分模块真实MySQL/Pg/SQLite/Redis/Mongo流程证据。shared/device完整类型、修改前端ESLint、Web production build（含前端类型）、architecture/docs/DBX任务检查通过；无Tauri构建。三个dev端点200，PostgreSQL/Redis容器healthy并保持后台watch。"
+        }
+      ],
       "scopeKind": "driver"
     },
     {

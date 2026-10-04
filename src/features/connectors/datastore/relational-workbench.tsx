@@ -27,6 +27,9 @@ import { DatabaseExportAction } from './database-export'
 import { DatabaseDocsPanel } from './database-docs'
 import { SchemaSearchAction } from './schema-search'
 import { SqliteBackupAction } from './sqlite-backup/action'
+import { DatabaseSecurityAction } from './security/action'
+import { DatabaseAdminObjectsAction } from './admin-objects'
+import { TableClearAction } from './table-clear/action'
 import { SchemaCreateAction } from './schema-create'
 import { TableCreateAction } from './table-create'
 import { SchemaDiagramView } from './schema-diagram-action'
@@ -280,6 +283,8 @@ export function RelationalWorkbench({
         <SchemaCreateAction session={currentSession} base={base} writable={writable} disabled={pending || busy || writeBusy} onUnlock={unlockSqlWrite} onBusyChange={setMutationBusy} onCreated={() => { refresh(); setFeedback('创建流程已结束，正在刷新资源目录；请以目录实际结果为准。') }} />
         <SchemaSearchAction base={base} session={session} connectionLabel={name} currentSchema={schema} disabled={pending || leaving} onOpen={openSearchHit} onNotice={setFeedback} />
         <SqliteBackupAction session={currentSession} base={base} disabled={pending || leaving || writeBusy} />
+        <DatabaseSecurityAction base={base} session={currentSession} schema={schema} disabled={pending || leaving || writeBusy} />
+        <DatabaseAdminObjectsAction base={base} session={currentSession} schema={schema} disabled={pending || leaving || writeBusy} />
         <button
           type="button"
           className={styles.writeAccess}
@@ -455,6 +460,7 @@ export function RelationalWorkbench({
                 <TestDataAction session={currentSession} base={base} schema={schema} table={table} writable={writable} disabled={pending || busy || writeBusy} onUnlock={unlockSqlWrite} onImported={refresh} onBusyChange={setMutationBusy} />
                 <SchemaCompareAction base={base} provider={session.provider} schema={schema} table={table} tables={tables} schemas={schemas} disabled={pending || busy} />
                 <StructureEditAction base={base} schema={schema} table={table} disabled={!writable || !table || pending || busy || writeBusy} onApplied={refresh} />
+                <TableClearAction base={base} session={currentSession} schema={schema} table={table} writable={writable} disabled={!table || tables.find(item => item.name === table)?.kind !== 'table' || pending || busy || writeBusy} onUnlock={unlockSqlWrite} onBusyChange={setMutationBusy} onCleared={() => { setSelectedRow(null); setActiveCell(null); setSelection(null); refresh() }} />
                 <span>
                   {schema}
                   {table ? `.${table}` : ""}
@@ -462,6 +468,12 @@ export function RelationalWorkbench({
               </div>
               {mode === "structure" && table ? (
                 <TableStructure
+                  session={currentSession}
+                  writable={writable}
+                  onUnlock={unlockSqlWrite}
+                  onBusyChange={setMutationBusy}
+                  onStructureChanged={refresh}
+                  onWriteAccessChanged={setCurrentSession}
                   key={`${schema}:${table}:${initialColumn ?? ''}`}
                   base={base}
                   schema={schema}

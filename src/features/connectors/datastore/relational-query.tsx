@@ -34,6 +34,7 @@ import { SaveSqlDialog, SqlDialog } from './sql-library-dialog'
 import { useSqlResource } from './use-sql-resource'
 import { useSqlDrafts } from './use-sql-drafts'
 import { useSqlMetadata } from './use-sql-metadata'
+import { mergeSqlJoinCompletion } from './sql-assistance/join/completion'
 import { SqlTabStrip, type SqlTabAction } from './sql-tab-strip'
 import { closeSqlTabs, mergeSqlDrafts, navigateSqlTabs, newSqlTab, pinSqlTab, reorderSqlTab, sqlTabDirty, sqlTabSaveable, visitSqlTab, type SqlTabVisits } from './sql-tabs'
 import common from './relational.module.css'
@@ -264,9 +265,13 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
   }
   const restoreError = restore ? targetIssue(restore.target) : ''
   const targetSchema = current ? session.provider === 'mysql' ? current.database : current.schema ?? schema : schema
-  const { metadata, state: metadataState } = useSqlMetadata(session, metadataRevision)
-  const complete = useCallback((context: CompletionContext) => metadata.complete(context, { schema: targetSchema, schemas }), [metadata, targetSchema, schemas])
-  function refreshMetadata() { metadata.clear(); if (editor.current) { closeCompletion(editor.current); startCompletion(editor.current) } }
+  const { metadata, join, state: metadataState } = useSqlMetadata(session, metadataRevision)
+  const complete = useCallback(async (context: CompletionContext) => {
+    const target = { schema: targetSchema, schemas }
+    const [ordinary, related] = await Promise.all([metadata.complete(context, target), join.complete(context, target, preferences.data?.formatter.keywordCase)])
+    return mergeSqlJoinCompletion(ordinary, related)
+  }, [metadata, join, targetSchema, schemas, preferences.data?.formatter.keywordCase])
+  function refreshMetadata() { metadata.clear(); join.clear(); if (editor.current) { closeCompletion(editor.current); startCompletion(editor.current) } }
   const displayDatabase = current && session.provider === 'sqlite' ? current.database.replace(/^.*[\\/]/, '') : current?.database
   const draftStatus = <span className={tabsStyle.status} data-state={state.status} role="status">{state.status === 'error' ? <WarningCircle size={12} /> : !state.ready || state.status === 'saving' || state.pending ? <CircleNotch size={12} className="mw-spin" /> : <CheckCircle size={12} />}{!libraryBase ? '临时连接 · 草稿保留至离开' : state.status === 'error' ? state.ready ? '草稿保存失败 · 本地内容已保留' : '草稿读取失败 · 点击重试' : !state.ready ? '正在恢复设备草稿…' : state.status === 'saving' ? '正在保存草稿…' : state.pending ? '草稿待保存' : '草稿已保存到设备'}</span>
   return <div className={styles.workspace}>

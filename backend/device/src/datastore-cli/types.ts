@@ -4,6 +4,8 @@ export interface CliOptions {
   command: string[];
   workspace: string | null;
   connection: string | null;
+  /** Internal callers with ID-based grants must never fall back to display names. */
+  connectionResolution?: 'id';
   session: string | null;
   provider: CliProvider | null;
   schema: string | null;

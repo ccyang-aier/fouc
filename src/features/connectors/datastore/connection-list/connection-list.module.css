@@ -50,7 +50,7 @@
 
 .toolbar { display: flex; min-height: 30px; align-items: center; gap: 10px; margin-bottom: 11px; }
 .search { display: flex; width: 260px; height: 30px; flex-shrink: 0; align-items: center; gap: 10px; border: 1px solid var(--line-strong); border-radius: 5px; padding: 0 10px; background: var(--surface-subtle); color: var(--list-soft-ink); }
-.search:focus-within { border-color: var(--list-accent); box-shadow: 0 0 0 2px var(--focus-ring); }
+.search:focus-within { border-color: var(--list-accent); }
 .search input { width: 100%; min-width: 0; border: 0; padding: 0; outline: none !important; background: transparent; color: var(--list-ink); font: inherit; font-size: max(13px, var(--ui-size)); }
 .search input::placeholder { color: var(--muted); }
 .search > svg { flex-shrink: 0; }
@@ -65,7 +65,7 @@
 .favoriteFilter { display: flex; align-items: center; gap: 8px; margin-left: 4px; color: var(--list-ink); white-space: nowrap; font-size: max(13px, var(--ui-size)); cursor: pointer; }
 .directory input[type='checkbox'] { width: 13px; height: 13px; flex-shrink: 0; margin: 0; border-radius: 2px; accent-color: var(--list-accent); cursor: pointer; }
 .toolbarEnd { display: flex; min-width: 0; flex: 1; align-items: center; justify-content: flex-end; gap: 14px; }
-.columnButton { display: inline-flex; height: 30px; flex-shrink: 0; align-items: center; gap: 7px; border: 0; border-radius: 4px; padding: 0 8px; color: var(--list-ink); background: transparent; font: inherit; font-size: max(13px, var(--ui-size)); }
+.columnButton { display: inline-flex; height: 30px; flex-shrink: 0; align-items: center; gap: 7px; border: 1px solid var(--line-strong); border-radius: 5px; padding: 0 10px; color: var(--list-ink); background: var(--panel); font: inherit; font-size: max(13px, var(--ui-size)); }
 .columnButton:hover { background: var(--surface-hover); }
 .selectedCount { display: flex; align-items: center; gap: 6px; border: 0; border-radius: 4px; padding: 3px; background: transparent; color: var(--accent-ink); white-space: nowrap; font-size: max(13px, var(--ui-size)); }
 
@@ -92,7 +92,6 @@
 .dataRow:focus-within { background: color-mix(in srgb, var(--accent-soft) 55%, var(--panel)); }
 .dataRow[data-selected='true'] { background: var(--accent-soft); }
 .nameCell { display: flex; min-width: 0; align-items: center; gap: 13px; }
-.databaseIcon { display: flex; width: 26px; height: 26px; flex: 0 0 26px; align-items: center; justify-content: center; border: 1px solid var(--accent-soft-line); border-radius: 5px; background: var(--accent-soft); color: var(--list-accent); }
 .nameButton { overflow: hidden; min-width: 0; border: 0; border-radius: 3px; padding: 2px 0; background: transparent; color: var(--list-ink); font: inherit; font-weight: 600; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
 .nameButton:hover { color: var(--list-accent); }
 .favoriteButton { display: flex; width: 20px; height: 24px; flex: 0 0 20px; align-items: center; justify-content: center; border: 0; border-radius: 4px; padding: 0; background: transparent; color: var(--muted); }
@@ -121,18 +120,9 @@
 .status[data-status='passed'] i,
 .status[data-status='failed'] i { background: currentColor; }
 .table .actionsHeading { text-align: center; }
-.rowActions { display: flex; align-items: center; justify-content: flex-end; gap: 3px; }
-.iconButton { display: inline-flex; width: 26px; height: 28px; flex: 0 0 26px; align-items: center; justify-content: center; border: 1px solid transparent; border-radius: 4px; padding: 0; background: transparent; color: var(--list-soft-ink); }
+.rowActions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+.iconButton { display: inline-flex; width: 28px; height: 28px; flex: 0 0 28px; align-items: center; justify-content: center; border: 1px solid transparent; border-radius: 4px; padding: 0; background: transparent; color: var(--list-soft-ink); }
 .iconButton:hover { background: var(--surface-hover); color: var(--list-accent); }
-.openButton { display: inline-flex; width: 49px; height: 28px; flex: 0 0 49px; align-items: center; justify-content: center; gap: 4px; border: 1px solid transparent; border-radius: 4px; padding: 0; background: transparent; color: var(--list-soft-ink); font: inherit; font-size: max(13px, var(--ui-size)); }
-.openText { display: none; align-items: center; gap: 3px; }
-.dataRow:hover .openIcon,
-.dataRow:focus-within .openIcon { display: none; }
-.dataRow:hover .openText,
-.dataRow:focus-within .openText { display: inline-flex; }
-.dataRow:hover .openButton,
-.dataRow:focus-within .openButton { border-color: var(--accent-soft-line); background: var(--panel); color: var(--list-accent); }
-.openButton:hover { background: var(--accent-soft) !important; }
 .danger { color: var(--err-ink); }
 
 .error { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 11px; border: 1px solid color-mix(in srgb, var(--err-ink) 20%, var(--line)); border-radius: 5px; padding: 8px 10px; color: var(--err-ink); background: color-mix(in srgb, var(--err-ink) 4%, var(--panel)); font-size: max(13px, var(--ui-size)); }

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import {
-  ArrowRight, ArrowSquareOut, CaretDown, CaretLeft, CaretRight,
+  ArrowSquareOut, CaretDown, CaretLeft, CaretRight,
   CaretUpDown, Copy, Database, DotsThree, GearSix, LockSimple,
   MagnifyingGlass, PencilSimple, Plus, SpinnerGap, Star, Tag, Trash, X,
 } from '@phosphor-icons/react'
@@ -11,6 +11,7 @@ import {
   DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup,
   DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { ConnectionListProps, ConnectionListRow, ConnectionListStatus } from './types'
 import styles from './connection-list.module.css'
 
@@ -40,18 +41,30 @@ function RowActions({ row, pending, onOpen, onEdit, onCopy, onRemove, onOrganize
   pending: boolean
 } & Pick<ConnectionListProps, 'onOpen' | 'onEdit' | 'onCopy' | 'onRemove' | 'onOrganize'>) {
   return <div className={styles.rowActions}>
-    <button type="button" className={styles.openButton} aria-label={`打开 ${row.name} 工作台`}
-      title="打开工作台" disabled={pending} onClick={() => onOpen(row)}>
-      <ArrowSquareOut className={styles.openIcon} size={16} />
-      <span className={styles.openText}>打开 <ArrowRight size={13} /></span>
-    </button>
-    <button type="button" className={styles.iconButton} aria-label={`编辑 ${row.name}`}
-      title="编辑连接" disabled={pending} onClick={() => onEdit(row)}><PencilSimple size={16} /></button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button type="button" className={styles.iconButton} aria-label={`打开 ${row.name} 工作台`}
+          disabled={pending} onClick={() => onOpen(row)}><ArrowSquareOut size={16} /></button>
+      </TooltipTrigger>
+      <TooltipContent>打开工作台</TooltipContent>
+    </Tooltip>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button type="button" className={styles.iconButton} aria-label={`编辑 ${row.name}`}
+          disabled={pending} onClick={() => onEdit(row)}><PencilSimple size={16} /></button>
+      </TooltipTrigger>
+      <TooltipContent>编辑连接</TooltipContent>
+    </Tooltip>
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button type="button" className={styles.iconButton} aria-label={`${row.name} 更多操作`}
-          title="更多操作" disabled={pending}><DotsThree size={20} weight="bold" /></button>
-      </DropdownMenuTrigger>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DropdownMenuTrigger asChild>
+            <button type="button" className={styles.iconButton} aria-label={`${row.name} 更多操作`}
+              disabled={pending}><DotsThree size={20} weight="bold" /></button>
+          </DropdownMenuTrigger>
+        </TooltipTrigger>
+        <TooltipContent>更多操作</TooltipContent>
+      </Tooltip>
       <DropdownMenuContent align="end">
         <DropdownMenuItem onSelect={() => onOrganize(row)}><Tag />管理项目与标签</DropdownMenuItem>
         <DropdownMenuItem onSelect={() => onCopy(row)}><Copy />复制连接</DropdownMenuItem>
@@ -232,7 +245,7 @@ export function ConnectionList(props: ConnectionListProps) {
                 return <tr key={row.id} className={styles.dataRow} data-selected={selectedIds.includes(row.id)}>
                   <td className={styles.selectionCell}><input type="checkbox" aria-label={`选择 ${row.name}`} checked={selectedIds.includes(row.id)}
                     onChange={event => changeSelection(event.target.checked ? [...selectedIds, row.id] : selectedIds.filter(id => id !== row.id))} /></td>
-                  <td><div className={styles.nameCell}><span className={styles.databaseIcon}><Database size={17} /></span>
+                  <td><div className={styles.nameCell}>
                     <button type="button" className={styles.nameButton} onClick={() => onOpen(row)} disabled={pending} title={row.name}>{row.name}</button>
                     <button type="button" className={styles.favoriteButton} data-favorite={row.favorite} aria-label={`${row.favorite ? '取消收藏' : '收藏'} ${row.name}`}
                       title={row.favorite ? '取消收藏' : '收藏连接'} aria-pressed={row.favorite} disabled={pending}

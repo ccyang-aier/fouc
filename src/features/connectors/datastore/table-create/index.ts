@@ -1,0 +1,1 @@
+export { TableCreateAction } from './action';

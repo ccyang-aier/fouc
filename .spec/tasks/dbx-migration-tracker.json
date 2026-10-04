@@ -1564,6 +1564,11 @@
           "kind": "partial-dbx-visual-validation",
           "path": "src/features/connectors/datastore/resource-tree.tsx",
           "check": "2026-10-03：按固定 DBX screenshot-light / screenshot-grid 与资源树、SqlEditorWorkspace 源码复核真实渲染。MySQL8.4、PostgreSQL17、SQLite、Redis7.4 的连接目录、SQL / 表格 / 行详情、Key / PING 命令台 / INFO 概览在 Chrome 1440×1000、390×844 完成浅深主题和真实内容检查（SQL 标签功能另在760×844验收）；控制台、页面和 HTTP 无意外错误。五项对照：资源树灰底 / 类型颜色 / 实际计数，40px文档标签与中性工具栏，13px资源与表格正文及14px SQL语法 / 行号基线，指针和键盘编辑器结果分隔线及独立统计导出栏，浅深主题 / 可关闭详情 / 窄屏目标行与可见草稿状态。保留 Fouc 原导航、主题字体和当前能力的只读默认，不复制 DBX 图片或账户/云界面；AI 面板、全部专项页面、编辑器分组 / 独立窗口与全入口仍待实现验收。"
+        },
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "backend/device/src/database/table-create-plans.ts",
+          "check": "2026-10-04快速开发：三库原生新建表字段/类型/nullable/PK/unique/identity/受控默认值→readonly完整DDL→unlock→显式确认→目录刷新。5項P0/52断言、定向TS/lint和MySQL/Pg/SQLite实际create/structure/default insert精确回读、own tables清理；实际MySQL1440/390通过。外键/计算列/CHECK/分区/独立索引不在该设计器本批范围。"
         }
       ],
       "scopeKind": "driver"
@@ -3808,6 +3813,11 @@
           "kind": "partial-native-p0-and-browser-smoke",
           "path": "src/features/connectors/datastore/grid/layout/use-layout.ts",
           "check": "2026-10-04：开发阶段仅新增P0与一次实际流程。MongoDB8原生库/集合/筛选排序分页/聚合/索引/元数据和Canonical EJSON精度，读取6项57断言、窄写入5项56断言；原始完整BSON CAS、类型/权限/空间/一次性计划与取消。Chrome真实创建连接、筛选文档、只读解锁、预览0写入、确认后大整数原值回读。网格列隐藏/NULL列、左右冻结/排序/宽度/密度/日期/JSON路径/掩码/模板，22项95断言及刷新选择映射P0；实际原始复制、显示格式与重新执行布局保留。结构编辑9项64断言、三库实际DDL，权限与计划撤销/结构变化/原生提交接口P0，真实MySQL中文含单引号注释预览0写入后确认回读。1440与390实际视觉检查，修正Mongo窄屏资源导航、结构审查局部滚动与固定操作区、主按钮对比度；自有TS/lint通过。不重复此前通过矩阵。Mongo GridFS/导入导出/dump、批量更新/其他拓扑，网格转置/自动刷新，结构外键/约束完整编辑及全入口矩阵仍未完成。"
+        },
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "src/features/connectors/datastore/grid/transpose/model.ts",
+          "check": "2026-10-04快速开发：有界原生结果转置/原始精确TSV、不可变固定结果与独立页签状态；6项P0/25断言、定向TS/lint与真实SQLite pin→重跑保留旧值→transpose→unpin/close通过，1440/390查看并修正结果区实际高度；相邻Explain/Mutation重复React key已修复，同次新SQL实际流程确认执行计划1项、samekey0。"
         }
       ],
       "scopeKind": "driver"
@@ -4362,7 +4372,7 @@
     {
       "id": "D06",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql",
@@ -4383,7 +4393,13 @@
         "action": "SQLite 备份、MongoDB dump/import/export；MySQL/PostgreSQL 桌面一次性与小时/日/周定时逻辑备份，库/表模式、结构/数据/对象、路径模板、只读一致性快照、保留/历史/取消清理和 MySQL 指定表恢复。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "backend/device/src/database/sqlite-backup/service.ts",
+          "check": "2026-10-04快速开发：SQLite原生readonly transaction+backup覆盖已提交WAL，独立worker/owned artifact/120s timeout/TTL/限额/鉴权下载/真实取消close。3P0/29断言，定向TS/lint和单Chrome实际WAL→64MiB Blob回退→Node回读BIGINT/decimal/blob→close清理通过；1440/390已查看。恢复及其他驱动备份仍待后续。"
+        }
+      ],
       "scopeKind": "driver"
     },
     {
@@ -4891,7 +4907,7 @@
     {
       "id": "A04",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql",
@@ -4984,7 +5000,13 @@
         "action": "MCP stdio/HTTP 服务：连接/结构/文档/查询/专项资源与工具；连接白名单、库/资源作用域、只读/读写/完全访问三级权限、认证和会话。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "backend/device/src/datastore-mcp/server.ts",
+          "check": "2026-10-04快速开发：标准SDK stdio与显式开启loopback StreamableHTTP、strict连接/Schema/表/namespace范围与tools白名单、只读会话工具及16原生tools/resources/prompt。6项新P0/38断言、薄TS通过；实际标准stdio SQLite握手/精确查询/分页/固定会话/close/写入与越界拒绝，HTTP标准客户端双隔离会话/Token/Host/Origin/DELETE通过。"
+        }
+      ],
       "scopeKind": "driver"
     },
     {
@@ -5308,7 +5330,7 @@
     {
       "id": "A08",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql",
@@ -5401,13 +5423,19 @@
         "action": "MCP 工具逐项对齐 DBX 清单：连接增删复制、库/表/例程/源码/Schema 文档、SQL/Redis/Mongo/消息队列、桌面打开/展示；实现批量 SQL、固定连接会话与 MySQL 显式事务、回滚/未知结果处理、工具/连接/库/资源作用域。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "backend/device/src/datastore-mcp/bridge.ts",
+          "check": "2026-10-04快速开发：16只读MCP tools复用设备原生目录/注册SQLcancel/immutable capture/scope UUID固定会话/context/文档/Schema对象/Redis/Mongo；细粒度资源范围不能授权任意SQL，SQL须完整连接grant。真实标准客户端和新P0通过；写入/显式事务/桌面打开与全DBX工具仍待后续。"
+        }
+      ],
       "scopeKind": "driver"
     },
     {
       "id": "A09",
       "owner": "Codex",
-      "status": "pending",
+      "status": "in-progress",
       "dbxAvailability": "capability-or-profile-dependent",
       "applicableDriverTypes": [
         "mysql",
@@ -5500,7 +5528,13 @@
         "action": "MCP Desktop 与 Web Streamable HTTP/stdio 入口，默认关闭本机 HTTP、Bearer Token 轮换、Host/Origin 白名单、远程访问显式启用与异常重启；CLI/MCP 安装包和跨平台分发。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [],
+      "acceptanceEvidence": [
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "backend/device/src/datastore-mcp/http-server.ts",
+          "check": "2026-10-04快速开发：默认stdio，HTTP仅显式transport=http且32字符Token，固定127.0.0.1:8712/mcp，Host/Origin/1MiB body/8 clients/4 calls/10minidle；官方StreamableHTTP session隔离与关闭清理。新HTTP2P0/15断言通过，未执行Tauri/安装包或跨平台分发。"
+        }
+      ],
       "scopeKind": "driver"
     },
     {
@@ -5609,6 +5643,11 @@
           "kind": "partial-dbx-visual-validation",
           "path": "src/features/connectors/redis/redis-workbench.tsx",
           "check": "2026-10-03：按固定 DBX screenshot-light / screenshot-grid 与资源树、SqlEditorWorkspace 源码复核真实渲染。MySQL8.4、PostgreSQL17、SQLite、Redis7.4 的连接目录、SQL / 表格 / 行详情、Key / PING 命令台 / INFO 概览在 Chrome 1440×1000、390×844 完成浅深主题和真实内容检查（SQL 标签功能另在760×844验收）；控制台、页面和 HTTP 无意外错误。五项对照：资源树灰底 / 类型颜色 / 实际计数，40px文档标签与中性工具栏，13px资源与表格正文及14px SQL语法 / 行号基线，指针和键盘编辑器结果分隔线及独立统计导出栏，浅深主题 / 可关闭详情 / 窄屏目标行与可见草稿状态。保留 Fouc 原导航、主题字体和当前能力的只读默认，不复制 DBX 图片或账户/云界面；AI 面板、全部专项页面、编辑器分组 / 独立窗口与全入口仍待实现验收。"
+        },
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "backend/device/src/database/redis-bulk-plans.ts",
+          "check": "2026-10-04快速开发：Redis指定已载入keys批量delete/persist/相对与绝对TTL，只读DUMP/绝对过期CAS快照→unlock后重审→一次受控EVAL，原生ACL全项预检和真实partial/unknown。6项P0/73断言（34原生）、定向TS/lint及真实DB15三个key审核0写入→一次TTL且DUMP保持，1440/390通过；不提供wildcard全库批量。"
         }
       ],
       "scopeKind": "driver"
@@ -5649,6 +5688,11 @@
           "kind": "partial-native-p0-and-browser-smoke",
           "path": "shared/src/mongo-document-transfer.ts",
           "check": "2026-10-04：JSON/NDJSON Canonical EJSON完整文件解析/typed pointer/ID策略→既有collection零写入审核→一次ordered append，真实部分成功与取消；native cursor有界NDJSON流导出及BSON scalar精度保留。7项P0/55断言、定向TS/lint与真实Mongo下载→上传→review→once append，1440/390实际界面通过。CSV/ZIP/dump仍待后续。"
+        },
+        {
+          "kind": "partial-native-p0-and-browser-smoke",
+          "path": "shared/src/mongo-tabular.ts",
+          "check": "2026-10-04快速开发：新增CSV/TSV完整词法与header/delimiter/null策略、explicit source→typed JSONPointer/BSON映射，复用既有ordered append；9项P0/68断言、定向TS/lint与真实Mongo CSV review0 writes→once append2精确Int64/Decimal128/ObjectId/nestedInt32/quotednewline，1440/390通过。BSON转换提取到共享单函数避免重复；未交付CSV导出或dump。"
         }
       ],
       "scopeKind": "driver"

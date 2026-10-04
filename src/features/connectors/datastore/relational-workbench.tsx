@@ -26,7 +26,9 @@ import { TableTransferAction } from './table-transfer-action'
 import { DatabaseExportAction } from './database-export'
 import { DatabaseDocsPanel } from './database-docs'
 import { SchemaSearchAction } from './schema-search'
+import { SqliteBackupAction } from './sqlite-backup/action'
 import { SchemaCreateAction } from './schema-create'
+import { TableCreateAction } from './table-create'
 import { SchemaDiagramView } from './schema-diagram-action'
 import type { SchemaObject, SchemaSearchHit } from '@fouc/shared'
 import styles from "./relational.module.css"
@@ -274,8 +276,10 @@ export function RelationalWorkbench({
         <span className={styles.providerLabel}>{session.info.productName}</span>
         <span className={styles.connected}><i />已连接</span>
         <span className="mw-sql-spacer" />
+        <TableCreateAction session={currentSession} base={base} schema={schema} writable={writable} disabled={pending || busy || writeBusy} onUnlock={unlockSqlWrite} onBusyChange={setMutationBusy} onCreated={refresh} />
         <SchemaCreateAction session={currentSession} base={base} writable={writable} disabled={pending || busy || writeBusy} onUnlock={unlockSqlWrite} onBusyChange={setMutationBusy} onCreated={() => { refresh(); setFeedback('创建流程已结束，正在刷新资源目录；请以目录实际结果为准。') }} />
         <SchemaSearchAction base={base} session={session} connectionLabel={name} currentSchema={schema} disabled={pending || leaving} onOpen={openSearchHit} onNotice={setFeedback} />
+        <SqliteBackupAction session={currentSession} base={base} disabled={pending || leaving || writeBusy} />
         <button
           type="button"
           className={styles.writeAccess}

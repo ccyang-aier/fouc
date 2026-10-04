@@ -10,6 +10,9 @@ import { inspectSqlTemplate, resolveSqlExecutionTarget, type SqlEditorPreference
 import { SqlEditor, type SqlEditorCache } from './sql-editor'
 import { SqlExecutionResults } from './sql-execution-results'
 import { useSqlExecutions } from './use-sql-executions'
+import { useResultPins } from './sql-result-history/use-result-pins'
+import { ResultPins } from './sql-result-history/result-pins'
+import { scopedResultPins } from './sql-result-history/model'
 import { SqlParameterDialog, rememberSqlParameters, type SqlParameterRecents } from './sql-parameter-dialog'
 import { SqlEditorSplit } from './sql-editor-split'
 import { SqlFileActions } from './sql-file-actions'
@@ -64,6 +67,7 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
   }, [state.ready, controller, openRequest, session.provider, session.database])
   const [panel, setPanel] = useState<'history' | 'library' | null>(null), [revision, setRevision] = useState(0)
   const { executions, locks, run: execute, cancel, forget, selectResult } = useSqlExecutions(base, () => setRevision((value) => value + 1))
+  const resultPins = useResultPins()
   const [executionMode, setExecutionMode] = useState<SqlExecutionMode>('current')
   const [parameterRequest, setParameterRequest] = useState<{ tabId: string; title: string; target: SqlStatementRange; schema: string | null; declarationSql: string; descriptors: SqlParameterDescriptor[] } | null>(null)
   const parameterHistories = useRef(new Map<string, SqlParameterRecents>())
@@ -81,6 +85,11 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
   const preferences = useSqlResource<SqlEditorPreferences>(`${preferencesBase}/preferences`, undefined, preferencesRevision)
   const busyIds = new Set(Object.keys(executions).filter((id) => executions[id].running))
   const execution = current ? executions[current.id] : undefined
+  const pinScope = { workspaceId: session.workspaceId, connectionId: session.connectionId ?? session.id, tabId: current?.id ?? '' }
+  const selectedStatement = execution?.snapshot?.statements[execution.selectedResult]
+  const currentResultId = execution?.snapshot ? `${execution.snapshot.id}:${execution.selectedResult}` : ''
+  const currentResult = selectedStatement?.status === 'succeeded' && selectedStatement.result ? { id: currentResultId, result: selectedStatement.result, label: `${current?.title} · 结果 ${execution!.selectedResult + 1}` } : null
+  const currentResultPinned = scopedResultPins(resultPins.pins, pinScope).some(pin => pin.sourceId === currentResultId)
   const running = execution?.running ?? false
   useEffect(() => { if (state.ready && !state.pending && state.status === 'ready' && !Object.values(executions).some((item) => item.running)) onLeaveReady() }, [state.ready, state.pending, state.status, executions, onLeaveReady])
   useEffect(() => {
@@ -220,6 +229,7 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
     })
     controller.update((snapshot) => closeSqlTabs(snapshot, ids)); setClosing(null)
     forget(ids)
+    resultPins.forgetTabs(ids)
     for (const id of ids) parameterHistories.current.delete(id)
   }
   function action(action: SqlTabAction, tab: SqlDraftTab | null) {
@@ -277,8 +287,8 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
         <button type="button" aria-label="压缩 SQL" title="压缩选区或完整 SQL，保留字面量与执行提示" disabled={!current || running || formatting} onClick={() => void transformCurrent(true)}><ArrowsInLineHorizontal size={17} /></button>
         <button type="button" aria-label="SQL 编辑器设置" title="格式化、保存与代码片段" disabled={preferences.busy || !preferences.data || Boolean(preferences.error)} onClick={() => setEditorSettingsOpen(true)}><SlidersHorizontal size={17} /></button>
         <span className={styles.toolDivider} />
-        <SqlExplainAction key={`${base}:${current?.id}:${targetSchema}`} base={base} provider={session.provider} schema={targetSchema || null} targetLabel={displayDatabase ?? session.database} editorRef={editor} disabled={!current || running || formatting} contextIssue={current ? targetIssue(current) : ''} onNotice={setNotice} />
-        <SqlMutationAction key={`${base}:${current?.id}:${targetSchema}`} base={base} session={session} schema={targetSchema} editorRef={editor} disabled={!current || busyIds.size > 0 || formatting || schemaLocked} contextIssue={current ? targetIssue(current) : ''} onNotice={setNotice} onUnlock={onUnlockWrite} onBusyChange={onMutationBusy} onCommitted={() => { onMutated(); setNotice('SQL 事务已提交。已有查询结果保留，重新运行可读取最新数据。') }} />
+        <SqlExplainAction key={`explain:${base}:${current?.id}:${targetSchema}`} base={base} provider={session.provider} schema={targetSchema || null} targetLabel={displayDatabase ?? session.database} editorRef={editor} disabled={!current || running || formatting} contextIssue={current ? targetIssue(current) : ''} onNotice={setNotice} />
+        <SqlMutationAction key={`mutation:${base}:${current?.id}:${targetSchema}`} base={base} session={session} schema={targetSchema} editorRef={editor} disabled={!current || busyIds.size > 0 || formatting || schemaLocked} contextIssue={current ? targetIssue(current) : ''} onNotice={setNotice} onUnlock={onUnlockWrite} onBusyChange={onMutationBusy} onCommitted={() => { onMutated(); setNotice('SQL 事务已提交。已有查询结果保留，重新运行可读取最新数据。') }} />
         <SqlQueryCompareAction tabs={state.tabs} executions={executions} provider={session.provider} activeTabId={state.activeTabId} onNotice={setNotice} onSqlPreview={openComparisonReview} />
         <SqlQuickActions editorRef={editor} provider={session.provider} disabled={!current || running || formatting} keywordCase={preferences.data?.formatter.keywordCase} onFormatSql={formatText} onNotice={setNotice} />
         <SqlFileActions provider={session.provider} disabled={!state.ready || running} getDocument={() => current ? { sql: editor.current?.state.doc.toString() ?? current.sql, title: current.title } : null} onOpen={openSqlFiles} onNotice={setNotice} />
@@ -294,16 +304,20 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
       {preferences.error && <p role="alert" className={styles.error}>编辑器设置读取失败：{preferences.error}<button type="button" onClick={() => setPreferencesRevision((value) => value + 1)}>重试编辑器设置</button></p>}
       {metadataState.error && <p role="alert" className={styles.error}>SQL 元数据读取失败：{metadataState.error}<button type="button" onClick={refreshMetadata}>重试元数据</button></p>}
       {(notice || library.error) && <p role={library.error ? 'alert' : 'status'} className={library.error ? styles.error : styles.notice}>{library.error || notice}{!library.error && <button type="button" aria-label="关闭 SQL 提示" onClick={() => setNotice('')}><X size={14} /></button>}</p>}
-      {current ? <SqlEditorSplit editor={<div className="mw-editor" id="fouc-sql-query-document" role="tabpanel" aria-label={current.title}><SqlEditor provider={session.provider} documentId={current.id} value={current.sql} positions={current.editorPosition} cache={editorCache.current} complete={complete} completionScope={`${targetSchema}:${metadataRevision}:${preferences.data?.version ?? "default"}`}
+      {current ? <SqlEditorSplit resultMinHeight={scopedResultPins(resultPins.pins, pinScope).length ? 360 : 0} editor={<div className="mw-editor" id="fouc-sql-query-document" role="tabpanel" aria-label={current.title}><SqlEditor provider={session.provider} documentId={current.id} value={current.sql} positions={current.editorPosition} cache={editorCache.current} complete={complete} completionScope={`${targetSchema}:${metadataRevision}:${preferences.data?.version ?? "default"}`}
           onChange={(sql) => updateTab(current.id, { sql })} onPositionChange={(id, editorPosition) => { const tab = controller.getSnapshot().tabs.find((item) => item.id === id); if (tab && JSON.stringify(tab.editorPosition) !== JSON.stringify(editorPosition)) updateTab(id, { editorPosition }) }}
           onRun={(mode) => void run(mode ?? executionMode)} onSave={() => void saveCurrent()} onFormat={() => void transformCurrent()} snippets={preferences.data?.snippets} keywordCase={preferences.data?.formatter.keywordCase} functionCase={preferences.data?.formatter.functionCase} editorRef={editor} /></div>}
         status={<div className={styles.document}><span className={styles.language}>SQL</span><span title={current.database}>{displayDatabase}{current.schema && session.provider !== 'mysql' ? ` / ${current.schema}` : ''}</span><small><Lock size={12} />只读 · {executionMode === 'current' ? '当前语句' : '全部语句'} · 选区优先</small>{draftStatus}</div>}
-        result={<SqlExecutionResults key={`${current.id}:${execution?.snapshot?.id ?? 'empty'}`} layoutScopeKey={`${session.workspaceId}:${session.connectionId ?? session.id}:${current.database}:${current.schema}:${current.id}`} provider={session.provider} execution={execution} onSelect={(index) => selectResult(current.id, index)} view={current.resultView} onViewChange={(resultView) => updateTab(current.id, { resultView })} onCancel={() => void cancel(current.id)} onReveal={(statement) => {
+        result={<ResultPins key={JSON.stringify(pinScope)} scope={pinScope} pins={resultPins.pins} current={currentResult} provider={session.provider} layoutScopeKey={`${session.workspaceId}:${session.connectionId ?? session.id}:${current.database}:${current.schema}:${current.id}`} onRemove={resultPins.remove} onClear={() => resultPins.clear(pinScope)} onNotice={setNotice} onSqlPreview={openComparisonReview}><SqlExecutionResults key={`${current.id}:${execution?.snapshot?.id ?? 'empty'}`} layoutScopeKey={`${session.workspaceId}:${session.connectionId ?? session.id}:${current.database}:${current.schema}:${current.id}`} provider={session.provider} execution={execution} onSelect={(index) => selectResult(current.id, index)} view={current.resultView} onViewChange={(resultView) => updateTab(current.id, { resultView })} onCancel={() => void cancel(current.id)} currentPinned={currentResultPinned} onPin={(statement, index) => {
+          if (!statement.result || !execution?.snapshot) return
+          try { resultPins.pin({ scope: pinScope, sourceId: `${execution.snapshot.id}:${index}`, label: `${current.title} · 结果 ${index + 1}`, sql: statement.sql, result: statement.result }); setNotice('已固定结果，重新运行不会覆盖。') }
+          catch (reason) { setNotice(reason instanceof Error ? reason.message : '固定结果失败') }
+        }} onReveal={(statement) => {
           const view = editor.current; if (!view) return
           if (view.state.sliceDoc(statement.from, statement.to) !== statement.sql) { setNotice('本次执行后 SQL 已修改，无法精确定位。可在错误详情中查看本次执行的原始 SQL。'); return }
           const position = Math.min(view.state.doc.length, statement.from + (statement.error?.position ?? 0))
           view.dispatch({ selection: { anchor: position }, scrollIntoView: true }); view.focus()
-        }} />} />
+        }} /></ResultPins>} />
       : <><div className={tabsStyle.empty}><p>{state.ready ? '没有打开的 SQL 查询' : '正在加载 SQL 草稿…'}</p>{state.ready && <button type="button" onClick={add}>新建查询</button>}</div><div className={styles.document}>{draftStatus}</div></>}
     </div>
     {panel === 'history' && <SqlHistoryPanel base={`${base}/history`} revision={revision} canSave={Boolean(libraryBase)} onClose={() => setPanel(null)} onRestore={historyRestore} onSave={(entry) => setSaving({ tabId: null, sql: entry.sql, schema: entry.schema, database: entry.database, file: null })} />}

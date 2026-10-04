@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useEffectEvent, useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react'
-import { ArrowDown, ArrowsDownUp, ArrowUp, Copy, DotsSixVertical, PushPin, SidebarSimple, SlidersHorizontal, Table, X } from '@phosphor-icons/react'
+import { ArrowDown, ArrowsDownUp, ArrowsLeftRight, ArrowUp, Copy, DotsSixVertical, PushPin, SidebarSimple, SlidersHorizontal, Table, X } from '@phosphor-icons/react'
 import type { DatabaseCell, DatabaseQueryResult, RelationalSort } from '@fouc/shared'
 import { databaseCellText } from '../cell-format'
 import { columnLabel } from '../result-format'
@@ -18,6 +18,7 @@ import { gridColumnKeys, gridRowHeight, moveGridColumn, visibleGridColumns } fro
 import { remapGridColumnSelection } from './layout/selection-map'
 import { useGridLayout } from './layout/use-layout'
 import { fitGridColumn } from './layout/width'
+import { TransposedResultGrid } from './transpose/transposed-grid'
 import styles from './result-grid.module.css'
 
 export type ResultGridCellSelection = { rowIndex: number; columnIndex: number; columnName: string; value: DatabaseCell }
@@ -43,7 +44,7 @@ function selectionTarget(element: EventTarget | null): GridSelectionTarget | nul
 }
 
 function ResultGridContent({ result, displayRows, editedCells, onCellSelect, onSelectionChange, onNotice, readOnly = true, rowOffset = 0, rowNumbers, scopeLabel, emptyLabel = '查询成功，没有返回记录', primaryKeys = [], showCellDetails = true, sort = [], sortDisabled = false, onSort, toolbarActions, layoutScopeKey }: ResultGridProps) {
-  const [feedback, setFeedback] = useState(''), [layoutColumn, setLayoutColumn] = useState<number | null>(null)
+  const [feedback, setFeedback] = useState(''), [layoutColumn, setLayoutColumn] = useState<number | null>(null), [transposed, setTransposed] = useState(false)
   function notice(message: string) { setFeedback(message); onNotice?.(message) }
   const { layout, changeLayout } = useGridLayout(layoutScopeKey, notice)
   const keys = useMemo(() => gridColumnKeys(result.columns), [result.columns])
@@ -85,23 +86,25 @@ function ResultGridContent({ result, displayRows, editedCells, onCellSelect, onS
   const notifyCell = useEffectEvent(() => onCellSelect?.(cell))
   const notifySelection = useEffectEvent((scope: ResultGridSelectionScope | null) => onSelectionChange?.(scope))
   const selectionNotificationEnabled = onSelectionChange !== undefined
-  useEffect(() => { notifyCell() }, [result, visible, focus?.rowIndex, focus?.colIndex, focusSelected])
+  useEffect(() => { if (!transposed) notifyCell() }, [result, visible, focus?.rowIndex, focus?.colIndex, focusSelected, transposed])
   useEffect(() => {
+    if (transposed) return
     const element = viewportRef.current
     if (!element) return
     const observer = new ResizeObserver(() => setViewportSize({ height: element.clientHeight, top: element.scrollTop }))
     observer.observe(element)
     return () => observer.disconnect()
-  }, [])
+  }, [transposed])
   useEffect(() => {
     // Editing captures the current selection immediately; only statistics are deferred.
+    if (transposed) return
     if (selectionNotificationEnabled) notifySelection(gridSelectionScope(selection, result, visible))
     const timer = setTimeout(() => {
       function* values() { for (const selected of selectedGridCells(selection, result, visible)) yield selected.value }
       setStatistics({ selection, summary: summarizeExactValues(values()) })
     }, 90)
     return () => clearTimeout(timer)
-  }, [selection, result, visible, selectionNotificationEnabled])
+  }, [selection, result, visible, selectionNotificationEnabled, transposed])
   useEffect(() => {
     if (!focus) return
     const element = viewportRef.current
@@ -186,6 +189,7 @@ function ResultGridContent({ result, displayRows, editedCells, onCellSelect, onS
     return (!gridCellSelected(selection, row - 1, column) ? 1 : 0) | (!gridCellSelected(selection, row, column + 1) ? 2 : 0) | (!gridCellSelected(selection, row + 1, column) ? 4 : 0) | (!gridCellSelected(selection, row, column - 1) ? 8 : 0)
   }
   const summary = statistics?.selection === selection ? statistics.summary : null
+  if (transposed) return <TransposedResultGrid result={result} displayRows={displayRows} editedCells={editedCells} visible={visible} keys={keys} layout={layout} rowHeight={rowHeight} initialRow={cell?.rowIndex ?? 0} rowOffset={rowOffset} rowNumbers={rowNumbers} scopeLabel={scopeLabel} onCellSelect={onCellSelect} onSelectionChange={onSelectionChange} onNotice={onNotice} showCellDetails={showCellDetails} readOnly={readOnly} toolbarActions={toolbarActions} onExit={() => setTransposed(false)} />
   return <div className={styles.gridRoot} style={{ '--grid-row-height': `${rowHeight}px`, '--grid-font-size': `${layout.fontSize}px`, '--grid-value-font': layout.font === 'mono' ? 'var(--font-code)' : 'var(--font-sans)', '--grid-row-number-width': `${rowNumberWidth}px` } as CSSProperties}>
     <div className={styles.toolbar}><div className={styles.selectionLabel}><Table size={14} /><strong>{counts.cells ? `${counts.cells.toLocaleString()} 个单元格` : '数据结果'}</strong><span>{counts.cells ? `${counts.rows.toLocaleString()} 行` : '点击选择 · Shift 连选 · Ctrl 多选'}</span></div><div className={styles.toolbarActions}>
       <label className={styles.headersToggle}><input type="checkbox" checked={includeHeaders} onChange={(event) => setIncludeHeaders(event.target.checked)} />列名</label>
@@ -193,6 +197,7 @@ function ResultGridContent({ result, displayRows, editedCells, onCellSelect, onS
       {showCellDetails && <button type="button" disabled={!cell} aria-pressed={detailOpen && !!cell} onClick={() => setDetailOpen(!detailOpen)} title="单元格详情 · Enter"><SidebarSimple size={14} /><span>详情</span></button>}
       {counts.cells > 0 && <button type="button" aria-label="清除网格选择" title="清除选择 · Escape" onClick={() => changeSelection(emptyGridSelection())}><X size={13} /></button>}
       <button type="button" disabled={!keys.length} onClick={() => setLayoutColumn(cell?.columnIndex ?? visible[0] ?? 0)} title="列显示、固定、顺序、宽度与显示格式" aria-label="网格显示设置"><SlidersHorizontal size={14} /><span>显示</span>{visible.length < keys.length && <b>{visible.length}/{keys.length}</b>}</button>
+      <button type="button" disabled={!result.rows.length || !visible.length} aria-label="转置结果视图" title="字段按行、记录按列显示；原始值保持不变" onClick={() => setTransposed(true)}><ArrowsLeftRight size={14} /><span>转置</span></button>
       {toolbarActions}
     </div></div>
     <div className={`${styles.content} ${showCellDetails && detailOpen && cell ? styles.withDetail : ''}`}>

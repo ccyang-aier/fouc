@@ -7,6 +7,8 @@ import {
 } from '@fouc/shared/mongo-document-transfer';
 import { DatabaseInputError } from './input-error';
 import { mongoEjson, mongoNamespace, mongoObject } from './mongo-input';
+import { convertMongoImportValue } from './mongo-tabular-value';
+import { parseMongoTabularDocuments } from './mongo-tabular-input';
 
 const FIELD_TYPES = new Set(['string', 'objectId', 'int32', 'int64', 'decimal128', 'double', 'date', 'boolean']);
 
@@ -34,46 +36,6 @@ function mappings(value: unknown): MongoImportFieldMapping[] {
   });
 }
 
-function convert(value: unknown, type: MongoImportFieldMapping['type']): unknown {
-  const text = typeof value === 'string' ? value : value instanceof BSON.Int32 || value instanceof BSON.Long || value instanceof BSON.Double || value instanceof BSON.Decimal128 ? value.toString() : null;
-  switch (type) {
-    case 'string':
-      if (typeof value === 'string') return value;
-      if (text !== null || typeof value === 'boolean') return text ?? String(value);
-      break;
-    case 'objectId':
-      if (value instanceof BSON.ObjectId) return value;
-      if (typeof value === 'string' && /^[a-f\d]{24}$/i.test(value)) return new BSON.ObjectId(value);
-      break;
-    case 'int32':
-    case 'int64': {
-      if (text === null || !/^-?\d+$/.test(text) || text.length > 21) break;
-      const integer = BigInt(text);
-      const lower = type === 'int32' ? -2147483648n : -9223372036854775808n;
-      const upper = type === 'int32' ? 2147483647n : 9223372036854775807n;
-      if (integer < lower || integer > upper) break;
-      return type === 'int32' ? new BSON.Int32(Number(integer)) : BSON.Long.fromString(text);
-    }
-    case 'decimal128':
-      if (text !== null) return BSON.Decimal128.fromString(text);
-      break;
-    case 'double':
-      if (text !== null && text.trim() && Number.isFinite(Number(text))) return new BSON.Double(Number(text));
-      break;
-    case 'date':
-      if (value instanceof Date) return value;
-      if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(value)) {
-        const date = new Date(value);
-        if (Number.isFinite(date.valueOf()) && date.toISOString().slice(0, 19) === value.slice(0, 19)) return date;
-      }
-      break;
-    case 'boolean':
-      if (typeof value === 'boolean') return value;
-      if (value === 'true' || value === 'false') return value === 'true';
-      break;
-  }
-  throw new DatabaseInputError(`无法无歧义转换为 ${type}；整数与 Decimal128 可使用精确的数字字符串`);
-}
 
 function applyMapping(document: Document, mapping: MongoImportFieldMapping): void {
   const parts = mongoImportPath(mapping.path);
@@ -84,7 +46,7 @@ function applyMapping(document: Document, mapping: MongoImportFieldMapping): voi
     if (!Object.hasOwn(parent, key)) return; // Missing fields stay absent; defaults are never invented.
     const value = (parent as Record<string, unknown>)[key];
     if (index === parts.length - 1) {
-      if (value !== null) (parent as Record<string, unknown>)[key] = convert(value, mapping.type);
+      if (value !== null) (parent as Record<string, unknown>)[key] = convertMongoImportValue(value, mapping.type);
       return;
     }
     if (!value || typeof value !== 'object' || '_bsontype' in value || value instanceof Date) throw new DatabaseInputError('字段路径穿过标量值');
@@ -131,21 +93,34 @@ export type ParsedMongoImport = {
 export async function parseMongoDocumentImport(value: unknown, signal?: AbortSignal): Promise<ParsedMongoImport> {
   const raw = mongoObject(value), namespace = mongoNamespace(raw);
   if (typeof raw.text !== 'string' || !raw.text.trim() || Buffer.byteLength(raw.text) > LIMITS.inputBytes) throw new DatabaseInputError('UTF-8 导入文件须非空且不超过 32 MiB');
-  if (raw.format !== 'json' && raw.format !== 'ndjson') throw new DatabaseInputError('请选择 JSON 或 NDJSON 格式');
+  if (!['json', 'ndjson', 'csv', 'tsv'].includes(String(raw.format))) throw new DatabaseInputError('请选择 JSON、NDJSON、CSV 或 TSV 格式');
+  const format = raw.format as MongoDocumentImportInput['format'];
   if (raw.idPolicy !== 'preserve' && raw.idPolicy !== 'generate') throw new DatabaseInputError('请明确选择保留或重新生成 _id');
   const fields = mappings(raw.fields);
+  if ((format === 'csv' || format === 'tsv') && fields.length) throw new DatabaseInputError('CSV/TSV 请使用源列映射与明确类型，不同时应用文档字段转换');
   if (raw.idPolicy === 'generate' && fields.some(field => field.path === '/_id' || field.path.startsWith('/_id/'))) throw new DatabaseInputError('生成新 _id 时不能同时转换原 _id');
   const text = raw.text.replace(/^\uFEFF/, '');
-  let sources: string[];
-  try { sources = raw.format === 'json' ? jsonDocuments(text) : text.split(/\r?\n/).filter(line => line.trim()); }
-  catch (error) { throw new DatabaseInputError(`JSON 文件无效：${error instanceof Error ? error.message : String(error)}`); }
+  let sources: Array<string | Document>, tabular: MongoDocumentImportInput['tabular'], sourceLines: number[] | null = null;
+  try {
+    if (format === 'csv' || format === 'tsv') {
+      const parsed = await parseMongoTabularDocuments(text, format, raw.tabular, raw.idPolicy, signal);
+      sources = parsed.documents;
+      tabular = parsed.config;
+      sourceLines = parsed.sourceLines;
+    } else sources = format === 'json' ? jsonDocuments(text) : text.split(/\r?\n/).filter(line => line.trim());
+  }
+  catch (error) {
+    if (signal?.aborted) throw error;
+    throw new DatabaseInputError(`${format.toUpperCase()} 文件无效：${error instanceof Error ? error.message : String(error)}`);
+  }
   if (!sources.length || sources.length > LIMITS.documents) throw new DatabaseInputError('一次导入须包含 1–5000 个文档');
   const documents: Document[] = [];
   let bytes = 0, generatedIds = 0;
   for (let index = 0; index < sources.length; index++) {
     signal?.throwIfAborted();
     try {
-      const document = mongoEjson(sources[index]);
+      const source = sources[index];
+      const document = typeof source === 'string' ? mongoEjson(source) : source;
       for (const mapping of fields) applyMapping(document, mapping);
       if (raw.idPolicy === 'generate' || !Object.hasOwn(document, '_id')) {
         document._id = new BSON.ObjectId();
@@ -159,9 +134,9 @@ export async function parseMongoDocumentImport(value: unknown, signal?: AbortSig
       if (bytes > LIMITS.inputBytes) throw new DatabaseInputError('转换后的全部文档超过 32 MiB');
       documents.push(document);
     } catch (error) {
-      throw new DatabaseInputError(`第 ${index + 1} 个文档：${error instanceof Error ? error.message : String(error)}`);
+      throw new DatabaseInputError(`${sourceLines ? `源物理行 ${sourceLines[index]}，` : ''}第 ${index + 1} 个文档：${error instanceof Error ? error.message : String(error)}`);
     }
     if (index % 50 === 49) await yieldTurn();
   }
-  return { input: { ...namespace, format: raw.format, idPolicy: raw.idPolicy, fields }, documents, bytes, generatedIds };
+  return { input: { ...namespace, format, idPolicy: raw.idPolicy, fields, ...(tabular ? { tabular } : {}) }, documents, bytes, generatedIds };
 }

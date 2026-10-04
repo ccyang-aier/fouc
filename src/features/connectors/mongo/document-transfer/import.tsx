@@ -1,13 +1,15 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { UploadSimple } from '@phosphor-icons/react/dist/csr/UploadSimple';
 import {
   MONGO_DOCUMENT_TRANSFER_LIMITS as LIMITS,
-  type MongoDocumentImportPreview, type MongoDocumentImportStatus, type MongoImportFieldMapping,
+  type MongoDocumentImportPreview, type MongoDocumentImportStatus, type MongoImportFieldMapping, type MongoDocumentImportInput,
 } from '@fouc/shared/mongo-document-transfer';
+import { MONGO_TABULAR_LIMITS, mongoTabularDefaultPath, parseMongoTabular, validateMongoTabularFields, type MongoTabularOptions, type MongoTabularField } from '@fouc/shared/mongo-tabular';
 import { backendFetch } from '@/lib/backend';
 import { MongoImportResult, MongoImportReview } from './import-review';
+import { MongoTabularConfiguration, MongoTabularMappingReview } from './tabular-config';
 import styles from './transfer.module.css';
 
 const FIELD_TYPES = ['string', 'objectId', 'int32', 'int64', 'decimal128', 'double', 'date', 'boolean'];
@@ -25,11 +27,17 @@ export function MongoDocumentImportView({ base, database, collection, writable, 
   onUnlock: () => Promise<void>; onApplied: () => void; onBusyChange: (busy: boolean) => void;
 }) {
   const [source, setSource] = useState<{ name: string; text: string; bytes: number } | null>(null);
-  const [format, setFormat] = useState<'json' | 'ndjson'>('ndjson'), [idPolicy, setIdPolicy] = useState<'preserve' | 'generate'>('preserve');
+  const [format, setFormat] = useState<MongoDocumentImportInput['format']>('ndjson'), [idPolicy, setIdPolicy] = useState<'preserve' | 'generate'>('preserve');
+  const [tabularOptions, setTabularOptions] = useState<MongoTabularOptions>({ delimiter: ',', header: true, trimValues: false, emptyAsNull: false, nullToken: '', recognizeObjectIdHex: false });
+  const [tabularFields, setTabularFields] = useState<MongoTabularField[] | null>(null);
   const [mappingText, setMappingText] = useState(''), [confirmed, setConfirmed] = useState(false);
   const [preview, setPreview] = useState<MongoDocumentImportPreview | null>(null), [status, setStatus] = useState<MongoDocumentImportStatus | null>(null);
   const [busy, setBusy] = useState<'file' | 'preview' | 'unlock' | 'commit' | null>(null), [error, setError] = useState('');
   const token = useRef<string | null>(null), request = useRef<AbortController | null>(null);
+  const isTabular = format === 'csv' || format === 'tsv';
+  const parsedTable = useMemo(() => source && (format === 'csv' || format === 'tsv') ? parseMongoTabular(source.text, format, tabularOptions) : null, [source, format, tabularOptions]);
+  const fields = (tabularFields ?? parsedTable?.columns.map((column, sourceIndex) => ({ sourceIndex, target: mongoTabularDefaultPath(column), type: 'string' as const })) ?? []).map(field =>
+    idPolicy === 'generate' && (field.target === '/_id' || field.target?.startsWith('/_id/')) ? { ...field, target: null } : field);
   useEffect(() => () => {
     request.current?.abort();
     if (token.current) void backendFetch(`${base}/documents/import/plans/${encodeURIComponent(token.current)}`, { method: 'DELETE' }).catch(() => undefined);
@@ -45,10 +53,14 @@ export function MongoDocumentImportView({ base, database, collection, writable, 
     if (!file) return;
     invalidate(); setSource(null); activity('file');
     try {
-      if (!file.size || file.size > LIMITS.inputBytes) throw new Error('选择非空 UTF-8 文件，最大 32 MiB');
+      const detected: typeof format = /\.csv$/i.test(file.name) ? 'csv' : /\.tsv$/i.test(file.name) ? 'tsv' : /\.json$/i.test(file.name) ? 'json' : 'ndjson';
+      const limit = detected === 'csv' || detected === 'tsv' ? MONGO_TABULAR_LIMITS.inputBytes : LIMITS.inputBytes;
+      if (!file.size || file.size > limit) throw new Error(`选择非空 UTF-8 文件；${detected.toUpperCase()} 最大 ${limit / 1024 / 1024} MiB`);
       const text = new TextDecoder('utf-8', { fatal: true }).decode(await file.arrayBuffer());
       setSource({ name: file.name, bytes: file.size, text });
-      setFormat(/\.json$/i.test(file.name) ? 'json' : 'ndjson');
+      setFormat(detected);
+      setTabularOptions(current => ({ ...current, delimiter: detected === 'tsv' ? '\t' : ',' }));
+      setTabularFields(null);
     } catch (reason) { setError(reason instanceof TypeError ? '文件不是有效 UTF-8，未截断或替换无效字节' : reason instanceof Error ? reason.message : String(reason)); }
     finally { activity(null); }
   }
@@ -57,10 +69,14 @@ export function MongoDocumentImportView({ base, database, collection, writable, 
     invalidate(); activity('preview');
     const controller = new AbortController(); request.current = controller;
     try {
-      const fields = parseMongoImportMappings(mappingText);
+      if (isTabular) {
+        if (!parsedTable || parsedTable.errors.length) throw new Error('先修正 CSV/TSV 解析错误，再生成完整预览');
+        validateMongoTabularFields(fields, parsedTable.columns.length);
+      }
       const result = await backendFetch<MongoDocumentImportPreview>(`${base}/documents/import/plans`, {
         method: 'POST', signal: controller.signal,
-        body: JSON.stringify({ database, collection, text: source.text, format, idPolicy, fields }),
+        body: JSON.stringify({ database, collection, text: source.text, format, idPolicy,
+          ...(isTabular ? { tabular: { ...tabularOptions, fields } } : { fields: parseMongoImportMappings(mappingText) }) }),
       });
       token.current = result.planId; setPreview(result);
     } catch (reason) { setError(controller.signal.aborted ? '预览已取消，未执行写入' : reason instanceof Error ? reason.message : String(reason)); }
@@ -104,19 +120,29 @@ export function MongoDocumentImportView({ base, database, collection, writable, 
       catch (reason) { setError(reason instanceof Error ? reason.message : String(reason)); }
     } else request.current?.abort();
   }
-  return <div className={styles.workflow}>
-    <div className={styles.intro}><UploadSimple size={28} weight="duotone" /><div><strong>验证文件，然后审查追加</strong><p>目标 {database}.{collection} · 支持 UTF-8 JSON 对象 / 数组和 NDJSON。</p></div></div>
+  return <div className={styles.importWorkflow}><div className={styles.importContent}>
+    <div className={styles.intro}><UploadSimple size={28} weight="duotone" /><div><strong>验证文件，然后审查追加</strong><p>目标 {database}.{collection} · UTF-8 CSV / TSV、JSON 和 NDJSON。</p></div></div>
     {preview ? <div className={styles.sourceSummary}><div><strong>{source?.name}</strong><small>{format.toUpperCase()} · {idPolicy === 'generate' ? '生成新 ObjectId' : '保留原生 _id'}{mappingText.trim() ? ' · 显式字段转换' : ''}</small></div><button disabled={!!busy} onClick={invalidate}>修改配置</button></div> : <fieldset disabled={busy !== null} className={styles.source}>
-      <label className={styles.file}><span>{source ? source.name : '选择文档文件'}</span><small>{source ? `${(source.bytes / 1024).toFixed(1)} KiB · 已完整读取` : 'JSON / NDJSON / JSONL · 最大 32 MiB'}</small><input type="file" accept=".json,.ndjson,.jsonl,application/json" aria-label="选择 MongoDB 文档导入文件" onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; void readFile(file); }} /></label>
-      <div className={styles.options}><label><span>文件格式</span><select aria-label="文档导入格式" value={format} onChange={event => { invalidate(); setFormat(event.target.value as typeof format); }}><option value="ndjson">NDJSON · 每行一个文档</option><option value="json">JSON · 对象或对象数组</option></select></label><label><span>_id 处理</span><select aria-label="导入文档 ID 策略" value={idPolicy} onChange={event => { invalidate(); setIdPolicy(event.target.value as typeof idPolicy); }}><option value="preserve">保留原生 _id；缺少时生成</option><option value="generate">忽略原 _id，生成新 ObjectId</option></select></label></div>
-      <label className={styles.mapping}><span>显式字段类型转换 <small>可选 · 每行一个 JSON Pointer</small></span><textarea aria-label="导入字段类型转换" rows={3} value={mappingText} spellCheck={false} placeholder={'/amount:decimal128\n/items/0/count:int64\n/_id:objectId'} onChange={event => { invalidate(); setMappingText(event.target.value); }} /><small>数组使用 /items/0；~1 转义 /，~0 转义 ~。支持 {FIELD_TYPES.join('、')}。缺少字段保持缺少，null 保持 null。</small></label>
+      <label className={styles.file}><span>{source ? source.name : '选择文档文件'}</span><small>{source ? `${(source.bytes / 1024).toFixed(1)} KiB · 已完整读取` : 'CSV / TSV 最大 5 MiB · JSON / NDJSON 最大 32 MiB'}</small><input type="file" accept=".csv,.tsv,.json,.ndjson,.jsonl,application/json,text/csv,text/tab-separated-values" aria-label="选择 MongoDB 文档导入文件" onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; void readFile(file); }} /></label>
+      <div className={styles.options}><label><span>文件格式</span><select aria-label="文档导入格式" value={format} onChange={event => {
+        invalidate();
+        const next = event.target.value as typeof format;
+        setFormat(next); setTabularFields(null);
+        setTabularOptions(current => ({ ...current, delimiter: next === 'tsv' ? '\t' : ',' }));
+      }}><option value="csv">CSV · 可配置分隔符</option><option value="tsv">TSV · 制表符</option><option value="ndjson">NDJSON · 每行一个文档</option><option value="json">JSON · 对象或对象数组</option></select></label><label><span>_id 处理</span><select aria-label="导入文档 ID 策略" value={idPolicy} onChange={event => { invalidate(); setIdPolicy(event.target.value as typeof idPolicy); }}><option value="preserve">保留原生 _id；缺少时生成</option><option value="generate">忽略原 _id，生成新 ObjectId</option></select></label></div>
+      {isTabular ? <MongoTabularConfiguration options={tabularOptions} parsed={parsedTable} fields={fields} idPolicy={idPolicy} disabled={!!busy} onOptions={next => {
+        invalidate();
+        if (next.header !== tabularOptions.header || next.delimiter !== tabularOptions.delimiter) setTabularFields(null);
+        setTabularOptions(next);
+      }} onFields={next => { invalidate(); setTabularFields(next); }} /> : <label className={styles.mapping}><span>显式字段类型转换 <small>可选 · 每行一个 JSON Pointer</small></span><textarea aria-label="导入字段类型转换" rows={3} value={mappingText} spellCheck={false} placeholder={'/amount:decimal128\n/items/0/count:int64\n/_id:objectId'} onChange={event => { invalidate(); setMappingText(event.target.value); }} /><small>数组使用 /items/0；~1 转义 /，~0 转义 ~。支持 {FIELD_TYPES.join('、')}。缺少字段保持缺少，null 保持 null。</small></label>}
     </fieldset>}
-    {!preview && <p className={styles.notice}>每次最多 5000 个文档、32 MiB；单文档最多 256 KiB。Canonical EJSON 保留 BSON 类型；普通 JSON 的大整数须使用 $numberLong 或数字字符串再指定转换。不会自动识别 24 位十六进制字符串为 ObjectId，不支持 CSV、ZIP 或 dump。</p>}
-    {preview && !status && <MongoImportReview preview={preview} />}
-    {status && <MongoImportResult status={status} />}
+    {!preview && <p className={styles.notice}>{isTabular ? 'CSV/TSV 最多 5 MiB、5000 行、256 列和 100000 个单元格。采样只给出建议，全部类型须明确选择；Int64 / Decimal128 保留数字原文，EJSON 单元格可携带嵌套对象与 BSON 类型。' : '每次最多 5000 个文档、32 MiB；Canonical EJSON 保留 BSON 类型。普通 JSON 大整数须使用 $numberLong 或数字字符串再指定转换。'} 单文档最多 256 KiB。生成新 _id 时原 _id 列明确跳过；不支持 ZIP 或 dump。</p>}
+    {preview && !status && <>{isTabular && parsedTable && <MongoTabularMappingReview fields={fields} parsed={parsedTable} />}<MongoImportReview preview={preview} sourceLines={parsedTable?.sourceLines} /></>}
+    {status && <MongoImportResult status={status} sourceLines={parsedTable?.sourceLines} />}
     {status?.state === 'running' && !busy && <div className={styles.footer}><button onClick={() => void cancel()}>停止后续批次</button><button onClick={() => { if (token.current) void backendFetch<MongoDocumentImportStatus>(`${base}/documents/import/plans/${encodeURIComponent(token.current)}`).then(setStatus).catch(reason => setError(reason instanceof Error ? reason.message : String(reason))); }}>刷新写入结果</button></div>}
     {error && <p className={styles.error} role="alert">{error}</p>}
     {preview && !status && writable && <label className={styles.confirmation}><input type="checkbox" checked={confirmed} disabled={!!busy} onChange={event => setConfirmed(event.target.checked)} /><span>向 {collection} 追加全部 {preview.documents} 个文档；保留已成功写入，不覆盖已有文档。</span></label>}
+    </div>
     <footer className={styles.footer}>
       <span>{busy === 'file' ? '完整读取文件…' : busy === 'preview' ? '验证全部文档并读取服务器…' : busy === 'commit' ? '每批最多 100 个，等待服务器确认' : preview ? '一次性计划 · 5 分钟内有效' : '预览不写入数据库'}</span>
       {busy === 'preview' || busy === 'commit' ? <button onClick={() => void cancel()}>{busy === 'commit' ? '停止后续批次' : '取消预览'}</button> : <>

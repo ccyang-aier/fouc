@@ -1,4 +1,5 @@
 import type { MongoNamespace } from './mongo';
+import type { MongoTabularConfig } from './mongo-tabular';
 
 export const MONGO_DOCUMENT_TRANSFER_LIMITS = {
   inputBytes: 32 * 1024 * 1024,
@@ -16,9 +17,11 @@ export type MongoImportFieldType = 'string' | 'objectId' | 'int32' | 'int64' | '
 export type MongoImportFieldMapping = { path: string; type: MongoImportFieldType };
 export type MongoDocumentImportInput = MongoNamespace & {
   text: string;
-  format: 'json' | 'ndjson';
+  format: 'json' | 'ndjson' | 'csv' | 'tsv';
   idPolicy: 'preserve' | 'generate';
   fields?: MongoImportFieldMapping[];
+  /** Required only for CSV/TSV; all type choices are explicit. */
+  tabular?: MongoTabularConfig;
 };
 export type MongoDocumentImportField = { path: string; types: string[]; present: number };
 export type MongoDocumentImportPreview = MongoNamespace & {

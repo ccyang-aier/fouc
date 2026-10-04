@@ -34,7 +34,11 @@
     "./connection-config-transfer-plan": "./src/connection-config-transfer-plan.ts",
     "./mongo-document-transfer": "./src/mongo-document-transfer.ts",
     "./database-activity": "./src/database-activity.ts",
-    "./schema-create": "./src/schema-create.ts"
+    "./schema-create": "./src/schema-create.ts",
+    "./redis-bulk": "./src/redis-bulk.ts",
+    "./table-create": "./src/table-create.ts",
+    "./mongo-tabular": "./src/mongo-tabular.ts",
+    "./sqlite-backup": "./src/sqlite-backup.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

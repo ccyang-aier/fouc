@@ -200,22 +200,22 @@
         "area": "shared-relational-runtime-and-postgres-sqlite-drivers",
         "status": "partial",
         "files": 7,
-        "physical": 1499,
-        "effective": 1471
+        "physical": 1538,
+        "effective": 1510
       },
       {
         "area": "shared-sql-workbench-and-connection-management",
         "status": "partial",
         "files": 10,
-        "physical": 2134,
-        "effective": 2081
+        "physical": 2152,
+        "effective": 2099
       },
       {
         "area": "native-redis-and-specialized-surface",
         "status": "partial",
         "files": 50,
-        "physical": 4685,
-        "effective": 4463
+        "physical": 4719,
+        "effective": 4497
       },
       {
         "area": "shared-device-connection-management",
@@ -277,8 +277,8 @@
         "area": "native-relational-sql-execution-workflow",
         "status": "partial",
         "files": 7,
-        "physical": 397,
-        "effective": 377
+        "physical": 400,
+        "effective": 380
       },
       {
         "area": "native-relational-sql-parameters",
@@ -305,8 +305,8 @@
         "area": "native-relational-explain-grid-selection-and-result-export",
         "status": "partial",
         "files": 29,
-        "physical": 2507,
-        "effective": 2256
+        "physical": 2512,
+        "effective": 2261
       },
       {
         "area": "native-table-import",
@@ -410,8 +410,8 @@
         "area": "native-database-streaming-export-and-job-artifacts",
         "status": "partial",
         "files": 22,
-        "physical": 1970,
-        "effective": 1826
+        "physical": 1974,
+        "effective": 1830
       },
       {
         "area": "native-sql-mutation-readonly-preview-and-confirmed-transaction",
@@ -459,8 +459,8 @@
         "area": "native-mongo-document-ejson-file-import-export",
         "status": "partial",
         "files": 9,
-        "physical": 802,
-        "effective": 754
+        "physical": 806,
+        "effective": 757
       },
       {
         "area": "native-literal-insert-sql-file-import",
@@ -480,14 +480,56 @@
         "area": "native-workspace-scoped-readonly-datastore-cli",
         "status": "partial",
         "files": 10,
-        "physical": 704,
-        "effective": 654
+        "physical": 705,
+        "effective": 655
+      },
+      {
+        "area": "native-result-transpose-and-bounded-immutable-pins",
+        "status": "partial",
+        "files": 5,
+        "physical": 1095,
+        "effective": 1083
+      },
+      {
+        "area": "native-redis-reviewed-exact-key-bulk-actions",
+        "status": "partial",
+        "files": 8,
+        "physical": 570,
+        "effective": 542
+      },
+      {
+        "area": "native-reviewed-relational-table-creation",
+        "status": "partial",
+        "files": 12,
+        "physical": 605,
+        "effective": 575
+      },
+      {
+        "area": "native-mongo-tabular-reviewed-field-mapping",
+        "status": "partial",
+        "files": 4,
+        "physical": 378,
+        "effective": 348
+      },
+      {
+        "area": "native-standard-readonly-mcp-stdio-and-streamable-http",
+        "status": "partial",
+        "files": 8,
+        "physical": 722,
+        "effective": 691
+      },
+      {
+        "area": "native-sqlite-consistent-wal-backup-and-owned-artifact",
+        "status": "partial",
+        "files": 8,
+        "physical": 1230,
+        "effective": 1185
       }
     ],
     "runtime": {
-      "files": 472,
-      "physical": 45222,
-      "effective": 41867
+      "files": 517,
+      "physical": 49930,
+      "effective": 46398
     },
     "targetEffectiveRuntimeLines": 50000,
     "milestoneVerified": false

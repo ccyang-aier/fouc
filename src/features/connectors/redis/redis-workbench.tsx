@@ -17,7 +17,7 @@ import {
 } from "@phosphor-icons/react"
 import type { RedisBlob, RedisKeyInfo, RedisMutation, RedisMutationResult, RedisScanPage, RedisSession, RedisValuePage } from "@fouc/shared"
 import { backendFetch } from "@/lib/backend"
-import { RedisValueViewer, redisTtl } from "./redis-value-viewer"
+import { RedisValueViewer } from "./redis-value-viewer"
 import { RedisConsole } from "./redis-console"
 import { RedisMutationDialog } from "./redis-mutation-dialog"
 import type { RedisEditIntent } from "./redis-mutation-model"
@@ -25,6 +25,8 @@ import { RedisDatabaseSelector } from "./redis-database-selector"
 import { RedisDashboard } from "./redis-dashboard"
 import { RedisSlowlog } from "./redis-slowlog"
 import { RedisPubSubView } from './redis-pubsub'
+import { RedisBulkKeyList } from './bulk/key-list'
+import type { RedisBulkResult } from '@fouc/shared/redis-bulk'
 import styles from "./redis.module.css"
 
 export function RedisWorkbench({
@@ -160,6 +162,18 @@ export function RedisWorkbench({
     requestScan()
     if (!result.deleted) requestValue()
   }
+  async function unlockBulk() {
+    const updated = await backendFetch<RedisSession>(`${base}/write-mode`, { method: 'POST', body: JSON.stringify({ readOnly: false }) })
+    setReadOnly(updated.readOnly)
+    setIntent(null)
+    setValue(null)
+    if (selected !== null) requestValue()
+  }
+  function bulkApplied(result: RedisBulkResult) {
+    setFeedback(`批量结果 · 已执行 ${result.applied} · 无需更改 ${result.unchanged} · 未确认 ${result.unknown}`)
+    setWriteError('')
+    refresh()
+  }
   return (
     <section className={styles.workbench} aria-label="Redis 工作台">
       <header className={styles.header}>
@@ -250,28 +264,11 @@ export function RedisWorkbench({
               </div>
             )}
             <div className={styles.keyList}>
-              {keys.map((key) => (
-                <button
-                  key={key.key.rawBase64}
-                  type="button"
-                  aria-pressed={selected === key.key.rawBase64}
-                  disabled={writeBusy || jsonDirty}
-                  onClick={() => {
-                    setSelected(key.key.rawBase64)
-                    setValue(null)
-                    requestValue()
-                  }}
-                >
-                  <div>
-                    <Key size={13} />
-                    <span title={key.key.display}>{key.key.display || "（空 Key）"}</span>
-                  </div>
-                  <small>
-                    <span className={styles.type}>{key.type}</span>
-                    <span>{redisTtl(key.ttl)}</span>
-                  </small>
-                </button>
-              ))}
+              <RedisBulkKeyList key={base} base={base} database={session.database} keys={keys} selected={selected} disabled={writeBusy || jsonDirty} readOnly={readOnly} onUnlock={unlockBulk} onBusyChange={setWriteBusy} onApplied={bulkApplied} onSelect={(key) => {
+                setSelected(key)
+                setValue(null)
+                requestValue()
+              }} />
               {scanBusy && (
                 <div className={styles.notice} role="status">
                   扫描中…

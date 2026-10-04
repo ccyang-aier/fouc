@@ -49,7 +49,8 @@ export async function executeDatastoreCli(client: DatastoreHttpClient, options: 
       mongodb: ['databases', 'collections', 'canonical-ejson-document-page'],
       policy: 'readonly; no write access unlock, arbitrary Redis commands or Mongo commands',
       guarantees: ['explicit-workspace', 'exact-connection-id-or-unique-name', 'bounded-results', 'owned-session-cleanup', 'registered-sql-cancellation'],
-      notImplemented: ['direct-database-mode', 'CLI writes', 'desktop deep links', 'MCP server', 'remote cloud account login'],
+      mcp: 'separate datastore:mcp process with explicit readonly connection/resource policy',
+      notImplemented: ['direct-database-mode', 'CLI writes', 'desktop deep links', 'MCP write grants', 'remote cloud account login'],
     };
     return { command, data: capabilities };
   }

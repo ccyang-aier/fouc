@@ -48,7 +48,10 @@ const INTERNAL_TOKEN = process.env.FOUC_INTERNAL_TOKEN ?? (DEV_NO_AUTH ? 'dev-in
 const rawArgv = process.argv.slice(1);
 const bridgeFlag = rawArgv.indexOf('--bridge');
 
-if (rawArgv.includes('--sqlite-query')) {
+if (rawArgv.includes('--sqlite-backup')) {
+  const { runSqliteBackupWorker } = await import('../database/sqlite-backup/worker');
+  await runSqliteBackupWorker();
+} else if (rawArgv.includes('--sqlite-query')) {
   const { runSqliteQueryChild } = await import('../database/sqlite-query-child');
   await runSqliteQueryChild();
 } else if (bridgeFlag >= 0) {

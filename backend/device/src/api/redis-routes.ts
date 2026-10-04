@@ -120,6 +120,16 @@ export function redisRoutes(
     const body = await c.req.json().catch(() => null);
     return c.json({ ok: true, data: await sessions.commit(c.req.param('workspaceId')!, c.req.param('id')!, body?.planId, body?.confirmed) });
   });
+  app.post(base + '/:id/bulk/preview', async (c) => c.json({ ok: true,
+    data: await sessions.prepareBulk(c.req.param('workspaceId')!, c.req.param('id')!, await c.req.json().catch(() => null), c.req.raw.signal) }));
+  app.post(base + '/:id/bulk/commit', async (c) => {
+    const body = await c.req.json().catch(() => null);
+    return c.json({ ok: true, data: await sessions.commitBulk(c.req.param('workspaceId')!, c.req.param('id')!, body?.planId, body?.confirmed, body?.dangerConfirmed, c.req.raw.signal) });
+  });
+  app.delete(base + '/:id/bulk/plans/:planId', (c) => {
+    sessions.discardBulk(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('planId')!);
+    return c.json({ ok: true, data: { discarded: true } });
+  });
   app.delete(base + '/:id', (c) => {
     sessions.disconnect(c.req.param('workspaceId')!, c.req.param('id')!);
     return c.json({ ok: true, data: { disconnected: true } });

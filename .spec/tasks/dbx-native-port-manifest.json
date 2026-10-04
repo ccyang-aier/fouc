@@ -985,6 +985,120 @@
         "backend/device/src/datastore-cli/types.ts",
         "backend/device/src/entrypoints/datastore-cli.ts"
       ]
+    },
+    {
+      "area": "native-result-transpose-and-bounded-immutable-pins",
+      "status": "partial",
+      "sourceReferences": [
+        "apps/desktop/src/lib/dataGrid/dataGridTranspose.ts",
+        "apps/desktop/src/components/grid/DataGrid.vue",
+        "apps/desktop/src/components/layout/ContentArea.vue",
+        "apps/desktop/src/stores/queryStore.ts"
+      ],
+      "runtimeFiles": [
+        "src/features/connectors/datastore/grid/transpose/model.ts",
+        "src/features/connectors/datastore/grid/transpose/transposed-grid.tsx",
+        "src/features/connectors/datastore/sql-result-history/model.ts",
+        "src/features/connectors/datastore/sql-result-history/result-pins.tsx",
+        "src/features/connectors/datastore/sql-result-history/use-result-pins.ts"
+      ]
+    },
+    {
+      "area": "native-redis-reviewed-exact-key-bulk-actions",
+      "status": "partial",
+      "sourceReferences": [
+        "apps/desktop/src/lib/redis/redisKeyBatch.ts",
+        "apps/desktop/src/components/redis/RedisKeyBrowser.vue",
+        "crates/dbx-drivers/src/db/redis_driver.rs"
+      ],
+      "runtimeFiles": [
+        "backend/device/src/database/redis-bulk-input.ts",
+        "backend/device/src/database/redis-bulk-plans.ts",
+        "backend/device/src/database/redis-bulk-script.ts",
+        "shared/src/redis-bulk.ts",
+        "src/features/connectors/redis/bulk/dialog.tsx",
+        "src/features/connectors/redis/bulk/key-list.tsx",
+        "src/features/connectors/redis/bulk/model.ts",
+        "src/features/connectors/redis/bulk/review.tsx"
+      ]
+    },
+    {
+      "area": "native-reviewed-relational-table-creation",
+      "status": "partial",
+      "sourceReferences": [
+        "crates/dbx-sql/src/table_structure_sql/create_table.rs",
+        "crates/dbx-sql/src/table_structure_sql/column_format.rs",
+        "crates/dbx-sql/src/table_structure_sql/types.rs",
+        "crates/dbx-sql/src/table_structure_sql/validation.rs",
+        "apps/desktop/src/components/structure/TableStructureEditor.vue"
+      ],
+      "runtimeFiles": [
+        "backend/device/src/api/table-create-routes.ts",
+        "backend/device/src/database/table-create-metadata.ts",
+        "backend/device/src/database/table-create-plans.ts",
+        "backend/device/src/database/table-create-sql.ts",
+        "shared/src/table-create-model.ts",
+        "shared/src/table-create-types.ts",
+        "shared/src/table-create-validation.ts",
+        "shared/src/table-create.ts",
+        "src/features/connectors/datastore/table-create/action.tsx",
+        "src/features/connectors/datastore/table-create/column-row.tsx",
+        "src/features/connectors/datastore/table-create/index.ts",
+        "src/features/connectors/datastore/table-create/use-table-create.ts"
+      ]
+    },
+    {
+      "area": "native-mongo-tabular-reviewed-field-mapping",
+      "status": "partial",
+      "sourceReferences": [
+        "crates/dbx-core/src/data/mongodb_import_export.rs",
+        "apps/desktop/src/components/document/MongoImportDialog.vue"
+      ],
+      "runtimeFiles": [
+        "backend/device/src/database/mongo-tabular-input.ts",
+        "backend/device/src/database/mongo-tabular-value.ts",
+        "shared/src/mongo-tabular.ts",
+        "src/features/connectors/mongo/document-transfer/tabular-config.tsx"
+      ]
+    },
+    {
+      "area": "native-standard-readonly-mcp-stdio-and-streamable-http",
+      "status": "partial",
+      "sourceReferences": [
+        "crates/dbx-mcp/src/server.rs",
+        "crates/dbx-mcp/src/runtime.rs",
+        "crates/dbx-mcp/src/session.rs",
+        "crates/dbx-mcp/src/http.rs",
+        "crates/dbx-mcp/src/http_auth.rs"
+      ],
+      "runtimeFiles": [
+        "backend/device/src/datastore-mcp/bridge.ts",
+        "backend/device/src/datastore-mcp/http-config.ts",
+        "backend/device/src/datastore-mcp/http-server.ts",
+        "backend/device/src/datastore-mcp/policy.ts",
+        "backend/device/src/datastore-mcp/results.ts",
+        "backend/device/src/datastore-mcp/server.ts",
+        "backend/device/src/datastore-mcp/sessions.ts",
+        "backend/device/src/entrypoints/datastore-mcp.ts"
+      ]
+    },
+    {
+      "area": "native-sqlite-consistent-wal-backup-and-owned-artifact",
+      "status": "partial",
+      "sourceReferences": [
+        "crates/dbx-core/src/data/sqlite_backup.rs",
+        "apps/desktop/src/composables/useSidebarConnectionMutationRuntime.ts"
+      ],
+      "runtimeFiles": [
+        "backend/device/src/api/sqlite-backup-routes.ts",
+        "backend/device/src/database/sqlite-backup/process.ts",
+        "backend/device/src/database/sqlite-backup/service.ts",
+        "backend/device/src/database/sqlite-backup/worker-entry.ts",
+        "backend/device/src/database/sqlite-backup/worker.ts",
+        "shared/src/sqlite-backup.ts",
+        "src/features/connectors/datastore/sqlite-backup/action.tsx",
+        "src/features/connectors/datastore/sqlite-backup/use-sqlite-backup.ts"
+      ]
     }
   ],
   "knownRemainingScope": [

@@ -179,3 +179,7 @@ under Apache License 2.0.
 Native activity/process monitoring, Mongo Canonical EJSON file transfer,
 literal SQL data import, reviewed database/schema creation and workspace
 datastore CLI adapt the fixed DBX admin/data/CLI workflows under Apache 2.0.
+
+Native result transpose/pins, Redis reviewed bulk actions, table creation,
+Mongo tabular mapping, readonly MCP and SQLite consistent backup adapt the
+fixed DBX grid/data/admin/MCP workflows under Apache 2.0.

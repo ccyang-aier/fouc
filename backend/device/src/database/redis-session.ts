@@ -23,11 +23,12 @@ import { RedisPubSub, redisPubSubBytes } from './redis-pubsub';
 import { redisUnsigned } from './redis-protocol';
 import { isRedisJsonType, redisJsonCapability, redisJsonValue } from './redis-json';
 import { redisNativeConnectionOptions } from './connection-options';
+import { RedisBulkPlans } from './redis-bulk-plans';
 export { redisBlob } from './redis-blob';
 
 const PAGE_SIZE = 100;
 const STRING_BYTES = 65536;
-type Entry = { session: RedisSession; client: Redis; mutations: RedisMutationManager; changingMode: boolean; history: RedisHistoryEntry[]; monitors: Set<RedisMonitor>; pubsubs: Map<string, RedisPubSub> };
+type Entry = { session: RedisSession; client: Redis; mutations: RedisMutationManager; bulk: RedisBulkPlans; saving: boolean; changingMode: boolean; history: RedisHistoryEntry[]; monitors: Set<RedisMonitor>; pubsubs: Map<string, RedisPubSub> };
 
 /** Each client keeps its verified DB immutable; switching creates a new session. */
 export class RedisSessionManager {
@@ -74,7 +75,7 @@ export class RedisSessionManager {
         mode: 'standalone',
         readOnly: true,
       };
-      this.entries.set(session.id, { session, client, mutations: new RedisMutationManager(client), changingMode: false, history: [], monitors: new Set(), pubsubs: new Map() });
+      this.entries.set(session.id, { session, client, mutations: new RedisMutationManager(client), bulk: new RedisBulkPlans(client, session.database), saving: false, changingMode: false, history: [], monitors: new Set(), pubsubs: new Map() });
       return session;
     } catch (error) {
       client.disconnect();
@@ -91,7 +92,9 @@ export class RedisSessionManager {
     if (typeof readOnly !== 'boolean') throw new DatabaseInputError('Redis 写入开关无效');
     const entry = this.entry(workspaceId, id);
     if (entry.changingMode) throw new DatabaseInputError('Redis 写入模式正在切换，请等待结果');
+    if (entry.saving) throw new DatabaseInputError('Redis 写入已发送，请等待实际确认后切换模式');
     entry.mutations.clear();
+    entry.bulk.clear();
     entry.changingMode = true;
     try {
       if (!readOnly) {
@@ -105,6 +108,7 @@ export class RedisSessionManager {
   private writable(workspaceId: string, id: string): Entry {
     const entry = this.entry(workspaceId, id);
     if (entry.changingMode) throw new DatabaseInputError('Redis 写入模式正在切换');
+    if (entry.saving) throw new DatabaseInputError('当前 Redis 会话正在确认写入');
     if (entry.session.readOnly) throw new DatabaseInputError('请先解锁当前 Redis 会话的写入');
     return entry;
   }
@@ -171,8 +175,10 @@ export class RedisSessionManager {
     const database = redisDatabase(rawDatabase);
     const entry = this.entry(workspaceId, id);
     if (entry.changingMode) throw new DatabaseInputError('Redis 会话正在切换，请等待结果');
+    if (entry.saving) throw new DatabaseInputError('Redis 写入已发送，请等待确认后切换数据库');
     if (database === entry.session.database) return { ...entry.session };
     entry.mutations.clear();
+    entry.bulk.clear();
     entry.changingMode = true;
     const client = entry.client.duplicate({ db: database, lazyConnect: true });
     client.on('error', () => {});
@@ -181,7 +187,7 @@ export class RedisSessionManager {
       await client.select(database);
       await client.ping();
       const session = { ...entry.session, id: crypto.randomUUID(), database, readOnly: true };
-      this.entries.set(session.id, { session, client, mutations: new RedisMutationManager(client), changingMode: false, history: [], monitors: new Set(), pubsubs: new Map() });
+      this.entries.set(session.id, { session, client, mutations: new RedisMutationManager(client), bulk: new RedisBulkPlans(client, database), saving: false, changingMode: false, history: [], monitors: new Set(), pubsubs: new Map() });
       this.entries.delete(id);
       for (const monitor of entry.monitors) monitor.stop('Redis 数据库已切换，MONITOR 已停止');
       for (const capture of entry.pubsubs.values()) capture.stop('Redis 数据库已切换，Pub/Sub 已断开');
@@ -205,7 +211,9 @@ export class RedisSessionManager {
     const entries = [...this.entries.values()].filter((entry) => entry.session.workspaceId === workspaceId && entry.session.connectionId === connectionId);
     for (const entry of entries) {
       if (entry.changingMode) throw new DatabaseInputError('连接正在切换，请等待后再删除');
+      if (entry.saving) throw new DatabaseInputError('Redis 正在确认写入，请等待后再删除连接');
       entry.mutations.clear();
+      entry.bulk.clear();
     }
     for (const entry of entries) this.disconnect(workspaceId, entry.session.id);
     this.historyRepository?.clear(workspaceId, connectionId);
@@ -222,8 +230,25 @@ export class RedisSessionManager {
   prepare(workspaceId: string, id: string, mutation: unknown, version: unknown) {
     return this.writable(workspaceId, id).mutations.prepare(mutation, version);
   }
-  commit(workspaceId: string, id: string, planId: unknown, confirmed: unknown) {
-    return this.writable(workspaceId, id).mutations.commit(planId, confirmed);
+  async commit(workspaceId: string, id: string, planId: unknown, confirmed: unknown) {
+    const entry = this.writable(workspaceId, id);
+    entry.saving = true;
+    try { return await entry.mutations.commit(planId, confirmed); }
+    finally { entry.saving = false; }
+  }
+  prepareBulk(workspaceId: string, id: string, input: unknown, signal?: AbortSignal) {
+    const entry = this.entry(workspaceId, id);
+    if (entry.changingMode || entry.saving) throw new DatabaseInputError('Redis 会话正在切换或确认写入，请稍后预览');
+    return entry.bulk.prepare(input, signal);
+  }
+  discardBulk(workspaceId: string, id: string, planId: unknown): void {
+    this.entry(workspaceId, id).bulk.discard(planId);
+  }
+  async commitBulk(workspaceId: string, id: string, planId: unknown, confirmed: unknown, dangerConfirmed: unknown, signal?: AbortSignal) {
+    const entry = this.writable(workspaceId, id);
+    entry.saving = true;
+    try { return await entry.bulk.commit(planId, confirmed, dangerConfirmed, signal); }
+    finally { entry.saving = false; }
   }
   async editString(workspaceId: string, id: string, rawKey: unknown): Promise<{ content: RedisBlob; writeVersion: string }> {
     const { client, mutations } = this.writable(workspaceId, id);
@@ -384,9 +409,11 @@ export class RedisSessionManager {
   disconnect(workspaceId: string, id: string): void {
     // Session replacement and view cleanup may both close the same session.
     if (!this.entries.has(id)) return;
-    const { client, mutations, monitors, pubsubs } = this.entry(workspaceId, id);
+    const { client, mutations, bulk, saving, monitors, pubsubs } = this.entry(workspaceId, id);
     if (this.entry(workspaceId, id).changingMode) throw new DatabaseInputError('Redis 会话正在切换，请等待后断开');
+    if (saving) throw new DatabaseInputError('Redis 写入已发送，请等待实际确认后断开');
     mutations.clear();
+    bulk.clear();
     for (const monitor of monitors) monitor.stop('Redis 会话已断开，MONITOR 已停止');
     for (const capture of pubsubs.values()) capture.stop('Redis 会话已断开，Pub/Sub 已断开');
     this.entries.delete(id);

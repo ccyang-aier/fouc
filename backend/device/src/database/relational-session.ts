@@ -17,6 +17,8 @@ import { DatabaseExportJobs } from './database-export';
 import { RelationalExportService } from './relational-export-service';
 import { DatabaseActivityService } from './activity/service';
 import { SchemaCreatePlans } from './schema-create-plans';
+import { TableCreatePlans } from './table-create-plans';
+import { SqliteBackupService } from './sqlite-backup/service';
 import {
   DATABASE_CAPABILITIES,
   SQL_FILE_MAX_BYTES,
@@ -59,6 +61,7 @@ type Entry = {
   structureEdits: StructureEditPlans;
   sqlMutations: SqlMutationPlans;
   schemaCreates: SchemaCreatePlans;
+  tableCreates: TableCreatePlans;
   saving: boolean;
   connectionName: string;
   sourceIdentity: string;
@@ -71,10 +74,12 @@ export class RelationalSessionManager {
   readonly metadata: RelationalMetadataService;
   readonly exports: RelationalExportService;
   readonly activity: DatabaseActivityService;
+  readonly sqliteBackups: SqliteBackupService;
   constructor(private readonly capabilities: DatabaseCapabilityRegistry, readonly sqlRepository = new RelationalSqlRepository(), documents = new DatabaseDocsRepository(), exports?: DatabaseExportJobs) {
     this.metadata = new RelationalMetadataService((workspaceId, id) => this.entry(workspaceId, id), documents);
     this.exports = new RelationalExportService((workspaceId, id) => this.entry(workspaceId, id), exports);
     this.activity = new DatabaseActivityService((workspaceId, id) => this.entry(workspaceId, id));
+    this.sqliteBackups = new SqliteBackupService((workspaceId, id) => this.entry(workspaceId, id).session);
   }
 
   async connect(workspaceId: string, value: unknown, connection: { id: string; name: string } | null = null): Promise<RelationalSession> {
@@ -136,6 +141,7 @@ export class RelationalSessionManager {
         structureEdits: new StructureEditPlans(),
         sqlMutations: new SqlMutationPlans(),
         schemaCreates: new SchemaCreatePlans(),
+        tableCreates: new TableCreatePlans(),
         saving: false,
         sourceIdentity: input.provider === 'sqlite' ? JSON.stringify(['sqlite', path.resolve(input.path).toLowerCase()]) : JSON.stringify([input.provider, input.host.toLowerCase(), input.port, input.provider === 'postgres' ? input.database : null]),
         connectionName: connection?.name ?? `${input.provider} · ${session.database}`,
@@ -185,6 +191,7 @@ export class RelationalSessionManager {
     entry.structureEdits.clear();
     entry.sqlMutations.clear();
     if (!enabled) entry.schemaCreates.clear();
+    if (!enabled) entry.tableCreates.clear();
     this.transfers.clearSession(id);
     return entry.session;
   }
@@ -202,6 +209,29 @@ export class RelationalSessionManager {
     return entry.schemaCreates.options(entry.driver, entry.session.provider, entry.session.database, () => {
       if (this.entry(workspaceId, id) !== entry || entry.saving) throw new DatabaseInputError('连接忙或已变化，请稍后重试。');
     }, signal);
+  }
+  tableCreateOptions(workspaceId: string, id: string, signal?: AbortSignal) {
+    const entry = this.entry(workspaceId, id);
+    return entry.tableCreates.options(entry.driver, entry.session.provider, entry.session.database, () => {
+      if (this.entry(workspaceId, id) !== entry || entry.saving) throw new DatabaseInputError('连接忙或已变化，请稍后重试。');
+    }, signal);
+  }
+  prepareTableCreate(workspaceId: string, id: string, value: unknown, signal?: AbortSignal) {
+    const entry = this.entry(workspaceId, id);
+    return entry.tableCreates.prepare(entry.driver, entry.session.provider, entry.session.database, value, () => {
+      if (this.entry(workspaceId, id) !== entry || entry.saving) throw new DatabaseInputError('连接忙或已变化，请重新审查。');
+    }, signal);
+  }
+  discardTableCreate(workspaceId: string, id: string, planId: string): void { this.entry(workspaceId, id).tableCreates.discard(planId); }
+  async commitTableCreate(workspaceId: string, id: string, planId: string, signal?: AbortSignal) {
+    const entry = this.writable(workspaceId, id);
+    if (entry.saving) throw new DatabaseInputError('请等待当前事务结束。');
+    entry.saving = true;
+    try {
+      return await entry.tableCreates.commit(entry.driver, planId, () => {
+        if (this.writable(workspaceId, id) !== entry) throw new DatabaseInputError('会话已变化，请重新审查。');
+      }, signal);
+    } finally { entry.saving = false; }
   }
   prepareSchemaCreate(workspaceId: string, id: string, value: unknown, signal?: AbortSignal) {
     const entry = this.entry(workspaceId, id);
@@ -600,10 +630,14 @@ export class RelationalSessionManager {
     entry.structureEdits.clear();
     entry.sqlMutations.clear();
     entry.schemaCreates.clear();
+    entry.tableCreates.clear();
     await this.executions.closeSession(id);
     if (!entry.session.connectionId) this.transientSql.removeConnection(workspaceId, id);
     this.capabilities.disconnect(id, id);
-    try { await this.exports.closeSession({ workspaceId, sessionId: id }); }
+    try {
+      await this.sqliteBackups.closeSession({ workspaceId, sessionId: id });
+      await this.exports.closeSession({ workspaceId, sessionId: id });
+    }
     finally { await entry.driver.close(); }
   }
   async shutdown(): Promise<void> {
@@ -612,6 +646,7 @@ export class RelationalSessionManager {
         this.disconnect(session.workspaceId, session.id),
       ),
     );
+    await this.sqliteBackups.close();
     this.sqlRepository.close();
     this.transientSql.close();
     this.metadata.documents.close();

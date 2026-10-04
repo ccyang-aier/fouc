@@ -1,6 +1,7 @@
 import { getBackendEndpoint } from '@/lib/backend';
 
 interface SaveTarget {
+  name?: string;
   createWritable(): Promise<{ write(value: Uint8Array): Promise<void>; close(): Promise<void>; abort(): Promise<void>; }>;
 }
 type SavePicker = (options: { suggestedName: string; }) => Promise<SaveTarget>;
@@ -12,11 +13,14 @@ export async function downloadDatabaseExport(
   bytes: number,
   signal: AbortSignal,
   onProgress: (bytes: number) => void,
+  options: { forbiddenFilename?: string; browserBytes?: number } = {},
 ): Promise<'disk' | 'browser'> {
   const picker = (window as unknown as { showSaveFilePicker?: SavePicker; }).showSaveFilePicker;
   // A picker must run directly within the user gesture, before waiting for endpoint resolution.
   const target = picker ? await picker.call(window, { suggestedName: filename }) : null;
-  if (!target && bytes > 256 * 1024 * 1024) throw new Error('当前浏览器不支持流式保存；内存下载最多 256 MiB，请减小导出范围或使用支持文件保存的 Chrome / Edge。');
+  if (target?.name && options.forbiddenFilename && target.name.toLowerCase() === options.forbiddenFilename.toLowerCase()) throw new Error('请选与运行数据库不同的备份文件名。');
+  const browserBytes = options.browserBytes ?? 256 * 1024 * 1024;
+  if (!target && bytes > browserBytes) throw new Error(`当前浏览器不支持流式保存；内存下载最多 ${Math.floor(browserBytes / 1024 / 1024)} MiB，请减小导出范围或使用支持文件保存的 Chrome / Edge。`);
   signal.throwIfAborted();
   const endpoint = await getBackendEndpoint();
   const response = await fetch(`${endpoint.baseUrl}${path}`, { headers: endpoint.token ? { authorization: `Bearer ${endpoint.token}` } : {}, signal });
@@ -32,7 +36,7 @@ export async function downloadDatabaseExport(
       const { value, done } = await reader.read();
       if (done) break;
       received += value.byteLength;
-      if (received > bytes || !writable && received > 256 * 1024 * 1024) throw new Error('下载数据超过已确认文件范围。');
+      if (received > bytes || !writable && received > browserBytes) throw new Error('下载数据超过已确认文件范围。');
       if (writable) await writable.write(value);
       else parts.push(value.slice().buffer);
       onProgress(received);

@@ -200,15 +200,15 @@
         "area": "shared-relational-runtime-and-postgres-sqlite-drivers",
         "status": "partial",
         "files": 7,
-        "physical": 1462,
-        "effective": 1434
+        "physical": 1499,
+        "effective": 1471
       },
       {
         "area": "shared-sql-workbench-and-connection-management",
         "status": "partial",
         "files": 10,
-        "physical": 2128,
-        "effective": 2075
+        "physical": 2134,
+        "effective": 2081
       },
       {
         "area": "native-redis-and-specialized-surface",
@@ -312,8 +312,8 @@
         "area": "native-table-import",
         "status": "partial",
         "files": 15,
-        "physical": 797,
-        "effective": 752
+        "physical": 804,
+        "effective": 758
       },
       {
         "area": "native-query-data-comparison",
@@ -333,8 +333,8 @@
         "area": "native-mongo-document-and-mutation-workbench",
         "status": "partial",
         "files": 25,
-        "physical": 1624,
-        "effective": 1578
+        "physical": 1729,
+        "effective": 1682
       },
       {
         "area": "native-grid-layout-and-column-formatting",
@@ -447,12 +447,47 @@
         "files": 3,
         "physical": 323,
         "effective": 301
+      },
+      {
+        "area": "native-database-activity-and-process-monitoring",
+        "status": "partial",
+        "files": 13,
+        "physical": 580,
+        "effective": 527
+      },
+      {
+        "area": "native-mongo-document-ejson-file-import-export",
+        "status": "partial",
+        "files": 9,
+        "physical": 802,
+        "effective": 754
+      },
+      {
+        "area": "native-literal-insert-sql-file-import",
+        "status": "partial",
+        "files": 2,
+        "physical": 298,
+        "effective": 277
+      },
+      {
+        "area": "native-database-and-schema-creation-review",
+        "status": "partial",
+        "files": 9,
+        "physical": 481,
+        "effective": 445
+      },
+      {
+        "area": "native-workspace-scoped-readonly-datastore-cli",
+        "status": "partial",
+        "files": 10,
+        "physical": 704,
+        "effective": 654
       }
     ],
     "runtime": {
-      "files": 429,
-      "physical": 42202,
-      "effective": 39057
+      "files": 472,
+      "physical": 45222,
+      "effective": 41867
     },
     "targetEffectiveRuntimeLines": 50000,
     "milestoneVerified": false

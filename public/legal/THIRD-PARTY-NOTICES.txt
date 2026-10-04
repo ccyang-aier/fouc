@@ -175,3 +175,7 @@ and lib/document/gridfsFiles.ts/gridfsPagination.ts under Apache License 2.0.
 Connection config transfer, seeded table data generation and native binary
 HEX detail adapt DBX connection, test_data and binaryHexViewer workflows
 under Apache License 2.0.
+
+Native activity/process monitoring, Mongo Canonical EJSON file transfer,
+literal SQL data import, reviewed database/schema creation and workspace
+datastore CLI adapt the fixed DBX admin/data/CLI workflows under Apache 2.0.

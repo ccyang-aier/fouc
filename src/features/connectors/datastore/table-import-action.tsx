@@ -10,7 +10,7 @@ export function TableImportAction({ base, sessionId, provider, schema, page, dis
   base: string; sessionId: string; provider: RelationalProvider; schema: string; page: RelationalTablePage | null; disabled: boolean; onImported: () => void
 }) {
   const [source, setSource] = useState<{ schema: string; page: RelationalTablePage } | null>(null)
-  return <><button type="button" aria-label="导入表数据" title={disabled ? '先解锁写入并完成暂存变更' : 'CSV、TSV、JSON 与 NDJSON 追加导入'} disabled={disabled || !page} onClick={() => page && setSource({ schema, page })}><FileArrowUp size={15} /><span>导入数据</span></button>
+  return <><button type="button" aria-label="导入表数据" title={disabled ? '先解锁写入并完成暂存变更' : 'CSV、TSV、JSON / NDJSON 与字面量 INSERT SQL 追加导入'} disabled={disabled || !page} onClick={() => page && setSource({ schema, page })}><FileArrowUp size={15} /><span>导入数据</span></button>
     {source && <SqlDialog title="导入表数据" className={styles.dialog} onClose={() => setSource(null)}><div className={styles.body}>
       <TableImportPanel provider={provider} sessionId={sessionId} base={base} schema={source.schema} table={source.page.table} columns={source.page.columns} onImported={onImported} onClose={() => setSource(null)} />
     </div></SqlDialog>}</>

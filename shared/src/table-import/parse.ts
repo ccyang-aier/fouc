@@ -1,4 +1,5 @@
 import { inferTableImportColumns } from './inference';
+import { parseSqlTableImport } from './sql-parse';
 import { TABLE_IMPORT_LIMITS, type TableImportCell, type TableImportIssue, type TableImportParsed, type TableImportParseOptions } from './types';
 
 class ParseFailure extends Error { constructor(message: string, readonly offset: number, readonly record?: number) { super(message); } }
@@ -102,6 +103,7 @@ function validateOptions(options: TableImportParseOptions): { title: number; sta
 
 /** Adapted DBX row ranges, header disambiguation and null options, with an explicit bounded milestone. */
 export function parseTableImport(text: string, options: TableImportParseOptions, signal?: AbortSignal): TableImportParsed {
+  if (options?.format === 'sql') return parseSqlTableImport(text, options, signal);
   const parsed: TableImportParsed = { columns: [], rows: [], rowNumbers: [], inferredTypes: [], totalRows: 0, sizeBytes: 0, errors: [], warnings: [] };
   try {
     signal?.throwIfAborted();

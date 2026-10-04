@@ -17,6 +17,8 @@ import { TableQueryControls } from "./table-query-controls"
 import { TableStructure } from "./table-structure"
 import { TableImportAction } from './table-import-action'
 import { TestDataAction } from './test-data-action'
+import { DatabaseActivityPanel } from './activity'
+import { Pulse } from '@phosphor-icons/react/dist/csr/Pulse'
 import { SchemaCompareAction } from './schema-compare-action'
 import { StructureEditAction } from './structure-edit-action'
 import { SchemaObjectsPanel } from './schema-objects'
@@ -24,6 +26,7 @@ import { TableTransferAction } from './table-transfer-action'
 import { DatabaseExportAction } from './database-export'
 import { DatabaseDocsPanel } from './database-docs'
 import { SchemaSearchAction } from './schema-search'
+import { SchemaCreateAction } from './schema-create'
 import { SchemaDiagramView } from './schema-diagram-action'
 import type { SchemaObject, SchemaSearchHit } from '@fouc/shared'
 import styles from "./relational.module.css"
@@ -46,7 +49,7 @@ export function RelationalWorkbench({
   const [page, setPage] = useState<RelationalTablePage | null>(null)
   const [offset, setOffset] = useState(0)
   const [search, setSearch] = useState("")
-  const [mode, setMode] = useState<"data" | "structure" | "sql" | "objects" | "diagram" | "docs">("data")
+  const [mode, setMode] = useState<"data" | "structure" | "sql" | "objects" | "diagram" | "docs" | "activity">("data")
   const [initialObject, setInitialObject] = useState<SchemaObject | null>(null)
   const [initialColumn, setInitialColumn] = useState<string | undefined>()
   const [openRequest, setOpenRequest] = useState<{ id: string; sql: string; schema: string } | null>(null)
@@ -271,6 +274,7 @@ export function RelationalWorkbench({
         <span className={styles.providerLabel}>{session.info.productName}</span>
         <span className={styles.connected}><i />已连接</span>
         <span className="mw-sql-spacer" />
+        <SchemaCreateAction session={currentSession} base={base} writable={writable} disabled={pending || busy || writeBusy} onUnlock={unlockSqlWrite} onBusyChange={setMutationBusy} onCreated={() => { refresh(); setFeedback('创建流程已结束，正在刷新资源目录；请以目录实际结果为准。') }} />
         <SchemaSearchAction base={base} session={session} connectionLabel={name} currentSchema={schema} disabled={pending || leaving} onOpen={openSearchHit} onNotice={setFeedback} />
         <button
           type="button"
@@ -351,6 +355,7 @@ export function RelationalWorkbench({
               <button type="button" disabled={pending || !schema} aria-pressed={mode === "objects"} className={`mw-document-tab ${mode === "objects" ? "mw-document-active" : ""}`} onClick={() => { setInitialObject(null); setInspectorOpen(false); setMode("objects") }}><Database size={15} />Schema 对象</button>
               <button type="button" disabled={pending || !schema} aria-pressed={mode === "diagram"} className={`mw-document-tab ${mode === "diagram" ? "mw-document-active" : ""}`} onClick={() => { setInspectorOpen(false); setMode("diagram") }}><Graph size={15} />关系图</button>
               <button type="button" disabled={pending || !schema} aria-pressed={mode === "docs"} className={`mw-document-tab ${mode === "docs" ? "mw-document-active" : ""}`} onClick={() => { setInspectorOpen(false); setMode("docs") }}><BookOpenText size={15} />数据库文档</button>
+              <button type="button" disabled={pending} aria-pressed={mode === 'activity'} className={`mw-document-tab ${mode === 'activity' ? 'mw-document-active' : ''}`} onClick={() => { setInspectorOpen(false); setMode('activity') }}><Pulse size={15}/>活动监控</button>
             </div>
           </div>
           {error && (
@@ -418,6 +423,7 @@ export function RelationalWorkbench({
           {mode === "objects" && schema && <SchemaObjectsPanel base={base} provider={session.provider} schema={schema} initialObject={initialObject} onOpenReference={reference => { if (reference.kind === "table" || reference.kind === "view" || reference.kind === "materialized-view") { if (reference.schema) selectSchema(reference.schema); openTable(reference.name) } }} />}
           {mode === 'diagram' && schema && <SchemaDiagramView key={`${base}:${schema}`} base={base} schema={schema} onOpenTable={node => { selectSchema(node.schema); openTable(node.table) }} onOpenQuery={sql => { setOpenRequest({ id: crypto.randomUUID(), sql, schema }); setMode('sql') }} />}
           {mode === 'docs' && schema && <DatabaseDocsPanel base={base} schemas={[schema]} persistent={Boolean(session.connectionId)} onOpenTable={(nextSchema, nextTable) => { selectSchema(nextSchema); openTable(nextTable) }} />}
+          {mode === 'activity' && <DatabaseActivityPanel base={base} provider={session.provider} database={session.database} blocked={pending || writeBusy} />}
           {(mode === 'data' || mode === 'structure') && (
             <>
               <div className="mw-sql-toolbar">

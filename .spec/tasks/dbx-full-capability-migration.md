@@ -4,6 +4,8 @@
 
 ## 进度与证据
 
+- 监控 / Mongo文件 / SQL文件 / Schema / CLI：2026-10-04快速批次：P01 MySQL/Pg真实状态与进程、5秒暂停/隐藏跳过轮询、有界趋势、搜索/排序/SQL详情；SQLite仅原生PRAGMA。5项P0/47断言、Pg后台进程补充11断言，定向TS/lint与两库1440/390实际界面通过。 X02 JSON/NDJSON Canonical EJSON完整文件解析/typed pointer/ID策略→既有collection零写入审核→一次ordered append，真实部分成功与取消；native cursor有界NDJSON流导出及BSON scalar精度保留。7项P0/55断言、定向TS/lint与真实Mongo下载→上传→review→once append，1440/390实际界面通过。CSV/ZIP/dump仍待后续。 D01 字面量INSERT SQL原生方言解析、完整文件拒绝脚本/DDL/表达式、显式列映射与一致来源目录、保持BIGINT/DECIMAL原文本，复用服务端事务导入。4项P0/78断言、定向TS/前端lint与真实SQLite local/server review0写入→confirm2行精确回读，1440/390已查看。 S08 MySQL CREATE DATABASE/PG当前DB CREATE SCHEMA原生目录与角色权限检查、quote安全名称、5分钟session一次性审查，readonly prepare→unlock→explicit confirm→目录刷新。5项P0/50断言、定向TS/lint与两库实际创建及1440/390通过；MySQL隐式DDL/未知确认如实。管理删除/完整驱动矩阵仍待后续。 A05 只读设备HTTP CLI含doctor/capabilities、工作空间连接目录、borrowed/owned会话、库表/结构/行、registered SQL/cancel、context/DBML/Markdown、Redis页/Mongo EJSON页；精确Table/JSON/CSV、输出文件显式overwrite、稳定非零错误码与环境口令。6项P0/31断言、薄TS通过；原生SQLite 2 SELECT/精确数值、rows CSV、DBML、写入拒绝与5个隐式会话关闭均通过。CLI文件在repo ESLint ignore内，未虚报lint。直连/云/DeepLink/写入/MCP仍待后续。
+
 - 配置文件 / 测试数据 / 字节详情：2026-10-04：C04当前公开配置JSON完整预览→串行CRUD，空间/provider范围、同名默认改名/跳过/显式更新、真实部分失败/取消；PBKDF2-SHA256 600000+AES-256-GCM认证头/randomsalt/IV加密，秘密与资源ID不导出。7项P0/48断言、定向TS/lint，一次Chrome实际文件加解密与创建/更新/跳过通过。D09种子可重复5000行/5MiB/100000cells、逐字段生成与原始精确BIGINT/DECIMAL、FK与默认/生成列边界；5项P0/198断言，真实SQLite/MySQL样本与prepare0写入、confirm:false拒绝、一次追加5行及默认/生成值回读；复用原生导入引擎。G10原生binary envelope严格字节解码、有界HEX/ASCII分页/偏移搜索、UTF8/只读原值、栅格头部/像素预算/原文件下载；3项P0/26断言和一次原生SQLite BLOB页面下载逐字节一致、PNG实际解码。1440/390实际视觉检查，修复二进制详情被缩小结果区与窄屏祖先裁切，使用统一overlay宿主。第三方配置/vault、FK采样与多表生成、更多复杂类型继续后续。开发不重复旧模块矩阵；临时数据清理，服务常驻。
 
 - MongoDB GridFS 文件：2026-10-04：X02原生Mongo GridFS桶/孤儿目录、文件分页筛选排序、精确Long容量与EJSON详情、lazy原生流鉴权下载/断开取消均接实际工作台。4项新增P0/45断言，真实Mongo上传独立夹具→原生读取→HTTP字节一致及custom BSON scalar ID；实际Chrome只读浏览→下载65637字节与源逐字节相同，1440/390已查看/无外溢或pageerror，修正窄屏桶选择和内部滚动。native下载1GiB，Web无FS Access时64MiB回退；原生流5min并保持controller直到close。前后端定向TS/lint通过，不重复旧CRUD回归；FS Access系统保存、上传/删除/ZIP/dump及完整入口仍待后续。
@@ -47,7 +49,7 @@
 - Redis 观测验证入口：`node scripts/redis-observability-lab.mjs up|status` 复用或启动独立 Redis 7.4.8 实验室（56380，启动时阈值 0、保留 512 条），`node scripts/verify-redis-observability-live.mjs` 验证 INFO 分区与有界慢日志读取、原始二进制参数 / 客户端字段、数量校验、空间隔离、只读状态和命令历史保留、可选 CONFIG / LEN 权限降级及 GET / INFO 拒绝。实验室不会修改或重置业务 Redis 的日志配置。50 个作用域测试通过，涵盖 64 位计数 / 命中率 / 数值排序、旧版本缺失字段和响应截断。Playwright + Chrome 在 1440×1000、760×844、390×844 验证指标折叠 / 搜索 / 复制、真实定时刷新及离开视图后停止、慢日志数量 / 排序 / 筛选 / 分页 / 二进制详情 / JSON 复制、权限失败保留旧指标和错误恢复；两次预期 HTTP 502，无其他页面 / 控制台错误。Cluster 逐节点、其他版本与权限矩阵仍未完整交付。
 
 - 源码已恢复至固定 commit；[源码审计](dbx-source-audit.json) 与 [实质迁移文件清单](dbx-native-port-manifest.json) 可由 `node scripts/audit-dbx-source.mjs --write` 重算。约 133.4 万有效源码行；排除独立测试、翻译资源、工具与账户/云模块后的核心范围估算为 91.4 万行。词法统计仍包含 Rust 内嵌测试，不能把这个估算当成已迁移量。
-- 第一阶段目标仍为约 50,000 行 Fouc 核心运行逻辑；当前清单为 429 个运行文件、39,057 行有效代码。不计样式、目录 JSON、测试、参考仓库或演示工作台，且必须逐能力验收，当前未完成。MySQL 已合并到共享会话与工作台，移除的重复逻辑不保留行数信用。MONITOR / Pub/Sub 共享生命周期与流解码，删除的重复实现同样不保留信用。RedisJSON 仅计已适配且实际运行的 token 格式化 / Unicode 编辑映射子集，未使用的 Number 包装 / stringify 代码不计入。统计受代码格式影响，不能以行数代替功能覆盖。固定源码基线未变化时，可用 `node scripts/audit-dbx-source.mjs --native-only --write` 快速重算原生清单。
+- 第一阶段目标仍为约 50,000 行 Fouc 核心运行逻辑；当前清单为 472 个运行文件、41,867 行有效代码。不计样式、目录 JSON、测试、参考仓库或演示工作台，且必须逐能力验收，当前未完成。MySQL 已合并到共享会话与工作台，移除的重复逻辑不保留行数信用。MONITOR / Pub/Sub 共享生命周期与流解码，删除的重复实现同样不保留信用。RedisJSON 仅计已适配且实际运行的 token 格式化 / Unicode 编辑映射子集，未使用的 Number 包装 / stringify 代码不计入。统计受代码格式影响，不能以行数代替功能覆盖。固定源码基线未变化时，可用 `node scripts/audit-dbx-source.mjs --native-only --write` 快速重算原生清单。
 - MySQL / PostgreSQL / SQLite 的连接配置 CRUD、测试与会话打开、Schema/表/视图/字段发现、主键分页、只读 SQL、大整数/重复列名及空间隔离已有真实 HTTP 和浏览器证据。R01/R02/R03 保持进行中；完整对象管理、导入导出、比较/备份、取消/重连、CLI/MCP 等仍须推进。SQLite 读取已改为只读子进程隔离，注册批次的长查询取消已通过真实验收；写入取消、结果磁盘缓存与完整版本矩阵仍待推进。
 - 验证入口：`bun test --isolate backend/device/src/database backend/device/src/api/server.database.test.ts src/features/connectors/datastore/result-format.test.ts`、`node scripts/verify-relational-live.mjs`、`node scripts/verify-mysql-live.mjs`、`node scripts/verify-table-save-live.mjs`。真实服务验证使用独立 `fouc_datastore_lab` 数据库、专用 `dbx_save_fixture` / `dbx_unique_fixture` 表与 `.runtime/dbx-lab/relational.sqlite`，不访问 Fouc 账户/业务表。MySQL 实验室通过 `node scripts/datastore-lab.mjs up|status` 运行，容器有认证健康检查，随机凭据只写入被 Git 忽略的运行目录。
 - Web 验证：Playwright + Chrome，1440×1000 完成上述 PostgreSQL / SQLite 流程；390×844、760×844 检查连接目录、导航收起及溢出。两次故意写入产生预期 HTTP 400，未出现其他控制台或页面错误；窄窗口工作台操作矩阵仍待补齐。
@@ -131,7 +133,7 @@
 | S05 | 表结构视图和编辑：列、主键、索引、约束、外键、注释、存储选项，生成/预览 DDL；SQLite 重建等方言特例正确处理。 | `components/structure/`、`schema/table_structure_sql.rs` | 进行中 |
 | S06 | ER 图、表间关系、布局、搜索/缩放/导出；字段血缘、上下游依赖和字段来源解释。 | `components/diagram/`、`lineage/` | 进行中 |
 | S07 | 数据库文档快照、双向关系、表/字段 Markdown 笔记与彩色分组、自动保存/失败重试、本地笔记和数据库注释并存、DBML/文档导出与刷新；孤儿笔记、缺失元数据及不支持 DBML 的结构明确告警；支持 CLI/MCP 同源文档上下文。 | `crates/dbx-core/src/data/docs/`、`database-docs.cn.mdx` | 进行中 |
-| S08 | 数据库/Schema 创建与管理、对象复制/粘贴、跨库作用域、菜单权限和危险操作确认。 | `components/objects/`、`schema/` | 待实施 |
+| S08 | 数据库/Schema 创建与管理、对象复制/粘贴、跨库作用域、菜单权限和危险操作确认。 | `components/objects/`、`schema/` | 进行中 |
 
 ## 3. SQL 编辑、执行与结果分析
 
@@ -186,7 +188,7 @@
 | A02 | 模型配置覆盖 Claude、OpenAI、Gemini、DeepSeek、Qwen、MiniMax、Ollama、OpenAI/Anthropic Compatible、Custom；模型发现、API 风格、认证、代理、自定义请求头、推理强度/Thinking、凭据管理、连通测试与多配置切换。 | `crates/dbx-ai-provider/`、`ai_multi_config.rs`、`ai-assistant.cn.mdx` | 待实施 |
 | A03 | Agent 工具调用、只读 Ask 和受控执行、生产写入人工审查、会话历史、取消、错误恢复和用量/结果反馈。 | `crates/dbx-core/src/ai/`、`components/ai/` | 待实施 |
 | A04 | MCP stdio/HTTP 服务：连接/结构/文档/查询/专项资源与工具；连接白名单、库/资源作用域、只读/读写/完全访问三级权限、认证和会话。 | `crates/dbx-mcp/`、`mcp_policy.rs` | 待实施 |
-| A05 | CLI：`doctor`/`capabilities` 诊断、列连接/库/表、描述结构、查询、上下文/DBML 文档导出、表打开 Deep Link；本机直连与桌面桥、Web 远程模式、默认连接；Table/JSON/CSV 稳定输出与非零错误码、超时/行数/文件、写入/危险操作显式参数。 | `crates/dbx-cli/`、`cli.cn.mdx` | 待实施 |
+| A05 | CLI：`doctor`/`capabilities` 诊断、列连接/库/表、描述结构、查询、上下文/DBML 文档导出、表打开 Deep Link；本机直连与桌面桥、Web 远程模式、默认连接；Table/JSON/CSV 稳定输出与非零错误码、超时/行数/文件、写入/危险操作显式参数。 | `crates/dbx-cli/`、`cli.cn.mdx` | 进行中 |
 | A06 | 桌面 Deep Link 与外部 AI/脚本唤起目标连接、表、SQL 标签；错误目标与权限反馈。 | `deep_link.rs`、`launch_args.rs` | 待实施 |
 | A07 | 桌面本地 CLI Agent（Claude Code、Codex、Pi，及源码已接入的其他 CLI）路径/环境配置、受限 MCP 桥；Agent 轮次/重试、`@` 表与 SQL 文件上下文、全局指令/多模板快照、按连接历史和 Markdown 导出。Web 隐藏仅适用本机的 CLI 入口。 | `crates/dbx-ai-provider/src/`、`ai-assistant.cn.mdx` | 待实施 |
 | A08 | MCP 工具逐项对齐 DBX 清单：连接增删复制、库/表/例程/源码/Schema 文档、SQL/Redis/Mongo/消息队列、桌面打开/展示；实现批量 SQL、固定连接会话与 MySQL 显式事务、回滚/未知结果处理、工具/连接/库/资源作用域。 | `crates/dbx-mcp/`、`mcp.cn.mdx` | 待实施 |
@@ -217,7 +219,7 @@
 
 | ID | 任务 / 可验收交付 | DBX 对照 | 状态 |
 | --- | --- | --- | --- |
-| P01 | MySQL/PostgreSQL/Xugu 等 Dashboard、进程/会话、SQL Server 活动跟踪及对应数据库专属管理面板。 | `components/admin/` | 待实施 |
+| P01 | MySQL/PostgreSQL/Xugu 等 Dashboard、进程/会话、SQL Server 活动跟踪及对应数据库专属管理面板。 | `components/admin/` | 进行中 |
 | P02 | 用户/角色/权限管理，达梦用户/角色/Job、Oracle DB Link、PostgreSQL 扩展、MySQL Event 等专属对象操作。 | `components/admin/`、`components/objects/` | 待实施 |
 | P03 | DBX 插件包 `.dbxp` 的安装/启停/卸载、签名和哈希验证、市场目录、版本/更新、权限隔离、Host API 与插件日志。 | `crates/dbx-plugin-runtime/`、`plugins/` | 待实施 |
 | P04 | 插件贡献点：自定义连接/Profile/字段/对象/工作台/侧栏/文件提供者，前端宿主与 sidecar 插件运行时按权限通信。 | `components/plugins/`、`plugin-development.cn.mdx` | 待实施 |

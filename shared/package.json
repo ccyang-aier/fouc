@@ -31,7 +31,10 @@
     "./test-data": "./src/test-data.ts",
     "./connection-config-transfer": "./src/connection-config-transfer.ts",
     "./connection-config-transfer-crypto": "./src/connection-config-transfer-crypto.ts",
-    "./connection-config-transfer-plan": "./src/connection-config-transfer-plan.ts"
+    "./connection-config-transfer-plan": "./src/connection-config-transfer-plan.ts",
+    "./mongo-document-transfer": "./src/mongo-document-transfer.ts",
+    "./database-activity": "./src/database-activity.ts",
+    "./schema-create": "./src/schema-create.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

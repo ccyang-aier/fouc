@@ -15,6 +15,8 @@ import { RelationalMetadataService } from './relational-metadata';
 import { DatabaseDocsRepository } from './database-docs-repository';
 import { DatabaseExportJobs } from './database-export';
 import { RelationalExportService } from './relational-export-service';
+import { DatabaseActivityService } from './activity/service';
+import { SchemaCreatePlans } from './schema-create-plans';
 import {
   DATABASE_CAPABILITIES,
   SQL_FILE_MAX_BYTES,
@@ -56,6 +58,7 @@ type Entry = {
   imports: TableImportPlans;
   structureEdits: StructureEditPlans;
   sqlMutations: SqlMutationPlans;
+  schemaCreates: SchemaCreatePlans;
   saving: boolean;
   connectionName: string;
   sourceIdentity: string;
@@ -67,9 +70,11 @@ export class RelationalSessionManager {
   private readonly transientSql = new RelationalSqlRepository();
   readonly metadata: RelationalMetadataService;
   readonly exports: RelationalExportService;
+  readonly activity: DatabaseActivityService;
   constructor(private readonly capabilities: DatabaseCapabilityRegistry, readonly sqlRepository = new RelationalSqlRepository(), documents = new DatabaseDocsRepository(), exports?: DatabaseExportJobs) {
     this.metadata = new RelationalMetadataService((workspaceId, id) => this.entry(workspaceId, id), documents);
     this.exports = new RelationalExportService((workspaceId, id) => this.entry(workspaceId, id), exports);
+    this.activity = new DatabaseActivityService((workspaceId, id) => this.entry(workspaceId, id));
   }
 
   async connect(workspaceId: string, value: unknown, connection: { id: string; name: string } | null = null): Promise<RelationalSession> {
@@ -130,6 +135,7 @@ export class RelationalSessionManager {
         imports: new TableImportPlans(),
         structureEdits: new StructureEditPlans(),
         sqlMutations: new SqlMutationPlans(),
+        schemaCreates: new SchemaCreatePlans(),
         saving: false,
         sourceIdentity: input.provider === 'sqlite' ? JSON.stringify(['sqlite', path.resolve(input.path).toLowerCase()]) : JSON.stringify([input.provider, input.host.toLowerCase(), input.port, input.provider === 'postgres' ? input.database : null]),
         connectionName: connection?.name ?? `${input.provider} · ${session.database}`,
@@ -178,6 +184,7 @@ export class RelationalSessionManager {
     entry.imports.clear();
     entry.structureEdits.clear();
     entry.sqlMutations.clear();
+    if (!enabled) entry.schemaCreates.clear();
     this.transfers.clearSession(id);
     return entry.session;
   }
@@ -189,6 +196,31 @@ export class RelationalSessionManager {
     )
       throw new DatabaseInputError('当前会话只读，请先解锁表格写入');
     return entry;
+  }
+  schemaCreateOptions(workspaceId: string, id: string, signal?: AbortSignal) {
+    const entry = this.entry(workspaceId, id);
+    return entry.schemaCreates.options(entry.driver, entry.session.provider, entry.session.database, () => {
+      if (this.entry(workspaceId, id) !== entry || entry.saving) throw new DatabaseInputError('连接忙或已变化，请稍后重试。');
+    }, signal);
+  }
+  prepareSchemaCreate(workspaceId: string, id: string, value: unknown, signal?: AbortSignal) {
+    const entry = this.entry(workspaceId, id);
+    return entry.schemaCreates.prepare(entry.driver, entry.session.provider, entry.session.database, value, () => {
+      if (this.entry(workspaceId, id) !== entry || entry.saving) throw new DatabaseInputError('连接忙或已变化，请重新审查。');
+    }, signal);
+  }
+  discardSchemaCreate(workspaceId: string, id: string, planId: string): void {
+    this.entry(workspaceId, id).schemaCreates.discard(planId);
+  }
+  async commitSchemaCreate(workspaceId: string, id: string, planId: string, signal?: AbortSignal) {
+    const entry = this.writable(workspaceId, id);
+    if (entry.saving) throw new DatabaseInputError('请等待当前事务结束。');
+    entry.saving = true;
+    try {
+      return await entry.schemaCreates.commit(entry.driver, planId, () => {
+        if (this.writable(workspaceId, id) !== entry) throw new DatabaseInputError('会话已变化，请重新审查。');
+      }, signal);
+    } finally { entry.saving = false; }
   }
   async prepare(workspaceId: string, id: string, value: unknown): Promise<RelationalSavePreview> {
     const entry = this.writable(workspaceId, id);
@@ -567,6 +599,7 @@ export class RelationalSessionManager {
     entry.imports.clear();
     entry.structureEdits.clear();
     entry.sqlMutations.clear();
+    entry.schemaCreates.clear();
     await this.executions.closeSession(id);
     if (!entry.session.connectionId) this.transientSql.removeConnection(workspaceId, id);
     this.capabilities.disconnect(id, id);

@@ -6,6 +6,8 @@ import type { RelationalConnectionRepository } from '../database/relational-conn
 import { sqlLibraryRoutes } from './sql-library-routes';
 import { sqlMutationRoutes } from './sql-mutation-routes';
 import { databaseExportRoutes } from './database-export-routes';
+import { databaseActivityRoutes } from './database-activity-routes';
+import { schemaCreateRoutes } from './schema-create-routes';
 
 /** Mounted beneath device authentication; every operation includes workspace. */
 export function relationalRoutes(
@@ -56,6 +58,8 @@ export function relationalRoutes(
   app.route('/', sqlLibraryRoutes(sessions, connections));
   app.route('/', sqlMutationRoutes(sessions));
   app.route('/', databaseExportRoutes(sessions.exports));
+  app.route('/', databaseActivityRoutes(sessions.activity));
+  app.route('/', schemaCreateRoutes(sessions));
   app.post(base + '/:id/transfer/plans', async c => c.json({ ok: true, data: await sessions.prepareTransfer(c.req.param('workspaceId')!, c.req.param('id')!, await c.req.json().catch(() => null), c.req.raw.signal) }, 201));
   app.delete(base + '/:id/transfer/plans/:planId', c => { sessions.discardTransfer(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('planId')!); return c.json({ ok: true, data: { discarded: true } }); });
   app.post(base + '/:id/transfer/plans/:planId/start', async c => { const body = await c.req.json().catch(() => null); if (body?.confirm !== true) throw new DatabaseInputError('请明确确认传输计划'); return c.json({ ok: true, data: sessions.startTransfer(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('planId')!) }, 201); });

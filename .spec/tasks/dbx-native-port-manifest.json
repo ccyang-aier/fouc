@@ -858,9 +858,8 @@
       "area": "native-seeded-table-test-data-generation-and-confirmed-import",
       "status": "partial",
       "sourceReferences": [
-        "apps/desktop/src/components/generate/DataGenerateDialog.vue",
-        "apps/desktop/src/components/generate/params/",
-        "crates/dbx-core/src/data/script_generator.rs"
+        "apps/desktop/src/lib/dataGrid/dataGenerate.ts",
+        "apps/desktop/src/components/generate/DataGenerateDialog.vue"
       ],
       "runtimeFiles": [
         "shared/src/test-data-generate.ts",
@@ -888,6 +887,103 @@
         "src/features/connectors/datastore/grid/binary/image.ts",
         "src/features/connectors/datastore/grid/binary/model.ts",
         "src/features/connectors/datastore/grid/binary/view.tsx"
+      ]
+    },
+    {
+      "area": "native-database-activity-and-process-monitoring",
+      "status": "partial",
+      "sourceReferences": [
+        "apps/desktop/src/components/admin/",
+        "apps/desktop/src/lib/database/mysqlServerStatus.ts",
+        "apps/desktop/src/lib/database/postgresServerStatus.ts",
+        "apps/desktop/src/lib/database/serverMetrics.ts"
+      ],
+      "runtimeFiles": [
+        "backend/device/src/api/database-activity-routes.ts",
+        "backend/device/src/database/activity/index.ts",
+        "backend/device/src/database/activity/read.ts",
+        "backend/device/src/database/activity/service.ts",
+        "backend/device/src/database/activity/sql.ts",
+        "shared/src/database-activity-metrics.ts",
+        "shared/src/database-activity-types.ts",
+        "shared/src/database-activity.ts",
+        "src/features/connectors/datastore/activity/index.ts",
+        "src/features/connectors/datastore/activity/panel.tsx",
+        "src/features/connectors/datastore/activity/process-table.tsx",
+        "src/features/connectors/datastore/activity/trend.tsx",
+        "src/features/connectors/datastore/activity/use-activity.ts"
+      ]
+    },
+    {
+      "area": "native-mongo-document-ejson-file-import-export",
+      "status": "partial",
+      "sourceReferences": [
+        "crates/dbx-core/src/data/mongodb_import_export.rs",
+        "apps/desktop/src/components/document/MongoImportDialog.vue"
+      ],
+      "runtimeFiles": [
+        "backend/device/src/database/mongo-document-export.ts",
+        "backend/device/src/database/mongo-document-input.ts",
+        "backend/device/src/database/mongo-document-plans.ts",
+        "shared/src/mongo-document-transfer.ts",
+        "src/features/connectors/mongo/document-transfer/download.ts",
+        "src/features/connectors/mongo/document-transfer/export.tsx",
+        "src/features/connectors/mongo/document-transfer/import-review.tsx",
+        "src/features/connectors/mongo/document-transfer/import.tsx",
+        "src/features/connectors/mongo/document-transfer/index.tsx"
+      ]
+    },
+    {
+      "area": "native-literal-insert-sql-file-import",
+      "status": "partial",
+      "sourceReferences": [
+        "crates/dbx-core/src/data/table_import.rs",
+        "crates/dbx-core/src/data/sql_file_import/"
+      ],
+      "runtimeFiles": [
+        "shared/src/table-import/sql-lexer.ts",
+        "shared/src/table-import/sql-parse.ts"
+      ]
+    },
+    {
+      "area": "native-database-and-schema-creation-review",
+      "status": "partial",
+      "sourceReferences": [
+        "crates/dbx-sql/src/db_admin_sql.rs",
+        "apps/desktop/src/lib/database/createDatabaseCharsetOptions.ts",
+        "apps/desktop/src/lib/database/createDatabaseErrorHints.ts",
+        "apps/desktop/src/lib/database/createDatabaseSql.ts",
+        "apps/desktop/src/components/sidebar/SidebarTreeRuntimeHost.vue"
+      ],
+      "runtimeFiles": [
+        "backend/device/src/api/schema-create-routes.ts",
+        "backend/device/src/database/schema-create-metadata.ts",
+        "backend/device/src/database/schema-create-plans.ts",
+        "shared/src/schema-create-types.ts",
+        "shared/src/schema-create-validation.ts",
+        "shared/src/schema-create.ts",
+        "src/features/connectors/datastore/schema-create/action.tsx",
+        "src/features/connectors/datastore/schema-create/index.ts",
+        "src/features/connectors/datastore/schema-create/use-schema-create.ts"
+      ]
+    },
+    {
+      "area": "native-workspace-scoped-readonly-datastore-cli",
+      "status": "partial",
+      "sourceReferences": [
+        "crates/dbx-cli/src/main.rs"
+      ],
+      "runtimeFiles": [
+        "backend/device/src/datastore-cli/args.ts",
+        "backend/device/src/datastore-cli/commands.ts",
+        "backend/device/src/datastore-cli/connections.ts",
+        "backend/device/src/datastore-cli/execution.ts",
+        "backend/device/src/datastore-cli/format.ts",
+        "backend/device/src/datastore-cli/http.ts",
+        "backend/device/src/datastore-cli/main.ts",
+        "backend/device/src/datastore-cli/output.ts",
+        "backend/device/src/datastore-cli/types.ts",
+        "backend/device/src/entrypoints/datastore-cli.ts"
       ]
     }
   ],

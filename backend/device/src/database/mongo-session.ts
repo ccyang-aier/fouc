@@ -2,9 +2,11 @@ import type { MongoSession } from '@fouc/shared/mongo';
 import { DatabaseInputError } from './input-error';
 import { connectMongo, type MongoDriver } from './drivers/mongo-driver';
 import { MongoMutationPlans } from './mongo-mutation-plans';
+import { MongoDocumentImportPlans } from './mongo-document-plans';
+import { openMongoDocumentExport, type MongoDocumentExport } from './mongo-document-export';
 import { listMongoGridFsBuckets, listMongoGridFsFiles, openMongoGridFsDownload, summarizeMongoGridFs, type MongoGridFsDownload } from './mongo-gridfs';
 
-type Entry = { session: MongoSession; driver: MongoDriver; requests: Set<AbortController>; touched: number; mutations: MongoMutationPlans; saving: boolean };
+type Entry = { session: MongoSession; driver: MongoDriver; requests: Set<AbortController>; touched: number; mutations: MongoMutationPlans; documentImports: MongoDocumentImportPlans; saving: boolean };
 type DriverFactory = (value: unknown, signal?: AbortSignal) => Promise<MongoDriver>;
 /** Session ownership is checked before any database call, including metadata and disconnect. */
 export class MongoSessionManager {
@@ -27,7 +29,7 @@ export class MongoSessionManager {
       const driver = await this.factory(input, controller.signal);
       if (controller.signal.aborted || this.disposed) { await driver.close(); controller.signal.throwIfAborted(); throw new DatabaseInputError('MongoDB 运行时已关闭'); }
       const session: MongoSession = { provider: 'mongodb', id: crypto.randomUUID(), workspaceId, connectionId, database: driver.database, host: driver.host, version: driver.version, readOnly: true };
-      this.entries.set(session.id, { session, driver, requests: new Set(), touched: Date.now(), mutations: new MongoMutationPlans(), saving: false });
+      this.entries.set(session.id, { session, driver, requests: new Set(), touched: Date.now(), mutations: new MongoMutationPlans(), documentImports: new MongoDocumentImportPlans(), saving: false });
       return { ...session };
     } finally { this.connections.delete(controller); signal?.removeEventListener('abort', abort); }
   }
@@ -89,7 +91,7 @@ export class MongoSessionManager {
   setWriteAccess(workspaceId: string, id: string, enabled: boolean): MongoSession {
     const entry = this.entry(workspaceId, id);
     if (entry.saving) throw new DatabaseInputError('请等待 MongoDB 当前写入确认');
-    entry.mutations.clear(); entry.session = { ...entry.session, readOnly: !enabled };
+    entry.mutations.clear(); entry.documentImports.clear(); entry.session = { ...entry.session, readOnly: !enabled };
     return { ...entry.session };
   }
   private writable(workspaceId: string, id: string) {
@@ -113,9 +115,62 @@ export class MongoSessionManager {
     }, signal); }
     finally { entry.saving = false; }
   }
+  prepareDocumentImport(workspaceId: string, id: string, input: unknown, signal?: AbortSignal) {
+    const entry = this.entry(workspaceId, id);
+    return this.run(workspaceId, id, signal, (driver, request) => entry.documentImports.prepare(this.gridFsClient(driver), input, () => {
+      if (this.entry(workspaceId, id) !== entry || entry.saving) throw new DatabaseInputError('MongoDB 连接正在提交，请稍后重新预览');
+    }, request));
+  }
+  documentImportStatus(workspaceId: string, id: string, planId: string) {
+    return this.entry(workspaceId, id).documentImports.status(planId);
+  }
+  cancelDocumentImport(workspaceId: string, id: string, planId: string) {
+    return this.entry(workspaceId, id).documentImports.cancel(planId);
+  }
+  discardDocumentImport(workspaceId: string, id: string, planId: string) {
+    this.entry(workspaceId, id).documentImports.discard(planId);
+  }
+  async commitDocumentImport(workspaceId: string, id: string, planId: string, signal?: AbortSignal) {
+    const entry = this.writable(workspaceId, id);
+    if (entry.saving) throw new DatabaseInputError('MongoDB 当前连接正在提交');
+    const controller = new AbortController(), abort = () => controller.abort(signal?.reason);
+    signal?.throwIfAborted();
+    signal?.addEventListener('abort', abort, { once: true });
+    entry.requests.add(controller);
+    entry.saving = true;
+    try {
+      return await entry.documentImports.commit(entry.driver.mutationClient!(), planId, () => {
+        if (this.writable(workspaceId, id) !== entry) throw new DatabaseInputError('MongoDB 连接已变化');
+      }, controller.signal);
+    } finally {
+      entry.saving = false;
+      entry.requests.delete(controller);
+      signal?.removeEventListener('abort', abort);
+      entry.touched = Date.now();
+    }
+  }
+  async exportDocuments(workspaceId: string, id: string, input: unknown, signal?: AbortSignal): Promise<MongoDocumentExport> {
+    const entry = this.entry(workspaceId, id);
+    const controller = new AbortController(), abort = () => controller.abort(signal?.reason);
+    signal?.throwIfAborted();
+    signal?.addEventListener('abort', abort, { once: true });
+    entry.requests.add(controller);
+    const release = () => {
+      entry.requests.delete(controller);
+      signal?.removeEventListener('abort', abort);
+      entry.touched = Date.now();
+    };
+    try {
+      const download = await openMongoDocumentExport(this.gridFsClient(entry.driver), input, controller.signal);
+      download.stream.once('close', release);
+      download.stream.on('error', () => undefined);
+      if (controller.signal.aborted) { download.stream.destroy(); controller.signal.throwIfAborted(); }
+      return download;
+    } catch (error) { release(); throw error; }
+  }
   async disconnect(workspaceId: string, id: string): Promise<void> {
     const entry = this.entry(workspaceId, id); this.entries.delete(id);
-    entry.mutations.clear();
+    entry.mutations.clear(); entry.documentImports.clear();
     for (const request of entry.requests) request.abort(new Error('MongoDB 会话已关闭'));
     await entry.driver.close();
   }

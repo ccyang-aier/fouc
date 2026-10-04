@@ -30,7 +30,7 @@ export type TableImportPanelProps = {
 };
 type Step = 'source' | 'mapping' | 'review' | 'done';
 const STEPS: Array<[Step, string]> = [['source', '源与解析'], ['mapping', '字段映射'], ['review', '审核导入'], ['done', '完成']];
-function formatForName(name: string): TableImportFormat { return /\.tsv$/i.test(name) ? 'tsv' : /\.json$/i.test(name) ? 'json' : /\.(ndjson|jsonl)$/i.test(name) ? 'ndjson' : /\.(txt|psv)$/i.test(name) ? 'delimited' : 'csv'; }
+function formatForName(name: string): TableImportFormat { return /\.sql$/i.test(name) ? 'sql' : /\.tsv$/i.test(name) ? 'tsv' : /\.json$/i.test(name) ? 'json' : /\.(ndjson|jsonl)$/i.test(name) ? 'ndjson' : /\.(txt|psv)$/i.test(name) ? 'delimited' : 'csv'; }
 function Issues({ issues }: { issues: TableImportIssue[] }) {
   return issues.length ? <div className={styles.issues} role="alert"><div><WarningCircle size={15} /><strong>请修正后重新预览</strong></div><ul>{issues.slice(0, 20).map((issue, index) => <li key={index}>{issue.record ? `记录 ${issue.record} · ` : ''}{issue.line ? `第 ${issue.line} 行，第 ${issue.column} 列 · ` : ''}{issue.targetColumn ? `${issue.targetColumn}：` : ''}{issue.message}</li>)}</ul>{issues.length > 20 && <span>另有 {issues.length - 20} 项问题。</span>}</div> : null;
 }
@@ -58,13 +58,13 @@ function TableImportWorkflow({ provider, base, schema, table, columns, onPreview
   function invalidate() { request.current?.abort(); request.current = null; discard(); setServerReview(null); setError(''); setBusy(null); }
   async function loadFile(selected: File) {
     invalidate(); setSource(null); setFile(null);
-    if (/\.(xlsx?|parquet|orc|sql|zip)$/i.test(selected.name)) { setError('此格式尚未支持。请转换为 CSV、JSON 或分隔文本后导入。'); return; }
+    if (/\.(xls[xm]?|parquet|orc|zip)$/i.test(selected.name)) { setError('此格式尚未支持。请转换为 CSV、JSON、分隔文本或字面量 INSERT SQL 后导入。'); return; }
     if (selected.size > TABLE_IMPORT_LIMITS.bytes) { setError('文件最多 5 MiB。请拆分文件后再导入。'); return; }
     const controller = new AbortController(); request.current = controller; setBusy('file');
     try {
       const bytes = new Uint8Array(await selected.arrayBuffer());
       if (request.current !== controller || controller.signal.aborted) return;
-      setFile({ name: selected.name, bytes }); setOptions(defaultTableImportOptions(formatForName(selected.name))); setStep('source');
+      setFile({ name: selected.name, bytes }); setOptions({ ...defaultTableImportOptions(formatForName(selected.name)), sqlDialect: provider }); setStep('source');
     } catch (reason) { if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : String(reason)); }
     finally { if (request.current === controller && !controller.signal.aborted) setBusy(null); }
   }
@@ -123,7 +123,7 @@ function TableImportWorkflow({ provider, base, schema, table, columns, onPreview
       {step === 'source' && <>
         <div className={styles.sourceTabs}><button type="button" data-active={sourceMode === 'file'} onClick={() => { invalidate(); setSource(null); setSourceMode('file'); }}>选择文件</button><button type="button" data-active={sourceMode === 'text'} onClick={() => { invalidate(); setSource(null); setSourceMode('text'); }}>粘贴文本</button></div>
         {sourceMode === 'file' ? <div className={styles.dropzone} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); const selected = event.dataTransfer.files[0]; if (selected) void loadFile(selected); }}>
-          <FileArrowUp size={29} /><strong>{file ? file.name : '拖入文件，或选择本地文件'}</strong><p>{file ? `${(file.bytes.byteLength / 1024).toFixed(1)} KiB · 文件已在本地读取` : 'CSV、TSV、分隔文本、JSON 数组与 NDJSON'}</p><button type="button" className={styles.secondary} disabled={busy === 'file'} onClick={() => fileInput.current?.click()}>{busy === 'file' ? '正在读取…' : file ? '更换文件' : '选择文件'}</button><input className={styles.fileInput} ref={fileInput} type="file" accept=".csv,.tsv,.txt,.psv,.json,.jsonl,.ndjson" onChange={(event) => { const selected = event.target.files?.[0]; if (selected) void loadFile(selected); event.target.value = ''; }} />
+          <FileArrowUp size={29} /><strong>{file ? file.name : '拖入文件，或选择本地文件'}</strong><p>{file ? `${(file.bytes.byteLength / 1024).toFixed(1)} KiB · 文件已在本地读取` : 'CSV、TSV、分隔文本、JSON / NDJSON 与 INSERT SQL'}</p><button type="button" className={styles.secondary} disabled={busy === 'file'} onClick={() => fileInput.current?.click()}>{busy === 'file' ? '正在读取…' : file ? '更换文件' : '选择文件'}</button><input className={styles.fileInput} ref={fileInput} type="file" accept=".csv,.tsv,.txt,.psv,.json,.jsonl,.ndjson,.sql" onChange={(event) => { const selected = event.target.files?.[0]; if (selected) void loadFile(selected); event.target.value = ''; }} />
         </div> : <textarea className={styles.paste} value={paste} onChange={(event) => { invalidate(); setSource(null); setPaste(event.target.value); }} placeholder={'id,name\n1,Ada\n2,Grace'} aria-label="粘贴待导入数据" spellCheck={false} />}
         <TableImportParseControls options={options} encoding={encoding} hasFile={sourceMode === 'file'} onEncoding={(value) => { invalidate(); setSource(null); setEncoding(value); }} onChange={(value) => { invalidate(); setSource(null); setOptions(value); }} />
         <Issues issues={source?.parsed.errors ?? []} />

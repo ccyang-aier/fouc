@@ -1,7 +1,7 @@
 import type { DatabaseColumnInfo } from '../database';
 
 export const TABLE_IMPORT_LIMITS = { bytes: 5 * 1024 * 1024, rows: 5000, columns: 256, cells: 100_000, previewRows: 50, issues: 100 } as const;
-export type TableImportFormat = 'csv' | 'tsv' | 'delimited' | 'json' | 'ndjson';
+export type TableImportFormat = 'csv' | 'tsv' | 'delimited' | 'json' | 'ndjson' | 'sql';
 export type TableImportEncoding = 'auto' | 'utf8' | 'utf16Le' | 'utf16Be' | 'gbk';
 export type TableImportCell = { kind: 'text' | 'number' | 'boolean' | 'json'; value: string } | { kind: 'null' } | { kind: 'missing' };
 export type TableImportInferredType = 'boolean' | 'integer' | 'decimal' | 'date' | 'timestamp' | 'json' | 'text';
@@ -18,6 +18,8 @@ export interface TableImportParseOptions {
   /** Only an unquoted delimited field with this exact spelling becomes NULL. */
   nullToken?: string;
   jsonShape?: 'auto' | 'objects' | 'arrays';
+  /** Source dialect controls identifier case and string escape interpretation. */
+  sqlDialect?: 'mysql' | 'postgres' | 'sqlite';
 }
 export interface TableImportIssue {
   message: string;
@@ -38,6 +40,7 @@ export interface TableImportParsed {
   sizeBytes: number;
   errors: TableImportIssue[];
   warnings: string[];
+  sourceTarget?: { schema: string | null; table: string; dialect: 'mysql' | 'postgres' | 'sqlite' };
 }
 export interface TableImportMapping { sourceColumn: string; targetColumn: string }
 export interface TableImportInput { schema: string; table: string; text: string; options: TableImportParseOptions; mappings: TableImportMapping[] }

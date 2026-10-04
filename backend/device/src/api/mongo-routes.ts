@@ -33,6 +33,50 @@ export function mongoRoutes(sessions: MongoSessionManager, connections?: DeviceC
     if (body?.confirm !== true) throw new DatabaseInputError('请明确确认已预览的 MongoDB 变更');
     return c.json({ ok: true, data: await sessions.commitMutation(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('planId')!, c.req.raw.signal) });
   });
+  app.post(base + '/:id/documents/import/plans', async c => {
+    // Read the request with a real byte bound, including JSON escaping overhead.
+    const reader = c.req.raw.body?.getReader();
+    if (!reader) throw new DatabaseInputError('导入请求没有内容');
+    const chunks: Uint8Array[] = [];
+    let bytes = 0;
+    try {
+      while (true) {
+        const chunk = await reader.read();
+        if (chunk.done) break;
+        bytes += chunk.value.byteLength;
+        if (bytes > 64 * 1024 * 1024) { await reader.cancel(); throw new DatabaseInputError('导入请求超过 64 MiB；原始 UTF-8 文件最多 32 MiB'); }
+        chunks.push(chunk.value);
+      }
+    } finally { reader.releaseLock(); }
+    let input: unknown;
+    try { input = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks))); }
+    catch { throw new DatabaseInputError('导入请求须为有效的 UTF-8 JSON'); }
+    return c.json({ ok: true, data: await sessions.prepareDocumentImport(c.req.param('workspaceId')!, c.req.param('id')!, input, c.req.raw.signal) }, 201);
+  });
+  app.get(base + '/:id/documents/import/plans/:planId', c => c.json({ ok: true, data: sessions.documentImportStatus(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('planId')!) }));
+  app.delete(base + '/:id/documents/import/plans/:planId', c => {
+    sessions.discardDocumentImport(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('planId')!);
+    return c.json({ ok: true, data: { discarded: true } });
+  });
+  app.post(base + '/:id/documents/import/plans/:planId/cancel', c => c.json({ ok: true, data: sessions.cancelDocumentImport(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('planId')!) }));
+  app.post(base + '/:id/documents/import/plans/:planId/commit', async c => {
+    const input = await c.req.json().catch(() => null);
+    if (input?.confirm !== true) throw new DatabaseInputError('请明确确认向目标集合追加全部已预览文档');
+    return c.json({ ok: true, data: await sessions.commitDocumentImport(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('planId')!, c.req.raw.signal) });
+  });
+  app.post(base + '/:id/documents/export', async c => {
+    const download = await sessions.exportDocuments(c.req.param('workspaceId')!, c.req.param('id')!, await c.req.json().catch(() => null), c.req.raw.signal);
+    const ascii = download.filename.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_');
+    const encoded = encodeURIComponent(download.filename).replace(/['()*]/g, char => '%' + char.charCodeAt(0).toString(16).toUpperCase());
+    try {
+      return new Response(Readable.toWeb(download.stream) as ReadableStream<Uint8Array>, { headers: {
+        'content-type': 'application/octet-stream',
+        'content-disposition': `attachment; filename="${ascii}"; filename*=UTF-8''${encoded}`,
+        'cache-control': 'no-store',
+        'x-content-type-options': 'nosniff',
+      } });
+    } catch (error) { download.stream.destroy(); throw error; }
+  });
   for (const operation of ['collections', 'find', 'count', 'indexes', 'information', 'command'] as const) {
     app.post(base + '/:id/' + operation, async c => c.json({ ok: true, data: await sessions[operation](c.req.param('workspaceId')!, c.req.param('id')!, await c.req.json().catch(() => null), c.req.raw.signal) }));
   }

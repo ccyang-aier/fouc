@@ -25,6 +25,7 @@
     "test:frontend": "bun test --isolate ./shared/src ./src",
     "knowledge:verify": "node scripts/verify-knowledge-boundaries.mjs && node scripts/verify-knowledge-tasks.mjs",
     "dbx:verify": "node scripts/verify-dbx-migration-tracker.mjs",
+    "datastore:cli": "bun backend/device/src/entrypoints/datastore-cli.ts",
     "docs:verify": "node scripts/verify-docs.mjs",
     "knowledge:test": "bun test --isolate ./shared/src/knowledge ./backend/device/src/knowledge ./backend/device/src/collaboration ./backend/server/src/modules/knowledge",
     "backend:test": "pnpm device:test && pnpm server:test",

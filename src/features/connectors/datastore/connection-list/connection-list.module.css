@@ -119,8 +119,7 @@
 .status[data-status='testing'] { color: var(--accent-ink); }
 .status[data-status='passed'] i,
 .status[data-status='failed'] i { background: currentColor; }
-.table .actionsHeading { text-align: center; }
-.rowActions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+.rowActions { display: flex; align-items: center; justify-content: flex-start; gap: 6px; }
 .iconButton { display: inline-flex; width: 28px; height: 28px; flex: 0 0 28px; align-items: center; justify-content: center; border: 1px solid transparent; border-radius: 4px; padding: 0; background: transparent; color: var(--list-soft-ink); }
 .iconButton:hover { background: var(--surface-hover); color: var(--list-accent); }
 .danger { color: var(--err-ink); }

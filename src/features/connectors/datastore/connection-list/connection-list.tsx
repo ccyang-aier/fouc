@@ -231,7 +231,7 @@ export function ConnectionList(props: ConnectionListProps) {
             {!hiddenColumns.includes('tags') && sortHeader('tags', '标签')}
             {!hiddenColumns.includes('access') && <th scope="col">访问方式</th>}
             {!hiddenColumns.includes('status') && sortHeader('status', '状态')}
-            <th scope="col" className={styles.actionsHeading}>操作</th>
+            <th scope="col">操作</th>
           </tr></thead>
           <tbody>
             {loading ? Array.from({ length: 3 }, (_, index) => <tr key={index} aria-hidden="true">{Array.from({ length: visibleColumnCount }, (_, column) => <td key={column}><span className={styles.skeleton} /></td>)}</tr>)

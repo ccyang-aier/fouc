@@ -36,7 +36,7 @@ export function ConnectionConfigTransferActions({
   return (
     <>
       <DropdownMenu><DropdownMenuTrigger asChild><button type="button" className={styles.more} aria-label="连接配置操作" disabled={disabled}><DotsThree size={19} weight="bold" /></button></DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+        <DropdownMenuContent align="end" className="min-w-0 w-max whitespace-nowrap">
           <DropdownMenuItem onSelect={() => setImporting(true)}><UploadSimple size={14} />导入连接配置</DropdownMenuItem>
           <DropdownMenuItem disabled={!current.length} onSelect={() => setExportSnapshot(selected.length ? selected : current)}><DownloadSimple size={14} />{selected.length ? `导出所选配置（${selected.length}）` : '导出连接配置'}</DropdownMenuItem>
         </DropdownMenuContent>

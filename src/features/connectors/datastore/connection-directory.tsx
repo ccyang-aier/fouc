@@ -1,328 +1,147 @@
-"use client"
+'use client';
 
-import { useEffect, useState } from "react"
-import { Copy, Database, MagnifyingGlass, PencilSimple, Plus, Trash, ArrowRight } from "@phosphor-icons/react"
-import type {
-  RelationalConnectionConfig,
-  RelationalProvider,
-  RelationalSavedConnection,
-  RelationalSession,
-  RedisConnectionConfig,
-  RedisSavedConnection,
-  RedisSession
-} from "@fouc/shared"
-import { backendFetch } from "@/lib/backend"
-import { useWorkspace } from "@/features/workspaces/workspace-provider"
-import { ConnectorDetailHeader } from "../connector-detail-header"
-import { RelationalDialog } from "./relational-dialog"
-import { RelationalWorkbench } from "./relational-workbench"
-import { forgetSqlDrafts } from './use-sql-drafts'
-import { RedisDialog } from "../redis/redis-dialog"
-import { RedisWorkbench } from "../redis/redis-workbench"
-import { MongoWorkbench } from '../mongo'
-import { MongoDialog } from '../mongo/mongo-dialog'
-import type { MongoSession } from '@fouc/shared/mongo'
-import type { MongoConnectionConfig, MongoSavedConnection } from '@fouc/shared/mongo-connections'
-import styles from "./relational.module.css"
-import type { DatabaseConnectionOptionsInput } from '@fouc/shared/connection-options'
-import { ConnectionConfigTransferActions } from './connection-config-transfer'
-import transferStyles from './connection-config-transfer/transfer.module.css'
+import { useEffect, useRef, useState } from 'react';
+import type { RelationalConnectionConfig, RelationalSavedConnection, RelationalSession, RedisConnectionConfig, RedisSavedConnection, RedisSession } from '@fouc/shared';
+import type { MongoConnectionConfig, MongoSavedConnection } from '@fouc/shared/mongo-connections';
+import type { MongoSession } from '@fouc/shared/mongo';
+import type { DatabaseConnectionOptionsInput } from '@fouc/shared/connection-options';
+import type { ConnectionDirectoryMetadata } from '@fouc/shared/connection-directory';
+import { backendFetch } from '@/lib/backend';
+import { useWorkspace } from '@/features/workspaces/workspace-provider';
+import { useProjectResources } from '@/features/project/project-resources';
+import { RelationalDialog } from './relational-dialog';
+import { RelationalWorkbench } from './relational-workbench';
+import { forgetSqlDrafts } from './use-sql-drafts';
+import { RedisDialog } from '../redis/redis-dialog';
+import { RedisWorkbench } from '../redis/redis-workbench';
+import { MongoWorkbench } from '../mongo';
+import { MongoDialog } from '../mongo/mongo-dialog';
+import { ConnectionConfigTransferActions } from './connection-config-transfer';
+import { ConnectionList } from './connection-list/connection-list';
+import { connectionListRow, directoryProviders, emptyDirectory, type DatastoreProvider, type SavedDatastoreConnection } from './connection-list/provider-model';
+import { OrganizeConnectionDialog } from './connection-list/organize-dialog';
+import { SqlDialog } from './sql-library-dialog';
+import styles from './relational.module.css';
 
-type SavedConnection = RelationalSavedConnection | RedisSavedConnection | MongoSavedConnection
-
-type Props = { provider: RelationalProvider | "redis" | 'mongodb'; onBack: () => void; onWorkbenchFocus?: () => void }
+type Session = RelationalSession | RedisSession | MongoSession;
+type Props = { provider: DatastoreProvider; onBack: () => void; onWorkbenchFocus?: () => void };
 export function DatastoreConnections(props: Props) {
-  const { activeSpace } = useWorkspace()
-  const { onWorkbenchFocus } = props
+  const { activeSpace } = useWorkspace();
+  const { projects, status, error } = useProjectResources();
+  const { onWorkbenchFocus } = props;
   useEffect(() => {
-    if (window.matchMedia("(max-width: 760px)").matches) onWorkbenchFocus?.()
-  }, [onWorkbenchFocus])
-  return (
-    <ConnectionDirectory
-      key={`${activeSpace.id}:${props.provider}`}
-      {...props}
-      workspaceId={activeSpace.id}
-    />
-  )
+    if (window.matchMedia('(max-width: 760px)').matches) onWorkbenchFocus?.();
+  }, [onWorkbenchFocus]);
+  return <ConnectionDirectory key={`${activeSpace.id}:${props.provider}`} {...props} workspaceId={activeSpace.id}
+    projects={projects.filter(project => project.workspaceId === activeSpace.id)}
+    projectNotice={status === 'loading' ? '正在读取当前工作空间的项目…' : status === 'error' ? error ?? '项目暂不可用' : undefined} />;
 }
 
-function ConnectionDirectory({
-  provider,
-  workspaceId,
-  onBack,
-  onWorkbenchFocus
-}: Props & { workspaceId: string }) {
-  const label =
-    provider === "postgres"
-      ? "PostgreSQL"
-      : provider === "mysql"
-        ? "MySQL"
-        : provider === "redis"
-          ? "Redis"
-          : provider === 'mongodb' ? 'MongoDB' : "SQLite"
-  const base = `/api/database/workspaces/${encodeURIComponent(workspaceId)}/${provider === "redis" ? "redis" : provider === 'mongodb' ? 'mongo' : "relational"}`
-  const [connections, setConnections] = useState<SavedConnection[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
-  const [search, setSearch] = useState("")
-  const [revision, setRevision] = useState(0)
-  const [dialog, setDialog] = useState<{
-    intent: "save" | "connect"
-    connection?: SavedConnection
-  } | null>(null)
-  const [removing, setRemoving] = useState<SavedConnection | null>(null)
-  const [busy, setBusy] = useState(false)
-  const [active, setActive] = useState<{
-    connection: SavedConnection
-    session: RelationalSession | RedisSession | MongoSession
-  } | null>(null)
+function ConnectionDirectory({ provider, workspaceId, onBack, onWorkbenchFocus, projects, projectNotice }: Props & {
+  workspaceId: string; projects: { id: string; name: string }[]; projectNotice?: string;
+}) {
+  const descriptor = directoryProviders[provider];
+  const base = `/api/database/workspaces/${encodeURIComponent(workspaceId)}/${descriptor.family}`;
+  const [connections, setConnections] = useState<SavedDatastoreConnection[]>([]);
+  const [loading, setLoading] = useState(true), [error, setError] = useState('');
+  const [revision, setRevision] = useState(0), [selection, setSelection] = useState<string[]>([]);
+  const [dialog, setDialog] = useState<{ intent: 'save' | 'connect'; connection?: SavedDatastoreConnection } | null>(null);
+  const [organizing, setOrganizing] = useState<SavedDatastoreConnection | null>(null);
+  const [removing, setRemoving] = useState<SavedDatastoreConnection | null>(null);
+  const [busy, setBusy] = useState(false), [pendingIds, setPendingIds] = useState<string[]>([]), [testingId, setTestingId] = useState<string | null>(null);
+  const pending = useRef(new Set<string>());
+  const [active, setActive] = useState<{ connection: SavedDatastoreConnection; session: Session } | null>(null);
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   useEffect(() => {
-    const controller = new AbortController()
-    void backendFetch<SavedConnection[]>(`${base}/connections`, { signal: controller.signal })
-      .then((items) => {
-        if (!controller.signal.aborted) {
-          setConnections(items)
-          setLoading(false)
-        }
-      })
-      .catch((reason) => {
-        if (!controller.signal.aborted) {
-          setError(reason.message)
-          setLoading(false)
-        }
-      })
-    return () => controller.abort()
-  }, [base, revision])
-  const activeSessionId = active?.session.id
+    const controller = new AbortController();
+    void backendFetch<SavedDatastoreConnection[]>(`${base}/connections`, { signal: controller.signal })
+      .then(items => { if (!controller.signal.aborted) { setConnections(items); setLoading(false); } })
+      .catch(cause => { if (!controller.signal.aborted) { setError(cause instanceof Error ? cause.message : '读取连接失败'); setLoading(false); } });
+    return () => controller.abort();
+  }, [base, revision]);
+  const activeSessionId = active?.session.id;
   useEffect(() => {
-    if (!activeSessionId) return
-    return () => {
-      void backendFetch(`${base}/sessions/${activeSessionId}`, { method: "DELETE" }).catch(() => undefined)
-    }
-  }, [activeSessionId, base])
+    if (!activeSessionId) return;
+    return () => { void backendFetch(`${base}/sessions/${activeSessionId}`, { method: 'DELETE' }).catch(() => undefined); };
+  }, [activeSessionId, base]);
+  function replace(item: SavedDatastoreConnection) {
+    if (mounted.current) setConnections(current => current.map(entry => entry.id === item.id ? item : entry));
+  }
   async function save(name: string, config: RelationalConnectionConfig | RedisConnectionConfig | MongoConnectionConfig) {
-    const id = dialog?.connection?.id
-    const item = await backendFetch<SavedConnection>(`${base}/connections${id ? `/${id}` : ""}`, {
-      method: id ? "PUT" : "POST",
-      body: JSON.stringify({ name, config })
-    })
-    setConnections((current) => [...current.filter((entry) => entry.id !== item.id), item])
-    setDialog(null)
+    const id = dialog?.connection?.id;
+    const item = await backendFetch<SavedDatastoreConnection>(`${base}/connections${id ? `/${id}` : ''}`, { method: id ? 'PUT' : 'POST', body: JSON.stringify({ name, config }) });
+    if (mounted.current) { setConnections(current => [...current.filter(entry => entry.id !== item.id), item]); setDialog(null); }
   }
-  async function open(connection: SavedConnection, password = "", connectionOptions?: DatabaseConnectionOptionsInput) {
-    const session = await backendFetch<RelationalSession | RedisSession | MongoSession>(
-      `${base}/connections/${connection.id}/connect`,
-      {
-        method: "POST",
-        body: JSON.stringify({ password, connectionOptions })
-      }
-    )
-    setDialog(null)
-    setActive({ connection, session })
-    onWorkbenchFocus?.()
-  }
-  async function copy(connection: SavedConnection) {
-    setError("")
+  async function connect(connection: SavedDatastoreConnection, password: string, connectionOptions: DatabaseConnectionOptionsInput | undefined, open: boolean) {
+    setTestingId(connection.id);
+    const annotate = (kind: 'passed' | 'failed') => {
+      if (mounted.current) setConnections(current => current.map(entry => entry.id === connection.id && JSON.stringify(entry.config) === JSON.stringify(connection.config)
+        ? { ...entry, status: { kind, checkedAt: Date.now() } } : entry));
+    };
+    let session: Session;
     try {
-      const item = await backendFetch<SavedConnection>(`${base}/connections`, {
-        method: "POST",
-        body: JSON.stringify({ name: `${connection.name} 副本`, config: connection.config })
-      })
-      setConnections((current) => [...current, item])
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "复制失败")
+      session = await backendFetch<Session>(`${base}/connections/${connection.id}/connect`, { method: 'POST', body: JSON.stringify({ password, connectionOptions }) });
+    } catch (cause) {
+      annotate('failed');
+      throw cause;
+    } finally { if (mounted.current) setTestingId(null); }
+    if (!open || !mounted.current) {
+      await backendFetch(`${base}/sessions/${session.id}`, { method: 'DELETE' });
     }
+    if (mounted.current) {
+      annotate('passed');
+      if (open) { setSelection([]); setDialog(null); setActive({ connection, session }); onWorkbenchFocus?.(); }
+    }
+    return '连接测试通过';
+  }
+  async function patchDirectory(id: string, metadata: Partial<ConnectionDirectoryMetadata>) {
+    if (pending.current.has(id)) throw new Error('此连接正在保存，请稍后再试');
+    pending.current.add(id); setPendingIds([...pending.current]);
+    try { replace(await backendFetch<SavedDatastoreConnection>(`${base}/connections/${id}/directory`, { method: 'PATCH', body: JSON.stringify(metadata) })); }
+    finally { pending.current.delete(id); if (mounted.current) setPendingIds([...pending.current]); }
+  }
+  async function copy(id: string) {
+    const connection = connections.find(entry => entry.id === id);
+    if (!connection) return;
+    setError('');
+    try {
+      const item = await backendFetch<SavedDatastoreConnection>(`${base}/connections`, { method: 'POST', body: JSON.stringify({ name: `${connection.name} 副本`, config: connection.config, directory: { ...(connection.directory ?? emptyDirectory), favorite: false } }) });
+      if (mounted.current) setConnections(current => [...current, item]);
+    } catch (cause) { if (mounted.current) setError(cause instanceof Error ? cause.message : '复制失败'); }
   }
   async function remove() {
-    if (!removing) return
-    setBusy(true)
-    setError("")
+    if (!removing || busy) return;
+    setBusy(true); setError('');
     try {
-      await backendFetch(`${base}/connections/${removing.id}`, { method: "DELETE" })
-      if (provider !== 'redis' && provider !== 'mongodb') forgetSqlDrafts(`${base}/connections/${removing.id}`)
-      setConnections((items) => items.filter((item) => item.id !== removing.id))
-      setRemoving(null)
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "删除失败")
-    } finally {
-      setBusy(false)
-    }
+      await backendFetch(`${base}/connections/${removing.id}`, { method: 'DELETE' });
+      if (provider !== 'redis' && provider !== 'mongodb') forgetSqlDrafts(`${base}/connections/${removing.id}`);
+      if (mounted.current) { setConnections(items => items.filter(item => item.id !== removing.id)); setSelection(ids => ids.filter(id => id !== removing.id)); setRemoving(null); }
+    } catch (cause) { setError(cause instanceof Error ? cause.message : '删除失败'); }
+    finally { setBusy(false); }
   }
-  if (active?.session.provider === "redis")
-    return (
-      <RedisWorkbench key={active.session.id} session={active.session} name={active.connection.name} onBack={() => setActive(null)} onSessionChange={(session) => {
-        setActive({ connection: active.connection, session })
-      }} />
-    )
-  if (active?.session.provider === 'mongodb') return <MongoWorkbench key={active.session.id} session={active.session} name={active.connection.name} onBack={() => setActive(null)} onSessionChange={session => setActive({ connection: active.connection, session })} />
-  if (active)
-    return (
-      <RelationalWorkbench
-        key={active.session.id}
-        session={active.session}
-        name={active.connection.name}
-        onBack={() => setActive(null)}
-      />
-    )
-  const visible = connections.filter(
-    (item) =>
-      item.config.provider === provider &&
-      `${item.name} ${JSON.stringify(item.config)}`
-        .toLocaleLowerCase()
-        .includes(search.trim().toLocaleLowerCase())
-  )
-  return (
-    <section aria-label={`${label} 连接列表`} className={styles.directory}>
-      <ConnectorDetailHeader name={label} onBack={onBack} />
-      <div className={styles.directoryHead}>
-        <div>
-          <h1>{label} 连接</h1>
-          <p>管理当前工作空间的数据库连接，在工作台中浏览与查询。</p>
-        </div>
-        <button className={styles.primary} type="button" disabled={loading} onClick={() => setDialog({ intent: "save" })}>
-          <Plus size={15} />
-          新建连接
-        </button>
-      </div>
-      <div className={`${styles.directoryToolbar} ${transferStyles.directoryToolbar}`}>
-        <label className={styles.search}>
-          <MagnifyingGlass size={15} />
-          <input
-            aria-label="搜索连接"
-            placeholder="搜索名称或连接地址"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-        </label>
-        <span>{visible.length} 个连接</span>
-        <ConnectionConfigTransferActions workspaceId={workspaceId} provider={provider} connections={connections} disabled={loading || busy} onImported={() => setRevision((value) => value + 1)} />
-      </div>
-      {error && (
-        <div className={styles.error} role="alert">
-          {error}
-          <button
-            type="button"
-            onClick={() => {
-              setError("")
-              setLoading(true)
-              setRevision((value) => value + 1)
-            }}
-          >
-            重试
-          </button>
-        </div>
-      )}
-      {removing && (
-        <div className={styles.confirm} role="alertdialog" aria-label="删除连接确认">
-          <span>删除「{removing.name}」的连接配置？数据库内容保持不变。</span>
-          <button
-            disabled={busy}
-            type="button"
-            className={styles.secondary}
-            onClick={() => setRemoving(null)}
-          >
-            取消
-          </button>
-          <button disabled={busy} type="button" className={styles.danger} onClick={() => void remove()}>
-            确认删除
-          </button>
-        </div>
-      )}
-      <div className={styles.directoryBody}>
-        {loading ? (
-          <p className={styles.empty} role="status">
-            正在读取连接…
-          </p>
-        ) : !visible.length ? (
-          <div className={styles.empty}>
-            <Database size={32} />
-            <strong>{search ? "没有匹配的连接" : "连接你的第一个数据库"}</strong>
-            <span>{search ? "试试其他名称或地址。" : "连接配置保存在当前设备，并按工作空间隔离。"}</span>
-            {!search && (
-              <button
-                className={styles.secondary}
-                type="button"
-                onClick={() => setDialog({ intent: "save" })}
-              >
-                新建连接
-              </button>
-            )}
-          </div>
-        ) : (
-          <table className={styles.connections}>
-            <thead>
-              <tr>
-                <th>连接名称</th>
-                <th>地址 / 文件</th>
-                <th>数据库</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visible.map((item) => (
-                <tr key={item.id}>
-                  <td>
-                    <div className={styles.connectionIdentity}><span className={styles.connectionMark}><Database size={19} /></span><div><strong>{item.name}</strong><small>{label} · 只读连接</small></div></div>
-                  </td>
-                  <td title={item.config.provider !== "sqlite" ? item.config.host : item.config.path}>
-                    {item.config.provider !== "sqlite"
-                      ? `${item.config.host}:${item.config.port}`
-                      : item.config.path}
-                  </td>
-                  <td>{item.config.provider !== "sqlite" ? item.config.database : "main"}</td>
-                  <td><div className={styles.connectionActions}>
-                    <button
-                      type="button"
-                      className={styles.open}
-                      onClick={() => setDialog({ intent: "connect", connection: item })}
-                    >
-                      打开工作台
-                      <ArrowRight size={13} />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`编辑 ${item.name}`}
-                      onClick={() => setDialog({ intent: "save", connection: item })}
-                    >
-                      <PencilSimple size={15} />
-                    </button>
-                    <button type="button" aria-label={`复制 ${item.name}`} onClick={() => void copy(item)}>
-                      <Copy size={15} />
-                    </button>
-                    <button type="button" aria-label={`删除 ${item.name}`} onClick={() => setRemoving(item)}>
-                      <Trash size={15} />
-                    </button>
-                  </div></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-      {dialog && provider === "redis" ? (
-        <RedisDialog
-          workspaceId={workspaceId}
-          connection={dialog.connection as RedisSavedConnection | undefined}
-          intent={dialog.intent}
-          onClose={() => setDialog(null)}
-          onSave={save}
-          onConnect={(password, options) => open(dialog.connection!, password, options)}
-        />
-      ) : dialog && provider === 'mongodb' ? <MongoDialog workspaceId={workspaceId} connection={dialog.connection as MongoSavedConnection | undefined} intent={dialog.intent} onClose={() => setDialog(null)} onSave={save} onConnect={(password, options) => open(dialog.connection!, password, options)} /> : (
-        dialog &&
-        provider !== "redis" && provider !== 'mongodb' && (
-          <RelationalDialog
-            key={`${dialog.intent}:${dialog.connection?.id ?? "new"}`}
-            workspaceId={workspaceId}
-            provider={provider}
-            connection={dialog.connection as RelationalSavedConnection | undefined}
-            intent={dialog.intent}
-            onClose={() => setDialog(null)}
-            onSave={save}
-            onConnect={(password, options) => open(dialog.connection!, password, options)}
-          />
-        )
-      )}
-    </section>
-  )
+  if (active?.session.provider === 'redis') return <RedisWorkbench key={active.session.id} session={active.session} name={active.connection.name} onBack={() => setActive(null)} onSessionChange={session => setActive({ connection: active.connection, session })} />;
+  if (active?.session.provider === 'mongodb') return <MongoWorkbench key={active.session.id} session={active.session} name={active.connection.name} onBack={() => setActive(null)} onSessionChange={session => setActive({ connection: active.connection, session })} />;
+  if (active) return <RelationalWorkbench key={active.session.id} session={active.session} name={active.connection.name} onBack={() => setActive(null)} />;
+  const get = (id: string) => connections.find(entry => entry.id === id);
+  const connectSelected = (password: string, options?: DatabaseConnectionOptionsInput) => connect(dialog!.connection!, password, options, true).then(() => undefined);
+  const testSelected = (password: string, options?: DatabaseConnectionOptionsInput) => connect(dialog!.connection!, password, options, false);
+  return <>
+    <ConnectionList label={descriptor.label} targetLabel={descriptor.targetLabel} scopeKey={`${workspaceId}:${provider}`}
+      rows={connections.filter(entry => entry.config.provider === provider && entry.workspaceId === workspaceId).map(entry => connectionListRow(entry, testingId === entry.id))}
+      projects={projects} loading={loading} error={error} pendingIds={pendingIds}
+      headerActions={<ConnectionConfigTransferActions workspaceId={workspaceId} provider={provider} connections={connections} selectedIds={selection} disabled={loading || busy} onImported={() => setRevision(value => value + 1)} />}
+      onBack={onBack} onCreate={() => setDialog({ intent: 'save' })} onRetry={() => { setError(''); setLoading(true); setRevision(value => value + 1); }}
+      onOpen={row => setDialog({ intent: 'connect', connection: get(row.id) })} onEdit={row => setDialog({ intent: 'save', connection: get(row.id) })}
+      onCopy={row => void copy(row.id)} onRemove={row => setRemoving(get(row.id) ?? null)} onOrganize={row => setOrganizing(get(row.id) ?? null)}
+      onFavorite={(row, favorite) => { setError(''); void patchDirectory(row.id, { favorite }).catch(cause => { if (mounted.current) setError(cause instanceof Error ? cause.message : '收藏保存失败'); }); }}
+      onSelectionChange={setSelection} />
+    {organizing && <OrganizeConnectionDialog key={organizing.id} connection={organizing} projects={projects} projectNotice={projectNotice} onClose={() => setOrganizing(null)} onSave={metadata => patchDirectory(organizing.id, metadata)} />}
+    {removing && <SqlDialog title="删除连接确认" role="alertdialog" busy={busy} onClose={() => setRemoving(null)}><div className={styles.formBody}><p>删除「{removing.name}」的连接配置？</p><small>数据库文件与数据内容不会删除。</small></div><footer className={styles.dialogFooter}><button type="button" className={styles.secondary} disabled={busy} onClick={() => setRemoving(null)}>取消</button><span /><button type="button" className={styles.danger} disabled={busy} onClick={() => void remove()}>{busy ? '删除中…' : '确认删除'}</button></footer></SqlDialog>}
+    {dialog && (provider === 'redis'
+      ? <RedisDialog key={`${dialog.intent}:${dialog.connection?.id ?? 'new'}`} workspaceId={workspaceId} connection={dialog.connection as RedisSavedConnection | undefined} intent={dialog.intent} onClose={() => setDialog(null)} onSave={save} onConnect={connectSelected} onTest={testSelected} />
+      : provider === 'mongodb'
+        ? <MongoDialog key={`${dialog.intent}:${dialog.connection?.id ?? 'new'}`} workspaceId={workspaceId} connection={dialog.connection as MongoSavedConnection | undefined} intent={dialog.intent} onClose={() => setDialog(null)} onSave={save} onConnect={connectSelected} onTest={testSelected} />
+        : <RelationalDialog key={`${dialog.intent}:${dialog.connection?.id ?? 'new'}`} workspaceId={workspaceId} provider={provider} connection={dialog.connection as RelationalSavedConnection | undefined} intent={dialog.intent} onClose={() => setDialog(null)} onSave={save} onConnect={connectSelected} onTest={testSelected} />)}
+  </>;
 }

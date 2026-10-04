@@ -29,6 +29,7 @@ export function RedisDialog({
   onClose,
   onSave,
   onConnect,
+  onTest,
 }: {
   workspaceId: string;
   connection?: RedisSavedConnection;
@@ -39,6 +40,10 @@ export function RedisDialog({
     password: string,
     options: DatabaseConnectionOptionsInput,
   ) => Promise<void>;
+  onTest?: (
+    password: string,
+    options?: DatabaseConnectionOptionsInput,
+  ) => Promise<string>;
 }) {
   const previous = connection?.config;
   const [name, setName] = useState(connection?.name ?? '');
@@ -69,7 +74,14 @@ export function RedisDialog({
         database: Number(database),
         connectionOptions: publicConnectionOptions('redis', connectionOptions),
       };
-      if (test) {
+      if (test && intent === 'connect' && onTest) {
+        setFeedback(
+          await onTest(
+            password,
+            resolveConnectionOptions('redis', connectionOptions),
+          ),
+        );
+      } else if (test) {
         const base = `/api/database/workspaces/${encodeURIComponent(workspaceId)}/redis/sessions`;
         const session = await backendFetch<RedisSession>(base, {
           method: 'POST',

@@ -27,6 +27,12 @@ export function savedConnectionRoutes<Config, Session>(
       ),
     });
   });
+  app.patch(base + '/:id/directory', async (c) => c.json({
+    ok: true,
+    data: connections.updateDirectory(
+      c.req.param('workspaceId')!, c.req.param('id')!, await c.req.json().catch(() => null),
+    ),
+  }));
   app.delete(base + '/:id', async (c) => {
     connections.get(c.req.param('workspaceId')!, c.req.param('id')!);
     await beforeRemove?.(c.req.param('workspaceId')!, c.req.param('id')!);
@@ -36,10 +42,14 @@ export function savedConnectionRoutes<Config, Session>(
   app.post(base + '/:id/connect', async (c) => {
     const entry = connections.get(c.req.param('workspaceId')!, c.req.param('id')!);
     const body = await c.req.json().catch(() => null);
-    return c.json(
-      { ok: true, data: await connect(entry.workspaceId, { ...entry.config, password: body?.password, ...(body?.connectionOptions !== undefined ? { connectionOptions: body.connectionOptions } : {}) }, entry.id) },
-      201,
-    );
+    try {
+      const session = await connect(entry.workspaceId, { ...entry.config, password: body?.password, ...(body?.connectionOptions !== undefined ? { connectionOptions: body.connectionOptions } : {}) }, entry.id);
+      connections.recordStatus(entry.workspaceId, entry.id, entry.config, 'passed');
+      return c.json({ ok: true, data: session }, 201);
+    } catch (error) {
+      connections.recordStatus(entry.workspaceId, entry.id, entry.config, 'failed');
+      throw error;
+    }
   });
   return app;
 }

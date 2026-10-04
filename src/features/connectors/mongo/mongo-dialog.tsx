@@ -29,6 +29,7 @@ export function MongoDialog({
   onClose,
   onSave,
   onConnect,
+  onTest,
 }: {
   workspaceId: string;
   connection?: MongoSavedConnection;
@@ -39,6 +40,10 @@ export function MongoDialog({
     password: string,
     options: DatabaseConnectionOptionsInput,
   ) => Promise<void>;
+  onTest?: (
+    password: string,
+    options?: DatabaseConnectionOptionsInput,
+  ) => Promise<string>;
 }) {
   const [name, setName] = useState(connection?.name ?? '');
   const [config, setConfig] = useState<MongoConnectionConfig>(
@@ -85,7 +90,18 @@ export function MongoDialog({
           !!config.mongo?.srv,
         ),
       };
-      if (test) {
+      if (test && intent === 'connect' && onTest) {
+        setFeedback(
+          await onTest(
+            password,
+            resolveConnectionOptions(
+              'mongodb',
+              connectionOptions,
+              !!config.mongo?.srv,
+            ),
+          ),
+        );
+      } else if (test) {
         const base = `/api/database/workspaces/${encodeURIComponent(workspaceId)}/mongo/sessions`;
         const session = await backendFetch<MongoSession>(base, {
           method: 'POST',

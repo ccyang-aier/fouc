@@ -1,5 +1,6 @@
 /** DBX Redis blob, key and cursor semantics adapted to the Fouc boundary. */
 import type { DatabaseConnectionOptions, DatabaseConnectionOptionsInput } from './connection-options';
+import type { ConnectionDirectoryMetadata, ConnectionDirectoryStatus } from './connection-directory';
 export interface RedisConnectionConfig {
   provider: 'redis';
   host: string;
@@ -15,6 +16,8 @@ export interface RedisSavedConnection {
   name: string;
   config: RedisConnectionConfig;
   updatedAt: number;
+  directory?: ConnectionDirectoryMetadata;
+  status?: ConnectionDirectoryStatus;
 }
 export interface RedisSession {
   provider: 'redis';

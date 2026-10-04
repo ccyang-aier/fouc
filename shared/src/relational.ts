@@ -5,6 +5,7 @@ import type {
   DatabaseTablePage,
 } from './database';
 import type { DatabaseConnectionOptions, DatabaseConnectionOptionsInput } from './connection-options';
+import type { ConnectionDirectoryMetadata, ConnectionDirectoryStatus } from './connection-directory';
 
 export type RelationalProvider = 'postgres' | 'mysql' | 'sqlite';
 type NetworkConfig = { host: string; port: number; username: string; database: string; connectionOptions: DatabaseConnectionOptions };
@@ -18,6 +19,8 @@ export type RelationalSavedConnection = {
   name: string;
   updatedAt: number;
   config: RelationalConnectionConfig;
+  directory?: ConnectionDirectoryMetadata;
+  status?: ConnectionDirectoryStatus;
 };
 type NetworkInput = Omit<NetworkConfig, 'connectionOptions'> & { password: string; connectionOptions?: DatabaseConnectionOptionsInput };
 export type RelationalConnectInput =

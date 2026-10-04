@@ -34,6 +34,10 @@ type Props = {
     password: string,
     options?: DatabaseConnectionOptionsInput,
   ) => Promise<void>;
+  onTest?: (
+    password: string,
+    options?: DatabaseConnectionOptionsInput,
+  ) => Promise<string>;
 };
 
 export function RelationalDialog({
@@ -44,6 +48,7 @@ export function RelationalDialog({
   onClose,
   onSave,
   onConnect,
+  onTest,
 }: Props) {
   const previous = connection?.config,
     network = previous?.provider !== 'sqlite' ? previous : undefined;
@@ -98,7 +103,16 @@ export function RelationalDialog({
                 connectionOptions,
               ),
             };
-      if (action === 'test') {
+      if (action === 'test' && intent === 'connect' && onTest) {
+        setFeedback(
+          await onTest(
+            password,
+            provider === 'sqlite'
+              ? undefined
+              : resolveConnectionOptions(provider, connectionOptions),
+          ),
+        );
+      } else if (action === 'test') {
         const request =
           provider === 'sqlite'
             ? config

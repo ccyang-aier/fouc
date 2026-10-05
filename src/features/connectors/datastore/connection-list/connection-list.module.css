@@ -6,6 +6,7 @@
   flex: 1;
   min-width: 0;
   min-height: 0;
+  height: 100%;
   flex-direction: column;
   overflow: auto;
   color: var(--list-ink);
@@ -35,7 +36,7 @@
 .breadcrumb button { border: 0; padding: 2px 0; border-radius: 3px; color: var(--list-soft-ink); background: transparent; }
 .breadcrumb button:hover { color: var(--list-accent); }
 .breadcrumb > span[aria-hidden] { color: var(--muted); }
-.content { padding: 11px 28px 28px; }
+.content { flex-shrink: 0; padding: 11px 28px 28px; }
 .header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 17px; }
 .heading { min-width: 0; }
 .titleLine { display: flex; min-height: 32px; align-items: center; gap: 15px; }
@@ -65,7 +66,6 @@
 .toolbarEnd { display: flex; min-width: 0; flex: 1; align-items: center; justify-content: flex-end; gap: 14px; }
 .columnButton { display: inline-flex; height: 30px; flex-shrink: 0; align-items: center; gap: 7px; border: 1px solid var(--line-strong); border-radius: 5px; padding: 0 10px; color: var(--list-ink); background: var(--panel); font: inherit; font-size: max(13px, var(--ui-size)); }
 .columnButton:hover { background: var(--surface-hover); }
-.selectedCount { display: flex; align-items: center; gap: 6px; border: 0; border-radius: 4px; padding: 3px; background: transparent; color: var(--accent-ink); white-space: nowrap; font-size: max(13px, var(--ui-size)); }
 
 .tableViewport { width: 100%; overflow-x: auto; }
 .table { width: 100%; min-width: 950px; table-layout: fixed; border-collapse: collapse; text-align: left; }
@@ -90,8 +90,7 @@
 .dataRow:focus-within { background: color-mix(in srgb, var(--accent-soft) 55%, var(--panel)); }
 .dataRow[data-selected='true'] { background: var(--accent-soft); }
 .nameCell { display: flex; min-width: 0; align-items: center; gap: 13px; }
-.nameButton { overflow: hidden; min-width: 0; border: 0; border-radius: 3px; padding: 2px 0; background: transparent; color: var(--list-ink); font: inherit; font-weight: 600; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
-.nameButton:hover:not(:disabled) { color: var(--list-accent); }
+.name { display: block; overflow: hidden; min-width: 0; padding: 2px 0; color: var(--list-ink); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .favoriteButton { display: flex; width: 20px; height: 24px; flex: 0 0 20px; align-items: center; justify-content: center; border: 0; border-radius: 4px; padding: 0; background: transparent; color: var(--muted); }
 .favoriteButton[data-favorite='true'] { color: #ffb52e; }
 .favoriteButton:hover { background: var(--surface-hover); color: #e7a022; }
@@ -134,9 +133,9 @@
 @keyframes spin { to { transform: rotate(360deg); } }
 .footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 18px; color: var(--list-soft-ink); font-size: max(13px, var(--ui-size)); }
 .pagination { display: flex; align-items: center; gap: 8px; }
-.pageButton { display: flex; width: 29px; height: 28px; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: 4px; padding: 0; background: var(--panel); color: var(--list-soft-ink); }
+.pageButton { display: flex; width: 30px; height: 28px; align-items: center; justify-content: center; border: 1px solid var(--line-strong); border-radius: 4px; padding: 0; background: var(--panel); color: var(--ink-soft); }
 .pageButton:hover:not(:disabled) { background: var(--surface-hover); }
-.pageButton:disabled { color: var(--muted); opacity: .55; }
+.directory .pageButton:disabled { color: var(--muted-strong); border-color: var(--line); background: var(--surface-subtle); opacity: .8; }
 .currentPage { display: flex; min-width: 29px; height: 28px; align-items: center; justify-content: center; border: 1px solid var(--list-accent); border-radius: 4px; padding: 0 6px; background: color-mix(in srgb, var(--list-accent) 4%, var(--panel)); color: var(--list-accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--list-accent) 5%, transparent); font-weight: 500; }
 .pageSize { display: flex; height: 28px; align-items: center; justify-content: space-between; gap: 10px; margin-left: 13px; border: 1px solid var(--line-strong); border-radius: 4px; padding: 0 10px; background: var(--panel); color: var(--list-ink); font: inherit; font-size: max(13px, var(--ui-size)); }
 

@@ -705,8 +705,9 @@ html[data-theme="dark"] .mw {
   border-radius: 4px;
   text-align: left;
 }
-.mw-scope-menu button:hover {
-  background: var(--mw-blue-soft);
+.mw-scope-menu button:is(:hover, :focus-visible) {
+  background: var(--menu-item-hover-bg);
+  color: var(--menu-item-hover-ink);
 }
 .mw-scope-menu svg {
   color: var(--mw-blue);
@@ -1030,12 +1031,13 @@ html[data-theme="dark"] .mw {
   white-space: nowrap;
   font-size: 11px;
 }
-.mw-menu-action:hover {
-  background: var(--mw-blue-soft);
+.mw-menu-action:is(:hover, :focus-visible) {
+  background: var(--menu-item-hover-bg);
+  color: var(--menu-item-hover-ink);
 }
 .mw-menu-action > svg {
   flex: none;
-  color: #38475d;
+  color: inherit;
 }
 .mw-menu-action span {
   flex: 1;
@@ -1046,8 +1048,13 @@ html[data-theme="dark"] .mw {
 }
 .mw-menu-action.mw-danger,
 .mw-menu-action.mw-danger svg {
-  color: #d53e38;
+  color: var(--menu-danger-ink);
 }
+.mw-menu-action.mw-danger:is(:hover, :focus-visible) {
+  background: var(--menu-danger-hover-bg);
+  color: var(--menu-danger-hover-ink);
+}
+.mw-menu-action.mw-danger:is(:hover, :focus-visible) svg { color: inherit; }
 .mw-menu-separator {
   height: 1px;
   margin: 3px 6px;

@@ -29,6 +29,6 @@ export function connectionListRow(entry: SavedDatastoreConnection, testing: bool
     status: testing ? 'testing' : entry.status?.kind ?? 'untested',
     statusTitle: entry.status
       ? `上次连接验证${entry.status.kind === 'passed' ? '通过' : '失败'} · ${new Date(entry.status.checkedAt).toLocaleString()}。不代表当前在线状态。`
-      : '尚未验证此连接；请先编辑连接并通过测试。',
+      : '尚未验证此连接；请先测试连接。',
   };
 }

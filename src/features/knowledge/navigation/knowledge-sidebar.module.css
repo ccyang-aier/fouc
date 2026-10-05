@@ -13,15 +13,14 @@
 .knowledgeCollapse { display: grid; width: 28px; height: 32px; flex: none; place-items: center; border-radius: 6px; color: #5f718a; outline: none; }
 .knowledgeCollapse:hover, .knowledgeCollapse:active, .expandSidebar:hover, .expandSidebar:active { background: var(--knowledge-sidebar-state-bg); }
 .knowledgeCollapse svg, .expandSidebar svg { width: 18px; height: 18px; }
-.knowledgeMenu { width: 212px; padding: 5px; border-radius: 10px; --knowledge-sidebar-state-bg: #f4f6f8; }
-.knowledgeMenuBase { display: flex; min-height: 34px; gap: 9px; padding: 4px 9px; border-radius: 6px; color: #344156; font-size: 13px; cursor: pointer; }
-.knowledgeMenuBase[data-active="true"], .knowledgeMenuBase[data-highlighted] { background: var(--knowledge-sidebar-state-bg); }
+.knowledgeMenu { width: 212px; padding: 5px; border-radius: 10px; }
+.knowledgeMenuBase { display: flex; min-height: 34px; gap: 9px; padding: 4px 9px; border-radius: 6px; font-size: 13px; }
+.knowledgeMenuBase[data-active="true"] { background: var(--menu-item-hover-bg); }
 .knowledgeMenuAvatar { width: 22px; height: 22px; flex: none; border-radius: 5px; }
 .knowledgeMenuBaseName { min-width: 0; flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .knowledgeMenuCheck { width: 14px; height: 14px; flex: none; color: #6550b8; }
-.knowledgeMenuItem { height: 34px; gap: 11px; padding: 0 10px; color: #344156; font-size: 13px; cursor: pointer; }
-.knowledgeMenuItem[data-highlighted] { background: var(--knowledge-sidebar-state-bg); }
-.knowledgeMenuItem svg { width: 16px; height: 16px; flex: none; color: #3e4a5b; }
+.knowledgeMenuItem { height: 34px; gap: 11px; padding: 0 10px; font-size: 13px; }
+.knowledgeMenuItem svg { width: 16px; height: 16px; flex: none; }
 .knowledgeMenuSeparator { margin: 4px 0; background: #dce4ef; }
 .expandSidebar { position: absolute; top: 8px; left: 8px; z-index: 1; display: grid; width: 30px; height: 30px; place-items: center; border-radius: 6px; color: #5f718a; outline: none; animation: expandSidebarControlIn 180ms 90ms both cubic-bezier(.22, 1, .36, 1); }
 @keyframes expandSidebarControlIn { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: translateX(0); } }

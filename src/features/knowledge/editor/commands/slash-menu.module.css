@@ -18,15 +18,11 @@
   padding: 0 10px;
   border: 0;
   border-radius: 6px;
-  background: transparent;
-  color: var(--ink-soft);
   font-size: 13px;
   text-align: left;
   outline: none;
   cursor: pointer;
 }
-.item:hover:not(.active) { background: var(--raise); }
-.item.active { background: #0863d1; color: #fff; }
 .item.separated { position: relative; margin-top: 10px; }
 .item.separated::before {
   position: absolute;
@@ -38,11 +34,8 @@
   pointer-events: none;
 }
 .marker,
-.icon { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 17px; color: #334155; font-weight: 750; }
+.icon { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 17px; color: inherit; font-weight: 750; }
 .icon { height: 17px; }
-.active .marker,
-.active .icon { color: #fff; }
 .title { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .shortcut { flex: none; color: #879bb5; font-size: 12px; font-weight: 600; white-space: nowrap; }
-.active .shortcut { color: rgba(255, 255, 255, .8); }
 .empty { display: flex; align-items: center; justify-content: center; min-height: 64px; color: var(--muted); font-size: 13px; }

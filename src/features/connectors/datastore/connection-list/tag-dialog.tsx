@@ -3,24 +3,23 @@
 import { useState, type FormEvent } from 'react';
 import { Plus, X } from '@phosphor-icons/react';
 import { SqlDialog } from '../sql-library-dialog';
-import type { SavedDatastoreConnection } from './provider-model';
+import { appendConnectionTags } from './batch';
 import common from '../relational.module.css';
 import styles from './tag-dialog.module.css';
 
-export function ConnectionTagsDialog({ connection, onSave, onClose }: {
-  connection: SavedDatastoreConnection;
+export function ConnectionTagsDialog({ initialTags, title = '管理标签', additive = false, onSave, onClose }: {
+  initialTags: string[];
+  title?: string;
+  additive?: boolean;
   onSave: (tags: string[]) => Promise<void>;
   onClose: () => void;
 }) {
-  const [tags, setTags] = useState(connection.directory?.tags ?? []);
+  const [tags, setTags] = useState(initialTags);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
 
   function withDraft() {
-    const next = [...new Set([...tags, ...draft.split(/[,，]/).map(tag => tag.trim()).filter(Boolean)])];
-    if (next.length > 12) throw new Error('最多添加 12 个标签');
-    if (next.some(tag => tag.length > 32)) throw new Error('每个标签最多 32 个字符');
-    return next;
+    return appendConnectionTags(tags, draft.split(/[,，]/));
   }
   function addTags() {
     try { setTags(withDraft()); setDraft(''); setError(''); }
@@ -35,7 +34,7 @@ export function ConnectionTagsDialog({ connection, onSave, onClose }: {
     finally { setBusy(false); }
   }
 
-  return <SqlDialog title="管理标签" busy={busy} onClose={onClose} className={styles.dialog}>
+  return <SqlDialog title={title} busy={busy} onClose={onClose} className={styles.dialog}>
     <form onSubmit={event => void submit(event)}>
       <div className={styles.body}>
         <fieldset disabled={busy} className={styles.fieldset} aria-label="连接标签">
@@ -44,7 +43,7 @@ export function ConnectionTagsDialog({ connection, onSave, onClose }: {
         </fieldset>
         {error && <p className={styles.error} role="alert">{error}</p>}
       </div>
-      <footer className={`${common.dialogFooter} ${styles.footer}`}><button type="button" className={common.secondary} disabled={busy} onClick={onClose}>取消</button><button type="submit" className={common.primary} disabled={busy}>{busy ? '保存中…' : '保存'}</button></footer>
+      <footer className={`${common.dialogFooter} ${styles.footer}`}><button type="button" className={common.secondary} disabled={busy} onClick={onClose}>取消</button><button type="submit" className={common.primary} disabled={busy || (additive && !tags.length && !draft.trim())}>{busy ? '保存中…' : additive ? '添加标签' : '保存'}</button></footer>
     </form>
   </SqlDialog>;
 }

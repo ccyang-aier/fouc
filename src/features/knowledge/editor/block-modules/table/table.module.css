@@ -80,9 +80,7 @@
 }
 .menuItem { display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 12px; border-radius: 6px; outline: none; white-space: nowrap; user-select: none; cursor: pointer; }
 .menuItem svg { flex-shrink: 0; }
-.menuItem[data-highlighted], .menuItem[data-state="open"] { background: #2666e4; color: #fff; }
 .menuItem[data-disabled] { color: #a9b0bb; pointer-events: none; }
-.menuItem[data-danger][data-highlighted] { background: var(--danger-action-bg); color: white; }
 .caret { margin-left: auto; }
 .menuSeparator { height: 1px; margin: 6px 0; background: #d7dfed; }
 .swatch { flex-shrink: 0; width: 18px; height: 18px; border-radius: 50%; }

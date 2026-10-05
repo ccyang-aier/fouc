@@ -35,7 +35,7 @@ export function newColumnDraft(type: PropertyDefinition['type'] = 'text'): Colum
   return { name: '', type, options: [] };
 }
 
-const menuButton = 'flex h-[30px] w-full items-center gap-2.5 rounded-[5px] px-2.5 text-left outline-none transition-colors hover:bg-wash focus-visible:bg-wash disabled:pointer-events-none disabled:opacity-45';
+const menuButton = 'fouc-menu-item flex h-[30px] w-full items-center gap-2.5 rounded-[5px] px-2.5 text-left outline-none transition-colors disabled:pointer-events-none disabled:opacity-45';
 
 // ── 列头 ──
 
@@ -162,12 +162,13 @@ export function ColumnHeaderCell({
                 <button
                   type="button"
                   role="menuitem"
-                  className={cn(menuButton, 'text-[var(--err-ink)]')}
+                  className={menuButton}
+                  data-variant="destructive"
                   disabled={!canEditColumns}
                   title={canEditColumns ? undefined : '需要页面完整权限'}
                   onClick={() => setConfirmingDelete(true)}
                 >
-                  <span aria-hidden className="flex size-3.5 items-center justify-center text-[var(--err-ink)]"><Trash className="size-3.5" /></span>
+                  <span aria-hidden className="flex size-3.5 items-center justify-center"><Trash className="size-3.5" /></span>
                   删除列
                 </button>
               </>

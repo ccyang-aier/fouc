@@ -16,6 +16,7 @@ import type { ConnectionListProps, ConnectionListRow, ConnectionListStatus } fro
 import { ConnectionFilterMenu } from './filter-menu'
 import { filterConnections, unassignedProject } from './filter'
 import { ConnectionProjectLinks } from './project-links'
+import { ConnectionSelectionDock } from './selection-dock'
 import styles from './connection-list.module.css'
 
 type Column = 'target' | 'projects' | 'tags' | 'access' | 'status'
@@ -24,7 +25,7 @@ const statusNames: Record<ConnectionListStatus, string> = {
   untested: '未测试', testing: '测试中', passed: '测试通过', failed: '连接失败',
 }
 const columnNames: Record<Exclude<Column, 'target'>, string> = {
-  projects: '关联项目', tags: '标签', access: '访问方式', status: '状态',
+  projects: '关联项目', tags: '标签', access: '默认访问', status: '状态',
 }
 const tagColors = ['blue', 'violet', 'green', 'orange', 'neutral'] as const
 
@@ -49,7 +50,7 @@ function RowActions({ row, pending, onOpen, onEdit, onRemove, onManageTags }: {
         <button type="button" className={styles.iconButton} aria-label={`打开 ${row.name} 工作台`}
           disabled={pending || row.status !== 'passed'} onClick={() => onOpen(row)}><ArrowSquareOut size={16} weight="bold" /></button>
       </TooltipTrigger>
-      <TooltipContent>{row.status === 'passed' ? '打开工作台' : '请先编辑连接并通过测试'}</TooltipContent>
+      <TooltipContent>{row.status === 'passed' ? '打开工作台' : '请先测试连接'}</TooltipContent>
     </Tooltip>
     <Tooltip>
       <TooltipTrigger asChild>
@@ -81,13 +82,13 @@ export function ConnectionList(props: ConnectionListProps) {
   const {
     label, targetLabel, scopeKey, rows, projects, loading, error, pendingIds,
     headerActions, onBack, onCreate, onRetry, onOpen, onEdit,
-    onRemove, onOpenProject, onManageTags, onFavorite, onSelectionChange,
+    onRemove, onOpenProject, onManageTags, onFavorite, onSelectionChange: changeSelection,
+    selectedIds: selection, batchProgress, batchResult, onBatchAction, onDismissBatchResult,
   } = props
   const [search, setSearch] = useState('')
   const [projectFilter, setProjectFilter] = useState<string[]>([])
   const [tagFilter, setTagFilter] = useState<string[]>([])
   const [onlyFavorites, setOnlyFavorites] = useState(false)
-  const [selected, setSelected] = useState<string[]>([])
   const [hiddenColumns, setHiddenColumns] = useState<Column[]>([])
   const [sort, setSort] = useState<{ column: SortColumn; direction: 1 | -1 } | null>(null)
   const [page, setPage] = useState(1)
@@ -111,16 +112,12 @@ export function ConnectionList(props: ConnectionListProps) {
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize))
   const currentPage = Math.min(page, pageCount)
   const pageRows = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
-  const selectedIds = selected.filter(id => rows.some(row => row.id === id))
+  const selectedIds = selection.filter(id => rows.some(row => row.id === id))
   const allPageSelected = pageRows.length > 0 && pageRows.every(row => selectedIds.includes(row.id))
   const somePageSelected = pageRows.some(row => selectedIds.includes(row.id))
   const filteredActive = Boolean(search || projectFilter.length || tagFilter.length || onlyFavorites)
   const visibleColumnCount = 8 - hiddenColumns.length
 
-  function changeSelection(ids: string[]) {
-    setSelected(ids)
-    onSelectionChange(ids)
-  }
   function selectPage(checked: boolean) {
     const pageIds = new Set(pageRows.map(row => row.id))
     changeSelection(checked ? [...new Set([...selectedIds, ...pageIds])] : selectedIds.filter(id => !pageIds.has(id)))
@@ -151,7 +148,7 @@ export function ConnectionList(props: ConnectionListProps) {
           <div className={styles.titleLine}><h1>{label} 连接</h1><span className={styles.titleDivider} aria-hidden="true" /><span className={styles.count}>{rows.length} 个连接</span></div>
         </div>
         <div className={styles.headerActions}>
-          <button type="button" className={styles.createButton} onClick={onCreate}><Plus size={16} />新建连接</button>
+          <button type="button" className={styles.createButton} disabled={Boolean(batchProgress)} onClick={onCreate}><Plus size={16} />新建连接</button>
           {headerActions}
         </div>
       </header>
@@ -167,7 +164,6 @@ export function ConnectionList(props: ConnectionListProps) {
         <label className={styles.favoriteFilter}><input type="checkbox" checked={onlyFavorites}
           onChange={event => { setOnlyFavorites(event.target.checked); setPage(1) }} />仅收藏</label>
         <div className={styles.toolbarEnd}>
-          {selectedIds.length > 0 && <button type="button" className={styles.selectedCount} onClick={() => changeSelection([])} title="清除选择">已选 {selectedIds.length} 项 <X size={11} /></button>}
           <DropdownMenu>
             <DropdownMenuTrigger asChild><button type="button" className={styles.columnButton}><GearSix size={16} />列设置</button></DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -194,13 +190,13 @@ export function ConnectionList(props: ConnectionListProps) {
           </colgroup>
           <thead><tr>
             <th className={styles.selectionCell} scope="col"><input type="checkbox" aria-label="选择当前页所有连接" checked={allPageSelected}
-              ref={input => { if (input) input.indeterminate = somePageSelected && !allPageSelected }} disabled={loading || pageRows.length === 0}
+              ref={input => { if (input) input.indeterminate = somePageSelected && !allPageSelected }} disabled={loading || pageRows.length === 0 || Boolean(batchProgress)}
               onChange={event => selectPage(event.target.checked)} /></th>
             {sortHeader('name', '连接名称')}
             {!hiddenColumns.includes('target') && sortHeader('target', targetLabel)}
             {!hiddenColumns.includes('projects') && sortHeader('projects', '关联项目')}
             {!hiddenColumns.includes('tags') && sortHeader('tags', '标签')}
-            {!hiddenColumns.includes('access') && <th scope="col">访问方式</th>}
+            {!hiddenColumns.includes('access') && <th scope="col">默认访问</th>}
             {!hiddenColumns.includes('status') && sortHeader('status', '状态')}
             <th scope="col">操作</th>
           </tr></thead>
@@ -210,12 +206,12 @@ export function ConnectionList(props: ConnectionListProps) {
                 <Database size={25} /><strong>{filteredActive ? '没有符合筛选条件的连接' : error ? '暂时无法加载连接' : `还没有 ${label} 连接`}</strong>
                 {!error && <button type="button" className={styles.emptyAction} onClick={filteredActive ? resetFilters : onCreate}>{filteredActive ? '清除筛选' : '新建连接'}</button>}
               </td></tr> : pageRows.map(row => {
-                const pending = pendingIds.includes(row.id)
+                const pending = pendingIds.includes(row.id) || Boolean(batchProgress)
                 return <tr key={row.id} className={styles.dataRow} data-selected={selectedIds.includes(row.id)}>
-                  <td className={styles.selectionCell}><input type="checkbox" aria-label={`选择 ${row.name}`} checked={selectedIds.includes(row.id)}
+                  <td className={styles.selectionCell}><input type="checkbox" aria-label={`选择 ${row.name}`} checked={selectedIds.includes(row.id)} disabled={Boolean(batchProgress)}
                     onChange={event => changeSelection(event.target.checked ? [...selectedIds, row.id] : selectedIds.filter(id => id !== row.id))} /></td>
                   <td><div className={styles.nameCell}>
-                    <button type="button" className={styles.nameButton} onClick={() => onOpen(row)} disabled={pending || row.status !== 'passed'} title={row.name}>{row.name}</button>
+                    <span className={styles.name} title={row.name}>{row.name}</span>
                     <button type="button" className={styles.favoriteButton} data-favorite={row.favorite} aria-label={`${row.favorite ? '取消收藏' : '收藏'} ${row.name}`}
                       title={row.favorite ? '取消收藏' : '收藏连接'} aria-pressed={row.favorite} disabled={pending}
                       onClick={() => onFavorite(row, !row.favorite)}><Star size={15} weight={row.favorite ? 'fill' : 'regular'} /></button>
@@ -228,7 +224,7 @@ export function ConnectionList(props: ConnectionListProps) {
                     {row.tags.length > 2 && <button type="button" className={styles.projectChip} disabled={pending} title={row.tags.join('、')} onClick={() => onManageTags(row)}>+{row.tags.length - 2}</button>}
                     {!row.tags.length && <span className={styles.absent} aria-label="无标签">—</span>}
                   </div></td>}
-                  {!hiddenColumns.includes('access') && <td><span className={styles.access} title="默认只读；进入工作台后可显式解锁写入。"><LockSimple size={15} />只读</span></td>}
+                  {!hiddenColumns.includes('access') && <td><span className={styles.access} title="每次连接默认只读；当前会话可在工作台显式解锁写入，不改变数据库账号权限。"><LockSimple size={15} />只读</span></td>}
                   {!hiddenColumns.includes('status') && <td><span className={styles.status} data-status={row.status}
                     title={row.statusTitle ?? statusNames[row.status]}>{row.status === 'testing' ? <SpinnerGap size={12} className={styles.spinner} /> : <i aria-hidden="true" />}{statusNames[row.status]}</span></td>}
                   <td><RowActions row={row} pending={pending} onOpen={onOpen} onEdit={onEdit} onRemove={onRemove} onManageTags={onManageTags} /></td>
@@ -240,9 +236,9 @@ export function ConnectionList(props: ConnectionListProps) {
       <footer className={styles.footer}>
         <span>{filteredActive ? `${filtered.length} 个匹配连接 · 共 ${rows.length} 个连接` : `共 ${rows.length} 个连接`}</span>
         <div className={styles.pagination}>
-          <button type="button" aria-label="上一页" className={styles.pageButton} disabled={currentPage <= 1 || loading} onClick={() => setPage(currentPage - 1)}><CaretLeft size={14} /></button>
+          <button type="button" aria-label="上一页" title="上一页" className={styles.pageButton} disabled={currentPage <= 1 || loading} onClick={() => setPage(currentPage - 1)}><CaretLeft size={16} weight="bold" /></button>
           <span className={styles.currentPage} aria-label={`第 ${currentPage} 页，共 ${pageCount} 页`}>{currentPage}</span>
-          <button type="button" aria-label="下一页" className={styles.pageButton} disabled={currentPage >= pageCount || loading} onClick={() => setPage(currentPage + 1)}><CaretRight size={14} /></button>
+          <button type="button" aria-label="下一页" title="下一页" className={styles.pageButton} disabled={currentPage >= pageCount || loading} onClick={() => setPage(currentPage + 1)}><CaretRight size={16} weight="bold" /></button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild><button type="button" className={styles.pageSize}>{pageSize} 条/页<CaretDown size={12} /></button></DropdownMenuTrigger>
             <DropdownMenuContent align="end"><DropdownMenuRadioGroup value={String(pageSize)} onValueChange={value => { setPageSize(Number(value)); setPage(1) }}>
@@ -252,5 +248,8 @@ export function ConnectionList(props: ConnectionListProps) {
         </div>
       </footer>
     </div>
+    <ConnectionSelectionDock count={selectedIds.length} progress={batchProgress} result={batchResult}
+      onTags={() => onBatchAction('tags', selectedIds)} onTest={() => onBatchAction('test', selectedIds)} onDelete={() => onBatchAction('delete', selectedIds)}
+      onClear={() => changeSelection([])} onDismiss={onDismissBatchResult} />
   </section>
 }

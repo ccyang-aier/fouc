@@ -145,11 +145,12 @@ export function SlashMenuLayer({ editor }: { editor: Editor | null }) {
                 type="button"
                 role="menuitem"
                 data-slash-active={active || undefined}
+                data-highlighted={active ? '' : undefined}
                 // mousedown would drag focus out of the editor; the click still lands.
                 onMouseDown={(event) => event.preventDefault()}
                 onMouseEnter={() => setActiveSlashItem(editor.view, index)}
                 onClick={() => runSlashItem(editor.view, item)}
-                className={cn(styles.item, active && styles.active, separated && styles.separated)}
+                className={cn('fouc-menu-item', styles.item, separated && styles.separated)}
               >
                 {item.marker ? <span aria-hidden className={styles.marker}>{item.marker}</span> : Icon ? <Icon aria-hidden className={styles.icon} /> : null}
                 <span className={styles.title}>{item.title}</span>

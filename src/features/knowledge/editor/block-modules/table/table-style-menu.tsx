@@ -27,23 +27,23 @@ export function TableStyleMenu({ tableId, anchor, editor, run, onClose, align, b
   const row = target === 'row';
   const structure = row || column;
   const item = (label: string, Icon: typeof ArrowDown, command: TableCommand, danger = false) =>
-    <Menu.Item className={styles.menuItem} data-danger={danger || undefined} disabled={!command(editor.state)} onSelect={() => run(command)}><Icon size={18} weight="bold" aria-hidden /><span>{label}</span></Menu.Item>;
+    <Menu.Item className={`${styles.menuItem} fouc-menu-item`} data-variant={danger ? 'destructive' : undefined} disabled={!command(editor.state)} onSelect={() => run(command)}><Icon size={18} weight="bold" aria-hidden /><span>{label}</span></Menu.Item>;
   return <Menu.Root open modal={false} onOpenChange={open => { if (!open) onClose(); }}>
     <Menu.Trigger asChild><button type="button" aria-label="表格菜单锚点" tabIndex={-1} className={styles.menuAnchor} style={anchor.style} /></Menu.Trigger>
     <Menu.Portal>
       <Menu.Content data-fouc-table-menu={tableId} className={styles.menu} aria-label={column ? '列操作' : row ? '行操作' : '表格操作'} side={anchor.side} align={row ? 'center' : 'start'} sideOffset={5} collisionPadding={12} onCloseAutoFocus={event => event.preventDefault()} onPointerDownOutside={onClose}>
         <Menu.Sub>
-          <Menu.SubTrigger className={styles.menuItem}><TextAlignLeft size={18} weight="bold" aria-hidden /><span>对齐</span><CaretRight size={12} weight="fill" className={styles.caret} aria-hidden /></Menu.SubTrigger>
+          <Menu.SubTrigger className={`${styles.menuItem} fouc-menu-item`}><TextAlignLeft size={18} weight="bold" aria-hidden /><span>对齐</span><CaretRight size={12} weight="fill" className={styles.caret} aria-hidden /></Menu.SubTrigger>
           <Menu.Portal><Menu.SubContent data-fouc-table-menu={tableId} className={styles.menu} sideOffset={-8} alignOffset={0} collisionPadding={12} aria-label="对齐">
-            {alignments.map(({ value, label, icon: Icon }) => <Menu.Item key={value} className={styles.menuItem} onSelect={() => run((s, d) => setTableAlignment(s, d, target, value))}><Icon size={18} weight="bold" aria-hidden /><span>{label}</span>{align !== undefined && (align ?? 'left') === value ? <Check size={18} weight="bold" className={styles.caret} aria-hidden /> : null}</Menu.Item>)}
+            {alignments.map(({ value, label, icon: Icon }) => <Menu.Item key={value} className={`${styles.menuItem} fouc-menu-item`} onSelect={() => run((s, d) => setTableAlignment(s, d, target, value))}><Icon size={18} weight="bold" aria-hidden /><span>{label}</span>{align !== undefined && (align ?? 'left') === value ? <Check size={18} weight="bold" className={styles.caret} aria-hidden /> : null}</Menu.Item>)}
           </Menu.SubContent></Menu.Portal>
         </Menu.Sub>
         {column ? <Menu.Sub>
-          <Menu.SubTrigger className={styles.menuItem} disabled={!sortTableColumn(editor.state, undefined, false)}><SortAscending size={18} weight="bold" aria-hidden /><span>排序</span><CaretRight size={12} weight="fill" className={styles.caret} aria-hidden /></Menu.SubTrigger>
+          <Menu.SubTrigger className={`${styles.menuItem} fouc-menu-item`} disabled={!sortTableColumn(editor.state, undefined, false)}><SortAscending size={18} weight="bold" aria-hidden /><span>排序</span><CaretRight size={12} weight="fill" className={styles.caret} aria-hidden /></Menu.SubTrigger>
           <Menu.Portal><Menu.SubContent data-fouc-table-menu={tableId} className={styles.menu} sideOffset={-8} collisionPadding={12} aria-label="排序">{item('升序', SortAscending, (s, d) => sortTableColumn(s, d, false))}{item('降序', SortDescending, (s, d) => sortTableColumn(s, d, true))}</Menu.SubContent></Menu.Portal>
         </Menu.Sub> : null}
         <Menu.Sub>
-          <Menu.SubTrigger className={styles.menuItem}><Palette size={18} weight="fill" aria-hidden /><span>背景</span><CaretRight size={12} weight="fill" className={styles.caret} aria-hidden /></Menu.SubTrigger>
+          <Menu.SubTrigger className={`${styles.menuItem} fouc-menu-item`}><Palette size={18} weight="fill" aria-hidden /><span>背景</span><CaretRight size={12} weight="fill" className={styles.caret} aria-hidden /></Menu.SubTrigger>
           <Menu.Portal><Menu.SubContent data-fouc-table-menu={tableId} className={styles.menu} sideOffset={-8} collisionPadding={12} aria-label="背景">
             <TableColorMenuItems tableId={tableId} background={background} onChange={color => run((s, d) => setTableColor(s, d, target, color))} />
           </Menu.SubContent></Menu.Portal>
@@ -59,7 +59,7 @@ export function TableStyleMenu({ tableId, anchor, editor, run, onClose, align, b
         <Menu.Separator className={styles.menuSeparator} />
         {item('合并单元格', ArrowsInLineHorizontal, mergeCells)}
         {splitCell(editor.state) ? item('拆分单元格', ArrowsOutLineHorizontal, splitCell) : null}
-        {target === 'table' ? <><Menu.Separator className={styles.menuSeparator} /><Menu.Item className={styles.menuItem} onSelect={() => { const hit = tableNodeAt(editor.state.selection.$from); if (hit) downloadTableCsv(hit.table, editor.view.dom.ownerDocument); }}><DownloadSimple size={18} weight="bold" aria-hidden /><span>导出为 CSV</span></Menu.Item></> : null}
+        {target === 'table' ? <><Menu.Separator className={styles.menuSeparator} /><Menu.Item className={`${styles.menuItem} fouc-menu-item`} onSelect={() => { const hit = tableNodeAt(editor.state.selection.$from); if (hit) downloadTableCsv(hit.table, editor.view.dom.ownerDocument); }}><DownloadSimple size={18} weight="bold" aria-hidden /><span>导出为 CSV</span></Menu.Item></> : null}
         <Menu.Separator className={styles.menuSeparator} />
         {item('删除', Trash, target === 'table' ? deleteTable : row ? deleteRow : column ? deleteColumn : (s, d) => { if (d) d(s.tr.deleteSelection()); return true; }, true)}
       </Menu.Content>

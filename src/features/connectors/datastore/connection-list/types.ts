@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import type { ConnectionBatchAction, ConnectionBatchProgress, ConnectionBatchResult } from './batch'
 
 export type ConnectionListStatus = 'untested' | 'passed' | 'failed' | 'testing'
 
@@ -28,6 +29,9 @@ export interface ConnectionListProps {
   loading: boolean
   error: string
   pendingIds: readonly string[]
+  selectedIds: readonly string[]
+  batchProgress: ConnectionBatchProgress | null
+  batchResult: ConnectionBatchResult | null
   headerActions: ReactNode
   onBack: () => void
   onCreate: () => void
@@ -39,4 +43,6 @@ export interface ConnectionListProps {
   onManageTags: (row: ConnectionListRow) => void
   onFavorite: (row: ConnectionListRow, favorite: boolean) => void
   onSelectionChange: (ids: string[]) => void
+  onBatchAction: (action: ConnectionBatchAction, ids: readonly string[]) => void
+  onDismissBatchResult: () => void
 }

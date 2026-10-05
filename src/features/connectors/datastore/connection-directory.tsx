@@ -5,6 +5,7 @@ import type { RelationalConnectionConfig, RelationalSavedConnection, RelationalS
 import type { MongoConnectionConfig, MongoSavedConnection } from '@fouc/shared/mongo-connections';
 import type { MongoSession } from '@fouc/shared/mongo';
 import type { DatabaseConnectionOptionsInput } from '@fouc/shared/connection-options';
+import { resolveConnectionOptions } from '@fouc/shared/connection-options';
 import type { ConnectionDirectoryMetadata } from '@fouc/shared/connection-directory';
 import { backendFetch } from '@/lib/backend';
 import { useWorkspace } from '@/features/workspaces/workspace-provider';
@@ -20,8 +21,9 @@ import { ConnectionConfigTransferActions } from './connection-config-transfer';
 import { ConnectionList } from './connection-list/connection-list';
 import { connectionListRow, directoryProviders, type DatastoreProvider, type SavedDatastoreConnection } from './connection-list/provider-model';
 import { ConnectionTagsDialog } from './connection-list/tag-dialog';
-import { SqlDialog } from './sql-library-dialog';
-import styles from './relational.module.css';
+import { ConnectionBatchTestDialog, type ConnectionTestCredentials } from './connection-list/test-dialog';
+import { ConnectionDeleteDialog } from './connection-list/delete-dialog';
+import { appendConnectionTags, runConnectionBatch, type ConnectionBatchAction, type ConnectionBatchProgress, type ConnectionBatchResult } from './connection-list/batch';
 
 type Session = RelationalSession | RedisSession | MongoSession;
 type Props = { provider: DatastoreProvider; onBack: () => void; onOpenProject: (id: string) => void; onWorkbenchFocus?: () => void };
@@ -47,6 +49,10 @@ function ConnectionDirectory({ provider, workspaceId, onBack, onOpenProject, onW
   const [dialog, setDialog] = useState<{ intent: 'save' | 'connect'; connection?: SavedDatastoreConnection } | null>(null);
   const [tagConnection, setTagConnection] = useState<SavedDatastoreConnection | null>(null);
   const [removing, setRemoving] = useState<SavedDatastoreConnection | null>(null);
+  const [batchDialog, setBatchDialog] = useState<{ action: ConnectionBatchAction; connections: SavedDatastoreConnection[] } | null>(null);
+  const [batchProgress, setBatchProgress] = useState<ConnectionBatchProgress | null>(null);
+  const [batchResult, setBatchResult] = useState<ConnectionBatchResult | null>(null);
+  const batchRunning = useRef(false);
   const [busy, setBusy] = useState(false), [pendingIds, setPendingIds] = useState<string[]>([]), [testingId, setTestingId] = useState<string | null>(null);
   const pending = useRef(new Set<string>());
   const [active, setActive] = useState<{ connection: SavedDatastoreConnection; session: Session } | null>(null);
@@ -85,11 +91,11 @@ function ConnectionDirectory({ provider, workspaceId, onBack, onOpenProject, onW
       annotate('failed');
       throw cause;
     } finally { if (mounted.current) setTestingId(null); }
+    annotate('passed');
     if (!open || !mounted.current) {
       await backendFetch(`${base}/sessions/${session.id}`, { method: 'DELETE' });
     }
     if (mounted.current) {
-      annotate('passed');
       if (open) { setSelection([]); setDialog(null); setActive({ connection, session }); onWorkbenchFocus?.(); }
     }
     return '连接测试通过';
@@ -100,15 +106,50 @@ function ConnectionDirectory({ provider, workspaceId, onBack, onOpenProject, onW
     try { replace(await backendFetch<SavedDatastoreConnection>(`${base}/connections/${id}/directory`, { method: 'PATCH', body: JSON.stringify(metadata) })); }
     finally { pending.current.delete(id); if (mounted.current) setPendingIds([...pending.current]); }
   }
+  async function removeConnection(connection: SavedDatastoreConnection) {
+    await backendFetch(`${base}/connections/${connection.id}`, { method: 'DELETE' });
+    if (provider !== 'redis' && provider !== 'mongodb') forgetSqlDrafts(`${base}/connections/${connection.id}`);
+    if (mounted.current) { setConnections(items => items.filter(item => item.id !== connection.id)); setSelection(ids => ids.filter(id => id !== connection.id)); }
+  }
   async function remove() {
     if (!removing || busy) return;
     setBusy(true); setError('');
     try {
-      await backendFetch(`${base}/connections/${removing.id}`, { method: 'DELETE' });
-      if (provider !== 'redis' && provider !== 'mongodb') forgetSqlDrafts(`${base}/connections/${removing.id}`);
-      if (mounted.current) { setConnections(items => items.filter(item => item.id !== removing.id)); setSelection(ids => ids.filter(id => id !== removing.id)); setRemoving(null); }
+      await removeConnection(removing);
+      if (mounted.current) setRemoving(null);
     } catch (cause) { setError(cause instanceof Error ? cause.message : '删除失败'); }
     finally { setBusy(false); }
+  }
+  function beginBatch(action: ConnectionBatchAction, ids: readonly string[]) {
+    if (batchRunning.current || busy || pending.current.size) return;
+    const chosen = connections.filter(connection => connection.workspaceId === workspaceId && connection.config.provider === provider && ids.includes(connection.id));
+    if (chosen.length) { setBatchResult(null); setBatchDialog({ action, connections: chosen }); }
+  }
+  async function batch(action: ConnectionBatchAction, perform: (connection: SavedDatastoreConnection) => Promise<unknown>) {
+    if (!batchDialog || batchRunning.current) return;
+    batchRunning.current = true; setError(''); setBatchResult(null);
+    setBatchProgress({ action, completed: 0, total: batchDialog.connections.length });
+    try {
+      const result = await runConnectionBatch(batchDialog.connections, action, perform, setBatchProgress, () => mounted.current);
+      if (mounted.current) setBatchResult(result);
+    } finally {
+      batchRunning.current = false;
+      if (mounted.current) setBatchProgress(null);
+    }
+  }
+  async function batchTags(tags: string[]) {
+    const updates = new Map(batchDialog!.connections.map(connection => {
+      try { return [connection.id, appendConnectionTags(connection.directory?.tags ?? [], tags)] as const; }
+      catch (cause) { throw new Error(`${connection.name}：${cause instanceof Error ? cause.message : '标签无效'}`); }
+    }));
+    await batch('tags', connection => patchDirectory(connection.id, { tags: updates.get(connection.id)! }));
+  }
+  async function batchTests(credentials: ReadonlyMap<string, ConnectionTestCredentials>) {
+    await batch('test', connection => {
+      const input = credentials.get(connection.id)!;
+      const options = connection.config.provider === 'sqlite' ? undefined : resolveConnectionOptions(connection.config.provider, input.options);
+      return connect(connection, input.password, options, false);
+    });
   }
   if (active?.session.provider === 'redis') return <RedisWorkbench key={active.session.id} session={active.session} name={active.connection.name} onBack={() => setActive(null)} onSessionChange={session => setActive({ connection: active.connection, session })} />;
   if (active?.session.provider === 'mongodb') return <MongoWorkbench key={active.session.id} session={active.session} name={active.connection.name} onBack={() => setActive(null)} onSessionChange={session => setActive({ connection: active.connection, session })} />;
@@ -119,16 +160,20 @@ function ConnectionDirectory({ provider, workspaceId, onBack, onOpenProject, onW
   return <>
     <ConnectionList label={descriptor.label} targetLabel={descriptor.targetLabel} scopeKey={`${workspaceId}:${provider}`}
       rows={connections.filter(entry => entry.config.provider === provider && entry.workspaceId === workspaceId).map(entry => connectionListRow(entry, testingId === entry.id))}
-      projects={projects} loading={loading} error={error} pendingIds={pendingIds}
-      headerActions={<ConnectionConfigTransferActions workspaceId={workspaceId} provider={provider} connections={connections} selectedIds={selection} disabled={loading || busy} onImported={() => setRevision(value => value + 1)} />}
+      projects={projects} loading={loading} error={error} pendingIds={pendingIds} selectedIds={selection} batchProgress={batchProgress} batchResult={batchResult}
+      headerActions={<ConnectionConfigTransferActions workspaceId={workspaceId} provider={provider} connections={connections} selectedIds={selection} disabled={loading || busy || Boolean(batchProgress)} onImported={() => setRevision(value => value + 1)} />}
       onBack={onBack} onCreate={() => setDialog({ intent: 'save' })} onRetry={() => { setError(''); setLoading(true); setRevision(value => value + 1); }}
       onOpen={row => { if (row.status === 'passed') setDialog({ intent: 'connect', connection: get(row.id) }); }} onEdit={row => setDialog({ intent: 'save', connection: get(row.id) })}
-      onRemove={row => setRemoving(get(row.id) ?? null)} onOpenProject={onOpenProject}
+      onRemove={row => { setError(''); setRemoving(get(row.id) ?? null); }} onOpenProject={onOpenProject}
       onManageTags={row => setTagConnection(get(row.id) ?? null)}
       onFavorite={(row, favorite) => { setError(''); void patchDirectory(row.id, { favorite }).catch(cause => { if (mounted.current) setError(cause instanceof Error ? cause.message : '收藏保存失败'); }); }}
-      onSelectionChange={setSelection} />
-    {tagConnection && <ConnectionTagsDialog key={tagConnection.id} connection={tagConnection} onClose={() => setTagConnection(null)} onSave={tags => patchDirectory(tagConnection.id, { tags })} />}
-    {removing && <SqlDialog title="删除连接确认" role="alertdialog" busy={busy} onClose={() => setRemoving(null)}><div className={styles.formBody}><p>删除「{removing.name}」的连接配置？</p><small>数据库文件与数据内容不会删除。</small></div><footer className={styles.dialogFooter}><button type="button" className={styles.secondary} disabled={busy} onClick={() => setRemoving(null)}>取消</button><span /><button type="button" className={styles.danger} disabled={busy} onClick={() => void remove()}>{busy ? '删除中…' : '确认删除'}</button></footer></SqlDialog>}
+      onSelectionChange={setSelection} onBatchAction={beginBatch} onDismissBatchResult={() => setBatchResult(null)} />
+    {tagConnection && <ConnectionTagsDialog key={tagConnection.id} initialTags={tagConnection.directory?.tags ?? []} onClose={() => setTagConnection(null)} onSave={tags => patchDirectory(tagConnection.id, { tags })} />}
+    {removing && <ConnectionDeleteDialog connections={[removing]} busy={busy} error={error} onClose={() => setRemoving(null)} onDelete={() => void remove()} />}
+    {batchDialog?.action === 'tags' && <ConnectionTagsDialog initialTags={[]} additive title={`批量打标签 · ${batchDialog.connections.length} 个连接`} onSave={batchTags} onClose={() => setBatchDialog(null)} />}
+    {batchDialog?.action === 'test' && <ConnectionBatchTestDialog connections={batchDialog.connections} onRun={batchTests} onClose={() => setBatchDialog(null)} />}
+    {batchDialog?.action === 'delete' && <ConnectionDeleteDialog connections={batchDialog.connections} busy={Boolean(batchProgress)} onClose={() => setBatchDialog(null)}
+      onDelete={() => { void batch('delete', removeConnection).then(() => { if (mounted.current) setBatchDialog(null); }); }} />}
     {dialog && (provider === 'redis'
       ? <RedisDialog key={`${dialog.intent}:${dialog.connection?.id ?? 'new'}`} workspaceId={workspaceId} connection={dialog.connection as RedisSavedConnection | undefined} intent={dialog.intent} onClose={() => setDialog(null)} onSave={save} onConnect={connectSelected} onTest={testSelected} />
       : provider === 'mongodb'

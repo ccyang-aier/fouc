@@ -2,9 +2,7 @@
 .submenu { width: 196px; }
 .item { height: 33px; gap: 10px; padding: 0 10px; font-size: 13px; font-weight: 500; cursor: pointer; }
 .item > svg, .icon > svg { width: 16px; height: 16px; flex: none; }
-.item[data-variant='default'] > svg, .icon > svg { color: var(--ink-soft); }
 .icon { display: flex; }
-.item[data-highlighted]:not([data-variant='destructive']):not([data-variant='warning']) { background: var(--surface-hover); color: var(--ink); }
 .item[data-disabled] { opacity: .5; }
 .menu [role='group'] { display: grid; gap: 3px; }
 .submenu [role='menuitem'] + [role='menuitem'] { margin-top: 3px; }

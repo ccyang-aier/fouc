@@ -359,13 +359,13 @@ function MenuAction({
     <button
       type="button"
       role={compact ? undefined : "menuitem"}
+      data-variant={danger ? "destructive" : undefined}
       onClick={onClick}
       className={cn(
         "flex items-center gap-2 rounded-[6px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]",
         compact ? "h-7 px-2 text-[10.5px]" : "h-8 w-full px-2.5",
         primary && "bg-[var(--accent)] text-white hover:bg-[var(--accent-strong)]",
-        danger && !primary && "text-[var(--err-ink)] hover:bg-[#fff2f1]",
-        !primary && !danger && "hover:bg-wash",
+        !primary && "fouc-menu-item",
       )}
     >
       <Icon aria-hidden className="size-3.5" />

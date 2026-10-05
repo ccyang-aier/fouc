@@ -49,10 +49,20 @@
   --side-panel-shadow-left: 12px 0 28px -20px rgba(18, 23, 31, 0.28);
   --ok-ink: #1f8a5f;
   --err-ink: #b3413c;
-  --danger-action-bg: #e44747;
+  --danger-action-bg: #d4383d;
   --warn-ink: #a06b12;
   --warn-soft: #fdf8ee;
   --warn-soft-line: #f0dcae;
+  /* 系统菜单状态色：普通项为清晰灰底；危险项红底白字；警示项琥珀底。
+     鼠标悬停、键盘高亮与展开的子菜单共用，业务组件只选择语义，不自定颜色。 */
+  --menu-item-hover-bg: #edf0f4;
+  --menu-item-hover-ink: var(--ink);
+  --menu-danger-ink: var(--err-ink);
+  --menu-danger-hover-bg: var(--danger-action-bg);
+  --menu-danger-hover-ink: #ffffff;
+  --menu-warning-ink: var(--warn-ink);
+  --menu-warning-hover-bg: #faedcc;
+  --menu-warning-hover-ink: #875510;
 
   /* ── 字号基准（字体族默认栈由 @theme 定义，属性映射见下方） ── */
   --ui-size: 13px;
@@ -113,6 +123,9 @@ html[data-theme="dark"] {
   --warn-ink: #d9a743;
   --warn-soft: rgba(217, 167, 67, 0.1);
   --warn-soft-line: rgba(217, 167, 67, 0.28);
+  --menu-item-hover-bg: #30363c;
+  --menu-warning-hover-bg: #4b3920;
+  --menu-warning-hover-ink: #f0c979;
 
   --wt-sidebar-standard-panel: #141619;
   --wt-sidebar-edge: var(--line);
@@ -375,6 +388,30 @@ input {
 }
 
 .menu-surface[data-state="closed"] { animation: menu-pop-out 140ms ease-out both; }
+/* 共享菜单项契约；Radix 与原生菜单均使用 fouc-menu-item，禁用项不响应高亮。 */
+.fouc-menu-item {
+  --menu-state-bg: var(--menu-item-hover-bg);
+  --menu-state-ink: var(--menu-item-hover-ink);
+  color: var(--ink);
+  cursor: pointer;
+}
+.fouc-menu-item[data-variant="destructive"] {
+  --menu-state-bg: var(--menu-danger-hover-bg);
+  --menu-state-ink: var(--menu-danger-hover-ink);
+  color: var(--menu-danger-ink);
+}
+.fouc-menu-item[data-variant="warning"] {
+  --menu-state-bg: var(--menu-warning-hover-bg);
+  --menu-state-ink: var(--menu-warning-hover-ink);
+  color: var(--menu-warning-ink);
+}
+.fouc-menu-item:is(:hover, :focus-visible, [data-highlighted], [data-state="open"]):not(:disabled):not([data-disabled]):not([aria-disabled="true"]) {
+  background: var(--menu-state-bg);
+  color: var(--menu-state-ink);
+}
+.fouc-menu-item:is(:hover, :focus-visible, [data-highlighted], [data-state="open"]):not(:disabled):not([data-disabled]):not([aria-disabled="true"]) svg {
+  color: inherit;
+}
 .menu-surface :where([role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"], [role="option"], [data-menu-reveal], button):not([data-menu-reveal] *) {
   animation: menu-item-pop-in 400ms cubic-bezier(.22, 1, .36, 1) var(--menu-item-delay, 0ms) backwards;
 }

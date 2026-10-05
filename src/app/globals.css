@@ -434,15 +434,22 @@ html[data-theme="dark"] .dropdown-menu-trigger[data-state="open"] {
   a[href],
   summary,
   select,
+  input:is([type="button"], [type="submit"], [type="reset"], [type="checkbox"], [type="radio"], [type="color"]),
+  label:has(input:is([type="checkbox"], [type="radio"])),
   [role="button"]:not([aria-disabled="true"]),
   [role="tab"]:not([aria-disabled="true"]),
   [role="menuitem"]:not([aria-disabled="true"]),
+  [role="menuitemcheckbox"]:not([aria-disabled="true"]),
+  [role="menuitemradio"]:not([aria-disabled="true"]),
+  [role="checkbox"]:not([aria-disabled="true"]),
+  [role="radio"]:not([aria-disabled="true"]),
+  [role="switch"]:not([aria-disabled="true"]),
   [role="option"]:not([aria-disabled="true"])
 ) {
   cursor: pointer;
 }
 
-:where(button:disabled, [aria-disabled="true"]) {
+:where(button:disabled, select:disabled, input:disabled, textarea:disabled, label:has(input:disabled), [aria-disabled="true"], [data-disabled]) {
   cursor: not-allowed;
 }
 

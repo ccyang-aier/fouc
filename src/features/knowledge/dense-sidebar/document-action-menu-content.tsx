@@ -17,6 +17,6 @@ export function DocumentActionMenuContent({ documentId, starred, onAction }: { d
     <DropdownMenuItem onSelect={() => onAction(documentId, "toggle-star")}><Star weight={starred ? "fill" : "bold"} />{t(starred ? "sidebar.removeFavorite" : "sidebar.addFavorite")}</DropdownMenuItem>
     <DropdownMenuItem onSelect={() => onAction(documentId, "toggle-draft")}><FileDashed weight="bold" />切换草稿标记</DropdownMenuItem>
     <DropdownMenuSeparator />
-    <DropdownMenuItem className="text-red-600 focus:bg-red-50 focus:text-red-700" onSelect={() => onAction(documentId, "trash")}><Trash weight="bold" />{t("sidebar.moveToTrash")}</DropdownMenuItem>
+    <DropdownMenuItem variant="destructive" onSelect={() => onAction(documentId, "trash")}><Trash weight="bold" />{t("sidebar.moveToTrash")}</DropdownMenuItem>
   </DropdownMenuContent>;
 }

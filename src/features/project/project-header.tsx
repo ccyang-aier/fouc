@@ -118,7 +118,7 @@ export function ProjectHeader({
               <DropdownMenuItem><GearSix />项目设置</DropdownMenuItem>
               <DropdownMenuItem>复制项目链接</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-[var(--err-ink)]">归档项目</DropdownMenuItem>
+              <DropdownMenuItem variant="warning">归档项目</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

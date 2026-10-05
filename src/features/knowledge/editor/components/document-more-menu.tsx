@@ -103,7 +103,7 @@ export function DocumentMoreMenu({ editor, title, starred, onToggleStar, actions
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup aria-label="删除文档">
-          <DropdownMenuItem className={`${styles.item} ${styles.danger}`} disabled={!actions.onDelete || busy} title={!actions.onDelete ? '当前权限不能删除文档' : undefined} onSelect={() => { setDeleteError(''); setConfirmDelete(true); }}><Trash aria-hidden />删除</DropdownMenuItem>
+          <DropdownMenuItem variant="destructive" className={styles.item} disabled={!actions.onDelete || busy} title={!actions.onDelete ? '当前权限不能删除文档' : undefined} onSelect={() => { setDeleteError(''); setConfirmDelete(true); }}><Trash aria-hidden />删除</DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>

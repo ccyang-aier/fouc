@@ -408,7 +408,7 @@ export function ChatPanel() {
                               <PencilSimple weight="fill" />重命名
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-[var(--err-ink)]" onSelect={() => deleteGroup(group.id)}>
+                            <DropdownMenuItem variant="destructive" onSelect={() => deleteGroup(group.id)}>
                               <Trash weight="fill" />删除分组
                             </DropdownMenuItem>
                           </DropdownMenuContent>

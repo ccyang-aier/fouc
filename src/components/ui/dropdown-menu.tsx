@@ -53,15 +53,21 @@ function DropdownMenuContent({
 function DropdownMenuItem({
   className,
   inset,
+  variant = "default",
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Item> & {
   inset?: boolean
+  variant?: "default" | "destructive" | "warning"
 }) {
   return (
     <DropdownMenuPrimitive.Item
       data-inset={inset}
+      data-variant={variant}
       className={cn(
-        "relative flex h-8 cursor-default select-none items-center gap-2 rounded-[5px] px-2.5 outline-none transition-colors focus:bg-wash data-[disabled]:pointer-events-none data-[disabled]:opacity-45 data-[inset=true]:pl-8 [&_svg]:size-4 [&_svg]:text-[var(--muted)]",
+        "relative flex h-8 cursor-pointer select-none items-center gap-2 rounded-[5px] px-2.5 outline-none transition-colors data-[disabled]:pointer-events-none data-[disabled]:opacity-45 data-[inset=true]:pl-8 [&_svg]:size-4 [&_svg]:shrink-0",
+        variant === "default" && "hover:bg-wash focus:bg-wash [&_svg]:text-[var(--ink-soft)]",
+        variant === "destructive" && "text-[var(--err-ink)] hover:bg-[var(--danger-action-bg)] hover:text-white focus:bg-[var(--danger-action-bg)] focus:text-white [&_svg]:text-current",
+        variant === "warning" && "text-[var(--warn-ink)] hover:bg-[var(--warn-soft)] focus:bg-[var(--warn-soft)] [&_svg]:text-current",
         className,
       )}
       {...props}
@@ -78,7 +84,7 @@ function DropdownMenuCheckboxItem({
   return (
     <DropdownMenuPrimitive.CheckboxItem
       className={cn(
-        "relative flex h-8 cursor-default select-none items-center rounded-[5px] py-1.5 pr-2 pl-8 text-[12px] outline-none transition-colors focus:bg-wash",
+        "relative flex h-8 cursor-pointer select-none items-center rounded-[5px] py-1.5 pr-2 pl-8 text-[12px] outline-none transition-colors hover:bg-wash focus:bg-wash data-[disabled]:pointer-events-none data-[disabled]:opacity-45",
         className,
       )}
       checked={checked}
@@ -97,7 +103,7 @@ function DropdownMenuCheckboxItem({
 const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup
 function DropdownMenuRadioItem({ className, children, ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.RadioItem>) {
   return <DropdownMenuPrimitive.RadioItem
-    className={cn("relative flex h-8 cursor-default select-none items-center rounded-[5px] py-1.5 pr-2 pl-8 text-[12px] outline-none transition-colors focus:bg-wash data-[disabled]:pointer-events-none data-[disabled]:opacity-45", className)}
+    className={cn("relative flex h-8 cursor-pointer select-none items-center rounded-[5px] py-1.5 pr-2 pl-8 text-[12px] outline-none transition-colors hover:bg-wash focus:bg-wash data-[disabled]:pointer-events-none data-[disabled]:opacity-45", className)}
     {...props}
   >
     <span className="absolute left-2.5 flex size-4 items-center justify-center"><DropdownMenuPrimitive.ItemIndicator><Check className="size-3.5" weight="bold" /></DropdownMenuPrimitive.ItemIndicator></span>
@@ -140,7 +146,7 @@ function DropdownMenuSubTrigger({
   return (
     <DropdownMenuPrimitive.SubTrigger
       className={cn(
-        "flex h-8 cursor-default items-center gap-2 rounded-[5px] px-2.5 text-[12px] outline-none focus:bg-wash data-[state=open]:bg-wash",
+        "flex h-8 cursor-pointer items-center gap-2 rounded-[5px] px-2.5 text-[12px] outline-none hover:bg-wash focus:bg-wash data-[state=open]:bg-wash data-[disabled]:pointer-events-none data-[disabled]:opacity-45",
         className,
       )}
       {...props}

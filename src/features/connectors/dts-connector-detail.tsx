@@ -333,7 +333,7 @@ function ConnectionStatusMenu({ detail, connected, busy, onHeartbeat, onReconnec
           <ArrowsClockwise />
           重新连接
         </DropdownMenuItem>
-        {connected ? <DropdownMenuItem disabled={busy} onSelect={onDisconnect} className="text-[10px] text-[var(--err-ink)] focus:text-[var(--err-ink)]"><SignOut />断开连接</DropdownMenuItem> : null}
+        {connected ? <DropdownMenuItem variant="destructive" disabled={busy} onSelect={onDisconnect} className="text-[10px]"><SignOut />断开连接</DropdownMenuItem> : null}
       </DropdownMenuContent>
     </DropdownMenu>
   )

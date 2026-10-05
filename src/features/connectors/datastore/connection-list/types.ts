@@ -34,9 +34,8 @@ export interface ConnectionListProps {
   onRetry: () => void
   onOpen: (row: ConnectionListRow) => void
   onEdit: (row: ConnectionListRow) => void
-  onCopy: (row: ConnectionListRow) => void
   onRemove: (row: ConnectionListRow) => void
-  onManageProjects: (row: ConnectionListRow) => void
+  onOpenProject: (projectId: string) => void
   onManageTags: (row: ConnectionListRow) => void
   onFavorite: (row: ConnectionListRow, favorite: boolean) => void
   onSelectionChange: (ids: string[]) => void

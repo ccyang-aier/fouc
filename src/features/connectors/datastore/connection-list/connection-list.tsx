@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import {
   ArrowSquareOut, CaretDown, CaretLeft, CaretRight,
-  CaretUpDown, Copy, Database, DotsThree, FolderSimple, GearSix, LockSimple,
+  CaretUpDown, Database, DotsThree, GearSix, LockSimple,
   MagnifyingGlass, PencilSimple, Plus, SpinnerGap, Star, Tag, Trash, X,
 } from '@phosphor-icons/react'
 import {
@@ -13,6 +13,9 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { ConnectionListProps, ConnectionListRow, ConnectionListStatus } from './types'
+import { ConnectionFilterMenu } from './filter-menu'
+import { filterConnections, unassignedProject } from './filter'
+import { ConnectionProjectLinks } from './project-links'
 import styles from './connection-list.module.css'
 
 type Column = 'target' | 'projects' | 'tags' | 'access' | 'status'
@@ -36,22 +39,22 @@ function tagColor(tag: string) {
   return tagColors[hash % tagColors.length]
 }
 
-function RowActions({ row, pending, onOpen, onEdit, onCopy, onRemove, onManageProjects, onManageTags }: {
+function RowActions({ row, pending, onOpen, onEdit, onRemove, onManageTags }: {
   row: ConnectionListRow
   pending: boolean
-} & Pick<ConnectionListProps, 'onOpen' | 'onEdit' | 'onCopy' | 'onRemove' | 'onManageProjects' | 'onManageTags'>) {
+} & Pick<ConnectionListProps, 'onOpen' | 'onEdit' | 'onRemove' | 'onManageTags'>) {
   return <div className={styles.rowActions}>
     <Tooltip>
       <TooltipTrigger asChild>
         <button type="button" className={styles.iconButton} aria-label={`打开 ${row.name} 工作台`}
-          disabled={pending} onClick={() => onOpen(row)}><ArrowSquareOut size={16} /></button>
+          disabled={pending || row.status !== 'passed'} onClick={() => onOpen(row)}><ArrowSquareOut size={16} weight="bold" /></button>
       </TooltipTrigger>
-      <TooltipContent>打开工作台</TooltipContent>
+      <TooltipContent>{row.status === 'passed' ? '打开工作台' : '请先编辑连接并通过测试'}</TooltipContent>
     </Tooltip>
     <Tooltip>
       <TooltipTrigger asChild>
         <button type="button" className={styles.iconButton} aria-label={`编辑 ${row.name}`}
-          disabled={pending} onClick={() => onEdit(row)}><PencilSimple size={16} /></button>
+          disabled={pending} onClick={() => onEdit(row)}><PencilSimple size={16} weight="bold" /></button>
       </TooltipTrigger>
       <TooltipContent>编辑连接</TooltipContent>
     </Tooltip>
@@ -66,48 +69,23 @@ function RowActions({ row, pending, onOpen, onEdit, onCopy, onRemove, onManagePr
         <TooltipContent>更多操作</TooltipContent>
       </Tooltip>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onSelect={() => onManageProjects(row)}><FolderSimple />关联项目</DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => onManageTags(row)}><Tag />管理标签</DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => onCopy(row)}><Copy />复制连接</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => onManageTags(row)}><Tag weight="bold" />管理标签</DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className={styles.danger} onSelect={() => onRemove(row)}><Trash />删除连接</DropdownMenuItem>
+        <DropdownMenuItem variant="destructive" onSelect={() => onRemove(row)}><Trash weight="bold" />删除连接</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   </div>
 }
 
-function FilterMenu({ label, value, onChange, options }: {
-  label: string
-  value: string
-  onChange: (value: string) => void
-  options: readonly { value: string; label: string }[]
-}) {
-  const selected = options.find(option => option.value === value)
-  return <DropdownMenu>
-    <DropdownMenuTrigger asChild>
-      <button type="button" className={styles.filterButton} data-active={Boolean(value)}>
-        <span>{selected?.label ?? label}</span><CaretDown size={12} />
-      </button>
-    </DropdownMenuTrigger>
-    <DropdownMenuContent align="start" className={styles.filterMenu}>
-      <DropdownMenuLabel>{label}</DropdownMenuLabel>
-      <DropdownMenuRadioGroup value={value} onValueChange={onChange}>
-        <DropdownMenuRadioItem value="">全部{label === '关联项目' ? '项目' : '标签'}</DropdownMenuRadioItem>
-        {options.map(option => <DropdownMenuRadioItem key={option.value} value={option.value}>{option.label}</DropdownMenuRadioItem>)}
-      </DropdownMenuRadioGroup>
-    </DropdownMenuContent>
-  </DropdownMenu>
-}
-
 export function ConnectionList(props: ConnectionListProps) {
   const {
     label, targetLabel, scopeKey, rows, projects, loading, error, pendingIds,
-    headerActions, onBack, onCreate, onRetry, onOpen, onEdit, onCopy,
-    onRemove, onManageProjects, onManageTags, onFavorite, onSelectionChange,
+    headerActions, onBack, onCreate, onRetry, onOpen, onEdit,
+    onRemove, onOpenProject, onManageTags, onFavorite, onSelectionChange,
   } = props
   const [search, setSearch] = useState('')
-  const [project, setProject] = useState('')
-  const [tag, setTag] = useState('')
+  const [projectFilter, setProjectFilter] = useState<string[]>([])
+  const [tagFilter, setTagFilter] = useState<string[]>([])
   const [onlyFavorites, setOnlyFavorites] = useState(false)
   const [selected, setSelected] = useState<string[]>([])
   const [hiddenColumns, setHiddenColumns] = useState<Column[]>([])
@@ -118,17 +96,10 @@ export function ConnectionList(props: ConnectionListProps) {
   const tags = useMemo(() => [...new Set(rows.flatMap(row => row.tags))].sort((a, b) => a.localeCompare(b, 'zh-CN')), [rows])
   const projectOptions = useMemo(() => [
     ...projects.map(item => ({ value: item.id, label: item.name })),
-    { value: '__unassigned__', label: '未关联项目' },
+    { value: unassignedProject, label: '未关联项目' },
   ], [projects])
   const filtered = useMemo(() => {
-    const needle = search.trim().toLocaleLowerCase()
-    const results = rows.filter(row => {
-      if (onlyFavorites && !row.favorite) return false
-      if (tag && !row.tags.includes(tag)) return false
-      if (project === '__unassigned__' ? row.projectIds.length > 0 : project && !row.projectIds.includes(project)) return false
-      return !needle || [row.name, row.target, row.targetTitle, ...row.tags,
-        ...row.projectIds.map(id => projectNames.get(id) ?? '')].join(' ').toLocaleLowerCase().includes(needle)
-    })
+    const results = filterConnections(rows, { search, projects: projectFilter, tags: tagFilter, onlyFavorites }, projectNames)
     if (sort) {
       const value = (row: ConnectionListRow) => sort.column === 'projects'
         ? row.projectIds.map(id => projectNames.get(id) ?? id).join(' ')
@@ -136,14 +107,14 @@ export function ConnectionList(props: ConnectionListProps) {
       results.sort((a, b) => sort.direction * value(a).localeCompare(value(b), 'zh-CN', { numeric: true }))
     }
     return results
-  }, [rows, search, project, tag, onlyFavorites, projectNames, sort])
+  }, [rows, search, projectFilter, tagFilter, onlyFavorites, projectNames, sort])
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize))
   const currentPage = Math.min(page, pageCount)
   const pageRows = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
   const selectedIds = selected.filter(id => rows.some(row => row.id === id))
   const allPageSelected = pageRows.length > 0 && pageRows.every(row => selectedIds.includes(row.id))
   const somePageSelected = pageRows.some(row => selectedIds.includes(row.id))
-  const filteredActive = Boolean(search || project || tag || onlyFavorites)
+  const filteredActive = Boolean(search || projectFilter.length || tagFilter.length || onlyFavorites)
   const visibleColumnCount = 8 - hiddenColumns.length
 
   function changeSelection(ids: string[]) {
@@ -166,7 +137,7 @@ export function ConnectionList(props: ConnectionListProps) {
     </th>
   }
   function resetFilters() {
-    setSearch(''); setProject(''); setTag(''); setOnlyFavorites(false); setPage(1)
+    setSearch(''); setProjectFilter([]); setTagFilter([]); setOnlyFavorites(false); setPage(1)
   }
 
   return <section className={styles.directory} aria-label={`${label} 连接列表`} data-scope={scopeKey}>
@@ -191,8 +162,8 @@ export function ConnectionList(props: ConnectionListProps) {
             onChange={event => { setSearch(event.target.value); setPage(1) }} />
           {search && <button type="button" aria-label="清除搜索" onClick={() => { setSearch(''); setPage(1) }}><X size={12} /></button>}
         </div>
-        <FilterMenu label="关联项目" value={project} options={projectOptions} onChange={value => { setProject(value); setPage(1) }} />
-        <FilterMenu label="标签" value={tag} options={tags.map(value => ({ value, label: value }))} onChange={value => { setTag(value); setPage(1) }} />
+        <ConnectionFilterMenu label="关联项目" values={projectFilter} options={projectOptions} onChange={values => { setProjectFilter(values); setPage(1) }} />
+        <ConnectionFilterMenu label="标签" values={tagFilter} options={tags.map(value => ({ value, label: value }))} onChange={values => { setTagFilter(values); setPage(1) }} />
         <label className={styles.favoriteFilter}><input type="checkbox" checked={onlyFavorites}
           onChange={event => { setOnlyFavorites(event.target.checked); setPage(1) }} />仅收藏</label>
         <div className={styles.toolbarEnd}>
@@ -240,34 +211,27 @@ export function ConnectionList(props: ConnectionListProps) {
                 {!error && <button type="button" className={styles.emptyAction} onClick={filteredActive ? resetFilters : onCreate}>{filteredActive ? '清除筛选' : '新建连接'}</button>}
               </td></tr> : pageRows.map(row => {
                 const pending = pendingIds.includes(row.id)
-                const projectLabels = row.projectIds.map(id => projectNames.get(id) ?? '项目不可用')
                 return <tr key={row.id} className={styles.dataRow} data-selected={selectedIds.includes(row.id)}>
                   <td className={styles.selectionCell}><input type="checkbox" aria-label={`选择 ${row.name}`} checked={selectedIds.includes(row.id)}
                     onChange={event => changeSelection(event.target.checked ? [...selectedIds, row.id] : selectedIds.filter(id => id !== row.id))} /></td>
                   <td><div className={styles.nameCell}>
-                    <button type="button" className={styles.nameButton} onClick={() => onOpen(row)} disabled={pending} title={row.name}>{row.name}</button>
+                    <button type="button" className={styles.nameButton} onClick={() => onOpen(row)} disabled={pending || row.status !== 'passed'} title={row.name}>{row.name}</button>
                     <button type="button" className={styles.favoriteButton} data-favorite={row.favorite} aria-label={`${row.favorite ? '取消收藏' : '收藏'} ${row.name}`}
                       title={row.favorite ? '取消收藏' : '收藏连接'} aria-pressed={row.favorite} disabled={pending}
                       onClick={() => onFavorite(row, !row.favorite)}><Star size={15} weight={row.favorite ? 'fill' : 'regular'} /></button>
                   </div></td>
                   {!hiddenColumns.includes('target') && <td><span className={styles.target} title={row.targetTitle}>{row.target}</span></td>}
-                  {!hiddenColumns.includes('projects') && <td><div className={styles.chips}>
-                    {row.projectIds.length ? <><button type="button" className={styles.projectChip} disabled={pending}
-                      title={projectNames.has(row.projectIds[0]) ? projectLabels.join('、') : `项目不可用：${row.projectIds[0]}`} onClick={() => onManageProjects(row)}>{projectLabels[0]}</button>
-                      {row.projectIds.length > 1 && <button type="button" className={styles.projectChip} disabled={pending} title={projectLabels.join('、')}
-                        onClick={() => onManageProjects(row)}>+{row.projectIds.length - 1}</button>}</>
-                      : <button type="button" className={`${styles.projectChip} ${styles.unassigned}`} disabled={pending} onClick={() => onManageProjects(row)}>未关联</button>}
-                  </div></td>}
+                  {!hiddenColumns.includes('projects') && <td><ConnectionProjectLinks ids={row.projectIds} names={projectNames} onOpen={onOpenProject} /></td>}
                   {!hiddenColumns.includes('tags') && <td><div className={styles.chips}>
                     {row.tags.slice(0, 2).map(item => <button type="button" key={item} className={styles.tagChip} data-color={tagColor(item)}
-                      title={`筛选标签：${item}`} onClick={() => { setTag(item); setPage(1) }}>{item}</button>)}
+                      title={`筛选标签：${item}`} onClick={() => { setTagFilter([item]); setPage(1) }}>{item}</button>)}
                     {row.tags.length > 2 && <button type="button" className={styles.projectChip} disabled={pending} title={row.tags.join('、')} onClick={() => onManageTags(row)}>+{row.tags.length - 2}</button>}
                     {!row.tags.length && <span className={styles.absent} aria-label="无标签">—</span>}
                   </div></td>}
                   {!hiddenColumns.includes('access') && <td><span className={styles.access} title="默认只读；进入工作台后可显式解锁写入。"><LockSimple size={15} />只读</span></td>}
                   {!hiddenColumns.includes('status') && <td><span className={styles.status} data-status={row.status}
                     title={row.statusTitle ?? statusNames[row.status]}>{row.status === 'testing' ? <SpinnerGap size={12} className={styles.spinner} /> : <i aria-hidden="true" />}{statusNames[row.status]}</span></td>}
-                  <td><RowActions row={row} pending={pending} onOpen={onOpen} onEdit={onEdit} onCopy={onCopy} onRemove={onRemove} onManageProjects={onManageProjects} onManageTags={onManageTags} /></td>
+                  <td><RowActions row={row} pending={pending} onOpen={onOpen} onEdit={onEdit} onRemove={onRemove} onManageTags={onManageTags} /></td>
                 </tr>
               })}
           </tbody>

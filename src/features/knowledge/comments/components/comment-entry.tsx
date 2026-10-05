@@ -54,7 +54,7 @@ export function CommentEntryItem({ entry, workspaceId, author, isOwn, deleting, 
               {isOwn && canComment && <DropdownMenuItem onSelect={() => { setEditing(true); setCopyStatus('idle'); }}><PencilSimple size={16} weight="bold" aria-hidden />编辑</DropdownMenuItem>}
               {threadAction}
               <DropdownMenuItem onSelect={() => { void onCopyLink(entry.id).then(success => setCopyStatus(success ? 'copied' : 'error')); }}><LinkSimple size={16} weight="bold" aria-hidden />复制链接</DropdownMenuItem>
-              {isOwn && canComment && <><DropdownMenuSeparator /><DropdownMenuItem className={styles.deleteMenuItem} onSelect={() => onDelete(entry.id)} disabled={deleting}><TrashSimple size={16} weight="bold" aria-hidden />删除</DropdownMenuItem></>}
+              {isOwn && canComment && <><DropdownMenuSeparator /><DropdownMenuItem variant="destructive" onSelect={() => onDelete(entry.id)} disabled={deleting}><TrashSimple size={16} weight="bold" aria-hidden />删除</DropdownMenuItem></>}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

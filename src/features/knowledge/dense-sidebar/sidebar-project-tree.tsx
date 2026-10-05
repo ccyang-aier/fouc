@@ -149,7 +149,7 @@ export function SidebarProjectTreeNode({
                   <Star size={15} /> {node.starred ? t("sidebar.removeFavorite") : t("sidebar.addFavorite")}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-red-600 focus:bg-red-50 focus:text-red-700" onSelect={() => onProjectAction(node.id, "delete")}>
+                <DropdownMenuItem variant="destructive" onSelect={() => onProjectAction(node.id, "delete")}>
                   <Trash size={15} /> {t("sidebar.delete")}
                 </DropdownMenuItem>
               </DropdownMenuContent>

@@ -131,7 +131,7 @@ export function ScrollArea({ children, className, viewportClassName, viewportRef
   /* 抵达对应端点时清晰显示该端箭头，既提示当前位置，也避免在浅色主题中被误认为消失。 */
   function arrowClass(active: boolean) {
     return cn(
-      "cursor-default items-center justify-center transition-colors duration-150 hover:bg-surface-hover hover:text-ink",
+      "cursor-pointer items-center justify-center transition-colors duration-150 hover:bg-surface-hover hover:text-ink",
       active ? "text-ink-secondary" : "text-ink-faint/40",
     );
   }
@@ -167,7 +167,7 @@ export function ScrollArea({ children, className, viewportClassName, viewportRef
               </div>
               <div className="relative min-w-0 flex-1">
                 <div
-                  className="group absolute inset-y-0 left-0 flex h-3 cursor-default touch-none select-none items-center"
+                  className="group absolute inset-y-0 left-0 flex h-3 cursor-grab active:cursor-grabbing touch-none select-none items-center"
                   style={thumbStyle}
                   onPointerDown={handleThumbPointerDown}
                   onPointerMove={handleThumbPointerMove}
@@ -198,7 +198,7 @@ export function ScrollArea({ children, className, viewportClassName, viewportRef
               </div>
               <div className="relative min-h-0 flex-1">
                 <div
-                  className="group absolute inset-x-0 top-0 flex w-3 cursor-default touch-none select-none items-center justify-center"
+                  className="group absolute inset-x-0 top-0 flex w-3 cursor-grab active:cursor-grabbing touch-none select-none items-center justify-center"
                   style={thumbStyle}
                   onPointerDown={handleThumbPointerDown}
                   onPointerMove={handleThumbPointerMove}

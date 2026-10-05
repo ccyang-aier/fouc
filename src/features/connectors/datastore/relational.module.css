@@ -25,10 +25,11 @@
   border: 1px solid var(--line);
 }
 .danger {
-  color: #b52828;
-  border: 1px solid #e6c2c2;
-  background: #fff4f4;
+  color: var(--err-ink);
+  border: 1px solid color-mix(in srgb, var(--err-ink) 30%, var(--line));
+  background: color-mix(in srgb, var(--err-ink) 8%, var(--panel));
 }
+.danger:is(:hover, :focus-visible):not(:disabled) { color: white; border-color: var(--danger-action-bg); background: var(--danger-action-bg); }
 .primary:disabled,
 .secondary:disabled,
 .danger:disabled {

@@ -5,7 +5,7 @@ import { Plus, X } from '@phosphor-icons/react';
 import { SqlDialog } from '../sql-library-dialog';
 import type { SavedDatastoreConnection } from './provider-model';
 import common from '../relational.module.css';
-import styles from './directory-dialog.module.css';
+import styles from './tag-dialog.module.css';
 
 export function ConnectionTagsDialog({ connection, onSave, onClose }: {
   connection: SavedDatastoreConnection;
@@ -44,7 +44,7 @@ export function ConnectionTagsDialog({ connection, onSave, onClose }: {
         </fieldset>
         {error && <p className={styles.error} role="alert">{error}</p>}
       </div>
-      <footer className={common.dialogFooter}><button type="button" className={common.secondary} disabled={busy} onClick={onClose}>取消</button><span /><button type="submit" className={common.primary} disabled={busy}>{busy ? '保存中…' : '保存'}</button></footer>
+      <footer className={`${common.dialogFooter} ${styles.footer}`}><button type="button" className={common.secondary} disabled={busy} onClick={onClose}>取消</button><button type="submit" className={common.primary} disabled={busy}>{busy ? '保存中…' : '保存'}</button></footer>
     </form>
   </SqlDialog>;
 }

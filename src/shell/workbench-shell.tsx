@@ -63,7 +63,7 @@ export function WorkbenchShell() {
   const [view, setView] = useWorkbenchView()
   const settingsSection = useSettingsSection()
   const { spaces, activeSpace, updateSpaces, selectWorkspace, createWorkspace } = useWorkspace()
-  const { selectedProject, favorites, managementPanel, setManagementPanel, setFavorite } = useProjectResources()
+  const { selectedProject, selectProject, favorites, managementPanel, setManagementPanel, setFavorite } = useProjectResources()
   const projectFavorited = selectedProject !== null && favorites.includes(selectedProject.id)
   // 应用面板根：桌面端作为自绘外框的内层与弹层宿主
   const frameRef = useRef<HTMLDivElement>(null)
@@ -161,7 +161,7 @@ export function WorkbenchShell() {
                           ) : view === "automation" ? (
                             <AutomationCanvas key={activeSpace.id} workspaceId={activeSpace.id} workspaceName={activeSpace.label} />
                           ) : view === "connectors" ? (
-                            <ConnectorsCanvas key={activeSpace.id} onWorkbenchFocus={() => setSidebarCollapsed(true)} />
+                            <ConnectorsCanvas key={activeSpace.id} onWorkbenchFocus={() => setSidebarCollapsed(true)} onOpenProject={id => { selectProject(id); changeView("projects"); }} />
                           ) : view === "knowledge" ? (
                             <KnowledgePage key={activeSpace.id} onOpenSettings={() => changeView("settings")} />
                           ) : view === "help" ? (

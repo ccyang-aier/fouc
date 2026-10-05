@@ -95,7 +95,7 @@
 .favoriteButton[data-favorite='true'] { color: #ffb52e; }
 .favoriteButton:hover { background: var(--surface-hover); color: #e7a022; }
 .targetCell { display: flex; align-items: center; gap: 4px; min-width: 0; }
-.target { display: block; flex: 1; min-width: 0; overflow: hidden; color: var(--list-soft-ink); font-family: var(--font-code); font-size: max(13px, var(--ui-size)); text-overflow: ellipsis; white-space: nowrap; }
+.target { display: block; flex: 0 1 auto; min-width: 0; overflow: hidden; color: var(--list-soft-ink); font-family: var(--font-code); font-size: max(13px, var(--ui-size)); text-overflow: ellipsis; white-space: nowrap; }
 .targetCell .copyButton { width: 24px; height: 24px; flex-basis: 24px; color: var(--muted-strong); }
 .targetCell .copyButton[data-copied='true'] { color: var(--ok-ink); }
 .targetCell .copyButton[data-error='true'] { color: var(--err-ink); }

@@ -12,8 +12,8 @@
   --ink-soft: #3f4249;
   --muted-strong: #6c6e75;
   --muted: #9699a1;
-  --line: rgba(32, 33, 38, 0.085);
-  --line-strong: rgba(32, 33, 38, 0.14);
+  --line: rgba(32, 33, 38, 0.14);
+  --line-strong: rgba(32, 33, 38, 0.22);
   --accent: #3e63dd;
   --accent-strong: #3355c9;
   --accent-ink: #3a55b0;
@@ -64,7 +64,7 @@
 
   /* ── 侧栏材质令牌（供 sidebar-material.css 消费） ── */
   --wt-sidebar-standard-panel: #fafbfc;
-  --wt-sidebar-edge: rgb(38 51 59 / 0.07);
+  --wt-sidebar-edge: var(--line);
   /* 侧栏交互悬停面：浅白色，与标准面板协调 */
   --wt-sidebar-hover: rgb(255 255 255 / 0.55);
 }
@@ -80,8 +80,8 @@ html[data-theme="dark"] {
   --ink-soft: #c7ccd1;
   --muted-strong: #949ca4;
   --muted: #707880;
-  --line: rgba(233, 236, 239, 0.09);
-  --line-strong: rgba(233, 236, 239, 0.16);
+  --line: rgba(233, 236, 239, 0.16);
+  --line-strong: rgba(233, 236, 239, 0.24);
   --accent: #6681f5;
   --accent-strong: #7f97f8;
   --accent-ink: #9db2fa;
@@ -115,7 +115,7 @@ html[data-theme="dark"] {
   --warn-soft-line: rgba(217, 167, 67, 0.28);
 
   --wt-sidebar-standard-panel: #141619;
-  --wt-sidebar-edge: rgb(233 236 239 / 0.08);
+  --wt-sidebar-edge: var(--line);
   --wt-sidebar-hover: rgb(255 255 255 / 0.06);
 }
 

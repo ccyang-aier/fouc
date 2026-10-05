@@ -32,11 +32,10 @@ export function FontSection({
   onChange: (patch: Partial<AppearancePrefs>) => void
 }) {
   return (
-    <SettingsSection title="字体" description="界面、代码与对话的字体族和基准字号，立即生效">
+    <SettingsSection title="字体">
       <div className="divide-y divide-[var(--line)]">
         <FontRow
           label="界面字体"
-          hint="工作台全局界面文字"
           options={uiFontOptions}
           selected={prefs.uiFont}
           onSelect={(uiFont) => onChange({ uiFont })}
@@ -47,7 +46,6 @@ export function FontSection({
         />
         <FontRow
           label="代码字体"
-          hint="命令、路径与代码内容"
           options={codeFontOptions}
           selected={prefs.codeFont}
           onSelect={(codeFont) => onChange({ codeFont })}
@@ -59,7 +57,6 @@ export function FontSection({
         />
         <FontRow
           label="对话字体"
-          hint="会话消息与任务输入"
           options={chatFontOptions}
           selected={prefs.chatFont}
           onSelect={(chatFont) => onChange({ chatFont })}
@@ -79,7 +76,6 @@ type FontOption<T extends string> = { id: T; label: string; stack: string }
 
 function FontRow<T extends string>({
   label,
-  hint,
   options,
   selected,
   onSelect,
@@ -90,7 +86,6 @@ function FontRow<T extends string>({
   mono = false,
 }: {
   label: string
-  hint: string
   options: ReadonlyArray<FontOption<T>>
   selected: T
   onSelect: (id: T) => void
@@ -111,7 +106,6 @@ function FontRow<T extends string>({
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <div className="min-w-0">
           <h3 className="text-[12px] font-medium">{label}</h3>
-          <p className="mt-0.5 text-[10.5px] text-[var(--muted)]">{hint}</p>
         </div>
         <div className="ml-auto flex items-center gap-2">
           <FontFamilyMenu options={options} selected={selected} onSelect={onSelect} label={label} />

@@ -27,7 +27,7 @@
 .panel button,.panel input,.panel select { font:inherit; }
 .panel button { transition:background .15s,border-color .15s; cursor:pointer; }
 .panel button:disabled,.panel input:disabled,.panel select:disabled { opacity:.45; cursor:default; }
-.panel :is(button,input,select):focus-visible { outline:2px solid var(--focus-ring); outline-offset:2px; }
+.panel button:focus-visible { outline:2px solid var(--focus-ring); outline-offset:2px; }
 .segment { display:inline-flex; border:1px solid var(--line); padding:3px; border-radius:7px; background:var(--surface-subtle); gap:3px; }
 .segment button { border:0; background:transparent; border-radius:4px; color:var(--muted-strong); font-size:10px; padding:6px 10px; }
 .segment button[data-active=true] { background:var(--panel); color:var(--ink); box-shadow:0 1px 2px rgb(0 0 0/.06); }

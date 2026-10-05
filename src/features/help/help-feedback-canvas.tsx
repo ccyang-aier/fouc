@@ -8,7 +8,6 @@ export function HelpFeedbackCanvas({ onNavigate }: { onNavigate: (view: 'knowled
     <div className="mx-auto max-w-[860px]">
       <p className="text-[11px] font-semibold tracking-[0.12em] text-[var(--accent-ink)]">FOUC · SUPPORT</p>
       <h1 className="mt-3 text-[28px] font-semibold tracking-[-0.035em] text-[var(--ink)]">帮助与反馈</h1>
-      <p className="mt-2 text-[13px] leading-6 text-[var(--muted-strong)]">了解工作台的基础用法，或把遇到的问题和建议告诉我们。</p>
 
       <div className="mt-9 grid gap-4 md:grid-cols-2">
         <article className="rounded-2xl border border-[var(--line)] bg-[var(--surface-subtle)] p-6">

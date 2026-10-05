@@ -3,7 +3,7 @@
 .select { display: flex; width: 100%; min-width: 0; height: 34px; align-items: center; justify-content: space-between; gap: 12px; padding: 0 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); font-size: 13px; outline: none; cursor: pointer; transition: border-color 160ms, background 160ms; }
 .select > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .select:hover { border-color: color-mix(in srgb, var(--ink) 25%, var(--line)); }
-.select:focus-visible { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent); }
+.select:focus-visible { border-color: var(--accent); }
 .select > svg { flex-shrink: 0; color: var(--muted); transition: transform 160ms; }
 .select[data-state='open'] > svg { transform: rotate(180deg); }
 .dropdown { width: var(--radix-dropdown-menu-trigger-width); padding: 5px; }

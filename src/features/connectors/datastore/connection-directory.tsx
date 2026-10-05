@@ -19,7 +19,8 @@ import { MongoDialog } from '../mongo/mongo-dialog';
 import { ConnectionConfigTransferActions } from './connection-config-transfer';
 import { ConnectionList } from './connection-list/connection-list';
 import { connectionListRow, directoryProviders, emptyDirectory, type DatastoreProvider, type SavedDatastoreConnection } from './connection-list/provider-model';
-import { OrganizeConnectionDialog } from './connection-list/organize-dialog';
+import { ConnectionProjectsDialog } from './connection-list/project-dialog';
+import { ConnectionTagsDialog } from './connection-list/tag-dialog';
 import { SqlDialog } from './sql-library-dialog';
 import styles from './relational.module.css';
 
@@ -46,7 +47,7 @@ function ConnectionDirectory({ provider, workspaceId, onBack, onWorkbenchFocus, 
   const [loading, setLoading] = useState(true), [error, setError] = useState('');
   const [revision, setRevision] = useState(0), [selection, setSelection] = useState<string[]>([]);
   const [dialog, setDialog] = useState<{ intent: 'save' | 'connect'; connection?: SavedDatastoreConnection } | null>(null);
-  const [organizing, setOrganizing] = useState<SavedDatastoreConnection | null>(null);
+  const [organizing, setOrganizing] = useState<{ connection: SavedDatastoreConnection; kind: 'projects' | 'tags' } | null>(null);
   const [removing, setRemoving] = useState<SavedDatastoreConnection | null>(null);
   const [busy, setBusy] = useState(false), [pendingIds, setPendingIds] = useState<string[]>([]), [testingId, setTestingId] = useState<string | null>(null);
   const pending = useRef(new Set<string>());
@@ -133,10 +134,13 @@ function ConnectionDirectory({ provider, workspaceId, onBack, onWorkbenchFocus, 
       headerActions={<ConnectionConfigTransferActions workspaceId={workspaceId} provider={provider} connections={connections} selectedIds={selection} disabled={loading || busy} onImported={() => setRevision(value => value + 1)} />}
       onBack={onBack} onCreate={() => setDialog({ intent: 'save' })} onRetry={() => { setError(''); setLoading(true); setRevision(value => value + 1); }}
       onOpen={row => setDialog({ intent: 'connect', connection: get(row.id) })} onEdit={row => setDialog({ intent: 'save', connection: get(row.id) })}
-      onCopy={row => void copy(row.id)} onRemove={row => setRemoving(get(row.id) ?? null)} onOrganize={row => setOrganizing(get(row.id) ?? null)}
+      onCopy={row => void copy(row.id)} onRemove={row => setRemoving(get(row.id) ?? null)}
+      onManageProjects={row => { const connection = get(row.id); if (connection) setOrganizing({ connection, kind: 'projects' }); }}
+      onManageTags={row => { const connection = get(row.id); if (connection) setOrganizing({ connection, kind: 'tags' }); }}
       onFavorite={(row, favorite) => { setError(''); void patchDirectory(row.id, { favorite }).catch(cause => { if (mounted.current) setError(cause instanceof Error ? cause.message : '收藏保存失败'); }); }}
       onSelectionChange={setSelection} />
-    {organizing && <OrganizeConnectionDialog key={organizing.id} connection={organizing} projects={projects} projectNotice={projectNotice} onClose={() => setOrganizing(null)} onSave={metadata => patchDirectory(organizing.id, metadata)} />}
+    {organizing?.kind === 'projects' && <ConnectionProjectsDialog key={organizing.connection.id} connection={organizing.connection} projects={projects} projectNotice={projectNotice} onClose={() => setOrganizing(null)} onSave={projectIds => patchDirectory(organizing.connection.id, { projectIds })} />}
+    {organizing?.kind === 'tags' && <ConnectionTagsDialog key={organizing.connection.id} connection={organizing.connection} onClose={() => setOrganizing(null)} onSave={tags => patchDirectory(organizing.connection.id, { tags })} />}
     {removing && <SqlDialog title="删除连接确认" role="alertdialog" busy={busy} onClose={() => setRemoving(null)}><div className={styles.formBody}><p>删除「{removing.name}」的连接配置？</p><small>数据库文件与数据内容不会删除。</small></div><footer className={styles.dialogFooter}><button type="button" className={styles.secondary} disabled={busy} onClick={() => setRemoving(null)}>取消</button><span /><button type="button" className={styles.danger} disabled={busy} onClick={() => void remove()}>{busy ? '删除中…' : '确认删除'}</button></footer></SqlDialog>}
     {dialog && (provider === 'redis'
       ? <RedisDialog key={`${dialog.intent}:${dialog.connection?.id ?? 'new'}`} workspaceId={workspaceId} connection={dialog.connection as RedisSavedConnection | undefined} intent={dialog.intent} onClose={() => setDialog(null)} onSave={save} onConnect={connectSelected} onTest={testSelected} />

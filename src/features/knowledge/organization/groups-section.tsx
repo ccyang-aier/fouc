@@ -296,7 +296,6 @@ function CreateGroupDialog({ open, onClose, busy, onSubmit }: {
       open={open}
       onClose={close}
       title="新建群组"
-      description="群组是授权主体之一：把成员编入群组后，可以按群组授予页面权限。"
       footer={
         <>
           <DialogButton onClick={close}>取消</DialogButton>

@@ -105,7 +105,7 @@
 .alphaRange::-moz-range-thumb { background: var(--picker-color); }
 .hexRow { display: flex; gap: 6px; margin-top: 20px; }
 .hexInput { flex: 1; min-width: 0; height: 32px; padding: 0 8px; border: 1px solid #d7dfed; border-radius: 4px; font-size: 14px; line-height: 30px; color: #202633; outline: none; }
-.hexInput:focus-visible { border-color: #2868e6; box-shadow: 0 0 0 2px #2868e618; }
+.hexInput:focus-visible { border-color: #2868e6; }
 .hexInput[aria-invalid="true"] { border-color: #d75e5e; }
 .copyColor { display: grid; flex: 0 0 32px; height: 32px; place-items: center; border: 1px solid #d7dfed; border-radius: 4px; color: #414b5d; background: #fff; cursor: pointer; }
 .copyColor:hover { background: #f5f6f8; }

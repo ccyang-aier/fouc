@@ -68,7 +68,7 @@ export function AuthTextField({
         aria-describedby={describedBy}
         className={cn(
           'h-10 w-full rounded-[10px] border bg-[var(--panel)] px-3 text-[12.5px] text-[var(--ink)] outline-none',
-          'transition-[border-color,box-shadow] placeholder:text-[var(--muted)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)]',
+          'transition-colors placeholder:text-[var(--muted)] focus:border-[var(--accent)]',
           'disabled:cursor-not-allowed disabled:opacity-55',
           error ? 'border-[color-mix(in_srgb,var(--err-ink)_45%,var(--line))]' : 'border-[var(--line)]',
         )}

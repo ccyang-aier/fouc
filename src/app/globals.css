@@ -350,11 +350,12 @@ input {
 /* 表单焦点统一使用清晰边框，不叠加 ring / glow 阴影。 */
 :where(
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
-  textarea
-):focus {
+  textarea,
+  select
+):is(:focus, :focus-visible) {
   border-color: var(--accent) !important;
   box-shadow: none !important;
-  outline: none;
+  outline: none !important;
 }
 
 /* 浮层统一使用单一清晰边界、内侧高光与低扩散投影。 */

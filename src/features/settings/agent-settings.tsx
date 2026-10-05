@@ -439,7 +439,7 @@ function OfflineState({ onRetry }: { onRetry: () => void }) {
       <WifiSlash className="mb-3 size-7 text-[var(--muted)]" aria-hidden />
       <p className="text-[13px] font-medium text-[var(--ink-soft)]">无法连接后端服务</p>
       <p className="mt-1 max-w-sm text-[12px] leading-relaxed text-[var(--muted)]">
-        Agent 目录与纳管操作依赖本地 sidecar 服务（127.0.0.1）。请确认后端进程已启动后重试。
+        请启动设备服务后重试。
       </p>
       <Button variant="outline" size="sm" className="mt-4" onClick={onRetry}>
         <ArrowClockwise className="size-3.5" aria-hidden />

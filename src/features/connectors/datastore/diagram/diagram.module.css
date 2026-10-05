@@ -3,7 +3,7 @@
 .panel button:hover:not(:disabled) { background: var(--diagram-wash); border-color: color-mix(in srgb, var(--ink) 24%, var(--line)); }
 .panel button:active:not(:disabled) { transform: translateY(1px); }
 .panel button:disabled { opacity: .45; cursor: default; }
-.panel :is(button,input,select,summary,svg,[tabindex]):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.panel button:focus-visible, .panel summary:focus-visible, .panel svg:focus-visible, .panel [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .panel input, .panel select { min-width: 0; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; font: inherit; padding: 7px 9px; }
 .panel input::placeholder { color: var(--diagram-muted); }
 .header { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 20px 22px 17px; }

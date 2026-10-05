@@ -39,7 +39,7 @@ export function ThemeSection({
   onChange: (theme: ThemePref) => void
 }) {
   return (
-    <SettingsSection title="主题" description="深浅色基调；跟随系统时随操作系统设置自动切换">
+    <SettingsSection title="主题">
       <div className="grid w-fit grid-cols-3 gap-2.5" role="radiogroup" aria-label="主题">
         {THEME_PREFS.map((id) => {
           const selected = value === id

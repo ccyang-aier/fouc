@@ -39,17 +39,17 @@ type ProjectManagementDrawerProps = {
   onOpenWork: () => void
 }
 
-const panelCopy: Record<Exclude<ProjectManagementPanelId, `member:${string}`>, { title: string; description: string; tone: IconTone }> = {
-  summary: { title: "项目概览", description: "项目状态、协作与关键资源", tone: "sky" },
-  chat: { title: "项目会话", description: "围绕项目推进的共享讨论", tone: "teal" },
-  mentions: { title: "提及我的", description: "需要你回应或确认的项目动态", tone: "amber" },
-  notifications: { title: "项目通知", description: "评审、任务与资产同步提醒", tone: "rose" },
-  "ai-assets": { title: "项目 AI 资产", description: "让 Agent 继承项目专属能力与约束", tone: "violet" },
-  "project-assets": { title: "代码仓与文档", description: "管理 Agent 可读取的项目资产", tone: "blue" },
-  tasks: { title: "项目任务", description: "查看当前项目的任务与进展", tone: "indigo" },
-  agent: { title: "项目 Agent", description: "Nova 的上下文、能力与执行状态", tone: "indigo" },
-  invite: { title: "邀请成员", description: "为项目添加新的协作伙伴", tone: "blue" },
-  settings: { title: "项目设置", description: "配置项目基础信息与协作策略", tone: "slate" },
+const panelCopy: Record<Exclude<ProjectManagementPanelId, `member:${string}`>, { title: string; tone: IconTone }> = {
+  summary: { title: "项目概览", tone: "sky" },
+  chat: { title: "项目会话", tone: "teal" },
+  mentions: { title: "提及我的", tone: "amber" },
+  notifications: { title: "项目通知", tone: "rose" },
+  "ai-assets": { title: "项目 AI 资产", tone: "violet" },
+  "project-assets": { title: "代码仓与文档", tone: "blue" },
+  tasks: { title: "项目任务", tone: "indigo" },
+  agent: { title: "项目 Agent", tone: "indigo" },
+  invite: { title: "邀请成员", tone: "blue" },
+  settings: { title: "项目设置", tone: "slate" },
 }
 
 const DRAWER_WIDTH = 356
@@ -62,7 +62,7 @@ export function ProjectManagementDrawer({ activePanel, onClose, onOpenWork }: Pr
 
   const member = getRailMember(displayedPanel)
   const meta = member
-    ? { title: member.name, description: `${member.role} · 查看协作状态与任务`, tone: "sky" as IconTone }
+    ? { title: member.name, tone: "sky" as IconTone }
     : panelCopy[displayedPanel as Exclude<ProjectManagementPanelId, `member:${string}`>]
 
   return (
@@ -86,7 +86,7 @@ export function ProjectManagementDrawer({ activePanel, onClose, onOpenWork }: Pr
               </span>
               <div className="min-w-0 flex-1">
                 <h2 className="truncate text-[13px] font-semibold tracking-[-0.015em]">{meta.title}</h2>
-                <p className="mt-0.5 truncate text-[9.5px] text-[var(--muted)]">{meta.description}</p>
+                {member && <p className="mt-0.5 truncate text-[9.5px] text-[var(--muted)]">{member.role}</p>}
               </div>
               <button type="button" aria-label="关闭项目管理面板" onClick={onClose} className="flex size-8 shrink-0 items-center justify-center rounded-[8px] text-[var(--muted-strong)] outline-none transition-[background-color,color,transform] hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-95"><X className="size-4" /></button>
             </header>

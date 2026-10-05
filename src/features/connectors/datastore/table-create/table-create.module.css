@@ -31,7 +31,7 @@
 .columns input:not([type=checkbox]),.columns select { height:28px; width:100%; min-width:0; border:1px solid var(--line); border-radius:4px; padding:4px 5px; color:var(--ink); background:var(--panel); font:11px var(--font-code); }
 .columns select { font-family:var(--font-sans); }
 .columns input[type=checkbox] { accent-color:var(--accent); }
-.columns input:focus,.columns select:focus,.targetFields input:focus,.targetFields select:focus { outline:2px solid var(--focus-ring); outline-offset:0; border-color:var(--accent); }
+.columns input:focus, .columns select:focus, .targetFields input:focus, .targetFields select:focus { border-color:var(--accent); }
 .columns .columnName { position:sticky; left:0; z-index:1; border-right:1px solid var(--line); }
 .columnName > span { display:inline-block; font:10px var(--font-code); color:var(--muted); width:16px; text-align:center; margin-right:6px; }
 .columnName > input { width:calc(100% - 23px) !important; vertical-align:middle; }

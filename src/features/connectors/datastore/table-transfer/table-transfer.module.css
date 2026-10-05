@@ -7,7 +7,7 @@
 .panel button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 11px; font: inherit; color: inherit; border: 1px solid var(--line, #30333d); border-radius: 6px; background: transparent; cursor: pointer; transition: background .12s; }
 .panel button:hover:not(:disabled) { background: color-mix(in srgb, var(--ink, #fff) 5%, transparent); }
 .panel button:disabled { opacity: .4; cursor: default; }
-.panel :is(button, select, input):focus-visible { outline: 2px solid var(--accent, #8a90ff); outline-offset: 2px; }
+.panel button:focus-visible { outline: 2px solid var(--accent, #8a90ff); outline-offset: 2px; }
 .endpoints { display: grid; grid-template-columns: 1fr 32px 1fr; gap: 18px; align-items: center; padding: 17px 24px 21px; border-bottom: 1px solid var(--line, #30333d); background: linear-gradient(90deg, color-mix(in srgb, var(--accent, #8a90ff) 4%, transparent), transparent); }
 .endpoints > div { border: 1px solid var(--line, #30333d); padding: 13px 15px; border-radius: 8px; min-width: 0; }
 .endpoints small { color: var(--transfer-muted); font-size: 10px; }

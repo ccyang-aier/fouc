@@ -34,7 +34,7 @@
 .options { display:flex; flex-wrap:wrap; gap:14px; }
 .options>label { flex:1; min-width:180px; display:flex; flex-direction:column; gap:8px; }
 .options select,.options input,.mapping textarea { width:100%; min-width:0; border:1px solid var(--line); border-radius:7px; background:var(--panel); color:var(--ink); font:inherit; padding:9px 10px; }
-.options select:focus,.options input:focus,.mapping textarea:focus,.file:focus-within { outline:2px solid var(--focus-ring); outline-offset:2px; }
+.options select:focus, .options input:focus, .mapping textarea:focus, .file:focus-within { border-color:var(--accent); }
 .file { position:relative; display:flex; flex-direction:column; align-items:center; padding:23px 16px; gap:7px; border:1px dashed var(--line); border-radius:9px; background:var(--surface-subtle); cursor:pointer; }
 .file>span { max-width:100%; overflow-wrap:anywhere; font-weight:600; }
 .file input { position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; }
@@ -91,7 +91,6 @@
 .sourceColumn small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:10px; }
 .mappingRow input:not([type=checkbox]),.mappingRow select { width:100%; min-width:0; border:1px solid var(--line); border-radius:5px; padding:7px 8px; background:var(--panel); color:var(--ink); font-size:11px; }
 .mappingRow input:not([type=checkbox]) { font-family:var(--font-code),monospace; }
-.mappingRow input:focus,.mappingRow select:focus { outline:2px solid var(--focus-ring); outline-offset:2px; }
 .mapToggle { display:flex; align-items:center; gap:5px; font-size:10px; white-space:nowrap; }
 .mobileLabel { display:none; }
 .mappingReview { border:1px solid var(--line); border-radius:8px; padding:11px 13px; font-size:11px; }

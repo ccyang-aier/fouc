@@ -61,12 +61,7 @@
 .field input::placeholder {
   color: var(--muted-strong);
 }
-.field input:focus-visible,
-.field select:focus-visible,
-.generated textarea:focus-visible,
-.sourceActions select:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--accent) 32%, transparent);
-  outline-offset: 1px;
+.field input:focus-visible, .field select:focus-visible, .generated textarea:focus-visible, .sourceActions select:focus-visible {
   border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
 }
 .unitInput,
@@ -84,10 +79,8 @@
   background: transparent;
   border-radius: 0;
 }
-.unitInput:focus-within,
-.secretInput:focus-within {
-  outline: 2px solid color-mix(in srgb, var(--accent) 32%, transparent);
-  outline-offset: 1px;
+.unitInput:focus-within, .secretInput:focus-within {
+  border-color: var(--accent);
 }
 .unitInput input:focus-visible,
 .secretInput input:focus-visible {
@@ -203,11 +196,12 @@
   cursor: pointer;
   width: 100%;
 }
-.fileButton:focus-within,
-.iconButton:focus-visible,
-.assistant button:focus-visible {
+.iconButton:focus-visible, .assistant button:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--accent) 40%, transparent);
   outline-offset: 2px;
+}
+.fileButton:focus-within {
+  border-color: var(--accent);
 }
 .fileButton[aria-disabled='true'],
 .options input:disabled,

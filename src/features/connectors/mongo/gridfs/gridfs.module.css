@@ -10,7 +10,7 @@
 .panel button { cursor: pointer; transition: background .12s, border-color .12s; }
 .panel button:hover:not(:disabled) { background: var(--surface-hover); border-color: var(--muted); }
 .panel button:disabled { opacity: .45; cursor: default; }
-.panel :is(button,textarea,select):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.panel button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .header { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 19px 23px; border-bottom: 1px solid var(--line); }
 .header > div { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .header > button { flex-shrink: 0; white-space: nowrap; }

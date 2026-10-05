@@ -309,8 +309,6 @@
   opacity: 0.45;
   cursor: default;
 }
-.dialog input:focus-visible,
-.dialog select:focus-visible,
 .dialog button:focus-visible {
   outline: 2px solid var(--accent-ink);
   outline-offset: 2px;

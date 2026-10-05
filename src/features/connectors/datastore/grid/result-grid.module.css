@@ -9,7 +9,7 @@
 .gridRoot button:hover:not(:disabled) { background: var(--surface-hover); border-color: var(--line); }
 .gridRoot button:disabled { opacity: .38; cursor: default; }
 .gridRoot button[aria-pressed="true"] { background: var(--surface-subtle); border-color: var(--line); color: var(--accent-ink); }
-.gridRoot button:focus-visible, .headersToggle input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.gridRoot button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .headersToggle { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--muted-strong); margin-right: 5px; white-space: nowrap; }
 .headersToggle input { accent-color: var(--accent); width: 11px; height: 11px; }
 .content { display: flex; min-height: 0; flex: 1; min-width: 0; overflow: hidden; }
@@ -83,7 +83,6 @@
 .detailNavigation > div { display: flex; align-items: center; gap: 2px; }
 .detailNavigation i { height: 12px; width: 1px; background: var(--line); margin: 0 4px; }
 .detailValue { display: block; flex: 1; width: 100%; min-height: 100px; resize: none; border: 0; background: var(--panel); outline: none; padding: 12px; font: 12px/1.7 var(--font-code); color: var(--ink-soft); white-space: pre; scrollbar-width: thin; border-radius: 0; }
-.detailValue:focus { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent); }
 .detailFooter { display: flex; justify-content: space-between; padding: 7px 8px; border-top: 1px solid var(--line); background: var(--surface-subtle); flex-shrink: 0; }
 @media(max-width: 720px) { .toolbar { gap: 5px; padding: 7px 8px; } .selectionLabel > span { display: none; } .toolbarActions { gap: 1px; } .toolbarActions > button > span { display: none; } .headersToggle { margin-right: 1px; } .footer { align-items: flex-start; flex-direction: column; gap: 5px; padding: 6px 8px; } .statistics { justify-content: flex-start; width: 100%; gap: 10px; } .statistics strong { max-width: 110px; } .withDetail { flex-direction: column; } .detail { width: 100%; min-width: 0; max-width: none; height: 230px; flex-shrink: 0; border-left: 0; border-top: 1px solid var(--line); } .detailHeader { padding: 8px 12px; } .detailHeader > div { flex-direction: row; align-items: baseline; gap: 10px; } .detailMeta { padding-top: 6px; } .detailValue { min-height: 50px; padding: 8px 12px; } .viewport { min-height: 140px; } }
 @media(prefers-reduced-motion: reduce) { .gridRoot button { transition: none; } }

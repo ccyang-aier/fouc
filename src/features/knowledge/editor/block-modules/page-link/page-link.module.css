@@ -19,4 +19,5 @@
 .results p { margin: 11px 4px !important; color: #98a6b7; font-size: 11px; }
 .cancel { margin-top: 7px; padding: 4px 7px; border: 0; background: transparent; color: #8798ac; font-size: 11px; cursor: pointer; }
 .unconfigured { padding: 18px; color: #95a4b7; font-size: 12px; }
-.root button:focus-visible,.search:focus-within { outline: 2px solid #2674d1; outline-offset: 2px; }
+.root button:focus-visible { outline: 2px solid #2674d1; outline-offset: 2px; }
+.search:focus-within { border-color: var(--accent); }

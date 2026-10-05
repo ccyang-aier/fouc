@@ -45,12 +45,8 @@ html[data-theme="dark"] .mw {
   outline: 2px solid var(--focus-ring);
   outline-offset: -2px;
 }
-.mw input:focus-visible,
-.mw select:focus-visible,
-.mw textarea:focus-visible {
-  outline: none;
+.mw input:focus-visible, .mw select:focus-visible, .mw textarea:focus-visible {
   border-color: var(--mw-blue);
-  box-shadow: 0 0 0 2px #2d73d91c;
 }
 .mw :is(.mw-search, .mw-field-search, .mw-ai-composer, .mw-sql-select) :is(input, textarea, select):focus,
 .mw
@@ -62,7 +58,6 @@ html[data-theme="dark"] .mw {
 }
 .mw :is(.mw-search, .mw-field-search, .mw-ai-composer, .mw-sql-select):focus-within {
   border-color: var(--mw-blue);
-  box-shadow: 0 0 0 2px #2d73d91c;
 }
 .mw-ellipsis {
   overflow: hidden;

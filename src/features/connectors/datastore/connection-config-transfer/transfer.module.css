@@ -162,10 +162,6 @@
   border-radius: 5px;
   padding: 8px 9px;
 }
-.columns input:focus-visible,
-.field input:focus-visible,
-.reviewControls input:focus-visible,
-.reviewControls select:focus-visible,
 .reviewHead button:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--accent) 35%, transparent);
   outline-offset: 1px;
@@ -248,8 +244,7 @@
   cursor: pointer;
 }
 .upload:focus-within {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  border-color: var(--accent);
 }
 .reviewHead {
   display: flex;

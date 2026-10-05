@@ -102,7 +102,7 @@
 .error { display: flex; align-items: start; gap: 8px; margin: 14px 20px; padding: 12px; background: var(--warn-soft); color: var(--err-ink); border-radius: 6px; font-size: 11px; line-height: 1.6; }
 .error span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .notice { font-size: 10px; color: var(--muted-strong); margin: 12px 20px; }
-.dialog :is(button, input, select):focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.dialog button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 @media (max-width: 620px) {
   .dialog.dialog { width: calc(100vw - 16px); max-height: calc(100dvh - 20px); border-radius: 9px; }
   .context, .footer { padding: 12px; }

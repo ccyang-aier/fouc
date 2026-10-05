@@ -126,7 +126,7 @@ export function HistoryPanel({ workspaceId, pageId, editor, canEdit, onClose, ap
             maxLength={200}
             placeholder="版本名,如「评审基线」"
             aria-label="版本名称"
-            className="min-w-0 flex-1 rounded-md border border-line bg-panel px-2 py-1.5 text-xs text-ink outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+            className="min-w-0 flex-1 rounded-md border border-line bg-panel px-2 py-1.5 text-xs text-ink outline-none focus-visible:border-[var(--accent)]"
           />
           <button type="submit" disabled={busy || !label.trim()} className="rounded-md bg-accent px-2.5 py-1.5 text-xs font-medium text-white transition-opacity disabled:opacity-45">
             保存

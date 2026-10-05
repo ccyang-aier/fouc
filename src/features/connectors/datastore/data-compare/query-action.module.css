@@ -13,7 +13,7 @@
 .snapshot button { display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 3px 5px; border-radius: 4px; color: var(--ink-soft); font-size: 10px; white-space: nowrap; cursor: pointer; }
 .snapshot button:hover:not(:disabled) { background: var(--surface-hover); }
 .snapshot button:disabled { opacity: .4; cursor: default; }
-.sources select:focus-visible, .snapshot button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.snapshot button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .body { flex: 1; min-height: 0; overflow: hidden; }
 .body > div { height: 100%; min-height: 0; }
 .footer { flex-shrink: 0; }

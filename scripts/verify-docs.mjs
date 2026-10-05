@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const allowedRootDocs = new Set(['README.md', 'AGENTS.md', 'CLAUDE.md']);
+const allowedRootDocs = new Set(['README.md', 'AGENTS.md', 'CLAUDE.md', 'AI_FRONTEND_RULES.md']);
 const failures = [];
 const docs = [];
 

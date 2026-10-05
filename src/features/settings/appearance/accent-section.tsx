@@ -30,7 +30,7 @@ export function AccentSection({
   const activeColor = activePreset?.color ?? customColor
 
   return (
-    <SettingsSection title="主题色" description="强调色作用于激活状态、主要操作与交互反馈">
+    <SettingsSection title="主题色">
       <div className="flex flex-wrap items-center gap-2 py-1" role="radiogroup" aria-label="主题色">
         {accentOptions.map((option) => {
           const selected = value === option.id

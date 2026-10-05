@@ -303,7 +303,7 @@ function WorkspaceKnowledgeResource({ onOpenSettings, onOpenLocal, onOpenWorkspa
       ) : activeWorkspace && basesQuery.isPending ? (
         <CanvasSpinner label="正在加载知识库" />
       ) : activeWorkspace && !activeBase ? (
-        <CanvasState title="还没有知识库" hint="一个工作空间可以包含多个独立知识库。" actions={<Button onClick={() => setCreateKnowledgeBaseOpen(true)}>新建知识库</Button>} />
+        <CanvasState title="还没有知识库" actions={<Button onClick={() => setCreateKnowledgeBaseOpen(true)}>新建知识库</Button>} />
       ) : activeWorkspace && session.status === 'authenticated' ? (
         <>
           {selectedPageId && activeId ? (

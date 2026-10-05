@@ -23,9 +23,6 @@ export function HomeCanvas() {
           <h1 className="text-[29px] leading-[1.2] font-semibold tracking-[-0.045em] text-[var(--ink)] max-[760px]:text-[25px]">
             今天想完成什么？
           </h1>
-          <p className="mt-3 text-[12px] tracking-[-0.015em] text-[var(--muted-strong)]">
-            从目标开始，与 Agent 在同一条工作流中协作。
-          </p>
         </header>
 
         <div className="mt-[62px] max-[760px]:mt-[100px]">

@@ -29,7 +29,6 @@
 .options>label { flex:1; min-width:0; display:flex; flex-direction:column; gap:8px; font-size:12px; }
 .options input,.options select,.dangerConfirm input { width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:7px; background:var(--panel); color:var(--ink); font:inherit; }
 .options small { color:var(--muted-strong); font-size:11px; line-height:1.6; }
-.options input:focus,.options select:focus,.dangerConfirm input:focus { outline:2px solid var(--focus-ring); outline-offset:2px; }
 .notice,.dangerNotice { margin:0; padding:10px 13px; border-left:2px solid var(--line); background:var(--surface-subtle); color:var(--muted-strong); font-size:12px; line-height:1.7; }
 .dangerNotice { color:var(--err-ink); border-color:var(--err-ink); }
 .review,.outcome { display:flex; flex-direction:column; gap:12px; }

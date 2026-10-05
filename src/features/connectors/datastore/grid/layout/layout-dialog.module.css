@@ -5,7 +5,7 @@
 .settings label { width: 130px; }.settings label:nth-child(3) { width: 82px; }
 .form label { display: flex; flex-direction: column; gap: 7px; font-size: 11px; color: var(--muted-strong); min-width: 0; }
 .form input:not([type=checkbox]), .form select, .form textarea { width: 100%; min-width: 0; padding: 7px 9px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel); color: var(--ink); font: 12px/1.4 var(--font-sans); outline: none; }
-.form input:focus-visible, .form select:focus-visible, .form textarea:focus-visible, .form button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.form button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .form textarea { resize: vertical; font-family: var(--font-code); }.form input[type=checkbox] { accent-color: var(--accent); }
 .form button:not(.footer button) { display: inline-flex; align-items: center; justify-content: center; gap: 5px; border: 1px solid var(--line); border-radius: 5px; padding: 7px 9px; background: var(--panel); color: var(--ink-soft); font: 11px var(--font-sans); cursor: pointer; white-space: nowrap; }
 .form button:hover:not(:disabled) { background: var(--surface-hover); }.form button:disabled { opacity: .4; cursor: default; }

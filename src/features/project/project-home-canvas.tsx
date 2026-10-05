@@ -177,7 +177,6 @@ function ProjectSectionPlaceholder({ tab, onCreate }: { tab: ProjectTab; onCreat
     <section className="flex min-h-[420px] flex-col items-center justify-center rounded-[10px] border border-dashed border-[var(--line-strong)] bg-[var(--surface-subtle)] text-center">
       <span className="flex size-11 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent-ink)]"><CaretRight className="size-5" /></span>
       <h2 className="mt-4 text-[13px] font-semibold">{label}</h2>
-      <p className="mt-1.5 text-[10.5px] text-[var(--muted)]">该分区已连接到项目上下文，内容将在后续任务中逐步沉淀。</p>
       <button type="button" onClick={onCreate} className="mt-4 rounded-[7px] border border-[var(--line)] bg-panel px-3 py-2 text-[10.5px] text-[var(--muted-strong)] outline-none hover:border-[var(--line-strong)] hover:text-[var(--accent-ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">创建{label}任务</button>
     </section>
   )

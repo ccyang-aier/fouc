@@ -3,7 +3,7 @@
 .tabs button { padding:5px 7px; border:1px solid transparent; border-radius:4px; color:var(--muted-strong); }
 .tabs button[aria-selected=true] { background:var(--surface-subtle); border-color:var(--line); color:var(--ink); }
 .tabs span { margin-left:auto; align-self:center; color:var(--muted-strong); font:11px var(--font-code); }
-.viewer button:focus-visible,.search input:focus-visible,.hex:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
+.viewer button:focus-visible, .hex:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
 .search { display:flex; flex-shrink:0; gap:7px; align-items:center; padding:7px 10px; color:var(--muted-strong); border-bottom:1px solid var(--line); }
 .search input { min-width:0; flex:1; background:transparent; color:var(--ink); padding:5px 0; font:12px var(--font-code); }
 .search button { padding:4px 6px; }

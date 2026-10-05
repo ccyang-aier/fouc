@@ -8,7 +8,7 @@
 .heading>span{color:#7d8da6;font-size:13px}
 .tools{display:flex;gap:12px;align-items:center}
 .search{display:flex;align-items:center;gap:8px;width:216px;height:32px;padding:0 10px;border:1px solid #e5e9f1;border-radius:6px;background:#fafbfc;color:#92a0b7}
-.search:focus-within{border-color:var(--accent-soft-line);box-shadow:0 0 0 3px var(--focus-ring)}
+.search:focus-within{border-color:var(--accent-soft-line)}
 .search input{min-width:0;width:100%;outline:none;background:transparent;font-size:12px;color:#344463}
 .search input::placeholder{color:#99a4b6}
 .control,.upload{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:32px;padding:0 12px;border:1px solid #e0e6ef;border-radius:5px;white-space:nowrap;color:#65748e;background:#fff;font-size:12px;transition:background .18s,box-shadow .18s,transform .18s}

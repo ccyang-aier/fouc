@@ -94,7 +94,7 @@
 .dialogFooter { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 18px; border-top: 1px solid var(--line); flex-shrink: 0; }
 .dialogFooter span { font-size: 9px; color: var(--muted-strong); }
 .dialogFooter button { padding: 7px 12px; border: 1px solid var(--line-strong); border-radius: 5px; color: var(--ink-soft); background: var(--panel); font-size: 11px; }
-.dialog :is(button,input):focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.dialog button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 @media (max-width: 650px) {
   .dialog.dialog { width: calc(100vw - 16px); height: calc(100dvh - 20px); max-height: calc(100dvh - 20px); border-radius: 9px; }
   .toolbar { padding: 10px 12px; gap: 7px; }

@@ -67,7 +67,6 @@ export function AssistantRail({ open, onClose }: { open: boolean; onClose: () =>
         <CanvasState
           icon={<ChatCircleDots className="size-5" aria-hidden weight="regular" />}
           title="评审与 AI 助手将在这里接入"
-          hint="建议模式、侧栏对话与可点击的引用跳转会出现在这一栏。"
           announce="polite"
         />
       </div>

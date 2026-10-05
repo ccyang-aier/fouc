@@ -246,7 +246,6 @@ function CreateTeamspaceDialog({ bases, open, busy, onClose, onSubmit }: {
       open={open}
       onClose={close}
       title="新建团队空间"
-      description="创建后可以在其中建立页面树；根默认权限之后仍可调整。"
       width="w-[480px]"
       footer={
         <>

@@ -31,7 +31,7 @@ export function AppearanceSettings() {
 
   return (
     <div className="mx-auto w-full max-w-[960px] px-10 pb-14 pt-12 max-[1100px]:px-7 max-[900px]:pt-8">
-      <PanelHeader title="外观" description="主题、字体与材质 —— 所有修改即时作用于整个工作台。" />
+      <PanelHeader title="外观" />
       <ThemeSection
         value={prefs.theme}
         resolved={resolveTheme(prefs.theme)}

@@ -84,9 +84,7 @@
   color: var(--ink);
   font: 12px var(--font-code);
 }
-.filename input:focus-visible,
-.footer button:focus-visible,
-.download button:focus-visible {
+.footer button:focus-visible, .download button:focus-visible {
   outline: 2px solid var(--accent-ink);
   outline-offset: 2px;
 }

@@ -2,7 +2,7 @@
 .panel button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 5px 8px; border: 1px solid transparent; border-radius: 4px; font-size: 11px; color: var(--ink-soft); cursor: pointer; transition: background-color 120ms ease, border-color 120ms ease; }
 .panel button:hover:not(:disabled) { background: var(--surface-hover); border-color: var(--line); }
 .panel button:disabled { opacity: .38; cursor: default; }
-.panel button:focus-visible, .panel input:focus-visible, .panel select:focus-visible, .panel textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.panel button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .panel input[type="checkbox"] { width: 12px; height: 12px; accent-color: var(--accent); cursor: pointer; }
 .panel input:not([type="checkbox"]), .panel select { min-width: 0; padding: 6px 8px; background: var(--panel); color: var(--ink-soft); border: 1px solid var(--line); border-radius: 4px; font-size: 12px; height: 31px; }
 .sourceBar { display: grid; grid-template-columns: minmax(0,1fr) 24px minmax(0,1fr); gap: 18px; align-items: center; padding: 15px 18px; border-bottom: 1px solid var(--line); flex-shrink: 0; }

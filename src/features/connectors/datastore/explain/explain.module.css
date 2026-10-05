@@ -9,7 +9,7 @@
 .iconButton { width: 27px; height: 27px; }
 .iconButton:hover, .textButton:hover, .diagramTools button:hover { background: var(--surface-hover); color: var(--ink); }
 .viewer button:disabled { opacity: .45; cursor: default; }
-.viewer button:focus-visible, .viewer input:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.viewer button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 .toolbar { display: flex; align-items: center; gap: 10px; padding: 7px 12px; border-bottom: 1px solid var(--line); flex: 0 0 auto; }
 .tabs { display: flex; align-items: center; padding: 2px; gap: 2px; background: var(--surface-subtle); border-radius: 6px; }
 .tabs button { padding: 5px 8px; color: var(--muted-strong); white-space: nowrap; font-size: 11px; }

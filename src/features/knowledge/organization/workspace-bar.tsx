@@ -109,7 +109,6 @@ export function CreateWorkspaceDialog({ open, onClose, onCreated, notify }: {
       open={open}
       onClose={close}
       title="新建工作区"
-      description="工作区是知识库组织的顶层边界：成员、群组与团队空间都归属于某个工作区。"
       footer={
         <>
           <DialogButton onClick={close}>取消</DialogButton>

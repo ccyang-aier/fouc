@@ -38,7 +38,7 @@
 .dialog button { transition: background-color 140ms ease,border-color 140ms ease; }
 .dialog button:hover:not(:disabled) { background: var(--surface-hover); border-color: color-mix(in srgb,var(--accent) 28%,var(--line)); }
 .dialog button:disabled { opacity: .42; cursor: default; }
-.dialog button:focus-visible, .dialog input:focus-visible, .dialog textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.dialog button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .utilityActions { display: flex; gap: 6px; margin-bottom: 12px; }
 .utilityActions button { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 5px; font-size: 12px; padding: 6px 10px; color: var(--ink-soft); cursor: pointer; }
 .preview { height: 160px; min-width: 0; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--panel); }

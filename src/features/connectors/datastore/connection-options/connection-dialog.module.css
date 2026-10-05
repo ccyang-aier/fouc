@@ -49,10 +49,6 @@
   color: var(--ink);
   font: 13px var(--font-sans);
 }
-.body input:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--accent) 30%, transparent);
-  outline-offset: 1px;
-}
 .body input:disabled {
   opacity: 0.55;
 }

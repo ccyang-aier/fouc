@@ -30,7 +30,7 @@ export function SaveSqlDialog({ base, sql, database, schema, library, file, onCl
       <label>保存文件夹<select aria-label="SQL 保存文件夹" value={folder} onChange={(event) => setFolder(event.target.value)}><option value="">根目录</option>{library?.folders.map((entry) => <option key={entry.id} value={entry.id}>{sqlFolderPath(library.folders, entry.id)}</option>)}</select></label>
       {file && <label className={common.checkbox}><input type="checkbox" checked={saveAs} onChange={(event) => setSaveAs(event.target.checked)} />另存为新文件</label>}
       <small>数据库 {database || '默认'}{schema && schema !== database ? ` / ${schema}` : ''} · 完整 SQL {new TextEncoder().encode(sql).length.toLocaleString()} 字节</small>
-      <small>保存完整编辑内容。文件名会补全 .sql；同位置名称冲突或文件版本变化会阻止保存。</small>{error && <p role="alert" className={styles.error}>{error}</p>}
+      {error && <p role="alert" className={styles.error}>{error}</p>}
     </div><footer className={common.dialogFooter}><button type="button" className={common.secondary} disabled={busy} onClick={onClose}>取消</button><span /><button type="submit" className={common.primary} disabled={busy || !name.trim()}>{busy ? '保存中…' : '确认保存 SQL'}</button></footer>
   </form></SqlDialog>
 }

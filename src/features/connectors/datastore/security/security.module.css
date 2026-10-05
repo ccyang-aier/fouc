@@ -16,7 +16,7 @@
 .directory { min-height:0; display:flex; flex-direction:column; border-right:1px solid var(--line); background:color-mix(in srgb,var(--surface-subtle) 15%,var(--panel)); padding:15px 10px 8px }
 .search { display:flex; flex-direction:column; gap:7px; font-size:10px; font-weight:500; color:var(--ink-soft); padding:0 5px 12px }
 .search input { width:100%; min-width:0; font-size:11px; padding:8px 9px; border:1px solid var(--line); border-radius:6px; background:var(--panel); color:var(--ink); outline:none }
-.search input:focus { border-color:var(--accent); box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 12%,transparent) }
+.search input:focus { border-color:var(--accent) }
 .accountList { overflow:auto; min-height:0; scrollbar-width:thin }
 .accountList>button { display:flex; align-items:center; gap:9px; width:100%; padding:9px 8px; margin:2px 0; border:1px solid transparent; border-radius:7px; background:transparent; text-align:left; cursor:pointer; min-width:0 }
 .accountList>button:hover { background:var(--surface-subtle) }

@@ -49,7 +49,7 @@ export function GeneralSettings() {
 
   return (
     <div className="mx-auto w-full max-w-[960px] px-10 pb-14 pt-12 max-[1100px]:px-7 max-[900px]:pt-8">
-      <PanelHeader title="通用" description="Fouc 本地服务与 Agent 纳管的整体状态。" />
+      <PanelHeader title="通用" />
       <section className="mt-5 overflow-hidden rounded-[12px] border border-[var(--line)] bg-panel shadow-[0_1px_2px_rgba(23,25,27,0.04)]">
         <header className="flex items-center gap-2 border-b border-[var(--line)] px-5 py-3.5">
           <Plugs className="size-[15px] text-[var(--muted)]" weight="fill" aria-hidden />
@@ -84,9 +84,6 @@ export function GeneralSettings() {
           </StatusRow>
         </dl>
       </section>
-      <p className="mt-3 px-1 text-[11px] leading-relaxed text-[var(--muted)]">
-        后端为本地 sidecar 进程，仅绑定 127.0.0.1；Agent 的发现、探测与会话均在本地完成。
-      </p>
     </div>
   )
 }
@@ -105,11 +102,11 @@ function StatusRow({ label, last, children }: { label: string; last?: boolean; c
   )
 }
 
-export function PanelHeader({ title, description }: { title: string; description: string }) {
+export function PanelHeader({ title, description }: { title: string; description?: string }) {
   return (
     <header>
       <h2 className="text-[16px] font-semibold tracking-[-0.01em]">{title}</h2>
-      <p className="mt-0.5 text-[12px] text-[var(--muted)]">{description}</p>
+      {description && <p className="mt-0.5 text-[12px] text-[var(--muted)]">{description}</p>}
     </header>
   )
 }

@@ -77,7 +77,7 @@ export function AssetUploader(props: AssetUploaderProps) {
           </button>
         </p>
         <p id="asset-upload-hint" className="text-2xs leading-4 text-ink-faint">
-          SHA-256 内容寻址 · 工作区内相同内容自动秒传 · 单文件最大 5 GiB
+          单文件最大 5 GiB
         </p>
         <input
           ref={inputRef}

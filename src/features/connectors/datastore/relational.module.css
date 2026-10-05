@@ -75,7 +75,6 @@
   justify-content: space-between;
   align-items: center;
   padding: 20px 22px;
-  border-bottom: 1px solid var(--line);
 }
 .dialogHead > div {
   display: flex;
@@ -113,7 +112,6 @@
 }
 .formBody input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 14%, transparent);
 }
 .formBody small,
 .hint {

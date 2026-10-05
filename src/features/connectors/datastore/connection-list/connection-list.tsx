@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import {
   ArrowSquareOut, CaretDown, CaretLeft, CaretRight,
-  CaretUpDown, Copy, Database, DotsThree, GearSix, LockSimple,
+  CaretUpDown, Copy, Database, DotsThree, FolderSimple, GearSix, LockSimple,
   MagnifyingGlass, PencilSimple, Plus, SpinnerGap, Star, Tag, Trash, X,
 } from '@phosphor-icons/react'
 import {
@@ -36,10 +36,10 @@ function tagColor(tag: string) {
   return tagColors[hash % tagColors.length]
 }
 
-function RowActions({ row, pending, onOpen, onEdit, onCopy, onRemove, onOrganize }: {
+function RowActions({ row, pending, onOpen, onEdit, onCopy, onRemove, onManageProjects, onManageTags }: {
   row: ConnectionListRow
   pending: boolean
-} & Pick<ConnectionListProps, 'onOpen' | 'onEdit' | 'onCopy' | 'onRemove' | 'onOrganize'>) {
+} & Pick<ConnectionListProps, 'onOpen' | 'onEdit' | 'onCopy' | 'onRemove' | 'onManageProjects' | 'onManageTags'>) {
   return <div className={styles.rowActions}>
     <Tooltip>
       <TooltipTrigger asChild>
@@ -66,7 +66,8 @@ function RowActions({ row, pending, onOpen, onEdit, onCopy, onRemove, onOrganize
         <TooltipContent>更多操作</TooltipContent>
       </Tooltip>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onSelect={() => onOrganize(row)}><Tag />管理项目与标签</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => onManageProjects(row)}><FolderSimple />关联项目</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => onManageTags(row)}><Tag />管理标签</DropdownMenuItem>
         <DropdownMenuItem onSelect={() => onCopy(row)}><Copy />复制连接</DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem className={styles.danger} onSelect={() => onRemove(row)}><Trash />删除连接</DropdownMenuItem>
@@ -102,7 +103,7 @@ export function ConnectionList(props: ConnectionListProps) {
   const {
     label, targetLabel, scopeKey, rows, projects, loading, error, pendingIds,
     headerActions, onBack, onCreate, onRetry, onOpen, onEdit, onCopy,
-    onRemove, onOrganize, onFavorite, onSelectionChange,
+    onRemove, onManageProjects, onManageTags, onFavorite, onSelectionChange,
   } = props
   const [search, setSearch] = useState('')
   const [project, setProject] = useState('')
@@ -177,7 +178,6 @@ export function ConnectionList(props: ConnectionListProps) {
       <header className={styles.header}>
         <div className={styles.heading}>
           <div className={styles.titleLine}><h1>{label} 连接</h1><span className={styles.titleDivider} aria-hidden="true" /><span className={styles.count}>{rows.length} 个连接</span></div>
-          <p>管理当前工作空间的 {label} 数据库连接，在工作台中浏览与查询。</p>
         </div>
         <div className={styles.headerActions}>
           <button type="button" className={styles.createButton} onClick={onCreate}><Plus size={16} />新建连接</button>
@@ -237,7 +237,6 @@ export function ConnectionList(props: ConnectionListProps) {
             {loading ? Array.from({ length: 3 }, (_, index) => <tr key={index} aria-hidden="true">{Array.from({ length: visibleColumnCount }, (_, column) => <td key={column}><span className={styles.skeleton} /></td>)}</tr>)
               : pageRows.length === 0 ? <tr><td colSpan={visibleColumnCount} className={styles.emptyCell}>
                 <Database size={25} /><strong>{filteredActive ? '没有符合筛选条件的连接' : error ? '暂时无法加载连接' : `还没有 ${label} 连接`}</strong>
-                <span>{filteredActive ? '试试其他名称、项目或标签。' : error ? '请重试，检查设备服务是否可用。' : '创建连接，开始浏览与查询你的数据。'}</span>
                 {!error && <button type="button" className={styles.emptyAction} onClick={filteredActive ? resetFilters : onCreate}>{filteredActive ? '清除筛选' : '新建连接'}</button>}
               </td></tr> : pageRows.map(row => {
                 const pending = pendingIds.includes(row.id)
@@ -254,21 +253,21 @@ export function ConnectionList(props: ConnectionListProps) {
                   {!hiddenColumns.includes('target') && <td><span className={styles.target} title={row.targetTitle}>{row.target}</span></td>}
                   {!hiddenColumns.includes('projects') && <td><div className={styles.chips}>
                     {row.projectIds.length ? <><button type="button" className={styles.projectChip} disabled={pending}
-                      title={projectNames.has(row.projectIds[0]) ? projectLabels.join('、') : `项目不可用：${row.projectIds[0]}`} onClick={() => onOrganize(row)}>{projectLabels[0]}</button>
+                      title={projectNames.has(row.projectIds[0]) ? projectLabels.join('、') : `项目不可用：${row.projectIds[0]}`} onClick={() => onManageProjects(row)}>{projectLabels[0]}</button>
                       {row.projectIds.length > 1 && <button type="button" className={styles.projectChip} disabled={pending} title={projectLabels.join('、')}
-                        onClick={() => onOrganize(row)}>+{row.projectIds.length - 1}</button>}</>
-                      : <button type="button" className={`${styles.projectChip} ${styles.unassigned}`} disabled={pending} onClick={() => onOrganize(row)}>未关联</button>}
+                        onClick={() => onManageProjects(row)}>+{row.projectIds.length - 1}</button>}</>
+                      : <button type="button" className={`${styles.projectChip} ${styles.unassigned}`} disabled={pending} onClick={() => onManageProjects(row)}>未关联</button>}
                   </div></td>}
                   {!hiddenColumns.includes('tags') && <td><div className={styles.chips}>
                     {row.tags.slice(0, 2).map(item => <button type="button" key={item} className={styles.tagChip} data-color={tagColor(item)}
                       title={`筛选标签：${item}`} onClick={() => { setTag(item); setPage(1) }}>{item}</button>)}
-                    {row.tags.length > 2 && <button type="button" className={styles.projectChip} title={row.tags.join('、')} onClick={() => onOrganize(row)}>+{row.tags.length - 2}</button>}
+                    {row.tags.length > 2 && <button type="button" className={styles.projectChip} disabled={pending} title={row.tags.join('、')} onClick={() => onManageTags(row)}>+{row.tags.length - 2}</button>}
                     {!row.tags.length && <span className={styles.absent} aria-label="无标签">—</span>}
                   </div></td>}
                   {!hiddenColumns.includes('access') && <td><span className={styles.access} title="默认只读；进入工作台后可显式解锁写入。"><LockSimple size={15} />只读</span></td>}
                   {!hiddenColumns.includes('status') && <td><span className={styles.status} data-status={row.status}
                     title={row.statusTitle ?? statusNames[row.status]}>{row.status === 'testing' ? <SpinnerGap size={12} className={styles.spinner} /> : <i aria-hidden="true" />}{statusNames[row.status]}</span></td>}
-                  <td><RowActions row={row} pending={pending} onOpen={onOpen} onEdit={onEdit} onCopy={onCopy} onRemove={onRemove} onOrganize={onOrganize} /></td>
+                  <td><RowActions row={row} pending={pending} onOpen={onOpen} onEdit={onEdit} onCopy={onCopy} onRemove={onRemove} onManageProjects={onManageProjects} onManageTags={onManageTags} /></td>
                 </tr>
               })}
           </tbody>

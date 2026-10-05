@@ -45,7 +45,7 @@ export interface ConnectionListProps {
   onRemove: (row: ConnectionListRow) => void
   onOpenProject: (projectId: string) => void
   onManageTags: (row: ConnectionListRow) => void
-  onFavorite: (row: ConnectionListRow, favorite: boolean) => void
+  onFavorite: (row: ConnectionListRow, favorite: boolean) => Promise<void>
   onSelectionChange: (ids: string[]) => void
   onBatchAction: (action: ConnectionBatchAction, ids: readonly string[]) => void
   onDismissBatchResult: () => void

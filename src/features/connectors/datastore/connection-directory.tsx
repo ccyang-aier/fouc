@@ -166,7 +166,11 @@ function ConnectionDirectory({ provider, workspaceId, onBack, onOpenProject, onW
       onOpen={row => { if (row.status === 'passed') setDialog({ intent: 'connect', connection: get(row.id) }); }} onEdit={row => setDialog({ intent: 'save', connection: get(row.id) })}
       onRemove={row => { setError(''); setRemoving(get(row.id) ?? null); }} onOpenProject={onOpenProject}
       onManageTags={row => setTagConnection(get(row.id) ?? null)}
-      onFavorite={(row, favorite) => { setError(''); void patchDirectory(row.id, { favorite }).catch(cause => { if (mounted.current) setError(cause instanceof Error ? cause.message : '收藏保存失败'); }); }}
+      onFavorite={async (row, favorite) => {
+        setError('');
+        try { await patchDirectory(row.id, { favorite }); }
+        catch (cause) { if (mounted.current) setError(cause instanceof Error ? cause.message : '收藏保存失败'); throw cause; }
+      }}
       onSelectionChange={setSelection} onBatchAction={beginBatch} onDismissBatchResult={() => setBatchResult(null)} />
     {tagConnection && <ConnectionTagsDialog key={tagConnection.id} initialTags={tagConnection.directory?.tags ?? []} onClose={() => setTagConnection(null)} onSave={tags => patchDirectory(tagConnection.id, { tags })} />}
     {removing && <ConnectionDeleteDialog connections={[removing]} busy={busy} error={error} onClose={() => setRemoving(null)} onDelete={() => void remove()} />}

@@ -1,10 +1,10 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import {
   ArrowSquareOut, CaretDown, CaretLeft, CaretRight,
   CaretUpDown, Database, DotsThree, GearSix,
-  MagnifyingGlass, PencilSimple, Plus, SpinnerGap, Star, Tag, Trash, X,
+  MagnifyingGlass, PencilSimple, Plus, SpinnerGap, Tag, Trash, X,
 } from '@phosphor-icons/react'
 import {
   DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent,
@@ -18,6 +18,8 @@ import { filterConnections, unassignedProject } from './filter'
 import { ConnectionProjectLinks } from './project-links'
 import { ConnectionSelectionDock } from './selection-dock'
 import { ConnectionTarget } from './connection-target'
+import { ConnectionFavoriteButton } from './favorite-button'
+import { useDirectoryColumnWidths, type DirectoryColumn } from './use-column-widths'
 import styles from './connection-list.module.css'
 
 type Column = 'target' | 'projects' | 'tags' | 'account' | 'authSource' | 'status'
@@ -117,6 +119,8 @@ export function ConnectionList(props: ConnectionListProps) {
   const columnNames = { target: targetLabel, projects: '关联项目', tags: '标签', account: accountLabel, authSource: authSourceLabel, status: '状态' }
   const columns = (Object.keys(columnNames) as Column[]).filter(column => columnNames[column])
   const visibleColumnCount = 3 + columns.filter(column => !hiddenColumns.includes(column)).length
+  const table = useRef<HTMLTableElement>(null)
+  const layout = useDirectoryColumnWidths(scopeKey, table, ['name', ...columns.filter(column => !hiddenColumns.includes(column)), 'actions'])
 
   function selectPage(checked: boolean) {
     const pageIds = new Set(pageRows.map(row => row.id))
@@ -126,18 +130,23 @@ export function ConnectionList(props: ConnectionListProps) {
     setSort(current => ({ column, direction: current?.column === column && current.direction === 1 ? -1 : 1 }))
     setPage(1)
   }
+  function resizeHandle(column: DirectoryColumn, title: string) {
+    return <button type="button" className={styles.resizeHandle} aria-label={`调整${title}列宽`} title="拖动调整列宽 · ← / →"
+      {...layout.handleProps(column)} />
+  }
   function sortHeader(column: SortColumn, title: string) {
-    return <th scope="col" aria-sort={sort?.column === column ? sort.direction === 1 ? 'ascending' : 'descending' : 'none'}>
+    return <th scope="col" data-directory-column={column} aria-sort={sort?.column === column ? sort.direction === 1 ? 'ascending' : 'descending' : 'none'}>
       <button type="button" className={styles.sortButton} onClick={() => sortBy(column)}>
-        {title}<CaretUpDown size={12} data-active={sort?.column === column} />
+        <span>{title}</span><CaretUpDown size={12} data-active={sort?.column === column} />
       </button>
+      {resizeHandle(column, title)}
     </th>
   }
   function resetFilters() {
     setSearch(''); setProjectFilter([]); setTagFilter([]); setOnlyFavorites(false); setPage(1)
   }
 
-  return <section className={styles.directory} aria-label={`${label} 连接列表`} data-scope={scopeKey}>
+  return <section className={styles.directory} aria-label={`${label} 连接列表`} data-scope={scopeKey} data-resizing={Boolean(layout.resizing)}>
     <nav className={styles.breadcrumb} aria-label="面包屑">
       <button type="button" onClick={onBack}>连接器</button><span aria-hidden="true">/</span>
       <span aria-current="page">{label}</span>
@@ -178,16 +187,16 @@ export function ConnectionList(props: ConnectionListProps) {
       </div>
       {error && <div className={styles.error} role="alert"><span>{error}</span><button type="button" onClick={onRetry} disabled={loading}>重试</button></div>}
       <div className={styles.tableViewport}>
-        <table className={styles.table} aria-busy={loading}>
+        <table ref={table} className={styles.table} style={layout.tableStyle} aria-busy={loading}>
           <colgroup>
-            <col className={styles.selectionCol} /><col className={styles.nameCol} />
-            {!hiddenColumns.includes('target') && <col className={styles.targetCol} />}
-            {!hiddenColumns.includes('projects') && <col className={styles.projectCol} />}
-            {!hiddenColumns.includes('tags') && <col className={styles.tagsCol} />}
-            {accountLabel && !hiddenColumns.includes('account') && <col className={styles.accountCol} />}
-            {authSourceLabel && !hiddenColumns.includes('authSource') && <col className={styles.accountCol} />}
-            {!hiddenColumns.includes('status') && <col className={styles.statusCol} />}
-            <col className={styles.actionsCol} />
+            <col className={styles.selectionCol} /><col className={styles.nameCol} style={{ width: layout.widths.name }} />
+            {!hiddenColumns.includes('target') && <col className={styles.targetCol} style={{ width: layout.widths.target }} />}
+            {!hiddenColumns.includes('projects') && <col className={styles.projectCol} style={{ width: layout.widths.projects }} />}
+            {!hiddenColumns.includes('tags') && <col className={styles.tagsCol} style={{ width: layout.widths.tags }} />}
+            {accountLabel && !hiddenColumns.includes('account') && <col className={styles.accountCol} style={{ width: layout.widths.account }} />}
+            {authSourceLabel && !hiddenColumns.includes('authSource') && <col className={styles.accountCol} style={{ width: layout.widths.authSource }} />}
+            {!hiddenColumns.includes('status') && <col className={styles.statusCol} style={{ width: layout.widths.status }} />}
+            <col className={styles.actionsCol} style={{ width: layout.widths.actions }} />
           </colgroup>
           <thead><tr>
             <th className={styles.selectionCell} scope="col"><input type="checkbox" aria-label="选择当前页所有连接" checked={allPageSelected}
@@ -197,10 +206,10 @@ export function ConnectionList(props: ConnectionListProps) {
             {!hiddenColumns.includes('target') && sortHeader('target', targetLabel)}
             {!hiddenColumns.includes('projects') && sortHeader('projects', '关联项目')}
             {!hiddenColumns.includes('tags') && sortHeader('tags', '标签')}
-            {accountLabel && !hiddenColumns.includes('account') && <th scope="col">{accountLabel}</th>}
-            {authSourceLabel && !hiddenColumns.includes('authSource') && <th scope="col">{authSourceLabel}</th>}
+            {accountLabel && !hiddenColumns.includes('account') && <th scope="col" data-directory-column="account"><span className={styles.columnTitle}>{accountLabel}</span>{resizeHandle('account', accountLabel)}</th>}
+            {authSourceLabel && !hiddenColumns.includes('authSource') && <th scope="col" data-directory-column="authSource"><span className={styles.columnTitle}>{authSourceLabel}</span>{resizeHandle('authSource', authSourceLabel)}</th>}
             {!hiddenColumns.includes('status') && sortHeader('status', '状态')}
-            <th scope="col">操作</th>
+            <th scope="col" data-directory-column="actions"><span className={styles.columnTitle}>操作</span>{resizeHandle('actions', '操作')}</th>
           </tr></thead>
           <tbody>
             {loading ? Array.from({ length: 3 }, (_, index) => <tr key={index} aria-hidden="true">{Array.from({ length: visibleColumnCount }, (_, column) => <td key={column}><span className={styles.skeleton} /></td>)}</tr>)
@@ -214,9 +223,7 @@ export function ConnectionList(props: ConnectionListProps) {
                     onChange={event => changeSelection(event.target.checked ? [...selectedIds, row.id] : selectedIds.filter(id => id !== row.id))} /></td>
                   <td><div className={styles.nameCell}>
                     <span className={styles.name} title={row.name}>{row.name}</span>
-                    <button type="button" className={styles.favoriteButton} data-favorite={row.favorite} aria-label={`${row.favorite ? '取消收藏' : '收藏'} ${row.name}`}
-                      title={row.favorite ? '取消收藏' : '收藏连接'} aria-pressed={row.favorite} disabled={pending}
-                      onClick={() => onFavorite(row, !row.favorite)}><Star size={15} weight={row.favorite ? 'fill' : 'regular'} /></button>
+                    <ConnectionFavoriteButton row={row} pending={pendingIds.includes(row.id)} disabled={Boolean(batchProgress)} onFavorite={onFavorite} />
                   </div></td>
                   {!hiddenColumns.includes('target') && <td><ConnectionTarget row={row} label={targetLabel} /></td>}
                   {!hiddenColumns.includes('projects') && <td><ConnectionProjectLinks ids={row.projectIds} names={projectNames} onOpen={onOpenProject} /></td>}

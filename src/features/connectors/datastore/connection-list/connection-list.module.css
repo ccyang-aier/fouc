@@ -81,6 +81,17 @@
 .table td { height: 48px; border-bottom: 1px solid var(--line); padding: 0 12px; color: var(--list-ink); font-size: max(13px, var(--ui-size)); }
 .table .selectionCell { padding: 0 12px 0 14px; }
 .selectionCell input { display: block; }
+.table th { position: relative; }
+.columnTitle,
+.sortButton span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.columnTitle { display: block; }
+.sortButton svg { flex-shrink: 0; }
+.table .resizeHandle { position: absolute; inset: 3px 0 3px auto; z-index: 1; width: 9px; border: 0; border-radius: 0; padding: 0; background: transparent; cursor: col-resize; touch-action: none; }
+.resizeHandle::after { position: absolute; inset: 5px 4px; content: ''; background: var(--line-strong); }
+.resizeHandle:is(:hover, :focus-visible, [data-resizing='true'])::after { inset-inline: 3px 4px; background: var(--accent); }
+.directory .resizeHandle:focus-visible { outline: none; }
+.directory[data-resizing='true'] { user-select: none; }
+.directory[data-resizing='true'] * { cursor: col-resize; }
 .sortButton { display: flex; width: 100%; height: 32px; align-items: center; gap: 8px; border: 0; padding: 0; background: transparent; color: inherit; font: inherit; text-align: left; }
 .skeleton { display: block; height: 12px; width: 65%; border-radius: 3px; background: var(--line); }
 .sortButton svg { color: var(--muted-strong); }
@@ -101,7 +112,7 @@
 .targetCell .copyButton[data-error='true'] { color: var(--err-ink); }
 .chips { display: flex; min-width: 0; align-items: center; gap: 6px; }
 .projectChip { overflow: hidden; display: inline-flex; max-width: 135px; height: 23px; flex-shrink: 1; align-items: center; justify-content: center; border: 1px solid var(--line-strong); border-radius: 4px; padding: 0 7px; background: var(--surface-subtle); color: var(--list-ink); font: inherit; font-size: max(13px, var(--ui-size)); text-overflow: ellipsis; white-space: nowrap; }
-.projectChip:first-child { display: block; line-height: 21px; }
+.chips > .projectChip:first-child { display: block; line-height: 21px; }
 .projectChip:is(button):hover { border-color: var(--accent-soft-line); color: var(--accent-ink); }
 .unassigned { border-style: dashed; background: transparent; color: var(--list-soft-ink); }
 .tagChip { overflow: hidden; height: 23px; flex-shrink: 1; border: 0; border-radius: 4px; padding: 0 7px; color: var(--accent-ink); background: var(--accent-soft); font: inherit; font-size: max(13px, var(--ui-size)); text-overflow: ellipsis; white-space: nowrap; }

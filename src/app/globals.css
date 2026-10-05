@@ -55,7 +55,7 @@
   --warn-soft-line: #f0dcae;
   /* 系统菜单状态色：普通项为清晰灰底；危险项红底白字；警示项琥珀底。
      鼠标悬停、键盘高亮与展开的子菜单共用，业务组件只选择语义，不自定颜色。 */
-  --menu-item-hover-bg: #edf0f4;
+  --menu-item-hover-bg: var(--action-hover-bg);
   --menu-item-hover-ink: var(--ink);
   --menu-danger-ink: var(--err-ink);
   --menu-danger-hover-bg: var(--danger-action-bg);
@@ -128,7 +128,6 @@ html[data-theme="dark"] {
   --warn-ink: #d9a743;
   --warn-soft: rgba(217, 167, 67, 0.1);
   --warn-soft-line: rgba(217, 167, 67, 0.28);
-  --menu-item-hover-bg: #30363c;
   --menu-warning-hover-bg: #4b3920;
   --menu-warning-hover-ink: #f0c979;
   --action-hover-bg: #343e49;
@@ -394,12 +393,21 @@ input {
 }
 
 .menu-surface[data-state="closed"] { animation: menu-pop-out 140ms ease-out both; }
+/* Tooltip 与菜单会共用 data-state；菜单展开以专属的 aria-expanded 为准。
+   非 layer 规则保证展开底色不被业务组件的透明背景覆盖。 */
+.dropdown-menu-trigger[aria-expanded="true"] {
+  background: var(--action-hover-bg);
+  color: var(--ink);
+}
 /* 共享菜单项契约；Radix 与原生菜单均使用 fouc-menu-item，禁用项不响应高亮。 */
 .fouc-menu-item {
   --menu-state-bg: var(--menu-item-hover-bg);
   --menu-state-ink: var(--menu-item-hover-ink);
   color: var(--ink);
   cursor: pointer;
+  /* 底色即时反馈，避免短暂停留时仍像透明项；仅文字颜色柔和过渡。 */
+  transition-property: color;
+  transition-duration: 80ms;
 }
 .fouc-menu-item[data-variant="destructive"] {
   --menu-state-bg: var(--menu-danger-hover-bg);

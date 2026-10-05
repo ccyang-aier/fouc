@@ -15,7 +15,7 @@ function DropdownMenuTrigger({
   return (
     <DropdownMenuPrimitive.Trigger
       className={cn(
-        "dropdown-menu-trigger data-[state=open]:bg-[var(--surface-hover)] data-[state=open]:text-[var(--ink)]",
+        "dropdown-menu-trigger",
         className,
       )}
       {...props}

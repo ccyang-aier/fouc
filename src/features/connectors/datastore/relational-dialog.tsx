@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
-import { CheckCircle } from '@phosphor-icons/react';
+import { ConnectionDialogActions, type ConnectionPendingAction } from './connection-options/connection-dialog-actions';
 import type {
   RelationalConnectionConfig,
   RelationalProvider,
@@ -73,9 +73,12 @@ export function RelationalDialog({
     );
   const [optionsValid, setOptionsValid] = useState(true),
     [password, setPassword] = useState('');
-  const [busy, setBusy] = useState(false),
+  const [pending, setPending] = useState<ConnectionPendingAction>(null),
     [error, setError] = useState(''),
+    [testError, setTestError] = useState(''),
     [feedback, setFeedback] = useState('');
+  const busy = pending !== null;
+  function clearFeedback() { setError(''); setTestError(''); setFeedback(''); }
   const label =
     provider === 'postgres'
       ? 'PostgreSQL'
@@ -85,9 +88,8 @@ export function RelationalDialog({
 
   async function perform(action: 'submit' | 'test') {
     if (busy || !optionsValid) return;
-    setBusy(true);
-    setError('');
-    setFeedback('');
+    setPending(action);
+    clearFeedback();
     try {
       const config: RelationalConnectionConfig =
         provider === 'sqlite'
@@ -142,9 +144,9 @@ export function RelationalDialog({
         );
       else await onSave(name, config);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : '连接操作失败');
+      (action === 'test' ? setTestError : setError)(reason instanceof Error ? reason.message : '连接操作失败');
     } finally {
-      setBusy(false);
+      setPending(null);
     }
   }
   function submit(event: FormEvent) {
@@ -164,7 +166,7 @@ export function RelationalDialog({
       className={formStyles.dialog}
       onClose={onClose}
     >
-      <form className={formStyles.form} onSubmit={submit}>
+      <form className={formStyles.form} onSubmit={submit} onChange={clearFeedback}>
         <div className={formStyles.body}>
           {intent === 'save' && (
             <>
@@ -201,7 +203,7 @@ export function RelationalDialog({
                       setDatabase(fields.database);
                       setPassword(fields.password);
                       setConnectionOptions(fields.connectionOptions);
-                      setFeedback('');
+                      clearFeedback();
                     }}
                   />
                   <div className={styles.formColumns}>
@@ -295,49 +297,14 @@ export function RelationalDialog({
               />
             </>
           )}
-          <p className={styles.hint}>使用只读会话浏览结构与执行查询。</p>
           {error && (
             <p className={styles.connectionError} role="alert">
               {error}
             </p>
           )}
-          {feedback && (
-            <p className={styles.success} role="status">
-              <CheckCircle size={15} />
-              {feedback}
-            </p>
-          )}
         </div>
-        <footer className={styles.dialogFooter}>
-          <button
-            type="button"
-            className={styles.secondary}
-            disabled={busy || !optionsValid}
-            onClick={() => void perform('test')}
-          >
-            测试连接
-          </button>
-          <span />
-          <button
-            type="button"
-            className={styles.secondary}
-            disabled={busy}
-            onClick={onClose}
-          >
-            取消
-          </button>
-          <button
-            type="submit"
-            className={styles.primary}
-            disabled={busy || !optionsValid}
-          >
-            {busy
-              ? '处理中…'
-              : intent === 'connect'
-                ? '连接并打开'
-                : '保存连接'}
-          </button>
-        </footer>
+        <ConnectionDialogActions pending={pending} valid={optionsValid} feedback={feedback} testError={testError}
+          submitLabel={intent === 'connect' ? '连接并打开' : '保存连接'} onTest={() => void perform('test')} onClose={onClose} />
       </form>
     </SqlDialog>
   );

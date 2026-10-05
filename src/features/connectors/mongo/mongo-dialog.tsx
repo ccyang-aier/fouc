@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
-import { CheckCircle } from '@phosphor-icons/react/dist/csr/CheckCircle';
+import { ConnectionDialogActions, type ConnectionPendingAction } from '../datastore/connection-options/connection-dialog-actions';
 import type {
   MongoConnectionConfig,
   MongoSavedConnection,
@@ -61,9 +61,12 @@ export function MongoDialog({
     useState<DatabaseConnectionOptionsInput>(config.connectionOptions);
   const [optionsValid, setOptionsValid] = useState(true),
     [password, setPassword] = useState('');
-  const [busy, setBusy] = useState(false),
+  const [pending, setPending] = useState<ConnectionPendingAction>(null),
     [error, setError] = useState(''),
+    [testError, setTestError] = useState(''),
     [feedback, setFeedback] = useState('');
+  const busy = pending !== null;
+  function clearFeedback() { setError(''); setTestError(''); setFeedback(''); }
   const hostList = config.mongo?.srv || (config.mongo?.hosts.length ?? 0) > 1;
   function update<K extends keyof MongoConnectionConfig>(
     key: K,
@@ -74,13 +77,12 @@ export function MongoDialog({
       [key]: value,
       ...(key === 'host' || key === 'port' ? { mongo: undefined } : {}),
     }));
-    setFeedback('');
+    clearFeedback();
   }
   async function perform(test = false) {
     if (busy || !optionsValid) return;
-    setBusy(true);
-    setError('');
-    setFeedback('');
+    setPending(test ? 'test' : 'submit');
+    clearFeedback();
     try {
       const publicConfig = {
         ...config,
@@ -130,9 +132,9 @@ export function MongoDialog({
         );
       else await onSave(name, publicConfig);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : '连接操作失败');
+      (test ? setTestError : setError)(reason instanceof Error ? reason.message : '连接操作失败');
     } finally {
-      setBusy(false);
+      setPending(null);
     }
   }
   function submit(event: FormEvent) {
@@ -152,7 +154,7 @@ export function MongoDialog({
       className={formStyles.dialog}
       onClose={onClose}
     >
-      <form className={formStyles.form} onSubmit={submit}>
+      <form className={formStyles.form} onSubmit={submit} onChange={clearFeedback}>
         <div className={formStyles.body}>
           {intent === 'save' ? (
             <>
@@ -190,7 +192,7 @@ export function MongoDialog({
                   });
                   setPassword(fields.password);
                   setConnectionOptions(fields.connectionOptions);
-                  setFeedback('');
+                  clearFeedback();
                 }}
               />
               {hostList ? (
@@ -214,7 +216,7 @@ export function MongoDialog({
                         ...current,
                         mongo: undefined,
                       }));
-                      setFeedback('');
+                      clearFeedback();
                     }}
                   >
                     切换为单主机
@@ -295,7 +297,7 @@ export function MongoDialog({
               value={password}
               onChange={(event) => {
                 setPassword(event.target.value);
-                setFeedback('');
+                clearFeedback();
               }}
             />
             <small>密码仅用于本次连接，不保存到连接配置。</small>
@@ -312,43 +314,9 @@ export function MongoDialog({
               {error}
             </p>
           )}
-          {feedback && (
-            <p className={styles.success} role="status">
-              <CheckCircle size={16} />
-              {feedback}
-            </p>
-          )}
         </div>
-        <footer className={styles.dialogFooter}>
-          <button
-            type="button"
-            className={styles.secondary}
-            disabled={busy || !optionsValid}
-            onClick={() => void perform(true)}
-          >
-            测试连接
-          </button>
-          <span />
-          <button
-            type="button"
-            className={styles.secondary}
-            disabled={busy}
-            onClick={onClose}
-          >
-            取消
-          </button>
-          <button
-            type="submit"
-            className={styles.primary}
-            disabled={busy || !optionsValid}
-          >
-            {busy
-              ? '处理中…'
-              : intent === 'connect'
-                ? '打开工作台'
-                : '保存连接'}
-          </button>
-        </footer>
+        <ConnectionDialogActions pending={pending} valid={optionsValid} feedback={feedback} testError={testError}
+          submitLabel={intent === 'connect' ? '打开工作台' : '保存连接'} onTest={() => void perform(true)} onClose={onClose} />
       </form>
     </SqlDialog>
   );

@@ -63,6 +63,14 @@
 .body + footer {
   flex-shrink: 0;
 }
+.testGroup { display: flex; flex: 1; min-width: 0; align-items: center; gap: 10px; }
+.testGroup > button { min-width: 100px; }
+.testResult { display: inline-flex; flex-shrink: 0; align-items: center; gap: 5px; border-radius: 4px; color: var(--ok-ink); font-size: 12px; }
+.testResult[data-error='true'] { color: var(--err-ink); }
+.footerActions { display: flex; align-items: center; gap: 8px; }
+.spinner { animation: spin 900ms linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2s; } }
 .columns {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -109,13 +117,6 @@
   .columns {
     grid-template-columns: minmax(0, 1fr);
   }
-  .body + footer {
-    padding: 13px;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-  .body + footer > button {
-    padding: 7px 9px;
-    font-size: 11px;
-  }
+  .testGroup { flex-basis: 100%; }
+  .footerActions { margin-left: auto; }
 }

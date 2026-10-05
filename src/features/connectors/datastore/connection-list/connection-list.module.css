@@ -71,10 +71,10 @@
 .table { width: 100%; min-width: 950px; table-layout: fixed; border-collapse: collapse; text-align: left; }
 .selectionCol { width: 48px; }
 .nameCol { width: 17%; }
-.targetCol { width: 12%; }
+.targetCol { width: 18%; }
 .projectCol { width: 15%; }
 .tagsCol { width: 13%; }
-.accessCol { width: 14%; }
+.accountCol { width: 9%; }
 .statusCol { width: 15%; }
 .actionsCol { width: 136px; }
 .table th { height: 34px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 0 12px; background: var(--surface-subtle); color: var(--list-soft-ink); font-size: max(13px, var(--ui-size)); font-weight: 500; white-space: nowrap; }
@@ -94,7 +94,11 @@
 .favoriteButton { display: flex; width: 20px; height: 24px; flex: 0 0 20px; align-items: center; justify-content: center; border: 0; border-radius: 4px; padding: 0; background: transparent; color: var(--muted); }
 .favoriteButton[data-favorite='true'] { color: #ffb52e; }
 .favoriteButton:hover { background: var(--surface-hover); color: #e7a022; }
-.target { display: block; overflow: hidden; color: var(--list-soft-ink); font-family: var(--font-code); font-size: max(13px, var(--ui-size)); text-overflow: ellipsis; white-space: nowrap; }
+.targetCell { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.target { display: block; flex: 1; min-width: 0; overflow: hidden; color: var(--list-soft-ink); font-family: var(--font-code); font-size: max(13px, var(--ui-size)); text-overflow: ellipsis; white-space: nowrap; }
+.targetCell .copyButton { width: 24px; height: 24px; flex-basis: 24px; color: var(--muted-strong); }
+.targetCell .copyButton[data-copied='true'] { color: var(--ok-ink); }
+.targetCell .copyButton[data-error='true'] { color: var(--err-ink); }
 .chips { display: flex; min-width: 0; align-items: center; gap: 6px; }
 .projectChip { overflow: hidden; display: inline-flex; max-width: 135px; height: 23px; flex-shrink: 1; align-items: center; justify-content: center; border: 1px solid var(--line-strong); border-radius: 4px; padding: 0 7px; background: var(--surface-subtle); color: var(--list-ink); font: inherit; font-size: max(13px, var(--ui-size)); text-overflow: ellipsis; white-space: nowrap; }
 .projectChip:first-child { display: block; line-height: 21px; }
@@ -108,7 +112,7 @@
 .tagChip[data-color='orange'] { color: var(--warn-ink); background: color-mix(in srgb, #ed9347 18%, var(--panel)); }
 .tagChip[data-color='neutral'] { color: var(--list-ink); background: color-mix(in srgb, var(--ink) 10%, var(--panel)); }
 .absent { color: var(--muted); }
-.access { display: inline-flex; align-items: center; gap: 9px; color: var(--list-soft-ink); white-space: nowrap; font-size: max(13px, var(--ui-size)); }
+.account { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--list-soft-ink); font-family: var(--font-code); }
 .status { display: inline-flex; max-width: 100%; align-items: center; gap: 10px; color: var(--muted-strong); white-space: nowrap; font-size: max(13px, var(--ui-size)); }
 .status i { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; background: var(--muted); }
 .status[data-status='passed'] { color: var(--ok-ink); }

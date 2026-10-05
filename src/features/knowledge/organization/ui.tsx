@@ -132,14 +132,14 @@ export function ModalDialog({ open, onClose, title, description, children, foote
         aria-modal="true"
         aria-label={title}
         onMouseDown={(event) => event.stopPropagation()}
-        className={cn('modal-surface flex flex-col gap-4 rounded-[10px] px-5 py-4 outline-none', width)}
+        className={cn('modal-surface flex flex-col gap-4 rounded-[10px] px-5 pt-4 outline-none', width)}
       >
         <div className="flex flex-col gap-1">
           <h2 className="text-[13.5px] font-semibold tracking-[-0.01em] text-[var(--ink)]">{title}</h2>
           {description ? <p className="text-[11.5px] leading-relaxed text-[var(--muted-strong)]">{description}</p> : null}
         </div>
         {children}
-        <div className="flex justify-end gap-2 pt-0.5">{footer}</div>
+        <div className="fouc-dialog-footer [--dialog-footer-inset:0px]">{footer}</div>
       </div>
     </div>
   );

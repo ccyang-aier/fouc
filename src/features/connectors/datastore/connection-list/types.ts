@@ -8,6 +8,8 @@ export interface ConnectionListRow {
   name: string
   target: string
   targetTitle: string
+  account?: string
+  authSource?: string
   projectIds: string[]
   tags: string[]
   favorite: boolean
@@ -23,6 +25,8 @@ export interface DirectoryProject {
 export interface ConnectionListProps {
   label: string
   targetLabel: string
+  accountLabel?: string
+  authSourceLabel?: string
   scopeKey: string
   rows: readonly ConnectionListRow[]
   projects: readonly DirectoryProject[]

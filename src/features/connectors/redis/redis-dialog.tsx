@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
-import { CheckCircle } from '@phosphor-icons/react';
+import { ConnectionDialogActions, type ConnectionPendingAction } from '../datastore/connection-options/connection-dialog-actions';
 import type {
   RedisConnectionConfig,
   RedisSavedConnection,
@@ -57,14 +57,16 @@ export function RedisDialog({
     );
   const [optionsValid, setOptionsValid] = useState(true),
     [password, setPassword] = useState('');
-  const [busy, setBusy] = useState(false),
+  const [pending, setPending] = useState<ConnectionPendingAction>(null),
     [error, setError] = useState(''),
+    [testError, setTestError] = useState(''),
     [feedback, setFeedback] = useState('');
+  const busy = pending !== null;
+  function clearFeedback() { setError(''); setTestError(''); setFeedback(''); }
   async function perform(test = false) {
     if (busy || !optionsValid) return;
-    setBusy(true);
-    setError('');
-    setFeedback('');
+    setPending(test ? 'test' : 'submit');
+    clearFeedback();
     try {
       const config: RedisConnectionConfig = {
         provider: 'redis',
@@ -105,9 +107,9 @@ export function RedisDialog({
         );
       else await onSave(name, config);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : '连接操作失败');
+      (test ? setTestError : setError)(reason instanceof Error ? reason.message : '连接操作失败');
     } finally {
-      setBusy(false);
+      setPending(null);
     }
   }
   function submit(event: FormEvent) {
@@ -127,7 +129,7 @@ export function RedisDialog({
       className={formStyles.dialog}
       onClose={onClose}
     >
-      <form className={formStyles.form} onSubmit={submit}>
+      <form className={formStyles.form} onSubmit={submit} onChange={clearFeedback}>
         <div className={formStyles.body}>
           {intent === 'save' ? (
             <>
@@ -161,7 +163,7 @@ export function RedisDialog({
                   setDatabase(fields.database);
                   setPassword(fields.password);
                   setConnectionOptions(fields.connectionOptions);
-                  setFeedback('');
+                  clearFeedback();
                 }}
               />
               <div className={styles.formColumns}>
@@ -245,43 +247,9 @@ export function RedisDialog({
               {error}
             </p>
           )}
-          {feedback && (
-            <p className={styles.success} role="status">
-              <CheckCircle size={16} />
-              {feedback}
-            </p>
-          )}
         </div>
-        <footer className={styles.dialogFooter}>
-          <button
-            type="button"
-            className={styles.secondary}
-            disabled={busy || !optionsValid}
-            onClick={() => void perform(true)}
-          >
-            测试连接
-          </button>
-          <span />
-          <button
-            type="button"
-            className={styles.secondary}
-            disabled={busy}
-            onClick={onClose}
-          >
-            取消
-          </button>
-          <button
-            type="submit"
-            className={styles.primary}
-            disabled={busy || !optionsValid}
-          >
-            {busy
-              ? '处理中…'
-              : intent === 'connect'
-                ? '连接并打开'
-                : '保存连接'}
-          </button>
-        </footer>
+        <ConnectionDialogActions pending={pending} valid={optionsValid} feedback={feedback} testError={testError}
+          submitLabel={intent === 'connect' ? '连接并打开' : '保存连接'} onTest={() => void perform(true)} onClose={onClose} />
       </form>
     </SqlDialog>
   );

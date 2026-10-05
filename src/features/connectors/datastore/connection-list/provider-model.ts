@@ -8,12 +8,12 @@ export type DatastoreProvider = SavedDatastoreConnection['config']['provider'];
 export const emptyDirectory: ConnectionDirectoryMetadata = { favorite: false, projectIds: [], tags: [] };
 
 /** Provider differences stop here; the directory view never knows native configuration shapes. */
-export const directoryProviders: Record<DatastoreProvider, { label: string; family: string; targetLabel: string }> = {
+export const directoryProviders: Record<DatastoreProvider, { label: string; family: string; targetLabel: string; accountLabel?: string; authSourceLabel?: string }> = {
   sqlite: { label: 'SQLite', family: 'relational', targetLabel: '文件' },
-  mysql: { label: 'MySQL', family: 'relational', targetLabel: '连接目标' },
-  postgres: { label: 'PostgreSQL', family: 'relational', targetLabel: '连接目标' },
-  redis: { label: 'Redis', family: 'redis', targetLabel: '连接目标' },
-  mongodb: { label: 'MongoDB', family: 'mongo', targetLabel: '连接目标' },
+  mysql: { label: 'MySQL', family: 'relational', targetLabel: '连接目标', accountLabel: '登录账户' },
+  postgres: { label: 'PostgreSQL', family: 'relational', targetLabel: '连接目标', accountLabel: '登录账户' },
+  redis: { label: 'Redis', family: 'redis', targetLabel: '连接目标', accountLabel: '登录账户' },
+  mongodb: { label: 'MongoDB', family: 'mongo', targetLabel: '连接目标', accountLabel: '登录账户', authSourceLabel: '认证库' },
 };
 
 export function connectionListRow(entry: SavedDatastoreConnection, testing: boolean): ConnectionListRow {
@@ -25,6 +25,8 @@ export function connectionListRow(entry: SavedDatastoreConnection, testing: bool
   return {
     id: entry.id, name: entry.name, target,
     targetTitle: config.provider === 'sqlite' ? config.path : target,
+    account: config.provider === 'sqlite' ? undefined : config.provider === 'redis' ? config.username || 'default' : config.username || '未配置',
+    authSource: config.provider === 'mongodb' ? config.authSource : undefined,
     ...directory,
     status: testing ? 'testing' : entry.status?.kind ?? 'untested',
     statusTitle: entry.status

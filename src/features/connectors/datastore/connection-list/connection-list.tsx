@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import {
   ArrowSquareOut, CaretDown, CaretLeft, CaretRight,
-  CaretUpDown, Database, DotsThree, GearSix, LockSimple,
+  CaretUpDown, Database, DotsThree, GearSix,
   MagnifyingGlass, PencilSimple, Plus, SpinnerGap, Star, Tag, Trash, X,
 } from '@phosphor-icons/react'
 import {
@@ -17,15 +17,13 @@ import { ConnectionFilterMenu } from './filter-menu'
 import { filterConnections, unassignedProject } from './filter'
 import { ConnectionProjectLinks } from './project-links'
 import { ConnectionSelectionDock } from './selection-dock'
+import { ConnectionTarget } from './connection-target'
 import styles from './connection-list.module.css'
 
-type Column = 'target' | 'projects' | 'tags' | 'access' | 'status'
+type Column = 'target' | 'projects' | 'tags' | 'account' | 'authSource' | 'status'
 type SortColumn = 'name' | 'target' | 'projects' | 'tags' | 'status'
 const statusNames: Record<ConnectionListStatus, string> = {
   untested: '未测试', testing: '测试中', passed: '测试通过', failed: '连接失败',
-}
-const columnNames: Record<Exclude<Column, 'target'>, string> = {
-  projects: '关联项目', tags: '标签', access: '默认访问', status: '状态',
 }
 const tagColors = ['blue', 'violet', 'green', 'orange', 'neutral'] as const
 
@@ -80,7 +78,7 @@ function RowActions({ row, pending, onOpen, onEdit, onRemove, onManageTags }: {
 
 export function ConnectionList(props: ConnectionListProps) {
   const {
-    label, targetLabel, scopeKey, rows, projects, loading, error, pendingIds,
+    label, targetLabel, accountLabel, authSourceLabel, scopeKey, rows, projects, loading, error, pendingIds,
     headerActions, onBack, onCreate, onRetry, onOpen, onEdit,
     onRemove, onOpenProject, onManageTags, onFavorite, onSelectionChange: changeSelection,
     selectedIds: selection, batchProgress, batchResult, onBatchAction, onDismissBatchResult,
@@ -116,7 +114,9 @@ export function ConnectionList(props: ConnectionListProps) {
   const allPageSelected = pageRows.length > 0 && pageRows.every(row => selectedIds.includes(row.id))
   const somePageSelected = pageRows.some(row => selectedIds.includes(row.id))
   const filteredActive = Boolean(search || projectFilter.length || tagFilter.length || onlyFavorites)
-  const visibleColumnCount = 8 - hiddenColumns.length
+  const columnNames = { target: targetLabel, projects: '关联项目', tags: '标签', account: accountLabel, authSource: authSourceLabel, status: '状态' }
+  const columns = (Object.keys(columnNames) as Column[]).filter(column => columnNames[column])
+  const visibleColumnCount = 3 + columns.filter(column => !hiddenColumns.includes(column)).length
 
   function selectPage(checked: boolean) {
     const pageIds = new Set(pageRows.map(row => row.id))
@@ -169,9 +169,9 @@ export function ConnectionList(props: ConnectionListProps) {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>显示列</DropdownMenuLabel>
               <DropdownMenuCheckboxItem checked disabled>连接名称</DropdownMenuCheckboxItem>
-              {(['target', 'projects', 'tags', 'access', 'status'] as const).map(column => <DropdownMenuCheckboxItem key={column}
+              {columns.map(column => <DropdownMenuCheckboxItem key={column}
                 checked={!hiddenColumns.includes(column)} onCheckedChange={checked => setHiddenColumns(current => checked ? current.filter(item => item !== column) : [...current, column])}
-                onSelect={event => event.preventDefault()}>{column === 'target' ? targetLabel : columnNames[column]}</DropdownMenuCheckboxItem>)}
+                onSelect={event => event.preventDefault()}>{columnNames[column]}</DropdownMenuCheckboxItem>)}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -184,7 +184,8 @@ export function ConnectionList(props: ConnectionListProps) {
             {!hiddenColumns.includes('target') && <col className={styles.targetCol} />}
             {!hiddenColumns.includes('projects') && <col className={styles.projectCol} />}
             {!hiddenColumns.includes('tags') && <col className={styles.tagsCol} />}
-            {!hiddenColumns.includes('access') && <col className={styles.accessCol} />}
+            {accountLabel && !hiddenColumns.includes('account') && <col className={styles.accountCol} />}
+            {authSourceLabel && !hiddenColumns.includes('authSource') && <col className={styles.accountCol} />}
             {!hiddenColumns.includes('status') && <col className={styles.statusCol} />}
             <col className={styles.actionsCol} />
           </colgroup>
@@ -196,7 +197,8 @@ export function ConnectionList(props: ConnectionListProps) {
             {!hiddenColumns.includes('target') && sortHeader('target', targetLabel)}
             {!hiddenColumns.includes('projects') && sortHeader('projects', '关联项目')}
             {!hiddenColumns.includes('tags') && sortHeader('tags', '标签')}
-            {!hiddenColumns.includes('access') && <th scope="col">默认访问</th>}
+            {accountLabel && !hiddenColumns.includes('account') && <th scope="col">{accountLabel}</th>}
+            {authSourceLabel && !hiddenColumns.includes('authSource') && <th scope="col">{authSourceLabel}</th>}
             {!hiddenColumns.includes('status') && sortHeader('status', '状态')}
             <th scope="col">操作</th>
           </tr></thead>
@@ -216,7 +218,7 @@ export function ConnectionList(props: ConnectionListProps) {
                       title={row.favorite ? '取消收藏' : '收藏连接'} aria-pressed={row.favorite} disabled={pending}
                       onClick={() => onFavorite(row, !row.favorite)}><Star size={15} weight={row.favorite ? 'fill' : 'regular'} /></button>
                   </div></td>
-                  {!hiddenColumns.includes('target') && <td><span className={styles.target} title={row.targetTitle}>{row.target}</span></td>}
+                  {!hiddenColumns.includes('target') && <td><ConnectionTarget row={row} label={targetLabel} /></td>}
                   {!hiddenColumns.includes('projects') && <td><ConnectionProjectLinks ids={row.projectIds} names={projectNames} onOpen={onOpenProject} /></td>}
                   {!hiddenColumns.includes('tags') && <td><div className={styles.chips}>
                     {row.tags.slice(0, 2).map(item => <button type="button" key={item} className={styles.tagChip} data-color={tagColor(item)}
@@ -224,7 +226,8 @@ export function ConnectionList(props: ConnectionListProps) {
                     {row.tags.length > 2 && <button type="button" className={styles.projectChip} disabled={pending} title={row.tags.join('、')} onClick={() => onManageTags(row)}>+{row.tags.length - 2}</button>}
                     {!row.tags.length && <span className={styles.absent} aria-label="无标签">—</span>}
                   </div></td>}
-                  {!hiddenColumns.includes('access') && <td><span className={styles.access} title="每次连接默认只读；当前会话可在工作台显式解锁写入，不改变数据库账号权限。"><LockSimple size={15} />只读</span></td>}
+                  {accountLabel && !hiddenColumns.includes('account') && <td><span className={styles.account} title={row.account}>{row.account || '—'}</span></td>}
+                  {authSourceLabel && !hiddenColumns.includes('authSource') && <td><span className={styles.account} title={row.authSource}>{row.authSource || '—'}</span></td>}
                   {!hiddenColumns.includes('status') && <td><span className={styles.status} data-status={row.status}
                     title={row.statusTitle ?? statusNames[row.status]}>{row.status === 'testing' ? <SpinnerGap size={12} className={styles.spinner} /> : <i aria-hidden="true" />}{statusNames[row.status]}</span></td>}
                   <td><RowActions row={row} pending={pending} onOpen={onOpen} onEdit={onEdit} onRemove={onRemove} onManageTags={onManageTags} /></td>

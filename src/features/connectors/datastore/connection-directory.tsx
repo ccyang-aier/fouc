@@ -158,7 +158,7 @@ function ConnectionDirectory({ provider, workspaceId, onBack, onOpenProject, onW
   const connectSelected = (password: string, options?: DatabaseConnectionOptionsInput) => connect(dialog!.connection!, password, options, true).then(() => undefined);
   const testSelected = (password: string, options?: DatabaseConnectionOptionsInput) => connect(dialog!.connection!, password, options, false);
   return <>
-    <ConnectionList label={descriptor.label} targetLabel={descriptor.targetLabel} scopeKey={`${workspaceId}:${provider}`}
+    <ConnectionList label={descriptor.label} targetLabel={descriptor.targetLabel} accountLabel={descriptor.accountLabel} authSourceLabel={descriptor.authSourceLabel} scopeKey={`${workspaceId}:${provider}`}
       rows={connections.filter(entry => entry.config.provider === provider && entry.workspaceId === workspaceId).map(entry => connectionListRow(entry, testingId === entry.id))}
       projects={projects} loading={loading} error={error} pendingIds={pendingIds} selectedIds={selection} batchProgress={batchProgress} batchResult={batchResult}
       headerActions={<ConnectionConfigTransferActions workspaceId={workspaceId} provider={provider} connections={connections} selectedIds={selection} disabled={loading || busy || Boolean(batchProgress)} onImported={() => setRevision(value => value + 1)} />}

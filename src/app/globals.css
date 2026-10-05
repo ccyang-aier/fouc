@@ -63,6 +63,11 @@
   --menu-warning-ink: var(--warn-ink);
   --menu-warning-hover-bg: #faedcc;
   --menu-warning-hover-ink: #875510;
+  /* 紧凑操作按钮与模态框底栏尺寸；各业务界面只安排内容，不另定高度。 */
+  --action-hover-bg: #e1e7ef;
+  --dialog-action-height: 30px;
+  --dialog-footer-block: 8px;
+  --dialog-footer-inset: 22px;
 
   /* ── 字号基准（字体族默认栈由 @theme 定义，属性映射见下方） ── */
   --ui-size: 13px;
@@ -126,6 +131,7 @@ html[data-theme="dark"] {
   --menu-item-hover-bg: #30363c;
   --menu-warning-hover-bg: #4b3920;
   --menu-warning-hover-ink: #f0c979;
+  --action-hover-bg: #343e49;
 
   --wt-sidebar-standard-panel: #141619;
   --wt-sidebar-edge: var(--line);
@@ -412,6 +418,32 @@ input {
 .fouc-menu-item:is(:hover, :focus-visible, [data-highlighted], [data-state="open"]):not(:disabled):not([data-disabled]):not([aria-disabled="true"]) svg {
   color: inherit;
 }
+.fouc-action:is(:hover, :focus-visible):not(:disabled) { background: var(--action-hover-bg); }
+.fouc-action[data-variant="destructive"]:is(:hover, :focus-visible):not(:disabled) { background: var(--menu-danger-hover-bg); color: var(--menu-danger-hover-ink); }
+.fouc-menu-checkbox { display: grid; place-items: center; width: 14px; height: 14px; border: 1px solid var(--line-strong); border-radius: 3px; background: var(--panel); }
+[data-state="checked"] > .fouc-menu-checkbox { border-color: var(--accent); background: var(--accent); color: white; }
+.fouc-menu-checkbox svg { width: 11px; height: 11px; }
+/* 原生 dialog、共享 ModalDialog 和显式标记的动作栏使用同一契约。
+   选择器覆盖旧局部尺寸，避免懒加载 CSS 的顺序再次改变按钮高度。 */
+html :is(dialog, [role="dialog"], [role="alertdialog"]) :is(footer:has(button), .fouc-dialog-footer) {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-top: 0;
+  padding: var(--dialog-footer-block) var(--dialog-footer-inset);
+}
+html :is(dialog, [role="dialog"], [role="alertdialog"]) :is(footer:has(button), .fouc-dialog-footer) button {
+  box-sizing: border-box;
+  height: var(--dialog-action-height);
+  min-height: var(--dialog-action-height);
+  padding-block: 0;
+  line-height: 1;
+  white-space: nowrap;
+}
+@media (max-width: 540px) { :root { --dialog-footer-inset: 13px; } }
 .menu-surface :where([role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"], [role="option"], [data-menu-reveal], button):not([data-menu-reveal] *) {
   animation: menu-item-pop-in 400ms cubic-bezier(.22, 1, .36, 1) var(--menu-item-delay, 0ms) backwards;
 }

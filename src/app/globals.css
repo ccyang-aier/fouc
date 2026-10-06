@@ -17,7 +17,7 @@
   --line: rgba(32, 33, 38, 0.14);
   --line-strong: rgba(32, 33, 38, 0.22);
   /* 控件与卡片使用不透明描边，圆角与直边保持同一清晰度。 */
-  --control-border: #d2d3d6;
+  --control-border: #c3c5c9;
   --accent: #3e63dd;
   --accent-strong: #3355c9;
   --accent-ink: #3a55b0;
@@ -68,7 +68,7 @@
   --menu-warning-hover-bg: #faedcc;
   --menu-warning-hover-ink: #875510;
   /* 紧凑操作按钮与模态框底栏尺寸；各业务界面只安排内容，不另定高度。 */
-  --action-hover-bg: #efefef;
+  --action-hover-bg: #e8e8e8;
   --dialog-action-height: 30px;
   --dialog-footer-block: 8px;
   --dialog-footer-inset: 22px;
@@ -82,7 +82,7 @@
   --font-chat: var(--font-sans);
 
   /* ── 侧栏材质令牌（供 sidebar-material.css 消费） ── */
-  --wt-sidebar-standard-panel: #f1f2f4;
+  --wt-sidebar-standard-panel: #eceef1;
   --wt-sidebar-edge: var(--line);
   /* 侧栏交互悬停面：浅白色，与标准面板协调 */
   --sidebar-row-bg: #ffffff;

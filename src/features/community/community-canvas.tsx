@@ -301,7 +301,7 @@ export function CommunityCanvas() {
               <button type="button" onClick={() => notify("作品提交通道即将开放")} className="flex h-[30px] items-center gap-1.5 rounded-[6px] bg-[var(--accent)] px-3.5 text-[11px] font-semibold text-white shadow-[0_3px_9px_color-mix(in_srgb,var(--accent)_18%,transparent)] outline-none hover:bg-[var(--accent-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
                 <Plus className="size-3.5" weight="bold" />提交资源
               </button>
-              <button type="button" aria-label="更多社区操作" onClick={() => notify("更多社区能力即将开放")} className="fouc-action flex size-[30px] items-center justify-center rounded-[6px] border border-[var(--control-border)] text-[var(--muted-strong)] outline-none hover:border-[var(--line-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
+              <button type="button" aria-label="更多社区操作" onClick={() => notify("更多社区能力即将开放")} className="fouc-action flex size-[30px] items-center justify-center rounded-[6px] border border-[var(--control-border)] text-[var(--muted-strong)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
                 <DotsThree className="size-[18px]" weight="bold" />
               </button>
             </div>
@@ -353,7 +353,7 @@ export function CommunityCanvas() {
               </div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button type="button" className="flex h-8 w-[84px] items-center justify-between gap-1 whitespace-nowrap rounded-[6px] border border-[var(--control-border)] px-2 text-[9.5px] text-[var(--ink-soft)] outline-none hover:border-[var(--line-strong)]">
+                  <button type="button" className="flex h-8 w-[84px] items-center justify-between gap-1 whitespace-nowrap rounded-[6px] border border-[var(--control-border)] px-2 text-[9.5px] text-[var(--ink-soft)] outline-none">
                     {SORT_OPTIONS.find((item) => item.id === sort)?.label}<CaretDown className="size-3 text-[var(--muted)]" />
                   </button>
                 </DropdownMenuTrigger>

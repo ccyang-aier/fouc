@@ -6,6 +6,11 @@
   --action-state-ink: var(--ink);
 }
 
+/* 底色即时出现；颜色、描边与按下位移仍可柔和过渡。 */
+html .fouc-action {
+  transition-property: color, border-color, box-shadow, transform;
+}
+
 .fouc-action[data-variant="destructive"] {
   --action-state-bg: var(--menu-danger-hover-bg);
   --action-state-ink: var(--menu-danger-hover-ink);

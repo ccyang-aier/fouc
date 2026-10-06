@@ -8,13 +8,10 @@
   border: 1px solid transparent;
   color: var(--muted-strong);
   transition:
-    background-color 150ms,
-    border-color 150ms,
-    box-shadow 150ms,
     color 150ms,
     transform 150ms;
 }
-.sidebar-nav-row:is(:hover, :focus-visible, :focus-within, [data-active="true"], [aria-expanded="true"]) {
+.sidebar-nav-row:is(:hover, :focus-visible, :focus-within, [data-active="true"], [aria-expanded="true"], :has(> button[aria-expanded="true"])) {
   border-color: var(--sidebar-row-border);
   background: var(--sidebar-row-bg);
   color: var(--ink);

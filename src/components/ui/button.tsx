@@ -12,7 +12,7 @@ const buttonVariants = cva(
         default:
           "bg-[var(--accent)] text-white shadow-[0_4px_12px_color-mix(in_srgb,var(--accent)_22%,transparent)] hover:bg-[var(--accent-strong)]",
         outline:
-          "fouc-action border border-[var(--control-border)] bg-panel text-[var(--ink)] hover:border-[var(--line-strong)]",
+          "fouc-action border border-[var(--control-border)] bg-panel text-[var(--ink)]",
         ghost:
           "fouc-action text-[var(--muted-strong)]",
         subtle:

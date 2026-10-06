@@ -149,7 +149,7 @@ export function ConnectorsCanvas({ onWorkbenchFocus, onOpenProject }: { onWorkbe
         <div className="flex min-w-0 items-center gap-2.5">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button type="button" className="fouc-action flex h-8 min-w-[112px] items-center justify-between gap-2 rounded-[6px] border border-[var(--control-border)] bg-panel px-2.5 text-[10px] text-[var(--ink-soft)] outline-none transition-colors hover:border-[var(--line-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
+              <button type="button" className="fouc-action flex h-8 min-w-[112px] items-center justify-between gap-2 rounded-[6px] border border-[var(--control-border)] bg-panel px-2.5 text-[10px] text-[var(--ink-soft)] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
                 <span className="flex min-w-0 items-center gap-1.5">
                   <span className="truncate">{categoryLabel}</span>
                   <span className="text-[9px] tabular-nums text-[var(--muted)]">{categoryCounts.get(category) ?? 0}</span>
@@ -189,7 +189,7 @@ export function ConnectorsCanvas({ onWorkbenchFocus, onOpenProject }: { onWorkbe
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button type="button" className="fouc-action flex h-8 w-[92px] shrink-0 items-center justify-between gap-1 rounded-[6px] border border-[var(--control-border)] bg-panel px-2.5 text-[9.5px] text-[var(--ink-soft)] outline-none transition-colors hover:border-[var(--line-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] max-[760px]:hidden">
+              <button type="button" className="fouc-action flex h-8 w-[92px] shrink-0 items-center justify-between gap-1 rounded-[6px] border border-[var(--control-border)] bg-panel px-2.5 text-[9.5px] text-[var(--ink-soft)] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] max-[760px]:hidden">
                 {SORT_OPTIONS.find((option) => option.id === sort)?.label}
                 <CaretDown className="size-3 text-[var(--muted)]" weight="bold" />
               </button>

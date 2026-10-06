@@ -1,12 +1,12 @@
 .card {
-  border: 1px solid var(--control-border);
+  border: 1.5px solid var(--control-border);
   border-radius: 8px;
   background: var(--panel);
-  transition: border-color 150ms ease, background-color 150ms ease;
+  transition: border-color 120ms ease;
 }
 
 .card:hover {
-  border-color: var(--line-strong);
+  border-color: var(--control-border);
   background: var(--surface-subtle);
 }
 

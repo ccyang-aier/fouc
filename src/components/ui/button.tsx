@@ -5,18 +5,18 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md text-[12px] font-medium outline-none transition-[color,background-color,border-color,box-shadow,transform] disabled:pointer-events-none disabled:opacity-45 focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-panel active:translate-y-px data-[state=open]:bg-wash [&_svg]:pointer-events-none [&_svg]:shrink-0",
+  "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md text-[12px] font-medium outline-none transition-[color,background-color,border-color,box-shadow,transform] disabled:pointer-events-none disabled:opacity-45 focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-panel active:translate-y-px [&_svg]:pointer-events-none [&_svg]:shrink-0",
   {
     variants: {
       variant: {
         default:
           "bg-[var(--accent)] text-white shadow-[0_4px_12px_color-mix(in_srgb,var(--accent)_22%,transparent)] hover:bg-[var(--accent-strong)]",
         outline:
-          "border border-[var(--line)] bg-panel/80 text-[var(--ink)] hover:border-[var(--line-strong)] hover:bg-[var(--surface-subtle)]",
+          "fouc-action border border-[var(--control-border)] bg-panel text-[var(--ink)] hover:border-[var(--line-strong)]",
         ghost:
-          "text-[var(--muted-strong)] hover:bg-wash hover:text-[var(--ink)]",
+          "fouc-action text-[var(--muted-strong)]",
         subtle:
-          "border border-[var(--line)] bg-[var(--surface-subtle)] text-[var(--muted-strong)] hover:bg-surface-hover hover:text-[var(--ink)]",
+          "fouc-action border border-[var(--control-border)] bg-[var(--surface-subtle)] text-[var(--muted-strong)]",
       },
       size: {
         default: "h-9 px-4",

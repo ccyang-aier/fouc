@@ -47,14 +47,14 @@ function RowActions({ row, pending, onOpen, onEdit, onRemove, onManageTags }: {
   return <div className={styles.rowActions}>
     <Tooltip>
       <TooltipTrigger asChild>
-        <button type="button" className={styles.iconButton} aria-label={`打开 ${row.name} 工作台`}
+        <button type="button" className={`fouc-action ${styles.iconButton}`} aria-label={`打开 ${row.name} 工作台`}
           disabled={pending || row.status !== 'passed'} onClick={() => onOpen(row)}><ArrowSquareOut size={16} weight="bold" /></button>
       </TooltipTrigger>
       <TooltipContent>{row.status === 'passed' ? '打开工作台' : '请先测试连接'}</TooltipContent>
     </Tooltip>
     <Tooltip>
       <TooltipTrigger asChild>
-        <button type="button" className={styles.iconButton} aria-label={`编辑 ${row.name}`}
+        <button type="button" className={`fouc-action ${styles.iconButton}`} aria-label={`编辑 ${row.name}`}
           disabled={pending} onClick={() => onEdit(row)}><PencilSimple size={16} weight="bold" /></button>
       </TooltipTrigger>
       <TooltipContent>编辑连接</TooltipContent>
@@ -166,11 +166,11 @@ export function ConnectionList(props: ConnectionListProps) {
           <MagnifyingGlass size={16} aria-hidden="true" />
           <input aria-label="搜索连接、项目或标签" placeholder="搜索连接、项目或标签" value={search}
             onChange={event => { setSearch(event.target.value); setPage(1) }} />
-          {search && <button type="button" aria-label="清除搜索" onClick={() => { setSearch(''); setPage(1) }}><X size={12} /></button>}
+          {search && <button type="button" className="fouc-action" aria-label="清除搜索" onClick={() => { setSearch(''); setPage(1) }}><X size={12} /></button>}
         </div>
         <ConnectionFilterMenu label="关联项目" values={projectFilter} options={projectOptions} onChange={values => { setProjectFilter(values); setPage(1) }} />
         <ConnectionFilterMenu label="标签" values={tagFilter} options={tags.map(value => ({ value, label: value }))} onChange={values => { setTagFilter(values); setPage(1) }} />
-        <label className={styles.favoriteFilter}><input type="checkbox" checked={onlyFavorites}
+        <label className={`fouc-action ${styles.favoriteFilter}`}><input type="checkbox" checked={onlyFavorites}
           onChange={event => { setOnlyFavorites(event.target.checked); setPage(1) }} />仅收藏</label>
         <div className={styles.toolbarEnd}>
           <DropdownMenu>

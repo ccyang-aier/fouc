@@ -6,6 +6,7 @@ import { toneChips, type IconTone } from "@/lib/icon-tones"
 import { cn } from "@/lib/utils"
 
 import type { CommunitySortKey } from "./community-canvas"
+import styles from "./community-cards.module.css"
 
 export type CommunityLibraryItem = {
   id: string
@@ -155,10 +156,8 @@ export function CommunityAssetCard({
       onDoubleClick={onOpen}
       onKeyDown={onKeyDown}
       className={cn(
-        "group relative min-w-0 cursor-default rounded-[8px] border bg-panel p-3 outline-none transition-[border-color,box-shadow,transform] duration-150",
-        selected
-          ? "border-[var(--accent)] shadow-[0_0_0_1px_var(--accent)]"
-          : "border-[var(--line)] shadow-[0_1px_2px_rgba(20,20,18,0.025)] hover:-translate-y-px hover:border-[var(--line-strong)] hover:shadow-[0_6px_18px_-12px_rgba(20,24,32,0.35)]",
+        "group relative min-w-0 cursor-pointer p-3 outline-none",
+        styles.card,
       )}
     >
       <span

@@ -41,12 +41,12 @@ export function DocumentEditorHeader({
 
   return <header className={styles.header}>
     <div className={styles.leading}>
-      <button type="button" className={styles.folderButton} aria-label={`打开所属文件夹：${folderName}`} onClick={onOpenSidebar} title={`展开知识库侧栏 · ${folderName}`}>
+      <button type="button" className={`fouc-action ${styles.folderButton}`} aria-label={`打开所属文件夹：${folderName}`} onClick={onOpenSidebar} title={`展开知识库侧栏 · ${folderName}`}>
         <FolderSimple aria-hidden size={18} weight="duotone" />
         <span className={styles.folderName}>{folderName}</span>
       </button>
       <span className={styles.divider} aria-hidden>/</span>
-      <button ref={navigation?.outlineTrigger} type="button" className={styles.iconButton} aria-label={pdfNavigation ? 'PDF 缩略图' : '文档目录'} title={pdfNavigation ? (pdfNavigation.open ? '收起缩略图' : '展开缩略图') : (navigation?.outlineOpen ? '收起目录' : '展开目录')} aria-expanded={pdfNavigation?.open ?? navigation?.outlineOpen ?? false} aria-controls={pdfNavigation?.id ?? navigation?.outlineId} disabled={!pdfNavigation && !navigation?.onToggleOutline} onClick={pdfNavigation?.onToggle ?? navigation?.onToggleOutline}><List aria-hidden size={16} weight="bold" /></button>
+      <button ref={navigation?.outlineTrigger} type="button" className={`fouc-action ${styles.iconButton}`} aria-label={pdfNavigation ? 'PDF 缩略图' : '文档目录'} title={pdfNavigation ? (pdfNavigation.open ? '收起缩略图' : '展开缩略图') : (navigation?.outlineOpen ? '收起目录' : '展开目录')} aria-expanded={pdfNavigation?.open ?? navigation?.outlineOpen ?? false} aria-controls={pdfNavigation?.id ?? navigation?.outlineId} disabled={!pdfNavigation && !navigation?.onToggleOutline} onClick={pdfNavigation?.onToggle ?? navigation?.onToggleOutline}><List aria-hidden size={16} weight="bold" /></button>
       <DocumentStarButton starred={starred} onToggle={onToggleStar} />
     </div>
     <div className={styles.actions}>
@@ -60,7 +60,7 @@ export function DocumentEditorHeader({
           {copyState !== 'idle' ? <p role="status" className={styles.shareStatus}>{copyState === 'copied' ? '已复制到剪贴板' : '复制失败，请检查浏览器权限'}</p> : null}
         </DropdownMenuContent>
       </DropdownMenu>
-      <button type="button" aria-label="新建文档" className={`${styles.outlineButton} ${styles.createButton}`} disabled={!canCreateDocument} title={canCreateDocument ? '新建文档' : '没有创建文档的权限'} onClick={onCreateDocument}><Plus aria-hidden size={16} weight="bold" /><span className={styles.createLabel}>新建</span></button>
+      <button type="button" aria-label="新建文档" className={`fouc-action ${styles.outlineButton} ${styles.createButton}`} disabled={!canCreateDocument} title={canCreateDocument ? '新建文档' : '没有创建文档的权限'} onClick={onCreateDocument}><Plus aria-hidden size={16} weight="bold" /><span className={styles.createLabel}>新建</span></button>
       <DocumentMoreMenu editor={editor} title={title} starred={starred} onToggleStar={onToggleStar} actions={menuActions} />
     </div>
   </header>;

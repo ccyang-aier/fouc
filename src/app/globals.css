@@ -1,5 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "../components/ui/interaction-states.css";
+@import "../components/sidebar-nav-row.css";
 
 /* ── 浅色主题令牌（默认） ── */
 :root {
@@ -7,13 +9,15 @@
   --panel: #ffffff;
   --elevated: #ffffff;
   --surface-subtle: #fafafa;
-  --surface-hover: #f4f5f5;
+  --surface-hover: var(--action-hover-bg);
   --ink: #202126;
   --ink-soft: #3f4249;
   --muted-strong: #6c6e75;
   --muted: #9699a1;
   --line: rgba(32, 33, 38, 0.14);
   --line-strong: rgba(32, 33, 38, 0.22);
+  /* 控件与卡片使用不透明描边，圆角与直边保持同一清晰度。 */
+  --control-border: #d2d3d6;
   --accent: #3e63dd;
   --accent-strong: #3355c9;
   --accent-ink: #3a55b0;
@@ -64,7 +68,7 @@
   --menu-warning-hover-bg: #faedcc;
   --menu-warning-hover-ink: #875510;
   /* 紧凑操作按钮与模态框底栏尺寸；各业务界面只安排内容，不另定高度。 */
-  --action-hover-bg: #e1e7ef;
+  --action-hover-bg: #efefef;
   --dialog-action-height: 30px;
   --dialog-footer-block: 8px;
   --dialog-footer-inset: 22px;
@@ -78,10 +82,13 @@
   --font-chat: var(--font-sans);
 
   /* ── 侧栏材质令牌（供 sidebar-material.css 消费） ── */
-  --wt-sidebar-standard-panel: #fafbfc;
+  --wt-sidebar-standard-panel: #f1f2f4;
   --wt-sidebar-edge: var(--line);
   /* 侧栏交互悬停面：浅白色，与标准面板协调 */
-  --wt-sidebar-hover: rgb(255 255 255 / 0.55);
+  --sidebar-row-bg: #ffffff;
+  --sidebar-row-border: var(--line);
+  --sidebar-row-shadow: 0 1px 2px rgb(20 20 24 / 0.05);
+  --wt-sidebar-hover: var(--sidebar-row-bg);
 }
 
 /* ── 深色主题令牌 ── */
@@ -90,13 +97,14 @@ html[data-theme="dark"] {
   --panel: #17191c;
   --elevated: #1e2124;
   --surface-subtle: #1a1d20;
-  --surface-hover: #212428;
+  --surface-hover: var(--action-hover-bg);
   --ink: #e9ecef;
   --ink-soft: #c7ccd1;
   --muted-strong: #949ca4;
   --muted: #707880;
   --line: rgba(233, 236, 239, 0.16);
   --line-strong: rgba(233, 236, 239, 0.24);
+  --control-border: #484b50;
   --accent: #6681f5;
   --accent-strong: #7f97f8;
   --accent-ink: #9db2fa;
@@ -130,10 +138,13 @@ html[data-theme="dark"] {
   --warn-soft-line: rgba(217, 167, 67, 0.28);
   --menu-warning-hover-bg: #4b3920;
   --menu-warning-hover-ink: #f0c979;
-  --action-hover-bg: #343e49;
+  --action-hover-bg: #303235;
 
   --wt-sidebar-standard-panel: #141619;
   --wt-sidebar-edge: var(--line);
+  --sidebar-row-bg: #22252a;
+  --sidebar-row-border: var(--line);
+  --sidebar-row-shadow: none;
   --wt-sidebar-hover: rgb(255 255 255 / 0.06);
 }
 
@@ -393,12 +404,6 @@ input {
 }
 
 .menu-surface[data-state="closed"] { animation: menu-pop-out 140ms ease-out both; }
-/* Tooltip 与菜单会共用 data-state；菜单展开以专属的 aria-expanded 为准。
-   非 layer 规则保证展开底色不被业务组件的透明背景覆盖。 */
-.dropdown-menu-trigger[aria-expanded="true"] {
-  background: var(--action-hover-bg);
-  color: var(--ink);
-}
 /* 共享菜单项契约；Radix 与原生菜单均使用 fouc-menu-item，禁用项不响应高亮。 */
 .fouc-menu-item {
   --menu-state-bg: var(--menu-item-hover-bg);
@@ -426,8 +431,6 @@ input {
 .fouc-menu-item:is(:hover, :focus-visible, [data-highlighted], [data-state="open"]):not(:disabled):not([data-disabled]):not([aria-disabled="true"]) svg {
   color: inherit;
 }
-.fouc-action:is(:hover, :focus-visible):not(:disabled) { background: var(--action-hover-bg); }
-.fouc-action[data-variant="destructive"]:is(:hover, :focus-visible):not(:disabled) { background: var(--menu-danger-hover-bg); color: var(--menu-danger-hover-ink); }
 .fouc-menu-checkbox { display: grid; place-items: center; width: 14px; height: 14px; border: 1px solid var(--line-strong); border-radius: 3px; background: var(--panel); }
 [data-state="checked"] > .fouc-menu-checkbox { border-color: var(--accent); background: var(--accent); color: white; }
 .fouc-menu-checkbox svg { width: 11px; height: 11px; }
@@ -492,18 +495,6 @@ html :is(dialog, [role="dialog"], [role="alertdialog"]) :is(footer:has(button), 
     border-color: var(--floating-border);
     box-shadow: var(--side-panel-shadow);
   }
-}
-
-/* Radix 菜单打开时保持 hover 面，不额外描边或改变控件尺寸。 */
-.dropdown-menu-trigger[data-state="open"] {
-  background: var(--surface-hover) !important;
-  color: var(--ink) !important;
-  box-shadow: none !important;
-}
-
-html[data-theme="dark"] .dropdown-menu-trigger[data-state="open"] {
-  background: var(--surface-hover) !important;
-  box-shadow: none !important;
 }
 
 :where(

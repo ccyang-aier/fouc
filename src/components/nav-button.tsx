@@ -11,8 +11,6 @@ import type { Icon } from "@phosphor-icons/react"
 
 import { cn } from "@/lib/utils"
 
-import "./sidebar-nav-row.css"
-
 export type SidebarRowItem = {
   id: string
   label: string

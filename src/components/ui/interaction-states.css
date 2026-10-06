@@ -1,0 +1,22 @@
+/* 共享中性操作状态。业务组件负责布局，不重复定义 hover / 展开底色。
+   aria-expanded 属于菜单/弹层；Tooltip 共用的 data-state 不参与判断。
+   html 前缀让状态契约稳定高于局部控件的默认背景，不依赖 CSS 加载顺序。 */
+.fouc-action {
+  --action-state-bg: var(--action-hover-bg);
+  --action-state-ink: var(--ink);
+}
+
+.fouc-action[data-variant="destructive"] {
+  --action-state-bg: var(--menu-danger-hover-bg);
+  --action-state-ink: var(--menu-danger-hover-ink);
+}
+
+.fouc-action[data-variant="warning"] {
+  --action-state-bg: var(--menu-warning-hover-bg);
+  --action-state-ink: var(--menu-warning-hover-ink);
+}
+
+html .fouc-action:is(:hover, :focus-visible, :active, [aria-expanded="true"]):not(:disabled):not([aria-disabled="true"]):not([data-disabled]) {
+  background: var(--action-state-bg);
+  color: var(--action-state-ink);
+}

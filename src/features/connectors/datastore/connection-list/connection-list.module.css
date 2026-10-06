@@ -58,14 +58,12 @@
 .filterButton span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .filterButton > svg { flex-shrink: 0; }
 .filterButton small { display: grid; place-items: center; min-width: 17px; height: 17px; border-radius: 3px; padding: 0 3px; background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent-ink); font-size: 11px; font-weight: 600; }
-.filterButton:hover { background: var(--surface-subtle); }
 .filterButton[data-active='true'] { border-color: var(--accent-soft-line); color: var(--accent-ink); background: var(--accent-soft); }
 .filterMenu { max-height: 320px; overflow-y: auto; }
-.favoriteFilter { display: flex; align-items: center; gap: 8px; margin-left: 4px; color: var(--list-ink); white-space: nowrap; font-size: max(13px, var(--ui-size)); cursor: pointer; }
+.favoriteFilter { display: flex; height: 30px; align-items: center; gap: 8px; border-radius: 5px; padding: 0 6px; color: var(--list-ink); white-space: nowrap; font-size: max(13px, var(--ui-size)); cursor: pointer; }
 .directory input[type='checkbox'] { width: 13px; height: 13px; flex-shrink: 0; margin: 0; border-radius: 2px; accent-color: var(--list-accent); cursor: pointer; }
 .toolbarEnd { display: flex; min-width: 0; flex: 1; align-items: center; justify-content: flex-end; gap: 14px; }
 .columnButton { display: inline-flex; height: 30px; flex-shrink: 0; align-items: center; gap: 7px; border: 1px solid var(--line-strong); border-radius: 5px; padding: 0 10px; color: var(--list-ink); background: var(--panel); font: inherit; font-size: max(13px, var(--ui-size)); }
-.columnButton:hover { background: var(--surface-hover); }
 
 .tableViewport { width: 100%; overflow-x: auto; }
 .table { width: 100%; min-width: 950px; table-layout: fixed; border-collapse: collapse; text-align: left; }
@@ -133,7 +131,6 @@
 .status[data-status='failed'] i { background: currentColor; }
 .rowActions { display: flex; align-items: center; justify-content: flex-start; gap: 6px; }
 .iconButton { display: inline-flex; width: 28px; height: 28px; flex: 0 0 28px; align-items: center; justify-content: center; border: 1px solid transparent; border-radius: 4px; padding: 0; background: transparent; color: var(--list-soft-ink); }
-.iconButton:hover:not(:disabled) { background: var(--surface-hover); color: var(--list-accent); }
 
 .error { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 11px; border: 1px solid color-mix(in srgb, var(--err-ink) 20%, var(--line)); border-radius: 5px; padding: 8px 10px; color: var(--err-ink); background: color-mix(in srgb, var(--err-ink) 4%, var(--panel)); font-size: max(13px, var(--ui-size)); }
 .error span { overflow-wrap: anywhere; }

@@ -9,7 +9,7 @@ export function DocumentStarButton({ starred, onToggle }: { starred: boolean; on
 
   return <button
     type="button"
-    className={styles.button}
+    className={`fouc-action ${styles.button}`}
     aria-label={label}
     title={label}
     aria-pressed={starred}

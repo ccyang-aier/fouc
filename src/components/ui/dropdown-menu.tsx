@@ -15,7 +15,7 @@ function DropdownMenuTrigger({
   return (
     <DropdownMenuPrimitive.Trigger
       className={cn(
-        "dropdown-menu-trigger",
+        "fouc-action dropdown-menu-trigger",
         className,
       )}
       {...props}

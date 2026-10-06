@@ -3,6 +3,8 @@
    激活时图标 duotone→fill 并做弹性缩放，标签做水平微弹。
    消费方：navigation-sidebar / sidebar-project-pane / settings-canvas。 */
 .sidebar-nav-row {
+  --action-state-bg: var(--sidebar-row-bg);
+  --action-state-ink: var(--ink);
   border: 1px solid transparent;
   color: var(--muted-strong);
   transition:
@@ -12,27 +14,16 @@
     color 150ms,
     transform 150ms;
 }
-.sidebar-nav-row:hover {
-  border-color: rgb(0 0 0 / 0.08);
-  background: rgb(255 255 255 / 0.9);
+.sidebar-nav-row:is(:hover, :focus-visible, :focus-within, [data-active="true"], [aria-expanded="true"]) {
+  border-color: var(--sidebar-row-border);
+  background: var(--sidebar-row-bg);
   color: var(--ink);
-  box-shadow: 0 1px 2px rgb(20 20 18 / 0.04);
-}
-.sidebar-nav-row:focus,
-.sidebar-nav-row:focus-within {
-  border-color: rgb(0 0 0 / 0.07);
-  background: rgb(255 255 255 / 0.9);
-  color: var(--ink);
-  box-shadow: 0 1px 2px rgb(20 20 18 / 0.04);
+  box-shadow: var(--sidebar-row-shadow);
 }
 .sidebar-nav-row:active {
   transform: scale(0.995);
 }
 .sidebar-nav-row[data-active="true"] {
-  border-color: rgb(0 0 0 / 0.07);
-  background: rgb(255 255 255 / 0.9);
-  color: var(--ink);
-  box-shadow: 0 1px 2px rgb(20 20 18 / 0.04);
   font-weight: 500;
 }
 .sidebar-nav-icon {
@@ -54,16 +45,6 @@
 }
 .sidebar-nav-row[data-active="true"] .sidebar-nav-label {
   animation: nav-label-activate 340ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-/* 深色主题：白底抬升面换为浅白洗染，去掉投影 */
-html[data-theme="dark"] .sidebar-nav-row:hover,
-html[data-theme="dark"] .sidebar-nav-row:focus,
-html[data-theme="dark"] .sidebar-nav-row:focus-within,
-html[data-theme="dark"] .sidebar-nav-row[data-active="true"] {
-  border-color: rgb(255 255 255 / 0.08);
-  background: rgb(255 255 255 / 0.06);
-  box-shadow: none;
 }
 
 @keyframes nav-icon-activate {

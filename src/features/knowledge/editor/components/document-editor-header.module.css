@@ -1,22 +1,19 @@
-.header { display: flex; flex: none; align-items: center; justify-content: space-between; gap: 20px; height: 48px; padding: 0 8px 0 22px; background: #fff; color: #191d25; }
+.header { display: flex; flex: none; align-items: center; justify-content: space-between; gap: 20px; height: 48px; padding: 0 8px 0 22px; background: var(--panel); color: var(--ink); }
 .leading, .actions { display: flex; align-items: center; min-width: 0; }
 .leading { gap: 4px; }
 .actions { flex: none; gap: 9px; }
 .presence { display:flex; align-items:center; flex:none; }
-.iconButton, .moreButton { display: grid; flex: none; place-items: center; border: 0; background: transparent; color: #202833; cursor: pointer; }
-.folderButton { display:flex; align-items:center; gap:6px; min-width:0; height:32px; padding:0 5px; border:0; border-radius:6px; background:transparent; color:#181d26; cursor:pointer; }
+.iconButton, .moreButton { display: grid; flex: none; place-items: center; border: 0; background: transparent; color: var(--ink-soft); cursor: pointer; }
+.folderButton { display:flex; align-items:center; gap:6px; min-width:0; height:32px; padding:0 5px; border:0; border-radius:6px; background:transparent; color:var(--ink); cursor:pointer; }
 .folderButton svg { flex:none; color:#9b52ef; }
 .folderName { max-width:160px; overflow:hidden; font-size:15px; font-weight:650; text-overflow:ellipsis; white-space:nowrap; }
-.folderButton:hover { background:#f3f5f8; }
 .iconButton:disabled { opacity:.4; cursor:default; }
-.divider { padding: 0 7px; color: #d6dfea; font-size: 21px; font-weight: 350; }
+.divider { padding: 0 7px; color: var(--line-strong); font-size: 21px; font-weight: 350; }
 .iconButton { width: 28px; height: 32px; border-radius: 6px; }
-.iconButton:hover, .moreButton:hover { background: #f3f5f8; }
 .avatar { display: grid; flex: none; width: 30px; height: 30px; place-items: center; border-radius: 50%; background: #3034ed; color: white; font-size: 15px; font-weight: 500; }
-.outlineButton { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 32px; padding: 0 10px; border: 1px solid #d7e0ec; border-radius: 6px; background: #fff; box-shadow: 0 1px 2px rgb(20 32 52 / 9%); color: #1a202b; font-size: 14px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.outlineButton { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 32px; padding: 0 10px; border: 1px solid var(--control-border); border-radius: 6px; background: var(--panel); color: var(--ink); font-size: 14px; font-weight: 600; white-space: nowrap; cursor: pointer; }
 .shareButton { padding-inline: 9px; }
 .createButton { padding-inline: 7px; }
-.outlineButton:hover { background: #f9fbfd; border-color: #b6c5d9; }
 .outlineButton:disabled { opacity: .48; cursor: not-allowed; }
 .moreButton { width: 28px; height: 32px; border-radius: 6px; }
 .header button:focus-visible { outline: 2px solid #0869cf; outline-offset: 2px; }

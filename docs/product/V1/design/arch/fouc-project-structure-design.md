@@ -356,6 +356,8 @@ Web 与桌面共享前端源码，分别由宿主适配和构建配置处理差�
 
 `src/lib/` 中的职责可按实际需要建立子目录，没有必要统一改名为 `platform/`。现有 UI 组件保留在 `src/components/`，模块私有组件保留在对应 feature 内。Web 与桌面使用同一前端源码，本身不构成拆出 `packages/ui` 的理由。树中的模块目录按实际业务建立，不提前创建空模块。
 
+共享交互状态归 `src/components/ui/interaction-states.css`，主题令牌归 `src/app/globals.css`。`Button`、`DropdownMenuTrigger` 与知识库 `IconButton` 统一应用 `fouc-action`：中性操作的悬停、键盘焦点、按下及菜单展开使用同一灰底；危险与警示操作沿用各自语义色。菜单展开以 `aria-expanded` 判断，避免 Tooltip 覆盖 `data-state` 后入口丢失反馈。侧栏共享背景与导航行令牌，业务模块不得以纯白背景覆盖侧栏材质；局部 CSS 只处理布局及业务特有呈现。知识库文档工具栏是模块私有组合组件，复用共享按钮和 Radix 菜单，不另建弹层与交互状态实现。
+
 ### 8.1 允许的依赖方向
 
 ```text

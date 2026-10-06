@@ -12,5 +12,4 @@
   cursor: pointer;
   transition: color 160ms ease, background-color 160ms ease;
 }
-.button:hover { background: var(--surface-hover); }
 .button:active svg { transform: scale(.9); }

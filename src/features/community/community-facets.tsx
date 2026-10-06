@@ -84,7 +84,7 @@ export function CommunityFacets({ type, domain, tag, typeCounts, domainCounts, t
   }
 
   return (
-    <aside aria-label={collapsed ? "社区资源分类（已收起）" : "社区资源分类"} style={{ width: collapsed ? 44 : width, flexBasis: collapsed ? 44 : width, background: "var(--panel)" }} className={cn("sidebar-material relative h-full shrink-0 overflow-hidden border-r border-[var(--wt-sidebar-edge)]", !dragging && "will-change-[width,flex-basis] transition-[width,flex-basis] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]")}>
+    <aside aria-label={collapsed ? "社区资源分类（已收起）" : "社区资源分类"} style={{ width: collapsed ? 44 : width, flexBasis: collapsed ? 44 : width }} className={cn("sidebar-material relative h-full shrink-0 overflow-hidden border-r border-[var(--wt-sidebar-edge)]", !dragging && "will-change-[width,flex-basis] transition-[width,flex-basis] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]")}>
       <div inert={!collapsed} aria-hidden={!collapsed} className={cn("absolute inset-0 flex w-11 flex-col items-center transition-[opacity,transform] duration-150", collapsed ? "delay-100 translate-x-0 opacity-100" : "pointer-events-none -translate-x-1 opacity-0")}>
         <button type="button" aria-label="展开社区侧栏" title="展开社区侧栏" onClick={() => setCollapsed(false)} className="mt-2.5 flex size-7 items-center justify-center rounded-[6px] text-[var(--muted)] outline-none hover:bg-sidebar-hover hover:text-[var(--ink-soft)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><CaretRight className="size-3.5" weight="bold" /></button>
         <div className="mt-2 flex flex-col gap-1">

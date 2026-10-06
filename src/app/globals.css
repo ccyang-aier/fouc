@@ -18,6 +18,7 @@
   --line-strong: rgba(32, 33, 38, 0.22);
   /* 控件与卡片使用不透明描边，圆角与直边保持同一清晰度。 */
   --control-border: #c3c5c9;
+  --resource-card-border: #d5d7db;
   --accent: #3e63dd;
   --accent-strong: #3355c9;
   --accent-ink: #3a55b0;
@@ -82,13 +83,14 @@
   --font-chat: var(--font-sans);
 
   /* ── 侧栏材质令牌（供 sidebar-material.css 消费） ── */
-  --wt-sidebar-standard-panel: #eceef1;
+  --wt-sidebar-standard-panel: #fafbfc;
   --wt-sidebar-edge: var(--line);
   /* 侧栏交互悬停面：浅白色，与标准面板协调 */
-  --sidebar-row-bg: #ffffff;
-  --sidebar-row-border: var(--line);
-  --sidebar-row-shadow: 0 1px 2px rgb(20 20 24 / 0.05);
-  --wt-sidebar-hover: var(--sidebar-row-bg);
+  --sidebar-row-bg: rgb(255 255 255 / 0.9);
+  --sidebar-row-border: rgb(0 0 0 / 0.07);
+  --sidebar-row-hover-border: rgb(0 0 0 / 0.08);
+  --sidebar-row-shadow: 0 1px 2px rgb(20 20 18 / 0.04);
+  --wt-sidebar-hover: rgb(255 255 255 / 0.55);
 }
 
 /* ── 深色主题令牌 ── */
@@ -105,6 +107,7 @@ html[data-theme="dark"] {
   --line: rgba(233, 236, 239, 0.16);
   --line-strong: rgba(233, 236, 239, 0.24);
   --control-border: #484b50;
+  --resource-card-border: #3f4348;
   --accent: #6681f5;
   --accent-strong: #7f97f8;
   --accent-ink: #9db2fa;
@@ -142,8 +145,9 @@ html[data-theme="dark"] {
 
   --wt-sidebar-standard-panel: #141619;
   --wt-sidebar-edge: var(--line);
-  --sidebar-row-bg: #22252a;
-  --sidebar-row-border: var(--line);
+  --sidebar-row-bg: rgb(255 255 255 / 0.06);
+  --sidebar-row-border: rgb(255 255 255 / 0.08);
+  --sidebar-row-hover-border: var(--sidebar-row-border);
   --sidebar-row-shadow: none;
   --wt-sidebar-hover: rgb(255 255 255 / 0.06);
 }

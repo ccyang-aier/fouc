@@ -19,9 +19,6 @@
 .page button:disabled{opacity:.45;cursor:not-allowed}
 .page button:focus-visible{outline:2px solid var(--focus-ring);outline-offset:3px}
 .caret{margin-left:2px;flex-shrink:0}
-.switcher{display:flex;overflow:hidden;border:1px solid var(--control-border);border-radius:5px}
-.switcher button{height:30px;width:32px;display:grid;place-items:center;color:#7686a1;border-radius:4px}
-.switcher button[aria-pressed=true]{background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent-soft-line);color:var(--accent-ink)}
 .content{padding:20px 22px 50px;overflow:auto;flex:1}
 .sectionHeading{display:flex;align-items:center;justify-content:space-between;min-height:22px;margin-bottom:14px;gap:12px}
 .sectionHeading h2{font-size:14px;font-weight:650}

@@ -11,6 +11,19 @@ html .fouc-action {
   transition-property: color, border-color, box-shadow, transform;
 }
 
+/* 筛选/排序入口只保留底色反馈；Radix 选中后回焦不产生 ring、阴影或描边动画。 */
+html .dropdown-menu-trigger:not(.sidebar-nav-row) {
+  box-shadow: none;
+  translate: none;
+  transform: none;
+  transition-property: color;
+}
+
+html .dropdown-menu-trigger:not(.sidebar-nav-row):is(:focus, :focus-visible, :active, [aria-expanded="true"]) {
+  box-shadow: none;
+  outline: none;
+}
+
 .fouc-action[data-variant="destructive"] {
   --action-state-bg: var(--menu-danger-hover-bg);
   --action-state-ink: var(--menu-danger-hover-ink);

@@ -6,7 +6,7 @@ import { toneChips, type IconTone } from "@/lib/icon-tones"
 import { cn } from "@/lib/utils"
 
 import type { CommunitySortKey } from "./community-canvas"
-import styles from "./community-cards.module.css"
+import styles from "@/components/ui/resource-card.module.css"
 
 export type CommunityLibraryItem = {
   id: string

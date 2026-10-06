@@ -4,6 +4,7 @@ import Image from "next/image"
 import { Check } from "@phosphor-icons/react"
 
 import { cn } from "@/lib/utils"
+import styles from "@/components/ui/resource-card.module.css"
 
 import type { Connector } from "./connectors-data"
 
@@ -66,8 +67,8 @@ export function ConnectorCard(props: ConnectorItemProps) {
   const { connector, onOpen } = props
 
   return (
-    <article className="group relative flex min-h-[174px] cursor-pointer flex-col rounded-[8px] border border-[var(--line)] bg-panel p-4 outline-none transition-[border-color,box-shadow,transform] hover:-translate-y-px hover:border-[var(--line-strong)] hover:shadow-[0_8px_22px_-16px_rgba(18,23,31,0.34)] focus-within:border-[color-mix(in_srgb,var(--accent)_42%,var(--line))] focus-within:shadow-[0_0_0_2px_color-mix(in_srgb,var(--accent)_12%,transparent)]">
-      <button type="button" onClick={onOpen} aria-label={`打开 ${connector.name} 详情`} className="absolute inset-0 z-0 rounded-[8px] outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)]" />
+    <article className={cn("group relative flex min-h-[174px] cursor-pointer flex-col p-4 outline-none", styles.card)}>
+      <button type="button" onClick={onOpen} aria-label={`打开 ${connector.name} 详情`} className="absolute inset-0 z-0 rounded-[8px] outline-none" />
       <div className="flex min-w-0 items-start gap-3">
         <ConnectorLogo connector={connector} />
         <div className="min-w-0 pt-0.5">

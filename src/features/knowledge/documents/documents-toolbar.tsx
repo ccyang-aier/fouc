@@ -2,9 +2,10 @@
 
 import {
   ArrowsDownUp, CaretDown, DotsThree, Funnel, MagnifyingGlass,
-  Plus, SidebarSimple, SquaresFour, Table, UploadSimple, X,
+  Plus, SidebarSimple, UploadSimple, X,
 } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
+import { ViewSwitcher } from '@/components/ui/view-switcher';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuRadioGroup,
   DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -64,10 +65,7 @@ export function DocumentsToolbar({
         </DropdownMenuContent>
       </DropdownMenu>
       <Button variant="outline" size="sm" className={styles.control} title={ascending ? '按更新时间从新到旧' : '按更新时间从旧到新'} aria-label="切换更新时间排序" onClick={onSort}><ArrowsDownUp size={17} /></Button>
-      <div className={styles.switcher}>
-        <Button variant="ghost" size="icon-sm" aria-label="文件夹卡片视图" aria-pressed={layout === 'table'} onClick={() => onLayout('table')}><SquaresFour size={17} weight="fill" /></Button>
-        <Button variant="ghost" size="icon-sm" aria-label="文件网格视图" aria-pressed={layout === 'grid'} onClick={() => onLayout('grid')}><Table size={17} /></Button>
-      </div>
+      <ViewSwitcher value={layout === 'table' ? 'list' : 'grid'} onValueChange={mode => onLayout(mode === 'list' ? 'table' : 'grid')} listLabel="文件列表视图" gridLabel="文件网格视图" />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm" className={styles.control} disabled={!canEdit}><Plus size={17} />新建<CaretDown className={styles.caret} size={12} /></Button>

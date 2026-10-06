@@ -11,7 +11,7 @@
     color 150ms,
     transform 150ms;
 }
-.sidebar-nav-row:is(:hover, :focus-visible, :focus-within, [data-active="true"], [aria-expanded="true"], :has(> button[aria-expanded="true"])) {
+.sidebar-nav-row:is(:hover, :focus, :focus-within, [data-active="true"]) {
   border-color: var(--sidebar-row-border);
   background: var(--sidebar-row-bg);
   color: var(--ink);
@@ -19,6 +19,9 @@
 }
 .sidebar-nav-row:active {
   transform: scale(0.995);
+}
+.sidebar-nav-row:hover:not(:focus):not(:focus-within):not([data-active="true"]) {
+  border-color: var(--sidebar-row-hover-border);
 }
 .sidebar-nav-row[data-active="true"] {
   font-weight: 500;

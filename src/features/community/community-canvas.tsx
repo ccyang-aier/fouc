@@ -10,10 +10,8 @@ import {
   MagnifyingGlass,
   Plus,
   SealCheck,
-  SquaresFour,
   Star,
   StarHalf,
-  Table,
   X,
 } from "@phosphor-icons/react"
 
@@ -24,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import { ViewSwitcher, type ViewMode } from "@/components/ui/view-switcher"
 
 import { CommunityAssetCard, CommunityAssetTable, CommunityResourceIcon, type CommunityLibraryItem } from "./community-cards"
 import { CommunityDetailPage, type RelatedItem } from "./community-detail"
@@ -36,7 +35,6 @@ import {
 } from "./community-data"
 
 export type CommunitySortKey = "popular" | "rating" | "name" | "updated"
-type ViewMode = "grid" | "list"
 
 const SORT_OPTIONS: Array<{ id: CommunitySortKey; label: string }> = [
   { id: "popular", label: "最多获取" },
@@ -341,16 +339,7 @@ export function CommunityCanvas() {
               </label>
             </div>
             <div className="ml-auto flex shrink-0 items-center gap-2.5">
-              <div className="flex h-8 items-center overflow-hidden rounded-[6px] border border-[var(--control-border)]" aria-label="浏览方式">
-              {(["list", "grid"] as const).map((mode) => {
-                const Icon = mode === "grid" ? SquaresFour : Table
-                return (
-                  <button key={mode} type="button" aria-label={mode === "grid" ? "网格视图" : "列表视图"} aria-pressed={view === mode} onClick={() => setView(mode)} className={cn("fouc-action flex size-[30px] items-center justify-center text-[var(--muted)] transition-colors", view === mode && "bg-[color-mix(in_srgb,var(--accent)_9%,transparent)] text-[var(--accent-ink)]")}>
-                    <Icon className={mode === "grid" ? "size-[17px]" : "size-[17px]"} weight={view === mode ? "fill" : "regular"} />
-                  </button>
-                )
-              })}
-              </div>
+              <ViewSwitcher value={view} onValueChange={setView} gridLabel="网格视图" />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button type="button" className="flex h-8 w-[84px] items-center justify-between gap-1 whitespace-nowrap rounded-[6px] border border-[var(--control-border)] px-2 text-[9.5px] text-[var(--ink-soft)] outline-none">

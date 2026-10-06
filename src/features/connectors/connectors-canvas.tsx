@@ -4,7 +4,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import { motion } from "motion/react"
-import { CaretDown, CaretUp, CheckCircle, MagnifyingGlass, PlugsConnected, SquaresFour, Table } from "@phosphor-icons/react"
+import { CaretDown, CaretUp, CheckCircle, MagnifyingGlass, PlugsConnected } from "@phosphor-icons/react"
+import { ViewSwitcher, type ViewMode } from "@/components/ui/view-switcher"
 
 import {
   DropdownMenu,
@@ -19,7 +20,6 @@ import { ConnectorDetail } from "./connector-detail"
 import { CONNECTOR_CATEGORIES, initialConnectors } from "./connectors-data"
 import { clearDtsAuthProfile, dtsConnectorApi } from "./dts/api"
 
-type CatalogView = "grid" | "list"
 type ConnectorSort = "default" | "recent" | "name"
 
 const SORT_OPTIONS: ReadonlyArray<{ id: ConnectorSort; label: string }> = [
@@ -32,7 +32,7 @@ export function ConnectorsCanvas({ onWorkbenchFocus, onOpenProject }: { onWorkbe
   const [connectors, setConnectors] = useState(initialConnectors)
   const [category, setCategory] = useState<(typeof CONNECTOR_CATEGORIES)[number]>("全部")
   const [query, setQuery] = useState("")
-  const [view, setView] = useState<CatalogView>("grid")
+  const [view, setView] = useState<ViewMode>("grid")
   const [sort, setSort] = useState<ConnectorSort>("default")
   const [updatedSortDirection, setUpdatedSortDirection] = useState<"asc" | "desc">("desc")
   const [detailId, setDetailId] = useState<string | null>(null)
@@ -149,7 +149,7 @@ export function ConnectorsCanvas({ onWorkbenchFocus, onOpenProject }: { onWorkbe
         <div className="flex min-w-0 items-center gap-2.5">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button type="button" className="fouc-action flex h-8 min-w-[112px] items-center justify-between gap-2 rounded-[6px] border border-[var(--control-border)] bg-panel px-2.5 text-[10px] text-[var(--ink-soft)] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
+              <button type="button" className="fouc-action flex h-8 min-w-[112px] items-center justify-between gap-2 rounded-[6px] border border-[var(--control-border)] bg-panel px-2.5 text-[10px] text-[var(--ink-soft)] outline-none transition-colors">
                 <span className="flex min-w-0 items-center gap-1.5">
                   <span className="truncate">{categoryLabel}</span>
                   <span className="text-[9px] tabular-nums text-[var(--muted)]">{categoryCounts.get(category) ?? 0}</span>
@@ -175,21 +175,11 @@ export function ConnectorsCanvas({ onWorkbenchFocus, onOpenProject }: { onWorkbe
             <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} aria-label="搜索连接器" placeholder="搜索连接器" className="min-w-0 flex-1 bg-transparent text-[10px] text-[var(--ink)] outline-none placeholder:text-[var(--muted)]" />
           </label>
 
-          <div className="flex h-8 shrink-0 items-center overflow-hidden rounded-[6px] border border-[var(--control-border)]" aria-label="浏览方式">
-            {(["list", "grid"] as const).map((mode) => {
-              const Icon = mode === "grid" ? SquaresFour : Table
-              const selected = view === mode
-              return (
-                <button key={mode} type="button" aria-label={mode === "grid" ? "卡片视图" : "列表视图"} aria-pressed={selected} onClick={() => setView(mode)} className={cn("fouc-action flex size-[30px] items-center justify-center text-[var(--muted)] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)]", selected && "bg-[color-mix(in_srgb,var(--accent)_9%,transparent)] text-[var(--accent-ink)]")}>
-                  <Icon className="size-[16px]" weight={selected ? "fill" : "regular"} />
-                </button>
-              )
-            })}
-          </div>
+          <ViewSwitcher value={view} onValueChange={setView} />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button type="button" className="fouc-action flex h-8 w-[92px] shrink-0 items-center justify-between gap-1 rounded-[6px] border border-[var(--control-border)] bg-panel px-2.5 text-[9.5px] text-[var(--ink-soft)] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] max-[760px]:hidden">
+              <button type="button" className="fouc-action flex h-8 w-[92px] shrink-0 items-center justify-between gap-1 rounded-[6px] border border-[var(--control-border)] bg-panel px-2.5 text-[9.5px] text-[var(--ink-soft)] outline-none transition-colors max-[760px]:hidden">
                 {SORT_OPTIONS.find((option) => option.id === sort)?.label}
                 <CaretDown className="size-3 text-[var(--muted)]" weight="bold" />
               </button>

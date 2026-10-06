@@ -5,7 +5,7 @@
 .sidebar[data-collapsed="true"] > * { opacity: 0; transform: translateX(-12px); }
 .sidebar[data-collapsed="false"] > * { transition-delay: 55ms, 0ms; }
 .knowledgeHeader { display: flex; height: 54px; flex: none; align-items: center; gap: 4px; padding: 6px 8px; }
-.knowledgeButton { display: flex; height: 40px; min-width: 0; flex: 1; align-items: center; gap: 9px; padding: 0 7px; border-radius: 7px; background: transparent; color: var(--ink); text-align: left; outline: none; transition: background .15s ease; }
+.knowledgeButton { display: flex; height: 40px; min-width: 0; flex: 1; align-items: center; gap: 9px; padding: 0 7px; border-radius: 7px; background: transparent; color: var(--ink); text-align: left; outline: none; }
 .knowledgeButton:focus-visible, .knowledgeCollapse:focus-visible, .expandSidebar:focus-visible { outline: 2px solid #7994aa; outline-offset: 2px; }
 .knowledgeAvatar { width: 28px; height: 28px; flex: none; border-radius: 6px; }
 .knowledgeName { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 14px; font-weight: 600; line-height: 1; }

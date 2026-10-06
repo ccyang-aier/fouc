@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "../components/ui/interaction-states.css";
+@import "../shell/sidebar-material.css";
 @import "../components/sidebar-nav-row.css";
 
 /* ── 浅色主题令牌（默认） ── */
@@ -29,7 +30,7 @@
   --focus-ring: rgba(62, 99, 221, 0.32);
   /* 交互覆盖层：按钮/菜单 hover 的墨色洗染 */
   --hover-fill: rgba(0, 0, 0, 0.045);
-  /* 侧栏行 hover 的浅灰洗染：侧栏底色已近白，纯白抬升面不可辨 */
+  /* 通用控件的浅灰反馈面；导航行使用独立的 --sidebar-row-*。 */
   --raise: rgba(32, 33, 38, 0.05);
   /* 浅白芯片（描边按钮 / 用户卡） */
   --chip: rgba(255, 255, 255, 0.75);
@@ -83,12 +84,13 @@
   --font-chat: var(--font-sans);
 
   /* ── 侧栏材质令牌（供 sidebar-material.css 消费） ── */
-  --wt-sidebar-standard-panel: #fafbfc;
+  /* 浅灰白底与白色导航卡面保持可见层次；所有菜单侧栏共用。 */
+  --wt-sidebar-standard-panel: #f3f4f4;
   --wt-sidebar-edge: var(--line);
   /* 侧栏交互悬停面：浅白色，与标准面板协调 */
-  --sidebar-row-bg: rgb(255 255 255 / 0.9);
-  --sidebar-row-border: rgb(0 0 0 / 0.07);
-  --sidebar-row-hover-border: rgb(0 0 0 / 0.08);
+  --sidebar-row-bg: #ffffff;
+  --sidebar-row-border: #dfe1e3;
+  --sidebar-row-hover-border: var(--sidebar-row-border);
   --sidebar-row-shadow: 0 1px 2px rgb(20 20 18 / 0.04);
   --wt-sidebar-hover: rgb(255 255 255 / 0.55);
 }

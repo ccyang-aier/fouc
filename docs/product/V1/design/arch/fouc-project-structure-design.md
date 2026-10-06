@@ -356,7 +356,7 @@ Web 与桌面共享前端源码，分别由宿主适配和构建配置处理差�
 
 `src/lib/` 中的职责可按实际需要建立子目录，没有必要统一改名为 `platform/`。现有 UI 组件保留在 `src/components/`，模块私有组件保留在对应 feature 内。Web 与桌面使用同一前端源码，本身不构成拆出 `packages/ui` 的理由。树中的模块目录按实际业务建立，不提前创建空模块。
 
-共享交互状态归 `src/components/ui/interaction-states.css`，主题令牌归 `src/app/globals.css`。`Button`、`DropdownMenuTrigger` 与知识库 `IconButton` 统一应用 `fouc-action`：中性操作的悬停、键盘焦点、按下及菜单展开使用同一灰底，底色即时出现而不通过背景渐变延迟反馈；危险与警示操作沿用各自语义色。菜单展开以 `aria-expanded` 判断，避免 Tooltip 覆盖 `data-state` 后入口丢失反馈。侧栏共享背景与导航行令牌，业务模块不得以纯白背景覆盖侧栏材质；局部 CSS 只处理布局及业务特有呈现。知识库文档工具栏是模块私有组合组件，复用共享按钮和 Radix 菜单，不另建弹层与交互状态实现。 列表/卡片切换由共享 `ViewSwitcher` 统一呈现（列表在左、卡片在右，hover 保留图标原色），资源卡片由共享 `resource-card.module.css` 统一描边；筛选/排序入口回焦不产生 ring、阴影或边框渐变。标准侧栏浅色底座沿用原始 `#fafbfc`，导航项保留原来的半透明白底、细描边和轻阴影。
+共享交互状态归 `src/components/ui/interaction-states.css`，主题令牌归 `src/app/globals.css`。`Button`、`DropdownMenuTrigger` 与知识库 `IconButton` 统一应用 `fouc-action`：中性操作的悬停、键盘焦点、按下及菜单展开使用同一灰底，底色即时出现而不通过背景渐变延迟反馈；危险与警示操作沿用各自语义色。菜单展开以 `aria-expanded` 判断，避免 Tooltip 覆盖 `data-state` 后入口丢失反馈。侧栏材质与导航行样式统一从根 `globals.css` 加载，主导航、项目管理、设置、社区及知识库共享背景与导航行令牌；业务模块不得以纯白背景覆盖侧栏材质，局部 CSS 只处理布局及业务特有呈现。浅色侧栏使用 `#f3f4f4` 灰白底座，hover 与选中项使用不透明白底、`#dfe1e3` 细描边和轻阴影，知识库目录与主导航均即时显示卡面，不对底色或阴影做渐变。视觉验证同时检查实际底色与菜单项反馈，保证白色卡面能从侧栏底座中分辨。知识库文档工具栏是模块私有组合组件，复用共享按钮和 Radix 菜单，不另建弹层与交互状态实现。列表/卡片切换由共享 `ViewSwitcher` 统一呈现（列表在左、卡片在右，hover 保留图标原色），资源卡片由共享 `resource-card.module.css` 统一描边；筛选/排序入口回焦不产生 ring、阴影或边框渐变。
 
 ### 8.1 允许的依赖方向
 

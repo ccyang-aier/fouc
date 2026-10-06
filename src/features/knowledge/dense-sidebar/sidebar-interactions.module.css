@@ -2,8 +2,6 @@
 .iconButton,
 .actionButton {
   transition:
-    background-color 150ms ease,
-    box-shadow 150ms ease,
     color 150ms ease,
     transform 120ms ease;
 }

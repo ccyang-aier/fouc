@@ -34,7 +34,7 @@ export function AutomationHeader({ tab, onTabChange, onCreate, enabledCount, tod
           </button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button type="button" aria-label="更多自动化操作" className="flex size-9 items-center justify-center rounded-[8px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-[#f4f4f5] hover:text-[var(--ink)] data-[state=open]:bg-[#f4f4f5] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
+              <button type="button" aria-label="更多自动化操作" className="flex size-9 items-center justify-center rounded-[8px] text-[var(--muted-strong)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
                 <DotsThree className="size-[18px]" weight="bold" />
               </button>
             </DropdownMenuTrigger>

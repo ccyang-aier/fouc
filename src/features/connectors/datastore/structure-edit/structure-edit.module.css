@@ -9,7 +9,7 @@
 .dirty { color: #c9a56e; font-size: 11px; }
 .clean { color: var(--editor-muted); font-size: 11px; }
 .panel button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: inherit; font: inherit; background: transparent; border: 1px solid var(--line, #30333d); border-radius: 6px; padding: 7px 10px; cursor: pointer; transition: background .12s, border-color .12s; }
-.panel button:hover:not(:disabled) { background: color-mix(in srgb, var(--ink, #fff) 5%, transparent); border-color: color-mix(in srgb, var(--ink, #fff) 20%, transparent); }
+.panel button:hover:not(:disabled) { background: var(--surface-hover); border-color: color-mix(in srgb, var(--ink, #fff) 20%, transparent); }
 .panel button:disabled { opacity: .4; cursor: default; }
 .panel button:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent, #8a90ff) 75%, transparent); outline-offset: 2px; }
 .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line, #30333d); padding: 0 24px; }

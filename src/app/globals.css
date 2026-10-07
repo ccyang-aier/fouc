@@ -28,10 +28,10 @@
   /* 自定义主题色基色（实际值由 JS 按偏好写入，此为兜底） */
   --accent-custom: #3e63dd;
   --focus-ring: rgba(62, 99, 221, 0.32);
-  /* 交互覆盖层：按钮/菜单 hover 的墨色洗染 */
-  --hover-fill: rgba(0, 0, 0, 0.045);
+  /* 中性反馈统一使用浅白灰，避免局部叠加墨色后变深。 */
+  --hover-fill: var(--action-hover-bg);
   /* 通用控件的浅灰反馈面；导航行使用独立的 --sidebar-row-*。 */
-  --raise: rgba(32, 33, 38, 0.05);
+  --raise: var(--action-hover-bg);
   /* 浅白芯片（描边按钮 / 用户卡） */
   --chip: rgba(255, 255, 255, 0.75);
   --chip-strong: rgba(255, 255, 255, 0.95);
@@ -59,7 +59,7 @@
   --warn-ink: #a06b12;
   --warn-soft: #fdf8ee;
   --warn-soft-line: #f0dcae;
-  /* 系统菜单状态色：普通项为清晰灰底；危险项红底白字；警示项琥珀底。
+  /* 系统菜单状态色：普通项为浅白灰底；危险项红底白字；警示项琥珀底。
      鼠标悬停、键盘高亮与展开的子菜单共用，业务组件只选择语义，不自定颜色。 */
   --menu-item-hover-bg: var(--action-hover-bg);
   --menu-item-hover-ink: var(--ink);
@@ -70,7 +70,7 @@
   --menu-warning-hover-bg: #faedcc;
   --menu-warning-hover-ink: #875510;
   /* 紧凑操作按钮与模态框底栏尺寸；各业务界面只安排内容，不另定高度。 */
-  --action-hover-bg: #e8e8e8;
+  --action-hover-bg: #f5f6f7;
   --dialog-action-height: 30px;
   --dialog-footer-block: 8px;
   --dialog-footer-inset: 22px;
@@ -84,8 +84,9 @@
   --font-chat: var(--font-sans);
 
   /* ── 侧栏材质令牌（供 sidebar-material.css 消费） ── */
-  /* 浅灰白底与白色导航卡面保持可见层次；所有菜单侧栏共用。 */
-  --wt-sidebar-standard-panel: #f3f4f4;
+  /* 主侧栏使用浅白灰；知识库目录使用内容面板底色。 */
+  --wt-sidebar-standard-panel: #f8f9fa;
+  --wt-sidebar-knowledge-panel: var(--panel);
   --wt-sidebar-edge: var(--line);
   /* 侧栏交互悬停面：浅白色，与标准面板协调 */
   --sidebar-row-bg: #ffffff;

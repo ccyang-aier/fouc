@@ -97,8 +97,8 @@ export function ProjectHeader({
             aria-pressed={panelOpen}
             onClick={onTogglePanel}
             className={cn(
-              "flex size-9 items-center justify-center rounded-[8px] text-[#566888] outline-none transition-[background-color,color,transform] hover:text-[var(--accent-ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-95",
-              panelOpen ? "bg-[#f4f4f5]" : "bg-transparent hover:bg-[#f4f4f5]",
+              "fouc-action flex size-9 items-center justify-center rounded-[8px] text-[#566888] outline-none transition-[color,transform] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-95",
+              panelOpen ? "bg-[var(--surface-hover)]" : "bg-transparent",
             )}
           >
             <SidebarSimple className="size-[18px]" weight="regular" />
@@ -109,7 +109,7 @@ export function ProjectHeader({
               <button
                 type="button"
                 aria-label="更多项目操作"
-                className="flex size-9 items-center justify-center rounded-[8px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-[#f4f4f5] hover:text-[var(--ink)] data-[state=open]:bg-[#f4f4f5] data-[state=open]:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                className="flex size-9 items-center justify-center rounded-[8px] text-[var(--muted-strong)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
               >
                 <DotsThree className="size-[18px]" weight="bold" />
               </button>

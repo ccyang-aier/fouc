@@ -70,6 +70,7 @@ export function SidebarTagTreeNode({
             label={t(expanded ? "sidebar.collapseSection" : "sidebar.expandSection", { section: tag.name })}
             tooltip={expanded ? "收起" : "展开"}
             aria-expanded={expanded}
+            data-variant="disclosure"
             onClick={() => onToggle(tag.id)}
             className="mr-0.5 inline-flex size-[17px] shrink-0 items-center justify-center rounded-[4px] outline-none transition-colors hover:text-foreground focus-visible:text-foreground"
           >
@@ -119,7 +120,7 @@ export function SidebarTagTreeNode({
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                className="text-red-600 focus:bg-red-50 focus:text-red-700"
+                variant="destructive"
                 onSelect={() => onTagAction(tag.id, "delete")}
               >
                 <Trash size={15} /> {t("sidebar.delete")}

@@ -23,6 +23,6 @@
 .sizes { display: flex; height: 34px; overflow: hidden; border: 1px solid var(--line); border-radius: 6px; }
 .sizes button { flex: 1; min-width: 0; padding: 0 3px; background: var(--panel); border: none; border-right: 1px solid var(--line); color: var(--ink); font-size: 12px; cursor: pointer; outline: none; transition: background 160ms, color 160ms; }
 .sizes button:last-child { border-right: none; }
-.sizes button:hover { background: var(--wash); }
+.sizes button:hover { background: var(--surface-hover); }
 .sizes button[aria-pressed='true'] { background: color-mix(in srgb, var(--accent) 11%, var(--panel)); color: var(--accent); font-weight: 600; }
 .sizes button:focus-visible { box-shadow: inset 0 0 0 2px var(--accent); }

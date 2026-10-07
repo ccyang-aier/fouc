@@ -1,13 +1,13 @@
 'use client';
 
-import { CaretRight, Check, CircleNotch, SignOut, UserCircle } from '@phosphor-icons/react';
+import { Check, CircleNotch, SignOut, UserCircle } from '@phosphor-icons/react';
 import { useRef, useState } from 'react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { UserAvatar } from '@/components/user-avatar';
 import { useIdentity } from '../identity-provider';
 import { presenceDisplay, presenceOptions } from '../presence';
-import '@/components/sidebar-nav-row.css';
+import styles from './account-item.module.css';
 
 export function AccountItem({ compact = false }: { compact?: boolean }) {
   const { session, openSignIn, signOut, presence, presencePreference, setPresence } = useIdentity();
@@ -17,12 +17,12 @@ export function AccountItem({ compact = false }: { compact?: boolean }) {
   const label = user?.name ?? (session.status === 'checking' ? '正在确认身份' : '未登录');
   const detail = user?.email ?? (session.status === 'error' ? '服务暂不可用，点击重试登录' : '登录以使用你的账户');
   const status = presenceDisplay(presence);
-  const button = <button type="button" data-session-status={session.status} data-presence={user ? presence : undefined} data-active={!compact ? 'true' : undefined} aria-busy={session.status === 'checking'} aria-label={user ? `Fouc 账户：${user.name} · ${status.label}` : '登录 Fouc 账户'} onClick={user ? undefined : openSignIn} className={`sidebar-nav-row flex w-full items-center rounded-[6px] text-left focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] ${compact ? 'justify-center p-1' : 'gap-2.5 px-2 py-1'}`}>
+  const button = <button type="button" data-session-status={session.status} data-presence={user ? presence : undefined} aria-busy={session.status === 'checking'} aria-label={user ? `Fouc 账户：${user.name} · ${status.label}` : '登录 Fouc 账户'} onClick={user ? undefined : openSignIn} className={`fouc-action ${styles.trigger} ${compact ? styles.compact : ''}`}>
     <span aria-hidden className="relative flex size-7 shrink-0 items-center justify-center text-[var(--muted)]">
       {user ? <UserAvatar name={user.name} image={user.image} className="size-7 text-sm" /> : session.status === 'checking' ? <CircleNotch className="size-4 animate-spin" /> : <UserCircle size={24} weight="duotone" />}
       {user ? <span className="absolute -bottom-px -right-px flex size-2.5 items-center justify-center rounded-full ring-2 ring-[var(--shell)]" style={{ backgroundColor: status.color }}>{presence === 'do-not-disturb' ? <span className="h-px w-1.5 bg-white" /> : presence === 'away' ? <span className="size-1 rounded-full bg-[var(--panel)]" /> : null}</span> : null}
     </span>
-    {!compact ? <><span className="min-w-0 flex-1"><span className="block truncate text-[9.5px] font-medium leading-[13px] text-[var(--muted)]">{label}</span><span className="block truncate text-[8.5px] leading-[11px] text-[var(--muted)]">{detail}</span></span><CaretRight className="size-3.5 shrink-0 text-[var(--muted)]" /></> : null}
+    {!compact ? <span className="min-w-0 flex-1"><span className={styles.name}>{label}</span><span className={styles.detail}>{detail}</span></span> : null}
   </button>;
   const trigger = compact ? <Tooltip><TooltipTrigger asChild>{button}</TooltipTrigger><TooltipContent side="right">{label}{user ? ` · ${status.label}` : ''}</TooltipContent></Tooltip> : button;
   if (!user) return trigger;

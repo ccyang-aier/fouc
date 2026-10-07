@@ -1,14 +1,15 @@
 "use client"
 
 /**
- * 二级主导航（双层侧栏第二层，Kiln 式）：
+ * 主导航（底部组合用户身份与工作空间入口）：
  * 44px 品牌头 + 可滚动导航区 + 底部设置行；
- * 展开宽度 232–420px 可拖拽，收起为 64px 图标轨道（tooltip 提示）。
+ * 展开态可拖拽，收起为 52px 图标轨道（tooltip 提示）。
  * 进入项目视图时导航区整体切换为项目管理菜单。
  */
 
 import { useState } from "react"
 import { AccountItem } from "@/features/identity/components/account-item"
+import { WorkspaceSwitcher } from "@/features/workspaces/workspace-switcher"
 import Image from "next/image"
 import {
   BookOpenText,
@@ -410,14 +411,12 @@ export function NavigationSidebar({
           </div>
         </div>
       )}
-      {open ? <div className="shrink-0 border-t border-[var(--line)] px-2 pb-1.5 pt-2.5"><AccountItem /></div> : null}
-
       {/* 收起态图标轨道：工作台导航 / 项目管理菜单（折叠形态） */}
       <ScrollArea
         aria-hidden={open}
         className={cn(
           "absolute inset-x-0 top-11 z-[5] min-h-0 transition-[opacity,transform] duration-200",
-          projectsMode ? "bottom-12" : "bottom-[120px]",
+          projectsMode ? "bottom-20" : "bottom-[156px]",
           open ? "pointer-events-none translate-x-1 opacity-0" : "delay-100 translate-x-0 opacity-100",
         )}
         viewportClassName={cn(
@@ -448,14 +447,25 @@ export function NavigationSidebar({
         )}
       </ScrollArea>
 
-      {!open ? <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col items-center gap-1 p-1">
-        {!projectsMode ? <>
+      <div className={cn(
+        "shrink-0",
+        open
+          ? "flex items-center gap-1.5 border-t border-[var(--line)] px-2 pb-1.5 pt-2.5"
+          : "absolute inset-x-0 bottom-0 z-10 flex flex-col items-center gap-1 p-1",
+      )}>
+        {!open && !projectsMode ? <>
           <Tooltip><TooltipTrigger asChild><NavButton item={{ id: "settings", label: "设置", icon: GearSix }} active={view === "settings"} compact onSelect={() => onViewChange("settings")} /></TooltipTrigger><TooltipContent side="right" sideOffset={10}>设置</TooltipContent></Tooltip>
           <Tooltip><TooltipTrigger asChild><NavButton item={{ id: "help", label: "帮助与反馈", icon: Question }} active={view === "help"} compact onSelect={() => onViewChange("help")} /></TooltipTrigger><TooltipContent side="right" sideOffset={10}>帮助与反馈</TooltipContent></Tooltip>
         </> : null}
-        <div aria-hidden className="w-full border-t border-[var(--line)]" />
-        <AccountItem compact />
-      </div> : null}
+        {!open ? <div aria-hidden className="w-full border-t border-[var(--line)]" /> : null}
+        <div className={cn("min-w-0", open && "flex-1")}><AccountItem compact={!open} /></div>
+        <WorkspaceSwitcher
+          compact={!open}
+          onSelected={() => { if (view === "projects") onViewChange("project-home") }}
+          onCreated={() => onViewChange("project-home")}
+          onOpenProjects={() => onViewChange("project-home")}
+        />
+      </div>
       {open ? <SidebarResizeHandle dragging={dragging} onPointerDown={startResize} /> : null}
     </aside>
   )

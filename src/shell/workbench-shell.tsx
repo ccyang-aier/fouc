@@ -52,7 +52,6 @@ import styles from "./workbench-shell.module.css"
 import { SettingsCanvas } from "@/features/settings/settings-canvas"
 import { HelpFeedbackCanvas } from "@/features/help/help-feedback-canvas"
 import { SystemBar } from "./system-bar"
-import { WorkspaceRail } from "./workspace-rail"
 import { useWorkspace } from "@/features/workspaces/workspace-provider"
 
 export function WorkbenchShell() {
@@ -61,7 +60,7 @@ export function WorkbenchShell() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [view, setView] = useWorkbenchView()
   const settingsSection = useSettingsSection()
-  const { spaces, activeSpace, updateSpaces, selectWorkspace, createWorkspace } = useWorkspace()
+  const { activeSpace } = useWorkspace()
   const { selectedProject, selectProject, favorites, managementPanel, setManagementPanel, setFavorite } = useProjectResources()
   const projectFavorited = selectedProject !== null && favorites.includes(selectedProject.id)
   // 应用面板根：桌面端作为自绘外框的内层与弹层宿主
@@ -111,11 +110,10 @@ export function WorkbenchShell() {
                 <SettingsCanvas initialSection={settingsSection} onSectionChange={setSettingsSection} onBack={closeSettings} />
               </div>
             ) : (
-              // 双层侧栏（工作区轨道 + 主导航）顶行全高，共用同一块材质底座；
+              // 主导航包含底部身份与工作空间入口，顶行全高；
               // 系统底层行只在主区顶部、与主导航 header 等高并接
               <div className="flex min-h-0 flex-1">
                 <div className={`${styles.navigation} sidebar-material flex shrink-0`}>
-                  <WorkspaceRail view={view} onViewChange={changeView} spaces={spaces} activeSpaceId={activeSpace.id} onSpacesChange={updateSpaces} onActiveSpaceChange={selectWorkspace} onCreateSpace={createWorkspace} />
                   <NavigationSidebar
                     open={!sidebarCollapsed}
                     onCollapse={() => {

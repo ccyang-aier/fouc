@@ -87,6 +87,7 @@
   /* 主侧栏使用浅白灰；知识库目录与社区分类使用内容面板底色。 */
   --wt-sidebar-standard-panel: #f8f9fa;
   --wt-sidebar-content-panel: var(--panel);
+  --wt-sidebar-identity-panel: #eef0f1;
   --wt-sidebar-edge: var(--line);
   /* 侧栏交互悬停面：浅白色，与标准面板协调 */
   --sidebar-row-bg: #ffffff;
@@ -147,6 +148,7 @@ html[data-theme="dark"] {
   --action-hover-bg: #303235;
 
   --wt-sidebar-standard-panel: #141619;
+  --wt-sidebar-identity-panel: var(--surface-subtle);
   --wt-sidebar-edge: var(--line);
   --sidebar-row-bg: rgb(255 255 255 / 0.06);
   --sidebar-row-border: rgb(255 255 255 / 0.08);

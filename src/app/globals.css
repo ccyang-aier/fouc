@@ -84,9 +84,9 @@
   --font-chat: var(--font-sans);
 
   /* ── 侧栏材质令牌（供 sidebar-material.css 消费） ── */
-  /* 主侧栏使用浅白灰；知识库目录使用内容面板底色。 */
+  /* 主侧栏使用浅白灰；知识库目录与社区分类使用内容面板底色。 */
   --wt-sidebar-standard-panel: #f8f9fa;
-  --wt-sidebar-knowledge-panel: var(--panel);
+  --wt-sidebar-content-panel: var(--panel);
   --wt-sidebar-edge: var(--line);
   /* 侧栏交互悬停面：浅白色，与标准面板协调 */
   --sidebar-row-bg: #ffffff;

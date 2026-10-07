@@ -12,7 +12,7 @@ const CORE_NODES: Readonly<Record<string, NodeSpec>> = {
   text: { group: 'inline' },
   hardBreak: { inline: true, group: 'inline', selectable: false, linebreakReplacement: true, parseDOM: [{ tag: 'br' }], toDOM: () => ['br'] },
   inlineMath: { inline: true, group: 'inline', atom: true, attrs: { latex: stringAttribute }, toDOM: (node) => ['span', { 'data-inline-math': node.attrs.latex }, node.attrs.latex] },
-  wikiLink: { inline: true, group: 'inline', atom: true, attrs: { pageId: nullableString, target: stringAttribute, label: nullableString, targetBlockId: nullableString }, toDOM: (node) => ['span', { 'data-wiki-link': node.attrs.target }, node.attrs.label || node.attrs.target] },
+  wikiLink: { inline: true, group: 'inline', atom: true, attrs: { knowledgeBaseId: nullableString, pageId: nullableString, target: stringAttribute, label: nullableString, targetBlockId: nullableString }, toDOM: (node) => ['span', { 'data-wiki-link': node.attrs.target }, node.attrs.label || node.attrs.target] },
 };
 
 function schemaAttributes(attrs: NodeSpec['attrs']): Attributes {

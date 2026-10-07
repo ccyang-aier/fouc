@@ -127,7 +127,7 @@ function Panel({ base, provider, database, schemas, tables, initialSchemas, init
     {downloadFeedback && <div className={styles.feedback} role="status">{downloadFeedback}
     </div>}
     <footer className={styles.footer}>
-      <div className={styles.footerNote}>{downloading ? `正在保存 ${exportBytes(downloadBytes)} / ${exportBytes(resource.progress?.artifact?.bytes ?? 0)}` : resource.progress?.status === 'completed' ? '关闭后仍可恢复下载；源会话关闭时清理设备文件。' : active ? '关闭面板后任务继续；取消会停止读取并清理文件。' : '临时文件预算：本工作空间 1 GiB / 设备共 2 GiB。'}
+      <div className={styles.footerNote}>{downloading ? `正在保存 ${exportBytes(downloadBytes)} / ${exportBytes(resource.progress?.artifact?.bytes ?? 0)}` : resource.progress?.status === 'completed' ? '关闭后仍可恢复下载；源会话关闭时清理设备文件。' : active ? '关闭面板后任务继续；取消会停止读取并清理文件。' : '临时文件预算：本会话 1 GiB / 设备共 2 GiB。'}
       </div>
       <div className={styles.footerActions}>
         {onClose && <button className={styles.secondary} disabled={resource.starting || downloading} onClick={onClose}>关闭</button>}

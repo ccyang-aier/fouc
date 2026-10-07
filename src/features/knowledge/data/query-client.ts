@@ -22,7 +22,7 @@ export function createKnowledgeQueryClient(): QueryClient {
 }
 
 /**
- * Invalidate the whole workspace namespace (`knowledgeQueryKeys.workspace`)
+ * Invalidate the whole knowledgeBase namespace (`knowledgeQueryKeys.knowledgeBase`)
  * or one fine-grained key from the factory (`knowledgeQueryKeys.access`, ...).
  */
 export async function invalidateKnowledgeQueries(queryClient: QueryClient, key: KnowledgeQueryKey): Promise<void> {

@@ -19,7 +19,7 @@ const ws = 'e2f7a4c1-0000-4000-8000-6b1f9a2c3d01';
 const tsA = 'a0000000-0000-4000-8000-00000000000a';
 
 test('optimistic creation preserves selected metadata and permission inheritance', () => {
-  const created = optimisticCreatedPage({ id: crypto.randomUUID(), workspaceId: ws, teamspaceId: tsA, parentId: null, parentPath: null, title: '权限文档', kind: 'database', icon: '📚', cover: 'https://example.com/cover.png', inheritsPermissions: false, position: 'a0', now: '2026-09-27T00:00:00Z' });
+  const created = optimisticCreatedPage({ id: crypto.randomUUID(), knowledgeBaseId: ws, teamspaceId: tsA, parentId: null, parentPath: null, title: '权限文档', kind: 'database', icon: '📚', cover: 'https://example.com/cover.png', inheritsPermissions: false, position: 'a0', now: '2026-09-27T00:00:00Z' });
   expect(created).toMatchObject({ title: '权限文档', kind: 'database', icon: '📚', cover: 'https://example.com/cover.png', inheritsPermissions: false });
 });
 
@@ -27,7 +27,7 @@ type PageSeed = Partial<Page> & Pick<Page, 'id' | 'parentId' | 'position'>;
 
 function page(seed: PageSeed): Page {
   return {
-    workspaceId: ws,
+    knowledgeBaseId: ws,
     teamspaceId: tsA,
     kind: 'doc',
     databaseId: null,
@@ -59,7 +59,7 @@ const newChildId = '10000000-0000-4000-8000-000000000002';
 function createdPage(id: string, parentId: string | null): Page {
   return optimisticCreatedPage({
     id,
-    workspaceId: ws,
+    knowledgeBaseId: ws,
     teamspaceId: tsA,
     parentId,
     parentPath: parentId === null ? null : 'r1',
@@ -156,9 +156,9 @@ describe('settlement', () => {
     pages = settleTreePlacement(pages, { pageId: newPageId, parentId: 'r1', teamspaceId: tsA, position: 'zzzzzz', path: 'r1.10000000' });
     expect(pages.find((row) => row.id === newPageId)).toMatchObject({ parentId: 'r1', position: 'zzzzzz', teamspaceId: tsA });
 
-    pages = settleTreeLifecycle(pages, { workspaceId: ws, pageId: newPageId, deletedAt: '2026-09-26T04:00:00Z' });
+    pages = settleTreeLifecycle(pages, { knowledgeBaseId: ws, pageId: newPageId, deletedAt: '2026-09-26T04:00:00Z' });
     expect(pages.find((row) => row.id === newPageId)?.deletedAt).toBe('2026-09-26T04:00:00Z');
-    pages = settleTreeLifecycle(pages, { workspaceId: ws, pageId: newPageId, deletedAt: null });
+    pages = settleTreeLifecycle(pages, { knowledgeBaseId: ws, pageId: newPageId, deletedAt: null });
     expect(pages.find((row) => row.id === newPageId)?.deletedAt).toBeNull();
   });
 });

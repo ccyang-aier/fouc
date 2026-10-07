@@ -9,7 +9,7 @@
  */
 
 import type { QueryClient } from '@tanstack/react-query';
-import type { OrganizationPage } from '@/features/workspaces/organization-client';
+import type { OrganizationPage } from '@/features/knowledge/organization/client';
 
 export type InfiniteOrganizationData<T> = {
   pages: OrganizationPage<T>[];

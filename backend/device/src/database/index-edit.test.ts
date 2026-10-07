@@ -147,7 +147,7 @@ test('route rejects arbitrary SQL, unconfirmed deletion and oversized plans befo
     discardIndexEdit: () => undefined,
   }));
   app.onError(error => new Response(error.message, { status: 400 }));
-  const base = '/api/database/workspaces/w/relational/sessions/s/index-edit';
+  const base = '/api/database/relational/sessions/s/index-edit';
   for (const value of [{ confirm: false }, { confirm: true, sql: 'DROP INDEX x' }, {}]) expect((await app.request(`${base}/plans/token/commit`, { method: 'POST', body: JSON.stringify(value) })).status).toBe(400);
   expect((await app.request(`${base}/plans`, { method: 'POST', body: 'x'.repeat(INDEX_EDIT_LIMITS.requestBytes + 1) })).status).toBe(400);
   expect((await app.request(`${base}/options?schema=main&table=rows&sql=CREATE`)).status).toBe(400);

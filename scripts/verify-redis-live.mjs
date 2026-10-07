@@ -14,7 +14,7 @@ const password = decodeURIComponent(endpoint.password);
 const client = new Redis({ host: config.host, port: config.port, username: config.username || undefined, password: password || undefined, db: config.database, retryStrategy: () => null, connectTimeout: 10000, commandTimeout: 10000 });
 client.on('error', () => {});
 const prefix = 'fouc:dbx-lab:';
-const base = 'http://127.0.0.1:8710/api/database/workspaces/dbx-redis-live-verification/redis';
+const base = 'http://127.0.0.1:8710/api/database/redis';
 const key = (suffix) => prefix + suffix;
 const raw = (value) => Buffer.from(value).toString('base64');
 async function request(route, body, method = body ? 'POST' : 'GET') {
@@ -63,8 +63,8 @@ try {
   for (const command of ['SET fouc:should-not-exist x', 'FLUSHDB', 'EVAL "return 1" 0', 'SELECT 0', 'KEYS *']) {
     const response = await fetch(base + `/sessions/${session.id}/command`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ command }) }); assert.equal(response.status, 400);
   }
-  const cross = await fetch(base.replace('dbx-redis-live-verification', 'other-workspace') + `/sessions/${session.id}/scan`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ cursor: '0', pattern: '*' }) }); assert.equal(cross.status, 400);
-  console.log('PASS Redis HTTP: explicit lab DB, config CRUD, scoped sessions, cursor/binary keys, six value types, bounded string/list/stream pages, TTL/missing, command policy and workspace isolation.');
+  const cross = await fetch(base + `/sessions/${crypto.randomUUID()}/scan`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ cursor: '0', pattern: '*' }) }); assert.equal(cross.status, 400);
+  console.log('PASS Redis HTTP: explicit lab DB, config CRUD, scoped sessions, cursor/binary keys, six value types, bounded string/list/stream pages, TTL/missing, command policy and session ownership.');
 } finally {
   if (session) await request(`/sessions/${session.id}`, undefined, 'DELETE');
   if (saved) await request(`/connections/${saved.id}`, undefined, 'DELETE');

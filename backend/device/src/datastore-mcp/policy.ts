@@ -11,14 +11,14 @@ const grant = z.object({
   mongoNamespaces: z.array(z.object({ database: name, collection: name }).strict()).max(500).optional(),
   allowRedis: z.boolean().default(false),
 }).strict().refine(value => !value.allowSql || (!value.schemas && !value.tables), { message: 'SQL grants require explicit access to the whole connection; schema/table grants only allow scoped metadata and row tools' });
-const policy = z.object({ workspaceId: name.max(128), connections: z.array(grant).max(100), tools: z.array(name).max(50).optional() }).strict();
+const policy = z.object({ connections: z.array(grant).max(100), tools: z.array(name).max(50).optional() }).strict();
 export type DatastoreMcpPolicy = z.infer<typeof policy>;
 export type DatastoreMcpGrant = z.infer<typeof grant>;
 
-/** An explicit process policy fixes workspace and exact connection IDs before any tool runs. */
+/** An explicit process policy fixes exact connection IDs before any tool runs. */
 export function loadDatastoreMcpPolicy(environment: CliEnvironment): DatastoreMcpPolicy {
   const source = environment.FOUC_DATASTORE_MCP_POLICY;
-  if (!source || Buffer.byteLength(source) > 256 * 1024) throw new DatastoreCliError('Set FOUC_DATASTORE_MCP_POLICY to a bounded workspace/connection allowlist', 2, 'invalid_mcp_policy');
+  if (!source || Buffer.byteLength(source) > 256 * 1024) throw new DatastoreCliError('Set FOUC_DATASTORE_MCP_POLICY to a bounded connection allowlist', 2, 'invalid_mcp_policy');
   let value: unknown;
   try { value = JSON.parse(source); } catch { throw new DatastoreCliError('FOUC_DATASTORE_MCP_POLICY is not valid JSON', 2, 'invalid_mcp_policy'); }
   const parsed = policy.safeParse(value);
@@ -61,7 +61,7 @@ export class DatastoreMcpAccess {
   options(command: string[], connectionId: string, targets: Partial<CliOptions> = {}): CliOptions {
     this.connection(connectionId);
     const base = parseDatastoreCliArgs(command, { FOUC_DEVICE_URL: this.environment.FOUC_DEVICE_URL });
-    return { ...base, ...targets, workspace: this.policy.workspaceId, connection: connectionId, connectionResolution: 'id', session: null, timeout: Math.min(targets.timeout ?? 30_000, 120_000), limit: Math.min(targets.limit ?? 100, 1000), format: 'json', output: null, overwrite: false };
+    return { ...base, ...targets, connection: connectionId, connectionResolution: 'id', session: null, timeout: Math.min(targets.timeout ?? 30_000, 120_000), limit: Math.min(targets.limit ?? 100, 1000), format: 'json', output: null, overwrite: false };
   }
 }
 

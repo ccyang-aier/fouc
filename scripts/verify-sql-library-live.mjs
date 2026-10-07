@@ -4,9 +4,9 @@ import { parseEnv } from 'node:util';
 import path from 'node:path';
 const admin = new URL(parseEnv(readFileSync('.env.fouc.local', 'utf8')).DATABASE_ADMIN_URL);
 const mysql = JSON.parse(readFileSync('.runtime/dbx-lab/mysql-connection.json', 'utf8'));
-const workspace = 'dbx-sql-library-verification', base = `http://127.0.0.1:8710/api/database/workspaces/${workspace}/relational`;
-async function request(route, { body, method = body ? 'POST' : 'GET', status = 200, foreign = false } = {}) {
-  const response = await fetch((foreign ? base.replace(workspace, 'other-sql-workspace') : base) + route, { method, headers: { 'content-type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(30000) });
+const base = `http://127.0.0.1:8710/api/database/relational`;
+async function request(route, { body, method = body ? 'POST' : 'GET', status = 200, missingResource = false } = {}) {
+  const response = await fetch(base + (missingResource ? route.replace(/^\/(sessions|connections)\/[^/]+/, (_, kind) => `/${kind}/${crypto.randomUUID()}`) : route), { method, headers: { 'content-type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(30000) });
   const result = await response.json(); assert.equal(response.status, status, result.error?.message); return result.data ?? result.error;
 }
 const inputs = [
@@ -27,7 +27,7 @@ for (const { config, password, schema } of inputs) {
     const original = history.entries.find((entry) => entry.success); assert.equal((await request(historyBase + `/${original.id}`)).sql, sql); assert.ok(history.entries.some((entry) => !entry.success && entry.error));
     const filtered = await request(historyBase + '/search', { body: { success: true, search: 'exact integer', schema } }); assert.equal(filtered.total, 1);
     assert.equal((await request('/history/search', { body: { databases: [{ connectionId: saved.id, database: config.database ?? config.path }] } })).total, 2);
-    await request(historyBase + `/${original.id}`, { foreign: true, status: 400 }); assert.equal((await request('/history/search', { body: {}, foreign: true })).total, 0);
+    await request(historyBase + `/${original.id}`, { missingResource: true, status: 400 }); assert.equal((await request('/history/search', { body: { connectionIds: [crypto.randomUUID()] } })).total, 0);
     const folder = await request(library + '/folders', { body: { name: 'Queries', parentFolderId: null }, status: 201 });
     const nested = await request(library + '/folders', { body: { name: 'Nested', parentFolderId: folder.id }, status: 201 });
     await request(library + `/folders/${folder.id}`, { method: 'PUT', body: { name: 'Queries', parentFolderId: nested.id }, status: 400 });
@@ -35,7 +35,7 @@ for (const { config, password, schema } of inputs) {
     assert.equal(file.name, 'integer.sql'); assert.equal(file.sql, sql); assert.equal(file.sqlBytes, Buffer.byteLength(sql));
     const summary = await request(library); assert.equal(summary.files.length, 1); assert.ok(!('sql' in summary.files[0]));
     assert.equal((await request(library + `/files/${file.id}/open`, { method: 'POST' })).openCount, 1);
-    await request(library + `/files/${file.id}`, { foreign: true, status: 400 });
+    await request(library + `/files/${file.id}`, { missingResource: true, status: 400 });
     const before = file;
     file = await request(library + `/files/${file.id}`, { method: 'PUT', body: { version: file.version, name: 'renamed' } }); assert.equal(file.sql, sql);
     await request(library + `/files/${file.id}`, { method: 'PUT', body: { version: before.version, sql: 'SELECT 0' }, status: 400 });
@@ -45,7 +45,7 @@ for (const { config, password, schema } of inputs) {
     await request(`/sessions/${session.id}/history`, { method: 'DELETE', body: { confirmed: false }, status: 400 });
     await request(`/sessions/${session.id}/history`, { method: 'DELETE', body: { confirmed: true } }); assert.equal((await request(`/sessions/${session.id}/history/search`, { body: {} })).total, 0);
     await request(library + `/folders/${folder.id}`, { method: 'DELETE', body: { confirmed: true } }); assert.deepEqual(await request(library), { folders: [], files: [] });
-    console.log(`PASS ${config.provider}: actual execution/failure vs rejected-policy history, exact SQL+target, search/status/schema, connection-scoped database and foreign workspace guards, lazy SQL tree/documents, names/CAS/recursive deletion, persistence across reconnect and clear confirmation.`);
+    console.log(`PASS ${config.provider}: actual execution/failure vs rejected-policy history, exact SQL+target, search/status/schema, connection-scoped database and foreign missing-session guards, lazy SQL tree/documents, names/CAS/recursive deletion, persistence across reconnect and clear confirmation.`);
   } finally {
     if (session) await request(`/sessions/${session.id}`, { method: 'DELETE' }).catch(() => {});
     await request(`/connections/${saved.id}`, { method: 'DELETE' });

@@ -2,10 +2,10 @@
 
 /**
  * The notification bell (N03): the shell's live trigger over the knowledge
- * bridge. While a knowledge workspace is open it renders the real inbox —
+ * bridge. While a knowledge knowledgeBase is open it renders the real inbox —
  * unread highlighting, per-item and mark-all read actions, jump-to-page on
- * click — and live updates arrive through the same snapshot the B06 workspace
- * events invalidate. Without a published workspace it degrades to an inert
+ * click — and live updates arrive through the same snapshot the B06 knowledgeBase
+ * events invalidate. Without a published knowledgeBase it degrades to an inert
  * bell that simply opens the knowledge workbench, never inventing data.
  */
 
@@ -41,7 +41,7 @@ export function KnowledgeNotificationBell({ onOpenWorkbench }: { onOpenWorkbench
     run();
   };
 
-  // Inert state: no live knowledge workspace → the bell just opens the workbench.
+  // Inert state: no live knowledge knowledgeBase → the bell just opens the workbench.
   if (!snapshot) {
     return (
       <button

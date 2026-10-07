@@ -4,8 +4,8 @@ import { and, eq, inArray, sql } from 'drizzle-orm';
 import * as Y from 'yjs';
 import type { PageScope, Principal } from '@fouc/shared/knowledge/contracts';
 import { hybridSearchResultSchema } from '@fouc/shared/knowledge/search';
-import { blockIndex, docState, page } from '../../../platform/database/workspace/schema';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import { blockIndex, docState, page } from '../../../platform/database/resources/schema';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
 import { createModelGateway } from '../ai/gateway';
 import type { GatewayFetch } from '../ai/gateway';
 import { createPermissionsFixture } from '../permissions/permissions-test-fixture';
@@ -13,7 +13,7 @@ import type { PermissionsFixture } from '../permissions/permissions-test-fixture
 import { replaceAuthorizedPageAcl } from '../permissions/mutations';
 import { PAGE_BODY_FRAGMENT } from './backlinks';
 import type { EmbeddingBinding, EmbeddingGateway } from './embeddings';
-import { rebuildWorkspaceEmbeddings, refreshPageEmbeddings } from './embeddings';
+import { rebuildKnowledgeBaseEmbeddings, refreshPageEmbeddings } from './embeddings';
 import { searchBlocksByKeyword } from './keyword';
 import { searchHybrid } from './service';
 import type { SearchGateway } from './service';
@@ -37,7 +37,7 @@ describe('hybrid search fusion and rerank', () => {
   beforeEach(async () => {
     await fixture.resetJobs();
     await fixture.server.database.admin.query(
-      'DELETE FROM workspace.block_embedding_staging; DELETE FROM workspace.block_embedding_model; DELETE FROM workspace.block_index',
+      'DELETE FROM resources.block_embedding_staging; DELETE FROM resources.block_embedding_model; DELETE FROM resources.block_index',
     );
   });
 
@@ -56,11 +56,11 @@ describe('hybrid search fusion and rerank', () => {
     return { state: Buffer.from(Y.encodeStateAsUpdate(document)), stateVector: Buffer.from(Y.encodeStateVector(document)) };
   }
 
-  async function writeBody(node: { workspaceId: string; pageId: string }, blocks: readonly DraftBlock[]) {
+  async function writeBody(node: { knowledgeBaseId: string; pageId: string }, blocks: readonly DraftBlock[]) {
     const { state, stateVector } = encodeBody(blocks);
-    await withWorkspaceTenant(fixture.pool, node.workspaceId, async (db) => {
-      await db.insert(docState).values({ workspaceId: node.workspaceId, pageId: node.pageId, state, stateVector })
-        .onConflictDoUpdate({ target: [docState.workspaceId, docState.pageId], set: { state, stateVector, updatedAt: sql`clock_timestamp()` } });
+    await withKnowledgeBase(fixture.pool, node.knowledgeBaseId, async (db) => {
+      await db.insert(docState).values({ knowledgeBaseId: node.knowledgeBaseId, pageId: node.pageId, state, stateVector })
+        .onConflictDoUpdate({ target: [docState.knowledgeBaseId, docState.pageId], set: { state, stateVector, updatedAt: sql`clock_timestamp()` } });
     });
   }
 
@@ -68,27 +68,27 @@ describe('hybrid search fusion and rerank', () => {
   async function tree(options: Parameters<typeof fixture.tree>[0] = { parents: [null] }) {
     const created = await fixture.tree(options);
     await fixture.drain();
-    await withWorkspaceTenant(fixture.pool, created.root.workspaceId, (db) => db.delete(blockIndex).where(and(
-      eq(blockIndex.workspaceId, created.root.workspaceId),
+    await withKnowledgeBase(fixture.pool, created.root.knowledgeBaseId, (db) => db.delete(blockIndex).where(and(
+      eq(blockIndex.knowledgeBaseId, created.root.knowledgeBaseId),
       inArray(blockIndex.pageId, created.pages.map((node) => node.pageId)),
     )));
     return created;
   }
 
   async function retitle(scope: PageScope, title: string) {
-    await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) =>
-      db.update(page).set({ title }).where(and(eq(page.workspaceId, scope.workspaceId), eq(page.id, scope.pageId))));
+    await withKnowledgeBase(fixture.pool, scope.knowledgeBaseId, (db) =>
+      db.update(page).set({ title }).where(and(eq(page.knowledgeBaseId, scope.knowledgeBaseId), eq(page.id, scope.pageId))));
   }
 
-  /** The H01→H02 chain without the queue: project, then embed-and-switch the whole workspace. */
-  function indexAndEmbed(node: { workspaceId: string; pageId: string }, gateway: EmbeddingGateway, binding: EmbeddingBinding) {
-    const scope: PageScope = { workspaceId: node.workspaceId, pageId: node.pageId };
+  /** The H01→H02 chain without the queue: project, then embed-and-switch the whole resources. */
+  function indexAndEmbed(node: { knowledgeBaseId: string; pageId: string }, gateway: EmbeddingGateway, binding: EmbeddingBinding) {
+    const scope: PageScope = { knowledgeBaseId: node.knowledgeBaseId, pageId: node.pageId };
     return refreshPageEmbeddings(fixture.pool, { gateway, binding, scope, userId: fixture.owner.identity.userId })
-      .then(() => rebuildWorkspaceEmbeddings(fixture.pool, { gateway, binding, workspaceId: scope.workspaceId, userId: fixture.owner.identity.userId }));
+      .then(() => rebuildKnowledgeBaseEmbeddings(fixture.pool, { gateway, binding, knowledgeBaseId: scope.knowledgeBaseId, userId: fixture.owner.identity.userId }));
   }
 
-  function subjects(actor: 'owner' | 'reader' | 'foreign', workspaceId = fixture.alpha.id) {
-    return fixture.subjects(fixture[actor].identity.userId, workspaceId);
+  function subjects(actor: 'owner' | 'reader' | 'foreign', knowledgeBaseId = fixture.alpha.id) {
+    return fixture.subjects(fixture[actor].identity.userId, knowledgeBaseId);
   }
 
   /**
@@ -148,12 +148,12 @@ describe('hybrid search fusion and rerank', () => {
     };
   }
 
-  function search(workspaceId: string, principals: readonly Principal[], query: string, options: {
+  function search(knowledgeBaseId: string, principals: readonly Principal[], query: string, options: {
     gateway: SearchGateway; embedBinding: EmbeddingBinding; rerankBinding?: { source: 'platform'; provider: string; model: string }; limit?: number;
   }) {
     return searchHybrid(fixture.pool, {
       gateway: options.gateway, embedBinding: options.embedBinding, rerankBinding: options.rerankBinding,
-      workspaceId, principals, query, userId: fixture.owner.identity.userId, limit: options.limit,
+      knowledgeBaseId, principals, query, userId: fixture.owner.identity.userId, limit: options.limit,
     });
   }
 
@@ -185,15 +185,15 @@ describe('hybrid search fusion and rerank', () => {
     // transient state) — the keyword-only member of the disjoint-leg corpus.
     await writeBody(late, [{ attrs: { blockId: 'b-kw-only' }, text: '氦闪现象的远端附录补充说明文档' }]);
     const { refreshPageBlockIndex } = await import('./indexer');
-    await withWorkspaceTenant(fixture.pool, late.workspaceId, (db) =>
-      refreshPageBlockIndex(db, { workspaceId: late.workspaceId, pageId: late.pageId }));
+    await withKnowledgeBase(fixture.pool, late.knowledgeBaseId, (db) =>
+      refreshPageBlockIndex(db, { knowledgeBaseId: late.knowledgeBaseId, pageId: late.pageId }));
 
     // Ground truth for the keyword leg's own ranking before fusing.
-    const keywordOnly = await withWorkspaceTenant(fixture.pool, body.workspaceId, (db) =>
-      searchBlocksByKeyword(db, { workspaceId: body.workspaceId, principals: owner, query: '氦闪 探测', limit: 50 }));
+    const keywordOnly = await withKnowledgeBase(fixture.pool, body.knowledgeBaseId, (db) =>
+      searchBlocksByKeyword(db, { knowledgeBaseId: body.knowledgeBaseId, principals: owner, query: '氦闪 探测', limit: 50 }));
     expect(keywordOnly.map((hit) => hit.blockId)).toEqual(['b-both', 'b-kw-a', 'b-kw-b', 'b-kw-only']);
 
-    const result = await search(body.workspaceId, owner, '氦闪 探测', { gateway: steered.gateway, embedBinding: steered.binding });
+    const result = await search(body.knowledgeBaseId, owner, '氦闪 探测', { gateway: steered.gateway, embedBinding: steered.binding });
     expect(hybridSearchResultSchema.parse(result)).toEqual(result);
     // Keyword ranks: b-both=1, b-kw-a=2, b-kw-b=3, b-kw-only=4; vector ranks: b-vec-a=1,
     // b-both=2, b-kw-a=3, b-kw-b=4, b-vec-b=5. Dual-leg RRF beats every single leg.
@@ -233,7 +233,7 @@ describe('hybrid search fusion and rerank', () => {
 
     // The vector leg is a nearest-50 ranking, not a threshold: both embedded blocks appear,
     // v1 first by phrase match (keyword rank 1) and exact vector (rank 1).
-    const alphaView = await search(body.workspaceId, owner, '语义近邻 目标内容', { gateway: alpha.gateway, embedBinding: alpha.binding });
+    const alphaView = await search(body.knowledgeBaseId, owner, '语义近邻 目标内容', { gateway: alpha.gateway, embedBinding: alpha.binding });
     expect(alphaView.vectorLeg).toEqual({ status: 'used', model: 'alpha-embed', dimensions: 8 });
     expect(alphaView.hits.map((hit) => hit.blockId)).toEqual(['v1', 'k1']);
     expect(alphaView.hits[0]!.sources).toEqual(['keyword', 'vector']);
@@ -242,8 +242,8 @@ describe('hybrid search fusion and rerank', () => {
     // The active model flipped but the rows still carry alpha vectors (H02's atomic switch
     // forbids this state persisting; the query-side filter is the defense criterion 1 demands).
     await fixture.server.database.admin.query(
-      'UPDATE workspace.block_embedding_model SET embed_model=$2, embed_dimensions=$3 WHERE workspace_id=$1',
-      [body.workspaceId, 'beta-embed', 16],
+      'UPDATE resources.block_embedding_model SET embed_model=$2, embed_dimensions=$3 WHERE knowledge_base_id=$1',
+      [body.knowledgeBaseId, 'beta-embed', 16],
     );
     const beta = steeredEmbedGateway('beta-embed', 16, [
       { marker: '语义近邻', vector: [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
@@ -251,28 +251,28 @@ describe('hybrid search fusion and rerank', () => {
     ]);
     // A 16-dim query against unfiltered 8-dim rows would error on dimension mismatch; the
     // (model, dimensions) predicate keeps the leg clean and the keyword leg intact.
-    const staleView = await search(body.workspaceId, owner, '普通内容', { gateway: beta.gateway, embedBinding: beta.binding });
+    const staleView = await search(body.knowledgeBaseId, owner, '普通内容', { gateway: beta.gateway, embedBinding: beta.binding });
     expect(staleView.vectorLeg).toEqual({ status: 'used', model: 'beta-embed', dimensions: 16 });
     expect(staleView.hits.map((hit) => hit.blockId)).toEqual(['k1']);
     expect(staleView.hits[0]!.sources).toEqual(['keyword']);
     expect(staleView.hits.every((hit) => !hit.sources.includes('vector') && hit.semanticScore === null)).toBe(true);
 
     // A binding that disagrees with the active model skips the vector leg entirely.
-    const mismatch = await search(body.workspaceId, owner, '普通内容', { gateway: alpha.gateway, embedBinding: alpha.binding });
+    const mismatch = await search(body.knowledgeBaseId, owner, '普通内容', { gateway: alpha.gateway, embedBinding: alpha.binding });
     expect(mismatch.vectorLeg).toEqual({ status: 'skipped', reason: 'binding_mismatch' });
     expect(mismatch.hits.map((hit) => hit.blockId)).toEqual(['k1']);
 
     // The real H02 switch: rebuilding beta re-vectorizes everything, and the leg recovers.
-    await rebuildWorkspaceEmbeddings(fixture.pool, { gateway: beta.gateway, binding: beta.binding, workspaceId: body.workspaceId, userId: fixture.owner.identity.userId });
-    const betaView = await search(body.workspaceId, owner, '语义近邻 目标内容', { gateway: beta.gateway, embedBinding: beta.binding });
+    await rebuildKnowledgeBaseEmbeddings(fixture.pool, { gateway: beta.gateway, binding: beta.binding, knowledgeBaseId: body.knowledgeBaseId, userId: fixture.owner.identity.userId });
+    const betaView = await search(body.knowledgeBaseId, owner, '语义近邻 目标内容', { gateway: beta.gateway, embedBinding: beta.binding });
     expect(betaView.vectorLeg).toEqual({ status: 'used', model: 'beta-embed', dimensions: 16 });
     expect(betaView.hits.map((hit) => hit.blockId)).toEqual(['v1', 'k1']);
     expect(betaView.hits[0]!.sources).toEqual(['keyword', 'vector']);
     expect(betaView.hits[0]!.semanticScore).toBeCloseTo(1, 12);
 
     // No embedding model at all: the vector leg reports why and the keyword leg still serves.
-    await fixture.server.database.admin.query('DELETE FROM workspace.block_embedding_model WHERE workspace_id=$1', [body.workspaceId]);
-    const none = await search(body.workspaceId, owner, '普通内容', { gateway: alpha.gateway, embedBinding: alpha.binding });
+    await fixture.server.database.admin.query('DELETE FROM resources.block_embedding_model WHERE knowledge_base_id=$1', [body.knowledgeBaseId]);
+    const none = await search(body.knowledgeBaseId, owner, '普通内容', { gateway: alpha.gateway, embedBinding: alpha.binding });
     expect(none.vectorLeg).toEqual({ status: 'skipped', reason: 'no_active_model' });
     expect(none.hits.map((hit) => hit.blockId)).toEqual(['k1']);
   }, 60_000);
@@ -282,9 +282,9 @@ describe('hybrid search fusion and rerank', () => {
     const [ownerPage] = ownerTree.pages;
     const readerTree = await tree({ parents: [null], defaultAccess: null });
     const [readerPage] = readerTree.pages;
-    await withWorkspaceTenant(fixture.pool, readerPage.workspaceId, (db) => Promise.all([
-      replaceAuthorizedPageAcl(db, { workspaceId: readerPage.workspaceId, pageId: ownerPage.pageId, grants: [{ principal: `user:${fixture.owner.identity.userId}` as Principal, level: 'full' }] }),
-      replaceAuthorizedPageAcl(db, { workspaceId: readerPage.workspaceId, pageId: readerPage.pageId, grants: [
+    await withKnowledgeBase(fixture.pool, readerPage.knowledgeBaseId, (db) => Promise.all([
+      replaceAuthorizedPageAcl(db, { knowledgeBaseId: readerPage.knowledgeBaseId, pageId: ownerPage.pageId, grants: [{ principal: `user:${fixture.owner.identity.userId}` as Principal, level: 'full' }] }),
+      replaceAuthorizedPageAcl(db, { knowledgeBaseId: readerPage.knowledgeBaseId, pageId: readerPage.pageId, grants: [
         { principal: `user:${fixture.owner.identity.userId}` as Principal, level: 'full' },
         { principal: `user:${fixture.reader.identity.userId}` as Principal, level: 'edit' },
       ] }),
@@ -305,18 +305,18 @@ describe('hybrid search fusion and rerank', () => {
 
     const owner = await subjects('owner');
     const reader = await subjects('reader');
-    const ownerView = await search(ownerPage.workspaceId, owner, '检索查询 独占词汇', { gateway: steered.gateway, embedBinding: steered.binding });
+    const ownerView = await search(ownerPage.knowledgeBaseId, owner, '检索查询 独占词汇', { gateway: steered.gateway, embedBinding: steered.binding });
     expect(ownerView.hits.map((hit) => hit.blockId)).toEqual(['secret', 'shared']);
     expect(ownerView.hits.find((hit) => hit.blockId === 'secret')!.semanticScore).toBeCloseTo(1, 12);
 
-    const readerView = await search(ownerPage.workspaceId, reader, '检索查询 独占词汇', { gateway: steered.gateway, embedBinding: steered.binding });
+    const readerView = await search(ownerPage.knowledgeBaseId, reader, '检索查询 独占词汇', { gateway: steered.gateway, embedBinding: steered.binding });
     expect(readerView.hits.map((hit) => hit.blockId)).toEqual(['shared']);
     // The reader's block is rank 1 of their own visible set in both legs, not behind a hidden row.
     expect(readerView.hits[0]!.sources).toEqual(['keyword', 'vector']);
     expect(readerView.hits[0]!.semanticScore).toBeCloseTo(0, 12);
 
     // No principals at all: no authorization, no results from either leg.
-    const anonymous = await search(ownerPage.workspaceId, [], '检索查询 独占词汇', { gateway: steered.gateway, embedBinding: steered.binding });
+    const anonymous = await search(ownerPage.knowledgeBaseId, [], '检索查询 独占词汇', { gateway: steered.gateway, embedBinding: steered.binding });
     expect(anonymous.hits).toEqual([]);
     expect(anonymous.vectorLeg).toEqual({ status: 'used', model: 'alpha-embed', dimensions: 8 });
   }, 60_000);
@@ -341,7 +341,7 @@ describe('hybrid search fusion and rerank', () => {
     const owner = await subjects('owner');
 
     // RRF order first (identical term frequency ties resolve by insertion order in both legs).
-    const rrfOrder = await search(body.workspaceId, owner, '融合检索 氦闪', { gateway: steered.gateway, embedBinding: steered.binding });
+    const rrfOrder = await search(body.knowledgeBaseId, owner, '融合检索 氦闪', { gateway: steered.gateway, embedBinding: steered.binding });
     expect(rrfOrder.rerank).toEqual({ status: 'skipped', reason: 'not_configured' });
     expect(rrfOrder.hits.map((hit) => hit.blockId)).toEqual(['f1', 'f2', 'f3']);
 
@@ -354,7 +354,7 @@ describe('hybrid search fusion and rerank', () => {
       { originalIndex: 0, score: 0.42 },
       { originalIndex: 1, score: 0.11 },
     ];
-    const reordered = await search(body.workspaceId, owner, '融合检索 氦闪', { gateway: combined.gateway, embedBinding: steered.binding, rerankBinding: combined.rerankBinding });
+    const reordered = await search(body.knowledgeBaseId, owner, '融合检索 氦闪', { gateway: combined.gateway, embedBinding: steered.binding, rerankBinding: combined.rerankBinding });
     expect(reordered.rerank).toEqual({ status: 'applied' });
     expect(reordered.hits.map((hit) => hit.blockId)).toEqual(['f3', 'f1', 'f2']);
     expect(reordered.hits.map((hit) => hit.rerankScore)).toEqual([0.97, 0.42, 0.11]);
@@ -371,7 +371,7 @@ describe('hybrid search fusion and rerank', () => {
 
     // A provider subset: unranked candidates keep the RRF order after the ranked ones.
     rank = () => [{ originalIndex: 2, score: 0.9 }];
-    const subset = await search(body.workspaceId, owner, '融合检索 氦闪', { gateway: combined.gateway, embedBinding: steered.binding, rerankBinding: combined.rerankBinding });
+    const subset = await search(body.knowledgeBaseId, owner, '融合检索 氦闪', { gateway: combined.gateway, embedBinding: steered.binding, rerankBinding: combined.rerankBinding });
     expect(subset.rerank).toEqual({ status: 'applied' });
     expect(subset.hits[0]!.blockId).toBe('f3');
     expect(subset.hits[0]!.rerankScore).toBe(0.9);
@@ -379,7 +379,7 @@ describe('hybrid search fusion and rerank', () => {
 
     // A provider outage: flagged, non-fatal, RRF order preserved.
     rank = () => 'fail';
-    const outage = await search(body.workspaceId, owner, '融合检索 氦闪', { gateway: combined.gateway, embedBinding: steered.binding, rerankBinding: combined.rerankBinding });
+    const outage = await search(body.knowledgeBaseId, owner, '融合检索 氦闪', { gateway: combined.gateway, embedBinding: steered.binding, rerankBinding: combined.rerankBinding });
     expect(outage.rerank).toEqual({ status: 'skipped', reason: 'provider_failed' });
     expect(outage.hits.map((hit) => hit.blockId)).toEqual(['f1', 'f2', 'f3']);
     expect(outage.hits.every((hit) => hit.rerankScore === null)).toBe(true);
@@ -407,14 +407,14 @@ describe('hybrid search fusion and rerank', () => {
       return documents.map((_, index) => ({ originalIndex: index, score: 1 - index * 0.001 }));
     });
     const owner = await subjects('owner');
-    const result = await search(body.workspaceId, owner, '批量检索 氦闪', { gateway: combined.gateway, embedBinding: steered.binding, rerankBinding: combined.rerankBinding });
+    const result = await search(body.knowledgeBaseId, owner, '批量检索 氦闪', { gateway: combined.gateway, embedBinding: steered.binding, rerankBinding: combined.rerankBinding });
     expect(seen).toEqual([20]);
     expect(result.hits).toHaveLength(20);
     expect(result.rerank).toEqual({ status: 'applied' });
     expect(new Set(result.hits.map((hit) => hit.blockId)).size).toBe(20);
 
-    await expect(search(body.workspaceId, owner, '批量检索 氦闪', { gateway: combined.gateway, embedBinding: steered.binding, limit: 21 })).rejects.toThrow(TypeError);
-    expect((await search(body.workspaceId, owner, '批量检索 氦闪', { gateway: combined.gateway, embedBinding: steered.binding, limit: 5 })).hits).toHaveLength(5);
+    await expect(search(body.knowledgeBaseId, owner, '批量检索 氦闪', { gateway: combined.gateway, embedBinding: steered.binding, limit: 21 })).rejects.toThrow(TypeError);
+    expect((await search(body.knowledgeBaseId, owner, '批量检索 氦闪', { gateway: combined.gateway, embedBinding: steered.binding, limit: 5 })).hits).toHaveLength(5);
   }, 60_000);
 
   test('real Ollama vectors and real GLM rerank end to end', async () => {
@@ -448,7 +448,7 @@ describe('hybrid search fusion and rerank', () => {
       ollamaEndpoints: [ollamaEndpoint], fetch: glmFetch,
     });
     const owner = await subjects('owner');
-    const result = await search(body.workspaceId, owner, '向量检索的相似度如何度量', {
+    const result = await search(body.knowledgeBaseId, owner, '向量检索的相似度如何度量', {
       gateway, embedBinding: ollamaBinding, rerankBinding: { source: 'platform', provider: 'glm-rerank', model: 'rerank' },
     });
     expect(hybridSearchResultSchema.parse(result)).toEqual(result);

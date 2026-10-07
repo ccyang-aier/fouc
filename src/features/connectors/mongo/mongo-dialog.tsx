@@ -23,7 +23,6 @@ import styles from '../datastore/relational.module.css';
 import formStyles from '../datastore/connection-options/connection-dialog.module.css';
 
 export function MongoDialog({
-  workspaceId,
   connection,
   intent,
   onClose,
@@ -31,7 +30,7 @@ export function MongoDialog({
   onConnect,
   onTest,
 }: {
-  workspaceId: string;
+
   connection?: MongoSavedConnection;
   intent: 'save' | 'connect';
   onClose: () => void;
@@ -104,7 +103,7 @@ export function MongoDialog({
           ),
         );
       } else if (test) {
-        const base = `/api/database/workspaces/${encodeURIComponent(workspaceId)}/mongo/sessions`;
+        const base = `/api/database/mongo/sessions`;
         const session = await backendFetch<MongoSession>(base, {
           method: 'POST',
           body: JSON.stringify({

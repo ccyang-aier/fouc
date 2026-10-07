@@ -7,8 +7,7 @@ import { execFileSync } from 'node:child_process';
 
 const environment = parseEnv(readFileSync('.env.fouc.local', 'utf8'));
 const admin = new URL(environment.DATABASE_ADMIN_URL);
-const scope = 'dbx-relational-live-verification';
-const base = `http://127.0.0.1:8710/api/database/workspaces/${scope}/relational`;
+const base = `http://127.0.0.1:8710/api/database/relational`;
 function postgresTool(command, args, input) {
   const dockerArgs = ['exec', ...(input ? ['-i'] : []), 'fouc-knowledge-dev-postgres-1', command, '-U', environment.FOUC_POSTGRES_USER, ...args];
   return execFileSync(process.platform === 'win32' ? 'wsl.exe' : 'docker', process.platform === 'win32'
@@ -16,7 +15,7 @@ function postgresTool(command, args, input) {
   { input, encoding: 'utf8', windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
 }
 // A dedicated lab database keeps device connector validation independent of
-// Fouc account/tenant tables. Existing application data is never reset.
+// Fouc account/resource tables. Existing application data is never reset.
 if (postgresTool('psql', ['-d', 'postgres', '-tAc', "SELECT datname FROM pg_database WHERE datname='fouc_datastore_lab'"]).trim() !== 'fouc_datastore_lab') {
   postgresTool('createdb', ['fouc_datastore_lab']);
 }
@@ -66,9 +65,9 @@ for (const config of [
       const stateful = await fetch(base + `/sessions/${session.id}/query`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ schema, sql: 'SELECT pg_advisory_lock(1)' }) });
       assert.equal(stateful.status, 400);
     }
-    const escaped = await fetch(base.replace(scope, 'other-workspace') + `/sessions/${session.id}/schemas`);
+    const escaped = await fetch(base + `/sessions/${crypto.randomUUID()}/schemas`);
     assert.equal(escaped.status, 400);
-    console.log(`PASS ${config.provider}: connection CRUD, identity, schemas/tables/columns, primary-key pagination, SQL, duplicate columns, bigint precision, write rejection, workspace isolation.`);
+    console.log(`PASS ${config.provider}: connection CRUD, identity, schemas/tables/columns, primary-key pagination, SQL, duplicate columns, bigint precision, write rejection, session ownership.`);
   } finally {
     if (session) await request(`/sessions/${session.id}`, null, 'DELETE');
     await request(`/connections/${saved.id}`, null, 'DELETE');

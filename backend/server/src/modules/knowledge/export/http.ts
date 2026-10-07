@@ -6,7 +6,7 @@ import { DocumentPdfError } from './pdf';
 
 const path = '/api/knowledge/export/pdf';
 
-/** Converts caller-supplied bytes only; guest documents need no workspace lookup or account. */
+/** Converts caller-supplied bytes only; guest documents need no knowledgeBase lookup or account. */
 export function createDocumentPdfRoutes(trustedOrigins: readonly string[], render: (html: string) => Promise<Uint8Array>) {
   const app = new Hono();
   app.use(path, cors({ origin: origin => trustedOrigins.includes(origin) ? origin : undefined,

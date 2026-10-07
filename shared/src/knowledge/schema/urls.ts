@@ -11,7 +11,7 @@ function safeHttpUrl(value: string): boolean {
 /**
  * Return an inert null for unsupported URLs. Original document attributes remain
  * intact for review/export; NodeViews must use this same policy when resolving URLs.
- * Asset identifiers are workspace-scoped hashes; their access-controlled resolution
+ * Asset identifiers are knowledge-base-scoped hashes; their access-controlled resolution
  * belongs to the resource client, not this schema.
  */
 export function safeKnowledgeUrl(value: unknown, purpose: KnowledgeUrlPurpose): string | null {

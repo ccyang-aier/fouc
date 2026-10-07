@@ -34,8 +34,8 @@ type Entry = { session: RedisSession; client: Redis; mutations: RedisMutationMan
 export class RedisSessionManager {
   private readonly entries = new Map<string, Entry>();
   constructor(private readonly historyRepository?: RedisHistoryRepository) {}
-  async connect(workspaceId: string, value: unknown, connectionId: string | null = null): Promise<RedisSession> {
-    if (!workspaceId.trim() || workspaceId.length > 128) throw new DatabaseInputError('工作空间无效');
+  async connect(value: unknown, connectionId: string | null = null): Promise<RedisSession> {
+
     const config = redisConfig(value);
     const password = (value as Record<string, unknown>).password;
     if (typeof password !== 'string') throw new DatabaseInputError('Redis 密码参数无效');
@@ -68,7 +68,6 @@ export class RedisSessionManager {
       const session: RedisSession = {
         provider: 'redis',
         id: crypto.randomUUID(),
-        workspaceId,
         database: config.database,
         connectionId,
         version: /^redis_version:([^\r\n]+)/m.exec(info)?.[1] ?? null,
@@ -82,15 +81,15 @@ export class RedisSessionManager {
       throw error;
     }
   }
-  private entry(workspaceId: string, id: string): Entry {
+  private entry(id: string): Entry {
     const entry = this.entries.get(id);
-    if (!entry || entry.session.workspaceId !== workspaceId)
-      throw new DatabaseInputError('当前工作空间中的 Redis 连接已断开');
+    if (!entry)
+      throw new DatabaseInputError('当前会话中的 Redis 连接已断开');
     return entry;
   }
-  async setReadOnly(workspaceId: string, id: string, readOnly: unknown): Promise<RedisSession> {
+  async setReadOnly(id: string, readOnly: unknown): Promise<RedisSession> {
     if (typeof readOnly !== 'boolean') throw new DatabaseInputError('Redis 写入开关无效');
-    const entry = this.entry(workspaceId, id);
+    const entry = this.entry(id);
     if (entry.changingMode) throw new DatabaseInputError('Redis 写入模式正在切换，请等待结果');
     if (entry.saving) throw new DatabaseInputError('Redis 写入已发送，请等待实际确认后切换模式');
     entry.mutations.clear();
@@ -105,58 +104,58 @@ export class RedisSessionManager {
       return { ...entry.session };
     } finally { entry.changingMode = false; }
   }
-  private writable(workspaceId: string, id: string): Entry {
-    const entry = this.entry(workspaceId, id);
+  private writable(id: string): Entry {
+    const entry = this.entry(id);
     if (entry.changingMode) throw new DatabaseInputError('Redis 写入模式正在切换');
     if (entry.saving) throw new DatabaseInputError('当前 Redis 会话正在确认写入');
     if (entry.session.readOnly) throw new DatabaseInputError('请先解锁当前 Redis 会话的写入');
     return entry;
   }
-  databases(workspaceId: string, id: string, offset: unknown) {
-    const { client, session } = this.entry(workspaceId, id);
+  databases(id: string, offset: unknown) {
+    const { client, session } = this.entry(id);
     return redisDatabases(client, session.database, offset);
   }
-  information(workspaceId: string, id: string) {
-    return redisInformation(this.entry(workspaceId, id).client);
+  information(id: string) {
+    return redisInformation(this.entry(id).client);
   }
-  jsonCapability(workspaceId: string, id: string) { return redisJsonCapability(this.entry(workspaceId, id).client); }
-  slowlog(workspaceId: string, id: string, count: unknown) {
-    return redisSlowlog(this.entry(workspaceId, id).client, count);
+  jsonCapability(id: string) { return redisJsonCapability(this.entry(id).client); }
+  slowlog(id: string, count: unknown) {
+    return redisSlowlog(this.entry(id).client, count);
   }
-  streamGroups(workspaceId: string, id: string, key: unknown) {
-    return redisStreamGroups(this.entry(workspaceId, id).client, key);
+  streamGroups(id: string, key: unknown) {
+    return redisStreamGroups(this.entry(id).client, key);
   }
-  streamConsumers(workspaceId: string, id: string, key: unknown, group: unknown) {
-    return redisStreamConsumers(this.entry(workspaceId, id).client, key, group);
+  streamConsumers(id: string, key: unknown, group: unknown) {
+    return redisStreamConsumers(this.entry(id).client, key, group);
   }
-  streamPending(workspaceId: string, id: string, key: unknown, group: unknown, cursor: unknown, consumer: unknown) {
-    return redisStreamPending(this.entry(workspaceId, id).client, key, group, cursor, consumer);
+  streamPending(id: string, key: unknown, group: unknown, cursor: unknown, consumer: unknown) {
+    return redisStreamPending(this.entry(id).client, key, group, cursor, consumer);
   }
-  monitor(workspaceId: string, id: string, signal: AbortSignal) {
-    const entry = this.entry(workspaceId, id);
+  monitor(id: string, signal: AbortSignal) {
+    const entry = this.entry(id);
     const monitor = new RedisMonitor(entry.client, () => entry.monitors.delete(monitor));
     entry.monitors.add(monitor);
     return monitor.open(signal);
   }
-  pubsub(workspaceId: string, id: string, signal: AbortSignal) {
-    const entry = this.entry(workspaceId, id);
+  pubsub(id: string, signal: AbortSignal) {
+    const entry = this.entry(id);
     const capture = new RedisPubSub(entry.client, () => entry.pubsubs.delete(capture.id));
     entry.pubsubs.set(capture.id, capture);
     return capture.open(signal);
   }
-  private pubsubCapture(workspaceId: string, id: string, captureId: string) {
-    const capture = this.entry(workspaceId, id).pubsubs.get(captureId);
+  private pubsubCapture(id: string, captureId: string) {
+    const capture = this.entry(id).pubsubs.get(captureId);
     if (!capture) throw new DatabaseInputError('当前 Redis 会话中的 Pub/Sub 连接已断开');
     return capture;
   }
-  pubsubSubscriptions(workspaceId: string, id: string, captureId: string) {
-    return this.pubsubCapture(workspaceId, id, captureId).subscriptions();
+  pubsubSubscriptions(id: string, captureId: string) {
+    return this.pubsubCapture(id, captureId).subscriptions();
   }
-  pubsubChange(workspaceId: string, id: string, captureId: string, input: unknown) {
-    return this.pubsubCapture(workspaceId, id, captureId).change(input);
+  pubsubChange(id: string, captureId: string, input: unknown) {
+    return this.pubsubCapture(id, captureId).change(input);
   }
-  async pubsubPublish(workspaceId: string, id: string, input: unknown) {
-    const entry = this.writable(workspaceId, id);
+  async pubsubPublish(id: string, input: unknown) {
+    const entry = this.writable(id);
     if (!input || typeof input !== 'object' || (input as Record<string, unknown>).confirmed !== true)
       throw new DatabaseInputError('发布消息需要明确确认');
     const value = input as Record<string, unknown>;
@@ -171,9 +170,9 @@ export class RedisSessionManager {
       throw error;
     }
   }
-  async switchDatabase(workspaceId: string, id: string, rawDatabase: unknown): Promise<RedisSession> {
+  async switchDatabase(id: string, rawDatabase: unknown): Promise<RedisSession> {
     const database = redisDatabase(rawDatabase);
-    const entry = this.entry(workspaceId, id);
+    const entry = this.entry(id);
     if (entry.changingMode) throw new DatabaseInputError('Redis 会话正在切换，请等待结果');
     if (entry.saving) throw new DatabaseInputError('Redis 写入已发送，请等待确认后切换数据库');
     if (database === entry.session.database) return { ...entry.session };
@@ -196,62 +195,62 @@ export class RedisSessionManager {
     } catch (error) { client.disconnect(); throw error; }
     finally { entry.changingMode = false; }
   }
-  history(workspaceId: string, id: string): RedisHistoryPage {
-    const entry = this.entry(workspaceId, id);
+  history(id: string): RedisHistoryPage {
+    const entry = this.entry(id);
     const persistent = Boolean(this.historyRepository && entry.session.connectionId);
-    const entries = persistent ? this.historyRepository!.list(workspaceId, entry.session.connectionId!) : entry.history;
+    const entries = persistent ? this.historyRepository!.list(entry.session.connectionId!) : entry.history;
     return { entries: [...entries].reverse(), persistent, limit: REDIS_HISTORY_LIMIT };
   }
-  clearHistory(workspaceId: string, id: string): void {
-    const entry = this.entry(workspaceId, id);
-    if (this.historyRepository && entry.session.connectionId) this.historyRepository.clear(workspaceId, entry.session.connectionId);
+  clearHistory(id: string): void {
+    const entry = this.entry(id);
+    if (this.historyRepository && entry.session.connectionId) this.historyRepository.clear(entry.session.connectionId);
     entry.history = [];
   }
-  removeConnection(workspaceId: string, connectionId: string): void {
-    const entries = [...this.entries.values()].filter((entry) => entry.session.workspaceId === workspaceId && entry.session.connectionId === connectionId);
+  removeConnection(connectionId: string): void {
+    const entries = [...this.entries.values()].filter((entry) => entry.session.connectionId === connectionId);
     for (const entry of entries) {
       if (entry.changingMode) throw new DatabaseInputError('连接正在切换，请等待后再删除');
       if (entry.saving) throw new DatabaseInputError('Redis 正在确认写入，请等待后再删除连接');
       entry.mutations.clear();
       entry.bulk.clear();
     }
-    for (const entry of entries) this.disconnect(workspaceId, entry.session.id);
-    this.historyRepository?.clear(workspaceId, connectionId);
+    for (const entry of entries) this.disconnect(entry.session.id);
+    this.historyRepository?.clear(connectionId);
   }
   private recordHistory(entry: Entry, record: RedisHistoryEntry): string | null {
     if (this.entries.get(entry.session.id) !== entry) return null;
     try {
       if (this.historyRepository && entry.session.connectionId)
-        this.historyRepository.append(entry.session.workspaceId, entry.session.connectionId, record);
+        this.historyRepository.append(entry.session.connectionId, record);
       else entry.history = [...entry.history, record].slice(-REDIS_HISTORY_LIMIT);
       return null;
     } catch (error) { return `记录历史失败：${error instanceof Error ? error.message : String(error)}`; }
   }
-  prepare(workspaceId: string, id: string, mutation: unknown, version: unknown) {
-    return this.writable(workspaceId, id).mutations.prepare(mutation, version);
+  prepare(id: string, mutation: unknown, version: unknown) {
+    return this.writable(id).mutations.prepare(mutation, version);
   }
-  async commit(workspaceId: string, id: string, planId: unknown, confirmed: unknown) {
-    const entry = this.writable(workspaceId, id);
+  async commit(id: string, planId: unknown, confirmed: unknown) {
+    const entry = this.writable(id);
     entry.saving = true;
     try { return await entry.mutations.commit(planId, confirmed); }
     finally { entry.saving = false; }
   }
-  prepareBulk(workspaceId: string, id: string, input: unknown, signal?: AbortSignal) {
-    const entry = this.entry(workspaceId, id);
+  prepareBulk(id: string, input: unknown, signal?: AbortSignal) {
+    const entry = this.entry(id);
     if (entry.changingMode || entry.saving) throw new DatabaseInputError('Redis 会话正在切换或确认写入，请稍后预览');
     return entry.bulk.prepare(input, signal);
   }
-  discardBulk(workspaceId: string, id: string, planId: unknown): void {
-    this.entry(workspaceId, id).bulk.discard(planId);
+  discardBulk(id: string, planId: unknown): void {
+    this.entry(id).bulk.discard(planId);
   }
-  async commitBulk(workspaceId: string, id: string, planId: unknown, confirmed: unknown, dangerConfirmed: unknown, signal?: AbortSignal) {
-    const entry = this.writable(workspaceId, id);
+  async commitBulk(id: string, planId: unknown, confirmed: unknown, dangerConfirmed: unknown, signal?: AbortSignal) {
+    const entry = this.writable(id);
     entry.saving = true;
     try { return await entry.bulk.commit(planId, confirmed, dangerConfirmed, signal); }
     finally { entry.saving = false; }
   }
-  async editString(workspaceId: string, id: string, rawKey: unknown): Promise<{ content: RedisBlob; writeVersion: string }> {
-    const { client, mutations } = this.writable(workspaceId, id);
+  async editString(id: string, rawKey: unknown): Promise<{ content: RedisBlob; writeVersion: string }> {
+    const { client, mutations } = this.writable(id);
     const key = redisKey(rawKey);
     const before = await mutations.snapshot(key);
     if (before.type !== 'string') throw new DatabaseInputError('Key 类型已变化，请刷新');
@@ -261,8 +260,8 @@ export class RedisSessionManager {
     if (!sameRedisSnapshot(before, after)) throw new DatabaseInputError('读取期间 Key 已变化，请重新读取');
     return { content: redisBlob(content), writeVersion: mutations.remember(after) };
   }
-  async scan(workspaceId: string, id: string, cursor: unknown, pattern: unknown): Promise<RedisScanPage> {
-    const { client } = this.entry(workspaceId, id);
+  async scan(id: string, cursor: unknown, pattern: unknown): Promise<RedisScanPage> {
+    const { client } = this.entry(id);
     const current = redisCursor(cursor);
     if (typeof pattern !== 'string' || Buffer.byteLength(pattern) > 4096)
       throw new DatabaseInputError('Key 匹配规则无效');
@@ -287,12 +286,11 @@ export class RedisSessionManager {
     };
   }
   async value(
-    workspaceId: string,
     id: string,
     rawKey: unknown,
     rawCursor: unknown = '0',
   ): Promise<RedisValuePage> {
-    const { client, session, mutations } = this.entry(workspaceId, id);
+    const { client, session, mutations } = this.entry(id);
     const key = redisKey(rawKey);
     let before: Awaited<ReturnType<RedisMutationManager['snapshot']>> | null = null;
     let writeVersion: string | null = null;
@@ -391,8 +389,8 @@ export class RedisSessionManager {
     }
     return { key: redisBlob(key), type, ttl, data, writeVersion, writeUnavailable };
   }
-  async command(workspaceId: string, id: string, value: unknown): Promise<RedisCommandResult> {
-    const entry = this.entry(workspaceId, id);
+  async command(id: string, value: unknown): Promise<RedisCommandResult> {
+    const entry = this.entry(id);
     const [command, ...args] = redisCommand(value);
     const start = performance.now();
     const timestamp = Date.now();
@@ -406,11 +404,11 @@ export class RedisSessionManager {
       throw new Error(warning ? `${message}；${warning}` : message);
     }
   }
-  disconnect(workspaceId: string, id: string): void {
+  disconnect(id: string): void {
     // Session replacement and view cleanup may both close the same session.
     if (!this.entries.has(id)) return;
-    const { client, mutations, bulk, saving, monitors, pubsubs } = this.entry(workspaceId, id);
-    if (this.entry(workspaceId, id).changingMode) throw new DatabaseInputError('Redis 会话正在切换，请等待后断开');
+    const { client, mutations, bulk, saving, monitors, pubsubs } = this.entry(id);
+    if (this.entry(id).changingMode) throw new DatabaseInputError('Redis 会话正在切换，请等待后断开');
     if (saving) throw new DatabaseInputError('Redis 写入已发送，请等待实际确认后断开');
     mutations.clear();
     bulk.clear();
@@ -420,6 +418,6 @@ export class RedisSessionManager {
     client.disconnect();
   }
   shutdown(): void {
-    for (const { session } of this.entries.values()) this.disconnect(session.workspaceId, session.id);
+    for (const { session } of this.entries.values()) this.disconnect(session.id);
   }
 }

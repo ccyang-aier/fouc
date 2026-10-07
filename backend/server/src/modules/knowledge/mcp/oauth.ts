@@ -1,7 +1,7 @@
 import type { Pool } from 'pg';
 import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
 import { getFoucIdentity } from '../../../platform/identity/identity';
 import { activeSessionMember } from '../access/session-access';
 import {
@@ -16,7 +16,7 @@ import {
   verifyMcpConsentProof,
 } from '../access/oauth-server';
 import { hasTrustedFoucOrigin } from '../../../platform/identity/config';
-import { KnowledgeAccessError, knowledgeTokenScopes, tokenWorkspaceSchema } from '../access/access-policy';
+import { KnowledgeAccessError, knowledgeTokenScopes, tokenKnowledgeBaseSchema } from '../access/access-policy';
 import type { KnowledgeTokenScope } from '../access/access-policy';
 import type { FoucAuth } from '../../../platform/identity/service';
 import type { FoucIdentity } from '../../../platform/identity/identity';
@@ -27,7 +27,7 @@ import type { FoucIdentity } from '../../../platform/identity/identity';
  * revocation). Mount at the HTTP root so the well-known path-suffix forms resolve:
  * the protected resource `<origin>/api/knowledge/<ws>/mcp` advertises its metadata at
  * `<origin>/.well-known/oauth-protected-resource/api/knowledge/<ws>/mcp`, and the
- * workspace authorization server issuer `<origin>/api/knowledge/<ws>/oauth` at
+ * knowledgeBase authorization server issuer `<origin>/api/knowledge/<ws>/oauth` at
  * `<origin>/.well-known/oauth-authorization-server/api/knowledge/<ws>/oauth`.
  */
 
@@ -46,17 +46,17 @@ function normalizeExternalOrigin(value: string): string {
   return url.origin;
 }
 
-export function knowledgeMcpResourceUrl(externalOrigin: string, workspaceId: string): string {
-  return `${normalizeExternalOrigin(externalOrigin)}/api/knowledge/${workspaceId}/mcp`;
+export function knowledgeMcpResourceUrl(externalOrigin: string, knowledgeBaseId: string): string {
+  return `${normalizeExternalOrigin(externalOrigin)}/api/knowledge/${knowledgeBaseId}/mcp`;
 }
 
-export function knowledgeMcpResourceMetadataUrl(externalOrigin: string, workspaceId: string): string {
-  return `${normalizeExternalOrigin(externalOrigin)}/.well-known/oauth-protected-resource/api/knowledge/${workspaceId}/mcp`;
+export function knowledgeMcpResourceMetadataUrl(externalOrigin: string, knowledgeBaseId: string): string {
+  return `${normalizeExternalOrigin(externalOrigin)}/.well-known/oauth-protected-resource/api/knowledge/${knowledgeBaseId}/mcp`;
 }
 
 /** RFC 9727 challenge for MCP endpoints that rejected a request without valid credentials. */
-export function knowledgeMcpWwwAuthenticate(externalOrigin: string, workspaceId: string): string {
-  return `Bearer resource_metadata="${knowledgeMcpResourceMetadataUrl(externalOrigin, workspaceId)}"`;
+export function knowledgeMcpWwwAuthenticate(externalOrigin: string, knowledgeBaseId: string): string {
+  return `Bearer resource_metadata="${knowledgeMcpResourceMetadataUrl(externalOrigin, knowledgeBaseId)}"`;
 }
 
 const noStore = { 'cache-control': 'no-store', 'pragma': 'no-cache' } as const;
@@ -127,10 +127,10 @@ function errorRedirect(redirectUri: string, error: string, state: string | null)
   return new Response(null, { status: 302, headers: { location: url.toString(), ...noStore } });
 }
 
-function consentFormFields(input: { workspaceId: string; userId: string; clientId: string; redirectUri: string; scopes: readonly string[]; state: string | null; codeChallenge: string; resource: string | null }, secret: string) {
+function consentFormFields(input: { knowledgeBaseId: string; userId: string; clientId: string; redirectUri: string; scopes: readonly string[]; state: string | null; codeChallenge: string; resource: string | null }, secret: string) {
   const scope = input.scopes.join(' ');
   const consent = createMcpConsentProof(secret, [
-    input.workspaceId, input.clientId, input.redirectUri, scope, input.state ?? '', input.codeChallenge, input.resource ?? '', input.userId,
+    input.knowledgeBaseId, input.clientId, input.redirectUri, scope, input.state ?? '', input.codeChallenge, input.resource ?? '', input.userId,
   ]);
   const fields: Record<string, string> = {
     client_id: input.clientId, redirect_uri: input.redirectUri, scope, code_challenge: input.codeChallenge, consent,
@@ -152,19 +152,19 @@ export function createKnowledgeMcpAuthorizationRoutes(options: KnowledgeMcpOAuth
     onError: () => oauthError('invalid_request', 413),
   }));
 
-  const workspace = (value: string | undefined): string | null => {
-    const parsed = tokenWorkspaceSchema.safeParse(value);
+  const knowledgeBase = (value: string | undefined): string | null => {
+    const parsed = tokenKnowledgeBaseSchema.safeParse(value);
     return parsed.success ? parsed.data : null;
   };
-  const issuerOf = (workspaceId: string) => `${origin}/api/knowledge/${workspaceId}/oauth`;
-  const resourceOf = (workspaceId: string) => `${origin}/api/knowledge/${workspaceId}/mcp`;
+  const issuerOf = (knowledgeBaseId: string) => `${origin}/api/knowledge/${knowledgeBaseId}/oauth`;
+  const resourceOf = (knowledgeBaseId: string) => `${origin}/api/knowledge/${knowledgeBaseId}/mcp`;
 
-  /** Verified browser session that is still an active member of the workspace. */
-  const authorizeActor = async (request: Request, workspaceId: string): Promise<FoucIdentity | 'signin' | 'forbidden'> => {
+  /** Verified browser session that is still an active member of the resources. */
+  const authorizeActor = async (request: Request, knowledgeBaseId: string): Promise<FoucIdentity | 'signin' | 'forbidden'> => {
     const identity = await getFoucIdentity(options.auth, request.headers);
     if (!identity) return 'signin';
     try {
-      await withWorkspaceTenant(options.pool, workspaceId, (db) => activeSessionMember(db, workspaceId, identity));
+      await withKnowledgeBase(options.pool, knowledgeBaseId, (db) => activeSessionMember(db, knowledgeBaseId, identity));
       return identity;
     } catch (error) {
       if (error instanceof KnowledgeAccessError) return 'forbidden';
@@ -172,19 +172,19 @@ export function createKnowledgeMcpAuthorizationRoutes(options: KnowledgeMcpOAuth
     }
   };
 
-  app.get('/.well-known/oauth-protected-resource/api/knowledge/:workspaceId/mcp', (context) => {
-    const workspaceId = workspace(context.req.param('workspaceId'));
-    if (!workspaceId) return context.notFound();
-    // RFC 9728: point clients at the workspace-scoped authorization server.
+  app.get('/.well-known/oauth-protected-resource/api/knowledge/:knowledgeBaseId/mcp', (context) => {
+    const knowledgeBaseId = knowledgeBase(context.req.param('knowledgeBaseId'));
+    if (!knowledgeBaseId) return context.notFound();
+    // RFC 9728: point clients at the knowledgeBase-scoped authorization server.
     return oauthJson({
-      resource: resourceOf(workspaceId),
-      authorization_servers: [issuerOf(workspaceId)],
+      resource: resourceOf(knowledgeBaseId),
+      authorization_servers: [issuerOf(knowledgeBaseId)],
       scopes_supported: [...knowledgeTokenScopes],
     });
   });
 
-  const serverMetadata = (workspaceId: string) => {
-    const issuer = issuerOf(workspaceId);
+  const serverMetadata = (knowledgeBaseId: string) => {
+    const issuer = issuerOf(knowledgeBaseId);
     return {
       issuer,
       authorization_endpoint: `${issuer}/authorize`,
@@ -200,32 +200,32 @@ export function createKnowledgeMcpAuthorizationRoutes(options: KnowledgeMcpOAuth
       authorization_response_iss_parameter_supported: true,
     };
   };
-  app.get('/.well-known/oauth-authorization-server/api/knowledge/:workspaceId/oauth', (context) => {
-    const workspaceId = workspace(context.req.param('workspaceId'));
-    if (!workspaceId) return context.notFound();
-    return oauthJson(serverMetadata(workspaceId));
+  app.get('/.well-known/oauth-authorization-server/api/knowledge/:knowledgeBaseId/oauth', (context) => {
+    const knowledgeBaseId = knowledgeBase(context.req.param('knowledgeBaseId'));
+    if (!knowledgeBaseId) return context.notFound();
+    return oauthJson(serverMetadata(knowledgeBaseId));
   });
-  app.get('/api/knowledge/:workspaceId/oauth/.well-known/oauth-authorization-server', (context) => {
-    const workspaceId = workspace(context.req.param('workspaceId'));
-    if (!workspaceId) return context.notFound();
-    return oauthJson(serverMetadata(workspaceId));
+  app.get('/api/knowledge/:knowledgeBaseId/oauth/.well-known/oauth-authorization-server', (context) => {
+    const knowledgeBaseId = knowledgeBase(context.req.param('knowledgeBaseId'));
+    if (!knowledgeBaseId) return context.notFound();
+    return oauthJson(serverMetadata(knowledgeBaseId));
   });
 
-  app.get('/api/knowledge/:workspaceId/oauth/authorize', async (context) => {
-    const workspaceId = workspace(context.req.param('workspaceId'));
-    if (!workspaceId) return context.notFound();
-    const actor = await authorizeActor(context.req.raw, workspaceId);
+  app.get('/api/knowledge/:knowledgeBaseId/oauth/authorize', async (context) => {
+    const knowledgeBaseId = knowledgeBase(context.req.param('knowledgeBaseId'));
+    if (!knowledgeBaseId) return context.notFound();
+    const actor = await authorizeActor(context.req.raw, knowledgeBaseId);
     if (actor === 'signin') return page(401, 'Sign in required', 'Sign in to Fouc in this browser first, then let the MCP client retry.');
-    if (actor === 'forbidden') return page(403, 'Not a workspace member', 'Your account is not a member of this workspace.');
+    if (actor === 'forbidden') return page(403, 'Not a knowledgeBase member', 'Your account is not a member of this knowledge base.');
 
-    const parsed = parseAuthorizeRequest(new URL(context.req.url).searchParams, resourceOf(workspaceId));
+    const parsed = parseAuthorizeRequest(new URL(context.req.url).searchParams, resourceOf(knowledgeBaseId));
     const client = parsed ? await server.client(parsed.clientId) : null;
     if (!parsed || !client || !matchMcpRedirectUri(client.redirectUris, parsed.redirectUri)) {
       return page(400, 'Invalid authorization request', 'The client or its redirect URI is not registered with this server.');
     }
     if (parsed.error) return errorRedirect(parsed.redirectUri, parsed.error, parsed.state);
 
-    const { fields } = consentFormFields({ workspaceId, userId: actor.userId, clientId: parsed.clientId, redirectUri: parsed.redirectUri, scopes: parsed.valid!.scopes, state: parsed.state, codeChallenge: parsed.valid!.codeChallenge, resource: parsed.valid!.resource }, secret);
+    const { fields } = consentFormFields({ knowledgeBaseId, userId: actor.userId, clientId: parsed.clientId, redirectUri: parsed.redirectUri, scopes: parsed.valid!.scopes, state: parsed.state, codeChallenge: parsed.valid!.codeChallenge, resource: parsed.valid!.resource }, secret);
     const scopeText = parsed.valid!.scopes.map((scope) => (scope === 'write' ? 'read and write' : 'read-only')).join(', ');
     const hidden = Object.entries(fields).map(([name, value]) => `<input type="hidden" name="${escapeHtml(name)}" value="${escapeHtml(value)}">`).join('');
     const form = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">`
@@ -236,21 +236,21 @@ export function createKnowledgeMcpAuthorizationRoutes(options: KnowledgeMcpOAuth
       + `.actions{display:flex;gap:.75rem;margin-top:1.5rem}button{flex:1;padding:.55rem 1rem;font:inherit;font-weight:600;border-radius:8px;border:1px solid #d4d4d8;cursor:pointer;background:#fff}`
       + `button.approve{background:#1b1b1f;color:#fff;border-color:#1b1b1f}`
       + `</style></head><body><main><h1>Authorize MCP client</h1>`
-      + `<p><strong>${escapeHtml(client.name)}</strong> requests <strong>${escapeHtml(scopeText)}</strong> access to this workspace through the Fouc MCP server.</p>`
+      + `<p><strong>${escapeHtml(client.name)}</strong> requests <strong>${escapeHtml(scopeText)}</strong> access to this knowledgeBase through the Fouc MCP server.</p>`
       + `<p>The client receives a personal access token under your account; you can revoke it any time in Fouc.</p>`
-      + `<form method="post" action="${escapeHtml(`${issuerOf(workspaceId)}/authorize`)}">${hidden}`
+      + `<form method="post" action="${escapeHtml(`${issuerOf(knowledgeBaseId)}/authorize`)}">${hidden}`
       + `<div class="actions"><button class="approve" name="decision" value="approve">Authorize</button><button name="decision" value="deny">Deny</button></div></form>`
       + `</main></body></html>`;
     return new Response(form, { headers: { 'content-type': 'text/html; charset=utf-8', ...noStore } });
   });
 
-  app.post('/api/knowledge/:workspaceId/oauth/authorize', async (context) => {
-    const workspaceId = workspace(context.req.param('workspaceId'));
-    if (!workspaceId) return context.notFound();
+  app.post('/api/knowledge/:knowledgeBaseId/oauth/authorize', async (context) => {
+    const knowledgeBaseId = knowledgeBase(context.req.param('knowledgeBaseId'));
+    if (!knowledgeBaseId) return context.notFound();
     if (!hasTrustedFoucOrigin(context.req.raw, trustedOrigins)) return page(403, 'Untrusted request origin', 'The consent request came from an untrusted origin.');
-    const actor = await authorizeActor(context.req.raw, workspaceId);
+    const actor = await authorizeActor(context.req.raw, knowledgeBaseId);
     if (actor === 'signin') return page(401, 'Sign in required', 'Sign in to Fouc in this browser first, then let the MCP client retry.');
-    if (actor === 'forbidden') return page(403, 'Not a workspace member', 'Your account is not a member of this workspace.');
+    if (actor === 'forbidden') return page(403, 'Not a knowledgeBase member', 'Your account is not a member of this knowledge base.');
 
     const form = new URLSearchParams(await context.req.text());
     const clientId = form.get('client_id') ?? '';
@@ -260,7 +260,7 @@ export function createKnowledgeMcpAuthorizationRoutes(options: KnowledgeMcpOAuth
     const scope = form.get('scope') ?? '';
     const codeChallenge = form.get('code_challenge') ?? '';
     const resource = form.get('resource');
-    const fields = [workspaceId, clientId, redirectUri, scope, state ?? '', codeChallenge, resource ?? '', actor.userId];
+    const fields = [knowledgeBaseId, clientId, redirectUri, scope, state ?? '', codeChallenge, resource ?? '', actor.userId];
     const client = mcpClientIdPattern.test(clientId) ? await server.client(clientId) : null;
     if (!client || !verifyMcpConsentProof(secret, consent, fields) || !matchMcpRedirectUri(client.redirectUris, redirectUri)) {
       return page(400, 'Invalid consent request', 'The authorization request expired or was tampered with. Start again from the MCP client.');
@@ -272,19 +272,19 @@ export function createKnowledgeMcpAuthorizationRoutes(options: KnowledgeMcpOAuth
       return errorRedirect(redirectUri, 'invalid_request', state);
     }
     const code = await server.createAuthorizationCode({
-      workspaceId, clientId, clientName: client.name, userId: actor.userId, redirectUri,
-      scopes, codeChallenge, resource: resourceOf(workspaceId),
+      knowledgeBaseId, clientId, clientName: client.name, userId: actor.userId, redirectUri,
+      scopes, codeChallenge, resource: resourceOf(knowledgeBaseId),
     });
     const url = new URL(redirectUri);
     url.searchParams.set('code', code);
     if (state !== null) url.searchParams.set('state', state);
-    url.searchParams.set('iss', issuerOf(workspaceId));
+    url.searchParams.set('iss', issuerOf(knowledgeBaseId));
     return new Response(null, { status: 302, headers: { location: url.toString(), ...noStore } });
   });
 
-  app.post('/api/knowledge/:workspaceId/oauth/token', async (context) => {
-    const workspaceId = workspace(context.req.param('workspaceId'));
-    if (!workspaceId) return context.notFound();
+  app.post('/api/knowledge/:knowledgeBaseId/oauth/token', async (context) => {
+    const knowledgeBaseId = knowledgeBase(context.req.param('knowledgeBaseId'));
+    if (!knowledgeBaseId) return context.notFound();
     if (context.req.header('content-type')?.split(';')[0]?.trim() !== 'application/x-www-form-urlencoded') {
       return oauthError('invalid_request');
     }
@@ -296,7 +296,7 @@ export function createKnowledgeMcpAuthorizationRoutes(options: KnowledgeMcpOAuth
     // The claim is atomic and single-use; every subsequent mismatch burns the code.
     const grant = await server.claimAuthorizationCode(form.get('code') ?? '');
     const verifier = form.get('code_verifier') ?? '';
-    if (!grant || grant.workspaceId !== workspaceId || grant.clientId !== clientId
+    if (!grant || grant.knowledgeBaseId !== knowledgeBaseId || grant.clientId !== clientId
       || grant.redirectUri !== (form.get('redirect_uri') ?? '')
       || !mcpCodeVerifierPattern.test(verifier) || !mcpVerifyPkce(verifier, grant.codeChallenge)) {
       return oauthError('invalid_grant');
@@ -310,7 +310,7 @@ export function createKnowledgeMcpAuthorizationRoutes(options: KnowledgeMcpOAuth
     } catch { return oauthError('server_error', 500); }
   });
 
-  app.post('/api/knowledge/:workspaceId/oauth/register', async (context) => {
+  app.post('/api/knowledge/:knowledgeBaseId/oauth/register', async (context) => {
     if (context.req.header('content-type')?.split(';')[0]?.trim() !== 'application/json') return oauthError('invalid_client_metadata');
     const client = await server.registerClient(await context.req.json().catch(() => null));
     if (!client) return oauthError('invalid_client_metadata');
@@ -325,14 +325,14 @@ export function createKnowledgeMcpAuthorizationRoutes(options: KnowledgeMcpOAuth
     }, 201);
   });
 
-  app.post('/api/knowledge/:workspaceId/oauth/revoke', async (context) => {
-    const workspaceId = workspace(context.req.param('workspaceId'));
-    if (!workspaceId) return context.notFound();
+  app.post('/api/knowledge/:knowledgeBaseId/oauth/revoke', async (context) => {
+    const knowledgeBaseId = knowledgeBase(context.req.param('knowledgeBaseId'));
+    if (!knowledgeBaseId) return context.notFound();
     if (context.req.header('content-type')?.split(';')[0]?.trim() !== 'application/x-www-form-urlencoded') return oauthError('invalid_request');
     const form = new URLSearchParams(await context.req.text());
     const clientId = form.get('client_id') ?? '';
     if (!mcpClientIdPattern.test(clientId) || !(await server.client(clientId))) return oauthError('invalid_client');
-    await server.revokeAccessToken(workspaceId, form.get('token') ?? '');
+    await server.revokeAccessToken(knowledgeBaseId, form.get('token') ?? '');
     // RFC 7009: unknown or already-invalid tokens still report success.
     return oauthJson({});
   });

@@ -33,7 +33,7 @@ function AiTaskActions({ scope, taskId, blockId, prompt, tier, onTaskId, onError
   scope: PageScope; taskId: string | null; blockId: string; prompt: string; tier: 'fast' | 'smart';
   onTaskId: (taskId: string | null) => void; onError: (message: string) => void;
 }) {
-  const task = useAiStreamingTask(scope.workspaceId, taskId);
+  const task = useAiStreamingTask(scope.knowledgeBaseId, taskId);
   const [busy, setBusy] = useState(false);
   const status = task.snapshot?.status;
   const run = async () => {

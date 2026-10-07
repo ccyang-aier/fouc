@@ -131,15 +131,15 @@ export function DocumentNavigationTools({ editor, title, target, header, sidebar
   const reportTitle = reference?.reportTitle;
   useEffect(() => { reportTitle?.(title); }, [title, reportTitle]);
   const reportPrimaryDocument = reference?.reportPrimaryDocument;
-  const { workspaceId, knowledgeBaseId, pageId, source } = target;
+  const { knowledgeBaseId, pageId, source } = target;
   useEffect(() => {
-    reportPrimaryDocument?.({ title, target: { workspaceId, knowledgeBaseId, pageId, source } });
+    reportPrimaryDocument?.({ title, target: { knowledgeBaseId, pageId, source } });
     return () => reportPrimaryDocument?.(null);
-  }, [reportPrimaryDocument, title, workspaceId, knowledgeBaseId, pageId, source]);
+  }, [reportPrimaryDocument, title, knowledgeBaseId, pageId, source]);
   return <Context.Provider value={{ onPresent: () => { void onPresent(); }, onSearch: openSearch, onSplit: reference?.openReference ? () => reference.openReference!({ target, title }) : undefined,
     onTogglePin: reference ? () => reference.togglePin({ title, target }) : undefined, pinned: reference?.pins.some(pin => pin.target.pageId === target.pageId) ?? false,
     outlineOpen: Boolean(editor) && outlineOpen, outlineId, outlineTrigger, onToggleOutline: editor ? () => setOutlineOpen(!outlineOpen) : undefined }}>
-    <div ref={host} className={styles.toolsWorkspace}>
+    <div ref={host} className={styles.toolsSurface}>
       <div className={styles.toolbarHost}>{header}
       {fullscreenError && <div role="alert" className={styles.search}>{fullscreenError}<button aria-label="关闭提示" onClick={() => setFullscreenError('')}><X size={16} /></button></div>}
       {searchOpen && <div className={`${styles.search} menu-surface`} role="search" aria-label="在文档中搜索">
@@ -150,9 +150,9 @@ export function DocumentNavigationTools({ editor, title, target, header, sidebar
         <button type="button" aria-label="关闭文档搜索" onClick={() => setSearchOpen(false)}><X size={16} /></button>
       </div>}
       </div>
-      <div className={styles.workspaceBody}>
-        <div ref={documentHost} className={styles.documentWorkspace}>
-          <div className={styles.readingWorkspace} data-outline-open={Boolean(editor) && outlineOpen}>
+      <div className={styles.surfaceBody}>
+        <div ref={documentHost} className={styles.documentSurface}>
+          <div className={styles.readingSurface} data-outline-open={Boolean(editor) && outlineOpen}>
             {editor && outlineOpen && <aside className={styles.readingRail} aria-label="文档阅读导航">
               <div className={styles.railHeader}>
                 <div className={styles.railLabel}><strong>目录</strong><span>{headings.length}</span></div>

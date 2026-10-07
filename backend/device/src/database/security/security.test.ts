@@ -45,10 +45,10 @@ describe('native security directory P0', () => {
     expect(() => parseSecurityDetailQuery({ principalId: 'x', schema: '' })).toThrow();
     expect(parseSecurityDetailQuery({ principalId: 'x' })).toEqual({principalId:'x',schema:null});
   });
-  test('workspace access is checked before SQL and SQLite has no fabricated users', async () => {
-    const service = new DatabaseSecurityService(() => { throw new Error('workspace denied'); });
-    await expect(service.directory('wrong','id')).rejects.toThrow('workspace denied');
+  test('session access is checked before SQL and SQLite has no fabricated users', async () => {
+    const service = new DatabaseSecurityService(() => { throw new Error('session denied'); });
+    await expect(service.directory('id')).rejects.toThrow('session denied');
     const sqlite = new DatabaseSecurityService(() => ({ session: {provider:'sqlite'} } as never));
-    await expect(sqlite.directory('w','id')).rejects.toThrow('SQLite');
+    await expect(sqlite.directory('id')).rejects.toThrow('SQLite');
   });
 });

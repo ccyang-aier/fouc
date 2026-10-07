@@ -1,8 +1,8 @@
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { entityIdSchema, pageScopeSchema } from '@fouc/shared/knowledge/contracts';
-import { comment, commentThread, commentLike } from '../../../platform/database/workspace/schema';
-import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
+import { comment, commentThread, commentLike } from '../../../platform/database/resources/schema';
+import type { ResourceTransaction } from '../../../platform/database/resources/transaction';
 import { requireCommentAccess } from './access';
 import { KnowledgeCommentError } from './errors';
 
@@ -26,22 +26,22 @@ function parse<S extends z.ZodType>(schema: S, input: unknown): z.output<S> {
  * equal microsecond timestamps cannot occur through this one-comment-per-
  * transaction service.
  */
-export async function listPageCommentThreads(db: WorkspaceTenantTransaction, input: unknown): Promise<CommentThreadWithComments[]> {
+export async function listPageCommentThreads(db: ResourceTransaction, input: unknown): Promise<CommentThreadWithComments[]> {
   const parsed = parse(listInputSchema, input);
-  const scope = { workspaceId: parsed.workspaceId, pageId: parsed.pageId };
+  const scope = { knowledgeBaseId: parsed.knowledgeBaseId, pageId: parsed.pageId };
   await requireCommentAccess(db, { userId: parsed.userId, scope, required: 'view' });
   const threads = await db.select().from(commentThread)
-    .where(and(eq(commentThread.workspaceId, scope.workspaceId), eq(commentThread.pageId, scope.pageId)))
+    .where(and(eq(commentThread.knowledgeBaseId, scope.knowledgeBaseId), eq(commentThread.pageId, scope.pageId)))
     .orderBy(asc(commentThread.createdAt), asc(commentThread.id));
   if (!threads.length) return [];
   const entries = await db.select().from(comment)
-    .where(and(eq(comment.workspaceId, scope.workspaceId), inArray(comment.threadId, threads.map((thread) => thread.id))))
+    .where(and(eq(comment.knowledgeBaseId, scope.knowledgeBaseId), inArray(comment.threadId, threads.map((thread) => thread.id))))
     .orderBy(asc(comment.createdAt), asc(comment.id));
   const likes = entries.length ? await db.select({
     commentId: commentLike.commentId,
     likeCount: sql<number>`count(*)::int`,
     liked: sql<boolean>`bool_or(${commentLike.userId} = ${parsed.userId})`,
-  }).from(commentLike).where(and(eq(commentLike.workspaceId, scope.workspaceId), inArray(commentLike.commentId, entries.map(entry => entry.id)))).groupBy(commentLike.commentId) : [];
+  }).from(commentLike).where(and(eq(commentLike.knowledgeBaseId, scope.knowledgeBaseId), inArray(commentLike.commentId, entries.map(entry => entry.id)))).groupBy(commentLike.commentId) : [];
   const likesByComment = new Map(likes.map(like => [like.commentId, like]));
   const entriesByThread = new Map<string, CommentWithLikes[]>();
   for (const entry of entries) {

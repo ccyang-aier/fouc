@@ -26,8 +26,8 @@ test('editor preference API authenticates first and routes saved/live sessions t
   const sessions = new RelationalSessionManager(new DatabaseCapabilityRegistry()), connections = new RelationalConnectionRepository(directory);
   const app = createApp({ registry: {} as never, supervisor: {} as never, connectors: {} as never,
     relationalSessions: sessions, relationalConnections: connections, token: 'frontend-token', internalToken: 'native-only-token' }).app;
-  const headers = { authorization: 'Bearer frontend-token', 'content-type': 'application/json' }, root = '/api/database/workspaces/w/relational';
-  const saved = connections.save('w', { name: 'SQLite source', config: { provider: 'sqlite', path: dbFile } });
+  const headers = { authorization: 'Bearer frontend-token', 'content-type': 'application/json' }, root = '/api/database/relational';
+  const saved = connections.save({ name: 'SQLite source', config: { provider: 'sqlite', path: dbFile } });
   const library = `${root}/connections/${saved.id}/sql-library/preferences`;
   const send = (route: string, body: unknown) => app.request(route, { method: 'PUT', headers, body: JSON.stringify(body) });
   const read = (route: string) => app.request(route, { headers });
@@ -36,14 +36,14 @@ test('editor preference API authenticates first and routes saved/live sessions t
       expect((await app.request(route)).status).toBe(401);
       expect((await app.request(route, { method: 'PUT', body: '{}' })).status).toBe(401);
     }
-    expect((await read(library.replace('/workspaces/w/', '/workspaces/foreign/'))).status).toBe(400);
+    expect((await read(library.replace(saved.id, 'missing-connection'))).status).toBe(400);
     const initial = await read(library);
     expect(initial.status).toBe(200);
     expect(await preferencePayload(initial)).toEqual(defaultSqlEditorPreferences());
     const savedReply = await send(library, { ...snapshot(), formatOnSave: true });
     expect(savedReply.status).toBe(200);
     const preferences = await preferencePayload(savedReply);
-    const live = await sessions.connect('w', { provider: 'sqlite', path: dbFile }, { id: saved.id, name: saved.name });
+    const live = await sessions.connect({ provider: 'sqlite', path: dbFile }, { id: saved.id, name: saved.name });
     const liveRoute = `${root}/sessions/${live.id}/preferences`;
     expect(await preferencePayload(await read(liveRoute))).toEqual(preferences);
     const updatedReply = await send(liveRoute, { ...snapshot(preferences), formatOnSave: false });
@@ -53,20 +53,20 @@ test('editor preference API authenticates first and routes saved/live sessions t
     expect((await send(library, snapshot(preferences))).status).toBe(400);
     expect((await send(library, { ...snapshot(updated), snippets: [{ id: 'bad' }] })).status).toBe(400);
     expect(await preferencePayload(await read(library))).toEqual(updated);
-    expect((await read(liveRoute.replace('/workspaces/w/', '/workspaces/foreign/'))).status).toBe(400);
-    const transient = await sessions.connect('w', { provider: 'sqlite', path: dbFile });
+    expect((await read(liveRoute.replace(live.id, 'missing-session'))).status).toBe(400);
+    const transient = await sessions.connect({ provider: 'sqlite', path: dbFile });
     const transientRoute = `${root}/sessions/${transient.id}/preferences`;
     expect(await preferencePayload(await read(transientRoute))).toEqual(defaultSqlEditorPreferences());
     expect((await send(transientRoute, { ...snapshot(), snippets: [] })).status).toBe(200);
     expect(await preferencePayload(await read(library))).toEqual(updated);
-    await sessions.disconnect('w', transient.id);
+    await sessions.disconnect(transient.id);
     expect((await read(transientRoute)).status).toBe(400);
-    const reconnected = await sessions.connect('w', { provider: 'sqlite', path: dbFile });
-    expect(sessions.editorPreferences('w', reconnected.id)).toEqual(defaultSqlEditorPreferences());
+    const reconnected = await sessions.connect({ provider: 'sqlite', path: dbFile });
+    expect(sessions.editorPreferences(reconnected.id)).toEqual(defaultSqlEditorPreferences());
     expect((await app.request(`${root}/connections/${saved.id}`, { method: 'DELETE', headers })).status).toBe(200);
     expect((await read(library)).status).toBe(400);
     expect((await read(liveRoute)).status).toBe(400);
-    expect(sessions.sqlRepository.editorPreferences('w', saved.id)).toEqual(defaultSqlEditorPreferences());
+    expect(sessions.sqlRepository.editorPreferences(saved.id)).toEqual(defaultSqlEditorPreferences());
   } finally {
     await sessions.shutdown();
     Bun.gc(true);

@@ -16,7 +16,7 @@ import { xhrAssetTransfer } from './transfer';
 export type { UploadedAsset } from './upload-machine';
 
 export interface UseAssetUploadsOptions {
-  workspaceId: string;
+  knowledgeBaseId: string;
   /** 上传完成(含秒传)时回调;编辑器在此插入 `asset:<hash>` 媒体块。 */
   onUploaded?: (asset: UploadedAsset) => void;
   /** 以下端口仅供测试注入;浏览器装配使用默认 XHR + tRPC 实现。 */
@@ -34,16 +34,16 @@ export interface UseAssetUploads {
 }
 
 export function useAssetUploads(options: UseAssetUploadsOptions): UseAssetUploads {
-  const { workspaceId } = options;
+  const { knowledgeBaseId } = options;
   const store = useMemo<AssetUploadStore>(() => {
     const api = options.api ?? knowledgeAssetsApi;
     const transfer = options.transfer ?? xhrAssetTransfer;
     const ports = createBrowserAssetUploadPorts(api, transfer);
-    return createAssetUploadStore({ workspaceId, ports, onUploaded: options.onUploaded });
-    // 端口与完成回调按引用捕获一次:workspaceId 变化即新工作区,需新控制器;
+    return createAssetUploadStore({ knowledgeBaseId, ports, onUploaded: options.onUploaded });
+    // 端口与完成回调按引用捕获一次:knowledgeBaseId 变化即新知识库,需新控制器;
     // 回调请传稳定引用(useCallback/模块级),与注入端口同一契约。
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workspaceId]);
+  }, [knowledgeBaseId]);
 
   const subscribe = useCallback((listener: () => void) => store.subscribe(listener), [store]);
   const getSnapshot = useCallback(() => store.getItems(), [store]);

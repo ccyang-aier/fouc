@@ -4,8 +4,8 @@ import { and, eq, inArray, sql } from 'drizzle-orm';
 import * as Y from 'yjs';
 import type { OutboxEvent, PageScope } from '@fouc/shared/knowledge/contracts';
 import { isValidBlockId } from '@fouc/shared/knowledge/schema';
-import { backlink, blockIndex, docState, page } from '../../../platform/database/workspace/schema';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import { backlink, blockIndex, docState, page } from '../../../platform/database/resources/schema';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
 import { replaceAuthorizedPageAcl } from '../permissions/mutations';
 import { createPermissionsFixture, until } from '../permissions/permissions-test-fixture';
 import type { PermissionsFixture } from '../permissions/permissions-test-fixture';
@@ -19,7 +19,7 @@ import { createBlockIndexConsumer, readPageBlockIndexRows, refreshPageBlockIndex
 
 const sha256 = (value: string) => createHash('sha256').update(value, 'utf8').digest('hex');
 
-/** Real identities, real outbox queue, real tenant transactions. */
+/** Real identities, real outbox queue, real resource transactions. */
 describe('page block index projection', () => {
   let fixture: PermissionsFixture;
   const runners = new Set<RunningRole>();
@@ -34,8 +34,8 @@ describe('page block index projection', () => {
   }, 30_000);
   beforeEach(async () => {
     await fixture.resetJobs();
-    await fixture.server.database.admin.query('DELETE FROM workspace.backlink');
-    await fixture.server.database.admin.query('DELETE FROM workspace.block_index');
+    await fixture.server.database.admin.query('DELETE FROM resources.backlink');
+    await fixture.server.database.admin.query('DELETE FROM resources.block_index');
   });
 
   interface DraftLink { target?: string; targetBlockId?: string; pageId?: string }
@@ -80,13 +80,13 @@ describe('page block index projection', () => {
   }
 
   /** The same atomic commit onStoreDocument performs: state, vector, doc.changed. */
-  async function writeBody(node: { workspaceId: string; pageId: string }, blocks: readonly DraftBlock[], userId = fixture.owner.identity.userId) {
+  async function writeBody(node: { knowledgeBaseId: string; pageId: string }, blocks: readonly DraftBlock[], userId = fixture.owner.identity.userId) {
     const scope = scopeOf(node);
     const { state, stateVector } = encodeBody(blocks);
-    await withWorkspaceTenant(fixture.pool, scope.workspaceId, async (db) => {
+    await withKnowledgeBase(fixture.pool, scope.knowledgeBaseId, async (db) => {
       await db.insert(docState).values({ ...scope, state, stateVector })
-        .onConflictDoUpdate({ target: [docState.workspaceId, docState.pageId], set: { state, stateVector, updatedAt: sql`clock_timestamp()` } });
-      const event: OutboxEvent = { workspaceId: scope.workspaceId, topic: 'doc.changed', pageId: scope.pageId, actor: { kind: 'human', userId }, occurredAt: new Date().toISOString() };
+        .onConflictDoUpdate({ target: [docState.knowledgeBaseId, docState.pageId], set: { state, stateVector, updatedAt: sql`clock_timestamp()` } });
+      const event: OutboxEvent = { knowledgeBaseId: scope.knowledgeBaseId, topic: 'doc.changed', pageId: scope.pageId, actor: { kind: 'human', userId }, occurredAt: new Date().toISOString() };
       await appendKnowledgeOutbox(db, event);
     });
   }
@@ -94,8 +94,8 @@ describe('page block index projection', () => {
   /** fixture.tree() seeds one permission-canary row per page; it is not body content. */
   async function tree(options: Parameters<typeof fixture.tree>[0] = { parents: [null] }) {
     const created = await fixture.tree(options);
-    await withWorkspaceTenant(fixture.pool, created.root.workspaceId, (db) => db.delete(blockIndex).where(and(
-      eq(blockIndex.workspaceId, created.root.workspaceId),
+    await withKnowledgeBase(fixture.pool, created.root.knowledgeBaseId, (db) => db.delete(blockIndex).where(and(
+      eq(blockIndex.knowledgeBaseId, created.root.knowledgeBaseId),
       inArray(blockIndex.pageId, created.pages.map((node) => node.pageId)),
     )));
     return created;
@@ -124,33 +124,33 @@ describe('page block index projection', () => {
   }
 
   async function retitle(scope: PageScope, title: string) {
-    await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) =>
-      db.update(page).set({ title }).where(and(eq(page.workspaceId, scope.workspaceId), eq(page.id, scope.pageId))));
+    await withKnowledgeBase(fixture.pool, scope.knowledgeBaseId, (db) =>
+      db.update(page).set({ title }).where(and(eq(page.knowledgeBaseId, scope.knowledgeBaseId), eq(page.id, scope.pageId))));
   }
 
   async function grant(scope: PageScope, principalText: string, level: 'view' | 'comment' | 'edit' | 'full') {
-    await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) =>
-      replaceAuthorizedPageAcl(db, { workspaceId: scope.workspaceId, pageId: scope.pageId, grants: [{ principal: principalText, level }] }));
+    await withKnowledgeBase(fixture.pool, scope.knowledgeBaseId, (db) =>
+      replaceAuthorizedPageAcl(db, { knowledgeBaseId: scope.knowledgeBaseId, pageId: scope.pageId, grants: [{ principal: principalText, level }] }));
   }
 
-  function scopeOf(node: { workspaceId: string; pageId: string }): PageScope {
-    return { workspaceId: node.workspaceId, pageId: node.pageId };
+  function scopeOf(node: { knowledgeBaseId: string; pageId: string }): PageScope {
+    return { knowledgeBaseId: node.knowledgeBaseId, pageId: node.pageId };
   }
 
-  function refresh(node: { workspaceId: string; pageId: string }) {
+  function refresh(node: { knowledgeBaseId: string; pageId: string }) {
     const scope = scopeOf(node);
-    return withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) => refreshPageBlockIndex(db, scope));
+    return withKnowledgeBase(fixture.pool, scope.knowledgeBaseId, (db) => refreshPageBlockIndex(db, scope));
   }
 
-  function rowsOf(node: { workspaceId: string; pageId: string }) {
+  function rowsOf(node: { knowledgeBaseId: string; pageId: string }) {
     const scope = scopeOf(node);
-    return withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) => readPageBlockIndexRows(db, scope));
+    return withKnowledgeBase(fixture.pool, scope.knowledgeBaseId, (db) => readPageBlockIndexRows(db, scope));
   }
 
-  async function storedBodyIds(node: { workspaceId: string; pageId: string }): Promise<string[]> {
+  async function storedBodyIds(node: { knowledgeBaseId: string; pageId: string }): Promise<string[]> {
     const scope = scopeOf(node);
-    const stored = await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) =>
-      db.select({ state: docState.state }).from(docState).where(and(eq(docState.workspaceId, scope.workspaceId), eq(docState.pageId, scope.pageId))));
+    const stored = await withKnowledgeBase(fixture.pool, scope.knowledgeBaseId, (db) =>
+      db.select({ state: docState.state }).from(docState).where(and(eq(docState.knowledgeBaseId, scope.knowledgeBaseId), eq(docState.pageId, scope.pageId))));
     const document = new Y.Doc();
     Y.applyUpdate(document, new Uint8Array(stored[0]!.state));
     const ids: string[] = [];
@@ -263,8 +263,8 @@ describe('page block index projection', () => {
     await expect(rowsOf(body)).resolves.toEqual(after);
 
     // Losing the authoritative state clears the projection.
-    await withWorkspaceTenant(fixture.pool, body.workspaceId, (db) =>
-      db.delete(docState).where(and(eq(docState.workspaceId, body.workspaceId), eq(docState.pageId, body.pageId))));
+    await withKnowledgeBase(fixture.pool, body.knowledgeBaseId, (db) =>
+      db.delete(docState).where(and(eq(docState.knowledgeBaseId, body.knowledgeBaseId), eq(docState.pageId, body.pageId))));
     await expect(refresh(body)).resolves.toEqual({ inserted: 0, updated: 0, deleted: 3, repaired: 0, skipped: 0 });
     await expect(rowsOf(body)).resolves.toEqual([]);
   }, 30_000);
@@ -306,9 +306,9 @@ describe('page block index projection', () => {
     await expect(refresh(body)).resolves.toEqual({ inserted: 0, updated: 0, deleted: 0, repaired: 0, skipped: 0 });
     // The backlink uses the repaired carrier id, proving the post-repair re-derivation.
     const carrier = rows.find((row) => row.contentMd.includes('缺 ID 且带链接'))!;
-    const links = await withWorkspaceTenant(fixture.pool, body.workspaceId, (db) =>
+    const links = await withKnowledgeBase(fixture.pool, body.knowledgeBaseId, (db) =>
       db.select({ srcBlockId: backlink.srcBlockId, dstPageId: backlink.dstPageId, dstBlockId: backlink.dstBlockId }).from(backlink)
-        .where(and(eq(backlink.workspaceId, body.workspaceId), eq(backlink.srcPageId, body.pageId))));
+        .where(and(eq(backlink.knowledgeBaseId, body.knowledgeBaseId), eq(backlink.srcPageId, body.pageId))));
     expect(links).toEqual([{ srcBlockId: carrier.blockId, dstPageId: target.pageId, dstBlockId: null }]);
 
     // Replaying the same broken body event repairs again with fresh ids but keeps
@@ -325,9 +325,9 @@ describe('page block index projection', () => {
     const replayIds = replay.map((row) => row.blockId);
     expect(new Set(replayIds).size).toBe(4);
     for (const id of replayIds) expect(isValidBlockId(id)).toBe(true);
-    const replayLinks = await withWorkspaceTenant(fixture.pool, body.workspaceId, (db) =>
+    const replayLinks = await withKnowledgeBase(fixture.pool, body.knowledgeBaseId, (db) =>
       db.select({ srcBlockId: backlink.srcBlockId }).from(backlink)
-        .where(and(eq(backlink.workspaceId, body.workspaceId), eq(backlink.srcPageId, body.pageId))));
+        .where(and(eq(backlink.knowledgeBaseId, body.knowledgeBaseId), eq(backlink.srcPageId, body.pageId))));
     expect(replayLinks).toHaveLength(1);
     expect(replayLinks[0]!.srcBlockId).toBe(replay.find((row) => row.contentMd.includes('缺 ID 且带链接'))!.blockId);
   }, 45_000);

@@ -26,7 +26,7 @@ interface McpSession {
 
 /**
  * K01: Streamable HTTP MCP service over the J02/J03 tool registry. Sessions
- * are workspace-scoped and PAT-authenticated; one McpServer instance lives
+ * are knowledgeBase-scoped and PAT-authenticated; one McpServer instance lives
  * per session so client identity (initialize) is available to write-tool
  * attribution, and tearing a session down releases its transport. Every tool
  * call re-runs A03 scope checks and P03 authorization - the MCP surface adds
@@ -63,11 +63,11 @@ export function createKnowledgeMcpRequestHandler(deps: KnowledgeMcpDependencies)
   };
 
   return async function handleKnowledgeMcp(request: IncomingMessage, response: ServerResponse): Promise<void> {
-    const workspaceId = /\/api\/knowledge\/([a-zA-Z0-9-]+)\/mcp\/?$/.exec(request.url ?? '')?.[1] ?? '';
+    const knowledgeBaseId = /\/api\/knowledge\/([a-zA-Z0-9-]+)\/mcp\/?$/.exec(request.url ?? '')?.[1] ?? '';
     try {
       const authenticate = () => deps.authenticator.authenticate(
         new Request(`http://mcp.local${request.url ?? '/'}`, { method: request.method, headers: request.headers as Record<string, string> }),
-        workspaceId,
+        knowledgeBaseId,
         ['read'],
       );
 
@@ -92,7 +92,7 @@ export function createKnowledgeMcpRequestHandler(deps: KnowledgeMcpDependencies)
       if (!response.headersSent) {
         const headers: Record<string, string> = { 'content-type': 'application/json', 'cache-control': 'no-store' };
         if (failure.status === 401) {
-          headers['www-authenticate'] = deps.oauth ? knowledgeMcpWwwAuthenticate(deps.oauth.externalOrigin, workspaceId) : 'Bearer realm="knowledge"';
+          headers['www-authenticate'] = deps.oauth ? knowledgeMcpWwwAuthenticate(deps.oauth.externalOrigin, knowledgeBaseId) : 'Bearer realm="knowledge"';
         }
         response.writeHead(failure.status, headers);
         response.end(JSON.stringify({ jsonrpc: '2.0', error: { code: -32000, message: failure.message }, id: null }));

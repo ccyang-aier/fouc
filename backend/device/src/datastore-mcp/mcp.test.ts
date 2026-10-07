@@ -12,7 +12,7 @@ import { resolveCliConnection } from '../datastore-cli/connections';
 import { DatastoreHttpClient } from '../datastore-cli/http';
 
 test('MCP fixes exact connection/schema/table grants and denies narrowing a whole-connection SQL grant', () => {
-  const environment = { FOUC_DATASTORE_MCP_POLICY: JSON.stringify({ workspaceId: 'space-a', connections: [{ connectionId: 'saved', schemas: ['main'], tables: [{ schema: 'main', table: 'allowed' }] }] }) };
+  const environment = { FOUC_DATASTORE_MCP_POLICY: JSON.stringify({ connections: [{ connectionId: 'saved', schemas: ['main'], tables: [{ schema: 'main', table: 'allowed' }] }] }) };
   const access = new DatastoreMcpAccess(loadDatastoreMcpPolicy(environment), environment);
   expect(() => access.table('saved', 'main', 'allowed')).not.toThrow();
   expect(() => access.connection('other')).toThrow('allowlist');
@@ -21,8 +21,8 @@ test('MCP fixes exact connection/schema/table grants and denies narrowing a whol
   expect(() => access.sql('saved')).toThrow('SQL is disabled');
   expect(() => access.mongo('saved', 'db', 'items')).toThrow('namespace');
   expect(() => access.redis('saved')).toThrow('explicitly granted');
-  expect(() => loadDatastoreMcpPolicy({ FOUC_DATASTORE_MCP_POLICY: JSON.stringify({ workspaceId: 'a', connections: [{ connectionId: 'saved', allowSql: true, schemas: ['main'] }] }) })).toThrow('whole connection');
-  expect(access.options(['rows'], 'saved').workspace).toBe('space-a');
+  expect(() => loadDatastoreMcpPolicy({ FOUC_DATASTORE_MCP_POLICY: JSON.stringify({ connections: [{ connectionId: 'saved', allowSql: true, schemas: ['main'] }] }) })).toThrow('whole connection');
+  expect(access.options(['rows'], 'saved').connection).toBe('saved');
 });
 
 test('immutable result paging preserves exact values, NULL/empty and surrogate boundaries with connection ownership', () => {
@@ -41,7 +41,7 @@ test('immutable result paging preserves exact values, NULL/empty and surrogate b
 });
 
 test('standard MCP client initializes, discovers explicit readonly tools/resources and receives scope errors without native IO', async () => {
-  const environment = { FOUC_DATASTORE_MCP_POLICY: JSON.stringify({ workspaceId: 'empty', connections: [], tools: ['fouc_list_connections', 'fouc_execute_query'] }) };
+  const environment = { FOUC_DATASTORE_MCP_POLICY: JSON.stringify({ connections: [], tools: ['fouc_list_connections', 'fouc_execute_query'] }) };
   const runtime = createDatastoreMcpServer(environment);
   const client = new Client({ name: 'fouc-p0', version: '1.0.0' });
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
@@ -50,7 +50,7 @@ test('standard MCP client initializes, discovers explicit readonly tools/resourc
     expect((await client.listTools()).tools.map(tool => tool.name)).toEqual(['fouc_list_connections', 'fouc_execute_query']);
     const listed = await client.callTool({ name: 'fouc_list_connections', arguments: {} });
     expect(listed.isError).toBeUndefined();
-    expect(listed.structuredContent).toEqual({ ok: true, data: { workspaceId: 'empty', connections: [] } });
+    expect(listed.structuredContent).toEqual({ ok: true, data: { connections: [] } });
     const denied = await client.callTool({ name: 'fouc_execute_query', arguments: { connectionId: 'not-granted', sql: 'SELECT 1' } });
     expect(denied.isError).toBe(true);
     expect(denied.structuredContent).toMatchObject({ ok: false, error: { code: 'scope_denied' } });
@@ -59,7 +59,7 @@ test('standard MCP client initializes, discovers explicit readonly tools/resourc
     if (!('text' in policyContent)) throw new Error('MCP policy must be a text resource');
     expect(JSON.parse(policyContent.text).access).toBe('readonly');
     expect((await client.listPrompts()).prompts[0].name).toBe('explore-datastore');
-    await expect(client.callTool({ name: 'fouc_execute_query', arguments: { connectionId: 'x', sql: 'SELECT 1', workspaceId: 'b' } })).resolves.toMatchObject({ isError: true });
+    await expect(client.callTool({ name: 'fouc_execute_query', arguments: { connectionId: 'x', sql: 'SELECT 1', unexpected: true } })).resolves.toMatchObject({ isError: true });
   } finally { await client.close(); await runtime.close(); }
 });
 
@@ -69,7 +69,7 @@ test('MCP tool responses enforce their own text/structured output budget', () =>
 });
 
 test('MCP rejects a deleted granted ID even when an ungranted connection adopts its name, including pinned-open races', async () => {
-  const replacement = { id: 'private-id', workspaceId: 'space-a', name: 'granted-id', config: { provider: 'sqlite', database: 'main' }, updatedAt: 1 };
+  const replacement = { id: 'private-id', name: 'granted-id', config: { provider: 'sqlite', database: 'main' }, updatedAt: 1 };
   const original = { ...replacement, id: 'granted-id', name: 'Original' };
   let relationalReads = 0, connects = 0, pinnedRace = false, exactVisible = false;
   const http = createServer((request, response) => {
@@ -84,7 +84,7 @@ test('MCP rejects a deleted granted ID even when an ungranted connection adopts 
   });
   await new Promise<void>(resolve => http.listen(0, '127.0.0.1', resolve));
   const address = http.address() as { port: number };
-  const environment = { FOUC_DEVICE_URL: `http://127.0.0.1:${address.port}`, FOUC_DATASTORE_MCP_POLICY: JSON.stringify({ workspaceId: 'space-a', connections: [{ connectionId: 'granted-id', allowSql: true }] }) };
+  const environment = { FOUC_DEVICE_URL: `http://127.0.0.1:${address.port}`, FOUC_DATASTORE_MCP_POLICY: JSON.stringify({ connections: [{ connectionId: 'granted-id', allowSql: true }] }) };
   const bridge = new DatastoreMcpBridge(loadDatastoreMcpPolicy(environment), environment);
   const signal = new AbortController().signal;
   try {
@@ -110,7 +110,7 @@ test('MCP rejects a deleted granted ID even when an ungranted connection adopts 
     expect(connects).toBe(0);
     // Human CLI callers retain unique display-name selection; exact IDs win.
     const cli = new DatastoreHttpClient(environment.FOUC_DEVICE_URL, {}, 1000);
-    const named = parseDatastoreCliArgs(['--workspace', 'space-a', '--connection', 'granted-id']);
+    const named = parseDatastoreCliArgs(['--connection', 'granted-id']);
     expect((await resolveCliConnection(cli, named)).id).toBe('private-id');
     exactVisible = true;
     expect((await resolveCliConnection(cli, options)).id).toBe('granted-id');

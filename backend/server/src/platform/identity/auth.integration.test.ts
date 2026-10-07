@@ -26,7 +26,7 @@ async function session(cookie: string): Promise<Session | null> {
 }
 
 describe('Better Auth with real PostgreSQL and HTTP', () => {
-  test('registration validates inputs, uses UUIDs and salted password hashes, and creates no tenant', async () => {
+  test('registration validates inputs, uses UUIDs and salted password hashes, and creates no resource', async () => {
     expect((await server.request('/sign-up/email', { name: 'Person', email, password: 'short' })).status).toBe(400);
     expect((await server.request('/sign-up/email', { name: ' ', email, password: testPassword })).status).toBe(400);
     const response = await server.request('/sign-up/email', { name: '  Person  ', email: 'Person@Example.Test', password: testPassword, callbackURL: `${server.webOrigin}/verified` }, undefined,
@@ -46,8 +46,8 @@ describe('Better Auth with real PostgreSQL and HTTP', () => {
     expect(stored.rows[0]?.name).toBe('Person');
     expect(stored.rows[0]?.provider).toBe('credential');
     expect(stored.rows[0]?.account).toBe(userId);
-    expect((await server.database.admin.query('SELECT count(*)::int AS count FROM workspace.workspace')).rows[0].count).toBe(0);
-    expect((await server.database.admin.query('SELECT count(*)::int AS count FROM workspace.member')).rows[0].count).toBe(0);
+    expect((await server.database.admin.query('SELECT count(*)::int AS count FROM resources.knowledge_base')).rows[0].count).toBe(0);
+    expect((await server.database.admin.query('SELECT count(*)::int AS count FROM resources.knowledge_base_member')).rows[0].count).toBe(0);
     expect(server.captured).toHaveLength(1);
     const verificationUrl = server.captured[0]!.text.match(/https?:\/\/\S+/)![0];
     expect(new URL(verificationUrl).origin).toBe(server.origin);

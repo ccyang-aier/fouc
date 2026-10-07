@@ -7,7 +7,7 @@ export type GatewayFetch = (input: string | URL | Request, init?: RequestInit) =
 
 /** Created by the authenticated service, never copied from an HTTP request body. */
 export interface ModelCallContext {
-  workspaceId: string;
+  knowledgeBaseId: string;
   userId: string;
   taskId?: string;
 }
@@ -26,7 +26,7 @@ export interface ModelCallRecord {
 }
 export interface GatewayProvider {
   protocol: 'openai-compatible' | 'anthropic' | 'cohere';
-  /** Exact server-approved base URLs; workspace settings cannot extend this list. */
+  /** Exact server-approved base URLs; knowledgeBase settings cannot extend this list. */
   endpoints: readonly string[];
   tiers: readonly ModelTier[];
   options?: GatewayProviderOptions;

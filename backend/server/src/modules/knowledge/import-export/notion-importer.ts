@@ -5,16 +5,17 @@ import type { Pool } from 'pg';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { createMarkdownPipeline } from '@fouc/shared/knowledge/markdown';
 import type { MarkdownPipeline } from '@fouc/shared/knowledge/markdown';
-import { docState } from '../../../platform/database/workspace/schema';
-import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
-import { confirmWorkspaceAssetUpload, prepareWorkspaceAssetUpload } from '../assets/service';
+import { docState } from '../../../platform/database/resources/schema';
+import type { ResourceTransaction } from '../../../platform/database/resources/transaction';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
+import { confirmKnowledgeBaseAssetUpload, prepareKnowledgeBaseAssetUpload } from '../assets/service';
 import type { KnowledgeAssetStorage } from '../assets/storage';
 import { createAuthorizedDatabase, createAuthorizedRow } from '../databases/service';
 import { createAuthorizedPage } from '../pages/tree';
 import { appendKnowledgeOutbox } from '../workers/outbox';
 import { resolveNotionReference, scanNotionArchive } from './notion-archive';
 import { finalizeNotionBody } from './notion-body';
+import { bindImportedReferenceKnowledgeBase } from './body';
 import { encodeNotionPageState } from './notion-document';
 import { parseNotionCsv } from './notion-csv';
 import { parseNotionHtml } from './notion-html';
@@ -83,7 +84,7 @@ export interface NotionImportOptions {
   readonly pool: Pool;
   readonly storage: KnowledgeAssetStorage;
   readonly rootDir: string;
-  readonly workspaceId: string;
+  readonly knowledgeBaseId: string;
   readonly teamspaceId: string;
   readonly userId: string;
   /** 导出根级页面的落点;null 挂到 teamspace 根。 */
@@ -167,19 +168,19 @@ export async function importNotionExport(options: NotionImportOptions): Promise<
       const hash = createHash('sha256').update(bytes).digest('hex');
       const extension = attachment.key.slice(attachment.key.lastIndexOf('.')).toLowerCase();
       const intent = {
-        workspaceId: options.workspaceId,
+        knowledgeBaseId: options.knowledgeBaseId,
         userId: options.userId,
         hash,
         mime: MIME_BY_EXTENSION[extension] ?? 'application/octet-stream',
         size: bytes.byteLength,
         name: attachment.name,
       };
-      const uploaded = await withWorkspaceTenant(options.pool, options.workspaceId, (db) => prepareWorkspaceAssetUpload(options.storage, db, intent));
+      const uploaded = await withKnowledgeBase(options.pool, options.knowledgeBaseId, (db) => prepareKnowledgeBaseAssetUpload(options.storage, db, intent));
       if (uploaded.action === 'upload') {
         const response = await fetch(uploaded.url, { method: uploaded.method, headers: uploaded.headers, body: bytes });
         if (!response.ok) throw new Error(`对象存储 PUT 失败: HTTP ${response.status}`);
       }
-      await withWorkspaceTenant(options.pool, options.workspaceId, (db) => confirmWorkspaceAssetUpload(options.storage, db, intent));
+      await withKnowledgeBase(options.pool, options.knowledgeBaseId, (db) => confirmKnowledgeBaseAssetUpload(options.storage, db, intent));
       assetHashes.set(attachment.key, hash);
       assets.push({ source: attachment.key, hash, mime: intent.mime, size: intent.size, name: intent.name });
     } catch (error) {
@@ -205,16 +206,16 @@ export async function importNotionExport(options: NotionImportOptions): Promise<
     };
     const finalized = finalizeNotionBody(pipeline, document, source, resolver);
     warnings.push(...finalized.warnings);
-    const encoded = encodeNotionPageState(finalized.document);
+    const encoded = encodeNotionPageState(bindImportedReferenceKnowledgeBase(finalized.document, options.knowledgeBaseId));
     return { state: Buffer.from(encoded.state), stateVector: Buffer.from(encoded.stateVector) };
   };
 
-  const persistBody = async (db: WorkspaceTenantTransaction, pageId: string, encoded: EncodedBody): Promise<void> => {
-    await db.insert(docState).values({ workspaceId: options.workspaceId, pageId, state: encoded.state, stateVector: encoded.stateVector })
-      .onConflictDoUpdate({ target: [docState.workspaceId, docState.pageId], set: { state: encoded.state, stateVector: encoded.stateVector } });
+  const persistBody = async (db: ResourceTransaction, pageId: string, encoded: EncodedBody): Promise<void> => {
+    await db.insert(docState).values({ knowledgeBaseId: options.knowledgeBaseId, pageId, state: encoded.state, stateVector: encoded.stateVector })
+      .onConflictDoUpdate({ target: [docState.knowledgeBaseId, docState.pageId], set: { state: encoded.state, stateVector: encoded.stateVector } });
     await appendKnowledgeOutbox(db, {
       topic: 'doc.changed',
-      workspaceId: options.workspaceId,
+      knowledgeBaseId: options.knowledgeBaseId,
       pageId,
       actor: { kind: 'human', userId: options.userId },
       occurredAt: new Date().toISOString(),
@@ -232,8 +233,8 @@ export async function importNotionExport(options: NotionImportOptions): Promise<
   const importDatabase = async (source: string, title: string, parentKey: string | null, model: NotionParsedDatabase): Promise<void> => {
     warnings.push(...model.warnings);
     const id = databaseIds.get(source) ?? pageIds.get(source)!;
-    await withWorkspaceTenant(options.pool, options.workspaceId, (db) => createAuthorizedDatabase(db, {
-      id, workspaceId: options.workspaceId, teamspaceId: options.teamspaceId,
+    await withKnowledgeBase(options.pool, options.knowledgeBaseId, (db) => createAuthorizedDatabase(db, {
+      id, knowledgeBaseId: options.knowledgeBaseId, teamspaceId: options.teamspaceId,
       parentId: resolveParentId(parentKey), title, icon: null, cover: null,
       inheritsPermissions: true, afterPageId: null, columns: model.columns,
     }, options.userId));
@@ -245,9 +246,9 @@ export async function importNotionExport(options: NotionImportOptions): Promise<
       if (rowKey) handled.add(rowKey);
       const rowTitle = titleOf(row.title || '未命名行');
       try {
-        await withWorkspaceTenant(options.pool, options.workspaceId, async (db) => {
+        await withKnowledgeBase(options.pool, options.knowledgeBaseId, async (db) => {
           await createAuthorizedRow(db, {
-            id: rowId, workspaceId: options.workspaceId, databaseId: id, title: rowTitle,
+            id: rowId, knowledgeBaseId: options.knowledgeBaseId, databaseId: id, title: rowTitle,
             icon: null, cover: null, inheritsPermissions: true, afterPageId: null, properties: row.properties,
           }, options.userId);
           const encoded = rowKey ? buildBody(rowKey) : null;
@@ -286,9 +287,9 @@ export async function importNotionExport(options: NotionImportOptions): Promise<
           if (parentDatabaseId !== null) {
             warnings.push({ source: item.key, code: 'unsupported_element', detail: '数据库目录下不在视图表格中的页面按普通子页面导入' });
           }
-          const persisted = await withWorkspaceTenant(options.pool, options.workspaceId, async (db) => {
+          const persisted = await withKnowledgeBase(options.pool, options.knowledgeBaseId, async (db) => {
             await createAuthorizedPage(db, {
-              id, workspaceId: options.workspaceId, teamspaceId: options.teamspaceId,
+              id, knowledgeBaseId: options.knowledgeBaseId, teamspaceId: options.teamspaceId,
               parentId: parentDatabaseId ?? parentId, kind: 'doc', databaseId: null, title: info.title,
               icon: null, cover: null, properties: {}, inheritsPermissions: true, afterPageId: null,
             }, options.userId);

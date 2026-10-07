@@ -12,12 +12,12 @@ const port = Number(process.env.FOUC_REDIS_OBSERVABILITY_PORT || 56380);
 const config = { provider: 'redis', host, port, username: '', database: 15, tls: false, password: '' };
 const client = new Redis({ host, port, db: 15, retryStrategy: () => null, stringNumbers: true });
 client.on('error', () => {});
-const base = 'http://127.0.0.1:8710/api/database/workspaces/dbx-redis-observability-verification/redis';
+const base = 'http://127.0.0.1:8710/api/database/redis';
 const prefix = 'fouc:dbx-observability-lab:';
 const aclName = 'fouc_dbx_observability_verifier', aclPassword = crypto.randomUUID();
 let session, limited;
-async function request(path, { body, method = body ? 'POST' : 'GET', status = 200, workspace } = {}) {
-  const response = await fetch((workspace ? base.replace('dbx-redis-observability-verification', workspace) : base) + path, {
+async function request(path, { body, method = body ? 'POST' : 'GET', status = 200, missingSession = false } = {}) {
+  const response = await fetch(base + (missingSession ? path.replace(/^\/sessions\/[^/]+/, `/sessions/${crypto.randomUUID()}`) : path), {
     method, headers: { 'content-type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(20000),
   });
   const result = await response.json();
@@ -53,7 +53,7 @@ try {
   assert.equal(logged.originalArgumentCount, null, 'Redis 7.4 does not provide the Redis 8.10 count field');
   assert.ok((await request(path('slowlog') + '?count=1')).entries.length <= 1);
   for (const count of ['0', '-1', '10001', '1.5', 'NaN']) await request(path('slowlog') + '?count=' + count, { status: 400 });
-  for (const suffix of ['info', 'slowlog']) await request(path(suffix), { workspace: 'other-workspace', status: 400 });
+  for (const suffix of ['info', 'slowlog']) await request(path(suffix), { missingSession: true, status: 400 });
   assert.equal((await request(path('history'))).entries.length, 0, 'dashboard reads do not pollute command history');
   await request(path('mutations/preview'), { body: { mutation: { kind: 'delete', key: Buffer.from(prefix + 'sample').toString('base64') } }, status: 400 });
   assert.equal(await client.get(prefix + 'sample'), 'native sample');
@@ -68,7 +68,7 @@ try {
   await request(limitedPath + '/info', { status: 502 });
   await request(`/sessions/${session.id}`, { method: 'DELETE' }); session = null;
   await request(limitedPath + '/info', { status: 502 });
-  console.log('PASS Redis observability: native INFO sections, real slowlog/binary/client fields, bounded counts, DB/workspace scope, history and read-only preservation, optional ACL metadata, denied GET/INFO errors; dedicated lab port ' + port + '.');
+  console.log('PASS Redis observability: native INFO sections, real slowlog/binary/client fields, bounded counts, DB/session scope, history and read-only preservation, optional ACL metadata, denied GET/INFO errors; dedicated lab port ' + port + '.');
 } finally {
   for (const entry of [session, limited]) if (entry) await request(`/sessions/${entry.id}`, { method: 'DELETE' }).catch(() => {});
   await client.acl('DELUSER', aclName).catch(() => {});

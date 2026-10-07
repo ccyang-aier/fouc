@@ -7,7 +7,7 @@ import { buildIndexEditReview } from './index-edit-sql';
 
 interface HeldPlan { driver: RelationalDriver; provider: RelationalProvider; input: IndexEditInput; signature: string; prepared: IndexEditPrepared }
 
-/** Owned by one workspace-scoped live Entry. Locking/disconnecting revokes every held plan. */
+/** Owned by one connection-scoped live Entry. Locking/disconnecting revokes every held plan. */
 export class IndexEditPlans {
   private readonly plans = new Map<string, HeldPlan>();
   private readonly previews = new Set<AbortController>();

@@ -31,7 +31,7 @@ export interface DatabaseActivityIssue {
 export interface DatabaseActivitySnapshot {
   provider: RelationalProvider;
   database: string;
-  /** Public workspace/session identity, never an endpoint or credential. */
+  /** Public session identity, never an endpoint or credential. */
   scopeKey: string;
   capturedAt: number;
   durationMs: number;

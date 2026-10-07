@@ -32,12 +32,12 @@ describe('grid layout and raw source mapping', () => {
     expect(gridSelectionScope(restored, result, visible)?.columns).toEqual([0, 1])
     const hidden = remapGridColumnSelection(mapped, visible, [2, 1]); expect(gridSelectionScope(hidden, result, [2, 1])).toEqual({ rows: [0, 1], columns: [1], rectangular: true })
   })
-  test('workspace scopes restore layout independently and no scope never persists', () => {
+  test('connection scopes restore layout independently and no scope never persists', () => {
     const entries = new Map<string, string>(), storage = { getItem: (key: string) => entries.get(key) ?? null, setItem: (key: string, value: string) => { entries.set(key, value) }, removeItem: (key: string) => { entries.delete(key) } }
     const keys = gridColumnKeys(result.columns), layout = { ...defaultGridLayout(), order: [keys[2], keys[0], keys[1]], hidden: [keys[1]], pins: { [keys[2]]: 'left' as const }, widths: { [keys[0]]: 233 }, density: 'comfortable' as const, formatters: { [keys[2]]: { type: 'mask' as const, prefix: 1, suffix: 0 } } }
-    expect(saveGridLayout(storage, 'workspace-A:connection:table', layout)).toBe(true)
-    expect(loadGridLayout(storage, 'workspace-A:connection:table')).toEqual(layout)
-    expect(loadGridLayout(storage, 'workspace-B:connection:table')).toEqual(defaultGridLayout())
+    expect(saveGridLayout(storage, 'connection-A:table', layout)).toBe(true)
+    expect(loadGridLayout(storage, 'connection-A:table')).toEqual(layout)
+    expect(loadGridLayout(storage, 'connection-B:table')).toEqual(defaultGridLayout())
     expect(saveGridLayout(storage, undefined, layout)).toBe(false); expect(loadGridLayout(storage, undefined)).toEqual(defaultGridLayout())
   })
   test('width samples ignore outliers by percentile and fit allows the real long value', () => {

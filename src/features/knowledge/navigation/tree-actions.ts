@@ -58,7 +58,7 @@ export function canEditTree(access: KnowledgeAccess | undefined): boolean {
   return access.role !== 'guest' && access.scopes.includes('write');
 }
 
-export const readOnlyTreeReason = '当前角色对工作区是只读的，页面树操作需要编辑权限。';
+export const readOnlyTreeReason = '当前角色对知识库是只读的，页面树操作需要编辑权限。';
 
 // ── Keyboard intents ────────────────────────────────────────────────────
 

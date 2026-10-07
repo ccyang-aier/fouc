@@ -14,7 +14,7 @@ function startModelCallSpan(operation: string, call: ModelCallContext, tier: str
   const attributes: Attributes = {};
   attribute(attributes, 'fouc.ai.operation', operation);
   attribute(attributes, 'fouc.ai.tier', tier);
-  attribute(attributes, 'fouc.ai.workspace_id', typeof call.workspaceId === 'string' ? call.workspaceId : undefined);
+  attribute(attributes, 'fouc.ai.knowledge_base_id', typeof call.knowledgeBaseId === 'string' ? call.knowledgeBaseId : undefined);
   attribute(attributes, 'fouc.ai.user_id', typeof call.userId === 'string' ? call.userId : undefined);
   attribute(attributes, 'fouc.ai.task_id', typeof call.taskId === 'string' ? call.taskId : undefined);
   return trace.getTracer('fouc.knowledge.ai').startSpan(`fouc.ai.${operation}`, { kind: SpanKind.CLIENT, attributes }, context.active());

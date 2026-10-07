@@ -1,7 +1,7 @@
 import { DatastoreCliError, type CliEnvironment, type CliOptions, type CliProvider } from './types';
 
 const PROVIDERS: readonly CliProvider[] = ['mysql', 'postgres', 'sqlite', 'redis', 'mongodb'];
-const FLAGS = new Set(['workspace', 'connection', 'session', 'provider', 'schema', 'table', 'database', 'collection', 'query', 'file', 'out', 'timeout', 'limit', 'offset', 'format', 'url']);
+const FLAGS = new Set(['connection', 'session', 'provider', 'schema', 'table', 'database', 'collection', 'query', 'file', 'out', 'timeout', 'limit', 'offset', 'format', 'url']);
 const SWITCHES = new Set(['help', 'json', 'csv', 'overwrite']);
 
 function fail(message: string): never {
@@ -83,7 +83,6 @@ export function parseDatastoreCliArgs(args: readonly string[], environment: CliE
   if (connection && session) fail('Select --connection or --session');
   return {
     command,
-    workspace: named(values.get('workspace') ?? environment.FOUC_WORKSPACE_ID, 'workspace', 128),
     connection,
     session,
     provider: provider as CliProvider | undefined ?? null,
@@ -110,7 +109,7 @@ Usage: pnpm datastore:cli <command> [options]
 
   doctor                         Device health and reachable runtime
   capabilities                   Supported native command families and readonly policy
-  connections list               Current workspace public connection directory
+  connections list               Device public connection directory
   connect                        Open an explicit readonly session (caller owns closing it)
   disconnect                     Close the explicitly selected --session
   schemas list                   Relational schemas / Mongo databases
@@ -125,7 +124,6 @@ Usage: pnpm datastore:cli <command> [options]
   redis value                    One native value page (--query is canonical Base64 key)
   mongo documents                Native filtered document page (--query is canonical EJSON)
 
-Required for resources: --workspace <id> (or FOUC_WORKSPACE_ID)
 Session scope: --session <id> --provider <type>, or --connection <id|unique name>
 Targets: --schema <name> --table <name>, or --database <name> --collection <name>
 SQL: --query <sql> or --file <utf8.sql>; --limit 1..5000 --timeout 1000ms..10m

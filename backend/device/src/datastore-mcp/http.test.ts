@@ -16,7 +16,7 @@ test('HTTP requires a provisioned token, exact loopback Host and explicit browse
 
 test('real Streamable HTTP client initializes, reads scoped tools and terminates its isolated session', async () => {
   const token = crypto.randomUUID();
-  const runtime = await startDatastoreMcpHttp({ FOUC_DATASTORE_MCP_POLICY: JSON.stringify({ workspaceId: 'p0-http', connections: [] }) }, { port: 0, token, origins: ['http://localhost:3000'] });
+  const runtime = await startDatastoreMcpHttp({ FOUC_DATASTORE_MCP_POLICY: JSON.stringify({ connections: [] }) }, { port: 0, token, origins: ['http://localhost:3000'] });
   const transport = new StreamableHTTPClientTransport(new URL(runtime.url), { requestInit: { headers: { authorization: 'Bearer ' + token } } });
   const client = new Client({ name: 'http-p0', version: '1.0.0' });
   try {
@@ -27,7 +27,7 @@ test('real Streamable HTTP client initializes, reads scoped tools and terminates
     await client.connect(transport);
     expect((await client.listTools()).tools.length).toBe(16);
     const result = await client.callTool({ name: 'fouc_list_connections', arguments: {} });
-    expect(result.structuredContent).toEqual({ ok: true, data: { workspaceId: 'p0-http', connections: [] } });
+    expect(result.structuredContent).toEqual({ ok: true, data: { connections: [] } });
     const id = transport.sessionId!; expect(id).toBeTruthy();
     const second = new Client({ name: 'http-p0-second', version: '1.0.0' });
     const other = new StreamableHTTPClientTransport(new URL(runtime.url), { requestInit: { headers: { authorization: 'Bearer ' + token } } });

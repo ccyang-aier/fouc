@@ -73,7 +73,7 @@ export function TestDataPanel(props: TestDataPanelProps) {
         <small>{workflow.summary.elapsedMs.toLocaleString()} ms · {structure.schema}.{structure.table}</small>
         <p>目标表已刷新；原表结构和已有记录保持保留。</p>
       </div> : workflow.plan ? <>
-        <div className={styles.reviewHeading}><span><Check size={20}/></span><div><h3>原生预览已完成，等待确认</h3><p>此步骤没有发起写入。一次性计划绑定当前工作空间、会话、目标表和真实字段结构。</p></div></div>
+        <div className={styles.reviewHeading}><span><Check size={20}/></span><div><h3>原生预览已完成，等待确认</h3><p>此步骤没有发起写入。一次性计划绑定当前会话、目标表和真实字段结构。</p></div></div>
         <div className={styles.stats}>
           <div><span>待追加行数</span><strong>{workflow.plan.review.rowsToImport.toLocaleString()}</strong></div>
           <div><span>映射字段</span><strong>{workflow.plan.review.validation.mappedColumns.length}</strong></div>

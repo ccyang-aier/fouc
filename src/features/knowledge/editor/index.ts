@@ -5,7 +5,7 @@
  * ```tsx
  * import { KnowledgePageEditor } from '@/features/knowledge/editor';
  *
- * selectedPage ? <KnowledgePageEditor scope={{ workspaceId, pageId }} /> : <WorkspaceCanvas … />
+ * selectedPage ? <KnowledgePageEditor scope={{ knowledgeBaseId, pageId }} /> : <KnowledgeBaseCanvas … />
  * ```
  *
  * — the component owns the whole access / session / sync / readonly loop, so

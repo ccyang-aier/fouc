@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { entityIdSchema, pageScopeSchema, timestampSchema, workspaceScopeSchema } from '../contracts/primitives';
+import { entityIdSchema, pageScopeSchema, timestampSchema, knowledgeBaseScopeSchema } from '../contracts/primitives';
 
 import { commentThreadKindSchema, commentAnchorKindSchema, commentThreadStatusSchema, pdfCommentAnchorSchema, commentThreadSchema as threadResourceSchema } from '../contracts/content';
 export { commentThreadKindSchema, commentAnchorKindSchema, commentThreadStatusSchema };
@@ -15,7 +15,7 @@ export const commentBodySchema = z.string().trim().min(1).max(50_000);
 export const commentMentionsSchema = z.array(entityIdSchema).max(100);
 
 export const commentEntrySchema = z.strictObject({
-  workspaceId: entityIdSchema,
+  knowledgeBaseId: entityIdSchema,
   id: entityIdSchema,
   threadId: entityIdSchema,
   authorId: entityIdSchema,
@@ -49,7 +49,7 @@ export const createCommentThreadInputSchema = pageScopeSchema.extend({
 }).refine((input) => new Set(input.mentions).size === input.mentions.length && (!input.pdfAnchor || input.anchorKind === 'selection'));
 export type CreateCommentThreadInput = z.input<typeof createCommentThreadInputSchema>;
 
-export const replyCommentThreadInputSchema = workspaceScopeSchema.extend({
+export const replyCommentThreadInputSchema = knowledgeBaseScopeSchema.extend({
   threadId: entityIdSchema,
   replyToCommentId: entityIdSchema.optional(),
   bodyMd: commentBodySchema,
@@ -57,13 +57,13 @@ export const replyCommentThreadInputSchema = workspaceScopeSchema.extend({
 }).refine((input) => new Set(input.mentions).size === input.mentions.length);
 export type ReplyCommentThreadInput = z.input<typeof replyCommentThreadInputSchema>;
 
-export const commentThreadTargetInputSchema = workspaceScopeSchema.extend({ threadId: entityIdSchema });
+export const commentThreadTargetInputSchema = knowledgeBaseScopeSchema.extend({ threadId: entityIdSchema });
 export type CommentThreadTargetInput = z.infer<typeof commentThreadTargetInputSchema>;
 
-export const deleteOwnCommentInputSchema = workspaceScopeSchema.extend({ commentId: entityIdSchema });
+export const deleteOwnCommentInputSchema = knowledgeBaseScopeSchema.extend({ commentId: entityIdSchema });
 export type DeleteOwnCommentInput = z.infer<typeof deleteOwnCommentInputSchema>;
 
-export const updateOwnCommentInputSchema = workspaceScopeSchema.extend({ commentId: entityIdSchema, bodyMd: commentBodySchema });
+export const updateOwnCommentInputSchema = knowledgeBaseScopeSchema.extend({ commentId: entityIdSchema, bodyMd: commentBodySchema });
 export const updateOwnCommentResultSchema = z.strictObject({ comment: commentEntrySchema });
 export type UpdateOwnCommentResult = z.infer<typeof updateOwnCommentResultSchema>;
 
@@ -96,6 +96,6 @@ export const deleteOwnCommentResultSchema = z.strictObject({
 });
 export type DeleteOwnCommentResult = z.infer<typeof deleteOwnCommentResultSchema>;
 
-export const setCommentLikeInputSchema = workspaceScopeSchema.extend({ commentId: entityIdSchema, liked: z.boolean() });
+export const setCommentLikeInputSchema = knowledgeBaseScopeSchema.extend({ commentId: entityIdSchema, liked: z.boolean() });
 export const setCommentLikeResultSchema = z.strictObject({ commentId: entityIdSchema, likeCount: z.number().int().nonnegative(), liked: z.boolean() });
 export type SetCommentLikeResult = z.infer<typeof setCommentLikeResultSchema>;

@@ -9,7 +9,7 @@ import type { FoucServiceConfig } from '../platform/runtime/config';
 import { createFoucAuth, createFoucAuthRoutes, createSmtpAuthEmailTransport } from '../platform/identity';
 import { createKnowledgeRequestAuthenticator } from '../modules/knowledge/access';
 import { createVerificationEmailTransport } from '../platform/identity/email';
-import { createWorkspaceRoutes, createWorkspaceService } from '../modules/workspaces';
+import { createKnowledgeOrganizationRoutes, createKnowledgeOrganizationService } from '../modules/knowledge/organization';
 import { createProjectRoutes, createProjectService } from '../modules/projects';
 import { createKnowledgeCatalogRoutes, createKnowledgeCatalogService } from '../modules/knowledge/organization';
 import { teamspacePermissionInvalidator } from '../modules/knowledge/permissions/fence';
@@ -21,7 +21,7 @@ import { createKnowledgeNotificationRoutes } from '../modules/knowledge/notifica
 import { bindKnowledgeStreamingTasks, createKnowledgeStreamingTasks } from '../modules/knowledge/ai';
 import { createModelGateway } from '../modules/knowledge/ai/gateway';
 import { createPageCollaborationListener } from '../modules/knowledge/collaboration/page-collaboration-bun';
-import { createWorkspaceEventRuntime } from '../modules/knowledge/collaboration/events';
+import { createKnowledgeBaseEventRuntime } from '../modules/knowledge/collaboration/events';
 import { pageCheckpointExtension } from '../modules/knowledge/collaboration/checkpoints';
 import { createKnowledgeMcpAuthorizationRoutes } from '../modules/knowledge/mcp/oauth';
 import { createKnowledgeMcpRequestHandler } from '../modules/knowledge/mcp/server';
@@ -39,7 +39,7 @@ export interface FoucServiceRuntime {
 
 /**
  * The single-process composition behind the shared HTTP listener (Z03): one
- * Bun socket hosts the auth routes, the organization API, the per-workspace
+ * Bun socket hosts the auth routes, the organization API, the per-knowledgeBase
  * tRPC boundary, the MCP endpoint and the collaboration WebSocket upgrades.
  * Dedicated-role deployments reuse the same factories with narrower roles.
  */
@@ -59,7 +59,7 @@ export async function startFoucService(config: FoucServiceConfig, environment: N
   const authenticator = createKnowledgeRequestAuthenticator({ auth, pool });
   bindKnowledgeAssetStorage(config.roles.includes('api') && config.storage ? createKnowledgeAssetStorage(config.storage) : undefined);
   const externalOrigin = new URL(config.auth.baseUrl).origin;
-  const events = createWorkspaceEventRuntime({ authenticator });
+  const events = createKnowledgeBaseEventRuntime({ authenticator });
   const checkpoints = config.roles.includes('collab') ? pageCheckpointExtension({ pool }) : undefined;
   const app = new Hono();
   app.route('/', createOfficePreviewRoutes(auth.options.trustedOrigins as string[]));
@@ -67,7 +67,7 @@ export async function startFoucService(config: FoucServiceConfig, environment: N
   app.route('/', createDocumentPdfRoutes(auth.options.trustedOrigins as string[], html => documentPdf.render(html)));
   const socketTickets = createFoucSocketTickets();
   app.route('/', createFoucAuthRoutes(auth, (context) => context.env.clientAddress as string, socketTickets));
-  app.route('/', createWorkspaceRoutes(auth, createWorkspaceService(pool)));
+  app.route('/', createKnowledgeOrganizationRoutes(auth, createKnowledgeOrganizationService(pool)));
   app.route('/', createProjectRoutes(auth, createProjectService(pool)));
   app.route('/', createKnowledgeCatalogRoutes(auth, createKnowledgeCatalogService(pool, { permissions: teamspacePermissionInvalidator })));
   app.route('/', createKnowledgeApiRoutes({ auth, pool }));

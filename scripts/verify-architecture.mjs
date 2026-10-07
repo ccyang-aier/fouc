@@ -20,7 +20,7 @@ function filesIn(directory) {
 
 export function checkArchitectureImports(file, content) {
   const sourceOwner = owner(file);
-  const testing = /(?:\.test\.|\/testing\/|test-fixture|test-server|test-provider|tenant-test-database|oauth-node-smoke)/.test(file);
+  const testing = /(?:\.test\.|\/testing\/|test-fixture|test-server|test-provider|resource-test-database|oauth-node-smoke)/.test(file);
   const source = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true, file.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
   const errors = [];
   function check(specifier, typeOnly = false) {
@@ -66,14 +66,16 @@ export function checkArchitectureImports(file, content) {
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   if (existsSync(path.join(root, 'backend/package.json')) || existsSync(path.join(root, 'backend/src'))) throw new Error('backend/ 只能是组织目录，禁止恢复混合运行包。');
-  if (existsSync(path.join(root, 'backend/server/src/platform/database/knowledge'))) throw new Error('租户数据库必须位于 platform/database/workspace，不能恢复知识库专属的全产品租户根。');
-  if (existsSync(path.join(root, 'backend/server/src/modules/knowledge/organization/workspaces.ts'))) throw new Error('工作空间用例必须位于 modules/workspaces，不能回到知识库模块。');
-  const files = ['src', 'shared/src', 'backend/device/src', 'backend/device/scripts', 'backend/server/src', 'backend/server/scripts'].flatMap(filesIn);
-  const errors = files.flatMap((file) => checkArchitectureImports(file, readFileSync(path.join(root, file), 'utf8')));
-  const workspaceClient = readFileSync(path.join(root, 'src/features/workspaces/organization-client.ts'), 'utf8');
-  if (/\b(?:listKnowledgeBases|createKnowledgeBase|listTeamspaces|createTeamspace|updateTeamspace|removeTeamspace)\s*\(/.test(workspaceClient)) {
-    errors.push('src/features/workspaces/organization-client.ts: 知识库目录接口必须归 features/knowledge 所有');
+  for (const removed of ['src/features/workspaces', 'shared/src/workspaces', 'backend/server/src/modules/workspaces', 'backend/server/src/platform/database/workspace']) {
+    if (existsSync(path.join(root, removed))) throw new Error(`产品工作空间已移除，禁止恢复 ${removed}`);
   }
+  const files = ['src', 'shared/src', 'backend/device/src', 'backend/device/scripts', 'backend/server/src', 'backend/server/scripts'].flatMap(filesIn);
+  const errors = files.flatMap((file) => {
+    const content = readFileSync(path.join(root, file), 'utf8');
+    const failures = checkArchitectureImports(file, content);
+    if (/\bworkspaceId\b|\bworkspace_id\b|@fouc\/shared\/workspaces|\/api\/workspaces/.test(content)) failures.push(`${file}: 不得保留产品工作空间字段或接口`);
+    return failures;
+  });
   const shell = readFileSync(path.join(root, 'src/shell/workbench-shell.tsx'), 'utf8');
   if (/fouc\.project\.|\b(?:function setProjectFavorite|const \[managementPanel, setManagementPanel\])/.test(shell)) {
     errors.push('src/shell/workbench-shell.tsx: 项目选择与管理状态必须由 features/project 持有');

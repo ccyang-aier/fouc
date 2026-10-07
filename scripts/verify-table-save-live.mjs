@@ -23,8 +23,7 @@ const configurations = [
   JSON.parse(readFileSync('.runtime/dbx-lab/mysql-connection.json', 'utf8')),
   { provider: 'sqlite', path: path.resolve('.runtime/dbx-lab/relational.sqlite') },
 ];
-const scope = 'dbx-table-save-live-verification';
-const base = `http://127.0.0.1:8710/api/database/workspaces/${scope}/relational`;
+const base = `http://127.0.0.1:8710/api/database/relational`;
 async function request(route, body, method = body ? 'POST' : 'GET', expected = 200) {
   const response = await fetch(base + route, {
     method,
@@ -102,6 +101,7 @@ for (const config of configurations) {
   }
   const session = await request('/sessions', config, 'POST', 201);
   const sessionBase = `/sessions/${session.id}`;
+  let otherSession;
   const prepare = (changes) =>
     request(sessionBase + '/save-plans', { schema, table: 'dbx_save_fixture', changes }, 'POST', 201);
   const commit = (plan) => request(sessionBase + `/save-plans/${plan.id}/commit`, { confirm: true });
@@ -148,8 +148,10 @@ for (const config of configurations) {
     assert.equal(insert.statements[0].sql.includes(text), false);
     assert.equal((await rows()).length, 0, 'Preview must never execute writes');
     await request(sessionBase + `/save-plans/${insert.id}/commit`, {}, 'POST', 400);
+    otherSession = await request('/sessions', config, 'POST', 201);
+    await request(`/sessions/${otherSession.id}/write-access`, { enabled: true }, 'PUT');
     const foreign = await fetch(
-      base.replace(scope, 'other-workspace') + sessionBase + `/save-plans/${insert.id}/commit`,
+      base + `/sessions/${otherSession.id}/save-plans/${insert.id}/commit`,
       {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -157,6 +159,7 @@ for (const config of configurations) {
       },
     );
     assert.equal(foreign.status, 400);
+    assert.equal((await rows()).length, 0, 'A foreign active session cannot commit the plan');
     assert.equal((await commit(insert)).affectedRows, 2);
     await request(sessionBase + `/save-plans/${insert.id}/commit`, { confirm: true }, 'POST', 400);
     const first = (await rows()).find((row) => String(row[0]) === '1');
@@ -212,9 +215,10 @@ for (const config of configurations) {
     await request(sessionBase + '/write-access', { enabled: true }, 'PUT');
     await request(sessionBase + `/save-plans/${revoked.id}/commit`, { confirm: true }, 'POST', 400);
     console.log(
-      `PASS table save ${config.provider}: explicit unlock/confirmation, no-write preview, one-time/workspace-bound plans, parameter injection protection, exact bigint/JSON/binary, insert/update/delete, original-row conflict and constraint rollback, generated-column guard, write-lock invalidation, raw SQL remains read-only.`,
+      `PASS table save ${config.provider}: explicit unlock/confirmation, no-write preview, one-time/session-bound plans, parameter injection protection, exact bigint/JSON/binary, insert/update/delete, original-row conflict and constraint rollback, generated-column guard, write-lock invalidation, raw SQL remains read-only.`,
     );
   } finally {
+    if (otherSession) await request(`/sessions/${otherSession.id}`, null, 'DELETE');
     await request(sessionBase, null, 'DELETE');
   }
 }

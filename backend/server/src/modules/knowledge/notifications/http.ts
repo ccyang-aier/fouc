@@ -4,7 +4,7 @@ import { cors } from 'hono/cors';
 import type { Pool } from 'pg';
 import { knowledgeAccessErrorResponse } from '../access';
 import type { KnowledgeRequestAuthenticator } from '../access';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
 import { KnowledgeNotificationError } from './errors';
 import { countUnreadNotifications, listNotificationInbox, markAllNotificationsRead, markNotificationRead } from './service';
 
@@ -16,37 +16,37 @@ export interface KnowledgeNotificationRouteDependencies {
   trustedOrigins: readonly string[];
 }
 
-type Environment = { Variables: { workspaceId: string; userId: string } };
+type Environment = { Variables: { knowledgeBaseId: string; userId: string } };
 
 /**
- * N03 notification inbox over plain HTTP (session or PAT, workspace-scoped).
+ * N03 notification inbox over plain HTTP (session or PAT, knowledgeBase-scoped).
  *
  * The read model is the recipient's own mailbox: every route re-authenticates
- * against the live workspace membership and derives userId from that authority,
+ * against the live knowledgeBase membership and derives userId from that authority,
  * never from the URL or body, and responses carry the per-recipient visibility
  * filter of the service (§4.6/§5.3). Not wired into the runtime listener yet;
  * suggested wiring in the role that owns the listener (runtime/server.ts):
  *
- *   import { createKnowledgeNotificationRoutes } from '../notifications';
+ *   import { createKnowledgeNotificationRoutes } from '.';
  *   app.route('/', createKnowledgeNotificationRoutes({
  *     authenticator, pool,
  *     trustedOrigins: auth.options.trustedOrigins as string[],
  *   }));
  *
  * Endpoints (all JSON, credentials required, trusted-origin enforced):
- *   GET  /api/knowledge/:workspaceId/notifications            (?limit=&before=&beforeId=)
- *   GET  /api/knowledge/:workspaceId/notifications/unread-count
- *   POST /api/knowledge/:workspaceId/notifications/:notificationId/read
- *   POST /api/knowledge/:workspaceId/notifications/read-all
+ *   GET  /api/knowledge/:knowledgeBaseId/notifications            (?limit=&before=&beforeId=)
+ *   GET  /api/knowledge/:knowledgeBaseId/notifications/unread-count
+ *   POST /api/knowledge/:knowledgeBaseId/notifications/:notificationId/read
+ *   POST /api/knowledge/:knowledgeBaseId/notifications/read-all
  *
  * The 'read' scope covers the mark-read writes deliberately: they mutate only
- * the recipient's own mailbox rows, never workspace content.
+ * the recipient's own mailbox rows, never knowledgeBase content.
  */
 export function createKnowledgeNotificationRoutes(dependencies: KnowledgeNotificationRouteDependencies): Hono<Environment> {
   const app = new Hono<Environment>();
   const origins = dependencies.trustedOrigins;
 
-  app.use('/api/knowledge/:workspaceId/notifications*', async (context, next) => {
+  app.use('/api/knowledge/:knowledgeBaseId/notifications*', async (context, next) => {
     context.header('Cache-Control', 'no-store');
     context.header('Referrer-Policy', 'no-referrer');
     if (!['GET', 'OPTIONS'].includes(context.req.method)
@@ -55,23 +55,23 @@ export function createKnowledgeNotificationRoutes(dependencies: KnowledgeNotific
     }
     await next();
   });
-  app.use('/api/knowledge/:workspaceId/notifications*', cors({
+  app.use('/api/knowledge/:knowledgeBaseId/notifications*', cors({
     origin: (origin) => (origins.includes(origin) ? origin : undefined),
     credentials: true,
     allowMethods: ['GET', 'POST', 'OPTIONS'],
     allowHeaders: ['Content-Type'],
     maxAge: 600,
   }));
-  app.use('/api/knowledge/:workspaceId/notifications*', bodyLimit({
+  app.use('/api/knowledge/:knowledgeBaseId/notifications*', bodyLimit({
     maxSize: 2 * 1_024,
     onError: (context) => context.json({ code: 'PAYLOAD_TOO_LARGE', message: 'Notification request is too large.' }, 413),
   }));
 
   /** authenticate() owns origin trust (cookie CSRF), membership and scopes; userId never comes from the request. */
-  app.use('/api/knowledge/:workspaceId/notifications*', async (context, next) => {
+  app.use('/api/knowledge/:knowledgeBaseId/notifications*', async (context, next) => {
     try {
-      const authority = await dependencies.authenticator.authenticate(context.req.raw, context.req.param('workspaceId'), ['read']);
-      context.set('workspaceId', authority.workspaceId);
+      const authority = await dependencies.authenticator.authenticate(context.req.raw, context.req.param('knowledgeBaseId'), ['read']);
+      context.set('knowledgeBaseId', authority.knowledgeBaseId);
       context.set('userId', authority.userId);
     } catch (error) {
       return knowledgeAccessErrorResponse(error);
@@ -79,11 +79,11 @@ export function createKnowledgeNotificationRoutes(dependencies: KnowledgeNotific
     await next();
   });
 
-  app.get('/api/knowledge/:workspaceId/notifications', async (context) => {
+  app.get('/api/knowledge/:knowledgeBaseId/notifications', async (context) => {
     const query = context.req.query();
-    const result = await withWorkspaceTenant(dependencies.pool, context.get('workspaceId'), (db) =>
+    const result = await withKnowledgeBase(dependencies.pool, context.get('knowledgeBaseId'), (db) =>
       listNotificationInbox(db, {
-        workspaceId: context.get('workspaceId'),
+        knowledgeBaseId: context.get('knowledgeBaseId'),
         userId: context.get('userId'),
         ...(query.limit === undefined ? {} : { limit: query.limit }),
         ...(query.before === undefined ? {} : { before: query.before }),
@@ -92,22 +92,22 @@ export function createKnowledgeNotificationRoutes(dependencies: KnowledgeNotific
     return context.json(result);
   });
 
-  app.get('/api/knowledge/:workspaceId/notifications/unread-count', async (context) => {
-    const unreadCount = await withWorkspaceTenant(dependencies.pool, context.get('workspaceId'), (db) =>
-      countUnreadNotifications(db, { workspaceId: context.get('workspaceId'), userId: context.get('userId') }));
+  app.get('/api/knowledge/:knowledgeBaseId/notifications/unread-count', async (context) => {
+    const unreadCount = await withKnowledgeBase(dependencies.pool, context.get('knowledgeBaseId'), (db) =>
+      countUnreadNotifications(db, { knowledgeBaseId: context.get('knowledgeBaseId'), userId: context.get('userId') }));
     return context.json({ unreadCount });
   });
 
-  app.post('/api/knowledge/:workspaceId/notifications/read-all', async (context) => {
-    const updated = await withWorkspaceTenant(dependencies.pool, context.get('workspaceId'), (db) =>
-      markAllNotificationsRead(db, { workspaceId: context.get('workspaceId'), userId: context.get('userId') }));
+  app.post('/api/knowledge/:knowledgeBaseId/notifications/read-all', async (context) => {
+    const updated = await withKnowledgeBase(dependencies.pool, context.get('knowledgeBaseId'), (db) =>
+      markAllNotificationsRead(db, { knowledgeBaseId: context.get('knowledgeBaseId'), userId: context.get('userId') }));
     return context.json({ updated });
   });
 
-  app.post('/api/knowledge/:workspaceId/notifications/:notificationId/read', async (context) => {
-    const notification = await withWorkspaceTenant(dependencies.pool, context.get('workspaceId'), (db) =>
+  app.post('/api/knowledge/:knowledgeBaseId/notifications/:notificationId/read', async (context) => {
+    const notification = await withKnowledgeBase(dependencies.pool, context.get('knowledgeBaseId'), (db) =>
       markNotificationRead(db, {
-        workspaceId: context.get('workspaceId'),
+        knowledgeBaseId: context.get('knowledgeBaseId'),
         userId: context.get('userId'),
         notificationId: context.req.param('notificationId'),
       }));

@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 import { eq } from 'drizzle-orm';
 import { knowledgeSchema } from '@fouc/shared/knowledge/schema';
-import { docState } from '../../../platform/database/workspace/schema';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import { docState } from '../../../platform/database/resources/schema';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
 import { createKnowledgeCheckpointRoutes } from '../api/checkpoint-routes';
 import { createPermissionsFixture, until, type PermissionTestActor, type PermissionsFixture } from '../permissions/permissions-test-fixture';
 import { PAGE_BODY_FRAGMENT, insertProseMirrorBlocks } from '../import-export/y-encoding';
@@ -48,7 +48,7 @@ describe('page history service and checkpoint routes (V03)', () => {
       headers: { cookie: actor.cookie, origin, 'content-type': 'application/json', ...(init.headers ?? {}) },
     });
   }
-  const checkpointBase = (workspaceId: string, pageId: string) => `/api/knowledge/${workspaceId}/pages/${pageId}/checkpoints`;
+  const checkpointBase = (knowledgeBaseId: string, pageId: string) => `/api/knowledge/${knowledgeBaseId}/pages/${pageId}/checkpoints`;
 
   const paragraph = (text: string) => knowledgeSchema.node('paragraph', null, [knowledgeSchema.text(text)]);
   const connect = async (name: string, authorization: string) => {
@@ -60,21 +60,21 @@ describe('page history service and checkpoint routes (V03)', () => {
   test('named version, list, preview, and a client-side restore that other editors survive', async () => {
     const { pages } = await fixture.tree({ defaultAccess: 'edit' });
     await fixture.drain();
-    const scope = { workspaceId: fixture.alpha.id, pageId: pages[0].pageId };
+    const scope = { knowledgeBaseId: fixture.alpha.id, pageId: pages[0].pageId };
     const bearer = await fixture.createToken(fixture.owner, ['read', 'write']);
 
     const author = await connect(pageDocumentName(scope), bearer);
     insertProseMirrorBlocks(author.document.getXmlFragment(PAGE_BODY_FRAGMENT), 0, [paragraph('Version A'), paragraph('Version B')]);
-    await until(async () => Boolean(await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) =>
+    await until(async () => Boolean(await withKnowledgeBase(fixture.pool, scope.knowledgeBaseId, (db) =>
       db.select({ state: docState.state }).from(docState).where(eq(docState.pageId, scope.pageId)).then((rows) => rows[0]?.state?.byteLength ?? 0 > 0))));
 
     // A named version pins the current state and attributes the editor.
-    const named = await api(fixture.owner, checkpointBase(scope.workspaceId, scope.pageId), { method: 'POST', body: JSON.stringify({ label: '评审基线' }) });
+    const named = await api(fixture.owner, checkpointBase(scope.knowledgeBaseId, scope.pageId), { method: 'POST', body: JSON.stringify({ label: '评审基线' }) });
     expect(named.status).toBe(201);
     const created = await named.json() as { outcome: string; checkpointId: string };
     expect(created.outcome).toBe('created');
 
-    const list = await api(fixture.owner, checkpointBase(scope.workspaceId, scope.pageId));
+    const list = await api(fixture.owner, checkpointBase(scope.knowledgeBaseId, scope.pageId));
     expect(list.status).toBe(200);
     const listed = await list.json() as { checkpoints: { checkpointId: string; label: string | null; authors: string[] }[] };
     const entry = listed.checkpoints.find((item) => item.checkpointId === created.checkpointId);
@@ -82,7 +82,7 @@ describe('page history service and checkpoint routes (V03)', () => {
     expect(entry?.authors).toContain(fixture.owner.identity.userId);
 
     // The preview decodes server-side; the state blob itself never leaves.
-    const preview = await api(fixture.owner, `${checkpointBase(scope.workspaceId, scope.pageId)}/${created.checkpointId}`);
+    const preview = await api(fixture.owner, `${checkpointBase(scope.knowledgeBaseId, scope.pageId)}/${created.checkpointId}`);
     expect(preview.status).toBe(200);
     const snapshot = await preview.json() as { body: { type: string; content: { content: { text: string }[] }[] } };
     expect(snapshot.body.type).toBe('doc');
@@ -107,15 +107,15 @@ describe('page history service and checkpoint routes (V03)', () => {
   test('a view-only member reads history but cannot name versions', async () => {
     const { pages } = await fixture.tree({ defaultAccess: 'view' });
     await fixture.drain();
-    const scope = { workspaceId: fixture.alpha.id, pageId: pages[0].pageId };
-    const read = await api(fixture.reader, checkpointBase(scope.workspaceId, scope.pageId));
+    const scope = { knowledgeBaseId: fixture.alpha.id, pageId: pages[0].pageId };
+    const read = await api(fixture.reader, checkpointBase(scope.knowledgeBaseId, scope.pageId));
     expect(read.status).toBe(200);
-    const write = await api(fixture.reader, checkpointBase(scope.workspaceId, scope.pageId), { method: 'POST', body: JSON.stringify({ label: '越权命名' }) });
+    const write = await api(fixture.reader, checkpointBase(scope.knowledgeBaseId, scope.pageId), { method: 'POST', body: JSON.stringify({ label: '越权命名' }) });
     expect(write.status).toBe(403);
   });
 
-  test('a page of another tenant never becomes visible through the history surface', async () => {
-    const { pages } = await fixture.tree({ tenant: 'beta', defaultAccess: 'edit' });
+  test('a page of another resource never becomes visible through the history surface', async () => {
+    const { pages } = await fixture.tree({ resource: 'beta', defaultAccess: 'edit' });
     await fixture.drain();
     const response = await api(fixture.reader, checkpointBase(fixture.beta.id, pages[0].pageId));
     expect(response.status).toBe(403);

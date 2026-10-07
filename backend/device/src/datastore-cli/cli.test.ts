@@ -20,15 +20,15 @@ function server(handler: (request: Request) => Response | Promise<Response>) {
 const json = (data: unknown) => Response.json({ ok: true, data });
 
 test('CLI accepts explicit scoped targets and rejects secret/write flags and ambiguous arguments', () => {
-  const parsed = parseDatastoreCliArgs(['query', '--workspace', 'space-a', '--connection=id', '--query', 'SELECT 1', '--timeout=2m', '--json']);
-  expect(parsed.workspace).toBe('space-a'); expect(parsed.timeout).toBe(120_000); expect(parsed.format).toBe('json');
+  const parsed = parseDatastoreCliArgs(['query', '--connection=id', '--query', 'SELECT 1', '--timeout=2m', '--json']);
+  expect(parsed.connection).toBe('id'); expect(parsed.timeout).toBe(120_000); expect(parsed.format).toBe('json');
   for (const args of [
     ['query', '--password=secret'], ['query', '--write'], ['query', '--connection=a', '--session=b'],
     ['query', '--query=SELECT 1', '--file=x.sql'], ['query', '--limit=5001'], ['query', '--json', '--csv'],
     ['query', '--url=http://user:secret@localhost:8710'], ['query', '--url=http://localhost:8710/api'],
-    ['query', '--workspace=a', '--workspace=b'], ['query', '--offset=-1'],
+    ['query', '--offset=-1'],
   ]) expect(() => parseDatastoreCliArgs(args)).toThrow();
-  expect(parseDatastoreCliArgs(['query'], { FOUC_WORKSPACE_ID: 'space-b' }).workspace).toBe('space-b');
+  expect(parseDatastoreCliArgs(['query', '--connection=saved']).connection).toBe('saved');
 });
 
 test('CSV preserves precision, duplicate headers and NULL versus empty while terminal controls are escaped', () => {
@@ -56,16 +56,16 @@ test('implicitly opened sessions close after failed action; borrowed sessions ar
   const origin = server(request => {
     const route = new URL(request.url).pathname;
     requests.push({ method: request.method, route });
-    if (route.endsWith('/connections')) return json([{ id: 'saved', workspaceId: 'space-a', name: 'sqlite', updatedAt: 1, config: { provider: 'sqlite', path: 'fixture.sqlite' } }]);
-    if (route.endsWith('/connect')) return json({ id: 'owned', workspaceId: 'space-a', provider: 'sqlite', database: 'fixture.sqlite' });
+    if (route.endsWith('/connections')) return json([{ id: 'saved', name: 'sqlite', updatedAt: 1, config: { provider: 'sqlite', path: 'fixture.sqlite' } }]);
+    if (route.endsWith('/connect')) return json({ id: 'owned', provider: 'sqlite', database: 'fixture.sqlite' });
     return json(null);
   });
-  const options = parseDatastoreCliArgs(['query', '--workspace=space-a', '--connection=saved', '--provider=sqlite']);
+  const options = parseDatastoreCliArgs(['query', '--connection=saved', '--provider=sqlite']);
   const client = new DatastoreHttpClient(origin, {}, 1000);
   await expect(withCliSession(client, options, {}, async () => { throw new Error('native rejected'); })).rejects.toThrow('native rejected');
-  expect(requests.at(-1)).toEqual({ method: 'DELETE', route: '/api/database/workspaces/space-a/relational/sessions/owned' });
+  expect(requests.at(-1)).toEqual({ method: 'DELETE', route: '/api/database/relational/sessions/owned' });
   const before = requests.length;
-  const borrowed = parseDatastoreCliArgs(['query', '--workspace=space-a', '--session=borrowed', '--provider=sqlite']);
+  const borrowed = parseDatastoreCliArgs(['query', '--session=borrowed', '--provider=sqlite']);
   expect(await withCliSession(client, borrowed, {}, async session => session.id)).toBe('borrowed');
   expect(requests.length).toBe(before);
 });
@@ -80,7 +80,7 @@ test('interrupt requests registered SQL cancellation even though the original re
     if (route.endsWith('/executions')) { setTimeout(() => controller.abort(), 15); return json(execution); }
     return json({ revision: 1, execution: null });
   });
-  const options = parseDatastoreCliArgs(['query', '--workspace=space-a', '--session=borrowed', '--provider=sqlite', '--query=SELECT 1']);
+  const options = parseDatastoreCliArgs(['query', '--session=borrowed', '--provider=sqlite', '--query=SELECT 1']);
   const session = { id: 'borrowed', provider: 'sqlite' as const, database: 'main', root: '', base: '/scoped/sessions/borrowed', owned: false, raw: null };
   await expect(runCliSql(new DatastoreHttpClient(origin, {}, 1000, controller.signal), session, options, 'SELECT 1', controller.signal)).rejects.toMatchObject({ exitCode: 130 });
   expect(cancelled).toBe(true);

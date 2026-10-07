@@ -1,10 +1,10 @@
 import { getTableConfig } from 'drizzle-orm/pg-core';
-import { allApplicationTables, workspaceTenantTables } from './schema';
-import { workspacePoliciesForTable } from './workspace/rls';
+import { allApplicationTables, resourceTables } from './schema';
+import { resourcePoliciesForTable } from './resources/rls';
 import { assertFoucApplicationRole } from './initialize-role';
 import type { FoucSqlConnection } from './initialize-role';
 
-export const foucDatabaseSchemas = ['workspace', 'auth'] as const;
+export const foucDatabaseSchemas = ['resources', 'auth'] as const;
 const requiredExtensions = ['ltree', 'pg_search', 'vector'];
 
 export interface FoucDatabaseStatus {
@@ -12,8 +12,8 @@ export interface FoucDatabaseStatus {
   schemas: string[];
   tables: number;
   expectedTables: number;
-  forcedTenantTables: number;
-  expectedTenantTables: number;
+  forcedResourceTables: number;
+  expectedResourceTables: number;
   extensions: string[];
   issues: string[];
 }
@@ -25,7 +25,7 @@ function normalizePolicy(value: string): string {
 }
 
 function normalizeType(value: string): string {
-  return value.replaceAll('"', '').replace(/\b(?:workspace|public)\./g, '').replace(/^varchar\(/, 'character varying(');
+  return value.replaceAll('"', '').replace(/\b(?:resources|public)\./g, '').replace(/^varchar\(/, 'character varying(');
 }
 
 /** Read-only structural, RLS, extension and runtime-grant verification. */
@@ -36,7 +36,7 @@ export async function inspectFoucDatabase(admin: FoucSqlConnection, application:
   const issues: string[] = [];
   const status: FoucDatabaseStatus = {
     state: 'empty', schemas: namespaces.rows.map((row) => row.name), tables: 0, expectedTables: allApplicationTables.length,
-    forcedTenantTables: 0, expectedTenantTables: workspaceTenantTables.length,
+    forcedResourceTables: 0, expectedResourceTables: resourceTables.length,
     extensions: extensions.rows.map((row) => row.name), issues,
   };
   if (!status.schemas.length) return status;
@@ -85,17 +85,17 @@ export async function inspectFoucDatabase(admin: FoucSqlConnection, application:
     const relation = relations.rows.find((row) => key(row.schema, row.name) === target);
     if (!relation) { issues.push(`Missing table: ${target}`); continue; }
     if (relation.owner === role.name) issues.push(`Application role owns table: ${target}`);
-    if (config.schema === 'workspace') {
-      if (relation.enabled && relation.forced) status.forcedTenantTables += 1;
+    if (config.schema === 'resources') {
+      if (relation.enabled && relation.forced) status.forcedResourceTables += 1;
       else issues.push(`RLS not enabled and forced: ${target}`);
       const tablePolicies = policies.rows.filter((row) => key(row.schema, row.table) === target);
-      const expectedPolicies = workspacePoliciesForTable(table);
+      const expectedPolicies = resourcePoliciesForTable(table);
       if (tablePolicies.length !== expectedPolicies.length || expectedPolicies.some((expected) => {
         const policy = tablePolicies.find((item) => item.name === expected.name);
-        return !policy || policy.command !== (expected.command === 'ALL' ? '*' : 'r') || !policy.permissive || policy.roles.length !== 1 || policy.roles[0] !== 0
-          || normalizePolicy(policy.using ?? '') !== normalizePolicy(expected.using) || normalizePolicy(policy.check ?? '') !== normalizePolicy(expected.check ?? '');
+        return !policy || policy.command !== ({ ALL: '*', SELECT: 'r', INSERT: 'a', UPDATE: 'w', DELETE: 'd' }[expected.command]) || !policy.permissive || policy.roles.length !== 1 || policy.roles[0] !== 0
+          || normalizePolicy(policy.using ?? '') !== normalizePolicy(expected.using ?? '') || normalizePolicy(policy.check ?? '') !== normalizePolicy(expected.check ?? '');
       })) {
-        issues.push(`Tenant policy differs from current definition: ${target}`);
+        issues.push(`Resource policy differs from current definition: ${target}`);
       }
     }
     const tableColumns = columns.rows.filter((row) => key(row.schema, row.table) === target);

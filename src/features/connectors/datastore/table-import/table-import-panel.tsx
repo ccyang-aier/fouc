@@ -17,7 +17,7 @@ import styles from './table-import.module.css';
 export type TableImportPanelProps = {
   provider: RelationalProvider;
   sessionId: string;
-  /** Scoped session resource URL, including its workspace and session ID. */
+  /** Scoped session resource URL, including its session ID. */
   base: string;
   schema: string;
   table: string;
@@ -140,7 +140,7 @@ function TableImportWorkflow({ provider, base, schema, table, columns, onPreview
         <div className={styles.reviewMapping}>{plan.review.mappings.filter((mapping) => mapping.targetColumn).map((mapping) => <span key={mapping.sourceColumn}>{mapping.sourceColumn}<ArrowRight size={11} />{mapping.targetColumn}</span>)}</div>
         {warnings.length > 0 && <div className={styles.warnings}>{warnings.map((warning) => <p key={warning}><WarningCircle size={13} />{warning}</p>)}</div>}
         <TableImportPreviewGrid parsed={plan.review.parsed} />
-        <p className={styles.hint}>本次审核绑定当前工作空间、会话、目标与数据，只能提交一次。修改数据或映射后需要重新审核。</p>
+        <p className={styles.hint}>本次审核绑定当前会话、目标与数据，只能提交一次。修改数据或映射后需要重新审核。</p>
       </>}
       {step === 'done' && summary && <div className={styles.success} role="status"><span><Check size={29} /></span><h3>导入完成</h3><p>已向 <strong>{schema}.{table}</strong> 追加 <strong>{summary.rowsImported}</strong> 行。</p><small>事务已提交 · {summary.elapsedMs} ms</small></div>}
     </div>

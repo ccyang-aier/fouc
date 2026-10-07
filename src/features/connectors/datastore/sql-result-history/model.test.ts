@@ -7,7 +7,6 @@ import {
   type ResultPinScope,
 } from './model';
 const scope: ResultPinScope = {
-  workspaceId: 'workspace-a',
   connectionId: 'connection-a',
   tabId: 'tab-a',
 };
@@ -46,7 +45,6 @@ test('pin takes an independent snapshot and deduplicates only its own scope', ()
     ).length,
   ).toBe(2);
   for (const other of [
-    { ...scope, workspaceId: 'workspace-b' },
     { ...scope, connectionId: 'connection-b' },
     { ...scope, tabId: 'tab-b' },
   ])

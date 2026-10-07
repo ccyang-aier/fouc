@@ -48,7 +48,7 @@ function ActivityPanel({ base, provider, database, blocked }: { base: string; pr
           <div className={styles.rawHead}><span>没有值的字段保持未知；版本 {latest.settings.version ?? '未知'} · 最大连接数 {latest.settings.max_connections ?? '未知'}</span><input aria-label="筛选原始监控状态" value={statusSearch} placeholder="筛选指标名或原始值…" onChange={event => setStatusSearch(event.target.value)}/></div>
           <div className={styles.rawTable}><table><thead><tr><th>区域 / 来源</th><th>字段</th><th>原始值</th></tr></thead><tbody>{(['counters', 'settings'] as const).flatMap(group => Object.entries(latest[group]).sort(([a], [b]) => a.localeCompare(b)).filter(([name, value]) => !statusSearch || `${name} ${value ?? ''}`.toLocaleLowerCase().includes(statusSearch.toLocaleLowerCase())).map(([name, value]) => <tr key={`${group}:${name}`}><td>{group === 'counters' ? '原生状态' : '原生设置'}</td><td>{name}</td><td>{value ?? '未知'}</td></tr>))}</tbody></table></div>
         </details>
-        <details className={styles.limitations}><summary>来源、权限与监控限制</summary>{latest.warnings.map(warning => <p key={warning}>{warning}</p>)}<p>关闭监控页或切换工作空间后停止本页采样；不提供终止进程、取消其他会话或修改数据库参数的操作。</p></details>
+        <details className={styles.limitations}><summary>来源、权限与监控限制</summary>{latest.warnings.map(warning => <p key={warning}>{warning}</p>)}<p>关闭监控页后停止本页采样；不提供终止进程、取消其他会话或修改数据库参数的操作。</p></details>
       </>}
     </div>
   </section>;

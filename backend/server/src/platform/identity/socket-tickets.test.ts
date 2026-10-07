@@ -15,7 +15,7 @@ test('socket grants expire, bind the path, cannot replay, and never disclose the
   const expired = tickets.issue('/', headers);
   now += 20_000;
   expect(tickets.consume(new Request(`https://api.fouc.test/?fouc_socket_ticket=${expired}`))).toBeNull();
-  const bound = tickets.issue('/api/knowledge/workspace/events', headers);
+  const bound = tickets.issue('/api/knowledge/knowledgeBase/events', headers);
   expect(tickets.consume(new Request(`https://api.fouc.test/?fouc_socket_ticket=${bound}`))).toBeNull();
   expect(tickets.issue('/api/auth/get-session', headers)).toBeNull();
   expect(tickets.issue('/', new Headers())).toBeNull();

@@ -37,11 +37,11 @@ afterEach(async () => {
   (globalThis as Record<string, unknown>).fetch = undefined;
 });
 
-const workspace = '20000000-0000-4000-8000-000000000000';
+const knowledgeBase = '20000000-0000-4000-8000-000000000000';
 const database = '10000000-0000-4000-8000-00000000000d';
 const rowA = '10000000-0000-4000-8000-0000000000e1';
 const rowB = '10000000-0000-4000-8000-0000000000e2';
-const member = { workspaceId: workspace, userId: '30000000-0000-4000-8000-000000000001', role: 'member' as const, name: '林澜', email: 'lin@fouc.test', joinedAt: '2026-09-01T00:00:00Z' };
+const member = { knowledgeBaseId: knowledgeBase, userId: '30000000-0000-4000-8000-000000000001', role: 'member' as const, name: '林澜', email: 'lin@fouc.test', joinedAt: '2026-09-01T00:00:00Z' };
 
 const columns: PropertyDefinition[] = [
   { id: 'c_title_x', name: '摘要', type: 'text' },
@@ -126,16 +126,16 @@ function stubBackend(options: StubOptions = {}) {
     const respondProcedure = (name: string, query: Record<string, unknown>): unknown => {
       switch (name) {
         case 'page.access':
-          return { result: { data: { workspaceId: workspace, pageId: database, authorized: state.authorized, level: state.authorized ? state.level : null } } };
+          return { result: { data: { knowledgeBaseId: knowledgeBase, pageId: database, authorized: state.authorized, level: state.authorized ? state.level : null } } };
         case 'database.getColumns':
-          return { result: { data: { workspaceId: workspace, pageId: database, columns: state.columns } } };
+          return { result: { data: { knowledgeBaseId: knowledgeBase, pageId: database, columns: state.columns } } };
         case 'database.listRows':
           state.listRowsQueries.push(query);
           return { result: { data: { rows: state.rows, nextCursor: null } } };
         case 'database.updateRowProperties':
           state.rowPropertiesCalls.push({ pageId: query.pageId as string, properties: query.properties as Properties });
           state.rows = state.rows.map((row) => (row.pageId === query.pageId ? { ...row, properties: query.properties as Properties } : row));
-          return { result: { data: { workspaceId: workspace, pageId: query.pageId, properties: query.properties } } };
+          return { result: { data: { knowledgeBaseId: knowledgeBase, pageId: query.pageId, properties: query.properties } } };
         case 'database.createRow':
           state.createdRows.push(query.id as string);
           state.rows = [...state.rows, { pageId: query.id as string, title: query.title as string, properties: query.properties as Properties }];
@@ -143,7 +143,7 @@ function stubBackend(options: StubOptions = {}) {
         case 'database.updateColumns':
           state.columns = query.columns as PropertyDefinition[];
           state.updateColumnsCalls.push(state.columns);
-          return { result: { data: { workspaceId: workspace, pageId: database, columns: state.columns } } };
+          return { result: { data: { knowledgeBaseId: knowledgeBase, pageId: database, columns: state.columns } } };
         default:
           return { error: { code: -32001, message: 'not found', data: { code: 'NOT_FOUND', httpStatus: 404, requestId: 'req-x' } } };
       }
@@ -172,7 +172,7 @@ async function mountView(onOpenRow: (pageId: string) => void = () => undefined) 
   await act(async () => {
     root.render(
       <QueryClientProvider client={queryClient}>
-        <DatabaseTableView scope={{ workspaceId: workspace, pageId: database }} title="迭代任务库" onOpenRow={onOpenRow} />
+        <DatabaseTableView scope={{ knowledgeBaseId: knowledgeBase, pageId: database }} title="迭代任务库" onOpenRow={onOpenRow} />
       </QueryClientProvider>,
     );
   });

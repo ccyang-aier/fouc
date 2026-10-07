@@ -5,7 +5,7 @@ import { createKnowledgePagesApi } from './pages-api';
 import { knowledgeTrpcUrl } from './endpoint';
 
 const origin = 'https://api.fouc.example';
-const workspace = '20000000-0000-4000-8000-000000000000';
+const knowledgeBase = '20000000-0000-4000-8000-000000000000';
 const teamspace = 'a0000000-0000-4000-8000-00000000000a';
 
 type CapturedRequest = { url: string; method: string; body?: string };
@@ -24,7 +24,7 @@ function capturingFetch(respond: () => { status: number; body: string }) {
 function fullPage(overrides: Partial<Page> = {}): Page {
   return {
     id: '10000000-0000-4000-8000-000000000001',
-    workspaceId: workspace,
+    knowledgeBaseId: knowledgeBase,
     teamspaceId: teamspace,
     parentId: null,
     kind: 'doc',
@@ -47,21 +47,21 @@ function fullPage(overrides: Partial<Page> = {}): Page {
 const apiWith = (fetchImpl: typeof fetch) => createKnowledgePagesApi({ resolveOrigin: () => origin, fetchImpl });
 
 describe('createKnowledgePagesApi · listPages', () => {
-  test('queries page.list on the workspace transport URL and validates the pages through the contract', async () => {
+  test('queries page.list on the knowledgeBase transport URL and validates the pages through the contract', async () => {
     const page = fullPage();
     const { requests, fetchImpl } = capturingFetch(() => ({ status: 200, body: JSON.stringify([{ result: { data: [page] } }]) }));
-    const pages = await apiWith(fetchImpl).listPages(workspace);
+    const pages = await apiWith(fetchImpl).listPages(knowledgeBase);
     expect(pages).toEqual([page]);
     expect(requests).toHaveLength(1);
     expect(requests[0]!.method).toBe('GET');
-    expect(requests[0]!.url.startsWith(`${knowledgeTrpcUrl(origin, workspace)}/page.list?`)).toBe(true);
+    expect(requests[0]!.url.startsWith(`${knowledgeTrpcUrl(origin, knowledgeBase)}/page.list?`)).toBe(true);
     expect(requests[0]!.url).toContain('batch=1');
-    expect(decodeURIComponent(requests[0]!.url)).toContain(`"workspaceId":"${workspace}"`);
+    expect(decodeURIComponent(requests[0]!.url)).toContain(`"knowledgeBaseId":"${knowledgeBase}"`);
   });
 
   test('a payload the contract rejects is an UNAVAILABLE error, never rendered data', async () => {
     const { fetchImpl } = capturingFetch(() => ({ status: 200, body: JSON.stringify([{ result: { data: [{ id: 'not-a-uuid' }] } }]) }));
-    const error = await apiWith(fetchImpl).listPages(workspace).catch((cause: unknown) => cause);
+    const error = await apiWith(fetchImpl).listPages(knowledgeBase).catch((cause: unknown) => cause);
     expect(isKnowledgeDataError(error)).toBe(true);
     expect((error as { code: string }).code).toBe('UNAVAILABLE');
     expect((error as { message: string }).message).toContain('不符合契约');
@@ -74,7 +74,7 @@ describe('createKnowledgePagesApi · mutations', () => {
     const { requests, fetchImpl } = capturingFetch(() => ({ status: 200, body: JSON.stringify([{ result: { data: placement } }]) }));
     const input = {
       id: placement.pageId,
-      workspaceId: workspace,
+      knowledgeBaseId: knowledgeBase,
       teamspaceId: teamspace,
       parentId: null,
       kind: 'doc' as const,
@@ -86,16 +86,16 @@ describe('createKnowledgePagesApi · mutations', () => {
       inheritsPermissions: true,
       afterPageId: null,
     };
-    const result = await apiWith(fetchImpl).createPage(workspace, input);
+    const result = await apiWith(fetchImpl).createPage(knowledgeBase, input);
     expect(result).toEqual(placement);
     expect(requests[0]!.method).toBe('POST');
-    expect(requests[0]!.url.startsWith(`${knowledgeTrpcUrl(origin, workspace)}/page.create?`)).toBe(true);
+    expect(requests[0]!.url.startsWith(`${knowledgeTrpcUrl(origin, knowledgeBase)}/page.create?`)).toBe(true);
     expect(JSON.parse(requests[0]!.body!)).toEqual({ 0: input });
   });
 
   test('move, recycle and restore send their contract shapes', async () => {
     const movePlacement = { pageId: '10000000-0000-4000-8000-000000000001', parentId: null, teamspaceId: teamspace, position: 'i00000', path: 'x' };
-    const lifecycle = { workspaceId: workspace, pageId: '10000000-0000-4000-8000-000000000001', deletedAt: '2026-09-26T01:00:00Z' };
+    const lifecycle = { knowledgeBaseId: knowledgeBase, pageId: '10000000-0000-4000-8000-000000000001', deletedAt: '2026-09-26T01:00:00Z' };
     const queue = [
       { status: 200, body: JSON.stringify([{ result: { data: movePlacement } }]) },
       { status: 200, body: JSON.stringify([{ result: { data: lifecycle } }]) },
@@ -104,15 +104,15 @@ describe('createKnowledgePagesApi · mutations', () => {
     const { requests, fetchImpl } = capturingFetch(() => queue.shift()!);
     const api = apiWith(fetchImpl);
 
-    await api.movePage(workspace, { pageId: movePlacement.pageId, parentId: null, teamspaceId: teamspace, afterPageId: null, operationId: '30000000-0000-4000-8000-000000000000' });
-    await api.recyclePage(workspace, { pageId: lifecycle.pageId });
-    await api.restorePage(workspace, { pageId: lifecycle.pageId });
+    await api.movePage(knowledgeBase, { pageId: movePlacement.pageId, parentId: null, teamspaceId: teamspace, afterPageId: null, operationId: '30000000-0000-4000-8000-000000000000' });
+    await api.recyclePage(knowledgeBase, { pageId: lifecycle.pageId });
+    await api.restorePage(knowledgeBase, { pageId: lifecycle.pageId });
 
     expect(requests.map((request) => request.url.split('/').pop()?.split('?')[0])).toEqual(['page.move', 'page.recycle', 'page.restore']);
     expect(JSON.parse(requests[0]!.body!)).toEqual({
-      0: { workspaceId: workspace, pageId: movePlacement.pageId, parentId: null, teamspaceId: teamspace, afterPageId: null, operationId: '30000000-0000-4000-8000-000000000000' },
+      0: { knowledgeBaseId: knowledgeBase, pageId: movePlacement.pageId, parentId: null, teamspaceId: teamspace, afterPageId: null, operationId: '30000000-0000-4000-8000-000000000000' },
     });
-    expect(JSON.parse(requests[1]!.body!)).toEqual({ 0: { workspaceId: workspace, pageId: lifecycle.pageId } });
+    expect(JSON.parse(requests[1]!.body!)).toEqual({ 0: { knowledgeBaseId: knowledgeBase, pageId: lifecycle.pageId } });
   });
 
   test('a missing procedure (the honest pre-route state) normalizes to NOT_FOUND', async () => {
@@ -123,7 +123,7 @@ describe('createKnowledgePagesApi · mutations', () => {
         { error: { code: -32003, message: 'No procedure found on path "page.update"', data: { code: 'NOT_FOUND', httpStatus: 404, requestId: 'req-1' } } },
       ]),
     }));
-    const error = await apiWith(fetchImpl).updatePage(workspace, { pageId: '10000000-0000-4000-8000-000000000001', title: 'x' }).catch((cause: unknown) => cause);
+    const error = await apiWith(fetchImpl).updatePage(knowledgeBase, { pageId: '10000000-0000-4000-8000-000000000001', title: 'x' }).catch((cause: unknown) => cause);
     expect(isKnowledgeDataError(error)).toBe(true);
     expect((error as { code: string }).code).toBe('NOT_FOUND');
     expect((error as { requestId: string | null }).requestId).toBe('req-1');
@@ -131,7 +131,7 @@ describe('createKnowledgePagesApi · mutations', () => {
 
   test('contract-invalid inputs fail fast as INVALID_REQUEST without any request leaving', async () => {
     const { requests, fetchImpl } = capturingFetch(() => ({ status: 200, body: '[]' }));
-    const error = await apiWith(fetchImpl).updatePage(workspace, { pageId: 'not-a-uuid', title: 'x' }).catch((cause: unknown) => cause);
+    const error = await apiWith(fetchImpl).updatePage(knowledgeBase, { pageId: 'not-a-uuid', title: 'x' }).catch((cause: unknown) => cause);
     expect(isKnowledgeDataError(error)).toBe(true);
     expect((error as { code: string }).code).toBe('INVALID_REQUEST');
     expect(requests).toHaveLength(0);

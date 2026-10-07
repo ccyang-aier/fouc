@@ -14,7 +14,7 @@ export type { CommentAuthor } from './comment-avatar';
 
 export interface CommentEntryItemProps {
   entry: CommentEntry;
-  workspaceId: string;
+  knowledgeBaseId: string;
   author?: CommentAuthor;
   isOwn: boolean;
   deleting: boolean;
@@ -34,7 +34,7 @@ export interface CommentEntryItemProps {
   onCopyLink: (commentId: string) => Promise<boolean>;
 }
 
-export function CommentEntryItem({ entry, workspaceId, author, isOwn, deleting, canComment, isReply, action, threadAction, badge, quote, composer, replyTo, onDelete, onLike, liking, edit, onEdit, onCopyLink }: CommentEntryItemProps) {
+export function CommentEntryItem({ entry, knowledgeBaseId, author, isOwn, deleting, canComment, isReply, action, threadAction, badge, quote, composer, replyTo, onDelete, onLike, liking, edit, onEdit, onCopyLink }: CommentEntryItemProps) {
   const [editing, setEditing] = useState(false);
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
   const [likePulse, setLikePulse] = useState(0);
@@ -60,11 +60,11 @@ export function CommentEntryItem({ entry, workspaceId, author, isOwn, deleting, 
         </div>
       </div>
       {quote}
-      {editing && isOwn && canComment ? <div className={styles.editComposer}><CommentComposer workspaceId={workspaceId} placeholder="编辑评论…" initialBodyMd={entry.bodyMd} submitLabel="保存" sendingLabel="保存中…" sending={edit.pending} error={edit.error} onCancel={() => setEditing(false)} onSubmit={async body => {
+      {editing && isOwn && canComment ? <div className={styles.editComposer}><CommentComposer knowledgeBaseId={knowledgeBaseId} placeholder="编辑评论…" initialBodyMd={entry.bodyMd} submitLabel="保存" sendingLabel="保存中…" sending={edit.pending} error={edit.error} onCancel={() => setEditing(false)} onSubmit={async body => {
         const success = await onEdit(entry.id, body);
         if (success) setEditing(false);
         return success;
-      }} minHeight={36} /></div> : <div className={styles.entryBody}><CommentMarkdown body={entry.bodyMd} workspaceId={workspaceId} /></div>}
+      }} minHeight={36} /></div> : <div className={styles.entryBody}><CommentMarkdown body={entry.bodyMd} knowledgeBaseId={knowledgeBaseId} /></div>}
       <div className={styles.entryToolbar}>
         <button type="button" className={styles.likeButton} aria-label={entry.liked ? '取消点赞' : '点赞'} aria-pressed={entry.liked} disabled={!canComment || liking} onClick={() => { setLikePulse(pulse => entry.liked ? 0 : pulse + 1); onLike(entry.id, !entry.liked); }}><span key={likePulse} className={styles.likeIcon} data-pulse={likePulse > 0} aria-hidden><ThumbsUp size={16} weight={entry.liked ? 'fill' : 'regular'} /></span><span>{entry.likeCount || '赞'}</span></button>
         {action}

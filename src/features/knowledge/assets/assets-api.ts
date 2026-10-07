@@ -21,7 +21,7 @@ import { getFoucApiOrigin } from '@/lib/fouc-api-endpoint';
 import { KnowledgeDataError, normalizeKnowledgeError } from '../data/errors';
 import { createKnowledgeUntypedClientCache, type KnowledgeFetch, type KnowledgeUntypedTrpcClient } from '../data/trpc-client';
 
-/** 客户端单文件的申报意图:`uploadIntentSchema` 去掉 workspaceId(随调用携带)。 */
+/** 客户端单文件的申报意图:`uploadIntentSchema` 去掉 knowledgeBaseId(随调用携带)。 */
 export interface AssetIntentInput {
   hash: string;
   mime: string;
@@ -30,15 +30,15 @@ export interface AssetIntentInput {
 }
 
 export type KnowledgeAssetsApi = {
-  /** `asset.prepare`:同工作区同哈希 → `{action:'reuse'}`(秒传),否则预签名 PUT。 */
-  prepareUpload(workspaceId: string, intent: AssetIntentInput, signal?: AbortSignal): Promise<AssetUploadPrepareResult>;
+  /** `asset.prepare`:同知识库同哈希 → `{action:'reuse'}`(秒传),否则预签名 PUT。 */
+  prepareUpload(knowledgeBaseId: string, intent: AssetIntentInput, signal?: AbortSignal): Promise<AssetUploadPrepareResult>;
   /** `asset.confirm`:服务端按实际存储对象复验哈希/大小/类型后落库并出 asset.created。 */
-  confirmUpload(workspaceId: string, intent: AssetIntentInput, signal?: AbortSignal): Promise<AssetConfirmResult>;
-  download(workspaceId: string, hash: string, signal?: AbortSignal): Promise<AssetDownloadResult>;
+  confirmUpload(knowledgeBaseId: string, intent: AssetIntentInput, signal?: AbortSignal): Promise<AssetConfirmResult>;
+  download(knowledgeBaseId: string, hash: string, signal?: AbortSignal): Promise<AssetDownloadResult>;
 };
 
 function assertIntent(intent: AssetIntentInput, procedure: string): void {
-  if (!uploadIntentSchema.omit({ workspaceId: true }).safeParse(intent).success) {
+  if (!uploadIntentSchema.omit({ knowledgeBaseId: true }).safeParse(intent).success) {
     throw new KnowledgeDataError('INVALID_REQUEST', { message: `${procedure} 的输入不符合资产上传契约。` });
   }
 }
@@ -54,27 +54,27 @@ function parsePayload<T>(schema: { safeParse(payload: unknown): { success: true;
 
 export function createKnowledgeAssetsApi(deps: { resolveOrigin: () => Promise<string> | string; fetchImpl?: KnowledgeFetch }): KnowledgeAssetsApi {
   const cache = createKnowledgeUntypedClientCache(deps.fetchImpl);
-  const run = async <T,>(workspaceId: string, signal: AbortSignal | undefined, invoke: (client: KnowledgeUntypedTrpcClient) => Promise<T>): Promise<T> => {
+  const run = async <T,>(knowledgeBaseId: string, signal: AbortSignal | undefined, invoke: (client: KnowledgeUntypedTrpcClient) => Promise<T>): Promise<T> => {
     try {
-      return await invoke(cache.get(await deps.resolveOrigin(), workspaceId));
+      return await invoke(cache.get(await deps.resolveOrigin(), knowledgeBaseId));
     } catch (cause) {
       throw normalizeKnowledgeError(cause, signal);
     }
   };
 
   return {
-    async prepareUpload(workspaceId, intent, signal) {
+    async prepareUpload(knowledgeBaseId, intent, signal) {
       assertIntent(intent, 'asset.prepare');
-      const payload = await run(workspaceId, signal, (client) => client.mutation('asset.prepare', { workspaceId, ...intent }, { signal }));
+      const payload = await run(knowledgeBaseId, signal, (client) => client.mutation('asset.prepare', { knowledgeBaseId, ...intent }, { signal }));
       return parsePayload(assetUploadPrepareResultSchema, payload, 'asset.prepare');
     },
-    async confirmUpload(workspaceId, intent, signal) {
+    async confirmUpload(knowledgeBaseId, intent, signal) {
       assertIntent(intent, 'asset.confirm');
-      const payload = await run(workspaceId, signal, (client) => client.mutation('asset.confirm', { workspaceId, ...intent }, { signal }));
+      const payload = await run(knowledgeBaseId, signal, (client) => client.mutation('asset.confirm', { knowledgeBaseId, ...intent }, { signal }));
       return parsePayload(assetConfirmResultSchema, payload, 'asset.confirm');
     },
-    async download(workspaceId, hash, signal) {
-      const payload = await run(workspaceId, signal, (client) => client.query('asset.download', { workspaceId, hash }, { signal }));
+    async download(knowledgeBaseId, hash, signal) {
+      const payload = await run(knowledgeBaseId, signal, (client) => client.query('asset.download', { knowledgeBaseId, hash }, { signal }));
       return parsePayload(assetDownloadResultSchema, payload, 'asset.download');
     },
   };

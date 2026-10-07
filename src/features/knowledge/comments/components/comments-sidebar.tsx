@@ -20,7 +20,7 @@ function subscribeNarrowView(onChange: () => void) {
 }
 
 export interface CommentsSidebarProps extends Pick<CommentThreadCardProps,
-  'workspaceId' | 'canComment' | 'currentUserId' | 'authors' | 'reply' | 'resolve' | 'deletingCommentId' | 'deleteError' | 'like' | 'onLike' | 'onLocate' | 'onResolve' | 'onReopen' | 'onDeleteComment'
+  'knowledgeBaseId' | 'canComment' | 'currentUserId' | 'authors' | 'reply' | 'resolve' | 'deletingCommentId' | 'deleteError' | 'like' | 'onLike' | 'onLocate' | 'onResolve' | 'onReopen' | 'onDeleteComment'
   | 'edit' | 'onEdit' | 'onCopyLink'
 > {
   model: CommentSidebarModel;
@@ -48,7 +48,7 @@ export function CommentsSidebar({ model, replyTarget, onReplyTargetChange, onRep
   const replyEntry = [...model.groups, ...model.unanchored].find(group => group.threadId === replyTarget?.threadId)?.thread.comments.find(entry => entry.id === replyTarget?.commentId);
   const replyAuthor = replyEntry ? card.authors?.get(replyEntry.authorId) ?? { name: card.currentUserId === replyEntry.authorId ? '我' : '成员' } : undefined;
   const replyComposer = card.canComment && replyEntry && replyTarget ? <div key={replyTarget.commentId} className={styles.inlineReply}>
-    <CommentComposer workspaceId={card.workspaceId} placeholder={`回复 ${replyAuthor?.name}…`} submitLabel="发送回复" sendingLabel="发送中…" sending={card.reply.pending} error={card.reply.threadId === replyTarget.threadId ? card.reply.error : null} replyTo={replyAuthor} authors={card.authors} onSubmit={(body, _kind, mentions) => onReply(replyTarget, body, mentions)} onCancel={() => onReplyTargetChange(null)} minHeight={36} />
+    <CommentComposer knowledgeBaseId={card.knowledgeBaseId} placeholder={`回复 ${replyAuthor?.name}…`} submitLabel="发送回复" sendingLabel="发送中…" sending={card.reply.pending} error={card.reply.threadId === replyTarget.threadId ? card.reply.error : null} replyTo={replyAuthor} authors={card.authors} onSubmit={(body, _kind, mentions) => onReply(replyTarget, body, mentions)} onCancel={() => onReplyTargetChange(null)} minHeight={36} />
   </div> : null;
   const sidebar = <aside aria-label="页面评论" className={styles.sidebar}>
     <header className={styles.header}><h2 className={styles.heading}>评论</h2>
@@ -65,7 +65,7 @@ export function CommentsSidebar({ model, replyTarget, onReplyTargetChange, onRep
         </>}
     </div>
     <footer className={styles.footer}>
-      {card.canComment ? <CommentComposer workspaceId={card.workspaceId} placeholder="写下评论，分享你的想法…" submitLabel="发表" sendingLabel="发送中…" sending={create.pending} error={create.error} authors={card.authors} onSubmit={async (body, kind, mentions) => {
+      {card.canComment ? <CommentComposer knowledgeBaseId={card.knowledgeBaseId} placeholder="写下评论，分享你的想法…" submitLabel="发表" sendingLabel="发送中…" sending={create.pending} error={create.error} authors={card.authors} onSubmit={async (body, kind, mentions) => {
         const success = await onCreate(body, kind, mentions);
         if (success) setChoice({ activeThreadId, value: defaultCommentFilters });
         return success;

@@ -31,41 +31,50 @@ beforeAll(() => {
 });
 
 describe('open page target channel', () => {
+  test('the same page ID in different knowledge bases owns independent staged highlights', () => {
+    const first = { knowledgeBaseId: 'kb-first', pageId: 'same-page' };
+    const second = { knowledgeBaseId: 'kb-second', pageId: 'same-page' };
+    stageBlockHighlight({ ...first, blockId: 'first-block' });
+    stageBlockHighlight({ ...second, blockId: 'second-block' });
+    expect(takeStagedBlockHighlight(second)).toEqual({ blockId: 'second-block' });
+    expect(takeStagedBlockHighlight(first)).toEqual({ blockId: 'first-block' });
+    expect(takeStagedBlockHighlight(second)).toBeNull();
+  });
   test('requests fan out to current subscribers only', () => {
     const seenA: OpenPageTarget[] = [];
     const seenB: OpenPageTarget[] = [];
     const stopA = subscribeOpenPageTarget((target) => seenA.push(target));
     const stopB = subscribeOpenPageTarget((target) => seenB.push(target));
 
-    requestOpenPageBlock({ workspaceId: 'ws-1', pageId: 'page-1' });
-    expect(seenA).toEqual([{ workspaceId: 'ws-1', pageId: 'page-1' }]);
-    expect(seenB).toEqual([{ workspaceId: 'ws-1', pageId: 'page-1' }]);
+    requestOpenPageBlock({ knowledgeBaseId: 'kb-1', pageId: 'page-1' });
+    expect(seenA).toEqual([{ knowledgeBaseId: 'kb-1', pageId: 'page-1' }]);
+    expect(seenB).toEqual([{ knowledgeBaseId: 'kb-1', pageId: 'page-1' }]);
 
     stopA();
-    requestOpenPageBlock({ workspaceId: 'ws-1', pageId: 'page-2' });
+    requestOpenPageBlock({ knowledgeBaseId: 'kb-1', pageId: 'page-2' });
     expect(seenA).toHaveLength(1);
     expect(seenB).toEqual([
-      { workspaceId: 'ws-1', pageId: 'page-1' },
-      { workspaceId: 'ws-1', pageId: 'page-2' },
+      { knowledgeBaseId: 'kb-1', pageId: 'page-1' },
+      { knowledgeBaseId: 'kb-1', pageId: 'page-2' },
     ]);
     stopB();
   });
 
   test('a blockId request also stages the highlight for its page', () => {
-    const target = { workspaceId: 'ws-1', pageId: 'page-1', blockId: 'blk-9' };
+    const target = { knowledgeBaseId: 'kb-1', pageId: 'page-1', blockId: 'blk-9' };
     requestOpenPageBlock(target);
-    expect(takeStagedBlockHighlight('page-1')).toEqual({ blockId: 'blk-9' });
+    expect(takeStagedBlockHighlight({ knowledgeBaseId: 'kb-1', pageId: 'page-1' })).toEqual({ blockId: 'blk-9' });
   });
 
   test('staged highlights are one-shot and latest wins per page', () => {
-    stageBlockHighlight({ pageId: 'page-1', blockId: 'blk-a' });
-    stageBlockHighlight({ pageId: 'page-1', blockId: 'blk-b' });
-    stageBlockHighlight({ pageId: 'page-2', blockId: 'blk-c' });
+    stageBlockHighlight({ knowledgeBaseId: 'kb-1', pageId: 'page-1', blockId: 'blk-a' });
+    stageBlockHighlight({ knowledgeBaseId: 'kb-1', pageId: 'page-1', blockId: 'blk-b' });
+    stageBlockHighlight({ knowledgeBaseId: 'kb-1', pageId: 'page-2', blockId: 'blk-c' });
 
-    expect(takeStagedBlockHighlight('page-1')).toEqual({ blockId: 'blk-b' });
-    expect(takeStagedBlockHighlight('page-1')).toBeNull();
-    expect(takeStagedBlockHighlight('page-2')).toEqual({ blockId: 'blk-c' });
-    expect(takeStagedBlockHighlight('page-unknown')).toBeNull();
+    expect(takeStagedBlockHighlight({ knowledgeBaseId: 'kb-1', pageId: 'page-1' })).toEqual({ blockId: 'blk-b' });
+    expect(takeStagedBlockHighlight({ knowledgeBaseId: 'kb-1', pageId: 'page-1' })).toBeNull();
+    expect(takeStagedBlockHighlight({ knowledgeBaseId: 'kb-1', pageId: 'page-2' })).toEqual({ blockId: 'blk-c' });
+    expect(takeStagedBlockHighlight({ knowledgeBaseId: 'kb-1', pageId: 'page-unknown' })).toBeNull();
   });
 });
 

@@ -8,7 +8,7 @@ const sources = [
   ['postgres', { provider: 'postgres', host: pg.hostname, port: Number(pg.port), username: decodeURIComponent(pg.username), password: decodeURIComponent(pg.password), database: 'fouc_datastore_lab', ssl: false }, 'public'],
   ['sqlite', { provider: 'sqlite', path: root + '/.runtime/dbx-lab/relational.sqlite' }, 'main'],
 ];
-const base = 'http://127.0.0.1:8710/api/database/workspaces/dbx-parameter-verification/relational/sessions';
+const base = 'http://127.0.0.1:8710/api/database/relational/sessions';
 async function api(path, body, method = body ? 'POST' : 'GET', expected = 200) {
   const response = await fetch(base + path, { method, headers: { 'content-type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) });
   const payload = await response.json(); assert.equal(response.status, expected, payload.error?.message); return payload.data;

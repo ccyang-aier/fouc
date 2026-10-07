@@ -11,12 +11,12 @@ import { databaseExportCsvRow, databaseExportDdl, databaseExportInsert } from '.
 import { connectSqlite } from './drivers/sqlite';
 import { DatabaseExportWriter } from './database-export-writer';
 
-const scope = { workspaceId: 'workspace-a', sessionId: 'session-a' };
+const scope = { sessionId: 'session-a' };
 const request = (patch: Partial<DatabaseExportInput> = {}): DatabaseExportInput => ({ ...DEFAULT_DATABASE_EXPORT_INPUT, schemas: ['main'], ...patch });
 
-async function done(manager: DatabaseExportJobs, id: string): Promise<DatabaseExportProgress> {
+async function done(manager: DatabaseExportJobs, id: string, currentScope = scope): Promise<DatabaseExportProgress> {
   for (let count = 0; count < 1000; count++) {
-    const progress = manager.status(scope, id);
+    const progress = manager.status(currentScope, id);
     if (!['preparing', 'running', 'finalizing'].includes(progress.status)) return progress;
     await new Promise(resolve => setTimeout(resolve, 5));
   }
@@ -82,7 +82,7 @@ test('native SQLite pages beyond one batch; SQL replay preserves integers, NULL,
   try {
     const started = manager.start(scope, nativeAdapter(driver, file), request({ packaging: 'file', partMiB: null }));
     expect(() => manager.artifact(scope, started.id)).toThrow();
-    expect(() => manager.status({ ...scope, workspaceId: 'other' }, started.id)).toThrow();
+    expect(() => manager.status({ ...scope, sessionId: 'other' }, started.id)).toThrow();
     expect(manager.list({ ...scope, sessionId: 'other' })).toEqual([]);
     const progress = await done(manager, started.id);
     expect(progress.error).toBeNull();
@@ -175,7 +175,7 @@ test('native SQL compilation is parameterized; PostgreSQL raw JSON/numeric array
   expect(ddl.before).not.toContain('TRIGGER'); expect(ddl.after.join('')).toContain('DISABLE TRIGGER');
 });
 
-test('invalid input, metadata mismatch and cancellation publish no partial artifact; workspace/session cleanup is isolated', async () => {
+test('invalid input, metadata mismatch and cancellation publish no partial artifact; session cleanup is isolated', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'fouc-export-cancel-p0-'));
   const manager = new DatabaseExportJobs(directory);
   let reads = 0;
@@ -191,7 +191,7 @@ test('invalid input, metadata mismatch and cancellation publish no partial artif
     expect((await done(manager, job.id)).status).toBe('cancelled');
     expect(() => manager.artifact(scope, job.id)).toThrow();
     expect(() => manager.cancel({ ...scope, sessionId: 'other' }, job.id)).toThrow();
-    await manager.closeSession({ ...scope, workspaceId: 'other' });
+    await manager.closeSession({ ...scope, sessionId: 'other' });
     expect(manager.status(scope, job.id).status).toBe('cancelled');
     await manager.closeSession(scope);
     expect(() => manager.status(scope, job.id)).toThrow();
@@ -202,7 +202,7 @@ test('invalid input, metadata mismatch and cancellation publish no partial artif
     expect(failure.status).toBe('failed');
     expect(failure.error).toContain('结构在准备后发生变化');
     expect(() => manager.artifact(scope, changed.id)).toThrow();
-    const limited = new DatabaseExportJobs(directory, { maxStoredBytes: 32, maxWorkspaceBytes: 32 });
+    const limited = new DatabaseExportJobs(directory, { maxStoredBytes: 32, maxSessionBytes: 32 });
     try {
       const budgetJob = limited.start(scope, adapter, request());
       const budgetFailure = await done(limited, budgetJob.id);
@@ -211,5 +211,45 @@ test('invalid input, metadata mismatch and cancellation publish no partial artif
       expect(() => limited.artifact(scope, budgetJob.id)).toThrow();
     } finally { await limited.close(); }
     expect(DATABASE_EXPORT_MAX_BYTES).toBe(1024 * 1024 * 1024);
+  } finally { await manager.close(); await cleanup(directory); }
+});
+
+
+test('export disk budgets aggregate files per session and across the device, releasing failed artifacts', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'fouc-export-budget-p0-'));
+  const manager = new DatabaseExportJobs(directory, { maxStoredBytes: 20, maxSessionBytes: 10 });
+  const structure: RelationalTableStructure = {
+    provider: 'sqlite', connectionId: 'test', schema: 'main', table: 'table', kind: 'table',
+    columns: [{ name: 'id', dataType: 'INTEGER', isNullable: false, isPrimaryKey: true, isUnique: false, columnDefault: null, extra: null, comment: null, numericPrecision: null, numericScale: null, characterMaximumLength: null }],
+    indexes: [], foreignKeys: [], constraints: [], triggers: [], properties: {},
+    definition: { sql: 'CREATE TABLE "table"(id INTEGER PRIMARY KEY);', origin: 'native', warnings: [] },
+  };
+  const adapter: NativeDatabaseExportAdapter = {
+    provider: 'sqlite', database: 'lab', consistency: 'independent-reads',
+    listTables: async () => [{ schema: 'main', name: 'table', kind: 'table' }],
+    structure: async () => structure,
+    read: async () => ({ columns: [], columnTypes: [], rows: [], hasMore: false }),
+  };
+  const input = request({ format: 'csv', packaging: 'file', partMiB: null, includeStructure: false });
+  const exportFor = async (sessionId: string) => {
+    const owner = { sessionId }, job = manager.start(owner, adapter, input);
+    return { owner, job, progress: await done(manager, job.id, owner) };
+  };
+  try {
+    const first = await exportFor('a');
+    expect(first.progress.error).toBeNull();
+    expect(first.progress.status).toBe('completed');
+    expect(first.progress.bytes).toBe(6);
+    const sameSession = await exportFor('a');
+    expect(sameSession.progress.status).toBe('failed');
+    expect(sameSession.progress.error).toContain('临时文件预算');
+    expect(() => manager.artifact(sameSession.owner, sameSession.job.id)).toThrow();
+    expect((await exportFor('b')).progress.status).toBe('completed');
+    expect((await exportFor('c')).progress.status).toBe('completed');
+    const fullDevice = await exportFor('d');
+    expect(fullDevice.progress.status).toBe('failed');
+    expect(fullDevice.progress.error).toContain('临时文件预算');
+    await manager.discard(first.owner, first.job.id);
+    expect((await exportFor('d')).progress.status).toBe('completed');
   } finally { await manager.close(); await cleanup(directory); }
 });

@@ -21,7 +21,7 @@ export function DatabaseAdminObjectsAction({ base, session, schema, disabled }: 
     </button>
     {open && <SqlDialog title={title} className={styles.dialog} onClose={() => setOpen(false)}>
       <DatabaseAdminObjectsPanel base={base} session={session} schema={schema} />
-      <footer className={styles.dialogFooter}><span>当前连接与工作空间 · 只读原生目录</span><button type="button" onClick={() => setOpen(false)}>关闭</button></footer>
+      <footer className={styles.dialogFooter}><span>当前连接 · 只读原生目录</span><button type="button" onClick={() => setOpen(false)}>关闭</button></footer>
     </SqlDialog>}
   </>
 }

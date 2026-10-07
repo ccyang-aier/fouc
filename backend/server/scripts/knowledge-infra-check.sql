@@ -17,7 +17,7 @@ CREATE TABLE public.fouc_infra_probe (
   path ltree NOT NULL
 );
 INSERT INTO public.fouc_infra_probe VALUES
-  (1, '知识库支持协同编辑', 'Knowledge collaboration', '[1,0,0]', 'workspace.page.block'),
+  (1, '知识库支持协同编辑', 'Knowledge collaboration', '[1,0,0]', 'resources.page.block'),
   (2, '今天晴天', 'The weather is sunny', '[0,1,0]', 'other.page');
 CREATE INDEX fouc_infra_probe_search ON public.fouc_infra_probe
 USING paradedb (id, (body_zh::pdb.jieba), (body_en::pdb.icu)) WITH (key_field='id');
@@ -27,6 +27,6 @@ SELECT json_build_object(
   'chineseMatch', (SELECT array_agg(id) FROM public.fouc_infra_probe WHERE body_zh @@@ '协同'),
   'englishMatch', (SELECT array_agg(id) FROM public.fouc_infra_probe WHERE body_en @@@ 'collaboration'),
   'vectorNearest', (SELECT id FROM public.fouc_infra_probe ORDER BY embedding <=> '[1,0,0]'::vector LIMIT 1),
-  'ltreeMatch', (SELECT count(*) FROM public.fouc_infra_probe WHERE path <@ 'workspace'::ltree)
+  'ltreeMatch', (SELECT count(*) FROM public.fouc_infra_probe WHERE path <@ 'resources'::ltree)
 );
 ROLLBACK;

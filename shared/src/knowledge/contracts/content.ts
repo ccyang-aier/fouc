@@ -1,9 +1,9 @@
 import { z } from 'zod';
-import { assetHashSchema, blockIdSchema, entityIdSchema, pageScopeSchema, timestampSchema, workspaceScopeSchema } from './primitives';
+import { assetHashSchema, blockIdSchema, entityIdSchema, pageScopeSchema, timestampSchema, knowledgeBaseScopeSchema } from './primitives';
 
 export const blockReferenceSchema = pageScopeSchema.extend({ blockId: blockIdSchema });
 export const citationSchema = blockReferenceSchema.extend({ pageTitle: z.string(), excerpt: z.string() });
-export const searchInputSchema = workspaceScopeSchema.extend({
+export const searchInputSchema = knowledgeBaseScopeSchema.extend({
   query: z.string().trim().min(1).max(4000),
   filters: z.strictObject({
     teamspaceId: entityIdSchema.optional(),
@@ -40,7 +40,7 @@ export const commentThreadSchema = pageScopeSchema.extend({
   pdfAnchor: pdfCommentAnchorSchema.optional(),
   status: commentThreadStatusSchema.nullable(), createdAt: timestampSchema,
 }).refine(thread => (thread.kind === 'issue' ? thread.status !== null : thread.status === null) && (!thread.pdfAnchor || thread.anchorKind === 'selection'));
-export const commentSchema = workspaceScopeSchema.extend({
+export const commentSchema = knowledgeBaseScopeSchema.extend({
   id: entityIdSchema, threadId: entityIdSchema, authorId: entityIdSchema,
   replyToCommentId: entityIdSchema.nullable(),
   bodyMd: z.string().trim().min(1).max(50_000), createdAt: timestampSchema, updatedAt: timestampSchema,
@@ -61,11 +61,11 @@ export const assetDerivedSchema = z.strictObject({
   model: z.string().min(1).max(200).optional(),
   generatedAt: timestampSchema.optional(),
 });
-export const assetSchema = workspaceScopeSchema.extend({
+export const assetSchema = knowledgeBaseScopeSchema.extend({
   hash: assetHashSchema, mime: z.string().min(1).max(200), size: z.number().int().nonnegative(),
   meta: z.record(z.string(), z.json()), derived: assetDerivedSchema,
 });
-export const uploadIntentSchema = workspaceScopeSchema.extend({
+export const uploadIntentSchema = knowledgeBaseScopeSchema.extend({
   hash: assetHashSchema, mime: z.string().regex(/^[\w.+-]+\/[\w.+-]+$/),
   size: z.number().int().positive().max(5 * 1024 ** 3), name: z.string().min(1).max(255),
 });

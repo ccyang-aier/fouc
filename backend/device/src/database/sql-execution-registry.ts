@@ -3,7 +3,7 @@ import { sqlExecutionActive } from '@fouc/shared';
 import { DatabaseInputError } from './input-error';
 
 type Registration = {
-  workspaceId: string;
+
   sessionId: string;
   controller: AbortController;
   snapshot: SqlExecutionSnapshot;
@@ -21,7 +21,7 @@ export function sqlExecutionError(value: unknown): SqlExecutionError {
 /** Native DBX execution registration: ownership, interruption and terminal confirmation. */
 export class SqlExecutionRegistry {
   private entries = new Map<string, Registration>();
-  start(workspaceId: string, sessionId: string, database: string, schema: string | null, ranges: SqlStatementRange[],
+  start(sessionId: string, database: string, schema: string | null, ranges: SqlStatementRange[],
     run: (statement: string, signal: AbortSignal, index: number) => Promise<DatabaseQueryResult>,
     mapError: (error: unknown, index: number) => SqlExecutionError = sqlExecutionError): SqlExecutionSnapshot {
     const active = [...this.entries.values()].filter((entry) => sqlExecutionActive(entry.snapshot));
@@ -31,7 +31,7 @@ export class SqlExecutionRegistry {
     const snapshot: SqlExecutionSnapshot = { id: crypto.randomUUID(), status: 'running', database, schema,
       statements: ranges.map((range) => ({ ...range, status: 'pending', result: null, error: null, startedAt: null, finishedAt: null })),
       currentIndex: null, completedCount: 0, startedAt: Date.now(), finishedAt: null, revision: 1 };
-    const entry: Registration = { workspaceId, sessionId, controller: new AbortController(), snapshot, done: Promise.resolve() };
+    const entry: Registration = { sessionId, controller: new AbortController(), snapshot, done: Promise.resolve() };
     this.entries.set(snapshot.id, entry);
     entry.done = this.execute(entry, run, mapError);
     return this.copy(snapshot);
@@ -59,18 +59,18 @@ export class SqlExecutionRegistry {
     snapshot.currentIndex = null; snapshot.finishedAt = Date.now(); snapshot.revision++;
     this.trim(entry.sessionId);
   }
-  private owned(workspaceId: string, sessionId: string, id: string): Registration {
+  private owned(sessionId: string, id: string): Registration {
     const entry = this.entries.get(id);
-    if (!entry || entry.workspaceId !== workspaceId || entry.sessionId !== sessionId)
+    if (!entry || entry.sessionId !== sessionId)
       throw new DatabaseInputError('查询执行记录不存在或已释放');
     return entry;
   }
-  poll(workspaceId: string, sessionId: string, id: string, revision: number) {
-    const { snapshot } = this.owned(workspaceId, sessionId, id);
+  poll(sessionId: string, id: string, revision: number) {
+    const { snapshot } = this.owned(sessionId, id);
     return { revision: snapshot.revision, execution: revision === snapshot.revision ? null : this.copy(snapshot) };
   }
-  cancel(workspaceId: string, sessionId: string, id: string): SqlExecutionSnapshot {
-    const entry = this.owned(workspaceId, sessionId, id);
+  cancel(sessionId: string, id: string): SqlExecutionSnapshot {
+    const entry = this.owned(sessionId, id);
     if (entry.snapshot.status === 'running') {
       entry.snapshot.status = 'cancelling'; entry.snapshot.revision++; entry.controller.abort();
     }

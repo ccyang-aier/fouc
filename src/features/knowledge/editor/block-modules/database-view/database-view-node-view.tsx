@@ -34,7 +34,7 @@ export function DatabaseViewNodeView({ scope, ...props }: NodeViewProps & { scop
   useEffect(() => {
     if (!scope) return;
     const controller = new AbortController();
-    fetchKnowledgePages(scope.workspaceId, {}, controller.signal)
+    fetchKnowledgePages(scope.knowledgeBaseId, {}, controller.signal)
       .then((pages) => { setDatabases(pages.filter((page) => page.kind === 'database').map((page) => ({ id: page.id, title: page.title }))); setTeamspaceId(pages.find((page) => page.id === scope.pageId)?.teamspaceId ?? null); setListError(false); })
       .catch(() => { if (!controller.signal.aborted) setListError(true); });
     return () => controller.abort();
@@ -42,15 +42,15 @@ export function DatabaseViewNodeView({ scope, ...props }: NodeViewProps & { scop
 
   const title = databases.find((item) => item.id === databaseId)?.title ?? '数据库';
   const matches = databases.filter((item) => item.title.toLowerCase().includes(query.toLowerCase()));
-  const openRow = (pageId: string) => { if (scope) requestOpenPageBlock({ workspaceId: scope.workspaceId, pageId }); };
+  const openRow = (pageId: string) => { if (scope) requestOpenPageBlock({ knowledgeBaseId: scope.knowledgeBaseId, pageId }); };
   const createDatabase = async () => {
     if (!scope || !teamspaceId) return;
     setCreating(true);
     setCreateError('');
     const id = crypto.randomUUID();
     try {
-      await knowledgeDatabasesApi.createDatabase(scope.workspaceId, {
-        id, workspaceId: scope.workspaceId, teamspaceId, parentId: scope.pageId,
+      await knowledgeDatabasesApi.createDatabase(scope.knowledgeBaseId, {
+        id, knowledgeBaseId: scope.knowledgeBaseId, teamspaceId, parentId: scope.pageId,
         title: '新数据库', icon: null, cover: null, inheritsPermissions: true, afterPageId: null,
         columns: [
           { id: 'status', name: '状态', type: 'select', options: [{ id: 'todo', label: '待办', color: 'gray' }, { id: 'doing', label: '进行中', color: 'blue' }, { id: 'done', label: '已完成', color: 'green' }] },
@@ -67,23 +67,23 @@ export function DatabaseViewNodeView({ scope, ...props }: NodeViewProps & { scop
   return <NodeViewWrapper as="div" {...HTMLAttributes} data-fouc-node="database-view" data-block-id={node.attrs.blockId} className={styles.root} contentEditable={false}>
     <div className={styles.header}><span className={styles.heading}><Database aria-hidden size={17} weight="duotone" />{title}</span>{databaseId && editor.isEditable ? <button type="button" className={styles.change} onClick={() => setOpen((value) => !value)}>更换数据库</button> : null}</div>
     {open || !databaseId ? <div className={styles.picker}>
-      <p>选择此工作空间中的数据库</p>
+      <p>选择此知识库中的数据库</p>
       {scope ? <><div className={styles.search}><MagnifyingGlass aria-hidden size={15} /><input aria-label="搜索数据库" value={query} placeholder="搜索数据库…" onChange={(event) => setQuery(event.target.value)} /></div>
-        <div className={styles.choices}>{listError ? <span>数据库列表暂不可用</span> : matches.length ? matches.map((item) => <button type="button" key={item.id} onClick={() => { updateAttributes({ databaseId: item.id }); setOpen(false); }}><Database aria-hidden size={16} />{item.title}</button>) : <span>{query ? '没有匹配的数据库' : '此工作空间暂无数据库'}</span>}</div>
+        <div className={styles.choices}>{listError ? <span>数据库列表暂不可用</span> : matches.length ? matches.map((item) => <button type="button" key={item.id} onClick={() => { updateAttributes({ databaseId: item.id }); setOpen(false); }}><Database aria-hidden size={16} />{item.title}</button>) : <span>{query ? '没有匹配的数据库' : '此知识库暂无数据库'}</span>}</div>
         {editor.isEditable && teamspaceId ? <button type="button" className={styles.create} disabled={creating} onClick={() => void createDatabase()}><Plus aria-hidden size={15} />{creating ? '正在创建…' : '创建数据库'}</button> : null}
         {createError ? <p className={styles.createError} role="alert">{createError}</p> : null}
       </> : <div className={styles.empty}>本机知识库尚无数据库资源；团队数据库可在连接服务后引用。</div>}
       {databaseId ? <button type="button" className={styles.change} onClick={() => setOpen(false)}>取消</button> : null}
     </div> : scope ? <>
       <div className={styles.views} role="tablist" aria-label="数据库视图">{VIEWS.map((item) => <button key={item.value} type="button" role="tab" aria-selected={view === item.value} onClick={() => updateAttributes({ view: item.value })}><item.icon aria-hidden size={15} />{item.label}</button>)}</div>
-      <div className={styles.content}>{view === 'table' ? <DatabaseTableView scope={{ workspaceId: scope.workspaceId, pageId: databaseId }} title={title} onOpenRow={openRow} /> : <DatabaseAlternateView workspaceId={scope.workspaceId} databaseId={databaseId} view={view} onOpenRow={openRow} />}</div>
+      <div className={styles.content}>{view === 'table' ? <DatabaseTableView scope={{ knowledgeBaseId: scope.knowledgeBaseId, pageId: databaseId }} title={title} onOpenRow={openRow} /> : <DatabaseAlternateView knowledgeBaseId={scope.knowledgeBaseId} databaseId={databaseId} view={view} onOpenRow={openRow} />}</div>
     </> : null}
   </NodeViewWrapper>;
 }
 
-function DatabaseAlternateView({ workspaceId, databaseId, view, onOpenRow }: { workspaceId: string; databaseId: string; view: 'board' | 'calendar'; onOpenRow: (pageId: string) => void }) {
-  const columnsQuery = useDatabaseColumnsQuery(workspaceId, databaseId);
-  const rowsQuery = useDatabaseRowsQuery(workspaceId, databaseId, [], []);
+function DatabaseAlternateView({ knowledgeBaseId, databaseId, view, onOpenRow }: { knowledgeBaseId: string; databaseId: string; view: 'board' | 'calendar'; onOpenRow: (pageId: string) => void }) {
+  const columnsQuery = useDatabaseColumnsQuery(knowledgeBaseId, databaseId);
+  const rowsQuery = useDatabaseRowsQuery(knowledgeBaseId, databaseId, [], []);
   const rows = useMemo(() => rowsQuery.data?.pages.flatMap((page) => page.rows) ?? [], [rowsQuery.data]);
   const columns = columnsQuery.data?.columns ?? [];
   if (columnsQuery.isPending || rowsQuery.isPending) return <div className={styles.empty}>正在加载数据库…</div>;

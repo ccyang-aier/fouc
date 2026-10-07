@@ -10,29 +10,29 @@ function snapshot(preferences = defaultSqlEditorPreferences()) {
   return input;
 }
 
-test('SQL editor preferences persist with connection/workspace isolation, CAS and deletion cleanup', async () => {
+test('SQL editor preferences persist with connection isolation, CAS and deletion cleanup', async () => {
   const directory = mkdtempSync(path.join(tmpdir(), 'fouc-sql-preferences-'));
   let repo = new RelationalSqlRepository(directory);
   try {
-    const first = repo.saveEditorPreferences('w', 'c', { ...snapshot(), formatOnSave: true });
+    const first = repo.saveEditorPreferences('c', { ...snapshot(), formatOnSave: true });
     expect(first.version).toBeString();
     expect(first.updatedAt).toBeNumber();
-    expect(repo.editorPreferences('other', 'c')).toEqual(defaultSqlEditorPreferences());
-    expect(repo.editorPreferences('w', 'other')).toEqual(defaultSqlEditorPreferences());
-    expect(() => repo.saveEditorPreferences('w', 'c', snapshot())).toThrow('其他窗口');
+    expect(repo.editorPreferences('c')).toEqual(first);
+    expect(repo.editorPreferences('other')).toEqual(defaultSqlEditorPreferences());
+    expect(() => repo.saveEditorPreferences('c', snapshot())).toThrow('其他窗口');
     repo.close();
     repo = new RelationalSqlRepository(directory);
-    expect(repo.editorPreferences('w', 'c')).toEqual(first);
-    const changed = repo.saveEditorPreferences('w', 'c', { ...snapshot(first), snippets: [{ id: 'custom', label: '中文查询', prefix: '中文', body: "SELECT '${value}' AS value;", enabled: false }] });
+    expect(repo.editorPreferences('c')).toEqual(first);
+    const changed = repo.saveEditorPreferences('c', { ...snapshot(first), snippets: [{ id: 'custom', label: '中文查询', prefix: '中文', body: "SELECT '${value}' AS value;", enabled: false }] });
     expect(changed.version).not.toBe(first.version);
-    expect(() => repo.saveEditorPreferences('w', 'c', snapshot(first))).toThrow('其他窗口');
-    expect(repo.editorPreferences('w', 'c')).toEqual(changed);
-    repo.saveEditorPreferences('w', 'other', snapshot());
-    repo.saveEditorPreferences('other', 'c', snapshot());
-    repo.removeConnection('w', 'c');
-    expect(repo.editorPreferences('w', 'c')).toEqual(defaultSqlEditorPreferences());
-    expect(repo.editorPreferences('w', 'other').version).not.toBeNull();
-    expect(repo.editorPreferences('other', 'c').version).not.toBeNull();
+    expect(() => repo.saveEditorPreferences('c', snapshot(first))).toThrow('其他窗口');
+    expect(repo.editorPreferences('c')).toEqual(changed);
+    repo.saveEditorPreferences('other', snapshot());
+    repo.saveEditorPreferences('third', snapshot());
+    repo.removeConnection('c');
+    expect(repo.editorPreferences('c')).toEqual(defaultSqlEditorPreferences());
+    expect(repo.editorPreferences('other').version).not.toBeNull();
+    expect(repo.editorPreferences('third').version).not.toBeNull();
     const defaults = defaultSqlEditorPreferences();
     defaults.snippets[0].body = 'local mutation';
     defaults.formatter.keywordCase = 'lower';
@@ -50,7 +50,7 @@ test('SQL editor preferences persist with connection/workspace isolation, CAS an
 test('malformed or oversized settings cannot overwrite an existing preference snapshot', () => {
   const repo = new RelationalSqlRepository();
   try {
-    const first = repo.saveEditorPreferences('w', 'c', snapshot());
+    const first = repo.saveEditorPreferences('c', snapshot());
     const input = snapshot(first), snippet = input.snippets[0];
     const invalid: unknown[] = [
       null,
@@ -70,10 +70,10 @@ test('malformed or oversized settings cannot overwrite an existing preference sn
       { ...input, snippets: Array.from({ length: Math.ceil(SQL_EDITOR_PREFERENCES_MAX_BYTES / SQL_SNIPPET_MAX_BODY_BYTES) + 1 }, (_, index) => ({ ...snippet, id: `s-${index}`, prefix: `p${index}`, body: 'x'.repeat(SQL_SNIPPET_MAX_BODY_BYTES) })) },
     ];
     for (const value of invalid) {
-      expect(() => repo.saveEditorPreferences('w', 'c', value)).toThrow();
-      expect(repo.editorPreferences('w', 'c')).toEqual(first);
+      expect(() => repo.saveEditorPreferences('c', value)).toThrow();
+      expect(repo.editorPreferences('c')).toEqual(first);
     }
-    const empty = repo.saveEditorPreferences('w', 'c', { ...input, snippets: [] });
+    const empty = repo.saveEditorPreferences('c', { ...input, snippets: [] });
     expect(empty.snippets).toEqual([]);
     expect(empty.version).not.toBe(first.version);
   } finally { repo.close(); }

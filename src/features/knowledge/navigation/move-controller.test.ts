@@ -19,7 +19,7 @@ type PageSeed = Partial<Page> & Pick<Page, 'id' | 'parentId' | 'position'>;
 
 function page(seed: PageSeed): Page {
   return {
-    workspaceId: ws,
+    knowledgeBaseId: ws,
     teamspaceId: seed.teamspaceId ?? tsA,
     kind: 'doc',
     databaseId: null,

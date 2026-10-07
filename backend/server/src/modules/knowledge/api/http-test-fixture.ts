@@ -5,7 +5,7 @@ import { sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { createTRPCClient, httpBatchLink, httpLink } from '@trpc/client';
 import { TRPCError } from '@trpc/server';
-import { workspaceScopeSchema } from '@fouc/shared/knowledge/contracts';
+import { knowledgeBaseScopeSchema } from '@fouc/shared/knowledge/contracts';
 import { createAuthTestServer, responseCookie, testPassword } from '../../../platform/identity/auth-test-server';
 import { createKnowledgeTokenService } from '../access';
 import type { KnowledgeTokenScope } from '../access';
@@ -43,36 +43,36 @@ export async function createApiTestServer() {
   const router = createKnowledgeRouter({
     access: knowledgeApiRouter.access,
     probe: knowledgeQuery({
-      input: workspaceScopeSchema.extend({ delayMs: z.number().int().min(0).max(100).default(0) }), scopes: ['read'],
-      resolve: ({ input, ctx }) => ctx.withTenant(async (db, authority) => {
+      input: knowledgeBaseScopeSchema.extend({ delayMs: z.number().int().min(0).max(100).default(0) }), scopes: ['read'],
+      resolve: ({ input, ctx }) => ctx.withResource(async (db, authority) => {
         if (input.delayMs) await db.execute(sql`SELECT pg_sleep(${input.delayMs / 1_000})`);
-        const rows = await db.execute<{ workspaceId: string; name: string; pid: number; tenant: string; identity: string }>(sql`
-          SELECT workspace_id AS "workspaceId", name, pg_backend_pid() AS pid,
-            current_setting('app.workspace_id', true) AS tenant, current_setting('app.auth_session_id', true) AS identity
-          FROM workspace.workspace`);
+        const rows = await db.execute<{ knowledgeBaseId: string; name: string; pid: number; resource: string; identity: string }>(sql`
+          SELECT id AS "knowledgeBaseId", name, pg_backend_pid() AS pid,
+            current_setting('app.knowledge_base_id', true) AS resource, current_setting('app.auth_session_id', true) AS identity
+          FROM resources.knowledge_base`);
         successfulSignals.push(ctx.signal);
         return { rows: rows.rows, actor: authority.actor, role: authority.role };
       }),
     }),
     writeScope: knowledgeMutation({
-      input: workspaceScopeSchema, scopes: ['write'],
-      resolve: ({ ctx }) => ({ actor: ctx.authority.actor, workspaceId: ctx.authority.workspaceId }),
+      input: knowledgeBaseScopeSchema, scopes: ['write'],
+      resolve: ({ ctx }) => ({ actor: ctx.authority.actor, knowledgeBaseId: ctx.authority.knowledgeBaseId }),
     }),
     failure: knowledgeMutation({
-      input: workspaceScopeSchema, scopes: ['write'],
-      resolve: ({ ctx }) => ctx.withTenant(async (db) => {
-        await db.execute(sql`UPDATE workspace.workspace SET name='should-roll-back'`);
+      input: knowledgeBaseScopeSchema, scopes: ['write'],
+      resolve: ({ ctx }) => ctx.withResource(async (db) => {
+        await db.execute(sql`UPDATE resources.knowledge_base SET name='should-roll-back'`);
         throw new Error(privateErrorCanary);
       }),
     }),
     hold: knowledgeMutation({
-      input: workspaceScopeSchema.extend({ operationId: z.uuid() }), scopes: ['write'],
+      input: knowledgeBaseScopeSchema.extend({ operationId: z.uuid() }), scopes: ['write'],
       resolve: async ({ input, ctx }) => {
         const control = held.get(input.operationId);
         if (!control) throw new TRPCError({ code: 'BAD_REQUEST' });
         try {
-          return await ctx.withTenant(async (db) => {
-            await db.execute(sql`UPDATE workspace.workspace SET name=${input.operationId}`);
+          return await ctx.withResource(async (db) => {
+            await db.execute(sql`UPDATE resources.knowledge_base SET name=${input.operationId}`);
             const release = () => control.release.resolve();
             ctx.signal.addEventListener('abort', release, { once: true });
             if (ctx.signal.aborted) release();
@@ -86,7 +86,7 @@ export async function createApiTestServer() {
       },
     }),
     delayedRead: knowledgeQuery({
-      input: workspaceScopeSchema.extend({ operationId: z.uuid() }).transform(async (input) => {
+      input: knowledgeBaseScopeSchema.extend({ operationId: z.uuid() }).transform(async (input) => {
         const gate = inputGates.get(input.operationId);
         if (!gate) throw new TRPCError({ code: 'BAD_REQUEST' });
         gate.entered.resolve();
@@ -96,20 +96,20 @@ export async function createApiTestServer() {
       scopes: ['read'], resolve: ({ ctx }) => ctx.authority.userId,
     }),
     laterTransaction: knowledgeQuery({
-      input: workspaceScopeSchema.extend({ operationId: z.uuid() }), scopes: ['read'],
+      input: knowledgeBaseScopeSchema.extend({ operationId: z.uuid() }), scopes: ['read'],
       resolve: async ({ input, ctx }) => {
         const gate = inputGates.get(input.operationId);
         if (!gate) throw new TRPCError({ code: 'BAD_REQUEST' });
         gate.entered.resolve();
         await within(gate.release.promise);
-        return ctx.withTenant(async (_db, authority) => authority.role);
+        return ctx.withResource(async (_db, authority) => authority.role);
       },
     }),
   });
   let pool!: Pool;
   let tokens!: ReturnType<typeof createKnowledgeTokenService>;
   const server = await createAuthTestServer({ mount(app, { auth, database }) {
-    // Multiple ordinary-role connections exercise simultaneous tenant transactions as well as reuse.
+    // Multiple ordinary-role connections exercise simultaneous resource transactions as well as reuse.
     pool = new Pool({ ...database.pool.options, max: 4 });
     pool.on('error', () => { diagnostics.push({ requestId: 'pool', code: 'SERVICE_UNAVAILABLE', status: 503 }); });
     tokens = createKnowledgeTokenService({ auth, pool });
@@ -119,7 +119,7 @@ export async function createApiTestServer() {
       throw new Error('observer-private-canary'); // Observer errors must not alter the safe response.
     } }));
     // Registered afterwards on purpose: the tRPC module must not own this sibling route.
-    app.get('/api/workspaces', (context) => context.json({ handledBy: 'later-organization-router' }));
+    app.get('/api/knowledge-bases', (context) => context.json({ handledBy: 'later-organization-router' }));
   } });
   async function account(email: string) {
     const signup = await server.request('/sign-up/email', { name: email, email, password: testPassword });
@@ -131,22 +131,22 @@ export async function createApiTestServer() {
     return { userId: user.id, cookie: responseCookie(login) };
   }
   try {
-    const alpha = { ...await account('api-alpha@example.test'), workspaceId: randomUUID(), name: 'API Alpha' };
-    const beta = { ...await account('api-beta@example.test'), workspaceId: randomUUID(), name: 'API Beta' };
-    await server.database.admin.query("INSERT INTO workspace.workspace(workspace_id,name,kind) VALUES ($1,$2,'team'),($3,$4,'team')", [alpha.workspaceId, alpha.name, beta.workspaceId, beta.name]);
-    await server.database.admin.query("INSERT INTO workspace.member(workspace_id,user_id,role) VALUES ($1,$3,'owner'),($2,$4,'owner'),($2,$3,'member')", [alpha.workspaceId, beta.workspaceId, alpha.userId, beta.userId]);
-    const url = (workspaceId: string = alpha.workspaceId) => `${server.origin}/api/knowledge/${workspaceId}/trpc`;
+    const alpha = { ...await account('api-alpha@example.test'), knowledgeBaseId: randomUUID(), name: 'API Alpha' };
+    const beta = { ...await account('api-beta@example.test'), knowledgeBaseId: randomUUID(), name: 'API Beta' };
+    await server.database.admin.query("INSERT INTO resources.knowledge_base(id,name) VALUES ($1,$2),($3,$4)", [alpha.knowledgeBaseId, alpha.name, beta.knowledgeBaseId, beta.name]);
+    await server.database.admin.query("INSERT INTO resources.knowledge_base_member(knowledge_base_id,user_id,role) VALUES ($1,$3,'owner'),($2,$4,'owner'),($2,$3,'member')", [alpha.knowledgeBaseId, beta.knowledgeBaseId, alpha.userId, beta.userId]);
+    const url = (knowledgeBaseId: string = alpha.knowledgeBaseId) => `${server.origin}/api/knowledge/${knowledgeBaseId}/trpc`;
     return {
       server, alpha, beta, pool, shutdown, diagnostics, requests, successfulSignals, held, inputGates, router, url,
-      client(headers: Record<string, string> = {}, workspaceId: string = alpha.workspaceId) {
-        return createTRPCClient<typeof router>({ links: [httpLink({ url: url(workspaceId), headers })] });
+      client(headers: Record<string, string> = {}, knowledgeBaseId: string = alpha.knowledgeBaseId) {
+        return createTRPCClient<typeof router>({ links: [httpLink({ url: url(knowledgeBaseId), headers })] });
       },
       batchClient(headers: Record<string, string>) {
         return createTRPCClient<typeof router>({ links: [httpBatchLink({ url: url(), headers, maxItems: 10 })] });
       },
-      createToken(scopes: KnowledgeTokenScope[] = ['read'], tenant = alpha) {
-        return tokens.create(new Request(`${server.origin}/test-token-setup`, { method: 'POST', headers: { origin: server.webOrigin, cookie: tenant.cookie } }),
-          { workspaceId: tenant.workspaceId, name: 'HTTP test', scopes, expiresAt: null });
+      createToken(scopes: KnowledgeTokenScope[] = ['read'], resource = alpha) {
+        return tokens.create(new Request(`${server.origin}/test-token-setup`, { method: 'POST', headers: { origin: server.webOrigin, cookie: resource.cookie } }),
+          { knowledgeBaseId: resource.knowledgeBaseId, name: 'HTTP test', scopes, expiresAt: null });
       },
       async close() {
         shutdown.abort();

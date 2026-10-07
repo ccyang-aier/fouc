@@ -8,13 +8,13 @@
  *
  * page.kind === 'database' ? (
  *   <DatabaseTableView
- *     scope={{ workspaceId, pageId }}
+ *     scope={{ knowledgeBaseId, pageId }}
  *     title={page.title}
  *     icon={page.icon}
  *     onOpenRow={(rowPageId) => selectPage(rowPageId)}
  *   />
  * ) : (
- *   <KnowledgePageEditor scope={{ workspaceId, pageId }} />
+ *   <KnowledgePageEditor scope={{ knowledgeBaseId, pageId }} />
  * )
  * ```
  *

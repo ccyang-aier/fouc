@@ -2,9 +2,9 @@ import { and, eq, sql } from 'drizzle-orm';
 import type { Pool } from 'pg';
 import { z } from 'zod';
 import type { AssetDerived, OutboxEvent } from '@fouc/shared/knowledge/contracts';
-import { asset } from '../../../platform/database/workspace/schema';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
-import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
+import { asset } from '../../../platform/database/resources/schema';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
+import type { ResourceTransaction } from '../../../platform/database/resources/transaction';
 import { ModelGatewayError } from '../ai/gateway';
 import type { ModelGateway } from '../ai/gateway';
 import type { GatewayErrorCode } from '../ai/gateway/errors';
@@ -33,7 +33,7 @@ export interface KnowledgeVisionWorkerOptions {
   gateway: ModelGateway;
 }
 
-const scoped = (event: AssetCreatedEvent) => and(eq(asset.workspaceId, event.workspaceId), eq(asset.hash, event.hash))!;
+const scoped = (event: AssetCreatedEvent) => and(eq(asset.knowledgeBaseId, event.knowledgeBaseId), eq(asset.hash, event.hash))!;
 const imageMime = /^image\/[a-z0-9.+-]+$/;
 /** Mirrors the gateway's per-asset vision ceiling; larger objects are refused before reading. */
 const maxImageBytes = 8 * 1024 * 1024;
@@ -62,7 +62,7 @@ function parseVisionOutput(text: string): AssetDerived {
 /**
  * Design §8.2: images are described and OCR'd by a vision-tier model call.
  * The consumer runs as a Q01 graphile job on the asset.created outbox event;
- * authorization is asset-level (the event exists only because a workspace
+ * authorization is asset-level (the event exists only because a knowledgeBase
  * member confirmed the upload), media bytes are loaded server-side from S3.
  */
 export function createAssetVisionConsumer(options: KnowledgeVisionWorkerOptions): KnowledgeConsumer {
@@ -74,15 +74,15 @@ export function createAssetVisionConsumer(options: KnowledgeVisionWorkerOptions)
       // Topic narrowing is runtime-checked like every Q01 consumer; the payload shape is re-validated on read.
       if (event.topic !== 'asset.created') throw new KnowledgeJobError('invalid_event');
       context.signal.throwIfAborted();
-      const mime = await withWorkspaceTenant(pool, event.workspaceId, (db) => selectPendingImage(db, event));
+      const mime = await withKnowledgeBase(pool, event.knowledgeBaseId, (db) => selectPendingImage(db, event));
       if (!mime) return;
-      const claimed = await withWorkspaceTenant(pool, event.workspaceId, (db) => claimProcessing(db, event));
+      const claimed = await withKnowledgeBase(pool, event.knowledgeBaseId, (db) => claimProcessing(db, event));
       if (!claimed) return;
       try {
         context.signal.throwIfAborted();
         const bytes = await readImage(storage, event, context.signal);
         const result = await gateway.generate({
-          context: { workspaceId: event.workspaceId, userId: event.initiatedBy },
+          context: { knowledgeBaseId: event.knowledgeBaseId, userId: event.initiatedBy },
           settings: {},
           tier: 'vision',
           messages: [{ role: 'user', content: [{ type: 'text', text: visionPrompt }, { type: 'file', data: bytes, mediaType: mime }] }],
@@ -93,10 +93,10 @@ export function createAssetVisionConsumer(options: KnowledgeVisionWorkerOptions)
           signal: context.signal,
         });
         const derived: AssetDerived = { ...parseVisionOutput(result.text), model: result.model.model, generatedAt: new Date().toISOString() };
-        await withWorkspaceTenant(pool, event.workspaceId, (db) => storeOutcome(db, event, derived));
+        await withKnowledgeBase(pool, event.knowledgeBaseId, (db) => storeOutcome(db, event, derived));
       } catch (error) {
         const failure = derivationFailure(error);
-        await withWorkspaceTenant(pool, event.workspaceId, (db) => storeOutcome(db, event, { status: 'failed', error: failure.code }));
+        await withKnowledgeBase(pool, event.knowledgeBaseId, (db) => storeOutcome(db, event, { status: 'failed', error: failure.code }));
         // Retryable failures rethrow so the queue retries with backoff; exhausted
         // jobs stay retained by Graphile (dead-letter) while derived stays queryable.
         if (failure.retryable) throw new KnowledgeJobError('consumer_failed');
@@ -106,7 +106,7 @@ export function createAssetVisionConsumer(options: KnowledgeVisionWorkerOptions)
 }
 
 /** Returns the mime of an image still needing derivation; null is a permanent no-op. */
-async function selectPendingImage(db: WorkspaceTenantTransaction, event: AssetCreatedEvent): Promise<string | null> {
+async function selectPendingImage(db: ResourceTransaction, event: AssetCreatedEvent): Promise<string | null> {
   const [row] = await db.select({ status: asset.status, mime: asset.mime, derived: asset.derived }).from(asset).where(scoped(event));
   if (!row) throw new KnowledgeJobError('invalid_event');
   if (row.status !== 'ready' || row.derived.status === 'ready' || !imageMime.test(row.mime)) return null;
@@ -114,7 +114,7 @@ async function selectPendingImage(db: WorkspaceTenantTransaction, event: AssetCr
 }
 
 /** pending/failed/processing → processing. A lost race (already finished) is a no-op. */
-async function claimProcessing(db: WorkspaceTenantTransaction, event: AssetCreatedEvent): Promise<boolean> {
+async function claimProcessing(db: ResourceTransaction, event: AssetCreatedEvent): Promise<boolean> {
   const claimed = await db.update(asset).set({ derived: { status: 'processing' }, updatedAt: new Date() })
     .where(and(scoped(event), sql`${asset.derived}->>'status' IN ('pending', 'failed', 'processing')`))
     .returning({ hash: asset.hash });
@@ -122,7 +122,7 @@ async function claimProcessing(db: WorkspaceTenantTransaction, event: AssetCreat
 }
 
 /** Only the claimant's processing state may be completed; stale replays never clobber results. */
-async function storeOutcome(db: WorkspaceTenantTransaction, event: AssetCreatedEvent, derived: AssetDerived): Promise<boolean> {
+async function storeOutcome(db: ResourceTransaction, event: AssetCreatedEvent, derived: AssetDerived): Promise<boolean> {
   const stored = await db.update(asset).set({ derived, updatedAt: new Date() })
     .where(and(scoped(event), sql`${asset.derived}->>'status' = 'processing'`))
     .returning({ hash: asset.hash });

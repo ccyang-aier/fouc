@@ -58,16 +58,16 @@ export function createHistoryApi(deps: HistoryApiDeps = { resolveOrigin: getFouc
     }
     return (await response.json()) as T;
   }
-  const base = (workspaceId: string, pageId: string) => `/api/knowledge/${workspaceId}/pages/${pageId}/checkpoints`;
+  const base = (knowledgeBaseId: string, pageId: string) => `/api/knowledge/${knowledgeBaseId}/pages/${pageId}/checkpoints`;
   return {
-    list(workspaceId: string, pageId: string): Promise<{ checkpoints: PageCheckpointEntry[] }> {
-      return request<unknown>(base(workspaceId, pageId)).then((payload) => ({ checkpoints: parseCheckpointList(payload) }));
+    list(knowledgeBaseId: string, pageId: string): Promise<{ checkpoints: PageCheckpointEntry[] }> {
+      return request<unknown>(base(knowledgeBaseId, pageId)).then((payload) => ({ checkpoints: parseCheckpointList(payload) }));
     },
-    preview(workspaceId: string, pageId: string, checkpointId: string): Promise<PageCheckpointPreview> {
-      return request<PageCheckpointPreview>(`${base(workspaceId, pageId)}/${checkpointId}`);
+    preview(knowledgeBaseId: string, pageId: string, checkpointId: string): Promise<PageCheckpointPreview> {
+      return request<PageCheckpointPreview>(`${base(knowledgeBaseId, pageId)}/${checkpointId}`);
     },
-    name(workspaceId: string, pageId: string, label: string): Promise<NamedCheckpointResult> {
-      return request<NamedCheckpointResult>(base(workspaceId, pageId), { method: 'POST', body: { label } });
+    name(knowledgeBaseId: string, pageId: string, label: string): Promise<NamedCheckpointResult> {
+      return request<NamedCheckpointResult>(base(knowledgeBaseId, pageId), { method: 'POST', body: { label } });
     },
   };
 }

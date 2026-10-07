@@ -1,31 +1,24 @@
 import { expect, test } from 'bun:test';
-import { createDevelopmentWorkspaces } from './development-workbench';
+import { createDevelopmentKnowledgeBases } from './development-workbench';
 
-test('development workspaces exercise independent bases, diverse content and empty states', () => {
-  const spaces = createDevelopmentWorkspaces();
-  expect(spaces).toHaveLength(3);
-  expect(spaces.map((space) => space.bases.length)).toEqual([4, 3, 5]);
+test('independent development bases exercise diverse content and empty states', () => {
+  const bases = createDevelopmentKnowledgeBases();
+  expect(bases).toHaveLength(12);
+  expect(bases.filter((base) => base.documents.length === 0)).toHaveLength(3);
   const ids = new Set<string>();
   const extensions = new Set<string>();
   let documents = 0;
-  for (const space of spaces) {
-    expect(ids.has(space.id)).toBe(false); ids.add(space.id);
-    expect(space.bases.some((base) => base.documents.length === 0)).toBe(true);
-    for (const base of space.bases) {
-      expect(ids.has(base.id)).toBe(false); ids.add(base.id);
-      expect(base.workspaceId).toBe(space.id);
-      for (const folder of base.folders) {
-        expect(ids.has(folder.id)).toBe(false); ids.add(folder.id);
-        expect(folder.knowledgeBaseId).toBe(base.id);
-        expect(folder.workspaceId).toBe(space.id);
-      }
-      for (const document of base.documents) {
-        expect(ids.has(document.id)).toBe(false); ids.add(document.id);
-        expect(document.baseId).toBe(base.id);
-        expect(document.workspaceId).toBe(space.id);
-        expect(base.folders.some((folder) => folder.id === document.folderId)).toBe(true);
-        extensions.add(document.title.split('.').at(-1)!); documents++;
-      }
+  for (const base of bases) {
+    expect(ids.has(base.id)).toBe(false); ids.add(base.id);
+    for (const folder of base.folders) {
+      expect(ids.has(folder.id)).toBe(false); ids.add(folder.id);
+      expect(folder.knowledgeBaseId).toBe(base.id);
+    }
+    for (const document of base.documents) {
+      expect(ids.has(document.id)).toBe(false); ids.add(document.id);
+      expect(document.knowledgeBaseId).toBe(base.id);
+      expect(base.folders.some((folder) => folder.id === document.folderId)).toBe(true);
+      extensions.add(document.title.split('.').at(-1)!); documents++;
     }
   }
   expect(documents).toBe(145);

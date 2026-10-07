@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { knowledgeTrpcUrl,  } from './endpoint';
 import { createFoucOriginProvider, foucApiDevOrigin, foucApiUrlEnvName, parseFoucApiOrigin, resolveFoucApiOrigin, type FoucEndpointDeps } from '@/lib/fouc-api-endpoint';
 
-const workspace = '20000000-0000-4000-8000-000000000000';
+const knowledgeBase = '20000000-0000-4000-8000-000000000000';
 
 function deps(overrides: Partial<FoucEndpointDeps> = {}): FoucEndpointDeps {
   return {
@@ -29,13 +29,13 @@ describe('parseFoucApiOrigin', () => {
 });
 
 describe('knowledgeTrpcUrl', () => {
-  test('builds the A00 transport URL for one workspace', () => {
-    expect(knowledgeTrpcUrl('https://api.fouc.example', workspace)).toBe(`https://api.fouc.example/api/knowledge/${workspace}/trpc`);
+  test('builds the A00 transport URL for one knowledgeBase', () => {
+    expect(knowledgeTrpcUrl('https://api.fouc.example', knowledgeBase)).toBe(`https://api.fouc.example/api/knowledge/${knowledgeBase}/trpc`);
   });
 
-  test('validates the origin and the workspaceId', () => {
-    expect(() => knowledgeTrpcUrl('https://api.example/path', workspace)).toThrow('Invalid Fouc API origin');
-    expect(() => knowledgeTrpcUrl('https://api.fouc.example', 'not-a-uuid')).toThrow('workspaceId must be a UUID');
+  test('validates the origin and the knowledgeBaseId', () => {
+    expect(() => knowledgeTrpcUrl('https://api.example/path', knowledgeBase)).toThrow('Invalid Fouc API origin');
+    expect(() => knowledgeTrpcUrl('https://api.fouc.example', 'not-a-uuid')).toThrow('knowledgeBaseId must be a UUID');
   });
 });
 

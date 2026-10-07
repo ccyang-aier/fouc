@@ -4,12 +4,12 @@ import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import type { OutboxEvent, PagePlacement, PageScope, Principal, PropertyDefinition } from '@fouc/shared/knowledge/contracts';
-import { knowledgeBase, workspaceTenantSchema, member, page, teamspace, workspace } from '../../../platform/database/workspace/schema';
+import { knowledgeBase, resourceSchema, member, page, teamspace } from '../../../platform/database/resources/schema';
 import { authUser } from '../../../platform/database/identity/schema';
-import { createTenantTestDatabase } from '../../../platform/database/workspace/tenant-test-database';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
-import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
-import type { TenantTestDatabase } from '../../../platform/database/workspace/tenant-test-database';
+import { createResourceTestDatabase } from '../../../platform/database/resources/resource-test-database';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
+import type { ResourceTransaction } from '../../../platform/database/resources/transaction';
+import type { ResourceTestDatabase } from '../../../platform/database/resources/resource-test-database';
 import { recycleAuthorizedPage } from '../pages/tree';
 import { authorizePageAccess, expandRequestPrincipals } from '../permissions/authorization';
 import { replaceAuthorizedPageAcl, setAuthorizedPageInheritance } from '../permissions/mutations';
@@ -24,10 +24,10 @@ const label = (pageId: string) => pageId.replaceAll('-', '_');
 type AclEvent = Extract<OutboxEvent, { topic: 'acl.changed' }>;
 type Grant = { principal: Principal; level: 'view' | 'edit' | 'full' };
 
-let database: TenantTestDatabase;
+let database: ResourceTestDatabase;
 let concurrent: Pool;
-const alpha = { workspaceId: randomUUID(), owner: randomUUID(), editor: randomUUID(), viewer: randomUUID(), main: randomUUID() };
-const beta = { workspaceId: randomUUID(), owner: randomUUID(), teamspace: randomUUID() };
+const alpha = { knowledgeBaseId: randomUUID(), owner: randomUUID(), editor: randomUUID(), viewer: randomUUID(), main: randomUUID() };
+const beta = { knowledgeBaseId: randomUUID(), owner: randomUUID(), teamspace: randomUUID() };
 
 async function rejects(operation: () => Promise<unknown>, code: DatabaseErrorCode) {
   let failure: unknown;
@@ -46,32 +46,32 @@ async function rows<T extends Record<string, unknown>>(query: string, values: un
 
 async function rebuild(scope: PageScope) {
   const result = await rows<{ payload: AclEvent }>(
-    "SELECT payload FROM workspace.outbox WHERE workspace_id=$1 AND topic='acl.changed' AND payload->>'rootPageId'=$2 ORDER BY (payload->>'revision')::bigint DESC LIMIT 1",
-    [scope.workspaceId, scope.pageId],
+    "SELECT payload FROM resources.outbox WHERE knowledge_base_id=$1 AND topic='acl.changed' AND payload->>'rootPageId'=$2 ORDER BY (payload->>'revision')::bigint DESC LIMIT 1",
+    [scope.knowledgeBaseId, scope.pageId],
   );
   if (!result[0]) throw new Error('Expected an acl.changed event');
-  await withWorkspaceTenant(database.pool, scope.workspaceId, (db) => rebuildPermissionSubtree(db, result[0]!.payload));
+  await withKnowledgeBase(database.pool, scope.knowledgeBaseId, (db) => rebuildPermissionSubtree(db, result[0]!.payload));
 }
 
-const tenant = <T>(operation: (db: WorkspaceTenantTransaction) => Promise<T>, pool?: Pool) =>
-  withWorkspaceTenant(pool ?? database.pool, alpha.workspaceId, operation);
+const resource = <T>(operation: (db: ResourceTransaction) => Promise<T>, pool?: Pool) =>
+  withKnowledgeBase(pool ?? database.pool, alpha.knowledgeBaseId, operation);
 
-const workspacePrincipal = () => `workspace:${alpha.workspaceId}` as Principal;
+const knowledgeBasePrincipal = () => `knowledgeBase:${alpha.knowledgeBaseId}` as Principal;
 
 async function storedRow(scope: PageScope) {
   const [row] = await rows<{ kind: string; parent_id: string | null; database_id: string | null; path: string; position: string; properties: Record<string, unknown> }>(
-    'SELECT kind, parent_id::text AS parent_id, database_id::text AS database_id, path::text AS path, position, properties FROM workspace.page WHERE workspace_id=$1 AND id=$2',
-    [scope.workspaceId, scope.pageId],
+    'SELECT kind, parent_id::text AS parent_id, database_id::text AS database_id, path::text AS path, position, properties FROM resources.page WHERE knowledge_base_id=$1 AND id=$2',
+    [scope.knowledgeBaseId, scope.pageId],
   );
   return row!;
 }
 
-function createDatabase(seed: { id?: string; columns?: PropertyDefinition[]; title?: string; tenant?: 'alpha' | 'beta' } = {}) {
-  const foreign = seed.tenant === 'beta';
+function createDatabase(seed: { id?: string; columns?: PropertyDefinition[]; title?: string; resource?: 'alpha' | 'beta' } = {}) {
+  const foreign = seed.resource === 'beta';
   const scope = foreign ? beta : alpha;
-  return withWorkspaceTenant(database.pool, scope.workspaceId, (db) => createAuthorizedDatabase(db, {
+  return withKnowledgeBase(database.pool, scope.knowledgeBaseId, (db) => createAuthorizedDatabase(db, {
     id: seed.id ?? randomUUID(),
-    workspaceId: scope.workspaceId,
+    knowledgeBaseId: scope.knowledgeBaseId,
     teamspaceId: foreign ? beta.teamspace : alpha.main,
     parentId: null,
     title: seed.title ?? '数据库',
@@ -79,12 +79,12 @@ function createDatabase(seed: { id?: string; columns?: PropertyDefinition[]; tit
   }, scope.owner));
 }
 
-function createRow(seed: { id?: string; databaseId: string; properties?: Record<string, unknown>; title?: string; tenant?: 'alpha' | 'beta'; pool?: Pool }): Promise<PagePlacement> {
-  const foreign = seed.tenant === 'beta';
+function createRow(seed: { id?: string; databaseId: string; properties?: Record<string, unknown>; title?: string; resource?: 'alpha' | 'beta'; pool?: Pool }): Promise<PagePlacement> {
+  const foreign = seed.resource === 'beta';
   const scope = foreign ? beta : alpha;
-  return withWorkspaceTenant(seed.pool ?? database.pool, scope.workspaceId, (db) => createAuthorizedRow(db, {
+  return withKnowledgeBase(seed.pool ?? database.pool, scope.knowledgeBaseId, (db) => createAuthorizedRow(db, {
     id: seed.id ?? randomUUID(),
-    workspaceId: scope.workspaceId,
+    knowledgeBaseId: scope.knowledgeBaseId,
     title: seed.title ?? '行',
     databaseId: seed.databaseId,
     properties: seed.properties ?? {},
@@ -92,11 +92,11 @@ function createRow(seed: { id?: string; databaseId: string; properties?: Record<
   }, scope.owner));
 }
 
-function listRows(seed: { databaseId: string; viewer: Principal[]; filters?: unknown[]; sort?: { propertyId: string; direction: 'asc' | 'desc' }[]; cursor?: string; limit?: number; tenant?: 'alpha' | 'beta' }) {
-  const foreign = seed.tenant === 'beta';
+function listRows(seed: { databaseId: string; viewer: Principal[]; filters?: unknown[]; sort?: { propertyId: string; direction: 'asc' | 'desc' }[]; cursor?: string; limit?: number; resource?: 'alpha' | 'beta' }) {
+  const foreign = seed.resource === 'beta';
   const scope = foreign ? beta : alpha;
-  return withWorkspaceTenant(database.pool, scope.workspaceId, (db) => listDatabaseRows(db, {
-    workspaceId: scope.workspaceId,
+  return withKnowledgeBase(database.pool, scope.knowledgeBaseId, (db) => listDatabaseRows(db, {
+    knowledgeBaseId: scope.knowledgeBaseId,
     databaseId: seed.databaseId,
     viewer: seed.viewer,
     filters: seed.filters ?? [],
@@ -107,34 +107,33 @@ function listRows(seed: { databaseId: string; viewer: Principal[]; filters?: unk
 }
 
 beforeAll(async () => {
-  database = await createTenantTestDatabase();
+  database = await createResourceTestDatabase();
   concurrent = new Pool({ ...database.pool.options, max: 4 });
   await initializeKnowledgeJobs(database.admin, database.pool);
   const client = await database.admin.connect();
   try {
     await client.query('BEGIN');
-    const db = drizzle(client, { schema: workspaceTenantSchema });
+    const db = drizzle(client, { schema: resourceSchema });
     await db.insert(authUser).values([
       { id: alpha.owner, name: 'Alpha Owner', email: `${alpha.owner}@databases.test` },
       { id: alpha.editor, name: 'Alpha Editor', email: `${alpha.editor}@databases.test` },
       { id: alpha.viewer, name: 'Alpha Viewer', email: `${alpha.viewer}@databases.test` },
       { id: beta.owner, name: 'Beta Owner', email: `${beta.owner}@databases.test` },
     ]);
-    await db.insert(workspace).values([
-      { id: alpha.workspaceId, name: 'Databases Alpha', kind: 'team' },
-      { id: beta.workspaceId, name: 'Databases Beta', kind: 'team' },
+    await db.insert(knowledgeBase).values([
+      { id: alpha.knowledgeBaseId, name: 'Databases Alpha' },
+      { id: beta.knowledgeBaseId, name: 'Databases Beta' },
     ]);
     await db.insert(member).values([
-      { workspaceId: alpha.workspaceId, userId: alpha.owner, role: 'owner' },
-      { workspaceId: alpha.workspaceId, userId: alpha.editor, role: 'member' },
-      { workspaceId: alpha.workspaceId, userId: alpha.viewer, role: 'member' },
-      { workspaceId: beta.workspaceId, userId: beta.owner, role: 'owner' },
+      { knowledgeBaseId: alpha.knowledgeBaseId, userId: alpha.owner, role: 'owner' },
+      { knowledgeBaseId: alpha.knowledgeBaseId, userId: alpha.editor, role: 'member' },
+      { knowledgeBaseId: alpha.knowledgeBaseId, userId: alpha.viewer, role: 'member' },
+      { knowledgeBaseId: beta.knowledgeBaseId, userId: beta.owner, role: 'owner' },
     ]);
-    const knowledgeBaseId = randomUUID();
-    await db.insert(knowledgeBase).values([ { workspaceId: alpha.workspaceId, id: knowledgeBaseId, name: 'Alpha library' }, { workspaceId: beta.workspaceId, id: knowledgeBaseId, name: 'Beta library' } ]);
+
     await db.insert(teamspace).values([
-      { knowledgeBaseId, workspaceId: alpha.workspaceId, id: alpha.main, name: 'Main', defaultAccess: 'view' },
-      { knowledgeBaseId, workspaceId: beta.workspaceId, id: beta.teamspace, name: 'Beta', defaultAccess: 'view' },
+      { knowledgeBaseId: alpha.knowledgeBaseId, id: alpha.main, name: 'Main', defaultAccess: 'view' },
+      { knowledgeBaseId: beta.knowledgeBaseId, id: beta.teamspace, name: 'Beta', defaultAccess: 'view' },
     ]);
     await client.query('COMMIT');
   } catch (error) {
@@ -155,15 +154,15 @@ describe('T02 databases and rows are pages', () => {
     const id = randomUUID();
     const columns: PropertyDefinition[] = [{ id: 'name', name: '名称', type: 'text' }, { id: 'count', name: '数量', type: 'number' }];
     const created = await createDatabase({ id, columns, title: '项目库' });
-    expect(created).toEqual({ workspaceId: alpha.workspaceId, pageId: id, columns });
-    const stored = await storedRow({ workspaceId: alpha.workspaceId, pageId: id });
+    expect(created).toEqual({ knowledgeBaseId: alpha.knowledgeBaseId, pageId: id, columns });
+    const stored = await storedRow({ knowledgeBaseId: alpha.knowledgeBaseId, pageId: id });
     expect(stored.kind).toBe('database');
     expect(stored.parent_id).toBeNull();
     expect(stored.database_id).toBeNull();
     expect(stored.path).toBe(label(id));
     expect(stored.position).toMatch(canonical);
     const [definition] = await rows<{ properties: PropertyDefinition[] }>(
-      'SELECT properties FROM workspace.database_definition WHERE workspace_id=$1 AND page_id=$2', [alpha.workspaceId, id]);
+      'SELECT properties FROM resources.database_definition WHERE knowledge_base_id=$1 AND page_id=$2', [alpha.knowledgeBaseId, id]);
     expect(definition!.properties).toEqual(columns);
   });
 
@@ -175,7 +174,7 @@ describe('T02 databases and rows are pages', () => {
     expect(placed.parentId).toBe(owner.pageId);
     expect(placed.path).toBe(`${label(owner.pageId)}.${label(rowId)}`);
     expect(placed.position).toMatch(canonical);
-    const stored = await storedRow({ workspaceId: alpha.workspaceId, pageId: rowId });
+    const stored = await storedRow({ knowledgeBaseId: alpha.knowledgeBaseId, pageId: rowId });
     expect(stored).toMatchObject({ kind: 'row', parent_id: owner.pageId, database_id: owner.pageId, properties: { topic: '第一条', count: 3 } });
   });
 
@@ -185,7 +184,7 @@ describe('T02 databases and rows are pages', () => {
     const first = await createRow({ id: rowId, databaseId: owner.pageId, properties: { a: '初值' } });
     const replay = await createRow({ id: rowId, databaseId: owner.pageId, properties: { a: '重放' } });
     expect(replay).toEqual(first);
-    const [count] = await rows<{ n: string }>('SELECT count(*)::text AS n FROM workspace.page WHERE workspace_id=$1 AND id=$2', [alpha.workspaceId, rowId]);
+    const [count] = await rows<{ n: string }>('SELECT count(*)::text AS n FROM resources.page WHERE knowledge_base_id=$1 AND id=$2', [alpha.knowledgeBaseId, rowId]);
     expect(count!.n).toBe('1');
 
     const replayed = await createDatabase({ id: owner.pageId, columns: [{ id: 'b', name: 'B', type: 'number' }] });
@@ -194,7 +193,7 @@ describe('T02 databases and rows are pages', () => {
 
   test('ids colliding with other page kinds and missing or recycled databases are rejected', async () => {
     const docId = randomUUID();
-    await tenant((db) => db.insert(page).values({ workspaceId: alpha.workspaceId, id: docId, teamspaceId: alpha.main, parentId: null, position: 'a0', path: label(docId), createdBy: alpha.owner }));
+    await resource((db) => db.insert(page).values({ knowledgeBaseId: alpha.knowledgeBaseId, id: docId, teamspaceId: alpha.main, parentId: null, position: 'a0', path: label(docId), createdBy: alpha.owner }));
     await rejects(() => createDatabase({ id: docId }), 'INVALID_DATABASE_INPUT');
     await rejects(() => createRow({ id: docId, databaseId: randomUUID() }), 'DATABASE_NOT_FOUND');
 
@@ -205,7 +204,7 @@ describe('T02 databases and rows are pages', () => {
     await rejects(() => createRow({ databaseId: randomUUID() }), 'DATABASE_NOT_FOUND');
     await rejects(() => createRow({ databaseId: docId }), 'DATABASE_NOT_FOUND');
 
-    await tenant((db) => recycleAuthorizedPage(db, { workspaceId: alpha.workspaceId, pageId: owner.pageId }));
+    await resource((db) => recycleAuthorizedPage(db, { knowledgeBaseId: alpha.knowledgeBaseId, pageId: owner.pageId }));
     await rejects(() => createRow({ databaseId: owner.pageId }), 'DATABASE_NOT_FOUND');
   });
 });
@@ -217,7 +216,7 @@ describe('T02 per-row permissions and visibility', () => {
     const editorOnlyViews = (await createRow({ databaseId: owner.pageId, properties: { a: '编辑可见' } })).pageId;
     const editorEdits = (await createRow({ databaseId: owner.pageId, properties: { a: '编辑可写' } })).pageId;
     const sealed = (await createRow({ databaseId: owner.pageId, properties: { a: '无人可见' } })).pageId;
-    await rebuild({ workspaceId: alpha.workspaceId, pageId: owner.pageId });
+    await rebuild({ knowledgeBaseId: alpha.knowledgeBaseId, pageId: owner.pageId });
 
     const changes: [string, Grant[]][] = [
       [editorOnlyViews, [{ principal: `user:${alpha.editor}` as Principal, level: 'view' }]],
@@ -225,13 +224,13 @@ describe('T02 per-row permissions and visibility', () => {
       [sealed, []],
     ];
     for (const [pageId, grants] of changes) {
-      await tenant((db) => setAuthorizedPageInheritance(db, { workspaceId: alpha.workspaceId, pageId, inheritsPermissions: false }));
-      await tenant((db) => replaceAuthorizedPageAcl(db, { workspaceId: alpha.workspaceId, pageId, grants }));
+      await resource((db) => setAuthorizedPageInheritance(db, { knowledgeBaseId: alpha.knowledgeBaseId, pageId, inheritsPermissions: false }));
+      await resource((db) => replaceAuthorizedPageAcl(db, { knowledgeBaseId: alpha.knowledgeBaseId, pageId, grants }));
     }
-    await rebuild({ workspaceId: alpha.workspaceId, pageId: owner.pageId });
+    await rebuild({ knowledgeBaseId: alpha.knowledgeBaseId, pageId: owner.pageId });
 
     const decide = (userId: string, pageId: string, required: 'view' | 'edit') =>
-      tenant((db) => authorizePageAccess(db, { userId, scope: { workspaceId: alpha.workspaceId, pageId }, required }));
+      resource((db) => authorizePageAccess(db, { userId, scope: { knowledgeBaseId: alpha.knowledgeBaseId, pageId }, required }));
     expect(await decide(alpha.viewer, editorEdits, 'view')).toMatchObject({ decision: 'allow', level: 'view' });
     expect(await decide(alpha.viewer, editorEdits, 'edit')).toMatchObject({ decision: 'deny' });
     expect(await decide(alpha.editor, editorEdits, 'edit')).toMatchObject({ decision: 'allow', level: 'edit' });
@@ -241,26 +240,26 @@ describe('T02 per-row permissions and visibility', () => {
     expect(await decide(alpha.owner, sealed, 'view')).toMatchObject({ decision: 'deny' });
     expect(await decide(beta.owner, inherited, 'view')).toMatchObject({ decision: 'deny' });
 
-    const editorPrincipals = await tenant((db) => expandRequestPrincipals(db, alpha.workspaceId, alpha.editor));
-    const viewerPrincipals = await tenant((db) => expandRequestPrincipals(db, alpha.workspaceId, alpha.viewer));
-    const ownerPrincipals = await tenant((db) => expandRequestPrincipals(db, alpha.workspaceId, alpha.owner));
+    const editorPrincipals = await resource((db) => expandRequestPrincipals(db, alpha.knowledgeBaseId, alpha.editor));
+    const viewerPrincipals = await resource((db) => expandRequestPrincipals(db, alpha.knowledgeBaseId, alpha.viewer));
+    const ownerPrincipals = await resource((db) => expandRequestPrincipals(db, alpha.knowledgeBaseId, alpha.owner));
     // 无排序参数时列表按 position/id 返回;可见性断言比较集合,故对结果排序。
     const ids = (result: { rows: { pageId: string }[] }) => result.rows.map((row) => row.pageId).sort();
-    // 打断继承的行仅剩显式 ACL:workspace 主体只携带 teamspace 默认访问,故只见继承行。
-    expect(ids(await listRows({ databaseId: owner.pageId, viewer: [workspacePrincipal()] }))).toEqual([inherited]);
+    // 打断继承的行仅剩显式 ACL:knowledgeBase 主体只携带 teamspace 默认访问,故只见继承行。
+    expect(ids(await listRows({ databaseId: owner.pageId, viewer: [knowledgeBasePrincipal()] }))).toEqual([inherited]);
     expect(ids(await listRows({ databaseId: owner.pageId, viewer: viewerPrincipals }))).toEqual([inherited, editorEdits].sort());
     expect(ids(await listRows({ databaseId: owner.pageId, viewer: editorPrincipals }))).toEqual([inherited, editorOnlyViews, editorEdits].sort());
     expect(ids(await listRows({ databaseId: owner.pageId, viewer: ownerPrincipals }))).toEqual([inherited].sort());
-    expect(await listRows({ databaseId: owner.pageId, viewer: [`user:${beta.owner}`, `workspace:${beta.workspaceId}`] })).toEqual({ rows: [], nextCursor: null });
+    expect(await listRows({ databaseId: owner.pageId, viewer: [`user:${beta.owner}`, `knowledgeBase:${beta.knowledgeBaseId}`] })).toEqual({ rows: [], nextCursor: null });
 
-    await tenant((db) => recycleAuthorizedPage(db, { workspaceId: alpha.workspaceId, pageId: editorEdits }));
+    await resource((db) => recycleAuthorizedPage(db, { knowledgeBaseId: alpha.knowledgeBaseId, pageId: editorEdits }));
     expect(ids(await listRows({ databaseId: owner.pageId, viewer: viewerPrincipals }))).toEqual([inherited].sort());
   });
 
   test('an empty database lists no rows', async () => {
     const owner = await createDatabase({ columns: [{ id: 'a', name: 'A', type: 'text' }] });
-    await rebuild({ workspaceId: alpha.workspaceId, pageId: owner.pageId });
-    expect(await listRows({ databaseId: owner.pageId, viewer: [workspacePrincipal()] })).toEqual({ rows: [], nextCursor: null });
+    await rebuild({ knowledgeBaseId: alpha.knowledgeBaseId, pageId: owner.pageId });
+    expect(await listRows({ databaseId: owner.pageId, viewer: [knowledgeBasePrincipal()] })).toEqual({ rows: [], nextCursor: null });
   });
 });
 
@@ -292,7 +291,7 @@ describe('T02 typed row property validation', () => {
       tags: ['a', 'b'], site: 'https://example.com/x', assignee: [alpha.editor], link: [target.rowId],
     };
     const placed = await createRow({ databaseId: owner.pageId, properties: valid });
-    expect((await storedRow({ workspaceId: alpha.workspaceId, pageId: placed.pageId })).properties).toEqual(valid);
+    expect((await storedRow({ knowledgeBaseId: alpha.knowledgeBaseId, pageId: placed.pageId })).properties).toEqual(valid);
   });
 
   test('rejects unknown properties and every kind of type mismatch', async () => {
@@ -328,8 +327,8 @@ describe('T02 typed row property validation', () => {
   test('relation columns must reference an existing database and resolvable rows', async () => {
     await rejects(() => createDatabase({ columns: [{ id: 'link', name: '关联', type: 'relation', relationDatabaseId: randomUUID() }] }), 'INVALID_DATABASE_COLUMNS');
     const owner = await createDatabase({ columns: [{ id: 'n', name: 'N', type: 'text' }] });
-    await rejects(() => tenant((db) => updateAuthorizedDatabaseColumns(db, {
-      workspaceId: alpha.workspaceId, pageId: owner.pageId,
+    await rejects(() => resource((db) => updateAuthorizedDatabaseColumns(db, {
+      knowledgeBaseId: alpha.knowledgeBaseId, pageId: owner.pageId,
       columns: [{ id: 'link', name: '关联', type: 'relation', relationDatabaseId: randomUUID() }],
     })), 'INVALID_DATABASE_COLUMNS');
   });
@@ -337,27 +336,27 @@ describe('T02 typed row property validation', () => {
   test('property updates replace the stored object after validation and leave it intact on rejection', async () => {
     const owner = await createDatabase({ columns: columns() });
     const row = await createRow({ databaseId: owner.pageId, properties: { name: '旧值', count: 1 } });
-    const updated = await tenant((db) => updateAuthorizedRowProperties(db, {
-      workspaceId: alpha.workspaceId, pageId: row.pageId, properties: { name: '新值', count: 2, status: 'done' }, operationId: randomUUID(),
+    const updated = await resource((db) => updateAuthorizedRowProperties(db, {
+      knowledgeBaseId: alpha.knowledgeBaseId, pageId: row.pageId, properties: { name: '新值', count: 2, status: 'done' }, operationId: randomUUID(),
     }));
-    expect(updated).toEqual({ workspaceId: alpha.workspaceId, pageId: row.pageId, properties: { name: '新值', count: 2, status: 'done' } });
-    expect((await storedRow({ workspaceId: alpha.workspaceId, pageId: row.pageId })).properties).toEqual({ name: '新值', count: 2, status: 'done' });
+    expect(updated).toEqual({ knowledgeBaseId: alpha.knowledgeBaseId, pageId: row.pageId, properties: { name: '新值', count: 2, status: 'done' } });
+    expect((await storedRow({ knowledgeBaseId: alpha.knowledgeBaseId, pageId: row.pageId })).properties).toEqual({ name: '新值', count: 2, status: 'done' });
 
-    await rejects(() => tenant((db) => updateAuthorizedRowProperties(db, {
-      workspaceId: alpha.workspaceId, pageId: row.pageId, properties: { name: '坏值', ghost: 1 }, operationId: randomUUID(),
+    await rejects(() => resource((db) => updateAuthorizedRowProperties(db, {
+      knowledgeBaseId: alpha.knowledgeBaseId, pageId: row.pageId, properties: { name: '坏值', ghost: 1 }, operationId: randomUUID(),
     })), 'INVALID_ROW_PROPERTIES');
-    await rejects(() => tenant((db) => updateAuthorizedRowProperties(db, {
-      workspaceId: alpha.workspaceId, pageId: row.pageId, properties: { name: '坏值', count: '2' }, operationId: randomUUID(),
+    await rejects(() => resource((db) => updateAuthorizedRowProperties(db, {
+      knowledgeBaseId: alpha.knowledgeBaseId, pageId: row.pageId, properties: { name: '坏值', count: '2' }, operationId: randomUUID(),
     })), 'INVALID_ROW_PROPERTIES');
-    expect((await storedRow({ workspaceId: alpha.workspaceId, pageId: row.pageId })).properties).toEqual({ name: '新值', count: 2, status: 'done' });
+    expect((await storedRow({ knowledgeBaseId: alpha.knowledgeBaseId, pageId: row.pageId })).properties).toEqual({ name: '新值', count: 2, status: 'done' });
 
-    await rejects(() => tenant((db) => updateAuthorizedRowProperties(db, {
-      workspaceId: alpha.workspaceId, pageId: randomUUID(), properties: {}, operationId: randomUUID(),
+    await rejects(() => resource((db) => updateAuthorizedRowProperties(db, {
+      knowledgeBaseId: alpha.knowledgeBaseId, pageId: randomUUID(), properties: {}, operationId: randomUUID(),
     })), 'ROW_NOT_FOUND');
     const docId = randomUUID();
-    await tenant((db) => db.insert(page).values({ workspaceId: alpha.workspaceId, id: docId, teamspaceId: alpha.main, parentId: null, position: 'a0', path: label(docId), createdBy: alpha.owner }));
-    await rejects(() => tenant((db) => updateAuthorizedRowProperties(db, {
-      workspaceId: alpha.workspaceId, pageId: docId, properties: {}, operationId: randomUUID(),
+    await resource((db) => db.insert(page).values({ knowledgeBaseId: alpha.knowledgeBaseId, id: docId, teamspaceId: alpha.main, parentId: null, position: 'a0', path: label(docId), createdBy: alpha.owner }));
+    await rejects(() => resource((db) => updateAuthorizedRowProperties(db, {
+      knowledgeBaseId: alpha.knowledgeBaseId, pageId: docId, properties: {}, operationId: randomUUID(),
     })), 'INVALID_DATABASE_INPUT');
   });
 });
@@ -387,10 +386,10 @@ describe('T02 filtering, sorting and cursor pagination', () => {
     for (const [name, properties] of dataset) {
       seeded.byName[name] = (await createRow({ databaseId: owner.pageId, properties: { name, ...properties }, title: name })).pageId;
     }
-    await rebuild({ workspaceId: alpha.workspaceId, pageId: owner.pageId });
+    await rebuild({ knowledgeBaseId: alpha.knowledgeBaseId, pageId: owner.pageId });
   });
 
-  const viewer = [workspacePrincipal()];
+  const viewer = [knowledgeBasePrincipal()];
   const ids = async (seed: Parameters<typeof listRows>[0]) => (await listRows(seed)).rows.map((row) => row.pageId);
   const byName = (...wanted: string[]) => wanted.map((name) => seeded.byName[name]!);
 
@@ -472,56 +471,56 @@ describe('T02 column lifecycle', () => {
     const prioColumn = { id: 'prio', name: '优先级', type: 'select', options: [{ id: 'high', label: '高', color: 'red' }] } as const;
     const countColumn = { id: 'count', name: '数量', type: 'number' } as const;
 
-    const added = await tenant((db) => updateAuthorizedDatabaseColumns(db, {
-      workspaceId: alpha.workspaceId, pageId: owner.pageId, columns: [nameColumn, countColumn, prioColumn],
+    const added = await resource((db) => updateAuthorizedDatabaseColumns(db, {
+      knowledgeBaseId: alpha.knowledgeBaseId, pageId: owner.pageId, columns: [nameColumn, countColumn, prioColumn],
     }));
     expect(added.columns.map((entry) => entry.id)).toEqual(['name', 'count', 'prio']);
-    expect((await storedRow({ workspaceId: alpha.workspaceId, pageId: first.pageId })).properties).toEqual({ name: '一', count: 1 });
+    expect((await storedRow({ knowledgeBaseId: alpha.knowledgeBaseId, pageId: first.pageId })).properties).toEqual({ name: '一', count: 1 });
     const third = await createRow({ databaseId: owner.pageId, properties: { name: '三', prio: 'high' } });
-    await rebuild({ workspaceId: alpha.workspaceId, pageId: owner.pageId });
-    const withPrio = await listRows({ databaseId: owner.pageId, viewer: [workspacePrincipal()], filters: [{ propertyId: 'prio', operator: 'isNotEmpty' }] });
+    await rebuild({ knowledgeBaseId: alpha.knowledgeBaseId, pageId: owner.pageId });
+    const withPrio = await listRows({ databaseId: owner.pageId, viewer: [knowledgeBasePrincipal()], filters: [{ propertyId: 'prio', operator: 'isNotEmpty' }] });
     expect(withPrio.rows.map((row) => row.pageId)).toEqual([third.pageId]);
 
-    await rejects(() => tenant((db) => updateAuthorizedDatabaseColumns(db, {
-      workspaceId: alpha.workspaceId, pageId: owner.pageId,
+    await rejects(() => resource((db) => updateAuthorizedDatabaseColumns(db, {
+      knowledgeBaseId: alpha.knowledgeBaseId, pageId: owner.pageId,
       columns: [{ id: 'name', name: '名称', type: 'number' }, countColumn, prioColumn],
     })), 'INVALID_DATABASE_COLUMNS');
     const [afterReject] = await rows<{ properties: PropertyDefinition[] }>(
-      'SELECT properties FROM workspace.database_definition WHERE workspace_id=$1 AND page_id=$2', [alpha.workspaceId, owner.pageId]);
+      'SELECT properties FROM resources.database_definition WHERE knowledge_base_id=$1 AND page_id=$2', [alpha.knowledgeBaseId, owner.pageId]);
     expect(afterReject!.properties.find((entry) => entry.id === 'name')).toMatchObject({ type: 'text', name: '标题' });
-    expect((await storedRow({ workspaceId: alpha.workspaceId, pageId: first.pageId })).properties).toEqual({ name: '一', count: 1 });
+    expect((await storedRow({ knowledgeBaseId: alpha.knowledgeBaseId, pageId: first.pageId })).properties).toEqual({ name: '一', count: 1 });
 
-    const removed = await tenant((db) => updateAuthorizedDatabaseColumns(db, {
-      workspaceId: alpha.workspaceId, pageId: owner.pageId, columns: [nameColumn, prioColumn],
+    const removed = await resource((db) => updateAuthorizedDatabaseColumns(db, {
+      knowledgeBaseId: alpha.knowledgeBaseId, pageId: owner.pageId, columns: [nameColumn, prioColumn],
     }));
     expect(removed.columns.map((entry) => entry.id)).toEqual(['name', 'prio']);
-    expect((await storedRow({ workspaceId: alpha.workspaceId, pageId: first.pageId })).properties).toEqual({ name: '一' });
-    expect((await storedRow({ workspaceId: alpha.workspaceId, pageId: second.pageId })).properties).toEqual({ name: '二' });
-    await rejects(() => tenant((db) => updateAuthorizedRowProperties(db, {
-      workspaceId: alpha.workspaceId, pageId: first.pageId, properties: { name: '一', count: 9 }, operationId: randomUUID(),
+    expect((await storedRow({ knowledgeBaseId: alpha.knowledgeBaseId, pageId: first.pageId })).properties).toEqual({ name: '一' });
+    expect((await storedRow({ knowledgeBaseId: alpha.knowledgeBaseId, pageId: second.pageId })).properties).toEqual({ name: '二' });
+    await rejects(() => resource((db) => updateAuthorizedRowProperties(db, {
+      knowledgeBaseId: alpha.knowledgeBaseId, pageId: first.pageId, properties: { name: '一', count: 9 }, operationId: randomUUID(),
     })), 'INVALID_ROW_PROPERTIES');
-    await rejects(() => listRows({ databaseId: owner.pageId, viewer: [workspacePrincipal()], filters: [{ propertyId: 'count', operator: 'gt', value: 0 }] }), 'INVALID_DATABASE_QUERY');
+    await rejects(() => listRows({ databaseId: owner.pageId, viewer: [knowledgeBasePrincipal()], filters: [{ propertyId: 'count', operator: 'gt', value: 0 }] }), 'INVALID_DATABASE_QUERY');
 
-    const unchanged = await tenant((db) => updateAuthorizedDatabaseColumns(db, {
-      workspaceId: alpha.workspaceId, pageId: owner.pageId, columns: [nameColumn, prioColumn],
+    const unchanged = await resource((db) => updateAuthorizedDatabaseColumns(db, {
+      knowledgeBaseId: alpha.knowledgeBaseId, pageId: owner.pageId, columns: [nameColumn, prioColumn],
     }));
     expect(unchanged.columns).toEqual(removed.columns);
-    await rejects(() => tenant((db) => updateAuthorizedDatabaseColumns(db, {
-      workspaceId: alpha.workspaceId, pageId: randomUUID(), columns: [],
+    await rejects(() => resource((db) => updateAuthorizedDatabaseColumns(db, {
+      knowledgeBaseId: alpha.knowledgeBaseId, pageId: randomUUID(), columns: [],
     })), 'DATABASE_NOT_FOUND');
   });
 });
 
-describe('T02 tenant isolation and concurrent row creation', () => {
-  test('a foreign tenant cannot see or feed another workspace database', async () => {
-    const foreign = await createDatabase({ tenant: 'beta', columns: [{ id: 'n', name: 'N', type: 'text' }] });
-    await createRow({ tenant: 'beta', databaseId: foreign.pageId, properties: { n: 'beta row' } });
+describe('T02 resource isolation and concurrent row creation', () => {
+  test('a foreign resource cannot see or feed another knowledgeBase database', async () => {
+    const foreign = await createDatabase({ resource: 'beta', columns: [{ id: 'n', name: 'N', type: 'text' }] });
+    await createRow({ resource: 'beta', databaseId: foreign.pageId, properties: { n: 'beta row' } });
     await rejects(() => createRow({ databaseId: foreign.pageId }), 'DATABASE_NOT_FOUND');
-    await rejects(() => listRows({ databaseId: foreign.pageId, viewer: [workspacePrincipal()] }), 'DATABASE_NOT_FOUND');
-    await rebuild({ workspaceId: beta.workspaceId, pageId: foreign.pageId });
-    const seen = await listRows({ tenant: 'beta', databaseId: foreign.pageId, viewer: [`workspace:${beta.workspaceId}`] });
+    await rejects(() => listRows({ databaseId: foreign.pageId, viewer: [knowledgeBasePrincipal()] }), 'DATABASE_NOT_FOUND');
+    await rebuild({ knowledgeBaseId: beta.knowledgeBaseId, pageId: foreign.pageId });
+    const seen = await listRows({ resource: 'beta', databaseId: foreign.pageId, viewer: [`knowledgeBase:${beta.knowledgeBaseId}`] });
     expect(seen.rows.map((row) => row.properties.n)).toEqual(['beta row']);
-    expect((await withWorkspaceTenant(database.pool, beta.workspaceId, (db) => db.select({ id: page.id }).from(page).where(eq(page.workspaceId, alpha.workspaceId)))).length).toBe(0);
+    expect((await withKnowledgeBase(database.pool, beta.knowledgeBaseId, (db) => db.select({ id: page.id }).from(page).where(eq(page.knowledgeBaseId, alpha.knowledgeBaseId)))).length).toBe(0);
   });
 
   test('concurrent creations of the same row id converge on one stored page', async () => {
@@ -532,9 +531,9 @@ describe('T02 tenant isolation and concurrent row creation', () => {
       createRow({ id, databaseId: owner.pageId, properties: { a: '并发' }, title: '第二次', pool: concurrent }),
     ]);
     expect(one).toEqual(two);
-    const [count] = await rows<{ n: string }>('SELECT count(*)::text AS n FROM workspace.page WHERE workspace_id=$1 AND id=$2', [alpha.workspaceId, id]);
+    const [count] = await rows<{ n: string }>('SELECT count(*)::text AS n FROM resources.page WHERE knowledge_base_id=$1 AND id=$2', [alpha.knowledgeBaseId, id]);
     expect(count!.n).toBe('1');
-    expect((await storedRow({ workspaceId: alpha.workspaceId, pageId: id })).properties).toEqual({ a: '并发' });
+    expect((await storedRow({ knowledgeBaseId: alpha.knowledgeBaseId, pageId: id })).properties).toEqual({ a: '并发' });
   });
 
   test('concurrent distinct rows under one database get distinct placements', async () => {
@@ -544,8 +543,8 @@ describe('T02 tenant isolation and concurrent row creation', () => {
       createRow({ databaseId: owner.pageId, properties: { a: '右' }, pool: concurrent }),
     ]);
     expect(one.position).not.toBe(two.position);
-    await rebuild({ workspaceId: alpha.workspaceId, pageId: owner.pageId });
-    const seen = await listRows({ databaseId: owner.pageId, viewer: [workspacePrincipal()] });
+    await rebuild({ knowledgeBaseId: alpha.knowledgeBaseId, pageId: owner.pageId });
+    const seen = await listRows({ databaseId: owner.pageId, viewer: [knowledgeBasePrincipal()] });
     expect(seen.rows.map((row) => row.pageId).sort()).toEqual([one.pageId, two.pageId].sort());
   });
 });

@@ -53,16 +53,16 @@ export function stripColumnFromRowsCache(cache: DatabaseRowsInfiniteData, column
 export interface DatabaseTableOperationsDeps {
   queryClient: QueryClient;
   api: Pick<KnowledgeDatabasesApi, 'updateRowProperties' | 'createRow' | 'updateColumns'>;
-  workspaceId: string;
+  knowledgeBaseId: string;
   databaseId: string;
 }
 
 export type OperationFailure = { code: string; message: string };
 
 export function createDatabaseTableOperations(deps: DatabaseTableOperationsDeps) {
-  const { queryClient, api, workspaceId, databaseId } = deps;
-  const rowsRoot = databaseRowsRootKey(workspaceId, databaseId);
-  const columnsKey = databaseColumnsKey(workspaceId, databaseId);
+  const { queryClient, api, knowledgeBaseId, databaseId } = deps;
+  const rowsRoot = databaseRowsRootKey(knowledgeBaseId, databaseId);
+  const columnsKey = databaseColumnsKey(knowledgeBaseId, databaseId);
 
   return {
     /**
@@ -76,7 +76,7 @@ export function createDatabaseTableOperations(deps: DatabaseTableOperationsDeps)
         queryClient.setQueryData<DatabaseRowsInfiniteData>(key, (cache) => (cache ? patchRowsCache(cache, pageId, nextProperties) : cache));
       }
       try {
-        await api.updateRowProperties(workspaceId, { pageId, properties: nextProperties, operationId: crypto.randomUUID() });
+        await api.updateRowProperties(knowledgeBaseId, { pageId, properties: nextProperties, operationId: crypto.randomUUID() });
       } catch (cause) {
         for (const [key, cache] of snapshots) queryClient.setQueryData(key, cache);
         throw cause;
@@ -88,9 +88,9 @@ export function createDatabaseTableOperations(deps: DatabaseTableOperationsDeps)
     /** 新建行：成功后失效行查询与页面树（行是页面，树上会出现子页）。 */
     async createRow(input: { title: string; properties?: Properties }): Promise<PagePlacement> {
       const id = crypto.randomUUID();
-      const placement = await api.createRow(workspaceId, {
+      const placement = await api.createRow(knowledgeBaseId, {
         id,
-        workspaceId,
+        knowledgeBaseId,
         title: input.title,
         properties: input.properties ?? {},
         icon: null,
@@ -100,7 +100,7 @@ export function createDatabaseTableOperations(deps: DatabaseTableOperationsDeps)
         databaseId,
       });
       await queryClient.invalidateQueries({ queryKey: rowsRoot });
-      await queryClient.invalidateQueries({ queryKey: [workspaceId, 'knowledge', 'pages'] });
+      await queryClient.invalidateQueries({ queryKey: [knowledgeBaseId, 'knowledge', 'pages'] });
       return placement;
     },
 
@@ -125,7 +125,7 @@ export function createDatabaseTableOperations(deps: DatabaseTableOperationsDeps)
         }
       }
       try {
-        return await api.updateColumns(workspaceId, { pageId: databaseId, columns: nextColumns });
+        return await api.updateColumns(knowledgeBaseId, { pageId: databaseId, columns: nextColumns });
       } catch (cause) {
         if (columnsSnapshot !== undefined) queryClient.setQueryData(columnsKey, columnsSnapshot);
         for (const [key, cache] of rowsSnapshots) queryClient.setQueryData(key, cache);

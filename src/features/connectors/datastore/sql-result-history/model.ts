@@ -6,7 +6,7 @@ export const RESULT_PIN_LIMITS = {
   cells: 50_000,
 } as const;
 export type ResultPinScope = {
-  workspaceId: string;
+
   connectionId: string;
   tabId: string;
 };
@@ -21,7 +21,7 @@ export type ResultPin = {
   result: DatabaseQueryResult;
 };
 export function resultPinScopeKey(scope: ResultPinScope): string {
-  return JSON.stringify([scope.workspaceId, scope.connectionId, scope.tabId]);
+  return JSON.stringify([scope.connectionId, scope.tabId]);
 }
 export function scopedResultPins(
   pins: readonly ResultPin[],

@@ -78,8 +78,8 @@ export class DatastoreMcpBridge {
   private buildTools(): DatastoreMcpTool[] {
     return [
       {
-        name: 'fouc_list_connections', title: 'List granted connections', description: 'Return only exact connection IDs in this process workspace allowlist; no credentials.',
-        schema: z.object({}).strict(), run: async (_, signal) => ({ workspaceId: this.access.policy.workspaceId, connections: await this.directory(signal) }),
+        name: 'fouc_list_connections', title: 'List granted connections', description: 'Return only exact connection IDs in this process connection allowlist; no credentials.',
+        schema: z.object({}).strict(), run: async (_, signal) => ({ connections: await this.directory(signal) }),
       },
       {
         name: 'fouc_list_databases', title: 'List visible databases or schemas', description: 'Native relational schemas or Mongo database names filtered to the explicit resource grant.',

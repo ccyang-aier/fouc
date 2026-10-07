@@ -17,8 +17,8 @@ import type { KnowledgeRequestContext } from '../access';
 import type { NodeAnnotation } from '@fouc/shared/knowledge/schema/suggestions';
 import { newSuggestion } from '@fouc/shared/knowledge/schema/suggestions';
 import { createMarkdownPipeline } from '@fouc/shared/knowledge/markdown';
-import { docState } from '../../../platform/database/workspace/schema';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import { docState } from '../../../platform/database/resources/schema';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
 import { authorizePageAccess } from '../permissions/authorization';
 import { pageDocumentName } from '@fouc/shared/knowledge/collaboration';
 import { createAgentAwarenessSession } from '../collaboration/agent-awareness';
@@ -130,7 +130,7 @@ export class MarkdownStreamSplitter {
   }
 }
 
-interface PageScope { workspaceId: string; pageId: string }
+interface PageScope { knowledgeBaseId: string; pageId: string }
 type Fragment = Y.XmlFragment | Y.XmlElement;
 
 function findBlockLocation(container: Fragment, blockId: string): { parent: Fragment; element: Y.XmlElement } | undefined {
@@ -227,7 +227,7 @@ class PageWriteSession {
         located ? located.parent : fragment, located ? 'after' : 'inside', located?.element ?? null);
     }
     const mirror = new Y.Doc();
-    const loaded = await withWorkspaceTenant(input.pool, input.scope.workspaceId, async (db) => {
+    const loaded = await withKnowledgeBase(input.pool, input.scope.knowledgeBaseId, async (db) => {
       const [row] = await db.select({ state: docState.state }).from(docState).where(eq(docState.pageId, input.scope.pageId));
       return row?.state ?? null;
     });
@@ -317,11 +317,11 @@ class PageWriteSession {
     const state = Buffer.from(Y.encodeStateAsUpdate(this.mirror!));
     const stateVector = Buffer.from(Y.encodeStateVector(this.mirror!));
     const { userId, taskId } = this.identity;
-    await withWorkspaceTenant(this.pool, this.scope.workspaceId, async (db) => {
+    await withKnowledgeBase(this.pool, this.scope.knowledgeBaseId, async (db) => {
       await db.insert(docState).values({ ...this.scope, state, stateVector })
-        .onConflictDoUpdate({ target: [docState.workspaceId, docState.pageId], set: { state, stateVector, updatedAt: new Date() } });
+        .onConflictDoUpdate({ target: [docState.knowledgeBaseId, docState.pageId], set: { state, stateVector, updatedAt: new Date() } });
       await appendKnowledgeOutbox(db, {
-        topic: 'doc.changed', workspaceId: this.scope.workspaceId, pageId: this.scope.pageId,
+        topic: 'doc.changed', knowledgeBaseId: this.scope.knowledgeBaseId, pageId: this.scope.pageId,
         actor: agentActor(userId, taskId), occurredAt: nowIso(),
       });
     });
@@ -347,8 +347,8 @@ export interface KnowledgeStreamingTaskDeps {
   readonly gateway: ModelGateway;
   /** 协作宿主：提供时走 direct connection 实时广播 + Agent awareness；缺省 headless 回退。 */
   readonly hocuspocus?: Hocuspocus;
-  /** 工作区模型档位设置解析；缺省使用平台默认绑定。 */
-  readonly resolveSettings?: (workspaceId: string) => Promise<ModelSettings>;
+  /** 知识库模型档位设置解析；缺省使用平台默认绑定。 */
+  readonly resolveSettings?: (knowledgeBaseId: string) => Promise<ModelSettings>;
 }
 
 export interface KnowledgeStreamingTasks {
@@ -371,7 +371,7 @@ function requireInitiator(task: StreamingTask, authority: KnowledgeRequestContex
 }
 
 async function requirePageEdit(pool: Pool, userId: string, scope: PageScope): Promise<void> {
-  const allowed = await withWorkspaceTenant(pool, scope.workspaceId, async (db) => {
+  const allowed = await withKnowledgeBase(pool, scope.knowledgeBaseId, async (db) => {
     const decision = await authorizePageAccess(db, { userId, scope, required: 'edit' });
     return decision.decision === 'allow';
   });
@@ -395,14 +395,14 @@ export function createKnowledgeStreamingTasks(deps: KnowledgeStreamingTaskDeps):
 
   async function execute(task: StreamingTask, authority: KnowledgeRequestContext, input: StartAiStreamingTaskInput): Promise<void> {
     const { snapshot } = task;
-    const scope = { workspaceId: input.workspaceId, pageId: input.pageId };
+    const scope = { knowledgeBaseId: input.knowledgeBaseId, pageId: input.pageId };
     const identity: PageWriteIdentity = { userId: authority.userId, taskId: snapshot.taskId, author: suggestionAuthor(snapshot.taskId) };
     let session: PageWriteSession | null = null;
     let awareness: AgentAwarenessSession | null = null;
     const splitter = new MarkdownStreamSplitter();
     try {
       const assembled = await assembleContext(deps.pool, {
-        workspaceId: input.workspaceId,
+        knowledgeBaseId: input.knowledgeBaseId,
         userId: authority.userId,
         taskKind: 'ask',
         focus: { pageId: input.pageId, blockId: input.afterBlockId ?? input.insideBlockId ?? undefined },
@@ -433,9 +433,9 @@ export function createKnowledgeStreamingTasks(deps: KnowledgeStreamingTaskDeps):
           : { isEditing: true });
       };
 
-      const settings = (await deps.resolveSettings?.(input.workspaceId)) ?? {};
+      const settings = (await deps.resolveSettings?.(input.knowledgeBaseId)) ?? {};
       const stream = deps.gateway.stream({
-        context: { workspaceId: input.workspaceId, userId: authority.userId, taskId: snapshot.taskId },
+        context: { knowledgeBaseId: input.knowledgeBaseId, userId: authority.userId, taskId: snapshot.taskId },
         settings,
         tier: input.tier,
         system,
@@ -474,10 +474,10 @@ export function createKnowledgeStreamingTasks(deps: KnowledgeStreamingTaskDeps):
 
   return {
     async start(authority, input) {
-      await requirePageEdit(deps.pool, authority.userId, { workspaceId: input.workspaceId, pageId: input.pageId });
+      await requirePageEdit(deps.pool, authority.userId, { knowledgeBaseId: input.knowledgeBaseId, pageId: input.pageId });
       const taskId = randomUUID();
       const snapshot: AiStreamingTaskSnapshot = {
-        workspaceId: input.workspaceId,
+        knowledgeBaseId: input.knowledgeBaseId,
         taskId,
         pageId: input.pageId,
         initiatedBy: authority.userId,
@@ -499,7 +499,7 @@ export function createKnowledgeStreamingTasks(deps: KnowledgeStreamingTaskDeps):
 
     async cancel(authority, input) {
       const task = tasks.get(input.taskId);
-      if (!task || task.snapshot.workspaceId !== input.workspaceId) throw new KnowledgeStreamingTaskError('task_not_found', 'not_found');
+      if (!task || task.snapshot.knowledgeBaseId !== input.knowledgeBaseId) throw new KnowledgeStreamingTaskError('task_not_found', 'not_found');
       requireInitiator(task, authority);
       if (task.snapshot.status === 'running') {
         task.controller.abort();
@@ -510,17 +510,17 @@ export function createKnowledgeStreamingTasks(deps: KnowledgeStreamingTaskDeps):
 
     async get(authority, input) {
       const task = tasks.get(input.taskId);
-      if (!task || task.snapshot.workspaceId !== input.workspaceId) throw new KnowledgeStreamingTaskError('task_not_found', 'not_found');
+      if (!task || task.snapshot.knowledgeBaseId !== input.knowledgeBaseId) throw new KnowledgeStreamingTaskError('task_not_found', 'not_found');
       requireInitiator(task, authority);
       return copySnapshot(task);
     },
 
     async revoke(authority, input) {
       const task = tasks.get(input.taskId);
-      if (!task || task.snapshot.workspaceId !== input.workspaceId) throw new KnowledgeStreamingTaskError('task_not_found', 'not_found');
+      if (!task || task.snapshot.knowledgeBaseId !== input.knowledgeBaseId) throw new KnowledgeStreamingTaskError('task_not_found', 'not_found');
       requireInitiator(task, authority);
       if (task.snapshot.status === 'running') throw new KnowledgeStreamingTaskError('task_running', 'conflict');
-      const scope = { workspaceId: input.workspaceId, pageId: task.snapshot.pageId };
+      const scope = { knowledgeBaseId: input.knowledgeBaseId, pageId: task.snapshot.pageId };
       await requirePageEdit(deps.pool, authority.userId, scope);
       const session = await PageWriteSession.open({
         pool: deps.pool, scope,
@@ -536,7 +536,7 @@ export function createKnowledgeStreamingTasks(deps: KnowledgeStreamingTaskDeps):
       }
       task.snapshot.revokedAt = nowIso();
       task.snapshot.updatedAt = nowIso();
-      return { workspaceId: input.workspaceId, taskId: input.taskId, revokedBlocks };
+      return { knowledgeBaseId: input.knowledgeBaseId, taskId: input.taskId, revokedBlocks };
     },
   };
 }

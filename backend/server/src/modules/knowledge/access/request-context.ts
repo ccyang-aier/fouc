@@ -1,9 +1,9 @@
 import { createMiddleware } from 'hono/factory';
 import type { Context } from 'hono';
 import type { Actor } from '@fouc/shared/knowledge/contracts';
-import type { MemberRole } from '@fouc/shared/workspaces';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
-import { KnowledgeAccessError, knowledgeAccessErrorResponse, knowledgeTokenScopes, sanitizedAccess, tokenWorkspaceSchema } from './access-policy';
+import type { MemberRole } from '@fouc/shared/resources';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
+import { KnowledgeAccessError, knowledgeAccessErrorResponse, knowledgeTokenScopes, sanitizedAccess, tokenKnowledgeBaseSchema } from './access-policy';
 import type { KnowledgeTokenScope } from './access-policy';
 import { activeSessionMember, verifiedRequestSession } from './session-access';
 import type { KnowledgeAccessDependencies } from './session-access';
@@ -14,7 +14,7 @@ const issuedContexts = new WeakSet<object>();
 declare const contextBrand: unique symbol;
 export interface KnowledgeRequestContext {
   readonly [contextBrand]: true;
-  readonly workspaceId: string;
+  readonly knowledgeBaseId: string;
   readonly userId: string;
   readonly role: MemberRole;
   readonly actor: Readonly<Extract<Actor, { kind: 'human' }>>;
@@ -34,9 +34,9 @@ export function createKnowledgeRequestAuthenticator(dependencies: KnowledgeAcces
   type Identity = Pick<KnowledgeRequestContext, 'userId' | 'role' | 'credential' | 'scopes'>;
   type Proof = { kind: 'session'; userId: string; sessionId: string } | { kind: 'pat'; token: KnowledgeTokenProof };
   const proofs = new WeakMap<KnowledgeRequestContext, Proof>();
-  function issue(workspaceId: string, identity: Identity, proof: Proof, scopes: readonly KnowledgeTokenScope[]) {
+  function issue(knowledgeBaseId: string, identity: Identity, proof: Proof, scopes: readonly KnowledgeTokenScope[]) {
     const context = Object.freeze({
-      workspaceId, ...identity, scopes: Object.freeze([...identity.scopes]),
+      knowledgeBaseId, ...identity, scopes: Object.freeze([...identity.scopes]),
       credential: Object.freeze(identity.credential), actor: Object.freeze({ kind: 'human' as const, userId: identity.userId }),
     }) as KnowledgeRequestContext;
     issuedContexts.add(context);
@@ -45,9 +45,9 @@ export function createKnowledgeRequestAuthenticator(dependencies: KnowledgeAcces
     return context;
   }
   return {
-    authenticate(request: Request, workspaceId: string, requiredScopes: readonly KnowledgeTokenScope[] = []): Promise<KnowledgeRequestContext> {
+    authenticate(request: Request, knowledgeBaseId: string, requiredScopes: readonly KnowledgeTokenScope[] = []): Promise<KnowledgeRequestContext> {
       return sanitizedAccess(async () => {
-        const target = tokenWorkspaceSchema.safeParse(workspaceId);
+        const target = tokenKnowledgeBaseSchema.safeParse(knowledgeBaseId);
         if (!target.success) throw new KnowledgeAccessError('UNAUTHENTICATED');
         let identity: Identity;
         let proof: Proof;
@@ -62,7 +62,7 @@ export function createKnowledgeRequestAuthenticator(dependencies: KnowledgeAcces
           proof = { kind: 'pat', token: pat.proof };
         } else {
           const session = await verifiedRequestSession(dependencies.auth, request);
-          const role = await withWorkspaceTenant(dependencies.pool, target.data, (db) => activeSessionMember(db, target.data, session));
+          const role = await withKnowledgeBase(dependencies.pool, target.data, (db) => activeSessionMember(db, target.data, session));
           identity = { userId: session.userId, role, scopes: knowledgeTokenScopes, credential: { kind: 'session', sessionId: session.sessionId } };
           proof = { kind: 'session', userId: session.userId, sessionId: session.sessionId };
         }
@@ -81,10 +81,10 @@ export function createKnowledgeRequestAuthenticator(dependencies: KnowledgeAcces
           if (pat.userId !== context.userId) throw new KnowledgeAccessError('UNAUTHENTICATED');
           identity = { userId: pat.userId, role: pat.role, scopes: pat.scopes, credential: { kind: 'pat', tokenId: pat.tokenId } };
         } else {
-          const role = await withWorkspaceTenant(dependencies.pool, context.workspaceId, (db) => activeSessionMember(db, context.workspaceId, proof));
+          const role = await withKnowledgeBase(dependencies.pool, context.knowledgeBaseId, (db) => activeSessionMember(db, context.knowledgeBaseId, proof));
           identity = { userId: proof.userId, role, scopes: knowledgeTokenScopes, credential: { kind: 'session', sessionId: proof.sessionId } };
         }
-        return issue(context.workspaceId, identity, proof, requiredScopes);
+        return issue(context.knowledgeBaseId, identity, proof, requiredScopes);
       }, dependencies.onDiagnostic);
     },
   };
@@ -92,11 +92,11 @@ export function createKnowledgeRequestAuthenticator(dependencies: KnowledgeAcces
 export type KnowledgeRequestAuthenticator = ReturnType<typeof createKnowledgeRequestAuthenticator>;
 
 /** Route wiring chooses the target and required scopes, never identity fields in JSON. */
-export function requireKnowledgeRequest(authenticator: KnowledgeRequestAuthenticator, workspaceId: (context: Context) => string, scopes: readonly KnowledgeTokenScope[]) {
+export function requireKnowledgeRequest(authenticator: KnowledgeRequestAuthenticator, knowledgeBaseId: (context: Context) => string, scopes: readonly KnowledgeTokenScope[]) {
   return createMiddleware<{ Variables: { knowledge: KnowledgeRequestContext } }>(async (context, next) => {
     context.header('Cache-Control', 'no-store');
     context.header('Referrer-Policy', 'no-referrer');
-    try { context.set('knowledge', await authenticator.authenticate(context.req.raw, workspaceId(context), scopes)); }
+    try { context.set('knowledge', await authenticator.authenticate(context.req.raw, knowledgeBaseId(context), scopes)); }
     catch (error) { return knowledgeAccessErrorResponse(error); }
     await next();
   });

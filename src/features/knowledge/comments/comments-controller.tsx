@@ -3,7 +3,7 @@
 /** Joins PostgreSQL threads/likes with CRDT selection anchors and owns authorized mutations.
  * Page comments can be written independently of the editor selection; quoted
  * comments share client IDs with their optimistic anchors. Live events and
- * local mutations invalidate the same workspace/page comment query.
+ * local mutations invalidate the same knowledgeBase/page comment query.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -93,19 +93,19 @@ export interface PageCommentsProps {
 }
 
 export function PageComments({ scope, knowledgeBaseId, editor, pdf, canComment, currentUser, railOpen: controlledRailOpen, onRailOpenChange, followDocumentLink = true }: PageCommentsProps) {
-  const threadsQuery = usePageCommentThreads(scope.workspaceId, scope.pageId);
-  const accessQuery = useKnowledgeAccessQuery(scope.workspaceId);
+  const threadsQuery = usePageCommentThreads(scope.knowledgeBaseId, scope.pageId);
+  const accessQuery = useKnowledgeAccessQuery(scope.knowledgeBaseId);
   const currentUserId = accessQuery.data?.userId ?? null;
   const threads = useMemo(() => threadsQuery.data ?? [], [threadsQuery.data]);
 
-  const createMutation = useCreateCommentThread(scope.workspaceId);
-  const replyMutation = useReplyCommentThread(scope.workspaceId);
-  const resolveMutation = useResolveCommentThread(scope.workspaceId);
-  const reopenMutation = useReopenCommentThread(scope.workspaceId);
-  const deleteMutation = useDeleteComment(scope.workspaceId);
-  const likeMutation = useSetCommentLike(scope.workspaceId);
-  const editMutation = useUpdateComment(scope.workspaceId);
-  const pageCommentMutation = useCreateCommentThread(scope.workspaceId);
+  const createMutation = useCreateCommentThread(scope.knowledgeBaseId);
+  const replyMutation = useReplyCommentThread(scope.knowledgeBaseId);
+  const resolveMutation = useResolveCommentThread(scope.knowledgeBaseId);
+  const reopenMutation = useReopenCommentThread(scope.knowledgeBaseId);
+  const deleteMutation = useDeleteComment(scope.knowledgeBaseId);
+  const likeMutation = useSetCommentLike(scope.knowledgeBaseId);
+  const editMutation = useUpdateComment(scope.knowledgeBaseId);
+  const pageCommentMutation = useCreateCommentThread(scope.knowledgeBaseId);
   const pageDraft = useRef<{ threadId: string; commentId: string; bodyMd: string; kind: CommentThreadKind } | null>(null);
 
   // Anchors belong to one editor instance; a stale editor's anchors never
@@ -119,7 +119,7 @@ export function PageComments({ scope, knowledgeBaseId, editor, pdf, canComment, 
   const [composerAt, setComposerAt] = useState<{ x: number; y: number } | null>(null);
   const [localRailOpen, setLocalRailOpen] = useState(false);
   const railOpen = controlledRailOpen ?? localRailOpen;
-  const membersQuery = useMembersQuery(railOpen ? scope.workspaceId : null);
+  const membersQuery = useMembersQuery(railOpen ? scope.knowledgeBaseId : null);
   const authors = useMemo(() => {
     const names = new Map<string, CommentAuthor>();
     for (const page of membersQuery.data?.pages ?? []) for (const member of page.items) names.set(member.userId, { name: member.name });
@@ -209,7 +209,7 @@ export function PageComments({ scope, knowledgeBaseId, editor, pdf, canComment, 
   useEffect(() => {
     if (!followDocumentLink) return;
     const target = readCommentLink(window.location.href);
-    if ((!editor && !pdf) || !target || target.source !== 'workspace' || target.workspaceId !== scope.workspaceId || target.pageId !== scope.pageId || target.knowledgeBaseId !== knowledgeBaseId || followedLink.current === target.commentId) return;
+    if ((!editor && !pdf) || !target || target.source !== 'server' || target.knowledgeBaseId !== scope.knowledgeBaseId || target.pageId !== scope.pageId || target.knowledgeBaseId !== knowledgeBaseId || followedLink.current === target.commentId) return;
     const thread = threads.find(thread => thread.comments.some(entry => entry.id === target.commentId));
     if (!thread) return;
     if (pdf && pdf.activeThreadId !== thread.id) { pdf.onSelectThread(thread.id); setRailOpen(true); }
@@ -220,7 +220,7 @@ export function PageComments({ scope, knowledgeBaseId, editor, pdf, canComment, 
     followedLink.current = target.commentId;
     if (thread.pdfAnchor?.assetHash === pdf?.assetHash && thread.pdfAnchor) pdf?.onLocate(thread.pdfAnchor);
     editor?.view.dom.closest('[aria-label="页面编辑器"]')?.querySelector(`[data-comment-id="${target.commentId}"]`)?.scrollIntoView({ block: 'nearest' });
-  }, [scope.workspaceId, scope.pageId, knowledgeBaseId, threads, railOpen, editor, pdf, followDocumentLink, setRailOpen]);
+  }, [scope.knowledgeBaseId, scope.pageId, knowledgeBaseId, threads, railOpen, editor, pdf, followDocumentLink, setRailOpen]);
 
   const bindPdfCompose = pdf?.bindCompose;
   useEffect(() => {
@@ -310,7 +310,7 @@ export function PageComments({ scope, knowledgeBaseId, editor, pdf, canComment, 
 
   const handleCopyLink = useCallback(async (commentId: string) => {
     try {
-      await navigator.clipboard.writeText(commentLink(window.location.href, { ...scope, knowledgeBaseId, source: 'workspace' }, commentId));
+      await navigator.clipboard.writeText(commentLink(window.location.href, { ...scope, knowledgeBaseId, source: 'server' }, commentId));
       return true;
     } catch { return false; }
   }, [scope, knowledgeBaseId]);
@@ -417,7 +417,7 @@ export function PageComments({ scope, knowledgeBaseId, editor, pdf, canComment, 
             {composing.excerpt}
           </p>
           <CommentComposer
-            workspaceId={scope.workspaceId}
+            knowledgeBaseId={scope.knowledgeBaseId}
             placeholder="写下评论…（Ctrl+Enter 发送）"
             submitLabel={createMutation.isPending ? '发送中…' : '发送'}
             sendingLabel="发送中…"
@@ -433,7 +433,7 @@ export function PageComments({ scope, knowledgeBaseId, editor, pdf, canComment, 
 
       {railOpen ? (
         <CommentsSidebar
-          workspaceId={scope.workspaceId}
+          knowledgeBaseId={scope.knowledgeBaseId}
           model={model}
           replyTarget={replyTarget}
           activeThreadId={activeThreadId}

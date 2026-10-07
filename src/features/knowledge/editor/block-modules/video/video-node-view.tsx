@@ -4,7 +4,7 @@ import { useState } from 'react';
 import type { NodeViewProps } from '@tiptap/react';
 import { MediaBlockView } from '../media-core/media-block-view';
 
-export function VideoNodeView(props: NodeViewProps & { localWorkspaceId?: string; workspaceId?: string }) {
+export function VideoNodeView(props: NodeViewProps & { localKnowledgeBaseId?: string; knowledgeBaseId?: string }) {
   return <MediaBlockView {...props} kind="video" renderPreview={(source) => <VideoPreview key={source.url} src={source.url} />} />;
 }
 

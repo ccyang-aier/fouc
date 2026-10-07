@@ -48,6 +48,7 @@ export interface VaultBodyResolver {
 }
 
 export interface VaultExportContext {
+  readonly knowledgeBaseId: string;
   /** 导出集内 pageId → vault 笔记路径(不含扩展名)。 */
   readonly vaultPathOf: (pageId: string) => string | undefined;
   /** 资产哈希 → 压缩包内附件路径。 */
@@ -223,8 +224,8 @@ function visit(node: MdNode, fromNotePath: string, resolver: VaultBodyResolver):
   if (node.type === 'leafDirective' && (node.name === 'block-reference' || node.name === 'page-link')) {
     const attributes = { ...(node.attributes ?? {}) } as Record<string, string>;
     const referenced = attributes.pageId === undefined ? undefined : resolver.resolvePage(attributes.pageId, fromNotePath);
-    if (referenced) attributes.pageId = referenced.pageId;
-    else delete attributes.pageId;
+    if (referenced) { attributes.pageId = referenced.pageId; delete attributes.knowledgeBaseId; }
+    else if (!attributes.knowledgeBaseId) delete attributes.pageId;
     return { ...node, attributes };
   }
   // 导出端会把视频/音频/文件块的资产源写成压缩包内附件路径,这里改回 asset:hash。
@@ -289,10 +290,19 @@ export function importVaultBody(markdownSource: string, fromNotePath: string, re
   const resolved = mapDocument(document, (node) => {
     if (node.type.name !== 'wikiLink') return null;
     const page = resolver.resolvePage(node.attrs.target as string, fromNotePath);
+    if (!page && node.attrs.knowledgeBaseId && node.attrs.pageId) return null;
     const pageId = page?.pageId ?? null;
-    return pageId === node.attrs.pageId ? null : node.type.create({ ...node.attrs, pageId }, null, node.marks);
+    return pageId === node.attrs.pageId && node.attrs.knowledgeBaseId === null ? null : node.type.create({ ...node.attrs, pageId, knowledgeBaseId: null }, null, node.marks);
   });
   return repairBlockIds(resolved).doc;
+}
+
+/** Imported archive targets are resolved inside the destination library. */
+export function bindImportedReferenceKnowledgeBase(document: ProseMirrorNode, knowledgeBaseId: string): ProseMirrorNode {
+  return mapDocument(document, (node) => {
+    if (!['wikiLink', 'blockReference', 'pageLink'].includes(node.type.name) || !node.attrs.pageId || node.attrs.knowledgeBaseId) return null;
+    return node.type.createChecked({ ...node.attrs, knowledgeBaseId }, null, node.marks);
+  });
 }
 
 /** 收集正文引用的资产哈希(去重,文档顺序);导出端先取引用再定附件路径。 */
@@ -335,16 +345,18 @@ export function collectAnchorReferences(document: ProseMirrorNode): string[] {
 export function exportVaultBody(document: ProseMirrorNode, context: VaultExportContext): string {
   const visit = (node: ProseMirrorNode): ProseMirrorNode | null => {
     if (node.type.name === 'wikiLink') {
+      if (node.attrs.knowledgeBaseId && node.attrs.knowledgeBaseId !== context.knowledgeBaseId) return null;
       const path = node.attrs.pageId ? context.vaultPathOf(node.attrs.pageId as string) : undefined;
       const target = path ?? (node.attrs.target as string);
       if (target === node.attrs.target && node.attrs.pageId === null) return null;
-      return node.type.create({ ...node.attrs, target, pageId: null }, null, node.marks);
+      return node.type.create({ ...node.attrs, target, pageId: null, knowledgeBaseId: null }, null, node.marks);
     }
     if (node.type.name === 'blockReference' || node.type.name === 'pageLink') {
+      if (node.attrs.knowledgeBaseId && node.attrs.knowledgeBaseId !== context.knowledgeBaseId) return null;
       const path = node.attrs.pageId ? context.vaultPathOf(node.attrs.pageId as string) : undefined;
       const pageId = path ?? null;
       if (pageId === node.attrs.pageId) return null;
-      return node.type.create({ ...node.attrs, pageId });
+      return node.type.create({ ...node.attrs, pageId, knowledgeBaseId: null });
     }
     if (MEDIA_BLOCKS.has(node.type.name)) {
       const source = node.attrs.src as string;

@@ -30,11 +30,11 @@ describe('sqlite page document replica', () => {
   function open() {
     const db = new Database(path.join(directory, 'replica.sqlite'));
     db.exec(`CREATE TABLE IF NOT EXISTS knowledge_page_document (
-      workspace_id TEXT NOT NULL, page_id TEXT NOT NULL, state BLOB NOT NULL, state_vector BLOB NOT NULL,
-      updated_at INTEGER NOT NULL, PRIMARY KEY (workspace_id, page_id));`);
+      knowledge_base_id TEXT NOT NULL, page_id TEXT NOT NULL, state BLOB NOT NULL, state_vector BLOB NOT NULL,
+      updated_at INTEGER NOT NULL, PRIMARY KEY (knowledge_base_id, page_id));`);
     return db;
   }
-  const scope = { workspaceId: 'w-1', pageId: 'p-1' };
+  const scope = { knowledgeBaseId: 'kb-1', pageId: 'p-1' };
 
   test('missing documents stay undefined; saved ones round-trip byte-exactly', () => {
     const replica = createSqlitePageDocumentReplica(database);
@@ -60,14 +60,14 @@ describe('sqlite page document replica', () => {
     expect(decoded.getText('body').toString()).toBe('v2 replica body');
   });
 
-  test('workspaces and pages never share rows, and rows survive a database reopen', () => {
+  test('knowledge bases and pages never share rows, and rows survive a database reopen', () => {
     const replica = createSqlitePageDocumentReplica(database);
-    const other = { workspaceId: 'w-2', pageId: 'p-1' };
+    const other = { knowledgeBaseId: 'kb-2', pageId: 'p-1' };
     const doc = new Y.Doc();
     doc.getText('body').insert(0, 'scoped');
     replica.save(other, Y.encodeStateAsUpdate(doc), Y.encodeStateVector(doc));
 
-    expect(replica.load({ workspaceId: 'w-1', pageId: 'p-999' })).toBeUndefined();
+    expect(replica.load({ knowledgeBaseId: 'kb-1', pageId: 'p-999' })).toBeUndefined();
     const before = replica.load(other)!.state;
     database.close();
     database = open();

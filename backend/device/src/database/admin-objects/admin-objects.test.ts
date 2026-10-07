@@ -80,29 +80,29 @@ test('source bounds never claim truncated SQL complete and session revocation/sa
   expect(long.complete).toBe(false); expect(Buffer.byteLength(long.text!)).toBeLessThanOrEqual(limits.sourceBytes);
   expect(sourceText(null).origin).toBe('unknown'); expect(boundedRows([1, 2], 1).complete).toBe(false);
   let reads = 0, release: (() => void) | null = null;
-  const session = { workspaceId: 'w', provider: 'mysql', database: 'lab' } as RelationalSession;
+  const session = { provider: 'mysql', database: 'lab' } as RelationalSession;
   const entry: DatabaseAdminObjectEntry = {
     session, saving: false,
     driver: { read: async () => { reads++; await new Promise<void>(resolve => { release = resolve }); return { columns: ['name'], columnTypes: [], rows: [], hasMore: false }; } } as unknown as RelationalDriver,
   };
   let current = entry;
-  const service = new DatabaseAdminObjectService(workspace => { if (workspace !== 'w') throw new Error('different workspace'); return current });
+  const service = new DatabaseAdminObjectService(id => { if (id !== 's') throw new Error('different session'); return current });
   entry.saving = true;
-  await expect(service.list('w', 's', { kind: 'event', schema: 'lab' })).rejects.toThrow('写事务'); expect(reads).toBe(0);
+  await expect(service.list('s', { kind: 'event', schema: 'lab' })).rejects.toThrow('写事务'); expect(reads).toBe(0);
   entry.saving = false;
   const controller = new AbortController(); controller.abort();
-  await expect(service.list('w', 's', { kind: 'event', schema: 'lab' }, controller.signal)).rejects.toThrow(); expect(reads).toBe(0);
-  const pending = service.list('w', 's', { kind: 'event', schema: 'lab' });
+  await expect(service.list('s', { kind: 'event', schema: 'lab' }, controller.signal)).rejects.toThrow(); expect(reads).toBe(0);
+  const pending = service.list('s', { kind: 'event', schema: 'lab' });
   current = { ...entry }; release!();
   await expect(pending).rejects.toThrow('会话已变化');
-  await expect(service.list('other', 's', { kind: 'event', schema: 'lab' })).rejects.toThrow('different workspace');
+  await expect(service.list('missing-session', { kind: 'event', schema: 'lab' })).rejects.toThrow('different session');
 });
 
 test('dedicated routes expose only bounded readonly list/details operations', async () => {
   let reads = 0;
   const app = new Hono().route('/', databaseAdminObjectRoutes({ list: async () => { reads++; throw new Error('stop'); }, details: async () => { reads++; throw new Error('stop'); } }));
   app.onError(error => new Response(error.message, { status: 400 }));
-  const base = '/api/database/workspaces/w/relational/sessions/s/admin-objects';
+  const base = '/api/database/relational/sessions/s/admin-objects';
   expect((await app.request(`${base}/list`, { method: 'POST', body: 'x'.repeat(limits.requestBytes + 1) })).status).toBe(400);
   expect((await app.request(`${base}/execute`, { method: 'POST', body: '{}' })).status).toBe(404);
   expect((await app.request(`${base}/details`, { method: 'DELETE' })).status).toBe(404);

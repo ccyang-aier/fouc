@@ -17,7 +17,7 @@ export const useDocumentReference = () => useContext(Context);
 const clampSize = (value: number) => Math.max(20, Math.min(80, value));
 
 /** Resource adapters supply a real editor with its existing access and storage boundaries. */
-export function DocumentReferenceWorkspace({ scope, children, renderDocument, onCloseDocument }: { scope: string; children: ReactNode; renderDocument?: RenderFixedDocument; onCloseDocument?: () => void }) {
+export function DocumentReferenceSurface({ scope, children, renderDocument, onCloseDocument }: { scope: string; children: ReactNode; renderDocument?: RenderFixedDocument; onCloseDocument?: () => void }) {
   const [primaryDocument, setPrimaryDocument] = useState<FixedDocument | null>(null);
   const [reference, setReference] = useState<FixedDocument | null>(null);
   const [size, setSize] = useState(50);
@@ -26,7 +26,7 @@ export function DocumentReferenceWorkspace({ scope, children, renderDocument, on
   const key = `fouc.document.pins:${scope}`;
   const getPins = useCallback(() => {
     if (!pinSnapshots.has(key)) {
-      try { const saved = JSON.parse(localStorage.getItem(key) ?? '[]') as FixedDocument[]; pinSnapshots.set(key, saved.filter(pin => typeof pin.title === 'string' && typeof pin.target?.workspaceId === 'string' && typeof pin.target?.pageId === 'string')); }
+      try { const saved = JSON.parse(localStorage.getItem(key) ?? '[]') as FixedDocument[]; pinSnapshots.set(key, saved.filter(pin => typeof pin.title === 'string' && typeof pin.target?.knowledgeBaseId === 'string' && typeof pin.target?.pageId === 'string')); }
       catch { pinSnapshots.set(key, []); }
     }
     return pinSnapshots.get(key)!;
@@ -53,8 +53,8 @@ export function DocumentReferenceWorkspace({ scope, children, renderDocument, on
   const primaryContext = useMemo(() => ({ fixed: false, pins, togglePin, openReference: renderDocument ? setReference : undefined, reportPrimaryDocument: setPrimaryDocument }), [pins, togglePin, renderDocument]);
   const fixedContext = useMemo(() => ({ fixed: true, pins, togglePin, reportTitle }), [pins, togglePin, reportTitle]);
   const document = useMemo(() => reference && renderDocument?.(reference, close), [reference, renderDocument, close]);
-  return <div className={styles.workspace}>
-    <div className={`${styles.workspaceBody} ${styles.splitWorkspace}`} ref={host} data-split={Boolean(reference)} data-stacked={stacked} style={{ '--reference-size': `${size}%` } as CSSProperties}>
+  return <div className={styles.referenceSurface}>
+    <div className={`${styles.surfaceBody} ${styles.splitSurface}`} ref={host} data-split={Boolean(reference)} data-stacked={stacked} style={{ '--reference-size': `${size}%` } as CSSProperties}>
       <Context.Provider value={primaryContext}>
         <div className={styles.primary}>
           {reference ? <DocumentPaneTabs label="主栏文档标签" documents={primaryDocument ? [...pins.filter(pin => pin.target.pageId !== primaryDocument.target.pageId), primaryDocument] : pins} activePageId={primaryDocument?.target.pageId} isPinned={document => pins.some(pin => pin.target.pageId === document.target.pageId)} onSelect={document => requestOpenPageBlock(document.target)} onClose={document => document.target.pageId === primaryDocument?.target.pageId ? onCloseDocument?.() : togglePin(document)} /> : pins.length > 0 && <nav className={styles.pins} aria-label="固定文档">{pins.map(pin => <span key={pin.target.pageId}>

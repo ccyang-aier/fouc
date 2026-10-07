@@ -25,11 +25,11 @@ Fouc 是一套构建于 AI Agent 之上的超级工作台，面向个人与企�
 
 ## 产品资源模型（必须先于代码命名理解）
 
-- **工作空间是全产品的资源隔离根**。系统菜单侧栏底部的工作空间入口切换当前 `workspaceId`；同一用户可以创建或加入多个工作空间，但当前空间的资源读取、搜索、引用、执行与缓存不得隐式跨到另一空间。身份和平台公开目录不是某个工作空间的私有资源。
-- **项目与知识库是工作空间下的同级、多实例资源**：`workspace → projects[]` 与 `workspace → knowledgeBases[]`；项目不包含知识库，知识库也不包含项目。知识库下才有文件夹（现存内部名 `teamspace`）与文档。任何目录名、旧变量名或演示数据的一一对应关系都不能改变该模型。
-- 全局工作空间选择归 `features/workspaces`；项目列表、选择及管理状态归 `features/project`；知识库目录、文件夹和文档归 `features/knowledge`。`src/shell/` 只负责组合与呈现。后端 `modules/workspaces`、`modules/projects`、`modules/knowledge` 分别拥有这些用例，数据库业务表统一位于 `platform/database/workspace` 租户边界。
+- **全产品不设工作空间隔离层**。连接器目录和社区目录是全局资源；账户身份、设备连接与实际资源权限分别拥有自己的边界，不设全局 `workspaceId` 或虚构的默认空间。
+- **项目与知识库是独立、多实例资源**：项目以 `projectId` 和项目成员权限管理；知识库以 `knowledgeBaseId`、成员、分组、可见性与页面 ACL 管理。项目不包含知识库，知识库也不包含项目。知识库下才有文件夹（现存内部名 `teamspace`）与文档；项目引用文档不改变归属或授予权限。
+- 项目列表、选择及管理状态归 `features/project`；知识库目录、文件夹和文档归 `features/knowledge`；`src/shell/` 只负责组合与呈现。后端 `modules/projects`、`modules/knowledge` 拥有对应用例，业务表位于 `platform/database/resources`。设备会话和连接以真实 `sessionId`、`connectionId` 校验，不借助产品空间分区。
 - 登录态决定主体身份和具体操作权限，不决定整套知识库页面或整个产品的数据模式。访客也能使用允许的功能；本机、服务端和设备能力应按资源与操作明确选择，不因登录、退出自动迁移或替换内容。
-- 现有项目详情、自动化、连接器目录与社区部分页面使用演示数据；渲染了某项能力不等于已有对应的服务端持久化、空间绑定或授权。先核对实际用例与数据所有者，再扩展该能力；当前实现状态见 `docs/product/V1/design/arch/fouc-project-structure-design.md` §2.3。
+- 现有项目详情、自动化、连接器目录与社区部分页面使用演示数据；渲染了某项能力不等于已有对应的服务端持久化或资源授权。先核对实际用例与数据所有者，再扩展该能力；当前实现状态见 `docs/product/V1/design/arch/fouc-project-structure-design.md` §2.3。
 
 ## 开发理念
 
@@ -53,7 +53,7 @@ Fouc 是一套构建于 AI Agent 之上的超级工作台，面向个人与企�
 以下仅是导航；只在任务涉及对应领域时打开相关文档，不要一次性加载全部文档。完整索引见 [docs/README.md](docs/README.md)。
 
 - 产品目标与 V1 范围：[产品定位](docs/product/vision-and-positioning.md)、[V1 导航](docs/product/V1/README.md)。
-- 工作空间资源模型、工程边界与服务端选型：[项目结构设计](docs/product/V1/design/arch/fouc-project-structure-design.md)。
+- 资源模型、工程边界与服务端选型：[项目结构设计](docs/product/V1/design/arch/fouc-project-structure-design.md)。
 - 身份、会话和资源授权：[统一身份设计](docs/product/V1/design/identity/fouc-identity.md)。
 - 项目体验与工作对象：[项目设计](docs/product/V1/design/projects/fouc-project-space-product-ux-design.md)。
 - 知识库与协同编辑：[知识库设计](docs/product/V1/design/knowledgebase/fouc-knowledgebase-product-design.md)。

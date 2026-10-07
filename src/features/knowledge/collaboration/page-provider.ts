@@ -37,6 +37,8 @@ export function pageCollaborationUrl(origin: string): string {
 
 export interface PageDocumentSessionOptions {
   scope: PageScope;
+  /** The current actor identity isolates local copies; the collaboration name stays resource-only. */
+  cacheIdentity?: string;
   /** Knowledge API origin from U01 (`resolveFoucApiOrigin`). */
   origin: string;
   /** Aborting destroys the session (leaving the page). */
@@ -65,6 +67,10 @@ export interface PageDocumentSession {
   destroy(): Promise<void>;
 }
 
+export function pageOfflineStorageKey(documentName: string, cacheIdentity: string): string {
+  return `fouc.knowledge.body:${cacheIdentity}:${documentName}`;
+}
+
 export function connectPageDocument(options: PageDocumentSessionOptions): PageDocumentSession {
   // Computed synchronously so an invalid origin fails at the call site, the
   // same contract as the other endpoint helpers.
@@ -85,7 +91,7 @@ export function connectPageDocument(options: PageDocumentSessionOptions): PageDo
     for (const listener of listeners) listener();
   };
 
-  const offline = openOfflinePageDocument({ documentName, document, loadTimeoutMs: options.loadTimeoutMs });
+  const offline = openOfflinePageDocument({ documentName: pageOfflineStorageKey(documentName, options.cacheIdentity ?? 'anonymous'), document, loadTimeoutMs: options.loadTimeoutMs });
 
   const destroy = () => {
     destroyed = true;

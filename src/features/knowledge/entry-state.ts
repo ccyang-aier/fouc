@@ -2,7 +2,7 @@
  * Entry state machine of the knowledge workbench (U02).
  *
  * One pure derivation from the four real gates of the app shell — the A04
- * session check, the O01 workspace list, the A00 workspace access snapshot and
+ * session check, the O01 knowledgeBase list, the A00 knowledgeBase access snapshot and
  * the O03 teamspace directory — onto the phase the page renders. Every phase
  * maps to exactly one honest screen; nothing here fabricates data, and the
  * redirect phases stay effects of the page instead of logic of this module.
@@ -26,12 +26,12 @@ export type KnowledgeEntryPhase =
   | 'session-checking'
   | 'session-error'
   | 'auth-required'
-  | 'workspaces-loading'
-  | 'workspaces-error'
-  | 'workspaces-empty'
-  | 'workspace-loading'
-  | 'workspace-error'
-  | 'workspace-forbidden'
+  | 'knowledge-bases-loading'
+  | 'knowledge-bases-error'
+  | 'knowledge-bases-empty'
+  | 'knowledge-base-loading'
+  | 'knowledge-base-error'
+  | 'knowledge-base-forbidden'
   | 'tree-loading'
   | 'tree-forbidden'
   | 'tree-error'
@@ -45,9 +45,9 @@ export function knowledgeErrorCodeOf(error: unknown): string | null {
 
 export function deriveKnowledgeEntryPhase(input: {
   session: KnowledgeSessionGate;
-  /** Workspace list query; `null` while the session gate has not passed. */
-  workspaces: KnowledgeQuerySlice | null;
-  /** Workspace access snapshot (U01 tRPC); `null` until a workspace is active. */
+  /** KnowledgeBase list query; `null` while the session gate has not passed. */
+  knowledgeBases: KnowledgeQuerySlice | null;
+  /** KnowledgeBase access snapshot (U01 tRPC); `null` until a knowledgeBase is active. */
   access: KnowledgeQuerySlice | null;
   /** Teamspace directory (O03); `null` until the access snapshot succeeded. */
   teamspaces: KnowledgeQuerySlice | null;
@@ -57,19 +57,19 @@ export function deriveKnowledgeEntryPhase(input: {
   if (session.status === 'error') return 'session-error';
   if (session.status === 'anonymous') return 'auth-required';
 
-  const workspaces = input.workspaces;
-  if (!workspaces || workspaces.status === 'pending') return 'workspaces-loading';
-  if (workspaces.status === 'error') {
-    return workspaces.errorCode === 'UNAUTHENTICATED' ? 'auth-required' : 'workspaces-error';
+  const knowledgeBases = input.knowledgeBases;
+  if (!knowledgeBases || knowledgeBases.status === 'pending') return 'knowledge-bases-loading';
+  if (knowledgeBases.status === 'error') {
+    return knowledgeBases.errorCode === 'UNAUTHENTICATED' ? 'auth-required' : 'knowledge-bases-error';
   }
-  if ((workspaces.count ?? 0) === 0) return 'workspaces-empty';
+  if ((knowledgeBases.count ?? 0) === 0) return 'knowledge-bases-empty';
 
   const access = input.access;
-  if (!access || access.status === 'pending') return 'workspace-loading';
+  if (!access || access.status === 'pending') return 'knowledge-base-loading';
   if (access.status === 'error') {
     if (access.errorCode === 'UNAUTHENTICATED') return 'auth-required';
-    if (access.errorCode === 'FORBIDDEN') return 'workspace-forbidden';
-    return 'workspace-error';
+    if (access.errorCode === 'FORBIDDEN') return 'knowledge-base-forbidden';
+    return 'knowledge-base-error';
   }
 
   const teamspaces = input.teamspaces;
@@ -85,9 +85,9 @@ export function deriveKnowledgeEntryPhase(input: {
 /** Phases that render the full three-column stage (sidebar + canvas + reserved rail). */
 export function entryPhaseShowsStage(phase: KnowledgeEntryPhase): boolean {
   return (
-    phase === 'workspace-loading' ||
-    phase === 'workspace-error' ||
-    phase === 'workspace-forbidden' ||
+    phase === 'knowledge-base-loading' ||
+    phase === 'knowledge-base-error' ||
+    phase === 'knowledge-base-forbidden' ||
     phase === 'tree-loading' ||
     phase === 'tree-forbidden' ||
     phase === 'tree-error' ||

@@ -38,7 +38,6 @@ async function fixture() {
   const session: RelationalSession = {
     id: "session",
     connectionId: null,
-    workspaceId: "workspace",
     provider: "sqlite",
     database: source,
     info: { productName: "SQLite" },
@@ -54,13 +53,12 @@ async function fixture() {
     },
   };
   const scope: SqliteBackupScope = {
-    workspaceId: session.workspaceId,
     sessionId: session.id,
   };
   let current = session;
   const service = new SqliteBackupService(
-    (workspace, id) => {
-      if (workspace !== current.workspaceId || id !== current.id)
+    (id) => {
+      if (id !== current.id)
         throw new DatabaseInputError("会话不属于当前空间");
       return current;
     },
@@ -121,7 +119,7 @@ test("backup request rejects device paths, unknown source fields and reserved fi
     expect(sqliteBackupInputSchema.safeParse(input).success).toBe(false);
 });
 
-test("native snapshot includes committed WAL, exact integers and binary, excludes uncommitted writes; live workspace scope and stream cleanup stay enforced", async () => {
+test("native snapshot includes committed WAL, exact integers and binary, excludes uncommitted writes; live session scope and stream cleanup stay enforced", async () => {
   const value = await fixture();
   try {
     expect((await stat(value.source + "-wal")).size).toBeGreaterThan(0);
@@ -134,7 +132,7 @@ test("native snapshot includes committed WAL, exact integers and binary, exclude
     expect(() => value.service.download(value.scope, job.id)).toThrow();
     expect(() =>
       value.service.status(
-        { workspaceId: "other-space", sessionId: "session" },
+        { sessionId: "missing-session" },
         job.id,
       ),
     ).toThrow();

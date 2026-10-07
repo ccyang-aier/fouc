@@ -5,8 +5,8 @@ import type { Principal } from '@fouc/shared/knowledge/contracts';
 import { assembledContextSchema, citationVerdictSchema } from '@fouc/shared/knowledge/contracts';
 import type { ContextSegment, ContextTaskKind } from '@fouc/shared/knowledge/contracts';
 import type { HybridSearchHit } from '@fouc/shared/knowledge/search';
-import { docState, page } from '../../../platform/database/workspace/schema';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import { docState, page } from '../../../platform/database/resources/schema';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
 import { assembleContext, validateCitations } from './context';
 import { createPermissionsFixture } from '../permissions/permissions-test-fixture';
 import type { PermissionsFixture } from '../permissions/permissions-test-fixture';
@@ -34,7 +34,7 @@ describe('context assembly and citation validation', () => {
   beforeEach(async () => {
     await fixture.resetJobs();
     await fixture.server.database.admin.query(
-      'DELETE FROM workspace.block_embedding_staging; DELETE FROM workspace.block_embedding_model; DELETE FROM workspace.block_index',
+      'DELETE FROM resources.block_embedding_staging; DELETE FROM resources.block_embedding_model; DELETE FROM resources.block_index',
     );
   });
 
@@ -56,11 +56,11 @@ describe('context assembly and citation validation', () => {
     return { state: Buffer.from(Y.encodeStateAsUpdate(document)), stateVector: Buffer.from(Y.encodeStateVector(document)) };
   }
 
-  async function writeBody(node: { workspaceId: string; pageId: string }, blocks: readonly DraftBlock[]) {
+  async function writeBody(node: { knowledgeBaseId: string; pageId: string }, blocks: readonly DraftBlock[]) {
     const { state, stateVector } = encodeBody(blocks);
-    await withWorkspaceTenant(fixture.pool, node.workspaceId, async (db) => {
-      await db.insert(docState).values({ workspaceId: node.workspaceId, pageId: node.pageId, state, stateVector })
-        .onConflictDoUpdate({ target: [docState.workspaceId, docState.pageId], set: { state, stateVector, updatedAt: sql`clock_timestamp()` } });
+    await withKnowledgeBase(fixture.pool, node.knowledgeBaseId, async (db) => {
+      await db.insert(docState).values({ knowledgeBaseId: node.knowledgeBaseId, pageId: node.pageId, state, stateVector })
+        .onConflictDoUpdate({ target: [docState.knowledgeBaseId, docState.pageId], set: { state, stateVector, updatedAt: sql`clock_timestamp()` } });
     });
   }
 
@@ -70,21 +70,21 @@ describe('context assembly and citation validation', () => {
     return created;
   }
 
-  async function retitle(scope: { workspaceId: string; pageId: string }, title: string) {
-    await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) =>
-      db.update(page).set({ title }).where(and(eq(page.workspaceId, scope.workspaceId), eq(page.id, scope.pageId))));
+  async function retitle(scope: { knowledgeBaseId: string; pageId: string }, title: string) {
+    await withKnowledgeBase(fixture.pool, scope.knowledgeBaseId, (db) =>
+      db.update(page).set({ title }).where(and(eq(page.knowledgeBaseId, scope.knowledgeBaseId), eq(page.id, scope.pageId))));
   }
 
-  async function indexPage(node: { workspaceId: string; pageId: string }) {
-    await withWorkspaceTenant(fixture.pool, node.workspaceId, (db) =>
-      refreshPageBlockIndex(db, { workspaceId: node.workspaceId, pageId: node.pageId }));
+  async function indexPage(node: { knowledgeBaseId: string; pageId: string }) {
+    await withKnowledgeBase(fixture.pool, node.knowledgeBaseId, (db) =>
+      refreshPageBlockIndex(db, { knowledgeBaseId: node.knowledgeBaseId, pageId: node.pageId }));
   }
 
   /** The real keyword leg at the H04 hit contract; rank feeds a real RRF-shaped score. */
-  async function keywordHits(workspaceId: string, userId: string, query: string): Promise<HybridSearchHit[]> {
-    const principals = await fixture.subjects(userId, workspaceId);
-    const hits = await withWorkspaceTenant(fixture.pool, workspaceId, (db) =>
-      searchBlocksByKeyword(db, { workspaceId, principals, query, limit: 50 }));
+  async function keywordHits(knowledgeBaseId: string, userId: string, query: string): Promise<HybridSearchHit[]> {
+    const principals = await fixture.subjects(userId, knowledgeBaseId);
+    const hits = await withKnowledgeBase(fixture.pool, knowledgeBaseId, (db) =>
+      searchBlocksByKeyword(db, { knowledgeBaseId, principals, query, limit: 50 }));
     return hits.map((hit, index) => ({
       pageId: hit.pageId,
       blockId: hit.blockId,
@@ -116,7 +116,7 @@ describe('context assembly and citation validation', () => {
     ]);
     await indexPage(body);
     const owner = fixture.owner.identity.userId;
-    const hits = await keywordHits(body.workspaceId, owner, '氦闪 说明');
+    const hits = await keywordHits(body.knowledgeBaseId, owner, '氦闪 说明');
     expect(hits.length).toBeGreaterThanOrEqual(2);
 
     const history = [
@@ -124,7 +124,7 @@ describe('context assembly and citation validation', () => {
       { role: 'assistant' as const, content: '根据检索到的内容，氦闪源于简并氦核的失控燃烧。' },
     ];
     const result = await assembleContext(fixture.pool, {
-      workspaceId: body.workspaceId, userId: owner, taskKind: 'ask',
+      knowledgeBaseId: body.knowledgeBaseId, userId: owner, taskKind: 'ask',
       query: '氦闪 说明', searchHits: hits, focus: { pageId: body.pageId, blockId: 'b-p2' }, history,
     });
     expect(assembledContextSchema.parse(result)).toEqual(result);
@@ -164,7 +164,7 @@ describe('context assembly and citation validation', () => {
     expect(historySegment.kind === 'history' && historySegment.messages).toEqual(history);
 
     const edited = await assembleContext(fixture.pool, {
-      workspaceId: body.workspaceId, userId: owner, taskKind: 'edit',
+      knowledgeBaseId: body.knowledgeBaseId, userId: owner, taskKind: 'edit',
       query: '氦闪 说明', searchHits: hits, focus: { pageId: body.pageId, blockId: 'b-p2' }, history,
     });
     const rules = segment(result.segments, 'rules')!;
@@ -186,10 +186,10 @@ describe('context assembly and citation validation', () => {
     })));
     await indexPage(body);
     const owner = fixture.owner.identity.userId;
-    const hits = await keywordHits(body.workspaceId, owner, '氦闪 预算');
+    const hits = await keywordHits(body.knowledgeBaseId, owner, '氦闪 预算');
     expect(hits).toHaveLength(6);
     const history = [{ role: 'user' as const, content: '总结氦闪预算语料' }];
-    const base = { workspaceId: body.workspaceId, userId: owner, taskKind: 'ask' as const, query: '氦闪 预算', searchHits: hits, focus: { pageId: body.pageId, blockId: 'b-bud-3' }, history };
+    const base = { knowledgeBaseId: body.knowledgeBaseId, userId: owner, taskKind: 'ask' as const, query: '氦闪 预算', searchHits: hits, focus: { pageId: body.pageId, blockId: 'b-bud-3' }, history };
 
     const full = await assembleContext(fixture.pool, { ...base, budgetBytes: 10_000_000 });
     expect(assembledContextSchema.parse(full)).toEqual(full);
@@ -220,9 +220,9 @@ describe('context assembly and citation validation', () => {
   test('citations validate against the authoritative doc: valid, denied, missing, recycled, malformed', async () => {
     const created = await tree({ parents: [null, 0, 0], defaultAccess: null });
     const [ownerPage, readerPage, recycledPage] = created.pages;
-    await withWorkspaceTenant(fixture.pool, ownerPage.workspaceId, (db) => Promise.all([
-      replaceAuthorizedPageAcl(db, { workspaceId: ownerPage.workspaceId, pageId: ownerPage.pageId, grants: [{ principal: `user:${fixture.owner.identity.userId}` as Principal, level: 'full' }] }),
-      replaceAuthorizedPageAcl(db, { workspaceId: readerPage.workspaceId, pageId: readerPage.pageId, grants: [
+    await withKnowledgeBase(fixture.pool, ownerPage.knowledgeBaseId, (db) => Promise.all([
+      replaceAuthorizedPageAcl(db, { knowledgeBaseId: ownerPage.knowledgeBaseId, pageId: ownerPage.pageId, grants: [{ principal: `user:${fixture.owner.identity.userId}` as Principal, level: 'full' }] }),
+      replaceAuthorizedPageAcl(db, { knowledgeBaseId: readerPage.knowledgeBaseId, pageId: readerPage.pageId, grants: [
         { principal: `user:${fixture.owner.identity.userId}` as Principal, level: 'full' },
         { principal: `user:${fixture.reader.identity.userId}` as Principal, level: 'view' },
       ] }),
@@ -240,13 +240,13 @@ describe('context assembly and citation validation', () => {
     await writeBody(recycledPage, [{ attrs: { blockId: 'b-dead-1' }, text: '已回收页面的残余段落' }]);
     await indexPage(ownerPage);
     // b-list 是布局容器（index.mode=skip），不落 block_index，但存在于权威文档。
-    const indexed = await withWorkspaceTenant(fixture.pool, ownerPage.workspaceId, (db) => readPageBlockIndexRows(db, { workspaceId: ownerPage.workspaceId, pageId: ownerPage.pageId }));
+    const indexed = await withKnowledgeBase(fixture.pool, ownerPage.knowledgeBaseId, (db) => readPageBlockIndexRows(db, { knowledgeBaseId: ownerPage.knowledgeBaseId, pageId: ownerPage.pageId }));
     expect(indexed.map((row) => row.blockId)).not.toContain('b-list');
 
     const reader = fixture.reader.identity.userId;
     const owner = fixture.owner.identity.userId;
     const readerView = await validateCitations(fixture.pool, {
-      workspaceId: ownerPage.workspaceId,
+      knowledgeBaseId: ownerPage.knowledgeBaseId,
       userId: reader,
       citedBlockIds: [
         { pageId: ownerPage.pageId, blockId: 'b-own-1' },      // 无权
@@ -268,7 +268,7 @@ describe('context assembly and citation validation', () => {
 
     // 所有者视角：私有段落有效、未索引容器块有效（doc_state 权威，不依赖 block_index）、伪造块无效。
     const ownerView = await validateCitations(fixture.pool, {
-      workspaceId: ownerPage.workspaceId,
+      knowledgeBaseId: ownerPage.knowledgeBaseId,
       userId: owner,
       citedBlockIds: [
         { pageId: ownerPage.pageId, blockId: 'b-own-1' },
@@ -293,24 +293,24 @@ describe('context assembly and citation validation', () => {
     ]);
     const owner = fixture.owner.identity.userId;
 
-    const head = await assembleContext(fixture.pool, { workspaceId: body.workspaceId, userId: owner, taskKind: 'edit', focus: { pageId: body.pageId, blockId: 'b-first' } });
+    const head = await assembleContext(fixture.pool, { knowledgeBaseId: body.knowledgeBaseId, userId: owner, taskKind: 'edit', focus: { pageId: body.pageId, blockId: 'b-first' } });
     const headNeighbors = segment(head.segments, 'neighbors')!;
     expect(headNeighbors.kind === 'neighbors' && headNeighbors.blocks.map((block) => block.relation)).toEqual(['focus', 'after']);
 
-    const tail = await assembleContext(fixture.pool, { workspaceId: body.workspaceId, userId: owner, taskKind: 'edit', focus: { pageId: body.pageId, blockId: 'b-last' } });
+    const tail = await assembleContext(fixture.pool, { knowledgeBaseId: body.knowledgeBaseId, userId: owner, taskKind: 'edit', focus: { pageId: body.pageId, blockId: 'b-last' } });
     const tailNeighbors = segment(tail.segments, 'neighbors')!;
     expect(tailNeighbors.kind === 'neighbors' && tailNeighbors.blocks.map((block) => block.relation)).toEqual(['before', 'focus']);
 
-    const gone = await assembleContext(fixture.pool, { workspaceId: body.workspaceId, userId: owner, taskKind: 'edit', focus: { pageId: body.pageId, blockId: 'b-gone' } });
+    const gone = await assembleContext(fixture.pool, { knowledgeBaseId: body.knowledgeBaseId, userId: owner, taskKind: 'edit', focus: { pageId: body.pageId, blockId: 'b-gone' } });
     expect(gone.segments.map((entry) => entry.kind)).toEqual(['rules', 'outline']);
   }, 45_000);
 
   test('an unauthorized focus page fails closed for its legs; stale hits drop after revocation; empty search leg', async () => {
     const created = await tree({ parents: [null, 0], defaultAccess: null });
     const [ownerPage, sharedPage] = created.pages;
-    await withWorkspaceTenant(fixture.pool, ownerPage.workspaceId, (db) => Promise.all([
-      replaceAuthorizedPageAcl(db, { workspaceId: ownerPage.workspaceId, pageId: ownerPage.pageId, grants: [{ principal: `user:${fixture.owner.identity.userId}` as Principal, level: 'full' }] }),
-      replaceAuthorizedPageAcl(db, { workspaceId: sharedPage.workspaceId, pageId: sharedPage.pageId, grants: [
+    await withKnowledgeBase(fixture.pool, ownerPage.knowledgeBaseId, (db) => Promise.all([
+      replaceAuthorizedPageAcl(db, { knowledgeBaseId: ownerPage.knowledgeBaseId, pageId: ownerPage.pageId, grants: [{ principal: `user:${fixture.owner.identity.userId}` as Principal, level: 'full' }] }),
+      replaceAuthorizedPageAcl(db, { knowledgeBaseId: sharedPage.knowledgeBaseId, pageId: sharedPage.pageId, grants: [
         { principal: `user:${fixture.owner.identity.userId}` as Principal, level: 'full' },
         { principal: `user:${fixture.reader.identity.userId}` as Principal, level: 'view' },
       ] }),
@@ -327,38 +327,38 @@ describe('context assembly and citation validation', () => {
     const owner = fixture.owner.identity.userId;
 
     // 读者对私有焦点页 fail closed：只有规则段，其余腿整体跳过。
-    const denied = await assembleContext(fixture.pool, { workspaceId: ownerPage.workspaceId, userId: reader, taskKind: 'ask', focus: { pageId: ownerPage.pageId, blockId: 'b-owner-1' } });
+    const denied = await assembleContext(fixture.pool, { knowledgeBaseId: ownerPage.knowledgeBaseId, userId: reader, taskKind: 'ask', focus: { pageId: ownerPage.pageId, blockId: 'b-owner-1' } });
     expect(assembledContextSchema.parse(denied)).toEqual(denied);
     expect(denied.segments.map((entry) => entry.kind)).toEqual(['rules']);
     expect(segment(denied.segments, 'outline')).toBeUndefined();
 
     // 无查询无命中：空检索腿，焦点页有效时仍有规则+大纲。
-    const ownerFocus = await assembleContext(fixture.pool, { workspaceId: ownerPage.workspaceId, userId: owner, taskKind: 'ask', focus: { pageId: ownerPage.pageId } });
+    const ownerFocus = await assembleContext(fixture.pool, { knowledgeBaseId: ownerPage.knowledgeBaseId, userId: owner, taskKind: 'ask', focus: { pageId: ownerPage.pageId } });
     expect(ownerFocus.segments.map((entry) => entry.kind)).toEqual(['rules', 'outline']);
     expect(ownerFocus.usage).toMatchObject({ truncated: false, droppedRetrievalItems: 0, unavailableRetrievalHits: 0 });
 
     // 检索后收权：读者以旧命中组装，全部命中被权限谓词剔除并如实计数。
-    const staleHits = await keywordHits(sharedPage.workspaceId, reader, '氦闪 共享');
+    const staleHits = await keywordHits(sharedPage.knowledgeBaseId, reader, '氦闪 共享');
     expect(staleHits).toHaveLength(2);
-    await withWorkspaceTenant(fixture.pool, sharedPage.workspaceId, (db) =>
-      replaceAuthorizedPageAcl(db, { workspaceId: sharedPage.workspaceId, pageId: sharedPage.pageId, grants: [{ principal: `user:${fixture.owner.identity.userId}` as Principal, level: 'full' }] }));
+    await withKnowledgeBase(fixture.pool, sharedPage.knowledgeBaseId, (db) =>
+      replaceAuthorizedPageAcl(db, { knowledgeBaseId: sharedPage.knowledgeBaseId, pageId: sharedPage.pageId, grants: [{ principal: `user:${fixture.owner.identity.userId}` as Principal, level: 'full' }] }));
     await fixture.drain();
-    const revoked = await assembleContext(fixture.pool, { workspaceId: sharedPage.workspaceId, userId: reader, taskKind: 'ask', query: '氦闪 共享', searchHits: staleHits });
+    const revoked = await assembleContext(fixture.pool, { knowledgeBaseId: sharedPage.knowledgeBaseId, userId: reader, taskKind: 'ask', query: '氦闪 共享', searchHits: staleHits });
     expect(assembledContextSchema.parse(revoked)).toEqual(revoked);
     expect(segment(revoked.segments, 'retrieval')).toBeUndefined();
     expect(revoked.usage).toMatchObject({ truncated: false, droppedRetrievalItems: 0, unavailableRetrievalHits: 2, overBudgetBytes: 0 });
-    expect(await fixture.subjects(reader, sharedPage.workspaceId)).not.toHaveLength(0); // 仍是成员：剔除来自谓词而非身份
+    expect(await fixture.subjects(reader, sharedPage.knowledgeBaseId)).not.toHaveLength(0); // 仍是成员：剔除来自谓词而非身份
   }, 60_000);
 
   test('invalid inputs are caller errors', async () => {
     const created = await tree({ parents: [null] });
-    const workspaceId = created.root.workspaceId;
+    const knowledgeBaseId = created.root.knowledgeBaseId;
     const owner = fixture.owner.identity.userId;
-    await expect(assembleContext(fixture.pool, { workspaceId: 'nope', userId: owner, taskKind: 'ask' })).rejects.toThrow(TypeError);
-    await expect(assembleContext(fixture.pool, { workspaceId, userId: owner, taskKind: 'wat' as unknown as ContextTaskKind })).rejects.toThrow(TypeError);
-    await expect(assembleContext(fixture.pool, { workspaceId, userId: owner, taskKind: 'ask', query: `${'氦'.repeat(201)}` })).rejects.toThrow(TypeError);
-    await expect(assembleContext(fixture.pool, { workspaceId, userId: owner, taskKind: 'ask', history: [{ role: 'user', content: '' }] })).rejects.toThrow(TypeError);
-    await expect(assembleContext(fixture.pool, { workspaceId, userId: owner, taskKind: 'ask', budgetBytes: 0 })).rejects.toThrow(TypeError);
-    await expect(validateCitations(fixture.pool, { workspaceId, userId: owner, citedBlockIds: Array.from({ length: 101 }, () => ({ pageId: workspaceId, blockId: 'b' })) })).rejects.toThrow(TypeError);
+    await expect(assembleContext(fixture.pool, { knowledgeBaseId: 'nope', userId: owner, taskKind: 'ask' })).rejects.toThrow(TypeError);
+    await expect(assembleContext(fixture.pool, { knowledgeBaseId, userId: owner, taskKind: 'wat' as unknown as ContextTaskKind })).rejects.toThrow(TypeError);
+    await expect(assembleContext(fixture.pool, { knowledgeBaseId, userId: owner, taskKind: 'ask', query: `${'氦'.repeat(201)}` })).rejects.toThrow(TypeError);
+    await expect(assembleContext(fixture.pool, { knowledgeBaseId, userId: owner, taskKind: 'ask', history: [{ role: 'user', content: '' }] })).rejects.toThrow(TypeError);
+    await expect(assembleContext(fixture.pool, { knowledgeBaseId, userId: owner, taskKind: 'ask', budgetBytes: 0 })).rejects.toThrow(TypeError);
+    await expect(validateCitations(fixture.pool, { knowledgeBaseId, userId: owner, citedBlockIds: Array.from({ length: 101 }, () => ({ pageId: knowledgeBaseId, blockId: 'b' })) })).rejects.toThrow(TypeError);
   }, 45_000);
 });

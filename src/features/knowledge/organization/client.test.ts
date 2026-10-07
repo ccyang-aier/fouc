@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test';
-import { createOrganizationClient } from '@/features/workspaces/organization-client';
+import { createOrganizationClient } from '@/features/knowledge/organization/client';
 import { createKnowledgeCatalogClient } from '../data/knowledge-catalog-client';
-import type { OrganizationClientDeps } from '@/features/workspaces/organization-client';
-import { isOrganizationDataError, organizationErrorText } from '@/features/workspaces/organization-errors';
+import type { OrganizationClientDeps } from '@/features/knowledge/organization/client';
+import { isOrganizationDataError, organizationErrorText } from '@/features/knowledge/organization/errors';
 
 /**
  * Route-contract tests (O02): every client operation must hit exactly the
@@ -12,7 +12,7 @@ import { isOrganizationDataError, organizationErrorText } from '@/features/works
  */
 
 const ORIGIN = 'http://127.0.0.1:8710';
-const BASE = `${ORIGIN}/api/workspaces`;
+const BASE = `${ORIGIN}/api/knowledge-bases`;
 const ws = '10000000-0000-4000-8000-000000000001';
 const otherUser = '20000000-0000-4000-8000-000000000002';
 const groupId = '30000000-0000-4000-8000-000000000003';
@@ -60,7 +60,7 @@ describe('route contract', () => {
   test('list endpoints GET their collection path with cursor and limit in the query', async () => {
     const { calls, impl } = recordingFetch(200, { items: [], nextCursor: null });
     const client = clientWith(impl as unknown as typeof fetch);
-    await client.listWorkspaces({ cursor, limit: 25 });
+    await client.listKnowledgeBases({ cursor, limit: 25 });
     expect(lastCall(calls).url).toBe(`${BASE}?cursor=${cursor}&limit=25`);
     expect(lastCall(calls).method).toBe('GET');
     expect(lastCall(calls).body).toBe(undefined);
@@ -76,19 +76,19 @@ describe('route contract', () => {
     expect(lastCall(calls).url).toBe(`${BASE}/${ws}/teamspaces`);
   });
 
-  test('workspace creation POSTs name and kind to the collection', async () => {
-    const { calls, impl } = recordingFetch(201, { id: ws, name: '团队', kind: 'team', settings: {}, role: 'owner' });
-    await clientWith(impl as unknown as typeof fetch).createWorkspace({ name: ' 团队 ', kind: 'team' });
+  test('knowledge base creation POSTs only its name to the collection', async () => {
+    const { calls, impl } = recordingFetch(201, { id: ws, name: '团队' });
+    await clientWith(impl as unknown as typeof fetch).createKnowledgeBase({ name: ' 团队 ' });
     const call = lastCall(calls);
     expect(call.method).toBe('POST');
     expect(call.url).toBe(BASE);
-    expect(call.body).toBe(JSON.stringify({ name: '团队', kind: 'team' }));
+    expect(call.body).toBe(JSON.stringify({ name: '团队' }));
     expect(call.contentType).toBe('application/json');
     expect(call.credentials).toBe('include');
   });
 
   test('member role change PATCHes the member path with the role body', async () => {
-    const { calls, impl } = recordingFetch(200, { workspaceId: ws, userId: otherUser, role: 'admin' });
+    const { calls, impl } = recordingFetch(200, { knowledgeBaseId: ws, userId: otherUser, role: 'admin' });
     await clientWith(impl as unknown as typeof fetch).changeMemberRole(ws, { userId: otherUser, role: 'admin' });
     const call = lastCall(calls);
     expect(call.method).toBe('PATCH');
@@ -115,7 +115,7 @@ describe('route contract', () => {
   });
 
   test('group writes: create POSTs name, rename PATCHes, membership POSTs the userId', async () => {
-    const { calls, impl } = recordingFetch(201, { workspaceId: ws, id: groupId, name: '设计组' });
+    const { calls, impl } = recordingFetch(201, { knowledgeBaseId: ws, id: groupId, name: '设计组' });
     const client = clientWith(impl as unknown as typeof fetch);
     await client.createGroup(ws, { name: '设计组' });
     expect(lastCall(calls).url).toBe(`${BASE}/${ws}/groups`);
@@ -131,10 +131,10 @@ describe('route contract', () => {
   });
 
   test('teamspace creation sends defaultAccess including null; updates send only provided fields', async () => {
-    const { calls, impl } = recordingFetch(201, { workspaceId: ws, id: teamspaceId, name: '文档', defaultAccess: null });
+    const { calls, impl } = recordingFetch(201, { knowledgeBaseId: ws, id: teamspaceId, name: '文档', defaultAccess: null });
     const client = clientWith(impl as unknown as typeof fetch);
-    await client.createTeamspace(ws, { knowledgeBaseId: groupId, name: '文档', defaultAccess: null });
-    expect(lastCall(calls).body).toBe(JSON.stringify({ knowledgeBaseId: groupId, name: '文档', defaultAccess: null }));
+    await client.createTeamspace(ws, { name: '文档', defaultAccess: null });
+    expect(lastCall(calls).body).toBe(JSON.stringify({ name: '文档', defaultAccess: null }));
     await client.updateTeamspace(ws, teamspaceId, { defaultAccess: 'edit' });
     expect(lastCall(calls).body).toBe(JSON.stringify({ defaultAccess: 'edit' }));
     await client.updateTeamspace(ws, teamspaceId, { name: '文档库' });
@@ -146,10 +146,10 @@ describe('input validation fails before any request', () => {
   test('names must trim to 1..120 characters', async () => {
     const { calls, impl } = recordingFetch(201, {});
     const client = clientWith(impl as unknown as typeof fetch);
-    await expectInvalidInput(() => client.createWorkspace({ name: '   ', kind: 'team' }));
+    await expectInvalidInput(() => client.createKnowledgeBase({ name: '   ' }));
     await expectInvalidInput(() => client.createGroup(ws, { name: 'x'.repeat(121) }));
     await expectInvalidInput(() => client.renameGroup(ws, { id: groupId, name: '' }));
-    await expectInvalidInput(() => client.createTeamspace(ws, { knowledgeBaseId: groupId, name: '  ', defaultAccess: null }));
+    await expectInvalidInput(() => client.createTeamspace(ws, { name: '  ', defaultAccess: null }));
     expect(calls).toHaveLength(0);
   });
 
@@ -165,9 +165,9 @@ describe('input validation fails before any request', () => {
   test('pagination params are bounded', async () => {
     const { calls, impl } = recordingFetch(200, {});
     const client = clientWith(impl as unknown as typeof fetch);
-    await expectInvalidInput(() => client.listWorkspaces({ cursor: 'garbage' }));
-    await expectInvalidInput(() => client.listWorkspaces({ limit: 0 }));
-    await expectInvalidInput(() => client.listWorkspaces({ limit: 101 }));
+    await expectInvalidInput(() => client.listKnowledgeBases({ cursor: 'garbage' }));
+    await expectInvalidInput(() => client.listKnowledgeBases({ limit: 0 }));
+    await expectInvalidInput(() => client.listKnowledgeBases({ limit: 101 }));
     expect(calls).toHaveLength(0);
   });
 
@@ -175,7 +175,7 @@ describe('input validation fails before any request', () => {
     const { calls, impl } = recordingFetch(200, {});
     const client = clientWith(impl as unknown as typeof fetch);
     await expectInvalidInput(() => client.updateTeamspace(ws, teamspaceId, {}));
-    await expectInvalidInput(() => client.createTeamspace(ws, { knowledgeBaseId: groupId, name: 'x', defaultAccess: 'root' as never }));
+    await expectInvalidInput(() => client.createTeamspace(ws, { name: 'x', defaultAccess: 'root' as never }));
     await expectInvalidInput(() => client.changeMemberRole(ws, { userId: otherUser, role: 'superuser' as never }));
     expect(calls).toHaveLength(0);
   });
@@ -184,7 +184,7 @@ describe('input validation fails before any request', () => {
 describe('error normalization', () => {
   async function errorOf(status: number, body: unknown) {
     const { impl } = recordingFetch(status, body);
-    return clientWith(impl as unknown as typeof fetch).listWorkspaces().catch((cause) => cause);
+    return clientWith(impl as unknown as typeof fetch).listKnowledgeBases().catch((cause) => cause);
   }
 
   test('known server codes map to the domain error with Chinese copy', async () => {
@@ -208,36 +208,36 @@ describe('error normalization', () => {
     const unknownCode = await errorOf(500, { code: 'SOMETHING_ELSE' });
     expect((unknownCode as { code: string }).code).toBe('ORGANIZATION_UNAVAILABLE');
 
-    const notJson = createOrganizationClient({
+    const notJson = createKnowledgeCatalogClient({
       origin: async () => ORIGIN,
       fetchImpl: (async () => new Response('<html>gateway error</html>', { status: 502 })) as unknown as typeof fetch,
     });
-    const degraded = await notJson.listWorkspaces().catch((cause) => cause);
+    const degraded = await notJson.listKnowledgeBases().catch((cause) => cause);
     expect((degraded as { code: string }).code).toBe('ORGANIZATION_UNAVAILABLE');
   });
 
   test('a success body that is not JSON is an availability error', async () => {
-    const client = createOrganizationClient({
+    const client = createKnowledgeCatalogClient({
       origin: async () => ORIGIN,
       fetchImpl: (async () => new Response('ok', { status: 200 })) as unknown as typeof fetch,
     });
-    const error = await client.listWorkspaces().catch((cause) => cause);
+    const error = await client.listKnowledgeBases().catch((cause) => cause);
     expect((error as { code: string }).code).toBe('ORGANIZATION_UNAVAILABLE');
   });
 
   test('transport failures normalize to NETWORK; endpoint resolution failures keep ENDPOINT', async () => {
-    const network = createOrganizationClient({
+    const network = createKnowledgeCatalogClient({
       origin: async () => ORIGIN,
       fetchImpl: (async () => { throw new TypeError('fetch failed'); }) as unknown as typeof fetch,
     });
-    const networkError = await network.listWorkspaces().catch((cause) => cause);
+    const networkError = await network.listKnowledgeBases().catch((cause) => cause);
     expect((networkError as { code: string }).code).toBe('NETWORK');
 
-    const offline = createOrganizationClient({
+    const offline = createKnowledgeCatalogClient({
       origin: async () => { throw Object.assign(new Error('no endpoint'), { code: 'ENDPOINT' }); },
       fetchImpl: (async () => new Response('{}')) as unknown as typeof fetch,
     });
-    const endpointError = await offline.listWorkspaces().catch((cause) => cause);
+    const endpointError = await offline.listKnowledgeBases().catch((cause) => cause);
     expect((endpointError as { code: string }).code).toBe('ENDPOINT');
   });
 });

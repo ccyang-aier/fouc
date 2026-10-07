@@ -21,7 +21,7 @@ import { createPageUndo } from '../../collaboration/page-undo';
 import { pageCollaborationExtension } from '../page-collaboration';
 import { createBlockEditingExtensions } from '.';
 
-const scope = { workspaceId: '00000000-0000-4000-8000-000000000001', pageId: '00000000-0000-4000-8000-000000000002' };
+const scope = { knowledgeBaseId: '00000000-0000-4000-8000-000000000001', pageId: '00000000-0000-4000-8000-000000000002' };
 
 let window: Window;
 

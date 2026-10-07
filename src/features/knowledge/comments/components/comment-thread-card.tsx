@@ -11,7 +11,7 @@ export type CommentReplyTarget = { threadId: string; commentId: string };
 
 export interface CommentThreadCardProps {
   group: CommentThreadGroup;
-  workspaceId: string;
+  knowledgeBaseId: string;
   active: boolean;
   canComment: boolean;
   currentUserId: string | null;
@@ -34,7 +34,7 @@ export interface CommentThreadCardProps {
   replyComposer?: ReactNode;
 }
 
-export function CommentThreadCard({ group, workspaceId, active, canComment, currentUserId, authors, onStartReply, reply, resolve, deletingCommentId, deleteError, like, onLike, onLocate, onResolve, onReopen, onDeleteComment, edit, onEdit, onCopyLink, replyTarget, replyComposer }: CommentThreadCardProps) {
+export function CommentThreadCard({ group, knowledgeBaseId, active, canComment, currentUserId, authors, onStartReply, reply, resolve, deletingCommentId, deleteError, like, onLike, onLocate, onResolve, onReopen, onDeleteComment, edit, onEdit, onCopyLink, replyTarget, replyComposer }: CommentThreadCardProps) {
   const resolved = group.resolved;
   const resolvePending = resolve.pending && resolve.threadId === group.threadId;
   const issue = group.thread.kind === 'issue';
@@ -47,7 +47,7 @@ export function CommentThreadCard({ group, workspaceId, active, canComment, curr
       {group.thread.comments.map((entry, index) => {
         const target = group.thread.comments.find(comment => comment.id === entry.replyToCommentId);
         const replyTo = index > 0 ? target ? authors?.get(target.authorId)?.name || (currentUserId === target.authorId ? '我' : '成员') : '已删除的评论' : undefined;
-        return <CommentEntryItem key={entry.id} entry={entry} workspaceId={workspaceId} author={authors?.get(entry.authorId)} isOwn={currentUserId === entry.authorId} deleting={deletingCommentId === entry.id} canComment={canComment} isReply={index > 0} replyTo={replyTo} onDelete={onDeleteComment} onLike={onLike} liking={like.pending && like.commentId === entry.id}
+        return <CommentEntryItem key={entry.id} entry={entry} knowledgeBaseId={knowledgeBaseId} author={authors?.get(entry.authorId)} isOwn={currentUserId === entry.authorId} deleting={deletingCommentId === entry.id} canComment={canComment} isReply={index > 0} replyTo={replyTo} onDelete={onDeleteComment} onLike={onLike} liking={like.pending && like.commentId === entry.id}
           edit={{ pending: edit.pending && edit.commentId === entry.id, error: edit.commentId === entry.id ? edit.error : null }} onEdit={onEdit} onCopyLink={onCopyLink}
           composer={replyTarget?.threadId === group.threadId && replyTarget.commentId === entry.id ? replyComposer : undefined}
           quote={index === 0 ? quote : undefined}

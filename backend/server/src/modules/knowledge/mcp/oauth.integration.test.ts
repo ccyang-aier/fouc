@@ -27,7 +27,7 @@ describe('knowledge mcp oauth 2.1 authorization server', () => {
   let fixture: PermissionsFixture;
   let httpServer: Server;
   let origin: string;
-  let workspaceId: string;
+  let knowledgeBaseId: string;
   let endpoint: string;
   let resourceUrl: string;
   let clientId: string;
@@ -39,9 +39,9 @@ describe('knowledge mcp oauth 2.1 authorization server', () => {
     const address = server.address();
     origin = `http://127.0.0.1:${typeof address === 'object' && address ? address.port : 0}`;
     httpServer = server;
-    workspaceId = fixture.alpha.id;
-    endpoint = `${origin}/api/knowledge/${workspaceId}/mcp`;
-    resourceUrl = knowledgeMcpResourceUrl(origin, workspaceId);
+    knowledgeBaseId = fixture.alpha.id;
+    endpoint = `${origin}/api/knowledge/${knowledgeBaseId}/mcp`;
+    resourceUrl = knowledgeMcpResourceUrl(origin, knowledgeBaseId);
     const oauthRoutes = createKnowledgeMcpAuthorizationRoutes({ auth: fixture.server.auth, pool: fixture.pool, externalOrigin: origin });
     const mcpHandler = createKnowledgeMcpRequestHandler({
       authenticator: fixture.authenticator, pool: fixture.pool, oauth: { externalOrigin: origin },
@@ -66,7 +66,7 @@ describe('knowledge mcp oauth 2.1 authorization server', () => {
       response.writeHead(result.status, [...result.headers]);
       response.end(Buffer.from(await result.arrayBuffer()));
     }
-    const registered = await fetch(`${origin}/api/knowledge/${workspaceId}/oauth/register`, {
+    const registered = await fetch(`${origin}/api/knowledge/${knowledgeBaseId}/oauth/register`, {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ client_name: 'K02 OAuth client', redirect_uris: [REDIRECT_URI] }),
     });
@@ -90,7 +90,7 @@ describe('knowledge mcp oauth 2.1 authorization server', () => {
       scope: 'read write', state: 'st4te', code_challenge: challenge,
       code_challenge_method: 'S256', resource: resourceUrl,
     });
-    const form = await fetch(`${origin}/api/knowledge/${workspaceId}/oauth/authorize?${query}`, { headers: { cookie: actor.cookie }, redirect: 'manual' });
+    const form = await fetch(`${origin}/api/knowledge/${knowledgeBaseId}/oauth/authorize?${query}`, { headers: { cookie: actor.cookie }, redirect: 'manual' });
     expect(form.status).toBe(200);
     const html = await form.text();
     const action = /<form method="post" action="([^"]+)"/.exec(html)![1]!;
@@ -110,7 +110,7 @@ describe('knowledge mcp oauth 2.1 authorization server', () => {
   }
 
   function exchange(code: string, verifier: string, overrides: { redirectUri?: string; clientId?: string } = {}) {
-    return fetch(`${origin}/api/knowledge/${workspaceId}/oauth/token`, {
+    return fetch(`${origin}/api/knowledge/${knowledgeBaseId}/oauth/token`, {
       method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
         grant_type: 'authorization_code', code, redirect_uri: overrides.redirectUri ?? REDIRECT_URI,
@@ -146,7 +146,7 @@ describe('knowledge mcp oauth 2.1 authorization server', () => {
   });
 
   test('registration rejects unsafe redirect metadata', async () => {
-    const rejected = await fetch(`${origin}/api/knowledge/${workspaceId}/oauth/register`, {
+    const rejected = await fetch(`${origin}/api/knowledge/${knowledgeBaseId}/oauth/register`, {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ redirect_uris: ['https://client.example/callback#fragment'] }),
     });
@@ -154,16 +154,16 @@ describe('knowledge mcp oauth 2.1 authorization server', () => {
     expect(((await rejected.json()) as { error: string }).error).toBe('invalid_client_metadata');
   });
 
-  test('authorize demands a session of an active workspace member', async () => {
-    const anonymous = await fetch(`${origin}/api/knowledge/${workspaceId}/oauth/authorize?response_type=code`, { redirect: 'manual' });
+  test('authorize demands a session of an active knowledgeBase member', async () => {
+    const anonymous = await fetch(`${origin}/api/knowledge/${knowledgeBaseId}/oauth/authorize?response_type=code`, { redirect: 'manual' });
     expect(anonymous.status).toBe(401);
-    const foreign = await fetch(`${origin}/api/knowledge/${workspaceId}/oauth/authorize?response_type=code`, { headers: { cookie: fixture.foreign.cookie }, redirect: 'manual' });
+    const foreign = await fetch(`${origin}/api/knowledge/${knowledgeBaseId}/oauth/authorize?response_type=code`, { headers: { cookie: fixture.foreign.cookie }, redirect: 'manual' });
     expect(foreign.status).toBe(403);
   });
 
   test('audience and scope validation redirect RFC 6749 errors, tampering is refused', async () => {
     const { challenge } = pkce();
-    const authorizeUrl = (overrides: Record<string, string>) => `${origin}/api/knowledge/${workspaceId}/oauth/authorize?${new URLSearchParams({
+    const authorizeUrl = (overrides: Record<string, string>) => `${origin}/api/knowledge/${knowledgeBaseId}/oauth/authorize?${new URLSearchParams({
       response_type: 'code', client_id: clientId, redirect_uri: REDIRECT_URI,
       scope: 'read write', state: 'st4te', code_challenge: challenge, code_challenge_method: 'S256',
       resource: resourceUrl, ...overrides,
@@ -174,7 +174,7 @@ describe('knowledge mcp oauth 2.1 authorization server', () => {
     expect(new URL(wrongAudience.headers.get('location')!).searchParams.get('error')).toBe('invalid_target');
     const wrongScope = await fetch(authorizeUrl({ scope: 'openid profile' }), { headers: { cookie: fixture.reader.cookie }, redirect: 'manual' });
     expect(new URL(wrongScope.headers.get('location')!).searchParams.get('error')).toBe('invalid_scope');
-    const tampered = await fetch(`${origin}/api/knowledge/${workspaceId}/oauth/authorize`, {
+    const tampered = await fetch(`${origin}/api/knowledge/${knowledgeBaseId}/oauth/authorize`, {
       method: 'POST', redirect: 'manual',
       headers: { 'content-type': 'application/x-www-form-urlencoded', cookie: fixture.reader.cookie, origin: fixture.server.webOrigin },
       body: new URLSearchParams({ client_id: clientId, redirect_uri: REDIRECT_URI, scope: 'read write admin', code_challenge: 'a'.repeat(43), consent: 'tampered', decision: 'approve' }),
@@ -188,7 +188,7 @@ describe('knowledge mcp oauth 2.1 authorization server', () => {
   test('the PKCE code exchange returns a PAT that drives the MCP server', async () => {
     const granted = await consent(fixture.reader);
     expect(granted.code).toBeTruthy();
-    expect(granted.location.searchParams.get('iss')).toBe(`${origin}/api/knowledge/${workspaceId}/oauth`);
+    expect(granted.location.searchParams.get('iss')).toBe(`${origin}/api/knowledge/${knowledgeBaseId}/oauth`);
     const exchanged = await exchange(granted.code!, granted.verifier);
     expect(exchanged.status).toBe(200);
     const token = await exchanged.json() as { access_token: string; token_type: string; scope: string };
@@ -224,7 +224,7 @@ describe('knowledge mcp oauth 2.1 authorization server', () => {
     const exchanged = await exchange(granted.code!, granted.verifier);
     const { access_token: token } = await exchanged.json() as { access_token: string };
 
-    const revoked = await fetch(`${origin}/api/knowledge/${workspaceId}/oauth/revoke`, {
+    const revoked = await fetch(`${origin}/api/knowledge/${knowledgeBaseId}/oauth/revoke`, {
       method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({ token, client_id: clientId }),
     });

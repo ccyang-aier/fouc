@@ -40,7 +40,7 @@ export function RedisWorkbench({
   onBack: () => void
   onSessionChange: (session: RedisSession) => void
 }) {
-  const base = `/api/database/workspaces/${encodeURIComponent(session.workspaceId)}/redis/sessions/${session.id}`
+  const base = `/api/database/redis/sessions/${session.id}`
   const [pattern, setPattern] = useState("*")
   const [applied, setApplied] = useState("*")
   const [scan, setScan] = useState<RedisScanPage | null>(null)

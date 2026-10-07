@@ -10,18 +10,18 @@ describe('permission model', () => {
     expect(levelRank('edit')).toBeLessThan(levelRank('full'));
     expect(principalKind('user:u1')).toBe('user');
     expect(principalKind('group:g1')).toBe('group');
-    expect(principalKind('workspace:w1')).toBe('workspace');
+    expect(principalKind('knowledgeBase:w1')).toBe('knowledgeBase');
     expect(principalKind('link:l1')).toBe('link');
     expect(principalKind('bogus')).toBe('unknown');
     expect(shareLinkMaxLevel).toBe('comment');
   });
 
-  test('grants cannot exceed the actor level and workspace principals must match', () => {
+  test('grants cannot exceed the actor level and knowledgeBase principals must match', () => {
     expect(canGrant('edit', { principal: 'user:u1', level: 'edit' }, 'w1')).toBe(true);
     expect(canGrant('edit', { principal: 'user:u1', level: 'full' }, 'w1')).toBe(false);
     expect(canGrant(null, { principal: 'user:u1', level: 'view' }, 'w1')).toBe(false);
-    expect(canGrant('full', { principal: 'workspace:w1', level: 'view' }, 'w1')).toBe(true);
-    expect(canGrant('full', { principal: 'workspace:w2', level: 'view' }, 'w1')).toBe(false);
+    expect(canGrant('full', { principal: 'knowledgeBase:w1', level: 'view' }, 'w1')).toBe(true);
+    expect(canGrant('full', { principal: 'knowledgeBase:w2', level: 'view' }, 'w1')).toBe(false);
     expect(canGrant('full', { principal: 'bogus', level: 'view' }, 'w1')).toBe(false);
     expect(canRevoke('edit', { principal: 'user:u1', level: 'full' })).toBe(false);
     expect(canRevoke('full', { principal: 'user:u1', level: 'edit' })).toBe(true);
@@ -38,12 +38,12 @@ describe('permission model', () => {
 
   test('grant planning deduplicates, overrides levels and rejects beyond-grantor changes', () => {
     const current = [{ principal: 'user:u1', level: 'view' as const }];
-    const override = planGrantChange({ current, actorLevel: 'edit', next: { principal: 'user:u1', level: 'edit' }, workspaceId: 'w1' });
+    const override = planGrantChange({ current, actorLevel: 'edit', next: { principal: 'user:u1', level: 'edit' }, knowledgeBaseId: 'w1' });
     expect(override.ok).toBe(true);
     if (override.ok) {
       expect(override.grants).toEqual([{ principal: 'user:u1', level: 'edit' }]);
     }
-    expect(planGrantChange({ current, actorLevel: 'view', next: { principal: 'user:u2', level: 'edit' }, workspaceId: 'w1' })).toEqual({ ok: false, reason: 'beyond-grantor' });
-    expect(planGrantChange({ current: [], actorLevel: 'full', next: { principal: 'what', level: 'view' }, workspaceId: 'w1' })).toEqual({ ok: false, reason: 'invalid-principal' });
+    expect(planGrantChange({ current, actorLevel: 'view', next: { principal: 'user:u2', level: 'edit' }, knowledgeBaseId: 'w1' })).toEqual({ ok: false, reason: 'beyond-grantor' });
+    expect(planGrantChange({ current: [], actorLevel: 'full', next: { principal: 'what', level: 'view' }, knowledgeBaseId: 'w1' })).toEqual({ ok: false, reason: 'invalid-principal' });
   });
 });

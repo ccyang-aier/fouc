@@ -14,7 +14,7 @@
 零到多个 ConnectorInstance
 ```
 
-例如 DTS、Figma、飞书分别拥有独立 Provider；一个工作空间可以建立多个 Figma 或数据库 Instance。Provider 是平台目录，Instance 是当前工作空间内的资源；用户私有凭据和设备执行能力是单独的授权/宿主事实，不改变资源归属。
+例如 DTS、Figma、飞书分别拥有独立 Provider；用户可以建立多个 Figma 或数据库 Instance。Provider 是平台目录，Instance 是已授权的连接资源；用户私有凭据和设备执行能力是单独的授权/宿主事实，不改变资源归属。
 
 ## 二、目标与非目标
 
@@ -42,7 +42,7 @@
 
 ### 3.1 一平台一 Provider，多连接实例
 
-`ConnectorProvider` 描述一种平台的接入实现，如 DTS、Figma、飞书。`ConnectorInstance` 表示某个工作空间实际建立的一条连接，例如“我的 DTS”“产品团队 Figma”或“客户 A PostgreSQL”。个人与团队空间使用同一资源模型。
+`ConnectorProvider` 描述一种平台的接入实现，如 DTS、Figma、飞书。`ConnectorInstance` 表示用户实际建立的一条连接，例如“我的 DTS”“产品团队 Figma”或“客户 A PostgreSQL”。全局目录与实际连接授权分别管理。
 
 Provider 与外部平台一一对应是默认原则；只有同一平台的部署形态、认证协议或能力模型确实不同，且共享实现会造成错误耦合时，才拆分 Provider，例如 GitHub Cloud 与某个不兼容版本的 GitHub Enterprise Server。
 
@@ -132,15 +132,15 @@ interface ConnectorProviderDefinition {
 
 ### 4.2 `ConnectorInstance`
 
-当前工作空间内建立的一条连接。跨空间不得隐式复用实例、授权范围、查询结果或 Agent 工具引用；用户可在不同空间分别授权同一外部账户，但每个实例独立。
+用户建立的一条连接。实例、授权范围、查询结果与 Agent 工具引用按实际连接及会话归属校验；每个实例独立，不设产品工作空间分区。
 
 ```ts
 interface ConnectorInstance {
   id: string
   providerId: string
   name: string
-  workspaceId: string
-  createdBy: string
+  ownerType: 'user'
+  ownerId: string
   desiredState: 'enabled' | 'disabled'
   authState: 'unconfigured' | 'connecting' | 'valid' | 'needs_user_action'
   healthState: 'unknown' | 'healthy' | 'degraded' | 'unreachable'
@@ -158,6 +158,8 @@ interface ConnectorInstance {
   updatedAt: number
 }
 ```
+
+连接器目录是全局资源；设备保存的连接配置属于当前设备，不随项目选择分区。`ownerId` 表示连接的用户身份归属，不作为产品工作空间定位；外部身份中的 `tenantId` 仍表示外部系统自己的租户。连接详情、会话、凭据与调用始终按实际 Instance、执行目标及授权主体核验；项目引用用于组织和导航，不能隐式授予连接或原生数据库权限。
 
 `config` 只能保存非敏感配置，如服务地址、默认视图、项目范围和分页上限。密码、Token、Cookie 和私钥只能由凭据引用指向安全存储，或仅存在于运行时内存。认证、健康、期望启停与执行目标是相互独立的状态轴，禁止用单个 `status` 混合表达。
 
@@ -376,7 +378,7 @@ DTS · 通过“办公电脑”连接
 
 ### 7.1 副作用分级
 
-- `read`：无外部状态变更，可按工作区策略自动执行；
+- `read`：无外部状态变更，可按实际 Instance 授权策略自动执行；
 - `write`：创建评论、更新字段、发送消息等，默认需要策略判断；
 - `destructive`：删除、关闭、归档、撤销和批量状态变更，默认必须显式审批。
 
@@ -465,7 +467,7 @@ V1 可增加：
 - `connector_invocation`：调用审计、结果摘要和错误；
 - `connector_snapshot`：必要的外部对象最小快照。
 
-Provider Definition 和 Capability Definition 由代码注册。Secret、Cookie、Token 和私钥不进入普通业务表或设备 SQLite；设备侧凭据仅在安全存储或受控运行时内存。实例与授权由服务端按 `workspaceId` 校验，设备进程不能单独声明其对工作空间的访问权。
+Provider Definition 和 Capability Definition 由代码注册。Secret、Cookie、Token 和私钥不进入普通业务表或设备 SQLite；设备侧凭据仅在安全存储或受控运行时内存。实例按拥有者、连接与具体操作校验；设备侧连接还受设备许可、会话归属与原生权限约束。
 
 ### 9.2 Credential Broker
 
@@ -477,7 +479,7 @@ Credential Broker 负责：
 - 支持吊销、轮换和删除；
 - 避免凭据进入日志、Trace、错误消息和模型上下文。
 
-当前 DTS 设备连接与连接器目录尚未形成完整的服务端工作空间实例模型；以上是目标归属与授权边界，不能把现有全局设备连接状态解释为已实现的跨空间隔离。
+当前 DTS 使用全局设备连接与会话，连接器目录是全局资源；完整的服务端共享实例与团队操作授权仍是目标能力，不能从目录可见推断凭据可共享。
 
 ### 9.3 远程认证窗口
 

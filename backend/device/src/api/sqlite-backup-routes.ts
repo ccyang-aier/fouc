@@ -2,16 +2,15 @@ import { Hono } from "hono";
 import { Readable } from "node:stream";
 import type { SqliteBackupService } from "../database/sqlite-backup/service";
 
-/** Mounted under device authentication; every artifact belongs to one workspace and live native session. */
+/** Mounted under device authentication; every artifact belongs to one live native session. */
 export function sqliteBackupRoutes(backups: SqliteBackupService) {
   const app = new Hono();
   const base =
-    "/api/database/workspaces/:workspaceId/relational/sessions/:id/sqlite-backups";
+    "/api/database/relational/sessions/:id/sqlite-backups";
   app.get(base, (c) =>
     c.json({
       ok: true,
       data: backups.list({
-        workspaceId: c.req.param("workspaceId")!,
         sessionId: c.req.param("id")!,
       }),
     }),
@@ -22,7 +21,6 @@ export function sqliteBackupRoutes(backups: SqliteBackupService) {
         ok: true,
         data: backups.start(
           {
-            workspaceId: c.req.param("workspaceId")!,
             sessionId: c.req.param("id")!,
           },
           await c.req.json().catch(() => null),
@@ -36,7 +34,6 @@ export function sqliteBackupRoutes(backups: SqliteBackupService) {
       ok: true,
       data: backups.status(
         {
-          workspaceId: c.req.param("workspaceId")!,
           sessionId: c.req.param("id")!,
         },
         c.req.param("jobId")!,
@@ -48,7 +45,6 @@ export function sqliteBackupRoutes(backups: SqliteBackupService) {
       ok: true,
       data: backups.cancel(
         {
-          workspaceId: c.req.param("workspaceId")!,
           sessionId: c.req.param("id")!,
         },
         c.req.param("jobId")!,
@@ -58,7 +54,6 @@ export function sqliteBackupRoutes(backups: SqliteBackupService) {
   app.delete(base + "/:jobId", async (c) => {
     await backups.discard(
       {
-        workspaceId: c.req.param("workspaceId")!,
         sessionId: c.req.param("id")!,
       },
       c.req.param("jobId")!,
@@ -68,7 +63,6 @@ export function sqliteBackupRoutes(backups: SqliteBackupService) {
   app.get(base + "/:jobId/artifact", (c) => {
     const artifact = backups.download(
       {
-        workspaceId: c.req.param("workspaceId")!,
         sessionId: c.req.param("id")!,
       },
       c.req.param("jobId")!,

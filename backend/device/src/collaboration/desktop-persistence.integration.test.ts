@@ -36,8 +36,8 @@ describe('desktop sqlite page document replica', () => {
   function openDatabase() {
     const db = new Database(path.join(directory, 'replica.sqlite'));
     db.exec(`CREATE TABLE IF NOT EXISTS knowledge_page_document (
-      workspace_id TEXT NOT NULL, page_id TEXT NOT NULL, state BLOB NOT NULL, state_vector BLOB NOT NULL,
-      updated_at INTEGER NOT NULL, PRIMARY KEY (workspace_id, page_id));`);
+      knowledge_base_id TEXT NOT NULL, page_id TEXT NOT NULL, state BLOB NOT NULL, state_vector BLOB NOT NULL,
+      updated_at INTEGER NOT NULL, PRIMARY KEY (knowledge_base_id, page_id));`);
     return db;
   }
 
@@ -77,9 +77,9 @@ describe('desktop sqlite page document replica', () => {
     };
   }
 
-  const workspaceId = '11111111-1111-4111-8111-111111111111';
+  const knowledgeBaseId = '11111111-1111-4111-8111-111111111111';
   const pageId = '22222222-2222-4222-8222-222222222222';
-  const name = pageDocumentName({ workspaceId, pageId });
+  const name = pageDocumentName({ knowledgeBaseId, pageId });
 
   test('offline edits persist across a full host and database restart', async () => {
     host = startHost();
@@ -91,8 +91,8 @@ describe('desktop sqlite page document replica', () => {
 
     const replica = createSqlitePageDocumentReplica(database);
     const deadline = Date.now() + 5_000;
-    while (!replica.load({ workspaceId, pageId }) && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 40));
-    const persisted = replica.load({ workspaceId, pageId })!;
+    while (!replica.load({ knowledgeBaseId, pageId }) && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 40));
+    const persisted = replica.load({ knowledgeBaseId, pageId })!;
     expect(persisted.state.length).toBeGreaterThan(0);
     await writer.destroy();
     await host!.close();
@@ -116,10 +116,10 @@ describe('desktop sqlite page document replica', () => {
     // The offline buffer already carries 'offline draft'; the cloud version adds its own edit.
     const cloud = new Y.Doc();
     const replica = createSqlitePageDocumentReplica(database);
-    const persisted = replica.load({ workspaceId, pageId })!;
+    const persisted = replica.load({ knowledgeBaseId, pageId })!;
     Y.applyUpdate(cloud, persisted.state);
     cloud.getText('body').insert(0, 'cloud edit • ');
-    replica.save({ workspaceId, pageId }, Y.encodeStateAsUpdate(cloud), Y.encodeStateVector(cloud));
+    replica.save({ knowledgeBaseId, pageId }, Y.encodeStateAsUpdate(cloud), Y.encodeStateVector(cloud));
 
     // A fresh load after the replica advanced must show both contributions.
     await local.destroy();

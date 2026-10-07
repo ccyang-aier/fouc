@@ -117,7 +117,7 @@ export function settleTreeLifecycle(pages: readonly Page[], lifecycle: PageLifec
  */
 export function optimisticCreatedPage(input: {
   id: string;
-  workspaceId: string;
+  knowledgeBaseId: string;
   teamspaceId: string;
   parentId: string | null;
   parentPath: string | null;
@@ -132,7 +132,7 @@ export function optimisticCreatedPage(input: {
   const label = input.id.replaceAll('-', '_');
   return {
     id: input.id,
-    workspaceId: input.workspaceId,
+    knowledgeBaseId: input.knowledgeBaseId,
     teamspaceId: input.teamspaceId,
     parentId: input.parentId,
     kind: input.kind ?? 'doc',

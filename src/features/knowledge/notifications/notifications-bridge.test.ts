@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test';
 import { publishKnowledgeNotifications, readKnowledgeNotifications, resetKnowledgeNotificationsBridge, subscribeKnowledgeNotifications } from './notifications-bridge';
 import { notificationInboxKey, notificationUnreadCountKey } from './notifications-queries';
 import { knowledgeQueryKeys } from '../data/query-keys';
-import { invalidationSegmentsForEvent } from '../collaboration/workspace-events';
+import { invalidationSegmentsForEvent } from '../collaboration/knowledge-base-events';
 import { knowledgeKeysForSegments } from '../data/invalidation';
 
 /**
@@ -16,7 +16,7 @@ afterEach(() => resetKnowledgeNotificationsBridge());
 
 function snapshot(overrides: Partial<NonNullable<ReturnType<typeof readKnowledgeNotifications>>> = {}) {
   return {
-    workspaceId: '20000000-0000-4000-8000-000000000000',
+    knowledgeBaseId: '20000000-0000-4000-8000-000000000000',
     status: 'ready' as const,
     items: [],
     unreadCount: 0,
@@ -39,7 +39,7 @@ describe('notifications bridge', () => {
     unsubscribe();
   });
 
-  test('a cleared bridge (workspace switch or unmount) notifies and reads back null', () => {
+  test('a cleared bridge (knowledgeBase switch or unmount) notifies and reads back null', () => {
     publishKnowledgeNotifications(snapshot());
     let cleared = false;
     const unsubscribe = subscribeKnowledgeNotifications(() => { cleared = readKnowledgeNotifications() === null; });
@@ -60,13 +60,13 @@ describe('notifications bridge', () => {
 
 describe('notifications realtime wiring', () => {
   test('notification.created events invalidate the inbox and badge key namespace', () => {
-    const workspaceId = '20000000-0000-4000-8000-000000000000';
+    const knowledgeBaseId = '20000000-0000-4000-8000-000000000000';
     const segments = invalidationSegmentsForEvent({ type: 'notification.created' });
-    const keys = knowledgeKeysForSegments(workspaceId, segments);
-    const root = knowledgeQueryKeys.notifications(workspaceId).join('/');
+    const keys = knowledgeKeysForSegments(knowledgeBaseId, segments);
+    const root = knowledgeQueryKeys.notifications(knowledgeBaseId).join('/');
     expect(keys.some((key) => key.join('/') === root)).toBe(true);
     // Both live reads extend that root, so the single invalidation refetches them together.
-    expect(notificationInboxKey(workspaceId).slice(0, 3).join('/')).toBe(root);
-    expect(notificationUnreadCountKey(workspaceId).slice(0, 3).join('/')).toBe(root);
+    expect(notificationInboxKey(knowledgeBaseId).slice(0, 3).join('/')).toBe(root);
+    expect(notificationUnreadCountKey(knowledgeBaseId).slice(0, 3).join('/')).toBe(root);
   });
 });

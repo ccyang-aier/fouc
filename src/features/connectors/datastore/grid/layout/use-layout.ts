@@ -13,7 +13,7 @@ function snapshot(scope: string): GridLayout {
 function changed(event: StorageEvent) {
   for (const scope of listeners.keys()) if (event.key === null || event.key === GRID_LAYOUT_PREFIX + scope) { layouts.set(scope, loadGridLayout(storage(), scope)); for (const listener of listeners.get(scope) ?? []) listener() }
 }
-/** Scope is supplied by the resource owner and includes workspace identity. Unscoped grids stay local. */
+/** Scope is supplied by the resource owner and includes connection identity. Unscoped grids stay local. */
 export function useGridLayout(scope: string | undefined, onNotice: (message: string) => void) {
   const [local, setLocal] = useState(defaultGridLayout)
   const subscribe = useCallback((listener: () => void) => {

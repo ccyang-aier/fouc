@@ -6,7 +6,7 @@ import { loadQueryChartConfig, saveQueryChartConfig, type QueryChartConfig } fro
 const snapshots = new Map<string, QueryChartConfig | null>()
 function storage(): Storage | undefined { try { return typeof window === 'undefined' ? undefined : window.localStorage } catch { return undefined } }
 function subscribe() { return () => {} }
-/** The owner supplies a workspace-scoped resource key. Unscoped charts never persist. */
+/** The owner supplies a connection-scoped resource key. Unscoped charts never persist. */
 export function useStoredChartConfig(scope: string | undefined) {
   const getSnapshot = useCallback(() => {
     if (!scope) return null

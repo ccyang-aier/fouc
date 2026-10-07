@@ -14,15 +14,15 @@ const password = decodeURIComponent(endpoint.password);
 const client = new Redis({ host: config.host, port: config.port, username: config.username || undefined, password: password || undefined, db: 15, retryStrategy: () => null, commandTimeout: 10000 });
 client.on('error', () => {});
 const prefix = 'fouc:dbx-write-lab:';
-const base = 'http://127.0.0.1:8710/api/database/workspaces/dbx-redis-write-verification/redis';
+const base = 'http://127.0.0.1:8710/api/database/redis';
 const raw = (value) => Buffer.from(value).toString('base64');
 const key = (suffix) => prefix + suffix;
 const named = ['string', 'list', 'set', 'hash', 'zset', 'stream', 'renamed', 'collision', 'large', 'create-race', 'expires', 'ttl-change', 'restore', 'field-ttl', 'ui-string', 'ui-list', 'ui-set', 'ui-hash', 'ui-zset', 'ui-stream'];
 const aclName = 'fouc_dbx_write_verifier';
 const aclPassword = crypto.randomUUID();
-let session, restricted;
-async function request(route, body, { status = 200, workspace, method = 'POST' } = {}) {
-  const url = (workspace ? base.replace('dbx-redis-write-verification', workspace) : base) + route;
+let session, otherSession, restricted;
+async function request(route, body, { status = 200, method = 'POST' } = {}) {
+  const url = base + route;
   const response = await fetch(url, { method, headers: { 'content-type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(20000) });
   const result = await response.json();
   assert.equal(response.status, status, `${route}: ${result.error?.message}`);
@@ -119,7 +119,10 @@ try {
   await mutate({ kind: 'rename', key: raw(key('string')), destination: raw(key('renamed')) });
   assert.equal(await client.get(key('renamed')), 'after-preview');
   const crossPlan = await preview({ kind: 'delete', key: raw(key('renamed')) });
-  await commit(crossPlan, { status: 400, workspace: 'other-workspace' });
+  otherSession = await request('/sessions', { ...config, password }, { status: 201 });
+  await request(`/sessions/${otherSession.id}/write-mode`, { readOnly: false });
+  await request(`/sessions/${otherSession.id}/mutations/commit`, { planId: crossPlan.id, confirmed: true }, { status: 400 });
+  assert.equal(await client.get(key('renamed')), 'after-preview', 'a plan cannot write through another active session');
   await request(route('write-mode'), { readOnly: true });
   await request(route('write-mode'), { readOnly: false });
   await commit(crossPlan, { status: 400 });
@@ -165,6 +168,7 @@ try {
   await client.xadd(key('ui-stream'), '*', 'event', 'before');
   console.log(`PASS Redis ${version} mutations: six types, exact binary arguments, full string editor, preserved TTL, stale/expiry/create collisions, list duplicates, 64-bit Stream IDs, single-use scoped plans, relock, ACL rejection before writes and runtime-error compensation.`);
 } finally {
+  if (otherSession) await request(`/sessions/${otherSession.id}`, undefined, { method: 'DELETE' });
   if (restricted) await request(`/sessions/${restricted.id}`, undefined, { method: 'DELETE' });
   if (session) await request(`/sessions/${session.id}`, undefined, { method: 'DELETE' });
   await client.acl('DELUSER', aclName).catch(() => {});

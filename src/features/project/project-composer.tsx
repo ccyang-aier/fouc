@@ -67,7 +67,7 @@ export function ProjectComposer() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
               <DropdownMenuLabel>任务权限</DropdownMenuLabel>
-              {["默认权限", "仅查看", "允许修改工作区"].map((item) => <DropdownMenuCheckboxItem key={item} checked={permission === item} onCheckedChange={() => setPermission(item)}>{item}</DropdownMenuCheckboxItem>)}
+              {["默认权限", "仅查看", "允许修改项目文件"].map((item) => <DropdownMenuCheckboxItem key={item} checked={permission === item} onCheckedChange={() => setPermission(item)}>{item}</DropdownMenuCheckboxItem>)}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

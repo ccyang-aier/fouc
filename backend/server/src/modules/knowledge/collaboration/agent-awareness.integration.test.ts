@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 import { principal } from '@fouc/shared/knowledge/contracts';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
 import { replaceAuthorizedPageAcl } from '../permissions/mutations';
 import { createPermissionsFixture, until, type PermissionsFixture } from '../permissions/permissions-test-fixture';
 import { pageDocumentName } from '@fouc/shared/knowledge/collaboration';
@@ -30,8 +30,8 @@ describe('server-side agent awareness publication', () => {
   });
 
   async function grantEdit(pageId: string) {
-    await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => replaceAuthorizedPageAcl(db, {
-      workspaceId: fixture.alpha.id, pageId, grants: [{ principal: principal('user', fixture.reader.identity.userId), level: 'edit' }],
+    await withKnowledgeBase(fixture.pool, fixture.alpha.id, (db) => replaceAuthorizedPageAcl(db, {
+      knowledgeBaseId: fixture.alpha.id, pageId, grants: [{ principal: principal('user', fixture.reader.identity.userId), level: 'edit' }],
     }));
     await fixture.drain();
   }
@@ -39,7 +39,7 @@ describe('server-side agent awareness publication', () => {
   test('a human peer sees the agent cursor and its removal', async () => {
     const { pages } = await fixture.tree({ defaultAccess: null });
     await grantEdit(pages[0].pageId);
-    const name = pageDocumentName({ workspaceId: fixture.alpha.id, pageId: pages[1].pageId });
+    const name = pageDocumentName({ knowledgeBaseId: fixture.alpha.id, pageId: pages[1].pageId });
 
     const { connectCollaborationClient } = await import('../../../../../../qa/helpers/collaboration-client');
     const peer = connectCollaborationClient({ port: listener.port, origin: fixture.server.webOrigin, name, authorization: fixture.reader.cookie });
@@ -74,7 +74,7 @@ describe('server-side agent awareness publication', () => {
   test('aborting the task signal clears presence and closes the session', async () => {
     const { pages } = await fixture.tree({ defaultAccess: null });
     await grantEdit(pages[0].pageId);
-    const name = pageDocumentName({ workspaceId: fixture.alpha.id, pageId: pages[2].pageId });
+    const name = pageDocumentName({ knowledgeBaseId: fixture.alpha.id, pageId: pages[2].pageId });
 
     const controller = new AbortController();
     const session = await createAgentAwarenessSession(listener.hocuspocus, {
@@ -102,7 +102,7 @@ describe('server-side agent awareness publication', () => {
 
   test('non-page document names are rejected before any connection opens', async () => {
     await expect(createAgentAwarenessSession(listener.hocuspocus, {
-      documentName: `ws:${fixture.alpha.id}`,
+      documentName: `knowledgeBase:${fixture.alpha.id}`,
       identity: { userId: fixture.owner.identity.userId, taskId: crypto.randomUUID(), name: 'Agent', color: '#22c55e' },
     })).rejects.toThrow('strict page document name');
   });

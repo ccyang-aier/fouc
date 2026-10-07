@@ -4,7 +4,6 @@ import { DatastoreCliError, type CliEnvironment, type CliOptions, type CliProvid
 
 export interface CliConnection {
   id: string;
-  workspaceId: string;
   name: string;
   config: Record<string, unknown> & { provider: CliProvider };
   updatedAt: number;
@@ -20,9 +19,8 @@ export interface CliSession {
 }
 const FAMILIES = ['relational', 'redis', 'mongo'] as const;
 
-export function workspaceRoot(options: CliOptions, family: string): string {
-  if (!options.workspace) throw new DatastoreCliError('Resource commands require --workspace or FOUC_WORKSPACE_ID', 2, 'missing_workspace');
-  return `/api/database/workspaces/${resourceSegment(options.workspace)}/${family}`;
+export function databaseRoot(family: string): string {
+  return `/api/database/${family}`;
 }
 
 export function providerFamily(provider: CliProvider): string {
@@ -31,8 +29,8 @@ export function providerFamily(provider: CliProvider): string {
 
 export async function listCliConnections(client: DatastoreHttpClient, options: CliOptions): Promise<CliConnection[]> {
   const families = options.provider ? [providerFamily(options.provider)] : FAMILIES;
-  const lists = await Promise.all(families.map(family => client.request<CliConnection[]>(workspaceRoot(options, family) + '/connections')));
-  return lists.flat().filter(connection => (!options.provider || connection.config.provider === options.provider) && connection.workspaceId === options.workspace);
+  const lists = await Promise.all(families.map(family => client.request<CliConnection[]>(databaseRoot(family) + '/connections')));
+  return lists.flat().filter(connection => (!options.provider || connection.config.provider === options.provider));
 }
 
 export async function resolveCliConnection(client: DatastoreHttpClient, options: CliOptions): Promise<CliConnection> {
@@ -40,9 +38,9 @@ export async function resolveCliConnection(client: DatastoreHttpClient, options:
   const connections = await listCliConnections(client, options);
   const exact = connections.find(connection => connection.id === options.connection);
   if (exact) return exact;
-  if (options.connectionResolution === 'id') throw new DatastoreCliError('Granted connection ID does not exist in this workspace/provider', 3, 'connection_not_found');
+  if (options.connectionResolution === 'id') throw new DatastoreCliError('Granted connection ID does not exist for this provider', 3, 'connection_not_found');
   const named = connections.filter(connection => connection.name === options.connection);
-  if (named.length !== 1) throw new DatastoreCliError(named.length ? 'Connection name is ambiguous; select its exact ID' : 'Connection does not exist in this workspace/provider', 2, 'connection_not_found');
+  if (named.length !== 1) throw new DatastoreCliError(named.length ? 'Connection name is ambiguous; select its exact ID' : 'Connection does not exist for this provider', 2, 'connection_not_found');
   return named[0];
 }
 
@@ -61,14 +59,14 @@ export async function openCliSession(client: DatastoreHttpClient, options: CliOp
   if (options.session) {
     if (options.connectionResolution === 'id') throw new DatastoreCliError('ID-scoped callers cannot borrow an existing session', 3, 'session_denied');
     if (!options.provider) throw new DatastoreCliError('--session requires an explicit --provider', 2, 'missing_provider');
-    const root = workspaceRoot(options, providerFamily(options.provider));
+    const root = databaseRoot(providerFamily(options.provider));
     return { id: options.session, provider: options.provider, database: options.database, root, base: root + '/sessions/' + resourceSegment(options.session), owned: false, raw: null };
   }
   const connection = await resolveCliConnection(client, options);
   const provider = connection.config.provider;
-  const root = workspaceRoot(options, providerFamily(provider));
-  const raw = await client.request<{ id: string; workspaceId?: string; provider?: CliProvider; database?: string }>(root + '/connections/' + resourceSegment(connection.id) + '/connect', credentials(environment));
-  if (!raw || typeof raw.id !== 'string' || !raw.id || (raw.workspaceId && raw.workspaceId !== options.workspace) || (raw.provider && raw.provider !== provider)) throw new DatastoreCliError('Device returned an invalid scoped session');
+  const root = databaseRoot(providerFamily(provider));
+  const raw = await client.request<{ id: string; provider?: CliProvider; database?: string }>(root + '/connections/' + resourceSegment(connection.id) + '/connect', credentials(environment));
+  if (!raw || typeof raw.id !== 'string' || !raw.id || (raw.provider && raw.provider !== provider)) throw new DatastoreCliError('Device returned an invalid scoped session');
   return { id: raw.id, provider, database: raw.database ?? String(connection.config.database ?? ''), root, base: root + '/sessions/' + resourceSegment(raw.id), owned, raw };
 }
 

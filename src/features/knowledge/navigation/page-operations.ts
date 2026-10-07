@@ -68,7 +68,7 @@ export type PageTreeOperations = {
 };
 
 export function usePageTreeOperations(
-  workspaceId: string | null,
+  knowledgeBaseId: string | null,
   options: { canEdit: boolean; notify: TreeNotifier },
 ): PageTreeOperations {
   const queryClient = useQueryClient();
@@ -82,7 +82,7 @@ export function usePageTreeOperations(
   const pendingRef = useRef<TreeOperation[]>([]);
   const [pending, setPending] = useState<TreeOperation[]>([]);
 
-  const pagesKey = useMemo(() => (workspaceId === null ? null : knowledgeQueryKeys.pages(workspaceId)), [workspaceId]);
+  const pagesKey = useMemo(() => (knowledgeBaseId === null ? null : knowledgeQueryKeys.pages(knowledgeBaseId)), [knowledgeBaseId]);
 
   const register = useCallback((operation: TreeOperation) => {
     pendingRef.current = [...pendingRef.current, operation];
@@ -139,15 +139,15 @@ export function usePageTreeOperations(
   );
 
   const guard = useCallback(
-    (pageId: string | null): boolean => workspaceId !== null && optionsRef.current.canEdit && (pageId === null || !hasPendingOperationFor(pending, pageId)),
-    [pending, workspaceId],
+    (pageId: string | null): boolean => knowledgeBaseId !== null && optionsRef.current.canEdit && (pageId === null || !hasPendingOperationFor(pending, pageId)),
+    [pending, knowledgeBaseId],
   );
 
   const pendingByPage = useMemo(() => pendingKindsByPage(pending), [pending]);
 
   const createPage = useCallback(
     async (target: { teamspaceId: string; parentId: string | null; title?: string; icon?: string | null; cover?: string | null; inheritsPermissions?: boolean; kind?: 'doc' | 'database' }): Promise<string | null> => {
-      if (workspaceId === null || !optionsRef.current.canEdit) return null;
+      if (knowledgeBaseId === null || !optionsRef.current.canEdit) return null;
       const pages = readPages();
       const id = crypto.randomUUID();
       const siblings = liveSiblingsUnder(pages, target.teamspaceId, target.parentId);
@@ -162,7 +162,7 @@ export function usePageTreeOperations(
       const parent = target.parentId === null ? null : pages.find((page) => page.id === target.parentId) ?? null;
       const page = optimisticCreatedPage({
         id,
-        workspaceId,
+        knowledgeBaseId,
         teamspaceId: target.teamspaceId,
         parentId: target.parentId,
         parentPath: parent?.path ?? null,
@@ -177,9 +177,9 @@ export function usePageTreeOperations(
       const created = await commit(
         { kind: 'create', page },
         'create-child',
-        () => createKnowledgePage(workspaceId, {
+        () => createKnowledgePage(knowledgeBaseId, {
           id,
-          workspaceId,
+          knowledgeBaseId,
           teamspaceId: target.teamspaceId,
           parentId: target.parentId,
           kind: target.kind ?? 'doc',
@@ -195,7 +195,7 @@ export function usePageTreeOperations(
       );
       return created === null ? null : id;
     },
-    [commit, readPages, workspaceId],
+    [commit, readPages, knowledgeBaseId],
   );
 
   const renamePage = useCallback(
@@ -206,11 +206,11 @@ export function usePageTreeOperations(
       await commit(
         { kind: 'update', pageId, previous: { title: previous.title }, next: { title } },
         'rename',
-        () => updateKnowledgePage(workspaceId!, { pageId, title }),
+        () => updateKnowledgePage(knowledgeBaseId!, { pageId, title }),
         (current, updated) => current.map((page) => (page.id === updated.id ? updated : page)),
       );
     },
-    [commit, guard, readPages, workspaceId],
+    [commit, guard, readPages, knowledgeBaseId],
   );
 
   const updateAppearance = useCallback(
@@ -232,12 +232,12 @@ export function usePageTreeOperations(
       const result = await commit(
         { kind: 'update', pageId, previous: undo, next },
         next.icon !== undefined ? 'set-icon' : 'set-cover',
-        () => updateKnowledgePage(workspaceId!, { pageId, ...next }),
+        () => updateKnowledgePage(knowledgeBaseId!, { pageId, ...next }),
         (current, updated) => current.map((page) => (page.id === updated.id ? updated : page)),
       );
       return result !== null;
     },
-    [commit, guard, readPages, workspaceId],
+    [commit, guard, readPages, knowledgeBaseId],
   );
 
   const movePage = useCallback(
@@ -262,7 +262,7 @@ export function usePageTreeOperations(
         },
         action,
         () =>
-          moveKnowledgePage(workspaceId!, {
+          moveKnowledgePage(knowledgeBaseId!, {
             pageId,
             parentId: placement.parentId,
             teamspaceId: page.teamspaceId,
@@ -273,7 +273,7 @@ export function usePageTreeOperations(
       );
       return result !== null;
     },
-    [commit, guard, readPages, workspaceId],
+    [commit, guard, readPages, knowledgeBaseId],
   );
 
   const movePageByKeyboard = useCallback(
@@ -299,12 +299,12 @@ export function usePageTreeOperations(
       await commit(
         { kind: 'recycle', pageId, deletedAt: new Date().toISOString() },
         'recycle',
-        () => recycleKnowledgePage(workspaceId!, { pageId }),
+        () => recycleKnowledgePage(knowledgeBaseId!, { pageId }),
         (current, lifecycle) => settleTreeLifecycle(current, lifecycle),
         treeOperationSuccessText('recycle', title),
       );
     },
-    [commit, guard, readPages, workspaceId],
+    [commit, guard, readPages, knowledgeBaseId],
   );
 
   const restorePage = useCallback(
@@ -316,12 +316,12 @@ export function usePageTreeOperations(
       await commit(
         { kind: 'restore', pageId, previousDeletedAt: page.deletedAt },
         'restore',
-        () => restoreKnowledgePage(workspaceId!, { pageId }),
+        () => restoreKnowledgePage(knowledgeBaseId!, { pageId }),
         (current, lifecycle) => settleTreeLifecycle(current, lifecycle),
         treeOperationSuccessText('restore', title),
       );
     },
-    [commit, guard, readPages, workspaceId],
+    [commit, guard, readPages, knowledgeBaseId],
   );
 
   return useMemo(

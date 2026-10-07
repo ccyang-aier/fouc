@@ -4,9 +4,9 @@ import {
   createPageInputSchema, listPagesInputSchema, movePageInputSchema, pageSchema,
   recyclePageInputSchema, restorePageInputSchema, updatePageInputSchema, principal,
 } from '@fouc/shared/knowledge/contracts';
-import { page, pageAcl } from '../../../platform/database/workspace/schema';
-import { OrganizationError } from '../../workspaces/errors';
-import { effectivePageAccessCondition, expandRequestPrincipals, lockPermissionWorkspace } from '../permissions';
+import { page, pageAcl } from '../../../platform/database/resources/schema';
+import { ResourceRequestError } from '../../../platform/resources/errors';
+import { effectivePageAccessCondition, expandRequestPrincipals, lockPermissionKnowledgeBase } from '../permissions';
 import { requirePageAccess, requirePageDestination, refreshPagePermissions } from './page-route-guards';
 import { createAuthorizedPage, moveAuthorizedPage, recycleAuthorizedPage, restoreAuthorizedPage, updateAuthorizedPage } from '../pages/tree';
 import { KnowledgePageError } from '../pages/errors';
@@ -23,21 +23,21 @@ async function guarded<T>(operation: () => Promise<T>): Promise<T> {
   try { return await operation(); }
   catch (error) {
     if (error instanceof KnowledgePageError) throw new TRPCError({ code: error.code === 'PAGE_NOT_FOUND' ? 'NOT_FOUND' : 'BAD_REQUEST' });
-    if (error instanceof OrganizationError) throw new TRPCError({ code: 'FORBIDDEN' });
+    if (error instanceof ResourceRequestError) throw new TRPCError({ code: 'FORBIDDEN' });
     throw apiError(error);
   }
 }
 
-/** All writes authorize under the same workspace lock used by tree/ACL changes. */
+/** All writes authorize under the same knowledgeBase lock used by tree/ACL changes. */
 export const knowledgePageRouterRecord = {
   list: knowledgeQuery({
     input: listPagesInputSchema, scopes: ['read'],
-    resolve: ({ ctx, input }) => guarded(() => ctx.withTenant(async (db, authority) => {
-      const principals = await expandRequestPrincipals(db, input.workspaceId, authority.userId);
+    resolve: ({ ctx, input }) => guarded(() => ctx.withResource(async (db, authority) => {
+      const principals = await expandRequestPrincipals(db, input.knowledgeBaseId, authority.userId);
       const rows = await db.select().from(page).where(and(
-        or(effectivePageAccessCondition({ workspaceId: input.workspaceId, principals, required: 'view' }),
-          and(eq(page.workspaceId, input.workspaceId), isNotNull(page.deletedAt), sql`exists (
-            select 1 from ${pageAcl} where ${pageAcl.workspaceId} = ${page.workspaceId}
+        or(effectivePageAccessCondition({ knowledgeBaseId: input.knowledgeBaseId, principals, required: 'view' }),
+          and(eq(page.knowledgeBaseId, input.knowledgeBaseId), isNotNull(page.deletedAt), sql`exists (
+            select 1 from ${pageAcl} where ${pageAcl.knowledgeBaseId} = ${page.knowledgeBaseId}
             and ${pageAcl.pageId} = ${page.id} and ${pageAcl.level} = 'full'
             and ${pageAcl.principal} = any(${sql.param(principals)}::text[])
           )`)),
@@ -49,32 +49,32 @@ export const knowledgePageRouterRecord = {
   }),
   create: knowledgeMutation({
     input: createPageInputSchema, scopes: ['read', 'write'],
-    resolve: ({ ctx, input }) => guarded(() => ctx.withTenant(async (db, authority) => {
-      await lockPermissionWorkspace(db, input.workspaceId);
-      const [existing] = await db.select().from(page).where(and(eq(page.workspaceId, input.workspaceId), eq(page.id, input.id)));
-      if (existing) await requirePageAccess(db, authority.userId, { workspaceId: input.workspaceId, pageId: input.id }, 'edit');
+    resolve: ({ ctx, input }) => guarded(() => ctx.withResource(async (db, authority) => {
+      await lockPermissionKnowledgeBase(db, input.knowledgeBaseId);
+      const [existing] = await db.select().from(page).where(and(eq(page.knowledgeBaseId, input.knowledgeBaseId), eq(page.id, input.id)));
+      if (existing) await requirePageAccess(db, authority.userId, { knowledgeBaseId: input.knowledgeBaseId, pageId: input.id }, 'edit');
       else await requirePageDestination(db, authority.userId, input);
       const result = await createAuthorizedPage(db, input, authority.userId);
-      if (!existing) await db.insert(pageAcl).values({ workspaceId: input.workspaceId, pageId: input.id, principal: principal('user', authority.userId), level: 'full', inherited: false });
-      await refreshPagePermissions(db, { workspaceId: input.workspaceId, pageId: input.id });
+      if (!existing) await db.insert(pageAcl).values({ knowledgeBaseId: input.knowledgeBaseId, pageId: input.id, principal: principal('user', authority.userId), level: 'full', inherited: false });
+      await refreshPagePermissions(db, { knowledgeBaseId: input.knowledgeBaseId, pageId: input.id });
       return result;
     })),
   }),
   update: knowledgeMutation({
     input: updatePageInputSchema, scopes: ['read', 'write'],
-    resolve: ({ ctx, input }) => guarded(() => ctx.withTenant(async (db, authority) => {
-      await lockPermissionWorkspace(db, input.workspaceId);
+    resolve: ({ ctx, input }) => guarded(() => ctx.withResource(async (db, authority) => {
+      await lockPermissionKnowledgeBase(db, input.knowledgeBaseId);
       await requirePageAccess(db, authority.userId, input, 'edit');
-      const { workspaceId, pageId, ...patch } = input;
-      await updateAuthorizedPage(db, { workspaceId, pageId, patch });
-      const [updated] = await db.select().from(page).where(and(eq(page.workspaceId, workspaceId), eq(page.id, pageId)));
+      const { knowledgeBaseId, pageId, ...patch } = input;
+      await updateAuthorizedPage(db, { knowledgeBaseId, pageId, patch });
+      const [updated] = await db.select().from(page).where(and(eq(page.knowledgeBaseId, knowledgeBaseId), eq(page.id, pageId)));
       return serializePage(updated!);
     })),
   }),
   move: knowledgeMutation({
     input: movePageInputSchema, scopes: ['read', 'write'],
-    resolve: ({ ctx, input }) => guarded(() => ctx.withTenant(async (db, authority) => {
-      await lockPermissionWorkspace(db, input.workspaceId);
+    resolve: ({ ctx, input }) => guarded(() => ctx.withResource(async (db, authority) => {
+      await lockPermissionKnowledgeBase(db, input.knowledgeBaseId);
       await requirePageAccess(db, authority.userId, input, 'edit');
       await requirePageDestination(db, authority.userId, input);
       const result = await moveAuthorizedPage(db, input);
@@ -84,8 +84,8 @@ export const knowledgePageRouterRecord = {
   }),
   recycle: knowledgeMutation({
     input: recyclePageInputSchema, scopes: ['read', 'write'],
-    resolve: ({ ctx, input }) => guarded(() => ctx.withTenant(async (db, authority) => {
-      await lockPermissionWorkspace(db, input.workspaceId);
+    resolve: ({ ctx, input }) => guarded(() => ctx.withResource(async (db, authority) => {
+      await lockPermissionKnowledgeBase(db, input.knowledgeBaseId);
       await requirePageAccess(db, authority.userId, input, 'full');
       const result = await recycleAuthorizedPage(db, input);
       await refreshPagePermissions(db, input);
@@ -94,14 +94,14 @@ export const knowledgePageRouterRecord = {
   }),
   restore: knowledgeMutation({
     input: restorePageInputSchema, scopes: ['read', 'write'],
-    resolve: ({ ctx, input }) => guarded(() => ctx.withTenant(async (db, authority) => {
-      await lockPermissionWorkspace(db, input.workspaceId);
-      const [record] = await db.select().from(page).where(and(eq(page.workspaceId, input.workspaceId), eq(page.id, input.pageId)));
+    resolve: ({ ctx, input }) => guarded(() => ctx.withResource(async (db, authority) => {
+      await lockPermissionKnowledgeBase(db, input.knowledgeBaseId);
+      const [record] = await db.select().from(page).where(and(eq(page.knowledgeBaseId, input.knowledgeBaseId), eq(page.id, input.pageId)));
       if (!record) throw new TRPCError({ code: 'FORBIDDEN' });
       // Recycled pages intentionally have no effective ACL. The explicit full grant
       // and current destination rights must both still permit recovery.
-      const principals = await expandRequestPrincipals(db, input.workspaceId, authority.userId);
-      const grants = await db.select().from(pageAcl).where(and(eq(pageAcl.workspaceId, input.workspaceId), eq(pageAcl.pageId, input.pageId), eq(pageAcl.level, 'full')));
+      const principals = await expandRequestPrincipals(db, input.knowledgeBaseId, authority.userId);
+      const grants = await db.select().from(pageAcl).where(and(eq(pageAcl.knowledgeBaseId, input.knowledgeBaseId), eq(pageAcl.pageId, input.pageId), eq(pageAcl.level, 'full')));
       if (!grants.some((grant) => principals.includes(grant.principal))) throw new TRPCError({ code: 'FORBIDDEN' });
       await requirePageDestination(db, authority.userId, record);
       const result = await restoreAuthorizedPage(db, input);

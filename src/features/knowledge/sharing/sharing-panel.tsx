@@ -21,7 +21,7 @@ export interface SharingApi {
 
 export interface SharingPanelProps {
   pageId: string;
-  workspaceId: string;
+  knowledgeBaseId: string;
   actorLevel: PermissionLevel | null;
   rootDefault: PermissionLevel | null;
   explicit: readonly PrincipalGrant[];
@@ -90,7 +90,7 @@ export function SharingPanel(props: SharingPanelProps) {
   };
 
   const addGrant = () => {
-    const plan = planGrantChange({ current: state.grants, actorLevel: props.actorLevel, next: { principal, level }, workspaceId: props.workspaceId });
+    const plan = planGrantChange({ current: state.grants, actorLevel: props.actorLevel, next: { principal, level }, knowledgeBaseId: props.knowledgeBaseId });
     if (!plan.ok) {
       dispatch({ type: 'failed', reason: plan.reason === 'beyond-grantor' ? '不能授予超过自己有效级别的权限' : '主体格式不正确或重复' });
       return;
@@ -114,7 +114,7 @@ export function SharingPanel(props: SharingPanelProps) {
         <ul className="mt-2 flex flex-wrap gap-1">
           {effective.grants.map((grant) => (
             <li key={grant.principal} className="rounded bg-overlay px-2 py-1 text-xs text-ink">
-              {principalKind(grant.principal) === 'workspace' ? '所有成员' : grant.principal} · {grant.level}
+              {principalKind(grant.principal) === 'knowledgeBase' ? '所有成员' : grant.principal} · {grant.level}
             </li>
           ))}
           {!effective.grants.length && <li className="text-xs text-muted">无</li>}
@@ -140,10 +140,10 @@ export function SharingPanel(props: SharingPanelProps) {
           <div key={grant.principal} className="flex items-center justify-between rounded-md bg-overlay px-3 py-2">
             <span className="text-sm text-ink">{grant.principal}</span>
             <span className="flex items-center gap-2">
-              <select value={grant.level} disabled={!writable || state.busy || !canGrant(props.actorLevel, grant, props.workspaceId)}
+              <select value={grant.level} disabled={!writable || state.busy || !canGrant(props.actorLevel, grant, props.knowledgeBaseId)}
                 onChange={(event) => {
                   const next = { principal: grant.principal, level: event.target.value as PermissionLevel };
-                  const plan = planGrantChange({ current: state.grants, actorLevel: props.actorLevel, next, workspaceId: props.workspaceId });
+                  const plan = planGrantChange({ current: state.grants, actorLevel: props.actorLevel, next, knowledgeBaseId: props.knowledgeBaseId });
                   if (!plan.ok) return;
                   void run(async () => {
                     await props.api.saveGrants(props.pageId, plan.grants);
@@ -168,7 +168,7 @@ export function SharingPanel(props: SharingPanelProps) {
           </div>
         ))}
         <div className="flex gap-2">
-          <input value={principal} onChange={(event) => setPrincipal(event.target.value)} placeholder="user:… / group:… / workspace"
+          <input value={principal} onChange={(event) => setPrincipal(event.target.value)} placeholder="user:… / group:… / knowledgeBase:…"
             disabled={!writable || state.busy} className="flex-1 rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink" />
           <select value={level} onChange={(event) => setLevel(event.target.value as PermissionLevel)} disabled={!writable || state.busy}
             className="rounded-md border border-line bg-surface px-2 py-2 text-sm text-ink">

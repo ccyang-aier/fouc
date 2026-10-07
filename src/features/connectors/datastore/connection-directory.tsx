@@ -8,7 +8,6 @@ import type { DatabaseConnectionOptionsInput } from '@fouc/shared/connection-opt
 import { resolveConnectionOptions } from '@fouc/shared/connection-options';
 import type { ConnectionDirectoryMetadata } from '@fouc/shared/connection-directory';
 import { backendFetch } from '@/lib/backend';
-import { useWorkspace } from '@/features/workspaces/workspace-provider';
 import { useProjectResources } from '@/features/project/project-resources';
 import { RelationalDialog } from './relational-dialog';
 import { RelationalWorkbench } from './relational-workbench';
@@ -28,21 +27,20 @@ import { appendConnectionTags, runConnectionBatch, type ConnectionBatchAction, t
 type Session = RelationalSession | RedisSession | MongoSession;
 type Props = { provider: DatastoreProvider; onBack: () => void; onOpenProject: (id: string) => void; onWorkbenchFocus?: () => void };
 export function DatastoreConnections(props: Props) {
-  const { activeSpace } = useWorkspace();
   const { projects } = useProjectResources();
   const { onWorkbenchFocus } = props;
   useEffect(() => {
     if (window.matchMedia('(max-width: 760px)').matches) onWorkbenchFocus?.();
   }, [onWorkbenchFocus]);
-  return <ConnectionDirectory key={`${activeSpace.id}:${props.provider}`} {...props} workspaceId={activeSpace.id}
-    projects={projects.filter(project => project.workspaceId === activeSpace.id)} />;
+  return <ConnectionDirectory key={props.provider} {...props}
+    projects={projects} />;
 }
 
-function ConnectionDirectory({ provider, workspaceId, onBack, onOpenProject, onWorkbenchFocus, projects }: Props & {
-  workspaceId: string; projects: { id: string; name: string }[];
+function ConnectionDirectory({ provider, onBack, onOpenProject, onWorkbenchFocus, projects }: Props & {
+  projects: { id: string; name: string }[];
 }) {
   const descriptor = directoryProviders[provider];
-  const base = `/api/database/workspaces/${encodeURIComponent(workspaceId)}/${descriptor.family}`;
+  const base = `/api/database/${descriptor.family}`;
   const [connections, setConnections] = useState<SavedDatastoreConnection[]>([]);
   const [loading, setLoading] = useState(true), [error, setError] = useState('');
   const [revision, setRevision] = useState(0), [selection, setSelection] = useState<string[]>([]);
@@ -122,7 +120,7 @@ function ConnectionDirectory({ provider, workspaceId, onBack, onOpenProject, onW
   }
   function beginBatch(action: ConnectionBatchAction, ids: readonly string[]) {
     if (batchRunning.current || busy || pending.current.size) return;
-    const chosen = connections.filter(connection => connection.workspaceId === workspaceId && connection.config.provider === provider && ids.includes(connection.id));
+    const chosen = connections.filter(connection => connection.config.provider === provider && ids.includes(connection.id));
     if (chosen.length) { setBatchResult(null); setBatchDialog({ action, connections: chosen }); }
   }
   async function batch(action: ConnectionBatchAction, perform: (connection: SavedDatastoreConnection) => Promise<unknown>) {
@@ -158,10 +156,10 @@ function ConnectionDirectory({ provider, workspaceId, onBack, onOpenProject, onW
   const connectSelected = (password: string, options?: DatabaseConnectionOptionsInput) => connect(dialog!.connection!, password, options, true).then(() => undefined);
   const testSelected = (password: string, options?: DatabaseConnectionOptionsInput) => connect(dialog!.connection!, password, options, false);
   return <>
-    <ConnectionList label={descriptor.label} targetLabel={descriptor.targetLabel} accountLabel={descriptor.accountLabel} authSourceLabel={descriptor.authSourceLabel} scopeKey={`${workspaceId}:${provider}`}
-      rows={connections.filter(entry => entry.config.provider === provider && entry.workspaceId === workspaceId).map(entry => connectionListRow(entry, testingId === entry.id))}
+    <ConnectionList label={descriptor.label} targetLabel={descriptor.targetLabel} accountLabel={descriptor.accountLabel} authSourceLabel={descriptor.authSourceLabel} scopeKey={provider}
+      rows={connections.filter(entry => entry.config.provider === provider).map(entry => connectionListRow(entry, testingId === entry.id))}
       projects={projects} loading={loading} error={error} pendingIds={pendingIds} selectedIds={selection} batchProgress={batchProgress} batchResult={batchResult}
-      headerActions={<ConnectionConfigTransferActions workspaceId={workspaceId} provider={provider} connections={connections} selectedIds={selection} disabled={loading || busy || Boolean(batchProgress)} onImported={() => setRevision(value => value + 1)} />}
+      headerActions={<ConnectionConfigTransferActions provider={provider} connections={connections} selectedIds={selection} disabled={loading || busy || Boolean(batchProgress)} onImported={() => setRevision(value => value + 1)} />}
       onBack={onBack} onCreate={() => setDialog({ intent: 'save' })} onRetry={() => { setError(''); setLoading(true); setRevision(value => value + 1); }}
       onOpen={row => { if (row.status === 'passed') setDialog({ intent: 'connect', connection: get(row.id) }); }} onEdit={row => setDialog({ intent: 'save', connection: get(row.id) })}
       onRemove={row => { setError(''); setRemoving(get(row.id) ?? null); }} onOpenProject={onOpenProject}
@@ -179,9 +177,9 @@ function ConnectionDirectory({ provider, workspaceId, onBack, onOpenProject, onW
     {batchDialog?.action === 'delete' && <ConnectionDeleteDialog connections={batchDialog.connections} busy={Boolean(batchProgress)} onClose={() => setBatchDialog(null)}
       onDelete={() => { void batch('delete', removeConnection).then(() => { if (mounted.current) setBatchDialog(null); }); }} />}
     {dialog && (provider === 'redis'
-      ? <RedisDialog key={`${dialog.intent}:${dialog.connection?.id ?? 'new'}`} workspaceId={workspaceId} connection={dialog.connection as RedisSavedConnection | undefined} intent={dialog.intent} onClose={() => setDialog(null)} onSave={save} onConnect={connectSelected} onTest={testSelected} />
+      ? <RedisDialog key={`${dialog.intent}:${dialog.connection?.id ?? 'new'}`} connection={dialog.connection as RedisSavedConnection | undefined} intent={dialog.intent} onClose={() => setDialog(null)} onSave={save} onConnect={connectSelected} onTest={testSelected} />
       : provider === 'mongodb'
-        ? <MongoDialog key={`${dialog.intent}:${dialog.connection?.id ?? 'new'}`} workspaceId={workspaceId} connection={dialog.connection as MongoSavedConnection | undefined} intent={dialog.intent} onClose={() => setDialog(null)} onSave={save} onConnect={connectSelected} onTest={testSelected} />
-        : <RelationalDialog key={`${dialog.intent}:${dialog.connection?.id ?? 'new'}`} workspaceId={workspaceId} provider={provider} connection={dialog.connection as RelationalSavedConnection | undefined} intent={dialog.intent} onClose={() => setDialog(null)} onSave={save} onConnect={connectSelected} onTest={testSelected} />)}
+        ? <MongoDialog key={`${dialog.intent}:${dialog.connection?.id ?? 'new'}`} connection={dialog.connection as MongoSavedConnection | undefined} intent={dialog.intent} onClose={() => setDialog(null)} onSave={save} onConnect={connectSelected} onTest={testSelected} />
+        : <RelationalDialog key={`${dialog.intent}:${dialog.connection?.id ?? 'new'}`} provider={provider} connection={dialog.connection as RelationalSavedConnection | undefined} intent={dialog.intent} onClose={() => setDialog(null)} onSave={save} onConnect={connectSelected} onTest={testSelected} />)}
   </>;
 }

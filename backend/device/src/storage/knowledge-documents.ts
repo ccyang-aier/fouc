@@ -9,7 +9,7 @@
 import type { Database } from 'bun:sqlite';
 
 export interface PageDocumentScope {
-  workspaceId: string;
+  knowledgeBaseId: string;
   pageId: string;
 }
 
@@ -28,21 +28,21 @@ export interface PageDocumentReplica {
 export const KNOWLEDGE_PAGE_DOCUMENT_SCHEMA = 'knowledge_page_document';
 
 export function createSqlitePageDocumentReplica(db: Database): PageDocumentReplica {
-  const load = db.prepare('SELECT state, state_vector, updated_at FROM knowledge_page_document WHERE workspace_id = ? AND page_id = ?');
+  const load = db.prepare('SELECT state, state_vector, updated_at FROM knowledge_page_document WHERE knowledge_base_id = ? AND page_id = ?');
   const save = db.prepare(`
-    INSERT INTO knowledge_page_document (workspace_id, page_id, state, state_vector, updated_at)
+    INSERT INTO knowledge_page_document (knowledge_base_id, page_id, state, state_vector, updated_at)
     VALUES (?, ?, ?, ?, ?)
-    ON CONFLICT (workspace_id, page_id) DO UPDATE
+    ON CONFLICT (knowledge_base_id, page_id) DO UPDATE
       SET state = excluded.state, state_vector = excluded.state_vector, updated_at = excluded.updated_at
   `);
   return {
     load(scope) {
-      const row = load.get(scope.workspaceId, scope.pageId) as { state: Uint8Array; state_vector: Uint8Array; updated_at: number } | null;
+      const row = load.get(scope.knowledgeBaseId, scope.pageId) as { state: Uint8Array; state_vector: Uint8Array; updated_at: number } | null;
       if (!row) return undefined;
       return { state: new Uint8Array(row.state), stateVector: new Uint8Array(row.state_vector), updatedAt: row.updated_at };
     },
     save(scope, state, stateVector) {
-      save.run(scope.workspaceId, scope.pageId, state, stateVector, Date.now());
+      save.run(scope.knowledgeBaseId, scope.pageId, state, stateVector, Date.now());
     },
   };
 }

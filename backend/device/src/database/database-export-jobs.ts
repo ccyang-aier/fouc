@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { mkdir, readdir, rename, rmdir, unlink } from 'node:fs/promises';
 import { join, resolve, sep } from 'node:path';
-import { DATABASE_EXPORT_MAX_STORED_BYTES, DATABASE_EXPORT_MAX_WORKSPACE_BYTES, type DatabaseExportProgress } from '@fouc/shared/database-export';
+import { DATABASE_EXPORT_MAX_STORED_BYTES, DATABASE_EXPORT_MAX_SESSION_BYTES, type DatabaseExportProgress } from '@fouc/shared/database-export';
 import { DatabaseInputError } from './input-error';
 import { prepareDatabaseExport } from './database-export-plan';
 import { runDatabaseExport } from './database-export-run';
@@ -20,19 +20,19 @@ interface Job {
 }
 
 function sameScope(a: DatabaseExportScope, b: DatabaseExportScope): boolean {
-  return a.workspaceId === b.workspaceId && a.sessionId === b.sessionId;
+  return a.sessionId === b.sessionId;
 }
 
-/** Device-only UUID artifacts, scoped to the owning workspace and live session. */
+/** Device-only UUID artifacts, scoped to the owning live session. */
 export class DatabaseExportJobs {
   private readonly jobs = new Map<string, Job>();
   private readonly directory: string;
   private readonly ready: Promise<void>;
   private closed = false;
 
-  constructor(directory: string, private readonly budget = { maxStoredBytes: DATABASE_EXPORT_MAX_STORED_BYTES, maxWorkspaceBytes: DATABASE_EXPORT_MAX_WORKSPACE_BYTES }) {
+  constructor(directory: string, private readonly budget = { maxStoredBytes: DATABASE_EXPORT_MAX_STORED_BYTES, maxSessionBytes: DATABASE_EXPORT_MAX_SESSION_BYTES }) {
     this.directory = resolve(directory);
-    if (![budget.maxStoredBytes, budget.maxWorkspaceBytes].every(value => Number.isSafeInteger(value) && value > 0)) throw new Error('原生导出磁盘预算须为正整数。');
+    if (![budget.maxStoredBytes, budget.maxSessionBytes].every(value => Number.isSafeInteger(value) && value > 0)) throw new Error('原生导出磁盘预算须为正整数。');
     this.ready = this.initialize();
     // start() reports initialization errors through the job status, never an unhandled rejection.
     void this.ready.catch(() => undefined);
@@ -55,7 +55,7 @@ export class DatabaseExportJobs {
 
   start(scope: DatabaseExportScope, adapter: NativeDatabaseExportAdapter, input: unknown): DatabaseExportProgress {
     if (this.closed) throw new DatabaseInputError('导出任务管理器已关闭。');
-    if (!scope.workspaceId || !scope.sessionId) throw new DatabaseInputError('导出任务缺少工作空间或会话。');
+    if (!scope.sessionId) throw new DatabaseInputError('导出任务缺少会话。');
     const owned = [...this.jobs.values()].filter(job => sameScope(job.scope, scope));
     const active = owned.filter(job => ['preparing', 'running', 'finalizing'].includes(job.progress.status));
     if (active.length >= 2 || owned.length >= 16 || this.jobs.size >= 128) throw new DatabaseInputError('导出任务已达到上限，请取消运行任务或清理已完成文件后重试。');
@@ -77,7 +77,7 @@ export class DatabaseExportJobs {
 
   private get(scope: DatabaseExportScope, id: string): Job {
     const job = this.jobs.get(id);
-    if (!job || !sameScope(job.scope, scope)) throw new DatabaseInputError('当前工作空间与会话没有这个导出任务。');
+    if (!job || !sameScope(job.scope, scope)) throw new DatabaseInputError('当前会话没有这个导出任务。');
     return job;
   }
 
@@ -144,12 +144,12 @@ export class DatabaseExportJobs {
       writer = await DatabaseExportWriter.create(job.partial, zip, signal, bytes => {
         job.storedBytes = bytes;
         job.progress.bytes = bytes;
-        let total = 0, workspace = 0;
+        let total = 0, session = 0;
         for (const item of this.jobs.values()) {
           total += item.storedBytes;
-          if (item.scope.workspaceId === job.scope.workspaceId) workspace += item.storedBytes;
+          if (item.scope.sessionId === job.scope.sessionId) session += item.storedBytes;
         }
-        if (total > this.budget.maxStoredBytes || workspace > this.budget.maxWorkspaceBytes) throw new Error('设备 / 工作空间的导出临时文件预算已满，请清理已完成任务或缩小导出范围。');
+        if (total > this.budget.maxStoredBytes || session > this.budget.maxSessionBytes) throw new Error('设备 / 会话的导出临时文件预算已满，请清理已完成任务或缩小导出范围。');
       });
       const summary = await runDatabaseExport(adapter, prepared, writer, signal, update => {
         job.progress.table = update.table;

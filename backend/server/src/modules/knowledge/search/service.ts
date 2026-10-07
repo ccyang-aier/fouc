@@ -2,9 +2,9 @@ import { and, asc, eq, or, sql } from 'drizzle-orm';
 import type { Pool } from 'pg';
 import type { ModelBinding, Principal } from '@fouc/shared/knowledge/contracts';
 import type { HybridSearchHit, HybridSearchResult } from '@fouc/shared/knowledge/search';
-import { blockIndex } from '../../../platform/database/workspace/schema';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
-import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
+import { blockIndex } from '../../../platform/database/resources/schema';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
+import type { ResourceTransaction } from '../../../platform/database/resources/transaction';
 import { ModelGatewayError } from '../ai/gateway';
 import type { ModelGateway } from '../ai/gateway';
 import { indexedBlockAccessCondition } from '../permissions/queries';
@@ -40,7 +40,7 @@ const SNIPPET_WINDOW = 120;
 const blockAnchor = /\s*\{#b:[A-Za-z0-9_-]+\}/g;
 
 export interface HybridSearchInput {
-  readonly workspaceId: string;
+  readonly knowledgeBaseId: string;
   /**
    * 必须来自服务端已验证身份展开的主体集合（与 P03/H03 同一约定），绝不可直接
    * 采用请求体数组。空集合表示无任何授权，返回空结果。
@@ -53,9 +53,9 @@ export interface HybridSearchInput {
 
 export interface HybridSearchOptions extends HybridSearchInput {
   readonly gateway: SearchGateway;
-  /** 运行时解析出的 embed 档绑定；仅当它与工作区当前生效模型一致时向量腿才运行。 */
+  /** 运行时解析出的 embed 档绑定；仅当它与知识库当前生效模型一致时向量腿才运行。 */
   readonly embedBinding: EmbeddingBinding;
-  /** 工作区 rerank 档绑定；缺省时走网关平台默认，两者皆无则按降级语义跳过重排。 */
+  /** 知识库 rerank 档绑定；缺省时走网关平台默认，两者皆无则按降级语义跳过重排。 */
   readonly rerankBinding?: ModelBinding;
   /** 网关调用身份；每个 actorSchema 变体都携带发起用户。 */
   readonly userId: string;
@@ -117,7 +117,7 @@ interface VectorRow {
  * 表达式退化为精确距离扫描，语义不变。绑定参数的模型谓词在自定义计划中被代入
  * 常量，部分索引可用性不受参数化影响（实测 pgvector 0.8.x）。
  */
-async function searchBlocksByVector(db: WorkspaceTenantTransaction, input: HybridSearchInput & {
+async function searchBlocksByVector(db: ResourceTransaction, input: HybridSearchInput & {
   target: EmbeddingModelTarget;
   queryVector: readonly number[];
 }): Promise<VectorRow[]> {
@@ -134,7 +134,7 @@ async function searchBlocksByVector(db: WorkspaceTenantTransaction, input: Hybri
     distance,
   }).from(blockIndex)
     .where(and(
-      indexedBlockAccessCondition({ workspaceId: input.workspaceId, principals: [...input.principals] }),
+      indexedBlockAccessCondition({ knowledgeBaseId: input.knowledgeBaseId, principals: [...input.principals] }),
       eq(blockIndex.embedModel, input.target.model),
       eq(blockIndex.embedDimensions, input.target.dimensions),
       sql`${blockIndex.embedding} IS NOT NULL`,
@@ -145,13 +145,13 @@ async function searchBlocksByVector(db: WorkspaceTenantTransaction, input: Hybri
 
 /** Full text for keyword-only candidates: rerank documents and vector-only snippets need it. */
 async function loadCandidateContent(pool: Pool, input: HybridSearchInput, keys: readonly { pageId: string; blockId: string }[]): Promise<Map<string, { titlePath: string | null; contentMd: string }>> {
-  const rows = await withWorkspaceTenant(pool, input.workspaceId, (db) => db.select({
+  const rows = await withKnowledgeBase(pool, input.knowledgeBaseId, (db) => db.select({
     pageId: blockIndex.pageId,
     blockId: blockIndex.blockId,
     titlePath: blockIndex.titlePath,
     contentMd: blockIndex.contentMd,
   }).from(blockIndex).where(and(
-    indexedBlockAccessCondition({ workspaceId: input.workspaceId, principals: [...input.principals] }),
+    indexedBlockAccessCondition({ knowledgeBaseId: input.knowledgeBaseId, principals: [...input.principals] }),
     or(...keys.map((key) => and(eq(blockIndex.pageId, key.pageId), eq(blockIndex.blockId, key.blockId)))),
   )));
   return new Map(rows.map((row) => [candidateKey(row.pageId, row.blockId), { titlePath: row.titlePath, contentMd: row.contentMd }]));
@@ -172,7 +172,7 @@ async function loadCandidateContent(pool: Pool, input: HybridSearchInput, keys: 
  * 静态索引不可表达（pgvector 拒绝在无维度列上建 HNSW，实测），且 H02 的原子
  * 切换事务不能容纳 `CREATE INDEX CONCURRENTLY`。唯一正确形态是查询侧拥有的
  * `CREATE INDEX CONCURRENTLY block_index_hnsw_{model}_{dims}_idx ON
- * workspace.block_index USING hnsw ((embedding::vector({dims})) vector_cosine_ops)
+ * resources.block_index USING hnsw ((embedding::vector({dims})) vector_cosine_ops)
  * WHERE embed_model = '{model}' AND embed_dimensions = {dims}`——建索引起点是
  * 持有管理 DDL 权限的部署/维护通道（与 knowledge-db init/check 同级，不进 schema
  * 源与初始化事务，应用角色无 DDL 授权），在 H02 切换提交后为生效模型创建。
@@ -185,10 +185,10 @@ export async function searchHybrid(pool: Pool, options: HybridSearchOptions): Pr
   if (!Number.isInteger(limit) || limit < 1 || limit > MAX_LIMIT) throw new TypeError('Invalid hybrid search limit');
 
   const { gateway } = options;
-  const base = { workspaceId: options.workspaceId, principals: options.principals, query };
+  const base = { knowledgeBaseId: options.knowledgeBaseId, principals: options.principals, query };
 
-  // Stage 1: which model owns this workspace's vectors (§7.1 filter source).
-  const active = await withWorkspaceTenant(pool, options.workspaceId, (db) => readActiveEmbeddingModel(db, options.workspaceId));
+  // Stage 1: which model owns this knowledgeBase's vectors (§7.1 filter source).
+  const active = await withKnowledgeBase(pool, options.knowledgeBaseId, (db) => readActiveEmbeddingModel(db, options.knowledgeBaseId));
 
   // Stage 2: the query vector, generated outside any transaction by the ACTIVE model only.
   type VectorLeg = HybridSearchResult['vectorLeg'];
@@ -204,7 +204,7 @@ export async function searchHybrid(pool: Pool, options: HybridSearchOptions): Pr
   } else {
     try {
       const embedded = await gateway.embed({
-        context: { workspaceId: options.workspaceId, userId: options.userId },
+        context: { knowledgeBaseId: options.knowledgeBaseId, userId: options.userId },
         settings: { embed: options.embedBinding },
         values: [query],
         timeoutMs: modelTimeoutMs,
@@ -220,9 +220,9 @@ export async function searchHybrid(pool: Pool, options: HybridSearchOptions): Pr
     }
   }
 
-  // Stage 3: both legs share one tenant transaction (consistent snapshot), each inside the
+  // Stage 3: both legs share one resource transaction (consistent snapshot), each inside the
   // access predicate, each capped at 50 (§7.2).
-  const { keywordHits, vectorRows } = await withWorkspaceTenant(pool, options.workspaceId, async (db) => {
+  const { keywordHits, vectorRows } = await withKnowledgeBase(pool, options.knowledgeBaseId, async (db) => {
     const keywordHits = await searchBlocksByKeyword(db, { ...base, limit: LEG_LIMIT });
     const vectorRows = queryVector && active ? await searchBlocksByVector(db, { ...base, target: active, queryVector }) : [];
     return { keywordHits, vectorRows };
@@ -275,7 +275,7 @@ export async function searchHybrid(pool: Pool, options: HybridSearchOptions): Pr
   } else {
     try {
       const { ranking } = await gateway.rerank({
-        context: { workspaceId: options.workspaceId, userId: options.userId },
+        context: { knowledgeBaseId: options.knowledgeBaseId, userId: options.userId },
         settings: options.rerankBinding ? { rerank: options.rerankBinding } : {},
         query,
         documents: rerankable.map((candidate) => truncateDocument(embeddingInput(candidate.titlePath ?? null, candidate.contentMd!))),

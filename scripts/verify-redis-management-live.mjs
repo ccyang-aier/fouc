@@ -13,12 +13,12 @@ other.on('error', () => {});
 const prefix = 'fouc:dbx-management-lab:';
 const names = ['shared', 'hash', 'ui-field', 'ui-database'];
 const raw = (value) => Buffer.from(value).toString('base64');
-const base = 'http://127.0.0.1:8710/api/database/workspaces/dbx-redis-management-verification/redis';
+const base = 'http://127.0.0.1:8710/api/database/redis';
 const aclName = 'fouc_dbx_management_verifier';
 const aclPassword = crypto.randomUUID();
 let saved, session, restricted;
-async function request(path, body, { method = body ? 'POST' : 'GET', status = 200, workspace } = {}) {
-  const response = await fetch((workspace ? base.replace('dbx-redis-management-verification', workspace) : base) + path, {
+async function request(path, body, { method = body ? 'POST' : 'GET', status = 200, missingSession = false } = {}) {
+  const response = await fetch(base + (missingSession ? path.replace(/^\/sessions\/[^/]+/, `/sessions/${crypto.randomUUID()}`) : path), {
     method, headers: { 'content-type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(20000),
   });
   const result = await response.json();
@@ -71,8 +71,8 @@ try {
   assert.equal(history.persistent, true); assert.equal(history.entries.length, 3);
   assert.deepEqual(history.entries.map((entry) => [entry.database, entry.success]), [[15, false], [15, true], [14, true]]);
   assert.ok(!JSON.stringify(history).includes(rejectedSecret));
-  await request(path('history'), undefined, { workspace: 'other-space', status: 400 });
-  await request(`/sessions/${session.id}`, undefined, { method: 'DELETE', workspace: 'other-space', status: 400 });
+  await request(path('history'), undefined, { missingSession: true, status: 400 });
+  await request(`/sessions/${session.id}`, undefined, { method: 'DELETE', missingSession: true, status: 400 });
   assert.equal((await value('shared')).data.content.display, 'DB15');
   await request(`/sessions/${session.id}`, undefined, { method: 'DELETE' }); session = null;
   session = await request(`/connections/${saved.id}/connect`, { password }, { status: 201 });

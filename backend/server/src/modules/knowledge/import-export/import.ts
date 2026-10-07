@@ -3,14 +3,14 @@ import { and, eq } from 'drizzle-orm';
 import type { Pool } from 'pg';
 import { z } from 'zod';
 import { entityIdSchema } from '@fouc/shared/knowledge/contracts';
-import { docState, page } from '../../../platform/database/workspace/schema';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
-import { prepareWorkspaceAssetUpload, confirmWorkspaceAssetUpload } from '../assets/service';
+import { docState, page } from '../../../platform/database/resources/schema';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
+import { prepareKnowledgeBaseAssetUpload, confirmKnowledgeBaseAssetUpload } from '../assets/service';
 import type { KnowledgeAssetStorage } from '../assets/storage';
 import { authorizePageAccess } from '../permissions/authorization';
 import { createAuthorizedPage } from '../pages/tree';
 import { appendKnowledgeOutbox } from '../workers/outbox';
-import { createVaultResolver, importVaultBody } from './body';
+import { bindImportedReferenceKnowledgeBase, createVaultResolver, importVaultBody } from './body';
 import { KnowledgeVaultError } from './errors';
 import { summarize, vaultEventRecorder } from './events';
 import type { VaultEventSink, VaultItemResult, VaultProgressEvent } from './events';
@@ -31,7 +31,7 @@ import { prosemirrorDocToYDoc } from './y-encoding';
  */
 
 const inputSchema = z.strictObject({
-  workspaceId: entityIdSchema,
+  knowledgeBaseId: entityIdSchema,
   userId: entityIdSchema,
   /** 导入目标父页面(页面挂在其下;vault 根级笔记成为其子页面)。 */
   parentPageId: entityIdSchema,
@@ -69,14 +69,14 @@ export function mimeOfAttachment(path: string): string {
 }
 
 /** AS01 流程:prepare(租户事务)→ 预签名 PUT(无事务)→ confirm(新事务)。 */
-async function uploadAttachment(storage: KnowledgeAssetStorage, pool: Pool, input: { workspaceId: string; userId: string }, attachment: { path: string; bytes: Uint8Array; mime: string; hash: string }) {
-  const intent = { workspaceId: input.workspaceId, userId: input.userId, hash: attachment.hash, mime: attachment.mime, size: attachment.bytes.byteLength, name: attachment.path.split('/').at(-1)! };
-  const prepared = await withWorkspaceTenant(pool, input.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, intent));
+async function uploadAttachment(storage: KnowledgeAssetStorage, pool: Pool, input: { knowledgeBaseId: string; userId: string }, attachment: { path: string; bytes: Uint8Array; mime: string; hash: string }) {
+  const intent = { knowledgeBaseId: input.knowledgeBaseId, userId: input.userId, hash: attachment.hash, mime: attachment.mime, size: attachment.bytes.byteLength, name: attachment.path.split('/').at(-1)! };
+  const prepared = await withKnowledgeBase(pool, input.knowledgeBaseId, (db) => prepareKnowledgeBaseAssetUpload(storage, db, intent));
   if (prepared.action === 'upload') {
     const response = await fetch(prepared.url, { method: 'PUT', headers: prepared.headers, body: attachment.bytes });
     if (!response.ok) throw new Error(`asset_upload_http_${response.status}`);
   }
-  await withWorkspaceTenant(pool, input.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, intent));
+  await withKnowledgeBase(pool, input.knowledgeBaseId, (db) => confirmKnowledgeBaseAssetUpload(storage, db, intent));
 }
 
 export async function importObsidianVault(deps: { pool: Pool; storage: KnowledgeAssetStorage; onEvent?: VaultEventSink }, input: unknown): Promise<VaultImportResult> {
@@ -89,11 +89,11 @@ export async function importObsidianVault(deps: { pool: Pool; storage: Knowledge
   const items: VaultItemResult[] = [];
 
   // 目标父页面:P03 edit 校验 + 读取落位信息(teamspace 以父页面为准)。
-  const target = await withWorkspaceTenant(deps.pool, parsed.workspaceId, async (db) => {
-    const decision = await authorizePageAccess(db, { userId: parsed.userId, scope: { workspaceId: parsed.workspaceId, pageId: parsed.parentPageId }, required: 'edit' });
+  const target = await withKnowledgeBase(deps.pool, parsed.knowledgeBaseId, async (db) => {
+    const decision = await authorizePageAccess(db, { userId: parsed.userId, scope: { knowledgeBaseId: parsed.knowledgeBaseId, pageId: parsed.parentPageId }, required: 'edit' });
     if (decision.decision !== 'allow') throw new KnowledgeVaultError('VAULT_ACCESS_DENIED', '发起者对导入目标没有编辑权限');
     const [parent] = await db.select({ id: page.id, teamspaceId: page.teamspaceId }).from(page)
-      .where(and(eq(page.workspaceId, parsed.workspaceId), eq(page.id, parsed.parentPageId)));
+      .where(and(eq(page.knowledgeBaseId, parsed.knowledgeBaseId), eq(page.id, parsed.parentPageId)));
     if (!parent) throw new KnowledgeVaultError('VAULT_TARGET_INVALID', '导入目标父页面不存在');
     return parent;
   });
@@ -140,12 +140,12 @@ export async function importObsidianVault(deps: { pool: Pool; storage: Knowledge
   done = 0;
   for (const entry of plannedPages) {
     try {
-      const document = importVaultBody(entry.markdown, entry.path, resolver);
+      const document = bindImportedReferenceKnowledgeBase(importVaultBody(entry.markdown, entry.path, resolver), parsed.knowledgeBaseId);
       const encoded = prosemirrorDocToYDoc(document);
-      await withWorkspaceTenant(deps.pool, parsed.workspaceId, async (db) => {
+      await withKnowledgeBase(deps.pool, parsed.knowledgeBaseId, async (db) => {
         await createAuthorizedPage(db, {
           id: entry.pageId,
-          workspaceId: parsed.workspaceId,
+          knowledgeBaseId: parsed.knowledgeBaseId,
           teamspaceId: target.teamspaceId,
           parentId: parentIdOf.get(entry.path)!,
           kind: 'doc',
@@ -157,10 +157,10 @@ export async function importObsidianVault(deps: { pool: Pool; storage: Knowledge
           inheritsPermissions: true,
           afterPageId: null,
         }, parsed.userId);
-        await db.insert(docState).values({ workspaceId: parsed.workspaceId, pageId: entry.pageId, state: Buffer.from(encoded.state), stateVector: Buffer.from(encoded.stateVector) })
-          .onConflictDoUpdate({ target: [docState.workspaceId, docState.pageId], set: { state: Buffer.from(encoded.state), stateVector: Buffer.from(encoded.stateVector) } });
+        await db.insert(docState).values({ knowledgeBaseId: parsed.knowledgeBaseId, pageId: entry.pageId, state: Buffer.from(encoded.state), stateVector: Buffer.from(encoded.stateVector) })
+          .onConflictDoUpdate({ target: [docState.knowledgeBaseId, docState.pageId], set: { state: Buffer.from(encoded.state), stateVector: Buffer.from(encoded.stateVector) } });
         await appendKnowledgeOutbox(db, {
-          topic: 'doc.changed', workspaceId: parsed.workspaceId, pageId: entry.pageId,
+          topic: 'doc.changed', knowledgeBaseId: parsed.knowledgeBaseId, pageId: entry.pageId,
           actor: { kind: 'human', userId: parsed.userId }, occurredAt: new Date().toISOString(),
         });
       });

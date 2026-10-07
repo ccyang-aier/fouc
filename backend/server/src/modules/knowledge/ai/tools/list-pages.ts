@@ -1,8 +1,8 @@
 import { and, asc, eq, isNull, ne, sql } from 'drizzle-orm';
 import type { AgentListPagesToolInput, AgentListPagesToolResult } from '@fouc/shared/knowledge/contracts';
 import { agentListPagesToolResultSchema } from '@fouc/shared/knowledge/contracts';
-import { page } from '../../../../platform/database/workspace/schema';
-import { withWorkspaceTenant } from '../../../../platform/database/workspace/tenant';
+import { page } from '../../../../platform/database/resources/schema';
+import { withKnowledgeBase } from '../../../../platform/database/resources/transaction';
 import { authorizePageAccess, effectivePageAccessCondition, expandRequestPrincipals } from '../../permissions';
 import { KnowledgeAgentToolError } from './errors';
 import type { KnowledgeAgentToolContext } from './types';
@@ -14,20 +14,20 @@ import type { KnowledgeAgentToolContext } from './types';
  * 绝不放大不可见后代的暴露）。回收页不出现，也不会成为合法的子树根。
  */
 export async function executeAgentListPages(input: AgentListPagesToolInput, context: KnowledgeAgentToolContext): Promise<AgentListPagesToolResult> {
-  const workspaceId = context.authority.workspaceId;
-  return withWorkspaceTenant(context.pool, workspaceId, async (db) => {
-    const principals = await expandRequestPrincipals(db, workspaceId, context.authority.userId);
-    const conditions = [effectivePageAccessCondition({ workspaceId, principals, required: 'view' })];
+  const knowledgeBaseId = context.authority.knowledgeBaseId;
+  return withKnowledgeBase(context.pool, knowledgeBaseId, async (db) => {
+    const principals = await expandRequestPrincipals(db, knowledgeBaseId, context.authority.userId);
+    const conditions = [effectivePageAccessCondition({ knowledgeBaseId, principals, required: 'view' })];
     if (input.teamspaceId) conditions.push(eq(page.teamspaceId, input.teamspaceId));
     if (input.parentId !== undefined) {
       if (input.parentId === null) {
         conditions.push(isNull(page.parentId));
       } else {
-        const scope = { workspaceId, pageId: input.parentId };
+        const scope = { knowledgeBaseId, pageId: input.parentId };
         const decision = await authorizePageAccess(db, { userId: context.authority.userId, scope, required: 'view' });
         if (decision.decision !== 'allow') throw new KnowledgeAgentToolError('TARGET_NOT_ACCESSIBLE', 'list_pages');
         const [root] = await db.select({ path: page.path }).from(page)
-          .where(and(eq(page.workspaceId, workspaceId), eq(page.id, input.parentId), isNull(page.deletedAt)));
+          .where(and(eq(page.knowledgeBaseId, knowledgeBaseId), eq(page.id, input.parentId), isNull(page.deletedAt)));
         conditions.push(sql`${page.path} <@ ${root!.path}::ltree`, ne(page.id, input.parentId));
       }
     }

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
-import { collectAnchorReferences, collectAssetReferences, createVaultResolver, exportVaultBody, importVaultBody, markdownSchema } from './body';
+import { bindImportedReferenceKnowledgeBase, collectAnchorReferences, collectAssetReferences, createVaultResolver, exportVaultBody, importVaultBody, markdownSchema } from './body';
 import type { VaultBodyError } from './body';
 
 /**
@@ -28,6 +28,7 @@ const resolver = createVaultResolver(
 );
 
 const exportContext = (over: Partial<Parameters<typeof exportVaultBody>[1]> = {}) => ({
+  knowledgeBaseId: '10000000-0000-4000-8000-000000000001',
   vaultPathOf: (pageId: string) => ({
     '11111111-1111-4111-8111-111111111111': 'Index',
     '22222222-2222-4222-8222-222222222222': 'Projects/roadmap',
@@ -83,7 +84,7 @@ describe('M03 createVaultResolver: Obsidian target spellings', () => {
 describe('M03 importVaultBody: vault syntax to the knowledge document model', () => {
   test('wiki links gain pageId by vault resolution; unresolved links keep their target text', () => {
     const document = importVaultBody('参见 [[Projects/roadmap|路线图]]、[[Index]] 与 [[Ghost]]。', 'Index', resolver);
-    const links = find(document, 'wikiLink').map((row) => row.attrs);
+    const links = find(document, 'wikiLink').map((row) => { const { knowledgeBaseId: _target, ...attrs } = row.attrs; return attrs; });
     expect(links).toEqual([
       { pageId: '22222222-2222-4222-8222-222222222222', target: 'Projects/roadmap', label: '路线图', targetBlockId: null, annotations: null },
       { pageId: '11111111-1111-4111-8111-111111111111', target: 'Index', label: null, targetBlockId: null, annotations: null },
@@ -154,6 +155,25 @@ describe('M03 importVaultBody: vault syntax to the knowledge document model', ()
 });
 
 describe('M03 exportVaultBody: the knowledge document model back to vault syntax', () => {
+  test('archive references bind the destination library while explicit foreign references retain their full target', () => {
+    const localId = exportContext().knowledgeBaseId;
+    const foreignId = '20000000-0000-4000-8000-000000000001';
+    const pageId = '22222222-2222-4222-8222-222222222222';
+    const local = bindImportedReferenceKnowledgeBase(importVaultBody('![[Projects/roadmap]]\n\n![[Projects/roadmap#^anchor]]', 'Index', resolver), localId);
+    expect(find(local, 'pageLink')[0]!.attrs.knowledgeBaseId).toBe(localId);
+    expect(find(local, 'blockReference')[0]!.attrs.knowledgeBaseId).toBe(localId);
+    const nodes = markdownSchema().nodes;
+    const document = nodes.doc.createChecked(null, [
+      nodes.pageLink.createChecked({ blockId: 'foreign-page', knowledgeBaseId: foreignId, pageId }),
+      nodes.blockReference.createChecked({ blockId: 'foreign-block', knowledgeBaseId: foreignId, pageId, targetBlockId: 'foreign-target' }),
+      nodes.paragraph.createChecked({ blockId: 'foreign-wiki' }, nodes.wikiLink.createChecked({ knowledgeBaseId: foreignId, pageId, target: 'Foreign' })),
+    ]);
+    // The same page UUID exists in the local archive map: scope decides the target.
+    const restored = bindImportedReferenceKnowledgeBase(importVaultBody(exportVaultBody(document, exportContext()), 'Index', resolver), localId);
+    for (const kind of ['pageLink', 'blockReference', 'wikiLink']) {
+      expect(find(restored, kind)[0]!.attrs).toMatchObject({ knowledgeBaseId: foreignId, pageId });
+    }
+  });
   test('wiki links with a resolved pageId export as vault note paths; unresolved ones keep their target', () => {
     const document = importVaultBody('参见 [[Projects/roadmap|路线图]] 与 [[Ghost]]。', 'Index', resolver);
     const exported = exportVaultBody(document, exportContext({ vaultPathOf: () => '基地/Projects/roadmap' }));

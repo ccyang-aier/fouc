@@ -15,7 +15,7 @@ const trpc = initTRPC.context<KnowledgeApiContext>().create({
 const protectedProcedures = new WeakSet<AnyTRPCProcedure>();
 const protectedRouters = new WeakSet<AnyTRPCRouter>();
 
-type ScopedSchema = z.ZodType<{ workspaceId: string }>;
+type ScopedSchema = z.ZodType<{ knowledgeBaseId: string }>;
 type Definition<TSchema extends ScopedSchema, TOutput> = {
   /** Complete input schema; use strictObject to reject unsolicited fields. */
   input: TSchema;
@@ -31,7 +31,7 @@ function resolver<TSchema extends ScopedSchema, TOutput>(definition: Definition<
   return async ({ ctx, input }: { ctx: KnowledgeApiContext; input: z.output<TSchema> }) => {
     let authorized: KnowledgeProcedureContext | undefined;
     try {
-      authorized = await authorizeKnowledgeProcedure(ctx, input.workspaceId, scopes);
+      authorized = await authorizeKnowledgeProcedure(ctx, input.knowledgeBaseId, scopes);
       const result = await definition.resolve({ input, ctx: authorized });
       assertRequestActive(authorized.signal);
       return result;

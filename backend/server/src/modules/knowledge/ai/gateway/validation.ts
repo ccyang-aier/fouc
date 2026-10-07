@@ -6,7 +6,7 @@ import { ModelGatewayError } from './errors';
 import type { CallOptions, TextCall } from './types';
 
 const optionsSchema = z.object({
-  context: z.strictObject({ workspaceId: entityIdSchema, userId: entityIdSchema, taskId: entityIdSchema.optional() }),
+  context: z.strictObject({ knowledgeBaseId: entityIdSchema, userId: entityIdSchema, taskId: entityIdSchema.optional() }),
   settings: modelSettingsSchema,
   timeoutMs: z.number().int().min(1).max(300_000).default(60_000),
   maxRetries: z.number().int().min(0).max(2).default(1),

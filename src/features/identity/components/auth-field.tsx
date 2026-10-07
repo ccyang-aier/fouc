@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Labeled auth input (A04). Styling follows the workspace form language
+ * Labeled auth input (A04). Styling follows the workbench form language
  * (settings search input): 6px radius, token borders, accent focus. Errors
  * are wired to aria so screen readers announce them with the field.
  */

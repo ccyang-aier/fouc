@@ -24,7 +24,7 @@ import {
 } from '../comments/mutations';
 import { listPageCommentThreads } from '../comments/queries';
 import type { CommentRow, CommentWithLikes, CommentThreadRow, CommentThreadWithComments } from '../comments/queries';
-import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
+import type { ResourceTransaction } from '../../../platform/database/resources/transaction';
 import { apiError } from './errors';
 import { knowledgeMutation, knowledgeQuery } from './procedures';
 
@@ -44,7 +44,7 @@ function toCommentTrpcError(error: unknown): TRPCError {
 
 function serializeEntry(row: CommentRow & Partial<Pick<CommentWithLikes, 'likeCount' | 'liked'>>): CommentEntry {
   return {
-    workspaceId: row.workspaceId,
+    knowledgeBaseId: row.knowledgeBaseId,
     id: row.id,
     threadId: row.threadId,
     authorId: row.authorId,
@@ -59,7 +59,7 @@ function serializeEntry(row: CommentRow & Partial<Pick<CommentWithLikes, 'likeCo
 
 function serializeThread(row: CommentThreadRow & { comments?: CommentRow[] }, comments?: CommentRow[]): CommentThread {
   return {
-    workspaceId: row.workspaceId,
+    knowledgeBaseId: row.knowledgeBaseId,
     id: row.id,
     pageId: row.pageId,
     kind: row.kind,
@@ -77,7 +77,7 @@ function serializeThread(row: CommentThreadRow & { comments?: CommentRow[] }, co
  * wire contract carries the full thread, so mutation results re-read the one
  * thread inside the same transaction (its own visibility already granted).
  */
-async function serializeFullThread(db: WorkspaceTenantTransaction, input: { workspaceId: string; pageId: string }, userId: string, threadId: string): Promise<CommentThread> {
+async function serializeFullThread(db: ResourceTransaction, input: { knowledgeBaseId: string; pageId: string }, userId: string, threadId: string): Promise<CommentThread> {
   const threads: CommentThreadWithComments[] = await listPageCommentThreads(db, { ...input, userId });
   const found = threads.find((thread) => thread.id === threadId);
   if (!found) throw new TRPCError({ code: 'NOT_FOUND' });
@@ -88,10 +88,10 @@ export const knowledgeCommentRouterRecord = {
   update: knowledgeMutation({
     input: updateOwnCommentInputSchema,
     scopes: ['write'],
-    resolve: ({ ctx, input }) => ctx.withTenant(async (db, authority) => {
+    resolve: ({ ctx, input }) => ctx.withResource(async (db, authority) => {
       try {
         const updated = await updateOwnComment(db, { ...input, userId: authority.userId });
-        const thread = await serializeFullThread(db, { workspaceId: input.workspaceId, pageId: updated.pageId }, authority.userId, updated.comment.threadId);
+        const thread = await serializeFullThread(db, { knowledgeBaseId: input.knowledgeBaseId, pageId: updated.pageId }, authority.userId, updated.comment.threadId);
         return { comment: thread.comments.find(entry => entry.id === input.commentId)! };
       } catch (error) { throw toCommentTrpcError(error); }
     }),
@@ -99,7 +99,7 @@ export const knowledgeCommentRouterRecord = {
   like: knowledgeMutation({
     input: setCommentLikeInputSchema,
     scopes: ['write'],
-    resolve: ({ ctx, input }) => ctx.withTenant(async (db, authority) => {
+    resolve: ({ ctx, input }) => ctx.withResource(async (db, authority) => {
       try { return await setCommentLike(db, { ...input, userId: authority.userId }); }
       catch (error) { throw toCommentTrpcError(error); }
     }),
@@ -108,10 +108,10 @@ export const knowledgeCommentRouterRecord = {
   list: knowledgeQuery({
     input: listCommentThreadsInputSchema,
     scopes: ['read'],
-    resolve: ({ ctx, input }) => ctx.withTenant(async (db, authority) => {
+    resolve: ({ ctx, input }) => ctx.withResource(async (db, authority) => {
       try {
         const threads: CommentThreadWithComments[] = await listPageCommentThreads(db, {
-          workspaceId: input.workspaceId,
+          knowledgeBaseId: input.knowledgeBaseId,
           pageId: input.pageId,
           userId: authority.userId,
         });
@@ -126,10 +126,10 @@ export const knowledgeCommentRouterRecord = {
   create: knowledgeMutation({
     input: createCommentThreadInputSchema,
     scopes: ['write'],
-    resolve: ({ ctx, input }) => ctx.withTenant(async (db, authority) => {
+    resolve: ({ ctx, input }) => ctx.withResource(async (db, authority) => {
       try {
         const created = await createCommentThreadWithId(db, { ...input, userId: authority.userId });
-        const thread = await serializeFullThread(db, { workspaceId: input.workspaceId, pageId: input.pageId }, authority.userId, created.thread.id);
+        const thread = await serializeFullThread(db, { knowledgeBaseId: input.knowledgeBaseId, pageId: input.pageId }, authority.userId, created.thread.id);
         const entry = thread.comments.find(comment => comment.id === created.comment.id)!;
         return {
           thread,
@@ -146,11 +146,11 @@ export const knowledgeCommentRouterRecord = {
   reply: knowledgeMutation({
     input: replyCommentThreadInputSchema,
     scopes: ['write'],
-    resolve: ({ ctx, input }) => ctx.withTenant(async (db, authority) => {
+    resolve: ({ ctx, input }) => ctx.withResource(async (db, authority) => {
       try {
         const replied = await replyCommentThread(db, { ...input, userId: authority.userId });
         return {
-          thread: await serializeFullThread(db, { workspaceId: input.workspaceId, pageId: replied.thread.pageId }, authority.userId, replied.thread.id),
+          thread: await serializeFullThread(db, { knowledgeBaseId: input.knowledgeBaseId, pageId: replied.thread.pageId }, authority.userId, replied.thread.id),
           comment: serializeEntry(replied.comment),
           notified: replied.notified,
         };
@@ -163,11 +163,11 @@ export const knowledgeCommentRouterRecord = {
   resolve: knowledgeMutation({
     input: commentThreadTargetInputSchema,
     scopes: ['write'],
-    resolve: ({ ctx, input }) => ctx.withTenant(async (db, authority) => {
+    resolve: ({ ctx, input }) => ctx.withResource(async (db, authority) => {
       try {
         const resolved = await resolveCommentThread(db, { ...input, userId: authority.userId });
         return {
-          thread: await serializeFullThread(db, { workspaceId: input.workspaceId, pageId: resolved.thread.pageId }, authority.userId, resolved.thread.id),
+          thread: await serializeFullThread(db, { knowledgeBaseId: input.knowledgeBaseId, pageId: resolved.thread.pageId }, authority.userId, resolved.thread.id),
           changed: resolved.changed,
         };
       } catch (error) {
@@ -179,11 +179,11 @@ export const knowledgeCommentRouterRecord = {
   reopen: knowledgeMutation({
     input: commentThreadTargetInputSchema,
     scopes: ['write'],
-    resolve: ({ ctx, input }) => ctx.withTenant(async (db, authority) => {
+    resolve: ({ ctx, input }) => ctx.withResource(async (db, authority) => {
       try {
         const reopened = await reopenCommentThread(db, { ...input, userId: authority.userId });
         return {
-          thread: await serializeFullThread(db, { workspaceId: input.workspaceId, pageId: reopened.thread.pageId }, authority.userId, reopened.thread.id),
+          thread: await serializeFullThread(db, { knowledgeBaseId: input.knowledgeBaseId, pageId: reopened.thread.pageId }, authority.userId, reopened.thread.id),
           changed: reopened.changed,
         };
       } catch (error) {
@@ -196,7 +196,7 @@ export const knowledgeCommentRouterRecord = {
   delete: knowledgeMutation({
     input: deleteOwnCommentInputSchema,
     scopes: ['write'],
-    resolve: ({ ctx, input }) => ctx.withTenant(async (db, authority) => {
+    resolve: ({ ctx, input }) => ctx.withResource(async (db, authority) => {
       try {
         return await deleteOwnComment(db, { ...input, userId: authority.userId });
       } catch (error) {

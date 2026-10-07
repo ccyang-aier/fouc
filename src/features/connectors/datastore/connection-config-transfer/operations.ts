@@ -27,14 +27,12 @@ export type ConnectionImportPort = {
 export async function runConnectionImport({
   bundle,
   choices,
-  workspaceId,
   port,
   signal,
   onProgress,
 }: {
   bundle: ConnectionConfigBundle;
   choices: readonly ImportConnectionChoice[];
-  workspaceId: string;
   port: ConnectionImportPort;
   signal?: AbortSignal;
   onProgress?: (outcomes: readonly ConnectionImportOutcome[]) => void;
@@ -43,7 +41,7 @@ export async function runConnectionImport({
   const existing = await port.list();
   signal?.throwIfAborted();
   // Fresh complete validation happens before the first write, even after a successful preview.
-  const plan = prepareConnectionImport(bundle, existing, choices, workspaceId);
+  const plan = prepareConnectionImport(bundle, existing, choices);
   const outcomes: ConnectionImportOutcome[] = plan.operations.map(
     (operation) => ({
       index: operation.index,

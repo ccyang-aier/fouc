@@ -36,7 +36,7 @@ export function buildSqlExplain(provider: RelationalProvider, value: unknown): S
   return { sourceSql: input.sql, sql: prefix + source, schema: input.schema as string | null, format };
 }
 
-/** Caller owns workspace/session resolution; this function sends only the validated plan statement. */
+/** Caller owns session resolution; this function sends only the validated plan statement. */
 export async function explainSqlPlan(driver: Pick<RelationalDriver, 'read'>, provider: RelationalProvider, value: unknown, signal?: AbortSignal): Promise<SqlExplainResult> {
   const statement = buildSqlExplain(provider, value);
   signal?.throwIfAborted();

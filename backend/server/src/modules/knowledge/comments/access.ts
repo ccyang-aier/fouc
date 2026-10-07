@@ -1,5 +1,5 @@
 import type { PageScope, PermissionLevel } from '@fouc/shared/knowledge/contracts';
-import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
+import type { ResourceTransaction } from '../../../platform/database/resources/transaction';
 import { authorizePageAccess } from '../permissions/authorization';
 import { KnowledgeCommentError } from './errors';
 
@@ -9,7 +9,7 @@ import { KnowledgeCommentError } from './errors';
  * userId must come from verified session authority, never a request body.
  */
 export async function requireCommentAccess(
-  db: WorkspaceTenantTransaction,
+  db: ResourceTransaction,
   input: { userId: string; scope: PageScope; required: PermissionLevel },
 ): Promise<void> {
   const decision = await authorizePageAccess(db, input);

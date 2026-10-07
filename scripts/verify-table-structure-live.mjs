@@ -25,8 +25,7 @@ const configs = [
 const parent = 'dbx_structure_parent',
   child = 'dbx_structure_child',
   view = 'dbx_structure_view';
-const scope = 'dbx-structure-live-verification';
-const base = `http://127.0.0.1:8710/api/database/workspaces/${scope}/relational/sessions`;
+const base = `http://127.0.0.1:8710/api/database/relational/sessions`;
 async function request(route, body, method = body ? 'POST' : 'GET', expected = 200) {
   const response = await fetch(base + route, {
     method,
@@ -192,7 +191,7 @@ for (const config of configs) {
     assert.match(viewStructure.definition.sql, /VIEW/i);
     await request(tableRoute + 'dbx_structure_missing/structure', undefined, 'GET', 400);
     const wrong = await fetch(
-      base.replace(scope, 'dbx-other-workspace') + tableRoute + child + '/structure',
+      base + tableRoute.replace(`/${session.id}/`, `/${crypto.randomUUID()}/`) + child + '/structure',
     );
     assert.equal(wrong.status, 400);
     console.log(

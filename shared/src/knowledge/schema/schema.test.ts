@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { getSchema } from '@tiptap/core';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
+import { createMarkdownPipeline } from '../markdown';
 
 import { BlockRegistry, KNOWLEDGE_BLOCKS, KNOWLEDGE_MARKS, createKnowledgeExtensions, createKnowledgeRegistry, defineBlock, isKnowledgeBlock, knowledgeSchema } from './index';
 
@@ -58,8 +59,8 @@ describe('first-party knowledge schema', () => {
       taskItem: { checked: true },
       codeBlock: { language: 'typescript' },
       math: { latex: '\\int_0^1 x^2 dx' },
-      blockReference: { pageId: 'page-1', targetBlockId: 'block-1' },
-      pageLink: { pageId: 'page-2', title: '产品规划' },
+      blockReference: { knowledgeBaseId: 'base-1', pageId: 'page-1', targetBlockId: 'block-1' },
+      pageLink: { knowledgeBaseId: 'base-2', pageId: 'page-2', title: '产品规划' },
       databaseView: { databaseId: 'database-1', view: 'calendar', config: { dateProperty: 'dueDate', filters: [{ status: 'active' }] } },
       aiBlock: { prompt: '总结当前空间', scope: { pageIds: ['page-1', 'page-2'] }, schedule: '0 9 * * 1', taskId: 'task-1' },
     };
@@ -74,6 +75,26 @@ describe('first-party knowledge schema', () => {
       const dom = node.type.spec.toDOM?.(node);
       assert.ok(Array.isArray(dom));
       assert.deepEqual(JSON.parse((dom[1] as Record<string, string>)['data-fouc-attrs']), json.attrs);
+    }
+  });
+
+  it('preserves explicit cross-knowledge-base reference targets through Markdown', () => {
+    const markdown = createMarkdownPipeline();
+    const target = { knowledgeBaseId: 'other-base', pageId: 'target-page' };
+    const nodes = [
+      knowledgeSchema.nodes.blockReference.create({ ...target, targetBlockId: 'target-block' }),
+      knowledgeSchema.nodes.pageLink.create({ ...target, title: '另一知识库的页面' }),
+      knowledgeSchema.nodes.paragraph.create(null, knowledgeSchema.nodes.wikiLink.create({ ...target, target: '目标', targetBlockId: 'target-block' })),
+    ];
+    for (const node of nodes) {
+      const json = node.toJSON();
+      assert.ok(knowledgeSchema.nodeFromJSON(json).eq(node));
+      const document = knowledgeSchema.nodes.doc.create(null, node);
+      assert.deepEqual(markdown.parse(markdown.serialize(document)).toJSON(), document.toJSON());
+      const dom = node.type.spec.toDOM?.(node);
+      assert.ok(Array.isArray(dom));
+      const attrs = JSON.parse((dom[1] as Record<string, string>)['data-fouc-attrs']);
+      if (node.type.name !== 'paragraph') assert.equal(attrs.knowledgeBaseId, target.knowledgeBaseId);
     }
   });
 

@@ -1,7 +1,7 @@
-/** Workspace-owned organization of a saved connection, independent of its provider. */
+/** Device-owned organization of a saved connection, independent of its provider. */
 export interface ConnectionDirectoryMetadata {
   favorite: boolean;
-  /** References to projects in the same workspace; these do not grant access. */
+  /** References to projects; these do not grant access. */
   projectIds: string[];
   tags: string[];
 }

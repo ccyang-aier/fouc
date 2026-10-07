@@ -6,8 +6,8 @@ import { applyMemberRole, applyTeamspacePatch, patchByKey, removeByKey, upsertBy
 import type { MemberRow, TeamspaceRow } from './list-mutations';
 
 const ws = '10000000-0000-4000-8000-000000000001';
-const alice: MemberRow = { workspaceId: ws, userId: '20000000-0000-4000-8000-000000000002', role: 'member', name: 'Alice', email: 'alice@example.com' };
-const bob: MemberRow = { workspaceId: ws, userId: '30000000-0000-4000-8000-000000000003', role: 'admin', name: 'Bob', email: 'bob@example.com' };
+const alice: MemberRow = { knowledgeBaseId: ws, userId: '20000000-0000-4000-8000-000000000002', role: 'member', name: 'Alice', email: 'alice@example.com' };
+const bob: MemberRow = { knowledgeBaseId: ws, userId: '30000000-0000-4000-8000-000000000003', role: 'admin', name: 'Bob', email: 'bob@example.com' };
 
 describe('pure list reducers', () => {
   test('patchByKey updates only the matching row and preserves the rest', () => {
@@ -38,7 +38,7 @@ describe('pure list reducers', () => {
   });
 
   test('teamspace patches cover both rename and default access', () => {
-    const teamspace: TeamspaceRow = { knowledgeBaseId: 'base', workspaceId: ws, id: '40000000-0000-4000-8000-000000000004', name: '文档', defaultAccess: null };
+    const teamspace: TeamspaceRow = {  knowledgeBaseId: ws, id: '40000000-0000-4000-8000-000000000004', name: '文档', defaultAccess: null };
     expect(applyTeamspacePatch([teamspace], teamspace.id, { defaultAccess: 'edit' })[0]?.defaultAccess).toBe('edit');
     expect(applyTeamspacePatch([teamspace], teamspace.id, { name: '文档库' })[0]?.name).toBe('文档库');
     expect(applyTeamspacePatch([teamspace], teamspace.id, { name: '文档库' })[0]?.defaultAccess).toBe(null);
@@ -82,13 +82,13 @@ describe('optimistic cache rollback', () => {
     const queryClient = new QueryClient();
     const key = organizationQueryKeys.groups(ws);
     queryClient.setQueryData(key, { pages: [{ items: [], nextCursor: null }], pageParams: [null] });
-    const tempRow = { workspaceId: ws, id: 'pending-create', name: '设计组' };
+    const tempRow = { knowledgeBaseId: ws, id: 'pending-create', name: '设计组' };
 
     const snapshot = applyOptimisticList(queryClient, key, (items: typeof tempRow[]) => [...items, tempRow]);
     expect(readListItems<typeof tempRow>(queryClient.getQueryData(key))).toHaveLength(1);
 
     // The server row replaces the temp id on success…
-    const serverRow = { workspaceId: ws, id: '50000000-0000-4000-8000-000000000005', name: '设计组' };
+    const serverRow = { knowledgeBaseId: ws, id: '50000000-0000-4000-8000-000000000005', name: '设计组' };
     applyOptimisticList(queryClient, key, (items: typeof tempRow[]) => upsertByKey(removeByKey(items, (row) => row.id, tempRow.id), (row) => row.id, serverRow));
     expect(readListItems<typeof tempRow>(queryClient.getQueryData(key))[0]?.id).toBe(serverRow.id);
 

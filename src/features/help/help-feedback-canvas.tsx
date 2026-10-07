@@ -13,7 +13,7 @@ export function HelpFeedbackCanvas({ onNavigate }: { onNavigate: (view: 'knowled
         <article className="rounded-2xl border border-[var(--line)] bg-[var(--surface-subtle)] p-6">
           <span className="flex size-10 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent-ink)]"><BookOpenText size={21} weight="duotone" /></span>
           <h2 className="mt-5 text-[16px] font-semibold text-[var(--ink)]">开始使用</h2>
-          <p className="mt-2 min-h-12 text-[12px] leading-6 text-[var(--muted-strong)]">先选择工作区，再创建知识库和文档。外观与本机偏好可以在设置中调整。</p>
+          <p className="mt-2 min-h-12 text-[12px] leading-6 text-[var(--muted-strong)]">创建知识库后，即可添加文件夹和文档。外观与本机偏好可以在设置中调整。</p>
           <div className="mt-5 flex flex-wrap gap-2">
             <Button size="sm" variant="outline" onClick={() => onNavigate('knowledge')}><BookOpenText size={15} />打开知识库</Button>
             <Button size="sm" variant="outline" onClick={() => onNavigate('settings')}><GearSix size={15} />打开设置</Button>

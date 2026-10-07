@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Notification inbox client surface (N03) over plain workspace-scoped HTTP.
+ * Notification inbox client surface (N03) over plain knowledge-base-scoped HTTP.
  *
  * The backend routes (backend/server/src/modules/knowledge/notifications/http.ts) live outside
  * the tRPC boundary, so this client owns a small fetch transport with the same
@@ -36,8 +36,8 @@ const statusCodes: Record<number, 'INVALID_REQUEST' | 'UNAUTHENTICATED' | 'FORBI
 };
 
 /** Path builder on the shared prefix contract; callers prepend the resolved origin. */
-export function knowledgeNotificationsPath(workspaceId: string, route: 'inbox' | 'unread-count' | 'read-all' = 'inbox', notificationId?: string): string {
-  const base = `/api/knowledge/${workspaceId}/notifications`;
+export function knowledgeNotificationsPath(knowledgeBaseId: string, route: 'inbox' | 'unread-count' | 'read-all' = 'inbox', notificationId?: string): string {
+  const base = `/api/knowledge/${knowledgeBaseId}/notifications`;
   if (route === 'read-all') return `${base}/read-all`;
   if (route === 'unread-count') return `${base}/unread-count`;
   return notificationId ? `${base}/${notificationId}/read` : base;
@@ -55,10 +55,10 @@ function parseNotificationPayload<T>(schema: { safeParse(payload: unknown): { su
 export interface KnowledgeNotificationsCursor { before: string; beforeId: string }
 
 export type KnowledgeNotificationsApi = {
-  listInbox(workspaceId: string, options: { limit?: number; cursor?: KnowledgeNotificationsCursor }, signal?: AbortSignal): Promise<NotificationListResult>;
-  unreadCount(workspaceId: string, signal?: AbortSignal): Promise<number>;
-  markRead(workspaceId: string, notificationId: string, signal?: AbortSignal): Promise<NotificationItem>;
-  markAllRead(workspaceId: string, signal?: AbortSignal): Promise<number>;
+  listInbox(knowledgeBaseId: string, options: { limit?: number; cursor?: KnowledgeNotificationsCursor }, signal?: AbortSignal): Promise<NotificationListResult>;
+  unreadCount(knowledgeBaseId: string, signal?: AbortSignal): Promise<number>;
+  markRead(knowledgeBaseId: string, notificationId: string, signal?: AbortSignal): Promise<NotificationItem>;
+  markAllRead(knowledgeBaseId: string, signal?: AbortSignal): Promise<number>;
 };
 
 export function createKnowledgeNotificationsApi(deps: { resolveOrigin: () => Promise<string> | string; fetchImpl?: KnowledgeNotificationsFetch }): KnowledgeNotificationsApi {
@@ -80,9 +80,9 @@ export function createKnowledgeNotificationsApi(deps: { resolveOrigin: () => Pro
   }
 
   return {
-    async listInbox(workspaceId, options, signal) {
+    async listInbox(knowledgeBaseId, options, signal) {
       const input = notificationListInputSchema.safeParse({
-        workspaceId,
+        knowledgeBaseId,
         limit: options.limit ?? 30,
         ...(options.cursor ? { before: options.cursor.before, beforeId: options.cursor.beforeId } : {}),
       });
@@ -92,19 +92,19 @@ export function createKnowledgeNotificationsApi(deps: { resolveOrigin: () => Pro
         query.set('before', input.data.before);
         query.set('beforeId', input.data.beforeId!);
       }
-      return call(`${knowledgeNotificationsPath(workspaceId)}?${query.toString()}`, { method: 'GET' }, signal, 'list',
+      return call(`${knowledgeNotificationsPath(knowledgeBaseId)}?${query.toString()}`, { method: 'GET' }, signal, 'list',
         (payload) => parseNotificationPayload(notificationListResultSchema, payload, 'list'));
     },
-    unreadCount(workspaceId, signal) {
-      return call(knowledgeNotificationsPath(workspaceId, 'unread-count'), { method: 'GET' }, signal, 'unread-count',
+    unreadCount(knowledgeBaseId, signal) {
+      return call(knowledgeNotificationsPath(knowledgeBaseId, 'unread-count'), { method: 'GET' }, signal, 'unread-count',
         (payload) => parseNotificationPayload(notificationUnreadCountResultSchema, payload, 'unread-count').unreadCount);
     },
-    markRead(workspaceId, notificationId, signal) {
-      return call(knowledgeNotificationsPath(workspaceId, 'inbox', notificationId), { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' }, signal, 'read',
+    markRead(knowledgeBaseId, notificationId, signal) {
+      return call(knowledgeNotificationsPath(knowledgeBaseId, 'inbox', notificationId), { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' }, signal, 'read',
         (payload) => parseNotificationPayload(markNotificationReadResultSchema, payload, 'read').notification);
     },
-    markAllRead(workspaceId, signal) {
-      return call(knowledgeNotificationsPath(workspaceId, 'read-all'), { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' }, signal, 'read-all',
+    markAllRead(knowledgeBaseId, signal) {
+      return call(knowledgeNotificationsPath(knowledgeBaseId, 'read-all'), { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' }, signal, 'read-all',
         (payload) => parseNotificationPayload(markAllNotificationsReadResultSchema, payload, 'read-all').updated);
     },
   };

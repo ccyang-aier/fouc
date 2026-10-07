@@ -3,7 +3,7 @@ import { getEventListeners } from 'node:events';
 import { IncomingMessage, ServerResponse } from 'node:http';
 import { Socket } from 'node:net';
 import { initTRPC, TRPCError } from '@trpc/server';
-import { workspaceScopeSchema } from '@fouc/shared/knowledge/contracts';
+import { knowledgeBaseScopeSchema } from '@fouc/shared/knowledge/contracts';
 import { bindAuthTestRequestLifetime } from '../../../platform/identity/auth-test-server';
 import { createKnowledgeRouter, knowledgeQuery, assertKnowledgeRouter } from './procedures';
 import { createRequestLifetime, assertRequestActive } from './lifetime';
@@ -16,7 +16,7 @@ describe('knowledge API construction and finite request boundary', () => {
     const foreign = publicTRPC.procedure.query(() => 'unprotected');
     expect(() => createKnowledgeRouter({ nested: { unsafe: foreign } })).toThrow('Unprotected knowledge procedure');
     expect(() => assertKnowledgeRouter(publicTRPC.router({ unsafe: foreign }))).toThrow('Use createKnowledgeRouter');
-    const router = createKnowledgeRouter({ safe: knowledgeQuery({ input: workspaceScopeSchema, scopes: ['read'], resolve: () => 'ok' }) });
+    const router = createKnowledgeRouter({ safe: knowledgeQuery({ input: knowledgeBaseScopeSchema, scopes: ['read'], resolve: () => 'ok' }) });
     expect(() => assertKnowledgeRouter(router)).not.toThrow();
     // A post-construction replacement must not evade the mount-time audit either.
     Object.assign(router._def.procedures, { unsafe: foreign });
@@ -25,13 +25,13 @@ describe('knowledge API construction and finite request boundary', () => {
 
   test('requires explicit, distinct, supported scopes even from untyped server callers', () => {
     for (const scopes of [[], ['read', 'read'], ['admin']]) {
-      expect(() => knowledgeQuery({ input: workspaceScopeSchema, scopes: scopes as ['read'], resolve: () => null })).toThrow('distinct explicit credential scopes');
+      expect(() => knowledgeQuery({ input: knowledgeBaseScopeSchema, scopes: scopes as ['read'], resolve: () => null })).toThrow('distinct explicit credential scopes');
     }
   });
 
   test('a copied or fabricated tRPC context is not authentication', async () => {
-    const router = createKnowledgeRouter({ safe: knowledgeQuery({ input: workspaceScopeSchema, scopes: ['read'], resolve: () => 'should not run' }) });
-    await expect(router.createCaller({ requestId: 'forged', signal: new AbortController().signal }).safe({ workspaceId: '20000000-0000-4000-8000-000000000000' }))
+    const router = createKnowledgeRouter({ safe: knowledgeQuery({ input: knowledgeBaseScopeSchema, scopes: ['read'], resolve: () => 'should not run' }) });
+    await expect(router.createCaller({ requestId: 'forged', signal: new AbortController().signal }).safe({ knowledgeBaseId: '20000000-0000-4000-8000-000000000000' }))
       .rejects.toMatchObject({ code: 'UNAUTHORIZED' });
   });
 

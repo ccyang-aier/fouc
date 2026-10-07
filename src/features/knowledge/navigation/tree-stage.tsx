@@ -21,10 +21,9 @@ import type { TreeNotifier } from './page-operations';
 export type TreeStageTeamspaceState = 'loading' | 'error' | 'forbidden' | 'empty' | 'ready';
 export type LibraryView = 'overview' | 'all-documents' | 'starred' | 'drafts' | 'trash' | 'projects' | 'recent';
 
-export function KnowledgeTreeStage({ knowledgeBaseId, userId, workspaceId, teamspaces, teamspaceState, access, selectedSectionId, selectedPageId, onSelectSection, onSelectPage, onRetryTeamspaces, onCreateTeamspace, notify, view, onNavigate }: {
+export function KnowledgeTreeStage({ knowledgeBaseId, userId, teamspaces, teamspaceState, access, selectedSectionId, selectedPageId, onSelectSection, onSelectPage, onRetryTeamspaces, onCreateTeamspace, notify, view, onNavigate }: {
   userId: string;
   knowledgeBaseId: string;
-  workspaceId: string | null;
   teamspaces: readonly Teamspace[];
   teamspaceState: TreeStageTeamspaceState;
   access: KnowledgeAccess | undefined;
@@ -38,14 +37,14 @@ export function KnowledgeTreeStage({ knowledgeBaseId, userId, workspaceId, teams
   view: LibraryView;
   onNavigate: (view: LibraryView) => void;
 }) {
-  const pagesQuery = useKnowledgePagesQuery(workspaceId, { enabled: teamspaceState === 'ready' });
+  const pagesQuery = useKnowledgePagesQuery(knowledgeBaseId, { enabled: teamspaceState === 'ready' });
   const pages = useMemo(() => {
     const folderIds = new Set(teamspaces.map((folder) => folder.id));
     return (pagesQuery.data ?? []).filter((page) => folderIds.has(page.teamspaceId));
   }, [pagesQuery.data, teamspaces]);
   const sections = useMemo(() => buildNavigationSections(teamspaces, pages), [teamspaces, pages]);
   const documents = useMemo(() => sidebarDocuments(sections, pages), [sections, pages]);
-  const { collections, setCollections, toggleStar } = useSidebarCollections(userId, workspaceId, knowledgeBaseId);
+  const { collections, setCollections, toggleStar } = useSidebarCollections(userId, knowledgeBaseId);
   const [expandedSections, setExpandedSections] = useState<Record<SidebarSectionId, boolean>>({ projects: true, tags: true, recent: false });
   const [expandedProjects, setExpandedProjects] = useState<Record<string, boolean>>({});
   const [expandedTags, setExpandedTags] = useState<Record<string, boolean>>({});
@@ -59,7 +58,7 @@ export function KnowledgeTreeStage({ knowledgeBaseId, userId, workspaceId, teams
     setLocation(from);
     onSelectPage(id);
   }
-  const actions = useDocumentNavigationActions({ knowledgeBaseId, workspaceId: workspaceId ?? '', userId, pages, teamspaces, canEdit: canEditTree(access), onOpenPage: openPage, notify });
+  const actions = useDocumentNavigationActions({ knowledgeBaseId: knowledgeBaseId ?? '', userId, pages, teamspaces, canEdit: canEditTree(access), onOpenPage: openPage, notify });
   const toNode = (node: NavigationPageNode): SidebarProjectNode => ({ id: node.id, kind: 'document', label: node.title, icon: 'file', documentIcon: node.icon, starred: collections.starred.includes(node.id), expandable: node.children.length > 0, defaultExpanded: true, children: node.children.map(toNode) });
   const projects: SidebarProjectNode[] = sections.map((section) => ({ id: section.id, kind: 'project', label: section.title, count: documents.filter((page) => page.teamspaceId === section.id).length, projectIconId: 'folder', starred: collections.starred.includes(section.id), expandable: section.pages.length > 0, defaultExpanded: true, children: section.pages.map(toNode) }));
   const tags = collections.tags.map((tag) => ({ id: tag.id, name: tag.name, color: '#ada34e' }));
@@ -112,7 +111,7 @@ export function KnowledgeTreeStage({ knowledgeBaseId, userId, workspaceId, teams
         onSelectRecent={(id) => openPage(id, 'recent')}
       />
     )}
-    {folderAction && workspaceId ? <KnowledgeBaseActions key={`${folderAction.teamspace.id}:${folderAction.action}`} workspaceId={workspaceId} target={folderAction} onClose={() => setFolderAction(null)} onRemoved={() => onSelectSection('')} notify={notify} /> : null}
+    {folderAction && knowledgeBaseId ? <KnowledgeBaseActions key={`${folderAction.teamspace.id}:${folderAction.action}`} knowledgeBaseId={knowledgeBaseId} target={folderAction} onClose={() => setFolderAction(null)} onRemoved={() => onSelectSection('')} notify={notify} /> : null}
     {tagAction ? <NavigationDialogPortal><ModalDialog open title="标签名称" onClose={() => setTagAction(null)} footer={<><DialogButton onClick={() => setTagAction(null)}>取消</DialogButton><DialogButton variant="primary" disabled={!tagName.trim()} onClick={() => { setCollections((current) => ({ ...current, tags: [...current.tags.filter((tag) => tag.id !== tagAction.id), { ...tagAction, name: tagName.trim() }] })); setTagAction(null); }}>保存</DialogButton></>}><NameField label="名称" value={tagName} onChange={setTagName} autoFocus maxLength={80} /></ModalDialog></NavigationDialogPortal> : null}
     {actions.dialogs}
   </>;

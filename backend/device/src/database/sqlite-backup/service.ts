@@ -32,13 +32,10 @@ interface Entry {
 }
 
 const sameScope = (left: SqliteBackupScope, right: SqliteBackupScope) =>
-  left.workspaceId === right.workspaceId && left.sessionId === right.sessionId;
+  left.sessionId === right.sessionId;
 const publicJob = (entry: Entry): SqliteBackupJob => ({ ...entry.snapshot });
 const sameSession = (left: RelationalSession, right: RelationalSession) =>
-  left.id === right.id &&
-  left.workspaceId === right.workspaceId &&
-  left.provider === right.provider &&
-  left.database === right.database;
+  left.id === right.id && left.provider === right.provider && left.database === right.database;
 
 /** Each live native session owns bounded snapshots; no client can supply a source or device target path. */
 export class SqliteBackupService {
@@ -46,7 +43,6 @@ export class SqliteBackupService {
   private closed = false;
   constructor(
     private readonly access: (
-      workspaceId: string,
       id: string,
     ) => RelationalSession,
     private readonly directory = path.join(
@@ -58,7 +54,7 @@ export class SqliteBackupService {
 
   private session(scope: SqliteBackupScope): RelationalSession {
     if (this.closed) throw new DatabaseInputError("SQLite 备份服务已关闭");
-    const session = this.access(scope.workspaceId, scope.sessionId);
+    const session = this.access(scope.sessionId);
     if (session.provider !== "sqlite" || !path.isAbsolute(session.database))
       throw new DatabaseInputError(
         "原生备份仅适用于当前设备上的 SQLite 文件连接",
@@ -74,7 +70,7 @@ export class SqliteBackupService {
       !sameScope(entry.scope, scope) ||
       !sameSession(entry.session, session)
     )
-      throw new DatabaseInputError("当前工作空间和会话中的 SQLite 备份不存在");
+      throw new DatabaseInputError("当前会话中的 SQLite 备份不存在");
     if (entry.snapshot.expiresAt <= Date.now())
       throw new DatabaseInputError("SQLite 临时快照已过期，请重新创建备份");
     return entry;

@@ -12,7 +12,7 @@ import type { CommentAuthor } from './comment-avatar';
 import styles from './comments.module.css';
 
 export interface CommentComposerProps {
-  workspaceId: string;
+  knowledgeBaseId: string;
   placeholder: string;
   submitLabel: string;
   sendingLabel: string;
@@ -31,7 +31,7 @@ export interface CommentComposerProps {
 }
 
 /** Shared write surface: drafts survive failures; formatted text remains Markdown. */
-export function CommentComposer({ workspaceId, placeholder, submitLabel, sendingLabel, sending, error, onSubmit, onCancel, autoFocus = true, minHeight = 36, allowIssue = false, persistent = false, replyTo, focusKey, authors, initialBodyMd = '' }: CommentComposerProps) {
+export function CommentComposer({ knowledgeBaseId, placeholder, submitLabel, sendingLabel, sending, error, onSubmit, onCancel, autoFocus = true, minHeight = 36, allowIssue = false, persistent = false, replyTo, focusKey, authors, initialBodyMd = '' }: CommentComposerProps) {
   const [body, setBody] = useState(initialBodyMd);
   const [issue, setIssue] = useState(false);
   const [touched, setTouched] = useState(false);
@@ -43,7 +43,7 @@ export function CommentComposer({ workspaceId, placeholder, submitLabel, sending
   const input = useRef<HTMLInputElement>(null);
   const submitting = useRef(false);
   const [imageError, setImageError] = useState<string | null>(null);
-  const uploads = useAssetUploads({ workspaceId, onUploaded: asset => ref.current?.insertImage(asset.hash, asset.name) });
+  const uploads = useAssetUploads({ knowledgeBaseId, onUploaded: asset => ref.current?.insertImage(asset.hash, asset.name) });
   const activeUploads = uploads.items.filter(item => !['done', 'canceled', 'error'].includes(item.phase));
   const uploading = activeUploads.length > 0;
   const uploadItems = useRef(uploads.items);
@@ -65,7 +65,7 @@ export function CommentComposer({ workspaceId, placeholder, submitLabel, sending
   return <div className={styles.composer} data-persistent={persistent}>
     {replyTo && <div className={styles.composerHeading}><span>回复 <strong>{replyTo.name}</strong></span><button type="button" className={styles.cancelReply} disabled={sending} onClick={onCancel}>取消</button></div>}
     <div className={styles.composerBox}>
-      <CommentEditor ref={ref} workspaceId={workspaceId} initialBody={initialBodyMd} placeholder={placeholder} disabled={sending} autoFocus={autoFocus} focusKey={focusKey} minHeight={minHeight} onChange={setBody} onSubmit={() => void submit()} onCancel={onCancel} />
+      <CommentEditor ref={ref} knowledgeBaseId={knowledgeBaseId} initialBody={initialBodyMd} placeholder={placeholder} disabled={sending} autoFocus={autoFocus} focusKey={focusKey} minHeight={minHeight} onChange={setBody} onSubmit={() => void submit()} onCancel={onCancel} />
       <div className={styles.composerActions}>
         <div className={styles.composeTools}>
           <DropdownMenu modal={false}>
@@ -74,7 +74,7 @@ export function CommentComposer({ workspaceId, placeholder, submitLabel, sending
               {Array.from(authors ?? []).map(([id, author]) => <DropdownMenuItem key={id} onSelect={() => { ref.current?.insertText(`@${author.name} `); setMentioned(value => [...new Set([...value, id])]); }}>@{author.name}</DropdownMenuItem>)}
             </DropdownMenuContent>
           </DropdownMenu>
-          <button type="button" className={styles.iconButton} disabled={sending || !workspaceId} aria-label="上传评论图片" title="上传图片" onClick={() => input.current?.click()}><ImageIcon size={18} weight="regular" aria-hidden /></button>
+          <button type="button" className={styles.iconButton} disabled={sending || !knowledgeBaseId} aria-label="上传评论图片" title="上传图片" onClick={() => input.current?.click()}><ImageIcon size={18} weight="regular" aria-hidden /></button>
           <input ref={input} type="file" accept="image/*" multiple hidden aria-label="选择评论图片" onChange={event => {
             const files = Array.from(event.target.files ?? []);
             if (files.some(file => !file.type.startsWith('image/'))) { setImageError('请选择图片文件。'); }

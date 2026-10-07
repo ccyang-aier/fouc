@@ -28,8 +28,9 @@ import { revealBlockInEditor } from '../../open-target';
 import { createBlockReferenceSources } from './block-reference-source';
 import type { BlockReferenceSources, SourceConnector } from './block-reference-source';
 import { applyBlockReferenceView } from './block-reference';
+import { KnowledgeDataError } from '../../../data/errors';
 
-const scope: PageScope = { workspaceId: '00000000-0000-4000-8000-000000000001', pageId: '00000000-0000-4000-8000-000000000002' };
+const scope: PageScope = { knowledgeBaseId: '00000000-0000-4000-8000-000000000001', pageId: '00000000-0000-4000-8000-000000000002' };
 const sourcePageId = '00000000-0000-4000-8000-000000000003';
 
 /** The local bun:test ambient types omit bun's third-argument timeout; the runtime supports it. */
@@ -73,14 +74,15 @@ function sourceBody(): Y.Doc {
 interface SourceFixture {
   sources: BlockReferenceSources;
   document: Y.Doc;
-  calls: { connects: number; destroys: number };
+  calls: { connects: number; destroys: number; scopes: PageScope[] };
 }
 
 /** The B04 session contract over the prepared source doc, with counted lifecycle. */
-function sourceFixture(document: Y.Doc): SourceFixture {
-  const calls = { connects: 0, destroys: 0 };
+function sourceFixture(document: Y.Doc, authorize: (target: PageScope) => Promise<void> = async () => {}): SourceFixture {
+  const calls = { connects: 0, destroys: 0, scopes: [] as PageScope[] };
   const connect: SourceConnector = ({ scope: target }) => {
     calls.connects++;
+    calls.scopes.push(target);
     const session: PageDocumentSession = {
       scope: target,
       document,
@@ -94,7 +96,7 @@ function sourceFixture(document: Y.Doc): SourceFixture {
     };
     return Promise.resolve(session);
   };
-  return { sources: createBlockReferenceSources({ origin: 'https://fouc.test', connect }), document, calls };
+  return { sources: createBlockReferenceSources({ origin: 'https://fouc.test', authorize, connect }), document, calls };
 }
 
 function mountEditor(fixture: SourceFixture): Editor {
@@ -118,7 +120,7 @@ function mountEditor(fixture: SourceFixture): Editor {
   return editor;
 }
 
-function insertReference(editor: Editor, attrs: { pageId: string | null; targetBlockId: string | null }): void {
+function insertReference(editor: Editor, attrs: { knowledgeBaseId: string | null; pageId: string | null; targetBlockId: string | null }): void {
   expect(editor.commands.insertContentAt(editor.state.doc.content.size, { type: 'blockReference', attrs })).toBe(true);
 }
 
@@ -127,10 +129,42 @@ function card(editor: Editor, state: string): HTMLElement | null {
 }
 
 describe('block reference card in a real editor', () => {
+  testWithTimeout('changing the target clears the old body before its new ACL settles', async () => {
+    let rejectTarget: (cause: Error) => void = () => {};
+    const foreignBaseId = '00000000-0000-4000-8000-000000000009';
+    const fixture = sourceFixture(sourceBody(), target => target.knowledgeBaseId === foreignBaseId
+      ? new Promise((_, reject) => { rejectTarget = reject; }) : Promise.resolve());
+    const editor = mountEditor(fixture);
+    insertReference(editor, { knowledgeBaseId: scope.knowledgeBaseId, pageId: sourcePageId, targetBlockId: 'src-heading' });
+    await flush();
+    expect(card(editor, 'live')?.querySelector('h2')?.textContent).toBe('季度目标');
+    editor.commands.updateAttributes('blockReference', { knowledgeBaseId: foreignBaseId });
+    await flush();
+    expect(card(editor, 'live')).toBeNull();
+    expect(Boolean(card(editor, 'loading')?.querySelector('h2'))).toBe(false);
+    rejectTarget(new KnowledgeDataError('FORBIDDEN'));
+    await flush();
+    expect(card(editor, 'denied')?.textContent).toContain('无权访问来源页');
+    expect(fixture.calls.connects).toBe(1);
+  }, 15_000);
+  testWithTimeout('cross-knowledge-base references load and navigate the explicit target resource', async () => {
+    const fixture = sourceFixture(sourceBody());
+    const editor = mountEditor(fixture);
+    const targetScope = { knowledgeBaseId: '00000000-0000-4000-8000-000000000009', pageId: sourcePageId };
+    insertReference(editor, { ...targetScope, targetBlockId: 'src-heading' });
+    await flush();
+    expect(fixture.calls.scopes).toEqual([targetScope]);
+    expect(card(editor, 'live')?.querySelector('h2')?.textContent).toBe('季度目标');
+    let opened: OpenPageTarget | undefined;
+    const unsubscribe = subscribeOpenPageTarget(target => { opened = target; });
+    card(editor, 'live')?.querySelector('[role="button"]')?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }) as unknown as Event);
+    unsubscribe();
+    expect(opened).toEqual({ ...targetScope, blockId: 'src-heading' });
+  }, 15_000);
   testWithTimeout('a live card renders the source block through the shared schema', async () => {
     const fixture = sourceFixture(sourceBody());
     const editor = mountEditor(fixture);
-    insertReference(editor, { pageId: sourcePageId, targetBlockId: 'src-heading' });
+    insertReference(editor, { knowledgeBaseId: scope.knowledgeBaseId, pageId: sourcePageId, targetBlockId: 'src-heading' });
     await flush();
 
     const live = card(editor, 'live');
@@ -143,7 +177,7 @@ describe('block reference card in a real editor', () => {
   testWithTimeout('source edits repaint the card through the throttle; deletion flips to deleted', async () => {
     const fixture = sourceFixture(sourceBody());
     const editor = mountEditor(fixture);
-    insertReference(editor, { pageId: sourcePageId, targetBlockId: 'src-heading' });
+    insertReference(editor, { knowledgeBaseId: scope.knowledgeBaseId, pageId: sourcePageId, targetBlockId: 'src-heading' });
     await flush();
     expect(card(editor, 'live')?.querySelector('h2')?.textContent).toBe('季度目标');
 
@@ -167,7 +201,7 @@ describe('block reference card in a real editor', () => {
   testWithTimeout('a cyclic reference renders without the connector ever being called', async () => {
     const fixture = sourceFixture(sourceBody());
     const editor = mountEditor(fixture);
-    insertReference(editor, { pageId: scope.pageId, targetBlockId: 'src-heading' });
+    insertReference(editor, { knowledgeBaseId: scope.knowledgeBaseId, pageId: scope.pageId, targetBlockId: 'src-heading' });
     await flush();
 
     const cyclic = card(editor, 'cyclic');
@@ -179,7 +213,7 @@ describe('block reference card in a real editor', () => {
   testWithTimeout('an unconfigured reference renders its placeholder without connecting', async () => {
     const fixture = sourceFixture(sourceBody());
     const editor = mountEditor(fixture);
-    insertReference(editor, { pageId: null, targetBlockId: null });
+    insertReference(editor, { knowledgeBaseId: scope.knowledgeBaseId, pageId: null, targetBlockId: null });
     await flush();
 
     expect(card(editor, 'picker')?.textContent).toContain('引用文档内容');
@@ -189,7 +223,7 @@ describe('block reference card in a real editor', () => {
   testWithTimeout('clicking a live card publishes the open target and stages the highlight', async () => {
     const fixture = sourceFixture(sourceBody());
     const editor = mountEditor(fixture);
-    insertReference(editor, { pageId: sourcePageId, targetBlockId: 'src-heading' });
+    insertReference(editor, { knowledgeBaseId: scope.knowledgeBaseId, pageId: sourcePageId, targetBlockId: 'src-heading' });
     await flush();
     const live = card(editor, 'live');
     expect(live).not.toBeNull();
@@ -202,13 +236,13 @@ describe('block reference card in a real editor', () => {
     button?.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }) as unknown as Event);
     stop();
 
-    expect(seen).toEqual([{ workspaceId: scope.workspaceId, pageId: sourcePageId, blockId: 'src-heading' }]);
+    expect(seen).toEqual([{ knowledgeBaseId: scope.knowledgeBaseId, pageId: sourcePageId, blockId: 'src-heading' }]);
   }, 15_000);
 
   testWithTimeout('unmounting the card releases the shared source session', async () => {
     const fixture = sourceFixture(sourceBody());
     const editor = mountEditor(fixture);
-    insertReference(editor, { pageId: sourcePageId, targetBlockId: 'src-heading' });
+    insertReference(editor, { knowledgeBaseId: scope.knowledgeBaseId, pageId: sourcePageId, targetBlockId: 'src-heading' });
     await flush();
     expect(fixture.calls.connects).toBe(1);
     expect(fixture.calls.destroys).toBe(0);

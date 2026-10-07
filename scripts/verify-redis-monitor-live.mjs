@@ -10,12 +10,11 @@ const host = process.env.FOUC_REDIS_OBSERVABILITY_HOST || endpoint.hostname;
 const port = Number(process.env.FOUC_REDIS_OBSERVABILITY_PORT || 56380);
 const config = { provider: 'redis', host, port, username: '', database: 15, tls: false, password: '' };
 const client = new Redis({ host, port, db: 15, retryStrategy: () => null, stringNumbers: true }); client.on('error', () => {});
-const workspace = 'dbx-redis-monitor-verification';
-const base = `http://127.0.0.1:8710/api/database/workspaces/${workspace}/redis`;
+const base = `http://127.0.0.1:8710/api/database/redis`;
 const prefix = 'fouc:dbx-monitor-lab:', acl = 'fouc_dbx_monitor_verifier', secret = crypto.randomUUID();
 let session, limited, active, delayedSession, gate;
-async function request(path, { body, method = body ? 'POST' : 'GET', status = 200, otherWorkspace = false } = {}) {
-  const response = await fetch((otherWorkspace ? base.replace(workspace, 'other-workspace') : base) + path, {
+async function request(path, { body, method = body ? 'POST' : 'GET', status = 200, missingSession = false } = {}) {
+  const response = await fetch(base + (missingSession ? path.replace(/^\/sessions\/[^/]+/, `/sessions/${crypto.randomUUID()}`) : path), {
     method, headers: { 'content-type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(20000),
   });
   const result = await response.json(); assert.equal(response.status, status, result.error?.message);
@@ -86,7 +85,7 @@ try {
   await active.until((_, rows) => rows.some((row) => row.message.includes(prefix + 'large')));
   const long = active.records.find((row) => row.message.includes(prefix + 'large')); assert.equal(long.truncated, true); assert.equal(Buffer.byteLength(long.message), 16384);
   await active.stop(); active = null; await eventually(async () => (await monitorIds()).length === baseline.length, 'HTTP abort must release the Redis monitor client');
-  await request(`/sessions/${session.id}/monitor`, { body: {}, otherWorkspace: true, status: 400 });
+  await request(`/sessions/${session.id}/monitor`, { body: {}, missingSession: true, status: 400 });
   active = await start(session.id); await request(`/sessions/${session.id}`, { method: 'DELETE' }); session = null;
   const closed = await active.until((frame) => frame.type === 'error'); assert.match(closed.message, /会话已断开/); await active.stop(); active = null;
   await eventually(async () => (await monitorIds()).length === baseline.length, 'session disconnect must release its monitor');
@@ -111,7 +110,7 @@ try {
   cancel.abort(); await pendingResponse;
   await eventually(async () => (await monitorIds()).length === baseline.length, 'cancelling before HTTP headers must close the pending Redis MONITOR client');
   await request(`/sessions/${delayedSession.id}`, { method: 'DELETE' }); delayedSession = null; await gate.close(); gate = null;
-  console.log('PASS MONITOR real HTTP stream: dedicated client, native microsecond timestamp/DB/source/quote/binary escapes, all DBs, 16KiB truncation, separate normal command and history, request abort (including before delayed acknowledgement)/session close/DB switch/ACL rejection/recovery/unexpected socket close release actual monitor clients, workspace guard; dedicated lab port ' + port + '.');
+  console.log('PASS MONITOR real HTTP stream: dedicated client, native microsecond timestamp/DB/source/quote/binary escapes, all DBs, 16KiB truncation, separate normal command and history, request abort (including before delayed acknowledgement)/session close/DB switch/ACL rejection/recovery/unexpected socket close release actual monitor clients, missing-session guard; dedicated lab port ' + port + '.');
 } finally {
   await active?.stop().catch(() => {});
   for (const entry of [session, limited, delayedSession]) if (entry) await request(`/sessions/${entry.id}`, { method: 'DELETE' }).catch(() => {});

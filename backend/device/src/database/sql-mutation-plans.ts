@@ -6,7 +6,7 @@ import { DatabaseInputError } from './input-error';
 import { commitSqlMutation } from './sql-mutation-commit';
 import { prepareSqlMutation, type SqlMutationPlan } from './sql-mutation-preview';
 
-/** One instance belongs to exactly one workspace-owned session; client submits a token, never executable SQL. */
+/** One instance belongs to exactly one session-owned session; client submits a token, never executable SQL. */
 export class SqlMutationPlans {
   private readonly plans = new Map<string, { driver: RelationalDriver; value: SqlMutationPlan; expiresAt: number }>();
   private readonly previews = new Set<AbortController>();

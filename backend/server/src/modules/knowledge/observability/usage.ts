@@ -1,14 +1,14 @@
 import type { Pool } from 'pg';
-import { aiUsage } from '../../../platform/database/workspace/schema';
+import { aiUsage } from '../../../platform/database/resources/schema';
 import { foucDatabaseErrorMessage } from '../../../platform/database/initialize-config';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
 import type { ModelCallRecord } from '../ai/gateway';
 
 /** Only safe call metadata; never SQL errors, provider bodies or credentials. */
 export interface UsagePersistFailed {
   type: 'usage_persist_failed';
   callId: string;
-  workspaceId: string;
+  knowledgeBaseId: string;
   operation: ModelCallRecord['operation'];
   status: ModelCallRecord['status'];
   errorCode: string | null;
@@ -19,7 +19,7 @@ export type ObservabilityDiagnostic = UsagePersistFailed;
 
 /**
  * Every started gateway call becomes one durable ai_usage row through its own
- * short tenant transaction, committed before the call result is returned. The
+ * short resource transaction, committed before the call result is returned. The
  * insert is deliberately NOT part of any business write transaction: provider
  * tokens were consumed regardless of whether business writes commit, and a
  * metering outage must not fail an already successful model call. A failed
@@ -29,9 +29,9 @@ export function createAiUsageRecorder(pool: Pool, onDiagnostic: (event: Observab
   return {
     async persist(record: ModelCallRecord, traceId: string | null): Promise<boolean> {
       try {
-        await withWorkspaceTenant(pool, record.context.workspaceId, async (db) => {
+        await withKnowledgeBase(pool, record.context.knowledgeBaseId, async (db) => {
           await db.insert(aiUsage).values({
-            workspaceId: record.context.workspaceId,
+            knowledgeBaseId: record.context.knowledgeBaseId,
             id: record.callId,
             userId: record.context.userId,
             taskId: record.context.taskId ?? null,
@@ -50,7 +50,7 @@ export function createAiUsageRecorder(pool: Pool, onDiagnostic: (event: Observab
         return true;
       } catch (error) {
         onDiagnostic({
-          type: 'usage_persist_failed', callId: record.callId, workspaceId: record.context.workspaceId,
+          type: 'usage_persist_failed', callId: record.callId, knowledgeBaseId: record.context.knowledgeBaseId,
           operation: record.operation, status: record.status, errorCode: record.errorCode ?? null,
           cause: foucDatabaseErrorMessage(error),
         });

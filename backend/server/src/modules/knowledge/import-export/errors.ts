@@ -5,7 +5,7 @@ export type VaultErrorCode =
   | 'VAULT_TREE_INVALID'
   /** 发起者对导出根(或导入目标父页)没有所需权限。 */
   | 'VAULT_ACCESS_DENIED'
-  /** 导入目标 workspace/teamspace/父页面不存在或已回收。 */
+  /** 导入目标 knowledgeBase/teamspace/父页面不存在或已回收。 */
   | 'VAULT_TARGET_INVALID'
   /** 附件与 AS01 存储交互失败(上传/确认/下载)。 */
   | 'VAULT_STORAGE_FAILED';

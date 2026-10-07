@@ -40,22 +40,22 @@ export interface PageEditorSession extends Omit<SessionState, 'key'> {
   retry: () => void;
 }
 
-export function usePageEditorSession(scope: PageScope | null): PageEditorSession {
-  const workspaceId = scope?.workspaceId ?? null;
+export function usePageEditorSession(scope: PageScope | null, cacheIdentity: string = 'anonymous'): PageEditorSession {
+  const knowledgeBaseId = scope?.knowledgeBaseId ?? null;
   const pageId = scope?.pageId ?? null;
-  const scopeKey = workspaceId && pageId ? `${workspaceId}:${pageId}` : null;
+  const scopeKey = knowledgeBaseId && pageId ? `${cacheIdentity}:${knowledgeBaseId}:${pageId}` : null;
   const [state, setState] = useState<SessionState>(initialSessionState);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    if (!workspaceId || !pageId) return undefined;
+    if (!knowledgeBaseId || !pageId) return undefined;
     const controller = new AbortController();
     let unsubscribe: (() => void) | undefined;
     let session: PageDocumentSession | undefined;
     void getFoucApiOrigin()
       .then(({ origin }) => {
         if (controller.signal.aborted) return;
-        const connected = connectPageDocument({ scope: { workspaceId, pageId }, origin, signal: controller.signal });
+        const connected = connectPageDocument({ scope: { knowledgeBaseId, pageId }, cacheIdentity, origin, signal: controller.signal });
         session = connected;
         // Editor transactions ride the ySyncPlugin origin, so B08 counts
         // them as this human's writing (its bindingOrigins contract).
@@ -80,7 +80,7 @@ export function usePageEditorSession(scope: PageScope | null): PageEditorSession
       unsubscribe?.();
       void session?.destroy();
     };
-  }, [workspaceId, pageId, scopeKey, attempt]);
+  }, [knowledgeBaseId, pageId, cacheIdentity, scopeKey, attempt]);
 
   const retry = useCallback(() => setAttempt((value) => value + 1), []);
   // State from a previous scope stays unread until the new session publishes.

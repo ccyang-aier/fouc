@@ -38,14 +38,14 @@ afterEach(async () => {
 
 const encoder = new TextEncoder();
 const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');
-const workspace = '20000000-0000-4000-8000-000000000000';
+const knowledgeBase = '20000000-0000-4000-8000-000000000000';
 
 /** 可编程假 API:prepare 可按序切换结果,记录调用。 */
 function scriptApi(options: { prepareResults: ('upload' | 'reuse' | 'fail')[]; uploadedHeaders: string[] }) {
   const calls: { kind: 'prepare' | 'confirm'; hash: string }[] = [];
   let index = 0;
   const api: KnowledgeAssetsApi = {
-    async prepareUpload(_workspaceId, intent) {
+    async prepareUpload(_knowledgeBaseId, intent) {
       calls.push({ kind: 'prepare', hash: intent.hash });
       const outcome = options.prepareResults[Math.min(index, options.prepareResults.length - 1)] ?? 'upload';
       index += 1;
@@ -57,7 +57,7 @@ function scriptApi(options: { prepareResults: ('upload' | 'reuse' | 'fail')[]; u
       if (outcome === 'reuse') return { action: 'reuse' };
       return { action: 'upload', url: 'https://s3.test/put', method: 'PUT', headers: { 'content-type': intent.mime }, expiresAt: '2026-09-26T12:10:00.000Z' };
     },
-    async confirmUpload(_workspaceId, intent) {
+    async confirmUpload(_knowledgeBaseId, intent) {
       calls.push({ kind: 'confirm', hash: intent.hash });
       return { status: 'ready', created: true };
     },
@@ -89,7 +89,7 @@ async function mountUploader(props: { api: KnowledgeAssetsApi; transfer: AssetTr
   const root = createRoot(host as unknown as HTMLElement);
   roots.push(root);
   await act(async () => {
-    root.render(<AssetUploader workspaceId={workspace} api={props.api} transfer={props.transfer} onUploaded={props.onUploaded} />);
+    root.render(<AssetUploader knowledgeBaseId={knowledgeBase} api={props.api} transfer={props.transfer} onUploaded={props.onUploaded} />);
   });
   return host as unknown as HTMLElement;
 }
@@ -195,7 +195,7 @@ describe('AssetUploader · 组件闭环', () => {
     const host = await mountUploader({ api, transfer });
 
     selectFiles(host, [new File([encoder.encode('秒传内容')], 'dup.txt', { type: 'text/plain' })]);
-    await settle(() => expect(host.textContent).toContain('秒传命中 · 工作区已有相同内容'));
+    await settle(() => expect(host.textContent).toContain('秒传命中 · 知识库已有相同内容'));
 
     expect(puts).toHaveLength(0);
     expect(calls.map((call) => call.kind)).toEqual(['prepare']);

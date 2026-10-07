@@ -85,8 +85,8 @@ export function CanvasError({ title = '加载失败', detail, onRetry, retryLabe
   );
 }
 
-export function CanvasForbidden({ title = '没有访问权限', detail }: { title?: string; detail?: ReactNode }) {
-  return <CanvasState icon={<Warning className="size-5" aria-hidden weight="fill" />} title={title} hint={detail} announce="polite" />;
+export function CanvasForbidden({ title = '没有访问权限', detail, actions }: { title?: string; detail?: ReactNode; actions?: ReactNode }) {
+  return <CanvasState icon={<Warning className="size-5" aria-hidden weight="fill" />} title={title} hint={detail} actions={actions} announce="polite" />;
 }
 
 export function CanvasRedirect({ detail }: { detail?: ReactNode }) {

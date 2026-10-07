@@ -46,7 +46,7 @@ export function RelationalWorkbench({
   name: string
   onBack: () => void
 }) {
-  const base = `/api/database/workspaces/${encodeURIComponent(session.workspaceId)}/relational/sessions/${session.id}`
+  const base = `/api/database/relational/sessions/${session.id}`
   const [schemas, setSchemas] = useState<string[]>([])
   const [schema, setSchema] = useState("")
   const [tables, setTables] = useState<DatabaseObjectInfo[]>([])
@@ -503,7 +503,7 @@ export function RelationalWorkbench({
                   provider={session.provider}
                   schema={schema}
                   scopeKey={`${base}:${schema}:${table}:${page.offset}:${JSON.stringify(query)}:${pageSearch}`}
-                  layoutScopeKey={`${session.workspaceId}:${session.connectionId ?? session.id}:${session.database}:${schema}:${table}`}
+                  layoutScopeKey={`${session.connectionId ?? session.id}:${session.database}:${schema}:${table}`}
                   onSelect={(row) => { setSelectedRow(row); if (row !== null) setInspectorOpen(true) }}
                   search={pageSearch}
                   sort={query.sort}

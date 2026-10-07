@@ -1,10 +1,10 @@
 import { and, desc, eq, isNull, or, sql } from 'drizzle-orm';
 import type { KnowledgePatSummary } from '@fouc/shared/knowledge/contracts';
-import type { MemberRole } from '@fouc/shared/workspaces';
-import { member, personalAccessToken } from '../../../platform/database/workspace/schema';
+import type { MemberRole } from '@fouc/shared/resources';
+import { member, personalAccessToken } from '../../../platform/database/resources/schema';
 import { authUser } from '../../../platform/database/identity/schema';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
-import { createKnowledgeTokenInputSchema, KnowledgeAccessError, revokeKnowledgeTokenInputSchema, sanitizedAccess, tokenScopesSchema, tokenWorkspaceSchema } from './access-policy';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
+import { createKnowledgeTokenInputSchema, KnowledgeAccessError, revokeKnowledgeTokenInputSchema, sanitizedAccess, tokenScopesSchema, tokenKnowledgeBaseSchema } from './access-policy';
 import type { KnowledgeTokenScope } from './access-policy';
 import { activeSessionMember, verifiedRequestSession } from './session-access';
 import type { KnowledgeAccessDependencies } from './session-access';
@@ -12,7 +12,7 @@ import { issueKnowledgeToken, matchesKnowledgeToken, parseKnowledgeToken } from 
 import type { KnowledgeTokenProof } from './token-format';
 
 const metadataColumns = {
-  workspaceId: personalAccessToken.workspaceId, id: personalAccessToken.id, name: personalAccessToken.name,
+  knowledgeBaseId: personalAccessToken.knowledgeBaseId, id: personalAccessToken.id, name: personalAccessToken.name,
   scopes: personalAccessToken.scopes, createdAt: personalAccessToken.createdAt,
   expiresAt: personalAccessToken.expiresAt, revokedAt: personalAccessToken.revokedAt, lastUsedAt: personalAccessToken.lastUsedAt,
 };
@@ -21,7 +21,7 @@ export type KnowledgeTokenSummary = KnowledgePatSummary;
 
 function summary(value: StoredTokenMetadata): KnowledgeTokenSummary {
   return Object.freeze({
-    workspaceId: value.workspaceId, id: value.id, name: value.name,
+    knowledgeBaseId: value.knowledgeBaseId, id: value.id, name: value.name,
     scopes: Object.freeze(tokenScopesSchema.parse(value.scopes)),
     createdAt: value.createdAt.toISOString(), expiresAt: value.expiresAt?.toISOString() ?? null,
     revokedAt: value.revokedAt?.toISOString() ?? null, lastUsedAt: value.lastUsedAt?.toISOString() ?? null,
@@ -38,15 +38,15 @@ export function createKnowledgeTokenService(dependencies: KnowledgeAccessDepende
         const parsed = createKnowledgeTokenInputSchema.safeParse(input);
         if (!parsed.success) throw new KnowledgeAccessError('INVALID_TOKEN_INPUT');
         const value = parsed.data;
-        return withWorkspaceTenant(dependencies.pool, value.workspaceId, async (db) => {
-          await activeSessionMember(db, value.workspaceId, identity, true);
+        return withKnowledgeBase(dependencies.pool, value.knowledgeBaseId, async (db) => {
+          await activeSessionMember(db, value.knowledgeBaseId, identity, true);
           if (value.expiresAt !== null) {
             const result = await db.execute<{ valid: boolean }>(sql`SELECT ${value.expiresAt}::timestamptz > clock_timestamp() AS valid`);
             if (!result.rows[0]?.valid) throw new KnowledgeAccessError('INVALID_TOKEN_INPUT');
           }
-          const issued = issueKnowledgeToken(value.workspaceId);
+          const issued = issueKnowledgeToken(value.knowledgeBaseId);
           const [stored] = await db.insert(personalAccessToken).values({
-            workspaceId: value.workspaceId, id: issued.tokenId, userId: identity.userId, name: value.name,
+            knowledgeBaseId: value.knowledgeBaseId, id: issued.tokenId, userId: identity.userId, name: value.name,
             scopes: value.scopes, expiresAt: value.expiresAt ? new Date(value.expiresAt) : null, tokenHash: issued.tokenHash,
           }).returning(metadataColumns);
           // The plaintext is not retained by this service or recoverable from list().
@@ -54,15 +54,15 @@ export function createKnowledgeTokenService(dependencies: KnowledgeAccessDepende
         });
       });
     },
-    list(request: Request, workspaceId: string) {
+    list(request: Request, knowledgeBaseId: string) {
       return run(async () => {
         const identity = await verifiedRequestSession(dependencies.auth, request);
-        const parsed = tokenWorkspaceSchema.safeParse(workspaceId);
+        const parsed = tokenKnowledgeBaseSchema.safeParse(knowledgeBaseId);
         if (!parsed.success) throw new KnowledgeAccessError('INVALID_TOKEN_INPUT');
-        return withWorkspaceTenant(dependencies.pool, parsed.data, async (db) => {
+        return withKnowledgeBase(dependencies.pool, parsed.data, async (db) => {
           await activeSessionMember(db, parsed.data, identity, true);
           const tokens = await db.select(metadataColumns).from(personalAccessToken)
-            .where(and(eq(personalAccessToken.workspaceId, parsed.data), eq(personalAccessToken.userId, identity.userId)))
+            .where(and(eq(personalAccessToken.knowledgeBaseId, parsed.data), eq(personalAccessToken.userId, identity.userId)))
             .orderBy(desc(personalAccessToken.createdAt), personalAccessToken.id);
           return Object.freeze(tokens.map(summary));
         });
@@ -73,11 +73,11 @@ export function createKnowledgeTokenService(dependencies: KnowledgeAccessDepende
         const identity = await verifiedRequestSession(dependencies.auth, request, true);
         const parsed = revokeKnowledgeTokenInputSchema.safeParse(input);
         if (!parsed.success) throw new KnowledgeAccessError('INVALID_TOKEN_INPUT');
-        const { workspaceId, tokenId } = parsed.data;
-        await withWorkspaceTenant(dependencies.pool, workspaceId, async (db) => {
-          await activeSessionMember(db, workspaceId, identity, true);
+        const { knowledgeBaseId, tokenId } = parsed.data;
+        await withKnowledgeBase(dependencies.pool, knowledgeBaseId, async (db) => {
+          await activeSessionMember(db, knowledgeBaseId, identity, true);
           await db.update(personalAccessToken).set({ revokedAt: sql`clock_timestamp()` }).where(and(
-            eq(personalAccessToken.workspaceId, workspaceId), eq(personalAccessToken.id, tokenId),
+            eq(personalAccessToken.knowledgeBaseId, knowledgeBaseId), eq(personalAccessToken.id, tokenId),
             eq(personalAccessToken.userId, identity.userId), isNull(personalAccessToken.revokedAt),
           ));
         });
@@ -97,33 +97,33 @@ export interface VerifiedKnowledgeToken {
 }
 
 /** Private authentication bootstrap: no identity discovery or business reads here. */
-export async function verifyKnowledgeToken(dependencies: KnowledgeAccessDependencies, token: string, workspaceId: string): Promise<VerifiedKnowledgeToken> {
+export async function verifyKnowledgeToken(dependencies: KnowledgeAccessDependencies, token: string, knowledgeBaseId: string): Promise<VerifiedKnowledgeToken> {
   const locator = parseKnowledgeToken(token);
-  if (!locator || locator.workspaceId !== workspaceId) throw new KnowledgeAccessError('UNAUTHENTICATED');
+  if (!locator || locator.knowledgeBaseId !== knowledgeBaseId) throw new KnowledgeAccessError('UNAUTHENTICATED');
   return verifyKnowledgeTokenProof(dependencies, locator);
 }
 
 /** Internal only: refresh receives this proof from the authenticator's private WeakMap. */
 export async function verifyKnowledgeTokenProof(dependencies: KnowledgeAccessDependencies, locator: KnowledgeTokenProof): Promise<VerifiedKnowledgeToken> {
-  const workspaceId = locator.workspaceId;
-  return withWorkspaceTenant(dependencies.pool, locator.workspaceId, async (db) => {
-    // Only the token's composite locator is queried under its RLS tenant. A public
+  const knowledgeBaseId = locator.knowledgeBaseId;
+  return withKnowledgeBase(dependencies.pool, locator.knowledgeBaseId, async (db) => {
+    // Only the token's composite locator is queried under its RLS resource. A public
     // locator is not authorization; the secret and live user/membership are mandatory.
     const [found] = await db.select({ token: personalAccessToken,
       active: sql<boolean>`${personalAccessToken.revokedAt} IS NULL AND (${personalAccessToken.expiresAt} IS NULL OR ${personalAccessToken.expiresAt} > clock_timestamp())`,
     }).from(personalAccessToken)
-      .where(and(eq(personalAccessToken.workspaceId, locator.workspaceId), eq(personalAccessToken.id, locator.tokenId)))
+      .where(and(eq(personalAccessToken.knowledgeBaseId, locator.knowledgeBaseId), eq(personalAccessToken.id, locator.tokenId)))
       .for('update');
     const matches = matchesKnowledgeToken(locator.hash, found?.token.tokenHash);
     const scopes = tokenScopesSchema.safeParse(found?.token.scopes);
     if (!matches || !found?.active || !scopes.success) throw new KnowledgeAccessError('UNAUTHENTICATED');
     const [membership] = await db.select({ role: member.role }).from(member)
       .innerJoin(authUser, eq(authUser.id, member.userId))
-      .where(and(eq(member.workspaceId, workspaceId), eq(member.userId, found.token.userId), eq(authUser.emailVerified, true)))
+      .where(and(eq(member.knowledgeBaseId, knowledgeBaseId), eq(member.userId, found.token.userId), eq(authUser.emailVerified, true)))
       .for('share');
     if (!membership) throw new KnowledgeAccessError('UNAUTHENTICATED');
     const used = await db.update(personalAccessToken).set({ lastUsedAt: sql`clock_timestamp()` }).where(and(
-      eq(personalAccessToken.workspaceId, workspaceId), eq(personalAccessToken.id, locator.tokenId), isNull(personalAccessToken.revokedAt),
+      eq(personalAccessToken.knowledgeBaseId, knowledgeBaseId), eq(personalAccessToken.id, locator.tokenId), isNull(personalAccessToken.revokedAt),
       or(isNull(personalAccessToken.expiresAt), sql`${personalAccessToken.expiresAt} > clock_timestamp()`),
     )).returning({ id: personalAccessToken.id });
     if (!used.length) throw new KnowledgeAccessError('UNAUTHENTICATED');

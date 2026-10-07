@@ -15,11 +15,11 @@ import styles from './file-preview.module.css';
 const PdfFileView = dynamic(() => import('./pdf-file-view').then(module => module.PdfFileView), { ssr: false });
 const OfficeFileView = dynamic(() => import('./office-file-view').then(module => module.OfficeFileView), { ssr: false });
 
-type PreviewProps = { workspaceId: string; source: 'local' | 'workspace'; file?: DocumentFile; name: string; attach?: React.ReactNode; pdfComments?: PdfComments; commentTrigger?: React.ReactNode; thumbnails: boolean; thumbnailsId: string; onThumbnailsChange: (open: boolean) => void };
+type PreviewProps = { knowledgeBaseId: string; source: 'local' | 'server'; file?: DocumentFile; name: string; attach?: React.ReactNode; pdfComments?: PdfComments; commentTrigger?: React.ReactNode; thumbnails: boolean; thumbnailsId: string; onThumbnailsChange: (open: boolean) => void };
 export function FileDocumentPreview(props: PreviewProps) {
-  return <FilePreviewSession key={`${props.workspaceId}:${props.source}:${props.file?.source ?? props.name}`} {...props} />;
+  return <FilePreviewSession key={`${props.knowledgeBaseId}:${props.source}:${props.file?.source ?? props.name}`} {...props} />;
 }
-function FilePreviewSession({ workspaceId, source, file, name, attach, pdfComments, commentTrigger, thumbnails, thumbnailsId, onThumbnailsChange }: PreviewProps) {
+function FilePreviewSession({ knowledgeBaseId, source, file, name, attach, pdfComments, commentTrigger, thumbnails, thumbnailsId, onThumbnailsChange }: PreviewProps) {
   const format = documentFileFormat(file?.name ?? name);
   const [blob, setBlob] = useState<Blob | null>(null);
   const [converted, setConverted] = useState<Blob | null>(null);
@@ -36,13 +36,13 @@ function FilePreviewSession({ workspaceId, source, file, name, attach, pdfCommen
   useEffect(() => {
     if (!file) return;
     const controller = new AbortController(); let objectUrl = '';
-    void readDocumentFile(workspaceId, source, file, controller.signal).then(async data => {
+    void readDocumentFile(knowledgeBaseId, source, file, controller.signal).then(async data => {
       if (controller.signal.aborted) return;
       objectUrl = URL.createObjectURL(data); setUrl(objectUrl); setBlob(data);
       if (['text', 'json', 'csv', 'markdown'].includes(format ?? '')) { if (data.size > 10 * 1024 * 1024) throw new Error('文本结构预览支持 10 MB 以内的文件，请下载原文件查看。'); const content = await decodeDocumentText(data); if (!controller.signal.aborted) setText(content); }
     }).catch(error => { if (!controller.signal.aborted) setError(error instanceof Error ? error.message : '原文件读取失败'); }).finally(() => { if (!controller.signal.aborted) setBusy(false); });
     return () => { controller.abort(); conversion.current?.abort(); if (objectUrl) URL.revokeObjectURL(objectUrl); };
-  }, [workspaceId, source, file, format, retry]);
+  }, [knowledgeBaseId, source, file, format, retry]);
   async function convertDoc() {
     if (!blob) return;
     conversion.current?.abort(); const controller = new AbortController(); conversion.current = controller;

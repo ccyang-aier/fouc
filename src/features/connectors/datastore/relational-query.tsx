@@ -55,7 +55,7 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
   onMutated: () => void
   onMutationBusy: (busy: boolean) => void
 }) {
-  const root = `/api/database/workspaces/${encodeURIComponent(session.workspaceId)}/relational`
+  const root = `/api/database/relational`
   const base = `${root}/sessions/${session.id}`, libraryBase = session.connectionId ? `${root}/connections/${session.connectionId}/sql-library` : null
   const { state, controller } = useSqlDrafts(libraryBase, () => { const tab = newSqlTab(session.database, schema || null); return { tabs: [tab], activeTabId: tab.id } })
   const current = state.tabs.find((tab) => tab.id === state.activeTabId) ?? null
@@ -86,7 +86,7 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
   const preferences = useSqlResource<SqlEditorPreferences>(`${preferencesBase}/preferences`, undefined, preferencesRevision)
   const busyIds = new Set(Object.keys(executions).filter((id) => executions[id].running))
   const execution = current ? executions[current.id] : undefined
-  const pinScope = { workspaceId: session.workspaceId, connectionId: session.connectionId ?? session.id, tabId: current?.id ?? '' }
+  const pinScope = { connectionId: session.connectionId ?? session.id, tabId: current?.id ?? '' }
   const selectedStatement = execution?.snapshot?.statements[execution.selectedResult]
   const currentResultId = execution?.snapshot ? `${execution.snapshot.id}:${execution.selectedResult}` : ''
   const currentResult = selectedStatement?.status === 'succeeded' && selectedStatement.result ? { id: currentResultId, result: selectedStatement.result, label: `${current?.title} · 结果 ${execution!.selectedResult + 1}` } : null
@@ -313,7 +313,7 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
           onChange={(sql) => updateTab(current.id, { sql })} onPositionChange={(id, editorPosition) => { const tab = controller.getSnapshot().tabs.find((item) => item.id === id); if (tab && JSON.stringify(tab.editorPosition) !== JSON.stringify(editorPosition)) updateTab(id, { editorPosition }) }}
           onRun={(mode) => void run(mode ?? executionMode)} onSave={() => void saveCurrent()} onFormat={() => void transformCurrent()} snippets={preferences.data?.snippets} keywordCase={preferences.data?.formatter.keywordCase} functionCase={preferences.data?.formatter.functionCase} editorRef={editor} /></div>}
         status={<div className={styles.document}><span className={styles.language}>SQL</span><span title={current.database}>{displayDatabase}{current.schema && session.provider !== 'mysql' ? ` / ${current.schema}` : ''}</span><small><Lock size={12} />只读 · {executionMode === 'current' ? '当前语句' : '全部语句'} · 选区优先</small>{draftStatus}</div>}
-        result={<ResultPins key={JSON.stringify(pinScope)} scope={pinScope} pins={resultPins.pins} current={currentResult} provider={session.provider} layoutScopeKey={`${session.workspaceId}:${session.connectionId ?? session.id}:${current.database}:${current.schema}:${current.id}`} onRemove={resultPins.remove} onClear={() => resultPins.clear(pinScope)} onNotice={setNotice} onSqlPreview={openComparisonReview}><SqlExecutionResults key={`${current.id}:${execution?.snapshot?.id ?? 'empty'}`} layoutScopeKey={`${session.workspaceId}:${session.connectionId ?? session.id}:${current.database}:${current.schema}:${current.id}`} provider={session.provider} execution={execution} onSelect={(index) => selectResult(current.id, index)} view={current.resultView} onViewChange={(resultView) => updateTab(current.id, { resultView })} onCancel={() => void cancel(current.id)} currentPinned={currentResultPinned} onPin={(statement, index) => {
+        result={<ResultPins key={JSON.stringify(pinScope)} scope={pinScope} pins={resultPins.pins} current={currentResult} provider={session.provider} layoutScopeKey={`${session.connectionId ?? session.id}:${current.database}:${current.schema}:${current.id}`} onRemove={resultPins.remove} onClear={() => resultPins.clear(pinScope)} onNotice={setNotice} onSqlPreview={openComparisonReview}><SqlExecutionResults key={`${current.id}:${execution?.snapshot?.id ?? 'empty'}`} layoutScopeKey={`${session.connectionId ?? session.id}:${current.database}:${current.schema}:${current.id}`} provider={session.provider} execution={execution} onSelect={(index) => selectResult(current.id, index)} view={current.resultView} onViewChange={(resultView) => updateTab(current.id, { resultView })} onCancel={() => void cancel(current.id)} currentPinned={currentResultPinned} onPin={(statement, index) => {
           if (!statement.result || !execution?.snapshot) return
           try { resultPins.pin({ scope: pinScope, sourceId: `${execution.snapshot.id}:${index}`, label: `${current.title} · 结果 ${index + 1}`, sql: statement.sql, result: statement.result }); setNotice('已固定结果，重新运行不会覆盖。') }
           catch (reason) { setNotice(reason instanceof Error ? reason.message : '固定结果失败') }

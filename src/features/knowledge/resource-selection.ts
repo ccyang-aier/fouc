@@ -1,27 +1,27 @@
-export type KnowledgeResource = 'local' | 'workspace';
+export type KnowledgeResource = 'local' | 'server';
 
-export const knowledgeResourceStorageKey = (workspaceId: string) => `fouc.workspace.${workspaceId}.knowledge.resource`;
+export const knowledgeResourceStorageKey = 'fouc.knowledge.resource';
 
 /** Resource selection is a user choice; authentication never changes it. */
-export function readKnowledgeResource(storage: Pick<Storage, 'getItem'> | null, workspaceId: string, defaultResource: KnowledgeResource): KnowledgeResource {
+export function readKnowledgeResource(storage: Pick<Storage, 'getItem'> | null, defaultResource: KnowledgeResource): KnowledgeResource {
   try {
-    const saved = storage?.getItem(knowledgeResourceStorageKey(workspaceId));
-    return saved === 'workspace' || saved === 'local' ? saved : defaultResource;
+    const saved = storage?.getItem(knowledgeResourceStorageKey);
+    return saved === 'server' || saved === 'local' ? saved : defaultResource;
   } catch {
     return defaultResource;
   }
 }
 
-export function writeKnowledgeResource(storage: Pick<Storage, 'setItem'> | null, resource: KnowledgeResource, workspaceId: string): void {
+export function writeKnowledgeResource(storage: Pick<Storage, 'setItem'> | null, resource: KnowledgeResource): void {
   try {
-    storage?.setItem(knowledgeResourceStorageKey(workspaceId), resource);
+    storage?.setItem(knowledgeResourceStorageKey, resource);
   } catch {
     // Selection remains usable in memory when preference storage is unavailable.
   }
 }
 
-export function createKnowledgeResourceSelection(storage: Pick<Storage, 'getItem' | 'setItem'> | null, workspaceId: string, defaultResource: KnowledgeResource = 'local') {
-  let resource = readKnowledgeResource(storage, workspaceId, defaultResource);
+export function createKnowledgeResourceSelection(storage: Pick<Storage, 'getItem' | 'setItem'> | null, defaultResource: KnowledgeResource = 'local') {
+  let resource = readKnowledgeResource(storage, defaultResource);
   const listeners = new Set<() => void>();
   return {
     getSnapshot: () => resource,
@@ -30,15 +30,15 @@ export function createKnowledgeResourceSelection(storage: Pick<Storage, 'getItem
     select(next: KnowledgeResource) {
       if (next === resource) return;
       resource = next;
-      writeKnowledgeResource(storage, next, workspaceId);
+      writeKnowledgeResource(storage, next);
       for (const listener of listeners) listener();
     },
   };
 }
 
-export function createBrowserKnowledgeResourceSelection(workspaceId: string, defaultResource: KnowledgeResource) {
+export function createBrowserKnowledgeResourceSelection(defaultResource: KnowledgeResource) {
   let storage: Storage | null = null;
   try { if (typeof window !== 'undefined') storage = window.localStorage; }
   catch { /* The selection store also works without persistent storage. */ }
-  return createKnowledgeResourceSelection(storage, workspaceId, defaultResource);
+  return createKnowledgeResourceSelection(storage, defaultResource);
 }

@@ -138,19 +138,19 @@ test('cancelled column drags restore widths and leave stored preferences untouch
   expect(handle.hasPointerCapture(1)).toBe(false)
 })
 
-test('minimum width and keyboard resizing persist independently for each workspace and provider', async () => {
-  await renderDirectory('resize-scope-one:sqlite')
+test('minimum width and keyboard resizing persist independently for each provider', async () => {
+  await renderDirectory('sqlite')
   let handle = document.querySelector<HTMLButtonElement>('[aria-label="调整连接名称列宽"]')!
   await pointer(handle, 'pointerdown', 200)
   await pointer(handle, 'pointerup', -200)
   expect(width('name')).toBe('130px')
   await act(async () => handle.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', shiftKey: true, bubbles: true, cancelable: true })))
   expect(width('name')).toBe('170px')
-  await renderDirectory('resize-scope-one:mysql')
+  await renderDirectory('mysql')
   expect(width('name')).toBe('')
-  await renderDirectory('resize-scope-two:sqlite')
+  await renderDirectory('postgres')
   expect(width('name')).toBe('')
-  await renderDirectory('resize-scope-one:sqlite')
+  await renderDirectory('sqlite')
   expect(width('name')).toBe('170px')
   handle = document.querySelector<HTMLButtonElement>('[aria-label="调整连接名称列宽"]')!
   await act(async () => handle.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true })))

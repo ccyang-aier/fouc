@@ -17,7 +17,7 @@ import { createBlockEditingExtensions } from '.';
 import { currentBlockFormat, insertMathBlock, setBlockFormat } from './format/block-format';
 import type { BlockFormat } from './format/block-format';
 
-const scope = { workspaceId: '00000000-0000-4000-8000-000000000001', pageId: '00000000-0000-4000-8000-000000000002' };
+const scope = { knowledgeBaseId: '00000000-0000-4000-8000-000000000001', pageId: '00000000-0000-4000-8000-000000000002' };
 
 let window: Window;
 

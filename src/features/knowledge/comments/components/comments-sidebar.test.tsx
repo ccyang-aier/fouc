@@ -48,9 +48,9 @@ function thread(id: string, options: { kind?: 'comment' | 'issue'; anchorKind?: 
   const entries = options.comments ?? [{ id: `${id}-c1`, authorId: 'author-1', bodyMd: '首条评论' }];
   const createdAt = new Date(Date.now() - 30 * 60_000).toISOString();
   return {
-    workspaceId: 'ws', id, pageId: 'page', kind: options.kind ?? 'issue', anchorKind: options.anchorKind ?? 'selection', status: options.kind === 'comment' ? null : options.status ?? 'open', createdAt, updatedAt: createdAt,
+    knowledgeBaseId: 'ws', id, pageId: 'page', kind: options.kind ?? 'issue', anchorKind: options.anchorKind ?? 'selection', status: options.kind === 'comment' ? null : options.status ?? 'open', createdAt, updatedAt: createdAt,
     comments: entries.map((entry, index) => ({
-      workspaceId: 'ws', id: entry.id, threadId: id, authorId: entry.authorId, replyToCommentId: index > 0 ? entries[index - 1].id : null, bodyMd: entry.bodyMd, likeCount: 0, liked: false,
+      knowledgeBaseId: 'ws', id: entry.id, threadId: id, authorId: entry.authorId, replyToCommentId: index > 0 ? entries[index - 1].id : null, bodyMd: entry.bodyMd, likeCount: 0, liked: false,
       createdAt: new Date(Date.now() - (entry.minutesAgo ?? 30 - index) * 60_000).toISOString(),
       updatedAt: new Date(Date.now() - (entry.minutesAgo ?? 30 - index) * 60_000).toISOString(),
     })),
@@ -92,7 +92,7 @@ async function mountSidebar(options: MountOptions, handlers: Partial<SidebarHand
   await act(async () => {
     root.render(
       <CommentsSidebar
-        workspaceId="ws"
+        knowledgeBaseId="ws"
         model={model}
         replyTarget={options.replyTarget ?? null}
         activeThreadId={null}

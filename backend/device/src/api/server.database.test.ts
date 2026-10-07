@@ -38,7 +38,7 @@ describe('database capability API', () => {
 
   test('Redis write endpoints require device authentication and an owned active session', async () => {
     const app = testApp(new DatabaseCapabilityRegistry());
-    const base = '/api/database/workspaces/w/redis/sessions/missing';
+    const base = '/api/database/redis/sessions/missing';
     for (const path of ['/write-mode', '/edit-string', '/mutations/preview', '/mutations/commit']) {
       const options = { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' };
       expect((await app.request(base + path, options)).status).toBe(401);

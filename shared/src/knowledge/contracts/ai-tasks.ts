@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { blockIdSchema, entityIdSchema, timestampSchema, workspaceScopeSchema } from './primitives';
+import { blockIdSchema, entityIdSchema, timestampSchema, knowledgeBaseScopeSchema } from './primitives';
 
 /**
  * §9.3 逐块流式 AI 任务（J04）的前后端共享契约：tRPC 过程、服务端任务注册表
@@ -18,7 +18,7 @@ export const aiStreamingTaskErrorCodeSchema = z.string().regex(/^[a-z][a-z_]{0,6
  * 场景）；`insideBlockId` = 追加到该容器块内容末尾（AI 块场景）；均缺省为页面
  * 文末。`prompt` 是本轮生成指令，上下文（规则/大纲/邻块）由 J01 组装层补齐。
  */
-export const startAiStreamingTaskInputSchema = workspaceScopeSchema.extend({
+export const startAiStreamingTaskInputSchema = knowledgeBaseScopeSchema.extend({
   pageId: entityIdSchema,
   afterBlockId: blockIdSchema.nullable().default(null),
   insideBlockId: blockIdSchema.nullable().default(null),
@@ -27,7 +27,7 @@ export const startAiStreamingTaskInputSchema = workspaceScopeSchema.extend({
 }).refine((value) => !(value.afterBlockId && value.insideBlockId), '锚点 afterBlockId 与 insideBlockId 只能二选一');
 
 /** cancel / get / revoke 共用的任务选择器；taskId 由 start 返回。 */
-export const aiStreamingTaskSelectorSchema = workspaceScopeSchema.extend({
+export const aiStreamingTaskSelectorSchema = knowledgeBaseScopeSchema.extend({
   taskId: entityIdSchema,
 });
 
@@ -36,7 +36,7 @@ export const aiStreamingTaskSelectorSchema = workspaceScopeSchema.extend({
  * 累计字符（取消/失败后保留已写部分供审阅）；`revokedAt` 非空表示整体撤销已执行。
  */
 export const aiStreamingTaskSnapshotSchema = z.strictObject({
-  workspaceId: entityIdSchema,
+  knowledgeBaseId: entityIdSchema,
   taskId: entityIdSchema,
   pageId: entityIdSchema,
   initiatedBy: entityIdSchema,
@@ -51,7 +51,7 @@ export const aiStreamingTaskSnapshotSchema = z.strictObject({
 
 /** 整体任务撤销的结果：被移除的该任务建议块数（幂等，重复撤销返回 0）。 */
 export const revokeAiStreamingTaskResultSchema = z.strictObject({
-  workspaceId: entityIdSchema,
+  knowledgeBaseId: entityIdSchema,
   taskId: entityIdSchema,
   revokedBlocks: z.number().int().nonnegative(),
 });

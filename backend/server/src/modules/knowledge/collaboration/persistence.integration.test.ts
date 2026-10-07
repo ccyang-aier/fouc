@@ -2,8 +2,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:tes
 import { and, eq } from 'drizzle-orm';
 import * as Y from 'yjs';
 import { principal } from '@fouc/shared/knowledge/contracts';
-import { docState } from '../../../platform/database/workspace/schema';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import { docState } from '../../../platform/database/resources/schema';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
 import { replaceAuthorizedPageAcl } from '../permissions/mutations';
 import { createPermissionsFixture, until, type PermissionsFixture } from '../permissions/permissions-test-fixture';
 import { pageDocumentName } from '@fouc/shared/knowledge/collaboration';
@@ -33,19 +33,19 @@ describe('authoritative page document persistence', () => {
     await fixture.resetJobs();
   });
 
-  async function grant(node: { workspaceId: string; pageId: string }, grants: { principal: string; level: 'view' | 'comment' | 'edit' | 'full' }[]) {
-    return withWorkspaceTenant(fixture.pool, node.workspaceId, (db) => replaceAuthorizedPageAcl(db, { workspaceId: node.workspaceId, pageId: node.pageId, grants }));
+  async function grant(node: { knowledgeBaseId: string; pageId: string }, grants: { principal: string; level: 'view' | 'comment' | 'edit' | 'full' }[]) {
+    return withKnowledgeBase(fixture.pool, node.knowledgeBaseId, (db) => replaceAuthorizedPageAcl(db, { knowledgeBaseId: node.knowledgeBaseId, pageId: node.pageId, grants }));
   }
   function client(name: string, cookie = fixture.reader.cookie): CollaborationClient {
     return connectCollaborationClient({ port: listener.port, origin: fixture.server.webOrigin, name, authorization: cookie });
   }
   async function storedState(pageId: string) {
-    return withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => db.select({ state: docState.state, vector: docState.stateVector })
-      .from(docState).where(and(eq(docState.workspaceId, fixture.alpha.id), eq(docState.pageId, pageId))));
+    return withKnowledgeBase(fixture.pool, fixture.alpha.id, (db) => db.select({ state: docState.state, vector: docState.stateVector })
+      .from(docState).where(and(eq(docState.knowledgeBaseId, fixture.alpha.id), eq(docState.pageId, pageId))));
   }
   async function docChangedEvents(pageId: string) {
     const result = await fixture.server.database.admin.query(
-      "SELECT payload FROM workspace.outbox WHERE workspace_id=$1 AND topic='doc.changed' AND payload->>'pageId'=$2", [fixture.alpha.id, pageId]);
+      "SELECT payload FROM resources.outbox WHERE knowledge_base_id=$1 AND topic='doc.changed' AND payload->>'pageId'=$2", [fixture.alpha.id, pageId]);
     return result.rows as { payload: { actor: { kind: string; userId: string } } }[];
   }
 
@@ -54,7 +54,7 @@ describe('authoritative page document persistence', () => {
     await grant(pages[0], [{ principal: principal('user', fixture.reader.identity.userId), level: 'edit' }]);
     await fixture.drain();
 
-    const name = pageDocumentName({ workspaceId: fixture.alpha.id, pageId: pages[2].pageId });
+    const name = pageDocumentName({ knowledgeBaseId: fixture.alpha.id, pageId: pages[2].pageId });
     const writer = client(name);
     await until(async () => writer.scope() === 'read-write' && writer.synced());
     writer.document.getText('body').insert(0, 'durable body');
@@ -79,7 +79,7 @@ describe('authoritative page document persistence', () => {
     const { pages } = await fixture.tree({ defaultAccess: null });
     await grant(pages[0], [{ principal: principal('user', fixture.reader.identity.userId), level: 'edit' }]);
     await fixture.drain();
-    const name = pageDocumentName({ workspaceId: fixture.alpha.id, pageId: pages[1].pageId });
+    const name = pageDocumentName({ knowledgeBaseId: fixture.alpha.id, pageId: pages[1].pageId });
 
     const writer = client(name);
     await until(async () => writer.synced());
@@ -101,7 +101,7 @@ describe('authoritative page document persistence', () => {
     const { pages } = await fixture.tree({ defaultAccess: null });
     await grant(pages[0], [{ principal: principal('user', fixture.reader.identity.userId), level: 'view' }]);
     await fixture.drain();
-    const name = pageDocumentName({ workspaceId: fixture.alpha.id, pageId: pages[3].pageId });
+    const name = pageDocumentName({ knowledgeBaseId: fixture.alpha.id, pageId: pages[3].pageId });
 
     const viewer = client(name);
     await until(async () => viewer.scope() === 'readonly' && viewer.synced());
@@ -116,7 +116,7 @@ describe('authoritative page document persistence', () => {
     const { pages } = await fixture.tree({ defaultAccess: null });
     await grant(pages[0], [{ principal: principal('user', fixture.reader.identity.userId), level: 'edit' }]);
     await fixture.drain();
-    const name = pageDocumentName({ workspaceId: fixture.alpha.id, pageId: pages[0].pageId });
+    const name = pageDocumentName({ knowledgeBaseId: fixture.alpha.id, pageId: pages[0].pageId });
 
     const writer = client(name);
     await until(async () => writer.scope() === 'read-write' && writer.synced());

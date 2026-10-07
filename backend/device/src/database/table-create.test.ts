@@ -117,7 +117,7 @@ test('creation route bounds body and rejects missing confirmation or arbitrary S
     discardTableCreate: () => undefined,
   }));
   app.onError(error => new Response(error.message, { status: 400 }));
-  const base = '/api/database/workspaces/w/relational/sessions/s/table-create';
+  const base = '/api/database/relational/sessions/s/table-create';
   for (const value of [{ confirm: false }, { confirm: true, sql: 'DROP TABLE public.x' }, {}]) expect((await app.request(`${base}/plans/token/commit`, { method: 'POST', body: JSON.stringify(value) })).status).toBe(400);
   expect((await app.request(`${base}/plans`, { method: 'POST', body: 'x'.repeat(TABLE_CREATE_LIMITS.requestBytes + 1) })).status).toBe(400);
   expect((await app.request(`${base}/options?sql=CREATE`)).status).toBe(400);

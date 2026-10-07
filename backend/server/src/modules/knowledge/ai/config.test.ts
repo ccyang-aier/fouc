@@ -4,12 +4,12 @@ import { modelSettingsSchema } from '@fouc/shared/knowledge/contracts';
 import { resolveModel } from './config';
 import type { ModelCredential, PlatformModels } from './config';
 
-const workspaceId = '01991428-716d-7453-8d22-f8dc8e0a9081', userId = '01991428-716d-7453-8d22-f8dc8e0a9082', credentialId = '01991428-716d-7453-8d22-f8dc8e0a9083';
+const knowledgeBaseId = '01991428-716d-7453-8d22-f8dc8e0a9081', userId = '01991428-716d-7453-8d22-f8dc8e0a9082', credentialId = '01991428-716d-7453-8d22-f8dc8e0a9083';
 const platform: PlatformModels = { defaults: { fast: { source: 'platform', provider: 'openai', model: 'configured-fast-model' } }, providers: { openai: { apiKey: 'server-only-key' } } };
-const credential: ModelCredential = { id: credentialId, workspaceId, userId, provider: 'anthropic', apiKey: 'user-only-key', revokedAt: null };
-const base = { workspaceId, userId, tier: 'fast' as const, settings: {}, platform, credentials: [credential] };
+const credential: ModelCredential = { id: credentialId, knowledgeBaseId, userId, provider: 'anthropic', apiKey: 'user-only-key', revokedAt: null };
+const base = { knowledgeBaseId, userId, tier: 'fast' as const, settings: {}, platform, credentials: [credential] };
 
-test('workspace override, platform defaults and local Ollama resolve without silent model substitution', () => {
+test('knowledgeBase override, platform defaults and local Ollama resolve without silent model substitution', () => {
   assert.equal(resolveModel(base).apiKey, 'server-only-key');
   assert.equal(resolveModel({ ...base, settings: { fast: { source: 'byok', provider: 'anthropic', model: 'chosen-model', credentialId } } }).apiKey, 'user-only-key');
   const local = resolveModel({ ...base, settings: { fast: { source: 'ollama', model: 'local-model', endpoint: 'http://localhost:11434/' } } });
@@ -18,9 +18,9 @@ test('workspace override, platform defaults and local Ollama resolve without sil
   assert.throws(() => resolveModel({ ...base, tier: 'smart' }), /No model configured/);
 });
 
-test('BYOK is restricted to credential owner, workspace, provider and non-revoked state', () => {
+test('BYOK is restricted to credential owner, knowledgeBase, provider and non-revoked state', () => {
   const settings = { fast: { source: 'byok' as const, provider: 'anthropic', model: 'chosen-model', credentialId } };
-  for (const change of [{ userId: 'another-user' }, { workspaceId: 'another-workspace' }, { provider: 'openai' }, { revokedAt: '2026-09-26T00:00:00Z' }]) {
+  for (const change of [{ userId: 'another-user' }, { knowledgeBaseId: 'another-knowledgeBase' }, { provider: 'openai' }, { revokedAt: '2026-09-26T00:00:00Z' }]) {
     assert.throws(() => resolveModel({ ...base, settings, credentials: [{ ...credential, ...change }] }), /unavailable/);
   }
 });

@@ -3,33 +3,34 @@ import { and, asc, eq, gt, sql } from 'drizzle-orm';
 import type { Pool } from 'pg';
 import { createTeamspaceInputSchema, listTeamspacesInputSchema, removeTeamspaceInputSchema, teamspaceScopeSchema, updateTeamspaceInputSchema } from '@fouc/shared/knowledge/contracts';
 import type { Teamspace, TeamspaceScope } from '@fouc/shared/knowledge/contracts';
-import { knowledgeBase, page, teamspace } from '../../../platform/database/workspace/schema';
-import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
+import { page, teamspace } from '../../../platform/database/resources/schema';
+import type { ResourceTransaction } from '../../../platform/database/resources/transaction';
 import type { FoucIdentity } from '../../../platform/identity/identity';
-import { currentIdentity, inWorkspace, pageOf, requireDirectory, requireManager } from '../../workspaces/context';
-import { OrganizationError, parseInput } from '../../workspaces/errors';
+import { inKnowledgeBase, requireDirectory } from './context';
+import { currentIdentity, pageOf, requireManager } from '../../../platform/resources/context';
+import { ResourceRequestError, parseInput } from '../../../platform/resources/errors';
 
-const targetTeamspace = (scope: TeamspaceScope) => and(eq(teamspace.workspaceId, scope.workspaceId), eq(teamspace.id, scope.teamspaceId));
-const teamspaceView = (row: typeof teamspace.$inferSelect): Teamspace => ({ workspaceId: row.workspaceId, knowledgeBaseId: row.knowledgeBaseId, id: row.id, name: row.name, defaultAccess: row.defaultAccess });
+const targetTeamspace = (scope: TeamspaceScope) => and(eq(teamspace.knowledgeBaseId, scope.knowledgeBaseId), eq(teamspace.id, scope.teamspaceId));
+const teamspaceView = (row: typeof teamspace.$inferSelect): Teamspace => ({ knowledgeBaseId: row.knowledgeBaseId, id: row.id, name: row.name, defaultAccess: row.defaultAccess });
 
-async function loadTeamspace(db: WorkspaceTenantTransaction, scope: TeamspaceScope, lock = false) {
+async function loadTeamspace(db: ResourceTransaction, scope: TeamspaceScope, lock = false) {
   const query = db.select().from(teamspace).where(targetTeamspace(scope));
   const [record] = await (lock ? query.for('update') : query);
-  if (!record) throw new OrganizationError('TEAMSPACE_NOT_FOUND', 'Teamspace was not found.', 404);
+  if (!record) throw new ResourceRequestError('TEAMSPACE_NOT_FOUND', 'Teamspace was not found.', 404);
   return record;
 }
 
-async function containsPages(db: WorkspaceTenantTransaction, scope: TeamspaceScope) {
+async function containsPages(db: ResourceTransaction, scope: TeamspaceScope) {
   // Recycled pages count too: deleting the container must not erase recoverable data.
-  const [record] = await db.select({ id: page.id }).from(page).where(and(eq(page.workspaceId, scope.workspaceId), eq(page.teamspaceId, scope.teamspaceId))).limit(1);
+  const [record] = await db.select({ id: page.id }).from(page).where(and(eq(page.knowledgeBaseId, scope.knowledgeBaseId), eq(page.teamspaceId, scope.teamspaceId))).limit(1);
   return record !== undefined;
 }
 
 /**
- * P02 reads the authoritative root through its caller-owned, authorized tenant
+ * P02 reads the authoritative root through its caller-owned, authorized resource
  * transaction. This is permission input, not an access grant or an HTTP endpoint.
  */
-export async function readTeamspacePermissionRoot(db: WorkspaceTenantTransaction, input: TeamspaceScope) {
+export async function readTeamspacePermissionRoot(db: ResourceTransaction, input: TeamspaceScope) {
   const scope = parseInput(teamspaceScopeSchema, input);
   const record = await loadTeamspace(db, scope);
   return { ...scope, defaultAccess: record.defaultAccess };
@@ -37,12 +38,12 @@ export async function readTeamspacePermissionRoot(db: WorkspaceTenantTransaction
 
 /** Required server dependency, invoked after a root change in its SAME TX. */
 export interface TeamspacePermissionInvalidator {
-  invalidate(db: WorkspaceTenantTransaction, scope: TeamspaceScope): Promise<void>;
+  invalidate(db: ResourceTransaction, scope: TeamspaceScope): Promise<void>;
 }
 
 export function teamspaceOperations(pool: Pool, permissions: TeamspacePermissionInvalidator) {
-  function mutate<T>(identity: FoucIdentity, scope: TeamspaceScope, operation: (db: WorkspaceTenantTransaction, record: typeof teamspace.$inferSelect) => Promise<T>) {
-    return inWorkspace(pool, identity, scope.workspaceId, true, async ({ db, role }) => {
+  function mutate<T>(identity: FoucIdentity, scope: TeamspaceScope, operation: (db: ResourceTransaction, record: typeof teamspace.$inferSelect) => Promise<T>) {
+    return inKnowledgeBase(pool, identity, scope.knowledgeBaseId, true, async ({ db, role }) => {
       requireManager(role);
       // FOR UPDATE conflicts with a new page's FK key-share lock. The empty
       // check and a container mutation cannot race a committed child insertion.
@@ -55,26 +56,24 @@ export function teamspaceOperations(pool: Pool, permissions: TeamspacePermission
   return {
     async createTeamspace(identity: FoucIdentity, input: unknown) {
       const parsed = parseInput(createTeamspaceInputSchema, input);
-      return inWorkspace(pool, identity, parsed.workspaceId, true, async ({ db, role }) => {
+      return inKnowledgeBase(pool, identity, parsed.knowledgeBaseId, true, async ({ db, role }) => {
         requireManager(role);
-        const [base] = await db.select({ id: knowledgeBase.id }).from(knowledgeBase).where(and(eq(knowledgeBase.workspaceId, parsed.workspaceId), eq(knowledgeBase.id, parsed.knowledgeBaseId)));
-        if (!base) throw new OrganizationError('KNOWLEDGE_BASE_NOT_FOUND', 'Knowledge base was not found in this workspace.', 404);
         const [created] = await db.insert(teamspace).values({ ...parsed, id: randomUUID() }).returning();
         return teamspaceView(created!);
       });
     },
     async listTeamspaces(identity: FoucIdentity, input: unknown) {
       const parsed = parseInput(listTeamspacesInputSchema, input);
-      return inWorkspace(pool, identity, parsed.workspaceId, false, async ({ db, role }) => {
+      return inKnowledgeBase(pool, identity, parsed.knowledgeBaseId, false, async ({ db, role }) => {
         requireDirectory(role);
-        const rows = await db.select().from(teamspace).where(and(eq(teamspace.workspaceId, parsed.workspaceId), parsed.knowledgeBaseId ? eq(teamspace.knowledgeBaseId, parsed.knowledgeBaseId) : undefined, parsed.cursor ? gt(teamspace.id, parsed.cursor) : undefined))
+        const rows = await db.select().from(teamspace).where(and(eq(teamspace.knowledgeBaseId, parsed.knowledgeBaseId), parsed.cursor ? gt(teamspace.id, parsed.cursor) : undefined))
           .orderBy(asc(teamspace.id)).limit(parsed.limit + 1);
         return pageOf(rows.map(teamspaceView), parsed.limit, (row) => row.id);
       });
     },
     async getTeamspace(identity: FoucIdentity, input: unknown) {
       const scope = parseInput(teamspaceScopeSchema, input);
-      return inWorkspace(pool, identity, scope.workspaceId, false, async ({ db, role }) => {
+      return inKnowledgeBase(pool, identity, scope.knowledgeBaseId, false, async ({ db, role }) => {
         requireDirectory(role);
         return teamspaceView(await loadTeamspace(db, scope));
       });
@@ -85,7 +84,7 @@ export function teamspaceOperations(pool: Pool, permissions: TeamspacePermission
         const [updated] = await db.update(teamspace).set({ name: parsed.name, defaultAccess: parsed.defaultAccess, updatedAt: sql`clock_timestamp()` })
           .where(targetTeamspace(parsed)).returning();
         if (parsed.defaultAccess !== undefined && parsed.defaultAccess !== existing.defaultAccess) {
-          await permissions.invalidate(db, { workspaceId: parsed.workspaceId, teamspaceId: parsed.teamspaceId });
+          await permissions.invalidate(db, { knowledgeBaseId: parsed.knowledgeBaseId, teamspaceId: parsed.teamspaceId });
         }
         return teamspaceView(updated!);
       });
@@ -93,7 +92,7 @@ export function teamspaceOperations(pool: Pool, permissions: TeamspacePermission
     async removeTeamspace(identity: FoucIdentity, input: unknown) {
       const scope = parseInput(removeTeamspaceInputSchema, input);
       return mutate(identity, scope, async (db) => {
-        if (await containsPages(db, scope)) throw new OrganizationError('TEAMSPACE_NOT_EMPTY', 'Move or permanently remove all pages before deleting this teamspace.', 409);
+        if (await containsPages(db, scope)) throw new ResourceRequestError('TEAMSPACE_NOT_EMPTY', 'Move or permanently remove all pages before deleting this teamspace.', 409);
         await db.delete(teamspace).where(targetTeamspace(scope));
         return { removed: true as const };
       });

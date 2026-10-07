@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import { chmodSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync, type SQLInputValue } from 'node:sqlite';
@@ -15,15 +14,14 @@ const fileColumns = 'id, connectionId, folderId, name, database, schema, orderIn
 const historyColumns = 'id, connectionId, connectionName, provider, database, schema, sql, executedAt, executionTimeMs, success, error, rowCount, truncated';
 function historyRow(row: Row): SqlHistoryEntry { return { ...row, success: row.success === 1, truncated: row.truncated === 1 } as SqlHistoryEntry; }
 
-/** DBX's SQLite history/library storage, isolated in an owning workspace file. */
+/** Device-owned SQLite history and SQL library, scoped by connection IDs. */
 export class RelationalSqlRepository {
-  private readonly databases = new Map<string, DatabaseSync>();
+  private database: DatabaseSync | undefined;
   constructor(private readonly directory: string | null = null) {}
-  private db(workspaceId: string): DatabaseSync {
-    sqlText(workspaceId, '工作空间', 128);
-    const existing = this.databases.get(workspaceId); if (existing) return existing;
+  private db(): DatabaseSync {
+    if (this.database) return this.database;
     let file = ':memory:';
-    if (this.directory) { mkdirSync(this.directory, { recursive: true }); file = path.join(this.directory, createHash('sha256').update(workspaceId).digest('hex') + '.sqlite'); }
+    if (this.directory) { mkdirSync(this.directory, { recursive: true }); file = path.join(this.directory, 'sql-library.sqlite'); }
     const db = new DatabaseSync(file);
     try {
       if (this.directory) chmodSync(file, 0o600);
@@ -47,7 +45,7 @@ export class RelationalSqlRepository {
           connectionId TEXT PRIMARY KEY, version TEXT NOT NULL, updatedAt INTEGER NOT NULL, snapshot TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS editor_preferences (
           connectionId TEXT PRIMARY KEY, version TEXT NOT NULL, updatedAt INTEGER NOT NULL, snapshot TEXT NOT NULL);`);
-      this.databases.set(workspaceId, db); return db;
+      this.database = db; return db;
     } catch (error) { db.close(); throw error; }
   }
   private transaction<T>(db: DatabaseSync, operation: () => T): T {
@@ -55,8 +53,8 @@ export class RelationalSqlRepository {
     try { const result = operation(); db.exec('COMMIT'); return result; }
     catch (error) { db.exec('ROLLBACK'); throw error; }
   }
-  append(workspaceId: string, entry: SqlHistoryEntry): void {
-    const db = this.db(workspaceId);
+  append(entry: SqlHistoryEntry): void {
+    const db = this.db();
     this.transaction(db, () => {
       db.prepare(`INSERT INTO query_history (${historyColumns}) VALUES (${Array(13).fill('?').join(',')})`).run(
         entry.id, entry.connectionId, entry.connectionName, entry.provider, entry.database, entry.schema, entry.sql,
@@ -64,8 +62,8 @@ export class RelationalSqlRepository {
       db.prepare('DELETE FROM query_history WHERE id NOT IN (SELECT id FROM query_history ORDER BY executedAt DESC,id DESC LIMIT ?)').run(SQL_HISTORY_LIMIT);
     });
   }
-  search(workspaceId: string, value: unknown, fixedConnectionId: string | null = null): SqlHistoryPage {
-    const request = historySearch(value), db = this.db(workspaceId), clauses: string[] = [], bindings: SQLInputValue[] = [];
+  search(value: unknown, fixedConnectionId: string | null = null): SqlHistoryPage {
+    const request = historySearch(value), db = this.db(), clauses: string[] = [], bindings: SQLInputValue[] = [];
     if (fixedConnectionId) { clauses.push('connectionId=?'); bindings.push(fixedConnectionId); }
     const scopes: string[] = [];
     for (const id of request.connectionIds) if (!request.databases.some((item) => item.connectionId === id)) { scopes.push('connectionId=?'); bindings.push(id); }
@@ -86,33 +84,33 @@ export class RelationalSqlRepository {
     const last = entries.at(-1);
     return { entries, total, nextCursor: hasMore && last ? { executedAt: last.executedAt, id: last.id } : null, persistent: this.directory !== null, limit: SQL_HISTORY_LIMIT };
   }
-  history(workspaceId: string, id: string, fixedConnectionId: string | null = null): SqlHistoryEntry {
-    const row = this.db(workspaceId).prepare(`SELECT ${historyColumns} FROM query_history WHERE id=?${fixedConnectionId ? ' AND connectionId=?' : ''}`).get(...(fixedConnectionId ? [id, fixedConnectionId] : [id]));
+  history(id: string, fixedConnectionId: string | null = null): SqlHistoryEntry {
+    const row = this.db().prepare(`SELECT ${historyColumns} FROM query_history WHERE id=?${fixedConnectionId ? ' AND connectionId=?' : ''}`).get(...(fixedConnectionId ? [id, fixedConnectionId] : [id]));
     if (!row) throw new DatabaseInputError('当前范围中的历史记录不存在'); return historyRow(row);
   }
-  deleteHistory(workspaceId: string, id: string, connectionId: string | null = null): void {
-    this.history(workspaceId, id, connectionId);
-    this.db(workspaceId).prepare(`DELETE FROM query_history WHERE id=?${connectionId ? ' AND connectionId=?' : ''}`).run(...(connectionId ? [id, connectionId] : [id]));
+  deleteHistory(id: string, connectionId: string | null = null): void {
+    this.history(id, connectionId);
+    this.db().prepare(`DELETE FROM query_history WHERE id=?${connectionId ? ' AND connectionId=?' : ''}`).run(...(connectionId ? [id, connectionId] : [id]));
   }
-  clearHistory(workspaceId: string, connectionId: string | null = null): void {
-    this.db(workspaceId).prepare(`DELETE FROM query_history${connectionId ? ' WHERE connectionId=?' : ''}`).run(...(connectionId ? [connectionId] : []));
+  clearHistory(connectionId: string | null = null): void {
+    this.db().prepare(`DELETE FROM query_history${connectionId ? ' WHERE connectionId=?' : ''}`).run(...(connectionId ? [connectionId] : []));
   }
-  library(workspaceId: string, connectionId: string): SavedSqlLibrary {
-    const db = this.db(workspaceId);
+  library(connectionId: string): SavedSqlLibrary {
+    const db = this.db();
     return { folders: db.prepare(`SELECT ${folderColumns} FROM sql_folders WHERE connectionId=? ORDER BY orderIndex,nameKey,id`).all(connectionId) as unknown as SavedSqlFolder[],
       files: db.prepare(`SELECT ${fileColumns} FROM sql_files WHERE connectionId=? ORDER BY orderIndex,nameKey,id`).all(connectionId) as unknown as SavedSqlFile[] };
   }
-  folder(workspaceId: string, connectionId: string, id: string): SavedSqlFolder {
-    const row = this.db(workspaceId).prepare(`SELECT ${folderColumns} FROM sql_folders WHERE connectionId=? AND id=?`).get(connectionId, id);
+  folder(connectionId: string, id: string): SavedSqlFolder {
+    const row = this.db().prepare(`SELECT ${folderColumns} FROM sql_folders WHERE connectionId=? AND id=?`).get(connectionId, id);
     if (!row) throw new DatabaseInputError('当前连接中的 SQL 文件夹不存在'); return row as unknown as SavedSqlFolder;
   }
-  saveFolder(workspaceId: string, connectionId: string, value: unknown, id?: string): SavedSqlFolder {
+  saveFolder(connectionId: string, value: unknown, id?: string): SavedSqlFolder {
     const input = sqlObject(value), name = sqlName(input.name), parent = sqlNullable(input.parentFolderId, '父文件夹');
-    const db = this.db(workspaceId);
+    const db = this.db();
     return this.transaction(db, () => {
-      const prior = id ? this.folder(workspaceId, connectionId, id) : null;
+      const prior = id ? this.folder(connectionId, id) : null;
       if (parent !== null) {
-        this.folder(workspaceId, connectionId, parent);
+        this.folder(connectionId, parent);
         if (id && db.prepare('WITH RECURSIVE children(id) AS (SELECT id FROM sql_folders WHERE id=? UNION ALL SELECT f.id FROM sql_folders f JOIN children c ON f.parentFolderId=c.id) SELECT 1 FROM children WHERE id=?').get(id, parent)) throw new DatabaseInputError('文件夹不能移动到自身或其子文件夹');
       }
       if (db.prepare("SELECT id FROM sql_folders WHERE connectionId=? AND parentFolderId IS ? AND nameKey=? AND id<>?").get(connectionId, parent, name.toLocaleLowerCase(), id ?? '')) throw new DatabaseInputError('当前位置已有同名 SQL 文件夹');
@@ -122,25 +120,25 @@ export class RelationalSqlRepository {
       return folder;
     });
   }
-  deleteFolder(workspaceId: string, connectionId: string, id: string): void {
-    this.folder(workspaceId, connectionId, id);
-    this.db(workspaceId).prepare('DELETE FROM sql_folders WHERE connectionId=? AND id=?').run(connectionId, id);
+  deleteFolder(connectionId: string, id: string): void {
+    this.folder(connectionId, id);
+    this.db().prepare('DELETE FROM sql_folders WHERE connectionId=? AND id=?').run(connectionId, id);
   }
-  file(workspaceId: string, connectionId: string, id: string, opened = false): SavedSqlDocument {
-    const db = this.db(workspaceId), row = db.prepare(`SELECT ${fileColumns}, sql FROM sql_files WHERE connectionId=? AND id=?`).get(connectionId, id);
+  file(connectionId: string, id: string, opened = false): SavedSqlDocument {
+    const db = this.db(), row = db.prepare(`SELECT ${fileColumns}, sql FROM sql_files WHERE connectionId=? AND id=?`).get(connectionId, id);
     if (!row) throw new DatabaseInputError('当前连接中的 SQL 文件不存在');
     if (opened) { const now = Date.now(); db.prepare('UPDATE sql_files SET openCount=openCount+1,openedAt=? WHERE connectionId=? AND id=?').run(now, connectionId, id); row.openCount = Number(row.openCount) + 1; row.openedAt = now; }
     return row as unknown as SavedSqlDocument;
   }
-  saveFile(workspaceId: string, connectionId: string, value: unknown, id?: string): SavedSqlDocument {
-    const input = sqlObject(value), db = this.db(workspaceId);
+  saveFile(connectionId: string, value: unknown, id?: string): SavedSqlDocument {
+    const input = sqlObject(value), db = this.db();
     return this.transaction(db, () => {
-      const prior = id ? this.file(workspaceId, connectionId, id) : null;
+      const prior = id ? this.file(connectionId, id) : null;
       if (prior && input.version !== prior.version) throw new DatabaseInputError('SQL 文件已被其他编辑器修改，请重新打开并核对内容');
       const name = sqlName(input.name ?? prior?.name, true), folderId = input.folderId === undefined ? prior?.folderId ?? null : sqlNullable(input.folderId, 'SQL 文件夹');
       const database = sqlText(input.database ?? prior?.database, '数据库', 1024, true), schema = input.schema === undefined ? prior?.schema ?? null : sqlNullable(input.schema, 'Schema');
       const sql = input.sql === undefined && prior ? prior.sql : sqlDocument(input.sql);
-      if (folderId !== null) this.folder(workspaceId, connectionId, folderId);
+      if (folderId !== null) this.folder(connectionId, folderId);
       if (db.prepare('SELECT id FROM sql_files WHERE connectionId=? AND database=? AND folderId IS ? AND nameKey=? AND id<>?').get(connectionId, database, folderId, name.toLocaleLowerCase(), id ?? '')) throw new DatabaseInputError('当前数据库和文件夹已有同名 SQL 文件');
       const now = Date.now(), file: SavedSqlDocument = { id: id ?? crypto.randomUUID(), connectionId, folderId, name, database, schema, sql,
         sqlBytes: Buffer.byteLength(sql), orderIndex: prior && prior.folderId === folderId && prior.database === database ? prior.orderIndex : Number(db.prepare('SELECT COALESCE(MAX(orderIndex),-1)+1 AS position FROM sql_files WHERE connectionId=? AND database=? AND folderId IS ?').get(connectionId, database, folderId)!.position),
@@ -150,17 +148,17 @@ export class RelationalSqlRepository {
       return file;
     });
   }
-  deleteFile(workspaceId: string, connectionId: string, id: string, version: unknown): void {
-    const db = this.db(workspaceId);
+  deleteFile(connectionId: string, id: string, version: unknown): void {
+    const db = this.db();
     this.transaction(db, () => {
-      const file = this.file(workspaceId, connectionId, id); if (file.version !== version) throw new DatabaseInputError('SQL 文件已变化，请刷新后核对再删除');
+      const file = this.file(connectionId, id); if (file.version !== version) throw new DatabaseInputError('SQL 文件已变化，请刷新后核对再删除');
       db.prepare('DELETE FROM sql_files WHERE connectionId=? AND id=?').run(connectionId, id);
     });
   }
-  reorder(workspaceId: string, connectionId: string, value: unknown): void {
+  reorder(connectionId: string, value: unknown): void {
     const input = sqlObject(value), ids = input.ids, kind = input.kind;
     if ((kind !== 'files' && kind !== 'folders') || !Array.isArray(ids) || ids.length > 10000 || new Set(ids).size !== ids.length) throw new DatabaseInputError('SQL 排序参数无效');
-    const parent = sqlNullable(input.parentFolderId, '排序文件夹'), db = this.db(workspaceId), database = kind === 'files' ? sqlText(input.database, '排序数据库', 1024, true) : null;
+    const parent = sqlNullable(input.parentFolderId, '排序文件夹'), db = this.db(), database = kind === 'files' ? sqlText(input.database, '排序数据库', 1024, true) : null;
     const table = kind === 'files' ? 'sql_files' : 'sql_folders', parentColumn = kind === 'files' ? 'folderId' : 'parentFolderId';
     this.transaction(db, () => {
       const owned = db.prepare(`SELECT id FROM ${table} WHERE connectionId=? AND ${parentColumn} IS ?${database === null ? '' : ' AND database=?'}`).all(...(database === null ? [connectionId, parent] : [connectionId, parent, database]));
@@ -168,19 +166,19 @@ export class RelationalSqlRepository {
       const update = db.prepare(`UPDATE ${table} SET orderIndex=? WHERE connectionId=? AND id=?`); ids.forEach((id, index) => update.run(index, connectionId, sqlText(id, '排序 ID', 128)));
     });
   }
-  removeConnection(workspaceId: string, connectionId: string): void {
-    const db = this.db(workspaceId); this.transaction(db, () => {
+  removeConnection(connectionId: string): void {
+    const db = this.db(); this.transaction(db, () => {
       for (const table of ['query_history', 'sql_files', 'sql_folders', 'sql_drafts', 'editor_preferences']) db.prepare(`DELETE FROM ${table} WHERE connectionId=?`).run(connectionId);
     });
   }
-  drafts(workspaceId: string, connectionId: string): SqlDraftState {
-    const row = this.db(workspaceId).prepare('SELECT version,updatedAt,snapshot FROM sql_drafts WHERE connectionId=?').get(connectionId);
+  drafts(connectionId: string): SqlDraftState {
+    const row = this.db().prepare('SELECT version,updatedAt,snapshot FROM sql_drafts WHERE connectionId=?').get(connectionId);
     return row ? { ...sqlDraftSnapshot(JSON.parse(String(row.snapshot))), version: String(row.version), updatedAt: Number(row.updatedAt) }
       : { tabs: [], activeTabId: null, version: null, updatedAt: null };
   }
-  saveDrafts(workspaceId: string, connectionId: string, value: unknown): SqlDraftState {
+  saveDrafts(connectionId: string, value: unknown): SqlDraftState {
     const input = sqlObject(value), expected = input.version === null ? null : sqlText(input.version, 'SQL 草稿版本', 128);
-    const snapshot = sqlDraftSnapshot(input), db = this.db(workspaceId);
+    const snapshot = sqlDraftSnapshot(input), db = this.db();
     return this.transaction(db, () => {
       const current = db.prepare('SELECT version FROM sql_drafts WHERE connectionId=?').get(connectionId);
       if ((current ? String(current.version) : null) !== expected) throw new DatabaseInputError('其他窗口已修改设备草稿，当前内容已保留；请查看设备版本后再决定如何处理');
@@ -190,17 +188,17 @@ export class RelationalSqlRepository {
       return { ...snapshot, version, updatedAt };
     });
   }
-  editorPreferences(workspaceId: string, connectionId: string): SqlEditorPreferences {
+  editorPreferences(connectionId: string): SqlEditorPreferences {
     sqlText(connectionId, '连接 ID', 128);
-    const row = this.db(workspaceId).prepare('SELECT version,updatedAt,snapshot FROM editor_preferences WHERE connectionId=?').get(connectionId);
+    const row = this.db().prepare('SELECT version,updatedAt,snapshot FROM editor_preferences WHERE connectionId=?').get(connectionId);
     return row ? { ...JSON.parse(String(row.snapshot)), version: String(row.version), updatedAt: Number(row.updatedAt) } : defaultSqlEditorPreferences();
   }
-  saveEditorPreferences(workspaceId: string, connectionId: string, value: unknown): SqlEditorPreferences {
+  saveEditorPreferences(connectionId: string, value: unknown): SqlEditorPreferences {
     sqlText(connectionId, '连接 ID', 128);
     let input;
     try { input = validateSqlEditorPreferencesUpdate(value); }
     catch (reason) { throw new DatabaseInputError(reason instanceof Error ? reason.message : String(reason)); }
-    const db = this.db(workspaceId);
+    const db = this.db();
     return this.transaction(db, () => {
       const current = db.prepare('SELECT version FROM editor_preferences WHERE connectionId=?').get(connectionId);
       if ((current ? String(current.version) : null) !== input.version) {
@@ -213,5 +211,5 @@ export class RelationalSqlRepository {
       return { ...snapshot, version, updatedAt };
     });
   }
-  close(): void { for (const db of this.databases.values()) db.close(); this.databases.clear(); }
+  close(): void { this.database?.close(); this.database = undefined; }
 }

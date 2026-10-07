@@ -30,8 +30,7 @@ try {
   await seed.end();
 }
 
-const scope = 'dbx-mysql-live-verification';
-const base = `http://127.0.0.1:8710/api/database/workspaces/${scope}/relational`;
+const base = `http://127.0.0.1:8710/api/database/relational`;
 async function request(route, body, method = body ? 'POST' : 'GET') {
   const response = await fetch(base + route, {
     method,
@@ -96,7 +95,7 @@ try {
     `/sessions/${session.id}/schemas`,
     `/connections/${saved.id}/connect`,
   ]) {
-    const response = await fetch(base.replace(scope, 'other-workspace') + route, {
+    const response = await fetch(base + route.replace(/^\/(sessions|connections)\/[^/]+/, (_, kind) => `/${kind}/${crypto.randomUUID()}`), {
       ...(route.endsWith('connect')
         ? {
             method: 'POST',
@@ -110,7 +109,7 @@ try {
   const withoutDatabase = await request('/sessions', { ...input, database: '' });
   await request(`/sessions/${withoutDatabase.id}`, null, 'DELETE');
   console.log(
-    'PASS MySQL: real connection CRUD/session identity, database/table/view/generated metadata, pagination, exact bigint/decimal/JSON/binary values, duplicate and quoted columns, unsafe SQL rejection, workspace isolation, optional default database.',
+    'PASS MySQL: real connection CRUD/session identity, database/table/view/generated metadata, pagination, exact bigint/decimal/JSON/binary values, duplicate and quoted columns, unsafe SQL rejection, session ownership, optional default database.',
   );
 } finally {
   if (session) await request(`/sessions/${session.id}`, null, 'DELETE');

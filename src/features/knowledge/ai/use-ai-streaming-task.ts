@@ -16,8 +16,8 @@ import type {
 import { knowledgeQueryKeys } from '../data/query-keys';
 import { runKnowledgeCall } from '../data/trpc-client';
 
-/** 发起入参：不含 workspaceId（由 hook 绑定当前工作区）。 */
-export type AiStreamingTaskStartInput = Omit<StartAiStreamingTaskInput, 'workspaceId'>;
+/** 发起入参：不含 knowledgeBaseId（由 hook 绑定当前知识库）。 */
+export type AiStreamingTaskStartInput = Omit<StartAiStreamingTaskInput, 'knowledgeBaseId'>;
 
 export interface UseAiStreamingTaskResult {
   /** 当前任务快照；尚未发起或已重置时为 null。 */
@@ -32,17 +32,17 @@ export interface UseAiStreamingTaskResult {
   reset(): void;
 }
 
-export function useAiStreamingTask(workspaceId: string, initialTaskId: string | null = null): UseAiStreamingTaskResult {
+export function useAiStreamingTask(knowledgeBaseId: string, initialTaskId: string | null = null): UseAiStreamingTaskResult {
   const [tracking, setTracking] = useState<{ base: string | null; taskId: string | null } | null>(null);
   const taskId = tracking?.base === initialTaskId ? tracking.taskId : initialTaskId;
   const queryClient = useQueryClient();
-  const taskKey = useMemo(() => [...knowledgeQueryKeys.aiTasks(workspaceId), taskId] as const, [workspaceId, taskId]);
+  const taskKey = useMemo(() => [...knowledgeQueryKeys.aiTasks(knowledgeBaseId), taskId] as const, [knowledgeBaseId, taskId]);
 
   const statusQuery = useQuery({
     queryKey: taskKey,
     enabled: taskId !== null,
-    queryFn: ({ signal }) => runKnowledgeCall(workspaceId, signal, (client) =>
-      client.aiTask.get.query({ workspaceId, taskId: taskId! }, { signal })),
+    queryFn: ({ signal }) => runKnowledgeCall(knowledgeBaseId, signal, (client) =>
+      client.aiTask.get.query({ knowledgeBaseId, taskId: taskId! }, { signal })),
     // 运行中细粒度轮询进度；终态后停表，避免空转。
     refetchInterval: (query) => (query.state.data?.status === 'running' ? 400 : false),
   });
@@ -52,27 +52,27 @@ export function useAiStreamingTask(workspaceId: string, initialTaskId: string | 
   }, [queryClient, taskKey]);
 
   const start = useCallback(async (input: AiStreamingTaskStartInput) => {
-    const snapshot = await runKnowledgeCall(workspaceId, undefined, (client) =>
-      client.aiTask.start.mutate({ ...input, workspaceId }));
+    const snapshot = await runKnowledgeCall(knowledgeBaseId, undefined, (client) =>
+      client.aiTask.start.mutate({ ...input, knowledgeBaseId }));
     setTracking({ base: initialTaskId, taskId: snapshot.taskId });
     return snapshot;
-  }, [workspaceId, initialTaskId]);
+  }, [knowledgeBaseId, initialTaskId]);
 
   const cancel = useCallback(async () => {
     if (!taskId) return null;
-    const snapshot = await runKnowledgeCall(workspaceId, undefined, (client) =>
-      client.aiTask.cancel.mutate({ workspaceId, taskId }, undefined));
+    const snapshot = await runKnowledgeCall(knowledgeBaseId, undefined, (client) =>
+      client.aiTask.cancel.mutate({ knowledgeBaseId, taskId }, undefined));
     await refresh();
     return snapshot;
-  }, [refresh, taskId, workspaceId]);
+  }, [refresh, taskId, knowledgeBaseId]);
 
   const revoke = useCallback(async () => {
     if (!taskId) return null;
-    const result = await runKnowledgeCall(workspaceId, undefined, (client) =>
-      client.aiTask.revoke.mutate({ workspaceId, taskId }, undefined));
+    const result = await runKnowledgeCall(knowledgeBaseId, undefined, (client) =>
+      client.aiTask.revoke.mutate({ knowledgeBaseId, taskId }, undefined));
     await refresh();
     return result;
-  }, [refresh, taskId, workspaceId]);
+  }, [refresh, taskId, knowledgeBaseId]);
 
   const reset = useCallback(() => setTracking({ base: initialTaskId, taskId: null }), [initialTaskId]);
 

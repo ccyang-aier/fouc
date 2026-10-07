@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * The page-tree query (U03) under the U01 cache: one workspace-wide list of
+ * The page-tree query (U03) under the U01 cache: one knowledge-base-wide list of
  * every page (live and recycled — the tree and the recycle bin are two
  * projections of the same server truth), keyed by the U01 `pages` segment so
  * B06 `page.*` events and explicit invalidations converge both surfaces at
@@ -16,11 +16,11 @@ import type { Page } from '@fouc/shared/knowledge/contracts';
 import { knowledgeQueryKeys } from './query-keys';
 import { fetchKnowledgePages } from './pages-api';
 
-export function useKnowledgePagesQuery(workspaceId: string | null, options: { enabled?: boolean } = {}) {
+export function useKnowledgePagesQuery(knowledgeBaseId: string | null, options: { enabled?: boolean } = {}) {
   return useQuery({
-    queryKey: knowledgeQueryKeys.pages(workspaceId ?? 'none'),
-    queryFn: ({ signal }) => fetchKnowledgePages(workspaceId!, {}, signal),
-    enabled: (options.enabled ?? true) && workspaceId !== null,
+    queryKey: knowledgeQueryKeys.pages(knowledgeBaseId ?? 'none'),
+    queryFn: ({ signal }) => fetchKnowledgePages(knowledgeBaseId!, {}, signal),
+    enabled: (options.enabled ?? true) && knowledgeBaseId !== null,
   });
 }
 

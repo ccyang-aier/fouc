@@ -108,7 +108,7 @@ export async function readDatabaseActivity(adapter: NativeDatabaseActivityAdapte
       snapshot.processes = processes(adapter.provider, result);
       snapshot.processesTruncated = result.hasMore || result.rows.length > DATABASE_ACTIVITY_LIMITS.processes;
     });
-    snapshot.warnings.push('实例指标可能包含其他数据库的活动；会话目录只显示当前连接账号的原生可见范围，不代表全实例完整统计。', '速率需要同一工作空间与会话的两个有效样本；重启、统计重置、缺失数据或计数下降显示未知，不显示虚假的零。', '监控读查询自身也可能增加实例累计计数；刷新间隔越短，采样开销越大。');
+    snapshot.warnings.push('实例指标可能包含其他数据库的活动；会话目录只显示当前连接账号的原生可见范围，不代表全实例完整统计。', '速率需要同一会话的两个有效样本；重启、统计重置、缺失数据或计数下降显示未知，不显示虚假的零。', '监控读查询自身也可能增加实例累计计数；刷新间隔越短，采样开销越大。');
     if (mysql) snapshot.warnings.push('没有 PROCESS 权限时，MySQL 仅返回账号自身会话；Time 是当前状态持续秒数。SHOW FULL PROCESSLIST 不保证识别此监控连接。');
     else snapshot.warnings.push('PostgreSQL 可能隐藏其他角色的 state / query；Time 是当前或最后语句、事务 / 会话的年龄，idle 行不代表 SQL 仍在执行。WAL 指标是位置推进，并非网络带宽或磁盘实际写入。', 'SQL 文本还受原生 track_activity_query_size 字节上限约束；复制内容不保证包含完整原始语句。');
     if (snapshot.processes.some(row => row.masked)) snapshot.warnings.push('部分会话信息已被原生权限遮蔽；保留未知状态，不把权限遮蔽解释为零活动。');

@@ -264,7 +264,7 @@ describe('offline page session', () => {
   }
 
   test('undo and whole-task undo work with no network and count as local edits; session destroy cleans up', async () => {
-    const scope: PageScope = { workspaceId: crypto.randomUUID(), pageId: crypto.randomUUID() };
+    const scope: PageScope = { knowledgeBaseId: crypto.randomUUID(), pageId: crypto.randomUUID() };
     const session = connectPageDocument({
       scope,
       origin: 'http://127.0.0.1:8710',

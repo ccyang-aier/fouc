@@ -9,7 +9,7 @@ import { defaultQueryChartConfig, queryChartFields, type ChartField, type QueryC
 import { transformQueryChart, type QueryChartData } from './transform'
 import styles from './query-chart.module.css'
 
-export type QueryChartBuilderProps = { result: DatabaseQueryResult; /** Stable workspace / connection / document identity, supplied by the resource owner. */ scopeKey?: string }
+export type QueryChartBuilderProps = { result: DatabaseQueryResult; /** Stable connection / document identity, supplied by the resource owner. */ scopeKey?: string }
 const types: { id: QueryChartType; label: string; icon: typeof ChartBar }[] = [{ id: 'bar', label: '柱状图', icon: ChartBar }, { id: 'line', label: '折线图', icon: ChartLine }, { id: 'area', label: '面积图', icon: ChartLine }, { id: 'scatter', label: '散点图', icon: ChartScatter }, { id: 'pie', label: '饼图', icon: ChartPieSlice }]
 const aggregations = [{ value: 'none', label: '原始值 · 不聚合' }, { value: 'sum', label: '合计 SUM' }, { value: 'avg', label: '平均 AVG' }, { value: 'min', label: '最小 MIN' }, { value: 'max', label: '最大 MAX' }, { value: 'count', label: '行数 COUNT(*)' }] as const
 function missingOption(fields: readonly ChartField[], key: string | null) { return key && !fields.some((field) => field.key === key) ? <option value={key}>字段已不存在：{key.split('\u0000')[0]}</option> : null }
@@ -31,7 +31,7 @@ function ChartBuilderContent({ result, fields, initial, initialSaved, save, pers
   return <section className={styles.builder} aria-label="查询图表构建器">
     <header className={styles.toolbar}>
       <div className={styles.types} role="group" aria-label="图表类型">{types.map(({ id, label, icon: Icon }) => <button key={id} aria-pressed={config.type === id} title={label} onClick={() => change({ type: id })}><Icon size={15} /><span>{label}</span></button>)}</div>
-      <div className={styles.tools}><button aria-pressed={settings} title="图表设置" onClick={() => setSettings((value) => !value)}><GearSix size={15} /><span>设置</span></button><button aria-pressed={preview} disabled={!!data.error || !data.categories.length} onClick={() => setPreview((value) => !value)}><Table size={15} /><span>绘图数据</span></button><button disabled={!persistent || !!data.error || !dirty} title={persistent ? '保存到当前工作空间、连接与查询' : '此结果未提供持久资源身份，设置仅在当前视图有效'} onClick={saveSettings}><FloppyDisk size={15} /><span>{!persistent ? '临时设置' : dirty ? '保存设置' : '已保存'}</span></button></div>
+      <div className={styles.tools}><button aria-pressed={settings} title="图表设置" onClick={() => setSettings((value) => !value)}><GearSix size={15} /><span>设置</span></button><button aria-pressed={preview} disabled={!!data.error || !data.categories.length} onClick={() => setPreview((value) => !value)}><Table size={15} /><span>绘图数据</span></button><button disabled={!persistent || !!data.error || !dirty} title={persistent ? '保存到当前连接与查询' : '此结果未提供持久资源身份，设置仅在当前视图有效'} onClick={saveSettings}><FloppyDisk size={15} /><span>{!persistent ? '临时设置' : dirty ? '保存设置' : '已保存'}</span></button></div>
     </header>
     <div className={`${styles.body} ${settings ? styles.withSettings : ''}`}>
       {settings && <aside className={styles.settings} aria-label="图表字段与聚合设置">

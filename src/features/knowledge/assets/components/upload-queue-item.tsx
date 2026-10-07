@@ -89,7 +89,7 @@ export function UploadQueueItem(props: { item: AssetUploadItem; onCancel: (id: s
       {item.phase === 'done' && item.result && (
         <p className="flex min-w-0 items-center gap-1.5 text-2xs text-ink-faint">
           <CheckCircle size={12} weight="fill" className="shrink-0 text-ok" aria-hidden="true" />
-          {item.result.reused ? '秒传命中 · 工作区已有相同内容' : '已上传并通过完整性确认'}
+          {item.result.reused ? '秒传命中 · 知识库已有相同内容' : '已上传并通过完整性确认'}
           <code className="truncate font-mono text-ink-faint" title={item.result.hash}>{item.result.hash.slice(0, 16)}…</code>
         </p>
       )}

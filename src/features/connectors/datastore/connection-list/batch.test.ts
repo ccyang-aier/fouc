@@ -36,7 +36,7 @@ describe('connection batch operations', () => {
     expect(progress.map(value => value.completed)).toEqual([1, 2, 3])
   })
 
-  test('leaving a workspace finishes the current request without starting the next', async () => {
+  test('leaving a connection directory finishes the current request without starting the next', async () => {
     let active = true
     const calls: string[] = [], progress: ConnectionBatchProgress[] = []
     const result = await runConnectionBatch([{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }], 'delete', async item => {

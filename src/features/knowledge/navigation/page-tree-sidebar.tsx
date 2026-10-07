@@ -4,27 +4,24 @@ import type { ReactNode } from 'react';
 import { Warning, XCircle } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import type { KnowledgeBase } from '@fouc/shared/knowledge/contracts';
-import { KnowledgeBaseHeader } from '../knowledge-base-header';
+import { KnowledgeBaseHeader, type KnowledgeBaseSummary } from '../knowledge-base-header';
 import { CanvasState, TreeSkeletonRows } from '../canvas-states';
 import styles from './knowledge-sidebar.module.css';
 
-export function PageTreeSidebar({ collapsed, onCollapse, knowledgeBases, activeKnowledgeBaseId, onSelectKnowledgeBase, onCreateKnowledgeBase, onOpenSettings, onOpenLocal, onOpenWorkspace, treeArea, footer, createLabel }: {
+export function PageTreeSidebar({ collapsed, onCollapse, knowledgeBases, activeKnowledgeBaseId, onSelectKnowledgeBase, onCreateKnowledgeBase, onOpenSettings, treeArea, footer, createLabel }: {
   collapsed: boolean;
   onCollapse: () => void;
-  knowledgeBases: readonly Pick<KnowledgeBase, 'id' | 'name'>[];
+  knowledgeBases: readonly KnowledgeBaseSummary[];
   activeKnowledgeBaseId: string | null;
   onSelectKnowledgeBase: (id: string) => void;
   onCreateKnowledgeBase: () => void;
   onOpenSettings: () => void;
-  onOpenLocal?: () => void;
-  onOpenWorkspace?: () => void;
   treeArea: ReactNode;
   footer?: ReactNode;
   createLabel?: string;
 }) {
   return <aside aria-label="知识库侧边栏" aria-hidden={collapsed} inert={collapsed} data-collapsed={collapsed} className={cn('flex h-full min-h-0 flex-col', styles.sidebar)}>
-    <KnowledgeBaseHeader knowledgeBases={knowledgeBases} activeKnowledgeBaseId={activeKnowledgeBaseId} onSelectKnowledgeBase={onSelectKnowledgeBase} onCollapse={onCollapse} onCreateKnowledgeBase={onCreateKnowledgeBase} onOpenSettings={onOpenSettings} onOpenLocal={onOpenLocal} onOpenWorkspace={onOpenWorkspace} createLabel={createLabel} />
+    <KnowledgeBaseHeader knowledgeBases={knowledgeBases} activeKnowledgeBaseId={activeKnowledgeBaseId} onSelectKnowledgeBase={onSelectKnowledgeBase} onCollapse={onCollapse} onCreateKnowledgeBase={onCreateKnowledgeBase} onOpenSettings={onOpenSettings} createLabel={createLabel} />
     {treeArea}
     {footer}
   </aside>;

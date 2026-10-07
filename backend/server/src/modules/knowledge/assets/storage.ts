@@ -50,7 +50,7 @@ export async function readKnowledgeAssetStorageConfig(environment: NodeJS.Proces
 export interface AssetObjectStat { size: number; mime: string; etag: string }
 export interface AssetPresignedUrl { url: string; expiresAt: string }
 
-export interface AssetObjectAddress { workspaceId: string; hash: string }
+export interface AssetObjectAddress { knowledgeBaseId: string; hash: string }
 
 const UNSIGNED_PAYLOAD = 'UNSIGNED-PAYLOAD';
 const sha256Hex = (value: string | Uint8Array) => createHash('sha256').update(value).digest('hex');
@@ -63,12 +63,12 @@ function uriEncode(value: string) {
 }
 
 /**
- * Path-style, workspace-scoped object addressing: <workspaceId>/<sha256>.
- * Hash addressing never crosses workspaces, so identical content in two
- * workspaces is two independent objects with no shared existence signal.
+ * Path-style, knowledgeBase-scoped object addressing: <knowledgeBaseId>/<sha256>.
+ * Hash addressing never crosses knowledgeBases, so identical content in two
+ * knowledgeBases is two independent objects with no shared existence signal.
  */
 function address(input: AssetObjectAddress) {
-  if (!entityIdSchema.safeParse(input.workspaceId).success || !assetHashSchema.safeParse(input.hash).success) {
+  if (!entityIdSchema.safeParse(input.knowledgeBaseId).success || !assetHashSchema.safeParse(input.hash).success) {
     throw new KnowledgeAssetError('INVALID_ASSET_INPUT');
   }
   return input;
@@ -83,7 +83,7 @@ export function createKnowledgeAssetStorage(input: KnowledgeAssetStorageConfig) 
   const config = parsed.data;
   const origin = new URL(config.endpoint).origin;
 
-  const objectUrl = (target: AssetObjectAddress) => new URL(`${origin}/${[config.bucket, target.workspaceId, target.hash].map(uriEncode).join('/')}`);
+  const objectUrl = (target: AssetObjectAddress) => new URL(`${origin}/${[config.bucket, target.knowledgeBaseId, target.hash].map(uriEncode).join('/')}`);
 
   function signingMaterial(at = new Date()) {
     const date = amzDate(at);
@@ -131,7 +131,7 @@ export function createKnowledgeAssetStorage(input: KnowledgeAssetStorageConfig) 
   }
 
   return {
-    objectKey: (target: AssetObjectAddress) => { const safe = address(target); return `${safe.workspaceId}/${safe.hash}`; },
+    objectKey: (target: AssetObjectAddress) => { const safe = address(target); return `${safe.knowledgeBaseId}/${safe.hash}`; },
     presignUpload: (target: AssetObjectAddress, expiresInSeconds = 600) => presign('PUT', target, expiresInSeconds),
     presignDownload: (target: AssetObjectAddress, expiresInSeconds = 300) => presign('GET', target, expiresInSeconds),
     async statObject(target: AssetObjectAddress, signal?: AbortSignal): Promise<AssetObjectStat | undefined> {

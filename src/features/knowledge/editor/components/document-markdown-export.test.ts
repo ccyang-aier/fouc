@@ -142,7 +142,7 @@ describe('public Markdown export', () => {
     assert.doesNotMatch(markdown, /javascript:|fouc-/);
   });
 
-  it('describes private media without exporting unusable workspace or blob URLs', () => {
+  it('describes private media without exporting unusable knowledgeBase or blob URLs', () => {
     const image = node('image', { src: `asset:${'a'.repeat(64)}`, alt: '部署架构图', caption: '服务之间的连接关系' });
     const file = node('file', { src: `asset:${'b'.repeat(64)}`, title: '需求文档.pdf', caption: '评审附件' });
     const video = node('video', { src: 'blob:http://localhost:3000/local-session', title: '操作演示', caption: '本机录制' });

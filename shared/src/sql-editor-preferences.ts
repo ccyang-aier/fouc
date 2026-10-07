@@ -3,7 +3,7 @@ import { defaultSqlSnippets, validateSqlSnippets, type SqlSnippet } from "./sql-
 
 export const SQL_EDITOR_PREFERENCES_MAX_BYTES = 1024 * 1024;
 
-/** Editor settings belong to one workspace and connection, independent of live query results. */
+/** Editor settings belong to one device connection, independent of live query results. */
 export type SqlEditorPreferences = {
   version: string | null;
   updatedAt: number | null;

@@ -7,16 +7,16 @@ import { ConfirmDialog, DialogButton, ModalDialog, NameField, mutationErrorText 
 import { NavigationDialogPortal } from './navigation-dialog-portal';
 import type { TreeNotifier } from './page-operations';
 
-export function KnowledgeBaseActions({ workspaceId, target, onClose, onRemoved, notify }: {
-  workspaceId: string;
+export function KnowledgeBaseActions({ knowledgeBaseId, target, onClose, onRemoved, notify }: {
+  knowledgeBaseId: string;
   target: { teamspace: Teamspace; action: 'rename' | 'delete' };
   onClose: () => void;
   onRemoved: (id: string) => void;
   notify: TreeNotifier;
 }) {
   const [name, setName] = useState(target.teamspace.name);
-  const update = useUpdateTeamspaceMutation(workspaceId);
-  const remove = useRemoveTeamspaceMutation(workspaceId);
+  const update = useUpdateTeamspaceMutation(knowledgeBaseId);
+  const remove = useRemoveTeamspaceMutation(knowledgeBaseId);
   async function submit() {
     if (update.isPending || remove.isPending || (target.action === 'rename' && !name.trim())) return;
     try {

@@ -18,7 +18,7 @@ const uniqueColumnIds = (columns: z.infer<typeof propertyDefinitionSchema>[]) =>
 /** 数据库页面的创建契约:kind=database、页面属性与列 schema 一次落库。 */
 export const createDatabaseInputSchema = z.strictObject({
   id: entityIdSchema,
-  workspaceId: entityIdSchema,
+  knowledgeBaseId: entityIdSchema,
   teamspaceId: entityIdSchema,
   parentId: entityIdSchema.nullable(),
   ...pageMetadata,
@@ -28,7 +28,7 @@ export const createDatabaseInputSchema = z.strictObject({
 /** 行页面创建契约:teamspace 与父页面由所属数据库决定,属性按列 schema 验证。 */
 export const createRowInputSchema = z.strictObject({
   id: entityIdSchema,
-  workspaceId: entityIdSchema,
+  knowledgeBaseId: entityIdSchema,
   ...pageMetadata,
   databaseId: entityIdSchema,
   properties: propertiesSchema.default({}),

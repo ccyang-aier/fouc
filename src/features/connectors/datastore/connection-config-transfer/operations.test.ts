@@ -41,7 +41,6 @@ test('a malformed final record or new preview conflict causes zero writes', asyn
         { mode: 'create', name: 'First' },
         { mode: 'create', name: 'Last' },
       ],
-      workspaceId: 'workspace-a',
       port,
     }),
   ).rejects.toThrow('第 2');
@@ -53,14 +52,12 @@ test('a malformed final record or new preview conflict causes zero writes', asyn
         { mode: 'create', name: 'First' },
         { mode: 'create', name: 'Last' },
       ],
-      workspaceId: 'workspace-a',
       port: {
         ...port,
         list: async () => [
           {
             ...entry('First'),
             id: 'newly-added',
-            workspaceId: 'workspace-a',
             updatedAt: 1,
           },
         ],
@@ -83,7 +80,6 @@ test('partial failures remain visible and later records continue independently',
       mode: 'create',
       name: entry.name,
     })),
-    workspaceId: 'workspace-a',
     port: {
       list: async () => [],
       save: async (entry) => {
@@ -111,7 +107,6 @@ test('cancel reports a finished in-flight save and prevents every subsequent mut
       { mode: 'create', name: 'First' },
       { mode: 'create', name: 'Last' },
     ],
-    workspaceId: 'workspace-a',
     signal: controller.signal,
     port: {
       list: async () => [],

@@ -14,7 +14,7 @@ function result(columns: string[], rows: DriverResult['rows'], hasMore = false):
 
 function sample(patch: Partial<DatabaseActivitySnapshot> = {}): DatabaseActivitySnapshot {
   return {
-    provider: 'mysql', database: 'lab', scopeKey: 'workspace/session', capturedAt: 1000, durationMs: 1,
+    provider: 'mysql', database: 'lab', scopeKey: 'session', capturedAt: 1000, durationMs: 1,
     counters: {}, settings: {}, processes: [], processesSupported: true, processesTruncated: false,
     sources: { status: 'native', settings: 'native', processes: 'native' }, metricScope: 'instance', warnings: [], issues: [], ...patch,
   };
@@ -109,29 +109,29 @@ test('scope ownership, active writes, single-flight cancellation and route input
       return result([], []);
     } } as unknown as RelationalDriver,
   };
-  const service = new DatabaseActivityService((workspace, id) => {
-    if (workspace !== 'allowed' || id !== 'session' || !current) throw new DatabaseInputError('scope unavailable');
+  const service = new DatabaseActivityService((id) => {
+    if (id !== 'session' || !current) throw new DatabaseInputError('scope unavailable');
     return entry;
   });
-  await expect(service.snapshot('other', 'session')).rejects.toThrow('scope unavailable');
+  await expect(service.snapshot('missing-session')).rejects.toThrow('scope unavailable');
   entry.saving = true;
-  await expect(service.snapshot('allowed', 'session')).rejects.toThrow('写入');
+  await expect(service.snapshot('session')).rejects.toThrow('写入');
   expect(reads).toBe(0);
   entry.saving = false;
   const controller = new AbortController();
-  const inFlight = service.snapshot('allowed', 'session', controller.signal);
-  await expect(service.snapshot('allowed', 'session')).rejects.toThrow('尚未结束');
+  const inFlight = service.snapshot('session', controller.signal);
+  await expect(service.snapshot('session')).rejects.toThrow('尚未结束');
   controller.abort(); release!();
   await expect(inFlight).rejects.toThrow();
-  const next = await service.snapshot('allowed', 'session');
-  expect(next.scopeKey).toBe('["allowed","session"]');
+  const next = await service.snapshot('session');
+  expect(next.scopeKey).toBe('session');
   expect(reads).toBe(4);
   const app = new Hono();
   app.onError((error, c) => c.json({ error: error.message }, error instanceof DatabaseInputError ? 400 : 500));
   app.route('/', databaseActivityRoutes(service));
-  const rejected = await app.request('/api/database/workspaces/allowed/relational/sessions/session/activity/snapshot?sql=DELETE');
+  const rejected = await app.request('/api/database/relational/sessions/session/activity/snapshot?sql=DELETE');
   expect(rejected.status).toBe(400);
   expect(reads).toBe(4);
   current = false;
-  await expect(service.snapshot('allowed', 'session')).rejects.toThrow('scope unavailable');
+  await expect(service.snapshot('session')).rejects.toThrow('scope unavailable');
 });

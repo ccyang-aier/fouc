@@ -5,12 +5,12 @@ import { issueKnowledgeToken, matchesKnowledgeToken, parseKnowledgeToken } from 
 
 describe('PAT format and policy', () => {
   test('issues independent 256-bit secrets, canonical locators and only SHA-256 persistence values', () => {
-    const workspaceId = randomUUID();
+    const knowledgeBaseId = randomUUID();
     const secrets = new Set<string>();
     for (let index = 0; index < 100; index++) {
-      const issued = issueKnowledgeToken(workspaceId);
+      const issued = issueKnowledgeToken(knowledgeBaseId);
       const parsed = parseKnowledgeToken(issued.token)!;
-      expect(parsed.workspaceId).toBe(workspaceId);
+      expect(parsed.knowledgeBaseId).toBe(knowledgeBaseId);
       expect(parsed.tokenId).toBe(issued.tokenId);
       expect(issued.tokenHash).toBe(createHash('sha256').update(issued.token).digest('hex'));
       expect(matchesKnowledgeToken(parsed.hash, issued.tokenHash)).toBe(true);
@@ -37,7 +37,7 @@ describe('PAT format and policy', () => {
   });
 
   test('accepts explicit read/write scopes only and rejects identity or grant overrides', () => {
-    const input = { workspaceId: randomUUID(), name: 'CLI', scopes: ['read'], expiresAt: null };
+    const input = { knowledgeBaseId: randomUUID(), name: 'CLI', scopes: ['read'], expiresAt: null };
     expect(createKnowledgeTokenInputSchema.safeParse(input).success).toBe(true);
     for (const extra of [{ scopes: [] }, { scopes: ['read', 'read'] }, { scopes: ['*'] }, { scopes: ['admin'] },
       { userId: randomUUID() }, { actor: { kind: 'agent' } }, { tokenHash: '0'.repeat(64) }, { name: ' ' }]) {

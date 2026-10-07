@@ -6,7 +6,7 @@ import { blockIdSchema, entityIdSchema } from './primitives';
 /**
  * §9.2 只读 Agent 工具（J02）的输入与结果契约。产品内 AI（J04）与 MCP Server
  * （K01）共用 `backend/server/src/modules/knowledge/ai/tools/` 的同一注册表执行；输入里永远不出现
- * `workspaceId` 或 principals——工具层从已验证的请求上下文（A03）取得工作区与
+ * `knowledgeBaseId` 或 principals——工具层从已验证的请求上下文（A03）取得知识库与
  * 发起者，并在服务端展开主体，绝不采纳客户端自报身份。
  */
 
@@ -25,15 +25,15 @@ export const agentSearchToolInputSchema = z.strictObject({
 });
 
 /** read_page 的 range 语义与 C01 `readPageInputSchema.range` 完全一致。 */
-export const agentReadPageToolInputSchema = readPageInputSchema.omit({ workspaceId: true });
+export const agentReadPageToolInputSchema = readPageInputSchema.omit({ knowledgeBaseId: true });
 
 /** 筛选/排序/游标/上限与 T02 `queryDatabaseInputSchema` 同一规则。 */
-export const agentQueryDatabaseToolInputSchema = queryDatabaseInputSchema.omit({ workspaceId: true });
+export const agentQueryDatabaseToolInputSchema = queryDatabaseInputSchema.omit({ knowledgeBaseId: true });
 
 /** parentId 三态：缺省 = 整棵可见树；null = 仅根级；给定 id = 该页面的可见子树。 */
-export const agentListPagesToolInputSchema = listPagesInputSchema.omit({ workspaceId: true });
+export const agentListPagesToolInputSchema = listPagesInputSchema.omit({ knowledgeBaseId: true });
 
-export const agentGetBacklinksToolInputSchema = readPageInputSchema.omit({ workspaceId: true, range: true });
+export const agentGetBacklinksToolInputSchema = readPageInputSchema.omit({ knowledgeBaseId: true, range: true });
 
 /** read_page 返回的单块：markdown 是 M02 AI 方言切片，自带 `{#b:id}` 锚点。 */
 export const agentReadPageBlockSchema = z.strictObject({
@@ -73,6 +73,7 @@ export const agentListPagesToolResultSchema = z.strictObject({
 
 /** get_backlinks 的一条入链（L01 结构）：来源页经发起者 view 谓词过滤。 */
 export const agentPageBacklinkSchema = z.strictObject({
+  srcKnowledgeBaseId: entityIdSchema,
   srcPageId: entityIdSchema,
   srcTitle: pageSchema.shape.title,
   srcBlockId: blockIdSchema,
@@ -86,33 +87,33 @@ export const agentGetBacklinksToolResultSchema = z.strictObject({
 
 
 // ── J03 写工具输入契约 ────────────────────────────────────────────
-// workspaceId 与发起者身份照旧不出现在工具输入之外(与只读集同一防线);
+// knowledgeBaseId 与发起者身份照旧不出现在工具输入之外(与只读集同一防线);
 // 写工具一律以建议(S01)形式落稿,审阅接受前不改权威内容。
 
 const markdownBody = z.string().min(1).max(20_000);
 
 export const agentSuggestInsertToolInputSchema = z.strictObject({
-  workspaceId: entityIdSchema,
+  knowledgeBaseId: entityIdSchema,
   pageId: entityIdSchema,
   afterBlockId: blockIdSchema.nullable().default(null),
   markdown: markdownBody,
 });
 
 export const agentSuggestReplaceToolInputSchema = z.strictObject({
-  workspaceId: entityIdSchema,
+  knowledgeBaseId: entityIdSchema,
   pageId: entityIdSchema,
   blockId: blockIdSchema,
   markdown: markdownBody,
 });
 
 export const agentSuggestDeleteToolInputSchema = z.strictObject({
-  workspaceId: entityIdSchema,
+  knowledgeBaseId: entityIdSchema,
   pageId: entityIdSchema,
   blockId: blockIdSchema,
 });
 
 export const agentCreatePageToolInputSchema = z.strictObject({
-  workspaceId: entityIdSchema,
+  knowledgeBaseId: entityIdSchema,
   teamspaceId: entityIdSchema,
   parentId: entityIdSchema.nullable(),
   title: z.string().min(1).max(500),
@@ -123,7 +124,7 @@ export const agentCreatePageToolInputSchema = z.strictObject({
 });
 
 export const agentUpdatePagePropertiesToolInputSchema = z.strictObject({
-  workspaceId: entityIdSchema,
+  knowledgeBaseId: entityIdSchema,
   pageId: entityIdSchema,
   patch: z.strictObject({
     title: z.string().min(1).max(500).optional(),

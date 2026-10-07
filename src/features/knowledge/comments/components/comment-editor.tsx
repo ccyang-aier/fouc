@@ -49,9 +49,9 @@ export const CommentEditing = Extension.create({
   },
 });
 
-export function commentEditorExtensions(workspaceId: string) {
+export function commentEditorExtensions(knowledgeBaseId: string) {
   return [...createKnowledgeExtensions().filter(extension => supported.has(extension.name)).map(extension => extension.name === 'image' ? extension.extend({
-    addNodeView: () => ReactNodeViewRenderer((props: NodeViewProps) => <NodeViewWrapper><CommentImage source={String(props.node.attrs.src)} alt={String(props.node.attrs.alt || '')} workspaceId={workspaceId} /></NodeViewWrapper>),
+    addNodeView: () => ReactNodeViewRenderer((props: NodeViewProps) => <NodeViewWrapper><CommentImage source={String(props.node.attrs.src)} alt={String(props.node.attrs.alt || '')} knowledgeBaseId={knowledgeBaseId} /></NodeViewWrapper>),
   }) : extension.name === 'codeBlock' ? extension.extend({ marks: '' }) : extension), CommentEditing];
 }
 
@@ -63,11 +63,11 @@ export interface CommentEditorHandle {
   insertImage: (hash: string, name: string) => void;
 }
 
-export function CommentEditor({ ref, workspaceId, initialBody, placeholder, disabled, autoFocus, focusKey, minHeight, onChange, onSubmit, onCancel }: {
-  ref: Ref<CommentEditorHandle>; workspaceId: string; initialBody: string; placeholder: string; disabled: boolean; autoFocus: boolean; focusKey?: string; minHeight: number;
+export function CommentEditor({ ref, knowledgeBaseId, initialBody, placeholder, disabled, autoFocus, focusKey, minHeight, onChange, onSubmit, onCancel }: {
+  ref: Ref<CommentEditorHandle>; knowledgeBaseId: string; initialBody: string; placeholder: string; disabled: boolean; autoFocus: boolean; focusKey?: string; minHeight: number;
   onChange: (body: string) => void; onSubmit: () => void; onCancel?: () => void;
 }) {
-  const extensions = useMemo(() => commentEditorExtensions(workspaceId), [workspaceId]);
+  const extensions = useMemo(() => commentEditorExtensions(knowledgeBaseId), [knowledgeBaseId]);
   const content = useMemo(() => markdown.parse(initialBody).toJSON(), [initialBody]);
   const callbacks = useRef({ onChange, onSubmit, onCancel, disabled });
   useEffect(() => { callbacks.current = { onChange, onSubmit, onCancel, disabled }; }, [onChange, onSubmit, onCancel, disabled]);
@@ -94,7 +94,7 @@ export function CommentEditor({ ref, workspaceId, initialBody, placeholder, disa
         return true;
       },
     },
-  }, [workspaceId]);
+  }, [knowledgeBaseId]);
   useEffect(() => { editor?.setEditable(!disabled); }, [editor, disabled]);
   useEffect(() => { if (autoFocus) editor?.commands.focus('end'); }, [editor, autoFocus, focusKey]);
   useImperativeHandle(ref, () => ({

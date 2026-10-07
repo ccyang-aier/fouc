@@ -20,10 +20,10 @@ export type KnowledgeTrpcClient = TRPCClient<KnowledgeApiRouter>;
 export type KnowledgeUntypedTrpcClient = TRPCUntypedClient<KnowledgeApiRouter>;
 export type KnowledgeFetch = typeof fetch;
 
-function knowledgeLinks(origin: string, workspaceId: string, fetchImpl: KnowledgeFetch) {
+function knowledgeLinks(origin: string, knowledgeBaseId: string, fetchImpl: KnowledgeFetch) {
   return [
     httpBatchLink({
-      url: knowledgeTrpcUrl(origin, workspaceId),
+      url: knowledgeTrpcUrl(origin, knowledgeBaseId),
       maxItems: 10,
       maxURLLength: 8192,
       fetch: (input, init) => fetchImpl(input, { ...init, credentials: 'include' }),
@@ -31,8 +31,8 @@ function knowledgeLinks(origin: string, workspaceId: string, fetchImpl: Knowledg
   ];
 }
 
-export function createKnowledgeTrpcClient(origin: string, workspaceId: string, fetchImpl: KnowledgeFetch = authenticatedFetch): KnowledgeTrpcClient {
-  return createTRPCClient<KnowledgeApiRouter>({ links: knowledgeLinks(origin, workspaceId, fetchImpl) });
+export function createKnowledgeTrpcClient(origin: string, knowledgeBaseId: string, fetchImpl: KnowledgeFetch = authenticatedFetch): KnowledgeTrpcClient {
+  return createTRPCClient<KnowledgeApiRouter>({ links: knowledgeLinks(origin, knowledgeBaseId, fetchImpl) });
 }
 
 /**
@@ -41,11 +41,11 @@ export function createKnowledgeTrpcClient(origin: string, workspaceId: string, f
  * the router type until the API task mounts them, so the page client calls
  * them dynamically and validates every response against the shared contracts.
  */
-export function createKnowledgeUntypedTrpcClient(origin: string, workspaceId: string, fetchImpl: KnowledgeFetch = authenticatedFetch): KnowledgeUntypedTrpcClient {
-  return createTRPCUntypedClient<KnowledgeApiRouter>({ links: knowledgeLinks(origin, workspaceId, fetchImpl) });
+export function createKnowledgeUntypedTrpcClient(origin: string, knowledgeBaseId: string, fetchImpl: KnowledgeFetch = authenticatedFetch): KnowledgeUntypedTrpcClient {
+  return createTRPCUntypedClient<KnowledgeApiRouter>({ links: knowledgeLinks(origin, knowledgeBaseId, fetchImpl) });
 }
 
-/** One client per (origin, workspace) transport URL; per-call state travels in options, not in the client.
+/** One client per (origin, knowledgeBase) transport URL; per-call state travels in options, not in the client.
  *
  * The default fetch resolves the global at call time (the organization client's
  * pattern), so test doubles installed after module load are honored.
@@ -53,11 +53,11 @@ export function createKnowledgeUntypedTrpcClient(origin: string, workspaceId: st
 export function createKnowledgeClientCache(fetchImpl: KnowledgeFetch = authenticatedFetch) {
   const clients = new Map<string, KnowledgeTrpcClient>();
   return {
-    get(origin: string, workspaceId: string): KnowledgeTrpcClient {
-      const url = knowledgeTrpcUrl(origin, workspaceId);
+    get(origin: string, knowledgeBaseId: string): KnowledgeTrpcClient {
+      const url = knowledgeTrpcUrl(origin, knowledgeBaseId);
       let client = clients.get(url);
       if (!client) {
-        client = createKnowledgeTrpcClient(origin, workspaceId, fetchImpl);
+        client = createKnowledgeTrpcClient(origin, knowledgeBaseId, fetchImpl);
         clients.set(url, client);
       }
       return client;
@@ -69,11 +69,11 @@ export function createKnowledgeClientCache(fetchImpl: KnowledgeFetch = authentic
 export function createKnowledgeUntypedClientCache(fetchImpl: KnowledgeFetch = authenticatedFetch) {
   const clients = new Map<string, KnowledgeUntypedTrpcClient>();
   return {
-    get(origin: string, workspaceId: string): KnowledgeUntypedTrpcClient {
-      const url = knowledgeTrpcUrl(origin, workspaceId);
+    get(origin: string, knowledgeBaseId: string): KnowledgeUntypedTrpcClient {
+      const url = knowledgeTrpcUrl(origin, knowledgeBaseId);
       let client = clients.get(url);
       if (!client) {
-        client = createKnowledgeUntypedTrpcClient(origin, workspaceId, fetchImpl);
+        client = createKnowledgeUntypedTrpcClient(origin, knowledgeBaseId, fetchImpl);
         clients.set(url, client);
       }
       return client;
@@ -83,9 +83,9 @@ export function createKnowledgeUntypedClientCache(fetchImpl: KnowledgeFetch = au
 
 const clientCache = createKnowledgeClientCache();
 
-export async function getKnowledgeTrpcClient(workspaceId: string): Promise<KnowledgeTrpcClient> {
+export async function getKnowledgeTrpcClient(knowledgeBaseId: string): Promise<KnowledgeTrpcClient> {
   const { origin } = await getFoucApiOrigin();
-  return clientCache.get(origin, workspaceId);
+  return clientCache.get(origin, knowledgeBaseId);
 }
 
 /**
@@ -96,12 +96,12 @@ export async function getKnowledgeTrpcClient(workspaceId: string): Promise<Knowl
  * tRPC request options.
  */
 export async function runKnowledgeCall<T>(
-  workspaceId: string,
+  knowledgeBaseId: string,
   signal: AbortSignal | undefined,
   call: (client: KnowledgeTrpcClient) => Promise<T>,
 ): Promise<T> {
   try {
-    const client = await getKnowledgeTrpcClient(workspaceId);
+    const client = await getKnowledgeTrpcClient(knowledgeBaseId);
     return await call(client);
   } catch (cause) {
     throw normalizeKnowledgeError(cause, signal);

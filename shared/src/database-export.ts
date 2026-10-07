@@ -76,7 +76,7 @@ export interface DatabaseExportProgress {
 export interface DatabaseExportRow { values: DatabaseCell[]; types: string[]; }
 export const DATABASE_EXPORT_MAX_BYTES = 1024 * 1024 * 1024;
 export const DATABASE_EXPORT_MAX_STORED_BYTES = 2 * DATABASE_EXPORT_MAX_BYTES;
-export const DATABASE_EXPORT_MAX_WORKSPACE_BYTES = DATABASE_EXPORT_MAX_BYTES;
+export const DATABASE_EXPORT_MAX_SESSION_BYTES = DATABASE_EXPORT_MAX_BYTES;
 export const DATABASE_EXPORT_MAX_TABLES = 1000;
 export const DEFAULT_DATABASE_EXPORT_INPUT: DatabaseExportInput = { schemas: [], tables: [], format: 'sql', includeStructure: true, includeData: true, rowLimit: null, packaging: 'zip', partMiB: 64, pageSize: 500 };
 export * from './database-export-input';

@@ -6,13 +6,13 @@ const Redis = createRequire(new URL('../backend/device/package.json', import.met
 const host = new URL(parseEnv(readFileSync('.env.fouc.local', 'utf8')).REDIS_URL).hostname;
 const config = { provider: 'redis', host, port: 56381, username: '', database: 15, tls: false, password: '' };
 const client = new Redis({ host, port: 56381, db: 15, retryStrategy: () => null, stringNumbers: true }); client.on('error', () => {});
-const workspace = 'dbx-redis-json-verification', base = `http://127.0.0.1:8710/api/database/workspaces/${workspace}/redis`;
+const base = `http://127.0.0.1:8710/api/database/redis`;
 const prefix = 'fouc:dbx-json-lab:', acl = 'fouc_dbx_json_verifier', password = crypto.randomUUID(), b64 = (value) => Buffer.from(value).toString('base64');
 const binaryKey = Buffer.concat([Buffer.from(prefix), Buffer.from([255, 0, 128])]);
 const keys = [prefix + 'document', prefix + 'null', prefix + 'array', prefix + 'created', prefix + 'string', prefix + 'large', binaryKey];
 let session, limited, plain;
-async function request(path, { body, method = body ? 'POST' : 'GET', status = 200, foreign = false } = {}) {
-  const response = await fetch((foreign ? base.replace(workspace, 'other-workspace') : base) + path, {
+async function request(path, { body, method = body ? 'POST' : 'GET', status = 200, missingSession = false } = {}) {
+  const response = await fetch(base + (missingSession ? path.replace(/^\/sessions\/[^/]+/, `/sessions/${crypto.randomUUID()}`) : path), {
     method, headers: { 'content-type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(20000),
   });
   const result = await response.json(); assert.equal(response.status, status, result.error?.message); return result.data ?? result.error;
@@ -33,7 +33,7 @@ try {
   assert.equal((await value(session.id, keys[1])).data.content, 'null');
   assert.equal((await value(session.id, keys[2])).data.content, '[1,2,{"n":9007199254740993}]', 'root arrays must not be wrapped in a JSONPath result array');
   assert.equal((await value(session.id, binaryKey)).key.rawBase64, b64(binaryKey));
-  await request(`/sessions/${session.id}/json-capability`, { foreign: true, status: 400 });
+  await request(`/sessions/${session.id}/json-capability`, { missingSession: true, status: 400 });
   await prepare(session.id, { kind: 'json-set', key: b64(keys[0]), json: '{}' }, null, 400);
   await request(`/sessions/${session.id}/write-mode`, { body: { readOnly: false } });
   let page = await value(session.id, keys[0]); assert.ok(page.writeVersion);
@@ -70,7 +70,7 @@ try {
   plain = await request('/sessions', { body: { ...config, port: 56380 }, status: 201 });
   assert.equal((await request(`/sessions/${plain.id}/json-capability`)).available, false);
   assert.equal((await request(`/sessions/${session.id}/history`)).entries.length, 0);
-  console.log('PASS RedisJSON native: Redis8.2.2/ReJSON8.2.1, raw JSON numbers/int64, scalar/null/root-array and binary keys, no-write preview, NX create/XX edit/single-use plans, exact TTL preservation/content+expiry conflicts/relock/wrong types/invalid JSON guards, optional MODULE/MEMORY denial and unknown COMMAND metadata, GET/SET ACL errors/recovery, full-read bounds, standalone module absence and workspace guard; owned DB15 fixtures only.');
+  console.log('PASS RedisJSON native: Redis8.2.2/ReJSON8.2.1, raw JSON numbers/int64, scalar/null/root-array and binary keys, no-write preview, NX create/XX edit/single-use plans, exact TTL preservation/content+expiry conflicts/relock/wrong types/invalid JSON guards, optional MODULE/MEMORY denial and unknown COMMAND metadata, GET/SET ACL errors/recovery, full-read bounds, standalone module absence and missing-session guard; owned DB15 fixtures only.');
 } finally {
   for (const entry of [session, limited, plain]) if (entry) await request(`/sessions/${entry.id}`, { method: 'DELETE' }).catch(() => {});
   await client.del(...keys).catch(() => {}); await client.acl('DELUSER', acl).catch(() => {}); await client.quit().catch(() => client.disconnect());

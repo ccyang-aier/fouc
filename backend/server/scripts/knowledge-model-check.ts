@@ -4,19 +4,19 @@ import { readFile } from 'node:fs/promises';
 import { parseEnv } from 'node:util';
 import { createModelCredentialStore, createModelGateway, ModelGatewayError } from '../src/modules/knowledge/ai/gateway';
 import type { GatewayOptions, ModelCallRecord, TextCall } from '../src/modules/knowledge/ai/gateway';
-import { createTenantTestDatabase, seedTenantTestData } from '../src/platform/database/workspace/tenant-test-database';
+import { createResourceTestDatabase, seedResourceTestData } from '../src/platform/database/resources/resource-test-database';
 
 /** Deliberate opt-in live probe: sends synthetic content, prints metadata only. */
 async function main() {
-  const local = parseEnv(await readFile(new URL('../../../.env.workspace.models.local', import.meta.url), 'utf8'));
+  const local = parseEnv(await readFile(new URL('../../../.env.resources.models.local', import.meta.url), 'utf8'));
   const environment = { ...local, ...process.env };
   const apiKey = environment.KNOWLEDGE_AI_API_KEY;
   const endpoint = environment.KNOWLEDGE_AI_CHAT_BASE_URL;
   const model = environment.KNOWLEDGE_AI_MODEL;
   if (!apiKey || !endpoint || !model) throw new ModelGatewayError('configuration');
-  const database = await createTenantTestDatabase();
+  const database = await createResourceTestDatabase();
   try {
-    const { tenants: [context] } = await seedTenantTestData(database.admin);
+    const { resources: [context] } = await seedResourceTestData(database.admin);
     const credentials = createModelCredentialStore(database.pool, randomBytes(32));
     const records: ModelCallRecord[] = [];
     const config: GatewayOptions = {
@@ -27,7 +27,7 @@ async function main() {
       credentials, onCall: async (record) => { records.push(record); },
     };
     const gateway = createModelGateway(config);
-    const request: TextCall = { context: { workspaceId: context.workspaceId, userId: context.userId }, tier: 'fast', settings: {},
+    const request: TextCall = { context: { knowledgeBaseId: context.knowledgeBaseId, userId: context.userId }, tier: 'fast', settings: {},
       messages: [{ role: 'user', content: 'Reply with exactly OK.' }], maxOutputTokens: 64, timeoutMs: 45_000, maxRetries: 0 };
     const generated = await gateway.generate(request);
     assert.ok(generated.text.trim().length > 0);

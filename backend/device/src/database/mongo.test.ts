@@ -56,29 +56,29 @@ function fakeDriver(onFind: (signal?: AbortSignal) => Promise<ReturnType<MongoDr
   const unavailable = async (): Promise<never> => { throw new Error('unused test operation'); };
   return { database: 'demo', host: 'test', version: '8.0', find: (_value, signal) => onFind(signal), databases: unavailable, collections: unavailable, count: unavailable, indexes: unavailable, information: unavailable, command: unavailable, close: async () => onClose() };
 }
-test('Mongo workspace ownership precedes all I/O and close aborts in-flight reads', async () => {
+test('Mongo session ownership precedes all I/O and close aborts in-flight reads', async () => {
   let calls = 0, closed = 0;
   const driver = fakeDriver(signal => { calls++; return new Promise((_resolve, reject) => signal!.addEventListener('abort', () => reject(signal!.reason), { once: true })); }, () => closed++);
   const manager = new MongoSessionManager(async () => driver);
   try {
-    const session = await manager.connect('workspace-a', {});
+    const session = await manager.connect({});
     expect(session.readOnly).toBe(true); expect('uri' in session).toBe(false);
-    await expect(manager.find('workspace-b', session.id, {})).rejects.toThrow('工作空间');
-    await expect(manager.disconnect('workspace-b', session.id)).rejects.toThrow('工作空间'); expect(calls).toBe(0); expect(closed).toBe(0);
-    const pending = manager.find('workspace-a', session.id, {});
-    await manager.disconnect('workspace-a', session.id);
+    await expect(manager.find('missing-session', {})).rejects.toThrow('已断开');
+    await expect(manager.disconnect('missing-session')).rejects.toThrow('已断开'); expect(calls).toBe(0); expect(closed).toBe(0);
+    const pending = manager.find(session.id, {});
+    await manager.disconnect(session.id);
     await expect(pending).rejects.toThrow('会话已关闭'); expect(closed).toBe(1);
-    await expect(manager.find('workspace-a', session.id, {})).rejects.toThrow('已断开');
+    await expect(manager.find(session.id, {})).rejects.toThrow('已断开');
   } finally { await manager.dispose(); }
 });
-test('Mongo closing workspace cancels a pending connection and never publishes its session', async () => {
+test('Mongo disposal cancels a pending connection and never publishes its session', async () => {
   let closed = 0;
   const driver = fakeDriver(async () => { throw new Error('unused'); }, () => closed++);
   const manager = new MongoSessionManager(async (_input, signal) => { await new Promise<void>(resolve => signal!.addEventListener('abort', () => resolve(), { once: true })); return driver; });
   try {
-    const pending = manager.connect('workspace-a', {});
+    const pending = manager.connect({});
     await Promise.resolve(); await Promise.resolve();
-    await manager.closeWorkspace('workspace-a');
-    await expect(pending).rejects.toThrow('工作空间已关闭'); expect(closed).toBe(1);
+    await manager.dispose();
+    await expect(pending).rejects.toThrow('运行时已关闭'); expect(closed).toBe(1);
   } finally { await manager.dispose(); }
 });

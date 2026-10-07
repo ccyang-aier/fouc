@@ -2,7 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { assetDownloadInputSchema, assetUploadInputSchema } from '@fouc/shared/knowledge/contracts';
 import { KnowledgeAssetError } from '../assets/errors';
 import { knowledgeAssetStorage } from '../assets/runtime';
-import { confirmWorkspaceAssetUpload, prepareWorkspaceAssetUpload, presignWorkspaceAssetDownload } from '../assets/service';
+import { confirmKnowledgeBaseAssetUpload, prepareKnowledgeBaseAssetUpload, presignKnowledgeBaseAssetDownload } from '../assets/service';
 import { knowledgeMutation, knowledgeQuery } from './procedures';
 
 async function guarded<T>(operation: () => Promise<T>): Promise<T> {
@@ -21,17 +21,17 @@ async function guarded<T>(operation: () => Promise<T>): Promise<T> {
 export const knowledgeAssetRouterRecord = {
   prepare: knowledgeMutation({
     input: assetUploadInputSchema.omit({ userId: true }), scopes: ['read', 'write'],
-    resolve: ({ ctx, input }) => guarded(() => ctx.withTenant((db, authority) =>
-      prepareWorkspaceAssetUpload(knowledgeAssetStorage(), db, { ...input, userId: authority.userId }))),
+    resolve: ({ ctx, input }) => guarded(() => ctx.withResource((db, authority) =>
+      prepareKnowledgeBaseAssetUpload(knowledgeAssetStorage(), db, { ...input, userId: authority.userId }))),
   }),
   confirm: knowledgeMutation({
     input: assetUploadInputSchema.omit({ userId: true }), scopes: ['read', 'write'],
-    resolve: ({ ctx, input }) => guarded(() => ctx.withTenant((db, authority) =>
-      confirmWorkspaceAssetUpload(knowledgeAssetStorage(), db, { ...input, userId: authority.userId }))),
+    resolve: ({ ctx, input }) => guarded(() => ctx.withResource((db, authority) =>
+      confirmKnowledgeBaseAssetUpload(knowledgeAssetStorage(), db, { ...input, userId: authority.userId }))),
   }),
   download: knowledgeQuery({
     input: assetDownloadInputSchema.omit({ userId: true }), scopes: ['read'],
-    resolve: ({ ctx, input }) => guarded(() => ctx.withTenant((db, authority) =>
-      presignWorkspaceAssetDownload(knowledgeAssetStorage(), db, { ...input, userId: authority.userId }))),
+    resolve: ({ ctx, input }) => guarded(() => ctx.withResource((db, authority) =>
+      presignKnowledgeBaseAssetDownload(knowledgeAssetStorage(), db, { ...input, userId: authority.userId }))),
   }),
 };

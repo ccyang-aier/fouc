@@ -5,7 +5,7 @@ import { KnowledgeDataError } from '../data/errors';
 import { databaseColumnsKey, databaseRowsKey, type DatabaseRowsInfiniteData } from './database-queries';
 import { appendRowToCache, createDatabaseTableOperations, patchRowsCache, patchRowsPage, stripColumnFromRowsCache } from './table-operations';
 
-const workspace = '20000000-0000-4000-8000-000000000000';
+const knowledgeBase = '20000000-0000-4000-8000-000000000000';
 const database = '10000000-0000-4000-8000-00000000000d';
 const rowA = '10000000-0000-4000-8000-0000000000e1';
 const rowB = '10000000-0000-4000-8000-0000000000e2';
@@ -47,21 +47,21 @@ describe('table-operations · 纯补丁', () => {
 
 function seededClient(): QueryClient {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const columns: DatabaseColumnsState = { workspaceId: workspace, pageId: database, columns: [{ id: 'c1', name: '状态', type: 'text' }] };
-  client.setQueryData(databaseColumnsKey(workspace, database), columns);
+  const columns: DatabaseColumnsState = { knowledgeBaseId: knowledgeBase, pageId: database, columns: [{ id: 'c1', name: '状态', type: 'text' }] };
+  client.setQueryData(databaseColumnsKey(knowledgeBase, database), columns);
   const cache: DatabaseRowsInfiniteData = cacheOf(
     rowsPage([
       { pageId: rowA, title: 'A', properties: { c1: '进行中' } },
       { pageId: rowB, title: 'B', properties: {} },
     ]),
   );
-  client.setQueryData(databaseRowsKey(workspace, database, [{ propertyId: 'c1', operator: 'contains', value: '进行' }], emptySort), cache);
-  client.setQueryData(databaseRowsKey(workspace, database, [], emptySort), cache);
+  client.setQueryData(databaseRowsKey(knowledgeBase, database, [{ propertyId: 'c1', operator: 'contains', value: '进行' }], emptySort), cache);
+  client.setQueryData(databaseRowsKey(knowledgeBase, database, [], emptySort), cache);
   return client;
 }
 
 const readRows = (client: QueryClient, keyFilters: string): DatabaseRowsPage['rows'] =>
-  client.getQueryData<DatabaseRowsInfiniteData>(databaseRowsKey(workspace, database, keyFilters === 'filtered'
+  client.getQueryData<DatabaseRowsInfiniteData>(databaseRowsKey(knowledgeBase, database, keyFilters === 'filtered'
     ? [{ propertyId: 'c1', operator: 'contains', value: '进行' }]
     : [], emptySort))!.pages.flatMap((page) => page.rows);
 
@@ -76,12 +76,12 @@ describe('table-operations · 乐观编辑循环（真实 QueryClient）', () =>
       api: {
         updateRowProperties: async (_ws, input) => {
           sent.push({ pageId: input.pageId, properties: input.properties });
-          return { workspaceId: _ws, pageId: input.pageId, properties: input.properties };
+          return { knowledgeBaseId: _ws, pageId: input.pageId, properties: input.properties };
         },
         createRow: async () => placement,
         updateColumns: async () => { throw new Error('unused'); },
       },
-      workspaceId: workspace,
+      knowledgeBaseId: knowledgeBase,
       databaseId: database,
     });
 
@@ -104,7 +104,7 @@ describe('table-operations · 乐观编辑循环（真实 QueryClient）', () =>
         createRow: async () => placement,
         updateColumns: async () => { throw new Error('unused'); },
       },
-      workspaceId: workspace,
+      knowledgeBaseId: knowledgeBase,
       databaseId: database,
     });
 
@@ -127,13 +127,13 @@ describe('table-operations · 乐观编辑循环（真实 QueryClient）', () =>
         createRow: async () => placement,
         updateColumns: async () => { throw new KnowledgeDataError('FORBIDDEN', { message: 'denied' }); },
       },
-      workspaceId: workspace,
+      knowledgeBaseId: knowledgeBase,
       databaseId: database,
     });
 
     const error = await failing.replaceColumns(nextColumns).catch((cause: unknown) => cause);
     expect(isKnowledgeError(error, 'FORBIDDEN')).toBe(true);
-    expect(client.getQueryData<DatabaseColumnsState>(databaseColumnsKey(workspace, database))!.columns.map((column) => column.id)).toEqual(['c1']);
+    expect(client.getQueryData<DatabaseColumnsState>(databaseColumnsKey(knowledgeBase, database))!.columns.map((column) => column.id)).toEqual(['c1']);
     expect(readRows(client, 'all')[0]!.properties).toEqual({ c1: '进行中' });
 
     const succeeding = createDatabaseTableOperations({
@@ -141,13 +141,13 @@ describe('table-operations · 乐观编辑循环（真实 QueryClient）', () =>
       api: {
         updateRowProperties: async () => { throw new Error('unused'); },
         createRow: async () => placement,
-        updateColumns: async (_ws, input) => ({ workspaceId: _ws, pageId: input.pageId, columns: input.columns }),
+        updateColumns: async (_ws, input) => ({ knowledgeBaseId: _ws, pageId: input.pageId, columns: input.columns }),
       },
-      workspaceId: workspace,
+      knowledgeBaseId: knowledgeBase,
       databaseId: database,
     });
     await succeeding.replaceColumns(nextColumns);
-    expect(client.getQueryData<DatabaseColumnsState>(databaseColumnsKey(workspace, database))!.columns).toEqual(nextColumns);
+    expect(client.getQueryData<DatabaseColumnsState>(databaseColumnsKey(knowledgeBase, database))!.columns).toEqual(nextColumns);
     expect(readRows(client, 'all')[0]!.properties).toEqual({});
   });
 
@@ -164,7 +164,7 @@ describe('table-operations · 乐观编辑循环（真实 QueryClient）', () =>
           return placement;
         },
       },
-      workspaceId: workspace,
+      knowledgeBaseId: knowledgeBase,
       databaseId: database,
     });
 
@@ -172,9 +172,9 @@ describe('table-operations · 乐观编辑循环（真实 QueryClient）', () =>
     expect(sent[0]!.databaseId).toBe(database);
     expect(sent[0]!.id).toMatch(/^[0-9a-f-]{36}$/);
     // 行查询（两个筛选变体）与页面树段都被标记失效，等待服务端真值结算。
-    expect(client.getQueryState(databaseRowsKey(workspace, database, [], emptySort))?.isInvalidated).toBe(true);
-    expect(client.getQueryState(databaseRowsKey(workspace, database, [{ propertyId: 'c1', operator: 'contains', value: '进行' }], emptySort))?.isInvalidated).toBe(true);
-    expect(client.getQueryState([workspace, 'knowledge', 'pages'])?.isInvalidated ?? client.getQueryCache().find({ queryKey: [workspace, 'knowledge', 'pages'] })?.state.isInvalidated ?? true).toBe(true);
+    expect(client.getQueryState(databaseRowsKey(knowledgeBase, database, [], emptySort))?.isInvalidated).toBe(true);
+    expect(client.getQueryState(databaseRowsKey(knowledgeBase, database, [{ propertyId: 'c1', operator: 'contains', value: '进行' }], emptySort))?.isInvalidated).toBe(true);
+    expect(client.getQueryState([knowledgeBase, 'knowledge', 'pages'])?.isInvalidated ?? client.getQueryCache().find({ queryKey: [knowledgeBase, 'knowledge', 'pages'] })?.state.isInvalidated ?? true).toBe(true);
   });
 });
 

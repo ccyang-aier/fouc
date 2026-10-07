@@ -5,7 +5,7 @@ import { canEditTree, operationKeyIntent, readOnlyTreeReason, treeActionsForRow,
 
 function access(role: 'owner' | 'admin' | 'member' | 'guest', scopes: readonly string[]): KnowledgeAccess {
   return {
-    workspaceId: 'e2f7a4c1-0000-4000-8000-6b1f9a2c3d01',
+    knowledgeBaseId: 'e2f7a4c1-0000-4000-8000-6b1f9a2c3d01',
     userId: '90000000-0000-4000-8000-000000000000',
     role,
     actor: { kind: 'human', userId: '90000000-0000-4000-8000-000000000000' },

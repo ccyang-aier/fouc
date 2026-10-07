@@ -1,6 +1,6 @@
-import { createWorkspaceRoutes } from '../../workspaces/http';
-import { createWorkspaceService } from '../../workspaces/service';
-import type { WorkspaceService } from '../../workspaces/service';
+import { createKnowledgeOrganizationRoutes } from '../organization/membership-http';
+import { createKnowledgeOrganizationService } from '../organization/membership-service';
+import type { KnowledgeOrganizationService } from '../organization/membership-service';
 import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 import { and, eq } from 'drizzle-orm';
@@ -11,8 +11,8 @@ import { createTRPCClient, httpLink } from '@trpc/client';
 import type { OutboxEvent, PageScope, PermissionLevel, Principal, Teamspace } from '@fouc/shared/knowledge/contracts';
 import { createKnowledgeApiRoutes } from '../api/http';
 import { knowledgeApiRouter } from '../api/router';
-import { blockIndex, groupMember, member, page } from '../../../platform/database/workspace/schema';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import { blockIndex, groupMember, member, page } from '../../../platform/database/resources/schema';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
 import { createAuthTestServer, responseCookie, testPassword } from '../../../platform/identity/auth-test-server';
 import { createKnowledgeRequestAuthenticator, createKnowledgeTokenService } from '../access';
 import type { KnowledgeRequestAuthenticator, KnowledgeTokenScope } from '../access';
@@ -56,7 +56,7 @@ export type PermissionsFixtureMount = (app: Hono, context: { auth: FoucAuth; poo
 
 export async function createPermissionsFixture(options: { mount?: PermissionsFixtureMount } = {}) {
   let pool!: Pool;
-  let organization!: WorkspaceService & KnowledgeCatalogService;
+  let organization!: KnowledgeOrganizationService & KnowledgeCatalogService;
   let authenticator!: KnowledgeRequestAuthenticator;
   let tokens!: KnowledgeTokenService;
   const errors: Error[] = [];
@@ -65,8 +65,8 @@ export async function createPermissionsFixture(options: { mount?: PermissionsFix
     pool.on('error', (error) => errors.push(error));
     authenticator = createKnowledgeRequestAuthenticator({ auth, pool });
     tokens = createKnowledgeTokenService({ auth, pool });
-    organization = { ...createWorkspaceService(pool), ...createKnowledgeCatalogService(pool, { permissions: teamspacePermissionInvalidator }) };
-    app.route('/', createWorkspaceRoutes(auth, organization));
+    organization = { ...createKnowledgeOrganizationService(pool), ...createKnowledgeCatalogService(pool, { permissions: teamspacePermissionInvalidator }) };
+    app.route('/', createKnowledgeOrganizationRoutes(auth, organization));
     app.route('/', createKnowledgeCatalogRoutes(auth, organization));
     app.route('/', createKnowledgeApiRoutes({ auth, pool }));
     options.mount?.(app, { auth, pool, authenticator });
@@ -86,12 +86,12 @@ export async function createPermissionsFixture(options: { mount?: PermissionsFix
     return { cookie, identity: await response.json() as FoucIdentity };
   }
   const owner = await actor('owner'), foreign = await actor('foreign'), reader = await actor('reader');
-  const alpha = await organization.createWorkspace(owner.identity, { name: 'Alpha', kind: 'team' });
-  const beta = await organization.createWorkspace(foreign.identity, { name: 'Beta', kind: 'personal' });
-  const alphaKnowledgeBase = await organization.createKnowledgeBase(owner.identity, { workspaceId: alpha.id, name: 'Alpha library' });
-  const betaKnowledgeBase = await organization.createKnowledgeBase(foreign.identity, { workspaceId: beta.id, name: 'Beta library' });
-  const invitation = await organization.createInvitation(owner.identity, { workspaceId: alpha.id, email: reader.identity.email, role: 'member' });
-  await organization.acceptInvitation(reader.identity, { workspaceId: alpha.id, invitationId: invitation.invitation.id, token: invitation.token });
+  const alpha = await organization.createKnowledgeBase(owner.identity, { name: 'Alpha' });
+  const beta = await organization.createKnowledgeBase(foreign.identity, { name: 'Beta' });
+  const alphaKnowledgeBase = alpha;
+  const betaKnowledgeBase = beta;
+  const invitation = await organization.createInvitation(owner.identity, { knowledgeBaseId: alpha.id, email: reader.identity.email, role: 'member' });
+  await organization.acceptInvitation(reader.identity, { knowledgeBaseId: alpha.id, invitationId: invitation.invitation.id, token: invitation.token });
 
   async function jobs() {
     return (await admin.query<{ id: string; task: string; attempts: number; last_error: string | null }>(
@@ -109,69 +109,69 @@ export async function createPermissionsFixture(options: { mount?: PermissionsFix
   async function resetJobs() {
     for (const runner of runners) await runner.close();
     runners.clear();
-    await admin.query('DELETE FROM knowledge_jobs._private_jobs; DELETE FROM workspace.outbox');
+    await admin.query('DELETE FROM knowledge_jobs._private_jobs; DELETE FROM resources.outbox');
   }
-  async function tree(options: { teamspace?: Teamspace; tenant?: 'alpha' | 'beta'; defaultAccess?: PermissionLevel | null; parents?: (number | null)[]; breaks?: number[]; recycled?: number[]; ids?: string[] } = {}) {
-    const workspaceId = options.tenant === 'beta' ? beta.id : alpha.id;
-    const author = options.tenant === 'beta' ? foreign : owner;
-    const space = options.teamspace ?? await organization.createTeamspace(author.identity, { workspaceId, knowledgeBaseId: options.tenant === 'beta' ? betaKnowledgeBase.id : alphaKnowledgeBase.id, name: 'Permission tree', defaultAccess: options.defaultAccess === undefined ? 'view' : options.defaultAccess });
+  async function tree(options: { teamspace?: Teamspace; resource?: 'alpha' | 'beta'; defaultAccess?: PermissionLevel | null; parents?: (number | null)[]; breaks?: number[]; recycled?: number[]; ids?: string[] } = {}) {
+    const knowledgeBaseId = options.resource === 'beta' ? beta.id : alpha.id;
+    const author = options.resource === 'beta' ? foreign : owner;
+    const space = options.teamspace ?? await organization.createTeamspace(author.identity, { knowledgeBaseId: options.resource === 'beta' ? betaKnowledgeBase.id : alphaKnowledgeBase.id, name: 'Permission tree', defaultAccess: options.defaultAccess === undefined ? 'view' : options.defaultAccess });
     const parents = options.parents ?? [null, 0, 1, 0];
     const pages: (PageScope & { parentId: string | null; path: string })[] = [];
     for (const [index, parentIndex] of parents.entries()) {
       const id = options.ids?.[index] ?? randomUUID();
       const parent = parentIndex === null ? undefined : pages[parentIndex];
       if (parentIndex !== null && !parent) throw new Error('Invalid test tree');
-      pages.push({ workspaceId, pageId: id, parentId: parent?.pageId ?? null, path: `${parent ? `${parent.path}.` : ''}${id.replaceAll('-', '_')}` });
+      pages.push({ knowledgeBaseId, pageId: id, parentId: parent?.pageId ?? null, path: `${parent ? `${parent.path}.` : ''}${id.replaceAll('-', '_')}` });
     }
-    const root = { workspaceId, pageId: pages[0]!.pageId };
-    await withWorkspaceTenant(pool, workspaceId, (db) => withAuthorizedPageTreeMutation(db, root, async () => {
+    const root = { knowledgeBaseId, pageId: pages[0]!.pageId };
+    await withKnowledgeBase(pool, knowledgeBaseId, (db) => withAuthorizedPageTreeMutation(db, root, async () => {
       for (let offset = 0; offset < pages.length; offset += 250) {
         const batch = pages.slice(offset, offset + 250);
-        await db.insert(page).values(batch.map((node, batchIndex) => ({ workspaceId, id: node.pageId, parentId: node.parentId, path: node.path, teamspaceId: space.id, position: `a${offset + batchIndex}`, createdBy: author.identity.userId,
+        await db.insert(page).values(batch.map((node, batchIndex) => ({ knowledgeBaseId, id: node.pageId, parentId: node.parentId, path: node.path, teamspaceId: space.id, position: `a${offset + batchIndex}`, createdBy: author.identity.userId,
           inheritsPermissions: !options.breaks?.includes(offset + batchIndex), deletedAt: options.recycled?.includes(offset + batchIndex) ? new Date() : null })));
-        await db.insert(blockIndex).values(batch.map((node) => ({ workspaceId, pageId: node.pageId, blockId: 'text', blockType: 'paragraph', contentMd: 'Tenant-scoped content', contentHash: 'a'.repeat(64) })));
+        await db.insert(blockIndex).values(batch.map((node) => ({ knowledgeBaseId, pageId: node.pageId, blockId: 'text', blockType: 'paragraph', contentMd: 'Resource-scoped content', contentHash: 'a'.repeat(64) })));
       }
     }));
     return { root, pages, teamspace: space };
   }
   async function latestEvent(scope: PageScope): Promise<AclEvent> {
-    const result = await admin.query<{ payload: AclEvent }>("SELECT payload FROM workspace.outbox WHERE workspace_id=$1 AND topic='acl.changed' AND payload->>'rootPageId'=$2 ORDER BY (payload->>'revision')::bigint DESC LIMIT 1", [scope.workspaceId, scope.pageId]);
+    const result = await admin.query<{ payload: AclEvent }>("SELECT payload FROM resources.outbox WHERE knowledge_base_id=$1 AND topic='acl.changed' AND payload->>'rootPageId'=$2 ORDER BY (payload->>'revision')::bigint DESC LIMIT 1", [scope.knowledgeBaseId, scope.pageId]);
     if (!result.rows[0]) throw new Error('Expected an ACL event');
     return result.rows[0].payload;
   }
   async function access(scope: PageScope, principals: Principal[], required: PermissionLevel = 'view') {
-    return withWorkspaceTenant(pool, scope.workspaceId, async (db) => ({
-      pages: (await db.select({ id: page.id }).from(page).where(and(eq(page.id, scope.pageId), effectivePageAccessCondition({ workspaceId: scope.workspaceId, principals, required })))).length,
-      blocks: (await db.select({ id: blockIndex.id }).from(blockIndex).where(and(eq(blockIndex.pageId, scope.pageId), indexedBlockAccessCondition({ workspaceId: scope.workspaceId, principals })))).length,
+    return withKnowledgeBase(pool, scope.knowledgeBaseId, async (db) => ({
+      pages: (await db.select({ id: page.id }).from(page).where(and(eq(page.id, scope.pageId), effectivePageAccessCondition({ knowledgeBaseId: scope.knowledgeBaseId, principals, required })))).length,
+      blocks: (await db.select({ id: blockIndex.id }).from(blockIndex).where(and(eq(blockIndex.pageId, scope.pageId), indexedBlockAccessCondition({ knowledgeBaseId: scope.knowledgeBaseId, principals })))).length,
     }));
   }
-  async function subjects(userId: string, workspaceId = alpha.id) {
-    return withWorkspaceTenant(pool, workspaceId, async (db) => {
-      const [membership] = await db.select().from(member).where(and(eq(member.workspaceId, workspaceId), eq(member.userId, userId)));
+  async function subjects(userId: string, knowledgeBaseId = alpha.id) {
+    return withKnowledgeBase(pool, knowledgeBaseId, async (db) => {
+      const [membership] = await db.select().from(member).where(and(eq(member.knowledgeBaseId, knowledgeBaseId), eq(member.userId, userId)));
       if (!membership) return [];
-      const groups = await db.select().from(groupMember).where(and(eq(groupMember.workspaceId, workspaceId), eq(groupMember.userId, userId)));
-      return expandPrincipals({ workspaceId, userId, member: membership, groups });
+      const groups = await db.select().from(groupMember).where(and(eq(groupMember.knowledgeBaseId, knowledgeBaseId), eq(groupMember.userId, userId)));
+      return expandPrincipals({ knowledgeBaseId, userId, member: membership, groups });
     });
   }
   function patchTeamspace(space: Teamspace, body: unknown, actor = owner) {
-    return fetch(`${server.origin}/api/workspaces/${space.workspaceId}/teamspaces/${space.id}`, { method: 'PATCH', headers: { cookie: actor.cookie, origin: server.webOrigin, 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    return fetch(`${server.origin}/api/knowledge-bases/${space.knowledgeBaseId}/teamspaces/${space.id}`, { method: 'PATCH', headers: { cookie: actor.cookie, origin: server.webOrigin, 'content-type': 'application/json' }, body: JSON.stringify(body) });
   }
-  async function waitForWorkspaceLock(client: PoolClient) {
+  async function waitForKnowledgeBaseLock(client: PoolClient) {
     await until(async () => {
       await client.query('SELECT pg_stat_clear_snapshot()');
-      return (await client.query<{ waiting: boolean }>(`SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND usename=$1 AND wait_event_type='Lock' AND query LIKE '%workspace%for update%') AS waiting`, [server.database.role.name])).rows[0]!.waiting;
+      return (await client.query<{ waiting: boolean }>(`SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND usename=$1 AND wait_event_type='Lock' AND query LIKE '%knowledge_base%for update%') AS waiting`, [server.database.role.name])).rows[0]!.waiting;
     });
   }
   return { server, admin, pool, authenticator, owner, foreign, reader, alpha, beta, alphaKnowledgeBase, betaKnowledgeBase, organization, errors,
-    async createToken(actor: PermissionTestActor, scopes: KnowledgeTokenScope[], workspaceId = alpha.id) {
+    async createToken(actor: PermissionTestActor, scopes: KnowledgeTokenScope[], knowledgeBaseId = alpha.id) {
       const created = await tokens.create(new Request(`${server.origin}/test-token-setup`, { method: 'POST', headers: { origin: server.webOrigin, cookie: actor.cookie } }),
-        { workspaceId, name: 'Collaboration test', scopes, expiresAt: null });
+        { knowledgeBaseId, name: 'Collaboration test', scopes, expiresAt: null });
       if (!('token' in created)) throw new Error('Token creation failed');
       return `Bearer ${created.token}`;
     },
-    tree, jobs, start, stop, drain, resetJobs, latestEvent, access, subjects, patchTeamspace, waitForWorkspaceLock,
-    apiClient(headers: Record<string, string> = {}, workspaceId = alpha.id) {
-      return createTRPCClient<typeof knowledgeApiRouter>({ links: [httpLink({ url: `${server.origin}/api/knowledge/${workspaceId}/trpc`, headers })] });
+    tree, jobs, start, stop, drain, resetJobs, latestEvent, access, subjects, patchTeamspace, waitForKnowledgeBaseLock,
+    apiClient(headers: Record<string, string> = {}, knowledgeBaseId = alpha.id) {
+      return createTRPCClient<typeof knowledgeApiRouter>({ links: [httpLink({ url: `${server.origin}/api/knowledge/${knowledgeBaseId}/trpc`, headers })] });
     },
     async close() { await resetJobs(); await pool.end(); await server.close(); },
   };

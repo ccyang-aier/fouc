@@ -1,4 +1,4 @@
-import { pageScopeSchema, permissionLevelSchema, workspaceScopeSchema } from '@fouc/shared/knowledge/contracts';
+import { pageScopeSchema, permissionLevelSchema, knowledgeBaseScopeSchema } from '@fouc/shared/knowledge/contracts';
 import { aiStreamingTaskSelectorSchema, startAiStreamingTaskInputSchema } from '@fouc/shared/knowledge/contracts';
 import type { KnowledgeRequestContext } from '../access';
 import { authorizePageAccess } from '../permissions';
@@ -18,10 +18,10 @@ export const knowledgeApiRouter = createKnowledgeRouter({
   database: knowledgeDatabaseRouterRecord,
   asset: knowledgeAssetRouterRecord,
   access: knowledgeQuery({
-    input: workspaceScopeSchema,
+    input: knowledgeBaseScopeSchema,
     scopes: ['read'],
     resolve: ({ ctx }) => ({
-      workspaceId: ctx.authority.workspaceId,
+      knowledgeBaseId: ctx.authority.knowledgeBaseId,
       userId: ctx.authority.userId,
       role: ctx.authority.role,
       actor: ctx.authority.actor,
@@ -35,10 +35,10 @@ export const knowledgeApiRouter = createKnowledgeRouter({
     access: knowledgeQuery({
       input: pageScopeSchema.extend({ action: permissionLevelSchema }),
       scopes: ['read'],
-      resolve: ({ ctx, input }) => ctx.withTenant(async (db, authority) => {
-        const decision = await authorizePageAccess(db, { userId: authority.userId, scope: { workspaceId: input.workspaceId, pageId: input.pageId }, required: input.action });
-        if (decision.decision !== 'allow') return { workspaceId: input.workspaceId, pageId: input.pageId, authorized: false, level: null };
-        return { workspaceId: input.workspaceId, pageId: input.pageId, authorized: true, level: decision.level };
+      resolve: ({ ctx, input }) => ctx.withResource(async (db, authority) => {
+        const decision = await authorizePageAccess(db, { userId: authority.userId, scope: { knowledgeBaseId: input.knowledgeBaseId, pageId: input.pageId }, required: input.action });
+        if (decision.decision !== 'allow') return { knowledgeBaseId: input.knowledgeBaseId, pageId: input.pageId, authorized: false, level: null };
+        return { knowledgeBaseId: input.knowledgeBaseId, pageId: input.pageId, authorized: true, level: decision.level };
       }),
     }),
   },

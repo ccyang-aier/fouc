@@ -50,62 +50,62 @@ function assertInput(schema: { safeParse(payload: unknown): { success: true } | 
   }
 }
 
-/** 页面作用域之外的输入体：workspaceId 由方法首参注入，不经调用方重复传递。 */
+/** 页面作用域之外的输入体：knowledgeBaseId 由方法首参注入，不经调用方重复传递。 */
 export type UpdateRowPropertiesInput = { pageId: string; properties: RowPropertiesState['properties']; operationId: string };
-export type UpdateColumnsInput = Omit<UpdateDatabaseColumnsInput, 'workspaceId'>;
+export type UpdateColumnsInput = Omit<UpdateDatabaseColumnsInput, 'knowledgeBaseId'>;
 
 export type KnowledgeDatabasesApi = {
-  createDatabase(workspaceId: string, input: CreateDatabaseInput, signal?: AbortSignal): Promise<DatabaseColumnsState>;
-  getColumns(workspaceId: string, input: { pageId: string }, signal?: AbortSignal): Promise<DatabaseColumnsState>;
-  listRows(workspaceId: string, input: Omit<DatabaseQuery, 'workspaceId'>, signal?: AbortSignal): Promise<DatabaseRowsPage>;
-  createRow(workspaceId: string, input: CreateRowInput, signal?: AbortSignal): Promise<PagePlacement>;
-  updateRowProperties(workspaceId: string, input: UpdateRowPropertiesInput, signal?: AbortSignal): Promise<RowPropertiesState>;
-  updateColumns(workspaceId: string, input: UpdateColumnsInput, signal?: AbortSignal): Promise<DatabaseColumnsState>;
+  createDatabase(knowledgeBaseId: string, input: CreateDatabaseInput, signal?: AbortSignal): Promise<DatabaseColumnsState>;
+  getColumns(knowledgeBaseId: string, input: { pageId: string }, signal?: AbortSignal): Promise<DatabaseColumnsState>;
+  listRows(knowledgeBaseId: string, input: Omit<DatabaseQuery, 'knowledgeBaseId'>, signal?: AbortSignal): Promise<DatabaseRowsPage>;
+  createRow(knowledgeBaseId: string, input: CreateRowInput, signal?: AbortSignal): Promise<PagePlacement>;
+  updateRowProperties(knowledgeBaseId: string, input: UpdateRowPropertiesInput, signal?: AbortSignal): Promise<RowPropertiesState>;
+  updateColumns(knowledgeBaseId: string, input: UpdateColumnsInput, signal?: AbortSignal): Promise<DatabaseColumnsState>;
 };
 
 /** 构建一个传输之上的数据库面：origin 解析器 + 可注入 fetch（测试假传输入口）。 */
 export function createKnowledgeDatabasesApi(deps: { resolveOrigin: () => Promise<string> | string; fetchImpl?: KnowledgeFetch }): KnowledgeDatabasesApi {
   const cache = createKnowledgeUntypedClientCache(deps.fetchImpl);
-  const run = async <T,>(workspaceId: string, signal: AbortSignal | undefined, invoke: (client: KnowledgeUntypedTrpcClient) => Promise<T>): Promise<T> => {
+  const run = async <T,>(knowledgeBaseId: string, signal: AbortSignal | undefined, invoke: (client: KnowledgeUntypedTrpcClient) => Promise<T>): Promise<T> => {
     try {
       const origin = await deps.resolveOrigin();
-      return await invoke(cache.get(origin, workspaceId));
+      return await invoke(cache.get(origin, knowledgeBaseId));
     } catch (cause) {
       throw normalizeKnowledgeError(cause, signal);
     }
   };
 
   return {
-    async createDatabase(workspaceId, input, signal) {
+    async createDatabase(knowledgeBaseId, input, signal) {
       assertInput(createDatabaseInputSchema, input, 'database.create');
-      const payload = await run(workspaceId, signal, (client) => client.mutation('database.create', input, { signal }));
+      const payload = await run(knowledgeBaseId, signal, (client) => client.mutation('database.create', input, { signal }));
       return parsePayload(databaseColumnsStateSchema, payload, 'database.create');
     },
-    async getColumns(workspaceId, input, signal) {
-      const payload = await run(workspaceId, signal, (client) =>
-        client.query('database.getColumns', { workspaceId, ...input }, { signal }),
+    async getColumns(knowledgeBaseId, input, signal) {
+      const payload = await run(knowledgeBaseId, signal, (client) =>
+        client.query('database.getColumns', { knowledgeBaseId, ...input }, { signal }),
       );
       return parsePayload(databaseColumnsStateSchema, payload, 'database.getColumns');
     },
-    async listRows(workspaceId, input, signal) {
-      const query = { workspaceId, ...input };
+    async listRows(knowledgeBaseId, input, signal) {
+      const query = { knowledgeBaseId, ...input };
       assertInput(queryDatabaseInputSchema, query, 'database.listRows');
-      const payload = await run(workspaceId, signal, (client) => client.query('database.listRows', query, { signal }));
+      const payload = await run(knowledgeBaseId, signal, (client) => client.query('database.listRows', query, { signal }));
       return parsePayload(databaseRowsPageSchema, payload, 'database.listRows');
     },
-    async createRow(workspaceId, input, signal) {
+    async createRow(knowledgeBaseId, input, signal) {
       assertInput(createRowInputSchema, input, 'database.createRow');
-      const payload = await run(workspaceId, signal, (client) => client.mutation('database.createRow', input, { signal }));
+      const payload = await run(knowledgeBaseId, signal, (client) => client.mutation('database.createRow', input, { signal }));
       return parsePayload(pagePlacementSchema, payload, 'database.createRow');
     },
-    async updateRowProperties(workspaceId, input, signal) {
-      assertInput(updatePropertiesInputSchema, { workspaceId, ...input }, 'database.updateRowProperties');
-      const payload = await run(workspaceId, signal, (client) => client.mutation('database.updateRowProperties', { workspaceId, ...input }, { signal }));
+    async updateRowProperties(knowledgeBaseId, input, signal) {
+      assertInput(updatePropertiesInputSchema, { knowledgeBaseId, ...input }, 'database.updateRowProperties');
+      const payload = await run(knowledgeBaseId, signal, (client) => client.mutation('database.updateRowProperties', { knowledgeBaseId, ...input }, { signal }));
       return parsePayload(rowPropertiesStateSchema, payload, 'database.updateRowProperties');
     },
-    async updateColumns(workspaceId, input, signal) {
-      assertInput(updateDatabaseColumnsInputSchema, { workspaceId, ...input }, 'database.updateColumns');
-      const payload = await run(workspaceId, signal, (client) => client.mutation('database.updateColumns', { workspaceId, ...input }, { signal }));
+    async updateColumns(knowledgeBaseId, input, signal) {
+      assertInput(updateDatabaseColumnsInputSchema, { knowledgeBaseId, ...input }, 'database.updateColumns');
+      const payload = await run(knowledgeBaseId, signal, (client) => client.mutation('database.updateColumns', { knowledgeBaseId, ...input }, { signal }));
       return parsePayload(databaseColumnsStateSchema, payload, 'database.updateColumns');
     },
   };

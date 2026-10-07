@@ -4,7 +4,7 @@ export type { PageAccessDecision } from './authorization';
 export { KnowledgePermissionError } from './errors';
 export { teamspacePermissionInvalidator } from './fence';
 export type { PermissionFence } from './fence';
-export { lockPermissionWorkspace } from './locking';
+export { lockPermissionKnowledgeBase } from './locking';
 export { replaceAuthorizedPageAcl, setAuthorizedPageInheritance, withAuthorizedPageTreeMutation } from './mutations';
 export { withPermissionIndexWrite } from './projection';
 export type { IndexPermissionProjection } from './projection';

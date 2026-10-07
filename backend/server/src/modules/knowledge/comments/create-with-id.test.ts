@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 import { randomUUID } from 'node:crypto';
 import { principal } from '@fouc/shared/knowledge/contracts';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
 import { createPermissionsFixture, type PermissionsFixture } from '../permissions/permissions-test-fixture';
 import { replaceAuthorizedPageAcl } from '../permissions/mutations';
 import type { CommentErrorCode } from './errors';
@@ -9,7 +9,7 @@ import { createCommentThreadWithId } from './create-with-id';
 import { listPageCommentThreads } from './queries';
 import { replyCommentThread } from './mutations';
 import { and, eq } from 'drizzle-orm';
-import { page, asset } from '../../../platform/database/workspace/schema';
+import { page, asset } from '../../../platform/database/resources/schema';
 
 async function expectCode(run: () => Promise<unknown>, code: CommentErrorCode) {
   await expect(run()).rejects.toMatchObject({ code });
@@ -32,20 +32,20 @@ describe('comment thread creation with client ids', () => {
 
   test('PDF selection persists, exact retries succeed, and cross-resource or unauthorized anchors are rejected', async () => {
     const { pages } = await fixture.tree();
-    const scope = { workspaceId: fixture.alpha.id, pageId: pages[1].pageId }, owner = fixture.owner.identity.userId;
-    await withWorkspaceTenant(fixture.pool, scope.workspaceId, db => replaceAuthorizedPageAcl(db, { workspaceId: scope.workspaceId, pageId: pages[0].pageId, grants: [{ principal: principal('user', owner), level: 'full' }, { principal: principal('user', fixture.reader.identity.userId), level: 'comment' }] }));
+    const scope = { knowledgeBaseId: fixture.alpha.id, pageId: pages[1].pageId }, owner = fixture.owner.identity.userId;
+    await withKnowledgeBase(fixture.pool, scope.knowledgeBaseId, db => replaceAuthorizedPageAcl(db, { knowledgeBaseId: scope.knowledgeBaseId, pageId: pages[0].pageId, grants: [{ principal: principal('user', owner), level: 'full' }, { principal: principal('user', fixture.reader.identity.userId), level: 'comment' }] }));
     await fixture.drain();
     const hash = 'a'.repeat(64), otherHash = 'b'.repeat(64);
-    await withWorkspaceTenant(fixture.pool, scope.workspaceId, async db => {
-      await db.insert(asset).values({ workspaceId: scope.workspaceId, hash, mime: 'application/pdf', size: 100 });
-      await db.update(page).set({ properties: { fileAsset: `asset:${hash}`, fileName: 'test.pdf' } }).where(and(eq(page.workspaceId, scope.workspaceId), eq(page.id, scope.pageId)));
+    await withKnowledgeBase(fixture.pool, scope.knowledgeBaseId, async db => {
+      await db.insert(asset).values({ knowledgeBaseId: scope.knowledgeBaseId, hash, mime: 'application/pdf', size: 100 });
+      await db.update(page).set({ properties: { fileAsset: `asset:${hash}`, fileName: 'test.pdf' } }).where(and(eq(page.knowledgeBaseId, scope.knowledgeBaseId), eq(page.id, scope.pageId)));
     });
     const pdfAnchor = { assetHash: hash, quote: 'GPU architecture', pages: [{ page: 3, rects: [{ x: .1, y: .4, width: .5, height: .03 }] }] };
     const input = { ...scope, userId: owner, threadId: randomUUID(), commentId: randomUUID(), kind: 'comment', anchorKind: 'selection', pdfAnchor, bodyMd: 'PDF observation' };
-    const create = (value: unknown) => withWorkspaceTenant(fixture.pool, scope.workspaceId, db => createCommentThreadWithId(db, value));
+    const create = (value: unknown) => withKnowledgeBase(fixture.pool, scope.knowledgeBaseId, db => createCommentThreadWithId(db, value));
     expect((await create(input)).thread.pdfAnchor).toEqual(pdfAnchor);
     expect((await create(input)).existing).toBe(true);
-    const listed = await withWorkspaceTenant(fixture.pool, scope.workspaceId, db => listPageCommentThreads(db, { ...scope, userId: owner }));
+    const listed = await withKnowledgeBase(fixture.pool, scope.knowledgeBaseId, db => listPageCommentThreads(db, { ...scope, userId: owner }));
     expect(listed[0].pdfAnchor).toEqual(pdfAnchor);
     await expectCode(() => create({ ...input, pdfAnchor: { ...pdfAnchor, quote: 'changed' } }), 'INVALID_COMMENT_INPUT');
     await expectCode(() => create({ ...input, threadId: randomUUID(), commentId: randomUUID(), pdfAnchor: { ...pdfAnchor, assetHash: otherHash } }), 'INVALID_COMMENT_INPUT');
@@ -55,11 +55,11 @@ describe('comment thread creation with client ids', () => {
 
   test('creates the thread under the client ids, integrates with the N01 lifecycle, and retries are idempotent', async () => {
     const { pages } = await fixture.tree();
-    const scope = { workspaceId: fixture.alpha.id, pageId: pages[1].pageId };
+    const scope = { knowledgeBaseId: fixture.alpha.id, pageId: pages[1].pageId };
     const owner = fixture.owner.identity.userId;
     const reader = fixture.reader.identity.userId;
-    await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) =>
-      replaceAuthorizedPageAcl(db, { workspaceId: scope.workspaceId, pageId: pages[0].pageId, grants: [
+    await withKnowledgeBase(fixture.pool, scope.knowledgeBaseId, (db) =>
+      replaceAuthorizedPageAcl(db, { knowledgeBaseId: scope.knowledgeBaseId, pageId: pages[0].pageId, grants: [
         { principal: principal('user', owner), level: 'full' },
         { principal: principal('user', reader), level: 'comment' },
       ] }));
@@ -67,7 +67,7 @@ describe('comment thread creation with client ids', () => {
 
     const threadId = randomUUID();
     const commentId = randomUUID();
-    const created = await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) => createCommentThreadWithId(db, {
+    const created = await withKnowledgeBase(fixture.pool, scope.knowledgeBaseId, (db) => createCommentThreadWithId(db, {
       ...scope, userId: owner, threadId, commentId, kind: 'issue', anchorKind: 'selection', bodyMd:  '  Anchored observation  ',
     }));
     expect(created.existing).toBe(false);
@@ -75,7 +75,7 @@ describe('comment thread creation with client ids', () => {
     expect(created.comment).toMatchObject({ id: commentId, threadId, authorId: owner, bodyMd: 'Anchored observation' });
 
     // The retry of a lost response replays the exact same ids and is a no-op.
-    const retried = await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) => createCommentThreadWithId(db, {
+    const retried = await withKnowledgeBase(fixture.pool, scope.knowledgeBaseId, (db) => createCommentThreadWithId(db, {
       ...scope, userId: owner, threadId, commentId, kind: 'issue', anchorKind: 'selection', bodyMd: 'Anchored observation',
     }));
     expect(retried.existing).toBe(true);
@@ -83,31 +83,31 @@ describe('comment thread creation with client ids', () => {
     expect(retried.comment.id).toBe(commentId);
 
     // The rest of the N01 lifecycle sees an ordinary thread.
-    const reply = await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) => replyCommentThread(db, {
-      workspaceId: scope.workspaceId, threadId, userId: reader, bodyMd: 'Works with replies',
+    const reply = await withKnowledgeBase(fixture.pool, scope.knowledgeBaseId, (db) => replyCommentThread(db, {
+      knowledgeBaseId: scope.knowledgeBaseId, threadId, userId: reader, bodyMd: 'Works with replies',
     }));
     expect(reply.notified).toEqual([owner]);
-    const listed = await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) => listPageCommentThreads(db, { ...scope, userId: reader }));
+    const listed = await withKnowledgeBase(fixture.pool, scope.knowledgeBaseId, (db) => listPageCommentThreads(db, { ...scope, userId: reader }));
     expect(listed).toHaveLength(1);
     expect(listed[0].comments.map((entry) => entry.bodyMd)).toEqual(['Anchored observation', 'Works with replies']);
 
     // A different comment id under an existing thread is misuse, and so is a
     // thread id that already exists on another page: neither creates anything.
-    await expectCode(() => withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) => createCommentThreadWithId(db, {
+    await expectCode(() => withKnowledgeBase(fixture.pool, scope.knowledgeBaseId, (db) => createCommentThreadWithId(db, {
       ...scope, userId: owner, threadId, commentId: randomUUID(), kind: 'issue', anchorKind: 'selection', bodyMd: 'Forked',
     })), 'INVALID_COMMENT_INPUT');
-    await expectCode(() => withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) => createCommentThreadWithId(db, {
-      workspaceId: scope.workspaceId, pageId: pages[2].pageId, userId: owner, threadId, commentId, kind: 'issue', anchorKind: 'selection', bodyMd: 'Reused',
+    await expectCode(() => withKnowledgeBase(fixture.pool, scope.knowledgeBaseId, (db) => createCommentThreadWithId(db, {
+      knowledgeBaseId: scope.knowledgeBaseId, pageId: pages[2].pageId, userId: owner, threadId, commentId, kind: 'issue', anchorKind: 'selection', bodyMd: 'Reused',
     })), 'INVALID_COMMENT_INPUT');
 
     // Strict inputs and the permission gate behave like createCommentThread.
-    await expectCode(() => withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) => createCommentThreadWithId(db, {
+    await expectCode(() => withKnowledgeBase(fixture.pool, scope.knowledgeBaseId, (db) => createCommentThreadWithId(db, {
       ...scope, userId: owner, threadId: randomUUID(), commentId: randomUUID(), kind: 'issue', anchorKind: 'selection', bodyMd: '   ',
     })), 'INVALID_COMMENT_INPUT');
-    await expectCode(() => withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) => createCommentThreadWithId(db, {
+    await expectCode(() => withKnowledgeBase(fixture.pool, scope.knowledgeBaseId, (db) => createCommentThreadWithId(db, {
       ...scope, userId: fixture.foreign.identity.userId, threadId: randomUUID(), commentId: randomUUID(), kind: 'issue', anchorKind: 'selection', bodyMd: 'No access',
     })), 'COMMENT_ACCESS_DENIED');
-    const afterMisuse = await withWorkspaceTenant(fixture.pool, scope.workspaceId, (db) => listPageCommentThreads(db, { ...scope, userId: owner }));
+    const afterMisuse = await withKnowledgeBase(fixture.pool, scope.knowledgeBaseId, (db) => listPageCommentThreads(db, { ...scope, userId: owner }));
     expect(afterMisuse).toHaveLength(1);
   });
 });

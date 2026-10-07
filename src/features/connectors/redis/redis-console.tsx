@@ -116,7 +116,7 @@ export function RedisConsole({ base, database, onBusyChange }: { base: string; d
       {historyVisible && !monitorVisible && <aside className={historyStyles.history} aria-label="Redis 命令历史">
         <header><strong>最近 {history?.limit ?? 100} 条</strong><button type="button" aria-label="清空命令历史" disabled={busy || historyBusy || !history?.entries.length} onClick={() => setConfirmClear(true)}><Trash size={14} /></button></header>
         <div className={historyStyles.filter}><select aria-label="历史数据库范围" value={scope} onChange={(event) => { setScope(event.target.value as typeof scope); setRecallIndex(-1) }}><option value="current">当前 DB {database}</option><option value="all">本连接全部 DB</option></select>
-          <small>{history?.persistent ? "保存在当前设备与工作空间" : "临时会话 · 断开后清除"}</small></div>
+          <small>{history?.persistent ? "保存在当前设备" : "临时会话 · 断开后清除"}</small></div>
         {confirmClear && <div className={historyStyles.confirm}><span>清空本连接所有 DB 的历史？</span><div>
           <button type="button" disabled={historyBusy} onClick={() => void clearHistory()}>确认清空</button><button type="button" disabled={historyBusy} onClick={() => setConfirmClear(false)}>取消</button>
         </div></div>}

@@ -3,7 +3,7 @@ import { entityIdSchema } from '@fouc/shared/knowledge/contracts';
 
 const tokenPattern = /^fouc_share\.([a-f0-9-]{36})\.([a-f0-9-]{36})\.([A-Za-z0-9_-]{43})$/;
 const digest = (token: string) => createHash('sha256').update(token, 'utf8').digest();
-export interface ShareTokenProof { workspaceId: string; shareId: string; hash: Buffer }
+export interface ShareTokenProof { knowledgeBaseId: string; shareId: string; hash: Buffer }
 
 /** Locators are public routing hints. Neither UUID authenticates the request. */
 export function parseShareToken(token: string): ShareTokenProof | null {
@@ -11,12 +11,12 @@ export function parseShareToken(token: string): ShareTokenProof | null {
   if (!match || !entityIdSchema.safeParse(match[1]).success || !entityIdSchema.safeParse(match[2]).success) return null;
   const secret = Buffer.from(match[3]!, 'base64url');
   if (secret.length !== 32 || secret.toString('base64url') !== match[3]) return null;
-  return { workspaceId: match[1]!, shareId: match[2]!, hash: digest(token) };
+  return { knowledgeBaseId: match[1]!, shareId: match[2]!, hash: digest(token) };
 }
 
-export function issueShareToken(workspaceId: string) {
+export function issueShareToken(knowledgeBaseId: string) {
   const shareId = randomUUID();
-  const token = `fouc_share.${workspaceId}.${shareId}.${randomBytes(32).toString('base64url')}`;
+  const token = `fouc_share.${knowledgeBaseId}.${shareId}.${randomBytes(32).toString('base64url')}`;
   return { shareId, token, tokenHash: digest(token).toString('hex') };
 }
 

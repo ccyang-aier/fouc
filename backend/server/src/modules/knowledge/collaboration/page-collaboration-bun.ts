@@ -7,9 +7,9 @@ import { createPageCollaboration } from './page-collaboration-server';
 import type { PageCollaborationPersistence } from './page-collaboration-server';
 import type { PageCollaborationBroadcast } from './page-collaboration-redis';
 import type { PageCheckpointExtension } from './checkpoints';
-import type { WorkspaceEventsChannel } from './events';
+import type { KnowledgeBaseEventsChannel } from './events';
 
-const log = createLogger('workspace.collaboration');
+const log = createLogger('resources.collaboration');
 
 /**
  * Bun's ServerWebSocket rejects method calls made through the detached object
@@ -44,7 +44,7 @@ export interface PageCollaborationListener {
  * to the authenticated Hocuspocus host through crossws's Bun adapter. Z03 owns
  * when/where this runs; tests embed it exactly the way production does.
  */
-export function createPageCollaborationListener(deps: { authenticator: KnowledgeRequestAuthenticator; pool: Pool }, options: { socketTickets?: FoucSocketTickets; port?: number; hostname?: string; signal?: AbortSignal; persistence?: PageCollaborationPersistence; broadcast?: PageCollaborationBroadcast; events?: WorkspaceEventsChannel; /** V01 checkpoints, mounted by the production assembly (Z03/V03). */ checkpoints?: PageCheckpointExtension; /** Non-WebSocket fallback so one port can also host the HTTP API (Z03). */ http?: (request: Request, clientAddress: string) => Response | Promise<Response> } = {}): PageCollaborationListener {
+export function createPageCollaborationListener(deps: { authenticator: KnowledgeRequestAuthenticator; pool: Pool }, options: { socketTickets?: FoucSocketTickets; port?: number; hostname?: string; signal?: AbortSignal; persistence?: PageCollaborationPersistence; broadcast?: PageCollaborationBroadcast; events?: KnowledgeBaseEventsChannel; /** V01 checkpoints, mounted by the production assembly (Z03/V03). */ checkpoints?: PageCheckpointExtension; /** Non-WebSocket fallback so one port can also host the HTTP API (Z03). */ http?: (request: Request, clientAddress: string) => Response | Promise<Response> } = {}): PageCollaborationListener {
   const hocuspocus = createPageCollaboration(deps, options.persistence, options.broadcast, options.checkpoints);
   const connections = new Map<unknown, ReturnType<typeof hocuspocus.handleConnection>>();
   const crossws = bunAdapter({
@@ -89,27 +89,38 @@ export function createPageCollaborationListener(deps: { authenticator: Knowledge
     },
     websocket: {
       open(ws: { data?: { kind?: string } }) {
-        if (ws.data?.kind === 'workspace-events') options.events?.open(ws as never);
+        if (ws.data?.kind === 'knowledgeBase-events') options.events?.open(ws as never);
         else crossws.websocket.open?.(ws as never);
       },
       message(ws: { data?: { kind?: string } }, message: unknown) {
-        if (ws.data?.kind === 'workspace-events') options.events?.message(ws as never, String(message));
+        if (ws.data?.kind === 'knowledgeBase-events') options.events?.message(ws as never, String(message));
         else crossws.websocket.message?.(ws as never, message as never);
       },
       close(ws: { data?: { kind?: string } }, code: number, reason: string) {
-        if (ws.data?.kind === 'workspace-events') options.events?.close(ws as never);
+        if (ws.data?.kind === 'knowledgeBase-events') options.events?.close(ws as never);
         else crossws.websocket.close?.(ws as never, code, reason);
       },
     } as never,
   });
-  const close = async () => {
+  let closePromise: Promise<void> | undefined;
+  const close = () => closePromise ??= (async () => {
     options.signal?.removeEventListener('abort', close);
-    hocuspocus.closeConnections();
-    // Same shutdown contract as upstream Server.destroy(): the extension
-    // chain releases its own resources (Redis pub/sub) when the listener dies.
+    server.stop();
+    // Match Server.destroy(): document stores and unload hooks still need Redis.
+    // Releasing extensions first races their pending afterUnloadDocument hooks.
+    await new Promise<void>((resolve) => {
+      hocuspocus.configuration.extensions.push({
+        async afterUnloadDocument({ instance }) {
+          if (instance.getDocumentsCount() === 0) resolve();
+        },
+      });
+      if (hocuspocus.getDocumentsCount() === 0) resolve();
+      hocuspocus.closeConnections();
+      hocuspocus.flushPendingStores();
+    });
     await hocuspocus.hooks('onDestroy', { instance: hocuspocus });
     server.stop(true);
-  };
+  })();
   options.signal?.addEventListener('abort', close);
   return { port: server.port as number, hocuspocus, close };
 }

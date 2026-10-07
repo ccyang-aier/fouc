@@ -1,10 +1,10 @@
 import { z } from 'zod';
-import { assetHashSchema, entityIdSchema, timestampSchema, workspaceScopeSchema } from './primitives';
+import { assetHashSchema, entityIdSchema, timestampSchema, knowledgeBaseScopeSchema } from './primitives';
 import { actorSchema } from './organization';
 
-const eventBase = workspaceScopeSchema.extend({ id: entityIdSchema, occurredAt: timestampSchema });
+const eventBase = knowledgeBaseScopeSchema.extend({ id: entityIdSchema, occurredAt: timestampSchema });
 const pageEvent = <T extends string>(type: T) => eventBase.extend({ type: z.literal(type), ids: z.array(entityIdSchema).min(1) });
-export const workspaceEventSchema = z.discriminatedUnion('type', [
+export const knowledgeBaseEventSchema = z.discriminatedUnion('type', [
   pageEvent('page.created'),
   pageEvent('page.updated'),
   pageEvent('page.moved'),
@@ -18,14 +18,14 @@ export const workspaceEventSchema = z.discriminatedUnion('type', [
 ]);
 
 export const outboxEventSchema = z.discriminatedUnion('topic', [
-  workspaceScopeSchema.extend({ topic: z.literal('doc.changed'), pageId: entityIdSchema, actor: actorSchema, occurredAt: timestampSchema }),
-  workspaceScopeSchema.extend({ topic: z.literal('acl.changed'), rootPageId: entityIdSchema, revision: z.number().int().nonnegative() }),
-  workspaceScopeSchema.extend({ topic: z.literal('asset.created'), hash: assetHashSchema, initiatedBy: entityIdSchema }),
-  workspaceScopeSchema.extend({ topic: z.literal('workspace.event'), event: workspaceEventSchema }),
+  knowledgeBaseScopeSchema.extend({ topic: z.literal('doc.changed'), pageId: entityIdSchema, actor: actorSchema, occurredAt: timestampSchema }),
+  knowledgeBaseScopeSchema.extend({ topic: z.literal('acl.changed'), rootPageId: entityIdSchema, revision: z.number().int().nonnegative() }),
+  knowledgeBaseScopeSchema.extend({ topic: z.literal('asset.created'), hash: assetHashSchema, initiatedBy: entityIdSchema }),
+  knowledgeBaseScopeSchema.extend({ topic: z.literal('knowledgeBase.event'), event: knowledgeBaseEventSchema }),
 ]).superRefine((event, context) => {
-  if (event.topic === 'workspace.event' && event.workspaceId !== event.event.workspaceId) context.addIssue({ code: 'custom', message: '事件不得跨工作区嵌套' });
+  if (event.topic === 'knowledgeBase.event' && event.knowledgeBaseId !== event.event.knowledgeBaseId) context.addIssue({ code: 'custom', message: '事件不得跨知识库嵌套' });
 });
-export const aiTaskSchema = workspaceScopeSchema.extend({
+export const aiTaskSchema = knowledgeBaseScopeSchema.extend({
   id: entityIdSchema,
   initiatedBy: entityIdSchema,
   kind: z.enum(['inline', 'continue', 'chat', 'aiBlock', 'organize', 'report', 'mcp']),
@@ -45,7 +45,7 @@ export const awarenessStateSchema = z.strictObject({
   taskId: entityIdSchema.optional(),
 });
 
-export type WorkspaceEvent = z.infer<typeof workspaceEventSchema>;
+export type KnowledgeBaseEvent = z.infer<typeof knowledgeBaseEventSchema>;
 export type OutboxEvent = z.infer<typeof outboxEventSchema>;
 export type AiTask = z.infer<typeof aiTaskSchema>;
 export type AwarenessState = z.infer<typeof awarenessStateSchema>;

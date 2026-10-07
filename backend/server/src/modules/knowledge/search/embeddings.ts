@@ -2,9 +2,9 @@ import { createHash } from 'node:crypto';
 import { and, asc, eq, sql } from 'drizzle-orm';
 import type { Pool } from 'pg';
 import type { ModelBinding, PageScope } from '@fouc/shared/knowledge/contracts';
-import { blockEmbeddingModel, blockEmbeddingStaging, blockIndex } from '../../../platform/database/workspace/schema';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
-import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
+import { blockEmbeddingModel, blockEmbeddingStaging, blockIndex } from '../../../platform/database/resources/schema';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
+import type { ResourceTransaction } from '../../../platform/database/resources/transaction';
 import type { ModelGateway } from '../ai/gateway';
 import { KnowledgeJobError } from '../workers/types';
 import type { KnowledgeConsumer } from '../workers/types';
@@ -47,9 +47,9 @@ function targetOf(binding: EmbeddingBinding): EmbeddingModelTarget {
 }
 
 /** The (embed_model, embed_dimensions) the query side must filter by; null = no vector leg yet (§7.1). */
-export async function readActiveEmbeddingModel(db: WorkspaceTenantTransaction, workspaceId: string): Promise<EmbeddingModelTarget | null> {
+export async function readActiveEmbeddingModel(db: ResourceTransaction, knowledgeBaseId: string): Promise<EmbeddingModelTarget | null> {
   const [row] = await db.select({ model: blockEmbeddingModel.embedModel, dimensions: blockEmbeddingModel.embedDimensions })
-    .from(blockEmbeddingModel).where(eq(blockEmbeddingModel.workspaceId, workspaceId));
+    .from(blockEmbeddingModel).where(eq(blockEmbeddingModel.knowledgeBaseId, knowledgeBaseId));
   return row ? { model: row.model, dimensions: row.dimensions } : null;
 }
 
@@ -78,7 +78,7 @@ const staleVector = (target: EmbeddingModelTarget) => sql`(${blockIndex.embeddin
 /** A row needs no staging work when staged for the target at the current input hash, or already promoted and consistent. */
 const stagedFor = (target: EmbeddingModelTarget) => sql`(EXISTS (
     SELECT 1 FROM ${blockEmbeddingStaging} staging
-    WHERE staging.workspace_id = ${blockIndex.workspaceId} AND staging.page_id = ${blockIndex.pageId}
+    WHERE staging.knowledge_base_id = ${blockIndex.knowledgeBaseId} AND staging.page_id = ${blockIndex.pageId}
       AND staging.block_id = ${blockIndex.blockId} AND staging.embed_model = ${target.model}
       AND staging.embed_dimensions = ${target.dimensions} AND staging.content_hash = ${inputHashExpression()})
   OR NOT (${blockIndex.embedModel} IS DISTINCT FROM ${target.model}
@@ -108,7 +108,7 @@ const utf8Size = (value: string) => Buffer.byteLength(value, 'utf8');
  */
 async function embedBlocks(gateway: EmbeddingGateway, input: {
   binding: EmbeddingBinding;
-  context: { workspaceId: string; userId: string };
+  context: { knowledgeBaseId: string; userId: string };
   rows: readonly PendingBlock[];
   sink: (vectors: readonly EmbeddedVector[]) => Promise<void>;
   signal?: AbortSignal;
@@ -147,8 +147,8 @@ async function embedBlocks(gateway: EmbeddingGateway, input: {
  * or already this model). A newer revision or a completed model switch therefore
  * wins without being overwritten, and the queued event for that change converges.
  */
-async function storeBlockEmbeddings(pool: Pool, workspaceId: string, target: EmbeddingModelTarget, vectors: readonly EmbeddedVector[], signal?: AbortSignal): Promise<number> {
-  return withWorkspaceTenant(pool, workspaceId, async (db) => {
+async function storeBlockEmbeddings(pool: Pool, knowledgeBaseId: string, target: EmbeddingModelTarget, vectors: readonly EmbeddedVector[], signal?: AbortSignal): Promise<number> {
+  return withKnowledgeBase(pool, knowledgeBaseId, async (db) => {
     let stored = 0;
     for (const { row, vector } of vectors) {
       signal?.throwIfAborted();
@@ -159,7 +159,7 @@ async function storeBlockEmbeddings(pool: Pool, workspaceId: string, target: Emb
         embeddedHash: embeddingInputHash(row.titlePath, row.contentMd),
         updatedAt: sql`clock_timestamp()`,
       }).where(and(
-        eq(blockIndex.workspaceId, workspaceId),
+        eq(blockIndex.knowledgeBaseId, knowledgeBaseId),
         eq(blockIndex.pageId, row.pageId),
         eq(blockIndex.blockId, row.blockId),
         eq(blockIndex.contentHash, row.contentHash),
@@ -173,7 +173,7 @@ async function storeBlockEmbeddings(pool: Pool, workspaceId: string, target: Emb
 }
 
 export interface PageEmbeddingRefresh {
-  /** The workspace's active embedding model during this run; null = no rebuild has completed yet. */
+  /** The knowledgeBase's active embedding model during this run; null = no rebuild has completed yet. */
   readonly active: EmbeddingModelTarget | null;
   /** Blocks sent to the embed tier; zero unless the active model matches the binding. */
   readonly embedded: number;
@@ -201,9 +201,9 @@ export async function refreshPageEmbeddings(pool: Pool, options: {
 }): Promise<PageEmbeddingRefresh> {
   const { gateway, binding, scope, userId, signal } = options;
   signal?.throwIfAborted();
-  const planned = await withWorkspaceTenant(pool, scope.workspaceId, async (db) => {
+  const planned = await withKnowledgeBase(pool, scope.knowledgeBaseId, async (db) => {
     await refreshPageBlockIndex(db, scope, signal);
-    const active = await readActiveEmbeddingModel(db, scope.workspaceId);
+    const active = await readActiveEmbeddingModel(db, scope.knowledgeBaseId);
     if (!active || active.model !== binding.model || active.dimensions !== binding.dimensions) {
       // No active model yet, or another model's rebuild is pending: never mix vectors.
       return { active, rows: [] as PendingBlock[] };
@@ -212,7 +212,7 @@ export async function refreshPageEmbeddings(pool: Pool, options: {
       pageId: blockIndex.pageId, blockId: blockIndex.blockId, titlePath: blockIndex.titlePath,
       contentHash: blockIndex.contentHash, contentMd: blockIndex.contentMd,
     }).from(blockIndex).where(and(
-      eq(blockIndex.workspaceId, scope.workspaceId), eq(blockIndex.pageId, scope.pageId), staleVector(active),
+      eq(blockIndex.knowledgeBaseId, scope.knowledgeBaseId), eq(blockIndex.pageId, scope.pageId), staleVector(active),
     )).orderBy(asc(blockIndex.blockId));
     return { active, rows };
   });
@@ -224,10 +224,10 @@ export async function refreshPageEmbeddings(pool: Pool, options: {
   let stored = 0;
   const embedded = await embedBlocks(gateway, {
     binding,
-    context: { workspaceId: scope.workspaceId, userId },
+    context: { knowledgeBaseId: scope.knowledgeBaseId, userId },
     rows: embeddable,
     signal,
-    sink: async (vectors) => { stored += await storeBlockEmbeddings(pool, scope.workspaceId, active, vectors, signal); },
+    sink: async (vectors) => { stored += await storeBlockEmbeddings(pool, scope.knowledgeBaseId, active, vectors, signal); },
   });
   return { active, embedded, stored, skippedOversized: planned.rows.length - embeddable.length };
 }
@@ -235,7 +235,7 @@ export async function refreshPageEmbeddings(pool: Pool, options: {
 export interface BlockEmbeddingConsumerOptions {
   readonly pool: Pool;
   readonly gateway: EmbeddingGateway;
-  /** The runtime-resolved embed tier binding (workspace settings or platform default). */
+  /** The runtime-resolved embed tier binding (knowledgeBase settings or platform default). */
   readonly binding: EmbeddingBinding;
 }
 
@@ -249,7 +249,7 @@ export function createBlockEmbeddingConsumer(options: BlockEmbeddingConsumerOpti
       if (event.topic !== 'doc.changed') throw new KnowledgeJobError('invalid_event');
       await refreshPageEmbeddings(pool, {
         gateway, binding,
-        scope: { workspaceId: event.workspaceId, pageId: event.pageId },
+        scope: { knowledgeBaseId: event.knowledgeBaseId, pageId: event.pageId },
         userId: event.actor.userId,
         signal: context.signal,
       });
@@ -258,38 +258,38 @@ export function createBlockEmbeddingConsumer(options: BlockEmbeddingConsumerOpti
 }
 
 /** Stage target-model vectors for every block not already staged (or promoted) at its current input hash. */
-async function stageWorkspaceVectors(pool: Pool, input: {
+async function stageKnowledgeBaseVectors(pool: Pool, input: {
   gateway: EmbeddingGateway;
   binding: EmbeddingBinding;
-  workspaceId: string;
+  knowledgeBaseId: string;
   userId: string;
   signal?: AbortSignal;
 }): Promise<number> {
   const target = targetOf(input.binding);
-  const pending = await withWorkspaceTenant(pool, input.workspaceId, async (db) => db.select({
+  const pending = await withKnowledgeBase(pool, input.knowledgeBaseId, async (db) => db.select({
     pageId: blockIndex.pageId, blockId: blockIndex.blockId, titlePath: blockIndex.titlePath,
     contentHash: blockIndex.contentHash, contentMd: blockIndex.contentMd,
   }).from(blockIndex).where(and(
-    eq(blockIndex.workspaceId, input.workspaceId),
+    eq(blockIndex.knowledgeBaseId, input.knowledgeBaseId),
     sql`NOT ${stagedFor(target)}`,
   )).orderBy(asc(blockIndex.pageId), asc(blockIndex.blockId)));
   const embeddable = pending.filter((row) => embeddingInput(row.titlePath, row.contentMd).length <= embedValueCharLimit);
   if (!embeddable.length) return 0;
   return embedBlocks(input.gateway, {
     binding: input.binding,
-    context: { workspaceId: input.workspaceId, userId: input.userId },
+    context: { knowledgeBaseId: input.knowledgeBaseId, userId: input.userId },
     rows: embeddable,
     signal: input.signal,
     sink: async (vectors) => {
       for (let offset = 0; offset < vectors.length; offset += stagingBatchSize) {
-        await withWorkspaceTenant(pool, input.workspaceId, (db) => db.insert(blockEmbeddingStaging).values(
+        await withKnowledgeBase(pool, input.knowledgeBaseId, (db) => db.insert(blockEmbeddingStaging).values(
           vectors.slice(offset, offset + stagingBatchSize).map(({ row, vector }) => ({
-            workspaceId: input.workspaceId, pageId: row.pageId, blockId: row.blockId,
+            knowledgeBaseId: input.knowledgeBaseId, pageId: row.pageId, blockId: row.blockId,
             embedModel: target.model, embedDimensions: target.dimensions,
             contentHash: embeddingInputHash(row.titlePath, row.contentMd), embedding: [...vector],
           })),
         ).onConflictDoUpdate({
-          target: [blockEmbeddingStaging.workspaceId, blockEmbeddingStaging.pageId, blockEmbeddingStaging.blockId, blockEmbeddingStaging.embedModel, blockEmbeddingStaging.embedDimensions],
+          target: [blockEmbeddingStaging.knowledgeBaseId, blockEmbeddingStaging.pageId, blockEmbeddingStaging.blockId, blockEmbeddingStaging.embedModel, blockEmbeddingStaging.embedDimensions],
           set: { contentHash: sql`excluded.content_hash`, embedding: sql`excluded.embedding`, updatedAt: sql`clock_timestamp()` },
         }));
       }
@@ -305,40 +305,40 @@ interface EmbeddingSwitchAttempt {
 }
 
 /**
- * The atomic switch (§12): lock the workspace's projection rows, promote staged
+ * The atomic switch (§12): lock the knowledgeBase's projection rows, promote staged
  * vectors only when they cover EVERY block at its current content hash, then flip
  * the active-model marker and drop staging in the same transaction. Any gap — or
  * any thrown invariant — rolls back completely, leaving the previous model's
  * vectors and marker byte-identical, so the old index keeps serving queries.
  */
-async function switchActiveEmbeddingModel(pool: Pool, workspaceId: string, target: EmbeddingModelTarget, signal?: AbortSignal): Promise<EmbeddingSwitchAttempt> {
-  return withWorkspaceTenant(pool, workspaceId, async (db) => {
+async function switchActiveEmbeddingModel(pool: Pool, knowledgeBaseId: string, target: EmbeddingModelTarget, signal?: AbortSignal): Promise<EmbeddingSwitchAttempt> {
+  return withKnowledgeBase(pool, knowledgeBaseId, async (db) => {
     signal?.throwIfAborted();
     // Freeze the comparison set; concurrent index writers block until commit or rollback.
     const frozen = await db.select({ id: blockIndex.id }).from(blockIndex)
-      .where(eq(blockIndex.workspaceId, workspaceId)).for('update');
+      .where(eq(blockIndex.knowledgeBaseId, knowledgeBaseId)).for('update');
     const [gap] = await db.select({ missing: sql<number>`count(*)::int` }).from(blockIndex)
-      .where(and(eq(blockIndex.workspaceId, workspaceId), sql`NOT ${stagedFor(target)}`));
+      .where(and(eq(blockIndex.knowledgeBaseId, knowledgeBaseId), sql`NOT ${stagedFor(target)}`));
     if ((gap?.missing ?? 0) > 0) return { ready: false, blocks: frozen.length, promoted: 0, missing: gap!.missing };
     // The UPDATE aliases block_index as "block", so the input-hash twin is written for that alias.
     const promoted = await db.execute(sql`update ${blockIndex} as block
       set embedding = staged.embedding, embed_model = staged.embed_model, embed_dimensions = staged.embed_dimensions,
           embedded_hash = staged.content_hash, updated_at = clock_timestamp()
       from ${blockEmbeddingStaging} as staged
-      where block.workspace_id = ${workspaceId}
-        and staged.workspace_id = block.workspace_id and staged.page_id = block.page_id and staged.block_id = block.block_id
+      where block.knowledge_base_id = ${knowledgeBaseId}
+        and staged.knowledge_base_id = block.knowledge_base_id and staged.page_id = block.page_id and staged.block_id = block.block_id
         and staged.embed_model = ${target.model} and staged.embed_dimensions = ${target.dimensions}
         and staged.content_hash = encode(sha256(convert_to(coalesce(block.title_path || E'\\n\\n', '') || block.content_md, 'UTF8')), 'hex')
       returning block.id`);
     // Belt and braces: the gap check above must leave nothing stale; otherwise roll back.
     const [remaining] = await db.select({ stale: sql<number>`count(*)::int` }).from(blockIndex)
-      .where(and(eq(blockIndex.workspaceId, workspaceId), staleVector(target)));
+      .where(and(eq(blockIndex.knowledgeBaseId, knowledgeBaseId), staleVector(target)));
     if ((remaining?.stale ?? 0) > 0) throw new EmbeddingRebuildError('switch_not_converged');
-    await db.delete(blockEmbeddingStaging).where(eq(blockEmbeddingStaging.workspaceId, workspaceId));
+    await db.delete(blockEmbeddingStaging).where(eq(blockEmbeddingStaging.knowledgeBaseId, knowledgeBaseId));
     await db.insert(blockEmbeddingModel).values({
-      workspaceId, embedModel: target.model, embedDimensions: target.dimensions, updatedAt: sql`clock_timestamp()`,
+      knowledgeBaseId, embedModel: target.model, embedDimensions: target.dimensions, updatedAt: sql`clock_timestamp()`,
     }).onConflictDoUpdate({
-      target: blockEmbeddingModel.workspaceId,
+      target: blockEmbeddingModel.knowledgeBaseId,
       set: { embedModel: target.model, embedDimensions: target.dimensions, updatedAt: sql`clock_timestamp()` },
     });
     return { ready: true, blocks: frozen.length, promoted: promoted.rowCount ?? 0, missing: 0 };
@@ -359,31 +359,31 @@ export interface EmbeddingRebuildResult {
 
 /**
  * Manual rebuild entry for bootstrap and model generation switches: stage the
- * binding's vectors for the whole workspace into block_embedding_staging, then
+ * binding's vectors for the whole knowledgeBase into block_embedding_staging, then
  * atomically promote them and flip the marker. Re-running is cheap and resumable —
  * staged-at-current-hash and already-promoted blocks cost zero calls — and a run
  * that cannot converge (blocks keep changing underneath) fails with the staging
  * kept, ready for the next attempt. The active model's vectors are never touched
  * until the switch commits, so a failed rebuild leaves the old index queryable.
  */
-export async function rebuildWorkspaceEmbeddings(pool: Pool, options: {
+export async function rebuildKnowledgeBaseEmbeddings(pool: Pool, options: {
   gateway: EmbeddingGateway;
   binding: EmbeddingBinding;
-  workspaceId: string;
+  knowledgeBaseId: string;
   userId: string;
   signal?: AbortSignal;
   /** Bound on re-staging passes; the default leaves room for concurrent edits. */
   maxPasses?: number;
 }): Promise<EmbeddingRebuildResult> {
-  const { gateway, binding, workspaceId, userId, signal } = options;
+  const { gateway, binding, knowledgeBaseId, userId, signal } = options;
   signal?.throwIfAborted();
   const target = targetOf(binding);
-  const activeBefore = await withWorkspaceTenant(pool, workspaceId, (db) => readActiveEmbeddingModel(db, workspaceId));
+  const activeBefore = await withKnowledgeBase(pool, knowledgeBaseId, (db) => readActiveEmbeddingModel(db, knowledgeBaseId));
   let embedded = 0;
   for (let pass = 0; ; pass++) {
     signal?.throwIfAborted();
-    embedded += await stageWorkspaceVectors(pool, { gateway, binding, workspaceId, userId, signal });
-    const attempt = await switchActiveEmbeddingModel(pool, workspaceId, target, signal);
+    embedded += await stageKnowledgeBaseVectors(pool, { gateway, binding, knowledgeBaseId, userId, signal });
+    const attempt = await switchActiveEmbeddingModel(pool, knowledgeBaseId, target, signal);
     if (attempt.ready) return { target, activeBefore, switched: true, embedded, promoted: attempt.promoted, blocks: attempt.blocks };
     if (pass + 1 >= (options.maxPasses ?? defaultMaxPasses)) throw new EmbeddingRebuildError('switch_not_converged');
   }

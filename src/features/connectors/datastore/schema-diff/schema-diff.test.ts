@@ -143,7 +143,7 @@ test('SQLite new NOT NULL without backfill stops before destructive steps; unsup
   expect(partial.sql).not.toContain('DROP INDEX')
 })
 
-test('same-workspace collection mapping compares missing objects and guards unsupported providers', () => {
+test('collection mapping compares missing objects and guards unsupported providers', () => {
   const a = table('postgres', 'a', [column('id')], 'CREATE TABLE a(id INTEGER);')
   const b = table('postgres', 'b', [column('id')], 'CREATE TABLE b(id INTEGER);')
   const diff = buildSchemaDiff('postgres', [a], [b], { tableMappings: [{ sourceTable: 'a', targetTable: 'b' }] })

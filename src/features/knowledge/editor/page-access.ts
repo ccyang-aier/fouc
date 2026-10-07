@@ -19,16 +19,16 @@ import type { PageEditorGate } from './editor-state';
 
 export type PageAccessSnapshot = KnowledgeApiOutputs['page']['access'];
 
-export function pageAccessQueryKey(workspaceId: string, pageId: string) {
-  return [workspaceId, 'knowledge', 'pages', 'access', pageId] as const;
+export function pageAccessQueryKey(knowledgeBaseId: string, pageId: string) {
+  return [knowledgeBaseId, 'knowledge', 'pages', 'access', pageId] as const;
 }
 
-export function usePageAccessQuery(workspaceId: string, pageId: string) {
+export function usePageAccessQuery(knowledgeBaseId: string, pageId: string) {
   return useQuery({
-    queryKey: pageAccessQueryKey(workspaceId, pageId),
-    queryFn: ({ signal }) => runKnowledgeCall(workspaceId, signal, (client) =>
-      client.page.access.query({ workspaceId, pageId, action: 'view' }, { signal })),
-    enabled: workspaceId.length > 0 && pageId.length > 0,
+    queryKey: pageAccessQueryKey(knowledgeBaseId, pageId),
+    queryFn: ({ signal }) => runKnowledgeCall(knowledgeBaseId, signal, (client) =>
+      client.page.access.query({ knowledgeBaseId, pageId, action: 'view' }, { signal })),
+    enabled: knowledgeBaseId.length > 0 && pageId.length > 0,
   });
 }
 
@@ -39,8 +39,8 @@ export interface PageEditorGateState {
   retry: () => void;
 }
 
-export function usePageEditorGate(workspaceId: string, pageId: string): PageEditorGateState {
-  const query = usePageAccessQuery(workspaceId, pageId);
+export function usePageEditorGate(knowledgeBaseId: string, pageId: string): PageEditorGateState {
+  const query = usePageAccessQuery(knowledgeBaseId, pageId);
   return {
     gate: pageEditorGateOf({ isPending: query.isPending, error: query.error, data: query.data }),
     error: query.error,

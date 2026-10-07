@@ -14,7 +14,7 @@ describe('share token format', () => {
   test('parses only canonical tokens and never trusts a locator as authorization', () => {
     const issued = issueShareToken('01991428-716d-7453-8d22-f8dc8e0a9082');
     const proof = parseShareToken(issued.token)!;
-    expect(proof).toEqual({ workspaceId: '01991428-716d-7453-8d22-f8dc8e0a9082', shareId: issued.shareId, hash: expect.any(Buffer) });
+    expect(proof).toEqual({ knowledgeBaseId: '01991428-716d-7453-8d22-f8dc8e0a9082', shareId: issued.shareId, hash: expect.any(Buffer) });
     expect(proof.hash.equals(createHash('sha256').update(issued.token, 'utf8').digest())).toBe(true);
     for (const malformed of [
       '', 'fouc_share.x.y.z', issued.token.replace('fouc_share', 'fouc_pat'),

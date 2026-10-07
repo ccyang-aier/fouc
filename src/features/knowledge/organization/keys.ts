@@ -1,21 +1,19 @@
 /**
- * Query keys of the organization surface (O02). The workspaceId namespaces
- * every workspace-scoped list so switching or invalidating one workspace can
- * never leak into another workspace's cache entries.
+ * Query keys of the organization surface (O02). The knowledgeBaseId namespaces
+ * every knowledge-base-scoped list so switching or invalidating one knowledgeBase can
+ * never leak into another knowledgeBase's cache entries.
  */
 
 export const organizationQueryKeys = {
-  workspaces: ['organization', 'workspaces'] as const,
-  knowledgeBases: (workspaceId: string) => ['organization', workspaceId, 'knowledge-bases'] as const,
-  members: (workspaceId: string) => ['organization', workspaceId, 'members'] as const,
-  groups: (workspaceId: string) => ['organization', workspaceId, 'groups'] as const,
-  groupMembers: (workspaceId: string, groupId: string) => ['organization', workspaceId, 'groups', groupId, 'members'] as const,
-  teamspaces: (workspaceId: string) => ['organization', workspaceId, 'teamspaces'] as const,
+  knowledgeBases: ['organization', 'knowledge-bases'] as const,
+  members: (knowledgeBaseId: string) => ['organization', knowledgeBaseId, 'members'] as const,
+  groups: (knowledgeBaseId: string) => ['organization', knowledgeBaseId, 'groups'] as const,
+  groupMembers: (knowledgeBaseId: string, groupId: string) => ['organization', knowledgeBaseId, 'groups', groupId, 'members'] as const,
+  teamspaces: (knowledgeBaseId: string) => ['organization', knowledgeBaseId, 'teamspaces'] as const,
 };
 
 export type OrganizationQueryKey =
-  | typeof organizationQueryKeys.workspaces
-  | ReturnType<(typeof organizationQueryKeys)['knowledgeBases']>
+  | typeof organizationQueryKeys.knowledgeBases
   | ReturnType<(typeof organizationQueryKeys)['members']>
   | ReturnType<(typeof organizationQueryKeys)['groups']>
   | ReturnType<(typeof organizationQueryKeys)['groupMembers']>

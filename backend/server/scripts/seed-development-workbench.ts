@@ -5,13 +5,13 @@ import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { eq } from 'drizzle-orm';
 import { generateDrizzleJson, generateMigration } from 'drizzle-kit/api';
-import { createDevelopmentWorkspaces, developmentId } from '@fouc/shared/development-workbench';
+import { createDevelopmentKnowledgeBases, developmentId } from '@fouc/shared/development-workbench';
 import { repairBlockIds } from '@fouc/shared/knowledge/schema';
 import { readFoucDatabaseConnections, foucDatabaseErrorMessage } from '../src/platform/database/initialize-config';
 import { assertFoucApplicationRole } from '../src/platform/database/initialize-role';
-import { installWorkspaceRls } from '../src/platform/database/workspace/rls';
-import * as tables from '../src/platform/database/workspace/schema';
-import { workspaceTenantSchema } from '../src/platform/database/schema';
+import { installResourceRls } from '../src/platform/database/resources/rls';
+import * as tables from '../src/platform/database/resources/schema';
+import { resourceSchema } from '../src/platform/database/schema';
 import { authUser } from '../src/platform/database/identity/schema';
 import { markdownSchema } from '../src/modules/knowledge/import-export/body';
 import { prosemirrorDocToYDoc } from '../src/modules/knowledge/import-export/y-encoding';
@@ -31,59 +31,57 @@ export async function seedDevelopmentWorkbench() {
   const role = await assertFoucApplicationRole(admin, application);
   const client = await admin.connect();
   try {
-    const ddl = await generateMigration(generateDrizzleJson({}), generateDrizzleJson(workspaceTenantSchema, undefined, ['workspace']));
+    const ddl = await generateMigration(generateDrizzleJson({}), generateDrizzleJson(resourceSchema, undefined, ['resources']));
     await client.query('BEGIN');
     await client.query("SELECT pg_advisory_xact_lock(hashtext('fouc:database:initialize'))");
-    await client.query('DROP SCHEMA IF EXISTS knowledge CASCADE');
-    await client.query('DROP SCHEMA IF EXISTS workspace CASCADE');
+    await client.query('DROP SCHEMA IF EXISTS resources CASCADE');
     await client.query(ddl.join('\n'));
-    await installWorkspaceRls(client);
+    await installResourceRls(client);
     const name = `"${role.name.replaceAll('"', '""')}"`;
-    await client.query(`REVOKE ALL ON SCHEMA workspace FROM PUBLIC; GRANT USAGE ON SCHEMA workspace TO ${name}`);
-    await client.query(`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA workspace TO ${name}`);
-    await client.query(`GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA workspace TO ${name}`);
+    await client.query(`REVOKE ALL ON SCHEMA resources FROM PUBLIC; GRANT USAGE ON SCHEMA resources TO ${name}`);
+    await client.query(`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA resources TO ${name}`);
+    await client.query(`GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA resources TO ${name}`);
     const db = drizzle(client);
     const adminEmail = (process.env.FOUC_ADMIN_EMAIL ?? 'admin@fouc.local').toLowerCase();
     const [adminUser] = await db.select({ id: authUser.id }).from(authUser).where(eq(authUser.email, adminEmail));
-    if (!adminUser) throw new Error(`Create the built-in admin account before seeding development workspaces: ${adminEmail}`);
-    const fixtures = createDevelopmentWorkspaces();
+    if (!adminUser) throw new Error(`Create the built-in admin account before seeding development knowledgeBases: ${adminEmail}`);
+    const fixtures = createDevelopmentKnowledgeBases();
     const schema = markdownSchema();
-    for (const [index, space] of fixtures.entries()) {
-      await db.insert(tables.workspace).values({ id: space.id, name: space.name, kind: index === 1 ? 'personal' : 'team' });
-      await db.insert(tables.member).values({ workspaceId: space.id, userId: adminUser.id, role: 'owner' });
-      if (index === 0) await db.insert(tables.project).values({ workspaceId: space.id, id: developmentId(0x50000000, 1), name: 'Fouc 桌面端 V1', createdBy: adminUser.id });
-      for (const base of space.bases) {
-        await db.insert(tables.knowledgeBase).values({ id: base.id, workspaceId: space.id, name: base.name });
-        if (base.folders.length) await db.insert(tables.teamspace).values(base.folders.map((folder) => ({ ...folder, defaultAccess: 'edit' as const })));
-        for (const [position, document] of base.documents.entries()) {
-          const scope = { workspaceId: space.id, pageId: document.id };
-          const principals = [`workspace:${space.id}` as const];
-          await db.insert(tables.page).values({ workspaceId: space.id, id: document.id, teamspaceId: document.folderId,
-            path: document.id.replaceAll('-', '_'), position: `a${String(position).padStart(4, '0')}`, title: document.title,
-            createdBy: adminUser.id, updatedAt: new Date(document.updatedAt),
-            properties: { displayCreator: document.creator, fileSource: document.source, indexStatus: document.indexStatus },
-          });
-          const node = repairBlockIds(schema.nodeFromJSON(document.body)).doc;
-          const encoded = prosemirrorDocToYDoc(node);
-          await db.insert(tables.docState).values({ ...scope, state: encoded.state, stateVector: encoded.stateVector });
-          encoded.ydoc.destroy();
-          await db.insert(tables.pageEffectiveAcl).values({ ...scope, view: principals, comment: principals, edit: principals });
-          const blocks: (typeof tables.blockIndex.$inferInsert)[] = [];
-          node.forEach((block) => {
-            const text = block.textContent;
-            blocks.push({ ...scope, blockId: block.attrs.blockId, blockType: block.type.name, contentMd: text,
-              contentHash: createHash('sha256').update(text).digest('hex'), principals });
-          });
-          await db.insert(tables.blockIndex).values(blocks);
-        }
+    const projectId = developmentId(0x50000000, 1);
+    await db.insert(tables.project).values({ id: projectId, name: 'Fouc 桌面端 V1', createdBy: adminUser.id });
+    await db.insert(tables.projectMember).values({ projectId, userId: adminUser.id, role: 'owner' });
+    for (const base of fixtures) {
+      await db.insert(tables.knowledgeBase).values({ id: base.id, name: base.name });
+      await db.insert(tables.member).values({ knowledgeBaseId: base.id, userId: adminUser.id, role: 'owner' });
+      if (base.folders.length) await db.insert(tables.teamspace).values(base.folders.map((folder) => ({ ...folder, defaultAccess: 'edit' as const })));
+      for (const [position, document] of base.documents.entries()) {
+        const scope = { knowledgeBaseId: base.id, pageId: document.id };
+        const principals = [`knowledgeBase:${base.id}` as const];
+        await db.insert(tables.page).values({ knowledgeBaseId: base.id, id: document.id, teamspaceId: document.folderId,
+          path: document.id.replaceAll('-', '_'), position: `a${String(position).padStart(4, '0')}`, title: document.title,
+          createdBy: adminUser.id, updatedAt: new Date(document.updatedAt),
+          properties: { displayCreator: document.creator, fileSource: document.source, indexStatus: document.indexStatus },
+        });
+        const node = repairBlockIds(schema.nodeFromJSON(document.body)).doc;
+        const encoded = prosemirrorDocToYDoc(node);
+        await db.insert(tables.docState).values({ ...scope, state: encoded.state, stateVector: encoded.stateVector });
+        encoded.ydoc.destroy();
+        await db.insert(tables.pageEffectiveAcl).values({ ...scope, view: principals, comment: principals, edit: principals });
+        const blocks: (typeof tables.blockIndex.$inferInsert)[] = [];
+        node.forEach((block) => {
+          const text = block.textContent;
+          blocks.push({ ...scope, blockId: block.attrs.blockId, blockType: block.type.name, contentMd: text,
+            contentHash: createHash('sha256').update(text).digest('hex'), principals });
+        });
+        await db.insert(tables.blockIndex).values(blocks);
       }
     }
     // Development jobs referring to the discarded fixtures must not retry forever.
     const queue = await client.query("SELECT to_regclass('knowledge_jobs._private_jobs') AS table_name");
     if (queue.rows[0].table_name) await client.query('DELETE FROM knowledge_jobs._private_jobs');
     await client.query('COMMIT');
-    const documentCount = fixtures.reduce((sum, space) => sum + space.bases.reduce((count, base) => count + base.documents.length, 0), 0);
-    console.log(`Development workbench ready: ${fixtures.length} workspaces, ${fixtures.reduce((sum, space) => sum + space.bases.length, 0)} knowledge bases, ${documentCount} documents. Accounts preserved.`);
+    const documentCount = fixtures.reduce((sum, base) => sum + base.documents.length, 0);
+    console.log(`Development workbench ready: ${fixtures.length} knowledge bases, ${documentCount} documents. Accounts preserved.`);
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;

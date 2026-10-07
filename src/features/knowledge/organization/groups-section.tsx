@@ -3,31 +3,31 @@
 /**
  * Group management (O02): create / rename / delete groups and manage their
  * membership. Group rows expand into a member panel that resolves user ids
- * against the workspace member directory; membership writes are optimistic.
+ * against the knowledgeBase member directory; membership writes are optimistic.
  */
 
 import { useMemo, useState } from 'react';
 import { CaretDown, PencilSimple, Plus, Trash, UsersThree, X } from '@phosphor-icons/react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import { validateOrganizationName } from '@/features/workspaces/organization-client';
-import type { GroupMemberRow, MemberRole } from '@/features/workspaces/organization-client';
+import { validateOrganizationName } from '@/features/knowledge/organization/client';
+import type { GroupMemberRow, MemberRole } from '@/features/knowledge/organization/client';
 import { useAddGroupMemberMutation, useCreateGroupMutation, useGroupMembersQuery, useMembersQuery, useRemoveGroupMemberMutation, useRemoveGroupMutation, useRenameGroupMutation, useGroupsQuery } from './hooks';
 import type { GroupRow, MemberRow } from './list-mutations';
 import { canManageOrganization } from './view-model';
 import { ConfirmDialog, DialogButton, ListStateShell, LoadMoreButton, ModalDialog, NameField, SectionHeader, flattenPages, mutationErrorText, queryListState } from './ui';
 
-export function GroupsSection({ workspaceId, actorRole, notify }: {
-  workspaceId: string;
+export function GroupsSection({ knowledgeBaseId, actorRole, notify }: {
+  knowledgeBaseId: string;
   actorRole: MemberRole;
   notify: (kind: 'success' | 'error', text: string) => void;
 }) {
   const canManage = canManageOrganization(actorRole);
-  const groupsQuery = useGroupsQuery(workspaceId);
-  const membersQuery = useMembersQuery(workspaceId);
-  const createMutation = useCreateGroupMutation(workspaceId);
-  const renameMutation = useRenameGroupMutation(workspaceId);
-  const removeMutation = useRemoveGroupMutation(workspaceId);
+  const groupsQuery = useGroupsQuery(knowledgeBaseId);
+  const membersQuery = useMembersQuery(knowledgeBaseId);
+  const createMutation = useCreateGroupMutation(knowledgeBaseId);
+  const renameMutation = useRenameGroupMutation(knowledgeBaseId);
+  const removeMutation = useRemoveGroupMutation(knowledgeBaseId);
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [renamingGroup, setRenamingGroup] = useState<GroupRow | null>(null);
@@ -109,7 +109,7 @@ export function GroupsSection({ workspaceId, actorRole, notify }: {
                 </div>
                 {expanded ? (
                   <GroupMembersPanel
-                    workspaceId={workspaceId}
+                    knowledgeBaseId={knowledgeBaseId}
                     groupId={group.id}
                     directory={directory}
                     canManage={canManage}
@@ -183,16 +183,16 @@ function IconAction({ label, title, onClick, danger, children }: { label: string
   );
 }
 
-function GroupMembersPanel({ workspaceId, groupId, directory, canManage, notify }: {
-  workspaceId: string;
+function GroupMembersPanel({ knowledgeBaseId, groupId, directory, canManage, notify }: {
+  knowledgeBaseId: string;
   groupId: string;
   directory: readonly MemberRow[];
   canManage: boolean;
   notify: (kind: 'success' | 'error', text: string) => void;
 }) {
-  const membersQuery = useGroupMembersQuery(workspaceId, groupId);
-  const addMutation = useAddGroupMemberMutation(workspaceId, groupId);
-  const removeMutation = useRemoveGroupMemberMutation(workspaceId, groupId);
+  const membersQuery = useGroupMembersQuery(knowledgeBaseId, groupId);
+  const addMutation = useAddGroupMemberMutation(knowledgeBaseId, groupId);
+  const removeMutation = useRemoveGroupMemberMutation(knowledgeBaseId, groupId);
   const rows = flattenPages<GroupMemberRow>(membersQuery.data);
   const nameOf = useMemo(() => new Map(directory.map((member) => [member.userId, member])), [directory]);
   const inGroup = new Set(rows.map((row) => row.userId));
@@ -223,7 +223,7 @@ function GroupMembersPanel({ workspaceId, groupId, directory, canManage, notify 
         error={membersQuery.error}
         onRetry={() => void membersQuery.refetch()}
         emptyTitle="群组内暂无成员"
-        emptyHint="从工作区成员中选择并加入该群组。"
+        emptyHint="从知识库成员中选择并加入该群组。"
       >
         <div className="flex flex-wrap items-center gap-1.5">
           {rows.map((row) => {
@@ -259,9 +259,9 @@ function GroupMembersPanel({ workspaceId, groupId, directory, canManage, notify 
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="max-h-[260px] w-[240px] overflow-y-auto">
-                <DropdownMenuLabel>工作区成员</DropdownMenuLabel>
+                <DropdownMenuLabel>知识库成员</DropdownMenuLabel>
                 {candidates.length === 0 ? (
-                  <div className="px-2.5 py-2 text-[10.5px] text-[var(--muted)]">工作区成员都已在群组中</div>
+                  <div className="px-2.5 py-2 text-[10.5px] text-[var(--muted)]">知识库成员都已在群组中</div>
                 ) : candidates.map((member) => (
                   <DropdownMenuItem key={member.userId} onSelect={() => void add(member)} className="flex-col items-start gap-0">
                     <span className="text-[11.5px]">{member.name}</span>

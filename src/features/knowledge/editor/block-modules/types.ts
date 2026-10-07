@@ -1,10 +1,11 @@
 import type { ComponentType } from 'react';
 import type { Editor, Extensions, JSONContent } from '@tiptap/core';
 import type { PageScope } from '@fouc/shared/knowledge/contracts';
+import type { ReferencePageChoice } from '../../data/reference-pages';
 
 export type BlockInsertCommand = (editor: Editor) => boolean;
 export type BlockIcon = ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
-export interface EditorBlockContext { scope?: PageScope; origin?: string; localWorkspaceId?: string; localPageId?: string; getLocalPages?: () => readonly { id: string; title: string; body?: JSONContent }[]; subscribeLocalPages?: (listener: () => void) => () => void }
+export interface EditorBlockContext { scope?: PageScope; origin?: string; cacheIdentity?: string; localKnowledgeBaseId?: string; localPageId?: string; getLocalPages?: () => readonly (ReferencePageChoice & { body?: JSONContent })[]; subscribeLocalPages?: (listener: () => void) => () => void }
 
 export interface BlockChoice {
   name: string;

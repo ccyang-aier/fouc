@@ -36,6 +36,7 @@ import type {
   SourceHandle,
 } from './block-reference-source';
 import { BlockReferencePicker, listReferenceBlocks } from './block-reference-picker';
+import { knowledgeErrorCodeOf } from '../../../entry-state';
 import type { ReferenceBlockChoice } from './block-reference-picker';
 
 export interface BlockReferenceViewOptions {
@@ -43,6 +44,7 @@ export interface BlockReferenceViewOptions {
   scope: PageScope;
   /** Knowledge API origin from U01, used when no `sources` cache is injected. */
   origin: string;
+  cacheIdentity?: string;
   sources?: BlockReferenceSources;
   /** Content reconvert throttle override (tests); default 150ms. */
   throttleMs?: number;
@@ -64,7 +66,7 @@ const BlockReferenceContext = createContext<BlockReferenceEditorContext | null>(
 export function applyBlockReferenceView(extensions: Extensions, options: BlockReferenceViewOptions): Extensions {
   const context: BlockReferenceEditorContext = {
     scope: options.scope,
-    sources: options.sources ?? createBlockReferenceSources({ origin: options.origin }),
+    sources: options.sources ?? createBlockReferenceSources({ origin: options.origin, cacheIdentity: options.cacheIdentity }),
     throttleMs: options.throttleMs,
   };
   ensureBlockReferenceStyles();
@@ -77,14 +79,15 @@ export function applyBlockReferenceView(extensions: Extensions, options: BlockRe
   );
 }
 
-type ReferenceAttrs = { pageId: string | null; targetBlockId: string | null };
+type ReferenceAttrs = { knowledgeBaseId: string | null; pageId: string | null; targetBlockId: string | null };
 
 const failedSnapshot: BlockReferenceSnapshot = { state: 'failed', element: null, dom: null };
+const loadingSnapshot: BlockReferenceSnapshot = { state: 'loading', element: null, dom: null };
 
 /** States decidable from attrs alone render without ever opening a connection. */
 function localViewState(attrs: ReferenceAttrs, ownScope: PageScope): BlockReferenceViewState | null {
-  if (attrs.pageId === ownScope.pageId) return 'cyclic';
-  if (!attrs.pageId || !attrs.targetBlockId) return 'unconfigured';
+  if (attrs.knowledgeBaseId === ownScope.knowledgeBaseId && attrs.pageId === ownScope.pageId) return 'cyclic';
+  if (!attrs.knowledgeBaseId || !attrs.pageId || !attrs.targetBlockId) return 'unconfigured';
   return null;
 }
 
@@ -175,12 +178,15 @@ async function loadRemoteBlocks(sources: BlockReferenceSources, scope: PageScope
 function BlockReferenceCard({ node, editor, updateAttributes }: NodeViewProps) {
   const context = useContext(BlockReferenceContext);
   const attrs = node.attrs as ReferenceAttrs;
+  const knowledgeBaseId = attrs.knowledgeBaseId;
   const pageId = attrs.pageId;
   const targetBlockId = attrs.targetBlockId;
   // Source-backed state arrives only through async events (acquire resolution,
   // session status pushes, throttled watcher notifications) — never a
   // synchronous setState inside an effect.
-  const [source, setSource] = useState<BlockReferenceSnapshot>(() => ({ state: 'loading', element: null, dom: null }));
+  const sourceKey = `${knowledgeBaseId}:${pageId}:${targetBlockId}`;
+  const [sourceState, setSource] = useState<{ key: string; snapshot: BlockReferenceSnapshot }>(() => ({ key: '', snapshot: loadingSnapshot }));
+  const source = sourceState.key === sourceKey ? sourceState.snapshot : loadingSnapshot;
   const [editing, setEditing] = useState(false);
   const contentHost = useRef<HTMLDivElement | null>(null);
 
@@ -188,12 +194,12 @@ function BlockReferenceCard({ node, editor, updateAttributes }: NodeViewProps) {
   const content = (state === 'live' || state === 'loading') && source.dom ? source.dom : null;
 
   useEffect(() => {
-    if (!context || !pageId || !targetBlockId || pageId === context.scope.pageId) return undefined;
+    if (!context || !knowledgeBaseId || !pageId || !targetBlockId || (knowledgeBaseId === context.scope.knowledgeBaseId && pageId === context.scope.pageId)) return undefined;
     let alive = true;
     let stopStatus: (() => void) | undefined;
     let watch: ReturnType<typeof watchSourceBlock> | undefined;
     let handle: SourceHandle | undefined;
-    context.sources.acquire({ workspaceId: context.scope.workspaceId, pageId })
+    context.sources.acquire({ knowledgeBaseId, pageId })
       .then((acquired) => {
         if (!alive) {
           void acquired.release();
@@ -202,7 +208,7 @@ function BlockReferenceCard({ node, editor, updateAttributes }: NodeViewProps) {
         handle = acquired;
         watch = watchSourceBlock({
           fragment: acquired.document.getXmlFragment(PAGE_BODY_FRAGMENT),
-          attrs: { pageId, targetBlockId },
+          attrs: { knowledgeBaseId, pageId, targetBlockId },
           ownScope: context.scope,
           status: () => acquired.status(),
           schema: editor.schema,
@@ -210,12 +216,12 @@ function BlockReferenceCard({ node, editor, updateAttributes }: NodeViewProps) {
         });
         stopStatus = acquired.subscribe(() => watch?.refresh());
         watch.subscribe(() => {
-          if (alive && watch) setSource(watch.snapshot());
+          if (alive && watch) setSource({ key: sourceKey, snapshot: watch.snapshot() });
         });
-        setSource(watch.snapshot());
+        setSource({ key: sourceKey, snapshot: watch.snapshot() });
       })
-      .catch(() => {
-        if (alive) setSource(failedSnapshot);
+      .catch((cause: unknown) => {
+        if (alive) setSource({ key: sourceKey, snapshot: knowledgeErrorCodeOf(cause) === 'FORBIDDEN' ? { state: 'denied', element: null, dom: null } : failedSnapshot });
       });
     return () => {
       alive = false;
@@ -223,7 +229,7 @@ function BlockReferenceCard({ node, editor, updateAttributes }: NodeViewProps) {
       watch?.dispose();
       void handle?.release();
     };
-  }, [context, editor.schema, pageId, targetBlockId]);
+  }, [context, editor.schema, knowledgeBaseId, pageId, targetBlockId, sourceKey]);
 
   // The serialized subtree is schema-controlled DOM produced by
   // DOMSerializer — painted by replacing children, never injected as HTML text.
@@ -234,17 +240,17 @@ function BlockReferenceCard({ node, editor, updateAttributes }: NodeViewProps) {
   }, [content]);
 
   const open = (): void => {
-    if (state !== 'live' || !context || !pageId || !targetBlockId) return;
+    if (state !== 'live' || !context || !knowledgeBaseId || !pageId || !targetBlockId) return;
     if (window.getSelection()?.toString()) return;
-    requestOpenPageBlock({ workspaceId: context.scope.workspaceId, pageId, blockId: targetBlockId });
+    requestOpenPageBlock({ knowledgeBaseId, pageId, blockId: targetBlockId });
   };
 
   if (editor.isEditable && context && (editing || state === 'unconfigured')) return <NodeViewWrapper draggable={false} data-block-reference="picker">
     <BlockReferencePicker
-      workspaceId={context.scope.workspaceId}
+      knowledgeBaseId={context.scope.knowledgeBaseId}
       excludePageId={context.scope.pageId}
-      loadBlocks={(sourcePageId) => loadRemoteBlocks(context.sources, { workspaceId: context.scope.workspaceId, pageId: sourcePageId }, editor.schema)}
-      onChoose={(nextPageId, blockId) => { updateAttributes({ pageId: nextPageId, targetBlockId: blockId }); setEditing(false); }}
+      loadBlocks={sourceScope => loadRemoteBlocks(context.sources, sourceScope, editor.schema)}
+      onChoose={(sourceScope, blockId) => { updateAttributes({ ...sourceScope, targetBlockId: blockId }); setEditing(false); }}
       onCancel={pageId && targetBlockId ? () => setEditing(false) : undefined}
     />
   </NodeViewWrapper>;
@@ -272,13 +278,13 @@ function BlockReferenceCard({ node, editor, updateAttributes }: NodeViewProps) {
         <div className="min-w-0 flex-1 px-3.5 py-2.5">
           {content ? (
             <>
-              <div ref={contentHost} className={contentClasses} />
+              <div key={`source:${sourceKey}`} ref={contentHost} className={contentClasses} />
               {state === 'loading'
                 ? <p className="mt-2 text-[11px] text-[var(--muted)]">正在同步来源内容…</p>
                 : null}
             </>
           ) : state === 'live' || state === 'loading' ? (
-            <div className="py-1" aria-busy="true" aria-label="正在加载来源块">
+            <div key="source-loading" className="py-1" aria-busy="true" aria-label="正在加载来源块">
               <div className="fouc-block-skeleton h-[11px] w-[62%]" />
               <div className="fouc-block-skeleton mt-1.5 h-[11px] w-[38%]" />
               <p className="mt-2 text-[11.5px] text-[var(--muted)]">正在加载来源块…</p>

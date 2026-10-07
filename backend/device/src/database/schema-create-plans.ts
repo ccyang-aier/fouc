@@ -31,7 +31,7 @@ function nativeError(reason: unknown): { message: string; definite: boolean } {
   return { message: error.message + hint, definite };
 }
 
-/** One workspace-owned live Entry owns these plans. No SQL can be supplied at commit. */
+/** One session-owned live Entry owns these plans. No SQL can be supplied at commit. */
 export class SchemaCreatePlans {
   private readonly plans = new Map<string, HeldPlan>();
   private readonly previews = new Set<AbortController>();

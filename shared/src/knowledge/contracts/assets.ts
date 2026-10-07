@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { assetHashSchema, entityIdSchema, timestampSchema, workspaceScopeSchema } from './primitives';
+import { assetHashSchema, entityIdSchema, timestampSchema, knowledgeBaseScopeSchema } from './primitives';
 import { uploadIntentSchema } from './content';
 
 /**
@@ -11,11 +11,11 @@ export const assetStatusSchema = z.enum(['ready', 'revoked']);
 
 /** userId is a verified server-side identity, never accepted from request bodies. */
 export const assetUploadInputSchema = uploadIntentSchema.extend({ userId: entityIdSchema });
-export const assetDownloadInputSchema = workspaceScopeSchema.extend({ userId: entityIdSchema, hash: assetHashSchema });
-export const assetRevokeInputSchema = workspaceScopeSchema.extend({ userId: entityIdSchema, hash: assetHashSchema });
+export const assetDownloadInputSchema = knowledgeBaseScopeSchema.extend({ userId: entityIdSchema, hash: assetHashSchema });
+export const assetRevokeInputSchema = knowledgeBaseScopeSchema.extend({ userId: entityIdSchema, hash: assetHashSchema });
 
 export const assetUploadPrepareResultSchema = z.discriminatedUnion('action', [
-  /** 秒传: the same hash is already confirmed inside this workspace. */
+  /** 秒传: the same hash is already confirmed inside this knowledge base. */
   z.strictObject({ action: z.literal('reuse') }),
   z.strictObject({
     action: z.literal('upload'),

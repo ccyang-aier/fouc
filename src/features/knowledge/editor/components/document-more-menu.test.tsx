@@ -20,7 +20,7 @@ beforeAll(async () => {
   const { DocumentMoreMenu } = await import('./document-more-menu');
   function MenuHarness() {
     const [starred, setStarred] = useState(false);
-    return <DocumentAppearanceProvider scope="test-menu"><DocumentMoreMenu editor={null} title="测试文档" starred={starred} onToggleStar={() => { star = !star; setStarred(star); }} actions={{ target: { workspaceId: 'w', knowledgeBaseId: 'k', pageId: 'p', source: 'local' }, onComments: () => { comments++; }, onHistory: () => { history++; }, onDelete: async () => { deletes++; throw new Error('save-failed'); } }} /></DocumentAppearanceProvider>;
+    return <DocumentAppearanceProvider scope="test-menu"><DocumentMoreMenu editor={null} title="测试文档" starred={starred} onToggleStar={() => { star = !star; setStarred(star); }} actions={{ target: {  knowledgeBaseId: 'k', pageId: 'p', source: 'local' }, onComments: () => { comments++; }, onHistory: () => { history++; }, onDelete: async () => { deletes++; throw new Error('save-failed'); } }} /></DocumentAppearanceProvider>;
   }
   const host = document.createElement('div');
   document.body.append(host);

@@ -4,7 +4,7 @@ import { knowledgeTrpcUrl } from '../data/endpoint';
 import { createKnowledgeAssetsApi } from './assets-api';
 
 const origin = 'https://api.fouc.example';
-const workspace = '20000000-0000-4000-8000-000000000000';
+const knowledgeBase = '20000000-0000-4000-8000-000000000000';
 const intent = {
   hash: 'a'.repeat(64),
   mime: 'text/plain',
@@ -38,24 +38,24 @@ const apiWith = (fetchImpl: typeof fetch) => createKnowledgeAssetsApi({ resolveO
 describe('createKnowledgeAssetsApi · prepareUpload', () => {
   test('调用 asset.prepare 并透传完整意图,返回契约化的预签名授权', async () => {
     const { requests, fetchImpl } = capturingFetch(() => ({ status: 200, body: JSON.stringify([{ result: { data: uploadGrant } }]) }));
-    const prepared = await apiWith(fetchImpl).prepareUpload(workspace, intent);
+    const prepared = await apiWith(fetchImpl).prepareUpload(knowledgeBase, intent);
     expect(prepared).toEqual(uploadGrant);
     expect(requests).toHaveLength(1);
     expect(requests[0]!.method).toBe('POST');
-    expect(requests[0]!.url.startsWith(knowledgeTrpcUrl(origin, workspace) + '/asset.prepare?')).toBe(true);
+    expect(requests[0]!.url.startsWith(knowledgeTrpcUrl(origin, knowledgeBase) + '/asset.prepare?')).toBe(true);
     // tRPC 批量体以索引为键装载各调用的输入。
-    expect(JSON.parse(requests[0]!.body!)).toEqual({ 0: { workspaceId: workspace, ...intent } });
+    expect(JSON.parse(requests[0]!.body!)).toEqual({ 0: { knowledgeBaseId: knowledgeBase, ...intent } });
   });
 
   test('秒传响应 {action:"reuse"} 按契约通过', async () => {
     const { fetchImpl } = capturingFetch(() => ({ status: 200, body: JSON.stringify([{ result: { data: { action: 'reuse' } } }]) }));
-    expect(await apiWith(fetchImpl).prepareUpload(workspace, intent)).toEqual({ action: 'reuse' });
+    expect(await apiWith(fetchImpl).prepareUpload(knowledgeBase, intent)).toEqual({ action: 'reuse' });
   });
 
   test('不符合契约的响应(缺 expiresAt)被拒绝为 UNAVAILABLE,绝不当作数据', async () => {
     const malformed = { action: 'upload', url: uploadGrant.url, method: 'PUT', headers: { 'content-type': 'text/plain' } };
     const { fetchImpl } = capturingFetch(() => ({ status: 200, body: JSON.stringify([{ result: { data: malformed } }]) }));
-    const error = await apiWith(fetchImpl).prepareUpload(workspace, intent).catch((cause: unknown) => cause);
+    const error = await apiWith(fetchImpl).prepareUpload(knowledgeBase, intent).catch((cause: unknown) => cause);
     expect(isKnowledgeDataError(error)).toBe(true);
     expect((error as { code: string }).code).toBe('UNAVAILABLE');
   });
@@ -65,7 +65,7 @@ describe('createKnowledgeAssetsApi · prepareUpload', () => {
       status: 404,
       body: JSON.stringify([{ error: { message: 'The requested operation was not found.', code: -32004, data: { code: 'NOT_FOUND', httpStatus: 404 } } }]),
     }));
-    const error = await apiWith(fetchImpl).prepareUpload(workspace, intent).catch((cause: unknown) => cause);
+    const error = await apiWith(fetchImpl).prepareUpload(knowledgeBase, intent).catch((cause: unknown) => cause);
     expect(isKnowledgeDataError(error)).toBe(true);
     expect((error as { code: string }).code).toBe('NOT_FOUND');
   });
@@ -74,14 +74,14 @@ describe('createKnowledgeAssetsApi · prepareUpload', () => {
 describe('createKnowledgeAssetsApi · confirmUpload', () => {
   test('调用 asset.confirm 并返回确认结果(created 标记透传)', async () => {
     const { requests, fetchImpl } = capturingFetch(() => ({ status: 200, body: JSON.stringify([{ result: { data: { status: 'ready', created: true } } }]) }));
-    const confirmed = await apiWith(fetchImpl).confirmUpload(workspace, intent);
+    const confirmed = await apiWith(fetchImpl).confirmUpload(knowledgeBase, intent);
     expect(confirmed).toEqual({ status: 'ready', created: true });
-    expect(requests[0]!.url.startsWith(knowledgeTrpcUrl(origin, workspace) + '/asset.confirm?')).toBe(true);
+    expect(requests[0]!.url.startsWith(knowledgeTrpcUrl(origin, knowledgeBase) + '/asset.confirm?')).toBe(true);
   });
 
   test('非法输入(哈希不是 64 位十六进制)在发请求前被拒绝', async () => {
     const { requests, fetchImpl } = capturingFetch(() => ({ status: 200, body: '[]' }));
-    const error = await apiWith(fetchImpl).prepareUpload(workspace, { ...intent, hash: 'xyz' }).catch((cause: unknown) => cause);
+    const error = await apiWith(fetchImpl).prepareUpload(knowledgeBase, { ...intent, hash: 'xyz' }).catch((cause: unknown) => cause);
     expect(isKnowledgeDataError(error)).toBe(true);
     expect((error as { code: string }).code).toBe('INVALID_REQUEST');
     expect(requests).toHaveLength(0);

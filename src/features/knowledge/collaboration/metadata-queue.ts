@@ -47,15 +47,15 @@ export interface MetadataQueueStorage {
 
 /** The mutation surface the queue submits through; `KnowledgePagesApi` satisfies it. */
 export type MetadataMutationApi = {
-  createPage(workspaceId: string, input: CreateKnowledgePageInput): Promise<PagePlacement>;
-  updatePage(workspaceId: string, input: UpdateKnowledgePageInput): Promise<Page>;
-  movePage(workspaceId: string, input: MoveKnowledgePageInput): Promise<PagePlacement>;
-  recyclePage(workspaceId: string, input: RecycleKnowledgePageInput): Promise<PageLifecycleState>;
-  restorePage(workspaceId: string, input: RestoreKnowledgePageInput): Promise<PageLifecycleState>;
+  createPage(knowledgeBaseId: string, input: CreateKnowledgePageInput): Promise<PagePlacement>;
+  updatePage(knowledgeBaseId: string, input: UpdateKnowledgePageInput): Promise<Page>;
+  movePage(knowledgeBaseId: string, input: MoveKnowledgePageInput): Promise<PagePlacement>;
+  recyclePage(knowledgeBaseId: string, input: RecycleKnowledgePageInput): Promise<PageLifecycleState>;
+  restorePage(knowledgeBaseId: string, input: RestoreKnowledgePageInput): Promise<PageLifecycleState>;
 };
 
 export interface MetadataQueueOptions {
-  workspaceId: string;
+  knowledgeBaseId: string;
   storage: MetadataQueueStorage;
   api: MetadataMutationApi;
   isOnline: () => boolean;
@@ -77,7 +77,7 @@ export interface MetadataQueue {
   attach(): () => void;
 }
 
-const storageKey = (workspaceId: string) => `fouc:knowledge:metadata-queue:${workspaceId}`;
+const storageKey = (knowledgeBaseId: string, userId: string) => `fouc:knowledge:metadata-queue:${userId}:${knowledgeBaseId}`;
 
 function isRetryable(error: unknown): boolean {
   // The API layer normalizes every transport failure, so a non-structured
@@ -138,19 +138,19 @@ export function createMetadataQueue(options: MetadataQueueOptions): MetadataQueu
 }
 
 async function submitOne(options: MetadataQueueOptions, operation: QueuedMetadataOperation): Promise<MetadataSettlement> {
-  const { workspaceId, api } = options;
+  const { knowledgeBaseId, api } = options;
   switch (operation.request.kind) {
-    case 'create': return api.createPage(workspaceId, operation.request.input);
-    case 'update': return api.updatePage(workspaceId, operation.request.input);
-    case 'move': return api.movePage(workspaceId, operation.request.input);
-    case 'recycle': return api.recyclePage(workspaceId, operation.request.input);
-    case 'restore': return api.restorePage(workspaceId, operation.request.input);
+    case 'create': return api.createPage(knowledgeBaseId, operation.request.input);
+    case 'update': return api.updatePage(knowledgeBaseId, operation.request.input);
+    case 'move': return api.movePage(knowledgeBaseId, operation.request.input);
+    case 'recycle': return api.recyclePage(knowledgeBaseId, operation.request.input);
+    case 'restore': return api.restorePage(knowledgeBaseId, operation.request.input);
   }
 }
 
-/** The browser binding: localStorage per workspace, `navigator.onLine`, `crypto.randomUUID`. */
-export function createBrowserMetadataQueue(deps: Pick<MetadataQueueOptions, 'workspaceId' | 'api' | 'onCommitted' | 'onRejected'>): MetadataQueue {
-  const key = storageKey(deps.workspaceId);
+/** The browser binding: localStorage per actor and knowledge base, `navigator.onLine`, `crypto.randomUUID`. */
+export function createBrowserMetadataQueue(deps: Pick<MetadataQueueOptions, 'knowledgeBaseId' | 'api' | 'onCommitted' | 'onRejected'> & { userId: string }): MetadataQueue {
+  const key = storageKey(deps.knowledgeBaseId, deps.userId);
   return createMetadataQueue({
     ...deps,
     storage: {

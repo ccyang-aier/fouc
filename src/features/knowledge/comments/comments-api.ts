@@ -48,74 +48,74 @@ function assertCommentInput(schema: { safeParse(payload: unknown): { success: tr
 }
 
 export type ReplyKnowledgeCommentInput = { threadId: string; replyToCommentId?: string; bodyMd: string; mentions?: string[] };
-export type CreateKnowledgeCommentInput = Omit<CreateCommentThreadInput, 'workspaceId'>;
+export type CreateKnowledgeCommentInput = Omit<CreateCommentThreadInput, 'knowledgeBaseId'>;
 
 export type KnowledgeCommentsApi = {
-  updateComment(workspaceId: string, commentId: string, bodyMd: string): Promise<UpdateOwnCommentResult>;
-  setLike(workspaceId: string, commentId: string, liked: boolean): Promise<SetCommentLikeResult>;
-  listThreads(workspaceId: string, pageId: string, signal?: AbortSignal): Promise<CommentThread[]>;
-  createThread(workspaceId: string, input: CreateKnowledgeCommentInput, signal?: AbortSignal): Promise<CreateCommentThreadResult>;
-  replyThread(workspaceId: string, input: ReplyKnowledgeCommentInput, signal?: AbortSignal): Promise<ReplyCommentThreadResult>;
-  resolveThread(workspaceId: string, threadId: string, signal?: AbortSignal): Promise<CommentThreadTransitionResult>;
-  reopenThread(workspaceId: string, threadId: string, signal?: AbortSignal): Promise<CommentThreadTransitionResult>;
-  deleteComment(workspaceId: string, commentId: string, signal?: AbortSignal): Promise<DeleteOwnCommentResult>;
+  updateComment(knowledgeBaseId: string, commentId: string, bodyMd: string): Promise<UpdateOwnCommentResult>;
+  setLike(knowledgeBaseId: string, commentId: string, liked: boolean): Promise<SetCommentLikeResult>;
+  listThreads(knowledgeBaseId: string, pageId: string, signal?: AbortSignal): Promise<CommentThread[]>;
+  createThread(knowledgeBaseId: string, input: CreateKnowledgeCommentInput, signal?: AbortSignal): Promise<CreateCommentThreadResult>;
+  replyThread(knowledgeBaseId: string, input: ReplyKnowledgeCommentInput, signal?: AbortSignal): Promise<ReplyCommentThreadResult>;
+  resolveThread(knowledgeBaseId: string, threadId: string, signal?: AbortSignal): Promise<CommentThreadTransitionResult>;
+  reopenThread(knowledgeBaseId: string, threadId: string, signal?: AbortSignal): Promise<CommentThreadTransitionResult>;
+  deleteComment(knowledgeBaseId: string, commentId: string, signal?: AbortSignal): Promise<DeleteOwnCommentResult>;
 };
 
 /** Builds the comment surface over one transport: an origin resolver plus a fetch implementation. */
 export function createKnowledgeCommentsApi(deps: { resolveOrigin: () => Promise<string> | string; fetchImpl?: KnowledgeFetch }): KnowledgeCommentsApi {
   const cache = createKnowledgeUntypedClientCache(deps.fetchImpl);
-  const run = async <T,>(workspaceId: string, signal: AbortSignal | undefined, invoke: (client: KnowledgeUntypedTrpcClient) => Promise<T>): Promise<T> => {
+  const run = async <T,>(knowledgeBaseId: string, signal: AbortSignal | undefined, invoke: (client: KnowledgeUntypedTrpcClient) => Promise<T>): Promise<T> => {
     try {
       const origin = await deps.resolveOrigin();
-      return await invoke(cache.get(origin, workspaceId));
+      return await invoke(cache.get(origin, knowledgeBaseId));
     } catch (cause) {
       throw normalizeKnowledgeError(cause, signal);
     }
   };
 
   return {
-    async updateComment(workspaceId, commentId, bodyMd) {
-      const wire = { workspaceId, commentId, bodyMd };
+    async updateComment(knowledgeBaseId, commentId, bodyMd) {
+      const wire = { knowledgeBaseId, commentId, bodyMd };
       assertCommentInput(updateOwnCommentInputSchema, wire, 'comment.update');
-      const payload = await run(workspaceId, undefined, client => client.mutation('comment.update', wire));
+      const payload = await run(knowledgeBaseId, undefined, client => client.mutation('comment.update', wire));
       return parseCommentPayload(updateOwnCommentResultSchema, payload, 'comment.update');
     },
-    async setLike(workspaceId, commentId, liked) {
-      const wire = setCommentLikeInputSchema.parse({ workspaceId, commentId, liked });
-      const payload = await run(workspaceId, undefined, client => client.mutation('comment.like', wire));
+    async setLike(knowledgeBaseId, commentId, liked) {
+      const wire = setCommentLikeInputSchema.parse({ knowledgeBaseId, commentId, liked });
+      const payload = await run(knowledgeBaseId, undefined, client => client.mutation('comment.like', wire));
       return parseCommentPayload(setCommentLikeResultSchema, payload, 'comment.like');
     },
-    async listThreads(workspaceId, pageId, signal) {
-      const input = listCommentThreadsInputSchema.parse({ workspaceId, pageId });
-      const payload = await run(workspaceId, signal, (client) => client.query('comment.list', input, { signal }));
+    async listThreads(knowledgeBaseId, pageId, signal) {
+      const input = listCommentThreadsInputSchema.parse({ knowledgeBaseId, pageId });
+      const payload = await run(knowledgeBaseId, signal, (client) => client.query('comment.list', input, { signal }));
       return parseCommentPayload(threadListResultSchema, payload, 'comment.list');
     },
-    async createThread(workspaceId, input, signal) {
-      const wire = { workspaceId, ...input, mentions: input.mentions ?? [] };
+    async createThread(knowledgeBaseId, input, signal) {
+      const wire = { knowledgeBaseId, ...input, mentions: input.mentions ?? [] };
       assertCommentInput(createCommentThreadInputSchema, wire, 'comment.create');
-      const payload = await run(workspaceId, signal, (client) => client.mutation('comment.create', wire, { signal }));
+      const payload = await run(knowledgeBaseId, signal, (client) => client.mutation('comment.create', wire, { signal }));
       return parseCommentPayload(createCommentThreadResultSchema, payload, 'comment.create');
     },
-    async replyThread(workspaceId, input, signal) {
-      const wire = { workspaceId, threadId: input.threadId, replyToCommentId: input.replyToCommentId, bodyMd: input.bodyMd, mentions: input.mentions ?? [] };
+    async replyThread(knowledgeBaseId, input, signal) {
+      const wire = { knowledgeBaseId, threadId: input.threadId, replyToCommentId: input.replyToCommentId, bodyMd: input.bodyMd, mentions: input.mentions ?? [] };
       assertCommentInput(replyCommentThreadInputSchema, wire, 'comment.reply');
-      const payload = await run(workspaceId, signal, (client) => client.mutation('comment.reply', wire, { signal }));
+      const payload = await run(knowledgeBaseId, signal, (client) => client.mutation('comment.reply', wire, { signal }));
       return parseCommentPayload(replyCommentThreadResultSchema, payload, 'comment.reply');
     },
-    async resolveThread(workspaceId, threadId, signal) {
-      const wire = { workspaceId, threadId };
-      const payload = await run(workspaceId, signal, (client) => client.mutation('comment.resolve', wire, { signal }));
+    async resolveThread(knowledgeBaseId, threadId, signal) {
+      const wire = { knowledgeBaseId, threadId };
+      const payload = await run(knowledgeBaseId, signal, (client) => client.mutation('comment.resolve', wire, { signal }));
       return parseCommentPayload(commentThreadTransitionResultSchema, payload, 'comment.resolve');
     },
-    async reopenThread(workspaceId, threadId, signal) {
-      const wire = { workspaceId, threadId };
-      const payload = await run(workspaceId, signal, (client) => client.mutation('comment.reopen', wire, { signal }));
+    async reopenThread(knowledgeBaseId, threadId, signal) {
+      const wire = { knowledgeBaseId, threadId };
+      const payload = await run(knowledgeBaseId, signal, (client) => client.mutation('comment.reopen', wire, { signal }));
       return parseCommentPayload(commentThreadTransitionResultSchema, payload, 'comment.reopen');
     },
-    async deleteComment(workspaceId, commentId, signal) {
-      const wire = { workspaceId, commentId };
+    async deleteComment(knowledgeBaseId, commentId, signal) {
+      const wire = { knowledgeBaseId, commentId };
       assertCommentInput(deleteOwnCommentInputSchema, wire, 'comment.delete');
-      const payload = await run(workspaceId, signal, (client) => client.mutation('comment.delete', wire, { signal }));
+      const payload = await run(knowledgeBaseId, signal, (client) => client.mutation('comment.delete', wire, { signal }));
       return parseCommentPayload(deleteOwnCommentResultSchema, payload, 'comment.delete');
     },
   };

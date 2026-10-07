@@ -5,21 +5,21 @@ import { createKnowledgeClientCache, createKnowledgeTrpcClient } from './trpc-cl
 import { knowledgeTrpcUrl } from './endpoint';
 
 const origin = 'https://api.fouc.example';
-const workspace = '20000000-0000-4000-8000-000000000000';
+const knowledgeBase = '20000000-0000-4000-8000-000000000000';
 
 // Compile-time: the fixture and every input/output below are checked against the
 // shapes inferred from the backend's KnowledgeApiRouter, never hand-written types.
 const accessOutput: KnowledgeApiOutputs['access'] = {
-  workspaceId: workspace,
+  knowledgeBaseId: knowledgeBase,
   userId: '90000000-0000-4000-8000-000000000000',
   role: 'member',
   actor: { kind: 'human', userId: '90000000-0000-4000-8000-000000000000' },
   credentialKind: 'session',
   scopes: ['read', 'write'],
 };
-const accessInput: KnowledgeApiInputs['access'] = { workspaceId: workspace };
-// @ts-expect-error the shared workspace scope schema requires workspaceId
-const missingWorkspace: KnowledgeApiInputs['access'] = {};
+const accessInput: KnowledgeApiInputs['access'] = { knowledgeBaseId: knowledgeBase };
+// @ts-expect-error the shared knowledgeBase scope schema requires knowledgeBaseId
+const missingKnowledgeBase: KnowledgeApiInputs['access'] = {};
 
 type CapturedRequest = { url: string; init: RequestInit };
 
@@ -34,16 +34,16 @@ function capturingFetch(output: unknown) {
 }
 
 describe('createKnowledgeTrpcClient', () => {
-  test('calls the typed access procedure on the workspace transport URL with cookies and the request signal', async () => {
+  test('calls the typed access procedure on the knowledgeBase transport URL with cookies and the request signal', async () => {
     const { requests, fetchImpl } = capturingFetch(accessOutput);
-    const client = createKnowledgeTrpcClient(origin, workspace, fetchImpl);
+    const client = createKnowledgeTrpcClient(origin, knowledgeBase, fetchImpl);
     const controller = new AbortController();
 
-    const result = await client.access.query({ workspaceId: workspace }, { signal: controller.signal });
+    const result = await client.access.query({ knowledgeBaseId: knowledgeBase }, { signal: controller.signal });
 
     expect(result).toEqual(accessOutput);
     expect(requests).toHaveLength(1);
-    expect(requests[0]!.url.startsWith(`${knowledgeTrpcUrl(origin, workspace)}/access?`)).toBe(true);
+    expect(requests[0]!.url.startsWith(`${knowledgeTrpcUrl(origin, knowledgeBase)}/access?`)).toBe(true);
     expect(requests[0]!.url).toContain('batch=1');
     expect(requests[0]!.init.credentials).toBe('include');
     // The batch link merges per-op signals: aborting ours must abort the fetch signal.
@@ -53,33 +53,33 @@ describe('createKnowledgeTrpcClient', () => {
     expect(transportSignal.aborted).toBe(true);
   });
 
-  test('rejects invalid endpoints and workspaceIds at construction', () => {
-    expect(() => createKnowledgeTrpcClient('https://api.example/path', workspace)).toThrow('Invalid Fouc API origin');
-    expect(() => createKnowledgeTrpcClient(origin, 'not-a-uuid')).toThrow('workspaceId must be a UUID');
+  test('rejects invalid endpoints and knowledgeBaseIds at construction', () => {
+    expect(() => createKnowledgeTrpcClient('https://api.example/path', knowledgeBase)).toThrow('Invalid Fouc API origin');
+    expect(() => createKnowledgeTrpcClient(origin, 'not-a-uuid')).toThrow('knowledgeBaseId must be a UUID');
   });
 });
 
 describe('createKnowledgeClientCache', () => {
-  test('reuses one client per workspace transport URL and separates workspaces and origins', () => {
+  test('reuses one client per knowledgeBase transport URL and separates knowledgeBases and origins', () => {
     const { fetchImpl } = capturingFetch(accessOutput);
     const cache = createKnowledgeClientCache(fetchImpl);
 
-    expect(cache.get(origin, workspace)).toBe(cache.get(origin, workspace));
-    expect(cache.get(origin, workspace)).not.toBe(cache.get(origin, '40000000-0000-4000-8000-000000000000'));
-    expect(cache.get(origin, workspace)).not.toBe(cache.get('https://other.fouc.example', workspace));
+    expect(cache.get(origin, knowledgeBase)).toBe(cache.get(origin, knowledgeBase));
+    expect(cache.get(origin, knowledgeBase)).not.toBe(cache.get(origin, '40000000-0000-4000-8000-000000000000'));
+    expect(cache.get(origin, knowledgeBase)).not.toBe(cache.get('https://other.fouc.example', knowledgeBase));
   });
 });
 
 describe('typed contract', () => {
   test('inputs and outputs flow from the backend router types', () => {
-    expect(Object.keys(accessInput)).toEqual(['workspaceId']);
-    expect(Object.keys(missingWorkspace)).toHaveLength(0);
-    expect(accessOutput.workspaceId).toBe(workspace);
+    expect(Object.keys(accessInput)).toEqual(['knowledgeBaseId']);
+    expect(Object.keys(missingKnowledgeBase)).toHaveLength(0);
+    expect(accessOutput.knowledgeBaseId).toBe(knowledgeBase);
   });
 
   test('the procedure surface is router-inferred: unknown procedures must not compile', () => {
     const { fetchImpl } = capturingFetch(accessOutput);
-    const client = createKnowledgeTrpcClient(origin, workspace, fetchImpl);
+    const client = createKnowledgeTrpcClient(origin, knowledgeBase, fetchImpl);
     // @ts-expect-error no such procedure on KnowledgeApiRouter
     void client.unknowProcedure;
     expect(typeof client.access.query).toBe('function');

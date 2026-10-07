@@ -2,9 +2,9 @@ import { and, eq, sql } from 'drizzle-orm';
 import type { Pool } from 'pg';
 import { randomUUID } from 'node:crypto';
 import type { AssetDerived, OutboxEvent } from '@fouc/shared/knowledge/contracts';
-import { blockIndex, asset } from '../../../platform/database/workspace/schema';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
-import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
+import { blockIndex, asset } from '../../../platform/database/resources/schema';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
+import type { ResourceTransaction } from '../../../platform/database/resources/transaction';
 import { appendKnowledgeOutbox } from './outbox';
 import { MediaWorkerError } from '../media/client';
 import type { MediaWorkerClient, MediaAttachment, MediaProcessResponse } from '../media/client';
@@ -40,14 +40,14 @@ function mediaFailure(error: unknown): { code: string; retryable: boolean } {
   return { code: 'media_worker_unavailable', retryable: true };
 }
 
-const scoped = (event: AssetCreatedEvent) => and(eq(asset.workspaceId, event.workspaceId), eq(asset.hash, event.hash))!;
+const scoped = (event: AssetCreatedEvent) => and(eq(asset.knowledgeBaseId, event.knowledgeBaseId), eq(asset.hash, event.hash))!;
 
 /**
  * W05 design §8.2/§7.1: audio/video transcription and PDF/Office parsing run
  * on the stateless media worker over a short-lived presigned GET. Derived
  * results are idempotent — the claim/store state machine means a replayed or
  * retried job never duplicates or clobbers a finished derivation. Extracted
- * document images become real assets of the same workspace (their own
+ * document images become real assets of the same knowledgeBase (their own
  * asset.created events hand them to the W04 vision consumer), and every page
  * whose indexed blocks reference the asset is re-indexed through a doc.changed
  * outbox event so keyword and vector search both pick up the derived text.
@@ -60,9 +60,9 @@ export function createAssetMediaConsumer(options: KnowledgeMediaWorkerOptions): 
     async handle(event, context) {
       if (event.topic !== 'asset.created') throw new KnowledgeJobError('invalid_event');
       context.signal.throwIfAborted();
-      const pending = await withWorkspaceTenant(pool, event.workspaceId, (db) => selectPending(db, event));
+      const pending = await withKnowledgeBase(pool, event.knowledgeBaseId, (db) => selectPending(db, event));
       if (!pending) return;
-      const claimed = await withWorkspaceTenant(pool, event.workspaceId, (db) => claimProcessing(db, event));
+      const claimed = await withKnowledgeBase(pool, event.knowledgeBaseId, (db) => claimProcessing(db, event));
       if (!claimed) return;
       try {
         context.signal.throwIfAborted();
@@ -72,14 +72,14 @@ export function createAssetMediaConsumer(options: KnowledgeMediaWorkerOptions): 
           operation: pending.operation,
           resource: { url: grant.url, expiresAt: grant.expiresAt, sha256: event.hash, size: pending.size, mime: pending.mime },
         }, context.signal);
-        await withWorkspaceTenant(pool, event.workspaceId, async (db) => {
+        await withKnowledgeBase(pool, event.knowledgeBaseId, async (db) => {
           await storeOutcome(db, event, derivedOf(response));
           for (const attachment of response.attachments ?? []) await adoptAttachment(db, storage, event, attachment, context.signal);
           await reindexReferencingPages(db, event);
         });
       } catch (error) {
         const failure = mediaFailure(error);
-        await withWorkspaceTenant(pool, event.workspaceId, (db) => storeOutcome(db, event, { status: 'failed', error: failure.code }));
+        await withKnowledgeBase(pool, event.knowledgeBaseId, (db) => storeOutcome(db, event, { status: 'failed', error: failure.code }));
         if (failure.retryable) throw new KnowledgeJobError('consumer_failed');
       }
     },
@@ -91,7 +91,7 @@ function derivedOf(response: MediaProcessResponse): AssetDerived {
 }
 
 /** The operation this asset still needs; null is a permanent no-op. */
-async function selectPending(db: WorkspaceTenantTransaction, event: AssetCreatedEvent): Promise<{ operation: 'transcribe' | 'parse_document'; mime: string; size: number } | null> {
+async function selectPending(db: ResourceTransaction, event: AssetCreatedEvent): Promise<{ operation: 'transcribe' | 'parse_document'; mime: string; size: number } | null> {
   const [row] = await db.select({ status: asset.status, mime: asset.mime, size: asset.size, derived: asset.derived }).from(asset).where(scoped(event));
   if (!row) throw new KnowledgeJobError('invalid_event');
   if (row.status !== 'ready' || row.derived.status === 'ready' || row.derived.status === 'processing') return null;
@@ -100,7 +100,7 @@ async function selectPending(db: WorkspaceTenantTransaction, event: AssetCreated
 }
 
 /** pending/failed → processing; a lost race (already claimed or finished) is a no-op. */
-async function claimProcessing(db: WorkspaceTenantTransaction, event: AssetCreatedEvent): Promise<boolean> {
+async function claimProcessing(db: ResourceTransaction, event: AssetCreatedEvent): Promise<boolean> {
   const claimed = await db.update(asset).set({ derived: { status: 'processing' }, updatedAt: new Date() })
     .where(and(scoped(event), sql`${asset.derived}->>'status' = 'pending'`))
     .returning({ hash: asset.hash });
@@ -108,7 +108,7 @@ async function claimProcessing(db: WorkspaceTenantTransaction, event: AssetCreat
 }
 
 /** Only the claimant's processing state may be completed; stale replays never clobber results. */
-async function storeOutcome(db: WorkspaceTenantTransaction, event: AssetCreatedEvent, derived: AssetDerived): Promise<boolean> {
+async function storeOutcome(db: ResourceTransaction, event: AssetCreatedEvent, derived: AssetDerived): Promise<boolean> {
   const stored = await db.update(asset).set({ derived, updatedAt: new Date() })
     .where(and(scoped(event), sql`${asset.derived}->>'status' = 'processing'`))
     .returning({ hash: asset.hash });
@@ -116,33 +116,33 @@ async function storeOutcome(db: WorkspaceTenantTransaction, event: AssetCreatedE
 }
 
 /**
- * An extracted document image becomes a workspace asset: the bytes go to S3
+ * An extracted document image becomes a knowledgeBase asset: the bytes go to S3
  * under the worker's content hash and the row starts pending so the W04 vision
  * consumer (via the asset.created event) describes it. Re-running a job that
  * already adopted the attachment is an upsert no-op.
  */
-async function adoptAttachment(db: WorkspaceTenantTransaction, storage: KnowledgeAssetStorage, event: AssetCreatedEvent, attachment: MediaAttachment, signal: AbortSignal): Promise<void> {
+async function adoptAttachment(db: ResourceTransaction, storage: KnowledgeAssetStorage, event: AssetCreatedEvent, attachment: MediaAttachment, signal: AbortSignal): Promise<void> {
   const bytes = Buffer.from(attachment.dataBase64, 'base64');
-  const existing = await db.select({ status: asset.status }).from(asset).where(and(eq(asset.workspaceId, event.workspaceId), eq(asset.hash, attachment.sha256)));
+  const existing = await db.select({ status: asset.status }).from(asset).where(and(eq(asset.knowledgeBaseId, event.knowledgeBaseId), eq(asset.hash, attachment.sha256)));
   if (existing.length > 0) return;
-  const upload = storage.presignUpload({ workspaceId: event.workspaceId, hash: attachment.sha256 }, 600);
+  const upload = storage.presignUpload({ knowledgeBaseId: event.knowledgeBaseId, hash: attachment.sha256 }, 600);
   const put = await fetch(upload.url, { method: 'PUT', body: bytes, signal });
   if (!put.ok) throw new AssetMediaError('asset_storage_unavailable', true);
   await db.insert(asset).values({
-    workspaceId: event.workspaceId, hash: attachment.sha256, mime: 'image/png',
+    knowledgeBaseId: event.knowledgeBaseId, hash: attachment.sha256, mime: 'image/png',
     size: attachment.size, status: 'ready', meta: { source: 'document_extraction', parent: event.hash },
     derived: { status: 'pending' },
   }).onConflictDoNothing();
-  await appendKnowledgeOutbox(db, { workspaceId: event.workspaceId, topic: 'asset.created', hash: attachment.sha256, initiatedBy: event.initiatedBy });
+  await appendKnowledgeOutbox(db, { knowledgeBaseId: event.knowledgeBaseId, topic: 'asset.created', hash: attachment.sha256, initiatedBy: event.initiatedBy });
 }
 
 /** Pages whose indexed blocks mention the asset re-enter the doc.changed pipeline.
  *  The re-index is attributed to the uploader: it follows directly from their upload. */
-async function reindexReferencingPages(db: WorkspaceTenantTransaction, event: AssetCreatedEvent): Promise<void> {
+async function reindexReferencingPages(db: ResourceTransaction, event: AssetCreatedEvent): Promise<void> {
   const rows = await db.selectDistinct({ pageId: blockIndex.pageId }).from(blockIndex)
-    .where(and(eq(blockIndex.workspaceId, event.workspaceId), sql`${blockIndex.contentMd} LIKE ${`%${event.hash}%`}`));
+    .where(and(eq(blockIndex.knowledgeBaseId, event.knowledgeBaseId), sql`${blockIndex.contentMd} LIKE ${`%${event.hash}%`}`));
   const occurredAt = new Date().toISOString();
   for (const row of rows) {
-    await appendKnowledgeOutbox(db, { topic: 'doc.changed', workspaceId: event.workspaceId, pageId: row.pageId, actor: { kind: 'human', userId: event.initiatedBy }, occurredAt });
+    await appendKnowledgeOutbox(db, { topic: 'doc.changed', knowledgeBaseId: event.knowledgeBaseId, pageId: row.pageId, actor: { kind: 'human', userId: event.initiatedBy }, occurredAt });
   }
 }

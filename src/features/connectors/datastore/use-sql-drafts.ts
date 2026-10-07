@@ -4,7 +4,7 @@ import type { SavedSqlDocument, SqlDraftSnapshot, SqlDraftState } from '@fouc/sh
 import { backendFetch } from '@/lib/backend'
 import { SqlDraftController } from './sql-draft-controller'
 
-// A failed save survives an internal route/workspace unmount until the user can recover it.
+// A failed save survives an internal route unmount until the user can recover it.
 const controllers = new Map<string, SqlDraftController>()
 export function forgetSqlDrafts(base: string): void { controllers.delete(`${base}/sql-library`) }
 function persistentController(base: string, initial: () => SqlDraftSnapshot): SqlDraftController {

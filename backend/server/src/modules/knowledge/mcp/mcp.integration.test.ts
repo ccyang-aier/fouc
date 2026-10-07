@@ -6,8 +6,8 @@ import { parseKnowledgeOrigin } from '@fouc/shared/knowledge/collaboration';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { principal } from '@fouc/shared/knowledge/contracts';
 import { eq } from 'drizzle-orm';
-import { docState } from '../../../platform/database/workspace/schema';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import { docState } from '../../../platform/database/resources/schema';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
 import { replaceAuthorizedPageAcl } from '../permissions/mutations';
 import { createPermissionsFixture, until, type PermissionsFixture } from '../permissions/permissions-test-fixture';
 import { createPageCollaborationListener } from '../collaboration/page-collaboration-bun';
@@ -77,8 +77,8 @@ describe('knowledge mcp streamable http service', () => {
 
   test('write calls attribute suggestions with the mcp client name', async () => {
     const { pages } = await fixture.tree({ defaultAccess: null });
-    await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => replaceAuthorizedPageAcl(db, {
-      workspaceId: fixture.alpha.id, pageId: pages[0].pageId,
+    await withKnowledgeBase(fixture.pool, fixture.alpha.id, (db) => replaceAuthorizedPageAcl(db, {
+      knowledgeBaseId: fixture.alpha.id, pageId: pages[0].pageId,
       grants: [{ principal: principal('user', fixture.reader.identity.userId), level: 'edit' }],
     }));
     const { prosemirrorDocToYDoc } = await import('../import-export/y-encoding');
@@ -88,14 +88,14 @@ describe('knowledge mcp streamable http service', () => {
     const blocks: import('@tiptap/pm/model').Node[] = [];
     parsed.forEach((block) => blocks.push(block));
     const encoded = prosemirrorDocToYDoc(parsed.type.schema.topNodeType.createChecked(null, blocks));
-    await withWorkspaceTenant(fixture.pool, fixture.alpha.id, async (db) => {
-      await db.insert(docState).values({ workspaceId: fixture.alpha.id, pageId: pages[1].pageId, state: Buffer.from(encoded.state), stateVector: Buffer.from(encoded.stateVector) });
+    await withKnowledgeBase(fixture.pool, fixture.alpha.id, async (db) => {
+      await db.insert(docState).values({ knowledgeBaseId: fixture.alpha.id, pageId: pages[1].pageId, state: Buffer.from(encoded.state), stateVector: Buffer.from(encoded.stateVector) });
     });
     await fixture.drain();
 
     const { connection, transport } = await client();
     const target = await blockIdAt(pages[1].pageId);
-    const result = await connection.callTool({ name: 'delete', arguments: { workspaceId: fixture.alpha.id, pageId: pages[1].pageId, blockId: target } });
+    const result = await connection.callTool({ name: 'delete', arguments: { knowledgeBaseId: fixture.alpha.id, pageId: pages[1].pageId, blockId: target } });
     expect(result.isError).toBeFalsy();
 
     await until(async () => (await suggestionsOf(pages[1].pageId)).length > 0);
@@ -115,14 +115,14 @@ describe('knowledge mcp streamable http service', () => {
     await transport.close().catch(() => undefined);
 
     const { connection, transport: readTransport } = await client('read');
-    const rejected = await connection.callTool({ name: 'delete', arguments: { workspaceId: fixture.alpha.id, pageId: '00000000-0000-4000-8000-000000000000', blockId: 'b' } });
+    const rejected = await connection.callTool({ name: 'delete', arguments: { knowledgeBaseId: fixture.alpha.id, pageId: '00000000-0000-4000-8000-000000000000', blockId: 'b' } });
     expect(rejected.isError).toBe(true);
     await connection.close();
     await readTransport.close();
   });
 
   async function blockIdAt(pageId: string): Promise<string> {
-    const [row] = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => db.select({ state: docState.state }).from(docState).where(eq(docState.pageId, pageId)));
+    const [row] = await withKnowledgeBase(fixture.pool, fixture.alpha.id, (db) => db.select({ state: docState.state }).from(docState).where(eq(docState.pageId, pageId)));
     const document = yStateToProseMirrorDoc(new Uint8Array(row.state), knowledgeSchema)!;
     let found = '';
     document.descendants((node) => {
@@ -131,7 +131,7 @@ describe('knowledge mcp streamable http service', () => {
     return found;
   }
   async function suggestionsOf(pageId: string) {
-    const [row] = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => db.select({ state: docState.state }).from(docState).where(eq(docState.pageId, pageId)));
+    const [row] = await withKnowledgeBase(fixture.pool, fixture.alpha.id, (db) => db.select({ state: docState.state }).from(docState).where(eq(docState.pageId, pageId)));
     if (!row) return [];
     const document = yStateToProseMirrorDoc(new Uint8Array(row.state), knowledgeSchema);
     return document ? collectSuggestions(document) : [];

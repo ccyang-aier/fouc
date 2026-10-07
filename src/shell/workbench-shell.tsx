@@ -43,7 +43,6 @@ import { AutomationCanvas } from "@/features/automation/automation-canvas"
 import { CommunityCanvas } from "@/features/community/community-canvas"
 import { ConnectorsCanvas } from "@/features/connectors/connectors-canvas"
 import { KnowledgePage } from "@/features/knowledge/knowledge-page"
-import { useDocumentLinkNavigation } from "@/features/knowledge/editor/use-document-link-navigation"
 import { NavigationSidebar, type WorkbenchView } from "./navigation-sidebar"
 import { useProjectResources } from "@/features/project/project-resources"
 import { ProjectHomeCanvas } from "@/features/project/project-home-canvas"
@@ -52,16 +51,13 @@ import styles from "./workbench-shell.module.css"
 import { SettingsCanvas } from "@/features/settings/settings-canvas"
 import { HelpFeedbackCanvas } from "@/features/help/help-feedback-canvas"
 import { SystemBar } from "./system-bar"
-import { useWorkspace } from "@/features/workspaces/workspace-provider"
 
 export function WorkbenchShell() {
   useMenuMotion()
-  useDocumentLinkNavigation()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [view, setView] = useWorkbenchView()
   const settingsSection = useSettingsSection()
-  const { activeSpace } = useWorkspace()
-  const { selectedProject, selectProject, favorites, managementPanel, setManagementPanel, setFavorite } = useProjectResources()
+  const { projects, selectedProject, selectProject, favorites, managementPanel, setManagementPanel, setFavorite } = useProjectResources()
   const projectFavorited = selectedProject !== null && favorites.includes(selectedProject.id)
   // 应用面板根：桌面端作为自绘外框的内层与弹层宿主
   const frameRef = useRef<HTMLDivElement>(null)
@@ -110,7 +106,7 @@ export function WorkbenchShell() {
                 <SettingsCanvas initialSection={settingsSection} onSectionChange={setSettingsSection} onBack={closeSettings} />
               </div>
             ) : (
-              // 主导航包含底部身份与工作空间入口，顶行全高；
+              // 主导航包含底部身份入口，顶行全高；
               // 系统底层行只在主区顶部、与主导航 header 等高并接
               <div className="flex min-h-0 flex-1">
                 <div className={`${styles.navigation} sidebar-material flex shrink-0`}>
@@ -145,7 +141,7 @@ export function WorkbenchShell() {
                           ) : view === "project-home" ? (
                             <ProjectIndexCanvas onOpenProject={() => changeView("projects")} />
                           ) : view === "projects" ? (
-                            selectedProject ? <ProjectHomeCanvas key={`${activeSpace.id}:${selectedProject.id}`}
+                            selectedProject ? <ProjectHomeCanvas key={`${selectedProject.source}:${selectedProject.id}`}
                               projectId={selectedProject.id}
                               projectName={selectedProject.name}
                               favorited={projectFavorited}
@@ -156,16 +152,16 @@ export function WorkbenchShell() {
                           ) : view === "community" ? (
                             <CommunityCanvas />
                           ) : view === "automation" ? (
-                            <AutomationCanvas key={activeSpace.id} workspaceId={activeSpace.id} workspaceName={activeSpace.label} />
+                            <AutomationCanvas />
                           ) : view === "connectors" ? (
-                            <ConnectorsCanvas key={activeSpace.id} onWorkbenchFocus={() => setSidebarCollapsed(true)} onOpenProject={id => { selectProject(id); changeView("projects"); }} />
+                            <ConnectorsCanvas onWorkbenchFocus={() => setSidebarCollapsed(true)} onOpenProject={id => { if (projects.some(project => project.id === id)) { selectProject(id); changeView("projects"); } else changeView("project-home"); }} />
                           ) : view === "knowledge" ? (
-                            <KnowledgePage key={activeSpace.id} onOpenSettings={() => changeView("settings")} />
+                            <KnowledgePage onOpenSettings={() => changeView("settings")} />
                           ) : view === "help" ? (
                             <HelpFeedbackCanvas onNavigate={changeView} />
                           ) : (
                             <div className="flex h-full items-center justify-center text-[13px] text-[var(--ink-soft)]">
-                              该空间已在 V1 规划中，尚未开放
+                              该视图已在 V1 规划中，尚未开放
                             </div>
                           )}
                         </motion.div>

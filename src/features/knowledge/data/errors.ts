@@ -24,7 +24,7 @@ export type KnowledgeErrorCode =
   | 'ENDPOINT';
 
 const defaultMessages: Record<KnowledgeErrorCode, string> = {
-  UNAUTHENTICATED: 'Valid workspace credentials are required.',
+  UNAUTHENTICATED: 'Valid knowledgeBase credentials are required.',
   PAYMENT_REQUIRED: 'This operation requires additional access.',
   FORBIDDEN: 'This request is not permitted.',
   NOT_FOUND: 'The requested operation was not found.',

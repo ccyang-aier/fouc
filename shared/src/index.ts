@@ -304,7 +304,7 @@ export interface ConnectorInstance {
   id: string;
   providerId: string;
   name: string;
-  ownerType: 'user' | 'workspace';
+  ownerType: 'user';
   ownerId: string;
   desiredState: ConnectorDesiredState;
   authState: ConnectorAuthState;

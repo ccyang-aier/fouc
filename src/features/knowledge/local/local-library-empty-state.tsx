@@ -21,7 +21,7 @@ export function LocalLibraryEmptyState({ onCreate }: { onCreate: () => void }) {
         <span className="absolute bottom-0 left-[76px] flex size-[70px] items-center justify-center rounded-[20px] border border-[var(--accent-soft-line)] bg-[var(--panel)] text-[var(--accent-ink)] shadow-[0_18px_35px_-18px_rgba(35,50,95,.55)]"><BookOpenText size={34} weight="duotone" /></span>
       </div>
 
-      <p className="mb-3 text-[11px] font-semibold tracking-[0.16em] text-[var(--accent-ink)]">你的工作区知识库</p>
+      <p className="mb-3 text-[11px] font-semibold tracking-[0.16em] text-[var(--accent-ink)]">你的知识库</p>
       <h1 className="text-[26px] font-semibold tracking-[-0.035em] text-[var(--ink)] sm:text-[30px]">让好想法，有处可寻</h1>
       <p className="mx-auto mt-3 max-w-[380px] text-[13px] leading-7 text-[var(--muted-strong)]">创建一个知识库，把资料、文档和灵感整理在一起。<br className="hidden sm:block" />从这里开始，构建属于你的知识空间。</p>
       <Button onClick={onCreate} className="mt-7 h-10 rounded-lg px-5 text-[12px] shadow-[0_8px_20px_color-mix(in_srgb,var(--accent)_20%,transparent)]">新建知识库 <ArrowRight size={15} /></Button>

@@ -16,5 +16,5 @@ export interface PreparedDatabaseExport {
   review: DatabaseExportReview;
   tables: Array<{ review: DatabaseExportTableReview; structure: RelationalTableStructure; }>;
 }
-export interface DatabaseExportScope { workspaceId: string; sessionId: string; }
+export interface DatabaseExportScope { sessionId: string; }
 export interface DatabaseExportArtifact { path: string; filename: string; mimeType: string; bytes: number; }

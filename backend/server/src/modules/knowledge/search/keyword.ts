@@ -2,8 +2,8 @@ import { and, or, asc, desc, sql } from 'drizzle-orm';
 import type { SQL } from 'drizzle-orm';
 import type { Principal } from '@fouc/shared/knowledge/contracts';
 import type { KeywordSearchHit } from '@fouc/shared/knowledge/search';
-import { blockIndex } from '../../../platform/database/workspace/schema';
-import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
+import { blockIndex } from '../../../platform/database/resources/schema';
+import type { ResourceTransaction } from '../../../platform/database/resources/transaction';
 import { indexedBlockAccessCondition } from '../permissions/queries';
 
 /** 参与检索的词数上限：约束 SQL 谓词数量与查询膨胀。 */
@@ -66,7 +66,7 @@ function excerptOf(contentMd: string, terms: readonly string[]): string {
 }
 
 export interface KeywordSearchInput {
-  readonly workspaceId: string;
+  readonly knowledgeBaseId: string;
   /**
    * 必须来自服务端已验证身份展开的主体集合（与 P03 同一约定），绝不可直接
    * 采用请求体数组。空集合表示无任何授权，返回空结果。
@@ -79,12 +79,12 @@ export interface KeywordSearchInput {
 
 /**
  * H03 关键词检索：block_index 上真实的 pg_search BM25 查询（jieba 中英文混合
- * 切分）。权限谓词（workspace + principals + 回收页 + ACL 版本守卫，来自
+ * 切分）。权限谓词（knowledgeBase + principals + 回收页 + ACL 版本守卫，来自
  * indexedBlockAccessCondition）与命中谓词在同一 WHERE 中先于 ORDER BY score 与
  * LIMIT 生效——无权行既不进结果，也不挤占有权行的名次（§7.2）。结果携带
  * pageId/blockId/titlePath/摘要片段与 BM25 得分，供 H05 融合与 AI 引用。
  */
-export async function searchBlocksByKeyword(db: WorkspaceTenantTransaction, input: KeywordSearchInput): Promise<KeywordSearchHit[]> {
+export async function searchBlocksByKeyword(db: ResourceTransaction, input: KeywordSearchInput): Promise<KeywordSearchHit[]> {
   if (typeof input.query !== 'string') throw new TypeError('Invalid keyword search query');
   const query = input.query.trim();
   if (query.length > MAX_QUERY_LENGTH) throw new TypeError('Invalid keyword search query');
@@ -111,7 +111,7 @@ export async function searchBlocksByKeyword(db: WorkspaceTenantTransaction, inpu
     contentMd: blockIndex.contentMd,
     score: sql<number>`paradedb.score(${blockIndex.id})`,
   }).from(blockIndex)
-    .where(and(indexedBlockAccessCondition({ workspaceId: input.workspaceId, principals: [...input.principals] }), matches))
+    .where(and(indexedBlockAccessCondition({ knowledgeBaseId: input.knowledgeBaseId, principals: [...input.principals] }), matches))
     .orderBy(desc(sql`paradedb.score(${blockIndex.id})`), asc(blockIndex.id))
     .limit(limit).offset(offset);
 

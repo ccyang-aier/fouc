@@ -12,20 +12,20 @@ export interface PrincipalGrant {
   level: PermissionLevel;
 }
 
-/** 解析主体字符串('user:…'/'group:…'/'workspace:…'/'link:…')。 */
-export function principalKind(principal: string): 'user' | 'group' | 'workspace' | 'link' | 'unknown' {
+/** 解析主体字符串('user:…'/'group:…'/'knowledgeBase:…'/'link:…')。 */
+export function principalKind(principal: string): 'user' | 'group' | 'knowledgeBase' | 'link' | 'unknown' {
   const kind = principal.split(':')[0];
-  return kind === 'user' || kind === 'group' || kind === 'workspace' || kind === 'link' ? kind : 'unknown';
+  return kind === 'user' || kind === 'group' || kind === 'knowledgeBase' || kind === 'link' ? kind : 'unknown';
 }
 
 /**
  * 授予校验:编辑者自身有效级别必须 ≥ 目标级别(P02/P03 语义:
- * 不能授予自己没有的权限);workspace 主体必须指向本空间。
+ * 不能授予自己没有的权限);knowledgeBase 主体必须指向本空间。
  */
-export function canGrant(grantorLevel: PermissionLevel | null, grant: PrincipalGrant, workspaceId: string): boolean {
+export function canGrant(grantorLevel: PermissionLevel | null, grant: PrincipalGrant, knowledgeBaseId: string): boolean {
   if (!grantorLevel) return false;
   if (levelRank(grantorLevel) < levelRank(grant.level)) return false;
-  if (principalKind(grant.principal) === 'workspace') return grant.principal === `workspace:${workspaceId}`;
+  if (principalKind(grant.principal) === 'knowledgeBase') return grant.principal === `knowledgeBase:${knowledgeBaseId}`;
   return principalKind(grant.principal) !== 'unknown';
 }
 
@@ -45,7 +45,7 @@ export function explainEffective(input: {
 }): { source: 'explicit' | 'root-default' | 'inherited' | 'none'; grants: readonly PrincipalGrant[] } {
   if (input.explicit.length) return { source: 'explicit', grants: input.explicit };
   if (!input.inheritsPermissions) return { source: 'none', grants: [] };
-  if (input.rootDefault) return { source: 'root-default', grants: [{ principal: 'workspace', level: input.rootDefault }] };
+  if (input.rootDefault) return { source: 'root-default', grants: [{ principal: 'knowledgeBase', level: input.rootDefault }] };
   if (input.inheritedGrants.length) return { source: 'inherited', grants: input.inheritedGrants };
   return { source: 'none', grants: [] };
 }
@@ -66,9 +66,9 @@ export function planGrantChange(input: {
   current: readonly PrincipalGrant[];
   actorLevel: PermissionLevel | null;
   next: PrincipalGrant;
-  workspaceId: string;
+  knowledgeBaseId: string;
 }): SharePlan {
-  if (!canGrant(input.actorLevel, input.next, input.workspaceId)) {
+  if (!canGrant(input.actorLevel, input.next, input.knowledgeBaseId)) {
     return input.actorLevel && principalKind(input.next.principal) !== 'unknown' ? { ok: false, reason: 'beyond-grantor' } : { ok: false, reason: 'invalid-principal' };
   }
   const merged = input.current.filter((grant) => grant.principal !== input.next.principal);

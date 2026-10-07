@@ -74,18 +74,18 @@ test('explicit external FK schema never resolves to a same-named table in anothe
   expect(exported.warnings.some(warning=>warning.kind==='dbml-omitted'&&warning.item==='customer_fk')).toBe(true);
 });
 
-test('device notes persist with workspace/connection/database isolation, CAS, rejected payloads and connection cleanup',()=>{
+test('device notes persist with connection/database isolation, CAS, rejected payloads and connection cleanup',()=>{
   const directory=temporaryDirectory();let repo=new DatabaseDocsRepository(directory);
   try {
     const annotations=editDatabaseDocsAnnotations(emptyDatabaseDocsAnnotations(),{kind:'table-note',schema:'public',table:'records',note:'Persistent prose'});
-    const state=repo.save('workspace-a','connection-a','lab',{version:null,annotations});expect(state.persistent).toBe(true);
-    for (const [workspace,connection,database] of [['workspace-b','connection-a','lab'],['workspace-a','connection-b','lab'],['workspace-a','connection-a','other']]) expect(repo.get(workspace,connection,database).version).toBeNull();
-    expect(()=>repo.save('workspace-a','connection-a','lab',{version:null,annotations})).toThrow('其他窗口');
-    expect(()=>repo.save('workspace-a','connection-a','lab',{version:state.version,annotations:{...annotations,groups:[{id:'g',name:'Group',hue:360,note:null}]}})).toThrow();
-    expect(repo.get('workspace-a','connection-a','lab').version).toBe(state.version);
-    repo.close();repo=new DatabaseDocsRepository(directory);expect(repo.get('workspace-a','connection-a','lab').annotations.tables[0].note).toBe('Persistent prose');
-    const next=repo.save('workspace-a','connection-a','lab',{version:state.version,annotations});expect(next.version).not.toBe(state.version);
-    repo.deleteConnection('workspace-a','connection-a');expect(repo.get('workspace-a','connection-a','lab').version).toBeNull();
+    const state=repo.save('connection-a','lab',{version:null,annotations});expect(state.persistent).toBe(true);
+    for (const [connection,database] of [['connection-b','lab'],['connection-a','other']]) expect(repo.get(connection,database).version).toBeNull();
+    expect(()=>repo.save('connection-a','lab',{version:null,annotations})).toThrow('其他窗口');
+    expect(()=>repo.save('connection-a','lab',{version:state.version,annotations:{...annotations,groups:[{id:'g',name:'Group',hue:360,note:null}]}})).toThrow();
+    expect(repo.get('connection-a','lab').version).toBe(state.version);
+    repo.close();repo=new DatabaseDocsRepository(directory);expect(repo.get('connection-a','lab').annotations.tables[0].note).toBe('Persistent prose');
+    const next=repo.save('connection-a','lab',{version:state.version,annotations});expect(next.version).not.toBe(state.version);
+    repo.deleteConnection('connection-a');expect(repo.get('connection-a','lab').version).toBeNull();
     expect(()=>validateDatabaseDocsAnnotations({...annotations,groups:[{id:'missing',name:'G',hue:22,note:null},{id:'missing',name:'Duplicate',hue:30,note:null}]})).toThrow();
     expect(()=>validateDatabaseDocsAnnotations({...annotations,tables:[{...annotations.tables[0],note:'界'.repeat(22000)}]})).toThrow('64 KiB');
   } finally {repo.close();cleanup(directory);}

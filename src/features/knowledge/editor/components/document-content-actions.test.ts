@@ -53,8 +53,8 @@ describe('document content operations', () => {
 
 describe('document links carry explicit resource identity', () => {
   test('link round-trip distinguishes local/server and resets unrelated routes and parameters', () => {
-    for (const source of ['local', 'workspace'] as const) {
-      const target = { workspaceId: 'w & 1', knowledgeBaseId: 'kb1', pageId: 'p/1', source };
+    for (const source of ['local', 'server'] as const) {
+      const target = {  knowledgeBaseId: 'kb1', pageId: 'p/1', source };
       const link = documentLink('http://localhost:3000/old?view=projects#stale', target);
       expect(readDocumentLink(link)).toEqual(target);
       expect(new URL(link).pathname).toBe('/');
@@ -64,6 +64,6 @@ describe('document links carry explicit resource identity', () => {
   });
   test('incomplete and unknown source targets never select a document', () => {
     expect(readDocumentLink('http://localhost:3000/?document=p')).toBeNull();
-    expect(readDocumentLink('http://localhost:3000/?document=p&workspace=w&knowledgeBase=k&source=unknown')).toBeNull();
+    expect(readDocumentLink('http://localhost:3000/?document=p&knowledgeBase=w&knowledgeBase=k&source=unknown')).toBeNull();
   });
 });

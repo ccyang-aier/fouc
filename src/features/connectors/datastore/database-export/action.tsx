@@ -26,7 +26,7 @@ interface ExportSource {
 
 export function DatabaseExportAction({ session, schemas, schema, table, tables, disabled }: Props) {
   const [source, setSource] = useState<ExportSource | null>(null);
-  const base = `/api/database/workspaces/${encodeURIComponent(session.workspaceId)}/relational/sessions/${encodeURIComponent(session.id)}`;
+  const base = `/api/database/relational/sessions/${encodeURIComponent(session.id)}`;
 
   function open() {
     const targets = tables.filter(object => ['table', 'view', 'materialized_view'].includes(object.kind))

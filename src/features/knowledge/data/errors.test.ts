@@ -37,7 +37,7 @@ describe('normalizeKnowledgeError', () => {
       expect(normalized.code).toBe(domainCode);
       expect(normalized.message).toBe(`fixed ${serverCode} message`);
     }
-    const unauthorized = normalizeKnowledgeError(serverError('UNAUTHORIZED', 'Valid workspace credentials are required.', 401, 'req-42')) as KnowledgeDataError;
+    const unauthorized = normalizeKnowledgeError(serverError('UNAUTHORIZED', 'Valid knowledgeBase credentials are required.', 401, 'req-42')) as KnowledgeDataError;
     expect(unauthorized.httpStatus).toBe(401);
     expect(unauthorized.requestId).toBe('req-42');
   });

@@ -10,9 +10,9 @@ import {
 
 /** The bell's pure derivations: per-kind copy, relative time, unread state, badge label. */
 
-const workspace = '20000000-0000-4000-8000-000000000000';
+const knowledgeBase = '20000000-0000-4000-8000-000000000000';
 const base = {
-  workspaceId: workspace,
+  knowledgeBaseId: knowledgeBase,
   id: '30000000-0000-4000-8000-000000000001',
   pageId: '10000000-0000-4000-8000-000000000001',
   page: { id: '10000000-0000-4000-8000-000000000001', title: '设计规范' },

@@ -12,22 +12,22 @@ import { DatabaseExportJobs, type DatabaseExportScope, type NativeDatabaseExport
 type ExportEntry = { session: RelationalSession; driver: RelationalDriver };
 type Download = { scope: DatabaseExportScope; jobId: string; stream: ReadStream; closed: Promise<void> };
 
-/** Native jobs and disk artifacts remain owned by the live workspace/session. */
+/** Native jobs and disk artifacts remain owned by the live session. */
 export class RelationalExportService {
   private readonly downloads = new Set<Download>();
   constructor(
-    private readonly access: (workspaceId: string, id: string) => ExportEntry,
+    private readonly access: (id: string) => ExportEntry,
     readonly jobs = new DatabaseExportJobs(join(tmpdir(), 'fouc-native-export', randomUUID())),
   ) {}
 
   private check(scope: DatabaseExportScope, entry: ExportEntry, signal?: AbortSignal): void {
     signal?.throwIfAborted();
-    if (this.access(scope.workspaceId, scope.sessionId) !== entry)
+    if (this.access(scope.sessionId) !== entry)
       throw new DatabaseInputError('导出会话已变化，请重新连接');
   }
 
   private adapter(scope: DatabaseExportScope): NativeDatabaseExportAdapter {
-    const entry = this.access(scope.workspaceId, scope.sessionId);
+    const entry = this.access(scope.sessionId);
     const approveSchema = async (schema: string, signal?: AbortSignal) => {
       this.check(scope, entry, signal);
       const visible = await entry.driver.schemas();
@@ -67,20 +67,20 @@ export class RelationalExportService {
     return this.jobs.start(scope, this.adapter(scope), input);
   }
   list(scope: DatabaseExportScope) {
-    this.access(scope.workspaceId, scope.sessionId);
+    this.access(scope.sessionId);
     return this.jobs.list(scope);
   }
   status(scope: DatabaseExportScope, id: string) {
-    this.access(scope.workspaceId, scope.sessionId);
+    this.access(scope.sessionId);
     return this.jobs.status(scope, id);
   }
   cancel(scope: DatabaseExportScope, id: string) {
-    this.access(scope.workspaceId, scope.sessionId);
+    this.access(scope.sessionId);
     return this.jobs.cancel(scope, id);
   }
 
   download(scope: DatabaseExportScope, id: string, signal?: AbortSignal) {
-    this.access(scope.workspaceId, scope.sessionId);
+    this.access(scope.sessionId);
     signal?.throwIfAborted();
     const artifact = this.jobs.artifact(scope, id);
     if (this.downloads.size >= 16) throw new DatabaseInputError('正在下载的导出文件过多，请等待现有下载结束');
@@ -95,14 +95,13 @@ export class RelationalExportService {
 
   private async stopDownloads(scope?: DatabaseExportScope, id?: string): Promise<void> {
     const active = [...this.downloads].filter(download =>
-      (!scope || download.scope.workspaceId === scope.workspaceId && download.scope.sessionId === scope.sessionId) &&
-      (!id || download.jobId === id),
+      (!scope || download.scope.sessionId === scope.sessionId) && (!id || download.jobId === id),
     );
     for (const download of active) download.stream.destroy(new Error('导出文件的会话或任务已关闭'));
     await Promise.all(active.map(download => download.closed));
   }
   async discard(scope: DatabaseExportScope, id: string): Promise<void> {
-    this.access(scope.workspaceId, scope.sessionId);
+    this.access(scope.sessionId);
     this.jobs.status(scope, id);
     await this.stopDownloads(scope, id);
     await this.jobs.discard(scope, id);

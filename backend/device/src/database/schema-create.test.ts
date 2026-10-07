@@ -111,7 +111,7 @@ test('HTTP routes require exact confirmation and bound input, never dispatch arb
     discardSchemaCreate: () => undefined,
   }));
   app.onError(error => new Response(error.message, { status: 400 }));
-  const base = '/api/database/workspaces/w/relational/sessions/s/schema-create';
+  const base = '/api/database/relational/sessions/s/schema-create';
   for (const value of [{ confirm: false }, { confirm: true, sql: 'DROP SCHEMA public' }, []]) {
     expect((await app.request(`${base}/plans/token/commit`, { method: 'POST', body: JSON.stringify(value) })).status).toBe(400);
   }

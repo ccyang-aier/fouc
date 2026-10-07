@@ -4,8 +4,8 @@ import type { Pool } from 'pg';
 import { z } from 'zod';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { entityIdSchema } from '@fouc/shared/knowledge/contracts';
-import { asset, docState, page } from '../../../platform/database/workspace/schema';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import { asset, docState, page } from '../../../platform/database/resources/schema';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
 import { expandRequestPrincipals } from '../permissions/authorization';
 import { effectivePageAccessCondition } from '../permissions/queries';
 import type { KnowledgeAssetStorage } from '../assets/storage';
@@ -18,7 +18,7 @@ import { ATTACHMENTS_DIR, buildVaultArchive, vaultPathsForExport } from './vault
 import type { ExportVaultPage } from './vault';
 
 /**
- * Obsidian 导出(M03 §4.4):workspace(或子树)→ zip。
+ * Obsidian 导出(M03 §4.4):knowledgeBase(或子树)→ zip。
  *
  * 权限:导出集 = 发起者经 P03 物化谓词(effectivePageAccessCondition,view)
  * 可见的 `doc` 页面;不可见页面连标题都不进入压缩包,导出根不可见则整体拒绝。
@@ -28,9 +28,9 @@ import type { ExportVaultPage } from './vault';
  */
 
 const inputSchema = z.strictObject({
-  workspaceId: entityIdSchema,
+  knowledgeBaseId: entityIdSchema,
   userId: entityIdSchema,
-  /** 限定 teamspace;缺省为整个 workspace。 */
+  /** 限定 teamspace;缺省为整个 knowledgeBase。 */
   teamspaceId: entityIdSchema.optional(),
   /** 导出子树根;缺省为全部可见页面。 */
   rootPageId: entityIdSchema.optional(),
@@ -82,15 +82,15 @@ export async function exportObsidianVault(deps: { pool: Pool; storage: Knowledge
   const items: VaultItemResult[] = [];
 
   recorder.phase('planning', 0, 0);
-  const visible = await withWorkspaceTenant(deps.pool, parsed.workspaceId, async (db) => {
-    const principals = await expandRequestPrincipals(db, parsed.workspaceId, parsed.userId);
-    if (!principals.length) throw new KnowledgeVaultError('VAULT_ACCESS_DENIED', '发起者不是工作区成员');
-    const conditions = [eq(page.workspaceId, parsed.workspaceId), isNull(page.deletedAt), eq(page.kind, 'doc'),
-      effectivePageAccessCondition({ workspaceId: parsed.workspaceId, principals, required: 'view' })];
+  const visible = await withKnowledgeBase(deps.pool, parsed.knowledgeBaseId, async (db) => {
+    const principals = await expandRequestPrincipals(db, parsed.knowledgeBaseId, parsed.userId);
+    if (!principals.length) throw new KnowledgeVaultError('VAULT_ACCESS_DENIED', '发起者不是知识库成员');
+    const conditions = [eq(page.knowledgeBaseId, parsed.knowledgeBaseId), isNull(page.deletedAt), eq(page.kind, 'doc'),
+      effectivePageAccessCondition({ knowledgeBaseId: parsed.knowledgeBaseId, principals, required: 'view' })];
     if (parsed.teamspaceId) conditions.push(eq(page.teamspaceId, parsed.teamspaceId));
     if (parsed.rootPageId) {
       const [root] = await db.select({ path: page.path }).from(page)
-        .where(and(eq(page.workspaceId, parsed.workspaceId), eq(page.id, parsed.rootPageId)));
+        .where(and(eq(page.knowledgeBaseId, parsed.knowledgeBaseId), eq(page.id, parsed.rootPageId)));
       if (!root) throw new KnowledgeVaultError('VAULT_ACCESS_DENIED', '导出根不存在');
       conditions.push(sql`${page.path} <@ ${root.path}::ltree`);
     }
@@ -109,9 +109,9 @@ export async function exportObsidianVault(deps: { pool: Pool; storage: Knowledge
   const noteOf = (pageId: string) => `${vaultPaths.get(pageId) ?? pageId}.md`;
 
   const states = new Map<string, Uint8Array>();
-  await withWorkspaceTenant(deps.pool, parsed.workspaceId, async (db) => {
+  await withKnowledgeBase(deps.pool, parsed.knowledgeBaseId, async (db) => {
     const rows = await db.select({ pageId: docState.pageId, state: docState.state }).from(docState)
-      .where(and(eq(docState.workspaceId, parsed.workspaceId), inArray(docState.pageId, visible.map((row) => row.id))));
+      .where(and(eq(docState.knowledgeBaseId, parsed.knowledgeBaseId), inArray(docState.pageId, visible.map((row) => row.id))));
     for (const row of rows) states.set(row.pageId, new Uint8Array(row.state));
   });
 
@@ -134,9 +134,9 @@ export async function exportObsidianVault(deps: { pool: Pool; storage: Knowledge
   const anchors = new Set(planned.flatMap((entry) => (entry.document ? collectAnchorReferences(entry.document) : [])));
   const allHashes = [...new Set(planned.flatMap((entry) => entry.hashes))];
   const assetRows = allHashes.length
-    ? await withWorkspaceTenant(deps.pool, parsed.workspaceId, (db) => db
+    ? await withKnowledgeBase(deps.pool, parsed.knowledgeBaseId, (db) => db
       .select({ hash: asset.hash, mime: asset.mime, status: asset.status })
-      .from(asset).where(and(eq(asset.workspaceId, parsed.workspaceId), inArray(asset.hash, allHashes))))
+      .from(asset).where(and(eq(asset.knowledgeBaseId, parsed.knowledgeBaseId), inArray(asset.hash, allHashes))))
     : [];
   const readyAssets = new Map(assetRows.filter((row) => row.status === 'ready').map((row) => [row.hash, row]));
   const mimeOf = (hash: string) => readyAssets.get(hash)?.mime ?? 'application/octet-stream';
@@ -149,7 +149,7 @@ export async function exportObsidianVault(deps: { pool: Pool; storage: Knowledge
       items.push({ kind: 'attachment', path, status: 'failed', reason: 'asset_not_ready' });
     } else {
       try {
-        const response = await deps.storage.openObject({ workspaceId: parsed.workspaceId, hash });
+        const response = await deps.storage.openObject({ knowledgeBaseId: parsed.knowledgeBaseId, hash });
         attachmentBytes.set(hash, await readAll(response));
         items.push({ kind: 'attachment', path, status: 'exported' });
       } catch {
@@ -175,6 +175,7 @@ export async function exportObsidianVault(deps: { pool: Pool; storage: Knowledge
       if (blockingAssets.length) throw new Error('asset_not_ready');
       const markdown = entry.document
         ? exportVaultBody(entry.document, {
+          knowledgeBaseId: parsed.knowledgeBaseId,
           vaultPathOf: (pageId) => vaultPaths.get(pageId),
           attachmentPathOf: (hash) => `${ATTACHMENTS_DIR}/${hash}.${attachmentExtension(mimeOf(hash))}`,
           anchoredBlockIds: anchors,

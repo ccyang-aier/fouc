@@ -2,7 +2,7 @@ import type { MongoClient } from 'mongodb';
 import { prepareMongoMutation, commitMongoMutation, type MongoMutationPlan } from './mongo-mutation';
 import { DatabaseInputError } from './input-error';
 
-/** Stored inside one workspace-owned session; locking or disconnect revokes every token. */
+/** Stored inside one session-owned session; locking or disconnect revokes every token. */
 export class MongoMutationPlans {
   private readonly plans = new Map<string, { value: MongoMutationPlan; expiresAt: number }>();
   private active: AbortController | null = null;

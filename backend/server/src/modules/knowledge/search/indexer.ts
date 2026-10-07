@@ -7,9 +7,9 @@ import type { PageScope } from '@fouc/shared/knowledge/contracts';
 import { createMarkdownPipeline } from '@fouc/shared/knowledge/markdown';
 import { isKnowledgeBlock, planBlockIdRepairs } from '@fouc/shared/knowledge/schema';
 import type { BlockIdRepair } from '@fouc/shared/knowledge/schema';
-import { blockIndex, docState, page } from '../../../platform/database/workspace/schema';
-import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import { blockIndex, docState, page } from '../../../platform/database/resources/schema';
+import type { ResourceTransaction } from '../../../platform/database/resources/transaction';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
 import { withPermissionIndexWrite } from '../permissions/projection';
 import type { KnowledgeConsumer } from '../workers/types';
 import { PAGE_BODY_FRAGMENT, refreshPageBacklinks } from './backlinks';
@@ -179,14 +179,14 @@ function projectBlocks(document: KnowledgeNode, pageTitlePath: readonly string[]
 }
 
 /** 从页面自身沿 parentId 上溯收集标题（去空），构成短块的页面标题路径。 */
-async function readPageTitlePath(db: WorkspaceTenantTransaction, scope: PageScope): Promise<string[]> {
+async function readPageTitlePath(db: ResourceTransaction, scope: PageScope): Promise<string[]> {
   const titles: string[] = [];
   const seen = new Set<string>();
   let cursor: string | null = scope.pageId;
   while (cursor && !seen.has(cursor)) {
     seen.add(cursor);
     const [row] = await db.select({ parentId: page.parentId, title: page.title }).from(page)
-      .where(and(eq(page.workspaceId, scope.workspaceId), eq(page.id, cursor)));
+      .where(and(eq(page.knowledgeBaseId, scope.knowledgeBaseId), eq(page.id, cursor)));
     if (!row) break;
     titles.unshift(row.title);
     cursor = row.parentId;
@@ -215,11 +215,11 @@ export interface PageBlockIndexRefresh {
  * block_index 产生任何写。修复改变了权威状态时同事务重算反链，使两个
  * doc.changed 消费者的任意执行顺序都收敛到修复后的同一结果。
  */
-export async function refreshPageBlockIndex(db: WorkspaceTenantTransaction, scope: PageScope, signal?: AbortSignal): Promise<PageBlockIndexRefresh> {
+export async function refreshPageBlockIndex(db: ResourceTransaction, scope: PageScope, signal?: AbortSignal): Promise<PageBlockIndexRefresh> {
   if (!pageScopeSchema.safeParse(scope).success) throw new TypeError('Invalid page scope');
   signal?.throwIfAborted();
   const [stored] = await db.select({ state: docState.state }).from(docState)
-    .where(and(eq(docState.workspaceId, scope.workspaceId), eq(docState.pageId, scope.pageId))).for('update');
+    .where(and(eq(docState.knowledgeBaseId, scope.knowledgeBaseId), eq(docState.pageId, scope.pageId))).for('update');
   let drafts: BlockIndexDraft[] = [];
   let repaired = 0;
   let skipped = 0;
@@ -235,7 +235,7 @@ export async function refreshPageBlockIndex(db: WorkspaceTenantTransaction, scop
           state: Buffer.from(Y.encodeStateAsUpdate(document)),
           stateVector: Buffer.from(Y.encodeStateVector(document)),
           updatedAt: sql`clock_timestamp()`,
-        }).where(and(eq(docState.workspaceId, scope.workspaceId), eq(docState.pageId, scope.pageId)));
+        }).where(and(eq(docState.knowledgeBaseId, scope.knowledgeBaseId), eq(docState.pageId, scope.pageId)));
       }
       signal?.throwIfAborted();
       const projection = projectBlocks(model.document, await readPageTitlePath(db, scope));
@@ -246,7 +246,7 @@ export async function refreshPageBlockIndex(db: WorkspaceTenantTransaction, scop
   signal?.throwIfAborted();
   const existing = await db.select({
     blockId: blockIndex.blockId, blockType: blockIndex.blockType, contentHash: blockIndex.contentHash, titlePath: blockIndex.titlePath,
-  }).from(blockIndex).where(and(eq(blockIndex.workspaceId, scope.workspaceId), eq(blockIndex.pageId, scope.pageId)));
+  }).from(blockIndex).where(and(eq(blockIndex.knowledgeBaseId, scope.knowledgeBaseId), eq(blockIndex.pageId, scope.pageId)));
   const current = new Map(existing.map((row) => [row.blockId, row]));
   const desired = new Set(drafts.map((draft) => draft.blockId));
   const insert = drafts.filter((draft) => !current.has(draft.blockId));
@@ -258,10 +258,10 @@ export async function refreshPageBlockIndex(db: WorkspaceTenantTransaction, scop
   if (insert.length || update.length || remove.length) {
     await withPermissionIndexWrite(db, scope, async (projection) => {
       if (remove.length) await db.delete(blockIndex).where(and(
-        eq(blockIndex.workspaceId, scope.workspaceId), eq(blockIndex.pageId, scope.pageId), inArray(blockIndex.blockId, remove)));
+        eq(blockIndex.knowledgeBaseId, scope.knowledgeBaseId), eq(blockIndex.pageId, scope.pageId), inArray(blockIndex.blockId, remove)));
       for (let offset = 0; offset < insert.length; offset += writeBatchSize) {
         await db.insert(blockIndex).values(insert.slice(offset, offset + writeBatchSize).map((draft) => ({
-          workspaceId: scope.workspaceId, pageId: scope.pageId, ...draft,
+          knowledgeBaseId: scope.knowledgeBaseId, pageId: scope.pageId, ...draft,
           principals: projection.principals, aclRevision: projection.aclRevision,
         }))).onConflictDoNothing();
       }
@@ -269,7 +269,7 @@ export async function refreshPageBlockIndex(db: WorkspaceTenantTransaction, scop
         await db.update(blockIndex).set({
           blockType: draft.blockType, contentMd: draft.contentMd, contentHash: draft.contentHash, titlePath: draft.titlePath, updatedAt: sql`clock_timestamp()`,
         }).where(and(
-          eq(blockIndex.workspaceId, scope.workspaceId), eq(blockIndex.pageId, scope.pageId), eq(blockIndex.blockId, draft.blockId)));
+          eq(blockIndex.knowledgeBaseId, scope.knowledgeBaseId), eq(blockIndex.pageId, scope.pageId), eq(blockIndex.blockId, draft.blockId)));
       }
     });
   }
@@ -284,20 +284,20 @@ export function createBlockIndexConsumer(pool: Pool): KnowledgeConsumer {
     topic: 'doc.changed',
     async handle(event, context) {
       if (event.topic !== 'doc.changed') throw new TypeError('Unexpected event topic');
-      await withWorkspaceTenant(pool, event.workspaceId, (db) =>
-        refreshPageBlockIndex(db, { workspaceId: event.workspaceId, pageId: event.pageId }, context.signal));
+      await withKnowledgeBase(pool, event.knowledgeBaseId, (db) =>
+        refreshPageBlockIndex(db, { knowledgeBaseId: event.knowledgeBaseId, pageId: event.pageId }, context.signal));
     },
   };
 }
 
 /** 测试与验收脚本使用的行级观察口；生产检索走 H03 的权限过滤查询。 */
-export async function readPageBlockIndexRows(db: WorkspaceTenantTransaction, scope: PageScope) {
+export async function readPageBlockIndexRows(db: ResourceTransaction, scope: PageScope) {
   if (!pageScopeSchema.safeParse(scope).success) throw new TypeError('Invalid page scope');
   return db.select({
     blockId: blockIndex.blockId, blockType: blockIndex.blockType, contentMd: blockIndex.contentMd,
     contentHash: blockIndex.contentHash, titlePath: blockIndex.titlePath, principals: blockIndex.principals,
     aclRevision: blockIndex.aclRevision, rowId: blockIndex.id,
   }).from(blockIndex)
-    .where(and(eq(blockIndex.workspaceId, scope.workspaceId), eq(blockIndex.pageId, scope.pageId)))
+    .where(and(eq(blockIndex.knowledgeBaseId, scope.knowledgeBaseId), eq(blockIndex.pageId, scope.pageId)))
     .orderBy(asc(blockIndex.blockId));
 }

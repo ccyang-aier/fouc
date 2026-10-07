@@ -3,7 +3,7 @@ import { entityIdSchema } from '@fouc/shared/knowledge/contracts';
 
 const tokenPattern = /^fouc_pat\.([a-f0-9-]{36})\.([a-f0-9-]{36})\.([A-Za-z0-9_-]{43})$/;
 const digest = (token: string) => createHash('sha256').update(token, 'utf8').digest();
-export interface KnowledgeTokenProof { workspaceId: string; tokenId: string; hash: Buffer }
+export interface KnowledgeTokenProof { knowledgeBaseId: string; tokenId: string; hash: Buffer }
 
 /** Locators are public routing hints. Neither UUID authenticates the request. */
 export function parseKnowledgeToken(token: string): KnowledgeTokenProof | null {
@@ -11,12 +11,12 @@ export function parseKnowledgeToken(token: string): KnowledgeTokenProof | null {
   if (!match || !entityIdSchema.safeParse(match[1]).success || !entityIdSchema.safeParse(match[2]).success) return null;
   const secret = Buffer.from(match[3]!, 'base64url');
   if (secret.length !== 32 || secret.toString('base64url') !== match[3]) return null;
-  return { workspaceId: match[1]!, tokenId: match[2]!, hash: digest(token) };
+  return { knowledgeBaseId: match[1]!, tokenId: match[2]!, hash: digest(token) };
 }
 
-export function issueKnowledgeToken(workspaceId: string) {
+export function issueKnowledgeToken(knowledgeBaseId: string) {
   const tokenId = randomUUID();
-  const token = `fouc_pat.${workspaceId}.${tokenId}.${randomBytes(32).toString('base64url')}`;
+  const token = `fouc_pat.${knowledgeBaseId}.${tokenId}.${randomBytes(32).toString('base64url')}`;
   return { tokenId, token, tokenHash: digest(token).toString('hex') };
 }
 

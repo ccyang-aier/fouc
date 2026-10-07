@@ -11,7 +11,7 @@ import type { AssetUploadPorts } from './upload-machine';
  * 契约预检。传输是假 PUT,但哈希端口走真实的 hashBlobSha256 语义替身。
  */
 
-const workspace = '20000000-0000-4000-8000-000000000000';
+const knowledgeBase = '20000000-0000-4000-8000-000000000000';
 const encoder = new TextEncoder();
 
 function fileOf(content: string, name = '笔记.txt', mime = 'text/plain'): File {
@@ -62,7 +62,7 @@ function harness(script: PortScript = {}): Harness {
         }
         return hasher.digest('hex');
       },
-      async prepare(_workspace, intent) {
+      async prepare(_knowledgeBase, intent) {
         prepares.push({ hash: intent.hash });
         log.push(`prepare:${intent.hash.slice(0, 6)}`);
         if (script.prepareError) throw script.prepareError;
@@ -80,7 +80,7 @@ function harness(script: PortScript = {}): Harness {
           input.onProgress?.(quarter / 4);
         }
       },
-      async confirm(_workspace, intent) {
+      async confirm(_knowledgeBase, intent) {
         confirms.push({ hash: intent.hash });
         log.push('confirm');
         if (script.confirmError) throw script.confirmError;
@@ -109,7 +109,7 @@ describe('上传状态机 · 全流程', () => {
   test('哈希 → prepare → 直传(进度 0→1)→ confirm → done(created)', async () => {
     const state = harness();
     const completions: { hash: string; reused: boolean }[] = [];
-    const store = createAssetUploadStore({ workspaceId: workspace, ports: state.ports, onUploaded: (asset) => completions.push({ hash: asset.hash, reused: asset.reused }) });
+    const store = createAssetUploadStore({ knowledgeBaseId: knowledgeBase, ports: state.ports, onUploaded: (asset) => completions.push({ hash: asset.hash, reused: asset.reused }) });
     store.addFiles([fileOf('Fouc 全流程验收内容')]);
     await until(() => expect(store.getItems()[0]!.phase).toBe('done'));
 
@@ -128,7 +128,7 @@ describe('上传状态机 · 全流程', () => {
   test('秒传:prepare 返回 reuse 时跳过传输与确认,立即完成', async () => {
     const state = harness({ prepareResult: { action: 'reuse' } });
     const completions: { hash: string; reused: boolean }[] = [];
-    const store = createAssetUploadStore({ workspaceId: workspace, ports: state.ports, onUploaded: (asset) => completions.push({ hash: asset.hash, reused: asset.reused }) });
+    const store = createAssetUploadStore({ knowledgeBaseId: knowledgeBase, ports: state.ports, onUploaded: (asset) => completions.push({ hash: asset.hash, reused: asset.reused }) });
     store.addFiles([fileOf('秒传命中内容')]);
     await until(() => expect(store.getItems()[0]!.phase).toBe('done'));
 
@@ -143,7 +143,7 @@ describe('上传状态机 · 全流程', () => {
   test('进度量化:传输相位可见的单调进度且终值为 1', async () => {
     const state = harness();
     const seen: number[] = [];
-    const store = createAssetUploadStore({ workspaceId: workspace, ports: state.ports });
+    const store = createAssetUploadStore({ knowledgeBaseId: knowledgeBase, ports: state.ports });
     store.subscribe(() => {
       const item = store.getItems()[0];
       if (item && item.phase === 'uploading' && seen.at(-1) !== item.progress) seen.push(item.progress);
@@ -168,7 +168,7 @@ describe('上传状态机 · 取消', () => {
         };
         signal.addEventListener('abort', () => reject(signal.reason), { once: true });
       });
-    const store = createAssetUploadStore({ workspaceId: workspace, ports: state.ports });
+    const store = createAssetUploadStore({ knowledgeBaseId: knowledgeBase, ports: state.ports });
     const [item] = store.addFiles([fileOf('哈希中取消')]);
     await until(() => expect(releaseHash).toBeDefined());
     store.cancel(item!.id);
@@ -188,7 +188,7 @@ describe('上传状态机 · 取消', () => {
       });
       input.onProgress?.(0.4);
     };
-    const store = createAssetUploadStore({ workspaceId: workspace, ports: state.ports });
+    const store = createAssetUploadStore({ knowledgeBaseId: knowledgeBase, ports: state.ports });
     const [item] = store.addFiles([fileOf('传输中取消')]);
     await putArrived;
     store.cancel(item!.id);
@@ -200,12 +200,12 @@ describe('上传状态机 · 取消', () => {
     let onConfirmArrived!: () => void;
     const confirmArrived = new Promise<void>((resolve) => { onConfirmArrived = resolve; });
     const state = harness();
-    state.ports.confirm = (_workspaceId, _intent, signal) =>
+    state.ports.confirm = (_knowledgeBaseId, _intent, signal) =>
       new Promise((_resolve, reject) => {
         onConfirmArrived();
         signal?.addEventListener('abort', () => reject(signal!.reason), { once: true });
       });
-    const store = createAssetUploadStore({ workspaceId: workspace, ports: state.ports });
+    const store = createAssetUploadStore({ knowledgeBaseId: knowledgeBase, ports: state.ports });
     const [item] = store.addFiles([fileOf('确认中取消')]);
     await confirmArrived;
     store.cancel(item!.id);
@@ -226,7 +226,7 @@ describe('上传状态机 · 错误与重试', () => {
         return { action: 'upload', url: 'https://s3.test/put/retry', method: 'PUT', headers: { 'content-type': 'text/plain' }, expiresAt: '2026-09-26T12:10:00.000Z' };
       },
     });
-    const store = createAssetUploadStore({ workspaceId: workspace, ports: state.ports });
+    const store = createAssetUploadStore({ knowledgeBaseId: knowledgeBase, ports: state.ports });
     const [item] = store.addFiles([fileOf('重试流程内容')]);
     await until(() => expect(store.getItems()[0]!.phase).toBe('error'));
 
@@ -245,13 +245,13 @@ describe('上传状态机 · 错误与重试', () => {
 
   test('传输网络错误 → TRANSFER_NETWORK,带 detail 的拒绝 → TRANSFER_REJECTED', async () => {
     const network = harness({ transferError: new AssetTransferError('network') });
-    const storeA = createAssetUploadStore({ workspaceId: workspace, ports: network.ports });
+    const storeA = createAssetUploadStore({ knowledgeBaseId: knowledgeBase, ports: network.ports });
     storeA.addFiles([fileOf('网络错误内容')]);
     await until(() => expect(storeA.getItems()[0]!.phase).toBe('error'));
     expect(storeA.getItems()[0]!.error!.code).toBe('TRANSFER_NETWORK');
 
     const rejected = harness({ transferError: new AssetTransferError('status', 403) });
-    const storeB = createAssetUploadStore({ workspaceId: workspace, ports: rejected.ports });
+    const storeB = createAssetUploadStore({ knowledgeBaseId: knowledgeBase, ports: rejected.ports });
     storeB.addFiles([fileOf('拒绝错误内容')]);
     await until(() => expect(storeB.getItems()[0]!.phase).toBe('error'));
     expect(storeB.getItems()[0]!.error).toEqual({ code: 'TRANSFER_REJECTED', detail: 'HTTP 403' });
@@ -271,7 +271,7 @@ describe('上传状态机 · 错误与重试', () => {
       }
       return { status: 'ready', created: true };
     };
-    const store = createAssetUploadStore({ workspaceId: workspace, ports: state.ports });
+    const store = createAssetUploadStore({ knowledgeBaseId: knowledgeBase, ports: state.ports });
     const [item] = store.addFiles([fileOf('确认闭环内容')]);
     await until(() => expect(store.getItems()[0]!.phase).toBe('error'));
     expect(store.getItems()[0]!.error!.code).toBe('CONFIRM_FAILED');
@@ -294,7 +294,7 @@ describe('上传状态机 · 错误与重试', () => {
         if (!hanging) resolve();
       });
     };
-    const store = createAssetUploadStore({ workspaceId: workspace, ports: state.ports });
+    const store = createAssetUploadStore({ knowledgeBaseId: knowledgeBase, ports: state.ports });
     const [item] = store.addFiles([fileOf('取消后重试')]);
     await putArrived;
     store.cancel(item!.id);
@@ -311,7 +311,7 @@ describe('上传状态机 · 错误与重试', () => {
 describe('上传状态机 · 文件契约预检', () => {
   test('超过 5 GiB 的文件不入队流水线,直接 FILE_INVALID', async () => {
     const state = harness();
-    const store = createAssetUploadStore({ workspaceId: workspace, ports: state.ports });
+    const store = createAssetUploadStore({ knowledgeBaseId: knowledgeBase, ports: state.ports });
     const huge = new File([new Uint8Array([1])], 'huge.bin');
     Object.defineProperty(huge, 'size', { value: assetMaxBytes + 1 });
     const [item] = store.addFiles([huge]);
@@ -323,7 +323,7 @@ describe('上传状态机 · 文件契约预检', () => {
 
   test('空文件同样被预检拒绝', () => {
     const state = harness();
-    const store = createAssetUploadStore({ workspaceId: workspace, ports: state.ports });
+    const store = createAssetUploadStore({ knowledgeBaseId: knowledgeBase, ports: state.ports });
     const [item] = store.addFiles([new File([new Uint8Array(0)], 'empty.txt', { type: 'text/plain' })]);
     expect(item!.phase).toBe('error');
     expect(item!.error!.detail).toContain('空文件');
@@ -331,7 +331,7 @@ describe('上传状态机 · 文件契约预检', () => {
 
   test('缺 mime 的文件回退 application/octet-stream 并完成上传', async () => {
     const state = harness();
-    const store = createAssetUploadStore({ workspaceId: workspace, ports: state.ports });
+    const store = createAssetUploadStore({ knowledgeBaseId: knowledgeBase, ports: state.ports });
     store.addFiles([new File([encoder.encode('x')], 'noext', { type: '' })]);
     await until(() => expect(store.getItems()[0]!.phase).toBe('done'));
     expect(state.transfers[0]!.header).toBe('application/octet-stream');
@@ -351,7 +351,7 @@ describe('上传状态机 · 队列操作', () => {
         if (!hanging) resolve();
       });
     };
-    const store = createAssetUploadStore({ workspaceId: workspace, ports: state.ports });
+    const store = createAssetUploadStore({ knowledgeBaseId: knowledgeBase, ports: state.ports });
     const [active] = store.addFiles([fileOf('移除进行中')]);
     await putArrived;
     hanging = false; // 后续文件正常完成
@@ -367,7 +367,7 @@ describe('上传状态机 · 队列操作', () => {
 
   test('多文件并发:各自独立完成,互不阻塞', async () => {
     const state = harness();
-    const store = createAssetUploadStore({ workspaceId: workspace, ports: state.ports });
+    const store = createAssetUploadStore({ knowledgeBaseId: knowledgeBase, ports: state.ports });
     store.addFiles([fileOf('并发一'), fileOf('并发二'), fileOf('并发三')]);
     await until(() => expect(store.getItems().every((item) => item.phase === 'done')).toBe(true));
     // 队列顺序是插入顺序,与完成顺序无关。

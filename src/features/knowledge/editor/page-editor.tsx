@@ -1,8 +1,8 @@
 'use client';
 import { useKnowledgePagesQuery } from '../data/pages-queries';
 import { documentFileFormat } from '../documents/file-format';
-import { WorkspaceFileDocument } from '../documents/file-document-surface';
-import { flattenWorkspaceList, useKnowledgeTeamspacesQuery } from '../data/workspace-queries';
+import { KnowledgeBaseFileDocument } from '../documents/file-document-surface';
+import { flattenKnowledgeBaseList, useKnowledgeTeamspacesQuery } from '../data/catalog-queries';
 
 /**
  * The page editor container (E03, design §4/§5.1) — the state closed loop in
@@ -21,6 +21,7 @@ import { flattenWorkspaceList, useKnowledgeTeamspacesQuery } from '../data/works
 import type { PageScope } from '@fouc/shared/knowledge/contracts';
 import type { FoucAuthUser } from '../../identity/auth-api';
 import { CanvasError, CanvasForbidden, CanvasSpinner } from '../canvas-states';
+import { Button } from '@/components/ui/button';
 import { knowledgeErrorCodeOf } from '../entry-state';
 import { derivePageEditorView } from './editor-state';
 import { PageEditorSurface } from './editor-surface';
@@ -42,16 +43,16 @@ function pageAccessErrorText(error: unknown): string {
 
 /** The page editor of one open page; mounts inside the U02 canvas main column. */
 export function PageEditor({ scope, user, knowledgeBaseId, onBack, onOpenSidebar, onCreateDocument, canCreateDocument }: { scope: PageScope; user: FoucAuthUser | null; knowledgeBaseId: string; onBack: () => void; onOpenSidebar: () => void; onCreateDocument: () => void; canCreateDocument: boolean }) {
-  const pages = useKnowledgePagesQuery(scope.workspaceId);
-  const folders = useKnowledgeTeamspacesQuery(scope.workspaceId, knowledgeBaseId);
+  const pages = useKnowledgePagesQuery(scope.knowledgeBaseId);
+  const folders = useKnowledgeTeamspacesQuery(scope.knowledgeBaseId);
   const page = pages.data?.find(item => item.id === scope.pageId);
-  const folderName = flattenWorkspaceList(folders.data).find(folder => folder.id === page?.teamspaceId)?.name ?? '所属文件夹';
+  const folderName = flattenKnowledgeBaseList(folders.data).find(folder => folder.id === page?.teamspaceId)?.name ?? '所属文件夹';
   const format = page ? documentFileFormat(page.title) : null;
   const isFile = Boolean(page?.properties.fileAsset || format && format !== "markdown");
-  const { gate, error: gateError, retry } = usePageEditorGate(scope.workspaceId, scope.pageId);
+  const { gate, error: gateError, retry } = usePageEditorGate(scope.knowledgeBaseId, scope.pageId);
   // The collaboration session only exists once view access has been granted —
   // a denied page never opens a WebSocket or an IndexedDB copy.
-  const session = usePageEditorSession(gate.status === 'granted' && pages.isSuccess && !isFile ? scope : null);
+  const session = usePageEditorSession(gate.status === 'granted' && pages.isSuccess && !isFile ? scope : null, user?.id ?? 'anonymous');
   const view = derivePageEditorView(gate, session.status);
 
   if (gate.status === 'pending') {
@@ -71,12 +72,13 @@ export function PageEditor({ scope, user, knowledgeBaseId, onBack, onOpenSidebar
       <CanvasForbidden
         title="没有该页面的访问权限"
         detail="当前凭证对这个页面没有查看权限；如果最近权限有调整，请联系页面所有者。"
+        actions={<Button variant="outline" onClick={onBack}>返回知识库</Button>}
       />
     );
   }
   if (pages.isPending) return <CanvasSpinner label="正在读取文档信息" />;
   if (pages.isError) return <CanvasError title="无法读取文档信息" detail="请检查网络后重试。" onRetry={() => { void pages.refetch(); }} />;
-  if (gate.status === "granted" && isFile && page) return <WorkspaceFileDocument workspaceId={scope.workspaceId} knowledgeBaseId={knowledgeBaseId} page={page} canComment={gate.level !== "view"} canEdit={gate.level === "edit" || gate.level === "full"} avatarName={user?.name ?? "我"} folderName={folderName} onBack={onBack} onOpenSidebar={onOpenSidebar} onCreateDocument={onCreateDocument} />;
+  if (gate.status === "granted" && isFile && page) return <KnowledgeBaseFileDocument knowledgeBaseId={scope.knowledgeBaseId} page={page} canComment={gate.level !== "view"} canEdit={gate.level === "edit" || gate.level === "full"} avatarName={user?.name ?? "我"} folderName={folderName} onBack={onBack} onOpenSidebar={onOpenSidebar} onCreateDocument={onCreateDocument} />;
   if (session.failure) {
     return <CanvasError title="无法打开页面文档" detail={session.failure} onRetry={session.retry} />;
   }

@@ -80,17 +80,17 @@ live('native Redis bulk preview, guards, binary keys, TTL, dangerous delete and 
     await expect(plans.prepare({ database: 15, keys: [raw(big)], operation: { kind: 'persist' } })).rejects.toThrow('快照上限');
 
     await client.set(b, 'scope');
-    const session = await manager.connect('redis-bulk-p0', { provider: 'redis', host: options.host, port: options.port,
+    const session = await manager.connect({ provider: 'redis', host: options.host, port: options.port,
       username: options.username ?? '', password: options.password ?? '', database: 15, connectionOptions: {} });
-    const scoped = await manager.prepareBulk('redis-bulk-p0', session.id, { database: 15, keys: [raw(b)], operation: { kind: 'persist' } });
-    expect(() => manager.prepareBulk('other-workspace', session.id, {})).toThrow('工作空间');
-    await expect(manager.commitBulk('redis-bulk-p0', session.id, scoped.planId, true, false)).rejects.toThrow('解锁');
-    await manager.setReadOnly('redis-bulk-p0', session.id, false);
-    await expect(manager.commitBulk('redis-bulk-p0', session.id, scoped.planId, true, false)).rejects.toThrow('失效');
-    const renewed = await manager.prepareBulk('redis-bulk-p0', session.id, { database: 15, keys: [raw(b)], operation: { kind: 'persist' } });
-    await manager.setReadOnly('redis-bulk-p0', session.id, true);
-    await manager.setReadOnly('redis-bulk-p0', session.id, false);
-    await expect(manager.commitBulk('redis-bulk-p0', session.id, renewed.planId, true, false)).rejects.toThrow('失效');
+    const scoped = await manager.prepareBulk(session.id, { database: 15, keys: [raw(b)], operation: { kind: 'persist' } });
+    expect(() => manager.prepareBulk('missing-session', {})).toThrow('断开');
+    await expect(manager.commitBulk(session.id, scoped.planId, true, false)).rejects.toThrow('解锁');
+    await manager.setReadOnly(session.id, false);
+    await expect(manager.commitBulk(session.id, scoped.planId, true, false)).rejects.toThrow('失效');
+    const renewed = await manager.prepareBulk(session.id, { database: 15, keys: [raw(b)], operation: { kind: 'persist' } });
+    await manager.setReadOnly(session.id, true);
+    await manager.setReadOnly(session.id, false);
+    await expect(manager.commitBulk(session.id, renewed.planId, true, false)).rejects.toThrow('失效');
     expect(await client.get(b)).toBe('scope');
   } finally {
     manager.shutdown();

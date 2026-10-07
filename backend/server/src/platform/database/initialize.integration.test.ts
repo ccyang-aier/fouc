@@ -7,13 +7,13 @@ import * as Y from 'yjs';
 import { initializeFoucDatabase } from './initialize';
 import { readFoucDatabaseConnections } from './initialize-config';
 import { inspectFoucDatabase } from './initialize-status';
-import { createTenantTestDatabase, seedTenantTestData } from './workspace/tenant-test-database';
-import type { TenantTestDatabase } from './workspace/tenant-test-database';
-import { withWorkspaceTenant } from './workspace/tenant';
+import { createResourceTestDatabase, seedResourceTestData } from './resources/resource-test-database';
+import type { ResourceTestDatabase } from './resources/resource-test-database';
+import { withKnowledgeBase } from './resources/transaction';
 import * as tables from './schema';
 
-let database: TenantTestDatabase;
-let data: Awaited<ReturnType<typeof seedTenantTestData>>;
+let database: ResourceTestDatabase;
+let data: Awaited<ReturnType<typeof seedResourceTestData>>;
 
 function errorDetails(error: unknown): { code: string; constraint?: string } | undefined {
   if (!error || typeof error !== 'object') return undefined;
@@ -43,8 +43,8 @@ function runCommand(command: string, environment: NodeJS.ProcessEnv): Promise<{ 
 }
 
 beforeAll(async () => {
-  database = await createTenantTestDatabase();
-  data = await seedTenantTestData(database.admin);
+  database = await createResourceTestDatabase();
+  data = await seedResourceTestData(database.admin);
 }, 30_000);
 
 afterAll(async () => {
@@ -56,13 +56,13 @@ describe('current schema initialization against PostgreSQL', () => {
     const status = await inspectFoucDatabase(database.admin, database.pool);
     expect(status.state).toBe('ready');
     expect(status.tables).toBe(tables.allApplicationTables.length);
-    expect(status.forcedTenantTables).toBe(tables.workspaceTenantTables.length);
+    expect(status.forcedResourceTables).toBe(tables.resourceTables.length);
     expect(status.issues).toEqual([]);
   });
 
   test('init refuses existing schemas without modifying their data', async () => {
     await expect(initializeFoucDatabase(database.admin, database.pool)).rejects.toMatchObject({ code: 'already_initialized' });
-    const count = await database.admin.query<{ total: number }>('SELECT count(*)::int AS total FROM workspace.workspace');
+    const count = await database.admin.query<{ total: number }>('SELECT count(*)::int AS total FROM resources.knowledge_base');
     expect(count.rows[0]?.total).toBe(2);
     expect((await inspectFoucDatabase(database.admin, database.pool)).state).toBe('ready');
   });
@@ -72,19 +72,19 @@ describe('current schema initialization against PostgreSQL', () => {
   });
 
   test('runtime grants do not permit table creation, RLS disabling, or TRUNCATE bypass', async () => {
-    await violates(() => database.pool.query('CREATE TABLE workspace.not_allowed (id int)'), '42501');
-    await violates(() => database.pool.query('ALTER TABLE workspace.workspace DISABLE ROW LEVEL SECURITY'), '42501');
-    await violates(() => database.pool.query('TRUNCATE workspace.workspace CASCADE'), '42501');
+    await violates(() => database.pool.query('CREATE TABLE resources.not_allowed (id int)'), '42501');
+    await violates(() => database.pool.query('ALTER TABLE resources.knowledge_base DISABLE ROW LEVEL SECURITY'), '42501');
+    await violates(() => database.pool.query('TRUNCATE resources.knowledge_base CASCADE'), '42501');
   });
 
   test('read-only check detects a permissive policy substitution', async () => {
     const client = await database.admin.connect();
     try {
       await client.query('BEGIN');
-      await client.query('ALTER POLICY tenant_scope ON workspace.workspace USING (true) WITH CHECK (true)');
+      await client.query('ALTER POLICY knowledge_base_scope ON resources.knowledge_base USING (true) WITH CHECK (true)');
       const changed = await inspectFoucDatabase(client, database.pool);
       expect(changed.state).toBe('incomplete');
-      expect(changed.issues).toContain('Tenant policy differs from current definition: workspace.workspace');
+      expect(changed.issues).toContain('Resource policy differs from current definition: resources.knowledge_base');
     } finally {
       await client.query('ROLLBACK');
       client.release();
@@ -92,7 +92,7 @@ describe('current schema initialization against PostgreSQL', () => {
   });
 
   test('status/check/init commands handle an empty database and leave business tables empty', async () => {
-    const empty = await createTenantTestDatabase({ initialize: false });
+    const empty = await createResourceTestDatabase({ initialize: false });
     try {
       const connections = await readFoucDatabaseConnections();
       const admin = new URL(connections.admin);
@@ -111,7 +111,7 @@ describe('current schema initialization against PostgreSQL', () => {
       const checked = await runCommand('check', environment);
       expect(checked.code, checked.stderr).toBe(0);
       expect(JSON.parse(checked.stdout).state).toBe('ready');
-      const count = await empty.admin.query<{ total: number }>('SELECT count(*)::int AS total FROM workspace.workspace');
+      const count = await empty.admin.query<{ total: number }>('SELECT count(*)::int AS total FROM resources.knowledge_base');
       expect(count.rows[0]?.total).toBe(0);
       const repeated = await runCommand('init', environment);
       expect(repeated.code).toBe(1);
@@ -124,7 +124,7 @@ describe('current schema initialization against PostgreSQL', () => {
   }, 30_000);
 
   test('a failure after current DDL is applied rolls back schemas and permits a clean retry', async () => {
-    const empty = await createTenantTestDatabase({ initialize: false });
+    const empty = await createResourceTestDatabase({ initialize: false });
     try {
       await empty.admin.query(`
         CREATE FUNCTION public.fouc_test_reject_policy() RETURNS event_trigger LANGUAGE plpgsql AS $$
@@ -145,45 +145,45 @@ describe('current schema initialization against PostgreSQL', () => {
 });
 
 describe('real PostgreSQL constraints and Yjs persistence', () => {
-  test('composite foreign keys cannot attach records to another tenant', async () => {
-    const [alpha, beta] = data.tenants;
+  test('composite foreign keys cannot attach records to another resource', async () => {
+    const [alpha, beta] = data.resources;
     const foreignTeamspace = randomUUID();
     const foreignPage = randomUUID();
     const foreignThread = randomUUID();
-    await withWorkspaceTenant(database.pool, beta.workspaceId, async (db) => {
-      await db.insert(tables.teamspace).values({ workspaceId: beta.workspaceId, knowledgeBaseId: data.ids.knowledgeBase, id: foreignTeamspace, name: 'Private team' });
-      await db.insert(tables.page).values({ workspaceId: beta.workspaceId, id: foreignPage, teamspaceId: foreignTeamspace, path: foreignPage.replaceAll('-', '_'), position: 'a0', createdBy: beta.userId });
-      await db.insert(tables.commentThread).values({ workspaceId: beta.workspaceId, id: foreignThread, pageId: foreignPage });
+    await withKnowledgeBase(database.pool, beta.knowledgeBaseId, async (db) => {
+      await db.insert(tables.teamspace).values({ knowledgeBaseId: beta.knowledgeBaseId, id: foreignTeamspace, name: 'Private team' });
+      await db.insert(tables.page).values({ knowledgeBaseId: beta.knowledgeBaseId, id: foreignPage, teamspaceId: foreignTeamspace, path: foreignPage.replaceAll('-', '_'), position: 'a0', createdBy: beta.userId });
+      await db.insert(tables.commentThread).values({ knowledgeBaseId: beta.knowledgeBaseId, id: foreignThread, pageId: foreignPage });
     });
     const id = randomUUID();
-    await violates(() => withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => db.insert(tables.groupMember).values({ workspaceId: alpha.workspaceId, groupId: data.ids.group, userId: beta.userId })), '23503', 'group_member_membership_fk');
-    await violates(() => withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => db.insert(tables.page).values({ workspaceId: alpha.workspaceId, id, teamspaceId: foreignTeamspace, path: id.replaceAll('-', '_'), position: 'a0', createdBy: alpha.userId })), '23503', 'page_teamspace_fk');
-    await violates(() => withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => db.insert(tables.docState).values({ workspaceId: alpha.workspaceId, pageId: foreignPage, state: new Uint8Array([0, 0]), stateVector: new Uint8Array([0]) })), '23503');
-    await violates(() => withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => db.insert(tables.backlink).values({ workspaceId: alpha.workspaceId, srcPageId: data.ids.page, srcBlockId: 'block-1', dstPageId: foreignPage })), '23503');
-    await violates(() => withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => db.insert(tables.comment).values({ workspaceId: alpha.workspaceId, id: randomUUID(), threadId: foreignThread, authorId: alpha.userId, bodyMd: 'Forbidden link' })), '23503', 'comment_thread_fk');
+    await violates(() => withKnowledgeBase(database.pool, alpha.knowledgeBaseId, (db) => db.insert(tables.groupMember).values({ knowledgeBaseId: alpha.knowledgeBaseId, groupId: data.ids.group, userId: beta.userId })), '23503', 'group_member_membership_fk');
+    await violates(() => withKnowledgeBase(database.pool, alpha.knowledgeBaseId, (db) => db.insert(tables.page).values({ knowledgeBaseId: alpha.knowledgeBaseId, id, teamspaceId: foreignTeamspace, path: id.replaceAll('-', '_'), position: 'a0', createdBy: alpha.userId })), '23503', 'page_teamspace_fk');
+    await violates(() => withKnowledgeBase(database.pool, alpha.knowledgeBaseId, (db) => db.insert(tables.docState).values({ knowledgeBaseId: alpha.knowledgeBaseId, pageId: foreignPage, state: new Uint8Array([0, 0]), stateVector: new Uint8Array([0]) })), '23503');
+    await violates(() => withKnowledgeBase(database.pool, alpha.knowledgeBaseId, (db) => db.insert(tables.backlink).values({ knowledgeBaseId: alpha.knowledgeBaseId, srcPageId: data.ids.page, srcBlockId: 'block-1', dstKnowledgeBaseId: alpha.knowledgeBaseId, dstPageId: foreignPage })), '23503');
+    await violates(() => withKnowledgeBase(database.pool, alpha.knowledgeBaseId, (db) => db.insert(tables.comment).values({ knowledgeBaseId: alpha.knowledgeBaseId, id: randomUUID(), threadId: foreignThread, authorId: alpha.userId, bodyMd: 'Forbidden link' })), '23503', 'comment_thread_fk');
   });
 
   test('database rows require a local database definition whose page is actually kind=database', async () => {
-    const [alpha, beta] = data.tenants;
+    const [alpha, beta] = data.resources;
     const foreignDatabase = randomUUID();
-    await withWorkspaceTenant(database.pool, beta.workspaceId, async (db) => {
-      await db.insert(tables.page).values({ workspaceId: beta.workspaceId, id: foreignDatabase, teamspaceId: data.ids.teamspace, kind: 'database', path: foreignDatabase.replaceAll('-', '_'), position: 'a2', createdBy: beta.userId });
-      await db.insert(tables.databaseDefinition).values({ workspaceId: beta.workspaceId, pageId: foreignDatabase, teamspaceId: data.ids.teamspace });
+    await withKnowledgeBase(database.pool, beta.knowledgeBaseId, async (db) => {
+      await db.insert(tables.page).values({ knowledgeBaseId: beta.knowledgeBaseId, id: foreignDatabase, teamspaceId: data.ids.teamspace, kind: 'database', path: foreignDatabase.replaceAll('-', '_'), position: 'a2', createdBy: beta.userId });
+      await db.insert(tables.databaseDefinition).values({ knowledgeBaseId: beta.knowledgeBaseId, pageId: foreignDatabase, teamspaceId: data.ids.teamspace });
     });
     const id = randomUUID();
-    const row = { workspaceId: alpha.workspaceId, id, teamspaceId: data.ids.teamspace, parentId: data.ids.database, path: `${data.ids.database}.${id}`.replaceAll('-', '_'), position: 'a1', createdBy: alpha.userId, kind: 'row' as const };
-    await violates(() => withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => db.insert(tables.page).values({ ...row, databaseId: null })), '23514', 'page_row_database_relation');
-    await violates(() => withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => db.insert(tables.page).values({ ...row, databaseId: data.ids.page })), '23503', 'page_database_fk');
-    await violates(() => withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => db.insert(tables.page).values({ ...row, databaseId: foreignDatabase })), '23503', 'page_database_fk');
-    await violates(() => withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => db.insert(tables.page).values({ ...row, kind: 'doc', databaseId: data.ids.database })), '23514', 'page_row_database_relation');
-    await violates(() => withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => db.insert(tables.databaseDefinition).values({ workspaceId: alpha.workspaceId, pageId: data.ids.page, teamspaceId: data.ids.teamspace })), '23503', 'database_definition_page_fk');
-    await violates(() => withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => db.insert(tables.databaseDefinition).values({ workspaceId: alpha.workspaceId, pageId: data.ids.page, teamspaceId: data.ids.teamspace, pageKind: 'doc' })), '23514', 'database_definition_database_kind');
+    const row = { knowledgeBaseId: alpha.knowledgeBaseId, id, teamspaceId: data.ids.teamspace, parentId: data.ids.database, path: `${data.ids.database}.${id}`.replaceAll('-', '_'), position: 'a1', createdBy: alpha.userId, kind: 'row' as const };
+    await violates(() => withKnowledgeBase(database.pool, alpha.knowledgeBaseId, (db) => db.insert(tables.page).values({ ...row, databaseId: null })), '23514', 'page_row_database_relation');
+    await violates(() => withKnowledgeBase(database.pool, alpha.knowledgeBaseId, (db) => db.insert(tables.page).values({ ...row, databaseId: data.ids.page })), '23503', 'page_database_fk');
+    await violates(() => withKnowledgeBase(database.pool, alpha.knowledgeBaseId, (db) => db.insert(tables.page).values({ ...row, databaseId: foreignDatabase })), '23503', 'page_database_fk');
+    await violates(() => withKnowledgeBase(database.pool, alpha.knowledgeBaseId, (db) => db.insert(tables.page).values({ ...row, kind: 'doc', databaseId: data.ids.database })), '23514', 'page_row_database_relation');
+    await violates(() => withKnowledgeBase(database.pool, alpha.knowledgeBaseId, (db) => db.insert(tables.databaseDefinition).values({ knowledgeBaseId: alpha.knowledgeBaseId, pageId: data.ids.page, teamspaceId: data.ids.teamspace })), '23503', 'database_definition_page_fk');
+    await violates(() => withKnowledgeBase(database.pool, alpha.knowledgeBaseId, (db) => db.insert(tables.databaseDefinition).values({ knowledgeBaseId: alpha.knowledgeBaseId, pageId: data.ids.page, teamspaceId: data.ids.teamspace, pageKind: 'doc' })), '23514', 'database_definition_database_kind');
   });
 
   test('vector dimensions are checked while old and replacement models coexist', async () => {
-    const [alpha] = data.tenants;
-    await violates(() => withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => db.update(tables.blockIndex).set({ embedDimensions: 3 })), '23514', 'block_index_embedding_metadata');
-    const vectors = await withWorkspaceTenant(database.pool, alpha.workspaceId, async (db) => ({
+    const [alpha] = data.resources;
+    await violates(() => withKnowledgeBase(database.pool, alpha.knowledgeBaseId, (db) => db.update(tables.blockIndex).set({ embedDimensions: 3 })), '23514', 'block_index_embedding_metadata');
+    const vectors = await withKnowledgeBase(database.pool, alpha.knowledgeBaseId, async (db) => ({
       active: await db.select().from(tables.blockIndex), staging: await db.select().from(tables.blockEmbeddingStaging),
     }));
     expect(vectors.active[0]?.embedding).toEqual([1, 2]);
@@ -191,15 +191,15 @@ describe('real PostgreSQL constraints and Yjs persistence', () => {
   });
 
   test('stored bytea state and state vectors restore a real Y.Doc and converge after concurrent edits', async () => {
-    const [alpha] = data.tenants;
+    const [alpha] = data.resources;
     const docs = Array.from({ length: 5 }, () => new Y.Doc({ gc: true }));
     const [original, first, second, restored, checkpoint] = docs as [Y.Doc, Y.Doc, Y.Doc, Y.Doc, Y.Doc];
     try {
       original.getText('content').insert(0, '共同的知识库');
       const baseState = Y.encodeStateAsUpdate(original);
       const baseVector = Y.encodeStateVector(original);
-      await withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => db.update(tables.docState).set({ state: baseState, stateVector: baseVector }).where(eq(tables.docState.pageId, data.ids.page)));
-      const saved = await withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => db.select().from(tables.docState).where(eq(tables.docState.pageId, data.ids.page)));
+      await withKnowledgeBase(database.pool, alpha.knowledgeBaseId, (db) => db.update(tables.docState).set({ state: baseState, stateVector: baseVector }).where(eq(tables.docState.pageId, data.ids.page)));
+      const saved = await withKnowledgeBase(database.pool, alpha.knowledgeBaseId, (db) => db.select().from(tables.docState).where(eq(tables.docState.pageId, data.ids.page)));
       expect(saved[0]?.state).toBeInstanceOf(Uint8Array);
       expect(saved[0]?.stateVector).toEqual(baseVector);
       Y.applyUpdate(first, saved[0]!.state);
@@ -213,11 +213,11 @@ describe('real PostgreSQL constraints and Yjs persistence', () => {
       expect(first.getText('content').toString()).toBe(second.getText('content').toString());
       const merged = { state: Y.encodeStateAsUpdate(first), stateVector: Y.encodeStateVector(first) };
       const checkpointId = randomUUID();
-      await withWorkspaceTenant(database.pool, alpha.workspaceId, async (db) => {
+      await withKnowledgeBase(database.pool, alpha.knowledgeBaseId, async (db) => {
         await db.update(tables.docState).set(merged).where(eq(tables.docState.pageId, data.ids.page));
-        await db.insert(tables.docCheckpoint).values({ workspaceId: alpha.workspaceId, pageId: data.ids.page, id: checkpointId, authors: [alpha.userId], label: 'Concurrent merge', ...merged });
+        await db.insert(tables.docCheckpoint).values({ knowledgeBaseId: alpha.knowledgeBaseId, pageId: data.ids.page, id: checkpointId, authors: [alpha.userId], label: 'Concurrent merge', ...merged });
       });
-      const loaded = await withWorkspaceTenant(database.pool, alpha.workspaceId, async (db) => ({
+      const loaded = await withKnowledgeBase(database.pool, alpha.knowledgeBaseId, async (db) => ({
         current: await db.select().from(tables.docState).where(eq(tables.docState.pageId, data.ids.page)),
         checkpoint: await db.select().from(tables.docCheckpoint).where(eq(tables.docCheckpoint.id, checkpointId)),
       }));
@@ -232,22 +232,22 @@ describe('real PostgreSQL constraints and Yjs persistence', () => {
   });
 
   test('document state and its Outbox event roll back together on failure', async () => {
-    const [alpha] = data.tenants;
-    const before = await withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => db.select().from(tables.docState).where(eq(tables.docState.pageId, data.ids.page)));
+    const [alpha] = data.resources;
+    const before = await withKnowledgeBase(database.pool, alpha.knowledgeBaseId, (db) => db.select().from(tables.docState).where(eq(tables.docState.pageId, data.ids.page)));
     const eventId = randomUUID();
     const failure = new Error('Abort document persistence');
-    await expect(withWorkspaceTenant(database.pool, alpha.workspaceId, async (db) => {
+    await expect(withKnowledgeBase(database.pool, alpha.knowledgeBaseId, async (db) => {
       await db.update(tables.docState).set({ state: new Uint8Array([0, 0]), stateVector: new Uint8Array([0]) }).where(eq(tables.docState.pageId, data.ids.page));
-      await db.insert(tables.outbox).values({ workspaceId: alpha.workspaceId, id: eventId, topic: 'doc.changed', payload: { workspaceId: alpha.workspaceId, topic: 'doc.changed', pageId: data.ids.page, actor: { kind: 'human', userId: alpha.userId }, occurredAt: new Date().toISOString() } });
+      await db.insert(tables.outbox).values({ knowledgeBaseId: alpha.knowledgeBaseId, id: eventId, topic: 'doc.changed', payload: { knowledgeBaseId: alpha.knowledgeBaseId, topic: 'doc.changed', pageId: data.ids.page, actor: { kind: 'human', userId: alpha.userId }, occurredAt: new Date().toISOString() } });
       throw failure;
     })).rejects.toBe(failure);
-    const after = await withWorkspaceTenant(database.pool, alpha.workspaceId, async (db) => ({
+    const after = await withKnowledgeBase(database.pool, alpha.knowledgeBaseId, async (db) => ({
       state: await db.select().from(tables.docState).where(eq(tables.docState.pageId, data.ids.page)),
-      event: await db.select().from(tables.outbox).where(and(eq(tables.outbox.id, eventId), eq(tables.outbox.workspaceId, alpha.workspaceId))),
+      event: await db.select().from(tables.outbox).where(and(eq(tables.outbox.id, eventId), eq(tables.outbox.knowledgeBaseId, alpha.knowledgeBaseId))),
     }));
     expect(after.state[0]?.state).toEqual(before[0]!.state);
     expect(after.state[0]?.stateVector).toEqual(before[0]!.stateVector);
     expect(after.event).toHaveLength(0);
-    expect((await withWorkspaceTenant(database.pool, alpha.workspaceId, (db) => db.execute(sql`SELECT 1`))).rowCount).toBe(1);
+    expect((await withKnowledgeBase(database.pool, alpha.knowledgeBaseId, (db) => db.execute(sql`SELECT 1`))).rowCount).toBe(1);
   });
 });

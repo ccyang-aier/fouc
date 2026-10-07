@@ -11,7 +11,7 @@ test('runtime packages cannot import each other, including type-only and dynamic
 test('PostgreSQL is allowed only inside the user data-source driver', () => {
   assert.deepEqual(checkArchitectureImports('backend/device/src/database/drivers/postgres.ts', "import { Pool } from 'pg';"), []);
   assert.equal(checkArchitectureImports('backend/device/src/database/relational-session.ts', "import { Pool } from 'pg';").length, 1);
-  assert.equal(checkArchitectureImports('backend/device/src/database/drivers/postgres.ts', "import { database } from '../../../../server/src/platform/database/workspace';").length, 1);
+  assert.equal(checkArchitectureImports('backend/device/src/database/drivers/postgres.ts', "import { database } from '../../../../server/src/platform/database/resources';").length, 1);
 });
 
 test('frontend public router types are erased and cannot be loaded as runtime values', () => {

@@ -1,12 +1,12 @@
 import { KnowledgeDataError } from './errors';
 import { parseFoucApiOrigin } from '@/lib/fouc-api-endpoint';
 export const knowledgeApiPathPrefix = '/api/knowledge';
-const workspaceIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const knowledgeBaseIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** The tRPC transport URL for one workspace: `<origin>/api/knowledge/<workspaceId>/trpc` (A00 contract). */
-export function knowledgeTrpcUrl(origin: string, workspaceId: string): string {
-  if (!workspaceIdPattern.test(workspaceId)) {
-    throw new KnowledgeDataError('INVALID_REQUEST', { message: 'workspaceId must be a UUID.' });
+/** The tRPC transport URL for one knowledgeBase: `<origin>/api/knowledge/<knowledgeBaseId>/trpc` (A00 contract). */
+export function knowledgeTrpcUrl(origin: string, knowledgeBaseId: string): string {
+  if (!knowledgeBaseIdPattern.test(knowledgeBaseId)) {
+    throw new KnowledgeDataError('INVALID_REQUEST', { message: 'knowledgeBaseId must be a UUID.' });
   }
-  return `${parseFoucApiOrigin(origin)}${knowledgeApiPathPrefix}/${workspaceId}/trpc`;
+  return `${parseFoucApiOrigin(origin)}${knowledgeApiPathPrefix}/${knowledgeBaseId}/trpc`;
 }

@@ -8,12 +8,12 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import type { AssetDerived } from '@fouc/shared/knowledge/contracts';
-import { createTenantTestDatabase, type TenantTestDatabase } from '../../../platform/database/workspace/tenant-test-database';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
-import * as tables from '../../../platform/database/workspace/schema';
+import { createResourceTestDatabase, type ResourceTestDatabase } from '../../../platform/database/resources/resource-test-database';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
+import * as tables from '../../../platform/database/resources/schema';
 import { createModelGateway } from '../ai/gateway';
 import type { GatewayFetch, ModelGateway } from '../ai/gateway';
-import { confirmWorkspaceAssetUpload, prepareWorkspaceAssetUpload } from '../assets/service';
+import { confirmKnowledgeBaseAssetUpload, prepareKnowledgeBaseAssetUpload } from '../assets/service';
 import { createKnowledgeAssetStorage, readKnowledgeAssetStorageConfig, type KnowledgeAssetStorage } from '../assets/storage';
 import { createAiUsageRecorder } from '../observability';
 import type { AiUsageRecorder } from '../observability/usage';
@@ -90,43 +90,43 @@ async function readVisionModelsEnvironment(): Promise<VisionModelsEnvironment> {
 }
 
 describe('asset vision derivation through the real queue and GLM vision model', () => {
-  let database: TenantTestDatabase;
+  let database: ResourceTestDatabase;
   let pool: Pool;
   let storage: KnowledgeAssetStorage;
   let models: VisionModelsEnvironment;
   let gateway: ModelGateway;
   let usage: AiUsageRecorder;
-  const tenant = { workspaceId: randomUUID(), userId: randomUUID() };
-  const objects: { workspaceId: string; hash: string }[] = [];
+  const resource = { knowledgeBaseId: randomUUID(), userId: randomUUID() };
+  const objects: { knowledgeBaseId: string; hash: string }[] = [];
   let runner: RunningRole | undefined;
 
   const jobContext = (): KnowledgeJobContext => ({
-    workspaceId: tenant.workspaceId, outboxId: randomUUID(),
+    knowledgeBaseId: resource.knowledgeBaseId, outboxId: randomUUID(),
     idempotencyKey: `test:${randomUUID()}`, signal: AbortSignal.timeout(120_000), attempt: 1,
   });
 
-  async function upload(label: string, mime: string, bytes: Buffer): Promise<{ hash: string; event: { workspaceId: string; topic: 'asset.created'; hash: string; initiatedBy: string } }> {
+  async function upload(label: string, mime: string, bytes: Buffer): Promise<{ hash: string; event: { knowledgeBaseId: string; topic: 'asset.created'; hash: string; initiatedBy: string } }> {
     const hash = createHash('sha256').update(bytes).digest('hex');
-    const request = { workspaceId: tenant.workspaceId, userId: tenant.userId, hash, mime, size: bytes.byteLength, name: `${label}.${mime.split('/')[1]}` };
-    const prepared = await withWorkspaceTenant(pool, tenant.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, request));
+    const request = { knowledgeBaseId: resource.knowledgeBaseId, userId: resource.userId, hash, mime, size: bytes.byteLength, name: `${label}.${mime.split('/')[1]}` };
+    const prepared = await withKnowledgeBase(pool, resource.knowledgeBaseId, (db) => prepareKnowledgeBaseAssetUpload(storage, db, request));
     if (prepared.action !== 'upload') throw new Error('expected an upload grant');
     const response = await fetch(prepared.url, { method: 'PUT', headers: { 'content-type': mime }, body: bytes });
     if (response.status !== 200) throw new Error(`upload failed: ${response.status}`);
-    objects.push({ workspaceId: tenant.workspaceId, hash });
-    const confirmed = await withWorkspaceTenant(pool, tenant.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, request));
+    objects.push({ knowledgeBaseId: resource.knowledgeBaseId, hash });
+    const confirmed = await withKnowledgeBase(pool, resource.knowledgeBaseId, (db) => confirmKnowledgeBaseAssetUpload(storage, db, request));
     if (confirmed.status !== 'ready') throw new Error('expected a ready asset');
-    return { hash, event: { workspaceId: tenant.workspaceId, topic: 'asset.created', hash, initiatedBy: tenant.userId } };
+    return { hash, event: { knowledgeBaseId: resource.knowledgeBaseId, topic: 'asset.created', hash, initiatedBy: resource.userId } };
   }
 
-  async function derivedOf(workspaceId: string, hash: string): Promise<AssetDerived | undefined> {
+  async function derivedOf(knowledgeBaseId: string, hash: string): Promise<AssetDerived | undefined> {
     const result = await database.admin.query<{ derived: AssetDerived }>(
-      'SELECT derived FROM workspace.asset WHERE workspace_id=$1 AND hash=$2', [workspaceId, hash],
+      'SELECT derived FROM resources.asset WHERE knowledge_base_id=$1 AND hash=$2', [knowledgeBaseId, hash],
     );
     return result.rows[0]?.derived;
   }
-  async function usageRows(workspaceId: string) {
+  async function usageRows(knowledgeBaseId: string) {
     return (await database.admin.query<{ tier: string; operation: string; status: string; provider: string | null; model: string | null; input_tokens: number | null; output_tokens: number | null; error_code: string | null }>(
-      'SELECT tier, operation, status, provider, model, input_tokens, output_tokens, error_code FROM workspace.ai_usage WHERE workspace_id=$1 ORDER BY created_at', [workspaceId],
+      'SELECT tier, operation, status, provider, model, input_tokens, output_tokens, error_code FROM resources.ai_usage WHERE knowledge_base_id=$1 ORDER BY created_at', [knowledgeBaseId],
     )).rows;
   }
   async function until(check: () => Promise<boolean>, timeout = 60_000) {
@@ -140,16 +140,16 @@ describe('asset vision derivation through the real queue and GLM vision model', 
   beforeAll(async () => {
     storage = createKnowledgeAssetStorage(await readKnowledgeAssetStorageConfig());
     models = await readVisionModelsEnvironment();
-    database = await createTenantTestDatabase();
+    database = await createResourceTestDatabase();
     pool = new Pool({ ...database.pool.options, max: 4 });
     pool.on('error', () => {});
     await initializeKnowledgeJobs(database.admin, pool);
     const client = await database.admin.connect();
     try {
-      const db = drizzle(client, { schema: tables.workspaceTenantSchema });
-      await db.insert(authUser).values({ id: tenant.userId, name: 'Vision Owner', email: `${tenant.userId}@vision.test` });
-      await db.insert(tables.workspace).values({ id: tenant.workspaceId, name: 'Vision Workspace', kind: 'team' });
-      await db.insert(tables.member).values({ workspaceId: tenant.workspaceId, userId: tenant.userId, role: 'owner' });
+      const db = drizzle(client, { schema: tables.resourceSchema });
+      await db.insert(authUser).values({ id: resource.userId, name: 'Vision Owner', email: `${resource.userId}@vision.test` });
+      await db.insert(tables.knowledgeBase).values({ id: resource.knowledgeBaseId, name: 'Vision KnowledgeBase' });
+      await db.insert(tables.member).values({ knowledgeBaseId: resource.knowledgeBaseId, userId: resource.userId, role: 'owner' });
     } finally {
       client.release();
     }
@@ -177,16 +177,16 @@ describe('asset vision derivation through the real queue and GLM vision model', 
     const { hash, event } = await upload('vision-target', 'image/png', image);
 
     runner = await startKnowledgeWorker({ pool, consumers: [createAssetVisionConsumer({ pool, storage, gateway })], concurrency: 1, pollIntervalMs: 25 });
-    await until(async () => (await derivedOf(tenant.workspaceId, hash))?.status === 'ready');
+    await until(async () => (await derivedOf(resource.knowledgeBaseId, hash))?.status === 'ready');
 
-    const derived = await derivedOf(tenant.workspaceId, hash);
+    const derived = await derivedOf(resource.knowledgeBaseId, hash);
     expect(derived?.status).toBe('ready');
     expect(derived?.description?.length ?? 0).toBeGreaterThan(0);
     expect(typeof derived?.ocr).toBe('string');
     expect(derived?.model).toBe(models.model);
     expect(derived?.generatedAt && Date.parse(derived.generatedAt)).toBeGreaterThan(Date.now() - 10 * 60_000);
 
-    const rows = await usageRows(tenant.workspaceId);
+    const rows = await usageRows(resource.knowledgeBaseId);
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ tier: 'vision', operation: 'generate', status: 'success', provider: 'zhipu', model: models.model });
     // Real provider-reported token counts, never invented zeros.
@@ -196,14 +196,14 @@ describe('asset vision derivation through the real queue and GLM vision model', 
     // Idempotent replay: the same asset.created content under a new outbox id re-dispatches
     // the consumer, which must no-op without another model call or derived overwrite.
     const settled = derived!;
-    await withWorkspaceTenant(pool, tenant.workspaceId, (db) => appendKnowledgeOutbox(db, event));
+    await withKnowledgeBase(pool, resource.knowledgeBaseId, (db) => appendKnowledgeOutbox(db, event));
     await until(async () => (await database.admin.query<{ events: number; pending: number }>(
-      `SELECT (SELECT count(*)::int FROM workspace.outbox WHERE workspace_id=$1 AND topic='asset.created' AND payload->>'hash'=$2) AS events,
-              (SELECT count(*)::int FROM knowledge_jobs._private_jobs) AS pending`, [tenant.workspaceId, hash],
+      `SELECT (SELECT count(*)::int FROM resources.outbox WHERE knowledge_base_id=$1 AND topic='asset.created' AND payload->>'hash'=$2) AS events,
+              (SELECT count(*)::int FROM knowledge_jobs._private_jobs) AS pending`, [resource.knowledgeBaseId, hash],
     )).rows[0]?.events === 2 && (await database.admin.query<{ pending: number }>('SELECT count(*)::int AS pending FROM knowledge_jobs._private_jobs')).rows[0]?.pending === 0);
     await delay(200);
-    expect(await derivedOf(tenant.workspaceId, hash)).toEqual(settled);
-    expect(await usageRows(tenant.workspaceId)).toHaveLength(1);
+    expect(await derivedOf(resource.knowledgeBaseId, hash)).toEqual(settled);
+    expect(await usageRows(resource.knowledgeBaseId)).toHaveLength(1);
   }, 120_000);
 
   test('an unavailable vision model leaves a structured failed state without retry churn', async () => {
@@ -216,7 +216,7 @@ describe('asset vision derivation through the real queue and GLM vision model', 
     const { hash, event } = await upload('unconfigured-model', 'image/png', makePng(320, 240, 'unconfigured'));
     // Permanent configuration failure: the job completes, derived stays queryable and retryable by a later replay.
     await expect(unconfigured.handle(event, jobContext())).resolves.toBeUndefined();
-    expect(await derivedOf(tenant.workspaceId, hash)).toEqual({ status: 'failed', error: 'configuration' });
+    expect(await derivedOf(resource.knowledgeBaseId, hash)).toEqual({ status: 'failed', error: 'configuration' });
   }, 60_000);
 
   test('a retryable provider failure records usage and rethrows so the queue retries', async () => {
@@ -232,10 +232,10 @@ describe('asset vision derivation through the real queue and GLM vision model', 
     // Each failed attempt keeps a structured state and rethrows for the queue's backoff/dead-letter path.
     for (const attempt of [1, 2]) {
       await expect(consumer.handle(event, { ...jobContext(), attempt })).rejects.toMatchObject({ code: 'consumer_failed' });
-      expect(await derivedOf(tenant.workspaceId, hash)).toEqual({ status: 'failed', error: 'rate_limited' });
+      expect(await derivedOf(resource.knowledgeBaseId, hash)).toEqual({ status: 'failed', error: 'rate_limited' });
     }
     // The failed attempts are still metered through G02 with the fixed gateway error code.
-    const failures = (await usageRows(tenant.workspaceId)).filter((row) => row.error_code === 'rate_limited');
+    const failures = (await usageRows(resource.knowledgeBaseId)).filter((row) => row.error_code === 'rate_limited');
     expect(failures).toHaveLength(2);
     expect(failures[0]).toMatchObject({ tier: 'vision', status: 'error', model: models.model, input_tokens: null, output_tokens: null });
   }, 60_000);
@@ -245,12 +245,12 @@ describe('asset vision derivation through the real queue and GLM vision model', 
     const { hash: textHash, event: textEvent } = await upload('plain-text', 'text/plain', text);
     const consumer = createAssetVisionConsumer({ pool, storage, gateway });
     await expect(consumer.handle(textEvent, jobContext())).resolves.toBeUndefined();
-    expect(await derivedOf(tenant.workspaceId, textHash)).toEqual({ status: 'pending' });
+    expect(await derivedOf(resource.knowledgeBaseId, textHash)).toEqual({ status: 'pending' });
 
     const { hash, event } = await upload('vanished-object', 'image/png', makePng(320, 240, 'vanished'));
-    await storage.deleteObject({ workspaceId: tenant.workspaceId, hash });
+    await storage.deleteObject({ knowledgeBaseId: resource.knowledgeBaseId, hash });
     await expect(consumer.handle(event, jobContext())).resolves.toBeUndefined();
-    expect(await derivedOf(tenant.workspaceId, hash)).toEqual({ status: 'failed', error: 'asset_object_missing' });
-    expect((await usageRows(tenant.workspaceId)).filter((row) => row.error_code === 'rate_limited')).toHaveLength(2);
+    expect(await derivedOf(resource.knowledgeBaseId, hash)).toEqual({ status: 'failed', error: 'asset_object_missing' });
+    expect((await usageRows(resource.knowledgeBaseId)).filter((row) => row.error_code === 'rate_limited')).toHaveLength(2);
   }, 60_000);
 });

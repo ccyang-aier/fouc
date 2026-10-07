@@ -8,7 +8,7 @@ export interface MongoConnectionConfig {
   mongo?: ConnectionUrlFields['mongo'];
 }
 export interface MongoSavedConnection {
-  id: string; workspaceId: string; name: string; config: MongoConnectionConfig; updatedAt: number;
+  id: string; name: string; config: MongoConnectionConfig; updatedAt: number;
   directory?: ConnectionDirectoryMetadata;
   status?: ConnectionDirectoryStatus;
 }

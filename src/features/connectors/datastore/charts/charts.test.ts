@@ -91,11 +91,11 @@ describe('query chart field and source mapping', () => {
   })
 })
 
-test('chart configuration isolates workspace/document scopes and restores only the current schema', () => {
+test('chart configuration isolates connection/document scopes and restores only the current schema', () => {
   const values = new Map<string, string>(), storage = { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => { values.set(key, value) } }, config = build(source).config
-  expect(saveQueryChartConfig(storage, 'workspace-a/connection/query', config)).toBe(true)
-  expect(loadQueryChartConfig(storage, 'workspace-a/connection/query')).toEqual(config)
-  expect(loadQueryChartConfig(storage, 'workspace-b/connection/query')).toBeNull()
+  expect(saveQueryChartConfig(storage, 'connection-a/query', config)).toBe(true)
+  expect(loadQueryChartConfig(storage, 'connection-a/query')).toEqual(config)
+  expect(loadQueryChartConfig(storage, 'connection-b/query')).toBeNull()
   expect(saveQueryChartConfig(storage, undefined, config)).toBe(false)
   values.set(CHART_STORAGE_PREFIX + 'broken', JSON.stringify({ version: 1, config: { ...config, ys: [1] } }))
   expect(loadQueryChartConfig(storage, 'broken')).toBeNull()

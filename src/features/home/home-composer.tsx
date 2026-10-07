@@ -34,7 +34,7 @@ import { HomeAssistant } from "./home-assistant"
 
 const AGENTS = ["Nova", "Codey", "Sage"] as const
 const MODES = ["Auto", "Fast", "Deep"] as const
-const PERMISSIONS = ["默认权限", "仅查看", "允许修改工作区"] as const
+const PERMISSIONS = ["默认权限", "仅查看", "允许修改文件"] as const
 
 type HomeComposerProps = {
   onStatusChange: (status: string | null) => void

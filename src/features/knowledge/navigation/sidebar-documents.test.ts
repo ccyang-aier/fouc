@@ -4,7 +4,7 @@ import { buildNavigationSections } from './tree-model';
 import { sidebarDocuments } from './sidebar-documents';
 
 test('collections share the reachable page tree and order recent pages by update time', () => {
-  const base = { id: 'base', workspaceId: 'workspace', name: '知识库', defaultAccess: 'edit' } as Teamspace;
+  const base = { id: 'base', knowledgeBaseId: 'server', name: '知识库', defaultAccess: 'edit' } as Teamspace;
   const page = (id: string, parentId: string | null, updatedAt: string, deletedAt: string | null = null) => ({ id, teamspaceId: base.id, parentId, title: id, kind: 'doc', icon: null, position: 'a0', updatedAt, deletedAt }) as Page;
   const pages = [
     page('root', null, '2026-09-27T00:00:00Z'),

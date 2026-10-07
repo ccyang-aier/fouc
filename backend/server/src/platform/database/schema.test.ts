@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { describe, expect, test } from 'bun:test';
 import { getTableConfig } from 'drizzle-orm/pg-core';
 import { aiTaskSchema, assetStatusSchema, commentThreadStatusSchema, modelTiers, pageKindSchema, permissionLevels } from '@fouc/shared/knowledge/contracts';
-import { memberRoleSchema, workspaceKindSchema } from '@fouc/shared/workspaces';
+import { memberRoleSchema } from '@fouc/shared/resources';
 import { generateDatabaseSchemaSql, databaseSchemaSqlPath } from '../../../scripts/database-schema';
 import {
   aiTaskKind,
@@ -17,7 +17,7 @@ import {
   databaseDefinition,
   docCheckpoint,
   docState,
-  workspaceTenantTables,
+  resourceTables,
   identityTables,
   knowledgeBase,
   memberRole,
@@ -27,70 +27,47 @@ import {
   pageKind,
   permissionLevel,
   project,
+  projectMember,
   teamspace,
-  workspace,
-  workspaceKind,
 } from './schema';
 
-describe('workspace-owned current Drizzle schema', () => {
-  test('covers all designed business tables and keeps global identity separate', () => {
-    const names = workspaceTenantTables.map((table) => getTableConfig(table).name);
+describe('knowledgeBase-owned current Drizzle schema', () => {
+  test('covers resource tables and keeps identity separate', () => {
+    const names = resourceTables.map((table) => getTableConfig(table).name);
     for (const name of [
-      'workspace', 'member', 'workspace_invitation', 'group', 'group_member', 'project', 'knowledge_base', 'teamspace', 'page',
-      'database_definition', 'doc_state', 'doc_checkpoint', 'page_acl',
-      'page_effective_acl', 'block_index', 'backlink', 'asset', 'comment_thread',
-      'comment', 'comment_like', 'outbox', 'ai_task', 'ai_usage', 'notification',
-      'personal_access_token', 'share_link', 'model_credential', 'block_embedding_staging',
+      'knowledge_base', 'knowledge_base_member', 'knowledge_base_invitation', 'group', 'group_member', 'project', 'project_member', 'teamspace', 'page',
+      'database_definition', 'doc_state', 'doc_checkpoint', 'page_acl', 'page_effective_acl', 'block_index', 'backlink', 'asset', 'comment_thread',
+      'comment', 'comment_like', 'outbox', 'ai_task', 'ai_usage', 'notification', 'personal_access_token', 'share_link', 'model_credential', 'block_embedding_staging',
     ]) expect(names).toContain(name);
-    expect(identityTables.map((table) => getTableConfig(table).name).sort())
-      .toEqual(['account', 'session', 'user', 'verification']);
+    expect(identityTables.map((table) => getTableConfig(table).name).sort()).toEqual(['account', 'session', 'user', 'verification']);
     expect(new Set(allApplicationTables).size).toBe(allApplicationTables.length);
   });
 
-  test('all business tables carry a non-null workspace key and tenant-safe foreign keys', () => {
-    for (const table of workspaceTenantTables) {
+  test('knowledge-base children carry the real library key and consistent composite relations', () => {
+    for (const table of resourceTables.filter((item) => !new Set<object>([project, projectMember, knowledgeBase]).has(item))) {
       const config = getTableConfig(table);
-      const scope = config.columns.find((column) => column.name === 'workspace_id');
-      expect(scope, `${config.name} tenant key`).toBeDefined();
-      expect(scope?.notNull, `${config.name} nullable tenant key`).toBe(true);
+      expect(config.columns.find((column) => column.name === 'knowledge_base_id')?.notNull, config.name).toBe(true);
       for (const foreignKey of config.foreignKeys) {
         const reference = foreignKey.reference();
-        if (getTableConfig(reference.foreignTable).schema !== 'workspace') continue;
-        const localScopeIndex = reference.columns.findIndex((column) => column.name === 'workspace_id');
-        expect(localScopeIndex, `${config.name}.${foreignKey.getName()} missing tenant scope`).toBeGreaterThanOrEqual(0);
-        expect(reference.foreignColumns[localScopeIndex]?.name).toBe('workspace_id');
+        if (getTableConfig(reference.foreignTable).schema !== 'resources' || reference.foreignTable === knowledgeBase) continue;
+        const scopeIndex = reference.columns.findIndex((column) => column.name === (foreignKey.getName() === 'backlink_target_page_fk' ? 'dst_knowledge_base_id' : 'knowledge_base_id'));
+        expect(scopeIndex, foreignKey.getName()).toBeGreaterThanOrEqual(0);
+        expect(reference.foreignColumns[scopeIndex]?.name).toBe('knowledge_base_id');
       }
     }
   });
 
-  test('every tenant-owned table has a foreign-key path to its workspace root', () => {
-    function reachesRoot(table: typeof allApplicationTables[number], visited = new Set<object>()): boolean {
-      if (visited.has(table)) return false;
-      visited.add(table);
-      const config = getTableConfig(table);
-      if (config.schema !== 'workspace') return false;
-      return config.name === 'workspace' || config.foreignKeys.some((key) => reachesRoot(key.reference().foreignTable, visited));
-    }
-    for (const table of workspaceTenantTables) {
-      expect(reachesRoot(table), `${getTableConfig(table).name} has no workspace root`).toBe(true);
-    }
-  });
-
-  test('projects and knowledge bases are siblings; folders belong to one knowledge base in the same workspace', () => {
-    const parentsOf = (table: typeof project | typeof knowledgeBase | typeof teamspace) =>
-      getTableConfig(table).foreignKeys.map((key) => key.reference().foreignTable);
-    expect(parentsOf(project)).toContain(workspace);
-    expect(parentsOf(project)).not.toContain(knowledgeBase);
-    expect(parentsOf(knowledgeBase)).toContain(workspace);
-    expect(parentsOf(knowledgeBase)).not.toContain(project);
-    const folderBase = getTableConfig(teamspace).foreignKeys.find((key) => key.getName() === 'teamspace_knowledge_base_fk')?.reference();
-    expect(folderBase?.foreignTable).toBe(knowledgeBase);
-    expect(folderBase?.columns.map((column) => column.name)).toEqual(['workspace_id', 'knowledge_base_id']);
-    expect(folderBase?.foreignColumns.map((column) => column.name)).toEqual(['workspace_id', 'id']);
+  test('projects and knowledge bases are independent roots with no duplicated library identifier', () => {
+    expect(getTableConfig(knowledgeBase).columns.map((column) => column.name)).toEqual(['id', 'name', 'created_at', 'updated_at']);
+    expect(getTableConfig(project).columns.some((column) => column.name === 'knowledge_base_id')).toBe(false);
+    expect(getTableConfig(projectMember).foreignKeys.some((key) => key.reference().foreignTable === project)).toBe(true);
+    const relation = getTableConfig(teamspace).foreignKeys.find((key) => key.reference().foreignTable === knowledgeBase)?.reference();
+    expect(relation?.columns.map((column) => column.name)).toEqual(['knowledge_base_id']);
+    expect(relation?.foreignColumns.map((column) => column.name)).toEqual(['id']);
+    expect(getTableConfig(teamspace).columns.filter((column) => column.name === 'knowledge_base_id')).toHaveLength(1);
   });
 
   test('SQL enum values derive from the shared domain contracts', () => {
-    expect([...workspaceKind.enumValues]).toEqual(workspaceKindSchema.options);
     expect([...memberRole.enumValues]).toEqual(memberRoleSchema.options);
     expect([...pageKind.enumValues]).toEqual(pageKindSchema.options);
     expect(permissionLevel.enumValues).toEqual([...permissionLevels]);
@@ -101,33 +78,33 @@ describe('workspace-owned current Drizzle schema', () => {
     expect([...aiTaskStatus.enumValues]).toEqual(aiTaskSchema.shape.status.options);
   });
 
-  test('assets are workspace-scoped content-addressed blobs with a lifecycle status', () => {
+  test('assets are knowledgeBase-scoped content-addressed blobs with a lifecycle status', () => {
     const config = getTableConfig(asset);
-    expect(config.primaryKeys[0]?.columns.map((column) => column.name)).toEqual(['workspace_id', 'hash']);
+    expect(config.primaryKeys[0]?.columns.map((column) => column.name)).toEqual(['knowledge_base_id', 'hash']);
     expect(config.checks.map((check) => check.name)).toEqual(expect.arrayContaining(['asset_hash_valid', 'asset_mime_valid']));
     expect(asset.status.notNull).toBe(true);
     expect(asset.status.enumValues).toEqual(['ready', 'revoked']);
   });
 
-  test('database rows reference tenant-local database pages, never arbitrary documents', () => {
+  test('database rows reference resource-local database pages, never arbitrary documents', () => {
     const pageConfig = getTableConfig(page);
     const definitionConfig = getTableConfig(databaseDefinition);
     const databaseFk = pageConfig.foreignKeys.find((key) => key.getName() === 'page_database_fk')?.reference();
-    expect(databaseFk?.columns.map((column) => column.name)).toEqual(['workspace_id', 'teamspace_id', 'database_id']);
+    expect(databaseFk?.columns.map((column) => column.name)).toEqual(['knowledge_base_id', 'teamspace_id', 'database_id']);
     expect(databaseFk?.foreignTable).toBe(databaseDefinition);
     const definitionFk = definitionConfig.foreignKeys.find((key) => key.getName() === 'database_definition_page_fk')?.reference();
     expect(definitionFk?.foreignTable).toBe(page);
-    expect(definitionFk?.foreignColumns.map((column) => column.name)).toEqual(['workspace_id', 'teamspace_id', 'id', 'kind']);
+    expect(definitionFk?.foreignColumns.map((column) => column.name)).toEqual(['knowledge_base_id', 'teamspace_id', 'id', 'kind']);
     expect(pageConfig.checks.map((check) => check.name)).toContain('page_row_database_relation');
     expect(definitionConfig.checks.map((check) => check.name)).toContain('database_definition_database_kind');
   });
 
-  test('page tree uses ltree paths and indexed tenant-local parents', () => {
+  test('page tree uses ltree paths and indexed resource-local parents', () => {
     const config = getTableConfig(page);
     expect(page.path.getSQLType()).toBe('ltree');
     expect(config.indexes.find((index) => index.config.name === 'page_path_gist_idx')?.config.method).toBe('gist');
     const parent = config.foreignKeys.find((key) => key.getName() === 'page_parent_fk')?.reference();
-    expect(parent?.foreignColumns.map((column) => column.name)).toEqual(['workspace_id', 'teamspace_id', 'id']);
+    expect(parent?.foreignColumns.map((column) => column.name)).toEqual(['knowledge_base_id', 'teamspace_id', 'id']);
     expect(config.checks.map((check) => check.name)).toEqual(expect.arrayContaining(['page_not_own_parent', 'page_path_valid', 'page_root_path_depth']));
   });
 
@@ -149,7 +126,7 @@ describe('workspace-owned current Drizzle schema', () => {
     expect(blockIndex.id.getSQLType()).toBe('bigint');
     expect(blockIndex.id.primary).toBe(true);
     expect(blockIndex.id.generatedIdentity?.type).toBe('always');
-    expect(config.uniqueConstraints.some((key) => key.columns.map((column) => column.name).join(',') === 'workspace_id,page_id,block_id')).toBe(true);
+    expect(config.uniqueConstraints.some((key) => key.columns.map((column) => column.name).join(',') === 'knowledge_base_id,page_id,block_id')).toBe(true);
     expect(blockIndex.embedding.getSQLType()).toBe('vector');
     expect(blockIndex.embedding.mapToDriverValue([1, 2, 3])).toBe('[1,2,3]');
     expect(blockIndex.embedding.mapToDriverValue([1, 2])).toBe('[1,2]');
@@ -169,7 +146,7 @@ describe('workspace-owned current Drizzle schema', () => {
 
   test('replacement model vectors can be staged without replacing active vectors or copying body text', () => {
     const config = getTableConfig(blockEmbeddingStaging);
-    expect(config.primaryKeys[0]?.columns.map((column) => column.name)).toEqual(['workspace_id', 'page_id', 'block_id', 'embed_model', 'embed_dimensions']);
+    expect(config.primaryKeys[0]?.columns.map((column) => column.name)).toEqual(['knowledge_base_id', 'page_id', 'block_id', 'embed_model', 'embed_dimensions']);
     const blockKey = config.foreignKeys.find((key) => key.getName() === 'block_embedding_staging_block_fk');
     expect(blockKey?.reference().foreignTable).toBe(blockIndex);
     expect(blockKey?.onDelete).toBe('cascade');
@@ -209,8 +186,8 @@ describe('workspace-owned current Drizzle schema', () => {
     expect(sql).toContain('CREATE EXTENSION IF NOT EXISTS vector;');
     expect(sql).toContain('CREATE EXTENSION IF NOT EXISTS pg_search;');
     expect(sql).toContain('GENERATED ALWAYS AS IDENTITY');
-    for (const enumType of [workspaceKind, memberRole, pageKind, permissionLevel, modelTier, commentThreadStatus, aiTaskKind, aiTaskStatus]) {
-      expect(sql).toContain(`"workspace"."${enumType.enumName}"`);
+    for (const enumType of [memberRole, pageKind, permissionLevel, modelTier, commentThreadStatus, aiTaskKind, aiTaskStatus]) {
+      expect(sql).toContain(`"resources"."${enumType.enumName}"`);
       expect(sql).not.toMatch(new RegExp(`\\t"[a-z_]+" "${enumType.enumName}"(?: |,)`));
     }
     expect(sql).not.toContain('vector(1536)');

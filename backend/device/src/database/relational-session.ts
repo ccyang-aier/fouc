@@ -87,17 +87,16 @@ export class RelationalSessionManager {
   readonly security: DatabaseSecurityService;
   readonly adminObjects: DatabaseAdminObjectService;
   constructor(private readonly capabilities: DatabaseCapabilityRegistry, readonly sqlRepository = new RelationalSqlRepository(), documents = new DatabaseDocsRepository(), exports?: DatabaseExportJobs) {
-    this.metadata = new RelationalMetadataService((workspaceId, id) => this.entry(workspaceId, id), documents);
-    this.exports = new RelationalExportService((workspaceId, id) => this.entry(workspaceId, id), exports);
-    this.activity = new DatabaseActivityService((workspaceId, id) => this.entry(workspaceId, id));
-    this.sqliteBackups = new SqliteBackupService((workspaceId, id) => this.entry(workspaceId, id).session);
-    this.security = new DatabaseSecurityService((workspaceId, id) => this.entry(workspaceId, id));
-    this.adminObjects = new DatabaseAdminObjectService((workspaceId, id) => this.entry(workspaceId, id));
+    this.metadata = new RelationalMetadataService((id) => this.entry(id), documents);
+    this.exports = new RelationalExportService((id) => this.entry(id), exports);
+    this.activity = new DatabaseActivityService((id) => this.entry(id));
+    this.sqliteBackups = new SqliteBackupService((id) => this.entry(id).session);
+    this.security = new DatabaseSecurityService((id) => this.entry(id));
+    this.adminObjects = new DatabaseAdminObjectService((id) => this.entry(id));
   }
 
-  async connect(workspaceId: string, value: unknown, connection: { id: string; name: string } | null = null): Promise<RelationalSession> {
-    if (!workspaceId.trim() || workspaceId.length > 128)
-      throw new DatabaseInputError('工作空间无效');
+  async connect(value: unknown, connection: { id: string; name: string } | null = null): Promise<RelationalSession> {
+
     if (!value || typeof value !== 'object') throw new DatabaseInputError('连接参数无效');
     const input = value as RelationalConnectInput;
     if (input.provider === 'postgres' || input.provider === 'mysql') {
@@ -140,7 +139,6 @@ export class RelationalSessionManager {
       const session: RelationalSession = {
         id,
         connectionId: connection?.id ?? null,
-        workspaceId,
         provider: input.provider,
         database: input.provider === 'sqlite' ? input.path : input.database,
         info: driver.info,
@@ -170,21 +168,21 @@ export class RelationalSessionManager {
     }
   }
 
-  private entry(workspaceId: string, id: string): Entry {
+  private entry(id: string): Entry {
     const entry = this.entries.get(id);
-    if (!entry || entry.session.workspaceId !== workspaceId)
-      throw new DatabaseInputError('当前工作空间中的连接已断开');
+    if (!entry)
+      throw new DatabaseInputError('当前会话中的连接已断开');
     return entry;
   }
   private nativeCapabilities(provider: RelationalSession['provider']): DatabaseCapabilities {
     // The reference catalog describes DBX; Fouc also implements native SQLite QUERY PLAN.
     return { ...getDatabaseDriver(provider)!.capabilities, sqlExplain: true };
   }
-  details(workspaceId: string, id: string): RelationalSession {
-    return this.entry(workspaceId, id).session;
+  details(id: string): RelationalSession {
+    return this.entry(id).session;
   }
-  setWriteAccess(workspaceId: string, id: string, enabled: boolean): RelationalSession {
-    const entry = this.entry(workspaceId, id);
+  setWriteAccess(id: string, enabled: boolean): RelationalSession {
+    const entry = this.entry(id);
     if (entry.saving) throw new DatabaseInputError('请等待当前事务结束');
     const observed = Object.fromEntries(
       DATABASE_CAPABILITIES.map((key) => [
@@ -214,8 +212,8 @@ export class RelationalSessionManager {
     this.transfers.clearSession(id);
     return entry.session;
   }
-  private writable(workspaceId: string, id: string): Entry {
-    const entry = this.entry(workspaceId, id);
+  private writable(id: string): Entry {
+    const entry = this.entry(id);
     if (
       entry.session.capabilities.restrictions.readOnly ||
       !entry.session.capabilities.capabilities.tableDataEdit
@@ -223,134 +221,134 @@ export class RelationalSessionManager {
       throw new DatabaseInputError('当前会话只读，请先解锁表格写入');
     return entry;
   }
-  schemaCreateOptions(workspaceId: string, id: string, signal?: AbortSignal) {
-    const entry = this.entry(workspaceId, id);
+  schemaCreateOptions(id: string, signal?: AbortSignal) {
+    const entry = this.entry(id);
     return entry.schemaCreates.options(entry.driver, entry.session.provider, entry.session.database, () => {
-      if (this.entry(workspaceId, id) !== entry || entry.saving) throw new DatabaseInputError('连接忙或已变化，请稍后重试。');
+      if (this.entry(id) !== entry || entry.saving) throw new DatabaseInputError('连接忙或已变化，请稍后重试。');
     }, signal);
   }
-  prepareTableClear(workspaceId: string, id: string, value: unknown, signal?: AbortSignal) {
-    const entry = this.entry(workspaceId, id);
+  prepareTableClear(id: string, value: unknown, signal?: AbortSignal) {
+    const entry = this.entry(id);
     return entry.tableClears.prepare(entry.driver, entry.session.provider, value, () => {
-      if (this.entry(workspaceId, id) !== entry || entry.saving) throw new DatabaseInputError('连接忙或已变化，请重新审查。');
+      if (this.entry(id) !== entry || entry.saving) throw new DatabaseInputError('连接忙或已变化，请重新审查。');
     }, signal);
   }
-  discardTableClear(workspaceId: string, id: string, planId: string): void { this.entry(workspaceId, id).tableClears.discard(planId); }
-  async commitTableClear(workspaceId: string, id: string, planId: string, value: unknown, signal?: AbortSignal) {
-    const entry = this.writable(workspaceId, id);
+  discardTableClear(id: string, planId: string): void { this.entry(id).tableClears.discard(planId); }
+  async commitTableClear(id: string, planId: string, value: unknown, signal?: AbortSignal) {
+    const entry = this.writable(id);
     if (entry.saving) throw new DatabaseInputError('请等待当前事务结束。');
     entry.saving = true;
     try {
       return await entry.tableClears.commit(entry.driver, planId, value, () => {
-        if (this.writable(workspaceId, id) !== entry) throw new DatabaseInputError('连接已变化，请重新审查。');
+        if (this.writable(id) !== entry) throw new DatabaseInputError('连接已变化，请重新审查。');
       }, signal);
     } finally { entry.saving = false; }
   }
-  foreignKeyEditOptions(workspaceId: string, id: string, schema: string, table: string, signal?: AbortSignal) {
-    const entry = this.entry(workspaceId, id);
+  foreignKeyEditOptions(id: string, schema: string, table: string, signal?: AbortSignal) {
+    const entry = this.entry(id);
     return entry.foreignKeyEdits.options(entry.driver, entry.session.provider, schema, table, () => {
-      if (this.entry(workspaceId, id) !== entry || entry.saving) throw new DatabaseInputError('连接忙或已变化，请稍后重试。');
+      if (this.entry(id) !== entry || entry.saving) throw new DatabaseInputError('连接忙或已变化，请稍后重试。');
     }, signal);
   }
-  foreignKeyEditTarget(workspaceId: string, id: string, schema: string, table: string, signal?: AbortSignal) {
-    const entry = this.entry(workspaceId, id);
+  foreignKeyEditTarget(id: string, schema: string, table: string, signal?: AbortSignal) {
+    const entry = this.entry(id);
     return entry.foreignKeyEdits.target(entry.driver, entry.session.provider, schema, table, () => {
-      if (this.entry(workspaceId, id) !== entry || entry.saving) throw new DatabaseInputError('连接忙或已变化，请稍后重试。');
+      if (this.entry(id) !== entry || entry.saving) throw new DatabaseInputError('连接忙或已变化，请稍后重试。');
     }, signal);
   }
-  prepareForeignKeyEdit(workspaceId: string, id: string, value: unknown, signal?: AbortSignal) {
+  prepareForeignKeyEdit(id: string, value: unknown, signal?: AbortSignal) {
     const input = foreignKeyEditRequestSchema.safeParse(value);
     if (!input.success) throw new DatabaseInputError(input.error.issues[0]?.message ?? '外键审查请求无效。');
-    const entry = this.entry(workspaceId, id);
+    const entry = this.entry(id);
     return entry.foreignKeyEdits.prepare(entry.driver, entry.session.provider, input.data.schema, input.data.table, input.data.input, () => {
-      if (this.entry(workspaceId, id) !== entry || entry.saving) throw new DatabaseInputError('连接忙或已变化，请重新审查。');
+      if (this.entry(id) !== entry || entry.saving) throw new DatabaseInputError('连接忙或已变化，请重新审查。');
     }, signal);
   }
-  discardForeignKeyEdit(workspaceId: string, id: string, planId: string): void { this.entry(workspaceId, id).foreignKeyEdits.discard(planId); }
-  async commitForeignKeyEdit(workspaceId: string, id: string, planId: string, signal?: AbortSignal) {
-    const entry = this.writable(workspaceId, id);
+  discardForeignKeyEdit(id: string, planId: string): void { this.entry(id).foreignKeyEdits.discard(planId); }
+  async commitForeignKeyEdit(id: string, planId: string, signal?: AbortSignal) {
+    const entry = this.writable(id);
     if (entry.saving) throw new DatabaseInputError('请等待当前事务结束。');
     entry.saving = true;
     try {
       return await entry.foreignKeyEdits.commit(entry.driver, planId, () => {
-        if (this.writable(workspaceId, id) !== entry) throw new DatabaseInputError('连接已变化，请重新审查。');
+        if (this.writable(id) !== entry) throw new DatabaseInputError('连接已变化，请重新审查。');
       }, signal);
     } finally { entry.saving = false; }
   }
-  indexEditOptions(workspaceId: string, id: string, schema: string, table: string, signal?: AbortSignal) {
-    const entry = this.entry(workspaceId, id);
+  indexEditOptions(id: string, schema: string, table: string, signal?: AbortSignal) {
+    const entry = this.entry(id);
     return entry.indexEdits.options(entry.driver, entry.session.provider, schema, table, () => {
-      if (this.entry(workspaceId, id) !== entry || entry.saving) throw new DatabaseInputError('连接忙或已变化，请稍后重试。');
+      if (this.entry(id) !== entry || entry.saving) throw new DatabaseInputError('连接忙或已变化，请稍后重试。');
     }, signal);
   }
-  prepareIndexEdit(workspaceId: string, id: string, value: unknown, signal?: AbortSignal) {
-    const entry = this.entry(workspaceId, id);
+  prepareIndexEdit(id: string, value: unknown, signal?: AbortSignal) {
+    const entry = this.entry(id);
     return entry.indexEdits.prepare(entry.driver, entry.session.provider, value, () => {
-      if (this.entry(workspaceId, id) !== entry || entry.saving) throw new DatabaseInputError('连接忙或已变化，请重新审查。');
+      if (this.entry(id) !== entry || entry.saving) throw new DatabaseInputError('连接忙或已变化，请重新审查。');
     }, signal);
   }
-  discardIndexEdit(workspaceId: string, id: string, planId: string): void { this.entry(workspaceId, id).indexEdits.discard(planId); }
-  async commitIndexEdit(workspaceId: string, id: string, planId: string, signal?: AbortSignal) {
-    const entry = this.writable(workspaceId, id);
+  discardIndexEdit(id: string, planId: string): void { this.entry(id).indexEdits.discard(planId); }
+  async commitIndexEdit(id: string, planId: string, signal?: AbortSignal) {
+    const entry = this.writable(id);
     if (entry.saving) throw new DatabaseInputError('请等待当前事务结束。');
     entry.saving = true;
     try {
       return await entry.indexEdits.commit(entry.driver, planId, () => {
-        if (this.writable(workspaceId, id) !== entry) throw new DatabaseInputError('连接已变化，请重新审查。');
+        if (this.writable(id) !== entry) throw new DatabaseInputError('连接已变化，请重新审查。');
       }, signal);
     } finally { entry.saving = false; }
   }
-  tableCreateOptions(workspaceId: string, id: string, signal?: AbortSignal) {
-    const entry = this.entry(workspaceId, id);
+  tableCreateOptions(id: string, signal?: AbortSignal) {
+    const entry = this.entry(id);
     return entry.tableCreates.options(entry.driver, entry.session.provider, entry.session.database, () => {
-      if (this.entry(workspaceId, id) !== entry || entry.saving) throw new DatabaseInputError('连接忙或已变化，请稍后重试。');
+      if (this.entry(id) !== entry || entry.saving) throw new DatabaseInputError('连接忙或已变化，请稍后重试。');
     }, signal);
   }
-  prepareTableCreate(workspaceId: string, id: string, value: unknown, signal?: AbortSignal) {
-    const entry = this.entry(workspaceId, id);
+  prepareTableCreate(id: string, value: unknown, signal?: AbortSignal) {
+    const entry = this.entry(id);
     return entry.tableCreates.prepare(entry.driver, entry.session.provider, entry.session.database, value, () => {
-      if (this.entry(workspaceId, id) !== entry || entry.saving) throw new DatabaseInputError('连接忙或已变化，请重新审查。');
+      if (this.entry(id) !== entry || entry.saving) throw new DatabaseInputError('连接忙或已变化，请重新审查。');
     }, signal);
   }
-  discardTableCreate(workspaceId: string, id: string, planId: string): void { this.entry(workspaceId, id).tableCreates.discard(planId); }
-  async commitTableCreate(workspaceId: string, id: string, planId: string, signal?: AbortSignal) {
-    const entry = this.writable(workspaceId, id);
+  discardTableCreate(id: string, planId: string): void { this.entry(id).tableCreates.discard(planId); }
+  async commitTableCreate(id: string, planId: string, signal?: AbortSignal) {
+    const entry = this.writable(id);
     if (entry.saving) throw new DatabaseInputError('请等待当前事务结束。');
     entry.saving = true;
     try {
       return await entry.tableCreates.commit(entry.driver, planId, () => {
-        if (this.writable(workspaceId, id) !== entry) throw new DatabaseInputError('会话已变化，请重新审查。');
+        if (this.writable(id) !== entry) throw new DatabaseInputError('会话已变化，请重新审查。');
       }, signal);
     } finally { entry.saving = false; }
   }
-  prepareSchemaCreate(workspaceId: string, id: string, value: unknown, signal?: AbortSignal) {
-    const entry = this.entry(workspaceId, id);
+  prepareSchemaCreate(id: string, value: unknown, signal?: AbortSignal) {
+    const entry = this.entry(id);
     return entry.schemaCreates.prepare(entry.driver, entry.session.provider, entry.session.database, value, () => {
-      if (this.entry(workspaceId, id) !== entry || entry.saving) throw new DatabaseInputError('连接忙或已变化，请重新审查。');
+      if (this.entry(id) !== entry || entry.saving) throw new DatabaseInputError('连接忙或已变化，请重新审查。');
     }, signal);
   }
-  discardSchemaCreate(workspaceId: string, id: string, planId: string): void {
-    this.entry(workspaceId, id).schemaCreates.discard(planId);
+  discardSchemaCreate(id: string, planId: string): void {
+    this.entry(id).schemaCreates.discard(planId);
   }
-  async commitSchemaCreate(workspaceId: string, id: string, planId: string, signal?: AbortSignal) {
-    const entry = this.writable(workspaceId, id);
+  async commitSchemaCreate(id: string, planId: string, signal?: AbortSignal) {
+    const entry = this.writable(id);
     if (entry.saving) throw new DatabaseInputError('请等待当前事务结束。');
     entry.saving = true;
     try {
       return await entry.schemaCreates.commit(entry.driver, planId, () => {
-        if (this.writable(workspaceId, id) !== entry) throw new DatabaseInputError('会话已变化，请重新审查。');
+        if (this.writable(id) !== entry) throw new DatabaseInputError('会话已变化，请重新审查。');
       }, signal);
     } finally { entry.saving = false; }
   }
-  async prepare(workspaceId: string, id: string, value: unknown): Promise<RelationalSavePreview> {
-    const entry = this.writable(workspaceId, id);
+  async prepare(id: string, value: unknown): Promise<RelationalSavePreview> {
+    const entry = this.writable(id);
     const input = saveInput(value);
     await entry.driver.assertEditable(input.schema, input.table);
     const columns = await entry.driver.columns(input.schema, input.table);
     if (!columns.length) throw new DatabaseInputError('无法读取目标字段');
     const plan = prepareSave(input, columns, entry.session.provider, entry.driver.quoteIdentifier);
     // A disconnect/lock during metadata loading must invalidate this request.
-    if (this.writable(workspaceId, id) !== entry)
+    if (this.writable(id) !== entry)
       throw new DatabaseInputError('会话已变化，请重新预览');
     for (const [key, item] of entry.plans)
       if (item.preview.expiresAt <= Date.now()) entry.plans.delete(key);
@@ -358,66 +356,66 @@ export class RelationalSessionManager {
     entry.plans.set(plan.preview.id, plan);
     return plan.preview;
   }
-  discard(workspaceId: string, id: string, planId: string): void {
-    this.entry(workspaceId, id).plans.delete(planId);
+  discard(id: string, planId: string): void {
+    this.entry(id).plans.delete(planId);
   }
-  prepareImport(workspaceId: string, id: string, value: unknown, signal?: AbortSignal) {
-    const entry = this.writable(workspaceId, id);
+  prepareImport(id: string, value: unknown, signal?: AbortSignal) {
+    const entry = this.writable(id);
     return entry.imports.prepare(entry.driver, entry.session.provider, value, () => {
-      if (this.writable(workspaceId, id) !== entry || entry.saving) throw new DatabaseInputError('连接正在提交变更，请稍后重新预览。');
+      if (this.writable(id) !== entry || entry.saving) throw new DatabaseInputError('连接正在提交变更，请稍后重新预览。');
     }, signal);
   }
-  discardImport(workspaceId: string, id: string, planId: string) { this.entry(workspaceId, id).imports.discard(planId); }
-  prepareSqlMutation(workspaceId: string, id: string, value: unknown, signal?: AbortSignal) {
-    const entry = this.entry(workspaceId, id);
+  discardImport(id: string, planId: string) { this.entry(id).imports.discard(planId); }
+  prepareSqlMutation(id: string, value: unknown, signal?: AbortSignal) {
+    const entry = this.entry(id);
     return entry.sqlMutations.prepare(entry.driver, entry.session.provider, value, () => {
-      if (this.entry(workspaceId, id) !== entry || entry.saving)
+      if (this.entry(id) !== entry || entry.saving)
         throw new DatabaseInputError('连接正在提交变更，请稍后重新预览');
     }, signal);
   }
-  discardSqlMutation(workspaceId: string, id: string, planId: string): void {
-    this.entry(workspaceId, id).sqlMutations.discard(planId);
+  discardSqlMutation(id: string, planId: string): void {
+    this.entry(id).sqlMutations.discard(planId);
   }
-  async commitSqlMutation(workspaceId: string, id: string, planId: string, signal?: AbortSignal) {
-    const entry = this.writable(workspaceId, id);
+  async commitSqlMutation(id: string, planId: string, signal?: AbortSignal) {
+    const entry = this.writable(id);
     if (entry.saving) throw new DatabaseInputError('当前连接正在提交变更');
     entry.saving = true;
     try {
       return await entry.sqlMutations.commit(entry.driver, planId, () => {
-        if (this.writable(workspaceId, id) !== entry)
+        if (this.writable(id) !== entry)
           throw new DatabaseInputError('连接已变化，请重新预览');
       }, signal);
     } finally {
       entry.saving = false;
     }
   }
-  prepareStructureEdit(workspaceId: string, id: string, value: unknown, signal?: AbortSignal) {
-    const entry = this.writable(workspaceId, id);
-    return entry.structureEdits.prepare((schema, table) => this.structure(workspaceId, id, schema, table), value, () => {
-      if (this.writable(workspaceId, id) !== entry || entry.saving) throw new DatabaseInputError('连接正在提交变更，请稍后重新预览');
+  prepareStructureEdit(id: string, value: unknown, signal?: AbortSignal) {
+    const entry = this.writable(id);
+    return entry.structureEdits.prepare((schema, table) => this.structure(id, schema, table), value, () => {
+      if (this.writable(id) !== entry || entry.saving) throw new DatabaseInputError('连接正在提交变更，请稍后重新预览');
     }, signal);
   }
-  discardStructureEdit(workspaceId: string, id: string, planId: string) { this.entry(workspaceId, id).structureEdits.discard(planId); }
-  async commitStructureEdit(workspaceId: string, id: string, planId: string, signal?: AbortSignal) {
-    const entry = this.writable(workspaceId, id);
+  discardStructureEdit(id: string, planId: string) { this.entry(id).structureEdits.discard(planId); }
+  async commitStructureEdit(id: string, planId: string, signal?: AbortSignal) {
+    const entry = this.writable(id);
     if (entry.saving) throw new DatabaseInputError('当前连接正在提交变更');
     entry.saving = true;
-    try { return await entry.structureEdits.commit(entry.driver, (schema, table) => this.structure(workspaceId, id, schema, table), planId, () => {
-      if (this.writable(workspaceId, id) !== entry) throw new DatabaseInputError('连接已变化，请重新预览');
+    try { return await entry.structureEdits.commit(entry.driver, (schema, table) => this.structure(id, schema, table), planId, () => {
+      if (this.writable(id) !== entry) throw new DatabaseInputError('连接已变化，请重新预览');
     }, signal); }
     finally { entry.saving = false; }
   }
-  async commitImport(workspaceId: string, id: string, planId: string, signal?: AbortSignal) {
-    const entry = this.writable(workspaceId, id);
+  async commitImport(id: string, planId: string, signal?: AbortSignal) {
+    const entry = this.writable(id);
     if (entry.saving) throw new DatabaseInputError('当前连接正在提交变更。');
     entry.saving = true;
     try { return await entry.imports.commit(entry.driver, entry.session.provider, planId, () => {
-      if (this.writable(workspaceId, id) !== entry) throw new DatabaseInputError('连接已变化，请重新预览。');
+      if (this.writable(id) !== entry) throw new DatabaseInputError('连接已变化，请重新预览。');
     }, signal); }
     finally { entry.saving = false; }
   }
-  async commit(workspaceId: string, id: string, planId: string): Promise<RelationalSaveResult> {
-    const entry = this.writable(workspaceId, id);
+  async commit(id: string, planId: string): Promise<RelationalSaveResult> {
+    const entry = this.writable(id);
     const plan = entry.plans.get(planId);
     if (!plan || plan.preview.expiresAt <= Date.now())
       throw new DatabaseInputError('预览已失效，请重新生成');
@@ -442,59 +440,58 @@ export class RelationalSessionManager {
     }
   }
 
-  async prepareTransfer(workspaceId: string, id: string, value: unknown, signal?: AbortSignal) {
+  async prepareTransfer(id: string, value: unknown, signal?: AbortSignal) {
     const parsed = z.object({ sourceSchema: z.string().min(1).max(256), sourceTable: z.string().min(1).max(256), targetSessionId: z.string().uuid(), targetSchema: z.string().min(1).max(256), targetTable: z.string().min(1).max(256), input: tableTransferInputSchema }).strict().safeParse(value);
     if (!parsed.success) throw new DatabaseInputError('表传输参数无效');
-    const input = parsed.data, source = this.entry(workspaceId, id), target = this.writable(workspaceId, input.targetSessionId);
+    const input = parsed.data, source = this.entry(id), target = this.writable(input.targetSessionId);
     if (source === target || source.sourceIdentity === target.sourceIdentity && input.sourceSchema === input.targetSchema && input.sourceTable === input.targetTable) throw new DatabaseInputError('传输源和目标不能是同一张物理表；请选择独立目标连接与表');
     if (source.saving || target.saving) throw new DatabaseInputError('连接正在提交变更，请稍后准备');
     signal?.throwIfAborted();
-    const [sourceStructure, targetStructure] = await Promise.all([this.structure(workspaceId, id, input.sourceSchema, input.sourceTable), this.structure(workspaceId, target.session.id, input.targetSchema, input.targetTable)]);
-    if (this.entry(workspaceId, id) !== source || this.writable(workspaceId, target.session.id) !== target || source.saving || target.saving) throw new DatabaseInputError('传输会话已变化，请重新准备');
+    const [sourceStructure, targetStructure] = await Promise.all([this.structure(id, input.sourceSchema, input.sourceTable), this.structure(target.session.id, input.targetSchema, input.targetTable)]);
+    if (this.entry(id) !== source || this.writable(target.session.id) !== target || source.saving || target.saving) throw new DatabaseInputError('传输会话已变化，请重新准备');
     signal?.throwIfAborted();
-    return this.transfers.prepare(workspaceId, id, target.session.id, prepareTableTransfer(sourceStructure, targetStructure, input.input), sourceStructure, targetStructure);
+    return this.transfers.prepare(id, target.session.id, prepareTableTransfer(sourceStructure, targetStructure, input.input), sourceStructure, targetStructure);
   }
-  discardTransfer(workspaceId: string, id: string, planId: string) { this.entry(workspaceId, id); this.transfers.discard(workspaceId, id, planId); }
-  startTransfer(workspaceId: string, id: string, planId: string) {
-    const source = this.entry(workspaceId, id), prepared = this.transfers.consume(workspaceId, id, planId), target = this.writable(workspaceId, prepared.targetId);
+  discardTransfer(id: string, planId: string) { this.entry(id); this.transfers.discard(id, planId); }
+  startTransfer(id: string, planId: string) {
+    const source = this.entry(id), prepared = this.transfers.consume(id, planId), target = this.writable(prepared.targetId);
     if (source.saving || target.saving) throw new DatabaseInputError('连接正在提交变更，请重新准备传输');
     source.saving = true; target.saving = true;
     try { return this.transfers.start(prepared, async (signal, onProgress) => {
       try {
         signal.throwIfAborted();
-        const [a, b] = await Promise.all([this.structure(workspaceId, id, prepared.plan.source.schema, prepared.plan.source.table), this.structure(workspaceId, target.session.id, prepared.plan.target.schema, prepared.plan.target.table)]);
-        if (this.entry(workspaceId, id) !== source || this.writable(workspaceId, target.session.id) !== target) throw new DatabaseInputError('传输连接已变化');
+        const [a, b] = await Promise.all([this.structure(id, prepared.plan.source.schema, prepared.plan.source.table), this.structure(target.session.id, prepared.plan.target.schema, prepared.plan.target.table)]);
+        if (this.entry(id) !== source || this.writable(target.session.id) !== target) throw new DatabaseInputError('传输连接已变化');
         signal.throwIfAborted();
         if (transferStructureSignature(a) !== prepared.sourceSignature || transferStructureSignature(b) !== prepared.targetSignature) throw new DatabaseInputError('源或目标结构已变化，请重新准备');
         return await executeTableTransfer(source.driver, target.driver, prepared.plan, { signal, onProgress });
       } finally { source.saving = false; target.saving = false; }
     }); } catch (reason) { source.saving = false; target.saving = false; throw reason; }
   }
-  transferTask(workspaceId: string, id: string, taskId: string) { this.entry(workspaceId, id); return this.transfers.poll(workspaceId, id, taskId); }
-  cancelTransfer(workspaceId: string, id: string, taskId: string) { this.entry(workspaceId, id); return this.transfers.cancel(workspaceId, id, taskId); }
-  async schemas(workspaceId: string, id: string): Promise<string[]> {
-    return this.entry(workspaceId, id).driver.schemas();
+  transferTask(id: string, taskId: string) { this.entry(id); return this.transfers.poll(id, taskId); }
+  cancelTransfer(id: string, taskId: string) { this.entry(id); return this.transfers.cancel(id, taskId); }
+  async schemas(id: string): Promise<string[]> {
+    return this.entry(id).driver.schemas();
   }
-  async tables(workspaceId: string, id: string, schema: string): Promise<DatabaseObjectInfo[]> {
-    const { session, driver } = this.entry(workspaceId, id);
+  async tables(id: string, schema: string): Promise<DatabaseObjectInfo[]> {
+    const { session, driver } = this.entry(id);
     return (await driver.tables(schema)).map((table) => ({
       ...table,
       database: session.provider === 'mysql' ? schema : session.database,
       connectionId: id,
     }));
   }
-  async columns(workspaceId: string, id: string, schema: string, table: string): Promise<DatabaseColumnInfo[]> {
-    const columns = await this.entry(workspaceId, id).driver.columns(schema, table);
+  async columns(id: string, schema: string, table: string): Promise<DatabaseColumnInfo[]> {
+    const columns = await this.entry(id).driver.columns(schema, table);
     if (!columns.length) throw new DatabaseInputError('对象不存在或当前账号无权读取字段');
     return columns;
   }
   async structure(
-    workspaceId: string,
     id: string,
     schema: string,
     table: string,
   ): Promise<RelationalTableStructure> {
-    const { session, driver } = this.entry(workspaceId, id);
+    const { session, driver } = this.entry(id);
     const columns = await driver.columns(schema, table);
     if (!columns.length) throw new DatabaseInputError('对象不存在或当前账号无权读取字段');
     return {
@@ -505,7 +502,6 @@ export class RelationalSessionManager {
     };
   }
   private async planPage(
-    workspaceId: string,
     id: string,
     schema: string,
     table: string,
@@ -522,7 +518,7 @@ export class RelationalSessionManager {
       limit > 500
     )
       throw new DatabaseInputError('分页范围无效');
-    const { session, driver } = this.entry(workspaceId, id);
+    const { session, driver } = this.entry(id);
     const columns = await driver.columns(schema, table);
     if (!columns.length) throw new DatabaseInputError('对象不存在或当前账号无权读取字段');
     const query = tableQueryInput(queryValue);
@@ -539,7 +535,6 @@ export class RelationalSessionManager {
     return { session, driver, query, columns, compiled };
   }
   async previewPage(
-    workspaceId: string,
     id: string,
     schema: string,
     table: string,
@@ -548,7 +543,6 @@ export class RelationalSessionManager {
     queryValue: unknown = { filter: null, sort: [] },
   ): Promise<RelationalTableQueryPreview> {
     const { query, compiled } = await this.planPage(
-      workspaceId,
       id,
       schema,
       table,
@@ -563,7 +557,6 @@ export class RelationalSessionManager {
     };
   }
   async page(
-    workspaceId: string,
     id: string,
     schema: string,
     table: string,
@@ -572,7 +565,6 @@ export class RelationalSessionManager {
     queryValue: unknown = { filter: null, sort: [] },
   ): Promise<RelationalTablePage> {
     const { session, driver, query, columns, compiled } = await this.planPage(
-      workspaceId,
       id,
       schema,
       table,
@@ -596,7 +588,6 @@ export class RelationalSessionManager {
     };
   }
   async query(
-    workspaceId: string,
     id: string,
     sql: unknown,
     schema: string | null,
@@ -611,19 +602,19 @@ export class RelationalSessionManager {
       (schema !== null && typeof schema !== 'string')
     )
       throw new DatabaseInputError('查询参数无效');
-    const { driver, session } = this.entry(workspaceId, id);
+    const { driver, session } = this.entry(id);
     const statement =
       session.provider === 'mysql'
         ? assertMysqlReadOnlySql(sql as string)
         : assertRelationalReadSql(sql, session.provider);
-    const entry = this.entry(workspaceId, id), start = performance.now(), executedAt = Date.now();
+    const entry = this.entry(id), start = performance.now(), executedAt = Date.now();
     const record = (success: boolean, error: string | null, rowCount: number, truncated: boolean) => {
       if (this.entries.get(id) !== entry) return;
       const history: SqlHistoryEntry = { id: crypto.randomUUID(), connectionId: session.connectionId ?? session.id,
         connectionName: entry.connectionName, provider: session.provider, database: session.provider === 'mysql' ? schema ?? session.database : session.database,
         schema, sql: sourceSql ?? sql as string, executedAt, executionTimeMs: Math.round(performance.now() - start), success,
         error: error === null ? null : error.slice(0, 16384), rowCount, truncated };
-      try { this.historyRepository(entry).append(workspaceId, history); }
+      try { this.historyRepository(entry).append(history); }
       catch (reason) { return `查询历史保存失败：${reason instanceof Error ? reason.message : String(reason)}`; }
     };
     let result;
@@ -641,16 +632,16 @@ export class RelationalSessionManager {
     };
   }
   private historyRepository(entry: Entry): RelationalSqlRepository { return entry.session.connectionId ? this.sqlRepository : this.transientSql; }
-  async explain(workspaceId: string, id: string, value: unknown, signal?: AbortSignal): Promise<DatabaseQueryResult> {
-    const entry = this.entry(workspaceId, id), start = performance.now();
+  async explain(id: string, value: unknown, signal?: AbortSignal): Promise<DatabaseQueryResult> {
+    const entry = this.entry(id), start = performance.now();
     const plan = await explainSqlPlan(entry.driver, entry.session.provider, value, signal);
-    this.entry(workspaceId, id);
+    this.entry(id);
     return { columns: plan.columns, columnTypes: plan.columnTypes, rows: plan.rows, hasMore: plan.hasMore,
       columnSortables: plan.columns.map(() => false), affectedRows: 0, executionTimeMs: Math.round(performance.now() - start),
       truncated: plan.hasMore, sessionId: null, messages: plan.warnings.map((message) => ({ severity: 'warning', message })) };
   }
-  startExecution(workspaceId: string, id: string, value: unknown) {
-    const { session } = this.entry(workspaceId, id);
+  startExecution(id: string, value: unknown) {
+    const { session } = this.entry(id);
     const input = value as { sql?: unknown; schema?: unknown; maxRows?: unknown; offset?: unknown; parameters?: unknown; declarationSql?: unknown } | null;
     if (!input || typeof input.sql !== 'string' || Buffer.byteLength(input.sql, 'utf8') > 1_000_000 ||
       input.schema !== null && typeof input.schema !== 'string' ||
@@ -673,47 +664,47 @@ export class RelationalSessionManager {
       return { sql: sql.slice(from, to), from: from + offset, to: to + offset };
     });
     const context = sqlVariableContext(typeof input.declarationSql === 'string' ? input.declarationSql : sql, session.provider);
-    return this.executions.start(workspaceId, id, session.provider === 'mysql' ? schema ?? session.database : session.database, schema, originals,
-      (statement, signal, index) => this.query(workspaceId, id, ranges[index].sql, schema, maxRows, signal, context ? `${context}\n${stripSqlVariableDeclarations(statement, session.provider)}` : statement),
+    return this.executions.start(id, session.provider === 'mysql' ? schema ?? session.database : session.database, schema, originals,
+      (statement, signal, index) => this.query(id, ranges[index].sql, schema, maxRows, signal, context ? `${context}\n${stripSqlVariableDeclarations(statement, session.provider)}` : statement),
       (reason, index) => {
         const error = sqlExecutionError(reason);
         if (error.position !== null) error.position = Math.max(0, sqlSourcePosition(compiled, ranges[index].from + error.position) + offset - originals[index].from);
         return error;
       });
   }
-  execution(workspaceId: string, id: string, executionId: string, revision: number) {
-    this.entry(workspaceId, id);
-    return this.executions.poll(workspaceId, id, executionId, revision);
+  execution(id: string, executionId: string, revision: number) {
+    this.entry(id);
+    return this.executions.poll(id, executionId, revision);
   }
-  cancelExecution(workspaceId: string, id: string, executionId: string) {
-    this.entry(workspaceId, id);
-    return this.executions.cancel(workspaceId, id, executionId);
+  cancelExecution(id: string, executionId: string) {
+    this.entry(id);
+    return this.executions.cancel(id, executionId);
   }
-  historySearch(workspaceId: string, id: string, value: unknown) {
-    const entry = this.entry(workspaceId, id); return this.historyRepository(entry).search(workspaceId, value, entry.session.connectionId ?? id);
+  historySearch(id: string, value: unknown) {
+    const entry = this.entry(id); return this.historyRepository(entry).search(value, entry.session.connectionId ?? id);
   }
-  historyEntry(workspaceId: string, id: string, historyId: string) {
-    const entry = this.entry(workspaceId, id); return this.historyRepository(entry).history(workspaceId, historyId, entry.session.connectionId ?? id);
+  historyEntry(id: string, historyId: string) {
+    const entry = this.entry(id); return this.historyRepository(entry).history(historyId, entry.session.connectionId ?? id);
   }
-  deleteHistory(workspaceId: string, id: string, historyId: string) {
-    const entry = this.entry(workspaceId, id); this.historyRepository(entry).deleteHistory(workspaceId, historyId, entry.session.connectionId ?? id);
+  deleteHistory(id: string, historyId: string) {
+    const entry = this.entry(id); this.historyRepository(entry).deleteHistory(historyId, entry.session.connectionId ?? id);
   }
-  clearHistory(workspaceId: string, id: string) {
-    const entry = this.entry(workspaceId, id); this.historyRepository(entry).clearHistory(workspaceId, entry.session.connectionId ?? id);
+  clearHistory(id: string) {
+    const entry = this.entry(id); this.historyRepository(entry).clearHistory(entry.session.connectionId ?? id);
   }
-  editorPreferences(workspaceId: string, id: string) {
-    const entry = this.entry(workspaceId, id); return this.historyRepository(entry).editorPreferences(workspaceId, entry.session.connectionId ?? id);
+  editorPreferences(id: string) {
+    const entry = this.entry(id); return this.historyRepository(entry).editorPreferences(entry.session.connectionId ?? id);
   }
-  saveEditorPreferences(workspaceId: string, id: string, value: unknown) {
-    const entry = this.entry(workspaceId, id); return this.historyRepository(entry).saveEditorPreferences(workspaceId, entry.session.connectionId ?? id, value);
+  saveEditorPreferences(id: string, value: unknown) {
+    const entry = this.entry(id); return this.historyRepository(entry).saveEditorPreferences(entry.session.connectionId ?? id, value);
   }
-  async removeConnection(workspaceId: string, connectionId: string): Promise<void> {
-    await Promise.all([...this.entries.values()].filter(entry => entry.session.workspaceId === workspaceId && entry.session.connectionId === connectionId).map(entry => this.disconnect(workspaceId, entry.session.id)));
-    this.sqlRepository.removeConnection(workspaceId, connectionId);
-    this.metadata.documents.deleteConnection(workspaceId, connectionId);
+  async removeConnection(connectionId: string): Promise<void> {
+    await Promise.all([...this.entries.values()].filter(entry => entry.session.connectionId === connectionId).map(entry => this.disconnect(entry.session.id)));
+    this.sqlRepository.removeConnection(connectionId);
+    this.metadata.documents.deleteConnection(connectionId);
   }
-  async disconnect(workspaceId: string, id: string): Promise<void> {
-    const entry = this.entry(workspaceId, id);
+  async disconnect(id: string): Promise<void> {
+    const entry = this.entry(id);
     this.entries.delete(id);
     this.transfers.clearSession(id);
     entry.imports.clear();
@@ -725,18 +716,18 @@ export class RelationalSessionManager {
     entry.foreignKeyEdits.clear();
     entry.tableClears.clear();
     await this.executions.closeSession(id);
-    if (!entry.session.connectionId) this.transientSql.removeConnection(workspaceId, id);
+    if (!entry.session.connectionId) this.transientSql.removeConnection(id);
     this.capabilities.disconnect(id, id);
     try {
-      await this.sqliteBackups.closeSession({ workspaceId, sessionId: id });
-      await this.exports.closeSession({ workspaceId, sessionId: id });
+      await this.sqliteBackups.closeSession({ sessionId: id });
+      await this.exports.closeSession({ sessionId: id });
     }
     finally { await entry.driver.close(); }
   }
   async shutdown(): Promise<void> {
     await Promise.all(
       [...this.entries.values()].map(({ session }) =>
-        this.disconnect(session.workspaceId, session.id),
+        this.disconnect(session.id),
       ),
     );
     await this.sqliteBackups.close();

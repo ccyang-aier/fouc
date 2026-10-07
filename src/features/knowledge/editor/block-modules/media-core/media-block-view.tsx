@@ -18,8 +18,8 @@ export interface ResolvedMedia { url: string; name: string; mime: string; size: 
 const LABELS: Record<MediaKind, string> = { image: '图片', video: '视频', audio: '音频', file: '文件' };
 const ACCEPT: Record<MediaKind, string> = { image: 'image/*', video: 'video/*', audio: 'audio/*', file: '*' };
 
-function useResolvedMedia(source: string, localWorkspaceId?: string, workspaceId?: string) {
-  const sourceKey = `${localWorkspaceId ? `local:${localWorkspaceId}` : `remote:${workspaceId ?? ''}`}:${source}`;
+function useResolvedMedia(source: string, localKnowledgeBaseId?: string, knowledgeBaseId?: string) {
+  const sourceKey = `${localKnowledgeBaseId ? `local:${localKnowledgeBaseId}` : `remote:${knowledgeBaseId ?? ''}`}:${source}`;
   const [result, setResult] = useState<{ sourceKey: string; value: ResolvedMedia | null; error: string | null }>({ sourceKey: '', value: null, error: null });
   useEffect(() => {
     let canceled = false;
@@ -27,15 +27,15 @@ function useResolvedMedia(source: string, localWorkspaceId?: string, workspaceId
     let refreshTimer: ReturnType<typeof setTimeout> | undefined;
     const safe = safeKnowledgeUrl(source, 'media');
     if (!safe?.startsWith('asset:')) return;
-    if (localWorkspaceId) {
-      readLocalAsset(localWorkspaceId, safe).then((asset) => {
+    if (localKnowledgeBaseId) {
+      readLocalAsset(localKnowledgeBaseId, safe).then((asset) => {
         if (canceled) return;
         if (!asset) { setResult({ sourceKey, value: null, error: '本机资源不存在，可能已被浏览器清理' }); return; }
         objectUrl = URL.createObjectURL(asset.blob);
         setResult({ sourceKey, value: { url: objectUrl, name: asset.name, mime: asset.mime, size: asset.size }, error: null });
       }).catch(() => { if (!canceled) setResult({ sourceKey, value: null, error: '无法读取本机资源' }); });
-    } else if (workspaceId) {
-      const refresh = () => knowledgeAssetsApi.download(workspaceId, safe.slice(6)).then((grant) => {
+    } else if (knowledgeBaseId) {
+      const refresh = () => knowledgeAssetsApi.download(knowledgeBaseId, safe.slice(6)).then((grant) => {
         if (canceled) return;
         setResult({ sourceKey, value: { url: grant.url, name: '', mime: '', size: null }, error: null });
         refreshTimer = setTimeout(refresh, Math.max(10_000, new Date(grant.expiresAt).getTime() - Date.now() - 60_000));
@@ -43,17 +43,17 @@ function useResolvedMedia(source: string, localWorkspaceId?: string, workspaceId
       void refresh();
     }
     return () => { canceled = true; if (refreshTimer) clearTimeout(refreshTimer); if (objectUrl) URL.revokeObjectURL(objectUrl); };
-  }, [source, sourceKey, localWorkspaceId, workspaceId]);
+  }, [source, sourceKey, localKnowledgeBaseId, knowledgeBaseId]);
   if (!source) return { value: null, error: null };
   const safe = safeKnowledgeUrl(source, 'media');
   if (!safe) return { value: null, error: '资源地址不安全或格式无效' };
   if (!safe.startsWith('asset:')) return { value: { url: safe, name: '', mime: '', size: null }, error: null };
-  if (!localWorkspaceId && !workspaceId) return { value: null, error: '此资源尚未连接可访问的存储服务' };
+  if (!localKnowledgeBaseId && !knowledgeBaseId) return { value: null, error: '此资源尚未连接可访问的存储服务' };
   return result.sourceKey === sourceKey ? result : { value: null, error: null };
 }
 
-export function MediaBlockView({ kind, localWorkspaceId, workspaceId, renderPreview, ...props }: NodeViewProps & {
-  kind: MediaKind; localWorkspaceId?: string; workspaceId?: string;
+export function MediaBlockView({ kind, localKnowledgeBaseId, knowledgeBaseId, renderPreview, ...props }: NodeViewProps & {
+  kind: MediaKind; localKnowledgeBaseId?: string; knowledgeBaseId?: string;
   renderPreview: (source: ResolvedMedia) => ReactNode;
 }) {
   const { node, editor, updateAttributes, HTMLAttributes } = props;
@@ -62,25 +62,25 @@ export function MediaBlockView({ kind, localWorkspaceId, workspaceId, renderPrev
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const source = String(node.attrs.src ?? '');
-  const resolved = useResolvedMedia(source, localWorkspaceId, workspaceId);
+  const resolved = useResolvedMedia(source, localKnowledgeBaseId, knowledgeBaseId);
   const uploaded = useCallback((asset: { hash: string; name: string; mime: string }) => {
     updateAttributes({ src: 'asset:' + asset.hash, title: asset.name, mime: asset.mime, ...(kind === 'image' ? { alt: asset.name } : {}) });
   }, [updateAttributes, kind]);
-  const uploads = useAssetUploads({ workspaceId: workspaceId ?? '', onUploaded: uploaded });
+  const uploads = useAssetUploads({ knowledgeBaseId: knowledgeBaseId ?? '', onUploaded: uploaded });
   const { addFiles } = uploads;
   const latestUpload = uploads.items.at(-1);
   const importFile = useCallback(async (file: File) => {
-    if (!localWorkspaceId && !workspaceId) { setError('文档尚未连接资源存储。'); return; }
+    if (!localKnowledgeBaseId && !knowledgeBaseId) { setError('文档尚未连接资源存储。'); return; }
     if (kind !== 'file' && !file.type.startsWith(kind + '/')) { setError('请选择' + LABELS[kind] + '文件'); return; }
     setError(null);
-    if (workspaceId && !localWorkspaceId) { addFiles([file]); return; }
+    if (knowledgeBaseId && !localKnowledgeBaseId) { addFiles([file]); return; }
     setProgress(0);
     try {
-      const stored = await saveLocalAsset(localWorkspaceId!, file, ratio => setProgress(ratio));
+      const stored = await saveLocalAsset(localKnowledgeBaseId!, file, ratio => setProgress(ratio));
       updateAttributes({ src: stored, title: file.name, mime: file.type || null, ...(kind === 'image' ? { alt: file.name } : {}) });
     } catch (cause) { setError(cause instanceof Error ? cause.message : '文件保存失败'); }
     finally { setProgress(null); }
-  }, [localWorkspaceId, workspaceId, kind, updateAttributes, addFiles]);
+  }, [localKnowledgeBaseId, knowledgeBaseId, kind, updateAttributes, addFiles]);
   useEffect(() => {
     const file = takeInsertedMedia(String(node.attrs.blockId));
     if (file) queueMicrotask(() => { void importFile(file); });

@@ -3,8 +3,8 @@ import { useState } from 'react';
 import { saveLocalAsset } from '../assets/local-assets';
 import { documentFileAccept, documentFileFormat, type DocumentFile } from './file-format';
 import { FilePlus } from '@phosphor-icons/react';
-export function LocalDocumentImport({ onImport, workspaceId }: {
-    workspaceId: string;
+export function LocalDocumentImport({ onImport, knowledgeBaseId }: {
+    knowledgeBaseId: string;
     onImport: (items: {
         name: string;
         text: string;
@@ -22,7 +22,7 @@ export function LocalDocumentImport({ onImport, workspaceId }: {
             const items = await Promise.all(Array.from(files).map(async (file) => {
                 if (!documentFileFormat(file.name)) throw new Error('请选择 PDF、PPTX、Word、CSV、JSON、TXT 或 Markdown 等支持的格式。');
                 if (file.size > 100 * 1024 * 1024) throw new Error('单个预览文件请控制在 100 MB 以内。');
-                const source = await saveLocalAsset(workspaceId, file);
+                const source = await saveLocalAsset(knowledgeBaseId, file);
                 return { name: file.name, text: '', file: { source, name: file.name, mime: file.type, size: file.size } };
             }));
             setMessage(onImport(items) ? `已导入 ${items.length} 个文档，已保存至本机。` : '保存失败，请检查浏览器存储空间。');

@@ -10,14 +10,12 @@ import { ImportConnectionDialog } from './import-dialog';
 import styles from './transfer.module.css';
 
 export function ConnectionConfigTransferActions({
-  workspaceId,
   provider,
   connections,
   selectedIds = [],
   onImported,
   disabled = false,
 }: {
-  workspaceId: string;
   provider: TransferConnectionConfig['provider'];
   connections: readonly ExistingTransferConnection[];
   selectedIds?: readonly string[];
@@ -28,10 +26,7 @@ export function ConnectionConfigTransferActions({
       ExistingTransferConnection[] | null
     >(null),
     [importing, setImporting] = useState(false);
-  const current = connections.filter(
-    (entry) =>
-      entry.config.provider === provider && entry.workspaceId === workspaceId,
-  );
+  const current = connections.filter(entry => entry.config.provider === provider);
   const selected = current.filter(entry => selectedIds.includes(entry.id));
   return (
     <>
@@ -49,7 +44,6 @@ export function ConnectionConfigTransferActions({
       )}
       {importing && (
         <ImportConnectionDialog
-          workspaceId={workspaceId}
           onClose={() => setImporting(false)}
           onImported={onImported}
         />

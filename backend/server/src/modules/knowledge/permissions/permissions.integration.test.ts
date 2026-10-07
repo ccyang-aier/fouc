@@ -1,15 +1,15 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 import { and, eq, inArray } from 'drizzle-orm';
 import { principal } from '@fouc/shared/knowledge/contracts';
-import { blockIndex, page, pageEffectiveAcl } from '../../../platform/database/workspace/schema';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import { blockIndex, page, pageEffectiveAcl } from '../../../platform/database/resources/schema';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
 import { replaceAuthorizedPageAcl, setAuthorizedPageInheritance, withAuthorizedPageTreeMutation } from './mutations';
 import { createPermissionsFixture, type PermissionsFixture } from './permissions-test-fixture';
 import { readMaterializedPagePermissions } from './queries';
 import { withPermissionIndexWrite } from './projection';
 import { rebuildPermissionSubtree } from './rebuild';
 
-/** Real identities, real queue, ordinary-role tenant transactions. */
+/** Real identities, real queue, ordinary-role resource transactions. */
 describe('permission materialization, fences and index sync', () => {
   let fixture: PermissionsFixture;
 
@@ -24,15 +24,15 @@ describe('permission materialization, fences and index sync', () => {
     await fixture.resetJobs();
   });
 
-  async function grant(node: { workspaceId: string; pageId: string; parentId?: string | null; path?: string }, grants: { principal: string; level: 'view' | 'comment' | 'edit' | 'full' }[]) {
-    return withWorkspaceTenant(fixture.pool, node.workspaceId, (db) => replaceAuthorizedPageAcl(db, { workspaceId: node.workspaceId, pageId: node.pageId, grants }));
+  async function grant(node: { knowledgeBaseId: string; pageId: string; parentId?: string | null; path?: string }, grants: { principal: string; level: 'view' | 'comment' | 'edit' | 'full' }[]) {
+    return withKnowledgeBase(fixture.pool, node.knowledgeBaseId, (db) => replaceAuthorizedPageAcl(db, { knowledgeBaseId: node.knowledgeBaseId, pageId: node.pageId, grants }));
   }
-  async function readerSubjects(workspaceId = fixture.alpha.id) {
-    return fixture.subjects(fixture.reader.identity.userId, workspaceId);
+  async function readerSubjects(knowledgeBaseId = fixture.alpha.id) {
+    return fixture.subjects(fixture.reader.identity.userId, knowledgeBaseId);
   }
   /** tree() rows carry parent/path data; strict page scopes reject extra keys. */
-  function scopeOf(node: { workspaceId: string; pageId: string }) {
-    return { workspaceId: node.workspaceId, pageId: node.pageId };
+  function scopeOf(node: { knowledgeBaseId: string; pageId: string }) {
+    return { knowledgeBaseId: node.knowledgeBaseId, pageId: node.pageId };
   }
 
   test('grant fences the subtree, rebuilds it, and search predicates follow', async () => {
@@ -53,7 +53,7 @@ describe('permission materialization, fences and index sync', () => {
       expect(result.pages).toBe(1);
       expect(result.blocks).toBe(1);
     }
-    // A non-member has no principals in this workspace and matches nothing.
+    // A non-member has no principals in this knowledgeBase and matches nothing.
     expect(await readerSubjects(fixture.beta.id)).toEqual([]);
   });
 
@@ -69,14 +69,14 @@ describe('permission materialization, fences and index sync', () => {
     const blocked = await fixture.access(pages[2], subjects, 'view');
     expect(blocked.pages).toBe(0);
     expect(blocked.blocks).toBe(0);
-    const pending = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => readMaterializedPagePermissions(db, scopeOf(pages[2])));
+    const pending = await withKnowledgeBase(fixture.pool, fixture.alpha.id, (db) => readMaterializedPagePermissions(db, scopeOf(pages[2])));
     expect(pending).toEqual({ status: 'pending', code: 'PERMISSIONS_REBUILDING', retryable: true });
 
     await fixture.drain();
     expect((await fixture.access(pages[2], subjects, 'edit')).pages).toBe(0);
-    const cleared = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, async (db) => {
-      const [effective] = await db.select().from(pageEffectiveAcl).where(and(eq(pageEffectiveAcl.workspaceId, fixture.alpha.id), eq(pageEffectiveAcl.pageId, pages[2].pageId)));
-      const [block] = await db.select().from(blockIndex).where(and(eq(blockIndex.workspaceId, fixture.alpha.id), eq(blockIndex.pageId, pages[2].pageId)));
+    const cleared = await withKnowledgeBase(fixture.pool, fixture.alpha.id, async (db) => {
+      const [effective] = await db.select().from(pageEffectiveAcl).where(and(eq(pageEffectiveAcl.knowledgeBaseId, fixture.alpha.id), eq(pageEffectiveAcl.pageId, pages[2].pageId)));
+      const [block] = await db.select().from(blockIndex).where(and(eq(blockIndex.knowledgeBaseId, fixture.alpha.id), eq(blockIndex.pageId, pages[2].pageId)));
       return { effective, block };
     });
     expect(cleared.effective?.view).toEqual([]);
@@ -93,7 +93,7 @@ describe('permission materialization, fences and index sync', () => {
     expect((await fixture.access(pages[2], subjects, 'edit')).pages).toBe(0);
     expect((await fixture.access(pages[3], subjects, 'edit')).pages).toBe(1);
 
-    const fence = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => setAuthorizedPageInheritance(db, { workspaceId: fixture.alpha.id, pageId: pages[1].pageId, inheritsPermissions: true }));
+    const fence = await withKnowledgeBase(fixture.pool, fixture.alpha.id, (db) => setAuthorizedPageInheritance(db, { knowledgeBaseId: fixture.alpha.id, pageId: pages[1].pageId, inheritsPermissions: true }));
     expect(fence.pagesInvalidated).toBe(2);
     await fixture.drain();
     expect((await fixture.access(pages[1], subjects, 'edit')).pages).toBe(1);
@@ -108,9 +108,9 @@ describe('permission materialization, fences and index sync', () => {
     const subjects = await readerSubjects();
     expect((await fixture.access(pages[2], subjects, 'edit')).pages).toBe(1);
 
-    const fence = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => withAuthorizedPageTreeMutation(db, scopeOf(pages[2]), async () => {
+    const fence = await withKnowledgeBase(fixture.pool, fixture.alpha.id, (db) => withAuthorizedPageTreeMutation(db, scopeOf(pages[2]), async () => {
       await db.update(page).set({ parentId: pages[3].pageId, path: `${pages[3].path}.${pages[2].pageId.replaceAll('-', '_')}` })
-        .where(and(eq(page.workspaceId, fixture.alpha.id), eq(page.id, pages[2].pageId)));
+        .where(and(eq(page.knowledgeBaseId, fixture.alpha.id), eq(page.id, pages[2].pageId)));
     }));
     expect(fence.fence.pagesInvalidated).toBe(1);
     expect((await fixture.access(pages[2], subjects, 'edit')).pages).toBe(0);
@@ -128,24 +128,24 @@ describe('permission materialization, fences and index sync', () => {
     await grant(pages[0], [{ principal: principal('user', fixture.reader.identity.userId), level: 'edit' }]);
     await fixture.drain();
 
-    const snapshot = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, async (db) => {
-      const [effective] = await db.select().from(pageEffectiveAcl).where(and(eq(pageEffectiveAcl.workspaceId, fixture.alpha.id), eq(pageEffectiveAcl.pageId, pages[2].pageId)));
-      const [record] = await db.select({ aclRevision: page.aclRevision }).from(page).where(and(eq(page.workspaceId, fixture.alpha.id), eq(page.id, pages[2].pageId)));
+    const snapshot = await withKnowledgeBase(fixture.pool, fixture.alpha.id, async (db) => {
+      const [effective] = await db.select().from(pageEffectiveAcl).where(and(eq(pageEffectiveAcl.knowledgeBaseId, fixture.alpha.id), eq(pageEffectiveAcl.pageId, pages[2].pageId)));
+      const [record] = await db.select({ aclRevision: page.aclRevision }).from(page).where(and(eq(page.knowledgeBaseId, fixture.alpha.id), eq(page.id, pages[2].pageId)));
       return { effective: effective!, aclRevision: record!.aclRevision };
     });
-    const expected = [principal('user', fixture.reader.identity.userId), principal('workspace', fixture.alpha.id)].sort();
+    const expected = [principal('user', fixture.reader.identity.userId), principal('knowledgeBase', fixture.alpha.id)].sort();
     expect(snapshot.effective.view).toEqual(expected);
     expect(snapshot.effective.revision).toBe(snapshot.aclRevision);
 
     // A stale projection cannot smuggle principals past the current ACL.
-    await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => withPermissionIndexWrite(db, scopeOf(pages[2]), async () => {
+    await withKnowledgeBase(fixture.pool, fixture.alpha.id, (db) => withPermissionIndexWrite(db, scopeOf(pages[2]), async () => {
       await db.insert(blockIndex).values({
-        workspaceId: fixture.alpha.id, pageId: pages[2].pageId, blockId: 'stale', blockType: 'paragraph',
+        knowledgeBaseId: fixture.alpha.id, pageId: pages[2].pageId, blockId: 'stale', blockType: 'paragraph',
         contentMd: 'stale projection', contentHash: 'b'.repeat(64), principals: ['user:ghost'], aclRevision: 0,
       });
     }));
-    const blocks = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => db.select().from(blockIndex)
-      .where(and(eq(blockIndex.workspaceId, fixture.alpha.id), eq(blockIndex.pageId, pages[2].pageId))));
+    const blocks = await withKnowledgeBase(fixture.pool, fixture.alpha.id, (db) => db.select().from(blockIndex)
+      .where(and(eq(blockIndex.knowledgeBaseId, fixture.alpha.id), eq(blockIndex.pageId, pages[2].pageId))));
     expect(blocks.length).toBe(2);
     for (const block of blocks) {
       expect(block.principals).toEqual(expected);
@@ -155,26 +155,26 @@ describe('permission materialization, fences and index sync', () => {
 
   test('group membership changes take effect without any page rebuild', async () => {
     const { pages } = await fixture.tree({ defaultAccess: null });
-    const group = await fixture.organization.createGroup(fixture.owner.identity, { workspaceId: fixture.alpha.id, name: 'Reviewers' });
-    await fixture.organization.addGroupMember(fixture.owner.identity, { workspaceId: fixture.alpha.id, groupId: group.id, userId: fixture.reader.identity.userId });
+    const group = await fixture.organization.createGroup(fixture.owner.identity, { knowledgeBaseId: fixture.alpha.id, name: 'Reviewers' });
+    await fixture.organization.addGroupMember(fixture.owner.identity, { knowledgeBaseId: fixture.alpha.id, groupId: group.id, userId: fixture.reader.identity.userId });
     await grant(pages[0], [{ principal: principal('group', group.id), level: 'view' }]);
     await fixture.drain();
 
     const subjects = await readerSubjects();
     expect((await fixture.access(pages[3], subjects, 'view')).pages).toBe(1);
     const before = await fixture.server.database.admin.query<{ events: string; outbox: string }>(
-      "SELECT (SELECT count(*) FROM knowledge_jobs._private_jobs)::text AS events, (SELECT count(*) FROM workspace.outbox WHERE topic='acl.changed')::text AS outbox",
+      "SELECT (SELECT count(*) FROM knowledge_jobs._private_jobs)::text AS events, (SELECT count(*) FROM resources.outbox WHERE topic='acl.changed')::text AS outbox",
     ).then((result) => result.rows[0]!);
-    const revisionsBefore = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => db.select({ id: page.id, revision: page.aclRevision }).from(page).where(eq(page.workspaceId, fixture.alpha.id)));
+    const revisionsBefore = await withKnowledgeBase(fixture.pool, fixture.alpha.id, (db) => db.select({ id: page.id, revision: page.aclRevision }).from(page).where(eq(page.knowledgeBaseId, fixture.alpha.id)));
 
-    await fixture.organization.removeGroupMember(fixture.owner.identity, { workspaceId: fixture.alpha.id, groupId: group.id, userId: fixture.reader.identity.userId });
+    await fixture.organization.removeGroupMember(fixture.owner.identity, { knowledgeBaseId: fixture.alpha.id, groupId: group.id, userId: fixture.reader.identity.userId });
     // Immediate effect through principal expansion alone: no fence, no jobs.
     expect((await fixture.access(pages[3], await readerSubjects(), 'view')).pages).toBe(0);
     const after = await fixture.server.database.admin.query<{ events: string; outbox: string }>(
-      "SELECT (SELECT count(*) FROM knowledge_jobs._private_jobs)::text AS events, (SELECT count(*) FROM workspace.outbox WHERE topic='acl.changed')::text AS outbox",
+      "SELECT (SELECT count(*) FROM knowledge_jobs._private_jobs)::text AS events, (SELECT count(*) FROM resources.outbox WHERE topic='acl.changed')::text AS outbox",
     ).then((result) => result.rows[0]!);
     expect(after).toEqual(before);
-    const revisionsAfter = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => db.select({ id: page.id, revision: page.aclRevision }).from(page).where(eq(page.workspaceId, fixture.alpha.id)));
+    const revisionsAfter = await withKnowledgeBase(fixture.pool, fixture.alpha.id, (db) => db.select({ id: page.id, revision: page.aclRevision }).from(page).where(eq(page.knowledgeBaseId, fixture.alpha.id)));
     expect(revisionsAfter).toEqual(revisionsBefore);
   });
 
@@ -204,22 +204,22 @@ describe('permission materialization, fences and index sync', () => {
 
     const subjects = await readerSubjects();
     expect((await fixture.access(pages[2], subjects, 'full')).pages).toBe(1);
-    const rows = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => db.select({
+    const rows = await withKnowledgeBase(fixture.pool, fixture.alpha.id, (db) => db.select({
       pageId: page.id, revision: page.aclRevision, materialized: pageEffectiveAcl.revision,
-    }).from(page).leftJoin(pageEffectiveAcl, and(eq(pageEffectiveAcl.workspaceId, page.workspaceId), eq(pageEffectiveAcl.pageId, page.id)))
+    }).from(page).leftJoin(pageEffectiveAcl, and(eq(pageEffectiveAcl.knowledgeBaseId, page.knowledgeBaseId), eq(pageEffectiveAcl.pageId, page.id)))
       .where(inArray(page.id, pages.map((node) => node.pageId))));
     expect(rows.length).toBe(4);
     for (const row of rows) expect(row.materialized).toBe(row.revision);
 
     const latest = await fixture.latestEvent(root);
-    const replay = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => rebuildPermissionSubtree(db, latest));
+    const replay = await withKnowledgeBase(fixture.pool, fixture.alpha.id, (db) => rebuildPermissionSubtree(db, latest));
     expect(replay.rebuilt).toBe(0);
   });
 
-  test('tenant boundaries hold and recycled subtrees stay closed', async () => {
+  test('resource boundaries hold and recycled subtrees stay closed', async () => {
     const alphaTree = await fixture.tree({ defaultAccess: null });
     await grant(alphaTree.pages[0], [{ principal: principal('user', fixture.reader.identity.userId), level: 'edit' }]);
-    const betaTree = await fixture.tree({ tenant: 'beta', defaultAccess: 'view' });
+    const betaTree = await fixture.tree({ resource: 'beta', defaultAccess: 'view' });
     await fixture.drain();
 
     const betaReader = await readerSubjects(fixture.beta.id);
@@ -234,7 +234,7 @@ describe('permission materialization, fences and index sync', () => {
     const subjects = await readerSubjects();
     expect((await fixture.access(recycled.pages[2], subjects, 'view')).pages).toBe(0);
     expect((await fixture.access(recycled.pages[3], subjects, 'edit')).pages).toBe(1);
-    const materialized = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => readMaterializedPagePermissions(db, scopeOf(recycled.pages[2])));
+    const materialized = await withKnowledgeBase(fixture.pool, fixture.alpha.id, (db) => readMaterializedPagePermissions(db, scopeOf(recycled.pages[2])));
     expect(materialized).toEqual({ status: 'unavailable' });
   });
 
@@ -252,9 +252,9 @@ describe('permission materialization, fences and index sync', () => {
 
     expect((await fixture.access(pages[2], subjects, 'edit')).pages).toBe(1);
     expect((await fixture.access(pages[2], subjects, 'view')).pages).toBe(1);
-    const rows = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => db.select({
+    const rows = await withKnowledgeBase(fixture.pool, fixture.alpha.id, (db) => db.select({
       pageId: page.id, revision: page.aclRevision, materialized: pageEffectiveAcl.revision,
-    }).from(page).leftJoin(pageEffectiveAcl, and(eq(pageEffectiveAcl.workspaceId, page.workspaceId), eq(pageEffectiveAcl.pageId, page.id)))
+    }).from(page).leftJoin(pageEffectiveAcl, and(eq(pageEffectiveAcl.knowledgeBaseId, page.knowledgeBaseId), eq(pageEffectiveAcl.pageId, page.id)))
       .where(inArray(page.id, pages.map((node) => node.pageId))));
     for (const row of rows) expect(row.materialized).toBe(row.revision);
   });

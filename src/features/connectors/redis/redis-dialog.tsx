@@ -23,7 +23,6 @@ import styles from '../datastore/relational.module.css';
 import formStyles from '../datastore/connection-options/connection-dialog.module.css';
 
 export function RedisDialog({
-  workspaceId,
   connection,
   intent,
   onClose,
@@ -31,7 +30,7 @@ export function RedisDialog({
   onConnect,
   onTest,
 }: {
-  workspaceId: string;
+
   connection?: RedisSavedConnection;
   intent: 'save' | 'connect';
   onClose: () => void;
@@ -84,7 +83,7 @@ export function RedisDialog({
           ),
         );
       } else if (test) {
-        const base = `/api/database/workspaces/${encodeURIComponent(workspaceId)}/redis/sessions`;
+        const base = `/api/database/redis/sessions`;
         const session = await backendFetch<RedisSession>(base, {
           method: 'POST',
           body: JSON.stringify({
@@ -229,7 +228,7 @@ export function RedisDialog({
               onChange={(event) => setPassword(event.target.value)}
             />
             <small>
-              密码仅用于本次测试或会话，连接配置按工作空间保存在当前设备。
+              密码仅用于本次测试或会话，连接配置保存在当前设备。
             </small>
           </label>
           <ConnectionOptionsFields

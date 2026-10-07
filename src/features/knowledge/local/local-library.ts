@@ -4,13 +4,13 @@ import type { JSONContent } from '@tiptap/core';
 export type LocalDocument = { id: string; baseId: string; folderId?: string; icon?: string | null; title: string; body: JSONContent; file?: DocumentFile; starred: boolean; draft: boolean; deleted: boolean; updatedAt: string; creator?: string; source?: string; indexStatus?: string };
 export type LocalTag = { id: string; baseId: string; name: string; pageIds: string[] };
 export type LocalLibrary = { bases: { id: string; name: string }[]; folders: { id: string; knowledgeBaseId: string; name: string }[]; documents: LocalDocument[]; tags: LocalTag[] };
-export const localLibraryKey = (workspaceId: string) => `fouc.local-library.${workspaceId}`;
+export const localLibraryKey = 'fouc.local-library';
 export const emptyLocalLibrary: LocalLibrary = { bases: [], folders: [], documents: [], tags: [] };
 
 /** Local content stays on this device regardless of sign-in; it is never uploaded implicitly. */
-export function createLocalLibraryStore(storage: Pick<Storage, 'getItem' | 'setItem'>, workspaceId: string) {
+export function createLocalLibraryStore(storage: Pick<Storage, 'getItem' | 'setItem'>) {
   let snapshot = emptyLocalLibrary;
-  const key = localLibraryKey(workspaceId);
+  const key = localLibraryKey;
   const stored = storage.getItem(key);
   if (stored) snapshot = JSON.parse(stored) as LocalLibrary;
   const listeners = new Set<() => void>();

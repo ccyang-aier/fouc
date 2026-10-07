@@ -6,16 +6,16 @@ import {
   revokeKnowledgePatInputSchema,
 } from '@fouc/shared/knowledge/contracts';
 
-/** The shared PAT contract is the single source of truth; historical names alias it. */
+/** The shared PAT contract governs token issuance and request authorization. */
 export const knowledgeTokenScopes = knowledgePatScopes;
 export type KnowledgeTokenScope = (typeof knowledgePatScopes)[number];
 export const tokenScopesSchema = knowledgePatScopesSchema;
-export const tokenWorkspaceSchema = entityIdSchema;
+export const tokenKnowledgeBaseSchema = entityIdSchema;
 export const createKnowledgeTokenInputSchema = createKnowledgePatInputSchema;
 export const revokeKnowledgeTokenInputSchema = revokeKnowledgePatInputSchema;
 
 const failures = {
-  UNAUTHENTICATED: { status: 401, message: 'Valid workspace credentials are required.' },
+  UNAUTHENTICATED: { status: 401, message: 'Valid knowledge base credentials are required.' },
   INSUFFICIENT_SCOPE: { status: 403, message: 'This credential does not allow the requested operation.' },
   INVALID_ORIGIN: { status: 403, message: 'A trusted Origin is required.' },
   INVALID_TOKEN_INPUT: { status: 400, message: 'Invalid personal access token request.' },

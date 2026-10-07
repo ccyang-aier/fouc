@@ -26,7 +26,7 @@ function matchesSearch(entry: DataCompareEntry, comparison: DataCompareResult, q
   return false
 }
 
-/** The parent supplies actual results from its current workspace; this panel never reads another source. */
+/** The parent supplies actual results from its current connection; this panel never reads another source. */
 export function DataComparePanel(props: DataComparePanelProps) {
   return <DataCompareContent key={`${props.scopeKey ?? ''}:${props.provider ?? ''}:${objectKey(props.left)}:${objectKey(props.right)}`} {...props} />
 }

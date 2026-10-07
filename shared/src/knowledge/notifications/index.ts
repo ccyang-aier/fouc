@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { entityIdSchema, timestampSchema, workspaceScopeSchema } from '../contracts/primitives';
+import { entityIdSchema, timestampSchema, knowledgeBaseScopeSchema } from '../contracts/primitives';
 
 /**
  * Notification inbox wire contracts (N03, design §4.6 / §5.3).
@@ -28,7 +28,7 @@ export const notificationPayloadSchema = z.strictObject({
 export type NotificationPayload = z.infer<typeof notificationPayloadSchema>;
 
 export const notificationItemSchema = z.strictObject({
-  workspaceId: entityIdSchema,
+  knowledgeBaseId: entityIdSchema,
   id: entityIdSchema,
   kind: notificationKindSchema,
   /** null only for future kinds without a page anchor; comment notices always carry one. */
@@ -42,7 +42,7 @@ export const notificationItemSchema = z.strictObject({
 });
 export type NotificationItem = z.infer<typeof notificationItemSchema>;
 
-export const notificationListInputSchema = workspaceScopeSchema.extend({
+export const notificationListInputSchema = knowledgeBaseScopeSchema.extend({
   limit: z.coerce.number().int().min(1).max(50).default(30),
   /** Keyset cursor (both halves required together): rows strictly before this (createdAt, id). */
   before: timestampSchema.optional(),
@@ -64,12 +64,12 @@ export type NotificationListResult = z.infer<typeof notificationListResultSchema
 export const notificationUnreadCountResultSchema = z.strictObject({ unreadCount: z.number().int().nonnegative() });
 export type NotificationUnreadCountResult = z.infer<typeof notificationUnreadCountResultSchema>;
 
-export const markNotificationReadInputSchema = workspaceScopeSchema.extend({ notificationId: entityIdSchema });
+export const markNotificationReadInputSchema = knowledgeBaseScopeSchema.extend({ notificationId: entityIdSchema });
 export type MarkNotificationReadInput = z.infer<typeof markNotificationReadInputSchema>;
 
 export const markNotificationReadResultSchema = z.strictObject({ notification: notificationItemSchema });
 export type MarkNotificationReadResult = z.infer<typeof markNotificationReadResultSchema>;
 
-export const markAllNotificationsReadInputSchema = workspaceScopeSchema;
+export const markAllNotificationsReadInputSchema = knowledgeBaseScopeSchema;
 export const markAllNotificationsReadResultSchema = z.strictObject({ updated: z.number().int().nonnegative() });
 export type MarkAllNotificationsReadResult = z.infer<typeof markAllNotificationsReadResultSchema>;

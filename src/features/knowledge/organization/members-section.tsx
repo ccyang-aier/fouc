@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Member directory (O02): the workspace member list with role changes and
+ * Member directory (O02): the knowledgeBase member list with role changes and
  * removal. Management controls render only within the actor's authority
  * (`assignableRoles` / `canManageMember`); every mutation is optimistic with a
  * rollback toast on failure.
@@ -11,7 +11,7 @@ import { useState } from 'react';
 import { CaretDown, Trash, UsersThree } from '@phosphor-icons/react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import type { MemberRole } from '@/features/workspaces/organization-client';
+import type { MemberRole } from '@/features/knowledge/organization/client';
 import { useChangeMemberRoleMutation, useMembersQuery, useRemoveMemberMutation } from './hooks';
 import type { MemberRow } from './list-mutations';
 import { assignableRoles, canManageMember, memberRoleLabels } from './view-model';
@@ -22,14 +22,14 @@ function initialsOf(name: string): string {
   return trimmed.length > 0 ? [...trimmed][0]!.toUpperCase() : '?';
 }
 
-export function MembersSection({ workspaceId, actorRole, notify }: {
-  workspaceId: string;
+export function MembersSection({ knowledgeBaseId, actorRole, notify }: {
+  knowledgeBaseId: string;
   actorRole: MemberRole;
   notify: (kind: 'success' | 'error', text: string) => void;
 }) {
-  const membersQuery = useMembersQuery(workspaceId);
-  const changeRoleMutation = useChangeMemberRoleMutation(workspaceId);
-  const removeMutation = useRemoveMemberMutation(workspaceId);
+  const membersQuery = useMembersQuery(knowledgeBaseId);
+  const changeRoleMutation = useChangeMemberRoleMutation(knowledgeBaseId);
+  const removeMutation = useRemoveMemberMutation(knowledgeBaseId);
   const [removingMember, setRemovingMember] = useState<MemberRow | null>(null);
   const members = flattenPages<MemberRow>(membersQuery.data);
   const state = queryListState(membersQuery);
@@ -49,7 +49,7 @@ export function MembersSection({ workspaceId, actorRole, notify }: {
     if (!member) return;
     try {
       await removeMutation.mutateAsync(member.userId);
-      notify('success', `已将 ${member.name} 移出工作区`);
+      notify('success', `已将 ${member.name} 移出知识库`);
       setRemovingMember(null);
     } catch (error) {
       notify('error', mutationErrorText('移除成员', error));
@@ -60,15 +60,15 @@ export function MembersSection({ workspaceId, actorRole, notify }: {
     <div className="flex flex-col gap-3">
       <SectionHeader
         title="成员"
-        hint="成员目录展示工作区的全部成员；角色决定其管理与浏览权限，变更立即生效。"
+        hint="成员目录展示知识库的全部成员；角色决定其管理与浏览权限，变更立即生效。"
       />
       <ListStateShell
         state={state}
         error={membersQuery.error}
         onRetry={() => void membersQuery.refetch()}
         emptyIcon={<UsersThree className="size-6" aria-hidden />}
-        emptyTitle="此工作区暂无成员"
-        emptyHint="创建工作区的所有者会出现在这里；新成员加入后会自动列出。"
+        emptyTitle="此知识库暂无成员"
+        emptyHint="创建知识库的所有者会出现在这里；新成员加入后会自动列出。"
       >
         <div className="overflow-hidden rounded-[10px] border border-[var(--line)] bg-panel">
           <div className="grid grid-cols-[minmax(200px,1fr)_150px_64px] items-center gap-3 border-b border-[var(--line)] bg-[var(--surface-subtle)] px-4 py-2 text-[10px] font-medium text-[var(--muted)]">
@@ -147,8 +147,8 @@ export function MembersSection({ workspaceId, actorRole, notify }: {
         confirmLabel="移除"
         body={removingMember ? (
           <>
-            确定将 <strong className="font-semibold text-[var(--ink)]">{removingMember.name}</strong>（{removingMember.email}）移出该工作区？
-            移除后其将立即失去该工作区的访问权限，所在群组的成员关系也会一并清除。
+            确定将 <strong className="font-semibold text-[var(--ink)]">{removingMember.name}</strong>（{removingMember.email}）移出该知识库？
+            移除后其将立即失去该知识库的访问权限，所在群组的成员关系也会一并清除。
           </>
         ) : null}
       />

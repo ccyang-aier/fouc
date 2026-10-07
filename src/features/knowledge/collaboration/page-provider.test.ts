@@ -18,7 +18,7 @@ import * as syncProtocol from 'y-protocols/sync';
 import { IndexeddbPersistence } from 'y-indexeddb';
 import { pageDocumentName } from '@fouc/shared/knowledge/collaboration';
 import type { PageScope } from '@fouc/shared/knowledge/contracts';
-import { connectPageDocument } from './page-provider';
+import { connectPageDocument, pageOfflineStorageKey } from './page-provider';
 
 type SocketEvent = { data?: ArrayBuffer; code?: number; reason?: string };
 
@@ -172,13 +172,13 @@ async function nextSocket(after: number): Promise<FakeWebSocket> {
 }
 
 function freshScope(): PageScope {
-  return { workspaceId: crypto.randomUUID(), pageId: crypto.randomUUID() };
+  return { knowledgeBaseId: crypto.randomUUID(), pageId: crypto.randomUUID() };
 }
 
 /** Persists an offline draft exactly the way a previous session would have. */
 async function seedLocalCopy(documentName: string, text: string): Promise<void> {
   const doc = new Y.Doc();
-  const persistence = new IndexeddbPersistence(documentName, doc);
+  const persistence = new IndexeddbPersistence(pageOfflineStorageKey(documentName, 'anonymous'), doc);
   await persistence.whenSynced;
   doc.getText('body').insert(0, text);
   await settle();
@@ -243,6 +243,24 @@ describe('page document session', () => {
     expect(server.document.getText('body').toString()).toBe(clientText);
 
     await session.destroy();
+  });
+
+  test('an offline copy is private to the current actor on the same knowledge base and page', async () => {
+    resetNetwork();
+    const scope = freshScope();
+    const first = connectPageDocument({ ...sessionOptions, scope, cacheIdentity: 'user-a', WebSocketPolyfill: FakeWebSocket as never });
+    await until(() => first.getStatus().localReady);
+    first.document.getText('body').insert(0, 'private offline edit');
+    await settle();
+    await first.destroy();
+    const another = connectPageDocument({ ...sessionOptions, scope, cacheIdentity: 'user-b', WebSocketPolyfill: FakeWebSocket as never });
+    await until(() => another.getStatus().localReady);
+    expect(another.document.getText('body').toString()).toBe('');
+    await another.destroy();
+    const reopened = connectPageDocument({ ...sessionOptions, scope, cacheIdentity: 'user-a', WebSocketPolyfill: FakeWebSocket as never });
+    await until(() => reopened.getStatus().localReady);
+    expect(reopened.document.getText('body').toString()).toBe('private offline edit');
+    await reopened.destroy();
   });
 
   test('streams live edits both ways while synced, without pending state', async () => {

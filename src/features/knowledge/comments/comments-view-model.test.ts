@@ -11,7 +11,7 @@ import { deriveCommentSidebarModel, formatCommentTime, filterCommentGroups, defa
  */
 
 const PAGE = '20000000-0000-4000-8000-000000000000';
-const WORKSPACE = '30000000-0000-4000-8000-000000000000';
+const KNOWLEDGE_BASE = '30000000-0000-4000-8000-000000000000';
 const T1 = '10000000-0000-4000-8000-000000000001';
 const T2 = '10000000-0000-4000-8000-000000000002';
 const T3 = '10000000-0000-4000-8000-000000000003';
@@ -19,14 +19,14 @@ const PENDING = '10000000-0000-4000-8000-0000000000ff';
 
 function thread(id: string, overrides: Partial<CommentThread> = {}): CommentThread {
   return {
-    workspaceId: WORKSPACE,
+    knowledgeBaseId: KNOWLEDGE_BASE,
     id,
     pageId: PAGE,
     kind: 'issue', anchorKind: 'selection', status: 'open',
     createdAt: `2026-09-2${id.endsWith('1') ? '4' : id.endsWith('2') ? '5' : '6'}T08:00:00Z`,
     updatedAt: '2026-09-26T08:00:00Z',
     comments: [{
-      workspaceId: WORKSPACE,
+      knowledgeBaseId: KNOWLEDGE_BASE,
       id: `40000000-0000-4000-8000-${id.slice(-12)}`,
       threadId: id,
       authorId: '50000000-0000-4000-8000-000000000000',

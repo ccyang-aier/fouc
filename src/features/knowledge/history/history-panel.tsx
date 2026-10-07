@@ -22,7 +22,7 @@ const formatter = new Intl.DateTimeFormat('zh-CN', { month: 'short', day: 'numer
 const shortAuthor = (userId: string) => userId.slice(0, 8);
 
 export interface HistoryPanelProps {
-  workspaceId: string;
+  knowledgeBaseId: string;
   pageId: string;
   /** The live editor; null while the surface is read-only or still mounting. */
   editor: Editor | null;
@@ -32,7 +32,7 @@ export interface HistoryPanelProps {
   api?: HistoryApi;
 }
 
-export function HistoryPanel({ workspaceId, pageId, editor, canEdit, onClose, api = createHistoryApi() }: HistoryPanelProps) {
+export function HistoryPanel({ knowledgeBaseId, pageId, editor, canEdit, onClose, api = createHistoryApi() }: HistoryPanelProps) {
   const [phase, setPhase] = useState<Phase>('loading');
   const [entries, setEntries] = useState<PageCheckpointEntry[]>([]);
   const [selected, setSelected] = useState<{ preview: PageCheckpointPreview; html: string | null } | null>(null);
@@ -45,13 +45,13 @@ export function HistoryPanel({ workspaceId, pageId, editor, canEdit, onClose, ap
 
   const reload = useCallback(async () => {
     try {
-      const { checkpoints } = await listRef.current(workspaceId, pageId);
+      const { checkpoints } = await listRef.current(knowledgeBaseId, pageId);
       setEntries(checkpoints);
       setPhase('ready');
     } catch {
       setPhase('error');
     }
-  }, [workspaceId, pageId]);
+  }, [knowledgeBaseId, pageId]);
 
   useEffect(() => { void reload(); }, [reload]);
 
@@ -59,21 +59,21 @@ export function HistoryPanel({ workspaceId, pageId, editor, canEdit, onClose, ap
     setPreviewBusy(true);
     setFeedback(null);
     try {
-      const preview = await api.preview(workspaceId, pageId, checkpointId);
+      const preview = await api.preview(knowledgeBaseId, pageId, checkpointId);
       setSelected({ preview, html: editor ? renderCheckpointHtml(preview.body, editor.schema) : null });
     } catch {
       setFeedback({ tone: 'error', text: '版本预览加载失败,请重试。' });
     } finally {
       setPreviewBusy(false);
     }
-  }, [api, editor, workspaceId, pageId]);
+  }, [api, editor, knowledgeBaseId, pageId]);
 
   const nameVersion = useCallback(async () => {
     const trimmed = label.trim();
     if (!trimmed || busy) return;
     setBusy(true);
     try {
-      const result = await api.name(workspaceId, pageId, trimmed);
+      const result = await api.name(knowledgeBaseId, pageId, trimmed);
       setNaming(false);
       setLabel('');
       setFeedback({ tone: 'success', text: result.outcome === 'created' ? '已保存为命名版本。' : '内容与最新版本一致,已为该版本命名。' });
@@ -83,7 +83,7 @@ export function HistoryPanel({ workspaceId, pageId, editor, canEdit, onClose, ap
     } finally {
       setBusy(false);
     }
-  }, [api, busy, label, pageId, reload, workspaceId]);
+  }, [api, busy, label, pageId, reload, knowledgeBaseId]);
 
   const restore = useCallback(() => {
     if (!selected || !editor || busy) return;

@@ -30,7 +30,7 @@ export function downloadDocumentBlob(blob: Blob, title: string, extension: 'md' 
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-/** Isolated, script-free snapshot: the workspace chrome and editing controls are excluded. */
+/** Isolated, script-free snapshot: the knowledgeBase chrome and editing controls are excluded. */
 export function printDocument(html: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const frame = document.createElement('iframe');

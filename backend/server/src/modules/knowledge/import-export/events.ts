@@ -6,7 +6,7 @@ import { entityIdSchema } from '@fouc/shared/knowledge/contracts';
  * 单调不减。事件只描述传输本身,不携带页面正文或附件内容。
  *
  * 通道:服务通过 `onEvent` 回调发出;宿主(A 层 HTTP/WS)可把回调接到 B06
- * 工作区事件通道(如以 ai.task.changed 的形式携带 transferId 触发前端刷新),
+ * 知识库事件通道(如以 ai.task.changed 的形式携带 transferId 触发前端刷新),
  * 也可以在长连接上直接流式转发。本模块不持有任何 socket。
  */
 export const vaultPhaseSchema = z.enum(['planning', 'attachments', 'pages', 'packaging', 'done']);

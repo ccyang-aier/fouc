@@ -15,16 +15,16 @@ describe('asset routes', () => {
   });
   afterAll(async () => { bindKnowledgeAssetStorage(undefined); await fixture.close(); });
 
-  test('prepares a workspace-scoped upload and rejects a download before confirmation', async () => {
+  test('prepares a knowledgeBase-scoped upload and rejects a download before confirmation', async () => {
     const client = fixture.apiClient({ cookie: fixture.owner.cookie, origin: fixture.server.webOrigin });
-    const input = { workspaceId: fixture.alpha.id, hash: 'a'.repeat(64), mime: 'text/plain', size: 5, name: 'a.txt' };
+    const input = { knowledgeBaseId: fixture.alpha.id, hash: 'a'.repeat(64), mime: 'text/plain', size: 5, name: 'a.txt' };
     const prepared = await client.asset.prepare.mutate(input);
     expect(prepared.action).toBe('upload');
     if (prepared.action === 'upload') {
       expect(new URL(prepared.url).pathname).toContain(`${fixture.alpha.id}/${input.hash}`);
       expect(prepared.headers).toEqual({ 'content-type': 'text/plain' });
     }
-    await expect(client.asset.download.query({ workspaceId: input.workspaceId, hash: input.hash }))
+    await expect(client.asset.download.query({ knowledgeBaseId: input.knowledgeBaseId, hash: input.hash }))
       .rejects.toMatchObject({ data: { code: 'NOT_FOUND' } });
   });
 });

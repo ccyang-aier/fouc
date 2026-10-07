@@ -36,9 +36,9 @@ beforeAll(() => {
   (globalThis as Record<string, unknown>).window = window;
 });
 
-const scopeA: PageScope = { workspaceId: '00000000-0000-4000-8000-000000000001', pageId: '00000000-0000-4000-8000-00000000000a' };
-const scopeB: PageScope = { workspaceId: '00000000-0000-4000-8000-000000000001', pageId: '00000000-0000-4000-8000-00000000000b' };
-const ownScope: PageScope = { workspaceId: scopeA.workspaceId, pageId: '00000000-0000-4000-8000-00000000000f' };
+const scopeA: PageScope = { knowledgeBaseId: '00000000-0000-4000-8000-000000000001', pageId: '00000000-0000-4000-8000-00000000000a' };
+const scopeB: PageScope = { knowledgeBaseId: '00000000-0000-4000-8000-000000000001', pageId: '00000000-0000-4000-8000-00000000000b' };
+const ownScope: PageScope = { knowledgeBaseId: scopeA.knowledgeBaseId, pageId: '00000000-0000-4000-8000-00000000000f' };
 
 /** Session fake: a real Y.Doc plus counted connects/destroys. */
 function fakeConnector() {
@@ -68,9 +68,34 @@ function fakeConnector() {
 }
 
 describe('block reference source cache', () => {
+  test('the same page ID in two knowledge bases never shares a body session', async () => {
+    const fake = fakeConnector();
+    const scopes: PageScope[] = [];
+    const sources = createBlockReferenceSources({ origin: 'https://fouc.test', connect: fake.connect, authorize: async scope => { scopes.push(scope); } });
+    const foreignScope = { ...scopeA, knowledgeBaseId: '00000000-0000-4000-8000-000000000009' };
+    const [first, second] = await Promise.all([sources.acquire(scopeA), sources.acquire(foreignScope)]);
+    expect(scopes).toEqual([scopeA, foreignScope]);
+    expect(fake.calls.connects).toBe(2);
+    expect(first.document === second.document).toBe(false);
+    await first.release();
+    await second.release();
+  });
+  test('a denied target never opens its offline body or collaboration session', async () => {
+    const fake = fakeConnector();
+    let authorizedScope: PageScope | undefined;
+    const sources = createBlockReferenceSources({ origin: 'https://fouc.test', connect: fake.connect,
+      authorize: async scope => { authorizedScope = scope; throw new Error('denied'); },
+    });
+    const foreignScope = { knowledgeBaseId: '00000000-0000-4000-8000-000000000009', pageId: scopeA.pageId };
+    const result = await Promise.allSettled([sources.acquire(foreignScope)]);
+    expect(result[0].status).toBe('rejected');
+    expect(authorizedScope).toEqual(foreignScope);
+    expect(fake.calls.connects).toBe(0);
+    expect(fake.documents).toHaveLength(0);
+  });
   test('sequential acquires share one session; the last release destroys it', async () => {
     const fake = fakeConnector();
-    const sources: BlockReferenceSources = createBlockReferenceSources({ origin: 'https://fouc.test', connect: fake.connect });
+    const sources: BlockReferenceSources = createBlockReferenceSources({ origin: 'https://fouc.test', authorize: async () => {}, connect: fake.connect });
 
     const first = await sources.acquire(scopeA);
     const second = await sources.acquire(scopeA);
@@ -86,7 +111,7 @@ describe('block reference source cache', () => {
 
   test('concurrent acquires share one connector call', async () => {
     const fake = fakeConnector();
-    const sources = createBlockReferenceSources({ origin: 'https://fouc.test', connect: fake.connect });
+    const sources = createBlockReferenceSources({ origin: 'https://fouc.test', authorize: async () => {}, connect: fake.connect });
     const [a, b] = await Promise.all([sources.acquire(scopeA), sources.acquire(scopeA)]);
     expect(fake.calls.connects).toBe(1);
     expect(a.document).toBe(b.document);
@@ -97,7 +122,7 @@ describe('block reference source cache', () => {
 
   test('different pages get independent sessions', async () => {
     const fake = fakeConnector();
-    const sources = createBlockReferenceSources({ origin: 'https://fouc.test', connect: fake.connect });
+    const sources = createBlockReferenceSources({ origin: 'https://fouc.test', authorize: async () => {}, connect: fake.connect });
     const [a, b] = await Promise.all([sources.acquire(scopeA), sources.acquire(scopeB)]);
     expect(fake.calls.connects).toBe(2);
     expect(a.document).not.toBe(b.document);
@@ -111,7 +136,7 @@ describe('block reference source cache', () => {
     let failing = true;
     const fake = fakeConnector();
     const connect: SourceConnector = (options) => (failing ? Promise.reject(new Error('unreachable')) : fake.connect(options));
-    const sources = createBlockReferenceSources({ origin: 'https://fouc.test', connect });
+    const sources = createBlockReferenceSources({ origin: 'https://fouc.test', authorize: async () => {}, connect });
 
     const [first, second] = await Promise.allSettled([sources.acquire(scopeA), sources.acquire(scopeA)]);
     expect(first.status).toBe('rejected');
@@ -139,7 +164,7 @@ describe('block reference source cache', () => {
           }, 10);
         }),
       });
-    const sources = createBlockReferenceSources({ origin: 'https://fouc.test', connect });
+    const sources = createBlockReferenceSources({ origin: 'https://fouc.test', authorize: async () => {}, connect });
     const handle = await sources.acquire(scopeA);
     await handle.release();
     expect(destroyed).toBe(true);
@@ -214,15 +239,17 @@ describe('renderSourceBlock', () => {
 
 describe('resolveBlockReferenceState', () => {
   const base = {
-    attrs: { pageId: scopeA.pageId as string | null, targetBlockId: 'blk-head' as string | null },
+    attrs: { knowledgeBaseId: scopeA.knowledgeBaseId, pageId: scopeA.pageId as string | null, targetBlockId: 'blk-head' as string | null },
     ownScope,
     element: null as Y.XmlElement | null,
   };
 
   test('cyclic and unconfigured are decided before any connection', () => {
     expect(resolveBlockReferenceState({ ...base, attrs: { ...base.attrs, pageId: ownScope.pageId }, sessionStatus: null })).toBe('cyclic');
-    expect(resolveBlockReferenceState({ ...base, attrs: { pageId: null, targetBlockId: 'blk' }, sessionStatus: null })).toBe('unconfigured');
-    expect(resolveBlockReferenceState({ ...base, attrs: { pageId: scopeA.pageId, targetBlockId: null }, sessionStatus: null })).toBe('unconfigured');
+    expect(resolveBlockReferenceState({ ...base, attrs: { knowledgeBaseId: scopeA.knowledgeBaseId, pageId: null, targetBlockId: 'blk' }, sessionStatus: null })).toBe('unconfigured');
+    expect(resolveBlockReferenceState({ ...base, attrs: { knowledgeBaseId: scopeA.knowledgeBaseId, pageId: scopeA.pageId, targetBlockId: null }, sessionStatus: null })).toBe('unconfigured');
+    expect(resolveBlockReferenceState({ ...base, attrs: { ...base.attrs, knowledgeBaseId: null }, sessionStatus: null })).toBe('unconfigured');
+    expect(resolveBlockReferenceState({ ...base, attrs: { ...base.attrs, knowledgeBaseId: 'another-base', pageId: ownScope.pageId }, sessionStatus: synced, element: new Y.XmlElement('heading') })).toBe('live');
   });
 
   test('connector failure and auth denial map to their own states', () => {
@@ -247,7 +274,7 @@ describe('watchSourceBlock', () => {
   function openWatch(document: Y.Doc, targetBlockId: string, throttleMs = 0) {
     return watchSourceBlock({
       fragment: document.getXmlFragment('default'),
-      attrs: { pageId: scopeA.pageId, targetBlockId },
+      attrs: { knowledgeBaseId: scopeA.knowledgeBaseId, pageId: scopeA.pageId, targetBlockId },
       ownScope,
       status: () => synced,
       schema: knowledgeSchema,

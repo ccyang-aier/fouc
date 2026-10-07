@@ -81,7 +81,7 @@ export function PageEditorSurface({
   // marks (S01), comments (N02), markdown/keyboard block editing (E04), the
   // slash menu + paste pipeline (E06) and presence cursors (B07).
   const extensions = useMemo(() => {
-    const registry = applyEditorBlockModules(createKnowledgeExtensions(), { scope, origin: origin ?? '' });
+    const registry = applyEditorBlockModules(createKnowledgeExtensions(), { scope, origin: origin ?? '', cacheIdentity: user?.id ?? 'anonymous' });
     return [
       ...registry,
       createBlockIdExtension({ pageId: scope.pageId }),
@@ -102,7 +102,7 @@ export function PageEditorSurface({
   // only its identity-bearing fields belong here — otherwise the inline
   // object would rebuild (and remount) the editor on every parent render.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scope.pageId, scope.workspaceId, document, pageUndo, origin, user, session]);
+  }, [scope.pageId, scope.knowledgeBaseId, document, pageUndo, origin, user, session]);
 
   const editor = useEditor(
     {
@@ -126,29 +126,29 @@ export function PageEditorSurface({
   // the open-target channel (both selection-free).
   useEffect(() => {
     if (!editor || fixedPane) return undefined;
-    const staged = takeStagedBlockHighlight(scope.pageId);
+    const staged = takeStagedBlockHighlight({ knowledgeBaseId: scope.knowledgeBaseId, pageId: scope.pageId });
     if (staged) revealBlockInEditor(editor.view, staged.blockId);
     return subscribeOpenPageTarget((target) => {
-      if (target.pageId === scope.pageId && target.blockId) revealBlockInEditor(editor.view, target.blockId);
+      if (target.knowledgeBaseId === scope.knowledgeBaseId && target.pageId === scope.pageId && target.blockId) revealBlockInEditor(editor.view, target.blockId);
     });
-  }, [editor, scope.pageId, fixedPane]);
+  }, [editor, scope.knowledgeBaseId, scope.pageId, fixedPane]);
 
   const [historyOpen, setHistoryOpen] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const queryClient = useQueryClient();
-  const { collections, toggleStar } = useSidebarCollections(user?.id ?? '', scope.workspaceId, knowledgeBaseId);
+  const { collections, toggleStar } = useSidebarCollections(user?.id ?? '', scope.knowledgeBaseId);
   const pageTitle = usePageMetadata(scope);
   const updatedLabel = pageTitle.updatedAt
     ? `你已更新 ${new Date(pageTitle.updatedAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
     : '文档';
 
   return (
-    <DocumentEditorFrame appearanceScope={`workspace:${user?.id ?? 'guest'}:${scope.workspaceId}:${scope.pageId}`}
-      navigation={{ editor, title: pageTitle.title, target: { workspaceId: scope.workspaceId, knowledgeBaseId, pageId: scope.pageId, source: 'workspace' } }}
+    <DocumentEditorFrame appearanceScope={`knowledgeBase:${user?.id ?? 'guest'}:${scope.knowledgeBaseId}:${scope.pageId}`}
+      navigation={{ editor, title: pageTitle.title, target: { knowledgeBaseId: scope.knowledgeBaseId, pageId: scope.pageId, source: 'server' } }}
       sidebar={<PageCommentsLayer scope={scope} knowledgeBaseId={knowledgeBaseId} editor={editor} level={level} currentUser={user} railOpen={commentsOpen} onRailOpenChange={setCommentsOpen}>
         <PageReviewRail editor={editor} editable={view.editable} />
         {historyOpen && <aside className="flex h-full w-[320px] shrink-0 flex-col border-l border-[var(--line)] bg-[var(--panel)]">
-          <HistoryPanel workspaceId={scope.workspaceId} pageId={scope.pageId} editor={editor} canEdit={view.editable} onClose={() => setHistoryOpen(false)} />
+          <HistoryPanel knowledgeBaseId={scope.knowledgeBaseId} pageId={scope.pageId} editor={editor} canEdit={view.editable} onClose={() => setHistoryOpen(false)} />
         </aside>}
       </PageCommentsLayer>}
       header={
@@ -165,12 +165,12 @@ export function PageEditorSurface({
         shareDescription="复制文档标题和正文后，可以粘贴到其他应用。页面访问权限由知识库管理。"
         presence={user ? <AwarenessMembers awareness={session.awareness} identity={{ userId: user.id, name: user.name, image: user.image }} /> : undefined}
         menuActions={{
-          target: { workspaceId: scope.workspaceId, knowledgeBaseId, pageId: scope.pageId, source: 'workspace' },
+          target: { knowledgeBaseId: scope.knowledgeBaseId, pageId: scope.pageId, source: 'server' },
           onComments: () => { setHistoryOpen(false); setCommentsOpen(true); },
           onHistory: () => { setCommentsOpen(false); setHistoryOpen(true); },
           onDelete: view.editable ? async () => {
-            await recycleKnowledgePage(scope.workspaceId, { pageId: scope.pageId });
-            void queryClient.invalidateQueries({ queryKey: knowledgeQueryKeys.pages(scope.workspaceId) });
+            await recycleKnowledgePage(scope.knowledgeBaseId, { pageId: scope.pageId });
+            void queryClient.invalidateQueries({ queryKey: knowledgeQueryKeys.pages(scope.knowledgeBaseId) });
             onBack();
           } : undefined,
         }}

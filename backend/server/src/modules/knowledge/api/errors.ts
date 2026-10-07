@@ -12,7 +12,7 @@ const messages: Record<TRPC_ERROR_CODE_KEY, string> = {
   BAD_GATEWAY: 'A required service is unavailable.',
   SERVICE_UNAVAILABLE: 'The service is temporarily unavailable.',
   GATEWAY_TIMEOUT: 'A required service did not respond in time.',
-  UNAUTHORIZED: 'Valid workspace credentials are required.',
+  UNAUTHORIZED: 'Valid knowledge base credentials are required.',
   PAYMENT_REQUIRED: 'This operation requires additional access.',
   FORBIDDEN: 'This request is not permitted.',
   NOT_FOUND: 'The requested operation was not found.',

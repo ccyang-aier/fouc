@@ -4,7 +4,7 @@ import type { ModelBinding, ModelSettings, ModelTier } from '@fouc/shared/knowle
 /** Decrypted only in the backend immediately before a model call. Never a DTO. */
 export interface ModelCredential {
   id: string;
-  workspaceId: string;
+  knowledgeBaseId: string;
   userId: string;
   provider: string;
   apiKey: string;
@@ -26,10 +26,10 @@ export interface ResolvedModel {
   apiKey?: string;
 }
 
-/** A workspace chooses public bindings; secrets are resolved for the initiating user. */
+/** A knowledgeBase chooses public bindings; secrets are resolved for the initiating user. */
 export function resolveModel(input: {
   tier: ModelTier;
-  workspaceId: string;
+  knowledgeBaseId: string;
   userId: string;
   settings: ModelSettings;
   platform: PlatformModels;
@@ -38,7 +38,7 @@ export function resolveModel(input: {
   const settings = modelSettingsSchema.parse(input.settings);
   const selected = settings[input.tier] ?? input.platform.defaults[input.tier];
   if (!selected) throw new Error(`No model configured for ${input.tier}`);
-  // Defaults must satisfy the same capability contract as workspace overrides.
+  // Defaults must satisfy the same capability contract as knowledgeBase overrides.
   const binding = modelSettingsSchema.parse({ [input.tier]: selected })[input.tier]!;
   const common = { source: binding.source, model: binding.model, dimensions: binding.dimensions };
   if (binding.source === 'ollama') return { ...common, provider: 'ollama', endpoint: binding.endpoint.replace(/\/$/, '') };
@@ -47,7 +47,7 @@ export function resolveModel(input: {
     if (!provider?.apiKey) throw new Error(`Platform provider is not configured: ${binding.provider}`);
     return { ...common, provider: binding.provider, apiKey: provider.apiKey, endpoint: provider.endpoint ? modelEndpointSchema.parse(provider.endpoint) : undefined };
   }
-  const credential = input.credentials.find((item) => item.id === binding.credentialId && item.workspaceId === input.workspaceId && item.userId === input.userId && item.provider === binding.provider && item.revokedAt === null);
-  if (!credential?.apiKey) throw new Error('Model credential is unavailable for this user and workspace');
+  const credential = input.credentials.find((item) => item.id === binding.credentialId && item.knowledgeBaseId === input.knowledgeBaseId && item.userId === input.userId && item.provider === binding.provider && item.revokedAt === null);
+  if (!credential?.apiKey) throw new Error('Model credential is unavailable for this user and knowledgeBase');
   return { ...common, provider: binding.provider, apiKey: credential.apiKey, endpoint: credential.endpoint ? modelEndpointSchema.parse(credential.endpoint) : undefined };
 }

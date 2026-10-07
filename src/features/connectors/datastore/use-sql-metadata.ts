@@ -7,7 +7,7 @@ import { SqlJoinCompletion } from './sql-assistance/join/completion'
 
 export function useSqlMetadata(session: RelationalSession, revision: number) {
   const { metadata, join } = useMemo(() => {
-    const base = `/api/database/workspaces/${encodeURIComponent(session.workspaceId)}/relational/sessions/${session.id}/schemas`
+    const base = `/api/database/relational/sessions/${session.id}/schemas`
     const tables = (schema: string, signal: AbortSignal) => backendFetch<DatabaseObjectInfo[]>(`${base}/${encodeURIComponent(schema)}/tables`, { signal })
     const metadata = new SqlMetadataCompletion(session.provider, {
       tables,
@@ -18,7 +18,7 @@ export function useSqlMetadata(session: RelationalSession, revision: number) {
       structure: (schema, table, signal) => backendFetch<RelationalTableStructure>(`${base}/${encodeURIComponent(schema)}/tables/${encodeURIComponent(table)}/structure`, { signal }),
     })
     return { metadata, join }
-  }, [session.workspaceId, session.id, session.provider])
+  }, [session.id, session.provider])
   const state = useSyncExternalStore(metadata.subscribe, metadata.getSnapshot, metadata.getSnapshot)
   const joinState = useSyncExternalStore(join.subscribe, join.getSnapshot, join.getSnapshot)
   useEffect(() => { metadata.clear(); join.clear(); return () => { metadata.clear(); join.clear() } }, [metadata, join, revision])

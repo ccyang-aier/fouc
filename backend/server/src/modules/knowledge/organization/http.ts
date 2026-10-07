@@ -1,16 +1,19 @@
 import type { FoucAuth } from '../../../platform/identity/service';
-import { bodyWithPath, createWorkspaceApi, pagination, workspaceApiBase as base } from '../../workspaces/http-boundary';
+import { bodyWithPath, createResourceApi, pagination } from '../../../platform/resources/http';
+import { knowledgeBaseApiBase as base } from './paths';
 import type { KnowledgeCatalogService } from './service';
 
-/** Knowledge bases and their folders are children of the selected workspace. */
+/** Knowledge bases have independent membership; folders belong to a selected library. */
 export function createKnowledgeCatalogRoutes(auth: FoucAuth, service: KnowledgeCatalogService) {
-  const app = createWorkspaceApi(auth);
-  app.get(`${base}/:workspaceId/knowledge-bases`, async (context) => context.json(await service.listKnowledgeBases(context.get('identity'), { ...pagination(context), ...context.req.param() })));
-  app.post(`${base}/:workspaceId/knowledge-bases`, async (context) => context.json(await service.createKnowledgeBase(context.get('identity'), await bodyWithPath(context, context.req.param())), 201));
-  app.get(`${base}/:workspaceId/teamspaces`, async (context) => context.json(await service.listTeamspaces(context.get('identity'), { ...pagination(context), ...context.req.param() })));
-  app.post(`${base}/:workspaceId/teamspaces`, async (context) => context.json(await service.createTeamspace(context.get('identity'), await bodyWithPath(context, context.req.param())), 201));
-  app.get(`${base}/:workspaceId/teamspaces/:teamspaceId`, async (context) => context.json(await service.getTeamspace(context.get('identity'), context.req.param())));
-  app.patch(`${base}/:workspaceId/teamspaces/:teamspaceId`, async (context) => context.json(await service.updateTeamspace(context.get('identity'), await bodyWithPath(context, context.req.param()))));
-  app.delete(`${base}/:workspaceId/teamspaces/:teamspaceId`, async (context) => context.json(await service.removeTeamspace(context.get('identity'), await bodyWithPath(context, context.req.param()))));
+  const app = createResourceApi(auth, base);
+  app.get(base, async (context) => context.json(await service.listKnowledgeBases(context.get('identity'), pagination(context))));
+  app.post(base, async (context) => context.json(await service.createKnowledgeBase(context.get('identity'), await bodyWithPath(context)), 201));
+  app.get(`${base}/:knowledgeBaseId`, async (context) => context.json(await service.getKnowledgeBase(context.get('identity'), context.req.param())));
+  app.patch(`${base}/:knowledgeBaseId`, async (context) => context.json(await service.renameKnowledgeBase(context.get('identity'), await bodyWithPath(context, context.req.param()))));
+  app.get(`${base}/:knowledgeBaseId/teamspaces`, async (context) => context.json(await service.listTeamspaces(context.get('identity'), { ...pagination(context), ...context.req.param() })));
+  app.post(`${base}/:knowledgeBaseId/teamspaces`, async (context) => context.json(await service.createTeamspace(context.get('identity'), await bodyWithPath(context, context.req.param())), 201));
+  app.get(`${base}/:knowledgeBaseId/teamspaces/:teamspaceId`, async (context) => context.json(await service.getTeamspace(context.get('identity'), context.req.param())));
+  app.patch(`${base}/:knowledgeBaseId/teamspaces/:teamspaceId`, async (context) => context.json(await service.updateTeamspace(context.get('identity'), await bodyWithPath(context, context.req.param()))));
+  app.delete(`${base}/:knowledgeBaseId/teamspaces/:teamspaceId`, async (context) => context.json(await service.removeTeamspace(context.get('identity'), await bodyWithPath(context, context.req.param()))));
   return app;
 }

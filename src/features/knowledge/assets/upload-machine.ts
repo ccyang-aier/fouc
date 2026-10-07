@@ -48,9 +48,9 @@ export interface AssetUploadItem {
 
 export interface AssetUploadPorts {
   hashFile(file: File, progress: { onProgress: (ratio: number) => void; signal: AbortSignal }): Promise<string>;
-  prepare(workspaceId: string, intent: { hash: string; mime: string; size: number; name: string }, signal?: AbortSignal): Promise<AssetUploadPrepareResult>;
+  prepare(knowledgeBaseId: string, intent: { hash: string; mime: string; size: number; name: string }, signal?: AbortSignal): Promise<AssetUploadPrepareResult>;
   transfer: AssetTransfer;
-  confirm(workspaceId: string, intent: { hash: string; mime: string; size: number; name: string }, signal?: AbortSignal): Promise<AssetConfirmResult>;
+  confirm(knowledgeBaseId: string, intent: { hash: string; mime: string; size: number; name: string }, signal?: AbortSignal): Promise<AssetConfirmResult>;
 }
 
 export interface UploadedAsset {
@@ -58,7 +58,7 @@ export interface UploadedAsset {
   name: string;
   mime: string;
   size: number;
-  /** 秒传命中(工作区已有同哈希资产);此时没有新对象写入。 */
+  /** 秒传命中(知识库已有同哈希资产);此时没有新对象写入。 */
   reused: boolean;
   /** 本次 confirm 是否创建了新资产行(并发确认的另一方可能已创建)。 */
   created: boolean;
@@ -76,8 +76,8 @@ export interface AssetUploadStore {
   clearFinished(): void;
 }
 
-export function createAssetUploadStore(options: { workspaceId: string; ports: AssetUploadPorts; onUploaded?: (asset: UploadedAsset) => void }): AssetUploadStore {
-  const { workspaceId, ports } = options;
+export function createAssetUploadStore(options: { knowledgeBaseId: string; ports: AssetUploadPorts; onUploaded?: (asset: UploadedAsset) => void }): AssetUploadStore {
+  const { knowledgeBaseId, ports } = options;
   let items: AssetUploadItem[] = [];
   const listeners = new Set<() => void>();
   const controllers = new Map<string, AbortController>();
@@ -141,11 +141,11 @@ export function createAssetUploadStore(options: { workspaceId: string; ports: As
       }
       failFast();
       patch(item.id, { phase: 'preparing' });
-      const prepared = await guard('prepare', () => ports.prepare(workspaceId, intentOf(item, hash!), signal));
+      const prepared = await guard('prepare', () => ports.prepare(knowledgeBaseId, intentOf(item, hash!), signal));
       failFast();
 
       if (prepared.action === 'reuse') {
-        // 秒传:工作区已有同哈希资产,既不传输也不确认。
+        // 秒传:知识库已有同哈希资产,既不传输也不确认。
         return finish(item, { hash: hash!, reused: true, created: false });
       }
 
@@ -154,7 +154,7 @@ export function createAssetUploadStore(options: { workspaceId: string; ports: As
       failFast();
 
       patch(item.id, { phase: 'confirming' });
-      const confirmed = await guard('confirm', () => ports.confirm(workspaceId, intentOf(item, hash!), signal));
+      const confirmed = await guard('confirm', () => ports.confirm(knowledgeBaseId, intentOf(item, hash!), signal));
       return finish(item, { hash: hash!, reused: false, created: confirmed.created });
     } catch (cause) {
       const taggedCause = cause as { origin?: 'hash' | 'prepare' | 'transfer' | 'confirm' } & { cause?: unknown };
@@ -244,8 +244,8 @@ export function createAssetUploadStore(options: { workspaceId: string; ports: As
 export function createBrowserAssetUploadPorts(api: KnowledgeAssetsApi, transfer: AssetTransfer): AssetUploadPorts {
   return {
     hashFile: (file, progress) => hashBlobSha256(file, progress),
-    prepare: (workspace, intent, signal) => api.prepareUpload(workspace, intent, signal),
+    prepare: (knowledgeBase, intent, signal) => api.prepareUpload(knowledgeBase, intent, signal),
     transfer,
-    confirm: (workspace, intent, signal) => api.confirmUpload(workspace, intent, signal),
+    confirm: (knowledgeBase, intent, signal) => api.confirmUpload(knowledgeBase, intent, signal),
   };
 }

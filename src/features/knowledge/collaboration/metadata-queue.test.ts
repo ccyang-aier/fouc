@@ -12,14 +12,14 @@ function memoryStorage(): MetadataQueueStorage {
 }
 
 const page = (id: string, title: string): Page => ({
-  id, workspaceId: 'ws', teamspaceId: 'ts', parentId: null, kind: 'doc', databaseId: null, title,
+  id, knowledgeBaseId: 'ws', teamspaceId: 'ts', parentId: null, kind: 'doc', databaseId: null, title,
   icon: null, cover: null, properties: {}, inheritsPermissions: true, position: 'a', path: id,
   createdBy: '00000000-0000-4000-8000-000000000000', createdAt: '2026-09-26T00:00:00Z', updatedAt: '2026-09-26T00:00:00Z', deletedAt: null,
 });
 
 function createRequest(id: string): { request: MetadataOperationRequest; treeOperation: TreeOperation } {
   const input: CreatePageInput = {
-    id, workspaceId: 'ws', teamspaceId: 'ts', parentId: null, kind: 'doc', databaseId: null,
+    id, knowledgeBaseId: 'ws', teamspaceId: 'ts', parentId: null, kind: 'doc', databaseId: null,
     title: `Page ${id}`, icon: null, cover: null, properties: {}, inheritsPermissions: true, afterPageId: null,
   };
   return { request: { kind: 'create', input }, treeOperation: { kind: 'create', page: page(id, `Page ${id}`) } };
@@ -34,8 +34,8 @@ function fakeApi(overrides: Partial<MetadataMutationApi> = {}) {
     async createPage(_ws, input) { record({ operationId: input.id, kind: 'create', input }); return { pageId: input.id, teamspaceId: 'ts', parentId: null, position: 'z', path: 'p' }; },
     async updatePage(_ws, input) { record({ operationId: input.pageId, kind: 'update', input }); return page(input.pageId, 'updated'); },
     async movePage(_ws, input) { record({ operationId: input.operationId, kind: 'move', input }); return { pageId: input.pageId, teamspaceId: 'ts', parentId: input.parentId, position: 'z', path: 'p' }; },
-    async recyclePage(_ws, input) { record({ operationId: input.pageId, kind: 'recycle', input }); return { workspaceId: 'ws', pageId: input.pageId, deletedAt: '2026-09-26T01:00:00Z' }; },
-    async restorePage(_ws, input) { record({ operationId: input.pageId, kind: 'restore', input }); return { workspaceId: 'ws', pageId: input.pageId, deletedAt: null }; },
+    async recyclePage(_ws, input) { record({ operationId: input.pageId, kind: 'recycle', input }); return { knowledgeBaseId: 'ws', pageId: input.pageId, deletedAt: '2026-09-26T01:00:00Z' }; },
+    async restorePage(_ws, input) { record({ operationId: input.pageId, kind: 'restore', input }); return { knowledgeBaseId: 'ws', pageId: input.pageId, deletedAt: null }; },
     ...overrides,
   };
   return { api, calls };
@@ -51,7 +51,7 @@ function harness(overrides: { online?: boolean; api?: MetadataMutationApi; calls
   const rejected: { operation: QueuedMetadataOperation; error: unknown }[] = [];
   const uuids = Array.from({ length: 64 }, (_, index) => `op-${index}`);
   const queue: MetadataQueue = createMetadataQueue({
-    workspaceId: 'ws', storage, api,
+    knowledgeBaseId: 'ws', storage, api,
     isOnline: () => online, randomUUID: () => uuids.shift()!, now: () => '2026-09-26T00:00:00Z',
     onCommitted: (operation, settlement) => committed.push({ operation, settlement }),
     onRejected: (operation, error) => rejected.push({ operation, error }),
@@ -88,13 +88,13 @@ describe('metadata operation queue (U04 §5.4)', () => {
     const base = fakeApi();
     const flaky: MetadataMutationApi = {
       ...base.api,
-      async createPage(workspaceId, input) {
+      async createPage(knowledgeBaseId, input) {
         attempts += 1;
         if (attempts === 1) {
           base.calls.push({ operationId: input.id, kind: 'create', input });
           throw new KnowledgeDataError('NETWORK');
         }
-        return base.api.createPage(workspaceId, input);
+        return base.api.createPage(knowledgeBaseId, input);
       },
     };
     const world = harness({ api: flaky, calls: base.calls });
@@ -120,12 +120,12 @@ describe('metadata operation queue (U04 §5.4)', () => {
     const base = fakeApi();
     const rejecting: MetadataMutationApi = {
       ...base.api,
-      async createPage(workspaceId, input) {
+      async createPage(knowledgeBaseId, input) {
         if (input.id === 'p1') {
           base.calls.push({ operationId: input.id, kind: 'create', input });
           throw new KnowledgeDataError('FORBIDDEN');
         }
-        return base.api.createPage(workspaceId, input);
+        return base.api.createPage(knowledgeBaseId, input);
       },
     };
     const world = harness({ api: rejecting, calls: base.calls });
@@ -154,7 +154,7 @@ describe('metadata operation queue (U04 §5.4)', () => {
     const storage = memoryStorage();
     storage.save('{not json');
     const queue = createMetadataQueue({
-      workspaceId: 'ws', storage, api: fakeApi().api, isOnline: () => false,
+      knowledgeBaseId: 'ws', storage, api: fakeApi().api, isOnline: () => false,
       randomUUID: () => 'op-x', now: () => '2026-09-26T00:00:00Z',
     });
     expect(queue.pending()).toHaveLength(0);

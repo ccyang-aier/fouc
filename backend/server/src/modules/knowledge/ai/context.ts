@@ -22,9 +22,9 @@ import type { HybridSearchHit } from '@fouc/shared/knowledge/search';
 import { createMarkdownPipeline } from '@fouc/shared/knowledge/markdown';
 import type { AiBlockBinding, AiMarkdownContext } from '@fouc/shared/knowledge/markdown';
 import { isKnowledgeBlock } from '@fouc/shared/knowledge/schema';
-import { blockIndex, docState, page } from '../../../platform/database/workspace/schema';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
-import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
+import { blockIndex, docState, page } from '../../../platform/database/resources/schema';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
+import type { ResourceTransaction } from '../../../platform/database/resources/transaction';
 import { authorizePageAccess, expandRequestPrincipals } from '../permissions/authorization';
 import { indexedBlockAccessCondition } from '../permissions/queries';
 import { PAGE_BODY_FRAGMENT } from '../search/backlinks';
@@ -92,9 +92,9 @@ function decodePageBody(document: Y.Doc): KnowledgeNode | null {
  * 从未持久化或页面已删）返回 null；解码或锚点校验失败同样返回 null——读取路径对
  * 损坏正文 fail closed（留待 doc.changed 消费者修复），不阻塞其余分段。
  */
-async function loadPageAiContext(db: WorkspaceTenantTransaction, scope: { workspaceId: string; pageId: string }): Promise<{ document: KnowledgeNode; context: AiMarkdownContext } | null> {
+async function loadPageAiContext(db: ResourceTransaction, scope: { knowledgeBaseId: string; pageId: string }): Promise<{ document: KnowledgeNode; context: AiMarkdownContext } | null> {
   const [stored] = await db.select({ state: docState.state }).from(docState)
-    .where(and(eq(docState.workspaceId, scope.workspaceId), eq(docState.pageId, scope.pageId)));
+    .where(and(eq(docState.knowledgeBaseId, scope.knowledgeBaseId), eq(docState.pageId, scope.pageId)));
   if (!stored) return null;
   try {
     const document = new Y.Doc();
@@ -120,14 +120,14 @@ function collectOutlineEntries(document: KnowledgeNode): ContextOutlineEntry[] {
 }
 
 /** 从页面自身沿 parentId 上溯收集标题（去空），构成大纲段的页面路径。 */
-async function readPageTitlePath(db: WorkspaceTenantTransaction, scope: { workspaceId: string; pageId: string }): Promise<string[]> {
+async function readPageTitlePath(db: ResourceTransaction, scope: { knowledgeBaseId: string; pageId: string }): Promise<string[]> {
   const titles: string[] = [];
   const seen = new Set<string>();
   let cursor: string | null = scope.pageId;
   while (cursor && !seen.has(cursor)) {
     seen.add(cursor);
     const [row] = await db.select({ parentId: page.parentId, title: page.title }).from(page)
-      .where(and(eq(page.workspaceId, scope.workspaceId), eq(page.id, cursor)));
+      .where(and(eq(page.knowledgeBaseId, scope.knowledgeBaseId), eq(page.id, cursor)));
     if (!row) break;
     titles.unshift(row.title);
     cursor = row.parentId;
@@ -147,7 +147,7 @@ export interface AssembleContextFocus {
 }
 
 export interface AssembleContextInput {
-  readonly workspaceId: string;
+  readonly knowledgeBaseId: string;
   readonly userId: string;
   readonly taskKind: ContextTaskKind;
   /** 检索腿查询（与调用方执行 H04 检索所用同一次查询）；空白则无检索腿。 */
@@ -165,7 +165,7 @@ export interface AssembleContextInput {
 }
 
 export interface ValidateCitationsInput {
-  readonly workspaceId: string;
+  readonly knowledgeBaseId: string;
   readonly userId: string;
   /** 模型回答中的块引用候选（pageId + blockId 自由文本，畸形引用裁决为 invalid）。 */
   readonly citedBlockIds: readonly { readonly pageId: string; readonly blockId: string }[];
@@ -182,8 +182,8 @@ interface FocusLegs {
  * 权威取标题树与邻块——邻块经 M02 `createAiContext().read()` 按锚点读取，切片自带
  * `{#b:id}`；焦点块不存在于权威文档（已删除）时仅跳过邻块腿。
  */
-async function loadFocusLegs(db: WorkspaceTenantTransaction, input: { workspaceId: string; userId: string; focus: AssembleContextFocus }): Promise<FocusLegs | null> {
-  const scope = { workspaceId: input.workspaceId, pageId: input.focus.pageId };
+async function loadFocusLegs(db: ResourceTransaction, input: { knowledgeBaseId: string; userId: string; focus: AssembleContextFocus }): Promise<FocusLegs | null> {
+  const scope = { knowledgeBaseId: input.knowledgeBaseId, pageId: input.focus.pageId };
   const decision = await authorizePageAccess(db, { userId: input.userId, scope, required: 'view' });
   if (decision.decision !== 'allow') return null;
   const titlePath = await readPageTitlePath(db, scope);
@@ -215,12 +215,12 @@ async function loadFocusLegs(db: WorkspaceTenantTransaction, input: { workspaceI
 }
 
 /** 检索腿正文回读：与 H04 同一 `indexedBlockAccessCondition` 谓词（先于任何装配）。 */
-async function enrichRetrieval(db: WorkspaceTenantTransaction, input: {
-  workspaceId: string;
+async function enrichRetrieval(db: ResourceTransaction, input: {
+  knowledgeBaseId: string;
   userId: string;
   hits: readonly HybridSearchHit[];
 }): Promise<{ items: ContextRetrievalItem[]; unavailable: number }> {
-  const principals = await expandRequestPrincipals(db, input.workspaceId, input.userId);
+  const principals = await expandRequestPrincipals(db, input.knowledgeBaseId, input.userId);
   if (!principals.length) return { items: [], unavailable: input.hits.length };
   const rows = input.hits.length ? await db.select({
     pageId: blockIndex.pageId,
@@ -229,7 +229,7 @@ async function enrichRetrieval(db: WorkspaceTenantTransaction, input: {
     titlePath: blockIndex.titlePath,
     contentMd: blockIndex.contentMd,
   }).from(blockIndex).where(and(
-    indexedBlockAccessCondition({ workspaceId: input.workspaceId, principals: [...principals] }),
+    indexedBlockAccessCondition({ knowledgeBaseId: input.knowledgeBaseId, principals: [...principals] }),
     or(...input.hits.map((hit) => and(eq(blockIndex.pageId, hit.pageId), eq(blockIndex.blockId, hit.blockId)))),
   )) : [];
   const byKey = new Map(rows.map((row) => [`${row.pageId}:${row.blockId}`, row]));
@@ -297,7 +297,7 @@ const segmentBytes = (segments: readonly { text: string }[]) => segments.reduce(
  * （固定段不截）；固定段自身超预算时如实返回 `overBudgetBytes`。
  */
 export async function assembleContext(pool: Pool, input: AssembleContextInput): Promise<AssembledContext> {
-  if (!entityIdSchema.safeParse(input.workspaceId).success || !entityIdSchema.safeParse(input.userId).success) throw new TypeError('Invalid context assembly scope');
+  if (!entityIdSchema.safeParse(input.knowledgeBaseId).success || !entityIdSchema.safeParse(input.userId).success) throw new TypeError('Invalid context assembly scope');
   if (!contextTaskKindSchema.safeParse(input.taskKind).success) throw new TypeError('Invalid context task kind');
   const query = input.query?.trim() ?? '';
   if (query.length > MAX_QUERY_LENGTH) throw new TypeError('Invalid context assembly query');
@@ -307,9 +307,9 @@ export async function assembleContext(pool: Pool, input: AssembleContextInput): 
   if (!Number.isInteger(budgetBytes) || budgetBytes < 1) throw new TypeError('Invalid context budget');
   const hits = query && input.searchHits?.length ? input.searchHits : [];
 
-  const { focusLegs, retrieval } = await withWorkspaceTenant(pool, input.workspaceId, async (db) => {
-    const focusLegs = input.focus ? await loadFocusLegs(db, { workspaceId: input.workspaceId, userId: input.userId, focus: input.focus }) : null;
-    const retrieval = hits.length ? await enrichRetrieval(db, { workspaceId: input.workspaceId, userId: input.userId, hits }) : { items: [], unavailable: 0 };
+  const { focusLegs, retrieval } = await withKnowledgeBase(pool, input.knowledgeBaseId, async (db) => {
+    const focusLegs = input.focus ? await loadFocusLegs(db, { knowledgeBaseId: input.knowledgeBaseId, userId: input.userId, focus: input.focus }) : null;
+    const retrieval = hits.length ? await enrichRetrieval(db, { knowledgeBaseId: input.knowledgeBaseId, userId: input.userId, hits }) : { items: [], unavailable: 0 };
     return { focusLegs, retrieval };
   });
 
@@ -390,13 +390,13 @@ export async function assembleContext(pool: Pool, input: AssembleContextInput): 
  * 首次出现顺序去重。
  */
 export async function validateCitations(pool: Pool, input: ValidateCitationsInput): Promise<CitationVerdict[]> {
-  if (!entityIdSchema.safeParse(input.workspaceId).success || !entityIdSchema.safeParse(input.userId).success) throw new TypeError('Invalid citation validation scope');
+  if (!entityIdSchema.safeParse(input.knowledgeBaseId).success || !entityIdSchema.safeParse(input.userId).success) throw new TypeError('Invalid citation validation scope');
   if (!Array.isArray(input.citedBlockIds) || input.citedBlockIds.length > MAX_CITATIONS
     || !input.citedBlockIds.every((candidate) => typeof candidate?.pageId === 'string' && typeof candidate?.blockId === 'string')) {
     throw new TypeError('Invalid citation candidates');
   }
 
-  return withWorkspaceTenant(pool, input.workspaceId, async (db) => {
+  return withKnowledgeBase(pool, input.knowledgeBaseId, async (db) => {
     // 首次出现顺序去重；按 pageId 分组，逐页一次授权 + 一次权威读取。
     const order: string[] = [];
     const byPage = new Map<string, { pageId: string; blockId: string }[]>();
@@ -415,11 +415,11 @@ export async function validateCitations(pool: Pool, input: ValidateCitationsInpu
       let title: string | null = null;
       let context: AiMarkdownContext | null = null;
       if (entityIdSchema.safeParse(pageId).success) {
-        const scope = { workspaceId: input.workspaceId, pageId };
+        const scope = { knowledgeBaseId: input.knowledgeBaseId, pageId };
         const decision = await authorizePageAccess(db, { userId: input.userId, scope, required: 'view' });
         if (decision.decision === 'allow') {
           const [row] = await db.select({ title: page.title }).from(page)
-            .where(and(eq(page.workspaceId, scope.workspaceId), eq(page.id, scope.pageId)));
+            .where(and(eq(page.knowledgeBaseId, scope.knowledgeBaseId), eq(page.id, scope.pageId)));
           if (row) {
             title = row.title;
             context = (await loadPageAiContext(db, scope))?.context ?? null;

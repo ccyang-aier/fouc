@@ -4,9 +4,9 @@ import { parseEnv } from 'node:util';
 import path from 'node:path';
 const environment = parseEnv(readFileSync('.env.fouc.local', 'utf8'));
 const admin = new URL(environment.DATABASE_ADMIN_URL), mysql = JSON.parse(readFileSync('.runtime/dbx-lab/mysql-connection.json', 'utf8'));
-const workspace = 'dbx-sql-draft-verification', base = `http://127.0.0.1:8710/api/database/workspaces/${workspace}/relational`;
-async function request(route, body, method = body ? 'POST' : 'GET', status = 200, foreign = false) {
-  const response = await fetch((foreign ? base.replace(workspace, 'other-draft-workspace') : base) + route, { method, headers: { 'content-type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(30000) });
+const base = `http://127.0.0.1:8710/api/database/relational`;
+async function request(route, body, method = body ? 'POST' : 'GET', status = 200, missingResource = false) {
+  const response = await fetch(base + (missingResource ? route.replace(/^\/(sessions|connections)\/[^/]+/, (_, kind) => `/${kind}/${crypto.randomUUID()}`) : route), { method, headers: { 'content-type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(30000) });
   const result = await response.json(); assert.equal(response.status, status, result.error?.message); return result.data;
 }
 const inputs = [
@@ -32,7 +32,7 @@ for (const { config, password, schema } of inputs) {
     }
     await request(objectRoot + '/missing_metadata_fixture/columns', undefined, 'GET', 400);
     assert.deepEqual(await request(`/sessions/${session.id}/history/search`, {}), historyBefore);
-    console.log(`PASS ${config.provider}: read-only native column metadata matches full structure, quoted object names, missing object and workspace boundaries; no user-query history side effects.`);
+    console.log(`PASS ${config.provider}: read-only native column metadata matches full structure, quoted object names, missing object and session boundaries; no user-query history side effects.`);
     const tab = { id: crypto.randomUUID(), title: '中文草稿', customTitle: true, pinned: true, database: session.database, schema, sql: '-- Unicode\nSELECT 9007199254740993 AS exact_value;', originalSql: '', savedFile: null, editorPosition: { anchor: 1, head: 6, scrollTop: 66, scrollLeft: 0 }, resultView: 'json' };
     const initial = await request(route); assert.deepEqual(initial.tabs, []);
     const first = await request(route, { tabs: [tab], activeTabId: tab.id, version: initial.version }, 'PUT');
@@ -45,7 +45,7 @@ for (const { config, password, schema } of inputs) {
     await request(`/sessions/${session.id}`, undefined, 'DELETE'); session = await request(`/connections/${connection.id}/connect`, { password }, 'POST', 201);
     assert.deepEqual(await request(route), next);
     const emptied = await request(route, { tabs: [], activeTabId: null, version: next.version }, 'PUT'); assert.equal(emptied.tabs.length, 0); assert.ok(emptied.version);
-    console.log(`PASS ${config.provider}: real native execution, ordered/pinned multi-tab target+exact source+empty draft/position/view, CAS and cross-workspace rejection, reconnect restore and explicit empty state.`);
+    console.log(`PASS ${config.provider}: real native execution, ordered/pinned multi-tab target+exact source+empty draft/position/view, CAS and missing-connection rejection, reconnect restore and explicit empty state.`);
   } finally {
     if (session) await request(`/sessions/${session.id}`, undefined, 'DELETE');
     await request(`/connections/${connection.id}`, undefined, 'DELETE');

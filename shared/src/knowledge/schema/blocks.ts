@@ -204,12 +204,12 @@ export const KNOWLEDGE_BLOCKS: readonly BlockDefinition[] = Object.freeze([
     slash: { title: '嵌入', keywords: ['embed', '嵌入'], group: 'media' },
   }),
   defineBlock({
-    name: 'blockReference', schema: { atom: true, attrs: { pageId: nullableString, targetBlockId: nullableString }, toDOM: (node) => ['div', { 'data-block-reference': node.attrs.targetBlockId }, '块引用'] },
+    name: 'blockReference', schema: { atom: true, attrs: { knowledgeBaseId: nullableString, pageId: nullableString, targetBlockId: nullableString }, toDOM: (node) => ['div', { 'data-block-reference': node.attrs.targetBlockId }, '块引用'] },
     markdown: { fromMd: { directive: 'block-reference', kind: 'leaf' } }, index: { mode: 'skip' },
     slash: { title: '块引用', keywords: ['reference', '引用'], group: 'knowledge' },
   }),
   defineBlock({
-    name: 'pageLink', schema: { atom: true, attrs: { pageId: nullableString, title: stringAttribute }, toDOM: (node) => ['div', { 'data-page-link': node.attrs.pageId }, node.attrs.title || '页面链接'] },
+    name: 'pageLink', schema: { atom: true, attrs: { knowledgeBaseId: nullableString, pageId: nullableString, title: stringAttribute }, toDOM: (node) => ['div', { 'data-page-link': node.attrs.pageId }, node.attrs.title || '页面链接'] },
     markdown: { fromMd: { directive: 'page-link', kind: 'leaf' } }, index: { mode: 'text' },
     slash: { title: '页面链接', keywords: ['page', 'link', '页面'], group: 'knowledge' },
   }),

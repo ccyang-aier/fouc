@@ -21,6 +21,8 @@ import { yXmlFragmentToProseMirrorRootNode } from 'y-prosemirror';
 import type { PageDocumentSession } from '../../../collaboration/page-provider';
 import { connectPageDocument } from '../../../collaboration/page-provider';
 import type { PageDocumentStatus } from '../../../collaboration/page-sync-state';
+import { runKnowledgeCall } from '../../../data/trpc-client';
+import { KnowledgeDataError } from '../../../data/errors';
 
 /** Opens one source page document; the default connector is B04's `connectPageDocument`. */
 export type SourceConnector = (options: { scope: PageScope; signal: AbortSignal }) => PromiseLike<PageDocumentSession>;
@@ -43,12 +45,15 @@ export interface BlockReferenceSources {
 export interface BlockReferenceSourcesOptions {
   /** Knowledge API origin from U01, forwarded to the default connector. */
   origin: string;
+  cacheIdentity?: string;
+  /** Source-page ACL must pass before any offline body or collaboration session opens. */
+  authorize?: (scope: PageScope, signal: AbortSignal) => Promise<void>;
   /** Injectable connector (tests); defaults to `connectPageDocument`. */
   connect?: SourceConnector;
 }
 
-const defaultConnector = (origin: string): SourceConnector => ({ scope, signal }) =>
-  Promise.resolve(connectPageDocument({ scope, origin, signal }));
+const defaultConnector = (origin: string, cacheIdentity?: string): SourceConnector => ({ scope, signal }) =>
+  Promise.resolve(connectPageDocument({ scope, origin, cacheIdentity, signal }));
 
 interface SourceCacheEntry {
   readonly scope: PageScope;
@@ -63,13 +68,17 @@ interface SourceCacheEntry {
 }
 
 /**
- * One B04 session per `workspaceId:pageId`. Concurrent acquires share the same
+ * One B04 session per `knowledgeBaseId:pageId`. Concurrent acquires share the same
  * connector call; the first release-to-zero tears the session down. A
  * connector failure rejects every waiter exactly once and clears the slot, so
  * the next acquire retries the connection.
  */
 export function createBlockReferenceSources(options: BlockReferenceSourcesOptions): BlockReferenceSources {
-  const connect = options.connect ?? defaultConnector(options.origin);
+  const connect = options.connect ?? defaultConnector(options.origin, options.cacheIdentity);
+  const authorize = options.authorize ?? (async (scope: PageScope, signal: AbortSignal) => {
+    const access = await runKnowledgeCall(scope.knowledgeBaseId, signal, client => client.page.access.query({ ...scope, action: 'view' }, { signal }));
+    if (!access.authorized || !access.level) throw new KnowledgeDataError('FORBIDDEN');
+  });
   const entries = new Map<string, SourceCacheEntry>();
 
   const teardownNow = (key: string, entry: SourceCacheEntry): Promise<void> => {
@@ -84,7 +93,7 @@ export function createBlockReferenceSources(options: BlockReferenceSourcesOption
 
   return {
     async acquire(scope: PageScope): Promise<SourceHandle> {
-      const key = `${scope.workspaceId}:${scope.pageId}`;
+      const key = `${scope.knowledgeBaseId}:${scope.pageId}`;
       let entry = entries.get(key);
       if (!entry) {
         const controller = new AbortController();
@@ -94,7 +103,10 @@ export function createBlockReferenceSources(options: BlockReferenceSourcesOption
           refCount: 0,
           waiters: 0,
           teardown: null,
-          sessionPromise: Promise.resolve(connect({ scope, signal: controller.signal })),
+          sessionPromise: authorize(scope, controller.signal).then(() => {
+            if (controller.signal.aborted) throw controller.signal.reason;
+            return connect({ scope, signal: controller.signal });
+          }),
         };
         entries.set(key, entry);
       }
@@ -216,7 +228,7 @@ export type BlockReferenceViewState =
   | 'deleted';
 
 export interface BlockReferenceStateInput {
-  attrs: { pageId: string | null; targetBlockId: string | null };
+  attrs: { knowledgeBaseId: string | null; pageId: string | null; targetBlockId: string | null };
   ownScope: PageScope;
   /** Live session status; null while the source connection is still being established. */
   sessionStatus: PageDocumentStatus | null;
@@ -232,8 +244,8 @@ export interface BlockReferenceStateInput {
  * `loading` even when the offline copy already renders the block.
  */
 export function resolveBlockReferenceState(input: BlockReferenceStateInput): BlockReferenceViewState {
-  if (input.attrs.pageId === input.ownScope.pageId) return 'cyclic';
-  if (!input.attrs.pageId || !input.attrs.targetBlockId) return 'unconfigured';
+  if (input.attrs.knowledgeBaseId === input.ownScope.knowledgeBaseId && input.attrs.pageId === input.ownScope.pageId) return 'cyclic';
+  if (!input.attrs.knowledgeBaseId || !input.attrs.pageId || !input.attrs.targetBlockId) return 'unconfigured';
   if (input.connectFailed) return 'failed';
   const status = input.sessionStatus;
   if (!status) return 'loading';
@@ -252,7 +264,7 @@ export interface BlockReferenceSnapshot {
 export interface WatchSourceBlockOptions {
   /** The source page's body fragment. */
   fragment: Y.XmlFragment;
-  attrs: { pageId: string | null; targetBlockId: string | null };
+  attrs: { knowledgeBaseId: string | null; pageId: string | null; targetBlockId: string | null };
   ownScope: PageScope;
   status(): PageDocumentStatus;
   schema: Schema;

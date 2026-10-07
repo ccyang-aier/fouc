@@ -95,7 +95,7 @@ export function ExportConnectionDialog({
           <ShieldCheck size={15} />
           <span>
             当前目录 · {connections.length} 个连接 ·
-            文件不包含工作空间标识、密码、证书或私钥
+            文件不包含密码、证书或私钥
           </span>
         </div>
         <div className={styles.listHead}>

@@ -40,7 +40,7 @@ function save(scope: string, widths: Widths) {
 }
 type Gesture = { column: DirectoryColumn; startX: number; widths: Widths; element: HTMLButtonElement; pointerId: number }
 
-/** Freeze measured columns during a gesture, then persist once under workspace + provider. */
+/** Freeze measured columns during a gesture, then persist once under provider. */
 export function useDirectoryColumnWidths(scope: string, table: RefObject<HTMLTableElement | null>, columns: readonly DirectoryColumn[]) {
   const getSnapshot = useCallback(() => snapshot(scope), [scope])
   const saved = useSyncExternalStore(subscribe, getSnapshot, () => empty)

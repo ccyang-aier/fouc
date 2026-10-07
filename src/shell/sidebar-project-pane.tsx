@@ -62,7 +62,6 @@ const agentItem: SidebarRowItem & { id: "agent" } = {
 
 type ProjectSidebarPaneProps = {
   projectName: string
-  workspaceName: string
   hasDemoContent: boolean
   collapsed: boolean
   activePanel: ProjectManagementPanelId | null
@@ -74,7 +73,6 @@ type ProjectSidebarPaneProps = {
 
 export function ProjectSidebarPane({
   projectName,
-  workspaceName,
   hasDemoContent,
   collapsed,
   activePanel,
@@ -136,7 +134,7 @@ export function ProjectSidebarPane({
                       {projectName}
                     </span>
                     <span className="mt-0.5 block truncate text-[10px] text-[var(--muted)]">
-                      {workspaceName} · 项目工作台
+                      项目工作台
                     </span>
                   </span>
                   <CaretDown

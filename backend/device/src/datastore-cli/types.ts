@@ -2,7 +2,6 @@ export type CliFormat = 'table' | 'json' | 'csv';
 export type CliProvider = 'mysql' | 'postgres' | 'sqlite' | 'redis' | 'mongodb';
 export interface CliOptions {
   command: string[];
-  workspace: string | null;
   connection: string | null;
   /** Internal callers with ID-based grants must never fall back to display names. */
   connectionResolution?: 'id';

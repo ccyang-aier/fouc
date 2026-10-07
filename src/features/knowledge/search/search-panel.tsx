@@ -13,13 +13,13 @@ import { createKnowledgeSearchApi } from './search-api';
 const DEBOUNCE_MS = 220;
 
 export interface KnowledgeSearchPanelProps {
-  workspaceId: string;
+  knowledgeBaseId: string;
   origin: string;
   onOpenHit: (hit: { pageId: string; blockId: string }) => void;
   className?: string;
 }
 
-export function KnowledgeSearchPanel({ workspaceId, origin, onOpenHit, className }: KnowledgeSearchPanelProps) {
+export function KnowledgeSearchPanel({ knowledgeBaseId, origin, onOpenHit, className }: KnowledgeSearchPanelProps) {
   const [state, dispatch] = useReducer(searchReducer, initialSearchState);
   const [term, setTerm] = useState('');
   const api = useMemo(() => createKnowledgeSearchApi({ origin }), [origin]);
@@ -40,7 +40,7 @@ export function KnowledgeSearchPanel({ workspaceId, origin, onOpenHit, className
       controllerRef.current = controller;
       const queryId = ++queryIdRef.current;
       dispatch({ type: 'submit', queryId });
-      api.search({ workspaceId, query }, controller.signal)
+      api.search({ knowledgeBaseId, query }, controller.signal)
         .then((outcome) => dispatch({ type: 'results', queryId, ...outcome }))
         .catch((error: unknown) => {
           if (controller.signal.aborted) return;
@@ -48,7 +48,7 @@ export function KnowledgeSearchPanel({ workspaceId, origin, onOpenHit, className
         });
     }, DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [term, workspaceId, api]);
+  }, [term, knowledgeBaseId, api]);
 
   useEffect(() => () => controllerRef.current?.abort(), []);
 

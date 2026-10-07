@@ -1,7 +1,7 @@
 "use client"
 
 /**
- * 主导航（底部组合用户身份与工作空间入口）：
+ * 主导航（底部显示用户身份）：
  * 44px 品牌头 + 可滚动导航区 + 底部设置行；
  * 展开态可拖拽，收起为 52px 图标轨道（tooltip 提示）。
  * 进入项目视图时导航区整体切换为项目管理菜单。
@@ -9,7 +9,6 @@
 
 import { useState } from "react"
 import { AccountItem } from "@/features/identity/components/account-item"
-import { WorkspaceSwitcher } from "@/features/workspaces/workspace-switcher"
 import Image from "next/image"
 import {
   BookOpenText,
@@ -39,7 +38,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { cn } from "@/lib/utils"
 
 import { useProjectResources } from "@/features/project/project-resources"
-import { useWorkspace } from "@/features/workspaces/workspace-provider"
 import { SidebarAgentSection } from "./sidebar-agent-section"
 import { ProjectSidebarPane } from "./sidebar-project-pane"
 import { demonstrationProjectId } from "@/features/project/project-resources"
@@ -220,7 +218,6 @@ export function NavigationSidebar({
   view: WorkbenchView
   onViewChange: (view: WorkbenchView) => void
 }) {
-  const { activeSpace } = useWorkspace()
   const { projects: scopedProjects, selectedProject, favorites, selectProject, createProject: addProject, renameProject, removeProject, setFavorite, managementPanel, setManagementPanel } = useProjectResources()
   const projectFavorited = selectedProject !== null && favorites.includes(selectedProject.id)
   const projects: ManagedSidebarEntry[] = scopedProjects.map((project) => ({ id: project.id, name: project.name, kind: "project", marked: favorites.includes(project.id) }))
@@ -279,7 +276,6 @@ export function NavigationSidebar({
     onFavoriteChange: (favorited: boolean) => { if (selectedProject) setFavorite(selectedProject.id, favorited) },
     projectName: selectedProject?.name ?? '',
     hasDemoContent: selectedProject?.id === demonstrationProjectId,
-    workspaceName: activeSpace.label,
     onExit: () => onViewChange("home"),
   }
 
@@ -459,12 +455,6 @@ export function NavigationSidebar({
         </> : null}
         {!open ? <div aria-hidden className="w-full border-t border-[var(--line)]" /> : null}
         <div className={cn("min-w-0", open && "flex-1")}><AccountItem compact={!open} /></div>
-        <WorkspaceSwitcher
-          compact={!open}
-          onSelected={() => { if (view === "projects") onViewChange("project-home") }}
-          onCreated={() => onViewChange("project-home")}
-          onOpenProjects={() => onViewChange("project-home")}
-        />
       </div>
       {open ? <SidebarResizeHandle dragging={dragging} onPointerDown={startResize} /> : null}
     </aside>

@@ -7,14 +7,14 @@
  * knowledge tree (its QueryClient, session and page-selection state). Instead
  * of duplicating any of that at the shell, the knowledge workbench publishes
  * one immutable snapshot per state change and the bell renders it through
- * `useSyncExternalStore`. Publishing null (workspace switch, unmount) renders
+ * `useSyncExternalStore`. Publishing null (knowledgeBase switch, unmount) renders
  * the bell inert — it never invents data.
  */
 
 import type { NotificationItem } from '@fouc/shared/knowledge/notifications';
 
 export interface KnowledgeNotificationsBridgeSnapshot {
-  workspaceId: string;
+  knowledgeBaseId: string;
   status: 'loading' | 'ready' | 'error';
   /** The freshest inbox page the workbench holds. */
   items: readonly NotificationItem[];

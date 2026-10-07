@@ -19,7 +19,7 @@ const app = createApp({
   token: 'frontend-token',
   internalToken: 'native-only-token',
 }).app;
-const base = '/api/database/workspaces/workspace-a/redis';
+const base = '/api/database/redis';
 const config = {
   provider: 'redis',
   host: '127.0.0.1',
@@ -55,7 +55,7 @@ test('Redis routes require device authentication before config or session access
   }
   expect((await app.request(base + '/sessions/unknown/history', { method: 'DELETE' })).status).toBe(401);
 });
-test('Redis config CRUD stays scoped and never persists the supplied secret', async () => {
+test('Redis config CRUD stays device-wide and never persists the supplied secret', async () => {
   const headers = { authorization: 'Bearer frontend-token', 'content-type': 'application/json' };
   const response = await app.request(base + '/connections', {
     method: 'POST',
@@ -67,16 +67,16 @@ test('Redis config CRUD stays scoped and never persists the supplied secret', as
   expect(JSON.stringify(saved)).not.toContain('discard-me');
   expect(
     (
-      await app.request(base.replace('workspace-a', 'workspace-b') + '/connections/' + saved.id, {
+      await app.request(base + '/connections/missing', {
         method: 'DELETE',
         headers,
       })
     ).status,
   ).toBe(400);
-  const listed = await app.request(base.replace('workspace-a', 'workspace-b') + '/connections', { headers });
-  expect(((await listed.json()) as { data: unknown[] }).data).toEqual([]);
+  const listed = await app.request(base + '/connections', { headers });
+  expect(((await listed.json()) as { data: unknown[] }).data).toEqual([saved]);
   expect((await app.request(base + '/connections/' + saved.id, { method: 'DELETE', headers })).status).toBe(
     200,
   );
-  expect(connections.list('workspace-a')).toHaveLength(0);
+  expect(connections.list()).toHaveLength(0);
 });

@@ -118,7 +118,7 @@ test('native SQLite rolls back cancellation after write and refuses triggers, ca
 test('permission callbacks precede reads and writes; invalid plans and cleared requests cannot run SQL', async () => {
   await withSqlite(async (driver) => {
     const plans = new SqlMutationPlans();
-    const deny = () => { throw new Error('workspace access denied'); };
+    const deny = () => { throw new Error('session access denied'); };
     await expect(plans.prepare(driver, 'sqlite', { schema: 'main', sql: 'DELETE FROM fixture WHERE id=1' }, deny)).rejects.toThrow('access denied');
     const prepared = await plans.prepare(driver, 'sqlite', { schema: 'main', sql: 'DELETE FROM fixture WHERE id=1' }, approved);
     await expect(plans.commit(driver, prepared.planId!, deny)).rejects.toThrow('access denied');

@@ -8,7 +8,7 @@ export type MongoConnectionInput = {
   mongo?: ConnectionUrlFields['mongo'];
 };
 export interface MongoSession {
-  provider: 'mongodb'; id: string; workspaceId: string; connectionId: string | null;
+  provider: 'mongodb'; id: string; connectionId: string | null;
   database: string; host: string; version: string | null; readOnly: boolean;
 }
 export interface MongoNamespace { database: string; collection: string }

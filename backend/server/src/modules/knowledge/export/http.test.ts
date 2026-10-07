@@ -9,7 +9,7 @@ const request = (body = '<html>内容</html>', headers: Record<string, string> =
 });
 
 describe('stateless PDF boundary', () => {
-  test('returns an actual PDF to guests without querying or persisting workspace content', async () => {
+  test('returns an actual PDF to guests without querying or persisting knowledgeBase content', async () => {
     let input = '';
     const app = createDocumentPdfRoutes([origin], async html => { input = html; return new TextEncoder().encode('%PDF-1.7'); });
     const response = await app.fetch(request());

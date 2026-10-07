@@ -4,11 +4,11 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { unzipSync, zipSync } from 'fflate';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import type { OutboxEvent } from '@fouc/shared/knowledge/contracts';
-import { knowledgeBase, workspaceTenantSchema, member, teamspace, workspace } from '../../../platform/database/workspace/schema';
+import { knowledgeBase, resourceSchema, member, teamspace } from '../../../platform/database/resources/schema';
 import { authUser } from '../../../platform/database/identity/schema';
-import { createTenantTestDatabase } from '../../../platform/database/workspace/tenant-test-database';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
-import type { TenantTestDatabase } from '../../../platform/database/workspace/tenant-test-database';
+import { createResourceTestDatabase } from '../../../platform/database/resources/resource-test-database';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
+import type { ResourceTestDatabase } from '../../../platform/database/resources/resource-test-database';
 import type { KnowledgeAssetStorage } from '../assets/storage';
 import { createKnowledgeAssetStorage, readKnowledgeAssetStorageConfig } from '../assets/storage';
 import { createAuthorizedPage } from '../pages/tree';
@@ -46,16 +46,16 @@ const vaultArchive = () => zip({
   'assets/report.pdf': SPEC,
 });
 
-let database: TenantTestDatabase;
+let database: ResourceTestDatabase;
 let storage: KnowledgeAssetStorage;
-const owner = { workspaceId: randomUUID(), userId: randomUUID() };
+const owner = { knowledgeBaseId: randomUUID(), userId: randomUUID() };
 const outsider = randomUUID();
 const teamspaceId = randomUUID();
 const targetA = randomUUID();
 const targetB = randomUUID();
 const targetC = randomUUID();
 let mainTransferId = '';
-const uploadedObjects: { workspaceId: string; hash: string }[] = [];
+const uploadedObjects: { knowledgeBaseId: string; hash: string }[] = [];
 
 async function rows<T extends Record<string, unknown>>(query: string, values: unknown[] = []): Promise<T[]> {
   return (await database.admin.query(query, values)).rows as T[];
@@ -66,25 +66,25 @@ type AclEvent = Extract<OutboxEvent, { topic: 'acl.changed' }>;
 /** P02 消费者语义:取每个根的最新 revision 做当前态重建,物化有效权限。 */
 async function materializePermissions() {
   const events = await rows<{ payload: AclEvent }>(
-    `SELECT DISTINCT ON (payload->>'rootPageId') payload FROM workspace.outbox
-     WHERE workspace_id=$1 AND topic='acl.changed' ORDER BY payload->>'rootPageId', (payload->>'revision')::bigint DESC`,
-    [owner.workspaceId],
+    `SELECT DISTINCT ON (payload->>'rootPageId') payload FROM resources.outbox
+     WHERE knowledge_base_id=$1 AND topic='acl.changed' ORDER BY payload->>'rootPageId', (payload->>'revision')::bigint DESC`,
+    [owner.knowledgeBaseId],
   );
   for (const { payload } of events) {
-    await withWorkspaceTenant(database.pool, owner.workspaceId, (db) => rebuildPermissionSubtree(db, payload));
+    await withKnowledgeBase(database.pool, owner.knowledgeBaseId, (db) => rebuildPermissionSubtree(db, payload));
   }
 }
 
 async function pageRow(pageId: string) {
   const [row] = await rows<{ id: string; parent_id: string | null; title: string; icon: string | null; properties: Record<string, unknown>; teamspace_id: string }>(
-    'SELECT id::text, parent_id::text AS parent_id, title, icon, properties, teamspace_id::text AS teamspace_id FROM workspace.page WHERE workspace_id=$1 AND id=$2',
-    [owner.workspaceId, pageId],
+    'SELECT id::text, parent_id::text AS parent_id, title, icon, properties, teamspace_id::text AS teamspace_id FROM resources.page WHERE knowledge_base_id=$1 AND id=$2',
+    [owner.knowledgeBaseId, pageId],
   );
   return row;
 }
 
 async function pageBody(pageId: string): Promise<ProseMirrorNode | null> {
-  const [row] = await rows<{ state: Buffer }>('SELECT state FROM workspace.doc_state WHERE workspace_id=$1 AND page_id=$2', [owner.workspaceId, pageId]);
+  const [row] = await rows<{ state: Buffer }>('SELECT state FROM resources.doc_state WHERE knowledge_base_id=$1 AND page_id=$2', [owner.knowledgeBaseId, pageId]);
   return row ? yStateToProseMirrorDoc(new Uint8Array(row.state), markdownSchema()) : null;
 }
 
@@ -100,7 +100,7 @@ function blockTypes(document: ProseMirrorNode): string[] {
 
 const importVault = (archive: Uint8Array, input: { transferId?: string; userId?: string; parentPageId?: string } = {}) =>
   importObsidianVault({ pool: database.pool, storage }, {
-    workspaceId: owner.workspaceId,
+    knowledgeBaseId: owner.knowledgeBaseId,
     userId: input.userId ?? owner.userId,
     parentPageId: input.parentPageId ?? targetA,
     archive,
@@ -108,28 +108,27 @@ const importVault = (archive: Uint8Array, input: { transferId?: string; userId?:
   });
 const exportVault = (input: { userId?: string; rootPageId?: string } = {}) =>
   exportObsidianVault({ pool: database.pool, storage }, {
-    workspaceId: owner.workspaceId,
+    knowledgeBaseId: owner.knowledgeBaseId,
     userId: input.userId ?? owner.userId,
     ...(input.rootPageId ? { rootPageId: input.rootPageId } : {}),
   });
 
 beforeAll(async () => {
   storage = createKnowledgeAssetStorage(await readKnowledgeAssetStorageConfig());
-  database = await createTenantTestDatabase();
+  database = await createResourceTestDatabase();
   await initializeKnowledgeJobs(database.admin, database.pool);
   const client = await database.admin.connect();
   try {
     await client.query('BEGIN');
-    const db = drizzle(client, { schema: workspaceTenantSchema });
+    const db = drizzle(client, { schema: resourceSchema });
     await db.insert(authUser).values([
       { id: owner.userId, name: 'M03 Owner', email: `${owner.userId}@m03.test` },
       { id: outsider, name: 'M03 Outsider', email: `${outsider}@m03.test` },
     ]);
-    await db.insert(workspace).values({ id: owner.workspaceId, name: 'M03 Vault', kind: 'team' });
-    await db.insert(member).values({ workspaceId: owner.workspaceId, userId: owner.userId, role: 'owner' });
-    const knowledgeBaseId = randomUUID();
-    await db.insert(knowledgeBase).values({ workspaceId: owner.workspaceId, id: knowledgeBaseId, name: 'Import library' });
-    await db.insert(teamspace).values({ workspaceId: owner.workspaceId, knowledgeBaseId, id: teamspaceId, name: 'Main', defaultAccess: 'edit' });
+    await db.insert(knowledgeBase).values({ id: owner.knowledgeBaseId, name: 'M03 Vault' });
+    await db.insert(member).values({ knowledgeBaseId: owner.knowledgeBaseId, userId: owner.userId, role: 'owner' });
+
+    await db.insert(teamspace).values({ knowledgeBaseId: owner.knowledgeBaseId, id: teamspaceId, name: 'Main', defaultAccess: 'edit' });
     await client.query('COMMIT');
   } catch (error) {
     await client.query('ROLLBACK');
@@ -137,10 +136,10 @@ beforeAll(async () => {
   } finally {
     client.release();
   }
-  await withWorkspaceTenant(database.pool, owner.workspaceId, async (db) => {
+  await withKnowledgeBase(database.pool, owner.knowledgeBaseId, async (db) => {
     const targets: [string, string][] = [[targetA, TARGET_TITLE], [targetB, TARGET_TITLE], [targetC, '失败样本']];
     for (const [id, title] of targets) {
-      await createAuthorizedPage(db, { id, workspaceId: owner.workspaceId, teamspaceId, parentId: null, kind: 'doc', databaseId: null, title, icon: null, cover: null, properties: {}, inheritsPermissions: true, afterPageId: null }, owner.userId);
+      await createAuthorizedPage(db, { id, knowledgeBaseId: owner.knowledgeBaseId, teamspaceId, parentId: null, kind: 'doc', databaseId: null, title, icon: null, cover: null, properties: {}, inheritsPermissions: true, afterPageId: null }, owner.userId);
     }
   });
   await materializePermissions();
@@ -172,7 +171,7 @@ describe('M03 importObsidianVault: tree, attachments, frontmatter and progress',
     const welcome = byPath.get('Welcome.md');
     expect(projects?.status).toBe('imported');
     expect(projects?.pageId).toBeDefined();
-    uploadedObjects.push({ workspaceId: owner.workspaceId, hash: PHOTO_HASH }, { workspaceId: owner.workspaceId, hash: SPEC_HASH });
+    uploadedObjects.push({ knowledgeBaseId: owner.knowledgeBaseId, hash: PHOTO_HASH }, { knowledgeBaseId: owner.knowledgeBaseId, hash: SPEC_HASH });
 
     // 目录树 → 页面树:roadmap 挂 Projects 下,其余挂导入目标下。
     const projectsRow = await pageRow(projects!.pageId!);
@@ -184,7 +183,7 @@ describe('M03 importObsidianVault: tree, attachments, frontmatter and progress',
 
     // 附件经 AS01 完整流程入湖。
     const [asset] = await rows<{ status: string; mime: string; size: string }>(
-      'SELECT status, mime, size::text FROM workspace.asset WHERE workspace_id=$1 AND hash=$2', [owner.workspaceId, PHOTO_HASH]);
+      'SELECT status, mime, size::text FROM resources.asset WHERE knowledge_base_id=$1 AND hash=$2', [owner.knowledgeBaseId, PHOTO_HASH]);
     expect(asset).toMatchObject({ status: 'ready', mime: 'image/png', size: String(PHOTO.byteLength) });
 
     // 正文以 Y.Doc 初始状态写入 doc_state,可解码回知识文档。
@@ -197,7 +196,7 @@ describe('M03 importObsidianVault: tree, attachments, frontmatter and progress',
     expect(wikiLinks.length).toBe(2);
 
     const docChanged = await rows<{ count: string }>(
-      "SELECT count(*)::text AS count FROM workspace.outbox WHERE workspace_id=$1 AND topic='doc.changed'", [owner.workspaceId]);
+      "SELECT count(*)::text AS count FROM resources.outbox WHERE knowledge_base_id=$1 AND topic='doc.changed'", [owner.knowledgeBaseId]);
     expect(Number(docChanged[0]!.count)).toBeGreaterThanOrEqual(3);
   });
 
@@ -211,8 +210,8 @@ describe('M03 importObsidianVault: tree, attachments, frontmatter and progress',
       expect(second.items).toContainEqual(item);
     }
     const count = await rows<{ count: string }>(
-      'SELECT count(*)::text AS count FROM workspace.page WHERE workspace_id=$1 AND parent_id=$2 AND deleted_at IS NULL',
-      [owner.workspaceId, targetA]);
+      'SELECT count(*)::text AS count FROM resources.page WHERE knowledge_base_id=$1 AND parent_id=$2 AND deleted_at IS NULL',
+      [owner.knowledgeBaseId, targetA]);
     expect(Number(count[0]!.count)).toBe(2); // Welcome 与 Projects;roadmap 挂在 Projects 下
   });
 
@@ -245,7 +244,7 @@ describe('M03 exportObsidianVault: visible pages back to an Obsidian archive', (
     await materializePermissions();
     const seen: unknown[] = [];
     const result = await exportObsidianVault({ pool: database.pool, storage, onEvent: (event) => seen.push(event) }, {
-      workspaceId: owner.workspaceId, userId: owner.userId, rootPageId: targetA,
+      knowledgeBaseId: owner.knowledgeBaseId, userId: owner.userId, rootPageId: targetA,
     });
     for (const event of result.events) expect(vaultProgressEventSchema.parse(event)).toBeDefined();
     expect(seen.length).toBe(result.events.length);
@@ -291,7 +290,7 @@ describe('M03 exportObsidianVault: visible pages back to an Obsidian archive', (
     }
   });
 
-  test('outsiders see neither the whole workspace nor a subtree', async () => {
+  test('outsiders see neither the whole knowledgeBase nor a subtree', async () => {
     await expect(exportVault({ userId: outsider })).rejects.toMatchObject({ code: 'VAULT_ACCESS_DENIED' });
     await expect(exportVault({ userId: outsider, rootPageId: targetA })).rejects.toMatchObject({ code: 'VAULT_ACCESS_DENIED' });
   });

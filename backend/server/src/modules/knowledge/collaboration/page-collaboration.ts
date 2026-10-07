@@ -1,7 +1,7 @@
 import type { Pool } from 'pg';
 import type { Extension, onConnectPayload } from '@hocuspocus/server';
 import type { PermissionLevel } from '@fouc/shared/knowledge/contracts';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
 import type { KnowledgeRequestAuthenticator, KnowledgeRequestContext } from '../access';
 import { authorizePageAccess } from '../permissions';
 import { parsePageDocument } from '@fouc/shared/knowledge/collaboration';
@@ -25,7 +25,7 @@ const writable: readonly PermissionLevel[] = ['edit', 'full'];
 /**
  * B01 upgrade gate: strict page document names, A03 request authentication
  * (session cookie or PAT from the WebSocket handshake) and the P03 page ACL
- * in one tenant transaction. Denied, rebuilding and missing pages close
+ * in one resource transaction. Denied, rebuilding and missing pages close
  * identically. Body writes additionally require an edit-or-full level and a
  * write-capable credential; everything else stays a read-only connection.
  */
@@ -35,8 +35,8 @@ export function pageCollaborationExtension(deps: { authenticator: KnowledgeReque
     async onConnect(data: onConnectPayload<PageCollaborationContext>) {
       const scope = parsePageDocument(data.documentName);
       if (!scope) throw new PageCollaborationRejected();
-      const authority = await deps.authenticator.authenticate(data.request, scope.workspaceId, ['read']);
-      const decision = await withWorkspaceTenant(deps.pool, scope.workspaceId, (db) =>
+      const authority = await deps.authenticator.authenticate(data.request, scope.knowledgeBaseId, ['read']);
+      const decision = await withKnowledgeBase(deps.pool, scope.knowledgeBaseId, (db) =>
         authorizePageAccess(db, { userId: authority.userId, scope, required: 'view' }));
       if (decision.decision !== 'allow') throw new PageCollaborationRejected();
       data.connectionConfig.isAuthenticated = true;

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { entityIdSchema, pageScopeSchema, timestampSchema, workspaceScopeSchema } from './primitives';
+import { entityIdSchema, pageScopeSchema, timestampSchema, knowledgeBaseScopeSchema } from './primitives';
 
 export const pageKindSchema = z.enum(['doc', 'database', 'row']);
 export const propertyIdSchema = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/)
@@ -30,7 +30,7 @@ export const databaseDefinitionSchema = pageScopeSchema.extend({
 
 const pageFields = {
   id: entityIdSchema,
-  workspaceId: entityIdSchema,
+  knowledgeBaseId: entityIdSchema,
   teamspaceId: entityIdSchema,
   parentId: entityIdSchema.nullable(),
   kind: pageKindSchema,
@@ -80,14 +80,14 @@ export const movePageInputSchema = pageScopeSchema.extend({
   operationId: entityIdSchema,
 }).refine((value) => value.pageId !== value.parentId && value.pageId !== value.afterPageId, '不能相对自身移动页面');
 export const updatePropertiesInputSchema = pageScopeSchema.extend({ properties: propertiesSchema, operationId: entityIdSchema });
-export const listPagesInputSchema = workspaceScopeSchema.extend({ teamspaceId: entityIdSchema.optional(), parentId: entityIdSchema.nullable().optional() });
+export const listPagesInputSchema = knowledgeBaseScopeSchema.extend({ teamspaceId: entityIdSchema.optional(), parentId: entityIdSchema.nullable().optional() });
 
 export const databaseFilterSchema = z.strictObject({
   propertyId: propertyIdSchema,
   operator: z.enum(['eq', 'neq', 'contains', 'gt', 'gte', 'lt', 'lte', 'isEmpty', 'isNotEmpty']),
   value: propertyValueSchema.optional(),
 }).refine((filter) => ['isEmpty', 'isNotEmpty'].includes(filter.operator) || filter.value !== undefined, '筛选条件缺少比较值');
-export const queryDatabaseInputSchema = workspaceScopeSchema.extend({
+export const queryDatabaseInputSchema = knowledgeBaseScopeSchema.extend({
   databaseId: entityIdSchema,
   filters: z.array(databaseFilterSchema).max(30).default([]),
   sort: z.array(z.strictObject({ propertyId: propertyIdSchema, direction: z.enum(['asc', 'desc']) })).max(5).default([]),

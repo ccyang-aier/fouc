@@ -41,7 +41,7 @@ export function createKnowledgeApiRoutes(options: KnowledgeApiOptions): Hono {
       if (new TextEncoder().encode(request.url).byteLength > knowledgeApiLimits.urlBytes) throw new TRPCError({ code: 'PAYLOAD_TOO_LARGE' });
       const match = /^\/api\/knowledge\/([a-zA-Z0-9-]+)\/trpc(?:\/|$)/.exec(new URL(request.url).pathname);
       if (!match || !entityIdSchema.safeParse(match[1]).success) throw new TRPCError({ code: 'BAD_REQUEST' });
-      const workspaceId = match[1]!;
+      const knowledgeBaseId = match[1]!;
       if (request.method === 'OPTIONS') response = preflightResponse(request);
       else {
         if (!['GET', 'POST'].includes(request.method)) throw new TRPCError({ code: 'METHOD_NOT_SUPPORTED' });
@@ -49,10 +49,10 @@ export function createKnowledgeApiRoutes(options: KnowledgeApiOptions): Hono {
         if (request.headers.has('trpc-accept') || request.headers.get('accept')?.includes('text/event-stream')) throw new TRPCError({ code: 'UNSUPPORTED_MEDIA_TYPE' });
         const bounded = await boundedJsonRequest(request, lifetime.signal, knowledgeApiLimits.bodyBytes);
         response = await fetchRequestHandler({
-          endpoint: `${knowledgeApiBasePath}/${workspaceId}/trpc`, req: bounded, router,
+          endpoint: `${knowledgeApiBasePath}/${knowledgeBaseId}/trpc`, req: bounded, router,
           allowMethodOverride: false, allowBatching: true, maxBatchSize: knowledgeApiLimits.batchSize,
           createContext: async () => {
-            try { return await createKnowledgeApiContext({ request: bounded, workspaceId, requestId, signal: lifetime.signal, authenticator, pool: options.pool }); }
+            try { return await createKnowledgeApiContext({ request: bounded, knowledgeBaseId, requestId, signal: lifetime.signal, authenticator, pool: options.pool }); }
             catch (error) { assertRequestActive(lifetime.signal); throw apiError(error); }
           },
           onError: ({ error }) => reportApiError(error, requestId, options.onDiagnostic),
@@ -66,7 +66,7 @@ export function createKnowledgeApiRoutes(options: KnowledgeApiOptions): Hono {
     return finalizeApiResponse(response, request, requestId, origins);
   };
   // Do not intercept organization/auth/media routes sharing the knowledge prefix.
-  app.all(`${knowledgeApiBasePath}/:workspaceId/trpc`, handle);
-  app.all(`${knowledgeApiBasePath}/:workspaceId/trpc/*`, handle);
+  app.all(`${knowledgeApiBasePath}/:knowledgeBaseId/trpc`, handle);
+  app.all(`${knowledgeApiBasePath}/:knowledgeBaseId/trpc/*`, handle);
   return app;
 }

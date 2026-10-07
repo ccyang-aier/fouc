@@ -19,7 +19,7 @@ import styles from './comments-integration.module.css';
 export { createCommentsEditorExtension } from '../comments/comments-plugin';
 
 export function PageCommentsTrigger({ scope, open, onToggle }: { scope: PageScope; open: boolean; onToggle: () => void }) {
-  const threads = usePageCommentThreads(scope.workspaceId, scope.pageId);
+  const threads = usePageCommentThreads(scope.knowledgeBaseId, scope.pageId);
   const count = threads.data?.length ?? 0;
   return <span><button type="button" className={styles.trigger} aria-label={open ? '收起评论栏' : '展开评论栏'} aria-expanded={open} onClick={onToggle}>
     <ChatCircleDots aria-hidden size={15} /><span>评论{count > 0 ? ` ${count}` : ''}</span>

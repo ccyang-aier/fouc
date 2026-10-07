@@ -26,30 +26,30 @@ async function boundedInput(request: Request): Promise<unknown> {
 }
 
 export interface SchemaCreateRouteService {
-  schemaCreateOptions(workspaceId: string, id: string, signal?: AbortSignal): Promise<SchemaCreateOptions>;
-  prepareSchemaCreate(workspaceId: string, id: string, value: unknown, signal?: AbortSignal): Promise<SchemaCreatePrepared>;
-  commitSchemaCreate(workspaceId: string, id: string, planId: string, signal?: AbortSignal): Promise<SchemaCreateCommitResult>;
-  discardSchemaCreate(workspaceId: string, id: string, planId: string): void;
+  schemaCreateOptions(id: string, signal?: AbortSignal): Promise<SchemaCreateOptions>;
+  prepareSchemaCreate(id: string, value: unknown, signal?: AbortSignal): Promise<SchemaCreatePrepared>;
+  commitSchemaCreate(id: string, planId: string, signal?: AbortSignal): Promise<SchemaCreateCommitResult>;
+  discardSchemaCreate(id: string, planId: string): void;
 }
 
 export function schemaCreateRoutes(service: SchemaCreateRouteService) {
   const app = new Hono();
-  const base = '/api/database/workspaces/:workspaceId/relational/sessions/:id/schema-create';
+  const base = '/api/database/relational/sessions/:id/schema-create';
   app.get(`${base}/options`, async c => {
     if (Object.keys(c.req.query()).length) throw new DatabaseInputError('创建选项不接受客户端 SQL。');
-    return c.json({ ok: true, data: await service.schemaCreateOptions(c.req.param('workspaceId')!, c.req.param('id')!, c.req.raw.signal) });
+    return c.json({ ok: true, data: await service.schemaCreateOptions(c.req.param('id')!, c.req.raw.signal) });
   });
   app.post(`${base}/plans`, async c => {
     const value = await boundedInput(c.req.raw);
-    return c.json({ ok: true, data: await service.prepareSchemaCreate(c.req.param('workspaceId')!, c.req.param('id')!, value, c.req.raw.signal) });
+    return c.json({ ok: true, data: await service.prepareSchemaCreate(c.req.param('id')!, value, c.req.raw.signal) });
   });
   app.post(`${base}/plans/:planId/commit`, async c => {
     const value = await boundedInput(c.req.raw);
     if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).length !== 1 || (value as Record<string, unknown>).confirm !== true) throw new DatabaseInputError('请显式确认已审查的创建计划。');
-    return c.json({ ok: true, data: await service.commitSchemaCreate(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('planId')!, c.req.raw.signal) });
+    return c.json({ ok: true, data: await service.commitSchemaCreate(c.req.param('id')!, c.req.param('planId')!, c.req.raw.signal) });
   });
   app.delete(`${base}/plans/:planId`, c => {
-    service.discardSchemaCreate(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('planId')!);
+    service.discardSchemaCreate(c.req.param('id')!, c.req.param('planId')!);
     return c.json({ ok: true, data: null });
   });
   return app;

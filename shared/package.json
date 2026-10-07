@@ -9,7 +9,7 @@
     ".": "./src/index.ts",
     "./knowledge/*": "./src/knowledge/*/index.ts",
     "./projects": "./src/projects/index.ts",
-    "./workspaces": "./src/workspaces/index.ts",
+    "./resources": "./src/resources/index.ts",
     "./database-catalog": "./src/database-catalog.ts",
     "./connection-directory": "./src/connection-directory.ts",
     "./table-import": "./src/table-import.ts",

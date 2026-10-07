@@ -6,32 +6,32 @@ import type { MongoSessionManager } from '../database/mongo-session';
 import { DatabaseInputError } from '../database/input-error';
 import { savedConnectionRoutes } from './saved-connection-routes';
 
-/** Device authentication wraps this router; every native request checks workspace ownership. */
+/** Device authentication wraps this router; every native request checks session ownership. */
 export function mongoRoutes(sessions: MongoSessionManager, connections?: DeviceConnectionRepository<MongoConnectionConfig>) {
-  const app = new Hono(), root = '/api/database/workspaces/:workspaceId/mongo', base = root + '/sessions';
+  const app = new Hono(), root = '/api/database/mongo', base = root + '/sessions';
   app.onError((error, c) => c.json({ ok: false, error: { code: error instanceof DatabaseInputError ? 'invalid_input' : 'mongo_failed', message: error.message } }, error instanceof DatabaseInputError ? 400 : 502));
-  if (connections) app.route('/', savedConnectionRoutes(root + '/connections', connections, async (workspace, input, id) => {
-    const session = await sessions.connect(workspace, input, id);
-    try { connections.get(workspace, id); }
-    catch (error) { await sessions.disconnect(workspace, session.id).catch(() => undefined); throw error; }
+  if (connections) app.route('/', savedConnectionRoutes(root + '/connections', connections, async (input, id) => {
+    const session = await sessions.connect(input, id);
+    try { connections.get(id); }
+    catch (error) { await sessions.disconnect(session.id).catch(() => undefined); throw error; }
     return session;
-  }, (workspace, id) => sessions.closeConnection(workspace, id)));
-  app.post(base, async c => c.json({ ok: true, data: await sessions.connect(c.req.param('workspaceId')!, await c.req.json().catch(() => null), null, c.req.raw.signal) }, 201));
-  app.get(base + '/:id/databases', async c => c.json({ ok: true, data: await sessions.databases(c.req.param('workspaceId')!, c.req.param('id')!, c.req.raw.signal) }));
+  }, (id) => sessions.closeConnection(id)));
+  app.post(base, async c => c.json({ ok: true, data: await sessions.connect(await c.req.json().catch(() => null), null, c.req.raw.signal) }, 201));
+  app.get(base + '/:id/databases', async c => c.json({ ok: true, data: await sessions.databases(c.req.param('id')!, c.req.raw.signal) }));
   app.put(base + '/:id/write-access', async c => {
     const body = await c.req.json().catch(() => null);
     if (typeof body?.enabled !== 'boolean') throw new DatabaseInputError('MongoDB 写入权限参数无效');
-    return c.json({ ok: true, data: sessions.setWriteAccess(c.req.param('workspaceId')!, c.req.param('id')!, body.enabled) });
+    return c.json({ ok: true, data: sessions.setWriteAccess(c.req.param('id')!, body.enabled) });
   });
-  app.post(base + '/:id/mutation/plans', async c => c.json({ ok: true, data: await sessions.prepareMutation(c.req.param('workspaceId')!, c.req.param('id')!, await c.req.json().catch(() => null), c.req.raw.signal) }, 201));
+  app.post(base + '/:id/mutation/plans', async c => c.json({ ok: true, data: await sessions.prepareMutation(c.req.param('id')!, await c.req.json().catch(() => null), c.req.raw.signal) }, 201));
   app.delete(base + '/:id/mutation/plans/:planId', c => {
-    sessions.discardMutation(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('planId')!);
+    sessions.discardMutation(c.req.param('id')!, c.req.param('planId')!);
     return c.json({ ok: true, data: { discarded: true } });
   });
   app.post(base + '/:id/mutation/plans/:planId/commit', async c => {
     const body = await c.req.json().catch(() => null);
     if (body?.confirm !== true) throw new DatabaseInputError('请明确确认已预览的 MongoDB 变更');
-    return c.json({ ok: true, data: await sessions.commitMutation(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('planId')!, c.req.raw.signal) });
+    return c.json({ ok: true, data: await sessions.commitMutation(c.req.param('id')!, c.req.param('planId')!, c.req.raw.signal) });
   });
   app.post(base + '/:id/documents/import/plans', async c => {
     // Read the request with a real byte bound, including JSON escaping overhead.
@@ -51,21 +51,21 @@ export function mongoRoutes(sessions: MongoSessionManager, connections?: DeviceC
     let input: unknown;
     try { input = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks))); }
     catch { throw new DatabaseInputError('导入请求须为有效的 UTF-8 JSON'); }
-    return c.json({ ok: true, data: await sessions.prepareDocumentImport(c.req.param('workspaceId')!, c.req.param('id')!, input, c.req.raw.signal) }, 201);
+    return c.json({ ok: true, data: await sessions.prepareDocumentImport(c.req.param('id')!, input, c.req.raw.signal) }, 201);
   });
-  app.get(base + '/:id/documents/import/plans/:planId', c => c.json({ ok: true, data: sessions.documentImportStatus(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('planId')!) }));
+  app.get(base + '/:id/documents/import/plans/:planId', c => c.json({ ok: true, data: sessions.documentImportStatus(c.req.param('id')!, c.req.param('planId')!) }));
   app.delete(base + '/:id/documents/import/plans/:planId', c => {
-    sessions.discardDocumentImport(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('planId')!);
+    sessions.discardDocumentImport(c.req.param('id')!, c.req.param('planId')!);
     return c.json({ ok: true, data: { discarded: true } });
   });
-  app.post(base + '/:id/documents/import/plans/:planId/cancel', c => c.json({ ok: true, data: sessions.cancelDocumentImport(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('planId')!) }));
+  app.post(base + '/:id/documents/import/plans/:planId/cancel', c => c.json({ ok: true, data: sessions.cancelDocumentImport(c.req.param('id')!, c.req.param('planId')!) }));
   app.post(base + '/:id/documents/import/plans/:planId/commit', async c => {
     const input = await c.req.json().catch(() => null);
     if (input?.confirm !== true) throw new DatabaseInputError('请明确确认向目标集合追加全部已预览文档');
-    return c.json({ ok: true, data: await sessions.commitDocumentImport(c.req.param('workspaceId')!, c.req.param('id')!, c.req.param('planId')!, c.req.raw.signal) });
+    return c.json({ ok: true, data: await sessions.commitDocumentImport(c.req.param('id')!, c.req.param('planId')!, c.req.raw.signal) });
   });
   app.post(base + '/:id/documents/export', async c => {
-    const download = await sessions.exportDocuments(c.req.param('workspaceId')!, c.req.param('id')!, await c.req.json().catch(() => null), c.req.raw.signal);
+    const download = await sessions.exportDocuments(c.req.param('id')!, await c.req.json().catch(() => null), c.req.raw.signal);
     const ascii = download.filename.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_');
     const encoded = encodeURIComponent(download.filename).replace(/['()*]/g, char => '%' + char.charCodeAt(0).toString(16).toUpperCase());
     try {
@@ -78,13 +78,13 @@ export function mongoRoutes(sessions: MongoSessionManager, connections?: DeviceC
     } catch (error) { download.stream.destroy(); throw error; }
   });
   for (const operation of ['collections', 'find', 'count', 'indexes', 'information', 'command'] as const) {
-    app.post(base + '/:id/' + operation, async c => c.json({ ok: true, data: await sessions[operation](c.req.param('workspaceId')!, c.req.param('id')!, await c.req.json().catch(() => null), c.req.raw.signal) }));
+    app.post(base + '/:id/' + operation, async c => c.json({ ok: true, data: await sessions[operation](c.req.param('id')!, await c.req.json().catch(() => null), c.req.raw.signal) }));
   }
   for (const [path, operation] of [['buckets', 'gridFsBuckets'], ['files', 'gridFsFiles'], ['summary', 'gridFsSummary']] as const) {
-    app.post(base + '/:id/gridfs/' + path, async c => c.json({ ok: true, data: await sessions[operation](c.req.param('workspaceId')!, c.req.param('id')!, await c.req.json().catch(() => null), c.req.raw.signal) }));
+    app.post(base + '/:id/gridfs/' + path, async c => c.json({ ok: true, data: await sessions[operation](c.req.param('id')!, await c.req.json().catch(() => null), c.req.raw.signal) }));
   }
   app.post(base + '/:id/gridfs/download', async c => {
-    const download = await sessions.gridFsDownload(c.req.param('workspaceId')!, c.req.param('id')!, await c.req.json().catch(() => null), c.req.raw.signal);
+    const download = await sessions.gridFsDownload(c.req.param('id')!, await c.req.json().catch(() => null), c.req.raw.signal);
     const ascii = download.filename.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_');
     const encoded = encodeURIComponent(download.filename).replace(/['()*]/g, char => '%' + char.charCodeAt(0).toString(16).toUpperCase());
     try {
@@ -100,7 +100,7 @@ export function mongoRoutes(sessions: MongoSessionManager, connections?: DeviceC
     } catch (error) { download.stream.destroy(); throw error; }
   });
   app.delete(base + '/:id', async c => {
-    await sessions.disconnect(c.req.param('workspaceId')!, c.req.param('id')!);
+    await sessions.disconnect(c.req.param('id')!);
     return c.json({ ok: true, data: { disconnected: true } });
   });
   return app;

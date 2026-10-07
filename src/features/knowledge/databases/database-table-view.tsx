@@ -18,7 +18,7 @@ import { runKnowledgeCall } from '../data/trpc-client';
 import { knowledgeErrorCodeOf } from '../entry-state';
 import { CanvasError, CanvasForbidden, CanvasSpinner, CanvasState } from '../canvas-states';
 import { organizationQueryKeys } from '../organization/keys';
-import { organizationClient } from '@/features/workspaces/organization-client';
+import { organizationClient } from '@/features/knowledge/organization/client';
 import { knowledgeDatabasesApi } from './database-api';
 import { useDatabaseColumnsQuery, useDatabaseRowsQuery } from './database-queries';
 import { pruneQueryState, toggleSort, type SortKey } from './query-state';
@@ -37,8 +37,8 @@ const levelRank: Record<PermissionLevel, number> = { view: 0, comment: 1, edit: 
 const levelSatisfies = (level: PermissionLevel, required: PermissionLevel) => levelRank[level] >= levelRank[required];
 
 /** 与编辑器 page-access 同键共用缓存：同一页面的授权结论只问一次。 */
-function databaseAccessQueryKey(workspaceId: string, pageId: string) {
-  return [workspaceId, 'knowledge', 'pages', 'access', pageId] as const;
+function databaseAccessQueryKey(knowledgeBaseId: string, pageId: string) {
+  return [knowledgeBaseId, 'knowledge', 'pages', 'access', pageId] as const;
 }
 
 const accessErrorCopy: Record<string, string> = {
@@ -73,19 +73,19 @@ export function DatabaseTableView({
 
   // ── 授权门 ───────────────────────────────────────────────
   const accessQuery = useQuery({
-    queryKey: databaseAccessQueryKey(scope.workspaceId, scope.pageId),
-    queryFn: ({ signal }) => runKnowledgeCall(scope.workspaceId, signal, (client) =>
-      client.page.access.query({ workspaceId: scope.workspaceId, pageId: scope.pageId, action: 'view' }, { signal })),
-    enabled: scope.workspaceId.length > 0 && scope.pageId.length > 0,
+    queryKey: databaseAccessQueryKey(scope.knowledgeBaseId, scope.pageId),
+    queryFn: ({ signal }) => runKnowledgeCall(scope.knowledgeBaseId, signal, (client) =>
+      client.page.access.query({ knowledgeBaseId: scope.knowledgeBaseId, pageId: scope.pageId, action: 'view' }, { signal })),
+    enabled: scope.knowledgeBaseId.length > 0 && scope.pageId.length > 0,
   });
   const level: PermissionLevel | null = accessQuery.data?.authorized ? accessQuery.data.level : null;
   const canEditCells = level !== null && levelSatisfies(level, 'edit');
   const canEditColumns = level !== null && levelSatisfies(level, 'full');
 
   // ── 数据 ─────────────────────────────────────────────────
-  const columnsQuery = useDatabaseColumnsQuery(scope.workspaceId, accessQuery.data?.authorized ? scope.pageId : null);
+  const columnsQuery = useDatabaseColumnsQuery(scope.knowledgeBaseId, accessQuery.data?.authorized ? scope.pageId : null);
   const columns = useMemo(() => columnsQuery.data?.columns ?? [], [columnsQuery.data]);
-  const rowsQuery = useDatabaseRowsQuery(scope.workspaceId, accessQuery.data?.authorized ? scope.pageId : null, filters, sort);
+  const rowsQuery = useDatabaseRowsQuery(scope.knowledgeBaseId, accessQuery.data?.authorized ? scope.pageId : null, filters, sort);
   const rows = useMemo(() => rowsQuery.data?.pages.flatMap((page) => page.rows) ?? [], [rowsQuery.data]);
   const loadedCount = rows.length;
 
@@ -103,8 +103,8 @@ export function DatabaseTableView({
   }
 
   const membersQuery = useQuery({
-    queryKey: organizationQueryKeys.members(scope.workspaceId),
-    queryFn: ({ signal }) => organizationClient.listMembers(scope.workspaceId, { limit: 100, signal }),
+    queryKey: organizationQueryKeys.members(scope.knowledgeBaseId),
+    queryFn: ({ signal }) => organizationClient.listMembers(scope.knowledgeBaseId, { limit: 100, signal }),
     enabled: accessQuery.data?.authorized === true,
     staleTime: 60_000,
   });
@@ -117,9 +117,9 @@ export function DatabaseTableView({
   const operations = useMemo(() => createDatabaseTableOperations({
     queryClient,
     api: knowledgeDatabasesApi,
-    workspaceId: scope.workspaceId,
+    knowledgeBaseId: scope.knowledgeBaseId,
     databaseId: scope.pageId,
-  }), [queryClient, scope.workspaceId, scope.pageId]);
+  }), [queryClient, scope.knowledgeBaseId, scope.pageId]);
 
   const trackFailure = (cause: unknown, what: string) => {
     const code = knowledgeErrorCodeOf(cause);

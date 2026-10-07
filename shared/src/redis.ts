@@ -12,7 +12,6 @@ export interface RedisConnectionConfig {
 export type RedisConnectInput = Omit<RedisConnectionConfig, 'connectionOptions'> & { password: string; connectionOptions?: DatabaseConnectionOptionsInput };
 export interface RedisSavedConnection {
   id: string;
-  workspaceId: string;
   name: string;
   config: RedisConnectionConfig;
   updatedAt: number;
@@ -22,7 +21,6 @@ export interface RedisSavedConnection {
 export interface RedisSession {
   provider: 'redis';
   id: string;
-  workspaceId: string;
   database: number;
   connectionId: string | null;
   version: string | null;

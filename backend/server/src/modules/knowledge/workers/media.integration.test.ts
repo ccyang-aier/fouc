@@ -5,12 +5,12 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { deflateSync } from 'node:zlib';
 import { Pool } from 'pg';
 import type { AssetDerived } from '@fouc/shared/knowledge/contracts';
-import { createTenantTestDatabase, type TenantTestDatabase } from '../../../platform/database/workspace/tenant-test-database';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import { createResourceTestDatabase, type ResourceTestDatabase } from '../../../platform/database/resources/resource-test-database';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
 import { drizzle } from 'drizzle-orm/node-postgres';
-import * as tables from '../../../platform/database/workspace/schema';
-import { blockIndex, page } from '../../../platform/database/workspace/schema';
-import { prepareWorkspaceAssetUpload, confirmWorkspaceAssetUpload } from '../assets/service';
+import * as tables from '../../../platform/database/resources/schema';
+import { blockIndex, page } from '../../../platform/database/resources/schema';
+import { prepareKnowledgeBaseAssetUpload, confirmKnowledgeBaseAssetUpload } from '../assets/service';
 import { createKnowledgeAssetStorage, readKnowledgeAssetStorageConfig, type KnowledgeAssetStorage } from '../assets/storage';
 import type { MediaProcessRequest, MediaProcessResponse } from '../media/client';
 import type { RunningRole } from '../../../platform/runtime/lifecycle';
@@ -62,11 +62,11 @@ function makePng(width: number, height: number): Buffer {
 }
 
 describe('asset media derivation orchestration (W05)', () => {
-  let database: TenantTestDatabase;
+  let database: ResourceTestDatabase;
   let pool: Pool;
   let storage: KnowledgeAssetStorage;
-  const tenant = { workspaceId: randomUUID(), userId: randomUUID() };
-  const objects: { workspaceId: string; hash: string }[] = [];
+  const resource = { knowledgeBaseId: randomUUID(), userId: randomUUID() };
+  const objects: { knowledgeBaseId: string; hash: string }[] = [];
   const requests: MediaProcessRequest[] = [];
   let nextResponse: (request: MediaProcessRequest) => Promise<MediaProcessResponse>;
   const docChangedPages: string[] = [];
@@ -87,42 +87,41 @@ describe('asset media derivation orchestration (W05)', () => {
     }
   }
   const jobContext = (): KnowledgeJobContext => ({
-    workspaceId: tenant.workspaceId, outboxId: randomUUID(), idempotencyKey: `test:${randomUUID()}`, signal: AbortSignal.timeout(30_000), attempt: 1,
+    knowledgeBaseId: resource.knowledgeBaseId, outboxId: randomUUID(), idempotencyKey: `test:${randomUUID()}`, signal: AbortSignal.timeout(30_000), attempt: 1,
   });
   async function derivedOf(hash: string): Promise<AssetDerived | undefined> {
     const result = await database.admin.query<{ derived: AssetDerived }>(
-      'SELECT derived FROM workspace.asset WHERE workspace_id=$1 AND hash=$2', [tenant.workspaceId, hash],
+      'SELECT derived FROM resources.asset WHERE knowledge_base_id=$1 AND hash=$2', [resource.knowledgeBaseId, hash],
     );
     return result.rows[0]?.derived;
   }
   async function upload(label: string, mime: string, bytes: Buffer): Promise<string> {
     const hash = createHash('sha256').update(bytes).digest('hex');
-    const request = { workspaceId: tenant.workspaceId, userId: tenant.userId, hash, mime, size: bytes.byteLength, name: `${label}.${mime.split('/')[1]}` };
-    const prepared = await withWorkspaceTenant(pool, tenant.workspaceId, (db) => prepareWorkspaceAssetUpload(storage, db, request));
+    const request = { knowledgeBaseId: resource.knowledgeBaseId, userId: resource.userId, hash, mime, size: bytes.byteLength, name: `${label}.${mime.split('/')[1]}` };
+    const prepared = await withKnowledgeBase(pool, resource.knowledgeBaseId, (db) => prepareKnowledgeBaseAssetUpload(storage, db, request));
     if (prepared.action !== 'upload') throw new Error('expected an upload grant');
     const response = await fetch(prepared.url, { method: 'PUT', headers: { 'content-type': mime }, body: bytes });
     if (response.status !== 200) throw new Error(`upload failed: ${response.status}`);
-    objects.push({ workspaceId: tenant.workspaceId, hash });
-    const confirmed = await withWorkspaceTenant(pool, tenant.workspaceId, (db) => confirmWorkspaceAssetUpload(storage, db, request));
+    objects.push({ knowledgeBaseId: resource.knowledgeBaseId, hash });
+    const confirmed = await withKnowledgeBase(pool, resource.knowledgeBaseId, (db) => confirmKnowledgeBaseAssetUpload(storage, db, request));
     if (confirmed.status !== 'ready') throw new Error('expected a ready asset');
     return hash;
   }
 
   beforeAll(async () => {
-    database = await createTenantTestDatabase();
+    database = await createResourceTestDatabase();
     // A dedicated pool: graphile-worker and the test must not contend for one socket.
     pool = new Pool({ ...database.pool.options, max: 8 });
     storage = createKnowledgeAssetStorage(await readKnowledgeAssetStorageConfig());
     await initializeKnowledgeJobs(database.admin, pool);
     const client = await database.admin.connect();
     try {
-      const db = drizzle(client, { schema: tables.workspaceTenantSchema });
-      await db.insert(authUser).values({ id: tenant.userId, name: 'W05 Uploader', email: `${tenant.userId}@media.test` });
-      await db.insert(tables.workspace).values({ id: tenant.workspaceId, name: 'W05 Workspace', kind: 'team' });
-      await db.insert(tables.member).values({ workspaceId: tenant.workspaceId, userId: tenant.userId, role: 'owner' });
-      const knowledgeBaseId = randomUUID();
-      await db.insert(tables.knowledgeBase).values({ workspaceId: tenant.workspaceId, id: knowledgeBaseId, name: 'Fixture library' });
-      await db.insert(tables.teamspace).values({ knowledgeBaseId, workspaceId: tenant.workspaceId, id: tenant.workspaceId, name: '默认', defaultAccess: 'view' }).onConflictDoNothing();
+      const db = drizzle(client, { schema: tables.resourceSchema });
+      await db.insert(authUser).values({ id: resource.userId, name: 'W05 Uploader', email: `${resource.userId}@media.test` });
+      await db.insert(tables.knowledgeBase).values({ id: resource.knowledgeBaseId, name: 'W05 KnowledgeBase' });
+      await db.insert(tables.member).values({ knowledgeBaseId: resource.knowledgeBaseId, userId: resource.userId, role: 'owner' });
+
+      await db.insert(tables.teamspace).values({ knowledgeBaseId: resource.knowledgeBaseId, id: resource.knowledgeBaseId, name: '默认', defaultAccess: 'view' }).onConflictDoNothing();
     } finally {
       client.release();
     }
@@ -141,12 +140,12 @@ describe('asset media derivation orchestration (W05)', () => {
     const audioHash = await upload('meeting', 'audio/mpeg', Buffer.from('fake audio bytes for hashing'));
     // A page whose indexed block references the audio asset must re-enter indexing.
     const refPage = randomUUID();
-    await withWorkspaceTenant(pool, tenant.workspaceId, (db) => db.insert(page).values({
-      workspaceId: tenant.workspaceId, id: refPage, teamspaceId: tenant.workspaceId, parentId: null, kind: 'doc', databaseId: null,
-      title: '会议记录', position: 'a', path: refPage.replaceAll('-', '_'), createdBy: tenant.userId, deletedAt: null,
+    await withKnowledgeBase(pool, resource.knowledgeBaseId, (db) => db.insert(page).values({
+      knowledgeBaseId: resource.knowledgeBaseId, id: refPage, teamspaceId: resource.knowledgeBaseId, parentId: null, kind: 'doc', databaseId: null,
+      title: '会议记录', position: 'a', path: refPage.replaceAll('-', '_'), createdBy: resource.userId, deletedAt: null,
     }));
-    await withWorkspaceTenant(pool, tenant.workspaceId, (db) => db.insert(blockIndex).values({
-      workspaceId: tenant.workspaceId, pageId: refPage, blockId: 'b1', blockType: 'audio', contentMd: `![录音](asset:${audioHash})`, contentHash: 'a'.repeat(64),
+    await withKnowledgeBase(pool, resource.knowledgeBaseId, (db) => db.insert(blockIndex).values({
+      knowledgeBaseId: resource.knowledgeBaseId, pageId: refPage, blockId: 'b1', blockType: 'audio', contentMd: `![录音](asset:${audioHash})`, contentHash: 'a'.repeat(64),
     }));
 
     nextResponse = async () => ({
@@ -154,12 +153,12 @@ describe('asset media derivation orchestration (W05)', () => {
       derived: { status: 'ready', transcript: [{ start: 0, end: 2.5, text: '第一段转写' }] },
       processor: 'whisper-x', elapsedMs: 10,
     });
-    await withWorkspaceTenant(pool, tenant.workspaceId, (db) => appendKnowledgeOutbox(db, { workspaceId: tenant.workspaceId, topic: 'asset.created', hash: audioHash, initiatedBy: tenant.userId }));
+    await withKnowledgeBase(pool, resource.knowledgeBaseId, (db) => appendKnowledgeOutbox(db, { knowledgeBaseId: resource.knowledgeBaseId, topic: 'asset.created', hash: audioHash, initiatedBy: resource.userId }));
     await until(async () => (await derivedOf(audioHash))?.status === 'ready');
 
     const request = requests.find((item) => item.operation === 'transcribe')!;
     expect(request.resource.sha256).toBe(audioHash);
-    expect(request.resource.url).toContain(`/${tenant.workspaceId}/${audioHash}`);
+    expect(request.resource.url).toContain(`/${resource.knowledgeBaseId}/${audioHash}`);
     const derived = await derivedOf(audioHash);
     expect(derived?.transcript?.[0]?.text).toBe('第一段转写');
     expect(derived?.model).toBe('whisper-x');
@@ -169,12 +168,12 @@ describe('asset media derivation orchestration (W05)', () => {
     // Replay idempotency: the same event handled again is a no-op.
     const mediaConsumer = createAssetMediaConsumer({ pool, storage, media: fakeMedia as never });
     const before = requests.length;
-    await mediaConsumer.handle({ workspaceId: tenant.workspaceId, topic: 'asset.created', hash: audioHash, initiatedBy: tenant.userId }, jobContext());
+    await mediaConsumer.handle({ knowledgeBaseId: resource.knowledgeBaseId, topic: 'asset.created', hash: audioHash, initiatedBy: resource.userId }, jobContext());
     expect(requests.length).toBe(before);
     expect((await derivedOf(audioHash))?.status).toBe('ready');
   }, 30_000);
 
-  test('document parsing: markdown derivation, attachments become workspace assets', async () => {
+  test('document parsing: markdown derivation, attachments become knowledgeBase assets', async () => {
     const image = makePng(64, 48);
     const imageHash = createHash('sha256').update(image).digest('hex');
     const docHash = await upload('spec', 'application/pdf', Buffer.from('%PDF-fake-bytes'));
@@ -184,16 +183,16 @@ describe('asset media derivation orchestration (W05)', () => {
       processor: 'docling-1', elapsedMs: 12,
       attachments: [{ sha256: imageHash, mime: 'image/png', size: image.byteLength, width: 64, height: 48, dataBase64: image.toString('base64') }],
     });
-    await withWorkspaceTenant(pool, tenant.workspaceId, (db) => appendKnowledgeOutbox(db, { workspaceId: tenant.workspaceId, topic: 'asset.created', hash: docHash, initiatedBy: tenant.userId }));
+    await withKnowledgeBase(pool, resource.knowledgeBaseId, (db) => appendKnowledgeOutbox(db, { knowledgeBaseId: resource.knowledgeBaseId, topic: 'asset.created', hash: docHash, initiatedBy: resource.userId }));
     await until(async () => (await derivedOf(docHash))?.status === 'ready');
     expect((await derivedOf(docHash))?.markdown).toContain('规格说明');
 
-    // The extracted image became a pending workspace asset with real S3 bytes;
+    // The extracted image became a pending knowledgeBase asset with real S3 bytes;
     // its own asset.created event reached the media consumer, which no-ops on images.
     await until(async () => (await derivedOf(imageHash)) !== undefined);
-    const stat = await storage.statObject({ workspaceId: tenant.workspaceId, hash: imageHash });
+    const stat = await storage.statObject({ knowledgeBaseId: resource.knowledgeBaseId, hash: imageHash });
     expect(stat?.size).toBe(image.byteLength);
-    const row = await database.admin.query<{ meta: JSON; derived: AssetDerived }>('SELECT meta, derived FROM workspace.asset WHERE workspace_id=$1 AND hash=$2', [tenant.workspaceId, imageHash]);
+    const row = await database.admin.query<{ meta: JSON; derived: AssetDerived }>('SELECT meta, derived FROM resources.asset WHERE knowledge_base_id=$1 AND hash=$2', [resource.knowledgeBaseId, imageHash]);
     expect(row.rows[0]?.derived.status).toBe('pending');
     expect((row.rows[0]?.meta as { source?: string }).source).toBe('document_extraction');
   }, 30_000);
@@ -202,7 +201,7 @@ describe('asset media derivation orchestration (W05)', () => {
     const failedHash = await upload('broken', 'application/pdf', Buffer.from('%PDF-truncated'));
     const { MediaWorkerError } = await import('../media/client');
     nextResponse = async () => { throw new MediaWorkerError('processing_failed', 422, false); };
-    await withWorkspaceTenant(pool, tenant.workspaceId, (db) => appendKnowledgeOutbox(db, { workspaceId: tenant.workspaceId, topic: 'asset.created', hash: failedHash, initiatedBy: tenant.userId }));
+    await withKnowledgeBase(pool, resource.knowledgeBaseId, (db) => appendKnowledgeOutbox(db, { knowledgeBaseId: resource.knowledgeBaseId, topic: 'asset.created', hash: failedHash, initiatedBy: resource.userId }));
     await until(async () => (await derivedOf(failedHash))?.status === 'failed');
     expect((await derivedOf(failedHash))?.error).toBe('processing_failed');
   }, 30_000);

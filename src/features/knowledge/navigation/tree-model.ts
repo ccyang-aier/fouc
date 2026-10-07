@@ -1,5 +1,5 @@
 /**
- * Navigation tree model of the knowledge workspace (U02 skeleton, completed by
+ * Navigation tree model of the knowledge knowledgeBase (U02 skeleton, completed by
  * U03): a pure mapping from the shared contracts onto the sidebar tree.
  * Teamspaces become sections; live pages nest by `parentId` inside their
  * teamspace, siblings keep the T01 fractional-index order (`position`), and

@@ -1,9 +1,9 @@
 import { and, eq, gt, sql } from 'drizzle-orm';
-import type { MemberRole } from '@fouc/shared/workspaces';
+import type { MemberRole } from '@fouc/shared/resources';
 import type { Pool } from 'pg';
-import { member } from '../../../platform/database/workspace/schema';
+import { member } from '../../../platform/database/resources/schema';
 import { authSession, authUser } from '../../../platform/database/identity/schema';
-import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
+import type { ResourceTransaction } from '../../../platform/database/resources/transaction';
 import { hasTrustedFoucOrigin } from '../../../platform/identity/config';
 import { KnowledgeAccessError } from './access-policy';
 import type { KnowledgeAccessDiagnostic } from './access-policy';
@@ -30,11 +30,11 @@ export async function verifiedRequestSession(auth: FoucAuth, request: Request, m
   return identity;
 }
 
-/** Recheck live state inside the tenant transaction; never trust a cached role/email. */
-export async function activeSessionMember(db: WorkspaceTenantTransaction, workspaceId: string, identity: Pick<FoucIdentity, 'userId' | 'sessionId'>, lock = false): Promise<MemberRole> {
+/** Recheck live state inside the resource transaction; never trust a cached role/email. */
+export async function activeSessionMember(db: ResourceTransaction, knowledgeBaseId: string, identity: Pick<FoucIdentity, 'userId' | 'sessionId'>, lock = false): Promise<MemberRole> {
   let query = db.select({ role: member.role }).from(authSession)
     .innerJoin(authUser, eq(authUser.id, authSession.userId))
-    .innerJoin(member, and(eq(member.workspaceId, workspaceId), eq(member.userId, authUser.id)))
+    .innerJoin(member, and(eq(member.knowledgeBaseId, knowledgeBaseId), eq(member.userId, authUser.id)))
     .where(and(eq(authSession.id, identity.sessionId), eq(authSession.userId, identity.userId),
       gt(authSession.expiresAt, sql`clock_timestamp()`), eq(authUser.emailVerified, true))).$dynamic();
   if (lock) query = query.for('share');

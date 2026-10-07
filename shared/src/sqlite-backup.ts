@@ -43,7 +43,6 @@ export type SqliteBackupStatus =
   | "ready"
   | "failed";
 export interface SqliteBackupScope {
-  workspaceId: string;
   sessionId: string;
 }
 export interface SqliteBackupJob {

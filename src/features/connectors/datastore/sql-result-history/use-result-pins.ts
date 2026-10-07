@@ -7,7 +7,7 @@ import {
   type ResultPinScope,
 } from './model';
 
-/** Mounted connection owns all snapshots; they never enter global storage or a different workspace. */
+/** Mounted connection owns all snapshots; they never enter global storage or a different connection. */
 export function useResultPins() {
   const [pins, setPins] = useState<ResultPin[]>([]);
   function pin(input: Omit<ResultPin, 'id' | 'capturedAt' | 'bytes'>) {

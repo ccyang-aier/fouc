@@ -6,10 +6,10 @@
  * apply/rollback semantics directly testable without React.
  */
 
-import type { MemberRole, Group, GroupMember, WorkspaceMemberSummary } from '@/features/workspaces/organization-client';
+import type { MemberRole, Group, GroupMember, KnowledgeBaseMemberSummary } from '@/features/knowledge/organization/client';
 import type { Teamspace } from '@fouc/shared/knowledge/contracts';
 
-export type MemberRow = WorkspaceMemberSummary;
+export type MemberRow = KnowledgeBaseMemberSummary;
 export type GroupRow = Group;
 export type GroupMemberRow = GroupMember;
 export type TeamspaceRow = Teamspace;

@@ -24,7 +24,7 @@ import styles from './relational.module.css';
 import formStyles from './connection-options/connection-dialog.module.css';
 
 type Props = {
-  workspaceId: string;
+
   provider: RelationalProvider;
   connection?: RelationalSavedConnection;
   intent: 'save' | 'connect';
@@ -41,7 +41,6 @@ type Props = {
 };
 
 export function RelationalDialog({
-  workspaceId,
   provider,
   connection,
   intent,
@@ -126,7 +125,7 @@ export function RelationalDialog({
                   connectionOptions,
                 ),
               };
-        const base = `/api/database/workspaces/${encodeURIComponent(workspaceId)}/relational/sessions`;
+        const base = `/api/database/relational/sessions`;
         const session = await backendFetch<RelationalSession>(base, {
           method: 'POST',
           body: JSON.stringify(request),

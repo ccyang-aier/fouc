@@ -7,7 +7,7 @@ import type { ResolvedMedia } from '../media-core/media-block-view';
 
 function formatSize(size: number | null): string { return size === null ? '' : size < 1024 ? `${size} B` : size < 1024 ** 2 ? `${(size / 1024).toFixed(1)} KB` : `${(size / 1024 ** 2).toFixed(1)} MB`; }
 
-export function FileNodeView(props: NodeViewProps & { localWorkspaceId?: string; workspaceId?: string }) {
+export function FileNodeView(props: NodeViewProps & { localKnowledgeBaseId?: string; knowledgeBaseId?: string }) {
   const title = String(props.node.attrs.title || '附件');
   return <MediaBlockView {...props} kind="file" renderPreview={(source) => <FilePreview source={source} title={title} />} />;
 }

@@ -26,7 +26,7 @@ import {
   type ConnectionImportOutcome,
 } from './operations';
 import {
-  readWorkspaceTransferConnections,
+  readTransferConnections,
   saveTransferredConnection,
 } from './transport';
 import common from '../relational.module.css';
@@ -39,11 +39,9 @@ type Review = {
   choices: ImportConnectionChoice[];
 };
 export function ImportConnectionDialog({
-  workspaceId,
   onClose,
   onImported,
 }: {
-  workspaceId: string;
   onClose: () => void;
   onImported: () => void;
 }) {
@@ -70,8 +68,7 @@ export function ImportConnectionDialog({
         plan: prepareConnectionImport(
           review.bundle,
           review.existing,
-          review.choices,
-          workspaceId,
+          review.choices
         ),
         planError: '',
       };
@@ -81,7 +78,7 @@ export function ImportConnectionDialog({
         planError: reason instanceof Error ? reason.message : '导入计划无效',
       };
     }
-  }, [review, workspaceId]);
+  }, [review]);
   async function readFile(file: File) {
     job.current?.abort();
     const controller = new AbortController();
@@ -140,8 +137,7 @@ export function ImportConnectionDialog({
         passphrase,
         controller.signal,
       );
-      const existing = await readWorkspaceTransferConnections(
-        workspaceId,
+      const existing = await readTransferConnections(
         controller.signal,
       );
       controller.signal.throwIfAborted();
@@ -169,12 +165,11 @@ export function ImportConnectionDialog({
     try {
       const result = await runConnectionImport({
         ...review,
-        workspaceId,
         port: {
           list: () =>
-            readWorkspaceTransferConnections(workspaceId, controller.signal),
+            readTransferConnections(controller.signal),
           save: (entry, id) =>
-            saveTransferredConnection(workspaceId, entry, id),
+            saveTransferredConnection(entry, id),
         },
         signal: controller.signal,
         onProgress: (next) => {
@@ -220,7 +215,7 @@ export function ImportConnectionDialog({
         <div className={styles.scope}>
           <ShieldCheck size={15} />
           <span>
-            导入到当前工作空间 · 仅 Fouc 公开连接配置 · 完整校验后才会开始保存
+            导入到当前设备 · 仅 Fouc 公开连接配置 · 完整校验后才会开始保存
           </span>
         </div>
         {!review ? (

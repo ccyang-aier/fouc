@@ -6,7 +6,6 @@ import {
 
 export type ExistingTransferConnection = TransferConnection & {
   id: string;
-  workspaceId: string;
   updatedAt: number;
 };
 export type ImportConnectionChoice =
@@ -72,14 +71,8 @@ export function prepareConnectionImport(
   bundle: ConnectionConfigBundle,
   existing: readonly ExistingTransferConnection[],
   choices: readonly ImportConnectionChoice[],
-  workspaceId: string,
 ): ConnectionImportPlan {
   const valid = validateConnectionConfigBundle(bundle);
-  if (
-    !workspaceId ||
-    existing.some((entry) => entry.workspaceId !== workspaceId)
-  )
-    throw new Error('连接目录不属于当前工作空间');
   if (choices.length !== valid.connections.length)
     throw new Error('导入选择与已校验配置数量不一致');
   const names = new Set(

@@ -10,7 +10,7 @@ function attributes(output: DOMOutputSpec | undefined): Record<string, unknown> 
 }
 
 describe('knowledge URL policy', () => {
-  it('accepts explicit HTTP URLs and workspace asset identifiers for links and media', () => {
+  it('accepts explicit HTTP URLs and knowledge base asset identifiers for links and media', () => {
     for (const url of ['https://example.com/media?q=图', 'http://localhost:8710/file', `asset:${'ab'.repeat(32)}`]) {
       assert.equal(safeKnowledgeUrl(url, 'link'), url);
       assert.equal(safeKnowledgeUrl(url, 'media'), url);

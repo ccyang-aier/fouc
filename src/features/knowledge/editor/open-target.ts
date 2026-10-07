@@ -9,11 +9,12 @@
  */
 
 import type { EditorView } from '@tiptap/pm/view';
+import type { PageScope } from '@fouc/shared/knowledge/contracts';
 import { isValidBlockId } from '@fouc/shared/knowledge/schema';
 
 /** A page (optionally one block of it) the user asked to open. */
 export interface OpenPageTarget {
-  readonly workspaceId: string;
+  readonly knowledgeBaseId: string;
   readonly pageId: string;
   readonly blockId?: string | null;
 }
@@ -37,21 +38,23 @@ export function subscribeOpenPageTarget(listener: OpenPageTargetListener): () =>
  */
 export function requestOpenPageBlock(target: OpenPageTarget): void {
   for (const listener of [...openListeners]) listener(target);
-  if (target.blockId) stageBlockHighlight({ pageId: target.pageId, blockId: target.blockId });
+  if (target.blockId) stageBlockHighlight({ knowledgeBaseId: target.knowledgeBaseId, pageId: target.pageId, blockId: target.blockId });
 }
 
 /** Highlight waiting for one page's editor, latest block wins. */
 const stagedHighlights = new Map<string, { blockId: string }>();
+const highlightKey = (scope: PageScope) => `${scope.knowledgeBaseId}:${scope.pageId}`;
 
 /** Stages a block highlight for the next mount of that page's editor. */
-export function stageBlockHighlight(target: { pageId: string; blockId: string }): void {
-  stagedHighlights.set(target.pageId, { blockId: target.blockId });
+export function stageBlockHighlight(target: PageScope & { blockId: string }): void {
+  stagedHighlights.set(highlightKey(target), { blockId: target.blockId });
 }
 
 /** One-shot consume: returns and clears the staged block for the page. */
-export function takeStagedBlockHighlight(pageId: string): { blockId: string } | null {
-  const staged = stagedHighlights.get(pageId) ?? null;
-  stagedHighlights.delete(pageId);
+export function takeStagedBlockHighlight(scope: PageScope): { blockId: string } | null {
+  const key = highlightKey(scope);
+  const staged = stagedHighlights.get(key) ?? null;
+  stagedHighlights.delete(key);
   return staged;
 }
 

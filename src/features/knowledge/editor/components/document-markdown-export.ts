@@ -6,7 +6,7 @@ const html = (value: string) => value.replace(/[&<>"']/g, (char) => ({ '&': '&am
 const text = (value: string) => value.replace(/\\/g, '\\\\').replace(/[`*_\[\]<>~#$|&]/g, '\\$&');
 const destination = (value: unknown) => {
   const url = safeKnowledgeUrl(value, 'link');
-  // A single .md file cannot carry workspace assets or session-local blobs.
+  // A single .md file cannot carry knowledgeBase assets or session-local blobs.
   // Preserve their human-readable labels/captions instead of broken private URLs.
   if (url && /^[A-Za-z][A-Za-z0-9+.-]*:/.test(url) && !/^https?:\/\//i.test(url)) return null;
   return url?.replace(/[\s<>"()]/g, (char) => encodeURIComponent(char)) ?? null;

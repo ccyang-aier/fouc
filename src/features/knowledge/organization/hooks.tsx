@@ -12,12 +12,12 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { organizationClient } from '@/features/workspaces/organization-client';
-import type { MemberRole, OrganizationPage, WorkspaceWithRole } from '@/features/workspaces/organization-client';
+import { organizationClient } from '@/features/knowledge/organization/client';
+import type { MemberRole, OrganizationPage } from '@/features/knowledge/organization/client';
 import { knowledgeCatalogClient, type TeamspaceAccess } from '../data/knowledge-catalog-client';
 import { applyOptimisticList, restoreOptimisticList } from './cache';
 import type { OptimisticSnapshot } from './cache';
-import { isRetryableOrganizationError } from '@/features/workspaces/organization-errors';
+import { isRetryableOrganizationError } from '@/features/knowledge/organization/errors';
 import { organizationQueryKeys } from './keys';
 import type { GroupRow, MemberRow, TeamspaceRow } from './list-mutations';
 import { applyMemberRole, applyTeamspacePatch, patchByKey, removeByKey, upsertByKey } from './list-mutations';
@@ -39,18 +39,9 @@ export function OrganizationQueryProvider({ children }: { children: ReactNode })
 const firstPageParam = null as string | null;
 const getNextCursor = (page: { nextCursor: string | null }) => page.nextCursor;
 
-type GroupMemberRow = { workspaceId: string; groupId: string; userId: string };
+type GroupMemberRow = { knowledgeBaseId: string; groupId: string; userId: string };
 
-export function useWorkspacesQuery() {
-  return useInfiniteQuery({
-    queryKey: organizationQueryKeys.workspaces,
-    queryFn: ({ signal, pageParam }) => organizationClient.listWorkspaces({ cursor: pageParam, signal }),
-    initialPageParam: firstPageParam,
-    getNextPageParam: getNextCursor,
-  });
-}
-
-function useWorkspaceListQuery<T>(
+function useKnowledgeBaseListQuery<T>(
   key: readonly unknown[],
   load: (cursor: string | null, signal: AbortSignal | undefined) => Promise<OrganizationPage<T>>,
   enabled: boolean,
@@ -64,35 +55,35 @@ function useWorkspaceListQuery<T>(
   });
 }
 
-export function useMembersQuery(workspaceId: string | null) {
-  return useWorkspaceListQuery(
-    organizationQueryKeys.members(workspaceId ?? 'none'),
-    (cursor, signal) => organizationClient.listMembers(workspaceId!, { cursor, signal }),
-    workspaceId !== null,
+export function useMembersQuery(knowledgeBaseId: string | null) {
+  return useKnowledgeBaseListQuery(
+    organizationQueryKeys.members(knowledgeBaseId ?? 'none'),
+    (cursor, signal) => organizationClient.listMembers(knowledgeBaseId!, { cursor, signal }),
+    knowledgeBaseId !== null,
   );
 }
 
-export function useGroupsQuery(workspaceId: string | null) {
-  return useWorkspaceListQuery(
-    organizationQueryKeys.groups(workspaceId ?? 'none'),
-    (cursor, signal) => organizationClient.listGroups(workspaceId!, { cursor, signal }),
-    workspaceId !== null,
+export function useGroupsQuery(knowledgeBaseId: string | null) {
+  return useKnowledgeBaseListQuery(
+    organizationQueryKeys.groups(knowledgeBaseId ?? 'none'),
+    (cursor, signal) => organizationClient.listGroups(knowledgeBaseId!, { cursor, signal }),
+    knowledgeBaseId !== null,
   );
 }
 
-export function useGroupMembersQuery(workspaceId: string | null, groupId: string | null) {
-  return useWorkspaceListQuery(
-    organizationQueryKeys.groupMembers(workspaceId ?? 'none', groupId ?? 'none'),
-    (cursor, signal) => organizationClient.listGroupMembers(workspaceId!, groupId!, { cursor, signal }),
-    workspaceId !== null && groupId !== null,
+export function useGroupMembersQuery(knowledgeBaseId: string | null, groupId: string | null) {
+  return useKnowledgeBaseListQuery(
+    organizationQueryKeys.groupMembers(knowledgeBaseId ?? 'none', groupId ?? 'none'),
+    (cursor, signal) => organizationClient.listGroupMembers(knowledgeBaseId!, groupId!, { cursor, signal }),
+    knowledgeBaseId !== null && groupId !== null,
   );
 }
 
-export function useTeamspacesQuery(workspaceId: string | null) {
-  return useWorkspaceListQuery(
-    organizationQueryKeys.teamspaces(workspaceId ?? 'none'),
-    (cursor, signal) => knowledgeCatalogClient.listTeamspaces(workspaceId!, { cursor, signal }),
-    workspaceId !== null,
+export function useTeamspacesQuery(knowledgeBaseId: string | null) {
+  return useKnowledgeBaseListQuery(
+    organizationQueryKeys.teamspaces(knowledgeBaseId ?? 'none'),
+    (cursor, signal) => knowledgeCatalogClient.listTeamspaces(knowledgeBaseId!, { cursor, signal }),
+    knowledgeBaseId !== null,
   );
 }
 
@@ -116,49 +107,32 @@ function useOptimisticListMutation<TInput, TResult, TRow>(
   });
 }
 
-export function useCreateWorkspaceMutation() {
-  const queryClient = useQueryClient();
-  const key = organizationQueryKeys.workspaces;
-  return useMutation({
-    mutationFn: (input: { name: string; kind: 'personal' | 'team' }) => organizationClient.createWorkspace(input),
-    onMutate: ({ name, kind }) => {
-      const optimistic: WorkspaceWithRole = { id: pendingId(), name: name.trim(), kind, settings: {}, role: 'owner' };
-      return { tempId: optimistic.id, snapshot: applyOptimisticList<WorkspaceWithRole>(queryClient, key, (items) => [...items, optimistic]) };
-    },
-    onSuccess: (created, _input, context) => {
-      applyOptimisticList<WorkspaceWithRole>(queryClient, key, (items) => upsertByKey(removeByKey(items, (row) => row.id, context.tempId), (row) => row.id, created));
-    },
-    onError: (_error, _input, context) => restoreOptimisticList(queryClient, (context as { snapshot: OptimisticSnapshot } | undefined)?.snapshot ?? null),
-    onSettled: () => void queryClient.invalidateQueries({ queryKey: key }),
-  });
-}
-
-export function useChangeMemberRoleMutation(workspaceId: string) {
+export function useChangeMemberRoleMutation(knowledgeBaseId: string) {
   return useOptimisticListMutation(
-    organizationQueryKeys.members(workspaceId),
-    (input: { userId: string; role: MemberRole }) => organizationClient.changeMemberRole(workspaceId, input),
+    organizationQueryKeys.members(knowledgeBaseId),
+    (input: { userId: string; role: MemberRole }) => organizationClient.changeMemberRole(knowledgeBaseId, input),
     ({ userId, role }) => (items: MemberRow[]) => applyMemberRole(items, userId, role),
     (member, queryClient) => {
-      applyOptimisticList<MemberRow>(queryClient, organizationQueryKeys.members(workspaceId), (items) => patchByKey(items, (row) => row.userId, member.userId, { role: member.role }));
+      applyOptimisticList<MemberRow>(queryClient, organizationQueryKeys.members(knowledgeBaseId), (items) => patchByKey(items, (row) => row.userId, member.userId, { role: member.role }));
     },
   );
 }
 
-export function useRemoveMemberMutation(workspaceId: string) {
+export function useRemoveMemberMutation(knowledgeBaseId: string) {
   return useOptimisticListMutation(
-    organizationQueryKeys.members(workspaceId),
-    (userId: string) => organizationClient.removeMember(workspaceId, userId),
+    organizationQueryKeys.members(knowledgeBaseId),
+    (userId: string) => organizationClient.removeMember(knowledgeBaseId, userId),
     (userId) => (items: MemberRow[]) => removeByKey(items, (row) => row.userId, userId),
   );
 }
 
-export function useCreateGroupMutation(workspaceId: string) {
+export function useCreateGroupMutation(knowledgeBaseId: string) {
   const queryClient = useQueryClient();
-  const key = organizationQueryKeys.groups(workspaceId);
+  const key = organizationQueryKeys.groups(knowledgeBaseId);
   return useMutation({
-    mutationFn: (name: string) => organizationClient.createGroup(workspaceId, { name }),
+    mutationFn: (name: string) => organizationClient.createGroup(knowledgeBaseId, { name }),
     onMutate: (name) => {
-      const optimistic: GroupRow = { workspaceId, id: pendingId(), name: name.trim() };
+      const optimistic: GroupRow = { knowledgeBaseId, id: pendingId(), name: name.trim() };
       return { tempId: optimistic.id, snapshot: applyOptimisticList<GroupRow>(queryClient, key, (items) => [...items, optimistic]) };
     },
     onSuccess: (created, _name, context) => {
@@ -169,48 +143,48 @@ export function useCreateGroupMutation(workspaceId: string) {
   });
 }
 
-export function useRenameGroupMutation(workspaceId: string) {
+export function useRenameGroupMutation(knowledgeBaseId: string) {
   return useOptimisticListMutation(
-    organizationQueryKeys.groups(workspaceId),
-    (input: { id: string; name: string }) => organizationClient.renameGroup(workspaceId, input),
+    organizationQueryKeys.groups(knowledgeBaseId),
+    (input: { id: string; name: string }) => organizationClient.renameGroup(knowledgeBaseId, input),
     ({ id, name }) => (items: GroupRow[]) => patchByKey(items, (row) => row.id, id, { name: name.trim() }),
     (group, queryClient) => {
-      applyOptimisticList<GroupRow>(queryClient, organizationQueryKeys.groups(workspaceId), (items) => patchByKey(items, (row) => row.id, group.id, { name: group.name }));
+      applyOptimisticList<GroupRow>(queryClient, organizationQueryKeys.groups(knowledgeBaseId), (items) => patchByKey(items, (row) => row.id, group.id, { name: group.name }));
     },
   );
 }
 
-export function useRemoveGroupMutation(workspaceId: string) {
+export function useRemoveGroupMutation(knowledgeBaseId: string) {
   return useOptimisticListMutation(
-    organizationQueryKeys.groups(workspaceId),
-    (groupId: string) => organizationClient.removeGroup(workspaceId, groupId),
+    organizationQueryKeys.groups(knowledgeBaseId),
+    (groupId: string) => organizationClient.removeGroup(knowledgeBaseId, groupId),
     (groupId) => (items: GroupRow[]) => removeByKey(items, (row) => row.id, groupId),
   );
 }
 
-export function useAddGroupMemberMutation(workspaceId: string, groupId: string) {
+export function useAddGroupMemberMutation(knowledgeBaseId: string, groupId: string) {
   return useOptimisticListMutation(
-    organizationQueryKeys.groupMembers(workspaceId, groupId),
-    (userId: string) => organizationClient.addGroupMember(workspaceId, groupId, userId),
-    (userId) => (items: GroupMemberRow[]) => upsertByKey(items, (row) => row.userId, { workspaceId, groupId, userId }),
+    organizationQueryKeys.groupMembers(knowledgeBaseId, groupId),
+    (userId: string) => organizationClient.addGroupMember(knowledgeBaseId, groupId, userId),
+    (userId) => (items: GroupMemberRow[]) => upsertByKey(items, (row) => row.userId, { knowledgeBaseId, groupId, userId }),
   );
 }
 
-export function useRemoveGroupMemberMutation(workspaceId: string, groupId: string) {
+export function useRemoveGroupMemberMutation(knowledgeBaseId: string, groupId: string) {
   return useOptimisticListMutation(
-    organizationQueryKeys.groupMembers(workspaceId, groupId),
-    (userId: string) => organizationClient.removeGroupMember(workspaceId, groupId, userId),
+    organizationQueryKeys.groupMembers(knowledgeBaseId, groupId),
+    (userId: string) => organizationClient.removeGroupMember(knowledgeBaseId, groupId, userId),
     (userId) => (items: GroupMemberRow[]) => removeByKey(items, (row) => row.userId, userId),
   );
 }
 
-export function useCreateTeamspaceMutation(workspaceId: string) {
+export function useCreateTeamspaceMutation(knowledgeBaseId: string) {
   const queryClient = useQueryClient();
-  const key = organizationQueryKeys.teamspaces(workspaceId);
+  const key = organizationQueryKeys.teamspaces(knowledgeBaseId);
   return useMutation({
-    mutationFn: (input: { knowledgeBaseId: string; name: string; defaultAccess: TeamspaceAccess }) => knowledgeCatalogClient.createTeamspace(workspaceId, input),
-    onMutate: ({ knowledgeBaseId, name, defaultAccess }) => {
-      const optimistic: TeamspaceRow = { workspaceId, knowledgeBaseId, id: pendingId(), name: name.trim(), defaultAccess };
+    mutationFn: (input: { name: string; defaultAccess: TeamspaceAccess }) => knowledgeCatalogClient.createTeamspace(knowledgeBaseId, input),
+    onMutate: ({ name, defaultAccess }) => {
+      const optimistic: TeamspaceRow = { knowledgeBaseId, id: pendingId(), name: name.trim(), defaultAccess };
       return { tempId: optimistic.id, snapshot: applyOptimisticList<TeamspaceRow>(queryClient, key, (items) => [...items, optimistic]) };
     },
     onSuccess: (created, _input, context) => {
@@ -221,21 +195,21 @@ export function useCreateTeamspaceMutation(workspaceId: string) {
   });
 }
 
-export function useUpdateTeamspaceMutation(workspaceId: string) {
+export function useUpdateTeamspaceMutation(knowledgeBaseId: string) {
   return useOptimisticListMutation(
-    organizationQueryKeys.teamspaces(workspaceId),
-    (input: { id: string; patch: { name?: string; defaultAccess?: TeamspaceAccess } }) => knowledgeCatalogClient.updateTeamspace(workspaceId, input.id, input.patch),
+    organizationQueryKeys.teamspaces(knowledgeBaseId),
+    (input: { id: string; patch: { name?: string; defaultAccess?: TeamspaceAccess } }) => knowledgeCatalogClient.updateTeamspace(knowledgeBaseId, input.id, input.patch),
     ({ id, patch }) => (items: TeamspaceRow[]) => applyTeamspacePatch(items, id, patch),
     (teamspace, queryClient) => {
-      applyOptimisticList<TeamspaceRow>(queryClient, organizationQueryKeys.teamspaces(workspaceId), (items) => patchByKey(items, (row) => row.id, teamspace.id, { name: teamspace.name, defaultAccess: teamspace.defaultAccess }));
+      applyOptimisticList<TeamspaceRow>(queryClient, organizationQueryKeys.teamspaces(knowledgeBaseId), (items) => patchByKey(items, (row) => row.id, teamspace.id, { name: teamspace.name, defaultAccess: teamspace.defaultAccess }));
     },
   );
 }
 
-export function useRemoveTeamspaceMutation(workspaceId: string) {
+export function useRemoveTeamspaceMutation(knowledgeBaseId: string) {
   return useOptimisticListMutation(
-    organizationQueryKeys.teamspaces(workspaceId),
-    (teamspaceId: string) => knowledgeCatalogClient.removeTeamspace(workspaceId, teamspaceId),
+    organizationQueryKeys.teamspaces(knowledgeBaseId),
+    (teamspaceId: string) => knowledgeCatalogClient.removeTeamspace(knowledgeBaseId, teamspaceId),
     (teamspaceId) => (items: TeamspaceRow[]) => removeByKey(items, (row) => row.id, teamspaceId),
   );
 }

@@ -11,7 +11,7 @@ export interface SqlJoinTransport {
   structure: (schema: string, table: string, signal: AbortSignal) => Promise<RelationalTableStructure>;
 }
 
-/** One workspace/session owns this cache; refresh and document changes cancel real reads. */
+/** One session owns this cache; refresh and document changes cancel real reads. */
 export class SqlJoinCompletion {
   private readonly structures = new Map<string, RelationalTableStructure>();
   private readonly tables = new Map<string, DatabaseObjectInfo[]>();

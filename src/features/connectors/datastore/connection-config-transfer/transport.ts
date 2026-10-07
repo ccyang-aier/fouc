@@ -3,7 +3,6 @@ import type { TransferConnectionConfig } from '@fouc/shared/connection-config-tr
 import { backendFetch } from '@/lib/backend';
 
 function directory(
-  workspaceId: string,
   provider: TransferConnectionConfig['provider'],
 ) {
   const family =
@@ -12,16 +11,15 @@ function directory(
       : provider === 'mongodb'
         ? 'mongo'
         : 'relational';
-  return `/api/database/workspaces/${encodeURIComponent(workspaceId)}/${family}/connections`;
+  return `/api/database/${family}/connections`;
 }
-export async function readWorkspaceTransferConnections(
-  workspaceId: string,
+export async function readTransferConnections(
   signal?: AbortSignal,
 ): Promise<ExistingTransferConnection[]> {
   const groups = await Promise.all(
     (['postgres', 'redis', 'mongodb'] as const).map((provider) =>
       backendFetch<ExistingTransferConnection[]>(
-        directory(workspaceId, provider),
+        directory(provider),
         { signal },
       ),
     ),
@@ -29,11 +27,10 @@ export async function readWorkspaceTransferConnections(
   return groups.flat();
 }
 export async function saveTransferredConnection(
-  workspaceId: string,
   entry: { name: string; config: TransferConnectionConfig },
   targetId?: string,
 ) {
-  const base = directory(workspaceId, entry.config.provider);
+  const base = directory(entry.config.provider);
   // No request abort: a completed atomic CRUD write must remain visible in the outcome summary.
   return backendFetch<ExistingTransferConnection>(
     `${base}${targetId ? `/${encodeURIComponent(targetId)}` : ''}`,

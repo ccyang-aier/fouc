@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { OutboxEvent, PageScope } from '@fouc/shared/knowledge/contracts';
-import { groupMember, member, notification } from '../../../platform/database/workspace/schema';
-import type { WorkspaceTenantTransaction } from '../../../platform/database/workspace/tenant';
+import { groupMember, member, notification } from '../../../platform/database/resources/schema';
+import type { ResourceTransaction } from '../../../platform/database/resources/transaction';
 import { canAccess, expandPrincipals } from '../permissions/effective';
 import { readMaterializedPagePermissions } from '../permissions/queries';
 import { appendKnowledgeOutbox } from '../workers/outbox';
@@ -12,12 +12,12 @@ export type CommentNotificationKind = (typeof commentNotificationKinds)[number];
 
 export interface CommentNotice { kind: CommentNotificationKind; userId: string }
 
-/** Publishes the §5.3 workspace channel event with the business write, in this transaction. */
-export async function emitCommentThreadChanged(db: WorkspaceTenantTransaction, scope: PageScope, threadId: string): Promise<void> {
-  const event: Extract<OutboxEvent, { topic: 'workspace.event' }> = {
-    workspaceId: scope.workspaceId,
-    topic: 'workspace.event',
-    event: { workspaceId: scope.workspaceId, id: randomUUID(), occurredAt: new Date().toISOString(), type: 'comment.changed', pageId: scope.pageId, threadId },
+/** Publishes the §5.3 knowledgeBase channel event with the business write, in this transaction. */
+export async function emitCommentThreadChanged(db: ResourceTransaction, scope: PageScope, threadId: string): Promise<void> {
+  const event: Extract<OutboxEvent, { topic: 'knowledgeBase.event' }> = {
+    knowledgeBaseId: scope.knowledgeBaseId,
+    topic: 'knowledgeBase.event',
+    event: { knowledgeBaseId: scope.knowledgeBaseId, id: randomUUID(), occurredAt: new Date().toISOString(), type: 'comment.changed', pageId: scope.pageId, threadId },
   };
   await appendKnowledgeOutbox(db, event);
 }
@@ -30,7 +30,7 @@ export async function emitCommentThreadChanged(db: WorkspaceTenantTransaction, s
  * and actors are never notified about their own comments.
  */
 export async function notifyCommentRecipients(
-  db: WorkspaceTenantTransaction,
+  db: ResourceTransaction,
   input: { scope: PageScope; threadId: string; commentId: string; actorId: string; notices: CommentNotice[] },
 ): Promise<string[]> {
   const candidates = new Map<string, CommentNotificationKind>();
@@ -45,15 +45,15 @@ export async function notifyCommentRecipients(
 
   const userIds = [...candidates.keys()];
   const memberships = await db.select().from(member)
-    .where(and(eq(member.workspaceId, input.scope.workspaceId), inArray(member.userId, userIds)));
+    .where(and(eq(member.knowledgeBaseId, input.scope.knowledgeBaseId), inArray(member.userId, userIds)));
   const groups = await db.select().from(groupMember)
-    .where(and(eq(groupMember.workspaceId, input.scope.workspaceId), inArray(groupMember.userId, userIds)));
+    .where(and(eq(groupMember.knowledgeBaseId, input.scope.knowledgeBaseId), inArray(groupMember.userId, userIds)));
   const notified: string[] = [];
   for (const userId of userIds) {
     const membership = memberships.find((row) => row.userId === userId);
     if (!membership) continue;
     const principals = expandPrincipals({
-      workspaceId: input.scope.workspaceId,
+      knowledgeBaseId: input.scope.knowledgeBaseId,
       userId,
       member: membership,
       groups: groups.filter((row) => row.userId === userId),
@@ -62,17 +62,17 @@ export async function notifyCommentRecipients(
     const kind = candidates.get(userId)!;
     const notificationId = randomUUID();
     await db.insert(notification).values({
-      workspaceId: input.scope.workspaceId,
+      knowledgeBaseId: input.scope.knowledgeBaseId,
       id: notificationId,
       userId,
       pageId: input.scope.pageId,
       kind,
       payload: { threadId: input.threadId, commentId: input.commentId, actorId: input.actorId },
     });
-    const event: Extract<OutboxEvent, { topic: 'workspace.event' }> = {
-      workspaceId: input.scope.workspaceId,
-      topic: 'workspace.event',
-      event: { workspaceId: input.scope.workspaceId, id: randomUUID(), occurredAt: new Date().toISOString(), type: 'notification.created', userId, notificationId },
+    const event: Extract<OutboxEvent, { topic: 'knowledgeBase.event' }> = {
+      knowledgeBaseId: input.scope.knowledgeBaseId,
+      topic: 'knowledgeBase.event',
+      event: { knowledgeBaseId: input.scope.knowledgeBaseId, id: randomUUID(), occurredAt: new Date().toISOString(), type: 'notification.created', userId, notificationId },
     };
     await appendKnowledgeOutbox(db, event);
     notified.push(userId);

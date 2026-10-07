@@ -15,7 +15,6 @@ export type RelationalConnectionConfig =
   | { provider: 'sqlite'; path: string };
 export type RelationalSavedConnection = {
   id: string;
-  workspaceId: string;
   name: string;
   updatedAt: number;
   config: RelationalConnectionConfig;
@@ -31,7 +30,6 @@ export type RelationalConnectInput =
 export interface RelationalSession {
   id: string;
   connectionId: string | null;
-  workspaceId: string;
   provider: RelationalProvider;
   database: string;
   info: DatabaseConnectionInfo;
@@ -55,7 +53,7 @@ export interface RelationalSaveInput {
   changes: RelationalRowChange[];
 }
 
-/** A workspace/session-bound, single-use server plan; contains no credentials. */
+/** A session-bound, single-use server plan; contains no credentials. */
 export interface RelationalSavePreview {
   id: string;
   schema: string;

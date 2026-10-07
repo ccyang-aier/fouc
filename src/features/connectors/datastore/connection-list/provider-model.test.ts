@@ -2,7 +2,7 @@ import { expect, test } from 'bun:test'
 import { defaultConnectionOptions } from '@fouc/shared/connection-options'
 import { connectionListRow, directoryProviders, type SavedDatastoreConnection } from './provider-model'
 
-const metadata = { id: 'connection', workspaceId: 'workspace', name: 'Test', updatedAt: 1 }
+const metadata = { id: 'connection', name: 'Test', updatedAt: 1 }
 const row = (config: SavedDatastoreConnection['config']) => connectionListRow({ ...metadata, config } as SavedDatastoreConnection, false)
 
 test('SQLite preserves the complete file target and exposes no invented database account', () => {

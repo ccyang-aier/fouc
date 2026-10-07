@@ -14,6 +14,7 @@ import { TaskProgress } from '../editor/block-modules/task-list/task-progress';
 import type { LocalDocument } from './local-library';
 import type { createLocalLibraryStore } from './local-library';
 import { PageIconPicker } from '../navigation/page-icon-picker';
+import { revealBlockInEditor, subscribeOpenPageTarget, takeStagedBlockHighlight } from '../editor/open-target';
 
 const localHistory = Extension.create({
   name: 'localHistory',
@@ -27,19 +28,22 @@ const localHistory = Extension.create({
   },
 });
 
-export function LocalDocumentEditor({ workspaceId, store, document, folderName, onChange, onBack, onOpenSidebar, onCreateDocument }: { workspaceId: string; store: ReturnType<typeof createLocalLibraryStore>; document: LocalDocument; folderName: string; onChange: (patch: Partial<LocalDocument>) => boolean; onBack: () => void; onOpenSidebar: () => void; onCreateDocument: () => void }) {
+export function LocalDocumentEditor({ knowledgeBaseId, store, document, folderName, onChange, onBack, onOpenSidebar, onCreateDocument }: { knowledgeBaseId: string; store: ReturnType<typeof createLocalLibraryStore>; document: LocalDocument; folderName: string; onChange: (patch: Partial<LocalDocument>) => boolean; onBack: () => void; onOpenSidebar: () => void; onCreateDocument: () => void }) {
   const extensions = useMemo(() => [
     ...applyEditorBlockModules(createKnowledgeExtensions(), {
-      localWorkspaceId: workspaceId,
+      localKnowledgeBaseId: knowledgeBaseId,
       localPageId: document.id,
-      getLocalPages: () => store.getSnapshot().documents.filter((item) => item.baseId === document.baseId && !item.deleted),
+      getLocalPages: () => {
+        const library = store.getSnapshot();
+        return library.documents.filter(item => !item.deleted).map(item => ({ ...item, knowledgeBaseId: item.baseId, knowledgeBaseName: library.bases.find(base => base.id === item.baseId)?.name }));
+      },
       subscribeLocalPages: store.subscribe,
     }),
     createBlockIdExtension({ pageId: document.id }),
     ...createBlockEditingExtensions(),
     ...createSlashPasteExtensions(),
     localHistory,
-  ], [document.id, document.baseId, workspaceId, store]);
+  ], [document.id, knowledgeBaseId, store]);
   const editor = useEditor({
     extensions,
     immediatelyRender: false,
@@ -52,9 +56,18 @@ export function LocalDocumentEditor({ workspaceId, store, document, folderName, 
   useEffect(() => {
     if (editor && JSON.stringify(editor.getJSON()) !== JSON.stringify(document.body)) editor.commands.setContent(document.body, { emitUpdate: false });
   }, [editor, document.body]);
+  useEffect(() => {
+    if (!editor) return;
+    const scope = { knowledgeBaseId, pageId: document.id };
+    const staged = takeStagedBlockHighlight(scope);
+    if (staged) revealBlockInEditor(editor.view, staged.blockId);
+    return subscribeOpenPageTarget(target => {
+      if (target.knowledgeBaseId === knowledgeBaseId && target.pageId === document.id && target.blockId) revealBlockInEditor(editor.view, target.blockId);
+    });
+  }, [editor, knowledgeBaseId, document.id]);
 
-  return <DocumentEditorFrame appearanceScope={`local:${workspaceId}:${document.id}`}
-    navigation={{ editor, title: document.title, target: { workspaceId, knowledgeBaseId: document.baseId, pageId: document.id, source: 'local' } }}
+  return <DocumentEditorFrame appearanceScope={`local:${knowledgeBaseId}:${document.id}`}
+    navigation={{ editor, title: document.title, target: { knowledgeBaseId: document.baseId, pageId: document.id, source: 'local' } }}
     header={
     <DocumentEditorHeader
       editor={editor}
@@ -66,7 +79,7 @@ export function LocalDocumentEditor({ workspaceId, store, document, folderName, 
       onToggleStar={() => onChange({ starred: !document.starred })}
       onCreateDocument={onCreateDocument}
       shareDescription="本机文档仅保存在当前浏览器。你可以复制标题和正文，通过其他应用分享。"
-      menuActions={{ target: { workspaceId, knowledgeBaseId: document.baseId, pageId: document.id, source: 'local' }, onDelete: () => { if (!onChange({ deleted: true })) throw new Error('save-failed'); onBack(); } }}
+      menuActions={{ target: { knowledgeBaseId: document.baseId, pageId: document.id, source: 'local' }, onDelete: () => { if (!onChange({ deleted: true })) throw new Error('save-failed'); onBack(); } }}
     />}>
     <DocumentEditorBody editor={editor} before={<DocumentHeading
       title={document.title}

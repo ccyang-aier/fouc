@@ -11,7 +11,7 @@ async function main() {
     platform: { defaults: {}, providers: {} }, providers: {},
     ollamaEndpoints: [endpoint], onCall: async (record) => { records.push(record); },
   });
-  const context = { workspaceId: randomUUID(), userId: randomUUID() };
+  const context = { knowledgeBaseId: randomUUID(), userId: randomUUID() };
   const request: TextCall = {
     context, tier: 'fast', settings: { fast: { source: 'ollama', endpoint, model: 'smollm2:135m-instruct-q4_K_M' } },
     messages: [{ role: 'user', content: 'Say hello in one sentence.' }], maxOutputTokens: 24, maxRetries: 0, timeoutMs: 120_000,
@@ -25,7 +25,7 @@ async function main() {
   assert.ok(deltas > 0 && complete);
   const embedded = await gateway.embed({
     context, settings: { embed: { source: 'ollama', endpoint, model: 'all-minilm', dimensions: 384 } },
-    values: ['knowledge document indexing', 'workspace access permissions'], timeoutMs: 120_000, maxRetries: 0,
+    values: ['knowledge document indexing', 'knowledgeBase access permissions'], timeoutMs: 120_000, maxRetries: 0,
   });
   assert.equal(embedded.embeddings.length, 2);
   assert.ok(embedded.embeddings.every((vector) => vector.length === 384 && vector.some((value) => value !== 0)));

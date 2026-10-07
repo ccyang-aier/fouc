@@ -22,118 +22,118 @@ const diagramInput = z.object({
 /** Authorized native metadata and device-owned prose share the session boundary. */
 export class RelationalMetadataService {
   constructor(
-    private readonly access: (workspaceId: string, id: string) => MetadataEntry,
+    private readonly access: (id: string) => MetadataEntry,
     readonly documents = new DatabaseDocsRepository(),
   ) {}
 
-  private check(workspaceId: string, id: string, entry: MetadataEntry, signal?: AbortSignal) {
+  private check(id: string, entry: MetadataEntry, signal?: AbortSignal) {
     signal?.throwIfAborted();
-    if (this.access(workspaceId, id) !== entry) throw new DatabaseInputError('元数据读取会话已变化');
+    if (this.access(id) !== entry) throw new DatabaseInputError('元数据读取会话已变化');
   }
 
-  private adapter(workspaceId: string, id: string): NativeSchemaObjectAdapter {
-    const entry = this.access(workspaceId, id);
+  private adapter(id: string): NativeSchemaObjectAdapter {
+    const entry = this.access(id);
     return {
       provider: entry.session.provider,
       query: async (sql, parameters, signal) => {
         // Only the catalog module generates SQL; request SQL never enters here.
         const result = await entry.driver.read(sql, null, 10000, [...parameters], signal);
-        this.check(workspaceId, id, entry, signal);
+        this.check(id, entry, signal);
         if (result.hasMore) throw new DatabaseInputError('原生目录超过10000行，请缩小范围');
         return result.rows.map(row => Object.fromEntries(result.columns.map((name, index) => [name, row[index]])));
       },
     };
   }
 
-  objects(workspaceId: string, id: string, value: unknown, signal?: AbortSignal) {
-    return listSchemaObjects(this.adapter(workspaceId, id), value, signal);
+  objects(id: string, value: unknown, signal?: AbortSignal) {
+    return listSchemaObjects(this.adapter(id), value, signal);
   }
 
-  details(workspaceId: string, id: string, value: unknown, signal?: AbortSignal) {
-    return describeSchemaObject(this.adapter(workspaceId, id), value, signal);
+  details(id: string, value: unknown, signal?: AbortSignal) {
+    return describeSchemaObject(this.adapter(id), value, signal);
   }
 
-  search(workspaceId: string, id: string, value: unknown, signal?: AbortSignal) {
-    const entry = this.access(workspaceId, id);
+  search(id: string, value: unknown, signal?: AbortSignal) {
+    const entry = this.access(id);
     return searchNativeSchema({
-      scopeKey: JSON.stringify([workspaceId, id]),
+      scopeKey: id,
       provider: entry.session.provider,
       schemas: async probeSignal => {
         const schemas = await entry.driver.schemas();
-        this.check(workspaceId, id, entry, probeSignal);
+        this.check(id, entry, probeSignal);
         return schemas;
       },
       tables: async (schema, probeSignal) => {
         const tables = await entry.driver.tables(schema);
-        this.check(workspaceId, id, entry, probeSignal);
+        this.check(id, entry, probeSignal);
         return tables.map(table => ({ ...table, connectionId: id, database: entry.session.provider === 'mysql' ? schema : entry.session.database }));
       },
       columns: async (schema, table, probeSignal) => {
         const columns = await entry.driver.columns(schema, table);
-        this.check(workspaceId, id, entry, probeSignal);
+        this.check(id, entry, probeSignal);
         return columns;
       },
-      schemaObjects: (input, probeSignal) => this.objects(workspaceId, id, input, probeSignal),
+      schemaObjects: (input, probeSignal) => this.objects(id, input, probeSignal),
     }, value, signal);
   }
 
-  private async approveSchemas(workspaceId: string, id: string, schemas: string[], signal?: AbortSignal) {
-    const entry = this.access(workspaceId, id);
+  private async approveSchemas(id: string, schemas: string[], signal?: AbortSignal) {
+    const entry = this.access(id);
     signal?.throwIfAborted();
     const visible = await entry.driver.schemas();
-    this.check(workspaceId, id, entry, signal);
+    this.check(id, entry, signal);
     if (schemas.some(schema => !visible.includes(schema))) throw new DatabaseInputError('读取范围不属于当前连接的可见 Schema');
     return entry;
   }
 
-  async diagram(workspaceId: string, id: string, value: unknown, signal?: AbortSignal) {
+  async diagram(id: string, value: unknown, signal?: AbortSignal) {
     const parsed = diagramInput.safeParse(value);
     if (!parsed.success) throw new DatabaseInputError('关系图读取范围无效');
-    const entry = await this.approveSchemas(workspaceId, id, [parsed.data.schema], signal);
+    const entry = await this.approveSchemas(id, [parsed.data.schema], signal);
     const result = await loadRelationalDiagram(entry.driver, {
       ...parsed.data,
       provider: entry.session.provider,
       connectionId: entry.session.connectionId ?? id,
     }, { signal });
-    this.check(workspaceId, id, entry, signal);
+    this.check(id, entry, signal);
     return result;
   }
 
-  async snapshot(workspaceId: string, id: string, value: unknown, signal?: AbortSignal) {
+  async snapshot(id: string, value: unknown, signal?: AbortSignal) {
     let input;
     try { input = validateDatabaseDocsCollectInput(value); }
     catch (reason) { throw new DatabaseInputError(reason instanceof Error ? reason.message : String(reason)); }
-    const entry = await this.approveSchemas(workspaceId, id, input.schemas, signal);
+    const entry = await this.approveSchemas(id, input.schemas, signal);
     const result = await collectDatabaseDocs({
       provider: entry.session.provider,
       database: entry.session.database,
       listTables: async (schema, probeSignal) => {
         const tables = await entry.driver.tables(schema);
-        this.check(workspaceId, id, entry, probeSignal);
+        this.check(id, entry, probeSignal);
         return tables.map(table => ({ ...table, connectionId: id, database: entry.session.provider === 'mysql' ? schema : entry.session.database }));
       },
       structure: async (schema, table, probeSignal) => {
         const columns = await entry.driver.columns(schema, table);
-        this.check(workspaceId, id, entry, probeSignal);
+        this.check(id, entry, probeSignal);
         const structure = await entry.driver.structure(schema, table, columns);
-        this.check(workspaceId, id, entry, probeSignal);
+        this.check(id, entry, probeSignal);
         return { ...structure, columns, connectionId: entry.session.connectionId ?? id, provider: entry.session.provider };
       },
     }, input, signal);
-    this.check(workspaceId, id, entry, signal);
+    this.check(id, entry, signal);
     return result;
   }
 
-  annotations(workspaceId: string, id: string) {
-    const { session } = this.access(workspaceId, id);
+  annotations(id: string) {
+    const { session } = this.access(id);
     return session.connectionId
-      ? this.documents.get(workspaceId, session.connectionId, session.database)
+      ? this.documents.get(session.connectionId, session.database)
       : { version: null, updatedAt: null, persistent: false, annotations: emptyDatabaseDocsAnnotations() };
   }
 
-  saveAnnotations(workspaceId: string, id: string, value: unknown) {
-    const { session } = this.access(workspaceId, id);
+  saveAnnotations(id: string, value: unknown) {
+    const { session } = this.access(id);
     if (!session.connectionId) throw new DatabaseInputError('请先保存连接再维护持久文档笔记');
-    return this.documents.save(workspaceId, session.connectionId, session.database, value);
+    return this.documents.save(session.connectionId, session.database, value);
   }
 }

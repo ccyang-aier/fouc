@@ -12,37 +12,33 @@ import { DatabaseInputError } from "../database/input-error";
 
 export interface ForeignKeyEditRouteService {
   foreignKeyEditOptions(
-    workspaceId: string,
     id: string,
     schema: string,
     table: string,
     signal?: AbortSignal,
   ): Promise<ForeignKeyEditOptions>;
   foreignKeyEditTarget(
-    workspaceId: string,
     id: string,
     schema: string,
     table: string,
     signal?: AbortSignal,
   ): Promise<ForeignKeyTarget>;
   prepareForeignKeyEdit(
-    workspaceId: string,
     id: string,
     value: unknown,
     signal?: AbortSignal,
   ): Promise<ForeignKeyEditPrepared>;
   commitForeignKeyEdit(
-    workspaceId: string,
     id: string,
     planId: string,
     signal?: AbortSignal,
   ): Promise<ForeignKeyEditCommitResult>;
-  discardForeignKeyEdit(workspaceId: string, id: string, planId: string): void;
+  discardForeignKeyEdit(id: string, planId: string): void;
 }
 export function foreignKeyEditRoutes(service: ForeignKeyEditRouteService) {
   const app = new Hono();
   const base =
-    "/api/database/workspaces/:workspaceId/relational/sessions/:id/foreign-key-edit";
+    "/api/database/relational/sessions/:id/foreign-key-edit";
   app.use(
     `${base}/*`,
     bodyLimit({
@@ -70,7 +66,6 @@ export function foreignKeyEditRoutes(service: ForeignKeyEditRouteService) {
       return c.json({
         ok: true,
         data: await method(
-          c.req.param("workspaceId")!,
           c.req.param("id")!,
           query.schema,
           query.table ?? "",
@@ -87,7 +82,6 @@ export function foreignKeyEditRoutes(service: ForeignKeyEditRouteService) {
     return c.json({
       ok: true,
       data: await service.prepareForeignKeyEdit(
-        c.req.param("workspaceId")!,
         c.req.param("id")!,
         input.data,
         c.req.raw.signal,
@@ -107,7 +101,6 @@ export function foreignKeyEditRoutes(service: ForeignKeyEditRouteService) {
     return c.json({
       ok: true,
       data: await service.commitForeignKeyEdit(
-        c.req.param("workspaceId")!,
         c.req.param("id")!,
         c.req.param("planId")!,
         c.req.raw.signal,
@@ -116,7 +109,6 @@ export function foreignKeyEditRoutes(service: ForeignKeyEditRouteService) {
   });
   app.delete(`${base}/plans/:planId`, (c) => {
     service.discardForeignKeyEdit(
-      c.req.param("workspaceId")!,
       c.req.param("id")!,
       c.req.param("planId")!,
     );

@@ -3,15 +3,15 @@ import { and, eq } from 'drizzle-orm';
 import type { Pool } from 'pg';
 import type { Task, TaskList } from 'graphile-worker';
 import { z } from 'zod';
-import { outbox } from '../../../platform/database/workspace/schema';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import { outbox } from '../../../platform/database/resources/schema';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
 import { consumerTask, DISPATCH_TASK, enqueueKnowledgeJob, jobKey } from './outbox';
 import { observeWorker } from './logger';
 import { KnowledgeJobError } from './types';
 import type { KnowledgeConsumer, OutboxReference, OutboxTopic, WorkerObserver } from './types';
 
-const referenceSchema = z.strictObject({ workspaceId: entityIdSchema, outboxId: entityIdSchema });
-const topics = new Set<OutboxTopic>(['doc.changed', 'acl.changed', 'asset.created', 'workspace.event']);
+const referenceSchema = z.strictObject({ knowledgeBaseId: entityIdSchema, outboxId: entityIdSchema });
+const topics = new Set<OutboxTopic>(['doc.changed', 'acl.changed', 'asset.created', 'knowledgeBase.event']);
 
 function guarded(task: Task, observer?: WorkerObserver): Task {
   return async (payload, helpers) => {
@@ -43,31 +43,31 @@ export function createKnowledgeTaskList(pool: Pool, consumers: readonly Knowledg
   const tasks: TaskList = Object.create(null);
   tasks[DISPATCH_TASK] = guarded(async (input, helpers) => {
     const key = reference(input);
-    await withWorkspaceTenant(pool, key.workspaceId, async (db) => {
+    await withKnowledgeBase(pool, key.knowledgeBaseId, async (db) => {
       helpers.abortSignal.throwIfAborted();
       const [row] = await db.select().from(outbox)
-        .where(and(eq(outbox.workspaceId, key.workspaceId), eq(outbox.id, key.outboxId))).for('update');
+        .where(and(eq(outbox.knowledgeBaseId, key.knowledgeBaseId), eq(outbox.id, key.outboxId))).for('update');
       if (!row) throw new KnowledgeJobError('event_missing');
       if (row.dispatchedAt) return;
       const event = outboxEventSchema.safeParse(row.payload);
-      if (!event.success || event.data.workspaceId !== key.workspaceId || event.data.topic !== row.topic) throw new KnowledgeJobError('invalid_event');
+      if (!event.success || event.data.knowledgeBaseId !== key.knowledgeBaseId || event.data.topic !== row.topic) throw new KnowledgeJobError('invalid_event');
       const handlers = routes.get(event.data.topic);
       if (!handlers?.length) throw new KnowledgeJobError('unhandled_topic');
       for (const handler of handlers) await enqueueKnowledgeJob(db, consumerTask(handler.name), key);
       helpers.abortSignal.throwIfAborted();
-      await db.update(outbox).set({ dispatchedAt: new Date() }).where(and(eq(outbox.workspaceId, key.workspaceId), eq(outbox.id, key.outboxId)));
+      await db.update(outbox).set({ dispatchedAt: new Date() }).where(and(eq(outbox.knowledgeBaseId, key.knowledgeBaseId), eq(outbox.id, key.outboxId)));
     });
   }, observer);
   for (const consumersForTopic of routes.values()) for (const consumer of consumersForTopic) {
     const task = consumerTask(consumer.name);
     tasks[task] = guarded(async (input, helpers) => {
       const key = reference(input);
-      const event = await withWorkspaceTenant(pool, key.workspaceId, async (db) => {
-        const [row] = await db.select().from(outbox).where(and(eq(outbox.workspaceId, key.workspaceId), eq(outbox.id, key.outboxId)));
+      const event = await withKnowledgeBase(pool, key.knowledgeBaseId, async (db) => {
+        const [row] = await db.select().from(outbox).where(and(eq(outbox.knowledgeBaseId, key.knowledgeBaseId), eq(outbox.id, key.outboxId)));
         // No long network/model work is allowed inside this short read transaction.
         if (!row) throw new KnowledgeJobError('event_missing');
         const parsed = outboxEventSchema.safeParse(row.payload);
-        if (!row.dispatchedAt || !parsed.success || parsed.data.workspaceId !== key.workspaceId || parsed.data.topic !== consumer.topic) throw new KnowledgeJobError('invalid_event');
+        if (!row.dispatchedAt || !parsed.success || parsed.data.knowledgeBaseId !== key.knowledgeBaseId || parsed.data.topic !== consumer.topic) throw new KnowledgeJobError('invalid_event');
         return parsed.data;
       });
       helpers.abortSignal.throwIfAborted();

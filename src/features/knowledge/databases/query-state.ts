@@ -149,7 +149,7 @@ export function sortKeyPart(sort: readonly SortKey[]): string {
 }
 
 /** 组装 `database.listRows` 的查询输入（契约默认值 limit=50 由服务端定，客户端显式传页大小）。 */
-export function toRowsQuery(databaseId: string, filters: readonly DatabaseFilter[], sort: readonly SortKey[], cursor?: string, limit = 50): Omit<DatabaseQuery, 'workspaceId'> & { cursor?: string } {
+export function toRowsQuery(databaseId: string, filters: readonly DatabaseFilter[], sort: readonly SortKey[], cursor?: string, limit = 50): Omit<DatabaseQuery, 'knowledgeBaseId'> & { cursor?: string } {
   return {
     databaseId,
     filters: [...filters],

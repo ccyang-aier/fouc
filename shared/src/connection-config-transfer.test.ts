@@ -33,11 +33,11 @@ function existing(
   name = 'Primary',
   id = 'existing',
 ): ExistingTransferConnection {
-  return { ...connection(name), id, workspaceId: 'workspace-a', updatedAt: 1 };
+  return { ...connection(name), id, updatedAt: 1 };
 }
 
 describe('public connection config transfer P0', () => {
-  test('snapshots reconstruct public fields and never export secrets, source IDs or workspace IDs', () => {
+  test('snapshots reconstruct public fields and never export secrets or internal source fields', () => {
     const base = connection();
     if (base.config.provider === 'sqlite') throw new Error();
     const secret =
@@ -45,7 +45,7 @@ describe('public connection config transfer P0', () => {
     const source = {
       ...base,
       id: 'private-id',
-      workspaceId: 'private-workspace',
+      internalAnchor: 'private-anchor',
       config: {
         ...base.config,
         password: 'temporary-password',
@@ -68,7 +68,7 @@ describe('public connection config transfer P0', () => {
       text = JSON.stringify(bundle);
     for (const material of [
       'private-id',
-      'private-workspace',
+      'private-anchor',
       'temporary-password',
       'postgres://',
       'private-passphrase',
@@ -93,7 +93,7 @@ describe('public connection config transfer P0', () => {
       validateConnectionConfigBundle({ ...bundle, version: 2 }),
     ).toThrow('版本');
     expect(() =>
-      validateConnectionConfigBundle({ ...bundle, workspaceId: 'foreign' }),
+      validateConnectionConfigBundle({ ...bundle, unexpected: 'foreign' }),
     ).toThrow('字段');
     expect(() =>
       validateConnectionConfigBundle({
@@ -164,7 +164,7 @@ describe('public connection config transfer P0', () => {
     ).toThrow('索引');
   });
 
-  test('preview handles repeated names, explicit replacement and workspace isolation', () => {
+  test('preview handles repeated names, explicit replacement and exact target validation', () => {
     const bundle = createConnectionConfigBundle([connection(), connection()]);
     const choices = defaultConnectionImportChoices(bundle, [existing()]);
     expect(choices).toEqual([
@@ -172,14 +172,12 @@ describe('public connection config transfer P0', () => {
       { mode: 'create', name: 'Primary (3)' },
     ]);
     expect(
-      prepareConnectionImport(bundle, [existing()], choices, 'workspace-a')
-        .create,
+      prepareConnectionImport(bundle, [existing()], choices).create,
     ).toBe(2);
     const update = prepareConnectionImport(
       bundle,
       [existing()],
       [{ mode: 'update', targetId: 'existing' }, { mode: 'skip' }],
-      'workspace-a',
     );
     expect(update.update).toBe(1);
     expect(update.skip).toBe(1);
@@ -189,7 +187,6 @@ describe('public connection config transfer P0', () => {
         bundle,
         [existing()],
         [{ mode: 'create', name: 'PRIMARY' }, { mode: 'skip' }],
-        'workspace-a',
       ),
     ).toThrow('冲突');
     expect(() =>
@@ -200,18 +197,20 @@ describe('public connection config transfer P0', () => {
           { mode: 'update', targetId: 'existing' },
           { mode: 'update', targetId: 'existing' },
         ],
-        'workspace-a',
       ),
     ).toThrow('重复更新');
     expect(() =>
-      prepareConnectionImport(bundle, [existing()], choices, 'workspace-b'),
-    ).toThrow('工作空间');
+      prepareConnectionImport(
+        bundle,
+        [existing()],
+        [{ mode: 'update', targetId: 'missing' }, { mode: 'skip' }],
+      ),
+    ).toThrow('更新目标无效');
     expect(() =>
       prepareConnectionImport(
         bundle,
         [existing('Changed')],
         [{ mode: 'update', targetId: 'existing' }, { mode: 'skip' }],
-        'workspace-a',
       ),
     ).toThrow('名称已变化');
   });

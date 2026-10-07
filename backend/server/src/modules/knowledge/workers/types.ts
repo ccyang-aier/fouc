@@ -1,6 +1,6 @@
 import type { OutboxEvent } from '@fouc/shared/knowledge/contracts';
 
-export interface OutboxReference { workspaceId: string; outboxId: string }
+export interface OutboxReference { knowledgeBaseId: string; outboxId: string }
 export type OutboxTopic = OutboxEvent['topic'];
 export interface KnowledgeJobContext extends OutboxReference {
   /** Stable across retries: use this key when an external service supports idempotency. */

@@ -14,7 +14,7 @@ import type { UploadedAsset, UseAssetUploadsOptions } from '../use-asset-uploads
 import { UploadQueueItem } from './upload-queue-item';
 
 export interface AssetUploaderProps {
-  workspaceId: string;
+  knowledgeBaseId: string;
   onUploaded?: (asset: UploadedAsset) => void;
   /** 注入完整控制器(测试/宿主装配);缺省时由本面板自建浏览器装配。 */
   uploads?: ReturnType<typeof useAssetUploads>;
@@ -26,7 +26,7 @@ export interface AssetUploaderProps {
 export function AssetUploader(props: AssetUploaderProps) {
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const owned = useAssetUploads({ workspaceId: props.workspaceId, onUploaded: props.onUploaded, api: props.api, transfer: props.transfer });
+  const owned = useAssetUploads({ knowledgeBaseId: props.knowledgeBaseId, onUploaded: props.onUploaded, api: props.api, transfer: props.transfer });
   const uploads = props.uploads ?? owned;
 
   const acceptFiles = useCallback((files: Iterable<File>) => {

@@ -93,12 +93,12 @@ CREATE TABLE IF NOT EXISTS knowledge_document_version (
 );
 CREATE INDEX IF NOT EXISTS idx_knowledge_version_document ON knowledge_document_version(document_id, created_at DESC);
 CREATE TABLE IF NOT EXISTS knowledge_page_document (
-  workspace_id TEXT NOT NULL,
+  knowledge_base_id TEXT NOT NULL,
   page_id TEXT NOT NULL,
   state BLOB NOT NULL,
   state_vector BLOB NOT NULL,
   updated_at INTEGER NOT NULL,
-  PRIMARY KEY (workspace_id, page_id)
+  PRIMARY KEY (knowledge_base_id, page_id)
 );
 `;
 

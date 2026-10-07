@@ -19,7 +19,7 @@ describe('deriveListState', () => {
   test('auth and permission failures are distinct from other errors', () => {
     expect(deriveListState({ status: 'error', errorCode: 'UNAUTHENTICATED' })).toBe('unauthenticated');
     expect(deriveListState({ status: 'error', errorCode: 'FORBIDDEN' })).toBe('forbidden');
-    expect(deriveListState({ status: 'error', errorCode: 'WORKSPACE_NOT_FOUND' })).toBe('error');
+    expect(deriveListState({ status: 'error', errorCode: 'KNOWLEDGE_BASE_NOT_FOUND' })).toBe('error');
     expect(deriveListState({ status: 'error', errorCode: 'NETWORK' })).toBe('error');
     expect(deriveListState({ status: 'error', errorCode: null })).toBe('error');
   });

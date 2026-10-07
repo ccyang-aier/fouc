@@ -44,7 +44,7 @@ export class DatastoreMcpSessions {
       const current = await this.client.request<Record<string, unknown>>(held.session.base);
       const capabilities = current.capabilities as { restrictions?: { readOnly?: boolean } } | undefined;
       if (current.readOnly !== true && capabilities?.restrictions?.readOnly !== true) throw new DatastoreCliError('Pinned native session is no longer readonly', 3, 'session_denied');
-      if (current.workspaceId !== undefined && current.workspaceId !== (held.session.raw as { workspaceId?: string })?.workspaceId) throw new DatastoreCliError('Pinned native workspace changed', 3, 'session_denied');
+      if (current.id !== held.session.id || current.connectionId !== held.connectionId) throw new DatastoreCliError('Pinned native session changed', 3, 'session_denied');
       return await action(held.session, combined);
     } finally { held.active = false; held.finish(); }
   }

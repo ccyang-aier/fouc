@@ -12,9 +12,9 @@ import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Warning, WarningCircle, XCircle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import type { MemberRole } from '@/features/workspaces/organization-client';
+import type { MemberRole } from '@/features/knowledge/organization/client';
 import type { TeamspaceAccess } from '../data/knowledge-catalog-client';
-import { isOrganizationDataError, organizationErrorTextOf } from '@/features/workspaces/organization-errors';
+import { isOrganizationDataError, organizationErrorTextOf } from '@/features/knowledge/organization/errors';
 import { defaultAccessLabel, deriveListState, memberRoleLabels } from './view-model';
 import type { OrganizationListState } from './view-model';
 
@@ -87,7 +87,7 @@ export function ListStateShell(props: {
     case 'unauthenticated':
       return <CenteredState icon={<WarningCircle className="size-6" aria-hidden />} title="需要登录" hint="组织信息需要已验证的登录会话；请在登录知识服务后重试。" />;
     case 'forbidden':
-      return <CenteredState icon={<Warning className="size-6" aria-hidden />} title="没有查看权限" hint="访客角色无法浏览工作区的成员、群组与团队空间目录。" />;
+      return <CenteredState icon={<Warning className="size-6" aria-hidden />} title="没有查看权限" hint="访客角色无法浏览知识库的成员、群组与团队空间目录。" />;
     case 'error':
       return (
         <CenteredState
@@ -253,15 +253,7 @@ export function AccessBadge({ access }: { access: TeamspaceAccess }) {
   );
 }
 
-export function KindBadge({ kind }: { kind: 'personal' | 'team' }) {
-  return (
-    <span className={cn('inline-flex h-[20px] items-center rounded-full border px-1.5 text-[9.5px] font-medium', kind === 'team' ? 'border-[var(--accent-soft-line)] bg-[var(--accent-soft)] text-[var(--accent-ink)]' : 'border-[var(--line)] bg-[var(--surface-subtle)] text-[var(--muted-strong)]')}>
-      {kind === 'team' ? '团队' : '个人'}
-    </span>
-  );
-}
 
-/** Text field with the shared name validation mirrored client-side. */
 export function NameField({ label, value, onChange, onSubmit, placeholder, autoFocus, invalidReason, maxLength = 120 }: {
   label: string;
   value: string;

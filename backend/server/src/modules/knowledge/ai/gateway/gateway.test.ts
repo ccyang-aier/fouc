@@ -6,7 +6,7 @@ import { createModelGateway } from './gateway';
 import { ModelGatewayError } from './errors';
 import type { GatewayFetch, GatewayOptions, ModelCallRecord, TextCall } from './types';
 
-const context = { workspaceId: '01991428-716d-7453-8d22-f8dc8e0a9081', userId: '01991428-716d-7453-8d22-f8dc8e0a9082' };
+const context = { knowledgeBaseId: '01991428-716d-7453-8d22-f8dc8e0a9081', userId: '01991428-716d-7453-8d22-f8dc8e0a9082' };
 const request: TextCall = { context, settings: {}, tier: 'fast', messages: [{ role: 'user', content: 'Synthetic test input' }], maxRetries: 0 };
 const completion = (text = 'OK') => ({ id: 'synthetic-response', model: 'test-model', choices: [{ message: { role: 'assistant', content: text }, finish_reason: 'stop' }], usage: { prompt_tokens: 3, completion_tokens: 2, total_tokens: 5 } });
 const json = (value: unknown, status = 200) => Response.json(value, { status });
@@ -40,7 +40,7 @@ test('real AI SDK uses selected cloud model, minimizes outputs, and records one 
   assert.deepEqual(result.usage, { inputTokens: 3, outputTokens: 2 });
   assert.equal(records.length, 1);
   assert.equal(records[0].status, 'success');
-  assert.equal(records[0].context.workspaceId, context.workspaceId);
+  assert.equal(records[0].context.knowledgeBaseId, context.knowledgeBaseId);
   assert.equal(JSON.stringify({ result, records }).includes('synthetic-secret'), false);
   assert.equal(JSON.stringify(records).includes('Synthetic test input'), false);
 });

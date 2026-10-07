@@ -4,7 +4,7 @@
  * the P02 rebuild notice. No React here, so every rule is directly testable.
  */
 
-import type { MemberRole } from '@/features/workspaces/organization-client';
+import type { MemberRole } from '@/features/knowledge/organization/client';
 import type { TeamspaceAccess } from '../data/knowledge-catalog-client';
 
 /** The four observable list states plus the ready state they lead to. */
@@ -41,7 +41,7 @@ export function canBrowseDirectory(role: MemberRole): boolean {
   return role !== 'guest';
 }
 
-/** Workspace management: creating groups/teamspaces, renames, defaults. */
+/** KnowledgeBase management: creating groups/teamspaces, renames, defaults. */
 export function canManageOrganization(role: MemberRole): boolean {
   return role === 'owner' || role === 'admin';
 }
@@ -68,10 +68,10 @@ export type DefaultAccessOption = {
 
 export const defaultAccessOptions: readonly DefaultAccessOption[] = [
   { value: null, label: '仅显式授权', description: '根页面不设默认权限，只有被单独授权的成员与群组可访问' },
-  { value: 'view', label: '可查看', description: '工作区成员默认可以查看该团队空间内的页面' },
-  { value: 'comment', label: '可评论', description: '工作区成员默认可以查看并评论页面' },
-  { value: 'edit', label: '可编辑', description: '工作区成员默认可以编辑页面内容' },
-  { value: 'full', label: '完全控制', description: '工作区成员默认可以编辑、移动与共享页面' },
+  { value: 'view', label: '可查看', description: '知识库成员默认可以查看该团队空间内的页面' },
+  { value: 'comment', label: '可评论', description: '知识库成员默认可以查看并评论页面' },
+  { value: 'edit', label: '可编辑', description: '知识库成员默认可以编辑页面内容' },
+  { value: 'full', label: '完全控制', description: '知识库成员默认可以编辑、移动与共享页面' },
 ];
 
 export function defaultAccessLabel(value: TeamspaceAccess): string {
@@ -94,8 +94,3 @@ export const defaultAccessRebuildNotice =
 export function needsAccessRebuildConfirmation(current: TeamspaceAccess, next: TeamspaceAccess): boolean {
   return current !== next;
 }
-
-export const workspaceKindLabels: Record<'personal' | 'team', string> = {
-  personal: '个人工作区',
-  team: '团队工作区',
-};

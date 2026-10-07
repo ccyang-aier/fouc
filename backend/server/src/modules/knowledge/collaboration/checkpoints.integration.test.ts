@@ -4,8 +4,8 @@ import { Hocuspocus } from '@hocuspocus/server';
 import type { Configuration } from '@hocuspocus/server';
 import * as Y from 'yjs';
 import { principal } from '@fouc/shared/knowledge/contracts';
-import { docCheckpoint, docState } from '../../../platform/database/workspace/schema';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import { docCheckpoint, docState } from '../../../platform/database/resources/schema';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
 import { replaceAuthorizedPageAcl } from '../permissions/mutations';
 import { createPermissionsFixture, until } from '../permissions/permissions-test-fixture';
 import type { PermissionsFixture } from '../permissions/permissions-test-fixture';
@@ -92,22 +92,22 @@ describe('page document checkpoints', () => {
     };
   }
 
-  async function grant(node: { workspaceId: string; pageId: string }, grants: { principal: string; level: 'view' | 'comment' | 'edit' | 'full' }[]) {
-    return withWorkspaceTenant(fixture.pool, node.workspaceId, (db) => replaceAuthorizedPageAcl(db, { workspaceId: node.workspaceId, pageId: node.pageId, grants }));
+  async function grant(node: { knowledgeBaseId: string; pageId: string }, grants: { principal: string; level: 'view' | 'comment' | 'edit' | 'full' }[]) {
+    return withKnowledgeBase(fixture.pool, node.knowledgeBaseId, (db) => replaceAuthorizedPageAcl(db, { knowledgeBaseId: node.knowledgeBaseId, pageId: node.pageId, grants }));
   }
   function client(name: string, cookie = fixture.reader.cookie): CollaborationClient {
     return connectCollaborationClient({ port: host!.port, origin: fixture.server.webOrigin, name, authorization: cookie });
   }
   async function checkpoints(pageId: string) {
-    return withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => db
+    return withKnowledgeBase(fixture.pool, fixture.alpha.id, (db) => db
       .select({ id: docCheckpoint.id, state: docCheckpoint.state, authors: docCheckpoint.authors, label: docCheckpoint.label })
       .from(docCheckpoint)
-      .where(and(eq(docCheckpoint.workspaceId, fixture.alpha.id), eq(docCheckpoint.pageId, pageId)))
+      .where(and(eq(docCheckpoint.knowledgeBaseId, fixture.alpha.id), eq(docCheckpoint.pageId, pageId)))
       .orderBy(docCheckpoint.createdAt));
   }
   async function storedBody(pageId: string) {
-    const rows = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => db.select({ state: docState.state })
-      .from(docState).where(and(eq(docState.workspaceId, fixture.alpha.id), eq(docState.pageId, pageId))));
+    const rows = await withKnowledgeBase(fixture.pool, fixture.alpha.id, (db) => db.select({ state: docState.state })
+      .from(docState).where(and(eq(docState.knowledgeBaseId, fixture.alpha.id), eq(docState.pageId, pageId))));
     return rows[0] ? decode(rows[0].state).getText('body').toString() : undefined;
   }
   function decode(state: Uint8Array) {
@@ -126,7 +126,7 @@ describe('page document checkpoints', () => {
     host = startHost(700);
     const pages = await prepare({ principal: principal('user', fixture.reader.identity.userId), level: 'edit' });
     const pageId = pages[0]!.pageId;
-    const name = pageDocumentName({ workspaceId: fixture.alpha.id, pageId });
+    const name = pageDocumentName({ knowledgeBaseId: fixture.alpha.id, pageId });
 
     const writer = client(name);
     await until(async () => writer.scope() === 'read-write' && writer.synced());
@@ -155,7 +155,7 @@ describe('page document checkpoints', () => {
     host = startHost(60_000);
     const pages = await prepare({ principal: principal('user', fixture.reader.identity.userId), level: 'edit' });
     const edited = pages[0]!, untouched = pages[1]!;
-    const name = pageDocumentName({ workspaceId: fixture.alpha.id, pageId: edited.pageId });
+    const name = pageDocumentName({ knowledgeBaseId: fixture.alpha.id, pageId: edited.pageId });
 
     const writer = client(name);
     await until(async () => writer.scope() === 'read-write' && writer.synced());
@@ -177,7 +177,7 @@ describe('page document checkpoints', () => {
     expect((await checkpoints(edited.pageId)).length).toBe(1);
 
     // A page nobody ever edited is never checkpointed.
-    const viewer = client(pageDocumentName({ workspaceId: fixture.alpha.id, pageId: untouched.pageId }));
+    const viewer = client(pageDocumentName({ knowledgeBaseId: fixture.alpha.id, pageId: untouched.pageId }));
     await until(async () => viewer.synced());
     await viewer.destroy();
     await new Promise((resolve) => setTimeout(resolve, 400));
@@ -188,7 +188,7 @@ describe('page document checkpoints', () => {
     host = startHost(60_000);
     const pages = await prepare({ principal: principal('user', fixture.reader.identity.userId), level: 'edit' });
     const pageId = pages[0]!.pageId;
-    const scope = { workspaceId: fixture.alpha.id, pageId };
+    const scope = { knowledgeBaseId: fixture.alpha.id, pageId };
     const name = pageDocumentName(scope);
 
     const writer = client(name);
@@ -235,7 +235,7 @@ describe('page document checkpoints', () => {
     expect(rows[1]!.label).toBe('offline name');
 
     // A page that was never hosted still takes an explicit empty-snapshot label.
-    const fresh = await host.checkpoints.createNamedCheckpoint({ workspaceId: fixture.alpha.id, pageId: pages[3]!.pageId }, 'fresh');
+    const fresh = await host.checkpoints.createNamedCheckpoint({ knowledgeBaseId: fixture.alpha.id, pageId: pages[3]!.pageId }, 'fresh');
     expect(fresh.outcome).toBe('created');
     const freshRows = await checkpoints(pages[3]!.pageId);
     expect(freshRows.length).toBe(1);
@@ -259,7 +259,7 @@ describe('page document checkpoints', () => {
       { principal: principal('user', fixture.owner.identity.userId), level: 'edit' },
     );
     const pageId = pages[2]!.pageId;
-    const name = pageDocumentName({ workspaceId: fixture.alpha.id, pageId });
+    const name = pageDocumentName({ knowledgeBaseId: fixture.alpha.id, pageId });
 
     const first = client(name, fixture.reader.cookie);
     const second = client(name, fixture.owner.cookie);
@@ -283,7 +283,7 @@ describe('page document checkpoints', () => {
     host = startHost(60_000);
     const pages = await prepare({ principal: principal('user', fixture.reader.identity.userId), level: 'edit' });
     const pageId = pages[0]!.pageId;
-    const name = pageDocumentName({ workspaceId: fixture.alpha.id, pageId });
+    const name = pageDocumentName({ knowledgeBaseId: fixture.alpha.id, pageId });
 
     const direct = await host.hocuspocus.openDirectConnection(name);
     await direct.transact((document) => { document.getText('body').insert(0, 'server-internal '); });
@@ -300,7 +300,7 @@ describe('page document checkpoints', () => {
     expect((host.hocuspocus.configuration.yDocOptions as { gc?: boolean } | undefined)?.gc).toBe(true);
     const pages = await prepare({ principal: principal('user', fixture.reader.identity.userId), level: 'edit' });
     const pageId = pages[0]!.pageId;
-    const name = pageDocumentName({ workspaceId: fixture.alpha.id, pageId });
+    const name = pageDocumentName({ knowledgeBaseId: fixture.alpha.id, pageId });
 
     const writer = client(name);
     await until(async () => writer.scope() === 'read-write' && writer.synced());

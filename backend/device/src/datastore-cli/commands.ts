@@ -2,7 +2,7 @@ import type { RelationalTablePage, RelationalTableStructure, RedisScanPage } fro
 import type { MongoCollectionList, MongoDatabaseList, MongoDocumentPage } from '@fouc/shared/mongo';
 import { exportDatabaseDocsDbml, exportDatabaseDocsMarkdown, type DatabaseDocsSnapshot } from '@fouc/shared/database-docs';
 import { DatastoreHttpClient, resourceSegment } from './http';
-import { listCliConnections, openCliSession, relationalSession, withCliSession, workspaceRoot, providerFamily, type CliSession } from './connections';
+import { listCliConnections, openCliSession, relationalSession, withCliSession, databaseRoot, providerFamily, type CliSession } from './connections';
 import { cliSqlSource, runCliSql } from './execution';
 import { DatastoreCliError, type CliEnvironment, type CliOptions, type CliResult } from './types';
 
@@ -48,7 +48,7 @@ export async function executeDatastoreCli(client: DatastoreHttpClient, options: 
       redis: ['scan-page', 'value-page'],
       mongodb: ['databases', 'collections', 'canonical-ejson-document-page'],
       policy: 'readonly; no write access unlock, arbitrary Redis commands or Mongo commands',
-      guarantees: ['explicit-workspace', 'exact-connection-id-or-unique-name', 'bounded-results', 'owned-session-cleanup', 'registered-sql-cancellation'],
+      guarantees: ['exact-connection-id-or-unique-name', 'bounded-results', 'owned-session-cleanup', 'registered-sql-cancellation'],
       mcp: 'separate datastore:mcp process with explicit readonly connection/resource policy',
       notImplemented: ['direct-database-mode', 'CLI writes', 'desktop deep links', 'MCP write grants', 'remote cloud account login'],
     };
@@ -61,11 +61,11 @@ export async function executeDatastoreCli(client: DatastoreHttpClient, options: 
   if (command === 'connect') {
     if (options.session) throw new DatastoreCliError('connect requires --connection, not an existing --session', 2);
     const session = await openCliSession(client, options, environment, false);
-    return { command, data: { sessionId: session.id, workspaceId: options.workspace, provider: session.provider, database: session.database, readonly: true, closeCommand: `disconnect --workspace ${JSON.stringify(options.workspace)} --provider ${session.provider} --session ${session.id}` }, warnings: ['This explicitly opened session remains active; close it with disconnect when finished'] };
+    return { command, data: { sessionId: session.id, provider: session.provider, database: session.database, readonly: true, closeCommand: `disconnect --provider ${session.provider} --session ${session.id}` }, warnings: ['This explicitly opened session remains active; close it with disconnect when finished'] };
   }
   if (command === 'disconnect') {
     if (!options.session || !options.provider) throw new DatastoreCliError('disconnect requires --session and --provider', 2);
-    const route = workspaceRoot(options, providerFamily(options.provider)) + '/sessions/' + resourceSegment(options.session);
+    const route = databaseRoot(providerFamily(options.provider)) + '/sessions/' + resourceSegment(options.session);
     await client.request(route, undefined, 'DELETE');
     return { command, data: { sessionId: options.session, closed: true } };
   }

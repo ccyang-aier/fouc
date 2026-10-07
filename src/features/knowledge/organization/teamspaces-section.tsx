@@ -8,31 +8,27 @@
  * restores access under the new default.
  */
 
-import { useKnowledgeBasesQuery, flattenWorkspaceList } from '../data/workspace-queries';
-import type { KnowledgeBase } from '@fouc/shared/knowledge/contracts';
 import { useState } from 'react';
 import { FolderOpen, PencilSimple, ShieldCheck, Trash } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { validateOrganizationName } from '@/features/workspaces/organization-client';
-import type { MemberRole } from '@/features/workspaces/organization-client';
+import { validateOrganizationName } from '@/features/knowledge/organization/client';
+import type { MemberRole } from '@/features/knowledge/organization/client';
 import type { TeamspaceAccess } from '../data/knowledge-catalog-client';
 import { useCreateTeamspaceMutation, useRemoveTeamspaceMutation, useTeamspacesQuery, useUpdateTeamspaceMutation } from './hooks';
 import type { TeamspaceRow } from './list-mutations';
 import { canManageOrganization, defaultAccessOptions, defaultAccessRebuildNotice, needsAccessRebuildConfirmation } from './view-model';
 import { AccessBadge, ConfirmDialog, DialogButton, ListStateShell, LoadMoreButton, ModalDialog, NameField, SectionHeader, flattenPages, mutationErrorText, queryListState } from './ui';
 
-export function TeamspacesSection({ workspaceId, actorRole, notify }: {
-  workspaceId: string;
+export function TeamspacesSection({ knowledgeBaseId, actorRole, notify }: {
+  knowledgeBaseId: string;
   actorRole: MemberRole;
   notify: (kind: 'success' | 'error', text: string) => void;
 }) {
-  const basesQuery = useKnowledgeBasesQuery(workspaceId);
-  const bases = flattenWorkspaceList(basesQuery.data);
   const canManage = canManageOrganization(actorRole);
-  const teamspacesQuery = useTeamspacesQuery(workspaceId);
-  const createMutation = useCreateTeamspaceMutation(workspaceId);
-  const updateMutation = useUpdateTeamspaceMutation(workspaceId);
-  const removeMutation = useRemoveTeamspaceMutation(workspaceId);
+  const teamspacesQuery = useTeamspacesQuery(knowledgeBaseId);
+  const createMutation = useCreateTeamspaceMutation(knowledgeBaseId);
+  const updateMutation = useUpdateTeamspaceMutation(knowledgeBaseId);
+  const removeMutation = useRemoveTeamspaceMutation(knowledgeBaseId);
   const [creating, setCreating] = useState(false);
   const [accessTarget, setAccessTarget] = useState<TeamspaceRow | null>(null);
   const [renaming, setRenaming] = useState<TeamspaceRow | null>(null);
@@ -75,7 +71,7 @@ export function TeamspacesSection({ workspaceId, actorRole, notify }: {
     <div className="flex flex-col gap-3">
       <SectionHeader
         title="团队空间"
-        hint="页面树的顶层容器；根默认权限决定工作区成员对其页面的默认访问级别。"
+        hint="页面树的顶层容器；根默认权限决定知识库成员对其页面的默认访问级别。"
         action={canManage ? (
           <DialogButton variant="primary" onClick={() => setCreating(true)}>新建团队空间</DialogButton>
         ) : undefined}
@@ -86,7 +82,7 @@ export function TeamspacesSection({ workspaceId, actorRole, notify }: {
         onRetry={() => void teamspacesQuery.refetch()}
         emptyIcon={<FolderOpen className="size-6" aria-hidden />}
         emptyTitle="还没有团队空间"
-        emptyHint="团队空间是页面的顶层容器；根默认权限决定工作区成员对其中页面的默认访问级别。"
+        emptyHint="团队空间是页面的顶层容器；根默认权限决定知识库成员对其中页面的默认访问级别。"
         emptyAction={canManage ? (
           <DialogButton variant="primary" onClick={() => setCreating(true)}>新建团队空间</DialogButton>
         ) : undefined}
@@ -127,13 +123,12 @@ export function TeamspacesSection({ workspaceId, actorRole, notify }: {
       </ListStateShell>
 
       <CreateTeamspaceDialog
-        bases={bases}
         open={creating}
         busy={createMutation.isPending}
         onClose={() => setCreating(false)}
-        onSubmit={async (name, defaultAccess, knowledgeBaseId) => {
+        onSubmit={async (name, defaultAccess) => {
           try {
-            const created = await createMutation.mutateAsync({ name, defaultAccess, knowledgeBaseId });
+            const created = await createMutation.mutateAsync({ name, defaultAccess });
             notify('success', `团队空间「${created.name}」已创建`);
             setCreating(false);
           } catch (error) {
@@ -223,23 +218,20 @@ function AccessOptions({ value, onChange, disabled }: { value: TeamspaceAccess; 
   );
 }
 
-function CreateTeamspaceDialog({ bases, open, busy, onClose, onSubmit }: {
+function CreateTeamspaceDialog({ open, busy, onClose, onSubmit }: {
   open: boolean;
   busy: boolean;
   onClose: () => void;
-  bases: KnowledgeBase[];
-  onSubmit: (name: string, defaultAccess: TeamspaceAccess, knowledgeBaseId: string) => void;
+  onSubmit: (name: string, defaultAccess: TeamspaceAccess) => void;
 }) {
   const [name, setName] = useState('');
   const [access, setAccess] = useState<TeamspaceAccess>(null);
-  const [chosenBaseId, setChosenBaseId] = useState('');
-  const baseId = bases.find((base) => base.id === chosenBaseId)?.id ?? bases[0]?.id;
   const [touched, setTouched] = useState(false);
   const validation = validateOrganizationName(name);
   function close() { onClose(); setName(''); setAccess(null); setTouched(false); }
   function submit() {
     setTouched(true);
-    if (validation.ok && baseId) onSubmit(validation.value, access, baseId);
+    if (validation.ok) onSubmit(validation.value, access);
   }
   return (
     <ModalDialog
@@ -250,11 +242,11 @@ function CreateTeamspaceDialog({ bases, open, busy, onClose, onSubmit }: {
       footer={
         <>
           <DialogButton onClick={close}>取消</DialogButton>
-          <DialogButton variant="primary" disabled={!validation.ok || !baseId || busy} onClick={submit}>{busy ? '正在创建…' : '创建'}</DialogButton>
+          <DialogButton variant="primary" disabled={!validation.ok || busy} onClick={submit}>{busy ? '正在创建…' : '创建'}</DialogButton>
         </>
       }
     >
-      <div className="flex flex-col gap-4"><label className="text-xs">所属知识库<select aria-label="所属知识库" value={baseId ?? ''} onChange={(event) => setChosenBaseId(event.target.value)} className="mt-2 block w-full rounded-md border border-[var(--line)] bg-panel p-2">{!bases.length ? <option value="">请先创建知识库</option> : bases.map((base) => <option key={base.id} value={base.id}>{base.name}</option>)}</select></label>
+      <div className="flex flex-col gap-4">
         <NameField
           label="名称"
           value={name}
@@ -287,7 +279,7 @@ function AccessDialog({ teamspace, busy, onClose, onConfirm }: {
       open={teamspace !== null}
       onClose={onClose}
       title="根默认权限"
-      description={teamspace ? `「${teamspace.name}」内所有根页面将按此级别向工作区成员开放。` : undefined}
+      description={teamspace ? `「${teamspace.name}」内所有根页面将按此级别向知识库成员开放。` : undefined}
       width="w-[480px]"
       footer={
         <>

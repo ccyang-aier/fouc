@@ -19,9 +19,9 @@ export function createKnowledgeSearchApi(options: { origin: string; fetchImpl?: 
   const fetchImpl = options.fetchImpl ?? authenticatedFetch;
   const clients = createKnowledgeUntypedClientCache(fetchImpl);
   return {
-    async search(input: { workspaceId: string; query: string; limit?: number }, signal?: AbortSignal): Promise<HybridSearchOutcome> {
-      const client = clients.get(options.origin, input.workspaceId);
-      const raw = await client.query('search', { workspaceId: input.workspaceId, query: input.query, limit: input.limit ?? 20 }, { signal });
+    async search(input: { knowledgeBaseId: string; query: string; limit?: number }, signal?: AbortSignal): Promise<HybridSearchOutcome> {
+      const client = clients.get(options.origin, input.knowledgeBaseId);
+      const raw = await client.query('search', { knowledgeBaseId: input.knowledgeBaseId, query: input.query, limit: input.limit ?? 20 }, { signal });
       const parsed = hybridSearchResultSchema.safeParse(raw);
       if (!parsed.success) throw new Error('UNAVAILABLE');
       return {

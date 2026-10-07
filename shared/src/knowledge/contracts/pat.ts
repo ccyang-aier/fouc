@@ -12,12 +12,12 @@ export const knowledgePatScopeSchema = z.enum(knowledgePatScopes);
 export const knowledgePatScopesSchema = z.array(knowledgePatScopeSchema).min(1).max(knowledgePatScopes.length)
   .refine((scopes) => new Set(scopes).size === scopes.length);
 
-/** Plaintext tokens look like `fouc_pat.<workspaceId>.<tokenId>.<secret>`; only this prefix is display-safe. */
+/** Plaintext tokens look like `fouc_pat.<knowledgeBaseId>.<tokenId>.<secret>`; only this prefix is display-safe. */
 export const knowledgePatTokenPrefix = 'fouc_pat.';
 
 /** List/create/revoke surface. The plaintext secret is returned exactly once, at creation. */
 export interface KnowledgePatSummary {
-  readonly workspaceId: string;
+  readonly knowledgeBaseId: string;
   readonly id: string;
   readonly name: string;
   readonly scopes: readonly KnowledgePatScope[];
@@ -33,10 +33,10 @@ export interface KnowledgePatIssued {
 }
 
 export const createKnowledgePatInputSchema = z.strictObject({
-  workspaceId: entityIdSchema,
+  knowledgeBaseId: entityIdSchema,
   name: z.string().trim().min(1).max(120),
   scopes: knowledgePatScopesSchema,
   expiresAt: z.iso.datetime({ offset: true }).nullable(),
 });
 
-export const revokeKnowledgePatInputSchema = z.strictObject({ workspaceId: entityIdSchema, tokenId: entityIdSchema });
+export const revokeKnowledgePatInputSchema = z.strictObject({ knowledgeBaseId: entityIdSchema, tokenId: entityIdSchema });

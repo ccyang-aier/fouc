@@ -5,7 +5,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { Hono } from 'hono';
 import { createTransport } from 'nodemailer';
-import { createTenantTestDatabase } from '../database/workspace/tenant-test-database';
+import { createResourceTestDatabase } from '../database/resources/resource-test-database';
 import { createFoucAuth } from './service';
 import { createFoucAuthRoutes } from './http';
 import { createVerificationEmailTransport } from './email';
@@ -38,9 +38,9 @@ export async function createAuthTestServer(options: {
   socketTickets?: FoucSocketTickets;
   email?: AuthEmailTransport;
   oauth?: FoucOAuthOptions;
-  mount?: (app: Hono, dependencies: { auth: ReturnType<typeof createFoucAuth>; database: Awaited<ReturnType<typeof createTenantTestDatabase>> }) => void;
+  mount?: (app: Hono, dependencies: { auth: ReturnType<typeof createFoucAuth>; database: Awaited<ReturnType<typeof createResourceTestDatabase>> }) => void;
 } = {}) {
-  const database = await createTenantTestDatabase();
+  const database = await createResourceTestDatabase();
   const captured: { to: { address: string }[]; text: string }[] = [];
   const diagnostics: string[] = [];
   const transport = createTransport({ jsonTransport: true });

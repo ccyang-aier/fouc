@@ -4,8 +4,8 @@ import * as Y from 'yjs';
 import { principal } from '@fouc/shared/knowledge/contracts';
 import { Redis as RedisBroadcastExtension } from '@hocuspocus/extension-redis';
 import RedisClient from 'ioredis';
-import { docState } from '../../../platform/database/workspace/schema';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import { docState } from '../../../platform/database/resources/schema';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
 import { replaceAuthorizedPageAcl } from '../permissions/mutations';
 import { createPermissionsFixture, until, type PermissionsFixture } from '../permissions/permissions-test-fixture';
 import { pageDocumentName } from '@fouc/shared/knowledge/collaboration';
@@ -46,15 +46,15 @@ describe('redis multi-node broadcast', () => {
     await fixture.resetJobs();
   });
 
-  async function grant(node: { workspaceId: string; pageId: string }, grants: { principal: string; level: 'view' | 'comment' | 'edit' | 'full' }[]) {
-    return withWorkspaceTenant(fixture.pool, node.workspaceId, (db) => replaceAuthorizedPageAcl(db, { workspaceId: node.workspaceId, pageId: node.pageId, grants }));
+  async function grant(node: { knowledgeBaseId: string; pageId: string }, grants: { principal: string; level: 'view' | 'comment' | 'edit' | 'full' }[]) {
+    return withKnowledgeBase(fixture.pool, node.knowledgeBaseId, (db) => replaceAuthorizedPageAcl(db, { knowledgeBaseId: node.knowledgeBaseId, pageId: node.pageId, grants }));
   }
   function client(port: number, name: string, cookie = fixture.reader.cookie): CollaborationClient {
     return connectCollaborationClient({ port, origin: fixture.server.webOrigin, name, authorization: cookie });
   }
   async function persistedBody(pageId: string): Promise<string | undefined> {
-    const rows = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) => db.select({ state: docState.state })
-      .from(docState).where(and(eq(docState.workspaceId, fixture.alpha.id), eq(docState.pageId, pageId))));
+    const rows = await withKnowledgeBase(fixture.pool, fixture.alpha.id, (db) => db.select({ state: docState.state })
+      .from(docState).where(and(eq(docState.knowledgeBaseId, fixture.alpha.id), eq(docState.pageId, pageId))));
     if (!rows[0]) return undefined;
     const decoded = new Y.Doc();
     Y.applyUpdate(decoded, new Uint8Array(rows[0].state));
@@ -62,7 +62,7 @@ describe('redis multi-node broadcast', () => {
   }
   async function docChangedEvents(pageId: string) {
     const result = await fixture.server.database.admin.query(
-      "SELECT payload FROM workspace.outbox WHERE workspace_id=$1 AND topic='doc.changed' AND payload->>'pageId'=$2", [fixture.alpha.id, pageId]);
+      "SELECT payload FROM resources.outbox WHERE knowledge_base_id=$1 AND topic='doc.changed' AND payload->>'pageId'=$2", [fixture.alpha.id, pageId]);
     return result.rows as { payload: { actor: { kind: string; userId: string } } }[];
   }
 
@@ -70,7 +70,7 @@ describe('redis multi-node broadcast', () => {
     const { pages } = await fixture.tree({ defaultAccess: null });
     await grant(pages[0], [{ principal: principal('user', fixture.reader.identity.userId), level: 'edit' }]);
     await fixture.drain();
-    const name = pageDocumentName({ workspaceId: fixture.alpha.id, pageId: pages[1].pageId });
+    const name = pageDocumentName({ knowledgeBaseId: fixture.alpha.id, pageId: pages[1].pageId });
 
     const onOne = client(nodeOne.port, name);
     const onTwo = client(nodeTwo.port, name);
@@ -97,7 +97,7 @@ describe('redis multi-node broadcast', () => {
     const { pages } = await fixture.tree({ defaultAccess: null });
     await grant(pages[0], [{ principal: principal('user', fixture.reader.identity.userId), level: 'edit' }]);
     await fixture.drain();
-    const name = pageDocumentName({ workspaceId: fixture.alpha.id, pageId: pages[2].pageId });
+    const name = pageDocumentName({ knowledgeBaseId: fixture.alpha.id, pageId: pages[2].pageId });
 
     const dropped = client(nodeTwo.port, name);
     await until(async () => dropped.scope() === 'read-write' && dropped.synced());
@@ -126,7 +126,7 @@ describe('redis multi-node broadcast', () => {
       { principal: principal('user', fixture.owner.identity.userId), level: 'edit' },
     ]);
     await fixture.drain();
-    const name = pageDocumentName({ workspaceId: fixture.alpha.id, pageId: pages[3].pageId });
+    const name = pageDocumentName({ knowledgeBaseId: fixture.alpha.id, pageId: pages[3].pageId });
 
     // The test client carries headers on a static field, so each identity is
     // connected fully before the next handshake is built.
@@ -172,7 +172,7 @@ describe('redis multi-node broadcast', () => {
     const { pages } = await fixture.tree({ defaultAccess: null });
     await grant(pages[0], [{ principal: principal('user', fixture.reader.identity.userId), level: 'edit' }]);
     await fixture.drain();
-    const name = pageDocumentName({ workspaceId: fixture.alpha.id, pageId: pages[0].pageId });
+    const name = pageDocumentName({ knowledgeBaseId: fixture.alpha.id, pageId: pages[0].pageId });
 
     // The REDIS_URL password authenticates both nodes' connections end to end;
     // a failure would close the very first exchange below.
@@ -201,5 +201,22 @@ describe('redis multi-node broadcast', () => {
     await until(async () => watcher.document.getText('body').toString() === 'after-sever before-sever');
     await writer.destroy();
     await watcher.destroy();
+  });
+  test('shutdown drains pending stores before releasing Redis and repeated close is idempotent', async () => {
+    const { pages } = await fixture.tree({ defaultAccess: null });
+    await grant(pages[0], [{ principal: principal('user', fixture.reader.identity.userId), level: 'edit' }]);
+    await fixture.drain();
+    const writer = client(nodeOne.port, pageDocumentName({ knowledgeBaseId: fixture.alpha.id, pageId: pages[0].pageId }));
+    await until(async () => writer.scope() === 'read-write' && writer.synced());
+    writer.document.getText('body').insert(0, 'pending at shutdown');
+    await until(async () => nodeOne.hocuspocus.documents.get(pageDocumentName({ knowledgeBaseId: fixture.alpha.id, pageId: pages[0].pageId }))?.getText('body').toString() === 'pending at shutdown');
+    await Promise.all([nodeOne.close(), nodeOne.close()]);
+    expect(nodeOne.hocuspocus.getDocumentsCount()).toBe(0);
+    expect(await persistedBody(pages[0].pageId)).toBe('pending at shutdown');
+    const extension = nodeOne.hocuspocus.configuration.extensions.find((item): item is RedisBroadcastExtension => item instanceof RedisBroadcastExtension);
+    expect(extension?.pub.status).toBe('end');
+    expect(extension?.sub.status).toBe('end');
+    await writer.destroy();
+    await nodeOne.close();
   });
 });

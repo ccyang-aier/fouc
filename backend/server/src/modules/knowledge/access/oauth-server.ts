@@ -3,11 +3,11 @@ import type { Pool } from 'pg';
 import { and, eq, sql } from 'drizzle-orm';
 import { entityIdSchema } from '@fouc/shared/knowledge/contracts';
 import { z } from 'zod';
-import { member, personalAccessToken } from '../../../platform/database/workspace/schema';
+import { member, personalAccessToken } from '../../../platform/database/resources/schema';
 import { authUser } from '../../../platform/database/identity/schema';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
 import { isLoopbackHost } from '../../../platform/identity/oauth-config';
-import { tokenScopesSchema, tokenWorkspaceSchema } from './access-policy';
+import { tokenScopesSchema, tokenKnowledgeBaseSchema } from './access-policy';
 import type { KnowledgeTokenScope } from './access-policy';
 import { issueKnowledgeToken, parseKnowledgeToken } from './token-format';
 
@@ -99,7 +99,7 @@ export interface McpOAuthClient {
 }
 
 export interface McpAuthorizationGrant {
-  readonly workspaceId: string;
+  readonly knowledgeBaseId: string;
   readonly clientId: string;
   readonly clientName: string;
   readonly userId: string;
@@ -110,7 +110,7 @@ export interface McpAuthorizationGrant {
 }
 
 const grantSchema = z.strictObject({
-  workspaceId: tokenWorkspaceSchema,
+  knowledgeBaseId: tokenKnowledgeBaseSchema,
   clientId: z.string().regex(mcpClientIdPattern),
   clientName: z.string().min(1).max(120),
   userId: entityIdSchema,
@@ -189,15 +189,15 @@ export function createKnowledgeMcpOAuthServer(options: KnowledgeMcpOAuthServerOp
      * later request re-verifies the token against the database.
      */
     async issueAccessToken(grant: McpAuthorizationGrant): Promise<{ token: string; scopes: readonly KnowledgeTokenScope[] } | null> {
-      return withWorkspaceTenant(pool, grant.workspaceId, async (db) => {
+      return withKnowledgeBase(pool, grant.knowledgeBaseId, async (db) => {
         const [membership] = await db.select({ userId: member.userId }).from(member)
           .innerJoin(authUser, eq(authUser.id, member.userId))
-          .where(and(eq(member.workspaceId, grant.workspaceId), eq(member.userId, grant.userId), eq(authUser.emailVerified, true)))
+          .where(and(eq(member.knowledgeBaseId, grant.knowledgeBaseId), eq(member.userId, grant.userId), eq(authUser.emailVerified, true)))
           .for('share');
         if (!membership) return null;
-        const issued = issueKnowledgeToken(grant.workspaceId);
+        const issued = issueKnowledgeToken(grant.knowledgeBaseId);
         await db.insert(personalAccessToken).values({
-          workspaceId: grant.workspaceId, id: issued.tokenId, userId: grant.userId,
+          knowledgeBaseId: grant.knowledgeBaseId, id: issued.tokenId, userId: grant.userId,
           name: `mcp:${grant.clientName}`.slice(0, 120), scopes: [...grant.scopes],
           expiresAt: null, tokenHash: issued.tokenHash,
         });
@@ -206,13 +206,13 @@ export function createKnowledgeMcpOAuthServer(options: KnowledgeMcpOAuthServerOp
     },
 
     /** RFC 7009: always reports success; unknown, foreign or malformed tokens reveal nothing. */
-    async revokeAccessToken(workspaceId: string, token: string): Promise<void> {
+    async revokeAccessToken(knowledgeBaseId: string, token: string): Promise<void> {
       const locator = parseKnowledgeToken(token);
-      if (!locator || locator.workspaceId !== workspaceId) return;
-      await withWorkspaceTenant(pool, workspaceId, (db) => db.update(personalAccessToken)
+      if (!locator || locator.knowledgeBaseId !== knowledgeBaseId) return;
+      await withKnowledgeBase(pool, knowledgeBaseId, (db) => db.update(personalAccessToken)
         .set({ revokedAt: sql`clock_timestamp()` })
         .where(and(
-          eq(personalAccessToken.workspaceId, workspaceId),
+          eq(personalAccessToken.knowledgeBaseId, knowledgeBaseId),
           eq(personalAccessToken.id, locator.tokenId),
           eq(personalAccessToken.tokenHash, locator.hash.toString('hex')),
           sql`${personalAccessToken.revokedAt} IS NULL`,

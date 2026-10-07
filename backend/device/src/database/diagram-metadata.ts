@@ -3,7 +3,7 @@ import type { RelationalDriver } from './drivers/relational-driver';
 
 export interface RelationalDiagramInput { connectionId: string; provider: RelationalProvider; schema: string; tables?: string[]; maxTables?: number; includeViews?: boolean }
 export interface RelationalDiagramControl { signal?: AbortSignal; onProgress?: (progress: { loaded: number; total: number; table: string }) => void }
-/** Caller owns workspace/session authorization; only this approved schema is probed, never FK target schemas. */
+/** Caller owns session authorization; only this approved schema is probed, never FK target schemas. */
 export async function loadRelationalDiagram(driver: RelationalDriver, input: RelationalDiagramInput, control: RelationalDiagramControl = {}): Promise<ErDiagramLoadResult> {
   const maxTables = input.maxTables ?? 100;
   if (!Number.isInteger(maxTables) || maxTables < 1 || maxTables > 200 || !input.schema.trim() || !input.connectionId.trim() || input.schema.includes('\0')) throw new Error('关系图读取范围不合法');

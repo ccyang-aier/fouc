@@ -7,10 +7,10 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import * as Y from 'yjs';
 import type { OutboxEvent } from '@fouc/shared/knowledge/contracts';
-import * as tables from '../../../platform/database/workspace/schema';
-import { createTenantTestDatabase } from '../../../platform/database/workspace/tenant-test-database';
-import type { TenantTestDatabase } from '../../../platform/database/workspace/tenant-test-database';
-import { withWorkspaceTenant } from '../../../platform/database/workspace/tenant';
+import * as tables from '../../../platform/database/resources/schema';
+import { createResourceTestDatabase } from '../../../platform/database/resources/resource-test-database';
+import type { ResourceTestDatabase } from '../../../platform/database/resources/resource-test-database';
+import { withKnowledgeBase } from '../../../platform/database/resources/transaction';
 import { createModelGateway } from '../ai/gateway';
 import type { GatewayFetch, ModelGateway } from '../ai/gateway';
 import { createAiUsageRecorder } from '../observability';
@@ -21,11 +21,11 @@ import { startKnowledgeWorker } from '../workers/runner';
 import type { KnowledgeJobContext, KnowledgeConsumer, KnowledgeWorkerDiagnostic } from '../workers/types';
 import { PAGE_BODY_FRAGMENT } from './backlinks';
 import type { EmbeddingBinding, EmbeddingGateway } from './embeddings';
-import { createBlockEmbeddingConsumer, embeddingInputHash, readActiveEmbeddingModel, rebuildWorkspaceEmbeddings, refreshPageEmbeddings } from './embeddings';
+import { createBlockEmbeddingConsumer, embeddingInputHash, readActiveEmbeddingModel, rebuildKnowledgeBaseEmbeddings, refreshPageEmbeddings } from './embeddings';
 
 /** Real queue, disposable RLS database, real Ollama vectors plus protocol-level synthetic providers. */
 describe('block embedding generation and model switch', () => {
-  let database: TenantTestDatabase;
+  let database: ResourceTestDatabase;
   let pool: Pool;
   const runners = new Set<RunningRole>();
   const userId = randomUUID();
@@ -70,28 +70,27 @@ describe('block embedding generation and model switch', () => {
   }
 
   /** The same atomic commit onStoreDocument performs: state, vector, doc.changed. */
-  async function writeBody(node: { workspaceId: string; pageId: string }, blocks: readonly DraftBlock[]) {
+  async function writeBody(node: { knowledgeBaseId: string; pageId: string }, blocks: readonly DraftBlock[]) {
     const { state, stateVector } = encodeBody(blocks);
-    await withWorkspaceTenant(pool, node.workspaceId, async (db) => {
-      await db.insert(tables.docState).values({ workspaceId: node.workspaceId, pageId: node.pageId, state, stateVector })
-        .onConflictDoUpdate({ target: [tables.docState.workspaceId, tables.docState.pageId], set: { state, stateVector, updatedAt: sql`clock_timestamp()` } });
-      const event: OutboxEvent = { workspaceId: node.workspaceId, topic: 'doc.changed', pageId: node.pageId, actor: { kind: 'human', userId }, occurredAt: new Date().toISOString() };
+    await withKnowledgeBase(pool, node.knowledgeBaseId, async (db) => {
+      await db.insert(tables.docState).values({ knowledgeBaseId: node.knowledgeBaseId, pageId: node.pageId, state, stateVector })
+        .onConflictDoUpdate({ target: [tables.docState.knowledgeBaseId, tables.docState.pageId], set: { state, stateVector, updatedAt: sql`clock_timestamp()` } });
+      const event: OutboxEvent = { knowledgeBaseId: node.knowledgeBaseId, topic: 'doc.changed', pageId: node.pageId, actor: { kind: 'human', userId }, occurredAt: new Date().toISOString() };
       await appendKnowledgeOutbox(db, event);
     });
   }
 
-  async function seedWorkspace() {
-    const workspaceId = randomUUID(), teamspaceId = randomUUID(), pageId = randomUUID();
+  async function seedKnowledgeBase() {
+    const knowledgeBaseId = randomUUID(), teamspaceId = randomUUID(), pageId = randomUUID();
     const client = await database.admin.connect();
     try {
       await client.query('BEGIN');
-      const db = drizzle(client, { schema: tables.workspaceTenantSchema });
-      await db.insert(tables.workspace).values({ id: workspaceId, name: 'Embeddings Workspace', kind: 'team' });
-      await db.insert(tables.member).values({ workspaceId, userId, role: 'owner' });
-      const knowledgeBaseId = randomUUID();
-      await db.insert(tables.knowledgeBase).values({ workspaceId, id: knowledgeBaseId, name: 'Fixture library' });
-      await db.insert(tables.teamspace).values({ knowledgeBaseId, workspaceId, id: teamspaceId, name: 'Space', defaultAccess: 'view' });
-      await db.insert(tables.page).values({ workspaceId, id: pageId, teamspaceId, kind: 'doc', path: pageId.replaceAll('-', '_'), position: 'a0', title: '向量页', createdBy: userId });
+      const db = drizzle(client, { schema: tables.resourceSchema });
+      await db.insert(tables.knowledgeBase).values({ id: knowledgeBaseId, name: 'Embeddings KnowledgeBase' });
+      await db.insert(tables.member).values({ knowledgeBaseId, userId, role: 'owner' });
+
+      await db.insert(tables.teamspace).values({ knowledgeBaseId, id: teamspaceId, name: 'Space', defaultAccess: 'view' });
+      await db.insert(tables.page).values({ knowledgeBaseId, id: pageId, teamspaceId, kind: 'doc', path: pageId.replaceAll('-', '_'), position: 'a0', title: '向量页', createdBy: userId });
       await client.query('COMMIT');
     } catch (error) {
       await client.query('ROLLBACK');
@@ -99,7 +98,7 @@ describe('block embedding generation and model switch', () => {
     } finally {
       client.release();
     }
-    return { workspaceId, pageId };
+    return { knowledgeBaseId, pageId };
   }
 
   interface VectorRow {
@@ -107,13 +106,13 @@ describe('block embedding generation and model switch', () => {
     embedded_hash: string | null; content_hash: string; dims: number | null; vector: string | null; updated_at: string;
     title_path: string | null; content_md: string;
   }
-  async function vectorRows(node: { workspaceId: string; pageId: string }) {
+  async function vectorRows(node: { knowledgeBaseId: string; pageId: string }) {
     return (await database.admin.query<VectorRow>(`
       SELECT block_id, embed_model, embed_dimensions, embedded_hash, content_hash,
              vector_dims(embedding) AS dims, embedding::text AS vector, updated_at::text AS updated_at,
              title_path, content_md
-      FROM workspace.block_index WHERE workspace_id=$1 AND page_id=$2 ORDER BY block_id`,
-    [node.workspaceId, node.pageId])).rows;
+      FROM resources.block_index WHERE knowledge_base_id=$1 AND page_id=$2 ORDER BY block_id`,
+    [node.knowledgeBaseId, node.pageId])).rows;
   }
 
   /** Vector lineage is current when its hash covers the title-path-prefixed input (§7.1). */
@@ -129,15 +128,15 @@ describe('block embedding generation and model switch', () => {
     embedded_hash: row.embedded_hash, dims: row.dims, vector: row.vector,
   }));
 
-  async function markerOf(workspaceId: string) {
+  async function markerOf(knowledgeBaseId: string) {
     const result = await database.admin.query<{ embed_model: string; embed_dimensions: number }>(
-      'SELECT embed_model, embed_dimensions FROM workspace.block_embedding_model WHERE workspace_id=$1', [workspaceId]);
+      'SELECT embed_model, embed_dimensions FROM resources.block_embedding_model WHERE knowledge_base_id=$1', [knowledgeBaseId]);
     return result.rows[0] ? { model: result.rows[0].embed_model, dimensions: result.rows[0].embed_dimensions } : null;
   }
 
-  async function stagingCount(workspaceId: string, model?: string) {
+  async function stagingCount(knowledgeBaseId: string, model?: string) {
     const result = await database.admin.query<{ count: number }>(
-      'SELECT count(*)::int AS count FROM workspace.block_embedding_staging WHERE workspace_id=$1 AND ($2::text IS NULL OR embed_model=$2)', [workspaceId, model ?? null]);
+      'SELECT count(*)::int AS count FROM resources.block_embedding_staging WHERE knowledge_base_id=$1 AND ($2::text IS NULL OR embed_model=$2)', [knowledgeBaseId, model ?? null]);
     return result.rows[0].count;
   }
 
@@ -198,23 +197,23 @@ describe('block embedding generation and model switch', () => {
     }
   }
 
-  const jobContext = (workspaceId: string): KnowledgeJobContext => ({
-    workspaceId, outboxId: randomUUID(), idempotencyKey: `test:${randomUUID()}`, signal: AbortSignal.timeout(120_000), attempt: 1,
+  const jobContext = (knowledgeBaseId: string): KnowledgeJobContext => ({
+    knowledgeBaseId, outboxId: randomUUID(), idempotencyKey: `test:${randomUUID()}`, signal: AbortSignal.timeout(120_000), attempt: 1,
   });
 
-  const docChanged = (node: { workspaceId: string; pageId: string }): OutboxEvent => ({
-    workspaceId: node.workspaceId, topic: 'doc.changed', pageId: node.pageId,
+  const docChanged = (node: { knowledgeBaseId: string; pageId: string }): OutboxEvent => ({
+    knowledgeBaseId: node.knowledgeBaseId, topic: 'doc.changed', pageId: node.pageId,
     actor: { kind: 'human', userId }, occurredAt: new Date().toISOString(),
   });
 
   beforeAll(async () => {
-    database = await createTenantTestDatabase();
+    database = await createResourceTestDatabase();
     pool = new Pool({ ...database.pool.options, max: 4 });
     pool.on('error', () => {});
     await initializeKnowledgeJobs(database.admin, pool);
     const client = await database.admin.connect();
     try {
-      const db = drizzle(client, { schema: tables.workspaceTenantSchema });
+      const db = drizzle(client, { schema: tables.resourceSchema });
       await db.insert(authUser).values({ id: userId, name: 'Embeddings Owner', email: `${userId}@embeddings.test` });
     } finally {
       client.release();
@@ -224,7 +223,7 @@ describe('block embedding generation and model switch', () => {
   beforeEach(async () => {
     for (const runner of runners) await runner.close();
     runners.clear();
-    await database.admin.query('DELETE FROM knowledge_jobs._private_jobs; DELETE FROM workspace.outbox');
+    await database.admin.query('DELETE FROM knowledge_jobs._private_jobs; DELETE FROM resources.outbox');
   });
 
   afterAll(async () => {
@@ -235,7 +234,7 @@ describe('block embedding generation and model switch', () => {
   }, 60_000);
 
   test('rebuild bootstraps real Ollama vectors and doc.changed embeds only changed blocks', async () => {
-    const node = await seedWorkspace();
+    const node = await seedKnowledgeBase();
     const initial = paragraphs(4, (index) => `第${index + 1}段:向量验收内容${'甲乙丙丁'.charAt(index)}`);
     await writeBody(node, initial);
 
@@ -249,7 +248,7 @@ describe('block embedding generation and model switch', () => {
     // The queue indexes the page first (H01 chain); with no active model yet the embed tier is not called.
     await process([createBlockEmbeddingConsumer({ pool, gateway: bootstrap.gateway, binding: ollamaBinding })]);
     expect(bootstrap.calls).toEqual([]);
-    const rebuild = await rebuildWorkspaceEmbeddings(pool, { gateway: bootstrap.gateway, binding: ollamaBinding, workspaceId: node.workspaceId, userId });
+    const rebuild = await rebuildKnowledgeBaseEmbeddings(pool, { gateway: bootstrap.gateway, binding: ollamaBinding, knowledgeBaseId: node.knowledgeBaseId, userId });
     expect(rebuild).toEqual({ target: { model: 'all-minilm', dimensions: 384 }, activeBefore: null, switched: true, embedded: 4, promoted: 4, blocks: 4 });
     // One batched call for four blocks.
     expect(bootstrap.calls.map((values) => values.length)).toEqual([4]);
@@ -265,9 +264,9 @@ describe('block embedding generation and model switch', () => {
       expect(row.embedded_hash).toBe(embeddingInputHash('向量页', row.content_md));
     }
     expect(new Set(rows.map((row) => row.vector)).size).toBe(4);
-    expect(await markerOf(node.workspaceId)).toEqual({ model: 'all-minilm', dimensions: 384 });
+    expect(await markerOf(node.knowledgeBaseId)).toEqual({ model: 'all-minilm', dimensions: 384 });
     const usageRows = (await database.admin.query<{ operation: string; status: string; model: string; input_tokens: number | null }>(
-      "SELECT operation, status, model, input_tokens FROM workspace.ai_usage WHERE workspace_id=$1 AND operation='embed'", [node.workspaceId])).rows;
+      "SELECT operation, status, model, input_tokens FROM resources.ai_usage WHERE knowledge_base_id=$1 AND operation='embed'", [node.knowledgeBaseId])).rows;
     expect(usageRows).toHaveLength(1);
     expect(usageRows[0]).toMatchObject({ status: 'success', model: 'all-minilm' });
     expect(usageRows[0].input_tokens).toBeGreaterThan(0);
@@ -305,18 +304,18 @@ describe('block embedding generation and model switch', () => {
   }, 180_000);
 
   test('model switch stages invisibly, keeps the old index on failure and resumes idempotently', async () => {
-    const node = await seedWorkspace();
+    const node = await seedKnowledgeBase();
     const initial = paragraphs(4, (index) => `第${index + 1}段:向量验收内容${'甲乙丙丁'.charAt(index)}`);
     await writeBody(node, initial);
 
     // Before the first rebuild the query side has no active model to filter by.
-    expect(await withWorkspaceTenant(pool, node.workspaceId, (db) => readActiveEmbeddingModel(db, node.workspaceId))).toBeNull();
+    expect(await withKnowledgeBase(pool, node.knowledgeBaseId, (db) => readActiveEmbeddingModel(db, node.knowledgeBaseId))).toBeNull();
     const alpha = syntheticEmbedGateway('alpha-embed', 8);
     // The queue indexes the page first; with no active model yet nothing is embedded.
     await process([createBlockEmbeddingConsumer({ pool, gateway: alpha.gateway, binding: alpha.binding })]);
-    const bootstrap = await rebuildWorkspaceEmbeddings(pool, { gateway: alpha.gateway, binding: alpha.binding, workspaceId: node.workspaceId, userId });
+    const bootstrap = await rebuildKnowledgeBaseEmbeddings(pool, { gateway: alpha.gateway, binding: alpha.binding, knowledgeBaseId: node.knowledgeBaseId, userId });
     expect(bootstrap).toMatchObject({ switched: true, embedded: 4, promoted: 4, activeBefore: null });
-    expect(await markerOf(node.workspaceId)).toEqual({ model: 'alpha-embed', dimensions: 8 });
+    expect(await markerOf(node.knowledgeBaseId)).toEqual({ model: 'alpha-embed', dimensions: 8 });
 
     // While alpha is active, a consumer configured for beta embeds nothing: no model mixing.
     const beta = syntheticEmbedGateway('beta-embed', 16);
@@ -340,26 +339,26 @@ describe('block embedding generation and model switch', () => {
         if (mutateOnEmbed) {
           mutateOnEmbed = false;
           await database.admin.query(
-            `UPDATE workspace.block_index SET content_md=$3, content_hash=$4, updated_at=clock_timestamp()
-             WHERE workspace_id=$1 AND page_id=$2 AND block_id='b003'`,
-            [node.workspaceId, node.pageId, mutated, sha256(mutated)],
+            `UPDATE resources.block_index SET content_md=$3, content_hash=$4, updated_at=clock_timestamp()
+             WHERE knowledge_base_id=$1 AND page_id=$2 AND block_id='b003'`,
+            [node.knowledgeBaseId, node.pageId, mutated, sha256(mutated)],
           );
         }
         return result;
       },
     };
-    await expect(rebuildWorkspaceEmbeddings(pool, { gateway: hooked, binding: betaWithMutation.binding, workspaceId: node.workspaceId, userId, maxPasses: 1 }))
+    await expect(rebuildKnowledgeBaseEmbeddings(pool, { gateway: hooked, binding: betaWithMutation.binding, knowledgeBaseId: node.knowledgeBaseId, userId, maxPasses: 1 }))
       .rejects.toMatchObject({ code: 'switch_not_converged' });
-    expect(await markerOf(node.workspaceId)).toEqual({ model: 'alpha-embed', dimensions: 8 });
+    expect(await markerOf(node.knowledgeBaseId)).toEqual({ model: 'alpha-embed', dimensions: 8 });
     // The old alpha vectors are untouched; only b003's content moved (the injected indexer write).
     expect(lineage(await vectorRows(node))).toEqual(lineage(drifted));
-    expect(await stagingCount(node.workspaceId, 'beta-embed')).toBe(4);
+    expect(await stagingCount(node.knowledgeBaseId, 'beta-embed')).toBe(4);
 
-    // The retry only re-stages the block whose hash drifted, then switches the whole workspace atomically.
-    const resumed = await rebuildWorkspaceEmbeddings(pool, { gateway: beta.gateway, binding: beta.binding, workspaceId: node.workspaceId, userId });
+    // The retry only re-stages the block whose hash drifted, then switches the whole knowledgeBase atomically.
+    const resumed = await rebuildKnowledgeBaseEmbeddings(pool, { gateway: beta.gateway, binding: beta.binding, knowledgeBaseId: node.knowledgeBaseId, userId });
     expect(resumed).toMatchObject({ switched: true, embedded: 1, promoted: 4, activeBefore: { model: 'alpha-embed', dimensions: 8 } });
-    expect(await markerOf(node.workspaceId)).toEqual({ model: 'beta-embed', dimensions: 16 });
-    expect(await stagingCount(node.workspaceId)).toBe(0);
+    expect(await markerOf(node.knowledgeBaseId)).toEqual({ model: 'beta-embed', dimensions: 16 });
+    expect(await stagingCount(node.knowledgeBaseId)).toBe(0);
     const switched = await vectorRows(node);
     expect(switched).toHaveLength(4);
     for (const row of switched) {
@@ -373,13 +372,13 @@ describe('block embedding generation and model switch', () => {
     expect(switched[2]!.embedded_hash).toBe(embeddingInputHash(switched[2]!.title_path, mutated));
 
     // Re-running the rebuild for the active model is a pure no-op.
-    const again = await rebuildWorkspaceEmbeddings(pool, { gateway: beta.gateway, binding: beta.binding, workspaceId: node.workspaceId, userId });
+    const again = await rebuildKnowledgeBaseEmbeddings(pool, { gateway: beta.gateway, binding: beta.binding, knowledgeBaseId: node.knowledgeBaseId, userId });
     expect(again).toMatchObject({ switched: true, embedded: 0, promoted: 0 });
     expect(await vectorRows(node)).toEqual(switched);
   }, 60_000);
 
   test('per-batch staging survives a provider outage mid-rebuild and the consumer retries through failures', async () => {
-    const node = await seedWorkspace();
+    const node = await seedKnowledgeBase();
     const body = paragraphs(70, (index) => `第${index + 1}段:向量验收内容${'甲乙丙丁戊己庚辛壬癸'.charAt(index % 10)}${Math.floor(index / 10)}`);
     await writeBody(node, body);
 
@@ -388,23 +387,23 @@ describe('block embedding generation and model switch', () => {
     // The queue indexes the page first; with no active model yet nothing is embedded.
     await process([createBlockEmbeddingConsumer({ pool, gateway: bootstrap.gateway, binding: alpha.binding })]);
     expect(bootstrap.calls).toEqual([]);
-    await rebuildWorkspaceEmbeddings(pool, { gateway: bootstrap.gateway, binding: alpha.binding, workspaceId: node.workspaceId, userId });
-    // The 70-block workspace is embedded in bounded sequential batches.
+    await rebuildKnowledgeBaseEmbeddings(pool, { gateway: bootstrap.gateway, binding: alpha.binding, knowledgeBaseId: node.knowledgeBaseId, userId });
+    // The 70-block knowledgeBase is embedded in bounded sequential batches.
     expect(bootstrap.calls.map((values) => values.length)).toEqual([64, 6]);
-    expect(await markerOf(node.workspaceId)).toEqual({ model: 'alpha-embed', dimensions: 8 });
+    expect(await markerOf(node.knowledgeBaseId)).toEqual({ model: 'alpha-embed', dimensions: 8 });
 
     // The provider dies after the first batch: staging keeps it, block_index keeps alpha.
     const beta = syntheticEmbedGateway('beta-embed', 16);
     const outage = syntheticEmbedGateway('beta-embed', 16, { failAfter: 1 });
     const alphaSnapshot = await vectorRows(node);
-    await expect(rebuildWorkspaceEmbeddings(pool, { gateway: outage.gateway, binding: outage.binding, workspaceId: node.workspaceId, userId }))
+    await expect(rebuildKnowledgeBaseEmbeddings(pool, { gateway: outage.gateway, binding: outage.binding, knowledgeBaseId: node.knowledgeBaseId, userId }))
       .rejects.toMatchObject({ code: 'provider_unavailable' });
-    expect(await markerOf(node.workspaceId)).toEqual({ model: 'alpha-embed', dimensions: 8 });
+    expect(await markerOf(node.knowledgeBaseId)).toEqual({ model: 'alpha-embed', dimensions: 8 });
     expect(await vectorRows(node)).toEqual(alphaSnapshot);
-    expect(await stagingCount(node.workspaceId, 'beta-embed')).toBe(64);
-    const resumed = await rebuildWorkspaceEmbeddings(pool, { gateway: beta.gateway, binding: beta.binding, workspaceId: node.workspaceId, userId });
+    expect(await stagingCount(node.knowledgeBaseId, 'beta-embed')).toBe(64);
+    const resumed = await rebuildKnowledgeBaseEmbeddings(pool, { gateway: beta.gateway, binding: beta.binding, knowledgeBaseId: node.knowledgeBaseId, userId });
     expect(resumed).toMatchObject({ switched: true, embedded: 6, promoted: 70 });
-    expect(await stagingCount(node.workspaceId)).toBe(0);
+    expect(await stagingCount(node.knowledgeBaseId)).toBe(0);
     const switched = await vectorRows(node);
     expect(switched).toHaveLength(70);
     expect(switched.every((row) => isCurrent(row, 'beta-embed', 16))).toBe(true);
@@ -425,7 +424,7 @@ describe('block embedding generation and model switch', () => {
     const editedTwice = editedOnce.map((block, index) => (index === 19 || index === 29 ? { ...block, text: `重试段:向量验收内容${index === 19 ? '庚二' : '庚三'}` } : block));
     await writeBody(node, editedTwice);
     const beforeRetry = await vectorRows(node);
-    await expect(failingConsumer.handle(docChanged(node), jobContext(node.workspaceId))).rejects.toMatchObject({ code: 'provider_unavailable' });
+    await expect(failingConsumer.handle(docChanged(node), jobContext(node.knowledgeBaseId))).rejects.toMatchObject({ code: 'provider_unavailable' });
     // The projection advanced (content hashes moved) but no vector was written or lost.
     const midRetry = await vectorRows(node);
     expect(lineage(midRetry)).toEqual(lineage(beforeRetry));
@@ -436,7 +435,7 @@ describe('block embedding generation and model switch', () => {
     }
 
     const healthy = createBlockEmbeddingConsumer({ pool, gateway: beta.gateway, binding: beta.binding });
-    await expect(healthy.handle(docChanged(node), jobContext(node.workspaceId))).resolves.toBeUndefined();
+    await expect(healthy.handle(docChanged(node), jobContext(node.knowledgeBaseId))).resolves.toBeUndefined();
     const recovered = await vectorRows(node);
     expect(recovered).toHaveLength(70);
     expect(recovered.every((row) => isCurrent(row, 'beta-embed', 16))).toBe(true);

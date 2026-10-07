@@ -6,7 +6,7 @@
  * The shared contracts own every input shape (`listPagesInputSchema`,
  * `createPageInputSchema`, …) and every output shape (`pageSchema`,
  * `pagePlacementSchema`, `pageLifecycleStateSchema`). The backend page router
- * serves these procedures through the authenticated workspace transport.
+ * serves these procedures through the authenticated knowledgeBase transport.
  *
  * The calls go through the tRPC client's dynamic `query`/`mutate` entry points and every
  * response is re-validated with the shared zod schemas at the boundary: the
@@ -67,56 +67,56 @@ export type MoveKnowledgePageInput = {
 };
 
 export type KnowledgePagesApi = {
-  listPages(workspaceId: string, input?: ListKnowledgePagesInput, signal?: AbortSignal): Promise<Page[]>;
-  createPage(workspaceId: string, input: CreateKnowledgePageInput, signal?: AbortSignal): Promise<PagePlacement>;
-  updatePage(workspaceId: string, input: UpdateKnowledgePageInput, signal?: AbortSignal): Promise<Page>;
-  movePage(workspaceId: string, input: MoveKnowledgePageInput, signal?: AbortSignal): Promise<PagePlacement>;
-  recyclePage(workspaceId: string, input: RecycleKnowledgePageInput, signal?: AbortSignal): Promise<PageLifecycleState>;
-  restorePage(workspaceId: string, input: RestoreKnowledgePageInput, signal?: AbortSignal): Promise<PageLifecycleState>;
+  listPages(knowledgeBaseId: string, input?: ListKnowledgePagesInput, signal?: AbortSignal): Promise<Page[]>;
+  createPage(knowledgeBaseId: string, input: CreateKnowledgePageInput, signal?: AbortSignal): Promise<PagePlacement>;
+  updatePage(knowledgeBaseId: string, input: UpdateKnowledgePageInput, signal?: AbortSignal): Promise<Page>;
+  movePage(knowledgeBaseId: string, input: MoveKnowledgePageInput, signal?: AbortSignal): Promise<PagePlacement>;
+  recyclePage(knowledgeBaseId: string, input: RecycleKnowledgePageInput, signal?: AbortSignal): Promise<PageLifecycleState>;
+  restorePage(knowledgeBaseId: string, input: RestoreKnowledgePageInput, signal?: AbortSignal): Promise<PageLifecycleState>;
 };
 
 /** Builds the page surface over one transport: an origin resolver plus a fetch implementation. */
 export function createKnowledgePagesApi(deps: { resolveOrigin: () => Promise<string> | string; fetchImpl?: KnowledgeFetch }): KnowledgePagesApi {
   const cache = createKnowledgeUntypedClientCache(deps.fetchImpl);
-  const run = async <T,>(workspaceId: string, signal: AbortSignal | undefined, invoke: (client: KnowledgeUntypedTrpcClient) => Promise<T>): Promise<T> => {
+  const run = async <T,>(knowledgeBaseId: string, signal: AbortSignal | undefined, invoke: (client: KnowledgeUntypedTrpcClient) => Promise<T>): Promise<T> => {
     try {
       const origin = await deps.resolveOrigin();
-      return await invoke(cache.get(origin, workspaceId));
+      return await invoke(cache.get(origin, knowledgeBaseId));
     } catch (cause) {
       throw normalizeKnowledgeError(cause, signal);
     }
   };
 
   return {
-    async listPages(workspaceId, input = {}, signal) {
-      const payload = await run(workspaceId, signal, (client) =>
-        client.query('page.list', { workspaceId, ...input }, { signal }),
+    async listPages(knowledgeBaseId, input = {}, signal) {
+      const payload = await run(knowledgeBaseId, signal, (client) =>
+        client.query('page.list', { knowledgeBaseId, ...input }, { signal }),
       );
       return parsePagePayload(pageListResultSchema, payload, 'page.list');
     },
-    async createPage(workspaceId, input, signal) {
+    async createPage(knowledgeBaseId, input, signal) {
       assertPageInput(createPageInputSchema, input, 'page.create');
-      const payload = await run(workspaceId, signal, (client) => client.mutation('page.create', input, { signal }));
+      const payload = await run(knowledgeBaseId, signal, (client) => client.mutation('page.create', input, { signal }));
       return parsePagePayload(pagePlacementSchema, payload, 'page.create');
     },
-    async updatePage(workspaceId, input, signal) {
-      assertPageInput(updatePageInputSchema, { ...input, workspaceId }, 'page.update');
-      const payload = await run(workspaceId, signal, (client) => client.mutation('page.update', { workspaceId, ...input }, { signal }));
+    async updatePage(knowledgeBaseId, input, signal) {
+      assertPageInput(updatePageInputSchema, { ...input, knowledgeBaseId }, 'page.update');
+      const payload = await run(knowledgeBaseId, signal, (client) => client.mutation('page.update', { knowledgeBaseId, ...input }, { signal }));
       return parsePagePayload(pageSchema, payload, 'page.update');
     },
-    async movePage(workspaceId, input, signal) {
-      assertPageInput(movePageInputSchema, { ...input, workspaceId }, 'page.move');
-      const payload = await run(workspaceId, signal, (client) => client.mutation('page.move', { workspaceId, ...input }, { signal }));
+    async movePage(knowledgeBaseId, input, signal) {
+      assertPageInput(movePageInputSchema, { ...input, knowledgeBaseId }, 'page.move');
+      const payload = await run(knowledgeBaseId, signal, (client) => client.mutation('page.move', { knowledgeBaseId, ...input }, { signal }));
       return parsePagePayload(pagePlacementSchema, payload, 'page.move');
     },
-    async recyclePage(workspaceId, input, signal) {
-      assertPageInput(recyclePageInputSchema, { ...input, workspaceId }, 'page.recycle');
-      const payload = await run(workspaceId, signal, (client) => client.mutation('page.recycle', { workspaceId, ...input }, { signal }));
+    async recyclePage(knowledgeBaseId, input, signal) {
+      assertPageInput(recyclePageInputSchema, { ...input, knowledgeBaseId }, 'page.recycle');
+      const payload = await run(knowledgeBaseId, signal, (client) => client.mutation('page.recycle', { knowledgeBaseId, ...input }, { signal }));
       return parsePagePayload(pageLifecycleStateSchema, payload, 'page.recycle');
     },
-    async restorePage(workspaceId, input, signal) {
-      assertPageInput(restorePageInputSchema, { ...input, workspaceId }, 'page.restore');
-      const payload = await run(workspaceId, signal, (client) => client.mutation('page.restore', { workspaceId, ...input }, { signal }));
+    async restorePage(knowledgeBaseId, input, signal) {
+      assertPageInput(restorePageInputSchema, { ...input, knowledgeBaseId }, 'page.restore');
+      const payload = await run(knowledgeBaseId, signal, (client) => client.mutation('page.restore', { knowledgeBaseId, ...input }, { signal }));
       return parsePagePayload(pageLifecycleStateSchema, payload, 'page.restore');
     },
   };

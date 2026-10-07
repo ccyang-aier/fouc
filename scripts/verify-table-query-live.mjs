@@ -21,8 +21,7 @@ const configurations = [
   JSON.parse(readFileSync('.runtime/dbx-lab/mysql-connection.json', 'utf8')),
   { provider: 'sqlite', path: path.resolve('.runtime/dbx-lab/relational.sqlite') },
 ];
-const scope = 'dbx-table-query-live-verification';
-const base = `http://127.0.0.1:8710/api/database/workspaces/${scope}/relational`;
+const base = `http://127.0.0.1:8710/api/database/relational`;
 async function request(route, body, method = body ? 'POST' : 'GET', expected = 200) {
   const response = await fetch(base + route, {
     method,
@@ -236,14 +235,14 @@ for (const config of configurations) {
       { filter: condition('id', 'equals', 9007199254740992), sort: [] },
     ])
       await request(route, bad, 'POST', 400);
-    const foreign = await fetch(base.replace(scope, 'other-workspace') + route, {
+    const foreign = await fetch(base + route.replace(/^\/(sessions|connections)\/[^/]+/, (_, kind) => `/${kind}/${crypto.randomUUID()}`), {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ filter: null, sort: [] }),
     });
     assert.equal(foreign.status, 400);
     console.log(
-      `PASS table query ${config.provider}: 18 operators, nested AND/OR, NULL/blank/list/range semantics, exact bigint/JSON/binary, injection-safe previews, multi-sort/NULL order, stable pagination, invalid-input and workspace rejection.`,
+      `PASS table query ${config.provider}: 18 operators, nested AND/OR, NULL/blank/list/range semantics, exact bigint/JSON/binary, injection-safe previews, multi-sort/NULL order, stable pagination, invalid-input and missing-session rejection.`,
     );
   } finally {
     await request(sessionBase, null, 'DELETE');

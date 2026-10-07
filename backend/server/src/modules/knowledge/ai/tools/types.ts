@@ -4,7 +4,7 @@ import type { KnowledgeRequestContext } from '../../access';
 import type { EmbeddingBinding } from '../../search/embeddings';
 import type { SearchGateway } from '../../search/service';
 
-/** search 工具的模型依赖；由调用方（J04/K01）从工作区模型设置解析后装配。 */
+/** search 工具的模型依赖；由调用方（J04/K01）从知识库模型设置解析后装配。 */
 export interface KnowledgeAgentSearchModels {
   readonly gateway: SearchGateway;
   readonly embedBinding: EmbeddingBinding;

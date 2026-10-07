@@ -129,7 +129,7 @@ const UPDATE_NOTES: Record<CommunityTab, string[]> = {
 }
 
 const PERMISSIONS: Record<CommunityTab, string[]> = {
-  agents: ["读取任务上下文与工作区文件（可随时撤销）", "执行命令前逐条弹出确认", "运行日志仅保留在本机"],
+  agents: ["读取任务上下文与本机文件（可随时撤销）", "执行命令前逐条弹出确认", "运行日志仅保留在本机"],
   skills: ["仅在任务内加载提示词与模板", "不发起网络请求（纯本地技能）", "可随时卸载并清理缓存"],
 }
 

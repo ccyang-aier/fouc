@@ -28,20 +28,20 @@ import { hashBlobSha256 } from './sha256';
  */
 interface BackendPresignGrant { url: string; expiresAt: string }
 interface BackendAssetStorage {
-  presignUpload(target: { workspaceId: string; hash: string }, seconds: number): BackendPresignGrant;
-  presignDownload(target: { workspaceId: string; hash: string }, seconds: number): BackendPresignGrant;
-  statObject(target: { workspaceId: string; hash: string }): Promise<{ size: number; mime: string; etag: string } | undefined>;
-  deleteObject(target: { workspaceId: string; hash: string }): Promise<boolean>;
+  presignUpload(target: { knowledgeBaseId: string; hash: string }, seconds: number): BackendPresignGrant;
+  presignDownload(target: { knowledgeBaseId: string; hash: string }, seconds: number): BackendPresignGrant;
+  statObject(target: { knowledgeBaseId: string; hash: string }): Promise<{ size: number; mime: string; etag: string } | undefined>;
+  deleteObject(target: { knowledgeBaseId: string; hash: string }): Promise<boolean>;
 }
 type BackendStorageModule = {
   createKnowledgeAssetStorage(config: { endpoint: string; region: string; bucket: string; accessKeyId: string; secretAccessKey: string }): BackendAssetStorage;
   readKnowledgeAssetStorageConfig(environment?: NodeJS.ProcessEnv): Promise<{ endpoint: string; region: string; bucket: string; accessKeyId: string; secretAccessKey: string }>;
 };
 
-const workspace = '31000000-0000-4000-8000-000000000003';
+const knowledgeBase = '31000000-0000-4000-8000-000000000003';
 const encoder = new TextEncoder();
 
-const created: { workspaceId: string; hash: string }[] = [];
+const created: { knowledgeBaseId: string; hash: string }[] = [];
 
 /**
  * 可达性在模块顶层判定:测试注册时就要知道是否跳过。MinIO 不可达时
@@ -56,7 +56,7 @@ try {
   const backend = await import(backendStorageSpecifier) as unknown as BackendStorageModule;
   storage = backend.createKnowledgeAssetStorage(await backend.readKnowledgeAssetStorageConfig());
   // 预签名 URL 的 origin 即 MinIO origin,健康探测走同一地址。
-  const granted = storage.presignUpload({ workspaceId: workspace, hash: 'f'.repeat(64) }, 60);
+  const granted = storage.presignUpload({ knowledgeBaseId: knowledgeBase, hash: 'f'.repeat(64) }, 60);
   const probe = await fetch(`${new URL(granted.url).origin}/minio/health/live`, { signal: AbortSignal.timeout(3000) });
   minioAvailable = probe.ok;
 } catch {
@@ -90,15 +90,15 @@ function minioPorts(): AssetUploadPorts {
     hashFile: (file, progress) => hashBlobSha256(file, progress),
     // 未装配的 asset.prepare:以 AS01 的 presign 实现扮演端点角色,返回
     // 与服务端 `{action:'upload', …}` 完全一致的形状(同一 presignUpload)。
-    prepare: async (_workspaceId, intent) => {
-      const granted = storage.presignUpload({ workspaceId: workspace, hash: intent.hash }, 300);
+    prepare: async (_knowledgeBaseId, intent) => {
+      const granted = storage.presignUpload({ knowledgeBaseId: knowledgeBase, hash: intent.hash }, 300);
       return { action: 'upload', url: granted.url, method: 'PUT', headers: { 'content-type': intent.mime }, expiresAt: granted.expiresAt };
     },
     transfer: fetchTransfer,
     // 未装配的 asset.confirm:客户端半边的完整性闭环 —— 预签名 GET 回读
     // 对象并复哈希,与服务端 confirm 的流式校验语义一致。
-    confirm: async (_workspaceId, intent) => {
-      const granted = storage.presignDownload({ workspaceId: workspace, hash: intent.hash }, 120);
+    confirm: async (_knowledgeBaseId, intent) => {
+      const granted = storage.presignDownload({ knowledgeBaseId: knowledgeBase, hash: intent.hash }, 120);
       const response = await fetch(granted.url, { signal: AbortSignal.timeout(15_000) });
       if (!response.ok) throw new Error(`GET ${response.status}`);
       const body = new Uint8Array(await response.arrayBuffer());
@@ -115,7 +115,7 @@ describe('MinIO 集成 · 真实预签名直传闭环', () => {
     const content = `Fouc U08 集成验收 ${randomUUID()} · 知识库附件`;
     const bytes = encoder.encode(content);
     const file = new File([bytes], 'u08-integration.txt', { type: 'text/plain' });
-    const store = createAssetUploadStore({ workspaceId: workspace, ports: minioPorts() });
+    const store = createAssetUploadStore({ knowledgeBaseId: knowledgeBase, ports: minioPorts() });
 
     store.addFiles([file]);
     const deadline = Date.now() + 30_000;
@@ -125,11 +125,11 @@ describe('MinIO 集成 · 真实预签名直传闭环', () => {
     const final = store.getItems()[0]!;
     expect(final.phase).toBe('done');
     expect(final.error).toBeNull();
-    created.push({ workspaceId: workspace, hash: final.hash! });
+    created.push({ knowledgeBaseId: knowledgeBase, hash: final.hash! });
     expect(final.result).toEqual({ hash: final.hash, reused: false, created: true });
 
     // 对象真实落盘且内容逐字节一致(经服务端 SigV4 HEAD 再核一次)。
-    const stat = await storage.statObject({ workspaceId: workspace, hash: final.hash! });
+    const stat = await storage.statObject({ knowledgeBaseId: knowledgeBase, hash: final.hash! });
     expect(stat?.size).toBe(bytes.byteLength);
     expect(stat?.mime).toContain('text/plain');
   });
@@ -143,7 +143,7 @@ describe('MinIO 集成 · 真实预签名直传闭环', () => {
       transferCalls += 1;
       return fetchTransfer(input);
     };
-    const store = createAssetUploadStore({ workspaceId: workspace, ports });
+    const store = createAssetUploadStore({ knowledgeBaseId: knowledgeBase, ports });
 
     store.addFiles([file]);
     await new Promise<void>((resolve, reject) => {
@@ -155,7 +155,7 @@ describe('MinIO 集成 · 真实预签名直传闭环', () => {
       setTimeout(() => { clearInterval(timer); reject(new Error('timeout')); }, 30_000);
     });
     const firstHash = store.getItems()[0]!.hash!;
-    created.push({ workspaceId: workspace, hash: firstHash });
+    created.push({ knowledgeBaseId: knowledgeBase, hash: firstHash });
 
     // 第二次:prepare 端点(由 AS01 服务逻辑保证)将返回 reuse;此处端口
     // 直接按服务端语义返回,验证客户端对秒传分支的处理(不 PUT、不确认)。

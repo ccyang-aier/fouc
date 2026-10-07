@@ -75,12 +75,12 @@ test('PDF coordinates clip to page bounds and remain equal across zoom levels', 
 test('PDF anchor contract rejects invalid geometry, duplicate pages, empty quotes and page comments with selections', () => {
   expect(pdfCommentAnchorSchema.safeParse(anchor).success).toBe(true);
   for (const invalid of [{ ...anchor, quote: '' }, { ...anchor, assetHash: 'bad' }, { ...anchor, pages: [anchor.pages[0], anchor.pages[0]] }, { ...anchor, pages: [{ page: 0, rects: anchor.pages[0].rects }] }, { ...anchor, pages: [{ page: 2, rects: [{ x: .9, y: 0, width: .2, height: .1 }] }] }]) expect(pdfCommentAnchorSchema.safeParse(invalid).success).toBe(false);
-  const input = { workspaceId: crypto.randomUUID(), pageId: crypto.randomUUID(), threadId: crypto.randomUUID(), commentId: crypto.randomUUID(), kind: 'comment', anchorKind: 'page', bodyMd: 'Comment', pdfAnchor: anchor };
+  const input = { knowledgeBaseId: crypto.randomUUID(), pageId: crypto.randomUUID(), threadId: crypto.randomUUID(), commentId: crypto.randomUUID(), kind: 'comment', anchorKind: 'page', bodyMd: 'Comment', pdfAnchor: anchor };
   expect(createCommentThreadInputSchema.safeParse(input).success).toBe(false);
   expect(createCommentThreadInputSchema.safeParse({ ...input, anchorKind: 'selection' }).success).toBe(true);
 });
 test('PDF sidebar orders by page and coordinates and loses location when the original asset is replaced', () => {
-  const thread = { workspaceId: 'ws', pageId: 'page', id: 'one', kind: 'comment' as const, anchorKind: 'selection' as const, status: null, pdfAnchor: anchor, createdAt: '2026-10-03T00:00:00Z', updatedAt: '2026-10-03T00:00:00Z', comments: [] };
+  const thread = { knowledgeBaseId: 'ws', pageId: 'page', id: 'one', kind: 'comment' as const, anchorKind: 'selection' as const, status: null, pdfAnchor: anchor, createdAt: '2026-10-03T00:00:00Z', updatedAt: '2026-10-03T00:00:00Z', comments: [] };
   const threads = [thread, { ...thread, id: 'two', pdfAnchor: { ...anchor, pages: [{ ...anchor.pages[0], page: 1 }] } }];
   const model = deriveCommentSidebarModel({ threads, anchors: [], excerptOf: () => '', pending: new Set(), pdfAssetHash: anchor.assetHash });
   expect(model.groups.map(group => group.threadId)).toEqual(['two', 'one']);

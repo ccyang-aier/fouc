@@ -9,11 +9,11 @@ const host = process.env.FOUC_REDIS_OBSERVABILITY_HOST || new URL(parseEnv(readF
 const port = Number(process.env.FOUC_REDIS_OBSERVABILITY_PORT || 56380);
 const config = { provider: 'redis', host, port, username: '', database: 15, tls: false, password: '' };
 const client = new Redis({ host, port, db: 15, retryStrategy: () => null, stringNumbers: true }); client.on('error', () => {});
-const workspace = 'dbx-redis-pubsub-verification', base = `http://127.0.0.1:8710/api/database/workspaces/${workspace}/redis`;
+const base = `http://127.0.0.1:8710/api/database/redis`;
 const prefix = 'fouc:dbx-pubsub-lab:', acl = 'fouc_dbx_pubsub_verifier', secret = crypto.randomUUID(), b64 = (value) => Buffer.from(value).toString('base64');
 let session, limited, delayed, gate, active;
-async function request(path, { body, method = body ? 'POST' : 'GET', status = 200, foreign = false } = {}) {
-  const response = await fetch((foreign ? base.replace(workspace, 'other-workspace') : base) + path, {
+async function request(path, { body, method = body ? 'POST' : 'GET', status = 200, missingSession = false } = {}) {
+  const response = await fetch(base + (missingSession ? path.replace(/^\/sessions\/[^/]+/, `/sessions/${crypto.randomUUID()}`) : path), {
     method, headers: { 'content-type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(20000),
   });
   const result = await response.json(); assert.equal(response.status, status, result.error?.message); return result.data ?? result.error;
@@ -91,7 +91,7 @@ try {
   assert.equal((await request(`/sessions/${session.id}/history`)).entries.length, 0);
   assert.equal((await request(`/sessions/${session.id}/command`, { body: { command: 'PING' } })).result, 'PONG');
   assert.equal(await client.dbsize(), keyCount, 'Pub/Sub does not create database keys');
-  await request(`/sessions/${session.id}/pubsub/${active.id}/subscriptions`, { foreign: true, status: 400 });
+  await request(`/sessions/${session.id}/pubsub/${active.id}/subscriptions`, { missingSession: true, status: 400 });
   const other = await request('/sessions', { body: config, status: 201 });
   await request(`/sessions/${other.id}/pubsub/${active.id}/subscriptions`, { status: 400 }); await request(`/sessions/${other.id}`, { method: 'DELETE' });
   await active.change('unsubscribe', [channel, binaryChannel, '', '__proto__', 'absent']);
@@ -125,7 +125,7 @@ try {
   assert.match(unconfirmed.message, /发布结果未确认/);
   await active.until((_, rows) => rows.some((row) => row.payload.rawBase64 === b64('delivered-with-lost-ack')));
   assert.equal(active.messages.filter((row) => row.payload.rawBase64 === b64('delivered-with-lost-ack')).length, 1, 'a lost publication ACK must not trigger an automatic retry');
-  console.log('PASS Pub/Sub native HTTP: binary/empty channel and payload, binary patterns, channel+pattern duplicate deliveries, cross-DB messages, ACK truth after partial ACL denial, unsubscribe/resubscribe, 64KiB clipping, guarded confirmed publishing/ACL recovery/no history or keys, publication delivered with lost ACK reports unknown without retry, workspace/session guards, actual sockets released on abort/pre-ready cancellation/DB switch/session close/transport failure; lab ' + port + '.');
+  console.log('PASS Pub/Sub native HTTP: binary/empty channel and payload, binary patterns, channel+pattern duplicate deliveries, cross-DB messages, ACK truth after partial ACL denial, unsubscribe/resubscribe, 64KiB clipping, guarded confirmed publishing/ACL recovery/no history or keys, publication delivered with lost ACK reports unknown without retry, missing-session and capture ownership guards, actual sockets released on abort/pre-ready cancellation/DB switch/session close/transport failure; lab ' + port + '.');
 } finally {
   await active?.stop().catch(() => {});
   for (const entry of [session, limited, delayed]) if (entry) await request(`/sessions/${entry.id}`, { method: 'DELETE' }).catch(() => {});

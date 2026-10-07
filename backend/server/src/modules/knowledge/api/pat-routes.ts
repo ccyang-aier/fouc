@@ -13,7 +13,7 @@ import type { KnowledgeAccessDependencies } from '../access';
  *   app.route('/', createKnowledgePatRoutes({ auth, pool }));
  *
  * Endpoints: POST /api/knowledge/pat (create, 201, plaintext returned once),
- * GET /api/knowledge/pat/:workspaceId (list), POST /api/knowledge/pat/revoke.
+ * GET /api/knowledge/pat/:knowledgeBaseId (list), POST /api/knowledge/pat/revoke.
  */
 export function createKnowledgePatRoutes(dependencies: KnowledgeAccessDependencies): Hono {
   const tokens = createKnowledgeTokenService(dependencies);
@@ -27,8 +27,8 @@ export function createKnowledgePatRoutes(dependencies: KnowledgeAccessDependenci
     try { return context.json(await tokens.create(context.req.raw, await context.req.json().catch(() => null)), 201); }
     catch (error) { return knowledgeAccessErrorResponse(error); }
   });
-  app.get('/api/knowledge/pat/:workspaceId', async (context) => {
-    try { return context.json(await tokens.list(context.req.raw, context.req.param('workspaceId'))); }
+  app.get('/api/knowledge/pat/:knowledgeBaseId', async (context) => {
+    try { return context.json(await tokens.list(context.req.raw, context.req.param('knowledgeBaseId'))); }
     catch (error) { return knowledgeAccessErrorResponse(error); }
   });
   app.post('/api/knowledge/pat/revoke', async (context) => {

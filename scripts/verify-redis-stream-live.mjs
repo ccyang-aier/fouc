@@ -10,15 +10,14 @@ const port = Number(process.env.FOUC_REDIS_OBSERVABILITY_PORT || 56380);
 const config = { provider: 'redis', host, port, username: '', database: 15, tls: false, password: '' };
 const client = new Redis({ host, port, db: 15, retryStrategy: () => null, stringNumbers: true });
 client.on('error', () => {});
-const workspace = 'dbx-redis-stream-verification';
-const base = `http://127.0.0.1:8710/api/database/workspaces/${workspace}/redis`;
+const base = `http://127.0.0.1:8710/api/database/redis`;
 const prefix = 'fouc:dbx-stream-lab:', key = prefix + 'orders';
 const encode = (value) => Buffer.from(value).toString('base64');
 const binaryGroup = Buffer.from([0, 255]), binaryConsumer = Buffer.from([255, 0]);
 const aclName = 'fouc_dbx_stream_verifier', aclPassword = crypto.randomUUID();
 let session, limited, otherDb;
-async function request(path, { body, method = body ? 'POST' : 'GET', status = 200, otherWorkspace = false } = {}) {
-  const response = await fetch((otherWorkspace ? base.replace(workspace, 'other-workspace') : base) + path, {
+async function request(path, { body, method = body ? 'POST' : 'GET', status = 200, missingSession = false } = {}) {
+  const response = await fetch(base + (missingSession ? path.replace(/^\/sessions\/[^/]+/, `/sessions/${crypto.randomUUID()}`) : path), {
     method, headers: { 'content-type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(20000),
   });
   const result = await response.json();
@@ -74,7 +73,7 @@ try {
   assert.deepEqual(await client.dumpBuffer(key), dump, 'XINFO / XPENDING do not acknowledge, claim, deliver or mutate the Stream');
   assert.equal(await client.call('PEXPIRETIME', key), expiry);
   assert.equal((await request(`/sessions/${session.id}/history`)).entries.length, 0);
-  for (const suffix of ['groups', 'consumers', 'pending']) await request(path(suffix), { body, otherWorkspace: true, status: 400 });
+  for (const suffix of ['groups', 'consumers', 'pending']) await request(path(suffix), { body, missingSession: true, status: 400 });
   for (const cursor of ['1', '(1-0', '18446744073709551616-0']) await request(path('pending'), { body: { ...body, cursor }, status: 400 });
   await request(path('groups'), { body: { key: encode(prefix + 'string') }, status: 502 });
   await request(path('consumers'), { body: { ...body, group: encode('absent-group') }, status: 502 });
@@ -86,7 +85,7 @@ try {
   await client.acl('SETUSER', aclName, '+xinfo', '+xpending');
   assert.equal((await request(`/sessions/${limited.id}/stream/groups`, { body })).groups.length, 4);
   assert.deepEqual(await client.dumpBuffer(key), dump);
-  console.log('PASS Redis Stream: real 64-bit IDs, binary/empty group and consumer names, unknown Lag/Inactive, 100-row cursor ACK race, server consumer filter, empty PEL, unchanged DUMP/expiry/history/read-only session, DB/workspace isolation, malformed cursor/WRONGTYPE/missing group/ACL denial and recovery; dedicated lab port ' + port + '.');
+  console.log('PASS Redis Stream: real 64-bit IDs, binary/empty group and consumer names, unknown Lag/Inactive, 100-row cursor ACK race, server consumer filter, empty PEL, unchanged DUMP/expiry/history/read-only session, DB/session ownership, malformed cursor/WRONGTYPE/missing group/ACL denial and recovery; dedicated lab port ' + port + '.');
 } finally {
   for (const entry of [session, limited, otherDb]) if (entry) await request(`/sessions/${entry.id}`, { method: 'DELETE' }).catch(() => {});
   await client.acl('DELUSER', aclName).catch(() => {});

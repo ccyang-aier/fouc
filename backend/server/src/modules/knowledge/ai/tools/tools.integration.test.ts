@@ -14,8 +14,8 @@ import type {
 import type { Principal } from '@fouc/shared/knowledge/contracts';
 import { hybridSearchResultSchema } from '@fouc/shared/knowledge/search';
 import type { HybridSearchResult } from '@fouc/shared/knowledge/search';
-import { blockIndex, docState } from '../../../../platform/database/workspace/schema';
-import { withWorkspaceTenant } from '../../../../platform/database/workspace/tenant';
+import { blockIndex, docState } from '../../../../platform/database/resources/schema';
+import { withKnowledgeBase } from '../../../../platform/database/resources/transaction';
 import type { KnowledgeRequestContext } from '../../access';
 import { createModelGateway } from '../gateway';
 import { createAuthorizedDatabase, createAuthorizedRow } from '../../databases/service';
@@ -27,8 +27,8 @@ import { PAGE_BODY_FRAGMENT, refreshPageBacklinks } from '../../search/backlinks
 import { refreshPageBlockIndex } from '../../search/indexer';
 import { createAuthorizedShareLink } from '../../sharing/links';
 import { KnowledgeAgentToolError } from './errors';
-import { invokeKnowledgeAgentTool, knowledgeAgentTools } from './';
-import type { KnowledgeAgentSearchModels, KnowledgeAgentToolContext } from './';
+import { invokeKnowledgeAgentTool, knowledgeAgentTools } from '.';
+import type { KnowledgeAgentSearchModels, KnowledgeAgentToolContext } from '.';
 
 interface DraftLink { target?: string; targetBlockId?: string; pageId?: string }
 interface DraftBlock {
@@ -48,7 +48,7 @@ describe('read-only knowledge agent tools', () => {
       platform: { defaults: {}, providers: {} },
       providers: {},
       ollamaEndpoints: ['http://127.0.0.1:11434'],
-      // 本工作区无生效嵌入模型、无 rerank 绑定：两阶段降级都不应发出外呼。
+      // 本知识库无生效嵌入模型、无 rerank 绑定：两阶段降级都不应发出外呼。
       fetch: async () => { throw new Error('unexpected outbound model call'); },
     }),
     embedBinding: { source: 'ollama', endpoint: 'http://127.0.0.1:11434', model: 'agent-tools-unused', dimensions: 8 },
@@ -65,14 +65,14 @@ describe('read-only knowledge agent tools', () => {
   beforeEach(async () => {
     await fixture.resetJobs();
     await fixture.server.database.admin.query(
-      'DELETE FROM workspace.block_embedding_staging; DELETE FROM workspace.block_embedding_model; DELETE FROM workspace.block_index; DELETE FROM workspace.backlink',
+      'DELETE FROM resources.block_embedding_staging; DELETE FROM resources.block_embedding_model; DELETE FROM resources.block_index; DELETE FROM resources.backlink',
     );
   });
 
-  function authority(actor: PermissionTestActor = fixture.owner, workspaceId = fixture.alpha.id) {
-    const key = `${workspaceId}:${actor.identity.userId}`;
+  function authority(actor: PermissionTestActor = fixture.owner, knowledgeBaseId = fixture.alpha.id) {
+    const key = `${knowledgeBaseId}:${actor.identity.userId}`;
     const issued = authorities.get(key) ?? fixture.authenticator.authenticate(
-      new Request(`${fixture.server.origin}/agent-tools`, { headers: { cookie: actor.cookie } }), workspaceId);
+      new Request(`${fixture.server.origin}/agent-tools`, { headers: { cookie: actor.cookie } }), knowledgeBaseId);
     authorities.set(key, issued);
     return issued;
   }
@@ -117,20 +117,20 @@ describe('read-only knowledge agent tools', () => {
     return { state: Buffer.from(Y.encodeStateAsUpdate(document)), stateVector: Buffer.from(Y.encodeStateVector(document)) };
   }
 
-  async function writeBody(node: { workspaceId: string; pageId: string }, blocks: readonly DraftBlock[], options: { corrupt?: boolean } = {}) {
-    const scope = { workspaceId: node.workspaceId, pageId: node.pageId };
+  async function writeBody(node: { knowledgeBaseId: string; pageId: string }, blocks: readonly DraftBlock[], options: { corrupt?: boolean } = {}) {
+    const scope = { knowledgeBaseId: node.knowledgeBaseId, pageId: node.pageId };
     const encoded = options.corrupt
       ? { state: Buffer.from([0x02, 0xff, 0xff, 0xff]), stateVector: Buffer.alloc(0) }
       : encodeBody(blocks);
-    await withWorkspaceTenant(fixture.pool, node.workspaceId, (db) =>
+    await withKnowledgeBase(fixture.pool, node.knowledgeBaseId, (db) =>
       db.insert(docState).values({ ...scope, ...encoded })
-        .onConflictDoUpdate({ target: [docState.workspaceId, docState.pageId], set: { ...encoded, updatedAt: sql`clock_timestamp()` } }));
+        .onConflictDoUpdate({ target: [docState.knowledgeBaseId, docState.pageId], set: { ...encoded, updatedAt: sql`clock_timestamp()` } }));
   }
 
   /** L01+H01 的直接重算：本文件不依赖队列消费者。 */
-  async function indexPage(node: { workspaceId: string; pageId: string }, options: { backlinks?: boolean } = { backlinks: true }) {
-    const scope = { workspaceId: node.workspaceId, pageId: node.pageId };
-    await withWorkspaceTenant(fixture.pool, node.workspaceId, async (db) => {
+  async function indexPage(node: { knowledgeBaseId: string; pageId: string }, options: { backlinks?: boolean } = { backlinks: true }) {
+    const scope = { knowledgeBaseId: node.knowledgeBaseId, pageId: node.pageId };
+    await withKnowledgeBase(fixture.pool, node.knowledgeBaseId, async (db) => {
       if (options.backlinks) await refreshPageBacklinks(db, scope);
       await refreshPageBlockIndex(db, scope);
     });
@@ -140,31 +140,31 @@ describe('read-only knowledge agent tools', () => {
   async function tree(options: Parameters<typeof fixture.tree>[0]) {
     const created = await fixture.tree(options);
     await fixture.drain();
-    await withWorkspaceTenant(fixture.pool, created.root.workspaceId, (db) => db.delete(blockIndex).where(and(
-      eq(blockIndex.workspaceId, created.root.workspaceId),
+    await withKnowledgeBase(fixture.pool, created.root.knowledgeBaseId, (db) => db.delete(blockIndex).where(and(
+      eq(blockIndex.knowledgeBaseId, created.root.knowledgeBaseId),
       inArray(blockIndex.pageId, created.pages.map((node) => node.pageId)),
     )));
     return created;
   }
 
-  async function grant(node: { workspaceId: string; pageId: string }, principalText: string, level: 'view' | 'edit' | 'full') {
-    await withWorkspaceTenant(fixture.pool, node.workspaceId, (db) =>
-      replaceAuthorizedPageAcl(db, { workspaceId: node.workspaceId, pageId: node.pageId, grants: [{ principal: principalText as Principal, level }] }));
+  async function grant(node: { knowledgeBaseId: string; pageId: string }, principalText: string, level: 'view' | 'edit' | 'full') {
+    await withKnowledgeBase(fixture.pool, node.knowledgeBaseId, (db) =>
+      replaceAuthorizedPageAcl(db, { knowledgeBaseId: node.knowledgeBaseId, pageId: node.pageId, grants: [{ principal: principalText as Principal, level }] }));
     await fixture.drain();
   }
 
   /**
    * 直接按最新 acl.changed 载荷重算子树（databases 测试同款）：数据库行创建还会
-   * 发 workspace.event，仅含 rebuild 消费者的 drain 会因此永远等不到清空。
+   * 发 knowledgeBase.event，仅含 rebuild 消费者的 drain 会因此永远等不到清空。
    */
-  async function rebuildLatest(rootPageId: string, workspaceId = fixture.alpha.id) {
+  async function rebuildLatest(rootPageId: string, knowledgeBaseId = fixture.alpha.id) {
     const result = await fixture.server.database.admin.query<{ payload: OutboxEvent }>(
-      "SELECT payload FROM workspace.outbox WHERE workspace_id=$1 AND topic='acl.changed' AND payload->>'rootPageId'=$2 ORDER BY (payload->>'revision')::bigint DESC LIMIT 1",
-      [workspaceId, rootPageId],
+      "SELECT payload FROM resources.outbox WHERE knowledge_base_id=$1 AND topic='acl.changed' AND payload->>'rootPageId'=$2 ORDER BY (payload->>'revision')::bigint DESC LIMIT 1",
+      [knowledgeBaseId, rootPageId],
     );
     if (!result.rows[0]) throw new Error('Expected an acl.changed event');
     const payload = result.rows[0].payload as Extract<OutboxEvent, { topic: 'acl.changed' }>;
-    await withWorkspaceTenant(fixture.pool, workspaceId, (db) => rebuildPermissionSubtree(db, payload));
+    await withKnowledgeBase(fixture.pool, knowledgeBaseId, (db) => rebuildPermissionSubtree(db, payload));
   }
 
   const ownerPrincipal = () => `user:${fixture.owner.identity.userId}` as Principal;
@@ -177,7 +177,7 @@ describe('read-only knowledge agent tools', () => {
 
       const forged = await failure(async () => invokeKnowledgeAgentTool('list_pages', {}, {
         pool: fixture.pool,
-        authority: { workspaceId: fixture.alpha.id, userId: fixture.owner.identity.userId } as KnowledgeRequestContext,
+        authority: { knowledgeBaseId: fixture.alpha.id, userId: fixture.owner.identity.userId } as KnowledgeRequestContext,
       }));
       expect(forged.code).toBe('UNAUTHENTICATED');
 
@@ -195,7 +195,7 @@ describe('read-only knowledge agent tools', () => {
       expect(knowledgeAgentTools.map((tool) => tool.name)).toEqual(['search', 'read_page', 'query_database', 'list_pages', 'get_backlinks', 'insert', 'replace', 'delete', 'create_page', 'update_properties']);
     }, 30_000);
 
-    test('non-members cannot obtain a request context for the workspace at all', async () => {
+    test('non-members cannot obtain a request context for the knowledgeBase at all', async () => {
       await expect(fixture.authenticator.authenticate(
         new Request(`${fixture.server.origin}/agent-tools`, { headers: { cookie: fixture.foreign.cookie } }), fixture.alpha.id,
       )).rejects.toMatchObject({ code: 'UNAUTHENTICATED' });
@@ -310,8 +310,8 @@ describe('read-only knowledge agent tools', () => {
       expect(`${denied.code}:${denied.message}`).toBe(`${recycled.code}:${recycled.message}`);
 
       // 分享链接只授予 link 主体；成员工具路径从不展开它。
-      const shared = await withWorkspaceTenant(fixture.pool, fixture.alpha.id, (db) =>
-        createAuthorizedShareLink(db, fixture.owner.identity.userId, { workspaceId: fixture.alpha.id, pageId: privatePage.pageId, level: 'view', expiresAt: null }));
+      const shared = await withKnowledgeBase(fixture.pool, fixture.alpha.id, (db) =>
+        createAuthorizedShareLink(db, fixture.owner.identity.userId, { knowledgeBaseId: fixture.alpha.id, pageId: privatePage.pageId, level: 'view', expiresAt: null }));
       expect(shared.share.id).toBeTruthy();
       await fixture.drain();
       const viaLink = await failure(async () => invokeKnowledgeAgentTool('read_page', { pageId: privatePage.pageId }, reader));
@@ -339,9 +339,9 @@ describe('read-only knowledge agent tools', () => {
 
     async function seededDatabase(space: Teamspace, options: { private?: boolean } = {}) {
       const databaseId = randomUUID();
-      await withWorkspaceTenant(fixture.pool, fixture.alpha.id, async (db) => {
+      await withKnowledgeBase(fixture.pool, fixture.alpha.id, async (db) => {
         await createAuthorizedDatabase(db, {
-          id: databaseId, workspaceId: fixture.alpha.id, teamspaceId: space.id, parentId: null, title: '工具数据库', columns,
+          id: databaseId, knowledgeBaseId: fixture.alpha.id, teamspaceId: space.id, parentId: null, title: '工具数据库', columns,
         }, fixture.owner.identity.userId);
         for (const seed of [
           { title: '行一', properties: { c_status: 'todo', c_score: 30 } },
@@ -349,12 +349,12 @@ describe('read-only knowledge agent tools', () => {
           { title: '行三', properties: { c_status: 'todo', c_score: 10 } },
         ]) {
           await createAuthorizedRow(db, {
-            id: randomUUID(), workspaceId: fixture.alpha.id, title: seed.title, databaseId, properties: seed.properties,
+            id: randomUUID(), knowledgeBaseId: fixture.alpha.id, title: seed.title, databaseId, properties: seed.properties,
           }, fixture.owner.identity.userId);
         }
         if (options.private) {
           await replaceAuthorizedPageAcl(db, {
-            workspaceId: fixture.alpha.id, pageId: databaseId, grants: [{ principal: ownerPrincipal(), level: 'full' }],
+            knowledgeBaseId: fixture.alpha.id, pageId: databaseId, grants: [{ principal: ownerPrincipal(), level: 'full' }],
           });
         }
       });
@@ -363,7 +363,7 @@ describe('read-only knowledge agent tools', () => {
     }
 
     test('members filter, sort and paginate rows with product semantics', async () => {
-      const space = await fixture.organization.createTeamspace(fixture.owner.identity, { knowledgeBaseId: fixture.alphaKnowledgeBase.id, workspaceId: fixture.alpha.id, name: 'Agent 工具库', defaultAccess: 'view' });
+      const space = await fixture.organization.createTeamspace(fixture.owner.identity, { knowledgeBaseId: fixture.alphaKnowledgeBase.id, name: 'Agent 工具库', defaultAccess: 'view' });
       const databaseId = await seededDatabase(space);
 
       const owner = await toolContext();
@@ -385,7 +385,7 @@ describe('read-only knowledge agent tools', () => {
     }, 90_000);
 
     test('private databases, unknown ids, bad filters, sorts and cursors fail closed', async () => {
-      const privateSpace = await fixture.organization.createTeamspace(fixture.owner.identity, { knowledgeBaseId: fixture.alphaKnowledgeBase.id, workspaceId: fixture.alpha.id, name: '私有工具库', defaultAccess: null });
+      const privateSpace = await fixture.organization.createTeamspace(fixture.owner.identity, { knowledgeBaseId: fixture.alphaKnowledgeBase.id, name: '私有工具库', defaultAccess: null });
       const databaseId = await seededDatabase(privateSpace, { private: true });
       const reader = await toolContext(fixture.reader);
 
@@ -410,7 +410,7 @@ describe('read-only knowledge agent tools', () => {
 
   describe('list_pages tool', () => {
     test('lists the visible tree, subtrees and root level for members', async () => {
-      const space = await fixture.organization.createTeamspace(fixture.owner.identity, { knowledgeBaseId: fixture.alphaKnowledgeBase.id, workspaceId: fixture.alpha.id, name: '树空间', defaultAccess: 'view' });
+      const space = await fixture.organization.createTeamspace(fixture.owner.identity, { knowledgeBaseId: fixture.alphaKnowledgeBase.id, name: '树空间', defaultAccess: 'view' });
       const created = await tree({ teamspace: space, parents: [null, 0, 0, 1] });
       const [root, first, , grandchild] = created.pages;
       const owner = await toolContext();
@@ -430,7 +430,7 @@ describe('read-only knowledge agent tools', () => {
     }, 90_000);
 
     test('private subtrees stay invisible and recycled pages never appear', async () => {
-      const privateSpace = await fixture.organization.createTeamspace(fixture.owner.identity, { knowledgeBaseId: fixture.alphaKnowledgeBase.id, workspaceId: fixture.alpha.id, name: '私有树空间', defaultAccess: null });
+      const privateSpace = await fixture.organization.createTeamspace(fixture.owner.identity, { knowledgeBaseId: fixture.alphaKnowledgeBase.id, name: '私有树空间', defaultAccess: null });
       const privateTree = await tree({ teamspace: privateSpace, parents: [null, 0] });
       await grant(privateTree.pages[0]!, ownerPrincipal(), 'full');
 
@@ -442,7 +442,7 @@ describe('read-only knowledge agent tools', () => {
       const denied = await failure(async () => invokeKnowledgeAgentTool('list_pages', { parentId: privateTree.pages[0]!.pageId }, await toolContext(fixture.reader)));
       expect(denied.code).toBe('TARGET_NOT_ACCESSIBLE');
 
-      const space = await fixture.organization.createTeamspace(fixture.owner.identity, { knowledgeBaseId: fixture.alphaKnowledgeBase.id, workspaceId: fixture.alpha.id, name: '回收树空间', defaultAccess: 'view' });
+      const space = await fixture.organization.createTeamspace(fixture.owner.identity, { knowledgeBaseId: fixture.alphaKnowledgeBase.id, name: '回收树空间', defaultAccess: 'view' });
       const recycled = await tree({ teamspace: space, parents: [null, 0, 0], recycled: [1] });
       const [root, first, second] = recycled.pages;
       const owner = await toolContext();
@@ -455,10 +455,10 @@ describe('read-only knowledge agent tools', () => {
 
   describe('get_backlinks tool', () => {
     test('exposes member-visible sources with block anchors and filters the rest', async () => {
-      const sharedSpace = await fixture.organization.createTeamspace(fixture.owner.identity, { knowledgeBaseId: fixture.alphaKnowledgeBase.id, workspaceId: fixture.alpha.id, name: '链接目标空间', defaultAccess: 'view' });
+      const sharedSpace = await fixture.organization.createTeamspace(fixture.owner.identity, { knowledgeBaseId: fixture.alphaKnowledgeBase.id, name: '链接目标空间', defaultAccess: 'view' });
       const targetTree = await tree({ teamspace: sharedSpace, parents: [null] });
       const [target] = targetTree.pages;
-      const privateSpace = await fixture.organization.createTeamspace(fixture.owner.identity, { knowledgeBaseId: fixture.alphaKnowledgeBase.id, workspaceId: fixture.alpha.id, name: '链接来源空间', defaultAccess: null });
+      const privateSpace = await fixture.organization.createTeamspace(fixture.owner.identity, { knowledgeBaseId: fixture.alphaKnowledgeBase.id, name: '链接来源空间', defaultAccess: null });
       const sourceTree = await tree({ teamspace: privateSpace, parents: [null] });
       const [source] = sourceTree.pages;
       await grant(source, ownerPrincipal(), 'full');

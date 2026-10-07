@@ -7,7 +7,7 @@ import { tableClearPostgresFingerprint } from './table-clear-postgres';
 
 interface HeldPlan { driver: RelationalDriver; provider: RelationalProvider; input: TableClearInput; signature: string; postgresFingerprint: string | null; prepared: TableClearPrepared }
 
-/** One live Entry owns every plan; workspace/session authority remains with the session manager. */
+/** One live Entry owns every plan; session authority remains with the session manager. */
 export class TableClearPlans {
   private readonly plans = new Map<string, HeldPlan>();
   private readonly previews = new Set<AbortController>();

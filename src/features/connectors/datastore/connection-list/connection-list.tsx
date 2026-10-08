@@ -12,6 +12,7 @@ import {
   DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { ConnectorBackButton } from '../../connector-back-button'
 import type { ConnectionListProps, ConnectionListRow, ConnectionListStatus } from './types'
 import { ConnectionFilterMenu } from './filter-menu'
 import { filterConnections, unassignedProject } from './filter'
@@ -147,13 +148,10 @@ export function ConnectionList(props: ConnectionListProps) {
   }
 
   return <section className={styles.directory} aria-label={`${label} 连接列表`} data-scope={scopeKey} data-resizing={Boolean(layout.resizing)}>
-    <nav className={styles.breadcrumb} aria-label="面包屑">
-      <button type="button" onClick={onBack}>连接器</button><span aria-hidden="true">/</span>
-      <span aria-current="page">{label}</span>
-    </nav>
     <div className={styles.content}>
       <header className={styles.header}>
         <div className={styles.heading}>
+          <ConnectorBackButton onBack={onBack} />
           <div className={styles.titleLine}><h1>{label} 连接</h1><span className={styles.titleDivider} aria-hidden="true" /><span className={styles.count}>{rows.length} 个连接</span></div>
         </div>
         <div className={styles.headerActions}>

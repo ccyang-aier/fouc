@@ -2,7 +2,7 @@
 
 /** 连接器目录：使用与社区一致的浏览结构，专注单类系统资源。 */
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { motion } from "motion/react"
 import { CaretDown, CaretUp, CheckCircle, MagnifyingGlass, PlugsConnected } from "@phosphor-icons/react"
 import { ViewSwitcher, type ViewMode } from "@/components/ui/view-switcher"
@@ -38,6 +38,10 @@ export function ConnectorsCanvas({ onWorkbenchFocus, onOpenProject }: { onWorkbe
   const [detailId, setDetailId] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const toastTimerRef = useRef<number | null>(null)
+  const catalogScrollTop = useRef(0)
+  const restoreCatalogScroll = useCallback((element: HTMLDivElement | null) => {
+    if (element) element.scrollTop = catalogScrollTop.current
+  }, [])
 
   useEffect(() => {
     let disposed = false
@@ -195,7 +199,7 @@ export function ConnectorsCanvas({ onWorkbenchFocus, onOpenProject }: { onWorkbe
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-auto px-[18px] pb-20 pt-2.5">
+      <div ref={restoreCatalogScroll} onScroll={(event) => { catalogScrollTop.current = event.currentTarget.scrollTop }} className="min-h-0 flex-1 overflow-auto px-[18px] pb-20 pt-2.5">
         {visible.length === 0 ? (
           <div className="flex min-h-64 flex-col items-center justify-center text-center">
             <PlugsConnected className="size-6 text-[var(--muted)]" />

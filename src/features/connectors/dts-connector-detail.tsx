@@ -2,7 +2,7 @@
 
 import { forwardRef, useCallback, useEffect, useRef, useState } from 'react'
 import type { ComponentPropsWithoutRef } from 'react'
-import { ArrowSquareOut, ArrowsClockwise, Broadcast, CaretDown, CaretLeft, CheckCircle, CopySimple, DotsThree, SignOut, SpinnerGap, WarningCircle } from '@phosphor-icons/react'
+import { ArrowSquareOut, ArrowsClockwise, Broadcast, CaretDown, CheckCircle, CopySimple, DotsThree, SignOut, SpinnerGap, WarningCircle } from '@phosphor-icons/react'
 import type { ConnectorDetailDto, DtsFilterId, DtsTicketDetail, DtsTicketListResult, DtsTicketSummary } from '@fouc/shared'
 import { AppAlert, type AppAlertMessage, type AppAlertTone } from '@/components/app-alert'
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 import { clearDtsAuthProfile, dtsConnectorApi, openDtsAuthWindow } from './dts/api'
 import { DtsConnectorInspector } from './dts-connector-inspector'
 import { DtsTicketWorkspace } from './dts-ticket-workspace'
+import { ConnectorBackButton } from './connector-back-button'
 
 // 版本切换上下文（Web Mock 演示数据）：版本 → 环境 → PI 迭代 三级级联
 type DtsRuntimeContext = { version: string; environment: string; increment: string }
@@ -249,15 +250,13 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
 
   return (
     <section aria-label="DTS 连接器详情" className="relative flex h-full min-h-0 flex-col bg-panel">
-      <header className="flex h-[44px] shrink-0 items-center gap-3 border-b border-[var(--line)] px-4">
-        <button type="button" onClick={onBack} aria-label="返回连接器列表" className="flex size-7 shrink-0 items-center justify-center rounded-[6px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><CaretLeft className="size-3.5" weight="bold" /></button>
-        <nav aria-label="当前位置" className="flex min-w-0 items-center gap-1.5">
-          <button type="button" onClick={onBack} className="rounded-[5px] px-1 py-0.5 font-normal text-[var(--muted)] outline-none transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--muted-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><span className="text-[10px]">连接器</span></button>
-          <span className="text-[10px] text-[var(--muted)]" aria-hidden>/</span>
-          <h1 aria-current="page" className="truncate text-[10px] font-normal text-[var(--muted)]">DTS</h1>
+      <header className="flex min-h-14 shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-b border-[var(--line)] px-7 py-3 max-[1050px]:px-5">
+        <div className="flex min-w-0 items-center gap-3">
+          <ConnectorBackButton onBack={onBack} />
+          <h1 className="truncate text-[18px] leading-8 font-semibold tracking-[-0.02em] text-[var(--ink)]">DTS</h1>
           {connected && loading ? <span role="status" className="ml-1 flex items-center gap-1 text-[8.5px] text-[var(--muted)]"><SpinnerGap className="size-3 animate-spin" />同步中</span> : null}
-        </nav>
-        <div role="group" aria-label="DTS 运行上下文" className="ml-3 flex h-7 items-center gap-1.5 max-[900px]:hidden">
+        </div>
+        <div role="group" aria-label="DTS 运行上下文" className="flex h-7 items-center gap-1.5 max-[700px]:order-last max-[700px]:h-auto max-[700px]:w-full max-[700px]:flex-wrap">
           <DropdownMenu>
             <DropdownMenuTrigger asChild><ContextSegment label="选择 DTS 版本">DTS {runtime.version}</ContextSegment></DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="min-w-28">{DTS_VERSION_OPTIONS.map((version) => <DropdownMenuCheckboxItem key={version} checked={version === runtime.version} onCheckedChange={() => setRuntime((current) => ({ ...current, version }))}>{version}</DropdownMenuCheckboxItem>)}</DropdownMenuContent>

@@ -12,6 +12,7 @@ import {
   DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { ConnectorBackButton } from '../../connector-back-button'
 import type { ConnectionListProps, ConnectionListRow, ConnectionListStatus } from './types'
 import { ConnectionFilterMenu } from './filter-menu'
@@ -184,7 +185,7 @@ export function ConnectionList(props: ConnectionListProps) {
         </div>
       </div>
       {error && <div className={styles.error} role="alert"><span>{error}</span><button type="button" onClick={onRetry} disabled={loading}>重试</button></div>}
-      <div className={styles.tableViewport}>
+      <ScrollArea className={styles.tableViewport} orientation="horizontal">
         <table ref={table} className={styles.table} style={layout.tableStyle} aria-busy={loading}>
           <colgroup>
             <col className={styles.selectionCol} /><col className={styles.nameCol} style={{ width: layout.widths.name }} />
@@ -207,7 +208,7 @@ export function ConnectionList(props: ConnectionListProps) {
             {accountLabel && !hiddenColumns.includes('account') && <th scope="col" data-directory-column="account"><span className={styles.columnTitle}>{accountLabel}</span>{resizeHandle('account', accountLabel)}</th>}
             {authSourceLabel && !hiddenColumns.includes('authSource') && <th scope="col" data-directory-column="authSource"><span className={styles.columnTitle}>{authSourceLabel}</span>{resizeHandle('authSource', authSourceLabel)}</th>}
             {!hiddenColumns.includes('status') && sortHeader('status', '状态')}
-            <th scope="col" data-directory-column="actions"><span className={styles.columnTitle}>操作</span>{resizeHandle('actions', '操作')}</th>
+            <th scope="col" data-directory-column="actions"><span className={styles.columnTitle}>操作</span></th>
           </tr></thead>
           <tbody>
             {loading ? Array.from({ length: 3 }, (_, index) => <tr key={index} aria-hidden="true">{Array.from({ length: visibleColumnCount }, (_, column) => <td key={column}><span className={styles.skeleton} /></td>)}</tr>)
@@ -240,7 +241,7 @@ export function ConnectionList(props: ConnectionListProps) {
               })}
           </tbody>
         </table>
-      </div>
+      </ScrollArea>
       <footer className={styles.footer}>
         <span>{filteredActive ? `${filtered.length} 个匹配连接 · 共 ${rows.length} 个连接` : `共 ${rows.length} 个连接`}</span>
         <div className={styles.pagination}>

@@ -54,7 +54,8 @@
 .toolbarEnd { display: flex; min-width: 0; flex: 1; align-items: center; justify-content: flex-end; gap: 14px; }
 .columnButton { display: inline-flex; height: 30px; flex-shrink: 0; align-items: center; gap: 7px; border: 1px solid var(--line-strong); border-radius: 5px; padding: 0 10px; color: var(--list-ink); background: var(--panel); font: inherit; font-size: max(13px, var(--ui-size)); }
 
-.tableViewport { width: 100%; overflow-x: auto; }
+.tableViewport { width: 100%; min-width: 0; }
+.tableViewport:has(> [aria-hidden='true']) { padding-bottom: 12px; }
 .table { width: 100%; min-width: 950px; table-layout: fixed; border-collapse: collapse; text-align: left; }
 .selectionCol { width: 48px; }
 .nameCol { width: 17%; }

@@ -10,6 +10,7 @@ import './document-fonts.css';
 import './code-fonts.css';
 import { DocumentNavigationTools } from './document-tools';
 import type { DocumentLinkTarget } from './document-link';
+import { SelectionToolbar } from './components/selection-toolbar';
 
 export function DocumentEditorFrame({ children, header, sidebar, navigation, appearanceScope }: {
   children: ReactNode;
@@ -56,5 +57,6 @@ export function DocumentEditorBody({ editor, before }: { editor: Editor | null; 
   const spacing = documentParagraphSpacings.find(({ id }) => id === appearance.paragraphSpacing)!;
   return <div className={styles.scrollArea} data-document-scroll>
     <div className={styles.document} data-width={appearance.width} data-font={appearance.font} data-size={appearance.size} style={{ '--document-width': `${appearance.width}%`, '--document-font': font.family, '--document-code-font': codeFont.family, '--document-size': `${size.pixels}px`, '--document-line-height': appearance.lineHeight, '--document-paragraph-gap': `${spacing.pixels}px` } as CSSProperties}>{before}<EditorContent editor={editor} /></div>
+    <SelectionToolbar editor={editor} />
   </div>;
 }

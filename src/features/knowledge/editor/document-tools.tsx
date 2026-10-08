@@ -140,6 +140,7 @@ export function DocumentNavigationTools({ editor, title, target, header, sidebar
     onTogglePin: reference ? () => reference.togglePin({ title, target }) : undefined, pinned: reference?.pins.some(pin => pin.target.pageId === target.pageId) ?? false,
     outlineOpen: Boolean(editor) && outlineOpen, outlineId, outlineTrigger, onToggleOutline: editor ? () => setOutlineOpen(!outlineOpen) : undefined }}>
     <div ref={host} className={styles.toolsSurface}>
+      <div className={styles.documentPrimary}>
       <div className={styles.toolbarHost}>{header}
       {fullscreenError && <div role="alert" className={styles.search}>{fullscreenError}<button aria-label="关闭提示" onClick={() => setFullscreenError('')}><X size={16} /></button></div>}
       {searchOpen && <div className={`${styles.search} menu-surface`} role="search" aria-label="在文档中搜索">
@@ -172,8 +173,9 @@ export function DocumentNavigationTools({ editor, title, target, header, sidebar
             <button type="button" className={styles.railButton} aria-label={fullscreen ? '退出全屏' : '全屏'} title={fullscreen ? '退出全屏' : '全屏'} aria-pressed={fullscreen} onClick={() => { setFullscreenError(''); const request = fullscreen ? document.exitFullscreen() : host.current?.closest<HTMLElement>('[aria-label="页面编辑器"]')?.requestFullscreen(); void request?.catch(() => setFullscreenError('浏览器未允许全屏，请检查浏览器权限。')); }}>{fullscreen ? <ArrowsIn aria-hidden size={16} /> : <ArrowsOut aria-hidden size={16} />}<span>{fullscreen ? '退出全屏' : '全屏'}</span></button>
           </footer>
         </div>
-        {sidebar}
       </div>
+      </div>
+      {sidebar}
       <dialog ref={presentation} className={styles.presentation} aria-label="文档演示" onCancel={closePresentation} onKeyDown={navigatePresentation}>
         {presenting && <><header><span>{title || '无标题文档'}</span><button type="button" aria-label="退出演示" onClick={closePresentation}><X size={20} /></button></header>
           <div className={styles.stage}>{slides.length ? <iframe key={slide} title={`演示第 ${slide + 1} 页`} srcDoc={slides[slide]} sandbox="allow-same-origin" onLoad={event => { const document = event.currentTarget.contentDocument; document?.addEventListener('keydown', navigatePresentation); if (document) { document.body.tabIndex = 0; document.body.focus(); } }} /> : <div role={presentError ? 'alert' : 'status'}>{presentError || '正在准备演示…'}</div>}</div>

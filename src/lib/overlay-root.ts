@@ -12,5 +12,7 @@ export function setOverlayRoot(node: HTMLElement | null): void {
 }
 
 export function getOverlayRoot(): HTMLElement | undefined {
+  const fullscreen = typeof document === "undefined" ? null : document.fullscreenElement
+  if (fullscreen) return fullscreen as HTMLElement
   return overlayRoot ?? undefined
 }

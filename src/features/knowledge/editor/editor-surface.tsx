@@ -186,7 +186,7 @@ export function PageEditorSurface({
             <span>{updatedLabel}</span>
             <TaskProgress editor={editor} />
             <SyncIndicator view={view.sync} />
-            <span>{level === 'view' ? '仅可查看' : level === 'comment' ? '可评论' : '可编辑'} · 已被浏览</span>
+            <span>{level === 'view' ? '仅可查看' : level === 'comment' ? '可评论' : '可编辑'}</span><span>已被浏览</span>
             <PageCommentsTrigger scope={scope} open={commentsOpen} onToggle={() => { setHistoryOpen(false); setCommentsOpen(value => !value); }} />
             {pageTitle.fetchError ? <span role="alert" className="text-[var(--err-ink)]">标题暂不可用</span> : null}
             {pageTitle.saving ? <span>正在保存标题</span> : null}

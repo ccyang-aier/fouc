@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
-import { ConnectionDialogActions, type ConnectionPendingAction } from './connection-options/connection-dialog-actions';
+import { ConnectionDialogActions, type ConnectionPendingAction, type ConnectionVerification } from './connection-options/connection-dialog-actions';
 import type {
   RelationalConnectionConfig,
   RelationalProvider,
@@ -27,27 +27,17 @@ type Props = {
 
   provider: RelationalProvider;
   connection?: RelationalSavedConnection;
-  intent: 'save' | 'connect';
+  initialError?: string;
   onClose: () => void;
-  onSave: (name: string, config: RelationalConnectionConfig) => Promise<void>;
-  onConnect: (
-    password: string,
-    options?: DatabaseConnectionOptionsInput,
-  ) => Promise<void>;
-  onTest?: (
-    password: string,
-    options?: DatabaseConnectionOptionsInput,
-  ) => Promise<string>;
+  onSave: (name: string, config: RelationalConnectionConfig, verification?: ConnectionVerification) => Promise<void>;
 };
 
 export function RelationalDialog({
   provider,
   connection,
-  intent,
+  initialError = '',
   onClose,
   onSave,
-  onConnect,
-  onTest,
 }: Props) {
   const previous = connection?.config,
     network = previous?.provider !== 'sqlite' ? previous : undefined;
@@ -73,7 +63,7 @@ export function RelationalDialog({
   const [optionsValid, setOptionsValid] = useState(true),
     [password, setPassword] = useState('');
   const [pending, setPending] = useState<ConnectionPendingAction>(null),
-    [error, setError] = useState(''),
+    [error, setError] = useState(initialError),
     [testError, setTestError] = useState(''),
     [feedback, setFeedback] = useState('');
   const busy = pending !== null;
@@ -104,16 +94,7 @@ export function RelationalDialog({
                 connectionOptions,
               ),
             };
-      if (action === 'test' && intent === 'connect' && onTest) {
-        setFeedback(
-          await onTest(
-            password,
-            provider === 'sqlite'
-              ? undefined
-              : resolveConnectionOptions(provider, connectionOptions),
-          ),
-        );
-      } else if (action === 'test') {
+      if (action === 'test') {
         const request =
           provider === 'sqlite'
             ? config
@@ -134,14 +115,10 @@ export function RelationalDialog({
         setFeedback(
           `连接成功 · ${session.info.productName} · ${session.info.productVersion}`,
         );
-      } else if (intent === 'connect')
-        await onConnect(
-          password,
-          provider === 'sqlite'
-            ? undefined
-            : resolveConnectionOptions(provider, connectionOptions),
-        );
-      else await onSave(name, config);
+      } else await onSave(name, config, feedback && !testError ? {
+        password,
+        connectionOptions: provider === 'sqlite' ? undefined : resolveConnectionOptions(provider, connectionOptions),
+      } : undefined);
     } catch (reason) {
       (action === 'test' ? setTestError : setError)(reason instanceof Error ? reason.message : '连接操作失败');
     } finally {
@@ -155,9 +132,7 @@ export function RelationalDialog({
   return (
     <SqlDialog
       title={
-        intent === 'connect'
-          ? `打开 ${connection?.name}`
-          : connection
+        connection
             ? `编辑 ${label} 连接`
             : `新建 ${label} 连接`
       }
@@ -167,111 +142,102 @@ export function RelationalDialog({
     >
       <form className={formStyles.form} onSubmit={submit} onChange={clearFeedback}>
         <div className={formStyles.body}>
-          {intent === 'save' && (
+          <label>
+            连接名称
+            <input
+              autoFocus={!initialError}
+              required
+              maxLength={120}
+              disabled={busy}
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="例如：本地开发数据库"
+            />
+          </label>
+          {provider !== 'sqlite' ? (
             <>
-              <label>
-                连接名称
-                <input
-                  autoFocus
-                  required
-                  maxLength={120}
-                  disabled={busy}
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  placeholder="例如：本地开发数据库"
-                />
-              </label>
-              {provider !== 'sqlite' ? (
-                <>
-                  <ConnectionSourceAssistant
-                    provider={provider}
-                    fields={{
-                      provider,
-                      host,
-                      port: Number(port),
-                      username,
-                      password,
-                      database,
-                      connectionOptions,
-                    }}
-                    disabled={busy}
-                    onApply={({ fields }) => {
-                      setHost(fields.host);
-                      setPort(String(fields.port));
-                      setUsername(fields.username);
-                      setDatabase(fields.database);
-                      setPassword(fields.password);
-                      setConnectionOptions(fields.connectionOptions);
-                      clearFeedback();
-                    }}
-                  />
-                  <div className={styles.formColumns}>
-                    <label>
-                      主机
-                      <input
-                        required
-                        disabled={busy}
-                        value={host}
-                        onChange={(event) => setHost(event.target.value)}
-                      />
-                    </label>
-                    <label>
-                      端口
-                      <input
-                        required
-                        type="number"
-                        min={1}
-                        max={65535}
-                        disabled={busy}
-                        value={port}
-                        onChange={(event) => setPort(event.target.value)}
-                      />
-                    </label>
-                  </div>
-                  <label>
-                    数据库
-                    <input
-                      required={provider === 'postgres'}
-                      disabled={busy}
-                      value={database}
-                      onChange={(event) => setDatabase(event.target.value)}
-                      placeholder={
-                        provider === 'mysql'
-                          ? '可留空，在工作台选择数据库'
-                          : undefined
-                      }
-                    />
-                  </label>
-                  <label>
-                    用户名
-                    <input
-                      required
-                      disabled={busy}
-                      value={username}
-                      autoComplete="off"
-                      onChange={(event) => setUsername(event.target.value)}
-                    />
-                  </label>
-                </>
-              ) : (
+              <ConnectionSourceAssistant
+                provider={provider}
+                fields={{
+                  provider,
+                  host,
+                  port: Number(port),
+                  username,
+                  password,
+                  database,
+                  connectionOptions,
+                }}
+                disabled={busy}
+                onApply={({ fields }) => {
+                  setHost(fields.host);
+                  setPort(String(fields.port));
+                  setUsername(fields.username);
+                  setDatabase(fields.database);
+                  setPassword(fields.password);
+                  setConnectionOptions(fields.connectionOptions);
+                  clearFeedback();
+                }}
+              />
+              <div className={styles.formColumns}>
                 <label>
-                  设备上的 SQLite 文件
+                  主机
                   <input
                     required
                     disabled={busy}
-                    value={path}
-                    onChange={(event) => setPath(event.target.value)}
-                    placeholder="C:\\data\\application.db"
+                    value={host}
+                    onChange={(event) => setHost(event.target.value)}
                   />
-                  <small>使用绝对路径；文件须位于当前设备并已存在。</small>
                 </label>
-              )}
+                <label>
+                  端口
+                  <input
+                    required
+                    type="number"
+                    min={1}
+                    max={65535}
+                    disabled={busy}
+                    value={port}
+                    onChange={(event) => setPort(event.target.value)}
+                  />
+                </label>
+              </div>
+              <label>
+                数据库
+                <input
+                  required={provider === 'postgres'}
+                  disabled={busy}
+                  value={database}
+                  onChange={(event) => setDatabase(event.target.value)}
+                  placeholder={
+                    provider === 'mysql'
+                      ? '可留空，在工作台选择数据库'
+                      : undefined
+                  }
+                />
+              </label>
+              <label>
+                用户名
+                <input
+                  required
+                  disabled={busy}
+                  value={username}
+                  autoComplete="off"
+                  onChange={(event) => setUsername(event.target.value)}
+                />
+              </label>
             </>
-          )}
-          {intent === 'connect' && provider !== 'sqlite' && (
-            <p className={styles.hint}>
-              {host}:{port} · {database || '默认数据库'} · {username}
-            </p>
+          ) : (
+            <label>
+              设备上的 SQLite 文件
+              <input
+                required
+                disabled={busy}
+                value={path}
+                onChange={(event) => setPath(event.target.value)}
+                placeholder="C:\\data\\application.db"
+              />
+              <small>使用绝对路径；文件须位于当前设备并已存在。</small>
+            </label>
           )}
           {provider !== 'sqlite' && (
             <>
@@ -279,13 +245,13 @@ export function RelationalDialog({
                 连接密码
                 <input
                   type="password"
-                  autoFocus={intent === 'connect'}
+                  autoFocus={Boolean(initialError)}
                   disabled={busy}
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   autoComplete="off"
                 />
-                <small>仅用于本次连接或测试，不会保存到连接配置。</small>
+                <small>密码临时保留以便直接打开工作台，不写入连接配置。</small>
               </label>
               <ConnectionOptionsFields
                 provider={provider}
@@ -303,7 +269,7 @@ export function RelationalDialog({
           )}
         </div>
         <ConnectionDialogActions pending={pending} valid={optionsValid} feedback={feedback} testError={testError}
-          submitLabel={intent === 'connect' ? '连接并打开' : '保存连接'} onTest={() => void perform('test')} onClose={onClose} />
+          submitLabel="保存连接" onTest={() => void perform('test')} onClose={onClose} />
       </form>
     </SqlDialog>
   );

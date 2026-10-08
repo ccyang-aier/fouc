@@ -2,7 +2,7 @@
   width: min(620px, calc(100vw - 32px));
   max-width: 620px;
   max-height: calc(100dvh - 56px);
-  padding: 0;
+  padding: 0 0 8px;
 }
 .dialog[open] {
   display: flex;
@@ -11,6 +11,7 @@
 }
 .dialog > header {
   flex-shrink: 0;
+  padding: 16px 22px 12px;
 }
 .form {
   display: flex;
@@ -21,8 +22,8 @@
 .body {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 20px 22px;
+  gap: 12px;
+  padding: 8px 22px 16px;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -32,7 +33,7 @@
 .body > div > label {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 6px;
   color: var(--ink-soft);
   font-size: 13px;
   min-width: 0;
@@ -43,19 +44,22 @@
   width: 100%;
   min-width: 0;
   background: var(--panel);
-  border: 1px solid var(--line);
+  border: 1px solid var(--control-border);
   border-radius: 5px;
   padding: 6px 9px;
   color: var(--ink);
   font: 13px var(--font-sans);
+  outline: none;
+  box-shadow: none;
 }
+.body input:focus { border-color: var(--accent); }
 .body input:disabled {
   opacity: 0.55;
 }
 .body > label > small {
   color: var(--muted-strong);
   font-size: 11px;
-  line-height: 1.7;
+  line-height: 1.5;
 }
 .body > p {
   margin: 0;
@@ -111,9 +115,9 @@
     max-height: calc(100dvh - 24px);
   }
   .body {
-    padding: 15px 13px;
-    gap: 14px;
+    padding: 6px 13px 14px;
   }
+  .dialog > header { padding: 14px 13px 10px; }
   .columns {
     grid-template-columns: minmax(0, 1fr);
   }

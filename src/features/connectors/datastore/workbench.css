@@ -133,7 +133,7 @@ html[data-theme="dark"] .mw {
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--mw-line);
-  background: var(--mw-sidebar);
+  background: var(--panel);
 }
 .mw-explorer-collapsed {
   flex-basis: 38px;

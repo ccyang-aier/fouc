@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent, type MouseEvent, type PointerEvent, type RefObject } from 'react'
 
 export type DirectoryColumn = 'name' | 'target' | 'projects' | 'tags' | 'account' | 'authSource' | 'status' | 'actions'
-type Widths = Partial<Record<DirectoryColumn, number>>
-const minimum: Record<DirectoryColumn, number> = { name: 130, target: 100, projects: 80, tags: 80, account: 96, authSource: 90, status: 110, actions: 120 }
+type ResizableColumn = Exclude<DirectoryColumn, 'actions'>
+type Widths = Partial<Record<ResizableColumn, number>>
+const minimum: Record<ResizableColumn, number> = { name: 130, target: 100, projects: 80, tags: 80, account: 96, authSource: 90, status: 110 }
+const actionsWidth = 120
 const prefix = 'fouc:connection-directory:widths:'
 const empty: Widths = {}, snapshots = new Map<string, Widths>(), listeners = new Set<() => void>()
 
@@ -14,7 +16,7 @@ function snapshot(scope: string): Widths {
   const widths: Widths = {}
   try {
     const raw = JSON.parse(window.localStorage.getItem(prefix + scope) ?? '{}')
-    for (const column of Object.keys(minimum) as DirectoryColumn[]) {
+    for (const column of Object.keys(minimum) as ResizableColumn[]) {
       const width = raw?.[column]
       if (typeof width === 'number' && Number.isFinite(width) && width > 0) widths[column] = Math.round(width)
     }
@@ -38,7 +40,7 @@ function save(scope: string, widths: Widths) {
   try { window.localStorage.setItem(prefix + scope, JSON.stringify(widths)) } catch { /* Keep the applied in-memory layout. */ }
   for (const notify of listeners) notify()
 }
-type Gesture = { column: DirectoryColumn; startX: number; widths: Widths; element: HTMLButtonElement; pointerId: number }
+type Gesture = { column: ResizableColumn; startX: number; widths: Widths; element: HTMLButtonElement; pointerId: number }
 
 /** Freeze measured columns during a gesture, then persist once under provider. */
 export function useDirectoryColumnWidths(scope: string, table: RefObject<HTMLTableElement | null>, columns: readonly DirectoryColumn[]) {
@@ -53,6 +55,7 @@ export function useDirectoryColumnWidths(scope: string, table: RefObject<HTMLTab
     const measured = { ...saved }
     table.current?.querySelectorAll<HTMLElement>('[data-directory-column]').forEach(header => {
       const column = header.dataset.directoryColumn as DirectoryColumn
+      if (column === 'actions') return
       measured[column] = Math.round(header.getBoundingClientRect().width)
     })
     return measured
@@ -74,7 +77,7 @@ export function useDirectoryColumnWidths(scope: string, table: RefObject<HTMLTab
     if (gesture?.element.hasPointerCapture(gesture.pointerId)) gesture.element.releasePointerCapture(gesture.pointerId)
   }, [])
 
-  function start(event: PointerEvent<HTMLButtonElement>, column: DirectoryColumn) {
+  function start(event: PointerEvent<HTMLButtonElement>, column: ResizableColumn) {
     if (event.button !== 0 || active.current) return
     event.preventDefault(); event.stopPropagation(); event.currentTarget.focus()
     active.current = { column, startX: event.clientX, widths: measure(), element: event.currentTarget, pointerId: event.pointerId }
@@ -88,18 +91,18 @@ export function useDirectoryColumnWidths(scope: string, table: RefObject<HTMLTab
     if (active.current?.pointerId !== event.pointerId) return
     event.stopPropagation(); stop(cancel, event.clientX)
   }
-  function key(event: KeyboardEvent<HTMLButtonElement>, column: DirectoryColumn) {
+  function key(event: KeyboardEvent<HTMLButtonElement>, column: ResizableColumn) {
     if (event.key === 'Escape' && active.current) { event.preventDefault(); event.stopPropagation(); stop(true); return }
     if (active.current || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return
     event.preventDefault(); event.stopPropagation()
     const measured = measure(), step = event.shiftKey ? 40 : 10
     save(scope, { ...measured, [column]: Math.max(minimum[column], measured[column]! + (event.key === 'ArrowRight' ? step : -step)) })
   }
-  const fixed = columns.every(column => widths[column] !== undefined)
+  const fixed = columns.every(column => column === 'actions' || widths[column] !== undefined)
   return {
     widths, resizing,
-    tableStyle: fixed ? { width: 48 + columns.reduce((total, column) => total + widths[column]!, 0), minWidth: 0 } : undefined,
-    handleProps: (column: DirectoryColumn) => ({
+    tableStyle: fixed ? { width: 48 + actionsWidth + columns.reduce((total, column) => total + (column === 'actions' ? 0 : widths[column]!), 0), minWidth: '100%' } : undefined,
+    handleProps: (column: ResizableColumn) => ({
       onPointerDown: (event: PointerEvent<HTMLButtonElement>) => start(event, column),
       onPointerMove: move,
       onPointerUp: (event: PointerEvent<HTMLButtonElement>) => finish(event),

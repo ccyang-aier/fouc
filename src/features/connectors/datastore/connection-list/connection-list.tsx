@@ -50,9 +50,9 @@ function RowActions({ row, pending, onOpen, onEdit, onRemove, onManageTags }: {
     <Tooltip>
       <TooltipTrigger asChild>
         <button type="button" className={`fouc-action ${styles.iconButton}`} aria-label={`打开 ${row.name} 工作台`}
-          disabled={pending || row.status !== 'passed'} onClick={() => onOpen(row)}><ArrowSquareOut size={16} weight="bold" /></button>
+          disabled={pending || row.status === 'testing'} onClick={() => onOpen(row)}><ArrowSquareOut size={16} weight="bold" /></button>
       </TooltipTrigger>
-      <TooltipContent>{row.status === 'passed' ? '打开工作台' : '请先测试连接'}</TooltipContent>
+      <TooltipContent>{row.status === 'passed' ? '打开工作台' : row.status === 'testing' ? '正在测试连接' : '编辑并测试连接'}</TooltipContent>
     </Tooltip>
     <Tooltip>
       <TooltipTrigger asChild>
@@ -132,7 +132,7 @@ export function ConnectionList(props: ConnectionListProps) {
     setSort(current => ({ column, direction: current?.column === column && current.direction === 1 ? -1 : 1 }))
     setPage(1)
   }
-  function resizeHandle(column: DirectoryColumn, title: string) {
+  function resizeHandle(column: Exclude<DirectoryColumn, 'actions'>, title: string) {
     return <button type="button" className={styles.resizeHandle} aria-label={`调整${title}列宽`} title="拖动调整列宽 · ← / →"
       {...layout.handleProps(column)} />
   }
@@ -195,7 +195,7 @@ export function ConnectionList(props: ConnectionListProps) {
             {accountLabel && !hiddenColumns.includes('account') && <col className={styles.accountCol} style={{ width: layout.widths.account }} />}
             {authSourceLabel && !hiddenColumns.includes('authSource') && <col className={styles.accountCol} style={{ width: layout.widths.authSource }} />}
             {!hiddenColumns.includes('status') && <col className={styles.statusCol} style={{ width: layout.widths.status }} />}
-            <col className={styles.actionsCol} style={{ width: layout.widths.actions }} />
+            <col className={styles.actionsCol} style={{ width: layout.tableStyle ? 'auto' : undefined }} />
           </colgroup>
           <thead><tr>
             <th className={styles.selectionCell} scope="col"><input type="checkbox" aria-label="选择当前页所有连接" checked={allPageSelected}

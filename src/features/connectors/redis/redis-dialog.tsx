@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
-import { ConnectionDialogActions, type ConnectionPendingAction } from '../datastore/connection-options/connection-dialog-actions';
+import { ConnectionDialogActions, type ConnectionPendingAction, type ConnectionVerification } from '../datastore/connection-options/connection-dialog-actions';
 import type {
   RedisConnectionConfig,
   RedisSavedConnection,
@@ -24,25 +24,15 @@ import formStyles from '../datastore/connection-options/connection-dialog.module
 
 export function RedisDialog({
   connection,
-  intent,
+  initialError = '',
   onClose,
   onSave,
-  onConnect,
-  onTest,
 }: {
 
   connection?: RedisSavedConnection;
-  intent: 'save' | 'connect';
+  initialError?: string;
   onClose: () => void;
-  onSave: (name: string, config: RedisConnectionConfig) => Promise<void>;
-  onConnect: (
-    password: string,
-    options: DatabaseConnectionOptionsInput,
-  ) => Promise<void>;
-  onTest?: (
-    password: string,
-    options?: DatabaseConnectionOptionsInput,
-  ) => Promise<string>;
+  onSave: (name: string, config: RedisConnectionConfig, verification?: ConnectionVerification) => Promise<void>;
 }) {
   const previous = connection?.config;
   const [name, setName] = useState(connection?.name ?? '');
@@ -57,7 +47,7 @@ export function RedisDialog({
   const [optionsValid, setOptionsValid] = useState(true),
     [password, setPassword] = useState('');
   const [pending, setPending] = useState<ConnectionPendingAction>(null),
-    [error, setError] = useState(''),
+    [error, setError] = useState(initialError),
     [testError, setTestError] = useState(''),
     [feedback, setFeedback] = useState('');
   const busy = pending !== null;
@@ -75,14 +65,7 @@ export function RedisDialog({
         database: Number(database),
         connectionOptions: publicConnectionOptions('redis', connectionOptions),
       };
-      if (test && intent === 'connect' && onTest) {
-        setFeedback(
-          await onTest(
-            password,
-            resolveConnectionOptions('redis', connectionOptions),
-          ),
-        );
-      } else if (test) {
+      if (test) {
         const base = `/api/database/redis/sessions`;
         const session = await backendFetch<RedisSession>(base, {
           method: 'POST',
@@ -99,12 +82,9 @@ export function RedisDialog({
         setFeedback(
           `连接成功 · Redis ${session.version ?? '版本未知'} · DB ${session.database}`,
         );
-      } else if (intent === 'connect')
-        await onConnect(
-          password,
-          resolveConnectionOptions('redis', connectionOptions),
-        );
-      else await onSave(name, config);
+      } else await onSave(name, config, feedback && !testError ? {
+        password, connectionOptions: resolveConnectionOptions('redis', connectionOptions),
+      } : undefined);
     } catch (reason) {
       (test ? setTestError : setError)(reason instanceof Error ? reason.message : '连接操作失败');
     } finally {
@@ -118,9 +98,7 @@ export function RedisDialog({
   return (
     <SqlDialog
       title={
-        intent === 'connect'
-          ? `打开 ${connection?.name}`
-          : connection
+        connection
             ? '编辑 Redis 连接'
             : '新建 Redis 连接'
       }
@@ -130,97 +108,89 @@ export function RedisDialog({
     >
       <form className={formStyles.form} onSubmit={submit} onChange={clearFeedback}>
         <div className={formStyles.body}>
-          {intent === 'save' ? (
-            <>
-              <label>
-                连接名称
-                <input
-                  required
-                  autoFocus
-                  maxLength={120}
-                  disabled={busy}
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                />
-              </label>
-              <ConnectionSourceAssistant
-                provider="redis"
-                fields={{
-                  provider: 'redis',
-                  host,
-                  port: Number(port),
-                  username,
-                  password,
-                  database,
-                  connectionOptions,
-                }}
+          <label>
+            连接名称
+            <input
+              required
+              autoFocus={!initialError}
+              maxLength={120}
+              disabled={busy}
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+            />
+          </label>
+          <ConnectionSourceAssistant
+            provider="redis"
+            fields={{
+              provider: 'redis',
+              host,
+              port: Number(port),
+              username,
+              password,
+              database,
+              connectionOptions,
+            }}
+            disabled={busy}
+            onApply={({ fields }) => {
+              setHost(fields.host);
+              setPort(String(fields.port));
+              setUsername(fields.username);
+              setDatabase(fields.database);
+              setPassword(fields.password);
+              setConnectionOptions(fields.connectionOptions);
+              clearFeedback();
+            }}
+          />
+          <div className={styles.formColumns}>
+            <label>
+              主机
+              <input
+                required
                 disabled={busy}
-                onApply={({ fields }) => {
-                  setHost(fields.host);
-                  setPort(String(fields.port));
-                  setUsername(fields.username);
-                  setDatabase(fields.database);
-                  setPassword(fields.password);
-                  setConnectionOptions(fields.connectionOptions);
-                  clearFeedback();
-                }}
+                value={host}
+                onChange={(event) => setHost(event.target.value)}
               />
-              <div className={styles.formColumns}>
-                <label>
-                  主机
-                  <input
-                    required
-                    disabled={busy}
-                    value={host}
-                    onChange={(event) => setHost(event.target.value)}
-                  />
-                </label>
-                <label>
-                  端口
-                  <input
-                    required
-                    type="number"
-                    min={1}
-                    max={65535}
-                    disabled={busy}
-                    value={port}
-                    onChange={(event) => setPort(event.target.value)}
-                  />
-                </label>
-              </div>
-              <div className={formStyles.columns}>
-                <label>
-                  ACL 用户名
-                  <input
-                    placeholder="默认用户可留空"
-                    disabled={busy}
-                    value={username}
-                    onChange={(event) => setUsername(event.target.value)}
-                  />
-                </label>
-                <label>
-                  数据库编号
-                  <input
-                    required
-                    type="number"
-                    min={0}
-                    max={2147483646}
-                    disabled={busy}
-                    value={database}
-                    onChange={(event) => setDatabase(event.target.value)}
-                  />
-                </label>
-              </div>
-            </>
-          ) : (
-            <p className={styles.hint}>
-              {host}:{port} · DB {database}
-            </p>
-          )}
+            </label>
+            <label>
+              端口
+              <input
+                required
+                type="number"
+                min={1}
+                max={65535}
+                disabled={busy}
+                value={port}
+                onChange={(event) => setPort(event.target.value)}
+              />
+            </label>
+          </div>
+          <div className={formStyles.columns}>
+            <label>
+              ACL 用户名
+              <input
+                placeholder="默认用户可留空"
+                disabled={busy}
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+              />
+            </label>
+            <label>
+              数据库编号
+              <input
+                required
+                type="number"
+                min={0}
+                max={2147483646}
+                disabled={busy}
+                value={database}
+                onChange={(event) => setDatabase(event.target.value)}
+              />
+            </label>
+          </div>
           <label>
             连接密码
             <input
-              autoFocus={intent === 'connect'}
+              autoFocus={Boolean(initialError)}
               type="password"
               autoComplete="off"
               disabled={busy}
@@ -228,7 +198,7 @@ export function RedisDialog({
               onChange={(event) => setPassword(event.target.value)}
             />
             <small>
-              密码仅用于本次测试或会话，连接配置保存在当前设备。
+              密码临时保留以便直接打开工作台，不写入连接配置。
             </small>
           </label>
           <ConnectionOptionsFields
@@ -248,7 +218,7 @@ export function RedisDialog({
           )}
         </div>
         <ConnectionDialogActions pending={pending} valid={optionsValid} feedback={feedback} testError={testError}
-          submitLabel={intent === 'connect' ? '连接并打开' : '保存连接'} onTest={() => void perform(true)} onClose={onClose} />
+          submitLabel="保存连接" onTest={() => void perform(true)} onClose={onClose} />
       </form>
     </SqlDialog>
   );

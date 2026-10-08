@@ -6,7 +6,7 @@ import type { DatabaseObjectInfo, RelationalSavedConnection, RelationalSession, 
 import type { TableTransferInput, TableTransferPlan, TableTransferProgress, TableTransferResult } from '@fouc/shared/table-transfer'
 import { backendFetch } from '@/lib/backend'
 import { SqlDialog } from './sql-library-dialog'
-import { RelationalDialog } from './relational-dialog'
+import { RelationalAccessDialog } from './relational-access-dialog'
 import { TableTransferPanel } from './table-transfer'
 import common from './relational.module.css'
 import styles from './table-transfer-action.module.css'
@@ -62,6 +62,13 @@ function TransferDialog({ session, schema, table, name, onClose }: { session: Re
     if (!live.current) { await backendFetch(`${directory}/sessions/${value.id}`, { method: 'DELETE' }); return }
     ownedTarget.current = value.id; setTarget(value); setConnecting(false); setError('')
   }
+  async function beginConnect() {
+    if (connection?.config.provider !== 'sqlite') { setConnecting(true); return }
+    setBusy(true); setError('')
+    try { await connect('') }
+    catch (reason) { if (live.current) setError(reason instanceof Error ? reason.message : '连接目标失败') }
+    finally { if (live.current) setBusy(false) }
+  }
   async function unlock() {
     setBusy(true); setError('')
     try { setTarget(await backendFetch<RelationalSession>(`${targetBase}/write-access`, { method: 'PUT', body: JSON.stringify({ enabled: !targetWritable }) })) }
@@ -96,8 +103,8 @@ function TransferDialog({ session, schema, table, name, onClose }: { session: Re
     } finally { if (cancel) control.signal.removeEventListener('abort', cancel); if (live.current) setBusy(false) }
   }
   return <SqlDialog title="跨库表数据传输" className={styles.dialog} busy={busy} onClose={onClose}><div className={styles.body}>
-    <div className={styles.targetControls}><div><strong>传输到已有表</strong><small>目标使用独立连接，退出时关闭；准备计划不写入。</small></div>{!target ? <><label>目标连接<select aria-label="传输目标连接" value={connectionId} onChange={event => setConnectionId(event.target.value)} disabled={busy}><option value="">选择已保存连接</option>{connections.map(value => <option key={value.id} value={value.id}>{value.name} · {value.config.provider}</option>)}</select></label><button type="button" className={common.primary} disabled={!connection || busy} onClick={() => setConnecting(true)}>连接目标</button></> : <><label>目标 Schema<select aria-label="传输目标Schema" value={targetSchema} disabled={busy} onChange={event => { setTargetSchema(event.target.value); setTargetStructure(null); setTargetTable('') }}>{schemas.map(value => <option key={value}>{value}</option>)}</select></label><label>目标表<select aria-label="传输目标表" value={targetTable} disabled={busy} onChange={event => { setTargetTable(event.target.value); setTargetStructure(null) }}><option value="">选择已有普通表</option>{tables.map(value => <option key={value.name}>{value.name}</option>)}</select></label><button type="button" disabled={busy} className={common.secondary} onClick={() => void unlock()}>{targetWritable ? <LockOpen size={14} /> : <Lock size={14} />}{targetWritable ? '锁定目标写入' : '解锁传输目标写入'}</button></>}</div>
+    <div className={styles.targetControls}><div><strong>传输到已有表</strong><small>目标使用独立连接，退出时关闭；准备计划不写入。</small></div>{!target ? <><label>目标连接<select aria-label="传输目标连接" value={connectionId} onChange={event => setConnectionId(event.target.value)} disabled={busy}><option value="">选择已保存连接</option>{connections.map(value => <option key={value.id} value={value.id}>{value.name} · {value.config.provider}</option>)}</select></label><button type="button" className={common.primary} disabled={!connection || busy} onClick={() => void beginConnect()}>连接目标</button></> : <><label>目标 Schema<select aria-label="传输目标Schema" value={targetSchema} disabled={busy} onChange={event => { setTargetSchema(event.target.value); setTargetStructure(null); setTargetTable('') }}>{schemas.map(value => <option key={value}>{value}</option>)}</select></label><label>目标表<select aria-label="传输目标表" value={targetTable} disabled={busy} onChange={event => { setTargetTable(event.target.value); setTargetStructure(null) }}><option value="">选择已有普通表</option>{tables.map(value => <option key={value.name}>{value.name}</option>)}</select></label><button type="button" disabled={busy} className={common.secondary} onClick={() => void unlock()}>{targetWritable ? <LockOpen size={14} /> : <Lock size={14} />}{targetWritable ? '锁定目标写入' : '解锁传输目标写入'}</button></>}</div>
     {error && <p className={styles.error} role="alert">{error}<button type="button" onClick={() => { setError(''); setRevision(value => value + 1) }}>重试读取</button></p>}
     {source && targetStructure && targetWritable ? <TableTransferPanel source={source} target={targetStructure} sourceLabel={name} targetLabel={connection?.name} onPrepare={prepare} onExecute={execute} onComplete={() => setRevision(value => value + 1)} /> : <div className={styles.empty}><ArrowsLeftRight size={28} /><strong>{!source ? '读取源结构…' : !target ? '选择并连接传输目标' : !targetWritable ? '显式解锁目标写入后配置映射' : !targetTable ? '选择一张已有目标表' : '读取目标结构…'}</strong><span>{schema}.{table} → {target ? target.info.productName : '独立原生连接'} · 不清表，不自动重试</span></div>}
-  </div>{connecting && connection && <RelationalDialog provider={connection.config.provider} connection={connection} intent="connect" onClose={() => setConnecting(false)} onConnect={connect} onSave={async () => undefined} />}</SqlDialog>
+  </div>{connecting && connection && connection.config.provider !== 'sqlite' && <RelationalAccessDialog name={connection.name} config={connection.config} onClose={() => setConnecting(false)} onConnect={connect} />}</SqlDialog>
 }

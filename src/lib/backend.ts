@@ -42,7 +42,7 @@ async function resolveEndpoint(): Promise<Endpoint> {
 }
 
 export class BackendRequestError extends Error {
-  constructor(message: string, public readonly status: number) { super(message); this.name = 'BackendRequestError' }
+  constructor(message: string, public readonly status: number, public readonly code?: string) { super(message); this.name = 'BackendRequestError' }
 }
 export async function backendFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const endpoint = await resolveEndpoint()
@@ -56,7 +56,7 @@ export async function backendFetch<T>(path: string, init?: RequestInit): Promise
   })
   const body = (await response.json()) as ApiResult<T>
   if (!body.ok) {
-    throw new BackendRequestError(body.error?.message ?? `backend error (${response.status})`, response.status)
+    throw new BackendRequestError(body.error?.message ?? `backend error (${response.status})`, response.status, body.error?.code)
   }
   return body.data
 }

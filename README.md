@@ -58,7 +58,7 @@ pnpm dev:all
 node scripts/seed-connector-demo.mjs
 ```
 
-该命令启动或复用 MySQL 开发容器，在设备连接目录配置 SQLite 和 MySQL 电商运营示例，各包含 4 张表、1 个视图与 18 笔订单；重复执行复用同名连接。SQLite 文件位于 `.runtime/connector-demo/commerce.sqlite`，MySQL 使用独立示例库与只读账号，重新连接所需密码位于 Git 忽略的 `.runtime/connector-demo/mysql-connection.json`。
+该命令启动或复用 MySQL 开发容器，在设备连接目录配置 SQLite 和 MySQL 电商运营示例，各包含 4 张表、1 个视图与 18 笔订单；重复执行复用同名连接。SQLite 文件位于 `.runtime/connector-demo/commerce.sqlite`，MySQL 使用独立示例库与只读账号，设备服务重启后重新验证所需密码位于 Git 忽略的 `.runtime/connector-demo/mysql-connection.json`。
 
 Web 开发默认连接真实 sidecar。需要启用浏览器 Mock 时，在启动进程中设置连接器列表（逗号分隔）：
 

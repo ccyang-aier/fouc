@@ -272,7 +272,6 @@ export function RelationalWorkbench({
         >
           <ArrowLeft size={16} />
         </button>
-        <span className={styles.connectionMark}><Database size={17} /></span>
         <strong className={styles.breadcrumbName} title={name}>
           {name}
         </strong>

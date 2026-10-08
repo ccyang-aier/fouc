@@ -81,16 +81,17 @@ test('favorite immediately reflects intent, stays enabled while saving, and roll
 })
 
 const widths = { name: 180, target: 200, projects: 150, tags: 130, status: 140, actions: 136 }
-async function renderDirectory(scope: string) {
+async function renderDirectory(scope: string, overrides: Partial<ConnectionListProps> = {}) {
   const noop = () => {}
   const props: ConnectionListProps = { label: 'SQLite', targetLabel: '文件', scopeKey: scope, rows: [row], projects: [], loading: false, error: '', pendingIds: [], selectedIds: [], batchProgress: null, batchResult: null, headerActions: null,
-    onBack: noop, onCreate: noop, onRetry: noop, onOpen: noop, onEdit: noop, onRemove: noop, onOpenProject: noop, onManageTags: noop, onFavorite: async () => {}, onSelectionChange: noop, onBatchAction: noop, onDismissBatchResult: noop }
+    onBack: noop, onCreate: noop, onRetry: noop, onOpen: noop, onEdit: noop, onRemove: noop, onOpenProject: noop, onManageTags: noop, onFavorite: async () => {}, onSelectionChange: noop, onBatchAction: noop, onDismissBatchResult: noop, ...overrides }
   await act(async () => root.render(<TooltipProvider><ConnectionList key={scope} {...props} /></TooltipProvider>))
   for (const header of document.querySelectorAll<HTMLElement>('[data-directory-column]')) {
     const column = header.dataset.directoryColumn as keyof typeof widths
     const index = [...header.parentElement!.children].indexOf(header)
     header.getBoundingClientRect = () => ({ width: parseFloat(document.querySelectorAll('col')[index].style.width) || widths[column] }) as DOMRect
-    const handle = header.querySelector<HTMLButtonElement>('[aria-label^="调整"]')!, captured = new Set<number>()
+    const handle = header.querySelector<HTMLButtonElement>('[aria-label^="调整"]'), captured = new Set<number>()
+    if (!handle) continue
     handle.setPointerCapture = id => { captured.add(id) }
     handle.hasPointerCapture = id => captured.has(id)
     handle.releasePointerCapture = id => { captured.delete(id) }
@@ -105,6 +106,20 @@ function width(column: keyof typeof widths) {
   return document.querySelectorAll('col')[index].style.width
 }
 const preference = (scope: string) => browser.localStorage.getItem('fouc:connection-directory:widths:' + scope)
+
+test('open remains available for unverified connections and is blocked during verification', async () => {
+  const opened: string[] = [];
+  for (const status of ['untested', 'failed', 'passed'] as const) {
+    await renderDirectory(`open-${status}`, { rows: [{ ...row, status }], onOpen: selected => { opened.push(selected.id); } });
+    const open = document.querySelector<HTMLButtonElement>(`[aria-label="打开 ${row.name} 工作台"]`)!;
+    expect(open.disabled).toBe(false);
+    await act(async () => open.click());
+  }
+  expect(opened).toEqual([row.id, row.id, row.id]);
+  await renderDirectory('open-testing', { rows: [{ ...row, status: 'testing' }] });
+  expect(document.querySelector<HTMLButtonElement>(`[aria-label="打开 ${row.name} 工作台"]`)!.disabled).toBe(true);
+  expect(document.querySelector('th:last-child [aria-label^="调整"]')).toBeNull();
+});
 
 test('column drag changes only its target, commits once, and never sorts the header', async () => {
   await renderDirectory('resize-a:sqlite')

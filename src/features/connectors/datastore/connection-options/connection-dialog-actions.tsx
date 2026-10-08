@@ -4,8 +4,10 @@ import { ArrowsClockwise, CheckCircle, WarningCircle } from '@phosphor-icons/rea
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import common from '../relational.module.css'
 import styles from './connection-dialog.module.css'
+import type { DatabaseConnectionOptionsInput } from '@fouc/shared/connection-options'
 
 export type ConnectionPendingAction = 'test' | 'submit' | null
+export type ConnectionVerification = { password: string; connectionOptions?: DatabaseConnectionOptionsInput }
 
 export function ConnectionDialogActions({ pending, valid, feedback, testError, submitLabel, onTest, onClose }: {
   pending: ConnectionPendingAction
@@ -20,7 +22,7 @@ export function ConnectionDialogActions({ pending, valid, feedback, testError, s
   const detail = testError || feedback
   return <footer className={common.dialogFooter}>
     <div className={styles.testGroup}>
-      <button type="button" className={common.secondary} disabled={busy || !valid} aria-busy={pending === 'test'} onClick={onTest}>
+      <button type="button" className={`fouc-action ${common.secondary}`} disabled={busy || !valid} aria-busy={pending === 'test'} onClick={onTest}>
         <ArrowsClockwise size={15} weight="bold" className={pending === 'test' ? styles.spinner : undefined} />
         {pending === 'test' ? '测试中' : '测试连接'}
       </button>
@@ -35,7 +37,7 @@ export function ConnectionDialogActions({ pending, valid, feedback, testError, s
       </Tooltip>}
     </div>
     <div className={styles.footerActions}>
-      <button type="button" className={common.secondary} disabled={busy} onClick={onClose}>取消</button>
+      <button type="button" className={`fouc-action ${common.secondary}`} disabled={busy} onClick={onClose}>取消</button>
       <button type="submit" className={common.primary} disabled={busy || !valid}>{pending === 'submit' ? '处理中…' : submitLabel}</button>
     </div>
   </footer>

@@ -250,7 +250,7 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
 
   return (
     <section aria-label="DTS 连接器详情" className="relative flex h-full min-h-0 flex-col bg-panel">
-      <header className="flex min-h-14 shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-b border-[var(--line)] px-7 py-3 max-[1050px]:px-5">
+      <header className="flex min-h-14 shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-b border-[var(--line)] px-3 py-3">
         <div className="flex min-w-0 items-center gap-3">
           <ConnectorBackButton onBack={onBack} />
           <h1 className="truncate text-[18px] leading-8 font-semibold tracking-[-0.02em] text-[var(--ink)]">DTS</h1>

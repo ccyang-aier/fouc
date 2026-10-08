@@ -137,7 +137,7 @@ export function ConnectorsCanvas({ onWorkbenchFocus, onOpenProject }: { onWorkbe
 
   return (
     <section aria-label="连接器" className="relative flex h-full min-h-0 flex-col bg-panel">
-      <header className="flex h-[42px] shrink-0 items-center justify-between gap-4 border-b border-[var(--line)] px-[18px]">
+      <header className="flex h-[42px] shrink-0 items-center justify-between gap-4 border-b border-[var(--line)] px-3">
         <nav aria-label="面包屑" className="flex min-w-0 items-center gap-1.5 text-[11px] text-[var(--muted)]">
           <span>连接器</span>
           <span aria-hidden className="text-[var(--line-strong)]">/</span>
@@ -149,7 +149,7 @@ export function ConnectorsCanvas({ onWorkbenchFocus, onOpenProject }: { onWorkbe
         </span>
       </header>
 
-      <div className="flex min-h-[50px] shrink-0 flex-wrap items-center justify-between gap-3 px-[18px] py-2.5">
+      <div className="flex min-h-[50px] shrink-0 flex-wrap items-center justify-between gap-3 px-3 py-2.5">
         <div className="flex min-w-0 items-center gap-2.5">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -199,7 +199,7 @@ export function ConnectorsCanvas({ onWorkbenchFocus, onOpenProject }: { onWorkbe
         </div>
       </div>
 
-      <div ref={restoreCatalogScroll} onScroll={(event) => { catalogScrollTop.current = event.currentTarget.scrollTop }} className="min-h-0 flex-1 overflow-auto px-[18px] pb-20 pt-2.5">
+      <div ref={restoreCatalogScroll} onScroll={(event) => { catalogScrollTop.current = event.currentTarget.scrollTop }} className="min-h-0 flex-1 overflow-auto px-3 pb-20 pt-2.5">
         {visible.length === 0 ? (
           <div className="flex min-h-64 flex-col items-center justify-center text-center">
             <PlugsConnected className="size-6 text-[var(--muted)]" />

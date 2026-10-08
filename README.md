@@ -52,6 +52,14 @@ pnpm dev:all
 
 `dev:all` 启动或复用本仓库 Web、设备运行时和业务服务，退出命令后服务常驻并自动刷新源码。业务服务配置使用 `.env.fouc.local`。前端保持在 `src/`，后端拆为 `backend/device/` 与 `backend/server/`；职责和分发边界见[项目结构设计](./docs/product/V1/design/arch/fouc-project-structure-design.md)。单独启动前端仍使用 `pnpm dev`。
 
+查看有数据的数据库连接列表与工作台时，启动开发服务后运行：
+
+```bash
+node scripts/seed-connector-demo.mjs
+```
+
+该命令启动或复用 MySQL 开发容器，在设备连接目录配置 SQLite 和 MySQL 电商运营示例，各包含 4 张表、1 个视图与 18 笔订单；重复执行复用同名连接。SQLite 文件位于 `.runtime/connector-demo/commerce.sqlite`，MySQL 使用独立示例库与只读账号，重新连接所需密码位于 Git 忽略的 `.runtime/connector-demo/mysql-connection.json`。
+
 Web 开发默认连接真实 sidecar。需要启用浏览器 Mock 时，在启动进程中设置连接器列表（逗号分隔）：
 
 ```powershell

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
+import { useId, useState, type FormEvent } from 'react';
 import { CheckCircle } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { UserAvatar } from '@/components/user-avatar';
@@ -9,6 +9,7 @@ import { authErrorCopyFor } from '../auth-errors';
 import { useIdentity } from '../identity-provider';
 import { presenceDisplay } from '../presence';
 import { authNameMaxLength, validateAuthName } from '../validation';
+import { AuthBackdrop } from './auth-backdrop';
 import styles from './account-profile.module.css';
 
 /** Account data stays in the identity provider; this form only edits the display name. */
@@ -47,7 +48,7 @@ export function AccountProfile({ onClose }: { onClose: () => void }) {
   }
 
   return <div className={styles.profile}>
-    <ProfileCover name={user.name} />
+    <div className={styles.cover} aria-hidden><AuthBackdrop desktopOnly={false} /></div>
     <form noValidate onSubmit={(event) => void saveProfile(event)}>
       <div className={styles.body}>
         <div className={styles.avatarWrap}>
@@ -101,44 +102,4 @@ export function AccountProfile({ onClose }: { onClose: () => void }) {
       </footer>
     </form>
   </div>;
-}
-
-/** A static, name-seeded halftone cover follows the reference without an image asset. */
-function ProfileCover({ name }: { name: string }) {
-  const canvas = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    const element = canvas.current;
-    const context = element?.getContext('2d');
-    if (!element || !context) return;
-    const seed = Array.from(name).reduce((sum, character) => sum + (character.codePointAt(0) ?? 0), 0);
-    function draw() {
-      if (!element || !context) return;
-      const width = element.clientWidth;
-      const height = element.clientHeight;
-      if (!width || !height) return;
-      const density = Math.min(window.devicePixelRatio || 1, 2);
-      element.width = width * density;
-      element.height = height * density;
-      context.setTransform(density, 0, 0, density, 0, 0);
-      context.fillStyle = getComputedStyle(element).color;
-      for (let y = 5; y < height; y += 10) {
-        for (let x = 5; x < width; x += 10) {
-          const wave = (Math.sin(x / width * 6 + seed) + Math.sin(y / height * 4 + seed * 0.3) + Math.sin((x + y) / 90 + seed * 0.7)) / 3;
-          const value = Math.pow((wave + 1) / 2, 2.2) * (x / width * 0.9 + 0.2);
-          const radius = value * 4.2;
-          if (radius < 0.3) continue;
-          context.globalAlpha = 0.2 + value * 0.6;
-          context.beginPath();
-          context.arc(x, y, radius, 0, Math.PI * 2);
-          context.fill();
-        }
-      }
-      context.globalAlpha = 1;
-    }
-    draw();
-    const observer = new ResizeObserver(draw);
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [name]);
-  return <div className={styles.cover} aria-hidden><canvas ref={canvas} /></div>;
 }

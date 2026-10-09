@@ -81,7 +81,7 @@ function drawRibbon(context: CanvasRenderingContext2D, width: number, height: nu
 }
 
 /** Decorative local canvas. Animation never enters React's render cycle. */
-export function AuthBackdrop() {
+export function AuthBackdrop({ desktopOnly = true }: { desktopOnly?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -116,7 +116,7 @@ export function AuthBackdrop() {
       context.fillRect(0, 0, width, height);
     };
 
-    const canDraw = () => visible && desktopPane.matches && !document.hidden && width > 0 && height > 0;
+    const canDraw = () => visible && (!desktopOnly || desktopPane.matches) && !document.hidden && width > 0 && height > 0;
     const animate = (timestamp: number) => {
       frame = 0;
       if (!canDraw() || reducedMotion.matches) return;
@@ -179,7 +179,7 @@ export function AuthBackdrop() {
       container?.removeEventListener('pointermove', move);
       container?.removeEventListener('pointerleave', leave);
     };
-  }, []);
+  }, [desktopOnly]);
 
   return <canvas ref={canvasRef} className={styles.canvas} aria-hidden="true" />;
 }

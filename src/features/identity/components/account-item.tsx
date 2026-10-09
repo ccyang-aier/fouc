@@ -26,7 +26,7 @@ export function AccountItem({ compact = false }: { compact?: boolean }) {
     aria-busy={session.status === 'checking'}
     aria-label={user ? `Fouc 账户：${user.name} · ${status.label}` : session.status === 'error' ? '登录服务暂不可用，点击重试登录' : '登录 Fouc 账户'}
     onClick={user ? undefined : openSignIn}
-    className={`fouc-action ${styles.trigger} ${compact ? styles.compact : ''}`}
+    className={`fouc-action ${styles.trigger} ${compact ? styles.compact : ''} ${compact && !user ? styles.guestCompact : ''}`}
   >
     <span aria-hidden className={`${styles.avatarWrap} ${!user ? styles.guestAvatar : ''}`}>
       {user ? <UserAvatar name={user.name} image={user.image} className={styles.avatar} /> : session.status === 'checking' ? <CircleNotch size={17} className="animate-spin" /> : <User size={18} />}
@@ -42,7 +42,7 @@ export function AccountItem({ compact = false }: { compact?: boolean }) {
       <span aria-hidden className={styles.chevron}>{user ? <CaretDown size={14} /> : <CaretRight size={14} />}</span>
     </> : null}
   </button>;
-  if (!user) return compact ? <Tooltip><TooltipTrigger asChild>{button}</TooltipTrigger><TooltipContent side="right">{label} · {detail}</TooltipContent></Tooltip> : button;
+  if (!user) return compact ? <Tooltip><TooltipTrigger asChild>{button}</TooltipTrigger><TooltipContent side="right">点击登录</TooltipContent></Tooltip> : button;
 
   return <>
     <DropdownMenu>

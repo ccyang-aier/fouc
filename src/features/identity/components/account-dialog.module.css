@@ -1,5 +1,5 @@
 .dialog {
-  --auth-paper: #f3f2ee;
+  --auth-paper: #f5f6f7;
   --auth-showcase: #edece7;
   --auth-ink: #141416;
   --auth-input-border: transparent;
@@ -20,6 +20,7 @@
 .profileDialog { width: 440px; }
 .close { position: absolute; z-index: 2; top: 14px; right: 14px; display: grid; width: 32px; height: 32px; place-items: center; border: 1px solid transparent; border-radius: 10px; color: var(--muted-strong); outline: none; cursor: pointer; }
 .close:focus-visible { border-color: var(--control-border); }
+.profileDialog .close { background: var(--panel); border-color: var(--control-border); }
 .login { display: grid; grid-template-columns: 1.05fr 1fr; min-height: 480px; }
 .formPanel { display: flex; min-width: 0; flex-direction: column; padding: 40px 52px 28px; }
 .showcase { position: relative; min-width: 0; overflow: hidden; border-right: 1px solid var(--line); background: var(--auth-showcase); color: #141416; }
@@ -28,7 +29,7 @@
 .brand img { object-fit: contain; }
 .brand b { font-size: 15px; font-weight: 600; }
 .brand > span { margin-left: auto; color: #77777e; font-family: var(--font-code); font-size: 10px; letter-spacing: .06em; }
-.example { margin-top: auto; margin-bottom: 18px; padding: 16px 16px 14px; border: .5px solid rgb(255 255 255 / .35); border-radius: 14px; background: rgb(255 255 255 / .28); backdrop-filter: blur(24px) saturate(1.1); box-shadow: 0 8px 24px -16px rgb(55 66 60 / .12); animation: content-in .35s ease both; }
+.example { margin-top: auto; margin-bottom: 18px; padding: 16px 16px 14px; border: .5px solid rgb(255 255 255 / .35); border-radius: 14px; background: rgb(255 255 255 / .16); backdrop-filter: blur(18px) saturate(1.1); box-shadow: 0 8px 24px -16px rgb(55 66 60 / .12); animation: content-in .35s ease both; }
 .exampleHeader { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; color: #6c6c74; font-family: var(--font-code); font-size: 10px; letter-spacing: .07em; text-transform: uppercase; }
 .exampleLabel { letter-spacing: 0; }
 .exampleTitle { margin-bottom: 12px; font-size: 14px; font-weight: 600; line-height: 20px; }

@@ -134,8 +134,25 @@
   border-radius: 6px;
   background: transparent;
 }
+
+.guestCompact.guestCompact {
+  --action-state-bg: transparent;
+  --action-state-ink: var(--ink);
+  backdrop-filter: none;
+}
+
+.guestCompact:focus-visible {
+  border-color: transparent;
+}
+
+.guestCompact:is(:hover, :focus-visible, :active) .guestAvatar {
+  border-style: solid;
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
 .menu {
-  width: 228px;
+  width: 200px;
   max-width: calc(100vw - 24px);
   padding: 4px;
   border-radius: 8px;
@@ -192,7 +209,7 @@
 }
 
 .statusMenu {
-  width: 220px;
+  width: 200px;
   padding: 4px;
   border-radius: 8px;
 }

@@ -201,6 +201,11 @@
   font-size: 10px;
 }
 
+.statusTrigger > svg:last-child {
+  margin-left: 0;
+  flex-shrink: 0;
+}
+
 .statusDot {
   width: 8px;
   height: 8px;

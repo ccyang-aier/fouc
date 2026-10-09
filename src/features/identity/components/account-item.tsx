@@ -49,7 +49,7 @@ export function AccountItem({ compact = false }: { compact?: boolean }) {
     {compact ? <Tooltip><TooltipTrigger asChild><DropdownMenuTrigger asChild>{button}</DropdownMenuTrigger></TooltipTrigger><TooltipContent side="right">{label} · {status.label}</TooltipContent></Tooltip> : <DropdownMenuTrigger asChild>{button}</DropdownMenuTrigger>}
     <DropdownMenuContent
       side={compact ? 'right' : 'top'}
-      align="start"
+      align={compact ? 'start' : 'center'}
       sideOffset={8}
       className={styles.menu}
       onCloseAutoFocus={(event) => { if (openingDialog.current) { event.preventDefault(); openingDialog.current = false; } }}
@@ -60,7 +60,7 @@ export function AccountItem({ compact = false }: { compact?: boolean }) {
       </div>
       <DropdownMenuSeparator className={styles.separator} />
       <DropdownMenuSub>
-        <DropdownMenuSubTrigger className={styles.menuItem}>
+        <DropdownMenuSubTrigger className={`${styles.menuItem} ${styles.statusTrigger}`}>
           <span aria-hidden className={styles.statusDot} style={{ backgroundColor: status.color }} />
           {status.label}
           <span className={styles.menuHint}>设置状态</span>

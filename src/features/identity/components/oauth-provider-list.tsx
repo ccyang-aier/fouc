@@ -13,7 +13,7 @@ import { ArrowClockwise, Fingerprint, GithubLogo, GoogleLogo } from '@phosphor-i
 import { Button } from '@/components/ui/button';
 import { authErrorCopyFor } from '../auth-errors';
 import { foucAuthApi, type FoucOAuthProvider } from '../auth-api';
-import { AuthStatusMessage } from './auth-status';
+import { AppAlert } from '@/components/app-alert';
 import styles from './auth-form.module.css';
 
 type ProvidersState =
@@ -82,7 +82,7 @@ export function OAuthProviderSection({
       ) : null}
 
       {state.phase === 'error' ? (
-        <AuthStatusMessage
+        <AppAlert
           tone="error"
           title="企业登录暂不可用"
           description={state.message}
@@ -121,9 +121,7 @@ export function OAuthProviderSection({
       ) : null}
 
       {startError ? (
-        <p role="alert" className="text-[11px] leading-4 text-[var(--err-ink)]">
-          {startError}
-        </p>
+        <AppAlert tone="error" title={startError} />
       ) : null}
     </div>
   );

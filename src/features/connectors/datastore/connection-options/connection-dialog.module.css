@@ -69,8 +69,6 @@
 }
 .testGroup { display: flex; flex: 1; min-width: 0; align-items: center; gap: 10px; }
 .testGroup > button { min-width: 100px; }
-.testResult { display: inline-flex; flex-shrink: 0; align-items: center; gap: 5px; border-radius: 4px; color: var(--ok-ink); font-size: 12px; }
-.testResult[data-error='true'] { color: var(--err-ink); }
 .footerActions { display: flex; align-items: center; gap: 8px; }
 .spinner { animation: spin 900ms linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }

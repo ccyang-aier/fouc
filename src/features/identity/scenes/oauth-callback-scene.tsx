@@ -20,7 +20,7 @@ import { useIdentity } from '../identity-provider';
 import { authErrorCopyFor } from '../auth-errors';
 import type { FoucAuthUser } from '../auth-api';
 import { AuthPanel, AuthPanelHeading, AuthScene } from '../components/auth-scene';
-import { AuthStatusMessage } from '../components/auth-status';
+import { AppAlert } from '@/components/app-alert';
 
 type CompletionState =
   | { phase: 'checking' }
@@ -75,7 +75,7 @@ export function OAuthCallbackScene() {
       <AuthScene aria-label="企业登录结果" width={420}>
         <AuthPanel>
           <AuthPanelHeading title="企业登录" />
-          <AuthStatusMessage tone="error" title={copy.title} description={copy.description} />
+          <AppAlert tone="error" title={copy.title} description={copy.description} />
           <div className="mt-5 flex items-center gap-2">
             <Button type="button" onClick={() => router.push(authEntryPath)}>
               <ArrowClockwise className="size-4" aria-hidden />
@@ -104,7 +104,7 @@ export function OAuthCallbackScene() {
             </div>
           ) : null}
           {completion.phase === 'authenticated' ? (
-            <AuthStatusMessage
+            <AppAlert
               tone="success"
               title="登录成功"
               description={`正在以 ${completion.user.email} 进入 Fouc…`}
@@ -112,7 +112,7 @@ export function OAuthCallbackScene() {
           ) : null}
           {completion.phase === 'missing' ? (
             <>
-              <AuthStatusMessage
+              <AppAlert
                 tone="warning"
                 title="未能确认登录会话"
                 description="回调已完成,但没有读取到有效会话。请重新登录;若持续出现,请联系管理员。"
@@ -125,7 +125,7 @@ export function OAuthCallbackScene() {
           ) : null}
           {completion.phase === 'check-failed' ? (
             <>
-              <AuthStatusMessage tone="error" title="无法确认登录状态" description={completion.message} />
+              <AppAlert tone="error" title="无法确认登录状态" description={completion.message} />
               <Button type="button" className="mt-5 h-9 w-full" onClick={retryCheck}>
                 <ArrowClockwise className="size-4" aria-hidden />
                 重试

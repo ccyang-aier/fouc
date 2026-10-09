@@ -28,6 +28,7 @@ import { FilterSortBar } from './filter-sort-bar';
 import { personNameOfFactory } from './table-cells';
 import type { PersonOption } from './table-cells';
 import { Button } from '@/components/ui/button';
+import { AppAlert } from '@/components/app-alert';
 import { appendColumn, columnsEditFailureText, removeColumn as removeColumnPure, renameColumn as renameColumnPure, setColumnOptions, validateColumnsReplacement } from './cell-model';
 import { EditOptionsPanel } from './table-header';
 import type { ColumnDraft } from './table-header';
@@ -261,10 +262,7 @@ export function DatabaseTableView({
       {/* 操作失败横幅 */}
       {failureText ? (
         <div className="mx-auto w-full max-w-[1080px] shrink-0 px-6">
-          <div role="status" className="flex items-start justify-between gap-2 rounded-[7px] border border-[color-mix(in_srgb,var(--err-ink)_28%,transparent)] bg-[color-mix(in_srgb,var(--err-ink)_7%,transparent)] px-3 py-2 text-[11.5px] leading-relaxed text-[var(--err-ink)]">
-            <span className="min-w-0">{failureText}</span>
-            <button type="button" aria-label="关闭提示" onClick={() => setFailureText(null)} className="shrink-0 rounded-[4px] px-1 text-[13px] leading-none outline-none hover:bg-[color-mix(in_srgb,var(--err-ink)_10%,transparent)]">×</button>
-          </div>
+          <AppAlert tone="error" title={failureText} onClose={() => setFailureText(null)} />
         </div>
       ) : null}
 

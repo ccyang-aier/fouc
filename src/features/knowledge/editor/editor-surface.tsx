@@ -25,7 +25,8 @@ import { createSlashPasteExtensions, SlashMenuLayer } from './commands';
 import { DocumentEditorBody, DocumentEditorFrame, DocumentHeading } from './editor-layout';
 import { PageIconPicker } from '../navigation/page-icon-picker';
 import { DocumentEditorHeader } from './components/document-editor-header';
-import { ReadonlyBanner } from './components/readonly-banner';
+import { AppAlert } from '@/components/app-alert';
+import { readonlyMessageCopy } from './editor-state';
 import { SyncIndicator } from './components/sync-indicator';
 import type { PageEditorViewModel } from './editor-state';
 import { revealBlockInEditor, subscribeOpenPageTarget, takeStagedBlockHighlight } from './open-target';
@@ -175,7 +176,7 @@ export function PageEditorSurface({
           } : undefined,
         }}
       />}>
-      {view.readonlyReason ? <ReadonlyBanner reason={view.readonlyReason} level={level} /> : null}
+      {view.readonlyReason ? <AppAlert tone={view.readonlyReason === 'auth-failed' ? 'error' : 'info'} title={readonlyMessageCopy(view.readonlyReason, level)} className="mx-4 mt-3" /> : null}
         <DocumentEditorBody editor={editor} before={<DocumentHeading
           title={pageTitle.title}
           icon={<PageIconPicker value={pageTitle.icon} editable={view.editable && pageTitle.loaded} onChange={pageTitle.saveIcon} />}

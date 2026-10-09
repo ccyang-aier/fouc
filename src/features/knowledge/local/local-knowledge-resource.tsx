@@ -5,6 +5,8 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { FilePlus } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
+import { AppAlert } from '@/components/app-alert';
+import { useAppAlert } from '@/components/app-alert-provider';
 import { useIdentity } from '@/features/identity/identity-provider';
 import { KnowledgeWorkbench } from '../knowledge-workbench';
 import { PageTreeSidebar } from '../navigation/page-tree-sidebar';
@@ -42,7 +44,7 @@ export function LocalKnowledgeResource({ store, selectedKnowledgeBaseId, knowled
   const [editorSidebarOpen, setEditorSidebarOpen] = useState(false);
   const [activeTagId, setActiveTagId] = useState<string | null>(null);
   const [creation, setCreation] = useState<'document' | 'base' | 'folder' | null>(null);
-  const [failure, setFailure] = useState<string | null>(null);
+  const { notify } = useAppAlert();
   useEffect(() => subscribeOpenPageTarget((target) => {
     const page = store.getSnapshot().documents.find(item => item.baseId === target.knowledgeBaseId && item.id === target.pageId && !item.deleted);
     if (!page || page.baseId !== target.knowledgeBaseId) return;
@@ -61,8 +63,8 @@ export function LocalKnowledgeResource({ store, selectedKnowledgeBaseId, knowled
   const selectedFolderName = folders.find(folder => folder.id === selected?.folderId)?.name ?? '未归档';
   const counts = { 'all-documents': live.length, starred: live.filter((item) => item.starred).length, drafts: live.filter((item) => item.draft).length, trash: documents.filter((item) => item.deleted).length };
   function write(change: Parameters<Store['update']>[0]) {
-    try { store.update(change); setFailure(null); return true; }
-    catch { setFailure('本机保存失败，修改未保存。请检查存储空间后重试。'); return false; }
+    try { store.update(change); return true; }
+    catch { notify('error', '本机保存失败，修改未保存。请检查存储空间后重试。'); return false; }
   }
   function updateDocument(id: string, patch: Partial<LocalDocument>) {
     return write((current) => ({ ...current, documents: current.documents.map(item => item.baseId === knowledgeBaseId && item.id === id ? { ...item, ...patch, updatedAt: new Date().toISOString() } : item) }));
@@ -152,7 +154,7 @@ export function LocalKnowledgeResource({ store, selectedKnowledgeBaseId, knowled
           <p className="mb-4 text-xs text-[var(--muted)]">{base?.name} <span className="ml-2 rounded-full bg-[var(--surface-subtle)] px-2 py-1 text-[10px]">本机 · 个人</span></p>
           <div className="mb-7 flex items-center justify-between"><h1 className="text-[26px] font-semibold tracking-tight">{title ? t(title) : '文档'}</h1>{view !== 'trash' ? <Button size="sm" variant="outline" onClick={() => setCreation('document')}><FilePlus size={15} />新建文档</Button> : null}</div>
           <p className="mb-6 text-xs leading-6 text-[var(--muted)]">本机文档仅保存在当前浏览器。登录不会自动上传内容；团队知识库、成员授权与云端协作需要 Fouc 账户。</p>
-          {session.status === 'error' ? <div role="alert" className="mb-4 rounded-lg border border-[var(--line)] px-4 py-3 text-xs text-[var(--muted-strong)]">账户服务暂不可用，本机知识库仍可使用。<button type="button" onClick={openSignIn} className="ml-2 text-[var(--accent-ink)]">登录 / 重试</button></div> : null}
+          {session.status === 'error' ? <AppAlert tone="error" title="账户服务暂不可用，本机知识库仍可使用。" className="mb-4" action={<Button size="sm" onClick={openSignIn}>登录 / 重试</Button>} /> : null}
           <div className="overflow-hidden rounded-xl border border-[var(--line)]">
             {visible.map((item) => <div key={item.id} className="flex items-center gap-3 border-b border-[var(--line)] px-4 py-3 last:border-0 hover:bg-[var(--surface-hover)]">
               <button type="button" disabled={item.deleted} onClick={() => openDocument(item.id)} className="min-w-0 flex-1 truncate text-left text-xs">{item.title || '无标题文档'}</button>
@@ -162,7 +164,6 @@ export function LocalKnowledgeResource({ store, selectedKnowledgeBaseId, knowled
           </div>
         </div>
       </section>}
-      {failure ? <div role="alert" className="absolute bottom-4 left-4 right-4 rounded-lg bg-[var(--err-ink)] p-3 text-xs text-white">{failure}</div> : null}
   </KnowledgeWorkbench>;
 }
 

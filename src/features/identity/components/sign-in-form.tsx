@@ -16,7 +16,7 @@ import { authErrorCopyFor, isFoucAuthFlowError } from '../auth-errors';
 import { foucAuthApi, type FoucAuthApi } from '../auth-api';
 import { hasAuthFieldErrors, validateSignInForm, type AuthFieldErrors } from '../validation';
 import { AuthTextField } from './auth-field';
-import { AuthStatusMessage } from './auth-status';
+import { AppAlert } from '@/components/app-alert';
 import { ResendVerificationEntry } from './resend-verification';
 import styles from './auth-form.module.css';
 
@@ -66,7 +66,7 @@ export function SignInForm({
   if (unverifiedEmail !== null) {
     return (
       <div className="flex flex-col gap-4">
-        <AuthStatusMessage
+        <AppAlert
           tone="warning"
           title="邮箱尚未验证"
           description="该邮箱已注册但尚未完成验证。请查收验证邮件并打开其中的链接;未收到可重新发送。"
@@ -104,7 +104,7 @@ export function SignInForm({
         error={fieldErrors.password ?? null}
         disabled={submitting}
       />
-      {banner ? <AuthStatusMessage tone="error" title={banner.title} description={banner.description} /> : null}
+      {banner ? <AppAlert tone="error" title={banner.title} description={banner.description} /> : null}
       <Button type="submit" loading={submitting} className={styles.submit}>
         {submitting ? '正在登录…' : submitLabel}
         {!submitting ? <ArrowRight size={15} data-arrow aria-hidden /> : null}

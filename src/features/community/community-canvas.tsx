@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { AnimatePresence, motion } from "motion/react"
 import {
   CaretDown,
   CheckCircle,
@@ -23,6 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 import { ViewSwitcher, type ViewMode } from "@/components/ui/view-switcher"
+import { useAppAlert } from "@/components/app-alert-provider"
 
 import { CommunityAssetCard, CommunityAssetTable, CommunityResourceIcon, type CommunityLibraryItem } from "./community-cards"
 import { CommunityDetailPage, type RelatedItem } from "./community-detail"
@@ -78,7 +78,7 @@ export function CommunityCanvas() {
   const [detailId, setDetailId] = useState<string | null>(null)
   const [detailTagDraft, setDetailTagDraft] = useState("")
   const [addingDetailTag, setAddingDetailTag] = useState(false)
-  const [toast, setToast] = useState<string | null>(null)
+  const { notify } = useAppAlert()
   const searchRef = useRef<HTMLInputElement>(null)
 
   const libraryItems = useMemo<CommunityLibraryItem[]>(() => [
@@ -223,19 +223,14 @@ export function CommunityCanvas() {
     return () => window.removeEventListener("keydown", onKeyDown)
   }, [])
 
-  function notify(message: string) {
-    setToast(message)
-    window.setTimeout(() => setToast(null), 2200)
-  }
-
   function acquireItem(item: CommunityLibraryItem) {
     if (item.installed) return
     if (item.kind === "agents") {
       setAgents((list) => list.map((agent) => agent.id === item.id ? { ...agent, installed: true } : agent))
-      notify(`${item.name} 已添加到你的 Agent 列表`)
+      notify('success', `${item.name} 已添加到你的 Agent 列表`)
     } else {
       setSkills((list) => list.map((skill) => skill.id === item.id ? { ...skill, installed: true } : skill))
-      notify(`${item.name} 已安装，可在任务中引用`)
+      notify('success', `${item.name} 已安装，可在任务中引用`)
     }
   }
 
@@ -277,8 +272,8 @@ export function CommunityCanvas() {
             onBack={() => setDetailId(null)}
             onAction={detail.onAction}
             onOpenRelated={(id) => setDetailId(id)}
-            onShare={() => notify("详情链接已复制")}
-            onDiscuss={() => notify("讨论区即将开放")}
+            onShare={() => notify('success', "详情链接已复制")}
+            onDiscuss={() => notify('info', "讨论区即将开放")}
           />
         </div>
       </section>
@@ -296,10 +291,10 @@ export function CommunityCanvas() {
               <span>社区</span><span aria-hidden className="text-[var(--line-strong)]">/</span><strong className="truncate font-medium text-[var(--muted-strong)]">{typeFilter === "all" ? "全部资源" : typeFilter === "agents" ? "Agents" : typeFilter === "skills" ? "Skill" : typeFilter === "plugins" ? "Plugin" : "Prompt"}</strong>
             </nav>
             <div className="flex items-center gap-2">
-              <button type="button" onClick={() => notify("作品提交通道即将开放")} className="flex h-[30px] items-center gap-1.5 rounded-[6px] bg-[var(--accent)] px-3.5 text-[11px] font-semibold text-white shadow-[0_3px_9px_color-mix(in_srgb,var(--accent)_18%,transparent)] outline-none hover:bg-[var(--accent-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
+              <button type="button" onClick={() => notify('info', "作品提交通道即将开放")} className="flex h-[30px] items-center gap-1.5 rounded-[6px] bg-[var(--accent)] px-3.5 text-[11px] font-semibold text-white shadow-[0_3px_9px_color-mix(in_srgb,var(--accent)_18%,transparent)] outline-none hover:bg-[var(--accent-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
                 <Plus className="size-3.5" weight="bold" />提交资源
               </button>
-              <button type="button" aria-label="更多社区操作" onClick={() => notify("更多社区能力即将开放")} className="fouc-action flex size-[30px] items-center justify-center rounded-[6px] border border-[var(--control-border)] text-[var(--muted-strong)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
+              <button type="button" aria-label="更多社区操作" onClick={() => notify('info', "更多社区能力即将开放")} className="fouc-action flex size-[30px] items-center justify-center rounded-[6px] border border-[var(--control-border)] text-[var(--muted-strong)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
                 <DotsThree className="size-[18px]" weight="bold" />
               </button>
             </div>
@@ -405,14 +400,6 @@ export function CommunityCanvas() {
         ) : null}
       </div>
 
-      <AnimatePresence>
-        {toast ? (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }} role="status" className="pointer-events-none absolute bottom-5 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-[8px] border border-white/10 bg-[var(--ink)] px-3.5 py-2 text-[10px] font-medium text-white shadow-[0_8px_24px_rgba(28,33,42,0.16)]">
-            <CheckCircle className="size-3.5" weight="fill" />
-            {toast}
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
     </section>
   )
 }

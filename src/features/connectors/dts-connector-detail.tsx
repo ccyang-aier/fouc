@@ -4,7 +4,7 @@ import { forwardRef, useCallback, useEffect, useRef, useState } from 'react'
 import type { ComponentPropsWithoutRef } from 'react'
 import { ArrowSquareOut, ArrowsClockwise, Broadcast, CaretDown, CheckCircle, CopySimple, DotsThree, SignOut, SpinnerGap, WarningCircle } from '@phosphor-icons/react'
 import type { ConnectorDetailDto, DtsFilterId, DtsTicketDetail, DtsTicketListResult, DtsTicketSummary } from '@fouc/shared'
-import { AppAlert, type AppAlertMessage, type AppAlertTone } from '@/components/app-alert'
+import { useAppAlert } from '@/components/app-alert-provider'
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 import { clearDtsAuthProfile, dtsConnectorApi, openDtsAuthWindow } from './dts/api'
@@ -36,18 +36,13 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
   const [authPending, setAuthPending] = useState(false)
   const [connectionLoading, setConnectionLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [alert, setAlert] = useState<AppAlertMessage | null>(null)
+  const { notify } = useAppAlert()
   const [inspectorOpen, setInspectorOpen] = useState(false)
-  const alertId = useRef(0)
   const ticketRequestId = useRef(0)
   const finalizingConnection = useRef(false)
   const connectionAnnounced = useRef(false)
   const authStartedAt = useRef(0)
 
-  const notify = useCallback((tone: AppAlertTone, title: string, description?: string) => {
-    setAlert({ id: ++alertId.current, tone, title, description })
-  }, [])
-  const dismissAlert = useCallback(() => setAlert(null), [])
   const announceConnection = useCallback(() => {
     if (connectionAnnounced.current) return
     connectionAnnounced.current = true
@@ -240,7 +235,6 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
     return (
       <section aria-label="DTS 连接器连接处理中" className="relative flex h-full min-h-0 flex-col bg-panel">
         <ConnectionLoading />
-        <AppAlert alert={alert} onClose={dismissAlert} />
       </section>
     )
   }
@@ -289,7 +283,6 @@ export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () 
           onFilterChange={(filter) => { setActiveFilter(filter); setSelectedId(null); setTicketDetail(null); void loadTickets(filter, 1, keyword) }} onKeywordChange={setKeyword} onSearch={() => void loadTickets(activeFilter, 1, keyword)} onSelect={(ticket) => void loadTicketDetail(ticket)} onPageChange={(page) => void loadTickets(activeFilter, page, keyword)} onConnect={() => void connect()} onOpenInspector={inspectorOpen ? undefined : () => setInspectorOpen(true)} />
         {inspectorOpen ? <DtsConnectorInspector ticket={ticketDetail} summary={tickets?.items.find((ticket) => ticket.id === selectedId) ?? null} onClose={() => setInspectorOpen(false)} /> : null}
       </div>
-      <AppAlert alert={alert} onClose={dismissAlert} />
     </section>
   )
 }

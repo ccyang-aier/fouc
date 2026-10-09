@@ -2067,19 +2067,6 @@ html[data-theme="dark"] .mw {
   margin-bottom: 10px;
   border-bottom: 1px solid var(--mw-line);
 }
-.mw-live-result-feedback {
-  position: absolute;
-  right: 12px;
-  bottom: 38px;
-  z-index: 2;
-  padding: 7px 10px;
-  border: 1px solid #c9dfce;
-  border-radius: 5px;
-  background: #f3fcf5;
-  color: #287a41;
-  font-size: 10px;
-  box-shadow: 0 3px 10px #172b3e14;
-}
 
 @media (max-width: 1370px) {
   .mw-explorer {

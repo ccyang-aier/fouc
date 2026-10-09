@@ -9,7 +9,7 @@
  */
 
 import type { ReactNode } from 'react';
-import { CircleNotch, SignOut, Warning, WarningCircle, XCircle } from '@phosphor-icons/react';
+import { CircleNotch, SignOut, Warning, XCircle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 
 export function CanvasState({
@@ -97,15 +97,6 @@ export function CanvasRedirect({ detail }: { detail?: ReactNode }) {
       hint={detail ?? '当前会话需要重新验证，登录后会回到这里。'}
       announce="polite"
     />
-  );
-}
-
-export function CanvasNotice({ children }: { children: ReactNode }) {
-  return (
-    <div className="flex items-start gap-2 rounded-[7px] border border-[var(--warn-soft-line)] bg-[var(--warn-soft)] px-3 py-2 text-[11px] leading-relaxed text-[var(--warn-ink)]">
-      <WarningCircle aria-hidden className="mt-px size-3.5 shrink-0" weight="fill" />
-      <span className="min-w-0">{children}</span>
-    </div>
   );
 }
 

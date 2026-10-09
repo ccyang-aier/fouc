@@ -8,14 +8,14 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ClockCounterClockwise, FloppyDisk, Spinner, WarningCircle } from '@phosphor-icons/react';
+import { ClockCounterClockwise, FloppyDisk, Spinner } from '@phosphor-icons/react';
 import type { Editor } from '@tiptap/react';
+import { useAppAlert } from '@/components/app-alert-provider';
 import { createHistoryApi } from './history-api';
 import type { HistoryApi, PageCheckpointEntry, PageCheckpointPreview } from './history-api';
 import { buildRestoreTransaction, renderCheckpointHtml } from './restore';
 
 type Phase = 'loading' | 'ready' | 'error';
-type Feedback = { tone: 'success' | 'error'; text: string } | null;
 
 const formatter = new Intl.DateTimeFormat('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
@@ -40,7 +40,7 @@ export function HistoryPanel({ knowledgeBaseId, pageId, editor, canEdit, onClose
   const [naming, setNaming] = useState(false);
   const [label, setLabel] = useState('');
   const [busy, setBusy] = useState(false);
-  const [feedback, setFeedback] = useState<Feedback>(null);
+  const { notify } = useAppAlert();
   const listRef = useRef(api.list);
 
   const reload = useCallback(async () => {
@@ -57,16 +57,15 @@ export function HistoryPanel({ knowledgeBaseId, pageId, editor, canEdit, onClose
 
   const openPreview = useCallback(async (checkpointId: string) => {
     setPreviewBusy(true);
-    setFeedback(null);
     try {
       const preview = await api.preview(knowledgeBaseId, pageId, checkpointId);
       setSelected({ preview, html: editor ? renderCheckpointHtml(preview.body, editor.schema) : null });
     } catch {
-      setFeedback({ tone: 'error', text: '版本预览加载失败,请重试。' });
+      notify('error', '版本预览加载失败，请重试。');
     } finally {
       setPreviewBusy(false);
     }
-  }, [api, editor, knowledgeBaseId, pageId]);
+  }, [api, editor, knowledgeBaseId, pageId, notify]);
 
   const nameVersion = useCallback(async () => {
     const trimmed = label.trim();
@@ -76,26 +75,26 @@ export function HistoryPanel({ knowledgeBaseId, pageId, editor, canEdit, onClose
       const result = await api.name(knowledgeBaseId, pageId, trimmed);
       setNaming(false);
       setLabel('');
-      setFeedback({ tone: 'success', text: result.outcome === 'created' ? '已保存为命名版本。' : '内容与最新版本一致,已为该版本命名。' });
+      notify('success', result.outcome === 'created' ? '已保存为命名版本。' : '内容与最新版本一致，已为该版本命名。');
       await reload();
     } catch {
-      setFeedback({ tone: 'error', text: '命名失败:内容为空或超过 200 字符。' });
+      notify('error', '命名失败：内容为空或超过 200 字符。');
     } finally {
       setBusy(false);
     }
-  }, [api, busy, label, pageId, reload, knowledgeBaseId]);
+  }, [api, busy, label, pageId, reload, knowledgeBaseId, notify]);
 
   const restore = useCallback(() => {
     if (!selected || !editor || busy) return;
     const transaction = buildRestoreTransaction(editor.state, selected.preview.body);
     if (!transaction) {
-      setFeedback({ tone: 'error', text: '该版本内容无法解析,未能恢复。' });
+      notify('error', '该版本内容无法解析，未能恢复。');
       return;
     }
     editor.view.dispatch(transaction);
-    setFeedback({ tone: 'success', text: '已恢复该版本,可通过撤销(Ctrl+Z)回到恢复前状态。' });
+    notify('success', '已恢复该版本，可通过撤销(Ctrl+Z)回到恢复前状态。');
     onClose();
-  }, [busy, editor, onClose, selected]);
+  }, [busy, editor, onClose, selected, notify]);
 
   const sortedAuthors = useMemo(() => (selected?.preview.authors ?? []).map(shortAuthor).join('、'), [selected]);
 
@@ -133,13 +132,6 @@ export function HistoryPanel({ knowledgeBaseId, pageId, editor, canEdit, onClose
           </button>
           <button type="button" onClick={() => setNaming(false)} className="rounded-md px-2 py-1.5 text-xs text-muted hover:text-ink">取消</button>
         </form>
-      )}
-
-      {feedback && (
-        <p role="status" className={`flex items-start gap-1.5 rounded-md px-3 py-2 text-xs ${feedback.tone === 'success' ? 'bg-overlay text-ink' : 'text-danger'}`}>
-          {feedback.tone === 'error' && <WarningCircle aria-hidden className="mt-px size-3.5 shrink-0" />}
-          {feedback.text}
-        </p>
       )}
 
       <div className="min-h-0 flex-1 overflow-y-auto">

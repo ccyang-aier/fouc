@@ -1,5 +1,6 @@
 "use client"
 import { useRef, useEffect, useState, type FormEvent } from 'react'
+import { useAppAlert } from '@/components/app-alert-provider'
 import { ArrowsClockwise, ClockCounterClockwise, MagnifyingGlass, Copy, X, CaretLeft, CaretRight } from '@phosphor-icons/react'
 import type { RedisSlowlogEntry, RedisSlowlogPage } from '@fouc/shared'
 import { redisInteger, redisSlowlogCommand, redisSlowlogSort, redisSlowlogTime, type SlowlogSortField } from './redis-observability-model'
@@ -71,11 +72,11 @@ export function RedisSlowlog({ base }: { base: string }) {
 
 function RedisSlowlogDetail({ entry, onClose }: { entry: RedisSlowlogEntry; onClose: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null)
-  const [message, setMessage] = useState('')
+  const { notify } = useAppAlert()
   useEffect(() => { const element = dialog.current; element?.showModal(); return () => element?.close() }, [])
   async function copy(text: string) {
-    try { await navigator.clipboard.writeText(text); setMessage('已复制') }
-    catch { setMessage('复制失败，请选择文字复制。') }
+    try { await navigator.clipboard.writeText(text); notify('success', '已复制') }
+    catch { notify('error', '复制失败，请选择文字复制。') }
   }
   return <dialog ref={dialog} className={`${common.dialog} ${styles.detail}`} aria-labelledby="redis-slowlog-detail-title" onCancel={(event) => { event.preventDefault(); onClose() }}>
     <header className={common.dialogHead}><div><ClockCounterClockwise size={18} /><h2 id="redis-slowlog-detail-title">慢日志 #{entry.id}</h2></div>
@@ -88,7 +89,6 @@ function RedisSlowlogDetail({ entry, onClose }: { entry: RedisSlowlogEntry; onCl
       <h3>已记录参数 · {entry.arguments.length}</h3><ol className={styles.arguments}>{entry.arguments.map((argument, index) => <li key={index}><span>{index}</span><div>
         <code>{argument.display || '（空参数）'}</code><details><summary>原始字节 · Base64</summary><code>{argument.rawBase64 || '（空字节）'}</code></details></div>
         <button type="button" aria-label={`复制参数 ${index} Base64`} onClick={() => void copy(argument.rawBase64)}><Copy size={13} /></button></li>)}</ol>
-      {message && <p className={styles.notice} role="status">{message}</p>}
     </div>
     <footer className={common.dialogFooter}><button type="button" className={common.secondary} onClick={() => void copy(JSON.stringify(entry, null, 2))}><Copy size={13} />复制日志 JSON</button><span />
       <button type="button" className={common.primary} onClick={onClose}>完成</button></footer>

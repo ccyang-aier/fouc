@@ -3,6 +3,7 @@
 import { SignOut } from '@phosphor-icons/react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { AppAlert } from '@/components/app-alert';
 import { authErrorCopyFor } from '../auth-errors';
 import { useIdentity } from '../identity-provider';
 import styles from './logout-confirm-dialog.module.css';
@@ -58,7 +59,7 @@ export function LogoutConfirmDialog({ open, onClose }: { open: boolean; onClose:
       <div aria-hidden className={styles.icon}><SignOut size={22} /></div>
       <h2 id={titleId} className={styles.title}>退出当前账户？</h2>
       <p id={descriptionId} className={styles.description}>退出后需重新登录才能访问账户资源，本机文档仍会保留。</p>
-      {error ? <p className={styles.error} role="alert">{error}</p> : null}
+      {error ? <AppAlert tone="error" title={error} /> : null}
     </div>
     <footer className={styles.footer}>
       <Button type="button" variant="outline" onClick={close} disabled={signingOut}>取消</Button>

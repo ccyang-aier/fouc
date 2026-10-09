@@ -7,3 +7,4 @@
 5. **共享控件统一状态。** 中性操作使用 `Button`、`DropdownMenuTrigger` 或 `fouc-action`，状态由 `components/ui/interaction-states.css` 管理，底色即时出现，不使用背景渐变延迟 hover 反馈；菜单打开以 `aria-expanded` 判断，不能使用 Tooltip 也会改写的 `data-state`。侧栏底色与白色反馈面使用 `--wt-sidebar-*`、`--sidebar-row-*`，侧栏材质与导航行样式只从根 `globals.css` 加载；复核主导航、社区与知识库的实际背景、hover 与选中卡面，不能仅凭令牌相同判定视觉已恢复。控件描边使用 `--control-border`，资源卡片描边使用更轻的 `--resource-card-border`；局部 CSS 负责布局，不重复定义这些状态颜色。
 6. **同类视觉组件复用。** 列表/卡片切换统一使用 `ViewSwitcher`，列表在左、卡片在右；hover 只改变底色，保留图标原色，不在业务页另画选中描边。筛选/排序菜单入口不得在回焦时出现 ring、outline、阴影或边框渐变。资源卡片共用 `resource-card.module.css` 的单层描边，禁止叠加阴影与悬浮位移削弱圆角清晰度。
 7. **按钮级 loading 统一使用三点动画。** 优先使用 `Button` 的 `loading` 属性（原有 `aria-busy` 同样生效）；忙碌时只显示三点，保留原内容占位和可访问名称，并阻止重复提交。原生定制按钮可以复用 `ButtonLoading`。页面、列表、画布等非按钮加载状态不适用此规范。
+8. **消息提示统一使用 AppAlert。** 全局操作反馈通过 `useAppAlert` 发布，使用应用根部唯一宿主的底部居中深色 Toast，业务组件不自建通知 DOM、外观或计时器。需要持续显示的认证、权限与操作错误复用 `AppAlert` 的同一材质与语义，并保留必要恢复入口。字段校验、内容加载状态和危险操作确认保留各自交互职责。

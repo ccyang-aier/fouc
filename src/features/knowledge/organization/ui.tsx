@@ -3,12 +3,12 @@
 /**
  * Shared presentation primitives of the organization UI (O02): the four-state
  * list shell (loading / unauthenticated / forbidden / error, plus empty and
- * ready), the modal + confirm dialogs, the toast region and the small badges.
+ * ready), the modal + confirm dialogs and the small badges.
  * Everything composes the workbench design tokens (globals.css) the way the
  * existing knowledge and connector surfaces do.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { Warning, WarningCircle, XCircle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
@@ -185,37 +185,6 @@ export function ConfirmDialog({ open, onClose, onConfirm, title, body, confirmLa
     >
       <div className="text-[11.5px] leading-relaxed text-[var(--ink-soft)]">{body}</div>
     </ModalDialog>
-  );
-}
-
-export type ToastMessage = { kind: 'success' | 'error'; text: string } | null;
-
-export function useOrganizationToast() {
-  const [toast, setToast] = useState<ToastMessage>(null);
-  const timerRef = useRef<number | null>(null);
-  useEffect(() => () => { if (timerRef.current !== null) window.clearTimeout(timerRef.current); }, []);
-  function notify(kind: 'success' | 'error', text: string, duration = kind === 'error' ? 4200 : 2600) {
-    if (timerRef.current !== null) window.clearTimeout(timerRef.current);
-    setToast({ kind, text });
-    timerRef.current = window.setTimeout(() => setToast(null), duration);
-  }
-  return { toast, notify };
-}
-
-export function ToastRegion({ toast }: { toast: ToastMessage }) {
-  return (
-    <div
-      role="status"
-      aria-live="polite"
-      className={cn(
-        'pointer-events-none absolute bottom-5 left-1/2 z-[60] flex max-w-[76%] -translate-x-1/2 translate-y-2 items-center gap-2 rounded-[7px] border px-3.5 py-2 text-[11px] font-medium text-white opacity-0 shadow-[0_8px_24px_rgba(28,33,42,0.2)] transition-[opacity,transform]',
-        toast && 'translate-y-0 opacity-100',
-        toast?.kind === 'error' ? 'border-white/10 bg-[var(--err-ink)]' : 'border-white/10 bg-[var(--ink)]',
-      )}
-    >
-      {toast?.kind === 'error' ? <XCircle className="size-3.5 shrink-0" weight="fill" /> : null}
-      <span className="min-w-0 truncate">{toast?.text}</span>
-    </div>
   );
 }
 

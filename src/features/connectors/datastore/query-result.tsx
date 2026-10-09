@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useAppAlert } from "@/components/app-alert-provider"
 import { BracketsCurly, ChartBar, ChatText, CheckCircle, Clock, Copy, DownloadSimple, ListChecks, Table, TextAlignLeft } from '@phosphor-icons/react'
 import type { DatabaseQueryResult, RelationalProvider } from "@fouc/shared"
 import type { SqlResultView } from '@fouc/shared'
@@ -27,16 +28,16 @@ export function SqlQueryResult({ result, provider, scopeKey, layoutScopeKey, vie
   const view = controlledView ?? localView
   const [exportSnapshot, setExportSnapshot] = useState<Omit<ResultExportDialogProps, 'onClose'> | null>(null), [selectionScope, setSelectionScope] = useState<ResultGridSelectionScope | null>(null)
   function setView(next: ResultView) { setSelectionScope(null); (onViewChange ?? setLocalView)(next) }
-  const [feedback, setFeedback] = useState("")
+  const { notify } = useAppAlert()
   const hasRows = result.rows.length > 0
 
   async function copy() {
     try {
       const content = view === "json" ? formatJson(result) : formatDelimited(result, "\t")
       await navigator.clipboard.writeText(content)
-      setFeedback(`已复制本次返回的 ${result.rows.length} 行`)
+      notify('success', `已复制本次返回的 ${result.rows.length} 行`)
     } catch {
-      setFeedback("复制失败，请检查剪贴板权限")
+      notify('error', "复制失败，请检查剪贴板权限")
     }
   }
 
@@ -125,11 +126,6 @@ export function SqlQueryResult({ result, provider, scopeKey, layoutScopeKey, vie
         <button type="button" disabled={!hasRows} onClick={() => void copy()}><Copy size={14} />复制</button>
         <button type="button" aria-label="导出查询结果" disabled={!hasRows} onClick={() => setExportSnapshot({ result, provider, title: 'query-result', selectedRows: selectionScope?.rectangular ? selectionScope.rows : undefined, selectedColumns: selectionScope?.rectangular ? selectionScope.columns : undefined })}><DownloadSimple size={14} />导出…</button></div></footer>
       {exportSnapshot && <ResultExportDialog {...exportSnapshot} onClose={() => setExportSnapshot(null)} />}
-      {feedback && (
-        <span className="mw-live-result-feedback" role="status">
-          {feedback}
-        </span>
-      )}
     </>
   )
 }

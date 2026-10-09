@@ -24,7 +24,7 @@ import { KnowledgeTreeStage, type TreeStageTeamspaceState, type LibraryView } fr
 import { CreateTeamspaceDialog } from './navigation/create-teamspace-dialog';
 import { PageTreeSidebar } from './navigation/page-tree-sidebar';
 import { organizationErrorTextOf } from './organization/errors';
-import { ToastRegion, useOrganizationToast } from './organization/ui';
+import { useAppAlert } from '@/components/app-alert-provider';
 import { CreateKnowledgeBaseDialog } from './organization/create-knowledge-base-dialog';
 import { LibraryCanvas } from './navigation/library-canvas';
 import { KnowledgePageEditor } from './editor';
@@ -143,7 +143,7 @@ function ServerKnowledgeResource({ activeBaseId, baseAvailable, directoryState, 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [createTeamspaceOpen, setCreateTeamspaceOpen] = useState(false);
   const [createDocumentOpen, setCreateDocumentOpen] = useState(false);
-  const { toast, notify } = useOrganizationToast();
+  const { notify } = useAppAlert();
   const openPage = useCallback((id: string | null) => { setSelectedPageId(id); setEditorSidebarOpen(false); }, [setSelectedPageId, setEditorSidebarOpen]);
   useKnowledgeNotificationsBridge({ active: stageActive, knowledgeBaseId: activeId, openPage });
   useEffect(() => stageActive ? subscribeOpenPageTarget(target => { if (target.knowledgeBaseId === activeId) openPage(target.pageId); }) : undefined, [stageActive, activeId, openPage]);
@@ -259,7 +259,6 @@ function ServerKnowledgeResource({ activeBaseId, baseAvailable, directoryState, 
         onCreate={createDocument}
       /></NavigationDialogPortal> : null}
       {activeId ? <CreateTeamspaceDialog knowledgeBaseId={activeId} open={createTeamspaceOpen} onClose={() => setCreateTeamspaceOpen(false)} onCreated={folder => { setSelectedTeamspaceId(folder.id); setSelectedPageId(null); setLibraryView('overview'); }} /> : null}
-      <ToastRegion toast={toast} />
     </>}
   >{content}</KnowledgeWorkbench>;
 }

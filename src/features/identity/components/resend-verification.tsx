@@ -17,7 +17,7 @@ import { authErrorCopyFor, isFoucAuthFlowError } from '../auth-errors';
 import { foucAuthApi, type FoucAuthApi } from '../auth-api';
 import { isResendAvailable, resendCooldownRemaining, startResendCooldown, type ResendCooldownState } from '../resend-cooldown';
 import { AuthTextField } from './auth-field';
-import { AuthStatusMessage } from './auth-status';
+import { AppAlert } from '@/components/app-alert';
 
 export function ResendVerificationEntry({
   initialEmail = '',
@@ -88,7 +88,7 @@ export function ResendVerificationEntry({
         {!sending ? <PaperPlaneTilt className="size-3.5" weight="fill" aria-hidden /> : null}
         {remainingSeconds > 0 ? `重新发送(${remainingSeconds}s)` : '重新发送验证邮件'}
       </Button>
-      {outcome ? <AuthStatusMessage tone={outcome.tone} title={outcome.title} description={outcome.description} /> : null}
+      {outcome ? <AppAlert tone={outcome.tone} title={outcome.title} description={outcome.description} /> : null}
     </div>
   );
 

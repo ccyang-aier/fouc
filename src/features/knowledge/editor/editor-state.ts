@@ -22,6 +22,13 @@ export function permissionLevelLabel(level: PermissionLevel): string {
   return labels[level];
 }
 
+export function readonlyMessageCopy(reason: ReadonlyReason, level: PermissionLevel): string {
+  if (reason === 'auth-failed') return '同步连接被知识服务拒绝，正文以本地副本展示并暂不可编辑；重新进入页面或恢复访问权限后再试。';
+  return level === 'comment'
+    ? '只读模式：你在此页面的访问级别为「评论」，可以阅读与评论，但不能直接编辑正文。'
+    : `只读模式：你在此页面的访问级别为「${permissionLevelLabel(level)}」，可以阅读但不能修改正文。`;
+}
+
 /** The P03 `page.access` gate in editor terms; `view` authorization answers with the effective level. */
 export type PageEditorGate =
   | { status: 'pending' }

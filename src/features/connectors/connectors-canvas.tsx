@@ -4,7 +4,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { motion } from "motion/react"
-import { CaretDown, CaretUp, CheckCircle, MagnifyingGlass, PlugsConnected } from "@phosphor-icons/react"
+import { CaretDown, CaretUp, MagnifyingGlass, PlugsConnected } from "@phosphor-icons/react"
+import { useAppAlert } from "@/components/app-alert-provider"
 import { ViewSwitcher, type ViewMode } from "@/components/ui/view-switcher"
 
 import {
@@ -36,8 +37,7 @@ export function ConnectorsCanvas({ onWorkbenchFocus, onOpenProject }: { onWorkbe
   const [sort, setSort] = useState<ConnectorSort>("default")
   const [updatedSortDirection, setUpdatedSortDirection] = useState<"asc" | "desc">("desc")
   const [detailId, setDetailId] = useState<string | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
-  const toastTimerRef = useRef<number | null>(null)
+  const { notify } = useAppAlert()
   const catalogScrollTop = useRef(0)
   const restoreCatalogScroll = useCallback((element: HTMLDivElement | null) => {
     if (element) element.scrollTop = catalogScrollTop.current
@@ -57,17 +57,11 @@ export function ConnectorsCanvas({ onWorkbenchFocus, onOpenProject }: { onWorkbe
 
   const connectedCount = connectors.filter((connector) => connector.connected).length
 
-  function notify(message: string) {
-    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current)
-    setToast(message)
-    toastTimerRef.current = window.setTimeout(() => setToast(null), 2200)
-  }
-
   function setConnected(id: string, connected: boolean) {
     const item = connectors.find((connector) => connector.id === id)
     if (!item || item.connected === connected) return
     setConnectors((list) => list.map((connector) => connector.id === id ? { ...connector, connected } : connector))
-    notify(connected ? `${item.name} 已连接，可在任务与自动化中引用` : `${item.name} 已断开`)
+    notify('success', connected ? `${item.name} 已连接，可在任务与自动化中引用` : `${item.name} 已断开`)
   }
 
   function connectConnector(id: string) {
@@ -89,9 +83,9 @@ export function ConnectorsCanvas({ onWorkbenchFocus, onOpenProject }: { onWorkbe
       let profileCleared = true
       try { await clearDtsAuthProfile() } catch { profileCleared = false }
       setConnectors((list) => list.map((item) => item.id === id ? { ...item, connected: false } : item))
-      notify(profileCleared ? "DTS 已断开，会话凭证已清除" : "DTS 已断开；登录 Profile 清理失败，请重启 Fouc 后重试")
+      notify(profileCleared ? 'success' : 'warning', profileCleared ? "DTS 已断开，会话凭证已清除" : "DTS 已断开；登录 Profile 清理失败，请重启 Fouc 后重试")
     } catch (cause) {
-      notify(cause instanceof Error ? cause.message : "DTS 断开失败")
+      notify('error', cause instanceof Error ? cause.message : "DTS 断开失败")
     }
   }
 
@@ -233,9 +227,6 @@ export function ConnectorsCanvas({ onWorkbenchFocus, onOpenProject }: { onWorkbe
         )}
       </div>
 
-      <div role="status" aria-live="polite" className={cn("pointer-events-none absolute bottom-5 left-1/2 z-40 flex -translate-x-1/2 translate-y-2 items-center gap-2 rounded-[7px] border border-white/10 bg-[var(--ink)] px-3.5 py-2 text-[10px] font-medium text-white opacity-0 shadow-[0_8px_24px_rgba(28,33,42,0.16)] transition-[opacity,transform]", toast && "translate-y-0 opacity-100")}>
-        <CheckCircle className="size-3.5" weight="fill" />{toast}
-      </div>
     </section>
   )
 }

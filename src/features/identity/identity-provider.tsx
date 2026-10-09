@@ -5,7 +5,7 @@ import { sessionExpiredEvent } from '@/lib/authenticated-fetch';
 import { createIdentitySessionStore, type IdentitySession } from './session-store';
 import { authErrorCopyFor } from './auth-errors';
 import { AccountDialog } from './components/account-dialog';
-import { AppAlert, type AppAlertMessage } from '@/components/app-alert';
+import { useAppAlert } from '@/components/app-alert-provider';
 import { createPresenceStore } from './presence-store';
 import type { PresencePreference, PresenceStatus } from './presence';
 import { presenceDisplay } from './presence';
@@ -31,17 +31,12 @@ export function IdentityProvider({ children }: { children: ReactNode }) {
   const presenceStore = useMemo(() => createPresenceStore(userId), [userId]);
   const presence = useSyncExternalStore(presenceStore.subscribe, presenceStore.getSnapshot, presenceStore.getServerSnapshot);
   const [dialogMode, setDialogMode] = useState<'account' | 'switch-account' | null>(null);
-  const [notice, setNotice] = useState<(AppAlertMessage & { markerColor?: string }) | null>(null);
-  const noticeId = useRef(0);
-  const showNotice = useCallback((tone: AppAlertMessage['tone'], title: string, markerColor?: string) => {
-    setNotice({ id: ++noticeId.current, tone, title, markerColor });
-  }, []);
-  const closeNotice = useCallback(() => setNotice(null), []);
+  const { notify } = useAppAlert();
   const channel = useRef<BroadcastChannel | null>(null);
   useEffect(() => {
     void store.refresh();
     const onFocus = () => { void store.refresh(); };
-    const onExpired = () => { if (store.getSnapshot().status === 'authenticated') { store.expire(); showNotice('warning', '登录已过期，请重新登录'); } };
+    const onExpired = () => { if (store.getSnapshot().status === 'authenticated') { store.expire(); notify('warning', '登录已过期，请重新登录'); } };
     window.addEventListener('focus', onFocus);
     window.addEventListener(sessionExpiredEvent, onExpired);
     if (typeof BroadcastChannel !== 'undefined') {
@@ -49,7 +44,7 @@ export function IdentityProvider({ children }: { children: ReactNode }) {
       channel.current.onmessage = () => { void store.refresh(true); };
     }
     return () => { window.removeEventListener('focus', onFocus); window.removeEventListener(sessionExpiredEvent, onExpired); channel.current?.close(); };
-  }, [store, showNotice]);
+  }, [store, notify]);
   useEffect(() => {
     if (session.status !== 'authenticated') return;
     const timer = window.setTimeout(() => { void store.refresh(true); }, Math.min(Math.max(0, Date.parse(session.expiresAt) - Date.now()), 2_147_483_647));
@@ -63,33 +58,32 @@ export function IdentityProvider({ children }: { children: ReactNode }) {
     const previous = store.getSnapshot();
     const user = await store.completeSignIn();
     const switched = previous.status === 'authenticated' && previous.user.id !== user.id;
-    showNotice('success', switched ? `已切换账户：${user.name}` : `欢迎回来，${user.name}`);
+    notify('success', switched ? `已切换账户：${user.name}` : `欢迎回来，${user.name}`);
     setDialogMode(null);
     channel.current?.postMessage('session-changed');
-  }, [store, showNotice]);
+  }, [store, notify]);
   const signOut = useCallback(async () => {
     try {
       await store.signOut();
-      showNotice('success', '已安全退出账户');
+      notify('success', '已安全退出账户');
       setDialogMode(null);
       channel.current?.postMessage('session-changed');
-    } catch (error) { showNotice('error', authErrorCopyFor(error).description); throw error; }
-  }, [store, showNotice]);
+    } catch (error) { notify('error', authErrorCopyFor(error).description); throw error; }
+  }, [store, notify]);
   const expireSession = useCallback(() => {
     store.expire();
-    showNotice('warning', '登录已过期，请重新登录');
-  }, [store, showNotice]);
+    notify('warning', '登录已过期，请重新登录');
+  }, [store, notify]);
   const setPresence = useCallback((preference: PresencePreference) => {
     if (presenceStore.getSnapshot().preference === preference) return;
     presenceStore.setPreference(preference);
     const status = presenceDisplay(preference);
-    showNotice('success', `状态已设为「${status.label}」`, status.color);
-  }, [presenceStore, showNotice]);
+    notify('success', `状态已设为「${status.label}」`, undefined, { markerColor: status.color });
+  }, [presenceStore, notify]);
   const value = useMemo<IdentityContextValue>(() => ({ session, refresh, openSignIn, openSwitchAccount, completeSignIn, signOut, expireSession, presence: presence.status, presencePreference: presence.preference, setPresence }), [session, refresh, openSignIn, openSwitchAccount, completeSignIn, signOut, expireSession, presence, setPresence]);
   return <IdentityContext.Provider value={value}>
     {children}
     <AccountDialog open={dialogMode !== null} switchingAccount={dialogMode === 'switch-account'} onClose={closeDialog} />
-    <AppAlert alert={notice} onClose={closeNotice} variant="toast" markerColor={notice?.markerColor} duration={3200} />
   </IdentityContext.Provider>;
 }
 

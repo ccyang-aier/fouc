@@ -17,7 +17,7 @@ import { parseVerifyEmailQuery, verifyEmailErrorCopy } from '../verify-callback'
 import { readAuthPendingEmail } from '../return-to';
 import { authEntryPath } from '../session';
 import { AuthPanel, AuthPanelHeading, AuthScene } from '../components/auth-scene';
-import { AuthStatusMessage } from '../components/auth-status';
+import { AppAlert } from '@/components/app-alert';
 import { ResendVerificationEntry } from '../components/resend-verification';
 
 export function VerifyEmailScene() {
@@ -33,7 +33,7 @@ export function VerifyEmailScene() {
     return (
       <AuthScene aria-label="邮箱验证完成" width={380}>
         <AuthPanel>
-          <AuthStatusMessage
+          <AppAlert
             tone="success"
             title="邮箱验证成功"
             description="你的邮箱已完成验证。验证不会自动登录,请使用邮箱与密码登录后继续。"
@@ -53,7 +53,7 @@ export function VerifyEmailScene() {
       <AuthScene aria-label="邮箱验证未完成" width={420}>
         <AuthPanel>
           <AuthPanelHeading title="邮箱验证" />
-          <AuthStatusMessage tone={copy.resend ? 'warning' : 'error'} title={copy.title} description={copy.description} />
+          <AppAlert tone={copy.resend ? 'warning' : 'error'} title={copy.title} description={copy.description} />
           {copy.resend ? (
             <div className="mt-4">
               <ResendVerificationEntry initialEmail={pendingEmail ?? ''} />

@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { ArrowsDownUp, CaretDown, CheckCircle, Clock, MagnifyingGlass, WarningCircle } from "@phosphor-icons/react"
+import { ArrowsDownUp, CaretDown, Clock, MagnifyingGlass, WarningCircle } from "@phosphor-icons/react"
+import { useAppAlert } from "@/components/app-alert-provider"
 
 import {
   DropdownMenu,
@@ -30,7 +31,7 @@ export function AutomationCanvas() {
   const [sort, setSort] = useState<Sort>("default")
   const [query, setQuery] = useState("")
   const [runningId, setRunningId] = useState<string | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
+  const { notify } = useAppAlert()
   const searchRef = useRef<HTMLInputElement>(null)
   const runs = runRecords
 
@@ -58,11 +59,6 @@ export function AutomationCanvas() {
     return () => window.removeEventListener("keydown", focusSearch)
   }, [])
 
-  function notify(message: string) {
-    setToast(message)
-    window.setTimeout(() => setToast(null), 2200)
-  }
-
   function openItem(id: string) {
     setCreating(false)
     setSelectedId(id)
@@ -80,7 +76,7 @@ export function AutomationCanvas() {
     window.setTimeout(() => {
       setAutomations((items) => items.map((automation) => automation.id === id ? { ...automation, enabled: true, status: "running" as AutomationStatus, lastRun: "刚刚", lastRunDetail: "正在启动" } : automation))
       setRunningId(null)
-      notify(`${item.title} 已开始运行`)
+      notify('success', `${item.title} 已开始运行`)
     }, 700)
   }
 
@@ -125,9 +121,9 @@ export function AutomationCanvas() {
             creating={creating}
             running={runningId === selected?.id}
             onClose={() => { setSelectedId(null); setCreating(false) }}
-            onToggle={(enabled) => { updateSelected({ enabled, status: enabled ? "enabled" : "paused" }); notify(enabled ? "自动化已启用" : "自动化已暂停") }}
+            onToggle={(enabled) => { updateSelected({ enabled, status: enabled ? "enabled" : "paused" }); notify('success', enabled ? "自动化已启用" : "自动化已暂停") }}
             onRun={() => selected && runAutomation(selected.id)}
-            onSave={() => notify("更改已保存")}
+            onSave={() => notify('success', "更改已保存")}
             onCreate={(draft) => {
               const id = `AUTO-${String(automations.length + 1).padStart(3, "0")}`
               const created: AutomationDefinition = { id, title: draft.title.trim(), description: draft.instruction.trim(), schedule: draft.schedule, timezone: draft.schedule === "有新内容时" ? "事件触发" : "Asia/Shanghai (UTC+08:00)", agent: draft.agent, agentInitial: draft.agent.slice(0, 1), lastRun: "尚未运行", lastRunDetail: "—", status: "enabled", enabled: true, notification: "失败时通知", timeout: "30 分钟" }
@@ -135,13 +131,12 @@ export function AutomationCanvas() {
               setCreating(false)
               setSelectedId(id)
               setFilter("all")
-              notify(`${created.title} 已创建`)
+              notify('success', `${created.title} 已创建`)
             }}
           />
         </>
       ) : null}
 
-      <div role="status" aria-live="polite" className={cn("pointer-events-none absolute right-4 bottom-4 z-40 flex translate-y-2 items-center gap-2 rounded-[7px] border border-[var(--line-strong)] bg-[var(--elevated)] px-3 py-2 text-[9.5px] font-medium text-[var(--ink)] opacity-0 shadow-[0_8px_24px_rgba(28,33,42,0.10)] transition-[opacity,transform]", toast && "translate-y-0 opacity-100")}><CheckCircle className="size-3.5 text-[#318b61]" weight="fill" />{toast}</div>
     </section>
   )
 }

@@ -10,7 +10,8 @@ import { GroupsSection } from './groups-section';
 import { OrganizationQueryProvider } from './hooks';
 import { MembersSection } from './members-section';
 import { TeamspacesSection } from './teamspaces-section';
-import { ListStateShell, RoleBadge, ToastRegion, flattenPages, queryListState, useOrganizationToast } from './ui';
+import { ListStateShell, RoleBadge, flattenPages, queryListState } from './ui';
+import { useAppAlert } from '@/components/app-alert-provider';
 
 type SectionId = 'members' | 'groups' | 'teamspaces';
 const sections: readonly { id: SectionId; label: string }[] = [
@@ -28,7 +29,7 @@ function OrganizationPanelBody() {
   const bases = flattenPages(basesQuery.data);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [section, setSection] = useState<SectionId>('members');
-  const { toast, notify } = useOrganizationToast();
+  const { notify } = useAppAlert();
   const activeBase = bases.find(base => base.id === selectedId) ?? bases[0] ?? null;
   const access = useKnowledgeAccessQuery(activeBase?.id ?? '', { enabled: activeBase !== null });
   const role = access.data?.role;
@@ -44,6 +45,5 @@ function OrganizationPanelBody() {
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto"><div className="mx-auto w-full max-w-[900px] px-6 py-5">{role ? section === 'members' ? <MembersSection knowledgeBaseId={activeBase.id} actorRole={role} notify={notify} /> : section === 'groups' ? <GroupsSection knowledgeBaseId={activeBase.id} actorRole={role} notify={notify} /> : <TeamspacesSection knowledgeBaseId={activeBase.id} actorRole={role} notify={notify} /> : <ListStateShell state={access.isError ? 'error' : 'loading'} error={access.error} onRetry={() => void access.refetch()} emptyTitle="无法确认知识库权限">{null}</ListStateShell>}</div></div>
     </> : <ListStateShell state={session.status === 'anonymous' ? 'unauthenticated' : queryListState(basesQuery)} error={basesQuery.error} onRetry={() => void basesQuery.refetch()} emptyIcon={<FolderOpen className="size-6" aria-hidden />} emptyTitle="还没有可管理的知识库">{null}</ListStateShell>}
-    <ToastRegion toast={toast} />
   </section>;
 }

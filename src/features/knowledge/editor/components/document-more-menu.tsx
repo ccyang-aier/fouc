@@ -6,6 +6,8 @@ import type { Editor } from '@tiptap/core';
 import { Bell, ChatCircleDots, ClockCounterClockwise, Copy, DotsThree, DownloadSimple, FileArrowUp, FileCode, FilePdf, FileText, LinkSimple, LockSimple, MagnifyingGlass, MarkdownLogo, Printer, PushPin, SplitHorizontal, Trash, Presentation, FolderSimple, SquaresFour } from '@phosphor-icons/react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ModalDialog } from '../../organization/ui';
+import { AppAlert } from '@/components/app-alert';
+import { useAppAlert } from '@/components/app-alert-provider';
 import { documentLink, type DocumentLinkTarget } from '../document-link';
 import { useDocumentNavigation } from '../document-tools';
 import { DocumentAppearanceMenu } from './document-appearance-menu';
@@ -29,7 +31,7 @@ export function DocumentMoreMenu({ editor, title, starred, onToggleStar, actions
   editor: Editor | null; title: string; starred: boolean; onToggleStar: () => void; actions: DocumentMenuActions;
 }) {
   const navigation = useDocumentNavigation();
-  const [status, setStatus] = useState('');
+  const { notify } = useAppAlert();
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -38,9 +40,8 @@ export function DocumentMoreMenu({ editor, title, starred, onToggleStar, actions
     if (busyRef.current) return;
     busyRef.current = true;
     setBusy(true);
-    setStatus('');
-    try { await work(); setStatus(success); }
-    catch (error) { setStatus(failure ? (error instanceof Error ? error.message : failure) : '操作失败，请检查浏览器权限或稍后重试'); }
+    try { await work(); notify('success', success); }
+    catch (error) { notify('error', failure ? (error instanceof Error ? error.message : failure) : '操作失败，请检查浏览器权限或稍后重试'); }
     finally { busyRef.current = false; setBusy(false); }
   };
   const copy = (format: ContentFormat | 'link') => action(async () => {
@@ -49,7 +50,7 @@ export function DocumentMoreMenu({ editor, title, starred, onToggleStar, actions
   }, '已复制到剪贴板');
   const exportContent = (format: 'markdown' | 'html') => action(async () => downloadDocument(await documentContent(editor!, title, format), title, format), '已导出文档');
   const exportPdf = () => action(async () => {
-    setStatus('正在生成 PDF…');
+    notify('info', '正在生成 PDF…', undefined, { duration: 0 });
     const { exportDocumentPdf } = await import('./document-pdf-export');
     await exportDocumentPdf(editor!, title);
   }, '已导出 PDF', 'PDF 导出失败，请稍后重试');
@@ -107,9 +108,8 @@ export function DocumentMoreMenu({ editor, title, starred, onToggleStar, actions
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
-    {status ? <div role="status" className={styles.status}>{status}<button type="button" aria-label="关闭操作提示" onClick={() => setStatus('')}>×</button></div> : null}
     <ModalDialog open={confirmDelete} width="w-[min(440px,calc(100vw-32px))]" onClose={() => { if (!busy) setConfirmDelete(false); }} title="删除文档？" description={`「${title.trim() || '无标题文档'}」将移至回收站，可以从回收站恢复。`} footer={<><button type="button" autoFocus className={styles.cancel} disabled={busy} onClick={() => setConfirmDelete(false)}>取消</button><button type="button" className={styles.delete} disabled={busy} onClick={() => void action(async () => { try { await actions.onDelete?.(); setConfirmDelete(false); } catch (error) { setDeleteError('删除失败，文档已保留，请稍后重试。'); throw error; } }, '文档已移至回收站')}>{busy ? '正在删除…' : '移至回收站'}</button></>}>
-      {deleteError ? <p role="alert" className={styles.error}>{deleteError}</p> : null}
+      {deleteError ? <AppAlert tone="error" title={deleteError} /> : null}
     </ModalDialog>
   </>;
 }

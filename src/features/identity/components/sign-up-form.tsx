@@ -15,7 +15,7 @@ import { foucAuthApi, type FoucAuthApi } from '../auth-api';
 import { authPendingEmailStorageKey } from '../return-to';
 import { hasAuthFieldErrors, validateSignUpForm, type AuthFieldErrors } from '../validation';
 import { AuthTextField } from './auth-field';
-import { AuthStatusMessage } from './auth-status';
+import { AppAlert } from '@/components/app-alert';
 import { ResendVerificationEntry } from './resend-verification';
 import styles from './auth-form.module.css';
 
@@ -59,7 +59,7 @@ export function SignUpForm({ api = foucAuthApi }: { api?: FoucAuthApi }) {
   if (acceptedEmail !== null) {
     return (
       <div className="flex flex-col gap-4">
-        <AuthStatusMessage
+        <AppAlert
           tone="success"
           title="注册请求已受理"
           description="请查收验证邮件;未收到可重发。"
@@ -107,7 +107,7 @@ export function SignUpForm({ api = foucAuthApi }: { api?: FoucAuthApi }) {
         hint="12–128 位,建议混合字母、数字与符号"
         disabled={submitting}
       />
-      {banner ? <AuthStatusMessage tone="error" title={banner.title} description={banner.description} /> : null}
+      {banner ? <AppAlert tone="error" title={banner.title} description={banner.description} /> : null}
       <Button type="submit" loading={submitting} className={styles.submit}>
         {!submitting ? <PaperPlaneTilt className="size-4" weight="fill" aria-hidden /> : null}
         {submitting ? '正在提交…' : '创建账号'}

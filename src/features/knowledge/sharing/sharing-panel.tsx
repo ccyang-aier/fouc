@@ -7,6 +7,7 @@
  * api 操作,未装配时呈现端点错误,不伪造成功。
  */
 import { useMemo, useReducer, useState } from 'react';
+import { AppAlert } from '@/components/app-alert';
 import {
   canGrant, canRevoke, explainEffective, explainSourceCopy, levelRank, permissionLevels, planGrantChange, principalKind,
 } from './permission-model';
@@ -212,7 +213,7 @@ export function SharingPanel(props: SharingPanelProps) {
         )}
       </div>
 
-      {state.error && <p role="alert" className="rounded-md bg-err-soft px-3 py-2 text-xs text-err-ink">{state.error}</p>}
+      {state.error ? <AppAlert tone="error" title={state.error} /> : null}
       {state.busy && <p className="text-xs text-muted" aria-busy="true">保存中…</p>}
     </section>
   );

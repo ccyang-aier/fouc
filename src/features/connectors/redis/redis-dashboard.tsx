@@ -1,5 +1,8 @@
 "use client"
 import { useState } from 'react'
+import { AppAlert } from '@/components/app-alert'
+import { useAppAlert } from '@/components/app-alert-provider'
+import { Button } from '@/components/ui/button'
 import { ArrowsClockwise, ChartLineUp, MagnifyingGlass, Copy, CaretDown, CaretRight } from '@phosphor-icons/react'
 import type { RedisInfoSnapshot } from '@fouc/shared'
 import { redisBytes, redisHitRatio, redisInfoFilter, redisInfoValue, redisInteger, redisTotalKeys } from './redis-observability-model'
@@ -14,7 +17,7 @@ export function RedisDashboard({ base }: { base: string }) {
   const [revision, setRevision] = useState(0)
   const [search, setSearch] = useState('')
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
-  const [message, setMessage] = useState('')
+  const { notify } = useAppAlert()
   const { data, loading, error } = useRedisPoll<RedisInfoSnapshot>(`${base}/info`, interval, revision)
   const sections = data?.sections ?? []
   const value = (section: string, key: string) => redisInfoValue(sections, section, key)
@@ -30,8 +33,8 @@ export function RedisDashboard({ base }: { base: string }) {
   ]
   const filtered = redisInfoFilter(sections, search)
   async function copy(text: string) {
-    try { await navigator.clipboard.writeText(text); setMessage('已复制指标') }
-    catch { setMessage('复制失败，请选中指标文字复制。') }
+    try { await navigator.clipboard.writeText(text); notify('success', '已复制指标') }
+    catch { notify('error', '复制失败，请选中指标文字复制。') }
   }
   return <section className={styles.panel} aria-label="Redis 运行概览">
     <div className={styles.toolbar}>
@@ -40,7 +43,7 @@ export function RedisDashboard({ base }: { base: string }) {
         {[0, 5, 10, 30, 60].map((seconds) => <option key={seconds} value={seconds}>{seconds ? `${seconds} 秒` : '关闭'}</option>)}</select></label>
       <button type="button" aria-label="刷新 Redis 运行概览" disabled={loading} onClick={() => setRevision((current) => current + 1)}><ArrowsClockwise size={15} />{loading ? '读取中…' : '刷新'}</button>
     </div>
-    {error && <div role="alert" className={styles.error}>{error}{data && ' · 下方保留上次数据，尚未刷新。'}<button type="button" disabled={loading} onClick={() => setRevision((current) => current + 1)}>重试</button></div>}
+    {error ? <AppAlert tone="error" title={error} description={data ? '下方保留上次数据，尚未刷新。' : undefined} action={<Button size="sm" disabled={loading} onClick={() => setRevision(current => current + 1)}>重试</Button>} /> : null}
     <div className={styles.scroll}>
       <div className={styles.lead}><div><small>SERVER OVERVIEW</small><h2>{value('Server', 'redis_version') ? `Redis ${value('Server', 'redis_version')}` : 'Redis 指标'}</h2>
         <p>{value('Server', 'redis_mode') ?? '模式未知'} · {value('Replication', 'role') ?? '角色未知'}<span>{data ? `更新于 ${new Date(data.fetchedAt).toLocaleTimeString('zh-CN', { hour12: false })}` : '等待服务器指标'}</span></p></div>
@@ -48,7 +51,6 @@ export function RedisDashboard({ base }: { base: string }) {
       <div className={styles.metrics}>{metrics.map(([label, formatted, origin]) => <article key={label}><span>{label}</span><strong title={formatted}>{formatted}</strong><small>{origin}</small></article>)}</div>
       <div className={styles.search}><MagnifyingGlass size={15} /><input aria-label="搜索 Redis 指标" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="搜索分区、指标名称或值…" />
         {search && <button type="button" onClick={() => setSearch('')}>清除</button>}</div>
-      {message && <p role="status" className={styles.notice}>{message}</p>}
       <div className={styles.sections}>{filtered.map((section, index) => {
         const identity = `${section.name}:${index}`, open = expanded.has(section.name) || Boolean(search.trim())
         return <section key={identity} className={styles.infoSection}>

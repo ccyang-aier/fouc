@@ -1,6 +1,7 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef } from 'react'
+import { useAppAlert } from '@/components/app-alert-provider'
 import type { EditorView } from '@codemirror/view'
 import { Copy } from '@phosphor-icons/react/dist/csr/Copy'
 import { DownloadSimple } from '@phosphor-icons/react/dist/csr/DownloadSimple'
@@ -17,12 +18,12 @@ export function AdminObjectSource({ source, name, label, provider }: {
   provider: RelationalProvider
 }) {
   const editor = useRef<EditorView | null>(null)
-  const [feedback, setFeedback] = useState('')
+  const { notify } = useAppAlert()
   const available = source.text !== null && source.complete
   async function copy() {
     if (!available) return
-    try { await navigator.clipboard.writeText(source.text!); setFeedback('SQL 已复制。') }
-    catch { setFeedback('无法访问剪贴板，可在编辑器中选择源码复制。') }
+    try { await navigator.clipboard.writeText(source.text!); notify('success', 'SQL 已复制。') }
+    catch { notify('error', '无法访问剪贴板，可在编辑器中选择源码复制。') }
   }
   function download() {
     if (!available) return
@@ -32,7 +33,7 @@ export function AdminObjectSource({ source, name, label, provider }: {
     anchor.download = `${name}.sql`.replace(/[<>:"/\\|?*\u0000-\u001f]/g, '_')
     anchor.click()
     setTimeout(() => URL.revokeObjectURL(url), 1000)
-    setFeedback('SQL 文件已生成。')
+    notify('success', 'SQL 文件已生成。')
   }
   return <section className={styles.source} aria-label={label}>
     <div className={styles.sourceToolbar}>
@@ -47,6 +48,5 @@ export function AdminObjectSource({ source, name, label, provider }: {
         provider={provider} readOnly label={`${label}源码`} />
     </div> : <p className={styles.empty}>原生目录未提供此源码，或当前角色没有读取权限。</p>}
     {source.warning && <p className={styles.warning}><Warning size={14} />{source.warning}</p>}
-    {feedback && <p className={styles.feedback} role="status">{feedback}</p>}
   </section>
 }

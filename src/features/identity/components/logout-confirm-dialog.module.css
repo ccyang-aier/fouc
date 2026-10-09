@@ -45,13 +45,6 @@
   line-height: 21px;
 }
 
-.error {
-  margin-top: 12px;
-  color: var(--err-ink);
-  font-size: 12px;
-  line-height: 20px;
-}
-
 .footer {
   margin-bottom: 12px;
 }

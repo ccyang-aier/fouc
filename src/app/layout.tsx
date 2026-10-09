@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next"
 
 import "./globals.css"
 import { IdentityProvider } from "@/features/identity/identity-provider"
+import { AppAlertProvider } from "@/components/app-alert-provider"
 
 export const metadata: Metadata = {
   title: "Fouc · AI Agent 工作台",
@@ -30,7 +31,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="zh-CN" suppressHydrationWarning>
       <body>
         <script dangerouslySetInnerHTML={{ __html: BOOT_SCRIPT }} />
-        <IdentityProvider>{children}</IdentityProvider>
+        <AppAlertProvider><IdentityProvider>{children}</IdentityProvider></AppAlertProvider>
       </body>
     </html>
   )

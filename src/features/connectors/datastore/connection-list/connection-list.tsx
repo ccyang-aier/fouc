@@ -195,7 +195,7 @@ export function ConnectionList(props: ConnectionListProps) {
             {accountLabel && !hiddenColumns.includes('account') && <col className={styles.accountCol} style={{ width: layout.widths.account }} />}
             {authSourceLabel && !hiddenColumns.includes('authSource') && <col className={styles.accountCol} style={{ width: layout.widths.authSource }} />}
             {!hiddenColumns.includes('status') && <col className={styles.statusCol} style={{ width: layout.widths.status }} />}
-            <col className={styles.actionsCol} style={{ width: layout.tableStyle ? 'auto' : undefined }} />
+            <col className={styles.actionsCol} />
           </colgroup>
           <thead><tr>
             <th className={styles.selectionCell} scope="col"><input type="checkbox" aria-label="选择当前页所有连接" checked={allPageSelected}

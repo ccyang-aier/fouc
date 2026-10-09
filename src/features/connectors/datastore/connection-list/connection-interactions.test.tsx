@@ -40,25 +40,26 @@ test('copy uses the complete path and a rejected clipboard write never reports s
   expect(document.querySelector('[data-copied="true"]')).toBeNull()
 })
 
-test('testing disables actions without relabeling save, and outcomes stay beside the test action', async () => {
+test('testing disables actions without relabeling save, and outcomes use the shared alert', async () => {
   const props = { valid: true, feedback: '', testError: '', submitLabel: '保存连接', onTest: () => {}, onClose: () => {} }
   await act(async () => root.render(<TooltipProvider><ConnectionDialogActions {...props} pending="test" /></TooltipProvider>))
   expect(document.querySelector('[aria-busy="true"]')?.textContent).toBe('测试中')
   expect(document.querySelector('button[type="submit"]')?.textContent).toBe('保存连接')
   expect([...document.querySelectorAll<HTMLButtonElement>('button')].every(button => button.disabled)).toBe(true)
   await act(async () => root.render(<TooltipProvider><ConnectionDialogActions {...props} pending={null} feedback="SQLite 3.53.2" /></TooltipProvider>))
-  expect(document.querySelector('footer [role="status"]')?.textContent).toBe('测试通过')
+  expect(document.querySelector('[role="status"]')?.textContent).toContain('测试通过')
+  expect(document.querySelector('[role="status"]')?.textContent).toContain('SQLite 3.53.2')
   await act(async () => root.render(<TooltipProvider><ConnectionDialogActions {...props} pending={null} testError="文件不存在" /></TooltipProvider>))
-  expect(document.querySelector('footer [role="alert"]')?.textContent).toBe('连接失败')
+  expect(document.querySelector('[role="alert"]')?.textContent).toContain('连接失败')
+  expect(document.querySelector('[role="alert"]')?.textContent).toContain('文件不存在')
   expect(document.querySelector('[role="status"]')).toBeNull()
 })
 
-test('connection feedback tooltips stay inside the native modal top layer', async () => {
+test('connection feedback stays readable inside the native modal top layer', async () => {
   await act(async () => root.render(<TooltipProvider><dialog open><ConnectionDialogActions pending={null} valid feedback="SQLite 3.53.2" testError="" submitLabel="保存连接" onTest={() => {}} onClose={() => {}} /></dialog></TooltipProvider>))
-  await act(async () => document.querySelector<HTMLElement>('[role="status"]')!.focus())
-  const tooltip = document.querySelector('[data-slot="tooltip-content"]')
-  expect(tooltip?.closest('dialog[open]')).not.toBeNull()
-  expect(tooltip?.textContent).toContain('SQLite 3.53.2')
+  const feedback = document.querySelector('[role="status"]')
+  expect(feedback?.closest('dialog[open]')).not.toBeNull()
+  expect(feedback?.textContent).toContain('SQLite 3.53.2')
 })
 
 const row = { id: 'local', name: 'Local', target: 'local.sqlite', targetTitle: 'C:\\data\\local.sqlite', projectIds: [], tags: [], favorite: false, status: 'passed' as const }

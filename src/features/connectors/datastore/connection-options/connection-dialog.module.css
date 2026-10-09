@@ -2,7 +2,7 @@
   width: min(620px, calc(100vw - 32px));
   max-width: 620px;
   max-height: calc(100dvh - 56px);
-  padding: 0 0 8px;
+  padding: 0 0 16px;
 }
 .dialog[open] {
   display: flex;

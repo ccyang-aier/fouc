@@ -56,15 +56,21 @@
 
 .tableViewport { width: 100%; min-width: 0; }
 .tableViewport:has(> [aria-hidden='true']) { padding-bottom: 12px; }
-.table { width: 100%; min-width: 950px; table-layout: fixed; border-collapse: collapse; text-align: left; }
+.table { width: 100%; min-width: 1000px; table-layout: fixed; border-collapse: collapse; text-align: left; }
 .selectionCol { width: 48px; }
-.nameCol { width: 17%; }
-.targetCol { width: 18%; }
-.projectCol { width: 15%; }
-.tagsCol { width: 13%; }
-.accountCol { width: 9%; }
-.statusCol { width: 15%; }
+.nameCol { width: auto; }
+.targetCol { width: 28%; }
+.projectCol { width: 14%; }
+.tagsCol { width: 14%; }
+.accountCol { width: 112px; }
+.statusCol { width: 130px; }
 .actionsCol { width: 120px; }
+.table:has(.accountCol) { min-width: 1200px; }
+.table:has(.accountCol) .targetCol { width: 24%; }
+.table:has(.accountCol) :is(.projectCol, .tagsCol) { width: 12%; }
+.table:has(.accountCol ~ .accountCol) { min-width: 1320px; }
+.table:has(.accountCol ~ .accountCol) .targetCol { width: 22%; }
+.table:has(.accountCol ~ .accountCol) :is(.projectCol, .tagsCol) { width: 11%; }
 .table th { height: 34px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 0 12px; background: var(--surface-subtle); color: var(--list-soft-ink); font-size: max(13px, var(--ui-size)); font-weight: 500; white-space: nowrap; }
 .table td { height: 48px; border-bottom: 1px solid var(--line); padding: 0 12px; color: var(--list-ink); font-size: max(13px, var(--ui-size)); }
 .table .selectionCell { padding: 0 12px 0 14px; }

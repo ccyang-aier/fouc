@@ -47,6 +47,7 @@ export function TableStructure({
   revision,
   pending,
   initialColumn,
+  initialTab = "columns",
   onOpenTable,
   onStructureChanged,
   onWriteAccessChanged,
@@ -61,6 +62,7 @@ export function TableStructure({
   revision: number
   pending: boolean
   initialColumn?: string
+  initialTab?: StructureTab
   onOpenTable: (schema: string, table: string) => void
   onStructureChanged?: () => void
   onWriteAccessChanged?: (session: RelationalSession) => void
@@ -70,7 +72,7 @@ export function TableStructure({
   onBusyChange: (busy: boolean) => void
 }) {
   const [structure, setStructure] = useState<RelationalTableStructure | null>(null)
-  const [tab, setTab] = useState<StructureTab>("columns")
+  const [tab, setTab] = useState<StructureTab>(initialTab)
   const [search, setSearch] = useState(initialColumn ?? "")
   const [loadedKey, setLoadedKey] = useState("")
   const [error, setError] = useState("")

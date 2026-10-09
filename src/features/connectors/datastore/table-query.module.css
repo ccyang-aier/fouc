@@ -7,30 +7,36 @@
 .toolbar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  padding: 7px 12px;
-  font-size: 11px;
+  gap: 4px;
+  flex-wrap: nowrap;
+  height: 48px;
+  padding: 0 6px;
+  font-size: 13px;
 }
 .toolbar > button {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 6px 7px;
-  border-radius: 5px;
+  height: 31px;
+  padding: 0 5px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
 }
 .toolbar > button:hover {
   background: var(--surface-hover);
 }
-.toolbar > .active {
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 8%, var(--panel));
-}
-.scope {
-  margin-left: auto;
-  color: var(--muted-strong);
-  font-size: 10px;
-}
+.toolbar > .condition { display: flex; flex: 1; min-width: 110px; border: 1px solid var(--line); background: var(--panel); padding: 0 7px; gap: 7px; text-align: left; }
+.condition b { color: #246cff; font-size: 13px; font-weight: 600; }
+.condition[data-kind="sort"] b { color: #ed6c1b; }
+.condition > span { min-width: 0; flex: 1; overflow: hidden; color: var(--muted-strong); text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+.condition > svg { flex-shrink: 0; color: var(--muted-strong); }
+.rowScope { flex-shrink: 0; white-space: nowrap; }
+.auto { display: flex; align-items: center; gap: 2px; color: var(--muted-strong); font-size: 13px; }
+.toolbar .auto select { width: 62px; border: 0; padding: 0 3px; background: transparent; height: 30px; color: var(--muted-strong); font-size: 13px; cursor: pointer; }
+.actionTarget { display: flex; flex-shrink: 0; align-items: center; }
 .pageSearch {
   display: flex;
   align-items: center;
@@ -272,7 +278,6 @@
   color: var(--muted-strong);
 }
 @media (max-width: 1050px) {
-  .scope,
   .tabs > span {
     display: none;
   }

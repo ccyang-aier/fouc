@@ -1,8 +1,12 @@
 .editing {
   flex: none;
-  border-bottom: 1px solid var(--line);
   background: var(--panel);
 }
+.nativeToolbar { display: flex; align-items: center; gap: 4px; height: 38px; }
+.nativeToolbar button { display: inline-flex; align-items: center; gap: 4px; border: 0; border-radius: 4px; height: 28px; padding: 0 5px; font-size: 13px; white-space: nowrap; color: var(--ink-soft); cursor: pointer; }
+.nativeToolbar button:disabled { opacity: .38; cursor: default; }
+.nativeToolbar button:not(:disabled):hover { background: var(--surface-hover); }
+.nativeToolbar .submit { background: var(--muted-strong); color: var(--panel); }
 .toolbar {
   display: flex;
   align-items: center;
@@ -101,7 +105,7 @@
   min-width: 0;
 }
 .field strong {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   overflow-wrap: anywhere;
 }
@@ -183,7 +187,7 @@
   justify-content: space-between;
   gap: 10px;
   margin-bottom: 8px;
-  font-size: 12px;
+  font-size: 13px;
 }
 .summary strong {
   font-weight: 500;
@@ -249,3 +253,5 @@
     padding: 16px;
   }
 }
+
+.nativeToolbar button[data-variant="destructive"], .toolbar button[data-variant="destructive"] { color: var(--err-ink); }

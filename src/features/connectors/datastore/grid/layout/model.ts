@@ -8,7 +8,7 @@ export type GridLayout = { order: string[]; hidden: string[]; pins: Record<strin
 export type GridLayoutStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 export const GRID_LAYOUT_PREFIX = 'fouc:grid-layout:'
 export const GRID_COLUMN_MIN_WIDTH = 60, GRID_COLUMN_MAX_WIDTH = 1200
-export function defaultGridLayout(): GridLayout { return { order: [], hidden: [], pins: {}, widths: {}, formatters: {}, density: 'standard', font: 'mono', fontSize: 13 } }
+export function defaultGridLayout(): GridLayout { return { order: [], hidden: [], pins: {}, widths: {}, formatters: {}, density: 'standard', font: 'sans', fontSize: 14 } }
 
 /** Preserve case and repeated names; aliases are distinct columns, never accidentally merged. */
 export function gridColumnKeys(columns: readonly string[]): string[] {

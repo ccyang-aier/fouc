@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useState, type RefObject } from "react"
-import { Plus, PencilSimple, Trash, FileCode, X } from "@phosphor-icons/react"
+import { createPortal } from "react-dom"
+import { Plus, PencilSimple, Trash, FileCode, X, ArrowCounterClockwise } from "@phosphor-icons/react"
 import type {
   DatabaseTablePage,
   RelationalRowChange,
@@ -24,7 +25,9 @@ export function TableEditing({
   writable,
   disabled,
   onPending,
-  onSaved
+  onSaved,
+  toolbarTarget,
+  toolsTarget
 }: {
   base: string
   schema: string
@@ -39,6 +42,8 @@ export function TableEditing({
   disabled: boolean
   onPending: (pending: boolean) => void
   onSaved: (message: string) => void
+  toolbarTarget?: HTMLElement | null
+  toolsTarget?: HTMLElement | null
 }) {
   const history = useGridDraftHistory()
   const { drafts } = history
@@ -104,36 +109,17 @@ export function TableEditing({
     editing?.row == null
       ? undefined
       : drafts.find((draft) => draft.row === editing.row && draft.change.kind === "update")?.change
+  const toolbar = <div className={toolbarTarget ? styles.nativeToolbar : styles.toolbar}>
+    <button type="button" disabled={!writable || disabled || busy} onClick={() => setEditing({ row: null })}><Plus size={14} />新增行</button>
+    <button type="button" disabled={!writable || disabled || busy || !selected || !identifiable} onClick={() => setEditing({ row: selectedRow })}><PencilSimple size={14} />编辑行</button>
+    <button type="button" className="fouc-action" data-variant="destructive" disabled={!writable || disabled || busy || !selected || !identifiable} onClick={() => selected && stage({ kind: "delete", original: selected }, selectedRow)}><Trash size={14} />删除行</button>
+    <button type="button" className={styles.submit} disabled={!drafts.length || busy || disabled} onClick={() => void prepare()}><FileCode size={14} />提交</button>
+    <button type="button" disabled={!drafts.length || busy} onClick={() => { history.reset(); setError("") }}><ArrowCounterClockwise size={14} />回滚</button>
+  </div>
   return (
     <div className={styles.editing}>
-      <div className={styles.toolbar}>
-        <button
-          type="button"
-          disabled={!writable || disabled || busy}
-          onClick={() => setEditing({ row: null })}
-        >
-          <Plus size={14} />
-          新增记录
-        </button>
-        <button
-          type="button"
-          disabled={!writable || disabled || busy || !selected || !identifiable}
-          onClick={() => setEditing({ row: selectedRow })}
-        >
-          <PencilSimple size={14} />
-          编辑记录
-        </button>
-        <button
-          type="button"
-          disabled={!writable || disabled || busy || !selected || !identifiable}
-          onClick={() => selected && stage({ kind: "delete", original: selected }, selectedRow)}
-        >
-          <Trash size={14} />
-          删除记录
-        </button>
-        <span>{writable ? "变更须预览确认" : "解锁表格写入后可编辑"}</span>
-      </div>
-      <GridEditingActions page={page} provider={provider} selection={selection} activeCell={activeCell} shortcutTarget={shortcutTarget} writable={writable} disabled={disabled || busy || !!preview || !!editing} history={history} />
+      {toolbarTarget ? createPortal(toolbar, toolbarTarget) : toolbar}
+      <GridEditingActions page={page} provider={provider} selection={selection} activeCell={activeCell} shortcutTarget={shortcutTarget} writable={writable} disabled={disabled || busy || !!preview || !!editing} history={history} toolbarTarget={toolsTarget} />
       {drafts.length > 0 && (
         <div className={styles.drafts}>
           <div className={styles.draftHead}>

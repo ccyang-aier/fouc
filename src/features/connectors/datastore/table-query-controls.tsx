@@ -1,7 +1,9 @@
 "use client"
 
-import { useState } from "react"
-import { Funnel, MagnifyingGlass, ArrowsClockwise, Eye, Copy, Check } from "@phosphor-icons/react"
+import { useEffect, useEffectEvent, useState } from "react"
+import { createPortal } from "react-dom"
+import { Funnel, MagnifyingGlass, ArrowsClockwise, Eye, Copy, Check, CaretDown, ArrowsDownUp, Timer } from "@phosphor-icons/react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import type { RelationalTablePage, RelationalTableQuery, RelationalTableQueryPreview } from "@fouc/shared"
 import { backendFetch } from "@/lib/backend"
 import { buildFilter, draftFilter } from "./table-filter-model"
@@ -24,7 +26,10 @@ export function TableQueryControls({
   onSearch,
   onApply,
   onLimit,
-  onRefresh
+  onRefresh,
+  active = true,
+  footerTarget,
+  onActionTarget
 }: {
   base: string
   schema: string
@@ -40,6 +45,9 @@ export function TableQueryControls({
   onApply: (query: RelationalTableQuery) => void
   onLimit: (size: number) => void
   onRefresh: () => void
+  active?: boolean
+  footerTarget?: HTMLElement | null
+  onActionTarget?: (node: HTMLDivElement | null) => void
 }) {
   const [filter, setFilter] = useState(() => draftFilter(query.filter, page.columns))
   const [sort, setSort] = useState(query.sort)
@@ -48,7 +56,16 @@ export function TableQueryControls({
   const [preview, setPreview] = useState<RelationalTableQueryPreview | null>(null)
   const [previewBusy, setPreviewBusy] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [autoSeconds, setAutoSeconds] = useState(0)
+  const autoRefresh = useEffectEvent(() => { if (active && !disabled && !busy && !previewBusy) onRefresh() })
+  useEffect(() => {
+    if (!autoSeconds) return
+    const timer = window.setInterval(() => autoRefresh(), autoSeconds * 1000)
+    return () => window.clearInterval(timer)
+  }, [autoSeconds])
   const controlsDisabled = disabled || busy || previewBusy
+  function show(next: "filter" | "sort") { setTab(next); if (!open || tab === next) onToggle() }
+  const pageSize = <select aria-label="每页行数" disabled={disabled || busy} value={limit} onChange={event => onLimit(Number(event.target.value))}>{[25, 50, 100, 250, 500].map(size => <option key={size} value={size}>{size} 行 / 页</option>)}</select>
   function build(): RelationalTableQuery {
     return { filter: buildFilter(filter, page.columns), sort }
   }
@@ -91,40 +108,15 @@ export function TableQueryControls({
   return (
     <section className={styles.controls} aria-label="表查询控制">
       <div className={styles.toolbar}>
-        <button
-          type="button"
-          aria-expanded={open}
-          className={query.filter || query.sort.length ? styles.active : ""}
-          onClick={onToggle}
-        >
-          <Funnel size={14} />
-          筛选与排序{query.filter || query.sort.length ? " · 已应用" : ""}
-        </button>
-        <label className={styles.pageSearch}>
-          <MagnifyingGlass size={13} />
-          <input
-            aria-label="当前页搜索"
-            value={search}
-            placeholder="搜索当前页"
-            onChange={(event) => onSearch(event.target.value)}
-          />
-        </label>
-        <span className={styles.scope}>WHERE / ORDER BY 在数据库执行</span>
-        <select
-          aria-label="每页行数"
-          disabled={disabled || busy}
-          value={limit}
-          onChange={(event) => onLimit(Number(event.target.value))}
-        >
-          {[25, 50, 100, 250, 500].map((size) => (
-            <option key={size} value={size}>
-              {size} 行 / 页
-            </option>
-          ))}
-        </select>
+        <DropdownMenu><DropdownMenuTrigger asChild><button type="button" className={`fouc-action ${styles.rowScope}`}>{search ? "当前页搜索" : "全部行"}<CaretDown size={11} /></button></DropdownMenuTrigger><DropdownMenuContent align="start"><label className={styles.pageSearch}><MagnifyingGlass size={13} /><input aria-label="当前页搜索" value={search} placeholder="搜索当前页" onChange={event => onSearch(event.target.value)} /></label></DropdownMenuContent></DropdownMenu>
+        <button type="button" className={styles.condition} data-kind="where" aria-label="WHERE 筛选条件" aria-expanded={open && tab === "filter"} disabled={disabled || busy} onClick={() => show("filter")}><Funnel size={14} /><b>WHERE</b><span>{query.filter ? "已应用筛选" : ""}</span><CaretDown size={11} /></button>
+        <button type="button" className={styles.condition} data-kind="sort" aria-label="ORDER BY 排序规则" aria-expanded={open && tab === "sort"} disabled={disabled || busy} onClick={() => show("sort")}><ArrowsDownUp size={14} /><b>ORDER BY</b><span>{query.sort.map(item => `${item.column} ${item.direction.toUpperCase()}`).join(", ")}</span><CaretDown size={11} /></button>
         <button type="button" aria-label="刷新表数据" disabled={disabled || busy} onClick={onRefresh}>
-          <ArrowsClockwise size={14} />
+          <ArrowsClockwise size={14} />刷新
         </button>
+        <label className={styles.auto}><Timer size={14} /><select aria-label="自动刷新表数据" value={autoSeconds} onChange={event => setAutoSeconds(Number(event.target.value))}><option value={0}>自动</option>{[5, 10, 30, 60].map(seconds => <option key={seconds} value={seconds}>{seconds}s</option>)}</select></label>
+        <div ref={onActionTarget} className={styles.actionTarget} />
+        {footerTarget ? createPortal(pageSize, footerTarget) : null}
       </div>
       {open && (
         <div className={styles.panel}>

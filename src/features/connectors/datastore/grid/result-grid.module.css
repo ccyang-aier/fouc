@@ -1,5 +1,11 @@
 .gridRoot { display: flex; flex-direction: column; flex: 1 1 0; min-width: 0; min-height: 0; overflow: hidden; color: var(--ink-soft); background: var(--panel); font-family: var(--font-sans); }
 .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 12px; min-height: 40px; border-bottom: 1px solid var(--line); flex-shrink: 0; }
+.toolbar[data-external="true"] { display: contents; }
+.toolbar[data-external="true"] > .selectionLabel { display: none; }
+.jump { position: relative; display: inline-flex; }
+.jump > button { display: inline-flex; align-items: center; gap: 5px; height: 27px; border: 0; border-radius: 4px; padding: 0 4px; color: var(--ink-soft); font-size: 12px; cursor: pointer; }
+.jumpPanel { position: absolute; right: 0; top: 100%; z-index: 70; display: flex; flex-direction: column; gap: 2px; min-width: 170px; max-height: 350px; overflow: auto; padding: 5px; border: 1px solid var(--floating-border); border-radius: 6px; background: var(--panel); box-shadow: var(--floating-shadow); }
+.jumpPanel button { text-align: left; border: 0; border-radius: 4px; padding: 6px 9px; font-size: 12px; cursor: pointer; }
 .selectionLabel, .toolbarActions { display: flex; align-items: center; gap: 7px; min-width: 0; }
 .selectionLabel svg { color: var(--muted-strong); flex-shrink: 0; }
 .selectionLabel strong { font-size: 11px; font-weight: 600; white-space: nowrap; }
@@ -19,9 +25,15 @@
 .table { border-collapse: separate; border-spacing: 0; table-layout: fixed; font-size: 13px; }
 .table thead { position: sticky; top: 0; z-index: 7; }
 .table th, .table td { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 0 10px; box-sizing: border-box; }
-.table thead th { position: relative; height: 44px; text-align: left; background: var(--surface-subtle); font-weight: 500; cursor: pointer; color: var(--ink); user-select: none; }
-.table thead th > span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 16px; padding-left: 7px; padding-right: 31px; }
-.table thead small { display: flex; align-items: center; gap: 4px; color: var(--muted-strong); font: 9px/13px var(--font-code); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 7px; padding-right: 24px; }
+.table thead th { position: relative; height: 52px; text-align: left; background: color-mix(in srgb, var(--ink) 6%, var(--panel)); font-weight: 600; font-size: 14px; cursor: pointer; color: var(--ink); user-select: none; }
+.table thead th > span { display: flex; align-items: center; gap: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 16px; padding-left: 7px; padding-right: 31px; }
+.table thead th > span > svg { flex-shrink: 0; }
+.primaryKey { color: #f7901e; }
+.uniqueKey { color: #e74e64; }
+.table thead small[data-type="number"] { color: #326cff; }
+.table thead small[data-type="date"] { color: #a648df; }
+.table thead small[data-type="text"] { color: #21815d; }
+.table thead small { display: flex; align-items: center; gap: 4px; color: var(--muted-strong); font: 10px/14px var(--font-code); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 7px; padding-right: 24px; }
 .table thead small i { color: var(--accent-ink); font: italic 11px var(--font-code); }
 .table thead th:has(.sortButton) > span { padding-right: 48px; }
 .columnActions { display: flex; align-items: center; gap: 1px; position: absolute; top: 8px; right: 7px; }
@@ -34,12 +46,13 @@
 .table .resizeHandle:hover, .table .resizeHandle:focus-visible { background: color-mix(in srgb, var(--accent) 35%, transparent); }
 .table th[data-drop] { box-shadow: inset 2px 0 var(--accent); }.table th[data-moving] { opacity: .58; }
 .sortButton b { font: 8px var(--font-code); color: var(--accent-ink); }
-.table tbody td { height: var(--grid-row-height, 32px); position: relative; font: var(--grid-font-size, 13px)/calc(var(--grid-row-height, 32px) - 1px) var(--grid-value-font, var(--font-code)); cursor: cell; white-space: nowrap; background: var(--panel); }
+.table tbody td { height: var(--grid-row-height, 32px); position: relative; font: var(--grid-font-size, 13px)/calc(var(--grid-row-height, 32px) - 1px) var(--grid-value-font, var(--font-code)); font-weight: 500; cursor: cell; white-space: nowrap; background: var(--panel); }
 .table tbody td > span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.table tbody tr:nth-child(even) > td:not([data-selected]):not([data-dirty]) { background: color-mix(in srgb, var(--ink) 4%, var(--panel)); }
 .table tbody tr:hover > td:not([data-selected]) { background: color-mix(in srgb, var(--surface-hover) 45%, var(--panel)); }
 .table th.corner { position: sticky; left: 0; width: var(--grid-row-number-width, 48px); padding: 0; z-index: 8; text-align: center; }
-.corner button { width: 100%; height: 44px; border: 0; border-radius: 0; color: var(--muted-strong); font: 10px var(--font-code); }
-.table th.rowNumber { position: sticky; left: 0; z-index: 5; width: var(--grid-row-number-width, 48px); text-align: right; font: 10px/calc(var(--grid-row-height, 32px) - 1px) var(--font-code); color: var(--muted-strong); background: var(--surface-subtle); cursor: pointer; user-select: none; height: var(--grid-row-height, 32px); }
+.corner button { width: 100%; height: 52px; border: 0; border-radius: 0; color: var(--muted-strong); font: 10px var(--font-code); }
+.table th.rowNumber { position: sticky; left: 0; z-index: 5; width: var(--grid-row-number-width, 48px); text-align: right; font: 12px/calc(var(--grid-row-height, 32px) - 1px) var(--font-code); color: var(--muted-strong); background: var(--surface-subtle); cursor: pointer; user-select: none; height: var(--grid-row-height, 32px); }
 .table thead th[data-pinned] { z-index: 5; }.table td[data-pinned] { z-index: 2; }.table td[data-pinned][data-active] { z-index: 4; }
 .table [data-pinned="left"] { box-shadow: 1px 0 0 var(--line); }.table [data-pinned="right"] { box-shadow: -1px 0 0 var(--line); }
 .table td[data-format-error] > span { text-decoration: underline dotted var(--warn-ink); text-underline-offset: 3px; }

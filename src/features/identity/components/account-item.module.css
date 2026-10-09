@@ -4,12 +4,12 @@
   display: flex;
   width: 100%;
   min-width: 0;
-  min-height: 60px;
+  min-height: 40px;
   align-items: center;
-  gap: 10px;
-  padding: 10px;
+  gap: 8px;
+  padding: 5px 8px;
   border: 1px solid var(--sidebar-row-border);
-  border-radius: 14px;
+  border-radius: 8px;
   background: color-mix(in srgb, var(--sidebar-row-bg) 78%, transparent);
   backdrop-filter: blur(12px);
   color: var(--ink);
@@ -24,8 +24,8 @@
 .avatarWrap {
   position: relative;
   display: grid;
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   flex: none;
   place-items: center;
   border-radius: 50%;
@@ -37,12 +37,12 @@
 }
 
 .avatar {
-  width: 36px;
-  height: 36px;
-  font-size: 13px;
+  width: 28px;
+  height: 28px;
+  font-size: 11px;
 }
 
-.avatar[data-fallback='true'] {
+.avatar.avatar[data-fallback='true'] {
   background: #141416;
   color: #fff;
 }
@@ -57,8 +57,8 @@
   right: -1px;
   bottom: -1px;
   display: grid;
-  width: 11px;
-  height: 11px;
+  width: 9px;
+  height: 9px;
   place-items: center;
   border: 2px solid var(--wt-sidebar-standard-panel);
   border-radius: 50%;
@@ -94,16 +94,16 @@
 
 .name {
   color: var(--ink);
-  font-size: 13px;
+  font-size: 11.5px;
   font-weight: 600;
-  line-height: 18px;
+  line-height: 15px;
 }
 
 .detail {
-  margin-top: 2px;
+  margin-top: 0;
   color: var(--muted-strong);
-  font-size: 11px;
-  line-height: 16px;
+  font-size: 9.5px;
+  line-height: 12px;
 }
 
 .detailDivider {
@@ -126,62 +126,62 @@
 }
 
 .compact {
-  width: 40px;
-  min-height: 40px;
+  width: 32px;
+  min-height: 32px;
   justify-content: center;
   padding: 1px;
   border-color: transparent;
-  border-radius: 10px;
+  border-radius: 6px;
   background: transparent;
 }
 .menu {
-  width: 280px;
+  width: 228px;
   max-width: calc(100vw - 24px);
-  padding: 6px;
-  border-radius: 16px;
+  padding: 4px;
+  border-radius: 8px;
 }
 
 .menuHeader {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 10px 14px;
+  gap: 8px;
+  padding: 8px 8px 10px;
 }
 
 .menuAvatar {
-  width: 40px;
-  height: 40px;
-  font-size: 14px;
+  width: 28px;
+  height: 28px;
+  font-size: 11px;
 }
 
 .menuName {
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 20px;
-}
-
-.menuEmail {
-  margin-top: 3px;
-  color: var(--muted-strong);
   font-size: 12px;
+  font-weight: 600;
   line-height: 17px;
 }
 
+.menuEmail {
+  margin-top: 1px;
+  color: var(--muted-strong);
+  font-size: 10.5px;
+  line-height: 14px;
+}
+
 .separator {
-  margin: 4px 6px;
+  margin: 3px 4px;
 }
 
 .menuItem {
-  height: 36px;
-  gap: 10px;
-  border-radius: 9px;
-  font-size: 13px;
+  height: 30px;
+  gap: 8px;
+  border-radius: 5px;
+  font-size: 12px;
 }
 
 .menuHint {
   margin-left: auto;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .statusDot {
@@ -192,17 +192,17 @@
 }
 
 .statusMenu {
-  width: 240px;
-  padding: 6px;
-  border-radius: 14px;
+  width: 220px;
+  padding: 4px;
+  border-radius: 8px;
 }
 
 .statusItem {
   height: auto;
-  min-height: 48px;
-  gap: 10px;
-  padding-block: 8px;
-  border-radius: 9px;
+  min-height: 38px;
+  gap: 8px;
+  padding-block: 6px;
+  border-radius: 5px;
 }
 
 .statusText {

@@ -9,7 +9,7 @@
 
 import { useState } from "react"
 import { AccountItem } from "@/features/identity/components/account-item"
-import Image from "next/image"
+import { FoucMark } from "@/components/fouc-mark"
 import {
   BookOpenText,
   CaretDown,
@@ -169,20 +169,6 @@ function ManagedSidebarRow({ entry, active, editing, onSelect, onBeginRename, on
         <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}><DropdownMenuTrigger asChild><button type="button" aria-label={`${entry.name}更多操作`} title="更多操作" className={cn("flex size-6 items-center justify-center rounded-[5px] text-[var(--muted)] outline-none hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]", menuOpen && "bg-[var(--surface-hover)] text-[var(--ink)]")}><DotsThree className="size-4" weight="bold" /></button></DropdownMenuTrigger><DropdownMenuContent align="end" sideOffset={4} className="w-28 min-w-0"><DropdownMenuItem onSelect={onBeginRename}><PencilSimple />重命名</DropdownMenuItem><DropdownMenuSeparator /><DropdownMenuItem variant="destructive" onSelect={onDelete}><Trash />删除</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
       </div>
     </div>
-  )
-}
-
-/** 品牌标：直接展示 logo，不叠加容器或底色。 */
-function FoucMark({ compact = false }: { compact?: boolean }) {
-  return (
-    <Image
-      src="/brand/fouc-mark.png"
-      alt=""
-      width={compact ? 26 : 24}
-      height={compact ? 26 : 24}
-      draggable={false}
-      className="shrink-0 object-contain"
-    />
   )
 }
 

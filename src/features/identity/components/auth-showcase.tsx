@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import Image from 'next/image';
+import { useEffect, useState } from 'react';
 import { Check, CircleNotch } from '@phosphor-icons/react';
+import { FoucMark } from '@/components/fouc-mark';
 import styles from './account-dialog.module.css';
 
 const examples = [
@@ -24,9 +24,9 @@ export function AuthShowcase() {
   const stepIndex = tick % 4;
   const example = examples[exampleIndex];
   return <aside className={styles.showcase} aria-label="Fouc 协作示例">
-    <DotField />
+    <div className={styles.atmosphere} aria-hidden />
     <div className={styles.showcaseContent}>
-      <div className={styles.brand}><Image src="/brand/fouc-mark-cropped.png" width={33} height={23} style={{ width: 26, height: 'auto' }} alt="" unoptimized /><b>Fouc</b><span>AI WORKBENCH</span></div>
+      <div className={styles.brand}><FoucMark compact /><b>Fouc</b><span>AI WORKBENCH</span></div>
       <div className={styles.example} key={exampleIndex}>
         <div className={styles.exampleHeader}><span>Agent · {example.agent}</span><span className={styles.exampleLabel}>协作示例</span></div>
         <p className={styles.exampleTitle}>{example.task}</p>
@@ -39,46 +39,4 @@ export function AuthShowcase() {
       <div className={styles.showcaseFooter}><span className={styles.pages} aria-hidden>{examples.map((item, index) => <i key={item.agent} data-active={index === exampleIndex} />)}</span><span>0{exampleIndex + 1} / 03</span></div>
     </div>
   </aside>;
-}
-
-function DotField() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const context = canvas?.getContext('2d');
-    if (!canvas || !context) return;
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    let width = 0, height = 0, frame = 0, time = 0;
-    const draw = () => {
-      context.clearRect(0, 0, width, height);
-      context.fillStyle = '#141416';
-      for (let y = 6.5; y < height; y += 13) for (let x = 6.5; x < width; x += 13) {
-        const nx = x / width, ny = y / height;
-        const wave = Math.sin(nx * 5 + time * 2 + Math.sin(ny * 3 + time) * 1.4) + Math.sin(ny * 6 - time * 1.3 + nx * 2) + Math.sin((nx + ny) * 4 + time * 1.7);
-        const value = Math.pow((wave / 3 + 1) / 2, 2.4) * (.3 + ny * .85);
-        const radius = Math.min(value, 1) * 5.4;
-        if (radius < .35) continue;
-        context.globalAlpha = .15 + value * .7;
-        context.beginPath(); context.arc(x, y, radius, 0, Math.PI * 2); context.fill();
-      }
-      context.globalAlpha = 1;
-    };
-    const animate = () => {
-      frame = 0;
-      if (!width || !height) return;
-      if (!document.hidden) { time += .006; draw(); }
-      frame = window.requestAnimationFrame(animate);
-    };
-    const resize = () => {
-      width = canvas.clientWidth; height = canvas.clientHeight;
-      const density = Math.min(window.devicePixelRatio || 1, 2);
-      canvas.width = width * density; canvas.height = height * density;
-      context.setTransform(density, 0, 0, density, 0, 0); draw();
-      if (!reducedMotion.matches && !frame && width && height) frame = window.requestAnimationFrame(animate);
-    };
-    const observer = new ResizeObserver(resize);
-    observer.observe(canvas); resize();
-    return () => { observer.disconnect(); window.cancelAnimationFrame(frame); };
-  }, []);
-  return <canvas ref={canvasRef} className={styles.field} aria-hidden />;
 }

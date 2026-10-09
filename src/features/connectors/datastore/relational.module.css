@@ -87,6 +87,10 @@
   font-weight: 600;
 }
 .dialogHead button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
   padding: 4px;
   cursor: pointer;
   color: var(--muted-strong);

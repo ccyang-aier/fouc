@@ -10,7 +10,7 @@ export function SqlDialog({ title, busy = false, role = 'dialog', className = ''
   const dialog = useRef<HTMLDialogElement>(null)
   useEffect(() => { dialog.current?.showModal() }, [])
   return <dialog ref={dialog} role={role} className={`${common.dialog} ${styles.dialog} ${className}`} aria-label={title} onCancel={(event) => { event.preventDefault(); if (!busy) onClose() }}>
-    <header className={common.dialogHead}><h2>{title}</h2><button type="button" disabled={busy} aria-label={`关闭${title}`} onClick={onClose}><X size={18} /></button></header>{children}</dialog>
+    <header className={common.dialogHead}><h2>{title}</h2><button type="button" className="fouc-action" disabled={busy} aria-label={`关闭${title}`} onClick={onClose}><X size={18} /></button></header>{children}</dialog>
 }
 export function SaveSqlDialog({ base, sql, database, schema, library, file, onClose, onSaved }: {
   base: string; sql: string; database: string; schema: string | null; library: SavedSqlLibrary | null; file: Pick<SavedSqlDocument, 'id' | 'name' | 'folderId' | 'version'> | null;

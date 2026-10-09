@@ -9,7 +9,7 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { ArrowClockwise, CircleNotch, Fingerprint, GithubLogo, GoogleLogo } from '@phosphor-icons/react';
+import { ArrowClockwise, Fingerprint, GithubLogo, GoogleLogo } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { authErrorCopyFor } from '../auth-errors';
 import { foucAuthApi, type FoucOAuthProvider } from '../auth-api';
@@ -106,15 +106,11 @@ export function OAuthProviderSection({
                 type="button"
                 variant="outline"
                 disabled={startingId !== null}
-                aria-busy={starting}
+                loading={starting}
                 onClick={() => void startSignIn(provider)}
                 className={styles.providerButton}
               >
-                {starting ? (
-                  <CircleNotch className="size-4 shrink-0 animate-spin text-[var(--muted-strong)]" aria-hidden />
-                ) : (
-                  <ProviderIcon className="size-4 shrink-0" aria-hidden />
-                )}
+                {!starting ? <ProviderIcon className="size-4 shrink-0" aria-hidden /> : null}
                 <span className="min-w-0 truncate">
                   {starting ? '正在跳转…' : provider.name}
                 </span>

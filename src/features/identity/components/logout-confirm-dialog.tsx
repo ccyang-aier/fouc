@@ -62,7 +62,7 @@ export function LogoutConfirmDialog({ open, onClose }: { open: boolean; onClose:
     </div>
     <footer className={styles.footer}>
       <Button type="button" variant="outline" onClick={close} disabled={signingOut}>取消</Button>
-      <Button type="button" variant="outline" data-variant="destructive" className={styles.danger} onClick={() => void exitAccount()} disabled={signingOut}>{signingOut ? '正在退出…' : '退出登录'}</Button>
+      <Button type="button" variant="outline" data-variant="destructive" className={styles.danger} onClick={() => void exitAccount()} loading={signingOut}>{signingOut ? '正在退出…' : '退出登录'}</Button>
     </footer>
   </dialog>;
 }

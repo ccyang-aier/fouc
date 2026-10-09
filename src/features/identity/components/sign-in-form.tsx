@@ -10,7 +10,7 @@
 import { useState, type FormEvent } from 'react';
 import { useIdentity } from '../identity-provider';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight, CircleNotch } from '@phosphor-icons/react';
+import { ArrowLeft, ArrowRight } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { authErrorCopyFor, isFoucAuthFlowError } from '../auth-errors';
 import { foucAuthApi, type FoucAuthApi } from '../auth-api';
@@ -23,10 +23,12 @@ import styles from './auth-form.module.css';
 export function SignInForm({
   targetPath,
   onSuccess,
+  submitLabel = '登录',
   api = foucAuthApi,
 }: {
   targetPath: string;
   onSuccess?: () => void;
+  submitLabel?: string;
   api?: FoucAuthApi;
 }) {
   const router = useRouter();
@@ -103,9 +105,8 @@ export function SignInForm({
         disabled={submitting}
       />
       {banner ? <AuthStatusMessage tone="error" title={banner.title} description={banner.description} /> : null}
-      <Button type="submit" disabled={submitting} className={styles.submit} aria-busy={submitting}>
-        {submitting ? <CircleNotch className="size-4 animate-spin" aria-hidden /> : null}
-        {submitting ? '正在登录…' : '登录'}
+      <Button type="submit" loading={submitting} className={styles.submit}>
+        {submitting ? '正在登录…' : submitLabel}
         {!submitting ? <ArrowRight size={15} data-arrow aria-hidden /> : null}
       </Button>
     </form>

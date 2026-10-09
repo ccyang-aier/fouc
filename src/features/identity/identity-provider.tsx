@@ -5,8 +5,10 @@ import { sessionExpiredEvent } from '@/lib/authenticated-fetch';
 import { createIdentitySessionStore, type IdentitySession } from './session-store';
 import { authErrorCopyFor } from './auth-errors';
 import { AccountDialog } from './components/account-dialog';
+import { AppAlert, type AppAlertMessage } from '@/components/app-alert';
 import { createPresenceStore } from './presence-store';
 import type { PresencePreference, PresenceStatus } from './presence';
+import { presenceDisplay } from './presence';
 
 type IdentityContextValue = {
   session: IdentitySession;
@@ -15,6 +17,7 @@ type IdentityContextValue = {
   signOut: () => Promise<void>;
   expireSession: () => void;
   openSignIn: () => void;
+  openSwitchAccount: () => void;
   presence: PresenceStatus;
   presencePreference: PresencePreference;
   setPresence: (value: PresencePreference) => void;
@@ -27,13 +30,18 @@ export function IdentityProvider({ children }: { children: ReactNode }) {
   const userId = session.status === 'authenticated' ? session.user.id : null;
   const presenceStore = useMemo(() => createPresenceStore(userId), [userId]);
   const presence = useSyncExternalStore(presenceStore.subscribe, presenceStore.getSnapshot, presenceStore.getServerSnapshot);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [dialogMode, setDialogMode] = useState<'account' | 'switch-account' | null>(null);
+  const [notice, setNotice] = useState<(AppAlertMessage & { markerColor?: string }) | null>(null);
+  const noticeId = useRef(0);
+  const showNotice = useCallback((tone: AppAlertMessage['tone'], title: string, markerColor?: string) => {
+    setNotice({ id: ++noticeId.current, tone, title, markerColor });
+  }, []);
+  const closeNotice = useCallback(() => setNotice(null), []);
   const channel = useRef<BroadcastChannel | null>(null);
   useEffect(() => {
     void store.refresh();
     const onFocus = () => { void store.refresh(); };
-    const onExpired = () => { if (store.getSnapshot().status === 'authenticated') { store.expire(); setNotice('登录已过期，你可以继续使用本机知识库'); } };
+    const onExpired = () => { if (store.getSnapshot().status === 'authenticated') { store.expire(); showNotice('warning', '登录已过期，请重新登录'); } };
     window.addEventListener('focus', onFocus);
     window.addEventListener(sessionExpiredEvent, onExpired);
     if (typeof BroadcastChannel !== 'undefined') {
@@ -41,43 +49,47 @@ export function IdentityProvider({ children }: { children: ReactNode }) {
       channel.current.onmessage = () => { void store.refresh(true); };
     }
     return () => { window.removeEventListener('focus', onFocus); window.removeEventListener(sessionExpiredEvent, onExpired); channel.current?.close(); };
-  }, [store]);
-  useEffect(() => {
-    if (!notice) return;
-    const timer = window.setTimeout(() => setNotice(null), 4200);
-    return () => window.clearTimeout(timer);
-  }, [notice]);
+  }, [store, showNotice]);
   useEffect(() => {
     if (session.status !== 'authenticated') return;
     const timer = window.setTimeout(() => { void store.refresh(true); }, Math.min(Math.max(0, Date.parse(session.expiresAt) - Date.now()), 2_147_483_647));
     return () => window.clearTimeout(timer);
   }, [session, store]);
-  const closeDialog = useCallback(() => setDialogOpen(false), []);
+  const closeDialog = useCallback(() => setDialogMode(null), []);
   const refresh = useCallback(() => store.refresh(true), [store]);
-  const openSignIn = useCallback(() => setDialogOpen(true), []);
+  const openSignIn = useCallback(() => setDialogMode('account'), []);
+  const openSwitchAccount = useCallback(() => setDialogMode('switch-account'), []);
   const completeSignIn = useCallback(async () => {
-    await store.completeSignIn();
-    setNotice('登录成功，欢迎回来');
-    setDialogOpen(false);
+    const previous = store.getSnapshot();
+    const user = await store.completeSignIn();
+    const switched = previous.status === 'authenticated' && previous.user.id !== user.id;
+    showNotice('success', switched ? `已切换账户：${user.name}` : `欢迎回来，${user.name}`);
+    setDialogMode(null);
     channel.current?.postMessage('session-changed');
-  }, [store]);
+  }, [store, showNotice]);
   const signOut = useCallback(async () => {
     try {
       await store.signOut();
-      setNotice('已退出登录，本机文档仍然保留');
-      setDialogOpen(false);
+      showNotice('success', '已安全退出账户');
+      setDialogMode(null);
       channel.current?.postMessage('session-changed');
-    } catch (error) { setNotice(authErrorCopyFor(error).description); throw error; }
-  }, [store]);
+    } catch (error) { showNotice('error', authErrorCopyFor(error).description); throw error; }
+  }, [store, showNotice]);
   const expireSession = useCallback(() => {
     store.expire();
-    setNotice('登录已过期，你可以继续使用本机知识库');
-  }, [store]);
-  const value = useMemo<IdentityContextValue>(() => ({ session, refresh, openSignIn, completeSignIn, signOut, expireSession, presence: presence.status, presencePreference: presence.preference, setPresence: presenceStore.setPreference }), [session, refresh, openSignIn, completeSignIn, signOut, expireSession, presence, presenceStore]);
+    showNotice('warning', '登录已过期，请重新登录');
+  }, [store, showNotice]);
+  const setPresence = useCallback((preference: PresencePreference) => {
+    if (presenceStore.getSnapshot().preference === preference) return;
+    presenceStore.setPreference(preference);
+    const status = presenceDisplay(preference);
+    showNotice('success', `状态已设为「${status.label}」`, status.color);
+  }, [presenceStore, showNotice]);
+  const value = useMemo<IdentityContextValue>(() => ({ session, refresh, openSignIn, openSwitchAccount, completeSignIn, signOut, expireSession, presence: presence.status, presencePreference: presence.preference, setPresence }), [session, refresh, openSignIn, openSwitchAccount, completeSignIn, signOut, expireSession, presence, setPresence]);
   return <IdentityContext.Provider value={value}>
     {children}
-    <AccountDialog open={dialogOpen} onClose={closeDialog} />
-    {notice ? <div role="status" aria-live="polite" className="fixed bottom-6 left-1/2 z-[150] max-w-[calc(100vw-32px)] -translate-x-1/2 rounded-xl border border-[var(--line)] bg-[var(--panel)] px-5 py-3 text-[12px] text-[var(--ink)] shadow-lg">{notice}</div> : null}
+    <AccountDialog open={dialogMode !== null} switchingAccount={dialogMode === 'switch-account'} onClose={closeDialog} />
+    <AppAlert alert={notice} onClose={closeNotice} variant="toast" markerColor={notice?.markerColor} duration={3200} />
   </IdentityContext.Provider>;
 }
 

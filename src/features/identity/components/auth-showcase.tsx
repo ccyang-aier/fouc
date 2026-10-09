@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Check, CircleNotch } from '@phosphor-icons/react';
 import { FoucMark } from '@/components/fouc-mark';
+import { AuthBackdrop } from './auth-backdrop';
 import styles from './account-dialog.module.css';
 
 const examples = [
@@ -24,7 +25,7 @@ export function AuthShowcase() {
   const stepIndex = tick % 4;
   const example = examples[exampleIndex];
   return <aside className={styles.showcase} aria-label="Fouc 协作示例">
-    <div className={styles.atmosphere} aria-hidden />
+    <AuthBackdrop />
     <div className={styles.showcaseContent}>
       <div className={styles.brand}><FoucMark compact /><b>Fouc</b><span>AI WORKBENCH</span></div>
       <div className={styles.example} key={exampleIndex}>

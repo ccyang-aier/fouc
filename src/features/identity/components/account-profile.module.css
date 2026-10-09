@@ -197,19 +197,10 @@
   background: var(--ink-soft);
 }
 
-.spinner {
-  animation: spin 800ms linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
 @media (max-width: 540px) {
   .body { padding-inline: 22px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .input { transition: none; }
-  .spinner { animation: none; }
 }

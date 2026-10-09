@@ -3,6 +3,8 @@ import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
+import { ButtonLoading } from "./button-loading"
+import loadingStyles from "./button-loading.module.css"
 
 const buttonVariants = cva(
   "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md text-[12px] font-medium outline-none transition-[color,background-color,border-color,box-shadow,transform] disabled:pointer-events-none disabled:opacity-45 focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-panel active:translate-y-px [&_svg]:pointer-events-none [&_svg]:shrink-0",
@@ -37,20 +39,34 @@ function Button({
   variant,
   size,
   asChild = false,
+  loading = false,
+  disabled,
+  children,
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
+    loading?: boolean
   }) {
   const Comp = asChild ? Slot : "button"
+  const busy = loading || props["aria-busy"] === true || props["aria-busy"] === "true"
 
   return (
     <Comp
       data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
       {...props}
-    />
+      className={cn(buttonVariants({ variant, size, className }), busy && !asChild && loadingStyles.button)}
+      aria-busy={busy || props["aria-busy"]}
+      disabled={busy ? true : disabled}
+    >
+      {busy && !asChild ? (
+        <>
+          <span className={loadingStyles.content} data-slot="button-content">{children}</span>
+          <span className={loadingStyles.overlay}><ButtonLoading /></span>
+        </>
+      ) : children}
+    </Comp>
   )
 }
 
-export { Button, buttonVariants }
+export { Button, ButtonLoading, buttonVariants }

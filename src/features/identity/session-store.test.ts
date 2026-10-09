@@ -30,6 +30,26 @@ describe('global Fouc session', () => {
     await expect(store.completeSignIn()).rejects.toMatchObject({ code: 'SESSION_NOT_PERSISTED' });
     expect(store.getSnapshot().status).toBe('anonymous');
   });
+  test('switching accounts replaces the subject and ignores a late old-account check', async () => {
+    let reads = 0;
+    let resolvePrevious!: (value: FoucAuthSessionInfo) => void;
+    const nextUser = { ...user, id: 'next-user', name: 'Second account' };
+    const next: FoucAuthSessionInfo = { user: nextUser, session: { ...active.session!, id: 'next-session', userId: nextUser.id } };
+    const store = createIdentitySessionStore(api({ getSession: async () => {
+      reads++;
+      if (reads === 1) return active;
+      if (reads === 2) return new Promise((resolve) => { resolvePrevious = resolve; });
+      return next;
+    } }));
+    await store.refresh();
+    const previousCheck = store.refresh(true);
+    expect(store.getSnapshot()).toMatchObject({ status: 'authenticated', user });
+    await store.completeSignIn();
+    expect(store.getSnapshot()).toMatchObject({ status: 'authenticated', user: nextUser });
+    resolvePrevious(active);
+    await previousCheck;
+    expect(store.getSnapshot()).toMatchObject({ status: 'authenticated', user: nextUser });
+  });
   test('sign-out failure preserves the known identity; successful revocation clears it', async () => {
     let fail = true;
     const store = createIdentitySessionStore(api({ signOut: async () => { if (fail) throw new Error('offline'); return { success: true }; } }));

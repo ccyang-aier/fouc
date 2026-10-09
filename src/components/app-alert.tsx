@@ -1,9 +1,11 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import { CheckCircle, Info, WarningCircle, X, XCircle } from "@phosphor-icons/react"
 
 import { cn } from "@/lib/utils"
+
+import styles from "./app-alert.module.css"
 
 export type AppAlertTone = "success" | "info" | "warning" | "error"
 
@@ -14,10 +16,12 @@ export interface AppAlertMessage {
   description?: string
 }
 
-interface AppAlertProps {
+export interface AppAlertProps {
   alert: AppAlertMessage | null
   onClose: () => void
   duration?: number
+  variant?: "card" | "toast"
+  markerColor?: string
 }
 
 const toneStyles: Record<AppAlertTone, { icon: string; iconSurface: string }> = {
@@ -39,12 +43,57 @@ const toneStyles: Record<AppAlertTone, { icon: string; iconSurface: string }> = 
   },
 }
 
-export function AppAlert({ alert, onClose, duration = 5_000 }: AppAlertProps) {
+function ToastAlert({ alert, onClose, duration, markerColor, icon }: {
+  alert: AppAlertMessage
+  onClose: () => void
+  duration: number
+  markerColor?: string
+  icon: ReactNode
+}) {
+  const [closing, setClosing] = useState(false)
+
   useEffect(() => {
-    if (!alert || duration <= 0) return
+    if (duration <= 0) return
+    const timer = window.setTimeout(() => setClosing(true), duration)
+    return () => window.clearTimeout(timer)
+  }, [duration])
+
+  useEffect(() => {
+    if (!closing) return
+    const timer = window.setTimeout(onClose, 160)
+    return () => window.clearTimeout(timer)
+  }, [closing, onClose])
+
+  return (
+    <div
+      role={alert.tone === "error" ? "alert" : "status"}
+      aria-live={alert.tone === "error" ? "assertive" : "polite"}
+      className={styles.toast}
+      data-closing={closing || undefined}
+    >
+      {markerColor ? <span className={styles.marker} style={{ backgroundColor: markerColor }} aria-hidden /> : icon}
+      <span className={styles.message}>
+        <span>{alert.title}</span>
+        {alert.description ? <span className={styles.description}>{alert.description}</span> : null}
+      </span>
+      <button
+        type="button"
+        onClick={() => setClosing(true)}
+        aria-label="关闭通知"
+        className={cn("fouc-action", styles.close)}
+      >
+        <X className="size-3" weight="bold" aria-hidden />
+      </button>
+    </div>
+  )
+}
+
+export function AppAlert({ alert, onClose, duration = 5_000, variant = "card", markerColor }: AppAlertProps) {
+  useEffect(() => {
+    if (!alert || duration <= 0 || variant === "toast") return
     const timer = window.setTimeout(onClose, duration)
     return () => window.clearTimeout(timer)
-  }, [alert, duration, onClose])
+  }, [alert, duration, onClose, variant])
 
   if (!alert) return null
 
@@ -56,6 +105,19 @@ export function AppAlert({ alert, onClose, duration = 5_000 }: AppAlertProps) {
       : alert.tone === "error"
         ? XCircle
         : Info
+
+  if (variant === "toast") {
+    return (
+      <ToastAlert
+        key={alert.id}
+        alert={alert}
+        onClose={onClose}
+        duration={duration}
+        markerColor={markerColor}
+        icon={<Icon className={styles.icon} weight="fill" aria-hidden />}
+      />
+    )
+  }
 
   return (
     <div

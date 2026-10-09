@@ -11,7 +11,7 @@
 
 import { verificationCallbackUrl } from '../verification-url';
 import { useEffect, useMemo, useState } from 'react';
-import { CircleNotch, PaperPlaneTilt } from '@phosphor-icons/react';
+import { PaperPlaneTilt } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { authErrorCopyFor, isFoucAuthFlowError } from '../auth-errors';
 import { foucAuthApi, type FoucAuthApi } from '../auth-api';
@@ -84,8 +84,8 @@ export function ResendVerificationEntry({
         error={emailError}
         disabled={sending}
       />
-      <Button type="button" variant="outline" size="sm" className="h-8 self-start" disabled={sending || remainingSeconds > 0} onClick={() => void resend()}>
-        {sending ? <CircleNotch className="size-3.5 animate-spin" aria-hidden /> : <PaperPlaneTilt className="size-3.5" weight="fill" aria-hidden />}
+      <Button type="button" variant="outline" size="sm" className="h-8 self-start" loading={sending} disabled={remainingSeconds > 0} onClick={() => void resend()}>
+        {!sending ? <PaperPlaneTilt className="size-3.5" weight="fill" aria-hidden /> : null}
         {remainingSeconds > 0 ? `重新发送(${remainingSeconds}s)` : '重新发送验证邮件'}
       </Button>
       {outcome ? <AuthStatusMessage tone={outcome.tone} title={outcome.title} description={outcome.description} /> : null}

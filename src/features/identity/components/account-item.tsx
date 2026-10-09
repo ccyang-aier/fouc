@@ -1,6 +1,6 @@
 'use client';
 
-import { CaretDown, CaretRight, Check, CircleNotch, SignOut, User, UserCircle } from '@phosphor-icons/react';
+import { ArrowsLeftRight, CaretDown, CaretRight, Check, CircleNotch, SignOut, User, UserCircle } from '@phosphor-icons/react';
 import { useRef, useState } from 'react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -11,7 +11,7 @@ import { LogoutConfirmDialog } from './logout-confirm-dialog';
 import styles from './account-item.module.css';
 
 export function AccountItem({ compact = false }: { compact?: boolean }) {
-  const { session, openSignIn, presence, presencePreference, setPresence } = useIdentity();
+  const { session, openSignIn, openSwitchAccount, presence, presencePreference, setPresence } = useIdentity();
   const [logoutOpen, setLogoutOpen] = useState(false);
   const openingDialog = useRef(false);
   const user = session.status === 'authenticated' ? session.user : null;
@@ -76,6 +76,7 @@ export function AccountItem({ compact = false }: { compact?: boolean }) {
         </DropdownMenuSubContent>
       </DropdownMenuSub>
       <DropdownMenuItem className={styles.menuItem} onSelect={() => { openingDialog.current = true; openSignIn(); }}><UserCircle />个人信息</DropdownMenuItem>
+      <DropdownMenuItem className={styles.menuItem} onSelect={() => { openingDialog.current = true; openSwitchAccount(); }}><ArrowsLeftRight />切换账户</DropdownMenuItem>
       <DropdownMenuSeparator className={styles.separator} />
       <DropdownMenuItem variant="destructive" className={styles.menuItem} onSelect={() => { openingDialog.current = true; setLogoutOpen(true); }}><SignOut />退出登录</DropdownMenuItem>
     </DropdownMenuContent>

@@ -8,7 +8,7 @@
 
 import { verificationCallbackUrl } from '../verification-url';
 import { useState, type FormEvent } from 'react';
-import { CircleNotch, PaperPlaneTilt } from '@phosphor-icons/react';
+import { PaperPlaneTilt } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { authErrorCopyFor } from '../auth-errors';
 import { foucAuthApi, type FoucAuthApi } from '../auth-api';
@@ -108,8 +108,8 @@ export function SignUpForm({ api = foucAuthApi }: { api?: FoucAuthApi }) {
         disabled={submitting}
       />
       {banner ? <AuthStatusMessage tone="error" title={banner.title} description={banner.description} /> : null}
-      <Button type="submit" disabled={submitting} className={styles.submit} aria-busy={submitting}>
-        {submitting ? <CircleNotch className="size-4 animate-spin" aria-hidden /> : <PaperPlaneTilt className="size-4" weight="fill" aria-hidden />}
+      <Button type="submit" loading={submitting} className={styles.submit}>
+        {!submitting ? <PaperPlaneTilt className="size-4" weight="fill" aria-hidden /> : null}
         {submitting ? '正在提交…' : '创建账号'}
       </Button>
     </form>

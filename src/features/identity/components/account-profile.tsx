@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
-import { CheckCircle, SpinnerGap } from '@phosphor-icons/react';
+import { CheckCircle } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { UserAvatar } from '@/components/user-avatar';
 import { foucAuthApi } from '../auth-api';
@@ -95,8 +95,7 @@ export function AccountProfile({ onClose }: { onClose: () => void }) {
       </div>
       <footer className={`fouc-dialog-footer ${styles.footer}`}>
         <Button type="button" variant="outline" disabled={saving} onClick={onClose}>取消</Button>
-        <Button type="submit" className={styles.save} disabled={saving || !name.trim() || name.trim() === user.name} aria-busy={saving}>
-          {saving ? <SpinnerGap size={13} className={styles.spinner} aria-hidden /> : null}
+        <Button type="submit" className={styles.save} loading={saving} disabled={!name.trim() || name.trim() === user.name}>
           {saving ? '正在保存…' : '保存更改'}
         </Button>
       </footer>

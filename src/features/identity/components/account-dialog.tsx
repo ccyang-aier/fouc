@@ -9,10 +9,11 @@ import { AccountProfile } from './account-profile';
 import styles from './account-dialog.module.css';
 
 /** Native dialog keeps focus, Escape dismissal and focus restoration in one layer. */
-export function AccountDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function AccountDialog({ open, switchingAccount = false, onClose }: { open: boolean; switchingAccount?: boolean; onClose: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const { session } = useIdentity();
-  const authenticated = session.status === 'authenticated';
+  const authenticated = session.status === 'authenticated' && !switchingAccount;
+  const currentAccount = switchingAccount && session.status === 'authenticated' ? session.user.name : undefined;
   useEffect(() => {
     if (open && !dialog.current?.open) {
       dialog.current?.showModal();
@@ -24,12 +25,12 @@ export function AccountDialog({ open, onClose }: { open: boolean; onClose: () =>
       if (document.activeElement === document.body) document.querySelector<HTMLButtonElement>('[data-account-trigger]')?.focus();
     }
   }, [open, authenticated]);
-  return <dialog ref={dialog} onCancel={onClose} onClose={onClose} onClick={(event) => { if (event.target === event.currentTarget) onClose(); }} aria-label={authenticated ? '个人资料' : '登录 Fouc'} className={`${styles.dialog} ${authenticated ? styles.profileDialog : ''}`}>
+  return <dialog ref={dialog} onCancel={onClose} onClose={onClose} onClick={(event) => { if (event.target === event.currentTarget) onClose(); }} aria-label={authenticated ? '个人资料' : switchingAccount ? '切换账户' : '登录 Fouc'} className={`${styles.dialog} ${authenticated ? styles.profileDialog : ''}`}>
     {open ? <>
       <button type="button" aria-label="关闭账户窗口" onClick={onClose} className={`fouc-action ${styles.close}`}><X size={16} aria-hidden /></button>
       {authenticated ? <AccountProfile onClose={onClose} /> : <div className={styles.login}>
         <AuthShowcase />
-        <section className={styles.formPanel}><AuthEntryContent showBrand={false} targetPath={window.location.pathname + window.location.search} onSuccess={onClose} onDismiss={onClose} /></section>
+        <section className={styles.formPanel}><AuthEntryContent showBrand={false} currentAccount={currentAccount} targetPath={window.location.pathname + window.location.search} onSuccess={onClose} onDismiss={onClose} /></section>
       </div>}
     </> : null}
   </dialog>;

@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useState } from "react"
-import { CaretDown, CheckCircle, CircleNotch, MagicWand, Microphone, PaperPlaneTilt, Paperclip, ShieldCheck } from "@phosphor-icons/react"
+import { CaretDown, CheckCircle, MagicWand, Microphone, PaperPlaneTilt, Paperclip, ShieldCheck } from "@phosphor-icons/react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -87,8 +87,8 @@ export function ProjectComposer() {
             </TooltipTrigger>
             <TooltipContent>{listening ? "停止语音输入" : "语音输入"}</TooltipContent>
           </Tooltip>
-          <Button type="button" size="icon-sm" aria-label="创建任务" onClick={submit} disabled={sending} className="size-9 rounded-[7px]">
-            {sending ? <CircleNotch className="size-[17px] animate-spin" /> : sent ? <CheckCircle className="size-[18px]" weight="fill" /> : <PaperPlaneTilt className="size-[17px]" weight="fill" />}
+          <Button type="button" size="icon-sm" aria-label="创建任务" onClick={submit} loading={sending} className="size-9 rounded-[7px]">
+            {sent ? <CheckCircle className="size-[18px]" weight="fill" /> : <PaperPlaneTilt className="size-[17px]" weight="fill" />}
           </Button>
         </div>
       </div>

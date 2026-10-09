@@ -9,11 +9,12 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { ArrowClockwise, CircleNotch, Fingerprint } from '@phosphor-icons/react';
+import { ArrowClockwise, CircleNotch, Fingerprint, GithubLogo, GoogleLogo } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { authErrorCopyFor } from '../auth-errors';
 import { foucAuthApi, type FoucOAuthProvider } from '../auth-api';
 import { AuthStatusMessage } from './auth-status';
+import styles from './auth-form.module.css';
 
 type ProvidersState =
   | { phase: 'loading' }
@@ -69,15 +70,11 @@ export function OAuthProviderSection({
   if (state.phase === 'ready' && state.providers.length === 0) return null;
 
   return (
-    <div className="flex flex-col gap-3.5" aria-label="企业单点登录">
-      <div className="flex items-center gap-3" aria-hidden>
-        <span className="h-px flex-1 bg-[var(--line)]" />
-        <span className="text-[10.5px] font-medium tracking-[0.06em] text-[var(--muted)]">或使用企业账号</span>
-        <span className="h-px flex-1 bg-[var(--line)]" />
-      </div>
+    <div className={`${styles.providers} flex flex-col gap-3.5`} aria-label="其他登录方式">
+      <div className={styles.divider} aria-hidden>或</div>
 
       {state.phase === 'loading' ? (
-        <div className="flex flex-col gap-2" aria-busy="true" aria-label="正在加载登录方式">
+        <div className={styles.providerGrid} aria-busy="true" aria-label="正在加载登录方式">
           {[0, 1].map((index) => (
             <div key={index} className="h-10 animate-pulse rounded-[8px] border border-[var(--line)] bg-[var(--surface-subtle)]" />
           ))}
@@ -99,9 +96,10 @@ export function OAuthProviderSection({
       ) : null}
 
       {state.phase === 'ready' ? (
-        <div className="flex flex-col gap-2">
+        <div className={styles.providerGrid}>
           {state.providers.map((provider) => {
             const starting = startingId === provider.id;
+            const ProviderIcon = /google/i.test(provider.id) ? GoogleLogo : /github/i.test(provider.id) ? GithubLogo : Fingerprint;
             return (
               <Button
                 key={provider.id}
@@ -110,20 +108,15 @@ export function OAuthProviderSection({
                 disabled={startingId !== null}
                 aria-busy={starting}
                 onClick={() => void startSignIn(provider)}
-                className="h-10 w-full justify-start gap-2.5 px-3 font-normal"
+                className={styles.providerButton}
               >
                 {starting ? (
                   <CircleNotch className="size-4 shrink-0 animate-spin text-[var(--muted-strong)]" aria-hidden />
                 ) : (
-                  <span className="flex size-6 shrink-0 items-center justify-center rounded-[6px] bg-[var(--accent-soft)]">
-                    <Fingerprint className="size-[15px] text-[var(--accent-ink)]" weight="duotone" aria-hidden />
-                  </span>
+                  <ProviderIcon className="size-4 shrink-0" aria-hidden />
                 )}
-                <span className="min-w-0 flex-1 truncate text-left text-[12.5px] text-[var(--ink)]">
-                  {starting ? '正在跳转…' : `通过 ${provider.name} 继续`}
-                </span>
-                <span className="shrink-0 rounded-[4px] border border-[var(--line)] bg-[var(--surface-subtle)] px-1.5 py-px text-[9.5px] font-medium uppercase tracking-[0.08em] text-[var(--muted)]">
-                  {provider.kind === 'oidc' ? 'OIDC' : 'OAuth'}
+                <span className="min-w-0 truncate">
+                  {starting ? '正在跳转…' : provider.name}
                 </span>
               </Button>
             );

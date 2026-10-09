@@ -10,7 +10,7 @@
 import { useState, type FormEvent } from 'react';
 import { useIdentity } from '../identity-provider';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, CircleNotch, SignIn } from '@phosphor-icons/react';
+import { ArrowLeft, ArrowRight, CircleNotch } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { authErrorCopyFor, isFoucAuthFlowError } from '../auth-errors';
 import { foucAuthApi, type FoucAuthApi } from '../auth-api';
@@ -18,6 +18,7 @@ import { hasAuthFieldErrors, validateSignInForm, type AuthFieldErrors } from '..
 import { AuthTextField } from './auth-field';
 import { AuthStatusMessage } from './auth-status';
 import { ResendVerificationEntry } from './resend-verification';
+import styles from './auth-form.module.css';
 
 export function SignInForm({
   targetPath,
@@ -78,13 +79,13 @@ export function SignInForm({
   }
 
   return (
-    <form noValidate onSubmit={submit} className="flex flex-col gap-3.5" aria-label="邮箱登录">
+    <form noValidate onSubmit={submit} className={styles.form} aria-label="邮箱登录">
       <AuthTextField
         label="邮箱"
         type="email"
         inputMode="email"
         autoComplete="email"
-        placeholder="name@example.com"
+        placeholder="name@company.com"
         value={email}
         onChange={(value) => { setEmail(value); setFieldErrors((current) => ({ ...current, email: undefined })); }}
         error={fieldErrors.email ?? null}
@@ -95,15 +96,17 @@ export function SignInForm({
         label="密码"
         type="password"
         autoComplete="current-password"
+        placeholder="输入你的密码"
         value={password}
         onChange={(value) => { setPassword(value); setFieldErrors((current) => ({ ...current, password: undefined })); }}
         error={fieldErrors.password ?? null}
         disabled={submitting}
       />
       {banner ? <AuthStatusMessage tone="error" title={banner.title} description={banner.description} /> : null}
-      <Button type="submit" disabled={submitting} className="mt-1 h-9 w-full" aria-busy={submitting}>
-        {submitting ? <CircleNotch className="size-4 animate-spin" aria-hidden /> : <SignIn className="size-4" weight="bold" aria-hidden />}
+      <Button type="submit" disabled={submitting} className={styles.submit} aria-busy={submitting}>
+        {submitting ? <CircleNotch className="size-4 animate-spin" aria-hidden /> : null}
         {submitting ? '正在登录…' : '登录'}
+        {!submitting ? <ArrowRight size={15} data-arrow aria-hidden /> : null}
       </Button>
     </form>
   );

@@ -17,6 +17,7 @@ import { hasAuthFieldErrors, validateSignUpForm, type AuthFieldErrors } from '..
 import { AuthTextField } from './auth-field';
 import { AuthStatusMessage } from './auth-status';
 import { ResendVerificationEntry } from './resend-verification';
+import styles from './auth-form.module.css';
 
 export function SignUpForm({ api = foucAuthApi }: { api?: FoucAuthApi }) {
   const [name, setName] = useState('');
@@ -72,7 +73,7 @@ export function SignUpForm({ api = foucAuthApi }: { api?: FoucAuthApi }) {
   }
 
   return (
-    <form noValidate onSubmit={submit} className="flex flex-col gap-3.5" aria-label="注册账号">
+    <form noValidate onSubmit={submit} className={styles.form} aria-label="注册账号">
       <AuthTextField
         label="名称"
         autoComplete="name"
@@ -82,6 +83,7 @@ export function SignUpForm({ api = foucAuthApi }: { api?: FoucAuthApi }) {
         error={fieldErrors.name ?? null}
         disabled={submitting}
         maxLength={121}
+        autoFocus
       />
       <AuthTextField
         label="邮箱"
@@ -98,6 +100,7 @@ export function SignUpForm({ api = foucAuthApi }: { api?: FoucAuthApi }) {
         label="密码"
         type="password"
         autoComplete="new-password"
+        placeholder="设置登录密码"
         value={password}
         onChange={(value) => { setPassword(value); setFieldErrors((current) => ({ ...current, password: undefined })); }}
         error={fieldErrors.password ?? null}
@@ -105,7 +108,7 @@ export function SignUpForm({ api = foucAuthApi }: { api?: FoucAuthApi }) {
         disabled={submitting}
       />
       {banner ? <AuthStatusMessage tone="error" title={banner.title} description={banner.description} /> : null}
-      <Button type="submit" disabled={submitting} className="mt-1 h-9 w-full" aria-busy={submitting}>
+      <Button type="submit" disabled={submitting} className={styles.submit} aria-busy={submitting}>
         {submitting ? <CircleNotch className="size-4 animate-spin" aria-hidden /> : <PaperPlaneTilt className="size-4" weight="fill" aria-hidden />}
         {submitting ? '正在提交…' : '创建账号'}
       </Button>

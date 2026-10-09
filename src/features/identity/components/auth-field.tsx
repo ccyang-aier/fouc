@@ -1,13 +1,14 @@
 'use client';
 
 /**
- * Labeled auth input (A04). Styling follows the workbench form language
- * (settings search input): 6px radius, token borders, accent focus. Errors
- * are wired to aria so screen readers announce them with the field.
+ * Shared authentication input with a quiet paper fill and border-only focus.
+ * Password visibility and error descriptions remain accessible to keyboards
+ * and screen readers.
  */
 
-import { useId } from 'react';
-import { cn } from '@/lib/utils';
+import { useId, useState } from 'react';
+import { Eye, EyeSlash } from '@phosphor-icons/react';
+import styles from './auth-form.module.css';
 
 export function AuthTextField({
   label,
@@ -41,19 +42,21 @@ export function AuthTextField({
   'data-testid'?: string;
 }) {
   const id = useId();
+  const [passwordVisible, setPasswordVisible] = useState(false);
   const errorId = `${id}-error`;
   const hintId = `${id}-hint`;
   const describedBy = error ? errorId : hint ? hintId : undefined;
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-[11.5px] font-medium text-[var(--ink-soft)]">
+    <div className={styles.field}>
+      <label htmlFor={id} className={styles.label}>
         {label}
       </label>
+      <div className={styles.inputShell} data-invalid={Boolean(error)}>
       <input
         id={id}
         data-testid={testId}
-        type={type}
+        type={type === 'password' && passwordVisible ? 'text' : type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         onBlur={onInputBlur}
@@ -66,19 +69,16 @@ export function AuthTextField({
         spellCheck={false}
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy}
-        className={cn(
-          'h-10 w-full rounded-[10px] border bg-[var(--panel)] px-3 text-[12.5px] text-[var(--ink)] outline-none',
-          'transition-colors placeholder:text-[var(--muted)] focus:border-[var(--accent)]',
-          'disabled:cursor-not-allowed disabled:opacity-55',
-          error ? 'border-[color-mix(in_srgb,var(--err-ink)_45%,var(--line))]' : 'border-[var(--line)]',
-        )}
+        className={styles.input}
       />
+      {type === 'password' ? <button type="button" className={`fouc-action ${styles.passwordToggle}`} disabled={disabled} aria-label={passwordVisible ? '隐藏密码' : '显示密码'} aria-pressed={passwordVisible} onClick={() => setPasswordVisible((visible) => !visible)}>{passwordVisible ? <EyeSlash size={17} aria-hidden /> : <Eye size={17} aria-hidden />}</button> : null}
+      </div>
       {error ? (
-        <p id={errorId} role="alert" className="text-[11px] leading-4 text-[var(--err-ink)]">
+        <p id={errorId} role="alert" className={styles.error}>
           {error}
         </p>
       ) : hint ? (
-        <p id={hintId} className="text-[11px] leading-4 text-[var(--muted)]">
+        <p id={hintId} className={styles.hint}>
           {hint}
         </p>
       ) : null}

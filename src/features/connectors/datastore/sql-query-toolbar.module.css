@@ -1,16 +1,26 @@
-.toolbar { display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 10px; border-bottom: 1px solid var(--line); background: var(--surface-subtle); flex: none; min-width: 0; }
-.controls { display: flex; align-items: center; gap: 3px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
-.controls > button { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 5px; flex: none; cursor: pointer; color: var(--ink-soft); }
+.toolbar { --sql-tool-plan: #8b37ee; --sql-tool-format: #e98110; --sql-tool-file: #1468ff; --sql-tool-pane: #039dd0; --sql-tool-paste: #079f98; display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 10px; border-bottom: 1px solid var(--line); background: var(--surface-subtle); flex: none; min-width: 0; }
+.controls { display: flex; align-items: center; gap: 4px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.controls > button { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 5px; flex: none; cursor: pointer; color: var(--ink); }
 .controls > button:not([data-slot="button"]) > span { display: none; }
 .controls > button:disabled { opacity: .4; cursor: default; }
 .controls > button:focus-visible { outline: none; box-shadow: none; }
-.controls > button > svg { width: 18px; height: 18px; flex: none; }
+.controls > button > svg { width: 22px; height: 22px; flex: none; }
 .controls > .run { --action-state-ink: var(--ok-ink); color: var(--ok-ink); background: color-mix(in srgb, var(--ok-ink) 9%, var(--panel)); }
 .controls > .run[data-running] { --action-state-ink: var(--err-ink); color: var(--err-ink); }
-.controls > .scope { width: 16px; margin-left: -2px; }
-.controls > .runAll { --action-state-ink: var(--accent-ink); color: var(--accent-ink); }
-.controls > button[aria-label="格式化 SQL"], .controls > button[aria-label="压缩 SQL"] { color: var(--warn-ink); }
-.controls > button[aria-label="保存 SQL"], .controls > button[aria-label="SQL 库"], .controls > button[aria-label="新建查询"] { color: var(--accent-ink); }
+.controls > .runNew, .controls > button[aria-label="查看执行计划"] { --action-state-ink: var(--sql-tool-plan); color: var(--sql-tool-plan); }
+.controls > .runAll { color: var(--ink); }
+.controls > button[aria-label="格式化 SQL"], .controls > button[aria-label="压缩 SQL"], .controls > button[aria-label="切换 SQL 关键字大小写"] { --action-state-ink: var(--sql-tool-format); color: var(--sql-tool-format); }
+.controls > button[aria-label="保存 SQL"], .controls > button[aria-label="SQL 库"], .controls > button[aria-label="导入 SQL 文件"], .controls > button[aria-label="下载 SQL 文件"] { --action-state-ink: var(--sql-tool-file); color: var(--sql-tool-file); }
+.controls > button[aria-label="SQL 快速操作"] { --action-state-ink: var(--sql-tool-paste); color: var(--sql-tool-paste); }
+.controls > button[aria-label="显示查询结果"] { --action-state-ink: var(--sql-tool-pane); color: var(--sql-tool-pane); }
+.controls > button[aria-pressed="true"] { background: var(--accent-soft); }
+.controls > button[aria-label="SQL 编辑器设置"] > strong { font-size: 17px; font-weight: 700; }
+.controls > button[aria-label="切换 SQL 关键字大小写"] > strong { font-size: 18px; font-weight: 700; }
+.controls > button[aria-label="SQL 编辑器设置"] { color: var(--muted-strong); }
+.controls > button:is([aria-label="折叠全部 SQL"], [aria-label="展开全部 SQL"], [aria-label="SQL 自动换行"]) { color: var(--muted-strong); }
+.controls > button[aria-label="SQL 语义诊断"] { color: var(--muted-strong); background: transparent; }
+.controls > button[aria-label="SQL 语义诊断"] > strong { font-size: 17px; text-decoration: underline; text-underline-offset: 3px; }
+.controls > button[aria-label="显示查询结果"][aria-pressed="true"] { --action-state-bg: color-mix(in srgb, var(--sql-tool-pane) 12%, var(--panel)); background: color-mix(in srgb, var(--sql-tool-pane) 12%, var(--panel)); }
 .target { display: flex; align-items: center; gap: 10px; min-width: 100px; max-width: 330px; margin-left: auto; flex: none; }
 .database { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-soft); font-size: 12px; font-weight: 500; }
 .target label { width: auto; flex: none; }

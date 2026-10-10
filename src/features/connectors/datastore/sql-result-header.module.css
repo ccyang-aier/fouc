@@ -1,0 +1,25 @@
+.bar { display: flex; align-items: center; gap: 12px; min-width: 0; height: 44px; padding: 0 10px; border-bottom: 1px solid var(--line); background: var(--panel); flex: none; color: var(--ink); }
+.bar[hidden], .bar [hidden] { display: none; }
+.pinSlot { display: flex; align-items: center; padding-right: 10px; border-right: 1px solid var(--line); flex: none; }
+.pinSlot:empty { display: none; }
+.bar .pinSlot button { display: inline-flex; align-items: center; justify-content: center; width: 27px; height: 29px; border-radius: 4px; color: var(--ink); cursor: pointer; }
+.tabs { display: flex; align-items: center; gap: 5px; flex: 1; max-width: 43%; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.currentTabs { display: contents; }
+.tab { display: inline-flex; align-items: center; gap: 7px; height: 31px; padding: 0 8px 0 10px; border: 1px solid transparent; border-radius: 6px; color: var(--muted-strong); font-size: 14px; font-weight: 500; white-space: nowrap; flex: none; cursor: pointer; outline: none; }
+.tab > span { max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+.tab[aria-selected="true"] { color: var(--ink); border-color: var(--control-border); background: var(--panel); font-weight: 600; box-shadow: 0 1px 4px color-mix(in srgb, var(--ink) 10%, transparent); }
+.bar .close { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 24px; padding: 0; border: 0; color: var(--muted-strong); cursor: pointer; }
+.badge { display: block; max-width: 210px; padding: 4px 10px; border-radius: 5px; color: var(--panel); background: var(--ink); font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.actions { display: flex; align-items: center; gap: 7px; margin-left: auto; flex: none; }
+.actions:empty { display: none; }
+.tools { display: flex; align-items: center; gap: 7px; }
+.bar .actions button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 30px; padding: 0 7px; border-radius: 4px; color: var(--ink); font: 14px var(--font-sans); white-space: nowrap; cursor: pointer; }
+.bar .actions button > svg, .pinSlot button > svg { width: 19px; height: 19px; flex: none; }
+.bar button:disabled { opacity: .4; cursor: default; }
+.bar .actions button[aria-label="查询结果工具"] { order: 4; }
+.bar .actions button[aria-label="查看结果来源 DDL"] { order: 3; }
+.bar .actions button[data-variant="destructive"] { color: var(--err-ink); }
+.tab[data-status="failed"] { color: var(--err-ink); }
+.bar .actions :global(.fouc-action[data-surface="subtle"]) { --action-surface-bg: transparent; }
+@media (max-width: 1000px) { .badge { display: none; } .tabs { max-width: none; } }
+@media (max-width: 760px) { .bar { gap: 6px; padding-inline: 6px; } .tab { font-size: 12px; } .bar .actions button:not([aria-label="查询结果工具"]) { font-size: 0; width: 29px; padding: 0; } }

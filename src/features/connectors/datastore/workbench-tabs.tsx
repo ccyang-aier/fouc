@@ -30,13 +30,13 @@ function WorkbenchTab({ label, icon, selected, disabled, closeLabel, onSelect, o
   return <div role="tab" aria-label={label} aria-selected={selected} aria-disabled={disabled} tabIndex={selected && !disabled ? 0 : -1} className={`${styles.objectTab} fouc-action`}
     onClick={() => { if (!disabled) onSelect() }} onKeyDown={event => { if (event.target === event.currentTarget && !disabled && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); onSelect() } }}>
     {icon}<span title={label}>{label}</span>
-    {onClose && <button type="button" className={`${styles.tabClose} fouc-action`} data-variant="nested" disabled={disabled} aria-label={closeLabel} onClick={event => { event.stopPropagation(); onClose() }}><X size={12} /></button>}
+    {onClose && <button type="button" className={styles.tabClose} disabled={disabled} aria-label={closeLabel} onClick={event => { event.stopPropagation(); onClose() }}><X size={12} /></button>}
   </div>
 }
 
-export function WorkbenchTabs({ table, schema, mode, openedViews, disabled, onChange, onCloseTable, onCloseView, onNewQuery, onSqlTabsTarget, onSqlActionsTarget }: {
+export function WorkbenchTabs({ table, schema, mode, openedViews, disabled, onChange, onCloseTable, onCloseView, onNewQuery, onSqlTabsTarget }: {
   table: string; schema: string; mode: WorkbenchMode; openedViews: WorkbenchMode[]; disabled: boolean; onChange: (mode: WorkbenchMode) => void; onCloseTable: () => void; onCloseView: (mode: WorkbenchMode) => void; onNewQuery: () => void
-  onSqlTabsTarget: (target: HTMLDivElement | null) => void; onSqlActionsTarget: (target: HTMLDivElement | null) => void
+  onSqlTabsTarget: (target: HTMLDivElement | null) => void;
 }) {
   const dataActive = mode === "data" || mode === "structure"
   const list = useRef<HTMLDivElement>(null)
@@ -56,7 +56,6 @@ export function WorkbenchTabs({ table, schema, mode, openedViews, disabled, onCh
         return view ? <WorkbenchTab key={value} label={view.label} icon={<view.icon size={15} />} selected={mode === value} disabled={disabled} onSelect={() => onChange(value)} closeLabel={`关闭 ${view.label} 视图`} onClose={() => onCloseView(value)} /> : null
       })}
     </div>
-    <div ref={onSqlActionsTarget} className={styles.sqlTabActions} hidden={mode !== 'sql'} />
     <button type="button" className="fouc-action" data-surface="subtle" aria-label="新建 SQL 查询" disabled={disabled} onClick={onNewQuery}><Plus size={16} /></button>
     <WorkbenchViewMenu disabled={disabled} onChange={onChange} />
   </div>

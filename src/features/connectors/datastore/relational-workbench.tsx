@@ -65,7 +65,6 @@ export function RelationalWorkbench({
   const [mode, setMode] = useState<WorkbenchMode>("data")
   const [openedViews, setOpenedViews] = useState<WorkbenchMode[]>([])
   const [sqlTabsTarget, setSqlTabsTarget] = useState<HTMLDivElement | null>(null)
-  const [sqlActionsTarget, setSqlActionsTarget] = useState<HTMLDivElement | null>(null)
   const [structureTab, setStructureTab] = useState<StructureTab>("columns")
   const [propertiesOpen, setPropertiesOpen] = useState(false)
   const [gridHeaderTarget, setGridHeaderTarget] = useState<HTMLElement | null>(null)
@@ -389,7 +388,7 @@ export function RelationalWorkbench({
               ))}
             </select>
           </div>
-          <WorkbenchTabs table={table} schema={schema} mode={mode} openedViews={openedViews} disabled={pending || leaving} onChange={changeView} onCloseView={view => void closeView(view)} onCloseTable={() => { setTable(""); setPage(null); setSelectedRow(null); setMode("data") }} onNewQuery={() => { setOpenRequest({ id: crypto.randomUUID(), sql: "", schema }); changeView("sql") }} onSqlTabsTarget={setSqlTabsTarget} onSqlActionsTarget={setSqlActionsTarget} />
+          <WorkbenchTabs table={table} schema={schema} mode={mode} openedViews={openedViews} disabled={pending || leaving} onChange={changeView} onCloseView={view => void closeView(view)} onCloseTable={() => { setTable(""); setPage(null); setSelectedRow(null); setMode("data") }} onNewQuery={() => { setOpenRequest({ id: crypto.randomUUID(), sql: "", schema }); changeView("sql") }} onSqlTabsTarget={setSqlTabsTarget} />
           {(mode === "data" || mode === "structure") && <WorkbenchMetadata provider={session.info.productName ?? session.provider} table={table} schema={schema} columnCount={page?.table === table ? page.columns.length : 0} pending={pending} onProperties={() => setPropertiesOpen(true)} onGridHeader={setGridHeaderTarget} onGridTools={setGridToolsTarget}
             structureAction={<StructureEditAction base={base} schema={schema} table={table} disabled={!writable || !table || pending || busy || writeBusy} onApplied={refresh} />}
             tools={<>
@@ -416,7 +415,7 @@ export function RelationalWorkbench({
           )}
           <div hidden={mode !== "sql"} className={styles.queryPanel}>
             <RelationalQuery key={session.id} session={currentSession} schema={schema} schemas={schemas} metadataRevision={revision} schemaLocked={pending} onSchemaChange={selectSchema} beforeLeaveRef={sqlBeforeLeave} onLeaveReady={clearLeaveError} openRequest={openRequest} onUnlockWrite={unlockSqlWrite} onMutated={refresh} onMutationBusy={setMutationBusy}
-              tabsTarget={sqlTabsTarget} tabActionsTarget={sqlActionsTarget} active={mode === 'sql'} tabsDisabled={pending || leaving} onActivate={() => changeView('sql')} onNoQueries={() => { setOpenedViews(current => current.filter(value => value !== 'sql')); if (mode === 'sql') setMode('data') }} />
+              tabsTarget={sqlTabsTarget} active={mode === 'sql'} tabsDisabled={pending || leaving} onActivate={() => changeView('sql')} onNoQueries={() => { setOpenedViews(current => current.filter(value => value !== 'sql')); if (mode === 'sql') setMode('data') }} />
           </div>
           {page && (
             <div hidden={mode !== "data"}>

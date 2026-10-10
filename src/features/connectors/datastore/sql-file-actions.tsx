@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useRef, useState } from 'react'
-import { ArrowDown, ArrowUp, CheckCircle, CircleNotch, FileSql, WarningCircle } from '@phosphor-icons/react'
+import { DownloadSimple, FolderOpen, CheckCircle, CircleNotch, FileSql, WarningCircle } from '@phosphor-icons/react'
 import { SQL_FILE_MAX_BYTES, type RelationalProvider } from '@fouc/shared'
 import type { EditorView } from '@codemirror/view'
 import { SqlEditor } from './sql-editor'
@@ -36,12 +36,12 @@ export function SqlFileActions({ provider, disabled, getDocument, onOpen, onNoti
       if (selected.reduce((bytes, file) => bytes + file.size, 0) > SQL_FILE_MAX_BYTES) { onNotice('本批 SQL 文件合计最多 64 MiB，请分批打开。'); return }
       prepareRead(); setIndex(0); setFiles(selected)
     }} />
-    <button type="button" className="fouc-action" aria-label="导入 SQL 文件" title="打开本机 SQL 文件 · 仅加载到查询标签" disabled={disabled} onClick={() => input.current?.click()}><ArrowUp size={17} /></button>
+    <button type="button" className="fouc-action" aria-label="导入 SQL 文件" title="打开本机 SQL 文件 · 仅加载到查询标签" disabled={disabled} onClick={() => input.current?.click()}><FolderOpen /></button>
     <button type="button" className="fouc-action" aria-label="下载 SQL 文件" title="下载当前完整文档为 UTF-8 SQL" disabled={disabled} onClick={() => {
       const document = getDocument(); if (!document) return
       try { downloadSqlFile(document.sql, document.title); onNotice('已下载完整 SQL 文档（UTF-8）。') }
       catch (reason) { onNotice(reason instanceof Error ? reason.message : String(reason)) }
-    }}><ArrowDown size={17} /></button>
+    }}><DownloadSimple /></button>
     {files.length > 0 && <SqlDialog title="打开 SQL 文件" className={styles.dialog} onClose={close}>
       <div className={styles.body}>
         <div className={styles.intro}><FileSql size={24} /><div><strong>在当前连接中打开脚本</strong><p>每个文件建立独立查询标签，打开后由你选择执行范围。</p></div></div>

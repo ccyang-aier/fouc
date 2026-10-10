@@ -20,7 +20,7 @@ import { sqlDiagnosticsExtensions } from './sql-assistance/diagnostics'
 import './sql-assistance/functions/theme.css'
 import { Compartment, EditorState, StateEffect } from "@codemirror/state"
 import { getOverlayRoot } from '@/lib/overlay-root'
-import type { SqlEditorPosition, SqlExecutionMode, SqlFormatterCase, SqlSnippet } from '@fouc/shared'
+import type { SqlEditorPosition, SqlExecutionMode, SqlFormatterCase, SqlSnippet, SqlStatementExecution } from '@fouc/shared'
 import {
   bracketMatching,
   HighlightStyle,
@@ -43,6 +43,7 @@ import {
   tooltips
 } from "@codemirror/view"
 import { tags } from '@lezer/highlight'
+import loadingStyles from '@/components/ui/button-loading.module.css'
 
 const sqlHighlight = HighlightStyle.define([
   { tag: tags.keyword, color: 'var(--mw-sql-keyword)' },
@@ -54,10 +55,27 @@ const sqlHighlight = HighlightStyle.define([
 ])
 
 const tooltipParent = new Compartment()
+const wrapCompartment = new Compartment()
+const diagnosticsCompartment = new Compartment()
+const refreshExecutionMarker = StateEffect.define<void>()
+type MarkerStatus = 'idle' | 'running' | 'succeeded' | 'failed'
 class RunStatementMarker extends GutterMarker {
+  constructor(private status: MarkerStatus) { super() }
   toDOM() {
     const button = document.createElement('button')
-    button.type = 'button'; button.textContent = '▷'; button.className = 'fouc-action'
+    button.type = 'button'; button.className = 'fouc-action'; button.dataset.execution = this.status
+    const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    icon.setAttribute('viewBox', '0 0 24 24'); icon.setAttribute('aria-hidden', 'true'); icon.setAttribute('fill', 'none'); icon.setAttribute('stroke', 'currentColor'); icon.setAttribute('stroke-width', '2'); icon.setAttribute('stroke-linejoin', 'round')
+    const play = document.createElementNS('http://www.w3.org/2000/svg', 'path'); play.setAttribute('d', 'M7 4L21 12L7 20Z'); icon.append(play); button.append(icon)
+    if (this.status === 'running') {
+      button.disabled = true; button.setAttribute('aria-busy', 'true'); icon.style.display = 'none'
+      const dots = document.createElement('span'); dots.className = loadingStyles.dots; dots.setAttribute('aria-hidden', 'true')
+      for (let index = 0; index < 3; index++) dots.append(document.createElement('span'))
+      button.append(dots)
+    }
+    if (this.status === 'succeeded' || this.status === 'failed') {
+      const badge = document.createElement('span'); badge.className = 'mw-sql-run-badge'; badge.textContent = this.status === 'succeeded' ? '✓' : '!'; badge.setAttribute('aria-hidden', 'true'); button.append(badge)
+    }
     button.setAttribute('aria-label', '运行当前语句'); button.title = '运行当前语句 · Ctrl / ⌘ + Enter'
     // Gutters mount after the editor constructor and are hidden by CodeMirror.
     requestAnimationFrame(() => {
@@ -69,9 +87,10 @@ class RunStatementMarker extends GutterMarker {
     return button
   }
 }
-const runStatementMarker = new RunStatementMarker()
+const runStatementMarkers = { idle: new RunStatementMarker('idle'), running: new RunStatementMarker('running'), succeeded: new RunStatementMarker('succeeded'), failed: new RunStatementMarker('failed') }
+export type SqlEditorExecutionMark = Pick<SqlStatementExecution, 'from' | 'to' | 'sql' | 'status'>
 
-type SqlEditorHandlers = { onChange: (value: string) => void; onRun: (mode?: SqlExecutionMode) => void; onSave?: () => void; onFormat?: () => void; onPositionChange?: (id: string, position: SqlEditorPosition) => void; complete?: CompletionSource; snippets?: SqlSnippet[]; keywordCase?: SqlFormatterCase; functionCase?: SqlFormatterCase }
+type SqlEditorHandlers = { onChange: (value: string) => void; onRun: (mode?: SqlExecutionMode) => void; onSave?: () => void; onFormat?: () => void; onPositionChange?: (id: string, position: SqlEditorPosition) => void; complete?: CompletionSource; snippets?: SqlSnippet[]; keywordCase?: SqlFormatterCase; functionCase?: SqlFormatterCase; executionMark?: SqlEditorExecutionMark }
 class SqlEditorCallbacks {
   private positionReporter: ((view: EditorView) => void) | null = null
   constructor(private handlers: SqlEditorHandlers) {}
@@ -83,6 +102,9 @@ class SqlEditorCallbacks {
 export type SqlEditorCache = Map<string, { state: EditorState; scrollTop: number; scrollLeft: number; callbacks: SqlEditorCallbacks }>
 type Props = {
   showRunGutter?: boolean
+  executionMark?: SqlEditorExecutionMark
+  wrapLines?: boolean
+  diagnostics?: boolean
   value: string
   onChange: (value: string) => void
   onRun: (mode?: SqlExecutionMode) => void
@@ -114,21 +136,26 @@ export function SqlEditor({
   provider = "mysql",
   readOnly = false,
   showRunGutter = false,
+  executionMark, wrapLines = true, diagnostics = true,
   label = "SQL 编辑器",
   documentId = 'sql', positions, cache, onPositionChange, complete, completionScope
 }: Props) {
   const host = useRef<HTMLDivElement>(null)
   const initialValue = useRef(value)
   const initialPosition = useRef(positions)
-  const handlers = useRef({ onChange, onRun, onSave, onFormat, onPositionChange, complete, snippets, keywordCase, functionCase })
+  const initialWrapLines = useRef(wrapLines)
+  const initialDiagnostics = useRef(diagnostics)
+  const handlers = useRef({ onChange, onRun, onSave, onFormat, onPositionChange, complete, snippets, keywordCase, functionCase, executionMark })
   const activeCallbacks = useRef<SqlEditorCallbacks | null>(null)
 
   useEffect(() => {
-    handlers.current = { onChange, onRun, onSave, onFormat, onPositionChange, complete, snippets, keywordCase, functionCase }
+    handlers.current = { onChange, onRun, onSave, onFormat, onPositionChange, complete, snippets, keywordCase, functionCase, executionMark }
     activeCallbacks.current?.update(handlers.current)
     initialValue.current = value
     initialPosition.current = positions
-  }, [onChange, onRun, onSave, onFormat, onPositionChange, complete, snippets, keywordCase, functionCase, value, positions])
+    initialWrapLines.current = wrapLines
+    initialDiagnostics.current = diagnostics
+  }, [onChange, onRun, onSave, onFormat, onPositionChange, complete, snippets, keywordCase, functionCase, value, positions, executionMark, wrapLines, diagnostics])
   useEffect(() => { if (editorRef.current) closeCompletion(editorRef.current) }, [editorRef, completionScope])
 
   useEffect(() => {
@@ -155,8 +182,14 @@ export function SqlEditor({
         EditorView.editable.of(!readOnly),
         ...(showRunGutter && !readOnly ? [gutter({
           class: 'mw-sql-run-gutter',
-          lineMarker: (view, line) => view.state.doc.lineAt(view.state.selection.main.head).from === line.from ? runStatementMarker : null,
-          lineMarkerChange: update => update.selectionSet || update.docChanged,
+          lineMarker: (view, line) => {
+            const head = view.state.selection.main.head
+            if (view.state.doc.lineAt(head).from !== line.from) return null
+            const mark = callbacks.get().executionMark
+            const status = mark && head >= mark.from && head <= mark.to + 1 && view.state.sliceDoc(mark.from, mark.to) === mark.sql && ['running', 'succeeded', 'failed'].includes(mark.status) ? mark.status as MarkerStatus : 'idle'
+            return runStatementMarkers[status]
+          },
+          lineMarkerChange: update => update.selectionSet || update.docChanged || update.transactions.some(transaction => transaction.effects.some(effect => effect.is(refreshExecutionMarker))),
           domEventHandlers: { click: (view, _line, event) => { event.preventDefault(); view.focus(); callbacks.get().onRun('current'); return true } }
         })] : []),
         lineNumbers(),
@@ -174,9 +207,9 @@ export function SqlEditor({
           dialect: provider === "postgres" ? PostgreSQL : provider === "sqlite" ? SQLite : MySQL
         }),
         ...(readOnly ? [] : [autocompletion({ tooltipClass: () => 'fouc-sql-completion', override: [bounded(keywords), bounded(sqlSnippetCompletion(provider, () => callbacks.get())), sqlFunctionCompletion(provider, () => callbacks.get()), bounded((context) => callbacks.get().complete?.(context) ?? null)] }),
-          ...sqlFunctionSignatureExtensions(provider), ...sqlDiagnosticsExtensions(provider)]),
+          ...sqlFunctionSignatureExtensions(provider), diagnosticsCompartment.of(initialDiagnostics.current ? sqlDiagnosticsExtensions(provider) : [])]),
         highlightSelectionMatches(),
-        EditorView.lineWrapping,
+        wrapCompartment.of(initialWrapLines.current ? EditorView.lineWrapping : []),
         EditorView.contentAttributes.of({
           "aria-label": label,
           spellcheck: "false",
@@ -246,6 +279,10 @@ export function SqlEditor({
       view.destroy()
     }
   }, [editorRef, provider, readOnly, showRunGutter, label, documentId, cache])
+
+  useEffect(() => { editorRef.current?.dispatch({ effects: wrapCompartment.reconfigure(wrapLines ? EditorView.lineWrapping : []) }) }, [editorRef, wrapLines, documentId])
+  useEffect(() => { if (!readOnly) editorRef.current?.dispatch({ effects: diagnosticsCompartment.reconfigure(diagnostics ? sqlDiagnosticsExtensions(provider) : []) }) }, [editorRef, diagnostics, provider, readOnly, documentId])
+  useEffect(() => { if (showRunGutter) editorRef.current?.dispatch({ effects: refreshExecutionMarker.of() }) }, [editorRef, showRunGutter, executionMark, documentId])
 
   useEffect(() => {
     const view = editorRef.current

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import { useEffect, useImperativeHandle, useRef, useState, type RefObject } from 'react';
 import type { EditorView } from '@codemirror/view';
 import { ShieldCheck } from '@phosphor-icons/react';
 import { resolveSqlExecutionTarget, type RelationalSession } from '@fouc/shared';
@@ -10,6 +10,8 @@ import { SqlDialog } from './sql-library-dialog';
 import styles from './sql-mutation-action.module.css';
 
 interface Props {
+  actionRef?: RefObject<{ open: () => void } | null>;
+  showTrigger?: boolean;
   base: string;
   session: RelationalSession;
   schema: string;
@@ -38,10 +40,11 @@ export function SqlMutationAction(props: Props) {
     setTarget(null);
     props.editorRef.current?.focus();
   }
+  useImperativeHandle(props.actionRef, () => ({ open }));
   return <>
-    <button type="button" className="fouc-action" aria-label="SQL 变更预览" title="只读审查选区或当前写操作" disabled={props.disabled} onClick={open}>
+    {props.showTrigger !== false && <button type="button" className="fouc-action" aria-label="SQL 变更预览" title="只读审查选区或当前写操作" disabled={props.disabled} onClick={open}>
       <ShieldCheck size={16} /><span>变更预览</span>
-    </button>
+    </button>}
     {target && <MutationDialog {...props} {...target} onClose={close} />}
   </>;
 }

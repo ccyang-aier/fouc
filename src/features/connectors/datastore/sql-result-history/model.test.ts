@@ -28,6 +28,7 @@ function input(sourceId = 'run-a') {
     sourceId,
     label: 'Query · 结果 1',
     sql: 'SELECT id, json FROM test',
+    context: { database: 'db', schema: 'public' },
     result,
   };
 }
@@ -35,7 +36,9 @@ test('pin takes an independent snapshot and deduplicates only its own scope', ()
   const source = input(),
     pins = addResultPin([], source, 'pin-a', 1);
   source.result.rows[0][0] = 'changed';
+  source.context.schema = 'later-schema';
   expect(pins[0].result.rows[0][0]).toBe('9007199254740993');
+  expect(pins[0].context).toEqual({ database: 'db', schema: 'public' });
   expect(addResultPin(pins, input(), 'pin-b').length).toBe(1);
   expect(
     addResultPin(

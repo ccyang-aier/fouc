@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useRef, useState, type RefObject } from 'react'
+import { createPortal } from 'react-dom'
 import type { EditorView } from '@codemirror/view'
-import { TreeStructure } from '@phosphor-icons/react'
+import { GitBranch } from '@phosphor-icons/react'
 import { inspectSqlTemplate, resolveSqlExecutionTarget, sqlVariableContext, type DatabaseQueryResult, type RelationalProvider, type SqlParameterDescriptor, type SqlParameterInput } from '@fouc/shared'
 import { backendFetch } from '@/lib/backend'
 import { ExplainPlanViewer } from './explain'
@@ -12,10 +13,10 @@ import common from './relational.module.css'
 import styles from './sql-explain-action.module.css'
 
 type Statement = { sql: string; declarationSql: string; descriptors: SqlParameterDescriptor[]; parameters?: Record<string, SqlParameterInput> }
-type Props = { base: string; provider: RelationalProvider; schema: string | null; targetLabel: string; editorRef: RefObject<EditorView | null>; disabled: boolean; contextIssue?: string; onNotice: (message: string) => void }
+type Props = { base: string; provider: RelationalProvider; schema: string | null; targetLabel: string; editorRef: RefObject<EditorView | null>; disabled: boolean; contextIssue?: string; onNotice: (message: string) => void; resultTriggerTarget?: HTMLElement | null }
 
 /** Estimated plans reuse the document's parameters and native scoped session. */
-export function SqlExplainAction({ base, provider, schema, targetLabel, editorRef, disabled, contextIssue, onNotice }: Props) {
+export function SqlExplainAction({ base, provider, schema, targetLabel, editorRef, disabled, contextIssue, onNotice, resultTriggerTarget }: Props) {
   const [statement, setStatement] = useState<Statement | null>(null), [parameters, setParameters] = useState<Statement | null>(null)
   const [result, setResult] = useState<DatabaseQueryResult | null>(null), [loading, setLoading] = useState(false), [error, setError] = useState('')
   const request = useRef<AbortController | null>(null), [history] = useState<SqlParameterRecents>(() => new Map())
@@ -48,12 +49,13 @@ export function SqlExplainAction({ base, provider, schema, targetLabel, editorRe
     } catch (reason) { onNotice(reason instanceof Error ? reason.message : String(reason)) }
   }
   return <>
-    <button type="button" className="fouc-action" aria-label="查看执行计划" title="选区或当前查询 · 仅生成估算计划" disabled={disabled} onClick={open}><TreeStructure size={16} /><span>执行计划</span></button>
+    <button type="button" className="fouc-action" aria-label="查看执行计划" title="选区或当前查询 · 仅生成估算计划" disabled={disabled} onClick={open}><GitBranch size={16} /><span>执行计划</span></button>
+    {resultTriggerTarget && createPortal(<button type="button" className="fouc-action" aria-label="结果区执行计划" title="查看当前 SQL 的执行计划" disabled={disabled} onClick={open}><GitBranch size={18} weight="bold" /><span>执行计划</span></button>, resultTriggerTarget)}
     {parameters && <SqlParameterDialog action="explain" sql={parameters.sql} declarationSql={parameters.declarationSql} provider={provider} descriptors={parameters.descriptors} history={history} targetLabel={targetLabel} onClose={() => { setParameters(null); editorRef.current?.focus() }} onExecute={(values) => {
       rememberSqlParameters(history, values); const source = { ...parameters, parameters: values }; setParameters(null); void load(source)
     }} />}
     {statement && <SqlDialog title="SQL 执行计划" className={styles.dialog} onClose={close}>
-      <div className={styles.context}><span><TreeStructure size={16} />{targetLabel}</span><small>EXPLAIN · 估算计划 · 未实际运行查询</small></div>
+      <div className={styles.context}><span><GitBranch size={16} />{targetLabel}</span><small>EXPLAIN · 估算计划 · 未实际运行查询</small></div>
       <details className={styles.source}><summary>查看本次查询</summary><pre>{statement.sql}</pre></details>
       <div className={styles.body}><ExplainPlanViewer provider={provider} result={result} loading={loading} error={error} onRetry={() => void load(statement)} /></div>
       <footer className={`${common.dialogFooter} ${styles.footer}`}><small>{loading ? '正在读取原生执行计划…' : result ? `${result.executionTimeMs} ms · 优化器估算不代表实际耗时` : '查询内容保留，可关闭后修改并重试'}</small><button type="button" className={common.secondary} onClick={close}>{loading ? '取消并关闭' : '关闭'}</button></footer>

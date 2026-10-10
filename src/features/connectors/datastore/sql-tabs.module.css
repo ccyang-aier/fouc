@@ -1,12 +1,9 @@
-.navigation { display: flex; align-items: center; gap: 2px; }
-.navigation:empty { display: none; }
-.navigation > button, .menu { display: inline-flex; align-items: center; justify-content: center; height: 26px; padding: 0 6px; color: var(--muted-strong); border-radius: 4px; cursor: pointer; flex-shrink: 0; }
-.navigation button:disabled, .menu:disabled, .tab button:disabled { opacity: .35; cursor: default; }
+.contextAnchor { position: fixed; width: 1px; height: 1px; padding: 0; opacity: 0; pointer-events: none; }
+.tab button:disabled { opacity: .35; cursor: default; }
 .list { display: flex; min-width: 0; height: 100%; }
-.tab { display: flex; align-items: center; border-right: 1px solid var(--line); flex-shrink: 0; min-width: 135px; max-width: 240px; padding: 0 5px; position: relative; }
-.tab > button { display: flex; align-items: center; gap: 7px; height: 26px; padding: 0 5px; font-size: 13px; color: var(--ink-soft); cursor: pointer; min-width: 0; }
-.tab > button[role=tab] { flex: 1; }
-.tab span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tab { display: flex; align-items: center; gap: 7px; height: 100%; border-right: 1px solid var(--line); flex-shrink: 0; min-width: 135px; max-width: 240px; padding: 0 8px 0 10px; color: var(--ink-soft); font-size: 13px; cursor: pointer; outline: none; }
+.tab span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tab .close { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; padding: 0; color: var(--muted-strong); flex: none; cursor: pointer; }
 .tab svg { flex-shrink: 0; }
 .active { background: var(--panel); }
 :global(html:not([data-theme="dark"])) .active { background: var(--surface-subtle); }

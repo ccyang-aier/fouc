@@ -16,6 +16,7 @@ export type ResultPin = {
   sourceId: string;
   label: string;
   sql: string;
+  context: { database: string; schema: string | null };
   capturedAt: number;
   bytes: number;
   result: DatabaseQueryResult;

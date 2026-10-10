@@ -43,7 +43,7 @@ export function WorkbenchConnectionInfo({ session, name, page, selectedRow }: {
     }
   }, [open, place])
   return <>
-    <button ref={trigger} type="button" className="fouc-action" aria-label="连接信息与行详情" title="连接信息与行详情" aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? id : undefined} onClick={() => open ? setPosition(null) : place()}><Info size={17} /></button>
+    <button ref={trigger} type="button" className="fouc-action" data-surface="subtle" aria-label="连接信息与行详情" title="连接信息与行详情" aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? id : undefined} onClick={() => open ? setPosition(null) : place()}><Info size={17} /></button>
     {position && createPortal(<div ref={panel} id={id} role="dialog" aria-label="连接信息与行详情" className={styles.connectionPopover} style={position}>
       <header>
         <span className={styles.connectionIcon}><Database size={18} /></span>

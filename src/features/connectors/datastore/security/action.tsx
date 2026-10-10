@@ -14,7 +14,7 @@ import styles from './security.module.css';
 export function DatabaseSecurityAction(props: { base: string; session: RelationalSession; schema: string; disabled: boolean }) {
   const [open, setOpen] = useState(false);
   if (props.session.provider === 'sqlite') return null;
-  return <><button type="button" className={styles.trigger} disabled={props.disabled} aria-label="查看数据库用户与角色" onClick={() => setOpen(true)}><ShieldCheck size={14}/><span>用户与角色</span></button>{open && <SecurityDialog key={props.base} {...props} onClose={() => setOpen(false)}/>}</>;
+  return <><button type="button" className={`${styles.trigger} fouc-action`} data-surface="subtle" disabled={props.disabled} aria-label="查看数据库用户与角色" onClick={() => setOpen(true)}><ShieldCheck size={14}/><span>用户与角色</span></button>{open && <SecurityDialog key={props.base} {...props} onClose={() => setOpen(false)}/>}</>;
 }
 
 function SecurityDialog({ base, session, schema, onClose }: { base: string; session: RelationalSession; schema: string; onClose: () => void }) {

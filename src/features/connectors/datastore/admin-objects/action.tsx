@@ -16,7 +16,7 @@ export function DatabaseAdminObjectsAction({ base, session, schema, disabled }: 
   const mysql = session.provider === 'mysql'
   const title = mysql ? 'MySQL 事件目录' : 'PostgreSQL 扩展目录'
   return <>
-    <button type="button" className={styles.trigger} aria-label={`打开${title}`} disabled={disabled || mysql && !schema} onClick={() => setOpen(true)}>
+    <button type="button" className={`${styles.trigger} fouc-action`} data-surface="subtle" aria-label={`打开${title}`} disabled={disabled || mysql && !schema} onClick={() => setOpen(true)}>
       {mysql ? <Clock size={14} /> : <Package size={14} />}<span>{mysql ? '事件' : '扩展'}</span>
     </button>
     {open && <SqlDialog title={title} className={styles.dialog} onClose={() => setOpen(false)}>

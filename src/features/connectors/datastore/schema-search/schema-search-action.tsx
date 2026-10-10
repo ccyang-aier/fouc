@@ -79,5 +79,5 @@ function SchemaSearchDialog({ base, session, connectionLabel, currentSchema, onO
 
 export function SchemaSearchAction(props: SchemaSearchActionProps) {
   const [open, setOpen] = useState(false)
-  return <><button type="button" aria-label="搜索对象" title="搜索对象" className={styles.trigger} disabled={props.disabled} onClick={() => setOpen(true)}><MagnifyingGlass size={14} /><span>搜索对象</span></button>{open && <SchemaSearchDialog key={`${props.session.id}`} {...props} onClose={() => setOpen(false)} />}</>
+  return <><button type="button" aria-label="搜索对象" title="搜索对象" className={`${styles.trigger} fouc-action`} data-surface="subtle" disabled={props.disabled} onClick={() => setOpen(true)}><MagnifyingGlass size={14} /><span>搜索对象</span></button>{open && <SchemaSearchDialog key={`${props.session.id}`} {...props} onClose={() => setOpen(false)} />}</>
 }

@@ -72,6 +72,9 @@
   --menu-warning-hover-ink: #875510;
   /* 紧凑操作按钮与模态框底栏尺寸；各业务界面只安排内容，不另定高度。 */
   --action-hover-bg: #f5f6f7;
+  --action-surface-bg: #f7f8fa;
+  --action-surface-hover-bg: #eef0f3;
+  --action-nested-hover-bg: color-mix(in srgb, var(--ink) 8%, var(--panel));
   --dialog-action-height: 30px;
   --dialog-footer-block: 8px;
   --dialog-footer-inset: 22px;
@@ -149,6 +152,8 @@ html[data-theme="dark"] {
   --menu-warning-hover-bg: #4b3920;
   --menu-warning-hover-ink: #f0c979;
   --action-hover-bg: #303235;
+  --action-surface-bg: #202328;
+  --action-surface-hover-bg: var(--action-hover-bg);
 
   --wt-sidebar-standard-panel: #141619;
   --wt-sidebar-database-panel: var(--surface-subtle);

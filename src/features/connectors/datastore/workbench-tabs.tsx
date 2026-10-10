@@ -59,7 +59,7 @@ export function WorkbenchTabs({ table, schema, mode, openedViews, disabled, onCh
         return view ? <WorkbenchTab key={value} label={view.label} icon={<view.icon size={15} />} selected={mode === value} disabled={disabled} onSelect={() => onChange(value)} closeLabel={`关闭 ${view.label} 视图`} onClose={() => onCloseView(value)} /> : null
       })}
     </div>
-    <button type="button" className="fouc-action" aria-label="新建 SQL 查询" disabled={disabled} onClick={onNewQuery}><Plus size={16} /></button>
+    <button type="button" className="fouc-action" data-surface="subtle" aria-label="新建 SQL 查询" disabled={disabled} onClick={onNewQuery}><Plus size={16} /></button>
     <WorkbenchViewMenu disabled={disabled} onChange={onChange} />
   </div>
 }

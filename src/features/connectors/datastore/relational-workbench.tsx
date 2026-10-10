@@ -300,6 +300,8 @@ export function RelationalWorkbench({
       <header className="mw-breadcrumb">
         <button
           type="button"
+          className="fouc-action"
+          data-surface="subtle"
           aria-label="返回数据库连接列表"
           disabled={pending || leaving}
           title={pending ? "先提交或放弃待提交变更" : "返回连接列表"}
@@ -307,7 +309,7 @@ export function RelationalWorkbench({
         >
           <ArrowLeft size={16} />
         </button>
-        {resourcesHidden && <button type="button" className="fouc-action" aria-label="展开数据库资源" title="展开数据库资源" onClick={() => setResourcesHidden(false)}><SidebarSimple size={16} /></button>}
+        {resourcesHidden && <button type="button" className="fouc-action" data-surface="subtle" aria-label="展开数据库资源" title="展开数据库资源" onClick={() => setResourcesHidden(false)}><SidebarSimple size={16} /></button>}
         <strong className={styles.breadcrumbName} title={name}>
           {name}
         </strong>
@@ -324,7 +326,8 @@ export function RelationalWorkbench({
         <DatabaseAdminObjectsAction base={base} session={currentSession} schema={schema} disabled={pending || leaving || writeBusy} />
         <button
           type="button"
-          className={styles.writeAccess}
+          className={`${styles.writeAccess} fouc-action`}
+          data-surface="subtle"
           aria-label={writeBusy ? "切换中…" : writable ? "锁定表格写入" : "解锁表格写入"}
           disabled={pending || writeBusy}
           onClick={() => void toggleWriteAccess()}

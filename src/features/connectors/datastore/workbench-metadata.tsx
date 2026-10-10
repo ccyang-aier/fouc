@@ -14,7 +14,7 @@ export function WorkbenchMetadata({ provider, table, schema, columnCount, struct
     <div className={styles.metadataActions}>
       {structureAction}
       <span ref={onGridHeader} className={styles.gridHeaderSlot} />
-      <button type="button" className="fouc-action" disabled={pending || !table} onClick={onProperties}><Table size={15} />表属性</button>
+      <button type="button" className="fouc-action" data-surface="subtle" disabled={pending || !table} onClick={onProperties}><Table size={15} />表属性</button>
       <WorkbenchMenu label="数据工具" icon={<Table size={15} />} disabled={pending}>{tools}<div ref={onGridTools} className={styles.gridToolsSlot} /></WorkbenchMenu>
     </div>
   </div>

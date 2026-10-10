@@ -273,6 +273,8 @@ export function SqliteBackupAction({
       <button
         type="button"
         aria-label="SQLite 原生备份"
+        className="fouc-action"
+        data-surface="subtle"
         title="SQLite 原生备份 · WAL 一致性快照与文件下载"
         disabled={disabled}
         onClick={() => setOpen(true)}

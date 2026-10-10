@@ -11,7 +11,7 @@ import styles from './structure-edit-action.module.css'
 
 export function StructureEditAction({ base, schema, table, disabled, onApplied }: { base: string; schema: string; table: string; disabled: boolean; onApplied: () => void }) {
   const [target, setTarget] = useState<{ schema: string; table: string } | null>(null)
-  return <><button type="button" disabled={disabled} onClick={() => setTarget({ schema, table })}><PencilSimple size={14} />编辑表结构</button>{target && <StructureEditDialog base={base} {...target} onApplied={onApplied} onClose={() => setTarget(null)} />}</>
+  return <><button type="button" className="fouc-action" data-surface="subtle" disabled={disabled} onClick={() => setTarget({ schema, table })}><PencilSimple size={14} />编辑表结构</button>{target && <StructureEditDialog base={base} {...target} onApplied={onApplied} onClose={() => setTarget(null)} />}</>
 }
 function StructureEditDialog({ base, schema, table, onApplied, onClose }: { base: string; schema: string; table: string; onApplied: () => void; onClose: () => void }) {
   const [structure, setStructure] = useState<RelationalTableStructure | null>(null), [error, setError] = useState(''), [revision, setRevision] = useState(0), [busy, setBusy] = useState(false)

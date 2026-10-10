@@ -1,6 +1,6 @@
 "use client"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { ArrowLeft, ArrowsDownUp, Database, GridFour, Info, Lock, LockOpen, Plus } from "@phosphor-icons/react"
+import { ArrowLeft, ArrowsDownUp, Database, GridFour, Lock, LockOpen, Plus } from "@phosphor-icons/react"
 import type {
   DatabaseObjectInfo,
   RelationalTablePage,
@@ -9,7 +9,8 @@ import type {
 } from "@fouc/shared"
 import { backendFetch } from "@/lib/backend"
 import { ResourceTree } from "./resource-tree"
-import { TableView, RowInspector } from "./table-view"
+import { TableView } from "./table-view"
+import { WorkbenchConnectionInfo } from "./workbench-connection-info"
 import { RelationalQuery } from "./relational-query"
 import { TableEditing } from "./table-editing"
 import type { GridEditDraft, GridEditCell, GridEditSelection } from './grid-editing'
@@ -33,7 +34,7 @@ import { SchemaCreateAction } from './schema-create'
 import { TableCreateAction } from './table-create'
 import { SchemaDiagramView } from './schema-diagram-action'
 import type { SchemaObject, SchemaSearchHit } from '@fouc/shared'
-import { WorkbenchTabs, type WorkbenchMode } from "./workbench-tabs"
+import { WorkbenchShortcuts, WorkbenchTabs, type WorkbenchMode } from "./workbench-tabs"
 import { WorkbenchMetadata } from "./workbench-metadata"
 import { WorkbenchMenu } from "./workbench-menu"
 import { SqlDialog } from "./sql-library-dialog"
@@ -60,6 +61,7 @@ export function RelationalWorkbench({
   const [offset, setOffset] = useState(0)
   const [search, setSearch] = useState("")
   const [mode, setMode] = useState<WorkbenchMode>("data")
+  const [openedViews, setOpenedViews] = useState<WorkbenchMode[]>([])
   const [structureTab, setStructureTab] = useState<StructureTab>("columns")
   const [propertiesOpen, setPropertiesOpen] = useState(false)
   const [gridHeaderTarget, setGridHeaderTarget] = useState<HTMLElement | null>(null)
@@ -78,7 +80,6 @@ export function RelationalWorkbench({
   const [selection, setSelection] = useState<GridEditSelection | null>(null), [activeCell, setActiveCell] = useState<GridEditCell | null>(null)
   const gridHost = useRef<HTMLElement>(null)
   const [selectedRow, setSelectedRow] = useState<number | null>(null)
-  const [inspectorOpen, setInspectorOpen] = useState(false)
   const [currentSession, setCurrentSession] = useState(session)
   const [gridPending, setPending] = useState(false)
   const [mutationBusy, setMutationBusy] = useState(false)
@@ -248,15 +249,14 @@ export function RelationalWorkbench({
   function openSearchHit(hit: SchemaSearchHit) {
     if (pending) return
     selectSchema(hit.schema)
-    setInspectorOpen(false)
     setInitialColumn(undefined)
-    if (hit.kind === 'schema') { setInitialObject(null); setMode('objects'); return }
+    if (hit.kind === 'schema') { changeView('objects'); return }
     if (hit.kind === 'table' || hit.kind === 'column') {
       openTable(hit.kind === 'column' ? hit.parentName! : hit.name)
       if (hit.kind === 'column') { setInitialColumn(hit.column ?? hit.name); setMode('structure') }
       return
     }
-    if (hit.object) { setInitialObject(hit.object); setMode('objects') }
+    if (hit.object) { changeView('objects'); setInitialObject(hit.object) }
     else if (hit.relation) openTable(hit.relation.name)
   }
   function sortColumn(column: string, additive: boolean) {
@@ -276,7 +276,22 @@ export function RelationalWorkbench({
     }
     applyQuery({ ...query, sort: next ? [...others, next] : others })
   }
-  function changeView(next: WorkbenchMode) { if (pending) return; if (next === "objects") setInitialObject(null); setInspectorOpen(false); setMode(next) }
+  function changeView(next: WorkbenchMode) {
+    if (pending) return
+    if (next === "objects") setInitialObject(null)
+    if (next !== "data" && next !== "structure") setOpenedViews(current => current.includes(next) ? current : [...current, next])
+    setMode(next)
+  }
+  async function closeView(view: WorkbenchMode) {
+    if (pending || leaving) return
+    setLeaving(true); setLeaveError('')
+    try {
+      if (view === "sql") await sqlBeforeLeave.current?.()
+      setOpenedViews(current => current.filter(value => value !== view))
+      if (mode === view) setMode("data")
+    } catch (reason) { setLeaveError(reason instanceof Error ? reason.message : '草稿保存失败，当前视图保持打开') }
+    finally { setLeaving(false) }
+  }
   return (
     <section aria-label={`${name} 数据库工作台`} className={`mw ${nativeStyles.shell}`}>
       <header className="mw-breadcrumb">
@@ -314,10 +329,7 @@ export function RelationalWorkbench({
           <span>{writeBusy ? "切换中…" : writable ? "锁定表格写入" : "解锁表格写入"}</span>
         </button>
         {pending && <small className={styles.pendingLabel}>有待提交变更</small>}
-        <span className={styles.databaseLabel} title={session.database}>
-          {session.database}
-        </span>
-        <button type="button" aria-label="连接信息与行详情" aria-pressed={inspectorOpen} title="连接信息与行详情" onClick={() => setInspectorOpen((value) => !value)}><Info size={17} /></button>
+        <WorkbenchConnectionInfo session={session} name={name} page={page} selectedRow={mode === "data" ? selectedRow : null} />
       </header>
       <div className="mw-body">
         <ResourceTree
@@ -326,6 +338,7 @@ export function RelationalWorkbench({
             <TableImportAction base={base} sessionId={session.id} provider={session.provider} schema={schema} page={page} disabled={!writable || pending || busy || writeBusy} onImported={refresh} />
           </WorkbenchMenu>}
           name={name}
+          viewActions={<WorkbenchShortcuts mode={mode} disabled={pending || leaving} onChange={changeView} />}
           schemas={schemas}
           schema={schema}
           tables={tables}
@@ -366,8 +379,8 @@ export function RelationalWorkbench({
               ))}
             </select>
           </div>
-          <WorkbenchTabs table={table} schema={schema} mode={mode} disabled={pending} onChange={changeView} onCloseTable={() => { setTable(""); setPage(null); setSelectedRow(null); setMode("data") }} onNewQuery={() => { setOpenRequest({ id: crypto.randomUUID(), sql: "", schema }); setMode("sql") }} />
-          {(mode === "data" || mode === "structure") && <WorkbenchMetadata provider={session.info.productName ?? session.provider} table={table} schema={schema} columnCount={page?.table === table ? page.columns.length : 0} pending={pending} onView={changeView} onProperties={() => setPropertiesOpen(true)} onGridHeader={setGridHeaderTarget} onGridTools={setGridToolsTarget}
+          <WorkbenchTabs table={table} schema={schema} mode={mode} openedViews={openedViews} disabled={pending || leaving} onChange={changeView} onCloseView={view => void closeView(view)} onCloseTable={() => { setTable(""); setPage(null); setSelectedRow(null); setMode("data") }} onNewQuery={() => { setOpenRequest({ id: crypto.randomUUID(), sql: "", schema }); changeView("sql") }} />
+          {(mode === "data" || mode === "structure") && <WorkbenchMetadata provider={session.info.productName ?? session.provider} table={table} schema={schema} columnCount={page?.table === table ? page.columns.length : 0} pending={pending} onProperties={() => setPropertiesOpen(true)} onGridHeader={setGridHeaderTarget} onGridTools={setGridToolsTarget}
             structureAction={<StructureEditAction base={base} schema={schema} table={table} disabled={!writable || !table || pending || busy || writeBusy} onApplied={refresh} />}
             tools={<>
               <button type="button" className="fouc-action" disabled={!table || pending} onClick={() => changeView("data")}><GridFour size={15} />数据浏览</button>
@@ -385,7 +398,7 @@ export function RelationalWorkbench({
               </button>
             </p>
           )}
-          {leaveError && <p role="alert" className={styles.error}>暂时无法返回：{leaveError}。</p>}
+          {leaveError && <p role="alert" className={styles.error}>暂时无法离开：{leaveError}。</p>}
           {feedback && (
             <p className={styles.saveFeedback} role="status">
               {feedback}
@@ -445,7 +458,7 @@ export function RelationalWorkbench({
             </div>
           )}
           {mode === "objects" && schema && <SchemaObjectsPanel base={base} provider={session.provider} schema={schema} initialObject={initialObject} onOpenReference={reference => { if (reference.kind === "table" || reference.kind === "view" || reference.kind === "materialized-view") { if (reference.schema) selectSchema(reference.schema); openTable(reference.name) } }} />}
-          {mode === 'diagram' && schema && <SchemaDiagramView key={`${base}:${schema}`} base={base} schema={schema} onOpenTable={node => { selectSchema(node.schema); openTable(node.table) }} onOpenQuery={sql => { setOpenRequest({ id: crypto.randomUUID(), sql, schema }); setMode('sql') }} />}
+          {mode === 'diagram' && schema && <SchemaDiagramView key={`${base}:${schema}`} base={base} schema={schema} onOpenTable={node => { selectSchema(node.schema); openTable(node.table) }} onOpenQuery={sql => { setOpenRequest({ id: crypto.randomUUID(), sql, schema }); changeView('sql') }} />}
           {mode === 'docs' && schema && <DatabaseDocsPanel base={base} schemas={[schema]} persistent={Boolean(session.connectionId)} onOpenTable={(nextSchema, nextTable) => { selectSchema(nextSchema); openTable(nextTable) }} />}
           {mode === 'activity' && <DatabaseActivityPanel base={base} provider={session.provider} database={session.database} blocked={pending || writeBusy} />}
           {(mode === 'data' || mode === 'structure') && (
@@ -516,13 +529,6 @@ export function RelationalWorkbench({
             </>
           )}
         </main>
-        {inspectorOpen && <RowInspector
-          session={session}
-          name={name}
-          onClose={() => setInspectorOpen(false)}
-          page={page}
-          selectedRow={mode === "sql" ? null : selectedRow}
-        />}
       </div>
       {propertiesOpen && table ? <SqlDialog title={`表属性 · ${schema}.${table}`} className={nativeStyles.properties} onClose={() => setPropertiesOpen(false)}><div><TableStructure session={currentSession} writable={writable} onUnlock={unlockSqlWrite} onBusyChange={setMutationBusy} onStructureChanged={refresh} onWriteAccessChanged={setCurrentSession} base={base} schema={schema} table={table} revision={revision} pending={pending} onOpenTable={(nextSchema, nextTable) => { setPropertiesOpen(false); selectSchema(nextSchema); openTable(nextTable) }} /></div></SqlDialog> : null}
     </section>

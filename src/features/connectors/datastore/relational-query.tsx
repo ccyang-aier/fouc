@@ -62,7 +62,7 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
   const openedRequest = useRef<string | null>(null)
   useEffect(() => {
     if (!state.ready || !openRequest || openedRequest.current === openRequest.id) return
-    const tab = { ...newSqlTab(session.provider === 'mysql' ? openRequest.schema : session.database, openRequest.schema, '外键关联查询'), sql: openRequest.sql, originalSql: '', customTitle: true }
+    const tab = { ...newSqlTab(session.provider === 'mysql' ? openRequest.schema : session.database, openRequest.schema, openRequest.sql ? '外键关联查询' : undefined), sql: openRequest.sql, originalSql: '', customTitle: Boolean(openRequest.sql) }
     controller.update(snapshot => ({ tabs: [...snapshot.tabs, tab], activeTabId: tab.id }))
     openedRequest.current = openRequest.id
   }, [state.ready, controller, openRequest, session.provider, session.database])

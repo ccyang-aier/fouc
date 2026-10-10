@@ -3,11 +3,10 @@
 import type { ReactNode } from "react"
 import { Table } from "@phosphor-icons/react"
 import { WorkbenchMenu } from "./workbench-menu"
-import { WorkbenchViewMenu, type WorkbenchMode } from "./workbench-tabs"
 import styles from "./dbx-workbench.module.css"
 
-export function WorkbenchMetadata({ provider, table, schema, columnCount, structureAction, onProperties, onView, pending, tools, onGridHeader, onGridTools }: {
-  provider: string; table: string; schema: string; columnCount: number; structureAction: ReactNode; onProperties: () => void; onView: (mode: WorkbenchMode) => void; pending: boolean;
+export function WorkbenchMetadata({ provider, table, schema, columnCount, structureAction, onProperties, pending, tools, onGridHeader, onGridTools }: {
+  provider: string; table: string; schema: string; columnCount: number; structureAction: ReactNode; onProperties: () => void; pending: boolean;
   tools: ReactNode; onGridHeader: (node: HTMLSpanElement | null) => void; onGridTools: (node: HTMLDivElement | null) => void
 }) {
   return <div className={styles.metadata}>
@@ -17,7 +16,6 @@ export function WorkbenchMetadata({ provider, table, schema, columnCount, struct
       <span ref={onGridHeader} className={styles.gridHeaderSlot} />
       <button type="button" className="fouc-action" disabled={pending || !table} onClick={onProperties}><Table size={15} />表属性</button>
       <WorkbenchMenu label="数据工具" icon={<Table size={15} />} disabled={pending}>{tools}<div ref={onGridTools} className={styles.gridToolsSlot} /></WorkbenchMenu>
-      <WorkbenchViewMenu disabled={pending} onChange={onView} />
     </div>
   </div>
 }

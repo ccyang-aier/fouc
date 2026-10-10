@@ -2,13 +2,12 @@
 
 import { useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
-import type { DatabaseQueryResult, DatabaseTablePage, RelationalProvider, RelationalSession, RelationalSort } from '@fouc/shared'
-import { Database, DownloadSimple, X } from '@phosphor-icons/react'
+import type { DatabaseQueryResult, DatabaseTablePage, RelationalProvider, RelationalSort } from '@fouc/shared'
+import { DownloadSimple } from '@phosphor-icons/react'
 import { databaseCellText } from './cell-format'
 import { ResultGrid, type ResultGridSelectionScope } from './grid/result-grid'
 import { ResultExportDialog, type ResultExportDialogProps } from './result-export'
 import { gridRowsWithDrafts, type GridEditDraft, type GridEditCell, type GridEditSelection } from './grid-editing'
-import styles from './relational.module.css'
 
 export function TableView({ page, provider, schema, onSelect, scopeKey, layoutScopeKey, search = '', sort = [], sortDisabled = false, filtered = false, onSort, drafts = [], onSelectionChange, onCellSelect, headerTarget, toolsTarget, exportTarget }: {
   drafts?: readonly GridEditDraft[]; onSelectionChange?: (scope: GridEditSelection | null) => void; onCellSelect?: (cell: GridEditCell | null) => void;
@@ -36,46 +35,4 @@ export function TableView({ page, provider, schema, onSelect, scopeKey, layoutSc
     onCellSelect={(cell) => { onSelect(cell ? model.indices[cell.rowIndex] : null); onCellSelect?.(cell ? { rowIndex: model.indices[cell.rowIndex], columnIndex: cell.columnIndex } : null) }} toolbarActions={exportTarget ? undefined : exportAction} />
     {exportTarget && createPortal(exportAction, exportTarget)}
     {exportSnapshot && <ResultExportDialog {...exportSnapshot} onClose={() => setExportSnapshot(null)} />}</>
-}
-
-export function RowInspector({
-  session,
-  name,
-  onClose,
-  page,
-  selectedRow
-}: {
-  session: RelationalSession
-  name: string
-  onClose: () => void
-  page: DatabaseTablePage | null
-  selectedRow: number | null
-}) {
-  const selected = selectedRow !== null ? page?.rows[selectedRow] : null
-  return (
-    <aside className={`mw-inspector ${styles.inspector}`} aria-label="行详情">
-      <div className="mw-explorer-head">
-        <strong>{selected ? "行详情" : "连接信息"}</strong>
-        <button type="button" aria-label="关闭详情面板" className="mw-icon-button" onClick={onClose}><X size={16} /></button>
-      </div>
-      {selected ? (
-        page?.columns.map((column, index) => (
-          <div className={styles.detailField} key={column.name}>
-            <small>{column.name}</small>
-            <pre>{databaseCellText(selected[index] ?? null)}</pre>
-          </div>
-        ))
-      ) : (
-        <div className={styles.connectionDetails}>
-          <span className={styles.connectionMark}><Database size={23} /></span>
-          <strong>{name}</strong><small>{session.info.productName}</small>
-          <dl>
-            <div><dt>数据库</dt><dd title={session.database}>{session.provider === 'sqlite' ? session.database.replace(/^.*[\\/]/, '') : session.database}</dd></div>
-            <div><dt>驱动</dt><dd>{session.info.driverName}</dd></div>
-            <div><dt>版本</dt><dd>{session.info.productVersion}</dd></div>
-          </dl>
-        </div>
-      )}
-    </aside>
-  )
 }

@@ -10,6 +10,7 @@ type Props = {
   name: string; schemas: string[]; schema: string; tables: DatabaseObjectInfo[]; table: string; search: string; disabled?: boolean;
   columns?: DatabaseTablePage["columns"];
   transferActions?: ReactNode;
+  viewActions?: ReactNode;
   onSearch: (value: string) => void; onSchema: (value: string) => void; onTable: (value: string) => void; onRefresh: () => void;
   onStructure?: (table: string, section: StructureTab, column?: string) => void; onQuery?: () => void
 }
@@ -20,7 +21,7 @@ const sections = [
   { key: "triggers", label: "触发器", icon: Lightning, color: "triggers" },
 ] as const
 
-export function ResourceTree({ name, schemas, schema, tables, table, search, onSearch, onSchema, onTable, onRefresh, disabled = false, columns = [], transferActions, onStructure, onQuery }: Props) {
+export function ResourceTree({ name, schemas, schema, tables, table, search, onSearch, onSchema, onTable, onRefresh, disabled = false, columns = [], transferActions, viewActions, onStructure, onQuery }: Props) {
   const visible = tables.filter(item => item.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()))
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set())
   const [fieldsOpen, setFieldsOpen] = useState(false)
@@ -60,6 +61,7 @@ export function ResourceTree({ name, schemas, schema, tables, table, search, onS
       </div>)}
       {onQuery ? <button type="button" className={`${styles.row} ${styles.query}`} disabled={disabled} onClick={onQuery}><Folder size={15} /><span>查询</span></button> : null}
     </div>
+    {viewActions}
     <footer className={styles.footer}><span>{schemas.length} 个 Schema</span><span>{tables.length} 个对象</span></footer>
   </aside>
 }

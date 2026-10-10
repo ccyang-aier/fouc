@@ -30,6 +30,7 @@ export function SqlExecutionResults({ execution, provider, layoutScopeKey, view,
   onPin?: (statement: SqlStatementExecution, index: number) => void
   currentPinned?: boolean
 }) {
+  const [headerTarget, setHeaderTarget] = useState<HTMLDivElement | null>(null)
   const selected = execution?.selectedResult ?? 0, setSelected = onSelect
   const snapshot = execution?.snapshot, statement = snapshot?.statements[selected] ?? snapshot?.statements[0]
   if (!execution) return <div className="mw-result-state"><Table size={26} /><strong>查询结果</strong><span>运行当前语句或全部语句，在这里查看独立结果。</span><small><kbd>Ctrl / ⌘</kbd> + <kbd>Enter</kbd> 运行 · <kbd>Ctrl / ⌘</kbd> + <kbd>Shift</kbd> + <kbd>Enter</kbd> 全部运行</small></div>
@@ -39,22 +40,23 @@ export function SqlExecutionResults({ execution, provider, layoutScopeKey, view,
   const active = execution.running
   return <div className={styles.results} data-execution-id={snapshot.id}>
     <header className={styles.summary} data-status={snapshot.status}>
+      <div className={styles.tabs} role="tablist" aria-label="SQL 语句结果">
+        {snapshot.statements.map((item, index) => <button type="button" className="fouc-action" role="tab" id={`sql-result-${snapshot.id}-${index}`} aria-controls={`sql-result-panel-${snapshot.id}`} aria-selected={index === selected} tabIndex={index === selected ? 0 : -1}
+          data-status={item.status} key={index} title={item.sql} onClick={() => setSelected(index)} onKeyDown={(event) => {
+            const next = event.key === 'ArrowRight' ? (index + 1) % snapshot.statements.length : event.key === 'ArrowLeft' ? (index - 1 + snapshot.statements.length) % snapshot.statements.length : event.key === 'Home' ? 0 : event.key === 'End' ? snapshot.statements.length - 1 : null
+            if (next !== null) { event.preventDefault(); setSelected(next); document.getElementById(`sql-result-${snapshot.id}-${next}`)?.focus() }
+          }}><StatementIcon statement={item} /><span>结果 {index + 1}</span>{item.result && snapshot.statements.length > 1 && <small>{item.result.rows.length.toLocaleString()} 行{item.result.truncated ? '+' : ''}</small>}</button>)}
+      </div>
+      {onPin && <button type="button" className={`fouc-action ${styles.pin}`} aria-label="固定当前结果" disabled={!statement?.result || statement.status !== 'succeeded' || currentPinned} title={currentPinned ? '当前结果已固定' : '固定当前结果，再次运行不会覆盖'} onClick={() => statement && onPin(statement, selected)}><PushPin size={15} weight={currentPinned ? 'fill' : 'regular'} /></button>}
       <span role="status" className={styles.state}>{active ? <CircleNotch size={13} className="mw-spin" /> : snapshot.status === 'completed' ? <Check size={13} /> : snapshot.status === 'failed' || lost ? <WarningCircle size={13} /> : <Stop size={13} />}{lost ? '执行状态已丢失' : labels[snapshot.status]}</span>
-      <span className={styles.count}>{snapshot.completedCount} / {snapshot.statements.length} 条完成</span><Elapsed execution={snapshot} active={active} />
-      {onPin && <button type="button" className={styles.cancel} style={{ color: 'var(--ink-soft)', borderColor: 'var(--line)' }} aria-label="固定当前结果" disabled={!statement?.result || statement.status !== 'succeeded' || currentPinned} title="固定当前已返回结果；再次运行不会覆盖 · 最多 5 份 / 8 MiB" onClick={() => statement && onPin(statement, selected)}><PushPin size={13} weight={currentPinned ? 'fill' : 'regular'} />{currentPinned ? '已固定' : '固定结果'}</button>}
+      {snapshot.statements.length > 1 && <span className={styles.count}>{snapshot.completedCount} / {snapshot.statements.length} 条完成</span>}<Elapsed execution={snapshot} active={active} />
+      <div ref={setHeaderTarget} className={styles.headerTools} />
       {active && <button type="button" className={styles.cancel} disabled={snapshot.status === 'cancelling' && !execution.connectionError} onClick={onCancel}><Stop size={13} weight="fill" />{snapshot.status === 'cancelling' ? '停止中…' : '取消查询'}</button>}
     </header>
     {active && <div className={styles.progress} role="progressbar" aria-label="SQL 执行进度" aria-valuemin={0} aria-valuemax={snapshot.statements.length} aria-valuenow={snapshot.completedCount}><i style={{ width: `${snapshot.completedCount / snapshot.statements.length * 100}%` }} /></div>}
     {execution.connectionError && <p className={styles.connectionError} role="alert">{execution.connectionError}{active && <button type="button" onClick={onCancel}>重试取消</button>}</p>}
-    {snapshot.statements.length > 1 && <div className={styles.tabs} role="tablist" aria-label="SQL 语句结果">
-      {snapshot.statements.map((item, index) => <button type="button" role="tab" id={`sql-result-${snapshot.id}-${index}`} aria-controls={`sql-result-panel-${snapshot.id}`} aria-selected={index === selected} tabIndex={index === selected ? 0 : -1}
-        data-status={item.status} key={index} title={item.sql} onClick={() => setSelected(index)} onKeyDown={(event) => {
-          const next = event.key === 'ArrowRight' ? (index + 1) % snapshot.statements.length : event.key === 'ArrowLeft' ? (index - 1 + snapshot.statements.length) % snapshot.statements.length : event.key === 'Home' ? 0 : event.key === 'End' ? snapshot.statements.length - 1 : null
-          if (next !== null) { event.preventDefault(); setSelected(next); document.getElementById(`sql-result-${snapshot.id}-${next}`)?.focus() }
-        }}><StatementIcon statement={item} /><span>结果 {index + 1}</span>{item.result && <small>{item.result.rows.length.toLocaleString()} 行{item.result.truncated ? '+' : ''}</small>}</button>)}
-    </div>}
-    {statement && <div className={styles.body} role={snapshot.statements.length > 1 ? 'tabpanel' : 'region'} id={`sql-result-panel-${snapshot.id}`} aria-labelledby={snapshot.statements.length > 1 ? `sql-result-${snapshot.id}-${selected}` : undefined} aria-label={snapshot.statements.length > 1 ? undefined : 'SQL 查询结果'}>
-      {statement.result ? <>{statement.result.messages.filter((message) => message.severity === 'warning').map((message, index) => <p key={index} className={styles.connectionError} role="alert">{message.message}</p>)}<SqlQueryResult key={`${snapshot.id}:${selected}`} scopeKey={`${snapshot.id}:${selected}`} layoutScopeKey={layoutScopeKey ? `${layoutScopeKey}:${selected}` : undefined} provider={provider} result={statement.result} view={view} onViewChange={onViewChange} /></>
+    {statement && <div className={styles.body} role="tabpanel" id={`sql-result-panel-${snapshot.id}`} aria-labelledby={`sql-result-${snapshot.id}-${selected}`}>
+      {statement.result ? <>{statement.result.messages.filter((message) => message.severity === 'warning').map((message, index) => <p key={index} className={styles.connectionError} role="alert">{message.message}</p>)}<SqlQueryResult key={`${snapshot.id}:${selected}`} scopeKey={`${snapshot.id}:${selected}`} layoutScopeKey={layoutScopeKey ? `${layoutScopeKey}:${selected}` : undefined} provider={provider} result={statement.result} view={view} onViewChange={onViewChange} headerTarget={headerTarget} /></>
         : statement.error ? <div className={styles.failure} role="alert"><div><WarningCircle size={19} /><strong>语句 {selected + 1} 执行失败</strong>{statement.error.code && <code>{statement.error.code}</code>}</div><p>{statement.error.message}</p>{statement.error.detail && <p>{statement.error.detail}</p>}{statement.error.hint && <small>{statement.error.hint}</small>}<button type="button" onClick={() => onReveal(statement)}>定位到 SQL</button><details><summary>查看本次执行的 SQL</summary><pre>{statement.sql}</pre></details><span>前面已完成的结果仍可查看，后续语句未执行。</span></div>
         : <div className="mw-result-state">{lost ? <WarningCircle size={26} /> : statement.status === 'running' ? <CircleNotch size={26} className="mw-spin" /> : statement.status === 'cancelled' ? <X size={26} /> : <SkipForward size={26} />}<strong>{lost ? '无法确认此语句的结果' : statement.status === 'running' ? '正在执行此语句' : statement.status === 'cancelled' ? '此语句已取消' : statement.status === 'skipped' ? '此语句未执行' : '等待前面的语句完成'}</strong><span>{statement.status === 'cancelled' || statement.status === 'skipped' ? '编辑内容和已完成的结果已保留，可重新运行。' : '可查看已完成的结果或切换其他查询标签。'}</span></div>}
     </div>}

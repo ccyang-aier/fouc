@@ -1,11 +1,12 @@
 "use client"
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
+import { Button } from '@/components/ui/button'
 import type { CompletionContext } from '@codemirror/autocomplete'
 import { closeCompletion, startCompletion } from '@codemirror/autocomplete'
 import type { EditorView } from '@codemirror/view'
 import { isolateHistory } from '@codemirror/commands'
 import { Transaction } from '@codemirror/state'
-import { Play, Stop, ClockCounterClockwise, FolderOpen, FloppyDisk, FilePlus, CheckCircle, CircleNotch, Database, Lock, WarningCircle, X, ArrowsClockwise, TextAlignLeft, ArrowsInLineHorizontal, SlidersHorizontal } from '@phosphor-icons/react'
+import { ClockCounterClockwise, FolderOpen, FloppyDisk, FilePlus, CheckCircle, CircleNotch, Database, Lock, WarningCircle, X, ArrowsClockwise, TextAlignLeft, ArrowsInLineHorizontal, SlidersHorizontal } from '@phosphor-icons/react'
 import { inspectSqlTemplate, resolveSqlExecutionTarget, type SqlEditorPreferences, type SqlExecutionMode, type SqlStatementRange, type SqlParameterDescriptor, type RelationalSession, type SavedSqlDocument, type SavedSqlLibrary, type SqlDraftState, type SqlDraftTab, type SqlHistoryEntry } from '@fouc/shared'
 import { SqlEditor, type SqlEditorCache } from './sql-editor'
 import { SqlExecutionResults } from './sql-execution-results'
@@ -15,6 +16,7 @@ import { ResultPins } from './sql-result-history/result-pins'
 import { scopedResultPins } from './sql-result-history/model'
 import { SqlParameterDialog, rememberSqlParameters, type SqlParameterRecents } from './sql-parameter-dialog'
 import { SqlEditorSplit } from './sql-editor-split'
+import { SqlQueryToolbar } from './sql-query-toolbar'
 import { SqlFileActions } from './sql-file-actions'
 import { SqlQuickActions } from './sql-quick-actions'
 import { SqlExplainAction } from './sql-explain-action'
@@ -40,7 +42,6 @@ import { closeSqlTabs, mergeSqlDrafts, navigateSqlTabs, newSqlTab, pinSqlTab, re
 import common from './relational.module.css'
 import styles from './sql-library.module.css'
 import tabsStyle from './sql-tabs.module.css'
-import executionStyle from './sql-execution.module.css'
 
 type Restore = { sql: string; schema: string | null; database: string; file: SavedSqlDocument | null }
 type Saving = { tabId: string | null; sql: string; schema: string | null; database: string; file: SqlDraftTab['savedFile'] }
@@ -285,31 +286,29 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
     <div className={`${styles.query} mw-sql-workspace mw-live-sql`}>
       {state.ready && <SqlTabStrip snapshot={state} scope={libraryBase ?? base} busyIds={busyIds} canBack={Boolean(navigateSqlTabs(visits, -1, state))} canForward={Boolean(navigateSqlTabs(visits, 1, state))} canReopen={closed.length > 0} onSelect={select} onNew={add} onAction={action}
         onNavigate={(direction) => { const next = navigateSqlTabs(visits, direction, state); if (next) { setVisits(next.visits); select(next.id) } }} onReorder={(id, beforeId) => controller.update((snapshot) => reorderSqlTab(snapshot, id, beforeId))} />}
-      <div className={`mw-sql-toolbar ${styles.toolbar}`}><div className={styles.actions}><button type="button" className="mw-run" aria-label={running ? '取消查询' : '运行'} title={running ? '中断数据库查询' : '运行 SQL · Ctrl / ⌘ + Enter · 选区优先'} disabled={!current || !state.ready || execution?.snapshot?.status === 'cancelling'} onClick={() => current && void (running ? cancel(current.id) : run())}>{running ? execution?.snapshot?.status === 'cancelling' ? <CircleNotch size={16} className="mw-spin" /> : <Stop size={16} weight="fill" /> : <Play size={16} weight="fill" />}<span>{running ? execution?.snapshot?.status === 'cancelling' ? '停止中…' : '取消' : '运行'}</span></button>
-        <select className={executionStyle.mode} aria-label="SQL 执行范围" value={executionMode} disabled={running} onChange={(event) => setExecutionMode(event.target.value as SqlExecutionMode)}><option value="current">当前语句</option><option value="all">全部语句</option></select>
+      <SqlQueryToolbar database={displayDatabase ?? session.database} running={running} cancelling={execution?.snapshot?.status === 'cancelling'} disabled={!current || !state.ready} mode={executionMode} onModeChange={setExecutionMode} onRun={(mode) => void run(mode)} onCancel={() => current && void cancel(current.id)} target={current && <label className={tabsStyle.target}><Database size={15} /><select aria-label="SQL 目标 Schema" value={targetSchema} disabled={running || schemaLocked} onChange={(event) => {
+          const next = event.target.value; updateTab(current.id, session.provider === 'mysql' ? { database: next, schema: next } : { schema: next }); if (next !== schema) onSchemaChange(next)
+        }}>{targetSchema && !schemas.includes(targetSchema) && <option value={targetSchema}>{targetSchema}（当前不可用）</option>}{schemas.map((item) => <option key={item}>{item}</option>)}</select><Button variant="ghost" size="icon-sm" loading={metadataState.pending > 0} aria-label="刷新 SQL 元数据" title={metadataState.pending ? '正在读取 SQL 元数据' : '刷新表与字段补全'} onClick={refreshMetadata}><ArrowsClockwise size={15} /></Button></label>}>
         <span className={styles.toolDivider} />
-        <button type="button" aria-label="格式化 SQL" title="格式化 SQL · Ctrl / ⌘ + Shift + F · 选区优先" disabled={!current || running || formatting || preferences.busy || !preferences.data || Boolean(preferences.error)} onClick={() => void transformCurrent()}>{formatting ? <CircleNotch size={17} className="mw-spin" /> : <TextAlignLeft size={17} />}<span>格式化</span></button>
-        <button type="button" aria-label="压缩 SQL" title="压缩选区或完整 SQL，保留字面量与执行提示" disabled={!current || running || formatting} onClick={() => void transformCurrent(true)}><ArrowsInLineHorizontal size={17} /></button>
-        <button type="button" aria-label="SQL 编辑器设置" title="格式化、保存与代码片段" disabled={preferences.busy || !preferences.data || Boolean(preferences.error)} onClick={() => setEditorSettingsOpen(true)}><SlidersHorizontal size={17} /></button>
+        <Button variant="ghost" size="icon-sm" loading={formatting} aria-label="格式化 SQL" title="格式化 SQL · Ctrl / ⌘ + Shift + F · 选区优先" disabled={!current || running || preferences.busy || !preferences.data || Boolean(preferences.error)} onClick={() => void transformCurrent()}><TextAlignLeft size={17} /></Button>
+        <button type="button" className="fouc-action" aria-label="压缩 SQL" title="压缩选区或完整 SQL，保留字面量与执行提示" disabled={!current || running || formatting} onClick={() => void transformCurrent(true)}><ArrowsInLineHorizontal size={17} /></button>
+        <button type="button" className="fouc-action" aria-label="SQL 编辑器设置" title="格式化、保存与代码片段" disabled={preferences.busy || !preferences.data || Boolean(preferences.error)} onClick={() => setEditorSettingsOpen(true)}><SlidersHorizontal size={17} /></button>
         <span className={styles.toolDivider} />
         <SqlExplainAction key={`explain:${base}:${current?.id}:${targetSchema}`} base={base} provider={session.provider} schema={targetSchema || null} targetLabel={displayDatabase ?? session.database} editorRef={editor} disabled={!current || running || formatting} contextIssue={current ? targetIssue(current) : ''} onNotice={setNotice} />
         <SqlMutationAction key={`mutation:${base}:${current?.id}:${targetSchema}`} base={base} session={session} schema={targetSchema} editorRef={editor} disabled={!current || busyIds.size > 0 || formatting || schemaLocked} contextIssue={current ? targetIssue(current) : ''} onNotice={setNotice} onUnlock={onUnlockWrite} onBusyChange={onMutationBusy} onCommitted={() => { onMutated(); setNotice('SQL 事务已提交。已有查询结果保留，重新运行可读取最新数据。') }} />
         <SqlQueryCompareAction tabs={state.tabs} executions={executions} provider={session.provider} activeTabId={state.activeTabId} onNotice={setNotice} onSqlPreview={openComparisonReview} />
         <SqlQuickActions editorRef={editor} provider={session.provider} disabled={!current || running || formatting} keywordCase={preferences.data?.formatter.keywordCase} onFormatSql={formatText} onNotice={setNotice} />
         <SqlFileActions provider={session.provider} disabled={!state.ready || running} getDocument={() => current ? { sql: editor.current?.state.doc.toString() ?? current.sql, title: current.title } : null} onOpen={openSqlFiles} onNotice={setNotice} />
-        <button type="button" aria-label="历史" title="查询历史" aria-pressed={panel === 'history'} onClick={() => setPanel((value) => value === 'history' ? null : 'history')}><ClockCounterClockwise size={17} /><span>历史</span></button>
-        <button type="button" aria-label="SQL 库" aria-pressed={panel === 'library'} disabled={!libraryBase} title={!libraryBase ? '保存连接后可使用 SQL 库' : 'SQL 库'} onClick={() => setPanel((value) => value === 'library' ? null : 'library')}><FolderOpen size={17} /><span>SQL 库</span></button>
-        <button type="button" aria-label="保存 SQL" title="保存 SQL · Ctrl / ⌘ + S" disabled={!current || running || formatting || preferences.busy || !libraryBase || library.busy || !sqlTabSaveable(current)} onClick={() => void saveCurrent()}><FloppyDisk size={17} /><span>保存 SQL</span></button>
-        <button type="button" aria-label="新建查询" title="新建查询" disabled={!state.ready} onClick={add}><FilePlus size={17} /><span>新建查询</span></button></div>
-        {current && <label className={tabsStyle.target}><Database size={15} /><select aria-label="SQL 目标 Schema" value={targetSchema} disabled={running || schemaLocked} onChange={(event) => {
-          const next = event.target.value; updateTab(current.id, session.provider === 'mysql' ? { database: next, schema: next } : { schema: next }); if (next !== schema) onSchemaChange(next)
-        }}>{targetSchema && !schemas.includes(targetSchema) && <option value={targetSchema}>{targetSchema}（当前不可用）</option>}{schemas.map((item) => <option key={item}>{item}</option>)}</select><button type="button" aria-label="刷新 SQL 元数据" title={metadataState.pending ? '正在读取 SQL 元数据' : '刷新表与字段补全'} onClick={refreshMetadata}>{metadataState.pending ? <CircleNotch size={15} className="mw-spin" /> : <ArrowsClockwise size={15} />}</button></label>}
-      </div>
+        <button type="button" className="fouc-action" aria-label="历史" title="查询历史" aria-pressed={panel === 'history'} onClick={() => setPanel((value) => value === 'history' ? null : 'history')}><ClockCounterClockwise size={17} /><span>历史</span></button>
+        <button type="button" className="fouc-action" aria-label="SQL 库" aria-pressed={panel === 'library'} disabled={!libraryBase} title={!libraryBase ? '保存连接后可使用 SQL 库' : 'SQL 库'} onClick={() => setPanel((value) => value === 'library' ? null : 'library')}><FolderOpen size={17} /><span>SQL 库</span></button>
+        <button type="button" className="fouc-action" aria-label="保存 SQL" title="保存 SQL · Ctrl / ⌘ + S" disabled={!current || running || formatting || preferences.busy || !libraryBase || library.busy || !sqlTabSaveable(current)} onClick={() => void saveCurrent()}><FloppyDisk size={17} /><span>保存 SQL</span></button>
+        <button type="button" className="fouc-action" aria-label="新建查询" title="新建查询" disabled={!state.ready} onClick={add}><FilePlus size={17} /><span>新建查询</span></button>
+      </SqlQueryToolbar>
       {state.error && <p role="alert" className={styles.error}>{state.error}<button type="button" onClick={() => void (state.ready ? controller.flush() : controller.load()).catch(() => undefined)}>重试草稿存储</button>{state.ready && <button type="button" disabled={inspectBusy} onClick={() => void inspect()}>查看设备版本</button>}</p>}
       {preferences.error && <p role="alert" className={styles.error}>编辑器设置读取失败：{preferences.error}<button type="button" onClick={() => setPreferencesRevision((value) => value + 1)}>重试编辑器设置</button></p>}
       {metadataState.error && <p role="alert" className={styles.error}>SQL 元数据读取失败：{metadataState.error}<button type="button" onClick={refreshMetadata}>重试元数据</button></p>}
       {(notice || library.error) && <p role={library.error ? 'alert' : 'status'} className={library.error ? styles.error : styles.notice}>{library.error || notice}{!library.error && <button type="button" aria-label="关闭 SQL 提示" onClick={() => setNotice('')}><X size={14} /></button>}</p>}
-      {current ? <SqlEditorSplit resultMinHeight={scopedResultPins(resultPins.pins, pinScope).length ? 360 : 0} editor={<div className="mw-editor" id="fouc-sql-query-document" role="tabpanel" aria-label={current.title}><SqlEditor provider={session.provider} documentId={current.id} value={current.sql} positions={current.editorPosition} cache={editorCache.current} complete={complete} completionScope={`${targetSchema}:${metadataRevision}:${preferences.data?.version ?? "default"}`}
+      {current ? <SqlEditorSplit resultMinHeight={scopedResultPins(resultPins.pins, pinScope).length ? 360 : 0} editor={<div className="mw-editor" id="fouc-sql-query-document" role="tabpanel" aria-label={current.title}><SqlEditor showRunGutter provider={session.provider} documentId={current.id} value={current.sql} positions={current.editorPosition} cache={editorCache.current} complete={complete} completionScope={`${targetSchema}:${metadataRevision}:${preferences.data?.version ?? "default"}`}
           onChange={(sql) => updateTab(current.id, { sql })} onPositionChange={(id, editorPosition) => { const tab = controller.getSnapshot().tabs.find((item) => item.id === id); if (tab && JSON.stringify(tab.editorPosition) !== JSON.stringify(editorPosition)) updateTab(id, { editorPosition }) }}
           onRun={(mode) => void run(mode ?? executionMode)} onSave={() => void saveCurrent()} onFormat={() => void transformCurrent()} snippets={preferences.data?.snippets} keywordCase={preferences.data?.formatter.keywordCase} functionCase={preferences.data?.formatter.functionCase} editorRef={editor} /></div>}
         status={<div className={styles.document}><span className={styles.language}>SQL</span><span title={current.database}>{displayDatabase}{current.schema && session.provider !== 'mysql' ? ` / ${current.schema}` : ''}</span><small><Lock size={12} />只读 · {executionMode === 'current' ? '当前语句' : '全部语句'} · 选区优先</small>{draftStatus}</div>}

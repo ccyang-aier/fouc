@@ -38,6 +38,8 @@ import {
   highlightSpecialChars,
   keymap,
   lineNumbers,
+  gutter,
+  GutterMarker,
   tooltips
 } from "@codemirror/view"
 import { tags } from '@lezer/highlight'
@@ -52,6 +54,22 @@ const sqlHighlight = HighlightStyle.define([
 ])
 
 const tooltipParent = new Compartment()
+class RunStatementMarker extends GutterMarker {
+  toDOM() {
+    const button = document.createElement('button')
+    button.type = 'button'; button.textContent = '▷'; button.className = 'fouc-action'
+    button.setAttribute('aria-label', '运行当前语句'); button.title = '运行当前语句 · Ctrl / ⌘ + Enter'
+    // Gutters mount after the editor constructor and are hidden by CodeMirror.
+    requestAnimationFrame(() => {
+      if (!button.isConnected) return
+      const gutters = button.closest('.cm-gutters')
+      gutters?.removeAttribute('aria-hidden')
+      gutters?.querySelectorAll('.cm-gutter:not(.mw-sql-run-gutter)').forEach(element => element.setAttribute('aria-hidden', 'true'))
+    })
+    return button
+  }
+}
+const runStatementMarker = new RunStatementMarker()
 
 type SqlEditorHandlers = { onChange: (value: string) => void; onRun: (mode?: SqlExecutionMode) => void; onSave?: () => void; onFormat?: () => void; onPositionChange?: (id: string, position: SqlEditorPosition) => void; complete?: CompletionSource; snippets?: SqlSnippet[]; keywordCase?: SqlFormatterCase; functionCase?: SqlFormatterCase }
 class SqlEditorCallbacks {
@@ -64,6 +82,7 @@ class SqlEditorCallbacks {
 }
 export type SqlEditorCache = Map<string, { state: EditorState; scrollTop: number; scrollLeft: number; callbacks: SqlEditorCallbacks }>
 type Props = {
+  showRunGutter?: boolean
   value: string
   onChange: (value: string) => void
   onRun: (mode?: SqlExecutionMode) => void
@@ -94,6 +113,7 @@ export function SqlEditor({
   editorRef,
   provider = "mysql",
   readOnly = false,
+  showRunGutter = false,
   label = "SQL 编辑器",
   documentId = 'sql', positions, cache, onPositionChange, complete, completionScope
 }: Props) {
@@ -133,6 +153,12 @@ export function SqlEditor({
         tooltipParent.of(tooltips({ parent: getOverlayRoot() ?? document.body })),
         EditorState.readOnly.of(readOnly),
         EditorView.editable.of(!readOnly),
+        ...(showRunGutter && !readOnly ? [gutter({
+          class: 'mw-sql-run-gutter',
+          lineMarker: (view, line) => view.state.doc.lineAt(view.state.selection.main.head).from === line.from ? runStatementMarker : null,
+          lineMarkerChange: update => update.selectionSet || update.docChanged,
+          domEventHandlers: { click: (view, _line, event) => { event.preventDefault(); view.focus(); callbacks.get().onRun('current'); return true } }
+        })] : []),
         lineNumbers(),
         highlightActiveLineGutter(),
         highlightSpecialChars(),
@@ -219,7 +245,7 @@ export function SqlEditor({
       editorRef.current = null
       view.destroy()
     }
-  }, [editorRef, provider, readOnly, label, documentId, cache])
+  }, [editorRef, provider, readOnly, showRunGutter, label, documentId, cache])
 
   useEffect(() => {
     const view = editorRef.current

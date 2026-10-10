@@ -96,7 +96,7 @@ export function SqlQuickActions({ editorRef, provider, disabled, keywordCase = '
   const locked = busy || disabled
   const range = snapshot?.state.selection.main
   const preview = tab === 'in' && inPreview?.result.ok ? inPreview.result.sql : tab === 'table' ? tableSql : snapshot?.state.sliceDoc(range?.empty ? 0 : range!.from, range?.empty ? snapshot.state.doc.length : range!.to) ?? ''
-  return <><button type="button" disabled={disabled} aria-label="SQL 快速操作" title="SQL 快速操作" onClick={open}><Lightning size={14} /><span>快速操作</span></button>{snapshot && <SqlDialog title="SQL 快速操作" busy={busy} className={styles.dialog} onClose={close}>
+  return <><button type="button" className="fouc-action" disabled={disabled} aria-label="SQL 快速操作" title="SQL 快速操作" onClick={open}><Lightning size={14} /><span>快速操作</span></button>{snapshot && <SqlDialog title="SQL 快速操作" busy={busy} className={styles.dialog} onClose={close}>
     <div className={styles.intro}><span className={styles.icon}><Lightning size={21} /></span><div><strong>让编辑更顺手</strong><p>{range?.empty ? '光标与完整文档' : `已选择 ${range!.to - range!.from} 个字符`} · {provider === 'postgres' ? 'PostgreSQL' : provider === 'mysql' ? 'MySQL' : 'SQLite'}</p></div></div>
     <nav className={styles.tabs} role="tablist" aria-label="SQL 快速操作分类">{([{ key: 'context', label: '光标意图', Icon: Lightning }, { key: 'text', label: '文本编辑', Icon: TextAa }, { key: 'in', label: 'IN 列表', Icon: Clipboard }, { key: 'table', label: '表查询', Icon: Table }] as const).map(({ key, label, Icon }) => <button key={key} type="button" role="tab" aria-selected={tab === key} onClick={() => { setTab(key); setError('') }}><Icon size={14} />{label}</button>)}</nav>
     <div className={styles.body}>

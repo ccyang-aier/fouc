@@ -5,7 +5,7 @@ import { useRef, useState, type CSSProperties, type ReactNode } from 'react'
 /** DBX's editor/result divider adapted to pointer and keyboard input in the Web workbench. */
 export function SqlEditorSplit({ editor, status, result, resultMinHeight = 0 }: { editor: ReactNode; status: ReactNode; result: ReactNode; resultMinHeight?: number }) {
   const root = useRef<HTMLDivElement>(null)
-  const [size, setSize] = useState(58)
+  const [size, setSize] = useState(48)
   const [resizing, setResizing] = useState(false)
   function resize(clientY: number) {
     const bounds = root.current?.getBoundingClientRect()

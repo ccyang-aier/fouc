@@ -48,7 +48,7 @@ export function SqlExplainAction({ base, provider, schema, targetLabel, editorRe
     } catch (reason) { onNotice(reason instanceof Error ? reason.message : String(reason)) }
   }
   return <>
-    <button type="button" aria-label="查看执行计划" title="选区或当前查询 · 仅生成估算计划" disabled={disabled} onClick={open}><TreeStructure size={16} /><span>执行计划</span></button>
+    <button type="button" className="fouc-action" aria-label="查看执行计划" title="选区或当前查询 · 仅生成估算计划" disabled={disabled} onClick={open}><TreeStructure size={16} /><span>执行计划</span></button>
     {parameters && <SqlParameterDialog action="explain" sql={parameters.sql} declarationSql={parameters.declarationSql} provider={provider} descriptors={parameters.descriptors} history={history} targetLabel={targetLabel} onClose={() => { setParameters(null); editorRef.current?.focus() }} onExecute={(values) => {
       rememberSqlParameters(history, values); const source = { ...parameters, parameters: values }; setParameters(null); void load(source)
     }} />}

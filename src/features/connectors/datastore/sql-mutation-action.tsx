@@ -39,7 +39,7 @@ export function SqlMutationAction(props: Props) {
     props.editorRef.current?.focus();
   }
   return <>
-    <button type="button" aria-label="SQL 变更预览" title="只读审查选区或当前写操作" disabled={props.disabled} onClick={open}>
+    <button type="button" className="fouc-action" aria-label="SQL 变更预览" title="只读审查选区或当前写操作" disabled={props.disabled} onClick={open}>
       <ShieldCheck size={16} /><span>变更预览</span>
     </button>
     {target && <MutationDialog {...props} {...target} onClose={close} />}

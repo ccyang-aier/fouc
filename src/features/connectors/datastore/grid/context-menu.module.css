@@ -1,6 +1,5 @@
 .anchor { position: fixed; width: 1px; height: 1px; padding: 0; opacity: 0; pointer-events: none; }
-.menu { width: 230px; max-height: min(760px, calc(100dvh - 16px), var(--radix-dropdown-menu-content-available-height)); overflow-y: auto; }
-.menu [role="menuitem"], .menu [role="menuitemcheckbox"] { height: 30px; }
+.menu { width: 196px; max-height: min(760px, calc(100dvh - 16px), var(--radix-dropdown-menu-content-available-height)); overflow-y: auto; }
 .shortcut { margin-left: auto; color: var(--muted-strong); font: 10px var(--font-code); }
 .record { padding: 16px 20px; max-height: min(65dvh, 560px); overflow-y: auto; display: grid; gap: 14px; }
 .record > div { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 16px; }

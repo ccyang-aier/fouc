@@ -28,11 +28,13 @@ function DropdownMenuContent({
   className,
   sideOffset = 6,
   onCloseAutoFocus,
+  density = "regular",
   ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.Content>) {
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Content> & { density?: "regular" | "compact" }) {
   return (
     <DropdownMenuPrimitive.Portal container={getOverlayRoot()}>
       <DropdownMenuPrimitive.Content
+        data-density={density}
         sideOffset={sideOffset}
         className={cn(
           "menu-surface z-50 min-w-44 overflow-hidden rounded-[7px] border bg-elevated p-1 text-[12px] text-[var(--ink)]",
@@ -159,11 +161,13 @@ function DropdownMenuSubContent({
   className,
   sideOffset = 6,
   alignOffset = -4,
+  density = "regular",
   ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.SubContent>) {
+}: React.ComponentProps<typeof DropdownMenuPrimitive.SubContent> & { density?: "regular" | "compact" }) {
   return (
     <DropdownMenuPrimitive.Portal container={getOverlayRoot()}>
       <DropdownMenuPrimitive.SubContent
+        data-density={density}
         sideOffset={sideOffset}
         alignOffset={alignOffset}
         className={cn(

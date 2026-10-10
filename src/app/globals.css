@@ -50,6 +50,7 @@
     0 1px 2px rgba(18, 23, 31, 0.067),
     0 4px 8px -2px rgba(18, 23, 31, 0.1),
     0 8px 12px -5px rgba(18, 23, 31, 0.08);
+  --menu-compact-shadow: 0 1px 2px rgba(18, 23, 31, 0.12), 0 4px 10px -2px rgba(18, 23, 31, 0.18);
   --modal-backdrop: rgba(18, 23, 31, 0.16);
   --side-panel-shadow: -12px 0 28px -20px rgba(18, 23, 31, 0.32);
   --side-panel-shadow-left: 12px 0 28px -20px rgba(18, 23, 31, 0.28);
@@ -135,6 +136,7 @@ html[data-theme="dark"] {
     0 1px 2px rgba(0, 0, 0, 0.213),
     0 4px 8px -2px rgba(0, 0, 0, 0.253),
     0 8px 12px -5px rgba(0, 0, 0, 0.2);
+  --menu-compact-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 12px -2px rgba(0, 0, 0, 0.45);
   --modal-backdrop: rgba(0, 0, 0, 0.38);
   --side-panel-shadow: -12px 0 30px -18px rgba(0, 0, 0, 0.55);
   --side-panel-shadow-left: 12px 0 30px -18px rgba(0, 0, 0, 0.5);
@@ -413,6 +415,11 @@ input {
 }
 
 .menu-surface[data-state="closed"] { animation: menu-pop-out 140ms ease-out both; }
+
+/* 紧凑工作菜单：就地出现，使用明确的边界与接触阴影。 */
+.menu-surface[data-density="compact"] { border-color: var(--line-strong); border-radius: 6px; box-shadow: var(--menu-compact-shadow); animation: none; }
+.menu-surface[data-density="compact"] .fouc-menu-item { height: 26px; min-height: 26px; gap: 8px; padding-inline: 8px; border-radius: 3px; font-size: 13px; font-weight: 500; animation: none; }
+.menu-surface[data-density="compact"] [role="menuitemcheckbox"], .menu-surface[data-density="compact"] [role="menuitemradio"] { padding-left: 30px; }
 /* 共享菜单项契约；Radix 与原生菜单均使用 fouc-menu-item，禁用项不响应高亮。 */
 .fouc-menu-item {
   --menu-state-bg: var(--menu-item-hover-bg);

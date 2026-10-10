@@ -1,4 +1,4 @@
-.tree { display: flex; flex-direction: column; width: 284px; min-width: 210px; flex: 0 0 284px; min-height: 0; border-right: 1px solid var(--line); background: var(--surface-subtle); color: var(--ink-soft); font-size: 14px; }
+.tree { display: flex; flex-direction: column; width: 284px; min-width: 210px; flex: 0 0 284px; min-height: 0; border-right: 1px solid var(--line); color: var(--ink-soft); font-size: 14px; }
 .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 4px; height: 32px; min-height: 32px; flex-shrink: 0; padding: 0 6px; border-bottom: 1px solid var(--line); }
 .toolbar strong { font-size: 13px; font-weight: 500; }
 .toolbarActions { display: flex; align-items: center; gap: 1px; }

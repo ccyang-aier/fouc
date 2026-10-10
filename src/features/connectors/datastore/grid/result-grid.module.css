@@ -24,7 +24,7 @@
 .table { border-collapse: separate; border-spacing: 0; table-layout: fixed; font-size: 13px; }
 .table thead { position: sticky; top: 0; z-index: 7; }
 .table th, .table td { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 0 10px; box-sizing: border-box; }
-.table thead th { position: relative; height: 52px; text-align: left; background: color-mix(in srgb, var(--ink) 6%, var(--panel)); font-weight: 600; font-size: 14px; cursor: pointer; color: var(--ink); user-select: none; }
+.table thead th { position: relative; height: 44px; text-align: left; background: color-mix(in srgb, var(--ink) 6%, var(--panel)); font-weight: 600; font-size: 14px; cursor: pointer; color: var(--ink); user-select: none; }
 .table thead th > span { display: flex; align-items: center; gap: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 16px; padding-left: 7px; padding-right: 31px; }
 .table thead th > span > svg { flex-shrink: 0; }
 .primaryKey { color: #f7901e; }
@@ -45,26 +45,26 @@
 .table .resizeHandle:hover, .table .resizeHandle:focus-visible { background: color-mix(in srgb, var(--accent) 35%, transparent); }
 .table th[data-drop] { box-shadow: inset 2px 0 var(--accent); }.table th[data-moving] { opacity: .58; }
 .sortButton b { font: 8px var(--font-code); color: var(--accent-ink); }
-.table tbody td { height: var(--grid-row-height, 32px); position: relative; font: var(--grid-font-size, 13px)/calc(var(--grid-row-height, 32px) - 1px) var(--grid-value-font, var(--font-code)); font-weight: 500; cursor: cell; white-space: nowrap; background: var(--panel); }
+.table tbody td { height: var(--grid-row-height, 28px); position: relative; font: var(--grid-font-size, 13px)/calc(var(--grid-row-height, 28px) - 1px) var(--grid-value-font, var(--font-code)); font-weight: 500; cursor: cell; white-space: nowrap; background: var(--panel); }
 .table tbody td > span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .table tbody tr:nth-child(even) > td:not([data-selected]):not([data-dirty]) { background: color-mix(in srgb, var(--ink) 4%, var(--panel)); }
 .table tbody tr:hover > td:not([data-selected]) { background: color-mix(in srgb, var(--surface-hover) 45%, var(--panel)); }
 .table th.corner { position: sticky; left: 0; width: var(--grid-row-number-width, 48px); padding: 0; z-index: 8; text-align: center; }
-.corner button { width: 100%; height: 52px; border: 0; border-radius: 0; color: var(--muted-strong); font: 10px var(--font-code); }
-.table th.rowNumber { position: sticky; left: 0; z-index: 5; width: var(--grid-row-number-width, 48px); text-align: right; font: 12px/calc(var(--grid-row-height, 32px) - 1px) var(--font-code); color: var(--muted-strong); background: var(--surface-subtle); cursor: pointer; user-select: none; height: var(--grid-row-height, 32px); }
+.corner button { width: 100%; height: 43px; border: 0; border-radius: 0; color: var(--muted-strong); font: 10px var(--font-code); }
+.table th.rowNumber { position: sticky; left: 0; z-index: 5; width: var(--grid-row-number-width, 48px); text-align: right; font: 12px/calc(var(--grid-row-height, 28px) - 1px) var(--font-code); color: var(--muted-strong); background: var(--surface-subtle); cursor: pointer; user-select: none; height: var(--grid-row-height, 28px); }
 .table thead th[data-pinned] { z-index: 5; }.table td[data-pinned] { z-index: 2; }.table td[data-pinned][data-active] { z-index: 4; }
 .table [data-pinned="left"] { box-shadow: 1px 0 0 var(--line); }.table [data-pinned="right"] { box-shadow: -1px 0 0 var(--line); }
 .table td[data-format-error] > span { text-decoration: underline dotted var(--warn-ink); text-underline-offset: 3px; }
 .table th[aria-selected="true"] { color: var(--accent-ink); background: color-mix(in srgb, var(--accent) 12%, var(--surface-subtle)); }
-.table td[data-selected] { background: color-mix(in srgb, var(--accent) 12%, var(--panel)); }
+.table td[data-selected] { background: color-mix(in srgb, #5b9df9 35%, var(--panel)); color: var(--ink); border-color: color-mix(in srgb, var(--panel) 65%, transparent); }
 .table td[data-highlight]:not([data-selected]):not([data-dirty]), .table th[data-highlight]:not([aria-selected="true"]) { background: var(--accent-soft); color: var(--accent-ink); }
-.gridRoot:not([data-selection-multiple]) .table td[data-active] { outline: 1.5px solid var(--accent); outline-offset: -1.5px; }
+.gridRoot:not([data-selection-multiple]) .table td[data-active] { outline: 2px solid var(--ink); outline-offset: -2px; }
 .table td[data-active] { z-index: 1; }
-.table td[data-edge]::after { content: ""; position: absolute; inset: -1px 0 0 -1px; pointer-events: none; border: 0 solid var(--accent); }
-.table td:is([data-edge="1"],[data-edge="3"],[data-edge="5"],[data-edge="7"],[data-edge="9"],[data-edge="11"],[data-edge="13"],[data-edge="15"])::after { border-top-width: 1.5px; }
-.table td:is([data-edge="2"],[data-edge="3"],[data-edge="6"],[data-edge="7"],[data-edge="10"],[data-edge="11"],[data-edge="14"],[data-edge="15"])::after { border-right-width: 1.5px; }
-.table td:is([data-edge="4"],[data-edge="5"],[data-edge="6"],[data-edge="7"],[data-edge="12"],[data-edge="13"],[data-edge="14"],[data-edge="15"])::after { border-bottom-width: 1.5px; }
-.table td:is([data-edge="8"],[data-edge="9"],[data-edge="10"],[data-edge="11"],[data-edge="12"],[data-edge="13"],[data-edge="14"],[data-edge="15"])::after { border-left-width: 1.5px; }
+.table td[data-edge]::after { content: ""; position: absolute; inset: -1px 0 0 -1px; pointer-events: none; border: 0 solid var(--ink); }
+.table td:is([data-edge="1"],[data-edge="3"],[data-edge="5"],[data-edge="7"],[data-edge="9"],[data-edge="11"],[data-edge="13"],[data-edge="15"])::after { border-top-width: 2px; }
+.table td:is([data-edge="2"],[data-edge="3"],[data-edge="6"],[data-edge="7"],[data-edge="10"],[data-edge="11"],[data-edge="14"],[data-edge="15"])::after { border-right-width: 2px; }
+.table td:is([data-edge="4"],[data-edge="5"],[data-edge="6"],[data-edge="7"],[data-edge="12"],[data-edge="13"],[data-edge="14"],[data-edge="15"])::after { border-bottom-width: 2px; }
+.table td:is([data-edge="8"],[data-edge="9"],[data-edge="10"],[data-edge="11"],[data-edge="12"],[data-edge="13"],[data-edge="14"],[data-edge="15"])::after { border-left-width: 2px; }
 .table .nullCell { color: var(--muted-strong); font-style: italic; }
 .table .numericCell { text-align: right; }
 .emptyString { color: var(--muted-strong); font: italic 10px var(--font-sans); }

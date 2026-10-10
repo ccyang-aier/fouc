@@ -7,3 +7,7 @@
 .sidebar-material[data-surface="content"] {
   background: var(--wt-sidebar-content-panel);
 }
+
+.sidebar-material[data-surface="database"] {
+  background: var(--wt-sidebar-database-panel);
+}

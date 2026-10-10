@@ -35,7 +35,7 @@ export type ResultGridProps = { result: DatabaseQueryResult; displayRows?: Datab
 
 function nativeGridType(type?: string) { return /int|numeric|decimal|real|float|double/i.test(type ?? "") ? "number" : /date|time/i.test(type ?? "") ? "date" : /char|text|string/i.test(type ?? "") ? "text" : undefined }
 
-const HEADER_HEIGHT = 52, OVERSCAN = 8
+const HEADER_HEIGHT = 44, OVERSCAN = 8
 const resultKeys = new WeakMap<DatabaseQueryResult, string>()
 let nextResultKey = 0
 function resultKey(result: DatabaseQueryResult): string { let key = resultKeys.get(result); if (!key) { key = `result-${++nextResultKey}`; resultKeys.set(result, key) } return key }

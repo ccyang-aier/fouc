@@ -47,7 +47,7 @@ export function ResourceTree({ name, schemas, schema, tables, table, search, onS
     setCollapsed(current => { const next = new Set(current); ["connection", `schema:${schema}`, kind === "table" ? "tables" : "views", `table:${table}`].forEach(key => next.delete(key)); return next })
     setLocateRequest(value => value + 1)
   }
-  return <aside className={styles.tree} data-hidden={hidden} aria-label="数据库资源">
+  return <aside className={`${styles.tree} sidebar-material`} data-surface="database" data-hidden={hidden} aria-label="数据库资源">
     <div className={styles.toolbar}>{transferActions ?? <strong>数据库资源</strong>}<div className={styles.toolbarActions}>
       <button type="button" className={`${styles.iconButton} fouc-action`} aria-label="刷新数据库资源" title="刷新数据库资源" disabled={disabled} onClick={onRefresh}><ArrowsClockwise size={14} /></button>
       <button type="button" className={`${styles.iconButton} fouc-action`} aria-label="全部折叠数据库资源" title="全部折叠" disabled={disabled} onClick={() => { setCollapsed(new Set(["connection", "tables", "views", ...schemas.map(item => `schema:${item}`), `table:${table}`])); setFieldsOpen(false) }}><CaretDoubleUp size={14} /></button>

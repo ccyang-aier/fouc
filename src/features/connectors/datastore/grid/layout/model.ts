@@ -60,7 +60,7 @@ export function hideGridColumns(layout: GridLayout, keys: readonly string[], ind
   if (keys.length && keys.every((key) => hidden.has(key))) hidden.delete(keys[orderedGridColumns(keys, layout.order)[0]])
   return { ...layout, hidden: [...hidden] }
 }
-export function gridRowHeight(density: GridDensity): number { return density === 'compact' ? 28 : density === 'comfortable' ? 40 : 32 }
+export function gridRowHeight(density: GridDensity): number { return density === 'compact' ? 24 : density === 'comfortable' ? 40 : 28 }
 function record(value: unknown): value is Record<string, unknown> { return !!value && typeof value === 'object' && !Array.isArray(value) }
 /** Read only the current schema. No legacy or cross-scope fallback. Storage failures leave a usable local layout. */
 export function loadGridLayout(storage: GridLayoutStorage | undefined, scope: string | undefined): GridLayout {

@@ -75,6 +75,15 @@ services:
       timeout: 5s
       retries: 12
 
+# Keep container addresses separate from WSL's 172.x NAT subnet; overlapping
+# addresses make containers ARP for the Windows host instead of replying via
+# their gateway, so host-side database/Redis/S3 connections time out.
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 192.168.240.0/24
+
 volumes:
   postgres-data:
   redis-data:

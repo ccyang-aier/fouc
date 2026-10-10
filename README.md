@@ -52,6 +52,8 @@ pnpm dev:all
 
 `dev:all` 启动或复用本仓库 Web、设备运行时和业务服务，退出命令后服务常驻并自动刷新源码。业务服务配置使用 `.env.fouc.local`。前端保持在 `src/`，后端拆为 `backend/device/` 与 `backend/server/`；职责和分发边界见[项目结构设计](./docs/product/V1/design/arch/fouc-project-structure-design.md)。单独启动前端仍使用 `pnpm dev`。
 
+先运行 `node backend/server/scripts/knowledge-infra.mjs up` 启动并检查 PostgreSQL、Redis 和 MinIO；首次使用先执行该脚本的 `init` 命令。基础设施网络使用独立的 `192.168.240.0/24`，避免与 WSL NAT 网段重叠。Web 默认使用 3000 端口，可通过进程环境或 `.env.fouc.local` 中的 `FOUC_WEB_PORT` 指定其他端口，同时将对应网页 origin 加入 `FOUC_AUTH_TRUSTED_ORIGINS`。
+
 查看有数据的数据库连接列表与工作台时，启动开发服务后运行：
 
 ```bash

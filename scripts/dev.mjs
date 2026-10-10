@@ -23,8 +23,9 @@ const bunExecutable = [
 if (!bunExecutable) throw new Error('Bun executable was not found. Install Bun or set FOUC_BUN_PATH to its executable.');
 const serverEnvironment = ['.env.fouc.local', '.env.knowledge.models.local'].filter((file) => existsSync(path.join(root, file))).map((file) => `--env-file=${file}`);
 const serverLocalEnvironment = existsSync(path.join(root, '.env.fouc.local')) ? parseEnv(readFileSync(path.join(root, '.env.fouc.local'), 'utf8')) : {};
+const webPort = Number(process.env.FOUC_WEB_PORT ?? serverLocalEnvironment.FOUC_WEB_PORT ?? 3000);
 const services = [
-  { name: 'Web', port: 3000, health: '/', executable: process.execPath, args: [require.resolve('next/dist/bin/next'), 'dev', '--hostname', '0.0.0.0', '--port', '3000'], owner: (command) => normalize(command).includes(normalize(root) + '/node_modules/') && /next[\\/]/.test(command) },
+  { name: 'Web', port: webPort, health: '/', executable: process.execPath, args: [require.resolve('next/dist/bin/next'), 'dev', '--hostname', '0.0.0.0', '--port', String(webPort)], owner: (command) => normalize(command).includes(normalize(root) + '/node_modules/') && /next[\\/]/.test(command) },
   { name: 'Device', port: Number(process.env.FOUC_BACKEND_PORT ?? 8710), health: '/health', executable: bunExecutable, args: ['--watch', path.join(root, 'backend/device/src/entrypoints/index.ts')] },
   { name: 'Server', port: Number(process.env.FOUC_SERVICE_PORT ?? serverLocalEnvironment.FOUC_SERVICE_PORT ?? 8711), health: '/api/auth/ok', executable: bunExecutable, args: ['--watch', ...serverEnvironment, path.join(root, 'backend/server/src/entrypoints/server.ts')] },
 ];

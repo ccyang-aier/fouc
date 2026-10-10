@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useRef, type ReactNode } from "react"
 import { BookOpenText, Database, FileCode, Graph, GridFour, Plus, Pulse, Wrench, X } from "@phosphor-icons/react"
 import { WorkbenchMenu } from "./workbench-menu"
 import styles from "./dbx-workbench.module.css"
@@ -22,23 +23,41 @@ export function WorkbenchShortcuts({ mode, disabled, onChange }: { mode: Workben
   return <nav className={styles.shortcuts} aria-label="数据库工作台功能">{views.filter(view => view.mode !== "data" && view.mode !== "sql").map(({ mode: value, label, icon: Icon }) => <button key={value} type="button" className="fouc-action" disabled={disabled} aria-pressed={mode === value} onClick={() => onChange(value)}><Icon size={15} /><span>{label}</span></button>)}</nav>
 }
 
+function WorkbenchTab({ label, icon, selected, disabled, closeLabel, onSelect, onClose }: {
+  label: string; icon: ReactNode; selected: boolean; disabled: boolean; closeLabel?: string; onSelect: () => void; onClose?: () => void
+}) {
+  return <div role="tab" aria-label={label} aria-selected={selected} aria-disabled={disabled} tabIndex={selected && !disabled ? 0 : -1} className={`${styles.objectTab} fouc-action`}
+    onClick={() => { if (!disabled) onSelect() }} onKeyDown={event => { if (event.target === event.currentTarget && !disabled && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); onSelect() } }}>
+    {icon}<span title={label}>{label}</span>
+    {onClose && <button type="button" className={`${styles.tabClose} fouc-action`} disabled={disabled} aria-label={closeLabel} onClick={event => { event.stopPropagation(); onClose() }}><X size={12} /></button>}
+  </div>
+}
+
 export function WorkbenchTabs({ table, schema, mode, openedViews, disabled, onChange, onCloseTable, onCloseView, onNewQuery }: {
   table: string; schema: string; mode: WorkbenchMode; openedViews: WorkbenchMode[]; disabled: boolean; onChange: (mode: WorkbenchMode) => void; onCloseTable: () => void; onCloseView: (mode: WorkbenchMode) => void; onNewQuery: () => void
 }) {
   const dataActive = mode === "data" || mode === "structure"
+  const list = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const reveal = () => list.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: "nearest", inline: "nearest" })
+    const observer = new ResizeObserver(reveal)
+    if (list.current) observer.observe(list.current)
+    reveal()
+    return () => observer.disconnect()
+  }, [mode, table])
   return <div className={styles.tabs} aria-label="工作对象标签">
-    <div className={styles.tabItems}>
-    {table ? <div className={styles.objectTab} data-active={dataActive}>
-      <button type="button" className="fouc-action" disabled={disabled} aria-pressed={dataActive} onClick={() => onChange("data")}><GridFour size={15} className={styles.tableIcon} /><span>{table}@{schema}</span></button>
-      <button type="button" className="fouc-action" disabled={disabled} aria-label={`关闭 ${table} 数据表`} onClick={onCloseTable}><X size={12} /></button>
-    </div> : <button type="button" className={styles.emptyTab} disabled={disabled} onClick={() => onChange("data")}><GridFour size={15} />数据浏览</button>}
-    {openedViews.map(value => {
-      const view = views.find(item => item.mode === value)
-      return view ? <div key={value} className={styles.objectTab} data-active={mode === value}>
-        <button type="button" className="fouc-action" disabled={disabled} aria-pressed={mode === value} onClick={() => onChange(value)}><view.icon size={15} /><span>{view.label}</span></button>
-        <button type="button" className="fouc-action" disabled={disabled} aria-label={`关闭 ${view.label} 视图`} onClick={() => onCloseView(value)}><X size={12} /></button>
-      </div> : null
-    })}
+    <div ref={list} className={styles.tabItems} role="tablist" aria-label="工作台页面" onKeyDown={event => {
+      if (disabled || event.target !== (event.target as HTMLElement).closest('[role="tab"]') || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return
+      const tabs = [...list.current!.querySelectorAll<HTMLElement>('[role="tab"]')]
+      const index = tabs.indexOf(event.target as HTMLElement)
+      const next = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (index + (event.key === "ArrowLeft" ? -1 : 1) + tabs.length) % tabs.length
+      event.preventDefault(); tabs[next]?.click(); tabs[next]?.focus()
+    }}>
+      <WorkbenchTab label={table ? `${table}@${schema}` : "数据浏览"} icon={<GridFour size={15} className={styles.tableIcon} />} selected={dataActive} disabled={disabled} onSelect={() => onChange("data")} closeLabel={`关闭 ${table} 数据表`} onClose={table ? onCloseTable : undefined} />
+      {openedViews.map(value => {
+        const view = views.find(item => item.mode === value)
+        return view ? <WorkbenchTab key={value} label={view.label} icon={<view.icon size={15} />} selected={mode === value} disabled={disabled} onSelect={() => onChange(value)} closeLabel={`关闭 ${view.label} 视图`} onClose={() => onCloseView(value)} /> : null
+      })}
     </div>
     <button type="button" className="fouc-action" aria-label="新建 SQL 查询" disabled={disabled} onClick={onNewQuery}><Plus size={16} /></button>
     <WorkbenchViewMenu disabled={disabled} onChange={onChange} />

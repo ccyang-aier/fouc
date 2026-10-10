@@ -16,6 +16,7 @@ export interface ResultExportDialogProps {
   target?: ResultExportTarget
   selectedRows?: readonly number[]
   selectedColumns?: readonly number[]
+  initialFormat?: import('./model').ResultExportFormat
   onClose: () => void
 }
 
@@ -26,8 +27,8 @@ function bytes(value: number) {
 }
 function errorText(error: unknown) { return error instanceof Error ? error.message : String(error) }
 
-export function ResultExportDialog({ result, provider, title = '查询结果', target, selectedRows, selectedColumns, onClose }: ResultExportDialogProps) {
-  const [options, setOptions] = useState<ResultExportOptions>(() => ({ ...DEFAULT_RESULT_EXPORT_OPTIONS, target: target ?? { table: '' } }))
+export function ResultExportDialog({ result, provider, title = '查询结果', target, selectedRows, selectedColumns, initialFormat, onClose }: ResultExportDialogProps) {
+  const [options, setOptions] = useState<ResultExportOptions>(() => ({ ...DEFAULT_RESULT_EXPORT_OPTIONS, ...(initialFormat ? { format: initialFormat } : {}), target: target ?? { table: '' } }))
   const [filename, setFilename] = useState(title)
   const [rowScope, setRowScope] = useState<'all' | 'selected'>(selectedRows?.length ? 'selected' : 'all')
   const [columns, setColumns] = useState<number[]>(() => selectedColumns ? [...new Set(selectedColumns)] : result.columns.map((_, index) => index))

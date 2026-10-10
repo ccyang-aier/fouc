@@ -41,8 +41,6 @@
 .query > svg { color: #428dff; }
 .empty { padding: 12px 24px; font-size: 13px; color: var(--muted-strong); }
 .footer { display: flex; justify-content: space-between; gap: 10px; min-height: 38px; align-items: center; padding: 0 10px; border-top: 1px solid var(--line); color: var(--muted-strong); font-size: 12px; }
-.tree[data-hidden="true"] { width: 32px; min-width: 32px; flex-basis: 32px; }
-.tree[data-hidden="true"] > :not(.rail) { display: none; }
-.rail { display: flex; align-items: center; justify-content: center; height: 32px; border-bottom: 1px solid var(--line); }
+.tree[data-hidden="true"] { display: none; }
 @media (max-width: 1000px) { .tree { width: 230px; flex-basis: 230px; } }
 @media (max-width: 720px) { .tree { display: none; } }

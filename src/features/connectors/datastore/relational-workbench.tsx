@@ -1,6 +1,6 @@
 "use client"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { ArrowLeft, ArrowsDownUp, Database, GridFour, Lock, LockOpen, Plus } from "@phosphor-icons/react"
+import { ArrowLeft, ArrowsDownUp, Database, GridFour, Lock, LockOpen, Plus, SidebarSimple } from "@phosphor-icons/react"
 import type {
   DatabaseObjectInfo,
   RelationalTablePage,
@@ -14,6 +14,7 @@ import { WorkbenchConnectionInfo } from "./workbench-connection-info"
 import { RelationalQuery } from "./relational-query"
 import { TableEditing } from "./table-editing"
 import type { GridEditDraft, GridEditCell, GridEditSelection } from './grid-editing'
+import type { TableGridCommandHandle } from './grid/context-actions'
 import { TableQueryControls } from "./table-query-controls"
 import { TableStructure } from "./table-structure"
 import { TableImportAction } from './table-import-action'
@@ -60,6 +61,7 @@ export function RelationalWorkbench({
   const [page, setPage] = useState<RelationalTablePage | null>(null)
   const [offset, setOffset] = useState(0)
   const [search, setSearch] = useState("")
+  const [resourcesHidden, setResourcesHidden] = useState(false)
   const [mode, setMode] = useState<WorkbenchMode>("data")
   const [openedViews, setOpenedViews] = useState<WorkbenchMode[]>([])
   const [structureTab, setStructureTab] = useState<StructureTab>("columns")
@@ -79,6 +81,7 @@ export function RelationalWorkbench({
   const [drafts, setDrafts] = useState<GridEditDraft[]>([])
   const [selection, setSelection] = useState<GridEditSelection | null>(null), [activeCell, setActiveCell] = useState<GridEditCell | null>(null)
   const gridHost = useRef<HTMLElement>(null)
+  const gridCommands = useRef<TableGridCommandHandle | null>(null)
   const [selectedRow, setSelectedRow] = useState<number | null>(null)
   const [currentSession, setCurrentSession] = useState(session)
   const [gridPending, setPending] = useState(false)
@@ -304,6 +307,7 @@ export function RelationalWorkbench({
         >
           <ArrowLeft size={16} />
         </button>
+        {resourcesHidden && <button type="button" className="fouc-action" aria-label="展开数据库资源" title="展开数据库资源" onClick={() => setResourcesHidden(false)}><SidebarSimple size={16} /></button>}
         <strong className={styles.breadcrumbName} title={name}>
           {name}
         </strong>
@@ -333,6 +337,7 @@ export function RelationalWorkbench({
       </header>
       <div className="mw-body">
         <ResourceTree
+          hidden={resourcesHidden} onHide={() => setResourcesHidden(true)}
           transferActions={<WorkbenchMenu label="导入/导出" icon={<ArrowsDownUp size={15} />} align="start" disabled={pending || busy || writeBusy}>
             <DatabaseExportAction session={session} schemas={schemas} schema={schema} table={table} tables={tables} disabled={pending || busy || writeBusy} />
             <TableImportAction base={base} sessionId={session.id} provider={session.provider} schema={schema} page={page} disabled={!writable || pending || busy || writeBusy} onImported={refresh} />
@@ -443,7 +448,7 @@ export function RelationalWorkbench({
                 schema={schema}
                 page={page}
                 selectedRow={selectedRow}
-                provider={session.provider} selection={selection} activeCell={activeCell} shortcutTarget={gridHost} onDraftsChange={setDrafts}
+                provider={session.provider} selection={selection} activeCell={activeCell} shortcutTarget={gridHost} onDraftsChange={setDrafts} commandRef={gridCommands}
                 toolbarTarget={rowActionTarget}
                 toolsTarget={gridToolsTarget}
                 writable={writable}
@@ -511,6 +516,11 @@ export function RelationalWorkbench({
                   sortDisabled={busy || pending}
                   filtered={query.filter !== null}
                   onSort={sortColumn}
+                  writable={writable} editingDisabled={busy || writeBusy || tables.find(item => item.name === table)?.kind !== 'table'} commandRef={gridCommands}
+                  onDatabaseSort={(column, direction) => { if (!pending && !busy) applyQuery({ ...query, sort: [{ column, direction, nulls: 'last' }] }) }}
+                  onFilter={(column, value, operator) => { if (!pending && !busy) { const filter: import('@fouc/shared').RelationalFilter = { kind: 'condition', column, operator, ...(operator === 'equals' || operator === 'not-equals' ? { value } : {}) }; applyQuery({ ...query, filter: query.filter ? { kind: 'group', join: 'and', children: [query.filter, filter] } : filter }) } }}
+                  onColumnDetails={column => { setStructureTab('columns'); setInitialColumn(column); setMode('structure') }}
+                  onRefresh={refresh}
                 />
               )}
               {page && mode === "data" && (

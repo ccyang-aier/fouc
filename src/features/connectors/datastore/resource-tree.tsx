@@ -12,6 +12,7 @@ type Props = {
   columns?: DatabaseTablePage["columns"];
   transferActions?: ReactNode;
   viewActions?: ReactNode;
+  hidden: boolean; onHide: () => void;
   onSearch: (value: string) => void; onSchema: (value: string) => void; onTable: (value: string) => void; onRefresh: () => void;
   onStructure?: (table: string, section: StructureTab, column?: string) => void; onQuery?: () => void
 }
@@ -22,14 +23,13 @@ const sections = [
   { key: "triggers", label: "触发器", icon: Lightning, color: "triggers" },
 ] as const
 
-export function ResourceTree({ name, schemas, schema, tables, table, search, onSearch, onSchema, onTable, onRefresh, disabled = false, columns = [], transferActions, viewActions, onStructure, onQuery }: Props) {
+export function ResourceTree({ name, schemas, schema, tables, table, search, onSearch, onSchema, onTable, onRefresh, disabled = false, columns = [], transferActions, viewActions, hidden, onHide, onStructure, onQuery }: Props) {
   const [sort, setSort] = useState<ResourceSort>("catalog")
   const [kinds, setKinds] = useState<ReadonlySet<ResourceKind>>(new Set(["table", "view"]))
   const visible = tables.filter(item => kinds.has(item.kind === "table" ? "table" : "view") && item.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()))
   if (sort !== "catalog") visible.sort((a, b) => a.name.localeCompare(b.name, "zh-CN", { numeric: true }) * (sort === "asc" ? 1 : -1))
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set())
   const [fieldsOpen, setFieldsOpen] = useState(false)
-  const [hidden, setHidden] = useState(false)
   const [locateRequest, setLocateRequest] = useState(0)
   const scroll = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -48,11 +48,10 @@ export function ResourceTree({ name, schemas, schema, tables, table, search, onS
     setLocateRequest(value => value + 1)
   }
   return <aside className={styles.tree} data-hidden={hidden} aria-label="数据库资源">
-    {hidden && <div className={styles.rail}><button type="button" className={`${styles.iconButton} fouc-action`} aria-label="展开数据库资源" title="展开数据库资源" onClick={() => setHidden(false)}><SidebarSimple size={16} /></button></div>}
     <div className={styles.toolbar}>{transferActions ?? <strong>数据库资源</strong>}<div className={styles.toolbarActions}>
       <button type="button" className={`${styles.iconButton} fouc-action`} aria-label="刷新数据库资源" title="刷新数据库资源" disabled={disabled} onClick={onRefresh}><ArrowsClockwise size={14} /></button>
       <button type="button" className={`${styles.iconButton} fouc-action`} aria-label="全部折叠数据库资源" title="全部折叠" disabled={disabled} onClick={() => { setCollapsed(new Set(["connection", "tables", "views", ...schemas.map(item => `schema:${item}`), `table:${table}`])); setFieldsOpen(false) }}><CaretDoubleUp size={14} /></button>
-      <button type="button" className={`${styles.iconButton} fouc-action`} aria-label="收纳数据库资源" title="收纳侧栏" onClick={() => setHidden(true)}><SidebarSimple size={15} /></button>
+      <button type="button" className={`${styles.iconButton} fouc-action`} aria-label="收纳数据库资源" title="收纳侧栏" onClick={onHide}><SidebarSimple size={15} /></button>
     </div></div>
     <div className={styles.searchRow}>
       <label className={styles.search}><MagnifyingGlass size={14} /><input aria-label="搜索表" value={search} onChange={event => {

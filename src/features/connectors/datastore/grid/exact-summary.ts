@@ -26,6 +26,13 @@ export function formatExactDecimal(coefficient: bigint, scale: number): string {
   return (negative && coefficient !== 0n ? '-' : '') + (value || '0')
 }
 
+export function compareExactGridNumbers(left: DatabaseCell, right: DatabaseCell): number | null {
+  const a = parseDecimal(left), b = parseDecimal(right)
+  if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return null
+  const scale = Math.max(a.scale, b.scale), x = a.coefficient * 10n ** BigInt(scale - a.scale), y = b.coefficient * 10n ** BigInt(scale - b.scale)
+  return x < y ? -1 : x > y ? 1 : 0
+}
+
 /** Aggregate original decimal text with BigInt; unsafe driver numbers are explicitly excluded. */
 export function summarizeExactValues(values: Iterable<DatabaseCell>): ExactSelectionSummary {
   let sum = 0n, scale = 0, numericCount = 0, unsafeNumericCount = 0, limitedNumericCount = 0

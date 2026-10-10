@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState, type RefObject } from 'react'
+import { useEffect, useEffectEvent, useImperativeHandle, useLayoutEffect, useRef, useState, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
+import { useAppAlert } from '@/components/app-alert-provider'
 import { ArrowCounterClockwise, ArrowClockwise, ClipboardText, Copy, PencilSimple, ArrowUUpLeft } from '@phosphor-icons/react'
 import type { DatabaseTablePage, RelationalProvider } from '@fouc/shared'
 import { formatGridEditClipboard } from './clipboard'
@@ -11,21 +12,32 @@ import { sameGridEditValue } from './values'
 import { fillGridSelection, stageGridCellEdits, validateGridEditScope } from './operations'
 import type { GridDraftHistory } from './use-grid-draft-history'
 import { gridEditNativeInput, gridEditShortcut } from './shortcuts'
+import type { TableGridCommandHandle } from '../grid/context-actions'
 import styles from './grid-editing.module.css'
 
-export type GridEditingActionsProps = { page: DatabaseTablePage; provider: RelationalProvider; selection: GridEditSelection | null; activeCell?: GridEditCell | null; writable: boolean; disabled: boolean; history: GridDraftHistory; onNotice?: (message: string) => void; shortcutTarget?: RefObject<HTMLElement | null>; toolbarTarget?: HTMLElement | null }
-export function GridEditingActions({ page, provider, selection, activeCell, writable, disabled, history, onNotice, shortcutTarget, toolbarTarget }: GridEditingActionsProps) {
+export type GridEditingActionsProps = { page: DatabaseTablePage; provider: RelationalProvider; selection: GridEditSelection | null; activeCell?: GridEditCell | null; writable: boolean; disabled: boolean; history: GridDraftHistory; onNotice?: (message: string) => void; shortcutTarget?: RefObject<HTMLElement | null>; toolbarTarget?: HTMLElement | null; commandRef?: RefObject<TableGridCommandHandle | null> }
+export function GridEditingActions({ page, provider, selection, activeCell, writable, disabled, history, onNotice, shortcutTarget, toolbarTarget, commandRef }: GridEditingActionsProps) {
   const scope = editableGridScope(selection, activeCell), signature = gridEditScopeSignature(scope), scopeError = validateGridEditScope(page, scope)
-  const [operation, setOperation] = useState<GridEditOperation | null>(null), [feedback, setFeedback] = useState('')
+  const [operation, setOperation] = useState<GridEditOperation | null>(null)
+  const { notify } = useAppAlert()
   const latest = useRef({ page, provider, revision: history.revision, signature, writable, disabled, alive: true })
   useLayoutEffect(() => { latest.current = { page, provider, revision: history.revision, signature, writable, disabled, alive: true }; return () => { latest.current.alive = false } }, [page, provider, history.revision, signature, writable, disabled])
   const busy = disabled || !writable, current = !operation || gridEditSourceCurrent(operation, { page, provider, revision: history.revision, signature, writable, disabled, alive: true })
-  function notice(message: string) { setFeedback(message); onNotice?.(message) }
+  function notice(message: string) { if (onNotice) onNotice(message); else notify('info', message) }
   function isCurrent() { return !!operation && gridEditSourceCurrent(operation, latest.current) }
-  function open(kind: GridEditOperation['kind'], initialMode?: 'value' | 'null', initialPaste?: string) {
-    if (busy || !scope || scopeError) { notice(scopeError ?? '解锁表格写入后可编辑'); return }
-    setOperation({ kind, page, provider, scope: { ...scope, rows: [...scope.rows], columns: [...scope.columns] }, drafts: history.drafts, revision: history.revision, signature, initialMode, initialPaste }); setFeedback('')
+  function open(kind: GridEditOperation['kind'], initialMode?: 'value' | 'null', initialPaste?: string, target = scope, generated = false) {
+    const error = validateGridEditScope(page, target)
+    if (busy || !target || error) { notice(error ?? '解锁表格写入后可编辑'); return }
+    setOperation({ kind, page, provider, scope: { ...target, rows: [...target.rows], columns: [...target.columns] }, drafts: history.drafts, revision: history.revision, signature: gridEditScopeSignature(target), initialMode, initialPaste, generated })
   }
+  useImperativeHandle(commandRef, () => ({ execute(command, target) {
+    if (command === 'fill' || command === 'null') { open('fill', command === 'null' ? 'null' : undefined, undefined, target); return }
+    if (command.startsWith('generate-')) {
+      const now = new Date().toISOString()
+      const values = target.rows.map((_, row) => target.columns.map((_, column) => command === 'generate-uuid' ? crypto.randomUUID() : command === 'generate-now' ? now : row * target.columns.length + column + 1))
+      open('paste', undefined, formatGridEditClipboard(values, '\t'), target, true)
+    }
+  } }))
   const scopedKey = useEffectEvent((event: globalThis.KeyboardEvent) => {
     const command = gridEditShortcut(event)
     if (!command || busy) return
@@ -66,7 +78,7 @@ export function GridEditingActions({ page, provider, selection, activeCell, writ
     const command = gridEditShortcut(event)
     if (!command || busy) return
     event.preventDefault(); if (command === 'undo') history.undo(); else history.redo()
-  }}>{toolbarTarget ? createPortal(actionButtons, toolbarTarget) : actionButtons}{feedback && <p className={styles.feedback} role="status">{feedback}</p>}{operation && <GridEditDialog operation={operation} provider={operation.provider} sourceCurrent={current} isCurrent={isCurrent} onClose={() => setOperation(null)} onApply={(edits, label) => {
+  }}>{toolbarTarget ? createPortal(actionButtons, toolbarTarget) : actionButtons}{operation && <GridEditDialog operation={operation} provider={operation.provider} sourceCurrent={current} isCurrent={isCurrent} onClose={() => setOperation(null)} onApply={(edits, label) => {
     if (!isCurrent()) { notice('来源已改变，保留当前输入；请关闭后重新打开选区编辑'); return }
     try { const next = stageGridCellEdits(page, history.drafts, edits, provider), changed = edits.filter((edit) => !sameGridEditValue(gridDraftCellValue(page, history.drafts, edit), gridDraftCellValue(page, next, edit))).length; history.apply(next, label); setOperation(null); notice(changed ? `已暂存 ${changed} 个单元格 · 单次撤销 · 尚未写入数据库` : '当前值一致，没有新增待提交变更') }
     catch (reason) { notice(reason instanceof Error ? reason.message : '无法加入待提交变更') }

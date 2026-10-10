@@ -77,8 +77,6 @@
 .statistics > span { display: inline-flex; min-width: 0; align-items: baseline; gap: 4px; white-space: nowrap; }
 .statistics strong { font: 10px var(--font-code); color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 190px; }
 .statistics .warning { color: var(--warn-ink, var(--muted-strong)); overflow: hidden; text-overflow: ellipsis; }
-.feedback { display: flex; align-items: center; gap: 8px; padding: 4px 12px; border-top: 1px solid var(--line); background: var(--panel); color: var(--ink-soft); font-size: 10px; flex-shrink: 0; }
-.feedback > span { margin-right: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .detail { display: flex; flex-direction: column; width: 310px; min-width: 240px; max-width: 40%; border-left: 1px solid var(--line); background: var(--panel); min-height: 0; outline: none; }
 .detail:focus-visible { box-shadow: inset 0 0 0 1px var(--accent); }
 .detail.binaryDetail { position:fixed; right:20px; bottom:60px; z-index:30; width:480px; max-width:calc(100vw - 32px); height:min(500px,70dvh); border:1px solid var(--line); border-radius:8px; overflow:hidden; box-shadow:0 12px 48px color-mix(in srgb,var(--ink) 14%,transparent); }

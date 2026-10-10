@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, type RefObject } from "react"
+import { useEffect, useImperativeHandle, useRef, useState, type RefObject } from "react"
 import { createPortal } from "react-dom"
 import { Plus, PencilSimple, Trash, FileCode, X, ArrowCounterClockwise } from "@phosphor-icons/react"
 import type {
@@ -16,6 +16,8 @@ import styles from "./table-editing.module.css"
 import common from "./relational.module.css"
 
 import { GridEditingActions, useGridDraftHistory, type GridEditDraft as Draft, type GridEditCell, type GridEditSelection } from './grid-editing'
+import { stageGridSelectedRows } from './grid-editing/context-operations'
+import type { TableGridCommandHandle } from './grid/context-actions'
 export function TableEditing({
   base,
   schema,
@@ -27,7 +29,8 @@ export function TableEditing({
   onPending,
   onSaved,
   toolbarTarget,
-  toolsTarget
+  toolsTarget,
+  commandRef
 }: {
   base: string
   schema: string
@@ -44,22 +47,31 @@ export function TableEditing({
   onSaved: (message: string) => void
   toolbarTarget?: HTMLElement | null
   toolsTarget?: HTMLElement | null
+  commandRef?: RefObject<TableGridCommandHandle | null>
 }) {
   const history = useGridDraftHistory()
   const { drafts } = history
   useEffect(() => { onPending(drafts.length > 0); onDraftsChange(drafts) }, [drafts, onPending, onDraftsChange])
-  const [editing, setEditing] = useState<{ row: number | null } | null>(null)
+  const [editing, setEditing] = useState<{ row: number | null; draftId?: string } | null>(null)
+  const gridCommands = useRef<TableGridCommandHandle | null>(null)
   const [preview, setPreview] = useState<RelationalSavePreview | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState("")
   const selected = selectedRow === null ? null : page.rows[selectedRow]
   const identifiable = page.columns.some((column) => column.isPrimaryKey || column.isUnique)
+  useImperativeHandle(commandRef, () => ({ execute(command, scope) {
+    if (!writable || disabled || busy || preview || editing) return
+    if (command === 'clone' || command === 'delete') {
+      try { history.apply(stageGridSelectedRows(page, drafts, scope, command), command === 'clone' ? '克隆所选行' : '删除所选行'); setError('') }
+      catch (reason) { setError(reason instanceof Error ? reason.message : '无法暂存所选行操作') }
+    } else gridCommands.current?.execute(command, scope)
+  } }))
   function update(next: Draft[]) {
     history.apply(next)
     setError("")
   }
   function stage(change: RelationalRowChange, row: number | null) {
-    const existing = row === null ? undefined : drafts.find((draft) => draft.row === row)
+    const existing = editing?.draftId ? drafts.find(draft => draft.id === editing.draftId) : row === null ? undefined : drafts.find((draft) => draft.row === row)
     update([
       ...drafts.filter((draft) => draft !== existing),
       { id: existing?.id ?? crypto.randomUUID(), row, change }
@@ -106,7 +118,7 @@ export function TableEditing({
     }
   }
   const prior =
-    editing?.row == null
+    editing?.draftId ? drafts.find(draft => draft.id === editing.draftId)?.change : editing?.row == null
       ? undefined
       : drafts.find((draft) => draft.row === editing.row && draft.change.kind === "update")?.change
   const toolbar = <div className={toolbarTarget ? styles.nativeToolbar : styles.toolbar}>
@@ -119,7 +131,7 @@ export function TableEditing({
   return (
     <div className={styles.editing}>
       {toolbarTarget ? createPortal(toolbar, toolbarTarget) : toolbar}
-      <GridEditingActions page={page} provider={provider} selection={selection} activeCell={activeCell} shortcutTarget={shortcutTarget} writable={writable} disabled={disabled || busy || !!preview || !!editing} history={history} toolbarTarget={toolsTarget} />
+      <GridEditingActions page={page} provider={provider} selection={selection} activeCell={activeCell} shortcutTarget={shortcutTarget} writable={writable} disabled={disabled || busy || !!preview || !!editing} history={history} toolbarTarget={toolsTarget} commandRef={gridCommands} />
       {drafts.length > 0 && (
         <div className={styles.drafts}>
           <div className={styles.draftHead}>
@@ -148,6 +160,7 @@ export function TableEditing({
                       : "修改"}
                 </b>
                 {draft.row === null ? "" : `第 ${page.offset + draft.row + 1} 行`}
+                {draft.change.kind === 'insert' && <button type="button" aria-label={`编辑新增变更 ${drafts.indexOf(draft) + 1}`} disabled={busy || disabled} onClick={() => setEditing({ row: null, draftId: draft.id })}><PencilSimple size={12} /></button>}
                 <button
                   type="button"
                   aria-label={`移除变更 ${drafts.indexOf(draft) + 1}`}
@@ -170,7 +183,7 @@ export function TableEditing({
         <RowEditDialog
           columns={page.columns}
           original={editing.row === null ? undefined : page.rows[editing.row]}
-          values={prior?.kind === "update" ? prior.values : undefined}
+          values={prior?.kind === "update" || prior?.kind === "insert" ? prior.values : undefined}
           onClose={() => setEditing(null)}
           onStage={(change) => stage(change, editing.row)}
         />

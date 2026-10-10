@@ -2,6 +2,12 @@
 
 import { useEffect, useEffectEvent, useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import { useAppAlert } from '@/components/app-alert-provider'
+import { SqlDialog } from '../sql-library-dialog'
+import { GridContextMenu } from './context-menu'
+import type { TableGridContextActions } from './context-actions'
+import { downloadGridSelectionImage } from './selection-image'
+import contextStyles from './context-menu.module.css'
 import { ArrowDown, ArrowsDownUp, ArrowsLeftRight, ArrowUp, Copy, DotsSixVertical, PushPin, SidebarSimple, SlidersHorizontal, Table, X, Columns, Key, Hash } from '@phosphor-icons/react'
 import type { DatabaseCell, DatabaseQueryResult, RelationalSort } from '@fouc/shared'
 import { databaseCellText } from '../cell-format'
@@ -10,7 +16,7 @@ import { GridCellDetail } from './cell-detail'
 import { formatGridSelection, rawGridCellText } from './clipboard'
 import { summarizeExactValues, type ExactSelectionSummary } from './exact-summary'
 import { beginDataGridNativeSelectionBlock, finishDataGridNativeSelectionBlock, releaseDataGridNativeSelectionBlock, type NativeSelectionBlockEnvironment } from './native-selection'
-import { captureResultGridSelection, dragGridSelection, emptyGridSelection, gridCellSelected, gridSelectionCounts, gridSelectionFrames, gridSelectionScope, moveGridSelection, restoreResultGridSelection, selectAllGridCells, selectedGridCells, selectGridTarget, type GridSelectionModifiers, type GridSelectionTarget, type ResultGridSelection, type ResultGridSelectionScope } from './selection-controller'
+import { captureResultGridSelection, dragGridSelection, emptyGridSelection, gridCellSelected, gridSelectionCounts, gridSelectionFrames, gridSelectionScope, moveGridSelection, restoreResultGridSelection, selectAllGridCells, selectedGridCells, selectGridContextTarget, selectGridTarget, type GridSelectionModifiers, type GridSelectionTarget, type ResultGridSelection, type ResultGridSelectionScope } from './selection-controller'
 import { dataGridSelectionEdgeMask } from './selection-frames'
 import { useGridColumnInteractions } from './layout/column-interactions'
 import { applyColumnFormatter } from './layout/formatter'
@@ -24,7 +30,7 @@ import styles from './result-grid.module.css'
 
 export type ResultGridCellSelection = { rowIndex: number; columnIndex: number; columnName: string; value: DatabaseCell }
 export type { ResultGridSelectionScope } from './selection-controller'
-export type ResultGridProps = { result: DatabaseQueryResult; displayRows?: DatabaseCell[][]; editedCells?: ReadonlySet<string>; onCellSelect?: (cell: ResultGridCellSelection | null) => void; onSelectionChange?: (scope: ResultGridSelectionScope | null) => void; onNotice?: (message: string) => void; readOnly?: boolean; rowOffset?: number; rowNumbers?: readonly number[]; scopeLabel?: string; emptyLabel?: string; scopeKey?: string; layoutScopeKey?: string; primaryKeys?: readonly string[]; uniqueKeys?: readonly string[]; showCellDetails?: boolean; sort?: readonly RelationalSort[]; sortDisabled?: boolean; onSort?: (column: string, additive: boolean) => void; toolbarActions?: ReactNode; headerTarget?: HTMLElement | null; toolsTarget?: HTMLElement | null }
+export type ResultGridProps = { result: DatabaseQueryResult; displayRows?: DatabaseCell[][]; editedCells?: ReadonlySet<string>; onCellSelect?: (cell: ResultGridCellSelection | null) => void; onSelectionChange?: (scope: ResultGridSelectionScope | null) => void; onNotice?: (message: string) => void; readOnly?: boolean; rowOffset?: number; rowNumbers?: readonly number[]; scopeLabel?: string; emptyLabel?: string; scopeKey?: string; layoutScopeKey?: string; primaryKeys?: readonly string[]; uniqueKeys?: readonly string[]; showCellDetails?: boolean; sort?: readonly RelationalSort[]; sortDisabled?: boolean; onSort?: (column: string, additive: boolean) => void; toolbarActions?: ReactNode; headerTarget?: HTMLElement | null; toolsTarget?: HTMLElement | null; tableActions?: TableGridContextActions }
 
 function nativeGridType(type?: string) { return /int|numeric|decimal|real|float|double/i.test(type ?? "") ? "number" : /date|time/i.test(type ?? "") ? "date" : /char|text|string/i.test(type ?? "") ? "text" : undefined }
 
@@ -46,7 +52,7 @@ function selectionTarget(element: EventTarget | null): GridSelectionTarget | nul
   return { kind, rowIndex: Number(cell.dataset.gridRow), colIndex: Number(cell.dataset.gridColumn) }
 }
 
-function ResultGridContent({ result, displayRows, editedCells, onCellSelect, onSelectionChange, onNotice, readOnly = true, rowOffset = 0, rowNumbers, scopeLabel, emptyLabel = '查询成功，没有返回记录', primaryKeys = [], uniqueKeys = [], showCellDetails = true, sort = [], sortDisabled = false, onSort, toolbarActions, layoutScopeKey, headerTarget, toolsTarget }: ResultGridProps) {
+function ResultGridContent({ result, displayRows, editedCells, onCellSelect, onSelectionChange, onNotice, readOnly = true, rowOffset = 0, rowNumbers, scopeLabel, emptyLabel = '查询成功，没有返回记录', primaryKeys = [], uniqueKeys = [], showCellDetails = true, sort = [], sortDisabled = false, onSort, toolbarActions, layoutScopeKey, headerTarget, toolsTarget, tableActions }: ResultGridProps) {
   const [jumpOpen, setJumpOpen] = useState(false)
   const jumpHost = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -55,8 +61,10 @@ function ResultGridContent({ result, displayRows, editedCells, onCellSelect, onS
     document.addEventListener('pointerdown', closeOutside)
     return () => document.removeEventListener('pointerdown', closeOutside)
   }, [jumpOpen])
-  const [feedback, setFeedback] = useState(''), [layoutColumn, setLayoutColumn] = useState<number | null>(null), [transposed, setTransposed] = useState(false)
-  function notice(message: string) { setFeedback(message); onNotice?.(message) }
+  const [layoutColumn, setLayoutColumn] = useState<number | null>(null), [transposed, setTransposed] = useState(false)
+  const [contextPoint, setContextPoint] = useState<{ x: number; y: number } | null>(null), [rowDetail, setRowDetail] = useState(false)
+  const { notify } = useAppAlert()
+  function notice(message: string) { if (onNotice) onNotice(message); else notify('info', message) }
   const { layout, changeLayout } = useGridLayout(layoutScopeKey, notice)
   const keys = useMemo(() => gridColumnKeys(result.columns), [result.columns])
   const visible = useMemo(() => visibleGridColumns(keys, layout), [keys, layout])
@@ -141,6 +149,20 @@ function ResultGridContent({ result, displayRows, editedCells, onCellSelect, onS
     if (!counts.cells) return
     void copyText(formatGridSelection(result, selection, separator, includeHeaders, visible), `${counts.cells.toLocaleString()} 个单元格 · ${separator === ',' ? 'CSV' : 'TSV'}`)
   }
+  function contextAt(target: GridSelectionTarget, point: { x: number; y: number }) {
+    const next = selectGridContextTarget(selection, target, dimensions)
+    changeSelection(next)
+    onSelectionChange?.(gridSelectionScope(next, result, visible))
+    const column = visible[target.colIndex]
+    onCellSelect?.({ rowIndex: target.rowIndex, columnIndex: column, columnName: columnLabel(result.columns, column), value: result.rows[target.rowIndex]?.[column] ?? null })
+    setContextPoint(point)
+  }
+  function contextCopy(format: 'raw' | 'tsv' | 'csv' | 'json') {
+    if (!cell) return
+    if (format === 'raw') void copyText(rawGridCellText(cell.value), '单元格原始值')
+    else if (format === 'json') void copyText(JSON.stringify([...selectedGridCells(selection, result, visible)].map(value => ({ row: rowNumbers?.[value.rowIndex] ?? rowOffset + value.rowIndex + 1, column: value.colIndex, name: result.columns[value.colIndex], value: value.value })), null, 2), '选区原始值 · JSON')
+    else copySelection(format === 'tsv' ? '\t' : ',')
+  }
   function nativeEnvironment(): NativeSelectionBlockEnvironment {
     return { document: { documentElement: viewportRef.current ?? undefined, activeElement: document.activeElement }, getSelection: () => window.getSelection(), setTimeout: (callback: () => void, delay: number) => setTimeout(callback, delay), clearTimeout: (timer: ReturnType<typeof setTimeout>) => clearTimeout(timer) }
   }
@@ -186,6 +208,12 @@ function ResultGridContent({ result, displayRows, editedCells, onCellSelect, onS
   function keyDown(event: KeyboardEvent<HTMLDivElement>) {
     if ((event.target as Element).closest('input, textarea, button, [contenteditable="true"]')) return
     const control = event.ctrlKey || event.metaKey, key = event.key
+    if ((key === 'ContextMenu' || event.shiftKey && key === 'F10') && focus) {
+      event.preventDefault(); const element = viewportRef.current?.querySelector<HTMLElement>(`[data-grid-target="cell"][data-grid-row="${focus.rowIndex}"][data-grid-column="${focus.colIndex}"]`), rect = element?.getBoundingClientRect()
+      if (rect) contextAt({ kind: 'cell', ...focus }, { x: rect.left + Math.min(40, rect.width / 2), y: rect.bottom })
+      return
+    }
+    if (control && key.toLowerCase() === 'r' && tableActions) { event.preventDefault(); if (!tableActions.queryDisabled) tableActions.onRefresh(); return }
     if (control && key.toLowerCase() === 'a') { event.preventDefault(); changeSelection(selectAllGridCells(dimensions)); return }
     if (control && key.toLowerCase() === 'c' && counts.cells) { event.preventDefault(); copySelection('\t'); return }
     if (key === 'Escape') { event.preventDefault(); if (detailOpen) setDetailOpen(false); else changeSelection(emptyGridSelection()); return }
@@ -211,10 +239,14 @@ function ResultGridContent({ result, displayRows, editedCells, onCellSelect, onS
       {toolbarActions}
     </div>
   if (transposed) return <TransposedResultGrid result={result} displayRows={displayRows} editedCells={editedCells} visible={visible} keys={keys} layout={layout} rowHeight={rowHeight} initialRow={cell?.rowIndex ?? 0} rowOffset={rowOffset} rowNumbers={rowNumbers} scopeLabel={scopeLabel} onCellSelect={onCellSelect} onSelectionChange={onSelectionChange} onNotice={onNotice} showCellDetails={showCellDetails} readOnly={readOnly} toolbarActions={toolbarActions} onExit={() => setTransposed(false)} />
-  return <div className={styles.gridRoot} style={{ '--grid-row-height': `${rowHeight}px`, '--grid-font-size': `${layout.fontSize}px`, '--grid-value-font': layout.font === 'mono' ? 'var(--font-code)' : 'var(--font-sans)', '--grid-row-number-width': `${rowNumberWidth}px` } as CSSProperties}>
+  return <div className={styles.gridRoot} onContextMenu={event => {
+    const target = selectionTarget(event.target)
+    if (!target || !dimensions.rows || !dimensions.columns) return
+    event.preventDefault(); viewportRef.current?.focus({ preventScroll: true }); contextAt(target, { x: event.clientX, y: event.clientY })
+  }} style={{ '--grid-row-height': `${rowHeight}px`, '--grid-font-size': `${layout.fontSize}px`, '--grid-value-font': layout.font === 'mono' ? 'var(--font-code)' : 'var(--font-sans)', '--grid-row-number-width': `${rowNumberWidth}px` } as CSSProperties}>
     {headerTarget ? createPortal(<><button type="button" className="fouc-action" disabled={!keys.length} onClick={() => setLayoutColumn(cell?.columnIndex ?? visible[0] ?? 0)}><SlidersHorizontal size={14} />字段筛选</button><div ref={jumpHost} className={styles.jump} onKeyDown={event => { if (event.key === "Escape") { event.stopPropagation(); setJumpOpen(false) } }}><button type="button" className="fouc-action" aria-haspopup="menu" aria-expanded={jumpOpen} disabled={!visible.length} onClick={() => setJumpOpen(value => !value)}><Columns size={14} />跳转列</button>{jumpOpen ? <div className={styles.jumpPanel} role="menu" aria-label="跳转到字段">{visible.map((column, index) => <button key={keys[column]} type="button" role="menuitem" className="fouc-menu-item" onClick={() => { if (viewportRef.current) viewportRef.current.scrollLeft = renderedWidths.slice(0, index).reduce((sum, width) => sum + width, 0); setJumpOpen(false); viewportRef.current?.focus() }}>{result.columns[column]}</button>)}</div> : null}</div></>, headerTarget) : null}
     <div className={styles.toolbar} data-external={!!toolsTarget}><div className={styles.selectionLabel}><Table size={14} /><strong>{counts.cells ? `${counts.cells.toLocaleString()} 个单元格` : '数据结果'}</strong><span>{counts.cells ? `${counts.rows.toLocaleString()} 行` : '点击选择 · Shift 连选 · Ctrl 多选'}</span></div>{toolsTarget ? createPortal(gridTools, toolsTarget) : gridTools}</div>
-    <div className={`${styles.content} ${showCellDetails && detailOpen && cell ? styles.withDetail : ''}`}>
+    <div className={`${styles.content} ${detailOpen && cell ? styles.withDetail : ''}`}>
       <div className={styles.viewport} ref={viewportRef} role="grid" tabIndex={0} aria-label="查询结果，使用方向键移动，Shift 扩展选区" aria-rowcount={result.rows.length + 1} aria-colcount={visible.length + 1} aria-readonly={readOnly} aria-multiselectable aria-activedescendant={focusSelected && focus && focus.rowIndex >= firstRow && focus.rowIndex < endRow ? `${id}-${focus.rowIndex}-${focus.colIndex}` : undefined} onKeyDown={keyDown} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={endDrag} onPointerCancel={endDrag} onLostPointerCapture={endDrag} onScroll={(event) => setViewportSize({ height: event.currentTarget.clientHeight, top: event.currentTarget.scrollTop })} onDoubleClick={(event) => { if (showCellDetails && !(event.target as Element).closest('button') && selectionTarget(event.target)?.kind === 'cell') setDetailOpen(true) }}>
         <table className={styles.table} style={{ width: rowNumberWidth + renderedWidths.reduce((sum, width) => sum + width, 0) }} role="presentation"><colgroup><col style={{ width: rowNumberWidth }} />{visible.map((column, index) => <col key={keys[column]} style={{ width: renderedWidths[index] }} />)}</colgroup><thead role="rowgroup"><tr role="row" aria-rowindex={1}><th className={styles.corner} role="columnheader"><button type="button" disabled={!dimensions.rows || !dimensions.columns} title="选择本次已返回的全部可见单元格" aria-label="选择本次已返回的全部可见单元格" onClick={() => { changeSelection(selectAllGridCells(dimensions)); viewportRef.current?.focus() }}>#</button></th>{visible.map((column, index) => {
           const name = result.columns[column], columnKey = keys[column], preview = columnPointer.preview
@@ -234,13 +266,16 @@ function ResultGridContent({ result, displayRows, editedCells, onCellSelect, onS
           </tbody></table>
         {!result.rows.length && <div className={styles.empty}><Table size={22} /><strong>{emptyLabel}</strong><span>{result.columns.length ? `${result.columns.length} 个结果列` : '本次执行没有数据结果'}</span></div>}
       </div>
-      {showCellDetails && detailOpen && cell && <GridCellDetail {...cell} columnIndex={focus!.colIndex} rowOffset={rowOffset} rowNumber={rowNumbers?.[cell.rowIndex]} columnType={result.columnTypes[cell.columnIndex]} rowCount={result.rows.length} columnCount={visible.length} onMove={(rowIndex, colIndex) => changeSelection(selectGridTarget(selection, { kind: 'cell', rowIndex, colIndex }, {}, dimensions))} onClose={() => { setDetailOpen(false); viewportRef.current?.focus() }} onCopy={(text, label) => void copyText(text, label)} />}
+      {detailOpen && cell && <GridCellDetail {...cell} columnIndex={focus!.colIndex} rowOffset={rowOffset} rowNumber={rowNumbers?.[cell.rowIndex]} columnType={result.columnTypes[cell.columnIndex]} rowCount={result.rows.length} columnCount={visible.length} onMove={(rowIndex, colIndex) => changeSelection(selectGridTarget(selection, { kind: 'cell', rowIndex, colIndex }, {}, dimensions))} onClose={() => { setDetailOpen(false); viewportRef.current?.focus() }} onCopy={(text, label) => void copyText(text, label)} />}
     </div>
     {(!headerTarget || counts.cells > 0) && <footer className={styles.footer}><span className={styles.scope}>{scopeLabel ?? (rowOffset > 0 && result.rows.length ? `当前页 ${rowOffset + 1}–${rowOffset + result.rows.length} 行` : `本次返回 ${result.rows.length.toLocaleString()} 行`)}{result.hasMore || result.truncated ? ' · 还有数据' : ''}</span><div className={styles.statistics}>
       {counts.cells > 0 && (summary ? <><span>数值 <strong>{summary.numericCount.toLocaleString()}</strong></span>{summary.sum !== null && <span title={`精确求和：${summary.sum}`}>求和 <strong>{summary.sum}</strong></span>}{summary.average !== null && <span title={`${summary.averageApproximate ? '近似' : '精确'}平均值：${summary.average}`}>平均 <strong>{summary.averageApproximate ? '≈ ' : ''}{summary.average}</strong></span>}{summary.unsafeNumericCount + summary.limitedNumericCount > 0 && <span className={styles.warning} title={`${summary.unsafeNumericCount} 个驱动已返回不安全整数，${summary.limitedNumericCount} 个数值超出统计精度范围；未参与求和与平均`}>{summary.unsafeNumericCount + summary.limitedNumericCount} 个值未计入数值统计</span>}</> : <span>统计中…</span>)}
       {!counts.cells && <span>统计与复制仅作用于当前已返回数据</span>}
     </div></footer>}
-    {feedback && <div className={styles.feedback} role="status"><span>{feedback}</span>{cell && counts.cells === 1 && <button type="button" onClick={() => void copyText(rawGridCellText(cell.value), '单元格原始值')}>复制原始值</button>}<button type="button" aria-label="关闭复制反馈" onClick={() => setFeedback('')}><X size={12} /></button></div>}
+    <GridContextMenu point={contextPoint} cell={cell} scope={gridSelectionScope(selection, result, visible)} actions={tableActions} includeHeaders={includeHeaders} onHeaders={setIncludeHeaders} onClose={() => setContextPoint(null)} onReturnFocus={() => { const active = document.activeElement; if (!active || active === document.body || active.getAttribute('aria-hidden') === 'true' || active.closest('[role="menu"]')) viewportRef.current?.focus({ preventScroll: true }) }}
+      onCellDetails={() => setDetailOpen(true)} onRowDetails={() => setRowDetail(true)} onColumnDetails={() => tableActions ? tableActions.onColumnDetails(cell!.columnName) : setLayoutColumn(cell!.columnIndex)} onCopy={contextCopy} onTranspose={() => { setContextPoint(null); setTransposed(true) }} onClear={() => { setContextPoint(null); changeSelection(emptyGridSelection()) }}
+      onScreenshot={() => { if (viewportRef.current) void downloadGridSelectionImage(result, displayRows, selection, visible, keys, layout, renderedWidths, rowHeight, viewportRef.current).catch(error => notice(error instanceof Error ? error.message : '截图失败')) }} />
+    {rowDetail && cell && <SqlDialog title={`行详情 · 第 ${rowNumbers?.[cell.rowIndex] ?? rowOffset + cell.rowIndex + 1} 行`} onClose={() => setRowDetail(false)}><dl className={contextStyles.record}>{result.columns.map((name, column) => <div key={column}><dt>{columnLabel(result.columns, column)}</dt><dd><pre>{rawGridCellText((displayRows ?? result.rows)[cell.rowIndex][column] ?? null, true)}</pre></dd></div>)}</dl></SqlDialog>}
     {layoutColumn !== null && <GridLayoutDialog result={result} keys={keys} initial={layout} initialColumn={layoutColumn} persistent={!!layoutScopeKey} onApply={(next) => { changeLayout(next); setLayoutColumn(null); viewportRef.current?.focus() }} onClose={() => { setLayoutColumn(null); viewportRef.current?.focus() }} />}
   </div>
 }

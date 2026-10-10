@@ -41,6 +41,13 @@ export function gridCellSelected(selection: ResultGridSelection, row: number, co
   const key = gridCellKey(row, column)
   return selection.cells.has(key) || !selection.excluded.has(key) && selection.baseRanges.some((range) => isCellInSelection(row, column, range))
 }
+
+/** A context click inside the selection changes focus without discarding its other cells. */
+export function selectGridContextTarget(selection: ResultGridSelection, target: GridSelectionTarget, dimensions: GridDimensions): ResultGridSelection {
+  return gridCellSelected(selection, target.rowIndex, target.colIndex)
+    ? { ...selection, focus: { rowIndex: target.rowIndex, colIndex: target.colIndex } }
+    : selectGridTarget(selection, target, {}, dimensions)
+}
 function rangeSelection(anchor: CellPosition, focus: CellPosition): ResultGridSelection { return { ...emptyGridSelection(), mode: 'range', anchor, focus, range: normalizeSelectionRange(anchor, focus) } }
 function inclusive(first: number, last: number): number[] { return Array.from({ length: Math.abs(last - first) + 1 }, (_, index) => Math.min(first, last) + index) }
 

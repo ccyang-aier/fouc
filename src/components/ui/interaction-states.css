@@ -39,6 +39,12 @@ html .dropdown-menu-trigger:not(.sidebar-nav-row):is(:focus, :focus-visible, :ac
   --action-state-ink: var(--menu-warning-hover-ink);
 }
 
+/* 嵌套操作在父容器已悬停时仍保留独立反馈面。 */
+html .fouc-action[data-variant="nested"] {
+  --action-state-bg: var(--line);
+  transition-property: color, border-color, box-shadow, transform;
+}
+
 /* 树目录折叠箭头的反馈由整行承担，展开、悬停与键盘焦点均不叠加底色。 */
 .fouc-action[data-variant="disclosure"] {
   --action-state-bg: transparent;

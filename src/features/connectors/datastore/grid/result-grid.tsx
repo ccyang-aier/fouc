@@ -17,7 +17,7 @@ import { formatGridSelection, rawGridCellText } from './clipboard'
 import { summarizeExactValues, type ExactSelectionSummary } from './exact-summary'
 import { beginDataGridNativeSelectionBlock, finishDataGridNativeSelectionBlock, releaseDataGridNativeSelectionBlock, type NativeSelectionBlockEnvironment } from './native-selection'
 import { captureResultGridSelection, dragGridSelection, emptyGridSelection, gridCellSelected, gridSelectionCounts, gridSelectionFrames, gridSelectionScope, moveGridSelection, restoreResultGridSelection, selectAllGridCells, selectedGridCells, selectGridContextTarget, selectGridTarget, type GridSelectionModifiers, type GridSelectionTarget, type ResultGridSelection, type ResultGridSelectionScope } from './selection-controller'
-import { dataGridSelectionEdgeMask } from './selection-frames'
+import { dataGridSelectionEdgeFlags, dataGridSelectionEdgeMaskFromFlags } from './selection-frames'
 import { useGridColumnInteractions } from './layout/column-interactions'
 import { applyColumnFormatter } from './layout/formatter'
 import { GridLayoutDialog } from './layout/layout-dialog'
@@ -230,8 +230,11 @@ function ResultGridContent({ result, displayRows, editedCells, onCellSelect, onS
     }
   }
   function cellEdge(row: number, column: number): number {
-    if (!gridCellSelected(selection, row, column)) return 0
-    if (!frames.sparse) return dataGridSelectionEdgeMask(frames.frames, row, column)
+    if (counts.cells < 2 || !gridCellSelected(selection, row, column)) return 0
+    if (!frames.sparse) {
+      const edges = dataGridSelectionEdgeFlags(frames.frames, row, column)
+      return edges ? dataGridSelectionEdgeMaskFromFlags(edges) : 0
+    }
     return (!gridCellSelected(selection, row - 1, column) ? 1 : 0) | (!gridCellSelected(selection, row, column + 1) ? 2 : 0) | (!gridCellSelected(selection, row + 1, column) ? 4 : 0) | (!gridCellSelected(selection, row, column - 1) ? 8 : 0)
   }
   const summary = statistics?.selection === selection ? statistics.summary : null
@@ -245,7 +248,7 @@ function ResultGridContent({ result, displayRows, editedCells, onCellSelect, onS
       {toolbarActions}
     </div>
   if (transposed) return <TransposedResultGrid result={result} displayRows={displayRows} editedCells={editedCells} visible={visible} keys={keys} layout={layout} rowHeight={rowHeight} initialRow={cell?.rowIndex ?? 0} rowOffset={rowOffset} rowNumbers={rowNumbers} scopeLabel={scopeLabel} onCellSelect={onCellSelect} onSelectionChange={onSelectionChange} onNotice={onNotice} showCellDetails={showCellDetails} readOnly={readOnly} toolbarActions={toolbarActions} onExit={() => setTransposed(false)} />
-  return <div className={styles.gridRoot} onContextMenu={event => {
+  return <div className={styles.gridRoot} data-selection-multiple={counts.cells > 1 || undefined} onContextMenu={event => {
     const target = selectionTarget(event.target)
     if (!target || !dimensions.rows || !dimensions.columns) return
     event.preventDefault(); viewportRef.current?.focus({ preventScroll: true }); contextAt(target, { x: event.clientX, y: event.clientY })

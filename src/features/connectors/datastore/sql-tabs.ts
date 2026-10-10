@@ -20,6 +20,11 @@ export function newSqlTab(database: string, schema: string | null, title = '未�
   return { id: crypto.randomUUID(), title, customTitle: false, pinned: false, database, schema, sql, originalSql: sql,
     savedFile: null, editorPosition: { anchor: 0, head: 0, scrollTop: 0, scrollLeft: 0 }, resultView: 'table' };
 }
+export function nextSqlQueryTitle(tabs: readonly SqlDraftTab[]): string {
+  let number = tabs.length + 1
+  while (tabs.some(tab => tab.title === `查询 ${number}`)) number++
+  return `查询 ${number}`
+}
 export function sqlTabDirty(tab: SqlDraftTab): boolean { return tab.sql !== tab.originalSql; }
 export function sqlTabSaveable(tab: SqlDraftTab): boolean { return Boolean(tab.savedFile) || Boolean(tab.sql.trim()); }
 export function closeSqlTabs(snapshot: SqlDraftSnapshot, ids: readonly string[]): SqlDraftSnapshot {

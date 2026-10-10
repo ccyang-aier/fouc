@@ -5,10 +5,10 @@
 .controls > button:disabled { opacity: .4; cursor: default; }
 .controls > button:focus-visible { outline: none; box-shadow: none; }
 .controls > button > svg { width: 18px; height: 18px; flex: none; }
-.controls > .run { color: var(--ok-ink); background: color-mix(in srgb, var(--ok-ink) 9%, var(--panel)); }
-.controls > .run[data-running] { color: var(--err-ink); }
+.controls > .run { --action-state-ink: var(--ok-ink); color: var(--ok-ink); background: color-mix(in srgb, var(--ok-ink) 9%, var(--panel)); }
+.controls > .run[data-running] { --action-state-ink: var(--err-ink); color: var(--err-ink); }
 .controls > .scope { width: 16px; margin-left: -2px; }
-.controls > .runAll { color: var(--accent-ink); }
+.controls > .runAll { --action-state-ink: var(--accent-ink); color: var(--accent-ink); }
 .controls > button[aria-label="格式化 SQL"], .controls > button[aria-label="压缩 SQL"] { color: var(--warn-ink); }
 .controls > button[aria-label="保存 SQL"], .controls > button[aria-label="SQL 库"], .controls > button[aria-label="新建查询"] { color: var(--accent-ink); }
 .target { display: flex; align-items: center; gap: 10px; min-width: 100px; max-width: 330px; margin-left: auto; flex: none; }
@@ -16,5 +16,8 @@
 .target label { width: auto; flex: none; }
 .target select { background: transparent; max-width: 145px; height: 28px; font-size: 12px; }
 .target button { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 4px; flex: none; }
+.status { display: flex; align-items: center; gap: 8px; color: var(--muted-strong); flex: none; }
+.status > span { font-size: 0; gap: 0; }
+.status svg { flex: none; }
 @media (max-width: 960px) { .database { display: none; } }
-@media (max-width: 760px) { .toolbar { gap: 6px; padding-inline: 6px; } .controls { flex: 1; } .target { min-width: 85px; max-width: 120px; } .target label { flex-wrap: nowrap; } .target select { max-width: 76px; } }
+@media (max-width: 760px) { .toolbar { gap: 6px; padding-inline: 6px; } .controls { flex: 1; } .target { min-width: 85px; max-width: 156px; } .target label { flex-wrap: nowrap; } .target select { max-width: 76px; } .status { gap: 6px; } }

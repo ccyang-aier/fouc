@@ -8,7 +8,7 @@
 .pin { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 4px; flex: none; color: var(--ink-soft); cursor: pointer; }
 .pin:disabled { opacity: .4; cursor: default; }
 .headerTools { display: flex; align-items: center; gap: 4px; flex: none; }
-.headerTools button { display: inline-flex; align-items: center; gap: 5px; height: 27px; padding: 0 7px; border-radius: 4px; color: var(--ink-soft); font-size: 12px; white-space: nowrap; cursor: pointer; }
+.summary .headerTools button { display: inline-flex; align-items: center; gap: 5px; height: 27px; padding: 0 7px; border-radius: 4px; color: var(--ink-soft); font-size: 12px; white-space: nowrap; cursor: pointer; }
 .cancel { display: inline-flex; align-items: center; gap: 5px; color: var(--err-ink); padding: 3px 7px; border: 1px solid color-mix(in srgb,var(--err-ink) 22%,transparent); border-radius: 4px; cursor: pointer; }
 .cancel:hover { background: color-mix(in srgb,var(--err-ink) 7%,var(--panel)); }
 .cancel:disabled { opacity: .6; cursor: wait; }
@@ -31,5 +31,5 @@
 .failure p { color: var(--ink-soft); white-space: pre-wrap; overflow-wrap: anywhere; }
 .failure small, .failure > span { color: var(--muted-strong); font-size: 11px; }
 .failure button { justify-self: start; border: 1px solid var(--line); padding: 4px 9px; border-radius: 4px; cursor: pointer; color: var(--accent-ink); }
-@media(max-width:760px) { .summary { gap: 6px; padding-inline: 6px; } .tabs { max-width: 45%; } .count { display: none; } .headerTools > button, .headerTools > div > button { width: 27px; padding: 0; justify-content: center; font-size: 0; } .state { overflow: hidden; text-overflow: ellipsis; } .tabs button { padding-inline: 8px; } }
+@media(max-width:760px) { .summary { gap: 6px; padding-inline: 6px; } .tabs { max-width: 45%; } .count { display: none; } .summary .headerTools > button, .summary .headerTools > div > button { width: 27px; padding: 0; justify-content: center; font-size: 0; } .state { overflow: hidden; text-overflow: ellipsis; } .tabs button { padding-inline: 8px; } }
 @media(prefers-reduced-motion:reduce) { .progress i { transition: none; } }

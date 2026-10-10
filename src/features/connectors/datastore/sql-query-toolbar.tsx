@@ -7,10 +7,10 @@ import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import styles from './sql-query-toolbar.module.css'
 
-export function SqlQueryToolbar({ running, cancelling, disabled, mode, onModeChange, onRun, onCancel, children, target, database }: {
+export function SqlQueryToolbar({ running, cancelling, disabled, mode, onModeChange, onRun, onCancel, children, target, database, status }: {
   running: boolean; cancelling: boolean; disabled: boolean; mode: SqlExecutionMode;
   onModeChange: (mode: SqlExecutionMode) => void; onRun: (mode: SqlExecutionMode) => void; onCancel: () => void;
-  children: ReactNode; target: ReactNode; database: string;
+  children: ReactNode; target: ReactNode; database: string; status: ReactNode;
 }) {
   return <div className={styles.toolbar} aria-label="SQL 查询工具栏">
     <div className={styles.controls}>
@@ -25,6 +25,6 @@ export function SqlQueryToolbar({ running, cancelling, disabled, mode, onModeCha
       <Button variant="ghost" size="icon-sm" className={styles.runAll} aria-label="运行全部语句" title="运行全部语句 · Ctrl / ⌘ + Shift + Enter" disabled={disabled || running} onClick={() => onRun('all')}><PlayCircle size={20} /></Button>
       {children}
     </div>
-    <div className={styles.target}><span className={styles.database} title={database}>{database}</span>{target}</div>
+    <div className={styles.target}><span className={styles.database} title={database}>{database}</span>{target}<div className={styles.status}>{status}</div></div>
   </div>
 }

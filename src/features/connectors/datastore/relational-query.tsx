@@ -1,5 +1,6 @@
 "use client"
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
+import { createPortal } from 'react-dom'
 import { Button } from '@/components/ui/button'
 import type { CompletionContext } from '@codemirror/autocomplete'
 import { closeCompletion, startCompletion } from '@codemirror/autocomplete'
@@ -38,7 +39,7 @@ import { useSqlDrafts } from './use-sql-drafts'
 import { useSqlMetadata } from './use-sql-metadata'
 import { mergeSqlJoinCompletion } from './sql-assistance/join/completion'
 import { SqlTabStrip, type SqlTabAction } from './sql-tab-strip'
-import { closeSqlTabs, mergeSqlDrafts, navigateSqlTabs, newSqlTab, pinSqlTab, reorderSqlTab, sqlTabDirty, sqlTabSaveable, visitSqlTab, type SqlTabVisits } from './sql-tabs'
+import { closeSqlTabs, mergeSqlDrafts, navigateSqlTabs, newSqlTab, nextSqlQueryTitle, pinSqlTab, reorderSqlTab, sqlTabDirty, sqlTabSaveable, visitSqlTab, type SqlTabVisits } from './sql-tabs'
 import common from './relational.module.css'
 import styles from './sql-library.module.css'
 import tabsStyle from './sql-tabs.module.css'
@@ -47,7 +48,7 @@ type Restore = { sql: string; schema: string | null; database: string; file: Sav
 type Saving = { tabId: string | null; sql: string; schema: string | null; database: string; file: SqlDraftTab['savedFile'] }
 function binding(file: SavedSqlDocument): NonNullable<SqlDraftTab['savedFile']> { return { id: file.id, version: file.version, name: file.name, folderId: file.folderId } }
 
-export function RelationalQuery({ session, schema, schemas, metadataRevision, schemaLocked, onSchemaChange, beforeLeaveRef, onLeaveReady, openRequest, onUnlockWrite, onMutated, onMutationBusy }: {
+export function RelationalQuery({ session, schema, schemas, metadataRevision, schemaLocked, onSchemaChange, beforeLeaveRef, onLeaveReady, openRequest, onUnlockWrite, onMutated, onMutationBusy, tabsTarget, tabActionsTarget, active, tabsDisabled, onActivate, onNoQueries }: {
   session: RelationalSession; schema: string; schemas: string[]; metadataRevision: number; schemaLocked: boolean; onSchemaChange: (schema: string) => void;
   beforeLeaveRef: RefObject<(() => Promise<void>) | null>
   onLeaveReady: () => void
@@ -55,6 +56,8 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
   onUnlockWrite: () => Promise<void>
   onMutated: () => void
   onMutationBusy: (busy: boolean) => void
+  tabsTarget: HTMLElement | null; tabActionsTarget: HTMLElement | null; active: boolean; tabsDisabled: boolean;
+  onActivate: () => void; onNoQueries: () => void
 }) {
   const root = `/api/database/relational`
   const base = `${root}/sessions/${session.id}`, libraryBase = session.connectionId ? `${root}/connections/${session.connectionId}/sql-library` : null
@@ -63,7 +66,7 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
   const openedRequest = useRef<string | null>(null)
   useEffect(() => {
     if (!state.ready || !openRequest || openedRequest.current === openRequest.id) return
-    const tab = { ...newSqlTab(session.provider === 'mysql' ? openRequest.schema : session.database, openRequest.schema, openRequest.sql ? '外键关联查询' : undefined), sql: openRequest.sql, originalSql: '', customTitle: Boolean(openRequest.sql) }
+    const tab = { ...newSqlTab(session.provider === 'mysql' ? openRequest.schema : session.database, openRequest.schema, openRequest.sql ? '外键关联查询' : nextSqlQueryTitle(controller.getSnapshot().tabs)), sql: openRequest.sql, originalSql: '', customTitle: Boolean(openRequest.sql) }
     controller.update(snapshot => ({ tabs: [...snapshot.tabs, tab], activeTabId: tab.id }))
     openedRequest.current = openRequest.id
   }, [state.ready, controller, openRequest, session.provider, session.database])
@@ -122,8 +125,7 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
     if (tab) controller.update((snapshot) => ({ ...snapshot, activeTabId: id }))
   }
   function add() {
-    let number = state.tabs.length + 1; while (state.tabs.some((tab) => tab.title === `查询 ${number}`)) number++
-    const tab = newSqlTab(session.provider === 'mysql' ? schema || session.database : session.database, schema || null, `查询 ${number}`)
+    const tab = newSqlTab(session.provider === 'mysql' ? schema || session.database : session.database, schema || null, nextSqlQueryTitle(state.tabs))
     controller.update((snapshot) => ({ tabs: [...snapshot.tabs, tab], activeTabId: tab.id })); setPanel(null)
   }
   function openSqlFiles(files: Pick<OpenSqlFile, 'name' | 'sql'>[]) {
@@ -229,7 +231,9 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
       for (const key of editorCache.current.keys()) if (!retained.has(key)) editorCache.current.delete(key)
       return next
     })
+    const closesAll = controller.getSnapshot().tabs.every(tab => ids.includes(tab.id))
     controller.update((snapshot) => closeSqlTabs(snapshot, ids)); setClosing(null)
+    if (closesAll) onNoQueries()
     forget(ids)
     resultPins.forgetTabs(ids)
     for (const id of ids) parameterHistories.current.delete(id)
@@ -274,7 +278,8 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
   }, [metadata, join, targetSchema, schemas, preferences.data?.formatter.keywordCase])
   function refreshMetadata() { metadata.clear(); join.clear(); if (editor.current) { closeCompletion(editor.current); startCompletion(editor.current) } }
   const displayDatabase = current && session.provider === 'sqlite' ? current.database.replace(/^.*[\\/]/, '') : current?.database
-  const draftStatus = <span className={tabsStyle.status} data-state={state.status} role="status">{state.status === 'error' ? <WarningCircle size={12} /> : !state.ready || state.status === 'saving' || state.pending ? <CircleNotch size={12} className="mw-spin" /> : <CheckCircle size={12} />}{!libraryBase ? '临时连接 · 草稿保留至离开' : state.status === 'error' ? state.ready ? '草稿保存失败 · 本地内容已保留' : '草稿读取失败 · 点击重试' : !state.ready ? '正在恢复设备草稿…' : state.status === 'saving' ? '正在保存草稿…' : state.pending ? '草稿待保存' : '草稿已保存到设备'}</span>
+  const draftMessage = !libraryBase ? '临时连接 · 草稿保留至离开' : state.status === 'error' ? state.ready ? '草稿保存失败 · 本地内容已保留' : '草稿读取失败 · 点击重试' : !state.ready ? '正在恢复设备草稿…' : state.status === 'saving' ? '正在保存草稿…' : state.pending ? '草稿待保存' : '草稿已保存到设备'
+  const draftStatus = <span className={tabsStyle.status} data-state={state.status} role="status" aria-label={draftMessage} title={draftMessage}>{state.status === 'error' ? <WarningCircle size={14} /> : !state.ready || state.status === 'saving' || state.pending ? <CircleNotch size={14} className="mw-spin" /> : <CheckCircle size={14} />}{draftMessage}</span>
   return <div className={styles.workspace}>
     {editorSettingsOpen && preferences.data && <SqlEditorPreferencesDialog base={preferencesBase} initial={preferences.data} provider={session.provider} onClose={() => { setEditorSettingsOpen(false); editor.current?.focus() }} onSaved={() => { setEditorSettingsOpen(false); setPreferencesRevision((value) => value + 1); setNotice('编辑器设置已保存，片段补全已更新。'); editor.current?.focus() }} />}
     {parameterRequest && <SqlParameterDialog key={parameterRequest.tabId} sql={parameterRequest.target.sql} declarationSql={parameterRequest.declarationSql} provider={session.provider} descriptors={parameterRequest.descriptors} history={parameterHistories.current.get(parameterRequest.tabId)!} targetLabel={parameterRequest.title}
@@ -284,9 +289,9 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
         void execute(parameterRequest.tabId, parameterRequest.target, parameterRequest.schema, { parameters, declarationSql: parameterRequest.declarationSql })
       }} />}
     <div className={`${styles.query} mw-sql-workspace mw-live-sql`}>
-      {state.ready && <SqlTabStrip snapshot={state} scope={libraryBase ?? base} busyIds={busyIds} canBack={Boolean(navigateSqlTabs(visits, -1, state))} canForward={Boolean(navigateSqlTabs(visits, 1, state))} canReopen={closed.length > 0} onSelect={select} onNew={add} onAction={action}
-        onNavigate={(direction) => { const next = navigateSqlTabs(visits, direction, state); if (next) { setVisits(next.visits); select(next.id) } }} onReorder={(id, beforeId) => controller.update((snapshot) => reorderSqlTab(snapshot, id, beforeId))} />}
-      <SqlQueryToolbar database={displayDatabase ?? session.database} running={running} cancelling={execution?.snapshot?.status === 'cancelling'} disabled={!current || !state.ready} mode={executionMode} onModeChange={setExecutionMode} onRun={(mode) => void run(mode)} onCancel={() => current && void cancel(current.id)} target={current && <label className={tabsStyle.target}><Database size={15} /><select aria-label="SQL 目标 Schema" value={targetSchema} disabled={running || schemaLocked} onChange={(event) => {
+      {state.ready && tabsTarget && createPortal(<SqlTabStrip snapshot={state} scope={libraryBase ?? base} busyIds={busyIds} active={active} disabled={tabsDisabled} actionsTarget={tabActionsTarget} canBack={Boolean(navigateSqlTabs(visits, -1, state))} canForward={Boolean(navigateSqlTabs(visits, 1, state))} canReopen={closed.length > 0} onSelect={id => { onActivate(); select(id) }} onAction={action}
+        onNavigate={(direction) => { const next = navigateSqlTabs(visits, direction, state); if (next) { setVisits(next.visits); select(next.id) } }} onReorder={(id, beforeId) => controller.update((snapshot) => reorderSqlTab(snapshot, id, beforeId))} />, tabsTarget)}
+      <SqlQueryToolbar database={displayDatabase ?? session.database} status={<><span aria-label="只读查询" title="只读查询 · 选区优先"><Lock size={14} aria-hidden /></span>{draftStatus}</>} running={running} cancelling={execution?.snapshot?.status === 'cancelling'} disabled={!current || !state.ready} mode={executionMode} onModeChange={setExecutionMode} onRun={(mode) => void run(mode)} onCancel={() => current && void cancel(current.id)} target={current && <label className={tabsStyle.target}><Database size={15} /><select aria-label="SQL 目标 Schema" value={targetSchema} disabled={running || schemaLocked} onChange={(event) => {
           const next = event.target.value; updateTab(current.id, session.provider === 'mysql' ? { database: next, schema: next } : { schema: next }); if (next !== schema) onSchemaChange(next)
         }}>{targetSchema && !schemas.includes(targetSchema) && <option value={targetSchema}>{targetSchema}（当前不可用）</option>}{schemas.map((item) => <option key={item}>{item}</option>)}</select><Button variant="ghost" size="icon-sm" loading={metadataState.pending > 0} aria-label="刷新 SQL 元数据" title={metadataState.pending ? '正在读取 SQL 元数据' : '刷新表与字段补全'} onClick={refreshMetadata}><ArrowsClockwise size={15} /></Button></label>}>
         <span className={styles.toolDivider} />
@@ -311,7 +316,6 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
       {current ? <SqlEditorSplit resultMinHeight={scopedResultPins(resultPins.pins, pinScope).length ? 360 : 0} editor={<div className="mw-editor" id="fouc-sql-query-document" role="tabpanel" aria-label={current.title}><SqlEditor showRunGutter provider={session.provider} documentId={current.id} value={current.sql} positions={current.editorPosition} cache={editorCache.current} complete={complete} completionScope={`${targetSchema}:${metadataRevision}:${preferences.data?.version ?? "default"}`}
           onChange={(sql) => updateTab(current.id, { sql })} onPositionChange={(id, editorPosition) => { const tab = controller.getSnapshot().tabs.find((item) => item.id === id); if (tab && JSON.stringify(tab.editorPosition) !== JSON.stringify(editorPosition)) updateTab(id, { editorPosition }) }}
           onRun={(mode) => void run(mode ?? executionMode)} onSave={() => void saveCurrent()} onFormat={() => void transformCurrent()} snippets={preferences.data?.snippets} keywordCase={preferences.data?.formatter.keywordCase} functionCase={preferences.data?.formatter.functionCase} editorRef={editor} /></div>}
-        status={<div className={styles.document}><span className={styles.language}>SQL</span><span title={current.database}>{displayDatabase}{current.schema && session.provider !== 'mysql' ? ` / ${current.schema}` : ''}</span><small><Lock size={12} />只读 · {executionMode === 'current' ? '当前语句' : '全部语句'} · 选区优先</small>{draftStatus}</div>}
         result={<ResultPins key={JSON.stringify(pinScope)} scope={pinScope} pins={resultPins.pins} current={currentResult} provider={session.provider} layoutScopeKey={`${session.connectionId ?? session.id}:${current.database}:${current.schema}:${current.id}`} onRemove={resultPins.remove} onClear={() => resultPins.clear(pinScope)} onNotice={setNotice} onSqlPreview={openComparisonReview}><SqlExecutionResults key={`${current.id}:${execution?.snapshot?.id ?? 'empty'}`} layoutScopeKey={`${session.connectionId ?? session.id}:${current.database}:${current.schema}:${current.id}`} provider={session.provider} execution={execution} onSelect={(index) => selectResult(current.id, index)} view={current.resultView} onViewChange={(resultView) => updateTab(current.id, { resultView })} onCancel={() => void cancel(current.id)} currentPinned={currentResultPinned} onPin={(statement, index) => {
           if (!statement.result || !execution?.snapshot) return
           try { resultPins.pin({ scope: pinScope, sourceId: `${execution.snapshot.id}:${index}`, label: `${current.title} · 结果 ${index + 1}`, sql: statement.sql, result: statement.result }); setNotice('已固定结果，重新运行不会覆盖。') }
@@ -322,7 +326,7 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
           const position = Math.min(view.state.doc.length, statement.from + (statement.error?.position ?? 0))
           view.dispatch({ selection: { anchor: position }, scrollIntoView: true }); view.focus()
         }} /></ResultPins>} />
-      : <><div className={tabsStyle.empty}><p>{state.ready ? '没有打开的 SQL 查询' : '正在加载 SQL 草稿…'}</p>{state.ready && <button type="button" onClick={add}>新建查询</button>}</div><div className={styles.document}>{draftStatus}</div></>}
+      : <div className={tabsStyle.empty}><p>{state.ready ? '没有打开的 SQL 查询' : '正在加载 SQL 草稿…'}</p>{state.ready && <button type="button" onClick={add}>新建查询</button>}</div>}
     </div>
     {panel === 'history' && <SqlHistoryPanel base={`${base}/history`} revision={revision} canSave={Boolean(libraryBase)} onClose={() => setPanel(null)} onRestore={historyRestore} onSave={(entry) => setSaving({ tabId: null, sql: entry.sql, schema: entry.schema, database: entry.database, file: null })} />}
     {panel === 'library' && libraryBase && <SqlLibraryPanel base={libraryBase} library={library.data} busy={library.busy} error={library.error} onRefresh={() => setRevision((value) => value + 1)} onClose={() => setPanel(null)} onOpen={openFile}
@@ -334,7 +338,7 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
       setSaving(null); setNotice(`已保存 ${document.name}`); setRevision((value) => value + 1)
     }} />}
     {restore && <SqlDialog title="恢复 SQL 编辑内容" onClose={() => setRestore(null)}><div className={common.formBody}><p>{restoreError ? '保存的目标上下文当前无法恢复，编辑内容保持原样。' : '当前查询有修改。恢复后会替换完整编辑内容，并选择原目标 Schema。'}</p><small>恢复操作不会执行 SQL。</small>{restoreError && <p role="alert" className={styles.error}>{restoreError}</p>}</div><footer className={common.dialogFooter}><button type="button" className={common.secondary} onClick={() => setRestore(null)}>保留当前内容</button><span /><button type="button" className={common.primary} disabled={Boolean(restoreError)} onClick={() => apply(restore.target, restore.tabId)}>替换并恢复</button></footer></SqlDialog>}
-    {closing && <SqlDialog title="关闭 SQL 标签确认" role="alertdialog" onClose={() => setClosing(null)}><div className={common.formBody}><p>关闭 {closing.length} 个标签，其中 {closing.filter(sqlTabDirty).length} 个有修改。关闭后这些草稿会从设备恢复列表移除。</p><ul className={tabsStyle.closing}>{closing.map((tab) => <li key={tab.id}>{tab.title}{sqlTabDirty(tab) ? ' · 未保存到 SQL 文件' : ''}</li>)}</ul><small>可取消后逐个保存。当前工作台内可重新打开最近关闭的标签。</small></div><footer className={common.dialogFooter}><button type="button" className={common.secondary} onClick={() => setClosing(null)}>保留标签</button><span /><button type="button" className={common.primary} onClick={() => finishClose(closing)}>放弃修改并关闭</button></footer></SqlDialog>}
+    {closing && <SqlDialog title="关闭 SQL 标签确认" role="alertdialog" onClose={() => setClosing(null)}><div className={common.formBody}><p>关闭 {closing.length} 个标签，其中 {closing.filter(sqlTabDirty).length} 个有修改。关闭后这些草稿会从设备恢复列表移除。</p><ul className={tabsStyle.closing}>{closing.map((tab) => <li key={tab.id}>{tab.title}{sqlTabDirty(tab) ? ' · 未保存到 SQL 文件' : ''}</li>)}</ul><small>可取消后逐个保存。当前工作台内可重新打开最近关闭的标签。</small></div><footer className={common.dialogFooter}><button type="button" className={common.secondary} onClick={() => setClosing(null)}>保留标签</button><span /><button type="button" className={common.danger} onClick={() => finishClose(closing)}>放弃修改并关闭</button></footer></SqlDialog>}
     {renaming && <SqlDialog title="重命名 SQL 标签" onClose={() => setRenaming(null)}><form onSubmit={(event) => { event.preventDefault(); if (title.trim()) { updateTab(renaming.id, { title: title.trim(), customTitle: true }); setRenaming(null) } }}><div className={common.formBody}><label>标签名称<input aria-label="SQL 标签名称" value={title} maxLength={200} required autoFocus onChange={(event) => setTitle(event.target.value)} /></label><small>修改标签标题，SQL 文件名称可在 SQL 库中管理。</small></div><footer className={common.dialogFooter}><button type="button" className={common.secondary} onClick={() => setRenaming(null)}>取消</button><span /><button type="submit" className={common.primary} disabled={!title.trim()}>确认标签名称</button></footer></form></SqlDialog>}
     {remote && <SqlDialog title="查看设备 SQL 草稿" onClose={() => setRemote(null)}><div className={common.formBody}><p>设备版本包含 {remote.tabs.length} 个标签。下方是设备中的完整 SQL；当前窗口内容仍保留。</p>{busyIds.size > 0 && <p role="status">仍有查询正在执行，结束后可替换或合并草稿。</p>}<div className={tabsStyle.preview}>{remote.tabs.map((tab) => <label key={tab.id}>{tab.title} · {tab.database}{tab.schema ? ` / ${tab.schema}` : ''}<textarea readOnly aria-label={`设备草稿 ${tab.title}`} value={tab.sql} /></label>)}</div></div><footer className={common.dialogFooter}><button type="button" className={common.secondary} onClick={() => setRemote(null)}>保留当前内容</button><button type="button" className={common.secondary} disabled={busyIds.size > 0} onClick={() => adoptDeviceDrafts(false)}>用设备版本替换</button><button type="button" className={common.primary} disabled={busyIds.size > 0} onClick={() => adoptDeviceDrafts(true)}>保留本地并合并保存</button></footer></SqlDialog>}
   </div>

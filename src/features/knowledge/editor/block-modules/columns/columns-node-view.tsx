@@ -10,7 +10,7 @@ import { addColumn, removeLastColumn, setColumnWidths } from './columns-commands
 import styles from './columns.module.css';
 
 const VARIANTS = [{ id: 'cards', label: '卡片' }, { id: 'dividers', label: '分割线' }, { id: 'plain', label: '无边框' }] as const;
-type Resize = { pointer: number; x: number; available: number; widths: number[]; next: number[] };
+type Resize = { index: number; pointer: number; x: number; available: number; widths: number[]; next: number[] };
 
 export function ColumnsNodeView({ node, editor, getPos, selected, updateAttributes, HTMLAttributes }: NodeViewProps) {
   const [open, setOpen] = useState(false);
@@ -43,7 +43,7 @@ export function ColumnsNodeView({ node, editor, getPos, selected, updateAttribut
     if (event.button !== 0) return;
     event.preventDefault();
     const available = Math.max(1, (layoutRef.current?.clientWidth ?? 1) - 16 * (node.childCount - 1));
-    resizeRef.current = { pointer: event.pointerId, x: event.clientX, available, widths: normalized, next: normalized };
+    resizeRef.current = { index: Number(event.currentTarget.dataset.resizeIndex), pointer: event.pointerId, x: event.clientX, available, widths: normalized, next: normalized };
     event.currentTarget.setPointerCapture(event.pointerId);
     setDragging(true);
   };
@@ -88,7 +88,7 @@ export function ColumnsNodeView({ node, editor, getPos, selected, updateAttribut
       {editor.isEditable && widths.slice(0, -1).map((_, index) => {
         const fraction = widths.slice(0, index + 1).reduce((total, width) => total + width, 0) / sum;
         return <button key={index} type="button" role="separator" aria-orientation="vertical" aria-label={'调整第 ' + (index + 1) + ' 与第 ' + (index + 2) + ' 栏宽度'} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(fraction * 100)}
-          contentEditable={false} data-document-export-omit data-resize-index={index} className={styles.resizeHandle}
+          contentEditable={false} data-document-export-omit data-resize-index={index} data-resize-axis="x" data-resizing={dragging && resizeRef.current?.index === index || undefined} className={`fouc-resize-handle ${styles.resizeHandle}`}
           style={{ left: 'calc(' + fraction * 100 + '% + ' + (16 * (index + .5 - (node.childCount - 1) * fraction)) + 'px)' }}
           onPointerDown={beginResize}
           onPointerMove={moveResize}

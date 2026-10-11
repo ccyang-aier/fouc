@@ -35,7 +35,7 @@ function Harness() {
     onPointerDown={event => start(event, 'move', index)} onPointerMove={move} onPointerUp={finish} onPointerCancel={event => finish(event, true)} onLostPointerCapture={event => finish(event, true)}
     onClick={event => { if (event.currentTarget.contains(event.target as Node) && !(event.target as Element).closest('button, [data-grid-column-actions]') && !click(event)) selections.push(column) }}>
     <span>{keys[column]}</span><div data-grid-column-actions><button type="button">菜单</button></div>
-    <button type="button" data-resize onPointerDown={event => start(event, 'resize', index)} onPointerMove={move} onPointerUp={finish} onPointerCancel={event => finish(event, true)}>列宽</button>
+    <button type="button" data-resize data-resizing={preview?.kind === 'resize' && preview.column === column || undefined} onPointerDown={event => start(event, 'resize', index)} onPointerMove={move} onPointerUp={finish} onPointerCancel={event => finish(event, true)}>列宽</button>
     {column === 0 && createPortal(<div data-menu-item>值筛选</div>, document.body)}
   </div>)}</div>
 }
@@ -102,7 +102,10 @@ test('pointer cancellation and Escape clear holds; edge resizing remains immedia
   await pointer(header(0), 'pointerup', 380)
   expect(order()).toEqual([0, 1, 3]); expect(changes).toHaveLength(0); expect(frames.size).toBe(0)
   const resize = header(1).querySelector<HTMLButtonElement>('[data-resize]')!
-  await pointer(resize, 'pointerdown', 290); await pointer(resize, 'pointermove', 300); await pointer(resize, 'pointerup', 325)
+  await pointer(resize, 'pointerdown', 290)
+  expect(resize.dataset.resizing).toBe('true')
+  await pointer(resize, 'pointermove', 300); await pointer(resize, 'pointerup', 325)
+  expect(resize.dataset.resizing).toBeUndefined()
   expect(changes).toHaveLength(1); expect(changes[0].widths[keys[1]]).toBe(165)
   expect(order()).toEqual([0, 1, 3]); expect(selections).toHaveLength(0)
 })

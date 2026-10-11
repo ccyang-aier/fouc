@@ -119,7 +119,7 @@
 .ruleWrap,
 .sortRow { position: relative; display: flex; align-items: flex-start; gap: 6px; min-width: 0; }
 .ruleWrap[data-drop-edge]::before,
-.sortRow[data-drop-edge]::before { content: ""; position: absolute; z-index: 1; left: 0; right: 0; height: 2px; top: -4px; background: #171717; box-shadow: 0 0 0 1px var(--panel); pointer-events: none; }
+.sortRow[data-drop-edge]::before { content: ""; position: absolute; z-index: 1; left: 0; right: 0; height: var(--drag-indicator-width); top: -4px; background: var(--drag-indicator-color); pointer-events: none; }
 .ruleWrap[data-drop-edge="after"]::before,
 .sortRow[data-drop-edge="after"]::before { top: auto; bottom: -4px; }
 [data-rule-dragging="true"] > .grip { cursor: grabbing !important; color: var(--ink); }

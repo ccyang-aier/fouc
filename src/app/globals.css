@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "../components/ui/interaction-states.css";
+@import "../components/ui/resize-handle.css";
 @import "../shell/sidebar-material.css";
 @import "../components/sidebar-nav-row.css";
 
@@ -15,7 +16,11 @@
   --ink-soft: #3f4249;
   --muted-strong: #6c6e75;
   --muted: #9699a1;
-  --line: rgba(32, 33, 38, 0.14);
+  --separator-width: 1px;
+  --separator-color: rgba(32, 33, 38, 0.1);
+  --line: var(--separator-color);
+  --drag-indicator-width: 2px;
+  --drag-indicator-color: #171717;
   --line-strong: rgba(32, 33, 38, 0.22);
   /* 控件与卡片使用不透明描边，圆角与直边保持同一清晰度。 */
   --control-border: #c3c5c9;
@@ -114,7 +119,8 @@ html[data-theme="dark"] {
   --ink-soft: #c7ccd1;
   --muted-strong: #949ca4;
   --muted: #707880;
-  --line: rgba(233, 236, 239, 0.16);
+  --separator-color: rgba(233, 236, 239, 0.14);
+  --line: var(--separator-color);
   --line-strong: rgba(233, 236, 239, 0.24);
   --control-border: #484b50;
   --resource-card-border: #3f4348;

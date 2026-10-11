@@ -1,5 +1,5 @@
 .root { margin: 22px 0; overflow: hidden; border: 1px solid #dddff1; border-radius: 11px; background: #fff; box-shadow: 0 4px 16px rgba(51,43,101,.055); }
-.header { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 42px; padding: 8px 14px; border-bottom: 1px solid #eae9f4; background: linear-gradient(95deg,#f8f7ff,#fcfbff); }
+.header { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 42px; padding: 8px 14px; border-bottom: var(--separator-width) solid var(--separator-color); background: linear-gradient(95deg,#f8f7ff,#fcfbff); }
 .title { display: flex; align-items: center; gap: 7px; color: #564c95; font-size: 12px; font-weight: 700; }
 .sparkle { display: grid; width: 25px; height: 25px; place-items: center; border-radius: 7px; background: #eeeafb; color: #795cc6; }
 .subtle { color: #9b98b1; font-size: 10px; }
@@ -21,7 +21,7 @@
 .status,.failed,.localNotice { display: flex; align-items: center; gap: 5px; font-size: 11px; }
 .status { color: #71659e; }.failed,.error { color: #bc5554; }.localNotice { color: #9b98b1; }
 .error { margin: 9px 0 0 !important; font-size: 11px; }
-.output { min-height: 58px; padding: 11px 16px 13px; border-top: 1px solid #efedf5; background: #fdfcff; }
+.output { min-height: 58px; padding: 11px 16px 13px; border-top: var(--separator-width) solid var(--separator-color); background: #fdfcff; }
 .outputLabel { display: block; margin-bottom: 6px; color: #9a94b3; font-size: 10px; font-weight: 650; }
 .content { min-height: 24px; color: #2c3a4f; font-size: 13px; line-height: 1.7; }
 .spin { animation: ai-spin 1s linear infinite; }

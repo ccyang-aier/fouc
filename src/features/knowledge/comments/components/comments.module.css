@@ -1,4 +1,4 @@
-.sidebar { --comment-accent:#0667f5; --comment-ink:#637087; --comment-strong:#202838; --comment-muted:#8793a8; --comment-line:#e3e8ef; display:flex; flex:none; flex-direction:column; width:364px; min-width:0; min-height:0; border-inline-start:1px solid var(--comment-line); background:var(--panel); color:var(--comment-strong); container-type:inline-size; }
+.sidebar { --comment-accent:#0667f5; --comment-ink:#637087; --comment-strong:#202838; --comment-muted:#8793a8; --comment-line:var(--separator-color); display:flex; flex:none; flex-direction:column; width:364px; min-width:0; min-height:0; border-inline-start:1px solid var(--comment-line); background:var(--panel); color:var(--comment-strong); container-type:inline-size; }
 .header { display:flex; align-items:center; gap:10px; flex:none; height:40px; padding:0 12px; }
 .heading { margin:0; font-size:18px; font-weight:650; line-height:1.4; letter-spacing:-.4px; }
 .count { color:var(--comment-ink); font-size:13px; font-variant-numeric:tabular-nums; }

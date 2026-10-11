@@ -23,7 +23,7 @@ export function SqlEditorSplit({ editor, result, resultMinHeight = 0, resultsVis
   }
   return <div ref={root} className={`mw-editor-split ${styles.root}`} data-resizing={resizing || undefined} style={{ '--editor-share': `${size}%`, ...(!resultsVisible ? { gridTemplateRows: 'minmax(0, 1fr)' } : resultMinHeight ? { gridTemplateRows: `minmax(80px, min(var(--editor-share), max(80px, calc(100% - ${resultMinHeight + 7}px)))) 7px minmax(0, 1fr)` } : {}) } as CSSProperties}>
     <div ref={editorPane} className="mw-editor-pane">{editor}</div>
-    <div hidden={!resultsVisible} role="separator" aria-label="调整 SQL 编辑器与结果区高度" aria-orientation="horizontal" aria-valuemin={20} aria-valuemax={80} aria-valuenow={Math.round(size)} tabIndex={0} className="mw-editor-divider"
+    <div hidden={!resultsVisible} role="separator" aria-label="调整 SQL 编辑器与结果区高度" aria-orientation="horizontal" aria-valuemin={20} aria-valuemax={80} aria-valuenow={Math.round(size)} tabIndex={0} className="fouc-resize-handle mw-editor-divider" data-resize-axis="y" data-resizing={resizing || undefined}
       onPointerDown={(event) => { if (event.button !== 0) return; event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); setResizing(true); resize(event.clientY) }}
       onPointerMove={(event) => { if (event.currentTarget.hasPointerCapture(event.pointerId)) resize(event.clientY) }}
       onPointerUp={(event) => { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); setResizing(false) }}
@@ -31,7 +31,7 @@ export function SqlEditorSplit({ editor, result, resultMinHeight = 0, resultsVis
       onKeyDown={(event) => {
         if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return
         event.preventDefault(); setSize((value) => event.key === 'Home' ? 20 : event.key === 'End' ? 80 : Math.max(20, Math.min(80, value + (event.key === 'ArrowUp' ? -5 : 5))))
-      }}><span /></div>
+      }} />
     <div id={resultId} hidden={!resultsVisible} className="mw-result">{result}</div>
     {!resultsVisible && <button ref={restoreButton} type="button" className={`fouc-action ${styles.restore}`} aria-controls={resultId} aria-expanded={false} onClick={onShowResults}>显示结果</button>}
   </div>

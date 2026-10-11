@@ -93,7 +93,7 @@ function SidebarSectionCaption({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-6 items-center gap-2 px-1.5 text-[11px] font-medium tracking-[0.02em] text-[var(--muted)]">
       <span className="shrink-0">{children}</span>
-      <span aria-hidden className="h-px min-w-0 flex-1 bg-[var(--wt-sidebar-edge)] opacity-70" />
+      <span aria-hidden className="h-px min-w-0 flex-1 bg-[var(--wt-sidebar-edge)]" />
     </div>
   )
 }

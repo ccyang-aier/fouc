@@ -41,6 +41,7 @@ export function useGridColumnInteractions({ viewport, keys, visible, widths, lay
     const gesture: ActiveColumnPointer = { kind, column: visible[visibleIndex], source: visibleIndex, startX: event.clientX, startY: event.clientY, startWidth: widths[visibleIndex], width: widths[visibleIndex], target: visibleIndex, slot: visibleIndex, active: kind === 'resize', element: event.currentTarget, pointerId: event.pointerId }
     active.current = gesture
     event.currentTarget.setPointerCapture(event.pointerId)
+    if (kind === 'resize') paint(gesture)
     if (kind === 'move') gesture.timer = setTimeout(() => {
       if (active.current !== gesture) return
       gesture.active = true; suppressClick.current = true

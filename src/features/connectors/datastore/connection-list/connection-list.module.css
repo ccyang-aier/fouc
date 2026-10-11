@@ -30,7 +30,7 @@
 .heading > button:focus-visible { outline: none; }
 .titleLine { display: flex; min-width: 0; min-height: 32px; align-items: center; gap: 15px; }
 .titleLine h1 { overflow: hidden; margin: 0; color: var(--ink); font-size: 23px; font-weight: 650; line-height: 32px; letter-spacing: -.6px; text-overflow: ellipsis; white-space: nowrap; }
-.titleDivider { width: 1px; height: 15px; background: var(--line-strong); }
+.titleDivider { width: 1px; height: 15px; background: var(--separator-color); }
 .count { color: var(--list-soft-ink); white-space: nowrap; font-size: max(13px, var(--ui-size)); }
 .headerActions { display: flex; flex-shrink: 0; align-items: center; gap: 8px; }
 .createButton { display: inline-flex; height: 32px; align-items: center; justify-content: center; gap: 7px; border: 1px solid transparent; border-radius: 5px; padding: 0 12px; background: var(--list-accent); color: #fff; font-size: max(13px, var(--ui-size)); font-weight: 500; box-shadow: 0 1px 2px rgb(24 92 255 / .13); }
@@ -80,10 +80,7 @@
 .sortButton span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .columnTitle { display: block; }
 .sortButton svg { flex-shrink: 0; }
-.table .resizeHandle { position: absolute; inset: 3px 0 3px auto; z-index: 1; width: 9px; border: 0; border-radius: 0; padding: 0; background: transparent; cursor: col-resize; touch-action: none; }
-.resizeHandle::after { position: absolute; inset: 5px 4px; content: ''; background: var(--line-strong); }
-.resizeHandle:is(:hover, :focus-visible, [data-resizing='true'])::after { inset-inline: 3px 4px; background: var(--accent); }
-.directory .resizeHandle:focus-visible { outline: none; }
+.table .resizeHandle { position: absolute; inset: 0 0 0 auto; z-index: 1; width: 9px; --resize-line-position: calc(100% - 1px); }
 .directory[data-resizing='true'] { user-select: none; }
 .directory[data-resizing='true'] * { cursor: col-resize; }
 .sortButton { display: flex; width: 100%; height: 32px; align-items: center; gap: 8px; border: 0; padding: 0; background: transparent; color: inherit; font: inherit; text-align: left; }

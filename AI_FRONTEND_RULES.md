@@ -8,3 +8,4 @@
 6. **同类视觉组件复用。** 列表/卡片切换统一使用 `ViewSwitcher`，列表在左、卡片在右；hover 只改变底色，保留图标原色，不在业务页另画选中描边。筛选/排序菜单入口不得在回焦时出现 ring、outline、阴影或边框渐变。资源卡片共用 `resource-card.module.css` 的单层描边，禁止叠加阴影与悬浮位移削弱圆角清晰度。
 7. **按钮级 loading 统一使用三点动画。** 优先使用 `Button` 的 `loading` 属性（原有 `aria-busy` 同样生效）；忙碌时只显示三点，保留原内容占位和可访问名称，并阻止重复提交。原生定制按钮可以复用 `ButtonLoading`。页面、列表、画布等非按钮加载状态不适用此规范。
 8. **消息提示统一使用 AppAlert。** 全局操作反馈通过 `useAppAlert` 发布，使用应用根部唯一宿主的底部居中深色 Toast，业务组件不自建通知 DOM、外观或计时器。需要持续显示的认证、权限与操作错误复用 `AppAlert` 的同一材质与语义，并保留必要恢复入口。字段校验、内容加载状态和危险操作确认保留各自交互职责。
+9. **分隔与拖拽指示统一。** 常态分割线使用 `--separator-width`（1px）和 `--separator-color`（浅色），`--line` 与侧栏边界均引用同一颜色；相邻面板只绘制一条边界，不叠加手柄描边。调整宽高的入口复用根部加载的 `components/ui/resize-handle.css` 与 `fouc-resize-handle`，业务组件只安排点击区和位置；hover 立即显示 `--drag-indicator-color` 黑色、`--drag-indicator-width` 2px 线，与按下、键盘焦点和拖拽状态一致，禁止颜色、透明度或线宽过渡。按方向显示 `col-resize` / `row-resize` 光标；拖动离开点击区后用 `data-resizing="true"` 保持指示线。重排插入线复用相同的黑色与 2px 令牌；操作无效的原因通过提示表达。

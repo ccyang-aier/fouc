@@ -133,7 +133,7 @@ export function ConnectionList(props: ConnectionListProps) {
     setPage(1)
   }
   function resizeHandle(column: Exclude<DirectoryColumn, 'actions'>, title: string) {
-    return <button type="button" className={styles.resizeHandle} aria-label={`调整${title}列宽`} title="拖动调整列宽 · ← / →"
+    return <button type="button" className={`fouc-resize-handle ${styles.resizeHandle}`} data-resize-axis="x" aria-label={`调整${title}列宽`} title="拖动调整列宽 · ← / →"
       {...layout.handleProps(column)} />
   }
   function sortHeader(column: SortColumn, title: string) {

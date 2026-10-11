@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type PointerEvent, type RefObject } from 'react'
 import { SidebarResizeHandle } from '@/components/sidebar-resize'
-import styles from './resource-tree.module.css'
 
 const MIN_WIDTH = 210, MAX_WIDTH = 520, CENTER_MIN_WIDTH = 400
 const widthProperty = '--resource-tree-width'
@@ -65,7 +64,7 @@ export function ResourceTreeResize({ paneRef, controls, onChange }: { paneRef: R
       current.pane.style.setProperty(widthProperty, `${width}px`)
     })
   }
-  return <SidebarResizeHandle className={styles.resizeHandle} dragging={dragging} role="separator" aria-label="调整数据库侧栏宽度" title="拖拽调宽 · 左右键微调 · 双击还原" aria-orientation="vertical" aria-controls={controls} aria-valuemin={MIN_WIDTH} aria-valuemax={bounds.maximum} aria-valuenow={bounds.width} aria-valuetext={`${bounds.width} 像素`} tabIndex={0}
+  return <SidebarResizeHandle dragging={dragging} role="separator" aria-label="调整数据库侧栏宽度" title="拖拽调宽 · 左右键微调 · 双击还原" aria-orientation="vertical" aria-controls={controls} aria-valuemin={MIN_WIDTH} aria-valuemax={bounds.maximum} aria-valuenow={bounds.width} aria-valuetext={`${bounds.width} 像素`} tabIndex={0}
     onPointerDown={start} onPointerMove={move}
     onPointerUp={event => { if (gesture.current?.pointer === event.pointerId) { gesture.current.latestX = event.clientX; stop(true) } }}
     onPointerCancel={event => { if (gesture.current?.pointer === event.pointerId) stop(false) }} onLostPointerCapture={event => { if (gesture.current?.pointer === event.pointerId) stop(false) }}

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } f
 import { Briefcase, CaretDown, CaretLeft, CaretRight, ChartBar, CirclesFour, Code, PenNib, Plugs, Plus, Robot, Sparkle, Tag, TextT } from "@phosphor-icons/react"
 
 import { cn } from "@/lib/utils"
+import { SidebarResizeHandle } from "@/components/sidebar-resize"
 
 export type CommunityTypeFilter = "all" | "agents" | "skills" | "plugins" | "prompts"
 
@@ -58,18 +59,23 @@ export function CommunityFacets({ type, domain, tag, typeCounts, domainCounts, t
     function stop() {
       dragStart.current = null
       setDragging(false)
-      document.body.style.removeProperty("cursor")
-      document.body.style.removeProperty("user-select")
     }
     window.addEventListener("pointermove", move)
-    window.addEventListener("pointerup", stop, { once: true })
-    return () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", stop) }
+    window.addEventListener("pointerup", stop)
+    window.addEventListener("pointercancel", stop)
+    window.addEventListener("lostpointercapture", stop)
+    window.addEventListener("blur", stop)
+    return () => {
+      window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", stop)
+      window.removeEventListener("pointercancel", stop); window.removeEventListener("lostpointercapture", stop)
+      window.removeEventListener("blur", stop)
+    }
   }, [dragging])
 
   function beginResize(event: ReactPointerEvent<HTMLButtonElement>) {
+    if (event.button !== 0) return
+    event.preventDefault()
     dragStart.current = { pointerX: event.clientX, width }
-    document.body.style.cursor = "col-resize"
-    document.body.style.userSelect = "none"
     event.currentTarget.setPointerCapture(event.pointerId)
     setDragging(true)
   }
@@ -126,8 +132,8 @@ export function CommunityFacets({ type, domain, tag, typeCounts, domainCounts, t
         })}
       </FacetSection>
 
-        <button type="button" aria-label="拖拽调整社区侧栏宽度" title="拖拽调整社区侧栏宽度" onPointerDown={beginResize} style={{ cursor: "col-resize" }} className={cn("absolute inset-y-0 right-[-4px] z-30 w-[9px] touch-none outline-none before:absolute before:inset-y-0 before:left-1/2 before:w-px before:-translate-x-1/2 before:bg-[var(--ink)] before:opacity-0 before:transition-opacity hover:before:opacity-100 focus-visible:before:opacity-100", dragging && "before:w-[2px] before:opacity-100")} />
       </div>
+      {!collapsed && <SidebarResizeHandle dragging={dragging} onPointerDown={beginResize} aria-label="拖拽调整社区侧栏宽度" />}
     </aside>
   )
 }

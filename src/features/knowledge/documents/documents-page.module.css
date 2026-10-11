@@ -45,7 +45,7 @@
 .table th:nth-child(6){width:16%}
 .table th:nth-child(7){width:13%}
 .table th:last-child{width:3%}
-.table td{height:38px;border-bottom:1px solid #edf0f5;color:#8090ab;font-size:12px}
+.table td{height:38px;border-bottom:var(--separator-width) solid var(--separator-color);color:#8090ab;font-size:12px}
 .table tr{transition:background .16s}
 .table tbody tr:hover{background:#f8faff}
 .table tr[data-selected=true]{background:#f1f5ff}

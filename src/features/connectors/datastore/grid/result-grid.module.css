@@ -38,9 +38,8 @@
 .table thead small[data-type="text"] { color: #21815d; }
 .table thead small { display: flex; align-items: center; gap: 4px; color: var(--muted-strong); font: 10px/14px var(--font-code); white-space: nowrap; }
 .table thead small i { color: var(--accent-ink); font: italic 11px var(--font-code); }
-.table .resizeHandle { position: absolute; right: -3px; top: 0; bottom: 0; width: 7px; padding: 0; background: transparent; border: 0; border-radius: 0; cursor: col-resize; z-index: 3; touch-action: none; }
-.table .resizeHandle:hover, .table .resizeHandle:focus-visible { background: color-mix(in srgb, var(--accent) 35%, transparent); }
-.table th[data-drop-edge]::after { content: ""; position: absolute; top: 0; bottom: 0; width: 2px; background: var(--ink); z-index: 4; pointer-events: none; }
+.table .resizeHandle { position: absolute; right: 0; top: 0; bottom: 0; width: 6px; z-index: 3; --resize-line-position: calc(100% - 1px); }
+.table th[data-drop-edge]::after { content: ""; position: absolute; top: 0; bottom: 0; width: var(--drag-indicator-width); background: var(--drag-indicator-color); z-index: 4; pointer-events: none; }
 .table th[data-drop-edge="before"]::after { left: 0; }.table th[data-drop-edge="after"]::after { right: 0; }
 .table th[data-moving] { opacity: .58; }.viewport[data-column-dragging] .table th { cursor: grabbing; }
 .table tbody td { height: var(--grid-row-height, 28px); position: relative; font: var(--grid-font-size, 13px)/calc(var(--grid-row-height, 28px) - 1px) var(--grid-value-font, var(--font-code)); font-weight: 500; cursor: cell; white-space: nowrap; background: var(--panel); }

@@ -21,6 +21,7 @@ export function DocumentReferenceSurface({ scope, children, renderDocument, onCl
   const [primaryDocument, setPrimaryDocument] = useState<FixedDocument | null>(null);
   const [reference, setReference] = useState<FixedDocument | null>(null);
   const [size, setSize] = useState(50);
+  const [resizing, setResizing] = useState(false);
   const [stacked, setStacked] = useState(false);
   const host = useRef<HTMLDivElement>(null);
   const key = `fouc.document.pins:${scope}`;
@@ -65,7 +66,7 @@ export function DocumentReferenceSurface({ scope, children, renderDocument, onCl
         </div>
       </Context.Provider>
       {reference && <>
-        <button type="button" className={styles.resizer} role="separator" aria-label={stacked ? '调整拆分视图高度' : '调整拆分视图宽度'} aria-orientation={stacked ? 'horizontal' : 'vertical'} aria-valuemin={20} aria-valuemax={80} aria-valuenow={Math.round(size)}
+        <button type="button" className={`fouc-resize-handle ${styles.resizer}`} data-resize-axis={stacked ? 'y' : 'x'} data-resizing={resizing || undefined} role="separator" aria-label={stacked ? '调整拆分视图高度' : '调整拆分视图宽度'} aria-orientation={stacked ? 'horizontal' : 'vertical'} aria-valuemin={20} aria-valuemax={80} aria-valuenow={Math.round(size)}
           onKeyDown={event => {
             const before = stacked ? 'ArrowUp' : 'ArrowLeft';
             const after = stacked ? 'ArrowDown' : 'ArrowRight';
@@ -73,13 +74,15 @@ export function DocumentReferenceSurface({ scope, children, renderDocument, onCl
             if (event.key === 'Home' || event.key === 'End') { event.preventDefault(); setSize(event.key === 'Home' ? 20 : 80); }
           }}
           onDoubleClick={() => setSize(50)}
-          onPointerDown={event => { event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); }}
+          onPointerDown={event => { if (event.button !== 0) return; event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); setResizing(true); }}
           onPointerMove={event => {
             if (!event.currentTarget.hasPointerCapture(event.pointerId) || !host.current) return;
             const box = host.current.getBoundingClientRect();
             setSize(clampSize(stacked ? (box.bottom - event.clientY) / box.height * 100 : (box.right - event.clientX) / box.width * 100));
           }}
-          onPointerUp={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); }} />
+          onPointerUp={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); setResizing(false); }}
+          onPointerCancel={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); setResizing(false); }}
+          onLostPointerCapture={() => setResizing(false)} />
         <aside className={styles.reference} aria-label="拆分文档" data-page-id={reference.target.pageId}>
           <DocumentPaneTabs label="固定栏文档标签" documents={[reference]} activePageId={reference.target.pageId} isPinned={() => true} onClose={close} closeLabel="关闭拆分视图" />
           <Context.Provider value={fixedContext}>{document}</Context.Provider>

@@ -36,14 +36,22 @@ export function useSidebarWidth() {
       setDragging(false)
     }
     window.addEventListener("pointermove", move)
-    window.addEventListener("pointerup", stop, { once: true })
+    window.addEventListener("pointerup", stop)
+    window.addEventListener("pointercancel", stop)
+    window.addEventListener("lostpointercapture", stop)
+    window.addEventListener("blur", stop)
     return () => {
       window.removeEventListener("pointermove", move)
       window.removeEventListener("pointerup", stop)
+      window.removeEventListener("pointercancel", stop)
+      window.removeEventListener("lostpointercapture", stop)
+      window.removeEventListener("blur", stop)
     }
   }, [dragging])
 
   function startResize(event: ReactPointerEvent<HTMLButtonElement>) {
+    if (event.button !== 0) return
+    event.preventDefault()
     dragStart.current = { pointerX: event.clientX, width }
     event.currentTarget.setPointerCapture(event.pointerId)
     setDragging(true)
@@ -52,7 +60,7 @@ export function useSidebarWidth() {
   return { width, dragging, startResize }
 }
 
-/** 侧栏右缘拖拽手柄：hover 显现 1px 分隔线，拖拽中加粗。 */
+/** 侧栏右缘拖拽手柄：全系统共享即时出现的 2px 黑色指示线。 */
 export function SidebarResizeHandle({
   dragging,
   onPointerDown,
@@ -70,11 +78,10 @@ export function SidebarResizeHandle({
       aria-label={label}
       title={title}
       onPointerDown={onPointerDown}
-      /* globals.css 的 button { cursor: default } 会压过 cursor-col-resize 工具类，内联保住手柄光标 */
-      style={{ cursor: "col-resize" }}
+      data-resize-axis="x"
+      data-resizing={dragging || undefined}
       className={cn(
-        "absolute inset-y-0 right-0 z-30 w-2 translate-x-1/2 cursor-col-resize touch-none outline-none before:absolute before:inset-y-0 before:left-[4.5px] before:w-px before:-translate-x-1/2 before:bg-[var(--wt-sidebar-edge)] before:opacity-100 before:transition-[background-color,width] before:duration-150 hover:before:bg-[var(--ink)] focus-visible:before:bg-[var(--ink)]",
-        dragging && "before:w-[2px] before:bg-[var(--ink)]",
+        "fouc-resize-handle fouc-sidebar-resize absolute inset-y-0 right-0 z-30 w-2",
         className,
       )}
     />

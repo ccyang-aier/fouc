@@ -50,9 +50,11 @@ test('drag previews do not commit or steal input focus; release commits the late
   expect(handle().getAttribute('aria-valuenow')).toBe('344')
   expect(document.activeElement).toBe(input); expect(input.value).toBe('未提交的输入')
   expect(pane().dataset.resourceResizing).toBe('true')
+  expect(handle().dataset.resizing).toBe('true')
   await pointer('pointermove', 390); await pointer('pointerup', 395)
   expect(changes).toEqual([379]); expect(pane().style.getPropertyValue(property)).toBe('379px')
   expect(frames.size).toBe(0); expect(capture.size).toBe(0); expect(pane().dataset.resourceResizing).toBeUndefined()
+  expect(handle().dataset.resizing).toBeUndefined()
 })
 test('release adapts to the current container and respects both width limits', async () => {
   await render('bounds'); await pointer('pointerdown', 300); await pointer('pointermove', 9000); await frame()

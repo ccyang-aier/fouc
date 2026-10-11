@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, type ReactNode } from "react"
-import { BookOpenText, Database, FileCode, Graph, GridFour, Plus, Pulse, Wrench, X } from "@phosphor-icons/react"
+import { BookOpenText, Database, FileCode, Graph, GridFour, Plus, Pulse, SquaresFour, X } from "@phosphor-icons/react"
 import { WorkbenchMenu } from "./workbench-menu"
 import { navigateWorkbenchTabs } from './workbench-tab-navigation'
 import styles from "./dbx-workbench.module.css"
@@ -17,7 +17,7 @@ const views = [
 ] as const
 
 export function WorkbenchViewMenu({ disabled, onChange }: { disabled: boolean; onChange: (mode: WorkbenchMode) => void }) {
-  return <WorkbenchMenu label="工作台视图" icon={<Wrench size={15} />} disabled={disabled}>{views.map(({ mode, label, icon: Icon }) => <button key={mode} type="button" role="menuitem" className="fouc-menu-item" onClick={() => onChange(mode)}><Icon size={15} />{label}</button>)}</WorkbenchMenu>
+  return <WorkbenchMenu label="工作台视图" icon={<SquaresFour size={16} />} disabled={disabled}>{views.map(({ mode, label, icon: Icon }) => <button key={mode} type="button" role="menuitem" className="fouc-menu-item" onClick={() => onChange(mode)}><Icon size={15} />{label}</button>)}</WorkbenchMenu>
 }
 
 export function WorkbenchShortcuts({ mode, disabled, onChange }: { mode: WorkbenchMode; disabled: boolean; onChange: (mode: WorkbenchMode) => void }) {
@@ -56,7 +56,9 @@ export function WorkbenchTabs({ table, schema, mode, openedViews, disabled, onCh
         return view ? <WorkbenchTab key={value} label={view.label} icon={<view.icon size={15} />} selected={mode === value} disabled={disabled} onSelect={() => onChange(value)} closeLabel={`关闭 ${view.label} 视图`} onClose={() => onCloseView(value)} /> : null
       })}
     </div>
-    <button type="button" className="fouc-action" data-surface="subtle" aria-label="新建 SQL 查询" disabled={disabled} onClick={onNewQuery}><Plus size={16} /></button>
-    <WorkbenchViewMenu disabled={disabled} onChange={onChange} />
+    <div className={`${styles.tabActions} ${styles.commandGroup}`} role="group" aria-label="工作台视图操作">
+      <button type="button" className="fouc-action" aria-label="新建 SQL 查询" title="新建 SQL 查询" disabled={disabled} onClick={onNewQuery}><Plus size={16} /></button>
+      <WorkbenchViewMenu disabled={disabled} onChange={onChange} />
+    </div>
   </div>
 }

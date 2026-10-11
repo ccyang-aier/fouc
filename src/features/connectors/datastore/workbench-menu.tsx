@@ -17,7 +17,7 @@ export function WorkbenchMenu({ label, icon, children, disabled = false, iconOnl
     return () => document.removeEventListener("pointerdown", outside)
   }, [open])
   return <div ref={host} className={styles.menu}>
-    <button ref={trigger} type="button" className="fouc-action" data-surface="subtle" disabled={disabled} aria-label={label} title={iconOnly ? label : undefined} aria-expanded={open} aria-haspopup="menu" onClick={() => setOpen(value => !value)}>{icon}{!iconOnly && <><span>{label}</span><CaretDown size={11} aria-hidden /></>}</button>
+    <button ref={trigger} type="button" className="fouc-action" data-surface="subtle" disabled={disabled} aria-label={label} title={label} aria-expanded={open} aria-haspopup="menu" onClick={() => setOpen(value => !value)}>{icon}{!iconOnly && <><span>{label}</span><CaretDown size={11} aria-hidden /></>}</button>
     <div ref={panel} className={styles.menuPanel} data-open={open} data-align={align} role={open ? "menu" : undefined} aria-label={open ? label : undefined}
       onClickCapture={event => { const button = (event.target as Element).closest("button"); if (button && !button.closest("dialog") && panel.current?.contains(button)) setOpen(false) }}
       onKeyDown={event => {

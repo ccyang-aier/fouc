@@ -1,7 +1,7 @@
 "use client"
 
 import type { ReactNode } from "react"
-import { Table } from "@phosphor-icons/react"
+import { Table, Wrench } from "@phosphor-icons/react"
 import { WorkbenchMenu } from "./workbench-menu"
 import styles from "./dbx-workbench.module.css"
 
@@ -15,10 +15,12 @@ export function WorkbenchMetadata({ table, schema, columnCount, structureAction,
       {table && <span className={styles.columnCount} title="数据表的全部字段数量">{columnCount} 字段</span>}
     </div>
     <div className={styles.metadataActions}>
-      {structureAction}
-      <span ref={onGridHeader} className={styles.gridHeaderSlot} />
-      <button type="button" className="fouc-action" data-surface="subtle" disabled={pending || !table} onClick={onProperties}><Table size={15} />表属性</button>
-      <WorkbenchMenu label="数据工具" icon={<Table size={15} />} disabled={pending}>{tools}<div ref={onGridTools} className={styles.gridToolsSlot} /></WorkbenchMenu>
+      <span ref={onGridHeader} className={`${styles.gridHeaderSlot} ${styles.commandGroup}`} role="group" aria-label="表格显示" />
+      <div className={styles.commandGroup} role="group" aria-label="表结构与工具">
+        {structureAction}
+        <button type="button" className="fouc-action" title="表属性" disabled={pending || !table} onClick={onProperties}><Table size={16} />表属性</button>
+        <WorkbenchMenu label="数据工具" icon={<Wrench size={16} />} disabled={pending}>{tools}<div ref={onGridTools} className={styles.gridToolsSlot} /></WorkbenchMenu>
+      </div>
     </div>
   </div>
 }

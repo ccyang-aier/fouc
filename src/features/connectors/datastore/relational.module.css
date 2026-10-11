@@ -206,20 +206,6 @@
 .paging button {
   cursor: pointer;
 }
-:global(.mw-breadcrumb) > .writeAccess {
-  width: auto;
-  height: 30px;
-  flex: none;
-  padding: 3px 8px;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  background: var(--surface-subtle);
-  white-space: nowrap;
-  font-size: 11px;
-  display: inline-flex;
-  gap: 5px;
-  align-items: center;
-}
 .breadcrumbName {
   min-width: 0;
   max-width: 220px;
@@ -240,8 +226,6 @@
     flex: 1;
     max-width: none;
   }
-  :global(.mw-breadcrumb) > .writeAccess { width: 30px; padding: 0; justify-content: center; }
-  .writeAccess > span { display: none; }
 }
 @media (max-width: 600px) {
   .empty {

@@ -8,6 +8,7 @@ import type {
   RelationalSession
 } from "@fouc/shared"
 import { backendFetch } from "@/lib/backend"
+import { Button } from "@/components/ui/button"
 import { ResourceTree } from "./resource-tree"
 import { TableView } from "./table-view"
 import { WorkbenchConnectionInfo } from "./workbench-connection-info"
@@ -301,27 +302,39 @@ export function RelationalWorkbench({
         <span className={styles.providerLabel}>{session.info.productName}</span>
         <span className={styles.connected}><i />已连接</span>
         <span className="mw-sql-spacer" />
-        <WorkbenchMenu label="新建" icon={<Plus size={15} />} disabled={pending || busy || writeBusy}>
-        <TableCreateAction session={currentSession} base={base} schema={schema} writable={writable} disabled={pending || busy || writeBusy} onUnlock={unlockSqlWrite} onBusyChange={setMutationBusy} onCreated={refresh} />
-        <SchemaCreateAction session={currentSession} base={base} writable={writable} disabled={pending || busy || writeBusy} onUnlock={unlockSqlWrite} onBusyChange={setMutationBusy} onCreated={() => { refresh(); setFeedback('创建流程已结束，正在刷新资源目录；请以目录实际结果为准。') }} />
-        </WorkbenchMenu>
-        <SchemaSearchAction base={base} session={session} connectionLabel={name} currentSchema={schema} disabled={pending || leaving} onOpen={openSearchHit} onNotice={setFeedback} />
-        <SqliteBackupAction session={currentSession} base={base} disabled={pending || leaving || writeBusy} />
-        <DatabaseSecurityAction base={base} session={currentSession} schema={schema} disabled={pending || leaving || writeBusy} />
-        <DatabaseAdminObjectsAction base={base} session={currentSession} schema={schema} disabled={pending || leaving || writeBusy} />
-        <button
-          type="button"
-          className={`${styles.writeAccess} fouc-action`}
-          data-surface="subtle"
-          aria-label={writeBusy ? "切换中…" : writable ? "锁定表格写入" : "解锁表格写入"}
-          disabled={pending || writeBusy}
-          onClick={() => void toggleWriteAccess()}
-        >
-          {writable ? <LockOpen size={14} /> : <Lock size={14} />}
-          <span>{writeBusy ? "切换中…" : writable ? "锁定表格写入" : "解锁表格写入"}</span>
-        </button>
-        {pending && <small className={styles.pendingLabel}>有待提交变更</small>}
-        <WorkbenchConnectionInfo session={session} name={name} page={page} selectedRow={mode === "data" ? selectedRow : null} />
+        <div className={nativeStyles.connectionActions} role="group" aria-label="连接操作">
+          <div className={nativeStyles.commandGroup} role="group" aria-label="创建与查找">
+            <WorkbenchMenu label="新建" icon={<Plus size={16} />} disabled={pending || busy || writeBusy}>
+              <TableCreateAction session={currentSession} base={base} schema={schema} writable={writable} disabled={pending || busy || writeBusy} onUnlock={unlockSqlWrite} onBusyChange={setMutationBusy} onCreated={refresh} />
+              <SchemaCreateAction session={currentSession} base={base} writable={writable} disabled={pending || busy || writeBusy} onUnlock={unlockSqlWrite} onBusyChange={setMutationBusy} onCreated={() => { refresh(); setFeedback('创建流程已结束，正在刷新资源目录；请以目录实际结果为准。') }} />
+            </WorkbenchMenu>
+            <SchemaSearchAction base={base} session={session} connectionLabel={name} currentSchema={schema} disabled={pending || leaving} onOpen={openSearchHit} onNotice={setFeedback} />
+          </div>
+          <div className={nativeStyles.commandGroup} role="group" aria-label="数据库管理">
+            <SqliteBackupAction session={currentSession} base={base} disabled={pending || leaving || writeBusy} />
+            <DatabaseSecurityAction base={base} session={currentSession} schema={schema} disabled={pending || leaving || writeBusy} />
+            <DatabaseAdminObjectsAction base={base} session={currentSession} schema={schema} disabled={pending || leaving || writeBusy} />
+          </div>
+          <div className={nativeStyles.commandGroup} role="group" aria-label="写入与连接信息">
+            <Button
+              type="button"
+              variant="ghost"
+              className={nativeStyles.writeAccess}
+              data-active={writable}
+              aria-label={writable ? "锁定表格写入" : "解锁表格写入"}
+              aria-pressed={writable}
+              title={writable ? "锁定表格写入" : "解锁表格写入"}
+              loading={writeBusy}
+              disabled={pending}
+              onClick={() => void toggleWriteAccess()}
+            >
+              {writable ? <LockOpen size={16} /> : <Lock size={16} />}
+              <span>{writable ? "锁定写入" : "解锁写入"}</span>
+            </Button>
+            {pending && <small className={styles.pendingLabel}>有待提交变更</small>}
+            <WorkbenchConnectionInfo session={session} name={name} page={page} selectedRow={mode === "data" ? selectedRow : null} />
+          </div>
+        </div>
       </header>
       <div className="mw-body">
         <ResourceTree

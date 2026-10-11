@@ -89,6 +89,14 @@ describe('query chart field and source mapping', () => {
     const line = queryChartOption(chart.data, { ...chart.config, type: 'line' }, { ink: '#111', muted: '#777', line: '#eee', panel: '#fff', accent: '#369', font: 'sans-serif' }, 'category') as typeof option
     expect(line.series[0].connectNulls).toBe(false)
   })
+  test('value labels retain original numeric text and are explicitly controlled', () => {
+    const chart = build(result(['category', 'amount'], [['A', '1.20e1'], ['B', null]]), { showValues: true })
+    const option = queryChartOption(chart.data, chart.config, { ink: '#111', muted: '#777', line: '#eee', panel: '#fff', accent: '#369', font: 'sans-serif' }, 'category') as { series: { label: { show: boolean; formatter: (parameter: unknown) => string }; data: unknown[] }[] }
+    expect(option.series[0].label.show).toBe(true)
+    expect(option.series[0].label.formatter({ data: option.series[0].data[0] })).toBe('1.20e1')
+    expect(option.series[0].label.formatter({ data: option.series[0].data[1] })).toBe('')
+    expect(build(source).config.showValues).toBe(false)
+  })
 })
 
 test('chart configuration isolates connection/document scopes and restores only the current schema', () => {

@@ -1,0 +1,22 @@
+.summary { flex: 1; min-width: 0; min-height: 0; overflow: auto; color: var(--ink); font: 13px var(--font-sans); }
+.sheet { width: min(100%, 820px); }
+.progress { padding: 12px 14px 10px; }
+.caption { display: flex; align-items: center; gap: 14px; margin-bottom: 9px; font-variant-numeric: tabular-nums; }
+.caption > span:not(:first-child) { color: var(--muted-strong); }
+.caption > span:last-child { margin-left: auto; }
+.track { height: 6px; border-radius: 999px; overflow: hidden; background: var(--surface-subtle); }
+.track > i { display: block; height: 100%; border-radius: inherit; background: var(--ink); }
+.scroll { overflow-x: auto; }
+.sheet table { width: 100%; min-width: 540px; border-collapse: collapse; table-layout: fixed; }
+.sheet th, .sheet td { height: 42px; padding: 8px 14px; text-align: left; font-weight: 400; vertical-align: top; }
+.sheet thead th { height: 36px; border-block: 1px solid var(--line); background: var(--surface-subtle); color: var(--muted-strong); }
+.sheet tbody th { color: var(--muted-strong); font-weight: 500; }
+.sheet th:nth-last-child(-n+2), .sheet td:nth-last-child(-n+2) { text-align: right; font-variant-numeric: tabular-nums; }
+.number { width: 64px; }.statusColumn { width: 110px; }.metric { width: 88px; }
+.sheet code { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 13px/22px var(--font-code); }
+.status { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border: 1px solid var(--control-border); border-radius: 999px; font-size: 12px; white-space: nowrap; color: var(--muted-strong); }
+.status[data-status="succeeded"] { color: var(--ok-ink); border-color: color-mix(in srgb, var(--ok-ink) 30%, transparent); background: color-mix(in srgb, var(--ok-ink) 8%, var(--panel)); }
+.status[data-status="failed"], .error { color: var(--err-ink); }
+.status[data-status="failed"] { border-color: color-mix(in srgb, var(--err-ink) 30%, transparent); background: color-mix(in srgb, var(--err-ink) 7%, var(--panel)); }
+.status[data-status="running"] { color: var(--accent-ink); }
+.error { margin-top: 6px; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }

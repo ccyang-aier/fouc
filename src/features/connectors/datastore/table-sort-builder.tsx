@@ -1,113 +1,29 @@
 "use client"
 
-import { Plus, Trash, ArrowUp, ArrowDown } from "@phosphor-icons/react"
+import { Check } from "@phosphor-icons/react"
+import { DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
 import type { DatabaseColumnInfo, RelationalSort } from "@fouc/shared"
+import type { SortDraft } from "./table-sort-model"
+import { QueryRuleActions, QueryRuleHandle } from "./table-query-row-actions"
 import styles from "./table-query.module.css"
 
-export function TableSortBuilder({
-  sort,
-  columns,
-  disabled,
-  onChange
-}: {
-  sort: RelationalSort[]
-  columns: DatabaseColumnInfo[]
-  disabled: boolean
-  onChange: (sort: RelationalSort[]) => void
-}) {
-  function update(index: number, value: Partial<RelationalSort>) {
-    onChange(sort.map((item, position) => (position === index ? { ...item, ...value } : item)))
-  }
-  function move(index: number, direction: number) {
-    const next = [...sort]
-    const target = index + direction
-    ;[next[index], next[target]] = [next[target]!, next[index]!]
+export function TableSortBuilder({ sort, columns, disabled, onChange }: { sort: SortDraft[]; columns: DatabaseColumnInfo[]; disabled: boolean; onChange: (sort: SortDraft[]) => void }) {
+  function update(id: string, value: Partial<SortDraft>) { onChange(sort.map(item => item.id === id ? { ...item, ...value } : item)) }
+  function move(index: number, target: number) {
+    if (target < 0 || target >= sort.length) return
+    const next = [...sort], [item] = next.splice(index, 1)
+    next.splice(target, 0, item!)
     onChange(next)
   }
-  return (
-    <section className={styles.sorting} aria-label="数据库排序规则">
-      <p>按优先级执行 ORDER BY。主键会作为最后的稳定分页依据自动补齐。</p>
-      {sort.map((item, index) => (
-        <div className={styles.sortRow} key={index}>
-          <b>{index + 1}</b>
-          <select
-            aria-label={`排序字段 ${index + 1}`}
-            disabled={disabled}
-            value={item.column}
-            onChange={(event) => update(index, { column: event.target.value })}
-          >
-            {columns
-              .filter(
-                (column) => column.name === item.column || !sort.some((rule) => rule.column === column.name)
-              )
-              .map((column) => (
-                <option key={column.name}>{column.name}</option>
-              ))}
-          </select>
-          <select
-            aria-label={`排序方向 ${index + 1}`}
-            disabled={disabled}
-            value={item.direction}
-            onChange={(event) =>
-              update(index, { direction: event.target.value as RelationalSort["direction"] })
-            }
-          >
-            <option value="asc">升序 ASC</option>
-            <option value="desc">降序 DESC</option>
-          </select>
-          <select
-            aria-label={`空值位置 ${index + 1}`}
-            disabled={disabled}
-            value={item.nulls}
-            onChange={(event) => update(index, { nulls: event.target.value as RelationalSort["nulls"] })}
-          >
-            <option value="last">NULL 最后</option>
-            <option value="first">NULL 最前</option>
-          </select>
-          <button
-            type="button"
-            disabled={disabled || index === 0}
-            aria-label={`上移排序 ${index + 1}`}
-            onClick={() => move(index, -1)}
-          >
-            <ArrowUp size={13} />
-          </button>
-          <button
-            type="button"
-            disabled={disabled || index === sort.length - 1}
-            aria-label={`下移排序 ${index + 1}`}
-            onClick={() => move(index, 1)}
-          >
-            <ArrowDown size={13} />
-          </button>
-          <button
-            type="button"
-            disabled={disabled}
-            aria-label={`移除排序 ${index + 1}`}
-            onClick={() => onChange(sort.filter((_, position) => position !== index))}
-          >
-            <Trash size={13} />
-          </button>
-        </div>
-      ))}
-      <button
-        type="button"
-        className={styles.addSort}
-        disabled={disabled || sort.length >= 8 || sort.length >= columns.length}
-        onClick={() =>
-          onChange([
-            ...sort,
-            {
-              column: columns.find((column) => !sort.some((rule) => rule.column === column.name))!.name,
-              direction: "asc",
-              nulls: "last"
-            }
-          ])
-        }
-      >
-        <Plus size={13} />
-        添加排序字段
-      </button>
-    </section>
-  )
+  return <section className={styles.sorting} aria-label="数据库排序规则">
+    {sort.map((item, index) => <div className={styles.sortRow} data-enabled={item.enabled} key={item.id} onDragOver={event => { if (!disabled && event.dataTransfer.types.includes("text/x-fouc-sort-id")) event.preventDefault() }} onDrop={event => { const source = sort.findIndex(rule => rule.id === event.dataTransfer.getData("text/x-fouc-sort-id")); if (!disabled && source >= 0) { event.preventDefault(); move(source, index) } }}>
+      <QueryRuleHandle id={item.id} kind="sort" index={index} count={sort.length} disabled={disabled} onMove={target => move(index, target)}>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem disabled={disabled} onSelect={() => update(item.id, { nulls: "first" })}><span className={styles.menuCheck}>{item.nulls === "first" && <Check size={16} />}</span>NULL 最前</DropdownMenuItem>
+        <DropdownMenuItem disabled={disabled} onSelect={() => update(item.id, { nulls: "last" })}><span className={styles.menuCheck}>{item.nulls === "last" && <Check size={16} />}</span>NULL 最后</DropdownMenuItem>
+      </QueryRuleHandle>
+      <div className={styles.sortFields}><select aria-label={`排序字段 ${index + 1}`} disabled={disabled || !item.enabled} value={item.column} onChange={event => update(item.id, { column: event.target.value })}><option value="" disabled>选择字段</option>{columns.filter(column => column.name === item.column || !sort.some(rule => rule.column === column.name && rule.enabled)).map(column => <option key={column.name} value={column.name}>{column.name}</option>)}</select><select aria-label={`排序方向 ${index + 1}`} disabled={disabled || !item.enabled} value={item.direction} onChange={event => update(item.id, { direction: event.target.value as RelationalSort["direction"] })}><option value="asc">ASC</option><option value="desc">DESC</option></select></div>
+      <QueryRuleActions label="排序" disabled={disabled} enabled={item.enabled} onOnly={() => onChange(sort.map(rule => ({ ...rule, enabled: rule.id === item.id })))} onToggle={() => update(item.id, { enabled: !item.enabled })} onRemove={() => onChange(sort.filter(rule => rule.id !== item.id))} />
+    </div>)}
+  </section>
 }

@@ -25,7 +25,7 @@
 .table thead { position: sticky; top: 0; z-index: 7; }
 .table th, .table td { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 0 10px; box-sizing: border-box; }
 .table thead th { position: relative; height: 44px; text-align: left; background: color-mix(in srgb, var(--ink) 6%, var(--panel)); font-weight: 600; font-size: 14px; cursor: pointer; color: var(--ink); user-select: none; }
-.table thead th > span { display: flex; align-items: center; gap: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 16px; padding-left: 7px; padding-right: 31px; }
+.table thead th > span { display: flex; align-items: center; gap: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 16px; padding-left: 7px; padding-right: 51px; }
 .table thead th > span > svg { flex-shrink: 0; }
 .primaryKey { color: #f7901e; }
 .uniqueKey { color: #e74e64; }
@@ -34,17 +34,11 @@
 .table thead small[data-type="text"] { color: #21815d; }
 .table thead small { display: flex; align-items: center; gap: 4px; color: var(--muted-strong); font: 10px/14px var(--font-code); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 7px; padding-right: 24px; }
 .table thead small i { color: var(--accent-ink); font: italic 11px var(--font-code); }
-.table thead th:has(.sortButton) > span { padding-right: 48px; }
-.columnActions { display: flex; align-items: center; gap: 1px; position: absolute; top: 8px; right: 7px; }
-.table .sortButton { color: var(--muted-strong); padding: 4px 2px; gap: 2px; }
-.table .columnSettings { padding: 4px 2px; color: var(--muted-strong); opacity: 0; }
-.table th:hover .columnSettings, .table th:focus-within .columnSettings { opacity: 1; }
 .table .moveHandle { position: absolute; left: 1px; top: 5px; padding: 0; height: 32px; width: 10px; color: var(--muted-strong); cursor: grab; opacity: .35; touch-action: none; }
 .table th:hover .moveHandle, .table .moveHandle:focus-visible { opacity: 1; }.table .moveHandle:active { cursor: grabbing; }
 .table .resizeHandle { position: absolute; right: -3px; top: 0; bottom: 0; width: 7px; padding: 0; background: transparent; border: 0; border-radius: 0; cursor: col-resize; z-index: 3; touch-action: none; }
 .table .resizeHandle:hover, .table .resizeHandle:focus-visible { background: color-mix(in srgb, var(--accent) 35%, transparent); }
 .table th[data-drop] { box-shadow: inset 2px 0 var(--accent); }.table th[data-moving] { opacity: .58; }
-.sortButton b { font: 8px var(--font-code); color: var(--accent-ink); }
 .table tbody td { height: var(--grid-row-height, 28px); position: relative; font: var(--grid-font-size, 13px)/calc(var(--grid-row-height, 28px) - 1px) var(--grid-value-font, var(--font-code)); font-weight: 500; cursor: cell; white-space: nowrap; background: var(--panel); }
 .table tbody td > span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .table tbody tr:nth-child(even) > td:not([data-selected]):not([data-dirty]) { background: color-mix(in srgb, var(--ink) 4%, var(--panel)); }

@@ -15,6 +15,7 @@ import { RelationalQuery } from "./relational-query"
 import { TableEditing } from "./table-editing"
 import type { GridEditDraft, GridEditCell, GridEditSelection } from './grid-editing'
 import type { TableGridCommandHandle } from './grid/context-actions'
+import { databaseColumnValueFilter, removeDatabaseColumnFilter } from './grid/column-filter-model'
 import { TableQueryControls } from "./table-query-controls"
 import { TableStructure } from "./table-structure"
 import { TableImportAction } from './table-import-action'
@@ -263,23 +264,6 @@ export function RelationalWorkbench({
     if (hit.object) { changeView('objects'); setInitialObject(hit.object) }
     else if (hit.relation) openTable(hit.relation.name)
   }
-  function sortColumn(column: string, additive: boolean) {
-    const existing = query.sort.find((item) => item.column === column)
-    const next =
-      existing?.direction === "desc"
-        ? null
-        : {
-            column,
-            direction: existing ? ("desc" as const) : ("asc" as const),
-            nulls: "last" as const
-          }
-    const others = additive ? query.sort.filter((item) => item.column !== column) : []
-    if (next && others.length >= 8) {
-      setError("最多按 8 个字段排序，请先移除已有规则")
-      return
-    }
-    applyQuery({ ...query, sort: next ? [...others, next] : others })
-  }
   function changeView(next: WorkbenchMode) {
     if (pending) return
     if (next === "objects") setInitialObject(null)
@@ -420,7 +404,7 @@ export function RelationalWorkbench({
           {page && (
             <div hidden={mode !== "data"}>
               <TableQueryControls
-                key={`${schema}:${page.table}:${JSON.stringify(query)}`}
+                key={`query:${schema}:${page.table}`}
                 base={base}
                 schema={schema}
                 page={page}
@@ -519,10 +503,11 @@ export function RelationalWorkbench({
                   search={pageSearch}
                   sort={query.sort}
                   sortDisabled={busy || pending}
-                  filtered={query.filter !== null}
-                  onSort={sortColumn}
+                  filter={query.filter}
                   writable={writable} editingDisabled={busy || writeBusy || tables.find(item => item.name === table)?.kind !== 'table'} commandRef={gridCommands}
                   onDatabaseSort={(column, direction) => { if (!pending && !busy) applyQuery({ ...query, sort: [{ column, direction, nulls: 'last' }] }) }}
+                  onClearSort={column => { if (!pending && !busy) applyQuery({ ...query, sort: query.sort.filter(rule => rule.column !== column) }) }}
+                  onValuesFilter={(column, values) => { if (!pending && !busy) { const remaining = removeDatabaseColumnFilter(query.filter, column), chosen = values === null ? null : databaseColumnValueFilter(column, values); applyQuery({ ...query, filter: remaining && chosen ? { kind: 'group', join: 'and', children: [remaining, chosen] } : remaining ?? chosen }) } }}
                   onFilter={(column, value, operator) => { if (!pending && !busy) { const filter: import('@fouc/shared').RelationalFilter = { kind: 'condition', column, operator, ...(operator === 'equals' || operator === 'not-equals' ? { value } : {}) }; applyQuery({ ...query, filter: query.filter ? { kind: 'group', join: 'and', children: [query.filter, filter] } : filter }) } }}
                   onColumnDetails={column => { setStructureTab('columns'); setInitialColumn(column); setMode('structure') }}
                   onRefresh={refresh}

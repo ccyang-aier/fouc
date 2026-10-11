@@ -1,185 +1,60 @@
 "use client"
 
-import { Plus, Trash, ArrowsDownUp } from "@phosphor-icons/react"
-import {
-  RELATIONAL_FILTER_OPERATORS,
-  type DatabaseColumnInfo,
-  type RelationalFilterOperator
-} from "@fouc/shared"
-import {
-  filterLabels,
-  needsFilterValue,
-  newCondition,
-  newGroup,
-  type FilterDraft
-} from "./table-filter-model"
+import { Eye, EyeSlash, Plus, X } from "@phosphor-icons/react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { RELATIONAL_FILTER_OPERATORS, type DatabaseColumnInfo, type RelationalFilterOperator } from "@fouc/shared"
+import { filterLabels, needsFilterValue, newCondition, newGroup, type FilterDraft } from "./table-filter-model"
+import { QueryRuleActions, QueryRuleHandle } from "./table-query-row-actions"
 import styles from "./table-query.module.css"
 
-export function TableFilterBuilder({
-  node,
-  columns,
-  disabled,
-  onChange,
-  onRemove,
-  depth = 0
-}: {
+export function TableFilterBuilder({ node, columns, disabled, onChange, onRemove, onOnly, depth = 0 }: {
   node: FilterDraft
   columns: DatabaseColumnInfo[]
   disabled: boolean
   onChange: (node: FilterDraft) => void
   onRemove?: () => void
+  onOnly: (id: string) => void
   depth?: number
 }) {
   if (node.kind === "group") {
-    function move(index: number, direction: number) {
-      if (node.kind !== "group") return
+    function move(index: number, target: number) {
+      if (node.kind !== "group" || target < 0 || target >= node.children.length) return
       const children = [...node.children]
-      const next = index + direction
-      ;[children[index], children[next]] = [children[next]!, children[index]!]
+      const [item] = children.splice(index, 1)
+      children.splice(target, 0, item!)
       onChange({ ...node, children })
     }
-    return (
-      <section className={styles.group} aria-label={depth ? "条件分组" : "筛选条件"}>
-        <header>
-          <select
-            aria-label="条件关系"
-            value={node.join}
-            disabled={disabled}
-            onChange={(event) => onChange({ ...node, join: event.target.value as "and" | "or" })}
-          >
-            <option value="and">全部满足 · AND</option>
-            <option value="or">任一满足 · OR</option>
-          </select>
-          <span />
-          <button
-            type="button"
-            disabled={disabled}
-            onClick={() =>
-              onChange({ ...node, children: [...node.children, newCondition(columns[0]?.name ?? "")] })
-            }
-          >
-            <Plus size={13} />
-            添加条件
-          </button>
-          <button
-            type="button"
-            disabled={disabled || depth >= 5}
-            onClick={() =>
-              onChange({
-                ...node,
-                children: [...node.children, newGroup([newCondition(columns[0]?.name ?? "")])]
-              })
-            }
-          >
-            <Plus size={13} />
-            添加分组
-          </button>
-          {onRemove && (
-            <button type="button" disabled={disabled} aria-label="移除条件分组" onClick={onRemove}>
-              <Trash size={13} />
-            </button>
-          )}
-        </header>
-        {!node.children.length && <p>暂无筛选条件，显示整个表的分页结果。</p>}
-        {node.children.map((child, index) => (
-          <div className={styles.ruleWrap} key={child.id}>
-            <TableFilterBuilder
-              node={child}
-              columns={columns}
-              disabled={disabled}
-              depth={depth + 1}
-              onChange={(updated) =>
-                onChange({
-                  ...node,
-                  children: node.children.map((item) => (item.id === child.id ? updated : item))
-                })
-              }
-              onRemove={() =>
-                onChange({ ...node, children: node.children.filter((item) => item.id !== child.id) })
-              }
-            />
-            <div className={styles.move}>
-              <button
-                type="button"
-                aria-label={`上移条件 ${index + 1}`}
-                disabled={disabled || index === 0}
-                onClick={() => move(index, -1)}
-              >
-                <ArrowsDownUp size={11} />↑
-              </button>
-              <button
-                type="button"
-                aria-label={`下移条件 ${index + 1}`}
-                disabled={disabled || index === node.children.length - 1}
-                onClick={() => move(index, 1)}
-              >
-                ↓
-              </button>
-            </div>
-          </div>
-        ))}
-      </section>
-    )
+    return <section className={depth ? styles.nestedGroup : styles.group} aria-label={depth ? "条件分组" : "筛选条件"}>
+      {depth > 0 && <header className={styles.groupHeader}>
+        <span>分组</span>
+        <select aria-label="分组条件关系" value={node.join} disabled={disabled || !node.enabled} onChange={event => onChange({ ...node, join: event.target.value as "and" | "or" })}><option value="and">AND</option><option value="or">OR</option></select>
+        <span className={styles.spacer} />
+        <DropdownMenu><DropdownMenuTrigger asChild><button className="fouc-action" type="button" title="新增组内条件" aria-label="新增组内条件" disabled={disabled || !node.enabled}><Plus size={16} /></button></DropdownMenuTrigger><DropdownMenuContent className={styles.popoverMenu} data-table-query-menu="" density="compact" align="end">
+          <DropdownMenuItem disabled={disabled || !node.enabled} onSelect={() => onChange({ ...node, children: [...node.children, newCondition("")] })}><Plus />新增条件</DropdownMenuItem>
+          <DropdownMenuItem disabled={disabled || !node.enabled || depth >= 5} onSelect={() => onChange({ ...node, children: [...node.children, newGroup([newCondition("")])] })}><Plus />新增条件分组</DropdownMenuItem>
+        </DropdownMenuContent></DropdownMenu>
+        <button className="fouc-action" type="button" title={node.enabled ? "停用分组" : "启用分组"} aria-label={node.enabled ? "停用分组" : "启用分组"} disabled={disabled} onClick={() => onChange({ ...node, enabled: !node.enabled })}>{node.enabled ? <Eye size={17} /> : <EyeSlash size={17} />}</button>
+        <button className="fouc-action" data-variant="destructive" type="button" title="删除分组" aria-label="删除分组" disabled={disabled} onClick={onRemove}><X size={16} /></button>
+      </header>}
+      {node.children.map((child, index) => <div key={child.id}>
+        {index > 0 && <div className={styles.join}><select aria-label={`条件关系 ${index}`} disabled={disabled || !node.enabled} value={node.join} onChange={event => onChange({ ...node, join: event.target.value as "and" | "or" })}><option value="and">AND</option><option value="or">OR</option></select></div>}
+        <div className={styles.ruleWrap} onDragOver={event => { if (!disabled && event.dataTransfer.types.includes("text/x-fouc-filter-id")) event.preventDefault() }} onDrop={event => { const source = node.children.findIndex(item => item.id === event.dataTransfer.getData("text/x-fouc-filter-id")); if (!disabled && source >= 0) { event.preventDefault(); move(source, index) } }}>
+          <QueryRuleHandle id={child.id} kind="filter" index={index} count={node.children.length} disabled={disabled || !node.enabled} onMove={target => move(index, target)} />
+          <TableFilterBuilder node={child} columns={columns} disabled={disabled || !node.enabled} depth={depth + 1} onOnly={onOnly} onChange={updated => onChange({ ...node, children: node.children.map(item => item.id === child.id ? updated : item) })} onRemove={() => onChange({ ...node, children: node.children.filter(item => item.id !== child.id) })} />
+        </div>
+      </div>)}
+    </section>
   }
   const list = node.operator === "in" || node.operator === "not-in"
   const range = node.operator === "between" || node.operator === "not-between"
-  return (
-    <div className={styles.rule}>
-      <select
-        aria-label="筛选字段"
-        disabled={disabled}
-        value={node.column}
-        onChange={(event) => onChange({ ...node, column: event.target.value })}
-      >
-        {columns.map((column) => (
-          <option key={column.name} value={column.name}>
-            {column.name}
-          </option>
-        ))}
-      </select>
-      <select
-        aria-label="筛选操作符"
-        disabled={disabled}
-        value={node.operator}
-        onChange={(event) => onChange({ ...node, operator: event.target.value as RelationalFilterOperator })}
-      >
-        {RELATIONAL_FILTER_OPERATORS.map((operator) => (
-          <option key={operator} value={operator}>
-            {filterLabels[operator]}
-          </option>
-        ))}
-      </select>
-      {needsFilterValue(node.operator) &&
-        (list ? (
-          <textarea
-            aria-label="筛选值列表"
-            disabled={disabled}
-            rows={2}
-            value={node.values}
-            placeholder={'JSON 数组： ["a", "b", null]'}
-            onChange={(event) => onChange({ ...node, values: event.target.value })}
-          />
-        ) : (
-          <input
-            aria-label="筛选值"
-            disabled={disabled}
-            value={node.value}
-            placeholder="值"
-            onChange={(event) => onChange({ ...node, value: event.target.value })}
-          />
-        ))}
-      {range && (
-        <input
-          aria-label="区间结束值"
-          disabled={disabled}
-          value={node.endValue}
-          placeholder="区间结束"
-          onChange={(event) => onChange({ ...node, endValue: event.target.value })}
-        />
-      )}
-      <button type="button" disabled={disabled} aria-label="移除筛选条件" onClick={onRemove}>
-        <Trash size={14} />
-      </button>
+  const fieldsDisabled = disabled || !node.enabled
+  return <div className={styles.rule} data-enabled={node.enabled}>
+    <div className={styles.ruleFields}>
+      <select aria-label="筛选字段" disabled={fieldsDisabled} value={node.column} onChange={event => onChange({ ...node, column: event.target.value })}><option value="" disabled>字段</option>{columns.map(column => <option key={column.name} value={column.name}>{column.name}</option>)}</select>
+      <select aria-label="筛选操作符" disabled={fieldsDisabled} value={node.operator} onChange={event => onChange({ ...node, operator: event.target.value as RelationalFilterOperator })}>{RELATIONAL_FILTER_OPERATORS.map(operator => <option key={operator} value={operator}>{filterLabels[operator]}</option>)}</select>
+      {needsFilterValue(node.operator) ? list ? <input aria-label="筛选值列表" disabled={fieldsDisabled} value={node.values} placeholder={'JSON 数组：["a", "b", null]'} onChange={event => onChange({ ...node, values: event.target.value })} /> : <input aria-label="筛选值" disabled={fieldsDisabled} value={node.value} placeholder="值" onChange={event => onChange({ ...node, value: event.target.value })} /> : <span className={styles.noValue}>无需值</span>}
+      {range && <input aria-label="区间结束值" disabled={fieldsDisabled} value={node.endValue} placeholder="区间结束" onChange={event => onChange({ ...node, endValue: event.target.value })} />}
     </div>
-  )
+    <QueryRuleActions label="筛选条件" disabled={disabled} enabled={node.enabled} onOnly={() => onOnly(node.id)} onToggle={() => onChange({ ...node, enabled: !node.enabled })} onRemove={onRemove} />
+  </div>
 }

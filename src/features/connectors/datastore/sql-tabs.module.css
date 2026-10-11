@@ -1,12 +1,11 @@
 .contextAnchor { position: fixed; width: 1px; height: 1px; padding: 0; opacity: 0; pointer-events: none; }
 .tab button:disabled { opacity: .35; cursor: default; }
 .list { display: flex; min-width: 0; height: 100%; }
-.tab { display: flex; align-items: center; gap: 7px; height: 100%; border-right: 1px solid var(--line); flex-shrink: 0; min-width: 135px; max-width: 240px; padding: 0 8px 0 10px; color: var(--ink-soft); font-size: 13px; cursor: pointer; outline: none; }
+.tab { display: flex; align-items: center; gap: 7px; height: 100%; border-right: 1px solid var(--line); flex-shrink: 0; min-width: 135px; max-width: 240px; padding: 0 8px 0 10px; color: var(--muted-strong); font-size: 13px; font-weight: 500; cursor: pointer; outline: none; }
 .tab span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tab .close { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; padding: 0; color: var(--muted-strong); flex: none; cursor: pointer; }
 .tab svg { flex-shrink: 0; }
-.active { background: var(--panel); }
-:global(html:not([data-theme="dark"])) .active { background: var(--surface-subtle); }
+.tab.active { --action-state-bg: var(--accent-soft); --action-state-ink: var(--ink); background: var(--accent-soft); color: var(--ink); font-weight: 600; box-shadow: inset 0 2px var(--accent); }
 .dirty, .running { width: 6px; height: 6px; border-radius: 50%; background: #b88835; flex-shrink: 0; }
 .running { background: var(--accent); animation: pulse 1s ease-in-out infinite alternate; }
 .status { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; font-size: 11px; color: var(--muted-strong); flex-shrink: 0; }

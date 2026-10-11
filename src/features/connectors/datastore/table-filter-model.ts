@@ -28,6 +28,7 @@ export const filterLabels: Record<RelationalFilterOperator, string> = {
 export type FilterDraft =
   | {
       id: string
+      enabled: boolean
       kind: "condition"
       column: string
       operator: RelationalFilterOperator
@@ -35,9 +36,10 @@ export type FilterDraft =
       values: string
       endValue: string
     }
-  | { id: string; kind: "group"; join: "and" | "or"; children: FilterDraft[] }
+  | { id: string; enabled: boolean; kind: "group"; join: "and" | "or"; children: FilterDraft[] }
 export const newCondition = (column: string): FilterDraft => ({
   id: crypto.randomUUID(),
+  enabled: true,
   kind: "condition",
   column,
   operator: "equals",
@@ -47,6 +49,7 @@ export const newCondition = (column: string): FilterDraft => ({
 })
 export const newGroup = (children: FilterDraft[] = []): Extract<FilterDraft, { kind: "group" }> => ({
   id: crypto.randomUUID(),
+  enabled: true,
   kind: "group",
   join: "and",
   children
@@ -80,6 +83,7 @@ export function draftFilter(
     const column = columns.find((column) => column.name === node.column)
     return {
       id: crypto.randomUUID(),
+      enabled: true,
       kind: "condition",
       column: node.column,
       operator:
@@ -113,14 +117,17 @@ function scalarValue(text: string, column: DatabaseColumnInfo): DatabaseCell {
   return text
 }
 export function buildFilter(root: FilterDraft, columns: DatabaseColumnInfo[]): RelationalFilter | null {
-  function build(node: FilterDraft, depth: number): RelationalFilter {
+  function build(node: FilterDraft, depth: number): RelationalFilter | null {
+    if (!node.enabled) return null
     if (depth > 6) throw new Error("条件分组最多 6 层")
     if (node.kind === "group") {
       if (!node.children.length) throw new Error("请为分组添加条件，或移除空分组")
+      const children = node.children.map((child) => build(child, depth + 1)).filter((child): child is RelationalFilter => child !== null)
+      if (!children.length) return null
       return {
         kind: "group",
         join: node.join,
-        children: node.children.map((child) => build(child, depth + 1))
+        children
       }
     }
     const column = columns.find((column) => column.name === node.column)
@@ -147,4 +154,10 @@ export function buildFilter(root: FilterDraft, columns: DatabaseColumnInfo[]): R
     return result
   }
   return root.kind === "group" && !root.children.length ? null : build(root, 0)
+}
+
+export function isolateFilter(root: FilterDraft, id: string): FilterDraft {
+  if (root.kind === "condition") return { ...root, enabled: root.id === id }
+  const children = root.children.map(child => isolateFilter(child, id))
+  return { ...root, enabled: root.id === id || children.some(child => child.enabled), children: root.id === id ? root.children : children }
 }

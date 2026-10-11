@@ -2,9 +2,9 @@
 .query { flex: 1; min-width: 0; display: flex; flex-direction: column; min-height: 0; }
 .query :global(.mw-live-code-editor .cm-content) { padding-block: 4px; }
 .query :global(.mw-live-code-editor .cm-line) { padding-inline: 8px; }
-.query :global(.mw-live-code-editor .cm-gutters) { min-width: 72px; border-right: 1px solid var(--line-strong); background: var(--panel); color: var(--accent-ink); }
-.query :global(.mw-live-code-editor .cm-lineNumbers .cm-gutterElement) { min-width: 36px; padding-right: 10px; font-weight: 600; }
-.query :global(.mw-sql-run-gutter) { width: 28px; }
+.query :global(.mw-live-code-editor .cm-gutters) { min-width: 64px; border-right: 1px solid var(--line-strong); background: var(--panel); color: var(--accent-ink); }
+.query :global(.mw-live-code-editor .cm-lineNumbers .cm-gutterElement) { min-width: 32px; padding-right: 8px; font-weight: 600; }
+.query :global(.mw-sql-run-gutter) { width: 26px; }
 .query :global(.mw-sql-run-gutter .cm-gutterElement) { display: flex; align-items: center; justify-content: center; }
 .query :global(.mw-sql-run-gutter button) { --action-state-ink: var(--ok-ink); display: grid; place-items: center; position: relative; width: 26px; height: 24px; padding: 0; border-radius: 5px; color: var(--ok-ink); background: color-mix(in srgb, var(--ok-ink) 9%, var(--panel)); cursor: pointer; }
 .query :global(.mw-sql-run-gutter button > svg) { width: 19px; height: 19px; }

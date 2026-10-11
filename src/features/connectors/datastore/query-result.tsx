@@ -3,7 +3,7 @@
 import { useCallback, useId, useMemo, useState } from "react"
 import { createPortal } from 'react-dom'
 import { useAppAlert } from "@/components/app-alert-provider"
-import { ArrowsClockwise, CaretDown, ChartBar, ChatText, CheckCircle, Clock, Copy, DownloadSimple, IconContext, ListChecks, Table, Timer } from '@phosphor-icons/react'
+import { ArrowCounterClockwise, ArrowsClockwise, CaretDown, ChartBar, ChatText, CheckCircle, Clock, Copy, FloppyDisk, IconContext, ListChecks, Plus, Table, Timer, Trash, UploadSimple } from '@phosphor-icons/react'
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import type { DatabaseQueryResult, RelationalProvider } from "@fouc/shared"
 import type { SqlResultView } from '@fouc/shared'
@@ -82,10 +82,20 @@ export function SqlQueryResult({ result, provider, scopeKey, layoutScopeKey, vie
         <div className={styles.toolbarActions}>
           {!headerTarget && <div ref={setHeaderTarget} className={styles.headerTools} />}
           <div ref={active ? onExplainTarget : undefined} className={styles.explainSlot} />
-          <button type="button" className="fouc-action" aria-label="导出查询结果" disabled={!hasRows} onClick={() => setExportSnapshot({ result, provider, title: 'query-result', selectedRows: selectionScope?.rectangular ? selectionScope.rows : filteredRows ?? undefined, selectedColumns: selectionScope?.rectangular ? selectionScope.columns : undefined })}><DownloadSimple /><span>保存结果</span></button>
+          <button type="button" className="fouc-action" aria-label="导出查询结果" disabled={!hasRows} onClick={() => setExportSnapshot({ result, provider, title: 'query-result', selectedRows: selectionScope?.rectangular ? selectionScope.rows : filteredRows ?? undefined, selectedColumns: selectionScope?.rectangular ? selectionScope.columns : undefined })}><UploadSimple /><span>保存结果</span></button>
           <span className={styles.divider} />
           <button type="button" className="fouc-action" aria-label="刷新当前查询" title={onRefresh ? '重新运行当前 SQL' : '固定快照不能刷新'} disabled={!onRefresh} onClick={onRefresh}><ArrowsClockwise /><span>刷新</span></button>
           <button type="button" className="fouc-action" aria-label="自动刷新查询" title={onAutoRefresh ? '每 15 秒刷新，离开查询页或修改 SQL 后暂停' : '固定快照不会自动刷新'} disabled={!onAutoRefresh} aria-pressed={autoRefresh} onClick={onAutoRefresh}><Timer /><span>自动</span></button>
+          <div className={styles.readonlyActions} role="group" aria-label="查询结果写入操作" aria-describedby={`${id}-readonly`} title="查询结果为只读快照，请在数据表中编辑">
+            <span id={`${id}-readonly`} className="sr-only">查询结果为只读快照，请在数据表中编辑</span>
+            <div className={styles.addRow}>
+              <button type="button" className="fouc-action" aria-label="新增行" aria-describedby={`${id}-readonly`} disabled><Plus /><span>新增行</span></button>
+              <button type="button" className="fouc-action" aria-label="新增行选项" aria-describedby={`${id}-readonly`} disabled><CaretDown /></button>
+            </div>
+            <button type="button" className="fouc-action" data-variant="destructive" aria-label="删除行" aria-describedby={`${id}-readonly`} disabled><Trash /><span>删除行</span></button>
+            <button type="button" className={`fouc-action ${styles.submit}`} aria-label="提交" aria-describedby={`${id}-readonly`} disabled><FloppyDisk /><span>提交</span></button>
+            <button type="button" className={`fouc-action ${styles.rollback}`} aria-label="回滚" aria-describedby={`${id}-readonly`} disabled><ArrowCounterClockwise /><span>回滚</span></button>
+          </div>
         </div>
         {(headerTarget ?? localHeaderTarget) && createPortal(<><SqlResultDdlAction context={queryContext} provider={provider} /><SqlResultTools onTarget={setToolsTarget} disabled={view !== 'table'} extraActions={<button type="button" className="fouc-menu-item" disabled={!hasRows} onClick={() => void copy()}><Copy size={16} />复制查询结果</button>} /></>, (headerTarget ?? localHeaderTarget)!)}
       </div>

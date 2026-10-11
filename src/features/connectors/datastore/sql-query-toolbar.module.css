@@ -4,7 +4,7 @@
 .controls > button:not([data-slot="button"]) > span { display: none; }
 .controls > button:disabled { opacity: .4; cursor: default; }
 .controls > button:focus-visible { outline: none; box-shadow: none; }
-.controls > button > svg { width: 22px; height: 22px; flex: none; }
+.controls > button > svg { width: 20px; height: 20px; flex: none; }
 .controls > .run { --action-state-ink: var(--ok-ink); color: var(--ok-ink); background: color-mix(in srgb, var(--ok-ink) 9%, var(--panel)); }
 .controls > .run[data-running] { --action-state-ink: var(--err-ink); color: var(--err-ink); }
 .controls > .runNew, .controls > button[aria-label="查看执行计划"] { --action-state-ink: var(--sql-tool-plan); color: var(--sql-tool-plan); }
@@ -14,20 +14,20 @@
 .controls > button[aria-label="SQL 快速操作"] { --action-state-ink: var(--sql-tool-paste); color: var(--sql-tool-paste); }
 .controls > button[aria-label="显示查询结果"] { --action-state-ink: var(--sql-tool-pane); color: var(--sql-tool-pane); }
 .controls > button[aria-pressed="true"] { background: var(--accent-soft); }
-.controls > button[aria-label="SQL 编辑器设置"] > strong { font-size: 17px; font-weight: 700; }
-.controls > button[aria-label="切换 SQL 关键字大小写"] > strong { font-size: 18px; font-weight: 700; }
+.controls > button[aria-label="SQL 编辑器设置"] > strong { font-size: 16px; font-weight: 700; }
+.controls > button[aria-label="切换 SQL 关键字大小写"] > strong { font-size: 16px; font-weight: 700; }
 .controls > button[aria-label="SQL 编辑器设置"] { color: var(--muted-strong); }
 .controls > button:is([aria-label="折叠全部 SQL"], [aria-label="展开全部 SQL"], [aria-label="SQL 自动换行"]) { color: var(--muted-strong); }
 .controls > button[aria-label="SQL 语义诊断"] { color: var(--muted-strong); background: transparent; }
-.controls > button[aria-label="SQL 语义诊断"] > strong { font-size: 17px; text-decoration: underline; text-underline-offset: 3px; }
+.controls > button[aria-label="SQL 语义诊断"] > strong { font-size: 16px; text-decoration: underline; text-underline-offset: 3px; }
 .controls > button[aria-label="显示查询结果"][aria-pressed="true"] { --action-state-bg: color-mix(in srgb, var(--sql-tool-pane) 12%, var(--panel)); background: color-mix(in srgb, var(--sql-tool-pane) 12%, var(--panel)); }
-.target { display: flex; align-items: center; gap: 10px; min-width: 100px; max-width: 330px; margin-left: auto; flex: none; }
-.database { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-soft); font-size: 12px; font-weight: 500; }
-.target label { width: auto; flex: none; }
-.target select { background: transparent; max-width: 145px; height: 28px; font-size: 12px; }
-.target button { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 4px; flex: none; }
-.status { display: flex; align-items: center; gap: 8px; color: var(--muted-strong); flex: none; }
-.status > span { font-size: 0; gap: 0; }
-.status svg { flex: none; }
+.target { display: flex; align-items: center; gap: 6px; min-width: 100px; max-width: 330px; margin-left: auto; flex: none; color: var(--ink-soft); font: 12px/16px var(--font-sans); }
+.database { max-width: 160px; height: 28px; line-height: 28px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.target label { width: auto; margin: 0; flex: none; gap: 6px; font: inherit; }
+.toolbar .target select { background: transparent; max-width: 145px; height: 28px; padding: 0 6px; font: inherit; }
+.target button { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; border-radius: 4px; flex: none; }
+.target svg { display: block; width: 16px; height: 16px; flex: none; }
+.status { display: flex; align-items: center; gap: 4px; color: var(--muted-strong); flex: none; }
+.status > span { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; font-size: 0; gap: 0; }
 @media (max-width: 960px) { .database { display: none; } }
-@media (max-width: 760px) { .toolbar { gap: 6px; padding-inline: 6px; } .controls { flex: 1; } .target { min-width: 85px; max-width: 156px; } .target label { flex-wrap: nowrap; } .target select { max-width: 76px; } .status { gap: 6px; } }
+@media (max-width: 760px) { .toolbar { gap: 6px; padding-inline: 6px; } .controls { flex: 1; } .target { min-width: 0; max-width: 200px; } .target label { flex-wrap: nowrap; } .toolbar .target select { max-width: 76px; } }

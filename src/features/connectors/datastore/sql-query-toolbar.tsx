@@ -12,7 +12,7 @@ export function SqlQueryToolbar({ running, cancelling, disabled, mode, onRun, on
   children: ReactNode; target: ReactNode; database: string; status: ReactNode;
 }) {
   return <div className={styles.toolbar} aria-label="SQL 查询工具栏">
-    <IconContext.Provider value={{ weight: 'bold', size: 22 }}><div className={styles.controls}>
+    <IconContext.Provider value={{ weight: 'bold', size: 20 }}><div className={styles.controls}>
       <Button variant="ghost" size="icon-sm" className={styles.run} data-running={running || undefined}
         aria-label={running ? '取消查询' : '运行'} title={running ? '中断数据库查询' : '运行 SQL · Ctrl / ⌘ + Enter · 选区优先'}
         loading={cancelling} disabled={disabled} onClick={() => running ? onCancel() : onRun(mode)}>

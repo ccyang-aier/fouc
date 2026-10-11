@@ -7,6 +7,14 @@
 .toolbar button[aria-selected="true"] { background: var(--panel); color: var(--ink); font-weight: 600; }
 .toolbar button:disabled { opacity: .4; cursor: default; }
 .toolbarActions { display: flex; align-items: center; gap: 4px; margin-left: auto; flex: none; }
+.readonlyActions { display: flex; align-items: center; gap: 4px; flex: none; }
+.addRow { display: flex; align-items: center; border: 1px solid var(--control-border); border-radius: 5px; background: var(--panel); }
+.root .toolbar .addRow > button { height: 27px; }
+.root .toolbar .addRow > button:last-child { width: 25px; padding: 0; border-left: 1px solid var(--control-border); border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.root .toolbar .addRow > button:last-child > svg { width: 14px; height: 14px; }
+.root .toolbar .readonlyActions button:disabled { opacity: .6; }
+.root .toolbar .submit { background: var(--muted-strong); color: var(--panel); }
+.root .toolbar .rollback { border: 1px solid var(--control-border); background: var(--panel); }
 .rowsFilter { border-left: 1px solid var(--line); margin-left: 4px; }
 .explainSlot { display: flex; align-items: center; }
 .divider { width: 1px; height: 19px; margin-inline: 5px; background: var(--line); }
@@ -31,5 +39,5 @@
 .ddlState { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; flex: 1; font-size: 13px; }
 .ddlFooter { display: flex; align-items: center; gap: 8px; height: 42px; padding: 0 12px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted-strong); }
 .ddlFooter > span { margin-right: auto; }
-@media (max-width: 1100px) { .root .toolbarActions > button > span, .explainSlot button > span { display: none; } }
-@media (max-width: 760px) { .toolbar { gap: 3px; padding-inline: 4px; } .headerTools { display: none; } .root .views button { padding-inline: 6px; font-size: 12px; } .views button > svg { display: none; } .root .toolbar .rowsFilter { padding-inline: 4px; font-size: 12px; } .footer { gap: 6px; font-size: 10px; } }
+@media (max-width: 1100px) { .root .toolbarActions button > span { display: none; } .toolbarActions { flex: 0 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; } }
+@media (max-width: 760px) { .toolbar { gap: 3px; padding-inline: 4px; } .headerTools { display: none; } .root .views button { padding-inline: 6px; font-size: 12px; } .views { flex: none; } .views button > svg { display: none; } .root .toolbar .rowsFilter { padding-inline: 4px; font-size: 12px; } .footer { gap: 6px; font-size: 10px; } }

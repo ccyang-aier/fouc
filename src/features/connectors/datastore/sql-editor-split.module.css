@@ -1,0 +1,2 @@
+.root { position: relative; }
+.restore { position: absolute; right: 16px; bottom: 16px; display: inline-flex; align-items: center; justify-content: center; height: 36px; padding: 0 18px; border: 1px solid var(--resource-card-border); border-radius: 999px; background: var(--panel); color: var(--ink); box-shadow: 0 4px 14px color-mix(in srgb, var(--ink) 10%, transparent); font: 14px var(--font-sans); white-space: nowrap; cursor: pointer; }

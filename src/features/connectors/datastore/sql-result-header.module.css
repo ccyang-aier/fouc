@@ -1,5 +1,8 @@
 .bar { display: flex; align-items: center; gap: 12px; min-width: 0; height: 44px; padding: 0 10px; border-bottom: 1px solid var(--line); background: var(--panel); flex: none; color: var(--ink); }
-.bar[hidden], .bar [hidden] { display: none; }
+.bar [hidden], .bar[data-empty] > :not(.collapse) { display: none; }
+.bar[data-empty] { justify-content: flex-end; }
+.collapse { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 30px; padding: 0; border-radius: 4px; color: var(--muted-strong); cursor: pointer; flex: none; }
+.collapse > svg { width: 19px; height: 19px; }
 .pinSlot { display: flex; align-items: center; padding-right: 10px; border-right: 1px solid var(--line); flex: none; }
 .pinSlot:empty { display: none; }
 .bar .pinSlot button { display: inline-flex; align-items: center; justify-content: center; width: 27px; height: 29px; border-radius: 4px; color: var(--ink); cursor: pointer; }

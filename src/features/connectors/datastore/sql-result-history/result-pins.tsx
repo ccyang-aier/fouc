@@ -21,8 +21,9 @@ type Props = {
   provider: RelationalProvider; children: (host: SqlResultHeaderHost) => ReactNode;
   layoutScopeKey?: string; onRemove: (id: string) => void;
   onNotice: (message: string) => void; onSqlPreview: (sql: string) => void;
+  onCollapse: () => void;
 };
-export function ResultPins({ scope, pins, current, currentLabel, hasExecution, base, provider, children, layoutScopeKey, onRemove, onNotice, onSqlPreview, onExplainTarget }: Props) {
+export function ResultPins({ scope, pins, current, currentLabel, hasExecution, base, provider, children, layoutScopeKey, onRemove, onNotice, onSqlPreview, onExplainTarget, onCollapse }: Props) {
   const entries = scopedResultPins(pins, scope);
   const [active, setActive] = useState<string | null>(null);
   const [tabsTarget, setTabsTarget] = useState<HTMLDivElement | null>(null), [actionsTarget, setActionsTarget] = useState<HTMLDivElement | null>(null), [pinTarget, setPinTarget] = useState<HTMLDivElement | null>(null), [pinnedToolsTarget, setPinnedToolsTarget] = useState<HTMLDivElement | null>(null);
@@ -31,7 +32,7 @@ export function ResultPins({ scope, pins, current, currentLabel, hasExecution, b
   function remove(id: string) { onRemove(id); if (id === selected?.id) setActive(null) }
   const selectedLabel = selected?.label ?? currentLabel;
   return <IconContext.Provider value={{ weight: 'bold', size: 19 }}><div className={styles.root}>
-    <SqlResultHeader label={selectedLabel} selectedPin={Boolean(selected)} hidden={!hasExecution && !entries.length}
+    <SqlResultHeader label={selectedLabel} selectedPin={Boolean(selected)} empty={!hasExecution && !entries.length} onCollapse={onCollapse}
       onTabsTarget={setTabsTarget} onActionsTarget={setActionsTarget} onPinTarget={setPinTarget} onPinnedToolsTarget={setPinnedToolsTarget}
       pinnedPinControl={selected && <button type="button" className="fouc-action" aria-label="取消固定当前结果" title="取消固定当前结果" onClick={() => remove(selected.id)}><PushPin weight="fill" /></button>}
       tabs={entries.map((pin, index) => <div key={pin.id} role="tab" aria-label={`${sqlResultTabLabel(pin.label, entries.slice(0, index).map(entry => entry.label))} · 固定结果`} aria-selected={pin.id === selected?.id} tabIndex={pin.id === selected?.id ? 0 : -1}

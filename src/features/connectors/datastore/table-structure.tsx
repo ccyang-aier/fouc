@@ -46,7 +46,7 @@ export function TableStructure({
   table,
   revision,
   pending,
-  initialColumn,
+  initialSearch,
   initialTab = "columns",
   onOpenTable,
   onStructureChanged,
@@ -61,7 +61,7 @@ export function TableStructure({
   table: string
   revision: number
   pending: boolean
-  initialColumn?: string
+  initialSearch?: string
   initialTab?: StructureTab
   onOpenTable: (schema: string, table: string) => void
   onStructureChanged?: () => void
@@ -73,7 +73,7 @@ export function TableStructure({
 }) {
   const [structure, setStructure] = useState<RelationalTableStructure | null>(null)
   const [tab, setTab] = useState<StructureTab>(initialTab)
-  const [search, setSearch] = useState(initialColumn ?? "")
+  const [search, setSearch] = useState(initialSearch ?? "")
   const [loadedKey, setLoadedKey] = useState("")
   const [error, setError] = useState("")
   const [reload, setReload] = useState(0)

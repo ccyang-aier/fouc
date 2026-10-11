@@ -75,7 +75,7 @@ export function RelationalWorkbench({
   const [footerExportTarget, setFooterExportTarget] = useState<HTMLElement | null>(null)
   const [footerTarget, setFooterTarget] = useState<HTMLElement | null>(null)
   const [initialObject, setInitialObject] = useState<SchemaObject | null>(null)
-  const [initialColumn, setInitialColumn] = useState<string | undefined>()
+  const [initialStructureSearch, setInitialStructureSearch] = useState<string | undefined>()
   const [openRequest, setOpenRequest] = useState<{ id: string; sql: string; schema: string } | null>(null)
   const [busy, setBusy] = useState(false)
   const [loadTimeMs, setLoadTimeMs] = useState<number | null>(null)
@@ -255,11 +255,11 @@ export function RelationalWorkbench({
   function openSearchHit(hit: SchemaSearchHit) {
     if (pending) return
     selectSchema(hit.schema)
-    setInitialColumn(undefined)
+    setInitialStructureSearch(undefined)
     if (hit.kind === 'schema') { changeView('objects'); return }
     if (hit.kind === 'table' || hit.kind === 'column') {
       openTable(hit.kind === 'column' ? hit.parentName! : hit.name)
-      if (hit.kind === 'column') { setInitialColumn(hit.column ?? hit.name); setMode('structure') }
+      if (hit.kind === 'column') { setInitialStructureSearch(hit.column ?? hit.name); setMode('structure') }
       return
     }
     if (hit.object) { changeView('objects'); setInitialObject(hit.object) }
@@ -338,6 +338,7 @@ export function RelationalWorkbench({
       </header>
       <div className="mw-body">
         <ResourceTree
+          key={`${base}:${schema}`} base={base} revision={revision}
           hidden={resourcesHidden} onHide={() => setResourcesHidden(true)}
           transferActions={<WorkbenchMenu label="导入/导出" icon={<ArrowsDownUp size={15} />} align="start" disabled={pending || busy || writeBusy}>
             <DatabaseExportAction session={session} schemas={schemas} schema={schema} table={table} tables={tables} disabled={pending || busy || writeBusy} />
@@ -355,9 +356,8 @@ export function RelationalWorkbench({
           onTable={openTable}
           onRefresh={refresh}
           disabled={pending}
-          columns={page?.table === table ? page.columns : []}
           onQuery={() => changeView("sql")}
-          onStructure={(nextTable, section, column) => { openTable(nextTable); setStructureTab(section); setInitialColumn(column); setMode("structure") }}
+          onStructure={(nextTable, section, record) => { openTable(nextTable); setStructureTab(section); setInitialStructureSearch(record); setMode("structure") }}
         />
         <main className="mw-center" ref={gridHost}>
           <div className={styles.mobileResources}>
@@ -476,13 +476,13 @@ export function RelationalWorkbench({
                   onBusyChange={setMutationBusy}
                   onStructureChanged={refresh}
                   onWriteAccessChanged={setCurrentSession}
-                  key={`${schema}:${table}:${structureTab}:${initialColumn ?? ''}`}
+                  key={`${schema}:${table}:${structureTab}:${initialStructureSearch ?? ''}`}
                   base={base}
                   schema={schema}
                   table={table}
                   revision={revision}
                   pending={pending}
-                  initialColumn={initialColumn}
+                  initialSearch={initialStructureSearch}
                   initialTab={structureTab}
                   onOpenTable={(nextSchema, nextTable) => {
                     selectSchema(nextSchema)
@@ -520,7 +520,7 @@ export function RelationalWorkbench({
                   onClearSort={column => { if (!pending && !busy) applyQuery({ ...query, sort: query.sort.filter(rule => rule.column !== column) }) }}
                   onValuesFilter={(column, values) => { if (!pending && !busy) { const remaining = removeDatabaseColumnFilter(query.filter, column), chosen = values === null ? null : databaseColumnValueFilter(column, values); applyQuery({ ...query, filter: remaining && chosen ? { kind: 'group', join: 'and', children: [remaining, chosen] } : remaining ?? chosen }) } }}
                   onFilter={(column, value, operator) => { if (!pending && !busy) { const filter: import('@fouc/shared').RelationalFilter = { kind: 'condition', column, operator, ...(operator === 'equals' || operator === 'not-equals' ? { value } : {}) }; applyQuery({ ...query, filter: query.filter ? { kind: 'group', join: 'and', children: [query.filter, filter] } : filter }) } }}
-                  onColumnDetails={column => { setStructureTab('columns'); setInitialColumn(column); setMode('structure') }}
+                  onColumnDetails={column => { setStructureTab('columns'); setInitialStructureSearch(column); setMode('structure') }}
                   onRefresh={refresh}
                 />
               )}

@@ -108,3 +108,6 @@ export interface RelationalTablePage extends DatabaseTablePage {
   statement: { sql: string; parameters: DatabaseCell[] };
   stableOrder: boolean;
 }
+export const RELATIONAL_PAGE_LIMITS = { rows: 1000, offset: 10_000_000 } as const;
+/** Decimal text preserves native COUNT precision independently of page offsets. */
+export interface RelationalTableCount { totalRows: string }

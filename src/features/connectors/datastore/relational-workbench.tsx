@@ -9,6 +9,7 @@ import type {
 } from "@fouc/shared"
 import { backendFetch } from "@/lib/backend"
 import { Button } from "@/components/ui/button"
+import { useAppAlert } from "@/components/app-alert-provider"
 import { ResourceTree } from "./resource-tree"
 import { TableView } from "./table-view"
 import { WorkbenchConnectionInfo } from "./workbench-connection-info"
@@ -18,6 +19,8 @@ import type { GridEditDraft, GridEditCell, GridEditSelection } from './grid-edit
 import type { TableGridCommandHandle } from './grid/context-actions'
 import { databaseColumnValueFilter, removeDatabaseColumnFilter } from './grid/column-filter-model'
 import { TableQueryControls } from "./table-query-controls"
+import { TablePagination } from "./table-pagination"
+import { useTablePageSize } from "./use-table-page-size"
 import { TableStructure } from "./table-structure"
 import { TableImportAction } from './table-import-action'
 import { TestDataAction } from './test-data-action'
@@ -73,7 +76,6 @@ export function RelationalWorkbench({
   const [gridToolsTarget, setGridToolsTarget] = useState<HTMLElement | null>(null)
   const [rowActionTarget, setRowActionTarget] = useState<HTMLElement | null>(null)
   const [footerExportTarget, setFooterExportTarget] = useState<HTMLElement | null>(null)
-  const [footerTarget, setFooterTarget] = useState<HTMLElement | null>(null)
   const [initialObject, setInitialObject] = useState<SchemaObject | null>(null)
   const [initialStructureSearch, setInitialStructureSearch] = useState<string | undefined>()
   const [openRequest, setOpenRequest] = useState<{ id: string; sql: string; schema: string } | null>(null)
@@ -103,7 +105,10 @@ export function RelationalWorkbench({
     finally { setLeaving(false) }
   }
   const [feedback, setFeedback] = useState("")
-  const [limit, setLimit] = useState(100)
+  const alerts = useAppAlert()
+  const { defaultSize, setDefault } = useTablePageSize(JSON.stringify([session.connectionId ?? session.id, session.provider === 'mysql' ? schema || session.database : session.database]))
+  const [customLimit, setCustomLimit] = useState<number | undefined>()
+  const limit = customLimit ?? defaultSize
   const [query, setQuery] = useState<RelationalTableQuery>({
     filter: null,
     sort: []
@@ -217,6 +222,7 @@ export function RelationalWorkbench({
     setError("")
     setFeedback("")
     if (value !== table) {
+      setCustomLimit(undefined)
       setQuery({ filter: null, sort: [] })
       setPageSearch("")
       setFiltersOpen(false)
@@ -227,6 +233,15 @@ export function RelationalWorkbench({
     setBusy(Boolean(table))
     setRevision((value) => value + 1)
   }
+  function navigatePage(nextOffset: number) { if (!busy && !pending && !leaving && nextOffset !== offset) { setBusy(true); setSelectedRow(null); setOffset(nextOffset) } }
+  function changeLimit(value: number) { if (!busy && !pending && !leaving && (value !== limit || offset)) { setCustomLimit(value); setOffset(0); setBusy(true); setSelectedRow(null) } }
+  function defaultLimit(value: number) {
+    if (busy || pending || leaving) return
+    changeLimit(value)
+    if (setDefault(value)) alerts.notify('success', `默认每页行数已设为 ${value}`)
+    else alerts.notify('warning', '行数已应用，无法保存默认值')
+  }
+  function closeTable() { setTable(''); setPage(null); setSelectedRow(null); setMode('data') }
   function selectSchema(value: string) {
     if (value === schema) {
       refresh()
@@ -385,7 +400,7 @@ export function RelationalWorkbench({
               ))}
             </select>
           </div>
-          <WorkbenchTabs table={table} schema={schema} mode={mode} openedViews={openedViews} disabled={pending || leaving} onChange={changeView} onCloseView={view => void closeView(view)} onCloseTable={() => { setTable(""); setPage(null); setSelectedRow(null); setMode("data") }} onNewQuery={() => { setOpenRequest({ id: crypto.randomUUID(), sql: "", schema }); changeView("sql") }} onSqlTabsTarget={setSqlTabsTarget} />
+          <WorkbenchTabs table={table} schema={schema} mode={mode} openedViews={openedViews} disabled={pending || leaving} onChange={changeView} onCloseView={view => void closeView(view)} onCloseTable={closeTable} onNewQuery={() => { setOpenRequest({ id: crypto.randomUUID(), sql: "", schema }); changeView("sql") }} onSqlTabsTarget={setSqlTabsTarget} />
           {(mode === "data" || mode === "structure") && <WorkbenchMetadata table={table} schema={schema} columnCount={page?.table === table ? page.columns.length : 0} pending={pending} onProperties={() => setPropertiesOpen(true)} onGridHeader={setGridHeaderTarget} onGridTools={setGridToolsTarget}
             structureAction={<StructureEditAction base={base} schema={schema} table={table} disabled={!writable || !table || pending || busy || writeBusy} onApplied={refresh} />}
             tools={<>
@@ -420,7 +435,6 @@ export function RelationalWorkbench({
                 key={`query:${schema}:${page.table}`}
                 page={page}
                 query={query}
-                limit={limit}
                 search={pageSearch}
                 open={filtersOpen}
                 disabled={pending}
@@ -431,15 +445,8 @@ export function RelationalWorkbench({
                   setSelectedRow(null)
                 }}
                 onApply={applyQuery}
-                onLimit={(value) => {
-                  setLimit(value)
-                  setOffset(0)
-                  setBusy(true)
-                  setSelectedRow(null)
-                }}
                 onRefresh={refresh}
                 active={mode === "data"}
-                footerTarget={footerTarget}
                 onActionTarget={setRowActionTarget}
               />
               <TableEditing
@@ -525,17 +532,10 @@ export function RelationalWorkbench({
                 />
               )}
               {page && mode === "data" && (
-                <footer className={nativeStyles.footer}>
-                  <span>当前页 {page.rows.length} 行{page.hasMore ? " · 还有数据" : ""}</span>{loadTimeMs !== null && <span title="表数据请求耗时，包含网络传输">{loadTimeMs} ms</span>}
-                  <code>{page.statement.sql}</code>
-                  <span ref={setFooterTarget} className={nativeStyles.pageControls} />
-                  <div className={nativeStyles.pageControls}>
-                    <button type="button" aria-label="上一页数据" disabled={!offset || busy || pending} onClick={() => { setBusy(true); setSelectedRow(null); setOffset(value => Math.max(0, value - limit)) }}>‹</button>
-                    <span className={nativeStyles.pageNumber}>{Math.floor(offset / limit) + 1}</span>
-                    <button type="button" aria-label="下一页数据" disabled={!page.hasMore || busy || pending} onClick={() => { setBusy(true); setSelectedRow(null); setOffset(value => value + limit) }}>›</button>
-                  </div>
-                  <span ref={setFooterExportTarget} className={nativeStyles.pageControls} />
-                </footer>
+                <TablePagination base={base} schema={schema} page={page} query={query} revision={revision}
+                  offset={offset} limit={limit} defaultSize={defaultSize} loadTimeMs={loadTimeMs} disabled={busy || pending || leaving}
+                  onNavigate={navigatePage} onLimit={changeLimit} onDefault={defaultLimit} onClose={closeTable}
+                  exportAction={<span ref={setFooterExportTarget} />} />
               )}
             </>
           )}

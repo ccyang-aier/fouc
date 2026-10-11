@@ -202,6 +202,10 @@ export function relationalRoutes(
       ),
     });
   });
+  app.post(base + '/:id/schemas/:schema/tables/:table/count', async (c) => {
+    const body = await c.req.json().catch(() => null);
+    return c.json({ ok: true, data: await sessions.countRows(c.req.param('id')!, c.req.param('schema')!, c.req.param('table')!, body, c.req.raw.signal) });
+  });
   app.post(base + '/:id/query', async (c) => {
     const body = await c.req.json().catch(() => null);
     if (

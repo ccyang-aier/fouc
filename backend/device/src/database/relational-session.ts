@@ -27,12 +27,14 @@ import { TableClearPlans } from './table-clear-plans';
 import { DatabaseAdminObjectService } from './admin-objects/service';
 import {
   DATABASE_CAPABILITIES,
+  RELATIONAL_PAGE_LIMITS,
   SQL_FILE_MAX_BYTES,
   type DatabaseCapabilities,
   type DatabaseColumnInfo,
   type DatabaseObjectInfo,
   type DatabaseQueryResult,
   type RelationalTablePage,
+  type RelationalTableCount,
   type RelationalTableStructure,
   type RelationalConnectInput,
   type RelationalSession,
@@ -511,10 +513,10 @@ export class RelationalSessionManager {
     if (
       !Number.isInteger(offset) ||
       offset < 0 ||
-      offset > 10_000_000 ||
+      offset > RELATIONAL_PAGE_LIMITS.offset ||
       !Number.isInteger(limit) ||
       limit < 1 ||
-      limit > 500
+      limit > RELATIONAL_PAGE_LIMITS.rows
     )
       throw new DatabaseInputError('分页范围无效');
     const { session, driver } = this.entry(id);
@@ -545,6 +547,16 @@ export class RelationalSessionManager {
       statement: { sql: compiled.sql, parameters: compiled.displayParameters },
       stableOrder: compiled.stableOrder,
     };
+  }
+  async countRows(id: string, schema: string, table: string, queryValue: unknown, signal?: AbortSignal): Promise<RelationalTableCount> {
+    const { driver, session } = this.entry(id);
+    const columns = await driver.columns(schema, table);
+    if (!columns.length) throw new DatabaseInputError('对象不存在或当前账号无权读取字段');
+    const compiled = compileTableQuery(session.provider, schema, table, columns, tableQueryInput(queryValue), 0, 1, driver.quoteIdentifier, 'count');
+    const result = await driver.read(compiled.sql, schema, 1, compiled.parameters, signal);
+    const value = result.rows[0]?.[0];
+    if ((typeof value === 'number' && (!Number.isSafeInteger(value) || value < 0)) || (typeof value !== 'number' && typeof value !== 'string') || !/^\d+$/.test(String(value))) throw new DatabaseInputError('数据库返回的总行数无效');
+    return { totalRows: String(value) };
   }
   async query(
     id: string,

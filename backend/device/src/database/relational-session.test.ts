@@ -31,6 +31,28 @@ afterAll(() => {
 });
 
 describe('real SQLite connection and API', () => {
+  test('footer counts share typed filters and auth, cancel cleanly, and allow the 1000-row preset', async () => {
+    const manager = new RelationalSessionManager(new DatabaseCapabilityRegistry());
+    const session = await manager.connect({ provider: 'sqlite', path: dbFile });
+    const query = { filter: { kind: 'condition', column: 'tenant', operator: 'equals', value: 'a' }, sort: [] };
+    const app = createApp({ registry: {} as never, supervisor: {} as never, connectors: {} as never, relationalSessions: manager, token: 'test-token', internalToken: 'internal-token' }).app;
+    const route = `/api/database/relational/sessions/${session.id}/schemas/main/tables/items/count`, headers = { authorization: 'Bearer test-token', 'content-type': 'application/json' };
+    try {
+      expect(await manager.countRows(session.id, 'main', 'items', query)).toEqual({ totalRows: '2' });
+      expect(await manager.countRows(session.id, 'main', 'item_names', { filter: null, sort: [] })).toEqual({ totalRows: '3' });
+      expect(await manager.countRows(session.id, 'main', 'items', { filter: { kind: 'condition', column: 'value', operator: 'equals', value: "'; DELETE FROM items; --" }, sort: [] })).toEqual({ totalRows: '0' });
+      expect((await manager.page(session.id, 'main', 'items', 0, 1000)).rows).toHaveLength(3);
+      await expect(manager.page(session.id, 'main', 'items', 0, 1001)).rejects.toThrow('分页范围');
+      expect((await app.request(route, { method: 'POST', body: JSON.stringify(query) })).status).toBe(401);
+      const response = await app.request(route, { method: 'POST', headers, body: JSON.stringify(query) });
+      expect(response.status).toBe(200); expect((await response.json()).data).toEqual({ totalRows: '2' });
+      expect((await app.request(route.replace(session.id, 'missing-session'), { method: 'POST', headers, body: JSON.stringify(query) })).status).toBe(400);
+      await expect(manager.countRows(session.id, 'main', 'items', { filter: { kind: 'condition', column: 'id; DELETE', operator: 'equals', value: 1 }, sort: [] })).rejects.toThrow('不存在');
+      const controller = new AbortController(); controller.abort();
+      await expect(manager.countRows(session.id, 'main', 'items', query, controller.signal)).rejects.toThrow();
+      expect(manager.historySearch(session.id, {}).total).toBe(0);
+    } finally { await manager.shutdown(); }
+  });
   test('execution endpoints keep partial results, preflight the full batch, scope cancellation and interrupt real SQLite work', async () => {
     const manager = new RelationalSessionManager(new DatabaseCapabilityRegistry());
     const session = await manager.connect({ provider: 'sqlite', path: dbFile });

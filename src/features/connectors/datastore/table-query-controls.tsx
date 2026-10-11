@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useEffectEvent, useId, useRef, useState } from "react"
-import { createPortal } from "react-dom"
 import { ArrowsClockwise, ArrowsDownUp, CaretDown, Funnel, MagnifyingGlass, Plus, Timer, Trash } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -13,11 +12,11 @@ import { TableSortBuilder } from "./table-sort-builder"
 import { TableQueryPopover } from "./table-query-popover"
 import styles from "./table-query.module.css"
 
-export function TableQueryControls({ page, query, limit, search, open, disabled, busy, onToggle, onSearch, onApply, onLimit, onRefresh, active = true, footerTarget, onActionTarget }: {
-  page: RelationalTablePage; query: RelationalTableQuery; limit: number; search: string
+export function TableQueryControls({ page, query, search, open, disabled, busy, onToggle, onSearch, onApply, onRefresh, active = true, onActionTarget }: {
+  page: RelationalTablePage; query: RelationalTableQuery; search: string
   open: boolean; disabled: boolean; busy: boolean; onToggle: () => void; onSearch: (text: string) => void
-  onApply: (query: RelationalTableQuery) => void; onLimit: (size: number) => void; onRefresh: () => void
-  active?: boolean; footerTarget?: HTMLElement | null; onActionTarget?: (node: HTMLDivElement | null) => void
+  onApply: (query: RelationalTableQuery) => void; onRefresh: () => void
+  active?: boolean; onActionTarget?: (node: HTMLDivElement | null) => void
 }) {
   const id = useId()
   const whereAnchor = useRef<HTMLDivElement>(null), sortAnchor = useRef<HTMLDivElement>(null)
@@ -62,7 +61,6 @@ export function TableQueryControls({ page, query, limit, search, open, disabled,
       close()
     } catch (reason) { setError(reason instanceof Error ? reason.message : "条件无效") }
   }
-  const pageSize = <select aria-label="每页行数" disabled={disabled || busy} value={limit} onChange={event => onLimit(Number(event.target.value))}>{[25, 50, 100, 250, 500].map(size => <option key={size} value={size}>{size} 行 / 页</option>)}</select>
   return <section className={styles.controls} aria-label="表查询控制">
     <div className={styles.toolbar}>
       <DropdownMenu><DropdownMenuTrigger asChild><button type="button" className={`fouc-action ${styles.rowScope}`}>{search ? "当前页搜索" : "全部行"}<CaretDown size={11} /></button></DropdownMenuTrigger><DropdownMenuContent align="start"><label className={styles.pageSearch}><MagnifyingGlass size={13} /><input aria-label="当前页搜索" value={search} placeholder="搜索当前页" onChange={event => onSearch(event.target.value)} /></label></DropdownMenuContent></DropdownMenu>
@@ -71,7 +69,6 @@ export function TableQueryControls({ page, query, limit, search, open, disabled,
       <Button variant="ghost" aria-label="刷新表数据" disabled={disabled} loading={busy} onClick={onRefresh}><ArrowsClockwise size={14} />刷新</Button>
       <label className={styles.auto}><Timer size={14} /><select aria-label="自动刷新表数据" value={autoSeconds} disabled={disabled || busy} onChange={event => setAutoSeconds(Number(event.target.value))}><option value={0}>自动</option>{[5, 10, 30, 60].map(seconds => <option key={seconds} value={seconds}>{seconds}s</option>)}</select></label>
       <div ref={onActionTarget} className={styles.actionTarget} />
-      {footerTarget ? createPortal(pageSize, footerTarget) : null}
     </div>
     <TableQueryPopover id={`${id}-${tab}`} open={active && open} interactionScope={id} anchor={tab === "filter" ? whereAnchor : sortAnchor} onClose={close} label={tab === "filter" ? "筛选" : "排序"} className={styles.queryForm} width={tab === "filter" ? 560 : 500}>
       <header className={styles.popoverHeader}><strong>{tab === "filter" ? "筛选" : "排序"}</strong><span className={styles.spacer} /><button type="button" className="fouc-action" data-variant="destructive" disabled={controlsDisabled} onClick={() => apply(true)}><Trash size={16} />{tab === "filter" ? "清除筛选" : "清除排序"}</button></header>

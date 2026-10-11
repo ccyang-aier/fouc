@@ -34,6 +34,7 @@ export function compileTableQuery(
   offset: number,
   limit: number,
   quote: RelationalDriver['quoteIdentifier'],
+  projection: 'rows' | 'count' = 'rows',
 ): CompiledQuery {
   const parameters: SqlParameter[] = [];
   const displayParameters: DatabaseCell[] = [];
@@ -165,7 +166,7 @@ export function compileTableQuery(
   const primary = columns.filter((column) => column.isPrimaryKey);
   for (const column of primary) if (!sorted.has(column.name)) order.push(`${quote(column.name)} ASC`);
   return {
-    sql: `SELECT * FROM ${quote(schema)}.${quote(table)}${where}${order.length ? ' ORDER BY ' + order.join(', ') : ''} LIMIT ${limit + 1} OFFSET ${offset}`,
+    sql: projection === 'count' ? `SELECT COUNT(*) FROM ${quote(schema)}.${quote(table)}${where}` : `SELECT * FROM ${quote(schema)}.${quote(table)}${where}${order.length ? ' ORDER BY ' + order.join(', ') : ''} LIMIT ${limit + 1} OFFSET ${offset}`,
     parameters,
     displayParameters,
     stableOrder: primary.length > 0,

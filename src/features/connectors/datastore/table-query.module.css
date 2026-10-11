@@ -86,6 +86,8 @@
   box-shadow: none;
 }
 .popover select { cursor: pointer; }
+.queryForm { font-size: 12px; }
+.queryForm :is(input, select) { height: 30px; padding: 0 8px; font-size: 12px; }
 .popover :is(input, select):focus { border-color: var(--accent); outline: none; box-shadow: none; }
 .popover :is(input, select):disabled { cursor: default; }
 .popoverHeader {
@@ -93,48 +95,49 @@
   flex: none;
   align-items: center;
   gap: 5px;
-  min-height: 45px;
-  padding: 8px 12px 5px;
+  min-height: 38px;
+  padding: 5px 10px 3px;
 }
-.popoverHeader strong { font-size: 13px; font-weight: 500; }
+.popoverHeader strong { font-size: 12px; font-weight: 500; }
 .popoverHeader button,
-.popoverFooter button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 8px; height: 30px; border-radius: 5px; white-space: nowrap; font-size: 13px; }
+.popoverFooter button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 0 7px; height: 30px; border-radius: 5px; white-space: nowrap; font-size: 12px; }
 .popoverHeader .options { width: 28px; height: 28px; padding: 0; box-shadow: none; outline: none; }
 .popoverHeader [data-variant="destructive"],
 .ruleActions [data-variant="destructive"],
 .groupHeader [data-variant="destructive"] { color: var(--err-ink); }
 .spacer { flex: 1; min-width: 0; }
-.editor { min-height: 34px; flex: 1 1 auto; overflow: auto; padding: 8px 12px; }
+.editor { min-height: 30px; flex: 1 1 auto; overflow: auto; padding: 5px 10px; }
 .group { min-width: 0; }
 .nestedGroup { min-width: 0; padding: 8px; border: 1px solid var(--line); border-radius: 6px; }
 .groupHeader { display: flex; align-items: center; gap: 5px; padding-bottom: 8px; }
 .groupHeader > span:first-child { color: var(--muted-strong); font-size: 12px; }
-.groupHeader select { height: 26px; padding: 0 4px; border: 0; width: 62px; }
 .groupHeader button { display: flex; align-items: center; justify-content: center; height: 26px; width: 26px; border-radius: 4px; }
 .ruleWrap,
-.sortRow { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
+.sortRow { display: flex; align-items: flex-start; gap: 6px; min-width: 0; }
 .ruleWrap > :last-child { flex: 1; min-width: 0; }
-.grip { display: flex; flex-shrink: 0; align-items: center; justify-content: center; width: 20px; height: 34px; padding: 0; color: var(--muted); border-radius: 4px; cursor: grab !important; outline: none; box-shadow: none; }
+.grip { display: flex; flex-shrink: 0; align-items: center; justify-content: center; width: 18px; height: 30px; padding: 0; color: var(--muted); border-radius: 4px; cursor: grab !important; outline: none; box-shadow: none; }
 .grip:active { cursor: grabbing !important; }
 .grip:disabled { cursor: default !important; }
-.join { display: flex; justify-content: center; height: 34px; padding-right: 94px; }
-.join select { width: 66px; height: 29px; padding: 0 5px; border-color: transparent; border-radius: 4px; text-align: center; }
-.rule { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
-.ruleFields { display: grid; grid-template-columns: minmax(80px, 1fr) minmax(105px, .8fr) minmax(110px, 1.7fr); flex: 1; min-width: 0; gap: 8px; }
+.join { display: grid; align-items: center; grid-template-columns: minmax(75px, 1fr) minmax(86px, .8fr) minmax(100px, 1.7fr); gap: 6px; height: 28px; padding: 0 82px 0 24px; }
+.join > .joinToggle { grid-column: 3; justify-self: start; }
+.joinToggle,
+.groupHeader .joinToggle { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 24px; padding: 0 6px; border: 0; border-radius: 4px; font-size: 12px; line-height: 1; outline: none; box-shadow: none; }
+.rule { display: flex; align-items: flex-start; gap: 6px; min-width: 0; }
+.ruleFields { display: grid; grid-template-columns: minmax(75px, 1fr) minmax(86px, .8fr) minmax(100px, 1.7fr); flex: 1; min-width: 0; gap: 6px; }
 .ruleFields > input:last-child:nth-child(4) { grid-column: 3; }
 .ruleFields > select { width: 100%; }
-.noValue { display: flex; align-items: center; height: 34px; color: var(--muted); padding: 0 10px; }
+.noValue { display: flex; align-items: center; height: 30px; color: var(--muted); padding: 0 8px; }
 .ruleActions { display: flex; align-items: center; flex-shrink: 0; gap: 2px; }
-.ruleActions button { display: flex; align-items: center; justify-content: center; width: 28px; height: 34px; padding: 0; border-radius: 4px; color: var(--ink); }
+.ruleActions button { display: flex; align-items: center; justify-content: center; width: 24px; height: 30px; padding: 0; border-radius: 4px; color: var(--ink); }
 .rule[data-enabled="false"] .ruleFields,
 .sortRow[data-enabled="false"] .sortFields { opacity: .4; }
-.sorting { display: flex; flex-direction: column; gap: 8px; }
-.sortFields { display: flex; flex: 1; min-width: 0; gap: 8px; }
+.sorting { display: flex; flex-direction: column; gap: 6px; }
+.sortFields { display: flex; flex: 1; min-width: 0; gap: 6px; }
 .sortFields select:first-child { flex: 1; min-width: 100px; }
-.sortFields select:last-child { flex: none; width: 84px; }
+.sortFields select:last-child { flex: none; width: 72px; }
 .menuCheck { display: inline-flex; align-items: center; justify-content: center; width: 16px; }
 .popoverMenu { z-index: 80; }
-.popoverFooter { display: flex; flex: none; align-items: center; gap: 8px; padding: 6px 12px 12px; }
+.popoverFooter { display: flex; flex: none; align-items: center; gap: 6px; padding: 5px 10px 10px; }
 .addCondition { display: flex; align-items: center; }
 .addCondition > button:last-child { width: 22px; padding: 0; }
 .popoverFooter .apply { background: var(--ink); color: var(--panel); padding: 0 13px; }
@@ -155,6 +158,8 @@
   .ruleActions { gap: 0; }
   .ruleActions button { width: 25px; }
   .ruleWrap, .rule, .sortRow { gap: 5px; }
+  .join { grid-template-columns: 1fr; padding-left: 23px; padding-right: 80px; }
+  .join > .joinToggle { grid-column: 1; }
   .popoverHeader, .editor, .popoverFooter { padding-left: 10px; padding-right: 10px; }
   .popoverFooter { gap: 4px; }
   .popoverFooter button { padding: 0 6px; }

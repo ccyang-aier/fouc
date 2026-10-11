@@ -3,6 +3,7 @@
 import type { ReactNode } from "react"
 import { ArrowDown, ArrowUp, DotsSixVertical, Eye, EyeSlash, Scan, X } from "@phosphor-icons/react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import styles from "./table-query.module.css"
 
 export function QueryRuleActions({ label, disabled, enabled, onOnly, onToggle, onRemove }: {
@@ -14,10 +15,21 @@ export function QueryRuleActions({ label, disabled, enabled, onOnly, onToggle, o
   onRemove?: () => void
 }) {
   const onlyLabel = label === "筛选条件" ? "仅筛选此项" : "仅排序此项"
+  const toggleLabel = `${enabled ? "禁用" : "启用"}${label}`
+  const removeLabel = `删除${label}`
   return <div className={styles.ruleActions}>
-    <button type="button" className="fouc-action" disabled={disabled} aria-label={onlyLabel} title={onlyLabel} onClick={onOnly}><Scan size={18} weight="bold" /></button>
-    <button type="button" className="fouc-action" disabled={disabled} aria-label={`${enabled ? "停用" : "启用"}${label}`} title={`${enabled ? "停用" : "启用"}${label}`} onClick={onToggle}>{enabled ? <Eye size={18} weight="bold" /> : <EyeSlash size={18} />}</button>
-    <button type="button" className="fouc-action" data-variant="destructive" disabled={disabled} aria-label={`删除${label}`} title={`删除${label}`} onClick={onRemove}><X size={18} /></button>
+    <Tooltip>
+      <TooltipTrigger asChild><button type="button" className="fouc-action" disabled={disabled} aria-label={onlyLabel} onClick={onOnly}><Scan size={16} weight="bold" /></button></TooltipTrigger>
+      <TooltipContent className="z-[90]">{onlyLabel}</TooltipContent>
+    </Tooltip>
+    <Tooltip>
+      <TooltipTrigger asChild><button type="button" className="fouc-action" disabled={disabled} aria-label={toggleLabel} aria-pressed={!enabled} onClick={onToggle}>{enabled ? <Eye size={16} weight="bold" /> : <EyeSlash size={16} weight="bold" />}</button></TooltipTrigger>
+      <TooltipContent className="z-[90]">{toggleLabel}</TooltipContent>
+    </Tooltip>
+    <Tooltip>
+      <TooltipTrigger asChild><button type="button" className="fouc-action" data-variant="destructive" disabled={disabled} aria-label={removeLabel} onClick={onRemove}><X size={16} weight="bold" /></button></TooltipTrigger>
+      <TooltipContent className="z-[90]">{removeLabel}</TooltipContent>
+    </Tooltip>
   </div>
 }
 

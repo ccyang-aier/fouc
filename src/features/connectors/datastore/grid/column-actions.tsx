@@ -34,9 +34,9 @@ export function GridColumnActions({ name, column, direction, priority, sortable,
     queryActions?.onLocalFilter(column, null)
     if (queryActions?.databaseFiltered(name)) queryActions.onDatabaseFilter(name, null)
   }
-  return <div ref={anchor} className={styles.actions} onClick={event => event.stopPropagation()}>
+  return <div ref={anchor} className={styles.actions} data-grid-column-actions onClick={event => event.stopPropagation()}>
     {sortable && <DropdownMenu modal={false} open={sortOpen} onOpenChange={open => { setSortOpen(open); if (open) setFilterMode(null) }}>
-      <DropdownMenuTrigger asChild><button type="button" className={`fouc-action ${styles.icon}`} disabled={disabled || !actions} aria-label={`${name} 排序菜单`} data-active={!!shownDirection || undefined}>
+      <DropdownMenuTrigger asChild><button type="button" className={`fouc-action ${styles.icon}`} data-variant="nested" disabled={disabled || !actions} aria-label={`${name} 排序菜单`} data-active={sortOpen || !!shownDirection || undefined}>
         {shownDirection === 'asc' ? <ArrowUp size={15} /> : shownDirection === 'desc' ? <ArrowDown size={15} /> : <ArrowsDownUp size={15} />}{priority !== undefined && <b>{priority}</b>}
       </button></DropdownMenuTrigger>
       <DropdownMenuContent density="compact" align="end" sideOffset={3} aria-label={`${name} 排序`} className={styles.menu}>
@@ -50,7 +50,7 @@ export function GridColumnActions({ name, column, direction, priority, sortable,
       </DropdownMenuContent>
     </DropdownMenu>}
     <DropdownMenu modal={false} open={settingsOpen} onOpenChange={open => { setSettingsOpen(open); if (open) setFilterMode(null) }}>
-      <DropdownMenuTrigger asChild><button ref={returnFocus} type="button" className={`fouc-action ${styles.icon}`} aria-label={`${name} 列菜单`} data-active={filtered || formatted || filterMode !== null || undefined} aria-controls={filterMode ? id : undefined}><CaretDown size={14} /></button></DropdownMenuTrigger>
+      <DropdownMenuTrigger asChild><button ref={returnFocus} type="button" className={`fouc-action ${styles.icon}`} data-variant="nested" aria-label={`${name} 列菜单`} data-active={settingsOpen || filtered || formatted || filterMode !== null || undefined} aria-expanded={settingsOpen || filterMode !== null} aria-haspopup={filterMode ? 'dialog' : 'menu'} aria-controls={filterMode ? id : undefined}><CaretDown size={14} /></button></DropdownMenuTrigger>
       <DropdownMenuContent density="compact" align="end" sideOffset={3} aria-label={`${name} 列设置`} className={styles.menu} onCloseAutoFocus={event => { if (filterMode) event.preventDefault() }}>
         <DropdownMenuItem onSelect={onFormat}><Code />列格式化</DropdownMenuItem>
         <DropdownMenuItem disabled={disabled || !queryActions} onSelect={() => setFilterMode('local')}><Funnel />本地值筛选</DropdownMenuItem>

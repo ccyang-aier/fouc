@@ -67,6 +67,7 @@ export function RelationalWorkbench({
   const [offset, setOffset] = useState(0)
   const [search, setSearch] = useState("")
   const [resourcesHidden, setResourcesHidden] = useState(false)
+  const [resourceWidth, setResourceWidth] = useState<number | undefined>()
   const [mode, setMode] = useState<WorkbenchMode>("data")
   const [openedViews, setOpenedViews] = useState<WorkbenchMode[]>([])
   const [sqlTabsTarget, setSqlTabsTarget] = useState<HTMLDivElement | null>(null)
@@ -355,6 +356,7 @@ export function RelationalWorkbench({
         <ResourceTree
           key={`${base}:${schema}`} base={base} revision={revision}
           hidden={resourcesHidden} onHide={() => setResourcesHidden(true)}
+          width={resourceWidth} onWidthChange={setResourceWidth}
           transferActions={<WorkbenchMenu label="导入/导出" icon={<ArrowsDownUp size={15} />} align="start" disabled={pending || busy || writeBusy}>
             <DatabaseExportAction session={session} schemas={schemas} schema={schema} table={table} tables={tables} disabled={pending || busy || writeBusy} />
             <TableImportAction base={base} sessionId={session.id} provider={session.provider} schema={schema} page={page} disabled={!writable || pending || busy || writeBusy} onImported={refresh} />

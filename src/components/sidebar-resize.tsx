@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
+  type ComponentProps,
 } from "react"
 
 import { cn } from "@/lib/utils"
@@ -55,21 +56,26 @@ export function useSidebarWidth() {
 export function SidebarResizeHandle({
   dragging,
   onPointerDown,
+  className,
+  "aria-label": label = "拖拽调整侧栏宽度",
+  title = label,
+  ...props
 }: {
   dragging: boolean
-  onPointerDown: (event: ReactPointerEvent<HTMLButtonElement>) => void
-}) {
+} & Omit<ComponentProps<"button">, "children" | "style">) {
   return (
     <button
+      {...props}
       type="button"
-      aria-label="拖拽调整侧栏宽度"
-      title="拖拽调整侧栏宽度"
+      aria-label={label}
+      title={title}
       onPointerDown={onPointerDown}
       /* globals.css 的 button { cursor: default } 会压过 cursor-col-resize 工具类，内联保住手柄光标 */
       style={{ cursor: "col-resize" }}
       className={cn(
         "absolute inset-y-0 right-0 z-30 w-2 translate-x-1/2 cursor-col-resize touch-none outline-none before:absolute before:inset-y-0 before:left-[4.5px] before:w-px before:-translate-x-1/2 before:bg-[var(--wt-sidebar-edge)] before:opacity-100 before:transition-[background-color,width] before:duration-150 hover:before:bg-[var(--ink)] focus-visible:before:bg-[var(--ink)]",
         dragging && "before:w-[2px] before:bg-[var(--ink)]",
+        className,
       )}
     />
   )

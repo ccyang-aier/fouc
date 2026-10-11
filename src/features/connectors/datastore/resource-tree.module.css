@@ -1,4 +1,9 @@
-.tree { display: flex; flex-direction: column; width: 284px; min-width: 210px; flex: 0 0 284px; min-height: 0; border-right: 1px solid var(--line); color: var(--ink-soft); font-size: max(13px, var(--ui-size)); }
+.tree { --resource-tree-default-width: 284px; position: relative; display: flex; flex-direction: column; width: var(--resource-tree-width, var(--resource-tree-default-width)); min-width: 210px; max-width: min(520px, max(210px, calc(100% - 400px))); flex: 0 0 auto; min-height: 0; border-right: 1px solid var(--line); color: var(--ink-soft); font-size: max(13px, var(--ui-size)); }
+.tree > .resizeHandle { padding: 0; border: 0; background: transparent; }
+.tree > .resizeHandle:is(:focus, :focus-visible) { outline: none; box-shadow: none; }
+.resizeHandle::before { transition: none; }
+:global(body:has([data-resource-resizing="true"])) { user-select: none; }
+:global(body:has([data-resource-resizing="true"]) *) { cursor: col-resize !important; }
 .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 4px; height: 32px; min-height: 32px; flex-shrink: 0; padding: 0 6px; border-bottom: 1px solid var(--line); }
 .toolbar strong { font-size: 13px; font-weight: 500; }
 .toolbarActions { display: flex; align-items: center; gap: 1px; }
@@ -57,5 +62,5 @@
 .empty { padding: 12px 24px; font-size: 13px; color: var(--muted-strong); }
 .footer { display: flex; justify-content: space-between; gap: 10px; height: 30px; min-height: 30px; align-items: center; padding: 0 10px; border-top: 1px solid var(--line); color: var(--muted-strong); font-size: 12px; }
 .tree[data-hidden="true"] { display: none; }
-@media (max-width: 1000px) { .tree { width: 230px; flex-basis: 230px; } }
+@media (max-width: 1000px) { .tree { --resource-tree-default-width: 230px; } }
 @media (max-width: 720px) { .tree { display: none; } }

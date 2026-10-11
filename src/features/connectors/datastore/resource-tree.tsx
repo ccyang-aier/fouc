@@ -1,11 +1,12 @@
 "use client"
 
-import { useEffect, useRef, useState, type ReactNode } from "react"
+import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react"
 import { ArrowsClockwise, CaretDoubleUp, CaretDown, CaretRight, Database, Eye, Folder, GridFour, MagnifyingGlass, SidebarSimple } from "@phosphor-icons/react"
 import type { DatabaseObjectInfo } from "@fouc/shared"
 import type { StructureTab } from "./structure-metadata"
 import { ResourceTreeControls, type ResourceKind, type ResourceSort } from "./resource-tree-controls"
 import { ResourceTreeObject } from "./resource-tree-object"
+import { ResourceTreeResize } from "./resource-tree-resize"
 import styles from "./resource-tree.module.css"
 
 type Props = {
@@ -14,11 +15,13 @@ type Props = {
   transferActions?: ReactNode;
   viewActions?: ReactNode;
   hidden: boolean; onHide: () => void;
+  width?: number; onWidthChange?: (width: number | undefined) => void;
   onSearch: (value: string) => void; onSchema: (value: string) => void; onTable: (value: string) => void; onRefresh: () => void;
   onStructure?: (table: string, section: StructureTab, record?: string) => void; onQuery?: () => void
 }
 
-export function ResourceTree({ name, schemas, schema, tables, table, base, revision, search, onSearch, onSchema, onTable, onRefresh, disabled = false, transferActions, viewActions, hidden, onHide, onStructure, onQuery }: Props) {
+export function ResourceTree({ name, schemas, schema, tables, table, base, revision, search, onSearch, onSchema, onTable, onRefresh, disabled = false, transferActions, viewActions, hidden, onHide, width, onWidthChange, onStructure, onQuery }: Props) {
+  const id = useId(), pane = useRef<HTMLElement>(null)
   const [sort, setSort] = useState<ResourceSort>("catalog")
   const [kinds, setKinds] = useState<ReadonlySet<ResourceKind>>(new Set(["table", "view"]))
   const visible = tables.filter(item => kinds.has(item.kind === "table" ? "table" : "view") && item.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()))
@@ -47,7 +50,7 @@ export function ResourceTree({ name, schemas, schema, tables, table, base, revis
     revealObject(table)
     setLocateRequest(value => value + 1)
   }
-  return <aside className={`${styles.tree} sidebar-material`} data-surface="database" data-hidden={hidden} aria-label="数据库资源">
+  return <aside id={id} ref={pane} className={`${styles.tree} sidebar-material`} data-surface="database" data-hidden={hidden} style={width === undefined ? undefined : { '--resource-tree-width': `${width}px` } as CSSProperties} aria-label="数据库资源">
     <div className={styles.toolbar}>{transferActions ?? <strong>数据库资源</strong>}<div className={styles.toolbarActions}>
       <button type="button" className={`${styles.iconButton} fouc-action`} aria-label="刷新数据库资源" title="刷新数据库资源" disabled={disabled} onClick={onRefresh}><ArrowsClockwise size={14} /></button>
       <button type="button" className={`${styles.iconButton} fouc-action`} aria-label="全部折叠数据库资源" title="全部折叠" disabled={disabled} onClick={() => { setCollapsed(new Set(["connection", "tables", "views", ...schemas.map(item => `schema:${item}`)])); setObjects(current => ({ ...current, expanded: new Set() })) }}><CaretDoubleUp size={14} /></button>
@@ -81,5 +84,6 @@ export function ResourceTree({ name, schemas, schema, tables, table, base, revis
     </div>
     {viewActions}
     <footer className={styles.footer}><span>{schemas.length} 个 Schema</span><span>{tables.length} 个对象</span></footer>
+    {!hidden && onWidthChange ? <ResourceTreeResize paneRef={pane} controls={id} onChange={onWidthChange} /> : null}
   </aside>
 }

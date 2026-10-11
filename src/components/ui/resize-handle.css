@@ -51,6 +51,17 @@ html .fouc-resize-handle[data-resize-axis="y"]:is(:hover, :focus-visible, :activ
   height: var(--drag-indicator-width);
 }
 
+/* 拖动高亮互斥：其他手柄可能保留键盘焦点，或因布局移动落在鼠标下方。
+   它们在当前手势结束前只显示常态边界，不能同时显示第二条黑线。 */
+html body:has(.fouc-resize-handle[data-resizing="true"]) .fouc-resize-handle:not([data-resizing="true"])::before {
+  width: var(--separator-width);
+  background: var(--resize-rest-color, transparent);
+}
+html body:has(.fouc-resize-handle[data-resizing="true"]) .fouc-resize-handle[data-resize-axis="y"]:not([data-resizing="true"])::before {
+  width: auto;
+  height: var(--separator-width);
+}
+
 /* 侧栏可裁切内容；指示线向内放置，避免 2px 线被 overflow 裁成 1px。 */
 .fouc-sidebar-resize { --resize-line-position: calc(100% - 1px); }
 

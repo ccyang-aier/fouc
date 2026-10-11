@@ -89,7 +89,7 @@ export function TransposedResultGrid({
   toolbarActions,
   onExit,
 }: Props) {
-  const [multi, setMulti] = useState(false),
+  const [multi, setMulti] = useState(layout.transposeMode === 'multiple'),
     [record, setRecord] = useState(initialRow);
   const [selection, setSelection] = useState(emptyGridSelection),
     [headers, setHeaders] = useState(true),

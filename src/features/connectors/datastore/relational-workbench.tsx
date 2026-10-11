@@ -21,6 +21,7 @@ import { databaseColumnValueFilter, removeDatabaseColumnFilter } from './grid/co
 import { TableQueryControls } from "./table-query-controls"
 import { TablePagination } from "./table-pagination"
 import { useTablePageSize } from "./use-table-page-size"
+import { TablePropertiesPanel } from './table-properties-panel'
 import { TableStructure } from "./table-structure"
 import { TableImportAction } from './table-import-action'
 import { TestDataAction } from './test-data-action'
@@ -43,7 +44,6 @@ import type { SchemaObject, SchemaSearchHit } from '@fouc/shared'
 import { WorkbenchShortcuts, WorkbenchTabs, type WorkbenchMode } from "./workbench-tabs"
 import { WorkbenchMetadata } from "./workbench-metadata"
 import { WorkbenchMenu } from "./workbench-menu"
-import { SqlDialog } from "./sql-library-dialog"
 import type { StructureTab } from "./structure-metadata"
 import nativeStyles from "./dbx-workbench.module.css"
 import styles from "./relational.module.css"
@@ -75,6 +75,8 @@ export function RelationalWorkbench({
   const [propertiesOpen, setPropertiesOpen] = useState(false)
   const [gridHeaderTarget, setGridHeaderTarget] = useState<HTMLElement | null>(null)
   const [gridToolsTarget, setGridToolsTarget] = useState<HTMLElement | null>(null)
+  const [gridEditToolsTarget, setGridEditToolsTarget] = useState<HTMLElement | null>(null)
+  const [dataExportTarget, setDataExportTarget] = useState<HTMLElement | null>(null)
   const [rowActionTarget, setRowActionTarget] = useState<HTMLElement | null>(null)
   const [footerExportTarget, setFooterExportTarget] = useState<HTMLElement | null>(null)
   const [initialObject, setInitialObject] = useState<SchemaObject | null>(null)
@@ -403,13 +405,14 @@ export function RelationalWorkbench({
             </select>
           </div>
           <WorkbenchTabs table={table} schema={schema} mode={mode} openedViews={openedViews} disabled={pending || leaving} onChange={changeView} onCloseView={view => void closeView(view)} onCloseTable={closeTable} onNewQuery={() => { setOpenRequest({ id: crypto.randomUUID(), sql: "", schema }); changeView("sql") }} onSqlTabsTarget={setSqlTabsTarget} />
-          {(mode === "data" || mode === "structure") && <WorkbenchMetadata table={table} schema={schema} columnCount={page?.table === table ? page.columns.length : 0} pending={pending} onProperties={() => setPropertiesOpen(true)} onGridHeader={setGridHeaderTarget} onGridTools={setGridToolsTarget}
+          {(mode === "data" || mode === "structure") && <WorkbenchMetadata table={table} schema={schema} columnCount={page?.table === table ? page.columns.length : 0} pending={pending} onProperties={() => setPropertiesOpen(value => !value)} propertiesOpen={propertiesOpen} onGridHeader={setGridHeaderTarget} onGridTools={setGridToolsTarget} onEditTools={setGridEditToolsTarget} onExportTools={setDataExportTarget}
+            generateAction={<TestDataAction session={currentSession} base={base} schema={schema} table={table} writable={writable} disabled={pending || busy || writeBusy} onUnlock={unlockSqlWrite} onImported={refresh} onBusyChange={setMutationBusy} />}
+            importAction={<TableImportAction base={base} sessionId={session.id} provider={session.provider} schema={schema} page={page} disabled={!writable || pending || busy || writeBusy} onImported={refresh} />}
             structureAction={<StructureEditAction base={base} schema={schema} table={table} disabled={!writable || !table || pending || busy || writeBusy} onApplied={refresh} />}
             tools={<>
               <button type="button" className="fouc-action" disabled={!table || pending} onClick={() => changeView("data")}><GridFour size={15} />数据浏览</button>
               <button type="button" className="fouc-action" disabled={!table || pending} onClick={() => changeView("structure")}><Database size={15} />结构浏览</button>
               <TableTransferAction session={session} name={name} schema={schema} table={table} disabled={pending || busy || writeBusy} />
-              <TestDataAction session={currentSession} base={base} schema={schema} table={table} writable={writable} disabled={pending || busy || writeBusy} onUnlock={unlockSqlWrite} onImported={refresh} onBusyChange={setMutationBusy} />
               <SchemaCompareAction base={base} provider={session.provider} schema={schema} table={table} tables={tables} schemas={schemas} disabled={pending || busy} />
               <TableClearAction base={base} session={currentSession} schema={schema} table={table} writable={writable} disabled={!table || tables.find(item => item.name === table)?.kind !== "table" || pending || busy || writeBusy} onUnlock={unlockSqlWrite} onBusyChange={setMutationBusy} onCleared={() => { setSelectedRow(null); setActiveCell(null); setSelection(null); refresh() }} />
             </>} />}
@@ -459,7 +462,7 @@ export function RelationalWorkbench({
                 selectedRow={selectedRow}
                 provider={session.provider} selection={selection} activeCell={activeCell} shortcutTarget={gridHost} onDraftsChange={setDrafts} commandRef={gridCommands}
                 toolbarTarget={rowActionTarget}
-                toolsTarget={gridToolsTarget}
+                toolsTarget={gridEditToolsTarget}
                 writable={writable}
                 disabled={busy || tables.find((item) => item.name === table)?.kind !== "table"}
                 onPending={setPending}
@@ -477,6 +480,7 @@ export function RelationalWorkbench({
           {mode === 'activity' && <DatabaseActivityPanel base={base} provider={session.provider} database={session.database} blocked={pending || writeBusy} />}
           {(mode === 'data' || mode === 'structure') && (
             <>
+              <div className={nativeStyles.dataWorkspace}>
               {mode === "structure" && table ? (
                 <TableStructure
                   session={currentSession}
@@ -518,7 +522,8 @@ export function RelationalWorkbench({
                   layoutScopeKey={`${session.connectionId ?? session.id}:${session.database}:${schema}:${table}`}
                   onSelect={setSelectedRow}
                   headerTarget={gridHeaderTarget}
-                  toolsTarget={gridToolsTarget}
+                  toolsTarget={gridEditToolsTarget}
+                  viewTarget={gridToolsTarget} exportMenuTarget={dataExportTarget}
                   exportTarget={footerExportTarget}
                   search={pageSearch}
                   sort={query.sort}
@@ -533,6 +538,8 @@ export function RelationalWorkbench({
                   onRefresh={refresh}
                 />
               )}
+              {propertiesOpen && table && <TablePropertiesPanel key={base} base={base} database={session.database} schema={schema} table={table} revision={revision} pending={pending || busy || writeBusy} onClose={() => setPropertiesOpen(false)} editAction={<StructureEditAction base={base} schema={schema} table={table} disabled={!writable || !table || pending || busy || writeBusy} onApplied={refresh} />} onOpenTable={(nextSchema, nextTable) => { selectSchema(nextSchema); openTable(nextTable) }} />}
+              </div>
               {page && mode === "data" && (
                 <TablePagination base={base} schema={schema} page={page} query={query} revision={revision}
                   offset={offset} limit={limit} defaultSize={defaultSize} loadTimeMs={loadTimeMs} disabled={busy || pending || leaving}
@@ -543,7 +550,6 @@ export function RelationalWorkbench({
           )}
         </main>
       </div>
-      {propertiesOpen && table ? <SqlDialog title={`表属性 · ${schema}.${table}`} className={nativeStyles.properties} onClose={() => setPropertiesOpen(false)}><div><TableStructure session={currentSession} writable={writable} onUnlock={unlockSqlWrite} onBusyChange={setMutationBusy} onStructureChanged={refresh} onWriteAccessChanged={setCurrentSession} base={base} schema={schema} table={table} revision={revision} pending={pending} onOpenTable={(nextSchema, nextTable) => { setPropertiesOpen(false); selectSchema(nextSchema); openTable(nextTable) }} /></div></SqlDialog> : null}
     </section>
   )
 }

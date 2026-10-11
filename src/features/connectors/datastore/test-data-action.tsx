@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Sparkle } from '@phosphor-icons/react/dist/csr/Sparkle';
+import { Database } from '@phosphor-icons/react/dist/csr/Database';
 import type { RelationalSession, RelationalTableStructure } from '@fouc/shared';
 import { backendFetch } from '@/lib/backend';
 import { SqlDialog } from './sql-library-dialog';
@@ -26,7 +26,7 @@ export function TestDataAction(props: Props) {
   function close() { if (!busy) setTarget(null); }
   function changeBusy(value: boolean) { setBusy(value); props.onBusyChange(value); }
   return <>
-    <button type="button" aria-label="生成当前表测试数据" title="基于真实字段生成测试数据 · 先预览再确认追加" disabled={props.disabled || !props.schema || !props.table} onClick={() => setTarget({ schema: props.schema, table: props.table })}><Sparkle size={15}/><span>生成数据</span></button>
+    <button type="button" className="fouc-menu-item" aria-label="生成当前表测试数据" title="基于真实字段生成测试数据 · 先预览再确认追加" disabled={props.disabled || !props.schema || !props.table} onClick={() => setTarget({ schema: props.schema, table: props.table })}><Database size={16}/><span>生成数据</span></button>
     {target && <SqlDialog title="生成测试数据" className={styles.dialog} busy={busy} onClose={close}>
       <TestDataSource key={`${props.base}\0${target.schema}\0${target.table}`} {...props} {...target} onBusyChange={changeBusy} onClose={close}/>
     </SqlDialog>}

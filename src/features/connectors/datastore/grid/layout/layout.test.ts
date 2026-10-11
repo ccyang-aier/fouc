@@ -3,12 +3,34 @@ import type { DatabaseQueryResult } from '@fouc/shared'
 import { formatGridSelection } from '../clipboard'
 import { captureResultGridSelection, emptyGridSelection, gridSelectionScope, restoreResultGridSelection, selectGridTarget } from '../selection-controller'
 import { applyColumnFormatter, validateColumnFormatter } from './formatter'
-import { allNullGridColumns, defaultGridLayout, gridColumnKeys, hideGridColumns, loadGridLayout, moveGridColumn, saveGridLayout, setGridColumnVisible, visibleGridColumns } from './model'
+import { allNullGridColumns, defaultGridLayout, displayedGridColumns, gridColumnKeys, hideGridColumns, loadGridLayout, moveGridColumn, reorderGridFields, saveGridLayout, setGridColumnVisible, visibleGridColumns } from './model'
 import { remapGridColumnSelection } from './selection-map'
 import { fitGridColumn, percentileWidth } from './width'
 
 const result: DatabaseQueryResult = { columns: ['id', 'amount', 'label'], rows: [[1, '9007199254740993', 'Alice'], [2, '0.1', 'Bob']], columnTypes: ['int', 'decimal', 'text'], columnSortables: [true, true, true], affectedRows: 0, executionTimeMs: 1, truncated: false, hasMore: false, sessionId: null, messages: [] }
 describe('grid layout and raw source mapping', () => {
+  test('field ordering includes hidden fields and crossing frozen groups adopts the destination', () => {
+    const keys = gridColumnKeys(result.columns), original = { ...defaultGridLayout(), hidden: [keys[1]], pins: { [keys[0]]: 'left' as const } }
+    const moved = reorderGridFields(original, keys, 0, 2)
+    expect(moved.order).toEqual([keys[1], keys[2], keys[0]])
+    expect(moved.hidden).toEqual([keys[1]])
+    expect(moved.pins).toEqual({})
+    expect(visibleGridColumns(keys, moved)).toEqual([2, 0])
+    expect(original.pins).toEqual({ [keys[0]]: 'left' })
+  })
+  test('NULL visibility is derived from loaded rows and never overwrites saved explicit visibility', () => {
+    const source = { ...result, rows: [[null, null, 'x'], [null, null, 'y']] }, keys = gridColumnKeys(source.columns)
+    const layout = { ...defaultGridLayout(), hideNullColumns: true }
+    expect(displayedGridColumns(source, keys, layout)).toEqual([2])
+    expect(layout.hidden).toEqual([])
+    expect(displayedGridColumns({ ...source, rows: [[null, 1, 'x']] }, keys, layout)).toEqual([1, 2])
+    expect(displayedGridColumns({ ...source, rows: [[null, null, null]] }, keys, layout)).toHaveLength(1)
+    const saved = new Map<string, string>(), storage = { getItem: (key: string) => saved.get(key) ?? null, setItem: (key: string, value: string) => { saved.set(key, value) }, removeItem: (key: string) => { saved.delete(key) } }
+    const preferences = { ...layout, widthMode: 'fill' as const, searchMode: 'highlight' as const, rowNumberMode: 'source' as const, transposeMode: 'multiple' as const, booleanMode: 'checkbox' as const, numericAlign: 'left' as const, typeColors: true, copyMode: 'json' as const, copyHeaders: true }
+    saveGridLayout(storage, 'A', preferences)
+    expect(loadGridLayout(storage, 'A')).toEqual(preferences)
+    expect(loadGridLayout(storage, 'B')).toEqual(defaultGridLayout())
+  })
   test('case and repeated columns stay unique, unknown columns append, hiding keeps one visible', () => {
     const keys = gridColumnKeys(['id', 'ID', 'id']); expect(new Set(keys).size).toBe(3)
     const layout = { ...defaultGridLayout(), order: [keys[2], keys[0]], hidden: [keys[0]] }

@@ -4,11 +4,11 @@ import { validateColumnFormatter, type ColumnFormatter } from './formatter'
 
 export type GridDensity = 'compact' | 'standard' | 'comfortable'
 export type GridPin = 'left' | 'right'
-export type GridLayout = { order: string[]; hidden: string[]; pins: Record<string, GridPin>; widths: Record<string, number>; formatters: Record<string, ColumnFormatter>; density: GridDensity; font: 'mono' | 'sans'; fontSize: number }
+export type GridLayout = { order: string[]; hidden: string[]; pins: Record<string, GridPin>; widths: Record<string, number>; formatters: Record<string, ColumnFormatter>; density: GridDensity; font: 'mono' | 'sans'; fontSize: number; widthMode: 'content' | 'fill'; searchMode: 'filter' | 'highlight'; rowNumberMode: 'view' | 'source'; transposeMode: 'current' | 'multiple'; numericAlign: 'left' | 'right'; booleanMode: 'text' | 'checkbox'; typeColors: boolean; hideNullColumns: boolean; copyMode: 'smart' | 'tsv' | 'csv' | 'json'; copyHeaders: boolean }
 export type GridLayoutStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 export const GRID_LAYOUT_PREFIX = 'fouc:grid-layout:'
 export const GRID_COLUMN_MIN_WIDTH = 60, GRID_COLUMN_MAX_WIDTH = 1200
-export function defaultGridLayout(): GridLayout { return { order: [], hidden: [], pins: {}, widths: {}, formatters: {}, density: 'standard', font: 'sans', fontSize: 14 } }
+export function defaultGridLayout(): GridLayout { return { order: [], hidden: [], pins: {}, widths: {}, formatters: {}, density: 'standard', font: 'sans', fontSize: 14, widthMode: 'content', searchMode: 'filter', rowNumberMode: 'view', transposeMode: 'current', numericAlign: 'right', booleanMode: 'text', typeColors: false, hideNullColumns: false, copyMode: 'smart', copyHeaders: false } }
 
 /** Preserve case and repeated names; aliases are distinct columns, never accidentally merged. */
 export function gridColumnKeys(columns: readonly string[]): string[] {
@@ -20,6 +20,10 @@ export function orderedGridColumns(keys: readonly string[], order: readonly stri
   for (const key of order) { const index = indexes.get(key); if (index !== undefined && !used.has(index)) { result.push(index); used.add(index) } }
   for (let index = 0; index < keys.length; index++) if (!used.has(index)) result.push(index)
   return result
+}
+export function orderedGridFields(keys: readonly string[], layout: GridLayout): number[] {
+  const ordered = orderedGridColumns(keys, layout.order)
+  return [...ordered.filter(index => layout.pins[keys[index]] === 'left'), ...ordered.filter(index => !layout.pins[keys[index]]), ...ordered.filter(index => layout.pins[keys[index]] === 'right')]
 }
 export function visibleGridColumns(keys: readonly string[], layout: GridLayout): number[] {
   const hidden = new Set(layout.hidden), ordered = orderedGridColumns(keys, layout.order)
@@ -61,6 +65,18 @@ export function hideGridColumns(layout: GridLayout, keys: readonly string[], ind
   return { ...layout, hidden: [...hidden] }
 }
 export function gridRowHeight(density: GridDensity): number { return density === 'compact' ? 24 : density === 'comfortable' ? 40 : 28 }
+/** Field-list moves include hidden columns; the list and the stored order stay in sync. */
+export function reorderGridFields(layout: GridLayout, keys: readonly string[], source: number, target: number): GridLayout {
+  const order = orderedGridFields(keys, layout)
+  if (source < 0 || source >= order.length || target < 0 || target >= order.length || source === target) return layout
+  const column = order[source], destinationPin = layout.pins[keys[order[target]]], pins = { ...layout.pins }
+  order.splice(source, 1); order.splice(target, 0, column)
+  if (destinationPin) pins[keys[column]] = destinationPin; else delete pins[keys[column]]
+  return { ...layout, order: order.map(index => keys[index]), pins }
+}
+export function displayedGridColumns(result: Pick<DatabaseQueryResult, 'columns' | 'rows'>, keys: readonly string[], layout: GridLayout): number[] {
+  return visibleGridColumns(keys, layout.hideNullColumns ? hideGridColumns(layout, keys, allNullGridColumns(result)) : layout)
+}
 function record(value: unknown): value is Record<string, unknown> { return !!value && typeof value === 'object' && !Array.isArray(value) }
 /** Read only the current schema. No legacy or cross-scope fallback. Storage failures leave a usable local layout. */
 export function loadGridLayout(storage: GridLayoutStorage | undefined, scope: string | undefined): GridLayout {
@@ -78,6 +94,16 @@ export function loadGridLayout(storage: GridLayoutStorage | undefined, scope: st
     if (raw.density === 'compact' || raw.density === 'standard' || raw.density === 'comfortable') layout.density = raw.density
     if (raw.font === 'sans' || raw.font === 'mono') layout.font = raw.font
     if (typeof raw.fontSize === 'number' && Number.isInteger(raw.fontSize) && raw.fontSize >= 12 && raw.fontSize <= 16) layout.fontSize = raw.fontSize
+    if (raw.widthMode === 'content' || raw.widthMode === 'fill') layout.widthMode = raw.widthMode
+    if (raw.searchMode === 'filter' || raw.searchMode === 'highlight') layout.searchMode = raw.searchMode
+    if (raw.rowNumberMode === 'view' || raw.rowNumberMode === 'source') layout.rowNumberMode = raw.rowNumberMode
+    if (raw.transposeMode === 'current' || raw.transposeMode === 'multiple') layout.transposeMode = raw.transposeMode
+    if (raw.numericAlign === 'left' || raw.numericAlign === 'right') layout.numericAlign = raw.numericAlign
+    if (raw.booleanMode === 'text' || raw.booleanMode === 'checkbox') layout.booleanMode = raw.booleanMode
+    if (typeof raw.typeColors === 'boolean') layout.typeColors = raw.typeColors
+    if (typeof raw.hideNullColumns === 'boolean') layout.hideNullColumns = raw.hideNullColumns
+    if (typeof raw.copyHeaders === 'boolean') layout.copyHeaders = raw.copyHeaders
+    if (['smart', 'tsv', 'csv', 'json'].includes(String(raw.copyMode))) layout.copyMode = raw.copyMode as GridLayout['copyMode']
     return layout
   } catch { return layout }
 }

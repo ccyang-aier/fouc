@@ -1,5 +1,7 @@
 "use client"
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
+import { getOverlayRoot } from '@/lib/overlay-root'
 import { X } from '@phosphor-icons/react'
 import { sqlFolderPath, type SavedSqlDocument, type SavedSqlLibrary } from '@fouc/shared'
 import { backendFetch } from '@/lib/backend'
@@ -8,9 +10,12 @@ import styles from './sql-library.module.css'
 
 export function SqlDialog({ title, busy = false, role = 'dialog', className = '', onClose, children }: { title: string; busy?: boolean; role?: 'dialog' | 'alertdialog'; className?: string; onClose: () => void; children: ReactNode }) {
   const dialog = useRef<HTMLDialogElement>(null)
-  useEffect(() => { dialog.current?.showModal() }, [])
-  return <dialog ref={dialog} role={role} className={`${common.dialog} ${styles.dialog} ${className}`} aria-label={title} onCancel={(event) => { event.preventDefault(); if (!busy) onClose() }}>
-    <header className={common.dialogHead}><h2>{title}</h2><button type="button" className="fouc-action" disabled={busy} aria-label={`关闭${title}`} onClick={onClose}><X size={18} /></button></header>{children}</dialog>
+  const origin = useRef<HTMLSpanElement>(null), [host, setHost] = useState<HTMLElement | null>(null)
+  // Leave collapsing menus, while retaining the workbench's fonts and SQL tokens.
+  useLayoutEffect(() => { setHost(origin.current?.closest<HTMLElement>('.mw') ?? getOverlayRoot() ?? document.body) }, [])
+  useEffect(() => { dialog.current?.showModal() }, [host])
+  return <><span ref={origin} hidden />{host && createPortal(<dialog ref={dialog} role={role} className={`${common.dialog} ${styles.dialog} ${className}`} aria-label={title} onCancel={(event) => { event.preventDefault(); if (!busy) onClose() }}>
+    <header className={common.dialogHead}><h2>{title}</h2><button type="button" className="fouc-action" disabled={busy} aria-label={`关闭${title}`} onClick={onClose}><X size={18} /></button></header>{children}</dialog>, host)}</>
 }
 export function SaveSqlDialog({ base, sql, database, schema, library, file, onClose, onSaved }: {
   base: string; sql: string; database: string; schema: string | null; library: SavedSqlLibrary | null; file: Pick<SavedSqlDocument, 'id' | 'name' | 'folderId' | 'version'> | null;

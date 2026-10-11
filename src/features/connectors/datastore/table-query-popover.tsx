@@ -53,7 +53,7 @@ export function TableQueryPopover({ id, open, anchor, returnFocus, interactionSc
       close()
     }
     place()
-    ;(surface.querySelector<HTMLElement>("[data-autofocus]") ?? surface.querySelector<HTMLElement>("input:not(:disabled), select:not(:disabled)") ?? surface.querySelector<HTMLElement>("button:not(:disabled)") ?? surface).focus({ preventScroll: true })
+    ;(surface.querySelector<HTMLElement>("[data-autofocus]:not(:disabled)") ?? surface.querySelector<HTMLElement>("input:not(:disabled)") ?? surface.querySelector<HTMLElement>("button:not(:disabled)") ?? surface).focus({ preventScroll: true })
     const observer = new ResizeObserver(place)
     observer.observe(surface)
     window.addEventListener("resize", place)

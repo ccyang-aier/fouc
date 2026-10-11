@@ -2,9 +2,10 @@
 
 import { Check } from "@phosphor-icons/react"
 import { DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
-import type { DatabaseColumnInfo, RelationalSort } from "@fouc/shared"
+import type { DatabaseColumnInfo } from "@fouc/shared"
 import type { SortDraft } from "./table-sort-model"
 import { QueryRuleActions, QueryRuleHandle } from "./table-query-row-actions"
+import { TableQuerySelect } from "./table-query-select"
 import { useQueryRuleReorder } from "./use-query-rule-reorder"
 import styles from "./table-query.module.css"
 
@@ -24,7 +25,10 @@ export function TableSortBuilder({ sort, columns, disabled, onChange }: { sort: 
         <DropdownMenuItem disabled={disabled} onSelect={() => update(item.id, { nulls: "first" })}><span className={styles.menuCheck}>{item.nulls === "first" && <Check size={16} />}</span>NULL 最前</DropdownMenuItem>
         <DropdownMenuItem disabled={disabled} onSelect={() => update(item.id, { nulls: "last" })}><span className={styles.menuCheck}>{item.nulls === "last" && <Check size={16} />}</span>NULL 最后</DropdownMenuItem>
       </QueryRuleHandle>
-      <div className={styles.sortFields}><select aria-label={`排序字段 ${index + 1}`} disabled={disabled || !item.enabled} value={item.column} onChange={event => update(item.id, { column: event.target.value })}><option value="" disabled>选择字段</option>{columns.filter(column => column.name === item.column || !sort.some(rule => rule.column === column.name && rule.enabled)).map(column => <option key={column.name} value={column.name}>{column.name}</option>)}</select><select aria-label={`排序方向 ${index + 1}`} disabled={disabled || !item.enabled} value={item.direction} onChange={event => update(item.id, { direction: event.target.value as RelationalSort["direction"] })}><option value="asc">ASC</option><option value="desc">DESC</option></select></div>
+      <div className={styles.sortFields}>
+        <TableQuerySelect label={`排序字段 ${index + 1}`} placeholder="选择字段" autoFocus disabled={disabled || !item.enabled} value={item.column} options={columns.filter(column => column.name === item.column || !sort.some(rule => rule.column === column.name && rule.enabled)).map(column => ({ value: column.name, label: column.name }))} onChange={column => update(item.id, { column })} />
+        <TableQuerySelect label={`排序方向 ${index + 1}`} disabled={disabled || !item.enabled} value={item.direction} options={[{ value: "asc", label: "ASC" }, { value: "desc", label: "DESC" }]} onChange={direction => update(item.id, { direction })} />
+      </div>
       <QueryRuleActions label="排序" disabled={disabled} enabled={item.enabled} onOnly={() => onChange(sort.map(rule => ({ ...rule, enabled: rule.id === item.id })))} onToggle={() => update(item.id, { enabled: !item.enabled })} onRemove={() => onChange(sort.filter(rule => rule.id !== item.id))} />
     </div>)}
   </section>

@@ -373,7 +373,7 @@ export function RelationalWorkbench({
             </select>
           </div>
           <WorkbenchTabs table={table} schema={schema} mode={mode} openedViews={openedViews} disabled={pending || leaving} onChange={changeView} onCloseView={view => void closeView(view)} onCloseTable={() => { setTable(""); setPage(null); setSelectedRow(null); setMode("data") }} onNewQuery={() => { setOpenRequest({ id: crypto.randomUUID(), sql: "", schema }); changeView("sql") }} onSqlTabsTarget={setSqlTabsTarget} />
-          {(mode === "data" || mode === "structure") && <WorkbenchMetadata provider={session.info.productName ?? session.provider} table={table} schema={schema} columnCount={page?.table === table ? page.columns.length : 0} pending={pending} onProperties={() => setPropertiesOpen(true)} onGridHeader={setGridHeaderTarget} onGridTools={setGridToolsTarget}
+          {(mode === "data" || mode === "structure") && <WorkbenchMetadata table={table} schema={schema} columnCount={page?.table === table ? page.columns.length : 0} pending={pending} onProperties={() => setPropertiesOpen(true)} onGridHeader={setGridHeaderTarget} onGridTools={setGridToolsTarget}
             structureAction={<StructureEditAction base={base} schema={schema} table={table} disabled={!writable || !table || pending || busy || writeBusy} onApplied={refresh} />}
             tools={<>
               <button type="button" className="fouc-action" disabled={!table || pending} onClick={() => changeView("data")}><GridFour size={15} />数据浏览</button>

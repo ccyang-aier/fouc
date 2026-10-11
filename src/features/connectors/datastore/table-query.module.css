@@ -72,7 +72,6 @@
 .popover button { cursor: pointer; }
 .popover button:disabled:not([aria-busy="true"]),
 .conditionIcon:disabled { opacity: .4; cursor: default; }
-.popover select,
 .popover input {
   min-width: 0;
   height: 34px;
@@ -85,11 +84,17 @@
   outline: none;
   box-shadow: none;
 }
-.popover select { cursor: pointer; }
 .queryForm { font-size: 12px; }
-.queryForm :is(input, select) { height: 30px; padding: 0 8px; font-size: 12px; }
-.popover :is(input, select):focus { border-color: var(--accent); outline: none; box-shadow: none; }
-.popover :is(input, select):disabled { cursor: default; }
+.queryForm input { height: 30px; padding: 0 8px; font-size: 12px; }
+.popover input:focus { border-color: var(--accent); outline: none; box-shadow: none; }
+.popover input:disabled { cursor: default; opacity: .4; }
+.querySelect { display: flex; align-items: center; gap: 6px; min-width: 0; width: 100%; height: 30px; padding: 0 8px; border: 1px solid var(--control-border); border-radius: 6px; background: var(--panel); color: var(--ink); font-size: 12px; text-align: left; outline: none; box-shadow: none; }
+.querySelect > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.querySelect > svg { flex-shrink: 0; color: var(--muted-strong); }
+.querySelect[data-empty="true"] > span { color: var(--muted-strong); }
+.querySelect:is(:focus-visible, [aria-expanded="true"]) { border-color: var(--accent); }
+.selectMenu { min-width: max(128px, var(--radix-dropdown-menu-trigger-width)); max-width: min(360px, calc(100vw - 24px)); max-height: min(280px, var(--radix-dropdown-menu-content-available-height)); overflow-y: auto; scrollbar-width: thin; }
+.selectOption { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .popoverHeader {
   display: flex;
   flex: none;
@@ -131,19 +136,17 @@
 .rule { display: flex; align-items: flex-start; gap: 6px; min-width: 0; }
 .ruleFields { display: grid; grid-template-columns: minmax(75px, 1fr) minmax(86px, .8fr) minmax(100px, 1.7fr); flex: 1; min-width: 0; gap: 6px; }
 .ruleFields > input:last-child:nth-child(4) { grid-column: 3; }
-.ruleFields > select { width: 100%; }
 .noValue { display: flex; align-items: center; height: 30px; color: var(--muted); padding: 0 8px; }
 .ruleActions { display: flex; align-items: center; flex-shrink: 0; gap: 2px; }
 .ruleActions button { display: flex; align-items: center; justify-content: center; width: 24px; height: 30px; padding: 0; border-radius: 4px; color: var(--ink); }
-.rule[data-enabled="false"] .ruleFields,
-.sortRow[data-enabled="false"] .sortFields { opacity: .4; }
 .sorting { display: flex; flex-direction: column; gap: 6px; }
 .sortFields { display: flex; flex: 1; min-width: 0; gap: 6px; }
-.sortFields select:first-child { flex: 1; min-width: 100px; }
-.sortFields select:last-child { flex: none; width: 72px; }
+.sortFields > .querySelect:first-child { flex: 1; min-width: 100px; }
+.sortFields > .querySelect:last-child { flex: none; width: 72px; }
 .menuCheck { display: inline-flex; align-items: center; justify-content: center; width: 16px; }
 .popoverMenu { z-index: 80; }
 .popoverFooter { display: flex; flex: none; align-items: center; gap: 6px; padding: 5px 10px 10px; }
+.queryForm[role="dialog"] > .popoverFooter { padding-bottom: calc(var(--dialog-footer-block) + 4px); }
 .addCondition { display: flex; align-items: center; }
 .addCondition > button:last-child { width: 22px; padding: 0; }
 .popoverFooter .apply { background: var(--ink); color: var(--panel); padding: 0 13px; }
@@ -164,6 +167,6 @@
   .popoverFooter { gap: 4px; }
   .popoverFooter button { padding: 0 6px; }
   .sortFields { gap: 5px; }
-  .sortFields select:first-child { min-width: 70px; }
-  .sortFields select:last-child { width: 65px; }
+  .sortFields > .querySelect:first-child { min-width: 70px; }
+  .sortFields > .querySelect:last-child { width: 65px; }
 }

@@ -2,9 +2,10 @@
 
 import { Eye, EyeSlash, Plus, X } from "@phosphor-icons/react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { RELATIONAL_FILTER_OPERATORS, type DatabaseColumnInfo, type RelationalFilterOperator } from "@fouc/shared"
+import { RELATIONAL_FILTER_OPERATORS, type DatabaseColumnInfo } from "@fouc/shared"
 import { filterLabels, needsFilterValue, newCondition, newGroup, type FilterDraft } from "./table-filter-model"
 import { QueryRuleActions, QueryRuleHandle } from "./table-query-row-actions"
+import { TableQuerySelect } from "./table-query-select"
 import { useQueryRuleReorder } from "./use-query-rule-reorder"
 import styles from "./table-query.module.css"
 
@@ -62,8 +63,8 @@ export function TableFilterBuilder(props: FilterBuilderProps) {
   const fieldsDisabled = disabled || !node.enabled
   return <div className={styles.rule} data-enabled={node.enabled}>
     <div className={styles.ruleFields}>
-      <select aria-label="筛选字段" disabled={fieldsDisabled} value={node.column} onChange={event => onChange({ ...node, column: event.target.value })}><option value="" disabled>字段</option>{columns.map(column => <option key={column.name} value={column.name}>{column.name}</option>)}</select>
-      <select aria-label="筛选操作符" disabled={fieldsDisabled} value={node.operator} onChange={event => onChange({ ...node, operator: event.target.value as RelationalFilterOperator })}>{RELATIONAL_FILTER_OPERATORS.map(operator => <option key={operator} value={operator}>{filterLabels[operator]}</option>)}</select>
+      <TableQuerySelect label="筛选字段" placeholder="字段" autoFocus disabled={fieldsDisabled} value={node.column} options={columns.map(column => ({ value: column.name, label: column.name }))} onChange={column => onChange({ ...node, column })} />
+      <TableQuerySelect label="筛选操作符" disabled={fieldsDisabled} value={node.operator} options={RELATIONAL_FILTER_OPERATORS.map(operator => ({ value: operator, label: filterLabels[operator] }))} onChange={operator => onChange({ ...node, operator })} />
       {needsFilterValue(node.operator) ? list ? <input aria-label="筛选值列表" disabled={fieldsDisabled} value={node.values} placeholder={'JSON 数组：["a", "b", null]'} onChange={event => onChange({ ...node, values: event.target.value })} /> : <input aria-label="筛选值" disabled={fieldsDisabled} value={node.value} placeholder="值" onChange={event => onChange({ ...node, value: event.target.value })} /> : <span className={styles.noValue}>无需值</span>}
       {range && <input aria-label="区间结束值" disabled={fieldsDisabled} value={node.endValue} placeholder="区间结束" onChange={event => onChange({ ...node, endValue: event.target.value })} />}
     </div>

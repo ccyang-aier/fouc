@@ -74,7 +74,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 22px;
+  padding: var(--dialog-section-gap) var(--dialog-footer-inset) calc(var(--dialog-section-gap) / 2);
 }
 .dialogHead > div {
   display: flex;
@@ -97,7 +97,7 @@
 .formBody {
   display: grid;
   gap: 15px;
-  padding: 20px 22px;
+  padding: calc(var(--dialog-section-gap) / 2) var(--dialog-footer-inset) var(--dialog-section-gap);
 }
 .formBody label {
   display: grid;

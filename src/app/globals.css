@@ -76,7 +76,8 @@
   --action-surface-hover-bg: #eef0f3;
   --action-nested-hover-bg: color-mix(in srgb, var(--ink) 8%, var(--panel));
   --dialog-action-height: 30px;
-  --dialog-footer-block: 8px;
+  --dialog-section-gap: 16px;
+  --dialog-footer-block: 16px;
   --dialog-footer-inset: 22px;
 
   /* ── 字号基准（字体族默认栈由 @theme 定义，属性映射见下方） ── */
@@ -463,6 +464,7 @@ html :is(dialog, [role="dialog"], [role="alertdialog"]) :is(footer:has(button), 
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  height: auto;
   flex-shrink: 0;
   flex-wrap: wrap;
   gap: 8px;
@@ -473,6 +475,7 @@ html :is(dialog, [role="dialog"], [role="alertdialog"]) :is(footer:has(button), 
   box-sizing: border-box;
   height: var(--dialog-action-height);
   min-height: var(--dialog-action-height);
+  flex-shrink: 0;
   padding-block: 0;
   line-height: 1;
   white-space: nowrap;

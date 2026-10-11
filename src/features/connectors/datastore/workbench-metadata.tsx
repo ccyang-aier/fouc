@@ -10,7 +10,7 @@ export function WorkbenchMetadata({ provider, table, schema, columnCount, struct
   tools: ReactNode; onGridHeader: (node: HTMLSpanElement | null) => void; onGridTools: (node: HTMLDivElement | null) => void
 }) {
   return <div className={styles.metadata}>
-    <div className={styles.chips}><span>{provider}</span><strong title={table}>{table || "选择数据表"}</strong><span>{schema}@{schema}</span><span>{columnCount} 字段</span></div>
+    <div className={styles.chips}><span title="数据库类型">{provider}</span><strong title={table}>{table || "选择数据表"}</strong><span title="当前 Schema">{schema}</span><span title="数据表的全部字段数量">{columnCount} 字段</span></div>
     <div className={styles.metadataActions}>
       {structureAction}
       <span ref={onGridHeader} className={styles.gridHeaderSlot} />

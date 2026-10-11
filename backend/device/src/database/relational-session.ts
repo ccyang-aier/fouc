@@ -33,7 +33,6 @@ import {
   type DatabaseObjectInfo,
   type DatabaseQueryResult,
   type RelationalTablePage,
-  type RelationalTableQueryPreview,
   type RelationalTableStructure,
   type RelationalConnectInput,
   type RelationalSession,
@@ -501,14 +500,14 @@ export class RelationalSessionManager {
       columns,
     };
   }
-  private async planPage(
+  async page(
     id: string,
     schema: string,
     table: string,
     offset = 0,
     limit = 100,
     queryValue: unknown = { filter: null, sort: [] },
-  ) {
+  ): Promise<RelationalTablePage> {
     if (
       !Number.isInteger(offset) ||
       offset < 0 ||
@@ -531,46 +530,6 @@ export class RelationalSessionManager {
       offset,
       limit,
       driver.quoteIdentifier,
-    );
-    return { session, driver, query, columns, compiled };
-  }
-  async previewPage(
-    id: string,
-    schema: string,
-    table: string,
-    offset = 0,
-    limit = 100,
-    queryValue: unknown = { filter: null, sort: [] },
-  ): Promise<RelationalTableQueryPreview> {
-    const { query, compiled } = await this.planPage(
-      id,
-      schema,
-      table,
-      offset,
-      limit,
-      queryValue,
-    );
-    return {
-      query,
-      statement: { sql: compiled.sql, parameters: compiled.displayParameters },
-      stableOrder: compiled.stableOrder,
-    };
-  }
-  async page(
-    id: string,
-    schema: string,
-    table: string,
-    offset = 0,
-    limit = 100,
-    queryValue: unknown = { filter: null, sort: [] },
-  ): Promise<RelationalTablePage> {
-    const { session, driver, query, columns, compiled } = await this.planPage(
-      id,
-      schema,
-      table,
-      offset,
-      limit,
-      queryValue,
     );
     const result = await driver.read(compiled.sql, schema, limit, compiled.parameters);
     return {

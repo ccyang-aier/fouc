@@ -405,8 +405,6 @@ export function RelationalWorkbench({
             <div hidden={mode !== "data"}>
               <TableQueryControls
                 key={`query:${schema}:${page.table}`}
-                base={base}
-                schema={schema}
                 page={page}
                 query={query}
                 limit={limit}

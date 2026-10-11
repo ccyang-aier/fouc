@@ -202,21 +202,6 @@ export function relationalRoutes(
       ),
     });
   });
-  app.post(base + '/:id/schemas/:schema/tables/:table/rows/preview', async (c) => {
-    const body = await c.req.json().catch(() => null);
-    if (!body || typeof body !== 'object') throw new DatabaseInputError('表查询参数无效');
-    return c.json({
-      ok: true,
-      data: await sessions.previewPage(
-        c.req.param('id')!,
-        c.req.param('schema')!,
-        c.req.param('table')!,
-        body.offset ?? 0,
-        body.limit ?? 100,
-        body,
-      ),
-    });
-  });
   app.post(base + '/:id/query', async (c) => {
     const body = await c.req.json().catch(() => null);
     if (

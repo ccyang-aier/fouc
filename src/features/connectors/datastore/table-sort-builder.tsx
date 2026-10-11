@@ -5,9 +5,11 @@ import { DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdow
 import type { DatabaseColumnInfo, RelationalSort } from "@fouc/shared"
 import type { SortDraft } from "./table-sort-model"
 import { QueryRuleActions, QueryRuleHandle } from "./table-query-row-actions"
+import { useQueryRuleReorder } from "./use-query-rule-reorder"
 import styles from "./table-query.module.css"
 
 export function TableSortBuilder({ sort, columns, disabled, onChange }: { sort: SortDraft[]; columns: DatabaseColumnInfo[]; disabled: boolean; onChange: (sort: SortDraft[]) => void }) {
+  const { list: listRef, row: rowProps, handle: dragHandle } = useQueryRuleReorder(sort.length, disabled, move)
   function update(id: string, value: Partial<SortDraft>) { onChange(sort.map(item => item.id === id ? { ...item, ...value } : item)) }
   function move(index: number, target: number) {
     if (target < 0 || target >= sort.length) return
@@ -15,9 +17,9 @@ export function TableSortBuilder({ sort, columns, disabled, onChange }: { sort: 
     next.splice(target, 0, item!)
     onChange(next)
   }
-  return <section className={styles.sorting} aria-label="数据库排序规则">
-    {sort.map((item, index) => <div className={styles.sortRow} data-enabled={item.enabled} key={item.id} onDragOver={event => { if (!disabled && event.dataTransfer.types.includes("text/x-fouc-sort-id")) event.preventDefault() }} onDrop={event => { const source = sort.findIndex(rule => rule.id === event.dataTransfer.getData("text/x-fouc-sort-id")); if (!disabled && source >= 0) { event.preventDefault(); move(source, index) } }}>
-      <QueryRuleHandle id={item.id} kind="sort" index={index} count={sort.length} disabled={disabled} onMove={target => move(index, target)}>
+  return <section ref={listRef} data-query-rule-list className={styles.sorting} aria-label="数据库排序规则">
+    {sort.map((item, index) => <div key={item.id} {...rowProps(index)} className={styles.sortRow} data-enabled={item.enabled}>
+      <QueryRuleHandle kind="sort" index={index} count={sort.length} disabled={disabled} onMove={target => move(index, target)} drag={dragHandle(index)}>
         <DropdownMenuSeparator />
         <DropdownMenuItem disabled={disabled} onSelect={() => update(item.id, { nulls: "first" })}><span className={styles.menuCheck}>{item.nulls === "first" && <Check size={16} />}</span>NULL 最前</DropdownMenuItem>
         <DropdownMenuItem disabled={disabled} onSelect={() => update(item.id, { nulls: "last" })}><span className={styles.menuCheck}>{item.nulls === "last" && <Check size={16} />}</span>NULL 最后</DropdownMenuItem>

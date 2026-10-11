@@ -159,7 +159,7 @@ describe('real SQLite connection and API', () => {
         }),
       ).rejects.toThrow('不存在');
       await expect(
-        manager.previewPage('missing-session', 'main', 'items', 0, 100, query),
+        manager.page('missing-session', 'main', 'items', 0, 100, query),
       ).rejects.toThrow('断开');
     } finally {
       await manager.shutdown();

@@ -101,7 +101,6 @@
 .popoverHeader strong { font-size: 12px; font-weight: 500; }
 .popoverHeader button,
 .popoverFooter button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 0 7px; height: 30px; border-radius: 5px; white-space: nowrap; font-size: 12px; }
-.popoverHeader .options { width: 28px; height: 28px; padding: 0; box-shadow: none; outline: none; }
 .popoverHeader [data-variant="destructive"],
 .ruleActions [data-variant="destructive"],
 .groupHeader [data-variant="destructive"] { color: var(--err-ink); }
@@ -113,9 +112,16 @@
 .groupHeader > span:first-child { color: var(--muted-strong); font-size: 12px; }
 .groupHeader button { display: flex; align-items: center; justify-content: center; height: 26px; width: 26px; border-radius: 4px; }
 .ruleWrap,
-.sortRow { display: flex; align-items: flex-start; gap: 6px; min-width: 0; }
+.sortRow { position: relative; display: flex; align-items: flex-start; gap: 6px; min-width: 0; }
+.ruleWrap[data-drop-edge]::before,
+.sortRow[data-drop-edge]::before { content: ""; position: absolute; z-index: 1; left: 0; right: 0; height: 2px; top: -4px; background: #171717; box-shadow: 0 0 0 1px var(--panel); pointer-events: none; }
+.ruleWrap[data-drop-edge="after"]::before,
+.sortRow[data-drop-edge="after"]::before { top: auto; bottom: -4px; }
+[data-rule-dragging="true"] > .grip { cursor: grabbing !important; color: var(--ink); }
+.ruleWrap[data-rule-dragging="true"],
+.sortRow[data-rule-dragging="true"] { user-select: none; }
 .ruleWrap > :last-child { flex: 1; min-width: 0; }
-.grip { display: flex; flex-shrink: 0; align-items: center; justify-content: center; width: 18px; height: 30px; padding: 0; color: var(--muted); border-radius: 4px; cursor: grab !important; outline: none; box-shadow: none; }
+.grip { display: flex; flex-shrink: 0; align-items: center; justify-content: center; width: 18px; height: 30px; padding: 0; color: var(--muted); border-radius: 4px; cursor: grab !important; touch-action: none; outline: none; box-shadow: none; }
 .grip:active { cursor: grabbing !important; }
 .grip:disabled { cursor: default !important; }
 .join { display: grid; align-items: center; grid-template-columns: minmax(75px, 1fr) minmax(86px, .8fr) minmax(100px, 1.7fr); gap: 6px; height: 28px; padding: 0 82px 0 24px; }
@@ -143,12 +149,6 @@
 .popoverFooter .apply { background: var(--ink); color: var(--panel); padding: 0 13px; }
 .popoverFooter .apply:hover:not(:disabled) { background: color-mix(in srgb, var(--ink) 85%, var(--panel)); }
 .error { flex: none; margin: 0; padding: 5px 12px 8px; color: var(--err-ink); font-size: 12px; line-height: 1.5; }
-.preview { flex: none; min-height: 60px; max-height: 200px; overflow: auto; padding: 10px 12px; border-top: 1px solid var(--line); }
-.preview > header { display: flex; gap: 8px; align-items: center; justify-content: space-between; font-size: 11px; margin-bottom: 8px; }
-.preview strong { font-weight: 500; }
-.preview button { display: inline-flex; align-items: center; gap: 5px; padding: 4px; border-radius: 4px; color: var(--muted-strong); }
-.preview pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: 6px 0; font: 11px/1.6 monospace; }
-.preview small { font-size: 10px; color: var(--muted-strong); }
 @media (max-width: 600px) {
   .toolbar { overflow-x: auto; }
   .ruleFields { grid-template-columns: minmax(65px, 1fr) minmax(80px, 1fr); }

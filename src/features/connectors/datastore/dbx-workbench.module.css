@@ -20,9 +20,9 @@
 .objectTab > .tabClose { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 20px; height: 20px; padding: 0; border-radius: 4px; color: var(--muted-strong); cursor: pointer; }
 .tabs > .menu { align-items: center; padding-right: 4px; }
 .tableIcon { color: #0ab85a; flex-shrink: 0; }
-.metadata { display: flex; align-items: center; gap: 10px; min-height: 44px; height: 44px; flex-shrink: 0; padding: 0 10px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.metadata { display: flex; align-items: center; gap: 8px; min-height: 34px; height: 34px; flex-shrink: 0; padding: 0 10px; border-bottom: 1px solid var(--line); background: var(--panel); }
 .chips { display: flex; align-items: center; gap: 7px; min-width: 0; }
-.chips > * { display: block; overflow: hidden; max-width: 170px; padding: 3px 8px; border: 1px solid var(--line); border-radius: 5px; color: var(--muted-strong); font-size: 14px; line-height: 18px; text-overflow: ellipsis; white-space: nowrap; }
+.chips > * { display: block; overflow: hidden; max-width: 170px; padding: 2px 6px; border: 1px solid var(--line); border-radius: 4px; color: var(--muted-strong); font-size: 13px; line-height: 18px; text-overflow: ellipsis; white-space: nowrap; }
 .chips strong { color: var(--ink); font-weight: 600; }
 .metadataActions { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0; }
 .metadataActions > button, .metadataActions > span > button, .menu > button { display: inline-flex; height: 27px; align-items: center; gap: 5px; border: 0; border-radius: 4px; padding: 0 7px; background: transparent; color: var(--ink-soft); font-size: 13px; cursor: pointer; white-space: nowrap; }

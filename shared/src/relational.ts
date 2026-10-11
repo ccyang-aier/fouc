@@ -108,4 +108,3 @@ export interface RelationalTablePage extends DatabaseTablePage {
   statement: { sql: string; parameters: DatabaseCell[] };
   stableOrder: boolean;
 }
-export type RelationalTableQueryPreview = Pick<RelationalTablePage, 'statement' | 'query' | 'stableOrder'>;

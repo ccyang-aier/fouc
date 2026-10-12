@@ -1,6 +1,6 @@
 "use client"
 
-import { Crosshair, PanelsTopLeft, Table2, List, SlidersHorizontal, ArrowDownAZ, ArrowDownZA } from "lucide-react"
+import { Crosshair, Eye, Grid2X2, List, SlidersHorizontal, ArrowDownAZ, ArrowDownZA } from "lucide-react"
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import styles from "./resource-tree.module.css"
 
@@ -28,8 +28,8 @@ export function ResourceTreeControls({ disabled, canLocate, sort, kinds, onLocat
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuLabel>按类型筛选</DropdownMenuLabel>
-          <DropdownMenuCheckboxItem className="gap-2" checked={kinds.has("table")} onCheckedChange={visible => onKind("table", visible)} onSelect={event => event.preventDefault()}><Table2 />表</DropdownMenuCheckboxItem>
-          <DropdownMenuCheckboxItem className="gap-2" checked={kinds.has("view")} onCheckedChange={visible => onKind("view", visible)} onSelect={event => event.preventDefault()}><PanelsTopLeft />视图</DropdownMenuCheckboxItem>
+          <DropdownMenuCheckboxItem className="gap-2" checked={kinds.has("table")} onCheckedChange={visible => onKind("table", visible)} onSelect={event => event.preventDefault()}><Grid2X2 />表</DropdownMenuCheckboxItem>
+          <DropdownMenuCheckboxItem className="gap-2" checked={kinds.has("view")} onCheckedChange={visible => onKind("view", visible)} onSelect={event => event.preventDefault()}><Eye />视图</DropdownMenuCheckboxItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>

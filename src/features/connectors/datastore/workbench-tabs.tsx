@@ -1,14 +1,14 @@
 "use client"
 
 import { useEffect, useRef, type ReactNode } from "react"
-import { BookOpenText, Database, FileCode, Network, Table2, Plus, Activity, PanelsTopLeft, X } from "lucide-react"
+import { BookOpenText, Database, FileCode, Network, Grid2X2, Plus, Activity, PanelsTopLeft, X } from "lucide-react"
 import { WorkbenchMenu } from "./workbench-menu"
 import { navigateWorkbenchTabs } from './workbench-tab-navigation'
 import styles from "./dbx-workbench.module.css"
 
 export type WorkbenchMode = "data" | "structure" | "sql" | "objects" | "diagram" | "docs" | "activity"
 const views = [
-  { mode: "data", label: "数据浏览", icon: Table2 },
+  { mode: "data", label: "数据浏览", icon: Grid2X2 },
   { mode: "sql", label: "SQL 查询", icon: FileCode },
   { mode: "objects", label: "Schema 对象", icon: Database },
   { mode: "diagram", label: "关系图", icon: Network },
@@ -49,7 +49,7 @@ export function WorkbenchTabs({ table, schema, mode, openedViews, disabled, sqlR
   }, [mode, table])
   return <div className={styles.tabs} aria-label="工作对象标签">
     <div ref={list} className={styles.tabItems} role="tablist" aria-label="工作台页面" onKeyDown={event => { if (!disabled) navigateWorkbenchTabs(event) }}>
-      <WorkbenchTab label={table ? `${table}@${schema}` : "数据浏览"} icon={<Table2 size={15} className={styles.tableIcon} />} selected={dataActive} disabled={disabled} onSelect={() => onChange("data")} closeLabel={`关闭 ${table} 数据表`} onClose={table ? onCloseTable : undefined} />
+      <WorkbenchTab label={table ? `${table}@${schema}` : "数据浏览"} icon={<Grid2X2 size={15} className={styles.tableIcon} />} selected={dataActive} disabled={disabled} onSelect={() => onChange("data")} closeLabel={`关闭 ${table} 数据表`} onClose={table ? onCloseTable : undefined} />
       <div ref={onSqlTabsTarget} className={styles.sqlTabsSlot} />
       {openedViews.filter(value => value !== 'sql').map(value => {
         const view = views.find(item => item.mode === value)

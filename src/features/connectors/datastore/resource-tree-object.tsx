@@ -1,7 +1,7 @@
 "use client"
 
 import { useId, useState } from "react"
-import { ChevronDown, ChevronRight, Columns3, PanelsTopLeft, Table2, KeyRound, Zap, Network, TableProperties } from "lucide-react"
+import { ChevronDown, ChevronRight, Columns3, Eye, Grid2X2, KeyRound, Zap, Network, List } from "lucide-react"
 import type { DatabaseObjectInfo, RelationalTableStructure } from "@fouc/shared"
 import { Button } from "@/components/ui/button"
 import type { StructureTab } from "./structure-metadata"
@@ -9,7 +9,7 @@ import { useSqlResource } from "./use-sql-resource"
 import styles from "./resource-tree.module.css"
 
 const sections = [
-  { key: "columns", label: "字段", icon: TableProperties },
+  { key: "columns", label: "字段", icon: List },
   { key: "indexes", label: "索引", icon: KeyRound },
   { key: "foreignKeys", label: "外键", icon: Network },
   { key: "triggers", label: "触发器", icon: Zap },
@@ -32,7 +32,7 @@ export function ResourceTreeObject({ base, schema, entry, revision, selected, ex
   if (expanded && !requested) setRequested(true)
   const resource = useSqlResource<RelationalTableStructure>(requested && onStructure ? `${base}/schemas/${encodeURIComponent(schema)}/tables/${encodeURIComponent(entry.name)}/structure` : null, undefined, revision + retry)
   const structure = resource.error ? null : resource.data
-  const ObjectIcon = entry.kind === "table" ? Table2 : PanelsTopLeft
+  const ObjectIcon = entry.kind === "table" ? Grid2X2 : Eye
   function toggleSection(section: Section) {
     setOpenSections(current => { const next = new Set(current); if (next.has(section)) next.delete(section); else next.add(section); return next })
   }

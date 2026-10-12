@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react"
-import { RefreshCw, ChevronsUp, ChevronDown, ChevronRight, Database, Layers3, PanelsTopLeft, FolderCode, Table2, Search, PanelLeftClose } from "lucide-react"
+import { RefreshCw, ChevronsUp, ChevronDown, ChevronRight, Database, Layers3, Eye, FolderCode, Grid2X2, Search, PanelLeftClose } from "lucide-react"
 import type { DatabaseObjectInfo } from "@fouc/shared"
 import type { StructureTab } from "./structure-metadata"
 import { ResourceTreeControls, type ResourceKind, type ResourceSort } from "./resource-tree-controls"
@@ -36,8 +36,8 @@ export function ResourceTree({ name, schemas, schema, tables, table, base, revis
     if (locateRequest) scroll.current?.querySelector('[data-selected="true"]')?.scrollIntoView({ block: "nearest", inline: "nearest" })
   }, [locateRequest])
   const groups = [
-    { id: "tables", label: "表", items: visible.filter(item => item.kind === "table"), icon: Table2 },
-    { id: "views", label: "视图", items: visible.filter(item => item.kind !== "table"), icon: PanelsTopLeft },
+    { id: "tables", label: "表", items: visible.filter(item => item.kind === "table"), icon: Grid2X2 },
+    { id: "views", label: "视图", items: visible.filter(item => item.kind !== "table"), icon: Eye },
   ]
   function toggle(key: string) { setCollapsed(value => { const next = new Set(value); if (next.has(key)) next.delete(key); else next.add(key); return next }) }
   function revealObject(value: string) { setObjects(current => ({ ...current, expanded: new Set([...current.expanded, value]) })) }

@@ -38,7 +38,7 @@ export function SettingsDialog({ open, section, onSectionChange, onClose }: {
           <button type="button" aria-label="关闭设置" onClick={onClose} className={`fouc-action ${styles.close}`}>
             <X size={18} aria-hidden />
           </button>
-          <SettingsCanvas initialSection={section} onSectionChange={onSectionChange} onBack={onClose} />
+          <SettingsCanvas initialSection={section} onSectionChange={onSectionChange} />
         </div>
       ) : null}
     </dialog>

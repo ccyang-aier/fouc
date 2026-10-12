@@ -7,7 +7,6 @@
 
 import { useState } from "react"
 import {
-  ArrowLeft,
   Info,
   MagnifyingGlass,
   PaintBrush,
@@ -36,11 +35,9 @@ const SECTIONS: Array<SidebarRowItem & { id: SettingsSection }> = [
 
 export function SettingsCanvas({
   initialSection = "appearance",
-  onBack,
   onSectionChange,
 }: {
   initialSection?: SettingsSection
-  onBack?: () => void
   onSectionChange?: (section: SettingsSection) => void
 }) {
   const [section, setSection] = useState<SettingsSection>(initialSection)
@@ -75,14 +72,6 @@ export function SettingsCanvas({
           className="relative flex h-full min-h-0 flex-col border-r border-[var(--wt-sidebar-edge)] px-3 pb-5 pt-3"
         >
           <div data-tauri-drag-region className="flex h-9 shrink-0 items-center gap-1.5">
-            <button
-              type="button"
-              aria-label="返回工作台"
-              onClick={onBack}
-              className="flex size-7 shrink-0 items-center justify-center rounded-[7px] text-[#6f7478] outline-none transition-colors hover:bg-wash hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
-            >
-              <ArrowLeft className="size-4" weight="bold" aria-hidden />
-            </button>
             <span className="text-[13px] font-semibold tracking-[-0.01em] text-[var(--ink)]">设置</span>
           </div>
 

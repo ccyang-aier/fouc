@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import Image from 'next/image';
-import { Circle, FileText, Lightning, MagnifyingGlass, Plus, Question } from '@phosphor-icons/react';
+import { FileText, Lightning, MagnifyingGlass, Plus, Question } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { NavigationDialogPortal } from './navigation/navigation-dialog-portal';
 import { DialogButton, ModalDialog } from './organization/ui';
@@ -26,7 +26,7 @@ export function KnowledgeEmptyState({ onCreate }: { onCreate: () => void }) {
         <Button ref={learnButton} variant="ghost" onClick={() => setHelpOpen(true)} className={styles.learn}><Question size={20} aria-hidden />了解知识库</Button>
       </div>
       <div className={styles.benefits}>
-        <div aria-hidden className={styles.divider}><Circle size={5} weight="fill" /><hr /><Circle size={5} weight="fill" /></div>
+        <div aria-hidden className={styles.divider}><hr /></div>
         <ul className={styles.benefitList}>
           <li><FileText size={20} aria-hidden />资料有序</li>
           <li><Lightning size={20} aria-hidden />灵感留存</li>

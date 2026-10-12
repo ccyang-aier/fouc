@@ -17,12 +17,11 @@
 .shell .commandGroup > .writeAccess { font-weight: 500; }
 .shell .commandGroup > .writeAccess[data-active="true"] { color: var(--accent-ink); }
 .tabActions { padding: 0 6px; }
-.tabs { display: flex; min-height: 32px; height: 32px; flex-shrink: 0; align-items: stretch; gap: 0; border-bottom: 1px solid var(--line); background: var(--dbx-chrome); }
-:global(html:not([data-theme="dark"])) .tabs { background: var(--panel); }
+.tabs { display: flex; min-height: 32px; height: 32px; flex-shrink: 0; align-items: stretch; gap: 0; border-bottom: 1px solid var(--line); background: var(--workbench-tab-inactive-bg); }
 .tabItems { display: flex; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
 .sqlTabsSlot { display: flex; align-items: stretch; flex-shrink: 0; }
 .tabs button:disabled { cursor: default; opacity: .45; }
-.objectTab { display: flex; align-items: center; gap: 7px; height: 100%; min-width: 0; max-width: 300px; flex-shrink: 0; padding: 0 7px 0 10px; border-right: 1px solid var(--line); color: var(--muted-strong); font-size: 13px; font-weight: 500; cursor: pointer; outline: none; }
+.objectTab { display: flex; align-items: center; gap: 7px; height: 100%; min-width: 0; max-width: 300px; flex-shrink: 0; padding: 0 7px 0 10px; border-right: 1px solid var(--line); background: var(--workbench-tab-inactive-bg); color: var(--muted-strong); font-size: 13px; font-weight: 500; cursor: pointer; outline: none; }
 .objectTab[aria-selected="true"] { --action-state-bg: var(--workbench-tab-active-bg); --action-state-ink: var(--ink); background: var(--workbench-tab-active-bg); color: var(--ink); font-weight: 600; }
 .objectTab[aria-disabled="true"] { cursor: default; opacity: .45; }
 .objectTab > svg { flex-shrink: 0; }

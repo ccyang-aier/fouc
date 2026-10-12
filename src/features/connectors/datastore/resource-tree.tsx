@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react"
-import { ArrowsClockwise, CaretDoubleUp, CaretDown, CaretRight, Database, Eye, Folder, GridFour, MagnifyingGlass, SidebarSimple } from "@phosphor-icons/react"
+import { ArrowsClockwise, CaretDoubleUp, CaretDown, CaretRight, Database, Eye, Folder, GridFour, IconContext, MagnifyingGlass, SidebarSimple } from "@phosphor-icons/react"
 import type { DatabaseObjectInfo } from "@fouc/shared"
 import type { StructureTab } from "./structure-metadata"
 import { ResourceTreeControls, type ResourceKind, type ResourceSort } from "./resource-tree-controls"
@@ -63,13 +63,13 @@ export function ResourceTree({ name, schemas, schema, tables, table, base, revis
       }} placeholder="搜索表或视图" /></label>
       <ResourceTreeControls disabled={disabled} canLocate={Boolean(table)} sort={sort} kinds={kinds} onSort={setSort} onLocate={locate} onKind={(kind, visible) => setKinds(current => { const next = new Set(current); if (visible) next.add(kind); else next.delete(kind); return next })} />
     </div>
-    <div className={styles.scroll} ref={scroll}>
-      <div className="fouc-action"><button type="button" className={`${styles.row} ${styles.connection} fouc-action`} data-variant="disclosure" aria-label={`${collapsed.has("connection") ? "展开" : "收起"}连接资源`} aria-expanded={!collapsed.has("connection")} onClick={() => toggle("connection")}>{collapsed.has("connection") ? <CaretRight size={11} /> : <CaretDown size={11} />}<Database size={15} /><strong title={name}>{name}</strong><i className={styles.online} aria-label="已连接" /></button></div>
+    <IconContext.Provider value={{ weight: 'duotone' }}><div className={styles.scroll} ref={scroll}>
+      <div className="fouc-action"><button type="button" className={`${styles.row} ${styles.connection} fouc-action`} data-variant="disclosure" aria-label={`${collapsed.has("connection") ? "展开" : "收起"}连接资源`} aria-expanded={!collapsed.has("connection")} onClick={() => toggle("connection")}>{collapsed.has("connection") ? <CaretRight weight="bold" size={11} /> : <CaretDown weight="bold" size={11} />}<Database size={16} /><strong title={name}>{name}</strong><i className={styles.online} aria-label="已连接" /></button></div>
       {!collapsed.has("connection") && <>
       {schemas.map(item => <div key={item}>
-        <div className="fouc-action"><button className={`${styles.row} ${styles.schema} fouc-action`} data-variant="disclosure" type="button" aria-expanded={schema === item && !collapsed.has(`schema:${item}`)} disabled={disabled} onClick={() => { if (schema === item) toggle(`schema:${item}`); else { setCollapsed(current => { const next = new Set(current); next.delete(`schema:${item}`); return next }); onSchema(item) } }}>{schema === item && !collapsed.has(`schema:${item}`) ? <CaretDown size={11} /> : <CaretRight size={11} />}<Database size={15} /><span title={item}>{item}</span><i className={styles.online} /></button></div>
+        <div className="fouc-action"><button className={`${styles.row} ${styles.schema} fouc-action`} data-variant="disclosure" type="button" aria-expanded={schema === item && !collapsed.has(`schema:${item}`)} disabled={disabled} onClick={() => { if (schema === item) toggle(`schema:${item}`); else { setCollapsed(current => { const next = new Set(current); next.delete(`schema:${item}`); return next }); onSchema(item) } }}>{schema === item && !collapsed.has(`schema:${item}`) ? <CaretDown weight="bold" size={11} /> : <CaretRight weight="bold" size={11} />}<Database size={16} /><span title={item}>{item}</span><i className={styles.online} /></button></div>
         {schema === item && !collapsed.has(`schema:${item}`) && groups.filter(group => group.items.length).map(group => <div key={group.id}>
-          <div className="fouc-action"><button type="button" className={`${styles.row} ${styles.group} fouc-action`} data-variant="disclosure" aria-expanded={!collapsed.has(group.id)} onClick={() => toggle(group.id)}>{collapsed.has(group.id) ? <CaretRight size={11} /> : <CaretDown size={11} />}<group.icon size={15} className={group.id === "tables" ? styles.tableIcon : styles.viewIcon} /><span>{group.label}</span><small>{group.items.length}</small></button></div>
+          <div className="fouc-action"><button type="button" className={`${styles.row} ${styles.group} fouc-action`} data-variant="disclosure" aria-expanded={!collapsed.has(group.id)} onClick={() => toggle(group.id)}>{collapsed.has(group.id) ? <CaretRight weight="bold" size={11} /> : <CaretDown weight="bold" size={11} />}<group.icon size={16} className={group.id === "tables" ? styles.tableIcon : styles.viewIcon} /><span>{group.label}</span><small>{group.items.length}</small></button></div>
           {!collapsed.has(group.id) && group.items.map(entry => <ResourceTreeObject
             key={`${base}:${schema}:${entry.name}`} base={base} schema={schema} entry={entry} revision={revision}
             selected={table === entry.name} expanded={objects.expanded.has(entry.name)} disabled={disabled}
@@ -79,9 +79,9 @@ export function ResourceTree({ name, schemas, schema, tables, table, base, revis
         </div>)}
         {schema === item && !collapsed.has(`schema:${item}`) && !visible.length ? <p className={styles.empty}>{search || kinds.size !== 2 ? "没有匹配的表或视图" : "当前 Schema 没有可见对象"}</p> : null}
       </div>)}
-      {onQuery ? <button type="button" className={`${styles.row} ${styles.query} fouc-action`} disabled={disabled} onClick={onQuery}><Folder size={15} /><span>查询</span></button> : null}
+      {onQuery ? <button type="button" className={`${styles.row} ${styles.query} fouc-action`} disabled={disabled} onClick={onQuery}><Folder size={16} /><span>查询</span></button> : null}
       </>}
-    </div>
+    </div></IconContext.Provider>
     {viewActions}
     <footer className={styles.footer}><span>{schemas.length} 个 Schema</span><span>{tables.length} 个对象</span></footer>
     {!hidden && onWidthChange ? <ResourceTreeResize paneRef={pane} controls={id} onChange={onWidthChange} /> : null}

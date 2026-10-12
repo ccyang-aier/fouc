@@ -231,9 +231,11 @@ function ResultGridContent({ result, displayRows, editedCells, onCellSelect, onS
     }
   }
   function cellEdge(row: number, column: number): number {
-    if (counts.cells < 2 || !gridCellSelected(selection, row, column)) return 0
+    if ((counts.cells < 2 && selection.mode !== 'columns') || !gridCellSelected(selection, row, column)) return 0
     if (!frames.sparse) {
       const edges = dataGridSelectionEdgeFlags(frames.frames, row, column)
+      // Whole columns start their outer frame at the header, not the first data row.
+      if (edges && selection.mode === 'columns') edges.top = false
       return edges ? dataGridSelectionEdgeMaskFromFlags(edges) : 0
     }
     return (!gridCellSelected(selection, row - 1, column) ? 1 : 0) | (!gridCellSelected(selection, row, column + 1) ? 2 : 0) | (!gridCellSelected(selection, row + 1, column) ? 4 : 0) | (!gridCellSelected(selection, row, column - 1) ? 8 : 0)
@@ -248,7 +250,7 @@ function ResultGridContent({ result, displayRows, editedCells, onCellSelect, onS
       {!headerTarget && <GridViewOptions result={result} layout={layout} onChange={changeLayout} />}{toolbarActions}
     </div>
   if (transposed) return <>{headerTarget && createPortal(<GridFieldFilter result={result} keys={keys} layout={layout} onChange={changeLayout} />, headerTarget)}{(viewTarget ?? headerTarget) && createPortal(<GridViewOptions result={result} layout={layout} onChange={changeLayout} />, (viewTarget ?? headerTarget)!)}<TransposedResultGrid result={result} displayRows={displayRows} editedCells={editedCells} visible={visible} keys={keys} layout={layout} rowHeight={rowHeight} initialRow={cell?.rowIndex ?? 0} rowOffset={rowOffset} rowNumbers={rowNumbers} scopeLabel={scopeLabel} onCellSelect={onCellSelect} onSelectionChange={onSelectionChange} onNotice={onNotice} showCellDetails={showCellDetails} readOnly={readOnly} toolbarActions={toolbarActions} onExit={() => setTransposed(false)} /></>
-  return <div className={styles.gridRoot} data-selection-multiple={counts.cells > 1 || undefined} onContextMenu={event => {
+  return <div className={styles.gridRoot} data-selection-multiple={counts.cells > 1 || selection.mode === 'columns' || undefined} onContextMenu={event => {
     const target = selectionTarget(event.target)
     if (!target || !dimensions.rows || !dimensions.columns) return
     event.preventDefault(); viewportRef.current?.focus({ preventScroll: true }); contextAt(target, { x: event.clientX, y: event.clientY })
@@ -263,7 +265,9 @@ function ResultGridContent({ result, displayRows, editedCells, onCellSelect, onS
           const sortIndex = sort.findIndex((entry) => entry.column === name), direction = sort[sortIndex]?.direction
           const shownDirection = columnQueryActions?.localSort?.column === column ? columnQueryActions.localSort.direction : direction
           const dropping = preview?.kind === 'move' && preview.target !== visible.indexOf(preview.column)
-          return <th key={columnKey} style={columnPositions[index]} role="columnheader" tabIndex={0} title="长按拖动列 · Alt + ← / →" aria-colindex={index + 2} aria-selected={selection.mode === 'columns' && selection.columns.has(index)} aria-sort={shownDirection === 'asc' ? 'ascending' : shownDirection === 'desc' ? 'descending' : undefined} data-highlight={activeHighlight?.mode === "columns" && activeHighlight.columns.includes(column) || undefined} data-grid-target="column" data-grid-row={focus?.rowIndex ?? 0} data-grid-column={index} data-pinned={layout.pins[columnKey]} data-jump-current={jumpColumn === column || undefined} data-drop-edge={dropping && preview.slot === index ? 'before' : dropping && preview.slot === visible.length && index === visible.length - 1 ? 'after' : undefined} data-moving={preview?.kind === 'move' && preview.column === column || undefined}
+          const selected = selection.mode === 'columns' && selection.columns.has(index)
+          const edge = selected ? 1 | (selection.columns.has(index + 1) ? 0 : 2) | (selection.columns.has(index - 1) ? 0 : 8) : 0
+          return <th key={columnKey} style={columnPositions[index]} role="columnheader" tabIndex={0} title="长按拖动列 · Alt + ← / →" aria-colindex={index + 2} aria-selected={selected} data-selected={selected || undefined} data-edge={edge} aria-sort={shownDirection === 'asc' ? 'ascending' : shownDirection === 'desc' ? 'descending' : undefined} data-highlight={activeHighlight?.mode === "columns" && activeHighlight.columns.includes(column) || undefined} data-grid-target="column" data-grid-row={focus?.rowIndex ?? 0} data-grid-column={index} data-pinned={layout.pins[columnKey]} data-jump-current={jumpColumn === column || undefined} data-drop-edge={dropping && preview.slot === index ? 'before' : dropping && preview.slot === visible.length && index === visible.length - 1 ? 'after' : undefined} data-moving={preview?.kind === 'move' && preview.column === column || undefined}
             onPointerDown={event => columnPointer.start(event, 'move', index)} onPointerMove={columnPointer.move} onPointerUp={event => columnPointer.finish(event)} onPointerCancel={event => columnPointer.finish(event, true)} onLostPointerCapture={event => columnPointer.finish(event, true)}
             onClick={event => {
               if (!event.currentTarget.contains(event.target as Node) || (event.target as Element).closest('button, [data-grid-column-actions]') || columnPointer.click(event)) return

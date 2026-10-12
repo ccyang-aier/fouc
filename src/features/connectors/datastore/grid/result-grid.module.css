@@ -1,4 +1,4 @@
-.gridRoot { display: flex; flex-direction: column; flex: 1 1 0; min-width: 0; min-height: 0; overflow: hidden; color: var(--ink-soft); background: var(--panel); font-family: var(--font-sans); }
+.gridRoot { --grid-selection-bg: color-mix(in srgb, #5b9df9 35%, var(--panel)); display: flex; flex-direction: column; flex: 1 1 0; min-width: 0; min-height: 0; overflow: hidden; color: var(--ink-soft); background: var(--panel); font-family: var(--font-sans); }
 .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 12px; min-height: 40px; border-bottom: 1px solid var(--line); flex-shrink: 0; }
 .toolbar[data-external="true"] { display: contents; }
 .toolbar[data-external="true"] > .selectionLabel { display: none; }
@@ -48,16 +48,18 @@
 .table thead th[data-pinned] { z-index: 5; }.table td[data-pinned] { z-index: 2; }.table td[data-pinned][data-active] { z-index: 4; }
 .table [data-pinned="left"] { box-shadow: 1px 0 0 var(--line); }.table [data-pinned="right"] { box-shadow: -1px 0 0 var(--line); }
 .table td[data-format-error] > span { text-decoration: underline dotted var(--warn-ink); text-underline-offset: 3px; }
-.table th[aria-selected="true"] { color: var(--accent-ink); background: color-mix(in srgb, var(--accent) 12%, var(--surface-subtle)); }
-.table td[data-selected] { background: color-mix(in srgb, #5b9df9 35%, var(--panel)); color: var(--ink); border-color: color-mix(in srgb, var(--panel) 65%, transparent); }
+.table tbody th[aria-selected="true"] { color: var(--accent-ink); background: color-mix(in srgb, var(--accent) 12%, var(--surface-subtle)); }
+.table thead th[data-selected], .table td[data-selected] { background: var(--grid-selection-bg); color: var(--ink); border-color: color-mix(in srgb, var(--panel) 65%, transparent); }
 .table td[data-highlight]:not([data-selected]):not([data-dirty]), .table th[data-highlight]:not([aria-selected="true"]) { background: var(--accent-soft); color: var(--accent-ink); }
 .gridRoot:not([data-selection-multiple]) .table td[data-active] { outline: 2px solid var(--ink); outline-offset: -2px; }
 .table td[data-active] { z-index: 1; }
-.table td[data-edge]::after { content: ""; position: absolute; inset: -1px 0 0 -1px; pointer-events: none; border: 0 solid var(--ink); }
-.table td:is([data-edge="1"],[data-edge="3"],[data-edge="5"],[data-edge="7"],[data-edge="9"],[data-edge="11"],[data-edge="13"],[data-edge="15"])::after { border-top-width: 2px; }
-.table td:is([data-edge="2"],[data-edge="3"],[data-edge="6"],[data-edge="7"],[data-edge="10"],[data-edge="11"],[data-edge="14"],[data-edge="15"])::after { border-right-width: 2px; }
-.table td:is([data-edge="4"],[data-edge="5"],[data-edge="6"],[data-edge="7"],[data-edge="12"],[data-edge="13"],[data-edge="14"],[data-edge="15"])::after { border-bottom-width: 2px; }
-.table td:is([data-edge="8"],[data-edge="9"],[data-edge="10"],[data-edge="11"],[data-edge="12"],[data-edge="13"],[data-edge="14"],[data-edge="15"])::after { border-left-width: 2px; }
+/* Keep strokes inside the cell's left/top edges; cover its own right/bottom grid borders.
+   A negative left inset is clipped by sticky row numbers, making the first column thinner. */
+.table :is(td, th[data-selected])[data-edge]::before { content: ""; position: absolute; inset: 0 -1px -1px 0; z-index: 1; pointer-events: none; border: 0 solid var(--ink); }
+.table :is(td, th[data-selected]):is([data-edge="1"],[data-edge="3"],[data-edge="5"],[data-edge="7"],[data-edge="9"],[data-edge="11"],[data-edge="13"],[data-edge="15"])::before { border-top-width: 2px; }
+.table :is(td, th[data-selected]):is([data-edge="2"],[data-edge="3"],[data-edge="6"],[data-edge="7"],[data-edge="10"],[data-edge="11"],[data-edge="14"],[data-edge="15"])::before { border-right-width: 2px; }
+.table :is(td, th[data-selected]):is([data-edge="4"],[data-edge="5"],[data-edge="6"],[data-edge="7"],[data-edge="12"],[data-edge="13"],[data-edge="14"],[data-edge="15"])::before { border-bottom-width: 2px; }
+.table :is(td, th[data-selected]):is([data-edge="8"],[data-edge="9"],[data-edge="10"],[data-edge="11"],[data-edge="12"],[data-edge="13"],[data-edge="14"],[data-edge="15"])::before { border-left-width: 2px; }
 .table .nullCell { color: var(--muted-strong); font-style: italic; }
 .table .numericCell { text-align: var(--grid-number-align, right); }
 .emptyString { color: var(--muted-strong); font: italic 10px var(--font-sans); }
@@ -93,9 +95,10 @@
 @media(prefers-reduced-motion: reduce) { .gridRoot button { transition: none; } }
 @media(max-width: 720px) { .detail.binaryDetail { right:12px; bottom:68px; width:calc(100vw - 24px); max-width:none; height:440px; max-height:75dvh; } }
 
-.table td[data-dirty] { background: color-mix(in srgb, var(--warn-ink) 8%, var(--panel)); box-shadow: inset 3px 0 0 color-mix(in srgb, var(--warn-ink) 60%, transparent); }
+.table td[data-dirty]:not([data-selected]) { background: color-mix(in srgb, var(--warn-ink) 8%, var(--panel)); }
+.table td[data-dirty] { box-shadow: inset 3px 0 0 color-mix(in srgb, var(--warn-ink) 60%, transparent); }
 
-.table thead th[data-jump-current] { background: var(--accent-soft); color: var(--accent-ink); }
+.table thead th[data-jump-current]:not([data-selected]) { background: var(--accent-soft); color: var(--accent-ink); }
 .table td[data-search-match]:not([data-selected]) { background: var(--warn-soft); }
 .table td[data-value-type="number"]:not([data-selected]) { color: var(--accent-ink); }
 .table td[data-value-type="date"]:not([data-selected]) { color: #a648df; }

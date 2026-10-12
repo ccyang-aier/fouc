@@ -1,23 +1,23 @@
 "use client"
 
 import { useEffect, useRef, type ReactNode } from "react"
-import { BookOpenText, Database, FileCode, Graph, GridFour, Plus, Pulse, SquaresFour, X } from "@phosphor-icons/react"
+import { BookOpenText, Database, FileCode, Network, Table2, Plus, Activity, PanelsTopLeft, X } from "lucide-react"
 import { WorkbenchMenu } from "./workbench-menu"
 import { navigateWorkbenchTabs } from './workbench-tab-navigation'
 import styles from "./dbx-workbench.module.css"
 
 export type WorkbenchMode = "data" | "structure" | "sql" | "objects" | "diagram" | "docs" | "activity"
 const views = [
-  { mode: "data", label: "数据浏览", icon: GridFour },
+  { mode: "data", label: "数据浏览", icon: Table2 },
   { mode: "sql", label: "SQL 查询", icon: FileCode },
   { mode: "objects", label: "Schema 对象", icon: Database },
-  { mode: "diagram", label: "关系图", icon: Graph },
+  { mode: "diagram", label: "关系图", icon: Network },
   { mode: "docs", label: "数据库文档", icon: BookOpenText },
-  { mode: "activity", label: "活动监控", icon: Pulse },
+  { mode: "activity", label: "活动监控", icon: Activity },
 ] as const
 
 export function WorkbenchViewMenu({ disabled, onChange }: { disabled: boolean; onChange: (mode: WorkbenchMode) => void }) {
-  return <WorkbenchMenu label="工作台视图" icon={<SquaresFour size={16} />} disabled={disabled}>{views.map(({ mode, label, icon: Icon }) => <button key={mode} type="button" role="menuitem" className="fouc-menu-item" onClick={() => onChange(mode)}><Icon size={15} />{label}</button>)}</WorkbenchMenu>
+  return <WorkbenchMenu label="工作台视图" icon={<PanelsTopLeft size={16} />} disabled={disabled}>{views.map(({ mode, label, icon: Icon }) => <button key={mode} type="button" role="menuitem" className="fouc-menu-item" onClick={() => onChange(mode)}><Icon size={15} />{label}</button>)}</WorkbenchMenu>
 }
 
 export function WorkbenchShortcuts({ mode, disabled, onChange }: { mode: WorkbenchMode; disabled: boolean; onChange: (mode: WorkbenchMode) => void }) {
@@ -49,7 +49,7 @@ export function WorkbenchTabs({ table, schema, mode, openedViews, disabled, sqlR
   }, [mode, table])
   return <div className={styles.tabs} aria-label="工作对象标签">
     <div ref={list} className={styles.tabItems} role="tablist" aria-label="工作台页面" onKeyDown={event => { if (!disabled) navigateWorkbenchTabs(event) }}>
-      <WorkbenchTab label={table ? `${table}@${schema}` : "数据浏览"} icon={<GridFour size={15} className={styles.tableIcon} />} selected={dataActive} disabled={disabled} onSelect={() => onChange("data")} closeLabel={`关闭 ${table} 数据表`} onClose={table ? onCloseTable : undefined} />
+      <WorkbenchTab label={table ? `${table}@${schema}` : "数据浏览"} icon={<Table2 size={15} className={styles.tableIcon} />} selected={dataActive} disabled={disabled} onSelect={() => onChange("data")} closeLabel={`关闭 ${table} 数据表`} onClose={table ? onCloseTable : undefined} />
       <div ref={onSqlTabsTarget} className={styles.sqlTabsSlot} />
       {openedViews.filter(value => value !== 'sql').map(value => {
         const view = views.find(item => item.mode === value)

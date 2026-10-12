@@ -1,6 +1,6 @@
 "use client"
 
-import { Crosshair, Eye, GridFour, List, SlidersHorizontal, SortAscending, SortDescending } from "@phosphor-icons/react"
+import { Crosshair, PanelsTopLeft, Table2, List, SlidersHorizontal, ArrowDownAZ, ArrowDownZA } from "lucide-react"
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import styles from "./resource-tree.module.css"
 
@@ -21,15 +21,15 @@ export function ResourceTreeControls({ disabled, canLocate, sort, kinds, onLocat
           <DropdownMenuLabel>对象排序</DropdownMenuLabel>
           <DropdownMenuRadioGroup value={sort} onValueChange={value => onSort(value as ResourceSort)}>
             <DropdownMenuRadioItem className="gap-2" value="catalog"><List />目录顺序</DropdownMenuRadioItem>
-            <DropdownMenuRadioItem className="gap-2" value="asc"><SortAscending />名称：A–Z</DropdownMenuRadioItem>
-            <DropdownMenuRadioItem className="gap-2" value="desc"><SortDescending />名称：Z–A</DropdownMenuRadioItem>
+            <DropdownMenuRadioItem className="gap-2" value="asc"><ArrowDownAZ />名称：A–Z</DropdownMenuRadioItem>
+            <DropdownMenuRadioItem className="gap-2" value="desc"><ArrowDownZA />名称：Z–A</DropdownMenuRadioItem>
           </DropdownMenuRadioGroup>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuLabel>按类型筛选</DropdownMenuLabel>
-          <DropdownMenuCheckboxItem className="gap-2" checked={kinds.has("table")} onCheckedChange={visible => onKind("table", visible)} onSelect={event => event.preventDefault()}><GridFour />表</DropdownMenuCheckboxItem>
-          <DropdownMenuCheckboxItem className="gap-2" checked={kinds.has("view")} onCheckedChange={visible => onKind("view", visible)} onSelect={event => event.preventDefault()}><Eye />视图</DropdownMenuCheckboxItem>
+          <DropdownMenuCheckboxItem className="gap-2" checked={kinds.has("table")} onCheckedChange={visible => onKind("table", visible)} onSelect={event => event.preventDefault()}><Table2 />表</DropdownMenuCheckboxItem>
+          <DropdownMenuCheckboxItem className="gap-2" checked={kinds.has("view")} onCheckedChange={visible => onKind("view", visible)} onSelect={event => event.preventDefault()}><PanelsTopLeft />视图</DropdownMenuCheckboxItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>

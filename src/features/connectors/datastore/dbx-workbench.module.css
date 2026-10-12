@@ -17,7 +17,7 @@
 .shell .commandGroup > .writeAccess { font-weight: 500; }
 .shell .commandGroup > .writeAccess[data-active="true"] { color: var(--accent-ink); }
 .tabActions { padding: 0 6px; }
-.tabs { display: flex; min-height: 32px; height: 32px; flex-shrink: 0; align-items: stretch; gap: 0; border-bottom: 1px solid var(--line); background: var(--workbench-tab-inactive-bg); }
+.tabs { display: flex; min-height: 32px; height: 32px; flex-shrink: 0; align-items: stretch; gap: 0; border-bottom: 1px solid var(--line); background: var(--panel); }
 .tabItems { display: flex; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
 .sqlTabsSlot { display: flex; align-items: stretch; flex-shrink: 0; }
 .tabs button:disabled { cursor: default; opacity: .45; }

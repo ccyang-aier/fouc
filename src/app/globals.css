@@ -30,8 +30,8 @@
   --accent-ink: #3a55b0;
   --accent-soft: #eef1fd;
   --accent-soft-line: #ccd6f3;
-  --workbench-tab-active-bg: var(--panel);
-  --workbench-tab-inactive-bg: #f4f5f6;
+  --workbench-tab-active-bg: #e7e9ec;
+  --workbench-tab-inactive-bg: #f5f6f7;
   --sql-completion-function-ink: #8956c7;
   --sql-completion-field-ink: #0e918a;
   /* 自定义主题色基色（实际值由 JS 按偏好写入，此为兜底） */

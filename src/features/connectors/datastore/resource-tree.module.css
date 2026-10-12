@@ -48,7 +48,8 @@
 .catalogLoading i:nth-child(3) { width: 60%; }
 .catalogError { display: flex; align-items: center; justify-content: space-between; gap: 4px; padding: 4px 8px 4px 66px; font-size: 12px; color: var(--err-ink); }
 .tableIcon, .columns { color: var(--ok-ink); }
-.viewIcon { color: #b34dff; }
+.viewIcon { color: #8056b7; }
+:global(html[data-theme="dark"]) .viewIcon { color: #b995e0; }
 .indexes { color: var(--warn-ink); }
 .foreignKeys { color: var(--accent); }
 .triggers { color: var(--warn-ink); }

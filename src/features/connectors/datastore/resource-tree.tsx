@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react"
-import { ArrowsClockwise, CaretDoubleUp, CaretDown, CaretRight, Database, Eye, Folder, GridFour, IconContext, MagnifyingGlass, SidebarSimple } from "@phosphor-icons/react"
+import { RefreshCw, ChevronsUp, ChevronDown, ChevronRight, Database, Layers3, PanelsTopLeft, FolderCode, Table2, Search, PanelLeftClose } from "lucide-react"
 import type { DatabaseObjectInfo } from "@fouc/shared"
 import type { StructureTab } from "./structure-metadata"
 import { ResourceTreeControls, type ResourceKind, type ResourceSort } from "./resource-tree-controls"
@@ -36,8 +36,8 @@ export function ResourceTree({ name, schemas, schema, tables, table, base, revis
     if (locateRequest) scroll.current?.querySelector('[data-selected="true"]')?.scrollIntoView({ block: "nearest", inline: "nearest" })
   }, [locateRequest])
   const groups = [
-    { id: "tables", label: "表", items: visible.filter(item => item.kind === "table"), icon: GridFour },
-    { id: "views", label: "视图", items: visible.filter(item => item.kind !== "table"), icon: Eye },
+    { id: "tables", label: "表", items: visible.filter(item => item.kind === "table"), icon: Table2 },
+    { id: "views", label: "视图", items: visible.filter(item => item.kind !== "table"), icon: PanelsTopLeft },
   ]
   function toggle(key: string) { setCollapsed(value => { const next = new Set(value); if (next.has(key)) next.delete(key); else next.add(key); return next }) }
   function revealObject(value: string) { setObjects(current => ({ ...current, expanded: new Set([...current.expanded, value]) })) }
@@ -52,24 +52,24 @@ export function ResourceTree({ name, schemas, schema, tables, table, base, revis
   }
   return <aside id={id} ref={pane} className={`${styles.tree} sidebar-material`} data-surface="database" data-hidden={hidden} style={width === undefined ? undefined : { '--resource-tree-width': `${width}px` } as CSSProperties} aria-label="数据库资源">
     <div className={styles.toolbar}>{transferActions ?? <strong>数据库资源</strong>}<div className={styles.toolbarActions}>
-      <button type="button" className={`${styles.iconButton} fouc-action`} aria-label="刷新数据库资源" title="刷新数据库资源" disabled={disabled} onClick={onRefresh}><ArrowsClockwise size={14} /></button>
-      <button type="button" className={`${styles.iconButton} fouc-action`} aria-label="全部折叠数据库资源" title="全部折叠" disabled={disabled} onClick={() => { setCollapsed(new Set(["connection", "tables", "views", ...schemas.map(item => `schema:${item}`)])); setObjects(current => ({ ...current, expanded: new Set() })) }}><CaretDoubleUp size={14} /></button>
-      <button type="button" className={`${styles.iconButton} fouc-action`} aria-label="收纳数据库资源" title="收纳侧栏" onClick={onHide}><SidebarSimple size={15} /></button>
+      <button type="button" className={`${styles.iconButton} fouc-action`} aria-label="刷新数据库资源" title="刷新数据库资源" disabled={disabled} onClick={onRefresh}><RefreshCw size={14} /></button>
+      <button type="button" className={`${styles.iconButton} fouc-action`} aria-label="全部折叠数据库资源" title="全部折叠" disabled={disabled} onClick={() => { setCollapsed(new Set(["connection", "tables", "views", ...schemas.map(item => `schema:${item}`)])); setObjects(current => ({ ...current, expanded: new Set() })) }}><ChevronsUp size={14} /></button>
+      <button type="button" className={`${styles.iconButton} fouc-action`} aria-label="收纳数据库资源" title="收纳侧栏" onClick={onHide}><PanelLeftClose size={15} /></button>
     </div></div>
     <div className={styles.searchRow}>
-      <label className={styles.search}><MagnifyingGlass size={14} /><input aria-label="搜索表" value={search} onChange={event => {
+      <label className={styles.search}><Search size={14} /><input aria-label="搜索表" value={search} onChange={event => {
         onSearch(event.target.value)
         if (event.target.value) setCollapsed(current => { const next = new Set(current); ["connection", `schema:${schema}`, "tables", "views"].forEach(key => next.delete(key)); return next })
       }} placeholder="搜索表或视图" /></label>
       <ResourceTreeControls disabled={disabled} canLocate={Boolean(table)} sort={sort} kinds={kinds} onSort={setSort} onLocate={locate} onKind={(kind, visible) => setKinds(current => { const next = new Set(current); if (visible) next.add(kind); else next.delete(kind); return next })} />
     </div>
-    <IconContext.Provider value={{ weight: 'duotone' }}><div className={styles.scroll} ref={scroll}>
-      <div className="fouc-action"><button type="button" className={`${styles.row} ${styles.connection} fouc-action`} data-variant="disclosure" aria-label={`${collapsed.has("connection") ? "展开" : "收起"}连接资源`} aria-expanded={!collapsed.has("connection")} onClick={() => toggle("connection")}>{collapsed.has("connection") ? <CaretRight weight="bold" size={11} /> : <CaretDown weight="bold" size={11} />}<Database size={16} /><strong title={name}>{name}</strong><i className={styles.online} aria-label="已连接" /></button></div>
+    <div className={styles.scroll} ref={scroll}>
+      <div className="fouc-action"><button type="button" className={`${styles.row} ${styles.connection} fouc-action`} data-variant="disclosure" aria-label={`${collapsed.has("connection") ? "展开" : "收起"}连接资源`} aria-expanded={!collapsed.has("connection")} onClick={() => toggle("connection")}>{collapsed.has("connection") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}<Database size={16} /><strong title={name}>{name}</strong><i className={styles.online} aria-label="已连接" /></button></div>
       {!collapsed.has("connection") && <>
       {schemas.map(item => <div key={item}>
-        <div className="fouc-action"><button className={`${styles.row} ${styles.schema} fouc-action`} data-variant="disclosure" type="button" aria-expanded={schema === item && !collapsed.has(`schema:${item}`)} disabled={disabled} onClick={() => { if (schema === item) toggle(`schema:${item}`); else { setCollapsed(current => { const next = new Set(current); next.delete(`schema:${item}`); return next }); onSchema(item) } }}>{schema === item && !collapsed.has(`schema:${item}`) ? <CaretDown weight="bold" size={11} /> : <CaretRight weight="bold" size={11} />}<Database size={16} /><span title={item}>{item}</span><i className={styles.online} /></button></div>
+        <div className="fouc-action"><button className={`${styles.row} ${styles.schema} fouc-action`} data-variant="disclosure" type="button" aria-expanded={schema === item && !collapsed.has(`schema:${item}`)} disabled={disabled} onClick={() => { if (schema === item) toggle(`schema:${item}`); else { setCollapsed(current => { const next = new Set(current); next.delete(`schema:${item}`); return next }); onSchema(item) } }}>{schema === item && !collapsed.has(`schema:${item}`) ? <ChevronDown size={11} /> : <ChevronRight size={11} />}<Layers3 size={16} /><span title={item}>{item}</span><i className={styles.online} /></button></div>
         {schema === item && !collapsed.has(`schema:${item}`) && groups.filter(group => group.items.length).map(group => <div key={group.id}>
-          <div className="fouc-action"><button type="button" className={`${styles.row} ${styles.group} fouc-action`} data-variant="disclosure" aria-expanded={!collapsed.has(group.id)} onClick={() => toggle(group.id)}>{collapsed.has(group.id) ? <CaretRight weight="bold" size={11} /> : <CaretDown weight="bold" size={11} />}<group.icon size={16} className={group.id === "tables" ? styles.tableIcon : styles.viewIcon} /><span>{group.label}</span><small>{group.items.length}</small></button></div>
+          <div className="fouc-action"><button type="button" className={`${styles.row} ${styles.group} fouc-action`} data-variant="disclosure" aria-expanded={!collapsed.has(group.id)} onClick={() => toggle(group.id)}>{collapsed.has(group.id) ? <ChevronRight size={11} /> : <ChevronDown size={11} />}<group.icon size={16} className={group.id === "tables" ? styles.tableIcon : styles.viewIcon} /><span>{group.label}</span><small>{group.items.length}</small></button></div>
           {!collapsed.has(group.id) && group.items.map(entry => <ResourceTreeObject
             key={`${base}:${schema}:${entry.name}`} base={base} schema={schema} entry={entry} revision={revision}
             selected={table === entry.name} expanded={objects.expanded.has(entry.name)} disabled={disabled}
@@ -79,9 +79,9 @@ export function ResourceTree({ name, schemas, schema, tables, table, base, revis
         </div>)}
         {schema === item && !collapsed.has(`schema:${item}`) && !visible.length ? <p className={styles.empty}>{search || kinds.size !== 2 ? "没有匹配的表或视图" : "当前 Schema 没有可见对象"}</p> : null}
       </div>)}
-      {onQuery ? <button type="button" className={`${styles.row} ${styles.query} fouc-action`} disabled={disabled} onClick={onQuery}><Folder size={16} /><span>查询</span></button> : null}
+      {onQuery ? <button type="button" className={`${styles.row} ${styles.query} fouc-action`} disabled={disabled} onClick={onQuery}><FolderCode size={16} /><span>查询</span></button> : null}
       </>}
-    </div></IconContext.Provider>
+    </div>
     {viewActions}
     <footer className={styles.footer}><span>{schemas.length} 个 Schema</span><span>{tables.length} 个对象</span></footer>
     {!hidden && onWidthChange ? <ResourceTreeResize paneRef={pane} controls={id} onChange={onWidthChange} /> : null}

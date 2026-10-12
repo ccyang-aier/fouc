@@ -1,7 +1,7 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
-import type { SettingsSection } from '@/features/settings/settings-dialog';
+import type { SettingsSection } from '@/features/settings/settings-canvas';
 
 export const WORKBENCH_VIEW_CHANGED = 'fouc:view-changed';
 function notify() { window.dispatchEvent(new Event(WORKBENCH_VIEW_CHANGED)); }
@@ -26,11 +26,11 @@ export function closeSettings() {
 
 function readSection(): SettingsSection {
   const section = new URLSearchParams(window.location.search).get('section');
-  return ['appearance', 'general', 'agents', 'about'].includes(section ?? '') ? section as SettingsSection : 'general';
+  return ['appearance', 'general', 'agents', 'about'].includes(section ?? '') ? section as SettingsSection : 'appearance';
 }
 function subscribe(listener: () => void) {
   window.addEventListener('popstate', listener);
   window.addEventListener(WORKBENCH_VIEW_CHANGED, listener);
   return () => { window.removeEventListener('popstate', listener); window.removeEventListener(WORKBENCH_VIEW_CHANGED, listener); };
 }
-export function useSettingsSection() { return useSyncExternalStore(subscribe, readSection, () => 'general' as SettingsSection); }
+export function useSettingsSection() { return useSyncExternalStore(subscribe, readSection, () => 'appearance' as SettingsSection); }

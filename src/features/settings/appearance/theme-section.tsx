@@ -40,7 +40,7 @@ export function ThemeSection({
 }) {
   return (
     <SettingsSection title="主题">
-      <div className="grid grid-cols-3 gap-2.5 max-[760px]:grid-cols-1" role="radiogroup" aria-label="主题">
+      <div className="grid w-fit grid-cols-3 gap-2.5" role="radiogroup" aria-label="主题">
         {THEME_PREFS.map((id) => {
           const selected = value === id
           const Icon = THEME_ICONS[id]
@@ -52,10 +52,10 @@ export function ThemeSection({
               aria-checked={selected}
               onClick={() => onChange(id)}
               className={cn(
-                "fouc-action group relative min-w-0 rounded-[10px] border p-2 text-left outline-none transition-colors duration-200 focus-visible:border-[var(--accent)]",
+                "group relative w-[186px] rounded-[10px] border p-2 text-left outline-none transition-[border-color,box-shadow,transform] duration-200 ease-out focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] hover:-translate-y-px",
                 selected
-                  ? "border-[var(--accent)]"
-                  : "border-[var(--control-border)]",
+                  ? "border-[var(--accent)] shadow-[0_0_0_1px_var(--accent)]"
+                  : "border-[var(--line)] hover:border-[var(--line-strong)]",
               )}
             >
               <span className="relative block h-[104px] overflow-hidden rounded-[7px] border border-[var(--line)]" aria-hidden>

@@ -11,7 +11,6 @@ import type { AgentInstallation, ProviderSpec } from "@fouc/shared"
 import { backendFetch, getBackendEndpoint } from "@/lib/backend"
 import { formatRelativeTime } from "@/lib/relative-time"
 import { cn } from "@/lib/utils"
-import { SettingsPanel } from "./settings-panel"
 
 export function GeneralSettings() {
   const [backendUrl, setBackendUrl] = useState<string>("—")
@@ -49,8 +48,9 @@ export function GeneralSettings() {
   }, null)
 
   return (
-    <SettingsPanel title="通用">
-      <section className="mt-4 overflow-hidden rounded-[12px] bg-panel">
+    <div className="mx-auto w-full max-w-[960px] px-10 pb-14 pt-12 max-[1100px]:px-7 max-[900px]:pt-8">
+      <PanelHeader title="通用" />
+      <section className="mt-5 overflow-hidden rounded-[12px] border border-[var(--line)] bg-panel shadow-[0_1px_2px_rgba(23,25,27,0.04)]">
         <header className="flex items-center gap-2 border-b border-[var(--line)] px-5 py-3.5">
           <Plugs className="size-[15px] text-[var(--muted)]" weight="fill" aria-hidden />
           <h2 className="text-[13px] font-medium">运行状态</h2>
@@ -84,9 +84,10 @@ export function GeneralSettings() {
           </StatusRow>
         </dl>
       </section>
-    </SettingsPanel>
+    </div>
   )
 }
+
 function StatusRow({ label, last, children }: { label: string; last?: boolean; children: React.ReactNode }) {
   return (
     <div
@@ -98,5 +99,14 @@ function StatusRow({ label, last, children }: { label: string; last?: boolean; c
       <dt className="shrink-0 text-[var(--muted-strong)]">{label}</dt>
       <dd className="min-w-0 truncate text-[var(--ink)]">{children}</dd>
     </div>
+  )
+}
+
+export function PanelHeader({ title, description }: { title: string; description?: string }) {
+  return (
+    <header>
+      <h2 className="text-[16px] font-semibold tracking-[-0.01em]">{title}</h2>
+      {description && <p className="mt-0.5 text-[12px] text-[var(--muted)]">{description}</p>}
+    </header>
   )
 }

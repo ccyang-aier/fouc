@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils"
 
 import { pickBestInstallation, ProviderRow, type ProviderStatusKey } from "./provider-row"
 import { ProviderAvatar } from "./provider-meta"
-import { SettingsPanel } from "./settings-panel"
+import { PanelHeader } from "./general-settings"
 
 type AvailabilityTab = "all" | "available" | "unavailable"
 
@@ -268,10 +268,12 @@ export function AgentSettings() {
   ]
 
   return (
-    <SettingsPanel
-      title="Agent 纳管"
-      description={`管理本机可用的 AI Agent —— ${installations.length} 个已登记实例 / ${providers.length} 种受支持产品。`}
-    >
+    <div className="mx-auto w-full max-w-[960px] px-10 pb-14 pt-12 max-[1100px]:px-7 max-[900px]:pt-8">
+      <PanelHeader
+        title="Agent 纳管"
+        description={`管理本机可用的 AI Agent —— ${installations.length} 个已登记实例 / ${providers.length} 种受支持产品。`}
+      />
+
       {loading ? (
         <LoadingState />
       ) : !backendOnline ? (
@@ -298,10 +300,10 @@ export function AgentSettings() {
                 variant="outline"
                 size="sm"
                 onClick={() => void refreshAll()}
-                loading={refreshing}
+                disabled={refreshing}
                 className="h-8 rounded-[9px] px-2.5 text-[11.5px]"
               >
-                <ArrowClockwise className="size-3.5" aria-hidden />
+                <ArrowClockwise className={cn("size-3.5", refreshing && "animate-spin")} aria-hidden />
                 刷新发现
               </Button>
               <DropdownMenu>
@@ -313,7 +315,7 @@ export function AgentSettings() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-60 p-0">
-                  <ScrollArea className="max-h-[320px]" viewportClassName="p-1.5">
+                  <ScrollArea scrollbar={false} className="max-h-[320px]" viewportClassName="p-1.5">
                     {unregisteredProviders.length === 0 ? (
                       <DropdownMenuItem disabled>全部受支持产品均已登记</DropdownMenuItem>
                     ) : (
@@ -398,7 +400,7 @@ export function AgentSettings() {
           </div>
         </>
       )}
-    </SettingsPanel>
+    </div>
   )
 }
 

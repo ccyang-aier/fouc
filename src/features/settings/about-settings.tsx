@@ -6,15 +6,16 @@
 
 import Image from "next/image"
 
-import { SettingsPanel } from "./settings-panel"
+import { PanelHeader } from "./general-settings"
 
 export const FOUC_VERSION = "0.1.0"
 
 export function AboutSettings() {
   return (
-    <SettingsPanel title="关于">
+    <div className="mx-auto w-full max-w-[960px] px-10 pb-14 pt-12 max-[1100px]:px-7 max-[900px]:pt-8">
+      <PanelHeader title="关于" />
 
-      <section className="mt-4 rounded-[12px] bg-panel px-6 py-6">
+      <section className="mt-5 rounded-[12px] border border-[var(--line)] bg-panel px-6 py-6 shadow-[0_1px_2px_rgba(23,25,27,0.04)]">
         <div className="flex items-center gap-4">
           <span className="relative size-12 shrink-0 overflow-hidden rounded-[12px]">
             <Image
@@ -40,6 +41,6 @@ export function AboutSettings() {
           的目录声明，安装即可自动发现、探测与纳管，无需任何手工配置。
         </div>
       </section>
-    </SettingsPanel>
+    </div>
   )
 }

@@ -30,7 +30,7 @@ function WorkbenchTab({ label, icon, selected, disabled, closeLabel, onSelect, o
   return <div role="tab" aria-label={label} aria-selected={selected} aria-disabled={disabled} tabIndex={selected && !disabled ? 0 : -1} className={`${styles.objectTab} fouc-action`}
     onClick={() => { if (!disabled) onSelect() }} onKeyDown={event => { if (event.target === event.currentTarget && !disabled && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); onSelect() } }}>
     {icon}<span title={label}>{label}</span>
-    {onClose && <button type="button" className={styles.tabClose} disabled={disabled} aria-label={closeLabel} onClick={event => { event.stopPropagation(); onClose() }}><X size={12} /></button>}
+    {onClose && <button type="button" className={`${styles.tabClose} fouc-action`} data-variant="nested" disabled={disabled} aria-label={closeLabel} onClick={event => { event.stopPropagation(); onClose() }}><X size={12} /></button>}
   </div>
 }
 

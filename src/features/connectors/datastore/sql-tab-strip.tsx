@@ -50,7 +50,7 @@ export function SqlTabStrip({ snapshot, scope, busyIds, canBack, canForward, can
         onDrop={event => { event.preventDefault(); if (disabled) return; try { const data = JSON.parse(event.dataTransfer.getData(dragMime)); if (data.scope === scope && typeof data.id === 'string') onReorder(data.id, tab.id) } catch { /* Unrelated drag. */ } }}>
         {tab.pinned ? <PushPin size={15} weight="fill" /> : <FileCode size={15} weight="bold" />}<span>{tab.title}</span>
         {busyIds.has(tab.id) ? <i className={styles.running} aria-hidden /> : sqlTabDirty(tab) ? <i className={styles.dirty} aria-hidden /> : null}
-        <button type="button" className={styles.close} aria-label={`关闭 ${tab.title}`} disabled={disabled || busyIds.has(tab.id)} onClick={event => { event.stopPropagation(); onAction('close', tab) }}><X size={13} weight="bold" /></button>
+        <button type="button" className={`${styles.close} fouc-action`} data-variant="nested" aria-label={`关闭 ${tab.title}`} disabled={disabled || busyIds.has(tab.id)} onClick={event => { event.stopPropagation(); onAction('close', tab) }}><X size={13} weight="bold" /></button>
       </div>)}
     </div>
     {context && <DropdownMenu open modal={false} onOpenChange={open => { if (!open) setContext(null) }}>

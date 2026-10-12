@@ -3,7 +3,7 @@
 .list { display: flex; min-width: 0; height: 100%; }
 .tab { display: flex; align-items: center; gap: 7px; height: 100%; border-right: 1px solid var(--line); flex-shrink: 0; min-width: 135px; max-width: 240px; padding: 0 8px 0 10px; color: var(--muted-strong); font-size: 13px; font-weight: 500; cursor: pointer; outline: none; }
 .tab span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tab .close { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; padding: 0; color: var(--muted-strong); flex: none; cursor: pointer; }
+.tab .close { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; padding: 0; border-radius: 4px; color: var(--muted-strong); flex: none; cursor: pointer; }
 .tab svg { flex-shrink: 0; }
 .tab.active { --action-state-bg: var(--workbench-tab-active-bg); --action-state-ink: var(--ink); background: var(--workbench-tab-active-bg); color: var(--ink); font-weight: 600; }
 .dirty, .running { width: 6px; height: 6px; border-radius: 50%; background: #b88835; flex-shrink: 0; }

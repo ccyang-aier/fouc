@@ -4,7 +4,7 @@
 
 import { useCallback, useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { FolderPlus, LockSimple, XCircle } from '@phosphor-icons/react';
+import { LockSimple, XCircle } from '@phosphor-icons/react';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { useIdentity } from '@/features/identity/identity-provider';
@@ -39,6 +39,7 @@ import { useCreateTeamspaceMutation } from './organization/hooks';
 import { currentDocumentLinkTarget, documentLink, readDocumentLink } from './editor/document-link';
 import { createLocalLibraryStore, emptyLocalLibrary } from './local/local-library';
 import type { KnowledgeBaseSummary } from './knowledge-base-header';
+import { KnowledgeEmptyState } from './knowledge-empty-state';
 
 type LocalStore = ReturnType<typeof createLocalLibraryStore>;
 const LocalKnowledgeResource = dynamic(() => import('./local/local-knowledge-resource').then(module => module.LocalKnowledgeResource), { ssr: false, loading: () => <CanvasSpinner label="正在加载知识资源" /> });
@@ -205,7 +206,7 @@ function ServerKnowledgeResource({ activeBaseId, baseAvailable, directoryState, 
   } else if (phase === 'knowledge-bases-error') {
     content = <CanvasError title="知识库列表加载失败" detail={organizationErrorTextOf(directoryError)} onRetry={retryDirectory} />;
   } else if (phase === 'knowledge-bases-empty' && !activeBaseId) {
-    content = <CanvasState icon={<FolderPlus size={20} />} title="还没有服务端知识库" actions={<Button onClick={onCreateKnowledgeBase}>新建知识库</Button>} />;
+    content = <KnowledgeEmptyState onCreate={onCreateKnowledgeBase} />;
   } else if (directoryState.status === 'success' && !baseAvailable) {
     content = <CanvasState icon={<LockSimple size={20} />} title="无法访问此知识库" hint="知识库已被移除，或当前账户没有访问权限。" />;
   } else if (phase === 'knowledge-base-loading') {

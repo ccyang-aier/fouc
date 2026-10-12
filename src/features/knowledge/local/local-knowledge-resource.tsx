@@ -18,7 +18,7 @@ import { documentFileFormat } from '../documents/file-format';
 import { LocalDocumentEditor } from './local-document-editor';
 import { subscribeOpenPageTarget } from '../editor/open-target';
 import { LocalLibraryNavigation } from './local-library-navigation';
-import { LocalLibraryEmptyState } from './local-library-empty-state';
+import { KnowledgeEmptyState } from '../knowledge-empty-state';
 import { DocumentsPage } from '../documents/documents-page';
 import { LocalDocumentImport } from '../documents/local-document-import';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuCheckboxItem } from '@/components/ui/dropdown-menu';
@@ -43,7 +43,7 @@ export function LocalKnowledgeResource({ store, selectedKnowledgeBaseId, knowled
   const [collapsed, setCollapsed] = useState(false);
   const [editorSidebarOpen, setEditorSidebarOpen] = useState(false);
   const [activeTagId, setActiveTagId] = useState<string | null>(null);
-  const [creation, setCreation] = useState<'document' | 'base' | 'folder' | null>(null);
+  const [creation, setCreation] = useState<'document' | 'folder' | null>(null);
   const { notify } = useAppAlert();
   useEffect(() => subscribeOpenPageTarget((target) => {
     const page = store.getSnapshot().documents.find(item => item.baseId === target.knowledgeBaseId && item.id === target.pageId && !item.deleted);
@@ -122,11 +122,7 @@ export function LocalKnowledgeResource({ store, selectedKnowledgeBaseId, knowled
     />}
     onExpandSidebar={collapsed ? () => setCollapsed(false) : undefined}
     overlays={<LocalCreationDialog kind={creation} onClose={() => setCreation(null)} onCreate={(name) => {
-      if (creation === 'base') {
-        const id = crypto.randomUUID();
-        if (!write((current) => ({ ...current, bases: [...current.bases, { id, name }] }))) return;
-        setBaseId(id); setSelectedId(null);
-      } else if (creation === 'folder' && base) {
+      if (creation === 'folder' && base) {
         const id = crypto.randomUUID();
         if (!write((current) => ({ ...current, folders: [...current.folders, { id, knowledgeBaseId: base.id, name }] }))) return;
         setFolderId(id); setSelectedId(null); setActiveTagId(null);
@@ -143,7 +139,7 @@ export function LocalKnowledgeResource({ store, selectedKnowledgeBaseId, knowled
       setCreation(null);
     }} />}
   >
-      {!base ? <LocalLibraryEmptyState onCreate={onCreateKnowledgeBase} /> : selected ? (selected.file || documentFileFormat(selected.title) && documentFileFormat(selected.title) !== "markdown") ? <LocalFileDocument key={selected.id} knowledgeBaseId={knowledgeBaseId} document={selected} folderName={selectedFolderName} onChange={(patch) => updateDocument(selected.id, patch)} onBack={() => setSelectedId(null)} onOpenSidebar={() => setEditorSidebarOpen(true)} onCreateDocument={() => setCreation("document")} attach={setFile => <LocalDocumentImport knowledgeBaseId={knowledgeBaseId} onImport={items => { return items[0] ? setFile(items[0].file) : false; }} />} /> : <LocalDocumentEditor key={selected.id} knowledgeBaseId={knowledgeBaseId} store={store} document={selected} folderName={selectedFolderName} onChange={(patch) => updateDocument(selected.id, patch)} onBack={() => { setSelectedId(null); }} onOpenSidebar={() => setEditorSidebarOpen(true)} onCreateDocument={() => setCreation('document')} /> : view === 'all-documents' ? <DocumentsPage key={`${base.id}:${folderId ?? activeTagId ?? 'all'}`}
+      {!base ? <KnowledgeEmptyState onCreate={onCreateKnowledgeBase} /> : selected ? (selected.file || documentFileFormat(selected.title) && documentFileFormat(selected.title) !== "markdown") ? <LocalFileDocument key={selected.id} knowledgeBaseId={knowledgeBaseId} document={selected} folderName={selectedFolderName} onChange={(patch) => updateDocument(selected.id, patch)} onBack={() => setSelectedId(null)} onOpenSidebar={() => setEditorSidebarOpen(true)} onCreateDocument={() => setCreation("document")} attach={setFile => <LocalDocumentImport knowledgeBaseId={knowledgeBaseId} onImport={items => { return items[0] ? setFile(items[0].file) : false; }} />} /> : <LocalDocumentEditor key={selected.id} knowledgeBaseId={knowledgeBaseId} store={store} document={selected} folderName={selectedFolderName} onChange={(patch) => updateDocument(selected.id, patch)} onBack={() => { setSelectedId(null); }} onOpenSidebar={() => setEditorSidebarOpen(true)} onCreateDocument={() => setCreation('document')} /> : view === 'all-documents' ? <DocumentsPage key={`${base.id}:${folderId ?? activeTagId ?? 'all'}`}
         onExpandSidebar={collapsed ? () => setCollapsed(false) : undefined}
         documents={listed.map((item) => ({ id: item.id, title: item.title, icon: item.icon, updatedAt: item.updatedAt, creator: item.creator ?? '我', source: item.source ?? '本机文档', status: item.indexStatus ?? '暂无状态', starred: item.starred, folderId: item.folderId }))}
         folders={activeTagId ? [] : folders.map((folder) => ({ id: folder.id, name: folder.name, count: live.filter((item) => item.folderId === folder.id).length, updatedAt: live.filter((item) => item.folderId === folder.id).map((item) => item.updatedAt).sort().at(-1) }))}
@@ -168,13 +164,13 @@ export function LocalKnowledgeResource({ store, selectedKnowledgeBaseId, knowled
   </KnowledgeWorkbench>;
 }
 
-function LocalCreationDialog({ kind, onClose, onCreate }: { kind: 'document' | 'base' | 'folder' | null; onClose: () => void; onCreate: (name: string) => void }) {
+function LocalCreationDialog({ kind, onClose, onCreate }: { kind: 'document' | 'folder' | null; onClose: () => void; onCreate: (name: string) => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [name, setName] = useState('');
   useEffect(() => { if (kind) dialog.current?.showModal(); else dialog.current?.close(); }, [kind]);
-  return <dialog ref={dialog} aria-label={kind === 'base' ? '新建本机知识库' : kind === 'folder' ? '新建文件夹' : '新建本机文档'} onCancel={onClose} onClose={onClose} className="m-auto w-[400px] max-w-[calc(100vw-32px)] rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-7 text-[var(--ink)] shadow-xl backdrop:bg-black/25 backdrop:backdrop-blur-sm">
+  return <dialog ref={dialog} aria-label={kind === 'folder' ? '新建文件夹' : '新建本机文档'} onCancel={onClose} onClose={onClose} className="m-auto w-[400px] max-w-[calc(100vw-32px)] rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-7 text-[var(--ink)] shadow-xl backdrop:bg-black/25 backdrop:backdrop-blur-sm">
     <form onSubmit={(event) => { event.preventDefault(); if (name.trim()) { onCreate(name.trim()); setName(''); } }}>
-      <h2 className="mb-5 text-base font-semibold">{kind === 'base' ? '新建本机知识库' : kind === 'folder' ? '新建文件夹' : '新建文档'}</h2>
+      <h2 className="mb-5 text-base font-semibold">{kind === 'folder' ? '新建文件夹' : '新建文档'}</h2>
       <label className="block text-xs">名称<input autoFocus required value={name} onChange={(event) => setName(event.target.value)} className="mt-2 h-10 w-full rounded-lg border border-[var(--line)] bg-transparent px-3 outline-none focus:border-[var(--accent)]" /></label>
       <div className="mt-6 flex justify-end gap-2"><Button type="button" variant="ghost" onClick={() => { setName(''); onClose(); }}>取消</Button><Button type="submit" disabled={!name.trim()}>创建</Button></div>
     </form>

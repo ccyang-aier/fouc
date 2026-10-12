@@ -36,7 +36,7 @@ export function KnowledgeBaseHeader({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button type="button" className={styles.knowledgeButton} aria-label={`知识库菜单：${knowledgeBaseName}`}>
-          {activeKnowledgeBase ? <span aria-hidden="true" className={styles.knowledgeAvatar} data-tone={knowledgeBases.findIndex((base) => base.id === activeKnowledgeBaseId) % 6}>{Array.from(knowledgeBaseName.trim())[0]?.toUpperCase() ?? "K"}</span> : <BookOpen aria-hidden="true" size={22} className="mx-[3px] shrink-0 text-[var(--muted)]" />}
+          {activeKnowledgeBase ? <span aria-hidden="true" className={styles.knowledgeAvatar} data-tone={knowledgeBases.findIndex((base) => base.id === activeKnowledgeBaseId) % 6}>{Array.from(knowledgeBaseName.trim())[0]?.toUpperCase() ?? "K"}</span> : <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-[var(--surface-subtle)] text-[var(--muted)]"><BookOpen aria-hidden="true" size={20} /></span>}
           <span className={styles.knowledgeName}>{knowledgeBaseName}</span>
         </button>
       </DropdownMenuTrigger>

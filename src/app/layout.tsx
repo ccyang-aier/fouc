@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next"
 
+import "./code-fonts.css"
 import "./globals.css"
 import { IdentityProvider } from "@/features/identity/identity-provider"
 import { AppAlertProvider } from "@/components/app-alert-provider"
@@ -29,6 +30,7 @@ try{var p=JSON.parse(localStorage.getItem("fouc.appearance")||"null")||{};var h=
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="zh-CN" suppressHydrationWarning>
+      <head><link rel="preload" href="/fonts/code/maple-mono/MapleMono-Regular.woff2" as="font" type="font/woff2" crossOrigin="anonymous" /></head>
       <body>
         <script dangerouslySetInnerHTML={{ __html: BOOT_SCRIPT }} />
         <AppAlertProvider><IdentityProvider>{children}</IdentityProvider></AppAlertProvider>

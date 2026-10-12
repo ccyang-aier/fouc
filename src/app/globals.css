@@ -92,8 +92,8 @@
   --ui-size: 13px;
   --code-size: 12px;
   --chat-size: 13px;
-  --font-code: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    "Liberation Mono", "Courier New", monospace;
+  --font-code: "Maple Mono", "Maple Mono NF CN", ui-monospace,
+    SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --font-chat: var(--font-sans);
 
   /* ── 侧栏材质令牌（供 sidebar-material.css 消费） ── */

@@ -85,8 +85,7 @@ export const uiFontOptions: Array<{ id: UiFontId; label: string; stack: string }
   {
     id: "mono",
     label: "等宽界面",
-    stack:
-      'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+    stack: "var(--font-code)",
   },
 ]
 
@@ -107,8 +106,8 @@ export type CodeFontId = (typeof CODE_FONT_IDS)[number]
 export const codeFontOptions: Array<{ id: CodeFontId; label: string; stack: string }> = [
   {
     id: "default",
-    label: "默认等宽",
-    stack: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+    label: "默认（Maple Mono）",
+    stack: '"Maple Mono", "Maple Mono NF CN", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
   },
   {
     id: "cascadia",
@@ -123,7 +122,7 @@ export const codeFontOptions: Array<{ id: CodeFontId; label: string; stack: stri
   {
     id: "maple",
     label: "Maple Mono",
-    stack: '"Maple Mono", "Maple Mono NF CN", "JetBrains Mono", ui-monospace, monospace',
+    stack: '"Maple Mono", "Maple Mono NF CN", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
   },
   {
     id: "sarasa",
@@ -193,7 +192,7 @@ export const APPEARANCE_DEFAULTS: AppearancePrefs = {
   accentCustom: "#3e63dd",
   uiFont: "default",
   uiFontSize: 13,
-  codeFont: "default",
+  codeFont: "maple",
   codeFontSize: 12,
   chatFont: "follow",
   chatFontSize: 13,

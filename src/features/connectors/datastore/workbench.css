@@ -5,9 +5,9 @@
   --mw-blue-soft: var(--accent-soft);
   --mw-text: var(--ink);
   --mw-muted: var(--muted-strong);
-  --mw-sql-keyword: #215bb7;
-  --mw-sql-string: #aa3c35;
-  --mw-sql-number: #157b57;
+  --mw-sql-keyword: #123fff;
+  --mw-sql-string: #bd4700;
+  --mw-sql-number: #007c69;
   --mw-sidebar: var(--surface-subtle);
   --surface: var(--surface-subtle);
   display: flex;
@@ -22,9 +22,9 @@
   line-height: 1.5;
 }
 html[data-theme="dark"] .mw {
-  --mw-sql-keyword: #87b5ff;
-  --mw-sql-string: #e8a398;
-  --mw-sql-number: #83cdb0;
+  --mw-sql-keyword: #91adff;
+  --mw-sql-string: #ffb275;
+  --mw-sql-number: #72d9ba;
 }
 
 .mw button,
@@ -1552,7 +1552,10 @@ html[data-theme="dark"] .mw {
   padding: 10px 8px 10px 0;
   border-right: 1px solid var(--mw-line);
   color: #68839f;
-  font: max(14px, var(--code-size))/1.8 var(--font-code);
+  font: 400 max(14px, var(--code-size))/1.65 var(--font-code);
+  font-synthesis: none;
+  font-variant-ligatures: contextual;
+  letter-spacing: 0;
   text-align: right;
 }
 .mw-editor-code {
@@ -1608,7 +1611,7 @@ html[data-theme="dark"] .mw {
 .mw-live-code-editor .cm-scroller {
   overflow: auto;
   font-family: var(--font-code);
-  line-height: 1.8;
+  line-height: 1.65;
 }
 .mw-live-code-editor .cm-content {
   padding: 16px 0;
@@ -1652,16 +1655,6 @@ html[data-theme="dark"] .mw {
 .fouc-sql-completion-key { visibility: hidden; display: inline-flex; align-items: center; justify-content: center; flex: none; height: 20px; margin-left: auto; padding: 0 5px; border: 1px solid var(--resource-card-border); border-radius: 4px; color: var(--muted-strong); background: var(--panel); box-shadow: 0 1px 0 var(--line); font: 10px/1 var(--font-sans); white-space: nowrap; }
 .fouc-sql-completion li[aria-selected] .fouc-sql-completion-key { visibility: visible; }
 .fouc-sql-completion .cm-completionInfo { padding: 10px 12px; border: 1px solid var(--menu-border); border-radius: 7px; box-shadow: var(--menu-shadow); font: 12px/1.6 var(--font-sans); color: var(--ink); background: var(--panel); max-width: min(320px, calc(100vw - 24px)); white-space: pre-wrap; overflow-wrap: anywhere; }
-.mw-sql-keyword {
-  color: #1648c9;
-  font-weight: 650;
-}
-.mw-sql-string {
-  color: #bf3d37;
-}
-.mw-sql-number {
-  color: #289056;
-}
 .mw-result {
   position: relative;
   min-height: 0;

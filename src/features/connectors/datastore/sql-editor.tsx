@@ -48,12 +48,13 @@ import { tags } from '@lezer/highlight'
 import loadingStyles from '@/components/ui/button-loading.module.css'
 
 const sqlHighlight = HighlightStyle.define([
-  { tag: tags.keyword, color: 'var(--mw-sql-keyword)' },
+  { tag: [tags.keyword, tags.bool, tags.null], color: 'var(--mw-sql-keyword)', fontWeight: '500' },
   { tag: [tags.string, tags.special(tags.string)], color: 'var(--mw-sql-string)' },
-  { tag: [tags.number, tags.bool, tags.null], color: 'var(--mw-sql-number)' },
+  { tag: tags.number, color: 'var(--mw-sql-number)' },
   { tag: tags.comment, color: 'var(--mw-muted)', fontStyle: 'italic' },
   { tag: [tags.typeName, tags.className], color: 'var(--accent-ink)' },
-  { tag: [tags.operator, tags.punctuation], color: 'var(--ink-soft)' }
+  { tag: tags.standard(tags.name), color: 'var(--sql-completion-function-ink)' },
+  { tag: [tags.operator, tags.punctuation], color: 'var(--ink)' }
 ])
 
 const tooltipParent = new Compartment()

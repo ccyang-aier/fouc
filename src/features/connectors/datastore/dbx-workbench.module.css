@@ -81,7 +81,7 @@
 .detailField { min-width: 0; }
 .detailField pre { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 180px; overflow-y: auto; font: 12px/1.6 var(--font-code); }
 .shortcuts { display: flex; flex-direction: column; flex-shrink: 0; padding: 4px 8px; border-top: 1px solid var(--line); }
-.shortcuts button { display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 8px; border-radius: 4px; color: var(--ink-soft); font: inherit; text-align: left; }
+.shortcuts button { display: flex; align-items: center; gap: 8px; min-height: 28px; padding: 0 8px; border-radius: 4px; color: var(--ink-soft); font: inherit; text-align: left; }
 .shortcuts button[aria-pressed="true"] { background: var(--surface-hover); color: var(--ink); }
 @media (max-width: 1100px) { .connectionActions, .metadataActions { gap: 6px; } .commandGroup + .commandGroup::before { margin-right: 6px; } }
 @media (max-width: 1000px) {

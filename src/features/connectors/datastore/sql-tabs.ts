@@ -15,9 +15,9 @@ export function navigateSqlTabs(visits: SqlTabVisits, direction: -1 | 1, snapsho
   }
   return null;
 }
-export function newSqlTab(database: string, schema: string | null, title = '未命名查询'): SqlDraftTab {
+export function newSqlTab(database: string, schema: string | null, title = '未命名查询', id: string = crypto.randomUUID()): SqlDraftTab {
   const sql = 'SELECT 1 AS result;';
-  return { id: crypto.randomUUID(), title, customTitle: false, pinned: false, database, schema, sql, originalSql: sql,
+  return { id, title, customTitle: false, pinned: false, database, schema, sql, originalSql: sql,
     savedFile: null, editorPosition: { anchor: 0, head: 0, scrollTop: 0, scrollLeft: 0 }, resultView: 'table' };
 }
 export function nextSqlQueryTitle(tabs: readonly SqlDraftTab[]): string {

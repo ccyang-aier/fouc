@@ -35,8 +35,14 @@ export class SqlDraftController {
     this.loading = Promise.resolve().then(async () => {
       try {
         const remote = this.transport ? await this.transport.read() : { ...this.initial(), version: null, updatedAt: null };
-        this.publish({ ...remote, ready: true, status: 'ready', error: '', pending: false });
-        if (remote.version === null && remote.tabs.length === 0) this.edit(this.initial());
+        const fresh = remote.version === null && remote.tabs.length === 0;
+        const snapshot = fresh ? this.initial() : remote;
+        const seeded = fresh && snapshot.tabs.length > 0;
+        if (seeded) this.generation++;
+        // Expose a complete initial snapshot once. Ready subscribers may immediately
+        // open a query, so a later initialization edit must never overwrite it.
+        this.publish({ ...remote, ...snapshot, ready: true, status: 'ready', error: '', pending: seeded && this.transport !== null });
+        if (seeded) this.scheduleSave();
       } catch (reason) { this.publish({ status: 'error', error: reason instanceof Error ? reason.message : String(reason) }); }
       finally { this.loading = null; }
     });
@@ -46,8 +52,12 @@ export class SqlDraftController {
     if (!this.state.ready || (snapshot.tabs === this.state.tabs && snapshot.activeTabId === this.state.activeTabId)) return;
     this.generation++;
     this.publish({ ...snapshot, pending: this.transport !== null });
+    this.scheduleSave();
+  }
+  private scheduleSave(): void {
     if (this.timer) clearTimeout(this.timer);
-    if (this.transport && this.state.status !== 'error') this.timer = setTimeout(() => { this.timer = null; void this.flush().catch(() => undefined); }, 300);
+    this.timer = null;
+    if (this.transport && this.state.pending && this.state.status !== 'error') this.timer = setTimeout(() => { this.timer = null; void this.flush().catch(() => undefined); }, 300);
   }
   update(operation: (snapshot: SqlDraftSnapshot) => SqlDraftSnapshot): void { this.edit(operation(this.state)); }
   /** One request at a time; callers wait until edits made during a save have also landed. */

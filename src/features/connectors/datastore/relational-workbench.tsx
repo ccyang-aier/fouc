@@ -82,6 +82,7 @@ export function RelationalWorkbench({
   const [initialObject, setInitialObject] = useState<SchemaObject | null>(null)
   const [initialStructureSearch, setInitialStructureSearch] = useState<string | undefined>()
   const [openRequest, setOpenRequest] = useState<{ id: string; sql: string; schema: string } | null>(null)
+  const consumeOpenRequest = useCallback((id: string) => { setOpenRequest(current => current?.id === id ? null : current) }, [])
   const [busy, setBusy] = useState(false)
   const [loadTimeMs, setLoadTimeMs] = useState<number | null>(null)
   const [error, setError] = useState("")
@@ -431,7 +432,7 @@ export function RelationalWorkbench({
             </p>
           )}
           <div hidden={mode !== "sql"} className={styles.queryPanel}>
-            <RelationalQuery key={session.id} session={currentSession} schema={schema} schemas={schemas} metadataRevision={revision} schemaLocked={pending} onSchemaChange={selectSchema} beforeLeaveRef={sqlBeforeLeave} onLeaveReady={clearLeaveError} openRequest={openRequest} onUnlockWrite={unlockSqlWrite} onMutated={refresh} onMutationBusy={setMutationBusy}
+            <RelationalQuery key={session.id} session={currentSession} schema={schema} schemas={schemas} metadataRevision={revision} schemaLocked={pending} onSchemaChange={selectSchema} beforeLeaveRef={sqlBeforeLeave} onLeaveReady={clearLeaveError} openRequest={openRequest} onOpenRequestConsumed={consumeOpenRequest} onUnlockWrite={unlockSqlWrite} onMutated={refresh} onMutationBusy={setMutationBusy}
               tabsTarget={sqlTabsTarget} active={mode === 'sql'} tabsDisabled={pending || leaving} onActivate={() => changeView('sql')} onNoQueries={() => { setOpenedViews(current => current.filter(value => value !== 'sql')); if (mode === 'sql') setMode('data') }} />
           </div>
           {page && (

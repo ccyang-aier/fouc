@@ -63,8 +63,8 @@ const diagnosticsCompartment = new Compartment()
 const refreshExecutionMarker = StateEffect.define<void>()
 type MarkerStatus = 'idle' | 'running' | 'succeeded' | 'failed'
 class RunStatementMarker extends GutterMarker {
-  constructor(private status: MarkerStatus) { super() }
-  toDOM() {
+  constructor(private status: MarkerStatus, private readonly run: () => void) { super() }
+  toDOM(view: EditorView) {
     const button = document.createElement('button')
     button.type = 'button'; button.className = 'fouc-action'; button.dataset.execution = this.status
     const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
@@ -80,6 +80,7 @@ class RunStatementMarker extends GutterMarker {
       const badge = document.createElement('span'); badge.className = 'mw-sql-run-badge'; badge.textContent = this.status === 'succeeded' ? '✓' : '!'; badge.setAttribute('aria-hidden', 'true'); button.append(badge)
     }
     button.setAttribute('aria-label', '运行当前语句'); button.title = '运行当前语句 · Ctrl / ⌘ + Enter'
+    button.addEventListener('click', event => { event.preventDefault(); event.stopPropagation(); view.focus(); this.run() })
     // Gutters mount after the editor constructor and are hidden by CodeMirror.
     requestAnimationFrame(() => {
       if (!button.isConnected) return
@@ -90,7 +91,6 @@ class RunStatementMarker extends GutterMarker {
     return button
   }
 }
-const runStatementMarkers = { idle: new RunStatementMarker('idle'), running: new RunStatementMarker('running'), succeeded: new RunStatementMarker('succeeded'), failed: new RunStatementMarker('failed') }
 export type SqlEditorExecutionMark = Pick<SqlStatementExecution, 'from' | 'to' | 'sql' | 'status'>
 
 type SqlEditorHandlers = { onChange: (value: string) => void; onRun: (mode?: SqlExecutionMode) => void; onSave?: () => void; onFormat?: () => void; onPositionChange?: (id: string, position: SqlEditorPosition) => void; complete?: CompletionSource; snippets?: SqlSnippet[]; keywordCase?: SqlFormatterCase; functionCase?: SqlFormatterCase; executionMark?: SqlEditorExecutionMark }
@@ -166,6 +166,12 @@ export function SqlEditor({
     // Cached extensions keep this bridge; bind it to the current React callbacks on every mount.
     const callbacks = cached?.callbacks ?? new SqlEditorCallbacks(handlers.current)
     callbacks.update(handlers.current); activeCallbacks.current = callbacks
+    const runStatementMarkers = {
+      idle: new RunStatementMarker('idle', () => callbacks.get().onRun('current')),
+      running: new RunStatementMarker('running', () => callbacks.get().onRun('current')),
+      succeeded: new RunStatementMarker('succeeded', () => callbacks.get().onRun('current')),
+      failed: new RunStatementMarker('failed', () => callbacks.get().onRun('current')),
+    }
     const savedTop = cached?.scrollTop ?? initialPosition.current?.scrollTop ?? 0
     const savedLeft = cached?.scrollLeft ?? initialPosition.current?.scrollLeft ?? 0
     let restoringViewport = true
@@ -193,7 +199,6 @@ export function SqlEditor({
             return runStatementMarkers[status]
           },
           lineMarkerChange: update => update.selectionSet || update.docChanged || update.transactions.some(transaction => transaction.effects.some(effect => effect.is(refreshExecutionMarker))),
-          domEventHandlers: { click: (view, _line, event) => { event.preventDefault(); view.focus(); callbacks.get().onRun('current'); return true } }
         })] : []),
         lineNumbers(),
         highlightActiveLineGutter(),

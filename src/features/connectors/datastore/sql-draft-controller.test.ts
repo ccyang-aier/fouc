@@ -4,6 +4,26 @@ import { SqlDraftController } from './sql-draft-controller';
 import { closeSqlTabs, mergeSqlDrafts, navigateSqlTabs, newSqlTab, pinSqlTab, reorderSqlTab, sqlTabSaveable, visitSqlTab } from './sql-tabs';
 
 function initial(): SqlDraftSnapshot { const tab = newSqlTab('db', 'public'); return { tabs: [tab], activeTabId: tab.id }; }
+
+test('first ready publication includes initialization and cannot overwrite an immediately opened query', async () => {
+  const seed = newSqlTab('db', 'public'), requested = newSqlTab('db', 'public')
+  let remote: SqlDraftState = { tabs: [], activeTabId: null, version: null, updatedAt: null }
+  const controller = new SqlDraftController({ read: async () => remote, write: async snapshot => {
+    remote = { ...snapshot, version: 'saved', updatedAt: 1 }; return remote
+  } }, () => ({ tabs: [seed], activeTabId: seed.id }))
+  let firstReady: string[] | null = null
+  controller.subscribe(() => {
+    const snapshot = controller.getSnapshot()
+    if (!snapshot.ready || firstReady) return
+    firstReady = snapshot.tabs.map(tab => tab.id)
+    controller.update(current => ({ tabs: [...current.tabs, requested], activeTabId: requested.id }))
+  })
+  await controller.load()
+  expect(firstReady).toEqual([seed.id])
+  expect(controller.getSnapshot().tabs.map(tab => tab.id)).toEqual([seed.id, requested.id])
+  await controller.flush()
+  expect(remote.tabs.map(tab => tab.id)).toEqual([seed.id, requested.id])
+})
 test('debounced saves are serialized and a leave flush includes edits made while its first write is in flight', async () => {
   let remote: SqlDraftState = { ...initial(), version: 'v0', updatedAt: 0 }, active = 0, maximum = 0;
   const releases: (() => void)[] = [], writes: string[] = [];

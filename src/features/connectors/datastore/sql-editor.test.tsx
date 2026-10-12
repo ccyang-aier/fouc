@@ -173,3 +173,22 @@ test('read-only SQL does not accept completion, indent, execute, save or format'
   expect(completionStatus(view.state)).toBeNull()
   expect(actions).toBe(0)
 })
+
+test('run gutter preserves status badges and its busy feedback prevents a second execution', async () => {
+  const sql = 'SELECT 1', runs: (string | undefined)[] = []
+  const mark = { sql, from: 0, to: sql.length }
+  const onRun = (mode?: 'current' | 'all') => { runs.push(mode) }
+  await mount(sql, { showRunGutter: true, executionMark: { ...mark, status: 'failed' }, onRun })
+  expect(document.querySelector('.mw-sql-run-badge')?.textContent).toBe('!')
+  document.querySelector<HTMLButtonElement>('.mw-sql-run-gutter button')!.click()
+  expect(runs).toEqual(['current'])
+  await mount(sql, { showRunGutter: true, executionMark: { ...mark, status: 'succeeded' }, onRun })
+  expect(document.querySelector('.mw-sql-run-badge')?.textContent).toBe('✓')
+  await mount(sql, { showRunGutter: true, executionMark: { ...mark, status: 'running' }, onRun })
+  const busy = document.querySelector<HTMLButtonElement>('.mw-sql-run-gutter button')!
+  expect(busy.getAttribute('aria-busy')).toBe('true')
+  expect(busy.disabled).toBe(true)
+  expect(busy.querySelector('span')?.children).toHaveLength(3)
+  busy.click()
+  expect(runs).toEqual(['current'])
+})

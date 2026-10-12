@@ -1,6 +1,6 @@
-.toolbar { --sql-tool-plan: #8b37ee; --sql-tool-format: #e98110; --sql-tool-file: #1468ff; --sql-tool-pane: #039dd0; --sql-tool-paste: #079f98; display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 10px; border-bottom: 1px solid var(--line); background: var(--surface-subtle); flex: none; min-width: 0; }
-.controls { display: flex; align-items: center; gap: 4px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
-.controls > button { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 5px; flex: none; cursor: pointer; color: var(--ink); }
+.toolbar { --sql-tool-plan: #8b37ee; --sql-tool-format: #e98110; --sql-tool-file: #1468ff; --sql-tool-pane: #039dd0; --sql-tool-paste: #079f98; display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 8px; border-bottom: 1px solid var(--line); background: var(--surface-subtle); flex: none; min-width: 0; }
+.controls { display: flex; align-items: center; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.controls > button { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 5px; flex: none; cursor: pointer; color: var(--ink); }
 .controls > button:not([data-slot="button"]) > span { display: none; }
 .controls > button:disabled { opacity: .4; cursor: default; }
 .controls > button:focus-visible { outline: none; box-shadow: none; }

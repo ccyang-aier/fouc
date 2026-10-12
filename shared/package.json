@@ -39,7 +39,6 @@
     "./redis-bulk": "./src/redis-bulk.ts",
     "./table-create": "./src/table-create.ts",
     "./mongo-tabular": "./src/mongo-tabular.ts",
-    "./sqlite-backup": "./src/sqlite-backup.ts",
     "./index-edit": "./src/index-edit.ts",
     "./sql-join": "./src/sql-join.ts",
     "./database-security": "./src/database-security.ts",

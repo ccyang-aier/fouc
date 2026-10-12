@@ -92,6 +92,11 @@ test('restored query tabs are visible before New; each click adds one and reconn
 
 test('a fresh connection does not silently create a query before New', async () => {
   await mount()
+  const header = document.querySelector('.mw-breadcrumb')!
+  expect(header.querySelector('[aria-label="新建"]')).toBeNull()
+  expect(header.querySelector('[aria-label="搜索对象"]')).toBeNull()
+  expect(header.querySelector('[aria-label="SQLite 原生备份"]')).toBeNull()
+  expect(header.querySelector('[aria-label="解锁表格写入"]')).not.toBeNull()
   expect(queryTabs()).toHaveLength(0)
   expect(writes).toHaveLength(0)
   await clickNew()

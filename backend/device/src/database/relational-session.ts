@@ -18,7 +18,6 @@ import { RelationalExportService } from './relational-export-service';
 import { DatabaseActivityService } from './activity/service';
 import { SchemaCreatePlans } from './schema-create-plans';
 import { TableCreatePlans } from './table-create-plans';
-import { SqliteBackupService } from './sqlite-backup/service';
 import { IndexEditPlans } from './index-edit-plans';
 import { DatabaseSecurityService } from './security/service';
 import { ForeignKeyEditPlans } from './foreign-key-edit-plans';
@@ -84,14 +83,12 @@ export class RelationalSessionManager {
   readonly metadata: RelationalMetadataService;
   readonly exports: RelationalExportService;
   readonly activity: DatabaseActivityService;
-  readonly sqliteBackups: SqliteBackupService;
   readonly security: DatabaseSecurityService;
   readonly adminObjects: DatabaseAdminObjectService;
   constructor(private readonly capabilities: DatabaseCapabilityRegistry, readonly sqlRepository = new RelationalSqlRepository(), documents = new DatabaseDocsRepository(), exports?: DatabaseExportJobs) {
     this.metadata = new RelationalMetadataService((id) => this.entry(id), documents);
     this.exports = new RelationalExportService((id) => this.entry(id), exports);
     this.activity = new DatabaseActivityService((id) => this.entry(id));
-    this.sqliteBackups = new SqliteBackupService((id) => this.entry(id).session);
     this.security = new DatabaseSecurityService((id) => this.entry(id));
     this.adminObjects = new DatabaseAdminObjectService((id) => this.entry(id));
   }
@@ -690,7 +687,6 @@ export class RelationalSessionManager {
     if (!entry.session.connectionId) this.transientSql.removeConnection(id);
     this.capabilities.disconnect(id, id);
     try {
-      await this.sqliteBackups.closeSession({ sessionId: id });
       await this.exports.closeSession({ sessionId: id });
     }
     finally { await entry.driver.close(); }
@@ -701,7 +697,6 @@ export class RelationalSessionManager {
         this.disconnect(session.id),
       ),
     );
-    await this.sqliteBackups.close();
     this.sqlRepository.close();
     this.transientSql.close();
     this.metadata.documents.close();

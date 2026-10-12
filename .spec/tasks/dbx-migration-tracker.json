@@ -4417,7 +4417,6 @@
       "applicableDriverTypes": [
         "mysql",
         "postgres",
-        "sqlite",
         "mongodb"
       ],
       "entryPoints": {
@@ -4426,20 +4425,14 @@
         "cli": "not-applicable",
         "mcp": "not-applicable"
       },
-      "sourceReference": "`sqlite_backup.rs`、`mongodb_dump.rs`、`components/backup/`、`database-backup.cn.mdx`",
+      "sourceReference": "`mongodb_dump.rs`、`components/backup/`、`database-backup.cn.mdx`",
       "regressionCase": {
         "id": "MIG-D06-01",
         "setup": "使用适用驱动的真实服务或可重复协议夹具，并在所列入口进入对应功能",
-        "action": "SQLite 备份、MongoDB dump/import/export；MySQL/PostgreSQL 桌面一次性与小时/日/周定时逻辑备份，库/表模式、结构/数据/对象、路径模板、只读一致性快照、保留/历史/取消清理和 MySQL 指定表恢复。",
+        "action": "MongoDB dump/import/export；MySQL/PostgreSQL 桌面一次性与小时/日/周定时逻辑备份，库/表模式、结构/数据/对象、路径模板、只读一致性快照、保留/历史/取消清理和 MySQL 指定表恢复。",
         "expected": "任务条款逐项成立；记录正常路径、权限边界、失败与取消结果"
       },
-      "acceptanceEvidence": [
-        {
-          "kind": "partial-native-p0-and-browser-smoke",
-          "path": "backend/device/src/database/sqlite-backup/service.ts",
-          "check": "2026-10-04快速开发：SQLite原生readonly transaction+backup覆盖已提交WAL，独立worker/owned artifact/120s timeout/TTL/限额/鉴权下载/真实取消close。3P0/29断言，定向TS/lint和单Chrome实际WAL→64MiB Blob回退→Node回读BIGINT/decimal/blob→close清理通过；1440/390已查看。恢复及其他驱动备份仍待后续。"
-        }
-      ],
+      "acceptanceEvidence": [],
       "scopeKind": "driver"
     },
     {

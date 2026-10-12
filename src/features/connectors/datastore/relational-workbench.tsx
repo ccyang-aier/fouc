@@ -1,6 +1,6 @@
 "use client"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { ArrowLeft, ArrowsDownUp, Database, GridFour, Lock, LockOpen, Plus, SidebarSimple } from "@phosphor-icons/react"
+import { ArrowLeft, ArrowsDownUp, Database, GridFour, Lock, LockOpen, SidebarSimple } from "@phosphor-icons/react"
 import type {
   DatabaseObjectInfo,
   RelationalTablePage,
@@ -33,15 +33,10 @@ import { SchemaObjectsPanel } from './schema-objects'
 import { TableTransferAction } from './table-transfer-action'
 import { DatabaseExportAction } from './database-export'
 import { DatabaseDocsPanel } from './database-docs'
-import { SchemaSearchAction } from './schema-search'
-import { SqliteBackupAction } from './sqlite-backup/action'
 import { DatabaseSecurityAction } from './security/action'
 import { DatabaseAdminObjectsAction } from './admin-objects'
 import { TableClearAction } from './table-clear/action'
-import { SchemaCreateAction } from './schema-create'
-import { TableCreateAction } from './table-create'
 import { SchemaDiagramView } from './schema-diagram-action'
-import type { SchemaObject, SchemaSearchHit } from '@fouc/shared'
 import { WorkbenchShortcuts, WorkbenchTabs, type WorkbenchMode } from "./workbench-tabs"
 import { WorkbenchMetadata } from "./workbench-metadata"
 import { WorkbenchMenu } from "./workbench-menu"
@@ -81,7 +76,6 @@ export function RelationalWorkbench({
   const [dataExportTarget, setDataExportTarget] = useState<HTMLElement | null>(null)
   const [rowActionTarget, setRowActionTarget] = useState<HTMLElement | null>(null)
   const [footerExportTarget, setFooterExportTarget] = useState<HTMLElement | null>(null)
-  const [initialObject, setInitialObject] = useState<SchemaObject | null>(null)
   const [initialStructureSearch, setInitialStructureSearch] = useState<string | undefined>()
   const [openRequest, setOpenRequest] = useState<{ id: string; sql: string; schema: string } | null>(null)
   const consumeOpenRequest = useCallback((id: string) => { setOpenRequest(current => current?.id === id ? null : current) }, [])
@@ -273,22 +267,8 @@ export function RelationalWorkbench({
     setFeedback("")
     setPageSearch("")
   }
-  function openSearchHit(hit: SchemaSearchHit) {
-    if (pending) return
-    selectSchema(hit.schema)
-    setInitialStructureSearch(undefined)
-    if (hit.kind === 'schema') { changeView('objects'); return }
-    if (hit.kind === 'table' || hit.kind === 'column') {
-      openTable(hit.kind === 'column' ? hit.parentName! : hit.name)
-      if (hit.kind === 'column') { setInitialStructureSearch(hit.column ?? hit.name); setMode('structure') }
-      return
-    }
-    if (hit.object) { changeView('objects'); setInitialObject(hit.object) }
-    else if (hit.relation) openTable(hit.relation.name)
-  }
   function changeView(next: WorkbenchMode) {
     if (pending) return
-    if (next === "objects") setInitialObject(null)
     if (next !== "data" && next !== "structure") setOpenedViews(current => current.includes(next) ? current : [...current, next])
     setMode(next)
   }
@@ -324,18 +304,10 @@ export function RelationalWorkbench({
         <span className={styles.connected}><i />已连接</span>
         <span className="mw-sql-spacer" />
         <div className={nativeStyles.connectionActions} role="group" aria-label="连接操作">
-          <div className={nativeStyles.commandGroup} role="group" aria-label="创建与查找">
-            <WorkbenchMenu label="新建" icon={<Plus size={16} />} disabled={pending || busy || writeBusy}>
-              <TableCreateAction session={currentSession} base={base} schema={schema} writable={writable} disabled={pending || busy || writeBusy} onUnlock={unlockSqlWrite} onBusyChange={setMutationBusy} onCreated={refresh} />
-              <SchemaCreateAction session={currentSession} base={base} writable={writable} disabled={pending || busy || writeBusy} onUnlock={unlockSqlWrite} onBusyChange={setMutationBusy} onCreated={() => { refresh(); setFeedback('创建流程已结束，正在刷新资源目录；请以目录实际结果为准。') }} />
-            </WorkbenchMenu>
-            <SchemaSearchAction base={base} session={session} connectionLabel={name} currentSchema={schema} disabled={pending || leaving} onOpen={openSearchHit} onNotice={setFeedback} />
-          </div>
-          <div className={nativeStyles.commandGroup} role="group" aria-label="数据库管理">
-            <SqliteBackupAction session={currentSession} base={base} disabled={pending || leaving || writeBusy} />
+          {session.provider !== 'sqlite' && <div className={nativeStyles.commandGroup} role="group" aria-label="数据库管理">
             <DatabaseSecurityAction base={base} session={currentSession} schema={schema} disabled={pending || leaving || writeBusy} />
             <DatabaseAdminObjectsAction base={base} session={currentSession} schema={schema} disabled={pending || leaving || writeBusy} />
-          </div>
+          </div>}
           <div className={nativeStyles.commandGroup} role="group" aria-label="写入与连接信息">
             <Button
               type="button"
@@ -477,7 +449,7 @@ export function RelationalWorkbench({
               />
             </div>
           )}
-          {mode === "objects" && schema && <SchemaObjectsPanel base={base} provider={session.provider} schema={schema} initialObject={initialObject} onOpenReference={reference => { if (reference.kind === "table" || reference.kind === "view" || reference.kind === "materialized-view") { if (reference.schema) selectSchema(reference.schema); openTable(reference.name) } }} />}
+          {mode === "objects" && schema && <SchemaObjectsPanel base={base} provider={session.provider} schema={schema} onOpenReference={reference => { if (reference.kind === "table" || reference.kind === "view" || reference.kind === "materialized-view") { if (reference.schema) selectSchema(reference.schema); openTable(reference.name) } }} />}
           {mode === 'diagram' && schema && <SchemaDiagramView key={`${base}:${schema}`} base={base} schema={schema} onOpenTable={node => { selectSchema(node.schema); openTable(node.table) }} onOpenQuery={sql => { setOpenRequest({ id: crypto.randomUUID(), sql, schema }); changeView('sql') }} />}
           {mode === 'docs' && schema && <DatabaseDocsPanel base={base} schemas={[schema]} persistent={Boolean(session.connectionId)} onOpenTable={(nextSchema, nextTable) => { selectSchema(nextSchema); openTable(nextTable) }} />}
           {mode === 'activity' && <DatabaseActivityPanel base={base} provider={session.provider} database={session.database} blocked={pending || writeBusy} />}

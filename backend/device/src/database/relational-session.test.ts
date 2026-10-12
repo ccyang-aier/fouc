@@ -31,6 +31,18 @@ afterAll(() => {
 });
 
 describe('real SQLite connection and API', () => {
+  test('SQLite backup routes are absent while native metadata remains available', async () => {
+    const manager = new RelationalSessionManager(new DatabaseCapabilityRegistry());
+    const session = await manager.connect({ provider: 'sqlite', path: dbFile });
+    const app = createApp({ registry: {} as never, supervisor: {} as never, connectors: {} as never, relationalSessions: manager, token: 'test-token', internalToken: 'internal-token' }).app;
+    const base = `/api/database/relational/sessions/${session.id}`, headers = { authorization: 'Bearer test-token', 'content-type': 'application/json' };
+    try {
+      for (const [method, suffix] of [['GET', ''], ['POST', ''], ['GET', '/job'], ['POST', '/job/cancel'], ['GET', '/job/download'], ['DELETE', '/job']]) {
+        expect((await app.request(`${base}/sqlite-backups${suffix}`, { method, headers })).status).toBe(404);
+      }
+      expect((await app.request(`${base}/schemas`, { headers })).status).toBe(200);
+    } finally { await manager.shutdown(); }
+  });
   test('footer counts share typed filters and auth, cancel cleanly, and allow the 1000-row preset', async () => {
     const manager = new RelationalSessionManager(new DatabaseCapabilityRegistry());
     const session = await manager.connect({ provider: 'sqlite', path: dbFile });
@@ -45,7 +57,7 @@ describe('real SQLite connection and API', () => {
       await expect(manager.page(session.id, 'main', 'items', 0, 1001)).rejects.toThrow('分页范围');
       expect((await app.request(route, { method: 'POST', body: JSON.stringify(query) })).status).toBe(401);
       const response = await app.request(route, { method: 'POST', headers, body: JSON.stringify(query) });
-      expect(response.status).toBe(200); expect((await response.json()).data).toEqual({ totalRows: '2' });
+      expect(response.status).toBe(200); expect((await response.json() as { data: { totalRows: string } }).data).toEqual({ totalRows: '2' });
       expect((await app.request(route.replace(session.id, 'missing-session'), { method: 'POST', headers, body: JSON.stringify(query) })).status).toBe(400);
       await expect(manager.countRows(session.id, 'main', 'items', { filter: { kind: 'condition', column: 'id; DELETE', operator: 'equals', value: 1 }, sort: [] })).rejects.toThrow('不存在');
       const controller = new AbortController(); controller.abort();
@@ -406,7 +418,7 @@ describe('real SQLite connection and API', () => {
       ).toBe(400);
       expect(
         (
-          await app.request(`${base}/${data.id}/schemas/main/tables/items/rows?limit=501`, {
+          await app.request(`${base}/${data.id}/schemas/main/tables/items/rows?limit=1001`, {
             headers,
           })
         ).status,

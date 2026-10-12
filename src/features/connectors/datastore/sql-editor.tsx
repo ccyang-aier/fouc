@@ -3,12 +3,14 @@
 import { useEffect, useRef, type RefObject } from "react"
 import {
   autocompletion,
+  acceptCompletion,
   closeCompletion,
   closeBrackets,
   closeBracketsKeymap,
   completionKeymap,
   nextSnippetField,
-  prevSnippetField
+  prevSnippetField,
+  startCompletion
 } from "@codemirror/autocomplete"
 import type { CompletionSource } from '@codemirror/autocomplete'
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands"
@@ -18,7 +20,7 @@ import { sqlSnippetCompletion } from './sql-snippet-completion'
 import { MAX_SQL_ASSISTANCE_DOCUMENT_CHARS, sqlFunctionCompletion, sqlFunctionReplacesKeyword, sqlFunctionSignatureExtensions } from './sql-assistance/functions'
 import { sqlDiagnosticsExtensions } from './sql-assistance/diagnostics'
 import './sql-assistance/functions/theme.css'
-import { Compartment, EditorState, StateEffect } from "@codemirror/state"
+import { Compartment, EditorState, Prec, StateEffect } from "@codemirror/state"
 import { getOverlayRoot } from '@/lib/overlay-root'
 import type { SqlEditorPosition, SqlExecutionMode, SqlFormatterCase, SqlSnippet, SqlStatementExecution } from '@fouc/shared'
 import {
@@ -180,6 +182,9 @@ export function SqlEditor({
         tooltipParent.of(tooltips({ parent: getOverlayRoot() ?? document.body })),
         EditorState.readOnly.of(readOnly),
         EditorView.editable.of(!readOnly),
+        // Snippets append their own highest-priority Tab binding. Accept a
+        // visible completion before navigating a field or falling back to indent.
+        Prec.highest(keymap.of([{ key: 'Tab', run: acceptCompletion }])),
         ...(showRunGutter && !readOnly ? [gutter({
           class: 'mw-sql-run-gutter',
           lineMarker: (view, line) => {
@@ -226,6 +231,7 @@ export function SqlEditor({
               return true
             }
           },
+          { key: 'Alt-/', run: startCompletion },
           { key: 'Tab', run: nextSnippetField },
           { key: 'Shift-Tab', run: prevSnippetField },
           indentWithTab,

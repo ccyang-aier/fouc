@@ -31,6 +31,8 @@
   --accent-soft: #eef1fd;
   --accent-soft-line: #ccd6f3;
   --workbench-tab-active-bg: color-mix(in srgb, var(--accent) 16%, var(--panel));
+  --sql-completion-function-ink: #8956c7;
+  --sql-completion-field-ink: #0e918a;
   /* 自定义主题色基色（实际值由 JS 按偏好写入，此为兜底） */
   --accent-custom: #3e63dd;
   --focus-ring: rgba(62, 99, 221, 0.32);
@@ -131,6 +133,8 @@ html[data-theme="dark"] {
   --accent-soft: rgba(102, 129, 245, 0.16);
   --accent-soft-line: rgba(102, 129, 245, 0.36);
   --workbench-tab-active-bg: color-mix(in srgb, var(--accent) 26%, var(--panel));
+  --sql-completion-function-ink: #bb9bea;
+  --sql-completion-field-ink: #72c9bd;
   --focus-ring: rgba(102, 129, 245, 0.42);
   --hover-fill: rgba(255, 255, 255, 0.055);
   --raise: rgba(255, 255, 255, 0.06);

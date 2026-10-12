@@ -54,22 +54,26 @@ async function waitForCompletion() {
   await new Promise(resolve => setTimeout(resolve, 100))
 }
 
-test('Ctrl+Space opens SQL keyword completion and Tab accepts it instead of indenting', async () => {
+test('Ctrl+Space opens SQL keyword completion with a native icon and an Enter key hint', async () => {
   const view = await mount('SELE')
   expect(press(' ', { ctrlKey: true })).toBe(true)
   await waitForCompletion()
   expect(currentCompletions(view.state)[selectedCompletionIndex(view.state)!].label).toBe('SELECT')
-  expect(press('Tab')).toBe(true)
+  const selected = document.querySelector('.fouc-sql-completion li[aria-selected]')!
+  expect(selected.querySelector('.fouc-sql-completion-key')?.textContent).toBe('↵ Enter')
+  expect(selected.querySelector('.fouc-sql-completion-icon[data-kind="keyword"] svg path')).not.toBeNull()
+  expect(selected.querySelector('.cm-completionIcon')).toBeNull()
+  expect(press('Enter')).toBe(true)
   expect(view.state.doc.toString()).toBe('SELECT')
   expect(view.state.selection.main.head).toBe(6)
   expect(completionStatus(view.state)).toBeNull()
 })
 
-test('ordinary typing opens completion automatically and Tab inserts the keyword', async () => {
+test('ordinary typing opens completion automatically and Enter inserts the keyword', async () => {
   const view = await mount('')
   view.dispatch({ changes: { from: 0, insert: 'SELE' }, selection: { anchor: 4 }, annotations: Transaction.userEvent.of('input.type') })
   await waitForCompletion()
-  expect(press('Tab')).toBe(true)
+  expect(press('Enter')).toBe(true)
   expect(view.state.doc.toString()).toBe('SELECT')
 })
 
@@ -109,7 +113,7 @@ test('Tab still indents without a popup and Tab/Shift+Tab navigate actual snippe
   expect(view.state.sliceDoc(view.state.selection.main.from, view.state.selection.main.to)).toBe('field')
 })
 
-test('Tab accepts table completion inside a snippet field before moving to the next field', async () => {
+test('Enter accepts table completion inside a snippet field', async () => {
   const metadata = new SqlMetadataCompletion('sqlite', {
     tables: async () => nativeTables,
     columns: async () => [],
@@ -120,9 +124,24 @@ test('Tab accepts table completion inside a snippet field before moving to the n
   const { from, to } = view.state.selection.main
   view.dispatch({ changes: { from, to, insert: 'order_' }, selection: { anchor: from + 6 }, annotations: Transaction.userEvent.of('input.type') })
   await waitForCompletion()
-  expect(press('Tab')).toBe(true)
+  expect(press('Enter')).toBe(true)
   expect(view.state.doc.toString()).toBe('SELECT field FROM order_items WHERE id = id')
   expect(view.state.selection.main.empty).toBe(true)
+})
+
+test('more than eight completion candidates remain reachable by keyboard and Enter', async () => {
+  const tables = Array.from({ length: 12 }, (_, index) => ({ ...nativeTables[0], name: `order_items_${index}` }))
+  const metadata = new SqlMetadataCompletion('sqlite', { tables: async () => tables, columns: async () => [] })
+  const view = await mount('SELECT * FROM order_', { complete: context => metadata.complete(context, { schema: 'main', schemas: ['main'] }) })
+  press('/', { altKey: true })
+  await waitForCompletion()
+  expect(currentCompletions(view.state)).toHaveLength(12)
+  expect(document.querySelectorAll('.fouc-sql-completion li').length).toBeGreaterThan(8)
+  for (let index = 0; index < 9; index++) press('ArrowDown')
+  expect(selectedCompletionIndex(view.state)).toBe(9)
+  const selected = currentCompletions(view.state)[9].label
+  expect(press('Enter')).toBe(true)
+  expect(view.state.doc.toString()).toBe(`SELECT * FROM ${selected}`)
 })
 
 test('execution, save, format and comment shortcuts reach the mounted editor without executing on completion', async () => {

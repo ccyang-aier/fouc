@@ -4,7 +4,7 @@
 .controls > button:not([data-slot="button"]) > span { display: none; }
 .controls > button:disabled { opacity: .4; cursor: default; }
 .controls > button:focus-visible { outline: none; box-shadow: none; }
-.controls > button > svg { width: 20px; height: 20px; flex: none; }
+.controls > button > svg { width: 18px; height: 18px; flex: none; }
 .controls > .run { --action-state-ink: var(--ok-ink); color: var(--ok-ink); background: color-mix(in srgb, var(--ok-ink) 9%, var(--panel)); }
 .controls > .run[data-running] { --action-state-ink: var(--err-ink); color: var(--err-ink); }
 .controls > .runNew, .controls > button[aria-label="查看执行计划"] { --action-state-ink: var(--sql-tool-plan); color: var(--sql-tool-plan); }
@@ -14,12 +14,12 @@
 .controls > button[aria-label="SQL 快速操作"] { --action-state-ink: var(--sql-tool-paste); color: var(--sql-tool-paste); }
 .controls > button[aria-label="显示查询结果"] { --action-state-ink: var(--sql-tool-pane); color: var(--sql-tool-pane); }
 .controls > button[aria-pressed="true"] { background: var(--accent-soft); }
-.controls > button[aria-label="SQL 编辑器设置"] > strong { font-size: 16px; font-weight: 700; }
-.controls > button[aria-label="切换 SQL 关键字大小写"] > strong { font-size: 16px; font-weight: 700; }
+.controls > button[aria-label="SQL 编辑器设置"] > strong { font-size: 15px; font-weight: 700; }
+.controls > button[aria-label="切换 SQL 关键字大小写"] > strong { font-size: 15px; font-weight: 700; }
 .controls > button[aria-label="SQL 编辑器设置"] { color: var(--muted-strong); }
 .controls > button:is([aria-label="折叠全部 SQL"], [aria-label="展开全部 SQL"], [aria-label="SQL 自动换行"]) { color: var(--muted-strong); }
 .controls > button[aria-label="SQL 语义诊断"] { color: var(--muted-strong); background: transparent; }
-.controls > button[aria-label="SQL 语义诊断"] > strong { font-size: 16px; text-decoration: underline; text-underline-offset: 3px; }
+.controls > button[aria-label="SQL 语义诊断"] > strong { font-size: 15px; text-decoration: underline; text-underline-offset: 3px; }
 .controls > button[aria-label="显示查询结果"][aria-pressed="true"] { --action-state-bg: color-mix(in srgb, var(--sql-tool-pane) 12%, var(--panel)); background: color-mix(in srgb, var(--sql-tool-pane) 12%, var(--panel)); }
 .target { display: flex; align-items: center; gap: 6px; min-width: 100px; max-width: 330px; margin-left: auto; flex: none; color: var(--ink-soft); font: 12px/16px var(--font-sans); }
 .database { max-width: 160px; height: 28px; line-height: 28px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }

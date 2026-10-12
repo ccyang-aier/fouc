@@ -10,7 +10,7 @@ const custom: SqlSnippet = { id: 'custom-native', label: 'Personal SELECT', pref
 
 test('DBX common templates keep LIMIT 100, receive editable fields and preserve custom bodies', () => {
   const select = DEFAULT_SQL_SNIPPETS.find((entry) => entry.id === 'builtin-sel')!
-  expect(sqlSnippetTemplate(select, 'lower')).toBe('select *\nfrom ${table}\nlimit 100;')
+  expect(sqlSnippetTemplate(select, 'lower')).toBe('select * from ${table} limit 100;')
   expect(sqlSnippetTemplate(custom, 'lower')).toBe(custom.body)
   const changed = { ...select, body: "SELECT 'MixedCase' FROM MyTable;" }
   expect(sqlSnippetTemplate(changed, 'lower')).toBe(changed.body)
@@ -18,6 +18,15 @@ test('DBX common templates keep LIMIT 100, receive editable fields and preserve 
   expect(sqlSnippetItems('sf', [custom])).toHaveLength(0)
   expect(sqlSnippetItems('s', [{ ...custom, enabled: false }])).toHaveLength(0)
   expect(sqlSnippetItems('sele', [select])[0].boost).toBe(-40)
+})
+
+test('short built-in SQL stays on one line while structured and custom templates retain their layout', () => {
+  for (const entry of DEFAULT_SQL_SNIPPETS.filter(entry => !['builtin-cte', 'builtin-ct'].includes(entry.id))) {
+    expect(sqlSnippetTemplate(entry)).not.toContain('\n')
+  }
+  for (const id of ['builtin-cte', 'builtin-ct']) expect(sqlSnippetTemplate(DEFAULT_SQL_SNIPPETS.find(entry => entry.id === id)!)).toContain('\n')
+  const customMultiline = { ...custom, body: "SELECT 'line one\nline two' -- keep this comment\nFROM ${table};" }
+  expect(sqlSnippetTemplate(customMultiline)).toBe(customMultiline.body)
 })
 
 test('snippets respect native quote/comment/qualified-name boundaries and latest connection settings', async () => {

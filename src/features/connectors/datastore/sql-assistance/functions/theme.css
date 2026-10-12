@@ -1,4 +1,4 @@
-.fouc-sql-function-tooltip { box-sizing: border-box; max-width: min(540px, calc(100vw - 24px)); padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 7px; background: var(--panel); color: var(--ink); box-shadow: var(--side-panel-shadow); font: 12px/1.6 var(--font-sans); white-space: normal; overflow-wrap: anywhere; }
+.fouc-sql-function-tooltip { box-sizing: border-box; max-width: min(540px, calc(100vw - 24px)); padding: 10px 12px; border: 1px solid var(--menu-border); border-radius: 7px; background: var(--panel); color: var(--ink); box-shadow: var(--menu-shadow); font: 12px/1.6 var(--font-sans); white-space: normal; overflow-wrap: anywhere; }
 .cm-tooltip:has(> .fouc-sql-function-tooltip) { border: 0; background: transparent; }
 .fouc-sql-function-heading { display: flex; justify-content: space-between; gap: 20px; margin-bottom: 7px; font: 10px/1.4 var(--font-sans); color: var(--muted-strong); }
 .fouc-sql-function-provider { font-weight: 600; color: var(--ink-soft); }

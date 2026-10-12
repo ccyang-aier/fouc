@@ -1637,14 +1637,21 @@ html[data-theme="dark"] .mw {
 .mw-live-code-editor .cm-cursor {
   border-left-color: var(--ink);
 }
-.fouc-sql-completion.cm-tooltip-autocomplete { z-index: 100; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--panel); color: var(--ink); box-shadow: var(--side-panel-shadow); font: 13px/1.5 var(--font-sans); max-width: min(560px, calc(100vw - 24px)); }
-.fouc-sql-completion.cm-tooltip-autocomplete > ul { border-radius: 5px; }
-.fouc-sql-completion.cm-tooltip-autocomplete > ul > li { padding: 5px 10px; display: flex; align-items: center; gap: 8px; }
-.fouc-sql-completion.cm-tooltip-autocomplete > ul > li[aria-selected] { color: var(--accent-ink); background: var(--accent-soft); }
-.fouc-sql-completion .cm-completionLabel { font: 13px/1.5 var(--font-code); }
+.fouc-sql-completion.cm-tooltip-autocomplete { z-index: 100; box-sizing: border-box; padding: 4px; border: 1px solid var(--menu-border); border-radius: 8px; background: var(--panel); color: var(--ink); box-shadow: inset 0 1px 0 var(--floating-highlight), var(--menu-shadow); font: 13px/20px var(--font-sans); min-width: min(320px, calc(100vw - 24px)); max-width: min(560px, calc(100vw - 24px)); }
+.fouc-sql-completion.cm-tooltip-autocomplete > ul { margin: 0; padding: 0; min-width: 0; max-width: 100%; max-height: 240px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; border-radius: 4px; }
+.fouc-sql-completion.cm-tooltip-autocomplete > ul > li { box-sizing: border-box; height: 30px; padding: 5px 8px; display: flex; align-items: center; gap: 8px; border-radius: 4px; line-height: 20px; }
+.fouc-sql-completion.cm-tooltip-autocomplete > ul > li[aria-selected] { color: var(--accent-ink); background: var(--workbench-tab-active-bg); }
+.fouc-sql-completion .cm-completionLabel { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 13px/20px var(--font-code); }
 .fouc-sql-completion .cm-completionDetail { margin-left: auto; font-size: 11px; font-style: normal; color: var(--muted-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fouc-sql-completion .cm-completionIcon-property { color: var(--ok-ink); }
-.fouc-sql-completion .cm-completionInfo { padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 6px; box-shadow: var(--side-panel-shadow); font: 12px/1.6 var(--font-sans); color: var(--ink); background: var(--panel); max-width: min(320px, calc(100vw - 24px)); white-space: pre-wrap; overflow-wrap: anywhere; }
+.fouc-sql-completion-icon { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 16px; height: 16px; color: var(--accent-ink); }
+.fouc-sql-completion-icon > svg { width: 16px; height: 16px; }
+.fouc-sql-completion-icon[data-kind="function"] { color: var(--sql-completion-function-ink); }
+.fouc-sql-completion-icon[data-kind="table"] { color: var(--ok-ink); }
+.fouc-sql-completion-icon[data-kind="property"] { color: var(--sql-completion-field-ink); }
+.fouc-sql-completion-icon:is([data-kind="namespace"], [data-kind="snippet"]) { color: var(--warn-ink); }
+.fouc-sql-completion-key { visibility: hidden; display: inline-flex; align-items: center; justify-content: center; flex: none; height: 20px; margin-left: auto; padding: 0 5px; border: 1px solid var(--resource-card-border); border-radius: 4px; color: var(--muted-strong); background: var(--panel); box-shadow: 0 1px 0 var(--line); font: 10px/1 var(--font-sans); white-space: nowrap; }
+.fouc-sql-completion li[aria-selected] .fouc-sql-completion-key { visibility: visible; }
+.fouc-sql-completion .cm-completionInfo { padding: 10px 12px; border: 1px solid var(--menu-border); border-radius: 7px; box-shadow: var(--menu-shadow); font: 12px/1.6 var(--font-sans); color: var(--ink); background: var(--panel); max-width: min(320px, calc(100vw - 24px)); white-space: pre-wrap; overflow-wrap: anywhere; }
 .mw-sql-keyword {
   color: #1648c9;
   font-weight: 650;

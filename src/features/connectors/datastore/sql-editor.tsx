@@ -3,7 +3,6 @@
 import { useEffect, useRef, type RefObject } from "react"
 import {
   autocompletion,
-  acceptCompletion,
   closeCompletion,
   closeBrackets,
   closeBracketsKeymap,
@@ -17,10 +16,11 @@ import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirro
 import { MySQL, PostgreSQL, SQLite, sql } from "@codemirror/lang-sql"
 import { sqlKeywordCompletion } from './sql-metadata-completion'
 import { sqlSnippetCompletion } from './sql-snippet-completion'
+import { sqlCompletionPresentation } from './sql-completion-presentation'
 import { MAX_SQL_ASSISTANCE_DOCUMENT_CHARS, sqlFunctionCompletion, sqlFunctionReplacesKeyword, sqlFunctionSignatureExtensions } from './sql-assistance/functions'
 import { sqlDiagnosticsExtensions } from './sql-assistance/diagnostics'
 import './sql-assistance/functions/theme.css'
-import { Compartment, EditorState, Prec, StateEffect } from "@codemirror/state"
+import { Compartment, EditorState, StateEffect } from "@codemirror/state"
 import { getOverlayRoot } from '@/lib/overlay-root'
 import type { SqlEditorPosition, SqlExecutionMode, SqlFormatterCase, SqlSnippet, SqlStatementExecution } from '@fouc/shared'
 import {
@@ -182,9 +182,6 @@ export function SqlEditor({
         tooltipParent.of(tooltips({ parent: getOverlayRoot() ?? document.body })),
         EditorState.readOnly.of(readOnly),
         EditorView.editable.of(!readOnly),
-        // Snippets append their own highest-priority Tab binding. Accept a
-        // visible completion before navigating a field or falling back to indent.
-        Prec.highest(keymap.of([{ key: 'Tab', run: acceptCompletion }])),
         ...(showRunGutter && !readOnly ? [gutter({
           class: 'mw-sql-run-gutter',
           lineMarker: (view, line) => {
@@ -211,7 +208,7 @@ export function SqlEditor({
         sql({
           dialect: provider === "postgres" ? PostgreSQL : provider === "sqlite" ? SQLite : MySQL
         }),
-        ...(readOnly ? [] : [autocompletion({ tooltipClass: () => 'fouc-sql-completion', override: [bounded(keywords), bounded(sqlSnippetCompletion(provider, () => callbacks.get())), sqlFunctionCompletion(provider, () => callbacks.get()), bounded((context) => callbacks.get().complete?.(context) ?? null)] }),
+        ...(readOnly ? [] : [autocompletion({ ...sqlCompletionPresentation, override: [bounded(keywords), bounded(sqlSnippetCompletion(provider, () => callbacks.get())), sqlFunctionCompletion(provider, () => callbacks.get()), bounded((context) => callbacks.get().complete?.(context) ?? null)] }),
           ...sqlFunctionSignatureExtensions(provider), diagnosticsCompartment.of(initialDiagnostics.current ? sqlDiagnosticsExtensions(provider) : [])]),
         highlightSelectionMatches(),
         wrapCompartment.of(initialWrapLines.current ? EditorView.lineWrapping : []),

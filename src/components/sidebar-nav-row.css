@@ -1,7 +1,7 @@
 /* ── Kiln 风格侧栏导航行 ──
    hover / 激活均为白底抬升卡面（1px 描边 + 卡片阴影），
    激活时图标 duotone→fill 并做弹性缩放，标签做水平微弹。
-   消费方：navigation-sidebar / sidebar-project-pane / settings-canvas。 */
+   消费方：navigation-sidebar / sidebar-project-pane。 */
 html .sidebar-nav-row {
   --action-state-bg: var(--sidebar-row-bg);
   --action-state-ink: var(--ink);

@@ -12,6 +12,9 @@ export function setOverlayRoot(node: HTMLElement | null): void {
 }
 
 export function getOverlayRoot(): HTMLElement | undefined {
+  // 原生模态框处于 top layer；其菜单与提示也必须位于同一层。
+  const modal = typeof document === "undefined" ? null : Array.from(document.querySelectorAll<HTMLDialogElement>("dialog:modal")).at(-1)
+  if (modal) return modal
   const fullscreen = typeof document === "undefined" ? null : document.fullscreenElement
   if (fullscreen) return fullscreen as HTMLElement
   return overlayRoot ?? undefined

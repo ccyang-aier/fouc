@@ -7,10 +7,6 @@ import { getOverlayRoot } from "@/lib/overlay-root"
 import { cn } from "@/lib/utils"
 
 const TooltipContainer = React.createContext<HTMLElement | undefined>(undefined)
-function tooltipContainer() {
-  // 原生模态框处于 top layer；提示浮层必须挂到框内，才能显示并保持可访问。
-  return (typeof document === 'undefined' ? null : document.querySelector<HTMLDialogElement>('dialog[open]')) ?? getOverlayRoot()
-}
 
 function TooltipProvider({
   delayDuration = 380,
@@ -29,7 +25,7 @@ function Tooltip({ onOpenChange, ...props }: React.ComponentProps<typeof Tooltip
   const [container, setContainer] = React.useState<HTMLElement>()
   return <TooltipContainer.Provider value={container}>
     <TooltipPrimitive.Root data-slot="tooltip" {...props} onOpenChange={open => {
-      if (open) setContainer(tooltipContainer())
+      if (open) setContainer(getOverlayRoot())
       onOpenChange?.(open)
     }} />
   </TooltipContainer.Provider>
@@ -47,7 +43,7 @@ function TooltipContent({
   children,
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Content>) {
-  const container = React.useContext(TooltipContainer) ?? tooltipContainer()
+  const container = React.useContext(TooltipContainer) ?? getOverlayRoot()
   return (
     <TooltipPrimitive.Portal container={container}>
       <TooltipPrimitive.Content

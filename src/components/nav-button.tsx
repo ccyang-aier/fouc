@@ -3,7 +3,7 @@
 /**
  * 通用侧栏导航行（展开 30px / 折叠 32px 图标态）：hover 白底抬升，
  * 激活图标 duotone→fill，形态细节见随行 sidebar-nav-row.css。
- * 消费方：navigation-sidebar / sidebar-project-pane / settings-canvas。
+ * 消费方：navigation-sidebar / sidebar-project-pane。
  */
 
 import type { ReactNode } from "react"

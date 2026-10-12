@@ -20,7 +20,7 @@ import {
 import { FontSection } from "./appearance/font-section"
 import { AccentSection } from "./appearance/accent-section"
 import { ThemeSection } from "./appearance/theme-section"
-import { PanelHeader } from "./general-settings"
+import { SettingsPanel } from "./settings-panel"
 
 export function AppearanceSettings() {
   const prefs = useSyncExternalStore(subscribeAppearance, getAppearanceSnapshot, getAppearanceServerSnapshot)
@@ -30,8 +30,7 @@ export function AppearanceSettings() {
   }, [])
 
   return (
-    <div className="mx-auto w-full max-w-[960px] px-10 pb-14 pt-12 max-[1100px]:px-7 max-[900px]:pt-8">
-      <PanelHeader title="外观" />
+    <SettingsPanel title="外观">
       <ThemeSection
         value={prefs.theme}
         resolved={resolveTheme(prefs.theme)}
@@ -44,6 +43,6 @@ export function AppearanceSettings() {
         onCustomColor={(accentCustom) => update({ accent: "custom", accentCustom })}
       />
       <FontSection prefs={prefs} onChange={update} />
-    </div>
+    </SettingsPanel>
   )
 }

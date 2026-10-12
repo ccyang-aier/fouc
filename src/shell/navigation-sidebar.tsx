@@ -374,6 +374,8 @@ export function NavigationSidebar({
       {/* 展开态底行：应用设置（项目模式下由项目管理菜单自带底行，避免重复） */}
       {projectsMode ? null : (
         <div
+          aria-hidden={!open}
+          inert={!open}
           className={cn(
             "shrink-0 pb-1 pl-[11px] pr-[10px] pt-2 transition-opacity duration-150",
             open ? "delay-100 opacity-100" : "pointer-events-none opacity-0",

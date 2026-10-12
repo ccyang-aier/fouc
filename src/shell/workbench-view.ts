@@ -6,8 +6,7 @@ import { WORKBENCH_VIEW_CHANGED } from '@/lib/settings-navigation';
 
 const views: readonly WorkbenchView[] = ['home', 'settings', 'help', 'project-home', 'projects', 'community', 'automation', 'knowledge', 'connectors'];
 const viewChanged = WORKBENCH_VIEW_CHANGED;
-function readView(): WorkbenchView {
-  const value = new URLSearchParams(window.location.search).get('view');
+function resolveView(value: string | null): WorkbenchView {
   return views.includes(value as WorkbenchView) ? value as WorkbenchView : 'home';
 }
 function subscribe(listener: () => void) {
@@ -16,13 +15,20 @@ function subscribe(listener: () => void) {
   return () => { window.removeEventListener('popstate', listener); window.removeEventListener(viewChanged, listener); };
 }
 export function useWorkbenchView() {
-  const view = useSyncExternalStore(subscribe, readView, () => 'home' as WorkbenchView);
+  const search = useSyncExternalStore(subscribe, () => window.location.search, () => '');
+  const params = new URLSearchParams(search);
+  const settingsOpen = params.get('view') === 'settings';
+  const requestedView = resolveView(params.get(settingsOpen ? 'returnView' : 'view'));
+  const view = requestedView === 'settings' ? 'home' : requestedView;
   return [view, (next: WorkbenchView) => {
     const url = new URL(window.location.href);
+    if (next === 'settings' && url.searchParams.get('view') !== 'settings') {
+      url.searchParams.set('returnView', resolveView(url.searchParams.get('view')));
+    }
     if (next === 'home') url.searchParams.delete('view');
     else url.searchParams.set('view', next);
     if (next !== 'settings') { url.searchParams.delete('section'); url.searchParams.delete('returnView'); }
     window.history.replaceState(null, '', url);
     window.dispatchEvent(new Event(viewChanged));
-  }] as const;
+  }, settingsOpen] as const;
 }

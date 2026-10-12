@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils"
 
 import { pickBestInstallation, ProviderRow, type ProviderStatusKey } from "./provider-row"
 import { ProviderAvatar } from "./provider-meta"
-import { PanelHeader } from "./general-settings"
+import { SettingsPanel } from "./settings-panel"
 
 type AvailabilityTab = "all" | "available" | "unavailable"
 
@@ -268,12 +268,10 @@ export function AgentSettings() {
   ]
 
   return (
-    <div className="mx-auto w-full max-w-[960px] px-10 pb-14 pt-12 max-[1100px]:px-7 max-[900px]:pt-8">
-      <PanelHeader
-        title="Agent 纳管"
-        description={`管理本机可用的 AI Agent —— ${installations.length} 个已登记实例 / ${providers.length} 种受支持产品。`}
-      />
-
+    <SettingsPanel
+      title="Agent 纳管"
+      description={`管理本机可用的 AI Agent —— ${installations.length} 个已登记实例 / ${providers.length} 种受支持产品。`}
+    >
       {loading ? (
         <LoadingState />
       ) : !backendOnline ? (
@@ -300,10 +298,10 @@ export function AgentSettings() {
                 variant="outline"
                 size="sm"
                 onClick={() => void refreshAll()}
-                disabled={refreshing}
+                loading={refreshing}
                 className="h-8 rounded-[9px] px-2.5 text-[11.5px]"
               >
-                <ArrowClockwise className={cn("size-3.5", refreshing && "animate-spin")} aria-hidden />
+                <ArrowClockwise className="size-3.5" aria-hidden />
                 刷新发现
               </Button>
               <DropdownMenu>
@@ -400,7 +398,7 @@ export function AgentSettings() {
           </div>
         </>
       )}
-    </div>
+    </SettingsPanel>
   )
 }
 

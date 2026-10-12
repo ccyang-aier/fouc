@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, GearSix, Plus, SidebarSimple } from "@phosphor-icons/react";
+import { BookOpen, Check, GearSix, Plus, SidebarSimple } from "@phosphor-icons/react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,13 +30,13 @@ export function KnowledgeBaseHeader({
   createLabel?: string;
 }) {
   const activeKnowledgeBase = knowledgeBases.find((base) => base.id === activeKnowledgeBaseId);
-  const knowledgeBaseName = activeKnowledgeBase?.name ?? "知识库";
+  const knowledgeBaseName = activeKnowledgeBase?.name ?? (knowledgeBases.length ? "选择知识库" : "暂无知识库");
 
   return <div className={styles.knowledgeHeader}>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button type="button" className={styles.knowledgeButton} aria-label={`知识库菜单：${knowledgeBaseName}`}>
-          <span aria-hidden="true" className={styles.knowledgeAvatar} data-tone={Math.max(0, knowledgeBases.findIndex((base) => base.id === activeKnowledgeBaseId)) % 6}>{Array.from(knowledgeBaseName.trim())[0]?.toUpperCase() ?? "K"}</span>
+          {activeKnowledgeBase ? <span aria-hidden="true" className={styles.knowledgeAvatar} data-tone={knowledgeBases.findIndex((base) => base.id === activeKnowledgeBaseId) % 6}>{Array.from(knowledgeBaseName.trim())[0]?.toUpperCase() ?? "K"}</span> : <BookOpen aria-hidden="true" size={22} className="mx-[3px] shrink-0 text-[var(--muted)]" />}
           <span className={styles.knowledgeName}>{knowledgeBaseName}</span>
         </button>
       </DropdownMenuTrigger>
@@ -52,7 +52,7 @@ export function KnowledgeBaseHeader({
           <Plus aria-hidden="true" weight="bold" />{createLabel}
         </DropdownMenuItem>
         <DropdownMenuSeparator className={styles.knowledgeMenuSeparator} />
-        <DropdownMenuItem className={styles.knowledgeMenuItem} onSelect={onOpenSettings}>
+        <DropdownMenuItem className={styles.knowledgeMenuItem} disabled={!activeKnowledgeBase} onSelect={onOpenSettings}>
           <GearSix aria-hidden="true" weight="fill" />设置
         </DropdownMenuItem>
       </DropdownMenuContent>

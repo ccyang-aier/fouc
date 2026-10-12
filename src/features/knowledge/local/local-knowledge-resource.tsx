@@ -99,6 +99,7 @@ export function LocalKnowledgeResource({ store, selectedKnowledgeBaseId, knowled
       onCreateKnowledgeBase={onCreateKnowledgeBase}
       onOpenSettings={onOpenSettings}
       treeArea={<LocalLibraryNavigation
+        hasKnowledgeBase={Boolean(base)}
         view={view}
         counts={counts}
         selectedId={selectedId}
@@ -108,8 +109,8 @@ export function LocalKnowledgeResource({ store, selectedKnowledgeBaseId, knowled
         tags={tags}
         onSelectMain={(next) => { setView(next); setSelectedId(null); setFolderId(null); setActiveTagId(null); }}
         onSelectDocument={openDocument}
-        onCreateFolder={() => setCreation(base ? 'folder' : 'base')}
-        onCreateDocument={() => setCreation(base ? 'document' : 'base')}
+        onCreateFolder={() => { if (base) setCreation('folder'); }}
+        onCreateDocument={() => { if (base) setCreation('document'); }}
         onCreateDocumentInFolder={(id) => { setFolderId(id); setActiveTagId(null); setSelectedId(null); setView('all-documents'); setCreation('document'); }}
         onRenameFolder={(id, name) => write((current) => ({ ...current, folders: current.folders.map((folder) => folder.id === id ? { ...folder, name } : folder) }))}
         onRemoveFolder={(id) => { if (write((current) => ({ ...current, folders: current.folders.filter((folder) => folder.id !== id), documents: current.documents.map((doc) => doc.folderId === id ? { ...doc, folderId: undefined } : doc) })) && folderId === id) setFolderId(null); }}

@@ -17,11 +17,12 @@ const tagColors = ['#5582c4', '#cb805c', '#5d9d83', '#a87ac0', '#d6a24c', '#688a
 const emptyHintTextClassName = 'py-1 text-[11px] leading-4 text-[var(--muted)]';
 
 export function LocalLibraryNavigation({
-  view, counts, selectedId, activeTagId, folders, documents, tags,
+  view, counts, selectedId, activeTagId, folders, documents, tags, hasKnowledgeBase,
   onSelectMain, onSelectDocument,
   onCreateFolder, onCreateDocument, onCreateDocumentInFolder, onRenameFolder, onRemoveFolder, onCreateDocumentInTag, onCreateTag, onRenameTag, onRemoveTag,
 }: {
   view: MainView;
+  hasKnowledgeBase: boolean;
   counts: Record<MainView, number>;
   selectedId: string | null;
   activeTagId: string | null;
@@ -71,7 +72,7 @@ export function LocalLibraryNavigation({
   function submitTag(event: React.FormEvent) {
     event.preventDefault();
     const name = tagDraft.trim();
-    if (!name) return;
+    if (!name || !hasKnowledgeBase) return;
     onCreateTag(name);
     setTagDraft('');
     setCreatingTag(false);
@@ -107,7 +108,7 @@ export function LocalLibraryNavigation({
     </nav>
 
     <section className="mt-5" aria-label="文件夹">
-      <SidebarSectionHeader icon={Folder} label="文件夹" count={folders.length} expanded={foldersOpen} onToggle={() => setFoldersOpen((open) => !open)} actions={<IconButton label="新建文件夹" onClick={onCreateFolder} className="rounded p-1 hover:bg-[var(--surface-hover)]"><Plus size={15} /></IconButton>} />
+      <SidebarSectionHeader icon={Folder} label="文件夹" count={folders.length} expanded={foldersOpen} onToggle={() => setFoldersOpen((open) => !open)} actions={<IconButton label="新建文件夹" disabled={!hasKnowledgeBase} tooltip={hasKnowledgeBase ? "新建文件夹" : "请先新建知识库"} onClick={onCreateFolder} className="rounded p-1 enabled:hover:bg-[var(--surface-hover)] disabled:cursor-not-allowed disabled:opacity-40"><Plus size={15} /></IconButton>} />
       {foldersOpen ? <div className="mt-0.5 space-y-0.5">
         {folders.map((folder) => {
           const folderDocuments = documents.filter((doc) => doc.folderId === folder.id);
@@ -127,12 +128,12 @@ export function LocalLibraryNavigation({
           </div>;
         })}
         {documents.filter((doc) => !doc.folderId).map((doc) => <SidebarRow key={doc.id} depth={1} leading={<PageIcon value={doc.icon} size={15} className="mr-2 shrink-0" />} label={doc.title || '无标题文档'} selected={selectedId === doc.id} onClick={() => onSelectDocument(doc.id)} />)}
-        {!folders.length && !documents.length ? <p className={cn(emptyHintTextClassName, 'px-1')}><button type="button" onClick={onCreateDocument} className="rounded text-left [font:inherit] hover:text-[var(--ink)]">暂无文档 · 新建第一个文档</button></p> : null}
+        {!folders.length && !documents.length ? <p className={cn(emptyHintTextClassName, 'px-1')}><button type="button" disabled={!hasKnowledgeBase} title={hasKnowledgeBase ? undefined : '请先新建知识库'} onClick={onCreateDocument} className="rounded text-left [font:inherit] enabled:hover:text-[var(--ink)] disabled:cursor-not-allowed disabled:opacity-40">暂无文档 · 新建第一个文档</button></p> : null}
       </div> : null}
     </section>
 
     <section className="mt-4" aria-label="标签">
-      <SidebarSectionHeader icon={Tag} label="标签" count={tags.length} expanded={tagsOpen} onToggle={() => setTagsOpen((open) => !open)} actions={<IconButton label="新建标签" onClick={() => { setCreatingTag(true); setTagsOpen(true); }} className="rounded p-1 hover:bg-[var(--surface-hover)]"><Plus size={15} /></IconButton>} />
+      <SidebarSectionHeader icon={Tag} label="标签" count={tags.length} expanded={tagsOpen} onToggle={() => setTagsOpen((open) => !open)} actions={<IconButton label="新建标签" disabled={!hasKnowledgeBase} tooltip={hasKnowledgeBase ? "新建标签" : "请先新建知识库"} onClick={() => { setCreatingTag(true); setTagsOpen(true); }} className="rounded p-1 enabled:hover:bg-[var(--surface-hover)] disabled:cursor-not-allowed disabled:opacity-40"><Plus size={15} /></IconButton>} />
       {tagsOpen ? <div className="mt-1 space-y-0.5">
         {creatingTag ? <form onSubmit={submitTag} className="flex items-center gap-1 px-1 py-1"><input autoFocus aria-label="标签名称" value={tagDraft} onChange={(event) => setTagDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Escape') { setCreatingTag(false); setTagDraft(''); } }} className="min-w-0 flex-1 rounded border border-[var(--line)] bg-transparent px-1.5 py-1 text-xs outline-none focus:border-[var(--accent)]" /><button type="submit" disabled={!tagDraft.trim()} className="text-[11px] text-[var(--accent-ink)] disabled:opacity-40">创建</button></form> : null}
         {tags.map((tag, index) => {

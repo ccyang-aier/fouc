@@ -24,14 +24,14 @@ afterAll(async () => { await browser.happyDOM.abort() })
 
 function Query({ controller, request, consumed }: { controller: SqlDraftController; request: SqlOpenRequest | null; consumed: (id: string) => void }) {
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot, controller.getSnapshot)
-  useSqlOpenRequest({ controller, state, request, provider: 'sqlite', database: 'test.sqlite', schema: 'main', onConsumed: consumed })
+  useSqlOpenRequest({ controller, state, active: true, request, provider: 'sqlite', database: 'test.sqlite', schema: 'main', onConsumed: consumed })
   useEffect(() => { void controller.load() }, [controller])
   return null
 }
 function Workbench({ controller }: { controller: SqlDraftController }) {
   const [opened, setOpened] = useState(false), [request, setRequest] = useState<SqlOpenRequest | null>(null), [mount, setMount] = useState(0)
   return <>
-    <WorkbenchTabs table="" schema="main" mode={opened ? 'sql' : 'data'} openedViews={opened ? ['sql'] : []} disabled={false} onChange={() => setOpened(true)} onCloseTable={() => {}} onCloseView={() => setOpened(false)} onSqlTabsTarget={() => {}}
+    <WorkbenchTabs table="" schema="main" mode={opened ? 'sql' : 'data'} openedViews={opened ? ['sql'] : []} disabled={false} sqlReady onChange={() => setOpened(true)} onCloseTable={() => {}} onCloseView={() => setOpened(false)} onSqlTabsTarget={() => {}}
       onNewQuery={() => { setRequest({ id: crypto.randomUUID(), sql: '', schema: 'main' }); setOpened(true) }} />
     <button onClick={() => setMount(current => current + 1)}>重新挂载查询视图</button>
     <button onClick={() => { controller.update(snapshot => closeSqlTabs(snapshot, snapshot.tabs.map(tab => tab.id))); setOpened(false) }}>关闭全部查询</button>

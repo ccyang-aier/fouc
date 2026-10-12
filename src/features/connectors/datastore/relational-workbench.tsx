@@ -14,6 +14,7 @@ import { ResourceTree } from "./resource-tree"
 import { TableView } from "./table-view"
 import { WorkbenchConnectionInfo } from "./workbench-connection-info"
 import { RelationalQuery } from "./relational-query"
+import { useSqlDrafts } from "./use-sql-drafts"
 import { TableEditing } from "./table-editing"
 import type { GridEditDraft, GridEditCell, GridEditSelection } from './grid-editing'
 import type { TableGridCommandHandle } from './grid/context-actions'
@@ -59,6 +60,7 @@ export function RelationalWorkbench({
   onBack: () => void
 }) {
   const base = `/api/database/relational/sessions/${session.id}`
+  const sqlDrafts = useSqlDrafts(session.connectionId ? `/api/database/relational/connections/${session.connectionId}/sql-library` : null, () => ({ tabs: [], activeTabId: null }))
   const [schemas, setSchemas] = useState<string[]>([])
   const [schema, setSchema] = useState("")
   const [tables, setTables] = useState<DatabaseObjectInfo[]>([])
@@ -405,7 +407,7 @@ export function RelationalWorkbench({
               ))}
             </select>
           </div>
-          <WorkbenchTabs table={table} schema={schema} mode={mode} openedViews={openedViews} disabled={pending || leaving} onChange={changeView} onCloseView={view => void closeView(view)} onCloseTable={closeTable} onNewQuery={() => { setOpenRequest({ id: crypto.randomUUID(), sql: "", schema }); changeView("sql") }} onSqlTabsTarget={setSqlTabsTarget} />
+          <WorkbenchTabs table={table} schema={schema} mode={mode} openedViews={openedViews} disabled={pending || leaving} sqlReady={sqlDrafts.state.ready} onChange={changeView} onCloseView={view => void closeView(view)} onCloseTable={closeTable} onNewQuery={() => { setOpenRequest({ id: crypto.randomUUID(), sql: "", schema }); changeView("sql") }} onSqlTabsTarget={setSqlTabsTarget} />
           {(mode === "data" || mode === "structure") && <WorkbenchMetadata table={table} schema={schema} columnCount={page?.table === table ? page.columns.length : 0} pending={pending} onProperties={() => setPropertiesOpen(value => !value)} propertiesOpen={propertiesOpen} onGridHeader={setGridHeaderTarget} onGridTools={setGridToolsTarget} onEditTools={setGridEditToolsTarget} onExportTools={setDataExportTarget}
             generateAction={<TestDataAction session={currentSession} base={base} schema={schema} table={table} writable={writable} disabled={pending || busy || writeBusy} onUnlock={unlockSqlWrite} onImported={refresh} onBusyChange={setMutationBusy} />}
             importAction={<TableImportAction base={base} sessionId={session.id} provider={session.provider} schema={schema} page={page} disabled={!writable || pending || busy || writeBusy} onImported={refresh} />}
@@ -432,7 +434,7 @@ export function RelationalWorkbench({
             </p>
           )}
           <div hidden={mode !== "sql"} className={styles.queryPanel}>
-            <RelationalQuery key={session.id} session={currentSession} schema={schema} schemas={schemas} metadataRevision={revision} schemaLocked={pending} onSchemaChange={selectSchema} beforeLeaveRef={sqlBeforeLeave} onLeaveReady={clearLeaveError} openRequest={openRequest} onOpenRequestConsumed={consumeOpenRequest} onUnlockWrite={unlockSqlWrite} onMutated={refresh} onMutationBusy={setMutationBusy}
+            <RelationalQuery key={session.id} drafts={sqlDrafts} session={currentSession} schema={schema} schemas={schemas} metadataRevision={revision} schemaLocked={pending} onSchemaChange={selectSchema} beforeLeaveRef={sqlBeforeLeave} onLeaveReady={clearLeaveError} openRequest={openRequest} onOpenRequestConsumed={consumeOpenRequest} onUnlockWrite={unlockSqlWrite} onMutated={refresh} onMutationBusy={setMutationBusy}
               tabsTarget={sqlTabsTarget} active={mode === 'sql'} tabsDisabled={pending || leaving} onActivate={() => changeView('sql')} onNoQueries={() => { setOpenedViews(current => current.filter(value => value !== 'sql')); if (mode === 'sql') setMode('data') }} />
           </div>
           {page && (

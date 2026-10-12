@@ -34,8 +34,8 @@ function WorkbenchTab({ label, icon, selected, disabled, closeLabel, onSelect, o
   </div>
 }
 
-export function WorkbenchTabs({ table, schema, mode, openedViews, disabled, onChange, onCloseTable, onCloseView, onNewQuery, onSqlTabsTarget }: {
-  table: string; schema: string; mode: WorkbenchMode; openedViews: WorkbenchMode[]; disabled: boolean; onChange: (mode: WorkbenchMode) => void; onCloseTable: () => void; onCloseView: (mode: WorkbenchMode) => void; onNewQuery: () => void
+export function WorkbenchTabs({ table, schema, mode, openedViews, disabled, sqlReady, onChange, onCloseTable, onCloseView, onNewQuery, onSqlTabsTarget }: {
+  table: string; schema: string; mode: WorkbenchMode; openedViews: WorkbenchMode[]; disabled: boolean; sqlReady: boolean; onChange: (mode: WorkbenchMode) => void; onCloseTable: () => void; onCloseView: (mode: WorkbenchMode) => void; onNewQuery: () => void
   onSqlTabsTarget: (target: HTMLDivElement | null) => void;
 }) {
   const dataActive = mode === "data" || mode === "structure"
@@ -50,14 +50,14 @@ export function WorkbenchTabs({ table, schema, mode, openedViews, disabled, onCh
   return <div className={styles.tabs} aria-label="工作对象标签">
     <div ref={list} className={styles.tabItems} role="tablist" aria-label="工作台页面" onKeyDown={event => { if (!disabled) navigateWorkbenchTabs(event) }}>
       <WorkbenchTab label={table ? `${table}@${schema}` : "数据浏览"} icon={<GridFour size={15} className={styles.tableIcon} />} selected={dataActive} disabled={disabled} onSelect={() => onChange("data")} closeLabel={`关闭 ${table} 数据表`} onClose={table ? onCloseTable : undefined} />
-      <div ref={onSqlTabsTarget} className={styles.sqlTabsSlot} hidden={!openedViews.includes('sql')} />
+      <div ref={onSqlTabsTarget} className={styles.sqlTabsSlot} />
       {openedViews.filter(value => value !== 'sql').map(value => {
         const view = views.find(item => item.mode === value)
         return view ? <WorkbenchTab key={value} label={view.label} icon={<view.icon size={15} />} selected={mode === value} disabled={disabled} onSelect={() => onChange(value)} closeLabel={`关闭 ${view.label} 视图`} onClose={() => onCloseView(value)} /> : null
       })}
     </div>
     <div className={`${styles.tabActions} ${styles.commandGroup}`} role="group" aria-label="工作台视图操作">
-      <button type="button" className="fouc-action" aria-label="新建 SQL 查询" title="新建 SQL 查询" disabled={disabled} onClick={onNewQuery}><Plus size={16} /></button>
+      <button type="button" className="fouc-action" aria-label="新建 SQL 查询" title={sqlReady ? '新建 SQL 查询' : 'SQL 草稿加载后可新建查询'} disabled={disabled || !sqlReady} onClick={onNewQuery}><Plus size={16} /></button>
       <WorkbenchViewMenu disabled={disabled} onChange={onChange} />
     </div>
   </div>

@@ -38,7 +38,7 @@ import { SqlHistoryPanel } from './sql-history-panel'
 import { SqlLibraryPanel } from './sql-library-panel'
 import { SaveSqlDialog, SqlDialog } from './sql-library-dialog'
 import { useSqlResource } from './use-sql-resource'
-import { useSqlDrafts } from './use-sql-drafts'
+import type { SqlDraftController, SqlDraftWorkspace } from './sql-draft-controller'
 import { useSqlOpenRequest, type SqlOpenRequest } from './use-sql-open-request'
 import { useSqlMetadata } from './use-sql-metadata'
 import { mergeSqlJoinCompletion } from './sql-assistance/join/completion'
@@ -52,7 +52,8 @@ type Restore = { sql: string; schema: string | null; database: string; file: Sav
 type Saving = { tabId: string | null; sql: string; schema: string | null; database: string; file: SqlDraftTab['savedFile'] }
 function binding(file: SavedSqlDocument): NonNullable<SqlDraftTab['savedFile']> { return { id: file.id, version: file.version, name: file.name, folderId: file.folderId } }
 
-export function RelationalQuery({ session, schema, schemas, metadataRevision, schemaLocked, onSchemaChange, beforeLeaveRef, onLeaveReady, openRequest, onOpenRequestConsumed, onUnlockWrite, onMutated, onMutationBusy, tabsTarget, active, tabsDisabled, onActivate, onNoQueries }: {
+export function RelationalQuery({ drafts, session, schema, schemas, metadataRevision, schemaLocked, onSchemaChange, beforeLeaveRef, onLeaveReady, openRequest, onOpenRequestConsumed, onUnlockWrite, onMutated, onMutationBusy, tabsTarget, active, tabsDisabled, onActivate, onNoQueries }: {
+  drafts: { state: SqlDraftWorkspace; controller: SqlDraftController }
   session: RelationalSession; schema: string; schemas: string[]; metadataRevision: number; schemaLocked: boolean; onSchemaChange: (schema: string) => void;
   beforeLeaveRef: RefObject<(() => Promise<void>) | null>
   onLeaveReady: () => void
@@ -68,8 +69,8 @@ export function RelationalQuery({ session, schema, schemas, metadataRevision, sc
   const { notify } = useAppAlert()
   const setNotice = useCallback((message: string) => { if (message) notify('info', message) }, [notify])
   const base = `${root}/sessions/${session.id}`, libraryBase = session.connectionId ? `${root}/connections/${session.connectionId}/sql-library` : null
-  const { state, controller } = useSqlDrafts(libraryBase, () => ({ tabs: [], activeTabId: null }))
-  useSqlOpenRequest({ controller, state, request: openRequest, provider: session.provider, database: session.database, schema, onConsumed: onOpenRequestConsumed })
+  const { state, controller } = drafts
+  useSqlOpenRequest({ controller, state, active, request: openRequest, provider: session.provider, database: session.database, schema, onConsumed: onOpenRequestConsumed })
   const current = state.tabs.find((tab) => tab.id === state.activeTabId) ?? null
   const [panel, setPanel] = useState<'history' | 'library' | null>(null), [revision, setRevision] = useState(0)
   const { executions, locks, run: execute, cancel, forget, selectResult } = useSqlExecutions(base, () => setRevision((value) => value + 1))

@@ -8,14 +8,15 @@ import { newSqlTab, nextSqlQueryTitle } from './sql-tabs'
 export type SqlOpenRequest = { id: string; sql: string; schema: string }
 
 /** A ready query view consumes an open command once, including effect replay and remounts. */
-export function useSqlOpenRequest({ controller, state, request, provider, database, schema, onConsumed }: {
+export function useSqlOpenRequest({ controller, state, active, request, provider, database, schema, onConsumed }: {
   controller: SqlDraftController; state: SqlDraftWorkspace; request?: SqlOpenRequest | null;
+  active: boolean;
   provider: RelationalProvider; database: string; schema: string; onConsumed: (id: string) => void;
 }) {
   const initialized = useRef(false)
   const consumedRequest = useRef<string | null>(null)
   useEffect(() => {
-    if (!state.ready) return
+    if (!state.ready || !active) return
     const firstReady = !initialized.current
     initialized.current = true
     const snapshot = controller.getSnapshot()
@@ -31,5 +32,5 @@ export function useSqlOpenRequest({ controller, state, request, provider, databa
       const tab = newSqlTab(provider === 'mysql' ? schema || database : database, schema || null, nextSqlQueryTitle(snapshot.tabs))
       controller.update(current => ({ tabs: [...current.tabs, tab], activeTabId: tab.id }))
     }
-  }, [state.ready, controller, request, provider, database, schema, onConsumed])
+  }, [state.ready, active, controller, request, provider, database, schema, onConsumed])
 }

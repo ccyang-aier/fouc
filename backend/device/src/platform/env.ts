@@ -313,11 +313,21 @@ export async function prepareCleanEnv(customEnv?: Record<string, string>): Promi
   delete merged.FOUC_DATA_DIR;
   // npm lifecycle 变量会干扰包解析
   for (const key of Object.keys(merged)) {
-    if (key.startsWith('npm_')) delete merged[key];
+    const name = key.toUpperCase();
+    if (name.startsWith('FOUC_') || name.startsWith('NPM_') || (AGENT_PROCESS_ENV_BLOCKLIST as readonly string[]).includes(name)) delete merged[key];
   }
 
   return merged as Record<string, string>;
 }
+
+/** Business-service secrets are not Agent model/proxy credentials. */
+export const AGENT_PROCESS_ENV_BLOCKLIST = [
+  'DATABASE_URL', 'AUTH_SECRET', 'BETTER_AUTH_SECRET', 'SESSION_SECRET',
+  'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_SESSION_TOKEN',
+  'S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY', 'S3_ACCESS_KEY', 'S3_SECRET_KEY',
+  'MINIO_ROOT_USER', 'MINIO_ROOT_PASSWORD', 'GITHUB_TOKEN', 'GH_TOKEN',
+  'GITHUB_CLIENT_SECRET', 'GOOGLE_CLIENT_SECRET', 'OAUTH_CLIENT_SECRET',
+] as const;
 
 /** Windows 上执行命令需要 shell 解析 .cmd shim */
 export function getWindowsShellExecutionOptions(): { shell?: boolean; windowsHide?: boolean } {

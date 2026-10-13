@@ -39,6 +39,7 @@ struct BackendInner {
     token: String,
     internal_token: String,
     child: Option<Child>,
+    native_child: Option<Child>,
     restart_count: u32,
     last_start: Option<Instant>,
     /// 健康监视线程只启动一次（每次 spawn 都另起 watcher 会随重启累积、双重拉起）
@@ -76,6 +77,7 @@ impl BackendState {
                 token: String::new(),
                 internal_token: String::new(),
                 child: None,
+                native_child: None,
                 restart_count: 0,
                 last_start: None,
                 watcher_running: false,
@@ -99,7 +101,8 @@ fn backend_command(
             .parent()?
             .to_path_buf();
         let mut c = Command::new("bun");
-        c.arg("run").arg(repo_root.join("backend/device/src/entrypoints/index.ts"));
+        c.arg("run")
+            .arg(repo_root.join("backend/device/src/entrypoints/index.ts"));
         c
     } else {
         Command::new(current_exe_dir()?.join(sidecar_name()))
@@ -150,6 +153,79 @@ fn sidecar_name() -> &'static str {
     }
 }
 
+/// The native Node host is a sibling of Bun; Rust only starts and watches it.
+fn ensure_native_worker(app: &AppHandle, inner: &mut BackendInner, data_dir: &str) {
+    if !cfg!(windows) {
+        return;
+    }
+    if let Some(child) = inner.native_child.as_mut() {
+        if matches!(child.try_wait(), Ok(None)) {
+            return;
+        }
+    }
+    inner.native_child = None;
+    let directory = Path::new(data_dir).join("project-executions");
+    let descriptor = directory.join("native-worker.json");
+    if let Ok(text) = std::fs::read_to_string(&descriptor) {
+        if let Ok(value) = serde_json::from_str::<serde_json::Value>(&text) {
+            if let (Some(port), Some(pid)) = (value["port"].as_u64(), value["pid"].as_u64()) {
+                if let Ok(client) = reqwest::blocking::Client::builder()
+                    .no_proxy()
+                    .timeout(Duration::from_secs(1))
+                    .build()
+                {
+                    if let Ok(response) =
+                        client.get(format!("http://127.0.0.1:{port}/health")).send()
+                    {
+                        if let Ok(health) = response.json::<serde_json::Value>() {
+                            if health["ok"] == true
+                                && health["pid"] == pid
+                                && health["dataDirectory"] == directory.to_string_lossy().as_ref()
+                            {
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    let (node, script) = if cfg!(debug_assertions) {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
+        (
+            std::env::var_os("FOUC_NODE_PATH")
+                .map(PathBuf::from)
+                .unwrap_or_else(|| PathBuf::from("node")),
+            root.join("backend/device/src/agents/project-native-worker.cjs"),
+        )
+    } else {
+        let Some(binary_directory) = current_exe_dir() else {
+            return;
+        };
+        let Ok(resources) = app.path().resource_dir() else {
+            return;
+        };
+        (
+            binary_directory.join("fouc-native-node.exe"),
+            resources.join("native-execution/project-native-worker.cjs"),
+        )
+    };
+    let mut command = Command::new(node);
+    command
+        .arg(script)
+        .arg("--data-dir")
+        .arg(directory)
+        .stdin(Stdio::null())
+        .stdout(backend_log_stdio(data_dir))
+        .stderr(backend_log_stdio(data_dir));
+    #[cfg(windows)]
+    command.creation_flags(CREATE_NO_WINDOW);
+    match command.spawn() {
+        Ok(child) => inner.native_child = Some(child),
+        Err(error) => log_warn(&format!("native process host unavailable: {error}")),
+    }
+}
+
 fn spawn_backend(app: &AppHandle, state: SharedBackendState) {
     let data_dir = app
         .path()
@@ -159,6 +235,7 @@ fn spawn_backend(app: &AppHandle, state: SharedBackendState) {
         .unwrap_or_else(dirs_fallback);
 
     let mut inner = state.inner.lock().unwrap();
+    ensure_native_worker(app, &mut inner, &data_dir);
     if inner.port == 0 {
         inner.port = pick_free_port().unwrap_or(8710);
     }
@@ -235,6 +312,15 @@ fn spawn_health_watch(app: AppHandle, state: SharedBackendState, port: u16) {
                 .map(|r| r.status().is_success())
                 .unwrap_or(false);
             if healthy {
+                let data_dir = app
+                    .path()
+                    .app_data_dir()
+                    .ok()
+                    .map(|path| path.to_string_lossy().to_string())
+                    .unwrap_or_else(dirs_fallback);
+                if let Ok(mut inner) = state.inner.lock() {
+                    ensure_native_worker(&app, &mut inner, &data_dir);
+                }
                 failures = 0;
                 if !ready_announced {
                     ready_announced = true;
@@ -741,6 +827,17 @@ fn shutdown_backend(state: &BackendState) {
                 }
             }
             std::thread::sleep(Duration::from_millis(300));
+            let _ = child.kill();
+            let _ = child.wait();
+        }
+        if let Some(mut child) = inner.native_child.take() {
+            #[cfg(windows)]
+            {
+                let mut kill = Command::new("taskkill");
+                kill.args(["/PID", &child.id().to_string(), "/T", "/F"])
+                    .creation_flags(CREATE_NO_WINDOW);
+                let _ = kill.status();
+            }
             let _ = child.kill();
             let _ = child.wait();
         }

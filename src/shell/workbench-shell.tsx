@@ -1,9 +1,9 @@
 "use client"
 
 import { useWorkbenchView } from "./workbench-view"
-import { closeSettings, setSettingsSection, useSettingsSection } from "@/lib/settings-navigation"
+import { closeSettings, setSettingsSection, useSettingsSection, WORKBENCH_VIEW_CHANGED } from "@/lib/settings-navigation"
 import { useMenuMotion } from "@/lib/use-menu-motion"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react"
 import { AnimatePresence, MotionConfig, motion, type Variants } from "motion/react"
 
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -44,7 +44,9 @@ import { CommunityCanvas } from "@/features/community/community-canvas"
 import { ConnectorsCanvas } from "@/features/connectors/connectors-canvas"
 import { KnowledgePage } from "@/features/knowledge/knowledge-page"
 import { NavigationSidebar, type WorkbenchView } from "./navigation-sidebar"
-import { useProjectResources } from "@/features/project/project-resources"
+import { useProjectResources, type ProjectResource } from "@/features/project/project-resources"
+import { ProjectDeliveryProvider, AcceptDeliveryInvitation } from "@/features/project/delivery"
+import { useAppAlert } from "@/components/app-alert-provider"
 import { ProjectHomeCanvas } from "@/features/project/project-home-canvas"
 import { ProjectIndexCanvas } from "@/features/project/project-index-canvas"
 import styles from "./workbench-shell.module.css"
@@ -57,7 +59,13 @@ export function WorkbenchShell() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [view, setView, settingsOpen] = useWorkbenchView()
   const settingsSection = useSettingsSection()
-  const { projects, selectedProject, selectProject, favorites, managementPanel, setManagementPanel, setFavorite } = useProjectResources()
+  const { projects, selectedProject, selectProject, refreshProjects, favorites, managementPanel, setManagementPanel, setFavorite } = useProjectResources()
+  const { notify } = useAppAlert()
+  const query = useSyncExternalStore(subscribeProjectLink, readProjectLink, () => "")
+  const link = new URLSearchParams(query)
+  const linkedProjectId = link.get("projectId")
+  const invitationId = link.get("invitationId")
+  const invitationToken = link.get("invitationToken")
   const projectFavorited = selectedProject !== null && favorites.includes(selectedProject.id)
   // 应用面板根：桌面端作为自绘外框的内层与弹层宿主
   const frameRef = useRef<HTMLDivElement>(null)
@@ -66,6 +74,10 @@ export function WorkbenchShell() {
   useEffect(() => {
     applyAppearancePrefs(readAppearancePrefs())
   }, [])
+
+  useEffect(() => {
+    if (linkedProjectId && projects.some(project => project.id === linkedProjectId) && selectedProject?.id !== linkedProjectId) selectProject(linkedProjectId)
+  }, [linkedProjectId, projects, selectedProject?.id, selectProject])
 
   // 桌面端启用窗口自绘外框，并把弹层收进应用面板内
   useEffect(() => {
@@ -86,16 +98,23 @@ export function WorkbenchShell() {
       return
     }
     if (nextView !== "projects") setManagementPanel(null)
-    const needsCompactNavigation = nextView === "projects" || nextView === "community" || nextView === "knowledge"
-    // 项目、社区与知识库视图默认收起主导航为内容让位。
+    const needsCompactNavigation = nextView === "community" || nextView === "knowledge"
     if (needsCompactNavigation && !sidebarCollapsed) {
       setSidebarCollapsed(true)
     }
     setView(nextView)
   }
 
+  function closeInvitation() {
+    const url = new URL(window.location.href)
+    url.searchParams.delete("invitationId")
+    url.searchParams.delete("invitationToken")
+    window.history.replaceState(null, "", url)
+    window.dispatchEvent(new Event(WORKBENCH_VIEW_CHANGED))
+  }
+
   return (
-    <MotionConfig reducedMotion="never">
+    <MotionConfig reducedMotion="user">
       <TooltipProvider>
         {/* 外层透明边距承载自绘阴影；应用面板根绘环境画布并作为弹层宿主 */}
         <div className="h-dvh w-full p-[var(--win-frame-inset)]">
@@ -104,7 +123,7 @@ export function WorkbenchShell() {
             className={`${styles.frame} flex h-full w-full min-w-[660px] min-h-[540px] flex-col overflow-hidden bg-background text-[var(--ink)] shadow-[var(--win-shadow)]`}
           >
             {/* 设置覆盖在当前工作面上，原视图及其输入、选择和滚动状态保持挂载。 */}
-            <div className="flex min-h-0 flex-1">
+            <ProjectDeliveryBoundary project={selectedProject}><div className="flex min-h-0 flex-1">
               <div className={`${styles.navigation} sidebar-material flex shrink-0`}>
                 <NavigationSidebar
                   open={!sidebarCollapsed}
@@ -166,10 +185,29 @@ export function WorkbenchShell() {
                 </main>
               </div>
             </div>
+            </ProjectDeliveryBoundary>
             <SettingsDialog open={settingsOpen} section={settingsSection} onSectionChange={setSettingsSection} onClose={closeSettings} />
+            {linkedProjectId && invitationId && invitationToken ? <AcceptDeliveryInvitation projectId={linkedProjectId} invitationId={invitationId} token={invitationToken} onClose={closeInvitation} onAccepted={() => {
+              closeInvitation()
+              void refreshProjects(linkedProjectId).then(refreshed => {
+                if (refreshed) { changeView("projects"); notify("success", "已加入项目") }
+                else { changeView("project-home"); notify("warning", "已加入项目，项目列表暂未刷新，请稍后重试") }
+              })
+            }} /> : null}
           </div>
         </div>
       </TooltipProvider>
     </MotionConfig>
   )
+}
+
+function ProjectDeliveryBoundary({project, children}: {project: ProjectResource | null; children: ReactNode}) {
+  return project ? <ProjectDeliveryProvider key={`${project.source}:${project.id}`} project={project}>{children}</ProjectDeliveryProvider> : children
+}
+
+function readProjectLink() { return window.location.search }
+function subscribeProjectLink(listener: () => void) {
+  window.addEventListener("popstate", listener)
+  window.addEventListener(WORKBENCH_VIEW_CHANGED, listener)
+  return () => { window.removeEventListener("popstate", listener); window.removeEventListener(WORKBENCH_VIEW_CHANGED, listener) }
 }

@@ -19,9 +19,10 @@ type ResourceContext = {
   managementPanel: ProjectManagementPanelId | null;
   setManagementPanel: (panel: ProjectManagementPanelId | null) => void;
   selectProject: (id: string) => void;
+  refreshProjects: (selectId?: string) => Promise<boolean>;
   createProject: (name: string, source?: ProjectResource['source']) => Promise<ProjectResource | null>;
-  renameProject: (id: string, name: string) => Promise<void>;
-  removeProject: (id: string) => Promise<void>;
+  renameProject: (id: string, name: string) => Promise<boolean>;
+  removeProject: (id: string) => Promise<boolean>;
   setFavorite: (id: string, favorite: boolean) => void;
 };
 const Context = createContext<ResourceContext | null>(null);
@@ -46,6 +47,7 @@ export function ProjectResourceProvider({ children }: { children: ReactNode }) {
 function ProjectResourceScope({ children, principal }: { children: ReactNode; principal: string }) {
   const [state, setState] = useState<ProjectState>({ projects: [], selectedId: null, favorites: [] });
   const snapshot = useRef(state);
+  const scope = useRef<AbortController | null>(null);
   const updateState = useCallback((change: (current: ProjectState) => ProjectState) => {
     const next = change(snapshot.current);
     snapshot.current = next;
@@ -59,6 +61,7 @@ function ProjectResourceScope({ children, principal }: { children: ReactNode; pr
 
   useEffect(() => {
     const controller = new AbortController();
+    scope.current = controller;
     const selectedId = readStorage<string | null>(activeProjectKey, null);
     const favorites = readStorage<string[]>(prefs, []);
     const local = readStorage<Project[]>(projectStorageKey, []).map(project => ({ ...project, source: 'local' as const }));
@@ -93,41 +96,67 @@ function ProjectResourceScope({ children, principal }: { children: ReactNode; pr
     projects: state.projects, selectedProject, favorites: state.favorites, status, error,
     managementPanel, setManagementPanel,
     selectProject: (id) => { if (state.projects.some((item) => item.id === id)) { persist(current => ({ ...current, selectedId: id })); setManagementPanel(null); } },
+    refreshProjects: async (selectId) => {
+      const signal = scope.current?.signal;
+      if (!signal || signal.aborted || principal === 'guest') return false;
+      try {
+        const projects = await projectClient.list(signal);
+        if (signal.aborted) return false;
+        persist(current => {
+          const next = [...current.projects.filter(project => project.source === 'local'), ...projects.map(project => ({ ...project, source: 'server' as const }))];
+          return { ...current, projects: next, selectedId: selectId && next.some(project => project.id === selectId) ? selectId : current.selectedId };
+        });
+        setError(null);
+        setStatus('ready');
+        return true;
+      } catch (cause) {
+        if (!signal.aborted) setError(cause instanceof Error ? cause.message : '项目列表刷新失败');
+        return false;
+      }
+    },
     createProject: async (name, source = selectedProject?.source ?? 'local') => {
       const title = name.trim();
-      if (!title) return null;
+      const signal = scope.current?.signal;
+      if (!title || !signal || signal.aborted) return null;
       try {
         if (source === 'server' && principal === 'guest') throw new Error('登录后才能创建服务端项目');
         const project = source === 'server' ? await projectClient.create(title) : { id: crypto.randomUUID(), name: title };
+        if (signal.aborted) return null;
         const created = { ...project, source };
         persist(current => ({ ...current, projects: [...current.projects.filter(project => project.id !== created.id), created], selectedId: created.id }));
         setError(null);
         return created;
-      } catch (cause) { setError(cause instanceof Error ? cause.message : '项目创建失败'); return null; }
+      } catch (cause) { if (!signal.aborted) setError(cause instanceof Error ? cause.message : '项目创建失败'); return null; }
     },
     renameProject: async (id, name) => {
       const title = name.trim();
       const resource = state.projects.find(project => project.id === id);
-      if (!title || !resource) return;
+      const signal = scope.current?.signal;
+      if (!title || !resource || !signal || signal.aborted) return false;
       try {
         const project = resource.source === 'server' ? await projectClient.rename(id, title) : { id, name: title };
+        if (signal.aborted) return false;
         const updated = { ...project, source: resource.source };
         persist(current => ({ ...current, projects: current.projects.map((project) => project.id === id ? updated : project) }));
         setError(null);
-      } catch (cause) { setError(cause instanceof Error ? cause.message : '项目重命名失败'); }
+        return true;
+      } catch (cause) { if (!signal.aborted) setError(cause instanceof Error ? cause.message : '项目重命名失败'); return false; }
     },
     removeProject: async (id) => {
       const resource = state.projects.find(project => project.id === id);
-      if (!resource) return;
+      const signal = scope.current?.signal;
+      if (!resource || !signal || signal.aborted) return false;
       try {
         if (resource.source === 'server') await projectClient.remove(id);
+        if (signal.aborted) return false;
         persist(current => {
           const projects = current.projects.filter((project) => project.id !== id);
           return { projects, selectedId: current.selectedId === id ? projects[0]?.id ?? null : current.selectedId, favorites: current.favorites.filter((favorite) => favorite !== id) };
         });
         setManagementPanel(null);
         setError(null);
-      } catch (cause) { setError(cause instanceof Error ? cause.message : '项目删除失败'); }
+        return true;
+      } catch (cause) { if (!signal.aborted) setError(cause instanceof Error ? cause.message : '项目删除失败'); return false; }
     },
     setFavorite: (id, favorite) => {
       if (!state.projects.some((project) => project.id === id)) return;

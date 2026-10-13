@@ -40,7 +40,6 @@ import { cn } from "@/lib/utils"
 import { useProjectResources } from "@/features/project/project-resources"
 import { SidebarAgentSection } from "./sidebar-agent-section"
 import { ProjectSidebarPane } from "./sidebar-project-pane"
-import { demonstrationProjectId } from "@/features/project/project-resources"
 
 export type WorkbenchView =
   | "home"
@@ -261,8 +260,7 @@ export function NavigationSidebar({
     favorited: projectFavorited,
     onFavoriteChange: (favorited: boolean) => { if (selectedProject) setFavorite(selectedProject.id, favorited) },
     projectName: selectedProject?.name ?? '',
-    hasDemoContent: selectedProject?.id === demonstrationProjectId,
-    onExit: () => onViewChange("home"),
+    onExit: () => onViewChange("project-home"),
   }
 
   return (

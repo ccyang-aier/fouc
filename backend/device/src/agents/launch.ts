@@ -71,7 +71,7 @@ export async function buildLaunchSpec(
   provider: ProviderSpec,
   installation: AgentInstallation,
   cwd: string,
-  options?: { yoloMode?: boolean }
+  options?: { yoloMode?: boolean; readOnly?: boolean }
 ): Promise<AcpLaunchSpec> {
   if (provider.acpLaunch.kind === 'native') {
     return {
@@ -90,8 +90,12 @@ export async function buildLaunchSpec(
     } catch {
       throw new Error(`bridge artifact missing in dev: ${devEntry}`);
     }
-    if (devRuntime === 'native') return { command: devPath, args: [], cwd };
-    return { command: 'bun', args: ['run', devPath], cwd, env: claudeBridgeEnv(provider, installation) };
+    if (devRuntime === 'native') {
+      const spec: AcpLaunchSpec = { command: devPath, args: [], cwd };
+      if (provider.id === 'codex') applyCodexRuntimeConfig(spec, options?.yoloMode ?? false, options?.readOnly);
+      return spec;
+    }
+    return { command: process.execPath, args: ['run', devPath], cwd, env: claudeBridgeEnv(provider, installation) };
   }
 
   if (packaged.source === 'backend-dispatch') {
@@ -103,7 +107,7 @@ export async function buildLaunchSpec(
     };
   }
   const spec: AcpLaunchSpec = { command: await ensureNpmBridge(packaged), args: [], cwd };
-  if (provider.id === 'codex') applyCodexRuntimeConfig(spec, options?.yoloMode ?? false);
+  if (provider.id === 'codex') applyCodexRuntimeConfig(spec, options?.yoloMode ?? false, options?.readOnly);
   log.debug(`[${provider.id}] launch: ${spec.command} ${(spec.args ?? []).join(' ')}`);
   return spec;
 }
@@ -118,11 +122,12 @@ function claudeBridgeEnv(provider: ProviderSpec, installation: AgentInstallation
  * codex 桥运行时配置（AionCore acp_launch_policy 实测契约）：
  * shell 工具继承完整环境；sandbox 档位随 YOLO 请求切换。
  */
-function applyCodexRuntimeConfig(spec: AcpLaunchSpec, yolo: boolean): void {
+function applyCodexRuntimeConfig(spec: AcpLaunchSpec, yolo: boolean, readOnly = false): void {
   const config: string[] = [
     'shell_environment_policy.inherit=all',
     'shell_environment_policy.include_only=[]',
-    `sandbox_mode="${yolo ? 'danger-full-access' : 'workspace-write'}"`,
+    `sandbox_mode="${readOnly ? 'read-only' : yolo ? 'danger-full-access' : 'workspace-write'}"`,
+    ...(readOnly ? ['approval_policy="never"'] : []),
   ];
   if (yolo && process.platform === 'win32') {
     config.push('windows.sandbox="unelevated"');

@@ -130,6 +130,8 @@ export interface AgentSpawnSpec {
   env?: Record<string, string>;
   /** POSIX 上脱离父进程会话（父退出不拖死子进程；终止时走进程组 kill） */
   detached?: boolean;
+  /** JSONL one-shot drivers take their prompt in argv and require immediate stdin EOF. */
+  stdin?: 'pipe' | 'ignore';
 }
 
 /** 长驻 Agent CLI：pipe stdio、干净环境、可选 detached */
@@ -143,7 +145,7 @@ export function spawnAgentProcess(spec: AgentSpawnSpec): ChildProcess {
   const child = spawn(command, spec.args, {
     cwd: spec.cwd,
     env: spec.env as NodeJS.ProcessEnv | undefined,
-    stdio: ['pipe', 'pipe', 'pipe'],
+    stdio: [spec.stdin ?? 'pipe', 'pipe', 'pipe'],
     detached: spec.detached ?? !isWindows,
     shell: useShell,
     windowsHide: true,

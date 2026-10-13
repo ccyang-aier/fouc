@@ -44,7 +44,12 @@
     "shortDescription": "AI Agent collaborative workbench",
     "longDescription": "Fouc brings people, teams, and AI agents into one shared workflow.",
     "externalBin": [
-      "binaries/fouc-backend"
-    ]
+      "binaries/fouc-backend",
+      "binaries/fouc-native-node"
+    ],
+    "resources": {
+      "../backend/device/src/agents/project-native-worker.cjs": "native-execution/project-native-worker.cjs",
+      "binaries/fouc-native-node.LICENSE": "native-execution/node.LICENSE"
+    }
   }
 }

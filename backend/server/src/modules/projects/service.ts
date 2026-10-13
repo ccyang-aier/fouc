@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import { and, asc, eq, gt, ne } from 'drizzle-orm';
+import { and, asc, eq, gt } from 'drizzle-orm';
 import type { Pool } from 'pg';
 import { createProjectInputSchema, listProjectsInputSchema, removeProjectInputSchema, renameProjectInputSchema } from '@fouc/shared/projects';
-import { project, projectMember } from '../../platform/database/resources/schema';
+import { project, projectDeliveryWorkObject, projectMember } from '../../platform/database/resources/schema';
 import type { ResourceTransaction } from '../../platform/database/resources/transaction';
 import { withFoucIdentity, withProject } from '../../platform/database/resources/transaction';
 import type { FoucIdentity } from '../../platform/identity/identity';
@@ -31,7 +31,7 @@ export function createProjectService(pool: Pool) {
       return withFoucIdentity(pool, identity.sessionId, async (db) => {
         const actor = await currentIdentity(db, identity);
         const rows = await db.select({ project }).from(project)
-          .innerJoin(projectMember, and(eq(projectMember.projectId, project.id), eq(projectMember.userId, actor.userId), ne(projectMember.role, 'guest')))
+          .innerJoin(projectMember, and(eq(projectMember.projectId, project.id), eq(projectMember.userId, actor.userId)))
           .where(parsed.cursor ? gt(project.id, parsed.cursor) : undefined).orderBy(asc(project.id)).limit(parsed.limit + 1);
         return pageOf(rows.map(({ project: row }) => view(row)), parsed.limit, (row) => row.id);
       });
@@ -56,6 +56,10 @@ export function createProjectService(pool: Pool) {
     async remove(identity: FoucIdentity, input: unknown) {
       const parsed = parseInput(removeProjectInputSchema, input);
       return mutate(identity, parsed.projectId, async (db) => {
+        const workObjects = await db.select({ aggregate: projectDeliveryWorkObject.aggregate }).from(projectDeliveryWorkObject).where(eq(projectDeliveryWorkObject.projectId, parsed.projectId));
+        if (workObjects.some(({ aggregate }) => aggregate.runs.some(run => ['reserved', 'queued', 'running', 'waiting_approval'].includes(run.status)) || aggregate.releases.some(release => release.status === 'running'))) {
+          throw new ResourceRequestError('CONFLICT', '先停止真实运行或等待发布结束，再删除项目。', 409);
+        }
         await db.delete(project).where(eq(project.id, parsed.projectId));
         return { removed: true as const };
       });

@@ -128,21 +128,25 @@ type PendingPermission = {
 
 type PendingPermissionWithContext = PendingPermission & {
   cacheKey: string;
+  options: Map<string, string>;
 };
 
 export type PermissionResolverConfig = {
   autoApproveAll: boolean;
   cacheMaxSize?: number;
+  allowAlways?: boolean;
 };
 
 export class PermissionResolver {
   private readonly yoloMode: boolean;
   private readonly cache: ApprovalCache;
   private readonly pending = new Map<string, PendingPermissionWithContext>();
+  private readonly allowAlways: boolean;
 
   constructor(config: PermissionResolverConfig) {
     this.yoloMode = config.autoApproveAll;
     this.cache = new ApprovalCache(config.cacheMaxSize ?? 500);
+    this.allowAlways = config.allowAlways ?? true;
   }
 
   get hasPending(): boolean {
@@ -171,13 +175,14 @@ export class PermissionResolver {
     const { toolCall } = request;
     const callId = toolCall.toolCallId;
     return new Promise<RequestPermissionResponse>((resolve, reject) => {
-      this.pending.set(callId, { callId, resolve, reject, createdAt: Date.now(), cacheKey });
+      const options = request.options.filter(option => this.allowAlways || option.kind !== 'allow_always');
+      this.pending.set(callId, { callId, resolve, reject, createdAt: Date.now(), cacheKey, options: new Map(options.map(option => [option.optionId, option.kind])) });
       uiCallback({
         callId,
         title: toolCall.title ?? '',
         description: '',
         kind: toolCall.kind ? mapToolKind(toolCall.kind) : undefined,
-        options: request.options.map((o) => ({
+        options: options.map((o) => ({
           optionId: o.optionId,
           label: o.name,
           kind: o.kind,
@@ -191,17 +196,18 @@ export class PermissionResolver {
     });
   }
 
-  resolve(callId: string, optionId: string): void {
+  resolve(callId: string, optionId: string): boolean {
     const entry = this.pending.get(callId);
-    if (!entry) return;
+    if (!entry || !entry.options.has(optionId)) return false;
     this.pending.delete(callId);
 
     // 只缓存 "allow always" 决策供后续自动批准
-    if (optionId.startsWith('allow_') && optionId.includes('always')) {
+    if (entry.options.get(optionId) === 'allow_always') {
       this.cache.set(entry.cacheKey, optionId);
     }
 
     entry.resolve({ outcome: { outcome: 'selected', optionId } });
+    return true;
   }
 
   rejectAll(error: Error): void {

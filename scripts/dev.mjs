@@ -13,31 +13,6 @@ await prepareDocumentPdf();
 const require = createRequire(import.meta.url);
 const logDirectory = path.join(root, '.runtime', 'dev');
 const normalize = (value) => value.replaceAll('\\', '/').toLowerCase();
-const nativeWorkerDirectory = path.join(process.env.FOUC_DATA_DIR ?? path.join(homedir(), '.fouc'), 'project-executions');
-async function nativeWorkerReady() {
-  try {
-    const descriptor = JSON.parse(readFileSync(path.join(nativeWorkerDirectory, 'native-worker.json'), 'utf8'));
-    const response = await fetch(`http://127.0.0.1:${descriptor.port}/health`, { signal: AbortSignal.timeout(2000) });
-    const health = await response.json();
-    return health.ok === true && health.protocol === 1 && health.pid === descriptor.pid && normalize(health.dataDirectory) === normalize(nativeWorkerDirectory);
-  } catch { return false; }
-}
-if (process.platform === 'win32') {
-  if (await nativeWorkerReady()) console.log('Native execution: reusing the device Node process host');
-  else {
-    mkdirSync(logDirectory, { recursive: true });
-    const stdout = openSync(path.join(logDirectory, 'native-worker.log'), 'a');
-    const stderr = openSync(path.join(logDirectory, 'native-worker.error.log'), 'a');
-    const worker = spawn(process.execPath, ['--watch', path.join(root, 'backend/device/src/agents/project-native-worker.cjs'), '--data-dir', nativeWorkerDirectory], { cwd: root, env: process.env, detached: true, windowsHide: true, stdio: ['ignore', stdout, stderr] });
-    closeSync(stdout); closeSync(stderr);
-    await new Promise((resolve, reject) => { worker.once('spawn', resolve); worker.once('error', reject); });
-    worker.unref();
-    const deadline = Date.now() + 10_000;
-    while (Date.now() < deadline && !await nativeWorkerReady()) await delay(100);
-    if (!await nativeWorkerReady()) throw new Error('Native Node execution host did not become ready. Inspect .runtime/dev/native-worker.error.log.');
-    console.log('Native execution: started the device Node process host');
-  }
-}
 const bunName = process.platform === 'win32' ? 'bun.exe' : 'bun';
 const bunExecutable = [
   process.env.FOUC_BUN_PATH,

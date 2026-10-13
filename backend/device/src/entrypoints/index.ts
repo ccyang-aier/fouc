@@ -14,7 +14,6 @@ import { openDatabase } from '../storage/db';
 import { EventRepository, InstallationRepository, ProviderRepository, RunRepository, SessionRepository } from '../storage/repositories';
 import { AgentRegistry } from '../agents/registry';
 import { SessionSupervisor } from '../agents/supervisor';
-import { ProjectExecutionManager } from '../agents/project-execution';
 import { createLogger } from '../platform/logger';
 import { ConnectorRepository } from '../connectors/repository';
 import { ConnectorService } from '../connectors/service';
@@ -96,9 +95,8 @@ async function main(): Promise<void> {
 
   const registry = new AgentRegistry(providerRepo, installationRepo, (event) => emitter.emit(event));
   const supervisor = new SessionSupervisor(registry, sessionRepo, runRepo, eventRepo, (event) => emitter.emit(event));
-  const projectExecutions = new ProjectExecutionManager(registry, supervisor, path.join(process.env.FOUC_DATA_DIR ?? path.join(homedir(), '.fouc'), 'project-executions'));
 
-  const { app, hub } = createApp({ registry, supervisor, projectExecutions, connectors, databaseCapabilities, relationalSessions, relationalConnections, redisSessions, redisConnections, mongoSessions, mongoConnections, knowledge, token: TOKEN || 'dev', internalToken: INTERNAL_TOKEN, devNoAuth: DEV_NO_AUTH });
+  const { app, hub } = createApp({ registry, supervisor, connectors, databaseCapabilities, relationalSessions, relationalConnections, redisSessions, redisConnections, mongoSessions, mongoConnections, knowledge, token: TOKEN || 'dev', internalToken: INTERNAL_TOKEN, devNoAuth: DEV_NO_AUTH });
   const forwarder = createEventForwarder(hub);
   emitter.emit = (event) => forwarder(event);
   for (const event of buffered.splice(0)) forwarder(event);
@@ -136,7 +134,6 @@ async function main(): Promise<void> {
   const shutdown = async () => {
     log.info('Shutting down: suspending sessions…');
     connectors.stopHeartbeat();
-    await projectExecutions.shutdown().catch((error) => log.error('Project executions shutdown failed:', error));
     await relationalSessions.shutdown().catch((error) => log.error('Relational sessions shutdown failed:', error));
     redisSessions.shutdown();
     await mongoSessions.dispose().catch((error) => log.error('Mongo sessions shutdown failed:', error));

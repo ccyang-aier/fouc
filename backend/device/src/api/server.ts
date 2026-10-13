@@ -27,13 +27,10 @@ import type { MongoSessionManager } from '../database/mongo-session';
 import type { MongoConnectionConfig } from '@fouc/shared/mongo-connections';
 import type { KnowledgeRepository } from '../knowledge/repository';
 import { DATABASE_CATALOG_REVISION, getDatabaseDialect, getDatabaseProfile, listDatabaseDrivers, listDatabaseProfiles } from '@fouc/shared/database-catalog';
-import type { ProjectExecutionManager } from '../agents/project-execution';
-import { projectExecutionRoutes } from './project-execution-routes';
 
 export type ServerContext = {
   registry: AgentRegistry;
   supervisor: SessionSupervisor;
-  projectExecutions?: ProjectExecutionManager;
   connectors: ConnectorService;
   databaseCapabilities?: DatabaseCapabilityRegistry;
   relationalSessions?: RelationalSessionManager;
@@ -301,7 +298,6 @@ export function createApp(context: ServerContext): { app: Hono; hub: BroadcastHu
   // ── 会话与运行 ─────────────────────────────────────────────────
 
   app.get('/api/sessions', (c) => c.json({ ok: true, data: supervisor.listSessions() }));
-  if (context.projectExecutions) app.route('/', projectExecutionRoutes(context.projectExecutions));
 
   app.post('/api/sessions', async (c) => {
     const body = await readJson<{ installationId: string; workDir?: string; yoloMode?: boolean }>(c);

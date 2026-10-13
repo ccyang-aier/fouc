@@ -19,7 +19,6 @@ import type { AgentConnectionConfig, SessionCallbacks } from './driver/acp/types
 import type { EventRepository, RunRepository, SessionRepository } from '../storage/repositories';
 import { createLogger } from '../platform/logger';
 import { isProcessAlive } from '../execution/process';
-import { probeProjectCodex, ProjectCodexSession } from './project-execution-codex';
 
 const log = createLogger('supervisor');
 
@@ -27,7 +26,7 @@ const DEFAULT_IDLE_TIMEOUT_MS = 10 * 60 * 1000; // 10 分钟
 const IDLE_CHECK_INTERVAL_MS = 30 * 1000; // 30 秒巡检
 
 interface SupervisedSession {
-  session: AcpSession | ProjectCodexSession;
+  session: AcpSession;
   installationId: string;
   providerId: string;
   rowId: string;
@@ -185,12 +184,6 @@ export class SessionSupervisor {
     provider: import('@fouc/shared').ProviderSpec,
     options?: { yoloMode?: boolean; readOnly?: boolean; projectExecution?: boolean; projectIsolated?: boolean; executionDeadlineAt?: number; resumeSessionId?: string | null }
   ): Promise<void> {
-    if (options?.projectExecution && provider.id === 'codex' && (await probeProjectCodex(installation.executablePath)).supported) {
-      const session = new ProjectCodexSession(installation.executablePath, row.workDir, row.id, options.readOnly ?? true, this.buildCallbacks(row.id, row.installationId), installation.capabilityManifest?.controls.models ?? [], options.projectIsolated, options.executionDeadlineAt);
-      this.sessions.set(row.id, { session, installationId: row.installationId, providerId: provider.id, rowId: row.id, currentRunId: null, lastActiveAt: Date.now() });
-      session.start();
-      return;
-    }
     const spec = await buildLaunchSpec(provider, installation, row.workDir, {
       yoloMode: options?.yoloMode ?? false,
       readOnly: options?.readOnly,
@@ -249,7 +242,7 @@ export class SessionSupervisor {
     return this.sessionRepo.listAll();
   }
 
-  getNativeSessionHandle(sessionId: string): AcpSession | ProjectCodexSession | null {
+  getNativeSessionHandle(sessionId: string): AcpSession | null {
     return this.sessions.get(sessionId)?.session ?? null;
   }
 

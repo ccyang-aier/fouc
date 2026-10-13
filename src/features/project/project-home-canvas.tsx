@@ -1,9 +1,8 @@
 "use client"
 
 import type { ProjectManagementPanelId } from "./project-management-model"
-import { ProjectWorkbench } from "./project-workbench"
 
-export function ProjectHomeCanvas({ favorited, onFavoriteChange, managementPanel, onManagementPanelChange }: {
+export function ProjectHomeCanvas({ projectName }: {
   projectId: string
   projectName: string
   favorited: boolean
@@ -11,5 +10,5 @@ export function ProjectHomeCanvas({ favorited, onFavoriteChange, managementPanel
   managementPanel: ProjectManagementPanelId | null
   onManagementPanelChange: (panel: ProjectManagementPanelId | null) => void
 }) {
-  return <ProjectWorkbench favorited={favorited} onFavoriteChange={onFavoriteChange} managementPanel={managementPanel} onManagementPanelChange={onManagementPanelChange} />
+  return <section aria-label={`${projectName}项目`} className="flex h-full items-center justify-center bg-panel text-[13px] text-[var(--ink-soft)]">项目工作台尚未开放</section>
 }

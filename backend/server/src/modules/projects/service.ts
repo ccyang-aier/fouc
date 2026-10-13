@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { and, asc, eq, gt } from 'drizzle-orm';
 import type { Pool } from 'pg';
 import { createProjectInputSchema, listProjectsInputSchema, removeProjectInputSchema, renameProjectInputSchema } from '@fouc/shared/projects';
-import { project, projectDeliveryWorkObject, projectMember } from '../../platform/database/resources/schema';
+import { project, projectMember } from '../../platform/database/resources/schema';
 import type { ResourceTransaction } from '../../platform/database/resources/transaction';
 import { withFoucIdentity, withProject } from '../../platform/database/resources/transaction';
 import type { FoucIdentity } from '../../platform/identity/identity';
@@ -56,10 +56,6 @@ export function createProjectService(pool: Pool) {
     async remove(identity: FoucIdentity, input: unknown) {
       const parsed = parseInput(removeProjectInputSchema, input);
       return mutate(identity, parsed.projectId, async (db) => {
-        const workObjects = await db.select({ aggregate: projectDeliveryWorkObject.aggregate }).from(projectDeliveryWorkObject).where(eq(projectDeliveryWorkObject.projectId, parsed.projectId));
-        if (workObjects.some(({ aggregate }) => aggregate.runs.some(run => ['reserved', 'queued', 'running', 'waiting_approval'].includes(run.status)) || aggregate.releases.some(release => release.status === 'running'))) {
-          throw new ResourceRequestError('CONFLICT', '先停止真实运行或等待发布结束，再删除项目。', 409);
-        }
         await db.delete(project).where(eq(project.id, parsed.projectId));
         return { removed: true as const };
       });

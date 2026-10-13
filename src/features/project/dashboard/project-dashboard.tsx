@@ -1,24 +1,28 @@
 'use client';
 
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { Bell, CaretRight, Check, ClockCounterClockwise, DotsThree, FolderSimple, MagnifyingGlass, ShareNetwork, UsersThree } from '@phosphor-icons/react';
 import { useAppAlert } from '@/components/app-alert-provider';
-import { AppAlert } from '@/components/app-alert';
-import { DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { ActivityMap, MilestoneTracker } from './dashboard-charts';
-import { DashboardActionDialog, DashboardDeleteDialog, type DashboardAction } from './dashboard-actions';
-import { ActivityPanel, MeetingsPanel, TeamPanel, TodayProjects } from './dashboard-panels';
+import { DashboardDeleteDialog } from './dashboard-actions';
 import { DashboardSidebar, type DashboardSection } from './dashboard-sidebar';
-import { DashboardTaskDialog } from './dashboard-task-dialog';
-import { AvatarGroup, DashboardButton, IconButton, ReferenceIcon, SegmentedControl } from './dashboard-ui';
+import { DashboardToolbar, type DashboardSearchResult } from './dashboard-toolbar';
+import {
+  DashboardContent,
+  type DashboardContentActions,
+  type DashboardPortfolioTab,
+} from './dashboard-content';
+import { DashboardDialogs, type DashboardDialog } from './dashboard-dialogs';
+import { selectFavorites } from './dashboard-selectors';
+import { downloadFile, csvCell } from './dashboard-download';
 import { useDashboard } from './use-dashboard';
-import type { DashboardPersonId, DashboardStatus, DashboardTask } from './dashboard-model';
-import { DashboardMenu as DropdownMenu, DashboardMenuContent as DropdownMenuContent } from './dashboard-menu';
+import { dashboardLink, readDashboardLink } from './dashboard-links';
+import type {
+  DashboardActivity,
+  DashboardDocument,
+  DashboardDocumentKind,
+  DashboardStatus,
+  DashboardTarget,
+} from './dashboard-model';
 import styles from './dashboard.module.css';
-
-const shortcuts = [
-  { label: 'Send a invoice', icon: 'invoice' }, { label: 'Draft a Proposal', icon: 'proposal' }, { label: 'Create a contract', icon: 'contract' }, { label: 'Add a form', icon: 'form' },
-] as const;
 
 function subscribeCompactNavigation(listener: () => void) {
   const query = window.matchMedia('(max-width: 1060px)');
@@ -27,85 +31,334 @@ function subscribeCompactNavigation(listener: () => void) {
 }
 const compactNavigation = () => window.matchMedia('(max-width: 1060px)').matches;
 
-export function ProjectDashboard({ projectId, projectName, source, onBack }: { projectId: string; projectName: string; source: 'local' | 'server'; onBack: () => void }) {
-  const { state, storageError, saveTask, createTask, removeTask } = useDashboard(`${source}:${projectId}`);
-  const [section, setSection] = useState<DashboardSection>('Dashboard');
-  const autoCollapsed = useSyncExternalStore(subscribeCompactNavigation, compactNavigation, () => false);
-  const [collapsedPreference, setCollapsedPreference] = useState<boolean | null>(null);
-  const collapsed = collapsedPreference ?? autoCollapsed;
-  const [query, setQuery] = useState('');
-  const [searchFocused, setSearchFocused] = useState(false);
-  const [status, setStatus] = useState<DashboardStatus | 'All'>('All');
-  const [taskId, setTaskId] = useState<string | null>(null);
-  const [action, setAction] = useState<DashboardAction | null>(null);
-  const [deleting, setDeleting] = useState<DashboardTask | null>(null);
-  const [invited, setInvited] = useState<DashboardPersonId[]>(['jerome', 'kiara', 'tania', 'joe', 'cameron']);
-  const [recentlySaved, setRecentlySaved] = useState(false);
-  const scrollArea = useRef<HTMLDivElement>(null);
+interface ProjectDashboardProps {
+  projectId: string;
+  projectName: string;
+  source: 'local' | 'server';
+  onBack: () => void;
+}
+interface Deletion {
+  target: DashboardTarget;
+  title: string;
+  description: string;
+}
+
+export function ProjectDashboard({
+  projectId,
+  projectName,
+  source,
+  onBack,
+}: ProjectDashboardProps) {
+  const scopeKey = `${source}:${projectId}`;
+  const store = useDashboard(scopeKey);
+  const { state, storageError } = store;
   const { notify } = useAppAlert();
-  const task = state.tasks.find(item => item.id === taskId);
-  const filteredTasks = state.tasks.filter(item => (!query.trim() || `${item.title} ${item.description} ${item.tag}`.toLowerCase().includes(query.trim().toLowerCase())) && (status === 'All' || item.status === status));
+  const [section, setSection] = useState<DashboardSection>('Dashboard');
+  const autoCollapsed = useSyncExternalStore(
+    subscribeCompactNavigation,
+    compactNavigation,
+    () => false,
+  );
+  const [collapsedPreference, setCollapsedPreference] = useState<boolean | null>(null);
+  const [query, setQuery] = useState('');
+  const [status, setStatus] = useState<DashboardStatus | 'All'>('All');
+  const [portfolioTab, setPortfolioTab] = useState<DashboardPortfolioTab>('Projects');
+  const [documentKind, setDocumentKind] = useState<DashboardDocumentKind>('invoice');
+  const [dialog, setDialog] = useState<DashboardDialog | null>(null);
+  const [deletion, setDeletion] = useState<Deletion | null>(null);
+  const scrollArea = useRef<HTMLDivElement>(null);
+  const restoredLink = useRef(false);
+  const unreadCount = state.activities.filter((activity) => !activity.read).length;
+  const favorites = selectFavorites(state);
+
+  function changeSection(next: DashboardSection, nextStatus?: DashboardStatus) {
+    setSection(next);
+    setQuery('');
+    setStatus(nextStatus ?? 'All');
+    setPortfolioTab('Projects');
+    scrollArea.current?.scrollTo({ top: 0 });
+  }
+
+  function openProject(id: string) {
+    const projectTasks = state.tasks.filter((task) => task.projectId === id);
+    // The reference's single-task cards open the original task modal directly.
+    setDialog(
+      projectTasks.length === 1
+        ? { kind: 'task', id: projectTasks[0].id }
+        : { kind: 'project', id },
+    );
+  }
+
+  function openTarget(target: DashboardTarget) {
+    switch (target.kind) {
+      case 'project':
+        if (state.projects.some((item) => item.id === target.id)) openProject(target.id);
+        else notify('warning', 'This project is no longer available');
+        break;
+      case 'task':
+        if (state.tasks.some((item) => item.id === target.id))
+          setDialog({ kind: 'task', id: target.id });
+        else notify('warning', 'This task is no longer available');
+        break;
+      case 'document': {
+        const document = state.documents.find((item) => item.id === target.id);
+        if (document) setDialog({ kind: 'document', id: document.id, documentKind: document.kind });
+        else notify('warning', 'This document is no longer available');
+        break;
+      }
+      case 'meeting':
+        if (state.meetings.some((item) => item.id === target.id))
+          setDialog({ kind: 'meeting', id: target.id });
+        else notify('warning', 'This meeting is no longer available');
+        break;
+    }
+  }
 
   useEffect(() => {
-    const id = new URLSearchParams(window.location.search).get('dashboardTask');
-    if (id) queueMicrotask(() => setTaskId(id));
-  }, []);
+    if (!store.hydrated || restoredLink.current) return;
+    restoredLink.current = true;
+    const { wrongProject, target } = readDashboardLink(window.location.href, scopeKey);
+    if (wrongProject) {
+      notify('warning', 'Open the Fouc project this link belongs to.');
+      return;
+    }
+    if (!target) return;
+    let next: DashboardDialog | null = null;
+    if (target.kind === 'task' && state.tasks.some((item) => item.id === target.id))
+      next = { kind: 'task', id: target.id };
+    if (target.kind === 'document') {
+      const document = state.documents.find((item) => item.id === target.id);
+      if (document) next = { kind: 'document', id: target.id, documentKind: document.kind };
+    }
+    if (target.kind === 'meeting' && state.meetings.some((item) => item.id === target.id))
+      next = { kind: 'meeting', id: target.id };
+    if (target.kind === 'project' && state.projects.some((item) => item.id === target.id))
+      next = { kind: 'project', id: target.id };
+    if (next) queueMicrotask(() => setDialog(next));
+    else notify('warning', 'This item is no longer available in this dashboard');
+  }, [
+    store.hydrated,
+    scopeKey,
+    state.tasks,
+    state.documents,
+    state.meetings,
+    state.projects,
+    notify,
+  ]);
 
-  function changeSection(next: DashboardSection) { setSection(next); setQuery(''); setStatus('All'); scrollArea.current?.scrollTo({ top: 0 }); }
-  function openTask(id: string) {
-    if (id === 'meeting') { setAction('Dev Sync Meeting'); return; }
-    if (id === 'abc') { changeSection('Portfolio'); return; }
-    setTaskId(id);
-  }
-  function closeTask() {
-    setTaskId(null);
+  function closeDialog() {
+    setDialog(null);
     const url = new URL(window.location.href);
-    if (url.searchParams.has('dashboardTask')) { url.searchParams.delete('dashboardTask'); window.history.replaceState(null, '', url); }
+    for (const key of [
+      'dashboardTask',
+      'dashboardProject',
+      'dashboardDocument',
+      'dashboardMeeting',
+      'dashboardScope',
+    ])
+      url.searchParams.delete(key);
+    window.history.replaceState(null, '', url);
   }
-  function persistTask(next: DashboardTask) { saveTask(next); setRecentlySaved(true); }
-  async function copyLink() {
-    try { await navigator.clipboard.writeText(window.location.href); notify('success', 'Dashboard link copied'); }
-    catch { notify('error', 'Could not copy the link'); }
-  }
-  function exportActivity() {
-    const body = state.activities.map(item => `${item.actor} ${item.text} ${item.subject} — ${item.time}`).join('\n');
-    const blobUrl = URL.createObjectURL(new Blob([body], { type: 'text/plain;charset=utf-8' }));
-    const link = document.createElement('a'); link.href = blobUrl; link.download = 'project-activity.txt'; link.click(); URL.revokeObjectURL(blobUrl);
-  }
-  function openSubject(subject: string) { const match = state.tasks.find(item => item.title === subject); if (match) openTask(match.id); else { setQuery(subject); setSection('Portfolio'); } }
-  const sharedProjects = { tasks: filteredTasks, onOpen: openTask, onSave: persistTask, onDelete: setDeleting, onCreate: () => setAction('New Project'), onExpand: () => changeSection(section === 'Dashboard' ? 'Portfolio' : 'Dashboard'), expanded: section !== 'Dashboard' };
-  const stats = [
-    { label: 'Total Projects', value: 12 + state.tasks.length - 2, detail: 'Active Projects', section: 'Portfolio' },
-    { label: 'Total Task', value: 108 + state.tasks.length - 2, detail: 'Tasks Created', section: 'My Task' },
-    { label: 'In Progress', value: 10 + state.tasks.filter(item => item.status === 'On Progress').length, detail: 'Task', section: 'My Task' },
-    { label: 'Completed', value: 76 + state.tasks.filter(item => item.status === 'Completed').length, detail: 'Task', section: 'Goals' },
-  ] as const;
 
-  return <section className={styles.dashboard} aria-label={`${projectName} project dashboard`} lang="en">
-    <DashboardSidebar section={section} onSectionChange={changeSection} collapsed={collapsed} onCollapse={() => setCollapsedPreference(!collapsed)} favorites={state.favorites} onCreate={() => setAction('Create Task')} onFavorite={() => changeSection('Portfolio')} onHelp={() => setAction('Help Center')} projectName={projectName} onBack={onBack} />
-    <div className={styles.workbench}>
-      <header className={styles.topbar}>
-        <div className={styles.breadcrumb}><button type="button" className="fouc-action" title="Back to Fouc projects" onClick={onBack}>Synchro</button><CaretRight size={14} /><span><ReferenceIcon name="dashboard" size={19} />{section}</span></div>
-        <div className={styles.topbarTools}>
-          <div className={styles.searchWrap}><label className={styles.search}><MagnifyingGlass size={21} /><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search projects..." aria-label="Search projects" onFocus={() => setSearchFocused(true)} onBlur={() => setSearchFocused(false)} onKeyDown={event => { if (event.key === 'Enter' && filteredTasks[0]) { setSearchFocused(false); openTask(filteredTasks[0].id); } if (event.key === 'Escape') { setQuery(''); setSearchFocused(false); event.currentTarget.blur(); } }} /></label>
-            {searchFocused && query.trim() ? <div className={styles.searchResults}>{filteredTasks.length ? filteredTasks.map(item => <button type="button" className="fouc-action" key={item.id} onMouseDown={event => event.preventDefault()} onClick={() => { setSearchFocused(false); openTask(item.id); }}><FolderSimple size={17} /><span>{item.title}<small>{item.tag} · {item.status}</small></span></button>) : <p>No projects found</p>}</div> : null}
-          </div>
-          <span className={styles.toolbarDivider} /><IconButton label="Share Dashboard" onClick={() => { void copyLink(); }}><ShareNetwork /></IconButton><IconButton label="Notifications" onClick={() => setAction('Notifications')}><Bell /></IconButton>
+  async function copyLink() {
+    try {
+      await navigator.clipboard.writeText(dashboardLink(window.location.href, scopeKey));
+      notify('success', 'Dashboard link copied');
+    } catch {
+      notify('error', 'Could not copy the link');
+    }
+  }
+
+  function exportActivity() {
+    const rows = state.activities.map((item) =>
+      [item.actor, item.text, item.subject, item.time, item.read ? 'Read' : 'Unread']
+        .map(csvCell)
+        .join(','),
+    );
+    downloadFile(
+      'project-activity.csv',
+      ['Actor,Action,Subject,Time,Status', ...rows].join('\r\n'),
+      'text/csv;charset=utf-8',
+    );
+    notify('success', 'Activity exported');
+  }
+
+  function openActivity(activity: DashboardActivity) {
+    store.markRead(activity.id);
+    openTarget(activity.target);
+  }
+
+  function saveDocument(document: DashboardDocument) {
+    const creating = !state.documents.some((item) => item.id === document.id);
+    store.saveDocument(document);
+    if (creating) {
+      setDialog((current) =>
+        current?.kind === 'document' ? { ...current, id: document.id } : current,
+      );
+      setSection('Portfolio');
+      setPortfolioTab('Documents');
+      setDocumentKind(document.kind);
+      setQuery('');
+    }
+  }
+
+  function deleteResource() {
+    if (!deletion) return;
+    const { target } = deletion;
+    if (target.kind === 'project') store.removeProject(target.id);
+    if (target.kind === 'task') store.removeTask(target.id);
+    if (target.kind === 'document') store.removeDocument(target.id);
+    if (target.kind === 'meeting') store.removeMeeting(target.id);
+    setDeletion(null);
+    closeDialog();
+    notify('success', `${target.kind[0].toUpperCase()}${target.kind.slice(1)} deleted`);
+  }
+
+  const searchResults: DashboardSearchResult[] = [
+    ...state.projects.map((project) => ({
+      id: `project:${project.id}`,
+      title: project.name,
+      detail: 'Project',
+      keywords: `${project.name} ${project.description} ${project.priority}`,
+      target: { kind: 'project', id: project.id } as const,
+    })),
+    ...state.tasks.map((task) => ({
+      id: `task:${task.id}`,
+      title: task.title,
+      detail: `Task · ${task.status}`,
+      keywords: `${task.title} ${task.detailTitle} ${task.description} ${task.tag} ${task.priority}`,
+      target: { kind: 'task', id: task.id } as const,
+    })),
+    ...state.documents.map((document) => ({
+      id: `document:${document.id}`,
+      title: document.title,
+      detail: `${document.kind} · ${document.status}`,
+      keywords: `${document.title} ${document.kind} ${document.kind === 'form' ? document.description : document.client}`,
+      target: { kind: 'document', id: document.id } as const,
+    })),
+    ...state.meetings.map((meeting) => ({
+      id: `meeting:${meeting.id}`,
+      title: meeting.title,
+      detail: 'Meeting',
+      keywords: `${meeting.title} ${meeting.agenda}`,
+      target: { kind: 'meeting', id: meeting.id } as const,
+    })),
+  ].filter((result) => result.keywords.toLowerCase().includes(query.trim().toLowerCase()));
+
+  const actions: DashboardContentActions = {
+    openTarget,
+    openProject,
+    changeSection,
+    exportActivity,
+    openActivity,
+    createProject: () => setDialog({ kind: 'action', action: 'New Project' }),
+    deleteProject: (project) =>
+      setDeletion({
+        target: { kind: 'project', id: project.id },
+        title: 'Delete project?',
+        description: `“${project.name}” and all its tasks and comments will be removed.`,
+      }),
+    toggleProjectFavorite: store.toggleProjectFavorite,
+    completeProject: store.completeProject,
+    saveTask: store.saveTask,
+    deleteTask: (task) =>
+      setDeletion({
+        target: { kind: 'task', id: task.id },
+        title: 'Delete task?',
+        description: `“${task.title}” and its comments will be removed from this project.`,
+      }),
+    createTask: () => setDialog({ kind: 'action', action: 'Create Task' }),
+    invite: () => setDialog({ kind: 'action', action: 'Invite' }),
+    createMeeting: () => setDialog({ kind: 'meeting', id: null }),
+    openDocument: (document) => openTarget({ kind: 'document', id: document.id }),
+    createDocument: (kind) => setDialog({ kind: 'document', id: null, documentKind: kind }),
+    saveDocument,
+    deleteDocument: (document) =>
+      setDeletion({
+        target: { kind: 'document', id: document.id },
+        title: `Delete ${document.kind}?`,
+        description: `“${document.title}” will be permanently removed from this dashboard.`,
+      }),
+    editMilestones: () => setDialog({ kind: 'milestones' }),
+    readAll: () => {
+      store.markAllRead();
+      notify('success', 'All updates marked as read');
+    },
+    manageFavorites: () => setDialog({ kind: 'favorites' }),
+  };
+
+  return (
+    <section className={styles.dashboard} aria-label={`${projectName} project dashboard`} lang="en">
+      <DashboardSidebar
+        section={section}
+        onSectionChange={changeSection}
+        collapsed={collapsedPreference ?? autoCollapsed}
+        onCollapse={() => setCollapsedPreference(!(collapsedPreference ?? autoCollapsed))}
+        favorites={favorites}
+        unreadCount={unreadCount}
+        onCreate={actions.createTask}
+        onFavorite={openTarget}
+        onAddFavorite={actions.manageFavorites}
+        onViewFavorites={() => {
+          changeSection('Portfolio');
+          setPortfolioTab('Favourites');
+        }}
+        onHelp={() => setDialog({ kind: 'action', action: 'Help Center' })}
+        projectName={projectName}
+        onBack={onBack}
+      />
+      <div className={styles.workbench}>
+        <DashboardToolbar
+          section={section}
+          query={query}
+          onQueryChange={setQuery}
+          results={searchResults}
+          onOpen={openTarget}
+          memberIds={state.memberIds}
+          unreadCount={unreadCount}
+          updatedAt={state.updatedAt}
+          onBack={onBack}
+          onShare={() => void copyLink()}
+          onNotify={() => setDialog({ kind: 'action', action: 'Notifications' })}
+          onInvite={actions.invite}
+          onViewProjects={() => changeSection('Portfolio')}
+        />
+        <div ref={scrollArea} className={styles.content}>
+          <DashboardContent
+            state={state}
+            section={section}
+            query={query}
+            status={status}
+            onStatusChange={setStatus}
+            portfolioTab={portfolioTab}
+            onPortfolioTabChange={setPortfolioTab}
+            documentKind={documentKind}
+            onDocumentKindChange={setDocumentKind}
+            storageError={storageError}
+            actions={actions}
+          />
         </div>
-      </header>
-      <div className={styles.titlebar}><h1>{section}</h1><div className={styles.titlebarTools}><span className={styles.lastUpdated}>{recentlySaved ? <Check size={14} /> : <ClockCounterClockwise size={14} />}{recentlySaved ? 'Just now' : '3 min ago'}</span><button type="button" className={styles.collaborators} aria-label="Manage collaborators" onClick={() => setAction('Invite')}><AvatarGroup ids={invited.slice(0, 3)} size={28} extra={Math.max(0, invited.length - 3)} /></button><DashboardButton onClick={() => setAction('Invite')}><UsersThree size={21} weight="fill" />Invite</DashboardButton><DropdownMenu><DropdownMenuTrigger asChild><IconButton label="Dashboard options"><DotsThree weight="bold" /></IconButton></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onSelect={() => { void copyLink(); }}><ShareNetwork />Copy Dashboard link</DropdownMenuItem><DropdownMenuItem onSelect={() => changeSection('Portfolio')}><FolderSimple />View all projects</DropdownMenuItem><DropdownMenuItem onSelect={onBack}>Back to Fouc projects</DropdownMenuItem></DropdownMenuContent></DropdownMenu></div></div>
-      <div ref={scrollArea} className={styles.content}>
-        {storageError ? <AppAlert tone="warning" title="Changes can’t be saved on this device" description="You can keep working. Enable browser storage to keep changes after refreshing." /> : null}
-        {section === 'Dashboard' ? <>
-          <div className={styles.shortcuts}>{shortcuts.map(({ label, icon }) => <button type="button" className={`fouc-action ${styles.shortcut}`} key={label} onClick={() => setAction(label)}><span><ReferenceIcon name={icon} size={40} /></span><strong>{label}</strong></button>)}</div>
-          <div className={styles.stats}>{stats.map(stat => <article className={styles.statCard} key={stat.label}><div><span>{stat.label}</span><DropdownMenu><DropdownMenuTrigger asChild><button className={styles.flatIcon} aria-label={`${stat.label} options`}><DotsThree size={17} weight="bold" /></button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onSelect={() => { changeSection(stat.section); if (stat.label === 'In Progress') setStatus('On Progress'); if (stat.label === 'Completed') setStatus('Completed'); }}>View {stat.label.toLowerCase()}</DropdownMenuItem></DropdownMenuContent></DropdownMenu></div><p><strong>{stat.value}</strong><small>{stat.detail}</small></p></article>)}</div>
-          <div className={styles.mainGrid}><div className={styles.leftColumn}><ActivityMap onOpenTask={openTask} /><TodayProjects {...sharedProjects} /></div><div className={styles.rightColumn}><TeamPanel onInvite={() => setAction('Invite')} /><MeetingsPanel onOpen={title => setAction(title as DashboardAction)} /></div></div>
-          <div className={styles.analyticsGrid}><MilestoneTracker /><ActivityPanel activities={state.activities} onOpen={openSubject} onExport={exportActivity} /></div>
-        </> : section === 'My Task' || section === 'Portfolio' ? <><div className={styles.filterBar}><SegmentedControl items={['All', 'To Do', 'On Progress', 'Completed'] as const} value={status} onChange={setStatus} label="Filter tasks by status" /><span>{filteredTasks.length} projects</span></div><TodayProjects {...sharedProjects} /></> : section === 'Reporting' ? <><ActivityMap onOpenTask={openTask} /><div className={styles.analyticsGrid}><MilestoneTracker /><ActivityPanel activities={state.activities} onOpen={openSubject} onExport={exportActivity} /></div></> : section === 'Accounts' ? <TeamPanel expanded onInvite={() => setAction('Invite')} /> : section === 'Inbox' ? <ActivityPanel activities={state.activities} onOpen={openSubject} onExport={exportActivity} /> : <><div className={styles.goalSummary}><h2>{state.tasks.filter(item => item.status === 'Completed').length} of {state.tasks.length} projects completed</h2><p>Keep your projects moving toward their milestones.</p></div><TodayProjects {...sharedProjects} /></>}
       </div>
-    </div>
-    {task ? <DashboardTaskDialog key={task.id} task={task} onClose={closeTask} onSave={persistTask} /> : null}
-    {action ? <DashboardActionDialog key={action} action={action} onClose={() => setAction(null)} onCreate={createTask} invited={invited} onInvite={setInvited} /> : null}
-    {deleting ? <DashboardDeleteDialog task={deleting} onClose={() => setDeleting(null)} onDelete={() => { removeTask(deleting.id); setDeleting(null); notify('success', 'Project deleted'); }} /> : null}
-  </section>;
+      <DashboardDialogs
+        dialog={dialog}
+        scopeKey={scopeKey}
+        store={store}
+        onClose={closeDialog}
+        onOpenTarget={openTarget}
+        onOpenProject={(id) => setDialog({ kind: 'project', id })}
+        onCreateTask={(id) => setDialog({ kind: 'action', action: 'Create Task', projectId: id })}
+        onDeleteProject={actions.deleteProject}
+        onSaveDocument={saveDocument}
+        onSaved={(message) => notify('success', message)}
+      />
+      {deletion ? (
+        <DashboardDeleteDialog
+          title={deletion.title}
+          description={deletion.description}
+          onClose={() => setDeletion(null)}
+          onDelete={deleteResource}
+        />
+      ) : null}
+    </section>
+  );
 }

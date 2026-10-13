@@ -1,127 +1,496 @@
 'use client';
 
-import { useEffect, useEffectEvent, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useEffectEvent, useId, useRef, useState, type CSSProperties } from 'react';
 import type { ECharts, EChartsCoreOption } from 'echarts/core';
-import { ArrowClockwise, DotsThree, DownloadSimple } from '@phosphor-icons/react';
 import {
-  DropdownMenuItem, DropdownMenuTrigger,
+  ArrowClockwise,
+  CaretLeft,
+  CaretRight,
+  DotsThree,
+  DownloadSimple,
+  SlidersHorizontal,
+} from '@phosphor-icons/react';
+import {
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import type { DashboardPeriod, DashboardPersonId } from './dashboard-model';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import type {
+  DashboardMeeting,
+  DashboardMilestonePoint,
+  DashboardPeriod,
+  DashboardPersonId,
+  DashboardTarget,
+  DashboardTask,
+} from './dashboard-model';
 import { AvatarGroup, IconButton, SegmentedControl } from './dashboard-ui';
-import { DashboardMenu as DropdownMenu, DashboardMenuContent as DropdownMenuContent } from './dashboard-menu';
+import { DashboardMenu, DashboardMenuContent } from './dashboard-menu';
 import styles from './dashboard-charts.module.css';
 
+const hour = 60 * 60 * 1000;
+const day = 24 * hour;
 const activityPeriods: readonly DashboardPeriod[] = ['Daily', 'Weekly', 'Monthly', 'Yearly'];
-const activityAxes: Record<DashboardPeriod, readonly string[]> = {
-  Daily: ['09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '01:00 PM', '02:00 PM', '03:00 PM', '04:00 PM'],
-  Weekly: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-  Monthly: ['Feb 1', 'Feb 5', 'Feb 9', 'Feb 13', 'Feb 17', 'Feb 21', 'Feb 25', 'Feb 28'],
-  Yearly: ['Jan', 'Mar', 'May', 'Jul', 'Sep', 'Nov', 'Dec'],
-};
-interface TimelineTask {
-  id: string;
-  row: string;
-  title: string;
-  progress: number;
-  people: readonly DashboardPersonId[];
-  tone: string;
-  start: number;
-  duration: number;
-}
-const timelineTasks: readonly TimelineTask[] = [
-  { id: 'brand', row: 'Dashboard Design', title: 'Update Brand Logo Guidelines', progress: 60, people: ['jerome', 'tania', 'cameron'], tone: 'mint', start: 3, duration: 39 },
-  { id: 'wireframe', row: 'Mobile App', title: 'Setup Wireframe', progress: 50, people: ['jerome', 'tania'], tone: 'peach', start: 12.6, duration: 29.4 },
-  { id: 'abc', row: 'Landing Page', title: 'Update ABC Project', progress: 40, people: ['jerome', 'cameron'], tone: 'lavender', start: 27.3, duration: 28.1 },
-  { id: 'meeting', row: 'Meeting', title: 'Dev Sync Meeting', progress: 0, people: ['jerome', 'cameron'], tone: 'purple', start: 65.3, duration: 29.9 },
-];
-const periodOffsets: Record<DashboardPeriod, number> = { Daily: 0, Weekly: -2, Monthly: 3, Yearly: -1 };
+const timelineCategories = ['Dashboard Design', 'Mobile App', 'Landing Page', 'Meeting'] as const;
+const shortMonth = new Intl.DateTimeFormat('en-US', { month: 'short', timeZone: 'UTC' });
+const longMonth = new Intl.DateTimeFormat('en-US', { month: 'long', timeZone: 'UTC' });
+const dateLabel = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+  timeZone: 'UTC',
+});
+const timeLabel = new Intl.DateTimeFormat('en-US', {
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: true,
+  timeZone: 'UTC',
+});
 
-export function ActivityMap({ onOpenTask }: { onOpenTask: (id: string) => void }) {
+interface TimelineEvent {
+  target: DashboardTarget;
+  category: (typeof timelineCategories)[number];
+  title: string;
+  progress?: number;
+  people: readonly DashboardPersonId[];
+  tone: 'mint' | 'peach' | 'lavender' | 'purple';
+  start: number;
+  end: number;
+}
+interface PositionedEvent extends TimelineEvent {
+  position: number;
+  width: number;
+  lane: number;
+  compact: boolean;
+}
+interface TimeWindow {
+  start: number;
+  end: number;
+}
+interface TimeTick {
+  label: string;
+  time: number;
+}
+
+function calendarDate(value: string) {
+  return new Date(`${value.slice(0, 10)}T00:00:00Z`);
+}
+function dateValue(value: Date) {
+  return value.toISOString().slice(0, 10);
+}
+
+function timelineEvents(
+  tasks: readonly DashboardTask[],
+  meetings: readonly DashboardMeeting[],
+): TimelineEvent[] {
+  const taskEvents = tasks.map((task) => {
+    const start = calendarDate(task.scheduledDate).getTime() + task.startHour * hour;
+    return {
+      target: { kind: 'task', id: task.id } as DashboardTarget,
+      category: task.timelineCategory,
+      title: task.title,
+      progress: task.progress,
+      people: task.assignees,
+      tone:
+        task.timelineCategory === 'Dashboard Design'
+          ? 'mint'
+          : task.timelineCategory === 'Mobile App'
+            ? 'peach'
+            : 'lavender',
+      start,
+      end: start + task.durationHours * hour,
+    } satisfies TimelineEvent;
+  });
+  const meetingEvents = meetings.map((meeting) => {
+    // The dashboard editor stores calendar wall times, independent of the host timezone.
+    const start = new Date(`${meeting.startsAt.slice(0, 19)}Z`).getTime();
+    return {
+      target: { kind: 'meeting', id: meeting.id } as DashboardTarget,
+      category: 'Meeting',
+      title: meeting.title,
+      people: meeting.attendees,
+      tone: 'purple',
+      start,
+      end: start + meeting.durationMinutes * 60 * 1000,
+    } satisfies TimelineEvent;
+  });
+  return [...taskEvents, ...meetingEvents];
+}
+
+function timeWindow(
+  date: string,
+  period: DashboardPeriod,
+  events: readonly TimelineEvent[],
+): TimeWindow {
+  const selected = calendarDate(date);
+  const midnight = selected.getTime();
+  const year = selected.getUTCFullYear();
+  const month = selected.getUTCMonth();
+  if (period === 'Weekly') {
+    const start = midnight - ((selected.getUTCDay() + 6) % 7) * day;
+    return { start, end: start + 7 * day };
+  }
+  if (period === 'Monthly')
+    return { start: Date.UTC(year, month, 1), end: Date.UTC(year, month + 1, 1) };
+  if (period === 'Yearly') return { start: Date.UTC(year, 0, 1), end: Date.UTC(year + 1, 0, 1) };
+  const scheduled = events.filter((event) => event.start < midnight + day && event.end > midnight);
+  const firstHour = Math.min(
+    9,
+    ...scheduled.map((event) => Math.max(0, (event.start - midnight) / hour)),
+  );
+  const lastHour = Math.max(
+    16.5,
+    ...scheduled.map((event) => Math.min(24, (event.end - midnight) / hour)),
+  );
+  return {
+    start: midnight + Math.floor(firstHour) * hour,
+    end: midnight + (Math.ceil(lastHour * 2) / 2) * hour,
+  };
+}
+
+function timeTicks(window: TimeWindow, period: DashboardPeriod): TimeTick[] {
+  if (period === 'Daily') {
+    const hours = (window.end - window.start) / hour;
+    const step = hours > 14 ? 3 : hours > 9 ? 2 : 1;
+    const ticks: TimeTick[] = [];
+    for (let time = window.start; time <= window.end; time += step * hour)
+      ticks.push({ label: timeLabel.format(time), time });
+    return ticks;
+  }
+  if (period === 'Weekly') {
+    const weekday = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: 'UTC' });
+    return Array.from({ length: 7 }, (_, index) => {
+      const time = window.start + (index + 0.5) * day;
+      return { label: weekday.format(time), time };
+    });
+  }
+  const first = new Date(window.start);
+  if (period === 'Yearly') {
+    return [0, 2, 4, 6, 8, 10, 11].map((month) => {
+      const time = Date.UTC(first.getUTCFullYear(), month, 1);
+      return { label: shortMonth.format(time), time };
+    });
+  }
+  const days = (window.end - window.start) / day;
+  const step = Math.ceil((days - 1) / 7);
+  const indices = Array.from({ length: Math.ceil((days - 1) / step) }, (_, index) => index * step);
+  indices.push(days - 1);
+  return indices.map((index) => ({
+    label: `${shortMonth.format(window.start)} ${index + 1}`,
+    time: window.start + index * day,
+  }));
+}
+
+function positionEvents(events: readonly TimelineEvent[], window: TimeWindow): PositionedEvent[] {
+  const laneEnds: number[] = [];
+  const span = window.end - window.start;
+  return [...events]
+    .sort((a, b) => a.start - b.start)
+    .map((event) => {
+      const actualWidth =
+        ((Math.min(event.end, window.end) - Math.max(event.start, window.start)) / span) * 100;
+      const width = Math.min(100, Math.max(6, actualWidth));
+      const position = Math.min(
+        100 - width,
+        Math.max(0, ((event.start - window.start) / span) * 100),
+      );
+      let lane = laneEnds.findIndex((end) => end <= position);
+      if (lane === -1) lane = laneEnds.length;
+      laneEnds[lane] = position + width;
+      return { ...event, position, width, lane, compact: actualWidth < 12 };
+    });
+}
+
+function adjacentDate(value: string, period: DashboardPeriod, direction: number) {
+  const date = calendarDate(value);
+  if (period === 'Yearly') date.setUTCFullYear(date.getUTCFullYear() + direction);
+  else if (period === 'Monthly') {
+    const selectedDay = date.getUTCDate();
+    date.setUTCDate(1);
+    date.setUTCMonth(date.getUTCMonth() + direction);
+    const lastDay = new Date(
+      Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0),
+    ).getUTCDate();
+    date.setUTCDate(Math.min(selectedDay, lastDay));
+  } else date.setUTCDate(date.getUTCDate() + direction * (period === 'Weekly' ? 7 : 1));
+  return dateValue(date);
+}
+
+export function ActivityMap({
+  tasks,
+  meetings,
+  onOpenTarget,
+  referenceDate = '2027-02-08',
+}: {
+  tasks: readonly DashboardTask[];
+  meetings: readonly DashboardMeeting[];
+  onOpenTarget: (target: DashboardTarget) => void;
+  referenceDate?: string;
+}) {
   const [period, setPeriod] = useState<DashboardPeriod>('Daily');
-  const axes = activityAxes[period];
-  return <section className={`${styles.panel} ${styles.activityPanel}`} aria-labelledby="dashboard-activity-map-title">
-    <header className={styles.panelHeader}>
-      <h2 id="dashboard-activity-map-title">Time-Based Activity Map</h2>
-      <SegmentedControl items={activityPeriods} value={period} onChange={setPeriod} label="Activity timeline period" />
-    </header>
-    <div className={styles.timeline}>
-      <div className={styles.timelineRows}>
-        {timelineTasks.map(task => <div className={styles.timelineRow} key={task.id}>
-          <span className={styles.rowLabel}>{task.row}</span>
-          <div className={styles.rowTrack}>
+  const [selectedDate, setSelectedDate] = useState(referenceDate);
+  const events = timelineEvents(tasks, meetings);
+  const window = timeWindow(selectedDate, period, events);
+  const visibleEvents = events.filter(
+    (event) => event.start < window.end && event.end > window.start,
+  );
+  const rows = timelineCategories.map((category, index) => {
+    const positioned = positionEvents(
+      visibleEvents.filter((event) => event.category === category),
+      window,
+    );
+    const lanes = Math.max(1, ...positioned.map((event) => event.lane + 1));
+    return {
+      category,
+      events: positioned,
+      height: Math.max([78, 70, 70, 28][index], lanes * 32 - 4),
+    };
+  });
+  const plotHeight = rows.reduce((sum, row) => sum + row.height, 0);
+  const ticks = timeTicks(window, period);
+  const referenceTime = calendarDate(referenceDate).getTime() + 13 * hour;
+  const referenceVisible = referenceTime >= window.start && referenceTime <= window.end;
+  const rangeName =
+    period === 'Daily'
+      ? dateLabel.format(window.start)
+      : `${dateLabel.format(window.start)} – ${dateLabel.format(window.end - 1)}`;
+
+  return (
+    <section
+      className={`${styles.panel} ${styles.activityPanel}`}
+      aria-labelledby="dashboard-activity-map-title"
+    >
+      <header className={styles.panelHeader}>
+        <div className={styles.activityHeading}>
+          <h2 id="dashboard-activity-map-title">Time-Based Activity Map</h2>
+          <div className={styles.timelineDates}>
             <button
               type="button"
-              className={`fouc-action ${styles.timelineTask} ${styles[task.tone]}`}
-              style={{ '--task-start': `${task.start + periodOffsets[period]}%`, '--task-width': `${task.duration}%` } as CSSProperties}
-              onClick={() => onOpenTask(task.id)}
-              aria-label={`${task.title}, ${task.progress}% complete. Open details`}
-              title={`${task.title} · ${task.progress}% complete`}
+              className={`fouc-action ${styles.dateNavigation}`}
+              aria-label="Previous timeline period"
+              onClick={() => setSelectedDate((value) => adjacentDate(value, period, -1))}
             >
-              <AvatarGroup ids={task.people} size={16} />
-              <span className={styles.timelineTaskTitle}>{task.title}</span>
-              <strong>{task.progress}%</strong>
+              <CaretLeft size={12} />
+            </button>
+            <input
+              type="date"
+              aria-label="Timeline date"
+              value={selectedDate}
+              onInput={(event) => {
+                const value = event.currentTarget.value;
+                if (value) setSelectedDate(value);
+              }}
+            />
+            <button
+              type="button"
+              className={`fouc-action ${styles.dateNavigation}`}
+              aria-label="Next timeline period"
+              onClick={() => setSelectedDate((value) => adjacentDate(value, period, 1))}
+            >
+              <CaretRight size={12} />
             </button>
           </div>
-        </div>)}
+        </div>
+        <SegmentedControl
+          items={activityPeriods}
+          value={period}
+          onChange={setPeriod}
+          label="Activity timeline period"
+        />
+      </header>
+      <div
+        className={styles.timeline}
+        style={{ '--timeline-height': `${plotHeight}px` } as CSSProperties}
+        role="group"
+        aria-label={`${period} schedule: ${rangeName}`}
+      >
+        <div
+          className={styles.timelineRows}
+          style={{ gridTemplateRows: rows.map((row) => `${row.height}px`).join(' ') }}
+        >
+          {rows.map((row) => (
+            <div className={styles.timelineRow} key={row.category}>
+              <span className={styles.rowLabel}>{row.category}</span>
+              <div className={styles.rowTrack}>
+                {row.events.map((event) => (
+                  <Tooltip key={`${event.target.kind}:${event.target.id}`}>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        className={`fouc-action ${styles.timelineTask} ${styles[event.tone]}`}
+                        style={
+                          {
+                            '--task-start': `${event.position}%`,
+                            '--task-width': `${event.width}%`,
+                            '--task-top': `${event.lane * 32}px`,
+                          } as CSSProperties
+                        }
+                        data-compact={event.compact}
+                        onClick={() => onOpenTarget(event.target)}
+                        aria-label={`${event.title}, ${dateLabel.format(event.start)}, ${timeLabel.format(event.start)} to ${timeLabel.format(event.end)}${event.progress === undefined ? '' : `, ${event.progress}% complete`}. Open details`}
+                      >
+                        <AvatarGroup
+                          ids={event.compact ? event.people.slice(0, 1) : event.people}
+                          size={16}
+                        />
+                        <span className={styles.timelineTaskTitle}>{event.title}</span>
+                        {event.progress === undefined ? null : <strong>{event.progress}%</strong>}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className={styles.scheduleTooltip}>
+                      <strong>{event.title}</strong>
+                      <span>
+                        {dateLabel.format(event.start)} · {timeLabel.format(event.start)} –{' '}
+                        {timeLabel.format(event.end)}
+                      </span>
+                      {event.progress === undefined ? null : (
+                        <span>{event.progress}% complete</span>
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        {referenceVisible ? (
+          <div
+            className={styles.currentTime}
+            style={
+              {
+                '--reference-position':
+                  (referenceTime - window.start) / (window.end - window.start),
+              } as CSSProperties
+            }
+            aria-label={`Reference time: ${dateLabel.format(referenceTime)}, ${timeLabel.format(referenceTime)}`}
+          />
+        ) : null}
+        {!visibleEvents.length ? (
+          <p className={styles.timelineEmpty}>No scheduled tasks or meetings in this period.</p>
+        ) : null}
+        <div className={styles.timeAxis} aria-hidden="true">
+          {ticks.map((tick, index) => (
+            <span
+              key={tick.time}
+              style={
+                {
+                  '--tick-position': `${((tick.time - window.start) / (window.end - window.start)) * 100}%`,
+                } as CSSProperties
+              }
+              data-first={index === 0}
+              data-current={period === 'Daily' && referenceVisible && tick.time === referenceTime}
+            >
+              {tick.label}
+            </span>
+          ))}
+        </div>
       </div>
-      <div className={styles.currentTime} aria-label={period === 'Daily' ? 'Current time: 01:00 PM' : 'Current period'} />
-      <div className={styles.timeAxis} aria-hidden="true">
-        {axes.map((label, index) => <span key={label} data-current={index === 4}>{label}</span>)}
-      </div>
-    </div>
-  </section>;
+    </section>
+  );
 }
 
-type MilestonePeriod = '1 Monts' | '3 Months' | '6 Month' | '1 Year';
-interface MilestonePoint { month: string; target: number; actual: number; }
-const milestonePeriods: readonly MilestonePeriod[] = ['1 Monts', '3 Months', '6 Month', '1 Year'];
-const milestonePoints: readonly MilestonePoint[] = [
-  { month: 'Jan', target: 60, actual: 72 },
-  { month: 'Feb', target: 41, actual: 25 },
-  { month: 'Mar', target: 39, actual: 65 },
-  { month: 'Apr', target: 85, actual: 82 },
-  { month: 'May', target: 99, actual: 112 },
-  { month: 'Jun', target: 85, actual: 50 },
-  { month: 'Jul', target: 95, actual: 90 },
-  { month: 'Aug', target: 110, actual: 104 },
-  { month: 'Sep', target: 102, actual: 97 },
-  { month: 'Oct', target: 120, actual: 114 },
-  { month: 'Nov', target: 132, actual: 129 },
-  { month: 'Dec', target: 140, actual: 136 },
-];
-const rangeLength: Record<MilestonePeriod, number> = { '1 Monts': 1, '3 Months': 3, '6 Month': 6, '1 Year': 12 };
-const monthNames: Record<string, string> = { Jan: 'January', Feb: 'February', Mar: 'March', Apr: 'April', May: 'May', Jun: 'June', Jul: 'July', Aug: 'August', Sep: 'September', Oct: 'October', Nov: 'November', Dec: 'December' };
+type MilestonePeriod = '1 Month' | '3 Months' | '6 Months' | '1 Year';
+const milestonePeriods: readonly MilestonePeriod[] = ['1 Month', '3 Months', '6 Months', '1 Year'];
+const rangeLength: Record<MilestonePeriod, number> = {
+  '1 Month': 1,
+  '3 Months': 3,
+  '6 Months': 6,
+  '1 Year': 12,
+};
+
+function monthDate(value: string) {
+  return calendarDate(`${value}-01`);
+}
+function milestoneDateLabel(value: string) {
+  const date = monthDate(value);
+  return `${longMonth.format(date)}, ${date.getUTCFullYear()}`;
+}
+function milestoneRange(
+  points: readonly DashboardMilestonePoint[],
+  period: MilestonePeriod,
+  startMonth: string | undefined,
+): DashboardMilestonePoint[] {
+  if (!points.length || !startMonth) return [];
+  const first = monthDate(startMonth);
+  const byMonth = new Map(points.map((point) => [point.month, point]));
+  return Array.from({ length: rangeLength[period] }, (_, index) => {
+    const date = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + index, 1));
+    const month = dateValue(date).slice(0, 7);
+    return byMonth.get(month) ?? { month, target: 0, actual: 0 };
+  });
+}
+function milestoneYMax(points: readonly DashboardMilestonePoint[]) {
+  return Math.max(
+    10,
+    Math.ceil(
+      (Math.max(0, ...points.flatMap((point) => [point.target, point.actual])) * 1.5) / 10,
+    ) * 10,
+  );
+}
 
 let chartLibrary: Promise<typeof import('echarts/core')> | undefined;
 function loadChartLibrary() {
-  return chartLibrary ??= Promise.all([
-    import('echarts/core'), import('echarts/charts'), import('echarts/components'), import('echarts/renderers'),
-  ]).then(([core, charts, components, renderers]) => {
-    core.use([charts.BarChart, components.GridComponent, renderers.CanvasRenderer]);
-    return core;
-  }).catch((error: unknown) => { chartLibrary = undefined; throw error; });
+  return (chartLibrary ??= Promise.all([
+    import('echarts/core'),
+    import('echarts/charts'),
+    import('echarts/components'),
+    import('echarts/renderers'),
+  ])
+    .then(([core, charts, components, renderers]) => {
+      core.use([charts.BarChart, components.GridComponent, renderers.CanvasRenderer]);
+      return core;
+    })
+    .catch((error: unknown) => {
+      chartLibrary = undefined;
+      throw error;
+    }));
 }
 
-function milestoneChartOption(points: readonly MilestonePoint[], fontFamily: string): EChartsCoreOption {
+function milestoneChartOption(
+  points: readonly DashboardMilestonePoint[],
+  fontFamily: string,
+): EChartsCoreOption {
   return {
     animation: false,
     grid: { left: -12, right: -12, top: 16, bottom: 42 },
     xAxis: {
-      type: 'category', data: points.map(point => point.month),
-      axisLine: { show: false }, axisTick: { show: false, alignWithLabel: true },
+      type: 'category',
+      data: points.map((point) => shortMonth.format(monthDate(point.month))),
+      axisLine: { show: false },
+      axisTick: { show: false, alignWithLabel: true },
       axisLabel: { color: '#55555f', fontFamily, fontSize: 12, margin: 26, interval: 0 },
-      splitLine: { show: true, alignWithLabel: true, lineStyle: { color: '#e7e7e9', width: 1.5, type: [3, 3] } },
+      splitLine: {
+        show: true,
+        alignWithLabel: true,
+        lineStyle: { color: '#e7e7e9', width: 1.5, type: [3, 3] },
+      },
     },
-    yAxis: { type: 'value', max: 170, show: false },
+    yAxis: { type: 'value', max: milestoneYMax(points), show: false },
     series: [
-      { name: 'Target', type: 'bar', data: points.map(point => point.target), barWidth: points.length > 6 ? 8 : 12, barGap: '35%', itemStyle: { color: '#56877e', borderRadius: 4 }, silent: true },
-      { name: 'Actual', type: 'bar', data: points.map(point => point.actual), barWidth: points.length > 6 ? 8 : 12, itemStyle: { color: '#f36e16', borderRadius: 4 }, silent: true },
+      {
+        name: 'Target',
+        type: 'bar',
+        data: points.map((point) => point.target),
+        barWidth: points.length > 6 ? 8 : 12,
+        barGap: '35%',
+        itemStyle: { color: '#56877e', borderRadius: 4 },
+        silent: true,
+      },
+      {
+        name: 'Actual',
+        type: 'bar',
+        data: points.map((point) => point.actual),
+        barWidth: points.length > 6 ? 8 : 12,
+        itemStyle: { color: '#f36e16', borderRadius: 4 },
+        silent: true,
+      },
     ],
   };
 }
 
-function exportMilestones(points: readonly MilestonePoint[]) {
-  const csv = `Month,Target,Actual\r\n${points.map(point => `${point.month} 2027,${point.target},${point.actual}`).join('\r\n')}`;
+function exportMilestones(points: readonly DashboardMilestonePoint[]) {
+  const csv = `Month,Target,Actual\r\n${points.map((point) => `${point.month},${point.target},${point.actual}`).join('\r\n')}`;
   const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
   const link = document.createElement('a');
   link.href = url;
@@ -130,87 +499,255 @@ function exportMilestones(points: readonly MilestonePoint[]) {
   URL.revokeObjectURL(url);
 }
 
-export function MilestoneTracker() {
-  const [period, setPeriod] = useState<MilestonePeriod>('6 Month');
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+export function MilestoneTracker({
+  points,
+  onEdit,
+}: {
+  points: readonly DashboardMilestonePoint[];
+  onEdit: () => void;
+}) {
+  const [period, setPeriod] = useState<MilestonePeriod>('6 Months');
+  const [startMonth, setStartMonth] = useState<string | null>(null);
+  const [activeMonth, setActiveMonth] = useState<string | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [retry, setRetry] = useState(0);
   const canvas = useRef<HTMLDivElement>(null);
   const instance = useRef<ECharts | null>(null);
   const controls = useRef<HTMLDivElement>(null);
-  const points = milestonePoints.slice(0, rangeLength[period]);
-  const activePoint = activeIndex === null ? undefined : points[activeIndex];
+  const tooltipId = useId();
+  const firstMonth = points.map((point) => point.month).sort()[0];
+  const windowStart = startMonth ?? firstMonth;
+  const visiblePoints = milestoneRange(points, period, windowStart);
+  const activeIndex = visiblePoints.findIndex((point) => point.month === activeMonth);
+  const activePoint = visiblePoints[activeIndex];
+  const hasPoints = points.length > 0;
   const draw = useEffectEvent(() => {
-    if (instance.current && canvas.current) instance.current.setOption(milestoneChartOption(points, getComputedStyle(canvas.current).fontFamily), { notMerge: true });
+    if (instance.current && canvas.current) {
+      instance.current.setOption(
+        milestoneChartOption(visiblePoints, getComputedStyle(canvas.current).fontFamily),
+        { notMerge: true },
+      );
+    }
   });
 
   useEffect(() => {
     const element = canvas.current;
-    if (!element) return;
+    if (!element || !hasPoints) return;
     let disposed = false;
     let core: typeof import('echarts/core') | undefined;
     function initialize() {
-      if (disposed || !core || !element || instance.current || !element.clientWidth || !element.clientHeight) return;
+      if (
+        disposed ||
+        !core ||
+        !element ||
+        instance.current ||
+        !element.clientWidth ||
+        !element.clientHeight
+      )
+        return;
       instance.current = core.init(element, undefined, { renderer: 'canvas' });
       draw();
       setStatus('ready');
     }
-    const resize = new ResizeObserver(() => { initialize(); instance.current?.resize(); });
+    const resize = new ResizeObserver(() => {
+      initialize();
+      instance.current?.resize();
+    });
     resize.observe(element);
-    void loadChartLibrary().then(loaded => { if (!disposed) { core = loaded; initialize(); } })
-      .catch(() => { if (!disposed) setStatus('error'); });
-    return () => { disposed = true; resize.disconnect(); instance.current?.dispose(); instance.current = null; };
-  }, [retry]);
+    void loadChartLibrary()
+      .then((loaded) => {
+        if (!disposed) {
+          core = loaded;
+          initialize();
+        }
+      })
+      .catch(() => {
+        if (!disposed) setStatus('error');
+      });
+    return () => {
+      disposed = true;
+      resize.disconnect();
+      instance.current?.dispose();
+      instance.current = null;
+    };
+  }, [retry, hasPoints]);
 
-  useEffect(() => { draw(); }, [period]);
+  useEffect(() => {
+    draw();
+  }, [points, period, windowStart]);
 
-  function changePeriod(value: MilestonePeriod) { setPeriod(value); setActiveIndex(null); }
-  function focusPoint(index: number) { controls.current?.querySelectorAll<HTMLButtonElement>('button')[index]?.focus(); }
+  function changePeriod(value: MilestonePeriod) {
+    setPeriod(value);
+    setActiveMonth(null);
+  }
+  function navigatePeriod(direction: number) {
+    if (!windowStart) return;
+    const first = monthDate(windowStart);
+    const next = new Date(
+      Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + direction * rangeLength[period], 1),
+    );
+    setStartMonth(dateValue(next).slice(0, 7));
+    setActiveMonth(null);
+  }
+  function resetView() {
+    changePeriod('6 Months');
+    setStartMonth(null);
+  }
+  function focusPoint(index: number) {
+    controls.current?.querySelectorAll<HTMLButtonElement>('button')[index]?.focus();
+  }
 
-  return <section className={`${styles.panel} ${styles.milestonePanel}`} aria-labelledby="dashboard-milestone-title">
-    <header className={styles.panelHeader}>
-      <h2 id="dashboard-milestone-title">Milestone Tracker</h2>
-      <div className={styles.milestoneActions}>
-        <SegmentedControl items={milestonePeriods} value={period} onChange={changePeriod} label="Milestone date range" />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <IconButton label="Milestone options"><DotsThree size={18} weight="bold" /></IconButton>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" density="compact">
-            <DropdownMenuItem onSelect={() => exportMilestones(points)}><DownloadSimple />Export CSV</DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => changePeriod('6 Month')}><ArrowClockwise />Reset view</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+  return (
+    <section
+      className={`${styles.panel} ${styles.milestonePanel}`}
+      aria-labelledby="dashboard-milestone-title"
+    >
+      <header className={styles.panelHeader}>
+        <h2 id="dashboard-milestone-title">Milestone Tracker</h2>
+        <div className={styles.milestoneActions}>
+          <SegmentedControl
+            items={milestonePeriods}
+            value={period}
+            onChange={changePeriod}
+            label="Milestone date range"
+          />
+          <DashboardMenu>
+            <DropdownMenuTrigger asChild>
+              <IconButton label="Milestone options">
+                <DotsThree size={18} weight="bold" />
+              </IconButton>
+            </DropdownMenuTrigger>
+            <DashboardMenuContent align="end" density="compact">
+              {hasPoints ? (
+                <DropdownMenuLabel>
+                  {milestoneDateLabel(visiblePoints[0].month)} –{' '}
+                  {milestoneDateLabel(visiblePoints.at(-1)!.month)}
+                </DropdownMenuLabel>
+              ) : null}
+              <DropdownMenuItem disabled={!hasPoints} onSelect={() => navigatePeriod(-1)}>
+                <CaretLeft />
+                Previous period
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled={!hasPoints} onSelect={() => navigatePeriod(1)}>
+                <CaretRight />
+                Next period
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={onEdit}>
+                <SlidersHorizontal />
+                Manage targets and values
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={!hasPoints}
+                onSelect={() => exportMilestones(visiblePoints)}
+              >
+                <DownloadSimple />
+                Export CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={resetView}>
+                <ArrowClockwise />
+                Reset view
+              </DropdownMenuItem>
+            </DashboardMenuContent>
+          </DashboardMenu>
+        </div>
+      </header>
+      <div className={styles.chartWrap}>
+        <div className={styles.chartCanvas} ref={canvas} aria-hidden="true" />
+        {hasPoints && status === 'ready' ? (
+          <div
+            className={styles.chartControls}
+            ref={controls}
+            role="group"
+            aria-label={`${period} milestone target and actual tasks, ${visiblePoints[0].month} to ${visiblePoints.at(-1)!.month}`}
+            onMouseLeave={() => {
+              if (!controls.current?.contains(document.activeElement)) setActiveMonth(null);
+            }}
+          >
+            {visiblePoints.map((point, index) => (
+              <button
+                type="button"
+                key={point.month}
+                className={styles.chartPoint}
+                data-active={point.month === activeMonth}
+                aria-label={`${milestoneDateLabel(point.month)}: target ${point.target} tasks, actual ${point.actual} tasks`}
+                aria-describedby={point.month === activeMonth ? tooltipId : undefined}
+                onMouseEnter={() => setActiveMonth(point.month)}
+                onFocus={() => setActiveMonth(point.month)}
+                onBlur={() => setActiveMonth(null)}
+                onClick={() => setActiveMonth(point.month)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape') setActiveMonth(null);
+                  if (event.key === 'Home' || event.key === 'End') {
+                    event.preventDefault();
+                    focusPoint(event.key === 'Home' ? 0 : visiblePoints.length - 1);
+                  }
+                  if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+                    event.preventDefault();
+                    focusPoint(
+                      (index + (event.key === 'ArrowRight' ? 1 : -1) + visiblePoints.length) %
+                        visiblePoints.length,
+                    );
+                  }
+                }}
+              />
+            ))}
+          </div>
+        ) : null}
+        {hasPoints && activePoint ? (
+          <div
+            className={styles.chartTooltip}
+            id={tooltipId}
+            role="tooltip"
+            style={
+              {
+                '--tooltip-x': `calc(${((activeIndex + 0.5) / visiblePoints.length) * 100}% + ${((activeIndex + 0.5) / visiblePoints.length) * 24 - 12}px)`,
+                '--tooltip-y': `${Math.max(-8, 16 + (1 - Math.max(activePoint.target, activePoint.actual) / milestoneYMax(visiblePoints)) * 162 - 88)}px`,
+              } as CSSProperties
+            }
+          >
+            <div className={styles.tooltipDate}>{milestoneDateLabel(activePoint.month)}</div>
+            <div className={styles.tooltipRow}>
+              <span className={styles.targetDot} />
+              Target <span>{activePoint.target} Tasks</span>
+            </div>
+            <div className={styles.tooltipRow}>
+              <span className={styles.actualDot} />
+              Actual <span>{activePoint.actual} Tasks</span>
+            </div>
+          </div>
+        ) : null}
+        {!hasPoints ? (
+          <div className={styles.chartStatus}>
+            <span>No milestone data yet.</span>
+            <button type="button" className="fouc-action" onClick={onEdit}>
+              Add targets
+            </button>
+          </div>
+        ) : status === 'loading' ? (
+          <span className={styles.chartStatus} role="status" aria-label="Loading milestone chart">
+            <span className={styles.loadingDots}>
+              <i />
+              <i />
+              <i />
+            </span>
+          </span>
+        ) : status === 'error' ? (
+          <div className={styles.chartStatus} role="alert">
+            <span>Couldn’t load the chart.</span>
+            <button
+              type="button"
+              className="fouc-action"
+              onClick={() => {
+                setStatus('loading');
+                setRetry((value) => value + 1);
+              }}
+            >
+              Try again
+            </button>
+          </div>
+        ) : null}
       </div>
-    </header>
-    <div className={styles.chartWrap}>
-      <div className={styles.chartCanvas} ref={canvas} aria-hidden="true" />
-      {status === 'ready' ? <div className={styles.chartControls} ref={controls} role="group" aria-label="Milestone target and actual tasks by month" onMouseLeave={() => { if (!controls.current?.contains(document.activeElement)) setActiveIndex(null); }}>
-        {points.map((point, index) => <button
-          type="button" key={point.month} className={styles.chartPoint} data-active={index === activeIndex}
-          aria-label={`${monthNames[point.month]} 2027: target ${point.target} tasks, actual ${point.actual} tasks`}
-          aria-describedby={index === activeIndex ? 'milestone-point-tooltip' : undefined}
-          onMouseEnter={() => setActiveIndex(index)} onFocus={() => setActiveIndex(index)}
-          onBlur={() => setActiveIndex(null)}
-          onKeyDown={event => {
-            if (event.key === 'Escape') setActiveIndex(null);
-            if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') { event.preventDefault(); focusPoint((index + (event.key === 'ArrowRight' ? 1 : -1) + points.length) % points.length); }
-          }}
-        />)}
-      </div> : null}
-      {activePoint && activeIndex !== null ? <div
-        className={styles.chartTooltip} id="milestone-point-tooltip" role="tooltip"
-        style={{
-          '--tooltip-x': `calc(${(activeIndex + .5) / points.length * 100}% + ${(activeIndex + .5) / points.length * 24 - 12}px)`,
-          '--tooltip-y': `${Math.max(-8, 16 + (170 - Math.max(activePoint.target, activePoint.actual)) / 170 * 162 - 88)}px`,
-        } as CSSProperties}
-      >
-        <div className={styles.tooltipDate}>{monthNames[activePoint.month]}, 2027</div>
-        <div className={styles.tooltipRow}><span className={styles.targetDot} />Target <span>{activePoint.target} Tasks</span></div>
-        <div className={styles.tooltipRow}><span className={styles.actualDot} />Actual <span>{activePoint.actual} Tasks</span></div>
-      </div> : null}
-      {status === 'loading' ? <span className={styles.chartStatus} role="status" aria-label="Loading milestone chart"><span className={styles.loadingDots}><i /><i /><i /></span></span> : null}
-      {status === 'error' ? <div className={styles.chartStatus} role="alert"><span>Couldn’t load the chart.</span><button type="button" className="fouc-action" onClick={() => { setStatus('loading'); setRetry(value => value + 1); }}>Try again</button></div> : null}
-    </div>
-  </section>;
+    </section>
+  );
 }

@@ -25,15 +25,81 @@
   white-space: nowrap;
 }
 
-.activityPanel { height: 384px; }
+.activityPanel {
+  min-height: 384px;
+}
+.activityHeading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.timelineDates {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  padding: 2px;
+  border: 1px solid #e7e7e9;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.dateNavigation {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  color: #696971;
+  cursor: pointer;
+}
+.dateNavigation:focus-visible {
+  outline: 1px solid #111;
+  outline-offset: -1px;
+}
+.timelineDates input {
+  width: 106px;
+  height: 22px;
+  padding: 0 3px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  color: #696971;
+  font: inherit;
+  font-size: 10px;
+  line-height: 20px;
+  outline: none;
+  box-shadow: none;
+}
+.timelineDates input:focus {
+  border-color: #111;
+  outline: none;
+  box-shadow: none;
+}
+.timelineDates input::-webkit-calendar-picker-indicator {
+  width: 12px;
+  height: 12px;
+  cursor: pointer;
+}
 
 .timeline {
+  --timeline-label-width: 104px;
   position: relative;
   margin-top: 24px;
 }
 
-.timelineRows { display: grid; grid-template-rows: 78px 70px 70px 28px; }
-.timelineRow { display: grid; grid-template-columns: 104px minmax(0, 1fr); align-items: start; }
+.timelineRows {
+  display: grid;
+  grid-template-rows: 78px 70px 70px 28px;
+}
+.timelineRow {
+  display: grid;
+  grid-template-columns: var(--timeline-label-width) minmax(0, 1fr);
+  align-items: start;
+}
 
 .rowLabel {
   display: flex;
@@ -48,7 +114,7 @@
 .rowTrack {
   position: relative;
   min-width: 0;
-  height: 28px;
+  height: 100%;
 }
 
 .rowTrack::before {
@@ -63,6 +129,7 @@
 .timelineTask {
   position: absolute;
   z-index: 1;
+  top: var(--task-top, 0px);
   left: var(--task-start);
   display: flex;
   width: var(--task-width);
@@ -77,25 +144,71 @@
   line-height: 14px;
   cursor: pointer;
   outline: none;
+  overflow: hidden;
 }
 
 .timelineTask:hover,
-.timelineTask:focus-visible { filter: brightness(.95); }
-.timelineTask > :first-child { flex-shrink: 0; }
-.timelineTaskTitle { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.timelineTask strong { margin-left: auto; color: #121212; font-size: 10px; font-weight: 600; white-space: nowrap; }
-.mint { background: #e6f8ec !important; }
-.peach { background: #f7ece5 !important; }
-.lavender { background: #e0dffd !important; }
-.purple { background: #dcd0fa !important; }
+.timelineTask:focus-visible {
+  filter: brightness(0.95);
+}
+.timelineTask > :first-child {
+  flex-shrink: 0;
+}
+.timelineTaskTitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.timelineTask strong {
+  margin-left: auto;
+  color: #121212;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.timelineTask[data-compact='true'] {
+  justify-content: center;
+  padding-right: 3px;
+  gap: 0;
+}
+.timelineTask[data-compact='true'] .timelineTaskTitle,
+.timelineTask[data-compact='true'] strong {
+  display: none;
+}
+.scheduleTooltip {
+  display: grid;
+  gap: 3px;
+  max-width: 310px;
+}
+.scheduleTooltip strong {
+  font-weight: 500;
+}
+.scheduleTooltip span {
+  font-weight: 400;
+  opacity: 0.8;
+}
+.mint {
+  background: #e6f8ec !important;
+}
+.peach {
+  background: #f7ece5 !important;
+}
+.lavender {
+  background: #e0dffd !important;
+}
+.purple {
+  background: #dcd0fa !important;
+}
 
 .currentTime {
   position: absolute;
   z-index: 2;
   top: 0;
-  left: calc(104px + (100% - 104px) * .541);
+  left: calc(
+    var(--timeline-label-width) + (100% - var(--timeline-label-width)) * var(--reference-position)
+  );
   width: 2px;
-  height: 246px;
+  height: var(--timeline-height);
   background: #111;
   pointer-events: none;
 }
@@ -113,24 +226,54 @@
 }
 
 .timeAxis {
-  display: flex;
-  justify-content: space-between;
-  gap: 0;
+  position: relative;
+  height: 16px;
   margin-top: 22px;
-  margin-left: 104px;
-  padding-right: 12px;
+  margin-left: var(--timeline-label-width);
   color: #51515d;
   font-size: 12px;
   line-height: 16px;
   white-space: nowrap;
 }
 
-.timeAxis span:first-child { transform: translateX(-12px); }
-.timeAxis span[data-current='true'] { color: #111; font-weight: 600; }
+.timeAxis span {
+  position: absolute;
+  left: var(--tick-position);
+  transform: translateX(-50%);
+}
+.timeAxis span[data-first='true'] {
+  transform: translateX(-12px);
+}
+.timeAxis span[data-current='true'] {
+  color: #111;
+  font-weight: 600;
+}
+.timelineEmpty {
+  position: absolute;
+  top: calc(var(--timeline-height) / 2 - 16px);
+  left: var(--timeline-label-width);
+  right: 0;
+  z-index: 3;
+  margin: 0;
+  padding: 8px;
+  color: #85858e;
+  background: rgb(255 255 255 / 90%);
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+}
 
-.milestonePanel { height: 300px; }
-.milestoneActions { display: flex; align-items: center; gap: 16px; }
-.milestoneActions > :last-child { flex-shrink: 0; }
+.milestonePanel {
+  height: 300px;
+}
+.milestoneActions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.milestoneActions > :last-child {
+  flex-shrink: 0;
+}
 
 .chartWrap {
   position: relative;
@@ -138,7 +281,10 @@
   margin-top: 4px;
 }
 
-.chartCanvas { width: 100%; height: 100%; }
+.chartCanvas {
+  width: 100%;
+  height: 100%;
+}
 
 .chartControls {
   position: absolute;
@@ -160,15 +306,21 @@
   outline: none;
 }
 
-.chartPoint[data-active='true'] { background: rgb(0 0 0 / 3%); }
-.chartPoint:focus-visible { box-shadow: inset 0 -2px #111; }
+.chartPoint[data-active='true'] {
+  background: rgb(0 0 0 / 3%);
+}
+.chartPoint:focus-visible {
+  box-shadow: inset 0 -2px #111;
+}
 
 .chartTooltip {
   position: absolute;
   z-index: 3;
   top: var(--tooltip-y, 20px);
   left: clamp(62px, var(--tooltip-x), calc(100% - 62px));
-  width: 116px;
+  width: max-content;
+  min-width: 116px;
+  max-width: 210px;
   transform: translateX(-50%);
   padding: 9px 8px;
   border: 1px solid #363636;
@@ -191,12 +343,34 @@
   content: '';
 }
 
-.tooltipDate { margin-bottom: 10px; color: #adadb0; font-size: 12px; white-space: nowrap; }
-.tooltipRow { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
-.tooltipRow > span:last-child { margin-left: auto; }
-.targetDot, .actualDot { width: 6px; height: 6px; flex-shrink: 0; border-radius: 50%; }
-.targetDot { background: #56877e; }
-.actualDot { background: #f36e16; }
+.tooltipDate {
+  margin-bottom: 10px;
+  color: #adadb0;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.tooltipRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.tooltipRow > span:last-child {
+  margin-left: auto;
+}
+.targetDot,
+.actualDot {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+.targetDot {
+  background: #56877e;
+}
+.actualDot {
+  background: #f36e16;
+}
 
 .chartStatus {
   position: absolute;
@@ -209,46 +383,128 @@
   font-size: 12px;
 }
 
-.chartStatus button { padding: 4px 8px; border: 1px solid #e6e6e8; border-radius: 5px; cursor: pointer; }
-.loadingDots { display: flex; gap: 4px; }
-.loadingDots i { width: 4px; height: 4px; border-radius: 50%; background: #a8a8ae; animation: pulse 1.2s ease-in-out infinite; }
-.loadingDots i:nth-child(2) { animation-delay: .15s; }
-.loadingDots i:nth-child(3) { animation-delay: .3s; }
+.chartStatus button {
+  padding: 4px 8px;
+  border: 1px solid #e6e6e8;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.loadingDots {
+  display: flex;
+  gap: 4px;
+}
+.loadingDots i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #a8a8ae;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+.loadingDots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.loadingDots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
 
-@keyframes pulse { 0%, 80%, 100% { opacity: .35; } 40% { opacity: 1; } }
+@keyframes pulse {
+  0%,
+  80%,
+  100% {
+    opacity: 0.35;
+  }
+  40% {
+    opacity: 1;
+  }
+}
 
 @container (max-width: 660px) {
-  .timelineRow { grid-template-columns: 86px minmax(0, 1fr); }
-  .rowLabel { width: 76px; }
-  .currentTime { left: calc(86px + (100% - 86px) * .541); }
-  .timeAxis { margin-left: 86px; font-size: 10px; }
-  .timelineTask { gap: 4px; padding-right: 5px; }
-  .timelineTaskTitle { font-size: 9px; }
-  .timelineTask strong { font-size: 9px; }
+  .activityHeading {
+    gap: 8px;
+  }
+  .activityPanel .panelHeader {
+    flex-wrap: wrap;
+  }
+  .timeline {
+    --timeline-label-width: 86px;
+  }
+  .rowLabel {
+    width: 76px;
+  }
+  .timeAxis {
+    font-size: 10px;
+  }
+  .timelineTask {
+    gap: 4px;
+    padding-right: 5px;
+  }
+  .timelineTaskTitle {
+    font-size: 9px;
+  }
+  .timelineTask strong {
+    font-size: 9px;
+  }
 }
 
 @media (max-width: 1100px) {
-  .panelHeader { flex-wrap: wrap; }
-  .activityPanel { height: auto; min-height: 384px; }
-  .milestonePanel { height: auto; min-height: 300px; }
-  .milestoneActions { gap: 8px; }
+  .panelHeader {
+    flex-wrap: wrap;
+  }
+  .activityPanel {
+    height: auto;
+    min-height: 384px;
+  }
+  .milestonePanel {
+    height: auto;
+    min-height: 300px;
+  }
+  .milestoneActions {
+    gap: 8px;
+  }
 }
 
 @media (max-width: 640px) {
-  .panel { padding: 16px; }
-  .panelHeader { gap: 10px; }
-  .panelHeader h2 { font-size: 14px; }
-  .timelineRow { grid-template-columns: 76px minmax(0, 1fr); }
-  .rowLabel { width: 66px; font-size: 11px; }
-  .currentTime { left: calc(76px + (100% - 76px) * .541); }
-  .timeAxis { margin-left: 76px; font-size: 9px; }
-  .timeAxis span:nth-child(2n):not([data-current='true']) { visibility: hidden; width: 0; }
-  .timelineTask { gap: 3px; padding-right: 5px; }
-  .timelineTaskTitle { font-size: 9px; }
-  .timelineTask strong { font-size: 9px; }
-  .milestoneActions { width: 100%; justify-content: space-between; }
+  .panel {
+    padding: 16px;
+  }
+  .panelHeader {
+    gap: 10px;
+  }
+  .panelHeader h2 {
+    font-size: 14px;
+  }
+  .timeline {
+    --timeline-label-width: 76px;
+  }
+  .rowLabel {
+    width: 66px;
+    font-size: 11px;
+  }
+  .timeAxis {
+    font-size: 9px;
+  }
+  .timeAxis span:nth-child(2n):not([data-current='true']) {
+    visibility: hidden;
+  }
+  .timelineTask {
+    gap: 3px;
+    padding-right: 5px;
+  }
+  .timelineTaskTitle {
+    font-size: 9px;
+  }
+  .timelineTask strong {
+    font-size: 9px;
+  }
+  .milestoneActions {
+    width: 100%;
+    justify-content: space-between;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .loadingDots i { animation: none; opacity: .6; }
+  .loadingDots i {
+    animation: none;
+    opacity: 0.6;
+  }
 }

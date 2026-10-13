@@ -1,0 +1,84 @@
+.favoriteList {
+  padding: 8px 22px 22px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.favoriteList label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 8px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.favoriteList label > span {
+  flex: 1;
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.favoriteList strong {
+  font-size: 13px;
+  font-weight: 500;
+}
+.favoriteList small {
+  color: #858690;
+  font-size: 12px;
+  text-transform: capitalize;
+}
+.favoriteList input {
+  width: 16px;
+  height: 16px;
+  accent-color: #17171a;
+  cursor: pointer;
+}
+.milestoneFields {
+  display: grid;
+  gap: 12px;
+  padding: 8px 22px 22px;
+  max-height: 65vh;
+  overflow-y: auto;
+}
+.milestoneFields > p {
+  color: #737580;
+  font-size: 12px;
+}
+.monthRow,
+.tableHeading {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr 1fr;
+  gap: 12px;
+  align-items: center;
+}
+.tableHeading {
+  color: #80828c;
+  font-size: 11px;
+}
+.monthRow time {
+  font-size: 13px;
+}
+.milestoneFields input {
+  width: 100%;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid var(--control-border);
+  border-radius: 5px;
+  outline: none;
+  box-shadow: none;
+  font: inherit;
+}
+.milestoneFields input:focus {
+  border-color: #17171a;
+}
+.addMonth {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+.addMonth input {
+  flex: 1;
+}
+.error {
+  color: #bd3c42 !important;
+}

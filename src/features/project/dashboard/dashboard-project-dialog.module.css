@@ -1,0 +1,181 @@
+.form {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.body {
+  display: grid;
+  gap: 18px;
+  min-height: 0;
+  max-height: 65vh;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+  color: #5e606b;
+  font-size: 12px;
+}
+
+.field :is(input, textarea, select) {
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 1px solid var(--control-border);
+  border-radius: 6px;
+  outline: none;
+  background: #fff;
+  box-shadow: none;
+  color: #1f2027;
+  font: inherit;
+  font-size: 13px;
+}
+
+.field textarea {
+  resize: vertical;
+}
+
+.field :is(input, textarea, select):focus {
+  border-color: #72747f;
+  outline: none;
+  box-shadow: none;
+}
+
+.field input[aria-invalid='true'] {
+  border-color: #d64854;
+}
+
+.error {
+  margin-top: -10px;
+  color: #d64854;
+  font-size: 12px;
+}
+
+.tasks {
+  margin-top: 2px;
+}
+
+.tasks > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+}
+
+.tasks h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.tasks h3 span {
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #f0f0f2;
+  color: #7d7f8b;
+  font-size: 11px;
+}
+
+.tasks > header button {
+  height: 30px;
+  padding-inline: 9px;
+  font-size: 12px;
+}
+
+.taskRows {
+  overflow: hidden;
+  border: 1px solid var(--resource-card-border);
+  border-radius: 7px;
+}
+
+.taskRow {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px;
+  border-bottom: 1px solid var(--separator-color);
+  text-align: left;
+}
+
+.taskRow:last-child {
+  border-bottom: 0;
+}
+
+.taskName {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.taskName strong {
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.taskName small {
+  color: #858690;
+  font-size: 11px;
+}
+
+.empty {
+  padding: 22px;
+  border: 1px dashed var(--control-border);
+  border-radius: 7px;
+  color: #858690;
+  font-size: 12px;
+  text-align: center;
+}
+
+.footer {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 24px;
+  border-top: 1px solid var(--separator-color);
+}
+
+.footer > div {
+  display: flex;
+  gap: 8px;
+}
+
+.footer button {
+  height: 30px;
+  padding-inline: 10px;
+  font-size: 12px;
+}
+
+.footer .delete {
+  border-color: #f1c3c8;
+  color: #d64854;
+}
+
+.footer .delete:is(:hover, :focus-visible) {
+  border-color: #d64854;
+  background: #d64854;
+  color: #fff;
+}
+
+@media (max-width: 640px) {
+  .body {
+    padding: 18px;
+  }
+
+  .footer {
+    flex-wrap: wrap;
+    padding-inline: 18px;
+  }
+}

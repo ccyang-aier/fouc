@@ -8,7 +8,7 @@
  */
 
 import { execSync } from "node:child_process"
-import { existsSync, copyFileSync, mkdirSync, readdirSync, rmSync } from "node:fs"
+import { existsSync, copyFileSync, mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 
@@ -31,6 +31,17 @@ const ext = isWindows ? ".exe" : "";
 mkdirSync(outDir, { recursive: true });
 
 const outfile = path.join(outDir, `fouc-backend-${target}${ext}`);
+const nativeNodeFile = path.join(outDir, `fouc-native-node-${target}${ext}`);
+const nativeNodeSource = process.execPath;
+if (Number(process.versions.node.split('.')[0]) < 22) throw new Error('The native execution companion requires Node.js 22+.');
+if ((isWindows && process.platform !== 'win32') || (!isWindows && process.platform === 'win32')) {
+  throw new Error('Build the desktop package on its target platform so the verified Node companion matches that platform.');
+}
+copyFileSync(nativeNodeSource, nativeNodeFile);
+const license = await fetch(`https://raw.githubusercontent.com/nodejs/node/v${process.versions.node}/LICENSE`);
+if (!license.ok) throw new Error('Could not obtain the exact Node runtime distribution license.');
+writeFileSync(path.join(outDir, 'fouc-native-node.LICENSE'), await license.text());
+console.log(`[build-backend] native Node companion: ${nativeNodeFile}`);
 if (existsSync(outfile)) rmSync(outfile);
 
 // --compile 将 hono/@agentclientprotocol/sdk/claude 桥适配器等全部内联进单文件
@@ -47,6 +58,10 @@ const rawCopy = path.join(rawDir, `fouc-backend${ext}`);
 if (existsSync(rawDir)) {
   try {
     copyFileSync(outfile, rawCopy);
+    copyFileSync(nativeNodeFile, path.join(rawDir, `fouc-native-node${ext}`));
+    mkdirSync(path.join(rawDir, 'native-execution'), { recursive: true });
+    copyFileSync(path.join(root, 'backend/device/src/agents/project-native-worker.cjs'), path.join(rawDir, 'native-execution/project-native-worker.cjs'));
+    copyFileSync(path.join(outDir, 'fouc-native-node.LICENSE'), path.join(rawDir, 'native-execution/node.LICENSE'));
     console.log(`[build-backend] synced raw-run copy: ${rawCopy}`);
   } catch (error) {
     console.warn(`[build-backend] raw-run copy skipped (file locked?): ${error.message}`);

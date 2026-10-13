@@ -10,7 +10,7 @@ import { createFoucAuth, createFoucAuthRoutes, createSmtpAuthEmailTransport } fr
 import { createKnowledgeRequestAuthenticator } from '../modules/knowledge/access';
 import { createVerificationEmailTransport } from '../platform/identity/email';
 import { createKnowledgeOrganizationRoutes, createKnowledgeOrganizationService } from '../modules/knowledge/organization';
-import { createProjectRoutes, createProjectService } from '../modules/projects';
+import { createProjectRoutes, createProjectService, createProjectDeliveryRoutes, createProjectDeliveryService } from '../modules/projects';
 import { createKnowledgeCatalogRoutes, createKnowledgeCatalogService } from '../modules/knowledge/organization';
 import { teamspacePermissionInvalidator } from '../modules/knowledge/permissions/fence';
 import { createKnowledgeApiRoutes, createKnowledgePatRoutes } from '../modules/knowledge/api';
@@ -68,6 +68,7 @@ export async function startFoucService(config: FoucServiceConfig, environment: N
   const socketTickets = createFoucSocketTickets();
   app.route('/', createFoucAuthRoutes(auth, (context) => context.env.clientAddress as string, socketTickets));
   app.route('/', createKnowledgeOrganizationRoutes(auth, createKnowledgeOrganizationService(pool)));
+  app.route('/', createProjectDeliveryRoutes(auth, createProjectDeliveryService(pool)));
   app.route('/', createProjectRoutes(auth, createProjectService(pool)));
   app.route('/', createKnowledgeCatalogRoutes(auth, createKnowledgeCatalogService(pool, { permissions: teamspacePermissionInvalidator })));
   app.route('/', createKnowledgeApiRoutes({ auth, pool }));

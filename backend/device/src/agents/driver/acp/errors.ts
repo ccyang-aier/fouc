@@ -124,15 +124,16 @@ export function normalizeError(error: unknown): AcpError {
 
   if (error instanceof RequestError) {
     const mapped = ACP_CODE_MAP[error.code];
+    const message = describeRequestError(error.message, error.data);
     // 部分 Agent 用 -32603 而非 -32000 返回认证失败；用消息启发式纠正，
     // 以便向用户呈现正确的认证引导流程。
-    if (mapped && mapped.code !== 'AUTH_REQUIRED' && isAuthRelatedMessage(error.message)) {
-      return new AcpError('AUTH_REQUIRED', error.message, { cause: error, retryable: true });
+    if (mapped && mapped.code !== 'AUTH_REQUIRED' && isAuthRelatedMessage(message)) {
+      return new AcpError('AUTH_REQUIRED', message, { cause: error, retryable: true });
     }
     if (mapped) {
-      return new AcpError(mapped.code, error.message, { cause: error, retryable: mapped.retryable });
+      return new AcpError(mapped.code, message, { cause: error, retryable: mapped.retryable });
     }
-    return new AcpError('AGENT_ERROR', error.message, { cause: error });
+    return new AcpError('AGENT_ERROR', message, { cause: error });
   }
 
   // SDK 的 "ACP connection closed"：子进程在响应前退出，按可重试的崩溃处理
@@ -150,6 +151,14 @@ export function normalizeError(error: unknown): AcpError {
   }
 
   return new AcpError('INTERNAL_ERROR', formatUnknownError(error), { cause: error });
+}
+
+function describeRequestError(message: string, data: unknown): string {
+  const detail = typeof data === 'string' ? data : data && typeof data === 'object'
+    ? ['message', 'details', 'detail', 'error'].map(key => (data as Record<string, unknown>)[key]).find(value => typeof value === 'string')
+    : undefined;
+  const description = typeof detail === 'string' && detail !== message ? `${message}: ${detail}` : message;
+  return description.slice(0, 8192).replace(/\b(?:sk-[a-zA-Z0-9_-]{12,}|Bearer\s+[a-zA-Z0-9._-]+)/g, '[redacted]');
 }
 
 export function isRetryablePromptError(error: unknown): boolean {

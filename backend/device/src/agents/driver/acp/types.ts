@@ -101,6 +101,9 @@ export type AgentConnectionConfig = {
   authCredentials?: Record<string, string>;
   resumeSessionId?: string;
   yoloMode?: boolean;
+  /** Explicit project read-only policy; never inferred from prompt text. */
+  readOnly?: boolean;
+  projectExecution?: boolean;
   behaviorPolicy: {
     sessionLoadViaMetaField?: boolean;
     yoloModeId?: string | null;

@@ -19,6 +19,7 @@ import type { AgentConnectionConfig, SessionCallbacks } from './driver/acp/types
 import type { EventRepository, RunRepository, SessionRepository } from '../storage/repositories';
 import { createLogger } from '../platform/logger';
 import { isProcessAlive } from '../execution/process';
+import { probeProjectCodex, ProjectCodexSession } from './project-execution-codex';
 
 const log = createLogger('supervisor');
 
@@ -26,7 +27,7 @@ const DEFAULT_IDLE_TIMEOUT_MS = 10 * 60 * 1000; // 10 分钟
 const IDLE_CHECK_INTERVAL_MS = 30 * 1000; // 30 秒巡检
 
 interface SupervisedSession {
-  session: AcpSession;
+  session: AcpSession | ProjectCodexSession;
   installationId: string;
   providerId: string;
   rowId: string;
@@ -146,7 +147,7 @@ export class SessionSupervisor {
 
   // ─── 会话管理 ──────────────────────────────────────────────────
 
-  async createSession(installationId: string, workDir: string, options?: { yoloMode?: boolean }): Promise<AgentSessionRow> {
+  async createSession(installationId: string, workDir: string, options?: { yoloMode?: boolean; readOnly?: boolean; projectExecution?: boolean; projectIsolated?: boolean; executionDeadlineAt?: number }): Promise<AgentSessionRow> {
     const installation = this.registry.installationById(installationId);
     if (!installation) throw new Error(`Installation not found: ${installationId}`);
     const provider = this.registry.providerById(installation.providerId);
@@ -173,7 +174,7 @@ export class SessionSupervisor {
     };
     this.sessionRepo.insert(row);
 
-    await this.spawnSupervisedSession(row, installation, provider, { yoloMode: options?.yoloMode ?? false });
+    await this.spawnSupervisedSession(row, installation, provider, { yoloMode: options?.yoloMode ?? false, readOnly: options?.readOnly, projectExecution: options?.projectExecution, projectIsolated: options?.projectIsolated, executionDeadlineAt: options?.executionDeadlineAt });
     return row;
   }
 
@@ -182,10 +183,17 @@ export class SessionSupervisor {
     row: AgentSessionRow,
     installation: import('@fouc/shared').AgentInstallation,
     provider: import('@fouc/shared').ProviderSpec,
-    options?: { yoloMode?: boolean; resumeSessionId?: string | null }
+    options?: { yoloMode?: boolean; readOnly?: boolean; projectExecution?: boolean; projectIsolated?: boolean; executionDeadlineAt?: number; resumeSessionId?: string | null }
   ): Promise<void> {
+    if (options?.projectExecution && provider.id === 'codex' && (await probeProjectCodex(installation.executablePath)).supported) {
+      const session = new ProjectCodexSession(installation.executablePath, row.workDir, row.id, options.readOnly ?? true, this.buildCallbacks(row.id, row.installationId), installation.capabilityManifest?.controls.models ?? [], options.projectIsolated, options.executionDeadlineAt);
+      this.sessions.set(row.id, { session, installationId: row.installationId, providerId: provider.id, rowId: row.id, currentRunId: null, lastActiveAt: Date.now() });
+      session.start();
+      return;
+    }
     const spec = await buildLaunchSpec(provider, installation, row.workDir, {
       yoloMode: options?.yoloMode ?? false,
+      readOnly: options?.readOnly,
     });
     const config: AgentConnectionConfig = {
       agentBackend: provider.id,
@@ -197,7 +205,9 @@ export class SessionSupervisor {
       gracePeriodMs: spec.gracePeriodMs,
       behaviorPolicy: provider.behaviorPolicy,
       yoloMode: options?.yoloMode ?? false,
+      readOnly: options?.readOnly,
       ...(options?.resumeSessionId ? { resumeSessionId: options.resumeSessionId } : {}),
+      projectExecution: options?.projectExecution,
     };
 
     const supervised: SupervisedSession = {
@@ -239,15 +249,16 @@ export class SessionSupervisor {
     return this.sessionRepo.listAll();
   }
 
-  getNativeSessionHandle(sessionId: string): AcpSession | null {
+  getNativeSessionHandle(sessionId: string): AcpSession | ProjectCodexSession | null {
     return this.sessions.get(sessionId)?.session ?? null;
   }
 
   // ─── Run 管理 ──────────────────────────────────────────────────
 
-  async startRun(sessionId: string, input: string, files?: string[]): Promise<AgentRun> {
+  async startRun(sessionId: string, input: string, files?: string[], options?: { background?: boolean }): Promise<AgentRun> {
     const supervised = this.sessions.get(sessionId);
     if (!supervised) throw new Error(`Session not active: ${sessionId}`);
+    if (supervised.currentRunId) throw new Error(`Session already has an active run: ${sessionId}`);
 
     const runId = randomUUID();
     const run: AgentRun = {
@@ -270,13 +281,12 @@ export class SessionSupervisor {
 
     this.emit({ type: 'run.started', sessionId, runId });
 
-    try {
-      await supervised.session.sendMessage(input, files);
-    } catch (error) {
-      // handlePromptError 已发 error 信号（会转为 run.failed）；
-      // 这里兜底保证 run 不悬挂
-      this.finalizeRun(sessionId, runId, 'failed', { message: String(error) });
-    }
+    const execute = async () => {
+      try { await supervised.session.sendMessage(input, files); }
+      catch (error) { this.finalizeRun(sessionId, runId, 'failed', { message: String(error) }); }
+    };
+    if (options?.background) void execute();
+    else await execute();
     return run;
   }
 
@@ -297,7 +307,7 @@ export class SessionSupervisor {
   resolveApproval(sessionId: string, callId: string, optionId: string): boolean {
     const supervised = this.sessions.get(sessionId);
     if (!supervised) return false;
-    supervised.session.confirmPermission(callId, optionId);
+    if (!supervised.session.confirmPermission(callId, optionId)) return false;
     this.emit({ type: 'approval.resolved', sessionId, callId, outcome: optionId });
     return true;
   }
@@ -442,8 +452,8 @@ export class SessionSupervisor {
     this.emitEvent(enriched);
   }
 
-  listEvents(sessionId: string, afterId = 0): Array<{ id: number; event: AgentEvent }> {
-    return this.eventRepo.listBySession(sessionId, afterId);
+  listEvents(sessionId: string, afterId = 0, limit = 500): Array<{ id: number; event: AgentEvent }> {
+    return this.eventRepo.listBySession(sessionId, afterId, Math.min(500, Math.max(1, limit)));
   }
 
   /** 诊断：进程存活快照 */

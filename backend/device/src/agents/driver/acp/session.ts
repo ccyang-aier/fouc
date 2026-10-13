@@ -93,6 +93,8 @@ export class AcpSession {
   private _sessionId: string | null = null;
   private _client: ProcessAcpClient | null = null;
   private authPending = false;
+  private stopped = false;
+  private retryTimer: ReturnType<typeof setTimeout> | null = null;
   private cachedAuthMethods: AuthMethod[] | null = null;
   private startRetryCount = 0;
   private resumeRetryCount = 0;
@@ -110,10 +112,11 @@ export class AcpSession {
   ) {
     this.callbacks = wrapCallbacks(callbacks);
     this.translator = new EventTranslator(config.foucSessionId);
-    this.inputPreprocessor = new InputPreprocessor((p) => fs.readFileSync(p, 'utf-8'));
+    this.inputPreprocessor = new InputPreprocessor((p) => { this.assertPathAllowed(p); return fs.readFileSync(p, 'utf-8'); });
     this.permissionResolver = new PermissionResolver({
       autoApproveAll: config.yoloMode ?? false,
       cacheMaxSize: options?.approvalCacheMaxSize,
+      allowAlways: !config.projectExecution,
     });
     this.authNegotiator = new AuthNegotiator(config.agentBackend);
     if (config.authCredentials) this.authNegotiator.mergeCredentials(config.authCredentials);
@@ -160,10 +163,14 @@ export class AcpSession {
     if (this._status !== 'idle' && this._status !== 'error') return;
     log.info(`Starting session with backend ${this.config.agentBackend}`);
     this.startRetryCount = 0;
+    this.stopped = false;
     void this.doStart().catch((err) => this.handleStartError(err));
   }
 
   async stop(): Promise<void> {
+    this.stopped = true;
+    if (this.retryTimer) clearTimeout(this.retryTimer);
+    this.retryTimer = null;
     this.timer.stop();
     this.permissionResolver.rejectAll(new Error('Session stopped'));
     this.pendingPrompt = null;
@@ -234,6 +241,18 @@ export class AcpSession {
     }
   }
 
+  /** Required execution policies must complete successfully before a prompt starts. */
+  async applyExecutionControls(modeId: string, modelId?: string): Promise<void> {
+    if (!this._client || !this._sessionId || this._status !== 'active') throw new Error('Agent session is not ready');
+    if (modelId) {
+      await this._client.setModel(this._sessionId, modelId);
+      this.configTracker.setCurrentModel(modelId);
+    }
+    await this._client.setMode(this._sessionId, modeId);
+    this.configTracker.setCurrentMode(modeId);
+    this.callbacks.onModeUpdate(this.configTracker.modeSnapshot());
+  }
+
   setConfigOption(id: string, value: string | boolean): void {
     this.configTracker.setDesiredConfigOption(id, value);
     if (this._status === 'active' && this._client && this._sessionId) {
@@ -244,8 +263,8 @@ export class AcpSession {
     }
   }
 
-  confirmPermission(callId: string, optionId: string): void {
-    this.permissionResolver.resolve(callId, optionId);
+  confirmPermission(callId: string, optionId: string): boolean {
+    return this.permissionResolver.resolve(callId, optionId);
   }
 
   /** 当前 YOLO 模式 id 是否在该 Agent 的可用模式中（外部诊断用） */
@@ -256,10 +275,13 @@ export class AcpSession {
   // ─── 启动 ──────────────────────────────────────────────────────
 
   private async doStart(): Promise<void> {
+    if (this.stopped) return;
     this.setStatus('starting');
     try {
       await this.spawnAndInit();
+      if (this.stopped) { await this.teardown(); return; }
       const sessionResult = await this.establishSession();
+      if (this.stopped) { await this.teardown(); return; }
       if (!sessionResult) return; // 需要认证，已处理
       this.applySessionResult(sessionResult);
       await this.reassertConfig();
@@ -317,6 +339,7 @@ export class AcpSession {
   }
 
   private handleStartError(err: unknown): void {
+    if (this.stopped) return;
     const acpErr = normalizeError(err);
     log.error(`start failed (${acpErr.code}, retryable=${acpErr.retryable}): ${acpErr.message}`);
 
@@ -324,7 +347,7 @@ export class AcpSession {
       this.startRetryCount++;
       void this.teardown().then(() => {
         const delay = 1000 * Math.pow(2, this.startRetryCount - 1);
-        setTimeout(() => void this.doStart().catch((e) => this.handleStartError(e)), delay);
+        if (!this.stopped) this.retryTimer = setTimeout(() => void this.doStart().catch((e) => this.handleStartError(e)), delay);
       });
     } else {
       void this.teardown().then(() => this.enterError(acpErr.message));
@@ -334,13 +357,16 @@ export class AcpSession {
   // ─── 恢复 ──────────────────────────────────────────────────────
 
   resume(): void {
+    if (this.stopped) return;
     void this.doResume().catch((err) => this.handleResumeError(err));
   }
 
   private async doResume(): Promise<void> {
+    if (this.stopped) return;
     this.setStatus('resuming');
     try {
       await this.spawnAndInit();
+      if (this.stopped) { await this.teardown(); return; }
       await this.tryLoadOrCreate(McpConfig.merge({ userServers: this.config.mcpServers }));
       await this.reassertConfig();
       this.setStatus('active');
@@ -351,12 +377,13 @@ export class AcpSession {
   }
 
   private handleResumeError(err: unknown): void {
+    if (this.stopped) return;
     const acpErr = normalizeError(err);
     if (acpErr.retryable && this.resumeRetryCount < this.maxResumeRetries) {
       this.resumeRetryCount++;
       void this.teardown().then(() => {
         const delay = 1000 * Math.pow(2, this.resumeRetryCount - 1);
-        setTimeout(() => void this.doResume().catch((e) => this.handleResumeError(e)), delay);
+        if (!this.stopped) this.retryTimer = setTimeout(() => void this.doResume().catch((e) => this.handleResumeError(e)), delay);
       });
     } else {
       void this.teardown().then(() => this.enterError(acpErr.message));
@@ -567,6 +594,7 @@ export class AcpSession {
   // ─── 断连分派 ──────────────────────────────────────────────────
 
   private onDisconnect(info?: DisconnectInfo): void {
+    if (this.stopped) return;
     switch (this._status) {
       case 'idle':
       case 'suspended':
@@ -618,9 +646,19 @@ export class AcpSession {
   private assertPathAllowed(filePath: string): void {
     const resolved = path.resolve(filePath);
     const allowedRoots = [this.config.cwd, ...(this.config.additionalDirectories ?? [])];
-    const withinAllowed = allowedRoots.some(
-      (root) => resolved.startsWith(path.resolve(root) + path.sep) || resolved === path.resolve(root)
-    );
+    let target = resolved;
+    while (true) {
+      try { fs.lstatSync(target); break; } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
+      const parent = path.dirname(target);
+      if (parent === target) break;
+      target = parent;
+    }
+    const actual = path.resolve(fs.realpathSync(target), path.relative(target, resolved));
+    const withinAllowed = allowedRoots.some((root) => {
+      const actualRoot = fs.realpathSync(root);
+      const relative = path.relative(actualRoot, actual);
+      return relative === '' || (relative !== '..' && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative));
+    });
     if (!withinAllowed) {
       throw new Error(`Path not allowed: ${filePath} is outside permitted directories`);
     }
@@ -642,6 +680,7 @@ export class AcpSession {
         }
       },
       onWriteTextFile: async (req) => {
+        if (this.config.readOnly) throw new Error('This session is read-only');
         this.assertPathAllowed(req.path);
         try {
           fs.writeFileSync(req.path, req.content, 'utf-8');
@@ -689,6 +728,14 @@ export class AcpSession {
   private async handlePermissionRequest(
     request: Parameters<ProtocolHandlers['onRequestPermission']>[0]
   ): ReturnType<ProtocolHandlers['onRequestPermission']> {
+    if (this.config.projectExecution) {
+      if (request.toolCall.kind === 'switch_mode') return { outcome: { outcome: 'cancelled' } };
+      try { for (const location of request.toolCall.locations ?? []) this.assertPathAllowed(location.path); }
+      catch { return { outcome: { outcome: 'cancelled' } }; }
+    }
+    if (this.config.readOnly && request.toolCall.kind !== 'read' && request.toolCall.kind !== 'search') {
+      return { outcome: { outcome: 'cancelled' } };
+    }
     this.timer.pause();
     try {
       return await this.permissionResolver.evaluate(request, (data) => {

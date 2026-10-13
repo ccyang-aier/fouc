@@ -13,11 +13,12 @@ import {
 import type { IconTone } from "@/lib/icon-tones"
 
 export const projectTabs = [
-  { id: "overview", label: "总览", icon: BracketsCurly },
-  { id: "work", label: "工作", icon: CalendarBlank },
-  { id: "outputs", label: "产物", icon: FileText },
-  { id: "resources", label: "资源", icon: Cube },
-  { id: "timeline", label: "时间线", icon: CalendarBlank },
+  { id: "overview", label: "交付总览", icon: BracketsCurly },
+  { id: "work", label: "交付目标", icon: CalendarBlank },
+  { id: "outputs", label: "产物与证据", icon: FileText },
+  { id: "resources", label: "资源与编排", icon: Cube },
+  { id: "timeline", label: "活动", icon: CalendarBlank },
+  { id: "inbox", label: "待我决策", icon: ShieldCheck },
 ] as const
 
 export type ProjectTab = (typeof projectTabs)[number]["id"]

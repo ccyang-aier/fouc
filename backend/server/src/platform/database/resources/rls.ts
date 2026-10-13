@@ -14,7 +14,7 @@ const verifiedIdentityUser = `(SELECT s.user_id FROM auth.session s
     AND s.expires_at > clock_timestamp() AND u.email_verified IS TRUE)`;
 
 export interface ResourceRlsPolicy {
-  name: 'knowledge_base_scope' | 'project_scope' | 'own_identity' | 'reference_read' | 'backlink_target';
+  name: 'knowledge_base_scope' | 'project_scope' | 'own_identity' | 'reference_read' | 'backlink_target' | 'accept_invitation';
   command: 'ALL' | 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE';
   using?: string;
   check?: string;
@@ -23,6 +23,28 @@ export interface ResourceRlsPolicy {
 /** Knowledge-base data has a real resource scope; project access uses its own membership. */
 export function resourcePoliciesForTable(table: PgTable): ResourceRlsPolicy[] {
   const config = getTableConfig(table);
+  if (config.name.startsWith('project_delivery_')) {
+    const projectId = `(SELECT NULLIF(current_setting('app.project_id', true), '')::uuid)`;
+    const scope = `"project_id" = ${projectId}`;
+    const membership = `EXISTS (SELECT 1 FROM resources.project_member m WHERE m.project_id = ${projectId} AND m.user_id = ${verifiedIdentityUser}`;
+    const manager = config.name === 'project_delivery_settings' || config.name === 'project_delivery_invitation';
+    const read = `${scope} AND ${membership})`;
+    const rolePredicate = manager ? "(m.role::text = 'owner' OR m.role::text = 'admin')" : "m.role::text <> 'guest'";
+    const write = `${scope} AND ${membership} AND ${rolePredicate})`;
+    const policies: ResourceRlsPolicy[] = [
+      { name: 'project_scope', command: 'ALL', using: write, check: write },
+      { name: 'own_identity', command: 'SELECT', using: read },
+    ];
+    const acceptedInvitation = `(SELECT NULLIF(current_setting('app.accepting_project_invitation_id', true), '')::uuid)`;
+    if (config.name === 'project_delivery_invitation') {
+      const email = `(SELECT invitation_user.email FROM auth."user" invitation_user WHERE invitation_user.id = ${verifiedIdentityUser})`;
+      const recipient = `${scope} AND "email" = ${email}`;
+      policies.push({ name: 'reference_read', command: 'SELECT', using: recipient });
+      policies.push({ name: 'accept_invitation', command: 'UPDATE', using: `${recipient} AND "id" = ${acceptedInvitation} AND "accepted_at" IS NULL`, check: `${recipient} AND "id" = ${acceptedInvitation} AND "accepted_by" = ${verifiedIdentityUser} AND "accepted_at" IS NOT NULL` });
+    }
+    if (config.name === 'project_delivery_event') policies.push({ name: 'accept_invitation', command: 'INSERT', check: `${scope} AND ${acceptedInvitation} IS NOT NULL AND "actor_id" = ${verifiedIdentityUser} AND "payload"->>'type' = 'invitation.accepted'` });
+    return policies;
+  }
   if (config.name === 'project' || config.name === 'project_member') {
     const projectId = `(SELECT NULLIF(current_setting('app.project_id', true), '')::uuid)`;
     const predicate = `${config.name === 'project' ? '"id"' : '"project_id"'} = ${projectId}`;
@@ -52,8 +74,8 @@ export function resourcePoliciesForTable(table: PgTable): ResourceRlsPolicy[] {
 }
 
 /** DDL identifiers come only from the checked-in Drizzle table definitions. */
-export function resourceRlsSql(): string {
-  return resourceTables.map((table) => {
+export function resourceRlsSql(tables: readonly PgTable[] = resourceTables): string {
+  return tables.map((table) => {
     const config = getTableConfig(table);
     const name = `${identifier(config.schema!)}.${identifier(config.name)}`;
     return [

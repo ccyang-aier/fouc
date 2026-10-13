@@ -123,6 +123,10 @@ export class ProcessAcpClient {
       throw new AgentSpawnError(this.options.backend, err);
     }
     this.child = child;
+    if (this.closing) {
+      await this.close();
+      throw new AgentDisconnectedError('connection_close', null, null);
+    }
 
     // 2. 从 spawn 时刻捕获 stderr
     this.setupStderrCapture(child);

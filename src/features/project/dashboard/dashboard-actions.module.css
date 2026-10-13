@@ -1,0 +1,31 @@
+.dialog { margin: auto; width: min(460px, calc(100vw - 32px)); max-height: calc(100dvh - 40px); overflow: auto; border: 0; border-radius: 12px; padding: 0; color: #171719; background: #fff; box-shadow: 0 12px 80px rgb(0 0 0 / 10%); font-family: "Dashboard Inter", Arial, sans-serif; font-size: 14px; }
+.dialog::backdrop { background: rgb(0 0 0 / 28%); backdrop-filter: blur(2px); }
+.dialog[open] { animation: enter 180ms ease-out; }
+.dialog header { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px 22px 12px; }
+.dialog h2 { font-size: 17px; font-weight: 500; }
+.dialog footer { display: flex; justify-content: flex-end; gap: 10px; padding: 16px 22px; border-top: 1px solid #eee; }
+.dialog footer button { height: 30px; font-size: 13px; }
+.fields { display: grid; gap: 18px; padding: 12px 22px 24px; }
+.fields label { display: grid; gap: 7px; font-size: 13px; color: #5e606b; }
+.fields input, .fields textarea, .fields select { width: 100%; border: 1px solid #e0e1e5; border-radius: 6px; padding: 9px 11px; background: #fff; color: #202125; font: inherit; box-shadow: none; outline: none; }
+.fields :is(input, textarea, select):focus { border-color: #202125; }
+.fields textarea { resize: vertical; }
+.fields select { cursor: pointer; }
+.fields input[aria-invalid="true"] { border-color: #bd3c42; }
+.error { color: #bd3c42; font-size: 12px; }
+.helpContent { padding: 12px 22px 24px; color: #656771; line-height: 1.7; }
+.helpContent h3 { margin-bottom: 8px; font-weight: 500; color: #1c1c20; }
+.helpContent p + p { margin-top: 12px; }
+.memberList { padding: 4px 22px 18px; }
+.memberList label { display: flex; gap: 12px; align-items: center; padding: 11px 0; cursor: pointer; border-bottom: 1px solid #eee; }
+.memberList label:last-child { border: 0; }
+.memberList label span { display: grid; flex: 1; gap: 3px; }
+.memberList strong { font-weight: 400; }
+.memberList small { color: #7d7e86; font-size: 12px; }
+.memberList input { accent-color: #111; width: 16px; height: 16px; cursor: pointer; }
+.meetingMembers { display: grid; gap: 12px; margin-top: 18px; }
+.meetingMembers > span { display: flex; align-items: center; gap: 12px; }
+.danger, .danger:hover { background: var(--danger-action-bg); color: #fff; }
+.danger:focus-visible { background: var(--danger-action-bg); outline-color: var(--danger-action-bg); }
+@keyframes enter { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .dialog[open] { animation: none; } }

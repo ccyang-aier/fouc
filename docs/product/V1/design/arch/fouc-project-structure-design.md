@@ -86,7 +86,7 @@ shell 只组合主导航和业务模块。`features/project` 管理项目列表�
 
 新增模块先明确资源所有者、操作权限和执行宿主，再确定缓存及接口范围，不能从页面可见推断持久化或授权已经实现。
 
-项目工作台不读取演示任务、成员、产物或活动数组；无目标时直接创建可验收目标，已有目标从真实聚合状态派生阶段和下一动作。领域契约与确定性门禁位于 `@fouc/shared/projects`；服务端 `modules/projects` 管理共享项目权威状态，`resources.project_delivery_*` 管理设置、工作对象、事件和邀请，设备包仅管理实际 Agent、Git 工作目录与运行事实。scope/plan/code 固定证据及批准的适用版本，CAS revision 保护并发写入；Agent 报告不能替人批准。界面与具体门禁见[项目工作台设计](../projects/fouc-project-space-product-ux-design.md)。
+项目交付业务以真实聚合状态派生阶段和下一动作，不从演示数组取得成员、证据或批准。当前项目工作台按用户指定的视频 Dashboard 复刻；其中参考人物、任务和统计仅用于本机界面交互，按项目来源与 projectId 独立保存，不写入项目交付表或授权任何真实资源。当前视觉与交互边界统一见[项目工作台设计](../projects/fouc-project-space-product-ux-design.md)第十三节。领域契约与确定性门禁位于 `@fouc/shared/projects`；服务端 `modules/projects` 管理共享项目权威状态，`resources.project_delivery_*` 管理设置、工作对象、事件和邀请，设备包仅管理实际 Agent、Git 工作目录与运行事实。scope/plan/code 固定证据及批准的适用版本，CAS revision 保护并发写入；Agent 报告不能替人批准。
 
 项目引用知识内容仍逐项检查知识库与页面 ACL；无权查看的标题以“受限文档”呈现，引用不授予读取权限。GitHub 发布凭据留在服务端；全局仓库白名单之外还必须有管理员配置的 projectId → repository 绑定。Native Agent 设备子进程过滤业务服务凭据，Windows Node companion 承载实际 CLI 与事件；worktree 和 Agent 工具策略不等于通用 OS sandbox，未支持的工具审批、resume 与跨设备执行不显示为可用。
 

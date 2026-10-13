@@ -1,0 +1,30 @@
+@font-face {
+  font-family: "Dashboard Inter";
+  src: url("/fonts/dashboard-inter/Inter-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Dashboard Inter";
+  src: url("/fonts/dashboard-inter/Inter-Medium.ttf") format("truetype");
+  font-weight: 500 700;
+  font-display: swap;
+}
+.avatar { display: inline-block; flex: none; object-fit: cover; border-radius: 50%; background: #eaeaec; }
+.referenceIcon { display: block; flex: none; object-fit: contain; mix-blend-mode: multiply; }
+.avatarGroup { display: inline-flex; align-items: center; flex: none; padding-left: 0; }
+.avatarGroup > * { box-sizing: content-box; border: var(--avatar-border) solid #fff; margin-left: calc(var(--avatar-size) * -.28); }
+.avatarGroup > :first-child { margin-left: 0; }
+.avatarExtra { display: grid; place-items: center; width: var(--avatar-size); height: var(--avatar-size); border-radius: 50%; background: #efeff1; color: #646775; font-size: 14px; font-weight: 500; }
+.iconButton { display: inline-flex; justify-content: center; align-items: center; flex: none; width: 34px; height: 34px; border: 1px solid #e5e5e7; border-radius: 8px; background: #fff; color: #5d5e69; box-shadow: 0 2px 7px rgb(0 0 0 / 5%); cursor: pointer; }
+.iconButton svg { width: 19px; height: 19px; }
+.iconButton:focus-visible { outline: 2px solid #171717; outline-offset: 2px; }
+.button { border-radius: 7px; font-family: "Dashboard Inter", Arial, sans-serif; font-size: 14px; font-weight: 400; height: 40px; padding: 0 12px; box-shadow: none; cursor: pointer; }
+.primary { background: #111; color: #fff; --action-state-bg: #292929; --action-state-ink: #fff; }
+.primary:hover, .primary:focus-visible { background: #292929; }
+.neutral { background: #fff; border-color: #e5e5e7; color: #565862; box-shadow: 0 2px 7px rgb(0 0 0 / 4%); }
+.button:focus-visible { outline: 2px solid #171717; outline-offset: 2px; box-shadow: none; }
+.segments { display: inline-flex; padding: 3px; border: 1px solid #e7e7e9; border-radius: 7px; background: #f6f6f7; gap: 2px; flex: none; }
+.segments button { height: 24px; min-width: 44px; padding: 0 11px; font: inherit; font-size: 12px; line-height: 1; color: #6d6e78; border-radius: 4px; cursor: pointer; }
+.segments button[aria-pressed="true"] { color: #18181b; background: #fff; box-shadow: 0 1px 5px rgb(0 0 0 / 4%); }
+.segments button:focus-visible { outline: 1px solid #171717; outline-offset: -1px; }

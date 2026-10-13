@@ -57,8 +57,8 @@ export function WorkbenchShell() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [view, setView, settingsOpen] = useWorkbenchView()
   const settingsSection = useSettingsSection()
-  const { projects, selectedProject, selectProject, favorites, managementPanel, setManagementPanel, setFavorite } = useProjectResources()
-  const projectFavorited = selectedProject !== null && favorites.includes(selectedProject.id)
+  const { projects, selectedProject, selectProject, setManagementPanel } = useProjectResources()
+  const projectDashboard = view === "projects" && selectedProject !== null
   // 应用面板根：桌面端作为自绘外框的内层与弹层宿主
   const frameRef = useRef<HTMLDivElement>(null)
 
@@ -104,7 +104,7 @@ export function WorkbenchShell() {
           >
             {/* 设置覆盖在当前工作面上，原视图及其输入、选择和滚动状态保持挂载。 */}
             <div className="flex min-h-0 flex-1">
-              <div className={`${styles.navigation} sidebar-material flex shrink-0`}>
+              {!projectDashboard && <div className={`${styles.navigation} sidebar-material flex shrink-0`}>
                 <NavigationSidebar
                   open={!sidebarCollapsed}
                   onCollapse={() => {
@@ -116,9 +116,9 @@ export function WorkbenchShell() {
                   view={view}
                   onViewChange={changeView}
                 />
-              </div>
+              </div>}
               <div className="flex min-w-0 flex-1 flex-col">
-                <div className={styles.systemBar}><SystemBar onNavigate={changeView} /></div>
+                {!projectDashboard && <div className={styles.systemBar}><SystemBar onNavigate={changeView} /></div>}
                 <main className="relative min-w-0 flex-1 overflow-hidden bg-panel">
                   <div className="relative h-full min-h-0" style={{ perspective: 1600 }}>
                     <AnimatePresence initial={false} custom={view === "projects" ? 1 : -1}>
@@ -139,10 +139,8 @@ export function WorkbenchShell() {
                           selectedProject ? <ProjectHomeCanvas key={`${selectedProject.source}:${selectedProject.id}`}
                             projectId={selectedProject.id}
                             projectName={selectedProject.name}
-                            favorited={projectFavorited}
-                            onFavoriteChange={(favorite) => setFavorite(selectedProject.id, favorite)}
-                            managementPanel={managementPanel}
-                            onManagementPanelChange={setManagementPanel}
+                            source={selectedProject.source}
+                            onBack={() => changeView("project-home")}
                           /> : <ProjectIndexCanvas onOpenProject={() => changeView("projects")} />
                         ) : view === "community" ? (
                           <CommunityCanvas />

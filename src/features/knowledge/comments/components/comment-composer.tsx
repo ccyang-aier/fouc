@@ -8,6 +8,7 @@ import { useAssetUploads } from '../../assets/use-asset-uploads';
 import { UploadQueueItem } from '../../assets/components/upload-queue-item';
 import { safeKnowledgeUrl } from '@fouc/shared/knowledge/schema';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
 import type { CommentAuthor } from './comment-avatar';
 import styles from './comments.module.css';
 
@@ -28,10 +29,11 @@ export interface CommentComposerProps {
   focusKey?: string;
   authors?: ReadonlyMap<string, CommentAuthor>;
   initialBodyMd?: string;
+  variant?: 'inline' | 'popover';
 }
 
 /** Shared write surface: drafts survive failures; formatted text remains Markdown. */
-export function CommentComposer({ knowledgeBaseId, placeholder, submitLabel, sendingLabel, sending, error, onSubmit, onCancel, autoFocus = true, minHeight = 36, allowIssue = false, persistent = false, replyTo, focusKey, authors, initialBodyMd = '' }: CommentComposerProps) {
+export function CommentComposer({ knowledgeBaseId, placeholder, submitLabel, sendingLabel, sending, error, onSubmit, onCancel, autoFocus = true, minHeight = 36, allowIssue = false, persistent = false, replyTo, focusKey, authors, initialBodyMd = '', variant = 'inline' }: CommentComposerProps) {
   const [body, setBody] = useState(initialBodyMd);
   const [issue, setIssue] = useState(false);
   const [touched, setTouched] = useState(false);
@@ -62,19 +64,29 @@ export function CommentComposer({ knowledgeBaseId, placeholder, submitLabel, sen
       }
     } finally { submitting.current = false; }
   };
-  return <div className={styles.composer} data-persistent={persistent}>
+  const popover = variant === 'popover';
+  const feedback = <>
+    {uploads.items.some(item => item.phase !== 'done') && <ul className={styles.uploadQueue} aria-label="评论图片上传">{uploads.items.filter(item => item.phase !== 'done').map(item => <UploadQueueItem key={item.id} item={item} onCancel={uploads.cancel} onRetry={uploads.retry} onRemove={uploads.remove} />)}</ul>}
+    {imageError && <p className={styles.composerError} role="alert">{imageError}</p>}
+    {touched && !valid && <p className={styles.composerError}><WarningCircle size={12} aria-hidden />评论内容不能为空，且不超过 50000 字符。</p>}
+    {error && <p className={styles.composerError} role="alert"><WarningCircle size={12} aria-hidden />{error}</p>}
+  </>;
+  return <div className={styles.composer} data-persistent={persistent} data-comment-composer={popover ? '' : undefined}>
     {replyTo && <div className={styles.composerHeading}><span>回复 <strong>{replyTo.name}</strong></span><button type="button" className={styles.cancelReply} disabled={sending} onClick={onCancel}>取消</button></div>}
-    <div className={styles.composerBox}>
-      <CommentEditor ref={ref} knowledgeBaseId={knowledgeBaseId} initialBody={initialBodyMd} placeholder={placeholder} disabled={sending} autoFocus={autoFocus} focusKey={focusKey} minHeight={minHeight} onChange={setBody} onSubmit={() => void submit()} onCancel={onCancel} />
-      <div className={styles.composerActions}>
-        <div className={styles.composeTools}>
+    <div className={styles.composerBox} data-comment-box={popover ? '' : undefined}>
+      <div data-comment-writing={popover ? '' : undefined}>
+        <CommentEditor ref={ref} knowledgeBaseId={knowledgeBaseId} initialBody={initialBodyMd} placeholder={placeholder} disabled={sending} autoFocus={autoFocus} focusKey={focusKey} minHeight={minHeight} onChange={setBody} onSubmit={() => void submit()} onCancel={onCancel} />
+        {popover && <><div data-comment-feedback>{feedback}</div><span className={styles.sendHint} data-comment-shortcut>Ctrl / ⌘ + Enter 发送</span></>}
+      </div>
+      <div className={styles.composerActions} data-comment-actions={popover ? '' : undefined}>
+        <div className={styles.composeTools} data-comment-tools={popover ? '' : undefined}>
           <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild><button type="button" className={styles.iconButton} disabled={sending || !authors?.size} aria-label="提及成员" title="提及成员"><At size={18} weight="regular" aria-hidden /></button></DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="max-h-60 overflow-y-auto" onCloseAutoFocus={event => { event.preventDefault(); ref.current?.focus(); }}>
               {Array.from(authors ?? []).map(([id, author]) => <DropdownMenuItem key={id} onSelect={() => { ref.current?.insertText(`@${author.name} `); setMentioned(value => [...new Set([...value, id])]); }}>@{author.name}</DropdownMenuItem>)}
             </DropdownMenuContent>
           </DropdownMenu>
-          <button type="button" className={styles.iconButton} disabled={sending || !knowledgeBaseId} aria-label="上传评论图片" title="上传图片" onClick={() => input.current?.click()}><ImageIcon size={18} weight="regular" aria-hidden /></button>
+          <button type="button" className={`fouc-action ${styles.iconButton}`} disabled={sending || !knowledgeBaseId} aria-label="上传评论图片" title="上传图片" onClick={() => input.current?.click()}><ImageIcon size={18} weight="regular" aria-hidden /></button>
           <input ref={input} type="file" accept="image/*" multiple hidden aria-label="选择评论图片" onChange={event => {
             const files = Array.from(event.target.files ?? []);
             if (files.some(file => !file.type.startsWith('image/'))) { setImageError('请选择图片文件。'); }
@@ -92,16 +104,17 @@ export function CommentComposer({ knowledgeBaseId, placeholder, submitLabel, sen
           </DropdownMenu>
           {allowIssue && <label className={styles.issueChoice}><input type="checkbox" checked={issue} disabled={sending} onChange={event => setIssue(event.target.checked)} />作为问题</label>}
         </div>
-        <span className={styles.sendHint}>Ctrl / ⌘ + Enter 发送</span>
+        {popover ? <div data-comment-submit>
+          {onCancel && <Button variant="ghost" size="sm" onClick={onCancel} disabled={sending}>取消</Button>}
+          <Button size="sm" loading={sending} disabled={uploading || !valid} onClick={() => void submit()} aria-label={sending ? sendingLabel : submitLabel}>{submitLabel}</Button>
+        </div> : <><span className={styles.sendHint}>Ctrl / ⌘ + Enter 发送</span>
         <button type="button" className={styles.sendButton} onClick={() => void submit()} disabled={sending || uploading || !valid} aria-label={sending ? sendingLabel : submitLabel} title={`${submitLabel} · Ctrl / ⌘ + Enter`}>
           <span>{sending ? sendingLabel : submitLabel}</span>{sending && <CircleNotch size={15} className="animate-spin" aria-hidden />}
         </button>
+        </>}
       </div>
     </div>
-    {uploads.items.some(item => item.phase !== 'done') && <ul className={styles.uploadQueue} aria-label="评论图片上传">{uploads.items.filter(item => item.phase !== 'done').map(item => <UploadQueueItem key={item.id} item={item} onCancel={uploads.cancel} onRetry={uploads.retry} onRemove={uploads.remove} />)}</ul>}
-    {imageError && <p className={styles.composerError} role="alert">{imageError}</p>}
-    {touched && !valid && <p className={styles.composerError}><WarningCircle size={12} aria-hidden />评论内容不能为空，且不超过 50000 字符。</p>}
-    {error && <p className={styles.composerError} role="alert"><WarningCircle size={12} aria-hidden />{error}</p>}
-    {onCancel && !replyTo && <button type="button" className={styles.cancelReply} disabled={sending} onClick={onCancel}>取消</button>}
+    {!popover && feedback}
+    {!popover && onCancel && !replyTo && <button type="button" className={styles.cancelReply} disabled={sending} onClick={onCancel}>取消</button>}
   </div>;
 }

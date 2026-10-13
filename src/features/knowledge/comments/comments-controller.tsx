@@ -7,7 +7,6 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { motion } from 'motion/react';
 import type { Editor } from '@tiptap/react';
 import type { Transaction } from '@tiptap/pm/state';
 import type { CommentThreadKind } from '@fouc/shared/knowledge/comments';
@@ -42,6 +41,7 @@ import {
 import { deriveCommentSidebarModel } from './comments-view-model';
 import { CommentsSidebar } from './components/comments-sidebar';
 import { CommentComposer } from './components/comment-composer';
+import { SelectionCommentPopover } from './components/selection-comment-popover';
 import type { CommentAuthor } from './components/comment-entry';
 import type { CommentReplyTarget } from './components/comment-thread-card';
 import { useMembersQuery } from '../organization/hooks';
@@ -399,27 +399,16 @@ export function PageComments({ scope, knowledgeBaseId, editor, pdf, canComment, 
         : null,
   };
 
-  const popoverX = composerAt ? Math.min(Math.max(composerAt.x, 156), (typeof window === 'undefined' ? 1024 : window.innerWidth) - 156) : 0;
-
   return (
     <div ref={sidebarHost} style={{ display: 'contents' }}>
       {composing && composerAt ? (
-        <motion.div
-          role="dialog"
-          aria-label="新建评论"
-          initial={{ opacity: 0, y: 5 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
-          style={{ left: popoverX, top: composerAt.y > 240 ? undefined : composerAt.y + 22, bottom: composerAt.y > 240 ? (typeof window === 'undefined' ? 480 : window.innerHeight) - composerAt.y + 14 : undefined }}
-          className="fixed z-30 w-[292px] -translate-x-1/2 rounded-[10px] border border-[var(--floating-border)] bg-[var(--panel)] p-3 shadow-[var(--floating-shadow)]"
-        >
-          <p className="mb-2 line-clamp-2 border-b border-[var(--line)] px-1.5 py-2 text-[11.5px] leading-relaxed text-[var(--ink-soft)]">
-            {composing.excerpt}
-          </p>
+        <SelectionCommentPopover anchor={composerAt} excerpt={composing.excerpt}>
           <CommentComposer
+            variant="popover"
+            minHeight={90}
             knowledgeBaseId={scope.knowledgeBaseId}
-            placeholder="写下评论…（Ctrl+Enter 发送）"
-            submitLabel={createMutation.isPending ? '发送中…' : '发送'}
+            placeholder="写下评论…"
+            submitLabel="发送"
             sendingLabel="发送中…"
             sending={createMutation.isPending}
             error={composerError}
@@ -428,7 +417,7 @@ export function PageComments({ scope, knowledgeBaseId, editor, pdf, canComment, 
             authors={authors}
             onCancel={cancelCompose}
           />
-        </motion.div>
+        </SelectionCommentPopover>
       ) : null}
 
       {railOpen ? (

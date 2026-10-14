@@ -55,6 +55,7 @@ import { SystemBar } from "./system-bar"
 export function WorkbenchShell() {
   useMenuMotion()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [conversationVersion, setConversationVersion] = useState(0)
   const [view, setView, settingsOpen] = useWorkbenchView()
   const settingsSection = useSettingsSection()
   const { projects, selectedProject, selectProject, setManagementPanel } = useProjectResources()
@@ -81,6 +82,7 @@ export function WorkbenchShell() {
   }, [])
 
   function changeView(nextView: WorkbenchView) {
+    if (nextView === "home") setConversationVersion(current => current + 1)
     if (nextView === "settings") {
       setView(nextView)
       return
@@ -132,7 +134,7 @@ export function WorkbenchShell() {
                         className="absolute inset-0"
                       >
                         {view === "home" ? (
-                          <HomeCanvas />
+                          <HomeCanvas key={conversationVersion} />
                         ) : view === "project-home" ? (
                           <ProjectIndexCanvas onOpenProject={() => changeView("projects")} />
                         ) : view === "projects" ? (

@@ -17,6 +17,7 @@ V1 以个人和团队共用的 Web / 桌面 AI 工作台为产品范围。项目
 | 全产品资源模型、工程结构与运行边界 | [项目结构与架构](design/arch/fouc-project-structure-design.md) |
 | 账户、会话与授权 | [统一身份](design/identity/fouc-identity.md) |
 | 项目及工作对象体验 | [项目空间](design/projects/fouc-project-space-product-ux-design.md) |
+| 新对话输入与会话界面 | [New Conversation](design/conversations/fouc-new-conversation-design.md) |
 | 知识库与协同编辑 | [知识库](design/knowledgebase/fouc-knowledgebase-product-design.md) |
 | Agent 发现、纳管与运行 | [本机 Agent](design/agents/fouc-agent-management-design.md) |
 | 连接器共同框架 | [连接器架构](design/connectors/connector-architecture.md) |

@@ -1,8 +1,12 @@
 'use client';
 
+import { useTranslation } from '@/lib/i18n/react';
+import { messages } from './i18n/account-profile.messages';
+
 import { useId, useState, type FormEvent } from 'react';
 import { CheckCircle } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
+import { AppAlert } from '@/components/app-alert';
 import { UserAvatar } from '@/components/user-avatar';
 import { foucAuthApi } from '../auth-api';
 import { authErrorCopyFor } from '../auth-errors';
@@ -14,15 +18,18 @@ import styles from './account-profile.module.css';
 
 /** Account data stays in the identity provider; this form only edits the display name. */
 export function AccountProfile({ onClose }: { onClose: () => void }) {
+  const { t: uiText, locale } = useTranslation(messages);
   const { session, refresh, presence } = useIdentity();
   const [name, setName] = useState(session.status === 'authenticated' ? session.user.name : '');
   const [saving, setSaving] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<{ error: boolean; text: string } | null>(null);
+  const [feedback, setFeedback] = useState<
+    { kind: 'success' } | { kind: 'error'; cause: unknown } | null
+  >(null);
   const nameId = useId();
   if (session.status !== 'authenticated') return null;
   const { user } = session;
-  const status = presenceDisplay(presence);
+  const status = presenceDisplay(presence, locale);
 
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -38,68 +45,103 @@ export function AccountProfile({ onClose }: { onClose: () => void }) {
       if (updatedSession.status === 'error') throw updatedSession.error;
       if (updatedSession.status === 'authenticated') {
         setName(updatedSession.user.name);
-        setFeedback({ error: false, text: '个人资料已更新' });
+        setFeedback({ kind: 'success' });
       }
     } catch (error) {
-      setFeedback({ error: true, text: authErrorCopyFor(error).description });
+      setFeedback({ kind: 'error', cause: error });
     } finally {
       setSaving(false);
     }
   }
 
-  return <div className={styles.profile}>
-    <div className={styles.cover} aria-hidden><AuthBackdrop desktopOnly={false} /></div>
-    <form noValidate onSubmit={(event) => void saveProfile(event)}>
-      <div className={styles.body}>
-        <div className={styles.avatarWrap}>
-          <UserAvatar name={user.name} image={user.image} className={styles.avatar} />
-          <span aria-hidden className={styles.presenceDot} style={{ backgroundColor: status.color }} />
-        </div>
-        <div className={styles.summary}>
-          <div className={styles.identity}>
-            <h2 className={styles.name}>{user.name}</h2>
-            <p className={styles.email}>{user.email}</p>
-          </div>
-          <span className={styles.status}><span aria-hidden style={{ backgroundColor: status.color }} />{status.label}</span>
-        </div>
-        <div className={styles.fields}>
-          <div className={styles.field}>
-            <label htmlFor={nameId}>显示名称</label>
-            <input
-              id={nameId}
-              name="name"
-              autoComplete="name"
-              required
-              maxLength={authNameMaxLength}
-              readOnly={saving}
-              aria-invalid={nameError ? true : undefined}
-              aria-describedby={nameError ? `${nameId}-error` : undefined}
-              value={name}
-              onBlur={() => setNameError(validateAuthName(name))}
-              onChange={(event) => { setName(event.target.value); setNameError(null); setFeedback(null); }}
-              className={styles.input}
+  return (
+    <div className={styles.profile}>
+      <div className={styles.cover} aria-hidden>
+        <AuthBackdrop desktopOnly={false} />
+      </div>
+      <form noValidate onSubmit={(event) => void saveProfile(event)}>
+        <div className={styles.body}>
+          <div className={styles.avatarWrap}>
+            <UserAvatar name={user.name} image={user.image} className={styles.avatar} />
+            <span
+              aria-hidden
+              className={styles.presenceDot}
+              style={{ backgroundColor: status.color }}
             />
-            {nameError ? <p id={`${nameId}-error`} className={styles.error} role="alert">{nameError}</p> : null}
           </div>
-          <div className={styles.field}>
-            <span className={styles.label}>邮箱</span>
-            <div className={styles.emailValue}>
-              <span className={styles.emailAddress}>{user.email}</span>
-              <span className={user.emailVerified ? styles.verified : styles.unverified}>
-                {user.emailVerified ? <CheckCircle size={12} weight="fill" aria-hidden /> : null}
-                {user.emailVerified ? '已验证' : '未验证'}
-              </span>
+          <div className={styles.summary}>
+            <div className={styles.identity}>
+              <h2 className={styles.name}>{user.name}</h2>
+              <p className={styles.email}>{user.email}</p>
+            </div>
+            <span className={styles.status}>
+              <span aria-hidden style={{ backgroundColor: status.color }} />
+              {status.label}
+            </span>
+          </div>
+          <div className={styles.fields}>
+            <div className={styles.field}>
+              <label htmlFor={nameId}>{uiText('显示名称')}</label>
+              <input
+                id={nameId}
+                name="name"
+                autoComplete="name"
+                required
+                maxLength={authNameMaxLength}
+                readOnly={saving}
+                aria-invalid={nameError ? true : undefined}
+                aria-describedby={nameError ? `${nameId}-error` : undefined}
+                value={name}
+                onBlur={() => setNameError(validateAuthName(name))}
+                onChange={(event) => {
+                  setName(event.target.value);
+                  setNameError(null);
+                  setFeedback(null);
+                }}
+                className={styles.input}
+              />
+              {nameError ? (
+                <p id={`${nameId}-error`} className={styles.error} role="alert">
+                  {validateAuthName(name, locale)}
+                </p>
+              ) : null}
+            </div>
+            <div className={styles.field}>
+              <span className={styles.label}>{uiText('邮箱')}</span>
+              <div className={styles.emailValue}>
+                <span className={styles.emailAddress}>{user.email}</span>
+                <span className={user.emailVerified ? styles.verified : styles.unverified}>
+                  {user.emailVerified ? <CheckCircle size={12} weight="fill" aria-hidden /> : null}
+                  {user.emailVerified ? uiText('已验证') : uiText('未验证')}
+                </span>
+              </div>
             </div>
           </div>
+          {feedback ? (
+            <AppAlert
+              tone={feedback.kind === 'error' ? 'error' : 'success'}
+              title={
+                feedback.kind === 'success'
+                  ? uiText('个人资料已更新')
+                  : authErrorCopyFor(feedback.cause, locale).description
+              }
+            />
+          ) : null}
         </div>
-        {feedback ? <p className={feedback.error ? styles.error : styles.success} role={feedback.error ? 'alert' : 'status'}>{feedback.text}</p> : null}
-      </div>
-      <footer className={`fouc-dialog-footer ${styles.footer}`}>
-        <Button type="button" variant="outline" disabled={saving} onClick={onClose}>取消</Button>
-        <Button type="submit" className={styles.save} loading={saving} disabled={!name.trim() || name.trim() === user.name}>
-          {saving ? '正在保存…' : '保存更改'}
-        </Button>
-      </footer>
-    </form>
-  </div>;
+        <footer className={`fouc-dialog-footer ${styles.footer}`}>
+          <Button type="button" variant="outline" disabled={saving} onClick={onClose}>
+            {uiText('取消')}
+          </Button>
+          <Button
+            type="submit"
+            className={styles.save}
+            loading={saving}
+            disabled={!name.trim() || name.trim() === user.name}
+          >
+            {saving ? uiText('正在保存…') : uiText('保存更改')}
+          </Button>
+        </footer>
+      </form>
+    </div>
+  );
 }

@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from '@/lib/i18n';
+import { knowledgeMessages } from './review-panel.messages';
 /**
  * The suggestion review sidebar (S02, design §4.5/§9.3): one honest surface
  * for every outstanding suggestion — humans' and agents' share the single
@@ -40,11 +42,13 @@ function BatchButton({
   tone: 'accept' | 'reject';
   children: React.ReactNode;
 }) {
+  const { t: knowledgeT } = useTranslation(knowledgeMessages);
+
   return (
     <button
       type="button"
       aria-label={label}
-      title={disabled ? (reason ?? '当前不可用') : label}
+      title={disabled ? (reason ?? knowledgeT('currentlyUnavailable')) : label}
       onClick={onClick}
       disabled={disabled}
       className={cn(
@@ -81,6 +85,8 @@ function BatchButton({
 type RailIntent = 'auto' | 'open' | 'closed';
 
 export function ReviewPanel({ editor, editable }: { editor: Editor | null; editable: boolean }) {
+  const { t: knowledgeT } = useTranslation(knowledgeMessages);
+
   const view = useReviewPanel(editor, editable);
   const [intent, setIntent] = useState<RailIntent>('auto');
   const [lastTotal, setLastTotal] = useState(view.stats.total);
@@ -108,7 +114,7 @@ export function ReviewPanel({ editor, editable }: { editor: Editor | null; edita
     return (
       <button
         type="button"
-        aria-label={`展开建议审阅（${total} 条）`}
+        aria-label={knowledgeT('expandSuggestionReviewValue', { v0: total })}
         aria-expanded={false}
         onClick={() => setIntent('open')}
         className={cn(
@@ -121,14 +127,14 @@ export function ReviewPanel({ editor, editable }: { editor: Editor | null; edita
         )}
       >
         <CheckCircle aria-hidden className="size-3.5 text-[var(--accent-ink)]" />
-        审阅 {total}
+        {knowledgeT('reviewCount', { v0: total })}
       </button>
     );
   }
 
   return (
     <aside
-      aria-label="建议审阅"
+      aria-label={knowledgeT('suggestionReview')}
       className={cn(
         'flex h-full w-[300px] shrink-0 animate-in fade-in slide-in-from-right-2 flex-col duration-150',
         'border-l border-[var(--line)] bg-[var(--panel)]',
@@ -136,7 +142,9 @@ export function ReviewPanel({ editor, editable }: { editor: Editor | null; edita
     >
       <header className="flex h-[42px] shrink-0 items-center gap-2 border-b border-[var(--line)] pl-4 pr-2">
         <CheckCircle aria-hidden className="size-3.5 shrink-0 text-[var(--accent-ink)]" />
-        <span className="text-[12px] font-medium text-[var(--ink)]">建议审阅</span>
+        <span className="text-[12px] font-medium text-[var(--ink)]">
+          {knowledgeT('suggestionReview')}
+        </span>
         <span
           role="status"
           className="flex h-[17px] items-center rounded-full bg-[var(--accent-soft)] px-1.5 text-[10px] font-semibold leading-none text-[var(--accent-ink)]"
@@ -145,8 +153,8 @@ export function ReviewPanel({ editor, editable }: { editor: Editor | null; edita
         </span>
         <button
           type="button"
-          aria-label="收起建议审阅"
-          title="收起建议审阅（Esc）"
+          aria-label={knowledgeT('collapseSuggestionReview')}
+          title={knowledgeT('collapseSuggestionReviewEsc')}
           onClick={() => setIntent('closed')}
           className={cn(
             'ml-auto flex size-7 items-center justify-center rounded-[6px] text-[var(--muted)] outline-none',
@@ -161,8 +169,17 @@ export function ReviewPanel({ editor, editable }: { editor: Editor | null; edita
 
       <div className="shrink-0 border-b border-[var(--line)] px-4 py-2.5">
         <p className="text-[11px] leading-[1.6] text-[var(--muted-strong)]">
-          {total} 条建议 · {inserts} 插入 · {deletes} 删除 · {replaces} 替换
-          {blockScoped > 0 ? ` · ${blockScoped} 块级` : ''}
+          {[
+            knowledgeT(total === 1 ? 'oneSuggestion' : 'suggestionCount', { count: total }),
+            knowledgeT(inserts === 1 ? 'oneInsertion' : 'insertionCount', { count: inserts }),
+            knowledgeT(deletes === 1 ? 'oneDeletion' : 'deletionCount', { count: deletes }),
+            knowledgeT(replaces === 1 ? 'oneReplacement' : 'replacementCount', { count: replaces }),
+          ].join(' · ')}
+          {blockScoped > 0
+            ? knowledgeT(blockScoped === 1 ? 'oneBlockSuggestion' : 'valueBlockSuggestions', {
+                v0: blockScoped,
+              })
+            : ''}
         </p>
         {authors.length > 0 ? (
           <div className="mt-1.5 flex flex-wrap gap-1">
@@ -172,7 +189,9 @@ export function ReviewPanel({ editor, editable }: { editor: Editor | null; edita
                 title={`${badge.source}${badge.detail ? ` · ${badge.detail}` : ''}`}
                 className="flex h-[17px] items-center gap-1 rounded-[4px] border border-[var(--line)] bg-[var(--surface-subtle)] px-1.5 text-[10px] font-medium leading-none text-[var(--muted-strong)]"
               >
-                <span aria-hidden className="font-semibold tracking-[0.02em]">{authorBadgeGlyph(badge.kind)}</span>
+                <span aria-hidden className="font-semibold tracking-[0.02em]">
+                  {authorBadgeGlyph(badge.kind)}
+                </span>
                 {badge.label}
                 {authors.length > 1 ? <span className="text-[var(--muted)]">{count}</span> : null}
               </span>
@@ -183,28 +202,31 @@ export function ReviewPanel({ editor, editable }: { editor: Editor | null; edita
 
       <div className="flex shrink-0 gap-1.5 px-3 py-2.5">
         <BatchButton
-          label={`全部拒绝（${total} 条）`}
+          label={knowledgeT('rejectAllValue', { v0: total })}
           tone="reject"
           disabled={!view.actions.canDecideAll}
           reason={view.actions.disabledReason}
           onClick={() => view.decide('reject')}
         >
           <Prohibit aria-hidden className="size-3" weight="bold" />
-          全部拒绝
+          {knowledgeT('rejectAll')}
         </BatchButton>
         <BatchButton
-          label={`全部接受（${total} 条）`}
+          label={knowledgeT('acceptAllValue', { v0: total })}
           tone="accept"
           disabled={!view.actions.canDecideAll}
           reason={view.actions.disabledReason}
           onClick={() => view.decide('accept')}
         >
           <Check aria-hidden className="size-3" weight="bold" />
-          全部接受
+          {knowledgeT('acceptAll')}
         </BatchButton>
       </div>
 
-      <ul aria-label="建议列表" className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 pb-4">
+      <ul
+        aria-label={knowledgeT('suggestions2')}
+        className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 pb-4"
+      >
         {view.rows.map((row) => (
           <ReviewCard
             key={row.suggestionId}

@@ -1,0 +1,26 @@
+import { defineMessages } from '@/lib/i18n';
+
+export const messages = defineMessages({
+  switchTo: ['切换为 {p0}', 'Switch to {p0}'],
+  conditionGroup: ['条件分组', 'Condition group'],
+  filterCondition: ['筛选条件', 'Filter condition'],
+  groupBy: ['分组', 'Group by'],
+  groupConditionRelationship: ['分组条件关系', 'Group condition relationship'],
+  addConditionToGroup: ['新增组内条件', 'Add condition to group'],
+  addCondition: ['新增条件', 'Add condition'],
+  addConditionGroup: ['新增条件分组', 'Add condition group'],
+  disableGroup: ['禁用分组', 'Disable group'],
+  enableGroup: ['启用分组', 'Enable group'],
+  deleteGroup: ['删除分组', 'Delete group'],
+  conditionRelationship: ['条件关系 {p0}', 'Condition relationship {p0}'],
+  filterColumns: ['筛选字段', 'Filter columns'],
+  field: ['字段', 'Field'],
+  filterOperator: ['筛选操作符', 'Filter operator'],
+  filterValueList: ['筛选值列表', 'Filter value list'],
+  jsonArrayABNull: ['JSON 数组：["a", "b", null]', 'JSON array: ["a", "b", null]'],
+  filterValue: ['筛选值', 'Filter value'],
+  value: ['值', 'Value'],
+  noValueRequired: ['无需值', 'No value required'],
+  rangeEndValue: ['区间结束值', 'Range end value'],
+  rangeEnd: ['区间结束', 'Range end'],
+});

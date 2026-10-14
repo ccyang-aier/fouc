@@ -1,11 +1,40 @@
 'use client';
 
+import { useTranslation } from '@/lib/i18n';
+import { knowledgeMessages } from './default-access-field.messages';
 import type { TeamspaceAccess } from '../data/knowledge-catalog-client';
 import { defaultAccessOptions } from './view-model';
 import { PermissionSelect } from './permission-select';
 
-const options = defaultAccessOptions.map((option) => ({ ...option, value: option.value ?? 'explicit', description: option.description.replaceAll('团队空间', '文件夹') }));
+export function DefaultAccessField({
+  value,
+  onChange,
+  disabled = false,
+}: {
+  value: TeamspaceAccess;
+  onChange: (value: TeamspaceAccess) => void;
+  disabled?: boolean;
+}) {
+  const { locale, t: knowledgeT } = useTranslation(knowledgeMessages);
+  const options = defaultAccessOptions(locale).map((option) => ({
+    ...option,
+    value: option.value ?? 'explicit',
+  }));
 
-export function DefaultAccessField({ value, onChange, disabled = false }: { value: TeamspaceAccess; onChange: (value: TeamspaceAccess) => void; disabled?: boolean }) {
-  return <div className="mt-4"><PermissionSelect label="根默认权限" value={value ?? 'explicit'} options={options} disabled={disabled} onChange={(next) => onChange(defaultAccessOptions.find((option) => (option.value ?? 'explicit') === next)!.value)} /></div>;
+  return (
+    <div className="mt-4">
+      <PermissionSelect
+        label={knowledgeT('defaultAccess')}
+        value={value ?? 'explicit'}
+        options={options}
+        disabled={disabled}
+        onChange={(next) =>
+          onChange(
+            defaultAccessOptions(locale).find((option) => (option.value ?? 'explicit') === next)!
+              .value,
+          )
+        }
+      />
+    </div>
+  );
 }

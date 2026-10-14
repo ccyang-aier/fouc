@@ -1,0 +1,46 @@
+import { defineMessages } from '@/lib/i18n/messages';
+
+export const messages = defineMessages({
+  idle: ['未启动', 'Idle'],
+  starting: ['启动中', 'Starting'],
+  active: ['就绪', 'Ready'],
+  prompting: ['处理中', 'Processing'],
+  suspended: ['等待审批', 'Awaiting approval'],
+  resuming: ['恢复中', 'Resuming'],
+  error: ['异常', 'Error'],
+  ended: ['已结束', 'Ended'],
+  '已创建受管会话，正在拉起 {0}…': [
+    '已创建受管会话，正在拉起 {0}…',
+    'Managed session created. Starting {0}…',
+  ],
+  '下发失败：{0}': ['下发失败：{0}', 'Failed to send: {0}'],
+  会话已终止: ['会话已终止', 'Session terminated'],
+  '审批：{0}': ['审批：{0}', 'Approval: {0}'],
+  '会话控制台 ·': ['会话控制台 ·', 'Session console ·'],
+  '会话 {0} · 状态 {1}': ['会话 {0} · 状态 {1}', 'Session {0} · Status {1}'],
+  创建受管会话以验证端到端执行能力: [
+    '创建受管会话以验证端到端执行能力',
+    'Create a managed session to verify execution',
+  ],
+  '该 Agent 当前不可用（完成健康检查并确保就绪后再试）': [
+    '该 Agent 当前不可用（完成健康检查并确保就绪后再试）',
+    'This agent is unavailable. Run a health check and try again when ready.',
+  ],
+  创建会话: ['创建会话', 'Create session'],
+  '输入任务，Enter 发送…': ['输入任务，Enter 发送…', 'Enter a task; press Enter to send…'],
+  '等待会话就绪…': ['等待会话就绪…', 'Waiting for session…'],
+  任务输入: ['任务输入', 'Task input'],
+  发送任务: ['发送任务', 'Send task'],
+  取消当前任务: ['取消当前任务', 'Cancel current task'],
+  终止会话: ['终止会话', 'Terminate session'],
+  任务开始: ['任务开始', 'Task started'],
+  '任务完成{0}{1}': ['任务完成{0}{1}', 'Task completed{0}{1}'],
+  '任务失败：{0}': ['任务失败：{0}', 'Task failed: {0}'],
+  任务已取消: ['任务已取消', 'Task canceled'],
+  'Agent 需要认证 —— 请在其原生流程完成登录后重试': [
+    'Agent 需要认证 —— 请在其原生流程完成登录后重试',
+    'Agent authentication required. Complete its native sign-in and try again.',
+  ],
+  工具: ['工具', 'Tool'],
+  '审批请求：': ['审批请求：', 'Approval request:'],
+});

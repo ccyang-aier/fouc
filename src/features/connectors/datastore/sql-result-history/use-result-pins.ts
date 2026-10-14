@@ -1,18 +1,14 @@
 'use client';
+import { useLocale } from '@/lib/i18n';
 import { useState } from 'react';
-import {
-  addResultPin,
-  scopedResultPins,
-  type ResultPin,
-  type ResultPinScope,
-} from './model';
-
+import { addResultPin, scopedResultPins, type ResultPin, type ResultPinScope } from './model';
 /** Mounted connection owns all snapshots; they never enter global storage or a different connection. */
 export function useResultPins() {
+  const locale = useLocale();
   const [pins, setPins] = useState<ResultPin[]>([]);
   function pin(input: Omit<ResultPin, 'id' | 'capturedAt' | 'bytes'>) {
     // Compute before setState so limit failures can be reported by the initiating user action.
-    setPins(addResultPin(pins, input));
+    setPins(addResultPin(pins, input, undefined, undefined, locale));
   }
   function remove(id: string) {
     setPins((current) => current.filter((pin) => pin.id !== id));
@@ -22,9 +18,7 @@ export function useResultPins() {
     setPins((current) => current.filter((pin) => !ids.has(pin.id)));
   }
   function forgetTabs(ids: readonly string[]) {
-    setPins((current) =>
-      current.filter((pin) => !ids.includes(pin.scope.tabId)),
-    );
+    setPins((current) => current.filter((pin) => !ids.includes(pin.scope.tabId)));
   }
   return { pins, pin, remove, clear, forgetTabs };
 }

@@ -1,3 +1,6 @@
+import { createTranslator, type Locale } from '@/lib/i18n';
+import { knowledgeMessages } from './editor-state.messages';
+
 /**
  * Pure view-model logic of the page editor (E03, design §4/§5.1).
  *
@@ -12,21 +15,24 @@ import { permissionLevels } from '@fouc/shared/knowledge/contracts';
 import type { PermissionLevel } from '@fouc/shared/knowledge/contracts';
 import type { PageDocumentStatus } from '../collaboration/page-sync-state';
 
+const knowledgeT = createTranslator(knowledgeMessages);
+
 /** Whether `level` grants at least `required` (view < comment < edit < full). */
 export function levelSatisfies(level: PermissionLevel, required: PermissionLevel): boolean {
   return permissionLevels.indexOf(level) >= permissionLevels.indexOf(required);
 }
 
-export function permissionLevelLabel(level: PermissionLevel): string {
-  const labels: Record<PermissionLevel, string> = { view: '查看', comment: '评论', edit: '编辑', full: '完全访问' };
-  return labels[level];
+export function permissionLevelLabel(level: PermissionLevel, locale?: Locale): string {
+  const keys = { view: 'view', comment: 'comments', edit: 'edit', full: 'fullAccess' } as const;
+  return createTranslator(knowledgeMessages, locale)(keys[level]);
 }
 
 export function readonlyMessageCopy(reason: ReadonlyReason, level: PermissionLevel): string {
-  if (reason === 'auth-failed') return '同步连接被知识服务拒绝，正文以本地副本展示并暂不可编辑；重新进入页面或恢复访问权限后再试。';
+  if (reason === 'auth-failed')
+    return knowledgeT('knowledgeServiceRejectedSynchronizationTheLocalCopyIs');
   return level === 'comment'
-    ? '只读模式：你在此页面的访问级别为「评论」，可以阅读与评论，但不能直接编辑正文。'
-    : `只读模式：你在此页面的访问级别为「${permissionLevelLabel(level)}」，可以阅读但不能修改正文。`;
+    ? knowledgeT('readOnlyYourAccessLevelIsCommentYou')
+    : knowledgeT('readOnlyYourAccessLevelIsValueYou', { v0: permissionLevelLabel(level) });
 }
 
 /** The P03 `page.access` gate in editor terms; `view` authorization answers with the effective level. */
@@ -72,28 +78,65 @@ export interface SyncIndicatorView {
   busy: boolean;
 }
 
-const loadingView = (label: string, hint: string): SyncIndicatorView => ({ badge: 'loading', label, hint, tone: 'quiet', busy: true });
+const loadingView = (label: string, hint: string): SyncIndicatorView => ({
+  badge: 'loading',
+  label,
+  hint,
+  tone: 'quiet',
+  busy: true,
+});
 
 /** The B04 status machine (§5.1 lifecycle) as one honest indicator state. */
 export function syncIndicatorView(status: PageDocumentStatus | null): SyncIndicatorView {
-  if (!status) return loadingView('正在打开文档', '正在建立页面文档会话。');
-  if (!status.localReady) return loadingView('正在读取本地副本', '正在从本机离线副本恢复页面，随后连接知识服务。');
+  if (!status)
+    return loadingView(knowledgeT('openingDocument'), knowledgeT('establishingDocumentSession'));
+  if (!status.localReady)
+    return loadingView(
+      knowledgeT('readingLocalCopy'),
+      knowledgeT('restoringTheOfflineLocalCopyBeforeConnectingTo'),
+    );
   switch (status.phase) {
     case 'local-only':
-      return { badge: 'local-only', label: '已保存在本机', hint: '本地副本已就绪；正在准备连接知识服务，编辑会先落在本地。', tone: 'quiet', busy: false };
+      return {
+        badge: 'local-only',
+        label: knowledgeT('savedLocally'),
+        hint: knowledgeT('theLocalCopyIsReadyConnectingToKnowledge'),
+        tone: 'quiet',
+        busy: false,
+      };
     case 'syncing':
-      return { badge: 'syncing', label: '正在同步', hint: '正在与知识服务交换文档更新。', tone: 'progress', busy: true };
+      return {
+        badge: 'syncing',
+        label: knowledgeT('syncing'),
+        hint: knowledgeT('exchangingDocumentUpdatesWithKnowledgeService'),
+        tone: 'progress',
+        busy: true,
+      };
     case 'synced':
-      return { badge: 'synced', label: '已同步', hint: '所有更改都已同步到知识服务。', tone: 'ok', busy: false };
+      return {
+        badge: 'synced',
+        label: knowledgeT('synced'),
+        hint: knowledgeT('allChangesAreSyncedToKnowledgeService'),
+        tone: 'ok',
+        busy: false,
+      };
     case 'offline':
-      return { badge: 'offline', label: '离线可编辑', hint: '连接已断开；更改继续保存在本地副本，重连后自动合并。', tone: 'warn', busy: false };
+      return {
+        badge: 'offline',
+        label: knowledgeT('offlineEditing'),
+        hint: knowledgeT('disconnectedChangesAreSavedLocallyAndWillMerge'),
+        tone: 'warn',
+        busy: false,
+      };
     case 'error':
       return {
         badge: 'error',
-        label: '同步被拒绝',
+        label: knowledgeT('syncRejected'),
         hint: status.errorReason
-          ? `知识服务拒绝了本页的同步连接（${status.errorReason}）。正文以本地副本展示。`
-          : '知识服务拒绝了本页的同步连接。正文以本地副本展示。',
+          ? knowledgeT('knowledgeServiceRejectedSynchronizationForThisPageValue', {
+              v0: status.errorReason,
+            })
+          : knowledgeT('knowledgeServiceRejectedSynchronizationForThisPageThe'),
         tone: 'error',
         busy: false,
       };
@@ -122,9 +165,18 @@ export interface PageEditorViewModel {
  * - every other phase — local-only, syncing, synced, offline — keeps the
  *   document editable (§5.4: offline body editing merges through the CRDT).
  */
-export function derivePageEditorView(gate: PageEditorGate, status: PageDocumentStatus | null): PageEditorViewModel {
+export function derivePageEditorView(
+  gate: PageEditorGate,
+  status: PageDocumentStatus | null,
+): PageEditorViewModel {
   if (gate.status !== 'granted') {
-    return { open: false, gate, editable: false, readonlyReason: null, sync: syncIndicatorView(null) };
+    return {
+      open: false,
+      gate,
+      editable: false,
+      readonlyReason: null,
+      sync: syncIndicatorView(null),
+    };
   }
   const canEditByAccess = levelSatisfies(gate.level, 'edit');
   const authFailed = status?.phase === 'error';

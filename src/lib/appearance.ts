@@ -1,4 +1,8 @@
-"use client"
+'use client';
+
+import { getLocale, type Locale } from './i18n/locale';
+import { translate } from './i18n/messages';
+import { appearanceMessages } from './i18n/appearance.messages';
 
 /**
  * 外观偏好：主题（浅色 / 深色 / 跟随系统）与字体（界面 / 代码 / 对话）。
@@ -8,220 +12,251 @@
 
 // ── 主题 ───────────────────────────────────────────────────────────
 
-export const THEME_PREFS = ["light", "dark", "system"] as const
-export type ThemePref = (typeof THEME_PREFS)[number]
-export type ResolvedTheme = "light" | "dark"
-
-export const themePrefLabels: Record<ThemePref, string> = {
-  light: "浅色",
-  dark: "深色",
-  system: "跟随系统",
-}
+export const THEME_PREFS = ['light', 'dark', 'system'] as const;
+export type ThemePref = (typeof THEME_PREFS)[number];
+export type ResolvedTheme = 'light' | 'dark';
 
 export function resolveTheme(pref: ThemePref): ResolvedTheme {
-  if (pref !== "system") return pref
-  if (typeof window === "undefined") return "light"
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+  if (pref !== 'system') return pref;
+  if (typeof window === 'undefined') return 'light';
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
 // ── 主题色 ─────────────────────────────────────────────────────────
 
-export const ACCENT_IDS = ["mineral", "emerald", "ocean", "violet", "amber", "rose"] as const
-export type AccentId = (typeof ACCENT_IDS)[number]
+export const ACCENT_IDS = ['mineral', 'emerald', 'ocean', 'violet', 'amber', 'rose'] as const;
+export type AccentId = (typeof ACCENT_IDS)[number];
 
 /** 主题色偏好：六个内置预设，或 custom（任意取色，基色落在 --accent-custom） */
-export type AccentPref = AccentId | "custom"
+export type AccentPref = AccentId | 'custom';
 
-export const accentOptions: Array<{ id: AccentId; label: string; color: string }> = [
-  { id: "mineral", label: "矿物蓝", color: "#3e63dd" },
-  { id: "emerald", label: "松石绿", color: "#2D8C78" },
-  { id: "ocean", label: "海湾蓝", color: "#3F78A8" },
-  { id: "violet", label: "雾紫", color: "#766A9C" },
-  { id: "amber", label: "琥珀", color: "#A67535" },
-  { id: "rose", label: "岩蔷薇", color: "#9A6269" },
-]
+export const accentOptions: Array<{ id: AccentId; color: string }> = [
+  { id: 'mineral', color: '#3e63dd' },
+  { id: 'emerald', color: '#2D8C78' },
+  { id: 'ocean', color: '#3F78A8' },
+  { id: 'violet', color: '#766A9C' },
+  { id: 'amber', color: '#A67535' },
+  { id: 'rose', color: '#9A6269' },
+];
 
-export const ACCENT_PREF_IDS: readonly AccentPref[] = [...ACCENT_IDS, "custom"]
+export const ACCENT_PREF_IDS: readonly AccentPref[] = [...ACCENT_IDS, 'custom'];
 
 // ── 字体目录（预览栈与 globals.css 的属性映射保持同步） ─────────────
 
 export const UI_FONT_IDS = [
-  "default",
-  "native",
-  "lxgw-wenkai",
-  "source-han-sans",
-  "source-han-serif",
-  "mono",
-] as const
-export type UiFontId = (typeof UI_FONT_IDS)[number]
+  'default',
+  'native',
+  'lxgw-wenkai',
+  'source-han-sans',
+  'source-han-serif',
+  'mono',
+] as const;
+export type UiFontId = (typeof UI_FONT_IDS)[number];
 
-export const uiFontOptions: Array<{ id: UiFontId; label: string; stack: string }> = [
+export const uiFontOptions: Array<{ id: UiFontId; stack: string }> = [
   {
-    id: "default",
-    label: "默认",
+    id: 'default',
     stack:
       '"Inter Variable", "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", "PingFang SC", "Microsoft YaHei UI", "Noto Sans CJK SC", system-ui, sans-serif',
   },
   {
-    id: "native",
-    label: "系统原生",
-    stack: 'system-ui, "Segoe UI", "PingFang SC", "Microsoft YaHei UI", "Noto Sans CJK SC", sans-serif',
+    id: 'native',
+    stack:
+      'system-ui, "Segoe UI", "PingFang SC", "Microsoft YaHei UI", "Noto Sans CJK SC", sans-serif',
   },
   {
-    id: "lxgw-wenkai",
-    label: "霞鹜文楷",
+    id: 'lxgw-wenkai',
     stack: '"LXGW WenKai", "霞鹜文楷", "STKaiti", "KaiTi", serif',
   },
   {
-    id: "source-han-sans",
-    label: "思源黑体",
-    stack: '"Source Han Sans SC", "Noto Sans CJK SC", "Noto Sans SC", "Microsoft YaHei UI", sans-serif',
+    id: 'source-han-sans',
+    stack:
+      '"Source Han Sans SC", "Noto Sans CJK SC", "Noto Sans SC", "Microsoft YaHei UI", sans-serif',
   },
   {
-    id: "source-han-serif",
-    label: "思源宋体",
+    id: 'source-han-serif',
     stack: '"Source Han Serif SC", "Noto Serif CJK SC", "Noto Serif SC", "Songti SC", serif',
   },
   {
-    id: "mono",
-    label: "等宽界面",
-    stack: "var(--font-code)",
+    id: 'mono',
+    stack: 'var(--font-code)',
   },
-]
+];
 
 export const CODE_FONT_IDS = [
-  "default",
-  "cascadia",
-  "jetbrains",
-  "maple",
-  "sarasa",
-  "fira-code",
-  "source-code-pro",
-  "iosevka",
-  "ibm-plex-mono",
-  "consolas",
-] as const
-export type CodeFontId = (typeof CODE_FONT_IDS)[number]
+  'default',
+  'cascadia',
+  'jetbrains',
+  'maple',
+  'sarasa',
+  'fira-code',
+  'source-code-pro',
+  'iosevka',
+  'ibm-plex-mono',
+  'consolas',
+] as const;
+export type CodeFontId = (typeof CODE_FONT_IDS)[number];
 
 export const codeFontOptions: Array<{ id: CodeFontId; label: string; stack: string }> = [
   {
-    id: "default",
-    label: "默认（Maple Mono）",
-    stack: '"Maple Mono", "Maple Mono NF CN", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+    id: 'default',
+    label: 'Maple Mono',
+    stack:
+      '"Maple Mono", "Maple Mono NF CN", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
   },
   {
-    id: "cascadia",
-    label: "Cascadia Code",
+    id: 'cascadia',
+    label: 'Cascadia Code',
     stack: '"Cascadia Code", "Cascadia Mono", ui-monospace, SFMono-Regular, Consolas, monospace',
   },
   {
-    id: "jetbrains",
-    label: "JetBrains Mono",
+    id: 'jetbrains',
+    label: 'JetBrains Mono',
     stack: '"JetBrains Mono", "Cascadia Code", ui-monospace, SFMono-Regular, Consolas, monospace',
   },
   {
-    id: "maple",
-    label: "Maple Mono",
-    stack: '"Maple Mono", "Maple Mono NF CN", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+    id: 'maple',
+    label: 'Maple Mono',
+    stack:
+      '"Maple Mono", "Maple Mono NF CN", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
   },
   {
-    id: "sarasa",
-    label: "更纱黑体等宽",
+    id: 'sarasa',
+    label: 'Sarasa Mono',
     stack: '"Sarasa Mono SC", "Sarasa Fixed SC", "Noto Sans Mono CJK SC", ui-monospace, monospace',
   },
   {
-    id: "fira-code",
-    label: "Fira Code",
+    id: 'fira-code',
+    label: 'Fira Code',
     stack: '"Fira Code", "JetBrains Mono", ui-monospace, monospace',
   },
   {
-    id: "source-code-pro",
-    label: "Source Code Pro",
+    id: 'source-code-pro',
+    label: 'Source Code Pro',
     stack: '"Source Code Pro", "Cascadia Code", ui-monospace, monospace',
   },
   {
-    id: "iosevka",
-    label: "Iosevka",
+    id: 'iosevka',
+    label: 'Iosevka',
     stack: 'Iosevka, "JetBrains Mono", ui-monospace, monospace',
   },
   {
-    id: "ibm-plex-mono",
-    label: "IBM Plex Mono",
+    id: 'ibm-plex-mono',
+    label: 'IBM Plex Mono',
     stack: '"IBM Plex Mono", "Source Code Pro", ui-monospace, monospace',
   },
   {
-    id: "consolas",
-    label: "Consolas",
+    id: 'consolas',
+    label: 'Consolas',
     stack: 'Consolas, "Liberation Mono", "Courier New", monospace',
   },
-]
+];
 
-export const CHAT_FONT_IDS = ["follow", ...UI_FONT_IDS] as const
-export type ChatFontId = "follow" | UiFontId
+export const CHAT_FONT_IDS = ['follow', ...UI_FONT_IDS] as const;
+export type ChatFontId = 'follow' | UiFontId;
 
 /** 对话字体与界面字体共享同一字体池，仅额外提供“跟随界面”。 */
-export const chatFontOptions: Array<{ id: ChatFontId; label: string; stack: string }> = [
-  { id: "follow", label: "跟随界面", stack: "" },
+export const chatFontOptions: Array<{ id: ChatFontId; stack: string }> = [
+  { id: 'follow', stack: '' },
   ...uiFontOptions,
-]
+];
+
+export function getThemePrefLabels(locale: Locale = getLocale()): Record<ThemePref, string> {
+  return Object.fromEntries(
+    THEME_PREFS.map((id) => [id, translate(appearanceMessages, id, undefined, locale)]),
+  ) as Record<ThemePref, string>;
+}
+export function getAccentOptions(locale: Locale = getLocale()) {
+  return accentOptions.map((option) => ({
+    ...option,
+    label: translate(appearanceMessages, option.id, undefined, locale),
+  }));
+}
+export function getUiFontOptions(locale: Locale = getLocale()) {
+  return uiFontOptions.map((option) => ({
+    ...option,
+    label: translate(appearanceMessages, option.id, undefined, locale),
+  }));
+}
+export function getCodeFontOptions(locale: Locale = getLocale()) {
+  return codeFontOptions.map((option) => ({
+    ...option,
+    label:
+      option.id === 'default'
+        ? translate(appearanceMessages, 'codeDefault', undefined, locale)
+        : option.id === 'sarasa'
+          ? translate(appearanceMessages, 'sarasa', undefined, locale)
+          : option.label,
+  }));
+}
+export function getChatFontOptions(locale: Locale = getLocale()) {
+  return [
+    { ...chatFontOptions[0], label: translate(appearanceMessages, 'follow', undefined, locale) },
+    ...getUiFontOptions(locale),
+  ];
+}
 
 export const FONT_SIZE_RANGES = {
   ui: { min: 12, max: 16 },
   code: { min: 11, max: 15 },
   chat: { min: 12, max: 17 },
-} as const
+} as const;
 
 // ── 偏好模型 ───────────────────────────────────────────────────────
 
 export type AppearancePrefs = {
-  theme: ThemePref
-  accent: AccentPref
+  theme: ThemePref;
+  accent: AccentPref;
   /** 自定义主题色基色（#rrggbb），仅 accent === "custom" 时生效 */
-  accentCustom: string
-  uiFont: UiFontId
-  uiFontSize: number
-  codeFont: CodeFontId
-  codeFontSize: number
-  chatFont: ChatFontId
-  chatFontSize: number
-}
+  accentCustom: string;
+  uiFont: UiFontId;
+  uiFontSize: number;
+  codeFont: CodeFontId;
+  codeFontSize: number;
+  chatFont: ChatFontId;
+  chatFontSize: number;
+};
 
 export const APPEARANCE_DEFAULTS: AppearancePrefs = {
-  theme: "light",
-  accent: "mineral",
-  accentCustom: "#3e63dd",
-  uiFont: "default",
+  theme: 'light',
+  accent: 'mineral',
+  accentCustom: '#3e63dd',
+  uiFont: 'default',
   uiFontSize: 13,
-  codeFont: "maple",
+  codeFont: 'maple',
   codeFontSize: 12,
-  chatFont: "follow",
+  chatFont: 'follow',
   chatFontSize: 13,
-}
+};
 
-const STORAGE_KEY = "fouc.appearance"
+const STORAGE_KEY = 'fouc.appearance';
 
 function oneOf<T extends string>(value: unknown, allowed: readonly T[], fallback: T): T {
-  return typeof value === "string" && (allowed as readonly string[]).includes(value) ? (value as T) : fallback
+  return typeof value === 'string' && (allowed as readonly string[]).includes(value)
+    ? (value as T)
+    : fallback;
 }
 
 function sizeOf(value: unknown, range: { min: number; max: number }, fallback: number): number {
-  const n = typeof value === "number" ? value : Number(value)
-  return Number.isFinite(n) && n >= range.min && n <= range.max ? Math.round(n) : fallback
+  const n = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(n) && n >= range.min && n <= range.max ? Math.round(n) : fallback;
 }
 
 function hexOf(value: unknown, fallback: string): string {
-  return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value) ? value.toLowerCase() : fallback
+  return typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value)
+    ? value.toLowerCase()
+    : fallback;
 }
 
 export function readAppearancePrefs(): AppearancePrefs {
-  if (typeof window === "undefined") return APPEARANCE_DEFAULTS
-  let raw: unknown = null
+  if (typeof window === 'undefined') return APPEARANCE_DEFAULTS;
+  let raw: unknown = null;
   try {
-    raw = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "null")
+    raw = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? 'null');
   } catch {
-    raw = null
+    raw = null;
   }
-  const saved = (raw ?? {}) as Record<string, unknown>
+  const saved = (raw ?? {}) as Record<string, unknown>;
   return {
     theme: oneOf(saved.theme, THEME_PREFS, APPEARANCE_DEFAULTS.theme),
     accent: oneOf(saved.accent, ACCENT_PREF_IDS, APPEARANCE_DEFAULTS.accent),
@@ -229,84 +264,92 @@ export function readAppearancePrefs(): AppearancePrefs {
     uiFont: oneOf(saved.uiFont, UI_FONT_IDS, APPEARANCE_DEFAULTS.uiFont),
     uiFontSize: sizeOf(saved.uiFontSize, FONT_SIZE_RANGES.ui, APPEARANCE_DEFAULTS.uiFontSize),
     codeFont: oneOf(saved.codeFont, CODE_FONT_IDS, APPEARANCE_DEFAULTS.codeFont),
-    codeFontSize: sizeOf(saved.codeFontSize, FONT_SIZE_RANGES.code, APPEARANCE_DEFAULTS.codeFontSize),
+    codeFontSize: sizeOf(
+      saved.codeFontSize,
+      FONT_SIZE_RANGES.code,
+      APPEARANCE_DEFAULTS.codeFontSize,
+    ),
     chatFont: oneOf(saved.chatFont, CHAT_FONT_IDS, APPEARANCE_DEFAULTS.chatFont),
-    chatFontSize: sizeOf(saved.chatFontSize, FONT_SIZE_RANGES.chat, APPEARANCE_DEFAULTS.chatFontSize),
-  }
+    chatFontSize: sizeOf(
+      saved.chatFontSize,
+      FONT_SIZE_RANGES.chat,
+      APPEARANCE_DEFAULTS.chatFontSize,
+    ),
+  };
 }
 
 // ── 应用 ───────────────────────────────────────────────────────────
 
-let current: AppearancePrefs = APPEARANCE_DEFAULTS
-let snapshotInitialized = false
-let systemListenerBound = false
-const listeners = new Set<() => void>()
+let current: AppearancePrefs = APPEARANCE_DEFAULTS;
+let snapshotInitialized = false;
+let systemListenerBound = false;
+const listeners = new Set<() => void>();
 
 function applyResolvedTheme(resolved: ResolvedTheme): void {
-  if (typeof document === "undefined") return
-  document.documentElement.dataset.theme = resolved
-  document.documentElement.style.colorScheme = resolved
+  if (typeof document === 'undefined') return;
+  document.documentElement.dataset.theme = resolved;
+  document.documentElement.style.colorScheme = resolved;
 }
 
 /** 跟随系统：系统深浅色变化时实时重解析（监听常驻，仅在 system 偏好下生效） */
 function ensureSystemListener(): void {
-  if (systemListenerBound || typeof window === "undefined") return
-  systemListenerBound = true
-  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
-    if (current.theme !== "system") return
-    applyResolvedTheme(resolveTheme("system"))
-  })
+  if (systemListenerBound || typeof window === 'undefined') return;
+  systemListenerBound = true;
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if (current.theme !== 'system') return;
+    applyResolvedTheme(resolveTheme('system'));
+  });
 }
 
 export function applyAppearancePrefs(prefs: AppearancePrefs): void {
-  current = prefs
-  if (typeof window === "undefined") return
+  current = prefs;
+  if (typeof window === 'undefined') return;
 
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs))
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
 
-  applyResolvedTheme(resolveTheme(prefs.theme))
+  applyResolvedTheme(resolveTheme(prefs.theme));
 
-  const root = document.documentElement
-  root.dataset.accent = prefs.accent
-  if (prefs.accent === "custom") {
-    root.style.setProperty("--accent-custom", prefs.accentCustom)
+  const root = document.documentElement;
+  root.dataset.accent = prefs.accent;
+  if (prefs.accent === 'custom') {
+    root.style.setProperty('--accent-custom', prefs.accentCustom);
   } else {
-    root.style.removeProperty("--accent-custom")
+    root.style.removeProperty('--accent-custom');
   }
   const fontAttrs: Array<[name: string, value: string, isDefault: boolean]> = [
-    ["uiFont", prefs.uiFont, prefs.uiFont === "default"],
-    ["codeFont", prefs.codeFont, prefs.codeFont === "default"],
-    ["chatFont", prefs.chatFont, prefs.chatFont === "follow"],
-  ]
+    ['uiFont', prefs.uiFont, prefs.uiFont === 'default'],
+    ['codeFont', prefs.codeFont, prefs.codeFont === 'default'],
+    ['chatFont', prefs.chatFont, prefs.chatFont === 'follow'],
+  ];
   for (const [name, value, isDefault] of fontAttrs) {
-    if (isDefault) delete root.dataset[name]
-    else root.dataset[name] = value
+    if (isDefault) delete root.dataset[name];
+    else root.dataset[name] = value;
   }
-  root.style.setProperty("--ui-size", `${prefs.uiFontSize}px`)
-  root.style.setProperty("--code-size", `${prefs.codeFontSize}px`)
-  root.style.setProperty("--chat-size", `${prefs.chatFontSize}px`)
-  ensureSystemListener()
-  for (const listener of listeners) listener()
+  root.style.setProperty('--ui-size', `${prefs.uiFontSize}px`);
+  root.style.setProperty('--code-size', `${prefs.codeFontSize}px`);
+  root.style.setProperty('--chat-size', `${prefs.chatFontSize}px`);
+  ensureSystemListener();
+  for (const listener of listeners) listener();
 }
 
 // ── 外部存储（useSyncExternalStore） ────────────────────────────────
 
 /** 订阅外观偏好变化（applyAppearancePrefs 时通知） */
 export function subscribeAppearance(listener: () => void): () => void {
-  listeners.add(listener)
-  return () => listeners.delete(listener)
+  listeners.add(listener);
+  return () => listeners.delete(listener);
 }
 
 /** 客户端快照：首次读取本地持久化偏好，之后缓存 */
 export function getAppearanceSnapshot(): AppearancePrefs {
   if (!snapshotInitialized) {
-    current = readAppearancePrefs()
-    snapshotInitialized = true
+    current = readAppearancePrefs();
+    snapshotInitialized = true;
   }
-  return current
+  return current;
 }
 
 /** 服务端快照：默认值（保持水合契约） */
 export function getAppearanceServerSnapshot(): AppearancePrefs {
-  return APPEARANCE_DEFAULTS
+  return APPEARANCE_DEFAULTS;
 }

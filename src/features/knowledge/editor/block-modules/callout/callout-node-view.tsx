@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation, createTranslator, type Locale } from '@/lib/i18n';
+import { knowledgeMessages } from './callout-node-view.messages';
 /**
  * The callout NodeView (E05): a light tinted card over the shared schema's
  * `callout` node — a quiet tone-derived surface,
@@ -17,7 +19,32 @@ import type { NodeViewProps } from '@tiptap/react';
 import { NodeViewContent, NodeViewWrapper } from '@tiptap/react';
 import styles from './callout.module.css';
 
-const CALLOUT_EMOJI = ['💡', '✅', '⚠️', 'ℹ️', '🔥', '⭐', '📌', '📝', '❗', '❓', '🎯', '🚀', '✨', '💬', '🔍', '🧠', '📎', '🗓️', '⚙️', '🛠️', '💼', '🎉', '👀', '🧪'] as const;
+const CALLOUT_EMOJI = [
+  '💡',
+  '✅',
+  '⚠️',
+  'ℹ️',
+  '🔥',
+  '⭐',
+  '📌',
+  '📝',
+  '❗',
+  '❓',
+  '🎯',
+  '🚀',
+  '✨',
+  '💬',
+  '🔍',
+  '🧠',
+  '📎',
+  '🗓️',
+  '⚙️',
+  '🛠️',
+  '💼',
+  '🎉',
+  '👀',
+  '🧪',
+] as const;
 
 interface CalloutTone {
   label: string;
@@ -27,18 +54,23 @@ interface CalloutTone {
   wash: string;
 }
 
-const CALLOUT_TONES: Record<string, CalloutTone> = {
-  neutral: { label: '普通', accent: '#6d7d92', wash: '#f7f9fc' },
-  info: { label: '提示', accent: '#3077cc', wash: '#f2f7ff' },
-  success: { label: '成功', accent: '#2e916d', wash: '#f0faf5' },
-  warn: { label: '警告', accent: '#c18a31', wash: '#fff9ed' },
-  danger: { label: '错误', accent: '#c65652', wash: '#fff4f3' },
-};
+function CALLOUT_TONES(locale?: Locale): Record<string, CalloutTone> {
+  const knowledgeT = createTranslator(knowledgeMessages, locale);
+  return {
+    neutral: { label: knowledgeT('neutral'), accent: '#6d7d92', wash: '#f7f9fc' },
+    info: { label: knowledgeT('info'), accent: '#3077cc', wash: '#f2f7ff' },
+    success: { label: knowledgeT('success'), accent: '#2e916d', wash: '#f0faf5' },
+    warn: { label: knowledgeT('warning'), accent: '#c18a31', wash: '#fff9ed' },
+    danger: { label: knowledgeT('error'), accent: '#c65652', wash: '#fff4f3' },
+  };
+}
 
 export function CalloutNodeView({ node, editor, updateAttributes, HTMLAttributes }: NodeViewProps) {
+  const { locale, t: knowledgeT } = useTranslation(knowledgeMessages);
+
   const emoji = String(node.attrs.emoji || '💡');
   // tone is a free string attr; anything unknown renders as neutral.
-  const tone = CALLOUT_TONES[String(node.attrs.tone)] ?? CALLOUT_TONES.neutral;
+  const tone = CALLOUT_TONES(locale)[String(node.attrs.tone)] ?? CALLOUT_TONES(locale).neutral;
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const chipRef = useRef<HTMLButtonElement>(null);
@@ -75,10 +107,11 @@ export function CalloutNodeView({ node, editor, updateAttributes, HTMLAttributes
         <button
           ref={chipRef}
           type="button"
-          aria-label="设置提示框图标与语气"
+          aria-label={knowledgeT('setCalloutIconAndTone')}
           aria-expanded={open}
+          data-document-callout-icon
           aria-haspopup="dialog"
-          title="设置提示框图标与语气"
+          title={knowledgeT('setCalloutIconAndTone')}
           disabled={!editor.isEditable}
           onMouseDown={(event) => event.preventDefault()}
           onClick={() => (editor.isEditable ? setOpen((value) => !value) : undefined)}
@@ -92,7 +125,7 @@ export function CalloutNodeView({ node, editor, updateAttributes, HTMLAttributes
         {open ? (
           <div
             role="dialog"
-            aria-label="提示框样式"
+            aria-label={knowledgeT('calloutStyle')}
             onKeyDown={(event) => {
               if (event.key === 'Escape') {
                 event.preventDefault();
@@ -101,13 +134,13 @@ export function CalloutNodeView({ node, editor, updateAttributes, HTMLAttributes
             }}
             className={styles.menu}
           >
-            <div className={styles.menuTitle}>图标</div>
+            <div className={styles.menuTitle}>{knowledgeT('icon')}</div>
             <div className={styles.emojiGrid}>
               {CALLOUT_EMOJI.map((candidate) => (
                 <button
                   key={candidate}
                   type="button"
-                  aria-label={`图标 ${candidate}`}
+                  aria-label={knowledgeT('iconValue', { v0: candidate })}
                   aria-pressed={candidate === emoji}
                   onClick={() => {
                     updateAttributes({ emoji: candidate });
@@ -119,13 +152,13 @@ export function CalloutNodeView({ node, editor, updateAttributes, HTMLAttributes
                 </button>
               ))}
             </div>
-            <div className={styles.menuTitle}>提示等级</div>
+            <div className={styles.menuTitle}>{knowledgeT('calloutLevel')}</div>
             <div className={styles.toneGrid}>
-              {Object.entries(CALLOUT_TONES).map(([name, candidate]) => (
+              {Object.entries(CALLOUT_TONES(locale)).map(([name, candidate]) => (
                 <button
                   key={name}
                   type="button"
-                  aria-label={`语气 ${candidate.label}`}
+                  aria-label={knowledgeT('toneValue', { v0: candidate.label })}
                   aria-pressed={name === String(node.attrs.tone)}
                   onClick={() => {
                     updateAttributes({ tone: name });
@@ -133,7 +166,11 @@ export function CalloutNodeView({ node, editor, updateAttributes, HTMLAttributes
                   }}
                   className={styles.toneOption}
                 >
-                  <span aria-hidden className={styles.swatch} style={{ background: candidate.accent }} />
+                  <span
+                    aria-hidden
+                    className={styles.swatch}
+                    style={{ background: candidate.accent }}
+                  />
                   {candidate.label}
                 </button>
               ))}

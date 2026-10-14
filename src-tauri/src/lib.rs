@@ -404,6 +404,7 @@ fn open_dts_auth(
     state: State<'_, SharedBackendState>,
     interaction_id: String,
     url: String,
+    title: String,
 ) -> Result<(), String> {
     let parsed = url
         .parse()
@@ -413,6 +414,9 @@ fn open_dts_auth(
     }
     let label = format!("dts-auth-{}", interaction_id.replace('-', ""));
     if let Some(existing) = app.get_webview_window(&label) {
+        existing
+            .set_title(&title)
+            .map_err(|error| error.to_string())?;
         existing.set_focus().map_err(|error| error.to_string())?;
         return Ok(());
     }
@@ -436,7 +440,7 @@ fn open_dts_auth(
     let window_closed = Arc::new(AtomicBool::new(false));
     let window_closed_for_event = window_closed.clone();
     let window = WebviewWindowBuilder::new(&app, &label, WebviewUrl::External(parsed))
-        .title("登录 DTS")
+        .title(title)
         .inner_size(1040.0, 760.0)
         .min_inner_size(760.0, 560.0)
         .center()

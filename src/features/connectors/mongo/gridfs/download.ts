@@ -1,5 +1,14 @@
-import { getBackendEndpoint } from '@/lib/backend';
-import { MONGO_GRIDFS_LIMITS, mongoGridFsDownloadName, type MongoGridFsFile, type MongoGridFsNamespace } from '@fouc/shared/mongo-gridfs';
+import { BackendRequestError, getBackendEndpoint } from '@/lib/backend';
+import { isValidationIssue, type ValidationIssue } from '@fouc/shared';
+import {
+  MONGO_GRIDFS_LIMITS,
+  mongoGridFsDownloadName,
+  type MongoGridFsFile,
+  type MongoGridFsNamespace,
+} from '@fouc/shared/mongo-gridfs';
+import { createUiMessages } from '../../i18n/ui-message';
+import { messages as unitMessages } from '../i18n/gridfs-download';
+const { error: uiError } = createUiMessages(unitMessages);
 
 interface SaveTarget {
   createWritable(): Promise<SaveWriter>;
@@ -21,8 +30,11 @@ export async function consumeGridFsDownload(
 ): Promise<BlobPart[]> {
   const reader = body.getReader();
   const parts: BlobPart[] = [];
-  let received = 0, reported = 0;
-  const abort = () => { void reader.cancel(signal.reason).catch(() => undefined); };
+  let received = 0,
+    reported = 0;
+  const abort = () => {
+    void reader.cancel(signal.reason).catch(() => undefined);
+  };
   signal.addEventListener('abort', abort, { once: true });
   try {
     for (;;) {
@@ -30,14 +42,18 @@ export async function consumeGridFsDownload(
       const { done, value } = await reader.read();
       if (done) break;
       received += value.byteLength;
-      if (received > bytes || !writer && received > MONGO_GRIDFS_LIMITS.browserBufferBytes) throw new Error('GridFS 下载超过已核对长度或浏览器内存限额');
+      if (received > bytes || (!writer && received > MONGO_GRIDFS_LIMITS.browserBufferBytes))
+        throw uiError('GridFS 下载超过已核对长度或浏览器内存限额');
       if (writer) await writer.write(value);
       else parts.push(value.slice().buffer);
       const now = performance.now();
-      if (now - reported >= 120 || received === bytes) { reported = now; onProgress(received); }
+      if (now - reported >= 120 || received === bytes) {
+        reported = now;
+        onProgress(received);
+      }
     }
     signal.throwIfAborted();
-    if (received !== bytes) throw new Error('GridFS 下载不完整，请重新读取文件后重试');
+    if (received !== bytes) throw uiError('GridFS 下载不完整，请重新读取文件后重试');
     if (writer) await writer.close();
     onProgress(received);
     return parts;
@@ -58,37 +74,59 @@ export async function downloadMongoGridFs(
   signal: AbortSignal,
   onProgress: (received: number) => void,
 ): Promise<'disk' | 'browser'> {
-  if (!file.length || !/^\d+$/.test(file.length)) throw new Error('GridFS 文件没有有效长度');
+  if (!file.length || !/^\d+$/.test(file.length)) throw uiError('GridFS 文件没有有效长度');
   const length = BigInt(file.length);
-  if (length > BigInt(MONGO_GRIDFS_LIMITS.downloadBytes)) throw new Error('单文件下载最多 1 GiB；文件详情仍可查看');
+  if (length > BigInt(MONGO_GRIDFS_LIMITS.downloadBytes))
+    throw uiError('单文件下载最多 1 GiB；文件详情仍可查看');
   const filename = mongoGridFsDownloadName(file.filename);
   const picker = (window as unknown as { showSaveFilePicker?: SavePicker }).showSaveFilePicker;
   // Open synchronously within the click gesture, before endpoint resolution and HTTP.
   const target = picker ? await picker.call(window, { suggestedName: filename }) : null;
-  if (!target && length > BigInt(MONGO_GRIDFS_LIMITS.browserBufferBytes)) throw new Error('此浏览器不支持直接流式保存，内存下载最多 64 MiB。请使用支持文件保存的 Chrome / Edge 下载此文件。');
+  if (!target && length > BigInt(MONGO_GRIDFS_LIMITS.browserBufferBytes))
+    throw uiError(
+      '此浏览器不支持直接流式保存，内存下载最多 64 MiB。请使用支持文件保存的 Chrome / Edge 下载此文件。',
+    );
   signal.throwIfAborted();
   const endpoint = await getBackendEndpoint();
   const response = await fetch(`${endpoint.baseUrl}${base}/gridfs/download`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json', ...(endpoint.token ? { authorization: `Bearer ${endpoint.token}` } : {}) },
+    headers: {
+      'content-type': 'application/json',
+      ...(endpoint.token ? { authorization: `Bearer ${endpoint.token}` } : {}),
+    },
     body: JSON.stringify({ ...namespace, idEjson: file.idEjson }),
     signal,
   });
   if (!response.ok) {
-    const failure = await response.json().catch(() => null) as { error?: { message?: string } } | null;
-    throw new Error(failure?.error?.message ?? `GridFS 下载请求失败 (${response.status})`);
+    const failure = (await response.json().catch(() => null)) as {
+      error?: { message?: string; code?: string; issue?: ValidationIssue };
+    } | null;
+    if (failure?.error?.message)
+      throw new BackendRequestError(
+        failure.error.message,
+        response.status,
+        failure.error.code,
+        isValidationIssue(failure.error.issue) ? failure.error.issue : undefined,
+      );
+    throw uiError('GridFS 下载请求失败 ({v0})', { v0: response.status });
   }
-  if (!response.body) throw new Error('当前浏览器未提供可读取的下载流');
+  if (!response.body) throw uiError('当前浏览器未提供可读取的下载流');
   const declaredLength = response.headers.get('content-length');
   // HTTP may use chunked transfer without Content-Length; actual streamed bytes are always checked below.
   if (declaredLength !== null && declaredLength !== file.length) {
     await response.body.cancel().catch(() => undefined);
-    throw new Error('文件长度已变化，请刷新列表后重新下载');
+    throw uiError('文件长度已变化，请刷新列表后重新下载');
   }
   let writer: SaveWriter | null = null;
   try {
     writer = target ? await target.createWritable() : null;
-    const parts = await consumeGridFsDownload(response.body, Number(length), writer, signal, onProgress);
+    const parts = await consumeGridFsDownload(
+      response.body,
+      Number(length),
+      writer,
+      signal,
+      onProgress,
+    );
     if (!writer) {
       signal.throwIfAborted();
       const url = URL.createObjectURL(new Blob(parts, { type: 'application/octet-stream' }));

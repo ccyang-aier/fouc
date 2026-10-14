@@ -1,24 +1,31 @@
 'use client';
+import { translateFixed } from '../i18n/display';
 
-import { useState } from 'react';
-import { DownloadSimple, LinkSimple, Star, Trash } from '@phosphor-icons/react';
+import { fixtureField } from '../i18n/display';
+
+import { useTranslation, type Locale } from '@/lib/i18n';
+import { registerProjectFixtures } from '../i18n/display';
+import { messages } from './i18n/dashboard-document-dialog';
+
 import { useAppAlert } from '@/components/app-alert-provider';
-import { DashboardButton, IconButton, SegmentedControl } from './dashboard-ui';
-import { DashboardModal } from './dashboard-modal';
+import { DownloadSimple, LinkSimple, Star, Trash } from '@phosphor-icons/react';
+import { useState } from 'react';
 import { DashboardDeleteDialog } from './dashboard-actions';
-import { downloadFile } from './dashboard-download';
-import { dashboardLink } from './dashboard-links';
-import { documentTypes, documentHtml, documentCsv } from './dashboard-document-export';
-import {
-  InvoiceFields,
-  ProposalFields,
-  ContractFields,
-  FormFields,
-} from './dashboard-document-fields';
-import { DocumentPreview, FormPreview, FormResponses } from './dashboard-document-preview';
-import type { DashboardDocument, DashboardDocumentKind } from './dashboard-model';
 import common from './dashboard-actions.module.css';
 import styles from './dashboard-document-dialog.module.css';
+import { documentCsv, documentHtml, documentTypes } from './dashboard-document-export';
+import {
+  ContractFields,
+  FormFields,
+  InvoiceFields,
+  ProposalFields,
+} from './dashboard-document-fields';
+import { DocumentPreview, FormPreview, FormResponses } from './dashboard-document-preview';
+import { downloadFile } from './dashboard-download';
+import { dashboardLink } from './dashboard-links';
+import { DashboardModal } from './dashboard-modal';
+import type { DashboardDocument, DashboardDocumentKind } from './dashboard-model';
+import { DashboardButton, IconButton, SegmentedControl } from './dashboard-ui';
 
 const documentLabels = {
   invoice: 'Send a invoice',
@@ -28,10 +35,10 @@ const documentLabels = {
 };
 type DocumentTab = 'Edit' | 'Preview' | 'Responses';
 
-function newDocument(kind: DashboardDocumentKind): DashboardDocument {
+function newDocument(kind: DashboardDocumentKind, locale: Locale): DashboardDocument {
   const base = {
     id: crypto.randomUUID(),
-    title: `Untitled ${kind}`,
+    title: translateFixed('Untitled ' + kind, locale),
     status: 'Draft' as const,
     starred: false,
   };
@@ -138,7 +145,10 @@ export function DashboardDocumentDialog({
   onSave: (document: DashboardDocument) => void;
   onDelete?: (id: string) => void;
 }) {
-  const [draft, setDraft] = useState<DashboardDocument>(() => savedDocument ?? newDocument(kind));
+  const { t, locale } = useTranslation(messages);
+  const [draft, setDraft] = useState<DashboardDocument>(
+    () => savedDocument ?? newDocument(kind, locale),
+  );
   const [tab, setTab] = useState<DocumentTab>('Edit');
   const [error, setError] = useState('');
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -157,11 +167,14 @@ export function DashboardDocumentDialog({
     setError('');
     notify(
       'success',
-      status === 'Draft'
-        ? 'Draft saved'
-        : status === 'Ready'
-          ? 'Document marked ready'
-          : 'Document completed',
+      translateFixed(
+        status === 'Draft'
+          ? 'Draft saved'
+          : status === 'Ready'
+            ? 'Document marked ready'
+            : 'Document completed',
+        locale,
+      ),
     );
     if (close) onClose();
   }
@@ -177,15 +190,18 @@ export function DashboardDocumentDialog({
       await navigator.clipboard.writeText(
         dashboardLink(window.location.href, scopeKey, { kind: 'document', id: draft.id }),
       );
-      notify('success', 'Document link copied');
+      notify('success', t('Document link copied'));
     } catch {
-      notify('error', 'Could not copy the document link');
+      notify('error', t('Could not copy the document link'));
     }
   }
   return (
     <>
       <DashboardModal
-        title={savedDocument ? documentTypes[draft.kind] : documentLabels[draft.kind]}
+        title={translateFixed(
+          savedDocument ? documentTypes[draft.kind] : documentLabels[draft.kind],
+          locale,
+        )}
         onClose={onClose}
         wide
       >
@@ -198,26 +214,28 @@ export function DashboardDocumentDialog({
             }
             value={tab}
             onChange={setTab}
-            label="Document view"
+            label={t('Document view')}
           />
           <span className={styles.status} data-status={draft.status.toLowerCase()}>
-            {draft.status}
+            {translateFixed(draft.status, locale)}
           </span>
           <IconButton
-            label={draft.starred ? 'Remove document from favorites' : 'Add document to favorites'}
+            label={
+              draft.starred ? t('Remove document from favorites') : t('Add document to favorites')
+            }
             aria-pressed={draft.starred}
             onClick={() => setDraft((current) => ({ ...current, starred: !current.starred }))}
           >
             <Star size={16} weight={draft.starred ? 'fill' : 'regular'} />
           </IconButton>
           {savedDocument ? (
-            <IconButton label="Copy document link" onClick={() => void copyLink()}>
+            <IconButton label={t('Copy document link')} onClick={() => void copyLink()}>
               <LinkSimple size={16} />
             </IconButton>
           ) : null}
           {savedDocument && onDelete ? (
             <IconButton
-              label="Delete document"
+              label={t('Delete document')}
               className={styles.dangerIcon}
               data-variant="destructive"
               onClick={() => setDeleteOpen(true)}
@@ -238,7 +256,7 @@ export function DashboardDocumentDialog({
             {tab === 'Edit' ? (
               <div className={common.fields}>
                 <label>
-                  Document title
+                  {t('Document title')}
                   <input
                     autoFocus
                     value={draft.title}
@@ -263,7 +281,7 @@ export function DashboardDocumentDialog({
                 {draft.kind === 'form' ? <FormFields value={draft} onChange={setDraft} /> : null}
                 {error ? (
                   <p role="alert" className={common.error}>
-                    {error}
+                    {translateFixed(error, locale)}
                   </p>
                 ) : null}
               </div>
@@ -284,7 +302,7 @@ export function DashboardDocumentDialog({
                     };
                     onSave(next);
                     setDraft(next);
-                    notify('success', 'Response saved on this device');
+                    notify('success', t('Response saved on this device'));
                   }}
                 />
               ) : (
@@ -297,14 +315,14 @@ export function DashboardDocumentDialog({
             <div className={styles.downloads}>
               <DashboardButton type="button" tone="neutral" onClick={() => download('html')}>
                 <DownloadSimple size={13} />
-                HTML
+                {t('HTML')}
               </DashboardButton>
               <DashboardButton type="button" tone="neutral" onClick={() => download('csv')}>
-                CSV
+                {t('CSV')}
               </DashboardButton>
             </div>
             <DashboardButton type="button" tone="neutral" onClick={onClose}>
-              Cancel
+              {t('Cancel')}
             </DashboardButton>
             <DashboardButton
               type="button"
@@ -321,25 +339,28 @@ export function DashboardDocumentDialog({
               }
             >
               {draft.status === 'Draft'
-                ? 'Mark ready'
+                ? t('Mark ready')
                 : draft.status === 'Ready'
-                  ? 'Complete'
-                  : 'Reopen draft'}
+                  ? t('Complete')
+                  : t('Reopen draft')}
             </DashboardButton>
             <DashboardButton type="submit">
-              {draft.status === 'Draft' ? 'Save draft' : 'Save'}
+              {draft.status === 'Draft' ? t('Save draft') : t('Save')}
             </DashboardButton>
           </footer>
         </form>
       </DashboardModal>
       {deleteOpen ? (
         <DashboardDeleteDialog
-          title={`Delete ${documentTypes[draft.kind].toLowerCase()}?`}
-          description={`“${draft.title}”${draft.kind === 'form' ? ' and its responses' : ''} will be removed from this dashboard.`}
+          title={t('Delete {v0}?', { v0: translateFixed(documentTypes[draft.kind], locale) })}
+          description={t('“{v0}”{v1} will be removed from this dashboard.', {
+            v0: fixtureField(draft, 'title', locale),
+            v1: draft.kind === 'form' ? ' and its responses' : '',
+          })}
           onClose={() => setDeleteOpen(false)}
           onDelete={() => {
             onDelete?.(draft.id);
-            notify('success', 'Document deleted');
+            notify('success', t('Document deleted'));
             onClose();
           }}
         />
@@ -347,3 +368,5 @@ export function DashboardDocumentDialog({
     </>
   );
 }
+
+registerProjectFixtures([documentLabels]);

@@ -1,13 +1,21 @@
+import { createTranslator, type Locale } from '@/lib/i18n';
+import { knowledgeMessages } from './document-pdf-export.messages';
+
 import type { Editor } from '@tiptap/core';
 import { getFoucApiOrigin } from '@/lib/fouc-api-endpoint';
 import { exportDocumentHtml } from './document-html-export';
 import { downloadDocumentBlob } from './document-content-actions';
 
-const errors: Record<string, string> = {
-  PDF_BUSY: '导出服务繁忙，请稍后重试',
-  PDF_UNAVAILABLE: 'PDF 渲染服务暂时不可用，请稍后重试',
-  PAYLOAD_TOO_LARGE: '文档资源过大，暂时无法导出 PDF',
-};
+const knowledgeT = createTranslator(knowledgeMessages);
+
+function errors(locale?: Locale): Record<string, string> {
+  const knowledgeT = createTranslator(knowledgeMessages, locale);
+  return {
+    PDF_BUSY: knowledgeT('exportServiceIsBusyRetryLater'),
+    PDF_UNAVAILABLE: knowledgeT('pdfRenderingServiceUnavailableRetryLater'),
+    PAYLOAD_TOO_LARGE: knowledgeT('documentAssetsAreTooLargeToExportAs'),
+  };
+}
 
 /** Native paged PDF, using exactly the same live presentation as the HTML snapshot. */
 export async function exportDocumentPdf(editor: Editor, title: string) {
@@ -16,19 +24,26 @@ export async function exportDocumentPdf(editor: Editor, title: string) {
   let response: Response;
   try {
     response = await fetch(`${origin}/api/knowledge/export/pdf`, {
-      method: 'POST', headers: { 'Content-Type': 'text/html;charset=utf-8' }, body: html,
+      method: 'POST',
+      headers: { 'Content-Type': 'text/html;charset=utf-8' },
+      body: html,
       signal: AbortSignal.timeout(60_000),
     });
   } catch (error) {
-    throw new Error(error instanceof Error && error.name === 'TimeoutError'
-      ? 'PDF 导出耗时较长，请稍后重试' : '无法连接 PDF 导出服务，请检查连接后重试');
+    throw new Error(
+      error instanceof Error && error.name === 'TimeoutError'
+        ? knowledgeT('pdfExportIsTakingTooLongRetryLater')
+        : knowledgeT('unableToConnectToPdfExportServiceCheck'),
+    );
   }
   if (!response.ok) {
-    const body = await response.json().catch(() => null) as { code?: string } | null;
-    throw new Error(errors[body?.code ?? ''] ?? 'PDF 导出失败，请稍后重试');
+    const body = (await response.json().catch(() => null)) as { code?: string } | null;
+    throw new Error(errors()[body?.code ?? ''] ?? knowledgeT('unableToExportPdfRetryLater'));
   }
-  if (response.headers.get('Content-Type')?.split(';')[0] !== 'application/pdf') throw new Error('PDF 文件响应异常，请重试');
+  if (response.headers.get('Content-Type')?.split(';')[0] !== 'application/pdf')
+    throw new Error(knowledgeT('invalidPdfResponsePleaseRetry'));
   const blob = await response.blob();
-  if ((await blob.slice(0, 5).text()) !== '%PDF-') throw new Error('PDF 文件生成失败，请重试');
+  if ((await blob.slice(0, 5).text()) !== '%PDF-')
+    throw new Error(knowledgeT('unableToGeneratePdfPleaseRetry'));
   downloadDocumentBlob(blob, title, 'pdf');
 }

@@ -1,20 +1,10 @@
 'use client';
+import { uiText, uiFailure, createUiMessages, type UiMessage } from '../../i18n/ui-message';
 
-import {
-  useEffect,
-  useEffectEvent,
-  useId,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'react';
-import {
-  FileArrowUp,
-  ShieldCheck,
-  Timer,
-  Trash,
-  WarningCircle,
-} from '@phosphor-icons/react';
+import { createTranslator, type Locale, useTranslation } from '@/lib/i18n';
+import { messages as connectorMessages } from './connection-options-fields.messages';
+import { useEffect, useEffectEvent, useId, useLayoutEffect, useRef, useState } from 'react';
+import { FileArrowUp, ShieldCheck, Timer, Trash, WarningCircle } from '@phosphor-icons/react';
 import {
   defaultConnectionOptions,
   resolveConnectionOptions,
@@ -24,7 +14,7 @@ import {
 import { ConnectionDurationField } from './duration-field';
 import { readConnectionPem, type ConnectionPemKind } from './pem-file';
 import styles from './connection-options.module.css';
-
+const connectorUiMessages = createUiMessages(connectorMessages);
 export type ConnectionOptionsFieldsProps = {
   provider: NativeNetworkProvider;
   value: DatabaseConnectionOptionsInput;
@@ -32,18 +22,24 @@ export type ConnectionOptionsFieldsProps = {
   disabled?: boolean;
   onValidityChange?: (valid: boolean) => void;
 };
-type FileStatus = { name: string; pending: boolean; error: string };
-const fileLabels: Record<ConnectionPemKind, string> = {
-  caPem: 'CA 证书',
-  certificatePem: '客户端证书',
-  privateKeyPem: '客户端私钥',
+type FileStatus = {
+  name: string;
+  pending: boolean;
+  error: UiMessage;
+};
+const fileLabels = (locale?: Locale): Record<ConnectionPemKind, string> => {
+  const tConnector = createTranslator(connectorMessages, locale);
+  return {
+    caPem: tConnector('caCertificate'),
+    certificatePem: tConnector('clientCertificate'),
+    privateKeyPem: tConnector('clientPrivateKey'),
+  };
 };
 const emptyFiles: Record<ConnectionPemKind, FileStatus> = {
   caPem: { name: '', pending: false, error: '' },
   certificatePem: { name: '', pending: false, error: '' },
   privateKeyPem: { name: '', pending: false, error: '' },
 };
-
 export function ConnectionOptionsFields({
   provider,
   value,
@@ -51,6 +47,7 @@ export function ConnectionOptionsFields({
   disabled = false,
   onValidityChange,
 }: ConnectionOptionsFieldsProps) {
+  const { t: tConnector, locale } = useTranslation(connectorMessages);
   const id = useId(),
     defaults = defaultConnectionOptions(provider),
     tls = { ...defaults.tls, ...value.tls };
@@ -60,37 +57,30 @@ export function ConnectionOptionsFields({
   }, [provider, value, onChange, disabled]);
   const epochs = useRef({ caPem: 0, certificatePem: 0, privateKeyPem: 0 });
   const [files, setFiles] = useState(emptyFiles);
-  const [invalidDurations, setInvalidDurations] = useState<
-    Record<string, boolean>
-  >({});
+  const [invalidDurations, setInvalidDurations] = useState<Record<string, boolean>>({});
   const [showPassphrase, setShowPassphrase] = useState(false);
   let validation = '';
   try {
     resolveConnectionOptions(provider, value, false, false);
   } catch (error) {
-    validation = error instanceof Error ? error.message : '连接参数无效';
+    validation =
+      error instanceof Error ? uiText(error, locale) : tConnector('invalidConnectionParameters');
   }
   const valid =
     !validation &&
     !Object.values(invalidDurations).some(Boolean) &&
     !Object.values(files).some((file) => file.pending || file.error);
-  const notifyValidity = useEffectEvent((next: boolean) =>
-    onValidityChange?.(next),
-  );
+  const notifyValidity = useEffectEvent((next: boolean) => onValidityChange?.(next));
   useEffect(() => {
     notifyValidity(valid);
   }, [valid]);
   useEffect(() => {
     const counters = epochs.current;
     return () => {
-      for (const kind of Object.keys(counters) as ConnectionPemKind[])
-        counters[kind]++;
+      for (const kind of Object.keys(counters) as ConnectionPemKind[]) counters[kind]++;
     };
   }, []);
-
-  function updateTls(
-    patch: NonNullable<DatabaseConnectionOptionsInput['tls']>,
-  ) {
+  function updateTls(patch: NonNullable<DatabaseConnectionOptionsInput['tls']>) {
     onChange({ ...value, tls: { ...tls, ...patch } });
   }
   async function upload(kind: ConnectionPemKind, file: File) {
@@ -101,14 +91,10 @@ export function ConnectionOptionsFields({
       [kind]: { name: file.name, pending: true, error: '' },
     }));
     try {
-      const pem = await readConnectionPem(file, kind);
+      const pem = await readConnectionPem(file, kind, locale);
       const current = latest.current;
       if (epoch !== epochs.current[kind]) return;
-      if (
-        current.provider !== sourceProvider ||
-        current.disabled ||
-        !current.value.tls?.enabled
-      ) {
+      if (current.provider !== sourceProvider || current.disabled || !current.value.tls?.enabled) {
         setFiles((previous) => ({ ...previous, [kind]: emptyFiles[kind] }));
         return;
       }
@@ -127,7 +113,10 @@ export function ConnectionOptionsFields({
         [kind]: {
           name: file.name,
           pending: false,
-          error: error instanceof Error ? error.message : '文件读取失败',
+          error:
+            error instanceof Error
+              ? uiFailure(error)
+              : connectorUiMessages.message('couldNotReadTheFile'),
         },
       }));
     }
@@ -140,26 +129,25 @@ export function ConnectionOptionsFields({
     });
     setFiles((current) => ({ ...current, [kind]: emptyFiles[kind] }));
   }
-
   return (
-    <section className={styles.options} aria-label="高级连接参数">
+    <section className={styles.options} aria-label={tConnector('advancedConnectionParameters')}>
       <div className={styles.sectionTitle}>
         <Timer size={16} />
-        <strong>超时与连接池</strong>
-        <span>有界等待</span>
+        <strong>{tConnector('timeoutsAndConnectionPooling')}</strong>
+        <span>{tConnector('boundedWaits')}</span>
       </div>
       <div className={styles.durationGrid}>
         {(
           [
-            ['connectTimeoutMs', '建立连接', 300_000],
+            ['connectTimeoutMs', tConnector('connect'), 300000],
             [
               'queryTimeoutMs',
-              provider === 'redis' ? '命令截止时间' : '查询截止时间',
-              3_600_000,
+              provider === 'redis' ? tConnector('commandDeadline') : tConnector('queryDeadline'),
+              3600000,
             ],
             ...(provider === 'redis'
               ? []
-              : [['idleTimeoutMs', '空闲连接回收', 3_600_000]]),
+              : [['idleTimeoutMs', tConnector('idleConnectionExpiry'), 3600000]]),
           ] as [
             keyof Pick<
               DatabaseConnectionOptionsInput,
@@ -175,9 +163,7 @@ export function ConnectionOptionsFields({
             milliseconds={(value[key] ?? defaults[key])!}
             maximum={maximum}
             disabled={disabled}
-            onChange={(milliseconds) =>
-              onChange({ ...value, [key]: milliseconds })
-            }
+            onChange={(milliseconds) => onChange({ ...value, [key]: milliseconds })}
             onValidityChange={(isValid) =>
               setInvalidDurations((current) => ({
                 ...current,
@@ -189,15 +175,14 @@ export function ConnectionOptionsFields({
       </div>
       {provider === 'mongodb' && (
         <p className={styles.hint}>
-          查询截止时间同时用于服务器 maxTimeMS 与套接字等待；SRV DNS
-          发现使用建立连接超时。
+          {tConnector('theQueryDeadlineAppliesToBothServerMaxtimemsAndSocket')}
         </p>
       )}
 
       <div className={styles.tlsSection}>
         <div className={styles.sectionTitle}>
           <ShieldCheck size={16} />
-          <strong>传输安全</strong>
+          <strong>{tConnector('transportSecurity')}</strong>
           <span>TLS</span>
         </div>
         <label className={styles.checkbox}>
@@ -208,9 +193,7 @@ export function ConnectionOptionsFields({
             onChange={(event) => {
               const enabled = event.target.checked;
               if (!enabled) {
-                for (const kind of Object.keys(
-                  epochs.current,
-                ) as ConnectionPemKind[])
+                for (const kind of Object.keys(epochs.current) as ConnectionPemKind[])
                   epochs.current[kind]++;
                 setFiles(emptyFiles);
                 onChange({
@@ -224,13 +207,13 @@ export function ConnectionOptionsFields({
               } else updateTls({ enabled: true });
             }}
           />
-          <span>启用 TLS 并验证服务器证书与主机名</span>
+          <span>{tConnector('enableTlsAndVerifyTheServerCertificateAndHostname')}</span>
         </label>
         {tls.enabled && (
           <>
             <div className={styles.twoColumns}>
               <label className={styles.field}>
-                <span>最低 TLS 版本</span>
+                <span>{tConnector('minimumTlsVersion')}</span>
                 <select
                   value={tls.minVersion}
                   disabled={disabled}
@@ -246,7 +229,8 @@ export function ConnectionOptionsFields({
               </label>
               <label className={styles.field}>
                 <span>
-                  服务器名称 <small>可选</small>
+                  {tConnector('serverName')}
+                  <small>{tConnector('optional')}</small>
                 </span>
                 <input
                   value={tls.serverName}
@@ -254,17 +238,14 @@ export function ConnectionOptionsFields({
                   disabled={disabled}
                   autoComplete="off"
                   spellCheck={false}
-                  placeholder="默认使用连接主机名"
-                  onChange={(event) =>
-                    updateTls({ serverName: event.target.value })
-                  }
+                  placeholder={tConnector('defaultsToTheConnectionHostname')}
+                  onChange={(event) => updateTls({ serverName: event.target.value })}
                 />
               </label>
             </div>
             {provider === 'postgres' && (
               <p className={styles.hint}>
-                PostgreSQL 自定义服务器名称适用于 IP / 隧道地址；DNS
-                连接须与主机名一致。
+                {tConnector('postgresqlCustomServerNamesSupportIpAndTunnelAddressesDns')}
               </p>
             )}
             <div className={styles.requirements}>
@@ -273,11 +254,9 @@ export function ConnectionOptionsFields({
                   type="checkbox"
                   checked={tls.caRequired}
                   disabled={disabled}
-                  onChange={(event) =>
-                    updateTls({ caRequired: event.target.checked })
-                  }
+                  onChange={(event) => updateTls({ caRequired: event.target.checked })}
                 />
-                要求自定义 CA
+                {tConnector('requireACustomCa')}
               </label>
               <label className={styles.checkbox}>
                 <input
@@ -290,41 +269,37 @@ export function ConnectionOptionsFields({
                     })
                   }
                 />
-                要求客户端证书
+                {tConnector('requireAClientCertificate')}
               </label>
             </div>
             <div className={styles.files}>
-              {(Object.keys(fileLabels) as ConnectionPemKind[]).map((kind) => {
-                const required =
-                  kind === 'caPem'
-                    ? tls.caRequired
-                    : tls.clientCertificateRequired;
+              {(Object.keys(fileLabels(locale)) as ConnectionPemKind[]).map((kind) => {
+                const required = kind === 'caPem' ? tls.caRequired : tls.clientCertificateRequired;
                 const status = files[kind],
                   material = value.tls?.[kind];
                 return (
                   <div className={styles.file} key={kind}>
                     <div>
-                      <strong>{fileLabels[kind]}</strong>
+                      <strong>{fileLabels(locale)[kind]}</strong>
                       <span>
                         {status.pending
-                          ? '读取中…'
+                          ? tConnector('reading')
                           : material
-                            ? status.name || '已加载 PEM'
+                            ? status.name || tConnector('pemLoaded')
                             : required
-                              ? '连接前需重新上传'
+                              ? tConnector('uploadAgainBeforeConnecting')
                               : kind === 'caPem'
-                                ? '默认使用系统信任根'
-                                : '未提供'}
+                                ? tConnector('defaultsToSystemTrustRoots')
+                                : tConnector('notProvided')}
                       </span>
                     </div>
-                    <label
-                      className={styles.fileButton}
-                      aria-disabled={disabled}
-                    >
+                    <label className={styles.fileButton} aria-disabled={disabled}>
                       <FileArrowUp size={14} />
-                      <span>{material ? '更换' : '选择文件'}</span>
+                      <span>{material ? tConnector('replace') : tConnector('chooseFile')}</span>
                       <input
-                        aria-label={`选择${fileLabels[kind]}文件`}
+                        aria-label={tConnector('chooseFile587', {
+                          p0: String(fileLabels(locale)[kind]),
+                        })}
                         type="file"
                         accept=".pem,.crt,.cer,.key,text/plain,application/x-pem-file"
                         disabled={disabled}
@@ -340,7 +315,7 @@ export function ConnectionOptionsFields({
                         type="button"
                         className={styles.iconButton}
                         disabled={disabled}
-                        aria-label={`清除${fileLabels[kind]}`}
+                        aria-label={tConnector('clear', { p0: String(fileLabels(locale)[kind]) })}
                         onClick={() => clearFile(kind)}
                       >
                         <Trash size={14} />
@@ -348,7 +323,7 @@ export function ConnectionOptionsFields({
                     )}
                     {status.error && (
                       <p className={styles.fileError} role="alert">
-                        {status.error}
+                        {uiText(status.error, locale)}
                       </p>
                     )}
                   </div>
@@ -357,7 +332,8 @@ export function ConnectionOptionsFields({
             </div>
             <label className={styles.field} htmlFor={`${id}-passphrase`}>
               <span>
-                私钥口令 <small>仅加密私钥需要</small>
+                {tConnector('privateKeyPassphrase')}
+                <small>{tConnector('onlyRequiredForEncryptedPrivateKeys')}</small>
               </span>
               <div className={styles.secretInput}>
                 <input
@@ -368,9 +344,7 @@ export function ConnectionOptionsFields({
                   disabled={disabled}
                   maxLength={4096}
                   value={value.tls?.privateKeyPassphrase ?? ''}
-                  onChange={(event) =>
-                    updateTls({ privateKeyPassphrase: event.target.value })
-                  }
+                  onChange={(event) => updateTls({ privateKeyPassphrase: event.target.value })}
                 />
                 <button
                   type="button"
@@ -378,15 +352,13 @@ export function ConnectionOptionsFields({
                   aria-pressed={showPassphrase}
                   onClick={() => setShowPassphrase((current) => !current)}
                 >
-                  {showPassphrase ? '隐藏' : '显示'}
+                  {showPassphrase ? tConnector('hide') : tConnector('showing')}
                 </button>
               </div>
             </label>
             <p className={styles.secureNote}>
               <ShieldCheck size={14} />
-              <span>
-                文件内容和私钥口令只随本次请求发送，不保存到连接配置。保存的证书需求会提示下次重新上传。
-              </span>
+              <span>{tConnector('fileContentsAndThePrivateKeyPassphraseAreSentOnly')}</span>
             </p>
           </>
         )}

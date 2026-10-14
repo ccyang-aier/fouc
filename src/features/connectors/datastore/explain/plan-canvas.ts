@@ -1,6 +1,7 @@
-import type { ExplainPlanNode } from "./types";
+import type { ExplainPlanNode } from './types';
 
-export type PlanCanvasCategory = "result" | "sort" | "join" | "tscan" | "iscan" | "lookup" | "mat" | "agg" | "xchg" | "other";
+export type PlanCanvasCategory =
+  'result' | 'sort' | 'join' | 'tscan' | 'iscan' | 'lookup' | 'mat' | 'agg' | 'xchg' | 'other';
 
 export const PLAN_CANVAS_NODE_W = 212;
 export const PLAN_CANVAS_NODE_H = 76;
@@ -10,26 +11,26 @@ export const PLAN_CANVAS_PAD = 36;
 
 /** DBX operator categorization restricted to native MySQL/PostgreSQL/SQLite plans. */
 const CATEGORY_RULES: Array<[RegExp, PlanCanvasCategory]> = [
-  [/^(?:eq_ref|const|system)$/, "lookup"],
-  [/^(?:ref|range|index|index_merge|ref_or_null|fulltext)$/, "iscan"],
-  [/^all$/, "tscan"],
-  [/nested loops?|nest loop|hash join|merge join/, "join"],
-  [/aggregate|group by|grouping_operation|\bagg\b/, "agg"],
-  [/sort|ordering_operation|use temp b-tree/, "sort"],
-  [/gather|exchange/, "xchg"],
-  [/materiali[sz]|\bhash\b|\bcte\b|co-routine/, "mat"],
-  [/seq scan|sequential scan|table scan|^scan(?:\s|$)/, "tscan"],
-  [/index.*(?:scan|seek)|bitmap heap scan|^search(?:\s|$)|multi-index/, "iscan"],
-  [/result|^select\b|limit|query_block|union/, "result"],
+  [/^(?:eq_ref|const|system)$/, 'lookup'],
+  [/^(?:ref|range|index|index_merge|ref_or_null|fulltext)$/, 'iscan'],
+  [/^all$/, 'tscan'],
+  [/nested loops?|nest loop|hash join|merge join/, 'join'],
+  [/aggregate|group by|grouping_operation|\bagg\b/, 'agg'],
+  [/sort|ordering_operation|use temp b-tree/, 'sort'],
+  [/gather|exchange/, 'xchg'],
+  [/materiali[sz]|\bhash\b|\bcte\b|co-routine/, 'mat'],
+  [/seq scan|sequential scan|table scan|^scan(?:\s|$)/, 'tscan'],
+  [/index.*(?:scan|seek)|bitmap heap scan|^search(?:\s|$)|multi-index/, 'iscan'],
+  [/result|^select\b|limit|query_block|union/, 'result'],
 ];
 
 export function categorizePlanNode(nodeType: string): PlanCanvasCategory {
   const normalized = nodeType.trim().toLowerCase();
-  if (!normalized) return "other";
+  if (!normalized) return 'other';
   for (const [pattern, category] of CATEGORY_RULES) {
     if (pattern.test(normalized)) return category;
   }
-  return "other";
+  return 'other';
 }
 
 /** Reads the numeric part of an engine-native cost/rows string ("0.29..1830.12", "1,234", "96M"). */
@@ -39,18 +40,17 @@ export function parsePlanNumber(value?: string): number | undefined {
   if (!text) return undefined;
 
   // PostgreSQL reports "startup..total"; the total is what matters.
-  const rangeIndex = text.lastIndexOf("..");
+  const rangeIndex = text.lastIndexOf('..');
   if (rangeIndex >= 0) text = text.slice(rangeIndex + 2).trim();
 
   const match = text.match(/^([+-]?[\d,]*\.?\d+)\s*(?:([kmgt])\b)?/i);
   if (!match) return undefined;
-  const base = Number(match[1].replaceAll(",", ""));
+  const base = Number(match[1].replaceAll(',', ''));
   if (!Number.isFinite(base)) return undefined;
 
   const scales: Record<string, number> = { k: 1e3, m: 1e6, g: 1e9, t: 1e12 };
-  return base * (scales[match[2]?.toLowerCase() ?? ""] ?? 1);
+  return base * (scales[match[2]?.toLowerCase() ?? ''] ?? 1);
 }
-
 
 export interface PlanCanvasNode {
   node: ExplainPlanNode;
@@ -80,7 +80,10 @@ export function buildPlanCanvas(roots: ExplainPlanNode[]): PlanCanvasLayout {
   const selfCosts = new Map<PlanCanvasNode, number>();
   let leafOffset = 0;
   function nearestCost(node: ExplainPlanNode): number {
-    return parsePlanNumber(node.cost) ?? node.children.reduce((sum, child) => sum + nearestCost(child), 0);
+    return (
+      parsePlanNumber(node.cost) ??
+      node.children.reduce((sum, child) => sum + nearestCost(child), 0)
+    );
   }
 
   function place(node: ExplainPlanNode, depth: number, parent?: PlanCanvasNode): PlanCanvasNode {
@@ -118,15 +121,19 @@ export function buildPlanCanvas(roots: ExplainPlanNode[]): PlanCanvasLayout {
     for (const [placed, cost] of selfCosts) placed.costShare = cost / totalSelfCost;
   }
 
-  const width = nodes.reduce((max, placed) => Math.max(max, placed.x + PLAN_CANVAS_NODE_W), 0) + PLAN_CANVAS_PAD;
-  const height = nodes.reduce((max, placed) => Math.max(max, placed.y + PLAN_CANVAS_NODE_H), 0) + PLAN_CANVAS_PAD;
+  const width =
+    nodes.reduce((max, placed) => Math.max(max, placed.x + PLAN_CANVAS_NODE_W), 0) +
+    PLAN_CANVAS_PAD;
+  const height =
+    nodes.reduce((max, placed) => Math.max(max, placed.y + PLAN_CANVAS_NODE_H), 0) +
+    PLAN_CANVAS_PAD;
   return { nodes, edges, width: nodes.length ? width : 0, height: nodes.length ? height : 0 };
 }
 
-export function heatLevel(share?: number): "none" | "cool" | "warm" | "hot" {
-  if (share === undefined) return "none";
-  if (share > 0.2) return "hot";
-  return share >= 0.05 ? "warm" : "cool";
+export function heatLevel(share?: number): 'none' | 'cool' | 'warm' | 'hot' {
+  if (share === undefined) return 'none';
+  if (share > 0.2) return 'hot';
+  return share >= 0.05 ? 'warm' : 'cool';
 }
 
 export function edgeStrokeWidth(rows?: number): number {
@@ -135,8 +142,8 @@ export function edgeStrokeWidth(rows?: number): number {
 }
 
 export function formatPlanRows(rows?: number): string {
-  if (rows === undefined || !Number.isFinite(rows)) return "—";
-  const trim = (value: string) => value.replace(/\.0$/, "");
+  if (rows === undefined || !Number.isFinite(rows)) return '—';
+  const trim = (value: string) => value.replace(/\.0$/, '');
   const magnitude = Math.abs(rows);
   if (magnitude >= 1e6) return `${trim((rows / 1e6).toFixed(1))}M`;
   if (magnitude >= 1e3) return `${trim((rows / 1e3).toFixed(1))}K`;

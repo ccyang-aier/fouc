@@ -1,3 +1,4 @@
+import type { ValidationIssue } from './validation-issue';
 import type { TableImportInput, TableImportParsed } from './table-import';
 
 export const TEST_DATA_LIMITS = {
@@ -37,7 +38,7 @@ export interface TestDataConfig {
   columns: TestDataColumnConfig[];
 }
 
-export interface TestDataIssue {
+export interface TestDataIssue extends Partial<Pick<ValidationIssue, 'code' | 'values'>> {
   column?: string;
   message: string;
 }
@@ -45,19 +46,19 @@ export interface TestDataIssue {
 export interface TestDataValidation {
   valid: boolean;
   errors: TestDataIssue[];
-  warnings: string[];
+  warnings: ValidationIssue[];
 }
 
 export interface TestDataPreview {
   parsed: TableImportParsed;
-  warnings: string[];
+  warnings: ValidationIssue[];
   sampleRows: number;
   targetRows: number;
 }
 
 export interface TestDataImport {
   input: TableImportInput;
-  warnings: string[];
+  warnings: ValidationIssue[];
   rows: number;
   bytes: number;
 }

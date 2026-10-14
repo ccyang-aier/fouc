@@ -1,8 +1,12 @@
 'use client';
+import { translateFixed } from '../i18n/display';
 
-import { useId, useRef, useState, type RefObject } from 'react';
+import { useTranslation } from '@/lib/i18n';
+import { fixtureField } from '../i18n/display';
+import { messages } from './i18n/dashboard-task-composer';
+
 import { At, Paperclip, X } from '@phosphor-icons/react';
-import { Avatar } from './dashboard-ui';
+import { useId, useRef, useState, type RefObject } from 'react';
 import { MentionText } from './dashboard-comments';
 import {
   dashboardPeople,
@@ -11,6 +15,7 @@ import {
   type DashboardPersonId,
 } from './dashboard-model';
 import styles from './dashboard-task-dialog.module.css';
+import { Avatar } from './dashboard-ui';
 
 const people = Object.values(dashboardPeople);
 
@@ -39,6 +44,8 @@ export function DashboardTaskComposer({
   attachmentLoading,
   error,
 }: DashboardTaskComposerProps) {
+  const { t, locale } = useTranslation(messages);
+
   const editorMirror = useRef<HTMLDivElement>(null);
   const attachmentInput = useRef<HTMLInputElement>(null);
   const mentionsId = useId();
@@ -74,11 +81,12 @@ export function DashboardTaskComposer({
       <div className={styles.composerBody}>
         {replyTo ? (
           <div className={styles.replyLabel}>
-            Replying to {dashboardPeople[replyTo.author].name}
+            {t('Replying to')}
+            {fixtureField(dashboardPeople[replyTo.author], 'name', locale)}
             <button
               type="button"
               className="fouc-action"
-              aria-label="Cancel reply"
+              aria-label={t('Cancel reply')}
               onClick={onCancelReply}
             >
               <X size={12} />
@@ -93,8 +101,8 @@ export function DashboardTaskComposer({
             ref={textareaRef}
             value={commentText}
             rows={Math.min(4, Math.max(1, commentText.split('\n').length))}
-            placeholder="Add a comment"
-            aria-label="Add a comment"
+            placeholder={t('Add a comment')}
+            aria-label={t('Add a comment')}
             aria-controls={mentionChoices.length ? mentionsId : undefined}
             onScroll={(event) => {
               if (editorMirror.current)
@@ -132,7 +140,7 @@ export function DashboardTaskComposer({
             <button
               type="button"
               className="fouc-action"
-              aria-label="Attach a file"
+              aria-label={t('Attach a file')}
               onClick={() => attachmentInput.current?.click()}
             >
               <Paperclip size={13} />
@@ -140,7 +148,7 @@ export function DashboardTaskComposer({
             <button
               type="button"
               className="fouc-action"
-              aria-label="Mention a collaborator"
+              aria-label={t('Mention a collaborator')}
               onClick={() => {
                 const next = `${commentText}${commentText && !commentText.endsWith(' ') ? ' ' : ''}@`;
                 onChange(next);
@@ -167,12 +175,14 @@ export function DashboardTaskComposer({
         {attachment ? (
           <div className={styles.pendingAttachment}>
             <Paperclip size={13} />
-            <span title={attachment.name}>{attachment.name}</span>
+            <span title={fixtureField(attachment, 'name', locale)}>
+              {fixtureField(attachment, 'name', locale)}
+            </span>
             <small>{attachment.size}</small>
             <button
               type="button"
               className="fouc-action"
-              aria-label="Remove attached file"
+              aria-label={t('Remove attached file')}
               onClick={onRemoveAttachment}
             >
               <X size={13} />
@@ -181,7 +191,7 @@ export function DashboardTaskComposer({
         ) : null}
         {error ? (
           <p role="alert" className={styles.attachmentError}>
-            {error}
+            {translateFixed(error, locale)}
           </p>
         ) : null}
         {mentionChoices.length ? (
@@ -189,7 +199,7 @@ export function DashboardTaskComposer({
             id={mentionsId}
             className={`${styles.mentionMenu} menu-surface`}
             role="listbox"
-            aria-label="Mention people"
+            aria-label={t('Mention people')}
           >
             {mentionChoices.map((person, index) => (
               <button
@@ -204,7 +214,7 @@ export function DashboardTaskComposer({
               >
                 <Avatar id={person.id} size={22} />
                 <span>
-                  {person.name}
+                  {fixtureField(person, 'name', locale)}
                   <small>@{person.handle}</small>
                 </span>
               </button>

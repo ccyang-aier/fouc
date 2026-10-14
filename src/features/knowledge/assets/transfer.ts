@@ -1,5 +1,8 @@
 'use client';
 
+import { createTranslator } from '@/lib/i18n';
+import { knowledgeMessages } from './transfer.messages';
+const knowledgeT = createTranslator(knowledgeMessages);
 /**
  * S3 预签名直传的浏览器传输端口(U08 · 设计 §8.1 第 3 步)。
  *
@@ -16,7 +19,11 @@ export class AssetTransferError extends Error {
   readonly status: number | null;
 
   constructor(kind: AssetTransferErrorKind, status: number | null = null) {
-    super(kind === 'network' ? '无法连接对象存储。' : `对象存储拒绝了上传(HTTP ${status})。`);
+    super(
+      kind === 'network'
+        ? knowledgeT('unableToConnectToObjectStorage')
+        : knowledgeT('objectStorageRejectedTheUploadHttpValue', { v0: status ?? 'unknown' }),
+    );
     this.name = 'AssetTransferError';
     this.kind = kind;
     this.status = status;
@@ -36,7 +43,8 @@ export type AssetTransfer = (input: AssetTransferInput) => Promise<void>;
 
 /** XHR 不存在于非浏览器运行时(Bun 测试用注入的假传输);装配时才解析。 */
 function assertXhr(): typeof XMLHttpRequest {
-  if (typeof XMLHttpRequest === 'undefined') throw new Error('当前运行时没有 XMLHttpRequest,不能装配 XHR 传输。');
+  if (typeof XMLHttpRequest === 'undefined')
+    throw new Error(knowledgeT('xmlhttprequestIsUnavailableInThisRuntime'));
   return XMLHttpRequest;
 }
 
@@ -53,17 +61,32 @@ export const xhrAssetTransfer: AssetTransfer = (input) =>
     };
     const onAbort = () => {
       xhr.abort();
-      settle(() => reject(input.signal?.reason ?? new DOMException('上传已取消。', 'AbortError')));
+      settle(() =>
+        reject(
+          input.signal?.reason ?? new DOMException(knowledgeT('uploadCancelled'), 'AbortError'),
+        ),
+      );
     };
 
     xhr.open(input.method, input.url, true);
     for (const [name, value] of Object.entries(input.headers)) xhr.setRequestHeader(name, value);
     xhr.upload.onprogress = (event) => {
-      if (event.lengthComputable && event.total > 0) input.onProgress?.(Math.min(1, event.loaded / event.total));
+      if (event.lengthComputable && event.total > 0)
+        input.onProgress?.(Math.min(1, event.loaded / event.total));
     };
-    xhr.onload = () => settle(() => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new AssetTransferError('status', xhr.status))));
+    xhr.onload = () =>
+      settle(() =>
+        xhr.status >= 200 && xhr.status < 300
+          ? resolve()
+          : reject(new AssetTransferError('status', xhr.status)),
+      );
     xhr.onerror = () => settle(() => reject(new AssetTransferError('network')));
-    xhr.onabort = () => settle(() => reject(input.signal?.reason ?? new DOMException('上传已取消。', 'AbortError')));
+    xhr.onabort = () =>
+      settle(() =>
+        reject(
+          input.signal?.reason ?? new DOMException(knowledgeT('uploadCancelled'), 'AbortError'),
+        ),
+      );
     xhr.ontimeout = () => settle(() => reject(new AssetTransferError('network')));
     input.signal?.addEventListener('abort', onAbort, { once: true });
     xhr.send(input.body);

@@ -1,5 +1,8 @@
 'use client';
 
+import { createTranslator } from '@/lib/i18n';
+import { knowledgeMessages } from './notifications-api.messages';
+
 /**
  * Notification inbox client surface (N03) over plain knowledge-base-scoped HTTP.
  *
@@ -20,13 +23,27 @@ import {
   notificationListResultSchema,
   notificationUnreadCountResultSchema,
 } from '@fouc/shared/knowledge/notifications';
-import type { NotificationItem, NotificationListResult } from '@fouc/shared/knowledge/notifications';
+import type {
+  NotificationItem,
+  NotificationListResult,
+} from '@fouc/shared/knowledge/notifications';
 import { getFoucApiOrigin } from '@/lib/fouc-api-endpoint';
 import { KnowledgeDataError } from '../data/errors';
 
+const knowledgeT = createTranslator(knowledgeMessages);
+
 export type KnowledgeNotificationsFetch = typeof fetch;
 
-const statusCodes: Record<number, 'INVALID_REQUEST' | 'UNAUTHENTICATED' | 'FORBIDDEN' | 'NOT_FOUND' | 'PAYLOAD_TOO_LARGE' | 'RATE_LIMITED' | 'UNAVAILABLE'> = {
+const statusCodes: Record<
+  number,
+  | 'INVALID_REQUEST'
+  | 'UNAUTHENTICATED'
+  | 'FORBIDDEN'
+  | 'NOT_FOUND'
+  | 'PAYLOAD_TOO_LARGE'
+  | 'RATE_LIMITED'
+  | 'UNAVAILABLE'
+> = {
   400: 'INVALID_REQUEST',
   401: 'UNAUTHENTICATED',
   403: 'FORBIDDEN',
@@ -36,7 +53,11 @@ const statusCodes: Record<number, 'INVALID_REQUEST' | 'UNAUTHENTICATED' | 'FORBI
 };
 
 /** Path builder on the shared prefix contract; callers prepend the resolved origin. */
-export function knowledgeNotificationsPath(knowledgeBaseId: string, route: 'inbox' | 'unread-count' | 'read-all' = 'inbox', notificationId?: string): string {
+export function knowledgeNotificationsPath(
+  knowledgeBaseId: string,
+  route: 'inbox' | 'unread-count' | 'read-all' = 'inbox',
+  notificationId?: string,
+): string {
   const base = `/api/knowledge/${knowledgeBaseId}/notifications`;
   if (route === 'read-all') return `${base}/read-all`;
   if (route === 'unread-count') return `${base}/unread-count`;
@@ -44,37 +65,69 @@ export function knowledgeNotificationsPath(knowledgeBaseId: string, route: 'inbo
 }
 
 /** A response the shared contracts reject is an unavailable service, never data to render. */
-function parseNotificationPayload<T>(schema: { safeParse(payload: unknown): { success: true; data: T } | { success: false } }, payload: unknown, procedure: string): T {
+function parseNotificationPayload<T>(
+  schema: { safeParse(payload: unknown): { success: true; data: T } | { success: false } },
+  payload: unknown,
+  procedure: string,
+): T {
   const parsed = schema.safeParse(payload);
   if (!parsed.success) {
-    throw new KnowledgeDataError('UNAVAILABLE', { message: `通知服务 ${procedure} 返回的数据不符合契约。` });
+    throw new KnowledgeDataError('UNAVAILABLE', {
+      message: knowledgeT('invalidResponseFromNotificationServiceValue', { v0: procedure }),
+    });
   }
   return parsed.data;
 }
 
-export interface KnowledgeNotificationsCursor { before: string; beforeId: string }
+export interface KnowledgeNotificationsCursor {
+  before: string;
+  beforeId: string;
+}
 
 export type KnowledgeNotificationsApi = {
-  listInbox(knowledgeBaseId: string, options: { limit?: number; cursor?: KnowledgeNotificationsCursor }, signal?: AbortSignal): Promise<NotificationListResult>;
+  listInbox(
+    knowledgeBaseId: string,
+    options: { limit?: number; cursor?: KnowledgeNotificationsCursor },
+    signal?: AbortSignal,
+  ): Promise<NotificationListResult>;
   unreadCount(knowledgeBaseId: string, signal?: AbortSignal): Promise<number>;
-  markRead(knowledgeBaseId: string, notificationId: string, signal?: AbortSignal): Promise<NotificationItem>;
+  markRead(
+    knowledgeBaseId: string,
+    notificationId: string,
+    signal?: AbortSignal,
+  ): Promise<NotificationItem>;
   markAllRead(knowledgeBaseId: string, signal?: AbortSignal): Promise<number>;
 };
 
-export function createKnowledgeNotificationsApi(deps: { resolveOrigin: () => Promise<string> | string; fetchImpl?: KnowledgeNotificationsFetch }): KnowledgeNotificationsApi {
+export function createKnowledgeNotificationsApi(deps: {
+  resolveOrigin: () => Promise<string> | string;
+  fetchImpl?: KnowledgeNotificationsFetch;
+}): KnowledgeNotificationsApi {
   const fetchImpl = deps.fetchImpl ?? authenticatedFetch;
 
-  async function call<T>(path: string, init: RequestInit, signal: AbortSignal | undefined, procedure: string, parse: (payload: unknown) => T): Promise<T> {
+  async function call<T>(
+    path: string,
+    init: RequestInit,
+    signal: AbortSignal | undefined,
+    procedure: string,
+    parse: (payload: unknown) => T,
+  ): Promise<T> {
     let response: Response;
     try {
       const origin = await deps.resolveOrigin();
-      response = await fetchImpl(new URL(path, origin).toString(), { ...init, signal, credentials: 'include' });
+      response = await fetchImpl(new URL(path, origin).toString(), {
+        ...init,
+        signal,
+        credentials: 'include',
+      });
     } catch (cause) {
       if (signal?.aborted) throw cause;
       throw new KnowledgeDataError('NETWORK', { cause });
     }
     if (!response.ok) {
-      throw new KnowledgeDataError(statusCodes[response.status] ?? 'UNAVAILABLE', { httpStatus: response.status });
+      throw new KnowledgeDataError(statusCodes[response.status] ?? 'UNAVAILABLE', {
+        httpStatus: response.status,
+      });
     }
     return parse(await response.json().catch(() => null));
   }
@@ -84,31 +137,63 @@ export function createKnowledgeNotificationsApi(deps: { resolveOrigin: () => Pro
       const input = notificationListInputSchema.safeParse({
         knowledgeBaseId,
         limit: options.limit ?? 30,
-        ...(options.cursor ? { before: options.cursor.before, beforeId: options.cursor.beforeId } : {}),
+        ...(options.cursor
+          ? { before: options.cursor.before, beforeId: options.cursor.beforeId }
+          : {}),
       });
-      if (!input.success) throw new KnowledgeDataError('INVALID_REQUEST', { message: 'notifications.listInbox 的输入不符合契约。' });
+      if (!input.success)
+        throw new KnowledgeDataError('INVALID_REQUEST', {
+          message: knowledgeT('invalidNotificationsListinboxInput'),
+        });
       const query = new URLSearchParams({ limit: String(input.data.limit) });
       if (input.data.before !== undefined) {
         query.set('before', input.data.before);
         query.set('beforeId', input.data.beforeId!);
       }
-      return call(`${knowledgeNotificationsPath(knowledgeBaseId)}?${query.toString()}`, { method: 'GET' }, signal, 'list',
-        (payload) => parseNotificationPayload(notificationListResultSchema, payload, 'list'));
+      return call(
+        `${knowledgeNotificationsPath(knowledgeBaseId)}?${query.toString()}`,
+        { method: 'GET' },
+        signal,
+        'list',
+        (payload) => parseNotificationPayload(notificationListResultSchema, payload, 'list'),
+      );
     },
     unreadCount(knowledgeBaseId, signal) {
-      return call(knowledgeNotificationsPath(knowledgeBaseId, 'unread-count'), { method: 'GET' }, signal, 'unread-count',
-        (payload) => parseNotificationPayload(notificationUnreadCountResultSchema, payload, 'unread-count').unreadCount);
+      return call(
+        knowledgeNotificationsPath(knowledgeBaseId, 'unread-count'),
+        { method: 'GET' },
+        signal,
+        'unread-count',
+        (payload) =>
+          parseNotificationPayload(notificationUnreadCountResultSchema, payload, 'unread-count')
+            .unreadCount,
+      );
     },
     markRead(knowledgeBaseId, notificationId, signal) {
-      return call(knowledgeNotificationsPath(knowledgeBaseId, 'inbox', notificationId), { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' }, signal, 'read',
-        (payload) => parseNotificationPayload(markNotificationReadResultSchema, payload, 'read').notification);
+      return call(
+        knowledgeNotificationsPath(knowledgeBaseId, 'inbox', notificationId),
+        { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' },
+        signal,
+        'read',
+        (payload) =>
+          parseNotificationPayload(markNotificationReadResultSchema, payload, 'read').notification,
+      );
     },
     markAllRead(knowledgeBaseId, signal) {
-      return call(knowledgeNotificationsPath(knowledgeBaseId, 'read-all'), { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' }, signal, 'read-all',
-        (payload) => parseNotificationPayload(markAllNotificationsReadResultSchema, payload, 'read-all').updated);
+      return call(
+        knowledgeNotificationsPath(knowledgeBaseId, 'read-all'),
+        { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' },
+        signal,
+        'read-all',
+        (payload) =>
+          parseNotificationPayload(markAllNotificationsReadResultSchema, payload, 'read-all')
+            .updated,
+      );
     },
   };
 }
 
 /** The browser binding the React hooks call. */
-export const knowledgeNotificationsApi = createKnowledgeNotificationsApi({ resolveOrigin: () => getFoucApiOrigin().then(({ origin }) => origin) });
+export const knowledgeNotificationsApi = createKnowledgeNotificationsApi({
+  resolveOrigin: () => getFoucApiOrigin().then(({ origin }) => origin),
+});

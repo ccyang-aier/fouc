@@ -1,3 +1,7 @@
+import { createTranslator, getLocale } from '@/lib/i18n';
+import { editorLocaleMeta } from '../use-editor-locale';
+import { knowledgeMessages } from './awareness-extension.messages';
+
 /**
  * The editor-side presence extension (B07): one Tiptap extension that both
  * publishes this client's caret into the page session's shared awareness and
@@ -22,13 +26,18 @@ import type { DecorationAttrs, EditorView } from '@tiptap/pm/view';
 import { DecorationSet } from '@tiptap/pm/view';
 import type { Awareness } from 'y-protocols/awareness';
 import { ySyncPluginKey } from 'y-prosemirror';
-import { buildRemoteCursorDecorations, createAwarenessPublisher } from '../../collaboration/awareness';
+import {
+  buildRemoteCursorDecorations,
+  createAwarenessPublisher,
+} from '../../collaboration/awareness';
 import type {
   AwarenessIdentity,
   RemoteCursorWidgetBuilder,
   RemoteSelectionAttrsBuilder,
   ResolvedRemoteCursor,
 } from '../../collaboration/awareness';
+
+const knowledgeT = createTranslator(knowledgeMessages);
 
 export interface AwarenessExtensionOptions {
   /**
@@ -48,7 +57,8 @@ export interface AwarenessExtensionOptions {
 const NAME_LIMIT = 12;
 
 /** The Phosphor `Sparkle` glyph (fill) agents wear on their caret flag. */
-const AGENT_SPARKLE_PATH = 'M208,144a15.78,15.78,0,0,1-10.42,14.94L146,178l-19,51.62a15.92,15.92,0,0,1-29.88,0L78,178l-51.62-19a15.92,15.92,0,0,1,0-29.88L78,110l19-51.62a15.92,15.92,0,0,0,29.88,0L146,110l51.62,19A15.78,15.78,0,0,1,208,144Z';
+const AGENT_SPARKLE_PATH =
+  'M208,144a15.78,15.78,0,0,1-10.42,14.94L146,178l-19,51.62a15.92,15.92,0,0,1-29.88,0L78,178l-51.62-19a15.92,15.92,0,0,1,0-29.88L78,110l19-51.62a15.92,15.92,0,0,0,29.88,0L146,110l51.62,19A15.78,15.78,0,0,1,208,144Z';
 
 function truncateName(name: string): string {
   return name.length > NAME_LIMIT ? `${name.slice(0, NAME_LIMIT)}…` : name;
@@ -60,12 +70,17 @@ function readableTextOn(color: string): string {
     const value = Number.parseInt(hex, 16) / 255;
     return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
   };
-  const luminance = 0.2126 * channel(color.slice(1, 3)) + 0.7152 * channel(color.slice(3, 5)) + 0.0722 * channel(color.slice(5, 7));
+  const luminance =
+    0.2126 * channel(color.slice(1, 3)) +
+    0.7152 * channel(color.slice(3, 5)) +
+    0.0722 * channel(color.slice(5, 7));
   return luminance > 0.45 ? '#10151d' : '#ffffff';
 }
 
 function flagLabel(resolved: ResolvedRemoteCursor): string {
-  return resolved.kind === 'agent' && resolved.isEditing ? '正在编辑' : truncateName(resolved.name);
+  return resolved.kind === 'agent' && resolved.isEditing
+    ? knowledgeT('editing')
+    : truncateName(resolved.name);
 }
 
 /** The caret widget DOM: a 2px colored caret with the floating name flag. */
@@ -80,7 +95,9 @@ const remoteCursorWidget: RemoteCursorWidgetBuilder = (resolved) => (): HTMLElem
 
   const flag = document.createElement('span');
   flag.className = 'fouc-awareness-flag';
-  flag.title = resolved.isEditing ? `${resolved.name} · 正在编辑` : resolved.name;
+  flag.title = resolved.isEditing
+    ? knowledgeT('valueEditing', { v0: resolved.name })
+    : resolved.name;
   if (resolved.kind === 'agent') {
     const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     icon.setAttribute('viewBox', '0 0 256 256');
@@ -96,10 +113,11 @@ const remoteCursorWidget: RemoteCursorWidgetBuilder = (resolved) => (): HTMLElem
   return caret;
 };
 
-const remoteSelectionAttributes: RemoteSelectionAttrsBuilder = (resolved) => ({
-  class: 'fouc-awareness-selection',
-  style: `--fouc-awareness-color:${resolved.color}`,
-} satisfies DecorationAttrs);
+const remoteSelectionAttributes: RemoteSelectionAttrsBuilder = (resolved) =>
+  ({
+    class: 'fouc-awareness-selection',
+    style: `--fouc-awareness-color:${resolved.color}`,
+  }) satisfies DecorationAttrs;
 
 const awarenessPluginKey = new PluginKey<DecorationSet>('foucAwarenessCursors');
 
@@ -121,81 +139,104 @@ export function createAwarenessExtension(options: AwarenessExtensionOptions): Ex
       // the first `sync()` in the plugin view always attaches (and later
       // session announcements swap the publisher).
       let awareness: Awareness | null = null;
-      const build = (state: Parameters<typeof buildRemoteCursorDecorations>[0], ySyncStateFrom?: Parameters<typeof buildRemoteCursorDecorations>[3]) => awareness
-        ? buildRemoteCursorDecorations(state, awareness, {
-          cursorWidget: remoteCursorWidget,
-          selectionAttributes: remoteSelectionAttributes,
-          ownUserId: identity.userId,
-        }, ySyncStateFrom).decorations
-        : DecorationSet.empty;
-      return [new Plugin<DecorationSet>({
-        key: awarenessPluginKey,
-        state: {
-          init: (_, state) => build(state),
-          // Awareness shifts rebuild; y-sync-origin transactions arrive with a
-          // fresh binding mapping (remote updates, doc rebuilds); every other
-          // document change maps the existing decorations through. The y-sync
-          // binding is read off the previous state — this plugin runs before
-          // the y-sync plugin in Tiptap's ordering, so the in-flight state
-          // does not carry its field yet (the binding object itself is shared
-          // and already current).
-          apply: (tr: Transaction, previous: DecorationSet, oldState, newState) => {
-            if (tr.getMeta(awarenessPluginKey) !== undefined || ySyncPluginKey.getState(oldState)?.isChangeOrigin) {
-              return build(newState, oldState);
-            }
-            return (previous ?? DecorationSet.empty).map(tr.mapping, tr.doc);
-          },
-        },
-        props: {
-          decorations(state) {
-            return awarenessPluginKey.getState(state);
-          },
-        },
-        view(view: EditorView) {
-          let publisher: ReturnType<typeof createAwarenessPublisher> | null = null;
-          let changeHandler: ((changes: AwarenessClientChanges) => void) | null = null;
-          const requestRebuild = () => {
-            if (!(view as unknown as { docView?: unknown }).docView) return;
-            view.dispatch(view.state.tr
-              .setMeta(awarenessPluginKey, { awarenessChanged: true })
-              .setMeta('addToHistory', false));
-          };
-          const detachCurrent = () => {
-            if (changeHandler && awareness) awareness.off('change', changeHandler);
-            changeHandler = null;
-            publisher?.detach();
-            publisher = null;
-          };
-          const sync = () => {
-            const next = options.getAwareness();
-            if (next === awareness) return;
-            detachCurrent();
-            awareness = next;
-            if (awareness) {
-              publisher = createAwarenessPublisher(awareness, identity);
-              publisher.attach(view);
-              const own = awareness.clientID;
-              changeHandler = (changes: AwarenessClientChanges) => {
-                if (![...changes.added, ...changes.updated, ...changes.removed].some((clientId) => clientId !== own)) return;
-                requestRebuild();
-              };
-              awareness.on('change', changeHandler);
-            }
-            requestRebuild();
-          };
-          sync();
-          const unsubscribe = options.subscribeAwareness(sync);
-          return {
-            update(nextView: EditorView, prevState: EditorState) {
-              publisher?.notify({ docChanged: prevState.doc !== nextView.state.doc });
+      const build = (
+        state: Parameters<typeof buildRemoteCursorDecorations>[0],
+        ySyncStateFrom?: Parameters<typeof buildRemoteCursorDecorations>[3],
+      ) =>
+        awareness
+          ? buildRemoteCursorDecorations(
+              state,
+              awareness,
+              {
+                cursorWidget: remoteCursorWidget,
+                selectionAttributes: remoteSelectionAttributes,
+                ownUserId: identity.userId,
+                presentationKey: getLocale(),
+              },
+              ySyncStateFrom,
+            ).decorations
+          : DecorationSet.empty;
+      return [
+        new Plugin<DecorationSet>({
+          key: awarenessPluginKey,
+          state: {
+            init: (_, state) => build(state),
+            // Awareness shifts rebuild; y-sync-origin transactions arrive with a
+            // fresh binding mapping (remote updates, doc rebuilds); every other
+            // document change maps the existing decorations through. The y-sync
+            // binding is read off the previous state — this plugin runs before
+            // the y-sync plugin in Tiptap's ordering, so the in-flight state
+            // does not carry its field yet (the binding object itself is shared
+            // and already current).
+            apply: (tr: Transaction, previous: DecorationSet, oldState, newState) => {
+              if (
+                tr.getMeta(awarenessPluginKey) !== undefined ||
+                tr.getMeta(editorLocaleMeta) ||
+                ySyncPluginKey.getState(oldState)?.isChangeOrigin
+              ) {
+                return build(newState, oldState);
+              }
+              return (previous ?? DecorationSet.empty).map(tr.mapping, tr.doc);
             },
-            destroy() {
-              unsubscribe();
+          },
+          props: {
+            decorations(state) {
+              return awarenessPluginKey.getState(state);
+            },
+          },
+          view(view: EditorView) {
+            let publisher: ReturnType<typeof createAwarenessPublisher> | null = null;
+            let changeHandler: ((changes: AwarenessClientChanges) => void) | null = null;
+            const requestRebuild = () => {
+              if (!(view as unknown as { docView?: unknown }).docView) return;
+              view.dispatch(
+                view.state.tr
+                  .setMeta(awarenessPluginKey, { awarenessChanged: true })
+                  .setMeta('addToHistory', false),
+              );
+            };
+            const detachCurrent = () => {
+              if (changeHandler && awareness) awareness.off('change', changeHandler);
+              changeHandler = null;
+              publisher?.detach();
+              publisher = null;
+            };
+            const sync = () => {
+              const next = options.getAwareness();
+              if (next === awareness) return;
               detachCurrent();
-            },
-          };
-        },
-      })];
+              awareness = next;
+              if (awareness) {
+                publisher = createAwarenessPublisher(awareness, identity);
+                publisher.attach(view);
+                const own = awareness.clientID;
+                changeHandler = (changes: AwarenessClientChanges) => {
+                  if (
+                    ![...changes.added, ...changes.updated, ...changes.removed].some(
+                      (clientId) => clientId !== own,
+                    )
+                  )
+                    return;
+                  requestRebuild();
+                };
+                awareness.on('change', changeHandler);
+              }
+              requestRebuild();
+            };
+            sync();
+            const unsubscribe = options.subscribeAwareness(sync);
+            return {
+              update(nextView: EditorView, prevState: EditorState) {
+                publisher?.notify({ docChanged: prevState.doc !== nextView.state.doc });
+              },
+              destroy() {
+                unsubscribe();
+                detachCurrent();
+              },
+            };
+          },
+        }),
+      ];
     },
   });
 }

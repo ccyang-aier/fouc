@@ -1,8 +1,13 @@
+import { createTranslator } from '@/lib/i18n';
+import { knowledgeMessages } from './search-state.messages';
+
 /**
  * Search panel state (H05): one debounced hybrid query at a time, late
  * responses discarded, cancellable; keyboard traversal over validated hits.
  */
 import type { HybridSearchHit } from '@fouc/shared/knowledge/search';
+
+const knowledgeT = createTranslator(knowledgeMessages);
 
 export type SearchPhase = 'idle' | 'loading' | 'error' | 'empty' | 'results';
 
@@ -18,12 +23,24 @@ export interface SearchViewState {
 }
 
 export const initialSearchState: SearchViewState = {
-  phase: 'idle', hits: [], cursor: 0, errorReason: null, vectorLeg: null, rerank: null, queryId: 0,
+  phase: 'idle',
+  hits: [],
+  cursor: 0,
+  errorReason: null,
+  vectorLeg: null,
+  rerank: null,
+  queryId: 0,
 };
 
 export type SearchAction =
   | { type: 'submit'; queryId: number }
-  | { type: 'results'; queryId: number; hits: readonly HybridSearchHit[]; vectorLeg: string | null; rerank: string | null }
+  | {
+      type: 'results';
+      queryId: number;
+      hits: readonly HybridSearchHit[];
+      vectorLeg: string | null;
+      rerank: string | null;
+    }
   | { type: 'failed'; queryId: number; reason: string }
   | { type: 'reset' }
   | { type: 'move'; delta: 1 | -1 }
@@ -55,7 +72,8 @@ export function searchReducer(state: SearchViewState, action: SearchAction): Sea
       return { ...state, cursor: Math.max(0, Math.min(state.hits.length - 1, next)) };
     }
     case 'cursor':
-      if (state.phase !== 'results' || action.index < 0 || action.index >= state.hits.length) return state;
+      if (state.phase !== 'results' || action.index < 0 || action.index >= state.hits.length)
+        return state;
       return { ...state, cursor: action.index };
   }
 }
@@ -72,7 +90,9 @@ export function searchKeyboardAction(key: string): SearchAction | 'open' | null 
 export function describeVectorLeg(leg: unknown): string | null {
   if (leg && typeof leg === 'object' && 'status' in leg) {
     const value = leg as { status: string; model?: string };
-    return value.status === 'used' ? `语义腿:${value.model ?? '当前模型'}` : '语义腿未启用(未配置模型)';
+    return value.status === 'used'
+      ? knowledgeT('semanticSearchValue', { v0: value.model ?? knowledgeT('currentModel') })
+      : knowledgeT('semanticSearchUnavailableNoModelConfigured');
   }
   return null;
 }
@@ -80,7 +100,7 @@ export function describeVectorLeg(leg: unknown): string | null {
 export function describeRerank(rerank: unknown): string | null {
   if (rerank && typeof rerank === 'object' && 'status' in rerank) {
     const value = rerank as { status: string };
-    return value.status === 'used' ? '已重排' : '未重排';
+    return value.status === 'used' ? knowledgeT('reranked') : knowledgeT('notReranked');
   }
   return null;
 }

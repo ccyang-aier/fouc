@@ -1,5 +1,8 @@
 'use client';
 
+import { createTranslator, useTranslation } from '@/lib/i18n';
+import { knowledgeMessages } from './filter-sort-bar.messages';
+
 /**
  * 筛选 / 排序工具栏（U06）——契约 `queryDatabaseInputSchema` 的 UI 投影。
  *
@@ -11,14 +14,30 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowDown, ArrowUp, Funnel } from '@phosphor-icons/react';
-import type { DatabaseFilter, PropertyDefinition, PropertyValue } from '@fouc/shared/knowledge/contracts';
+import type {
+  DatabaseFilter,
+  PropertyDefinition,
+  PropertyValue,
+} from '@fouc/shared/knowledge/contracts';
 import { cn } from '@/lib/utils';
-import { buildFilter, defaultOperatorForType, filterNeedsValue, filterValueEditor, operatorText, operatorsForType, type FilterOperator, type SortKey } from './query-state';
+import {
+  buildFilter,
+  defaultOperatorForType,
+  filterNeedsValue,
+  filterValueEditor,
+  operatorText,
+  operatorsForType,
+  type FilterOperator,
+  type SortKey,
+} from './query-state';
 import type { PersonOption } from './table-cells';
 import { AnchoredPanel, anchorRectOf } from './anchored-panel';
 import type { AnchorRect } from './anchored-panel';
 
-const triggerClasses = 'flex h-7 items-center gap-1.5 rounded-[6px] border border-[var(--line)] px-2 text-[11.5px] text-[var(--muted-strong)] outline-none transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--surface-subtle)]';
+const knowledgeT = createTranslator(knowledgeMessages);
+
+const triggerClasses =
+  'flex h-7 items-center gap-1.5 rounded-[6px] border border-[var(--line)] px-2 text-[11.5px] text-[var(--muted-strong)] outline-none transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--surface-subtle)]';
 
 export function FilterSortBar({
   columns,
@@ -48,8 +67,14 @@ export function FilterSortBar({
   onToggleSortDirection: (propertyId: string) => void;
   onRemoveSort: (propertyId: string) => void;
 }) {
+  const { locale, t: knowledgeT } = useTranslation(knowledgeMessages);
+
   const columnOf = (propertyId: string) => columns.find((column) => column.id === propertyId);
-  const [filterPanel, setFilterPanel] = useState<{ anchor: AnchorRect; editIndex: number | null; initialColumnId?: string } | null>(null);
+  const [filterPanel, setFilterPanel] = useState<{
+    anchor: AnchorRect;
+    editIndex: number | null;
+    initialColumnId?: string;
+  } | null>(null);
   const [sortPanel, setSortPanel] = useState<AnchorRect | null>(null);
   const hasColumns = columns.length > 0;
   const filterTriggerRef = useRef<HTMLButtonElement>(null);
@@ -62,7 +87,11 @@ export function FilterSortBar({
       onFocusColumnConsumed?.();
       return;
     }
-    setFilterPanel({ anchor: anchorRectOf(filterTriggerRef.current), editIndex: null, initialColumnId: column.id });
+    setFilterPanel({
+      anchor: anchorRectOf(filterTriggerRef.current),
+      editIndex: null,
+      initialColumnId: column.id,
+    });
     onFocusColumnConsumed?.();
   }, [focusColumnId, columns, onFocusColumnConsumed]);
 
@@ -74,12 +103,14 @@ export function FilterSortBar({
         aria-haspopup="menu"
         aria-expanded={filterPanel !== null}
         disabled={!hasColumns}
-        onClick={(event) => setFilterPanel({ anchor: anchorRectOf(event.currentTarget), editIndex: null })}
+        onClick={(event) =>
+          setFilterPanel({ anchor: anchorRectOf(event.currentTarget), editIndex: null })
+        }
         className={triggerClasses}
-        title={hasColumns ? undefined : '数据库还没有属性列'}
+        title={hasColumns ? undefined : knowledgeT('noPropertyColumnsInThisDatabaseYet')}
       >
         <Funnel aria-hidden className="size-3" />
-        筛选
+        {knowledgeT('filter')}
       </button>
       <button
         type="button"
@@ -88,10 +119,10 @@ export function FilterSortBar({
         disabled={!hasColumns}
         onClick={(event) => setSortPanel(anchorRectOf(event.currentTarget))}
         className={triggerClasses}
-        title={hasColumns ? undefined : '数据库还没有属性列'}
+        title={hasColumns ? undefined : knowledgeT('noPropertyColumnsInThisDatabaseYet')}
       >
         <ArrowUp aria-hidden className="size-3" />
-        排序
+        {knowledgeT('sort')}
       </button>
 
       {filters.map((filter, index) => {
@@ -104,19 +135,28 @@ export function FilterSortBar({
           >
             <button
               type="button"
-              aria-label={`编辑筛选：${column.name} ${operatorText[filter.operator]}`}
-              onClick={(event) => setFilterPanel({ anchor: anchorRectOf(event.currentTarget), editIndex: index })}
+              aria-label={knowledgeT('editFilterValueValue', {
+                v0: column.name,
+                v1: operatorText(locale)[filter.operator],
+              })}
+              onClick={(event) =>
+                setFilterPanel({ anchor: anchorRectOf(event.currentTarget), editIndex: index })
+              }
               className="flex min-w-0 items-center gap-1 rounded-[5px] px-0.5 outline-none"
             >
               <span className="max-w-32 truncate font-medium">{column.name}</span>
-              <span className="text-[var(--muted-strong)]">{operatorText[filter.operator]}</span>
+              <span className="text-[var(--muted-strong)]">
+                {operatorText(locale)[filter.operator]}
+              </span>
               {filterNeedsValue(filter.operator) ? (
-                <span className="max-w-40 truncate">{filterValueText(column, filter.value, members)}</span>
+                <span className="max-w-40 truncate">
+                  {filterValueText(column, filter.value, members)}
+                </span>
               ) : null}
             </button>
             <button
               type="button"
-              aria-label={`移除筛选：${column.name}`}
+              aria-label={knowledgeT('removeFilterValue', { v0: column.name })}
               onClick={() => onRemoveFilter(index)}
               className="flex size-5 items-center justify-center rounded-[4px] text-[13px] leading-none text-[var(--muted)] outline-none transition-colors hover:bg-wash hover:text-[var(--err-ink)]"
             >
@@ -130,21 +170,29 @@ export function FilterSortBar({
         const column = columnOf(key.propertyId);
         if (!column) return null;
         return (
-          <span key={key.propertyId} className="flex h-7 items-center gap-1 rounded-[6px] bg-[var(--raise)] pl-2 pr-1 text-[11.5px] text-[var(--ink-soft)]">
+          <span
+            key={key.propertyId}
+            className="flex h-7 items-center gap-1 rounded-[6px] bg-[var(--raise)] pl-2 pr-1 text-[11.5px] text-[var(--ink-soft)]"
+          >
             <button
               type="button"
-              aria-label={`切换排序方向：${column.name}（当前${key.direction === 'asc' ? '升序' : '降序'}）`}
+              aria-label={knowledgeT('changeSortDirectionValueCurrentlyValue', {
+                v0: column.name,
+                v1: key.direction === 'asc' ? knowledgeT('ascending') : knowledgeT('descending'),
+              })}
               onClick={() => onToggleSortDirection(key.propertyId)}
               className="flex min-w-0 items-center gap-1 rounded-[5px] px-0.5 outline-none"
             >
               <span className="max-w-32 truncate font-medium">{column.name}</span>
-              {key.direction === 'asc'
-                ? <ArrowUp aria-hidden className="size-3 text-[var(--muted-strong)]" />
-                : <ArrowDown aria-hidden className="size-3 text-[var(--muted-strong)]" />}
+              {key.direction === 'asc' ? (
+                <ArrowUp aria-hidden className="size-3 text-[var(--muted-strong)]" />
+              ) : (
+                <ArrowDown aria-hidden className="size-3 text-[var(--muted-strong)]" />
+              )}
             </button>
             <button
               type="button"
-              aria-label={`移除排序：${column.name}`}
+              aria-label={knowledgeT('removeSortValue', { v0: column.name })}
               onClick={() => onRemoveSort(key.propertyId)}
               className="flex size-5 items-center justify-center rounded-[4px] text-[13px] leading-none text-[var(--muted)] outline-none transition-colors hover:bg-wash hover:text-[var(--err-ink)]"
             >
@@ -186,20 +234,28 @@ export function FilterSortBar({
   );
 }
 
-function filterValueText(column: PropertyDefinition, value: PropertyValue | undefined, members: readonly PersonOption[]): string {
+function filterValueText(
+  column: PropertyDefinition,
+  value: PropertyValue | undefined,
+  members: readonly PersonOption[],
+): string {
   if (value === undefined || value === null) return '';
-  if (column.type === 'select') return column.options?.find((option) => option.id === value)?.label ?? String(value);
-  if (column.type === 'multiSelect') return column.options?.find((option) => option.id === value)?.label ?? String(value);
+  if (column.type === 'select')
+    return column.options?.find((option) => option.id === value)?.label ?? String(value);
+  if (column.type === 'multiSelect')
+    return column.options?.find((option) => option.id === value)?.label ?? String(value);
   if (column.type === 'person') {
     const member = members.find((candidate) => candidate.userId === value);
     return member?.name ?? String(value).slice(0, 8);
   }
-  if (column.type === 'checkbox') return value === true ? '是' : '否';
+  if (column.type === 'checkbox') return value === true ? knowledgeT('yes') : knowledgeT('no');
   return String(value);
 }
 
-const panelSelect = 'h-[28px] w-full rounded-[5px] border border-[var(--line-strong)] bg-[var(--panel)] px-1.5 text-[12px] text-[var(--ink)] outline-none focus:border-[var(--accent)]';
-const panelInput = 'h-[28px] w-full rounded-[5px] border border-[var(--line-strong)] bg-[var(--panel)] px-2 text-[12px] text-[var(--ink)] outline-none focus:border-[var(--accent)]';
+const panelSelect =
+  'h-[28px] w-full rounded-[5px] border border-[var(--line-strong)] bg-[var(--panel)] px-1.5 text-[12px] text-[var(--ink)] outline-none focus:border-[var(--accent)]';
+const panelInput =
+  'h-[28px] w-full rounded-[5px] border border-[var(--line-strong)] bg-[var(--panel)] px-2 text-[12px] text-[var(--ink)] outline-none focus:border-[var(--accent)]';
 
 function FilterPanel({
   anchor,
@@ -218,35 +274,81 @@ function FilterPanel({
   onClose: () => void;
   onConfirm: (filter: DatabaseFilter) => void;
 }) {
-  const [propertyId, setPropertyId] = useState(initial?.propertyId ?? initialColumnId ?? columns[0]?.id ?? '');
-  const column = useMemo(() => columns.find((candidate) => candidate.id === propertyId), [columns, propertyId]);
-  const [operator, setOperator] = useState<FilterOperator>(initial?.operator ?? (column ? defaultOperatorForType(column.type) : 'isEmpty'));
-  const [valueDraft, setValueDraft] = useState<string | boolean>(initial?.value === undefined ? '' : typeof initial.value === 'boolean' ? initial.value : String(initial.value));
+  const { locale, t: knowledgeT } = useTranslation(knowledgeMessages);
+
+  const [propertyId, setPropertyId] = useState(
+    initial?.propertyId ?? initialColumnId ?? columns[0]?.id ?? '',
+  );
+  const column = useMemo(
+    () => columns.find((candidate) => candidate.id === propertyId),
+    [columns, propertyId],
+  );
+  const [operator, setOperator] = useState<FilterOperator>(
+    initial?.operator ?? (column ? defaultOperatorForType(column.type) : 'isEmpty'),
+  );
+  const [valueDraft, setValueDraft] = useState<string | boolean>(
+    initial?.value === undefined
+      ? ''
+      : typeof initial.value === 'boolean'
+        ? initial.value
+        : String(initial.value),
+  );
 
   const operators = column ? operatorsForType(column.type) : [];
   const editor = column ? filterValueEditor(column, operator) : 'none';
-  const built = column ? buildFilter(column, operator, editor === 'boolean' ? valueDraft : valueDraft === '' ? undefined : editor === 'number' ? valueDraft : valueDraft) : null;
+  const built = column
+    ? buildFilter(
+        column,
+        operator,
+        editor === 'boolean'
+          ? valueDraft
+          : valueDraft === ''
+            ? undefined
+            : editor === 'number'
+              ? valueDraft
+              : valueDraft,
+      )
+    : null;
   const confirmDisabled = !built?.ok;
 
   return (
-    <AnchoredPanel anchor={anchor} onClose={onClose} label="筛选条件" width={264}>
+    <AnchoredPanel
+      anchor={anchor}
+      onClose={onClose}
+      label={knowledgeT('filterConditions')}
+      width={264}
+    >
       <div className="space-y-1.5 p-1.5">
-        <select aria-label="筛选列" value={propertyId} onChange={(event) => {
-          setPropertyId(event.target.value);
-          const next = columns.find((candidate) => candidate.id === event.target.value);
-          setOperator(next ? defaultOperatorForType(next.type) : 'isEmpty');
-          setValueDraft('');
-        }} className={panelSelect}>
+        <select
+          aria-label={knowledgeT('filterColumn')}
+          value={propertyId}
+          onChange={(event) => {
+            setPropertyId(event.target.value);
+            const next = columns.find((candidate) => candidate.id === event.target.value);
+            setOperator(next ? defaultOperatorForType(next.type) : 'isEmpty');
+            setValueDraft('');
+          }}
+          className={panelSelect}
+        >
           {columns.map((candidate) => (
-            <option key={candidate.id} value={candidate.id}>{candidate.name}</option>
+            <option key={candidate.id} value={candidate.id}>
+              {candidate.name}
+            </option>
           ))}
         </select>
-        <select aria-label="比较方式" value={operator} onChange={(event) => {
-          setOperator(event.target.value as FilterOperator);
-          setValueDraft('');
-        }} className={panelSelect}>
+        <select
+          aria-label={knowledgeT('operator')}
+          value={operator}
+          onChange={(event) => {
+            setOperator(event.target.value as FilterOperator);
+            setValueDraft('');
+          }}
+          className={panelSelect}
+        >
           {operators.map((candidate) => (
-            <option key={candidate} value={candidate}>{operatorText[candidate]}</option>
+            <option key={candidate} value={candidate}>
+              {operatorText(locale)[candidate]}
+            </option>
           ))}
         </select>
         {column && editor !== 'none' ? (
@@ -256,17 +358,21 @@ function FilterPanel({
             members={members}
             draft={valueDraft}
             onChange={setValueDraft}
-            onEnter={() => { if (built?.ok) onConfirm(built.filter); }}
+            onEnter={() => {
+              if (built?.ok) onConfirm(built.filter);
+            }}
           />
         ) : null}
         <div className="flex justify-end border-t border-[var(--line)] pt-2">
           <button
             type="button"
             disabled={confirmDisabled}
-            onClick={() => { if (built?.ok) onConfirm(built.filter); }}
+            onClick={() => {
+              if (built?.ok) onConfirm(built.filter);
+            }}
             className="flex h-7 items-center rounded-[5px] bg-[var(--accent)] px-2.5 text-[11.5px] font-medium text-white outline-none transition-colors hover:bg-[var(--accent-strong)] disabled:pointer-events-none disabled:opacity-45"
           >
-            {initial ? '更新筛选' : '添加筛选'}
+            {initial ? knowledgeT('updateFilter') : knowledgeT('addFilter')}
           </button>
         </div>
       </div>
@@ -289,6 +395,8 @@ function FilterValueInput({
   onChange: (draft: string | boolean) => void;
   onEnter: () => void;
 }) {
+  const { t: knowledgeT } = useTranslation(knowledgeMessages);
+
   const onKeyDown = (event: React.KeyboardEvent) => {
     event.stopPropagation();
     if (event.key === 'Enter') {
@@ -300,7 +408,7 @@ function FilterValueInput({
   };
   if (editor === 'boolean') {
     return (
-      <div role="radiogroup" aria-label="比较值" className="flex gap-1">
+      <div role="radiogroup" aria-label={knowledgeT('comparisonValue')} className="flex gap-1">
         {[true, false].map((candidate) => (
           <button
             key={String(candidate)}
@@ -310,10 +418,12 @@ function FilterValueInput({
             onClick={() => onChange(candidate)}
             className={cn(
               'h-[28px] flex-1 rounded-[5px] border text-[11.5px] outline-none transition-colors',
-              draft === candidate ? 'border-[var(--accent-soft-line)] bg-[var(--accent-soft)] text-[var(--accent-ink)]' : 'border-[var(--line)] text-[var(--ink-soft)] hover:bg-wash',
+              draft === candidate
+                ? 'border-[var(--accent-soft-line)] bg-[var(--accent-soft)] text-[var(--accent-ink)]'
+                : 'border-[var(--line)] text-[var(--ink-soft)] hover:bg-wash',
             )}
           >
-            {candidate ? '是' : '否'}
+            {candidate ? knowledgeT('yes') : knowledgeT('no')}
           </button>
         ))}
       </div>
@@ -322,25 +432,46 @@ function FilterValueInput({
   if (editor === 'option') {
     const options = column.options ?? [];
     return (
-      <select aria-label="比较值" value={typeof draft === 'string' ? draft : ''} onChange={(event) => onChange(event.target.value)} className={panelSelect}>
-        <option value="">选择选项…</option>
+      <select
+        aria-label={knowledgeT('comparisonValue')}
+        value={typeof draft === 'string' ? draft : ''}
+        onChange={(event) => onChange(event.target.value)}
+        className={panelSelect}
+      >
+        <option value="">{knowledgeT('chooseAnOption')}</option>
         {options.map((option) => (
-          <option key={option.id} value={option.id}>{option.label}</option>
+          <option key={option.id} value={option.id}>
+            {option.label}
+          </option>
         ))}
       </select>
     );
   }
   if (editor === 'person') {
     return (
-      <select aria-label="比较值" value={typeof draft === 'string' ? draft : ''} onChange={(event) => onChange(event.target.value)} className={panelSelect}>
-        <option value="">选择成员…</option>
+      <select
+        aria-label={knowledgeT('comparisonValue')}
+        value={typeof draft === 'string' ? draft : ''}
+        onChange={(event) => onChange(event.target.value)}
+        className={panelSelect}
+      >
+        <option value="">{knowledgeT('chooseAMember')}</option>
         {members.map((member) => (
-          <option key={member.userId} value={member.userId}>{member.name}</option>
+          <option key={member.userId} value={member.userId}>
+            {member.name}
+          </option>
         ))}
       </select>
     );
   }
-  const placeholder = editor === 'date' ? 'YYYY-MM-DD' : editor === 'number' ? '数字' : editor === 'text' && column.type === 'url' ? 'https://…' : '文本';
+  const placeholder =
+    editor === 'date'
+      ? 'YYYY-MM-DD'
+      : editor === 'number'
+        ? knowledgeT('number')
+        : editor === 'text' && column.type === 'url'
+          ? 'https://…'
+          : knowledgeT('text');
   return (
     <input
       autoFocus
@@ -348,7 +479,7 @@ function FilterValueInput({
       inputMode={editor === 'number' ? 'decimal' : undefined}
       value={typeof draft === 'string' ? draft : ''}
       placeholder={placeholder}
-      aria-label="比较值"
+      aria-label={knowledgeT('comparisonValue')}
       onChange={(event) => onChange(event.target.value)}
       onKeyDown={onKeyDown}
       className={panelInput}
@@ -369,19 +500,28 @@ function SortPanel({
   onClose: () => void;
   onPick: (key: SortKey) => void;
 }) {
+  const { t: knowledgeT } = useTranslation(knowledgeMessages);
+
   const [propertyId, setPropertyId] = useState(columns[0]?.id ?? '');
   const [direction, setDirection] = useState<'asc' | 'desc'>('asc');
   const existing = sort.find((key) => key.propertyId === propertyId);
 
   return (
-    <AnchoredPanel anchor={anchor} onClose={onClose} label="排序" width={240}>
+    <AnchoredPanel anchor={anchor} onClose={onClose} label={knowledgeT('sort')} width={240}>
       <div className="space-y-1.5 p-1.5">
-        <select aria-label="排序列" value={propertyId} onChange={(event) => setPropertyId(event.target.value)} className={panelSelect}>
+        <select
+          aria-label={knowledgeT('sortColumn')}
+          value={propertyId}
+          onChange={(event) => setPropertyId(event.target.value)}
+          className={panelSelect}
+        >
           {columns.map((column) => (
-            <option key={column.id} value={column.id}>{column.name}</option>
+            <option key={column.id} value={column.id}>
+              {column.name}
+            </option>
           ))}
         </select>
-        <div role="radiogroup" aria-label="排序方向" className="flex gap-1">
+        <div role="radiogroup" aria-label={knowledgeT('sortDirection')} className="flex gap-1">
           {(['asc', 'desc'] as const).map((candidate) => (
             <button
               key={candidate}
@@ -391,10 +531,12 @@ function SortPanel({
               onClick={() => setDirection(candidate)}
               className={cn(
                 'h-[28px] flex-1 rounded-[5px] border text-[11.5px] outline-none transition-colors',
-                direction === candidate ? 'border-[var(--accent-soft-line)] bg-[var(--accent-soft)] text-[var(--accent-ink)]' : 'border-[var(--line)] text-[var(--ink-soft)] hover:bg-wash',
+                direction === candidate
+                  ? 'border-[var(--accent-soft-line)] bg-[var(--accent-soft)] text-[var(--accent-ink)]'
+                  : 'border-[var(--line)] text-[var(--ink-soft)] hover:bg-wash',
               )}
             >
-              {candidate === 'asc' ? '升序' : '降序'}
+              {candidate === 'asc' ? knowledgeT('ascending') : knowledgeT('descending')}
             </button>
           ))}
         </div>
@@ -405,7 +547,7 @@ function SortPanel({
             onClick={() => onPick({ propertyId, direction })}
             className="flex h-7 items-center rounded-[5px] bg-[var(--accent)] px-2.5 text-[11.5px] font-medium text-white outline-none transition-colors hover:bg-[var(--accent-strong)] disabled:pointer-events-none disabled:opacity-45"
           >
-            {existing ? '更新排序' : '添加排序'}
+            {existing ? knowledgeT('updateSort') : knowledgeT('addSort')}
           </button>
         </div>
       </div>

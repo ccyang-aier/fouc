@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from '@/lib/i18n';
+import { knowledgeMessages } from './asset-uploader.messages';
 /**
  * 附件上传面板(U08):拖拽 / 点选加入文件,队列呈现进度、取消、重试与
  * 错误反馈。默认经 `useAssetUploads` 使用浏览器装配(tRPC + XHR + 流式
@@ -24,20 +26,32 @@ export interface AssetUploaderProps {
 }
 
 export function AssetUploader(props: AssetUploaderProps) {
+  const { t: knowledgeT } = useTranslation(knowledgeMessages);
+
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const owned = useAssetUploads({ knowledgeBaseId: props.knowledgeBaseId, onUploaded: props.onUploaded, api: props.api, transfer: props.transfer });
+  const owned = useAssetUploads({
+    knowledgeBaseId: props.knowledgeBaseId,
+    onUploaded: props.onUploaded,
+    api: props.api,
+    transfer: props.transfer,
+  });
   const uploads = props.uploads ?? owned;
 
-  const acceptFiles = useCallback((files: Iterable<File>) => {
-    const list = [...files];
-    if (list.length > 0) uploads.addFiles(list);
-  }, [uploads]);
+  const acceptFiles = useCallback(
+    (files: Iterable<File>) => {
+      const list = [...files];
+      if (list.length > 0) uploads.addFiles(list);
+    },
+    [uploads],
+  );
 
-  const finished = uploads.items.filter((item) => item.phase === 'done' || item.phase === 'canceled' || item.phase === 'error').length;
+  const finished = uploads.items.filter(
+    (item) => item.phase === 'done' || item.phase === 'canceled' || item.phase === 'error',
+  ).length;
 
   return (
-    <section aria-label="附件上传" className="flex flex-col gap-3">
+    <section aria-label={knowledgeT('attachmentUploads')} className="flex flex-col gap-3">
       <div
         onDragOver={(event) => {
           event.preventDefault();
@@ -53,7 +67,9 @@ export function AssetUploader(props: AssetUploaderProps) {
         }}
         className={[
           'group relative flex flex-col items-center gap-2 rounded-xl border border-dashed px-4 py-7 text-center transition-colors',
-          dragging ? 'border-[var(--accent)] bg-accent-soft' : 'border-border-strong bg-panel hover:border-[var(--accent)]',
+          dragging
+            ? 'border-[var(--accent)] bg-accent-soft'
+            : 'border-border-strong bg-panel hover:border-[var(--accent)]',
         ].join(' ')}
         aria-describedby="asset-upload-hint"
       >
@@ -67,24 +83,24 @@ export function AssetUploader(props: AssetUploaderProps) {
           <CloudArrowUp size={20} weight="duotone" />
         </span>
         <p className="text-[13px] leading-5 text-ink">
-          拖入文件,或
+          {knowledgeT('dropFilesHereOr')}
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
             className="mx-0.5 rounded font-medium text-accent-ink outline-none hover:underline focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)]"
           >
-            点击选择
+            {knowledgeT('chooseFiles')}
           </button>
         </p>
         <p id="asset-upload-hint" className="text-2xs leading-4 text-ink-faint">
-          单文件最大 5 GiB
+          {knowledgeT('upTo5GibPerFile')}
         </p>
         <input
           ref={inputRef}
           type="file"
           multiple
           className="hidden"
-          aria-label="选择要上传的文件"
+          aria-label={knowledgeT('selectFilesToUpload')}
           onChange={(event) => {
             acceptFiles(event.target.files ?? []);
             event.target.value = '';
@@ -93,7 +109,7 @@ export function AssetUploader(props: AssetUploaderProps) {
       </div>
 
       {uploads.items.length > 0 && (
-        <ul className="flex flex-col gap-1.5" aria-label="上传队列">
+        <ul className="flex flex-col gap-1.5" aria-label={knowledgeT('uploadQueue')}>
           {uploads.items.map((item) => (
             <UploadQueueItem
               key={item.id}
@@ -112,7 +128,8 @@ export function AssetUploader(props: AssetUploaderProps) {
           onClick={uploads.clearFinished}
           className="self-start rounded-md px-2 py-1 text-xs text-[var(--muted-strong)] outline-none transition-colors hover:bg-wash hover:text-ink focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)]"
         >
-          清除已完成与失败项({finished})
+          {knowledgeT('clearCompletedAndFailedItems')}
+          {finished})
         </button>
       )}
     </section>

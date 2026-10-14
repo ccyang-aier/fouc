@@ -1,28 +1,61 @@
 'use client';
 
+import { useTranslation } from '@/lib/i18n';
+import { knowledgeMessages } from './editor-layout.messages';
 import type { CSSProperties, ReactNode } from 'react';
 import { EditorContent } from '@tiptap/react';
 import type { Editor } from '@tiptap/react';
 import styles from './editor-layout.module.css';
-import { DocumentAppearanceProvider, useDocumentAppearance } from './components/document-appearance';
-import { documentFonts, documentCodeFonts, documentSizes, documentParagraphSpacings } from '@/lib/editor-appearance-options';
+import {
+  DocumentAppearanceProvider,
+  useDocumentAppearance,
+} from './components/document-appearance';
+import {
+  documentFonts,
+  documentCodeFonts,
+  documentSizes,
+  documentParagraphSpacings,
+} from '@/lib/editor-appearance-options';
 import './document-fonts.css';
 import './code-fonts.css';
 import { DocumentNavigationTools } from './document-tools';
 import type { DocumentLinkTarget } from './document-link';
 import { SelectionToolbar } from './components/selection-toolbar';
 
-export function DocumentEditorFrame({ children, header, sidebar, navigation, appearanceScope }: {
+export function DocumentEditorFrame({
+  children,
+  header,
+  sidebar,
+  navigation,
+  appearanceScope,
+}: {
   children: ReactNode;
   header: ReactNode;
   sidebar?: ReactNode;
   navigation: { editor: Editor | null; title: string; target: DocumentLinkTarget };
   appearanceScope: string;
 }) {
-  return <DocumentAppearanceProvider key={appearanceScope} scope={appearanceScope}><section aria-label="页面编辑器" className={styles.frame}><DocumentNavigationTools {...navigation} header={header} sidebar={sidebar}>{children}</DocumentNavigationTools></section></DocumentAppearanceProvider>;
+  const { t: knowledgeT } = useTranslation(knowledgeMessages);
+
+  return (
+    <DocumentAppearanceProvider key={appearanceScope} scope={appearanceScope}>
+      <section data-knowledge-editor aria-label={knowledgeT('pageEditor')} className={styles.frame}>
+        <DocumentNavigationTools {...navigation} header={header} sidebar={sidebar}>
+          {children}
+        </DocumentNavigationTools>
+      </section>
+    </DocumentAppearanceProvider>
+  );
 }
 
-export function DocumentHeading({ title, onTitleChange, onTitleCommit, editable = true, metadata, icon }: {
+export function DocumentHeading({
+  title,
+  onTitleChange,
+  onTitleCommit,
+  editable = true,
+  metadata,
+  icon,
+}: {
   title: string;
   onTitleChange?: (title: string) => void;
   onTitleCommit?: () => void;
@@ -30,33 +63,69 @@ export function DocumentHeading({ title, onTitleChange, onTitleCommit, editable 
   metadata?: ReactNode;
   icon?: ReactNode;
 }) {
-  return <div className={styles.heading}>
-    {icon ? <div className={styles.titleIcon}>{icon}</div> : null}
-    <div className={styles.titleRow}>
-    {onTitleChange && editable
-      ? <input
-          aria-label="文档标题"
-          className={styles.titleInput}
-          value={title}
-          placeholder="无标题文档"
-          maxLength={500}
-          onChange={(event) => onTitleChange(event.target.value)}
-          onBlur={onTitleCommit}
-          onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur(); }}
-        />
-      : <h1 className={styles.title}>{title || '无标题文档'}</h1>}</div>
-    {metadata ? <div className={styles.metadata}>{metadata}</div> : null}
-  </div>;
+  const { t: knowledgeT } = useTranslation(knowledgeMessages);
+
+  return (
+    <div className={styles.heading}>
+      {icon ? <div className={styles.titleIcon}>{icon}</div> : null}
+      <div className={styles.titleRow}>
+        {onTitleChange && editable ? (
+          <input
+            data-knowledge-title
+            aria-label={knowledgeT('documentTitle')}
+            className={styles.titleInput}
+            value={title}
+            placeholder={knowledgeT('untitledDocument')}
+            maxLength={500}
+            onChange={(event) => onTitleChange(event.target.value)}
+            onBlur={onTitleCommit}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') event.currentTarget.blur();
+            }}
+          />
+        ) : (
+          <h1 className={styles.title}>{title || knowledgeT('untitledDocument')}</h1>
+        )}
+      </div>
+      {metadata ? <div className={styles.metadata}>{metadata}</div> : null}
+    </div>
+  );
 }
 
-export function DocumentEditorBody({ editor, before }: { editor: Editor | null; before?: ReactNode }) {
+export function DocumentEditorBody({
+  editor,
+  before,
+}: {
+  editor: Editor | null;
+  before?: ReactNode;
+}) {
   const { appearance } = useDocumentAppearance();
   const font = documentFonts.find(({ id }) => id === appearance.font)!;
   const codeFont = documentCodeFonts.find(({ id }) => id === appearance.codeFont)!;
   const size = documentSizes.find(({ id }) => id === appearance.size)!;
   const spacing = documentParagraphSpacings.find(({ id }) => id === appearance.paragraphSpacing)!;
-  return <div className={styles.scrollArea} data-document-scroll>
-    <div className={styles.document} data-width={appearance.width} data-font={appearance.font} data-size={appearance.size} style={{ '--document-width': `${appearance.width}%`, '--document-font': font.family, '--document-code-font': codeFont.family, '--document-size': `${size.pixels}px`, '--document-line-height': appearance.lineHeight, '--document-paragraph-gap': `${spacing.pixels}px` } as CSSProperties}>{before}<EditorContent editor={editor} /></div>
-    <SelectionToolbar editor={editor} />
-  </div>;
+  return (
+    <div className={styles.scrollArea} data-document-scroll>
+      <div
+        className={styles.document}
+        data-width={appearance.width}
+        data-font={appearance.font}
+        data-size={appearance.size}
+        style={
+          {
+            '--document-width': `${appearance.width}%`,
+            '--document-font': font.family,
+            '--document-code-font': codeFont.family,
+            '--document-size': `${size.pixels}px`,
+            '--document-line-height': appearance.lineHeight,
+            '--document-paragraph-gap': `${spacing.pixels}px`,
+          } as CSSProperties
+        }
+      >
+        {before}
+        <EditorContent editor={editor} />
+      </div>
+      <SelectionToolbar editor={editor} />
+    </div>
+  );
 }

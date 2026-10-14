@@ -21,10 +21,16 @@ import type { EditorState, Transaction } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import type { EditorView } from '@tiptap/pm/view';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
-import { collectSuggestions, isSuggestionMark, nodeAnnotations } from '@fouc/shared/knowledge/schema/suggestions';
+import {
+  collectSuggestions,
+  isSuggestionMark,
+  nodeAnnotations,
+} from '@fouc/shared/knowledge/schema/suggestions';
 import type { SuggestionSummary } from '@fouc/shared/knowledge/schema/suggestions';
 import { authorBadgeGlyph, describeSuggestionAuthor, formatSuggestionTime } from './author';
 import { suggestionAnchor } from './review-scroll';
+import { getLocale } from '@/lib/i18n';
+import { editorLocaleMeta } from '../use-editor-locale';
 
 export interface ReviewMarksState {
   /** The suggestion the card/panel act on — selection-derived or manual. */
@@ -34,9 +40,7 @@ export interface ReviewMarksState {
   decorations: DecorationSet;
 }
 
-type ReviewMarksMeta =
-  | { type: 'select'; id: string | null }
-  | { type: 'flash'; id: string | null };
+type ReviewMarksMeta = { type: 'select'; id: string | null } | { type: 'flash'; id: string | null };
 
 export const reviewPluginKey = new PluginKey<ReviewMarksState>('foucReviewMarks');
 
@@ -57,10 +61,19 @@ function suggestionIdAt(doc: ProseMirrorNode, pos: number): string | null {
   return null;
 }
 
-function rangeClasses(summary: { suggestionId: string }, range: { type: string; storage: 'mark' | 'node' }, state: { activeId: string | null; flashId: string | null }): string {
-  const base = range.storage === 'node'
-    ? (range.type === 'suggestion_insert' ? 'fouc-suggest-block-insert' : 'fouc-suggest-block-delete')
-    : (range.type === 'suggestion_insert' ? 'fouc-suggest-insert' : 'fouc-suggest-delete');
+function rangeClasses(
+  summary: { suggestionId: string },
+  range: { type: string; storage: 'mark' | 'node' },
+  state: { activeId: string | null; flashId: string | null },
+): string {
+  const base =
+    range.storage === 'node'
+      ? range.type === 'suggestion_insert'
+        ? 'fouc-suggest-block-insert'
+        : 'fouc-suggest-block-delete'
+      : range.type === 'suggestion_insert'
+        ? 'fouc-suggest-insert'
+        : 'fouc-suggest-delete';
   const active = state.activeId === summary.suggestionId ? ' fouc-suggest-active' : '';
   const flash = state.flashId === summary.suggestionId ? ' fouc-suggest-flash' : '';
   return base + active + flash;
@@ -77,19 +90,29 @@ function badgeElement(summary: SuggestionSummary): HTMLElement {
   return badge;
 }
 
-function buildDecorations(doc: ProseMirrorNode, state: { activeId: string | null; flashId: string | null }): DecorationSet {
+function buildDecorations(
+  doc: ProseMirrorNode,
+  state: { activeId: string | null; flashId: string | null },
+): DecorationSet {
   const decorations: Decoration[] = [];
   for (const summary of collectSuggestions(doc)) {
     const first = summary.ranges.reduce((min, range) => (range.from < min.from ? range : min));
-    decorations.push(Decoration.widget(first.from, () => badgeElement(summary), {
-      side: -1,
-      key: `fouc-badge-${summary.suggestionId}`,
-    }));
+    decorations.push(
+      Decoration.widget(first.from, () => badgeElement(summary), {
+        side: -1,
+        key: `fouc-badge-${summary.suggestionId}-${getLocale()}`,
+      }),
+    );
     for (const range of summary.ranges) {
-      const attrs = { class: rangeClasses(summary, range, state), 'data-suggestion-id': summary.suggestionId };
-      decorations.push(range.storage === 'node'
-        ? Decoration.node(range.from, range.to, attrs)
-        : Decoration.inline(range.from, range.to, attrs));
+      const attrs = {
+        class: rangeClasses(summary, range, state),
+        'data-suggestion-id': summary.suggestionId,
+      };
+      decorations.push(
+        range.storage === 'node'
+          ? Decoration.node(range.from, range.to, attrs)
+          : Decoration.inline(range.from, range.to, attrs),
+      );
     }
   }
   return DecorationSet.create(doc, decorations);
@@ -100,7 +123,11 @@ function createReviewPlugin(): Plugin<ReviewMarksState> {
     key: reviewPluginKey,
     state: {
       init(_, state) {
-        return { activeId: suggestionIdAt(state.doc, state.selection.from), flashId: null, decorations: buildDecorations(state.doc, { activeId: null, flashId: null }) };
+        return {
+          activeId: suggestionIdAt(state.doc, state.selection.from),
+          flashId: null,
+          decorations: buildDecorations(state.doc, { activeId: null, flashId: null }),
+        };
       },
       apply(tr: Transaction, previous: ReviewMarksState, _oldState, newState): ReviewMarksState {
         const meta = tr.getMeta(reviewPluginKey) as ReviewMarksMeta | undefined;
@@ -109,21 +136,34 @@ function createReviewPlugin(): Plugin<ReviewMarksState> {
         if (meta?.type === 'select') activeId = meta.id;
         if (meta?.type === 'flash') flashId = meta.id;
         if (tr.selectionSet && !meta) {
-          const derived = suggestionIdAt(newState.doc, newState.selection.from) ?? suggestionIdAt(newState.doc, newState.selection.to);
+          const derived =
+            suggestionIdAt(newState.doc, newState.selection.from) ??
+            suggestionIdAt(newState.doc, newState.selection.to);
           if (derived !== null) activeId = derived;
         }
         // Rebuild whenever the visible state can differ: doc changes (remote
         // or local) and selection-derived/manual active or flash transitions.
         // A selection-only pick must repaint the classes immediately — waiting
         // for the next content change would leave the card/marks disagreeing.
-        if (tr.docChanged || activeId !== previous.activeId || flashId !== previous.flashId) {
+        if (
+          tr.docChanged ||
+          tr.getMeta(editorLocaleMeta) ||
+          activeId !== previous.activeId ||
+          flashId !== previous.flashId
+        ) {
           if (tr.docChanged) {
             // A resolved suggestion stops being active the moment it leaves the doc.
-            const outstanding = new Set(collectSuggestions(tr.doc).map((summary) => summary.suggestionId));
+            const outstanding = new Set(
+              collectSuggestions(tr.doc).map((summary) => summary.suggestionId),
+            );
             if (activeId !== null && !outstanding.has(activeId)) activeId = null;
             if (flashId !== null && !outstanding.has(flashId)) flashId = null;
           }
-          return { activeId, flashId, decorations: buildDecorations(tr.doc, { activeId, flashId }) };
+          return {
+            activeId,
+            flashId,
+            decorations: buildDecorations(tr.doc, { activeId, flashId }),
+          };
         }
         return { activeId, flashId, decorations: previous.decorations.map(tr.mapping, tr.doc) };
       },
@@ -160,25 +200,38 @@ function createReviewPlugin(): Plugin<ReviewMarksState> {
  * state agrees with the manual pick) and the card/panel focus follows. With
  * `flash`, the located suggestion also plays the locate pulse once.
  */
-export function selectReviewSuggestion(view: EditorView, suggestionId: string | null, options: { flash?: boolean } = {}): void {
+export function selectReviewSuggestion(
+  view: EditorView,
+  suggestionId: string | null,
+  options: { flash?: boolean } = {},
+): void {
   let anchor: number | null = null;
   if (suggestionId) {
-    const summary = collectSuggestions(view.state.doc).find((candidate) => candidate.suggestionId === suggestionId);
+    const summary = collectSuggestions(view.state.doc).find(
+      (candidate) => candidate.suggestionId === suggestionId,
+    );
     if (!summary) return;
     anchor = suggestionAnchor(summary);
   }
   const tr = view.state.tr.setMeta(reviewPluginKey, { type: 'select', id: suggestionId });
   if (anchor !== null) {
-    tr.setSelection(TextSelection.near(view.state.doc.resolve(Math.min(anchor + 1, view.state.doc.content.size)), 1));
+    tr.setSelection(
+      TextSelection.near(
+        view.state.doc.resolve(Math.min(anchor + 1, view.state.doc.content.size)),
+        1,
+      ),
+    );
   }
   // Selection-only: stays off the B08 undo stack (the same rule the page
   // collaboration plugin enforces for caret moves).
   tr.setMeta('addToHistory', false);
   view.dispatch(tr);
   if (options.flash && suggestionId) {
-    view.dispatch(view.state.tr
-      .setMeta(reviewPluginKey, { type: 'flash', id: suggestionId })
-      .setMeta('addToHistory', false));
+    view.dispatch(
+      view.state.tr
+        .setMeta(reviewPluginKey, { type: 'flash', id: suggestionId })
+        .setMeta('addToHistory', false),
+    );
   }
 }
 

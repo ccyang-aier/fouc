@@ -1,11 +1,7 @@
-import type {
-  DtsFilterId,
-  DtsTicketDetail,
-  ExternalObjectRef,
-} from '@fouc/shared'
+import type { DtsFilterId, DtsTicketDetail, ExternalObjectRef } from '@fouc/shared';
 
-export const DTS_INSTANCE_ID = 'dts-personal'
-export const MOCK_NOW = Date.parse('2026-09-20T09:30:00+08:00')
+export const DTS_INSTANCE_ID = 'dts-personal';
+export const MOCK_NOW = Date.parse('2026-09-20T09:30:00+08:00');
 
 function source(id: string): ExternalObjectRef {
   return {
@@ -14,7 +10,7 @@ function source(id: string): ExternalObjectRef {
     objectType: 'ticket',
     externalId: id,
     url: `https://dts.example.test/tickets/${encodeURIComponent(id)}`,
-  }
+  };
 }
 
 function relation(id: string, objectType: string): ExternalObjectRef {
@@ -24,7 +20,7 @@ function relation(id: string, objectType: string): ExternalObjectRef {
     objectType,
     externalId: id,
     url: `https://dts.example.test/${objectType}/${encodeURIComponent(id)}`,
-  }
+  };
 }
 
 export const MOCK_TICKETS: DtsTicketDetail[] = [
@@ -38,11 +34,18 @@ export const MOCK_TICKETS: DtsTicketDetail[] = [
     createdAt: '2026-09-20 08:42',
     productType: '服务故障',
     productPath: ['交易平台', '订单中心', '订单查询服务'],
-    remark: '上午高峰期间 P99 延迟由 320ms 升至 4.8s，重试后大部分请求成功，需在午间流量前确认根因。',
+    remark:
+      '上午高峰期间 P99 延迟由 320ms 升至 4.8s，重试后大部分请求成功，需在午间流量前确认根因。',
     relatedCount: 3,
     commentCount: 5,
     source: source('DTS-20260920-1842'),
-    currentNode: { id: 'diagnose', name: '定位根因', status: 'active', handler: '陈思远', handledAt: null },
+    currentNode: {
+      id: 'diagnose',
+      name: '定位根因',
+      status: 'active',
+      handler: '陈思远',
+      handledAt: null,
+    },
     flowState: 'processing',
     handlers: ['陈思远', '林晚舟', '数据库值班'],
     fields: [
@@ -52,12 +55,28 @@ export const MOCK_TICKETS: DtsTicketDetail[] = [
       { key: 'change', label: '最近变更', value: '订单缓存降级策略 v3' },
     ],
     flowNodes: [
-      { id: 'report', name: '问题上报', status: 'done', handler: '周予安', handledAt: '2026-09-20 08:42' },
-      { id: 'triage', name: '值班分诊', status: 'done', handler: '林晚舟', handledAt: '2026-09-20 08:49' },
+      {
+        id: 'report',
+        name: '问题上报',
+        status: 'done',
+        handler: '周予安',
+        handledAt: '2026-09-20 08:42',
+      },
+      {
+        id: 'triage',
+        name: '值班分诊',
+        status: 'done',
+        handler: '林晚舟',
+        handledAt: '2026-09-20 08:49',
+      },
       { id: 'diagnose', name: '定位根因', status: 'active', handler: '陈思远', handledAt: null },
       { id: 'verify', name: '修复验证', status: 'pending', handler: null, handledAt: null },
     ],
-    relations: [relation('INC-8841', 'incident'), relation('CHG-2917', 'change'), relation('DTS-20260918-1731', 'ticket')],
+    relations: [
+      relation('INC-8841', 'incident'),
+      relation('CHG-2917', 'change'),
+      relation('DTS-20260918-1731', 'ticket'),
+    ],
     permissions: ['ticket:read', 'flow:read', 'relation:read'],
   },
   {
@@ -74,7 +93,13 @@ export const MOCK_TICKETS: DtsTicketDetail[] = [
     relatedCount: 2,
     commentCount: 3,
     source: source('DTS-20260920-1765'),
-    currentNode: { id: 'verify', name: '测试验证', status: 'active', handler: '许清禾', handledAt: null },
+    currentNode: {
+      id: 'verify',
+      name: '测试验证',
+      status: 'active',
+      handler: '许清禾',
+      handledAt: null,
+    },
     flowState: 'verifying',
     handlers: ['沈亦航', '许清禾'],
     fields: [
@@ -83,8 +108,20 @@ export const MOCK_TICKETS: DtsTicketDetail[] = [
       { key: 'build', label: '修复构建', value: '6.18.1-rc.3' },
     ],
     flowNodes: [
-      { id: 'report', name: '缺陷提交', status: 'done', handler: '沈亦航', handledAt: '2026-09-20 07:18' },
-      { id: 'fix', name: '开发修复', status: 'done', handler: '顾言川', handledAt: '2026-09-20 08:21' },
+      {
+        id: 'report',
+        name: '缺陷提交',
+        status: 'done',
+        handler: '沈亦航',
+        handledAt: '2026-09-20 07:18',
+      },
+      {
+        id: 'fix',
+        name: '开发修复',
+        status: 'done',
+        handler: '顾言川',
+        handledAt: '2026-09-20 08:21',
+      },
       { id: 'verify', name: '测试验证', status: 'active', handler: '许清禾', handledAt: null },
       { id: 'release', name: '合入发布', status: 'pending', handler: null, handledAt: null },
     ],
@@ -105,7 +142,13 @@ export const MOCK_TICKETS: DtsTicketDetail[] = [
     relatedCount: 1,
     commentCount: 8,
     source: source('DTS-20260919-1633'),
-    currentNode: { id: 'fix', name: '开发修复', status: 'active', handler: '赵景行', handledAt: null },
+    currentNode: {
+      id: 'fix',
+      name: '开发修复',
+      status: 'active',
+      handler: '赵景行',
+      handledAt: null,
+    },
     flowState: 'processing',
     handlers: ['赵景行', '唐书宁'],
     fields: [
@@ -114,8 +157,20 @@ export const MOCK_TICKETS: DtsTicketDetail[] = [
       { key: 'queue', label: '消息队列', value: 'export-status-v2' },
     ],
     flowNodes: [
-      { id: 'report', name: '问题确认', status: 'done', handler: '唐书宁', handledAt: '2026-09-19 16:41' },
-      { id: 'diagnose', name: '定位原因', status: 'done', handler: '赵景行', handledAt: '2026-09-19 18:05' },
+      {
+        id: 'report',
+        name: '问题确认',
+        status: 'done',
+        handler: '唐书宁',
+        handledAt: '2026-09-19 16:41',
+      },
+      {
+        id: 'diagnose',
+        name: '定位原因',
+        status: 'done',
+        handler: '赵景行',
+        handledAt: '2026-09-19 18:05',
+      },
       { id: 'fix', name: '开发修复', status: 'active', handler: '赵景行', handledAt: null },
       { id: 'verify', name: '灰度验证', status: 'pending', handler: null, handledAt: null },
     ],
@@ -136,7 +191,13 @@ export const MOCK_TICKETS: DtsTicketDetail[] = [
     relatedCount: 1,
     commentCount: 2,
     source: source('DTS-20260919-1518'),
-    currentNode: { id: 'accept', name: '研发受理', status: 'active', handler: '陆知遥', handledAt: null },
+    currentNode: {
+      id: 'accept',
+      name: '研发受理',
+      status: 'active',
+      handler: '陆知遥',
+      handledAt: null,
+    },
     flowState: 'pending',
     handlers: ['陆知遥'],
     fields: [
@@ -144,7 +205,13 @@ export const MOCK_TICKETS: DtsTicketDetail[] = [
       { key: 'scope', label: '异常范围', value: '华东区运营组织' },
     ],
     flowNodes: [
-      { id: 'report', name: '问题提交', status: 'done', handler: '陆知遥', handledAt: '2026-09-19 15:18' },
+      {
+        id: 'report',
+        name: '问题提交',
+        status: 'done',
+        handler: '陆知遥',
+        handledAt: '2026-09-19 15:18',
+      },
       { id: 'accept', name: '研发受理', status: 'active', handler: '陆知遥', handledAt: null },
       { id: 'fix', name: '修复验证', status: 'pending', handler: null, handledAt: null },
     ],
@@ -165,7 +232,13 @@ export const MOCK_TICKETS: DtsTicketDetail[] = [
     relatedCount: 1,
     commentCount: 1,
     source: source('DTS-20260918-1427'),
-    currentNode: { id: 'done', name: '完成', status: 'done', handler: '江屿', handledAt: '2026-09-19 11:20' },
+    currentNode: {
+      id: 'done',
+      name: '完成',
+      status: 'done',
+      handler: '江屿',
+      handledAt: '2026-09-19 11:20',
+    },
     flowState: 'closed',
     handlers: ['江屿', '宋时雨'],
     fields: [
@@ -173,8 +246,20 @@ export const MOCK_TICKETS: DtsTicketDetail[] = [
       { key: 'metric', label: '离线指标', value: 'NDCG +8.4%' },
     ],
     flowNodes: [
-      { id: 'proposal', name: '方案确认', status: 'done', handler: '宋时雨', handledAt: '2026-09-18 15:10' },
-      { id: 'implement', name: '开发实现', status: 'done', handler: '江屿', handledAt: '2026-09-19 09:45' },
+      {
+        id: 'proposal',
+        name: '方案确认',
+        status: 'done',
+        handler: '宋时雨',
+        handledAt: '2026-09-18 15:10',
+      },
+      {
+        id: 'implement',
+        name: '开发实现',
+        status: 'done',
+        handler: '江屿',
+        handledAt: '2026-09-19 09:45',
+      },
       { id: 'done', name: '完成', status: 'done', handler: '江屿', handledAt: '2026-09-19 11:20' },
     ],
     relations: [relation('EXP-search-rank-v5', 'experiment')],
@@ -194,7 +279,13 @@ export const MOCK_TICKETS: DtsTicketDetail[] = [
     relatedCount: 1,
     commentCount: 4,
     source: source('DTS-20260917-1196'),
-    currentNode: { id: 'review', name: '方案评审', status: 'active', handler: '宋时雨', handledAt: null },
+    currentNode: {
+      id: 'review',
+      name: '方案评审',
+      status: 'active',
+      handler: '宋时雨',
+      handledAt: null,
+    },
     flowState: 'reviewing',
     handlers: ['宋时雨', '顾言川'],
     fields: [
@@ -202,14 +293,20 @@ export const MOCK_TICKETS: DtsTicketDetail[] = [
       { key: 'volume', label: '典型数据量', value: '2000–10000 人' },
     ],
     flowNodes: [
-      { id: 'submit', name: '需求提交', status: 'done', handler: '顾言川', handledAt: '2026-09-17 11:06' },
+      {
+        id: 'submit',
+        name: '需求提交',
+        status: 'done',
+        handler: '顾言川',
+        handledAt: '2026-09-17 11:06',
+      },
       { id: 'review', name: '方案评审', status: 'active', handler: '宋时雨', handledAt: null },
       { id: 'schedule', name: '排期开发', status: 'pending', handler: null, handledAt: null },
     ],
     relations: [relation('VOC-2026-391', 'feedback')],
     permissions: ['ticket:read', 'relation:read'],
   },
-]
+];
 
 export const FILTER_TICKET_IDS: Record<DtsFilterId, string[]> = {
   myTodos: ['DTS-20260920-1842', 'DTS-20260920-1765', 'DTS-20260919-1633', 'DTS-20260919-1518'],
@@ -219,9 +316,15 @@ export const FILTER_TICKET_IDS: Record<DtsFilterId, string[]> = {
   myOverdue: ['DTS-20260919-1633'],
   ccToMe: ['DTS-20260920-1765'],
   closed: ['DTS-20260918-1427'],
-  unclosed: ['DTS-20260920-1842', 'DTS-20260920-1765', 'DTS-20260919-1633', 'DTS-20260919-1518', 'DTS-20260917-1196'],
+  unclosed: [
+    'DTS-20260920-1842',
+    'DTS-20260920-1765',
+    'DTS-20260919-1633',
+    'DTS-20260919-1518',
+    'DTS-20260917-1196',
+  ],
   cancel: [],
-}
+};
 
 export const FILTER_NAMES: Record<DtsFilterId, string> = {
   myTodos: '待处理',
@@ -233,4 +336,4 @@ export const FILTER_NAMES: Record<DtsFilterId, string> = {
   closed: '已关闭',
   unclosed: '未关闭',
   cancel: '已取消',
-}
+};

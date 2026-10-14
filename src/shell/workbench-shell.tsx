@@ -1,12 +1,15 @@
-"use client"
+'use client';
 
-import { useWorkbenchView } from "./workbench-view"
-import { closeSettings, setSettingsSection, useSettingsSection } from "@/lib/settings-navigation"
-import { useMenuMotion } from "@/lib/use-menu-motion"
-import { useEffect, useRef, useState } from "react"
-import { AnimatePresence, MotionConfig, motion, type Variants } from "motion/react"
+import { useTranslation } from '@/lib/i18n/react';
+import { messages } from './i18n/workbench-shell.messages';
 
-import { TooltipProvider } from "@/components/ui/tooltip"
+import { useWorkbenchView } from './workbench-view';
+import { closeSettings, setSettingsSection, useSettingsSection } from '@/lib/settings-navigation';
+import { useMenuMotion } from '@/lib/use-menu-motion';
+import { useEffect, useRef, useState } from 'react';
+import { AnimatePresence, MotionConfig, motion, type Variants } from 'motion/react';
+
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 /** 主区视图切换：横向推挤 + 3D 微转角，direction +1 进入项目视图 */
 const mainCanvasVariants: Variants = {
@@ -21,7 +24,7 @@ const mainCanvasVariants: Variants = {
     x: 0,
     scale: 1,
     rotateY: 0,
-    transition: { type: "spring", stiffness: 220, damping: 27 },
+    transition: { type: 'spring', stiffness: 220, damping: 27 },
   },
   exit: (direction: number) => ({
     opacity: 0,
@@ -29,70 +32,71 @@ const mainCanvasVariants: Variants = {
     scale: 0.965,
     rotateY: direction * -2,
     // 退场层让出指针，避免过渡期间拦截新视图的点击
-    pointerEvents: "none",
+    pointerEvents: 'none',
     transition: { duration: 0.2, ease: [0.4, 0, 1, 1] },
   }),
-}
+};
 
-import { applyAppearancePrefs, readAppearancePrefs } from "@/lib/appearance"
-import { setOverlayRoot } from "@/lib/overlay-root"
-import { manageWindowFrame } from "@/lib/window-frame"
+import { applyAppearancePrefs, readAppearancePrefs } from '@/lib/appearance';
+import { setOverlayRoot } from '@/lib/overlay-root';
+import { manageWindowFrame } from '@/lib/window-frame';
 
-import { HomeCanvas } from "@/features/home/home-canvas"
-import { AutomationCanvas } from "@/features/automation/automation-canvas"
-import { CommunityCanvas } from "@/features/community/community-canvas"
-import { ConnectorsCanvas } from "@/features/connectors/connectors-canvas"
-import { KnowledgePage } from "@/features/knowledge/knowledge-page"
-import { NavigationSidebar, type WorkbenchView } from "./navigation-sidebar"
-import { useProjectResources } from "@/features/project/project-resources"
-import { ProjectHomeCanvas } from "@/features/project/project-home-canvas"
-import { ProjectIndexCanvas } from "@/features/project/project-index-canvas"
-import styles from "./workbench-shell.module.css"
-import { SettingsDialog } from "@/features/settings/settings-dialog"
-import { HelpFeedbackCanvas } from "@/features/help/help-feedback-canvas"
-import { SystemBar } from "./system-bar"
+import { HomeCanvas } from '@/features/home/home-canvas';
+import { AutomationCanvas } from '@/features/automation/automation-canvas';
+import { CommunityCanvas } from '@/features/community/community-canvas';
+import { ConnectorsCanvas } from '@/features/connectors/connectors-canvas';
+import { KnowledgePage } from '@/features/knowledge/knowledge-page';
+import { NavigationSidebar, type WorkbenchView } from './navigation-sidebar';
+import { useProjectResources } from '@/features/project/project-resources';
+import { ProjectHomeCanvas } from '@/features/project/project-home-canvas';
+import { ProjectIndexCanvas } from '@/features/project/project-index-canvas';
+import styles from './workbench-shell.module.css';
+import { SettingsDialog } from '@/features/settings/settings-dialog';
+import { HelpFeedbackCanvas } from '@/features/help/help-feedback-canvas';
+import { SystemBar } from './system-bar';
 
 export function WorkbenchShell() {
-  useMenuMotion()
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [conversationVersion, setConversationVersion] = useState(0)
-  const [view, setView, settingsOpen] = useWorkbenchView()
-  const settingsSection = useSettingsSection()
-  const { projects, selectedProject, selectProject, setManagementPanel } = useProjectResources()
-  const projectDashboard = view === "projects" && selectedProject !== null
+  const uiText = useTranslation(messages).t;
+  useMenuMotion();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [conversationVersion, setConversationVersion] = useState(0);
+  const [view, setView, settingsOpen] = useWorkbenchView();
+  const settingsSection = useSettingsSection();
+  const { projects, selectedProject, selectProject, setManagementPanel } = useProjectResources();
+  const projectDashboard = view === 'projects' && selectedProject !== null;
   // 应用面板根：桌面端作为自绘外框的内层与弹层宿主
-  const frameRef = useRef<HTMLDivElement>(null)
+  const frameRef = useRef<HTMLDivElement>(null);
 
   // 启动时恢复外观偏好（主题 / 字体）
   useEffect(() => {
-    applyAppearancePrefs(readAppearancePrefs())
-  }, [])
+    applyAppearancePrefs(readAppearancePrefs());
+  }, []);
 
   // 桌面端启用窗口自绘外框，并把弹层收进应用面板内
   useEffect(() => {
-    setOverlayRoot(frameRef.current)
-    let disposeFrame: (() => void) | undefined
+    setOverlayRoot(frameRef.current);
+    let disposeFrame: (() => void) | undefined;
     void manageWindowFrame().then((dispose) => {
-      disposeFrame = dispose
-    })
+      disposeFrame = dispose;
+    });
     return () => {
-      disposeFrame?.()
-      setOverlayRoot(null)
-    }
-  }, [])
+      disposeFrame?.();
+      setOverlayRoot(null);
+    };
+  }, []);
 
   function changeView(nextView: WorkbenchView) {
-    if (nextView === "home") setConversationVersion(current => current + 1)
-    if (nextView === "settings") {
-      setView(nextView)
-      return
+    if (nextView === 'home') setConversationVersion((current) => current + 1);
+    if (nextView === 'settings') {
+      setView(nextView);
+      return;
     }
-    if (nextView !== "projects") setManagementPanel(null)
-    const needsCompactNavigation = nextView === "community" || nextView === "knowledge"
+    if (nextView !== 'projects') setManagementPanel(null);
+    const needsCompactNavigation = nextView === 'community' || nextView === 'knowledge';
     if (needsCompactNavigation && !sidebarCollapsed) {
-      setSidebarCollapsed(true)
+      setSidebarCollapsed(true);
     }
-    setView(nextView)
+    setView(nextView);
   }
 
   return (
@@ -106,57 +110,76 @@ export function WorkbenchShell() {
           >
             {/* 设置覆盖在当前工作面上，原视图及其输入、选择和滚动状态保持挂载。 */}
             <div className="flex min-h-0 flex-1">
-              {!projectDashboard && <div className={`${styles.navigation} sidebar-material flex shrink-0`}>
-                <NavigationSidebar
-                  open={!sidebarCollapsed}
-                  onCollapse={() => {
-                    setSidebarCollapsed(true)
-                  }}
-                  onExpand={() => {
-                    setSidebarCollapsed(false)
-                  }}
-                  view={view}
-                  onViewChange={changeView}
-                />
-              </div>}
+              {!projectDashboard && (
+                <div className={`${styles.navigation} sidebar-material flex shrink-0`}>
+                  <NavigationSidebar
+                    open={!sidebarCollapsed}
+                    onCollapse={() => {
+                      setSidebarCollapsed(true);
+                    }}
+                    onExpand={() => {
+                      setSidebarCollapsed(false);
+                    }}
+                    view={view}
+                    onViewChange={changeView}
+                  />
+                </div>
+              )}
               <div className="flex min-w-0 flex-1 flex-col">
-                {!projectDashboard && <div className={styles.systemBar}><SystemBar onNavigate={changeView} /></div>}
+                {!projectDashboard && (
+                  <div className={styles.systemBar}>
+                    <SystemBar onNavigate={changeView} />
+                  </div>
+                )}
                 <main className="relative min-w-0 flex-1 overflow-hidden bg-panel">
                   <div className="relative h-full min-h-0" style={{ perspective: 1600 }}>
-                    <AnimatePresence initial={false} custom={view === "projects" ? 1 : -1}>
+                    <AnimatePresence initial={false} custom={view === 'projects' ? 1 : -1}>
                       <motion.div
                         key={view}
-                        custom={view === "projects" ? 1 : -1}
+                        custom={view === 'projects' ? 1 : -1}
                         variants={mainCanvasVariants}
                         initial="enter"
                         animate="center"
                         exit="exit"
                         className="absolute inset-0"
                       >
-                        {view === "home" ? (
+                        {view === 'home' ? (
                           <HomeCanvas key={conversationVersion} />
-                        ) : view === "project-home" ? (
-                          <ProjectIndexCanvas onOpenProject={() => changeView("projects")} />
-                        ) : view === "projects" ? (
-                          selectedProject ? <ProjectHomeCanvas key={`${selectedProject.source}:${selectedProject.id}`}
-                            projectId={selectedProject.id}
-                            projectName={selectedProject.name}
-                            source={selectedProject.source}
-                            onBack={() => changeView("project-home")}
-                          /> : <ProjectIndexCanvas onOpenProject={() => changeView("projects")} />
-                        ) : view === "community" ? (
+                        ) : view === 'project-home' ? (
+                          <ProjectIndexCanvas onOpenProject={() => changeView('projects')} />
+                        ) : view === 'projects' ? (
+                          selectedProject ? (
+                            <ProjectHomeCanvas
+                              key={`${selectedProject.source}:${selectedProject.id}`}
+                              projectId={selectedProject.id}
+                              projectName={selectedProject.name}
+                              source={selectedProject.source}
+                              onBack={() => changeView('project-home')}
+                            />
+                          ) : (
+                            <ProjectIndexCanvas onOpenProject={() => changeView('projects')} />
+                          )
+                        ) : view === 'community' ? (
                           <CommunityCanvas />
-                        ) : view === "automation" ? (
+                        ) : view === 'automation' ? (
                           <AutomationCanvas />
-                        ) : view === "connectors" ? (
-                          <ConnectorsCanvas onWorkbenchFocus={() => setSidebarCollapsed(true)} onOpenProject={id => { if (projects.some(project => project.id === id)) { selectProject(id); changeView("projects"); } else changeView("project-home"); }} />
-                        ) : view === "knowledge" ? (
-                          <KnowledgePage onOpenSettings={() => changeView("settings")} />
-                        ) : view === "help" ? (
+                        ) : view === 'connectors' ? (
+                          <ConnectorsCanvas
+                            onWorkbenchFocus={() => setSidebarCollapsed(true)}
+                            onOpenProject={(id) => {
+                              if (projects.some((project) => project.id === id)) {
+                                selectProject(id);
+                                changeView('projects');
+                              } else changeView('project-home');
+                            }}
+                          />
+                        ) : view === 'knowledge' ? (
+                          <KnowledgePage onOpenSettings={() => changeView('settings')} />
+                        ) : view === 'help' ? (
                           <HelpFeedbackCanvas onNavigate={changeView} />
                         ) : (
                           <div className="flex h-full items-center justify-center text-[13px] text-[var(--ink-soft)]">
-                            该视图已在 V1 规划中，尚未开放
+                            {uiText('该视图已在 V1 规划中，尚未开放')}
                           </div>
                         )}
                       </motion.div>
@@ -165,10 +188,15 @@ export function WorkbenchShell() {
                 </main>
               </div>
             </div>
-            <SettingsDialog open={settingsOpen} section={settingsSection} onSectionChange={setSettingsSection} onClose={closeSettings} />
+            <SettingsDialog
+              open={settingsOpen}
+              section={settingsSection}
+              onSectionChange={setSettingsSection}
+              onClose={closeSettings}
+            />
           </div>
         </div>
       </TooltipProvider>
     </MotionConfig>
-  )
+  );
 }

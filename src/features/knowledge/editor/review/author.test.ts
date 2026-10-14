@@ -30,8 +30,16 @@ describe('describeSuggestionAuthor', () => {
   });
 
   test('human origins stay generic; user names and unknown shapes stay honest', () => {
-    expect(describeSuggestionAuthor('human:window_7')).toMatchObject({ kind: 'human', label: '成员', source: '本人输入' });
-    expect(describeSuggestionAuthor('user:张三')).toMatchObject({ kind: 'human', label: '张三', source: '本人输入' });
+    expect(describeSuggestionAuthor('human:window_7')).toMatchObject({
+      kind: 'human',
+      label: '成员',
+      source: '本人输入',
+    });
+    expect(describeSuggestionAuthor('user:张三')).toMatchObject({
+      kind: 'human',
+      label: '张三',
+      source: '本人输入',
+    });
     // Unparseable strings present the raw value instead of inventing a source.
     expect(describeSuggestionAuthor('李四')).toMatchObject({ kind: 'human', label: '李四' });
     expect(describeSuggestionAuthor('')).toMatchObject({ kind: 'human', label: '成员' });
@@ -47,6 +55,13 @@ describe('describeSuggestionAuthor', () => {
 
 describe('formatSuggestionTime', () => {
   const now = new Date('2026-09-26T12:00:00+08:00');
+
+  test('English uses singular and plural units and preserves raw timestamps', () => {
+    expect(formatSuggestionTime('2026-09-26T11:59:00+08:00', now, 'en-US')).toBe('1 minute ago');
+    expect(formatSuggestionTime('2026-09-26T10:00:00+08:00', now, 'en-US')).toBe('2 hours ago');
+    expect(formatSuggestionTime('2026-09-25T12:00:00+08:00', now, 'en-US')).toBe('1 day ago');
+    expect(formatSuggestionTime('用户时间备注', now, 'en-US')).toBe('用户时间备注');
+  });
 
   test('buckets elapsed time the way a reviewer reads it', () => {
     expect(formatSuggestionTime('2026-09-26T11:59:40+08:00', now)).toBe('刚刚');

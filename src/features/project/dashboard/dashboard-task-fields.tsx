@@ -1,6 +1,16 @@
 'use client';
 
-import { useId, useState, type ReactNode } from 'react';
+import { useTranslation } from '@/lib/i18n';
+import { fixtureField, registerProjectFixtures, translateFixed } from '../i18n/display';
+import { messages } from './i18n/dashboard-task-fields';
+
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   CalendarBlank,
   CaretDown,
@@ -13,14 +23,7 @@ import {
   User,
   X,
 } from '@phosphor-icons/react';
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Avatar } from './dashboard-ui';
+import { useId, useState, type ReactNode } from 'react';
 import {
   dashboardPeople,
   type DashboardPersonId,
@@ -29,6 +32,7 @@ import {
   type DashboardTask,
 } from './dashboard-model';
 import styles from './dashboard-task-dialog.module.css';
+import { Avatar } from './dashboard-ui';
 
 const people = Object.values(dashboardPeople);
 const priorities: DashboardPriority[] = ['Low', 'Medium', 'High', 'Urgent'];
@@ -49,22 +53,24 @@ function ChoiceMenu({
   icon?: ReactNode;
   compact?: boolean;
 }) {
+  const { locale } = useTranslation(messages);
+  const uiLabel = (value: string) => translateFixed(value, locale);
   const [open, setOpen] = useState(false);
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger
         className={compact ? styles.priority : styles.control}
-        aria-label={`${label}: ${value}`}
+        aria-label={`${label}: ${uiLabel(value)}`}
         data-priority={compact ? value.toLowerCase() : undefined}
       >
         {icon}
-        {value}
+        {uiLabel(value)}
         {compact ? null : <CaretDown size={13} className={styles.caret} />}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" density="compact">
         {values.map((option) => (
           <DropdownMenuItem key={option} onSelect={() => onChange(option)}>
-            {option}
+            {uiLabel(option)}
             <span className={styles.menuCheck}>
               {option === value ? <Check size={13} /> : null}
             </span>
@@ -86,6 +92,8 @@ export function PeopleMenu({
   onToggle: (id: DashboardPersonId) => void;
   children?: ReactNode;
 }) {
+  const { locale } = useTranslation(messages);
+
   const [open, setOpen] = useState(false);
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -101,7 +109,7 @@ export function PeopleMenu({
             onSelect={(event) => event.preventDefault()}
           >
             <Avatar id={person.id} size={22} />
-            {person.name}
+            {fixtureField(person, 'name', locale)}
           </DropdownMenuCheckboxItem>
         ))}
       </DropdownMenuContent>
@@ -116,11 +124,13 @@ export function DashboardTaskFields({
   task: DashboardTask;
   onChange: (task: DashboardTask) => void;
 }) {
+  const { t, locale } = useTranslation(messages);
+
   const dateId = useId();
   const dueDate = new Date(`${task.dueDate}T12:00:00`);
   const formattedDate = Number.isNaN(dueDate.valueOf())
-    ? 'Choose a date'
-    : dueDate.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+    ? translateFixed('Choose a date', locale)
+    : dueDate.toLocaleDateString(locale, { month: 'short', day: '2-digit', year: 'numeric' });
 
   function toggleAssignee(id: DashboardPersonId) {
     const assignees = task.assignees.includes(id)
@@ -134,7 +144,7 @@ export function DashboardTaskFields({
       <div className={styles.fieldRow}>
         <span className={styles.fieldLabel}>
           <User size={16} />
-          Assignee
+          {t('Assignee')}
         </span>
         <div className={styles.assignees}>
           {task.assignees.map((id) => (
@@ -143,23 +153,29 @@ export function DashboardTaskFields({
               key={id}
               className={`${styles.assigneeChip} fouc-action`}
               data-person={id}
-              aria-label={`Remove ${dashboardPeople[id].name} from assignees`}
+              aria-label={t('Remove {v0} from assignees', {
+                v0: fixtureField(dashboardPeople[id], 'name', locale),
+              })}
               onClick={() => toggleAssignee(id)}
             >
-              {dashboardPeople[id].name}
+              {fixtureField(dashboardPeople[id], 'name', locale)}
               <X size={11} />
             </button>
           ))}
-          <PeopleMenu label="Add assignees" selected={task.assignees} onToggle={toggleAssignee} />
+          <PeopleMenu
+            label={t('Add assignees')}
+            selected={task.assignees}
+            onToggle={toggleAssignee}
+          />
         </div>
       </div>
       <div className={styles.fieldRow}>
         <span className={styles.fieldLabel}>
           <Tag size={16} />
-          Tags
+          {t('Tags')}
         </span>
         <ChoiceMenu
-          label="Tag"
+          label={t('Tag')}
           value={task.tag}
           values={['Mobile App', 'Website', 'Dashboard', 'Branding']}
           onChange={(tag) => onChange({ ...task, tag })}
@@ -168,10 +184,10 @@ export function DashboardTaskFields({
       <div className={styles.fieldRow}>
         <span className={styles.fieldLabel}>
           <SealCheck size={16} />
-          Status
+          {t('Status')}
         </span>
         <ChoiceMenu
-          label="Status"
+          label={t('Status')}
           value={task.status}
           values={statuses}
           icon={task.status === 'Completed' ? <Check size={15} /> : <CircleDashed size={15} />}
@@ -194,7 +210,7 @@ export function DashboardTaskFields({
       <div className={styles.fieldRow}>
         <label className={styles.fieldLabel} htmlFor={dateId}>
           <CalendarBlank size={16} />
-          Due date
+          {t('Due date')}
         </label>
         <div className={styles.dateControl}>
           <span>{formattedDate}</span>
@@ -207,19 +223,19 @@ export function DashboardTaskFields({
               const dueDate = event.currentTarget.value;
               if (dueDate) onChange({ ...task, dueDate });
             }}
-            aria-label="Due date"
+            aria-label={t('Due date')}
           />
         </div>
       </div>
       <div className={styles.fieldRow}>
         <span className={styles.fieldLabel}>
           <Flame size={16} />
-          Priority
+          {t('Priority')}
         </span>
         <div>
           <ChoiceMenu
             compact
-            label="Priority"
+            label={t('Priority')}
             value={task.priority}
             values={priorities}
             onChange={(priority) => onChange({ ...task, priority: priority as DashboardPriority })}
@@ -229,3 +245,5 @@ export function DashboardTaskFields({
     </div>
   );
 }
+
+registerProjectFixtures([priorities, statuses]);

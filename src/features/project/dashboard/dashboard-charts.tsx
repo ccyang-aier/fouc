@@ -1,7 +1,17 @@
 'use client';
+import { translateFixed } from '../i18n/display';
 
-import { useEffect, useEffectEvent, useId, useRef, useState, type CSSProperties } from 'react';
-import type { ECharts, EChartsCoreOption } from 'echarts/core';
+import { getLocale, useTranslation, type Locale } from '@/lib/i18n';
+import { fixtureField, registerProjectFixtures } from '../i18n/display';
+import { messages } from './i18n/dashboard-charts';
+
+import {
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   ArrowClockwise,
   CaretLeft,
@@ -10,13 +20,11 @@ import {
   DownloadSimple,
   SlidersHorizontal,
 } from '@phosphor-icons/react';
-import {
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import type { ECharts, EChartsCoreOption } from 'echarts/core';
+import { useEffect, useEffectEvent, useId, useRef, useState, type CSSProperties } from 'react';
+import styles from './dashboard-charts.module.css';
+import { csvCell, downloadFile } from './dashboard-download';
+import { DashboardMenu, DashboardMenuContent } from './dashboard-menu';
 import type {
   DashboardMeeting,
   DashboardMilestonePoint,
@@ -26,27 +34,27 @@ import type {
   DashboardTask,
 } from './dashboard-model';
 import { AvatarGroup, IconButton, SegmentedControl } from './dashboard-ui';
-import { DashboardMenu, DashboardMenuContent } from './dashboard-menu';
-import styles from './dashboard-charts.module.css';
 
 const hour = 60 * 60 * 1000;
 const day = 24 * hour;
 const activityPeriods: readonly DashboardPeriod[] = ['Daily', 'Weekly', 'Monthly', 'Yearly'];
 const timelineCategories = ['Dashboard Design', 'Mobile App', 'Landing Page', 'Meeting'] as const;
-const shortMonth = new Intl.DateTimeFormat('en-US', { month: 'short', timeZone: 'UTC' });
-const longMonth = new Intl.DateTimeFormat('en-US', { month: 'long', timeZone: 'UTC' });
-const dateLabel = new Intl.DateTimeFormat('en-US', {
-  month: 'short',
-  day: 'numeric',
-  year: 'numeric',
-  timeZone: 'UTC',
-});
-const timeLabel = new Intl.DateTimeFormat('en-US', {
-  hour: '2-digit',
-  minute: '2-digit',
-  hour12: true,
-  timeZone: 'UTC',
-});
+const shortMonth = (locale: Locale) =>
+  new Intl.DateTimeFormat(locale, { month: 'short', timeZone: 'UTC' });
+const dateLabel = (locale: Locale) =>
+  new Intl.DateTimeFormat(locale, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+const timeLabel = (locale: Locale) =>
+  new Intl.DateTimeFormat(locale, {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'UTC',
+  });
 
 interface TimelineEvent {
   target: DashboardTarget;
@@ -83,13 +91,14 @@ function dateValue(value: Date) {
 function timelineEvents(
   tasks: readonly DashboardTask[],
   meetings: readonly DashboardMeeting[],
+  locale: Locale = getLocale(),
 ): TimelineEvent[] {
   const taskEvents = tasks.map((task) => {
     const start = calendarDate(task.scheduledDate).getTime() + task.startHour * hour;
     return {
       target: { kind: 'task', id: task.id } as DashboardTarget,
       category: task.timelineCategory,
-      title: task.title,
+      title: fixtureField(task, 'title', locale),
       progress: task.progress,
       people: task.assignees,
       tone:
@@ -108,7 +117,7 @@ function timelineEvents(
     return {
       target: { kind: 'meeting', id: meeting.id } as DashboardTarget,
       category: 'Meeting',
-      title: meeting.title,
+      title: fixtureField(meeting, 'title', locale),
       people: meeting.attendees,
       tone: 'purple',
       start,
@@ -149,17 +158,21 @@ function timeWindow(
   };
 }
 
-function timeTicks(window: TimeWindow, period: DashboardPeriod): TimeTick[] {
+function timeTicks(
+  window: TimeWindow,
+  period: DashboardPeriod,
+  locale: Locale = getLocale(),
+): TimeTick[] {
   if (period === 'Daily') {
     const hours = (window.end - window.start) / hour;
     const step = hours > 14 ? 3 : hours > 9 ? 2 : 1;
     const ticks: TimeTick[] = [];
     for (let time = window.start; time <= window.end; time += step * hour)
-      ticks.push({ label: timeLabel.format(time), time });
+      ticks.push({ label: timeLabel(locale).format(time), time });
     return ticks;
   }
   if (period === 'Weekly') {
-    const weekday = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: 'UTC' });
+    const weekday = new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' });
     return Array.from({ length: 7 }, (_, index) => {
       const time = window.start + (index + 0.5) * day;
       return { label: weekday.format(time), time };
@@ -169,7 +182,7 @@ function timeTicks(window: TimeWindow, period: DashboardPeriod): TimeTick[] {
   if (period === 'Yearly') {
     return [0, 2, 4, 6, 8, 10, 11].map((month) => {
       const time = Date.UTC(first.getUTCFullYear(), month, 1);
-      return { label: shortMonth.format(time), time };
+      return { label: shortMonth(locale).format(time), time };
     });
   }
   const days = (window.end - window.start) / day;
@@ -177,7 +190,7 @@ function timeTicks(window: TimeWindow, period: DashboardPeriod): TimeTick[] {
   const indices = Array.from({ length: Math.ceil((days - 1) / step) }, (_, index) => index * step);
   indices.push(days - 1);
   return indices.map((index) => ({
-    label: `${shortMonth.format(window.start)} ${index + 1}`,
+    label: `${shortMonth(locale).format(window.start)} ${index + 1}`,
     time: window.start + index * day,
   }));
 }
@@ -228,9 +241,11 @@ export function ActivityMap({
   onOpenTarget: (target: DashboardTarget) => void;
   referenceDate?: string;
 }) {
+  const { t, locale } = useTranslation(messages);
+
   const [period, setPeriod] = useState<DashboardPeriod>('Daily');
   const [selectedDate, setSelectedDate] = useState(referenceDate);
-  const events = timelineEvents(tasks, meetings);
+  const events = timelineEvents(tasks, meetings, locale);
   const window = timeWindow(selectedDate, period, events);
   const visibleEvents = events.filter(
     (event) => event.start < window.end && event.end > window.start,
@@ -248,13 +263,13 @@ export function ActivityMap({
     };
   });
   const plotHeight = rows.reduce((sum, row) => sum + row.height, 0);
-  const ticks = timeTicks(window, period);
+  const ticks = timeTicks(window, period, locale);
   const referenceTime = calendarDate(referenceDate).getTime() + 13 * hour;
   const referenceVisible = referenceTime >= window.start && referenceTime <= window.end;
   const rangeName =
     period === 'Daily'
-      ? dateLabel.format(window.start)
-      : `${dateLabel.format(window.start)} – ${dateLabel.format(window.end - 1)}`;
+      ? dateLabel(locale).format(window.start)
+      : `${dateLabel(locale).format(window.start)} – ${dateLabel(locale).format(window.end - 1)}`;
 
   return (
     <section
@@ -263,19 +278,19 @@ export function ActivityMap({
     >
       <header className={styles.panelHeader}>
         <div className={styles.activityHeading}>
-          <h2 id="dashboard-activity-map-title">Time-Based Activity Map</h2>
+          <h2 id="dashboard-activity-map-title">{t('Time-Based Activity Map')}</h2>
           <div className={styles.timelineDates}>
             <button
               type="button"
               className={`fouc-action ${styles.dateNavigation}`}
-              aria-label="Previous timeline period"
+              aria-label={t('Previous timeline period')}
               onClick={() => setSelectedDate((value) => adjacentDate(value, period, -1))}
             >
               <CaretLeft size={12} />
             </button>
             <input
               type="date"
-              aria-label="Timeline date"
+              aria-label={t('Timeline date')}
               value={selectedDate}
               onInput={(event) => {
                 const value = event.currentTarget.value;
@@ -285,7 +300,7 @@ export function ActivityMap({
             <button
               type="button"
               className={`fouc-action ${styles.dateNavigation}`}
-              aria-label="Next timeline period"
+              aria-label={t('Next timeline period')}
               onClick={() => setSelectedDate((value) => adjacentDate(value, period, 1))}
             >
               <CaretRight size={12} />
@@ -296,14 +311,14 @@ export function ActivityMap({
           items={activityPeriods}
           value={period}
           onChange={setPeriod}
-          label="Activity timeline period"
+          label={t('Activity timeline period')}
         />
       </header>
       <div
         className={styles.timeline}
         style={{ '--timeline-height': `${plotHeight}px` } as CSSProperties}
         role="group"
-        aria-label={`${period} schedule: ${rangeName}`}
+        aria-label={t('{v0} schedule: {v1}', { v0: translateFixed(period, locale), v1: rangeName })}
       >
         <div
           className={styles.timelineRows}
@@ -311,7 +326,7 @@ export function ActivityMap({
         >
           {rows.map((row) => (
             <div className={styles.timelineRow} key={row.category}>
-              <span className={styles.rowLabel}>{row.category}</span>
+              <span className={styles.rowLabel}>{translateFixed(row.category, locale)}</span>
               <div className={styles.rowTrack}>
                 {row.events.map((event) => (
                   <Tooltip key={`${event.target.kind}:${event.target.id}`}>
@@ -328,24 +343,39 @@ export function ActivityMap({
                         }
                         data-compact={event.compact}
                         onClick={() => onOpenTarget(event.target)}
-                        aria-label={`${event.title}, ${dateLabel.format(event.start)}, ${timeLabel.format(event.start)} to ${timeLabel.format(event.end)}${event.progress === undefined ? '' : `, ${event.progress}% complete`}. Open details`}
+                        aria-label={t('{v0}, {v1}, {v2} to {v3}{v4}. Open details', {
+                          v0: fixtureField(event, 'title', locale),
+                          v1: dateLabel(locale).format(event.start),
+                          v2: timeLabel(locale).format(event.start),
+                          v3: timeLabel(locale).format(event.end),
+                          v4:
+                            event.progress === undefined
+                              ? ''
+                              : t(', {count}% complete', { count: event.progress }),
+                        })}
                       >
                         <AvatarGroup
                           ids={event.compact ? event.people.slice(0, 1) : event.people}
                           size={16}
                         />
-                        <span className={styles.timelineTaskTitle}>{event.title}</span>
+                        <span className={styles.timelineTaskTitle}>
+                          {fixtureField(event, 'title', locale)}
+                        </span>
                         {event.progress === undefined ? null : <strong>{event.progress}%</strong>}
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="top" className={styles.scheduleTooltip}>
-                      <strong>{event.title}</strong>
+                      <strong>{fixtureField(event, 'title', locale)}</strong>
                       <span>
-                        {dateLabel.format(event.start)} · {timeLabel.format(event.start)} –{' '}
-                        {timeLabel.format(event.end)}
+                        {dateLabel(locale).format(event.start)} ·{' '}
+                        {timeLabel(locale).format(event.start)} –{' '}
+                        {timeLabel(locale).format(event.end)}
                       </span>
                       {event.progress === undefined ? null : (
-                        <span>{event.progress}% complete</span>
+                        <span>
+                          {event.progress}
+                          {t('% complete')}
+                        </span>
                       )}
                     </TooltipContent>
                   </Tooltip>
@@ -363,11 +393,16 @@ export function ActivityMap({
                   (referenceTime - window.start) / (window.end - window.start),
               } as CSSProperties
             }
-            aria-label={`Reference time: ${dateLabel.format(referenceTime)}, ${timeLabel.format(referenceTime)}`}
+            aria-label={t('Reference time: {v0}, {v1}', {
+              v0: dateLabel(locale).format(referenceTime),
+              v1: timeLabel(locale).format(referenceTime),
+            })}
           />
         ) : null}
         {!visibleEvents.length ? (
-          <p className={styles.timelineEmpty}>No scheduled tasks or meetings in this period.</p>
+          <p className={styles.timelineEmpty}>
+            {t('No scheduled tasks or meetings in this period.')}
+          </p>
         ) : null}
         <div className={styles.timeAxis} aria-hidden="true">
           {ticks.map((tick, index) => (
@@ -381,7 +416,7 @@ export function ActivityMap({
               data-first={index === 0}
               data-current={period === 'Daily' && referenceVisible && tick.time === referenceTime}
             >
-              {tick.label}
+              {fixtureField(tick, 'label', locale)}
             </span>
           ))}
         </div>
@@ -402,9 +437,13 @@ const rangeLength: Record<MilestonePeriod, number> = {
 function monthDate(value: string) {
   return calendarDate(`${value}-01`);
 }
-function milestoneDateLabel(value: string) {
+function milestoneDateLabel(value: string, locale: Locale = getLocale()) {
   const date = monthDate(value);
-  return `${longMonth.format(date)}, ${date.getUTCFullYear()}`;
+  return new Intl.DateTimeFormat(locale, {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(date);
 }
 function milestoneRange(
   points: readonly DashboardMilestonePoint[],
@@ -450,13 +489,14 @@ function loadChartLibrary() {
 function milestoneChartOption(
   points: readonly DashboardMilestonePoint[],
   fontFamily: string,
+  locale: Locale = getLocale(),
 ): EChartsCoreOption {
   return {
     animation: false,
     grid: { left: -12, right: -12, top: 16, bottom: 42 },
     xAxis: {
       type: 'category',
-      data: points.map((point) => shortMonth.format(monthDate(point.month))),
+      data: points.map((point) => shortMonth(locale).format(monthDate(point.month))),
       axisLine: { show: false },
       axisTick: { show: false, alignWithLabel: true },
       axisLabel: { color: '#55555f', fontFamily, fontSize: 12, margin: 26, interval: 0 },
@@ -469,7 +509,7 @@ function milestoneChartOption(
     yAxis: { type: 'value', max: milestoneYMax(points), show: false },
     series: [
       {
-        name: 'Target',
+        name: translateFixed('Target', locale),
         type: 'bar',
         data: points.map((point) => point.target),
         barWidth: points.length > 6 ? 8 : 12,
@@ -478,7 +518,7 @@ function milestoneChartOption(
         silent: true,
       },
       {
-        name: 'Actual',
+        name: translateFixed('Actual', locale),
         type: 'bar',
         data: points.map((point) => point.actual),
         barWidth: points.length > 6 ? 8 : 12,
@@ -490,13 +530,16 @@ function milestoneChartOption(
 }
 
 function exportMilestones(points: readonly DashboardMilestonePoint[]) {
-  const csv = `Month,Target,Actual\r\n${points.map((point) => `${point.month},${point.target},${point.actual}`).join('\r\n')}`;
-  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = 'milestone-tracker.csv';
-  link.click();
-  URL.revokeObjectURL(url);
+  const locale = getLocale();
+  const rows = [
+    ['Month', 'Target', 'Actual'].map((key) => translateFixed(key, locale)),
+    ...points.map((point) => [milestoneDateLabel(point.month, locale), point.target, point.actual]),
+  ];
+  downloadFile(
+    'milestone-tracker.csv',
+    '\uFEFF' + rows.map((row) => row.map(csvCell).join(',')).join('\r\n'),
+    'text/csv;charset=utf-8',
+  );
 }
 
 export function MilestoneTracker({
@@ -506,6 +549,8 @@ export function MilestoneTracker({
   points: readonly DashboardMilestonePoint[];
   onEdit: () => void;
 }) {
+  const { t, locale } = useTranslation(messages);
+
   const [period, setPeriod] = useState<MilestonePeriod>('6 Months');
   const [startMonth, setStartMonth] = useState<string | null>(null);
   const [activeMonth, setActiveMonth] = useState<string | null>(null);
@@ -524,7 +569,7 @@ export function MilestoneTracker({
   const draw = useEffectEvent(() => {
     if (instance.current && canvas.current) {
       instance.current.setOption(
-        milestoneChartOption(visiblePoints, getComputedStyle(canvas.current).fontFamily),
+        milestoneChartOption(visiblePoints, getComputedStyle(canvas.current).fontFamily, locale),
         { notMerge: true },
       );
     }
@@ -574,7 +619,7 @@ export function MilestoneTracker({
 
   useEffect(() => {
     draw();
-  }, [points, period, windowStart]);
+  }, [points, period, windowStart, locale]);
 
   function changePeriod(value: MilestonePeriod) {
     setPeriod(value);
@@ -603,50 +648,50 @@ export function MilestoneTracker({
       aria-labelledby="dashboard-milestone-title"
     >
       <header className={styles.panelHeader}>
-        <h2 id="dashboard-milestone-title">Milestone Tracker</h2>
+        <h2 id="dashboard-milestone-title">{t('Milestone Tracker')}</h2>
         <div className={styles.milestoneActions}>
           <SegmentedControl
             items={milestonePeriods}
             value={period}
             onChange={changePeriod}
-            label="Milestone date range"
+            label={t('Milestone date range')}
           />
           <DashboardMenu>
             <DropdownMenuTrigger asChild>
-              <IconButton label="Milestone options">
+              <IconButton label={t('Milestone options')}>
                 <DotsThree size={18} weight="bold" />
               </IconButton>
             </DropdownMenuTrigger>
             <DashboardMenuContent align="end" density="compact">
               {hasPoints ? (
                 <DropdownMenuLabel>
-                  {milestoneDateLabel(visiblePoints[0].month)} –{' '}
-                  {milestoneDateLabel(visiblePoints.at(-1)!.month)}
+                  {milestoneDateLabel(visiblePoints[0].month, locale)} –{' '}
+                  {milestoneDateLabel(visiblePoints.at(-1)!.month, locale)}
                 </DropdownMenuLabel>
               ) : null}
               <DropdownMenuItem disabled={!hasPoints} onSelect={() => navigatePeriod(-1)}>
                 <CaretLeft />
-                Previous period
+                {t('Previous period')}
               </DropdownMenuItem>
               <DropdownMenuItem disabled={!hasPoints} onSelect={() => navigatePeriod(1)}>
                 <CaretRight />
-                Next period
+                {t('Next period')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={onEdit}>
                 <SlidersHorizontal />
-                Manage targets and values
+                {t('Manage targets and values')}
               </DropdownMenuItem>
               <DropdownMenuItem
                 disabled={!hasPoints}
                 onSelect={() => exportMilestones(visiblePoints)}
               >
                 <DownloadSimple />
-                Export CSV
+                {t('Export CSV')}
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={resetView}>
                 <ArrowClockwise />
-                Reset view
+                {t('Reset view')}
               </DropdownMenuItem>
             </DashboardMenuContent>
           </DashboardMenu>
@@ -659,7 +704,11 @@ export function MilestoneTracker({
             className={styles.chartControls}
             ref={controls}
             role="group"
-            aria-label={`${period} milestone target and actual tasks, ${visiblePoints[0].month} to ${visiblePoints.at(-1)!.month}`}
+            aria-label={t('{v0} milestone target and actual tasks, {v1} to {v2}', {
+              v0: translateFixed(period, locale),
+              v1: milestoneDateLabel(visiblePoints[0].month, locale),
+              v2: milestoneDateLabel(visiblePoints.at(-1)!.month, locale),
+            })}
             onMouseLeave={() => {
               if (!controls.current?.contains(document.activeElement)) setActiveMonth(null);
             }}
@@ -670,7 +719,11 @@ export function MilestoneTracker({
                 key={point.month}
                 className={styles.chartPoint}
                 data-active={point.month === activeMonth}
-                aria-label={`${milestoneDateLabel(point.month)}: target ${point.target} tasks, actual ${point.actual} tasks`}
+                aria-label={t('{v0}: target {v1} tasks, actual {v2} tasks', {
+                  v0: milestoneDateLabel(point.month, locale),
+                  v1: point.target,
+                  v2: point.actual,
+                })}
                 aria-describedby={point.month === activeMonth ? tooltipId : undefined}
                 onMouseEnter={() => setActiveMonth(point.month)}
                 onFocus={() => setActiveMonth(point.month)}
@@ -706,26 +759,38 @@ export function MilestoneTracker({
               } as CSSProperties
             }
           >
-            <div className={styles.tooltipDate}>{milestoneDateLabel(activePoint.month)}</div>
+            <div className={styles.tooltipDate}>
+              {milestoneDateLabel(activePoint.month, locale)}
+            </div>
             <div className={styles.tooltipRow}>
               <span className={styles.targetDot} />
-              Target <span>{activePoint.target} Tasks</span>
+              {t('Target')}
+              <span>
+                {activePoint.target} {t('Tasks')}
+              </span>
             </div>
             <div className={styles.tooltipRow}>
               <span className={styles.actualDot} />
-              Actual <span>{activePoint.actual} Tasks</span>
+              {t('Actual')}
+              <span>
+                {activePoint.actual} {t('Tasks')}
+              </span>
             </div>
           </div>
         ) : null}
         {!hasPoints ? (
           <div className={styles.chartStatus}>
-            <span>No milestone data yet.</span>
+            <span>{t('No milestone data yet.')}</span>
             <button type="button" className="fouc-action" onClick={onEdit}>
-              Add targets
+              {t('Add targets')}
             </button>
           </div>
         ) : status === 'loading' ? (
-          <span className={styles.chartStatus} role="status" aria-label="Loading milestone chart">
+          <span
+            className={styles.chartStatus}
+            role="status"
+            aria-label={t('Loading milestone chart')}
+          >
             <span className={styles.loadingDots}>
               <i />
               <i />
@@ -734,7 +799,7 @@ export function MilestoneTracker({
           </span>
         ) : status === 'error' ? (
           <div className={styles.chartStatus} role="alert">
-            <span>Couldn’t load the chart.</span>
+            <span>{t('Couldn’t load the chart.')}</span>
             <button
               type="button"
               className="fouc-action"
@@ -743,7 +808,7 @@ export function MilestoneTracker({
                 setRetry((value) => value + 1);
               }}
             >
-              Try again
+              {t('Try again')}
             </button>
           </div>
         ) : null}
@@ -751,3 +816,5 @@ export function MilestoneTracker({
     </section>
   );
 }
+
+registerProjectFixtures([activityPeriods, milestonePeriods, rangeLength]);

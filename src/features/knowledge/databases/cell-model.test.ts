@@ -38,7 +38,12 @@ const selectColumn = column({
   ],
 });
 
-const multiColumn = column({ id: 'col_tags', name: '标签', type: 'multiSelect', options: [{ id: 'opt_a', label: 'A', color: 'amber' }] });
+const multiColumn = column({
+  id: 'col_tags',
+  name: '标签',
+  type: 'multiSelect',
+  options: [{ id: 'opt_a', label: 'A', color: 'amber' }],
+});
 const personColumn = column({ id: 'col_owner', name: '负责人', type: 'person' });
 
 describe('cell-model · 本地校验镜像', () => {
@@ -76,18 +81,27 @@ describe('cell-model · commitCellEdit', () => {
     expect(commitCellEdit(column({ type: 'number' }), '')).toEqual({ ok: true, value: null });
     const bad = commitCellEdit(column({ type: 'number' }), 'abc');
     expect(bad.ok).toBe(false);
-    if (!bad.ok) expect(failureText[bad.failure.kind]).toBe('请输入有效数字');
+    if (!bad.ok) expect(failureText()[bad.failure.kind]).toBe('请输入有效数字');
   });
 
   test('日期列：归一斜杠、接受完整时间、拒绝非法', () => {
-    expect(commitCellEdit(column({ type: 'date' }), '2026/09/26')).toEqual({ ok: true, value: '2026-09-26' });
-    expect(commitCellEdit(column({ type: 'date' }), '2026-09-26T09:00:00+08:00')).toEqual({ ok: true, value: '2026-09-26T09:00:00+08:00' });
+    expect(commitCellEdit(column({ type: 'date' }), '2026/09/26')).toEqual({
+      ok: true,
+      value: '2026-09-26',
+    });
+    expect(commitCellEdit(column({ type: 'date' }), '2026-09-26T09:00:00+08:00')).toEqual({
+      ok: true,
+      value: '2026-09-26T09:00:00+08:00',
+    });
     expect(commitCellEdit(column({ type: 'date' }), '')).toEqual({ ok: true, value: null });
     expect(commitCellEdit(column({ type: 'date' }), '明天').ok).toBe(false);
   });
 
   test('URL 列：仅接受绝对 http(s)，空串清空', () => {
-    expect(commitCellEdit(column({ type: 'url' }), 'https://a.b/c')).toEqual({ ok: true, value: 'https://a.b/c' });
+    expect(commitCellEdit(column({ type: 'url' }), 'https://a.b/c')).toEqual({
+      ok: true,
+      value: 'https://a.b/c',
+    });
     expect(commitCellEdit(column({ type: 'url' }), '')).toEqual({ ok: true, value: null });
     expect(commitCellEdit(column({ type: 'url' }), 'a.b/c').ok).toBe(false);
   });
@@ -116,7 +130,11 @@ describe('cell-model · commitCellEdit', () => {
   });
 
   test('关联列：编辑入口如实拒绝（uneditable）', () => {
-    const relation = column({ id: 'col_rel', type: 'relation', relationDatabaseId: '40000000-0000-4000-8000-000000000000' });
+    const relation = column({
+      id: 'col_rel',
+      type: 'relation',
+      relationDatabaseId: '40000000-0000-4000-8000-000000000000',
+    });
     const result = commitCellEdit(relation, ['x']);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.failure.kind).toBe('uneditable');
@@ -132,7 +150,8 @@ describe('cell-model · commitCellEdit', () => {
 });
 
 describe('cell-model · 展示', () => {
-  const personNameOf = (id: string) => (id === '30000000-0000-4000-8000-000000000000' ? '林澜' : null);
+  const personNameOf = (id: string) =>
+    id === '30000000-0000-4000-8000-000000000000' ? '林澜' : null;
 
   test('isCellEmpty：缺失/null/空串/空数组同为空', () => {
     expect(isCellEmpty(undefined)).toBe(true);
@@ -146,11 +165,23 @@ describe('cell-model · 展示', () => {
   test('cellDisplayText 按类型格式化（选项走 label、人员走目录、日期去时间尾巴）', () => {
     expect(cellDisplayText(selectColumn, 'opt_todo', personNameOf)).toBe('待办');
     expect(cellDisplayText(multiColumn, ['opt_a'], personNameOf)).toBe('A');
-    expect(cellDisplayText(personColumn, ['30000000-0000-4000-8000-000000000000'], personNameOf)).toBe('林澜');
-    expect(cellDisplayText(personColumn, ['50000000-0000-4000-8000-000000000000'], personNameOf)).toBe('50000000');
-    expect(cellDisplayText(column({ type: 'date' }), '2026-09-26T09:00:00Z', personNameOf)).toBe('2026-09-26 09:00:00');
+    expect(
+      cellDisplayText(personColumn, ['30000000-0000-4000-8000-000000000000'], personNameOf),
+    ).toBe('林澜');
+    expect(
+      cellDisplayText(personColumn, ['50000000-0000-4000-8000-000000000000'], personNameOf),
+    ).toBe('50000000');
+    expect(cellDisplayText(column({ type: 'date' }), '2026-09-26T09:00:00Z', personNameOf)).toBe(
+      '2026-09-26 09:00:00',
+    );
     expect(cellDisplayText(column({ type: 'checkbox' }), true, personNameOf)).toBe('是');
-    expect(cellDisplayText(column({ type: 'relation', relationDatabaseId: '40000000-0000-4000-8000-000000000000' }), ['a', 'b'], personNameOf)).toBe('2 个关联');
+    expect(
+      cellDisplayText(
+        column({ type: 'relation', relationDatabaseId: '40000000-0000-4000-8000-000000000000' }),
+        ['a', 'b'],
+        personNameOf,
+      ),
+    ).toBe('2 个关联');
   });
 
   test('cellDraftOf：数字回填字符串形式，其余文本原样', () => {
@@ -182,23 +213,31 @@ describe('cell-model · 列集合编辑', () => {
   });
 
   test('validateColumnsReplacement：改类型拒绝、重复 ID 拒绝、空名拒绝、选项缺失拒绝', () => {
-    expect(validateColumnsReplacement(base, renameColumn(base, 'col_text', '摘要'))).toEqual({ ok: true });
-    const typeChanged = base.map((entry) => (entry.id === 'col_text' ? { ...entry, type: 'number' as const } : entry));
+    expect(validateColumnsReplacement(base, renameColumn(base, 'col_text', '摘要'))).toEqual({
+      ok: true,
+    });
+    const typeChanged = base.map((entry) =>
+      entry.id === 'col_text' ? { ...entry, type: 'number' as const } : entry,
+    );
     const failure = validateColumnsReplacement(base, typeChanged);
     expect(failure.ok).toBe(false);
     if (!failure.ok) {
       expect(failure.failure.kind).toBe('type-change');
-      expect(columnsEditFailureText[failure.failure.kind]).toBe('列类型创建后不可更改');
+      expect(columnsEditFailureText()[failure.failure.kind]).toBe('列类型创建后不可更改');
     }
     const duplicated = [...base, { ...base[0]! }];
     expect(validateColumnsReplacement(base, duplicated).ok).toBe(false);
     expect(validateColumnsReplacement(base, [column({ name: '  ' })]).ok).toBe(false);
-    const noOptions = base.map((entry) => (entry.id === 'col_status' ? { ...entry, options: undefined } : entry));
+    const noOptions = base.map((entry) =>
+      entry.id === 'col_status' ? { ...entry, options: undefined } : entry,
+    );
     const optionsFailure = validateColumnsReplacement(base, noOptions);
     expect(optionsFailure.ok).toBe(false);
     if (!optionsFailure.ok) {
       expect(optionsFailure.failure.kind).toBe('invalid-options');
-      expect(columnsEditFailureText[optionsFailure.failure.kind]).toBe('选择列必须声明不重复的选项');
+      expect(columnsEditFailureText()[optionsFailure.failure.kind]).toBe(
+        '选择列必须声明不重复的选项',
+      );
     }
   });
 });

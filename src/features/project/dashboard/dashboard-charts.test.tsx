@@ -1,3 +1,4 @@
+import { setLocale } from '@/lib/i18n';
 import { afterAll, afterEach, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 import { Window } from 'happy-dom';
 import { act } from 'react';
@@ -91,6 +92,7 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
+  setLocale('en-US');
   tasks = structuredClone(initialDashboardState.tasks);
   meetings = structuredClone(initialDashboardState.meetings);
   points = initialDashboardState.milestones.map((point) => ({
@@ -285,7 +287,7 @@ test('milestone prop changes update the displayed values and expand the scale wh
   await renderMilestones();
   expect(series('Actual')).toEqual([72, 25, 65, 82, 112, 50]);
   const april = host.querySelector<HTMLButtonElement>(
-    '[aria-label="April, 2027: target 85 tasks, actual 82 tasks"]',
+    '[aria-label="April 2027: target 85 tasks, actual 82 tasks"]',
   );
   expect(april).toBeTruthy();
   await act(async () => april!.focus());
@@ -328,19 +330,19 @@ test('keyboard focus and arrow navigation expose the correct milestone month, ye
   ];
   await renderMilestones();
   const february = host.querySelector<HTMLButtonElement>(
-    '[aria-label="February, 2028: target 90 tasks, actual 70 tasks"]',
+    '[aria-label="February 2028: target 90 tasks, actual 70 tasks"]',
   );
   expect(february).toBeTruthy();
   await act(async () => february!.focus());
-  expect(host.querySelector('[role="tooltip"]')?.textContent).toContain('February, 2028');
+  expect(host.querySelector('[role="tooltip"]')?.textContent).toContain('February 2028');
   expect(host.querySelector('[role="tooltip"]')?.textContent).toContain('70 Tasks');
   await act(async () =>
     february!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true })),
   );
   expect(document.activeElement?.getAttribute('aria-label')).toBe(
-    'January, 2028: target 100 tasks, actual 60 tasks',
+    'January 2028: target 100 tasks, actual 60 tasks',
   );
-  expect(host.querySelector('[role="tooltip"]')?.textContent).toContain('January, 2028');
+  expect(host.querySelector('[role="tooltip"]')?.textContent).toContain('January 2028');
   await act(async () =>
     document.activeElement!.dispatchEvent(
       new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
@@ -353,27 +355,43 @@ test('milestone menu navigation reaches newly added next-year values and reset r
   await renderMilestones();
   points = [...points, { month: '2028-01', target: 210, actual: 185 }];
   await renderMilestones();
-  expect(host.querySelector('[aria-label="January, 2028: target 210 tasks, actual 185 tasks"]')).toBeNull();
+  expect(
+    host.querySelector('[aria-label="January 2028: target 210 tasks, actual 185 tasks"]'),
+  ).toBeNull();
 
   await selectMilestoneOption('Next period');
-  expect(host.querySelector('[aria-label="6 Months milestone target and actual tasks, 2027-07 to 2027-12"]')).not.toBeNull();
+  expect(
+    host.querySelector(
+      '[aria-label="6 Months milestone target and actual tasks, July 2027 to December 2027"]',
+    ),
+  ).not.toBeNull();
   await selectMilestoneOption('Next period');
   const january = host.querySelector<HTMLButtonElement>(
-    '[aria-label="January, 2028: target 210 tasks, actual 185 tasks"]',
+    '[aria-label="January 2028: target 210 tasks, actual 185 tasks"]',
   );
   expect(january).not.toBeNull();
   expect(series('Target')).toEqual([210, 0, 0, 0, 0, 0]);
   expect(series('Actual')).toEqual([185, 0, 0, 0, 0, 0]);
   await act(async () => january!.focus());
-  expect(host.querySelector('[role="tooltip"]')?.textContent).toContain('January, 2028');
+  expect(host.querySelector('[role="tooltip"]')?.textContent).toContain('January 2028');
   expect(host.querySelector('[role="tooltip"]')?.textContent).toContain('185 Tasks');
 
   await selectMilestoneOption('Previous period');
-  expect(host.querySelector('[aria-label="6 Months milestone target and actual tasks, 2027-07 to 2027-12"]')).not.toBeNull();
+  expect(
+    host.querySelector(
+      '[aria-label="6 Months milestone target and actual tasks, July 2027 to December 2027"]',
+    ),
+  ).not.toBeNull();
   await selectMilestoneOption('Reset view');
-  expect(host.querySelector('[aria-label="6 Months milestone target and actual tasks, 2027-01 to 2027-06"]')).not.toBeNull();
+  expect(
+    host.querySelector(
+      '[aria-label="6 Months milestone target and actual tasks, January 2027 to June 2027"]',
+    ),
+  ).not.toBeNull();
   expect(series('Actual')).toEqual([72, 25, 65, 82, 112, 50]);
-  expect(host.querySelector('[aria-label="January, 2028: target 210 tasks, actual 185 tasks"]')).toBeNull();
+  expect(
+    host.querySelector('[aria-label="January 2028: target 210 tasks, actual 185 tasks"]'),
+  ).toBeNull();
 });
 
 test('empty milestone data offers the parent editor and new values render after the empty state', async () => {
@@ -387,6 +405,6 @@ test('empty milestone data offers the parent editor and new values render after 
   expect(host.textContent).not.toContain('No milestone data yet.');
   expect(series('Actual')[0]).toBe(75);
   expect(
-    host.querySelector('[aria-label="April, 2028: target 120 tasks, actual 75 tasks"]'),
+    host.querySelector('[aria-label="April 2028: target 120 tasks, actual 75 tasks"]'),
   ).not.toBeNull();
 });

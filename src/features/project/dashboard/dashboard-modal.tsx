@@ -1,10 +1,14 @@
 'use client';
 
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useTranslation } from '@/lib/i18n';
+import { fixtureField, translateFixed } from '../i18n/display';
+import { messages } from './i18n/dashboard-modal';
+
 import { X } from '@phosphor-icons/react';
-import { Avatar, IconButton } from './dashboard-ui';
-import { dashboardPeople, type DashboardPersonId } from './dashboard-model';
+import { useEffect, useId, useRef, type ReactNode } from 'react';
 import styles from './dashboard-actions.module.css';
+import { dashboardPeople, type DashboardPersonId } from './dashboard-model';
+import { Avatar, IconButton } from './dashboard-ui';
 
 export function DashboardModal({
   title,
@@ -17,6 +21,8 @@ export function DashboardModal({
   children: ReactNode;
   wide?: boolean;
 }) {
+  const { t } = useTranslation(messages);
+
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   useEffect(() => {
@@ -57,7 +63,7 @@ export function DashboardModal({
       <div className={styles.modalSurface}>
         <header className={styles.modalHeader}>
           <h2 id={titleId}>{title}</h2>
-          <IconButton label="Close dialog" onClick={onClose}>
+          <IconButton label={t('Close dialog')} onClick={onClose}>
             <X size={17} />
           </IconButton>
         </header>
@@ -78,6 +84,9 @@ export function DashboardMemberPicker({
   ids?: DashboardPersonId[];
   fixedIds?: DashboardPersonId[];
 }) {
+  const { locale } = useTranslation(messages);
+  const uiLabel = (value: string) => translateFixed(value, locale);
+
   return (
     <div className={styles.memberList}>
       {ids.map((id) => {
@@ -86,8 +95,8 @@ export function DashboardMemberPicker({
           <label key={id} className={styles.memberRow}>
             <Avatar id={id} size={30} />
             <span>
-              <strong>{person.name}</strong>
-              <small>{person.role}</small>
+              <strong>{fixtureField(person, 'name', locale)}</strong>
+              <small>{uiLabel(person.role)}</small>
             </span>
             <input
               type="checkbox"

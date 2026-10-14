@@ -82,7 +82,7 @@ export function ChatConversation({
                   <dd>
                     {submission.context.agent}
                     <span className={styles.summaryDot}>·</span>
-                    {submission.context.mode}
+                    {t(submission.context.mode)}
                   </dd>
                 </div>
                 <div>

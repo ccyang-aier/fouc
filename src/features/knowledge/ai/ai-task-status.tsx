@@ -1,5 +1,8 @@
 'use client';
 
+import { createTranslator, useTranslation } from '@/lib/i18n';
+import { knowledgeMessages } from './ai-task-status.messages';
+
 /**
  * J04 AI 流式任务的状态渲染（最小接入）：一枚状态条呈现任务进度（逐块计数），
  * 运行中提供「取消」，终态且已有建议块时提供「整体撤销」。正文本身不经此组件
@@ -10,6 +13,8 @@ import { SpinnerGap, Stop, ArrowCounterClockwise } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import type { AiStreamingTaskSnapshot } from '@fouc/shared/knowledge/contracts';
 
+const knowledgeT = createTranslator(knowledgeMessages);
+
 export interface AiTaskStatusView {
   tone: 'progress' | 'ok' | 'warn' | 'error';
   label: string;
@@ -19,16 +24,38 @@ export interface AiTaskStatusView {
 
 /** 仅由快照推导视图；任何未列出的组合按保守的 warn 处理。 */
 export function aiTaskStatusView(snapshot: AiStreamingTaskSnapshot): AiTaskStatusView {
-  const blocks = `${snapshot.blocksWritten} 块`;
+  const blocks = knowledgeT('valueBlocks', { v0: snapshot.blocksWritten });
   switch (snapshot.status) {
     case 'running':
-      return { tone: 'progress', label: `AI 生成中 · ${blocks}`, hint: '内容逐块写入页面，可随时取消', busy: true };
+      return {
+        tone: 'progress',
+        label: knowledgeT('aiGeneratingValue', { v0: blocks }),
+        hint: knowledgeT('contentIsAddedBlockByBlockYouCan'),
+        busy: true,
+      };
     case 'done':
-      return { tone: 'ok', label: `AI 完成 · ${blocks}`, hint: '建议已写入页面，可在审阅中接受或拒绝', busy: false };
+      return {
+        tone: 'ok',
+        label: knowledgeT('aiCompletedValue', { v0: blocks }),
+        hint: knowledgeT('suggestionsAreInThePageAcceptOrReject'),
+        busy: false,
+      };
     case 'cancelled':
-      return { tone: 'warn', label: `已取消 · ${blocks} 可审阅`, hint: '已写入的部分保留为建议，可整体撤销', busy: false };
+      return {
+        tone: 'warn',
+        label: knowledgeT('cancelledValueAvailableForReview', { v0: blocks }),
+        hint: knowledgeT('generatedContentRemainsAsSuggestionsYouCanUndo'),
+        busy: false,
+      };
     case 'failed':
-      return { tone: 'error', label: `失败 · ${snapshot.errorCode ?? 'unknown'}`, hint: `已写入 ${snapshot.blocksWritten} 块建议；可重试或整体撤销`, busy: false };
+      return {
+        tone: 'error',
+        label: knowledgeT('failedValue', { v0: snapshot.errorCode ?? 'unknown' }),
+        hint: knowledgeT('valueSuggestionBlocksAddedRetryOrUndoThe', {
+          v0: snapshot.blocksWritten,
+        }),
+        busy: false,
+      };
   }
 }
 
@@ -36,7 +63,8 @@ const toneClasses: Record<AiTaskStatusView['tone'], string> = {
   progress: 'border-[var(--accent-soft-line)] bg-[var(--accent-soft)] text-[var(--accent-ink)]',
   ok: 'border-[color-mix(in_srgb,var(--ok-ink)_24%,transparent)] bg-[color-mix(in_srgb,var(--ok-ink)_8%,transparent)] text-[var(--ok-ink)]',
   warn: 'border-[var(--warn-soft-line)] bg-[var(--warn-soft)] text-[var(--warn-ink)]',
-  error: 'border-[color-mix(in_srgb,var(--err-ink)_24%,transparent)] bg-[color-mix(in_srgb,var(--err-ink)_8%,transparent)] text-[var(--err-ink)]',
+  error:
+    'border-[color-mix(in_srgb,var(--err-ink)_24%,transparent)] bg-[color-mix(in_srgb,var(--err-ink)_8%,transparent)] text-[var(--err-ink)]',
 };
 
 export interface AiTaskStatusActions {
@@ -46,9 +74,18 @@ export interface AiTaskStatusActions {
   pending: boolean;
 }
 
-export function AiTaskStatus({ snapshot, actions }: { snapshot: AiStreamingTaskSnapshot; actions: AiTaskStatusActions }) {
+export function AiTaskStatus({
+  snapshot,
+  actions,
+}: {
+  snapshot: AiStreamingTaskSnapshot;
+  actions: AiTaskStatusActions;
+}) {
+  const { t: knowledgeT } = useTranslation(knowledgeMessages);
+
   const view = aiTaskStatusView(snapshot);
-  const revocable = snapshot.status !== 'running' && snapshot.blocksWritten > 0 && snapshot.revokedAt === null;
+  const revocable =
+    snapshot.status !== 'running' && snapshot.blocksWritten > 0 && snapshot.revokedAt === null;
   return (
     <span
       role="status"
@@ -58,9 +95,11 @@ export function AiTaskStatus({ snapshot, actions }: { snapshot: AiStreamingTaskS
         toneClasses[view.tone],
       )}
     >
-      {view.busy || actions.pending
-        ? <SpinnerGap aria-hidden className="size-3 animate-spin" />
-        : <span aria-hidden className="size-1.5 rounded-full bg-current" />}
+      {view.busy || actions.pending ? (
+        <SpinnerGap aria-hidden className="size-3 animate-spin" />
+      ) : (
+        <span aria-hidden className="size-1.5 rounded-full bg-current" />
+      )}
       {view.label}
       {snapshot.status === 'running' && (
         <button
@@ -70,7 +109,7 @@ export function AiTaskStatus({ snapshot, actions }: { snapshot: AiStreamingTaskS
           className="ml-1 inline-flex items-center gap-0.5 rounded px-1 hover:bg-[color-mix(in_srgb,currentColor_12%,transparent)] disabled:opacity-50"
         >
           <Stop aria-hidden className="size-3" />
-          取消
+          {knowledgeT('cancel')}
         </button>
       )}
       {revocable && (
@@ -81,7 +120,7 @@ export function AiTaskStatus({ snapshot, actions }: { snapshot: AiStreamingTaskS
           className="ml-1 inline-flex items-center gap-0.5 rounded px-1 hover:bg-[color-mix(in_srgb,currentColor_12%,transparent)] disabled:opacity-50"
         >
           <ArrowCounterClockwise aria-hidden className="size-3" />
-          撤销任务
+          {knowledgeT('undoTask')}
         </button>
       )}
     </span>

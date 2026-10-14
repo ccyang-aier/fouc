@@ -1,14 +1,13 @@
-import type { EditorState } from "@codemirror/state";
-import type { RelationalProvider } from "@fouc/shared";
+import type { EditorState } from '@codemirror/state';
+import type { RelationalProvider } from '@fouc/shared';
 
-export type { SqlSemanticSpan, SqlSemanticToken, SqlSemanticTokenKind } from "@fouc/shared";
-import type { SqlSemanticSpan, SqlSemanticToken } from "@fouc/shared";
+export type { SqlSemanticSpan, SqlSemanticToken, SqlSemanticTokenKind } from '@fouc/shared';
+import type { SqlSemanticSpan, SqlSemanticToken } from '@fouc/shared';
 
-export type SqlSemanticConfidence = "high" | "medium" | "low";
+export type SqlSemanticConfidence = 'high' | 'medium' | 'low';
 
-export type SqlSemanticStatementKind = "select" | "insert" | "update" | "delete" | "call" | "unknown";
-
-
+export type SqlSemanticStatementKind =
+  'select' | 'insert' | 'update' | 'delete' | 'call' | 'unknown';
 
 export interface SqlSemanticIdentifierPart {
   raw: string;
@@ -22,7 +21,8 @@ export interface SqlSemanticQualifiedName {
   span: SqlSemanticSpan;
 }
 
-export type SqlSemanticRowSourceKind = "table" | "cte" | "subquery" | "table_function" | "mutation_target" | "unknown";
+export type SqlSemanticRowSourceKind =
+  'table' | 'cte' | 'subquery' | 'table_function' | 'mutation_target' | 'unknown';
 
 export interface SqlSemanticProjection {
   name: string;
@@ -87,7 +87,20 @@ export interface SqlSemanticRowSource {
   bodySources?: SqlSemanticRowSource[];
 }
 
-export type SqlSemanticCursorKind = "table" | "schema" | "catalog" | "routine" | "column" | "alias_column" | "insert_column" | "update_column" | "delete_target" | "join_condition" | "star" | "keyword" | "suppressed";
+export type SqlSemanticCursorKind =
+  | 'table'
+  | 'schema'
+  | 'catalog'
+  | 'routine'
+  | 'column'
+  | 'alias_column'
+  | 'insert_column'
+  | 'update_column'
+  | 'delete_target'
+  | 'join_condition'
+  | 'star'
+  | 'keyword'
+  | 'suppressed';
 
 export interface SqlSemanticCursorIntent {
   kind: SqlSemanticCursorKind;
@@ -95,7 +108,9 @@ export interface SqlSemanticCursorIntent {
   replacementRange: SqlSemanticSpan;
   qualifierParts: string[];
   targetSourceId?: string;
-  expectedObjectKinds: Array<"database" | "schema" | "table" | "view" | "routine" | "procedure" | "function" | "column">;
+  expectedObjectKinds: Array<
+    'database' | 'schema' | 'table' | 'view' | 'routine' | 'procedure' | 'function' | 'column'
+  >;
   confidence: SqlSemanticConfidence;
   fallbackReason?: string;
 }

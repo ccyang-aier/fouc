@@ -1,346 +1,727 @@
-"use client"
+'use client';
+import { useAppAlert } from '@/components/app-alert-provider';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { createTranslator, useTranslation } from '@/lib/i18n';
+import { cn } from '@/lib/utils';
+import type {
+  ConnectorDetailDto,
+  DtsFilterId,
+  DtsTicketDetail,
+  DtsTicketListResult,
+  DtsTicketSummary,
+} from '@fouc/shared';
+import {
+  ArrowSquareOut,
+  ArrowsClockwise,
+  Broadcast,
+  CaretDown,
+  CheckCircle,
+  CopySimple,
+  DotsThree,
+  SignOut,
+  SpinnerGap,
+  WarningCircle,
+} from '@phosphor-icons/react';
+import type { ComponentPropsWithoutRef } from 'react';
+import { forwardRef, useCallback, useEffect, useRef, useState } from 'react';
+import { ConnectorBackButton } from './connector-back-button';
+import { DtsConnectorInspector } from './dts-connector-inspector';
+import { DtsTicketWorkspace } from './dts-ticket-workspace';
+import { clearDtsAuthProfile, dtsConnectorApi, openDtsAuthWindow } from './dts/api';
+import { messages as unitMessages } from './dts/i18n/dts-connector-detail';
+import { createUiMessages, uiFailure, uiText, type UiMessage } from './i18n/ui-message';
+const { message: uiMessage } = createUiMessages(unitMessages);
 
-import { forwardRef, useCallback, useEffect, useRef, useState } from 'react'
-import type { ComponentPropsWithoutRef } from 'react'
-import { ArrowSquareOut, ArrowsClockwise, Broadcast, CaretDown, CheckCircle, CopySimple, DotsThree, SignOut, SpinnerGap, WarningCircle } from '@phosphor-icons/react'
-import type { ConnectorDetailDto, DtsFilterId, DtsTicketDetail, DtsTicketListResult, DtsTicketSummary } from '@fouc/shared'
-import { useAppAlert } from '@/components/app-alert-provider'
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { cn } from '@/lib/utils'
-import { clearDtsAuthProfile, dtsConnectorApi, openDtsAuthWindow } from './dts/api'
-import { DtsConnectorInspector } from './dts-connector-inspector'
-import { DtsTicketWorkspace } from './dts-ticket-workspace'
-import { ConnectorBackButton } from './connector-back-button'
+const eventText = createTranslator(unitMessages);
 
 // 版本切换上下文（Web Mock 演示数据）：版本 → 环境 → PI 迭代 三级级联
-type DtsRuntimeContext = { version: string; environment: string; increment: string }
-const DTS_VERSION_OPTIONS = ['v2.1.0', 'v2.0.8', 'v2.0.3']
+type DtsRuntimeContext = { version: string; environment: string; increment: string };
+const DTS_VERSION_OPTIONS = ['v2.1.0', 'v2.0.8', 'v2.0.3'];
 const DTS_ENVIRONMENT_OPTIONS = [
   { id: 'prod', label: '生产环境', dotClass: 'bg-[var(--ok-ink)]' },
   { id: 'staging', label: '预发环境', dotClass: 'bg-[var(--warn-ink)]' },
   { id: 'test', label: '测试环境', dotClass: 'bg-[var(--muted)]' },
-]
-const DTS_INCREMENT_OPTIONS = ['PI-2026Q3', 'PI-2026Q2', 'PI-2026Q1']
+] as const;
+const DTS_INCREMENT_OPTIONS = ['PI-2026Q3', 'PI-2026Q2', 'PI-2026Q1'];
 
-export function DtsConnectorDetail({ onBack, onConnectionChange }: { onBack: () => void; onConnectionChange: (connected: boolean) => void }) {
-  const [detail, setDetail] = useState<ConnectorDetailDto | null>(null)
-  const [activeFilter, setActiveFilter] = useState<DtsFilterId>('myTodos')
-  const [tickets, setTickets] = useState<DtsTicketListResult | null>(null)
-  const [ticketDetail, setTicketDetail] = useState<DtsTicketDetail | null>(null)
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [keyword, setKeyword] = useState('')
-  const [runtime, setRuntime] = useState<DtsRuntimeContext>({ version: 'v2.1.0', environment: 'prod', increment: 'PI-2026Q3' })
-  const [loading, setLoading] = useState(true)
-  const [detailLoading, setDetailLoading] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const [authPending, setAuthPending] = useState(false)
-  const [connectionLoading, setConnectionLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const { notify } = useAppAlert()
-  const [inspectorOpen, setInspectorOpen] = useState(false)
-  const ticketRequestId = useRef(0)
-  const finalizingConnection = useRef(false)
-  const connectionAnnounced = useRef(false)
-  const authStartedAt = useRef(0)
+export function DtsConnectorDetail({
+  onBack,
+  onConnectionChange,
+}: {
+  onBack: () => void;
+  onConnectionChange: (connected: boolean) => void;
+}) {
+  const { t: tu, locale } = useTranslation(unitMessages);
+
+  const [detail, setDetail] = useState<ConnectorDetailDto | null>(null);
+  const [activeFilter, setActiveFilter] = useState<DtsFilterId>('myTodos');
+  const [tickets, setTickets] = useState<DtsTicketListResult | null>(null);
+  const [ticketDetail, setTicketDetail] = useState<DtsTicketDetail | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [keyword, setKeyword] = useState('');
+  const [runtime, setRuntime] = useState<DtsRuntimeContext>({
+    version: 'v2.1.0',
+    environment: 'prod',
+    increment: 'PI-2026Q3',
+  });
+  const [loading, setLoading] = useState(true);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [authPending, setAuthPending] = useState(false);
+  const [connectionLoading, setConnectionLoading] = useState(false);
+  const [error, setError] = useState<UiMessage | null>(null);
+  const { notify } = useAppAlert();
+  const [inspectorOpen, setInspectorOpen] = useState(false);
+  const ticketRequestId = useRef(0);
+  const finalizingConnection = useRef(false);
+  const connectionAnnounced = useRef(false);
+  const authStartedAt = useRef(0);
 
   const announceConnection = useCallback(() => {
-    if (connectionAnnounced.current) return
-    connectionAnnounced.current = true
-    notify('success', 'DTS 登录成功', '正在同步待处理工单，完成后即可开始使用')
-  }, [notify])
+    if (connectionAnnounced.current) return;
+    connectionAnnounced.current = true;
+    notify(
+      'success',
+      eventText('DTS 登录成功'),
+      eventText('正在同步待处理工单，完成后即可开始使用'),
+    );
+  }, [notify]);
 
-  const loadTicketDetail = useCallback(async (ticket: DtsTicketSummary) => {
-    setSelectedId(ticket.id); setTicketDetail(null); setDetailLoading(true)
-    try { setTicketDetail(await dtsConnectorApi.ticket(ticket.id)) }
-    catch (cause) { notify('error', '工单详情读取失败', cause instanceof Error ? cause.message : undefined) }
-    finally { setDetailLoading(false) }
-  }, [notify])
-
-  const loadTickets = useCallback(async (filter: DtsFilterId, page = 1, search = '') => {
-    const requestId = ++ticketRequestId.current
-    setLoading(true); setError(null)
-    try {
-      const result = await dtsConnectorApi.tickets({ filter, page, pageSize: 20, keyword: search.trim() || undefined })
-      if (requestId === ticketRequestId.current) {
-        setTickets(result)
-        const first = result.items[0]
-        if (first) void loadTicketDetail(first)
-        else { setSelectedId(null); setTicketDetail(null) }
+  const loadTicketDetail = useCallback(
+    async (ticket: DtsTicketSummary) => {
+      setSelectedId(ticket.id);
+      setTicketDetail(null);
+      setDetailLoading(true);
+      try {
+        setTicketDetail(await dtsConnectorApi.ticket(ticket.id));
+      } catch (cause) {
+        notify(
+          'error',
+          eventText('工单详情读取失败'),
+          cause instanceof Error ? cause.message : undefined,
+        );
+      } finally {
+        setDetailLoading(false);
       }
-    } catch (cause) {
-      if (requestId === ticketRequestId.current) setError(cause instanceof Error ? cause.message : 'DTS 工单读取失败')
-    } finally {
-      if (requestId === ticketRequestId.current) setLoading(false)
-    }
-  }, [loadTicketDetail])
+    },
+    [notify],
+  );
+
+  const loadTickets = useCallback(
+    async (filter: DtsFilterId, page = 1, search = '') => {
+      const requestId = ++ticketRequestId.current;
+      setLoading(true);
+      setError(null);
+      try {
+        const result = await dtsConnectorApi.tickets({
+          filter,
+          page,
+          pageSize: 20,
+          keyword: search.trim() || undefined,
+        });
+        if (requestId === ticketRequestId.current) {
+          setTickets(result);
+          const first = result.items[0];
+          if (first) void loadTicketDetail(first);
+          else {
+            setSelectedId(null);
+            setTicketDetail(null);
+          }
+        }
+      } catch (cause) {
+        if (requestId === ticketRequestId.current) setError(uiFailure(cause));
+      } finally {
+        if (requestId === ticketRequestId.current) setLoading(false);
+      }
+    },
+    [loadTicketDetail],
+  );
 
   const refreshDetail = useCallback(async () => {
-    const next = await dtsConnectorApi.detail()
-    setDetail(next)
-    return next
-  }, [])
+    const next = await dtsConnectorApi.detail();
+    setDetail(next);
+    return next;
+  }, []);
 
   useEffect(() => {
-    let active = true
+    let active = true;
     const timer = window.setTimeout(() => {
-      void refreshDetail().then((value) => {
-        if (!active) return
-        if (value.instance.authState === 'valid') {
-          setActiveFilter('myTodos')
-          void loadTickets('myTodos', 1)
-        } else {
-          setLoading(false)
-        }
-      }).catch((cause) => {
-        if (!active) return
-        setError(cause instanceof Error ? cause.message : '连接器服务不可用')
-        setLoading(false)
-      })
-    }, 0)
-    return () => { active = false; window.clearTimeout(timer) }
-  }, [refreshDetail, loadTickets])
+      void refreshDetail()
+        .then((value) => {
+          if (!active) return;
+          if (value.instance.authState === 'valid') {
+            setActiveFilter('myTodos');
+            void loadTickets('myTodos', 1);
+          } else {
+            setLoading(false);
+          }
+        })
+        .catch((cause) => {
+          if (!active) return;
+          setError(uiFailure(cause));
+          setLoading(false);
+        });
+    }, 0);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [refreshDetail, loadTickets]);
 
-  const finishConnection = useCallback(async (next: ConnectorDetailDto) => {
-    if (finalizingConnection.current) return
-    finalizingConnection.current = true
-    setConnectionLoading(true)
-    setDetail(next)
-    setActiveFilter('myTodos')
-    setTickets(null)
-    setSelectedId(null)
-    setTicketDetail(null)
-    setAuthPending(false)
-    setBusy(false)
-    onConnectionChange(true)
-    announceConnection()
-    try {
-      await loadTickets('myTodos', 1)
-    } finally {
-      setConnectionLoading(false)
-      finalizingConnection.current = false
-    }
-  }, [announceConnection, loadTickets, onConnectionChange])
+  const finishConnection = useCallback(
+    async (next: ConnectorDetailDto) => {
+      if (finalizingConnection.current) return;
+      finalizingConnection.current = true;
+      setConnectionLoading(true);
+      setDetail(next);
+      setActiveFilter('myTodos');
+      setTickets(null);
+      setSelectedId(null);
+      setTicketDetail(null);
+      setAuthPending(false);
+      setBusy(false);
+      onConnectionChange(true);
+      announceConnection();
+      try {
+        await loadTickets('myTodos', 1);
+      } finally {
+        setConnectionLoading(false);
+        finalizingConnection.current = false;
+      }
+    },
+    [announceConnection, loadTickets, onConnectionChange],
+  );
 
   useEffect(() => {
-    let disposed = false
-    const unlisten: Array<() => void> = []
+    let disposed = false;
+    const unlisten: Array<() => void> = [];
 
-    void import('@tauri-apps/api/event').then(async ({ listen }) => {
-      const completed = await listen<{ providerId?: string }>('connector://auth-completed', () => {
-        if (disposed) return
-        // 原生层在关闭登录窗口前发送该事件。此处必须先同步给出反馈，不能等待详情接口。
-        setConnectionLoading(true)
-        announceConnection()
-        void dtsConnectorApi.detail().then((next) => {
-          if (!disposed && next.instance.authState === 'valid') void finishConnection(next)
-        }).catch(() => {
-          // 轮询仍会接管短暂的 sidecar 不可用或事件早于状态落盘的情况。
-        })
-      })
-      if (disposed) completed(); else unlisten.push(completed)
+    void import('@tauri-apps/api/event')
+      .then(async ({ listen }) => {
+        const completed = await listen<{ providerId?: string }>(
+          'connector://auth-completed',
+          () => {
+            if (disposed) return;
+            // 原生层在关闭登录窗口前发送该事件。此处必须先同步给出反馈，不能等待详情接口。
+            setConnectionLoading(true);
+            announceConnection();
+            void dtsConnectorApi
+              .detail()
+              .then((next) => {
+                if (!disposed && next.instance.authState === 'valid') void finishConnection(next);
+              })
+              .catch(() => {
+                // 轮询仍会接管短暂的 sidecar 不可用或事件早于状态落盘的情况。
+              });
+          },
+        );
+        if (disposed) completed();
+        else unlisten.push(completed);
 
-      const failed = await listen<{ providerId?: string; message?: string }>('connector://auth-failed', (event) => {
-        if (disposed) return
-        setConnectionLoading(false)
-        setAuthPending(false)
-        setBusy(false)
-        notify('error', 'DTS 登录失败', event.payload.message ?? '请检查网络环境后重试')
-      })
-      if (disposed) failed(); else unlisten.push(failed)
+        const failed = await listen<{ providerId?: string; message?: string }>(
+          'connector://auth-failed',
+          (event) => {
+            if (disposed) return;
+            setConnectionLoading(false);
+            setAuthPending(false);
+            setBusy(false);
+            notify(
+              'error',
+              eventText('DTS 登录失败'),
+              event.payload.message ?? '请检查网络环境后重试',
+            );
+          },
+        );
+        if (disposed) failed();
+        else unlisten.push(failed);
 
-      const cancelled = await listen<{ providerId?: string }>('connector://auth-cancelled', () => {
-        if (disposed) return
-        setConnectionLoading(false)
-        setAuthPending(false)
-        setBusy(false)
-        notify('info', '已取消 DTS 登录')
+        const cancelled = await listen<{ providerId?: string }>(
+          'connector://auth-cancelled',
+          () => {
+            if (disposed) return;
+            setConnectionLoading(false);
+            setAuthPending(false);
+            setBusy(false);
+            notify('info', eventText('已取消 DTS 登录'));
+          },
+        );
+        if (disposed) cancelled();
+        else unlisten.push(cancelled);
       })
-      if (disposed) cancelled(); else unlisten.push(cancelled)
-    }).catch(() => undefined)
+      .catch(() => undefined);
 
     return () => {
-      disposed = true
-      unlisten.forEach((stop) => stop())
-    }
-  }, [announceConnection, finishConnection, notify])
+      disposed = true;
+      unlisten.forEach((stop) => stop());
+    };
+  }, [announceConnection, finishConnection, notify]);
 
   useEffect(() => {
-    if (!authPending) return
-    let active = true
-    let checking = false
+    if (!authPending) return;
+    let active = true;
+    let checking = false;
     const check = async () => {
-      if (!active || checking) return
-      checking = true
+      if (!active || checking) return;
+      checking = true;
       try {
-        const next = await dtsConnectorApi.detail()
-        if (!active) return
+        const next = await dtsConnectorApi.detail();
+        if (!active) return;
         if (next.instance.authState === 'valid') {
-          void finishConnection(next)
-        } else if (next.instance.authState !== 'connecting' && Date.now() - authStartedAt.current >= 3_000) {
-          setDetail(next)
-          notify('error', 'DTS 登录未完成', next.instance.lastErrorMessage ?? '请重新打开登录窗口后重试')
-          setAuthPending(false)
-          setBusy(false)
+          void finishConnection(next);
+        } else if (
+          next.instance.authState !== 'connecting' &&
+          Date.now() - authStartedAt.current >= 3_000
+        ) {
+          setDetail(next);
+          notify(
+            'error',
+            eventText('DTS 登录未完成'),
+            next.instance.lastErrorMessage ?? '请重新打开登录窗口后重试',
+          );
+          setAuthPending(false);
+          setBusy(false);
         }
       } catch {
         // sidecar 的瞬时重启或短暂不可用不应丢失一次仍在进行的官方登录。
       } finally {
-        checking = false
+        checking = false;
       }
-    }
-    void check()
-    const timer = window.setInterval(() => void check(), 250)
-    return () => { active = false; window.clearInterval(timer) }
-  }, [authPending, finishConnection, notify])
+    };
+    void check();
+    const timer = window.setInterval(() => void check(), 250);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [authPending, finishConnection, notify]);
 
   async function connect() {
-    connectionAnnounced.current = false
-    setBusy(true); setConnectionLoading(false); setError(null)
+    connectionAnnounced.current = false;
+    setBusy(true);
+    setConnectionLoading(false);
+    setError(null);
     try {
-      const interaction = await dtsConnectorApi.connect()
-      authStartedAt.current = Date.now()
-      setAuthPending(true)
-      await openDtsAuthWindow(interaction)
-      notify('info', 'DTS 登录窗口已打开', '请在官方 SSO 页面完成身份验证')
+      const interaction = await dtsConnectorApi.connect();
+      authStartedAt.current = Date.now();
+      setAuthPending(true);
+      await openDtsAuthWindow(interaction);
+      notify('info', eventText('DTS 登录窗口已打开'), eventText('请在官方 SSO 页面完成身份验证'));
     } catch (cause) {
-      setAuthPending(false); setBusy(false)
-      notify('error', '无法打开 DTS 登录', cause instanceof Error ? cause.message : undefined)
+      setAuthPending(false);
+      setBusy(false);
+      notify(
+        'error',
+        eventText('无法打开 DTS 登录'),
+        cause instanceof Error ? cause.message : undefined,
+      );
     }
   }
 
   async function heartbeat() {
-    setBusy(true)
-    try { await dtsConnectorApi.heartbeat(); await refreshDetail(); notify('success', 'DTS 连接正常', '身份与会话状态已重新确认') }
-    catch (cause) { await refreshDetail().catch(() => undefined); notify('error', 'DTS 连接检测失败', cause instanceof Error ? cause.message : undefined) }
-    finally { setBusy(false) }
+    setBusy(true);
+    try {
+      await dtsConnectorApi.heartbeat();
+      await refreshDetail();
+      notify('success', eventText('DTS 连接正常'), eventText('身份与会话状态已重新确认'));
+    } catch (cause) {
+      await refreshDetail().catch(() => undefined);
+      notify(
+        'error',
+        eventText('DTS 连接检测失败'),
+        cause instanceof Error ? cause.message : undefined,
+      );
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function disconnect() {
-    if (!window.confirm('断开 DTS 后会立即清除 sidecar 内存中的会话凭证。确定继续吗？')) return
-    setAuthPending(false); setConnectionLoading(false); setBusy(true)
+    if (!window.confirm(eventText('断开 DTS 后会立即清除 sidecar 内存中的会话凭证。确定继续吗？')))
+      return;
+    setAuthPending(false);
+    setConnectionLoading(false);
+    setBusy(true);
     try {
-      ticketRequestId.current += 1
-      await dtsConnectorApi.disconnect()
-      let profileCleared = true
-      try { await clearDtsAuthProfile() } catch { profileCleared = false }
-      await refreshDetail(); setTickets(null); setLoading(false); setSelectedId(null); setTicketDetail(null); onConnectionChange(false)
-      if (profileCleared) notify('success', 'DTS 已断开', '本地会话凭证已清除')
-      else notify('warning', 'DTS 已断开', '登录 Profile 清理失败，请重启 Fouc 后重试')
+      ticketRequestId.current += 1;
+      await dtsConnectorApi.disconnect();
+      let profileCleared = true;
+      try {
+        await clearDtsAuthProfile();
+      } catch {
+        profileCleared = false;
+      }
+      await refreshDetail();
+      setTickets(null);
+      setLoading(false);
+      setSelectedId(null);
+      setTicketDetail(null);
+      onConnectionChange(false);
+      if (profileCleared)
+        notify('success', eventText('DTS 已断开'), eventText('本地会话凭证已清除'));
+      else
+        notify(
+          'warning',
+          eventText('DTS 已断开'),
+          eventText('登录 Profile 清理失败，请重启 Fouc 后重试'),
+        );
+    } finally {
+      setBusy(false);
     }
-    finally { setBusy(false) }
   }
 
-  if (!detail) return <div className="flex h-full items-center justify-center gap-2 text-[10.5px] text-[var(--muted)]"><SpinnerGap className="size-4 animate-spin" />正在加载 DTS 连接器…</div>
+  if (!detail)
+    return (
+      <div className="flex h-full items-center justify-center gap-2 text-[10.5px] text-[var(--muted)]">
+        <SpinnerGap className="size-4 animate-spin" />
+        {tu('正在加载 DTS 连接器…')}
+      </div>
+    );
   if (connectionLoading) {
     return (
-      <section aria-label="DTS 连接器连接处理中" className="relative flex h-full min-h-0 flex-col bg-panel">
+      <section
+        aria-label={tu('DTS 连接器连接处理中')}
+        className="relative flex h-full min-h-0 flex-col bg-panel"
+      >
         <ConnectionLoading />
       </section>
-    )
+    );
   }
-  const connected = detail.instance.authState === 'valid'
-  const activeEnv = DTS_ENVIRONMENT_OPTIONS.find((env) => env.id === runtime.environment) ?? DTS_ENVIRONMENT_OPTIONS[0]
-  const selectedTicket = ticketDetail ?? tickets?.items.find((ticket) => ticket.id === selectedId) ?? null
+  const connected = detail.instance.authState === 'valid';
+  const activeEnv =
+    DTS_ENVIRONMENT_OPTIONS.find((env) => env.id === runtime.environment) ??
+    DTS_ENVIRONMENT_OPTIONS[0];
+  const selectedTicket =
+    ticketDetail ?? tickets?.items.find((ticket) => ticket.id === selectedId) ?? null;
 
   return (
-    <section aria-label="DTS 连接器详情" className="relative flex h-full min-h-0 flex-col bg-panel">
+    <section
+      aria-label={tu('DTS 连接器详情')}
+      className="relative flex h-full min-h-0 flex-col bg-panel"
+    >
       <header className="flex min-h-14 shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-b border-[var(--line)] px-3 py-3">
         <div className="flex min-w-0 items-center gap-3">
           <ConnectorBackButton onBack={onBack} />
-          <h1 className="truncate text-[18px] leading-8 font-semibold tracking-[-0.02em] text-[var(--ink)]">DTS</h1>
-          {connected && loading ? <span role="status" className="ml-1 flex items-center gap-1 text-[8.5px] text-[var(--muted)]"><SpinnerGap className="size-3 animate-spin" />同步中</span> : null}
+          <h1 className="truncate text-[18px] leading-8 font-semibold tracking-[-0.02em] text-[var(--ink)]">
+            DTS
+          </h1>
+          {connected && loading ? (
+            <span
+              role="status"
+              className="ml-1 flex items-center gap-1 text-[8.5px] text-[var(--muted)]"
+            >
+              <SpinnerGap className="size-3 animate-spin" />
+              {tu('同步中')}
+            </span>
+          ) : null}
         </div>
-        <div role="group" aria-label="DTS 运行上下文" className="flex h-7 items-center gap-1.5 max-[700px]:order-last max-[700px]:h-auto max-[700px]:w-full max-[700px]:flex-wrap">
+        <div
+          role="group"
+          aria-label={tu('DTS 运行上下文')}
+          className="flex h-7 items-center gap-1.5 max-[700px]:order-last max-[700px]:h-auto max-[700px]:w-full max-[700px]:flex-wrap"
+        >
           <DropdownMenu>
-            <DropdownMenuTrigger asChild><ContextSegment label="选择 DTS 版本">DTS {runtime.version}</ContextSegment></DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="min-w-28">{DTS_VERSION_OPTIONS.map((version) => <DropdownMenuCheckboxItem key={version} checked={version === runtime.version} onCheckedChange={() => setRuntime((current) => ({ ...current, version }))}>{version}</DropdownMenuCheckboxItem>)}</DropdownMenuContent>
+            <DropdownMenuTrigger asChild>
+              <ContextSegment label={tu('选择 DTS 版本')}>DTS {runtime.version}</ContextSegment>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="min-w-28">
+              {DTS_VERSION_OPTIONS.map((version) => (
+                <DropdownMenuCheckboxItem
+                  key={version}
+                  checked={version === runtime.version}
+                  onCheckedChange={() => setRuntime((current) => ({ ...current, version }))}
+                >
+                  {version}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
           </DropdownMenu>
           <DropdownMenu>
-            <DropdownMenuTrigger asChild><ContextSegment label="选择运行环境">{activeEnv.label}</ContextSegment></DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="min-w-28">{DTS_ENVIRONMENT_OPTIONS.map((env) => <DropdownMenuCheckboxItem key={env.id} checked={env.id === runtime.environment} onCheckedChange={() => setRuntime((current) => ({ ...current, environment: env.id }))}>{env.label}</DropdownMenuCheckboxItem>)}</DropdownMenuContent>
+            <DropdownMenuTrigger asChild>
+              <ContextSegment label={tu('选择运行环境')}>
+                {uiText(uiMessage(activeEnv.label), locale)}
+              </ContextSegment>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="min-w-28">
+              {DTS_ENVIRONMENT_OPTIONS.map((env) => (
+                <DropdownMenuCheckboxItem
+                  key={env.id}
+                  checked={env.id === runtime.environment}
+                  onCheckedChange={() =>
+                    setRuntime((current) => ({ ...current, environment: env.id }))
+                  }
+                >
+                  {uiText(uiMessage(env.label), locale)}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
           </DropdownMenu>
           <DropdownMenu>
-            <DropdownMenuTrigger asChild><ContextSegment label="选择 PI 迭代">{runtime.increment}</ContextSegment></DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="min-w-28">{DTS_INCREMENT_OPTIONS.map((increment) => <DropdownMenuCheckboxItem key={increment} checked={increment === runtime.increment} onCheckedChange={() => setRuntime((current) => ({ ...current, increment }))}>{increment}</DropdownMenuCheckboxItem>)}</DropdownMenuContent>
+            <DropdownMenuTrigger asChild>
+              <ContextSegment label={tu('选择 PI 迭代')}>{runtime.increment}</ContextSegment>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="min-w-28">
+              {DTS_INCREMENT_OPTIONS.map((increment) => (
+                <DropdownMenuCheckboxItem
+                  key={increment}
+                  checked={increment === runtime.increment}
+                  onCheckedChange={() => setRuntime((current) => ({ ...current, increment }))}
+                >
+                  {increment}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
           </DropdownMenu>
         </div>
         <div className="ml-auto flex items-center gap-1">
-          <ConnectionStatusMenu detail={detail} connected={connected} busy={busy} onHeartbeat={() => void heartbeat()} onReconnect={() => void connect()} onDisconnect={() => void disconnect()} />
-          <button type="button" disabled={!connected || loading} onClick={() => void loadTickets(activeFilter, 1, keyword)} aria-label="刷新工单" className="flex size-8 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:opacity-40"><ArrowsClockwise className={cn('size-3.5', loading && 'animate-spin')} /></button>
+          <ConnectionStatusMenu
+            detail={detail}
+            connected={connected}
+            busy={busy}
+            onHeartbeat={() => void heartbeat()}
+            onReconnect={() => void connect()}
+            onDisconnect={() => void disconnect()}
+          />
+          <button
+            type="button"
+            disabled={!connected || loading}
+            onClick={() => void loadTickets(activeFilter, 1, keyword)}
+            aria-label={tu('刷新工单')}
+            className="flex size-8 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:opacity-40"
+          >
+            <ArrowsClockwise className={cn('size-3.5', loading && 'animate-spin')} />
+          </button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button type="button" aria-label="更多操作" className="flex size-8 items-center justify-center rounded-[7px] text-[var(--muted)] outline-none hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><DotsThree className="size-4" weight="bold" /></button>
+              <button
+                type="button"
+                aria-label={tu('更多操作')}
+                className="flex size-8 items-center justify-center rounded-[7px] text-[var(--muted)] outline-none hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+              >
+                <DotsThree className="size-4" weight="bold" />
+              </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-40">
-              <DropdownMenuItem disabled={!selectedTicket} onSelect={() => { if (selectedTicket) void navigator.clipboard.writeText(selectedTicket.id).then(() => notify('success', '已复制工单编号', selectedTicket.id)) }}><CopySimple />复制工单编号</DropdownMenuItem>
-              <DropdownMenuItem disabled={!selectedTicket?.source.url} onSelect={() => { if (selectedTicket?.source.url) window.open(selectedTicket.source.url, '_blank', 'noopener,noreferrer') }}><ArrowSquareOut />在 DTS 中打开</DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={!selectedTicket}
+                onSelect={() => {
+                  if (selectedTicket)
+                    void navigator.clipboard
+                      .writeText(selectedTicket.id)
+                      .then(() =>
+                        notify('success', eventText('已复制工单编号'), selectedTicket.id),
+                      );
+                }}
+              >
+                <CopySimple />
+                {tu('复制工单编号')}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={!selectedTicket?.source.url}
+                onSelect={() => {
+                  if (selectedTicket?.source.url)
+                    window.open(selectedTicket.source.url, '_blank', 'noopener,noreferrer');
+                }}
+              >
+                <ArrowSquareOut />
+                {tu('在 DTS 中打开')}
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </header>
       <div className="flex min-h-0 flex-1">
-        <DtsTicketWorkspace connected={connected} activeFilter={activeFilter} tickets={tickets} selectedId={selectedId} detail={ticketDetail} loading={loading} detailLoading={detailLoading} keyword={keyword} error={error}
-          onFilterChange={(filter) => { setActiveFilter(filter); setSelectedId(null); setTicketDetail(null); void loadTickets(filter, 1, keyword) }} onKeywordChange={setKeyword} onSearch={() => void loadTickets(activeFilter, 1, keyword)} onSelect={(ticket) => void loadTicketDetail(ticket)} onPageChange={(page) => void loadTickets(activeFilter, page, keyword)} onConnect={() => void connect()} onOpenInspector={inspectorOpen ? undefined : () => setInspectorOpen(true)} />
-        {inspectorOpen ? <DtsConnectorInspector ticket={ticketDetail} summary={tickets?.items.find((ticket) => ticket.id === selectedId) ?? null} onClose={() => setInspectorOpen(false)} /> : null}
+        <DtsTicketWorkspace
+          connected={connected}
+          activeFilter={activeFilter}
+          tickets={tickets}
+          selectedId={selectedId}
+          detail={ticketDetail}
+          loading={loading}
+          detailLoading={detailLoading}
+          keyword={keyword}
+          error={uiText(error, locale)}
+          onFilterChange={(filter) => {
+            setActiveFilter(filter);
+            setSelectedId(null);
+            setTicketDetail(null);
+            void loadTickets(filter, 1, keyword);
+          }}
+          onKeywordChange={setKeyword}
+          onSearch={() => void loadTickets(activeFilter, 1, keyword)}
+          onSelect={(ticket) => void loadTicketDetail(ticket)}
+          onPageChange={(page) => void loadTickets(activeFilter, page, keyword)}
+          onConnect={() => void connect()}
+          onOpenInspector={inspectorOpen ? undefined : () => setInspectorOpen(true)}
+        />
+        {inspectorOpen ? (
+          <DtsConnectorInspector
+            ticket={ticketDetail}
+            summary={tickets?.items.find((ticket) => ticket.id === selectedId) ?? null}
+            onClose={() => setInspectorOpen(false)}
+          />
+        ) : null}
       </div>
     </section>
-  )
+  );
 }
 
-const ContextSegment = forwardRef<HTMLButtonElement, ComponentPropsWithoutRef<'button'> & { label: string }>(function ContextSegment({ label, children, className, ...props }, ref) {
-  return <button ref={ref} type="button" aria-label={label} {...props} className={cn('flex h-full items-center gap-1 rounded-[6px] border border-[var(--line)] bg-panel px-2 text-[8.5px] text-[var(--ink-soft)] outline-none hover:border-[var(--line-strong)] hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]', className)}><span className="whitespace-nowrap">{children}</span><CaretDown className="size-2.5 shrink-0 text-[var(--muted)]" /></button>
-})
+const ContextSegment = forwardRef<
+  HTMLButtonElement,
+  ComponentPropsWithoutRef<'button'> & { label: string }
+>(function ContextSegment({ label, children, className, ...props }, ref) {
+  return (
+    <button
+      ref={ref}
+      type="button"
+      aria-label={label}
+      {...props}
+      className={cn(
+        'flex h-full items-center gap-1 rounded-[6px] border border-[var(--line)] bg-panel px-2 text-[8.5px] text-[var(--ink-soft)] outline-none hover:border-[var(--line-strong)] hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]',
+        className,
+      )}
+    >
+      <span className="whitespace-nowrap">{children}</span>
+      <CaretDown className="size-2.5 shrink-0 text-[var(--muted)]" />
+    </button>
+  );
+});
 
-function ConnectionStatusMenu({ detail, connected, busy, onHeartbeat, onReconnect, onDisconnect }: { detail: ConnectorDetailDto; connected: boolean; busy: boolean; onHeartbeat: () => void; onReconnect: () => void; onDisconnect: () => void }) {
-  const identity = detail.instance.identity?.displayName ?? detail.instance.identity?.account ?? detail.instance.executionTargetId
-  const healthLabel = detail.instance.healthState === 'healthy' ? '运行正常' : detail.instance.healthState === 'degraded' ? '服务降级' : detail.instance.healthState === 'unreachable' ? '连接不可达' : '等待检测'
-  const heartbeatLabel = detail.instance.lastHeartbeatAt ? new Date(detail.instance.lastHeartbeatAt).toLocaleString('zh-CN', { hour12: false }) : '暂无记录'
+function ConnectionStatusMenu({
+  detail,
+  connected,
+  busy,
+  onHeartbeat,
+  onReconnect,
+  onDisconnect,
+}: {
+  detail: ConnectorDetailDto;
+  connected: boolean;
+  busy: boolean;
+  onHeartbeat: () => void;
+  onReconnect: () => void;
+  onDisconnect: () => void;
+}) {
+  const { t: tu, locale } = useTranslation(unitMessages);
+
+  const identity =
+    detail.instance.identity?.displayName ??
+    detail.instance.identity?.account ??
+    detail.instance.executionTargetId;
+  const healthLabel =
+    detail.instance.healthState === 'healthy'
+      ? '运行正常'
+      : detail.instance.healthState === 'degraded'
+        ? '服务降级'
+        : detail.instance.healthState === 'unreachable'
+          ? '连接不可达'
+          : '等待检测';
+  const heartbeatLabel = detail.instance.lastHeartbeatAt
+    ? new Date(detail.instance.lastHeartbeatAt).toLocaleString(locale, { hour12: false })
+    : tu('暂无记录');
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button type="button" aria-label="查看 DTS 连接状态" className="flex size-8 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">
+        <button
+          type="button"
+          aria-label={tu('查看 DTS 连接状态')}
+          className="flex size-8 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+        >
           <Broadcast className="size-4" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[264px] rounded-[10px] p-1.5">
         <div className="rounded-[8px] bg-[var(--surface-subtle)] p-3">
-          <div className={cn('flex items-center gap-2', connected ? 'text-[var(--ok-ink)]' : 'text-[var(--warn-ink)]')}>
-            {connected ? <CheckCircle className="size-4" weight="fill" /> : <WarningCircle className="size-4" weight="fill" />}
-            <span className="text-[11px] font-medium">{connected ? 'DTS 已连接' : 'DTS 需要连接'}</span>
-            <span className="ml-auto rounded-full bg-panel px-2 py-0.5 text-[8px] text-[var(--muted-strong)] ring-1 ring-inset ring-[var(--line)]">{healthLabel}</span>
+          <div
+            className={cn(
+              'flex items-center gap-2',
+              connected ? 'text-[var(--ok-ink)]' : 'text-[var(--warn-ink)]',
+            )}
+          >
+            {connected ? (
+              <CheckCircle className="size-4" weight="fill" />
+            ) : (
+              <WarningCircle className="size-4" weight="fill" />
+            )}
+            <span className="text-[11px] font-medium">
+              {connected ? tu('DTS 已连接') : tu('DTS 需要连接')}
+            </span>
+            <span className="ml-auto rounded-full bg-panel px-2 py-0.5 text-[8px] text-[var(--muted-strong)] ring-1 ring-inset ring-[var(--line)]">
+              {uiText(uiMessage(healthLabel), locale)}
+            </span>
           </div>
           <dl className="mt-3 grid grid-cols-[64px_minmax(0,1fr)] gap-x-3 gap-y-2 text-[8.5px]">
-            <dt className="text-[var(--muted)]">当前身份</dt><dd className="truncate text-right text-[var(--ink-soft)]" title={identity}>{identity}</dd>
-            <dt className="text-[var(--muted)]">运行位置</dt><dd className="truncate text-right text-[var(--ink-soft)]">{detail.instance.executionTargetId}</dd>
-            <dt className="text-[var(--muted)]">最近检测</dt><dd className="truncate text-right tabular-nums text-[var(--ink-soft)]">{heartbeatLabel}</dd>
+            <dt className="text-[var(--muted)]">{tu('当前身份')}</dt>
+            <dd className="truncate text-right text-[var(--ink-soft)]" title={identity}>
+              {identity}
+            </dd>
+            <dt className="text-[var(--muted)]">{tu('运行位置')}</dt>
+            <dd className="truncate text-right text-[var(--ink-soft)]">
+              {detail.instance.executionTargetId}
+            </dd>
+            <dt className="text-[var(--muted)]">{tu('最近检测')}</dt>
+            <dd className="truncate text-right tabular-nums text-[var(--ink-soft)]">
+              {heartbeatLabel}
+            </dd>
           </dl>
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuItem disabled={busy || !connected} onSelect={onHeartbeat} className="text-[10px]">
+        <DropdownMenuItem
+          disabled={busy || !connected}
+          onSelect={onHeartbeat}
+          className="text-[10px]"
+        >
           {busy ? <SpinnerGap className="animate-spin" /> : <ArrowsClockwise />}
-          检测连接
+          {tu('检测连接')}{' '}
         </DropdownMenuItem>
         <DropdownMenuItem disabled={busy} onSelect={onReconnect} className="text-[10px]">
           <ArrowsClockwise />
-          重新连接
+          {tu('重新连接')}{' '}
         </DropdownMenuItem>
-        {connected ? <DropdownMenuItem variant="destructive" disabled={busy} onSelect={onDisconnect} className="text-[10px]"><SignOut />断开连接</DropdownMenuItem> : null}
+        {connected ? (
+          <DropdownMenuItem
+            variant="destructive"
+            disabled={busy}
+            onSelect={onDisconnect}
+            className="text-[10px]"
+          >
+            <SignOut />
+            {tu('断开连接')}
+          </DropdownMenuItem>
+        ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }
 
 function ConnectionLoading() {
+  const { t: tu } = useTranslation(unitMessages);
+
   return (
-    <div role="status" aria-live="polite" aria-busy="true" className="flex min-h-0 flex-1 items-center justify-center bg-panel">
+    <div
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      className="flex min-h-0 flex-1 items-center justify-center bg-panel"
+    >
       <div className="flex w-[340px] flex-col items-center rounded-[14px] border border-[var(--line)] bg-[var(--elevated)] px-8 py-7 text-center shadow-[0_18px_50px_rgba(24,30,42,0.12)]">
         <span className="flex size-11 items-center justify-center rounded-[11px] bg-[var(--accent-soft)] text-[var(--accent-ink)]">
           <SpinnerGap className="size-5 animate-spin" weight="bold" aria-hidden />
         </span>
-        <h2 className="mt-4 text-[13px] font-semibold text-[var(--ink)]">正在完成 DTS 连接</h2>
-        <p className="mt-1.5 text-[9.5px] leading-4 text-[var(--muted-strong)]">身份验证已完成，正在同步连接状态和待处理工单…</p>
+        <h2 className="mt-4 text-[13px] font-semibold text-[var(--ink)]">
+          {tu('正在完成 DTS 连接')}
+        </h2>
+        <p className="mt-1.5 text-[9.5px] leading-4 text-[var(--muted-strong)]">
+          {tu('身份验证已完成，正在同步连接状态和待处理工单…')}
+        </p>
       </div>
     </div>
-  )
+  );
 }

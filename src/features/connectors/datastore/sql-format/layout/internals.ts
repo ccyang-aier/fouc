@@ -1,10 +1,10 @@
-import type { Dialect, DialectOptions } from "sql-formatter/dist/esm/dialect.js";
-import type ExpressionFormatter from "sql-formatter/dist/esm/formatter/ExpressionFormatter.js";
-import type Indentation from "sql-formatter/dist/esm/formatter/Indentation.js";
-import type InlineLayout from "sql-formatter/dist/esm/formatter/InlineLayout.js";
-import type Layout from "sql-formatter/dist/esm/formatter/Layout.js";
-import type Params from "sql-formatter/dist/esm/formatter/Params.js";
-import type { AstNode, StatementNode } from "sql-formatter/dist/esm/parser/ast.js";
+import type { Dialect, DialectOptions } from 'sql-formatter/dist/esm/dialect.js';
+import type ExpressionFormatter from 'sql-formatter/dist/esm/formatter/ExpressionFormatter.js';
+import type Indentation from 'sql-formatter/dist/esm/formatter/Indentation.js';
+import type InlineLayout from 'sql-formatter/dist/esm/formatter/InlineLayout.js';
+import type Layout from 'sql-formatter/dist/esm/formatter/Layout.js';
+import type Params from 'sql-formatter/dist/esm/formatter/Params.js';
+import type { AstNode, StatementNode } from 'sql-formatter/dist/esm/parser/ast.js';
 
 /**
  * Access to sql-formatter's bundled parser and layout machinery.
@@ -23,7 +23,8 @@ import type { AstNode, StatementNode } from "sql-formatter/dist/esm/parser/ast.j
  */
 
 type InlineLayoutCtor = typeof InlineLayout;
-type InlineLayoutErrorCtor = typeof import("sql-formatter/dist/esm/formatter/InlineLayout.js").InlineLayoutError;
+type InlineLayoutErrorCtor =
+  typeof import('sql-formatter/dist/esm/formatter/InlineLayout.js').InlineLayoutError;
 type ExpressionFormatterCtor = typeof ExpressionFormatter;
 type ParamsCtor = typeof Params;
 type LayoutCtor = typeof Layout;
@@ -41,7 +42,11 @@ export interface SqlFormatterEngine {
   /** Every bundled dialect, keyed by the name `format()` accepts. */
   readonly dialects: Record<string, DialectOptions>;
   readonly createDialect: (options: DialectOptions) => Dialect;
-  readonly parse: (sql: string, dialect: Dialect, paramTypes: Record<string, unknown>) => StatementNode[];
+  readonly parse: (
+    sql: string,
+    dialect: Dialect,
+    paramTypes: Record<string, unknown>,
+  ) => StatementNode[];
   readonly ExpressionFormatter: ExpressionFormatterCtor;
   readonly InlineLayout: InlineLayoutCtor;
   readonly InlineLayoutError: InlineLayoutErrorCtor;
@@ -56,15 +61,24 @@ async function importEngine(): Promise<SqlFormatterEngine | null> {
   try {
     // Literal specifiers only: The bundler cannot statically analyse a computed path,
     // and these must resolve through the `sql-formatter/dist/esm/` alias.
-    const [parserMod, dialectMod, allDialects, expressionMod, inlineLayoutMod, paramsMod, layoutMod, indentationMod] = await Promise.all([
-      import("sql-formatter/dist/esm/parser/createParser.js"),
-      import("sql-formatter/dist/esm/dialect.js"),
-      import("sql-formatter/dist/esm/allDialects.js"),
-      import("sql-formatter/dist/esm/formatter/ExpressionFormatter.js"),
-      import("sql-formatter/dist/esm/formatter/InlineLayout.js"),
-      import("sql-formatter/dist/esm/formatter/Params.js"),
-      import("sql-formatter/dist/esm/formatter/Layout.js"),
-      import("sql-formatter/dist/esm/formatter/Indentation.js"),
+    const [
+      parserMod,
+      dialectMod,
+      allDialects,
+      expressionMod,
+      inlineLayoutMod,
+      paramsMod,
+      layoutMod,
+      indentationMod,
+    ] = await Promise.all([
+      import('sql-formatter/dist/esm/parser/createParser.js'),
+      import('sql-formatter/dist/esm/dialect.js'),
+      import('sql-formatter/dist/esm/allDialects.js'),
+      import('sql-formatter/dist/esm/formatter/ExpressionFormatter.js'),
+      import('sql-formatter/dist/esm/formatter/InlineLayout.js'),
+      import('sql-formatter/dist/esm/formatter/Params.js'),
+      import('sql-formatter/dist/esm/formatter/Layout.js'),
+      import('sql-formatter/dist/esm/formatter/Indentation.js'),
     ]);
 
     const createParser = parserMod.createParser;
@@ -77,16 +91,16 @@ async function importEngine(): Promise<SqlFormatterEngine | null> {
     const Indentation = indentationMod.default;
 
     if (
-      typeof createParser !== "function" ||
-      typeof createDialect !== "function" ||
-      typeof ExpressionFormatter !== "function" ||
-      typeof InlineLayout !== "function" ||
-      typeof InlineLayoutError !== "function" ||
-      typeof Params !== "function" ||
-      typeof Layout !== "function" ||
-      typeof Indentation !== "function" ||
+      typeof createParser !== 'function' ||
+      typeof createDialect !== 'function' ||
+      typeof ExpressionFormatter !== 'function' ||
+      typeof InlineLayout !== 'function' ||
+      typeof InlineLayoutError !== 'function' ||
+      typeof Params !== 'function' ||
+      typeof Layout !== 'function' ||
+      typeof Indentation !== 'function' ||
       !allDialects ||
-      typeof allDialects !== "object"
+      typeof allDialects !== 'object'
     ) {
       return null;
     }
@@ -148,7 +162,14 @@ export interface SqlLayoutRenderers {
  * overflow `width` — so one call answers "would this fit on the line?" exactly,
  * which is what the collapse rule is decided on.
  */
-export function renderInline(engine: SqlFormatterEngine, nodes: AstNode[], dialect: Dialect, cfg: Record<string, unknown>, params: InstanceType<ParamsCtor>, width: number): string | null {
+export function renderInline(
+  engine: SqlFormatterEngine,
+  nodes: AstNode[],
+  dialect: Dialect,
+  cfg: Record<string, unknown>,
+  params: InstanceType<ParamsCtor>,
+  width: number,
+): string | null {
   if (nodes.length === 0 || width <= 0) return null;
 
   // `formatParenthesis` measures nested groups against `cfg.expressionWidth`, so
@@ -177,8 +198,14 @@ export function renderInline(engine: SqlFormatterEngine, nodes: AstNode[], diale
 }
 
 /** Creates the inline/block renderer pair for one dialect and configuration. */
-export function createRenderers(engine: SqlFormatterEngine, dialect: Dialect, cfg: Record<string, unknown>, params: InstanceType<ParamsCtor>, indentWidth: number): SqlLayoutRenderers {
-  const indent = " ".repeat(Math.max(1, indentWidth));
+export function createRenderers(
+  engine: SqlFormatterEngine,
+  dialect: Dialect,
+  cfg: Record<string, unknown>,
+  params: InstanceType<ParamsCtor>,
+  indentWidth: number,
+): SqlLayoutRenderers {
+  const indent = ' '.repeat(Math.max(1, indentWidth));
   const alwaysDenseOperators = dialect.formatOptions.alwaysDenseOperators ?? [];
   return {
     inline: (nodes, width) => renderInline(engine, nodes, dialect, cfg, params, width),

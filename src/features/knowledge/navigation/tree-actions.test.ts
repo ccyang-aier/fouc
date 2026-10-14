@@ -1,9 +1,19 @@
 import { describe, expect, test } from 'bun:test';
 import { KnowledgeDataError } from '../data/errors';
 import type { KnowledgeAccess } from '../data/hooks';
-import { canEditTree, operationKeyIntent, readOnlyTreeReason, treeActionsForRow, treeOperationErrorText, treeOperationSuccessText } from './tree-actions';
+import {
+  canEditTree,
+  operationKeyIntent,
+  readOnlyTreeReason,
+  treeActionsForRow,
+  treeOperationErrorText,
+  treeOperationSuccessText,
+} from './tree-actions';
 
-function access(role: 'owner' | 'admin' | 'member' | 'guest', scopes: readonly string[]): KnowledgeAccess {
+function access(
+  role: 'owner' | 'admin' | 'member' | 'guest',
+  scopes: readonly string[],
+): KnowledgeAccess {
   return {
     knowledgeBaseId: 'e2f7a4c1-0000-4000-8000-6b1f9a2c3d01',
     userId: '90000000-0000-4000-8000-000000000000',
@@ -24,8 +34,8 @@ describe('canEditTree (write gate)', () => {
   });
 
   test('the read-only reason names the permission requirement', () => {
-    expect(readOnlyTreeReason).toContain('只读');
-    expect(readOnlyTreeReason).toContain('编辑权限');
+    expect(readOnlyTreeReason()).toContain('只读');
+    expect(readOnlyTreeReason()).toContain('编辑权限');
   });
 });
 
@@ -48,17 +58,39 @@ describe('operationKeyIntent', () => {
   });
 
   test('Alt+Arrows move; plain arrows stay navigation (null here)', () => {
-    expect(operationKeyIntent(key('ArrowUp', { alt: true }))).toEqual({ kind: 'move', direction: 'up' });
-    expect(operationKeyIntent(key('ArrowDown', { alt: true }))).toEqual({ kind: 'move', direction: 'down' });
-    expect(operationKeyIntent(key('ArrowRight', { alt: true }))).toEqual({ kind: 'move', direction: 'indent' });
-    expect(operationKeyIntent(key('ArrowLeft', { alt: true }))).toEqual({ kind: 'move', direction: 'outdent' });
+    expect(operationKeyIntent(key('ArrowUp', { alt: true }))).toEqual({
+      kind: 'move',
+      direction: 'up',
+    });
+    expect(operationKeyIntent(key('ArrowDown', { alt: true }))).toEqual({
+      kind: 'move',
+      direction: 'down',
+    });
+    expect(operationKeyIntent(key('ArrowRight', { alt: true }))).toEqual({
+      kind: 'move',
+      direction: 'indent',
+    });
+    expect(operationKeyIntent(key('ArrowLeft', { alt: true }))).toEqual({
+      kind: 'move',
+      direction: 'outdent',
+    });
     expect(operationKeyIntent(key('ArrowUp'))).toBeNull();
     expect(operationKeyIntent(key('ArrowRight'))).toBeNull();
   });
 
   test('the row action set covers the U03 operation collection, recycle marked destructive', () => {
     const ids = treeActionsForRow().map((action) => action.id);
-    expect(ids).toEqual(['create-child', 'rename', 'set-icon', 'set-cover', 'move-up', 'move-down', 'indent', 'outdent', 'recycle']);
+    expect(ids).toEqual([
+      'create-child',
+      'rename',
+      'set-icon',
+      'set-cover',
+      'move-up',
+      'move-down',
+      'indent',
+      'outdent',
+      'recycle',
+    ]);
     expect(treeActionsForRow().find((action) => action.id === 'recycle')?.danger).toBe(true);
   });
 });

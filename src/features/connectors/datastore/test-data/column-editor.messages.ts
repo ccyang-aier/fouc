@@ -1,0 +1,36 @@
+import { defineMessages } from '@/lib/i18n';
+
+export const messages = defineMessages({
+  actualTableColumns: ['真实表字段', 'Actual table columns'],
+  includeInGeneration: ['参与生成', 'Include in generation'],
+  generate: ['生成', 'Generate'],
+  columnType: ['字段 / 类型', 'Column / type'],
+  generator: ['生成器', 'Generator'],
+  generateColumn: ['生成字段 {p0}', 'Generate column {p0}'],
+  sqliteDynamicType: ['SQLite 动态类型', 'SQLite dynamic type'],
+  nullable: [' · 可空', ' · Nullable'],
+  nativeOmit: ['原生 / 省略', 'Native / omit'],
+  omit: ['省略', 'Omit'],
+  generationColumnConfiguration: ['生成字段配置', 'Generation column configuration'],
+  columnConfiguration: ['字段配置', 'Column configuration'],
+  thisColumnIsNotWrittenDatabaseDefaultsAndGenerationRules: [
+    '不写入此字段。数据库默认值与生成规则会在原生追加事务中生效；没有默认值的必填字段将阻止整批生成。',
+    'This column is not written. Database defaults and generation rules apply in the native append transaction; required columns without defaults block the entire generation batch.',
+  ],
+  columnGenerator: ['字段 {p0} 生成器', 'Column {p0} generator'],
+  uniqueWithinBatch: ['本批唯一', 'Unique within batch'],
+  nativeConstraint: [' · 原生约束', ' · Native constraint'],
+  nullRatio: ['NULL 比例 (%)', 'NULL ratio (%)'],
+  columnNullRatio: ['字段 {p0} NULL 比例', 'Column {p0} NULL ratio'],
+  databaseDefault: ['数据库默认值', 'Database default'],
+  none: ['无', 'None'],
+  maximum: ['最大', 'Maximum'],
+  characters: ['个字符', 'characters'],
+  precision: ['精度', 'Precision'],
+  decimals: ['/ 小数', '/ decimals'],
+  unknown: ['未知', 'Unknown'],
+  selectAColumnToConfigureItsGenerator: [
+    '选择字段配置生成器。',
+    'Select a column to configure its generator.',
+  ],
+});

@@ -1,0 +1,51 @@
+import { defineMessages } from '@/lib/i18n';
+
+export const messages = defineMessages({
+  copied: ['已复制{p0}', 'Copied {p0}'],
+  copyFailedCheckBrowserClipboardPermissions: [
+    '复制失败，请检查浏览器剪贴板权限',
+    'Copy failed. Check browser clipboard permissions',
+  ],
+  originalValues: ['{p0} 个原始值 · {p1}', '{p0} original values · {p1}'],
+  returnedRowsVisibleColumns: [
+    '已返回 {p0} 行 · {p1} 个可见字段',
+    '{p0} returned rows · {p1} visible columns',
+  ],
+  partialResults: [' · 部分结果', ' · Partial results'],
+  exactSum: [' · 精确求和 {p0}', ' · Exact sum {p0}'],
+  originalValues1486: ['{p0} 个原始值{p1}', '{p0} original values{p1}'],
+  clickToSelectShiftForRangesCtrlForMultipleSelections: [
+    '点击选择 · Shift 连选 · Ctrl 多选',
+    'Click to select · Shift for ranges · Ctrl for multiple selections',
+  ],
+  transpose: ['转置', 'Transpose'],
+  single: ['单条', 'Single'],
+  multiple: ['多条', 'Multiple'],
+  fieldName: ['字段名', 'Field name'],
+  transposedCellDetails: ['转置单元格详情', 'Transposed cell details'],
+  cellDetailsEnter: ['单元格详情 · Enter', 'Cell details · Enter'],
+  details: ['详情', 'Details'],
+  backToTheStandardTable: ['返回标准表格', 'Back to the standard table'],
+  table: ['表格', 'Table'],
+  previousTransposedRecord: ['上一条转置记录', 'Previous transposed record'],
+  originalRow: ['原始行', 'Original row'],
+  transposedRecord: ['转置记录', 'Transposed record'],
+  no: ['第', 'No. '],
+  row: ['行', ' row'],
+  nextTransposedRecord: ['下一条转置记录', 'Next transposed record'],
+  visibleColumnsOnlyTheDisplayOrientationChanges: [
+    '个可见字段 · 仅改变显示方向',
+    ' visible columns · Only the display orientation changes',
+  ],
+  transposedResultsRowsAreOriginalFieldsAndColumnsAreOriginal: [
+    '转置结果，行是原字段，列是原记录',
+    'Transposed results: rows are original fields and columns are original records',
+  ],
+  selectAllTransposedValues: ['选择全部转置值', 'Select all transposed values'],
+  fieldOriginalRecord: ['字段 / 原始记录', 'Field / Original record'],
+  originalValue: ['{p0}原始值：{p1}', '{p0}Original value: {p1}'],
+  emptyString: ['空字符串', 'Empty string'],
+  originalCellValue: ['单元格原始值', 'Original cell value'],
+  copyOriginalValue: ['复制原始值', 'Copy original value'],
+  closeTransposeFeedback: ['关闭转置反馈', 'Close transpose feedback'],
+});

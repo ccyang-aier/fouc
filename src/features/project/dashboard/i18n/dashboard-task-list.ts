@@ -1,0 +1,22 @@
+import { defineMessages } from '@/lib/i18n';
+export const messages = defineMessages({
+  'Add to favourites': ['加入收藏', 'Add to favourites'],
+  Assignees: ['负责人', 'Assignees'],
+  'Create Task': ['创建任务', 'Create Task'],
+  'Delete task': ['删除任务', 'Delete task'],
+  'Due date': ['截止日期', 'Due date'],
+  Favourite: ['收藏', 'Favourite'],
+  'Mark as complete': ['标记完成', 'Mark as complete'],
+  'No tasks found': ['没有匹配的任务', 'No tasks found'],
+  'Open task': ['打开任务', 'Open task'],
+  Progress: ['进度', 'Progress'],
+  'Remove from favourites': ['取消收藏', 'Remove from favourites'],
+  'Reopen task': ['重新打开任务', 'Reopen task'],
+  Status: ['状态', 'Status'],
+  Task: ['任务', 'Task'],
+  Tasks: ['任务', 'Tasks'],
+  'To Do': ['待办', 'To Do'],
+  Completed: ['已完成', 'Completed'],
+  '{v0} progress': ['{v0}进度', '{v0} progress'],
+  '{v0} options': ['{v0}选项', '{v0} options'],
+});

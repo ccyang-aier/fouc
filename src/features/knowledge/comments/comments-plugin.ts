@@ -1,3 +1,7 @@
+import { createTranslator, getLocale } from '@/lib/i18n';
+import { editorLocaleMeta } from '../editor/use-editor-locale';
+import { knowledgeMessages } from './comments-plugin.messages';
+
 /**
  * The comment anchor rendering layer of the editor (N02, design §4.6).
  *
@@ -18,6 +22,8 @@ import type { EditorView } from '@tiptap/pm/view';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { collectCommentAnchors, commentThreadIdAt } from './comment-anchors';
 
+const knowledgeT = createTranslator(knowledgeMessages);
+
 /** Thread presentation the controller refreshes as query data changes. */
 export interface CommentAnchorContext {
   /** Thread ids the database reports as resolved. */
@@ -31,7 +37,10 @@ export interface CommentAnchorContext {
 }
 
 export const emptyCommentAnchorContext: CommentAnchorContext = {
-  resolved: new Set(), orphan: new Set(), pending: new Set(), counts: new Map(),
+  resolved: new Set(),
+  orphan: new Set(),
+  pending: new Set(),
+  counts: new Map(),
 };
 
 export interface CommentAnchorPluginState {
@@ -52,7 +61,11 @@ export function activeCommentThreadId(state: EditorState): string | null {
   return commentsPluginKey.getState(state)?.activeThreadId ?? null;
 }
 
-function anchorClasses(threadId: string, context: CommentAnchorContext, plugin: { activeThreadId: string | null; flashThreadId: string | null }): string {
+function anchorClasses(
+  threadId: string,
+  context: CommentAnchorContext,
+  plugin: { activeThreadId: string | null; flashThreadId: string | null },
+): string {
   let classes = 'fouc-comment-anchor';
   if (context.resolved.has(threadId)) classes += ' fouc-comment-resolved';
   if (context.orphan.has(threadId)) classes += ' fouc-comment-orphan';
@@ -72,27 +85,39 @@ function badgeElement(threadId: string, context: CommentAnchorContext): HTMLElem
   label.className = 'fouc-comment-badge-label';
   label.textContent = context.resolved.has(threadId) ? '✓' : String(Math.max(count ?? 1, 1));
   badge.append(label);
-  badge.title = context.resolved.has(threadId) ? '已解决的评论' : `${Math.max(count ?? 1, 1)} 条评论`;
+  badge.title = context.resolved.has(threadId)
+    ? knowledgeT('resolvedComment')
+    : knowledgeT(Math.max(count ?? 1, 1) === 1 ? 'oneComment' : 'valueComments', {
+        v0: Math.max(count ?? 1, 1),
+      });
   return badge;
 }
 
-function buildDecorations(doc: ProseMirrorNode, context: CommentAnchorContext, plugin: CommentAnchorPluginState): DecorationSet {
+function buildDecorations(
+  doc: ProseMirrorNode,
+  context: CommentAnchorContext,
+  plugin: CommentAnchorPluginState,
+): DecorationSet {
   const decorations: Decoration[] = [];
   for (const anchor of collectCommentAnchors(doc)) {
-    const end = Math.max(...anchor.ranges.map(range => range.to));
+    const end = Math.max(...anchor.ranges.map((range) => range.to));
     // The badge content follows the live context (count / resolved): a key
     // change replaces the widget, so a new reply re-renders the count.
     const count = Math.max(context.counts.get(anchor.threadId) ?? 1, 1);
     const resolved = context.resolved.has(anchor.threadId);
-    decorations.push(Decoration.widget(end, () => badgeElement(anchor.threadId, context), {
-      side: -1,
-      key: `fouc-comment-badge-${anchor.threadId}-${count}-${resolved ? 'r' : 'o'}`,
-    }));
+    decorations.push(
+      Decoration.widget(end, () => badgeElement(anchor.threadId, context), {
+        side: -1,
+        key: `fouc-comment-badge-${anchor.threadId}-${count}-${resolved ? 'r' : 'o'}-${getLocale()}`,
+      }),
+    );
     for (const range of anchor.ranges) {
-      decorations.push(Decoration.inline(range.from, range.to, {
-        class: anchorClasses(anchor.threadId, context, plugin),
-        'data-comment-thread': anchor.threadId,
-      }));
+      decorations.push(
+        Decoration.inline(range.from, range.to, {
+          class: anchorClasses(anchor.threadId, context, plugin),
+          'data-comment-thread': anchor.threadId,
+        }),
+      );
     }
   }
   return DecorationSet.create(doc, decorations);
@@ -115,15 +140,19 @@ function anchorStorageOf(editor: { storage?: unknown }): CommentAnchorStorage | 
 
 /** Keep all fragments of a discussion connected to its raised badge on hover. */
 function updateHoveredBadge(view: EditorView, target: EventTarget | null): void {
-  const anchor = target instanceof Element ? target.closest('.fouc-comment-anchor, .fouc-comment-badge') : null;
-  const id = anchor && view.dom.contains(anchor) ? anchor.getAttribute('data-comment-thread') : null;
-  view.dom.querySelectorAll<HTMLElement>('.fouc-comment-badge').forEach(badge => {
+  const anchor =
+    target instanceof Element ? target.closest('.fouc-comment-anchor, .fouc-comment-badge') : null;
+  const id =
+    anchor && view.dom.contains(anchor) ? anchor.getAttribute('data-comment-thread') : null;
+  view.dom.querySelectorAll<HTMLElement>('.fouc-comment-badge').forEach((badge) => {
     badge.toggleAttribute('data-hovered', id !== null && badge.dataset.commentThread === id);
   });
 }
 
 /** Reads the live context of an editor (null before the extension mounts). */
-export function commentAnchorContextOfEditor(editor: { storage?: unknown }): CommentAnchorContext | null {
+export function commentAnchorContextOfEditor(editor: {
+  storage?: unknown;
+}): CommentAnchorContext | null {
   const storage = anchorStorageOf(editor);
   return storage ? anchorContextOf(storage) : null;
 }
@@ -133,22 +162,39 @@ export function commentAnchorContextOfEditor(editor: { storage?: unknown }): Com
  * with a meta-only `context` dispatch (or any transaction) to rebuild the
  * decorations; returning false means the extension is not mounted.
  */
-export function setCommentAnchorContextOnEditor(editor: { storage?: unknown }, context: CommentAnchorContext): boolean {
+export function setCommentAnchorContextOnEditor(
+  editor: { storage?: unknown },
+  context: CommentAnchorContext,
+): boolean {
   const storage = anchorStorageOf(editor);
   if (!storage) return false;
   storage.context = context;
   return true;
 }
 
-function createCommentAnchorPlugin(storage: CommentAnchorStorage): Plugin<CommentAnchorPluginState> {
+function createCommentAnchorPlugin(
+  storage: CommentAnchorStorage,
+): Plugin<CommentAnchorPluginState> {
   return new Plugin<CommentAnchorPluginState>({
     key: commentsPluginKey,
     state: {
       init(_, state) {
-        const initial: CommentAnchorPluginState = { activeThreadId: null, flashThreadId: null, decorations: DecorationSet.empty };
-        return { ...initial, decorations: buildDecorations(state.doc, anchorContextOf(storage), initial) };
+        const initial: CommentAnchorPluginState = {
+          activeThreadId: null,
+          flashThreadId: null,
+          decorations: DecorationSet.empty,
+        };
+        return {
+          ...initial,
+          decorations: buildDecorations(state.doc, anchorContextOf(storage), initial),
+        };
       },
-      apply(tr: Transaction, previous: CommentAnchorPluginState, _oldState, newState): CommentAnchorPluginState {
+      apply(
+        tr: Transaction,
+        previous: CommentAnchorPluginState,
+        _oldState,
+        newState,
+      ): CommentAnchorPluginState {
         const meta = tr.getMeta(commentsPluginKey) as CommentAnchorMeta | undefined;
         let { activeThreadId } = previous;
         let { flashThreadId } = previous;
@@ -160,12 +206,32 @@ function createCommentAnchorPlugin(storage: CommentAnchorStorage): Plugin<Commen
           const anchored = new Set(collectCommentAnchors(tr.doc).map((anchor) => anchor.threadId));
           if (activeThreadId !== null && !anchored.has(activeThreadId)) activeThreadId = null;
           if (flashThreadId !== null && !anchored.has(flashThreadId)) flashThreadId = null;
-          return { activeThreadId, flashThreadId, decorations: buildDecorations(tr.doc, context, { activeThreadId, flashThreadId, decorations: previous.decorations }) };
+          return {
+            activeThreadId,
+            flashThreadId,
+            decorations: buildDecorations(tr.doc, context, {
+              activeThreadId,
+              flashThreadId,
+              decorations: previous.decorations,
+            }),
+          };
         }
-        if (meta) {
-          return { activeThreadId, flashThreadId, decorations: buildDecorations(newState.doc, context, { activeThreadId, flashThreadId, decorations: previous.decorations }) };
+        if (meta || tr.getMeta(editorLocaleMeta)) {
+          return {
+            activeThreadId,
+            flashThreadId,
+            decorations: buildDecorations(newState.doc, context, {
+              activeThreadId,
+              flashThreadId,
+              decorations: previous.decorations,
+            }),
+          };
         }
-        return { activeThreadId, flashThreadId, decorations: previous.decorations.map(tr.mapping, tr.doc) };
+        return {
+          activeThreadId,
+          flashThreadId,
+          decorations: previous.decorations.map(tr.mapping, tr.doc),
+        };
       },
     },
     props: {
@@ -178,8 +244,14 @@ function createCommentAnchorPlugin(storage: CommentAnchorStorage): Plugin<Commen
         return false;
       },
       handleDOMEvents: {
-        mouseover(view, event) { updateHoveredBadge(view, event.target); return false; },
-        mouseout(view, event) { updateHoveredBadge(view, event.relatedTarget); return false; },
+        mouseover(view, event) {
+          updateHoveredBadge(view, event.target);
+          return false;
+        },
+        mouseout(view, event) {
+          updateHoveredBadge(view, event.relatedTarget);
+          return false;
+        },
         // Read the decorated target directly, including nested formatted text.
         // Consuming its click also prevents default caret placement from
         // overriding this explicit selection at the anchor boundary.
@@ -203,23 +275,39 @@ function createCommentAnchorPlugin(storage: CommentAnchorStorage): Plugin<Commen
  * and sidebar agree on what is active) and an optional flash plays once.
  * Selection-only — stays off the B08 undo stack like every caret move.
  */
-export function selectCommentThread(view: EditorView, threadId: string | null, options: { flash?: boolean } = {}): void {
+export function selectCommentThread(
+  view: EditorView,
+  threadId: string | null,
+  options: { flash?: boolean } = {},
+): void {
   let anchor: number | null = null;
   if (threadId) {
-    const found = collectCommentAnchors(view.state.doc).find((candidate) => candidate.threadId === threadId);
+    const found = collectCommentAnchors(view.state.doc).find(
+      (candidate) => candidate.threadId === threadId,
+    );
     if (!found) return;
-    anchor = found.ranges.reduce((min, range) => Math.min(min, range.from), Number.MAX_SAFE_INTEGER);
+    anchor = found.ranges.reduce(
+      (min, range) => Math.min(min, range.from),
+      Number.MAX_SAFE_INTEGER,
+    );
   }
   const tr = view.state.tr.setMeta(commentsPluginKey, { type: 'select', id: threadId });
   if (anchor !== null) {
-    tr.setSelection(TextSelection.near(view.state.doc.resolve(Math.min(anchor + 1, view.state.doc.content.size)), 1));
+    tr.setSelection(
+      TextSelection.near(
+        view.state.doc.resolve(Math.min(anchor + 1, view.state.doc.content.size)),
+        1,
+      ),
+    );
   }
   tr.setMeta('addToHistory', false);
   view.dispatch(tr);
   if (options.flash && threadId) {
-    view.dispatch(view.state.tr
-      .setMeta(commentsPluginKey, { type: 'flash', id: threadId })
-      .setMeta('addToHistory', false));
+    view.dispatch(
+      view.state.tr
+        .setMeta(commentsPluginKey, { type: 'flash', id: threadId })
+        .setMeta('addToHistory', false),
+    );
   }
 }
 

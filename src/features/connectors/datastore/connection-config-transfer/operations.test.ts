@@ -68,11 +68,7 @@ test('a malformed final record or new preview conflict causes zero writes', asyn
 });
 
 test('partial failures remain visible and later records continue independently', async () => {
-  const bundle = createConnectionConfigBundle([
-    entry('First'),
-    entry('Fails'),
-    entry('Last'),
-  ]);
+  const bundle = createConnectionConfigBundle([entry('First'), entry('Fails'), entry('Last')]);
   const calls: string[] = [];
   const outcomes = await runConnectionImport({
     bundle,
@@ -89,11 +85,7 @@ test('partial failures remain visible and later records continue independently',
     },
   });
   expect(calls).toEqual(['First', 'Fails', 'Last']);
-  expect(outcomes.map((outcome) => outcome.status)).toEqual([
-    'saved',
-    'failed',
-    'saved',
-  ]);
+  expect(outcomes.map((outcome) => outcome.status)).toEqual(['saved', 'failed', 'saved']);
   expect(outcomes[1].error).toBe('Disk unavailable');
 });
 
@@ -117,8 +109,5 @@ test('cancel reports a finished in-flight save and prevents every subsequent mut
     },
   });
   expect(calls).toEqual(['First']);
-  expect(outcomes.map((outcome) => outcome.status)).toEqual([
-    'saved',
-    'cancelled',
-  ]);
+  expect(outcomes.map((outcome) => outcome.status)).toEqual(['saved', 'cancelled']);
 });

@@ -1,4 +1,7 @@
 'use client';
+import { createTranslator, useTranslation, type Locale } from '@/lib/i18n';
+import { knowledgeMessages } from './page-editor.messages';
+
 import { useKnowledgePagesQuery } from '../data/pages-queries';
 import { documentFileFormat } from '../documents/file-format';
 import { KnowledgeBaseFileDocument } from '../documents/file-document-surface';
@@ -28,41 +31,65 @@ import { PageEditorSurface } from './editor-surface';
 import { usePageEditorGate } from './page-access';
 import { usePageEditorSession } from './page-session';
 
-function pageAccessErrorText(error: unknown): string {
+function pageAccessErrorText(error: unknown, locale: Locale): string {
+  const knowledgeT = createTranslator(knowledgeMessages, locale);
   const copy: Record<string, string> = {
-    UNAVAILABLE: '知识服务暂时不可用，请稍后重试。',
-    NETWORK: '无法连接知识服务，请检查网络后重试。',
-    TIMEOUT: '连接知识服务超时，请重试。',
-    RATE_LIMITED: '请求过于频繁，请稍后重试。',
-    ENDPOINT: '知识服务地址未配置，无法建立连接。',
-    PAYMENT_REQUIRED: '该操作需要更高的访问权限。',
+    UNAVAILABLE: knowledgeT('knowledgeServiceUnavailableRetryLater'),
+    NETWORK: knowledgeT('unableToConnectToKnowledgeServiceCheckYour'),
+    TIMEOUT: knowledgeT('knowledgeServiceConnectionTimedOutPleaseRetry'),
+    RATE_LIMITED: knowledgeT('tooManyRequestsRetryLater'),
+    ENDPOINT: knowledgeT('knowledgeServiceAddressIsNotConfigured'),
+    PAYMENT_REQUIRED: knowledgeT('thisActionRequiresAHigherAccessLevel'),
   };
   const code = knowledgeErrorCodeOf(error);
-  return (code && copy[code]) ?? '确认页面访问时出现问题，请重试。';
+  return (code && copy[code]) ?? knowledgeT('unableToVerifyPageAccessPleaseRetry');
 }
 
 /** The page editor of one open page; mounts inside the U02 canvas main column. */
-export function PageEditor({ scope, user, knowledgeBaseId, onBack, onOpenSidebar, onCreateDocument, canCreateDocument }: { scope: PageScope; user: FoucAuthUser | null; knowledgeBaseId: string; onBack: () => void; onOpenSidebar: () => void; onCreateDocument: () => void; canCreateDocument: boolean }) {
+export function PageEditor({
+  scope,
+  user,
+  knowledgeBaseId,
+  onBack,
+  onOpenSidebar,
+  onCreateDocument,
+  canCreateDocument,
+}: {
+  scope: PageScope;
+  user: FoucAuthUser | null;
+  knowledgeBaseId: string;
+  onBack: () => void;
+  onOpenSidebar: () => void;
+  onCreateDocument: () => void;
+  canCreateDocument: boolean;
+}) {
+  const { locale, t: knowledgeT } = useTranslation(knowledgeMessages);
+
   const pages = useKnowledgePagesQuery(scope.knowledgeBaseId);
   const folders = useKnowledgeTeamspacesQuery(scope.knowledgeBaseId);
-  const page = pages.data?.find(item => item.id === scope.pageId);
-  const folderName = flattenKnowledgeBaseList(folders.data).find(folder => folder.id === page?.teamspaceId)?.name ?? '所属文件夹';
+  const page = pages.data?.find((item) => item.id === scope.pageId);
+  const folderName =
+    flattenKnowledgeBaseList(folders.data).find((folder) => folder.id === page?.teamspaceId)
+      ?.name ?? knowledgeT('containingFolder');
   const format = page ? documentFileFormat(page.title) : null;
-  const isFile = Boolean(page?.properties.fileAsset || format && format !== "markdown");
+  const isFile = Boolean(page?.properties.fileAsset || (format && format !== 'markdown'));
   const { gate, error: gateError, retry } = usePageEditorGate(scope.knowledgeBaseId, scope.pageId);
   // The collaboration session only exists once view access has been granted —
   // a denied page never opens a WebSocket or an IndexedDB copy.
-  const session = usePageEditorSession(gate.status === 'granted' && pages.isSuccess && !isFile ? scope : null, user?.id ?? 'anonymous');
+  const session = usePageEditorSession(
+    gate.status === 'granted' && pages.isSuccess && !isFile ? scope : null,
+    user?.id ?? 'anonymous',
+  );
   const view = derivePageEditorView(gate, session.status);
 
   if (gate.status === 'pending') {
-    return <CanvasSpinner label="正在确认页面访问" />;
+    return <CanvasSpinner label={knowledgeT('checkingPageAccess')} />;
   }
   if (gate.status === 'error') {
     return (
       <CanvasError
-        title="无法确认页面访问"
-        detail={pageAccessErrorText(gateError)}
+        title={knowledgeT('unableToVerifyPageAccess')}
+        detail={pageAccessErrorText(gateError, locale)}
         onRetry={retry}
       />
     );
@@ -70,20 +97,52 @@ export function PageEditor({ scope, user, knowledgeBaseId, onBack, onOpenSidebar
   if (gate.status === 'denied') {
     return (
       <CanvasForbidden
-        title="没有该页面的访问权限"
-        detail="当前凭证对这个页面没有查看权限；如果最近权限有调整，请联系页面所有者。"
-        actions={<Button variant="outline" onClick={onBack}>返回知识库</Button>}
+        title={knowledgeT('youDoNotHaveAccessToThisPage')}
+        detail={knowledgeT('yourCredentialsCannotViewThisPageContactIts')}
+        actions={
+          <Button variant="outline" onClick={onBack}>
+            {knowledgeT('backToKnowledgeBase')}
+          </Button>
+        }
       />
     );
   }
-  if (pages.isPending) return <CanvasSpinner label="正在读取文档信息" />;
-  if (pages.isError) return <CanvasError title="无法读取文档信息" detail="请检查网络后重试。" onRetry={() => { void pages.refetch(); }} />;
-  if (gate.status === "granted" && isFile && page) return <KnowledgeBaseFileDocument knowledgeBaseId={scope.knowledgeBaseId} page={page} canComment={gate.level !== "view"} canEdit={gate.level === "edit" || gate.level === "full"} avatarName={user?.name ?? "我"} folderName={folderName} onBack={onBack} onOpenSidebar={onOpenSidebar} onCreateDocument={onCreateDocument} />;
+  if (pages.isPending) return <CanvasSpinner label={knowledgeT('readingDocumentInformation')} />;
+  if (pages.isError)
+    return (
+      <CanvasError
+        title={knowledgeT('unableToReadDocumentInformation')}
+        detail={knowledgeT('checkYourConnectionAndRetry')}
+        onRetry={() => {
+          void pages.refetch();
+        }}
+      />
+    );
+  if (gate.status === 'granted' && isFile && page)
+    return (
+      <KnowledgeBaseFileDocument
+        knowledgeBaseId={scope.knowledgeBaseId}
+        page={page}
+        canComment={gate.level !== 'view'}
+        canEdit={gate.level === 'edit' || gate.level === 'full'}
+        avatarName={user?.name ?? knowledgeT('me')}
+        folderName={folderName}
+        onBack={onBack}
+        onOpenSidebar={onOpenSidebar}
+        onCreateDocument={onCreateDocument}
+      />
+    );
   if (session.failure) {
-    return <CanvasError title="无法打开页面文档" detail={session.failure} onRetry={session.retry} />;
+    return (
+      <CanvasError
+        title={knowledgeT('unableToOpenPageDocument')}
+        detail={session.failure}
+        onRetry={session.retry}
+      />
+    );
   }
   if (!session.session || !session.undo) {
-    return <CanvasSpinner label="正在打开文档" />;
+    return <CanvasSpinner label={knowledgeT('openingDocument')} />;
   }
   return (
     <PageEditorSurface

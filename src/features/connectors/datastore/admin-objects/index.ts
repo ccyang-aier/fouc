@@ -1,2 +1,2 @@
-export { DatabaseAdminObjectsAction } from './action'
-export { DatabaseAdminObjectsPanel } from './panel'
+export { DatabaseAdminObjectsAction } from './action';
+export { DatabaseAdminObjectsPanel } from './panel';

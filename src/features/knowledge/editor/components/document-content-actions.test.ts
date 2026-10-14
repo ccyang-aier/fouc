@@ -13,11 +13,27 @@ describe('document content operations', () => {
     const p = (text: string) => schema.nodes.paragraph.create(null, schema.text(text));
     const body = schema.nodes.doc.create(null, [
       schema.nodes.paragraph.create(null, schema.text('加粗文本', [schema.marks.bold.create()])),
-      schema.nodes.taskList.create(null, schema.nodes.taskItem.create({ checked: true }, p('已完成'))),
-      schema.nodes.table.create(null, [schema.nodes.tableRow.create(null, [schema.nodes.tableHeader.create(null, p('表头')), schema.nodes.tableHeader.create(null, p('标题'))]), schema.nodes.tableRow.create(null, [schema.nodes.tableCell.create(null, p('内容')), schema.nodes.tableCell.create(null, p('A | B'))])]),
+      schema.nodes.taskList.create(
+        null,
+        schema.nodes.taskItem.create({ checked: true }, p('已完成')),
+      ),
+      schema.nodes.table.create(null, [
+        schema.nodes.tableRow.create(null, [
+          schema.nodes.tableHeader.create(null, p('表头')),
+          schema.nodes.tableHeader.create(null, p('标题')),
+        ]),
+        schema.nodes.tableRow.create(null, [
+          schema.nodes.tableCell.create(null, p('内容')),
+          schema.nodes.tableCell.create(null, p('A | B')),
+        ]),
+      ]),
     ]);
     const editor = { schema, state: { doc: body } } as Editor;
-    const markdown = await documentContent(editor, '# 标题 [链接](javascript:alert(1))', 'markdown');
+    const markdown = await documentContent(
+      editor,
+      '# 标题 [链接](javascript:alert(1))',
+      'markdown',
+    );
     const parsed = new Window().document;
     parsed.write(renderToStaticMarkup(createElement(ReactMarkdown, null, markdown)));
     expect(parsed.querySelector('h1')?.textContent).toBe('# 标题 [链接](javascript:alert(1))');
@@ -30,8 +46,11 @@ describe('document content operations', () => {
   });
   test('HTML escapes title and includes a complete UTF-8 document without changing the body', async () => {
     const window = new Window();
-    window.document.body.innerHTML = '<article data-width="65" data-font="default" data-size="standard"><input aria-label="文档标题"><div class="ProseMirror"><p>正文</p></div></article>';
-    const editor = { view: { dom: window.document.querySelector('.ProseMirror') } } as unknown as Editor;
+    window.document.body.innerHTML =
+      '<article data-width="65" data-font="default" data-size="standard"><input data-knowledge-title aria-label="文档标题"><div class="ProseMirror"><p>正文</p></div></article>';
+    const editor = {
+      view: { dom: window.document.querySelector('.ProseMirror') },
+    } as unknown as Editor;
     const html = await documentContent(editor, '</h1><script>alert("x")</script>', 'html');
     expect(html).toContain('<meta charset="utf-8">');
     const parsed = new Window().document;
@@ -54,7 +73,7 @@ describe('document content operations', () => {
 describe('document links carry explicit resource identity', () => {
   test('link round-trip distinguishes local/server and resets unrelated routes and parameters', () => {
     for (const source of ['local', 'server'] as const) {
-      const target = {  knowledgeBaseId: 'kb1', pageId: 'p/1', source };
+      const target = { knowledgeBaseId: 'kb1', pageId: 'p/1', source };
       const link = documentLink('http://localhost:3000/old?view=projects#stale', target);
       expect(readDocumentLink(link)).toEqual(target);
       expect(new URL(link).pathname).toBe('/');
@@ -64,6 +83,10 @@ describe('document links carry explicit resource identity', () => {
   });
   test('incomplete and unknown source targets never select a document', () => {
     expect(readDocumentLink('http://localhost:3000/?document=p')).toBeNull();
-    expect(readDocumentLink('http://localhost:3000/?document=p&knowledgeBase=w&knowledgeBase=k&source=unknown')).toBeNull();
+    expect(
+      readDocumentLink(
+        'http://localhost:3000/?document=p&knowledgeBase=w&knowledgeBase=k&source=unknown',
+      ),
+    ).toBeNull();
   });
 });

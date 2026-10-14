@@ -1,0 +1,57 @@
+import { defineMessages } from '@/lib/i18n';
+export const messages = defineMessages({
+  执行失败: ['执行失败', 'Execution failed'],
+  '复制失败，请手动选择内容复制。': [
+    '复制失败，请手动选择内容复制。',
+    'Copy failed. Select the content and copy manually.',
+  ],
+  'Redis 命令台': ['Redis 命令台', 'Redis console'],
+  'Redis 命令': ['Redis 命令', 'Redis command'],
+  '执行中…': ['执行中…', 'Executing…'],
+  运行命令: ['运行命令', 'Run command'],
+  '· 只读命令 · ↑ ↓ 召回历史草稿': [
+    '· 只读命令 · ↑ ↓ 召回历史草稿',
+    '· Read-only commands · ↑ ↓ Recall history drafts',
+  ],
+  历史: ['历史', 'History'],
+  'PING · DBSIZE · TYPE · TTL / PTTL · STRLEN · LLEN · SCARD · HLEN · ZCARD · XLEN · EXISTS · INFO 单个分区 · MONITOR。MONITOR 监听整个实例的所有 DB，有性能成本；停止或关闭命令台会释放监听连接。监听内容不存入历史。':
+    [
+      'PING · DBSIZE · TYPE · TTL / PTTL · STRLEN · LLEN · SCARD · HLEN · ZCARD · XLEN · EXISTS · INFO 单个分区 · MONITOR。MONITOR 监听整个实例的所有 DB，有性能成本；停止或关闭命令台会释放监听连接。监听内容不存入历史。',
+      'PING · DBSIZE · TYPE · TTL / PTTL · STRLEN · LLEN · SCARD · HLEN · ZCARD · XLEN · EXISTS · Single INFO section · MONITOR. MONITOR listens to every DB in the instance and has a performance cost. Stopping or closing the console releases the connection. Monitor records are not saved in history.',
+    ],
+  '正在 DB': ['正在 DB', 'Executing in DB'],
+  '执行只读命令…': ['执行只读命令…', 'Executing read-only command…'],
+  已复制: ['已复制', 'Copied'],
+  复制输出: ['复制输出', 'Copy output'],
+  此条历史执行失败: ['此条历史执行失败', 'This historical execution failed'],
+  '历史仅保留前 16 KiB 输出；重用命令可重新查询当前结果。': [
+    '历史仅保留前 16 KiB 输出；重用命令可重新查询当前结果。',
+    'History retains only the first 16 KiB of output. Reuse the command to query the current result.',
+  ],
+  运行一个只读命令: ['运行一个只读命令', 'Run a read-only command'],
+  '结果显示在此处，也可查看本连接的历史输出。': [
+    '结果显示在此处，也可查看本连接的历史输出。',
+    'Results appear here; history output for this connection is also available.',
+  ],
+  'Redis 命令历史': ['Redis 命令历史', 'Redis command history'],
+  最近: ['最近', 'Recent'],
+  条: ['条', 'records'],
+  清空命令历史: ['清空命令历史', 'Clear command history'],
+  历史数据库范围: ['历史数据库范围', 'History database scope'],
+  '当前 DB': ['当前 DB', 'Current DB'],
+  '本连接全部 DB': ['本连接全部 DB', 'All DBs in this connection'],
+  保存在当前设备: ['保存在当前设备', 'Saved on this device'],
+  '临时会话 · 断开后清除': ['临时会话 · 断开后清除', 'Temporary session · Cleared on disconnect'],
+  '清空本连接所有 DB 的历史？': [
+    '清空本连接所有 DB 的历史？',
+    'Clear history for all DBs in this connection?',
+  ],
+  确认清空: ['确认清空', 'Confirm clear'],
+  取消: ['取消', 'Cancel'],
+  重试: ['重试', 'Retry'],
+  成功: ['成功', 'Success'],
+  失败: ['失败', 'Failed'],
+  '重用命令 {v0}': ['重用命令 {v0}', 'Reuse command {v0}'],
+  '正在读取历史…': ['正在读取历史…', 'Reading history…'],
+  '此范围没有命令历史。': ['此范围没有命令历史。', 'No command history in this scope.'],
+});

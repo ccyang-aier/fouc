@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from '@/lib/i18n';
+import { knowledgeMessages } from './slash-menu.messages';
 /**
  * The '/' floating menu (E06): a thin React view over the `foucSlashMenu`
  * plugin state. Every behavior decision — open/close, query, keyboard
@@ -15,7 +17,13 @@ import type { Editor } from '@tiptap/react';
 import { getOverlayRoot } from '@/lib/overlay-root';
 import { cn } from '@/lib/utils';
 import { filterSlashItems } from './slash-items';
-import { closeSlashMenu, runSlashItem, setActiveSlashItem, slashItemsOfEditor, slashMenuPluginKey } from './slash-paste';
+import {
+  closeSlashMenu,
+  runSlashItem,
+  setActiveSlashItem,
+  slashItemsOfEditor,
+  slashMenuPluginKey,
+} from './slash-paste';
 import styles from './slash-menu.module.css';
 
 const MENU_WIDTH = 240;
@@ -29,9 +37,13 @@ interface OpenMenuState {
 }
 
 export function SlashMenuLayer({ editor }: { editor: Editor | null }) {
+  const { locale, t: knowledgeT } = useTranslation(knowledgeMessages);
+
   // Keyed by editor: a stale editor's menu never renders after a scope switch
   // (derived, not reset in an effect).
-  const [menuState, setMenuState] = useState<{ editor: Editor | null; menu: OpenMenuState | null }>({ editor: null, menu: null });
+  const [menuState, setMenuState] = useState<{ editor: Editor | null; menu: OpenMenuState | null }>(
+    { editor: null, menu: null },
+  );
   const menu = menuState.editor === editor ? menuState.menu : null;
   const panelRef = useRef<HTMLDivElement>(null);
   const pointerInsideRef = useRef(false);
@@ -43,7 +55,10 @@ export function SlashMenuLayer({ editor }: { editor: Editor | null }) {
       const state = slashMenuPluginKey.getState(editor.state);
       setMenuState({
         editor,
-        menu: state?.open && state.range ? { range: state.range, query: state.query, active: state.active } : null,
+        menu:
+          state?.open && state.range
+            ? { range: state.range, query: state.query, active: state.active }
+            : null,
       });
     };
     read();
@@ -66,7 +81,10 @@ export function SlashMenuLayer({ editor }: { editor: Editor | null }) {
   }, [editor, menu]);
 
   const items = useMemo(() => (editor ? slashItemsOfEditor(editor) : []), [editor]);
-  const filtered = useMemo(() => filterSlashItems(items, menu?.query ?? ''), [items, menu?.query]);
+  const filtered = useMemo(
+    () => filterSlashItems(items, menu?.query ?? '', locale),
+    [items, menu?.query, locale],
+  );
   const activeIndex = Math.min(menu?.active ?? 0, filtered.length - 1);
   const activeItem = activeIndex >= 0 ? filtered[activeIndex] : null;
 
@@ -85,11 +103,15 @@ export function SlashMenuLayer({ editor }: { editor: Editor | null }) {
       return;
     }
     const height = Math.min(panel.offsetHeight, MENU_MAX_HEIGHT);
-    const left = Math.min(Math.max(VIEWPORT_MARGIN, coords.left), Math.max(VIEWPORT_MARGIN, window.innerWidth - MENU_WIDTH - VIEWPORT_MARGIN));
+    const left = Math.min(
+      Math.max(VIEWPORT_MARGIN, coords.left),
+      Math.max(VIEWPORT_MARGIN, window.innerWidth - MENU_WIDTH - VIEWPORT_MARGIN),
+    );
     const below = coords.bottom + 6;
-    const top = below + height + VIEWPORT_MARGIN > window.innerHeight
-      ? Math.max(VIEWPORT_MARGIN, coords.top - height - 6)
-      : below;
+    const top =
+      below + height + VIEWPORT_MARGIN > window.innerHeight
+        ? Math.max(VIEWPORT_MARGIN, coords.top - height - 6)
+        : below;
     panel.style.left = `${Math.round(left)}px`;
     panel.style.top = `${Math.round(top)}px`;
     panel.style.visibility = 'visible';
@@ -98,7 +120,9 @@ export function SlashMenuLayer({ editor }: { editor: Editor | null }) {
   // Keep the highlighted item inside the scroll viewport.
   useEffect(() => {
     if (!menu) return;
-    panelRef.current?.querySelector('[data-slash-active="true"]')?.scrollIntoView({ block: 'nearest' });
+    panelRef.current
+      ?.querySelector('[data-slash-active="true"]')
+      ?.scrollIntoView({ block: 'nearest' });
   }, [menu, activeItem]);
 
   // The editor's contenteditable owns the menu semantics for screen readers.
@@ -107,7 +131,8 @@ export function SlashMenuLayer({ editor }: { editor: Editor | null }) {
     const update = () => {
       if (editor.isDestroyed) return;
       const dom = editor.view.dom;
-      if (menu && activeItem) dom.setAttribute('aria-activedescendant', `fouc-slash-item-${activeItem.name}`);
+      if (menu && activeItem)
+        dom.setAttribute('aria-activedescendant', `fouc-slash-item-${activeItem.name}`);
       else dom.removeAttribute('aria-activedescendant');
     };
     update();
@@ -126,38 +151,58 @@ export function SlashMenuLayer({ editor }: { editor: Editor | null }) {
         <div
           ref={panelRef}
           role="menu"
-          aria-label="插入块"
+          aria-label={knowledgeT('insertBlock')}
           style={{ visibility: 'hidden', width: MENU_WIDTH }}
-          onMouseEnter={() => { pointerInsideRef.current = true; }}
-          onMouseLeave={() => { pointerInsideRef.current = false; }}
+          onMouseEnter={() => {
+            pointerInsideRef.current = true;
+          }}
+          onMouseLeave={() => {
+            pointerInsideRef.current = false;
+          }}
           className={styles.menu}
         >
           {filtered.length === 0 ? (
-            <p className={styles.empty}>无匹配的块</p>
-          ) : filtered.map((item, index) => {
-            const active = item === activeItem;
-            const Icon = item.icon;
-            const separated = index > 0 && (item.name === 'taskList' || item.name === 'image' || item.group !== filtered[index - 1]?.group);
-            return (
-              <button
-                key={item.name}
-                id={`fouc-slash-item-${item.name}`}
-                type="button"
-                role="menuitem"
-                data-slash-active={active || undefined}
-                data-highlighted={active ? '' : undefined}
-                // mousedown would drag focus out of the editor; the click still lands.
-                onMouseDown={(event) => event.preventDefault()}
-                onMouseEnter={() => setActiveSlashItem(editor.view, index)}
-                onClick={() => runSlashItem(editor.view, item)}
-                className={cn('fouc-menu-item', styles.item, separated && styles.separated)}
-              >
-                {item.marker ? <span aria-hidden className={styles.marker}>{item.marker}</span> : Icon ? <Icon aria-hidden className={styles.icon} /> : null}
-                <span className={styles.title}>{item.title}</span>
-                {item.shortcut ? <span aria-hidden className={styles.shortcut}>{item.shortcut}</span> : null}
-              </button>
-            );
-          })}
+            <p className={styles.empty}>{knowledgeT('noMatchingBlocks')}</p>
+          ) : (
+            filtered.map((item, index) => {
+              const active = item === activeItem;
+              const Icon = item.icon;
+              const separated =
+                index > 0 &&
+                (item.name === 'taskList' ||
+                  item.name === 'image' ||
+                  item.group !== filtered[index - 1]?.group);
+              return (
+                <button
+                  key={item.name}
+                  id={`fouc-slash-item-${item.name}`}
+                  type="button"
+                  role="menuitem"
+                  data-slash-active={active || undefined}
+                  data-highlighted={active ? '' : undefined}
+                  // mousedown would drag focus out of the editor; the click still lands.
+                  onMouseDown={(event) => event.preventDefault()}
+                  onMouseEnter={() => setActiveSlashItem(editor.view, index)}
+                  onClick={() => runSlashItem(editor.view, item)}
+                  className={cn('fouc-menu-item', styles.item, separated && styles.separated)}
+                >
+                  {item.marker ? (
+                    <span aria-hidden className={styles.marker}>
+                      {item.marker}
+                    </span>
+                  ) : Icon ? (
+                    <Icon aria-hidden className={styles.icon} />
+                  ) : null}
+                  <span className={styles.title}>{item.title}</span>
+                  {item.shortcut ? (
+                    <span aria-hidden className={styles.shortcut}>
+                      {item.shortcut}
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })
+          )}
         </div>
       ) : null}
     </>,

@@ -1,32 +1,32 @@
-"use client"
-
-import type { ReactNode } from "react"
-import type { RelationalTableStructure } from "@fouc/shared"
-import { ArrowSquareOut, Key } from "@phosphor-icons/react"
-import styles from "./table-structure.module.css"
-
+'use client';
+import { createTranslator, type Locale, useTranslation } from '@/lib/i18n';
+import { messages as connectorMessages } from './structure-metadata.messages';
+import type { ReactNode } from 'react';
+import type { RelationalTableStructure } from '@fouc/shared';
+import { ArrowSquareOut, Key } from '@phosphor-icons/react';
+import styles from './table-structure.module.css';
 export type StructureTab =
-  | "columns"
-  | "indexes"
-  | "foreignKeys"
-  | "constraints"
-  | "triggers"
-  | "ddl"
-const state = (value: boolean | null) => (value === null ? "未知" : value ? "YES" : "NO")
-const kinds = {
-  primary: "主键",
-  unique: "唯一",
-  foreign: "外键",
-  check: "检查",
-  exclusion: "排斥",
-  "not-null": "非空"
-}
+  'columns' | 'indexes' | 'foreignKeys' | 'constraints' | 'triggers' | 'ddl';
+const state = (value: boolean | null, locale?: Locale) => {
+  const tConnector = createTranslator(connectorMessages, locale);
+  return value === null ? tConnector('unknown') : value ? 'YES' : 'NO';
+};
+const kinds = (locale?: Locale) => {
+  const tConnector = createTranslator(connectorMessages, locale);
+  return {
+    primary: tConnector('primaryKey'),
+    unique: tConnector('unique'),
+    foreign: tConnector('foreignKeys'),
+    check: tConnector('check'),
+    exclusion: tConnector('exclusion'),
+    'not-null': tConnector('isNotNull'),
+  };
+};
 const has = (search: string, ...values: unknown[]) =>
   !search ||
   values.some((value) =>
-    JSON.stringify(value)?.toLocaleLowerCase().includes(search.toLocaleLowerCase())
-  )
-
+    JSON.stringify(value)?.toLocaleLowerCase().includes(search.toLocaleLowerCase()),
+  );
 function MetadataTable({ headings, children }: { headings: string[]; children: ReactNode }) {
   return (
     <div className={styles.grid}>
@@ -41,52 +41,59 @@ function MetadataTable({ headings, children }: { headings: string[]; children: R
         <tbody>{children}</tbody>
       </table>
     </div>
-  )
+  );
 }
 function Definition({ text }: { text: string | null }) {
+  const { t: tConnector } = useTranslation(connectorMessages);
   return text ? (
     <details className={styles.definition}>
-      <summary>查看定义</summary>
+      <summary>{tConnector('goToDefinition')}</summary>
       <pre>{text}</pre>
     </details>
   ) : (
-    <span className={styles.muted}>见对象 DDL</span>
-  )
+    <span className={styles.muted}>{tConnector('seeObjectDdl')}</span>
+  );
 }
 function Empty({ search }: { search: string }) {
+  const { t: tConnector } = useTranslation(connectorMessages);
   return (
-    <p className={styles.empty}>{search ? "没有匹配的结构记录。" : "当前对象没有此类结构记录。"}</p>
-  )
+    <p className={styles.empty}>
+      {search
+        ? tConnector('noMatchingStructureRecords')
+        : tConnector('thisObjectHasNoStructureRecordsOfThisKind')}
+    </p>
+  );
 }
 export function StructureMetadata({
   structure,
   tab,
   search,
   pending,
-  onOpenTable
+  onOpenTable,
 }: {
-  structure: RelationalTableStructure
-  tab: Exclude<StructureTab, "ddl">
-  search: string
-  pending: boolean
-  onOpenTable: (schema: string, table: string) => void
+  structure: RelationalTableStructure;
+  tab: Exclude<StructureTab, 'ddl'>;
+  search: string;
+  pending: boolean;
+  onOpenTable: (schema: string, table: string) => void;
 }) {
-  if (tab === "columns") {
+  const { t: tConnector, locale } = useTranslation(connectorMessages);
+  if (tab === 'columns') {
     const columns = structure.columns.filter((column) =>
-      has(search, column.name, column.dataType, column.comment)
-    )
+      has(search, column.name, column.dataType, column.comment),
+    );
     return (
       <>
         <MetadataTable
           headings={[
-            "字段",
-            "类型",
-            "可为空",
-            "主键",
-            "唯一",
-            "默认值 / 表达式",
-            "生成方式",
-            "注释"
+            tConnector('field'),
+            tConnector('type'),
+            tConnector('nullable'),
+            tConnector('primaryKey'),
+            tConnector('unique'),
+            tConnector('defaultExpression'),
+            tConnector('generationMethod'),
+            tConnector('comment'),
           ]}
         >
           {columns.map((column) => (
@@ -95,29 +102,38 @@ export function StructureMetadata({
                 {column.isPrimaryKey && <Key size={12} />} {column.name}
               </td>
               <td>{column.dataType}</td>
-              <td>{state(column.isNullable)}</td>
-              <td>{column.isPrimaryKey ? "PK" : "—"}</td>
-              <td>{state(column.isUnique)}</td>
+              <td>{state(column.isNullable, locale)}</td>
+              <td>{column.isPrimaryKey ? 'PK' : '—'}</td>
+              <td>{state(column.isUnique, locale)}</td>
               <td>
-                <code>{column.columnDefault ?? "—"}</code>
+                <code>{column.columnDefault ?? '—'}</code>
               </td>
-              <td>{column.extra || "—"}</td>
-              <td>{column.comment || "—"}</td>
+              <td>{column.extra || '—'}</td>
+              <td>{column.comment || '—'}</td>
             </tr>
           ))}
         </MetadataTable>
         {!columns.length && <Empty search={search} />}
       </>
-    )
+    );
   }
-  if (tab === "indexes") {
+  if (tab === 'indexes') {
     const indexes = structure.indexes.filter((index) =>
-      has(search, index.name, index.parts, index.predicate, index.comment)
-    )
+      has(search, index.name, index.parts, index.predicate, index.comment),
+    );
     return (
       <>
         <MetadataTable
-          headings={["索引", "键 / 包含列", "方法", "唯一", "主键", "有效", "可见", "条件 / 定义"]}
+          headings={[
+            tConnector('indexes'),
+            tConnector('keysIncludedColumns'),
+            tConnector('method'),
+            tConnector('unique'),
+            tConnector('primaryKey'),
+            tConnector('valid'),
+            tConnector('visible'),
+            tConnector('conditionDefinition'),
+          ]}
         >
           {indexes.map((index) => (
             <tr key={index.name}>
@@ -131,30 +147,34 @@ export function StructureMetadata({
                     <code>
                       {part.column ??
                         part.expression ??
-                        (part.role === "auxiliary" ? "rowid / 辅助键" : "表达式（见 DDL）")}
+                        (part.role === 'auxiliary'
+                          ? tConnector('rowidAuxiliaryKey')
+                          : tConnector('expressionSeeDdl'))}
                     </code>
                     <small>
-                      {part.role === "include"
-                        ? "INCLUDE"
-                        : part.role === "auxiliary"
-                          ? "辅助"
+                      {part.role === 'include'
+                        ? 'INCLUDE'
+                        : part.role === 'auxiliary'
+                          ? tConnector('auxiliary')
                           : part.descending === null
-                            ? ""
+                            ? ''
                             : part.descending
-                              ? "DESC"
-                              : "ASC"}
-                      {part.nulls ? ` · NULLS ${part.nulls.toUpperCase()}` : ""}
-                      {part.prefixLength !== null ? ` · 前缀 ${part.prefixLength}` : ""}
-                      {part.collation ? ` · ${part.collation}` : ""}
+                              ? 'DESC'
+                              : 'ASC'}
+                      {part.nulls ? ` · NULLS ${part.nulls.toUpperCase()}` : ''}
+                      {part.prefixLength !== null
+                        ? tConnector('prefix', { p0: String(part.prefixLength) })
+                        : ''}
+                      {part.collation ? ` · ${part.collation}` : ''}
                     </small>
                   </div>
                 ))}
               </td>
               <td>{index.method}</td>
-              <td>{state(index.unique)}</td>
-              <td>{state(index.primary)}</td>
-              <td>{state(index.valid)}</td>
-              <td>{state(index.visible)}</td>
+              <td>{state(index.unique, locale)}</td>
+              <td>{state(index.primary, locale)}</td>
+              <td>{state(index.valid, locale)}</td>
+              <td>{state(index.visible, locale)}</td>
               <td>
                 {index.predicate && <code>{index.predicate}</code>}
                 <Definition text={index.definition} />
@@ -164,31 +184,33 @@ export function StructureMetadata({
         </MetadataTable>
         {!indexes.length && <Empty search={search} />}
       </>
-    )
+    );
   }
-  if (tab === "foreignKeys") {
+  if (tab === 'foreignKeys') {
     const keys = structure.foreignKeys.filter((key) =>
-      has(search, key.name, key.columns, key.referencedTable, key.referencedColumns)
-    )
+      has(search, key.name, key.columns, key.referencedTable, key.referencedColumns),
+    );
     return (
       <>
         <MetadataTable
           headings={[
-            "外键",
-            "字段映射",
-            "引用对象",
-            "ON UPDATE",
-            "ON DELETE",
-            "匹配",
-            "延期 / 验证",
-            "定义"
+            tConnector('foreignKeys'),
+            tConnector('columnMapping'),
+            tConnector('referencedObject'),
+            'ON UPDATE',
+            'ON DELETE',
+            tConnector('match'),
+            tConnector('deferralValidation'),
+            tConnector('definition'),
           ]}
         >
           {keys.map((key) => (
             <tr key={key.name}>
               <td className={styles.name}>
                 {key.name}
-                {key.nameSource === "synthetic" && <small>PRAGMA 编号；声明名见 DDL</small>}
+                {key.nameSource === 'synthetic' && (
+                  <small>{tConnector('pragmaNumberSeeDdlForDeclaredName')}</small>
+                )}
               </td>
               <td>
                 {key.columns.map((column, index) => (
@@ -202,8 +224,15 @@ export function StructureMetadata({
                   type="button"
                   className={styles.reference}
                   disabled={pending}
-                  aria-label={`打开引用表 ${key.referencedSchema}.${key.referencedTable}`}
-                  title={pending ? "先提交或放弃表格变更" : "打开引用表"}
+                  aria-label={tConnector('openReferencedTable', {
+                    p0: String(key.referencedSchema),
+                    p1: String(key.referencedTable),
+                  })}
+                  title={
+                    pending
+                      ? tConnector('commitOrDiscardGridChangesFirst')
+                      : tConnector('openReferencedTable3345')
+                  }
                   onClick={() => onOpenTable(key.referencedSchema, key.referencedTable)}
                 >
                   {key.referencedSchema}.{key.referencedTable}
@@ -214,9 +243,16 @@ export function StructureMetadata({
               <td>{key.onDelete}</td>
               <td>{key.match}</td>
               <td>
-                可延期 {state(key.deferrable)}
-                <small>初始延期 {state(key.initiallyDeferred)}</small>
-                <small>已验证 {state(key.validated)}</small>
+                {tConnector('deferrable')}
+                {state(key.deferrable, locale)}
+                <small>
+                  {tConnector('initiallyDeferred')}
+                  {state(key.initiallyDeferred, locale)}
+                </small>
+                <small>
+                  {tConnector('validated')}
+                  {state(key.validated, locale)}
+                </small>
               </td>
               <td>
                 <Definition text={key.definition} />
@@ -226,23 +262,33 @@ export function StructureMetadata({
         </MetadataTable>
         {!keys.length && <Empty search={search} />}
       </>
-    )
+    );
   }
-  if (tab === "constraints") {
+  if (tab === 'constraints') {
     const constraints = structure.constraints.filter((constraint) =>
-      has(search, constraint.name, constraint.columns, constraint.definition)
-    )
+      has(search, constraint.name, constraint.columns, constraint.definition),
+    );
     return (
       <>
-        <MetadataTable headings={["约束", "类型", "字段", "已验证", "可延期", "初始延期", "定义"]}>
+        <MetadataTable
+          headings={[
+            tConnector('constraints'),
+            tConnector('type'),
+            tConnector('field'),
+            tConnector('validated'),
+            tConnector('deferrable'),
+            tConnector('initiallyDeferred'),
+            tConnector('definition'),
+          ]}
+        >
           {constraints.map((constraint) => (
             <tr key={constraint.name}>
               <td className={styles.name}>{constraint.name}</td>
-              <td>{kinds[constraint.kind]}</td>
-              <td>{constraint.columns.join(", ") || "—"}</td>
-              <td>{state(constraint.validated)}</td>
-              <td>{state(constraint.deferrable)}</td>
-              <td>{state(constraint.initiallyDeferred)}</td>
+              <td>{kinds(locale)[constraint.kind]}</td>
+              <td>{constraint.columns.join(', ') || '—'}</td>
+              <td>{state(constraint.validated, locale)}</td>
+              <td>{state(constraint.deferrable, locale)}</td>
+              <td>{state(constraint.initiallyDeferred, locale)}</td>
               <td>
                 <Definition text={constraint.definition} />
               </td>
@@ -251,21 +297,30 @@ export function StructureMetadata({
         </MetadataTable>
         {!constraints.length && <Empty search={search} />}
       </>
-    )
+    );
   }
   const triggers = structure.triggers.filter((trigger) =>
-    has(search, trigger.name, trigger.events, trigger.definition)
-  )
+    has(search, trigger.name, trigger.events, trigger.definition),
+  );
   return (
     <>
-      <MetadataTable headings={["触发器", "时机", "事件", "粒度", "状态", "定义"]}>
+      <MetadataTable
+        headings={[
+          tConnector('triggers'),
+          tConnector('timing'),
+          tConnector('event'),
+          tConnector('granularity'),
+          tConnector('status'),
+          tConnector('definition'),
+        ]}
+      >
         {triggers.map((trigger) => (
           <tr key={trigger.name}>
             <td className={styles.name}>{trigger.name}</td>
             <td>{trigger.timing}</td>
-            <td>{trigger.events.join(" / ") || "见原始 DDL"}</td>
+            <td>{trigger.events.join(' / ') || tConnector('seeOriginalDdl')}</td>
             <td>{trigger.orientation}</td>
-            <td>{trigger.enabled ?? "未知"}</td>
+            <td>{trigger.enabled ?? tConnector('unknown')}</td>
             <td>
               <Definition text={trigger.definition} />
             </td>
@@ -274,5 +329,5 @@ export function StructureMetadata({
       </MetadataTable>
       {!triggers.length && <Empty search={search} />}
     </>
-  )
+  );
 }

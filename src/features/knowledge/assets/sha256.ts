@@ -1,3 +1,6 @@
+import { createTranslator } from '@/lib/i18n';
+import { knowledgeMessages } from './sha256.messages';
+const knowledgeT = createTranslator(knowledgeMessages);
 /**
  * 浏览器端流式 SHA-256(U08 · 设计 §8.1 第 1 步)。
  *
@@ -29,7 +32,9 @@ export interface Sha256Hasher {
 export function createSha256(): Sha256Hasher {
   const block = new Uint8Array(64);
   const w = new Uint32Array(64);
-  const state = new Uint32Array([0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19]);
+  const state = new Uint32Array([
+    0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19,
+  ]);
   let buffered = 0;
   let bytesHashed = 0;
   let finished = false;
@@ -37,7 +42,12 @@ export function createSha256(): Sha256Hasher {
   function compress(input: Uint8Array) {
     for (let i = 0; i < 16; i += 1) {
       const base = i * 4;
-      w[i] = ((input[base]! << 24) | (input[base + 1]! << 16) | (input[base + 2]! << 8) | input[base + 3]!) >>> 0;
+      w[i] =
+        ((input[base]! << 24) |
+          (input[base + 1]! << 16) |
+          (input[base + 2]! << 8) |
+          input[base + 3]!) >>>
+        0;
     }
     for (let i = 16; i < 64; i += 1) {
       const x = w[i - 15]!;
@@ -54,8 +64,14 @@ export function createSha256(): Sha256Hasher {
       const sum0 = (rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22)) >>> 0;
       const majority = ((a & b) ^ (a & c) ^ (b & c)) >>> 0;
       const t2 = (sum0 + majority) >>> 0;
-      h = g; g = f; f = e; e = (d + t1) >>> 0;
-      d = c; c = b; b = a; a = (t1 + t2) >>> 0;
+      h = g;
+      g = f;
+      f = e;
+      e = (d + t1) >>> 0;
+      d = c;
+      c = b;
+      b = a;
+      a = (t1 + t2) >>> 0;
     }
     state[0] = (state[0]! + a) >>> 0;
     state[1] = (state[1]! + b) >>> 0;
@@ -69,7 +85,7 @@ export function createSha256(): Sha256Hasher {
 
   return {
     update(chunk) {
-      if (finished) throw new Error('sha256: digestHex 已终结,不能再 update');
+      if (finished) throw new Error(knowledgeT('sha256CannotUpdateAfterDigesthex'));
       bytesHashed += chunk.byteLength;
       let offset = 0;
       if (buffered > 0) {
@@ -92,7 +108,7 @@ export function createSha256(): Sha256Hasher {
       }
     },
     digestHex() {
-      if (finished) throw new Error('sha256: digestHex 只能调用一次');
+      if (finished) throw new Error(knowledgeT('sha256DigesthexCanOnlyBeCalledOnce'));
       finished = true;
       // 比特长度恒小于 2^53(契约上限 5 GiB),number 精确。
       const bits = bytesHashed * 8;
@@ -110,7 +126,8 @@ export function createSha256(): Sha256Hasher {
       padded[tail + 5] = (low >>> 16) & 0xff;
       padded[tail + 6] = (low >>> 8) & 0xff;
       padded[tail + 7] = low & 0xff;
-      for (let offset = 0; offset < padded.length; offset += 64) compress(padded.subarray(offset, offset + 64));
+      for (let offset = 0; offset < padded.length; offset += 64)
+        compress(padded.subarray(offset, offset + 64));
       let hex = '';
       for (let i = 0; i < 8; i += 1) hex += state[i]!.toString(16).padStart(8, '0');
       return hex;

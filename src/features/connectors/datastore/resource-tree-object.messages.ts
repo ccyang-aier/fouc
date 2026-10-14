@@ -1,0 +1,28 @@
+import { defineMessages } from '@/lib/i18n';
+
+export const messages = defineMessages({
+  field: ['字段', 'Field'],
+  indexes: ['索引', 'Indexes'],
+  foreignKeys: ['外键', 'Foreign keys'],
+  triggers: ['触发器', 'Triggers'],
+  collapse: ['收起', 'Collapse'],
+  expand: ['展开', 'Expand'],
+  objects: ['{p0} {p1} 对象', '{p0} {p1} objects'],
+  structureCatalog: ['{p0} 结构目录', '{p0} structure catalog'],
+  couldNotReadStructure: ['读取结构失败', 'Could not read structure'],
+  retry: ['重试', 'Retry'],
+  viewStructureFor: ['查看 {p0} {p1}结构', 'View structure for {p0} {p1}'],
+  count: ['{p0}数量', '{p0} count'],
+  list: ['{p0} {p1}列表', '{p0} {p1} list'],
+  reading: ['正在读取{p0}', 'Reading {p0}'],
+  noneYet: ['暂无', 'None yet'],
+  nullable: ['可空', 'Nullable'],
+  isNotNull: ['非空', 'Is not null'],
+  viewColumnIn: ['查看 {p0} 字段 {p1}', 'View column {p1} in {p0}'],
+  primaryKey: [' · 主键', ' · Primary key'],
+  unique: [' · 唯一', ' · Unique'],
+  expression: ['表达式', 'Expression'],
+  primaryKey965: ['主键', 'Primary key'],
+  unique980: ['唯一', 'Unique'],
+  view: ['查看 {p0} {p1} {p2}', 'View {p0} {p1} {p2}'],
+});

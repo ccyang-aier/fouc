@@ -1,5 +1,12 @@
-import type { AstNode, ClauseNode, KeywordNode, LimitClauseNode, ParenthesisNode, SetOperationNode } from "sql-formatter/dist/esm/parser/ast.js";
-import type { SqlLayoutRenderers } from "./internals";
+import type {
+  AstNode,
+  ClauseNode,
+  KeywordNode,
+  LimitClauseNode,
+  ParenthesisNode,
+  SetOperationNode,
+} from 'sql-formatter/dist/esm/parser/ast.js';
+import type { SqlLayoutRenderers } from './internals';
 
 /**
  * The building blocks both layout strategies share: a column-tracking output
@@ -20,7 +27,7 @@ export interface SqlLayoutOptions {
   /** Extra indent applied to JOIN keywords, in columns. */
   joinIndentWidth: number;
   /** Keyword casing, matching sql-formatter's `keywordCase`. */
-  keywordCase: "preserve" | "upper" | "lower";
+  keywordCase: 'preserve' | 'upper' | 'lower';
   /**
    * Where a wrapped condition puts its `AND`/`OR`, matching DBX's own
    * "logical operator newline" setting.
@@ -29,7 +36,7 @@ export interface SqlLayoutOptions {
    * previous line with it, and `none` keeps the whole condition on one line
    * wherever it fits, matching the element alignment rule.
    */
-  logicalOperatorNewline: "before" | "after" | "none";
+  logicalOperatorNewline: 'before' | 'after' | 'none';
   /** Blank lines left between two statements. */
   linesBetweenQueries: number;
   /** Whether indentation is written with tab characters. */
@@ -72,10 +79,10 @@ export interface SqlLayoutContext {
  * the tab width still lands where it was measured.
  */
 export class Writer {
-  private lines: string[] = [""];
+  private lines: string[] = [''];
   private columns: number[] = [0];
 
-  constructor(private readonly options: Pick<SqlLayoutOptions, "useTabs" | "indentWidth">) {}
+  constructor(private readonly options: Pick<SqlLayoutOptions, 'useTabs' | 'indentWidth'>) {}
 
   /** Column the cursor currently sits at, on the last line. */
   get column(): number {
@@ -91,7 +98,7 @@ export class Writer {
   /** Appends a single separating space, unless one is already there. */
   space(): void {
     const line = this.lines[this.lines.length - 1];
-    if (line.length > 0 && !line.endsWith(" ")) {
+    if (line.length > 0 && !line.endsWith(' ')) {
       this.lines[this.lines.length - 1] = `${line} `;
       this.columns[this.columns.length - 1] += 1;
     }
@@ -109,20 +116,20 @@ export class Writer {
   toString(): string {
     return this.lines
       .map((line) => line.trimEnd())
-      .join("\n")
+      .join('\n')
       .trim();
   }
 
   /** The whitespace achieving `column` columns of indentation. */
   private indentation(column: number): string {
-    if (!this.options.useTabs) return " ".repeat(column);
+    if (!this.options.useTabs) return ' '.repeat(column);
     const width = Math.max(1, this.options.indentWidth);
-    return "\t".repeat(Math.floor(column / width)) + " ".repeat(column % width);
+    return '\t'.repeat(Math.floor(column / width)) + ' '.repeat(column % width);
   }
 }
 
 export function isParenthesis(node: AstNode): node is ParenthesisNode {
-  return node.type === "parenthesis";
+  return node.type === 'parenthesis';
 }
 
 /**
@@ -130,10 +137,10 @@ export function isParenthesis(node: AstNode): node is ParenthesisNode {
  * an expression. Clauses, set operations and limit clauses each start a line.
  */
 export function bodyKeyword(node: AstNode): string | null {
-  if (node.type === "clause" || node.type === "set_operation") {
+  if (node.type === 'clause' || node.type === 'set_operation') {
     return (node as ClauseNode | SetOperationNode).nameKw.text;
   }
-  if (node.type === "limit_clause") {
+  if (node.type === 'limit_clause') {
     return (node as LimitClauseNode).limitKw.text;
   }
   return null;
@@ -161,7 +168,7 @@ export function collapsedContext(ctx: SqlLayoutContext): SqlLayoutContext {
  * separator itself while formatting; here the two are joined as ordinary clause
  * items, so the separator has to be an item.
  */
-const LIMIT_SEPARATOR = { type: "comma" } as unknown as AstNode;
+const LIMIT_SEPARATOR = { type: 'comma' } as unknown as AstNode;
 
 /** The expressions a `LIMIT` clause renders, in sql-formatter's own order. */
 export function limitChildren(node: LimitClauseNode): AstNode[] {
@@ -170,9 +177,9 @@ export function limitChildren(node: LimitClauseNode): AstNode[] {
 
 export function keywordText(text: string, ctx: SqlLayoutContext): string {
   switch (ctx.options.keywordCase) {
-    case "upper":
+    case 'upper':
       return text.toUpperCase();
-    case "lower":
+    case 'lower':
       return text.toLowerCase();
     default:
       return text;
@@ -183,7 +190,7 @@ export function splitByComma(children: AstNode[]): AstNode[][] {
   const groups: AstNode[][] = [];
   let current: AstNode[] = [];
   for (const child of children) {
-    if (child.type === "comma") {
+    if (child.type === 'comma') {
       groups.push(current);
       current = [];
     } else {
@@ -215,27 +222,31 @@ export function isCallParen(nodes: AstNode[], index: number, ctx: SqlLayoutConte
   const node = nodes[index];
   if (ctx.nonCallParens?.has(node)) return false;
   const previous = index > 0 ? nodes[index - 1] : undefined;
-  if (previous?.type !== "identifier" && previous?.type !== "property_access") return false;
+  if (previous?.type !== 'identifier' && previous?.type !== 'property_access') return false;
 
   const before = index > 1 ? nodes[index - 2] : undefined;
-  return !(before?.type === "keyword" && OBJECT_NAME_KEYWORD.test(before.text.trim()));
+  return !(before?.type === 'keyword' && OBJECT_NAME_KEYWORD.test(before.text.trim()));
 }
 
 /** `CREATE TABLE` plus the modifiers dialects may put around it. */
-const CREATE_TABLE_HEAD = "CREATE\\s+(?:OR\\s+REPLACE\\s+)?(?:GLOBAL\\s+|LOCAL\\s+)?(?:TEMP(?:ORARY)?\\s+)?(?:UNLOGGED\\s+)?TABLE(?:\\s+IF\\s+NOT\\s+EXISTS)?";
+const CREATE_TABLE_HEAD =
+  'CREATE\\s+(?:OR\\s+REPLACE\\s+)?(?:GLOBAL\\s+|LOCAL\\s+)?(?:TEMP(?:ORARY)?\\s+)?(?:UNLOGGED\\s+)?TABLE(?:\\s+IF\\s+NOT\\s+EXISTS)?';
 
 /**
  * A `CREATE TABLE` head. Shared with `ddl.ts` so that the column alignment and
  * the definition-list rule below agree on exactly which statements they describe.
  */
-export const CREATE_TABLE_KEYWORD = new RegExp(`^${CREATE_TABLE_HEAD}$`, "i");
+export const CREATE_TABLE_KEYWORD = new RegExp(`^${CREATE_TABLE_HEAD}$`, 'i');
 
 /**
  * Clause keywords whose object name is followed by a parenthesized *definition
  * list* rather than call arguments: `INSERT INTO t (a, b)` takes column names,
  * `CREATE TABLE t (id int)` takes column definitions.
  */
-const DEFINITION_LIST_KEYWORD = new RegExp(`^(?:INSERT\\b[\\s\\S]*\\bINTO|${CREATE_TABLE_HEAD})$`, "i");
+const DEFINITION_LIST_KEYWORD = new RegExp(
+  `^(?:INSERT\\b[\\s\\S]*\\bINTO|${CREATE_TABLE_HEAD})$`,
+  'i',
+);
 
 /**
  * The context a clause's own children are rendered in.
@@ -247,7 +258,8 @@ const DEFINITION_LIST_KEYWORD = new RegExp(`^(?:INSERT\\b[\\s\\S]*\\bINTO|${CREA
  * `ON DUPLICATE KEY UPDATE b = f(c)`, which the parser also puts here — a call.
  */
 export function clauseChildContext(ctx: SqlLayoutContext, clause: ClauseNode): SqlLayoutContext {
-  if (clause.children.length < 2 || !DEFINITION_LIST_KEYWORD.test(clause.nameKw.text.trim())) return ctx;
+  if (clause.children.length < 2 || !DEFINITION_LIST_KEYWORD.test(clause.nameKw.text.trim()))
+    return ctx;
 
   const at = clause.children.findIndex(isParenthesis);
   if (at <= 0) return ctx;
@@ -271,7 +283,11 @@ export function clauseChildContext(ctx: SqlLayoutContext, clause: ClauseNode): S
  * `logicalOperatorNewline` asks for it, so a condition stays on its clause's line
  * while it fits; the printer splits the operators onto their own lines otherwise.
  */
-export function renderInline(ctx: SqlLayoutContext, nodes: AstNode[], width: number): string | null {
+export function renderInline(
+  ctx: SqlLayoutContext,
+  nodes: AstNode[],
+  width: number,
+): string | null {
   if (nodes.length === 0 || width <= 0) return null;
 
   const parenAt = nodes.findIndex(isParenthesis);
@@ -283,8 +299,9 @@ export function renderInline(ctx: SqlLayoutContext, nodes: AstNode[], width: num
   const direct = ctx.renderers.inline(nodes, width);
   if (direct) return direct;
 
-  const joinsOperators = ctx.joinLogicalOperators ?? ctx.options.logicalOperatorNewline === "none";
-  const joined = joinsOperators && nodes.some(isLogicalOperator) ? renderLogicalJoin(ctx, nodes, width) : null;
+  const joinsOperators = ctx.joinLogicalOperators ?? ctx.options.logicalOperatorNewline === 'none';
+  const joined =
+    joinsOperators && nodes.some(isLogicalOperator) ? renderLogicalJoin(ctx, nodes, width) : null;
   if (joined) return joined;
 
   if (!nodes.some(isBodyNode)) return null;
@@ -294,15 +311,19 @@ export function renderInline(ctx: SqlLayoutContext, nodes: AstNode[], width: num
   for (const node of nodes) {
     const keyword = bodyKeyword(node);
     if (!keyword) return null;
-    const childCtx = node.type === "limit_clause" ? ctx : clauseChildContext(ctx, node as ClauseNode);
-    const children = node.type === "limit_clause" ? limitChildren(node as LimitClauseNode) : (node as ClauseNode).children;
+    const childCtx =
+      node.type === 'limit_clause' ? ctx : clauseChildContext(ctx, node as ClauseNode);
+    const children =
+      node.type === 'limit_clause'
+        ? limitChildren(node as LimitClauseNode)
+        : (node as ClauseNode).children;
     const text = renderInline(childCtx, children, width - used - keyword.length - 2);
     if (!text) return null;
     used += (parts.length > 0 ? 1 : 0) + keyword.length + 1 + text.length;
     if (used > width) return null;
     parts.push(`${keywordText(keyword, ctx)} ${text}`);
   }
-  return parts.join(" ");
+  return parts.join(' ');
 }
 
 /**
@@ -315,16 +336,25 @@ export function renderInline(ctx: SqlLayoutContext, nodes: AstNode[], width: num
  * separator, everything else with one, which is the only difference between
  * `f(x)` and `IN (x)`.
  */
-function renderParenGroup(ctx: SqlLayoutContext, nodes: AstNode[], at: number, width: number): string | null {
+function renderParenGroup(
+  ctx: SqlLayoutContext,
+  nodes: AstNode[],
+  at: number,
+  width: number,
+): string | null {
   const node = nodes[at] as ParenthesisNode;
   // A group that fits is a collapsed statement in its own right, so its contents
   // join their logical operators whatever the caller's operator placement is.
   const groupCtx = collapsedContext(ctx);
-  const head = at === 0 ? "" : renderInline(groupCtx, nodes.slice(0, at), width);
+  const head = at === 0 ? '' : renderInline(groupCtx, nodes.slice(0, at), width);
   if (head === null) return null;
 
-  const separator = at === 0 || isCallParen(nodes, at, ctx) ? "" : " ";
-  const inner = renderInline(groupCtx, node.children, width - head.length - separator.length - node.openParen.length - node.closeParen.length);
+  const separator = at === 0 || isCallParen(nodes, at, ctx) ? '' : ' ';
+  const inner = renderInline(
+    groupCtx,
+    node.children,
+    width - head.length - separator.length - node.openParen.length - node.closeParen.length,
+  );
   if (!inner) return null;
   const group = `${head}${separator}${node.openParen}${inner}${node.closeParen}`;
 
@@ -339,19 +369,22 @@ function renderParenGroup(ctx: SqlLayoutContext, nodes: AstNode[], at: number, w
 
 /** The space that belongs between a rendered group and the node following it. */
 function separatorBefore(node: AstNode, ctx: SqlLayoutContext): string {
-  if (node.type === "comma") return "";
-  if (node.type === "operator" && ctx.renderers.denseOperator(node.text)) return "";
-  return " ";
+  if (node.type === 'comma') return '';
+  if (node.type === 'operator' && ctx.renderers.denseOperator(node.text)) return '';
+  return ' ';
 }
 
 /** Whether `node` is an `AND`/`OR`/`XOR` joining two conditions. */
 export function isLogicalOperator(node: AstNode): node is KeywordNode {
-  return node.type === "keyword" && (node.tokenType === "AND" || node.tokenType === "OR" || node.tokenType === "XOR");
+  return (
+    node.type === 'keyword' &&
+    (node.tokenType === 'AND' || node.tokenType === 'OR' || node.tokenType === 'XOR')
+  );
 }
 
 /** Whether `node` opens a new join element — the `JOIN` keyword itself. */
 export function isJoinKeyword(node: AstNode): node is KeywordNode {
-  return node.type === "keyword" && node.tokenType === "RESERVED_JOIN";
+  return node.type === 'keyword' && node.tokenType === 'RESERVED_JOIN';
 }
 
 /**
@@ -417,7 +450,7 @@ function renderLogicalJoin(ctx: SqlLayoutContext, nodes: AstNode[], width: numbe
     parts.push(operator);
   }
   if (!flush()) return null;
-  return used - 1 <= width ? parts.join(" ") : null;
+  return used - 1 <= width ? parts.join(' ') : null;
 }
 
 /**
@@ -426,11 +459,11 @@ function renderLogicalJoin(ctx: SqlLayoutContext, nodes: AstNode[], width: numbe
  * own leading whitespace carries the nesting levels and only needs shifting.
  */
 export function emitText(writer: Writer, text: string, baseColumn: number): void {
-  const lines = text.split("\n");
+  const lines = text.split('\n');
   writer.write(lines[0].trimEnd());
   for (let index = 1; index < lines.length; index++) {
     const line = lines[index];
-    if (line.trim() === "") {
+    if (line.trim() === '') {
       writer.newline(0);
       continue;
     }

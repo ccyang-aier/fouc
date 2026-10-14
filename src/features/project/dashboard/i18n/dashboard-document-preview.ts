@@ -1,0 +1,30 @@
+import { defineMessages } from '@/lib/i18n';
+export const messages = defineMessages({
+  Amount: ['金额', 'Amount'],
+  'Bill to': ['账单接收方', 'Bill to'],
+  Budget: ['预算', 'Budget'],
+  Client: ['客户', 'Client'],
+  'Complete every question before submitting.': [
+    '请填写所有问题后再提交。',
+    'Complete every question before submitting.',
+  ],
+  Description: ['说明', 'Description'],
+  'Due date': ['截止日期', 'Due date'],
+  Form: ['表单', 'Form'],
+  'Mark this form ready to collect responses.': [
+    '将表单标记为就绪后即可收集回复。',
+    'Mark this form ready to collect responses.',
+  ],
+  'No responses yet.': ['暂无回复。', 'No responses yet.'],
+  'Prepared for': ['提案接收方', 'Prepared for'],
+  Provider: ['服务方', 'Provider'],
+  Qty: ['数量', 'Qty'],
+  Response: ['回复', 'Response'],
+  Scope: ['范围', 'Scope'],
+  'Submit response': ['提交回复', 'Submit response'],
+  'This form is completed.': ['此表单已完成。', 'This form is completed.'],
+  Total: ['合计', 'Total'],
+  'Valid until': ['有效期至', 'Valid until'],
+  Draft: ['草稿', 'Draft'],
+  Ready: ['就绪', 'Ready'],
+});

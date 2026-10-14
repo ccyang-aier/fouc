@@ -1,5 +1,8 @@
 'use client';
 
+import { createTranslator } from '@/lib/i18n';
+import { knowledgeMessages } from './database-api.messages';
+
 /**
  * 数据库客户端数据面（U06）——与 data/pages-api.ts 同一模式（U01）。
  *
@@ -34,39 +37,92 @@ import type {
 } from '@fouc/shared/knowledge/contracts';
 import { getFoucApiOrigin } from '@/lib/fouc-api-endpoint';
 import { KnowledgeDataError, normalizeKnowledgeError } from '../data/errors';
-import { createKnowledgeUntypedClientCache, type KnowledgeFetch, type KnowledgeUntypedTrpcClient } from '../data/trpc-client';
+import {
+  createKnowledgeUntypedClientCache,
+  type KnowledgeFetch,
+  type KnowledgeUntypedTrpcClient,
+} from '../data/trpc-client';
 
-function parsePayload<T>(schema: { safeParse(payload: unknown): { success: true; data: T } | { success: false } }, payload: unknown, procedure: string): T {
+const knowledgeT = createTranslator(knowledgeMessages);
+
+function parsePayload<T>(
+  schema: { safeParse(payload: unknown): { success: true; data: T } | { success: false } },
+  payload: unknown,
+  procedure: string,
+): T {
   const parsed = schema.safeParse(payload);
   if (!parsed.success) {
-    throw new KnowledgeDataError('UNAVAILABLE', { message: `数据库服务 ${procedure} 返回的数据不符合契约。` });
+    throw new KnowledgeDataError('UNAVAILABLE', {
+      message: knowledgeT('invalidResponseFromDatabaseServiceValue', { v0: procedure }),
+    });
   }
   return parsed.data;
 }
 
-function assertInput(schema: { safeParse(payload: unknown): { success: true } | { success: false } }, input: unknown, procedure: string): void {
+function assertInput(
+  schema: { safeParse(payload: unknown): { success: true } | { success: false } },
+  input: unknown,
+  procedure: string,
+): void {
   if (!schema.safeParse(input).success) {
-    throw new KnowledgeDataError('INVALID_REQUEST', { message: `${procedure} 的输入不符合数据库契约。` });
+    throw new KnowledgeDataError('INVALID_REQUEST', {
+      message: knowledgeT('invalidDatabaseInputForValue', { v0: procedure }),
+    });
   }
 }
 
 /** 页面作用域之外的输入体：knowledgeBaseId 由方法首参注入，不经调用方重复传递。 */
-export type UpdateRowPropertiesInput = { pageId: string; properties: RowPropertiesState['properties']; operationId: string };
+export type UpdateRowPropertiesInput = {
+  pageId: string;
+  properties: RowPropertiesState['properties'];
+  operationId: string;
+};
 export type UpdateColumnsInput = Omit<UpdateDatabaseColumnsInput, 'knowledgeBaseId'>;
 
 export type KnowledgeDatabasesApi = {
-  createDatabase(knowledgeBaseId: string, input: CreateDatabaseInput, signal?: AbortSignal): Promise<DatabaseColumnsState>;
-  getColumns(knowledgeBaseId: string, input: { pageId: string }, signal?: AbortSignal): Promise<DatabaseColumnsState>;
-  listRows(knowledgeBaseId: string, input: Omit<DatabaseQuery, 'knowledgeBaseId'>, signal?: AbortSignal): Promise<DatabaseRowsPage>;
-  createRow(knowledgeBaseId: string, input: CreateRowInput, signal?: AbortSignal): Promise<PagePlacement>;
-  updateRowProperties(knowledgeBaseId: string, input: UpdateRowPropertiesInput, signal?: AbortSignal): Promise<RowPropertiesState>;
-  updateColumns(knowledgeBaseId: string, input: UpdateColumnsInput, signal?: AbortSignal): Promise<DatabaseColumnsState>;
+  createDatabase(
+    knowledgeBaseId: string,
+    input: CreateDatabaseInput,
+    signal?: AbortSignal,
+  ): Promise<DatabaseColumnsState>;
+  getColumns(
+    knowledgeBaseId: string,
+    input: { pageId: string },
+    signal?: AbortSignal,
+  ): Promise<DatabaseColumnsState>;
+  listRows(
+    knowledgeBaseId: string,
+    input: Omit<DatabaseQuery, 'knowledgeBaseId'>,
+    signal?: AbortSignal,
+  ): Promise<DatabaseRowsPage>;
+  createRow(
+    knowledgeBaseId: string,
+    input: CreateRowInput,
+    signal?: AbortSignal,
+  ): Promise<PagePlacement>;
+  updateRowProperties(
+    knowledgeBaseId: string,
+    input: UpdateRowPropertiesInput,
+    signal?: AbortSignal,
+  ): Promise<RowPropertiesState>;
+  updateColumns(
+    knowledgeBaseId: string,
+    input: UpdateColumnsInput,
+    signal?: AbortSignal,
+  ): Promise<DatabaseColumnsState>;
 };
 
 /** 构建一个传输之上的数据库面：origin 解析器 + 可注入 fetch（测试假传输入口）。 */
-export function createKnowledgeDatabasesApi(deps: { resolveOrigin: () => Promise<string> | string; fetchImpl?: KnowledgeFetch }): KnowledgeDatabasesApi {
+export function createKnowledgeDatabasesApi(deps: {
+  resolveOrigin: () => Promise<string> | string;
+  fetchImpl?: KnowledgeFetch;
+}): KnowledgeDatabasesApi {
   const cache = createKnowledgeUntypedClientCache(deps.fetchImpl);
-  const run = async <T,>(knowledgeBaseId: string, signal: AbortSignal | undefined, invoke: (client: KnowledgeUntypedTrpcClient) => Promise<T>): Promise<T> => {
+  const run = async <T>(
+    knowledgeBaseId: string,
+    signal: AbortSignal | undefined,
+    invoke: (client: KnowledgeUntypedTrpcClient) => Promise<T>,
+  ): Promise<T> => {
     try {
       const origin = await deps.resolveOrigin();
       return await invoke(cache.get(origin, knowledgeBaseId));
@@ -78,7 +134,9 @@ export function createKnowledgeDatabasesApi(deps: { resolveOrigin: () => Promise
   return {
     async createDatabase(knowledgeBaseId, input, signal) {
       assertInput(createDatabaseInputSchema, input, 'database.create');
-      const payload = await run(knowledgeBaseId, signal, (client) => client.mutation('database.create', input, { signal }));
+      const payload = await run(knowledgeBaseId, signal, (client) =>
+        client.mutation('database.create', input, { signal }),
+      );
       return parsePayload(databaseColumnsStateSchema, payload, 'database.create');
     },
     async getColumns(knowledgeBaseId, input, signal) {
@@ -90,22 +148,38 @@ export function createKnowledgeDatabasesApi(deps: { resolveOrigin: () => Promise
     async listRows(knowledgeBaseId, input, signal) {
       const query = { knowledgeBaseId, ...input };
       assertInput(queryDatabaseInputSchema, query, 'database.listRows');
-      const payload = await run(knowledgeBaseId, signal, (client) => client.query('database.listRows', query, { signal }));
+      const payload = await run(knowledgeBaseId, signal, (client) =>
+        client.query('database.listRows', query, { signal }),
+      );
       return parsePayload(databaseRowsPageSchema, payload, 'database.listRows');
     },
     async createRow(knowledgeBaseId, input, signal) {
       assertInput(createRowInputSchema, input, 'database.createRow');
-      const payload = await run(knowledgeBaseId, signal, (client) => client.mutation('database.createRow', input, { signal }));
+      const payload = await run(knowledgeBaseId, signal, (client) =>
+        client.mutation('database.createRow', input, { signal }),
+      );
       return parsePayload(pagePlacementSchema, payload, 'database.createRow');
     },
     async updateRowProperties(knowledgeBaseId, input, signal) {
-      assertInput(updatePropertiesInputSchema, { knowledgeBaseId, ...input }, 'database.updateRowProperties');
-      const payload = await run(knowledgeBaseId, signal, (client) => client.mutation('database.updateRowProperties', { knowledgeBaseId, ...input }, { signal }));
+      assertInput(
+        updatePropertiesInputSchema,
+        { knowledgeBaseId, ...input },
+        'database.updateRowProperties',
+      );
+      const payload = await run(knowledgeBaseId, signal, (client) =>
+        client.mutation('database.updateRowProperties', { knowledgeBaseId, ...input }, { signal }),
+      );
       return parsePayload(rowPropertiesStateSchema, payload, 'database.updateRowProperties');
     },
     async updateColumns(knowledgeBaseId, input, signal) {
-      assertInput(updateDatabaseColumnsInputSchema, { knowledgeBaseId, ...input }, 'database.updateColumns');
-      const payload = await run(knowledgeBaseId, signal, (client) => client.mutation('database.updateColumns', { knowledgeBaseId, ...input }, { signal }));
+      assertInput(
+        updateDatabaseColumnsInputSchema,
+        { knowledgeBaseId, ...input },
+        'database.updateColumns',
+      );
+      const payload = await run(knowledgeBaseId, signal, (client) =>
+        client.mutation('database.updateColumns', { knowledgeBaseId, ...input }, { signal }),
+      );
       return parsePayload(databaseColumnsStateSchema, payload, 'database.updateColumns');
     },
   };

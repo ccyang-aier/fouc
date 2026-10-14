@@ -1,5 +1,8 @@
 'use client';
 
+import { useTranslation } from '@/lib/i18n/react';
+import { messages } from './i18n/auth-scene.messages';
+
 /**
  * Shared layout for every Fouc authentication surface (A04): a quiet, centered
  * stage over the app shell background with the Fouc mark, one card, and a
@@ -20,7 +23,14 @@ function FoucMark({ size = 28 }: { size?: number }) {
       <circle cx="16" cy="16" r="5.5" fill="var(--panel)" />
       <circle cx="16" cy="16" r="2.2" fill="var(--accent)" />
       <defs>
-        <linearGradient id="foucAuthMarkSheen" x1="4" y1="3" x2="28" y2="30" gradientUnits="userSpaceOnUse">
+        <linearGradient
+          id="foucAuthMarkSheen"
+          x1="4"
+          y1="3"
+          x2="28"
+          y2="30"
+          gradientUnits="userSpaceOnUse"
+        >
           <stop stopColor="#ffffff" stopOpacity="0.28" />
           <stop offset="0.5" stopColor="#ffffff" stopOpacity="0.04" />
           <stop offset="1" stopColor="#000000" stopOpacity="0.12" />
@@ -31,13 +41,16 @@ function FoucMark({ size = 28 }: { size?: number }) {
 }
 
 export function AuthBrandLockup() {
+  const uiText = useTranslation(messages).t;
   return (
     <div className="flex flex-col items-center gap-2.5 text-center">
       <div className="flex items-center gap-2.5">
         <FoucMark />
         <span className="text-[17px] font-semibold tracking-[-0.01em] text-[var(--ink)]">Fouc</span>
       </div>
-      <p className="text-[12px] text-[var(--muted-strong)]">人机协同的 AI Agent 工作台</p>
+      <p className="text-[12px] text-[var(--muted-strong)]">
+        {uiText('人机协同的 AI Agent 工作台')}
+      </p>
     </div>
   );
 }
@@ -53,7 +66,10 @@ export function AuthScene({
 }) {
   return (
     <MotionConfig reducedMotion="never">
-      <main aria-label={ariaLabel} className="relative h-full min-h-full overflow-y-auto bg-[var(--shell)]">
+      <main
+        aria-label={ariaLabel}
+        className="relative h-full min-h-full overflow-y-auto bg-[var(--shell)]"
+      >
         {/* Quiet stage: one soft accent glow above the card, a faint dot grid below. */}
         <div
           aria-hidden
@@ -67,10 +83,13 @@ export function AuthScene({
           aria-hidden
           className="pointer-events-none absolute inset-0 opacity-[0.5]"
           style={{
-            backgroundImage: 'radial-gradient(color-mix(in srgb, var(--ink) 7%, transparent) 1px, transparent 1px)',
+            backgroundImage:
+              'radial-gradient(color-mix(in srgb, var(--ink) 7%, transparent) 1px, transparent 1px)',
             backgroundSize: '22px 22px',
-            maskImage: 'linear-gradient(to bottom, transparent 12%, black 45%, black 70%, transparent 96%)',
-            WebkitMaskImage: 'linear-gradient(to bottom, transparent 12%, black 45%, black 70%, transparent 96%)',
+            maskImage:
+              'linear-gradient(to bottom, transparent 12%, black 45%, black 70%, transparent 96%)',
+            WebkitMaskImage:
+              'linear-gradient(to bottom, transparent 12%, black 45%, black 70%, transparent 96%)',
           }}
         />
         <motion.div
@@ -90,7 +109,13 @@ export function AuthScene({
 }
 
 /** The single card every auth state renders into. */
-export function AuthPanel({ children, 'aria-label': ariaLabel }: { children: ReactNode; 'aria-label'?: string }) {
+export function AuthPanel({
+  children,
+  'aria-label': ariaLabel,
+}: {
+  children: ReactNode;
+  'aria-label'?: string;
+}) {
   return (
     <section
       aria-label={ariaLabel}
@@ -104,8 +129,12 @@ export function AuthPanel({ children, 'aria-label': ariaLabel }: { children: Rea
 export function AuthPanelHeading({ title, description }: { title: string; description?: string }) {
   return (
     <header className="mb-5">
-      <h1 className="text-[19px] font-semibold leading-7 tracking-[-0.01em] text-[var(--ink)]">{title}</h1>
-      {description ? <p className="mt-1 text-[12px] leading-5 text-[var(--muted-strong)]">{description}</p> : null}
+      <h1 className="text-[19px] font-semibold leading-7 tracking-[-0.01em] text-[var(--ink)]">
+        {title}
+      </h1>
+      {description ? (
+        <p className="mt-1 text-[12px] leading-5 text-[var(--muted-strong)]">{description}</p>
+      ) : null}
     </header>
   );
 }

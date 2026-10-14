@@ -1,5 +1,7 @@
 'use client';
 
+import { createTranslator, useTranslation, type Locale } from '@/lib/i18n';
+import { knowledgeMessages } from './comments-controller.messages';
 /** Joins PostgreSQL threads/likes with CRDT selection anchors and owns authorized mutations.
  * Page comments can be written independently of the editor selection; quoted
  * comments share client IDs with their optimistic anchors. Live events and
@@ -59,24 +61,29 @@ interface ComposingDraft {
 
 export interface PdfCommentBridge {
   assetHash: string;
-  bindCompose: (compose: (selection: { anchor: PdfCommentAnchor; x: number; y: number }) => void) => () => void;
+  bindCompose: (
+    compose: (selection: { anchor: PdfCommentAnchor; x: number; y: number }) => void,
+  ) => () => void;
   onLocate: (anchor: PdfCommentAnchor) => void;
   activeThreadId: string | null;
   onSelectThread: (id: string) => void;
 }
 
-function commentErrorText(error: unknown, fallback: string): string {
+function commentErrorText(error: unknown, fallback: string, locale?: Locale): string {
   if (!isKnowledgeDataError(error)) return fallback;
-  const copy: Record<string, string> = {
-    NETWORK: '无法连接知识服务，请检查网络后重试。',
-    TIMEOUT: '请求超时，请重试。',
-    RATE_LIMITED: '请求过于频繁，请稍后重试。',
-    UNAVAILABLE: '评论服务暂时不可用，请稍后重试。',
-    UNAUTHENTICATED: '登录状态已失效，请重新登录后再评论。',
-    FORBIDDEN: '当前权限不能执行该评论操作。',
-    INVALID_REQUEST: '评论内容或参数不符合要求。',
-  };
-  return copy[error.code] ?? fallback;
+  function copy(locale?: Locale): Record<string, string> {
+    const knowledgeT = createTranslator(knowledgeMessages, locale);
+    return {
+      NETWORK: knowledgeT('unableToConnectToKnowledgeServiceCheckYour'),
+      TIMEOUT: knowledgeT('requestTimedOutPleaseRetry'),
+      RATE_LIMITED: knowledgeT('tooManyRequestsRetryLater'),
+      UNAVAILABLE: knowledgeT('commentServiceUnavailableRetryLater'),
+      UNAUTHENTICATED: knowledgeT('yourSessionHasExpiredSignInAgainTo'),
+      FORBIDDEN: knowledgeT('yourPermissionsDoNotAllowThisCommentAction'),
+      INVALID_REQUEST: knowledgeT('invalidCommentContentOrParameters'),
+    };
+  }
+  return copy(locale)[error.code] ?? fallback;
 }
 
 export interface PageCommentsProps {
@@ -92,7 +99,19 @@ export interface PageCommentsProps {
   currentUser?: { id: string; name: string; image?: string | null } | null;
 }
 
-export function PageComments({ scope, knowledgeBaseId, editor, pdf, canComment, currentUser, railOpen: controlledRailOpen, onRailOpenChange, followDocumentLink = true }: PageCommentsProps) {
+export function PageComments({
+  scope,
+  knowledgeBaseId,
+  editor,
+  pdf,
+  canComment,
+  currentUser,
+  railOpen: controlledRailOpen,
+  onRailOpenChange,
+  followDocumentLink = true,
+}: PageCommentsProps) {
+  const { locale, t: knowledgeT } = useTranslation(knowledgeMessages);
+
   const threadsQuery = usePageCommentThreads(scope.knowledgeBaseId, scope.pageId);
   const accessQuery = useKnowledgeAccessQuery(scope.knowledgeBaseId);
   const currentUserId = accessQuery.data?.userId ?? null;
@@ -106,24 +125,33 @@ export function PageComments({ scope, knowledgeBaseId, editor, pdf, canComment, 
   const likeMutation = useSetCommentLike(scope.knowledgeBaseId);
   const editMutation = useUpdateComment(scope.knowledgeBaseId);
   const pageCommentMutation = useCreateCommentThread(scope.knowledgeBaseId);
-  const pageDraft = useRef<{ threadId: string; commentId: string; bodyMd: string; kind: CommentThreadKind } | null>(null);
+  const pageDraft = useRef<{
+    threadId: string;
+    commentId: string;
+    bodyMd: string;
+    kind: CommentThreadKind;
+  } | null>(null);
 
   // Anchors belong to one editor instance; a stale editor's anchors never
   // render after a scope switch (derived, not reset in an effect).
-  const [anchorState, setAnchorState] = useState<{ editor: Editor | null; value: CommentAnchor[] }>({ editor: null, value: [] });
+  const [anchorState, setAnchorState] = useState<{ editor: Editor | null; value: CommentAnchor[] }>(
+    { editor: null, value: [] },
+  );
   const anchors = anchorState.editor === editor ? anchorState.value : EMPTY_ANCHORS;
   const [editorActiveThreadId, setActiveThreadId] = useState<string | null>(null);
   const activeThreadId = pdf?.activeThreadId ?? editorActiveThreadId;
   const [composing, setComposing] = useState<ComposingDraft | null>(null);
-  const [composerError, setComposerError] = useState<string | null>(null);
+  const [composerError, setComposerError] = useState<{ cause: unknown } | null>(null);
   const [composerAt, setComposerAt] = useState<{ x: number; y: number } | null>(null);
   const [localRailOpen, setLocalRailOpen] = useState(false);
   const railOpen = controlledRailOpen ?? localRailOpen;
   const membersQuery = useMembersQuery(railOpen ? scope.knowledgeBaseId : null);
   const authors = useMemo(() => {
     const names = new Map<string, CommentAuthor>();
-    for (const page of membersQuery.data?.pages ?? []) for (const member of page.items) names.set(member.userId, { name: member.name });
-    if (currentUser) names.set(currentUser.id, { name: currentUser.name, image: currentUser.image });
+    for (const page of membersQuery.data?.pages ?? [])
+      for (const member of page.items) names.set(member.userId, { name: member.name });
+    if (currentUser)
+      names.set(currentUser.id, { name: currentUser.name, image: currentUser.image });
     return names;
   }, [membersQuery.data, currentUser]);
   const setRailOpen = onRailOpenChange ?? setLocalRailOpen;
@@ -161,8 +189,12 @@ export function PageComments({ scope, knowledgeBaseId, editor, pdf, canComment, 
   // The active thread's card scrolls into view inside the rail.
   useEffect(() => {
     if (!activeThreadId || !railOpen) return;
-    const root = editor?.view.dom.closest('[aria-label="页面编辑器"]') ?? sidebarHost.current?.closest('[aria-label="页面编辑器"]');
-    root?.querySelector(`[data-comment-card="${activeThreadId}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    const root =
+      editor?.view.dom.closest('[data-knowledge-editor]') ??
+      sidebarHost.current?.closest('[data-knowledge-editor]');
+    root
+      ?.querySelector(`[data-comment-card="${activeThreadId}"]`)
+      ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }, [activeThreadId, railOpen, editor, threads]);
 
   const excerptOf = useCallback(
@@ -177,14 +209,18 @@ export function PageComments({ scope, knowledgeBaseId, editor, pdf, canComment, 
 
   // A failed list query cannot judge orphanhood — anchors render neutral then.
   const model = useMemo(
-    () => deriveCommentSidebarModel({
-      threads,
-      anchors: threadsQuery.error ? [] : anchors,
-      excerptOf,
-      pending: pendingThreadIds,
-      pdfAssetHash: pdf?.assetHash,
-    }),
-    [threads, anchors, threadsQuery.error, excerptOf, pendingThreadIds, pdf?.assetHash],
+    () =>
+      deriveCommentSidebarModel(
+        {
+          threads,
+          anchors: threadsQuery.error ? [] : anchors,
+          excerptOf,
+          pending: pendingThreadIds,
+          pdfAssetHash: pdf?.assetHash,
+        },
+        locale,
+      ),
+    [threads, anchors, threadsQuery.error, excerptOf, pendingThreadIds, pdf?.assetHash, locale],
   );
 
   // ── Plugin styling context: editor and sidebar share one truth ──
@@ -198,9 +234,11 @@ export function PageComments({ scope, knowledgeBaseId, editor, pdf, canComment, 
       counts: new Map(threads.map((thread) => [thread.id, thread.comments.length])),
     };
     if (setCommentAnchorContextOnEditor(editor, context)) {
-      editor.view.dispatch(editor.state.tr
-        .setMeta(commentsPluginKey, { type: 'context' })
-        .setMeta('addToHistory', false));
+      editor.view.dispatch(
+        editor.state.tr
+          .setMeta(commentsPluginKey, { type: 'context' })
+          .setMeta('addToHistory', false),
+      );
     }
   }, [editor, model, pendingThreadIds, threads]);
 
@@ -209,71 +247,130 @@ export function PageComments({ scope, knowledgeBaseId, editor, pdf, canComment, 
   useEffect(() => {
     if (!followDocumentLink) return;
     const target = readCommentLink(window.location.href);
-    if ((!editor && !pdf) || !target || target.source !== 'server' || target.knowledgeBaseId !== scope.knowledgeBaseId || target.pageId !== scope.pageId || target.knowledgeBaseId !== knowledgeBaseId || followedLink.current === target.commentId) return;
-    const thread = threads.find(thread => thread.comments.some(entry => entry.id === target.commentId));
+    if (
+      (!editor && !pdf) ||
+      !target ||
+      target.source !== 'server' ||
+      target.knowledgeBaseId !== scope.knowledgeBaseId ||
+      target.pageId !== scope.pageId ||
+      target.knowledgeBaseId !== knowledgeBaseId ||
+      followedLink.current === target.commentId
+    )
+      return;
+    const thread = threads.find((thread) =>
+      thread.comments.some((entry) => entry.id === target.commentId),
+    );
     if (!thread) return;
-    if (pdf && pdf.activeThreadId !== thread.id) { pdf.onSelectThread(thread.id); setRailOpen(true); }
+    if (pdf && pdf.activeThreadId !== thread.id) {
+      pdf.onSelectThread(thread.id);
+      setRailOpen(true);
+    }
     if (editor && activeCommentThreadId(editor.state) !== thread.id) {
-      editor.view.dispatch(editor.state.tr.setMeta(commentsPluginKey, { type: 'select', id: thread.id }).setMeta('addToHistory', false));
+      editor.view.dispatch(
+        editor.state.tr
+          .setMeta(commentsPluginKey, { type: 'select', id: thread.id })
+          .setMeta('addToHistory', false),
+      );
     }
     if (!railOpen) return;
     followedLink.current = target.commentId;
-    if (thread.pdfAnchor?.assetHash === pdf?.assetHash && thread.pdfAnchor) pdf?.onLocate(thread.pdfAnchor);
-    editor?.view.dom.closest('[aria-label="页面编辑器"]')?.querySelector(`[data-comment-id="${target.commentId}"]`)?.scrollIntoView({ block: 'nearest' });
-  }, [scope.knowledgeBaseId, scope.pageId, knowledgeBaseId, threads, railOpen, editor, pdf, followDocumentLink, setRailOpen]);
+    if (thread.pdfAnchor?.assetHash === pdf?.assetHash && thread.pdfAnchor)
+      pdf?.onLocate(thread.pdfAnchor);
+    editor?.view.dom
+      .closest('[data-knowledge-editor]')
+      ?.querySelector(`[data-comment-id="${target.commentId}"]`)
+      ?.scrollIntoView({ block: 'nearest' });
+  }, [
+    scope.knowledgeBaseId,
+    scope.pageId,
+    knowledgeBaseId,
+    threads,
+    railOpen,
+    editor,
+    pdf,
+    followDocumentLink,
+    setRailOpen,
+  ]);
 
   const bindPdfCompose = pdf?.bindCompose;
   useEffect(() => {
     if (!bindPdfCompose || !canComment || composing) return;
     return bindPdfCompose(({ anchor, x, y }) => {
-      setComposing({ threadId: crypto.randomUUID(), commentId: crypto.randomUUID(), excerpt: anchor.quote, pdfAnchor: anchor });
-      setComposerAt({ x, y }); setComposerError(null);
+      setComposing({
+        threadId: crypto.randomUUID(),
+        commentId: crypto.randomUUID(),
+        excerpt: anchor.quote,
+        pdfAnchor: anchor,
+      });
+      setComposerAt({ x, y });
+      setComposerError(null);
     });
   }, [bindPdfCompose, canComment, composing]);
 
-  const dispatchRemoveAnchor = useCallback((threadId: string, options: { userAction: boolean }) => {
-    if (!editor) return;
-    const tr = buildRemoveCommentAnchorTransaction(editor.state, threadId);
-    if (!tr) return;
-    if (!options.userAction) tr.setMeta('addToHistory', false);
-    editor.view.dispatch(tr);
-  }, [editor]);
+  const dispatchRemoveAnchor = useCallback(
+    (threadId: string, options: { userAction: boolean }) => {
+      if (!editor) return;
+      const tr = buildRemoveCommentAnchorTransaction(editor.state, threadId);
+      if (!tr) return;
+      if (!options.userAction) tr.setMeta('addToHistory', false);
+      editor.view.dispatch(tr);
+    },
+    [editor],
+  );
 
   // ── 划词评论: optimistic anchor, then persist under the same ids ──
-  const beginComposeAt = useCallback((point: CommentComposePoint) => {
-    if (!editor || !canComment || composing || !editor.isEditable) return;
-    const threadId = crypto.randomUUID();
-    const commentId = crypto.randomUUID();
-    const ranges = editor.state.selection.ranges.map(({ $from, $to }) => ({ from: $from.pos, to: $to.pos }));
-    const tr = buildAddCommentSelectionTransaction(editor.state, threadId);
-    if (!tr) return;
-    editor.view.dispatch(tr);
-    setComposing({ threadId, commentId, excerpt: anchorExcerpt(editor.state.doc, ranges) });
-    setComposerError(null);
-    setComposerAt(point);
-  }, [editor, canComment, composing]);
+  const beginComposeAt = useCallback(
+    (point: CommentComposePoint) => {
+      if (!editor || !canComment || composing || !editor.isEditable) return;
+      const threadId = crypto.randomUUID();
+      const commentId = crypto.randomUUID();
+      const ranges = editor.state.selection.ranges.map(({ $from, $to }) => ({
+        from: $from.pos,
+        to: $to.pos,
+      }));
+      const tr = buildAddCommentSelectionTransaction(editor.state, threadId);
+      if (!tr) return;
+      editor.view.dispatch(tr);
+      setComposing({ threadId, commentId, excerpt: anchorExcerpt(editor.state.doc, ranges) });
+      setComposerError(null);
+      setComposerAt(point);
+    },
+    [editor, canComment, composing],
+  );
   useEffect(() => {
     if (!editor || !editor.isEditable || !canComment || composing) return;
     return bindSelectionCommentComposer(editor, beginComposeAt);
   }, [editor, canComment, composing, beginComposeAt]);
 
-  const submitCompose = useCallback(async (bodyMd: string, kind: CommentThreadKind, mentions: string[]) => {
-    if (!composing) return false;
-    setComposerError(null);
-    try {
-      await createMutation.mutateAsync({ pageId: scope.pageId, threadId: composing.threadId, commentId: composing.commentId, bodyMd, kind, mentions, anchorKind: 'selection', ...(composing.pdfAnchor ? { pdfAnchor: composing.pdfAnchor } : {}) });
-      setComposing(null);
-      setComposerAt(null);
-      if (editor) selectCommentThread(editor.view, composing.threadId, { flash: true });
-      pdf?.onSelectThread(composing.threadId);
-      setRailOpen(true);
-      return true;
-    } catch (error: unknown) {
-      // The optimistic anchor stays; retry resubmits the exact same ids.
-      setComposerError(commentErrorText(error, '评论发送失败，请重试。'));
-      return false;
-    }
-  }, [composing, createMutation, scope.pageId, editor, pdf, setRailOpen]);
+  const submitCompose = useCallback(
+    async (bodyMd: string, kind: CommentThreadKind, mentions: string[]) => {
+      if (!composing) return false;
+      setComposerError(null);
+      try {
+        await createMutation.mutateAsync({
+          pageId: scope.pageId,
+          threadId: composing.threadId,
+          commentId: composing.commentId,
+          bodyMd,
+          kind,
+          mentions,
+          anchorKind: 'selection',
+          ...(composing.pdfAnchor ? { pdfAnchor: composing.pdfAnchor } : {}),
+        });
+        setComposing(null);
+        setComposerAt(null);
+        if (editor) selectCommentThread(editor.view, composing.threadId, { flash: true });
+        pdf?.onSelectThread(composing.threadId);
+        setRailOpen(true);
+        return true;
+      } catch (error: unknown) {
+        // The optimistic anchor stays; retry resubmits the exact same ids.
+        setComposerError({ cause: error });
+        return false;
+      }
+    },
+    [composing, createMutation, scope.pageId, editor, pdf, setRailOpen],
+  );
 
   const cancelCompose = useCallback(() => {
     if (!composing) return;
@@ -283,121 +380,206 @@ export function PageComments({ scope, knowledgeBaseId, editor, pdf, canComment, 
     setComposerError(null);
   }, [composing, dispatchRemoveAnchor]);
 
-  const submitPageComment = useCallback(async (bodyMd: string, kind: CommentThreadKind, mentions: string[]) => {
-    if (!canComment) return false;
-    if (!pageDraft.current || pageDraft.current.bodyMd !== bodyMd || pageDraft.current.kind !== kind) {
-      pageDraft.current = { threadId: crypto.randomUUID(), commentId: crypto.randomUUID(), bodyMd, kind };
-    }
-    pageCommentMutation.reset();
-    try {
-      await pageCommentMutation.mutateAsync({ ...pageDraft.current, pageId: scope.pageId, mentions, anchorKind: 'page' });
-      pageDraft.current = null;
-      return true;
-    } catch { return false; }
-  }, [canComment, pageCommentMutation, scope.pageId]);
+  const submitPageComment = useCallback(
+    async (bodyMd: string, kind: CommentThreadKind, mentions: string[]) => {
+      if (!canComment) return false;
+      if (
+        !pageDraft.current ||
+        pageDraft.current.bodyMd !== bodyMd ||
+        pageDraft.current.kind !== kind
+      ) {
+        pageDraft.current = {
+          threadId: crypto.randomUUID(),
+          commentId: crypto.randomUUID(),
+          bodyMd,
+          kind,
+        };
+      }
+      pageCommentMutation.reset();
+      try {
+        await pageCommentMutation.mutateAsync({
+          ...pageDraft.current,
+          pageId: scope.pageId,
+          mentions,
+          anchorKind: 'page',
+        });
+        pageDraft.current = null;
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [canComment, pageCommentMutation, scope.pageId],
+  );
 
-  const handleLike = useCallback(async (commentId: string, liked: boolean) => {
-    likeMutation.reset();
-    try { await likeMutation.mutateAsync({ commentId, liked }); }
-    catch { /* The entry retains its current value and shows a retryable error. */ }
-  }, [likeMutation]);
+  const handleLike = useCallback(
+    async (commentId: string, liked: boolean) => {
+      likeMutation.reset();
+      try {
+        await likeMutation.mutateAsync({ commentId, liked });
+      } catch {
+        /* The entry retains its current value and shows a retryable error. */
+      }
+    },
+    [likeMutation],
+  );
 
-  const handleEdit = useCallback(async (commentId: string, bodyMd: string) => {
-    editMutation.reset();
-    try { await editMutation.mutateAsync({ commentId, bodyMd }); return true; }
-    catch { return false; }
-  }, [editMutation]);
+  const handleEdit = useCallback(
+    async (commentId: string, bodyMd: string) => {
+      editMutation.reset();
+      try {
+        await editMutation.mutateAsync({ commentId, bodyMd });
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [editMutation],
+  );
 
-  const handleCopyLink = useCallback(async (commentId: string) => {
-    try {
-      await navigator.clipboard.writeText(commentLink(window.location.href, { ...scope, knowledgeBaseId, source: 'server' }, commentId));
-      return true;
-    } catch { return false; }
-  }, [scope, knowledgeBaseId]);
+  const handleCopyLink = useCallback(
+    async (commentId: string) => {
+      try {
+        await navigator.clipboard.writeText(
+          commentLink(
+            window.location.href,
+            { ...scope, knowledgeBaseId, source: 'server' },
+            commentId,
+          ),
+        );
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [scope, knowledgeBaseId],
+  );
 
   // ── Sidebar actions ──
-  const locateThread = useCallback((threadId: string) => {
-    if (pdf) {
-      const anchor = threads.find(thread => thread.id === threadId)?.pdfAnchor;
-      if (anchor?.assetHash === pdf.assetHash) { pdf.onSelectThread(threadId); pdf.onLocate(anchor); }
-      return;
-    }
-    if (!editor) return;
-    const anchor = collectCommentAnchors(editor.state.doc).find((candidate) => candidate.threadId === threadId);
-    if (!anchor) return;
-    selectCommentThread(editor.view, threadId, { flash: true });
-    const from = anchor.ranges.reduce((min, range) => Math.min(min, range.from), Number.MAX_SAFE_INTEGER);
-    const located = editor.view.domAtPos(from);
-    const element = located.node.nodeType === 1 ? located.node as HTMLElement : located.node.parentElement;
-    element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    setActiveThreadId(threadId);
-  }, [editor, pdf, threads]);
-
-  const handleReply = useCallback(async (target: CommentReplyTarget, bodyMd: string, mentions: string[]) => {
-    replyMutation.reset();
-    try {
-      await replyMutation.mutateAsync({ threadId: target.threadId, replyToCommentId: target.commentId, bodyMd, mentions });
-      setReplyTarget(null);
-      return true;
-    } catch {
-      // Keep the reply draft and target available for retry.
-      return false;
-    }
-  }, [replyMutation]);
-
-  const handleResolve = useCallback(async (threadId: string) => {
-    reopenMutation.reset();
-    resolveMutation.reset();
-    try {
-      await resolveMutation.mutateAsync(threadId);
-    } catch {
-      // Rendered on the card.
-    }
-  }, [resolveMutation, reopenMutation]);
-
-  const handleReopen = useCallback(async (threadId: string) => {
-    resolveMutation.reset();
-    reopenMutation.reset();
-    try {
-      await reopenMutation.mutateAsync(threadId);
-    } catch {
-      // Rendered on the card.
-    }
-  }, [reopenMutation, resolveMutation]);
-
-  const handleDeleteComment = useCallback(async (commentId: string) => {
-    deleteMutation.reset();
-    try {
-      const result = await deleteMutation.mutateAsync(commentId);
-      if (result.threadDeleted) {
-        const thread = threads.find((candidate) => candidate.comments.some((entry) => entry.id === commentId));
-        if (thread) dispatchRemoveAnchor(thread.id, { userAction: false });
+  const locateThread = useCallback(
+    (threadId: string) => {
+      if (pdf) {
+        const anchor = threads.find((thread) => thread.id === threadId)?.pdfAnchor;
+        if (anchor?.assetHash === pdf.assetHash) {
+          pdf.onSelectThread(threadId);
+          pdf.onLocate(anchor);
+        }
+        return;
       }
-    } catch {
-      // Rendered on the card.
-    }
-  }, [deleteMutation, threads, dispatchRemoveAnchor]);
+      if (!editor) return;
+      const anchor = collectCommentAnchors(editor.state.doc).find(
+        (candidate) => candidate.threadId === threadId,
+      );
+      if (!anchor) return;
+      selectCommentThread(editor.view, threadId, { flash: true });
+      const from = anchor.ranges.reduce(
+        (min, range) => Math.min(min, range.from),
+        Number.MAX_SAFE_INTEGER,
+      );
+      const located = editor.view.domAtPos(from);
+      const element =
+        located.node.nodeType === 1 ? (located.node as HTMLElement) : located.node.parentElement;
+      element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setActiveThreadId(threadId);
+    },
+    [editor, pdf, threads],
+  );
 
-  const handleRemoveOrphan = useCallback((threadId: string) => {
-    dispatchRemoveAnchor(threadId, { userAction: true });
-  }, [dispatchRemoveAnchor]);
+  const handleReply = useCallback(
+    async (target: CommentReplyTarget, bodyMd: string, mentions: string[]) => {
+      replyMutation.reset();
+      try {
+        await replyMutation.mutateAsync({
+          threadId: target.threadId,
+          replyToCommentId: target.commentId,
+          bodyMd,
+          mentions,
+        });
+        setReplyTarget(null);
+        return true;
+      } catch {
+        // Keep the reply draft and target available for retry.
+        return false;
+      }
+    },
+    [replyMutation],
+  );
 
-  const replyState = {
-    pending: replyMutation.isPending,
-    threadId: (replyMutation.variables?.threadId ?? null) as string | null,
-    error: replyMutation.isError ? commentErrorText(replyMutation.error, '回复发送失败，请重试。') : null,
-  };
+  const handleResolve = useCallback(
+    async (threadId: string) => {
+      reopenMutation.reset();
+      resolveMutation.reset();
+      try {
+        await resolveMutation.mutateAsync(threadId);
+      } catch {
+        // Rendered on the card.
+      }
+    },
+    [resolveMutation, reopenMutation],
+  );
+
+  const handleReopen = useCallback(
+    async (threadId: string) => {
+      resolveMutation.reset();
+      reopenMutation.reset();
+      try {
+        await reopenMutation.mutateAsync(threadId);
+      } catch {
+        // Rendered on the card.
+      }
+    },
+    [reopenMutation, resolveMutation],
+  );
+
+  const handleDeleteComment = useCallback(
+    async (commentId: string) => {
+      deleteMutation.reset();
+      try {
+        const result = await deleteMutation.mutateAsync(commentId);
+        if (result.threadDeleted) {
+          const thread = threads.find((candidate) =>
+            candidate.comments.some((entry) => entry.id === commentId),
+          );
+          if (thread) dispatchRemoveAnchor(thread.id, { userAction: false });
+        }
+      } catch {
+        // Rendered on the card.
+      }
+    },
+    [deleteMutation, threads, dispatchRemoveAnchor],
+  );
+
+  const handleRemoveOrphan = useCallback(
+    (threadId: string) => {
+      dispatchRemoveAnchor(threadId, { userAction: true });
+    },
+    [dispatchRemoveAnchor],
+  );
+
+  function replyState(locale?: Locale) {
+    const knowledgeT = createTranslator(knowledgeMessages, locale);
+    return {
+      pending: replyMutation.isPending,
+      threadId: (replyMutation.variables?.threadId ?? null) as string | null,
+      error: replyMutation.isError
+        ? commentErrorText(replyMutation.error, knowledgeT('unableToSendReplyPleaseRetry'))
+        : null,
+    };
+  }
   // Resolve and reopen share one card-level transition state: either pending
   // state disables both buttons of that thread, either failure renders on it.
-  const resolveState = {
-    pending: resolveMutation.isPending || reopenMutation.isPending,
-    threadId: (resolveMutation.variables ?? reopenMutation.variables ?? null) as string | null,
-    error: resolveMutation.isError
-      ? commentErrorText(resolveMutation.error, '操作失败，请重试。')
-      : reopenMutation.isError
-        ? commentErrorText(reopenMutation.error, '操作失败，请重试。')
-        : null,
-  };
+  function resolveState(locale?: Locale) {
+    const knowledgeT = createTranslator(knowledgeMessages, locale);
+    return {
+      pending: resolveMutation.isPending || reopenMutation.isPending,
+      threadId: (resolveMutation.variables ?? reopenMutation.variables ?? null) as string | null,
+      error: resolveMutation.isError
+        ? commentErrorText(resolveMutation.error, knowledgeT('actionFailedPleaseRetry'))
+        : reopenMutation.isError
+          ? commentErrorText(reopenMutation.error, knowledgeT('actionFailedPleaseRetry'))
+          : null,
+    };
+  }
 
   return (
     <div ref={sidebarHost} style={{ display: 'contents' }}>
@@ -407,11 +589,19 @@ export function PageComments({ scope, knowledgeBaseId, editor, pdf, canComment, 
             variant="popover"
             minHeight={90}
             knowledgeBaseId={scope.knowledgeBaseId}
-            placeholder="写下评论…"
-            submitLabel="发送"
-            sendingLabel="发送中…"
+            placeholder={knowledgeT('writeAComment')}
+            submitLabel={knowledgeT('send')}
+            sendingLabel={knowledgeT('sending')}
             sending={createMutation.isPending}
-            error={composerError}
+            error={
+              composerError
+                ? commentErrorText(
+                    composerError.cause,
+                    knowledgeT('unableToSendCommentPleaseRetry'),
+                    locale,
+                  )
+                : null
+            }
             allowIssue
             onSubmit={submitCompose}
             authors={authors}
@@ -428,29 +618,67 @@ export function PageComments({ scope, knowledgeBaseId, editor, pdf, canComment, 
           activeThreadId={activeThreadId}
           onRemoveOrphan={handleRemoveOrphan}
           status={threadsQuery.isPending ? 'loading' : threadsQuery.isError ? 'error' : 'ready'}
-          errorText={commentErrorText(threadsQuery.error, '评论列表加载失败，请重试。')}
+          errorText={commentErrorText(
+            threadsQuery.error,
+            knowledgeT('unableToLoadCommentsPleaseRetry'),
+          )}
           onRetry={() => void threadsQuery.refetch()}
           onClose={() => setRailOpen(false)}
           canComment={canComment}
           currentUserId={currentUserId}
           authors={authors}
-          create={{ pending: pageCommentMutation.isPending, error: pageCommentMutation.isError ? commentErrorText(pageCommentMutation.error, '评论发送失败，请重试。') : null }}
+          create={{
+            pending: pageCommentMutation.isPending,
+            error: pageCommentMutation.isError
+              ? commentErrorText(
+                  pageCommentMutation.error,
+                  knowledgeT('unableToSendCommentPleaseRetry'),
+                )
+              : null,
+          }}
           onCreate={submitPageComment}
-          like={{ pending: likeMutation.isPending, commentId: likeMutation.variables?.commentId ?? null, error: likeMutation.isError ? commentErrorText(likeMutation.error, '点赞失败，请重试。') : null }}
+          like={{
+            pending: likeMutation.isPending,
+            commentId: likeMutation.variables?.commentId ?? null,
+            error: likeMutation.isError
+              ? commentErrorText(likeMutation.error, knowledgeT('unableToLikeCommentPleaseRetry'))
+              : null,
+          }}
           onLike={(commentId, liked) => void handleLike(commentId, liked)}
-          edit={{ pending: editMutation.isPending, commentId: editMutation.variables?.commentId ?? null, error: editMutation.isError ? commentErrorText(editMutation.error, '保存失败，请重试。') : null }}
+          edit={{
+            pending: editMutation.isPending,
+            commentId: editMutation.variables?.commentId ?? null,
+            error: editMutation.isError
+              ? commentErrorText(editMutation.error, knowledgeT('unableToSavePleaseRetry'))
+              : null,
+          }}
           onEdit={handleEdit}
           onCopyLink={handleCopyLink}
-          reply={replyState}
-          resolve={resolveState}
-          deletingCommentId={deleteMutation.isPending ? deleteMutation.variables ?? null : null}
-          deleteError={deleteMutation.isError ? { commentId: deleteMutation.variables ?? null, message: commentErrorText(deleteMutation.error, '删除失败，评论已保留，请重试。') } : null}
+          reply={replyState(locale)}
+          resolve={resolveState(locale)}
+          deletingCommentId={deleteMutation.isPending ? (deleteMutation.variables ?? null) : null}
+          deleteError={
+            deleteMutation.isError
+              ? {
+                  commentId: deleteMutation.variables ?? null,
+                  message: commentErrorText(
+                    deleteMutation.error,
+                    knowledgeT('unableToDeleteYourCommentWasKeptPlease'),
+                  ),
+                }
+              : null
+          }
           onLocate={locateThread}
           onReply={handleReply}
           onResolve={(threadId) => void handleResolve(threadId)}
           onReopen={(threadId) => void handleReopen(threadId)}
           onDeleteComment={(commentId) => void handleDeleteComment(commentId)}
-          onReplyTargetChange={target => { if (!replyMutation.isPending) { replyMutation.reset(); setReplyTarget(target); } }}
+          onReplyTargetChange={(target) => {
+            if (!replyMutation.isPending) {
+              replyMutation.reset();
+              setReplyTarget(target);
+            }
+          }}
         />
       ) : null}
     </div>

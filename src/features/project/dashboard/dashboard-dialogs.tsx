@@ -1,17 +1,19 @@
 'use client';
+import { useLocale } from '@/lib/i18n';
 
+import { translateFixed } from '../i18n/display';
 import { DashboardActionDialog, type DashboardAction } from './dashboard-actions';
 import { DashboardDocumentDialog } from './dashboard-document-dialog';
-import { DashboardMeetingDialog } from './dashboard-meeting-dialog';
-import { DashboardProjectDialog } from './dashboard-project-dialog';
-import { DashboardTaskDialog } from './dashboard-task-dialog';
 import { DashboardFavoritesDialog, DashboardMilestoneDialog } from './dashboard-management-dialogs';
+import { DashboardMeetingDialog } from './dashboard-meeting-dialog';
 import type {
   DashboardDocument,
   DashboardDocumentKind,
   DashboardProject,
   DashboardTarget,
 } from './dashboard-model';
+import { DashboardProjectDialog } from './dashboard-project-dialog';
+import { DashboardTaskDialog } from './dashboard-task-dialog';
 import type { useDashboard } from './use-dashboard';
 
 export type DashboardDialog =
@@ -46,6 +48,7 @@ export function DashboardDialogs({
   onSaveDocument: (document: DashboardDocument) => void;
   onSaved: (message: string) => void;
 }) {
+  const locale = useLocale();
   if (!dialog) return null;
   const { state } = store;
   switch (dialog.kind) {
@@ -73,7 +76,7 @@ export function DashboardDialogs({
           onClose={onClose}
           onSave={(next) => {
             store.saveProject(next);
-            onSaved('Project saved');
+            onSaved(translateFixed('Project saved', locale));
           }}
           onOpenTask={(id) => onOpenTarget({ kind: 'task', id })}
           onCreateTask={() => onCreateTask(project.id)}
@@ -138,7 +141,7 @@ export function DashboardDialogs({
           onClose={onClose}
           onSave={(targets) => {
             store.saveFavorites(targets);
-            onSaved('Favourites saved');
+            onSaved(translateFixed('Favourites saved', locale));
           }}
         />
       );
@@ -149,7 +152,7 @@ export function DashboardDialogs({
           onClose={onClose}
           onSave={(milestones) => {
             store.saveMilestones(milestones);
-            onSaved('Milestones saved');
+            onSaved(translateFixed('Milestones saved', locale));
           }}
         />
       );

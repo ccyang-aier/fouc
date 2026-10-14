@@ -13,17 +13,40 @@ import 'fake-indexeddb/auto';
 import { Window } from 'happy-dom';
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { Editor } from '@tiptap/core';
+import { setLocale } from '@/lib/i18n';
+import { editorLocaleMeta } from '../use-editor-locale';
 import { TextSelection } from '@tiptap/pm/state';
 import { createKnowledgeExtensions } from '@fouc/shared/knowledge/schema';
-import { newSuggestion, reviewSuggestions, suggestText } from '@fouc/shared/knowledge/schema/suggestions';
-import { activeSuggestionId, createReviewMarksExtension, selectReviewSuggestion } from './review-marks';
+import {
+  newSuggestion,
+  reviewSuggestions,
+  suggestText,
+} from '@fouc/shared/knowledge/schema/suggestions';
+import {
+  activeSuggestionId,
+  createReviewMarksExtension,
+  selectReviewSuggestion,
+} from './review-marks';
 
 let window: Window;
 
 beforeAll(() => {
   window = new Window({ url: 'https://knowledge.fouc.test/page' });
   const globals = window as unknown as Record<string, unknown>;
-  for (const key of ['document', 'DOMParser', 'MutationObserver', 'Range', 'getSelection', 'HTMLElement', 'Element', 'Node', 'Text', 'Comment', 'customElements', 'requestAnimationFrame']) {
+  for (const key of [
+    'document',
+    'DOMParser',
+    'MutationObserver',
+    'Range',
+    'getSelection',
+    'HTMLElement',
+    'Element',
+    'Node',
+    'Text',
+    'Comment',
+    'customElements',
+    'requestAnimationFrame',
+  ]) {
     if (globals[key] !== undefined) (globalThis as Record<string, unknown>)[key] = globals[key];
   }
   (globalThis as Record<string, unknown>).window = window;
@@ -49,13 +72,19 @@ function endOfFirstParagraph(editor: Editor): number {
   return editor.state.doc.resolve(1).after(1) - 1;
 }
 
-function propose(editor: Editor, options: { from: number; to: number; text: string; id: string; author?: string }) {
+function propose(
+  editor: Editor,
+  options: { from: number; to: number; text: string; id: string; author?: string },
+) {
   editor.view.dispatch(
     suggestText(editor.state, {
       from: options.from,
       to: options.to,
       text: options.text,
-      suggestion: newSuggestion(options.author ?? 'agent:task_1', { suggestionId: options.id, createdAt }),
+      suggestion: newSuggestion(options.author ?? 'agent:task_1', {
+        suggestionId: options.id,
+        createdAt,
+      }),
     }),
   );
 }
@@ -65,12 +94,46 @@ afterAll(() => {
 });
 
 describe('review marks over a real editor instance', () => {
+  test('language-only transactions refresh an existing author badge without changing suggestions', () => {
+    const editor = mountEditor();
+    editor.commands.setContent('<p>原始名称 Alpha</p>');
+    const at = endOfFirstParagraph(editor);
+    propose(editor, { from: at, to: at, text: '用户正文', id: 'localized-badge' });
+    const doc = editor.state.doc;
+    const dom = editor.view.dom as unknown as HTMLElement;
+    expect(dom.querySelector('.fouc-suggest-badge')?.getAttribute('title')).toContain('AI 助手');
+    try {
+      setLocale('en-US');
+      editor.view.dispatch(
+        editor.state.tr.setMeta(editorLocaleMeta, 'en-US').setMeta('addToHistory', false),
+      );
+      expect(dom.querySelector('.fouc-suggest-badge')?.getAttribute('title')).toContain(
+        'AI assistant',
+      );
+      expect(editor.state.doc).toBe(doc);
+      expect(editor.state.doc.textContent).toContain('原始名称 Alpha');
+    } finally {
+      setLocale('zh-CN');
+    }
+  });
   test('insert and delete decorations and author badges render in the live DOM', async () => {
     const editor = mountEditor();
     editor.commands.setContent('<p>abcdef</p>');
     const insertAt = endOfFirstParagraph(editor);
-    propose(editor, { from: insertAt, to: insertAt, text: '新增', id: 'ins-1', author: 'agent:task_1' });
-    propose(editor, { from: 1, to: 3, text: '', id: 'del-1', author: 'mcp:Claude%20Desktop:call_9' });
+    propose(editor, {
+      from: insertAt,
+      to: insertAt,
+      text: '新增',
+      id: 'ins-1',
+      author: 'agent:task_1',
+    });
+    propose(editor, {
+      from: 1,
+      to: 3,
+      text: '',
+      id: 'del-1',
+      author: 'mcp:Claude%20Desktop:call_9',
+    });
 
     const dom = editor.view.dom as unknown as HTMLElement;
     const inserted = dom.querySelectorAll<HTMLElement>('.fouc-suggest-insert');
@@ -99,7 +162,12 @@ describe('review marks over a real editor instance', () => {
   test('manual selection drives the active decoration and the locate flash', () => {
     const editor = mountEditor();
     editor.commands.setContent('<p>abcdef</p>');
-    propose(editor, { from: endOfFirstParagraph(editor), to: endOfFirstParagraph(editor), text: '新增', id: 'ins-2' });
+    propose(editor, {
+      from: endOfFirstParagraph(editor),
+      to: endOfFirstParagraph(editor),
+      text: '新增',
+      id: 'ins-2',
+    });
 
     const dom = editor.view.dom as unknown as HTMLElement;
     selectReviewSuggestion(editor.view, 'ins-2', { flash: true });
@@ -113,7 +181,9 @@ describe('review marks over a real editor instance', () => {
     // A caret move onto no suggestion keeps a manual pick (it persists
     // honestly instead of flickering away on unrelated caret moves).
     editor.view.dispatch(
-      editor.state.tr.setSelection(TextSelection.create(editor.state.doc, 1)).setMeta('addToHistory', false),
+      editor.state.tr
+        .setSelection(TextSelection.create(editor.state.doc, 1))
+        .setMeta('addToHistory', false),
     );
     expect(activeSuggestionId(editor.state)).toBe('ins-2');
   });
@@ -121,11 +191,18 @@ describe('review marks over a real editor instance', () => {
   test('accept removes marks, badges and the active suggestion', () => {
     const editor = mountEditor();
     editor.commands.setContent('<p>abcdef</p>');
-    propose(editor, { from: endOfFirstParagraph(editor), to: endOfFirstParagraph(editor), text: '新增', id: 'ins-3' });
+    propose(editor, {
+      from: endOfFirstParagraph(editor),
+      to: endOfFirstParagraph(editor),
+      text: '新增',
+      id: 'ins-3',
+    });
     selectReviewSuggestion(editor.view, 'ins-3');
     expect(activeSuggestionId(editor.state)).toBe('ins-3');
 
-    editor.view.dispatch(reviewSuggestions(editor.state, { decision: 'accept', suggestionIds: ['ins-3'] }));
+    editor.view.dispatch(
+      reviewSuggestions(editor.state, { decision: 'accept', suggestionIds: ['ins-3'] }),
+    );
     const dom = editor.view.dom as unknown as HTMLElement;
     expect(dom.querySelector('.fouc-suggest-insert')).toBeNull();
     expect(dom.querySelector('.fouc-suggest-badge')).toBeNull();
@@ -136,7 +213,12 @@ describe('review marks over a real editor instance', () => {
   test('a readonly editor renders the same review presentation', () => {
     const editor = mountEditor(false);
     editor.commands.setContent('<p>abcdef</p>');
-    propose(editor, { from: endOfFirstParagraph(editor), to: endOfFirstParagraph(editor), text: '新增', id: 'ins-5' });
+    propose(editor, {
+      from: endOfFirstParagraph(editor),
+      to: endOfFirstParagraph(editor),
+      text: '新增',
+      id: 'ins-5',
+    });
     const dom = editor.view.dom as unknown as HTMLElement;
     expect(dom.querySelector('.fouc-suggest-insert')).not.toBeNull();
     expect(dom.querySelector('.fouc-suggest-badge')).not.toBeNull();

@@ -1,0 +1,62 @@
+import { defineMessages } from '@/lib/i18n';
+
+export const messages = defineMessages({
+  nativeStructure: ['原生结构', 'Native structure'],
+  databaseFieldGuide: ['数据库字段指南', 'Database field guide'],
+  checkFormatOmissionNotices: [' · 请查看格式遗漏提示', ' · Check format omission notices'],
+  exported: ['已导出 {p0}{p1}', 'Exported {p0}{p1}'],
+  exportFailed: ['导出失败：{p0}', 'Export failed: {p0}'],
+  nativeDatabaseDocumentation: ['原生数据库文档', 'Native database documentation'],
+  databaseDocumentation: ['数据库文档', 'Database documentation'],
+  savingLocalNotes: ['正在保存本地笔记…', 'Saving local notes…'],
+  localNotesSaved: ['本地笔记已保存', 'Local notes saved'],
+  currentDevicePersistentNotes: ['当前设备 · 持久笔记', 'Current device · Persistent notes'],
+  readOnlyStructurePreview: ['结构只读预览', 'Read-only structure preview'],
+  refreshDatabaseDocumentationStructure: [
+    '刷新数据库文档结构',
+    'Refresh database documentation structure',
+  ],
+  collectingNativeDatabaseStructure: [
+    '正在采集原生数据库结构',
+    'Collecting native database structure',
+  ],
+  columnsIndexesConstraintsForeignKeysAndNativeDefinitionsComeFrom: [
+    '字段、索引、约束、外键与原生定义来自当前连接。',
+    'Columns, indexes, constraints, foreign keys and native definitions come from the current connection.',
+  ],
+  retryDocumentationCollection: ['重试文档采集', 'Retry documentation collection'],
+  documentationOverview: ['文档总览', 'Documentation overview'],
+  searchDatabaseTablesColumnsOrNotes: [
+    '搜索数据库文档表、字段或笔记',
+    'Search database tables, columns or notes',
+  ],
+  searchTablesColumnsOrNotes: ['搜索表、字段或笔记…', 'Search tables, columns or notes…'],
+  filterDocumentationColorGroups: ['筛选文档彩色分组', 'Filter documentation color groups'],
+  allGroups: ['全部分组', 'All groups'],
+  ungrouped: ['未分组', 'Ungrouped'],
+  manageDocumentationColorGroups: ['管理文档彩色分组', 'Manage documentation color groups'],
+  databaseDocumentationObjectList: ['数据库文档对象列表', 'Database documentation object list'],
+  noMatchingNativeObjects: ['没有匹配的原生对象。', 'No matching native objects.'],
+  reloadDeviceNotes: ['重新读取设备笔记', 'Reload device notes'],
+  dbmlOmissions: ['DBML 格式遗漏 ·', 'DBML omissions · '],
+  tablesAndViews: ['表与视图', 'Tables and views'],
+  nativeColumns: ['原生字段', 'Native columns'],
+  foreignKeyRelationships: ['外键关系', 'Foreign key relationships'],
+  colorGroups: ['彩色分组', 'Color groups'],
+  databaseDocumentationMarkdownOverview: [
+    '数据库文档 Markdown 概述',
+    'Database documentation Markdown overview',
+  ],
+  objects: ['个对象', ' objects'],
+  collectedAt: ['采集于', 'Collected at '],
+  documentationExportsRetainFullNativeStructureAndLocalNotes: [
+    '。文档导出保留完整原生结构与本地笔记。',
+    '. Documentation exports retain full native structure and local notes.',
+  ],
+  theCurrentConnectionIsNotSavedBrowseSearchAndExport: [
+    '当前连接未持久保存；可查看、搜索与导出真实结构，保存连接后可维护设备本地笔记和分组。',
+    'The current connection is not saved. Browse, search and export actual structure; save the connection to manage device-local notes and groups.',
+  ],
+  structureAndNoteWarnings: ['结构与笔记告警 ·', 'Structure and note warnings · '],
+  notesRetained: ['· 保留笔记', '· Notes retained'],
+});

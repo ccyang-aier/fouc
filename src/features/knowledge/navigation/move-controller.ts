@@ -1,3 +1,6 @@
+import { createTranslator } from '@/lib/i18n';
+import { knowledgeMessages } from './move-controller.messages';
+
 /**
  * Move controller of the page tree (U03) — pure placement math, no React.
  *
@@ -20,6 +23,8 @@
  */
 
 import type { Page } from '@fouc/shared/knowledge/contracts';
+
+const knowledgeT = createTranslator(knowledgeMessages);
 
 // ── Fractional index mirror (T01 ordering.ts) ──────────────────────────
 
@@ -50,7 +55,8 @@ interface Scaled {
 }
 
 function parse(position: string): Scaled {
-  if (position.length < INTEGER_DIGITS || position.length > MAX_LENGTH || !canonical.test(position)) throw new PositionSpaceExhausted();
+  if (position.length < INTEGER_DIGITS || position.length > MAX_LENGTH || !canonical.test(position))
+    throw new PositionSpaceExhausted();
   let num = BigInt(0);
   for (const char of position) num = num * BASE + BigInt(ALPHABET.indexOf(char));
   return { num, scale: position.length - INTEGER_DIGITS };
@@ -67,8 +73,8 @@ function format(num: bigint, scale: number): string {
 
 /** Strictly between `prev` (null = 0) and `next` (null = 36^6); both null = the range midpoint. */
 export function positionBetween(prev: string | null, next: string | null): string {
-  const lower = prev === null ? { num: BigInt(0), scale: 0 } satisfies Scaled : parse(prev);
-  const upper = next === null ? { num: RANGE, scale: 0 } satisfies Scaled : parse(next);
+  const lower = prev === null ? ({ num: BigInt(0), scale: 0 } satisfies Scaled) : parse(prev);
+  const upper = next === null ? ({ num: RANGE, scale: 0 } satisfies Scaled) : parse(next);
   const scale = Math.max(lower.scale, upper.scale);
   const left = lower.num * BASE ** BigInt(scale - lower.scale);
   const right = upper.num * BASE ** BigInt(scale - upper.scale);
@@ -88,9 +94,17 @@ export function liveSiblingsUnder(
   excludingPageId?: string,
 ): { id: string; position: string }[] {
   const siblings = pages
-    .filter((page) => page.deletedAt === null && page.teamspaceId === teamspaceId && page.parentId === parentId && page.id !== excludingPageId)
+    .filter(
+      (page) =>
+        page.deletedAt === null &&
+        page.teamspaceId === teamspaceId &&
+        page.parentId === parentId &&
+        page.id !== excludingPageId,
+    )
     .map((page) => ({ id: page.id, position: page.position }));
-  siblings.sort((a, b) => (a.position === b.position ? (a.id < b.id ? -1 : 1) : comparePositions(a.position, b.position)));
+  siblings.sort((a, b) =>
+    a.position === b.position ? (a.id < b.id ? -1 : 1) : comparePositions(a.position, b.position),
+  );
   return siblings;
 }
 
@@ -101,10 +115,20 @@ export type InsertAnchor = { afterPageId: string | null };
  * `allocatePosition`: `afterPageId === null` anchors at the end of the
  * sibling list; an anchor that is not in the list is invalid input.
  */
-export function optimisticInsertPosition(siblings: readonly { id: string; position: string }[], afterPageId: string | null): string {
-  const anchor = afterPageId === null ? siblings.length - 1 : siblings.findIndex((row) => row.id === afterPageId);
-  if (afterPageId !== null && anchor < 0) throw new RangeError('afterPageId 不在目标父节点的子列表中');
-  return positionBetween(siblings[anchor]?.position ?? null, siblings[anchor + 1]?.position ?? null);
+export function optimisticInsertPosition(
+  siblings: readonly { id: string; position: string }[],
+  afterPageId: string | null,
+): string {
+  const anchor =
+    afterPageId === null
+      ? siblings.length - 1
+      : siblings.findIndex((row) => row.id === afterPageId);
+  if (afterPageId !== null && anchor < 0)
+    throw new RangeError(knowledgeT('afterpageidIsNotAChildOfTheTarget'));
+  return positionBetween(
+    siblings[anchor]?.position ?? null,
+    siblings[anchor + 1]?.position ?? null,
+  );
 }
 
 // ── Drop targets ────────────────────────────────────────────────────────
@@ -130,7 +154,8 @@ export type PlacementRequest = { parentId: string | null; afterPageId: string | 
 
 export type DropRejection = 'self' | 'descendant' | 'cross-teamspace' | 'first-position';
 
-export type DropResolution = { ok: true; placement: PlacementRequest } | { ok: false; reason: DropRejection };
+export type DropResolution =
+  { ok: true; placement: PlacementRequest } | { ok: false; reason: DropRejection };
 
 /** All live ids of the subtree rooted at `rootId` (inclusive). */
 export function subtreeIdsOf(pages: readonly Page[], rootId: string): Set<string> {
@@ -153,22 +178,32 @@ export function subtreeIdsOf(pages: readonly Page[], rootId: string): Set<string
 }
 
 /** Resolves a hover target into the expressible placement, validating the tree structure first. */
-export function resolveDropPlacement(pages: readonly Page[], dragPageId: string, target: DropTarget): DropResolution {
+export function resolveDropPlacement(
+  pages: readonly Page[],
+  dragPageId: string,
+  target: DropTarget,
+): DropResolution {
   const dragPage = pages.find((page) => page.id === dragPageId);
   const targetPage = pages.find((page) => page.id === target.pageId);
-  if (!dragPage || !targetPage || dragPage.deletedAt !== null || targetPage.deletedAt !== null) return { ok: false, reason: 'self' };
+  if (!dragPage || !targetPage || dragPage.deletedAt !== null || targetPage.deletedAt !== null)
+    return { ok: false, reason: 'self' };
   if (target.mode === 'inside') {
     if (target.pageId === dragPageId) return { ok: false, reason: 'self' };
-    if (dragPage.teamspaceId !== targetPage.teamspaceId) return { ok: false, reason: 'cross-teamspace' };
-    if (subtreeIdsOf(pages, dragPageId).has(target.pageId)) return { ok: false, reason: 'descendant' };
+    if (dragPage.teamspaceId !== targetPage.teamspaceId)
+      return { ok: false, reason: 'cross-teamspace' };
+    if (subtreeIdsOf(pages, dragPageId).has(target.pageId))
+      return { ok: false, reason: 'descendant' };
     return { ok: true, placement: { parentId: target.pageId, afterPageId: null } };
   }
   const parentId = targetPage.parentId;
-  if (targetPage.teamspaceId !== dragPage.teamspaceId) return { ok: false, reason: 'cross-teamspace' };
+  if (targetPage.teamspaceId !== dragPage.teamspaceId)
+    return { ok: false, reason: 'cross-teamspace' };
   if (parentId !== null) {
-    if (parentId === dragPageId || subtreeIdsOf(pages, dragPageId).has(parentId)) return { ok: false, reason: 'descendant' };
+    if (parentId === dragPageId || subtreeIdsOf(pages, dragPageId).has(parentId))
+      return { ok: false, reason: 'descendant' };
   }
-  if (target.mode === 'after') return { ok: true, placement: { parentId, afterPageId: target.pageId } };
+  if (target.mode === 'after')
+    return { ok: true, placement: { parentId, afterPageId: target.pageId } };
   // 'before' X: anchor on the sibling preceding X (the dragged page itself is
   // not a valid anchor, mirroring the backend's exclusion of the moving row);
   // a first child has no preceding sibling and `afterPageId: null` would mean
@@ -183,7 +218,8 @@ export function resolveDropPlacement(pages: readonly Page[], dragPageId: string,
 
 export type KeyboardMoveDirection = 'up' | 'down' | 'indent' | 'outdent';
 
-export type KeyboardMoveResolution = { ok: true; placement: PlacementRequest } | { ok: false; reason: 'no-op' | 'first-position' };
+export type KeyboardMoveResolution =
+  { ok: true; placement: PlacementRequest } | { ok: false; reason: 'no-op' | 'first-position' };
 
 /**
  * Expresses the four keyboard move intents as the same `{ parentId,
@@ -191,19 +227,30 @@ export type KeyboardMoveResolution = { ok: true; placement: PlacementRequest } |
  * the contract cannot express resolves to `no-op`/`first-position`, never to a
  * different position than the intent.
  */
-export function keyboardMovePlacement(pages: readonly Page[], pageId: string, direction: KeyboardMoveDirection): KeyboardMoveResolution {
+export function keyboardMovePlacement(
+  pages: readonly Page[],
+  pageId: string,
+  direction: KeyboardMoveDirection,
+): KeyboardMoveResolution {
   const page = pages.find((row) => row.id === pageId);
   if (!page || page.deletedAt !== null) return { ok: false, reason: 'no-op' };
   const siblings = liveSiblingsUnder(pages, page.teamspaceId, page.parentId, undefined);
   const index = siblings.findIndex((row) => row.id === pageId);
 
   if (direction === 'up') {
-    if (index <= 1) return index === 0 ? { ok: false, reason: 'no-op' } : { ok: false, reason: 'first-position' };
-    return { ok: true, placement: { parentId: page.parentId, afterPageId: siblings[index - 2]!.id } };
+    if (index <= 1)
+      return index === 0 ? { ok: false, reason: 'no-op' } : { ok: false, reason: 'first-position' };
+    return {
+      ok: true,
+      placement: { parentId: page.parentId, afterPageId: siblings[index - 2]!.id },
+    };
   }
   if (direction === 'down') {
     if (index === -1 || index >= siblings.length - 1) return { ok: false, reason: 'no-op' };
-    return { ok: true, placement: { parentId: page.parentId, afterPageId: siblings[index + 1]!.id } };
+    return {
+      ok: true,
+      placement: { parentId: page.parentId, afterPageId: siblings[index + 1]!.id },
+    };
   }
   if (direction === 'indent') {
     if (index <= 0) return { ok: false, reason: 'no-op' };

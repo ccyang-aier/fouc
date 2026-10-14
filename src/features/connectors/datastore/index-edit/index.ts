@@ -1,1 +1,1 @@
-export { IndexEditAction } from './action'
+export { IndexEditAction } from './action';

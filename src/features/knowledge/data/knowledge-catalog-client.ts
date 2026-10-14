@@ -1,3 +1,6 @@
+import { createTranslator } from '@/lib/i18n';
+import { knowledgeMessages } from './knowledge-catalog-client.messages';
+
 import { authenticatedFetch } from '@/lib/authenticated-fetch';
 import { getFoucApiOrigin } from '@/lib/fouc-api-endpoint';
 import type { KnowledgeBase, Teamspace } from '@fouc/shared/knowledge/contracts';
@@ -13,13 +16,22 @@ import {
 } from '@/features/knowledge/organization/client';
 import { OrganizationDataError } from '@/features/knowledge/organization/errors';
 
+const knowledgeT = createTranslator(knowledgeMessages);
+
 export type TeamspaceAccess = Teamspace['defaultAccess'];
 export type TeamspacePatch = { name?: string; defaultAccess?: TeamspaceAccess };
-export const teamspaceAccessValues: readonly NonNullable<TeamspaceAccess>[] = ['view', 'comment', 'edit', 'full'];
+export const teamspaceAccessValues: readonly NonNullable<TeamspaceAccess>[] = [
+  'view',
+  'comment',
+  'edit',
+  'full',
+];
 
 function requireAccess(value: TeamspaceAccess): TeamspaceAccess {
   if (value !== null && !teamspaceAccessValues.includes(value)) {
-    throw new OrganizationDataError('INVALID_INPUT', { message: '未知的默认权限级别' });
+    throw new OrganizationDataError('INVALID_INPUT', {
+      message: knowledgeT('unknownDefaultAccessLevel'),
+    });
   }
   return value;
 }
@@ -28,34 +40,66 @@ export function createKnowledgeCatalogClient(deps: OrganizationClientDeps) {
   const request = createOrganizationRequest(deps);
   return {
     listKnowledgeBases(options: OrganizationListOptions = {}) {
-      return request<OrganizationPage<KnowledgeBase>>({ method: 'GET', path: '/api/knowledge-bases', query: listQuery(options), signal: options.signal });
+      return request<OrganizationPage<KnowledgeBase>>({
+        method: 'GET',
+        path: '/api/knowledge-bases',
+        query: listQuery(options),
+        signal: options.signal,
+      });
     },
     createKnowledgeBase(input: { name: string }) {
-      return request<KnowledgeBase>({ method: 'POST', path: '/api/knowledge-bases', body: { name: requireName(input.name) } });
+      return request<KnowledgeBase>({
+        method: 'POST',
+        path: '/api/knowledge-bases',
+        body: { name: requireName(input.name) },
+      });
     },
     listTeamspaces(knowledgeBaseId: string, options: OrganizationListOptions = {}) {
       const scope = requireUuid(knowledgeBaseId, 'knowledgeBaseId');
-      return request<OrganizationPage<Teamspace>>({ method: 'GET', path: `/api/knowledge-bases/${scope}/teamspaces`, query: listQuery(options), signal: options.signal });
+      return request<OrganizationPage<Teamspace>>({
+        method: 'GET',
+        path: `/api/knowledge-bases/${scope}/teamspaces`,
+        query: listQuery(options),
+        signal: options.signal,
+      });
     },
-    createTeamspace(knowledgeBaseId: string, input: { name: string; defaultAccess: TeamspaceAccess }) {
+    createTeamspace(
+      knowledgeBaseId: string,
+      input: { name: string; defaultAccess: TeamspaceAccess },
+    ) {
       const scope = requireUuid(knowledgeBaseId, 'knowledgeBaseId');
-      return request<Teamspace>({ method: 'POST', path: `/api/knowledge-bases/${scope}/teamspaces`, body: { name: requireName(input.name), defaultAccess: requireAccess(input.defaultAccess) } });
+      return request<Teamspace>({
+        method: 'POST',
+        path: `/api/knowledge-bases/${scope}/teamspaces`,
+        body: { name: requireName(input.name), defaultAccess: requireAccess(input.defaultAccess) },
+      });
     },
     updateTeamspace(knowledgeBaseId: string, teamspaceId: string, patch: TeamspacePatch) {
       const scope = requireUuid(knowledgeBaseId, 'knowledgeBaseId');
       const target = requireUuid(teamspaceId, 'teamspaceId');
       if (patch.name === undefined && patch.defaultAccess === undefined) {
-        throw new OrganizationDataError('INVALID_INPUT', { message: '至少提供 name 或 defaultAccess 之一' });
+        throw new OrganizationDataError('INVALID_INPUT', {
+          message: knowledgeT('provideEitherNameOrDefaultaccess'),
+        });
       }
       const body: TeamspacePatch = {};
       if (patch.name !== undefined) body.name = requireName(patch.name);
-      if (patch.defaultAccess !== undefined) body.defaultAccess = requireAccess(patch.defaultAccess);
-      return request<Teamspace>({ method: 'PATCH', path: `/api/knowledge-bases/${scope}/teamspaces/${target}`, body });
+      if (patch.defaultAccess !== undefined)
+        body.defaultAccess = requireAccess(patch.defaultAccess);
+      return request<Teamspace>({
+        method: 'PATCH',
+        path: `/api/knowledge-bases/${scope}/teamspaces/${target}`,
+        body,
+      });
     },
     removeTeamspace(knowledgeBaseId: string, teamspaceId: string) {
       const scope = requireUuid(knowledgeBaseId, 'knowledgeBaseId');
       const target = requireUuid(teamspaceId, 'teamspaceId');
-      return request<RemovedResult>({ method: 'DELETE', path: `/api/knowledge-bases/${scope}/teamspaces/${target}`, body: {} });
+      return request<RemovedResult>({
+        method: 'DELETE',
+        path: `/api/knowledge-bases/${scope}/teamspaces/${target}`,
+        body: {},
+      });
     },
   };
 }

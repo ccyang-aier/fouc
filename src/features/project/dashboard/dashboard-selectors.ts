@@ -1,3 +1,5 @@
+import { getLocale, type Locale } from '@/lib/i18n';
+import { fixtureField } from '../i18n/display';
 import type {
   DashboardFavorite,
   DashboardMilestonePoint,
@@ -31,27 +33,30 @@ export function selectProjects(state: DashboardState): DashboardProjectSummary[]
   });
 }
 
-export function selectFavorites(state: DashboardState): DashboardFavorite[] {
+export function selectFavorites(
+  state: DashboardState,
+  locale: Locale = getLocale(),
+): DashboardFavorite[] {
   return [
     ...state.projects
       .filter((project) => project.starred)
       .map((project) => ({
         id: `project:${project.id}`,
-        label: project.favoriteLabel,
+        label: fixtureField(project, 'favoriteLabel', locale),
         target: { kind: 'project', id: project.id } as const,
       })),
     ...state.tasks
       .filter((task) => task.starred)
       .map((task) => ({
         id: `task:${task.id}`,
-        label: task.title,
+        label: fixtureField(task, 'title', locale),
         target: { kind: 'task', id: task.id } as const,
       })),
     ...state.documents
       .filter((document) => document.starred)
       .map((document) => ({
         id: `document:${document.id}`,
-        label: document.title,
+        label: fixtureField(document, 'title', locale),
         target: { kind: 'document', id: document.id } as const,
       })),
   ];

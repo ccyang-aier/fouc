@@ -1,5 +1,8 @@
 'use client';
 
+import { createTranslator } from '@/lib/i18n';
+import { knowledgeMessages } from './assets-api.messages';
+
 /**
  * 资产上传的客户端 API 面(U08 · 设计 §8.1 第 2/5 步)。
  *
@@ -14,12 +17,26 @@
  * 类型安全来自契约,而非对线路的信任。
  */
 
-import { assetConfirmResultSchema, assetDownloadResultSchema, uploadIntentSchema } from '@fouc/shared/knowledge/contracts';
-import type { AssetConfirmResult, AssetDownloadResult, AssetUploadPrepareResult } from '@fouc/shared/knowledge/contracts';
+import {
+  assetConfirmResultSchema,
+  assetDownloadResultSchema,
+  uploadIntentSchema,
+} from '@fouc/shared/knowledge/contracts';
+import type {
+  AssetConfirmResult,
+  AssetDownloadResult,
+  AssetUploadPrepareResult,
+} from '@fouc/shared/knowledge/contracts';
 import { assetUploadPrepareResultSchema } from '@fouc/shared/knowledge/contracts';
 import { getFoucApiOrigin } from '@/lib/fouc-api-endpoint';
 import { KnowledgeDataError, normalizeKnowledgeError } from '../data/errors';
-import { createKnowledgeUntypedClientCache, type KnowledgeFetch, type KnowledgeUntypedTrpcClient } from '../data/trpc-client';
+import {
+  createKnowledgeUntypedClientCache,
+  type KnowledgeFetch,
+  type KnowledgeUntypedTrpcClient,
+} from '../data/trpc-client';
+
+const knowledgeT = createTranslator(knowledgeMessages);
 
 /** 客户端单文件的申报意图:`uploadIntentSchema` 去掉 knowledgeBaseId(随调用携带)。 */
 export interface AssetIntentInput {
@@ -31,30 +48,57 @@ export interface AssetIntentInput {
 
 export type KnowledgeAssetsApi = {
   /** `asset.prepare`:同知识库同哈希 → `{action:'reuse'}`(秒传),否则预签名 PUT。 */
-  prepareUpload(knowledgeBaseId: string, intent: AssetIntentInput, signal?: AbortSignal): Promise<AssetUploadPrepareResult>;
+  prepareUpload(
+    knowledgeBaseId: string,
+    intent: AssetIntentInput,
+    signal?: AbortSignal,
+  ): Promise<AssetUploadPrepareResult>;
   /** `asset.confirm`:服务端按实际存储对象复验哈希/大小/类型后落库并出 asset.created。 */
-  confirmUpload(knowledgeBaseId: string, intent: AssetIntentInput, signal?: AbortSignal): Promise<AssetConfirmResult>;
-  download(knowledgeBaseId: string, hash: string, signal?: AbortSignal): Promise<AssetDownloadResult>;
+  confirmUpload(
+    knowledgeBaseId: string,
+    intent: AssetIntentInput,
+    signal?: AbortSignal,
+  ): Promise<AssetConfirmResult>;
+  download(
+    knowledgeBaseId: string,
+    hash: string,
+    signal?: AbortSignal,
+  ): Promise<AssetDownloadResult>;
 };
 
 function assertIntent(intent: AssetIntentInput, procedure: string): void {
   if (!uploadIntentSchema.omit({ knowledgeBaseId: true }).safeParse(intent).success) {
-    throw new KnowledgeDataError('INVALID_REQUEST', { message: `${procedure} 的输入不符合资产上传契约。` });
+    throw new KnowledgeDataError('INVALID_REQUEST', {
+      message: knowledgeT('invalidAssetUploadInputForValue', { v0: procedure }),
+    });
   }
 }
 
 /** 响应被共享契约拒绝即视为服务不可用,绝不把未验证的数据当结果。 */
-function parsePayload<T>(schema: { safeParse(payload: unknown): { success: true; data: T } | { success: false } }, payload: unknown, procedure: string): T {
+function parsePayload<T>(
+  schema: { safeParse(payload: unknown): { success: true; data: T } | { success: false } },
+  payload: unknown,
+  procedure: string,
+): T {
   const parsed = schema.safeParse(payload);
   if (!parsed.success) {
-    throw new KnowledgeDataError('UNAVAILABLE', { message: `资产服务 ${procedure} 返回的数据不符合契约。` });
+    throw new KnowledgeDataError('UNAVAILABLE', {
+      message: knowledgeT('invalidResponseFromAssetServiceValue', { v0: procedure }),
+    });
   }
   return parsed.data;
 }
 
-export function createKnowledgeAssetsApi(deps: { resolveOrigin: () => Promise<string> | string; fetchImpl?: KnowledgeFetch }): KnowledgeAssetsApi {
+export function createKnowledgeAssetsApi(deps: {
+  resolveOrigin: () => Promise<string> | string;
+  fetchImpl?: KnowledgeFetch;
+}): KnowledgeAssetsApi {
   const cache = createKnowledgeUntypedClientCache(deps.fetchImpl);
-  const run = async <T,>(knowledgeBaseId: string, signal: AbortSignal | undefined, invoke: (client: KnowledgeUntypedTrpcClient) => Promise<T>): Promise<T> => {
+  const run = async <T>(
+    knowledgeBaseId: string,
+    signal: AbortSignal | undefined,
+    invoke: (client: KnowledgeUntypedTrpcClient) => Promise<T>,
+  ): Promise<T> => {
     try {
       return await invoke(cache.get(await deps.resolveOrigin(), knowledgeBaseId));
     } catch (cause) {
@@ -65,16 +109,22 @@ export function createKnowledgeAssetsApi(deps: { resolveOrigin: () => Promise<st
   return {
     async prepareUpload(knowledgeBaseId, intent, signal) {
       assertIntent(intent, 'asset.prepare');
-      const payload = await run(knowledgeBaseId, signal, (client) => client.mutation('asset.prepare', { knowledgeBaseId, ...intent }, { signal }));
+      const payload = await run(knowledgeBaseId, signal, (client) =>
+        client.mutation('asset.prepare', { knowledgeBaseId, ...intent }, { signal }),
+      );
       return parsePayload(assetUploadPrepareResultSchema, payload, 'asset.prepare');
     },
     async confirmUpload(knowledgeBaseId, intent, signal) {
       assertIntent(intent, 'asset.confirm');
-      const payload = await run(knowledgeBaseId, signal, (client) => client.mutation('asset.confirm', { knowledgeBaseId, ...intent }, { signal }));
+      const payload = await run(knowledgeBaseId, signal, (client) =>
+        client.mutation('asset.confirm', { knowledgeBaseId, ...intent }, { signal }),
+      );
       return parsePayload(assetConfirmResultSchema, payload, 'asset.confirm');
     },
     async download(knowledgeBaseId, hash, signal) {
-      const payload = await run(knowledgeBaseId, signal, (client) => client.query('asset.download', { knowledgeBaseId, hash }, { signal }));
+      const payload = await run(knowledgeBaseId, signal, (client) =>
+        client.query('asset.download', { knowledgeBaseId, hash }, { signal }),
+      );
       return parsePayload(assetDownloadResultSchema, payload, 'asset.download');
     },
   };

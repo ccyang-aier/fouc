@@ -1,25 +1,219 @@
-import { useState } from 'react'
-import { ArrowSquareOut, FileText, FlowArrow, ShareNetwork, SidebarSimple, SpinnerGap } from '@phosphor-icons/react'
-import type { DtsSeverity, DtsTicketDetail, DtsTicketSummary } from '@fouc/shared'
-import { cn } from '@/lib/utils'
-import { DtsRelationshipGraph } from './dts-relationship-graph'
-import { DtsTicketDetailView } from './dts-ticket-detail-view'
+'use client';
+import { useTranslation } from '@/lib/i18n';
+import { cn } from '@/lib/utils';
+import type { DtsSeverity, DtsTicketDetail, DtsTicketSummary } from '@fouc/shared';
+import {
+  ArrowSquareOut,
+  FileText,
+  FlowArrow,
+  ShareNetwork,
+  SidebarSimple,
+  SpinnerGap,
+} from '@phosphor-icons/react';
+import { useState } from 'react';
+import { DtsRelationshipGraph } from './dts-relationship-graph';
+import { DtsTicketDetailView } from './dts-ticket-detail-view';
+import { messages as unitMessages } from './dts/i18n/dts-ticket-overview';
+import { dtsStatusLabel } from './dts/i18n/ticket-labels';
 
-type Props = { detail: DtsTicketDetail | null; summary: DtsTicketSummary | null; loading: boolean; onOpenList?: () => void; onOpenInspector?: () => void }
+type Props = {
+  detail: DtsTicketDetail | null;
+  summary: DtsTicketSummary | null;
+  loading: boolean;
+  onOpenList?: () => void;
+  onOpenInspector?: () => void;
+};
 
-export function DtsTicketOverview({ detail, summary, loading, onOpenList, onOpenInspector }: Props) {
-  const [view, setView] = useState<'graph' | 'detail'>('graph')
-  const ticket = detail ?? summary
-  if (!ticket) return <EmptyOverview />
-  return <main aria-label="工单工作区" className="flex min-h-0 min-w-[410px] flex-1 flex-col overflow-hidden bg-[var(--surface-subtle)]/35"><TicketHeader ticket={ticket} view={view} onViewChange={setView} onOpenList={onOpenList} onOpenInspector={onOpenInspector} />{loading ? <div className="flex min-h-0 flex-1 items-center justify-center gap-2 text-[10px] text-[var(--muted)]"><SpinnerGap className="size-4 animate-spin" />正在读取问题单…</div> : view === 'graph' ? <DtsRelationshipGraph ticket={ticket} detail={detail} /> : <DtsTicketDetailView ticket={ticket} detail={detail} />}</main>
+export function DtsTicketOverview({
+  detail,
+  summary,
+  loading,
+  onOpenList,
+  onOpenInspector,
+}: Props) {
+  const { t: tu } = useTranslation(unitMessages);
+
+  const [view, setView] = useState<'graph' | 'detail'>('graph');
+  const ticket = detail ?? summary;
+  if (!ticket) return <EmptyOverview />;
+  return (
+    <main
+      aria-label={tu('工单工作区')}
+      className="flex min-h-0 min-w-[410px] flex-1 flex-col overflow-hidden bg-[var(--surface-subtle)]/35"
+    >
+      <TicketHeader
+        ticket={ticket}
+        view={view}
+        onViewChange={setView}
+        onOpenList={onOpenList}
+        onOpenInspector={onOpenInspector}
+      />
+      {loading ? (
+        <div className="flex min-h-0 flex-1 items-center justify-center gap-2 text-[10px] text-[var(--muted)]">
+          <SpinnerGap className="size-4 animate-spin" />
+          {tu('正在读取问题单…')}
+        </div>
+      ) : view === 'graph' ? (
+        <DtsRelationshipGraph ticket={ticket} detail={detail} />
+      ) : (
+        <DtsTicketDetailView ticket={ticket} detail={detail} />
+      )}
+    </main>
+  );
 }
 
-function TicketHeader({ ticket, view, onViewChange, onOpenList, onOpenInspector }: { ticket: DtsTicketSummary; view: 'graph' | 'detail'; onViewChange: (view: 'graph' | 'detail') => void; onOpenList?: () => void; onOpenInspector?: () => void }) {
-  return <header className="flex h-[48px] shrink-0 items-center gap-2.5 border-b border-[var(--line)] bg-panel px-4">{onOpenList ? <button type="button" aria-label="展开工单侧栏" aria-expanded="false" onClick={onOpenList} className="flex size-8 shrink-0 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><SidebarSimple className="size-4" weight="regular" /></button> : null}<span className={cn('size-2 shrink-0 rounded-full', severityTone(ticket.severity))} /><div className="min-w-0 flex-1"><div className="flex items-center gap-1.5"><span className="shrink-0 text-[8.5px] font-medium text-[var(--muted-strong)]">{ticket.id}</span><SeverityBadge value={ticket.severity} /><span className="rounded-[5px] bg-[var(--accent-soft)] px-1.5 py-px text-[8px] text-[var(--accent-ink)]">{ticket.status}</span></div><h1 className="mt-0.5 truncate text-[11.5px] font-medium tracking-[-0.01em] text-[var(--ink)]">{ticket.title}</h1></div><div role="tablist" aria-label="问题单视图" className="flex h-8 shrink-0 items-center rounded-[8px] bg-[var(--surface-subtle)] p-0.5 ring-1 ring-inset ring-[var(--line)]"><ViewButton active={view === 'graph'} label="关系图" icon={ShareNetwork} onClick={() => onViewChange('graph')} /><ViewButton active={view === 'detail'} label="问题单详情" icon={FileText} onClick={() => onViewChange('detail')} /></div>{onOpenInspector ? <button type="button" aria-label="打开 AI 侧栏" onClick={onOpenInspector} className="flex h-8 shrink-0 items-center gap-1.5 rounded-[7px] border border-[var(--line)] bg-panel px-2.5 text-[9.5px] font-medium text-[var(--ink-soft)] outline-none transition-colors hover:border-[var(--accent-soft-line)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent-ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><SidebarSimple className="size-3.5" />AI</button> : null}{ticket.source.url ? <a href={ticket.source.url} target="_blank" rel="noreferrer" className="flex h-8 shrink-0 items-center gap-1.5 rounded-[7px] border border-[var(--line)] bg-panel px-3 text-[9.5px] font-medium text-[var(--ink-soft)] outline-none transition-colors hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]">在 DTS 中打开<ArrowSquareOut className="size-3.5" /></a> : null}</header>
+function TicketHeader({
+  ticket,
+  view,
+  onViewChange,
+  onOpenList,
+  onOpenInspector,
+}: {
+  ticket: DtsTicketSummary;
+  view: 'graph' | 'detail';
+  onViewChange: (view: 'graph' | 'detail') => void;
+  onOpenList?: () => void;
+  onOpenInspector?: () => void;
+}) {
+  const { t: tu, locale } = useTranslation(unitMessages);
+
+  return (
+    <header className="flex h-[48px] shrink-0 items-center gap-2.5 border-b border-[var(--line)] bg-panel px-4">
+      {onOpenList ? (
+        <button
+          type="button"
+          aria-label={tu('展开工单侧栏')}
+          aria-expanded="false"
+          onClick={onOpenList}
+          className="flex size-8 shrink-0 items-center justify-center rounded-[7px] text-[var(--muted-strong)] outline-none transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+        >
+          <SidebarSimple className="size-4" weight="regular" />
+        </button>
+      ) : null}
+      <span className={cn('size-2 shrink-0 rounded-full', severityTone(ticket.severity))} />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          <span className="shrink-0 text-[8.5px] font-medium text-[var(--muted-strong)]">
+            {ticket.id}
+          </span>
+          <SeverityBadge value={ticket.severity} />
+          <span className="rounded-[5px] bg-[var(--accent-soft)] px-1.5 py-px text-[8px] text-[var(--accent-ink)]">
+            {dtsStatusLabel(ticket.status, locale)}
+          </span>
+        </div>
+        <h1 className="mt-0.5 truncate text-[11.5px] font-medium tracking-[-0.01em] text-[var(--ink)]">
+          {ticket.title}
+        </h1>
+      </div>
+      <div
+        role="tablist"
+        aria-label={tu('问题单视图')}
+        className="flex h-8 shrink-0 items-center rounded-[8px] bg-[var(--surface-subtle)] p-0.5 ring-1 ring-inset ring-[var(--line)]"
+      >
+        <ViewButton
+          active={view === 'graph'}
+          label={tu('关系图')}
+          icon={ShareNetwork}
+          onClick={() => onViewChange('graph')}
+        />
+        <ViewButton
+          active={view === 'detail'}
+          label={tu('问题单详情')}
+          icon={FileText}
+          onClick={() => onViewChange('detail')}
+        />
+      </div>
+      {onOpenInspector ? (
+        <button
+          type="button"
+          aria-label={tu('打开 AI 侧栏')}
+          onClick={onOpenInspector}
+          className="flex h-8 shrink-0 items-center gap-1.5 rounded-[7px] border border-[var(--line)] bg-panel px-2.5 text-[9.5px] font-medium text-[var(--ink-soft)] outline-none transition-colors hover:border-[var(--accent-soft-line)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent-ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+        >
+          <SidebarSimple className="size-3.5" />
+          AI
+        </button>
+      ) : null}
+      {ticket.source.url ? (
+        <a
+          href={ticket.source.url}
+          target="_blank"
+          rel="noreferrer"
+          className="flex h-8 shrink-0 items-center gap-1.5 rounded-[7px] border border-[var(--line)] bg-panel px-3 text-[9.5px] font-medium text-[var(--ink-soft)] outline-none transition-colors hover:bg-[var(--surface-hover)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+        >
+          {tu('在 DTS 中打开')}
+          <ArrowSquareOut className="size-3.5" />
+        </a>
+      ) : null}
+    </header>
+  );
 }
 
-function ViewButton({ active, label, icon: Icon, onClick }: { active: boolean; label: string; icon: typeof FileText; onClick: () => void }) { return <button type="button" role="tab" aria-selected={active} onClick={onClick} className={cn('flex h-7 items-center gap-1.5 rounded-[6px] px-2.5 text-[8.5px] text-[var(--muted-strong)] outline-none transition-[background-color,color,box-shadow] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]', active && 'bg-panel text-[var(--ink)] shadow-[0_1px_4px_rgba(24,38,66,0.12)]')}><Icon className="size-3.5" />{label}</button> }
-function EmptyOverview() { return <main className="flex min-h-0 min-w-[410px] flex-1 items-center justify-center bg-[var(--surface-subtle)]/35"><div className="text-center"><FlowArrow className="mx-auto size-8 text-[var(--line-strong)]" /><p className="mt-3 text-[11px] font-medium text-[var(--ink-soft)]">选择一条工单查看关系图</p></div></main> }
-function SeverityBadge({ value }: { value: DtsSeverity | null }) { return <span className={cn('rounded-[5px] px-2 py-0.5 text-[8.5px] font-medium', severityBadgeTone(value))}>{value ?? '一般'}</span> }
-function severityTone(value: DtsSeverity | null): string { return value === '致命' ? 'bg-[#d92d20]' : value === '严重' ? 'bg-[#ef4565]' : value === '一般' ? 'bg-[#e6982d]' : 'bg-[#6681f5]' }
-function severityBadgeTone(value: DtsSeverity | null): string { return value === '致命' ? 'bg-[color-mix(in_srgb,var(--err-ink)_16%,transparent)] text-[var(--err-ink)]' : value === '严重' ? 'bg-[color-mix(in_srgb,var(--err-ink)_10%,transparent)] text-[var(--err-ink)]' : value === '一般' ? 'bg-[var(--warn-soft)] text-[var(--warn-ink)]' : 'bg-[var(--accent-soft)] text-[var(--accent-ink)]' }
+function ViewButton({
+  active,
+  label,
+  icon: Icon,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  icon: typeof FileText;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      className={cn(
+        'flex h-7 items-center gap-1.5 rounded-[6px] px-2.5 text-[8.5px] text-[var(--muted-strong)] outline-none transition-[background-color,color,box-shadow] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]',
+        active && 'bg-panel text-[var(--ink)] shadow-[0_1px_4px_rgba(24,38,66,0.12)]',
+      )}
+    >
+      <Icon className="size-3.5" />
+      {label}
+    </button>
+  );
+}
+function EmptyOverview() {
+  const { t: tu } = useTranslation(unitMessages);
+  return (
+    <main className="flex min-h-0 min-w-[410px] flex-1 items-center justify-center bg-[var(--surface-subtle)]/35">
+      <div className="text-center">
+        <FlowArrow className="mx-auto size-8 text-[var(--line-strong)]" />
+        <p className="mt-3 text-[11px] font-medium text-[var(--ink-soft)]">
+          {tu('选择一条工单查看关系图')}
+        </p>
+      </div>
+    </main>
+  );
+}
+function SeverityBadge({ value }: { value: DtsSeverity | null }) {
+  const { t: tu } = useTranslation(unitMessages);
+  return (
+    <span
+      className={cn('rounded-[5px] px-2 py-0.5 text-[8.5px] font-medium', severityBadgeTone(value))}
+    >
+      {value ?? tu('一般')}
+    </span>
+  );
+}
+function severityTone(value: DtsSeverity | null): string {
+  return value === '致命'
+    ? 'bg-[#d92d20]'
+    : value === '严重'
+      ? 'bg-[#ef4565]'
+      : value === '一般'
+        ? 'bg-[#e6982d]'
+        : 'bg-[#6681f5]';
+}
+function severityBadgeTone(value: DtsSeverity | null): string {
+  return value === '致命'
+    ? 'bg-[color-mix(in_srgb,var(--err-ink)_16%,transparent)] text-[var(--err-ink)]'
+    : value === '严重'
+      ? 'bg-[color-mix(in_srgb,var(--err-ink)_10%,transparent)] text-[var(--err-ink)]'
+      : value === '一般'
+        ? 'bg-[var(--warn-soft)] text-[var(--warn-ink)]'
+        : 'bg-[var(--accent-soft)] text-[var(--accent-ink)]';
+}

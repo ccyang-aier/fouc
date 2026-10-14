@@ -1,12 +1,16 @@
 'use client';
 
-import { DotsThree } from '@phosphor-icons/react';
+import { useTranslation } from '@/lib/i18n';
+import { fixtureField, registerProjectFixtures, translateFixed } from '../i18n/display';
+import { messages } from './i18n/dashboard-overview';
+
 import { DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DotsThree } from '@phosphor-icons/react';
 import { DashboardMenu, DashboardMenuContent } from './dashboard-menu';
-import { ReferenceIcon } from './dashboard-ui';
-import { selectStats } from './dashboard-selectors';
 import type { DashboardDocumentKind, DashboardState } from './dashboard-model';
+import { selectStats } from './dashboard-selectors';
 import type { DashboardSection } from './dashboard-sidebar';
+import { ReferenceIcon } from './dashboard-ui';
 import styles from './dashboard.module.css';
 
 const shortcuts: { label: string; kind: DashboardDocumentKind }[] = [
@@ -25,26 +29,34 @@ export function DashboardOverview({
   onCreateDocument: (kind: DashboardDocumentKind) => void;
   onViewStat: (section: DashboardSection, status?: 'On Progress' | 'Completed') => void;
 }) {
+  const { t, locale } = useTranslation(messages);
+  const uiLabel = (value: string) => translateFixed(value, locale);
+
   const totals = selectStats(state);
   const stats = [
     {
-      label: 'Total Projects',
+      label: uiLabel('Total Projects'),
       value: totals.projects,
-      detail: 'Active Projects',
+      detail: uiLabel('Active Projects'),
       section: 'Portfolio',
     },
-    { label: 'Total Task', value: totals.tasks, detail: 'Tasks Created', section: 'My Task' },
     {
-      label: 'In Progress',
+      label: uiLabel('Total Task'),
+      value: totals.tasks,
+      detail: uiLabel('Tasks Created'),
+      section: 'My Task',
+    },
+    {
+      label: uiLabel('In Progress'),
       value: totals.inProgress,
-      detail: 'Task',
+      detail: uiLabel('Task'),
       section: 'My Task',
       status: 'On Progress',
     },
     {
-      label: 'Completed',
+      label: uiLabel('Completed'),
       value: totals.completed,
-      detail: 'Task',
+      detail: uiLabel('Task'),
       section: 'My Task',
       status: 'Completed',
     },
@@ -63,7 +75,7 @@ export function DashboardOverview({
             <span>
               <ReferenceIcon name={kind} size={40} />
             </span>
-            <strong>{label}</strong>
+            <strong>{uiLabel(label)}</strong>
           </button>
         ))}
       </div>
@@ -71,13 +83,13 @@ export function DashboardOverview({
         {stats.map((stat) => (
           <article className={styles.statCard} key={stat.label}>
             <div>
-              <span>{stat.label}</span>
+              <span>{fixtureField(stat, 'label', locale)}</span>
               <DashboardMenu>
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
                     className={`fouc-action ${styles.flatIcon}`}
-                    aria-label={`${stat.label} options`}
+                    aria-label={t('{v0} options', { v0: fixtureField(stat, 'label', locale) })}
                   >
                     <DotsThree size={17} weight="bold" />
                   </button>
@@ -88,14 +100,15 @@ export function DashboardOverview({
                       onViewStat(stat.section, 'status' in stat ? stat.status : undefined)
                     }
                   >
-                    View {stat.label.toLowerCase()}
+                    {t('View')}
+                    {fixtureField(stat, 'label', locale).toLowerCase()}
                   </DropdownMenuItem>
                 </DashboardMenuContent>
               </DashboardMenu>
             </div>
             <p>
-              <strong>{stat.value}</strong>
-              <small>{stat.detail}</small>
+              <strong>{fixtureField(stat, 'value', locale)}</strong>
+              <small>{uiLabel(stat.detail)}</small>
             </p>
           </article>
         ))}
@@ -103,3 +116,5 @@ export function DashboardOverview({
     </>
   );
 }
+
+registerProjectFixtures([shortcuts]);

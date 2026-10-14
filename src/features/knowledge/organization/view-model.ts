@@ -1,3 +1,5 @@
+import { createTranslator, type Locale } from '@/lib/i18n';
+import { knowledgeMessages } from './view-model.messages';
 /**
  * Pure presentation logic of the organization UI (O02): list state machine,
  * role-authority rendering rules and the root default-access presentation with
@@ -8,7 +10,8 @@ import type { MemberRole } from '@/features/knowledge/organization/client';
 import type { TeamspaceAccess } from '../data/knowledge-catalog-client';
 
 /** The four observable list states plus the ready state they lead to. */
-export type OrganizationListState = 'loading' | 'unauthenticated' | 'forbidden' | 'error' | 'empty' | 'ready';
+export type OrganizationListState =
+  'loading' | 'unauthenticated' | 'forbidden' | 'error' | 'empty' | 'ready';
 
 export type ListStateInput = {
   /** TanStack Query status: 'pending' while loading, 'error' on failure. */
@@ -29,12 +32,15 @@ export function deriveListState(input: ListStateInput): OrganizationListState {
   return (input.itemCount ?? 0) === 0 ? 'empty' : 'ready';
 }
 
-export const memberRoleLabels: Record<MemberRole, string> = {
-  owner: '所有者',
-  admin: '管理员',
-  member: '成员',
-  guest: '访客',
-};
+export function memberRoleLabels(locale?: Locale): Record<MemberRole, string> {
+  const knowledgeT = createTranslator(knowledgeMessages, locale);
+  return {
+    owner: knowledgeT('owner'),
+    admin: knowledgeT('administrator'),
+    member: knowledgeT('members'),
+    guest: knowledgeT('guest'),
+  };
+}
 
 /** Directory (members, groups, teamspaces) is closed to guests. */
 export function canBrowseDirectory(role: MemberRole): boolean {
@@ -66,20 +72,45 @@ export type DefaultAccessOption = {
   description: string;
 };
 
-export const defaultAccessOptions: readonly DefaultAccessOption[] = [
-  { value: null, label: '仅显式授权', description: '根页面不设默认权限，只有被单独授权的成员与群组可访问' },
-  { value: 'view', label: '可查看', description: '知识库成员默认可以查看该团队空间内的页面' },
-  { value: 'comment', label: '可评论', description: '知识库成员默认可以查看并评论页面' },
-  { value: 'edit', label: '可编辑', description: '知识库成员默认可以编辑页面内容' },
-  { value: 'full', label: '完全控制', description: '知识库成员默认可以编辑、移动与共享页面' },
-];
-
-export function defaultAccessLabel(value: TeamspaceAccess): string {
-  return defaultAccessOptions.find((option) => option.value === value)?.label ?? '仅显式授权';
+export function defaultAccessOptions(locale?: Locale): readonly DefaultAccessOption[] {
+  const knowledgeT = createTranslator(knowledgeMessages, locale);
+  return [
+    {
+      value: null,
+      label: knowledgeT('explicitGrantsOnly'),
+      description: knowledgeT('rootPagesHaveNoDefaultAccessOnlyExplicitly'),
+    },
+    {
+      value: 'view',
+      label: knowledgeT('canView'),
+      description: knowledgeT('knowledgeBaseMembersCanViewPagesInThis'),
+    },
+    {
+      value: 'comment',
+      label: knowledgeT('canComment'),
+      description: knowledgeT('knowledgeBaseMembersCanViewAndCommentOn'),
+    },
+    {
+      value: 'edit',
+      label: knowledgeT('canEdit'),
+      description: knowledgeT('knowledgeBaseMembersCanEditPageContentBy'),
+    },
+    {
+      value: 'full',
+      label: knowledgeT('fullControl'),
+      description: knowledgeT('knowledgeBaseMembersCanEditMoveAndShare'),
+    },
+  ];
 }
 
-export function defaultAccessDescription(value: TeamspaceAccess): string {
-  return defaultAccessOptions.find((option) => option.value === value)?.description ?? '';
+export function defaultAccessLabel(value: TeamspaceAccess, locale?: Locale): string {
+  const options = defaultAccessOptions(locale);
+  return (options.find((option) => option.value === value) ?? options[0]).label;
+}
+
+export function defaultAccessDescription(value: TeamspaceAccess, locale?: Locale): string {
+  const options = defaultAccessOptions(locale);
+  return (options.find((option) => option.value === value) ?? options[0]).description;
 }
 
 /**
@@ -87,10 +118,15 @@ export function defaultAccessDescription(value: TeamspaceAccess): string {
  * teamspace in the same transaction — existing grants stop working immediately
  * and an asynchronous rebuild restores access under the new default.
  */
-export const defaultAccessRebuildNotice =
-  '修改根默认权限后，该团队空间内所有页面的现有授权会立即失效，系统将按新的默认权限重新计算；重算完成前，依赖旧授权的访问会暂时中断。';
+export function defaultAccessRebuildNotice(locale?: Locale) {
+  const knowledgeT = createTranslator(knowledgeMessages, locale);
+  return knowledgeT('changingDefaultAccessImmediatelyInvalidatesExistingPermissionsFor');
+}
 
 /** Only an actual default change on an existing teamspace needs the rebuild confirmation. */
-export function needsAccessRebuildConfirmation(current: TeamspaceAccess, next: TeamspaceAccess): boolean {
+export function needsAccessRebuildConfirmation(
+  current: TeamspaceAccess,
+  next: TeamspaceAccess,
+): boolean {
   return current !== next;
 }

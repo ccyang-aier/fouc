@@ -1,19 +1,21 @@
 'use client';
+import { translateFixed } from '../i18n/display';
 
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { fixtureField } from '../i18n/display';
+
+import { useTranslation } from '@/lib/i18n';
+import { messages } from './i18n/project-dashboard';
+
 import { useAppAlert } from '@/components/app-alert-provider';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { DashboardDeleteDialog } from './dashboard-actions';
-import { DashboardSidebar, type DashboardSection } from './dashboard-sidebar';
-import { DashboardToolbar, type DashboardSearchResult } from './dashboard-toolbar';
 import {
   DashboardContent,
   type DashboardContentActions,
   type DashboardPortfolioTab,
 } from './dashboard-content';
 import { DashboardDialogs, type DashboardDialog } from './dashboard-dialogs';
-import { selectFavorites } from './dashboard-selectors';
-import { downloadFile, csvCell } from './dashboard-download';
-import { useDashboard } from './use-dashboard';
+import { csvCell, downloadFile } from './dashboard-download';
 import { dashboardLink, readDashboardLink } from './dashboard-links';
 import type {
   DashboardActivity,
@@ -22,7 +24,11 @@ import type {
   DashboardStatus,
   DashboardTarget,
 } from './dashboard-model';
+import { selectFavorites } from './dashboard-selectors';
+import { DashboardSidebar, type DashboardSection } from './dashboard-sidebar';
+import { DashboardToolbar, type DashboardSearchResult } from './dashboard-toolbar';
 import styles from './dashboard.module.css';
+import { useDashboard } from './use-dashboard';
 
 function subscribeCompactNavigation(listener: () => void) {
   const query = window.matchMedia('(max-width: 1060px)');
@@ -39,8 +45,6 @@ interface ProjectDashboardProps {
 }
 interface Deletion {
   target: DashboardTarget;
-  title: string;
-  description: string;
 }
 
 export function ProjectDashboard({
@@ -49,6 +53,8 @@ export function ProjectDashboard({
   source,
   onBack,
 }: ProjectDashboardProps) {
+  const { t, locale } = useTranslation(messages);
+
   const scopeKey = `${source}:${projectId}`;
   const store = useDashboard(scopeKey);
   const { state, storageError } = store;
@@ -69,7 +75,7 @@ export function ProjectDashboard({
   const scrollArea = useRef<HTMLDivElement>(null);
   const restoredLink = useRef(false);
   const unreadCount = state.activities.filter((activity) => !activity.read).length;
-  const favorites = selectFavorites(state);
+  const favorites = selectFavorites(state, locale);
 
   function changeSection(next: DashboardSection, nextStatus?: DashboardStatus) {
     setSection(next);
@@ -93,23 +99,23 @@ export function ProjectDashboard({
     switch (target.kind) {
       case 'project':
         if (state.projects.some((item) => item.id === target.id)) openProject(target.id);
-        else notify('warning', 'This project is no longer available');
+        else notify('warning', t('This project is no longer available'));
         break;
       case 'task':
         if (state.tasks.some((item) => item.id === target.id))
           setDialog({ kind: 'task', id: target.id });
-        else notify('warning', 'This task is no longer available');
+        else notify('warning', t('This task is no longer available'));
         break;
       case 'document': {
         const document = state.documents.find((item) => item.id === target.id);
         if (document) setDialog({ kind: 'document', id: document.id, documentKind: document.kind });
-        else notify('warning', 'This document is no longer available');
+        else notify('warning', t('This document is no longer available'));
         break;
       }
       case 'meeting':
         if (state.meetings.some((item) => item.id === target.id))
           setDialog({ kind: 'meeting', id: target.id });
-        else notify('warning', 'This meeting is no longer available');
+        else notify('warning', t('This meeting is no longer available'));
         break;
     }
   }
@@ -119,7 +125,7 @@ export function ProjectDashboard({
     restoredLink.current = true;
     const { wrongProject, target } = readDashboardLink(window.location.href, scopeKey);
     if (wrongProject) {
-      notify('warning', 'Open the Fouc project this link belongs to.');
+      notify('warning', t('Open the Fouc project this link belongs to.'));
       return;
     }
     if (!target) return;
@@ -135,9 +141,10 @@ export function ProjectDashboard({
     if (target.kind === 'project' && state.projects.some((item) => item.id === target.id))
       next = { kind: 'project', id: target.id };
     if (next) queueMicrotask(() => setDialog(next));
-    else notify('warning', 'This item is no longer available in this dashboard');
+    else notify('warning', t('This item is no longer available in this dashboard'));
   }, [
     store.hydrated,
+    t,
     scopeKey,
     state.tasks,
     state.documents,
@@ -163,24 +170,36 @@ export function ProjectDashboard({
   async function copyLink() {
     try {
       await navigator.clipboard.writeText(dashboardLink(window.location.href, scopeKey));
-      notify('success', 'Dashboard link copied');
+      notify('success', t('Dashboard link copied'));
     } catch {
-      notify('error', 'Could not copy the link');
+      notify('error', t('Could not copy the link'));
     }
   }
 
   function exportActivity() {
     const rows = state.activities.map((item) =>
-      [item.actor, item.text, item.subject, item.time, item.read ? 'Read' : 'Unread']
+      [
+        fixtureField(item, 'actor', locale),
+        fixtureField(item, 'text', locale),
+        fixtureField(item, 'subject', locale),
+        fixtureField(item, 'time', locale),
+        translateFixed(item.read ? 'Read' : 'Unread', locale),
+      ]
         .map(csvCell)
         .join(','),
     );
     downloadFile(
       'project-activity.csv',
-      ['Actor,Action,Subject,Time,Status', ...rows].join('\r\n'),
+      [
+        ['Actor', 'Action', 'Subject', 'Time', 'Status']
+          .map((key) => translateFixed(key, locale))
+          .map(csvCell)
+          .join(','),
+        ...rows,
+      ].join('\r\n'),
       'text/csv;charset=utf-8',
     );
-    notify('success', 'Activity exported');
+    notify('success', t('Activity exported'));
   }
 
   function openActivity(activity: DashboardActivity) {
@@ -211,40 +230,60 @@ export function ProjectDashboard({
     if (target.kind === 'meeting') store.removeMeeting(target.id);
     setDeletion(null);
     closeDialog();
-    notify('success', `${target.kind[0].toUpperCase()}${target.kind.slice(1)} deleted`);
+    notify(
+      'success',
+      t('{kind} deleted', {
+        kind: translateFixed(target.kind[0].toUpperCase() + target.kind.slice(1), locale),
+      }),
+    );
   }
 
   const searchResults: DashboardSearchResult[] = [
     ...state.projects.map((project) => ({
       id: `project:${project.id}`,
-      title: project.name,
+      title: fixtureField(project, 'name', locale),
       detail: 'Project',
       keywords: `${project.name} ${project.description} ${project.priority}`,
       target: { kind: 'project', id: project.id } as const,
     })),
     ...state.tasks.map((task) => ({
       id: `task:${task.id}`,
-      title: task.title,
-      detail: `Task · ${task.status}`,
+      title: fixtureField(task, 'title', locale),
+      detail: `${'Task'} · ${translateFixed(task.status, locale)}`,
       keywords: `${task.title} ${task.detailTitle} ${task.description} ${task.tag} ${task.priority}`,
       target: { kind: 'task', id: task.id } as const,
     })),
     ...state.documents.map((document) => ({
       id: `document:${document.id}`,
-      title: document.title,
-      detail: `${document.kind} · ${document.status}`,
+      title: fixtureField(document, 'title', locale),
+      detail: `${translateFixed(document.kind[0].toUpperCase() + document.kind.slice(1), locale)} · ${translateFixed(document.status, locale)}`,
       keywords: `${document.title} ${document.kind} ${document.kind === 'form' ? document.description : document.client}`,
       target: { kind: 'document', id: document.id } as const,
     })),
     ...state.meetings.map((meeting) => ({
       id: `meeting:${meeting.id}`,
-      title: meeting.title,
+      title: fixtureField(meeting, 'title', locale),
       detail: 'Meeting',
       keywords: `${meeting.title} ${meeting.agenda}`,
       target: { kind: 'meeting', id: meeting.id } as const,
     })),
-  ].filter((result) => result.keywords.toLowerCase().includes(query.trim().toLowerCase()));
+  ].filter((result) =>
+    (result.keywords + ' ' + result.title + ' ' + result.detail)
+      .toLowerCase()
+      .includes(query.trim().toLowerCase()),
+  );
 
+  const deletionResource =
+    deletion?.target.kind === 'project'
+      ? state.projects.find((item) => item.id === deletion.target.id)
+      : deletion?.target.kind === 'task'
+        ? state.tasks.find((item) => item.id === deletion.target.id)
+        : deletion?.target.kind === 'document'
+          ? state.documents.find((item) => item.id === deletion.target.id)
+          : undefined;
+  const deletionName = deletionResource
+    ? fixtureField(deletionResource, deletion?.target.kind === 'project' ? 'name' : 'title', locale)
+    : '';
   const actions: DashboardContentActions = {
     openTarget,
     openProject,
@@ -255,8 +294,6 @@ export function ProjectDashboard({
     deleteProject: (project) =>
       setDeletion({
         target: { kind: 'project', id: project.id },
-        title: 'Delete project?',
-        description: `“${project.name}” and all its tasks and comments will be removed.`,
       }),
     toggleProjectFavorite: store.toggleProjectFavorite,
     completeProject: store.completeProject,
@@ -264,8 +301,6 @@ export function ProjectDashboard({
     deleteTask: (task) =>
       setDeletion({
         target: { kind: 'task', id: task.id },
-        title: 'Delete task?',
-        description: `“${task.title}” and its comments will be removed from this project.`,
       }),
     createTask: () => setDialog({ kind: 'action', action: 'Create Task' }),
     invite: () => setDialog({ kind: 'action', action: 'Invite' }),
@@ -276,19 +311,21 @@ export function ProjectDashboard({
     deleteDocument: (document) =>
       setDeletion({
         target: { kind: 'document', id: document.id },
-        title: `Delete ${document.kind}?`,
-        description: `“${document.title}” will be permanently removed from this dashboard.`,
       }),
     editMilestones: () => setDialog({ kind: 'milestones' }),
     readAll: () => {
       store.markAllRead();
-      notify('success', 'All updates marked as read');
+      notify('success', t('All updates marked as read'));
     },
     manageFavorites: () => setDialog({ kind: 'favorites' }),
   };
 
   return (
-    <section className={styles.dashboard} aria-label={`${projectName} project dashboard`} lang="en">
+    <section
+      className={styles.dashboard}
+      aria-label={t('{v0} project dashboard', { v0: projectName })}
+      lang={locale}
+    >
       <DashboardSidebar
         section={section}
         onSectionChange={changeSection}
@@ -353,8 +390,25 @@ export function ProjectDashboard({
       />
       {deletion ? (
         <DashboardDeleteDialog
-          title={deletion.title}
-          description={deletion.description}
+          title={t('Delete {kind}?', {
+            kind: translateFixed(
+              deletion.target.kind[0].toUpperCase() + deletion.target.kind.slice(1),
+              locale,
+            ),
+          })}
+          description={
+            deletion.target.kind === 'project'
+              ? t('“{name}” and all its tasks and comments will be removed.', {
+                  name: deletionName,
+                })
+              : deletion.target.kind === 'task'
+                ? t('“{name}” and its comments will be removed from this project.', {
+                    name: deletionName,
+                  })
+                : t('“{name}” will be permanently removed from this dashboard.', {
+                    name: deletionName,
+                  })
+          }
           onClose={() => setDeletion(null)}
           onDelete={deleteResource}
         />

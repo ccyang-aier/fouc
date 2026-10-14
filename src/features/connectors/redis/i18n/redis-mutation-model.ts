@@ -1,0 +1,27 @@
+import { defineMessages } from '@/lib/i18n';
+export const messages = defineMessages({
+  '请输入规范 Base64，空内容表示零字节。': [
+    '请输入规范 Base64，空内容表示零字节。',
+    'Enter canonical Base64. Empty content means zero bytes.',
+  ],
+  '新建 Redis Key': ['新建 Redis Key', 'Create Redis Key'],
+  '删除 Redis Key': ['删除 Redis Key', 'Delete Redis Key'],
+  '重命名 Redis Key': ['重命名 Redis Key', 'Rename Redis Key'],
+  设置过期时间: ['设置过期时间', 'Set expiry'],
+  '编辑 String': ['编辑 String', 'Edit String'],
+  '添加 List 元素': ['添加 List 元素', 'Add List element'],
+  '编辑 List 元素': ['编辑 List 元素', 'Edit List element'],
+  '删除 List 元素': ['删除 List 元素', 'Delete List element'],
+  '编辑 RedisJSON': ['编辑 RedisJSON', 'Edit RedisJSON'],
+  '添加 Set 成员': ['添加 Set 成员', 'Add Set member'],
+  '删除 Set 成员': ['删除 Set 成员', 'Remove Set member'],
+  '添加 Hash 字段': ['添加 Hash 字段', 'Add Hash field'],
+  '编辑 Hash 字段': ['编辑 Hash 字段', 'Edit Hash field'],
+  '删除 Hash 字段': ['删除 Hash 字段', 'Delete Hash field'],
+  '添加 ZSet 成员': ['添加 ZSet 成员', 'Add ZSet member'],
+  '编辑 ZSet 成员': ['编辑 ZSet 成员', 'Edit ZSet member'],
+  设置字段过期时间: ['设置字段过期时间', 'Set field expiry'],
+  '删除 ZSet 成员': ['删除 ZSet 成员', 'Remove ZSet member'],
+  '添加 Stream 消息': ['添加 Stream 消息', 'Add Stream message'],
+  '删除 Stream 消息': ['删除 Stream 消息', 'Delete Stream message'],
+});

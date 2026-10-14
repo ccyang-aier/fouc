@@ -1,0 +1,26 @@
+import { defineMessages } from '@/lib/i18n';
+
+export const messages = defineMessages({
+  queryRunning: [' 查询执行中', ' Query running'],
+  queryModified: [' 查询已修改', ' Query modified'],
+  close: ['关闭 {p0}', 'Close {p0}'],
+  sqlTabActions: ['SQL 标签操作', 'SQL tab actions'],
+  queryHistory: ['查询历史', 'Query history'],
+  sqlLibrary: ['SQL 库', 'SQL library'],
+  compareQueryResults: ['比较查询结果', 'Compare query results'],
+  sqlChangePreview: ['SQL 变更预览', 'SQL change preview'],
+  unpinTab: ['取消固定标签', 'Unpin tab'],
+  pinTab: ['固定标签', 'Pin tab'],
+  renameTab: ['重命名标签', 'Rename tab'],
+  duplicateAsANewQuery: ['复制为新查询', 'Duplicate as a new query'],
+  closeThisTab: ['关闭此标签', 'Close this tab'],
+  closeOtherUnpinnedTabs: ['关闭其他未固定标签', 'Close other unpinned tabs'],
+  closeUnpinnedTabsToTheLeft: ['关闭左侧未固定标签', 'Close unpinned tabs to the left'],
+  closeUnpinnedTabsToTheRight: ['关闭右侧未固定标签', 'Close unpinned tabs to the right'],
+  closeAllUnpinnedTabs: ['关闭所有未固定标签', 'Close all unpinned tabs'],
+  reopenClosedTab: ['重新打开关闭的标签', 'Reopen closed tab'],
+  previousQueryTab: ['上一个查询标签', 'Previous query tab'],
+  nextQueryTab: ['下一个查询标签', 'Next query tab'],
+  runCurrentStatementByDefault: ['默认运行当前语句', 'Run current statement by default'],
+  runAllStatementsByDefault: ['默认运行全部语句', 'Run all statements by default'],
+});

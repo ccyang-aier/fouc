@@ -1,11 +1,16 @@
 'use client';
+import { translateFixed } from '../i18n/display';
 
-import { useId, useState } from 'react';
+import { useTranslation } from '@/lib/i18n';
+import { fixtureField } from '../i18n/display';
+import { messages } from './i18n/dashboard-project-dialog';
+
 import { Plus, Trash } from '@phosphor-icons/react';
+import { useId, useState } from 'react';
 import { DashboardModal } from './dashboard-modal';
-import { AvatarGroup, DashboardButton } from './dashboard-ui';
 import type { DashboardPriority, DashboardProject, DashboardTask } from './dashboard-model';
 import styles from './dashboard-project-dialog.module.css';
+import { AvatarGroup, DashboardButton } from './dashboard-ui';
 
 interface DashboardProjectDialogProps {
   project: DashboardProject;
@@ -26,6 +31,9 @@ export function DashboardProjectDialog({
   onCreateTask,
   onDelete,
 }: DashboardProjectDialogProps) {
+  const { t, locale } = useTranslation(messages);
+  const uiLabel = (value: string) => translateFixed(value, locale);
+
   const [draft, setDraft] = useState(project);
   const [error, setError] = useState('');
   const nameId = useId();
@@ -46,7 +54,7 @@ export function DashboardProjectDialog({
   }
 
   return (
-    <DashboardModal title="Project details" onClose={onClose} wide>
+    <DashboardModal title={t('Project details')} onClose={onClose} wide>
       <form
         className={styles.form}
         onSubmit={(event) => {
@@ -56,7 +64,7 @@ export function DashboardProjectDialog({
       >
         <div className={styles.body}>
           <label className={styles.field} htmlFor={nameId}>
-            Project name
+            {t('Project name')}
             <input
               id={nameId}
               autoFocus
@@ -72,23 +80,23 @@ export function DashboardProjectDialog({
           </label>
           {error ? (
             <p id={`${nameId}-error`} className={styles.error} role="alert">
-              {error}
+              {translateFixed(error, locale)}
             </p>
           ) : null}
           <label className={styles.field} htmlFor={descriptionId}>
-            Description
+            {t('Description')}
             <textarea
               id={descriptionId}
               value={draft.description}
               rows={3}
-              placeholder="What are you working on?"
+              placeholder={t('What are you working on?')}
               onChange={(event) =>
                 setDraft((current) => ({ ...current, description: event.target.value }))
               }
             />
           </label>
           <label className={styles.field} htmlFor={priorityId}>
-            Priority
+            {t('Priority')}
             <select
               id={priorityId}
               value={draft.priority}
@@ -100,18 +108,21 @@ export function DashboardProjectDialog({
               }
             >
               {(['Low', 'Medium', 'High', 'Urgent'] as const).map((priority) => (
-                <option key={priority}>{priority}</option>
+                <option value={priority} key={priority}>
+                  {uiLabel(priority)}
+                </option>
               ))}
             </select>
           </label>
-          <section className={styles.tasks} aria-label="Project tasks">
+          <section className={styles.tasks} aria-label={t('Project tasks')}>
             <header>
               <h3>
-                Tasks <span>{tasks.length}</span>
+                {t('Tasks')}
+                <span>{tasks.length}</span>
               </h3>
               <DashboardButton tone="neutral" type="button" onClick={onCreateTask}>
                 <Plus size={14} />
-                Add task
+                {t('Add task')}
               </DashboardButton>
             </header>
             {tasks.length ? (
@@ -124,9 +135,9 @@ export function DashboardProjectDialog({
                     onClick={() => onOpenTask(task.id)}
                   >
                     <span className={styles.taskName}>
-                      <strong>{task.title}</strong>
+                      <strong>{fixtureField(task, 'title', locale)}</strong>
                       <small>
-                        {task.status} · {task.progress}%
+                        {uiLabel(task.status)} · {task.progress}%
                       </small>
                     </span>
                     <AvatarGroup
@@ -138,7 +149,7 @@ export function DashboardProjectDialog({
                 ))}
               </div>
             ) : (
-              <p className={styles.empty}>Add the first task to track this project.</p>
+              <p className={styles.empty}>{t('Add the first task to track this project.')}</p>
             )}
           </section>
         </div>
@@ -150,13 +161,13 @@ export function DashboardProjectDialog({
             onClick={() => onDelete(project)}
           >
             <Trash size={14} />
-            Delete project
+            {t('Delete project')}
           </DashboardButton>
           <div>
             <DashboardButton type="button" tone="neutral" onClick={onClose}>
-              Cancel
+              {t('Cancel')}
             </DashboardButton>
-            <DashboardButton type="submit">Save changes</DashboardButton>
+            <DashboardButton type="submit">{t('Save changes')}</DashboardButton>
           </div>
         </footer>
       </form>

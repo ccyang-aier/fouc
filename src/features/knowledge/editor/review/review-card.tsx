@@ -1,5 +1,7 @@
 'use client';
 
+import { createTranslator, useTranslation, type Locale } from '@/lib/i18n';
+import { knowledgeMessages } from './review-card.messages';
 /**
  * One reviewable suggestion as a card (S02, design §4.5/§9.3).
  *
@@ -16,23 +18,31 @@ import { cn } from '@/lib/utils';
 import { authorBadgeGlyph } from './author';
 import type { ReviewRow, SuggestionKind } from './review-model';
 
-const kindMeta: Record<SuggestionKind, { label: string; icon: typeof Plus; className: string }> = {
-  insert: {
-    label: '插入',
-    icon: Plus,
-    className: 'text-[var(--ok-ink)] border-[color-mix(in_srgb,var(--ok-ink)_32%,transparent)] bg-[color-mix(in_srgb,var(--ok-ink)_8%,transparent)]',
-  },
-  delete: {
-    label: '删除',
-    icon: Minus,
-    className: 'text-[var(--err-ink)] border-[color-mix(in_srgb,var(--err-ink)_32%,transparent)] bg-[color-mix(in_srgb,var(--err-ink)_8%,transparent)]',
-  },
-  replace: {
-    label: '替换',
-    icon: ArrowsLeftRight,
-    className: 'text-[var(--accent-ink)] border-[color-mix(in_srgb,var(--accent-ink)_32%,transparent)] bg-[var(--accent-soft)]',
-  },
-};
+function kindMeta(
+  locale?: Locale,
+): Record<SuggestionKind, { label: string; icon: typeof Plus; className: string }> {
+  const knowledgeT = createTranslator(knowledgeMessages, locale);
+  return {
+    insert: {
+      label: knowledgeT('insert'),
+      icon: Plus,
+      className:
+        'text-[var(--ok-ink)] border-[color-mix(in_srgb,var(--ok-ink)_32%,transparent)] bg-[color-mix(in_srgb,var(--ok-ink)_8%,transparent)]',
+    },
+    delete: {
+      label: knowledgeT('delete'),
+      icon: Minus,
+      className:
+        'text-[var(--err-ink)] border-[color-mix(in_srgb,var(--err-ink)_32%,transparent)] bg-[color-mix(in_srgb,var(--err-ink)_8%,transparent)]',
+    },
+    replace: {
+      label: knowledgeT('replace'),
+      icon: ArrowsLeftRight,
+      className:
+        'text-[var(--accent-ink)] border-[color-mix(in_srgb,var(--accent-ink)_32%,transparent)] bg-[var(--accent-soft)]',
+    },
+  };
+}
 
 const authorChipClass: Record<ReviewRow['author']['kind'], string> = {
   human: 'text-[var(--muted-strong)] border-[var(--line-strong)] bg-[var(--panel)]',
@@ -56,11 +66,13 @@ function DecisionButton({
   tone: 'accept' | 'reject';
   children: React.ReactNode;
 }) {
+  const { t: knowledgeT } = useTranslation(knowledgeMessages);
+
   return (
     <button
       type="button"
       aria-label={label}
-      title={disabled ? (reason ?? '当前不可用') : label}
+      title={disabled ? (reason ?? knowledgeT('currentlyUnavailable')) : label}
       onClick={onClick}
       disabled={disabled}
       className={cn(
@@ -98,9 +110,15 @@ export function ReviewCard({
   onLocate: (suggestionId: string) => void;
   onDecide: (suggestionId: string, decision: SuggestionDecision) => void;
 }) {
-  const kind = kindMeta[row.kind];
+  const { locale, t: knowledgeT } = useTranslation(knowledgeMessages);
+
+  const kind = kindMeta(locale)[row.kind];
   const KindIcon = kind.icon;
-  const locateLabel = `定位建议：${kind.label} · ${row.author.label} · ${row.excerpt}`;
+  const locateLabel = knowledgeT('locateSuggestionValueValueValue', {
+    v0: kind.label,
+    v1: row.author.label,
+    v2: row.excerpt,
+  });
 
   return (
     <li
@@ -116,7 +134,7 @@ export function ReviewCard({
       <button
         type="button"
         aria-label={locateLabel}
-        title="在正文中定位这条建议"
+        title={knowledgeT('locateThisSuggestionInTheDocument')}
         onClick={() => onLocate(row.suggestionId)}
         className={cn(
           'block w-full rounded-t-[8px] px-3 pb-1.5 pt-2.5 text-left outline-none',
@@ -135,10 +153,10 @@ export function ReviewCard({
           </span>
           {row.scope !== 'text' ? (
             <span
-              title="这条建议作用于完整块（图片、公式等非文本内容）"
+              title={knowledgeT('thisSuggestionAppliesToAWholeBlockImage')}
               className="flex h-[17px] items-center rounded-[4px] border border-[var(--line)] bg-[var(--surface-subtle)] px-1.5 text-[10px] font-medium leading-none text-[var(--muted-strong)]"
             >
-              块
+              {knowledgeT('block')}
             </span>
           ) : null}
           <span
@@ -148,7 +166,9 @@ export function ReviewCard({
             )}
             title={`${row.author.source}${row.author.detail ? ` · ${row.author.detail}` : ''}`}
           >
-            <span aria-hidden className="font-semibold tracking-[0.02em]">{authorBadgeGlyph(row.author.kind)}</span>
+            <span aria-hidden className="font-semibold tracking-[0.02em]">
+              {authorBadgeGlyph(row.author.kind)}
+            </span>
             {row.author.label}
           </span>
           <span
@@ -164,24 +184,24 @@ export function ReviewCard({
       </button>
       <div className="flex items-center justify-end gap-1.5 px-3 pb-2.5 pt-0.5">
         <DecisionButton
-          label="拒绝这条建议"
+          label={knowledgeT('rejectThisSuggestion')}
           tone="reject"
           disabled={!canDecide}
           reason={disabledReason}
           onClick={() => onDecide(row.suggestionId, 'reject')}
         >
           <X aria-hidden className="size-3" weight="bold" />
-          拒绝
+          {knowledgeT('reject')}
         </DecisionButton>
         <DecisionButton
-          label="接受这条建议"
+          label={knowledgeT('acceptThisSuggestion')}
           tone="accept"
           disabled={!canDecide}
           reason={disabledReason}
           onClick={() => onDecide(row.suggestionId, 'accept')}
         >
           <Check aria-hidden className="size-3" weight="bold" />
-          接受
+          {knowledgeT('accept')}
         </DecisionButton>
       </div>
     </li>

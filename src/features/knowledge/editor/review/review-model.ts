@@ -1,3 +1,6 @@
+import { createTranslator, type Locale } from '@/lib/i18n';
+import { knowledgeMessages } from './review-model.messages';
+
 /**
  * The review view-model (S02, design §4.5/§9.3): pure derivations from the
  * S01 `collectSuggestions` summaries over the current document — one panel
@@ -10,6 +13,8 @@ import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import type { SuggestionSummary } from '@fouc/shared/knowledge/schema/suggestions';
 import { describeSuggestionAuthor, formatSuggestionTime } from './author';
 import type { SuggestionAuthorBadge } from './author';
+
+const knowledgeT = createTranslator(knowledgeMessages);
 
 export type SuggestionKind = 'insert' | 'delete' | 'replace';
 export type SuggestionScope = 'text' | 'block' | 'mixed';
@@ -50,16 +55,26 @@ export function suggestionScopeOf(summary: SuggestionSummary): SuggestionScope {
   return node && text ? 'mixed' : node ? 'block' : 'text';
 }
 
-const nodeLabels: Record<string, string> = {
-  image: '图片', video: '视频', audio: '音频', file: '附件', math: '公式',
-  inlineMath: '行内公式', embed: '嵌入', blockReference: '块引用', pageLink: '页面链接',
-};
+function nodeLabels(locale?: Locale): Record<string, string> {
+  const knowledgeT = createTranslator(knowledgeMessages, locale);
+  return {
+    image: knowledgeT('image'),
+    video: knowledgeT('video'),
+    audio: knowledgeT('audio'),
+    file: knowledgeT('attachment'),
+    math: knowledgeT('equation'),
+    inlineMath: knowledgeT('inlineEquation'),
+    embed: knowledgeT('embed'),
+    blockReference: knowledgeT('blockReference'),
+    pageLink: knowledgeT('pageLink'),
+  };
+}
 
 function rangeText(doc: ProseMirrorNode, from: number, to: number): string {
   const text = doc.textBetween(from, to, ' ', ' ').replace(/\s+/g, ' ').trim();
   if (text) return text;
   const node = doc.nodeAt(from);
-  return node ? (nodeLabels[node.type.name] ?? `「${node.type.name}」`) : '';
+  return node ? (nodeLabels()[node.type.name] ?? `「${node.type.name}」`) : '';
 }
 
 function clip(text: string, limit = 40): string {
@@ -99,16 +114,34 @@ export function reviewRows(summaries: SuggestionSummary[], doc: ProseMirrorNode)
 
 export function reviewStats(summaries: SuggestionSummary[]): ReviewStats {
   const authors = new Map<string, { badge: SuggestionAuthorBadge; count: number }>();
-  const stats: ReviewStats = { total: summaries.length, inserts: 0, deletes: 0, replaces: 0, blockScoped: 0, authors: [] };
+  const stats: ReviewStats = {
+    total: summaries.length,
+    inserts: 0,
+    deletes: 0,
+    replaces: 0,
+    blockScoped: 0,
+    authors: [],
+  };
   for (const summary of summaries) {
-    stats[suggestionKindOf(summary) === 'insert' ? 'inserts' : suggestionKindOf(summary) === 'delete' ? 'deletes' : 'replaces'] += 1;
+    stats[
+      suggestionKindOf(summary) === 'insert'
+        ? 'inserts'
+        : suggestionKindOf(summary) === 'delete'
+          ? 'deletes'
+          : 'replaces'
+    ] += 1;
     if (suggestionScopeOf(summary) !== 'text') stats.blockScoped += 1;
     const badge = describeSuggestionAuthor(summary.author);
-    const entry = authors.get(`${badge.kind}:${badge.label}:${badge.detail ?? ''}`) ?? { badge, count: 0 };
+    const entry = authors.get(`${badge.kind}:${badge.label}:${badge.detail ?? ''}`) ?? {
+      badge,
+      count: 0,
+    };
     entry.count += 1;
     authors.set(`${badge.kind}:${badge.label}:${badge.detail ?? ''}`, entry);
   }
-  stats.authors = [...authors.values()].sort((a, b) => b.count - a.count || a.badge.label.localeCompare(b.badge.label));
+  stats.authors = [...authors.values()].sort(
+    (a, b) => b.count - a.count || a.badge.label.localeCompare(b.badge.label),
+  );
   return stats;
 }
 
@@ -126,10 +159,18 @@ export type ReviewActionsView = {
  */
 export function reviewActionsView(input: { editable: boolean; total: number }): ReviewActionsView {
   if (!input.editable) {
-    return { canDecide: false, canDecideAll: false, disabledReason: '只读模式：接受或拒绝建议会修改正文，需要此页面的编辑权限。' };
+    return {
+      canDecide: false,
+      canDecideAll: false,
+      disabledReason: knowledgeT('readOnlyAcceptingOrRejectingSuggestionsChangesThe'),
+    };
   }
   if (input.total === 0) {
-    return { canDecide: false, canDecideAll: false, disabledReason: '当前没有待审阅的建议。' };
+    return {
+      canDecide: false,
+      canDecideAll: false,
+      disabledReason: knowledgeT('noSuggestionsToReview'),
+    };
   }
   return { canDecide: true, canDecideAll: true, disabledReason: null };
 }

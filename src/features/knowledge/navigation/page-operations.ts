@@ -1,5 +1,8 @@
 'use client';
 
+import { createTranslator } from '@/lib/i18n';
+import { knowledgeMessages } from './page-operations.messages';
+
 /**
  * The tree operations controller (U03): the React binding of the pure
  * optimistic algebra in `tree-operations.ts` onto the U01 page-tree cache.
@@ -29,7 +32,11 @@ import {
   updateKnowledgePage,
 } from '../data/pages-api';
 import { knowledgeQueryKeys } from '../data/query-keys';
-import { treeOperationErrorText, treeOperationSuccessText, type TreeActionId } from './tree-actions';
+import {
+  treeOperationErrorText,
+  treeOperationSuccessText,
+  type TreeActionId,
+} from './tree-actions';
 import {
   keyboardMovePlacement,
   liveSiblingsUnder,
@@ -51,6 +58,8 @@ import {
   type TreeOperationKind,
 } from './tree-operations';
 
+const knowledgeT = createTranslator(knowledgeMessages);
+
 export type TreeNotifier = (kind: 'success' | 'error', text: string) => void;
 
 export type PageTreeOperations = {
@@ -58,9 +67,20 @@ export type PageTreeOperations = {
   pendingByPage: Map<string, TreeOperationKind[]>;
   hasPending: (pageId: string) => boolean;
   /** Creates a page under the target and returns its id (null when blocked); the row starts in rename mode. */
-  createPage: (target: { teamspaceId: string; parentId: string | null; title?: string; icon?: string | null; cover?: string | null; inheritsPermissions?: boolean; kind?: 'doc' | 'database' }) => Promise<string | null>;
+  createPage: (target: {
+    teamspaceId: string;
+    parentId: string | null;
+    title?: string;
+    icon?: string | null;
+    cover?: string | null;
+    inheritsPermissions?: boolean;
+    kind?: 'doc' | 'database';
+  }) => Promise<string | null>;
   renamePage: (pageId: string, title: string) => Promise<void>;
-  updateAppearance: (pageId: string, patch: { icon?: string | null; cover?: string | null }) => Promise<boolean>;
+  updateAppearance: (
+    pageId: string,
+    patch: { icon?: string | null; cover?: string | null },
+  ) => Promise<boolean>;
   movePage: (pageId: string, placement: PlacementRequest) => Promise<boolean>;
   movePageByKeyboard: (pageId: string, direction: KeyboardMoveDirection) => Promise<boolean>;
   recyclePage: (pageId: string) => Promise<void>;
@@ -82,7 +102,10 @@ export function usePageTreeOperations(
   const pendingRef = useRef<TreeOperation[]>([]);
   const [pending, setPending] = useState<TreeOperation[]>([]);
 
-  const pagesKey = useMemo(() => (knowledgeBaseId === null ? null : knowledgeQueryKeys.pages(knowledgeBaseId)), [knowledgeBaseId]);
+  const pagesKey = useMemo(
+    () => (knowledgeBaseId === null ? null : knowledgeQueryKeys.pages(knowledgeBaseId)),
+    [knowledgeBaseId],
+  );
 
   const register = useCallback((operation: TreeOperation) => {
     pendingRef.current = [...pendingRef.current, operation];
@@ -98,26 +121,44 @@ export function usePageTreeOperations(
   useEffect(() => {
     if (pagesKey === null) return undefined;
     const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
-      if (event.type !== 'updated' || event.action.type !== 'success' || event.action.manual) return;
+      if (event.type !== 'updated' || event.action.type !== 'success' || event.action.manual)
+        return;
       if (pendingRef.current.length === 0) return;
-      queryClient.setQueryData<Page[]>(pagesKey, (pages) => reapplyTreeOperations(pages ?? [], pendingRef.current));
+      queryClient.setQueryData<Page[]>(pagesKey, (pages) =>
+        reapplyTreeOperations(pages ?? [], pendingRef.current),
+      );
     });
     return unsubscribe;
   }, [pagesKey, queryClient]);
 
-  useEffect(() => () => { pendingRef.current = []; }, []);
+  useEffect(
+    () => () => {
+      pendingRef.current = [];
+    },
+    [],
+  );
 
-  const readPages = useCallback((): Page[] => (pagesKey === null ? [] : queryClient.getQueryData<Page[]>(pagesKey) ?? []), [pagesKey, queryClient]);
+  const readPages = useCallback(
+    (): Page[] => (pagesKey === null ? [] : (queryClient.getQueryData<Page[]>(pagesKey) ?? [])),
+    [pagesKey, queryClient],
+  );
   const writePages = useCallback(
     (updater: (pages: Page[]) => Page[]) => {
-      if (pagesKey !== null) queryClient.setQueryData<Page[]>(pagesKey, (pages) => updater(pages ?? []));
+      if (pagesKey !== null)
+        queryClient.setQueryData<Page[]>(pagesKey, (pages) => updater(pages ?? []));
     },
     [pagesKey, queryClient],
   );
 
   /** One full optimistic cycle. Returns the API result, or null when it failed (already rolled back + reported). */
   const commit = useCallback(
-    async <T,>(operation: TreeOperation, action: TreeActionId, call: () => Promise<T>, settle: (pages: Page[], result: T) => Page[], successText?: string): Promise<T | null> => {
+    async <T>(
+      operation: TreeOperation,
+      action: TreeActionId,
+      call: () => Promise<T>,
+      settle: (pages: Page[], result: T) => Page[],
+      successText?: string,
+    ): Promise<T | null> => {
       if (pagesKey === null) return null;
       register(operation);
       writePages((pages) => applyTreeOperation(pages, operation));
@@ -139,14 +180,25 @@ export function usePageTreeOperations(
   );
 
   const guard = useCallback(
-    (pageId: string | null): boolean => knowledgeBaseId !== null && optionsRef.current.canEdit && (pageId === null || !hasPendingOperationFor(pending, pageId)),
+    (pageId: string | null): boolean =>
+      knowledgeBaseId !== null &&
+      optionsRef.current.canEdit &&
+      (pageId === null || !hasPendingOperationFor(pending, pageId)),
     [pending, knowledgeBaseId],
   );
 
   const pendingByPage = useMemo(() => pendingKindsByPage(pending), [pending]);
 
   const createPage = useCallback(
-    async (target: { teamspaceId: string; parentId: string | null; title?: string; icon?: string | null; cover?: string | null; inheritsPermissions?: boolean; kind?: 'doc' | 'database' }): Promise<string | null> => {
+    async (target: {
+      teamspaceId: string;
+      parentId: string | null;
+      title?: string;
+      icon?: string | null;
+      cover?: string | null;
+      inheritsPermissions?: boolean;
+      kind?: 'doc' | 'database';
+    }): Promise<string | null> => {
       if (knowledgeBaseId === null || !optionsRef.current.canEdit) return null;
       const pages = readPages();
       const id = crypto.randomUUID();
@@ -159,7 +211,10 @@ export function usePageTreeOperations(
       } catch {
         position = siblings.at(-1)?.position ?? positionBetweenBoot();
       }
-      const parent = target.parentId === null ? null : pages.find((page) => page.id === target.parentId) ?? null;
+      const parent =
+        target.parentId === null
+          ? null
+          : (pages.find((page) => page.id === target.parentId) ?? null);
       const page = optimisticCreatedPage({
         id,
         knowledgeBaseId,
@@ -177,20 +232,21 @@ export function usePageTreeOperations(
       const created = await commit(
         { kind: 'create', page },
         'create-child',
-        () => createKnowledgePage(knowledgeBaseId, {
-          id,
-          knowledgeBaseId,
-          teamspaceId: target.teamspaceId,
-          parentId: target.parentId,
-          kind: target.kind ?? 'doc',
-          databaseId: null,
-          title: target.title ?? '',
-          icon: target.icon ?? null,
-          cover: target.cover ?? null,
-          properties: {},
-          inheritsPermissions: target.inheritsPermissions ?? true,
-          afterPageId: null,
-        }),
+        () =>
+          createKnowledgePage(knowledgeBaseId, {
+            id,
+            knowledgeBaseId,
+            teamspaceId: target.teamspaceId,
+            parentId: target.parentId,
+            kind: target.kind ?? 'doc',
+            databaseId: null,
+            title: target.title ?? '',
+            icon: target.icon ?? null,
+            cover: target.cover ?? null,
+            properties: {},
+            inheritsPermissions: target.inheritsPermissions ?? true,
+            afterPageId: null,
+          }),
         (current, placement) => settleTreePlacement(current, placement),
       );
       return created === null ? null : id;
@@ -214,7 +270,10 @@ export function usePageTreeOperations(
   );
 
   const updateAppearance = useCallback(
-    async (pageId: string, patch: { icon?: string | null; cover?: string | null }): Promise<boolean> => {
+    async (
+      pageId: string,
+      patch: { icon?: string | null; cover?: string | null },
+    ): Promise<boolean> => {
       if (!guard(pageId)) return false;
       const previous = readPages().find((page) => page.id === pageId);
       if (!previous) return false;
@@ -241,15 +300,27 @@ export function usePageTreeOperations(
   );
 
   const movePage = useCallback(
-    async (pageId: string, placement: PlacementRequest, action: TreeActionId = 'move-down'): Promise<boolean> => {
+    async (
+      pageId: string,
+      placement: PlacementRequest,
+      action: TreeActionId = 'move-down',
+    ): Promise<boolean> => {
       if (!guard(pageId)) return false;
       const pages = readPages();
       const page = pages.find((row) => row.id === pageId);
       if (!page || page.deletedAt !== null) return false;
-      if (page.parentId === placement.parentId && placement.afterPageId === null && isLastSibling(pages, page)) return true;
+      if (
+        page.parentId === placement.parentId &&
+        placement.afterPageId === null &&
+        isLastSibling(pages, page)
+      )
+        return true;
       let position: string;
       try {
-        position = optimisticInsertPosition(liveSiblingsUnder(pages, page.teamspaceId, placement.parentId, pageId), placement.afterPageId);
+        position = optimisticInsertPosition(
+          liveSiblingsUnder(pages, page.teamspaceId, placement.parentId, pageId),
+          placement.afterPageId,
+        );
       } catch {
         return false; // Stale anchor or exhausted space: nothing moved locally, nothing sent.
       }
@@ -284,7 +355,8 @@ export function usePageTreeOperations(
       // and never moves a row.
       const resolution = keyboardMovePlacement(readPages(), pageId, direction);
       if (!resolution.ok) return false;
-      const action: TreeActionId = direction === 'up' ? 'move-up' : direction === 'down' ? 'move-down' : direction;
+      const action: TreeActionId =
+        direction === 'up' ? 'move-up' : direction === 'down' ? 'move-down' : direction;
       return movePage(pageId, resolution.placement, action);
     },
     [guard, movePage, readPages],
@@ -295,7 +367,7 @@ export function usePageTreeOperations(
       if (!guard(pageId)) return;
       const page = readPages().find((row) => row.id === pageId);
       if (!page || page.deletedAt !== null) return;
-      const title = page.title.trim() || '无标题页面';
+      const title = page.title.trim() || knowledgeT('untitledPage');
       await commit(
         { kind: 'recycle', pageId, deletedAt: new Date().toISOString() },
         'recycle',
@@ -312,7 +384,7 @@ export function usePageTreeOperations(
       if (!guard(pageId)) return;
       const page = readPages().find((row) => row.id === pageId);
       if (!page || page.deletedAt === null) return;
-      const title = page.title.trim() || '无标题页面';
+      const title = page.title.trim() || knowledgeT('untitledPage');
       await commit(
         { kind: 'restore', pageId, previousDeletedAt: page.deletedAt },
         'restore',
@@ -336,7 +408,16 @@ export function usePageTreeOperations(
       recyclePage,
       restorePage,
     }),
-    [createPage, movePage, movePageByKeyboard, pendingByPage, recyclePage, renamePage, restorePage, updateAppearance],
+    [
+      createPage,
+      movePage,
+      movePageByKeyboard,
+      pendingByPage,
+      recyclePage,
+      renamePage,
+      restorePage,
+      updateAppearance,
+    ],
   );
 }
 

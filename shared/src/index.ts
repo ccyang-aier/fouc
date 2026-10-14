@@ -113,7 +113,8 @@ export interface CapabilityManifest {
 
 // ─── AgentSession / AgentRun ────────────────────────────────────────
 
-export type SessionStatus = 'idle' | 'starting' | 'active' | 'prompting' | 'suspended' | 'resuming' | 'error' | 'ended';
+export type SessionStatus =
+  'idle' | 'starting' | 'active' | 'prompting' | 'suspended' | 'resuming' | 'error' | 'ended';
 
 export interface AgentSession {
   id: string;
@@ -129,12 +130,7 @@ export interface AgentSession {
 }
 
 export type RunStatus =
-  | 'queued'
-  | 'running'
-  | 'waiting_approval'
-  | 'completed'
-  | 'failed'
-  | 'cancelled';
+  'queued' | 'running' | 'waiting_approval' | 'completed' | 'failed' | 'cancelled';
 
 export interface AgentRun {
   id: string;
@@ -170,16 +166,67 @@ export type AgentEvent =
   | { type: 'session.status'; sessionId: string; status: SessionStatus }
   | { type: 'session.ended'; sessionId: string; reason: string }
   | { type: 'run.started'; sessionId: string; runId: string }
-  | { type: 'run.completed'; sessionId: string; runId: string; stopReason: string | null; usage: TokenUsage | null }
+  | {
+      type: 'run.completed';
+      sessionId: string;
+      runId: string;
+      stopReason: string | null;
+      usage: TokenUsage | null;
+    }
   | { type: 'run.failed'; sessionId: string; runId: string; message: string; recoverable: boolean }
   | { type: 'run.cancelled'; sessionId: string; runId: string }
-  | { type: 'message.delta'; sessionId: string; runId: string | null; role: 'agent'; msgId: string; text: string }
+  | {
+      type: 'message.delta';
+      sessionId: string;
+      runId: string | null;
+      role: 'agent';
+      msgId: string;
+      text: string;
+    }
   | { type: 'thought.delta'; sessionId: string; runId: string | null; msgId: string; text: string }
-  | { type: 'tool.started'; sessionId: string; runId: string | null; toolCallId: string; title: string; kind: ToolKindDto; rawInput?: unknown; locations?: Array<{ path: string }> }
-  | { type: 'tool.updated'; sessionId: string; runId: string | null; toolCallId: string; title: string; kind: ToolKindDto; status: 'in_progress' | 'completed' | 'failed'; content?: ToolContentDto[]; rawOutput?: unknown }
-  | { type: 'plan.updated'; sessionId: string; runId: string | null; entries: Array<{ content: string; status: 'pending' | 'in_progress' | 'completed'; priority?: 'low' | 'medium' | 'high' }> }
-  | { type: 'control.updated'; sessionId: string; model?: ModelSnapshotDto | null; mode?: ModeSnapshotDto | null; configOptions?: ConfigOptionDto[] }
-  | { type: 'context.usage'; sessionId: string; usage: { used: number; total: number; percentage: number } }
+  | {
+      type: 'tool.started';
+      sessionId: string;
+      runId: string | null;
+      toolCallId: string;
+      title: string;
+      kind: ToolKindDto;
+      rawInput?: unknown;
+      locations?: Array<{ path: string }>;
+    }
+  | {
+      type: 'tool.updated';
+      sessionId: string;
+      runId: string | null;
+      toolCallId: string;
+      title: string;
+      kind: ToolKindDto;
+      status: 'in_progress' | 'completed' | 'failed';
+      content?: ToolContentDto[];
+      rawOutput?: unknown;
+    }
+  | {
+      type: 'plan.updated';
+      sessionId: string;
+      runId: string | null;
+      entries: Array<{
+        content: string;
+        status: 'pending' | 'in_progress' | 'completed';
+        priority?: 'low' | 'medium' | 'high';
+      }>;
+    }
+  | {
+      type: 'control.updated';
+      sessionId: string;
+      model?: ModelSnapshotDto | null;
+      mode?: ModeSnapshotDto | null;
+      configOptions?: ConfigOptionDto[];
+    }
+  | {
+      type: 'context.usage';
+      sessionId: string;
+      usage: { used: number; total: number; percentage: number };
+    }
   | { type: 'approval.required'; sessionId: string; runId: string | null; approval: ApprovalDto }
   | { type: 'approval.resolved'; sessionId: string; callId: string; outcome: string }
   | { type: 'installation.changed'; installation: AgentInstallation }
@@ -213,7 +260,11 @@ export interface ApprovalDto {
   callId: string;
   title: string;
   kind?: ToolKindDto;
-  options: Array<{ optionId: string; label: string; kind: 'allow_once' | 'allow_always' | 'reject_once' | 'reject_always' }>;
+  options: Array<{
+    optionId: string;
+    label: string;
+    kind: 'allow_once' | 'allow_always' | 'reject_once' | 'reject_always';
+  }>;
   locations?: Array<{ path: string; range?: { startLine: number; endLine?: number } }>;
   rawInput?: unknown;
 }
@@ -239,6 +290,7 @@ export type AgentErrorCode = (typeof AGENT_ERROR_CODES)[number];
 // ─── API 响应包 ─────────────────────────────────────────────────────
 
 export interface ApiErrorBody {
+  validation?: import('./validation-issue').ValidationIssue;
   code: string;
   message: string;
   guidance?: string | null;
@@ -267,7 +319,8 @@ export const WS_TOPICS = {
 export type ConnectorEffect = 'read' | 'write' | 'destructive';
 export type ConnectorTargetType = 'desktop_sidecar' | 'cloud_worker' | 'customer_relay';
 export type ConnectorDesiredState = 'enabled' | 'disabled';
-export type ConnectorAuthState = 'unconfigured' | 'connecting' | 'valid' | 'expired' | 'needs_user_action' | 'error';
+export type ConnectorAuthState =
+  'unconfigured' | 'connecting' | 'valid' | 'expired' | 'needs_user_action' | 'error';
 export type ConnectorHealthState = 'unknown' | 'healthy' | 'degraded' | 'unreachable';
 export type ConnectorExecutionState = 'online' | 'offline';
 
@@ -287,7 +340,15 @@ export interface ConnectorProviderDefinition {
   description: string;
   version: string;
   category: string;
-  authMethods: Array<'oauth_system_browser' | 'managed_web_session' | 'api_key' | 'username_password' | 'device_code' | 'service_account' | 'client_certificate'>;
+  authMethods: Array<
+    | 'oauth_system_browser'
+    | 'managed_web_session'
+    | 'api_key'
+    | 'username_password'
+    | 'device_code'
+    | 'service_account'
+    | 'client_certificate'
+  >;
   targetTypes: ConnectorTargetType[];
   capabilities: ConnectorCapabilityDefinition[];
 }
@@ -360,7 +421,16 @@ export interface ConnectorConnectInteraction {
   expiresAt: number;
 }
 
-export type DtsFilterId = 'myTodos' | 'myProcessed' | 'myCreate' | 'myFollowed' | 'myOverdue' | 'ccToMe' | 'closed' | 'unclosed' | 'cancel';
+export type DtsFilterId =
+  | 'myTodos'
+  | 'myProcessed'
+  | 'myCreate'
+  | 'myFollowed'
+  | 'myOverdue'
+  | 'ccToMe'
+  | 'closed'
+  | 'unclosed'
+  | 'cancel';
 
 export interface DtsTicketListInput {
   filter: DtsFilterId;
@@ -463,3 +533,15 @@ export * from './table-transfer';
 export * from './er-diagram';
 export * from './database-docs';
 export * from './relational-structure-edit';
+export {
+  validationIssue,
+  validationValue,
+  isValidationIssue,
+  defaultValidationMessage,
+  validationIssueFromError,
+  ValidationError,
+  ValidationAbortError,
+  type ValidationIssue,
+  type ValidationValue,
+  type ValidationFormatter,
+} from './validation-issue';

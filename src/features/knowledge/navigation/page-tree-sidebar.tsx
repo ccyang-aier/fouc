@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from '@/lib/i18n';
+import { knowledgeMessages } from './page-tree-sidebar.messages';
 import type { ReactNode } from 'react';
 import { Warning, XCircle } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
@@ -8,7 +10,18 @@ import { KnowledgeBaseHeader, type KnowledgeBaseSummary } from '../knowledge-bas
 import { CanvasState, TreeSkeletonRows } from '../canvas-states';
 import styles from './knowledge-sidebar.module.css';
 
-export function PageTreeSidebar({ collapsed, onCollapse, knowledgeBases, activeKnowledgeBaseId, onSelectKnowledgeBase, onCreateKnowledgeBase, onOpenSettings, treeArea, footer, createLabel }: {
+export function PageTreeSidebar({
+  collapsed,
+  onCollapse,
+  knowledgeBases,
+  activeKnowledgeBaseId,
+  onSelectKnowledgeBase,
+  onCreateKnowledgeBase,
+  onOpenSettings,
+  treeArea,
+  footer,
+  createLabel,
+}: {
   collapsed: boolean;
   onCollapse: () => void;
   knowledgeBases: readonly KnowledgeBaseSummary[];
@@ -20,33 +33,59 @@ export function PageTreeSidebar({ collapsed, onCollapse, knowledgeBases, activeK
   footer?: ReactNode;
   createLabel?: string;
 }) {
-  return <aside aria-label="知识库侧边栏" aria-hidden={collapsed} inert={collapsed} data-collapsed={collapsed} className={cn('flex h-full min-h-0 flex-col', styles.sidebar)}>
-    <KnowledgeBaseHeader knowledgeBases={knowledgeBases} activeKnowledgeBaseId={activeKnowledgeBaseId} onSelectKnowledgeBase={onSelectKnowledgeBase} onCollapse={onCollapse} onCreateKnowledgeBase={onCreateKnowledgeBase} onOpenSettings={onOpenSettings} createLabel={createLabel} />
-    {treeArea}
-    {footer}
-  </aside>;
+  const { t: knowledgeT } = useTranslation(knowledgeMessages);
+
+  return (
+    <aside
+      aria-label={knowledgeT('knowledgeBaseSidebar')}
+      aria-hidden={collapsed}
+      inert={collapsed}
+      data-collapsed={collapsed}
+      className={cn('flex h-full min-h-0 flex-col', styles.sidebar)}
+    >
+      <KnowledgeBaseHeader
+        knowledgeBases={knowledgeBases}
+        activeKnowledgeBaseId={activeKnowledgeBaseId}
+        onSelectKnowledgeBase={onSelectKnowledgeBase}
+        onCollapse={onCollapse}
+        onCreateKnowledgeBase={onCreateKnowledgeBase}
+        onOpenSettings={onOpenSettings}
+        createLabel={createLabel}
+      />
+      {treeArea}
+      {footer}
+    </aside>
+  );
 }
 
 export function TreeLoading() {
+  const { t: knowledgeT } = useTranslation(knowledgeMessages);
+
   return (
-    <div role="status" aria-label="正在加载页面树" className="min-h-0 flex-1 overflow-hidden">
+    <div
+      role="status"
+      aria-label={knowledgeT('loadingPageTree')}
+      className="min-h-0 flex-1 overflow-hidden"
+    >
       <TreeSkeletonRows />
     </div>
   );
 }
 
 export function TreeError({ onRetry }: { onRetry: () => void }) {
+  const { t: knowledgeT } = useTranslation(knowledgeMessages);
+
   return (
     <CanvasState
       className="min-h-[200px] flex-1"
       tone="error"
       announce="assertive"
       icon={<XCircle className="size-5" aria-hidden weight="fill" />}
-      title="页面树加载失败"
-      hint="无法读取文件夹目录，请稍后重试。"
+      title={knowledgeT('unableToLoadPageTree')}
+      hint={knowledgeT('unableToReadFoldersRetryLater')}
       actions={
         <Button variant="outline" size="sm" onClick={onRetry}>
-          重试
+          {knowledgeT('retry')}
         </Button>
       }
     />
@@ -54,12 +93,14 @@ export function TreeError({ onRetry }: { onRetry: () => void }) {
 }
 
 export function TreeForbidden() {
+  const { t: knowledgeT } = useTranslation(knowledgeMessages);
+
   return (
     <CanvasState
       className="min-h-[200px] flex-1"
       icon={<Warning className="size-5" aria-hidden weight="fill" />}
-      title="无法浏览页面树"
-      hint="当前角色没有查看该知识库目录的权限，请联系知识库管理员。"
+      title={knowledgeT('unableToBrowsePageTree')}
+      hint={knowledgeT('yourRoleCannotViewThisDirectoryContactThe')}
       announce="polite"
     />
   );

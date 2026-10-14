@@ -1,10 +1,16 @@
 'use client';
+import { translateFixed } from '../i18n/display';
 
-import { Link, Star, X } from '@phosphor-icons/react';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useTranslation } from '@/lib/i18n';
+import { fixtureField, registerProjectFixtures } from '../i18n/display';
+import { messages } from './i18n/dashboard-task-dialog';
+
 import { useAppAlert } from '@/components/app-alert-provider';
 import { Button } from '@/components/ui/button';
-import { AvatarGroup, IconButton, SegmentedControl } from './dashboard-ui';
+import { Link, Star, X } from '@phosphor-icons/react';
+import { useEffect, useId, useRef, useState } from 'react';
+import { CommentItem } from './dashboard-comments';
+import { dashboardLink } from './dashboard-links';
 import {
   type DashboardAttachment,
   type DashboardComment,
@@ -12,13 +18,12 @@ import {
   type DashboardProject,
   type DashboardTask,
 } from './dashboard-model';
-import { CommentItem } from './dashboard-comments';
 import { DashboardTaskComposer } from './dashboard-task-composer';
+import styles from './dashboard-task-dialog.module.css';
 import { DashboardTaskFields, PeopleMenu } from './dashboard-task-fields';
 import { DashboardTaskSettings, taskSettingError } from './dashboard-task-settings';
 import { dashboardTimestamp } from './dashboard-time';
-import { dashboardLink } from './dashboard-links';
-import styles from './dashboard-task-dialog.module.css';
+import { AvatarGroup, IconButton, SegmentedControl } from './dashboard-ui';
 
 type DetailTab = 'Description' | 'Comment' | 'Setting';
 const tabs: DetailTab[] = ['Description', 'Comment', 'Setting'];
@@ -38,6 +43,8 @@ export function DashboardTaskDialog({
   onSave: (task: DashboardTask) => void;
   onOpenProject: (projectId: string) => void;
 }) {
+  const { t, locale } = useTranslation(messages);
+
   const dialog = useRef<HTMLDialogElement>(null);
   const commentsViewport = useRef<HTMLDivElement>(null);
   const commentInput = useRef<HTMLTextAreaElement>(null);
@@ -142,7 +149,7 @@ export function DashboardTaskDialog({
         if (viewport) viewport.scrollTop = viewport.scrollHeight;
       });
     }
-    notify('success', newComment ? 'Comment added' : 'Changes saved');
+    notify('success', translateFixed(newComment ? 'Comment added' : 'Changes saved', locale));
   }
 
   function uploadAttachment(file: File) {
@@ -174,9 +181,9 @@ export function DashboardTaskDialog({
       await navigator.clipboard.writeText(
         dashboardLink(window.location.href, scopeKey, { kind: 'task', id: draft.id }),
       );
-      notify('success', 'Task link copied');
+      notify('success', t('Task link copied'));
     } catch {
-      notify('error', 'Could not copy the task link');
+      notify('error', t('Could not copy the task link'));
     }
   }
 
@@ -204,19 +211,19 @@ export function DashboardTaskDialog({
     >
       <div className={styles.surface}>
         <header className={styles.header}>
-          <h2 id={titleId}>{draft.detailTitle}</h2>
+          <h2 id={titleId}>{fixtureField(draft, 'detailTitle', locale)}</h2>
           <div className={styles.headerActions}>
             <IconButton
-              label={draft.starred ? 'Remove from favorites' : 'Add to favorites'}
+              label={draft.starred ? t('Remove from favorites') : t('Add to favorites')}
               aria-pressed={draft.starred}
               onClick={() => setDraft((current) => ({ ...current, starred: !current.starred }))}
             >
               <Star size={17} weight={draft.starred ? 'fill' : 'regular'} />
             </IconButton>
-            <IconButton label="Copy task link" onClick={() => void copyLink()}>
+            <IconButton label={t('Copy task link')} onClick={() => void copyLink()}>
               <Link size={17} />
             </IconButton>
-            <IconButton label="Close task details" onClick={onClose}>
+            <IconButton label={t('Close task details')} onClick={onClose}>
               <X size={17} />
             </IconButton>
           </div>
@@ -227,7 +234,7 @@ export function DashboardTaskDialog({
             items={tabs}
             value={tab}
             onChange={(value) => setTab(value as DetailTab)}
-            label="Task detail sections"
+            label={t('Task detail sections')}
           />
         </div>
         {saveError ? (
@@ -241,7 +248,7 @@ export function DashboardTaskDialog({
               className={styles.commentsViewport}
               id={commentPanelId}
               ref={commentsViewport}
-              aria-label="Task comments"
+              aria-label={t('Task comments')}
             >
               <div className={styles.comments}>
                 {draft.comments.length ? (
@@ -265,7 +272,7 @@ export function DashboardTaskDialog({
                     />
                   ))
                 ) : (
-                  <p className={styles.emptyComments}>No comments yet.</p>
+                  <p className={styles.emptyComments}>{t('No comments yet.')}</p>
                 )}
               </div>
             </div>
@@ -288,7 +295,7 @@ export function DashboardTaskDialog({
         ) : tab === 'Description' ? (
           <div className={styles.detailContent}>
             <label htmlFor={`${titleId}-description`} className={styles.sectionLabel}>
-              Description
+              {t('Description')}
             </label>
             <textarea
               id={`${titleId}-description`}
@@ -298,7 +305,7 @@ export function DashboardTaskDialog({
                 const description = event.currentTarget.value;
                 setDraft((current) => ({ ...current, description }));
               }}
-              placeholder="Add a task description"
+              placeholder={t('Add a task description')}
             />
           </div>
         ) : (
@@ -314,16 +321,16 @@ export function DashboardTaskDialog({
         )}
         <footer className={styles.footer}>
           <div className={styles.collaborators}>
-            <span>Collaborators</span>
+            <span>{t('Collaborators')}</span>
             <AvatarGroup ids={draft.collaborators} size={26} />
             <PeopleMenu
-              label="Edit collaborators"
+              label={t('Edit collaborators')}
               selected={draft.collaborators}
               onToggle={toggleCollaborator}
             />
           </div>
           <Button type="button" variant="outline" className={styles.cancelButton} onClick={onClose}>
-            Cancel
+            {t('Cancel')}
           </Button>
           <Button
             type="button"
@@ -331,10 +338,12 @@ export function DashboardTaskDialog({
             loading={attachmentLoading}
             onClick={save}
           >
-            Save
+            {t('Save')}
           </Button>
         </footer>
       </div>
     </dialog>
   );
 }
+
+registerProjectFixtures([tabs]);

@@ -1,21 +1,35 @@
+import { BackendRequestError, getBackendEndpoint } from '@/lib/backend';
+import { isValidationIssue, type ValidationIssue } from '@fouc/shared';
 import {
   MONGO_DOCUMENT_TRANSFER_LIMITS as LIMITS,
   type MongoDocumentExportInput,
   type MongoDocumentExportProgress,
 } from '@fouc/shared/mongo-document-transfer';
-import { getBackendEndpoint } from '@/lib/backend';
+import { createUiMessages } from '../../i18n/ui-message';
+import { messages as unitMessages } from '../i18n/document-transfer-download';
+const { error: uiError } = createUiMessages(unitMessages);
 
-type SaveWriter = { write: (chunk: Uint8Array) => Promise<void>; close: () => Promise<void>; abort: () => Promise<void> };
+type SaveWriter = {
+  write: (chunk: Uint8Array) => Promise<void>;
+  close: () => Promise<void>;
+  abort: () => Promise<void>;
+};
 type SaveHandle = { createWritable: () => Promise<SaveWriter> };
 type Picker = (options: { suggestedName: string }) => Promise<SaveHandle>;
 
 export async function consumeMongoDocumentExport(
-  stream: ReadableStream<Uint8Array>, writer: SaveWriter | null, signal: AbortSignal,
+  stream: ReadableStream<Uint8Array>,
+  writer: SaveWriter | null,
+  signal: AbortSignal,
   onProgress: (value: MongoDocumentExportProgress) => void,
 ): Promise<Uint8Array<ArrayBuffer>[]> {
-  const reader = stream.getReader(), parts: Uint8Array<ArrayBuffer>[] = [];
-  let bytes = 0, documents = 0;
-  const abort = () => { void reader.cancel(signal.reason).catch(() => undefined); };
+  const reader = stream.getReader(),
+    parts: Uint8Array<ArrayBuffer>[] = [];
+  let bytes = 0,
+    documents = 0;
+  const abort = () => {
+    void reader.cancel(signal.reason).catch(() => undefined);
+  };
   signal.throwIfAborted();
   signal.addEventListener('abort', abort, { once: true });
   try {
@@ -25,7 +39,11 @@ export async function consumeMongoDocumentExport(
       if (chunk.done) break;
       bytes += chunk.value.byteLength;
       if (bytes > (writer ? LIMITS.exportBytes : LIMITS.browserBytes)) {
-        throw new Error(writer ? '导出达到 1 GiB 上限，文件不完整' : '浏览器下载回退最多 64 MiB，已停止读取；请缩小范围或使用支持流式保存的浏览器');
+        throw uiError(
+          writer
+            ? '导出达到 1 GiB 上限，文件不完整'
+            : '浏览器下载回退最多 64 MiB，已停止读取；请缩小范围或使用支持流式保存的浏览器',
+        );
       }
       for (const byte of chunk.value) if (byte === 10) documents++;
       if (writer) await writer.write(chunk.value);
@@ -38,27 +56,48 @@ export async function consumeMongoDocumentExport(
     await reader.cancel().catch(() => undefined);
     await writer?.abort().catch(() => undefined);
     throw error;
-  } finally { reader.releaseLock(); signal.removeEventListener('abort', abort); }
+  } finally {
+    reader.releaseLock();
+    signal.removeEventListener('abort', abort);
+  }
 }
 
 export async function downloadMongoDocuments(
-  base: string, input: MongoDocumentExportInput, signal: AbortSignal,
+  base: string,
+  input: MongoDocumentExportInput,
+  signal: AbortSignal,
   onProgress: (value: MongoDocumentExportProgress) => void,
 ): Promise<'disk' | 'browser'> {
   const picker = (window as Window & { showSaveFilePicker?: Picker }).showSaveFilePicker;
-  const suggestedName = `${input.database}-${input.collection}.ndjson`.replace(/[\x00-\x1f\x7f<>:"/\\|?*]/g, '_').slice(0, 180);
+  const suggestedName = `${input.database}-${input.collection}.ndjson`
+    .replace(/[\x00-\x1f\x7f<>:"/\\|?*]/g, '_')
+    .slice(0, 180);
   const handle = picker ? await picker({ suggestedName }) : null;
   signal.throwIfAborted();
   const endpoint = await getBackendEndpoint();
   const response = await fetch(`${endpoint.baseUrl}${base}/documents/export`, {
-    method: 'POST', body: JSON.stringify(input), signal,
-    headers: { 'content-type': 'application/json', ...(endpoint.token ? { authorization: `Bearer ${endpoint.token}` } : {}) },
+    method: 'POST',
+    body: JSON.stringify(input),
+    signal,
+    headers: {
+      'content-type': 'application/json',
+      ...(endpoint.token ? { authorization: `Bearer ${endpoint.token}` } : {}),
+    },
   });
   if (!response.ok) {
-    const failure = await response.json().catch(() => null) as { error?: { message?: string } } | null;
-    throw new Error(failure?.error?.message ?? `MongoDB 文档导出请求失败 (${response.status})`);
+    const failure = (await response.json().catch(() => null)) as {
+      error?: { message?: string; code?: string; issue?: ValidationIssue };
+    } | null;
+    if (failure?.error?.message)
+      throw new BackendRequestError(
+        failure.error.message,
+        response.status,
+        failure.error.code,
+        isValidationIssue(failure.error.issue) ? failure.error.issue : undefined,
+      );
+    throw uiError('MongoDB 文档导出请求失败 ({v0})', { v0: response.status });
   }
-  if (!response.body) throw new Error('浏览器没有提供可读取的下载流');
+  if (!response.body) throw uiError('浏览器没有提供可读取的下载流');
   let writer: SaveWriter | null = null;
   try {
     writer = handle ? await handle.createWritable() : null;

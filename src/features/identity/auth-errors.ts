@@ -1,3 +1,8 @@
+import { getLocale, type Locale } from '@/lib/i18n/locale';
+
+import { createTranslator } from '@/lib/i18n/messages';
+import { messages } from './i18n/auth-errors.messages';
+
 /**
  * Global Fouc identity error boundary.
  *
@@ -35,7 +40,12 @@ export class FoucAuthFlowError extends Error {
 
   constructor(
     code: FoucAuthErrorCode,
-    options: { message?: string; httpStatus?: number | null; serverCode?: string | null; cause?: unknown } = {},
+    options: {
+      message?: string;
+      httpStatus?: number | null;
+      serverCode?: string | null;
+      cause?: unknown;
+    } = {},
   ) {
     super(options.message ?? defaultAuthErrorMessage(code), { cause: options.cause });
     this.name = 'FoucAuthFlowError';
@@ -94,16 +104,15 @@ function domainForStatus(status: number): FoucAuthErrorCode {
   return 'INVALID_REQUEST';
 }
 
-export function authFlowErrorFromResponse(
-  status: number,
-  body: unknown,
-): FoucAuthFlowError {
-  const serverCode = typeof (body as { code?: unknown } | null)?.code === 'string'
-    ? (body as { code: string }).code
-    : null;
-  const code = serverCode && domainByServerCode[serverCode]
-    ? domainByServerCode[serverCode]
-    : domainForStatus(status);
+export function authFlowErrorFromResponse(status: number, body: unknown): FoucAuthFlowError {
+  const serverCode =
+    typeof (body as { code?: unknown } | null)?.code === 'string'
+      ? (body as { code: string }).code
+      : null;
+  const code =
+    serverCode && domainByServerCode[serverCode]
+      ? domainByServerCode[serverCode]
+      : domainForStatus(status);
   return new FoucAuthFlowError(code, { httpStatus: status, serverCode });
 }
 
@@ -136,43 +145,49 @@ function defaultAuthErrorMessage(code: FoucAuthErrorCode): string {
 export type AuthErrorCopy = { title: string; description: string };
 
 /** Fixed Chinese copy per domain code; never built from server-provided text. */
-const authErrorCopy: Record<FoucAuthErrorCode, AuthErrorCopy> = {
-  SESSION_NOT_PERSISTED: { title: '登录会话未能保存', description: '浏览器没有保存会话，请检查 Cookie 设置后重试。' },
-  INVALID_CREDENTIALS: {
-    title: '邮箱或密码不正确',
-    description: '请检查后重试;若刚注册,请先完成邮箱验证再登录。',
-  },
-  EMAIL_NOT_VERIFIED: {
-    title: '邮箱尚未验证',
-    description: '该邮箱已注册但尚未完成验证,请查收验证邮件后再登录。',
-  },
-  EMAIL_DELIVERY_FAILED: {
-    title: '验证邮件暂时未能发送',
-    description: '邮件通道暂时不可用,稍后可以在此重新发送。',
-  },
-  AUTH_UNAVAILABLE: {
-    title: '认证服务暂时不可用',
-    description: '请稍后重试;若持续出现,请联系管理员。',
-  },
-  RATE_LIMITED: {
-    title: '操作过于频繁',
-    description: '为保障账号安全,请等待约一分钟后再试。',
-  },
-  NETWORK: {
-    title: '无法连接认证服务',
-    description: '请检查网络连接后重试。',
-  },
-  ENDPOINT: {
-    title: '认证服务地址未配置',
-    description: '当前部署缺少认证服务配置,请联系管理员。',
-  },
-  INVALID_REQUEST: {
-    title: '请求未能完成',
-    description: '请检查输入后重试;若持续出现,请联系管理员。',
-  },
-};
+function getAuthCopies(locale: Locale): Record<FoucAuthErrorCode, AuthErrorCopy> {
+  const uiText = createTranslator(messages, locale);
+  return {
+    SESSION_NOT_PERSISTED: {
+      title: uiText('登录会话未能保存'),
+      description: uiText('浏览器没有保存会话，请检查 Cookie 设置后重试。'),
+    },
+    INVALID_CREDENTIALS: {
+      title: uiText('邮箱或密码不正确'),
+      description: uiText('请检查后重试;若刚注册,请先完成邮箱验证再登录。'),
+    },
+    EMAIL_NOT_VERIFIED: {
+      title: uiText('邮箱尚未验证'),
+      description: uiText('该邮箱已注册但尚未完成验证,请查收验证邮件后再登录。'),
+    },
+    EMAIL_DELIVERY_FAILED: {
+      title: uiText('验证邮件暂时未能发送'),
+      description: uiText('邮件通道暂时不可用,稍后可以在此重新发送。'),
+    },
+    AUTH_UNAVAILABLE: {
+      title: uiText('认证服务暂时不可用'),
+      description: uiText('请稍后重试;若持续出现,请联系管理员。'),
+    },
+    RATE_LIMITED: {
+      title: uiText('操作过于频繁'),
+      description: uiText('为保障账号安全,请等待约一分钟后再试。'),
+    },
+    NETWORK: {
+      title: uiText('无法连接认证服务'),
+      description: uiText('请检查网络连接后重试。'),
+    },
+    ENDPOINT: {
+      title: uiText('认证服务地址未配置'),
+      description: uiText('当前部署缺少认证服务配置,请联系管理员。'),
+    },
+    INVALID_REQUEST: {
+      title: uiText('请求未能完成'),
+      description: uiText('请检查输入后重试;若持续出现,请联系管理员。'),
+    },
+  };
+}
 
-export function authErrorCopyFor(error: unknown): AuthErrorCopy {
+export function authErrorCopyFor(error: unknown, locale: Locale = getLocale()): AuthErrorCopy {
   const code = isFoucAuthFlowError(error) ? error.code : 'NETWORK';
-  return authErrorCopy[code];
+  return getAuthCopies(locale)[code];
 }

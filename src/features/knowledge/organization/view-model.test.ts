@@ -17,9 +17,13 @@ describe('deriveListState', () => {
   });
 
   test('auth and permission failures are distinct from other errors', () => {
-    expect(deriveListState({ status: 'error', errorCode: 'UNAUTHENTICATED' })).toBe('unauthenticated');
+    expect(deriveListState({ status: 'error', errorCode: 'UNAUTHENTICATED' })).toBe(
+      'unauthenticated',
+    );
     expect(deriveListState({ status: 'error', errorCode: 'FORBIDDEN' })).toBe('forbidden');
-    expect(deriveListState({ status: 'error', errorCode: 'KNOWLEDGE_BASE_NOT_FOUND' })).toBe('error');
+    expect(deriveListState({ status: 'error', errorCode: 'KNOWLEDGE_BASE_NOT_FOUND' })).toBe(
+      'error',
+    );
     expect(deriveListState({ status: 'error', errorCode: 'NETWORK' })).toBe('error');
     expect(deriveListState({ status: 'error', errorCode: null })).toBe('error');
   });
@@ -70,8 +74,14 @@ describe('role authority rendering', () => {
 
 describe('root default access presentation', () => {
   test('exactly the four levels plus null, each labeled and described', () => {
-    expect(defaultAccessOptions.map((option) => option.value)).toEqual([null, 'view', 'comment', 'edit', 'full']);
-    for (const option of defaultAccessOptions) {
+    expect(defaultAccessOptions().map((option) => option.value)).toEqual([
+      null,
+      'view',
+      'comment',
+      'edit',
+      'full',
+    ]);
+    for (const option of defaultAccessOptions()) {
       expect(option.label.length).toBeGreaterThan(0);
       expect(option.description.length).toBeGreaterThan(0);
     }

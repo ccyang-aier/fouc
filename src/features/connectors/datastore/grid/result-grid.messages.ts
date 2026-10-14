@@ -1,0 +1,88 @@
+import { defineMessages } from '@/lib/i18n';
+
+export const messages = defineMessages({
+  querySucceededWithNoReturnedRecords: [
+    '查询成功，没有返回记录',
+    'Query succeeded with no returned records',
+  ],
+  copied: ['已复制{p0}', 'Copied {p0}'],
+  copyFailedCheckBrowserClipboardPermissions: [
+    '复制失败，请检查浏览器剪贴板权限',
+    'Copy failed. Check browser clipboard permissions',
+  ],
+  cells: ['{p0} 个单元格 · {p1}', '{p0} cells · {p1}'],
+  originalCellValue: ['单元格原始值', 'Original cell value'],
+  originalSelectionValuesJson: ['选区原始值 · JSON', 'Original selection values · JSON'],
+  columnNames: ['列名', 'Column names'],
+  copySelectionAsTsvCtrlC: ['复制选区为 TSV · Ctrl / ⌘ C', 'Copy selection as TSV · Ctrl / ⌘ C'],
+  copySelectionAsCsv: ['复制选区为 CSV', 'Copy selection as CSV'],
+  cellDetailsEnter: ['单元格详情 · Enter', 'Cell details · Enter'],
+  details: ['详情', 'Details'],
+  clearGridSelection: ['清除网格选择', 'Clear grid selection'],
+  clearSelectionEscape: ['清除选择 · Escape', 'Clear selection · Escape'],
+  transposedResultsView: ['转置结果视图', 'Transposed results view'],
+  columnsAppearAsRowsAndRecordsAsColumnsOriginalValues: [
+    '字段按行、记录按列显示；原始值保持不变',
+    'Columns appear as rows and records as columns; original values are unchanged',
+  ],
+  transpose: ['转置', 'Transpose'],
+  jumpToColumn: ['跳转列', 'Jump to column'],
+  cells1453: ['{p0} 个单元格', '{p0} cells'],
+  dataResults: ['数据结果', 'Data results'],
+  rows: ['{p0} 行', '{p0} rows'],
+  clickToSelectShiftForRangesCtrlForMultipleSelections: [
+    '点击选择 · Shift 连选 · Ctrl 多选',
+    'Click to select · Shift for ranges · Ctrl for multiple selections',
+  ],
+  queryResultsUseArrowKeysToMoveAndShiftTo: [
+    '查询结果，使用方向键移动，Shift 扩展选区',
+    'Query results: use arrow keys to move and Shift to extend the selection',
+  ],
+  selectAllReturnedVisibleCells: [
+    '选择本次已返回的全部可见单元格',
+    'Select all returned visible cells',
+  ],
+  pressAndDragAColumnAlt: ['长按拖动列 · Alt + ← / →', 'Press and drag a column · Alt + ← / →'],
+  thisColumnHasADisplayFormat: ['此列设置了显示格式', 'This column has a display format'],
+  resizeColumn: ['调整 {p0} 列宽', 'Resize column {p0}'],
+  dragToResizeDoubleClickToAutoFit: [
+    '拖动调整列宽 · 双击自动适宽 · ← / →',
+    'Drag to resize · Double-click to auto-fit · ← / →',
+  ],
+  originalValueRetained: ['{p0}\n保持原始值：{p1}', '{p0}\nOriginal value retained: {p1}'],
+  displayedValueOriginalValue: [
+    '显示值：{p0}\n原始值：{p1}',
+    'Displayed value: {p0}\nOriginal value: {p1}',
+  ],
+  emptyString: ['空字符串', 'Empty string'],
+  resultColumns: ['{p0} 个结果列', '{p0} result columns'],
+  thisExecutionReturnedNoDataResults: [
+    '本次执行没有数据结果',
+    'This execution returned no data results',
+  ],
+  currentPageRows: ['当前页 {p0}–{p1} 行', 'Current page: rows {p0}–{p1}'],
+  rowsReturned: ['本次返回 {p0} 行', '{p0} rows returned'],
+  moreDataAvailable: [' · 还有数据', ' · More data available'],
+  numeric: ['数值', 'Numeric'],
+  exactSum: ['精确求和：{p0}', 'Exact sum: {p0}'],
+  sum: ['求和', 'Sum'],
+  approximate: ['近似', 'Approximate'],
+  exact: ['精确', 'Exact'],
+  average: ['{p0}平均值：{p1}', '{p0} average: {p1}'],
+  average1475: ['平均', 'Average'],
+  theDriverReturnedUnsafeIntegersAndNumbersExceedStatisticalPrecision: [
+    '{p0} 个驱动已返回不安全整数，{p1} 个数值超出统计精度范围；未参与求和与平均',
+    'The driver returned {p0} unsafe integers, and {p1} numbers exceed statistical precision; they were excluded from sum and average',
+  ],
+  valuesExcludedFromNumericStatistics: [
+    '个值未计入数值统计',
+    ' values excluded from numeric statistics',
+  ],
+  calculating: ['统计中…', 'Calculating…'],
+  statisticsAndCopyingCoverOnlyCurrentlyReturnedData: [
+    '统计与复制仅作用于当前已返回数据',
+    'Statistics and copying cover only currently returned data',
+  ],
+  couldNotCaptureImage: ['截图失败', 'Could not capture image'],
+  rowDetailsRow: ['行详情 · 第 {p0} 行', 'Row details · Row {p0}'],
+});

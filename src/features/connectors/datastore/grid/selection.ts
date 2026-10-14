@@ -1,5 +1,5 @@
-import { summarizeExactValues, type ExactSelectionSummary } from "./exact-summary";
-import type { DatabaseCell } from "@fouc/shared";
+import { summarizeExactValues, type ExactSelectionSummary } from './exact-summary';
+import type { DatabaseCell } from '@fouc/shared';
 export type GridCellValue = DatabaseCell;
 
 export interface CellPosition {
@@ -24,12 +24,15 @@ export interface CellSelectionMatrix extends SelectionData {
   columnIndexes: number[];
 }
 
-export interface SelectionSummary extends ExactSelectionSummary { cellCount: number; rowCount: number; }
+export interface SelectionSummary extends ExactSelectionSummary {
+  cellCount: number;
+  rowCount: number;
+}
 
 export function parseClipboardTable(text: string): string[][] {
-  const normalized = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").replace(/\n$/, "");
-  if (!normalized) return [[""]];
-  return normalized.split("\n").map((row) => row.split("\t"));
+  const normalized = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n$/, '');
+  if (!normalized) return [['']];
+  return normalized.split('\n').map((row) => row.split('\t'));
 }
 
 export function normalizeSelectedColumnIndexes(columnIndexes: Iterable<number>): number[] {
@@ -43,7 +46,10 @@ export function dedupeColumnIndexes(columnIndexes: Iterable<number>): number[] {
   return [...new Set(columnIndexes)].filter((index) => index >= 0);
 }
 
-export function normalizeSelectionRange(anchor: CellPosition, focus: CellPosition): CellSelectionRange {
+export function normalizeSelectionRange(
+  anchor: CellPosition,
+  focus: CellPosition,
+): CellSelectionRange {
   return {
     startRow: Math.min(anchor.rowIndex, focus.rowIndex),
     endRow: Math.max(anchor.rowIndex, focus.rowIndex),
@@ -52,7 +58,11 @@ export function normalizeSelectionRange(anchor: CellPosition, focus: CellPositio
   };
 }
 
-export function rowSelectionRange(rowIndex: number, columnCount: number, endRowIndex = rowIndex): CellSelectionRange | null {
+export function rowSelectionRange(
+  rowIndex: number,
+  columnCount: number,
+  endRowIndex = rowIndex,
+): CellSelectionRange | null {
   if (rowIndex < 0 || endRowIndex < 0 || columnCount <= 0) return null;
   return {
     startRow: Math.min(rowIndex, endRowIndex),
@@ -62,7 +72,11 @@ export function rowSelectionRange(rowIndex: number, columnCount: number, endRowI
   };
 }
 
-export function columnSelectionRange(rowCount: number, colIndex: number, endColIndex = colIndex): CellSelectionRange | null {
+export function columnSelectionRange(
+  rowCount: number,
+  colIndex: number,
+  endColIndex = colIndex,
+): CellSelectionRange | null {
   if (rowCount <= 0 || colIndex < 0 || endColIndex < 0) return null;
   return {
     startRow: 0,
@@ -72,27 +86,51 @@ export function columnSelectionRange(rowCount: number, colIndex: number, endColI
   };
 }
 
-export function allCellsSelectionRange(rowCount: number, columnCount: number): CellSelectionRange | null {
+export function allCellsSelectionRange(
+  rowCount: number,
+  columnCount: number,
+): CellSelectionRange | null {
   if (rowCount <= 0 || columnCount <= 0) return null;
   return { startRow: 0, endRow: rowCount - 1, startCol: 0, endCol: columnCount - 1 };
 }
 
-export function isCellInSelection(rowIndex: number, colIndex: number, range: CellSelectionRange | null): boolean {
+export function isCellInSelection(
+  rowIndex: number,
+  colIndex: number,
+  range: CellSelectionRange | null,
+): boolean {
   if (!range) return false;
-  return rowIndex >= range.startRow && rowIndex <= range.endRow && colIndex >= range.startCol && colIndex <= range.endCol;
+  return (
+    rowIndex >= range.startRow &&
+    rowIndex <= range.endRow &&
+    colIndex >= range.startCol &&
+    colIndex <= range.endCol
+  );
 }
 
-export function extractSelection(columns: readonly string[], rows: readonly GridCellValue[][], range: CellSelectionRange | null): SelectionData {
+export function extractSelection(
+  columns: readonly string[],
+  rows: readonly GridCellValue[][],
+  range: CellSelectionRange | null,
+): SelectionData {
   if (!range) return { columns: [], rows: [] };
 
   const selectedColumns = columns.slice(range.startCol, range.endCol + 1);
-  const selectedRows = rows.slice(range.startRow, range.endRow + 1).map((row) => row.slice(range.startCol, range.endCol + 1));
+  const selectedRows = rows
+    .slice(range.startRow, range.endRow + 1)
+    .map((row) => row.slice(range.startCol, range.endCol + 1));
 
   return { columns: selectedColumns, rows: selectedRows };
 }
 
-export function extractColumnsSelection(columns: readonly string[], rows: readonly GridCellValue[][], selectedColumnIndexes: Iterable<number>): SelectionData {
-  const normalizedIndexes = normalizeSelectedColumnIndexes(selectedColumnIndexes).filter((index) => index < columns.length);
+export function extractColumnsSelection(
+  columns: readonly string[],
+  rows: readonly GridCellValue[][],
+  selectedColumnIndexes: Iterable<number>,
+): SelectionData {
+  const normalizedIndexes = normalizeSelectedColumnIndexes(selectedColumnIndexes).filter(
+    (index) => index < columns.length,
+  );
   if (normalizedIndexes.length === 0) return { columns: [], rows: [] };
 
   return {
@@ -102,8 +140,24 @@ export function extractColumnsSelection(columns: readonly string[], rows: readon
 }
 
 export function summarizeSelection(selection: SelectionData): SelectionSummary {
-  return { ...summarizeExactValues(selection.rows.flat()), cellCount: selection.rows.reduce((count, row) => count + row.length, 0), rowCount: selection.rows.length };
+  return {
+    ...summarizeExactValues(selection.rows.flat()),
+    cellCount: selection.rows.reduce((count, row) => count + row.length, 0),
+    rowCount: selection.rows.length,
+  };
 }
-export function createPendingSelectionSummary(cellCount: number, rowCount: number): SelectionSummary {
-  return { cellCount, rowCount, numericCount: 0, sum: null, average: null, averageApproximate: false, unsafeNumericCount: 0, limitedNumericCount: 0 };
+export function createPendingSelectionSummary(
+  cellCount: number,
+  rowCount: number,
+): SelectionSummary {
+  return {
+    cellCount,
+    rowCount,
+    numericCount: 0,
+    sum: null,
+    average: null,
+    averageApproximate: false,
+    unsafeNumericCount: 0,
+    limitedNumericCount: 0,
+  };
 }

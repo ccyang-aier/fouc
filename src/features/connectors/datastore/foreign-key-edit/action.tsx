@@ -1,39 +1,36 @@
-"use client";
-
-import { useState } from "react";
-import { Link } from "@phosphor-icons/react";
-import type { RelationalProvider } from "@fouc/shared";
-import {
-  useForeignKeyEdit,
-  type ForeignKeyEditContext,
-} from "./use-foreign-key-edit";
-import { ForeignKeyDesigner } from "./designer";
-import { ForeignKeyReview } from "./review";
-import { SqlDialog } from "../sql-library-dialog";
-import styles from "./foreign-key-edit.module.css";
-
+'use client';
+import { useTranslation } from '@/lib/i18n';
+import { messages as connectorMessages } from './action.messages';
+import { useState } from 'react';
+import { Link } from '@phosphor-icons/react';
+import type { RelationalProvider } from '@fouc/shared';
+import { useForeignKeyEdit, type ForeignKeyEditContext } from './use-foreign-key-edit';
+import { ForeignKeyDesigner } from './designer';
+import { ForeignKeyReview } from './review';
+import { SqlDialog } from '../sql-library-dialog';
+import styles from './foreign-key-edit.module.css';
 interface Props extends ForeignKeyEditContext {
   provider: RelationalProvider;
   disabled: boolean;
 }
-
 export function ForeignKeyEditAction(props: Props) {
+  const { t: tConnector } = useTranslation(connectorMessages);
   const [open, setOpen] = useState(false);
   return (
     <>
       <button
         type="button"
-        aria-label="外键管理"
-        disabled={props.disabled || props.provider === "sqlite" || !props.table}
+        aria-label={tConnector('foreignKeyManagement')}
+        disabled={props.disabled || props.provider === 'sqlite' || !props.table}
         title={
-          props.provider === "sqlite"
-            ? "SQLite外键修改需要重建表，当前未实现"
-            : "真实外键创建与删除 · 先审查DDL"
+          props.provider === 'sqlite'
+            ? tConnector('changingSqliteForeignKeysRequiresRebuildingTheTableAndIs')
+            : tConnector('createAndDropRealForeignKeysReviewDdlFirst')
         }
         onClick={() => setOpen(true)}
       >
         <Link size={14} />
-        <span>外键管理</span>
+        <span>{tConnector('foreignKeyManagement')}</span>
       </button>
       {open && (
         <ForeignKeyDialog
@@ -45,7 +42,6 @@ export function ForeignKeyEditAction(props: Props) {
     </>
   );
 }
-
 function ForeignKeyDialog({
   base,
   provider,
@@ -56,7 +52,10 @@ function ForeignKeyDialog({
   onChanged,
   onBusyChange,
   onClose,
-}: Props & { onClose: () => void }) {
+}: Props & {
+  onClose: () => void;
+}) {
+  const { t: tConnector } = useTranslation(connectorMessages);
   const model = useForeignKeyEdit({
     base,
     schema,
@@ -84,7 +83,7 @@ function ForeignKeyDialog({
   } = model;
   return (
     <SqlDialog
-      title="外键管理"
+      title={tConnector('foreignKeyManagement')}
       className={styles.dialog}
       busy={locked}
       onClose={onClose}
@@ -96,34 +95,25 @@ function ForeignKeyDialog({
             {schema}.{table}
           </strong>
           <span>
-            {provider === "mysql" ? "MySQL · InnoDB" : "PostgreSQL"} ·{" "}
-            {prepared ? "原生DDL审查" : "真实字段与引用键"}
+            {provider === 'mysql' ? 'MySQL · InnoDB' : 'PostgreSQL'} ·{' '}
+            {prepared
+              ? tConnector('nativeDdlReview')
+              : tConnector('actualColumnsAndReferencedKeys')}
           </span>
         </div>
       </div>
       <div className={styles.body}>
         {prepared ? (
-          <ForeignKeyReview
-            model={model}
-            provider={provider}
-            writable={writable}
-          />
+          <ForeignKeyReview model={model} provider={provider} writable={writable} />
         ) : (
           <ForeignKeyDesigner model={model} />
         )}
         {(error || notice) && (
-          <p
-            className={error ? styles.error : styles.hint}
-            role={error ? "alert" : "status"}
-          >
+          <p className={error ? styles.error : styles.hint} role={error ? 'alert' : 'status'}>
             {error || notice}
             {!options && error && (
-              <button
-                type="button"
-                disabled={Boolean(busy)}
-                onClick={retryOptions}
-              >
-                重读目录
+              <button type="button" disabled={Boolean(busy)} onClick={retryOptions}>
+                {tConnector('reloadCatalog')}
               </button>
             )}
           </p>
@@ -131,16 +121,12 @@ function ForeignKeyDialog({
       </div>
       <footer className={styles.footer}>
         <button type="button" disabled={locked} onClick={onClose}>
-          {result ? "关闭" : "取消"}
+          {result ? tConnector('close') : tConnector('cancel')}
         </button>
         <span />
         {prepared && !result && (
-          <button
-            type="button"
-            disabled={Boolean(busy)}
-            onClick={() => void edit()}
-          >
-            返回编辑
+          <button type="button" disabled={Boolean(busy)} onClick={() => void edit()}>
+            {tConnector('backToEditing')}
           </button>
         )}
         {!prepared ? (
@@ -150,7 +136,7 @@ function ForeignKeyDialog({
             disabled={!options || !valid || Boolean(busy)}
             onClick={() => void prepare()}
           >
-            {busy === "prepare" ? "只读审查中…" : "审查外键DDL"}
+            {busy === 'prepare' ? tConnector('readOnlyReview') : tConnector('reviewForeignKeyDdl')}
           </button>
         ) : (
           !result && (
@@ -160,7 +146,9 @@ function ForeignKeyDialog({
               disabled={!confirmed || !writable || !remaining || Boolean(busy)}
               onClick={() => void commit()}
             >
-              {busy === "commit" ? "原生提交中…" : "确认外键变更"}
+              {busy === 'commit'
+                ? tConnector('committingNativeChanges')
+                : tConnector('confirmForeignKeyChanges')}
             </button>
           )
         )}

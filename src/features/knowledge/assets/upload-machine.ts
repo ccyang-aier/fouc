@@ -1,5 +1,8 @@
 'use client';
 
+import { createTranslator } from '@/lib/i18n';
+import { knowledgeMessages } from './upload-machine.messages';
+
 /**
  * 资产上传控制器(U08 · 设计 §8.1):一个文件一条独立流水线 ——
  * 哈希 → prepare(秒传探测)→ 预签名直传 → confirm(完整性确认)。
@@ -15,20 +18,32 @@
  * 所有 IO 端口注入:浏览器装配传 XHR 传输与 tRPC API;测试传假端口。
  */
 
-import type { AssetConfirmResult, AssetUploadPrepareResult } from '@fouc/shared/knowledge/contracts';
+import type {
+  AssetConfirmResult,
+  AssetUploadPrepareResult,
+} from '@fouc/shared/knowledge/contracts';
 import { KnowledgeDataError } from '../data/errors';
 import { hashBlobSha256 } from './sha256';
 import type { AssetTransfer } from './transfer';
 import { AssetTransferError } from './transfer';
 import type { KnowledgeAssetsApi } from './assets-api';
 
+const knowledgeT = createTranslator(knowledgeMessages);
+
 /** `uploadIntentSchema` 的客户端镜像:超限/空文件在哈希前就给出可见错误。 */
 export const assetMaxBytes = 5 * 1024 ** 3;
 const mimePattern = /^[\w.+-]+\/[\w.+-]+$/;
 
-export type AssetUploadPhase = 'hashing' | 'preparing' | 'uploading' | 'confirming' | 'done' | 'canceled' | 'error';
+export type AssetUploadPhase =
+  'hashing' | 'preparing' | 'uploading' | 'confirming' | 'done' | 'canceled' | 'error';
 
-export type AssetUploadErrorCode = 'FILE_INVALID' | 'HASH_FAILED' | 'PREPARE_FAILED' | 'TRANSFER_NETWORK' | 'TRANSFER_REJECTED' | 'CONFIRM_FAILED';
+export type AssetUploadErrorCode =
+  | 'FILE_INVALID'
+  | 'HASH_FAILED'
+  | 'PREPARE_FAILED'
+  | 'TRANSFER_NETWORK'
+  | 'TRANSFER_REJECTED'
+  | 'CONFIRM_FAILED';
 
 export interface AssetUploadItem {
   id: string;
@@ -47,10 +62,21 @@ export interface AssetUploadItem {
 }
 
 export interface AssetUploadPorts {
-  hashFile(file: File, progress: { onProgress: (ratio: number) => void; signal: AbortSignal }): Promise<string>;
-  prepare(knowledgeBaseId: string, intent: { hash: string; mime: string; size: number; name: string }, signal?: AbortSignal): Promise<AssetUploadPrepareResult>;
+  hashFile(
+    file: File,
+    progress: { onProgress: (ratio: number) => void; signal: AbortSignal },
+  ): Promise<string>;
+  prepare(
+    knowledgeBaseId: string,
+    intent: { hash: string; mime: string; size: number; name: string },
+    signal?: AbortSignal,
+  ): Promise<AssetUploadPrepareResult>;
   transfer: AssetTransfer;
-  confirm(knowledgeBaseId: string, intent: { hash: string; mime: string; size: number; name: string }, signal?: AbortSignal): Promise<AssetConfirmResult>;
+  confirm(
+    knowledgeBaseId: string,
+    intent: { hash: string; mime: string; size: number; name: string },
+    signal?: AbortSignal,
+  ): Promise<AssetConfirmResult>;
 }
 
 export interface UploadedAsset {
@@ -76,7 +102,11 @@ export interface AssetUploadStore {
   clearFinished(): void;
 }
 
-export function createAssetUploadStore(options: { knowledgeBaseId: string; ports: AssetUploadPorts; onUploaded?: (asset: UploadedAsset) => void }): AssetUploadStore {
+export function createAssetUploadStore(options: {
+  knowledgeBaseId: string;
+  ports: AssetUploadPorts;
+  onUploaded?: (asset: UploadedAsset) => void;
+}): AssetUploadStore {
   const { knowledgeBaseId, ports } = options;
   let items: AssetUploadItem[] = [];
   const listeners = new Set<() => void>();
@@ -105,17 +135,40 @@ export function createAssetUploadStore(options: { knowledgeBaseId: string; ports
     };
   };
 
-  const intentOf = (item: AssetUploadItem, hash: string) => ({ hash, mime: item.mime, size: item.size, name: item.name });
+  const intentOf = (item: AssetUploadItem, hash: string) => ({
+    hash,
+    mime: item.mime,
+    size: item.size,
+    name: item.name,
+  });
 
   /** 取消信号是相位语义不是错误:统一在 catch 处按 signal.aborted 分流。 */
-  const tagged = (origin: 'hash' | 'prepare' | 'transfer' | 'confirm', cause: unknown): AssetUploadItem['error'] => {
+  const tagged = (
+    origin: 'hash' | 'prepare' | 'transfer' | 'confirm',
+    cause: unknown,
+  ): AssetUploadItem['error'] => {
     if (cause instanceof AssetTransferError) {
       return cause.kind === 'network'
         ? { code: 'TRANSFER_NETWORK', detail: null }
-        : { code: 'TRANSFER_REJECTED', detail: cause.status === null ? null : `HTTP ${cause.status}` };
+        : {
+            code: 'TRANSFER_REJECTED',
+            detail: cause.status === null ? null : `HTTP ${cause.status}`,
+          };
     }
-    const code: AssetUploadErrorCode = origin === 'hash' ? 'HASH_FAILED' : origin === 'prepare' ? 'PREPARE_FAILED' : origin === 'confirm' ? 'CONFIRM_FAILED' : 'TRANSFER_NETWORK';
-    const detail = cause instanceof KnowledgeDataError ? cause.message : cause instanceof Error && cause.message ? cause.message : null;
+    const code: AssetUploadErrorCode =
+      origin === 'hash'
+        ? 'HASH_FAILED'
+        : origin === 'prepare'
+          ? 'PREPARE_FAILED'
+          : origin === 'confirm'
+            ? 'CONFIRM_FAILED'
+            : 'TRANSFER_NETWORK';
+    const detail =
+      cause instanceof KnowledgeDataError
+        ? cause.message
+        : cause instanceof Error && cause.message
+          ? cause.message
+          : null;
     return { code, detail };
   };
 
@@ -124,11 +177,16 @@ export function createAssetUploadStore(options: { knowledgeBaseId: string; ports
     controllers.set(item.id, controller);
     const signal = controller.signal;
     const failFast = () => {
-      if (signal.aborted) throw signal.reason ?? new DOMException('上传已取消。', 'AbortError');
+      if (signal.aborted)
+        throw signal.reason ?? new DOMException(knowledgeT('uploadCancelled'), 'AbortError');
     };
-    const guard = <T,>(origin: 'hash' | 'prepare' | 'transfer' | 'confirm', work: () => Promise<T>): Promise<T> =>
+    const guard = <T>(
+      origin: 'hash' | 'prepare' | 'transfer' | 'confirm',
+      work: () => Promise<T>,
+    ): Promise<T> =>
       work().catch((cause: unknown) => {
-        if (signal.aborted) throw signal.reason ?? new DOMException('上传已取消。', 'AbortError');
+        if (signal.aborted)
+          throw signal.reason ?? new DOMException(knowledgeT('uploadCancelled'), 'AbortError');
         throw Object.assign(new Error(origin), { cause, origin });
       });
 
@@ -136,12 +194,16 @@ export function createAssetUploadStore(options: { knowledgeBaseId: string; ports
       let hash = item.hash;
       if (!hash) {
         patch(item.id, { phase: 'hashing', progress: 0 });
-        hash = await guard('hash', () => ports.hashFile(item.file, { onProgress: byteProgress(item.id), signal }));
+        hash = await guard('hash', () =>
+          ports.hashFile(item.file, { onProgress: byteProgress(item.id), signal }),
+        );
         patch(item.id, { hash });
       }
       failFast();
       patch(item.id, { phase: 'preparing' });
-      const prepared = await guard('prepare', () => ports.prepare(knowledgeBaseId, intentOf(item, hash!), signal));
+      const prepared = await guard('prepare', () =>
+        ports.prepare(knowledgeBaseId, intentOf(item, hash!), signal),
+      );
       failFast();
 
       if (prepared.action === 'reuse') {
@@ -150,29 +212,71 @@ export function createAssetUploadStore(options: { knowledgeBaseId: string; ports
       }
 
       patch(item.id, { phase: 'uploading', progress: 0 });
-      await guard('transfer', () => ports.transfer({ url: prepared.url, method: 'PUT', headers: prepared.headers, body: item.file, onProgress: byteProgress(item.id), signal }));
+      await guard('transfer', () =>
+        ports.transfer({
+          url: prepared.url,
+          method: 'PUT',
+          headers: prepared.headers,
+          body: item.file,
+          onProgress: byteProgress(item.id),
+          signal,
+        }),
+      );
       failFast();
 
       patch(item.id, { phase: 'confirming' });
-      const confirmed = await guard('confirm', () => ports.confirm(knowledgeBaseId, intentOf(item, hash!), signal));
+      const confirmed = await guard('confirm', () =>
+        ports.confirm(knowledgeBaseId, intentOf(item, hash!), signal),
+      );
       return finish(item, { hash: hash!, reused: false, created: confirmed.created });
     } catch (cause) {
-      const taggedCause = cause as { origin?: 'hash' | 'prepare' | 'transfer' | 'confirm' } & { cause?: unknown };
+      const taggedCause = cause as { origin?: 'hash' | 'prepare' | 'transfer' | 'confirm' } & {
+        cause?: unknown;
+      };
       if (signal.aborted) patch(item.id, { phase: 'canceled', progress: 0, error: null });
-      else patch(item.id, { phase: 'error', progress: 0, error: taggedCause.origin ? tagged(taggedCause.origin, taggedCause.cause) : { code: 'TRANSFER_NETWORK', detail: null } });
+      else
+        patch(item.id, {
+          phase: 'error',
+          progress: 0,
+          error: taggedCause.origin
+            ? tagged(taggedCause.origin, taggedCause.cause)
+            : { code: 'TRANSFER_NETWORK', detail: null },
+        });
     } finally {
       controllers.delete(item.id);
     }
   }
 
-  function finish(item: AssetUploadItem, result: { hash: string; reused: boolean; created: boolean }) {
-    patch(item.id, { phase: 'done', progress: 1, error: null, result: { hash: result.hash, reused: result.reused, created: result.created } });
-    options.onUploaded?.({ hash: result.hash, name: item.name, mime: item.mime, size: item.size, reused: result.reused, created: result.created });
+  function finish(
+    item: AssetUploadItem,
+    result: { hash: string; reused: boolean; created: boolean },
+  ) {
+    patch(item.id, {
+      phase: 'done',
+      progress: 1,
+      error: null,
+      result: { hash: result.hash, reused: result.reused, created: result.created },
+    });
+    options.onUploaded?.({
+      hash: result.hash,
+      name: item.name,
+      mime: item.mime,
+      size: item.size,
+      reused: result.reused,
+      created: result.created,
+    });
   }
 
   function validate(file: File): { mime: string } | { invalid: string } {
-    if (!(file.size > 0 && file.size <= assetMaxBytes)) return { invalid: file.size > assetMaxBytes ? '文件超过 5 GiB 上限。' : '空文件不能上传。' };
-    if (file.name.length < 1 || file.name.length > 255) return { invalid: '文件名长度必须在 1–255 之间。' };
+    if (!(file.size > 0 && file.size <= assetMaxBytes))
+      return {
+        invalid:
+          file.size > assetMaxBytes
+            ? knowledgeT('fileExceedsThe5GibLimit')
+            : knowledgeT('emptyFilesCannotBeUploaded'),
+      };
+    if (file.name.length < 1 || file.name.length > 255)
+      return { invalid: knowledgeT('fileNamesMustContain1255Characters') };
     // 与服务端 normalizeMime 同语义:去掉参数、小写;浏览器给的 type 已如此,
     // 非浏览器运行时(如 Bun)会带 `;charset=…` 参数,契约正则不接受。
     const raw = file.type.split(';', 1)[0]?.trim().toLowerCase() ?? '';
@@ -220,7 +324,13 @@ export function createAssetUploadStore(options: { knowledgeBaseId: string; ports
     retry(id) {
       const current = find(id);
       if (!current || (current.phase !== 'error' && current.phase !== 'canceled')) return;
-      const next: AssetUploadItem = { ...current, phase: current.hash ? 'preparing' : 'hashing', progress: 0, error: null, attempts: current.attempts + 1 };
+      const next: AssetUploadItem = {
+        ...current,
+        phase: current.hash ? 'preparing' : 'hashing',
+        progress: 0,
+        error: null,
+        attempts: current.attempts + 1,
+      };
       items = items.map((item) => (item.id === id ? next : item));
       emit();
       void pipeline(next);
@@ -234,14 +344,19 @@ export function createAssetUploadStore(options: { knowledgeBaseId: string; ports
     },
     clearFinished() {
       const before = items.length;
-      items = items.filter((item) => item.phase !== 'done' && item.phase !== 'canceled' && item.phase !== 'error');
+      items = items.filter(
+        (item) => item.phase !== 'done' && item.phase !== 'canceled' && item.phase !== 'error',
+      );
       if (items.length !== before) emit();
     },
   };
 }
 
 /** 浏览器默认端口:tRPC 资产 API + XHR 直传 + 流式哈希。 */
-export function createBrowserAssetUploadPorts(api: KnowledgeAssetsApi, transfer: AssetTransfer): AssetUploadPorts {
+export function createBrowserAssetUploadPorts(
+  api: KnowledgeAssetsApi,
+  transfer: AssetTransfer,
+): AssetUploadPorts {
   return {
     hashFile: (file, progress) => hashBlobSha256(file, progress),
     prepare: (knowledgeBase, intent, signal) => api.prepareUpload(knowledgeBase, intent, signal),

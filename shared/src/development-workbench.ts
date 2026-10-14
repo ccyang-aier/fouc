@@ -8,7 +8,7 @@ const definitions = [
 const extensions = ['pdf', 'docx', 'xlsx', 'pptx', 'fig', 'md', 'txt', 'csv', 'json', 'html', 'png', 'docx'];
 const names = ['需求说明', '项目路线图', '功能清单', '季度规划', '界面设计规范', '接口说明', '会议纪要', '调研数据', '配置示例', '竞品分析', '流程示意', '团队协作指南'];
 const creators = ['张三', '李四', '王五', '赵六', '陈七'];
-const sources = ['本地上传', 'Figma', '飞书', '企业微信', '钉钉'];
+const sources = ['local-upload', 'figma', 'feishu', 'wechat-work', 'dingtalk'] as const;
 const folderNames = ['产品设计', '项目资料', '团队规范', '研究报告'];
 
 export function createDevelopmentKnowledgeBases() {
@@ -22,7 +22,7 @@ export function createDevelopmentKnowledgeBases() {
       return {
         id: developmentId(0x40000000, serial * 1000 + index), knowledgeBaseId: id, folderId: folders[index % folders.length].id,
         title, creator: creators[index % creators.length], source: sources[index % sources.length],
-        indexStatus: index % 11 === 10 ? '索引失败' : index % 9 === 8 ? '索引中' : '已索引',
+        indexStatus: index % 11 === 10 ? 'failed' : index % 9 === 8 ? 'indexing' : 'indexed',
         starred: index % 7 === 0, draft: index % 13 === 12, deleted: false,
         updatedAt: new Date(Date.UTC(2026, 8, 27, 14, 30) - (baseIndex * 20 + index) * 3_600_000).toISOString(),
         body: { type: 'doc', content: [

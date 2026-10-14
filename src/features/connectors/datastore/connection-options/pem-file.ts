@@ -1,23 +1,26 @@
+import { createUiMessages } from '../../i18n/ui-message';
+import { createTranslator, type Locale } from '@/lib/i18n';
+import { messages as connectorMessages } from './pem-file.messages';
 import { CONNECTION_OPTIONS_LIMITS } from '@fouc/shared/connection-options';
+const connectorUiMessages = createUiMessages(connectorMessages);
 
 export type ConnectionPemKind = 'caPem' | 'certificatePem' | 'privateKeyPem';
-
 /** Read the actual selected Web file, rather than forwarding an unusable browser path. */
 export async function readConnectionPem(
   file: File,
   kind: ConnectionPemKind,
+  locale?: Locale,
 ): Promise<string> {
+  const tConnector = createTranslator(connectorMessages, locale);
   if (file.size > CONNECTION_OPTIONS_LIMITS.pemBytes)
-    throw new Error('PEM 文件不能超过 256 KiB');
+    throw connectorUiMessages.error('pemFilesMustNotExceedKib');
   let text: string;
   try {
-    text = new TextDecoder('utf-8', { fatal: true }).decode(
-      await file.arrayBuffer(),
-    );
+    text = new TextDecoder('utf-8', { fatal: true }).decode(await file.arrayBuffer());
   } catch {
-    throw new Error('文件无法读取为 UTF-8 文本，请选择 PEM 文件');
+    throw connectorUiMessages.error('theFileCannotBeReadAsUtfTextChooseA');
   }
-  if (text.includes('\0')) throw new Error('PEM 文件包含无效字符');
+  if (text.includes('\0')) throw connectorUiMessages.error('thePemFileContainsInvalidCharacters');
   const expression =
     kind === 'privateKeyPem'
       ? /^\s*-----BEGIN (?:RSA |EC |ENCRYPTED )?PRIVATE KEY-----[\s\S]+-----END (?:RSA |EC |ENCRYPTED )?PRIVATE KEY-----\s*$/
@@ -25,8 +28,8 @@ export async function readConnectionPem(
   if (!expression.test(text))
     throw new Error(
       kind === 'privateKeyPem'
-        ? '请选择 PEM 格式的客户端私钥'
-        : '请选择 PEM CERTIFICATE 证书文件',
+        ? tConnector('chooseAPemClientPrivateKey')
+        : tConnector('chooseAPemCertificateFile'),
     );
   return text;
 }

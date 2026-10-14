@@ -1,5 +1,12 @@
-import type { DashboardDocument, DashboardInvoiceItem } from './dashboard-model';
+import { formatDate, formatNumber, getLocale, type Locale } from '@/lib/i18n';
+import {
+  fixtureArrayField,
+  fixtureField,
+  registerProjectFixtures,
+  translateFixed,
+} from '../i18n/display';
 import { csvCell } from './dashboard-download';
+import type { DashboardDocument, DashboardInvoiceItem } from './dashboard-model';
 export const documentTypes = {
   invoice: 'Invoice',
   proposal: 'Proposal',
@@ -9,11 +16,14 @@ export const documentTypes = {
 function numeric(value: number) {
   return Number.isFinite(value) ? Math.max(0, value) : 0;
 }
-export function money(value: number, currency = 'USD') {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(numeric(value));
+export function money(value: number, currency = 'USD', locale: Locale = getLocale()) {
+  return formatNumber(numeric(value), { style: 'currency', currency }, locale);
 }
 export function invoiceTotal(items: DashboardInvoiceItem[]) {
-  return items.reduce((sum, item) => sum + numeric(item.quantity) * numeric(item.rate), 0);
+  return numeric(items.reduce((sum, item) => sum + invoiceAmount(item), 0));
+}
+function invoiceAmount(item: DashboardInvoiceItem) {
+  return numeric(numeric(item.quantity) * numeric(item.rate));
 }
 function escapeHtml(value: string) {
   return value.replace(
@@ -22,7 +32,27 @@ function escapeHtml(value: string) {
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]!,
   );
 }
+export function documentDate(value: string, locale: Locale = getLocale()) {
+  if (!value) return '';
+  const date = new Date(value.length === 10 ? value + 'T00:00:00' : value);
+  return Number.isFinite(date.valueOf())
+    ? formatDate(
+        date,
+        {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          ...(value.length > 10 ? { hour: 'numeric', minute: '2-digit' as const } : {}),
+        },
+        locale,
+      )
+    : value;
+}
 export function documentHtml(value: DashboardDocument) {
+  const locale = getLocale();
+  const label = (key: string) => translateFixed(key, locale);
+  const content = (field: string) => fixtureField(value, field, locale);
+
   const text = (label: string, content: string) =>
     `<h2>${escapeHtml(label)}</h2><p>${escapeHtml(content)}</p>`;
   let body = '';
@@ -32,52 +62,55 @@ export function documentHtml(value: DashboardDocument) {
         .map(
           (item) => `
         <tr>
-          <td>${escapeHtml(item.description)}</td>
-          <td>${numeric(item.quantity)}</td>
+          <td>${escapeHtml(fixtureField(item, 'description', locale))}</td>
+          <td>${formatNumber(numeric(item.quantity), undefined, locale)}</td>
           <td>${money(item.rate, value.currency)}</td>
-          <td>${money(numeric(item.quantity) * numeric(item.rate), value.currency)}</td>
+          <td>${money(invoiceAmount(item), value.currency)}</td>
         </tr>`,
         )
         .join('\n');
       body =
-        text('Client', value.client) +
-        text('Email', value.email) +
-        text('Due date', value.dueDate) +
+        text(label('Client'), content('client')) +
+        text(label('Email'), value.email) +
+        text(label('Due date'), documentDate(value.dueDate, locale)) +
         `<table>
-          <thead><tr><th>Description</th><th>Quantity</th><th>Rate</th><th>Amount</th></tr></thead>
+          <thead><tr><th>${label('Description')}</th><th>${label('Quantity')}</th><th>${label('Rate')}</th><th>${label('Amount')}</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>` +
-        text('Total', money(invoiceTotal(value.items), value.currency)) +
-        text('Notes', value.notes);
+        text(label('Total'), money(invoiceTotal(value.items), value.currency)) +
+        text(label('Notes'), content('notes'));
       break;
     }
     case 'proposal':
       body =
-        text('Client', value.client) +
-        text('Scope', value.scope) +
-        text('Budget', money(value.budget)) +
-        text('Valid until', value.validUntil);
+        text(label('Client'), content('client')) +
+        text(label('Scope'), content('scope')) +
+        text(label('Budget'), money(value.budget)) +
+        text(label('Valid until'), documentDate(value.validUntil, locale));
       break;
     case 'contract':
       body =
-        text('Client', value.client) +
-        text('Provider', value.provider) +
-        text('Term', `${value.startDate} to ${value.endDate}`) +
-        text('Terms', value.terms);
+        text(label('Client'), content('client')) +
+        text(label('Provider'), value.provider) +
+        text(
+          label('Term'),
+          `${documentDate(value.startDate, locale)} ${label('To')} ${documentDate(value.endDate, locale)}`,
+        ) +
+        text(label('Terms'), content('terms'));
       break;
     case 'form':
       body =
-        text('Description', value.description) +
-        `<ol>${value.questions.map((question) => `<li>${escapeHtml(question)}</li>`).join('')}</ol>` +
-        text('Responses', String(value.responses.length));
+        text(label('Description'), content('description')) +
+        `<ol>${value.questions.map((_, index) => `<li>${escapeHtml(fixtureArrayField(value, 'questions', index, locale))}</li>`).join('')}</ol>` +
+        text(label('Responses'), formatNumber(value.responses.length, undefined, locale));
       break;
   }
   return `<!doctype html>
-<html lang="en">
+<html lang="${locale}">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>${escapeHtml(value.title)}</title>
+    <title>${escapeHtml(content('title'))}</title>
     <style>
       body {
         max-width: 820px;
@@ -96,59 +129,75 @@ export function documentHtml(value: DashboardDocument) {
     </style>
   </head>
   <body>
-    <h1>${escapeHtml(value.title)}</h1>
-    <p class="status">${documentTypes[value.kind]} · ${value.status}</p>
+    <h1>${escapeHtml(content('title'))}</h1>
+    <p class="status">${label(documentTypes[value.kind])} · ${label(value.status)}</p>
     ${body}
   </body>
 </html>`;
 }
 export function documentCsv(value: DashboardDocument) {
+  const locale = getLocale();
+  const label = (key: string) => translateFixed(key, locale);
+  const content = (field: string) => fixtureField(value, field, locale);
+
   let rows: (string | number)[][];
   switch (value.kind) {
     case 'invoice':
       rows = [
-        ['Invoice', value.title],
-        ['Client', value.client],
-        ['Email', value.email],
-        ['Due date', value.dueDate],
-        ['Currency', value.currency],
+        [label('Invoice'), content('title')],
+        [label('Client'), content('client')],
+        [label('Email'), value.email],
+        [label('Due date'), documentDate(value.dueDate, locale)],
+        [label('Currency'), value.currency],
         [],
-        ['Description', 'Quantity', 'Rate', 'Amount'],
+        [label('Description'), label('Quantity'), label('Rate'), label('Amount')],
         ...value.items.map((item) => [
-          item.description,
+          fixtureField(item, 'description', locale),
           numeric(item.quantity),
           numeric(item.rate),
-          numeric(item.quantity) * numeric(item.rate),
+          invoiceAmount(item),
         ]),
-        ['Total', '', '', invoiceTotal(value.items)],
-        ['Notes', value.notes],
+        [label('Total'), '', '', invoiceTotal(value.items)],
+        [label('Notes'), content('notes')],
       ];
       break;
     case 'proposal':
       rows = [
-        ['Proposal', value.title],
-        ['Client', value.client],
-        ['Scope', value.scope],
-        ['Budget (USD)', numeric(value.budget)],
-        ['Valid until', value.validUntil],
+        [label('Proposal'), content('title')],
+        [label('Client'), content('client')],
+        [label('Scope'), content('scope')],
+        [label('Budget (USD)'), numeric(value.budget)],
+        [label('Valid until'), documentDate(value.validUntil, locale)],
       ];
       break;
     case 'contract':
       rows = [
-        ['Contract', value.title],
-        ['Client', value.client],
-        ['Provider', value.provider],
-        ['Start date', value.startDate],
-        ['End date', value.endDate],
-        ['Terms', value.terms],
+        [label('Contract'), content('title')],
+        [label('Client'), content('client')],
+        [label('Provider'), value.provider],
+        [label('Start date'), documentDate(value.startDate, locale)],
+        [label('End date'), documentDate(value.endDate, locale)],
+        [label('Terms'), content('terms')],
       ];
       break;
     case 'form':
       rows = [
-        ['Submitted at', ...value.questions],
-        ...value.responses.map((response) => [response.submittedAt, ...response.answers]),
+        [
+          label('Submitted at'),
+          ...value.questions.map((_, index) =>
+            fixtureArrayField(value, 'questions', index, locale),
+          ),
+        ],
+        ...value.responses.map((response) => [
+          documentDate(response.submittedAt, locale),
+          ...response.answers.map((_, index) =>
+            fixtureArrayField(response, 'answers', index, locale),
+          ),
+        ]),
       ];
       break;
   }
   return '\uFEFF' + rows.map((row) => row.map(csvCell).join(',')).join('\r\n');
 }
+
+registerProjectFixtures([documentTypes]);

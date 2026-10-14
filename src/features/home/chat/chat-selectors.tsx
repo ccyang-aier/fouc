@@ -162,7 +162,7 @@ export function ChatContextSelectors({
             aria-label={t("mode")}
           >
             <SlidersHorizontal size={15} />
-            <span>{context.mode}</span>
+            <span>{t(context.mode)}</span>
             <CaretDown size={11} />
           </Button>
         </DropdownMenuTrigger>
@@ -175,7 +175,7 @@ export function ChatContextSelectors({
             {modes.map((mode) => (
               <DropdownMenuRadioItem value={mode} key={mode}>
                 <span>
-                  {mode}
+                  {t(mode)}
                   <span className={styles.menuDescription}>
                     {t(modeDescription[mode])}
                   </span>

@@ -1,36 +1,92 @@
+import { getLocale } from '@/lib/i18n';
+import { createTranslator, type Locale } from '@/lib/i18n';
+import { messages as connectorMessages } from './provider-model.messages';
 import type { RelationalSavedConnection, RedisSavedConnection } from '@fouc/shared';
 import type { MongoSavedConnection } from '@fouc/shared/mongo-connections';
 import type { ConnectionDirectoryMetadata } from '@fouc/shared/connection-directory';
 import type { ConnectionListRow } from './types';
-
-export type SavedDatastoreConnection = RelationalSavedConnection | RedisSavedConnection | MongoSavedConnection;
+export type SavedDatastoreConnection =
+  RelationalSavedConnection | RedisSavedConnection | MongoSavedConnection;
 export type DatastoreProvider = SavedDatastoreConnection['config']['provider'];
-export const emptyDirectory: ConnectionDirectoryMetadata = { favorite: false, projectIds: [], tags: [] };
-
-/** Provider differences stop here; the directory view never knows native configuration shapes. */
-export const directoryProviders: Record<DatastoreProvider, { label: string; family: string; targetLabel: string; accountLabel?: string; authSourceLabel?: string }> = {
-  sqlite: { label: 'SQLite', family: 'relational', targetLabel: '文件' },
-  mysql: { label: 'MySQL', family: 'relational', targetLabel: '连接目标', accountLabel: '登录账户' },
-  postgres: { label: 'PostgreSQL', family: 'relational', targetLabel: '连接目标', accountLabel: '登录账户' },
-  redis: { label: 'Redis', family: 'redis', targetLabel: '连接目标', accountLabel: '登录账户' },
-  mongodb: { label: 'MongoDB', family: 'mongo', targetLabel: '连接目标', accountLabel: '登录账户', authSourceLabel: '认证库' },
+export const emptyDirectory: ConnectionDirectoryMetadata = {
+  favorite: false,
+  projectIds: [],
+  tags: [],
 };
-
-export function connectionListRow(entry: SavedDatastoreConnection, testing: boolean): ConnectionListRow {
+/** Provider differences stop here; the directory view never knows native configuration shapes. */
+export const directoryProviders = (
+  locale?: Locale,
+): Record<
+  DatastoreProvider,
+  {
+    label: string;
+    family: string;
+    targetLabel: string;
+    accountLabel?: string;
+    authSourceLabel?: string;
+  }
+> => {
+  const tConnector = createTranslator(connectorMessages, locale);
+  return {
+    sqlite: { label: 'SQLite', family: 'relational', targetLabel: tConnector('file') },
+    mysql: {
+      label: 'MySQL',
+      family: 'relational',
+      targetLabel: tConnector('connectionTarget'),
+      accountLabel: tConnector('loginAccount'),
+    },
+    postgres: {
+      label: 'PostgreSQL',
+      family: 'relational',
+      targetLabel: tConnector('connectionTarget'),
+      accountLabel: tConnector('loginAccount'),
+    },
+    redis: {
+      label: 'Redis',
+      family: 'redis',
+      targetLabel: tConnector('connectionTarget'),
+      accountLabel: tConnector('loginAccount'),
+    },
+    mongodb: {
+      label: 'MongoDB',
+      family: 'mongo',
+      targetLabel: tConnector('connectionTarget'),
+      accountLabel: tConnector('loginAccount'),
+      authSourceLabel: tConnector('authenticationDatabase'),
+    },
+  };
+};
+export function connectionListRow(
+  entry: SavedDatastoreConnection,
+  testing: boolean,
+  locale?: Locale,
+): ConnectionListRow {
+  const tConnector = createTranslator(connectorMessages, locale);
   const { config } = entry;
   const directory = entry.directory ?? emptyDirectory;
-  const target = config.provider === 'sqlite'
-    ? config.path.split(/[\\/]/).pop() || config.path
-    : `${config.host}:${config.port}${config.provider === 'redis' ? ` / DB ${config.database}` : config.database ? ` / ${config.database}` : ''}`;
+  const target =
+    config.provider === 'sqlite'
+      ? config.path.split(/[\\/]/).pop() || config.path
+      : `${config.host}:${config.port}${config.provider === 'redis' ? ` / DB ${config.database}` : config.database ? ` / ${config.database}` : ''}`;
   return {
-    id: entry.id, name: entry.name, target,
+    id: entry.id,
+    name: entry.name,
+    target,
     targetTitle: config.provider === 'sqlite' ? config.path : target,
-    account: config.provider === 'sqlite' ? undefined : config.provider === 'redis' ? config.username || 'default' : config.username || '未配置',
+    account:
+      config.provider === 'sqlite'
+        ? undefined
+        : config.provider === 'redis'
+          ? config.username || 'default'
+          : config.username || tConnector('notConfigured'),
     authSource: config.provider === 'mongodb' ? config.authSource : undefined,
     ...directory,
-    status: testing ? 'testing' : entry.status?.kind ?? 'untested',
+    status: testing ? 'testing' : (entry.status?.kind ?? 'untested'),
     statusTitle: entry.status
-      ? `上次连接验证${entry.status.kind === 'passed' ? '通过' : '失败'} · ${new Date(entry.status.checkedAt).toLocaleString()}。不代表当前在线状态。`
-      : '尚未验证此连接；请先测试连接。',
+      ? tConnector('lastConnectionValidationThisDoesNotIndicateCurrentAvailability', {
+          p0: String(entry.status.kind === 'passed' ? tConnector('passed') : tConnector('failed')),
+          p1: String(new Date(entry.status.checkedAt).toLocaleString(locale ?? getLocale())),
+        })
+      : tConnector('thisConnectionHasNotBeenValidatedTestItFirst'),
   };
 }

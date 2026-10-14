@@ -1,0 +1,20 @@
+import { defineMessages } from '@/lib/i18n';
+export const messages = defineMessages({
+  'Add a task description': ['添加任务说明', 'Add a task description'],
+  Cancel: ['取消', 'Cancel'],
+  'Close task details': ['关闭任务详情', 'Close task details'],
+  Collaborators: ['协作者', 'Collaborators'],
+  'Copy task link': ['复制任务链接', 'Copy task link'],
+  'Could not copy the task link': ['任务链接复制失败', 'Could not copy the task link'],
+  Description: ['说明', 'Description'],
+  'Edit collaborators': ['编辑协作者', 'Edit collaborators'],
+  'No comments yet.': ['暂无评论。', 'No comments yet.'],
+  Save: ['保存', 'Save'],
+  'Task comments': ['任务评论', 'Task comments'],
+  'Task detail sections': ['任务详情分区', 'Task detail sections'],
+  'Task link copied': ['任务链接已复制', 'Task link copied'],
+  Comment: ['评论', 'Comment'],
+  Setting: ['设置', 'Setting'],
+  'Remove from favorites': ['取消收藏', 'Remove from favorites'],
+  'Add to favorites': ['加入收藏', 'Add to favorites'],
+});

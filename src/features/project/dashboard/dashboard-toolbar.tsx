@@ -1,6 +1,11 @@
 'use client';
+import { translateFixed } from '../i18n/display';
 
-import { useId, useRef, useState } from 'react';
+import { useTranslation } from '@/lib/i18n';
+import { fixtureField } from '../i18n/display';
+import { messages } from './i18n/dashboard-toolbar';
+
+import { DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
   Bell,
   CaretRight,
@@ -12,11 +17,11 @@ import {
   ShareNetwork,
   UsersThree,
 } from '@phosphor-icons/react';
-import { DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useId, useRef, useState } from 'react';
 import { DashboardMenu, DashboardMenuContent } from './dashboard-menu';
-import { AvatarGroup, DashboardButton, IconButton, ReferenceIcon } from './dashboard-ui';
-import type { DashboardSection } from './dashboard-sidebar';
 import type { DashboardPersonId, DashboardTarget } from './dashboard-model';
+import type { DashboardSection } from './dashboard-sidebar';
+import { AvatarGroup, DashboardButton, IconButton, ReferenceIcon } from './dashboard-ui';
 import styles from './dashboard.module.css';
 
 export interface DashboardSearchResult {
@@ -42,6 +47,9 @@ interface ToolbarProps {
 }
 
 export function DashboardToolbar(props: ToolbarProps) {
+  const { t, locale } = useTranslation(messages);
+  const uiLabel = (value: string) => translateFixed(value, locale);
+
   const {
     section,
     query,
@@ -77,15 +85,15 @@ export function DashboardToolbar(props: ToolbarProps) {
           <button
             type="button"
             className="fouc-action"
-            title="Back to Fouc projects"
+            title={t('Back to Fouc projects')}
             onClick={onBack}
           >
-            Synchro
+            {t('Synchro')}
           </button>
           <CaretRight size={14} />
           <span>
             <ReferenceIcon name="dashboard" size={19} />
-            {section}
+            {uiLabel(section)}
           </span>
         </div>
         <div className={styles.topbarTools}>
@@ -95,7 +103,7 @@ export function DashboardToolbar(props: ToolbarProps) {
               <input
                 ref={searchInput}
                 role="combobox"
-                aria-label="Search projects, tasks, documents and meetings"
+                aria-label={t('Search projects, tasks, documents and meetings')}
                 aria-expanded={showResults}
                 aria-controls={showResults ? resultId : undefined}
                 aria-activedescendant={
@@ -103,7 +111,7 @@ export function DashboardToolbar(props: ToolbarProps) {
                 }
                 aria-autocomplete="list"
                 value={query}
-                placeholder="Search projects..."
+                placeholder={t('Search projects...')}
                 onChange={(event) => {
                   onQueryChange(event.target.value);
                   setSelectedResult(0);
@@ -139,7 +147,7 @@ export function DashboardToolbar(props: ToolbarProps) {
                 className={styles.searchResults}
                 id={resultId}
                 role="listbox"
-                aria-label="Search results"
+                aria-label={t('Search results')}
               >
                 {visibleResults.length ? (
                   visibleResults.map((result, index) => (
@@ -155,23 +163,27 @@ export function DashboardToolbar(props: ToolbarProps) {
                     >
                       <FolderSimple size={17} />
                       <span>
-                        {result.title}
+                        {fixtureField(result, 'title', locale)}
                         <small>{result.detail}</small>
                       </span>
                     </button>
                   ))
                 ) : (
-                  <p role="status">No results found</p>
+                  <p role="status">{t('No results found')}</p>
                 )}
               </div>
             ) : null}
           </div>
           <span className={styles.toolbarDivider} />
-          <IconButton label="Share Dashboard" onClick={onShare}>
+          <IconButton label={t('Share Dashboard')} onClick={onShare}>
             <ShareNetwork />
           </IconButton>
           <IconButton
-            label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ''}`}
+            label={
+              unreadCount
+                ? t('Notifications, {count} unread', { count: unreadCount })
+                : t('Notifications')
+            }
             className={styles.notificationButton}
             onClick={onNotify}
           >
@@ -181,19 +193,19 @@ export function DashboardToolbar(props: ToolbarProps) {
         </div>
       </header>
       <div className={styles.titlebar}>
-        <h1>{section}</h1>
+        <h1>{uiLabel(section)}</h1>
         <div className={styles.titlebarTools}>
           <span
             className={styles.lastUpdated}
-            title={updatedAt ? new Date(updatedAt).toLocaleString() : undefined}
+            title={updatedAt ? new Date(updatedAt).toLocaleString(locale) : undefined}
           >
             {updatedAt ? <Check size={14} /> : <ClockCounterClockwise size={14} />}
-            {updatedAt ? 'Saved' : '3 min ago'}
+            {updatedAt ? t('Saved') : t('3 min ago')}
           </span>
           <button
             type="button"
             className={`fouc-action ${styles.collaborators}`}
-            aria-label="Manage collaborators"
+            aria-label={t('Manage collaborators')}
             onClick={onInvite}
           >
             <AvatarGroup
@@ -204,24 +216,24 @@ export function DashboardToolbar(props: ToolbarProps) {
           </button>
           <DashboardButton onClick={onInvite}>
             <UsersThree size={21} weight="fill" />
-            Invite
+            {t('Invite')}
           </DashboardButton>
           <DashboardMenu>
             <DropdownMenuTrigger asChild>
-              <IconButton label="Dashboard options">
+              <IconButton label={t('Dashboard options')}>
                 <DotsThree weight="bold" />
               </IconButton>
             </DropdownMenuTrigger>
             <DashboardMenuContent align="end">
               <DropdownMenuItem onSelect={onShare}>
                 <ShareNetwork />
-                Copy Dashboard link
+                {t('Copy Dashboard link')}
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={onViewProjects}>
                 <FolderSimple />
-                View all projects
+                {t('View all projects')}
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={onBack}>Back to Fouc projects</DropdownMenuItem>
+              <DropdownMenuItem onSelect={onBack}>{t('Back to Fouc projects')}</DropdownMenuItem>
             </DashboardMenuContent>
           </DashboardMenu>
         </div>

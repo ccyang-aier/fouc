@@ -2,13 +2,13 @@ import { afterAll, afterEach, beforeAll, beforeEach, expect, test } from 'bun:te
 import { Window } from 'happy-dom';
 import { act, StrictMode, useEffect } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { initialDashboardState } from './dashboard-seed';
 import type {
   DashboardDocument,
   DashboardMeeting,
   DashboardProject,
   DashboardTask,
 } from './dashboard-model';
+import { initialDashboardState } from './dashboard-seed';
 import {
   selectFavorites,
   selectMilestones,

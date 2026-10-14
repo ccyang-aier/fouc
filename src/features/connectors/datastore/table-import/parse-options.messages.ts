@@ -1,0 +1,35 @@
+import { defineMessages } from '@/lib/i18n';
+
+export const messages = defineMessages({
+  customDelimitedText: ['自定义分隔文本', 'Custom delimited text'],
+  jsonArray: ['JSON 数组', 'JSON array'],
+  insertSqlLiterals: ['INSERT SQL 字面量', 'INSERT SQL literals'],
+  importParsingSettings: ['导入解析设置', 'Import parsing settings'],
+  sourceFormat: ['源格式', 'Source format'],
+  textEncoding: ['文本编码', 'Text encoding'],
+  autoDetect: ['自动检测', 'Auto-detect'],
+  delimiter: ['分隔符', 'Delimiter'],
+  oneCharacterOrT: ['单个字符，或 \\t', 'One character, or \\t'],
+  headerRecord: ['标题记录', 'Header record'],
+  meansNoHeader: ['0 表示没有标题', '0 means no header'],
+  firstDataRecord: ['数据起始记录', 'First data record'],
+  lastDataRecord: ['数据结束记录', 'Last data record'],
+  meansEndOfFile: ['0 表示到文件末尾', '0 means end of file'],
+  jsonRowStructure: ['JSON 行结构', 'JSON row structure'],
+  autoDetect3546: ['自动识别', 'Auto-detect'],
+  objectRows: ['对象行', 'Object rows'],
+  arrayRows: ['数组行', 'Array rows'],
+  sourceSqlDialect: ['源 SQL 方言', 'Source SQL dialect'],
+  nullMarker: ['NULL 标记', 'NULL marker'],
+  unset: ['未设置', 'Unset'],
+  trimWhitespaceAroundFields: ['去除字段两端空白', 'Trim whitespace around fields'],
+  convertEmptyStringsToNull: ['将空字符串转为 NULL', 'Convert empty strings to NULL'],
+  onlyInsertIntoColumnsValuesLiteralsFromASingleSource: [
+    '只解析同一源表的 INSERT INTO … (字段) VALUES 字面量。DDL、函数、UPSERT、事务指令与二进制不支持；脚本永不直接执行，源表名可通过映射导入当前目标。',
+    'Only INSERT INTO … (columns) VALUES literals from a single source table are parsed. DDL, functions, UPSERT, transaction commands, and binary data are unsupported. Scripts are never executed directly; source table names can be mapped to the current target.',
+  ],
+  recordNumbersCountDataRecordsNewlinesInsideQuotedFieldsDo: [
+    '记录编号按数据记录计算，带引号字段内的换行不拆分记录。数字原文保留，类型提示不会改动目标字段。',
+    'Record numbers count data records. Newlines inside quoted fields do not split records. Numeric source text is preserved; type hints do not alter target columns.',
+  ],
+});

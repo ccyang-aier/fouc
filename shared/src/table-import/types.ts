@@ -1,10 +1,23 @@
 import type { DatabaseColumnInfo } from '../database';
 
-export const TABLE_IMPORT_LIMITS = { bytes: 5 * 1024 * 1024, rows: 5000, columns: 256, cells: 100_000, previewRows: 50, issues: 100 } as const;
+import type { ValidationIssue } from '../validation-issue';
+
+export const TABLE_IMPORT_LIMITS = {
+  bytes: 5 * 1024 * 1024,
+  rows: 5000,
+  columns: 256,
+  cells: 100_000,
+  previewRows: 50,
+  issues: 100,
+} as const;
 export type TableImportFormat = 'csv' | 'tsv' | 'delimited' | 'json' | 'ndjson' | 'sql';
 export type TableImportEncoding = 'auto' | 'utf8' | 'utf16Le' | 'utf16Be' | 'gbk';
-export type TableImportCell = { kind: 'text' | 'number' | 'boolean' | 'json'; value: string } | { kind: 'null' } | { kind: 'missing' };
-export type TableImportInferredType = 'boolean' | 'integer' | 'decimal' | 'date' | 'timestamp' | 'json' | 'text';
+export type TableImportCell =
+  | { kind: 'text' | 'number' | 'boolean' | 'json'; value: string }
+  | { kind: 'null' }
+  | { kind: 'missing' };
+export type TableImportInferredType =
+  'boolean' | 'integer' | 'decimal' | 'date' | 'timestamp' | 'json' | 'text';
 export interface TableImportParseOptions {
   format: TableImportFormat;
   delimiter?: string;
@@ -21,7 +34,7 @@ export interface TableImportParseOptions {
   /** Source dialect controls identifier case and string escape interpretation. */
   sqlDialect?: 'mysql' | 'postgres' | 'sqlite';
 }
-export interface TableImportIssue {
+export interface TableImportIssue extends Partial<Pick<ValidationIssue, 'code' | 'values'>> {
   message: string;
   record?: number;
   sourceColumn?: string;
@@ -39,12 +52,27 @@ export interface TableImportParsed {
   totalRows: number;
   sizeBytes: number;
   errors: TableImportIssue[];
-  warnings: string[];
+  warnings: ValidationIssue[];
   sourceTarget?: { schema: string | null; table: string; dialect: 'mysql' | 'postgres' | 'sqlite' };
 }
-export interface TableImportMapping { sourceColumn: string; targetColumn: string }
-export interface TableImportInput { schema: string; table: string; text: string; options: TableImportParseOptions; mappings: TableImportMapping[] }
-export interface TableImportValidation { valid: boolean; errors: TableImportIssue[]; warnings: string[]; mappedColumns: string[]; requiredColumns: string[] }
+export interface TableImportMapping {
+  sourceColumn: string;
+  targetColumn: string;
+}
+export interface TableImportInput {
+  schema: string;
+  table: string;
+  text: string;
+  options: TableImportParseOptions;
+  mappings: TableImportMapping[];
+}
+export interface TableImportValidation {
+  valid: boolean;
+  errors: TableImportIssue[];
+  warnings: ValidationIssue[];
+  mappedColumns: string[];
+  requiredColumns: string[];
+}
 export interface TableImportReview {
   parsed: TableImportParsed;
   targetColumns: DatabaseColumnInfo[];
@@ -54,5 +82,11 @@ export interface TableImportReview {
   rowsToImport: number;
   mode: 'append';
 }
-export interface TableImportAppendSummary { rowsImported: number; elapsedMs: number }
-export interface TableImportPlan { planId: string; review: TableImportReview }
+export interface TableImportAppendSummary {
+  rowsImported: number;
+  elapsedMs: number;
+}
+export interface TableImportPlan {
+  planId: string;
+  review: TableImportReview;
+}

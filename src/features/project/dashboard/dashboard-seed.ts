@@ -1,3 +1,4 @@
+import { markProjectSeed } from '../i18n/display';
 import type { DashboardComment, DashboardState, DashboardTask } from './dashboard-model';
 
 const wireframeComments: DashboardComment[] = [
@@ -160,7 +161,7 @@ const tasks: DashboardTask[] = [
 ];
 
 /** The supplied video is a reference fixture. Every visible object can be opened and edited. */
-export const initialDashboardState: DashboardState = {
+export const initialDashboardState: DashboardState = markProjectSeed({
   projects: [
     {
       id: 'wireframe-project',
@@ -324,4 +325,4 @@ export const initialDashboardState: DashboardState = {
     { month: '2027-12', target: 140, completed: 136 },
   ],
   updatedAt: null,
-};
+});

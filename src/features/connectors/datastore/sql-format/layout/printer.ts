@@ -1,8 +1,30 @@
-import type { AstNode, ClauseNode, LimitClauseNode, ParenthesisNode, StatementNode } from "sql-formatter/dist/esm/parser/ast.js";
-import { createTableLayout, isCreateTable } from "./ddl";
-import { clauseChildContext, collapsedContext, emitText, isBodyNode, isCallParen, isJoinKeyword, isLogicalOperator, isParenthesis, keywordText, limitChildren, renderInline, splitByComma, splitLogicalOperands, Writer, type SqlLayoutContext } from "./primitives";
+import type {
+  AstNode,
+  ClauseNode,
+  LimitClauseNode,
+  ParenthesisNode,
+  StatementNode,
+} from 'sql-formatter/dist/esm/parser/ast.js';
+import { createTableLayout, isCreateTable } from './ddl';
+import {
+  clauseChildContext,
+  collapsedContext,
+  emitText,
+  isBodyNode,
+  isCallParen,
+  isJoinKeyword,
+  isLogicalOperator,
+  isParenthesis,
+  keywordText,
+  limitChildren,
+  renderInline,
+  splitByComma,
+  splitLogicalOperands,
+  Writer,
+  type SqlLayoutContext,
+} from './primitives';
 
-export type { SqlLayoutContext, SqlLayoutOptions } from "./primitives";
+export type { SqlLayoutContext, SqlLayoutOptions } from './primitives';
 
 /**
  * SQL layout — DBX's default formatting style.
@@ -33,17 +55,27 @@ export type { SqlLayoutContext, SqlLayoutOptions } from "./primitives";
  * line and the rest aligned under it — unless the whole list is short enough to
  * stay on one line.
  */
-function printClause(writer: Writer, clause: ClauseNode, baseColumn: number, ctx: SqlLayoutContext): void {
+function printClause(
+  writer: Writer,
+  clause: ClauseNode,
+  baseColumn: number,
+  ctx: SqlLayoutContext,
+): void {
   const keyword = keywordText(clause.nameKw.text, ctx);
   const items = splitByComma(clause.children);
   const itemColumn = baseColumn + keyword.length + 1;
   // `FROM` is the one clause DBX lets users push its first source off of, so it
   // skips both the collapse and the "element on the keyword's line" rule.
-  const sourceOnOwnLine = clause.nameKw.text.toUpperCase() === "FROM" && !ctx.options.fromClauseSourceOnSameLine;
+  const sourceOnOwnLine =
+    clause.nameKw.text.toUpperCase() === 'FROM' && !ctx.options.fromClauseSourceOnSameLine;
   const childCtx = clauseChildContext(ctx, clause);
 
   if (!sourceOnOwnLine && items.length <= ctx.options.keepElementsOnOneLine) {
-    const flat = renderInline(childCtx, clause.children, ctx.options.lineWidth - writer.column - keyword.length - 1);
+    const flat = renderInline(
+      childCtx,
+      clause.children,
+      ctx.options.lineWidth - writer.column - keyword.length - 1,
+    );
     if (flat) {
       writer.write(`${keyword} ${flat}`);
       return;
@@ -59,7 +91,7 @@ function printClause(writer: Writer, clause: ClauseNode, baseColumn: number, ctx
       writer.newline(itemColumn);
     }
     printElement(writer, item, baseColumn, childCtx);
-    if (index < items.length - 1) writer.write(",");
+    if (index < items.length - 1) writer.write(',');
   });
 }
 
@@ -67,7 +99,11 @@ function printClause(writer: Writer, clause: ClauseNode, baseColumn: number, ctx
 function printLimitClause(writer: Writer, clause: LimitClauseNode, ctx: SqlLayoutContext): void {
   const keyword = keywordText(clause.limitKw.text, ctx);
   const children = limitChildren(clause);
-  const flat = renderInline(ctx, children, ctx.options.lineWidth - writer.column - keyword.length - 1);
+  const flat = renderInline(
+    ctx,
+    children,
+    ctx.options.lineWidth - writer.column - keyword.length - 1,
+  );
   if (flat) {
     writer.write(`${keyword} ${flat}`);
     return;
@@ -93,12 +129,21 @@ function joinElementEnd(nodes: AstNode[], from: number): number {
  * a whole. The group expands when it does not, rather than keeping a
  * short subquery inline and pushing a long `ON` onto a line of its own.
  */
-function measureParen(writer: Writer, nodes: AstNode[], index: number, ctx: SqlLayoutContext): string | null {
+function measureParen(
+  writer: Writer,
+  nodes: AstNode[],
+  index: number,
+  ctx: SqlLayoutContext,
+): string | null {
   const node = nodes[index] as ParenthesisNode;
   const width = ctx.options.lineWidth;
   const afterOpen = writer.column + node.openParen.length;
   const collapseCtx = collapsedContext(ctx);
-  const inner = renderInline(collapseCtx, node.children, width - afterOpen - node.closeParen.length);
+  const inner = renderInline(
+    collapseCtx,
+    node.children,
+    width - afterOpen - node.closeParen.length,
+  );
   if (!inner) return null;
 
   const end = joinElementEnd(nodes, index + 1);
@@ -117,7 +162,12 @@ function measureParen(writer: Writer, nodes: AstNode[], index: number, ctx: SqlL
  * follow — the style keeps a clause's elements in one column rather than
  * indenting them another step.
  */
-function printCondition(writer: Writer, operands: AstNode[][], baseColumn: number, ctx: SqlLayoutContext): void {
+function printCondition(
+  writer: Writer,
+  operands: AstNode[][],
+  baseColumn: number,
+  ctx: SqlLayoutContext,
+): void {
   const column = writer.column;
   for (const [head, ...rest] of operands) {
     if (!isLogicalOperator(head)) {
@@ -126,7 +176,7 @@ function printCondition(writer: Writer, operands: AstNode[][], baseColumn: numbe
     }
 
     const operator = keywordText(head.text, ctx);
-    if (ctx.options.logicalOperatorNewline === "before") {
+    if (ctx.options.logicalOperatorNewline === 'before') {
       writer.newline(column);
       writer.write(operator);
       writer.space();
@@ -143,7 +193,12 @@ function printCondition(writer: Writer, operands: AstNode[][], baseColumn: numbe
  * Emits one clause item, expanding only those parentheses that do not fit on the
  * current line.
  */
-function printElement(writer: Writer, nodes: AstNode[], baseColumn: number, ctx: SqlLayoutContext): void {
+function printElement(
+  writer: Writer,
+  nodes: AstNode[],
+  baseColumn: number,
+  ctx: SqlLayoutContext,
+): void {
   const whole = renderInline(ctx, nodes, ctx.options.lineWidth - writer.column);
   if (whole) {
     writer.write(whole);
@@ -154,7 +209,8 @@ function printElement(writer: Writer, nodes: AstNode[], baseColumn: number, ctx:
   // `AND`/`OR` end up on the lines the setting asks for rather than wherever the
   // block fallback happens to place them. `none` asks for no break of its own,
   // and is folded back together after formatting (see the caller's post-pass).
-  const operands = ctx.options.logicalOperatorNewline === "none" ? null : splitLogicalOperands(nodes);
+  const operands =
+    ctx.options.logicalOperatorNewline === 'none' ? null : splitLogicalOperands(nodes);
   if (operands) {
     printCondition(writer, operands, baseColumn, ctx);
     return;
@@ -213,7 +269,12 @@ function printElement(writer: Writer, nodes: AstNode[], baseColumn: number, ctx:
  * line, so there is no second collapse attempt here — re-flattening would undo
  * the very expansion the caller asked for.
  */
-function printBlock(writer: Writer, nodes: AstNode[], baseColumn: number, ctx: SqlLayoutContext): void {
+function printBlock(
+  writer: Writer,
+  nodes: AstNode[],
+  baseColumn: number,
+  ctx: SqlLayoutContext,
+): void {
   if (!nodes.some(isBodyNode)) {
     // A plain expression group (not a subquery) that did not fit: let
     // sql-formatter break it, then re-base the block on this column.
@@ -230,10 +291,15 @@ function printBlock(writer: Writer, nodes: AstNode[], baseColumn: number, ctx: S
 }
 
 /** Emits one clause / set operation / limit clause of a statement body. */
-function writeBodyNode(writer: Writer, node: AstNode, baseColumn: number, ctx: SqlLayoutContext): void {
-  if (node.type === "clause") printClause(writer, node, baseColumn, ctx);
-  else if (node.type === "set_operation") writer.write(keywordText(node.nameKw.text, ctx));
-  else if (node.type === "limit_clause") printLimitClause(writer, node, ctx);
+function writeBodyNode(
+  writer: Writer,
+  node: AstNode,
+  baseColumn: number,
+  ctx: SqlLayoutContext,
+): void {
+  if (node.type === 'clause') printClause(writer, node, baseColumn, ctx);
+  else if (node.type === 'set_operation') writer.write(keywordText(node.nameKw.text, ctx));
+  else if (node.type === 'limit_clause') printLimitClause(writer, node, ctx);
   else emitText(writer, ctx.renderers.block([node]).trim(), writer.column);
 }
 
@@ -257,7 +323,7 @@ function printStatement(statement: StatementNode, ctx: SqlLayoutContext): string
     writeBodyNode(writer, node, 0, ctx);
     first = false;
   }
-  if (statement.hasSemicolon) writer.write(";");
+  if (statement.hasSemicolon) writer.write(';');
   return writer.toString();
 }
 
@@ -271,7 +337,7 @@ function printStatement(statement: StatementNode, ctx: SqlLayoutContext): string
 export function printSqlLayout(statements: StatementNode[], ctx: SqlLayoutContext): string | null {
   // Same convention as sql-formatter: the setting counts blank lines, so the
   // separator is one newline longer.
-  const separator = "\n".repeat(ctx.options.linesBetweenQueries + 1);
+  const separator = '\n'.repeat(ctx.options.linesBetweenQueries + 1);
   const rendered: string[] = [];
   for (const statement of statements) {
     const text = printStatement(statement, ctx);

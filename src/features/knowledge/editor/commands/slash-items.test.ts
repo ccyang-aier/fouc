@@ -11,6 +11,7 @@
 import { Window } from 'happy-dom';
 import { beforeAll, describe, expect, test } from 'bun:test';
 import { Editor } from '@tiptap/core';
+import { setLocale } from '@/lib/i18n';
 import {
   createKnowledgeExtensions,
   createKnowledgeRegistry,
@@ -27,7 +28,20 @@ let window: Window;
 beforeAll(() => {
   window = new Window({ url: 'https://knowledge.fouc.test/page' });
   const globals = window as unknown as Record<string, unknown>;
-  for (const key of ['document', 'DOMParser', 'MutationObserver', 'Range', 'getSelection', 'HTMLElement', 'Element', 'Node', 'Text', 'Comment', 'customElements', 'requestAnimationFrame']) {
+  for (const key of [
+    'document',
+    'DOMParser',
+    'MutationObserver',
+    'Range',
+    'getSelection',
+    'HTMLElement',
+    'Element',
+    'Node',
+    'Text',
+    'Comment',
+    'customElements',
+    'requestAnimationFrame',
+  ]) {
     if (globals[key] !== undefined) (globalThis as Record<string, unknown>)[key] = globals[key];
   }
   (globalThis as Record<string, unknown>).window = window;
@@ -36,7 +50,10 @@ beforeAll(() => {
 function mountEditor(): Editor {
   const host = window.document.createElement('div');
   window.document.body.appendChild(host);
-  const editor = new Editor({ element: host as unknown as HTMLElement, extensions: [...createKnowledgeExtensions()] });
+  const editor = new Editor({
+    element: host as unknown as HTMLElement,
+    extensions: [...createKnowledgeExtensions()],
+  });
   editor.commands.focus('end');
   return editor;
 }
@@ -55,11 +72,22 @@ describe('slash menu items', () => {
   test('the menu is generated from the registry slash metadata', () => {
     const items = buildSlashItems();
     const expected = KNOWLEDGE_BLOCKS.filter((definition) => definition.slash);
-    expect(new Set(items.map((item) => item.name.replace(/^heading[134]$/, 'heading')))).toEqual(new Set(expected.map((definition) => definition.name)));
+    expect(new Set(items.map((item) => item.name.replace(/^heading[134]$/, 'heading')))).toEqual(
+      new Set(expected.map((definition) => definition.name)),
+    );
     expect(items.slice(0, 4).map((item) => item.marker)).toEqual(['H1', 'H2', 'H3', 'H4']);
-    expect(items.filter((item) => item.name.startsWith('heading')).map((item) => item.group)).toEqual(['text', 'text', 'text', 'text']);
+    expect(
+      items.filter((item) => item.name.startsWith('heading')).map((item) => item.group),
+    ).toEqual(['text', 'text', 'text', 'text']);
     // No structural child (listItem, tableRow, column…) ever shows in the menu.
-    for (const hidden of ['listItem', 'taskItem', 'tableRow', 'tableCell', 'tableHeader', 'column']) {
+    for (const hidden of [
+      'listItem',
+      'taskItem',
+      'tableRow',
+      'tableCell',
+      'tableHeader',
+      'column',
+    ]) {
       expect(items.some((item) => item.name === hidden)).toBe(false);
     }
   });
@@ -67,7 +95,7 @@ describe('slash menu items', () => {
   test('non-picker items insert their own valid node type into a real editor', () => {
     const items = buildSlashItems();
     expect(items.length).toBeGreaterThan(0);
-    for (const item of items.filter(item => !['image', 'video', 'audio'].includes(item.name))) {
+    for (const item of items.filter((item) => !['image', 'video', 'audio'].includes(item.name))) {
       const editor = mountEditor(); // one empty paragraph, caret at its end
       expect(item.run(editor)).toBe(true);
       const names = nodeNames(editor);
@@ -102,7 +130,11 @@ describe('slash menu items', () => {
 
   test('table insertion starts with a three-by-three grid and a header row', () => {
     const editor = mountEditor();
-    expect(buildSlashItems().find((item) => item.name === 'table')!.run(editor)).toBe(true);
+    expect(
+      buildSlashItems()
+        .find((item) => item.name === 'table')!
+        .run(editor),
+    ).toBe(true);
     const table = editor.state.doc.firstChild!;
     expect(table.type.name).toBe('table');
     expect(table.childCount).toBe(3);
@@ -143,9 +175,19 @@ describe('slash menu items', () => {
       const unregistered = mountEditor();
       expect(custom.find((item) => item.name === 'spacerBlock')!.run(unregistered)).toBe(false);
       unregistered.destroy();
-      registerSlashInsert('spacerBlock', (editor) => editor.chain().focus().command(setBlockFormat({ kind: 'heading', level: 3 })).run());
+      registerSlashInsert('spacerBlock', (editor) =>
+        editor
+          .chain()
+          .focus()
+          .command(setBlockFormat({ kind: 'heading', level: 3 }))
+          .run(),
+      );
       const registered = mountEditor();
-      expect(buildSlashItems(registry).find((item) => item.name === 'spacerBlock')!.run(registered)).toBe(true);
+      expect(
+        buildSlashItems(registry)
+          .find((item) => item.name === 'spacerBlock')!
+          .run(registered),
+      ).toBe(true);
       expect(registered.state.doc.firstChild?.type.name).toBe('heading');
       registered.destroy();
     } finally {
@@ -178,5 +220,22 @@ describe('filterSlashItems', () => {
   test('matching is case-insensitive and misses are empty', () => {
     expect(filterSlashItems(items, 'TODO').map((item) => item.name)).toEqual(['taskList']);
     expect(filterSlashItems(items, 'zzz')).toEqual([]);
+  });
+
+  test('an existing menu updates its product titles and filtering without replacing commands', () => {
+    const existing = buildSlashItems();
+    const table = existing.find((item) => item.name === 'table')!;
+    const command = table.run;
+    try {
+      setLocale('en-US');
+      expect(table.title).toBe('Table');
+      expect(filterSlashItems(existing, 'table', 'en-US')[0]).toBe(table);
+      expect(table.run).toBe(command);
+      setLocale('zh-CN');
+      expect(table.title).toBe('表格');
+      expect(filterSlashItems(existing, '表格', 'zh-CN')[0]).toBe(table);
+    } finally {
+      setLocale('zh-CN');
+    }
   });
 });

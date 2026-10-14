@@ -1,12 +1,9 @@
 'use client';
-
+import { uiText, type UiMessage, uiFailure, createUiMessages } from '../../i18n/ui-message';
+import { useTranslation } from '@/lib/i18n';
+import { messages as connectorMessages } from './export-dialog.messages';
 import { useEffect, useRef, useState } from 'react';
-import {
-  CheckCircle,
-  DownloadSimple,
-  LockKey,
-  ShieldCheck,
-} from '@phosphor-icons/react';
+import { CheckCircle, DownloadSimple, LockKey, ShieldCheck } from '@phosphor-icons/react';
 import {
   CONNECTION_CONFIG_LIMITS,
   createConnectionConfigBundle,
@@ -16,7 +13,7 @@ import type { ExistingTransferConnection } from '@fouc/shared/connection-config-
 import { SqlDialog } from '../sql-library-dialog';
 import common from '../relational.module.css';
 import styles from './transfer.module.css';
-
+const connectorUiMessages = createUiMessages(connectorMessages);
 export function ExportConnectionDialog({
   connections,
   onClose,
@@ -24,15 +21,16 @@ export function ExportConnectionDialog({
   connections: readonly ExistingTransferConnection[];
   onClose: () => void;
 }) {
-  const [selected, setSelected] = useState(
-    () => new Set(connections.map((entry) => entry.id)),
-  );
+  const { t: tConnector, locale } = useTranslation(connectorMessages);
+  const [selected, setSelected] = useState(() => new Set(connections.map((entry) => entry.id)));
   const [encrypted, setEncrypted] = useState(true),
     [passphrase, setPassphrase] = useState(''),
     [confirm, setConfirm] = useState('');
   const [busy, setBusy] = useState(false),
-    [error, setError] = useState(''),
-    [feedback, setFeedback] = useState('');
+    [errorStored, setError] = useState<UiMessage>(''),
+    [feedbackStored, setFeedback] = useState<UiMessage>('');
+  const error = uiText(errorStored, locale);
+  const feedback = uiText(feedbackStored, locale);
   const job = useRef<AbortController | null>(null);
   useEffect(() => () => job.current?.abort(), []);
   async function download() {
@@ -44,7 +42,7 @@ export function ExportConnectionDialog({
     setFeedback('');
     try {
       if (encrypted && passphrase !== confirm)
-        throw new Error('两次输入的加密口令不一致');
+        throw connectorUiMessages.error('theEncryptionPassphrasesDoNotMatch');
       const bundle = createConnectionConfigBundle(
         connections.filter((entry) => selected.has(entry.id)),
       );
@@ -54,9 +52,7 @@ export function ExportConnectionDialog({
       controller.signal.throwIfAborted();
       const pretty = JSON.stringify(payload, null, 2);
       const content =
-        !encrypted &&
-        new TextEncoder().encode(pretty).length >
-          CONNECTION_CONFIG_LIMITS.plainBytes
+        !encrypted && new TextEncoder().encode(pretty).length > CONNECTION_CONFIG_LIMITS.plainBytes
           ? JSON.stringify(payload)
           : pretty;
       const url = URL.createObjectURL(
@@ -72,20 +68,29 @@ export function ExportConnectionDialog({
       anchor.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
       setFeedback(
-        `已生成 ${bundle.connections.length} 个连接的${encrypted ? '加密' : '公开 JSON'}配置文件`,
+        connectorUiMessages.message('generatedAConfigurationFileForConnections', {
+          p0: String(bundle.connections.length),
+          p1: encrypted
+            ? connectorUiMessages.message('encrypted')
+            : connectorUiMessages.message('publicJson'),
+        }),
       );
       setPassphrase('');
       setConfirm('');
     } catch (reason) {
       if (!controller.signal.aborted)
-        setError(reason instanceof Error ? reason.message : '配置导出失败');
+        setError(
+          reason instanceof Error
+            ? uiFailure(reason)
+            : connectorUiMessages.message('couldNotExportConfigurations'),
+        );
     } finally {
       if (!controller.signal.aborted) setBusy(false);
     }
   }
   return (
     <SqlDialog
-      title="导出连接配置"
+      title={tConnector('exportConnectionConfigurations')}
       busy={busy}
       className={styles.dialog}
       onClose={onClose}
@@ -94,8 +99,9 @@ export function ExportConnectionDialog({
         <div className={styles.scope}>
           <ShieldCheck size={15} />
           <span>
-            当前目录 · {connections.length} 个连接 ·
-            文件不包含密码、证书或私钥
+            {tConnector('currentDirectory')}
+            {connections.length}
+            {tConnector('connectionsNoPasswordsCertificatesOrPrivateKeysAreIncluded')}
           </span>
         </div>
         <div className={styles.listHead}>
@@ -106,15 +112,17 @@ export function ExportConnectionDialog({
               checked={selected.size === connections.length}
               onChange={(event) =>
                 setSelected(
-                  event.target.checked
-                    ? new Set(connections.map((entry) => entry.id))
-                    : new Set(),
+                  event.target.checked ? new Set(connections.map((entry) => entry.id)) : new Set(),
                 )
               }
             />
-            选择全部
+            {tConnector('selectAll')}
           </label>
-          <small>已选择 {selected.size} 个</small>
+          <small>
+            {tConnector('selected')}
+            {selected.size}
+            {tConnector('items')}
+          </small>
         </div>
         <div className={styles.connectionList}>
           {connections.map((entry) => (
@@ -156,12 +164,12 @@ export function ExportConnectionDialog({
               }}
             />
             <LockKey size={15} />
-            使用口令加密配置文件
+            {tConnector('encryptTheConfigurationFileWithAPassphrase')}
           </label>
           {encrypted ? (
             <div className={styles.columns}>
               <label>
-                加密口令
+                {tConnector('encryptionPassphrase')}
                 <input
                   type="password"
                   autoComplete="new-password"
@@ -169,12 +177,12 @@ export function ExportConnectionDialog({
                   value={passphrase}
                   minLength={12}
                   maxLength={1024}
-                  placeholder="至少 12 个字符"
+                  placeholder={tConnector('atLeastCharacters')}
                   onChange={(event) => setPassphrase(event.target.value)}
                 />
               </label>
               <label>
-                再次输入口令
+                {tConnector('repeatPassphrase')}
                 <input
                   type="password"
                   autoComplete="new-password"
@@ -187,11 +195,11 @@ export function ExportConnectionDialog({
             </div>
           ) : (
             <p className={styles.warning}>
-              公开 JSON 会显示连接名称、地址和用户名，请确认文件的接收位置。
+              {tConnector('publicJsonExposesConnectionNamesAddressesAndUsernamesCheckWhere')}
             </p>
           )}
           <p className={styles.hint}>
-            目标设备仍需重新提供连接密码及所需证书文件。加密口令只用于当前操作，请自行妥善保管。
+            {tConnector('theTargetDeviceStillNeedsConnectionPasswordsAndRequiredCertificate')}
           </p>
         </div>
         {error && (
@@ -207,7 +215,10 @@ export function ExportConnectionDialog({
         )}
       </div>
       <footer className={`${common.dialogFooter} ${styles.footer}`}>
-        <span>{selected.size} 个连接</span>
+        <span>
+          {selected.size}
+          {tConnector('connections')}
+        </span>
         <button
           type="button"
           className={common.secondary}
@@ -216,7 +227,7 @@ export function ExportConnectionDialog({
             onClose();
           }}
         >
-          {busy ? '取消导出' : '关闭'}
+          {busy ? tConnector('cancelExport') : tConnector('close')}
         </button>
         <button
           type="button"
@@ -224,13 +235,12 @@ export function ExportConnectionDialog({
           disabled={
             busy ||
             !selected.size ||
-            (encrypted &&
-              (Array.from(passphrase).length < 12 || passphrase !== confirm))
+            (encrypted && (Array.from(passphrase).length < 12 || passphrase !== confirm))
           }
           onClick={() => void download()}
         >
           <DownloadSimple size={14} />
-          {busy ? '正在加密…' : '下载配置文件'}
+          {busy ? tConnector('encrypting') : tConnector('downloadConfigurationFile')}
         </button>
       </footer>
     </SqlDialog>

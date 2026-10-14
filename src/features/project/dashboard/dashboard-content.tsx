@@ -1,14 +1,12 @@
 'use client';
 
+import { useTranslation } from '@/lib/i18n';
+import { fixtureField, translateFixed } from '../i18n/display';
+import { messages } from './i18n/dashboard-content';
+
 import { AppAlert } from '@/components/app-alert';
-import { DashboardButton, SegmentedControl } from './dashboard-ui';
 import { ActivityMap, MilestoneTracker } from './dashboard-charts';
-import { ActivityPanel, MeetingsPanel, TeamPanel, TodayProjects } from './dashboard-panels';
-import { DashboardTaskList } from './dashboard-task-list';
-import { DashboardOverview } from './dashboard-overview';
 import { DashboardDocuments } from './dashboard-documents';
-import { selectMilestones, selectProjects, selectStats } from './dashboard-selectors';
-import type { DashboardSection } from './dashboard-sidebar';
 import type {
   DashboardActivity,
   DashboardDocument,
@@ -19,6 +17,12 @@ import type {
   DashboardTarget,
   DashboardTask,
 } from './dashboard-model';
+import { DashboardOverview } from './dashboard-overview';
+import { ActivityPanel, MeetingsPanel, TeamPanel, TodayProjects } from './dashboard-panels';
+import { selectMilestones, selectProjects, selectStats } from './dashboard-selectors';
+import type { DashboardSection } from './dashboard-sidebar';
+import { DashboardTaskList } from './dashboard-task-list';
+import { DashboardButton, SegmentedControl } from './dashboard-ui';
 import styles from './dashboard.module.css';
 
 export type DashboardPortfolioTab = 'Projects' | 'Documents' | 'Favourites';
@@ -71,25 +75,27 @@ export function DashboardContent({
   storageError: boolean;
   actions: DashboardContentActions;
 }) {
+  const { t, locale } = useTranslation(messages);
+
   const search = query.trim().toLowerCase();
   const matches = (value: string) => !search || value.toLowerCase().includes(search);
   const tasks = state.tasks.filter(
     (task) =>
       matches(
-        `${task.title} ${task.detailTitle} ${task.description} ${task.tag} ${task.priority}`,
+        `${fixtureField(task, 'title', locale)} ${fixtureField(task, 'description', locale)} ${task.title} ${task.detailTitle} ${task.description} ${task.tag} ${task.priority}`,
       ) &&
       (status === 'All' || task.status === status),
   );
   const projects = selectProjects(state).filter(
     (summary) =>
       matches(
-        `${summary.project.name} ${summary.project.description} ${summary.project.priority} ${summary.tasks.map((task) => `${task.title} ${task.detailTitle} ${task.tag}`).join(' ')}`,
+        `${fixtureField(summary.project, 'name', locale)} ${fixtureField(summary.project, 'description', locale)} ${summary.project.name} ${summary.project.description} ${summary.project.priority} ${summary.tasks.map((task) => `${task.title} ${task.detailTitle} ${task.tag}`).join(' ')}`,
       ) &&
       (status === 'All' || summary.status === status),
   );
   const documents = state.documents.filter((document) =>
     matches(
-      `${document.title} ${document.kind} ${document.kind === 'form' ? document.description : document.client}`,
+      `${fixtureField(document, 'title', locale)} ${document.title} ${document.kind} ${document.kind === 'form' ? document.description : document.client}`,
     ),
   );
   const projectProps = {
@@ -112,7 +118,9 @@ export function DashboardContent({
   };
   const activityProps = {
     activities: state.activities.filter((activity) =>
-      matches(`${activity.actor} ${activity.subject} ${activity.text}`),
+      matches(
+        `${fixtureField(activity, 'subject', locale)} ${fixtureField(activity, 'text', locale)} ${activity.actor} ${activity.subject} ${activity.text}`,
+      ),
     ),
     onOpen: actions.openActivity,
     onExport: actions.exportActivity,
@@ -130,8 +138,10 @@ export function DashboardContent({
       {storageError ? (
         <AppAlert
           tone="warning"
-          title="Changes can’t be saved on this device"
-          description="Browser storage is full or unavailable. Remove attached files or allow storage, then save again."
+          title={t('Changes can’t be saved on this device')}
+          description={t(
+            'Browser storage is full or unavailable. Remove attached files or allow storage, then save again.',
+          )}
         />
       ) : null}
       {section === 'Dashboard' ? (
@@ -170,7 +180,7 @@ export function DashboardContent({
             status={status}
             onChange={onStatusChange}
             count={tasks.length}
-            unit="tasks"
+            unit="Tasks"
           />
           <DashboardTaskList {...taskProps} />
         </>
@@ -182,11 +192,11 @@ export function DashboardContent({
               items={['Projects', 'Documents', 'Favourites'] as const}
               value={portfolioTab}
               onChange={onPortfolioTabChange}
-              label="Portfolio contents"
+              label={t('Portfolio contents')}
             />
             {portfolioTab === 'Favourites' ? (
               <DashboardButton tone="neutral" onClick={actions.manageFavorites}>
-                Manage favourites
+                {t('Manage favourites')}
               </DashboardButton>
             ) : null}
           </div>
@@ -196,7 +206,7 @@ export function DashboardContent({
                 status={status}
                 onChange={onStatusChange}
                 count={projects.length}
-                unit="projects"
+                unit="Projects"
               />
               <TodayProjects {...projectProps} />
             </>
@@ -251,12 +261,12 @@ export function DashboardContent({
         <>
           <div className={styles.goalSummary}>
             <h2>
-              {totals.completed} of {totals.tasks} tasks completed
+              {totals.completed} {t('of')} {totals.tasks} {t('tasks completed')}
             </h2>
             <div
               className={styles.goalProgress}
               role="progressbar"
-              aria-label="Overall task completion"
+              aria-label={t('Overall task completion')}
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={totals.tasks ? Math.round((totals.completed / totals.tasks) * 100) : 0}
@@ -291,16 +301,18 @@ function TaskFilters({
   count: number;
   unit: string;
 }) {
+  const { t, locale } = useTranslation(messages);
+
   return (
     <div className={styles.filterBar}>
       <SegmentedControl
         items={['All', 'To Do', 'On Progress', 'Completed'] as const}
         value={status}
         onChange={onChange}
-        label={`Filter ${unit} by status`}
+        label={t('Filter {v0} by status', { v0: translateFixed(unit, locale) })}
       />
       <span>
-        {count} {unit}
+        {count} {translateFixed(unit, locale)}
       </span>
     </div>
   );

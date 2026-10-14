@@ -1,0 +1,68 @@
+import { defineMessages } from '@/lib/i18n';
+
+export const messages = defineMessages({
+  nativeDdlInsert: ['原生 DDL / INSERT', 'Native DDL / INSERT'],
+  delimitedTextWithHeaders: ['带标题的分隔文本', 'Delimited text with headers'],
+  oneJsonObjectPerLine: ['每行一个 JSON 对象', 'One JSON object per line'],
+  aStandaloneCompleteJsonArray: ['独立完整的 JSON 数组', 'A standalone complete JSON array'],
+  selectNativeObjectScope: ['选择原生对象范围', 'Select native object scope'],
+  collectOnlyCatalogEntriesAndDataReadableThroughTheCurrent: [
+    '仅采集当前连接可读取的目录与数据。',
+    'Collect only catalog entries and data readable through the current connection.',
+  ],
+  exportSchemaScope: ['导出 Schema 范围', 'Export schema scope'],
+  exportObjectSelectionMode: ['导出对象选择方式', 'Export object selection mode'],
+  allObjectsInSelectedSchemas: ['选中 Schema 全部对象', 'All objects in selected schemas'],
+  specificTablesViews: ['指定表 / 视图', 'Specific tables / views'],
+  searchTablesViews: ['搜索表 / 视图…', 'Search tables / views…'],
+  searchExportObjects: ['搜索导出对象', 'Search export objects'],
+  noMatchingNativeObjects: ['没有匹配的原生对象。', 'No matching native objects.'],
+  selected: ['已选择', 'Selected '],
+  objects: ['个对象', ' objects'],
+  selectSearchResults: ['选择搜索结果', 'Select search results'],
+  formatAndDataContents: ['格式与数据内容', 'Format and data contents'],
+  preserveOriginalNumericTextBinaryDataAndNullToAvoid: [
+    '保留原始数字文本、二进制与 NULL，避免中途数值转换。',
+    'Preserve original numeric text, binary data and NULL to avoid intermediate numeric conversion.',
+  ],
+  databaseExportFormat: ['数据库导出格式', 'Database export format'],
+  structureDdl: ['结构 DDL', 'Structure DDL'],
+  tableDataInsert: ['表数据 INSERT', 'Table data INSERT'],
+  nullUsesUnquotedNEmptyStringsAndLiteralNText: [
+    'NULL 使用未加引号的 \\N；空字符串与文本 \\N 会加引号。CSV 类型信息位于 ZIP 清单。',
+    'NULL uses unquoted \\N; empty strings and literal \\N text are quoted. CSV type information is included in the ZIP manifest.',
+  ],
+  nativeJsonAndArrayColumnsRemainRawTextBinaryValues: [
+    '原生 JSON / 数组列保留为原始文本，二进制附带 Base64 类型标记；大整数数值字面量需要无损 JSON 读取端。',
+    'Native JSON and array columns remain raw text; binary values include Base64 type markers. Large-integer number literals require a lossless JSON reader.',
+  ],
+  actualRowRange: ['实际行范围', 'Actual row range'],
+  allRowsInEachTable: ['每表全部行', 'All rows in each table'],
+  explicitlyLimitToTheFirstNRowsPerTable: [
+    '明确限制每表前 N 行',
+    'Explicitly limit to the first N rows per table',
+  ],
+  maximumRowsPerTable: ['每表最多行数', 'Maximum rows per table'],
+  pageBuffer: ['分页缓冲', 'Page buffer'],
+  rowsPage: ['100 行 / 页', '100 rows / page'],
+  rowsPage882: ['500 行 / 页', '500 rows / page'],
+  rowsPage883: ['1000 行 / 页', '1000 rows / page'],
+  filesAndChunks: ['文件与分包', 'Files and chunks'],
+  deviceStreamingOutputDownloadWhenCompleteMaximumGibPerExport: [
+    '设备流式写入 · 完成后下载 · 单次最大 1 GiB。',
+    'Device streaming output · Download when complete · Maximum 1 GiB per export.',
+  ],
+  packaging: ['封装方式', 'Packaging'],
+  zipTypeRangeManifest: ['ZIP + 类型 / 范围清单', 'ZIP + Type / Range manifest'],
+  singleFile: ['单文件', 'Single file'],
+  targetChunkSize: ['目标分包大小', 'Target chunk size'],
+  doNotSplitTablesIntoChunks: ['每表不分包', 'Do not split tables into chunks'],
+  standardZipStoreWithoutCompressionEachJsonChunkIsIndependently: [
+    '标准 ZIP STORE 不压缩；每个 JSON 分包可独立读取，CSV 分包均含标题。单个超大行 / SQL 语句保持完整。',
+    'Standard ZIP STORE without compression. Each JSON chunk is independently readable; each CSV chunk includes headers. Oversized rows and SQL statements remain intact.',
+  ],
+  aSingleCsvJsonNdjsonFileSupportsOneObjectOnly: [
+    'CSV / JSON / NDJSON 单文件只支持一个对象；多表请使用 ZIP。单文件不包含类型清单。',
+    'A single CSV / JSON / NDJSON file supports one object only; use ZIP for multiple tables. Single files have no type manifest.',
+  ],
+});

@@ -15,14 +15,14 @@ const pathOf = (url: string) => fileURLToPath(new URL(url, import.meta.url));
 
 describe('editorClientBoundary', () => {
   test('the editor never renders on the server', () => {
-    expect(editorClientBoundary.ssr).toBe(false);
-    expect(editorClientBoundary.loadingLabel.length).toBeGreaterThan(0);
+    expect(editorClientBoundary().ssr).toBe(false);
+    expect(editorClientBoundary().loadingLabel.length).toBeGreaterThan(0);
   });
 
   test('the boundary module lazy-imports the container and stays chunk-clean', () => {
     const source = readFileSync(pathOf('./editor-boundary.tsx'), 'utf8');
     expect(source).toContain("import('./page-editor')");
-    expect(source).toContain('ssr: editorClientBoundary.ssr');
+    expect(source).toContain('ssr: editorClientBoundary().ssr');
     // Any direct editor-runtime import here would defeat the lazy boundary.
     expect(/from\s+['"]@tiptap\//.test(source)).toBe(false);
     expect(/from\s+['"]y-prosemirror['"]/.test(source)).toBe(false);
@@ -44,7 +44,8 @@ describe('editorClientBoundary', () => {
         // The sanctioned entry is the index module (the boundary itself);
         // deep imports of the container or the surface would load the whole
         // editor runtime eagerly.
-        if (/['"].*(?:\/editor\/page-editor|\/editor\/editor-surface)['"]/.test(content)) offenders.push(path);
+        if (/['"].*(?:\/editor\/page-editor|\/editor\/editor-surface)['"]/.test(content))
+          offenders.push(path);
       }
     };
     walk(srcRoot);

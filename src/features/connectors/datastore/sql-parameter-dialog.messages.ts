@@ -1,0 +1,67 @@
+import { defineMessages } from '@/lib/i18n';
+
+export const messages = defineMessages({
+  string: ['字符串', 'String'],
+  number: ['数字', 'Number'],
+  boolean: ['布尔值', 'Boolean'],
+  rawSql: ['原始 SQL', 'Raw SQL'],
+  copyFailedSelectTheSqlInThePreviewAndCopy: [
+    '复制失败，请选择预览中的 SQL 后手动复制。',
+    'Copy failed. Select the SQL in the preview and copy it manually.',
+  ],
+  sqlParameters: ['SQL 参数', 'SQL parameters'],
+  completeParametersAndPreviewTheStatement: [
+    '补全参数，预览执行语句',
+    'Complete parameters and preview the statement',
+  ],
+  parameters: ['个参数', 'parameters'],
+  parameterValues: ['参数值', 'Parameter values'],
+  forThisExecutionOnly: ['仅用于本次执行', 'For this execution only'],
+  clear: ['清空', 'Clear'],
+  setAllToRawSql: ['全部设为原始 SQL', 'Set all to raw SQL'],
+  sqlParameterList: ['SQL 参数列表', 'SQL parameter list'],
+  nameSyntax: ['名称 / 语法', 'Name / syntax'],
+  type: ['类型', 'Type'],
+  value: ['值', 'Value'],
+  list: [' · 集合', ' · List'],
+  type3046: ['{p0} 类型', '{p0} type'],
+  parameterValue: ['{p0} 参数值', '{p0} parameter value'],
+  alphaBetaOrCommaSeparatedValues: [
+    '["Alpha", "Beta"] 或逗号分隔值',
+    '["Alpha", "Beta"] or comma-separated values',
+  ],
+  sqlExpressionOrFragment: ['SQL 表达式或片段', 'SQL expression or fragment'],
+  enterAParameterValue: ['输入参数值', 'Enter a parameter value'],
+  recentValues: ['{p0} 最近值', '{p0} recent values'],
+  recentParameterValuesInThisQueryTab: [
+    '此查询标签内的最近参数值',
+    'Recent parameter values in this query tab',
+  ],
+  recent: ['最近', 'Recent'],
+  sqlPreview: ['SQL 预览', 'SQL preview'],
+  expandedExecutionStatement: ['展开后的执行语句', 'Expanded execution statement'],
+  copied: ['已复制', 'Copied'],
+  copySql: ['复制 SQL', 'Copy SQL'],
+  sqlParameterPreview: ['SQL 参数预览', 'SQL parameter preview'],
+  rawSqlExpandsDirectlyIntoExpressions: [
+    '原始 SQL 会直接展开为表达式。',
+    'Raw SQL expands directly into expressions.',
+  ],
+  theQuerySReadOnlyScopeIsStillValidatedBefore: [
+    '生成计划前仍会校验查询的只读范围，查询不会实际执行。',
+    "The query's read-only scope is still validated before generating a plan. The query is not executed.",
+  ],
+  theReadOnlyScopeOfTheEntireStatementBatchIs: [
+    '执行前仍会校验整批语句的只读范围。',
+    'The read-only scope of the entire statement batch is still validated before execution.',
+  ],
+  stringsAreEscapedAutomaticallyNumbersRetainPrecisionListsSupportJson: [
+    '字符串自动转义；数字保留精度；集合支持 JSON 数组。最近值仅保留在当前会话和查询标签内。',
+    'Strings are escaped automatically; numbers retain precision; lists support JSON arrays. Recent values are kept only in the current session and query tab.',
+  ],
+  generatePlan: ['生成计划', 'Generate plan'],
+  execute: ['执行', 'Execute'],
+  cancel: ['取消', 'Cancel'],
+  applyParametersAndGeneratePlan: ['应用参数并生成计划', 'Apply parameters and generate plan'],
+  applyParametersAndExecute: ['应用参数并执行', 'Apply parameters and execute'],
+});

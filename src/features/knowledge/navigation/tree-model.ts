@@ -1,3 +1,5 @@
+import { createTranslator, type Locale } from '@/lib/i18n';
+import { knowledgeMessages } from './tree-model.messages';
 /**
  * Navigation tree model of the knowledge knowledgeBase (U02 skeleton, completed by
  * U03): a pure mapping from the shared contracts onto the sidebar tree.
@@ -31,16 +33,26 @@ export type NavigationSection = {
   pageCount: number;
 };
 
-export const untitledPageLabel = '无标题页面';
-
-export function pageDisplayTitle(page: Pick<Page, 'title'>): string {
-  const title = page.title.trim();
-  return title.length > 0 ? title : untitledPageLabel;
+export function untitledPageLabel(locale?: Locale) {
+  const knowledgeT = createTranslator(knowledgeMessages, locale);
+  return knowledgeT('untitledPage');
 }
 
-type LivePage = Pick<Page, 'id' | 'teamspaceId' | 'parentId' | 'kind' | 'title' | 'icon' | 'position' | 'deletedAt'>;
+export function pageDisplayTitle(page: Pick<Page, 'title'>, locale?: Locale): string {
+  const title = page.title.trim();
+  return title.length > 0 ? title : untitledPageLabel(locale);
+}
 
-export function buildNavigationSections(teamspaces: readonly Teamspace[], pages: readonly LivePage[]): NavigationSection[] {
+type LivePage = Pick<
+  Page,
+  'id' | 'teamspaceId' | 'parentId' | 'kind' | 'title' | 'icon' | 'position' | 'deletedAt'
+>;
+
+export function buildNavigationSections(
+  teamspaces: readonly Teamspace[],
+  pages: readonly LivePage[],
+  locale?: Locale,
+): NavigationSection[] {
   const live = pages.filter((page) => page.deletedAt === null);
   const byTeamspace = new Map<string, LivePage[]>();
   for (const page of live) {
@@ -71,7 +83,7 @@ export function buildNavigationSections(teamspaces: readonly Teamspace[], pages:
       return {
         id: page.id,
         kind: page.kind,
-        title: pageDisplayTitle(page),
+        title: pageDisplayTitle(page, locale),
         icon: page.icon,
         children: (childrenOf.get(page.id) ?? []).sort(byPosition).map(toNode),
       };
@@ -88,7 +100,11 @@ export function buildNavigationSections(teamspaces: readonly Teamspace[], pages:
 
 /** T01 contract: siblings order by the fractional-index key, ties break by id for stability. */
 function byPosition(left: LivePage, right: LivePage): number {
-  return left.position === right.position ? left.id.localeCompare(right.id) : left.position < right.position ? -1 : 1;
+  return left.position === right.position
+    ? left.id.localeCompare(right.id)
+    : left.position < right.position
+      ? -1
+      : 1;
 }
 
 export type RecycledPageSummary = {
@@ -128,7 +144,9 @@ export function recycledRootPages(pages: readonly LivePage[]): RecycledPageSumma
       icon: page.icon,
       deletedAt: page.deletedAt as string,
     }))
-    .sort((a, b) => (a.deletedAt === b.deletedAt ? a.id.localeCompare(b.id) : a.deletedAt < b.deletedAt ? 1 : -1));
+    .sort((a, b) =>
+      a.deletedAt === b.deletedAt ? a.id.localeCompare(b.id) : a.deletedAt < b.deletedAt ? 1 : -1,
+    );
 }
 
 /** One row of the rendered tree: a selectable teamspace section or one page node. */
@@ -197,7 +215,10 @@ export function stepNavigationFocus(
 }
 
 /** Whether an ArrowRight/ArrowLeft press should toggle expansion at all at this row. */
-export function arrowExpansion(item: FlatNavigationItem, direction: 'right' | 'left'): 'expand' | 'collapse' | null {
+export function arrowExpansion(
+  item: FlatNavigationItem,
+  direction: 'right' | 'left',
+): 'expand' | 'collapse' | null {
   if (!item.expandable) return null;
   if (direction === 'right') return item.expanded ? null : 'expand';
   return item.expanded ? 'collapse' : null;

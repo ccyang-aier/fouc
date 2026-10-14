@@ -12,7 +12,12 @@
  * tables inside the inline view.
  */
 
-import type { SqlSemanticCteOutputColumn, SqlSemanticCteStar, SqlSemanticModel, SqlSemanticRowSource } from "../../sql-semantic/types";
+import type {
+  SqlSemanticCteOutputColumn,
+  SqlSemanticCteStar,
+  SqlSemanticModel,
+  SqlSemanticRowSource,
+} from '../../sql-semantic/types';
 
 import { identifierKey, sourceTokenSpans } from './model-context';
 import { visibleCteDefinitions, visibleSqlSources } from '../../sql-semantic/sources';
@@ -31,16 +36,23 @@ function sameName(left: string, right: string, provider: RelationalProvider): bo
 
 /** CTE definition row sources (`WITH c AS (...)`) in declaration order. */
 export function cteDefinitionSources(model: SqlSemanticModel): SqlSemanticRowSource[] {
-  return model.rowSources.filter((source) => source.kind === "cte" && source.id.startsWith("cte:"));
+  return model.rowSources.filter((source) => source.kind === 'cte' && source.id.startsWith('cte:'));
 }
 
 /** CTE *usages* as row sources (`FROM/JOIN cte`), excluding the definitions themselves. */
 export function cteReferenceSources(model: SqlSemanticModel): SqlSemanticRowSource[] {
-  return visibleSqlSources(model).filter((source) => source.kind === "cte" && !source.id.startsWith("cte:"));
+  return visibleSqlSources(model).filter(
+    (source) => source.kind === 'cte' && !source.id.startsWith('cte:'),
+  );
 }
 
-function findCteDefinition(model: SqlSemanticModel, name: string, reference?: SqlSemanticRowSource): SqlSemanticRowSource | undefined {
-  if (reference?.definitionId) return model.rowSources.find((source) => source.id === reference.definitionId);
+function findCteDefinition(
+  model: SqlSemanticModel,
+  name: string,
+  reference?: SqlSemanticRowSource,
+): SqlSemanticRowSource | undefined {
+  if (reference?.definitionId)
+    return model.rowSources.find((source) => source.id === reference.definitionId);
   return visibleCteDefinitions(model).find((source) => sameName(source.name, name, model.provider));
 }
 
@@ -53,7 +65,10 @@ export interface CteReferenceHit {
  * Position lies on an outer-query CTE reference name or alias (never on the definition name
  * itself — definitions have no `qualifiedName` and are excluded by id prefix).
  */
-export function findCteReferenceAt(model: SqlSemanticModel, position: number): CteReferenceHit | null {
+export function findCteReferenceAt(
+  model: SqlSemanticModel,
+  position: number,
+): CteReferenceHit | null {
   for (const reference of cteReferenceSources(model)) {
     const spans = sourceTokenSpans(reference, model.tokens, model.provider);
     const onName = containsPosition(spans.name, position);
@@ -96,8 +111,14 @@ function nestingDepthAt(model: SqlSemanticModel, position: number): number {
  * CTE-qualified (as `w.col`), so the outer qualifier never participates in star selection;
  * star qualifier parts only steer physical-source expansion during origin tracing.
  */
-function resolveCteOutputOrStars(definition: SqlSemanticRowSource, columnName: string, provider: RelationalProvider): CteColumnHit | null {
-  const output = definition.cteOutputs?.find((candidate) => sameName(candidate.name, columnName, provider));
+function resolveCteOutputOrStars(
+  definition: SqlSemanticRowSource,
+  columnName: string,
+  provider: RelationalProvider,
+): CteColumnHit | null {
+  const output = definition.cteOutputs?.find((candidate) =>
+    sameName(candidate.name, columnName, provider),
+  );
   if (output) return { definition, output };
 
   const stars = definition.cteStars ?? [];
@@ -116,7 +137,11 @@ function resolveCteOutputOrStars(definition: SqlSemanticRowSource, columnName: s
  *   the CTE is declared before the cursor and is referenced at the cursor's own nesting level —
  *   without that guard a later, unrelated CTE body claims bare columns of an earlier query block.
  */
-export function findCteColumnResolution(model: SqlSemanticModel, columnName: string, qualifier?: string): CteColumnHit | null {
+export function findCteColumnResolution(
+  model: SqlSemanticModel,
+  columnName: string,
+  qualifier?: string,
+): CteColumnHit | null {
   const intentTargetId = model.cursorIntent.targetSourceId;
   if (qualifier || intentTargetId) {
     let target: SqlSemanticRowSource | undefined;
@@ -124,12 +149,16 @@ export function findCteColumnResolution(model: SqlSemanticModel, columnName: str
       target = model.rowSources.find((source) => source.id === intentTargetId);
     }
     if (!target && qualifier) {
-      target = cteReferenceSources(model).find((source) => (!!source.alias && sameName(source.alias, qualifier, model.provider)) || sameName(source.name, qualifier, model.provider));
+      target = cteReferenceSources(model).find(
+        (source) =>
+          (!!source.alias && sameName(source.alias, qualifier, model.provider)) ||
+          sameName(source.name, qualifier, model.provider),
+      );
     }
     // The qualifier owns the column: a physical table (or any other non-CTE row source) must never
     // fall through to the bare-column scan below, which ignores qualifiers and would let a
     // star-bodied CTE claim `t.id` from an unrelated physical table.
-    if (!target || target.kind !== "cte" || target.id.startsWith("cte:")) return null;
+    if (!target || target.kind !== 'cte' || target.id.startsWith('cte:')) return null;
     const definition = findCteDefinition(model, target.name, target);
     return definition ? resolveCteOutputOrStars(definition, columnName, model.provider) : null;
   }
@@ -160,13 +189,22 @@ export interface CteColumnOrigin {
 }
 
 function isPhysicalOriginSource(source: SqlSemanticRowSource): boolean {
-  return source.kind === "table" || source.kind === "table_function" || source.kind === "mutation_target";
+  return (
+    source.kind === 'table' || source.kind === 'table_function' || source.kind === 'mutation_target'
+  );
 }
 
-function sourceMatchesQualifier(source: SqlSemanticRowSource, qualifierParts: readonly string[], provider: RelationalProvider): boolean {
+function sourceMatchesQualifier(
+  source: SqlSemanticRowSource,
+  qualifierParts: readonly string[],
+  provider: RelationalProvider,
+): boolean {
   const qualifier = qualifierParts[qualifierParts.length - 1];
   if (!qualifier) return false;
-  return !!source.alias && sameName(source.alias, qualifier, provider) || sameName(source.name, qualifier, provider);
+  return (
+    (!!source.alias && sameName(source.alias, qualifier, provider)) ||
+    sameName(source.name, qualifier, provider)
+  );
 }
 
 function dedupeOrigins(origins: CteColumnOrigin[]): CteColumnOrigin[] {
@@ -181,7 +219,14 @@ function dedupeOrigins(origins: CteColumnOrigin[]): CteColumnOrigin[] {
   return result;
 }
 
-function originsForDefinition(model: SqlSemanticModel, definition: SqlSemanticRowSource, hit: CteColumnHit, columnName: string, visited: Set<string>, depth: number): CteColumnOrigin[] {
+function originsForDefinition(
+  model: SqlSemanticModel,
+  definition: SqlSemanticRowSource,
+  hit: CteColumnHit,
+  columnName: string,
+  visited: Set<string>,
+  depth: number,
+): CteColumnOrigin[] {
   if (depth > MAX_CTE_ORIGIN_DEPTH || visited.has(definition.id)) return [];
   visited.add(definition.id);
 
@@ -192,26 +237,39 @@ function originsForDefinition(model: SqlSemanticModel, definition: SqlSemanticRo
   if (hit.stars && hit.stars.length > 0) {
     // `SELECT a.*, b.*` yields one candidate star per body source; trace them all and let the
     // caller's column metadata decide which one actually owns the name (see CteColumnHit.stars).
-    return dedupeOrigins(hit.stars.flatMap((star) => expandStarSources(model, definition, star, columnName, visited, depth)));
+    return dedupeOrigins(
+      hit.stars.flatMap((star) =>
+        expandStarSources(model, definition, star, columnName, visited, depth),
+      ),
+    );
   }
   return [];
 }
 
-function followBodySource(model: SqlSemanticModel, ownerDefinition: SqlSemanticRowSource, source: SqlSemanticRowSource, column: string, visited: Set<string>, depth: number): CteColumnOrigin[] {
+function followBodySource(
+  model: SqlSemanticModel,
+  ownerDefinition: SqlSemanticRowSource,
+  source: SqlSemanticRowSource,
+  column: string,
+  visited: Set<string>,
+  depth: number,
+): CteColumnOrigin[] {
   // Recursive CTE self-reference — never trace back into the same definition.
   if (sameName(source.name, ownerDefinition.name, model.provider)) return [];
-  if (source.kind === "cte") {
+  if (source.kind === 'cte') {
     const upstream = findCteDefinition(model, source.name, source);
     if (!upstream) return [];
     const upstreamHit = resolveCteOutputOrStars(upstream, column, model.provider);
     if (!upstreamHit) return [];
     return originsForDefinition(model, upstream, upstreamHit, column, visited, depth + 1);
   }
-  if (source.kind === "subquery") {
+  if (source.kind === 'subquery') {
     // Derived table (enriched only when it sits directly inside a CTE body): resolve the column
     // against the inline view's own projections/stars, then keep tracing inside its body.
     const innerHit = resolveCteOutputOrStars(source, column, model.provider);
-    return innerHit ? originsForDefinition(model, source, innerHit, column, visited, depth + 1) : [];
+    return innerHit
+      ? originsForDefinition(model, source, innerHit, column, visited, depth + 1)
+      : [];
   }
   if (isPhysicalOriginSource(source)) {
     return [{ source, column }];
@@ -219,11 +277,21 @@ function followBodySource(model: SqlSemanticModel, ownerDefinition: SqlSemanticR
   return [];
 }
 
-function expandOriginSources(model: SqlSemanticModel, definition: SqlSemanticRowSource, qualifierParts: readonly string[], column: string, visited: Set<string>, depth: number): CteColumnOrigin[] {
+function expandOriginSources(
+  model: SqlSemanticModel,
+  definition: SqlSemanticRowSource,
+  qualifierParts: readonly string[],
+  column: string,
+  visited: Set<string>,
+  depth: number,
+): CteColumnOrigin[] {
   const sources = definition.bodySources ?? [];
   // Bare columns may come from any source, including an upstream CTE (chain); followBodySource
   // itself decides which source kinds are traceable.
-  const matched = qualifierParts.length > 0 ? sources.filter((source) => sourceMatchesQualifier(source, qualifierParts, model.provider)) : sources;
+  const matched =
+    qualifierParts.length > 0
+      ? sources.filter((source) => sourceMatchesQualifier(source, qualifierParts, model.provider))
+      : sources;
   const origins: CteColumnOrigin[] = [];
   for (const source of matched) {
     origins.push(...followBodySource(model, definition, source, column, visited, depth));
@@ -231,9 +299,23 @@ function expandOriginSources(model: SqlSemanticModel, definition: SqlSemanticRow
   return dedupeOrigins(origins);
 }
 
-function expandStarSources(model: SqlSemanticModel, definition: SqlSemanticRowSource, star: SqlSemanticCteStar, columnName: string, visited: Set<string>, depth: number): CteColumnOrigin[] {
-  const sources = (definition.bodySources ?? []).filter((source) => !sameName(source.name, definition.name, model.provider));
-  const matched = star.qualifierParts.length > 0 ? sources.filter((source) => sourceMatchesQualifier(source, star.qualifierParts, model.provider)) : sources;
+function expandStarSources(
+  model: SqlSemanticModel,
+  definition: SqlSemanticRowSource,
+  star: SqlSemanticCteStar,
+  columnName: string,
+  visited: Set<string>,
+  depth: number,
+): CteColumnOrigin[] {
+  const sources = (definition.bodySources ?? []).filter(
+    (source) => !sameName(source.name, definition.name, model.provider),
+  );
+  const matched =
+    star.qualifierParts.length > 0
+      ? sources.filter((source) =>
+          sourceMatchesQualifier(source, star.qualifierParts, model.provider),
+        )
+      : sources;
   const origins: CteColumnOrigin[] = [];
   for (const source of matched) {
     origins.push(...followBodySource(model, definition, source, columnName, visited, depth));
@@ -246,6 +328,10 @@ function expandStarSources(model: SqlSemanticModel, definition: SqlSemanticRowSo
  * table column(s) whose metadata can drive hover comments. Returns an empty list for
  * expressions, explicit-list mismatches, cycles, or over-deep chains — callers then fall back.
  */
-export function resolveCteColumnOrigins(model: SqlSemanticModel, hit: CteColumnHit, outerColumnName: string): CteColumnOrigin[] {
+export function resolveCteColumnOrigins(
+  model: SqlSemanticModel,
+  hit: CteColumnHit,
+  outerColumnName: string,
+): CteColumnOrigin[] {
   return originsForDefinition(model, hit.definition, hit, outerColumnName, new Set<string>(), 0);
 }

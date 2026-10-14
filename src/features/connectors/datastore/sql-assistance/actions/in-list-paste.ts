@@ -2,7 +2,7 @@ import type { RelationalProvider } from '@fouc/shared';
 export const SQL_IN_LIST_PASTE_MAX_SOURCE_LENGTH = 1024 * 1024;
 export const SQL_IN_LIST_PASTE_MAX_VALUES = 10_000;
 
-export type SqlInListPasteError = "empty" | "not-list" | "too-large" | "too-many-values";
+export type SqlInListPasteError = 'empty' | 'not-list' | 'too-large' | 'too-many-values';
 
 export type SqlInListPasteResult =
   | {
@@ -28,24 +28,31 @@ interface ParsedPasteValues {
 
 const SIMPLE_SLASH_LIST_VALUE_RE = /^[A-Za-z0-9_.:-]+$/;
 
-export function buildSqlInConditionFromPasteSource(source: string, keywordCase: "preserve" | "upper" | "lower" = "upper", provider: RelationalProvider = 'postgres'): SqlInListPasteResult {
-  if (source.length > SQL_IN_LIST_PASTE_MAX_SOURCE_LENGTH || new TextEncoder().encode(source).byteLength > SQL_IN_LIST_PASTE_MAX_SOURCE_LENGTH) {
-    return { ok: false, reason: "too-large", limit: SQL_IN_LIST_PASTE_MAX_SOURCE_LENGTH };
+export function buildSqlInConditionFromPasteSource(
+  source: string,
+  keywordCase: 'preserve' | 'upper' | 'lower' = 'upper',
+  provider: RelationalProvider = 'postgres',
+): SqlInListPasteResult {
+  if (
+    source.length > SQL_IN_LIST_PASTE_MAX_SOURCE_LENGTH ||
+    new TextEncoder().encode(source).byteLength > SQL_IN_LIST_PASTE_MAX_SOURCE_LENGTH
+  ) {
+    return { ok: false, reason: 'too-large', limit: SQL_IN_LIST_PASTE_MAX_SOURCE_LENGTH };
   }
 
   const parsed = parsePastedValues(source);
   const values = parsed.values;
-  if (values.length === 0) return { ok: false, reason: "empty" };
-  if (values.length === 1 && !parsed.explicitList) return { ok: false, reason: "not-list" };
+  if (values.length === 0) return { ok: false, reason: 'empty' };
+  if (values.length === 1 && !parsed.explicitList) return { ok: false, reason: 'not-list' };
   if (values.length > SQL_IN_LIST_PASTE_MAX_VALUES) {
-    return { ok: false, reason: "too-many-values", limit: SQL_IN_LIST_PASTE_MAX_VALUES };
+    return { ok: false, reason: 'too-many-values', limit: SQL_IN_LIST_PASTE_MAX_VALUES };
   }
 
   const literals = values.map((token) => formatSqlLiteral(token, provider));
-  const inKeyword = keywordCase === "lower" ? "in" : "IN";
+  const inKeyword = keywordCase === 'lower' ? 'in' : 'IN';
   return {
     ok: true,
-    sql: `${inKeyword} (${literals.join(", ")})`,
+    sql: `${inKeyword} (${literals.join(', ')})`,
     valueCount: values.length,
   };
 }
@@ -55,16 +62,19 @@ export function sqlInConditionNeedsListOnly(prefix: string): boolean {
 }
 
 export function insertTextForSqlInCondition(condition: string, prefix: string): string {
-  if (sqlInConditionNeedsListOnly(prefix)) return condition.replace(/^IN\s+/i, "");
+  if (sqlInConditionNeedsListOnly(prefix)) return condition.replace(/^IN\s+/i, '');
   if (!prefix || /\s$|\($/.test(prefix)) return condition;
   return ` ${condition}`;
 }
 
 function parsePastedValues(source: string): ParsedPasteValues {
-  const sourceText = source.replace(/\r\n?/g, "\n").trim();
+  const sourceText = source.replace(/\r\n?/g, '\n').trim();
   const withoutInKeyword = stripLeadingInKeyword(sourceText);
   const explicitSource = withoutInKeyword.trim();
-  const explicitList = explicitSource.startsWith("(") && explicitSource.endsWith(")") && hasSingleWrappingParentheses(explicitSource);
+  const explicitList =
+    explicitSource.startsWith('(') &&
+    explicitSource.endsWith(')') &&
+    hasSingleWrappingParentheses(explicitSource);
   const trimmed = stripOuterParentheses(withoutInKeyword);
   if (!trimmed) return { values: [], explicitList };
 
@@ -83,7 +93,7 @@ function stripLeadingInKeyword(value: string): string {
 
 function splitPasteTokens(source: string): string[] {
   const tokens: string[] = [];
-  let current = "";
+  let current = '';
   let quote: "'" | '"' | null = null;
   const slashIsDelimiter = shouldSplitSlashSeparatedValues(source);
 
@@ -110,9 +120,9 @@ function splitPasteTokens(source: string): string[] {
       continue;
     }
 
-    if (char === "," || char === "\n" || char === "\t" || (slashIsDelimiter && char === "/")) {
+    if (char === ',' || char === '\n' || char === '\t' || (slashIsDelimiter && char === '/')) {
       tokens.push(current);
-      current = "";
+      current = '';
       continue;
     }
 
@@ -125,12 +135,16 @@ function splitPasteTokens(source: string): string[] {
 
 function shouldSplitSlashSeparatedValues(source: string): boolean {
   const trimmed = source.trim();
-  if (!trimmed.includes("/") || /[,\n\t]/.test(trimmed)) return false;
+  if (!trimmed.includes('/') || /[,\n\t]/.test(trimmed)) return false;
   if (trimmed.includes("'") || trimmed.includes('"')) return false;
-  if (trimmed.startsWith("/") || /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed)) return false;
-  if (/^\d{4}\/\d{1,2}\/\d{1,2}(?:\D|$)/.test(trimmed) || /^\d{1,2}\/\d{1,2}\/\d{4}(?:\D|$)/.test(trimmed)) return false;
+  if (trimmed.startsWith('/') || /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed)) return false;
+  if (
+    /^\d{4}\/\d{1,2}\/\d{1,2}(?:\D|$)/.test(trimmed) ||
+    /^\d{1,2}\/\d{1,2}\/\d{4}(?:\D|$)/.test(trimmed)
+  )
+    return false;
 
-  const parts = trimmed.split("/").map((part) => part.trim());
+  const parts = trimmed.split('/').map((part) => part.trim());
   if (parts.length < 2 || parts.some((part) => !part)) return false;
   return parts.every((part) => SIMPLE_SLASH_LIST_VALUE_RE.test(part));
 }
@@ -139,14 +153,15 @@ function normalizePastedToken(token: string): ParsedPasteValue | null {
   let value = stripOuterParentheses(
     token
       .trim()
-      .replace(/[;,]+$/g, "")
+      .replace(/[;,]+$/g, '')
       .trim(),
   );
   if (!value) return null;
 
   const first = value[0];
   const last = value[value.length - 1];
-  const quoted = value.length >= 2 && ((first === "'" && last === "'") || (first === '"' && last === '"'));
+  const quoted =
+    value.length >= 2 && ((first === "'" && last === "'") || (first === '"' && last === '"'));
   if (quoted) {
     value = value.slice(1, -1);
     value = first === "'" ? value.replace(/''/g, "'") : value.replace(/""/g, '"');
@@ -159,7 +174,7 @@ function normalizePastedToken(token: string): ParsedPasteValue | null {
 
 function stripOuterParentheses(value: string): string {
   let next = value.trim();
-  while (next.startsWith("(") && next.endsWith(")") && hasSingleWrappingParentheses(next)) {
+  while (next.startsWith('(') && next.endsWith(')') && hasSingleWrappingParentheses(next)) {
     next = next.slice(1, -1).trim();
   }
   return next;
@@ -186,8 +201,8 @@ function hasSingleWrappingParentheses(value: string): boolean {
       continue;
     }
 
-    if (char === "(") depth += 1;
-    if (char === ")") depth -= 1;
+    if (char === '(') depth += 1;
+    if (char === ')') depth -= 1;
     if (depth === 0 && index < value.length - 1) return false;
   }
 
@@ -195,7 +210,7 @@ function hasSingleWrappingParentheses(value: string): boolean {
 }
 
 function formatSqlLiteral(token: ParsedPasteValue, provider: RelationalProvider): string {
-  if (!token.quoted && /^null$/i.test(token.value)) return "NULL";
+  if (!token.quoted && /^null$/i.test(token.value)) return 'NULL';
   const value = provider === 'mysql' ? token.value.replaceAll('\\', '\\\\') : token.value;
   return `'${value.replace(/'/g, "''")}'`;
 }

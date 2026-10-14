@@ -1,0 +1,25 @@
+import { defineMessages } from '@/lib/i18n';
+
+export const messages = defineMessages({
+  barChart: ['柱状图', 'Bar chart'],
+  lineChart: ['折线图', 'Line chart'],
+  pieChart: ['饼图', 'Pie chart'],
+  fieldNoLongerExists: ['字段已不存在', 'Field no longer exists'],
+  resultRowNumber: ['结果行号', 'Result row number'],
+  rowCount: ['行数', 'Row count'],
+  selectField: ['选择字段', 'Select field'],
+  type: ['类型', 'Type'],
+  chartType: ['图表类型', 'Chart type'],
+  areaChart: ['面积图', 'Area chart'],
+  scatterPlot: ['散点图', 'Scatter plot'],
+  chartXAxis: ['图表 X 轴', 'Chart X axis'],
+  chartYAxis: ['图表 Y 轴', 'Chart Y axis'],
+  nonNumeric: ['非数值', 'Non-numeric'],
+  fieldNoLongerExists329: ['字段已不存在：', 'Field no longer exists: '],
+  showValues: ['显示数值', 'Show values'],
+  moreChartSettings: ['图表更多设置', 'More chart settings'],
+  advancedSettings: ['高级设置', 'Advanced settings'],
+  chartData: ['绘图数据', 'Chart data'],
+  saveChartSettings: ['保存图表设置', 'Save chart settings'],
+  restoreDefaults: ['恢复默认设置', 'Restore defaults'],
+});

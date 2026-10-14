@@ -1,3 +1,5 @@
+import { createTranslator, type Locale } from '@/lib/i18n';
+import { knowledgeMessages } from './editor-boundary-options.messages';
 /**
  * The Client Boundary descriptor of the editor (E03).
  *
@@ -7,9 +9,12 @@
  * `next/dynamic` call, so the flag is one named, testable fact instead of a
  * buried option.
  */
-export const editorClientBoundary = {
-  /** No server-side rendering: the Tiptap view is created strictly after mount. */
-  ssr: false,
-  /** `role="status"` copy of the fallback while the editor chunk streams in. */
-  loadingLabel: '正在加载编辑器',
-} as const;
+export function editorClientBoundary(locale?: Locale) {
+  const knowledgeT = createTranslator(knowledgeMessages, locale);
+  return {
+    /** No server-side rendering: the Tiptap view is created strictly after mount. */
+    ssr: false,
+    /** `role="status"` copy of the fallback while the editor chunk streams in. */
+    loadingLabel: knowledgeT('loadingEditor'),
+  } as const;
+}

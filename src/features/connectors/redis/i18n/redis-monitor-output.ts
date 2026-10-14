@@ -1,0 +1,41 @@
+import { defineMessages } from '@/lib/i18n';
+export const messages = defineMessages({
+  ' … [已截断]': [' … [已截断]', ' … [truncated]'],
+  '复制失败，请选择记录复制。': ['复制失败，请选择记录复制。', 'Copy failed. Select the record.'],
+  'Redis 实时 MONITOR': ['Redis 实时 MONITOR', 'Live Redis MONITOR'],
+  '正在建立独立监听连接…': [
+    '正在建立独立监听连接…',
+    'Establishing a dedicated monitor connection…',
+  ],
+  'MONITOR 正在监听': ['MONITOR 正在监听', 'MONITOR listening'],
+  'MONITOR 已停止': ['MONITOR 已停止', 'MONITOR stopped'],
+  'MONITOR 读取失败': ['MONITOR 读取失败', 'MONITOR read failed'],
+  '停止 Redis MONITOR': ['停止 Redis MONITOR', 'Stop Redis MONITOR'],
+  停止: ['停止', 'Stop'],
+  '复制 MONITOR 输出': ['复制 MONITOR 输出', 'Copy MONITOR output'],
+  已复制: ['已复制', 'Copied'],
+  复制: ['复制', 'Copy'],
+  '筛选 MONITOR 记录': ['筛选 MONITOR 记录', 'Filter MONITOR records'],
+  '筛选命令、Key 或来源': ['筛选命令、Key 或来源', 'Filter command, Key or source'],
+  跟随最新: ['跟随最新', 'Follow latest'],
+  '· 已保留接收记录，可重新运行 MONITOR。': [
+    '· 已保留接收记录，可重新运行 MONITOR。',
+    '· Received records retained. MONITOR can run again.',
+  ],
+  'MONITOR 记录': ['MONITOR 记录', 'MONITOR records'],
+  '… [已截断]': ['… [已截断]', '… [truncated]'],
+  '没有匹配的记录。': ['没有匹配的记录。', 'No matching records.'],
+  '等待此实例收到命令…': ['等待此实例收到命令…', 'Waiting for commands on this instance…'],
+  '等待服务器确认 MONITOR…': [
+    '等待服务器确认 MONITOR…',
+    'Waiting for server MONITOR confirmation…',
+  ],
+  '没有接收记录。': ['没有接收记录。', 'No received records.'],
+  显示: ['显示', 'Showing '],
+  '条 · 仅保留最新 1000 条 · 单条最多 16 KiB': [
+    '条 · 仅保留最新 1000 条 · 单条最多 16 KiB',
+    'records · Keeps the latest 1,000 only · Up to 16 KiB each',
+  ],
+  '· 传输缓冲已丢弃': ['· 传输缓冲已丢弃', '· Transport buffer has dropped'],
+  '条，记录不完整': ['条，记录不完整', 'records; incomplete'],
+});

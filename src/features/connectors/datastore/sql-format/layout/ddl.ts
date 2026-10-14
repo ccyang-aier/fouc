@@ -1,5 +1,17 @@
-import type { AstNode, ClauseNode, ParenthesisNode, StatementNode } from "sql-formatter/dist/esm/parser/ast.js";
-import { CREATE_TABLE_KEYWORD, keywordText, renderInline, splitByComma, Writer, type SqlLayoutContext } from "./primitives";
+import type {
+  AstNode,
+  ClauseNode,
+  ParenthesisNode,
+  StatementNode,
+} from 'sql-formatter/dist/esm/parser/ast.js';
+import {
+  CREATE_TABLE_KEYWORD,
+  keywordText,
+  renderInline,
+  splitByComma,
+  Writer,
+  type SqlLayoutContext,
+} from './primitives';
 
 /**
  * Column alignment for `CREATE TABLE`.
@@ -30,14 +42,15 @@ interface ColumnDefinition {
   tail: string;
 }
 
-type Definition = { kind: "column"; column: ColumnDefinition } | { kind: "other"; nodes: AstNode[] };
+type Definition =
+  { kind: 'column'; column: ColumnDefinition } | { kind: 'other'; nodes: AstNode[] };
 
 function isDataType(node: AstNode | undefined): boolean {
-  return node?.type === "data_type" || node?.type === "parameterized_data_type";
+  return node?.type === 'data_type' || node?.type === 'parameterized_data_type';
 }
 
 function isCommentNode(node: AstNode | undefined): boolean {
-  return node?.type === "identifier" && node.text.toUpperCase() === "COMMENT";
+  return node?.type === 'identifier' && node.text.toUpperCase() === 'COMMENT';
 }
 
 /**
@@ -46,7 +59,7 @@ function isCommentNode(node: AstNode | undefined): boolean {
  */
 function splitColumn(ctx: SqlLayoutContext, item: AstNode[]): ColumnDefinition | null {
   const [nameNode, typeNode] = item;
-  if (nameNode?.type !== "identifier" || !isDataType(typeNode)) return null;
+  if (nameNode?.type !== 'identifier' || !isDataType(typeNode)) return null;
 
   const commentAt = item.findIndex((node, index) => index >= 2 && isCommentNode(node));
   const modifierNodes = item.slice(2, commentAt === -1 ? item.length : commentAt);
@@ -57,8 +70,9 @@ function splitColumn(ctx: SqlLayoutContext, item: AstNode[]): ColumnDefinition |
   const modifiers = renderInline(ctx, modifierNodes, ctx.options.lineWidth);
   const tail = renderInline(ctx, tailNodes, ctx.options.lineWidth);
 
-  if (!name || !type || (modifierNodes.length > 0 && !modifiers) || (tailNodes.length > 0 && !tail)) return null;
-  return { name, type, modifiers: modifiers ?? "", tail: tail ?? "" };
+  if (!name || !type || (modifierNodes.length > 0 && !modifiers) || (tailNodes.length > 0 && !tail))
+    return null;
+  return { name, type, modifiers: modifiers ?? '', tail: tail ?? '' };
 }
 
 /**
@@ -69,14 +83,16 @@ export function isCreateTable(statement: StatementNode): boolean {
   return createTableParts(statement) !== null;
 }
 
-function createTableParts(statement: StatementNode): { clause: ClauseNode; name: AstNode; paren: ParenthesisNode; rest: AstNode[] } | null {
+function createTableParts(
+  statement: StatementNode,
+): { clause: ClauseNode; name: AstNode; paren: ParenthesisNode; rest: AstNode[] } | null {
   if (statement.children.length !== 1) return null;
   const clause = statement.children[0];
-  if (clause.type !== "clause") return null;
+  if (clause.type !== 'clause') return null;
   if (!CREATE_TABLE_KEYWORD.test(clause.nameKw.text.trim())) return null;
 
   const [name, paren] = clause.children;
-  if (name?.type !== "identifier" || paren?.type !== "parenthesis") return null;
+  if (name?.type !== 'identifier' || paren?.type !== 'parenthesis') return null;
   // A `CREATE TABLE ... AS SELECT` has no column list to align.
   if (paren.children.length === 0) return null;
   return { clause, name, paren, rest: clause.children.slice(2) };
@@ -85,32 +101,34 @@ function createTableParts(statement: StatementNode): { clause: ClauseNode; name:
 /** Emits a `CREATE TABLE`, aligning the definition list. */
 export function createTableLayout(statement: StatementNode, ctx: SqlLayoutContext): string {
   const parts = createTableParts(statement);
-  if (!parts) throw new Error("createTableLayout called on a statement that is not a CREATE TABLE");
+  if (!parts) throw new Error('createTableLayout called on a statement that is not a CREATE TABLE');
   const { clause, name, paren, rest } = parts;
 
   const writer = new Writer(ctx.options);
   const indent = ctx.options.indentWidth;
   const nameText = renderInline(ctx, [name], ctx.options.lineWidth - clause.nameKw.text.length - 1);
-  if (!nameText) throw new Error("a CREATE TABLE table name must fit on one line");
+  if (!nameText) throw new Error('a CREATE TABLE table name must fit on one line');
 
   writer.write(`${keywordText(clause.nameKw.text, ctx)} ${nameText}`);
   writer.newline(0);
-  writer.write("(");
+  writer.write('(');
 
   const definitions: Definition[] = splitByComma(paren.children).map((item) => {
     const column = splitColumn(ctx, item);
-    return column ? { kind: "column", column } : { kind: "other", nodes: item };
+    return column ? { kind: 'column', column } : { kind: 'other', nodes: item };
   });
 
   // Column widths are shared by every line, so measure before emitting.
-  const columns = definitions.flatMap((definition) => (definition.kind === "column" ? [definition.column] : []));
+  const columns = definitions.flatMap((definition) =>
+    definition.kind === 'column' ? [definition.column] : [],
+  );
   const nameWidth = Math.max(0, ...columns.map((column) => column.name.length));
   const typeWidth = Math.max(0, ...columns.map((column) => column.type.length));
   const modifierWidth = Math.max(0, ...columns.map((column) => column.modifiers.length));
 
   definitions.forEach((definition, index) => {
     writer.newline(indent);
-    if (definition.kind === "column") {
+    if (definition.kind === 'column') {
       const { name: columnName, type, modifiers, tail } = definition.column;
       writer.write(columnName.padEnd(nameWidth));
       if (type) writer.write(` ${type.padEnd(typeWidth)}`);
@@ -119,11 +137,11 @@ export function createTableLayout(statement: StatementNode, ctx: SqlLayoutContex
     } else {
       emitDefinition(writer, definition.nodes, indent, ctx);
     }
-    if (index < definitions.length - 1) writer.write(",");
+    if (index < definitions.length - 1) writer.write(',');
   });
 
   writer.newline(0);
-  writer.write(")");
+  writer.write(')');
   if (rest.length > 0) {
     const options = renderInline(ctx, rest, ctx.options.lineWidth - 1);
     if (options) {
@@ -133,7 +151,7 @@ export function createTableLayout(statement: StatementNode, ctx: SqlLayoutContex
       writer.write(ctx.renderers.block(rest).trim());
     }
   }
-  if (statement.hasSemicolon) writer.write(";");
+  if (statement.hasSemicolon) writer.write(';');
   return writer.toString();
 }
 
@@ -141,7 +159,12 @@ export function createTableLayout(statement: StatementNode, ctx: SqlLayoutContex
  * Emits a definition that is not a plain column — a table constraint. The
  * constraint name gets its own line and its body is indented one step.
  */
-function emitDefinition(writer: Writer, nodes: AstNode[], indent: number, ctx: SqlLayoutContext): void {
+function emitDefinition(
+  writer: Writer,
+  nodes: AstNode[],
+  indent: number,
+  ctx: SqlLayoutContext,
+): void {
   const flat = renderInline(ctx, nodes, ctx.options.lineWidth - indent);
   if (flat) {
     writer.write(flat);
@@ -149,8 +172,10 @@ function emitDefinition(writer: Writer, nodes: AstNode[], indent: number, ctx: S
   }
 
   const [first, second] = nodes;
-  if (first?.type === "keyword" && second?.type === "identifier") {
-    writer.write(`${keywordText(first.text, ctx)} ${renderInline(ctx, [second], ctx.options.lineWidth) ?? second.text}`);
+  if (first?.type === 'keyword' && second?.type === 'identifier') {
+    writer.write(
+      `${keywordText(first.text, ctx)} ${renderInline(ctx, [second], ctx.options.lineWidth) ?? second.text}`,
+    );
     writer.newline(indent + ctx.options.indentWidth);
     writer.write(ctx.renderers.block(nodes.slice(2)).trim());
     return;

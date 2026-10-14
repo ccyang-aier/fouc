@@ -1,4 +1,7 @@
-"use client"
+'use client';
+
+import { useTranslation } from '@/lib/i18n/react';
+import { messages } from './i18n/accent-section.messages';
 
 /**
  * 主题色分区：六个内置预设 + 任意取色（系统色板）。
@@ -6,13 +9,13 @@
  * custom 通道把基色写入 --accent-custom，派生色实时推导，切换即刻全局生效。
  */
 
-import { useRef } from "react"
-import { Swatches } from "@phosphor-icons/react"
+import { useRef } from 'react';
+import { Swatches } from '@phosphor-icons/react';
 
-import { accentOptions, type AccentPref } from "@/lib/appearance"
-import { cn } from "@/lib/utils"
+import { getAccentOptions, type AccentPref } from '@/lib/appearance';
+import { cn } from '@/lib/utils';
 
-import { SettingsSection } from "./section-card"
+import { SettingsSection } from './section-card';
 
 export function AccentSection({
   value,
@@ -20,20 +23,26 @@ export function AccentSection({
   onChange,
   onCustomColor,
 }: {
-  value: AccentPref
-  customColor: string
-  onChange: (value: AccentPref) => void
-  onCustomColor: (hex: string) => void
+  value: AccentPref;
+  customColor: string;
+  onChange: (value: AccentPref) => void;
+  onCustomColor: (hex: string) => void;
 }) {
-  const pickerRef = useRef<HTMLInputElement>(null)
-  const activePreset = accentOptions.find((option) => option.id === value)
-  const activeColor = activePreset?.color ?? customColor
+  const { t: uiText, locale } = useTranslation(messages);
+  const accentOptions = getAccentOptions(locale);
+  const pickerRef = useRef<HTMLInputElement>(null);
+  const activePreset = accentOptions.find((option) => option.id === value);
+  const activeColor = activePreset?.color ?? customColor;
 
   return (
-    <SettingsSection title="主题色">
-      <div className="flex flex-wrap items-center gap-2 py-1" role="radiogroup" aria-label="主题色">
+    <SettingsSection title={uiText('主题色')}>
+      <div
+        className="flex flex-wrap items-center gap-2 py-1"
+        role="radiogroup"
+        aria-label={uiText('主题色')}
+      >
         {accentOptions.map((option) => {
-          const selected = value === option.id
+          const selected = value === option.id;
           return (
             <button
               key={option.id}
@@ -44,14 +53,14 @@ export function AccentSection({
               title={option.label}
               onClick={() => onChange(option.id)}
               className={cn(
-                "size-[26px] rounded-full outline-none transition-[transform,box-shadow] duration-150 ease-out focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-95",
+                'size-[26px] rounded-full outline-none transition-[transform,box-shadow] duration-150 ease-out focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-95',
                 selected
-                  ? "shadow-[0_0_0_2px_var(--panel),0_0_0_4px_var(--accent-ink)]"
-                  : "hover:scale-110",
+                  ? 'shadow-[0_0_0_2px_var(--panel),0_0_0_4px_var(--accent-ink)]'
+                  : 'hover:scale-110',
               )}
               style={{ backgroundColor: option.color }}
             />
-          )
+          );
         })}
 
         <span className="mx-1.5 h-5 w-px bg-[var(--line)]" aria-hidden />
@@ -59,13 +68,13 @@ export function AccentSection({
         <button
           type="button"
           role="radio"
-          aria-checked={value === "custom"}
-          aria-label="自定义主题色"
-          title="自定义主题色"
+          aria-checked={value === 'custom'}
+          aria-label={uiText('自定义主题色')}
+          title={uiText('自定义主题色')}
           onClick={() => pickerRef.current?.click()}
           className={cn(
-            "relative size-[26px] rounded-full outline-none transition-[transform,box-shadow] duration-150 ease-out focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-95 hover:scale-110",
-            value === "custom" && "shadow-[0_0_0_2px_var(--panel),0_0_0_4px_var(--accent-ink)]",
+            'relative size-[26px] rounded-full outline-none transition-[transform,box-shadow] duration-150 ease-out focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-95 hover:scale-110',
+            value === 'custom' && 'shadow-[0_0_0_2px_var(--panel),0_0_0_4px_var(--accent-ink)]',
           )}
         >
           {/* 色环底座：从任意基色都能找到入口的彩虹环；内部样式恒定，
@@ -75,7 +84,7 @@ export function AccentSection({
             aria-hidden
             style={{
               background:
-                "conic-gradient(from 210deg, #e2564d, #d99a2b, #5aa469, #3f8fd2, #7a5cd6, #d256a0, #e2564d)",
+                'conic-gradient(from 210deg, #e2564d, #d99a2b, #5aa469, #3f8fd2, #7a5cd6, #d256a0, #e2564d)',
             }}
           />
           <span className="absolute inset-[3px] flex items-center justify-center rounded-full bg-panel text-[var(--muted-strong)]">
@@ -93,10 +102,14 @@ export function AccentSection({
         />
 
         <span className="ml-1.5 flex items-baseline gap-1.5">
-          <span className="text-[11px] text-[var(--muted-strong)]">{activePreset?.label ?? "自定义"}</span>
-          <span className="font-mono text-[10px] text-[var(--muted)]">{activeColor.toUpperCase()}</span>
+          <span className="text-[11px] text-[var(--muted-strong)]">
+            {activePreset?.label ?? uiText('自定义')}
+          </span>
+          <span className="font-mono text-[10px] text-[var(--muted)]">
+            {activeColor.toUpperCase()}
+          </span>
         </span>
       </div>
     </SettingsSection>
-  )
+  );
 }

@@ -1,5 +1,8 @@
 'use client';
 
+import { useTranslation } from '@/lib/i18n/react';
+import { messages } from './i18n/oauth-callback-scene.messages';
+
 /**
  * `/auth/callback` — OAuth/SSO landing (A04). Failures arrive as
  * `?error=<code>` (fixed codes; descriptions are dropped), completions as
@@ -26,9 +29,10 @@ type CompletionState =
   | { phase: 'checking' }
   | { phase: 'authenticated'; user: FoucAuthUser }
   | { phase: 'missing' }
-  | { phase: 'check-failed'; message: string };
+  | { phase: 'check-failed'; cause: unknown };
 
 export function OAuthCallbackScene() {
+  const { t: uiText, locale } = useTranslation(messages);
   const router = useRouter();
   const { refresh, completeSignIn } = useIdentity();
   const params = useSearchParams();
@@ -41,10 +45,15 @@ export function OAuthCallbackScene() {
     let active = true;
     refresh().then(
       (value) => {
-        if (active) setCompletion(value.status === 'authenticated' ? { phase: 'authenticated', user: value.user } : { phase: 'missing' });
+        if (active)
+          setCompletion(
+            value.status === 'authenticated'
+              ? { phase: 'authenticated', user: value.user }
+              : { phase: 'missing' },
+          );
       },
       (cause) => {
-        if (active) setCompletion({ phase: 'check-failed', message: authErrorCopyFor(cause).description });
+        if (active) setCompletion({ phase: 'check-failed', cause });
       },
     );
     return () => {
@@ -57,36 +66,47 @@ export function OAuthCallbackScene() {
     if (completion.phase !== 'authenticated' || redirecting.current) return;
     redirecting.current = true;
     const target = typeof window === 'undefined' ? '/' : consumeAuthReturnTo(window.sessionStorage);
-    const timer = window.setTimeout(() => { void completeSignIn().then(() => router.replace(target)).catch((cause) => setCompletion({ phase: 'check-failed', message: authErrorCopyFor(cause).description })); }, 700);
+    const timer = window.setTimeout(() => {
+      void completeSignIn()
+        .then(() => router.replace(target))
+        .catch((cause) => setCompletion({ phase: 'check-failed', cause }));
+    }, 700);
     return () => window.clearTimeout(timer);
   }, [completion, router, completeSignIn]);
 
   function retryCheck() {
     setCompletion({ phase: 'checking' });
     refresh().then(
-      (value) => setCompletion(value.status === 'authenticated' ? { phase: 'authenticated', user: value.user } : { phase: 'missing' }),
-      (cause) => setCompletion({ phase: 'check-failed', message: authErrorCopyFor(cause).description }),
+      (value) =>
+        setCompletion(
+          value.status === 'authenticated'
+            ? { phase: 'authenticated', user: value.user }
+            : { phase: 'missing' },
+        ),
+      (cause) => setCompletion({ phase: 'check-failed', cause }),
     );
   }
 
   if (view.kind === 'error') {
-    const copy = oauthCallbackErrorCopy(view.code);
+    const copy = oauthCallbackErrorCopy(view.code, locale);
     return (
-      <AuthScene aria-label="企业登录结果" width={420}>
+      <AuthScene aria-label={uiText('企业登录结果')} width={420}>
         <AuthPanel>
-          <AuthPanelHeading title="企业登录" />
+          <AuthPanelHeading title={uiText('企业登录')} />
           <AppAlert tone="error" title={copy.title} description={copy.description} />
           <div className="mt-5 flex items-center gap-2">
             <Button type="button" onClick={() => router.push(authEntryPath)}>
               <ArrowClockwise className="size-4" aria-hidden />
-              重新登录
+              {uiText('重新登录')}
             </Button>
             <Button type="button" variant="ghost" onClick={() => router.push('/')}>
-              返回首页
+              {uiText('返回首页')}
             </Button>
           </div>
           {copy.recoverable === 'retry' ? (
-            <p className="mt-3 text-[11px] leading-5 text-[var(--muted)]">重新登录后会保留你之前的目标页面。</p>
+            <p className="mt-3 text-[11px] leading-5 text-[var(--muted)]">
+              {uiText('重新登录后会保留你之前的目标页面。')}
+            </p>
           ) : null}
         </AuthPanel>
       </AuthScene>
@@ -95,40 +115,53 @@ export function OAuthCallbackScene() {
 
   if (view.kind === 'completed') {
     return (
-      <AuthScene aria-label="企业登录完成" width={400}>
+      <AuthScene aria-label={uiText('企业登录完成')} width={400}>
         <AuthPanel>
           {completion.phase === 'checking' ? (
-            <div className="flex items-center gap-3 py-2 text-[12.5px] text-[var(--muted-strong)]" role="status">
+            <div
+              className="flex items-center gap-3 py-2 text-[12.5px] text-[var(--muted-strong)]"
+              role="status"
+            >
               <CircleNotch className="size-4 animate-spin text-[var(--accent-ink)]" aria-hidden />
-              正在确认登录状态…
+              {uiText('正在确认登录状态…')}
             </div>
           ) : null}
           {completion.phase === 'authenticated' ? (
             <AppAlert
               tone="success"
-              title="登录成功"
-              description={`正在以 ${completion.user.email} 进入 Fouc…`}
+              title={uiText('登录成功')}
+              description={uiText('正在以 {0} 进入 Fouc…', { '0': completion.user.email })}
             />
           ) : null}
           {completion.phase === 'missing' ? (
             <>
               <AppAlert
                 tone="warning"
-                title="未能确认登录会话"
-                description="回调已完成,但没有读取到有效会话。请重新登录;若持续出现,请联系管理员。"
+                title={uiText('未能确认登录会话')}
+                description={uiText(
+                  '回调已完成,但没有读取到有效会话。请重新登录;若持续出现,请联系管理员。',
+                )}
               />
-              <Button type="button" className="mt-5 h-9 w-full" onClick={() => router.push(authEntryPath)}>
+              <Button
+                type="button"
+                className="mt-5 h-9 w-full"
+                onClick={() => router.push(authEntryPath)}
+              >
                 <SignIn className="size-4" weight="bold" aria-hidden />
-                前往登录
+                {uiText('前往登录')}
               </Button>
             </>
           ) : null}
           {completion.phase === 'check-failed' ? (
             <>
-              <AppAlert tone="error" title="无法确认登录状态" description={completion.message} />
+              <AppAlert
+                tone="error"
+                title={uiText('无法确认登录状态')}
+                description={authErrorCopyFor(completion.cause, locale).description}
+              />
               <Button type="button" className="mt-5 h-9 w-full" onClick={retryCheck}>
                 <ArrowClockwise className="size-4" aria-hidden />
-                重试
+                {uiText('重试')}
               </Button>
             </>
           ) : null}
@@ -138,12 +171,15 @@ export function OAuthCallbackScene() {
   }
 
   return (
-    <AuthScene aria-label="企业登录指引" width={400}>
+    <AuthScene aria-label={uiText('企业登录指引')} width={400}>
       <AuthPanel>
-        <AuthPanelHeading title="企业登录" description="这一页用于接收企业登录的完成回跳。请从登录页选择企业账号发起登录。" />
+        <AuthPanelHeading
+          title={uiText('企业登录')}
+          description={uiText('这一页用于接收企业登录的完成回跳。请从登录页选择企业账号发起登录。')}
+        />
         <Button type="button" className="h-9 w-full" onClick={() => router.push(authEntryPath)}>
           <SignIn className="size-4" weight="bold" aria-hidden />
-          前往登录
+          {uiText('前往登录')}
         </Button>
       </AuthPanel>
     </AuthScene>

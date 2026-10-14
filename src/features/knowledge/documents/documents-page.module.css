@@ -22,7 +22,6 @@
 .content{padding:20px 22px 50px;overflow:auto;flex:1}
 .sectionHeading{display:flex;align-items:center;justify-content:space-between;min-height:22px;margin-bottom:14px;gap:12px}
 .sectionHeading h2{font-size:14px;font-weight:650}
-.sectionHeading h2 span{color:#7d8ba2;font-size:12px;font-weight:400;margin-left:10px}
 .sectionHeading>button{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:12px}
 .sectionHeading>button:hover{color:var(--muted-strong)}
 .folders{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:28px}

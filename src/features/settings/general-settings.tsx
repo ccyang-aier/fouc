@@ -1,105 +1,126 @@
-"use client"
+'use client';
+
+import { useTranslation } from '@/lib/i18n/react';
+import { messages } from './i18n/general-settings.messages';
 
 /**
  * 通用设置：本机运行状态速览 —— 数据全部来自后端真实接口，无占位开关。
  */
 
-import { useEffect, useState } from "react"
-import { Plugs } from "@phosphor-icons/react"
+import { useEffect, useState } from 'react';
+import { Plugs } from '@phosphor-icons/react';
 
-import type { AgentInstallation, ProviderSpec } from "@fouc/shared"
-import { backendFetch, getBackendEndpoint } from "@/lib/backend"
-import { formatRelativeTime } from "@/lib/relative-time"
-import { cn } from "@/lib/utils"
+import type { AgentInstallation, ProviderSpec } from '@fouc/shared';
+import { backendFetch, getBackendEndpoint } from '@/lib/backend';
+import { formatRelativeTime } from '@/lib/relative-time';
+import { cn } from '@/lib/utils';
+import { LanguageSettings } from './language-settings';
 
 export function GeneralSettings() {
-  const [backendUrl, setBackendUrl] = useState<string>("—")
-  const [online, setOnline] = useState(false)
-  const [providers, setProviders] = useState<ProviderSpec[]>([])
-  const [installations, setInstallations] = useState<AgentInstallation[]>([])
+  const { t: uiText, locale } = useTranslation(messages);
+  const [backendUrl, setBackendUrl] = useState<string>('—');
+  const [online, setOnline] = useState(false);
+  const [providers, setProviders] = useState<ProviderSpec[]>([]);
+  const [installations, setInstallations] = useState<AgentInstallation[]>([]);
 
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
     void getBackendEndpoint().then((endpoint) => {
-      if (!cancelled) setBackendUrl(endpoint.baseUrl)
-    })
+      if (!cancelled) setBackendUrl(endpoint.baseUrl);
+    });
     void (async () => {
       try {
         const [p, i] = await Promise.all([
-          backendFetch<ProviderSpec[]>("/api/agents/providers"),
-          backendFetch<AgentInstallation[]>("/api/agents/installations"),
-        ])
+          backendFetch<ProviderSpec[]>('/api/agents/providers'),
+          backendFetch<AgentInstallation[]>('/api/agents/installations'),
+        ]);
         if (!cancelled) {
-          setProviders(p)
-          setInstallations(i)
-          setOnline(true)
+          setProviders(p);
+          setInstallations(i);
+          setOnline(true);
         }
       } catch {
-        if (!cancelled) setOnline(false)
+        if (!cancelled) setOnline(false);
       }
-    })()
+    })();
     return () => {
-      cancelled = true
-    }
-  }, [])
+      cancelled = true;
+    };
+  }, []);
 
   const lastProbeAt = installations.reduce<number | null>((latest, item) => {
-    return item.lastProbeAt && (!latest || item.lastProbeAt > latest) ? item.lastProbeAt : latest
-  }, null)
+    return item.lastProbeAt && (!latest || item.lastProbeAt > latest) ? item.lastProbeAt : latest;
+  }, null);
 
   return (
     <div className="mx-auto w-full max-w-[960px] px-10 pb-14 pt-11 max-[1100px]:px-7 max-[900px]:pt-7">
-      <PanelHeader title="通用" />
+      <PanelHeader title={uiText('通用')} />
+      <LanguageSettings />
       <section className="mt-5 overflow-hidden rounded-[12px] border border-[var(--line)] bg-panel shadow-[0_1px_2px_rgba(23,25,27,0.04)]">
         <header className="flex items-center gap-2 border-b border-[var(--line)] px-5 py-3.5">
           <Plugs className="size-[15px] text-[var(--muted)]" weight="fill" aria-hidden />
-          <h2 className="text-[13px] font-medium">运行状态</h2>
+          <h2 className="text-[13px] font-medium">{uiText('运行状态')}</h2>
         </header>
         <dl className="px-5 py-2">
-          <StatusRow label="后端服务">
+          <StatusRow label={uiText('后端服务')}>
             <span
               className={cn(
-                "inline-flex items-center gap-1.5 font-medium",
-                online ? "text-ok" : "text-warn"
+                'inline-flex items-center gap-1.5 font-medium',
+                online ? 'text-ok' : 'text-warn',
               )}
             >
               <span
-                className={cn("size-1.5 rounded-full", online ? "bg-[var(--ok-ink)]" : "bg-[var(--warn-ink)] animate-pulse")}
+                className={cn(
+                  'size-1.5 rounded-full',
+                  online ? 'bg-[var(--ok-ink)]' : 'bg-[var(--warn-ink)] animate-pulse',
+                )}
                 aria-hidden
               />
-              {online ? "在线" : "连接中…"}
+              {online ? uiText('在线') : uiText('连接中…')}
             </span>
           </StatusRow>
-          <StatusRow label="服务地址">
+          <StatusRow label={uiText('服务地址')}>
             <span className="code-scope text-[var(--ink-soft)]">{backendUrl}</span>
           </StatusRow>
-          <StatusRow label="受支持产品">
-            <span className="font-medium">{providers.length} 种</span>
+          <StatusRow label={uiText('受支持产品')}>
+            <span className="font-medium">
+              {uiText('productsCount', { count: providers.length })}
+            </span>
           </StatusRow>
-          <StatusRow label="已纳管实例">
-            <span className="font-medium">{installations.length} 个</span>
+          <StatusRow label={uiText('已纳管实例')}>
+            <span className="font-medium">
+              {uiText('instancesCount', { count: installations.length })}
+            </span>
           </StatusRow>
-          <StatusRow label="最近一次探测" last>
-            <span>{formatRelativeTime(lastProbeAt)}</span>
+          <StatusRow label={uiText('最近一次探测')} last>
+            <span>{formatRelativeTime(lastProbeAt, locale)}</span>
           </StatusRow>
         </dl>
       </section>
     </div>
-  )
+  );
 }
 
-function StatusRow({ label, last, children }: { label: string; last?: boolean; children: React.ReactNode }) {
+function StatusRow({
+  label,
+  last,
+  children,
+}: {
+  label: string;
+  last?: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-4 py-2.5 text-[12px]",
-        !last && "border-b border-[var(--line)]"
+        'flex items-center justify-between gap-4 py-2.5 text-[12px]',
+        !last && 'border-b border-[var(--line)]',
       )}
     >
       <dt className="shrink-0 text-[var(--muted-strong)]">{label}</dt>
       <dd className="min-w-0 truncate text-[var(--ink)]">{children}</dd>
     </div>
-  )
+  );
 }
 
 export function PanelHeader({ title, description }: { title: string; description?: string }) {
@@ -108,5 +129,5 @@ export function PanelHeader({ title, description }: { title: string; description
       <h2 className="text-[16px] font-semibold tracking-[-0.01em]">{title}</h2>
       {description && <p className="mt-0.5 text-[12px] text-[var(--muted)]">{description}</p>}
     </header>
-  )
+  );
 }

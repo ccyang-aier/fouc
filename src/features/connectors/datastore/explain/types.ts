@@ -36,7 +36,8 @@ export function flattenExplainPlanNodes(nodes: readonly ExplainPlanNode[]): Expl
   while (queue.length) {
     const node = queue.pop()!;
     rows.push(node);
-    for (let index = node.children.length - 1; index >= 0; index--) queue.push(node.children[index]);
+    for (let index = node.children.length - 1; index >= 0; index--)
+      queue.push(node.children[index]);
   }
   return rows;
 }

@@ -2,15 +2,8 @@ import type { ExistingTransferConnection } from '@fouc/shared/connection-config-
 import type { TransferConnectionConfig } from '@fouc/shared/connection-config-transfer';
 import { backendFetch } from '@/lib/backend';
 
-function directory(
-  provider: TransferConnectionConfig['provider'],
-) {
-  const family =
-    provider === 'redis'
-      ? 'redis'
-      : provider === 'mongodb'
-        ? 'mongo'
-        : 'relational';
+function directory(provider: TransferConnectionConfig['provider']) {
+  const family = provider === 'redis' ? 'redis' : provider === 'mongodb' ? 'mongo' : 'relational';
   return `/api/database/${family}/connections`;
 }
 export async function readTransferConnections(
@@ -18,10 +11,7 @@ export async function readTransferConnections(
 ): Promise<ExistingTransferConnection[]> {
   const groups = await Promise.all(
     (['postgres', 'redis', 'mongodb'] as const).map((provider) =>
-      backendFetch<ExistingTransferConnection[]>(
-        directory(provider),
-        { signal },
-      ),
+      backendFetch<ExistingTransferConnection[]>(directory(provider), { signal }),
     ),
   );
   return groups.flat();

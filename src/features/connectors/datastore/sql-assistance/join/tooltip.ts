@@ -1,15 +1,23 @@
+import { createTranslator, type Locale } from '@/lib/i18n';
+import { messages as connectorMessages } from './tooltip.messages';
 import type { RelationalProvider } from '@fouc/shared';
 import type { SqlJoinRelationship } from '@fouc/shared/sql-join';
 import './theme.css';
-
-export function sqlJoinInformation(relation: SqlJoinRelationship, sql: string, provider: RelationalProvider, coverage: string): HTMLElement {
+export function sqlJoinInformation(
+  relation: SqlJoinRelationship,
+  sql: string,
+  provider: RelationalProvider,
+  coverage: string,
+  locale?: Locale,
+): HTMLElement {
+  const tConnector = createTranslator(connectorMessages, locale);
   const root = document.createElement('div');
   root.className = 'fouc-sql-join-info';
   root.setAttribute('role', 'tooltip');
-  root.setAttribute('aria-label', '外键 JOIN 来源');
+  root.setAttribute('aria-label', tConnector('foreignKeyJoinSource'));
   const heading = document.createElement('div');
   heading.className = 'fouc-sql-join-heading';
-  heading.textContent = `${provider === 'postgres' ? 'PostgreSQL' : provider === 'sqlite' ? 'SQLite' : 'MySQL'} · ${relation.pairs.length > 1 ? '复合外键' : '外键'}`;
+  heading.textContent = `${provider === 'postgres' ? 'PostgreSQL' : provider === 'sqlite' ? 'SQLite' : 'MySQL'} · ${relation.pairs.length > 1 ? tConnector('compositeForeignKey') : tConnector('foreignKeys')}`;
   const title = document.createElement('strong');
   title.textContent = relation.constraint;
   const source = document.createElement('p');
@@ -25,7 +33,7 @@ export function sqlJoinInformation(relation: SqlJoinRelationship, sql: string, p
   preview.textContent = sql;
   const footer = document.createElement('p');
   footer.className = 'fouc-sql-join-coverage';
-  footer.textContent = `${relation.nameSource === 'synthetic' ? '关系来自原生目录；约束名称为设备生成标签。' : '来源：原生数据库外键目录。'} ${coverage}`;
+  footer.textContent = `${relation.nameSource === 'synthetic' ? tConnector('relationshipsComeFromTheNativeCatalogConstraintNamesAreLabels') : tConnector('sourceNativeDatabaseForeignKeyCatalog')} ${coverage}`;
   root.append(heading, title, source, pairs, preview, footer);
   return root;
 }

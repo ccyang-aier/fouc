@@ -1,11 +1,6 @@
 import { expect, test } from 'bun:test';
 import type { DatabaseQueryResult } from '@fouc/shared';
-import {
-  addResultPin,
-  RESULT_PIN_LIMITS,
-  scopedResultPins,
-  type ResultPinScope,
-} from './model';
+import { addResultPin, RESULT_PIN_LIMITS, scopedResultPins, type ResultPinScope } from './model';
 const scope: ResultPinScope = {
   connectionId: 'connection-a',
   tabId: 'tab-a',
@@ -41,11 +36,7 @@ test('pin takes an independent snapshot and deduplicates only its own scope', ()
   expect(pins[0].context).toEqual({ database: 'db', schema: 'public' });
   expect(addResultPin(pins, input(), 'pin-b').length).toBe(1);
   expect(
-    addResultPin(
-      pins,
-      { ...input(), scope: { ...scope, tabId: 'tab-b' } },
-      'pin-b',
-    ).length,
+    addResultPin(pins, { ...input(), scope: { ...scope, tabId: 'tab-b' } }, 'pin-b').length,
   ).toBe(2);
   for (const other of [
     { ...scope, connectionId: 'connection-b' },
@@ -61,9 +52,7 @@ test('pins never evict a fixed result and enforce total count, byte and cell bud
   large.result.rows = [['x'.repeat(RESULT_PIN_LIMITS.bytes + 1)]];
   expect(() => addResultPin([], large)).toThrow('8 MiB');
   const cells = input();
-  cells.result.rows = [
-    Array.from({ length: RESULT_PIN_LIMITS.cells + 1 }, () => null),
-  ];
+  cells.result.rows = [Array.from({ length: RESULT_PIN_LIMITS.cells + 1 }, () => null)];
   expect(() => addResultPin([], cells)).toThrow('50,000');
   expect(pins).toHaveLength(5);
 });

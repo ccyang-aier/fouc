@@ -1,0 +1,123 @@
+import { defineMessages } from '@/lib/i18n';
+export const messages = defineMessages({
+  'Feb 8, 2027 7:23PM': ['Feb 8, 2027 7:23PM', 'Feb 8, 2027 7:23PM'],
+  'Feb 8, 2027 7:00PM': ['Feb 8, 2027 7:00PM', 'Feb 8, 2027 7:00PM'],
+  'Feb 8, 2027 6:18PM': ['Feb 8, 2027 6:18PM', 'Feb 8, 2027 6:18PM'],
+  'Feb 8, 2027 4:00PM': ['Feb 8, 2027 4:00PM', 'Feb 8, 2027 4:00PM'],
+  'Feb 8, 2027 3:00PM': ['Feb 8, 2027 3:00PM', 'Feb 8, 2027 3:00PM'],
+  'ABC Dashboard Style.fig': ['ABC Dashboard Style.fig', 'ABC Dashboard Style.fig'],
+  'ABC Project Meeting': ['ABC 项目会议', 'ABC Project Meeting'],
+  'ABC Projects - Dashboard': ['ABC 项目 · 工作台', 'ABC Projects - Dashboard'],
+  'Automating deployment process for Designer team': [
+    '自动化设计团队的部署流程',
+    'Automating deployment process for Designer team',
+  ],
+  'Both variants are included in the next review.': [
+    '两个版本都已加入下一轮评审。',
+    'Both variants are included in the next review.',
+  ],
+  'Design Proposal': ['设计提案', 'Design Proposal'],
+  'Design System Guideline.doc': ['Design System Guideline.doc', 'Design System Guideline.doc'],
+  'Design a consistent project dashboard and task detail experience.': [
+    '设计一致的项目工作台与任务详情体验。',
+    'Design a consistent project dashboard and task detail experience.',
+  ],
+  'Dev Sync Meeting': ['研发同步会议', 'Dev Sync Meeting'],
+  'Dribbble Shot': ['Dribbble 设计展示', 'Dribbble Shot'],
+  'Graphic Design Brief': ['视觉设计需求', 'Graphic Design Brief'],
+  'I added the empty state and loading layouts.': [
+    '我补充了空状态和加载状态布局。',
+    'I added the empty state and loading layouts.',
+  ],
+  'I will check the mobile variants against the brief.': [
+    '我会根据需求核对移动端版本。',
+    'I will check the mobile variants against the brief.',
+  ],
+  'Interaction Brief.doc': ['Interaction Brief.doc', 'Interaction Brief.doc'],
+  'Interaction notes are ready for our next meeting.': [
+    '下一次会议的交互笔记已准备好。',
+    'Interaction notes are ready for our next meeting.',
+  ],
+  'Kiara Projects - Website': ['Kiara 项目 · 网站', 'Kiara Projects - Website'],
+  'Minor revision on logo usage guide for design team': [
+    '为设计团队微调标志使用指南',
+    'Minor revision on logo usage guide for design team',
+  ],
+  'Mobile Wireframe.fig': ['Mobile Wireframe.fig', 'Mobile Wireframe.fig'],
+  'Please also check the light and dark backgrounds.': [
+    '也请检查浅色和深色背景。',
+    'Please also check the light and dark backgrounds.',
+  ],
+  'Please include a compact view for the task list.': [
+    '请为任务列表加入紧凑视图。',
+    'Please include a compact view for the task list.',
+  ],
+  'Prepare a dashboard presentation with the activity timeline and comment flow.': [
+    '准备包含活动时间线与评论流程的工作台演示。',
+    'Prepare a dashboard presentation with the activity timeline and comment flow.',
+  ],
+  'Refine the landing page layout and mobile navigation': [
+    '完善落地页布局与移动导航',
+    'Refine the landing page layout and mobile navigation',
+  ],
+  'Review project progress, discuss the current design and agree on the next steps.': [
+    '回顾项目进展、讨论当前设计并确认后续行动。',
+    'Review project progress, discuss the current design and agree on the next steps.',
+  ],
+  'Review the landing page wireframes and confirm the next milestone.': [
+    '评审落地页线框并确认下一个里程碑。',
+    'Review the landing page wireframes and confirm the next milestone.',
+  ],
+  'Setup Wireframe': ['搭建线框', 'Setup Wireframe'],
+  'Sosro Mobile App': ['Sosro 移动应用', 'Sosro Mobile App'],
+  'Tell us about your visual direction.': [
+    '请说明你期望的视觉方向。',
+    'Tell us about your visual direction.',
+  ],
+  "That's good! but you must follow the direction, check the brief": [
+    '不错！但需要遵循设计方向，请核对需求。',
+    "That's good! but you must follow the direction, check the brief",
+  ],
+  'The content hierarchy looks good. Let’s review the interactions next.': [
+    '内容层级不错，接下来评审交互。',
+    'The content hierarchy looks good. Let’s review the interactions next.',
+  ],
+  'The mobile navigation wireframes are ready for review.': [
+    '移动导航线框已准备好，可以评审。',
+    'The mobile navigation wireframes are ready for review.',
+  ],
+  'The small logo now has a separate clear-space rule.': [
+    '小尺寸标志现在有独立的留白规范。',
+    'The small logo now has a separate clear-space rule.',
+  ],
+  'Update ABC Project': ['更新 ABC 项目', 'Update ABC Project'],
+  'Update Brand Logo Guidelines': ['更新品牌标志指南', 'Update Brand Logo Guidelines'],
+  'Updated the tablet breakpoint in the reference.': [
+    '已更新参考中的平板断点。',
+    'Updated the tablet breakpoint in the reference.',
+  ],
+  'What do you think about this style?': [
+    '你觉得这个风格怎么样？',
+    'What do you think about this style?',
+  ],
+  'answered the form': ['回复了表单', 'answered the form'],
+  'commented on': ['评论了', 'commented on'],
+  'marked complete': ['标记完成', 'marked complete'],
+  scheduled: ['安排了', 'scheduled'],
+  '2 hr ago': ['2 小时前', '2 hr ago'],
+  '1 hr ago': ['1 小时前', '1 hr ago'],
+  Reference: ['参考', 'Reference'],
+  '45 min ago': ['45 分钟前', '45 min ago'],
+  Medium: ['中', 'Medium'],
+  'On Progress': ['进行中', 'On Progress'],
+  'Mobile App': ['移动应用', 'Mobile App'],
+  Urgent: ['紧急', 'Urgent'],
+  'Dashboard Design': ['工作台设计', 'Dashboard Design'],
+  'Landing Page': ['落地页', 'Landing Page'],
+  Completed: ['已完成', 'Completed'],
+  Draft: ['草稿', 'Draft'],
+  Synchro: ['Synchro', 'Synchro'],
+  Ready: ['就绪', 'Ready'],
+  'Kiara Laras': ['Kiara Laras', 'Kiara Laras'],
+  'Jerome Bell': ['Jerome Bell', 'Jerome Bell'],
+});

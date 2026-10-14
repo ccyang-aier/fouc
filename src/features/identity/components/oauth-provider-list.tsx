@@ -1,5 +1,8 @@
 'use client';
 
+import { useTranslation } from '@/lib/i18n/react';
+import { messages } from './i18n/oauth-provider-list.messages';
+
 /**
  * Configured SSO entrances (A04). `GET /api/auth/oauth/providers` returns the
  * admin-configured `{id,name,kind}[]` — an entrance list, not a health
@@ -29,6 +32,7 @@ export function OAuthProviderSection({
   onBeforeNavigate?: () => void;
   api?: typeof foucAuthApi;
 }) {
+  const uiText = useTranslation(messages).t;
   const [state, setState] = useState<ProvidersState>({ phase: 'loading' });
   const [reloadToken, setReloadToken] = useState(0);
   const [startingId, setStartingId] = useState<string | null>(null);
@@ -56,10 +60,17 @@ export function OAuthProviderSection({
     setStartingId(provider.id);
     onBeforeNavigate?.();
     try {
-      const callbackBase = typeof window === 'undefined' ? '' : new URL('/auth/callback', window.location.origin).origin;
+      const callbackBase =
+        typeof window === 'undefined'
+          ? ''
+          : new URL('/auth/callback', window.location.origin).origin;
       const callbackURL = `${callbackBase}/auth/callback?status=ok`;
       const errorCallbackURL = `${callbackBase}/auth/callback`;
-      const { url } = await api.startSocialSignIn({ provider: provider.id, callbackURL, errorCallbackURL });
+      const { url } = await api.startSocialSignIn({
+        provider: provider.id,
+        callbackURL,
+        errorCallbackURL,
+      });
       window.location.assign(url);
     } catch (cause) {
       setStartingId(null);
@@ -70,13 +81,25 @@ export function OAuthProviderSection({
   if (state.phase === 'ready' && state.providers.length === 0) return null;
 
   return (
-    <div className={`${styles.providers} flex flex-col gap-3.5`} aria-label="其他登录方式">
-      <div className={styles.divider} aria-hidden>或</div>
+    <div
+      className={`${styles.providers} flex flex-col gap-3.5`}
+      aria-label={uiText('其他登录方式')}
+    >
+      <div className={styles.divider} aria-hidden>
+        {uiText('或')}
+      </div>
 
       {state.phase === 'loading' ? (
-        <div className={styles.providerGrid} aria-busy="true" aria-label="正在加载登录方式">
+        <div
+          className={styles.providerGrid}
+          aria-busy="true"
+          aria-label={uiText('正在加载登录方式')}
+        >
           {[0, 1].map((index) => (
-            <div key={index} className="h-10 animate-pulse rounded-[8px] border border-[var(--line)] bg-[var(--surface-subtle)]" />
+            <div
+              key={index}
+              className="h-10 animate-pulse rounded-[8px] border border-[var(--line)] bg-[var(--surface-subtle)]"
+            />
           ))}
         </div>
       ) : null}
@@ -84,12 +107,20 @@ export function OAuthProviderSection({
       {state.phase === 'error' ? (
         <AppAlert
           tone="error"
-          title="企业登录暂不可用"
+          title={uiText('企业登录暂不可用')}
           description={state.message}
           action={
-            <Button type="button" size="sm" variant="outline" onClick={() => { setState({ phase: 'loading' }); setReloadToken((token) => token + 1); }}>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setState({ phase: 'loading' });
+                setReloadToken((token) => token + 1);
+              }}
+            >
               <ArrowClockwise className="size-3.5" aria-hidden />
-              重试
+              {uiText('重试')}
             </Button>
           }
         />
@@ -99,7 +130,11 @@ export function OAuthProviderSection({
         <div className={styles.providerGrid}>
           {state.providers.map((provider) => {
             const starting = startingId === provider.id;
-            const ProviderIcon = /google/i.test(provider.id) ? GoogleLogo : /github/i.test(provider.id) ? GithubLogo : Fingerprint;
+            const ProviderIcon = /google/i.test(provider.id)
+              ? GoogleLogo
+              : /github/i.test(provider.id)
+                ? GithubLogo
+                : Fingerprint;
             return (
               <Button
                 key={provider.id}
@@ -112,7 +147,7 @@ export function OAuthProviderSection({
               >
                 {!starting ? <ProviderIcon className="size-4 shrink-0" aria-hidden /> : null}
                 <span className="min-w-0 truncate">
-                  {starting ? '正在跳转…' : provider.name}
+                  {starting ? uiText('正在跳转…') : provider.name}
                 </span>
               </Button>
             );
@@ -120,9 +155,7 @@ export function OAuthProviderSection({
         </div>
       ) : null}
 
-      {startError ? (
-        <AppAlert tone="error" title={startError} />
-      ) : null}
+      {startError ? <AppAlert tone="error" title={startError} /> : null}
     </div>
   );
 }

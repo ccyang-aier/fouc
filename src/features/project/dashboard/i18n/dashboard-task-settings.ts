@@ -1,0 +1,30 @@
+import { defineMessages } from '@/lib/i18n';
+export const messages = defineMessages({
+  'Activity map row': ['活动时间线行', 'Activity map row'],
+  'Choose a due date.': ['请选择截止日期。', 'Choose a due date.'],
+  'Choose a project for this task.': ['请选择任务所属项目。', 'Choose a project for this task.'],
+  'Choose a scheduled date.': ['请选择排期日期。', 'Choose a scheduled date.'],
+  'Choose a start time.': ['请选择开始时间。', 'Choose a start time.'],
+  'Duration (hours)': ['持续时间（小时）', 'Duration (hours)'],
+  'Duration must be greater than zero.': [
+    '持续时间必须大于零。',
+    'Duration must be greater than zero.',
+  ],
+  'Enter a task title.': ['请输入任务标题。', 'Enter a task title.'],
+  'Open project details': ['打开项目详情', 'Open project details'],
+  Progress: ['进度', 'Progress'],
+  Project: ['项目', 'Project'],
+  'Scheduled date': ['排期日期', 'Scheduled date'],
+  'Start time': ['开始时间', 'Start time'],
+  'Task title': ['任务标题', 'Task title'],
+  'The task must end on the scheduled day.': [
+    '任务必须在排期当天结束。',
+    'The task must end on the scheduled day.',
+  ],
+  'To Do': ['待办', 'To Do'],
+  'On Progress': ['进行中', 'On Progress'],
+  Completed: ['已完成', 'Completed'],
+  'Mobile App': ['移动应用', 'Mobile App'],
+  'Dashboard Design': ['工作台设计', 'Dashboard Design'],
+  'Landing Page': ['落地页', 'Landing Page'],
+});

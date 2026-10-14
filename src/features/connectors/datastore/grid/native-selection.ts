@@ -1,4 +1,4 @@
-export const DATA_GRID_NATIVE_SELECTION_BLOCK_CLASS = "fouc-data-grid-native-selection-blocked";
+export const DATA_GRID_NATIVE_SELECTION_BLOCK_CLASS = 'fouc-data-grid-native-selection-blocked';
 export const DATA_GRID_NATIVE_SELECTION_RELEASE_DELAY_MS = 2000;
 
 export interface NativeSelectionBlockEnvironment {
@@ -40,14 +40,21 @@ function clearReleaseTimer(owner: DataGridNativeSelectionBlockOwner) {
 
 function hasActiveBlockForEnvironment(environment: NativeSelectionBlockEnvironment) {
   const documentElement = environment.document?.documentElement;
-  return [...activeSelectionBlocks.values()].some((activeBlock) => activeBlock.environment.document?.documentElement === documentElement);
+  return [...activeSelectionBlocks.values()].some(
+    (activeBlock) => activeBlock.environment.document?.documentElement === documentElement,
+  );
 }
 
 function activeElementUsesNativeSelection(environment: NativeSelectionBlockEnvironment): boolean {
-  return !!environment.document?.activeElement?.closest?.("input, textarea, [contenteditable='true'], [role='textbox']");
+  return !!environment.document?.activeElement?.closest?.(
+    "input, textarea, [contenteditable='true'], [role='textbox']",
+  );
 }
 
-export function beginDataGridNativeSelectionBlock(owner: DataGridNativeSelectionBlockOwner, environment: NativeSelectionBlockEnvironment = defaultEnvironment()) {
+export function beginDataGridNativeSelectionBlock(
+  owner: DataGridNativeSelectionBlockOwner,
+  environment: NativeSelectionBlockEnvironment = defaultEnvironment(),
+) {
   clearReleaseTimer(owner);
   activeSelectionBlocks.set(owner, { environment });
   environment.document?.documentElement?.classList.add(DATA_GRID_NATIVE_SELECTION_BLOCK_CLASS);
@@ -57,22 +64,34 @@ export function beginDataGridNativeSelectionBlock(owner: DataGridNativeSelection
   environment.getSelection?.()?.removeAllRanges();
 }
 
-export function finishDataGridNativeSelectionBlock(owner: DataGridNativeSelectionBlockOwner, environment: NativeSelectionBlockEnvironment = defaultEnvironment(), delay = DATA_GRID_NATIVE_SELECTION_RELEASE_DELAY_MS) {
+export function finishDataGridNativeSelectionBlock(
+  owner: DataGridNativeSelectionBlockOwner,
+  environment: NativeSelectionBlockEnvironment = defaultEnvironment(),
+  delay = DATA_GRID_NATIVE_SELECTION_RELEASE_DELAY_MS,
+) {
   beginDataGridNativeSelectionBlock(owner, environment);
   const activeBlock = activeSelectionBlocks.get(owner);
   if (!activeBlock) return;
   activeBlock.releaseTimer = environment.setTimeout(() => {
     activeSelectionBlocks.delete(owner);
     if (!hasActiveBlockForEnvironment(environment)) {
-      environment.document?.documentElement?.classList.remove(DATA_GRID_NATIVE_SELECTION_BLOCK_CLASS);
+      environment.document?.documentElement?.classList.remove(
+        DATA_GRID_NATIVE_SELECTION_BLOCK_CLASS,
+      );
     }
   }, delay);
 }
 
 /** Releasing a mounted grid never leaves the document or another owner blocked. */
-export function releaseDataGridNativeSelectionBlock(owner: DataGridNativeSelectionBlockOwner): void {
-  const block = activeSelectionBlocks.get(owner)
-  if (!block) return
-  clearReleaseTimer(owner); activeSelectionBlocks.delete(owner)
-  if (!hasActiveBlockForEnvironment(block.environment)) block.environment.document?.documentElement?.classList.remove(DATA_GRID_NATIVE_SELECTION_BLOCK_CLASS)
+export function releaseDataGridNativeSelectionBlock(
+  owner: DataGridNativeSelectionBlockOwner,
+): void {
+  const block = activeSelectionBlocks.get(owner);
+  if (!block) return;
+  clearReleaseTimer(owner);
+  activeSelectionBlocks.delete(owner);
+  if (!hasActiveBlockForEnvironment(block.environment))
+    block.environment.document?.documentElement?.classList.remove(
+      DATA_GRID_NATIVE_SELECTION_BLOCK_CLASS,
+    );
 }

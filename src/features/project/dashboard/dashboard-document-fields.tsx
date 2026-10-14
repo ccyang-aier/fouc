@@ -1,41 +1,49 @@
 'use client';
+import { translateFixed } from '../i18n/display';
+
+import { useTranslation } from '@/lib/i18n';
+import { messages } from './i18n/dashboard-document-fields';
+
 import { Plus, X } from '@phosphor-icons/react';
+import common from './dashboard-actions.module.css';
+import styles from './dashboard-document-dialog.module.css';
+import { invoiceTotal, money } from './dashboard-document-export';
 import type {
   DashboardContract,
   DashboardForm,
   DashboardInvoice,
   DashboardProposal,
 } from './dashboard-model';
-import { invoiceTotal, money } from './dashboard-document-export';
-import common from './dashboard-actions.module.css';
-import styles from './dashboard-document-dialog.module.css';
 type FieldProps<T> = { value: T; onChange: (value: T) => void };
 export function InvoiceFields({ value, onChange }: FieldProps<DashboardInvoice>) {
+  const { t, locale } = useTranslation(messages);
+  const uiLabel = (value: string) => translateFixed(value, locale);
+
   const total = invoiceTotal(value.items);
   return (
     <>
       <div className={common.fieldGrid}>
         <label>
-          Client
+          {t('Client')}
           <input
             value={value.client}
             onChange={(event) => onChange({ ...value, client: event.target.value })}
-            placeholder="Client or company"
+            placeholder={t('Client or company')}
           />
         </label>
         <label>
-          Client email
+          {t('Client email')}
           <input
             type="email"
             value={value.email}
             onChange={(event) => onChange({ ...value, email: event.target.value })}
-            placeholder="client@example.com"
+            placeholder={t('client@example.com')}
           />
         </label>
       </div>
       <div className={common.fieldGrid}>
         <label>
-          Due date
+          {t('Due date')}
           <input
             type="date"
             value={value.dueDate}
@@ -43,7 +51,7 @@ export function InvoiceFields({ value, onChange }: FieldProps<DashboardInvoice>)
           />
         </label>
         <label>
-          Currency
+          {t('Currency')}
           <select
             value={value.currency}
             onChange={(event) =>
@@ -54,25 +62,27 @@ export function InvoiceFields({ value, onChange }: FieldProps<DashboardInvoice>)
             }
           >
             {['USD', 'EUR', 'CNY'].map((currency) => (
-              <option key={currency}>{currency}</option>
+              <option value={currency} key={currency}>
+                {uiLabel(currency)}
+              </option>
             ))}
           </select>
         </label>
       </div>
       <fieldset className={styles.itemField}>
-        <legend>Line items</legend>
+        <legend>{t('Line items')}</legend>
         <div className={styles.itemHeader}>
-          <span>Description</span>
-          <span>Qty</span>
-          <span>Rate</span>
+          <span>{t('Description')}</span>
+          <span>{t('Qty')}</span>
+          <span>{t('Rate')}</span>
           <span />
         </div>
         {value.items.map((item, index) => (
           <div key={item.id} className={styles.itemRow}>
             <input
-              aria-label={`Line ${index + 1} description`}
+              aria-label={t('Line {v0} description', { v0: index + 1 })}
               value={item.description}
-              placeholder="Design services"
+              placeholder={t('Design services')}
               onChange={(event) =>
                 onChange({
                   ...value,
@@ -85,7 +95,7 @@ export function InvoiceFields({ value, onChange }: FieldProps<DashboardInvoice>)
               }
             />
             <input
-              aria-label={`Line ${index + 1} quantity`}
+              aria-label={t('Line {v0} quantity', { v0: index + 1 })}
               type="number"
               min="0.01"
               step="0.01"
@@ -102,7 +112,7 @@ export function InvoiceFields({ value, onChange }: FieldProps<DashboardInvoice>)
               }
             />
             <input
-              aria-label={`Line ${index + 1} rate`}
+              aria-label={t('Line {v0} rate', { v0: index + 1 })}
               type="number"
               min="0"
               step="0.01"
@@ -122,7 +132,7 @@ export function InvoiceFields({ value, onChange }: FieldProps<DashboardInvoice>)
               type="button"
               className={`${styles.removeButton} fouc-action`}
               data-variant="destructive"
-              aria-label={`Remove line ${index + 1}`}
+              aria-label={t('Remove line {v0}', { v0: index + 1 })}
               disabled={value.items.length === 1}
               onClick={() =>
                 onChange({
@@ -155,48 +165,51 @@ export function InvoiceFields({ value, onChange }: FieldProps<DashboardInvoice>)
             }
           >
             <Plus size={13} />
-            Add item
+            {t('Add item')}
           </button>
           <span>
-            Total <strong>{money(total, value.currency)}</strong>
+            {t('Total')}
+            <strong>{money(total, value.currency, locale)}</strong>
           </span>
         </div>
       </fieldset>
       <label>
-        Notes
+        {t('Notes')}
         <textarea
           rows={3}
           value={value.notes}
           onChange={(event) => onChange({ ...value, notes: event.target.value })}
-          placeholder="Payment instructions or additional notes"
+          placeholder={t('Payment instructions or additional notes')}
         />
       </label>
     </>
   );
 }
 export function ProposalFields({ value, onChange }: FieldProps<DashboardProposal>) {
+  const { t } = useTranslation(messages);
+
   return (
     <>
       <label>
-        Client
+        {t('Client')}
         <input
           value={value.client}
           onChange={(event) => onChange({ ...value, client: event.target.value })}
-          placeholder="Client or company"
+          placeholder={t('Client or company')}
         />
       </label>
       <label>
-        Scope
+        {t('Scope')}
         <textarea
           rows={5}
           value={value.scope}
           onChange={(event) => onChange({ ...value, scope: event.target.value })}
-          placeholder="Deliverables, approach and timeline"
+          placeholder={t('Deliverables, approach and timeline')}
         />
       </label>
       <div className={common.fieldGrid}>
         <label>
-          Budget (USD)
+          {t('Budget (USD)')}
           <input
             type="number"
             min="0"
@@ -206,7 +219,7 @@ export function ProposalFields({ value, onChange }: FieldProps<DashboardProposal
           />
         </label>
         <label>
-          Valid until
+          {t('Valid until')}
           <input
             type="date"
             value={value.validUntil}
@@ -218,18 +231,20 @@ export function ProposalFields({ value, onChange }: FieldProps<DashboardProposal
   );
 }
 export function ContractFields({ value, onChange }: FieldProps<DashboardContract>) {
+  const { t } = useTranslation(messages);
+
   return (
     <>
       <div className={common.fieldGrid}>
         <label>
-          Client
+          {t('Client')}
           <input
             value={value.client}
             onChange={(event) => onChange({ ...value, client: event.target.value })}
           />
         </label>
         <label>
-          Provider
+          {t('Provider')}
           <input
             value={value.provider}
             onChange={(event) => onChange({ ...value, provider: event.target.value })}
@@ -238,7 +253,7 @@ export function ContractFields({ value, onChange }: FieldProps<DashboardContract
       </div>
       <div className={common.fieldGrid}>
         <label>
-          Start date
+          {t('Start date')}
           <input
             type="date"
             value={value.startDate}
@@ -246,7 +261,7 @@ export function ContractFields({ value, onChange }: FieldProps<DashboardContract
           />
         </label>
         <label>
-          End date
+          {t('End date')}
           <input
             type="date"
             value={value.endDate}
@@ -255,36 +270,39 @@ export function ContractFields({ value, onChange }: FieldProps<DashboardContract
         </label>
       </div>
       <label>
-        Terms
+        {t('Terms')}
         <textarea
           rows={7}
           value={value.terms}
           onChange={(event) => onChange({ ...value, terms: event.target.value })}
-          placeholder="Scope, responsibilities, payment and cancellation terms"
+          placeholder={t('Scope, responsibilities, payment and cancellation terms')}
         />
       </label>
     </>
   );
 }
 export function FormFields({ value, onChange }: FieldProps<DashboardForm>) {
+  const { t } = useTranslation(messages);
+
   const locked = value.responses.length > 0;
   return (
     <>
       <label>
-        Description
+        {t('Description')}
         <textarea
           rows={3}
           value={value.description}
           onChange={(event) => onChange({ ...value, description: event.target.value })}
-          placeholder="Tell people what this form is for"
+          placeholder={t('Tell people what this form is for')}
         />
       </label>
       <fieldset className={styles.itemField}>
-        <legend>Questions</legend>
+        <legend>{t('Questions')}</legend>
         {value.questions.map((question, index) => (
           <div key={index} className={styles.questionRow}>
             <label>
-              Question {index + 1}
+              {t('Question')}
+              {index + 1}
               <input
                 value={question}
                 disabled={locked}
@@ -296,14 +314,14 @@ export function FormFields({ value, onChange }: FieldProps<DashboardForm>) {
                     ),
                   })
                 }
-                placeholder="What would you like to know?"
+                placeholder={t('What would you like to know?')}
               />
             </label>
             <button
               type="button"
               className={`${styles.removeButton} fouc-action`}
               data-variant="destructive"
-              aria-label={`Remove question ${index + 1}`}
+              aria-label={t('Remove question {v0}', { v0: index + 1 })}
               disabled={locked || value.questions.length === 1}
               onClick={() =>
                 onChange({
@@ -317,7 +335,7 @@ export function FormFields({ value, onChange }: FieldProps<DashboardForm>) {
           </div>
         ))}
         {locked ? (
-          <p className={styles.hint}>Questions are locked after the first response.</p>
+          <p className={styles.hint}>{t('Questions are locked after the first response.')}</p>
         ) : (
           <button
             type="button"
@@ -325,7 +343,7 @@ export function FormFields({ value, onChange }: FieldProps<DashboardForm>) {
             onClick={() => onChange({ ...value, questions: [...value.questions, ''] })}
           >
             <Plus size={13} />
-            Add question
+            {t('Add question')}
           </button>
         )}
       </fieldset>

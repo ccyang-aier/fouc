@@ -1,13 +1,9 @@
 'use client';
-
+import { uiText, type UiMessage, uiFailure, createUiMessages } from '../../i18n/ui-message';
+import { useTranslation } from '@/lib/i18n';
+import { messages as connectorMessages } from './import-dialog.messages';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  ArrowLeft,
-  CheckCircle,
-  FileArrowUp,
-  ShieldCheck,
-  Spinner,
-} from '@phosphor-icons/react';
+import { ArrowLeft, CheckCircle, FileArrowUp, ShieldCheck, Spinner } from '@phosphor-icons/react';
 import {
   CONNECTION_CONFIG_LIMITS,
   type ConnectionConfigBundle,
@@ -21,18 +17,16 @@ import {
 } from '@fouc/shared/connection-config-transfer-plan';
 import { SqlDialog } from '../sql-library-dialog';
 import { ConnectionImportReview } from './import-review';
-import {
-  runConnectionImport,
-  type ConnectionImportOutcome,
-} from './operations';
-import {
-  readTransferConnections,
-  saveTransferredConnection,
-} from './transport';
+import { runConnectionImport, type ConnectionImportOutcome } from './operations';
+import { readTransferConnections, saveTransferredConnection } from './transport';
 import common from '../relational.module.css';
 import styles from './transfer.module.css';
-
-type Source = { name: string; text: string; encrypted: boolean };
+const connectorUiMessages = createUiMessages(connectorMessages);
+type Source = {
+  name: string;
+  text: string;
+  encrypted: boolean;
+};
 type Review = {
   bundle: ConnectionConfigBundle;
   existing: ExistingTransferConnection[];
@@ -45,13 +39,16 @@ export function ImportConnectionDialog({
   onClose: () => void;
   onImported: () => void;
 }) {
+  const { t: tConnector, locale } = useTranslation(connectorMessages);
   const [source, setSource] = useState<Source | null>(null),
     [passphrase, setPassphrase] = useState('');
   const [review, setReview] = useState<Review | null>(null),
     [outcomes, setOutcomes] = useState<readonly ConnectionImportOutcome[]>([]);
   const [phase, setPhase] = useState<'idle' | 'read' | 'write'>('idle'),
-    [error, setError] = useState(''),
-    [feedback, setFeedback] = useState('');
+    [errorStored, setError] = useState<UiMessage>(''),
+    [feedbackStored, setFeedback] = useState<UiMessage>('');
+  const error = uiText(errorStored, locale);
+  const feedback = uiText(feedbackStored, locale);
   const job = useRef<AbortController | null>(null),
     alive = useRef(true);
   useEffect(() => {
@@ -65,20 +62,17 @@ export function ImportConnectionDialog({
     if (!review) return { plan: null, planError: '' };
     try {
       return {
-        plan: prepareConnectionImport(
-          review.bundle,
-          review.existing,
-          review.choices
-        ),
+        plan: prepareConnectionImport(review.bundle, review.existing, review.choices),
         planError: '',
       };
     } catch (reason) {
       return {
         plan: null,
-        planError: reason instanceof Error ? reason.message : '导入计划无效',
+        planError:
+          reason instanceof Error ? uiText(reason, locale) : tConnector('invalidImportPlan'),
       };
     }
-  }, [review]);
+  }, [review, tConnector, locale]);
   async function readFile(file: File) {
     job.current?.abort();
     const controller = new AbortController();
@@ -92,21 +86,19 @@ export function ImportConnectionDialog({
     setPassphrase('');
     try {
       if (file.size > CONNECTION_CONFIG_LIMITS.fileBytes)
-        throw new Error('配置文件不能超过 3 MiB');
+        throw connectorUiMessages.error('configurationFilesMustNotExceedMib');
       let text: string;
       try {
-        text = new TextDecoder('utf-8', { fatal: true }).decode(
-          await file.arrayBuffer(),
-        );
+        text = new TextDecoder('utf-8', { fatal: true }).decode(await file.arrayBuffer());
       } catch {
-        throw new Error('配置文件须为 UTF-8 JSON 文本');
+        throw connectorUiMessages.error('theConfigurationFileMustBeUtfJsonText');
       }
       controller.signal.throwIfAborted();
       let value: unknown;
       try {
         value = JSON.parse(text);
       } catch {
-        throw new Error('配置文件不是有效 JSON');
+        throw connectorUiMessages.error('theConfigurationFileIsNotValidJson');
       }
       setSource({
         name: file.name,
@@ -119,7 +111,11 @@ export function ImportConnectionDialog({
       });
     } catch (reason) {
       if (!controller.signal.aborted && alive.current)
-        setError(reason instanceof Error ? reason.message : '文件读取失败');
+        setError(
+          reason instanceof Error
+            ? uiFailure(reason)
+            : connectorUiMessages.message('couldNotReadTheFile'),
+        );
     } finally {
       if (!controller.signal.aborted && alive.current) setPhase('idle');
     }
@@ -132,14 +128,8 @@ export function ImportConnectionDialog({
     setError('');
     setFeedback('');
     try {
-      const bundle = await decodeConnectionConfigFile(
-        source.text,
-        passphrase,
-        controller.signal,
-      );
-      const existing = await readTransferConnections(
-        controller.signal,
-      );
+      const bundle = await decodeConnectionConfigFile(source.text, passphrase, controller.signal);
+      const existing = await readTransferConnections(controller.signal);
       controller.signal.throwIfAborted();
       setReview({
         bundle,
@@ -150,7 +140,11 @@ export function ImportConnectionDialog({
       setOutcomes([]);
     } catch (reason) {
       if (!controller.signal.aborted && alive.current)
-        setError(reason instanceof Error ? reason.message : '配置校验失败');
+        setError(
+          reason instanceof Error
+            ? uiFailure(reason)
+            : connectorUiMessages.message('configurationValidationFailed'),
+        );
     } finally {
       if (!controller.signal.aborted && alive.current) setPhase('idle');
     }
@@ -163,33 +157,46 @@ export function ImportConnectionDialog({
     setError('');
     setFeedback('');
     try {
-      const result = await runConnectionImport({
-        ...review,
-        port: {
-          list: () =>
-            readTransferConnections(controller.signal),
-          save: (entry, id) =>
-            saveTransferredConnection(entry, id),
+      const result = await runConnectionImport(
+        {
+          ...review,
+          port: {
+            list: () => readTransferConnections(controller.signal),
+            save: (entry, id) => saveTransferredConnection(entry, id),
+          },
+          signal: controller.signal,
+          onProgress: (next) => {
+            if (alive.current) setOutcomes(next);
+          },
         },
-        signal: controller.signal,
-        onProgress: (next) => {
-          if (alive.current) setOutcomes(next);
-        },
-      });
+        locale,
+      );
       const saved = result.filter((item) => item.status === 'saved').length,
         failed = result.filter((item) => item.status === 'failed').length,
         cancelled = result.filter((item) => item.status === 'cancelled').length,
         skipped = result.filter((item) => item.status === 'skipped').length;
       if (alive.current)
         setFeedback(
-          `已保存 ${saved} · 失败 ${failed} · 跳过 ${skipped}${cancelled ? ` · 取消 ${cancelled}` : ''}`,
+          connectorUiMessages.message('savedFailedSkipped', {
+            p0: String(saved),
+            p1: String(failed),
+            p2: String(skipped),
+            p3: cancelled
+              ? connectorUiMessages.message('cancelled', { p0: String(cancelled) })
+              : '',
+          }),
         );
       if (saved) onImported();
     } catch (reason) {
       if (alive.current) {
-        if (controller.signal.aborted) setFeedback('已取消，尚未开始保存连接');
+        if (controller.signal.aborted)
+          setFeedback(connectorUiMessages.message('cancelledBeforeSavingAnyConnections'));
         else
-          setError(reason instanceof Error ? reason.message : '配置导入失败');
+          setError(
+            reason instanceof Error
+              ? uiFailure(reason)
+              : connectorUiMessages.message('couldNotImportConfigurations'),
+          );
       }
     } finally {
       if (alive.current) setPhase('idle');
@@ -198,7 +205,11 @@ export function ImportConnectionDialog({
   function cancel() {
     job.current?.abort();
     if (phase === 'write')
-      setFeedback('正在停止后续导入；当前保存请求完成后会显示实际结果。');
+      setFeedback(
+        connectorUiMessages.message(
+          'stoppingSubsequentImportsActualResultsWillAppearAfterTheCurrent',
+        ),
+      );
     else {
       setPhase('idle');
       onClose();
@@ -206,7 +217,7 @@ export function ImportConnectionDialog({
   }
   return (
     <SqlDialog
-      title="导入连接配置"
+      title={tConnector('importConnectionConfigurations')}
       busy={phase !== 'idle'}
       className={styles.dialog}
       onClose={onClose}
@@ -214,21 +225,19 @@ export function ImportConnectionDialog({
       <div className={styles.body}>
         <div className={styles.scope}>
           <ShieldCheck size={15} />
-          <span>
-            导入到当前设备 · 仅 Fouc 公开连接配置 · 完整校验后才会开始保存
-          </span>
+          <span>{tConnector('importToTheCurrentDeviceFoucPublicConfigurationsOnlySaving')}</span>
         </div>
         {!review ? (
           <>
             <label className={styles.upload}>
               <FileArrowUp size={25} />
-              <strong>{source?.name ?? '选择连接配置文件'}</strong>
-              <span>公开 JSON 或使用口令加密的 Fouc JSON · 最大 3 MiB</span>
+              <strong>{source?.name ?? tConnector('chooseAConnectionConfigurationFile')}</strong>
+              <span>{tConnector('publicJsonOrPassphraseEncryptedFoucJsonMaximumMib')}</span>
               <input
                 type="file"
                 accept=".json,application/json"
                 disabled={phase !== 'idle'}
-                aria-label="选择连接配置文件"
+                aria-label={tConnector('chooseAConnectionConfigurationFile')}
                 onChange={(event) => {
                   const file = event.target.files?.[0];
                   event.target.value = '';
@@ -238,7 +247,7 @@ export function ImportConnectionDialog({
             </label>
             {source?.encrypted && (
               <label className={styles.field}>
-                解密口令
+                {tConnector('decryptionPassphrase')}
                 <input
                   type="password"
                   autoComplete="off"
@@ -250,16 +259,21 @@ export function ImportConnectionDialog({
               </label>
             )}
             <p className={styles.hint}>
-              支持 PostgreSQL、MySQL、SQLite、Redis 和
-              MongoDB。其他工具的格式及凭据存储不在本次导入范围内。
+              {tConnector('supportsPostgresqlMysqlSqliteRedisAndMongodbFormatsAndCredential')}
             </p>
           </>
         ) : (
           <>
             <div className={styles.reviewHead}>
               <div>
-                <strong>{review.bundle.connections.length} 个已校验连接</strong>
-                <small>{source?.name} · 各类型会导入其相应连接目录</small>
+                <strong>
+                  {review.bundle.connections.length}
+                  {tConnector('validatedConnections')}
+                </strong>
+                <small>
+                  {source?.name}
+                  {tConnector('eachTypeImportsIntoItsCorrespondingConnectionDirectory')}
+                </small>
               </div>
               {!outcomes.length && (
                 <button
@@ -271,7 +285,7 @@ export function ImportConnectionDialog({
                   }}
                 >
                   <ArrowLeft size={13} />
-                  重新选择
+                  {tConnector('chooseAgain')}
                 </button>
               )}
             </div>
@@ -294,7 +308,7 @@ export function ImportConnectionDialog({
             />
             {!outcomes.length && (
               <p className={styles.hint}>
-                默认新建并为同名连接改名。只有明确选择“替换现有同名配置”才会更新现有连接。
+                {tConnector('newConnectionsAreCreatedByDefaultWithDuplicatesRenamedExisting')}
               </p>
             )}
           </>
@@ -303,8 +317,11 @@ export function ImportConnectionDialog({
           <p className={styles.progress} role="status">
             <Spinner size={15} className={styles.spin} />
             {phase === 'write'
-              ? `正在保存 · 已完成 ${outcomes.filter((item) => item.status !== 'pending').length} / ${outcomes.length || review?.bundle.connections.length || 0}`
-              : '正在读取、解密与校验配置…'}
+              ? tConnector('savingCompleted', {
+                  p0: String(outcomes.filter((item) => item.status !== 'pending').length),
+                  p1: String(outcomes.length || review?.bundle.connections.length || 0),
+                })
+              : tConnector('readingDecryptingAndValidatingConfigurations')}
           </p>
         )}
         {planError && (
@@ -327,15 +344,19 @@ export function ImportConnectionDialog({
       <footer className={`${common.dialogFooter} ${styles.footer}`}>
         <span>
           {plan
-            ? `新建 ${plan.create} · 更新 ${plan.update} · 跳过 ${plan.skip}`
-            : '不读取数据库内容'}
+            ? tConnector('createUpdateSkip', {
+                p0: String(plan.create),
+                p1: String(plan.update),
+                p2: String(plan.skip),
+              })
+            : tConnector('doesNotReadDatabaseContents')}
         </span>
         <button type="button" className={common.secondary} onClick={cancel}>
           {phase === 'write'
-            ? '停止后续导入'
+            ? tConnector('stopSubsequentImports')
             : outcomes.length
-              ? '关闭'
-              : '取消'}
+              ? tConnector('close')
+              : tConnector('cancel')}
         </button>
         {!review ? (
           <button
@@ -348,19 +369,19 @@ export function ImportConnectionDialog({
             }
             onClick={() => void inspect()}
           >
-            校验并预览
+            {tConnector('validateAndPreview')}
           </button>
         ) : (
           !outcomes.length && (
             <button
               type="button"
               className={common.primary}
-              disabled={
-                phase !== 'idle' || !plan || plan.create + plan.update === 0
-              }
+              disabled={phase !== 'idle' || !plan || plan.create + plan.update === 0}
               onClick={() => void perform()}
             >
-              确认导入 {plan ? plan.create + plan.update : 0} 个连接
+              {tConnector('confirmImport')}
+              {plan ? plan.create + plan.update : 0}
+              {tConnector('connections')}
             </button>
           )
         )}

@@ -1,27 +1,173 @@
-import { useState } from 'react'
-import { ClockCounterClockwise, LinkSimple, PaperPlaneTilt, ShieldCheck, Sparkle, X } from '@phosphor-icons/react'
-import type { DtsTicketDetail, DtsTicketSummary } from '@fouc/shared'
-import { cn } from '@/lib/utils'
+'use client';
+import { useTranslation } from '@/lib/i18n';
+import { cn } from '@/lib/utils';
+import type { DtsTicketDetail, DtsTicketSummary } from '@fouc/shared';
+import {
+  ClockCounterClockwise,
+  LinkSimple,
+  PaperPlaneTilt,
+  ShieldCheck,
+  Sparkle,
+  X,
+} from '@phosphor-icons/react';
+import { useState } from 'react';
+import { messages as unitMessages } from './dts/i18n/dts-connector-inspector';
 
-type Props = { ticket: DtsTicketDetail | null; summary: DtsTicketSummary | null; onClose: () => void }
+type Props = {
+  ticket: DtsTicketDetail | null;
+  summary: DtsTicketSummary | null;
+  onClose: () => void;
+};
 
 export function DtsConnectorInspector({ ticket, summary, onClose }: Props) {
-  const [tab, setTab] = useState<'detail' | 'assistant'>('detail')
-  const selected = ticket ?? summary
+  const { t: tu } = useTranslation(unitMessages);
+
+  const [tab, setTab] = useState<'detail' | 'assistant'>('detail');
+  const selected = ticket ?? summary;
   return (
-    <aside aria-label="工单上下文" className="flex min-h-0 w-[282px] shrink-0 flex-col border-l border-[var(--line)] bg-panel max-[1260px]:hidden">
-      <div className="flex h-[48px] shrink-0 items-end border-b border-[var(--line)] pl-3 pr-2"><TabButton active={tab === 'detail'} onClick={() => setTab('detail')}>AI 概述</TabButton><TabButton active={tab === 'assistant'} onClick={() => setTab('assistant')}>AI 助手</TabButton><button type="button" aria-label="关闭工单上下文" onClick={onClose} className="mb-2 ml-1 flex size-7 shrink-0 items-center justify-center rounded-[6px] text-[var(--muted)] outline-none hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"><X className="size-3.5" /></button></div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-1">
-        {tab === 'detail' ? selected ? <>
-          <InspectorSection title="问题摘要"><p className="text-[10px] font-medium leading-[17px] text-[var(--ink-soft)]">{selected.title}</p>{selected.remark && <p className="mt-2 line-clamp-4 text-[9.5px] leading-[16px] text-[var(--muted-strong)]">{selected.remark}</p>}</InspectorSection>
-          <InspectorSection title="关联"><RelationRow icon={LinkSimple} label="外部关联" value={ticket?.relations.length ?? 0} /><RelationRow icon={ShieldCheck} label="可用权限" value={ticket?.permissions.length ?? 0} /><RelationRow icon={ClockCounterClockwise} label="流程节点" value={ticket?.flowNodes.length ?? 0} /></InspectorSection>
-        </> : <div className="flex h-48 items-center justify-center text-[9.5px] text-[var(--muted)]">选择工单后查看详情</div> : <div className="py-4"><div className="rounded-[10px] border border-[var(--accent-soft-line)] bg-[var(--accent-soft)] p-3"><div className="flex items-center gap-2 text-[10px] font-semibold text-[var(--accent-ink)]"><Sparkle className="size-4" weight="fill" />围绕当前工单提问</div></div></div>}
+    <aside
+      aria-label={tu('工单上下文')}
+      className="flex min-h-0 w-[282px] shrink-0 flex-col border-l border-[var(--line)] bg-panel max-[1260px]:hidden"
+    >
+      <div className="flex h-[48px] shrink-0 items-end border-b border-[var(--line)] pl-3 pr-2">
+        <TabButton active={tab === 'detail'} onClick={() => setTab('detail')}>
+          {tu('AI 概述')}
+        </TabButton>
+        <TabButton active={tab === 'assistant'} onClick={() => setTab('assistant')}>
+          {tu('AI 助手')}
+        </TabButton>
+        <button
+          type="button"
+          aria-label={tu('关闭工单上下文')}
+          onClick={onClose}
+          className="mb-2 ml-1 flex size-7 shrink-0 items-center justify-center rounded-[6px] text-[var(--muted)] outline-none hover:bg-[var(--surface-hover)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+        >
+          <X className="size-3.5" />
+        </button>
       </div>
-      <form onSubmit={(event) => event.preventDefault()} className="shrink-0 border-t border-[var(--line)] p-2.5"><div className="flex h-9 items-center gap-2 rounded-[9px] border border-[var(--accent-soft-line)] bg-panel px-2 focus-within:border-[var(--accent)]"><input type="text" aria-label="向 Fouc 提问" placeholder="向 Fouc 提问，获取处理建议…" className="min-w-0 flex-1 bg-transparent px-1 text-[9.5px] text-[var(--ink)] outline-none placeholder:text-[var(--muted)]" /><button type="submit" aria-label="发送" className="flex size-7 shrink-0 items-center justify-center rounded-[6px] bg-[var(--accent)] text-white"><PaperPlaneTilt className="size-3.5" weight="fill" /></button></div></form>
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-1">
+        {tab === 'detail' ? (
+          selected ? (
+            <>
+              <InspectorSection title={tu('问题摘要')}>
+                <p className="text-[10px] font-medium leading-[17px] text-[var(--ink-soft)]">
+                  {selected.title}
+                </p>
+                {selected.remark && (
+                  <p className="mt-2 line-clamp-4 text-[9.5px] leading-[16px] text-[var(--muted-strong)]">
+                    {selected.remark}
+                  </p>
+                )}
+              </InspectorSection>
+              <InspectorSection title={tu('关联')}>
+                <RelationRow
+                  icon={LinkSimple}
+                  label={tu('外部关联')}
+                  value={ticket?.relations.length ?? 0}
+                />
+                <RelationRow
+                  icon={ShieldCheck}
+                  label={tu('可用权限')}
+                  value={ticket?.permissions.length ?? 0}
+                />
+                <RelationRow
+                  icon={ClockCounterClockwise}
+                  label={tu('流程节点')}
+                  value={ticket?.flowNodes.length ?? 0}
+                />
+              </InspectorSection>
+            </>
+          ) : (
+            <div className="flex h-48 items-center justify-center text-[9.5px] text-[var(--muted)]">
+              {tu('选择工单后查看详情')}
+            </div>
+          )
+        ) : (
+          <div className="py-4">
+            <div className="rounded-[10px] border border-[var(--accent-soft-line)] bg-[var(--accent-soft)] p-3">
+              <div className="flex items-center gap-2 text-[10px] font-semibold text-[var(--accent-ink)]">
+                <Sparkle className="size-4" weight="fill" />
+                {tu('围绕当前工单提问')}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+      <form
+        onSubmit={(event) => event.preventDefault()}
+        className="shrink-0 border-t border-[var(--line)] p-2.5"
+      >
+        <div className="flex h-9 items-center gap-2 rounded-[9px] border border-[var(--accent-soft-line)] bg-panel px-2 focus-within:border-[var(--accent)]">
+          <input
+            type="text"
+            aria-label={tu('向 Fouc 提问')}
+            placeholder={tu('向 Fouc 提问，获取处理建议…')}
+            className="min-w-0 flex-1 bg-transparent px-1 text-[9.5px] text-[var(--ink)] outline-none placeholder:text-[var(--muted)]"
+          />
+          <button
+            type="submit"
+            aria-label={tu('发送')}
+            className="flex size-7 shrink-0 items-center justify-center rounded-[6px] bg-[var(--accent)] text-white"
+          >
+            <PaperPlaneTilt className="size-3.5" weight="fill" />
+          </button>
+        </div>
+      </form>
     </aside>
-  )
+  );
 }
 
-function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) { return <button type="button" role="tab" aria-selected={active} onClick={onClick} className={cn('relative h-full flex-1 text-[10.5px] font-medium text-[var(--muted-strong)] outline-none hover:text-[var(--ink)]', active && 'font-semibold text-[var(--ink)] after:absolute after:inset-x-4 after:bottom-0 after:h-[2px] after:rounded-full after:bg-[var(--accent)]')}>{children}</button> }
-function InspectorSection({ title, children }: { title: string; children: React.ReactNode }) { return <section className="border-b border-[var(--line)] py-4 last:border-0"><header className="mb-2.5 flex items-center gap-1.5"><h2 className="text-[10px] font-semibold text-[var(--ink)]">{title}</h2><span className="h-px flex-1 bg-[var(--line)]" /></header>{children}</section> }
-function RelationRow({ icon: Icon, label, value }: { icon: typeof LinkSimple; label: string; value: number }) { return <div className="flex items-center gap-2 rounded-[6px] px-1 py-2 text-[9.5px] text-[var(--ink-soft)]"><Icon className="size-3.5 text-[var(--accent-ink)]" /><span className="flex-1">{label}</span><span className="font-semibold tabular-nums text-[var(--ink)]">{value}</span><span className="text-[var(--muted)]">›</span></div> }
+function TabButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      className={cn(
+        'relative h-full flex-1 text-[10.5px] font-medium text-[var(--muted-strong)] outline-none hover:text-[var(--ink)]',
+        active &&
+          'font-semibold text-[var(--ink)] after:absolute after:inset-x-4 after:bottom-0 after:h-[2px] after:rounded-full after:bg-[var(--accent)]',
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+function InspectorSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="border-b border-[var(--line)] py-4 last:border-0">
+      <header className="mb-2.5 flex items-center gap-1.5">
+        <h2 className="text-[10px] font-semibold text-[var(--ink)]">{title}</h2>
+        <span className="h-px flex-1 bg-[var(--line)]" />
+      </header>
+      {children}
+    </section>
+  );
+}
+function RelationRow({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof LinkSimple;
+  label: string;
+  value: number;
+}) {
+  return (
+    <div className="flex items-center gap-2 rounded-[6px] px-1 py-2 text-[9.5px] text-[var(--ink-soft)]">
+      <Icon className="size-3.5 text-[var(--accent-ink)]" />
+      <span className="flex-1">{label}</span>
+      <span className="font-semibold tabular-nums text-[var(--ink)]">{value}</span>
+      <span className="text-[var(--muted)]">›</span>
+    </div>
+  );
+}

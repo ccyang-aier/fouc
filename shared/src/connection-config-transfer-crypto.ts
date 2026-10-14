@@ -1,10 +1,16 @@
 import {
+  validationIssue,
+  validationValue,
+  ValidationError,
+  type ValidationIssue,
+  type ValidationValue,
+} from './validation-issue';
+import {
   CONNECTION_CONFIG_LIMITS,
   parseConnectionConfigBundle,
   validateConnectionConfigBundle,
   type ConnectionConfigBundle,
 } from './connection-config-transfer';
-
 export type EncryptedConnectionConfig = {
   format: 'fouc-connection-config-encrypted';
   version: 1;
@@ -15,14 +21,17 @@ export type EncryptedConnectionConfig = {
   iv: string;
   data: string;
 };
-const iterations = 600_000;
+const iterations = 600000;
 const additionalData = new TextEncoder().encode(
   'fouc-connection-config-encrypted:1:AES-256-GCM:PBKDF2-SHA256:600000',
 );
 function runtime(): Crypto {
   if (!globalThis.crypto?.subtle || !globalThis.crypto?.getRandomValues)
-    throw new Error(
-      '当前浏览器未提供 WebCrypto；请使用 HTTPS 或 localhost 打开后进行加密操作',
+    throw new ValidationError(
+      validationIssue(
+        'connection-config-transfer-crypto.webcryptoIsUnavailableInThisBrowserOpenOver',
+        '当前浏览器未提供 WebCrypto；请使用 HTTPS 或 localhost 打开后进行加密操作',
+      ),
     );
   return globalThis.crypto;
 }
@@ -32,7 +41,12 @@ function password(passphrase: string) {
     Array.from(passphrase).length < 12 ||
     passphrase.length > 1024
   )
-    throw new Error('加密口令须为 12–1024 个字符');
+    throw new ValidationError(
+      validationIssue(
+        'connection-config-transfer-crypto.encryptionPasswordsMustContainCharacters',
+        '加密口令须为 12–1024 个字符',
+      ),
+    );
 }
 function base64(bytes: Uint8Array<ArrayBuffer>): string {
   let text = '';
@@ -40,35 +54,35 @@ function base64(bytes: Uint8Array<ArrayBuffer>): string {
     text += String.fromCharCode(...bytes.subarray(index, index + 8192));
   return btoa(text);
 }
-function bytes(
-  text: unknown,
-  expected: number | null,
-): Uint8Array<ArrayBuffer> {
+function bytes(text: unknown, expected: number | null): Uint8Array<ArrayBuffer> {
   if (
     typeof text !== 'string' ||
-    text.length >
-      Math.ceil((CONNECTION_CONFIG_LIMITS.plainBytes + 16) / 3) * 4 ||
-    !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(
-      text,
-    )
+    text.length > Math.ceil((CONNECTION_CONFIG_LIMITS.plainBytes + 16) / 3) * 4 ||
+    !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(text)
   )
-    throw new Error('加密配置包含无效 Base64 数据');
+    throw new ValidationError(
+      validationIssue(
+        'connection-config-transfer-crypto.encryptedConfigurationContainsInvalidBaseData',
+        '加密配置包含无效 Base64 数据',
+      ),
+    );
   const decoded = atob(text),
     value = new Uint8Array(decoded.length);
-  for (let index = 0; index < decoded.length; index++)
-    value[index] = decoded.charCodeAt(index);
+  for (let index = 0; index < decoded.length; index++) value[index] = decoded.charCodeAt(index);
   if (
     base64(value) !== text ||
     (expected !== null && value.length !== expected) ||
     (expected === null && value.length < 17)
   )
-    throw new Error('加密配置长度或编码无效');
+    throw new ValidationError(
+      validationIssue(
+        'connection-config-transfer-crypto.invalidEncryptedConfigurationLengthOrEncoding',
+        '加密配置长度或编码无效',
+      ),
+    );
   return value;
 }
-async function key(
-  passphrase: string,
-  salt: Uint8Array<ArrayBuffer>,
-): Promise<CryptoKey> {
+async function key(passphrase: string, salt: Uint8Array<ArrayBuffer>): Promise<CryptoKey> {
   password(passphrase);
   const subtle = runtime().subtle;
   const material = await subtle.importKey(
@@ -86,25 +100,19 @@ async function key(
     ['encrypt', 'decrypt'],
   );
 }
-export function validateEncryptedConnectionConfig(
-  value: unknown,
-): EncryptedConnectionConfig {
+export function validateEncryptedConnectionConfig(value: unknown): EncryptedConnectionConfig {
   if (!value || typeof value !== 'object' || Array.isArray(value))
-    throw new Error('加密配置须为对象');
+    throw new ValidationError(
+      validationIssue(
+        'connection-config-transfer-crypto.encryptedConfigurationMustBeAnObject',
+        '加密配置须为对象',
+      ),
+    );
   const raw = value as Record<string, unknown>;
   if (
     Object.keys(raw).some(
       (key) =>
-        ![
-          'format',
-          'version',
-          'cipher',
-          'kdf',
-          'iterations',
-          'salt',
-          'iv',
-          'data',
-        ].includes(key),
+        !['format', 'version', 'cipher', 'kdf', 'iterations', 'salt', 'iv', 'data'].includes(key),
     ) ||
     raw.format !== 'fouc-connection-config-encrypted' ||
     raw.version !== 1 ||
@@ -112,7 +120,12 @@ export function validateEncryptedConnectionConfig(
     raw.kdf !== 'PBKDF2-SHA256' ||
     raw.iterations !== iterations
   )
-    throw new Error('加密配置格式、版本或加密参数不受支持');
+    throw new ValidationError(
+      validationIssue(
+        'connection-config-transfer-crypto.encryptedConfigurationFormatVersionOrEncryptionParametersAre',
+        '加密配置格式、版本或加密参数不受支持',
+      ),
+    );
   bytes(raw.salt, 16);
   bytes(raw.iv, 12);
   bytes(raw.data, null);
@@ -153,15 +166,23 @@ export async function decodeConnectionConfigFile(
   signal?: AbortSignal,
 ): Promise<ConnectionConfigBundle> {
   signal?.throwIfAborted();
-  if (
-    new TextEncoder().encode(source).length > CONNECTION_CONFIG_LIMITS.fileBytes
-  )
-    throw new Error('配置文件不能超过 3 MiB');
+  if (new TextEncoder().encode(source).length > CONNECTION_CONFIG_LIMITS.fileBytes)
+    throw new ValidationError(
+      validationIssue(
+        'connection-config-transfer-crypto.configurationFilesMustNotExceedMib',
+        '配置文件不能超过 3 MiB',
+      ),
+    );
   let value: unknown;
   try {
     value = JSON.parse(source);
   } catch {
-    throw new Error('配置文件不是有效 JSON');
+    throw new ValidationError(
+      validationIssue(
+        'connection-config-transfer-crypto.configurationFileIsNotValidJson',
+        '配置文件不是有效 JSON',
+      ),
+    );
   }
   if (
     !value ||
@@ -186,14 +207,24 @@ export async function decodeConnectionConfigFile(
       bytes(encrypted.data, null),
     );
   } catch {
-    throw new Error('解密失败：口令不正确或文件已被修改；未导入任何连接');
+    throw new ValidationError(
+      validationIssue(
+        'connection-config-transfer-crypto.decryptionFailedThePasswordIsIncorrectOrThe',
+        '解密失败：口令不正确或文件已被修改；未导入任何连接',
+      ),
+    );
   }
   signal?.throwIfAborted();
   let decoded: string;
   try {
     decoded = new TextDecoder('utf-8', { fatal: true }).decode(plaintext);
   } catch {
-    throw new Error('解密后的配置不是有效 UTF-8 文本');
+    throw new ValidationError(
+      validationIssue(
+        'connection-config-transfer-crypto.decryptedConfigurationIsNotValidUtfText',
+        '解密后的配置不是有效 UTF-8 文本',
+      ),
+    );
   }
   return parseConnectionConfigBundle(decoded);
 }

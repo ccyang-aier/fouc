@@ -1,5 +1,9 @@
 'use client';
 
+import { useTranslation } from '@/lib/i18n';
+import { fixtureField, translateFixed } from '../i18n/display';
+import { messages } from './i18n/dashboard-task-settings';
+
 import type { DashboardProject, DashboardTask } from './dashboard-model';
 import styles from './dashboard-task-dialog.module.css';
 
@@ -33,10 +37,13 @@ export function DashboardTaskSettings({
   onChange: (task: DashboardTask) => void;
   onOpenProject: (projectId: string) => void;
 }) {
+  const { t, locale } = useTranslation(messages);
+  const uiLabel = (value: string) => translateFixed(value, locale);
+
   return (
     <div className={styles.detailContent}>
       <label className={styles.settingField}>
-        Task title
+        {t('Task title')}
         <input
           value={task.title}
           maxLength={120}
@@ -51,14 +58,14 @@ export function DashboardTaskSettings({
       </label>
       <div className={styles.projectSetting}>
         <label className={styles.settingField}>
-          Project
+          {t('Project')}
           <select
             value={task.projectId}
             onChange={(event) => onChange({ ...task, projectId: event.currentTarget.value })}
           >
             {projects.map((project) => (
               <option key={project.id} value={project.id}>
-                {project.name}
+                {fixtureField(project, 'name', locale)}
               </option>
             ))}
           </select>
@@ -68,11 +75,12 @@ export function DashboardTaskSettings({
           className={`fouc-action ${styles.openProject}`}
           onClick={() => onOpenProject(task.projectId)}
         >
-          Open project details
+          {t('Open project details')}
         </button>
       </div>
       <label className={styles.settingField}>
-        Progress <span>{task.progress}%</span>
+        {t('Progress')}
+        <span>{task.progress}%</span>
         <input
           type="range"
           min="0"
@@ -90,7 +98,7 @@ export function DashboardTaskSettings({
       </label>
       <div className={styles.scheduleFields}>
         <label className={styles.settingField}>
-          Scheduled date
+          {t('Scheduled date')}
           <input
             type="date"
             value={task.scheduledDate}
@@ -98,7 +106,7 @@ export function DashboardTaskSettings({
           />
         </label>
         <label className={styles.settingField}>
-          Start time
+          {t('Start time')}
           <input
             type="time"
             value={Number.isFinite(task.startHour) ? dashboardStartTime(task.startHour) : ''}
@@ -109,7 +117,7 @@ export function DashboardTaskSettings({
           />
         </label>
         <label className={styles.settingField}>
-          Duration (hours)
+          {t('Duration (hours)')}
           <input
             type="number"
             min="0.25"
@@ -128,7 +136,7 @@ export function DashboardTaskSettings({
         </label>
       </div>
       <label className={styles.settingField}>
-        Activity map row
+        {t('Activity map row')}
         <select
           value={task.timelineCategory}
           onChange={(event) =>
@@ -139,7 +147,9 @@ export function DashboardTaskSettings({
           }
         >
           {(['Dashboard Design', 'Mobile App', 'Landing Page'] as const).map((category) => (
-            <option key={category}>{category}</option>
+            <option value={category} key={category}>
+              {uiLabel(category)}
+            </option>
           ))}
         </select>
       </label>

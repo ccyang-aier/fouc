@@ -1,5 +1,8 @@
 'use client';
 
+import { createTranslator, useTranslation, type Locale } from '@/lib/i18n';
+import { knowledgeMessages } from './block-reference.messages';
+
 /**
  * The live read-only block reference card (L02, design §4.6).
  *
@@ -21,14 +24,18 @@ import type { NodeViewProps } from '@tiptap/react';
 import type { Schema } from '@tiptap/pm/model';
 import { yXmlFragmentToProseMirrorRootNode } from 'y-prosemirror';
 import type { PageScope } from '@fouc/shared/knowledge/contracts';
-import { ArrowSquareOut, ArrowsClockwise, Link, Prohibit, Trash, Warning } from '@phosphor-icons/react';
+import {
+  ArrowSquareOut,
+  ArrowsClockwise,
+  Link,
+  Prohibit,
+  Trash,
+  Warning,
+} from '@phosphor-icons/react';
 import { withNodeView } from '../../extensions/with-node-view';
 import { PAGE_BODY_FRAGMENT } from '../../page-collaboration';
 import { requestOpenPageBlock } from '../../open-target';
-import {
-  createBlockReferenceSources,
-  watchSourceBlock,
-} from './block-reference-source';
+import { createBlockReferenceSources, watchSourceBlock } from './block-reference-source';
 import type {
   BlockReferenceSnapshot,
   BlockReferenceSources,
@@ -38,6 +45,8 @@ import type {
 import { BlockReferencePicker, listReferenceBlocks } from './block-reference-picker';
 import { knowledgeErrorCodeOf } from '../../../entry-state';
 import type { ReferenceBlockChoice } from './block-reference-picker';
+
+const knowledgeT = createTranslator(knowledgeMessages);
 
 export interface BlockReferenceViewOptions {
   /** The page the editor shows — cyclic references are decided against it. */
@@ -63,10 +72,15 @@ const BlockReferenceContext = createContext<BlockReferenceEditorContext | null>(
  * Returns the extension list with the registry's `blockReference` node
  * additionally rendering this NodeView. The input list is never mutated.
  */
-export function applyBlockReferenceView(extensions: Extensions, options: BlockReferenceViewOptions): Extensions {
+export function applyBlockReferenceView(
+  extensions: Extensions,
+  options: BlockReferenceViewOptions,
+): Extensions {
   const context: BlockReferenceEditorContext = {
     scope: options.scope,
-    sources: options.sources ?? createBlockReferenceSources({ origin: options.origin, cacheIdentity: options.cacheIdentity }),
+    sources:
+      options.sources ??
+      createBlockReferenceSources({ origin: options.origin, cacheIdentity: options.cacheIdentity }),
     throttleMs: options.throttleMs,
   };
   ensureBlockReferenceStyles();
@@ -79,14 +93,22 @@ export function applyBlockReferenceView(extensions: Extensions, options: BlockRe
   );
 }
 
-type ReferenceAttrs = { knowledgeBaseId: string | null; pageId: string | null; targetBlockId: string | null };
+type ReferenceAttrs = {
+  knowledgeBaseId: string | null;
+  pageId: string | null;
+  targetBlockId: string | null;
+};
 
 const failedSnapshot: BlockReferenceSnapshot = { state: 'failed', element: null, dom: null };
 const loadingSnapshot: BlockReferenceSnapshot = { state: 'loading', element: null, dom: null };
 
 /** States decidable from attrs alone render without ever opening a connection. */
-function localViewState(attrs: ReferenceAttrs, ownScope: PageScope): BlockReferenceViewState | null {
-  if (attrs.knowledgeBaseId === ownScope.knowledgeBaseId && attrs.pageId === ownScope.pageId) return 'cyclic';
+function localViewState(
+  attrs: ReferenceAttrs,
+  ownScope: PageScope,
+): BlockReferenceViewState | null {
+  if (attrs.knowledgeBaseId === ownScope.knowledgeBaseId && attrs.pageId === ownScope.pageId)
+    return 'cyclic';
   if (!attrs.knowledgeBaseId || !attrs.pageId || !attrs.targetBlockId) return 'unconfigured';
   return null;
 }
@@ -102,18 +124,48 @@ const accentByState: Record<BlockReferenceViewState, string> = {
 };
 
 /** The five states rendered as an icon + text notice (never alongside content). */
-type BlockReferenceNoticeState = Extract<BlockReferenceViewState, 'denied' | 'failed' | 'deleted' | 'cyclic' | 'unconfigured'>;
+type BlockReferenceNoticeState = Extract<
+  BlockReferenceViewState,
+  'denied' | 'failed' | 'deleted' | 'cyclic' | 'unconfigured'
+>;
 
-const blockReferenceNotices: Record<BlockReferenceNoticeState, { icon: typeof Link; text: string; tone: string }> = {
-  denied: { icon: Prohibit, text: '无权访问来源页', tone: 'text-[var(--err-ink)]' },
-  failed: { icon: Warning, text: '无法连接来源页', tone: 'text-[var(--err-ink)]' },
-  deleted: { icon: Trash, text: '来源块已删除', tone: 'text-[var(--muted-strong)]' },
-  cyclic: { icon: ArrowsClockwise, text: '循环引用：来源是当前页面', tone: 'text-[var(--warn-ink)]' },
-  unconfigured: { icon: Link, text: '未配置引用', tone: 'text-[var(--muted-strong)]' },
-};
+function blockReferenceNotices(
+  locale?: Locale,
+): Record<BlockReferenceNoticeState, { icon: typeof Link; text: string; tone: string }> {
+  const knowledgeT = createTranslator(knowledgeMessages, locale);
+  return {
+    denied: {
+      icon: Prohibit,
+      text: knowledgeT('sourcePageAccessDenied'),
+      tone: 'text-[var(--err-ink)]',
+    },
+    failed: {
+      icon: Warning,
+      text: knowledgeT('unableToConnectToSourcePage'),
+      tone: 'text-[var(--err-ink)]',
+    },
+    deleted: {
+      icon: Trash,
+      text: knowledgeT('sourceBlockDeleted'),
+      tone: 'text-[var(--muted-strong)]',
+    },
+    cyclic: {
+      icon: ArrowsClockwise,
+      text: knowledgeT('circularReferenceTheSourceIsThisPage'),
+      tone: 'text-[var(--warn-ink)]',
+    },
+    unconfigured: {
+      icon: Link,
+      text: knowledgeT('referenceNotConfigured'),
+      tone: 'text-[var(--muted-strong)]',
+    },
+  };
+}
 
 function BlockReferenceNotice({ state }: { state: BlockReferenceNoticeState }) {
-  const { icon: Icon, text, tone } = blockReferenceNotices[state];
+  const { locale } = useTranslation(knowledgeMessages);
+
+  const { icon: Icon, text, tone } = blockReferenceNotices(locale)[state];
   return (
     <p className={`flex items-center gap-2 py-1 text-[12.5px] ${tone}`}>
       <Icon aria-hidden className="size-3.5 shrink-0" />
@@ -157,25 +209,49 @@ function ensureBlockReferenceStyles(): void {
   document.head.append(style);
 }
 
-async function loadRemoteBlocks(sources: BlockReferenceSources, scope: PageScope, schema: Schema): Promise<ReferenceBlockChoice[]> {
+async function loadRemoteBlocks(
+  sources: BlockReferenceSources,
+  scope: PageScope,
+  schema: Schema,
+): Promise<ReferenceBlockChoice[]> {
   const handle = await sources.acquire(scope);
   try {
     const fragment = handle.document.getXmlFragment(PAGE_BODY_FRAGMENT);
-    const ready = () => handle.status().phase === 'synced' || (handle.status().localReady && fragment.length > 0);
-    if (!ready()) await new Promise<void>((resolve, reject) => {
-      let stop = () => {};
-      const timer = setTimeout(() => { stop(); reject(new Error('来源页同步超时')); }, 8_000);
-      stop = handle.subscribe(() => {
-        if (handle.status().phase === 'error') { clearTimeout(timer); stop(); reject(new Error('无权读取来源页')); }
-        else if (ready()) { clearTimeout(timer); stop(); resolve(); }
+    const ready = () =>
+      handle.status().phase === 'synced' || (handle.status().localReady && fragment.length > 0);
+    if (!ready())
+      await new Promise<void>((resolve, reject) => {
+        let stop = () => {};
+        const timer = setTimeout(() => {
+          stop();
+          reject(new Error(knowledgeT('sourcePageSyncTimedOut')));
+        }, 8_000);
+        stop = handle.subscribe(() => {
+          if (handle.status().phase === 'error') {
+            clearTimeout(timer);
+            stop();
+            reject(new Error(knowledgeT('sourcePageReadingPermissionDenied')));
+          } else if (ready()) {
+            clearTimeout(timer);
+            stop();
+            resolve();
+          }
+        });
+        if (ready()) {
+          clearTimeout(timer);
+          stop();
+          resolve();
+        }
       });
-      if (ready()) { clearTimeout(timer); stop(); resolve(); }
-    });
     return listReferenceBlocks(yXmlFragmentToProseMirrorRootNode(fragment, schema));
-  } finally { await handle.release(); }
+  } finally {
+    await handle.release();
+  }
 }
 
 function BlockReferenceCard({ node, editor, updateAttributes }: NodeViewProps) {
+  const { t: knowledgeT } = useTranslation(knowledgeMessages);
+
   const context = useContext(BlockReferenceContext);
   const attrs = node.attrs as ReferenceAttrs;
   const knowledgeBaseId = attrs.knowledgeBaseId;
@@ -185,7 +261,9 @@ function BlockReferenceCard({ node, editor, updateAttributes }: NodeViewProps) {
   // session status pushes, throttled watcher notifications) — never a
   // synchronous setState inside an effect.
   const sourceKey = `${knowledgeBaseId}:${pageId}:${targetBlockId}`;
-  const [sourceState, setSource] = useState<{ key: string; snapshot: BlockReferenceSnapshot }>(() => ({ key: '', snapshot: loadingSnapshot }));
+  const [sourceState, setSource] = useState<{ key: string; snapshot: BlockReferenceSnapshot }>(
+    () => ({ key: '', snapshot: loadingSnapshot }),
+  );
   const source = sourceState.key === sourceKey ? sourceState.snapshot : loadingSnapshot;
   const [editing, setEditing] = useState(false);
   const contentHost = useRef<HTMLDivElement | null>(null);
@@ -194,12 +272,20 @@ function BlockReferenceCard({ node, editor, updateAttributes }: NodeViewProps) {
   const content = (state === 'live' || state === 'loading') && source.dom ? source.dom : null;
 
   useEffect(() => {
-    if (!context || !knowledgeBaseId || !pageId || !targetBlockId || (knowledgeBaseId === context.scope.knowledgeBaseId && pageId === context.scope.pageId)) return undefined;
+    if (
+      !context ||
+      !knowledgeBaseId ||
+      !pageId ||
+      !targetBlockId ||
+      (knowledgeBaseId === context.scope.knowledgeBaseId && pageId === context.scope.pageId)
+    )
+      return undefined;
     let alive = true;
     let stopStatus: (() => void) | undefined;
     let watch: ReturnType<typeof watchSourceBlock> | undefined;
     let handle: SourceHandle | undefined;
-    context.sources.acquire({ knowledgeBaseId, pageId })
+    context.sources
+      .acquire({ knowledgeBaseId, pageId })
       .then((acquired) => {
         if (!alive) {
           void acquired.release();
@@ -221,7 +307,14 @@ function BlockReferenceCard({ node, editor, updateAttributes }: NodeViewProps) {
         setSource({ key: sourceKey, snapshot: watch.snapshot() });
       })
       .catch((cause: unknown) => {
-        if (alive) setSource({ key: sourceKey, snapshot: knowledgeErrorCodeOf(cause) === 'FORBIDDEN' ? { state: 'denied', element: null, dom: null } : failedSnapshot });
+        if (alive)
+          setSource({
+            key: sourceKey,
+            snapshot:
+              knowledgeErrorCodeOf(cause) === 'FORBIDDEN'
+                ? { state: 'denied', element: null, dom: null }
+                : failedSnapshot,
+          });
       });
     return () => {
       alive = false;
@@ -245,33 +338,52 @@ function BlockReferenceCard({ node, editor, updateAttributes }: NodeViewProps) {
     requestOpenPageBlock({ knowledgeBaseId, pageId, blockId: targetBlockId });
   };
 
-  if (editor.isEditable && context && (editing || state === 'unconfigured')) return <NodeViewWrapper draggable={false} data-block-reference="picker">
-    <BlockReferencePicker
-      knowledgeBaseId={context.scope.knowledgeBaseId}
-      excludePageId={context.scope.pageId}
-      loadBlocks={sourceScope => loadRemoteBlocks(context.sources, sourceScope, editor.schema)}
-      onChoose={(sourceScope, blockId) => { updateAttributes({ ...sourceScope, targetBlockId: blockId }); setEditing(false); }}
-      onCancel={pageId && targetBlockId ? () => setEditing(false) : undefined}
-    />
-  </NodeViewWrapper>;
+  if (editor.isEditable && context && (editing || state === 'unconfigured'))
+    return (
+      <NodeViewWrapper draggable={false} data-block-reference="picker">
+        <BlockReferencePicker
+          knowledgeBaseId={context.scope.knowledgeBaseId}
+          excludePageId={context.scope.pageId}
+          loadBlocks={(sourceScope) =>
+            loadRemoteBlocks(context.sources, sourceScope, editor.schema)
+          }
+          onChoose={(sourceScope, blockId) => {
+            updateAttributes({ ...sourceScope, targetBlockId: blockId });
+            setEditing(false);
+          }}
+          onCancel={pageId && targetBlockId ? () => setEditing(false) : undefined}
+        />
+      </NodeViewWrapper>
+    );
 
   return (
-    <NodeViewWrapper draggable={false} contentEditable={false} className="my-3 select-none" data-block-reference={state}>
+    <NodeViewWrapper
+      draggable={false}
+      contentEditable={false}
+      className="my-3 select-none"
+      data-block-reference={state}
+    >
       <div
         onClick={state === 'live' ? open : undefined}
-        onKeyDown={state === 'live'
-          ? (event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-              event.preventDefault();
-              open();
-            }
-          }
-          : undefined}
+        onKeyDown={
+          state === 'live'
+            ? (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  open();
+                }
+              }
+            : undefined
+        }
         role={state === 'live' ? 'button' : undefined}
         tabIndex={state === 'live' ? 0 : undefined}
-        aria-label={state === 'live' ? '块引用，点击跳转到原文' : undefined}
+        aria-label={
+          state === 'live' ? knowledgeT('blockReferenceClickToOpenTheOriginal') : undefined
+        }
         className={`group relative flex overflow-hidden rounded-[10px] border bg-[var(--panel)] transition-colors duration-150 ${
-          state === 'live' ? 'cursor-pointer border-[var(--line)] hover:border-[var(--line-strong)]' : 'border-[var(--line)]'
+          state === 'live'
+            ? 'cursor-pointer border-[var(--line)] hover:border-[var(--line-strong)]'
+            : 'border-[var(--line)]'
         }`}
       >
         <div aria-hidden className={`w-[3px] shrink-0 ${accentByState[state]}`} />
@@ -279,15 +391,24 @@ function BlockReferenceCard({ node, editor, updateAttributes }: NodeViewProps) {
           {content ? (
             <>
               <div key={`source:${sourceKey}`} ref={contentHost} className={contentClasses} />
-              {state === 'loading'
-                ? <p className="mt-2 text-[11px] text-[var(--muted)]">正在同步来源内容…</p>
-                : null}
+              {state === 'loading' ? (
+                <p className="mt-2 text-[11px] text-[var(--muted)]">
+                  {knowledgeT('syncingSourceContent')}
+                </p>
+              ) : null}
             </>
           ) : state === 'live' || state === 'loading' ? (
-            <div key="source-loading" className="py-1" aria-busy="true" aria-label="正在加载来源块">
+            <div
+              key="source-loading"
+              className="py-1"
+              aria-busy="true"
+              aria-label={knowledgeT('loadingSourceBlock')}
+            >
               <div className="fouc-block-skeleton h-[11px] w-[62%]" />
               <div className="fouc-block-skeleton mt-1.5 h-[11px] w-[38%]" />
-              <p className="mt-2 text-[11.5px] text-[var(--muted)]">正在加载来源块…</p>
+              <p className="mt-2 text-[11.5px] text-[var(--muted)]">
+                {knowledgeT('loadingSourceBlock2')}
+              </p>
             </div>
           ) : (
             <BlockReferenceNotice state={state} />
@@ -296,10 +417,23 @@ function BlockReferenceCard({ node, editor, updateAttributes }: NodeViewProps) {
         {state === 'live' ? (
           <span className="pointer-events-none absolute right-2.5 top-2.5 flex items-center gap-1 rounded-[6px] border border-[var(--line)] bg-[var(--raise)] px-1.5 py-[3px] text-[11px] font-medium text-[var(--muted-strong)] opacity-0 shadow-[0_1px_4px_rgba(18,23,31,0.12)] transition-opacity duration-150 group-hover:opacity-100">
             <ArrowSquareOut aria-hidden className="size-3" />
-            跳转到原文
+            {knowledgeT('goToOriginal')}
           </span>
         ) : null}
-        {editor.isEditable ? <button type="button" aria-label="更换引用" title="更换引用" onClick={(event) => { event.stopPropagation(); setEditing(true); }} className="absolute bottom-2.5 right-2.5 rounded px-1.5 py-1 text-[11px] text-[var(--muted-strong)] opacity-0 hover:bg-[var(--raise)] group-hover:opacity-100 focus-visible:opacity-100">更换引用</button> : null}
+        {editor.isEditable ? (
+          <button
+            type="button"
+            aria-label={knowledgeT('changeReference')}
+            title={knowledgeT('changeReference')}
+            onClick={(event) => {
+              event.stopPropagation();
+              setEditing(true);
+            }}
+            className="absolute bottom-2.5 right-2.5 rounded px-1.5 py-1 text-[11px] text-[var(--muted-strong)] opacity-0 hover:bg-[var(--raise)] group-hover:opacity-100 focus-visible:opacity-100"
+          >
+            {knowledgeT('changeReference')}
+          </button>
+        ) : null}
       </div>
     </NodeViewWrapper>
   );

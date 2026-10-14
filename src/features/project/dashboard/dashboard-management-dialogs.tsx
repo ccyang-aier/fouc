@@ -1,12 +1,17 @@
 'use client';
+import { translateFixed } from '../i18n/display';
 
-import { useState } from 'react';
+import { useTranslation } from '@/lib/i18n';
+import { fixtureField } from '../i18n/display';
+import { messages } from './i18n/dashboard-management-dialogs';
+
 import { Star } from '@phosphor-icons/react';
-import { DashboardModal } from './dashboard-modal';
-import { DashboardButton } from './dashboard-ui';
-import { selectFavorites } from './dashboard-selectors';
-import type { DashboardMilestone, DashboardState, DashboardTarget } from './dashboard-model';
+import { useState } from 'react';
 import styles from './dashboard-management.module.css';
+import { DashboardModal } from './dashboard-modal';
+import type { DashboardMilestone, DashboardState, DashboardTarget } from './dashboard-model';
+import { selectFavorites } from './dashboard-selectors';
+import { DashboardButton } from './dashboard-ui';
 
 export function DashboardFavoritesDialog({
   state,
@@ -17,26 +22,28 @@ export function DashboardFavoritesDialog({
   onClose: () => void;
   onSave: (targets: DashboardTarget[]) => void;
 }) {
+  const { t, locale } = useTranslation(messages);
+
   const [selected, setSelected] = useState(
     () => new Set(selectFavorites(state).map((item) => item.id)),
   );
   const options = [
     ...state.projects.map((project) => ({
       id: `project:${project.id}`,
-      title: project.name,
+      title: fixtureField(project, 'name', locale),
       type: 'Project',
       target: { kind: 'project', id: project.id } as const,
     })),
     ...state.tasks.map((task) => ({
       id: `task:${task.id}`,
-      title: task.title,
+      title: fixtureField(task, 'title', locale),
       type: 'Task',
       target: { kind: 'task', id: task.id } as const,
     })),
     ...state.documents.map((document) => ({
       id: `document:${document.id}`,
-      title: document.title,
-      type: document.kind,
+      title: fixtureField(document, 'title', locale),
+      type: document.kind[0].toUpperCase() + document.kind.slice(1),
       target: { kind: 'document', id: document.id } as const,
     })),
   ];
@@ -51,13 +58,13 @@ export function DashboardFavoritesDialog({
   }
 
   return (
-    <DashboardModal title="Manage favourites" onClose={onClose}>
+    <DashboardModal title={t('Manage favourites')} onClose={onClose}>
       <div className={styles.favoriteList}>
         {options.map((option) => (
           <label key={option.id} className="fouc-action">
             <Star size={18} weight={selected.has(option.id) ? 'fill' : 'regular'} />
             <span>
-              <strong>{option.title}</strong>
+              <strong>{fixtureField(option, 'title', locale)}</strong>
               <small>{option.type}</small>
             </span>
             <input
@@ -67,11 +74,11 @@ export function DashboardFavoritesDialog({
             />
           </label>
         ))}
-        {!options.length ? <p>No items to add yet.</p> : null}
+        {!options.length ? <p>{t('No items to add yet.')}</p> : null}
       </div>
       <footer>
         <DashboardButton tone="neutral" onClick={onClose}>
-          Cancel
+          {t('Cancel')}
         </DashboardButton>
         <DashboardButton
           onClick={() => {
@@ -81,7 +88,7 @@ export function DashboardFavoritesDialog({
             onClose();
           }}
         >
-          Save favourites
+          {t('Save favourites')}
         </DashboardButton>
       </footer>
     </DashboardModal>
@@ -97,6 +104,8 @@ export function DashboardMilestoneDialog({
   onClose: () => void;
   onSave: (milestones: DashboardMilestone[]) => void;
 }) {
+  const { t, locale } = useTranslation(messages);
+
   const [draft, setDraft] = useState(() => milestones.map((item) => ({ ...item })));
   const [month, setMonth] = useState('');
   const [error, setError] = useState('');
@@ -124,7 +133,7 @@ export function DashboardMilestoneDialog({
   }
 
   return (
-    <DashboardModal title="Milestone targets and history" onClose={onClose}>
+    <DashboardModal title={t('Milestone targets and history')} onClose={onClose}>
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -133,16 +142,16 @@ export function DashboardMilestoneDialog({
         }}
       >
         <div className={styles.milestoneFields}>
-          <p>Completed tasks are added to recorded history for their due month.</p>
+          <p>{t('Completed tasks are added to recorded history for their due month.')}</p>
           <div className={styles.tableHeading}>
-            <span>Month</span>
-            <span>Target</span>
-            <span>Recorded work</span>
+            <span>{t('Month')}</span>
+            <span>{t('Target')}</span>
+            <span>{t('Recorded work')}</span>
           </div>
           {draft.map((item, index) => (
             <div className={styles.monthRow} key={item.month}>
               <time dateTime={item.month}>
-                {new Date(`${item.month}-01T12:00:00`).toLocaleDateString('en-US', {
+                {new Date(`${item.month}-01T12:00:00`).toLocaleDateString(locale, {
                   month: 'short',
                   year: 'numeric',
                 })}
@@ -153,7 +162,7 @@ export function DashboardMilestoneDialog({
                 max={100000}
                 step={1}
                 required
-                aria-label={`${item.month} target`}
+                aria-label={t('{v0} target', { v0: item.month })}
                 value={item.target}
                 onChange={(event) => change(index, 'target', event.target.value)}
               />
@@ -163,7 +172,7 @@ export function DashboardMilestoneDialog({
                 max={100000}
                 step={1}
                 required
-                aria-label={`${item.month} recorded work`}
+                aria-label={t('{v0} recorded work', { v0: item.month })}
                 value={item.completed}
                 onChange={(event) => change(index, 'completed', event.target.value)}
               />
@@ -173,24 +182,24 @@ export function DashboardMilestoneDialog({
             <input
               type="month"
               value={month}
-              aria-label="Add milestone month"
+              aria-label={t('Add milestone month')}
               onInput={(event) => setMonth(event.currentTarget.value)}
             />
             <DashboardButton tone="neutral" onClick={addMonth}>
-              Add month
+              {t('Add month')}
             </DashboardButton>
           </div>
           {error ? (
             <p role="alert" className={styles.error}>
-              {error}
+              {translateFixed(error, locale)}
             </p>
           ) : null}
         </div>
         <footer>
           <DashboardButton tone="neutral" onClick={onClose}>
-            Cancel
+            {t('Cancel')}
           </DashboardButton>
-          <DashboardButton type="submit">Save milestones</DashboardButton>
+          <DashboardButton type="submit">{t('Save milestones')}</DashboardButton>
         </footer>
       </form>
     </DashboardModal>

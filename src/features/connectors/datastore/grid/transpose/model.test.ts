@@ -1,10 +1,6 @@
 import { expect, test } from 'bun:test';
 import type { DatabaseQueryResult } from '@fouc/shared';
-import {
-  emptyGridSelection,
-  selectAllGridCells,
-  selectGridTarget,
-} from '../selection-controller';
+import { emptyGridSelection, selectAllGridCells, selectGridTarget } from '../selection-controller';
 import {
   formatTransposeSelection,
   selectedTransposeCells,
@@ -35,11 +31,9 @@ test('transpose coordinates honor hidden/reordered fields and absolute source re
     rowIndex: 1,
     columnIndex: 2,
   });
-  expect(
-    [...selectedTransposeCells(result, mapping, selection)].map(
-      (cell) => cell.value,
-    ),
-  ).toEqual([{ type: 'binary', base64: 'AAE=' }, '9007199254740994']);
+  expect([...selectedTransposeCells(result, mapping, selection)].map((cell) => cell.value)).toEqual(
+    [{ type: 'binary', base64: 'AAE=' }, '9007199254740994'],
+  );
   expect(transposeSelectionScope(result, mapping, selection)).toEqual({
     rows: [1],
     columns: [0, 2],
@@ -63,14 +57,7 @@ test('transpose copying preserves large integers, decimal scale, NULL and binary
   expect(tsv).toContain('0.00000000000000000001\tNULL');
   expect(tsv).toContain('AAE=');
   expect(
-    formatTransposeSelection(
-      result,
-      mapping,
-      selection,
-      ',',
-      true,
-      (row) => row + 1,
-    ),
+    formatTransposeSelection(result, mapping, selection, ',', true, (row) => row + 1),
   ).toContain('"9007199254740993"');
 });
 test('sparse transpose selection never copies unselected intersections or reports a rectangle', () => {
@@ -88,28 +75,17 @@ test('sparse transpose selection never copies unselected intersections or report
     { additive: true },
     dimensions,
   );
-  expect(transposeSelectionScope(result, mapping, selection)?.rectangular).toBe(
-    false,
+  expect(transposeSelectionScope(result, mapping, selection)?.rectangular).toBe(false);
+  expect(formatTransposeSelection(result, mapping, selection, '\t', false, (row) => row + 1)).toBe(
+    '9007199254740993\t\n\tNULL',
   );
-  expect(
-    formatTransposeSelection(
-      result,
-      mapping,
-      selection,
-      '\t',
-      false,
-      (row) => row + 1,
-    ),
-  ).toBe('9007199254740993\t\n\tNULL');
-  expect(
-    transposeSelectionScope(result, mapping, emptyGridSelection()),
-  ).toBeNull();
+  expect(transposeSelectionScope(result, mapping, emptyGridSelection())).toBeNull();
 });
 test('horizontal transpose window bounds real records with overscan', () => {
   const window = transposeRecordWindow(500, 180 * 400, 390);
   expect(window.start).toBe(398);
   expect(window.end).toBe(405);
-  expect(
-    window.beforeWidth + (window.end - window.start) * 180 + window.afterWidth,
-  ).toBe(500 * 180);
+  expect(window.beforeWidth + (window.end - window.start) * 180 + window.afterWidth).toBe(
+    500 * 180,
+  );
 });

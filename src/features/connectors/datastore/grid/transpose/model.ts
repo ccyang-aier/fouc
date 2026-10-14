@@ -1,3 +1,5 @@
+import { createTranslator, type Locale } from '@/lib/i18n';
+import { messages as connectorMessages } from './model.messages';
 import type { DatabaseCell, DatabaseQueryResult } from '@fouc/shared';
 import { formatGridSelection } from '../clipboard';
 import {
@@ -6,21 +8,14 @@ import {
   type ResultGridSelection,
   type ResultGridSelectionScope,
 } from '../selection-controller';
-
 export type TransposeMapping = {
   columns: readonly number[];
   records: readonly number[];
 };
-export function transposeSourceCell(
-  mapping: TransposeMapping,
-  field: number,
-  record: number,
-) {
+export function transposeSourceCell(mapping: TransposeMapping, field: number, record: number) {
   const rowIndex = mapping.records[record],
     columnIndex = mapping.columns[field];
-  return rowIndex === undefined || columnIndex === undefined
-    ? null
-    : { rowIndex, columnIndex };
+  return rowIndex === undefined || columnIndex === undefined ? null : { rowIndex, columnIndex };
 }
 export function* selectedTransposeCells(
   result: DatabaseQueryResult,
@@ -67,18 +62,16 @@ export function formatTransposeSelection(
   separator: ',' | '\t',
   includeHeaders: boolean,
   rowNumber: (index: number) => number,
+  locale?: Locale,
 ): string {
+  const tConnector = createTranslator(connectorMessages, locale);
   const fields = mapping.columns.flatMap((column, field) =>
-    mapping.records.some((_, record) =>
-      gridCellSelected(selection, field, record),
-    )
+    mapping.records.some((_, record) => gridCellSelected(selection, field, record))
       ? [{ column, field }]
       : [],
   );
   const records = mapping.records.flatMap((row, record) =>
-    mapping.columns.some((_, field) =>
-      gridCellSelected(selection, field, record),
-    )
+    mapping.columns.some((_, field) => gridCellSelected(selection, field, record))
       ? [{ row, record }]
       : [],
   );
@@ -87,8 +80,8 @@ export function formatTransposeSelection(
     cells = new Set<string>();
   const presentation = {
     columns: [
-      ...(includeHeaders ? ['字段'] : []),
-      ...records.map(({ row }) => `第 ${rowNumber(row)} 行`),
+      ...(includeHeaders ? [tConnector('field')] : []),
+      ...records.map(({ row }) => tConnector('row', { p0: String(rowNumber(row)) })),
     ],
     rows: fields.map(({ column, field }, fieldIndex) => {
       if (includeHeaders) cells.add(`${fieldIndex}:0`);
@@ -116,15 +109,10 @@ export function transposeRecordWindow(
   fieldWidth = 190,
   recordWidth = 180,
 ) {
-  const start = Math.max(
-    0,
-    Math.floor(Math.max(0, scrollLeft) / recordWidth) - 2,
-  );
+  const start = Math.max(0, Math.floor(Math.max(0, scrollLeft) / recordWidth) - 2);
   const end = Math.min(
     total,
-    Math.ceil(
-      (Math.max(0, scrollLeft) + Math.max(0, width - fieldWidth)) / recordWidth,
-    ) + 3,
+    Math.ceil((Math.max(0, scrollLeft) + Math.max(0, width - fieldWidth)) / recordWidth) + 3,
   );
   return {
     start: Math.min(start, total),

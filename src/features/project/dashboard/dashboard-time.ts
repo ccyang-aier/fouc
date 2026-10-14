@@ -1,12 +1,4 @@
-const timestampFormat = new Intl.DateTimeFormat('en-US', {
-  month: 'short',
-  day: 'numeric',
-  year: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit',
-});
-
-/** Persist an actual timestamp label so restored activity does not stay “Just now” forever. */
+/** Store a timestamp; language-specific labels are formatted at render or export time. */
 export function dashboardTimestamp() {
-  return timestampFormat.format(new Date());
+  return new Date().toISOString();
 }

@@ -1,6 +1,6 @@
-import type { CellPosition } from "./selection";
+import type { CellPosition } from './selection';
 
-import type { DatabaseCell } from "@fouc/shared";
+import type { DatabaseCell } from '@fouc/shared';
 type CellValue = DatabaseCell;
 
 export interface DataGridSelectionRow {
@@ -22,13 +22,19 @@ interface ColumnIdentityToken {
 }
 
 type PersistedDataGridSelectionState =
-  | { kind: "rows"; rows: RowIdentityToken[]; anchorRow?: RowIdentityToken }
-  | { kind: "columns"; columns: ColumnIdentityToken[] }
-  | { kind: "range"; anchor: { row: RowIdentityToken; column: ColumnIdentityToken }; focus: { row: RowIdentityToken; column: ColumnIdentityToken }; selectingAll: boolean }
-  | { kind: "cells"; cells: Array<{ row: RowIdentityToken; column: ColumnIdentityToken }> };
+  | { kind: 'rows'; rows: RowIdentityToken[]; anchorRow?: RowIdentityToken }
+  | { kind: 'columns'; columns: ColumnIdentityToken[] }
+  | {
+      kind: 'range';
+      anchor: { row: RowIdentityToken; column: ColumnIdentityToken };
+      focus: { row: RowIdentityToken; column: ColumnIdentityToken };
+      selectingAll: boolean;
+    }
+  | { kind: 'cells'; cells: Array<{ row: RowIdentityToken; column: ColumnIdentityToken }> };
 
 export interface PersistedDataGridSelection {
-  identity: { mode: "keys"; primaryKeys: readonly string[] } | { mode: "row"; columnSignature: string };
+  identity:
+    { mode: 'keys'; primaryKeys: readonly string[] } | { mode: 'row'; columnSignature: string };
   state: PersistedDataGridSelectionState;
 }
 
@@ -49,10 +55,16 @@ export interface CaptureDataGridSelectionOptions {
 }
 
 export type RestoredDataGridSelection =
-  | { kind: "rows"; rowIds: number[]; anchorRowIndex: number | null; scrollRowIndex: number }
-  | { kind: "columns"; columnIndexes: number[] }
-  | { kind: "range"; anchor: CellPosition; focus: CellPosition; selectingAll: boolean; scrollRowIndex: number }
-  | { kind: "cells"; cellKeys: Set<string>; scrollRowIndex: number };
+  | { kind: 'rows'; rowIds: number[]; anchorRowIndex: number | null; scrollRowIndex: number }
+  | { kind: 'columns'; columnIndexes: number[] }
+  | {
+      kind: 'range';
+      anchor: CellPosition;
+      focus: CellPosition;
+      selectingAll: boolean;
+      scrollRowIndex: number;
+    }
+  | { kind: 'cells'; cellKeys: Set<string>; scrollRowIndex: number };
 
 export interface RestoreDataGridSelectionOptions {
   snapshot: PersistedDataGridSelection;
@@ -64,39 +76,61 @@ export interface RestoreDataGridSelectionOptions {
 }
 
 function normalizeColumnName(value: string | undefined): string {
-  return value?.trim() ?? "";
+  return value?.trim() ?? '';
 }
 
-function columnSignature(columns: readonly string[], sourceColumns: readonly (string | undefined)[] | undefined): string {
-  return columns.map((column, index) => `${normalizeColumnName(column)}\u0001${normalizeColumnName(sourceColumns?.[index])}`).join("\u0002");
+function columnSignature(
+  columns: readonly string[],
+  sourceColumns: readonly (string | undefined)[] | undefined,
+): string {
+  return columns
+    .map(
+      (column, index) =>
+        `${normalizeColumnName(column)}\u0001${normalizeColumnName(sourceColumns?.[index])}`,
+    )
+    .join('\u0002');
 }
 
-function identityColumnIndexes(columns: readonly string[], sourceColumns: readonly (string | undefined)[] | undefined, primaryKeys: readonly string[]): number[] | null {
+function identityColumnIndexes(
+  columns: readonly string[],
+  sourceColumns: readonly (string | undefined)[] | undefined,
+  primaryKeys: readonly string[],
+): number[] | null {
   if (primaryKeys.length === 0) return null;
   const indexes = primaryKeys.map((primaryKey) => {
     const target = normalizeColumnName(primaryKey);
-    const sourceIndex = sourceColumns?.findIndex((column) => normalizeColumnName(column) === target) ?? -1;
+    const sourceIndex =
+      sourceColumns?.findIndex((column) => normalizeColumnName(column) === target) ?? -1;
     if (sourceIndex >= 0) return sourceIndex;
-    return columns.findIndex((column, index) => !normalizeColumnName(sourceColumns?.[index]) && normalizeColumnName(column) === target);
+    return columns.findIndex(
+      (column, index) =>
+        !normalizeColumnName(sourceColumns?.[index]) && normalizeColumnName(column) === target,
+    );
   });
   return indexes.every((index) => index >= 0) ? indexes : null;
 }
 
 function serializeCellValue(value: CellValue): string {
-  if (value === null) return "null";
-  if (typeof value === "string") return `string:${value.length}:${value}`;
-  if (typeof value === "boolean") return value ? "boolean:1" : "boolean:0";
-  if (typeof value === 'object') { const json = JSON.stringify(value); return `json:${json.length}:${json}`; }
-  if (Number.isNaN(value)) return "number:NaN";
-  if (Object.is(value, -0)) return "number:-0";
+  if (value === null) return 'null';
+  if (typeof value === 'string') return `string:${value.length}:${value}`;
+  if (typeof value === 'boolean') return value ? 'boolean:1' : 'boolean:0';
+  if (typeof value === 'object') {
+    const json = JSON.stringify(value);
+    return `json:${json.length}:${json}`;
+  }
+  if (Number.isNaN(value)) return 'number:NaN';
+  if (Object.is(value, -0)) return 'number:-0';
   return `number:${String(value)}`;
 }
 
 function rowIdentityKey(row: readonly CellValue[], indexes: readonly number[]): string {
-  return indexes.map((index) => serializeCellValue(row[index] ?? null)).join("\u0000");
+  return indexes.map((index) => serializeCellValue(row[index] ?? null)).join('\u0000');
 }
 
-function buildRowTokens(rows: readonly (readonly CellValue[])[], indexes: readonly number[]): RowIdentityToken[] {
+function buildRowTokens(
+  rows: readonly (readonly CellValue[])[],
+  indexes: readonly number[],
+): RowIdentityToken[] {
   const occurrences = new Map<string, number>();
   return rows.map((row) => {
     const key = rowIdentityKey(row, indexes);
@@ -110,7 +144,10 @@ function rowTokenKey(token: RowIdentityToken): string {
   return `${token.key}\u0003${token.occurrence}`;
 }
 
-function buildColumnTokens(columns: readonly string[], sourceColumns: readonly (string | undefined)[] | undefined): ColumnIdentityToken[] {
+function buildColumnTokens(
+  columns: readonly string[],
+  sourceColumns: readonly (string | undefined)[] | undefined,
+): ColumnIdentityToken[] {
   const occurrences = new Map<string, number>();
   return columns.map((resultName, index) => {
     const sourceName = sourceColumns?.[index];
@@ -126,19 +163,35 @@ function columnTokenKey(token: ColumnIdentityToken): string {
 }
 
 function parseCellKey(key: string): CellPosition | null {
-  const [row, column] = key.split(":");
+  const [row, column] = key.split(':');
   const rowIndex = Number(row);
   const colIndex = Number(column);
-  if (!Number.isInteger(rowIndex) || !Number.isInteger(colIndex) || rowIndex < 0 || colIndex < 0) return null;
+  if (!Number.isInteger(rowIndex) || !Number.isInteger(colIndex) || rowIndex < 0 || colIndex < 0)
+    return null;
   return { rowIndex, colIndex };
 }
 
-export function captureDataGridSelection(options: CaptureDataGridSelectionOptions): PersistedDataGridSelection | null {
-  const hasSelection = options.selectedRowIds.size > 0 || options.selectedColumnIndexes.size > 0 || options.selectedCellKeys.size > 0 || (!!options.selectionAnchor && !!options.selectionFocus);
+export function captureDataGridSelection(
+  options: CaptureDataGridSelectionOptions,
+): PersistedDataGridSelection | null {
+  const hasSelection =
+    options.selectedRowIds.size > 0 ||
+    options.selectedColumnIndexes.size > 0 ||
+    options.selectedCellKeys.size > 0 ||
+    (!!options.selectionAnchor && !!options.selectionFocus);
   if (!hasSelection) return null;
 
-  const keyIndexes = identityColumnIndexes(options.columns, options.sourceColumns, options.primaryKeys);
-  const identity = keyIndexes ? ({ mode: "keys", primaryKeys: [...options.primaryKeys] } as const) : ({ mode: "row", columnSignature: columnSignature(options.columns, options.sourceColumns) } as const);
+  const keyIndexes = identityColumnIndexes(
+    options.columns,
+    options.sourceColumns,
+    options.primaryKeys,
+  );
+  const identity = keyIndexes
+    ? ({ mode: 'keys', primaryKeys: [...options.primaryKeys] } as const)
+    : ({
+        mode: 'row',
+        columnSignature: columnSignature(options.columns, options.sourceColumns),
+      } as const);
   const columnTokens = buildColumnTokens(options.columns, options.sourceColumns);
   if (options.selectedColumnIndexes.size > 0) {
     const columns = [...options.selectedColumnIndexes]
@@ -147,10 +200,13 @@ export function captureDataGridSelection(options: CaptureDataGridSelectionOption
         return actualColumnIndex === undefined ? undefined : columnTokens[actualColumnIndex];
       })
       .filter((token): token is ColumnIdentityToken => !!token);
-    return columns.length > 0 ? { identity, state: { kind: "columns", columns } } : null;
+    return columns.length > 0 ? { identity, state: { kind: 'columns', columns } } : null;
   }
 
-  const rowTokens = buildRowTokens(options.rows, keyIndexes ?? options.columns.map((_, index) => index));
+  const rowTokens = buildRowTokens(
+    options.rows,
+    keyIndexes ?? options.columns.map((_, index) => index),
+  );
   const displayRowToken = (displayRowIndex: number): RowIdentityToken | undefined => {
     const sourceIndex = options.displayItems[displayRowIndex]?.sourceIndex;
     return sourceIndex === undefined ? undefined : rowTokens[sourceIndex];
@@ -166,17 +222,33 @@ export function captureDataGridSelection(options: CaptureDataGridSelectionOption
       .map((item) => rowTokens[item.sourceIndex!])
       .filter((token): token is RowIdentityToken => !!token);
     if (rows.length === 0) return null;
-    const anchorSourceIndex = options.lastClickedRowIndex === null || options.lastClickedRowIndex === undefined ? undefined : options.displayItems[options.lastClickedRowIndex]?.sourceIndex;
-    return { identity, state: { kind: "rows", rows, anchorRow: anchorSourceIndex === undefined ? undefined : rowTokens[anchorSourceIndex] } };
+    const anchorSourceIndex =
+      options.lastClickedRowIndex === null || options.lastClickedRowIndex === undefined
+        ? undefined
+        : options.displayItems[options.lastClickedRowIndex]?.sourceIndex;
+    return {
+      identity,
+      state: {
+        kind: 'rows',
+        rows,
+        anchorRow: anchorSourceIndex === undefined ? undefined : rowTokens[anchorSourceIndex],
+      },
+    };
   }
 
   if (options.selectedCellKeys.size > 0) {
     const cells = [...options.selectedCellKeys]
       .map(parseCellKey)
       .filter((cell): cell is CellPosition => !!cell)
-      .map((cell) => ({ row: displayRowToken(cell.rowIndex), column: visibleColumnToken(cell.colIndex) }))
-      .filter((cell): cell is { row: RowIdentityToken; column: ColumnIdentityToken } => !!cell.row && !!cell.column);
-    return cells.length > 0 ? { identity, state: { kind: "cells", cells } } : null;
+      .map((cell) => ({
+        row: displayRowToken(cell.rowIndex),
+        column: visibleColumnToken(cell.colIndex),
+      }))
+      .filter(
+        (cell): cell is { row: RowIdentityToken; column: ColumnIdentityToken } =>
+          !!cell.row && !!cell.column,
+      );
+    return cells.length > 0 ? { identity, state: { kind: 'cells', cells } } : null;
   }
 
   if (options.selectionAnchor && options.selectionFocus) {
@@ -188,7 +260,7 @@ export function captureDataGridSelection(options: CaptureDataGridSelectionOption
     return {
       identity,
       state: {
-        kind: "range",
+        kind: 'range',
         anchor: { row: anchorRow, column: anchorColumn },
         focus: { row: focusRow, column: focusColumn },
         selectingAll: options.selectingAll,
@@ -199,10 +271,14 @@ export function captureDataGridSelection(options: CaptureDataGridSelectionOption
   return null;
 }
 
-export function restoreDataGridSelection(options: RestoreDataGridSelectionOptions): RestoredDataGridSelection | null {
+export function restoreDataGridSelection(
+  options: RestoreDataGridSelectionOptions,
+): RestoredDataGridSelection | null {
   const state = options.snapshot.state;
   const columnTokens = buildColumnTokens(options.columns, options.sourceColumns);
-  const actualColumnIndexByToken = new Map(columnTokens.map((token, index) => [columnTokenKey(token), index]));
+  const actualColumnIndexByToken = new Map(
+    columnTokens.map((token, index) => [columnTokenKey(token), index]),
+  );
   const visibleColumnIndex = (token: ColumnIdentityToken): number | undefined => {
     const actualColumnIndex = actualColumnIndexByToken.get(columnTokenKey(token));
     if (actualColumnIndex === undefined) return undefined;
@@ -210,50 +286,69 @@ export function restoreDataGridSelection(options: RestoreDataGridSelectionOption
     return index >= 0 ? index : undefined;
   };
 
-  if (state.kind === "columns") {
-    const columnIndexes = state.columns.map(visibleColumnIndex).filter((index): index is number => index !== undefined);
-    return columnIndexes.length > 0 ? { kind: "columns", columnIndexes } : null;
+  if (state.kind === 'columns') {
+    const columnIndexes = state.columns
+      .map(visibleColumnIndex)
+      .filter((index): index is number => index !== undefined);
+    return columnIndexes.length > 0 ? { kind: 'columns', columnIndexes } : null;
   }
 
   const identityIndexes =
-    options.snapshot.identity.mode === "keys"
-      ? identityColumnIndexes(options.columns, options.sourceColumns, options.snapshot.identity.primaryKeys)
-      : options.snapshot.identity.columnSignature === columnSignature(options.columns, options.sourceColumns)
+    options.snapshot.identity.mode === 'keys'
+      ? identityColumnIndexes(
+          options.columns,
+          options.sourceColumns,
+          options.snapshot.identity.primaryKeys,
+        )
+      : options.snapshot.identity.columnSignature ===
+          columnSignature(options.columns, options.sourceColumns)
         ? options.columns.map((_, index) => index)
         : null;
   if (!identityIndexes) return null;
 
   const rowTokens = buildRowTokens(options.rows, identityIndexes);
-  const sourceIndexByToken = new Map(rowTokens.map((token, sourceIndex) => [rowTokenKey(token), sourceIndex]));
+  const sourceIndexByToken = new Map(
+    rowTokens.map((token, sourceIndex) => [rowTokenKey(token), sourceIndex]),
+  );
   const displayRowIndexBySourceIndex = new Map<number, number>();
   options.displayItems.forEach((item, displayRowIndex) => {
-    if (item.sourceIndex !== undefined) displayRowIndexBySourceIndex.set(item.sourceIndex, displayRowIndex);
+    if (item.sourceIndex !== undefined)
+      displayRowIndexBySourceIndex.set(item.sourceIndex, displayRowIndex);
   });
   const displayRowIndex = (token: RowIdentityToken): number | undefined => {
     const sourceIndex = sourceIndexByToken.get(rowTokenKey(token));
     return sourceIndex === undefined ? undefined : displayRowIndexBySourceIndex.get(sourceIndex);
   };
 
-  if (state.kind === "rows") {
+  if (state.kind === 'rows') {
     const restoredRows = state.rows
       .map((token) => displayRowIndex(token))
       .filter((index): index is number => index !== undefined)
       .map((index) => ({ index, id: options.displayItems[index]!.id }));
     if (restoredRows.length === 0) return null;
     return {
-      kind: "rows",
+      kind: 'rows',
       rowIds: restoredRows.map((row) => row.id),
-      anchorRowIndex: state.anchorRow ? (displayRowIndex(state.anchorRow) ?? restoredRows[0]!.index) : restoredRows[0]!.index,
+      anchorRowIndex: state.anchorRow
+        ? (displayRowIndex(state.anchorRow) ?? restoredRows[0]!.index)
+        : restoredRows[0]!.index,
       scrollRowIndex: restoredRows[0]!.index,
     };
   }
 
-  if (state.kind === "range") {
-    if (state.selectingAll && options.displayItems.length > 0 && options.visibleColumnIndexes.length > 0) {
+  if (state.kind === 'range') {
+    if (
+      state.selectingAll &&
+      options.displayItems.length > 0 &&
+      options.visibleColumnIndexes.length > 0
+    ) {
       return {
-        kind: "range",
+        kind: 'range',
         anchor: { rowIndex: 0, colIndex: 0 },
-        focus: { rowIndex: options.displayItems.length - 1, colIndex: options.visibleColumnIndexes.length - 1 },
+        focus: {
+          rowIndex: options.displayItems.length - 1,
+          colIndex: options.visibleColumnIndexes.length - 1,
+        },
         selectingAll: true,
         scrollRowIndex: 0,
       };
@@ -262,9 +357,15 @@ export function restoreDataGridSelection(options: RestoreDataGridSelectionOption
     const anchorColumn = visibleColumnIndex(state.anchor.column);
     const focusRow = displayRowIndex(state.focus.row);
     const focusColumn = visibleColumnIndex(state.focus.column);
-    if (anchorRow === undefined || anchorColumn === undefined || focusRow === undefined || focusColumn === undefined) return null;
+    if (
+      anchorRow === undefined ||
+      anchorColumn === undefined ||
+      focusRow === undefined ||
+      focusColumn === undefined
+    )
+      return null;
     return {
-      kind: "range",
+      kind: 'range',
       anchor: { rowIndex: anchorRow, colIndex: anchorColumn },
       focus: { rowIndex: focusRow, colIndex: focusColumn },
       selectingAll: state.selectingAll,
@@ -281,5 +382,5 @@ export function restoreDataGridSelection(options: RestoreDataGridSelectionOption
     cellKeys.add(`${rowIndex}:${colIndex}`);
     scrollRowIndex = rowIndex;
   }
-  return cellKeys.size > 0 ? { kind: "cells", cellKeys, scrollRowIndex } : null;
+  return cellKeys.size > 0 ? { kind: 'cells', cellKeys, scrollRowIndex } : null;
 }

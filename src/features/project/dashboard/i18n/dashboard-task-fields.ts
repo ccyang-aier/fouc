@@ -1,0 +1,22 @@
+import { defineMessages } from '@/lib/i18n';
+export const messages = defineMessages({
+  'Add assignees': ['添加负责人', 'Add assignees'],
+  Assignee: ['负责人', 'Assignee'],
+  'Due date': ['截止日期', 'Due date'],
+  Priority: ['优先级', 'Priority'],
+  Status: ['状态', 'Status'],
+  Tag: ['标签', 'Tag'],
+  Tags: ['标签', 'Tags'],
+  'To Do': ['待办', 'To Do'],
+  'On Progress': ['进行中', 'On Progress'],
+  Completed: ['已完成', 'Completed'],
+  Low: ['低', 'Low'],
+  Medium: ['中', 'Medium'],
+  High: ['高', 'High'],
+  Urgent: ['紧急', 'Urgent'],
+  'Mobile App': ['移动应用', 'Mobile App'],
+  Website: ['网站', 'Website'],
+  Branding: ['品牌', 'Branding'],
+  Dashboard: ['工作台', 'Dashboard'],
+  'Remove {v0} from assignees': ['移除负责人 {v0}', 'Remove {v0} from assignees'],
+});

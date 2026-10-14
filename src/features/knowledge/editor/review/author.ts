@@ -1,3 +1,6 @@
+import { createTranslator, formatDate, getLocale, type Locale } from '@/lib/i18n';
+import { knowledgeMessages } from './author.messages';
+
 /**
  * Authorship presentation of one suggestion (S02, design §4.5/§9.3/§9.5).
  *
@@ -9,6 +12,8 @@
  */
 
 import { parseKnowledgeOrigin } from '@fouc/shared/knowledge/collaboration';
+
+const knowledgeT = createTranslator(knowledgeMessages);
 
 export type SuggestionAuthorKind = 'human' | 'agent' | 'mcp' | 'restore';
 
@@ -22,11 +27,14 @@ export interface SuggestionAuthorBadge {
   detail: string | null;
 }
 
-const CHIP_TEXT: Record<SuggestionAuthorKind, string> = { human: '人', agent: 'AI', mcp: 'MCP', restore: 'CP' };
+function CHIP_TEXT(locale?: Locale): Record<SuggestionAuthorKind, string> {
+  const knowledgeT = createTranslator(knowledgeMessages, locale);
+  return { human: knowledgeT('human'), agent: knowledgeT('ai'), mcp: 'MCP', restore: 'CP' };
+}
 
 /** The one-to-three character glyph the in-text badge widget renders. */
 export function authorBadgeGlyph(kind: SuggestionAuthorKind): string {
-  return CHIP_TEXT[kind];
+  return CHIP_TEXT()[kind];
 }
 
 /**
@@ -36,38 +44,74 @@ export function authorBadgeGlyph(kind: SuggestionAuthorKind): string {
 export function describeSuggestionAuthor(author: string): SuggestionAuthorBadge {
   const origin = parseKnowledgeOrigin(author);
   if (origin?.kind === 'agent') {
-    return { kind: 'agent', label: 'AI 助手', source: 'AI 任务', detail: origin.taskId };
+    return {
+      kind: 'agent',
+      label: knowledgeT('aiAssistant'),
+      source: knowledgeT('aiTask'),
+      detail: origin.taskId,
+    };
   }
   if (origin?.kind === 'mcp') {
-    return { kind: 'mcp', label: origin.clientName, source: 'MCP 客户端', detail: origin.taskId };
+    return {
+      kind: 'mcp',
+      label: origin.clientName,
+      source: knowledgeT('mcpClient'),
+      detail: origin.taskId,
+    };
   }
   if (origin?.kind === 'restore') {
-    return { kind: 'restore', label: '检查点恢复', source: '检查点', detail: origin.checkpointId };
+    return {
+      kind: 'restore',
+      label: knowledgeT('checkpointRestore'),
+      source: knowledgeT('checkpoint'),
+      detail: origin.checkpointId,
+    };
   }
   if (origin?.kind === 'human') {
     // `human:{clientId}` names a session, not a person; the authenticated
     // name is not part of the mark, so the badge stays generic on purpose.
-    return { kind: 'human', label: '成员', source: '本人输入', detail: null };
+    return {
+      kind: 'human',
+      label: knowledgeT('members'),
+      source: knowledgeT('yourInput'),
+      detail: null,
+    };
   }
   const user = /^user:(.+)$/.exec(author);
-  if (user?.[1]) return { kind: 'human', label: user[1], source: '本人输入', detail: null };
-  return { kind: 'human', label: author || '成员', source: '本人输入', detail: null };
+  if (user?.[1])
+    return { kind: 'human', label: user[1], source: knowledgeT('yourInput'), detail: null };
+  return {
+    kind: 'human',
+    label: author || knowledgeT('members'),
+    source: knowledgeT('yourInput'),
+    detail: null,
+  };
 }
 
 /** Relative time with a date fallback; an unparseable value shows verbatim. */
-export function formatSuggestionTime(createdAt: string, now: Date = new Date()): string {
+export function formatSuggestionTime(
+  createdAt: string,
+  now: Date = new Date(),
+  locale: Locale = getLocale(),
+): string {
+  const knowledgeT = createTranslator(knowledgeMessages, locale);
   const time = Date.parse(createdAt);
   if (Number.isNaN(time)) return createdAt;
   const elapsed = Math.max(0, now.getTime() - time);
   const minutes = Math.floor(elapsed / 60_000);
-  if (minutes < 1) return '刚刚';
-  if (minutes < 60) return `${minutes} 分钟前`;
+  if (minutes < 1) return knowledgeT('justNow');
+  if (minutes < 60)
+    return knowledgeT(minutes === 1 ? 'oneMinuteAgo' : 'valueMinutesAgo', { v0: minutes });
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} 小时前`;
+  if (hours < 24) return knowledgeT(hours === 1 ? 'oneHourAgo' : 'valueHoursAgo', { v0: hours });
   const days = Math.floor(hours / 24);
-  if (days < 7) return `${days} 天前`;
+  if (days < 7) return knowledgeT(days === 1 ? 'oneDayAgo' : 'valueDaysAgo', { v0: days });
   const date = new Date(time);
   const sameYear = date.getFullYear() === now.getFullYear();
-  const plain = `${sameYear ? '' : `${date.getFullYear()}/`}${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
-  return `${plain} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  const plain = formatDate(
+    date,
+    { ...(sameYear ? {} : { year: 'numeric' }), month: '2-digit', day: '2-digit' },
+    locale,
+  );
+  return `${plain} ${formatDate(date, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }, locale)}`;
 }

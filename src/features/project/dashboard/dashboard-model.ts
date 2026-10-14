@@ -1,3 +1,5 @@
+import {} from '@/lib/i18n';
+import { registerProjectFixtures } from '../i18n/display';
 export type DashboardPersonId =
   'sarah' | 'jerome' | 'kiara' | 'tania' | 'brooklyn' | 'cameron' | 'robert' | 'joe';
 export type DashboardPriority = 'Low' | 'Medium' | 'High' | 'Urgent';
@@ -77,6 +79,7 @@ export interface DashboardFavorite {
   target: DashboardTarget;
 }
 export interface DashboardActivity {
+  actionKey?: string;
   id: string;
   actor: string;
   text: string;
@@ -220,3 +223,5 @@ export const dashboardPeople: Record<DashboardPersonId, DashboardPerson> = {
     avatar: avatar('joe'),
   },
 };
+
+registerProjectFixtures([dashboardPeople]);

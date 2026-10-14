@@ -1,0 +1,132 @@
+import { defineMessages } from '@/lib/i18n';
+
+export const messages = defineMessages({
+  previewCancelled: ['预览已取消', 'Preview cancelled'],
+  readOnlyPreviewCompleteNoWritesExecuted: [
+    '只读预览完成，尚未执行写入',
+    'Read-only preview complete; no writes executed',
+  ],
+  readOnlyReviewCompleteNoExecutablePlanForThisScope: [
+    '已完成只读审查，此范围没有可执行计划',
+    'Read-only review complete; no executable plan for this scope',
+  ],
+  unlockRequestedPreviewAndConfirmAgainUsingTheCurrentConnection: [
+    '已请求解锁；请基于当前连接重新预览并确认',
+    'Unlock requested. Preview and confirm again using the current connection',
+  ],
+  transactionCommittedButRefreshFeedbackFailedReadTheDataAgain: [
+    '事务已提交，刷新反馈失败；请手动重新读取数据',
+    'Transaction committed, but refresh feedback failed. Read the data again manually',
+  ],
+  sqlCopied: ['SQL 已复制', 'SQL copied'],
+  copyFailedCheckClipboardPermissions: [
+    '复制失败，请检查剪贴板权限',
+    'Copy failed. Check clipboard permissions',
+  ],
+  sqlWriteReview: ['SQL 写操作审查', 'SQL write review'],
+  reviewSqlChanges: ['审查 SQL 变更', 'Review SQL changes'],
+  connectionUnlocked: ['连接已解锁', 'Connection unlocked'],
+  readOnlyConnection: ['连接只读', 'Read-only connection'],
+  close: ['关闭', 'Close'],
+  currentStatement: ['当前语句', 'Current statement'],
+  sqlToReview: ['需要审查的 SQL', 'SQL to review'],
+  eachSqlReviewSupportsAtMostCharactersReduceTheStatement: [
+    '单条审查 SQL 最多 65536 字符，请缩小语句。',
+    'Each SQL review supports at most 65,536 characters. Reduce the statement size.',
+  ],
+  maximumTargetRows: ['最多目标行', 'Maximum target rows'],
+  sqlPreviewTargetRowLimit: ['SQL 预览目标行限制', 'SQL preview target row limit'],
+  thePreviewDoesNotExecuteInsertUpdateDelete: [
+    '预览不会执行 INSERT / UPDATE / DELETE',
+    'The preview does not execute INSERT / UPDATE / DELETE',
+  ],
+  readOnlyPreviewInProgress: ['只读预览中…', 'Read-only preview in progress…'],
+  generateReadOnlyPreview: ['生成只读预览', 'Generate read-only preview'],
+  executingNativeSelectCalculatingScopeAndCheckingMetadata: [
+    '正在执行原生 SELECT、计算范围并核对元数据…',
+    'Executing native SELECT, calculating scope, and checking metadata…',
+  ],
+  targetScope: ['目标范围', 'Target scope'],
+  row: ['行', ' row'],
+  knownValueChanges: ['已知值变化', 'Known value changes'],
+  notFullyCalculated: ['未完整计算', 'Not fully calculated'],
+  rows: ['{p0} 行', '{p0} rows'],
+  executionPlan: ['执行计划', 'Execution plan'],
+  used: ['已使用', 'Used'],
+  expired: ['已过期', 'Expired'],
+  validOnce: ['一次有效', 'Valid once'],
+  notExecutable: ['不可执行', 'Not executable'],
+  viewRow: ['查看行', 'View row'],
+  chooseSqlComparisonPreviewRow: ['选择 SQL 对照预览行', 'Choose SQL comparison preview row'],
+  no: ['第', 'No. '],
+  executionPlanVerifiesAllRows: [
+    '执行计划核对全部 {p0} 行',
+    'Execution plan verifies all {p0} rows',
+  ],
+  noExecutionPlanGenerated: ['没有生成执行计划', 'No execution plan generated'],
+  showingTheFirstRows: ['展示前 {p0} 行；{p1}', 'Showing the first {p0} rows; {p1}'],
+  rowsOldNewValueComparison: ['{p0} 行旧值 / 新值对照', '{p0} rows: old / new value comparison'],
+  changesOnly: ['仅看变化', 'Changes only'],
+  sqlToCommit: ['实际提交 SQL', 'SQL to commit'],
+  copy: ['复制', 'Copy'],
+  readOnlyPreviewAndScopeCount: ['只读预览与范围计数', 'Read-only preview and scope count'],
+  copyPreview: ['复制预览', 'Copy preview'],
+  readOnlyRewrittenSelect: ['只读改写 SELECT', 'Read-only rewritten SELECT'],
+  nativeScopeCountSql: ['原生范围计数 SQL', 'Native scope count SQL'],
+  supportedScopeAndExecutionSemantics: [
+    '支持范围与执行语义',
+    'Supported scope and execution semantics',
+  ],
+  iHaveReviewedTheTargetRowsOldNewValuesAnd: [
+    '我已审查目标行、旧值 / 新值与实际 SQL，确认提交此一次性计划',
+    'I have reviewed the target rows, old / new values, and actual SQL, and confirm submitting this one-time plan',
+  ],
+  rowsReviewedDriverReportsAffectedRowsMs: [
+    '{p0} 行审查范围 · 驱动报告影响 {p1} 行 · {p2} ms',
+    '{p0} rows reviewed · driver reports {p1} affected rows · {p2} ms',
+  ],
+  checkTheDataBeforeDecidingToExecute: [
+    '先核对数据，再决定执行',
+    'Check the data before deciding to execute',
+  ],
+  supportsSingleTableValuesDeterministicUpdateAssignmentsAndDeleteWhere: [
+    '支持单表 VALUES、确定性 UPDATE 赋值与 DELETE WHERE。无法证明完整影响的语句会说明原因。',
+    'Supports single-table VALUES, deterministic UPDATE assignments, and DELETE WHERE. Statements whose complete impact cannot be proven will explain why.',
+  ],
+  cancellationRequestedWaitingForTheCurrentStatementToEndBefore: [
+    '已请求取消，等待当前语句结束后检查回滚',
+    'Cancellation requested. Waiting for the current statement to end before checking rollback',
+  ],
+  planExpiredGenerateANewPreview: [
+    '计划已过期，请重新预览',
+    'Plan expired. Generate a new preview',
+  ],
+  planExpiresInSeconds: ['计划剩余 {p0} 秒', 'Plan expires in {p0} seconds'],
+  readOnlyPreviewAndConfirmedExecutionUseTheSameConnection: [
+    '只读预览与确认执行使用同一个连接权限入口',
+    'Read-only preview and confirmed execution use the same connection permission entry point',
+  ],
+  cancel: ['取消', 'Cancel'],
+  preview: ['预览', 'Preview'],
+  execute: ['执行', 'Execute'],
+  unlockWrites: ['解锁写入', 'Unlock writes'],
+  verifyingAndCommitting: ['核对并提交中…', 'Verifying and committing…'],
+  confirmSingleTransactionCommit: ['确认单事务提交', 'Confirm single-transaction commit'],
+  transactionCommitted: ['事务已提交', 'Transaction committed'],
+  dataOrStructureConflictTheseChangesWereNotCommitted: [
+    '数据或结构冲突，未提交本次变更',
+    'Data or structure conflict; these changes were not committed',
+  ],
+  cancelledTransactionRollbackRequested: [
+    '已取消，事务已请求回滚',
+    'Cancelled; transaction rollback requested',
+  ],
+  executionFailedTransactionRollbackRequested: [
+    '执行失败，事务已请求回滚',
+    'Execution failed; transaction rollback requested',
+  ],
+  commitOutcomeIsUncertainReadTheDataAgainFirst: [
+    '提交结果不确定，请先重新读取数据',
+    'Commit outcome is uncertain. Read the data again first',
+  ],
+});

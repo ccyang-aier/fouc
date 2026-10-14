@@ -1,3 +1,6 @@
+import { createTranslator, type Locale } from '@/lib/i18n';
+import { knowledgeMessages } from './tree-actions.messages';
+
 /**
  * Tree action definitions, the permission gate and the failure copy (U03).
  *
@@ -15,6 +18,8 @@
 import type { KnowledgeAccess } from '../data/hooks';
 import type { KnowledgeErrorCode } from '../data/errors';
 import { isKnowledgeDataError } from '../data/errors';
+
+const knowledgeT = createTranslator(knowledgeMessages);
 
 export type TreeActionId =
   | 'create-child'
@@ -35,21 +40,24 @@ export type TreeAction = {
   danger?: boolean;
 };
 
-const rowActions: readonly TreeAction[] = [
-  { id: 'create-child', label: '新建子页面' },
-  { id: 'rename', label: '重命名' },
-  { id: 'set-icon', label: '更改图标…' },
-  { id: 'set-cover', label: '设置封面…' },
-  { id: 'move-up', label: '上移' },
-  { id: 'move-down', label: '下移' },
-  { id: 'indent', label: '缩进一级' },
-  { id: 'outdent', label: '升缩进一级' },
-  { id: 'recycle', label: '移入回收站', danger: true },
-];
+function rowActions(locale?: Locale): readonly TreeAction[] {
+  const knowledgeT = createTranslator(knowledgeMessages, locale);
+  return [
+    { id: 'create-child', label: knowledgeT('newSubpage') },
+    { id: 'rename', label: knowledgeT('rename') },
+    { id: 'set-icon', label: knowledgeT('changeIcon') },
+    { id: 'set-cover', label: knowledgeT('setCover') },
+    { id: 'move-up', label: knowledgeT('moveUp') },
+    { id: 'move-down', label: knowledgeT('moveDown') },
+    { id: 'indent', label: knowledgeT('indent') },
+    { id: 'outdent', label: knowledgeT('outdent') },
+    { id: 'recycle', label: knowledgeT('moveToTrash'), danger: true },
+  ];
+}
 
 /** The full row action set; the caller disables entries the structure rejects. */
 export function treeActionsForRow(): readonly TreeAction[] {
-  return rowActions;
+  return rowActions();
 }
 
 /** The write gate: a guest role or a scope without write is a read-only tree (U05 owns fine-grained page ACL UI). */
@@ -58,7 +66,10 @@ export function canEditTree(access: KnowledgeAccess | undefined): boolean {
   return access.role !== 'guest' && access.scopes.includes('write');
 }
 
-export const readOnlyTreeReason = '当前角色对知识库是只读的，页面树操作需要编辑权限。';
+export function readOnlyTreeReason(locale?: Locale) {
+  const knowledgeT = createTranslator(knowledgeMessages, locale);
+  return knowledgeT('yourKnowledgeBaseRoleIsReadOnlyPage');
+}
 
 // ── Keyboard intents ────────────────────────────────────────────────────
 
@@ -101,44 +112,56 @@ export function operationKeyIntent(event: KeyLike): OperationKeyIntent | null {
 
 // ── Failure copy ────────────────────────────────────────────────────────
 
-const actionLabels: Record<TreeActionId, string> = {
-  'create-child': '新建页面',
-  rename: '重命名页面',
-  'set-icon': '更改图标',
-  'set-cover': '设置封面',
-  'move-up': '移动页面',
-  'move-down': '移动页面',
-  indent: '移动页面',
-  outdent: '移动页面',
-  recycle: '移入回收站',
-  restore: '恢复页面',
-};
+function actionLabels(locale?: Locale): Record<TreeActionId, string> {
+  const knowledgeT = createTranslator(knowledgeMessages, locale);
+  return {
+    'create-child': knowledgeT('newPage'),
+    rename: knowledgeT('renamePage'),
+    'set-icon': knowledgeT('changeIcon2'),
+    'set-cover': knowledgeT('setCover2'),
+    'move-up': knowledgeT('movePage'),
+    'move-down': knowledgeT('movePage'),
+    indent: knowledgeT('movePage'),
+    outdent: knowledgeT('movePage'),
+    recycle: knowledgeT('moveToTrash'),
+    restore: knowledgeT('restorePage'),
+  };
+}
 
-const errorCodeCopy: Record<KnowledgeErrorCode, string> = {
-  UNAUTHENTICATED: '登录状态已过期，请重新登录后再试。',
-  PAYMENT_REQUIRED: '当前计划不支持该操作。',
-  FORBIDDEN: '没有执行该操作的权限。',
-  NOT_FOUND: '页面不存在或已被移除，请刷新目录后重试。',
-  INVALID_REQUEST: '请求内容不符合页面树契约。',
-  CONFLICT: '页面结构已被他人更新，正在重新同步。',
-  PAYLOAD_TOO_LARGE: '请求内容超出大小限制。',
-  RATE_LIMITED: '操作过于频繁，请稍后重试。',
-  TIMEOUT: '操作超时，请重试。',
-  UNAVAILABLE: '知识服务暂时不可用。',
-  NETWORK: '无法连接知识服务，请检查网络。',
-  ENDPOINT: '知识服务地址未配置。',
-};
+function errorCodeCopy(locale?: Locale): Record<KnowledgeErrorCode, string> {
+  const knowledgeT = createTranslator(knowledgeMessages, locale);
+  return {
+    UNAUTHENTICATED: knowledgeT('yourSessionHasExpiredSignInAgainAnd'),
+    PAYMENT_REQUIRED: knowledgeT('yourPlanDoesNotSupportThisAction'),
+    FORBIDDEN: knowledgeT('youDoNotHavePermissionForThisAction'),
+    NOT_FOUND: knowledgeT('pageNotFoundOrRemovedRefreshTheDirectory'),
+    INVALID_REQUEST: knowledgeT('invalidPageTreeRequest'),
+    CONFLICT: knowledgeT('pageStructureChangedBySomeoneElseResynchronizing'),
+    PAYLOAD_TOO_LARGE: knowledgeT('requestExceedsTheSizeLimit'),
+    RATE_LIMITED: knowledgeT('tooManyActionsRetryLater'),
+    TIMEOUT: knowledgeT('actionTimedOutPleaseRetry'),
+    UNAVAILABLE: knowledgeT('knowledgeServiceUnavailable'),
+    NETWORK: knowledgeT('unableToConnectToKnowledgeServiceCheckYour'),
+    ENDPOINT: knowledgeT('knowledgeServiceAddressIsNotConfigured'),
+  };
+}
 
 /** One structured Chinese line for a failed optimistic operation: what failed, why, and that the tree was restored. */
 export function treeOperationErrorText(action: TreeActionId, error: unknown): string {
-  const label = actionLabels[action];
+  const label = actionLabels()[action];
   if (isKnowledgeDataError(error)) {
-    return `${label}失败（${error.code}）：${errorCodeCopy[error.code]}已恢复到操作前的页面树。`;
+    return knowledgeT('valueFailedValueValuePreviousPageTreeRestored', {
+      v0: label,
+      v1: error.code,
+      v2: errorCodeCopy()[error.code],
+    });
   }
-  return `${label}失败：连接异常，已恢复到操作前的页面树。`;
+  return knowledgeT('valueFailedConnectionErrorPreviousPageTreeRestored', { v0: label });
 }
 
 /** Success copy for the two operations whose outcome is worth confirming (recoverable deletion / restoration). */
 export function treeOperationSuccessText(action: 'recycle' | 'restore', title: string): string {
-  return action === 'recycle' ? `「${title}」已移入回收站，可在回收站恢复。` : `「${title}」已恢复到原位置。`;
+  return action === 'recycle'
+    ? knowledgeT('valueMovedToTrashYouCanRestoreIt', { v0: title })
+    : knowledgeT('valueRestoredToItsOriginalLocation', { v0: title });
 }

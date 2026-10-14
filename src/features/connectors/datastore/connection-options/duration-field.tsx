@@ -1,8 +1,9 @@
 'use client';
-
+import { useTranslation, createTranslator } from '@/lib/i18n';
+import { messages as connectorMessages } from './duration-field.messages';
+const translateConnector = createTranslator(connectorMessages);
 import { useEffect, useEffectEvent, useId, useState } from 'react';
 import styles from './connection-options.module.css';
-
 export function ConnectionDurationField({
   label,
   milliseconds,
@@ -18,6 +19,7 @@ export function ConnectionDurationField({
   onChange: (milliseconds: number) => void;
   onValidityChange: (valid: boolean) => void;
 }) {
+  const { t: tConnector } = useTranslation(connectorMessages);
   const id = useId();
   const [draft, setDraft] = useState({
     source: milliseconds,
@@ -29,9 +31,7 @@ export function ConnectionDurationField({
       ? draft
       : { source: milliseconds, text: String(milliseconds / 1000), error: '' };
   const valid = !current.error;
-  const notifyValidity = useEffectEvent((next: boolean) =>
-    onValidityChange(next),
-  );
+  const notifyValidity = useEffectEvent((next: boolean) => onValidityChange(next));
   useEffect(() => {
     notifyValidity(valid);
   }, [valid]);
@@ -63,12 +63,16 @@ export function ConnectionDurationField({
             setDraft({
               source: valid ? Math.round(next) : milliseconds,
               text,
-              error: valid ? '' : `请输入 1–${maximum / 1000} 秒，最多三位小数`,
+              error: valid
+                ? ''
+                : translateConnector('enterSecondsWithUpToThreeDecimalPlaces', {
+                    p0: String(maximum / 1000),
+                  }),
             });
             if (valid) onChange(Math.round(next));
           }}
         />
-        <span>秒</span>
+        <span>{tConnector('seconds')}</span>
       </div>
       {current.error && (
         <small id={`${id}-error`} className={styles.error}>

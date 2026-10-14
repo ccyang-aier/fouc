@@ -15,7 +15,11 @@
 
 import * as Y from 'yjs';
 import type { Awareness } from 'y-protocols/awareness';
-import { absolutePositionToRelativePosition, relativePositionToAbsolutePosition, ySyncPluginKey } from 'y-prosemirror';
+import {
+  absolutePositionToRelativePosition,
+  relativePositionToAbsolutePosition,
+  ySyncPluginKey,
+} from 'y-prosemirror';
 import type { EditorState } from '@tiptap/pm/state';
 import type { EditorView } from '@tiptap/pm/view';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
@@ -67,9 +71,10 @@ export function buildLocalAwarenessState(
   selection: AwarenessCursorPayload | null,
   isEditing: boolean,
 ): AwarenessState {
-  const user: AwarenessState['user'] = identity.image === undefined
-    ? { id: identity.userId, name: identity.name }
-    : { id: identity.userId, name: identity.name, image: identity.image };
+  const user: AwarenessState['user'] =
+    identity.image === undefined
+      ? { id: identity.userId, name: identity.name }
+      : { id: identity.userId, name: identity.name, image: identity.image };
   return {
     user,
     color: awarenessColorFor(identity.userId),
@@ -95,16 +100,22 @@ function isAwarenessStateShape(state: unknown): state is AwarenessState {
   if (state === null || typeof state !== 'object') return false;
   const candidate = state as Partial<AwarenessState>;
   if (candidate.user === null || typeof candidate.user !== 'object') return false;
-  return typeof candidate.user.id === 'string'
-    && typeof candidate.user.name === 'string'
-    && candidate.user.name.length > 0
-    && typeof candidate.color === 'string'
-    && (candidate.kind === 'human' || candidate.kind === 'agent');
+  return (
+    typeof candidate.user.id === 'string' &&
+    typeof candidate.user.name === 'string' &&
+    candidate.user.name.length > 0 &&
+    typeof candidate.color === 'string' &&
+    (candidate.kind === 'human' || candidate.kind === 'agent')
+  );
 }
 
-export function readAwarenessMembers(awareness: Awareness, excludeClientId: number): AwarenessMember[] {
+export function readAwarenessMembers(
+  awareness: Awareness,
+  excludeClientId: number,
+): AwarenessMember[] {
   const ownState = awareness.getStates().get(excludeClientId);
-  const ownUserId = isAwarenessStateShape(ownState) && ownState.kind === 'human' ? ownState.user.id : null;
+  const ownUserId =
+    isAwarenessStateShape(ownState) && ownState.kind === 'human' ? ownState.user.id : null;
   const participants = new Map<string, AwarenessMember>();
   awareness.getStates().forEach((state, clientId) => {
     if (clientId === excludeClientId || state === null || !isAwarenessStateShape(state)) return;
@@ -119,7 +130,11 @@ export function readAwarenessMembers(awareness: Awareness, excludeClientId: numb
     if (typeof state.taskId === 'string') member.taskId = state.taskId;
     // Human identity is the account, not the tab. Agent tasks remain separate
     // participants even when they run on behalf of the same account.
-    const key = JSON.stringify([member.kind, member.user.id, member.kind === 'agent' ? member.taskId ?? clientId : null]);
+    const key = JSON.stringify([
+      member.kind,
+      member.user.id,
+      member.kind === 'agent' ? (member.taskId ?? clientId) : null,
+    ]);
     const existing = participants.get(key);
     if (existing) {
       existing.isEditing ||= member.isEditing;
@@ -129,7 +144,13 @@ export function readAwarenessMembers(awareness: Awareness, excludeClientId: numb
   });
   const members = [...participants.values()];
   // Account/task order stays stable when one of a participant's tabs leaves.
-  members.sort((a, b) => (a.kind === b.kind ? a.user.id.localeCompare(b.user.id) || (a.taskId ?? '').localeCompare(b.taskId ?? '') : a.kind === 'human' ? -1 : 1));
+  members.sort((a, b) =>
+    a.kind === b.kind
+      ? a.user.id.localeCompare(b.user.id) || (a.taskId ?? '').localeCompare(b.taskId ?? '')
+      : a.kind === 'human'
+        ? -1
+        : 1,
+  );
   return members;
 }
 
@@ -145,11 +166,16 @@ export interface ResolvedRemoteCursor {
 }
 
 /** DOM construction stays behind these builders; the pure pass only resolves positions. */
-export type CursorWidgetFactory = (view: EditorView, getPos: () => number | undefined) => HTMLElement;
+export type CursorWidgetFactory = (
+  view: EditorView,
+  getPos: () => number | undefined,
+) => HTMLElement;
 export type RemoteCursorWidgetBuilder = (resolved: ResolvedRemoteCursor) => CursorWidgetFactory;
 export type RemoteSelectionAttrsBuilder = (resolved: ResolvedRemoteCursor) => DecorationAttrs;
 
 export interface RemoteCursorDecorationOptions {
+  /** Refreshes widget labels without changing account, cursor or protocol identities. */
+  presentationKey?: string;
   cursorWidget: RemoteCursorWidgetBuilder;
   selectionAttributes: RemoteSelectionAttrsBuilder;
   /** The signed-in account, also available before local awareness publishes. */
@@ -172,7 +198,8 @@ interface YSyncStateShape {
 
 function ySyncStateOf(state: EditorState): YSyncStateShape | null {
   const ystate = ySyncPluginKey.getState(state) as Partial<YSyncStateShape> | null | undefined;
-  if (!ystate || !ystate.doc || !ystate.type || !ystate.binding || !ystate.binding.mapping) return null;
+  if (!ystate || !ystate.doc || !ystate.type || !ystate.binding || !ystate.binding.mapping)
+    return null;
   return ystate as YSyncStateShape;
 }
 
@@ -195,11 +222,20 @@ function blockPositionById(doc: ProseMirrorNode, blockId: string): number | null
  * `blockId` string, human clients publish yjs relative-position JSON; a value
  * that revives to nothing (deleted content, malformed payload) resolves null.
  */
-function resolveCursorEnd(doc: ProseMirrorNode, value: unknown, ystate: YSyncStateShape): number | null {
+function resolveCursorEnd(
+  doc: ProseMirrorNode,
+  value: unknown,
+  ystate: YSyncStateShape,
+): number | null {
   if (typeof value === 'string') return blockPositionById(doc, value);
   if (value === null || typeof value !== 'object') return null;
   try {
-    return relativePositionToAbsolutePosition(ystate.doc, ystate.type, Y.createRelativePositionFromJSON(value), ystate.binding.mapping);
+    return relativePositionToAbsolutePosition(
+      ystate.doc,
+      ystate.type,
+      Y.createRelativePositionFromJSON(value),
+      ystate.binding.mapping,
+    );
   } catch {
     return null;
   }
@@ -222,17 +258,34 @@ export function buildRemoteCursorDecorations(
   ySyncStateFrom: EditorState = state,
 ): RemoteCursorDecorations {
   const ystate = ySyncStateOf(ySyncStateFrom);
-  if (!ystate || ystate.snapshot != null || ystate.prevSnapshot != null || ystate.binding.mapping.size === 0) {
+  if (
+    !ystate ||
+    ystate.snapshot != null ||
+    ystate.prevSnapshot != null ||
+    ystate.binding.mapping.size === 0
+  ) {
     return { decorations: DecorationSet.empty, resolved: [] };
   }
   const decorations: Decoration[] = [];
   const resolved: ResolvedRemoteCursor[] = [];
   const ownState = awareness.getLocalState();
-  const ownUserId = options.ownUserId ?? (isAwarenessStateShape(ownState) && ownState.kind === 'human' ? ownState.user.id : null);
+  const ownUserId =
+    options.ownUserId ??
+    (isAwarenessStateShape(ownState) && ownState.kind === 'human' ? ownState.user.id : null);
   awareness.getStates().forEach((remote, clientId) => {
-    if (clientId === awareness.clientID || remote === null || !isAwarenessStateShape(remote) || remote.cursor === null) return;
+    if (
+      clientId === awareness.clientID ||
+      remote === null ||
+      !isAwarenessStateShape(remote) ||
+      remote.cursor === null
+    )
+      return;
     if (remote.kind === 'human' && remote.user.id === ownUserId) return;
-    const anchor = resolveCursorEnd(state.doc, (remote.cursor as { anchor?: unknown }).anchor, ystate);
+    const anchor = resolveCursorEnd(
+      state.doc,
+      (remote.cursor as { anchor?: unknown }).anchor,
+      ystate,
+    );
     const head = resolveCursorEnd(state.doc, (remote.cursor as { head?: unknown }).head, ystate);
     if (anchor === null || head === null) return;
     const maxSize = Math.max(state.doc.content.size - 1, 0);
@@ -246,19 +299,23 @@ export function buildRemoteCursorDecorations(
       head: Math.min(head, maxSize),
     };
     resolved.push(entry);
-    decorations.push(Decoration.widget(entry.head, options.cursorWidget(entry), {
-      key: `fouc-awareness-${clientId}`,
-      side: 10,
-      foucAwareness: clientId,
-    }));
+    decorations.push(
+      Decoration.widget(entry.head, options.cursorWidget(entry), {
+        key: `fouc-awareness-${clientId}-${options.presentationKey ?? ''}`,
+        side: 10,
+        foucAwareness: clientId,
+      }),
+    );
     const from = Math.min(entry.anchor, entry.head);
     const to = Math.max(entry.anchor, entry.head);
     if (from < to) {
-      decorations.push(Decoration.inline(from, to, options.selectionAttributes(entry), {
-        inclusiveEnd: true,
-        inclusiveStart: false,
-        foucAwareness: clientId,
-      }));
+      decorations.push(
+        Decoration.inline(from, to, options.selectionAttributes(entry), {
+          inclusiveEnd: true,
+          inclusiveStart: false,
+          foucAwareness: clientId,
+        }),
+      );
     }
   });
   return { decorations: DecorationSet.create(state.doc, decorations), resolved };
@@ -283,7 +340,10 @@ export interface AwarenessPublisher {
   detach(): void;
 }
 
-export function createAwarenessPublisher(awareness: Awareness, identity: AwarenessIdentity): AwarenessPublisher {
+export function createAwarenessPublisher(
+  awareness: Awareness,
+  identity: AwarenessIdentity,
+): AwarenessPublisher {
   let view: EditorView | null = null;
   let scheduled = false;
   let lastEditAt = 0;
@@ -299,8 +359,20 @@ export function createAwarenessPublisher(awareness: Awareness, identity: Awarene
     if (ystate) {
       try {
         cursor = {
-          anchor: Y.relativePositionToJSON(absolutePositionToRelativePosition(view.state.selection.anchor, ystate.type, ystate.binding.mapping)),
-          head: Y.relativePositionToJSON(absolutePositionToRelativePosition(view.state.selection.head, ystate.type, ystate.binding.mapping)),
+          anchor: Y.relativePositionToJSON(
+            absolutePositionToRelativePosition(
+              view.state.selection.anchor,
+              ystate.type,
+              ystate.binding.mapping,
+            ),
+          ),
+          head: Y.relativePositionToJSON(
+            absolutePositionToRelativePosition(
+              view.state.selection.head,
+              ystate.type,
+              ystate.binding.mapping,
+            ),
+          ),
         };
       } catch {
         cursor = null; // the binding cannot express this position yet

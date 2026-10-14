@@ -1,5 +1,8 @@
 'use client';
 
+import { useTranslation } from '@/lib/i18n/react';
+import { messages } from './i18n/resend-verification.messages';
+
 /**
  * Verification-email resend entry (A04). Shared by the sign-up acceptance
  * state, the `EMAIL_NOT_VERIFIED` sign-in error and the verify-email landing.
@@ -15,7 +18,12 @@ import { PaperPlaneTilt } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { authErrorCopyFor, isFoucAuthFlowError } from '../auth-errors';
 import { foucAuthApi, type FoucAuthApi } from '../auth-api';
-import { isResendAvailable, resendCooldownRemaining, startResendCooldown, type ResendCooldownState } from '../resend-cooldown';
+import {
+  isResendAvailable,
+  resendCooldownRemaining,
+  startResendCooldown,
+  type ResendCooldownState,
+} from '../resend-cooldown';
 import { AuthTextField } from './auth-field';
 import { AppAlert } from '@/components/app-alert';
 
@@ -29,12 +37,33 @@ export function ResendVerificationEntry({
   compact?: boolean;
   api?: FoucAuthApi;
 }) {
+  const { t: uiText, locale } = useTranslation(messages);
   const [email, setEmail] = useState(initialEmail);
-  const [emailError, setEmailError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState(false);
   const [cooldown, setCooldown] = useState<ResendCooldownState>(null);
   const [now, setNow] = useState(() => Date.now());
   const [sending, setSending] = useState(false);
-  const [outcome, setOutcome] = useState<{ tone: 'success' | 'error' | 'warning'; title: string; description: string } | null>(null);
+  const [outcome, setOutcome] = useState<
+    { kind: 'success' } | { kind: 'error'; cause: unknown } | null
+  >(null);
+  const outcomeCopy =
+    outcome?.kind === 'success'
+      ? {
+          tone: 'success' as const,
+          title: uiText('发送请求已受理'),
+          description: uiText(
+            '如该邮箱已注册且尚未验证,将收到新的验证邮件;未收到请稍后再试或检查垃圾箱。',
+          ),
+        }
+      : outcome?.kind === 'error'
+        ? {
+            ...authErrorCopyFor(outcome.cause, locale),
+            tone:
+              isFoucAuthFlowError(outcome.cause) && outcome.cause.code === 'RATE_LIMITED'
+                ? ('warning' as const)
+                : ('error' as const),
+          }
+        : null;
 
   useEffect(() => {
     if (cooldown === null) return;
@@ -48,24 +77,18 @@ export function ResendVerificationEntry({
     if (sending || (cooldown !== null && !isResendAvailable(cooldown, Date.now()))) return;
     const candidate = email.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(candidate)) {
-      setEmailError('请输入邮箱地址');
+      setEmailError(true);
       return;
     }
-    setEmailError(null);
+    setEmailError(false);
     setSending(true);
     setOutcome(null);
     try {
       await api.sendVerificationEmail({ email: candidate, callbackURL: verificationCallbackUrl() });
-      setOutcome({
-        tone: 'success',
-        title: '发送请求已受理',
-        description: '如该邮箱已注册且尚未验证,将收到新的验证邮件;未收到请稍后再试或检查垃圾箱。',
-      });
+      setOutcome({ kind: 'success' });
       setCooldown(startResendCooldown());
     } catch (cause) {
-      const copy = authErrorCopyFor(cause);
-      const tone = isFoucAuthFlowError(cause) && cause.code === 'RATE_LIMITED' ? 'warning' : 'error';
-      setOutcome({ tone, title: copy.title, description: copy.description });
+      setOutcome({ kind: 'error', cause });
     } finally {
       setSending(false);
     }
@@ -74,26 +97,44 @@ export function ResendVerificationEntry({
   const body = (
     <div className="flex flex-col gap-3">
       <AuthTextField
-        label="邮箱地址"
+        label={uiText('邮箱地址')}
         type="email"
         inputMode="email"
         autoComplete="email"
         placeholder="name@example.com"
         value={email}
         onChange={(value) => setEmail(value)}
-        error={emailError}
+        error={emailError ? uiText('请输入邮箱地址') : null}
         disabled={sending}
       />
-      <Button type="button" variant="outline" size="sm" className="h-8 self-start" loading={sending} disabled={remainingSeconds > 0} onClick={() => void resend()}>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="h-8 self-start"
+        loading={sending}
+        disabled={remainingSeconds > 0}
+        onClick={() => void resend()}
+      >
         {!sending ? <PaperPlaneTilt className="size-3.5" weight="fill" aria-hidden /> : null}
-        {remainingSeconds > 0 ? `重新发送(${remainingSeconds}s)` : '重新发送验证邮件'}
+        {remainingSeconds > 0
+          ? uiText('重新发送({0}s)', { '0': remainingSeconds })
+          : uiText('重新发送验证邮件')}
       </Button>
-      {outcome ? <AppAlert tone={outcome.tone} title={outcome.title} description={outcome.description} /> : null}
+      {outcomeCopy ? (
+        <AppAlert
+          tone={outcomeCopy.tone}
+          title={outcomeCopy.title}
+          description={outcomeCopy.description}
+        />
+      ) : null}
     </div>
   );
 
   if (compact) return body;
   return (
-    <div className="rounded-[10px] border border-[var(--line)] bg-[var(--surface-subtle)] p-4">{body}</div>
+    <div className="rounded-[10px] border border-[var(--line)] bg-[var(--surface-subtle)] p-4">
+      {body}
+    </div>
   );
 }

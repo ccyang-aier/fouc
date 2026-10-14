@@ -1,9 +1,14 @@
 'use client';
+import { translateFixed } from '../i18n/display';
 
-import { useState } from 'react';
-import { Check, Bell } from '@phosphor-icons/react';
+import { useTranslation } from '@/lib/i18n';
+import { fixtureField } from '../i18n/display';
+import { messages } from './i18n/dashboard-actions';
+
 import { useAppAlert } from '@/components/app-alert-provider';
-import { DashboardButton } from './dashboard-ui';
+import { Bell, Check } from '@phosphor-icons/react';
+import { useState } from 'react';
+import styles from './dashboard-actions.module.css';
 import { DashboardMemberPicker, DashboardModal } from './dashboard-modal';
 import type {
   DashboardPersonId,
@@ -13,7 +18,7 @@ import type {
   DashboardTarget,
   DashboardTask,
 } from './dashboard-model';
-import styles from './dashboard-actions.module.css';
+import { DashboardButton } from './dashboard-ui';
 
 export type DashboardAction =
   'Create Task' | 'New Project' | 'Invite' | 'Help Center' | 'Notifications';
@@ -41,6 +46,9 @@ function CreateTaskForm({
   onCreate: (task: DashboardTask) => void;
   onClose: () => void;
 }) {
+  const { t, locale } = useTranslation(messages);
+  const uiLabel = (value: string) => translateFixed(value, locale);
+
   const { notify } = useAppAlert();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -103,7 +111,7 @@ function CreateTaskForm({
       durationHours: duration,
       timelineCategory,
     });
-    notify('success', 'Task created');
+    notify('success', t('Task created'));
     onClose();
   }
   return (
@@ -117,7 +125,7 @@ function CreateTaskForm({
       <div className={styles.scrollBody}>
         <div className={styles.fields}>
           <label>
-            Task name
+            {t('Task name')}
             <input
               autoFocus
               required
@@ -126,49 +134,51 @@ function CreateTaskForm({
                 setTitle(event.target.value);
                 setError('');
               }}
-              placeholder="Give it a name"
+              placeholder={t('Give it a name')}
             />
           </label>
           <label>
-            Project
+            {t('Project')}
             <select
               value={projectId}
               onChange={(event) => setProjectId(event.target.value)}
               required
             >
               <option value="" disabled>
-                Choose a project
+                {t('Choose a project')}
               </option>
               {state.projects.map((project) => (
                 <option key={project.id} value={project.id}>
-                  {project.name}
+                  {fixtureField(project, 'name', locale)}
                 </option>
               ))}
             </select>
           </label>
           <label>
-            Description
+            {t('Description')}
             <textarea
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              placeholder="Add a description"
+              placeholder={t('Add a description')}
               rows={3}
             />
           </label>
           <div className={styles.fieldGrid}>
             <label>
-              Priority
+              {t('Priority')}
               <select
                 value={priority}
                 onChange={(event) => setPriority(event.target.value as DashboardPriority)}
               >
                 {['Low', 'Medium', 'High', 'Urgent'].map((value) => (
-                  <option key={value}>{value}</option>
+                  <option value={value} key={value}>
+                    {uiLabel(value)}
+                  </option>
                 ))}
               </select>
             </label>
             <label>
-              Due date
+              {t('Due date')}
               <input
                 type="date"
                 required
@@ -179,7 +189,7 @@ function CreateTaskForm({
           </div>
           <div className={styles.fieldGrid}>
             <label>
-              Scheduled date
+              {t('Scheduled date')}
               <input
                 type="date"
                 required
@@ -188,7 +198,7 @@ function CreateTaskForm({
               />
             </label>
             <label>
-              Start time
+              {t('Start time')}
               <input
                 type="time"
                 required
@@ -199,7 +209,7 @@ function CreateTaskForm({
           </div>
           <div className={styles.fieldGrid}>
             <label>
-              Duration (hours)
+              {t('Duration (hours)')}
               <input
                 type="number"
                 min="0.25"
@@ -211,7 +221,7 @@ function CreateTaskForm({
               />
             </label>
             <label>
-              Timeline category
+              {t('Timeline category')}
               <select
                 value={timelineCategory}
                 onChange={(event) =>
@@ -219,13 +229,15 @@ function CreateTaskForm({
                 }
               >
                 {['Dashboard Design', 'Mobile App', 'Landing Page'].map((value) => (
-                  <option key={value}>{value}</option>
+                  <option value={value} key={value}>
+                    {uiLabel(value)}
+                  </option>
                 ))}
               </select>
             </label>
           </div>
           <fieldset className={styles.memberField}>
-            <legend>Assignees</legend>
+            <legend>{t('Assignees')}</legend>
             <DashboardMemberPicker
               selected={assignees}
               onChange={setAssignees}
@@ -234,16 +246,16 @@ function CreateTaskForm({
           </fieldset>
           {error ? (
             <p role="alert" className={styles.error}>
-              {error}
+              {translateFixed(error, locale)}
             </p>
           ) : null}
         </div>
       </div>
       <footer>
         <DashboardButton type="button" tone="neutral" onClick={onClose}>
-          Cancel
+          {t('Cancel')}
         </DashboardButton>
-        <DashboardButton type="submit">Create task</DashboardButton>
+        <DashboardButton type="submit">{t('Create task')}</DashboardButton>
       </footer>
     </form>
   );
@@ -256,6 +268,9 @@ function NewProjectForm({
   onCreate: (project: DashboardProject) => void;
   onClose: () => void;
 }) {
+  const { t, locale } = useTranslation(messages);
+  const uiLabel = (value: string) => translateFixed(value, locale);
+
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<DashboardPriority>('Medium');
@@ -277,51 +292,53 @@ function NewProjectForm({
           starred: false,
           favoriteLabel: name.trim(),
         });
-        notify('success', 'Project created');
+        notify('success', t('Project created'));
         onClose();
       }}
     >
       <div className={styles.scrollBody}>
         <div className={styles.fields}>
           <label>
-            Project name
+            {t('Project name')}
             <input
               autoFocus
               required
               value={name}
               onChange={(event) => setName(event.target.value)}
-              placeholder="Give it a name"
+              placeholder={t('Give it a name')}
             />
           </label>
           <label>
-            Description
+            {t('Description')}
             <textarea
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               rows={3}
-              placeholder="What are you working on?"
+              placeholder={t('What are you working on?')}
             />
           </label>
           <div className={styles.fieldGrid}>
             <label>
-              Priority
+              {t('Priority')}
               <select
                 value={priority}
                 onChange={(event) => setPriority(event.target.value as DashboardPriority)}
               >
                 {['Low', 'Medium', 'High', 'Urgent'].map((value) => (
-                  <option key={value}>{value}</option>
+                  <option value={value} key={value}>
+                    {uiLabel(value)}
+                  </option>
                 ))}
               </select>
             </label>
             <label>
-              Color
+              {t('Color')}
               <select
                 value={color}
                 onChange={(event) => setColor(event.target.value as DashboardProject['color'])}
               >
-                <option value="green">Sage</option>
-                <option value="orange">Orange</option>
+                <option value="green">{t('Sage')}</option>
+                <option value="orange">{t('Orange')}</option>
               </select>
             </label>
           </div>
@@ -329,9 +346,9 @@ function NewProjectForm({
       </div>
       <footer>
         <DashboardButton type="button" tone="neutral" onClick={onClose}>
-          Cancel
+          {t('Cancel')}
         </DashboardButton>
-        <DashboardButton type="submit">Create project</DashboardButton>
+        <DashboardButton type="submit">{t('Create project')}</DashboardButton>
       </footer>
     </form>
   );
@@ -346,28 +363,30 @@ function InviteForm({
   onInvite: (ids: DashboardPersonId[]) => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation(messages);
+
   const [selected, setSelected] = useState(memberIds);
   const { notify } = useAppAlert();
   return (
     <>
       <div className={styles.scrollBody}>
         <div className={styles.helpContent}>
-          <p>Choose collaborators for this dashboard.</p>
+          <p>{t('Choose collaborators for this dashboard.')}</p>
           <DashboardMemberPicker selected={selected} onChange={setSelected} />
         </div>
       </div>
       <footer>
         <DashboardButton type="button" tone="neutral" onClick={onClose}>
-          Cancel
+          {t('Cancel')}
         </DashboardButton>
         <DashboardButton
           onClick={() => {
             onInvite(selected);
-            notify('success', 'Collaborators saved');
+            notify('success', t('Collaborators saved'));
             onClose();
           }}
         >
-          Save
+          {t('Save')}
         </DashboardButton>
       </footer>
     </>
@@ -381,6 +400,8 @@ function Notifications({
   onOpenTarget,
   onClose,
 }: Pick<DashboardActionProps, 'state' | 'onRead' | 'onReadAll' | 'onOpenTarget' | 'onClose'>) {
+  const { t, locale } = useTranslation(messages);
+
   const { notify } = useAppAlert();
   const unread = state.activities.filter((activity) => !activity.read).length;
   return (
@@ -405,15 +426,18 @@ function Notifications({
                 >
                   <Bell size={18} />
                   <span>
-                    <strong>{activity.actor}</strong> {activity.text} <b>{activity.subject}</b>
-                    <time>{activity.time}</time>
+                    <strong>{activity.actor}</strong> {fixtureField(activity, 'text', locale)}{' '}
+                    <b>{fixtureField(activity, 'subject', locale)}</b>
+                    <time>{fixtureField(activity, 'time', locale)}</time>
                   </span>
                 </button>
                 {!activity.read ? (
                   <button
                     type="button"
                     className={`${styles.readButton} fouc-action`}
-                    aria-label={`Mark ${activity.subject} as read`}
+                    aria-label={t('Mark {v0} as read', {
+                      v0: fixtureField(activity, 'subject', locale),
+                    })}
                     onClick={() => onRead(activity.id)}
                   >
                     <Check size={15} />
@@ -422,7 +446,7 @@ function Notifications({
               </article>
             ))
           ) : (
-            <p className={styles.empty}>No notifications yet.</p>
+            <p className={styles.empty}>{t('No notifications yet.')}</p>
           )}
         </div>
       </div>
@@ -432,21 +456,26 @@ function Notifications({
           disabled={!unread}
           onClick={() => {
             onReadAll();
-            notify('success', 'Notifications marked as read');
+            notify('success', t('Notifications marked as read'));
           }}
         >
-          Mark all as read
+          {t('Mark all as read')}
         </DashboardButton>
-        <DashboardButton onClick={onClose}>Done</DashboardButton>
+        <DashboardButton onClick={onClose}>{t('Done')}</DashboardButton>
       </footer>
     </>
   );
 }
 
 export function DashboardActionDialog(props: DashboardActionProps) {
+  const { t } = useTranslation(messages);
+
   const { action, state, onClose } = props;
   return (
-    <DashboardModal title={action === 'Invite' ? 'Invite collaborators' : action} onClose={onClose}>
+    <DashboardModal
+      title={action === 'Invite' ? t('Invite collaborators') : action}
+      onClose={onClose}
+    >
       {action === 'Create Task' ? (
         <CreateTaskForm
           state={state}
@@ -466,24 +495,29 @@ export function DashboardActionDialog(props: DashboardActionProps) {
         <>
           <div className={styles.scrollBody}>
             <div className={styles.helpContent}>
-              <h3>Working with your projects</h3>
+              <h3>{t('Working with your projects')}</h3>
               <p>
-                Projects group tasks. Create a task, choose its project and schedule, then open it
-                to update details or add a comment.
+                {t(
+                  'Projects group tasks. Create a task, choose its project and schedule, then open it to update details or add a comment.',
+                )}
               </p>
               <p>
-                Use the four document shortcuts for invoices, proposals, contracts and forms. Save
-                drafts, download their content, or collect form responses on this device.
+                {t(
+                  'Use the four document shortcuts for invoices, proposals, contracts and forms. Save drafts, download their content, or collect form responses on this device.',
+                )}
               </p>
               <p>
-                Meetings have their own agenda, attendees and calendar export. Notifications open
-                the item that changed.
+                {t(
+                  'Meetings have their own agenda, attendees and calendar export. Notifications open the item that changed.',
+                )}
               </p>
-              <p>Dashboard changes are saved on this device for the selected Fouc project.</p>
+              <p>
+                {t('Dashboard changes are saved on this device for the selected Fouc project.')}
+              </p>
             </div>
           </div>
           <footer>
-            <DashboardButton onClick={onClose}>Got it</DashboardButton>
+            <DashboardButton onClick={onClose}>{t('Got it')}</DashboardButton>
           </footer>
         </>
       ) : null}
@@ -502,6 +536,8 @@ export function DashboardDeleteDialog({
   onClose: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useTranslation(messages);
+
   return (
     <DashboardModal title={title} onClose={onClose}>
       <div className={styles.helpContent}>
@@ -509,10 +545,10 @@ export function DashboardDeleteDialog({
       </div>
       <footer>
         <DashboardButton tone="neutral" onClick={onClose}>
-          Cancel
+          {t('Cancel')}
         </DashboardButton>
         <DashboardButton data-variant="destructive" className={styles.danger} onClick={onDelete}>
-          Delete
+          {t('Delete')}
         </DashboardButton>
       </footer>
     </DashboardModal>

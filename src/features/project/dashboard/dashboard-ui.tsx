@@ -1,7 +1,11 @@
 'use client';
 
-import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from 'react';
+import { useTranslation } from '@/lib/i18n';
+import { translateFixed } from '../i18n/display';
+import { messages } from './i18n/dashboard-sidebar';
+
 import { Button } from '@/components/ui/button';
+import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from 'react';
 import { dashboardPeople, type DashboardPersonId } from './dashboard-model';
 import styles from './dashboard-ui.module.css';
 
@@ -115,6 +119,9 @@ export function SegmentedControl<T extends string>({
   onChange: (value: T) => void;
   label: string;
 }) {
+  const { locale } = useTranslation(messages);
+  const uiLabel = (value: string) => translateFixed(value, locale);
+
   return (
     <div className={styles.segments} role="group" aria-label={label}>
       {items.map((item) => (
@@ -125,7 +132,7 @@ export function SegmentedControl<T extends string>({
           aria-pressed={item === value}
           onClick={() => onChange(item)}
         >
-          {item}
+          {uiLabel(item)}
         </button>
       ))}
     </div>

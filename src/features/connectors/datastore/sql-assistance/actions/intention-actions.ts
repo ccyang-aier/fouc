@@ -1,15 +1,26 @@
-import { tokenizeSqlSemantic, type RelationalProvider as DatabaseType } from "@fouc/shared";
-import { buildSqlSemanticModel, type SqlSemanticModel, type SqlSemanticScope } from "./semantic-context";
-import { resolveSqlSemanticNavigationTarget, quoteTableIdentifier, supportsColumnNameQuoting } from "./semantic-context";
-import type { SqlSemanticRowSource, SqlSemanticCursorIntent, SqlSemanticToken } from "../../sql-semantic/types";
-import { unquoteSqlSemanticIdentifier, tokenIsIdentifier } from "@fouc/shared";
-
-
+import { tokenizeSqlSemantic, type RelationalProvider as DatabaseType } from '@fouc/shared';
+import {
+  buildSqlSemanticModel,
+  type SqlSemanticModel,
+  type SqlSemanticScope,
+} from './semantic-context';
+import {
+  resolveSqlSemanticNavigationTarget,
+  quoteTableIdentifier,
+  supportsColumnNameQuoting,
+} from './semantic-context';
+import type {
+  SqlSemanticRowSource,
+  SqlSemanticCursorIntent,
+  SqlSemanticToken,
+} from '../../sql-semantic/types';
+import { unquoteSqlSemanticIdentifier, tokenIsIdentifier } from '@fouc/shared';
 
 // ==================== Types ====================
 
 export interface IntentionAction {
-  kind: "expand_wildcard" | "qualify_identifier" | "unqualify_identifier" | "batch_qualify_identifiers";
+  kind:
+    'expand_wildcard' | 'qualify_identifier' | 'unqualify_identifier' | 'batch_qualify_identifiers';
   span: { start: number; end: number };
   replacement: string;
   /** batch_qualify_identifiers 专用：每个标识符的独立替换 */
@@ -29,74 +40,74 @@ export interface IntentionActionContext {
 
 // SQL 关键字集合（小写），用于批量限定时跳过
 const SQL_KEYWORDS = new Set([
-  "select",
-  "from",
-  "where",
-  "and",
-  "or",
-  "not",
-  "in",
-  "exists",
-  "between",
-  "like",
-  "is",
-  "null",
-  "as",
-  "on",
-  "join",
-  "inner",
-  "left",
-  "right",
-  "full",
-  "outer",
-  "cross",
-  "group",
-  "by",
-  "order",
-  "having",
-  "limit",
-  "offset",
-  "union",
-  "all",
-  "distinct",
-  "case",
-  "when",
-  "then",
-  "else",
-  "end",
-  "asc",
-  "desc",
-  "insert",
-  "into",
-  "values",
-  "update",
-  "set",
-  "delete",
-  "create",
-  "table",
-  "drop",
-  "alter",
-  "add",
-  "column",
-  "primary",
-  "key",
-  "foreign",
-  "references",
-  "default",
-  "constraint",
-  "unique",
-  "index",
-  "with",
-  "recursive",
-  "returning",
-  "intersect",
-  "except",
-  "using",
-  "natural",
-  "lateral",
-  "window",
-  "over",
-  "partition",
+  'select',
+  'from',
+  'where',
+  'and',
+  'or',
+  'not',
+  'in',
+  'exists',
+  'between',
+  'like',
+  'is',
+  'null',
+  'as',
+  'on',
+  'join',
+  'inner',
+  'left',
+  'right',
+  'full',
+  'outer',
+  'cross',
+  'group',
+  'by',
+  'order',
+  'having',
+  'limit',
+  'offset',
+  'union',
+  'all',
+  'distinct',
+  'case',
+  'when',
+  'then',
+  'else',
+  'end',
+  'asc',
+  'desc',
+  'insert',
+  'into',
+  'values',
+  'update',
+  'set',
+  'delete',
+  'create',
+  'table',
+  'drop',
+  'alter',
+  'add',
+  'column',
+  'primary',
+  'key',
+  'foreign',
+  'references',
+  'default',
+  'constraint',
+  'unique',
+  'index',
+  'with',
+  'recursive',
+  'returning',
+  'intersect',
+  'except',
+  'using',
+  'natural',
+  'lateral',
+  'window',
+  'over',
+  'partition',
 ]);
 
 // 热循环中使用的正则常量，避免重复编译
@@ -117,18 +128,21 @@ export function analyzeIntentionActions(ctx: IntentionActionContext): IntentionA
   const { cursorIntent } = model;
 
   switch (cursorIntent.kind) {
-    case "star":
+    case 'star':
       return buildExpandWildcardActions(model, cursorIntent);
 
-    case "column":
-    case "alias_column":
-    case "update_column":
-    case "insert_column":
-    case "join_condition":
+    case 'column':
+    case 'alias_column':
+    case 'update_column':
+    case 'insert_column':
+    case 'join_condition':
       return buildQualifierActions(model, cursorIntent, ctx.sql, ctx.databaseType);
 
-    case "keyword":
-      if (cursorIntent.qualifierParts.length > 0 || cursorIntent.replacementRange.start < cursorIntent.replacementRange.end) {
+    case 'keyword':
+      if (
+        cursorIntent.qualifierParts.length > 0 ||
+        cursorIntent.replacementRange.start < cursorIntent.replacementRange.end
+      ) {
         return buildQualifierActions(model, cursorIntent, ctx.sql, ctx.databaseType);
       }
       return [];
@@ -147,30 +161,48 @@ function findSelectScopeForCursor(model: SqlSemanticModel, cursorIntent: SqlSema
   return model.scopes.find((s) => {
     if (!s.clauseSpans.select) return false;
     const selectStart = s.clauseSpans.select.start;
-    const nextClause = s.clauseSpans.from ?? s.clauseSpans.where ?? s.clauseSpans.having ?? s.clauseSpans.groupBy ?? s.clauseSpans.orderBy ?? s.clauseSpans.limit;
+    const nextClause =
+      s.clauseSpans.from ??
+      s.clauseSpans.where ??
+      s.clauseSpans.having ??
+      s.clauseSpans.groupBy ??
+      s.clauseSpans.orderBy ??
+      s.clauseSpans.limit;
     const selectEnd = nextClause?.start ?? Infinity;
-    return cursorIntent.replacementRange.start >= selectStart && cursorIntent.replacementRange.start < selectEnd;
+    return (
+      cursorIntent.replacementRange.start >= selectStart &&
+      cursorIntent.replacementRange.start < selectEnd
+    );
   });
 }
 
-function buildExpandWildcardActions(model: SqlSemanticModel, cursorIntent: SqlSemanticCursorIntent): IntentionAction[] {
+function buildExpandWildcardActions(
+  model: SqlSemanticModel,
+  cursorIntent: SqlSemanticCursorIntent,
+): IntentionAction[] {
   const scope = findSelectScopeForCursor(model, cursorIntent);
   if (!scope || scope.rowSources.length === 0) return [];
 
-  const rowSources = scope.rowSources.filter((rs) => ['table', 'cte', 'subquery', 'table_function'].includes(rs.kind));
+  const rowSources = scope.rowSources.filter((rs) =>
+    ['table', 'cte', 'subquery', 'table_function'].includes(rs.kind),
+  );
 
   if (rowSources.length === 0) return [];
 
   return [
     {
-      kind: "expand_wildcard" as const,
+      kind: 'expand_wildcard' as const,
       span: cursorIntent.replacementRange,
-      replacement: "",
+      replacement: '',
     },
   ];
 }
 
-export async function buildExpandWildcardReplacement(databaseType: DatabaseType | undefined, rowSources: SqlSemanticRowSource[], fetchColumns: (source: SqlSemanticRowSource) => Promise<string[]>): Promise<string> {
+export async function buildExpandWildcardReplacement(
+  databaseType: DatabaseType | undefined,
+  rowSources: SqlSemanticRowSource[],
+  fetchColumns: (source: SqlSemanticRowSource) => Promise<string[]>,
+): Promise<string> {
   const quote = supportsColumnNameQuoting(databaseType);
   const allColumns: string[] = [];
 
@@ -185,7 +217,7 @@ export async function buildExpandWildcardReplacement(databaseType: DatabaseType 
     }
   }
 
-  return allColumns.join(", ");
+  return allColumns.join(', ');
 }
 
 // ==================== Batch Qualify (P0) ====================
@@ -205,7 +237,8 @@ function buildBatchQualifyActions(ctx: IntentionActionContext): IntentionAction[
 
   // 检查是否为多表场景
   const scope = model.scopes.find((s) => s.rowSources.length > 0);
-  const tableSources = scope?.rowSources.filter((rs) => rs.kind === "table" || rs.kind === "cte") ?? [];
+  const tableSources =
+    scope?.rowSources.filter((rs) => rs.kind === 'table' || rs.kind === 'cte') ?? [];
   const isMultiTable = tableSources.length > 1;
 
   // 单表场景：解析统一表源
@@ -214,18 +247,27 @@ function buildBatchQualifyActions(ctx: IntentionActionContext): IntentionAction[
     const tableTarget = resolveNavigationTarget(model, model.cursorIntent);
     if (!tableTarget) return [];
     const quote = supportsColumnNameQuoting(databaseType);
-    singleQualifier = quote ? quoteTableIdentifier(databaseType, tableTarget.alias ?? tableTarget.name) : (tableTarget.alias ?? tableTarget.name);
+    singleQualifier = quote
+      ? quoteTableIdentifier(databaseType, tableTarget.alias ?? tableTarget.name)
+      : (tableTarget.alias ?? tableTarget.name);
   }
 
   // 扫描选中区间内的标识符
   const tokens = tokenizeSelectionIdentifiers(sql, databaseType, selection);
-  const replacements: NonNullable<IntentionAction["replacements"]> = [];
+  const replacements: NonNullable<IntentionAction['replacements']> = [];
   const offset = selection.from;
 
   // 收集当前 scope 的 projection 别名，用于跳过
   const aliasNames = collectProjectionAliasNames(model);
   const tableAliasNames = collectTableAliasNames(model);
-  const crossesScopes = selection.to > (scope?.span.end ?? sql.length) || tokens.some((token) => !token.quoted && token.text.toLowerCase() === 'select' && offset + token.start !== scope?.clauseSpans.select?.start);
+  const crossesScopes =
+    selection.to > (scope?.span.end ?? sql.length) ||
+    tokens.some(
+      (token) =>
+        !token.quoted &&
+        token.text.toLowerCase() === 'select' &&
+        offset + token.start !== scope?.clauseSpans.select?.start,
+    );
   const quote = supportsColumnNameQuoting(databaseType);
 
   // 多表场景：一次性构建 column → qualifiers 映射，避免 N 次重复扫描全量 token
@@ -248,11 +290,26 @@ function buildBatchQualifyActions(ctx: IntentionActionContext): IntentionAction[
         databaseType,
         dialect,
       });
-      if (['table', 'schema', 'catalog', 'routine', 'delete_target', 'suppressed'].includes(tokenModel.cursorIntent.kind)) continue;
-      if (collectProjectionAliasNames(tokenModel).has(token.text.toLowerCase()) || collectTableAliasNames(tokenModel).has(token.text.toLowerCase())) continue;
-      const tokenTarget = resolveNavigationTarget(tokenModel, tokenModel.cursorIntent, qualifierMap);
+      if (
+        ['table', 'schema', 'catalog', 'routine', 'delete_target', 'suppressed'].includes(
+          tokenModel.cursorIntent.kind,
+        )
+      )
+        continue;
+      if (
+        collectProjectionAliasNames(tokenModel).has(token.text.toLowerCase()) ||
+        collectTableAliasNames(tokenModel).has(token.text.toLowerCase())
+      )
+        continue;
+      const tokenTarget = resolveNavigationTarget(
+        tokenModel,
+        tokenModel.cursorIntent,
+        qualifierMap,
+      );
       if (!tokenTarget) continue; // 无法确定表源，跳过
-      qualifier = quote ? quoteTableIdentifier(databaseType, tokenTarget.alias ?? tokenTarget.name) : (tokenTarget.alias ?? tokenTarget.name);
+      qualifier = quote
+        ? quoteTableIdentifier(databaseType, tokenTarget.alias ?? tokenTarget.name)
+        : (tokenTarget.alias ?? tokenTarget.name);
     } else {
       qualifier = singleQualifier!;
     }
@@ -268,9 +325,9 @@ function buildBatchQualifyActions(ctx: IntentionActionContext): IntentionAction[
 
   return [
     {
-      kind: "batch_qualify_identifiers" as const,
+      kind: 'batch_qualify_identifiers' as const,
       span: { start: selection.from, end: selection.to },
-      replacement: "",
+      replacement: '',
       replacements,
     },
   ];
@@ -291,13 +348,29 @@ interface SelectionToken {
 /**
  * 在选中文本中扫描独立标识符，处理各种引号包裹方式。
  */
-function tokenizeSelectionIdentifiers(sql: string, provider: DatabaseType = 'mysql', selection: { from: number; to: number }): SelectionToken[] {
+function tokenizeSelectionIdentifiers(
+  sql: string,
+  provider: DatabaseType = 'mysql',
+  selection: { from: number; to: number },
+): SelectionToken[] {
   const tokens = tokenizeSqlSemantic(sql, provider).filter((token) => token.kind !== 'comment');
   return tokens.flatMap((token, index) => {
-    if (!tokenIsIdentifier(token) || token.span.start < selection.from || token.span.end > selection.to) return [];
+    if (
+      !tokenIsIdentifier(token) ||
+      token.span.start < selection.from ||
+      token.span.end > selection.to
+    )
+      return [];
     if (tokens[index + 1]?.text === '(') return []; // Function names are not fields.
-    return [{ start: token.span.start - selection.from, end: token.span.end - selection.from,
-      text: unquoteSqlSemanticIdentifier(token), quoted: token.kind === 'quoted_identifier', qualified: tokens[index - 1]?.text === '.' || tokens[index + 1]?.text === '.' }];
+    return [
+      {
+        start: token.span.start - selection.from,
+        end: token.span.end - selection.from,
+        text: unquoteSqlSemanticIdentifier(token),
+        quoted: token.kind === 'quoted_identifier',
+        qualified: tokens[index - 1]?.text === '.' || tokens[index + 1]?.text === '.',
+      },
+    ];
   });
 }
 
@@ -342,7 +415,7 @@ function normalizeIdentifierToken(token: SqlSemanticToken): string {
  */
 function extractQualifier(tokens: readonly SqlSemanticToken[], i: number): string {
   // 检查是否为 3-part: schema.table.column → qualifier = schema.table
-  if (i >= 2 && tokens[i - 1]?.text === "." && tokenIsIdentifier(tokens[i - 2])) {
+  if (i >= 2 && tokens[i - 1]?.text === '.' && tokenIsIdentifier(tokens[i - 2])) {
     return `${normalizeIdentifierToken(tokens[i - 2])}.${normalizeIdentifierToken(tokens[i])}`;
   }
   return normalizeIdentifierToken(tokens[i]);
@@ -357,7 +430,11 @@ function collectColumnQualifiers(model: SqlSemanticModel, columnName: string): S
   const qualifiers = new Set<string>();
   const tokens = model.tokens;
   for (let i = 0; i < tokens.length - 2; i++) {
-    if (tokenIsIdentifier(tokens[i]) && tokens[i + 1]?.text === "." && tokenIsIdentifier(tokens[i + 2])) {
+    if (
+      tokenIsIdentifier(tokens[i]) &&
+      tokens[i + 1]?.text === '.' &&
+      tokenIsIdentifier(tokens[i + 2])
+    ) {
       if (normalizeIdentifierToken(tokens[i + 2]) === target) {
         qualifiers.add(extractQualifier(tokens, i));
       }
@@ -374,7 +451,11 @@ function buildColumnQualifierMap(model: SqlSemanticModel): Map<string, Set<strin
   const map = new Map<string, Set<string>>();
   const tokens = model.tokens;
   for (let i = 0; i < tokens.length - 2; i++) {
-    if (tokenIsIdentifier(tokens[i]) && tokens[i + 1]?.text === "." && tokenIsIdentifier(tokens[i + 2])) {
+    if (
+      tokenIsIdentifier(tokens[i]) &&
+      tokens[i + 1]?.text === '.' &&
+      tokenIsIdentifier(tokens[i + 2])
+    ) {
       const col = normalizeIdentifierToken(tokens[i + 2]);
       const qual = extractQualifier(tokens, i);
       let set = map.get(col);
@@ -418,9 +499,16 @@ function isColumnAmbiguous(model: SqlSemanticModel, columnName: string): boolean
  * trailingIdentifier 为自动补全设计，replacementRange 只到光标位置。
  * 意图操作需要完整 token 的范围和文本。
  */
-function findFullIdentifierToken(model: SqlSemanticModel, range: { start: number; end: number }): { prefix: string; replacementRange: { start: number; end: number } } | null {
+function findFullIdentifierToken(
+  model: SqlSemanticModel,
+  range: { start: number; end: number },
+): { prefix: string; replacementRange: { start: number; end: number } } | null {
   for (const token of model.tokens) {
-    if (tokenIsIdentifier(token) && token.span.start === range.start && token.span.end > range.end) {
+    if (
+      tokenIsIdentifier(token) &&
+      token.span.start === range.start &&
+      token.span.end > range.end
+    ) {
       return {
         prefix: unquoteSqlSemanticIdentifier(token),
         replacementRange: { start: token.span.start, end: token.span.end },
@@ -430,7 +518,12 @@ function findFullIdentifierToken(model: SqlSemanticModel, range: { start: number
   return null;
 }
 
-function buildQualifierActions(model: SqlSemanticModel, cursorIntentIn: SqlSemanticCursorIntent, sql: string, databaseType?: DatabaseType): IntentionAction[] {
+function buildQualifierActions(
+  model: SqlSemanticModel,
+  cursorIntentIn: SqlSemanticCursorIntent,
+  sql: string,
+  databaseType?: DatabaseType,
+): IntentionAction[] {
   let cursorIntent = cursorIntentIn;
 
   // 修复：当光标在标识符中间时，trailingIdentifier 返回的 replacementRange 只到光标位置。
@@ -451,7 +544,11 @@ function buildQualifierActions(model: SqlSemanticModel, cursorIntentIn: SqlSeman
   }
 
   // fallback：无 prefix 且无 qualifierParts 时从 SQL 文本提取
-  if (parts.length === 0 && sql && cursorIntent.replacementRange.start < cursorIntent.replacementRange.end) {
+  if (
+    parts.length === 0 &&
+    sql &&
+    cursorIntent.replacementRange.start < cursorIntent.replacementRange.end
+  ) {
     const text = sql.slice(cursorIntent.replacementRange.start, cursorIntent.replacementRange.end);
     if (text.length > 0) {
       parts = splitQualifiedIdentifier(text, databaseType);
@@ -461,7 +558,7 @@ function buildQualifierActions(model: SqlSemanticModel, cursorIntentIn: SqlSeman
   if (parts.length === 0) return [];
 
   const actions: IntentionAction[] = [];
-  const lastPart = parts[parts.length - 1] ?? "";
+  const lastPart = parts[parts.length - 1] ?? '';
 
   // P1-2: 跳过 projection 别名
   const aliasNames = collectProjectionAliasNames(model);
@@ -488,25 +585,30 @@ function buildQualifierActions(model: SqlSemanticModel, cursorIntentIn: SqlSeman
       let ti = model.tokens.length - 1;
       while (ti >= 0) {
         const t = model.tokens[ti];
-        if (t.span.end <= cursorIntent.replacementRange.start && t.kind !== "comment" && t.kind !== "string") break;
+        if (
+          t.span.end <= cursorIntent.replacementRange.start &&
+          t.kind !== 'comment' &&
+          t.kind !== 'string'
+        )
+          break;
         ti--;
       }
       // 检查 replacementRange 前是否紧跟 "."
-      if (ti >= 0 && model.tokens[ti].text === ".") {
+      if (ti >= 0 && model.tokens[ti].text === '.') {
         ti--;
         // 向前查找限定符标识符
         while (ti >= 0) {
           const token = model.tokens[ti];
           // 跳过 comment/string token
-          if (token.kind === "comment" || token.kind === "string") {
+          if (token.kind === 'comment' || token.kind === 'string') {
             ti--;
             continue;
           }
-          if (token.kind === "word" || token.kind === "quoted_identifier") {
+          if (token.kind === 'word' || token.kind === 'quoted_identifier') {
             span = { start: token.span.start, end: cursorIntent.replacementRange.end };
             ti--;
             // 继续向前查找 schema.table.column 模式
-            if (ti >= 0 && model.tokens[ti].text === ".") {
+            if (ti >= 0 && model.tokens[ti].text === '.') {
               ti--;
               continue;
             }
@@ -518,7 +620,7 @@ function buildQualifierActions(model: SqlSemanticModel, cursorIntentIn: SqlSeman
     const quote = supportsColumnNameQuoting(databaseType);
     const quotedColumn = quote ? quoteTableIdentifier(databaseType, lastPart) : lastPart;
     actions.push({
-      kind: "unqualify_identifier",
+      kind: 'unqualify_identifier',
       span,
       replacement: quotedColumn,
     });
@@ -529,10 +631,12 @@ function buildQualifierActions(model: SqlSemanticModel, cursorIntentIn: SqlSeman
   const target = resolveNavigationTarget(model, cursorIntent);
   if (target) {
     const quote = supportsColumnNameQuoting(databaseType);
-    const qualifier = quote ? quoteTableIdentifier(databaseType, target.alias ?? target.name) : (target.alias ?? target.name);
+    const qualifier = quote
+      ? quoteTableIdentifier(databaseType, target.alias ?? target.name)
+      : (target.alias ?? target.name);
     const quotedColumn = quote ? quoteTableIdentifier(databaseType, lastPart) : lastPart;
     actions.push({
-      kind: "qualify_identifier" as const,
+      kind: 'qualify_identifier' as const,
       span: cursorIntent.replacementRange,
       replacement: `${qualifier}.${quotedColumn}`,
     });
@@ -542,7 +646,7 @@ function buildQualifierActions(model: SqlSemanticModel, cursorIntentIn: SqlSeman
   // 多表场景：无法自动推断所属表时，提供所有候选表的限定选项
   const scope = findScopeContainingCursor(model, cursorIntent.replacementRange.start);
   if (scope) {
-    const tableSources = scope.rowSources.filter((rs) => rs.kind === "table" || rs.kind === "cte");
+    const tableSources = scope.rowSources.filter((rs) => rs.kind === 'table' || rs.kind === 'cte');
     if (tableSources.length > 1) {
       const quote = supportsColumnNameQuoting(databaseType);
       const quotedColumn = quote ? quoteTableIdentifier(databaseType, lastPart) : lastPart;
@@ -550,7 +654,7 @@ function buildQualifierActions(model: SqlSemanticModel, cursorIntentIn: SqlSeman
         const qualifierName = source.alias ?? source.name;
         const qualifier = quote ? quoteTableIdentifier(databaseType, qualifierName) : qualifierName;
         actions.push({
-          kind: "qualify_identifier" as const,
+          kind: 'qualify_identifier' as const,
           span: cursorIntent.replacementRange,
           replacement: `${qualifier}.${quotedColumn}`,
           label: `${qualifierName}.${lastPart}`,
@@ -570,7 +674,9 @@ function buildQualifierActions(model: SqlSemanticModel, cursorIntentIn: SqlSeman
  */
 function splitQualifiedIdentifier(text: string, provider: DatabaseType = 'mysql'): string[] {
   const tokens = tokenizeSqlSemantic(text, provider);
-  return tokens.every((token) => tokenIsIdentifier(token) || token.text === '.') ? tokens.filter(tokenIsIdentifier).map(unquoteSqlSemanticIdentifier) : [];
+  return tokens.every((token) => tokenIsIdentifier(token) || token.text === '.')
+    ? tokens.filter(tokenIsIdentifier).map(unquoteSqlSemanticIdentifier)
+    : [];
 }
 
 /**
@@ -590,7 +696,15 @@ function findScopeContainingCursor(model: SqlSemanticModel, cursor: number) {
       continue;
     }
     // 回退：检查 clauseSpans
-    const spans = [s.clauseSpans.select, s.clauseSpans.from, s.clauseSpans.where, s.clauseSpans.having, s.clauseSpans.groupBy, s.clauseSpans.orderBy, s.clauseSpans.limit].filter(Boolean) as { start: number; end: number }[];
+    const spans = [
+      s.clauseSpans.select,
+      s.clauseSpans.from,
+      s.clauseSpans.where,
+      s.clauseSpans.having,
+      s.clauseSpans.groupBy,
+      s.clauseSpans.orderBy,
+      s.clauseSpans.limit,
+    ].filter(Boolean) as { start: number; end: number }[];
     if (spans.some((sp) => cursor >= sp.start && cursor <= sp.end)) {
       best = s;
     }
@@ -598,7 +712,11 @@ function findScopeContainingCursor(model: SqlSemanticModel, cursor: number) {
   return best;
 }
 
-function resolveNavigationTarget(model: SqlSemanticModel, cursorIntent: SqlSemanticCursorIntent, qualifierMap?: Map<string, Set<string>>): { name: string; alias?: string } | null {
+function resolveNavigationTarget(
+  model: SqlSemanticModel,
+  cursorIntent: SqlSemanticCursorIntent,
+  qualifierMap?: Map<string, Set<string>>,
+): { name: string; alias?: string } | null {
   // 1. 优先使用 semantic 的 targetSourceId
   if (cursorIntent.targetSourceId) {
     const source = model.rowSources.find((rs) => rs.id === cursorIntent.targetSourceId);
@@ -616,7 +734,7 @@ function resolveNavigationTarget(model: SqlSemanticModel, cursorIntent: SqlSeman
   // 3. 降级策略 — 查找包含光标的 scope
   const scope = findScopeContainingCursor(model, cursorIntent.replacementRange.start);
   if (scope) {
-    const tableSources = scope.rowSources.filter((rs) => rs.kind === "table" || rs.kind === "cte");
+    const tableSources = scope.rowSources.filter((rs) => rs.kind === 'table' || rs.kind === 'cte');
     // 3a. 单表场景 → 直接返回
     if (tableSources.length === 1) {
       return { name: tableSources[0].name, alias: tableSources[0].alias };
@@ -625,7 +743,9 @@ function resolveNavigationTarget(model: SqlSemanticModel, cursorIntent: SqlSeman
     // 3b. 多表场景 → 扫描 SQL 中同一列名的限定符引用
     // 如果列名在 SQL 中被恰好 1 个限定符引用，则可推断其所属表
     if (cursorIntent.prefix && tableSources.length > 1) {
-      const qualifiers = qualifierMap?.get(cursorIntent.prefix.toLowerCase()) ?? collectColumnQualifiers(model, cursorIntent.prefix);
+      const qualifiers =
+        qualifierMap?.get(cursorIntent.prefix.toLowerCase()) ??
+        collectColumnQualifiers(model, cursorIntent.prefix);
       if (qualifiers.size === 1) {
         const qualifier = [...qualifiers][0];
         // 支持 schema.table 形式的限定符匹配
@@ -634,7 +754,7 @@ function resolveNavigationTarget(model: SqlSemanticModel, cursorIntent: SqlSeman
           const name = rs.name.toLowerCase();
           if (alias === qualifier || name === qualifier) return true;
           // 3-part: qualifier = "schema.table", match against metadataTarget
-          const dotIdx = qualifier.indexOf(".");
+          const dotIdx = qualifier.indexOf('.');
           if (dotIdx > 0) {
             const qualTable = qualifier.slice(dotIdx + 1);
             return alias === qualTable || name === qualTable;
@@ -651,10 +771,15 @@ function resolveNavigationTarget(model: SqlSemanticModel, cursorIntent: SqlSeman
 
 // ==================== Expand Wildcard Context ====================
 
-export function prepareExpandWildcardContext(sql: string, cursor: number, databaseType?: DatabaseType, dialect?: DatabaseType): { rowSources: SqlSemanticRowSource[]; starSpan: { start: number; end: number } } | null {
+export function prepareExpandWildcardContext(
+  sql: string,
+  cursor: number,
+  databaseType?: DatabaseType,
+  dialect?: DatabaseType,
+): { rowSources: SqlSemanticRowSource[]; starSpan: { start: number; end: number } } | null {
   const model = buildSqlSemanticModel(sql, cursor, { databaseType, dialect });
 
-  if (model.cursorIntent.kind !== "star") return null;
+  if (model.cursorIntent.kind !== 'star') return null;
 
   const { cursorIntent } = model;
 
@@ -662,7 +787,9 @@ export function prepareExpandWildcardContext(sql: string, cursor: number, databa
 
   if (!scope) return null;
 
-  let rowSources = scope.rowSources.filter((rs) => ['table', 'cte', 'subquery', 'table_function'].includes(rs.kind));
+  let rowSources = scope.rowSources.filter((rs) =>
+    ['table', 'cte', 'subquery', 'table_function'].includes(rs.kind),
+  );
   if (cursorIntent.qualifierParts.length) {
     const qualifier = cursorIntent.qualifierParts.at(-1)!;
     rowSources = rowSources.filter((source) => (source.alias ?? source.name) === qualifier);
@@ -670,7 +797,10 @@ export function prepareExpandWildcardContext(sql: string, cursor: number, databa
 
   if (rowSources.length === 0) return null;
 
-  const starSpan = cursorIntent.replacementRange.start === cursorIntent.replacementRange.end ? { start: cursorIntent.replacementRange.start, end: cursorIntent.replacementRange.end + 1 } : cursorIntent.replacementRange;
+  const starSpan =
+    cursorIntent.replacementRange.start === cursorIntent.replacementRange.end
+      ? { start: cursorIntent.replacementRange.start, end: cursorIntent.replacementRange.end + 1 }
+      : cursorIntent.replacementRange;
 
   return { rowSources, starSpan };
 }

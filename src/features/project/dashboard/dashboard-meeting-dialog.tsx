@@ -1,22 +1,27 @@
 'use client';
+import { translateFixed } from '../i18n/display';
 
-import { useState } from 'react';
-import { CalendarBlank, LinkSimple, Trash } from '@phosphor-icons/react';
+import { getLocale, useTranslation } from '@/lib/i18n';
+import { fixtureField } from '../i18n/display';
+import { messages } from './i18n/dashboard-meeting-dialog';
+
 import { useAppAlert } from '@/components/app-alert-provider';
-import { Avatar, DashboardButton, IconButton, SegmentedControl } from './dashboard-ui';
-import { DashboardMemberPicker, DashboardModal } from './dashboard-modal';
+import { CalendarBlank, LinkSimple, Trash } from '@phosphor-icons/react';
+import { useState } from 'react';
 import { DashboardDeleteDialog } from './dashboard-actions';
+import common from './dashboard-actions.module.css';
 import { downloadFile } from './dashboard-download';
 import { dashboardLink } from './dashboard-links';
-import { dashboardTimestamp } from './dashboard-time';
+import styles from './dashboard-meeting-dialog.module.css';
+import { DashboardMemberPicker, DashboardModal } from './dashboard-modal';
 import {
   dashboardPeople,
   type DashboardComment,
   type DashboardMeeting,
   type DashboardPersonId,
 } from './dashboard-model';
-import common from './dashboard-actions.module.css';
-import styles from './dashboard-meeting-dialog.module.css';
+import { dashboardTimestamp } from './dashboard-time';
+import { Avatar, DashboardButton, IconButton, SegmentedControl } from './dashboard-ui';
 
 function newMeeting(): DashboardMeeting {
   return {
@@ -66,11 +71,12 @@ function foldCalendarLine(line: string) {
   parts.push(part);
   return parts.join('\r\n');
 }
-function calendarFile(meeting: DashboardMeeting) {
+export function calendarFile(meeting: DashboardMeeting) {
+  const locale = getLocale();
   const start = new Date(meeting.startsAt);
   const end = new Date(start.valueOf() + meeting.durationMinutes * 60000);
   const attendees = meeting.attendees.map((id) => dashboardPeople[id].name).join(', ');
-  const description = `${meeting.agenda}${attendees ? `\n\nAttendees: ${attendees}` : ''}`;
+  const description = `${fixtureField(meeting, 'agenda', locale)}${attendees ? `\n\n${translateFixed('Attendees', locale)}: ${attendees}` : ''}`;
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
@@ -81,7 +87,7 @@ function calendarFile(meeting: DashboardMeeting) {
     `DTSTAMP:${calendarStamp(new Date())}`,
     `DTSTART:${calendarStamp(start)}`,
     `DTEND:${calendarStamp(end)}`,
-    `SUMMARY:${calendarText(meeting.title)}`,
+    `SUMMARY:${calendarText(fixtureField(meeting, 'title', locale))}`,
     `DESCRIPTION:${calendarText(description)}`,
   ];
   if (meeting.link) lines.push(`URL:${new URL(meeting.link).href}`);
@@ -100,6 +106,8 @@ function MeetingComments({
   text: string;
   onTextChange: (text: string) => void;
 }) {
+  const { t, locale } = useTranslation(messages);
+
   const [deleteId, setDeleteId] = useState<string | null>(null);
   function addComment() {
     if (!text.trim()) return;
@@ -122,15 +130,15 @@ function MeetingComments({
             <Avatar id={comment.author} size={28} />
             <div className={styles.commentContent}>
               <div className={styles.commentMeta}>
-                <strong>{dashboardPeople[comment.author].name}</strong>
-                <span>{comment.time}</span>
+                <strong>{fixtureField(dashboardPeople[comment.author], 'name', locale)}</strong>
+                <span>{fixtureField(comment, 'time', locale)}</span>
               </div>
-              <p>{comment.text}</p>
+              <p>{fixtureField(comment, 'text', locale)}</p>
               {deleteId === comment.id ? (
                 <div className={styles.commentActions}>
-                  <span>Delete comment?</span>
+                  <span>{t('Delete comment?')}</span>
                   <button type="button" className="fouc-action" onClick={() => setDeleteId(null)}>
-                    Cancel
+                    {t('Cancel')}
                   </button>
                   <button
                     type="button"
@@ -141,7 +149,7 @@ function MeetingComments({
                       setDeleteId(null);
                     }}
                   >
-                    Delete
+                    {t('Delete')}
                   </button>
                 </div>
               ) : (
@@ -160,7 +168,7 @@ function MeetingComments({
                       )
                     }
                   >
-                    {comment.liked ? 'Liked' : 'Like'}
+                    {comment.liked ? t('Liked') : t('Like')}
                   </button>
                   <button
                     type="button"
@@ -168,7 +176,7 @@ function MeetingComments({
                     data-variant="destructive"
                     onClick={() => setDeleteId(comment.id)}
                   >
-                    Delete
+                    {t('Delete')}
                   </button>
                 </div>
               )}
@@ -176,21 +184,21 @@ function MeetingComments({
           </article>
         ))
       ) : (
-        <p className={styles.empty}>No comments yet.</p>
+        <p className={styles.empty}>{t('No comments yet.')}</p>
       )}
       <label className={common.fieldLabel}>
-        Add a comment
+        {t('Add a comment')}
         <textarea
           className={common.textInput}
           rows={3}
           value={text}
           onChange={(event) => onTextChange(event.currentTarget.value)}
-          placeholder="Share an update or an agenda item"
+          placeholder={t('Share an update or an agenda item')}
         />
       </label>
       <div className={styles.commentAdd}>
         <DashboardButton type="button" tone="neutral" disabled={!text.trim()} onClick={addComment}>
-          Add comment
+          {t('Add comment')}
         </DashboardButton>
       </div>
     </div>
@@ -212,6 +220,8 @@ export function DashboardMeetingDialog({
   onSave: (meeting: DashboardMeeting) => void;
   onDelete?: (id: string) => void;
 }) {
+  const { t, locale } = useTranslation(messages);
+
   const [draft, setDraft] = useState(() => meeting ?? newMeeting());
   const [date, setDate] = useState(() => localParts(draft.startsAt).date);
   const [time, setTime] = useState(() => localParts(draft.startsAt).time);
@@ -273,7 +283,7 @@ export function DashboardMeetingDialog({
         },
       ];
     onSave(next);
-    notify('success', meeting ? 'Meeting saved' : 'Meeting created');
+    notify('success', translateFixed(meeting ? 'Meeting saved' : 'Meeting created', locale));
     onClose();
   }
 
@@ -282,26 +292,32 @@ export function DashboardMeetingDialog({
       await navigator.clipboard.writeText(
         dashboardLink(window.location.href, scopeKey, { kind: 'meeting', id: draft.id }),
       );
-      notify('success', 'Meeting link copied');
+      notify('success', t('Meeting link copied'));
     } catch {
-      notify('error', 'Could not copy the meeting link');
+      notify('error', t('Could not copy the meeting link'));
     }
   }
 
   return (
     <>
-      <DashboardModal title={meeting ? 'Meeting details' : 'New Meeting'} onClose={onClose} wide>
+      <DashboardModal
+        title={meeting ? t('Meeting details') : t('New Meeting')}
+        onClose={onClose}
+        wide
+      >
         <div className={styles.toolbar}>
           <SegmentedControl
             items={['Details', 'Comments'] as const}
             value={tab}
             onChange={setTab}
-            label="Meeting view"
+            label={t('Meeting view')}
           />
-          <span className={styles.commentCount}>{draft.comments.length} comments</span>
+          <span className={styles.commentCount}>
+            {draft.comments.length} {t('comments')}
+          </span>
           {meeting && onDelete ? (
             <IconButton
-              label="Delete meeting"
+              label={t('Delete meeting')}
               className={styles.dangerIcon}
               data-variant="destructive"
               onClick={() => setDeleteOpen(true)}
@@ -321,7 +337,7 @@ export function DashboardMeetingDialog({
             {tab === 'Details' ? (
               <div className={common.fields}>
                 <label>
-                  Meeting title
+                  {t('Meeting title')}
                   <input
                     autoFocus
                     value={draft.title}
@@ -332,12 +348,12 @@ export function DashboardMeetingDialog({
                       }));
                       setError('');
                     }}
-                    placeholder="Give it a name"
+                    placeholder={t('Give it a name')}
                   />
                 </label>
                 <div className={common.fieldGrid}>
                   <label>
-                    Date
+                    {t('Date')}
                     <input
                       type="date"
                       value={date}
@@ -345,7 +361,7 @@ export function DashboardMeetingDialog({
                     />
                   </label>
                   <label>
-                    Time
+                    {t('Time')}
                     <input
                       type="time"
                       value={time}
@@ -354,7 +370,7 @@ export function DashboardMeetingDialog({
                   </label>
                 </div>
                 <label>
-                  Duration (minutes)
+                  {t('Duration (minutes)')}
                   <input
                     type="number"
                     min="5"
@@ -370,7 +386,7 @@ export function DashboardMeetingDialog({
                   />
                 </label>
                 <label>
-                  Agenda
+                  {t('Agenda')}
                   <textarea
                     rows={4}
                     value={draft.agenda}
@@ -380,11 +396,11 @@ export function DashboardMeetingDialog({
                         agenda: event.target.value,
                       }))
                     }
-                    placeholder="Topics, decisions and next steps"
+                    placeholder={t('Topics, decisions and next steps')}
                   />
                 </label>
                 <label>
-                  Meeting link
+                  {t('Meeting link')}
                   <input
                     type="url"
                     value={draft.link}
@@ -394,11 +410,11 @@ export function DashboardMeetingDialog({
                         link: event.target.value,
                       }))
                     }
-                    placeholder="https://…"
+                    placeholder={t('https://…')}
                   />
                 </label>
                 <fieldset className={common.memberField}>
-                  <legend>Attendees</legend>
+                  <legend>{t('Attendees')}</legend>
                   <DashboardMemberPicker
                     selected={draft.attendees}
                     onChange={(attendees) => setDraft((current) => ({ ...current, attendees }))}
@@ -407,7 +423,7 @@ export function DashboardMeetingDialog({
                 </fieldset>
                 {error ? (
                   <p role="alert" className={common.error}>
-                    {error}
+                    {translateFixed(error, locale)}
                   </p>
                 ) : null}
               </div>
@@ -425,7 +441,7 @@ export function DashboardMeetingDialog({
               {meeting ? (
                 <DashboardButton type="button" tone="neutral" onClick={() => void copyLink()}>
                   <LinkSimple size={13} />
-                  Copy link
+                  {t('Copy link')}
                 </DashboardButton>
               ) : null}
               <DashboardButton
@@ -442,24 +458,26 @@ export function DashboardMeetingDialog({
                 }}
               >
                 <CalendarBlank size={13} />
-                Export ICS
+                {t('Export ICS')}
               </DashboardButton>
             </div>
             <DashboardButton type="button" tone="neutral" onClick={onClose}>
-              Cancel
+              {t('Cancel')}
             </DashboardButton>
-            <DashboardButton type="submit">Save</DashboardButton>
+            <DashboardButton type="submit">{t('Save')}</DashboardButton>
           </footer>
         </form>
       </DashboardModal>
       {deleteOpen ? (
         <DashboardDeleteDialog
-          title="Delete meeting?"
-          description={`“${draft.title}” and its comments will be removed from this dashboard.`}
+          title={t('Delete meeting?')}
+          description={t('“{v0}” and its comments will be removed from this dashboard.', {
+            v0: fixtureField(draft, 'title', locale),
+          })}
           onClose={() => setDeleteOpen(false)}
           onDelete={() => {
             onDelete?.(draft.id);
-            notify('success', 'Meeting deleted');
+            notify('success', t('Meeting deleted'));
             onClose();
           }}
         />

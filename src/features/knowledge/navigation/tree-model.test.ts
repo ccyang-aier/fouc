@@ -10,7 +10,12 @@ import {
   untitledPageLabel,
 } from './tree-model';
 
-const teamspace = (id: string, name: string): Teamspace => ({ id,  knowledgeBaseId: 'base', name, defaultAccess: null });
+const teamspace = (id: string, name: string): Teamspace => ({
+  id,
+  knowledgeBaseId: 'base',
+  name,
+  defaultAccess: null,
+});
 const ws = 'e2f7a4c1-0000-4000-8000-6b1f9a2c3d01';
 
 type PageSeed = Partial<Page> & Pick<Page, 'id' | 'parentId' | 'position' | 'title'>;
@@ -65,7 +70,13 @@ describe('buildNavigationSections', () => {
       [teamspace(tsA, '产品')],
       [
         page({ id: 'live', parentId: null, position: '000001', title: '保留' }),
-        page({ id: 'dead', parentId: null, position: '000002', title: '回收', deletedAt: '2026-09-26T01:00:00Z' }),
+        page({
+          id: 'dead',
+          parentId: null,
+          position: '000002',
+          title: '回收',
+          deletedAt: '2026-09-26T01:00:00Z',
+        }),
         page({ id: 'dead-child', parentId: 'dead', position: '000001', title: '回收的子页' }),
       ],
     );
@@ -85,14 +96,22 @@ describe('buildNavigationSections', () => {
   test('pages of other teamspaces never leak into a section', () => {
     const sections = buildNavigationSections(
       [teamspace(tsA, '产品')],
-      [page({ id: 'foreign', teamspaceId: tsB, parentId: null, position: '000001', title: '别家的' })],
+      [
+        page({
+          id: 'foreign',
+          teamspaceId: tsB,
+          parentId: null,
+          position: '000001',
+          title: '别家的',
+        }),
+      ],
     );
     expect(sections[0].pageCount).toBe(0);
   });
 
   test('whitespace-only and empty titles render the untitled label', () => {
-    expect(pageDisplayTitle({ title: '' })).toBe(untitledPageLabel);
-    expect(pageDisplayTitle({ title: '   ' })).toBe(untitledPageLabel);
+    expect(pageDisplayTitle({ title: '' })).toBe(untitledPageLabel());
+    expect(pageDisplayTitle({ title: '   ' })).toBe(untitledPageLabel());
     expect(pageDisplayTitle({ title: ' 手册 ' })).toBe('手册');
   });
 });
@@ -101,9 +120,27 @@ describe('recycledRootPages (U03 recycle bin)', () => {
   test('lists directly recycled pages newest first; nested recycled pages belong to their recycled root', () => {
     const roots = recycledRootPages([
       page({ id: 'live', parentId: null, position: '000001', title: '保留' }),
-      page({ id: 'dead', parentId: null, position: '000002', title: '昨天回收', deletedAt: '2026-09-25T00:00:00Z' }),
-      page({ id: 'dead-child', parentId: 'dead', position: '000001', title: '其子页', deletedAt: '2026-09-26T01:00:00Z' }),
-      page({ id: 'newer-dead', parentId: null, position: '000003', title: '今天回收', deletedAt: '2026-09-26T02:00:00Z' }),
+      page({
+        id: 'dead',
+        parentId: null,
+        position: '000002',
+        title: '昨天回收',
+        deletedAt: '2026-09-25T00:00:00Z',
+      }),
+      page({
+        id: 'dead-child',
+        parentId: 'dead',
+        position: '000001',
+        title: '其子页',
+        deletedAt: '2026-09-26T01:00:00Z',
+      }),
+      page({
+        id: 'newer-dead',
+        parentId: null,
+        position: '000003',
+        title: '今天回收',
+        deletedAt: '2026-09-26T02:00:00Z',
+      }),
     ]);
     expect(roots.map((row) => row.id)).toEqual(['newer-dead', 'dead']);
     expect(roots.map((row) => row.title)).toEqual(['今天回收', '昨天回收']);
@@ -111,10 +148,16 @@ describe('recycledRootPages (U03 recycle bin)', () => {
 
   test('whitespace titles fall back to the untitled label; live pages never appear', () => {
     const roots = recycledRootPages([
-      page({ id: 'titled', parentId: null, position: '000001', title: '  ', deletedAt: '2026-09-26T00:00:00Z' }),
+      page({
+        id: 'titled',
+        parentId: null,
+        position: '000001',
+        title: '  ',
+        deletedAt: '2026-09-26T00:00:00Z',
+      }),
       page({ id: 'alive', parentId: null, position: '000002', title: '活着' }),
     ]);
-    expect(roots.map((row) => row.title)).toEqual([untitledPageLabel]);
+    expect(roots.map((row) => row.title)).toEqual([untitledPageLabel()]);
   });
 });
 
@@ -130,7 +173,13 @@ describe('flattenNavigationTree', () => {
   test('collapsed by default: section rows only, pages hidden', () => {
     const items = flattenNavigationTree(sections, {});
     expect(items.map((item) => item.key)).toEqual([`section:${tsA}`, `section:${tsB}`]);
-    expect(items[0]).toMatchObject({ title: '产品', kind: 'teamspace', expandable: true, expanded: false, depth: 0 });
+    expect(items[0]).toMatchObject({
+      title: '产品',
+      kind: 'teamspace',
+      expandable: true,
+      expanded: false,
+      depth: 0,
+    });
   });
 
   test('expansion reveals children with depth and per-node expansion state', () => {
@@ -138,7 +187,12 @@ describe('flattenNavigationTree', () => {
     expect(items.map((item) => item.key)).toEqual([`section:${tsA}`, 'page:p1', `section:${tsB}`]);
     expect(items[1]).toMatchObject({ pageId: 'p1', depth: 1, expandable: true, expanded: false });
     const nested = flattenNavigationTree(sections, { [`section:${tsA}`]: true, 'page:p1': true });
-    expect(nested.map((item) => item.key)).toEqual([`section:${tsA}`, 'page:p1', 'page:p1a', `section:${tsB}`]);
+    expect(nested.map((item) => item.key)).toEqual([
+      `section:${tsA}`,
+      'page:p1',
+      'page:p1a',
+      `section:${tsB}`,
+    ]);
     expect(nested[2].depth).toBe(2);
   });
 });

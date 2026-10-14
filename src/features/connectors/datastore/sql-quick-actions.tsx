@@ -1,115 +1,698 @@
-"use client"
-
-import { useMemo, useRef, useState, type RefObject } from 'react'
-import type { EditorView } from '@codemirror/view'
-import type { RelationalProvider, SqlFormatterCase } from '@fouc/shared'
-import { ArrowSquareOut, BracketsCurly, Check, Clipboard, CodeBlock, Columns, ClipboardText, Table, TextAa, WarningCircle } from '@phosphor-icons/react'
-import { SqlDialog } from './sql-library-dialog'
-import { SqlEditor } from './sql-editor'
-import { captureSqlAction, applySqlAction, sqlTextActionEdit, type SqlActionSnapshot, type SqlTextAction } from './sql-assistance/actions/editor-actions'
-import { formatSqlText, compressSqlText } from './sql-format/formatter'
-import { analyzeIntentionActions, type IntentionAction } from './sql-assistance/actions/intention-actions'
-import { intentionActionEdit, sqlBlockCommentEdit, sqlInListEdit, sqlInListIssue, sqlLineCommentEdit, sqlWildcardEdit, sqlWildcardFields } from './sql-assistance/actions/action-edits'
-import { buildSqlTableShortcut, normalizeSqlShortcutLimit, sqlShortcutContextTable, sqlTableNameIssue, sqlTableShortcutEdit } from './sql-assistance/actions/table-shortcuts'
-import common from './relational.module.css'
-import styles from './sql-quick-actions.module.css'
-
-type Props = { editorRef: RefObject<EditorView | null>; provider: RelationalProvider; disabled: boolean; keywordCase?: SqlFormatterCase; onFormatSql?: (sql: string) => Promise<string>; onNotice: (message: string) => void }
-const textActions: { id: SqlTextAction; label: string; note: string }[] = [
-  { id: 'upper', label: '转换为大写', note: '保留跨选区的字符串内容' }, { id: 'lower', label: '转换为小写', note: '保留跨选区的字符串内容' },
-  { id: 'quote-string', label: 'SQL 字符串引用', note: '转义引号，保留内容精度' }, { id: 'quote-identifier', label: '标识符引用', note: '使用当前数据库的引号' },
-  { id: 'unquote', label: '移除外层引用', note: '解码成对的引号' }, { id: 'json-string', label: '转换为 JSON 字符串', note: '用于应用中的查询文本' }
-]
-
-export function SqlQuickActions({ editorRef, provider, disabled, keywordCase = 'upper', onFormatSql, onNotice }: Props) {
-  const [snapshot, setSnapshot] = useState<SqlActionSnapshot | null>(null), [error, setError] = useState(''), [busy, setBusy] = useState(false)
-  const [tab, setTab] = useState<'context' | 'text' | 'in' | 'table'>('context'), [inSource, setInSource] = useState(''), [copied, setCopied] = useState(false)
-  const [tableName, setTableName] = useState(''), [limit, setLimit] = useState('100'), [projection, setProjection] = useState('id, name'), [tableKind, setTableKind] = useState<'select' | 'count' | 'projection'>('select')
-  const [wildcard, setWildcard] = useState(false), [fields, setFields] = useState<Record<string, string>>({})
-  const previewEditor = useRef<EditorView | null>(null)
-  const intentions = useMemo(() => snapshot ? analyzeIntentionActions({ sql: snapshot.state.doc.toString(), cursor: snapshot.state.selection.main.head, databaseType: provider, selection: snapshot.state.selection.main }) : [], [snapshot, provider])
-  const sources = useMemo(() => snapshot ? sqlWildcardFields(snapshot, provider) : [], [snapshot, provider])
-  const inPreview = useMemo(() => snapshot ? sqlInListEdit(snapshot, inSource, provider, keywordCase) : null, [snapshot, inSource, provider, keywordCase])
-  const tableIssue = sqlTableNameIssue(tableName, provider) || (tableKind !== 'count' && (!/^\d+$/.test(limit) || Number(limit) < 1 || Number(limit) > 100_000) ? '行数须为 1 至 100,000 的整数。' : '')
-  const tableSql = buildSqlTableShortcut(tableKind, tableName, normalizeSqlShortcutLimit(limit), projection, keywordCase)
+'use client';
+import { uiText, type UiMessage, uiFailure, createUiMessages } from '../i18n/ui-message';
+import { createTranslator, type Locale, useTranslation } from '@/lib/i18n';
+import { messages as connectorMessages } from './sql-quick-actions.messages';
+const translateConnector = createTranslator(connectorMessages);
+import { useMemo, useRef, useState, type RefObject } from 'react';
+import type { EditorView } from '@codemirror/view';
+import type { RelationalProvider, SqlFormatterCase } from '@fouc/shared';
+import {
+  ArrowSquareOut,
+  BracketsCurly,
+  Check,
+  Clipboard,
+  CodeBlock,
+  Columns,
+  ClipboardText,
+  Table,
+  TextAa,
+  WarningCircle,
+} from '@phosphor-icons/react';
+import { SqlDialog } from './sql-library-dialog';
+import { SqlEditor } from './sql-editor';
+import {
+  captureSqlAction,
+  applySqlAction,
+  sqlTextActionEdit,
+  type SqlActionSnapshot,
+  type SqlTextAction,
+} from './sql-assistance/actions/editor-actions';
+import { formatSqlText, compressSqlText } from './sql-format/formatter';
+import {
+  analyzeIntentionActions,
+  type IntentionAction,
+} from './sql-assistance/actions/intention-actions';
+import {
+  intentionActionEdit,
+  sqlBlockCommentEdit,
+  sqlInListEdit,
+  sqlInListIssue,
+  sqlLineCommentEdit,
+  sqlWildcardEdit,
+  sqlWildcardFields,
+} from './sql-assistance/actions/action-edits';
+import {
+  buildSqlTableShortcut,
+  normalizeSqlShortcutLimit,
+  sqlShortcutContextTable,
+  sqlTableNameIssue,
+  sqlTableShortcutEdit,
+} from './sql-assistance/actions/table-shortcuts';
+import common from './relational.module.css';
+import styles from './sql-quick-actions.module.css';
+const connectorUiMessages = createUiMessages(connectorMessages);
+type Props = {
+  editorRef: RefObject<EditorView | null>;
+  provider: RelationalProvider;
+  disabled: boolean;
+  keywordCase?: SqlFormatterCase;
+  onFormatSql?: (sql: string) => Promise<string>;
+  onNotice: (message: string) => void;
+};
+const textActions = (
+  locale?: Locale,
+): {
+  id: SqlTextAction;
+  label: string;
+  note: string;
+}[] => {
+  const tConnector = createTranslator(connectorMessages, locale);
+  return [
+    {
+      id: 'upper',
+      label: tConnector('convertToUppercase'),
+      note: tConnector('preserveStringContentsAcrossTheSelection'),
+    },
+    {
+      id: 'lower',
+      label: tConnector('convertToLowercase'),
+      note: tConnector('preserveStringContentsAcrossTheSelection'),
+    },
+    {
+      id: 'quote-string',
+      label: tConnector('sqlStringQuoting'),
+      note: tConnector('escapeQuotesAndPreserveContentPrecision'),
+    },
+    {
+      id: 'quote-identifier',
+      label: tConnector('identifierQuoting'),
+      note: tConnector('useTheCurrentDatabaseSQuoteCharacters'),
+    },
+    {
+      id: 'unquote',
+      label: tConnector('removeOuterQuotes'),
+      note: tConnector('decodePairedQuotes'),
+    },
+    {
+      id: 'json-string',
+      label: tConnector('convertToJsonString'),
+      note: tConnector('forQueryTextInApplications'),
+    },
+  ];
+};
+export function SqlQuickActions({
+  editorRef,
+  provider,
+  disabled,
+  keywordCase = 'upper',
+  onFormatSql,
+  onNotice,
+}: Props) {
+  const { t: tConnector, locale } = useTranslation(connectorMessages);
+  const [snapshot, setSnapshot] = useState<SqlActionSnapshot | null>(null),
+    [errorStored, setError] = useState<UiMessage>(''),
+    [busy, setBusy] = useState(false);
+  const error = uiText(errorStored, locale);
+  const [tab, setTab] = useState<'context' | 'text' | 'in' | 'table'>('context'),
+    [inSource, setInSource] = useState(''),
+    [copied, setCopied] = useState(false);
+  const [tableName, setTableName] = useState(''),
+    [limit, setLimit] = useState('100'),
+    [projection, setProjection] = useState('id, name'),
+    [tableKind, setTableKind] = useState<'select' | 'count' | 'projection'>('select');
+  const [wildcard, setWildcard] = useState(false),
+    [fields, setFields] = useState<Record<string, string>>({});
+  const previewEditor = useRef<EditorView | null>(null);
+  const intentions = useMemo(
+    () =>
+      snapshot
+        ? analyzeIntentionActions({
+            sql: snapshot.state.doc.toString(),
+            cursor: snapshot.state.selection.main.head,
+            databaseType: provider,
+            selection: snapshot.state.selection.main,
+          })
+        : [],
+    [snapshot, provider],
+  );
+  const sources = useMemo(
+    () => (snapshot ? sqlWildcardFields(snapshot, provider) : []),
+    [snapshot, provider],
+  );
+  const inPreview = useMemo(
+    () => (snapshot ? sqlInListEdit(snapshot, inSource, provider, keywordCase) : null),
+    [snapshot, inSource, provider, keywordCase],
+  );
+  const tableIssue =
+    sqlTableNameIssue(tableName, provider, locale) ||
+    (tableKind !== 'count' && (!/^\d+$/.test(limit) || Number(limit) < 1 || Number(limit) > 100000)
+      ? tConnector('rowCountMustBeAnIntegerFromTo')
+      : '');
+  const tableSql = buildSqlTableShortcut(
+    tableKind,
+    tableName,
+    normalizeSqlShortcutLimit(limit),
+    projection,
+    keywordCase,
+  );
   function open() {
-    const current = captureSqlAction(editorRef.current)
-    if (!current) return
-    setSnapshot(current); setError(''); setCopied(false); setWildcard(false); setTab('context')
-    const range = current.state.selection.main
-    setInSource(range.empty ? '' : current.state.sliceDoc(range.from, range.to)); setTableName(sqlShortcutContextTable(current, provider))
-    setFields(Object.fromEntries(sqlWildcardFields(current, provider).map((source) => [source.id, source.fields.join('\n')])))
+    const current = captureSqlAction(editorRef.current);
+    if (!current) return;
+    setSnapshot(current);
+    setError('');
+    setCopied(false);
+    setWildcard(false);
+    setTab('context');
+    const range = current.state.selection.main;
+    setInSource(range.empty ? '' : current.state.sliceDoc(range.from, range.to));
+    setTableName(sqlShortcutContextTable(current, provider));
+    setFields(
+      Object.fromEntries(
+        sqlWildcardFields(current, provider).map((source) => [source.id, source.fields.join('\n')]),
+      ),
+    );
   }
-  function close() { setSnapshot(null); editorRef.current?.focus() }
+  function close() {
+    setSnapshot(null);
+    editorRef.current?.focus();
+  }
   function finish(edit: Parameters<typeof applySqlAction>[2], notice: string) {
-    if (!snapshot || disabled) return
-    if (!applySqlAction(() => editorRef.current, snapshot, edit)) { setError('编辑内容已变化，请关闭后重新打开快速操作。'); return }
-    close(); onNotice(notice)
+    if (!snapshot || disabled) return;
+    if (!applySqlAction(() => editorRef.current, snapshot, edit)) {
+      setError(connectorUiMessages.message('editorContentChangedCloseAndReopenQuickActions'));
+      return;
+    }
+    close();
+    onNotice(notice);
   }
   function apply(id: SqlTextAction) {
-    if (!snapshot) return
-    const edit = sqlTextActionEdit(snapshot, id, provider)
-    if (!edit) { setError('请选择可转换的 SQL 文本。'); return }
-    finish(edit, 'SQL 已更新，可使用撤销恢复。')
+    if (!snapshot) return;
+    const edit = sqlTextActionEdit(snapshot, id, provider);
+    if (!edit) {
+      setError(connectorUiMessages.message('selectSqlTextThatCanBeConverted'));
+      return;
+    }
+    finish(edit, tConnector('sqlUpdatedUseUndoToRestoreIt'));
   }
   async function transform(kind: 'format' | 'compress') {
-    if (!snapshot || busy) return
-    const range = snapshot.state.selection.main, from = range.empty ? 0 : range.from, to = range.empty ? snapshot.state.doc.length : range.to
-    const original = snapshot.state.sliceDoc(from, to)
-    setBusy(true); setError('')
+    if (!snapshot || busy) return;
+    const range = snapshot.state.selection.main,
+      from = range.empty ? 0 : range.from,
+      to = range.empty ? snapshot.state.doc.length : range.to;
+    const original = snapshot.state.sliceDoc(from, to);
+    setBusy(true);
+    setError('');
     try {
-      const result = kind === 'format' ? await (onFormatSql ? onFormatSql(original) : formatSqlText(original, provider)) : compressSqlText(original, provider)
-      if (result === original) { close(); onNotice('SQL 文本已经符合当前规则。'); return }
-      if (!applySqlAction(() => editorRef.current, snapshot, { changes: { from, to, insert: result }, anchor: from, head: from + result.length })) throw new Error('编辑内容已变化，请重新打开快速操作。')
-      close(); onNotice(kind === 'format' ? 'SQL 已格式化。' : 'SQL 已压缩。')
-    } catch (reason) { setError(reason instanceof Error ? reason.message : String(reason)) }
-    finally { setBusy(false) }
+      const result =
+        kind === 'format'
+          ? await (onFormatSql
+              ? onFormatSql(original)
+              : formatSqlText(original, provider, undefined))
+          : compressSqlText(original, provider, locale);
+      if (result === original) {
+        close();
+        onNotice(tConnector('sqlTextAlreadyFollowsTheCurrentRules'));
+        return;
+      }
+      if (
+        !applySqlAction(() => editorRef.current, snapshot, {
+          changes: { from, to, insert: result },
+          anchor: from,
+          head: from + result.length,
+        })
+      )
+        throw connectorUiMessages.error('editorContentChangedReopenQuickActions');
+      close();
+      onNotice(kind === 'format' ? tConnector('sqlFormatted') : tConnector('sqlMinified'));
+    } catch (reason) {
+      setError(reason instanceof Error ? uiFailure(reason) : String(reason));
+    } finally {
+      setBusy(false);
+    }
   }
   async function copy() {
-    if (!snapshot) return
-    const range = snapshot.state.selection.main
-    try { await navigator.clipboard.writeText(snapshot.state.sliceDoc(range.empty ? 0 : range.from, range.empty ? snapshot.state.doc.length : range.to)); setCopied(true); setError(''); onNotice('SQL 已复制。') }
-    catch { setError('复制失败，请选择 SQL 后手动复制。') }
+    if (!snapshot) return;
+    const range = snapshot.state.selection.main;
+    try {
+      await navigator.clipboard.writeText(
+        snapshot.state.sliceDoc(
+          range.empty ? 0 : range.from,
+          range.empty ? snapshot.state.doc.length : range.to,
+        ),
+      );
+      setCopied(true);
+      setError('');
+      onNotice(tConnector('sqlCopied'));
+    } catch {
+      setError(connectorUiMessages.message('copyFailedSelectTheSqlAndCopyItManually'));
+    }
   }
   async function readClipboard() {
-    if (busy) return
-    setBusy(true); setError('')
-    try { setInSource(await navigator.clipboard.readText()) }
-    catch { setError('无法读取剪贴板，请在下面直接粘贴列表。') }
-    finally { setBusy(false) }
+    if (busy) return;
+    setBusy(true);
+    setError('');
+    try {
+      setInSource(await navigator.clipboard.readText());
+    } catch {
+      setError(connectorUiMessages.message('unableToReadTheClipboardPasteTheListBelow'));
+    } finally {
+      setBusy(false);
+    }
   }
   function runIntention(action: IntentionAction) {
-    if (action.kind === 'expand_wildcard') { setWildcard(true); return }
-    finish(intentionActionEdit(action), action.kind === 'batch_qualify_identifiers' ? `已限定 ${action.replacements?.length ?? 0} 个字段，可单次撤销。` : '字段引用已更新。')
+    if (action.kind === 'expand_wildcard') {
+      setWildcard(true);
+      return;
+    }
+    finish(
+      intentionActionEdit(action),
+      action.kind === 'batch_qualify_identifiers'
+        ? tConnector('qualifiedColumnsUndoRestoresAllChangesAtOnce', {
+            p0: String(action.replacements?.length ?? 0),
+          })
+        : tConnector('columnReferencesUpdated'),
+    );
   }
   async function expand() {
-    if (!snapshot) return
-    const values = Object.fromEntries(Object.entries(fields).map(([id, source]) => [id, source.split(/\r?\n/).map((name) => name.trim()).filter(Boolean)]))
-    setBusy(true)
+    if (!snapshot) return;
+    const values = Object.fromEntries(
+      Object.entries(fields).map(([id, source]) => [
+        id,
+        source
+          .split(/\r?\n/)
+          .map((name) => name.trim())
+          .filter(Boolean),
+      ]),
+    );
+    setBusy(true);
     try {
-      const edit = await sqlWildcardEdit(snapshot, provider, values)
-      if (!edit) { setError('请为每个表填写实际字段，每行一个名称。'); return }
-      finish(edit, '已将通配符展开为指定字段。')
-    } catch (reason) { setError(reason instanceof Error ? reason.message : String(reason)) }
-    finally { setBusy(false) }
+      const edit = await sqlWildcardEdit(snapshot, provider, values);
+      if (!edit) {
+        setError(connectorUiMessages.message('enterTheActualColumnsForEachTableOneNamePer'));
+        return;
+      }
+      finish(edit, tConnector('wildcardExpandedToTheSpecifiedColumns'));
+    } catch (reason) {
+      setError(reason instanceof Error ? uiFailure(reason) : String(reason));
+    } finally {
+      setBusy(false);
+    }
   }
-  const locked = busy || disabled
-  const range = snapshot?.state.selection.main
-  const preview = tab === 'in' && inPreview?.result.ok ? inPreview.result.sql : tab === 'table' ? tableSql : snapshot?.state.sliceDoc(range?.empty ? 0 : range!.from, range?.empty ? snapshot.state.doc.length : range!.to) ?? ''
-  return <><button type="button" className="fouc-action" disabled={disabled} aria-label="SQL 快速操作" title="SQL 快速操作" onClick={open}><ClipboardText size={14} /><span>快速操作</span></button>{snapshot && <SqlDialog title="SQL 快速操作" busy={busy} className={styles.dialog} onClose={close}>
-    <div className={styles.intro}><span className={styles.icon}><ClipboardText size={21} /></span><div><strong>让编辑更顺手</strong><p>{range?.empty ? '光标与完整文档' : `已选择 ${range!.to - range!.from} 个字符`} · {provider === 'postgres' ? 'PostgreSQL' : provider === 'mysql' ? 'MySQL' : 'SQLite'}</p></div></div>
-    <nav className={styles.tabs} role="tablist" aria-label="SQL 快速操作分类">{([{ key: 'context', label: '光标意图', Icon: ClipboardText }, { key: 'text', label: '文本编辑', Icon: TextAa }, { key: 'in', label: 'IN 列表', Icon: Clipboard }, { key: 'table', label: '表查询', Icon: Table }] as const).map(({ key, label, Icon }) => <button key={key} type="button" role="tab" aria-selected={tab === key} onClick={() => { setTab(key); setError('') }}><Icon size={14} />{label}</button>)}</nav>
-    <div className={styles.body}>
-      {tab === 'context' && <section><div className={styles.sectionHeading}><ClipboardText size={15} /><strong>当前 SQL 的编辑意图</strong></div>{intentions.length ? <div className={styles.intentions}>{intentions.map((action, index) => <button key={index} type="button" disabled={locked} onClick={() => runIntention(action)}><Columns size={15} /><span>{action.kind === 'expand_wildcard' ? '将 * 展开为字段' : action.kind === 'batch_qualify_identifiers' ? `为选区的 ${action.replacements?.length ?? 0} 个字段添加限定符` : action.kind === 'unqualify_identifier' ? '移除表限定符' : `限定为 ${action.label ?? action.replacement}`}</span><code>{action.kind === 'expand_wildcard' ? '显式字段列表' : action.replacement || '保留已限定字段与字符串'}</code></button>)}</div> : <div className={styles.empty}><ClipboardText size={24} /><strong>当前位置没有可用的字段操作</strong><p>将光标放在字段或 SELECT * 上；选择多个字段可批量添加表限定符。</p></div>}
-        {wildcard && <div className={styles.fieldForm}><div className={styles.sectionHeading}><Columns size={15} /><strong>确认需要展开的字段</strong></div>{sources.map((source) => <label key={source.id}>{source.label}<small>{source.fields.length ? '源自当前 SQL 的已知投影，可修改' : '请填写实际字段，每行一个名称'}</small><textarea aria-label={`${source.label} 展开字段`} value={fields[source.id] ?? ''} disabled={locked} onChange={(event) => setFields((current) => ({ ...current, [source.id]: event.target.value }))} /></label>)}<button type="button" className={common.primary} disabled={locked || sources.some((source) => !fields[source.id]?.trim())} onClick={() => void expand()}>替换通配符</button></div>}
-        <div className={styles.utilityActions}><button type="button" disabled={locked} onClick={() => finish(sqlLineCommentEdit(snapshot), '行注释已切换。')}>切换行注释</button><button type="button" disabled={locked || range?.empty} onClick={() => { const edit = sqlBlockCommentEdit(snapshot, provider); if (edit) finish(edit, '块注释已切换。'); else setError('请选择不含块注释结束符的文本。') }}>切换块注释</button></div>
-      </section>}
-      {tab === 'text' && <><div className={styles.sectionHeading}><TextAa size={15} /><strong>选区操作</strong></div><div className={styles.actionGrid}>{textActions.map((entry) => <button type="button" key={entry.id} disabled={locked || range?.empty && entry.id !== 'quote-string'} onClick={() => apply(entry.id)}><span>{entry.label}</span><small>{entry.note}</small></button>)}</div>
-      <div className={styles.sectionHeading}><CodeBlock size={15} /><strong>SQL 文本</strong></div><div className={styles.utilityActions}><button type="button" disabled={locked} onClick={() => void transform('format')}><BracketsCurly size={14} />格式化</button><button type="button" disabled={locked} onClick={() => void transform('compress')}><ArrowSquareOut size={14} />压缩</button><button type="button" disabled={locked} onClick={() => void copy()}>{copied ? <Check size={14} /> : <Clipboard size={14} />}{copied ? '已复制' : '复制 SQL'}</button></div></>}
-      {tab === 'in' && <div className={styles.fieldForm}><div className={styles.sectionHeading}><Clipboard size={15} /><strong>将列表转换为 IN 条件</strong><button type="button" disabled={locked} className={styles.textButton} onClick={() => void readClipboard()}>读取剪贴板</button></div><label>列表内容<textarea aria-label="IN 列表源内容" value={inSource} disabled={locked} spellCheck={false} placeholder={'Alpha\nBeta\nO\'Reilly'} onChange={(event) => setInSource(event.target.value)} /></label><p>支持换行、逗号、Tab、简单斜杠列表；字符串自动转义，未加引号的 NULL 保留为空值。</p>{inSource && inPreview && !inPreview.result.ok && <p className={styles.error} role="alert">{sqlInListIssue(inPreview.result)}</p>}<button type="button" className={common.primary} disabled={locked || !inPreview?.edit} onClick={() => { if (inPreview?.edit) finish(inPreview.edit, `已插入 ${inPreview.result.ok ? inPreview.result.valueCount : 0} 个列表值。`) }}>插入 IN 条件</button></div>}
-      {tab === 'table' && <div className={styles.fieldForm}><div className={styles.sectionHeading}><Table size={15} /><strong>基于当前表生成查询</strong></div><div className={styles.tableModes} role="group" aria-label="表查询类型">{([{ kind: 'select', label: '前 N 行' }, { kind: 'count', label: '行数统计' }, { kind: 'projection', label: '字段投影' }] as const).map(({ kind, label }) => <button key={kind} type="button" aria-pressed={tableKind === kind} onClick={() => setTableKind(kind)}>{label}</button>)}</div><div className={styles.tableFields}><label>表名<input aria-label="快捷查询表名" value={tableName} disabled={locked} placeholder="schema.table" onChange={(event) => setTableName(event.target.value)} /></label>{tableKind !== 'count' && <label>返回行数<input aria-label="快捷查询返回行数" value={limit} disabled={locked} inputMode="numeric" onChange={(event) => setLimit(event.target.value)} /></label>}</div>{tableKind === 'projection' && <label>字段或 SQL 表达式<textarea aria-label="快捷查询字段投影" value={projection} disabled={locked} onChange={(event) => setProjection(event.target.value)} /></label>}{tableIssue && <p className={styles.error} role="alert">{tableIssue}</p>}<p>生成的查询追加到文档，保留原始内容；由你检查后执行。</p><button type="button" className={common.primary} disabled={locked || Boolean(tableIssue) || tableKind === 'projection' && !projection.trim()} onClick={() => finish(sqlTableShortcutEdit(snapshot, tableSql), '表查询已添加到 SQL 文档。')}>添加查询到文档</button></div>}
-      <div className={styles.preview}><SqlEditor value={preview} onChange={() => {}} onRun={() => {}} editorRef={previewEditor} provider={provider} readOnly label="快速操作 SQL 预览" /></div>
-      {error && <p className={styles.error} role="alert"><WarningCircle size={14} />{error}</p>}
-    </div><footer className={`${common.dialogFooter} ${styles.footer}`}><small>操作只修改编辑内容 · 支持单次撤销</small><button type="button" className={common.secondary} disabled={busy} onClick={close}>关闭</button></footer>
-  </SqlDialog>}</>
+  const locked = busy || disabled;
+  const range = snapshot?.state.selection.main;
+  const preview =
+    tab === 'in' && inPreview?.result.ok
+      ? inPreview.result.sql
+      : tab === 'table'
+        ? tableSql
+        : (snapshot?.state.sliceDoc(
+            range?.empty ? 0 : range!.from,
+            range?.empty ? snapshot.state.doc.length : range!.to,
+          ) ?? '');
+  return (
+    <>
+      <button
+        type="button"
+        className="fouc-action"
+        disabled={disabled}
+        aria-label={tConnector('sqlQuickActions')}
+        title={tConnector('sqlQuickActions')}
+        onClick={open}
+      >
+        <ClipboardText size={14} />
+        <span>{tConnector('quickActions')}</span>
+      </button>
+      {snapshot && (
+        <SqlDialog
+          title={tConnector('sqlQuickActions')}
+          busy={busy}
+          className={styles.dialog}
+          onClose={close}
+        >
+          <div className={styles.intro}>
+            <span className={styles.icon}>
+              <ClipboardText size={21} />
+            </span>
+            <div>
+              <strong>{tConnector('makeEditingEasier')}</strong>
+              <p>
+                {range?.empty
+                  ? tConnector('cursorAndFullDocument')
+                  : tConnector('charactersSelected', { p0: String(range!.to - range!.from) })}{' '}
+                ·{' '}
+                {provider === 'postgres' ? 'PostgreSQL' : provider === 'mysql' ? 'MySQL' : 'SQLite'}
+              </p>
+            </div>
+          </div>
+          <nav
+            className={styles.tabs}
+            role="tablist"
+            aria-label={tConnector('sqlQuickActionCategories')}
+          >
+            {(
+              [
+                { key: 'context', label: tConnector('cursorIntent'), Icon: ClipboardText },
+                { key: 'text', label: tConnector('textEditing'), Icon: TextAa },
+                { key: 'in', label: tConnector('inList'), Icon: Clipboard },
+                { key: 'table', label: tConnector('tableQuery'), Icon: Table },
+              ] as const
+            ).map(({ key, label, Icon }) => (
+              <button
+                key={key}
+                type="button"
+                role="tab"
+                aria-selected={tab === key}
+                onClick={() => {
+                  setTab(key);
+                  setError('');
+                }}
+              >
+                <Icon size={14} />
+                {label}
+              </button>
+            ))}
+          </nav>
+          <div className={styles.body}>
+            {tab === 'context' && (
+              <section>
+                <div className={styles.sectionHeading}>
+                  <ClipboardText size={15} />
+                  <strong>{tConnector('editingIntentForCurrentSql')}</strong>
+                </div>
+                {intentions.length ? (
+                  <div className={styles.intentions}>
+                    {intentions.map((action, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        disabled={locked}
+                        onClick={() => runIntention(action)}
+                      >
+                        <Columns size={15} />
+                        <span>
+                          {action.kind === 'expand_wildcard'
+                            ? tConnector('expandToColumns')
+                            : action.kind === 'batch_qualify_identifiers'
+                              ? tConnector('qualifySelectedColumns', {
+                                  p0: String(action.replacements?.length ?? 0),
+                                })
+                              : action.kind === 'unqualify_identifier'
+                                ? tConnector('removeTableQualifiers')
+                                : tConnector('qualifyWith', {
+                                    p0: String(action.label ?? action.replacement),
+                                  })}
+                        </span>
+                        <code>
+                          {action.kind === 'expand_wildcard'
+                            ? tConnector('explicitColumnList')
+                            : action.replacement ||
+                              tConnector('preserveQualifiedColumnsAndStrings')}
+                        </code>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className={styles.empty}>
+                    <ClipboardText size={24} />
+                    <strong>{tConnector('noColumnActionsAvailableAtThisPosition')}</strong>
+                    <p>{tConnector('placeTheCursorOnAColumnOrSelectSelectMultiple')}</p>
+                  </div>
+                )}
+                {wildcard && (
+                  <div className={styles.fieldForm}>
+                    <div className={styles.sectionHeading}>
+                      <Columns size={15} />
+                      <strong>{tConnector('confirmColumnsToExpand')}</strong>
+                    </div>
+                    {sources.map((source) => (
+                      <label key={source.id}>
+                        {source.label}
+                        <small>
+                          {source.fields.length
+                            ? tConnector('knownProjectionsFromTheCurrentSqlEditable')
+                            : tConnector('enterActualColumnsOneNamePerLine')}
+                        </small>
+                        <textarea
+                          aria-label={tConnector('expansionColumns', { p0: String(source.label) })}
+                          value={fields[source.id] ?? ''}
+                          disabled={locked}
+                          onChange={(event) =>
+                            setFields((current) => ({
+                              ...current,
+                              [source.id]: event.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+                    ))}
+                    <button
+                      type="button"
+                      className={common.primary}
+                      disabled={locked || sources.some((source) => !fields[source.id]?.trim())}
+                      onClick={() => void expand()}
+                    >
+                      {tConnector('replaceWildcard')}
+                    </button>
+                  </div>
+                )}
+                <div className={styles.utilityActions}>
+                  <button
+                    type="button"
+                    disabled={locked}
+                    onClick={() =>
+                      finish(
+                        sqlLineCommentEdit(snapshot),
+                        translateConnector('lineCommentsToggled'),
+                      )
+                    }
+                  >
+                    {tConnector('toggleLineComments')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={locked || range?.empty}
+                    onClick={() => {
+                      const edit = sqlBlockCommentEdit(snapshot, provider);
+                      if (edit) finish(edit, translateConnector('blockCommentsToggled'));
+                      else
+                        setError(
+                          connectorUiMessages.message(
+                            'selectTextWithoutABlockCommentClosingDelimiter',
+                          ),
+                        );
+                    }}
+                  >
+                    {tConnector('toggleBlockComments')}
+                  </button>
+                </div>
+              </section>
+            )}
+            {tab === 'text' && (
+              <>
+                <div className={styles.sectionHeading}>
+                  <TextAa size={15} />
+                  <strong>{tConnector('selectionActions')}</strong>
+                </div>
+                <div className={styles.actionGrid}>
+                  {textActions(locale).map((entry) => (
+                    <button
+                      type="button"
+                      key={entry.id}
+                      disabled={locked || (range?.empty && entry.id !== 'quote-string')}
+                      onClick={() => apply(entry.id)}
+                    >
+                      <span>{entry.label}</span>
+                      <small>{entry.note}</small>
+                    </button>
+                  ))}
+                </div>
+                <div className={styles.sectionHeading}>
+                  <CodeBlock size={15} />
+                  <strong>{tConnector('sqlText')}</strong>
+                </div>
+                <div className={styles.utilityActions}>
+                  <button type="button" disabled={locked} onClick={() => void transform('format')}>
+                    <BracketsCurly size={14} />
+                    {tConnector('formatting')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={locked}
+                    onClick={() => void transform('compress')}
+                  >
+                    <ArrowSquareOut size={14} />
+                    {tConnector('minify')}
+                  </button>
+                  <button type="button" disabled={locked} onClick={() => void copy()}>
+                    {copied ? <Check size={14} /> : <Clipboard size={14} />}
+                    {copied ? tConnector('copied') : tConnector('copySql')}
+                  </button>
+                </div>
+              </>
+            )}
+            {tab === 'in' && (
+              <div className={styles.fieldForm}>
+                <div className={styles.sectionHeading}>
+                  <Clipboard size={15} />
+                  <strong>{tConnector('convertAListToAnInCondition')}</strong>
+                  <button
+                    type="button"
+                    disabled={locked}
+                    className={styles.textButton}
+                    onClick={() => void readClipboard()}
+                  >
+                    {tConnector('readClipboard')}
+                  </button>
+                </div>
+                <label>
+                  {tConnector('listContent')}
+                  <textarea
+                    aria-label={tConnector('inListSourceContent')}
+                    value={inSource}
+                    disabled={locked}
+                    spellCheck={false}
+                    placeholder={"Alpha\nBeta\nO'Reilly"}
+                    onChange={(event) => setInSource(event.target.value)}
+                  />
+                </label>
+                <p>{tConnector('supportsNewlinesCommasTabsAndSimpleSlashSeparatedListsStrings')}</p>
+                {inSource && inPreview && !inPreview.result.ok && (
+                  <p className={styles.error} role="alert">
+                    {sqlInListIssue(inPreview.result, locale)}
+                  </p>
+                )}
+                <button
+                  type="button"
+                  className={common.primary}
+                  disabled={locked || !inPreview?.edit}
+                  onClick={() => {
+                    if (inPreview?.edit)
+                      finish(
+                        inPreview.edit,
+                        translateConnector('insertedListValues', {
+                          p0: String(inPreview.result.ok ? inPreview.result.valueCount : 0),
+                        }),
+                      );
+                  }}
+                >
+                  {tConnector('insertInCondition')}
+                </button>
+              </div>
+            )}
+            {tab === 'table' && (
+              <div className={styles.fieldForm}>
+                <div className={styles.sectionHeading}>
+                  <Table size={15} />
+                  <strong>{tConnector('generateAQueryForTheCurrentTable')}</strong>
+                </div>
+                <div
+                  className={styles.tableModes}
+                  role="group"
+                  aria-label={tConnector('tableQueryType')}
+                >
+                  {(
+                    [
+                      { kind: 'select', label: tConnector('firstNRows') },
+                      { kind: 'count', label: tConnector('rowCount') },
+                      { kind: 'projection', label: tConnector('columnProjection') },
+                    ] as const
+                  ).map(({ kind, label }) => (
+                    <button
+                      key={kind}
+                      type="button"
+                      aria-pressed={tableKind === kind}
+                      onClick={() => setTableKind(kind)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <div className={styles.tableFields}>
+                  <label>
+                    {tConnector('tableName')}
+                    <input
+                      aria-label={tConnector('quickQueryTableName')}
+                      value={tableName}
+                      disabled={locked}
+                      placeholder="schema.table"
+                      onChange={(event) => setTableName(event.target.value)}
+                    />
+                  </label>
+                  {tableKind !== 'count' && (
+                    <label>
+                      {tConnector('rowsToReturn')}
+                      <input
+                        aria-label={tConnector('quickQueryRowCount')}
+                        value={limit}
+                        disabled={locked}
+                        inputMode="numeric"
+                        onChange={(event) => setLimit(event.target.value)}
+                      />
+                    </label>
+                  )}
+                </div>
+                {tableKind === 'projection' && (
+                  <label>
+                    {tConnector('columnsOrSqlExpressions')}
+                    <textarea
+                      aria-label={tConnector('quickQueryColumnProjection')}
+                      value={projection}
+                      disabled={locked}
+                      onChange={(event) => setProjection(event.target.value)}
+                    />
+                  </label>
+                )}
+                {tableIssue && (
+                  <p className={styles.error} role="alert">
+                    {tableIssue}
+                  </p>
+                )}
+                <p>{tConnector('theGeneratedQueryIsAppendedToTheDocumentPreservingThe')}</p>
+                <button
+                  type="button"
+                  className={common.primary}
+                  disabled={
+                    locked ||
+                    Boolean(tableIssue) ||
+                    (tableKind === 'projection' && !projection.trim())
+                  }
+                  onClick={() =>
+                    finish(
+                      sqlTableShortcutEdit(snapshot, tableSql),
+                      translateConnector('tableQueryAddedToTheSqlDocument'),
+                    )
+                  }
+                >
+                  {tConnector('addQueryToDocument')}
+                </button>
+              </div>
+            )}
+            <div className={styles.preview}>
+              <SqlEditor
+                value={preview}
+                onChange={() => {}}
+                onRun={() => {}}
+                editorRef={previewEditor}
+                provider={provider}
+                readOnly
+                label={tConnector('quickActionSqlPreview')}
+              />
+            </div>
+            {error && (
+              <p className={styles.error} role="alert">
+                <WarningCircle size={14} />
+                {error}
+              </p>
+            )}
+          </div>
+          <footer className={`${common.dialogFooter} ${styles.footer}`}>
+            <small>{tConnector('actionsOnlyChangeEditorContentUndoRestoresChangesAtOnce')}</small>
+            <button type="button" className={common.secondary} disabled={busy} onClick={close}>
+              {tConnector('close')}
+            </button>
+          </footer>
+        </SqlDialog>
+      )}
+    </>
+  );
 }

@@ -1,13 +1,9 @@
 'use client';
-
+import { uiText, type UiMessage, uiFailure, createUiMessages } from '../../i18n/ui-message';
+import { useTranslation } from '@/lib/i18n';
+import { messages as connectorMessages } from './connection-source-assistant.messages';
 import { useId, useState } from 'react';
-import {
-  ArrowDown,
-  Check,
-  Copy,
-  Link,
-  WarningCircle,
-} from '@phosphor-icons/react';
+import { ArrowDown, Check, Copy, Link, WarningCircle } from '@phosphor-icons/react';
 import type { NativeNetworkProvider } from '@fouc/shared/connection-options';
 import {
   buildConnectionSource,
@@ -16,7 +12,7 @@ import {
   type ParsedConnectionSource,
 } from '@fouc/shared/connection-options-url';
 import styles from './connection-options.module.css';
-
+const connectorUiMessages = createUiMessages(connectorMessages);
 export type ConnectionSourceAssistantProps = {
   provider: NativeNetworkProvider;
   fields: ConnectionUrlFields;
@@ -24,7 +20,6 @@ export type ConnectionSourceAssistantProps = {
   disabled?: boolean;
   onNotice?: (message: string) => void;
 };
-
 export function ConnectionSourceAssistant({
   provider,
   fields,
@@ -32,6 +27,7 @@ export function ConnectionSourceAssistant({
   disabled = false,
   onNotice,
 }: ConnectionSourceAssistantProps) {
+  const { t: tConnector, locale } = useTranslation(connectorMessages);
   const id = useId();
   const [source, setSource] = useState(''),
     [visible, setVisible] = useState(false);
@@ -39,15 +35,15 @@ export function ConnectionSourceAssistant({
     source: string;
     result: ParsedConnectionSource;
   } | null>(null);
-  const [error, setError] = useState(''),
-    [feedback, setFeedback] = useState('');
+  const [errorStored, setError] = useState<UiMessage>(''),
+    [feedbackStored, setFeedback] = useState<UiMessage>('');
+  const error = uiText(errorStored, locale);
+  const feedback = uiText(feedbackStored, locale);
   const [format, setFormat] = useState<'url' | 'dsn'>('url');
   const [includePassword, setIncludePassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const preview =
-    parsed?.source === source && parsed.result.fields.provider === provider
-      ? parsed.result
-      : null;
+    parsed?.source === source && parsed.result.fields.provider === provider ? parsed.result : null;
   let built: ReturnType<typeof buildConnectionSource> | null = null,
     buildError = '';
   try {
@@ -57,9 +53,11 @@ export function ConnectionSourceAssistant({
       includePassword,
     );
   } catch (reason) {
-    buildError = reason instanceof Error ? reason.message : '连接 URL 无法生成';
+    buildError =
+      reason instanceof Error
+        ? uiText(reason, locale)
+        : tConnector('couldNotGenerateTheConnectionUrl');
   }
-
   function inspect() {
     setError('');
     setFeedback('');
@@ -68,7 +66,9 @@ export function ConnectionSourceAssistant({
     } catch (reason) {
       setParsed(null);
       setError(
-        reason instanceof Error ? reason.message : '连接 URL / DSN 无法解析',
+        reason instanceof Error
+          ? uiFailure(reason)
+          : connectorUiMessages.message('couldNotParseTheConnectionUrlDsn'),
       );
     }
   }
@@ -80,31 +80,40 @@ export function ConnectionSourceAssistant({
     setFeedback('');
     try {
       if (!navigator.clipboard?.writeText)
-        throw new Error('当前浏览器未提供剪贴板权限，可选中生成文本手动复制');
+        throw connectorUiMessages.error(
+          'clipboardPermissionIsUnavailableSelectTheGeneratedTextToCopy',
+        );
       await navigator.clipboard.writeText(text);
       const message =
         includePassword && fields.password
-          ? '已复制包含密码的连接文本'
-          : '已复制连接文本，未包含密码';
-      setFeedback(message);
+          ? tConnector('copiedConnectionTextIncludingThePassword')
+          : tConnector('copiedConnectionTextWithoutThePassword');
+      setFeedback(
+        includePassword && fields.password
+          ? connectorUiMessages.message('copiedConnectionTextIncludingThePassword')
+          : connectorUiMessages.message('copiedConnectionTextWithoutThePassword'),
+      );
       onNotice?.(message);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : '剪贴板写入失败');
+      setError(
+        reason instanceof Error
+          ? uiFailure(reason)
+          : connectorUiMessages.message('couldNotWriteToTheClipboard'),
+      );
     } finally {
       setBusy(false);
     }
   }
-
   return (
     <details className={styles.assistant}>
       <summary>
         <Link size={15} />
-        <strong>连接 URL / DSN</strong>
-        <span>解析与复制</span>
+        <strong>{tConnector('connectionUrlDsn')}</strong>
+        <span>{tConnector('parseAndCopy')}</span>
       </summary>
       <div className={styles.assistantBody}>
         <label className={styles.field} htmlFor={`${id}-source`}>
-          <span>粘贴连接文本</span>
+          <span>{tConnector('pasteConnectionText')}</span>
           <div className={styles.secretInput}>
             <input
               id={`${id}-source`}
@@ -115,9 +124,7 @@ export function ConnectionSourceAssistant({
               autoComplete="off"
               spellCheck={false}
               placeholder={
-                provider === 'postgres'
-                  ? 'postgresql://… 或 host=… dbname=…'
-                  : `${provider}://…`
+                provider === 'postgres' ? tConnector('postgresqlOrHostDbname') : `${provider}://…`
               }
               onChange={(event) => {
                 setSource(event.target.value);
@@ -131,61 +138,55 @@ export function ConnectionSourceAssistant({
               aria-pressed={visible}
               onClick={() => setVisible((current) => !current)}
             >
-              {visible ? '隐藏' : '显示'}
+              {visible ? tConnector('hide') : tConnector('showing')}
             </button>
           </div>
         </label>
         <div className={styles.sourceActions}>
-          <small>文本可能包含密码，仅保留在当前表单。</small>
-          <button
-            type="button"
-            disabled={disabled || !source.trim()}
-            onClick={inspect}
-          >
-            解析连接文本
+          <small>{tConnector('theTextMayContainAPasswordAndIsRetainedOnly')}</small>
+          <button type="button" disabled={disabled || !source.trim()} onClick={inspect}>
+            {tConnector('parseConnectionText')}
           </button>
         </div>
         {preview && (
           <div className={styles.parsed}>
             <dl>
               <div>
-                <dt>主机</dt>
+                <dt>{tConnector('host')}</dt>
                 <dd>
                   {preview.fields.mongo?.hosts
                     .map(
-                      (host) =>
-                        `${host.host}${preview.fields.mongo?.srv ? '' : `:${host.port}`}`,
+                      (host) => `${host.host}${preview.fields.mongo?.srv ? '' : `:${host.port}`}`,
                     )
-                    .join(', ') ||
-                    `${preview.fields.host}:${preview.fields.port}`}
+                    .join(', ') || `${preview.fields.host}:${preview.fields.port}`}
                 </dd>
               </div>
               <div>
-                <dt>数据库</dt>
-                <dd>{preview.fields.database || '未指定'}</dd>
+                <dt>{tConnector('database')}</dt>
+                <dd>{preview.fields.database || tConnector('notSpecified')}</dd>
               </div>
               <div>
-                <dt>用户名</dt>
-                <dd>{preview.fields.username || '未指定'}</dd>
+                <dt>{tConnector('username')}</dt>
+                <dd>{preview.fields.username || tConnector('notSpecified')}</dd>
               </div>
               <div>
                 <dt>TLS</dt>
                 <dd>
                   {preview.fields.connectionOptions.tls?.enabled
-                    ? '开启 · 完整证书校验'
-                    : '关闭'}
+                    ? tConnector('enabledFullCertificateVerification')
+                    : tConnector('close')}
                 </dd>
               </div>
             </dl>
             {preview.containsPassword && (
               <p className={styles.hint}>
-                已解析密码；应用后仅用于本次连接或测试。
+                {tConnector('passwordParsedAfterApplyingItIsUsedOnlyForThis')}
               </p>
             )}
             {preview.warnings.map((warning) => (
-              <p className={styles.warning} key={warning}>
+              <p className={styles.warning} key={warning.code}>
                 <WarningCircle size={13} />
-                {warning}
+                {uiText(warning, locale)}
               </p>
             ))}
             <button
@@ -195,30 +196,30 @@ export function ConnectionSourceAssistant({
               onClick={() => {
                 try {
                   onApply(preview);
-                  setFeedback('已应用到连接表单');
+                  setFeedback(connectorUiMessages.message('appliedToTheConnectionForm'));
                   setSource('');
                   setParsed(null);
                   setError('');
                 } catch (reason) {
                   setError(
                     reason instanceof Error
-                      ? reason.message
-                      : '连接文本应用失败',
+                      ? uiFailure(reason)
+                      : connectorUiMessages.message('couldNotApplyConnectionText'),
                   );
                 }
               }}
             >
               <ArrowDown size={14} />
-              应用到表单
+              {tConnector('applyToForm')}
             </button>
           </div>
         )}
         <div className={styles.generated}>
           <div className={styles.sourceActions}>
-            <strong>根据当前表单生成</strong>
+            <strong>{tConnector('generateFromTheCurrentForm')}</strong>
             {provider === 'postgres' && (
               <select
-                aria-label="连接文本格式"
+                aria-label={tConnector('connectionTextFormat')}
                 disabled={disabled}
                 value={format}
                 onChange={(event) => {
@@ -226,7 +227,7 @@ export function ConnectionSourceAssistant({
                   setFeedback('');
                 }}
               >
-                <option value="url">连接 URL</option>
+                <option value="url">{tConnector('connectionUrl')}</option>
                 <option value="dsn">libpq DSN</option>
               </select>
             )}
@@ -241,18 +242,18 @@ export function ConnectionSourceAssistant({
                 setFeedback('');
               }}
             />
-            在复制文本中包含密码
+            {tConnector('includePasswordInCopiedText')}
           </label>
           {includePassword && fields.password && (
             <p className={styles.warning}>
               <WarningCircle size={13} />
-              复制内容包含密码，请确认粘贴位置。
+              {tConnector('theCopiedTextContainsAPasswordCheckWhereYouPaste')}
             </p>
           )}
           {built && (
             <textarea
               readOnly
-              aria-label="生成的连接文本"
+              aria-label={tConnector('generatedConnectionText')}
               value={built.text}
               rows={3}
               spellCheck={false}
@@ -260,19 +261,17 @@ export function ConnectionSourceAssistant({
           )}
           {buildError && <p className={styles.hint}>{buildError}</p>}
           {built?.warnings.map((warning) => (
-            <p className={styles.hint} key={warning}>
-              {warning}
+            <p className={styles.hint} key={warning.code}>
+              {uiText(warning, locale)}
             </p>
           ))}
-          <button
-            type="button"
-            disabled={disabled || busy || !built}
-            onClick={() => void copy()}
-          >
+          <button type="button" disabled={disabled || busy || !built} onClick={() => void copy()}>
             <Copy size={14} />
             {busy
-              ? '复制中…'
-              : `复制${provider === 'postgres' && format === 'dsn' ? ' DSN' : ' URL'}`}
+              ? tConnector('copying')
+              : tConnector('copy', {
+                  p0: String(provider === 'postgres' && format === 'dsn' ? ' DSN' : ' URL'),
+                })}
           </button>
         </div>
         {error && (

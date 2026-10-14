@@ -1,8 +1,13 @@
-import type { DialectOptions } from "sql-formatter/dist/esm/dialect.js";
-import { createRenderers, loadEngine, type SqlFormatterEngine, type SqlFormatterParamValues } from "./internals";
-import { printSqlLayout, type SqlLayoutOptions } from "./printer";
+import type { DialectOptions } from 'sql-formatter/dist/esm/dialect.js';
+import {
+  createRenderers,
+  loadEngine,
+  type SqlFormatterEngine,
+  type SqlFormatterParamValues,
+} from './internals';
+import { printSqlLayout, type SqlLayoutOptions } from './printer';
 
-export type { SqlLayoutOptions } from "./printer";
+export type { SqlLayoutOptions } from './printer';
 
 /**
  * Default layout knobs: a 120-column hard wrap, element lists of up to three
@@ -14,8 +19,8 @@ export const DEFAULT_SQL_LAYOUT_OPTIONS: SqlLayoutOptions = {
   keepElementsOnOneLine: 3,
   indentWidth: 2,
   joinIndentWidth: 4,
-  keywordCase: "preserve",
-  logicalOperatorNewline: "before",
+  keywordCase: 'preserve',
+  logicalOperatorNewline: 'before',
   linesBetweenQueries: 1,
   useTabs: false,
   fromClauseSourceOnSameLine: true,
@@ -38,7 +43,8 @@ export interface SqlLayoutRequest {
 }
 
 function dialectFor(engine: SqlFormatterEngine, request: SqlLayoutRequest) {
-  const dialectOptions = request.dialectOptions ?? engine.dialects[request.language] ?? engine.dialects.sql;
+  const dialectOptions =
+    request.dialectOptions ?? engine.dialects[request.language] ?? engine.dialects.sql;
   return engine.createDialect(dialectOptions);
 }
 
@@ -56,7 +62,7 @@ export async function formatSqlLayout(request: SqlLayoutRequest): Promise<string
   const dialect = dialectFor(engine, request);
   const options: SqlLayoutOptions = {
     ...DEFAULT_SQL_LAYOUT_OPTIONS,
-    keywordCase: (request.cfg.keywordCase as SqlLayoutOptions["keywordCase"]) ?? "preserve",
+    keywordCase: (request.cfg.keywordCase as SqlLayoutOptions['keywordCase']) ?? 'preserve',
     ...request.options,
   };
   // `indentStyle` selects sql-formatter's tabular layouts, which pad every clause
@@ -66,12 +72,22 @@ export async function formatSqlLayout(request: SqlLayoutRequest): Promise<string
   // printer then re-bases onto the column it measured.
   // The annotation keeps the index signature spread objects would otherwise lose,
   // so `paramTypes`/`params` stay readable below.
-  const cfg: Record<string, unknown> = { ...request.cfg, indentStyle: "standard", useTabs: false };
+  const cfg: Record<string, unknown> = { ...request.cfg, indentStyle: 'standard', useTabs: false };
 
   try {
-    const statements = engine.parse(request.sql, dialect, (cfg.paramTypes as Record<string, unknown>) ?? {});
+    const statements = engine.parse(
+      request.sql,
+      dialect,
+      (cfg.paramTypes as Record<string, unknown>) ?? {},
+    );
     return printSqlLayout(statements, {
-      renderers: createRenderers(engine, dialect, cfg, new engine.Params(cfg.params as SqlFormatterParamValues), options.indentWidth),
+      renderers: createRenderers(
+        engine,
+        dialect,
+        cfg,
+        new engine.Params(cfg.params as SqlFormatterParamValues),
+        options.indentWidth,
+      ),
       options,
     });
   } catch {

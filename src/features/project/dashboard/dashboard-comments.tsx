@@ -1,8 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useTranslation } from '@/lib/i18n';
+import { fixtureField } from '../i18n/display';
+import { messages } from './i18n/dashboard-comments';
+
 import { DownloadSimple, File } from '@phosphor-icons/react';
-import { Avatar } from './dashboard-ui';
+import { useState } from 'react';
 import { downloadFile } from './dashboard-download';
 import {
   dashboardPeople,
@@ -10,6 +13,7 @@ import {
   type DashboardComment,
 } from './dashboard-model';
 import styles from './dashboard-task-dialog.module.css';
+import { Avatar } from './dashboard-ui';
 
 export function MentionText({ text }: { text: string }) {
   return text.split(/(@[\w.]+)/g).map((part, index) =>
@@ -53,16 +57,24 @@ function downloadAttachment(attachment: DashboardAttachment) {
 }
 
 function AttachmentPreview({ attachment }: { attachment: DashboardAttachment }) {
+  const { t, locale } = useTranslation(messages);
+
   const original = attachment.kind === 'file' && Boolean(attachment.content);
   const image = original && /^data:image\/(png|jpeg|gif|webp);base64,/i.test(attachment.content!);
   const notes =
     attachment.kind === 'figma'
-      ? 'A clean project dashboard with a neutral canvas, rounded cards, and clear task priorities.'
-      : 'Keep layouts consistent, use the shared typography scale, and make every status easy to recognize.';
+      ? t(
+          'A clean project dashboard with a neutral canvas, rounded cards, and clear task priorities.',
+        )
+      : t(
+          'Keep layouts consistent, use the shared typography scale, and make every status easy to recognize.',
+        );
 
   return (
     <div className={styles.attachmentPreview}>
-      <strong>{original ? attachment.name : 'Reference attachment'}</strong>
+      <strong>
+        {original ? fixtureField(attachment, 'name', locale) : t('Reference attachment')}
+      </strong>
       {original ? (
         <>
           {image ? (
@@ -73,7 +85,9 @@ function AttachmentPreview({ attachment }: { attachment: DashboardAttachment }) 
               alt={attachment.name}
             />
           ) : (
-            <p>{attachment.size} · Original file</p>
+            <p>
+              {attachment.size} {t('· Original file')}
+            </p>
           )}
           <button
             type="button"
@@ -81,12 +95,12 @@ function AttachmentPreview({ attachment }: { attachment: DashboardAttachment }) 
             onClick={() => downloadAttachment(attachment)}
           >
             <DownloadSimple size={13} />
-            Download file
+            {t('Download file')}
           </button>
         </>
       ) : (
         <>
-          <p>The video provides this file name only; its original file was not supplied.</p>
+          <p>{t('The video provides this file name only; its original file was not supplied.')}</p>
           <p>{notes}</p>
           <button
             type="button"
@@ -94,12 +108,12 @@ function AttachmentPreview({ attachment }: { attachment: DashboardAttachment }) 
             onClick={() =>
               downloadFile(
                 `${attachment.name}-reference-notes.txt`,
-                `${attachment.name}\n\nThe source video shows this attachment label. The original file was not supplied.\n\n${notes}\n`,
+                `${attachment.name}\n\n${t('The video provides this file name only; its original file was not supplied.')}\n\n${notes}\n`,
               )
             }
           >
             <DownloadSimple size={13} />
-            Download reference notes
+            {t('Download reference notes')}
           </button>
         </>
       )}
@@ -118,6 +132,8 @@ export function CommentItem({
   onLike: () => void;
   onDelete: () => void;
 }) {
+  const { t, locale } = useTranslation(messages);
+
   const [previewOpen, setPreviewOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const person = dashboardPeople[comment.author];
@@ -129,14 +145,14 @@ export function CommentItem({
       </div>
       <div className={styles.commentContent}>
         <div className={styles.commentMeta}>
-          <strong>{person.name}</strong>
+          <strong>{fixtureField(person, 'name', locale)}</strong>
           <span aria-hidden>·</span>
-          <time>{comment.time}</time>
+          <time>{fixtureField(comment, 'time', locale)}</time>
         </div>
         <div className={styles.commentBubble}>
           {comment.text ? (
             <p>
-              <MentionText text={comment.text} />
+              <MentionText text={fixtureField(comment, 'text', locale)} />
             </p>
           ) : null}
           {comment.attachment ? (
@@ -148,8 +164,8 @@ export function CommentItem({
                 onClick={() => setPreviewOpen((open) => !open)}
               >
                 <AttachmentIcon kind={comment.attachment.kind} />
-                <span>{comment.attachment.name}</span>
-                <small>{comment.attachment.size}</small>
+                <span>{fixtureField(comment.attachment, 'name', locale)}</span>
+                <small>{comment.attachment.size === 'Reference' ? t('Reference') : comment.attachment.size}</small>
               </button>
               {previewOpen ? <AttachmentPreview attachment={comment.attachment} /> : null}
             </>
@@ -157,9 +173,12 @@ export function CommentItem({
         </div>
         {confirmDelete ? (
           <div className={styles.commentActions}>
-            <span>Delete comment{comment.replyTo ? '' : ' and its replies'}?</span>
+            <span>
+              {t('Delete comment')}
+              {comment.replyTo ? '' : t(' and its replies')}?
+            </span>
             <button type="button" className="fouc-action" onClick={() => setConfirmDelete(false)}>
-              Cancel
+              {t('Cancel')}
             </button>
             <button
               type="button"
@@ -167,13 +186,13 @@ export function CommentItem({
               data-variant="destructive"
               onClick={onDelete}
             >
-              Delete
+              {t('Delete')}
             </button>
           </div>
         ) : (
           <div className={styles.commentActions}>
             <button type="button" className="fouc-action" onClick={onReply}>
-              Reply
+              {t('Reply')}
             </button>
             <span aria-hidden>·</span>
             <button
@@ -182,7 +201,7 @@ export function CommentItem({
               aria-pressed={Boolean(comment.liked)}
               onClick={onLike}
             >
-              {comment.liked ? 'Liked' : 'Like'}
+              {comment.liked ? t('Liked') : t('Like')}
             </button>
             <span aria-hidden>·</span>
             <button
@@ -191,7 +210,7 @@ export function CommentItem({
               data-variant="destructive"
               onClick={() => setConfirmDelete(true)}
             >
-              Delete
+              {t('Delete')}
             </button>
           </div>
         )}

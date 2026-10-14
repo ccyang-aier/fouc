@@ -1,3 +1,6 @@
+import { createTranslator, type Locale } from '@/lib/i18n';
+import { knowledgeMessages } from './cell-model.messages';
+
 /**
  * 类型化单元格视图模型（U06）——列与单元格的纯逻辑层。
  *
@@ -12,13 +15,16 @@
 
 import type { PropertyDefinition, PropertyValue } from '@fouc/shared/knowledge/contracts';
 
+const knowledgeT = createTranslator(knowledgeMessages);
+
 export type PropertyType = PropertyDefinition['type'];
 
 /** 契约的属性 ID 字符集：A-Za-z0-9_- 且避开保留字；随机 ID 取 UUID 去连字符。 */
 export function newPropertyId(): string {
-  return (typeof crypto !== 'undefined' && 'randomUUID' in crypto
-    ? crypto.randomUUID()
-    : `id${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`
+  return (
+    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `id${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`
   ).replaceAll('-', '');
 }
 
@@ -50,7 +56,8 @@ export function isAbsoluteUrl(value: string): boolean {
   }
 }
 
-const arrayTyped = (type: PropertyType) => type === 'multiSelect' || type === 'person' || type === 'relation';
+const arrayTyped = (type: PropertyType) =>
+  type === 'multiSelect' || type === 'person' || type === 'relation';
 
 /** 空单元格：缺失键、null、空字符串与空数组在展示上同为「空」。 */
 export function isCellEmpty(value: PropertyValue | undefined): boolean {
@@ -67,16 +74,20 @@ export type CellEditFailure =
   | { kind: 'uneditable' };
 
 /** 单元格编辑的产出：null 统一表示「清空」（所有类型的空值）。 */
-export type CellEditResult = { ok: true; value: PropertyValue } | { ok: false; failure: CellEditFailure };
+export type CellEditResult =
+  { ok: true; value: PropertyValue } | { ok: false; failure: CellEditFailure };
 
-export const cellEditFailureText: Record<CellEditFailure['kind'], string> = {
-  'not-number': '请输入有效数字',
-  'not-date': '请输入 YYYY-MM-DD 或完整日期时间',
-  'not-url': '请输入完整的 http(s) 链接',
-  'not-option': '只能选择列内已声明的选项',
-  'not-person': '人员值必须是成员 ID',
-  uneditable: '该列类型暂不支持在此编辑',
-};
+export function cellEditFailureText(locale?: Locale): Record<CellEditFailure['kind'], string> {
+  const knowledgeT = createTranslator(knowledgeMessages, locale);
+  return {
+    'not-number': knowledgeT('enterAValidNumber'),
+    'not-date': knowledgeT('enterYyyyMmDdOrACompleteDate'),
+    'not-url': knowledgeT('enterACompleteHttpSUrl'),
+    'not-option': knowledgeT('chooseAnOptionDefinedForThisColumn'),
+    'not-person': knowledgeT('peopleValuesMustBeMemberIds'),
+    uneditable: knowledgeT('thisColumnTypeCannotBeEditedHere'),
+  };
+}
 
 /**
  * 把一次单元格编辑提交为属性值：文本/URL/日期列空串即清空；数字列解析有限数；
@@ -84,18 +95,26 @@ export const cellEditFailureText: Record<CellEditFailure['kind'], string> = {
  */
 export function commitCellEdit(column: PropertyDefinition, draft: PropertyValue): CellEditResult {
   if (draft === null) return { ok: true, value: null };
-  if (column.type === 'text') return { ok: true, value: typeof draft === 'string' ? draft : String(draft) };
+  if (column.type === 'text')
+    return { ok: true, value: typeof draft === 'string' ? draft : String(draft) };
   if (column.type === 'url') {
     if (typeof draft !== 'string') return { ok: false, failure: { kind: 'not-url' } };
     if (draft === '') return { ok: true, value: null };
-    return isAbsoluteUrl(draft) ? { ok: true, value: draft } : { ok: false, failure: { kind: 'not-url' } };
+    return isAbsoluteUrl(draft)
+      ? { ok: true, value: draft }
+      : { ok: false, failure: { kind: 'not-url' } };
   }
   if (column.type === 'number') {
-    if (typeof draft === 'number') return Number.isFinite(draft) ? { ok: true, value: draft } : { ok: false, failure: { kind: 'not-number' } };
+    if (typeof draft === 'number')
+      return Number.isFinite(draft)
+        ? { ok: true, value: draft }
+        : { ok: false, failure: { kind: 'not-number' } };
     if (typeof draft === 'string') {
       if (draft.trim() === '') return { ok: true, value: null };
       const parsed = Number(draft.trim());
-      return Number.isFinite(parsed) ? { ok: true, value: parsed } : { ok: false, failure: { kind: 'not-number' } };
+      return Number.isFinite(parsed)
+        ? { ok: true, value: parsed }
+        : { ok: false, failure: { kind: 'not-number' } };
     }
     return { ok: false, failure: { kind: 'not-number' } };
   }
@@ -105,7 +124,9 @@ export function commitCellEdit(column: PropertyDefinition, draft: PropertyValue)
     const trimmed = draft.trim();
     // 输入纯日期时归一为 ISO 日期形式，与服务端存储一致。
     const normalized = isoDatePattern.test(trimmed) ? trimmed : trimmed.replaceAll('/', '-');
-    return isIsoDateOrDateTime(normalized) ? { ok: true, value: normalized } : { ok: false, failure: { kind: 'not-date' } };
+    return isIsoDateOrDateTime(normalized)
+      ? { ok: true, value: normalized }
+      : { ok: false, failure: { kind: 'not-date' } };
   }
   if (column.type === 'checkbox') {
     if (typeof draft === 'boolean') return { ok: true, value: draft };
@@ -114,12 +135,19 @@ export function commitCellEdit(column: PropertyDefinition, draft: PropertyValue)
   if (column.type === 'select') {
     if (typeof draft !== 'string') return { ok: false, failure: { kind: 'not-option' } };
     if (draft === '') return { ok: true, value: null };
-    return column.options?.some((option) => option.id === draft) ? { ok: true, value: draft } : { ok: false, failure: { kind: 'not-option' } };
+    return column.options?.some((option) => option.id === draft)
+      ? { ok: true, value: draft }
+      : { ok: false, failure: { kind: 'not-option' } };
   }
   if (column.type === 'multiSelect') {
     if (!Array.isArray(draft)) return { ok: false, failure: { kind: 'not-option' } };
     const unique = [...new Set(draft)];
-    if (!unique.every((entry) => typeof entry === 'string' && column.options?.some((option) => option.id === entry))) {
+    if (
+      !unique.every(
+        (entry) =>
+          typeof entry === 'string' && column.options?.some((option) => option.id === entry),
+      )
+    ) {
       return { ok: false, failure: { kind: 'not-option' } };
     }
     return { ok: true, value: unique };
@@ -127,7 +155,8 @@ export function commitCellEdit(column: PropertyDefinition, draft: PropertyValue)
   if (column.type === 'person') {
     if (!Array.isArray(draft)) return { ok: false, failure: { kind: 'not-person' } };
     const unique = [...new Set(draft)];
-    if (!unique.every((entry) => typeof entry === 'string' && isUuid(entry))) return { ok: false, failure: { kind: 'not-person' } };
+    if (!unique.every((entry) => typeof entry === 'string' && isUuid(entry)))
+      return { ok: false, failure: { kind: 'not-person' } };
     return { ok: true, value: unique };
   }
   // relation 的值必须解析为目标数据库的现存行页面，编辑入口留给关联视图任务。
@@ -136,7 +165,9 @@ export function commitCellEdit(column: PropertyDefinition, draft: PropertyValue)
 
 /** multiSelect / person 的选项切换：在位则移除，不在则追加，保持唯一。 */
 export function toggleArrayValue(value: PropertyValue, entry: string): PropertyValue {
-  const list = Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+  const list = Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string')
+    : [];
   return list.includes(entry) ? list.filter((item) => item !== entry) : [...list, entry];
 }
 
@@ -148,45 +179,73 @@ export type ColumnsEditFailure =
   | { kind: 'invalid-options'; columnId: string }
   | { kind: 'empty-name'; columnId: string };
 
-export const columnsEditFailureText: Record<ColumnsEditFailure['kind'], string> = {
-  'duplicate-id': '列 ID 不可重复',
-  'type-change': '列类型创建后不可更改',
-  'invalid-options': '选择列必须声明不重复的选项',
-  'empty-name': '列名不能为空',
-};
+export function columnsEditFailureText(
+  locale?: Locale,
+): Record<ColumnsEditFailure['kind'], string> {
+  const knowledgeT = createTranslator(knowledgeMessages, locale);
+  return {
+    'duplicate-id': knowledgeT('columnIdsMustBeUnique'),
+    'type-change': knowledgeT('columnTypeCannotBeChangedAfterCreation'),
+    'invalid-options': knowledgeT('selectionColumnsRequireUniqueOptions'),
+    'empty-name': knowledgeT('columnNameIsRequired'),
+  };
+}
 
 /** 客户端镜像服务端的列替换校验：改名/调选项同类型允许，改类型拒绝。 */
-export function validateColumnsReplacement(previous: readonly PropertyDefinition[], next: readonly PropertyDefinition[]):
-  { ok: true } | { ok: false; failure: ColumnsEditFailure } {
-  if (new Set(next.map((column) => column.id)).size !== next.length) return { ok: false, failure: { kind: 'duplicate-id' } };
+export function validateColumnsReplacement(
+  previous: readonly PropertyDefinition[],
+  next: readonly PropertyDefinition[],
+): { ok: true } | { ok: false; failure: ColumnsEditFailure } {
+  if (new Set(next.map((column) => column.id)).size !== next.length)
+    return { ok: false, failure: { kind: 'duplicate-id' } };
   for (const column of next) {
-    if (typeof column.name !== 'string' || column.name.trim() === '') return { ok: false, failure: { kind: 'empty-name', columnId: column.id } };
-    if ((column.type === 'select' || column.type === 'multiSelect')
-      && (!column.options || new Set(column.options.map((option) => option.id)).size !== column.options.length)) {
+    if (typeof column.name !== 'string' || column.name.trim() === '')
+      return { ok: false, failure: { kind: 'empty-name', columnId: column.id } };
+    if (
+      (column.type === 'select' || column.type === 'multiSelect') &&
+      (!column.options ||
+        new Set(column.options.map((option) => option.id)).size !== column.options.length)
+    ) {
       return { ok: false, failure: { kind: 'invalid-options', columnId: column.id } };
     }
   }
   const before = new Map(previous.map((column) => [column.id, column] as const));
   for (const column of next) {
     const old = before.get(column.id);
-    if (old && old.type !== column.type) return { ok: false, failure: { kind: 'type-change', columnId: column.id } };
+    if (old && old.type !== column.type)
+      return { ok: false, failure: { kind: 'type-change', columnId: column.id } };
   }
   return { ok: true };
 }
 
 /** 追加新列（默认带一个空选项骨架的选择列可直接补齐选项）。 */
-export function appendColumn(columns: readonly PropertyDefinition[], draft: { name: string; type: PropertyType; options?: { id: string; label: string; color: string }[] }): PropertyDefinition[] {
-  const definition: PropertyDefinition = draft.type === 'select' || draft.type === 'multiSelect'
-    ? { id: newPropertyId(), name: draft.name, type: draft.type, options: draft.options ?? [] }
-    : { id: newPropertyId(), name: draft.name, type: draft.type };
+export function appendColumn(
+  columns: readonly PropertyDefinition[],
+  draft: {
+    name: string;
+    type: PropertyType;
+    options?: { id: string; label: string; color: string }[];
+  },
+): PropertyDefinition[] {
+  const definition: PropertyDefinition =
+    draft.type === 'select' || draft.type === 'multiSelect'
+      ? { id: newPropertyId(), name: draft.name, type: draft.type, options: draft.options ?? [] }
+      : { id: newPropertyId(), name: draft.name, type: draft.type };
   return [...columns, definition];
 }
 
-export function renameColumn(columns: readonly PropertyDefinition[], columnId: string, name: string): PropertyDefinition[] {
+export function renameColumn(
+  columns: readonly PropertyDefinition[],
+  columnId: string,
+  name: string,
+): PropertyDefinition[] {
   return columns.map((column) => (column.id === columnId ? { ...column, name } : column));
 }
 
-export function removeColumn(columns: readonly PropertyDefinition[], columnId: string): PropertyDefinition[] {
+export function removeColumn(
+  columns: readonly PropertyDefinition[],
+  columnId: string,
+): PropertyDefinition[] {
   return columns.filter((column) => column.id !== columnId);
 }
 
@@ -207,7 +266,8 @@ const fallbackPalette = ['blue', 'green', 'amber', 'rose', 'violet', 'cyan'] as 
 export type OptionColor = (typeof fallbackPalette)[number];
 
 export function optionColorClass(color: string | undefined, optionId: string): string {
-  if (color && fallbackPalette.includes(color as OptionColor)) return optionColorClasses[color as OptionColor];
+  if (color && fallbackPalette.includes(color as OptionColor))
+    return optionColorClasses[color as OptionColor];
   let hash = 0;
   for (const character of optionId) hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
   return optionColorClasses[fallbackPalette[hash % fallbackPalette.length]!];
@@ -225,28 +285,40 @@ export const optionColorClasses: Record<OptionColor, string> = {
 // ── 展示格式化 ──
 
 /** 单元格展示文本（aria/复制友好）；空值统一为空串。 */
-export function cellDisplayText(column: PropertyDefinition, value: PropertyValue | undefined, personNameOf: (userId: string) => string | null): string {
+export function cellDisplayText(
+  column: PropertyDefinition,
+  value: PropertyValue | undefined,
+  personNameOf: (userId: string) => string | null,
+): string {
   if (isCellEmpty(value)) return '';
   switch (column.type) {
     case 'number':
       return typeof value === 'number' ? String(value) : '';
     case 'checkbox':
-      return value === true ? '是' : '否';
+      return value === true ? knowledgeT('yes') : knowledgeT('no');
     case 'multiSelect':
     case 'person': {
       const list = Array.isArray(value) ? value : [];
       return list
-        .map((entry) => (column.type === 'person' ? (personNameOf(entry) ?? entry.slice(0, 8)) : (column.options?.find((option) => option.id === entry)?.label ?? entry)))
+        .map((entry) =>
+          column.type === 'person'
+            ? (personNameOf(entry) ?? entry.slice(0, 8))
+            : (column.options?.find((option) => option.id === entry)?.label ?? entry),
+        )
         .join('、');
     }
     case 'relation': {
       const list = Array.isArray(value) ? value : [];
-      return list.length ? `${list.length} 个关联` : '';
+      return list.length ? knowledgeT('valueRelations', { v0: list.length }) : '';
     }
     case 'select':
-      return typeof value === 'string' ? (column.options?.find((option) => option.id === value)?.label ?? value) : '';
+      return typeof value === 'string'
+        ? (column.options?.find((option) => option.id === value)?.label ?? value)
+        : '';
     case 'date':
-      return typeof value === 'string' ? value.replaceAll('T', ' ').replace(/(\.\d+|Z|\+00:00)$/u, '') : '';
+      return typeof value === 'string'
+        ? value.replaceAll('T', ' ').replace(/(\.\d+|Z|\+00:00)$/u, '')
+        : '';
     default:
       return typeof value === 'string' ? value : '';
   }

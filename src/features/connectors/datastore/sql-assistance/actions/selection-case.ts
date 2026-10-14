@@ -1,6 +1,6 @@
-import { tokenizeSqlSemantic, type RelationalProvider } from "@fouc/shared";
+import { tokenizeSqlSemantic, type RelationalProvider } from '@fouc/shared';
 
-export type SqlSelectionCaseMode = "upper" | "lower";
+export type SqlSelectionCaseMode = 'upper' | 'lower';
 
 type SqlSelectionRange = {
   from: number;
@@ -8,18 +8,23 @@ type SqlSelectionRange = {
 };
 
 function convertCase(text: string, mode: SqlSelectionCaseMode): string {
-  return mode === "upper" ? text.toUpperCase() : text.toLowerCase();
+  return mode === 'upper' ? text.toUpperCase() : text.toLowerCase();
 }
 
-export function convertSqlSelectionCase(sql: string, range: SqlSelectionRange, mode: SqlSelectionCaseMode, dialectId?: RelationalProvider): string {
+export function convertSqlSelectionCase(
+  sql: string,
+  range: SqlSelectionRange,
+  mode: SqlSelectionCaseMode,
+  dialectId?: RelationalProvider,
+): string {
   const from = Math.max(0, Math.min(range.from, sql.length));
   const to = Math.max(from, Math.min(range.to, sql.length));
   const protectedTokens = tokenizeSqlSemantic(sql, dialectId).filter((item) => {
     if (item.span.end <= from || item.span.start >= to) return false;
-    if (item.kind === "string") return true;
-    if (dialectId !== "mysql") return false;
-    if (item.kind === "quoted_identifier" && item.quote === '"') return true;
-    return item.kind === "comment" && /^\/\*(?:!|M!)/i.test(item.text);
+    if (item.kind === 'string') return true;
+    if (dialectId !== 'mysql') return false;
+    if (item.kind === 'quoted_identifier' && item.quote === '"') return true;
+    return item.kind === 'comment' && /^\/\*(?:!|M!)/i.test(item.text);
   });
   if (protectedTokens.length === 0) return convertCase(sql.slice(from, to), mode);
 
@@ -31,7 +36,7 @@ export function convertSqlSelectionCase(sql: string, range: SqlSelectionRange, m
     return convertCase(sql.slice(from, to), mode);
   }
 
-  let converted = "";
+  let converted = '';
   let cursor = from;
   for (const item of protectedTokens) {
     const literalFrom = Math.max(from, item.span.start);

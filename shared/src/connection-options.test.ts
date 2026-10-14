@@ -4,15 +4,10 @@ import {
   publicConnectionOptions,
   resolveConnectionOptions,
 } from './connection-options';
-import {
-  buildConnectionSource,
-  parseConnectionSource,
-} from './connection-options-url';
+import { buildConnectionSource, parseConnectionSource } from './connection-options-url';
 
-const certificate =
-  '-----BEGIN CERTIFICATE-----\nVEVTVA==\n-----END CERTIFICATE-----';
-const privateKey =
-  '-----BEGIN PRIVATE KEY-----\nVEVTVA==\n-----END PRIVATE KEY-----';
+const certificate = '-----BEGIN CERTIFICATE-----\nVEVTVA==\n-----END CERTIFICATE-----';
+const privateKey = '-----BEGIN PRIVATE KEY-----\nVEVTVA==\n-----END PRIVATE KEY-----';
 
 describe('native connection options P0', () => {
   test('secrets never enter public profiles and required material is re-requested', () => {
@@ -36,9 +31,7 @@ describe('native connection options P0', () => {
     expect(publicValue.tls.clientCertificateRequired).toBe(true);
     expect(JSON.stringify(publicValue)).not.toContain('request-only');
     expect(JSON.stringify(publicValue)).not.toContain('VEVTVA');
-    expect(() => resolveConnectionOptions('postgres', publicValue)).toThrow(
-      '重新提供 CA',
-    );
+    expect(() => resolveConnectionOptions('postgres', publicValue)).toThrow('重新提供 CA');
     expect(() =>
       resolveConnectionOptions('postgres', {
         tls: { enabled: true, certificatePem: certificate },
@@ -53,15 +46,9 @@ describe('native connection options P0', () => {
 
   test('all waits bounded, Redis has no fabricated pool idle option, TLS cannot bypass validation', () => {
     expect(defaultConnectionOptions('redis').idleTimeoutMs).toBeNull();
-    expect(() =>
-      resolveConnectionOptions('redis', { idleTimeoutMs: 1000 }),
-    ).toThrow('不支持');
-    expect(() =>
-      resolveConnectionOptions('mysql', { queryTimeoutMs: 0 }),
-    ).toThrow('超时');
-    expect(() =>
-      resolveConnectionOptions('mysql', { connectTimeoutMs: 300_001 }),
-    ).toThrow('超时');
+    expect(() => resolveConnectionOptions('redis', { idleTimeoutMs: 1000 })).toThrow('不支持');
+    expect(() => resolveConnectionOptions('mysql', { queryTimeoutMs: 0 })).toThrow('超时');
+    expect(() => resolveConnectionOptions('mysql', { connectTimeoutMs: 300_001 })).toThrow('超时');
     expect(() =>
       resolveConnectionOptions('postgres', {
         tls: { enabled: true, rejectUnauthorized: false },
@@ -113,12 +100,10 @@ describe('native connection options P0', () => {
     );
     expect(withPassword.fields.password).toBe('p:a/ss');
     expect(withPassword.fields.connectionOptions.connectTimeoutMs).toBe(15000);
-    expect(() =>
-      parseConnectionSource('postgresql://u:p%ZZ@localhost/db'),
-    ).toThrow('转义');
-    expect(() =>
-      parseConnectionSource('postgresql://localhost/db#sslmode=disable'),
-    ).toThrow('片段');
+    expect(() => parseConnectionSource('postgresql://u:p%ZZ@localhost/db')).toThrow('转义');
+    expect(() => parseConnectionSource('postgresql://localhost/db#sslmode=disable')).toThrow(
+      '片段',
+    );
   });
 
   test('quoted libpq DSN and JDBC query credentials are actual supported inputs', () => {
@@ -127,24 +112,23 @@ describe('native connection options P0', () => {
       'postgres',
     );
     expect(parsed.fields.password).toBe("quote' and \\ slash");
-    expect(parseConnectionSource("host=localhost password='secret://value' dbname=app", 'postgres').fields.password).toBe('secret://value');
+    expect(
+      parseConnectionSource("host=localhost password='secret://value' dbname=app", 'postgres')
+        .fields.password,
+    ).toBe('secret://value');
     expect(parsed.fields.connectionOptions.queryTimeoutMs).toBe(60000);
     expect(
-      parseConnectionSource(
-        buildConnectionSource(parsed.fields, 'dsn', true).text,
-      ).fields,
+      parseConnectionSource(buildConnectionSource(parsed.fields, 'dsn', true).text).fields,
     ).toEqual(parsed.fields);
     expect(
       parseConnectionSource(
         'jdbc:mysql://localhost:3307/app?user=dev&password=p%26ss&connectTimeout=12000&sslMode=VERIFY_IDENTITY',
       ).fields.password,
     ).toBe('p&ss');
-    expect(() =>
-      parseConnectionSource('jdbc:mysql://dev@localhost/app?user=duplicate'),
-    ).toThrow('两处');
-    expect(() => parseConnectionSource('host=localhost host=other')).toThrow(
-      '重复',
+    expect(() => parseConnectionSource('jdbc:mysql://dev@localhost/app?user=duplicate')).toThrow(
+      '两处',
     );
+    expect(() => parseConnectionSource('host=localhost host=other')).toThrow('重复');
     expect(() => parseConnectionSource("host='unclosed")).toThrow('未闭合');
   });
 
@@ -161,13 +145,10 @@ describe('native connection options P0', () => {
     ])
       expect(() => parseConnectionSource(source)).toThrow();
     expect(
-      parseConnectionSource(
-        'mongodb://localhost/db?tls=true&tlsAllowInvalidCertificates=false',
-      ).warnings[0],
+      parseConnectionSource('mongodb://localhost/db?tls=true&tlsAllowInvalidCertificates=false')
+        .warnings[0].message,
     ).toContain('始终开启');
-    expect(() =>
-      parseConnectionSource('mysql://localhost/db', 'postgres'),
-    ).toThrow('不一致');
+    expect(() => parseConnectionSource('mysql://localhost/db', 'postgres')).toThrow('不一致');
   });
 
   test('Redis index and command timeout never collapse invalid values to database zero', () => {
@@ -177,17 +158,12 @@ describe('native connection options P0', () => {
     expect(parsed.fields.database).toBe('12');
     expect(parsed.fields.connectionOptions.tls?.enabled).toBe(true);
     expect(parsed.fields.connectionOptions.queryTimeoutMs).toBe(25000);
-    expect(
-      parseConnectionSource(buildConnectionSource(parsed.fields).text).fields
-        .password,
-    ).toBe('');
+    expect(parseConnectionSource(buildConnectionSource(parsed.fields).text).fields.password).toBe(
+      '',
+    );
     for (const index of ['-1', 'not-a-number', '2147483647', '1.5'])
-      expect(() => parseConnectionSource(`redis://localhost/${index}`)).toThrow(
-        '索引',
-      );
-    expect(() =>
-      parseConnectionSource('redis://localhost/0 --tls --insecure'),
-    ).toThrow('命令行');
+      expect(() => parseConnectionSource(`redis://localhost/${index}`)).toThrow('索引');
+    expect(() => parseConnectionSource('redis://localhost/0 --tls --insecure')).toThrow('命令行');
   });
 
   test('MongoDB host lists, SRV defaults and native URI parameters stay intact', () => {
@@ -199,14 +175,10 @@ describe('native connection options P0', () => {
       { host: 'db2.example', port: 27019 },
     ]);
     expect(parsed.warnings).toHaveLength(1);
-    const roundTrip = parseConnectionSource(
-      buildConnectionSource(parsed.fields, 'url', true).text,
-    );
+    const roundTrip = parseConnectionSource(buildConnectionSource(parsed.fields, 'url', true).text);
     expect(roundTrip.fields.mongo).toEqual(parsed.fields.mongo);
     expect(roundTrip.fields.password).toBe('pw');
-    const srv = parseConnectionSource(
-      'mongodb+srv://dev@cluster.example/app?retryWrites=true',
-    );
+    const srv = parseConnectionSource('mongodb+srv://dev@cluster.example/app?retryWrites=true');
     expect(srv.fields.connectionOptions.tls?.enabled).toBe(true);
     expect(buildConnectionSource(srv.fields).text).toStartWith(
       'mongodb+srv://dev@cluster.example/',

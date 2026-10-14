@@ -1,8 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { initialDashboardState } from './dashboard-seed';
-import { dashboardTimestamp } from './dashboard-time';
 import type {
   DashboardActivity,
   DashboardDocument,
@@ -14,6 +12,8 @@ import type {
   DashboardTarget,
   DashboardTask,
 } from './dashboard-model';
+import { initialDashboardState } from './dashboard-seed';
+import { dashboardTimestamp } from './dashboard-time';
 
 function normalizeTask(task: DashboardTask): DashboardTask {
   const progress = Math.max(0, Math.min(100, Math.round(task.progress)));
@@ -36,6 +36,7 @@ function activity(target: DashboardTarget, subject: string, text: string): Dashb
     id: crypto.randomUUID(),
     actor: 'Sarah Smither',
     text,
+    actionKey: text,
     subject,
     time: dashboardTimestamp(),
     target,

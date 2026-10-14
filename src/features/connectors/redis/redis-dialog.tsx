@@ -1,26 +1,29 @@
 'use client';
-
-import { useState, type FormEvent } from 'react';
-import { ConnectionDialogActions, type ConnectionPendingAction, type ConnectionVerification } from '../datastore/connection-options/connection-dialog-actions';
-import type {
-  RedisConnectionConfig,
-  RedisSavedConnection,
-  RedisSession,
-} from '@fouc/shared';
+import { backendFetch } from '@/lib/backend';
+import { useTranslation } from '@/lib/i18n';
+import type { RedisConnectionConfig, RedisSavedConnection, RedisSession } from '@fouc/shared';
 import {
   defaultConnectionOptions,
   publicConnectionOptions,
   resolveConnectionOptions,
   type DatabaseConnectionOptionsInput,
 } from '@fouc/shared/connection-options';
-import { backendFetch } from '@/lib/backend';
-import { SqlDialog } from '../datastore/sql-library-dialog';
+import { useState, type FormEvent } from 'react';
 import {
   ConnectionOptionsFields,
   ConnectionSourceAssistant,
 } from '../datastore/connection-options';
-import styles from '../datastore/relational.module.css';
+import {
+  ConnectionDialogActions,
+  type ConnectionPendingAction,
+  type ConnectionVerification,
+} from '../datastore/connection-options/connection-dialog-actions';
 import formStyles from '../datastore/connection-options/connection-dialog.module.css';
+import styles from '../datastore/relational.module.css';
+import { SqlDialog } from '../datastore/sql-library-dialog';
+import { createUiMessages, uiFailure, uiText, type UiMessage } from '../i18n/ui-message';
+import { messages as unitMessages } from './i18n/redis-dialog';
+const { message: uiMessage } = createUiMessages(unitMessages);
 
 export function RedisDialog({
   connection,
@@ -28,30 +31,38 @@ export function RedisDialog({
   onClose,
   onSave,
 }: {
-
   connection?: RedisSavedConnection;
   initialError?: string;
   onClose: () => void;
-  onSave: (name: string, config: RedisConnectionConfig, verification?: ConnectionVerification) => Promise<void>;
+  onSave: (
+    name: string,
+    config: RedisConnectionConfig,
+    verification?: ConnectionVerification,
+  ) => Promise<void>;
 }) {
+  const { t: tu, locale } = useTranslation(unitMessages);
+
   const previous = connection?.config;
   const [name, setName] = useState(connection?.name ?? '');
   const [host, setHost] = useState(previous?.host ?? '127.0.0.1'),
     [port, setPort] = useState(String(previous?.port ?? 6379));
   const [username, setUsername] = useState(previous?.username ?? ''),
     [database, setDatabase] = useState(String(previous?.database ?? 0));
-  const [connectionOptions, setConnectionOptions] =
-    useState<DatabaseConnectionOptionsInput>(
-      previous?.connectionOptions ?? defaultConnectionOptions('redis'),
-    );
+  const [connectionOptions, setConnectionOptions] = useState<DatabaseConnectionOptionsInput>(
+    previous?.connectionOptions ?? defaultConnectionOptions('redis'),
+  );
   const [optionsValid, setOptionsValid] = useState(true),
     [password, setPassword] = useState('');
   const [pending, setPending] = useState<ConnectionPendingAction>(null),
-    [error, setError] = useState(initialError),
-    [testError, setTestError] = useState(''),
-    [feedback, setFeedback] = useState('');
+    [error, setError] = useState<UiMessage>(initialError),
+    [testError, setTestError] = useState<UiMessage>(''),
+    [feedback, setFeedback] = useState<UiMessage>('');
   const busy = pending !== null;
-  function clearFeedback() { setError(''); setTestError(''); setFeedback(''); }
+  function clearFeedback() {
+    setError('');
+    setTestError('');
+    setFeedback('');
+  }
   async function perform(test = false) {
     if (busy || !optionsValid) return;
     setPending(test ? 'test' : 'submit');
@@ -72,21 +83,29 @@ export function RedisDialog({
           body: JSON.stringify({
             ...config,
             password,
-            connectionOptions: resolveConnectionOptions(
-              'redis',
-              connectionOptions,
-            ),
+            connectionOptions: resolveConnectionOptions('redis', connectionOptions),
           }),
         });
         await backendFetch(`${base}/${session.id}`, { method: 'DELETE' });
         setFeedback(
-          `连接成功 · Redis ${session.version ?? '版本未知'} · DB ${session.database}`,
+          uiMessage('连接成功 · Redis {v0} · DB {v1}', {
+            v0: String(session.version ?? '版本未知'),
+            v1: String(session.database),
+          }),
         );
-      } else await onSave(name, config, feedback && !testError ? {
-        password, connectionOptions: resolveConnectionOptions('redis', connectionOptions),
-      } : undefined);
+      } else
+        await onSave(
+          name,
+          config,
+          feedback && !testError
+            ? {
+                password,
+                connectionOptions: resolveConnectionOptions('redis', connectionOptions),
+              }
+            : undefined,
+        );
     } catch (reason) {
-      (test ? setTestError : setError)(reason instanceof Error ? reason.message : '连接操作失败');
+      (test ? setTestError : setError)(uiFailure(reason));
     } finally {
       setPending(null);
     }
@@ -97,11 +116,7 @@ export function RedisDialog({
   }
   return (
     <SqlDialog
-      title={
-        connection
-            ? '编辑 Redis 连接'
-            : '新建 Redis 连接'
-      }
+      title={connection ? tu('编辑 Redis 连接') : tu('新建 Redis 连接')}
       busy={busy}
       className={formStyles.dialog}
       onClose={onClose}
@@ -109,7 +124,7 @@ export function RedisDialog({
       <form className={formStyles.form} onSubmit={submit} onChange={clearFeedback}>
         <div className={formStyles.body}>
           <label>
-            连接名称
+            {tu('连接名称')}{' '}
             <input
               required
               autoFocus={!initialError}
@@ -143,7 +158,7 @@ export function RedisDialog({
           />
           <div className={styles.formColumns}>
             <label>
-              主机
+              {tu('主机')}{' '}
               <input
                 required
                 disabled={busy}
@@ -152,7 +167,7 @@ export function RedisDialog({
               />
             </label>
             <label>
-              端口
+              {tu('端口')}{' '}
               <input
                 required
                 type="number"
@@ -166,16 +181,16 @@ export function RedisDialog({
           </div>
           <div className={formStyles.columns}>
             <label>
-              ACL 用户名
+              {tu('ACL 用户名')}{' '}
               <input
-                placeholder="默认用户可留空"
+                placeholder={tu('默认用户可留空')}
                 disabled={busy}
                 value={username}
                 onChange={(event) => setUsername(event.target.value)}
               />
             </label>
             <label>
-              数据库编号
+              {tu('数据库编号')}{' '}
               <input
                 required
                 type="number"
@@ -188,7 +203,7 @@ export function RedisDialog({
             </label>
           </div>
           <label>
-            连接密码
+            {tu('连接密码')}{' '}
             <input
               autoFocus={Boolean(initialError)}
               type="password"
@@ -197,9 +212,7 @@ export function RedisDialog({
               value={password}
               onChange={(event) => setPassword(event.target.value)}
             />
-            <small>
-              密码临时保留以便直接打开工作台，不写入连接配置。
-            </small>
+            <small>{tu('密码临时保留以便直接打开工作台，不写入连接配置。')} </small>
           </label>
           <ConnectionOptionsFields
             provider="redis"
@@ -209,16 +222,23 @@ export function RedisDialog({
             onValidityChange={setOptionsValid}
           />
           <p className={styles.hint}>
-            支持 Standalone 连接。数据库索引由服务器实际配置决定。
+            {tu('支持 Standalone 连接。数据库索引由服务器实际配置决定。')}{' '}
           </p>
           {error && (
             <p className={styles.connectionError} role="alert">
-              {error}
+              {uiText(error, locale)}
             </p>
           )}
         </div>
-        <ConnectionDialogActions pending={pending} valid={optionsValid} feedback={feedback} testError={testError}
-          submitLabel="保存连接" onTest={() => void perform(true)} onClose={onClose} />
+        <ConnectionDialogActions
+          pending={pending}
+          valid={optionsValid}
+          feedback={uiText(feedback, locale)}
+          testError={uiText(testError, locale)}
+          submitLabel={tu('保存连接')}
+          onTest={() => void perform(true)}
+          onClose={onClose}
+        />
       </form>
     </SqlDialog>
   );

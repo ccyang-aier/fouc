@@ -1,16 +1,34 @@
-import { projectSchema, type Project } from '@fouc/shared/projects';
 import { authenticatedFetch } from '@/lib/authenticated-fetch';
 import { getFoucApiOrigin } from '@/lib/fouc-api-endpoint';
+import { projectSchema, type Project } from '@fouc/shared/projects';
+import { registerProjectFixtures } from './i18n/display';
 
 type ProjectPage = { items: Project[]; nextCursor: string | null };
 
-async function request<T>(path: string, method: 'GET' | 'POST' | 'PATCH' | 'DELETE', body?: unknown, signal?: AbortSignal): Promise<T> {
+async function request<T>(
+  path: string,
+  method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
+  body?: unknown,
+  signal?: AbortSignal,
+): Promise<T> {
   const { origin } = await getFoucApiOrigin();
   const response = await authenticatedFetch(`${origin}/api/projects${path}`, {
-    method, signal, ...(method === 'GET' ? {} : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body ?? {}) }),
+    method,
+    signal,
+    ...(method === 'GET'
+      ? {}
+      : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body ?? {}) }),
   });
   const payload: unknown = await response.json().catch(() => null);
-  if (!response.ok) throw new Error(typeof payload === 'object' && payload !== null && 'message' in payload && typeof payload.message === 'string' ? payload.message : '项目服务暂不可用');
+  if (!response.ok)
+    throw new Error(
+      typeof payload === 'object' &&
+        payload !== null &&
+        'message' in payload &&
+        typeof payload.message === 'string'
+        ? payload.message
+        : '项目服务暂不可用',
+    );
   return payload as T;
 }
 
@@ -19,7 +37,12 @@ export const projectClient = {
     const items: Project[] = [];
     let cursor: string | null = null;
     do {
-      const page: ProjectPage = await request(`${cursor ? `?cursor=${cursor}` : ''}`, 'GET', undefined, signal);
+      const page: ProjectPage = await request(
+        `${cursor ? `?cursor=${cursor}` : ''}`,
+        'GET',
+        undefined,
+        signal,
+      );
       items.push(...page.items.map((item) => projectSchema.parse(item)));
       cursor = page.nextCursor;
     } while (cursor);
@@ -35,3 +58,5 @@ export const projectClient = {
     await request(`/${projectId}`, 'DELETE');
   },
 };
+
+registerProjectFixtures([projectClient]);

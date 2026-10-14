@@ -1,7 +1,15 @@
 'use client';
 
+import { uiText, type UiMessage, createUiMessages } from '../i18n/ui-message';
+
+import { useTranslation } from '@/lib/i18n';
+import { messages as connectorMessages } from './relational-dialog.messages';
 import { useState, type FormEvent } from 'react';
-import { ConnectionDialogActions, type ConnectionPendingAction, type ConnectionVerification } from './connection-options/connection-dialog-actions';
+import {
+  ConnectionDialogActions,
+  type ConnectionPendingAction,
+  type ConnectionVerification,
+} from './connection-options/connection-dialog-actions';
 import type {
   RelationalConnectionConfig,
   RelationalProvider,
@@ -16,22 +24,21 @@ import {
 } from '@fouc/shared/connection-options';
 import { backendFetch } from '@/lib/backend';
 import { SqlDialog } from './sql-library-dialog';
-import {
-  ConnectionOptionsFields,
-  ConnectionSourceAssistant,
-} from './connection-options';
+import { ConnectionOptionsFields, ConnectionSourceAssistant } from './connection-options';
 import styles from './relational.module.css';
 import formStyles from './connection-options/connection-dialog.module.css';
-
+const connectorUiMessages = createUiMessages(connectorMessages);
 type Props = {
-
   provider: RelationalProvider;
   connection?: RelationalSavedConnection;
   initialError?: string;
   onClose: () => void;
-  onSave: (name: string, config: RelationalConnectionConfig, verification?: ConnectionVerification) => Promise<void>;
+  onSave: (
+    name: string,
+    config: RelationalConnectionConfig,
+    verification?: ConnectionVerification,
+  ) => Promise<void>;
 };
-
 export function RelationalDialog({
   provider,
   connection,
@@ -39,42 +46,38 @@ export function RelationalDialog({
   onClose,
   onSave,
 }: Props) {
+  const { t: tConnector, locale } = useTranslation(connectorMessages);
   const previous = connection?.config,
     network = previous?.provider !== 'sqlite' ? previous : undefined;
   const [name, setName] = useState(connection?.name ?? '');
   const [host, setHost] = useState(network?.host ?? '127.0.0.1');
-  const [port, setPort] = useState(
-    String(network?.port ?? (provider === 'mysql' ? 3306 : 5432)),
-  );
+  const [port, setPort] = useState(String(network?.port ?? (provider === 'mysql' ? 3306 : 5432)));
   const [username, setUsername] = useState(
     network?.username ?? (provider === 'mysql' ? 'root' : 'postgres'),
   );
   const [database, setDatabase] = useState(
     network?.database ?? (provider === 'mysql' ? '' : 'postgres'),
   );
-  const [path, setPath] = useState(
-    previous?.provider === 'sqlite' ? previous.path : '',
+  const [path, setPath] = useState(previous?.provider === 'sqlite' ? previous.path : '');
+  const [connectionOptions, setConnectionOptions] = useState<DatabaseConnectionOptionsInput>(
+    network?.connectionOptions ??
+      defaultConnectionOptions(provider === 'mysql' ? 'mysql' : 'postgres'),
   );
-  const [connectionOptions, setConnectionOptions] =
-    useState<DatabaseConnectionOptionsInput>(
-      network?.connectionOptions ??
-        defaultConnectionOptions(provider === 'mysql' ? 'mysql' : 'postgres'),
-    );
   const [optionsValid, setOptionsValid] = useState(true),
     [password, setPassword] = useState('');
   const [pending, setPending] = useState<ConnectionPendingAction>(null),
     [error, setError] = useState(initialError),
-    [testError, setTestError] = useState(''),
-    [feedback, setFeedback] = useState('');
+    [testErrorStored, setTestError] = useState<UiMessage>(''),
+    [feedbackStored, setFeedback] = useState<UiMessage>('');
+  const testError = uiText(testErrorStored, locale);
+  const feedback = uiText(feedbackStored, locale);
   const busy = pending !== null;
-  function clearFeedback() { setError(''); setTestError(''); setFeedback(''); }
-  const label =
-    provider === 'postgres'
-      ? 'PostgreSQL'
-      : provider === 'mysql'
-        ? 'MySQL'
-        : 'SQLite';
-
+  function clearFeedback() {
+    setError('');
+    setTestError('');
+    setFeedback('');
+  }
+  const label = provider === 'postgres' ? 'PostgreSQL' : provider === 'mysql' ? 'MySQL' : 'SQLite';
   async function perform(action: 'submit' | 'test') {
     if (busy || !optionsValid) return;
     setPending(action);
@@ -89,10 +92,7 @@ export function RelationalDialog({
               port: Number(port),
               username,
               database,
-              connectionOptions: publicConnectionOptions(
-                provider,
-                connectionOptions,
-              ),
+              connectionOptions: publicConnectionOptions(provider, connectionOptions),
             };
       if (action === 'test') {
         const request =
@@ -101,10 +101,7 @@ export function RelationalDialog({
             : {
                 ...config,
                 password,
-                connectionOptions: resolveConnectionOptions(
-                  provider,
-                  connectionOptions,
-                ),
+                connectionOptions: resolveConnectionOptions(provider, connectionOptions),
               };
         const base = `/api/database/relational/sessions`;
         const session = await backendFetch<RelationalSession>(base, {
@@ -113,14 +110,29 @@ export function RelationalDialog({
         });
         await backendFetch(`${base}/${session.id}`, { method: 'DELETE' });
         setFeedback(
-          `连接成功 · ${session.info.productName} · ${session.info.productVersion}`,
+          connectorUiMessages.message('connected', {
+            p0: String(session.info.productName),
+            p1: String(session.info.productVersion),
+          }),
         );
-      } else await onSave(name, config, feedback && !testError ? {
-        password,
-        connectionOptions: provider === 'sqlite' ? undefined : resolveConnectionOptions(provider, connectionOptions),
-      } : undefined);
+      } else
+        await onSave(
+          name,
+          config,
+          feedback && !testError
+            ? {
+                password,
+                connectionOptions:
+                  provider === 'sqlite'
+                    ? undefined
+                    : resolveConnectionOptions(provider, connectionOptions),
+              }
+            : undefined,
+        );
     } catch (reason) {
-      (action === 'test' ? setTestError : setError)(reason instanceof Error ? reason.message : '连接操作失败');
+      (action === 'test' ? setTestError : setError)(
+        reason instanceof Error ? uiText(reason, locale) : tConnector('connectionActionFailed'),
+      );
     } finally {
       setPending(null);
     }
@@ -133,8 +145,8 @@ export function RelationalDialog({
     <SqlDialog
       title={
         connection
-            ? `编辑 ${label} 连接`
-            : `新建 ${label} 连接`
+          ? tConnector('editConnection', { p0: String(label) })
+          : tConnector('newConnection', { p0: String(label) })
       }
       busy={busy}
       className={formStyles.dialog}
@@ -143,7 +155,7 @@ export function RelationalDialog({
       <form className={formStyles.form} onSubmit={submit} onChange={clearFeedback}>
         <div className={formStyles.body}>
           <label>
-            连接名称
+            {tConnector('connectionName')}
             <input
               autoFocus={!initialError}
               required
@@ -151,7 +163,7 @@ export function RelationalDialog({
               disabled={busy}
               value={name}
               onChange={(event) => setName(event.target.value)}
-              placeholder="例如：本地开发数据库"
+              placeholder={tConnector('exampleLocalDevelopmentDatabase')}
             />
           </label>
           {provider !== 'sqlite' ? (
@@ -180,7 +192,7 @@ export function RelationalDialog({
               />
               <div className={styles.formColumns}>
                 <label>
-                  主机
+                  {tConnector('host')}
                   <input
                     required
                     disabled={busy}
@@ -189,7 +201,7 @@ export function RelationalDialog({
                   />
                 </label>
                 <label>
-                  端口
+                  {tConnector('port')}
                   <input
                     required
                     type="number"
@@ -202,7 +214,7 @@ export function RelationalDialog({
                 </label>
               </div>
               <label>
-                数据库
+                {tConnector('database')}
                 <input
                   required={provider === 'postgres'}
                   disabled={busy}
@@ -210,13 +222,13 @@ export function RelationalDialog({
                   onChange={(event) => setDatabase(event.target.value)}
                   placeholder={
                     provider === 'mysql'
-                      ? '可留空，在工作台选择数据库'
+                      ? tConnector('leaveEmptyToChooseADatabaseInTheWorkbench')
                       : undefined
                   }
                 />
               </label>
               <label>
-                用户名
+                {tConnector('username')}
                 <input
                   required
                   disabled={busy}
@@ -228,7 +240,7 @@ export function RelationalDialog({
             </>
           ) : (
             <label>
-              设备上的 SQLite 文件
+              {tConnector('sqliteFileOnTheDevice')}
               <input
                 required
                 disabled={busy}
@@ -236,13 +248,13 @@ export function RelationalDialog({
                 onChange={(event) => setPath(event.target.value)}
                 placeholder="C:\\data\\application.db"
               />
-              <small>使用绝对路径；文件须位于当前设备并已存在。</small>
+              <small>{tConnector('useAnAbsolutePathTheFileMustAlreadyExistOn')}</small>
             </label>
           )}
           {provider !== 'sqlite' && (
             <>
               <label>
-                连接密码
+                {tConnector('connectionPassword')}
                 <input
                   type="password"
                   autoFocus={Boolean(initialError)}
@@ -251,7 +263,9 @@ export function RelationalDialog({
                   onChange={(event) => setPassword(event.target.value)}
                   autoComplete="off"
                 />
-                <small>密码临时保留以便直接打开工作台，不写入连接配置。</small>
+                <small>
+                  {tConnector('thePasswordIsRetainedTemporarilyForOpeningTheWorkbenchAnd')}
+                </small>
               </label>
               <ConnectionOptionsFields
                 provider={provider}
@@ -268,8 +282,15 @@ export function RelationalDialog({
             </p>
           )}
         </div>
-        <ConnectionDialogActions pending={pending} valid={optionsValid} feedback={feedback} testError={testError}
-          submitLabel="保存连接" onTest={() => void perform('test')} onClose={onClose} />
+        <ConnectionDialogActions
+          pending={pending}
+          valid={optionsValid}
+          feedback={feedback}
+          testError={testError}
+          submitLabel={tConnector('saveConnection')}
+          onTest={() => void perform('test')}
+          onClose={onClose}
+        />
       </form>
     </SqlDialog>
   );

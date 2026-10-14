@@ -22,14 +22,16 @@ function quoteWith(identifier: string, quote: string): string {
 }
 
 // UTF-8 PostgreSQL/SQLite identifiers fold ASCII letters; MySQL fields also fold Unicode case.
-function foldAscii(identifier: string): string { return identifier.replace(/[A-Z]/g, (char) => char.toLowerCase()); }
+function foldAscii(identifier: string): string {
+  return identifier.replace(/[A-Z]/g, (char) => char.toLowerCase());
+}
 
 /** DBX adapters restricted to the three installed native relational providers. */
 export const SQL_SEMANTIC_DIALECTS: Record<RelationalProvider, SqlSemanticDialectAdapter> = {
   postgres: {
     id: 'postgres',
     projectionAliasVisibility: { where: false, groupBy: true, having: false, orderBy: true },
-    normalizeIdentifier: (name, quoted) => quoted ? name : foldAscii(name),
+    normalizeIdentifier: (name, quoted) => (quoted ? name : foldAscii(name)),
     sameIdentifier: (left, right) => left === right,
     columnKey: (name) => name,
     quoteIdentifier: (name) => quoteWith(name, '"'),
@@ -52,6 +54,8 @@ export const SQL_SEMANTIC_DIALECTS: Record<RelationalProvider, SqlSemanticDialec
   },
 };
 
-export function sqlSemanticDialectFor(options: SqlSemanticBuildOptions = {}): SqlSemanticDialectAdapter {
+export function sqlSemanticDialectFor(
+  options: SqlSemanticBuildOptions = {},
+): SqlSemanticDialectAdapter {
   return SQL_SEMANTIC_DIALECTS[options.provider ?? 'mysql'];
 }

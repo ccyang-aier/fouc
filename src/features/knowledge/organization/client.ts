@@ -1,3 +1,6 @@
+import { createTranslator } from '@/lib/i18n';
+import { knowledgeMessages } from './client.messages';
+
 /**
  * Organization REST client (O02).
  *
@@ -14,7 +17,13 @@ import { authenticatedFetch } from '@/lib/authenticated-fetch';
 import type { MemberRole } from '@fouc/shared/resources';
 import type { Group, KnowledgeBaseMemberSummary } from '@fouc/shared/knowledge/contracts';
 import { getFoucApiOrigin } from '@/lib/fouc-api-endpoint';
-import { OrganizationDataError, normalizeOrganizationError, organizationErrorFromBody } from './errors';
+import {
+  OrganizationDataError,
+  normalizeOrganizationError,
+  organizationErrorFromBody,
+} from './errors';
+
+const knowledgeT = createTranslator(knowledgeMessages);
 
 export type { Group, MemberRole, KnowledgeBaseMemberSummary };
 /** Backend row of `group_member`: identity only; names resolve against the member directory. */
@@ -32,15 +41,21 @@ const organizationPathPrefix = '/api/knowledge-bases';
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Mirrors the shared `name` contract (`trim + 1..120 chars`) before any request is sent. */
-export function validateOrganizationName(raw: string): { ok: true; value: string } | { ok: false; reason: string } {
+export function validateOrganizationName(
+  raw: string,
+): { ok: true; value: string } | { ok: false; reason: string } {
   const value = raw.trim();
-  if (value.length === 0) return { ok: false, reason: '名称不能为空' };
-  if (value.length > 120) return { ok: false, reason: '名称不能超过 120 个字符' };
+  if (value.length === 0) return { ok: false, reason: knowledgeT('nameIsRequired') };
+  if (value.length > 120)
+    return { ok: false, reason: knowledgeT('nameMustNotExceed120Characters') };
   return { ok: true, value };
 }
 
 export function requireUuid(value: string, field: string): string {
-  if (!uuidPattern.test(value)) throw new OrganizationDataError('INVALID_INPUT', { message: `${field} 必须是 UUID` });
+  if (!uuidPattern.test(value))
+    throw new OrganizationDataError('INVALID_INPUT', {
+      message: knowledgeT('valueMustBeAUuid', { v0: field }),
+    });
   return value;
 }
 
@@ -51,11 +66,16 @@ export function requireName(value: string): string {
 }
 
 function requireRole(value: MemberRole): MemberRole {
-  if (!memberRoles.includes(value)) throw new OrganizationDataError('INVALID_INPUT', { message: '未知成员角色' });
+  if (!memberRoles.includes(value))
+    throw new OrganizationDataError('INVALID_INPUT', { message: knowledgeT('unknownMemberRole') });
   return value;
 }
 
-export type OrganizationListOptions = { cursor?: string | null; limit?: number; signal?: AbortSignal };
+export type OrganizationListOptions = {
+  cursor?: string | null;
+  limit?: number;
+  signal?: AbortSignal;
+};
 
 export type OrganizationClientDeps = {
   /** Resolved API origin (the U01 resolver in the browser binding). */
@@ -103,24 +123,44 @@ export function createOrganizationRequest(deps: OrganizationClientDeps) {
     }
     if (response.ok) {
       try {
-        return await response.json() as T;
+        return (await response.json()) as T;
       } catch (cause) {
-        throw normalizeOrganizationError(new OrganizationDataError('ORGANIZATION_UNAVAILABLE', { httpStatus: response.status, cause }), request.signal);
+        throw normalizeOrganizationError(
+          new OrganizationDataError('ORGANIZATION_UNAVAILABLE', {
+            httpStatus: response.status,
+            cause,
+          }),
+          request.signal,
+        );
       }
     }
     const body = await response.json().catch(() => null);
-    throw normalizeOrganizationError(organizationErrorFromBody(response.status, body), request.signal);
+    throw normalizeOrganizationError(
+      organizationErrorFromBody(response.status, body),
+      request.signal,
+    );
   };
 }
 
-export function listQuery(options: OrganizationListOptions): Record<string, string | number | undefined> {
-    if (options.cursor !== undefined && options.cursor !== null && !uuidPattern.test(options.cursor)) {
-      throw new OrganizationDataError('INVALID_INPUT', { message: 'cursor 必须是 UUID' });
-    }
-    if (options.limit !== undefined && (!Number.isInteger(options.limit) || options.limit < 1 || options.limit > 100)) {
-      throw new OrganizationDataError('INVALID_INPUT', { message: 'limit 必须是 1..100 的整数' });
-    }
-    return { cursor: options.cursor ?? undefined, limit: options.limit };
+export function listQuery(
+  options: OrganizationListOptions,
+): Record<string, string | number | undefined> {
+  if (
+    options.cursor !== undefined &&
+    options.cursor !== null &&
+    !uuidPattern.test(options.cursor)
+  ) {
+    throw new OrganizationDataError('INVALID_INPUT', { message: knowledgeT('cursorMustBeAUuid') });
+  }
+  if (
+    options.limit !== undefined &&
+    (!Number.isInteger(options.limit) || options.limit < 1 || options.limit > 100)
+  ) {
+    throw new OrganizationDataError('INVALID_INPUT', {
+      message: knowledgeT('limitMustBeAnIntegerBetween1And'),
+    });
+  }
+  return { cursor: options.cursor ?? undefined, limit: options.limit };
 }
 
 export function createOrganizationClient(deps: OrganizationClientDeps) {
@@ -128,52 +168,99 @@ export function createOrganizationClient(deps: OrganizationClientDeps) {
   return {
     listMembers(knowledgeBaseId: string, options: OrganizationListOptions = {}) {
       const scope = requireUuid(knowledgeBaseId, 'knowledgeBaseId');
-      return request<OrganizationPage<KnowledgeBaseMemberSummary>>({ method: 'GET', path: `${organizationPathPrefix}/${scope}/members`, query: listQuery(options), signal: options.signal });
+      return request<OrganizationPage<KnowledgeBaseMemberSummary>>({
+        method: 'GET',
+        path: `${organizationPathPrefix}/${scope}/members`,
+        query: listQuery(options),
+        signal: options.signal,
+      });
     },
     changeMemberRole(knowledgeBaseId: string, input: { userId: string; role: MemberRole }) {
       const scope = requireUuid(knowledgeBaseId, 'knowledgeBaseId');
       const userId = requireUuid(input.userId, 'userId');
-      return request<MemberRecord>({ method: 'PATCH', path: `${organizationPathPrefix}/${scope}/members/${userId}`, body: { role: requireRole(input.role) } });
+      return request<MemberRecord>({
+        method: 'PATCH',
+        path: `${organizationPathPrefix}/${scope}/members/${userId}`,
+        body: { role: requireRole(input.role) },
+      });
     },
     removeMember(knowledgeBaseId: string, userId: string) {
       const scope = requireUuid(knowledgeBaseId, 'knowledgeBaseId');
       const target = requireUuid(userId, 'userId');
-      return request<RemovedResult>({ method: 'DELETE', path: `${organizationPathPrefix}/${scope}/members/${target}`, body: {} });
+      return request<RemovedResult>({
+        method: 'DELETE',
+        path: `${organizationPathPrefix}/${scope}/members/${target}`,
+        body: {},
+      });
     },
     listGroups(knowledgeBaseId: string, options: OrganizationListOptions = {}) {
       const scope = requireUuid(knowledgeBaseId, 'knowledgeBaseId');
-      return request<OrganizationPage<Group>>({ method: 'GET', path: `${organizationPathPrefix}/${scope}/groups`, query: listQuery(options), signal: options.signal });
+      return request<OrganizationPage<Group>>({
+        method: 'GET',
+        path: `${organizationPathPrefix}/${scope}/groups`,
+        query: listQuery(options),
+        signal: options.signal,
+      });
     },
     createGroup(knowledgeBaseId: string, input: { name: string }) {
       const scope = requireUuid(knowledgeBaseId, 'knowledgeBaseId');
-      return request<Group>({ method: 'POST', path: `${organizationPathPrefix}/${scope}/groups`, body: { name: requireName(input.name) } });
+      return request<Group>({
+        method: 'POST',
+        path: `${organizationPathPrefix}/${scope}/groups`,
+        body: { name: requireName(input.name) },
+      });
     },
     renameGroup(knowledgeBaseId: string, input: { id: string; name: string }) {
       const scope = requireUuid(knowledgeBaseId, 'knowledgeBaseId');
       const id = requireUuid(input.id, 'groupId');
-      return request<Group>({ method: 'PATCH', path: `${organizationPathPrefix}/${scope}/groups/${id}`, body: { name: requireName(input.name) } });
+      return request<Group>({
+        method: 'PATCH',
+        path: `${organizationPathPrefix}/${scope}/groups/${id}`,
+        body: { name: requireName(input.name) },
+      });
     },
     removeGroup(knowledgeBaseId: string, groupId: string) {
       const scope = requireUuid(knowledgeBaseId, 'knowledgeBaseId');
       const target = requireUuid(groupId, 'groupId');
-      return request<RemovedResult>({ method: 'DELETE', path: `${organizationPathPrefix}/${scope}/groups/${target}`, body: {} });
+      return request<RemovedResult>({
+        method: 'DELETE',
+        path: `${organizationPathPrefix}/${scope}/groups/${target}`,
+        body: {},
+      });
     },
-    listGroupMembers(knowledgeBaseId: string, groupId: string, options: OrganizationListOptions = {}) {
+    listGroupMembers(
+      knowledgeBaseId: string,
+      groupId: string,
+      options: OrganizationListOptions = {},
+    ) {
       const scope = requireUuid(knowledgeBaseId, 'knowledgeBaseId');
       const target = requireUuid(groupId, 'groupId');
-      return request<OrganizationPage<GroupMember>>({ method: 'GET', path: `${organizationPathPrefix}/${scope}/groups/${target}/members`, query: listQuery(options), signal: options.signal });
+      return request<OrganizationPage<GroupMember>>({
+        method: 'GET',
+        path: `${organizationPathPrefix}/${scope}/groups/${target}/members`,
+        query: listQuery(options),
+        signal: options.signal,
+      });
     },
     addGroupMember(knowledgeBaseId: string, groupId: string, userId: string) {
       const scope = requireUuid(knowledgeBaseId, 'knowledgeBaseId');
       const group = requireUuid(groupId, 'groupId');
       const member = requireUuid(userId, 'userId');
-      return request<GroupMember>({ method: 'POST', path: `${organizationPathPrefix}/${scope}/groups/${group}/members`, body: { userId: member } });
+      return request<GroupMember>({
+        method: 'POST',
+        path: `${organizationPathPrefix}/${scope}/groups/${group}/members`,
+        body: { userId: member },
+      });
     },
     removeGroupMember(knowledgeBaseId: string, groupId: string, userId: string) {
       const scope = requireUuid(knowledgeBaseId, 'knowledgeBaseId');
       const group = requireUuid(groupId, 'groupId');
       const member = requireUuid(userId, 'userId');
-      return request<RemovedResult>({ method: 'DELETE', path: `${organizationPathPrefix}/${scope}/groups/${group}/members/${member}`, body: {} });
+      return request<RemovedResult>({
+        method: 'DELETE',
+        path: `${organizationPathPrefix}/${scope}/groups/${group}/members/${member}`,
+        body: {},
+      });
     },
   };
 }

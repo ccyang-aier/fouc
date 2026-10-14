@@ -1,15 +1,15 @@
 export const SQL_FORMATTER_CONFIG_VERSION = 1;
-export const SQL_FORMATTER_CONFIG_FORMATTER = "sql-formatter";
+export const SQL_FORMATTER_CONFIG_FORMATTER = 'sql-formatter';
 
-const CASE_VALUES = ["preserve", "upper", "lower"] as const;
-const INDENT_STYLE_VALUES = ["standard", "tabularLeft", "tabularRight"] as const;
-const LOGICAL_OPERATOR_NEWLINE_VALUES = ["before", "after", "none"] as const;
-const FROM_CLAUSE_LAYOUT_VALUES = ["newLine", "sameLine"] as const;
+const CASE_VALUES = ['preserve', 'upper', 'lower'] as const;
+const INDENT_STYLE_VALUES = ['standard', 'tabularLeft', 'tabularRight'] as const;
+const LOGICAL_OPERATOR_NEWLINE_VALUES = ['before', 'after', 'none'] as const;
+const FROM_CLAUSE_LAYOUT_VALUES = ['newLine', 'sameLine'] as const;
 const TAB_WIDTH_VALUES = [2, 4] as const;
 const EXPRESSION_WIDTH_VALUES = [50, 80, 120] as const;
 const LINES_BETWEEN_QUERIES_VALUES = [0, 1, 2] as const;
-const SQL_FORMATTER_PARAM_TYPE_MARKERS = ["?", ":", "$"] as const;
-const SQL_FORMATTER_NAMED_PARAM_TYPE_MARKERS = [":", "@", "$"] as const;
+const SQL_FORMATTER_PARAM_TYPE_MARKERS = ['?', ':', '$'] as const;
+const SQL_FORMATTER_NAMED_PARAM_TYPE_MARKERS = [':', '@', '$'] as const;
 
 export type SqlFormatterCase = (typeof CASE_VALUES)[number];
 export type SqlFormatterIndentStyle = (typeof INDENT_STYLE_VALUES)[number];
@@ -25,13 +25,16 @@ export interface SqlFormatterCustomParameter {
 
 // The native execution compiler owns `${name}`/`#{name}` substitution. Register
 // both forms here so formatting never treats their punctuation as SQL operators.
-const SQL_TEMPLATE_PARAM_TYPES: SqlFormatterCustomParameter[] = [{ regex: String.raw`\$\{[^}]+\}` }, { regex: String.raw`#\{[^}]+\}` }];
+const SQL_TEMPLATE_PARAM_TYPES: SqlFormatterCustomParameter[] = [
+  { regex: String.raw`\$\{[^}]+\}` },
+  { regex: String.raw`#\{[^}]+\}` },
+];
 
 export interface SqlFormatterParamTypes {
   positional?: boolean;
-  numbered?: ("?" | ":" | "$")[];
-  named?: (":" | "@" | "$")[];
-  quoted?: (":" | "@" | "$")[];
+  numbered?: ('?' | ':' | '$')[];
+  named?: (':' | '@' | '$')[];
+  quoted?: (':' | '@' | '$')[];
   custom?: SqlFormatterCustomParameter[];
 }
 
@@ -61,18 +64,19 @@ export interface SqlFormatterConfigFile {
   options: SqlFormatterOptionSettings;
 }
 
-export type SqlFormatterConfigParseResult = { ok: true; settings: SqlFormatterSettings } | { ok: false; message: string };
+export type SqlFormatterConfigParseResult =
+  { ok: true; settings: SqlFormatterSettings } | { ok: false; message: string };
 
 export const DEFAULT_SQL_FORMATTER_SETTINGS: SqlFormatterSettings = {
-  keywordCase: "upper",
-  dataTypeCase: "preserve",
-  functionCase: "preserve",
-  identifierCase: "preserve",
-  indentStyle: "standard",
+  keywordCase: 'upper',
+  dataTypeCase: 'preserve',
+  functionCase: 'preserve',
+  identifierCase: 'preserve',
+  indentStyle: 'standard',
   useTabs: false,
   tabWidth: 2,
-  logicalOperatorNewline: "before",
-  fromClauseLayout: "sameLine",
+  logicalOperatorNewline: 'before',
+  fromClauseLayout: 'sameLine',
   expressionWidth: 120,
   linesBetweenQueries: 1,
   preserveEmptyLines: false,
@@ -82,62 +86,80 @@ export const DEFAULT_SQL_FORMATTER_SETTINGS: SqlFormatterSettings = {
 };
 
 const SQL_FORMATTER_OPTION_KEYS = new Set<keyof SqlFormatterOptionSettings>([
-  "keywordCase",
-  "dataTypeCase",
-  "functionCase",
-  "identifierCase",
-  "indentStyle",
-  "useTabs",
-  "tabWidth",
-  "logicalOperatorNewline",
-  "fromClauseLayout",
-  "expressionWidth",
-  "linesBetweenQueries",
-  "preserveEmptyLines",
-  "denseOperators",
-  "newlineBeforeSemicolon",
-  "paramTypes",
+  'keywordCase',
+  'dataTypeCase',
+  'functionCase',
+  'identifierCase',
+  'indentStyle',
+  'useTabs',
+  'tabWidth',
+  'logicalOperatorNewline',
+  'fromClauseLayout',
+  'expressionWidth',
+  'linesBetweenQueries',
+  'preserveEmptyLines',
+  'denseOperators',
+  'newlineBeforeSemicolon',
+  'paramTypes',
 ]);
 
-const SQL_FORMATTER_OPTION_VALIDATORS: Record<keyof SqlFormatterOptionSettings, (value: unknown) => boolean> = {
+const SQL_FORMATTER_OPTION_VALIDATORS: Record<
+  keyof SqlFormatterOptionSettings,
+  (value: unknown) => boolean
+> = {
   keywordCase: (value) => isStringChoice(value, CASE_VALUES),
   dataTypeCase: (value) => isStringChoice(value, CASE_VALUES),
   functionCase: (value) => isStringChoice(value, CASE_VALUES),
   identifierCase: (value) => isStringChoice(value, CASE_VALUES),
   indentStyle: (value) => isStringChoice(value, INDENT_STYLE_VALUES),
-  useTabs: (value) => typeof value === "boolean",
+  useTabs: (value) => typeof value === 'boolean',
   tabWidth: (value) => isNumberChoice(value, TAB_WIDTH_VALUES),
   logicalOperatorNewline: (value) => isStringChoice(value, LOGICAL_OPERATOR_NEWLINE_VALUES),
   fromClauseLayout: (value) => isStringChoice(value, FROM_CLAUSE_LAYOUT_VALUES),
   expressionWidth: (value) => isNumberChoice(value, EXPRESSION_WIDTH_VALUES),
   linesBetweenQueries: (value) => isNumberChoice(value, LINES_BETWEEN_QUERIES_VALUES),
-  preserveEmptyLines: (value) => typeof value === "boolean",
-  denseOperators: (value) => typeof value === "boolean",
-  newlineBeforeSemicolon: (value) => typeof value === "boolean",
+  preserveEmptyLines: (value) => typeof value === 'boolean',
+  denseOperators: (value) => typeof value === 'boolean',
+  newlineBeforeSemicolon: (value) => typeof value === 'boolean',
   paramTypes: isSqlFormatterParamTypes,
 };
 
 function isObject(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === "object" && !Array.isArray(value);
+  return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
 function isStringChoice(value: unknown, values: readonly string[]): boolean {
-  return typeof value === "string" && values.includes(value);
+  return typeof value === 'string' && values.includes(value);
 }
 
 function isNumberChoice(value: unknown, values: readonly number[]): boolean {
-  return typeof value === "number" && values.includes(value);
+  return typeof value === 'number' && values.includes(value);
 }
 
-function isMarkerArray<T extends readonly string[]>(value: unknown, markers: T): value is T[number][] {
-  return Array.isArray(value) && value.length <= markers.length && new Set(value).size === value.length && value.every((item) => typeof item === "string" && markers.includes(item));
+function isMarkerArray<T extends readonly string[]>(
+  value: unknown,
+  markers: T,
+): value is T[number][] {
+  return (
+    Array.isArray(value) &&
+    value.length <= markers.length &&
+    new Set(value).size === value.length &&
+    value.every((item) => typeof item === 'string' && markers.includes(item))
+  );
 }
 
 function isCustomParameter(value: unknown): value is SqlFormatterCustomParameter {
-  if (!isObject(value) || typeof value.regex !== "string" || value.regex.length === 0 || value.regex.length > 1024 || !Object.keys(value).every((key) => key === "regex")) return false;
+  if (
+    !isObject(value) ||
+    typeof value.regex !== 'string' ||
+    value.regex.length === 0 ||
+    value.regex.length > 1024 ||
+    !Object.keys(value).every((key) => key === 'regex')
+  )
+    return false;
   try {
     // A parameter must consume source; an empty match cannot be tokenized.
-    return new RegExp(`(?:${value.regex})`, "uy").exec('') === null;
+    return new RegExp(`(?:${value.regex})`, 'uy').exec('') === null;
   } catch {
     return false;
   }
@@ -146,28 +168,62 @@ function isCustomParameter(value: unknown): value is SqlFormatterCustomParameter
 function isSqlFormatterParamTypes(value: unknown): value is SqlFormatterParamTypes | null {
   if (value === null) return true;
   if (!isObject(value)) return false;
-  if (!Object.keys(value).every((key) => ["positional", "numbered", "named", "quoted", "custom"].includes(key))) return false;
-  if (value.positional !== undefined && typeof value.positional !== "boolean") return false;
-  if (value.numbered !== undefined && !isMarkerArray(value.numbered, SQL_FORMATTER_PARAM_TYPE_MARKERS)) return false;
-  if (value.named !== undefined && !isMarkerArray(value.named, SQL_FORMATTER_NAMED_PARAM_TYPE_MARKERS)) return false;
-  if (value.quoted !== undefined && !isMarkerArray(value.quoted, SQL_FORMATTER_NAMED_PARAM_TYPE_MARKERS)) return false;
-  if (value.custom !== undefined && (!Array.isArray(value.custom) || value.custom.length > 32 || !value.custom.every(isCustomParameter))) return false;
+  if (
+    !Object.keys(value).every((key) =>
+      ['positional', 'numbered', 'named', 'quoted', 'custom'].includes(key),
+    )
+  )
+    return false;
+  if (value.positional !== undefined && typeof value.positional !== 'boolean') return false;
+  if (
+    value.numbered !== undefined &&
+    !isMarkerArray(value.numbered, SQL_FORMATTER_PARAM_TYPE_MARKERS)
+  )
+    return false;
+  if (
+    value.named !== undefined &&
+    !isMarkerArray(value.named, SQL_FORMATTER_NAMED_PARAM_TYPE_MARKERS)
+  )
+    return false;
+  if (
+    value.quoted !== undefined &&
+    !isMarkerArray(value.quoted, SQL_FORMATTER_NAMED_PARAM_TYPE_MARKERS)
+  )
+    return false;
+  if (
+    value.custom !== undefined &&
+    (!Array.isArray(value.custom) ||
+      value.custom.length > 32 ||
+      !value.custom.every(isCustomParameter))
+  )
+    return false;
   return true;
 }
 
-function normalizeChoice<T extends readonly string[]>(value: unknown, values: T, fallback: T[number]): T[number] {
-  return typeof value === "string" && values.includes(value) ? value : fallback;
+function normalizeChoice<T extends readonly string[]>(
+  value: unknown,
+  values: T,
+  fallback: T[number],
+): T[number] {
+  return typeof value === 'string' && values.includes(value) ? value : fallback;
 }
 
-function normalizeNumberChoice<T extends readonly number[]>(value: unknown, values: T, fallback: T[number]): T[number] {
-  return typeof value === "number" && values.includes(value) ? value : fallback;
+function normalizeNumberChoice<T extends readonly number[]>(
+  value: unknown,
+  values: T,
+  fallback: T[number],
+): T[number] {
+  return typeof value === 'number' && values.includes(value) ? value : fallback;
 }
 
 function normalizeBoolean(value: unknown, fallback: boolean): boolean {
-  return typeof value === "boolean" ? value : fallback;
+  return typeof value === 'boolean' ? value : fallback;
 }
 
-function normalizeParamTypes(value: unknown, fallback: SqlFormatterParamTypes | null): SqlFormatterParamTypes | null {
+function normalizeParamTypes(
+  value: unknown,
+  fallback: SqlFormatterParamTypes | null,
+): SqlFormatterParamTypes | null {
   if (value === null) return null;
   if (!isSqlFormatterParamTypes(value)) return fallback;
   return {
@@ -182,20 +238,69 @@ function normalizeParamTypes(value: unknown, fallback: SqlFormatterParamTypes | 
 export function sqlFormatterOptionSettings(settings: unknown): SqlFormatterOptionSettings {
   const input = isObject(settings) ? settings : {};
   return {
-    keywordCase: normalizeChoice(input.keywordCase, CASE_VALUES, DEFAULT_SQL_FORMATTER_SETTINGS.keywordCase),
-    dataTypeCase: normalizeChoice(input.dataTypeCase, CASE_VALUES, DEFAULT_SQL_FORMATTER_SETTINGS.dataTypeCase),
-    functionCase: normalizeChoice(input.functionCase, CASE_VALUES, DEFAULT_SQL_FORMATTER_SETTINGS.functionCase),
-    identifierCase: normalizeChoice(input.identifierCase, CASE_VALUES, DEFAULT_SQL_FORMATTER_SETTINGS.identifierCase),
-    indentStyle: normalizeChoice(input.indentStyle, INDENT_STYLE_VALUES, DEFAULT_SQL_FORMATTER_SETTINGS.indentStyle),
+    keywordCase: normalizeChoice(
+      input.keywordCase,
+      CASE_VALUES,
+      DEFAULT_SQL_FORMATTER_SETTINGS.keywordCase,
+    ),
+    dataTypeCase: normalizeChoice(
+      input.dataTypeCase,
+      CASE_VALUES,
+      DEFAULT_SQL_FORMATTER_SETTINGS.dataTypeCase,
+    ),
+    functionCase: normalizeChoice(
+      input.functionCase,
+      CASE_VALUES,
+      DEFAULT_SQL_FORMATTER_SETTINGS.functionCase,
+    ),
+    identifierCase: normalizeChoice(
+      input.identifierCase,
+      CASE_VALUES,
+      DEFAULT_SQL_FORMATTER_SETTINGS.identifierCase,
+    ),
+    indentStyle: normalizeChoice(
+      input.indentStyle,
+      INDENT_STYLE_VALUES,
+      DEFAULT_SQL_FORMATTER_SETTINGS.indentStyle,
+    ),
     useTabs: normalizeBoolean(input.useTabs, DEFAULT_SQL_FORMATTER_SETTINGS.useTabs),
-    tabWidth: normalizeNumberChoice(input.tabWidth, TAB_WIDTH_VALUES, DEFAULT_SQL_FORMATTER_SETTINGS.tabWidth),
-    logicalOperatorNewline: normalizeChoice(input.logicalOperatorNewline, LOGICAL_OPERATOR_NEWLINE_VALUES, DEFAULT_SQL_FORMATTER_SETTINGS.logicalOperatorNewline),
-    fromClauseLayout: normalizeChoice(input.fromClauseLayout, FROM_CLAUSE_LAYOUT_VALUES, DEFAULT_SQL_FORMATTER_SETTINGS.fromClauseLayout),
-    expressionWidth: normalizeNumberChoice(input.expressionWidth, EXPRESSION_WIDTH_VALUES, DEFAULT_SQL_FORMATTER_SETTINGS.expressionWidth),
-    linesBetweenQueries: normalizeNumberChoice(input.linesBetweenQueries, LINES_BETWEEN_QUERIES_VALUES, DEFAULT_SQL_FORMATTER_SETTINGS.linesBetweenQueries),
-    preserveEmptyLines: normalizeBoolean(input.preserveEmptyLines, DEFAULT_SQL_FORMATTER_SETTINGS.preserveEmptyLines),
-    denseOperators: normalizeBoolean(input.denseOperators, DEFAULT_SQL_FORMATTER_SETTINGS.denseOperators),
-    newlineBeforeSemicolon: normalizeBoolean(input.newlineBeforeSemicolon, DEFAULT_SQL_FORMATTER_SETTINGS.newlineBeforeSemicolon),
+    tabWidth: normalizeNumberChoice(
+      input.tabWidth,
+      TAB_WIDTH_VALUES,
+      DEFAULT_SQL_FORMATTER_SETTINGS.tabWidth,
+    ),
+    logicalOperatorNewline: normalizeChoice(
+      input.logicalOperatorNewline,
+      LOGICAL_OPERATOR_NEWLINE_VALUES,
+      DEFAULT_SQL_FORMATTER_SETTINGS.logicalOperatorNewline,
+    ),
+    fromClauseLayout: normalizeChoice(
+      input.fromClauseLayout,
+      FROM_CLAUSE_LAYOUT_VALUES,
+      DEFAULT_SQL_FORMATTER_SETTINGS.fromClauseLayout,
+    ),
+    expressionWidth: normalizeNumberChoice(
+      input.expressionWidth,
+      EXPRESSION_WIDTH_VALUES,
+      DEFAULT_SQL_FORMATTER_SETTINGS.expressionWidth,
+    ),
+    linesBetweenQueries: normalizeNumberChoice(
+      input.linesBetweenQueries,
+      LINES_BETWEEN_QUERIES_VALUES,
+      DEFAULT_SQL_FORMATTER_SETTINGS.linesBetweenQueries,
+    ),
+    preserveEmptyLines: normalizeBoolean(
+      input.preserveEmptyLines,
+      DEFAULT_SQL_FORMATTER_SETTINGS.preserveEmptyLines,
+    ),
+    denseOperators: normalizeBoolean(
+      input.denseOperators,
+      DEFAULT_SQL_FORMATTER_SETTINGS.denseOperators,
+    ),
+    newlineBeforeSemicolon: normalizeBoolean(
+      input.newlineBeforeSemicolon,
+      DEFAULT_SQL_FORMATTER_SETTINGS.newlineBeforeSemicolon,
+    ),
     paramTypes: normalizeParamTypes(input.paramTypes, DEFAULT_SQL_FORMATTER_SETTINGS.paramTypes),
   };
 }
@@ -216,9 +321,12 @@ export function isCompleteSqlFormatterSettings(value: unknown): value is SqlForm
   if (!isObject(value)) return false;
   for (const key of SQL_FORMATTER_OPTION_KEYS) {
     if (!(key in value)) return false;
-    if (!SQL_FORMATTER_OPTION_VALIDATORS[key]((value as Record<string, unknown>)[key])) return false;
+    if (!SQL_FORMATTER_OPTION_VALIDATORS[key]((value as Record<string, unknown>)[key]))
+      return false;
   }
-  return Object.keys(value).every((key) => SQL_FORMATTER_OPTION_KEYS.has(key as keyof SqlFormatterOptionSettings));
+  return Object.keys(value).every((key) =>
+    SQL_FORMATTER_OPTION_KEYS.has(key as keyof SqlFormatterOptionSettings),
+  );
 }
 
 export function sqlFormatterConfigFile(settings: unknown): SqlFormatterConfigFile {
@@ -239,28 +347,38 @@ export function parseSqlFormatterConfig(text: string): SqlFormatterConfigParseRe
   try {
     parsed = JSON.parse(text);
   } catch {
-    return { ok: false, message: "Invalid JSON." };
+    return { ok: false, message: 'Invalid JSON.' };
   }
 
-  if (!isObject(parsed)) return { ok: false, message: "Config must be a JSON object." };
-  if (Object.keys(parsed).some((key) => !['version', 'formatter', 'options'].includes(key))) return { ok: false, message: 'Unknown config field.' };
-  if (parsed.version !== SQL_FORMATTER_CONFIG_VERSION) return { ok: false, message: "Unsupported config version." };
-  if (parsed.formatter !== SQL_FORMATTER_CONFIG_FORMATTER) return { ok: false, message: "Unsupported formatter." };
-  if (!isObject(parsed.options)) return { ok: false, message: "Config options must be a JSON object." };
+  if (!isObject(parsed)) return { ok: false, message: 'Config must be a JSON object.' };
+  if (Object.keys(parsed).some((key) => !['version', 'formatter', 'options'].includes(key)))
+    return { ok: false, message: 'Unknown config field.' };
+  if (parsed.version !== SQL_FORMATTER_CONFIG_VERSION)
+    return { ok: false, message: 'Unsupported config version.' };
+  if (parsed.formatter !== SQL_FORMATTER_CONFIG_FORMATTER)
+    return { ok: false, message: 'Unsupported formatter.' };
+  if (!isObject(parsed.options))
+    return { ok: false, message: 'Config options must be a JSON object.' };
 
-  const unknownOption = Object.keys(parsed.options).find((key) => !SQL_FORMATTER_OPTION_KEYS.has(key as keyof SqlFormatterOptionSettings));
+  const unknownOption = Object.keys(parsed.options).find(
+    (key) => !SQL_FORMATTER_OPTION_KEYS.has(key as keyof SqlFormatterOptionSettings),
+  );
   if (unknownOption) return { ok: false, message: `Unknown formatter option: ${unknownOption}.` };
 
   const invalidOption = Object.entries(parsed.options).find(([key, value]) => {
     const optionKey = key as keyof SqlFormatterOptionSettings;
     return !SQL_FORMATTER_OPTION_VALIDATORS[optionKey](value);
   });
-  if (invalidOption) return { ok: false, message: `Invalid formatter option value: ${invalidOption[0]}.` };
+  if (invalidOption)
+    return { ok: false, message: `Invalid formatter option value: ${invalidOption[0]}.` };
 
   return { ok: true, settings: normalizeSqlFormatterSettings(parsed.options) };
 }
 
-export function syncSqlFormatterConfigDraft(text: string, syncSettings: (settings: SqlFormatterSettings) => void): SqlFormatterConfigParseResult {
+export function syncSqlFormatterConfigDraft(
+  text: string,
+  syncSettings: (settings: SqlFormatterSettings) => void,
+): SqlFormatterConfigParseResult {
   const result = parseSqlFormatterConfig(text);
   if (result.ok) syncSettings(result.settings);
   return result;
@@ -279,7 +397,8 @@ export function sqlFormatterOptions(settings: unknown) {
     tabWidth: normalized.tabWidth,
     // sql-formatter itself only supports before/after. The custom "none"
     // mode is applied as a post-processing pass by formatSqlText.
-    logicalOperatorNewline: normalized.logicalOperatorNewline === "none" ? "before" : normalized.logicalOperatorNewline,
+    logicalOperatorNewline:
+      normalized.logicalOperatorNewline === 'none' ? 'before' : normalized.logicalOperatorNewline,
     expressionWidth: normalized.expressionWidth,
     linesBetweenQueries: normalized.linesBetweenQueries,
     denseOperators: normalized.denseOperators,
@@ -287,7 +406,7 @@ export function sqlFormatterOptions(settings: unknown) {
     paramTypes: {
       ...paramTypes,
       positional: paramTypes.positional ?? true,
-      named: paramTypes.named ?? [":", "@"],
+      named: paramTypes.named ?? [':', '@'],
       custom: [...(paramTypes.custom ?? []), ...SQL_TEMPLATE_PARAM_TYPES],
     },
   };

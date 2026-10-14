@@ -1,26 +1,30 @@
 'use client';
-
-import { useState, type FormEvent } from 'react';
-import { ConnectionDialogActions, type ConnectionPendingAction, type ConnectionVerification } from '../datastore/connection-options/connection-dialog-actions';
-import type {
-  MongoConnectionConfig,
-  MongoSavedConnection,
-} from '@fouc/shared/mongo-connections';
-import type { MongoSession } from '@fouc/shared/mongo';
+import { backendFetch } from '@/lib/backend';
+import { useTranslation } from '@/lib/i18n';
 import {
   defaultConnectionOptions,
   publicConnectionOptions,
   resolveConnectionOptions,
   type DatabaseConnectionOptionsInput,
 } from '@fouc/shared/connection-options';
-import { backendFetch } from '@/lib/backend';
-import { SqlDialog } from '../datastore/sql-library-dialog';
+import type { MongoSession } from '@fouc/shared/mongo';
+import type { MongoConnectionConfig, MongoSavedConnection } from '@fouc/shared/mongo-connections';
+import { useState, type FormEvent } from 'react';
 import {
   ConnectionOptionsFields,
   ConnectionSourceAssistant,
 } from '../datastore/connection-options';
-import styles from '../datastore/relational.module.css';
+import {
+  ConnectionDialogActions,
+  type ConnectionPendingAction,
+  type ConnectionVerification,
+} from '../datastore/connection-options/connection-dialog-actions';
 import formStyles from '../datastore/connection-options/connection-dialog.module.css';
+import styles from '../datastore/relational.module.css';
+import { SqlDialog } from '../datastore/sql-library-dialog';
+import { createUiMessages, uiFailure, uiText, type UiMessage } from '../i18n/ui-message';
+import { messages as unitMessages } from './i18n/mongo-dialog';
+const { message: uiMessage } = createUiMessages(unitMessages);
 
 export function MongoDialog({
   connection,
@@ -28,12 +32,17 @@ export function MongoDialog({
   onClose,
   onSave,
 }: {
-
   connection?: MongoSavedConnection;
   initialError?: string;
   onClose: () => void;
-  onSave: (name: string, config: MongoConnectionConfig, verification?: ConnectionVerification) => Promise<void>;
+  onSave: (
+    name: string,
+    config: MongoConnectionConfig,
+    verification?: ConnectionVerification,
+  ) => Promise<void>;
 }) {
+  const { t: tu, locale } = useTranslation(unitMessages);
+
   const [name, setName] = useState(connection?.name ?? '');
   const [config, setConfig] = useState<MongoConnectionConfig>(
     connection?.config ?? {
@@ -46,21 +55,23 @@ export function MongoDialog({
       connectionOptions: defaultConnectionOptions('mongodb'),
     },
   );
-  const [connectionOptions, setConnectionOptions] =
-    useState<DatabaseConnectionOptionsInput>(config.connectionOptions);
+  const [connectionOptions, setConnectionOptions] = useState<DatabaseConnectionOptionsInput>(
+    config.connectionOptions,
+  );
   const [optionsValid, setOptionsValid] = useState(true),
     [password, setPassword] = useState('');
   const [pending, setPending] = useState<ConnectionPendingAction>(null),
-    [error, setError] = useState(initialError),
-    [testError, setTestError] = useState(''),
-    [feedback, setFeedback] = useState('');
+    [error, setError] = useState<UiMessage>(initialError),
+    [testError, setTestError] = useState<UiMessage>(''),
+    [feedback, setFeedback] = useState<UiMessage>('');
   const busy = pending !== null;
-  function clearFeedback() { setError(''); setTestError(''); setFeedback(''); }
+  function clearFeedback() {
+    setError('');
+    setTestError('');
+    setFeedback('');
+  }
   const hostList = config.mongo?.srv || (config.mongo?.hosts.length ?? 0) > 1;
-  function update<K extends keyof MongoConnectionConfig>(
-    key: K,
-    value: MongoConnectionConfig[K],
-  ) {
+  function update<K extends keyof MongoConnectionConfig>(key: K, value: MongoConnectionConfig[K]) {
     setConfig((current) => ({
       ...current,
       [key]: value,
@@ -97,13 +108,28 @@ export function MongoDialog({
         });
         await backendFetch(`${base}/${session.id}`, { method: 'DELETE' });
         setFeedback(
-          `连接成功 · MongoDB ${session.version ?? '版本未知'} · ${session.database}`,
+          uiMessage('连接成功 · MongoDB {v0} · {v1}', {
+            v0: session.version ?? uiMessage('版本未知'),
+            v1: session.database,
+          }),
         );
-      } else await onSave(name, publicConfig, feedback && !testError ? {
-        password, connectionOptions: resolveConnectionOptions('mongodb', connectionOptions, !!config.mongo?.srv),
-      } : undefined);
+      } else
+        await onSave(
+          name,
+          publicConfig,
+          feedback && !testError
+            ? {
+                password,
+                connectionOptions: resolveConnectionOptions(
+                  'mongodb',
+                  connectionOptions,
+                  !!config.mongo?.srv,
+                ),
+              }
+            : undefined,
+        );
     } catch (reason) {
-      (test ? setTestError : setError)(reason instanceof Error ? reason.message : '连接操作失败');
+      (test ? setTestError : setError)(uiFailure(reason));
     } finally {
       setPending(null);
     }
@@ -114,11 +140,7 @@ export function MongoDialog({
   }
   return (
     <SqlDialog
-      title={
-        connection
-            ? '编辑 MongoDB 连接'
-            : '新建 MongoDB 连接'
-      }
+      title={connection ? tu('编辑 MongoDB 连接') : tu('新建 MongoDB 连接')}
       busy={busy}
       className={formStyles.dialog}
       onClose={onClose}
@@ -126,7 +148,7 @@ export function MongoDialog({
       <form className={formStyles.form} onSubmit={submit} onChange={clearFeedback}>
         <div className={formStyles.body}>
           <label>
-            连接名称
+            {tu('连接名称')}{' '}
             <input
               required
               autoFocus={!initialError}
@@ -148,8 +170,7 @@ export function MongoDialog({
                 username: fields.username,
                 database: fields.database,
                 authSource:
-                  fields.mongo?.authSource ??
-                  (fields.username ? fields.database : 'admin'),
+                  fields.mongo?.authSource ?? (fields.username ? fields.database : 'admin'),
                 connectionOptions: publicConnectionOptions(
                   'mongodb',
                   fields.connectionOptions,
@@ -164,15 +185,10 @@ export function MongoDialog({
           />
           {hostList ? (
             <div className={formStyles.hostList}>
-              <strong>
-                {config.mongo?.srv ? 'DNS SRV 连接' : 'MongoDB 主机列表'}
-              </strong>
+              <strong>{config.mongo?.srv ? tu('DNS SRV 连接') : tu('MongoDB 主机列表')}</strong>
               <code>
                 {config.mongo?.hosts
-                  .map(
-                    (host) =>
-                      `${host.host}${config.mongo?.srv ? '' : `:${host.port}`}`,
-                  )
+                  .map((host) => `${host.host}${config.mongo?.srv ? '' : `:${host.port}`}`)
                   .join(', ')}
               </code>
               <button
@@ -186,13 +202,13 @@ export function MongoDialog({
                   clearFeedback();
                 }}
               >
-                切换为单主机
+                {tu('切换为单主机')}{' '}
               </button>
             </div>
           ) : (
             <div className={styles.formColumns}>
               <label>
-                主机
+                {tu('主机')}{' '}
                 <input
                   required
                   disabled={busy}
@@ -201,7 +217,7 @@ export function MongoDialog({
                 />
               </label>
               <label>
-                端口
+                {tu('端口')}{' '}
                 <input
                   required
                   type="number"
@@ -209,16 +225,14 @@ export function MongoDialog({
                   max={65535}
                   disabled={busy}
                   value={config.port}
-                  onChange={(event) =>
-                    update('port', Number(event.target.value))
-                  }
+                  onChange={(event) => update('port', Number(event.target.value))}
                 />
               </label>
             </div>
           )}
           <div className={formStyles.columns}>
             <label>
-              用户名
+              {tu('用户名')}{' '}
               <input
                 disabled={busy}
                 value={config.username}
@@ -227,7 +241,7 @@ export function MongoDialog({
               />
             </label>
             <label>
-              初始数据库
+              {tu('初始数据库')}{' '}
               <input
                 required
                 disabled={busy}
@@ -237,7 +251,7 @@ export function MongoDialog({
             </label>
           </div>
           <label>
-            认证数据库
+            {tu('认证数据库')}{' '}
             <input
               required
               disabled={busy}
@@ -246,9 +260,9 @@ export function MongoDialog({
             />
           </label>
           <label>
-            连接密码
+            {tu('连接密码')}{' '}
             <input
-              aria-label="连接密码"
+              aria-label={tu('连接密码')}
               type="password"
               autoFocus={Boolean(initialError)}
               autoComplete="off"
@@ -259,7 +273,7 @@ export function MongoDialog({
                 clearFeedback();
               }}
             />
-            <small>密码临时保留以便直接打开工作台，不写入连接配置。</small>
+            <small>{tu('密码临时保留以便直接打开工作台，不写入连接配置。')}</small>
           </label>
           <ConnectionOptionsFields
             provider="mongodb"
@@ -270,12 +284,19 @@ export function MongoDialog({
           />
           {error && (
             <p className={styles.connectionError} role="alert">
-              {error}
+              {uiText(error, locale)}
             </p>
           )}
         </div>
-        <ConnectionDialogActions pending={pending} valid={optionsValid} feedback={feedback} testError={testError}
-          submitLabel="保存连接" onTest={() => void perform(true)} onClose={onClose} />
+        <ConnectionDialogActions
+          pending={pending}
+          valid={optionsValid}
+          feedback={uiText(feedback, locale)}
+          testError={uiText(testError, locale)}
+          submitLabel={tu('保存连接')}
+          onTest={() => void perform(true)}
+          onClose={onClose}
+        />
       </form>
     </SqlDialog>
   );

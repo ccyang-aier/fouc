@@ -2,7 +2,10 @@ import { describe, expect, test } from 'bun:test';
 import { createOrganizationClient } from '@/features/knowledge/organization/client';
 import { createKnowledgeCatalogClient } from '../data/knowledge-catalog-client';
 import type { OrganizationClientDeps } from '@/features/knowledge/organization/client';
-import { isOrganizationDataError, organizationErrorText } from '@/features/knowledge/organization/errors';
+import {
+  isOrganizationDataError,
+  organizationErrorText,
+} from '@/features/knowledge/organization/errors';
 
 /**
  * Route-contract tests (O02): every client operation must hit exactly the
@@ -19,7 +22,13 @@ const groupId = '30000000-0000-4000-8000-000000000003';
 const teamspaceId = '40000000-0000-4000-8000-000000000004';
 const cursor = '50000000-0000-4000-8000-000000000005';
 
-type Recorded = { url: string; method: string; body?: string; contentType?: string; credentials?: RequestInit['credentials'] };
+type Recorded = {
+  url: string;
+  method: string;
+  body?: string;
+  contentType?: string;
+  credentials?: RequestInit['credentials'];
+};
 
 function recordingFetch(status: number, body: unknown) {
   const calls: Recorded[] = [];
@@ -31,13 +40,19 @@ function recordingFetch(status: number, body: unknown) {
       contentType: (init?.headers as Record<string, string> | undefined)?.['Content-Type'],
       credentials: init?.credentials,
     });
-    return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+    return new Response(JSON.stringify(body), {
+      status,
+      headers: { 'content-type': 'application/json' },
+    });
   };
   return { calls, impl };
 }
 
 function clientWith(impl: typeof fetch) {
-  const deps: OrganizationClientDeps = { origin: async () => ORIGIN, fetchImpl: impl as typeof fetch };
+  const deps: OrganizationClientDeps = {
+    origin: async () => ORIGIN,
+    fetchImpl: impl as typeof fetch,
+  };
   return { ...createOrganizationClient(deps), ...createKnowledgeCatalogClient(deps) };
 }
 
@@ -88,8 +103,15 @@ describe('route contract', () => {
   });
 
   test('member role change PATCHes the member path with the role body', async () => {
-    const { calls, impl } = recordingFetch(200, { knowledgeBaseId: ws, userId: otherUser, role: 'admin' });
-    await clientWith(impl as unknown as typeof fetch).changeMemberRole(ws, { userId: otherUser, role: 'admin' });
+    const { calls, impl } = recordingFetch(200, {
+      knowledgeBaseId: ws,
+      userId: otherUser,
+      role: 'admin',
+    });
+    await clientWith(impl as unknown as typeof fetch).changeMemberRole(ws, {
+      userId: otherUser,
+      role: 'admin',
+    });
     const call = lastCall(calls);
     expect(call.method).toBe('PATCH');
     expect(call.url).toBe(`${BASE}/${ws}/members/${otherUser}`);
@@ -115,7 +137,11 @@ describe('route contract', () => {
   });
 
   test('group writes: create POSTs name, rename PATCHes, membership POSTs the userId', async () => {
-    const { calls, impl } = recordingFetch(201, { knowledgeBaseId: ws, id: groupId, name: '设计组' });
+    const { calls, impl } = recordingFetch(201, {
+      knowledgeBaseId: ws,
+      id: groupId,
+      name: '设计组',
+    });
     const client = clientWith(impl as unknown as typeof fetch);
     await client.createGroup(ws, { name: '设计组' });
     expect(lastCall(calls).url).toBe(`${BASE}/${ws}/groups`);
@@ -131,7 +157,12 @@ describe('route contract', () => {
   });
 
   test('teamspace creation sends defaultAccess including null; updates send only provided fields', async () => {
-    const { calls, impl } = recordingFetch(201, { knowledgeBaseId: ws, id: teamspaceId, name: '文档', defaultAccess: null });
+    const { calls, impl } = recordingFetch(201, {
+      knowledgeBaseId: ws,
+      id: teamspaceId,
+      name: '文档',
+      defaultAccess: null,
+    });
     const client = clientWith(impl as unknown as typeof fetch);
     await client.createTeamspace(ws, { name: '文档', defaultAccess: null });
     expect(lastCall(calls).body).toBe(JSON.stringify({ name: '文档', defaultAccess: null }));
@@ -175,8 +206,12 @@ describe('input validation fails before any request', () => {
     const { calls, impl } = recordingFetch(200, {});
     const client = clientWith(impl as unknown as typeof fetch);
     await expectInvalidInput(() => client.updateTeamspace(ws, teamspaceId, {}));
-    await expectInvalidInput(() => client.createTeamspace(ws, { name: 'x', defaultAccess: 'root' as never }));
-    await expectInvalidInput(() => client.changeMemberRole(ws, { userId: otherUser, role: 'superuser' as never }));
+    await expectInvalidInput(() =>
+      client.createTeamspace(ws, { name: 'x', defaultAccess: 'root' as never }),
+    );
+    await expectInvalidInput(() =>
+      client.changeMemberRole(ws, { userId: otherUser, role: 'superuser' as never }),
+    );
     expect(calls).toHaveLength(0);
   });
 });
@@ -184,18 +219,20 @@ describe('input validation fails before any request', () => {
 describe('error normalization', () => {
   async function errorOf(status: number, body: unknown) {
     const { impl } = recordingFetch(status, body);
-    return clientWith(impl as unknown as typeof fetch).listKnowledgeBases().catch((cause) => cause);
+    return clientWith(impl as unknown as typeof fetch)
+      .listKnowledgeBases()
+      .catch((cause) => cause);
   }
 
   test('known server codes map to the domain error with Chinese copy', async () => {
     const forbidden = await errorOf(403, { code: 'FORBIDDEN', message: 'denied' });
     expect(isOrganizationDataError(forbidden)).toBe(true);
     expect((forbidden as { code: string }).code).toBe('FORBIDDEN');
-    expect((forbidden as Error).message).toBe(organizationErrorText.FORBIDDEN);
+    expect((forbidden as Error).message).toBe(organizationErrorText().FORBIDDEN);
 
     const unauthenticated = await errorOf(401, { code: 'UNAUTHENTICATED', message: 'no session' });
     expect((unauthenticated as { code: string }).code).toBe('UNAUTHENTICATED');
-    expect((unauthenticated as Error).message).toBe(organizationErrorText.UNAUTHENTICATED);
+    expect((unauthenticated as Error).message).toBe(organizationErrorText().UNAUTHENTICATED);
 
     const notEmpty = await errorOf(409, { code: 'TEAMSPACE_NOT_EMPTY', message: 'pages remain' });
     expect((notEmpty as { code: string }).code).toBe('TEAMSPACE_NOT_EMPTY');
@@ -210,7 +247,8 @@ describe('error normalization', () => {
 
     const notJson = createKnowledgeCatalogClient({
       origin: async () => ORIGIN,
-      fetchImpl: (async () => new Response('<html>gateway error</html>', { status: 502 })) as unknown as typeof fetch,
+      fetchImpl: (async () =>
+        new Response('<html>gateway error</html>', { status: 502 })) as unknown as typeof fetch,
     });
     const degraded = await notJson.listKnowledgeBases().catch((cause) => cause);
     expect((degraded as { code: string }).code).toBe('ORGANIZATION_UNAVAILABLE');
@@ -228,13 +266,17 @@ describe('error normalization', () => {
   test('transport failures normalize to NETWORK; endpoint resolution failures keep ENDPOINT', async () => {
     const network = createKnowledgeCatalogClient({
       origin: async () => ORIGIN,
-      fetchImpl: (async () => { throw new TypeError('fetch failed'); }) as unknown as typeof fetch,
+      fetchImpl: (async () => {
+        throw new TypeError('fetch failed');
+      }) as unknown as typeof fetch,
     });
     const networkError = await network.listKnowledgeBases().catch((cause) => cause);
     expect((networkError as { code: string }).code).toBe('NETWORK');
 
     const offline = createKnowledgeCatalogClient({
-      origin: async () => { throw Object.assign(new Error('no endpoint'), { code: 'ENDPOINT' }); },
+      origin: async () => {
+        throw Object.assign(new Error('no endpoint'), { code: 'ENDPOINT' });
+      },
       fetchImpl: (async () => new Response('{}')) as unknown as typeof fetch,
     });
     const endpointError = await offline.listKnowledgeBases().catch((cause) => cause);

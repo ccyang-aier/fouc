@@ -1,0 +1,25 @@
+import { defineMessages } from '@/lib/i18n/messages';
+
+export const messages = defineMessages({
+  获取: ['获取', 'Get'],
+  安装: ['安装', 'Install'],
+  已添加: ['已添加', 'Added'],
+  已安装: ['已安装', 'Installed'],
+  助理: ['助理', 'Agent'],
+  技能: ['技能', 'Skill'],
+  概览: ['概览', 'Overview'],
+  版本历史: ['版本历史', 'Version history'],
+  讨论: ['讨论', 'Discussions'],
+  信息: ['信息', 'Information'],
+  社区: ['社区', 'Community'],
+  更新: ['更新', 'Updated'],
+  分享: ['分享', 'Share'],
+  详情分区: ['详情分区', 'Detail sections'],
+  capabilityQuestion: ['你可以使用该{kind}做什么？', 'What can this {kind} do?'],
+  权限与数据: ['权限与数据', 'Permissions and data'],
+  发起讨论: ['发起讨论', 'Start discussion'],
+  回复: ['回复', 'Replies'],
+  relatedAgents: ['相关助理', 'Related agents'],
+  relatedSkills: ['相关技能', 'Related skills'],
+  查看更多: ['查看更多', 'View more'],
+});

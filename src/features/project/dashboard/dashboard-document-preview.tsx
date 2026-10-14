@@ -1,67 +1,91 @@
 'use client';
+import { translateFixed } from '../i18n/display';
+
+import { formatNumber, useTranslation } from '@/lib/i18n';
+import { fixtureArrayField, fixtureField } from '../i18n/display';
+import { messages } from './i18n/dashboard-document-preview';
+
 import { useState } from 'react';
-import { DashboardButton, ReferenceIcon } from './dashboard-ui';
-import type { DashboardDocument, DashboardForm } from './dashboard-model';
-import { documentTypes, invoiceTotal, money } from './dashboard-document-export';
 import common from './dashboard-actions.module.css';
 import styles from './dashboard-document-dialog.module.css';
+import { documentDate, documentTypes, invoiceTotal, money } from './dashboard-document-export';
+import type { DashboardDocument, DashboardForm } from './dashboard-model';
+import { DashboardButton, ReferenceIcon } from './dashboard-ui';
 export function DocumentPreview({ value }: { value: DashboardDocument }) {
+  const { t, locale } = useTranslation(messages);
+
   return (
     <div className={styles.preview}>
       <div className={styles.previewHeading}>
         <ReferenceIcon name={value.kind} size={30} />
-        <span>{documentTypes[value.kind]}</span>
+        <span>{translateFixed(documentTypes[value.kind], locale)}</span>
       </div>
-      <h3>{value.title}</h3>
+      <h3>{fixtureField(value, 'title', locale)}</h3>
       {value.kind === 'invoice' ? (
         <>
           <div className={styles.previewMeta}>
             <span>
-              Bill to<strong>{value.client || 'Client name'}</strong>
+              {t('Bill to')}
+              <strong>
+                {fixtureField(value, 'client', locale) || translateFixed('Client name', locale)}
+              </strong>
               {value.email}
             </span>
             <span>
-              Due date<strong>{value.dueDate}</strong>
+              {t('Due date')}
+              <strong>{documentDate(value.dueDate, locale)}</strong>
             </span>
           </div>
           <table>
             <thead>
               <tr>
-                <th>Description</th>
-                <th>Qty</th>
-                <th>Amount</th>
+                <th>{t('Description')}</th>
+                <th>{t('Qty')}</th>
+                <th>{t('Amount')}</th>
               </tr>
             </thead>
             <tbody>
               {value.items.map((item) => (
                 <tr key={item.id}>
-                  <td>{item.description || 'Line item'}</td>
-                  <td>{item.quantity}</td>
-                  <td>{money(item.quantity * item.rate, value.currency)}</td>
+                  <td>
+                    {fixtureField(item, 'description', locale) ||
+                      translateFixed('Line item', locale)}
+                  </td>
+                  <td>{formatNumber(item.quantity, undefined, locale)}</td>
+                  <td>{money(item.quantity * item.rate, value.currency, locale)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
           <div className={styles.total}>
-            Total <strong>{money(invoiceTotal(value.items), value.currency)}</strong>
+            {t('Total')}
+            <strong>{money(invoiceTotal(value.items), value.currency, locale)}</strong>
           </div>
-          {value.notes ? <p>{value.notes}</p> : null}
+          {value.notes ? <p>{fixtureField(value, 'notes', locale)}</p> : null}
         </>
       ) : null}
       {value.kind === 'proposal' ? (
         <>
           <div className={styles.previewMeta}>
             <span>
-              Prepared for<strong>{value.client || 'Client name'}</strong>
+              {t('Prepared for')}
+              <strong>
+                {fixtureField(value, 'client', locale) || translateFixed('Client name', locale)}
+              </strong>
             </span>
             <span>
-              Valid until<strong>{value.validUntil}</strong>
+              {t('Valid until')}
+              <strong>{documentDate(value.validUntil, locale)}</strong>
             </span>
           </div>
-          <h4>Scope</h4>
-          <p>{value.scope || 'Add your proposal scope.'}</p>
+          <h4>{t('Scope')}</h4>
+          <p>
+            {fixtureField(value, 'scope', locale) ||
+              translateFixed('Add your proposal scope.', locale)}
+          </p>
           <div className={styles.total}>
-            Budget <strong>{money(value.budget)}</strong>
+            {t('Budget')}
+            <strong>{money(value.budget, 'USD', locale)}</strong>
           </div>
         </>
       ) : null}
@@ -69,16 +93,23 @@ export function DocumentPreview({ value }: { value: DashboardDocument }) {
         <>
           <div className={styles.previewMeta}>
             <span>
-              Client<strong>{value.client || 'Client name'}</strong>
+              {t('Client')}
+              <strong>
+                {fixtureField(value, 'client', locale) || translateFixed('Client name', locale)}
+              </strong>
             </span>
             <span>
-              Provider<strong>{value.provider}</strong>
+              {t('Provider')}
+              <strong>{value.provider}</strong>
             </span>
           </div>
           <h4>
-            {value.startDate} — {value.endDate}
+            {documentDate(value.startDate, locale)} — {documentDate(value.endDate, locale)}
           </h4>
-          <p>{value.terms || 'Add the contract terms.'}</p>
+          <p>
+            {fixtureField(value, 'terms', locale) ||
+              translateFixed('Add the contract terms.', locale)}
+          </p>
         </>
       ) : null}
     </div>
@@ -92,6 +123,8 @@ export function FormPreview({
   value: DashboardForm;
   onSubmit: (answers: string[]) => void;
 }) {
+  const { t, locale } = useTranslation(messages);
+
   const [answers, setAnswers] = useState<string[]>([]);
   const [error, setError] = useState('');
   const active = value.status === 'Ready';
@@ -99,14 +132,14 @@ export function FormPreview({
     <div className={styles.preview}>
       <div className={styles.previewHeading}>
         <ReferenceIcon name="form" size={30} />
-        <span>Form</span>
+        <span>{t('Form')}</span>
       </div>
-      <h3>{value.title}</h3>
-      <p>{value.description}</p>
+      <h3>{fixtureField(value, 'title', locale)}</h3>
+      <p>{fixtureField(value, 'description', locale)}</p>
       <div className={`${common.fields} ${styles.responseFields}`}>
         {value.questions.map((question, index) => (
           <label key={index}>
-            {question || `Question ${index + 1}`}
+            {fixtureArrayField(value, 'questions', index, locale) || 'Question' + ' ' + (index + 1)}
             <textarea
               rows={2}
               disabled={!active}
@@ -124,7 +157,7 @@ export function FormPreview({
         ))}
         {error ? (
           <p role="alert" className={common.error}>
-            {error}
+            {translateFixed(error, locale)}
           </p>
         ) : null}
         <DashboardButton
@@ -139,13 +172,13 @@ export function FormPreview({
             setAnswers([]);
           }}
         >
-          Submit response
+          {t('Submit response')}
         </DashboardButton>
         {!active ? (
           <p className={styles.hint}>
             {value.status === 'Draft'
-              ? 'Mark this form ready to collect responses.'
-              : 'This form is completed.'}
+              ? t('Mark this form ready to collect responses.')
+              : t('This form is completed.')}
           </p>
         ) : null}
       </div>
@@ -154,25 +187,28 @@ export function FormPreview({
 }
 
 export function FormResponses({ value }: { value: DashboardForm }) {
+  const { t, locale } = useTranslation(messages);
+
   return (
     <div className={styles.responses}>
       {value.responses.length ? (
         value.responses.map((response, index) => (
           <article key={response.id}>
             <h3>
-              Response {index + 1}
-              <time>{new Date(response.submittedAt).toLocaleString('en-US')}</time>
+              {t('Response')}
+              {index + 1}
+              <time>{new Date(response.submittedAt).toLocaleString(locale)}</time>
             </h3>
             {value.questions.map((question, position) => (
               <div key={position}>
-                <strong>{question}</strong>
-                <p>{response.answers[position]}</p>
+                <strong>{fixtureArrayField(value, 'questions', position, locale)}</strong>
+                <p>{fixtureArrayField(response, 'answers', position, locale)}</p>
               </div>
             ))}
           </article>
         ))
       ) : (
-        <p className={styles.hint}>No responses yet.</p>
+        <p className={styles.hint}>{t('No responses yet.')}</p>
       )}
     </div>
   );

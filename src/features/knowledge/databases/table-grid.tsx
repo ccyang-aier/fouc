@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from '@/lib/i18n';
+import { knowledgeMessages } from './table-grid.messages';
 /**
  * 数据库表格网格（U06）——行 × 列的网格语义与键盘契约。
  *
@@ -13,7 +15,12 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FileText, Plus } from '@phosphor-icons/react';
-import type { DatabaseRowSummary, Properties, PropertyDefinition, PropertyValue } from '@fouc/shared/knowledge/contracts';
+import type {
+  DatabaseRowSummary,
+  Properties,
+  PropertyDefinition,
+  PropertyValue,
+} from '@fouc/shared/knowledge/contracts';
 import { cn } from '@/lib/utils';
 import { columnIsEditable } from './cell-model';
 import {
@@ -83,6 +90,8 @@ export function TableGrid({
   onCreateRow: () => void;
   creatingRow: boolean;
 }) {
+  const { t: knowledgeT } = useTranslation(knowledgeMessages);
+
   const [cursor, setCursor] = useState<GridCursor>({ row: 0, column: 0 });
   const [editing, setEditing] = useState<CellEditTarget | null>(null);
   const [addColumnAnchor, setAddColumnAnchor] = useState<AnchorRect | null>(null);
@@ -104,10 +113,14 @@ export function TableGrid({
   }, [cursor]);
 
   // 行集合收缩后把光标夹回网格内（「渲染期间对齐状态」：一次性收敛，不级联）。
-  const clamped: GridCursor = { row: Math.min(cursor.row, Math.max(0, rows.length - 1)), column: Math.min(cursor.column, Math.max(0, totalColumns - 1)) };
+  const clamped: GridCursor = {
+    row: Math.min(cursor.row, Math.max(0, rows.length - 1)),
+    column: Math.min(cursor.column, Math.max(0, totalColumns - 1)),
+  };
   if (!sameCursor(clamped, cursor)) setCursor(clamped);
 
-  const columnAt = (index: number): PropertyDefinition | null => (index <= 0 ? null : columns[index - 1] ?? null);
+  const columnAt = (index: number): PropertyDefinition | null =>
+    index <= 0 ? null : (columns[index - 1] ?? null);
 
   const rowAt = (index: number): DatabaseRowSummary | null => rows[index] ?? null;
 
@@ -128,7 +141,10 @@ export function TableGrid({
 
   const handleGridKeyDown = (event: React.KeyboardEvent) => {
     if (editing) return;
-    const action = gridActionFor(event.key, { ctrlOrMeta: event.ctrlKey || event.metaKey, alt: event.altKey });
+    const action = gridActionFor(event.key, {
+      ctrlOrMeta: event.ctrlKey || event.metaKey,
+      alt: event.altKey,
+    });
     if (!action) return;
     event.preventDefault();
     switch (action.type) {
@@ -183,15 +199,35 @@ export function TableGrid({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="min-h-0 flex-1 overflow-auto">
-        <div role="grid" aria-label="数据库表格" aria-rowcount={rows.length} onKeyDown={handleGridKeyDown} className="min-w-full">
+        <div
+          role="grid"
+          aria-label={knowledgeT('databaseTable')}
+          aria-rowcount={rows.length}
+          onKeyDown={handleGridKeyDown}
+          className="min-w-full"
+        >
           {/* 列头 */}
-          <div role="row" aria-rowindex={1} className="sticky top-0 z-10 grid border-b border-[var(--line-strong)] bg-[var(--surface-subtle)]" style={{ gridTemplateColumns: gridTemplate }}>
-            <div role="columnheader" aria-colindex={1} className="flex h-[32px] items-center gap-1.5 px-2 text-[11.5px] font-medium text-[var(--muted-strong)]">
+          <div
+            role="row"
+            aria-rowindex={1}
+            className="sticky top-0 z-10 grid border-b border-[var(--line-strong)] bg-[var(--surface-subtle)]"
+            style={{ gridTemplateColumns: gridTemplate }}
+          >
+            <div
+              role="columnheader"
+              aria-colindex={1}
+              className="flex h-[32px] items-center gap-1.5 px-2 text-[11.5px] font-medium text-[var(--muted-strong)]"
+            >
               <FileText aria-hidden className="size-3.5 text-[var(--muted)]" />
-              页面
+              {knowledgeT('page')}
             </div>
             {columns.map((column, index) => (
-              <div role="columnheader" aria-colindex={index + 2} key={column.id} className="h-[32px] border-l border-[var(--line)]">
+              <div
+                role="columnheader"
+                aria-colindex={index + 2}
+                key={column.id}
+                className="h-[32px] border-l border-[var(--line)]"
+              >
                 <ColumnHeaderCell
                   column={column}
                   sortKey={sort.find((key) => key.propertyId === column.id)}
@@ -221,12 +257,18 @@ export function TableGrid({
                 role="row"
                 aria-rowindex={rowIndex + 2}
                 className="group grid border-b border-[var(--line)] transition-opacity"
-                style={{ gridTemplateColumns: gridTemplate, height: ROW_HEIGHT, opacity: pending ? 0.55 : 1 }}
+                style={{
+                  gridTemplateColumns: gridTemplate,
+                  height: ROW_HEIGHT,
+                  opacity: pending ? 0.55 : 1,
+                }}
               >
                 <div
                   role="rowheader"
                   aria-colindex={1}
-                  ref={(element) => { registerCell(cellRefs, rowIndex, 0, element); }}
+                  ref={(element) => {
+                    registerCell(cellRefs, rowIndex, 0, element);
+                  }}
                   tabIndex={cursor.row === rowIndex && cursor.column === 0 ? 0 : -1}
                   onFocus={() => setCursor({ row: rowIndex, column: 0 })}
                   onKeyDown={(event) => {
@@ -238,7 +280,9 @@ export function TableGrid({
                   }}
                   className={cn(
                     'relative flex min-w-0 items-center outline-none',
-                    cursor.row === rowIndex && cursor.column === 0 && 'z-[1] shadow-[inset_0_0_0_1.5px_var(--focus-ring)]',
+                    cursor.row === rowIndex &&
+                      cursor.column === 0 &&
+                      'z-[1] shadow-[inset_0_0_0_1.5px_var(--focus-ring)]',
                   )}
                 >
                   <button
@@ -247,30 +291,46 @@ export function TableGrid({
                     className="flex h-full min-w-0 flex-1 items-center gap-1.5 px-2 text-left outline-none"
                   >
                     <FileText aria-hidden className="size-3.5 shrink-0 text-[var(--muted)]" />
-                    <span className="truncate text-[12.5px] text-[var(--ink)]">{row.title === '' ? '无标题' : row.title}</span>
+                    <span className="truncate text-[12.5px] text-[var(--ink)]">
+                      {row.title === '' ? knowledgeT('untitled') : row.title}
+                    </span>
                   </button>
                 </div>
                 {columns.map((column, columnIndex) => {
                   const gridColumn = columnIndex + 1;
                   const value = row.properties[column.id];
-                  const isEditing = editing !== null && editing.cursor.row === rowIndex && editing.cursor.column === gridColumn && editing.columnId === column.id;
+                  const isEditing =
+                    editing !== null &&
+                    editing.cursor.row === rowIndex &&
+                    editing.cursor.column === gridColumn &&
+                    editing.columnId === column.id;
                   return (
                     <div
                       key={column.id}
                       role="gridcell"
                       aria-colindex={gridColumn + 1}
-                      aria-readonly={canEditCells && columnIsEditable(column.type) ? undefined : true}
-                      ref={(element) => { registerCell(cellRefs, rowIndex, gridColumn, element); }}
+                      aria-readonly={
+                        canEditCells && columnIsEditable(column.type) ? undefined : true
+                      }
+                      ref={(element) => {
+                        registerCell(cellRefs, rowIndex, gridColumn, element);
+                      }}
                       tabIndex={cursor.row === rowIndex && cursor.column === gridColumn ? 0 : -1}
                       onFocus={() => setCursor({ row: rowIndex, column: gridColumn })}
                       onClick={() => {
                         if (column.type === 'checkbox') toggleCheckbox(row, column);
-                        else if (canEditCells && columnIsEditable(column.type)) beginEdit({ row: rowIndex, column: gridColumn }, cellRefs.current.get(`${rowIndex}:${gridColumn}`) ?? null);
+                        else if (canEditCells && columnIsEditable(column.type))
+                          beginEdit(
+                            { row: rowIndex, column: gridColumn },
+                            cellRefs.current.get(`${rowIndex}:${gridColumn}`) ?? null,
+                          );
                       }}
                       className={cn(
                         'relative flex min-w-0 items-center px-2 text-[12.5px] text-[var(--ink-soft)] outline-none',
                         column.type === 'number' && 'justify-end text-right',
-                        cursor.row === rowIndex && cursor.column === gridColumn && 'z-[1] shadow-[inset_0_0_0_1.5px_var(--focus-ring)]',
+                        cursor.row === rowIndex &&
+                          cursor.column === gridColumn &&
+                          'z-[1] shadow-[inset_0_0_0_1.5px_var(--focus-ring)]',
                         !isEditing && 'cursor-default',
                       )}
                     >
@@ -307,7 +367,7 @@ export function TableGrid({
                   className="flex h-[34px] w-full items-center gap-1.5 px-2 text-[12px] text-[var(--muted)] outline-none transition-colors hover:bg-wash hover:text-[var(--ink-soft)] disabled:pointer-events-none disabled:opacity-45"
                 >
                   <Plus aria-hidden className="size-3.5" />
-                  {creatingRow ? '正在新建…' : '新行'}
+                  {creatingRow ? knowledgeT('creating') : knowledgeT('newRow')}
                 </button>
               </div>
             </div>
@@ -329,7 +389,12 @@ export function TableGrid({
   );
 }
 
-function registerCell(refs: React.MutableRefObject<Map<string, HTMLDivElement>>, row: number, column: number, element: HTMLDivElement | null) {
+function registerCell(
+  refs: React.MutableRefObject<Map<string, HTMLDivElement>>,
+  row: number,
+  column: number,
+  element: HTMLDivElement | null,
+) {
   const key = `${row}:${column}`;
   if (element) refs.current.set(key, element);
   else refs.current.delete(key);

@@ -1,0 +1,33 @@
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+}
+.actionButton {
+  height: 38px;
+  padding: 0 14px;
+  gap: 8px;
+  border-color: var(--resource-card-border);
+  border-radius: 14px;
+  background: var(--panel);
+  color: var(--muted-strong);
+  font-size: 13px;
+  font-weight: 400;
+  box-shadow: 0 2px 3px rgb(22 33 23 / 5%);
+  cursor: pointer;
+}
+.actionButton svg {
+  color: var(--ink);
+}
+@media (max-width: 700px) {
+  .actions {
+    gap: 8px;
+    padding: 10px 13px;
+  }
+  .actionButton {
+    padding-inline: 11px;
+    font-size: 12px;
+  }
+}

@@ -31,6 +31,7 @@ import {
 import { ChatAttachments } from "./chat-attachments";
 import { ChatAgentSelector, ChatContextSelectors } from "./chat-selectors";
 import { ChatToolsLink } from "./chat-tools-link";
+import { ChatTaskActions } from "./chat-task-actions";
 import { useChatVoice } from "./use-chat-voice";
 import type { ChatAttachment, ChatContext, ChatSubmission } from "./chat-types";
 import type { ChatText } from "./chat-messages";
@@ -152,7 +153,21 @@ export function ChatComposer({
   }
   return (
     <div className={styles.composerGroup} data-compact={compact}>
-      <ChatContextSelectors context={context} onChange={setContext} t={t} />
+      {!compact ? (
+        <ChatTaskActions
+          t={t}
+          onPrompt={(prompt) => {
+            setDraft((current) => ({
+              ...current,
+              text: current.text.startsWith(prompt)
+                ? current.text
+                : `${prompt}${current.text.trim() ? `\n\n${current.text}` : ""}`,
+            }));
+            setInvalid(false);
+            requestAnimationFrame(() => inputRef.current?.focus());
+          }}
+        />
+      ) : null}
       <div
         className={styles.composer}
         data-invalid={invalid}
@@ -182,6 +197,7 @@ export function ChatComposer({
           addFiles(Array.from(event.dataTransfer.files));
         }}
       >
+        <ChatContextSelectors context={context} onChange={setContext} t={t} />
         {draft.attachments.length ? (
           <ChatAttachments
             attachments={draft.attachments}

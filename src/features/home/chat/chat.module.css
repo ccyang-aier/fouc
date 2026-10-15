@@ -12,15 +12,6 @@
     var(--panel)
   );
 }
-.wallpaper {
-  position: absolute;
-  inset: 0 0 auto;
-  height: 540px;
-  background: url("/brand/chat/conversation-waves.png") center top / 100% auto
-    no-repeat;
-  pointer-events: none;
-  transition: opacity 350ms ease;
-}
 .pageScroll {
   height: 100%;
   min-height: 0;
@@ -51,11 +42,14 @@
   font-size: clamp(27px, 2.6cqw, 36px);
   font-weight: 400;
   line-height: 1.22;
-  letter-spacing: -0.045em;
-  color: #15231e;
+  letter-spacing: -0.03em;
+  color: var(--ink);
 }
 .composerGroup {
   width: 100%;
+  border: 1px solid var(--resource-card-border);
+  border-radius: 16px;
+  background: var(--surface-subtle);
 }
 .composer {
   position: relative;
@@ -64,12 +58,13 @@
   border: 1px solid var(--resource-card-border);
   border-radius: 16px;
   padding: 16px;
+  margin: 0 -1px;
   background: var(--panel);
   box-shadow: 0 2px 6px rgb(22 33 23 / 3%);
   transition: border-color 160ms ease;
 }
 .composer:focus-within {
-  border-color: #8e9f93;
+  border-color: var(--control-border);
 }
 .composer[data-invalid="true"] {
   border-color: #ca6969;
@@ -95,7 +90,7 @@
   cursor: text;
 }
 .input::placeholder {
-  color: #8d948e;
+  color: var(--muted-strong);
   opacity: 1;
 }
 .input:focus {
@@ -163,7 +158,7 @@
 .composerGroup button:focus-visible {
   outline: none;
   box-shadow: none;
-  border-color: #8e9f93;
+  border-color: var(--control-border);
 }
 .fileInput {
   display: none;
@@ -172,18 +167,19 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 2px;
-  padding-top: 10px;
+  gap: 10px;
+  padding: 12px 16px;
 }
 .contextButton {
-  height: 27px;
-  padding: 0 7px;
-  font-size: 11px;
+  height: 35px;
+  padding: 0 12px;
+  font-size: 12px;
   font-weight: 400;
-  gap: 5px;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  box-shadow: none;
+  gap: 7px;
+  border-color: var(--chat-control-border);
+  border-radius: 11px;
+  background: var(--panel);
+  box-shadow: 0 1px 3px rgb(22 33 23 / 5%);
   color: var(--muted-strong);
   cursor: pointer;
   max-width: 230px;
@@ -193,63 +189,15 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.permissionButton {
-  margin-left: auto;
-}
 .menu {
   width: 226px;
   border-radius: 11px;
   padding: 5px;
 }
-.menuDescription {
-  display: block;
-  font-size: 10px;
-  color: var(--muted);
-  margin-top: 1px;
-}
-.menu [role="menuitemradio"]:has(.menuDescription) {
-  height: 44px;
-}
 .menuEllipsis {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.suggestions {
-  margin-top: 27px;
-  animation: arrive 420ms 80ms ease both;
-}
-.suggestions > p {
-  margin: 0 0 12px;
-  font-size: 10px;
-  font-weight: 400;
-  letter-spacing: 0.015em;
-  color: #8d948e;
-}
-.suggestionButtons {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.suggestionButton {
-  height: 33px;
-  border-radius: 9px;
-  padding: 0 10px;
-  gap: 7px;
-  border-color: var(--chat-control-border);
-  font-size: 12px;
-  font-weight: 400;
-  box-shadow: 0 2px 4px rgb(22 33 23 / 3%);
-  color: var(--ink);
-  cursor: pointer;
-}
-.suggestionButton svg {
-  color: #6b5bbc;
-}
-.suggestionButton:focus-visible {
-  outline: none;
-  box-shadow: none;
-  border-color: #8e9f93;
 }
 .attachments {
   display: flex;
@@ -370,9 +318,6 @@
   flex-shrink: 0;
   color: var(--muted);
 }
-.page[data-conversation="true"] .wallpaper {
-  opacity: 0;
-}
 .page[data-conversation="true"] .pageScroll {
   height: calc(100% - 53px);
 }
@@ -395,6 +340,16 @@
 }
 .composerGroup[data-compact="true"] .input {
   min-height: 67px;
+}
+.composerGroup[data-compact="true"] {
+  border: 0;
+  background: transparent;
+}
+.composerGroup[data-compact="true"] .composer {
+  margin: 0;
+}
+.composerGroup[data-compact="true"] .contextControls {
+  padding: 0 0 10px;
 }
 .composerGroup .input {
   transition: min-height 240ms ease;
@@ -503,10 +458,6 @@
   margin: 0;
   overflow-wrap: anywhere;
 }
-.summaryDot {
-  color: var(--muted);
-  padding: 0 7px;
-}
 .assistantContent > .previewNote {
   font-size: 10px;
   color: var(--muted);
@@ -518,12 +469,6 @@
   font-size: 11px;
   box-shadow: none;
 }
-:global(html[data-theme="dark"]) .wallpaper {
-  opacity: 0.15;
-}
-:global(html[data-theme="dark"]) .greeting h1 {
-  color: var(--ink);
-}
 :global(html[data-theme="dark"]) .greetingMark {
   filter: invert(1);
 }
@@ -532,7 +477,7 @@
 :global(html[data-theme="dark"]) .agentButton,
 :global(html[data-theme="dark"]) .fileCard,
 :global(html[data-theme="dark"]) .contextSummary,
-:global(html[data-theme="dark"]) .suggestionButton {
+:global(html[data-theme="dark"]) .contextButton {
   border-color: var(--control-border);
 }
 :global(html[data-theme="dark"]) .iconButton {
@@ -546,20 +491,10 @@
   .greeting h1 {
     font-size: 30px;
   }
-  .suggestionButtons {
-    gap: 8px;
-  }
-  .suggestionButton {
-    font-size: 11px;
-  }
 }
 @container (max-width: 560px) {
   .viewport {
     padding: 100px 20px 40px;
-  }
-  .wallpaper {
-    height: 440px;
-    background-size: auto 440px;
   }
   .greeting {
     margin-bottom: 28px;
@@ -580,18 +515,13 @@
     min-height: 122px;
     font-size: 13px;
   }
-  .suggestionButtons {
-    gap: 8px;
-  }
   .contextControls {
-    gap: 1px;
+    gap: 8px;
+    padding: 10px 13px;
   }
   .contextButton {
-    font-size: 10px;
+    font-size: 12px;
     max-width: 170px;
-  }
-  .permissionButton {
-    margin-left: 0;
   }
   .contextButton span {
     max-width: 128px;

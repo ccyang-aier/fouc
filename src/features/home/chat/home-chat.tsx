@@ -6,33 +6,27 @@ import Image from "next/image";
 import {
   ArrowLeft,
   ChatText as ChatIcon,
-  Scan,
-  Warning,
-  ChatCircleText,
-  NotePencil,
 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useProjectResources } from "@/features/project/project-resources";
+import type { Locale } from "@/lib/i18n";
 import { ChatComposer, type ChatDraft } from "./chat-composer";
 import { ChatConversation } from "./chat-conversation";
+import { ChatRecentConversations } from "./chat-recent-conversations";
+import { saveChatConversation, type ChatHistoryEntry } from "./chat-history";
 import type { ChatContext, ChatSubmission } from "./chat-types";
 import type { ChatText } from "./chat-messages";
 import styles from "./chat.module.css";
 
-const suggestions = [
-  { label: "review", prompt: "reviewPrompt", icon: Scan },
-  { label: "issues", prompt: "issuesPrompt", icon: Warning },
-  { label: "explain", prompt: "explainPrompt", icon: ChatCircleText },
-  { label: "improve", prompt: "improvePrompt", icon: NotePencil },
-] as const;
-
 export function HomeChat({
   t,
   locale = "zh-CN",
+  onOpenConnectors,
 }: {
   t: ChatText;
-  locale?: string;
+  locale?: Locale;
+  onOpenConnectors: () => void;
 }) {
   const { selectedProject } = useProjectResources();
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -40,24 +34,25 @@ export function HomeChat({
   const [draft, setDraft] = useState<ChatDraft>({ text: "", attachments: [] });
   const [context, setContext] = useState<ChatContext>({
     agent: "Nova",
-    mode: "Auto",
-    permission: "defaultPermission",
     projectId: selectedProject?.id ?? null,
     projectName: selectedProject?.name ?? null,
     knowledgeIncluded: true,
   });
   const [submissions, setSubmissions] = useState<ChatSubmission[]>([]);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const inConversation = submissions.length > 0;
   function updateContext(change: Partial<ChatContext>) {
     setContext((current) => ({ ...current, ...change }));
   }
   function submit(submission: ChatSubmission) {
-    setSubmissions((current) =>
-      editingId
-        ? current.map((item) => (item.id === editingId ? submission : item))
-        : [...current, submission],
-    );
+    const next = editingId
+      ? submissions.map((item) => (item.id === editingId ? submission : item))
+      : [...submissions, submission];
+    const id = conversationId ?? crypto.randomUUID();
+    setSubmissions(next);
+    setConversationId(id);
+    saveChatConversation({ id, submissions: next, updatedAt: submission.createdAt });
     setEditingId(null);
     requestAnimationFrame(() => {
       conversationViewport.current?.scrollTo({
@@ -73,13 +68,20 @@ export function HomeChat({
     setEditingId(submission.id);
     inputRef.current?.focus();
   }
+  function openConversation(entry: ChatHistoryEntry) {
+    setConversationId(entry.id);
+    setSubmissions(entry.submissions);
+    setContext(entry.submissions.at(-1)!.context);
+    setDraft({ text: "", attachments: [] });
+    setEditingId(null);
+    requestAnimationFrame(() => inputRef.current?.focus());
+  }
   return (
     <section
       className={styles.page}
       data-conversation={inConversation}
       aria-label={t("home")}
     >
-      <div className={styles.wallpaper} aria-hidden />
       {inConversation ? (
         <header className={styles.conversationHeader}>
           <Button
@@ -89,6 +91,8 @@ export function HomeChat({
             onClick={() => {
               setSubmissions([]);
               setEditingId(null);
+              setConversationId(null);
+              setDraft({ text: "", attachments: [] });
             }}
           >
             <ArrowLeft size={15} />
@@ -140,30 +144,12 @@ export function HomeChat({
               onSubmit={submit}
               inputRef={inputRef}
               compact={inConversation}
+              onOpenConnectors={onOpenConnectors}
               t={t}
             />
           </motion.div>
           {!inConversation ? (
-            <div className={styles.suggestions}>
-              <p>{t("suggestions")}</p>
-              <div className={styles.suggestionButtons}>
-                {suggestions.map(({ label, prompt, icon: Icon }) => (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className={styles.suggestionButton}
-                    key={label}
-                    onClick={() => {
-                      setDraft({ ...draft, text: t(prompt) });
-                      inputRef.current?.focus();
-                    }}
-                  >
-                    <Icon size={17} />
-                    <span>{t(label)}</span>
-                  </Button>
-                ))}
-              </div>
-            </div>
+            <ChatRecentConversations onOpen={openConversation} t={t} locale={locale} />
           ) : null}
         </div>
       </ScrollArea>

@@ -4,8 +4,6 @@ import {
   BookOpen,
   CaretDown,
   FolderSimple,
-  ShieldCheck,
-  SlidersHorizontal,
   Sparkle,
 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
@@ -19,18 +17,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useProjectResources } from "@/features/project/project-resources";
-import type { ChatContext, ChatMode, ChatPermission } from "./chat-types";
+import type { ChatContext } from "./chat-types";
 import type { ChatText } from "./chat-messages";
 import styles from "./chat.module.css";
 
 const agents = ["Nova", "Codey", "Sage"];
-const modes: ChatMode[] = ["Auto", "Fast", "Deep"];
-const permissions: ChatPermission[] = [
-  "defaultPermission",
-  "readPermission",
-  "writePermission",
-];
-const modeDescription = { Auto: "auto", Fast: "fast", Deep: "deep" } as const;
 
 export function ChatAgentSelector({
   context,
@@ -88,7 +79,7 @@ export function ChatContextSelectors({
         <DropdownMenuTrigger asChild>
           <Button
             type="button"
-            variant="ghost"
+            variant="outline"
             className={styles.contextButton}
             aria-label={t("projectContext")}
             data-active={Boolean(context.projectId)}
@@ -131,7 +122,7 @@ export function ChatContextSelectors({
         <DropdownMenuTrigger asChild>
           <Button
             type="button"
-            variant="ghost"
+            variant="outline"
             className={styles.contextButton}
             aria-label={t("knowledgeContext")}
             data-active={context.knowledgeIncluded}
@@ -151,67 +142,6 @@ export function ChatContextSelectors({
           >
             {t("teamKnowledge")}
           </DropdownMenuCheckboxItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            type="button"
-            variant="ghost"
-            className={styles.contextButton}
-            aria-label={t("mode")}
-          >
-            <SlidersHorizontal size={15} />
-            <span>{t(context.mode)}</span>
-            <CaretDown size={11} />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className={styles.menu}>
-          <DropdownMenuLabel>{t("mode")}</DropdownMenuLabel>
-          <DropdownMenuRadioGroup
-            value={context.mode}
-            onValueChange={(mode) => onChange({ mode: mode as ChatMode })}
-          >
-            {modes.map((mode) => (
-              <DropdownMenuRadioItem value={mode} key={mode}>
-                <span>
-                  {t(mode)}
-                  <span className={styles.menuDescription}>
-                    {t(modeDescription[mode])}
-                  </span>
-                </span>
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            type="button"
-            variant="ghost"
-            className={`${styles.contextButton} ${styles.permissionButton}`}
-            aria-label={t("permission")}
-          >
-            <ShieldCheck size={15} />
-            <span>{t(context.permission)}</span>
-            <CaretDown size={11} />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className={styles.menu}>
-          <DropdownMenuLabel>{t("permission")}</DropdownMenuLabel>
-          <DropdownMenuRadioGroup
-            value={context.permission}
-            onValueChange={(permission) =>
-              onChange({ permission: permission as ChatPermission })
-            }
-          >
-            {permissions.map((permission) => (
-              <DropdownMenuRadioItem value={permission} key={permission}>
-                {t(permission)}
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

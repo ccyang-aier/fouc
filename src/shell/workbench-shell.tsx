@@ -144,7 +144,7 @@ export function WorkbenchShell() {
                         className="absolute inset-0"
                       >
                         {view === 'home' ? (
-                          <HomeCanvas key={conversationVersion} />
+                          <HomeCanvas key={conversationVersion} onOpenConnectors={() => changeView('connectors')} />
                         ) : view === 'project-home' ? (
                           <ProjectIndexCanvas onOpenProject={() => changeView('projects')} />
                         ) : view === 'projects' ? (

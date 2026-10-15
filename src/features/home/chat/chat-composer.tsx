@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/tooltip";
 import { ChatAttachments } from "./chat-attachments";
 import { ChatAgentSelector, ChatContextSelectors } from "./chat-selectors";
+import { ChatToolsLink } from "./chat-tools-link";
 import { useChatVoice } from "./use-chat-voice";
 import type { ChatAttachment, ChatContext, ChatSubmission } from "./chat-types";
 import type { ChatText } from "./chat-messages";
@@ -44,6 +45,7 @@ export function ChatComposer({
   onSubmit,
   inputRef,
   compact = false,
+  onOpenConnectors,
   t,
 }: {
   draft: ChatDraft;
@@ -53,6 +55,7 @@ export function ChatComposer({
   onSubmit: (submission: ChatSubmission) => void;
   inputRef: RefObject<HTMLTextAreaElement | null>;
   compact?: boolean;
+  onOpenConnectors: () => void;
   t: ChatText;
 }) {
   const fileInput = useRef<HTMLInputElement>(null);
@@ -149,6 +152,7 @@ export function ChatComposer({
   }
   return (
     <div className={styles.composerGroup} data-compact={compact}>
+      <ChatContextSelectors context={context} onChange={setContext} t={t} />
       <div
         className={styles.composer}
         data-invalid={invalid}
@@ -325,7 +329,7 @@ export function ChatComposer({
           </div>
         ) : null}
       </div>
-      <ChatContextSelectors context={context} onChange={setContext} t={t} />
+      {!compact ? <ChatToolsLink onOpen={onOpenConnectors} t={t} /> : null}
     </div>
   );
 }

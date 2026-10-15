@@ -1,12 +1,5 @@
-export type ChatMode = "Auto" | "Fast" | "Deep";
-export type ChatPermission =
-  | "defaultPermission"
-  | "readPermission"
-  | "writePermission";
 export type ChatContext = {
   agent: string;
-  mode: ChatMode;
-  permission: ChatPermission;
   projectId: string | null;
   projectName: string | null;
   knowledgeIncluded: boolean;

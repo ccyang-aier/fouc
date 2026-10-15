@@ -79,19 +79,11 @@ export function ChatConversation({
               <dl className={styles.contextSummary}>
                 <div>
                   <dt>{t("agentLabel")}</dt>
-                  <dd>
-                    {submission.context.agent}
-                    <span className={styles.summaryDot}>·</span>
-                    {t(submission.context.mode)}
-                  </dd>
+                  <dd>{submission.context.agent}</dd>
                 </div>
                 <div>
                   <dt>{t("project")}</dt>
                   <dd>{submission.context.projectName ?? t("noProject")}</dd>
-                </div>
-                <div>
-                  <dt>{t("permission")}</dt>
-                  <dd>{t(submission.context.permission)}</dd>
                 </div>
                 {submission.context.knowledgeIncluded ? (
                   <div>

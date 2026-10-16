@@ -38,17 +38,13 @@ export function ModelReasoningControl({ reasoning, value, onChange, t }: {
     </DropdownMenuTrigger>
     <DropdownMenuContent className={styles.panel} side="top" align="start" sideOffset={8} collisionPadding={12}
       role="dialog" aria-labelledby={titleId}>
-      <div className={styles.heading}><span id={titleId}>{t('reasoningEffort')}</span><strong data-max={index === levels.length - 1}>{t(reasoningLabels[level])}</strong></div>
-      <StarfieldSlider ref={input} max={levels.length - 1} value={index}
-        aria-labelledby={titleId} aria-valuetext={t(reasoningLabels[level])}
+      <StarfieldSlider ref={input} max={levels.length - 1} value={index} titleId={titleId} label={level[0].toUpperCase() + level.slice(1)}
+        aria-label={t('reasoningEffort')} aria-valuetext={t(reasoningLabels[level])}
         onKeyDown={event => {
           if (event.key === 'Tab') setOpen(false);
           if (event.key !== 'Escape') event.stopPropagation();
         }}
         onValueChange={value => onChange(levels[value])} />
-      <div className={styles.levels} aria-hidden="true">{levels.map((item, i) =>
-        <span key={item} data-current={i === index} style={{ left: `${i / (levels.length - 1) * 100}%` }}>{item}</span>
-      )}</div>
     </DropdownMenuContent>
   </DropdownMenu>;
 }

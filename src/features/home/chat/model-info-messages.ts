@@ -2,7 +2,7 @@ export const modelInfoMessages = {
   details: ['模型资料', 'Model details'],
   backToModels: ['返回模型列表', 'Back to models'],
   useModel: ['使用此模型', 'Use this model'],
-  benchmarks: ['公开测评', 'Published benchmarks'],
+  benchmarks: ['能力测评', 'Benchmarks'],
   benchmarkNote: ['厂商公布的原始成绩；各测试条件不同。', 'Original provider results; test conditions vary.'],
   noBenchmarks: ['尚无可核实的公开测评分数', 'No verified public benchmark scores'],
   context: ['上下文长度', 'Context window'],
@@ -27,5 +27,5 @@ export const modelInfoMessages = {
   unavailable: ['模型目录暂不可用', 'Model catalog unavailable'],
   retry: ['重试', 'Retry'],
   empty: ['暂未发布模型资料', 'No model metadata published yet'],
-  detailsHint: ['悬停查看资料 · 方向键进入详情', 'Hover for details · Arrow key opens details'],
+  detailsHint: ['悬停查看资料 · 左方向键进入详情', 'Hover for details · Left arrow opens details'],
 } as const;

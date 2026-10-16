@@ -46,7 +46,7 @@ export function ChatProjectSelector({ context, onChange, t }: {
         <Button type="button" variant="ghost" className={styles.resourceButton} aria-label={t("projectContext")}
           data-selected={Boolean(context.projectId)}>
           <FolderSimple size={16} />
-          <span>{context.projectName ?? t("project")}</span>
+          <span>{context.projectId ? context.projectName ?? t("project") : t("noProject")}</span>
         </Button>
       </DropdownMenuTrigger>
       <ChatPickerContent onEscapeKeyDown={(event) => {
@@ -75,6 +75,7 @@ export function ChatProjectSelector({ context, onChange, t }: {
             {filtered.map((project) => (
               <ChatPickerItem key={`${project.source}:${project.id}`} data-selected={context.projectId === project.id}
                 role="menuitemradio" aria-checked={context.projectId === project.id}
+                textValue={project.name}
                 onSelect={() => onChange({ projectId: project.id, projectName: project.name })}>
                 <FolderSimple />
                 <span className={picker.name}>{project.name}</span>
@@ -92,8 +93,12 @@ export function ChatProjectSelector({ context, onChange, t }: {
             <Plus />{t("newProject")}
           </ChatPickerItem>
           <ChatPickerItem role="menuitemradio" aria-checked={!context.projectId}
-            data-selected={!context.projectId} onSelect={() => onChange({ projectId: null, projectName: null })}>
-            <X />{t("noProject")}
+            data-selected={!context.projectId} onSelect={() => {
+              onChange({ projectId: null, projectName: null });
+              notify("info", t("projectCleared"));
+            }}>
+            <X /><span className={picker.name}>{t("noProject")}</span>
+            {!context.projectId ? <Check className={picker.check} /> : null}
           </ChatPickerItem>
         </>}
       </ChatPickerContent>

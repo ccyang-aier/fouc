@@ -29,9 +29,20 @@ import {
   project,
   projectMember,
   teamspace,
+  catalogModel,
+  modelCatalogTables,
 } from './schema';
 
 describe('knowledgeBase-owned current Drizzle schema', () => {
+  test('public model metadata has an independently owned catalog without product resource scope', () => {
+    const config = getTableConfig(catalogModel);
+    expect(config.schema).toBe('catalog');
+    expect(modelCatalogTables).toEqual([catalogModel]);
+    expect(config.foreignKeys).toEqual([]);
+    for (const name of ['project_id', 'knowledge_base_id', 'user_id', 'api_key']) {
+      expect(config.columns.some((column) => column.name === name)).toBe(false);
+    }
+  });
   test('covers resource tables and keeps identity separate', () => {
     const names = resourceTables.map((table) => getTableConfig(table).name);
     for (const name of [

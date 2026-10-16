@@ -29,6 +29,8 @@ import { handleKnowledgeMcpOnBun } from '../modules/knowledge/mcp/bun-adapter';
 import { createDocumentPdfRenderer } from '../modules/knowledge/export/pdf';
 import { createOfficePreviewRoutes } from '../modules/knowledge/export/office';
 import { createDocumentPdfRoutes } from '../modules/knowledge/export/http';
+import { createModelCatalogRoutes } from '../modules/models/http';
+import { createModelCatalogRepository } from '../modules/models/repository';
 
 const mcpPathPattern = /^\/api\/knowledge\/[a-zA-Z0-9-]+\/mcp\/?$/;
 
@@ -62,6 +64,7 @@ export async function startFoucService(config: FoucServiceConfig, environment: N
   const events = createKnowledgeBaseEventRuntime({ authenticator });
   const checkpoints = config.roles.includes('collab') ? pageCheckpointExtension({ pool }) : undefined;
   const app = new Hono();
+  app.route('/', createModelCatalogRoutes(createModelCatalogRepository(pool), auth.options.trustedOrigins as string[]));
   app.route('/', createOfficePreviewRoutes(auth.options.trustedOrigins as string[]));
   const documentPdf = createDocumentPdfRenderer();
   app.route('/', createDocumentPdfRoutes(auth.options.trustedOrigins as string[], html => documentPdf.render(html)));

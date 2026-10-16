@@ -1,0 +1,257 @@
+{
+  "items": [
+    {
+      "id": "claude-haiku-5-5",
+      "name": "Claude Haiku 5.5",
+      "provider": "anthropic",
+      "summary": {
+        "zh": "面向分类、提取、路由等高频任务的快速模型，支持自适应思考与 1M 上下文。",
+        "en": "A fast model for high-volume classification, extraction and routing, with adaptive thinking and a 1M context window."
+      },
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "capabilities": { "vision": true, "tools": true, "reasoning": true, "imageGeneration": false },
+      "pricing": {
+        "currency": "USD", "input": 0.1, "output": 0.5, "cacheRead": 0.01, "cacheWrite": 0.125,
+        "note": {
+          "zh": "所列为不超过 100K 输入的标准价（USD/百万 tokens），缓存写入为 5 分钟。超过 100K：输入 $0.50、输出 $2.50、缓存读 $0.05、5 分钟写 $0.625；1 小时缓存写入分别 $0.20 / $1。Batch 输入与输出减半。",
+          "en": "Standard USD per 1M tokens for prompts up to 100K; cache writes use 5-minute retention. Over 100K: input $0.50, output $2.50, cache read $0.05, 5-minute write $0.625. One-hour writes: $0.20 / $1. Batch input and output are 50% lower."
+        }
+      },
+      "benchmarks": [
+        {
+          "name": "Terminal-Bench 4.0", "score": 39.2,
+          "note": { "zh": "Anthropic 发布测评，准确率 %；各项脚手架与思考设置不同，不宜直接跨榜比较。", "en": "Anthropic launch evaluation, accuracy %. Harnesses and thinking settings differ across evaluations; do not compare across benchmarks." },
+          "sourceUrl": "https://www.anthropic.com/claude-haiku-5-5"
+        },
+        {
+          "name": "HLE · 无工具", "score": 45.9,
+          "note": { "zh": "Humanity’s Last Exam，无工具，准确率 %；不可与带工具结果混比。", "en": "Humanity’s Last Exam without tools, accuracy %. Do not compare directly with tool-assisted results." },
+          "sourceUrl": "https://www.anthropic.com/claude-haiku-5-5"
+        },
+        {
+          "name": "HLE · 带工具", "score": 57.4,
+          "note": { "zh": "Humanity’s Last Exam，带工具，准确率 %。", "en": "Humanity’s Last Exam with tools, accuracy %." },
+          "sourceUrl": "https://www.anthropic.com/claude-haiku-5-5"
+        },
+        {
+          "name": "Chartography", "score": 46.4,
+          "note": { "zh": "视觉推理，无工具，准确率 %；厂商发布测评。", "en": "Visual reasoning without tools, accuracy %, as reported in the vendor launch evaluation." },
+          "sourceUrl": "https://www.anthropic.com/claude-haiku-5-5"
+        }
+      ],
+      "sources": [
+        { "label": "Claude Haiku 5.5 specifications and pricing", "url": "https://platform.claude.com/docs/en/models/haiku-5-5/overview" },
+        { "label": "Claude Haiku 5.5 launch evaluations", "url": "https://www.anthropic.com/claude-haiku-5-5" },
+        { "label": "Claude model capabilities", "url": "https://platform.claude.com/docs/en/models/overview" }
+      ],
+      "verifiedAt": "2026-10-16"
+    },
+    {
+      "id": "claude-sonnet-5-5",
+      "name": "Claude Sonnet 5.5",
+      "provider": "anthropic",
+      "summary": {
+        "zh": "兼顾速度与能力，适合日常开发、文档与设计任务，支持 1M 上下文与自适应思考。",
+        "en": "Balances speed and capability for everyday coding, documents and design, with a 1M context window and adaptive thinking."
+      },
+      "contextWindow": 1000000,
+      "maxOutput": 128000,
+      "capabilities": { "vision": true, "tools": true, "reasoning": true, "imageGeneration": false },
+      "pricing": {
+        "currency": "USD", "input": 2, "output": 10, "cacheRead": 0.1, "cacheWrite": 2.5,
+        "note": {
+          "zh": "标准价，USD/百万 tokens；缓存写入为 5 分钟，1 小时缓存写入 $4。Batch 输入与输出减半。完整 1M 上下文不加长上下文溢价。",
+          "en": "Standard USD per 1M tokens. Cache writes use 5-minute retention; one-hour writes cost $4. Batch input and output are 50% lower. The full 1M context has no long-context premium."
+        }
+      },
+      "benchmarks": [
+        {
+          "name": "Terminal-Bench 4.0", "score": 70.6,
+          "note": { "zh": "厂商发布准确率 %；不同脚手架和思考设置会影响结果，不是综合能力分。", "en": "Vendor-reported accuracy %. Results depend on harness and thinking settings; this is not an overall ability score." },
+          "sourceUrl": "https://www.anthropic.com/claude-sonnet-5-5"
+        },
+        {
+          "name": "CursorBench 4.0", "score": 55.5,
+          "note": { "zh": "来自真实 Cursor 会话的编码任务，厂商发布准确率 %。", "en": "Coding tasks from real Cursor sessions; vendor-reported accuracy %." },
+          "sourceUrl": "https://www.anthropic.com/claude-sonnet-5-5"
+        },
+        {
+          "name": "HLE · 带工具", "score": 64.5,
+          "note": { "zh": "Humanity’s Last Exam，带工具，准确率 %；不可与无工具结果混比。", "en": "Humanity’s Last Exam with tools, accuracy %. Do not compare directly with results without tools." },
+          "sourceUrl": "https://www.anthropic.com/claude-sonnet-5-5"
+        },
+        {
+          "name": "Chartography", "score": 61.6,
+          "note": { "zh": "图表识别，无工具，准确率 %；厂商发布测评。", "en": "Chart recognition without tools, accuracy %, from the vendor launch evaluation." },
+          "sourceUrl": "https://www.anthropic.com/claude-sonnet-5-5"
+        }
+      ],
+      "sources": [
+        { "label": "Claude Sonnet 5.5 specifications and pricing", "url": "https://platform.claude.com/docs/en/models/sonnet-5-5/overview" },
+        { "label": "Claude Sonnet 5.5 launch evaluations", "url": "https://www.anthropic.com/claude-sonnet-5-5" },
+        { "label": "Claude model capabilities", "url": "https://platform.claude.com/docs/en/models/overview" }
+      ],
+      "verifiedAt": "2026-10-16"
+    },
+    {
+      "id": "claude-haiku-4-5-20251001",
+      "name": "Claude Haiku 4.5",
+      "provider": "anthropic",
+      "summary": {
+        "zh": "低延迟的轻量模型，支持视觉、工具与扩展思考，适合快速交互和编码子任务。",
+        "en": "A lightweight, low-latency model with vision, tools and extended thinking for quick interactions and coding subtasks."
+      },
+      "contextWindow": 200000,
+      "maxOutput": 64000,
+      "capabilities": { "vision": true, "tools": true, "reasoning": true, "imageGeneration": false },
+      "pricing": {
+        "currency": "USD", "input": 1, "output": 5, "cacheRead": 0.1, "cacheWrite": 1.25,
+        "note": {
+          "zh": "标准价，USD/百万 tokens；缓存写入为 5 分钟，1 小时缓存写入 $2。Batch 输入与输出减半。",
+          "en": "Standard USD per 1M tokens. Cache writes use 5-minute retention; one-hour writes cost $2. Batch input and output are 50% lower."
+        }
+      },
+      "benchmarks": [
+        {
+          "name": "SWE-bench Verified", "score": 73.3,
+          "note": { "zh": "完整 500 题，50 次试验平均，128K 思考预算；使用 bash 和文件编辑脚手架及额外工具使用提示。准确率 %。", "en": "Accuracy % on all 500 problems, averaged over 50 trials, with a 128K thinking budget, bash/file-editing scaffold and extra tool-use prompting." },
+          "sourceUrl": "https://www.anthropic.com/news/claude-haiku-4-5"
+        },
+        {
+          "name": "Terminal-Bench", "score": 41.75,
+          "note": { "zh": "Terminus 2 / XML parser，32K 思考预算，5 次运行平均，n-attempts=1，准确率 %；无思考时为 40.21%。", "en": "Accuracy % using Terminus 2 with XML parser, 32K thinking budget, averaged over five runs, n-attempts=1. Without thinking: 40.21%." },
+          "sourceUrl": "https://www.anthropic.com/news/claude-haiku-4-5"
+        }
+      ],
+      "sources": [
+        { "label": "Claude Haiku 4.5 specifications and pricing", "url": "https://platform.claude.com/docs/en/models/haiku-4-5/overview" },
+        { "label": "Claude Haiku 4.5 launch benchmarks and methodology", "url": "https://www.anthropic.com/news/claude-haiku-4-5" }
+      ],
+      "verifiedAt": "2026-10-16"
+    },
+    {
+      "id": "gpt-6.1-sol",
+      "name": "GPT-6.1 Sol",
+      "provider": "openai",
+      "summary": {
+        "zh": "面向复杂编码、计算机操作与专业工作，在成本和能力之间取得平衡。",
+        "en": "Balances cost and capability for complex coding, computer use and professional work."
+      },
+      "contextWindow": 1050000,
+      "maxOutput": 128000,
+      "capabilities": { "vision": true, "tools": true, "reasoning": true, "imageGeneration": false },
+      "pricing": {
+        "currency": "USD", "input": 2, "output": 10, "cacheRead": 0.1, "cacheWrite": 2.5,
+        "note": {
+          "zh": "标准价，USD/百万 tokens，适用于输入不超过 272K。超过 272K 时整次请求：输入 $4、输出 $15、缓存读 $0.20、缓存写 $5。Fast 为标准 2 倍，Ultrafast 6 倍，Batch/Flex 减半；适用区域处理另加 10%。图像生成通过独立工具，另行计费。",
+          "en": "Standard USD per 1M tokens for up to 272K input. Above 272K, the full request costs $4 input, $15 output, $0.20 cache read and $5 cache write. Fast is 2x, Ultrafast 6x; Batch/Flex are half price. Eligible regional processing adds 10%. Image generation uses a separately billed tool."
+        }
+      },
+      "benchmarks": [],
+      "sources": [
+        { "label": "GPT-6.1 Sol specifications, features and pricing", "url": "https://developers.openai.com/api/docs/models/gpt-6.1-sol" },
+        { "label": "OpenAI API pricing", "url": "https://developers.openai.com/api/docs/pricing" }
+      ],
+      "verifiedAt": "2026-10-16"
+    },
+    {
+      "id": "gpt-6-luna",
+      "name": "GPT-6 Luna",
+      "provider": "openai",
+      "summary": {
+        "zh": "面向目标明确、高频任务的高效率模型，可调整推理强度。",
+        "en": "An efficient model for focused, high-volume tasks with configurable reasoning effort."
+      },
+      "contextWindow": 1050000,
+      "maxOutput": 128000,
+      "capabilities": { "vision": true, "tools": true, "reasoning": true, "imageGeneration": false },
+      "pricing": {
+        "currency": "USD", "input": 0.1, "output": 0.5, "cacheRead": 0.01, "cacheWrite": 0.125,
+        "note": {
+          "zh": "标准价，USD/百万 tokens，适用于输入不超过 272K。超过 272K 时整次请求：输入 $0.20、输出 $0.75、缓存读 $0.02、缓存写 $0.25。Fast 为标准 2 倍，Batch/Flex 减半；适用区域处理另加 10%。图像生成通过独立工具，另行计费。",
+          "en": "Standard USD per 1M tokens for up to 272K input. Above 272K, the full request costs $0.20 input, $0.75 output, $0.02 cache read and $0.25 cache write. Fast is 2x; Batch/Flex are half price. Eligible regional processing adds 10%. Image generation uses a separately billed tool."
+        }
+      },
+      "benchmarks": [],
+      "sources": [
+        { "label": "GPT-6 Luna specifications, features and pricing", "url": "https://developers.openai.com/api/docs/models/gpt-6-luna" },
+        { "label": "OpenAI API pricing", "url": "https://developers.openai.com/api/docs/pricing" }
+      ],
+      "verifiedAt": "2026-10-16"
+    },
+    {
+      "id": "deepseek-flash",
+      "name": "DeepSeek V4.1 Flash",
+      "provider": "deepseek",
+      "summary": {
+        "zh": "支持原生视觉理解、工具调用与可调思考的高效率模型，官方标注 1M 上下文。",
+        "en": "An efficient model with native visual understanding, tool use and adjustable thinking; the API advertises a 1M context window."
+      },
+      "contextWindow": null,
+      "maxOutput": 393216,
+      "capabilities": { "vision": true, "tools": true, "reasoning": true, "imageGeneration": false },
+      "pricing": {
+        "currency": "USD", "input": 0.15, "output": 0.6, "cacheRead": 0.003, "cacheWrite": null,
+        "note": {
+          "zh": "所列为非高峰价，USD/百万 tokens。高峰时输入 $0.30、输出 $1.20、缓存读 $0.006；独立缓存写入价格未公布。高峰为周一至周五 UTC 01:00–04:00 和 06:00–10:00，中国法定节假日除外。",
+          "en": "Listed rates are off-peak USD per 1M tokens. Peak: $0.30 input, $1.20 output, $0.006 cache read. No separate cache-write price is published. Peak hours are weekdays 01:00–04:00 and 06:00–10:00 UTC, excluding Chinese public holidays."
+        }
+      },
+      "benchmarks": [
+        {
+          "name": "GPQA Diamond", "score": 90.9,
+          "note": { "zh": "DeepSeek 发布测评，准确率 %；测试条件以官方技术报告为准，不是综合能力分。", "en": "DeepSeek launch evaluation, accuracy %. See the official technical report for conditions; this is not an overall ability score." },
+          "sourceUrl": "https://api-docs.deepseek.com/updates/"
+        },
+        {
+          "name": "HLE · 无工具", "score": 36.8,
+          "note": { "zh": "Humanity’s Last Exam，未标注工具的发布结果，准确率 %；纯文本子集另报 39.1%。", "en": "Humanity’s Last Exam launch result without the tools label, accuracy %. The text-only subset is reported separately at 39.1%." },
+          "sourceUrl": "https://api-docs.deepseek.com/updates/"
+        },
+        {
+          "name": "Terminal-Bench 4.0", "score": 31.2,
+          "note": { "zh": "厂商发布准确率 %；不可与不同版本 Terminal-Bench 混比。", "en": "Vendor-reported accuracy %. Do not compare directly with other Terminal-Bench versions." },
+          "sourceUrl": "https://api-docs.deepseek.com/updates/"
+        },
+        {
+          "name": "HLE · 带工具", "score": 63.9,
+          "note": { "zh": "Humanity’s Last Exam，带工具，准确率 %；不可与无工具结果混比。", "en": "Humanity’s Last Exam with tools, accuracy %. Do not compare directly with results without tools." },
+          "sourceUrl": "https://api-docs.deepseek.com/updates/"
+        }
+      ],
+      "sources": [
+        { "label": "DeepSeek models and pricing", "url": "https://api-docs.deepseek.com/quick_start/pricing/" },
+        { "label": "DeepSeek V4.1 Flash release evaluations", "url": "https://api-docs.deepseek.com/updates/" },
+        { "label": "DeepSeek API exact output limit", "url": "https://api-docs.deepseek.com/api/create-chat-completion/" }
+      ],
+      "verifiedAt": "2026-10-16"
+    },
+    {
+      "id": "gemini-3.1-flash-image",
+      "name": "Nano Banana 2",
+      "provider": "google",
+      "summary": {
+        "zh": "Gemini 3.1 Flash Image，面向快速图像生成与对话式编辑，支持多种分辨率及搜索增强。",
+        "en": "Gemini 3.1 Flash Image for fast image generation and conversational editing, with multiple resolutions and search grounding."
+      },
+      "contextWindow": 131072,
+      "maxOutput": 32768,
+      "capabilities": { "vision": true, "tools": false, "reasoning": true, "imageGeneration": true },
+      "pricing": {
+        "currency": "USD", "input": 0.5, "output": 3, "cacheRead": null, "cacheWrite": null,
+        "note": {
+          "zh": "标准价，USD/百万 tokens：所列输出价仅用于文本与思考，图片输出 $60，约 $0.045/0.5K、$0.067/1K、$0.101/2K、$0.151/4K 每张。Batch 减半。不支持缓存和函数调用；搜索增强单独计费。",
+          "en": "Standard USD per 1M tokens: listed output applies only to text and thinking. Image output is $60, about $0.045/0.5K, $0.067/1K, $0.101/2K or $0.151/4K per image. Batch is half price. Caching and function calling are unsupported; search grounding is billed separately."
+        }
+      },
+      "benchmarks": [],
+      "sources": [
+        { "label": "Gemini 3.1 Flash Image API specifications", "url": "https://ai.google.dev/gemini-api/docs/models/gemini-3.1-flash-image" },
+        { "label": "Gemini API pricing", "url": "https://ai.google.dev/gemini-api/docs/pricing" },
+        { "label": "Gemini 3.1 Flash Image model card and original Elo evaluations", "url": "https://deepmind.google/models/model-cards/gemini-3-1-flash-image/" }
+      ],
+      "verifiedAt": "2026-10-16"
+    }
+  ]
+}

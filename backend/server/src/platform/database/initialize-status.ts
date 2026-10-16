@@ -4,7 +4,7 @@ import { resourcePoliciesForTable } from './resources/rls';
 import { assertFoucApplicationRole } from './initialize-role';
 import type { FoucSqlConnection } from './initialize-role';
 
-export const foucDatabaseSchemas = ['resources', 'auth'] as const;
+export const foucDatabaseSchemas = ['resources', 'auth', 'catalog'] as const;
 const requiredExtensions = ['ltree', 'pg_search', 'vector'];
 
 export interface FoucDatabaseStatus {
@@ -128,8 +128,9 @@ export async function inspectFoucDatabase(admin: FoucSqlConnection, application:
   `, [[...foucDatabaseSchemas], role.name]);
   for (const row of schemaPrivileges.rows) if (!row.usage || row.create) issues.push('Application schema grants differ from least privilege');
   const privileges = await admin.query<{ allowed: boolean; elevated: boolean }>(`
-    SELECT has_table_privilege($2::name, c.oid, 'SELECT') AND has_table_privilege($2::name, c.oid, 'INSERT')
-      AND has_table_privilege($2::name, c.oid, 'UPDATE') AND has_table_privilege($2::name, c.oid, 'DELETE') AS allowed,
+    SELECT has_table_privilege($2::name, c.oid, 'SELECT') AND CASE WHEN n.nspname = 'catalog'
+      THEN NOT (has_table_privilege($2::name, c.oid, 'INSERT') OR has_table_privilege($2::name, c.oid, 'UPDATE') OR has_table_privilege($2::name, c.oid, 'DELETE'))
+      ELSE has_table_privilege($2::name, c.oid, 'INSERT') AND has_table_privilege($2::name, c.oid, 'UPDATE') AND has_table_privilege($2::name, c.oid, 'DELETE') END AS allowed,
       has_table_privilege($2::name, c.oid, 'TRUNCATE') OR has_table_privilege($2::name, c.oid, 'REFERENCES') OR has_table_privilege($2::name, c.oid, 'TRIGGER') AS elevated
     FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
     WHERE n.nspname = ANY($1::text[]) AND c.relkind = 'r'

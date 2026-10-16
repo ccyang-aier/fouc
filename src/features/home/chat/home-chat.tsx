@@ -37,6 +37,7 @@ export function HomeChat({
     projectId: selectedProject?.id ?? null,
     projectName: selectedProject?.name ?? null,
     knowledgeIncluded: true,
+    localEnvironment: { createWorktree: false },
   });
   const [submissions, setSubmissions] = useState<ChatSubmission[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);

@@ -21,6 +21,7 @@ V1 以个人和团队共用的 Web / 桌面 AI 工作台为产品范围。项目
 | 新对话输入与会话界面 | [New Conversation](design/conversations/fouc-new-conversation-design.md) |
 | 知识库与协同编辑 | [知识库](design/knowledgebase/fouc-knowledgebase-product-design.md) |
 | Agent 发现、纳管与运行 | [本机 Agent](design/agents/fouc-agent-management-design.md) |
+| 公开模型资料、价格与测评来源 | [模型资料目录](design/agents/fouc-model-catalog-design.md) |
 | 连接器共同框架 | [连接器架构](design/connectors/connector-architecture.md) |
 | DTS 特有的认证与能力 | [DTS Provider](design/connectors/dts-connector-design.md) |
 | 数据存储 Provider 与共享内核 | [数据存储模块](design/connectors/data-storage-module-design.md) |

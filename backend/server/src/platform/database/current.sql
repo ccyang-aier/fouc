@@ -7,6 +7,8 @@ CREATE SCHEMA "auth";
 
 CREATE SCHEMA "resources";
 
+CREATE SCHEMA "catalog";
+
 CREATE TYPE "resources"."ai_task_kind" AS ENUM('inline', 'continue', 'chat', 'aiBlock', 'organize', 'report', 'mcp');
 CREATE TYPE "resources"."ai_task_status" AS ENUM('running', 'awaiting_approval', 'done', 'failed');
 CREATE TYPE "resources"."asset_status" AS ENUM('ready', 'revoked');
@@ -420,56 +422,6 @@ CREATE TABLE "resources"."project" (
 	CONSTRAINT "project_name_not_empty" CHECK (length(btrim("resources"."project"."name")) > 0)
 );
 
-CREATE TABLE "resources"."project_delivery_event" (
-	"project_id" uuid NOT NULL,
-	"id" uuid NOT NULL,
-	"work_object_id" uuid,
-	"actor_id" uuid NOT NULL,
-	"payload" jsonb NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "project_delivery_event_project_id_id_pk" PRIMARY KEY("project_id","id"),
-	CONSTRAINT "project_delivery_event_scope_valid" CHECK (jsonb_typeof("resources"."project_delivery_event"."payload") = 'object' AND "resources"."project_delivery_event"."payload"->>'projectId' = "resources"."project_delivery_event"."project_id"::text)
-);
-
-CREATE TABLE "resources"."project_delivery_invitation" (
-	"project_id" uuid NOT NULL,
-	"id" uuid NOT NULL,
-	"email" text NOT NULL,
-	"role" "resources"."member_role" NOT NULL,
-	"token_hash" varchar(64) NOT NULL,
-	"created_by" uuid NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"expires_at" timestamp with time zone NOT NULL,
-	"accepted_by" uuid,
-	"accepted_at" timestamp with time zone,
-	CONSTRAINT "project_delivery_invitation_project_id_id_pk" PRIMARY KEY("project_id","id"),
-	CONSTRAINT "project_delivery_invitation_role_valid" CHECK ("resources"."project_delivery_invitation"."role" <> 'owner'),
-	CONSTRAINT "project_delivery_invitation_token_valid" CHECK ("resources"."project_delivery_invitation"."token_hash" ~ '^[a-f0-9]{64}$')
-);
-
-CREATE TABLE "resources"."project_delivery_settings" (
-	"project_id" uuid PRIMARY KEY NOT NULL,
-	"revision" integer DEFAULT 0 NOT NULL,
-	"settings" jsonb NOT NULL,
-	"updated_by" uuid NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "project_delivery_settings_revision_valid" CHECK ("resources"."project_delivery_settings"."revision" >= 0),
-	CONSTRAINT "project_delivery_settings_object" CHECK (jsonb_typeof("resources"."project_delivery_settings"."settings") = 'object')
-);
-
-CREATE TABLE "resources"."project_delivery_work_object" (
-	"project_id" uuid NOT NULL,
-	"id" uuid NOT NULL,
-	"revision" integer DEFAULT 0 NOT NULL,
-	"aggregate" jsonb NOT NULL,
-	"created_by" uuid NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "project_delivery_work_object_project_id_id_pk" PRIMARY KEY("project_id","id"),
-	CONSTRAINT "project_delivery_work_revision_valid" CHECK ("resources"."project_delivery_work_object"."revision" >= 0),
-	CONSTRAINT "project_delivery_work_scope_valid" CHECK (jsonb_typeof("resources"."project_delivery_work_object"."aggregate") = 'object' AND "resources"."project_delivery_work_object"."aggregate"->>'id' = "resources"."project_delivery_work_object"."id"::text AND "resources"."project_delivery_work_object"."aggregate"->>'projectId' = "resources"."project_delivery_work_object"."project_id"::text AND "resources"."project_delivery_work_object"."aggregate"->>'revision' = "resources"."project_delivery_work_object"."revision"::text)
-);
-
 CREATE TABLE "resources"."project_member" (
 	"project_id" uuid NOT NULL,
 	"user_id" uuid NOT NULL,
@@ -501,6 +453,25 @@ CREATE TABLE "resources"."teamspace" (
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "teamspace_knowledge_base_id_id_pk" PRIMARY KEY("knowledge_base_id","id"),
 	CONSTRAINT "teamspace_name_not_empty" CHECK (length(btrim("resources"."teamspace"."name")) > 0)
+);
+
+CREATE TABLE "catalog"."model" (
+	"id" varchar(120) PRIMARY KEY NOT NULL,
+	"name" varchar(120) NOT NULL,
+	"provider" varchar(24) NOT NULL,
+	"summary" jsonb NOT NULL,
+	"context_window" integer,
+	"max_output" integer,
+	"capabilities" jsonb NOT NULL,
+	"pricing" jsonb NOT NULL,
+	"benchmarks" jsonb NOT NULL,
+	"sources" jsonb NOT NULL,
+	"verified_at" date NOT NULL,
+	CONSTRAINT "model_id_present" CHECK (length(trim("catalog"."model"."id")) > 0),
+	CONSTRAINT "model_name_present" CHECK (length(trim("catalog"."model"."name")) > 0),
+	CONSTRAINT "model_provider_valid" CHECK ("catalog"."model"."provider" IN ('anthropic', 'openai', 'google', 'deepseek')),
+	CONSTRAINT "model_context_positive" CHECK ("catalog"."model"."context_window" IS NULL OR "catalog"."model"."context_window" > 0),
+	CONSTRAINT "model_output_positive" CHECK ("catalog"."model"."max_output" IS NULL OR "catalog"."model"."max_output" > 0)
 );
 
 ALTER TABLE "auth"."account" ADD CONSTRAINT "account_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE cascade ON UPDATE no action;
@@ -548,15 +519,6 @@ ALTER TABLE "resources"."page_effective_acl" ADD CONSTRAINT "page_effective_acl_
 ALTER TABLE "resources"."personal_access_token" ADD CONSTRAINT "personal_access_token_knowledge_base_id_knowledge_base_id_fk" FOREIGN KEY ("knowledge_base_id") REFERENCES "resources"."knowledge_base"("id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "resources"."personal_access_token" ADD CONSTRAINT "personal_access_token_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "resources"."project" ADD CONSTRAINT "project_created_by_user_id_fk" FOREIGN KEY ("created_by") REFERENCES "auth"."user"("id") ON DELETE no action ON UPDATE no action;
-ALTER TABLE "resources"."project_delivery_event" ADD CONSTRAINT "project_delivery_event_project_id_project_id_fk" FOREIGN KEY ("project_id") REFERENCES "resources"."project"("id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "resources"."project_delivery_event" ADD CONSTRAINT "project_delivery_event_actor_id_user_id_fk" FOREIGN KEY ("actor_id") REFERENCES "auth"."user"("id") ON DELETE no action ON UPDATE no action;
-ALTER TABLE "resources"."project_delivery_invitation" ADD CONSTRAINT "project_delivery_invitation_project_id_project_id_fk" FOREIGN KEY ("project_id") REFERENCES "resources"."project"("id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "resources"."project_delivery_invitation" ADD CONSTRAINT "project_delivery_invitation_created_by_user_id_fk" FOREIGN KEY ("created_by") REFERENCES "auth"."user"("id") ON DELETE no action ON UPDATE no action;
-ALTER TABLE "resources"."project_delivery_invitation" ADD CONSTRAINT "project_delivery_invitation_accepted_by_user_id_fk" FOREIGN KEY ("accepted_by") REFERENCES "auth"."user"("id") ON DELETE no action ON UPDATE no action;
-ALTER TABLE "resources"."project_delivery_settings" ADD CONSTRAINT "project_delivery_settings_project_id_project_id_fk" FOREIGN KEY ("project_id") REFERENCES "resources"."project"("id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "resources"."project_delivery_settings" ADD CONSTRAINT "project_delivery_settings_updated_by_user_id_fk" FOREIGN KEY ("updated_by") REFERENCES "auth"."user"("id") ON DELETE no action ON UPDATE no action;
-ALTER TABLE "resources"."project_delivery_work_object" ADD CONSTRAINT "project_delivery_work_object_project_id_project_id_fk" FOREIGN KEY ("project_id") REFERENCES "resources"."project"("id") ON DELETE cascade ON UPDATE no action;
-ALTER TABLE "resources"."project_delivery_work_object" ADD CONSTRAINT "project_delivery_work_object_created_by_user_id_fk" FOREIGN KEY ("created_by") REFERENCES "auth"."user"("id") ON DELETE no action ON UPDATE no action;
 ALTER TABLE "resources"."project_member" ADD CONSTRAINT "project_member_project_id_project_id_fk" FOREIGN KEY ("project_id") REFERENCES "resources"."project"("id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "resources"."project_member" ADD CONSTRAINT "project_member_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "resources"."share_link" ADD CONSTRAINT "share_link_created_by_user_id_fk" FOREIGN KEY ("created_by") REFERENCES "auth"."user"("id") ON DELETE no action ON UPDATE no action;
@@ -604,9 +566,6 @@ CREATE INDEX "page_effective_acl_full_gin_idx" ON "resources"."page_effective_ac
 CREATE INDEX "personal_access_token_hash_idx" ON "resources"."personal_access_token" USING btree ("knowledge_base_id","token_hash");
 CREATE INDEX "personal_access_token_user_idx" ON "resources"."personal_access_token" USING btree ("user_id");
 CREATE INDEX "project_created_by_name_idx" ON "resources"."project" USING btree ("created_by","name");
-CREATE INDEX "project_delivery_event_time_idx" ON "resources"."project_delivery_event" USING btree ("project_id","created_at","id");
-CREATE INDEX "project_delivery_invitation_email_idx" ON "resources"."project_delivery_invitation" USING btree ("project_id","email");
-CREATE INDEX "project_delivery_work_updated_idx" ON "resources"."project_delivery_work_object" USING btree ("project_id","updated_at","id");
 CREATE INDEX "project_member_user_idx" ON "resources"."project_member" USING btree ("user_id","project_id");
 CREATE INDEX "share_link_page_idx" ON "resources"."share_link" USING btree ("knowledge_base_id","page_id");
 CREATE INDEX "share_link_token_idx" ON "resources"."share_link" USING btree ("knowledge_base_id","token_hash");

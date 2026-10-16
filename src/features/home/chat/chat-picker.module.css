@@ -54,7 +54,7 @@
   font-weight: 400;
 }
 .item > svg { width: 14px; height: 14px; flex-shrink: 0; }
-.item[data-selected="true"] { background: var(--menu-item-hover-bg); }
+.surface:has(.item:hover) .item[data-highlighted]:not(:hover) { background: transparent; color: var(--ink); }
 .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .check { margin-left: auto; }
 .list { min-height: 0; max-height: 140px; }

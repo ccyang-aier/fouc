@@ -92,6 +92,9 @@ export function ChatConversation({
                     <dd>{t("teamKnowledge")}</dd>
                   </div>
                 ) : null}
+                {submission.context.localEnvironment?.createWorktree ? <div>
+                  <dt>{t('localEnvironment')}</dt><dd>{t('worktreeRequested')}</dd>
+                </div> : null}
               </dl>
               <p className={styles.previewNote}>{t("preview")}</p>
               <Button

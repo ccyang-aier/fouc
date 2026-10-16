@@ -466,7 +466,7 @@ input {
   background: var(--menu-state-bg);
   color: var(--menu-state-ink);
 }
-.fouc-menu-item:is(:hover, :focus-visible, [data-highlighted], [data-state="open"]):not(:disabled):not([data-disabled]):not([aria-disabled="true"]) svg {
+.fouc-menu-item:is(:hover, :focus-visible, [data-highlighted], [data-state="open"]):not(:disabled):not([data-disabled]):not([aria-disabled="true"]) svg:not([data-static-color]) {
   color: inherit;
 }
 .fouc-menu-checkbox { display: grid; place-items: center; width: 14px; height: 14px; border: 1px solid var(--line-strong); border-radius: 3px; background: var(--panel); }

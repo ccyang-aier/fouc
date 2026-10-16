@@ -153,7 +153,7 @@ export function ChatExecutionSelector({ context, onChange, t }: {
           onKeyDown={event => previewKeys(event, { kind: 'auto' })}
           onSelect={event => { if (pointerType.current === 'touch') { event.preventDefault(); showPreview({ kind: 'auto' }); } else selectAuto(); }}>
           <ChatExecutionLogo option={autoExecutionOption} /><span className={styles.optionName}>{autoExecutionOption.name}</span>
-          {execution.kind === 'auto' ? <Check size={13} className={styles.selected} aria-label={t('selectedExecution')} /> : null}
+          {execution.kind === 'auto' ? <Check size={13} weight="bold" className={styles.selected} data-static-color aria-label={t('selectedExecution')} /> : null}
         </ChatPickerItem> : null}
         {catalogPending ? <p className={styles.status} role="status">{info('loading')}</p> :
           catalogUnavailable ? <div className={styles.status} role="status"><span>{info('unavailable')}</span>
@@ -170,16 +170,18 @@ export function ChatExecutionSelector({ context, onChange, t }: {
               onKeyDown={event => previewKeys(event, { kind: 'model', id: model.id })}>
               <ChatExecutionLogo option={modelExecutionOption(model)} />
               <span className={styles.optionName}>{model.name}</span>
-              {model.capabilities.imageGeneration ? <ImageSquare className={styles.imageIcon} aria-label={t('imageModel')} /> : null}
-              <span className={styles.contextSize}>{formatModelTokens(model.contextWindow)}</span>
-              {active ? <Check size={13} className={styles.selected} aria-label={t('selectedExecution')} /> : null}
+              {model.capabilities.imageGeneration ? <ImageSquare className={styles.imageIcon} data-static-color aria-label={t('imageModel')} /> : null}
+              <span className={styles.optionMeta}>
+                <span className={styles.selectionSlot}>{active ? <Check size={13} weight="bold" className={styles.selected} data-static-color aria-label={t('selectedExecution')} /> : null}</span>
+                <span className={styles.contextSize}>{formatModelTokens(model.contextWindow)}</span>
+              </span>
             </ChatPickerItem>;
           })}
         </DropdownMenuGroup>) : agents.map(agent => {
           const active = execution.kind === 'agent' && execution.id === agent.id;
           return <ChatPickerItem key={agent.id} className={styles.option} role="menuitemradio" aria-checked={active} data-current={active} textValue={agent.name}
             onSelect={() => onChange({ execution: { kind: 'agent', id: agent.id, name: agent.name } })}>
-            <ChatExecutionLogo option={agent} /><span className={styles.optionName}>{agent.name}</span>{active ? <Check className={styles.selected} size={13} /> : null}
+            <ChatExecutionLogo option={agent} /><span className={styles.optionName}>{agent.name}</span>{active ? <Check className={styles.selected} size={13} weight="bold" data-static-color /> : null}
           </ChatPickerItem>;
         })}
         {showEmpty ? <p className={picker.empty} role="status">{kind === 'model' && !normalizedQuery ? info('empty') : t('noExecutionResults')}</p> : null}

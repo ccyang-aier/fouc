@@ -8,7 +8,7 @@
 .intro p { margin: 0; font-size: 12px; line-height: 1.7; color: var(--muted-strong); }
 .section { margin-top: 13px; }
 .sectionHeader { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: calc(100% + 16px); min-height: 34px; margin-inline: -8px; padding: 5px 8px; border: 0; border-radius: 6px; background: transparent; text-align: left; outline: none; font-size: 13px; color: var(--ink-soft); cursor: pointer; }
-.sectionHeader > span:first-child { display: flex; align-items: center; gap: 6px; flex-shrink: 0; font-weight: 400; }
+.sectionHeader > span:first-child { display: flex; align-items: center; gap: 6px; flex-shrink: 0; font-weight: 500; }
 .card [data-section="benchmarks"] { --section-marker: #e34397; }
 .card [data-section="context"] { --section-marker: #3386ff; }
 .card [data-section="capabilities"] { --section-marker: #8b49db; }
@@ -21,18 +21,19 @@
 .benchmarkLink { display: flex; align-items: center; gap: 7px; min-height: 30px; color: var(--ink-soft); font-size: 12px; border-radius: 4px; padding: 2px 5px; cursor: pointer; }
 .benchmarkLink > span { flex: 1; min-width: 0; }
 .benchmarkLink strong { font-weight: 500; font-variant-numeric: tabular-nums; color: var(--ink); }
-.note { margin: 7px 0 0; font-size: 10px; line-height: 1.65; color: var(--muted-strong); }
 .tokenRows { margin: 18px 0 0; }
 .tokenRows > div, .rows > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .tokenRows dt { display: flex; align-items: center; gap: 6px; color: var(--ink-soft); font-size: 13px; }
 .tokenRows dd { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; margin: 0; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .tokenRows strong { font-size: 13px; font-weight: 500; }
 .tokenRows dd > span { font-size: 10px; color: var(--muted-strong); }
-.rows { display: flex; flex-direction: column; gap: 0; padding: 0; margin: 0; font-size: 12px; line-height: 1.6; }
+.rows { display: flex; flex-direction: column; gap: 0; padding: 0; margin: 0; font-size: 12px; line-height: 20px; font-weight: 450; }
 .rows > div { min-height: 30px; }
 .rows dt { display: flex; flex-shrink: 0; align-items: center; gap: 7px; color: var(--muted-strong); }
-.rows dt > svg { flex-shrink: 0; width: 14px; height: 14px; stroke-width: 1.6; }
-.rows dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+.rows dt > svg { display: block; flex-shrink: 0; width: 14px; height: 14px; stroke-width: 1.8; }
+/* The dot extends the arrow's viewbox below its visual center. */
+.rows dt > .priceArrow { transform: translateY(1px); }
+.rows dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; color: var(--muted-strong); }
 .capabilityIcons { display: flex; align-items: center; gap: 4px; }
 .capabilityIcons > span { --capability-ink: #23974f; display: grid; place-items: center; width: 23px; height: 23px; border-radius: 5px; color: var(--capability-ink); background: color-mix(in srgb, var(--capability-ink) 10%, var(--panel)); }
 .capabilityIcons [data-capability="tools"] { --capability-ink: #087dff; }

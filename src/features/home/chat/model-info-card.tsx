@@ -90,7 +90,7 @@ export function ModelInfoCard({ model, expanded, onToggle, onSelect, onClose }: 
         {expanded.capabilities ? <dl className={styles.rows}>
           {capabilities.map(({ key, Icon, yes, no }) => {
             const supported = model.capabilities[key];
-            return <div key={key}><dt><Icon size={14} />{t(key)}</dt><dd>
+            return <div key={key}><dt><Icon size={14} /><span>{t(key)}</span></dt><dd>
               {supported === null ? t('unknown') : t(supported ? yes : no)}
             </dd></div>;
           })}
@@ -104,11 +104,10 @@ export function ModelInfoCard({ model, expanded, onToggle, onSelect, onClose }: 
         </span>)}
         {expanded.pricing ? <div className={styles.sectionContent}>
           <dl className={styles.rows}>{priceRows.map(({ key, label, Icon }) => <div key={key}>
-            <dt><Icon size={14} />{t(label)}</dt>
+            <dt><Icon size={14} className={key === 'input' || key === 'output' ? styles.priceArrow : undefined} /><span>{t(label)}</span></dt>
             <dd>{model.pricing[key] === null ? t('unknown') : t('priceAmount', { value: priceNumber(model.pricing[key]) })}
             </dd>
           </div>)}</dl>
-          {model.pricing.note ? <p className={styles.note}>{model.pricing.note[language]}</p> : null}
         </div> : null}
       </section>
     </div>

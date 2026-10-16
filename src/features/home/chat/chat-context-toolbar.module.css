@@ -1,0 +1,20 @@
+.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; height: 40px; padding: 5px 9px; }
+.resources { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.resourceButton { height: 28px; min-width: 0; max-width: 230px; padding: 0 9px; gap: 7px; border: 0; border-radius: 16px; font-size: 12px; font-weight: 400; color: var(--ink-soft); cursor: pointer; }
+.resourceButton[data-selected="true"] { background: var(--action-surface-bg); }
+.resourceButton span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.settingsButton { width: 28px; height: 28px; padding: 0; border: 1px solid transparent; border-radius: 7px; cursor: pointer; }
+.toolbar button:focus-visible { outline: none; box-shadow: none; border-color: var(--control-border); }
+.projectMenu { width: min(300px, calc(100vw - 24px)); padding: 5px; border-radius: 14px; }
+.search { display: flex; align-items: center; gap: 8px; margin: 0 8px 5px; border-bottom: 1px solid var(--separator-color); color: var(--muted-strong); }
+.search:focus-within { border-bottom-color: var(--control-border); }
+.search input { width: 100%; min-width: 0; height: 37px; border: 0; background: transparent; color: var(--ink); font-size: 13px; outline: none; box-shadow: none; cursor: text; }
+.search input::placeholder { color: var(--muted-strong); }
+.projectList { max-height: 204px; }
+.projectItem { height: 34px; gap: 8px; border-radius: 9px; font-size: 13px; font-weight: 400; }
+.projectItem span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.projectItem > svg:last-child:not(:first-child) { margin-left: auto; }
+.empty { padding: 15px 10px; margin: 0; color: var(--muted-strong); font-size: 12px; }
+.knowledgeMenu { width: 226px; border-radius: 11px; padding: 5px; }
+@container (max-width: 560px) { .resourceButton { max-width: 170px; padding-inline: 7px; } .toolbar { padding-inline: 7px; } }
+@container (max-width: 300px) { .toolbar { height: auto; min-height: 40px; align-items: flex-start; } .resources { flex-wrap: wrap; gap: 2px; } .resourceButton { max-width: 100%; } }

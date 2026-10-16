@@ -7,6 +7,7 @@ import { ChatAttachments } from "./chat-attachments";
 import type { ChatSubmission } from "./chat-types";
 import type { ChatText } from "./chat-messages";
 import styles from "./chat.module.css";
+import { getChatExecutionOption } from "./chat-execution-options";
 
 export function ChatConversation({
   submissions,
@@ -78,8 +79,8 @@ export function ChatConversation({
               <p>{t("readyDescription")}</p>
               <dl className={styles.contextSummary}>
                 <div>
-                  <dt>{t("agentLabel")}</dt>
-                  <dd>{submission.context.agent}</dd>
+                  <dt>{t(submission.context.execution.kind === "agent" ? "agentLabel" : "modelLabel")}</dt>
+                  <dd>{getChatExecutionOption(submission.context.execution).name}</dd>
                 </div>
                 <div>
                   <dt>{t("project")}</dt>

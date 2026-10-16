@@ -1,5 +1,5 @@
 export type ChatContext = {
-  agent: string;
+  execution: { kind: "agent" | "model"; id: string };
   projectId: string | null;
   projectName: string | null;
   knowledgeIncluded: boolean;

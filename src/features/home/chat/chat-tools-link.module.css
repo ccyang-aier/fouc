@@ -19,7 +19,14 @@
   align-items: center;
 }
 .toolsLinkEnd {
+  flex-shrink: 0;
   gap: 15px;
+}
+.toolsLink > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .toolLogo {
   display: grid;
@@ -45,5 +52,14 @@
   }
   .toolsLinkEnd {
     gap: 10px;
+  }
+}
+@container (max-width: 300px) {
+  .toolLogos {
+    display: none;
+  }
+  .toolsLink {
+    gap: 6px;
+    padding-inline: 12px;
   }
 }

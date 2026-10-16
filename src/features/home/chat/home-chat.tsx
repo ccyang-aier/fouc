@@ -33,7 +33,7 @@ export function HomeChat({
   const conversationViewport = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState<ChatDraft>({ text: "", attachments: [] });
   const [context, setContext] = useState<ChatContext>({
-    agent: "Nova",
+    execution: { kind: "agent", id: "nova" },
     projectId: selectedProject?.id ?? null,
     projectName: selectedProject?.name ?? null,
     knowledgeIncluded: true,

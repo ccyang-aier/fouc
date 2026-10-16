@@ -57,7 +57,7 @@
   flex-direction: column;
   border: 1px solid var(--resource-card-border);
   border-radius: 16px;
-  padding: 16px;
+  padding: 14px;
   margin: 0 -1px;
   background: var(--panel);
   box-shadow: 0 2px 6px rgb(22 33 23 / 3%);
@@ -75,7 +75,7 @@
 .input {
   display: block;
   width: 100%;
-  min-height: 100px;
+  min-height: 86px;
   max-height: 280px;
   field-sizing: content;
   border: 0;
@@ -111,9 +111,9 @@
 }
 .iconButton,
 .sendButton {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
   padding: 0;
   cursor: pointer;
 }
@@ -122,21 +122,6 @@
   background: var(--panel);
   color: #28322b;
   box-shadow: 0 2px 4px rgb(22 33 23 / 3%);
-}
-.agentButton {
-  height: 34px;
-  border-radius: 10px;
-  padding: 0 11px;
-  gap: 8px;
-  border-color: var(--chat-control-border);
-  font-size: 12px;
-  color: var(--ink);
-  font-weight: 500;
-  box-shadow: 0 2px 4px rgb(22 33 23 / 3%);
-  cursor: pointer;
-}
-.agentMark {
-  color: #c7826f;
 }
 .sendButton {
   color: #fff;
@@ -163,41 +148,10 @@
 .fileInput {
   display: none;
 }
-.contextControls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  padding: 0 0 12px;
-}
-.contextButton {
-  height: 27px;
-  padding: 0 8px;
-  font-size: 11px;
-  font-weight: 400;
-  gap: 5px;
-  border-color: var(--chat-control-border);
-  border-radius: 7px;
-  background: var(--panel);
-  box-shadow: none;
-  color: var(--muted-strong);
-  cursor: pointer;
-  max-width: 230px;
-}
-.contextButton span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 .menu {
   width: 226px;
   border-radius: 11px;
   padding: 5px;
-}
-.menuEllipsis {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .attachments {
   display: flex;
@@ -341,16 +295,6 @@
 .composerGroup[data-compact="true"] .input {
   min-height: 67px;
 }
-.composerGroup[data-compact="true"] {
-  border: 0;
-  background: transparent;
-}
-.composerGroup[data-compact="true"] .composer {
-  margin: 0;
-}
-.composerGroup[data-compact="true"] .contextControls {
-  padding-bottom: 10px;
-}
 .composerGroup .input {
   transition: min-height 240ms ease;
 }
@@ -474,10 +418,8 @@
 }
 :global(html[data-theme="dark"]) .composer,
 :global(html[data-theme="dark"]) .iconButton,
-:global(html[data-theme="dark"]) .agentButton,
 :global(html[data-theme="dark"]) .fileCard,
-:global(html[data-theme="dark"]) .contextSummary,
-:global(html[data-theme="dark"]) .contextButton {
+:global(html[data-theme="dark"]) .contextSummary {
   border-color: var(--control-border);
 }
 :global(html[data-theme="dark"]) .iconButton {
@@ -512,19 +454,8 @@
     border-radius: 14px;
   }
   .input {
-    min-height: 122px;
+    min-height: 86px;
     font-size: 13px;
-  }
-  .contextControls {
-    gap: 8px;
-    padding-bottom: 10px;
-  }
-  .contextButton {
-    font-size: 11px;
-    max-width: 170px;
-  }
-  .contextButton span {
-    max-width: 128px;
   }
   .conversationHeader {
     padding: 0 13px;
@@ -542,6 +473,20 @@
   }
   .contextSummary > div {
     grid-template-columns: 88px 1fr;
+  }
+}
+@container (max-width: 300px) {
+  .toolbar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .toolbarLeft {
+    width: 100%;
+    min-width: 0;
+    gap: 6px;
+  }
+  .toolbarRight {
+    margin-left: auto;
   }
 }
 @keyframes arrive {

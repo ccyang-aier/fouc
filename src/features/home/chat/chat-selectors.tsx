@@ -1,149 +1,93 @@
 "use client";
 
-import {
-  BookOpen,
-  CaretDown,
-  FolderSimple,
-  Sparkle,
-} from "@phosphor-icons/react";
+import { useState } from "react";
+import { BookOpen, Check, FolderSimple, GearSix, MagnifyingGlass, X } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useProjectResources } from "@/features/project/project-resources";
+import { openSettings } from "@/lib/settings-navigation";
 import type { ChatContext } from "./chat-types";
 import type { ChatText } from "./chat-messages";
-import styles from "./chat.module.css";
+import styles from "./chat-context-toolbar.module.css";
 
-const agents = ["Nova", "Codey", "Sage"];
-
-export function ChatAgentSelector({
-  context,
-  onChange,
-  t,
-}: {
-  context: ChatContext;
-  onChange: (change: Partial<ChatContext>) => void;
-  t: ChatText;
-}) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          className={styles.agentButton}
-          aria-label={t("agents")}
-        >
-          <Sparkle size={15} weight="fill" className={styles.agentMark} />
-          <span>{context.agent}</span>
-          <CaretDown size={12} />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className={styles.menu}>
-        <DropdownMenuLabel>{t("agents")}</DropdownMenuLabel>
-        <DropdownMenuRadioGroup
-          value={context.agent}
-          onValueChange={(agent) => onChange({ agent })}
-        >
-          {agents.map((agent) => (
-            <DropdownMenuRadioItem value={agent} key={agent}>
-              {agent}
-            </DropdownMenuRadioItem>
-          ))}
-        </DropdownMenuRadioGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
-export function ChatContextSelectors({
-  context,
-  onChange,
-  t,
-}: {
+export function ChatContextSelectors({ context, onChange, t }: {
   context: ChatContext;
   onChange: (change: Partial<ChatContext>) => void;
   t: ChatText;
 }) {
   const { projects } = useProjectResources();
+  const [query, setQuery] = useState("");
+  const filtered = projects.filter((project) => project.name.toLowerCase().includes(query.trim().toLowerCase()));
   return (
-    <div className={styles.contextControls}>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            className={styles.contextButton}
-            aria-label={t("projectContext")}
-            data-active={Boolean(context.projectId)}
-          >
-            <FolderSimple size={15} />
-            <span>{context.projectName ?? t("project")}</span>
-            <CaretDown size={11} />
+    <div className={styles.toolbar}>
+      <div className={styles.resources}>
+        <DropdownMenu onOpenChange={(open) => { if (open) setQuery(""); }}>
+          <DropdownMenuTrigger asChild>
+            <Button type="button" variant="ghost" className={styles.resourceButton} aria-label={t("projectContext")}
+              data-selected={Boolean(context.projectId)}>
+              <FolderSimple size={16} />
+              <span>{context.projectName ?? t("project")}</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className={styles.projectMenu}>
+            <label className={styles.search}>
+              <MagnifyingGlass size={16} aria-hidden="true" />
+              <input autoFocus value={query} aria-label={t("searchProjects")} placeholder={t("searchProjects")}
+                onChange={(event) => setQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") return;
+                  event.stopPropagation();
+                  if (event.key === "ArrowDown") {
+                    event.preventDefault();
+                    event.currentTarget.closest('[role="menu"]')?.querySelector<HTMLElement>('[role="menuitemradio"]')?.focus();
+                  }
+                }} />
+            </label>
+            <ScrollArea className={styles.projectList} style={{ height: Math.min(Math.max(filtered.length * 34, 54), 204) }}>
+              {filtered.map((project) => (
+                <DropdownMenuItem key={`${project.source}:${project.id}`} className={styles.projectItem}
+                  role="menuitemradio" aria-checked={context.projectId === project.id}
+                  onSelect={() => onChange({ projectId: project.id, projectName: project.name })}>
+                  <FolderSimple />
+                  <span>{project.name}</span>
+                  {context.projectId === project.id ? <Check size={15} /> : null}
+                </DropdownMenuItem>
+              ))}
+              {!filtered.length ? <p className={styles.empty} role="status">{t(query ? "noProjectResults" : "emptyProjects")}</p> : null}
+            </ScrollArea>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className={styles.projectItem} role="menuitemradio" aria-checked={!context.projectId} onSelect={() => onChange({ projectId: null, projectName: null })}>
+              <X />{t("noProject")}
+              {!context.projectId ? <Check size={15} /> : null}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button type="button" variant="ghost" className={styles.resourceButton} aria-label={t("knowledgeContext")}
+              data-selected={context.knowledgeIncluded}>
+              <BookOpen size={16} />
+              <span>{t("knowledge")}</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className={styles.knowledgeMenu}>
+            <DropdownMenuLabel>{t("knowledgeContext")}</DropdownMenuLabel>
+            <DropdownMenuCheckboxItem checked={context.knowledgeIncluded} onCheckedChange={(knowledgeIncluded) => onChange({ knowledgeIncluded })}>
+              {t("teamKnowledge")}
+            </DropdownMenuCheckboxItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button type="button" variant="ghost" className={styles.settingsButton} aria-label={t("chatSettings")} onClick={() => openSettings("agents")}>
+            <GearSix size={17} />
           </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className={styles.menu}>
-          <DropdownMenuLabel>{t("projectContext")}</DropdownMenuLabel>
-          <DropdownMenuRadioGroup
-            value={context.projectId ?? ""}
-            onValueChange={(id) => {
-              const project = projects.find((item) => item.id === id);
-              onChange({
-                projectId: project?.id ?? null,
-                projectName: project?.name ?? null,
-              });
-            }}
-          >
-            <DropdownMenuRadioItem value="">
-              {t("noProject")}
-            </DropdownMenuRadioItem>
-            {projects.map((project) => (
-              <DropdownMenuRadioItem
-                value={project.id}
-                key={`${project.source}:${project.id}`}
-              >
-                <span className={styles.menuEllipsis}>{project.name}</span>
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
-          {projects.length === 0 ? (
-            <DropdownMenuLabel>{t("emptyProjects")}</DropdownMenuLabel>
-          ) : null}
-        </DropdownMenuContent>
-      </DropdownMenu>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            className={styles.contextButton}
-            aria-label={t("knowledgeContext")}
-            data-active={context.knowledgeIncluded}
-          >
-            <BookOpen size={15} />
-            <span>{t("knowledge")}</span>
-            <CaretDown size={11} />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className={styles.menu}>
-          <DropdownMenuLabel>{t("knowledgeContext")}</DropdownMenuLabel>
-          <DropdownMenuCheckboxItem
-            checked={context.knowledgeIncluded}
-            onCheckedChange={(knowledgeIncluded) =>
-              onChange({ knowledgeIncluded })
-            }
-          >
-            {t("teamKnowledge")}
-          </DropdownMenuCheckboxItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+        </TooltipTrigger>
+        <TooltipContent>{t("chatSettings")}</TooltipContent>
+      </Tooltip>
     </div>
   );
 }

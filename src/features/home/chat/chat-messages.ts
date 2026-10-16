@@ -26,6 +26,8 @@ export const chatMessages = {
   drop: ["松开以添加文件", "Drop to add files"],
   remove: ["移除 {name}", "Remove {name}"],
   project: ["项目", "Project"],
+  selectProject: ["选中项目", "Select a project"],
+  clearProject: ["取消项目选择", "Clear project selection"],
   noProject: ["不在项目中工作", "Work outside a project"],
   projectCleared: ["已切换为不在项目中工作", "Working outside a project"],
   newProject: ["新建项目", "New project"],

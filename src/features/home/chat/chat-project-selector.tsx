@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Check, FolderSimple, Plus, X } from "@phosphor-icons/react";
+import { Check, FolderSimple, Plus, X, XCircle } from "@phosphor-icons/react";
 import { useAppAlert } from "@/components/app-alert-provider";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -21,11 +21,19 @@ export function ChatProjectSelector({ context, onChange, t }: {
   const { projects, createProject } = useProjectResources();
   const { notify } = useAppAlert();
   const search = useRef<HTMLInputElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [creating, setCreating] = useState(false);
   const [saving, setSaving] = useState(false);
   const filtered = projects.filter((project) => project.name.toLowerCase().includes(query.trim().toLowerCase()));
+
+  function clearProject() {
+    onChange({ projectId: null, projectName: null });
+    setOpen(false);
+    trigger.current?.focus({ preventScroll: true });
+    notify("info", t("projectCleared"));
+  }
 
   async function saveProject() {
     if (!query.trim() || saving) return;
@@ -42,13 +50,18 @@ export function ChatProjectSelector({ context, onChange, t }: {
       setOpen(next);
       if (next) { setQuery(""); setCreating(false); }
     }}>
-      <DropdownMenuTrigger asChild>
-        <Button type="button" variant="ghost" className={styles.resourceButton} aria-label={t("projectContext")}
-          data-selected={Boolean(context.projectId)}>
-          <FolderSimple size={16} />
-          <span>{context.projectId ? context.projectName ?? t("project") : t("noProject")}</span>
-        </Button>
-      </DropdownMenuTrigger>
+      <div className={styles.projectChip} data-selected={Boolean(context.projectId)}>
+        <DropdownMenuTrigger asChild>
+          <Button ref={trigger} type="button" variant="ghost" className={styles.resourceButton} aria-label={t("projectContext")}
+            data-selected={Boolean(context.projectId)}>
+            <FolderSimple size={16} className={styles.projectIcon} />
+            <span>{context.projectId ? context.projectName ?? t("project") : t("selectProject")}</span>
+          </Button>
+        </DropdownMenuTrigger>
+        {context.projectId ? <button type="button" className={`fouc-action ${styles.clearProject}`} aria-label={t("clearProject")} title={t("clearProject")} onClick={clearProject}>
+          <XCircle size={16} weight="fill" aria-hidden="true" />
+        </button> : null}
+      </div>
       <ChatPickerContent onEscapeKeyDown={(event) => {
         if (!creating) return;
         event.preventDefault();
@@ -93,10 +106,7 @@ export function ChatProjectSelector({ context, onChange, t }: {
             <Plus />{t("newProject")}
           </ChatPickerItem>
           <ChatPickerItem role="menuitemradio" aria-checked={!context.projectId}
-            data-selected={!context.projectId} onSelect={() => {
-              onChange({ projectId: null, projectName: null });
-              notify("info", t("projectCleared"));
-            }}>
+            data-selected={!context.projectId} onSelect={clearProject}>
             <X /><span className={picker.name}>{t("noProject")}</span>
             {!context.projectId ? <Check className={picker.check} /> : null}
           </ChatPickerItem>

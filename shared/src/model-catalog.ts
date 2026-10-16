@@ -10,11 +10,16 @@ const reasoningSchema = z.strictObject({
 }).refine(value => new Set(value.levels).size === value.levels.length && value.levels.includes(value.defaultLevel), {
   message: 'Reasoning levels must be unique and include their default.',
 });
-const ratingSchema = z.strictObject({
-  score: z.number().min(0).max(100),
-  source: sourceSchema,
-  note: localizedText,
-});
+const ratingScore = z.number().min(0).max(100);
+const ratingSchema = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('measured'), score: ratingScore, source: sourceSchema, note: localizedText }),
+  z.strictObject({
+    kind: z.literal('mock'), score: ratingScore, source: z.null(),
+    note: localizedText.refine(value => /mock/i.test(value.zh) && /mock/i.test(value.en), {
+      message: 'Both mock rating notes must explicitly identify mock data.',
+    }),
+  }),
+]);
 
 /** Public reference metadata. Listing a model does not grant execution or provider access. */
 export const modelCatalogEntrySchema = z.strictObject({
@@ -41,20 +46,23 @@ export const modelCatalogEntrySchema = z.strictObject({
     note: localizedText.nullable(),
   }),
   ratings: z.strictObject({
-    intelligence: ratingSchema.nullable(),
+    intelligence: ratingSchema,
     agentic: ratingSchema.nullable(),
-    writing: ratingSchema.nullable(),
-    design: ratingSchema.nullable(),
-    speed: ratingSchema.nullable(),
-    price: ratingSchema.nullable(),
+    writing: ratingSchema,
+    design: ratingSchema,
+    speed: ratingSchema,
+    price: ratingSchema,
   }),
   sources: z.array(sourceSchema).min(1),
   verifiedAt: z.iso.date(),
 }).refine(value => value.reasoning === null || value.capabilities.reasoning === true, {
   message: 'Adjustable reasoning requires a verified reasoning capability.',
+}).refine(value => value.capabilities.tools === false ? value.ratings.agentic === null : value.ratings.agentic !== null, {
+  message: 'Only models with explicitly unsupported tools have an unsupported Agentic rating.',
 });
 
 export const modelCatalogSchema = z.strictObject({ items: z.array(modelCatalogEntrySchema) });
 export type ModelCatalogEntry = z.infer<typeof modelCatalogEntrySchema>;
 export type ModelCatalog = z.infer<typeof modelCatalogSchema>;
 export type ModelReasoningLevel = z.infer<typeof modelReasoningLevelSchema>;
+export type ModelRating = z.infer<typeof ratingSchema>;

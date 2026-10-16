@@ -50,10 +50,9 @@ export function ChatProjectSelector({ context, onChange, t }: {
       setOpen(next);
       if (next) { setQuery(""); setCreating(false); }
     }}>
-      <div className={styles.projectChip} data-selected={Boolean(context.projectId)}>
+      <div className={`fouc-action ${styles.projectChip}`} data-selected={Boolean(context.projectId)}>
         <DropdownMenuTrigger asChild>
-          <Button ref={trigger} type="button" variant="ghost" className={styles.resourceButton} aria-label={t("projectContext")}
-            data-selected={Boolean(context.projectId)}>
+          <Button ref={trigger} type="button" variant="ghost" className={styles.resourceButton} aria-label={t("projectContext")}>
             <FolderSimple size={16} className={styles.projectIcon} />
             <span>{context.projectId ? context.projectName ?? t("project") : t("selectProject")}</span>
           </Button>

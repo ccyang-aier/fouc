@@ -40,6 +40,7 @@
       },
       "ratings": {
         "intelligence": {
+          "kind": "measured",
           "score": 43.4,
           "source": {
             "label": "Artificial Analysis",
@@ -51,6 +52,7 @@
           }
         },
         "agentic": {
+          "kind": "measured",
           "score": 53.8,
           "source": {
             "label": "Artificial Analysis · AnalystAgent",
@@ -61,8 +63,17 @@
             "en": "AA-AnalystAgent success rate ×100. A proxy for agentic data analysis, not a universal agent score. Claude Haiku 5.5 (Max); 2026-10-17."
           }
         },
-        "writing": null,
+        "writing": {
+          "kind": "mock",
+          "score": 76,
+          "source": null,
+          "note": {
+            "zh": "Mock 开发目录人工种子：Claude Haiku 5.5 的 writing 轴尚无已核实同口径数据，此分数用于界面演示，不是实测或能力结论；设置于 2026-10-17。",
+            "en": "Mock development catalog seed: no verified comparable writing measurement for Claude Haiku 5.5. This manually assigned score is for UI demonstration, not a measurement or capability conclusion. Set 2026-10-17."
+          }
+        },
         "design": {
+          "kind": "measured",
           "score": 61.2,
           "source": {
             "label": "DesignArena · Frontend",
@@ -74,6 +85,7 @@
           }
         },
         "speed": {
+          "kind": "measured",
           "score": 70.3,
           "source": {
             "label": "Artificial Analysis",
@@ -85,6 +97,7 @@
           }
         },
         "price": {
+          "kind": "measured",
           "score": 83.3,
           "source": {
             "label": "Provider list price",
@@ -156,6 +169,7 @@
       },
       "ratings": {
         "intelligence": {
+          "kind": "measured",
           "score": 56,
           "source": {
             "label": "Artificial Analysis",
@@ -167,6 +181,7 @@
           }
         },
         "agentic": {
+          "kind": "measured",
           "score": 57.5,
           "source": {
             "label": "Artificial Analysis · AnalystAgent",
@@ -178,6 +193,7 @@
           }
         },
         "writing": {
+          "kind": "measured",
           "score": 82.1,
           "source": {
             "label": "Arena · Creative Writing",
@@ -189,6 +205,7 @@
           }
         },
         "design": {
+          "kind": "measured",
           "score": 72.1,
           "source": {
             "label": "DesignArena · Frontend",
@@ -200,6 +217,7 @@
           }
         },
         "speed": {
+          "kind": "measured",
           "score": 58.6,
           "source": {
             "label": "Artificial Analysis",
@@ -211,6 +229,7 @@
           }
         },
         "price": {
+          "kind": "measured",
           "score": 20,
           "source": {
             "label": "Provider list price",
@@ -273,6 +292,7 @@
       },
       "ratings": {
         "intelligence": {
+          "kind": "measured",
           "score": 16.9,
           "source": {
             "label": "Artificial Analysis",
@@ -284,6 +304,7 @@
           }
         },
         "agentic": {
+          "kind": "measured",
           "score": 15,
           "source": {
             "label": "Artificial Analysis · AnalystAgent",
@@ -295,6 +316,7 @@
           }
         },
         "writing": {
+          "kind": "measured",
           "score": 74.7,
           "source": {
             "label": "Arena · Creative Writing",
@@ -306,6 +328,7 @@
           }
         },
         "design": {
+          "kind": "measured",
           "score": 38.1,
           "source": {
             "label": "DesignArena · Frontend",
@@ -317,6 +340,7 @@
           }
         },
         "speed": {
+          "kind": "measured",
           "score": 49.2,
           "source": {
             "label": "Artificial Analysis",
@@ -328,6 +352,7 @@
           }
         },
         "price": {
+          "kind": "measured",
           "score": 33.3,
           "source": {
             "label": "Provider list price",
@@ -391,6 +416,7 @@
       },
       "ratings": {
         "intelligence": {
+          "kind": "measured",
           "score": 51.8,
           "source": {
             "label": "Artificial Analysis",
@@ -402,6 +428,7 @@
           }
         },
         "agentic": {
+          "kind": "measured",
           "score": 50,
           "source": {
             "label": "Artificial Analysis · AnalystAgent",
@@ -413,6 +440,7 @@
           }
         },
         "writing": {
+          "kind": "measured",
           "score": 81.5,
           "source": {
             "label": "Arena · Creative Writing",
@@ -424,6 +452,7 @@
           }
         },
         "design": {
+          "kind": "measured",
           "score": 69.9,
           "source": {
             "label": "DesignArena · Frontend",
@@ -435,6 +464,7 @@
           }
         },
         "speed": {
+          "kind": "measured",
           "score": 37.9,
           "source": {
             "label": "Artificial Analysis",
@@ -446,6 +476,7 @@
           }
         },
         "price": {
+          "kind": "measured",
           "score": 20,
           "source": {
             "label": "Provider list price",
@@ -510,6 +541,7 @@
       },
       "ratings": {
         "intelligence": {
+          "kind": "measured",
           "score": 38.1,
           "source": {
             "label": "Artificial Analysis",
@@ -521,6 +553,7 @@
           }
         },
         "agentic": {
+          "kind": "measured",
           "score": 43.8,
           "source": {
             "label": "Artificial Analysis · AnalystAgent",
@@ -532,6 +565,7 @@
           }
         },
         "writing": {
+          "kind": "measured",
           "score": 77,
           "source": {
             "label": "Arena · Creative Writing",
@@ -543,6 +577,7 @@
           }
         },
         "design": {
+          "kind": "measured",
           "score": 60.2,
           "source": {
             "label": "DesignArena · Frontend",
@@ -554,6 +589,7 @@
           }
         },
         "speed": {
+          "kind": "measured",
           "score": 55.3,
           "source": {
             "label": "Artificial Analysis",
@@ -565,6 +601,7 @@
           }
         },
         "price": {
+          "kind": "measured",
           "score": 83.3,
           "source": {
             "label": "Provider list price",
@@ -627,6 +664,7 @@
       },
       "ratings": {
         "intelligence": {
+          "kind": "measured",
           "score": 39.5,
           "source": {
             "label": "Artificial Analysis",
@@ -638,6 +676,7 @@
           }
         },
         "agentic": {
+          "kind": "measured",
           "score": 35,
           "source": {
             "label": "Artificial Analysis · AnalystAgent",
@@ -649,6 +688,7 @@
           }
         },
         "writing": {
+          "kind": "measured",
           "score": 79.9,
           "source": {
             "label": "Arena · Creative Writing",
@@ -659,8 +699,20 @@
             "en": "Creative-writing preference Elo 1440; win probability vs fixed 1200 Elo: 100/(1+10^((1200−Elo)/400)). Tested as deepseek-v4.1-flash-max; not writing accuracy. Board updated 2026-10-15; observed 2026-10-17."
           }
         },
-        "design": null,
+        "design": {
+          "kind": "measured",
+          "score": 66.9,
+          "source": {
+            "label": "DesignArena · Frontend",
+            "url": "https://www.designarena.ai/leaderboard"
+          },
+          "note": {
+            "zh": "前端设计偏好 Elo 1322；换算为对固定 1200 Elo 参考的胜率：100/(1+10^((1200−Elo)/400))；非设计准确率；采集 2026-10-17。",
+            "en": "Frontend design preference Elo 1322. Score = win probability vs fixed 1200 Elo: 100/(1+10^((1200−Elo)/400)); not design accuracy. Observed 2026-10-17."
+          }
+        },
         "speed": {
+          "kind": "measured",
           "score": 64.3,
           "source": {
             "label": "Artificial Analysis",
@@ -672,6 +724,7 @@
           }
         },
         "price": {
+          "kind": "measured",
           "score": 79.2,
           "source": {
             "label": "Provider list price",
@@ -739,12 +792,61 @@
         }
       },
       "ratings": {
-        "intelligence": null,
+        "intelligence": {
+          "kind": "mock",
+          "score": 52,
+          "source": null,
+          "note": {
+            "zh": "Mock 开发目录人工种子：Nano Banana 2 的 intelligence 轴尚无已核实同口径数据，此分数用于界面演示，不是实测或能力结论；设置于 2026-10-17。",
+            "en": "Mock development catalog seed: no verified comparable intelligence measurement for Nano Banana 2. This manually assigned score is for UI demonstration, not a measurement or capability conclusion. Set 2026-10-17."
+          }
+        },
         "agentic": null,
-        "writing": null,
-        "design": null,
-        "speed": null,
-        "price": null
+        "writing": {
+          "kind": "mock",
+          "score": 47,
+          "source": null,
+          "note": {
+            "zh": "Mock 开发目录人工种子：Nano Banana 2 的 writing 轴尚无已核实同口径数据，此分数用于界面演示，不是实测或能力结论；设置于 2026-10-17。",
+            "en": "Mock development catalog seed: no verified comparable writing measurement for Nano Banana 2. This manually assigned score is for UI demonstration, not a measurement or capability conclusion. Set 2026-10-17."
+          }
+        },
+        "design": {
+          "kind": "measured",
+          "score": 41.2,
+          "source": {
+            "label": "Artificial Analysis · Image Arena",
+            "url": "https://artificialanalysis.ai/image/models/nano-banana-2"
+          },
+          "note": {
+            "zh": "生图质量偏好 Elo 1138.52；对固定 1200 Elo 参考的胜率：100/(1+10^((1200−Elo)/400))；仅代表图像偏好，非文本智能指数或前端设计能力；采集 2026-10-17。",
+            "en": "Image-generation preference Elo 1138.52; win probability vs fixed 1200 Elo: 100/(1+10^((1200−Elo)/400)). Image preference only, not text intelligence or frontend design. Observed 2026-10-17."
+          }
+        },
+        "speed": {
+          "kind": "measured",
+          "score": 54,
+          "source": {
+            "label": "Artificial Analysis · Image Generation",
+            "url": "https://artificialanalysis.ai/image/models/nano-banana-2"
+          },
+          "note": {
+            "zh": "Google 生图中位耗时 8.5 秒/图；评分=100×10/(10+秒数)，10秒基准；与文本 tokens/s 分属不同口径；采集 2026-10-17。",
+            "en": "Google median image-generation time 8.5 seconds/image. Score = 100×10/(10+seconds), a 10-second reference. Separate from text tokens/s. Observed 2026-10-17."
+          }
+        },
+        "price": {
+          "kind": "measured",
+          "score": 42.7,
+          "source": {
+            "label": "Artificial Analysis · Image Price",
+            "url": "https://artificialanalysis.ai/image/models/nano-banana-2"
+          },
+          "note": {
+            "zh": "Google 生图价 $67/1000图；评分=100/(1+每图USD/0.05)，$0.05/图基准；非文本 token 价格；采集 2026-10-17。",
+            "en": "Google image-generation price $67/1000 images. Score = 100/(1+USD-per-image/0.05), a $0.05/image reference. Not text-token pricing. Observed 2026-10-17."
+          }
+        }
       },
       "sources": [
         {

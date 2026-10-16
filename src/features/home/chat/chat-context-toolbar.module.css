@@ -2,8 +2,10 @@
 .resources { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .resourceButton { height: 28px; min-width: 0; max-width: 230px; padding: 0 9px; gap: 7px; border: 0; border-radius: 16px; font-size: 12px; font-weight: 400; color: var(--ink-soft); cursor: pointer; }
 .resourceButton[data-selected="true"] { background: var(--action-surface-bg); }
+.resources .resourceButton, .resources .projectChip { --action-state-bg: var(--action-surface-hover-bg); }
 .resourceButton span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.projectChip { position: relative; display: flex; min-width: 0; max-width: 230px; }
+.projectChip { position: relative; display: flex; min-width: 0; max-width: 230px; border-radius: 16px; }
+.projectChip[data-selected="true"] { background: var(--action-surface-bg); }
 .projectChip .resourceButton { max-width: 100%; }
 .projectIcon { transition: opacity 120ms ease-out; }
 .clearProject { position: absolute; top: 0; left: 3px; display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--muted-strong); outline: none; opacity: 0; pointer-events: none; cursor: pointer; transition: opacity 120ms ease-out; }

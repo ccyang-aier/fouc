@@ -192,10 +192,9 @@ export function ChatExecutionSelector({ context, onChange, t }: {
       </ModelInfoPane> : null}
     </ChatPickerContent>
     </DropdownMenu>
-    {currentModel?.reasoning && execution.kind === 'model' ? <>
-      <span className={styles.triggerDivider} aria-hidden="true" />
+    {currentModel?.reasoning && execution.kind === 'model' ?
       <ModelReasoningControl key={currentModel.id} reasoning={currentModel.reasoning} value={execution.reasoningEffort}
         onChange={reasoningEffort => onChange({ execution: { ...execution, reasoningEffort } })} t={t} />
-    </> : null}
+    : null}
   </div>;
 }

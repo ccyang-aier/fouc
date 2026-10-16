@@ -1,8 +1,10 @@
 .figure {
-  margin: 3px 0 0;
+  margin: 3px -12px 0;
+  padding: 0 12px;
   border-radius: 12px;
-  background: var(--surface-subtle);
+  background: transparent;
 }
+.figure:hover { background: var(--action-hover-bg); }
 
 .chart {
   display: block;
@@ -41,25 +43,3 @@
   font-weight: 550;
   font-variant-numeric: tabular-nums;
 }
-
-.sources {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 2px 5px;
-  padding: 0 12px 9px;
-  color: var(--muted);
-  font-size: 10px;
-  line-height: 1.6;
-}
-
-.sources a {
-  padding: 1px 4px;
-  border-radius: 4px;
-  color: var(--muted-strong);
-  cursor: pointer;
-  text-decoration: underline;
-  text-decoration-color: var(--separator-color);
-  text-underline-offset: 2px;
-}
-.scale { flex: 0 0 100%; color: var(--muted-strong); }

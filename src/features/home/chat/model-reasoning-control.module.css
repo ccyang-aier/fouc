@@ -1,4 +1,4 @@
-.trigger { height: 28px; min-width: 52px; gap: 5px; padding: 0 8px; border: 0; border-radius: 6px; font-size: 12px; font-weight: 400; color: var(--muted-strong); cursor: pointer; }
+.trigger { height: 30px; min-width: 52px; gap: 5px; padding: 0 9px; border: 1px solid var(--chat-control-border); border-radius: 8px; font-size: 12px; font-weight: 400; color: var(--muted-strong); cursor: pointer; }
 .panel { width: min(300px, calc(100vw - 24px)); padding: 16px; border-radius: 12px; }
 .heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 10px; font-size: 13px; color: var(--ink-soft); }
 .heading strong { font-weight: 500; color: var(--ink); }

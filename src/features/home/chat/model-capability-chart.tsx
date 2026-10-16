@@ -40,10 +40,10 @@ export function ModelCapabilityChart({ ratings }: { ratings: ModelCatalogEntry['
   const values = axes.map(axis => ratings[axis]);
   const complete = values.every(value => value !== null);
   const points = values.map((value, index) => value === null ? null : point(index, value.score / 100));
-  const sources = [...new Map(values.flatMap(value => value ? [[value.source.url, value.source] as const] : [])).values()];
   const describe = (index: number) => {
     const value = values[index];
-    if (!value) return t('dimensionUnavailable', { dimension: t(axes[index]) });
+    if (!value) return t('dimensionUnsupported', { dimension: t(axes[index]) });
+    if (value.kind === 'mock') return `${t('dimensionMock', { dimension: t(axes[index]), score: value.score })}. ${value.note[language]}`;
     return `${t('dimensionScore', { dimension: t(axes[index]), score: value.score })}. ${t('sourceAndMethod', {
       source: value.source.label, note: value.note[language],
     })}`;
@@ -72,9 +72,5 @@ export function ModelCapabilityChart({ ratings }: { ratings: ModelCatalogEntry['
         </text>
       </g>)}
     </svg>
-    <figcaption className={styles.sources}>
-      <span className={styles.scale}>{t('normalized')}</span>
-      {sources.length ? <><span>{t('sources')}</span>{sources.map(source => <a key={source.url} href={source.url} target="_blank" rel="noreferrer" className="fouc-action">{source.label}</a>)}</> : <span>{t('unavailable')}</span>}
-    </figcaption>
   </figure>;
 }

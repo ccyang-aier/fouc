@@ -32,7 +32,7 @@ export function ModelReasoningControl({ reasoning, value, onChange, t }: {
 
   return <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
     <DropdownMenuTrigger asChild>
-      <Button type="button" variant="ghost" className={styles.trigger} title={t('reasoningEffort')} aria-label={`${t('reasoningEffort')} · ${t(reasoningLabels[level])}`}>
+      <Button type="button" variant="outline" className={styles.trigger} title={t('reasoningEffort')} aria-label={`${t('reasoningEffort')} · ${t(reasoningLabels[level])}`}>
         <Brain size={14} /><span>{t(reasoningLabels[level])}</span>
       </Button>
     </DropdownMenuTrigger>

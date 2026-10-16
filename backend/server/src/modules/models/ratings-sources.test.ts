@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { readBundledModelCatalog } from './admin';
-import { preferenceRating, priceRating, readAnalysisApiRatings, readAnalysisRatings, readDesignRatings, readPageObjects, readWritingRatings } from './ratings-sources';
+import { mergeRatingEvidence, preferenceRating, priceRating, readAnalysisApiRatings, readAnalysisRatings, readDesignRatings, readImageRatings, readPageObjects, readWritingRatings } from './ratings-sources';
 
 const observedAt = '2026-10-17';
 function page(value: unknown) {
@@ -64,5 +64,38 @@ describe('sourced six-dimensional model ratings', () => {
     expect(priceRating(model, observedAt)?.score).toBe(20);
     expect(priceRating({ ...model, pricing: { ...model.pricing, input: null } }, observedAt)).toBeNull();
     expect(priceRating({ ...model, capabilities: { ...model.capabilities, imageGeneration: true } }, observedAt)).toBeNull();
+  });
+
+  test('image measurements preserve their own modality, host, units and normalization', () => {
+    const ratings = readImageRatings(page({
+      model: { slug: 'nano-banana-2', qualityElo: 1138.52 }, host: { name: 'Google' },
+      isRepresentative: true, pricePer1kImages: 67, performance: { medianGenerationTimeSeconds: 8.5014 },
+    }), observedAt).get('nano-banana-2')!;
+    expect(ratings.design?.kind).toBe('measured');
+    expect(ratings.design?.score).toBe(41.2);
+    expect(ratings.speed?.score).toBe(54);
+    expect(ratings.price?.score).toBe(42.7);
+    expect(ratings.speed?.note.en).toContain('seconds/image');
+    expect(ratings.price?.note.en).toContain('1000 images');
+    expect('intelligence' in ratings).toBe(false);
+    expect('writing' in ratings).toBe(false);
+    expect('agentic' in ratings).toBe(false);
+  });
+
+  test('measured data replaces mocks; missing observations and later mocks cannot erase measured scores', async () => {
+    const model = structuredClone((await readBundledModelCatalog()).items.find(item => item.id === 'claude-haiku-5-5')!);
+    const mock = structuredClone(model.ratings.writing);
+    expect(mock.kind).toBe('mock');
+    const measured = model.ratings.design;
+    mergeRatingEvidence(model, { writing: measured });
+    expect(model.ratings.writing).toEqual(measured);
+    mergeRatingEvidence(model, { writing: null, intelligence: null, design: undefined });
+    expect(model.ratings.writing).toEqual(measured);
+    expect(model.ratings.intelligence).not.toBeNull();
+    mergeRatingEvidence(model, { writing: mock });
+    expect(model.ratings.writing).toEqual(measured);
+    const unsupported = structuredClone((await readBundledModelCatalog()).items.find(item => item.id === 'gemini-3.1-flash-image')!);
+    mergeRatingEvidence(unsupported, { agentic: measured });
+    expect(unsupported.ratings.agentic).toBeNull();
   });
 });

@@ -1,8 +1,9 @@
 import { parse } from 'node-html-parser';
 import { z } from 'zod';
-import type { ModelCatalogEntry } from '@fouc/shared/model-catalog';
+import type { ModelCatalogEntry, ModelRating } from '@fouc/shared/model-catalog';
 
-type Rating = NonNullable<ModelCatalogEntry['ratings']['intelligence']>;
+type Rating = ModelRating;
+export type RatingEvidence = Partial<Record<keyof ModelCatalogEntry['ratings'], Rating | null>>;
 const round = (value: number) => Math.round(value * 10) / 10;
 const finite = z.number().finite();
 const analysisRecord = z.object({
@@ -21,7 +22,7 @@ export const ratingIdentities: Record<string, { analysis: string; design?: strin
   'claude-haiku-5-5': { analysis: 'claude-haiku-5-5', design: 'claude-haiku-5-5' },
   'claude-sonnet-5-5': { analysis: 'claude-sonnet-5-5', design: 'claude-sonnet-5-5', writing: 'claude-sonnet-5.5-xhigh' },
   'claude-haiku-4-5-20251001': { analysis: 'claude-4-5-haiku-reasoning', design: 'claude-haiku-4-5', writing: 'claude-haiku-4-5-20251001' },
-  'deepseek-flash': { analysis: 'deepseek-v4-1-flash', writing: 'deepseek-v4.1-flash-max' },
+  'deepseek-flash': { analysis: 'deepseek-v4-1-flash', design: 'deepseek-v4-1-flash', writing: 'deepseek-v4.1-flash-max' },
 };
 
 /** Read public Next.js response data as JSON only; never execute source-page scripts. */
@@ -42,7 +43,7 @@ export function readPageObjects(html: string): Record<string, unknown>[] {
 }
 
 function rating(score: number, label: string, url: string, zh: string, en: string): Rating {
-  return { score: round(score), source: { label, url }, note: { zh, en } };
+  return { kind: 'measured', score: round(score), source: { label, url }, note: { zh, en } };
 }
 
 /** Elo is converted to a win probability against a fixed 1200 reference, not an accuracy %. */
@@ -51,15 +52,15 @@ export function preferenceRating(elo: number) {
   return round(100 / (1 + 10 ** ((1200 - elo) / 400)));
 }
 
-export function readAnalysisRatings(html: string, observedAt: string): Map<string, Partial<ModelCatalogEntry['ratings']>> {
-  const ratings = new Map<string, Partial<ModelCatalogEntry['ratings']>>();
+export function readAnalysisRatings(html: string, observedAt: string): Map<string, RatingEvidence> {
+  const ratings = new Map<string, RatingEvidence>();
   for (const object of readPageObjects(html)) {
     const result = analysisRecord.safeParse(object);
     if (!result.success) continue;
     const row = result.data;
     const url = `https://artificialanalysis.ai/models/${row.slug}`;
     const suffix = ` ${row.name}; ${observedAt}.`;
-    const fields: Partial<ModelCatalogEntry['ratings']> = {
+    const fields: RatingEvidence = {
       intelligence: row.intelligenceIndex === null || row.intelligenceIndexIsEstimated ? null : rating(
         row.intelligenceIndex, 'Artificial Analysis', url,
         `AA 智能指数，沿用原始 0–100 分；测量配置：${row.name}；采集 ${observedAt}。`,
@@ -80,7 +81,7 @@ export function readAnalysisRatings(html: string, observedAt: string): Map<strin
 }
 
 /** The documented free API exposes intelligence and speed, not an Agentic composite. */
-export function readAnalysisApiRatings(payload: unknown, observedAt: string): Map<string, Partial<ModelCatalogEntry['ratings']>> {
+export function readAnalysisApiRatings(payload: unknown, observedAt: string): Map<string, RatingEvidence> {
   const response = z.object({ data: z.array(z.object({
     slug: z.string(), name: z.string(),
     evaluations: z.object({ artificial_analysis_intelligence_index: finite.min(0).max(100).nullable() }),
@@ -127,6 +128,52 @@ export function readWritingRatings(html: string, observedAt: string): Map<string
   }
   if (!ratings.size) throw new Error('Arena page contains no recognized creative-writing table.');
   return ratings;
+}
+
+/** Image quality, seconds/image and USD/image remain explicitly separate from text measurements. */
+export function readImageRatings(html: string, observedAt: string): Map<string, RatingEvidence> {
+  const record = z.object({
+    model: z.object({ slug: z.string(), qualityElo: finite.nullable() }),
+    host: z.object({ name: z.string() }),
+    isRepresentative: z.literal(true),
+    pricePer1kImages: finite.nonnegative().nullable(),
+    performance: z.object({ medianGenerationTimeSeconds: finite.positive().nullable() }).nullable(),
+  });
+  const ratings = new Map<string, RatingEvidence>();
+  for (const object of readPageObjects(html)) {
+    const parsed = record.safeParse(object);
+    if (!parsed.success) continue;
+    const row = parsed.data;
+    const url = `https://artificialanalysis.ai/image/models/${row.model.slug}`;
+    const seconds = row.performance?.medianGenerationTimeSeconds;
+    ratings.set(row.model.slug, {
+      design: row.model.qualityElo === null ? null : rating(preferenceRating(row.model.qualityElo), 'Artificial Analysis · Image Arena', url,
+        `生图质量偏好 Elo ${row.model.qualityElo}；对固定 1200 Elo 参考的胜率：100/(1+10^((1200−Elo)/400))；仅代表图像偏好，非文本智能指数或前端设计能力；采集 ${observedAt}。`,
+        `Image-generation preference Elo ${row.model.qualityElo}; win probability vs fixed 1200 Elo: 100/(1+10^((1200−Elo)/400)). Image preference only, not text intelligence or frontend design. Observed ${observedAt}.`),
+      speed: !seconds ? null : rating(1000 / (10 + seconds), 'Artificial Analysis · Image Generation', url,
+        `${row.host.name} 生图中位耗时 ${round(seconds)} 秒/图；评分=100×10/(10+秒数)，10秒基准；与文本 tokens/s 分属不同口径；采集 ${observedAt}。`,
+        `${row.host.name} median image-generation time ${round(seconds)} seconds/image. Score = 100×10/(10+seconds), a 10-second reference. Separate from text tokens/s. Observed ${observedAt}.`),
+      price: row.pricePer1kImages === null ? null : rating(100 / (1 + row.pricePer1kImages / 50), 'Artificial Analysis · Image Price', url,
+        `${row.host.name} 生图价 $${row.pricePer1kImages}/1000图；评分=100/(1+每图USD/0.05)，$0.05/图基准；非文本 token 价格；采集 ${observedAt}。`,
+        `${row.host.name} image-generation price $${row.pricePer1kImages}/1000 images. Score = 100/(1+USD-per-image/0.05), a $0.05/image reference. Not text-token pricing. Observed ${observedAt}.`),
+    });
+  }
+  if (!ratings.size) throw new Error('Artificial Analysis image page contains no recognized representative model data.');
+  return ratings;
+}
+
+/** Missing source observations cannot erase a rating; measured data always supersedes mock seeds. */
+export function mergeRatingEvidence(model: ModelCatalogEntry, evidence: RatingEvidence) {
+  for (const axis of ['intelligence', 'agentic', 'writing', 'design', 'speed', 'price'] as const) {
+    if (axis === 'agentic' && model.capabilities.tools === false) {
+      model.ratings.agentic = null;
+      continue;
+    }
+    const incoming = evidence[axis];
+    if (incoming && (incoming.kind === 'measured' || model.ratings[axis]?.kind !== 'measured')) {
+      model.ratings[axis] = incoming;
+    }
+  }
 }
 
 export function priceRating(model: ModelCatalogEntry, observedAt: string): Rating | null {

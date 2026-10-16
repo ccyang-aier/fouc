@@ -18,6 +18,15 @@ describe('model catalog import boundary', () => {
       { items: [entry, entry] },
       { items: [{ ...entry, maxOutput: -1 }] },
       { items: [{ ...entry, ratings: { ...entry.ratings, intelligence: { ...entry.ratings.intelligence, score: 101 } } }] },
+      ...(['intelligence', 'writing', 'design', 'speed', 'price', 'agentic'] as const)
+        .map(axis => ({ items: [{ ...entry, ratings: { ...entry.ratings, [axis]: null } }] })),
+      { items: [{ ...entry, ratings: { ...entry.ratings, intelligence: { ...entry.ratings.intelligence, source: null } } }] },
+      { items: [{ ...entry, ratings: { ...entry.ratings, writing: {
+        kind: 'mock', score: 60, source: entry.sources[0], note: { zh: 'Mock', en: 'Mock' },
+      } } }] },
+      { items: [{ ...entry, ratings: { ...entry.ratings, writing: {
+        kind: 'mock', score: 60, source: null, note: { zh: '人工评分', en: 'An actual score' },
+      } } }] },
       { items: [{ ...entry, reasoning: { levels: ['low', 'low'], defaultLevel: 'low' } }] },
       { items: [{ ...entry, reasoning: { levels: ['low', 'high'], defaultLevel: 'medium' } }] },
       { items: [{ ...entry, capabilities: { ...entry.capabilities, reasoning: false } }] },
@@ -28,5 +37,24 @@ describe('model catalog import boundary', () => {
     ]) await expect(importModelCatalog(admin, value)).rejects.toMatchObject({ code: 'invalid_config' });
     expect(connected).toBe(false);
     expect(validateModelCatalog({ items: [] })).toEqual({ items: [] });
+  });
+
+  test('null exclusively represents unsupported Agentic tools; mock scores remain explicit and unattributed', async () => {
+    const catalog = await readBundledModelCatalog();
+    const unsupported = catalog.items.find(item => item.id === 'gemini-3.1-flash-image')!;
+    expect(unsupported.capabilities.tools).toBe(false);
+    expect(unsupported.ratings.agentic).toBeNull();
+    expect(() => validateModelCatalog({ items: [{ ...unsupported, capabilities: { ...unsupported.capabilities, tools: null } }] })).toThrow();
+    expect(() => validateModelCatalog({ items: [{ ...unsupported, ratings: { ...unsupported.ratings, agentic: unsupported.ratings.intelligence } }] })).toThrow();
+    for (const item of catalog.items) {
+      for (const [axis, value] of Object.entries(item.ratings)) {
+        if (axis !== 'agentic' || item.capabilities.tools !== false) expect(value).not.toBeNull();
+        if (value?.kind === 'mock') {
+          expect(value.source).toBeNull();
+          expect(value.note.zh).toMatch(/mock/i);
+          expect(value.note.en).toMatch(/mock/i);
+        } else if (value) expect(value.source).not.toBeNull();
+      }
+    }
   });
 });

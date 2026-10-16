@@ -6,6 +6,7 @@ import { IdentityProvider } from '@/features/identity/identity-provider';
 import { AppAlertProvider } from '@/components/app-alert-provider';
 import { LanguageProvider } from '@/lib/i18n/react';
 import { ApplicationMetadata } from './application-metadata';
+import { GlobalCompanion } from '@/features/companion/global-companion';
 
 export const metadata: Metadata = {
   title: 'Fouc · AI Agent 工作台',
@@ -47,6 +48,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <ApplicationMetadata />
           <AppAlertProvider>
             <IdentityProvider>{children}</IdentityProvider>
+            <GlobalCompanion />
           </AppAlertProvider>
         </LanguageProvider>
       </body>

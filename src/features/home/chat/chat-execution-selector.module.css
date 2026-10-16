@@ -18,7 +18,7 @@
   white-space: nowrap;
 }
 .menu { --chat-picker-width: 324px; --chat-picker-row-height: 34px; overflow: visible; padding: 6px 0; }
-.header { display: flex; flex-shrink: 0; align-items: center; gap: 8px; padding: 2px 8px 12px; }
+.header { display: flex; flex-shrink: 0; align-items: center; gap: 8px; padding: 2px 8px 6px; }
 .search { height: 36px; gap: 8px; padding: 0 8px; }
 .search > svg { width: 16px; height: 16px; }
 .search input { height: 32px; font-size: 13px; }

@@ -19,6 +19,7 @@ import { ModelInfoPane, modelInfoNarrowWidth, modelInfoPaneGap, modelInfoPaneWid
 import { modelInfoMessages } from './model-info-messages';
 import { useModelCatalog } from './use-model-catalog';
 import { ModelReasoningControl } from './model-reasoning-control';
+import { aggregateModelUsage, getMockModelUsage } from './model-usage-data';
 import { ModelUsageSparkline } from './model-usage-sparkline';
 import styles from "./chat-execution-selector.module.css";
 import picker from "./chat-picker.module.css";
@@ -50,6 +51,9 @@ export function ChatExecutionSelector({ context, onChange, t }: {
   const selected = currentModel ? modelExecutionOption(currentModel) : getChatExecutionOption(execution);
   const normalizedQuery = query.trim().toLowerCase();
   const models = (catalog.data ?? []).filter(model => `${model.name} ${model.provider} ${model.id}`.toLowerCase().includes(normalizedQuery));
+  const autoCandidates = (catalog.data ?? []).filter(model => context.autoRules.modelIds === null || context.autoRules.modelIds.includes(model.id));
+  const autoContextWindow = autoCandidates.reduce<number | null>((max, model) => model.contextWindow === null ? max : Math.max(max ?? 0, model.contextWindow), null);
+  const autoUsage = aggregateModelUsage(autoCandidates.map(model => getMockModelUsage(model.id)));
   const groups = modelProviders.map(provider => ({ ...provider, models: models.filter(model => model.provider === provider.id) })).filter(group => group.models.length > 0);
   const showAuto = kind === 'model' && `${autoExecutionOption.name} ${t('autoMode')}`.toLowerCase().includes(normalizedQuery);
   const agents = chatAgents.filter(agent => `${agent.name} ${agent.brand}`.toLowerCase().includes(normalizedQuery));
@@ -143,13 +147,16 @@ export function ChatExecutionSelector({ context, onChange, t }: {
         </div>
       </div>
       <ScrollArea className={styles.list} key={kind} viewportClassName={styles.listViewport} style={{ '--list-height': `${listHeight}px` } as CSSProperties}>
-        {showAuto ? <ChatPickerItem className={styles.option} role="menuitemradio" aria-checked={execution.kind === 'auto'} data-current={execution.kind === 'auto'} textValue={autoExecutionOption.name}
+        {showAuto ? <ChatPickerItem className={`${styles.option} ${styles.modelOption}`} role="menuitemradio" aria-checked={execution.kind === 'auto'} data-current={execution.kind === 'auto'} textValue={autoExecutionOption.name}
           aria-label={autoExecutionOption.name} aria-expanded={previewAuto} aria-controls={previewAuto ? previewPanelId : undefined}
+          aria-describedby={`${previewPanelId}-usage-auto`}
           onPointerDown={event => { pointerType.current = event.pointerType; }}
           onPointerMove={event => { if (event.pointerType === 'mouse' && !previewAuto) showPreview({ kind: 'auto' }); }}
           onKeyDown={event => previewKeys(event, { kind: 'auto' })}
           onSelect={event => { if (pointerType.current === 'touch') { event.preventDefault(); showPreview({ kind: 'auto' }); } else selectAuto(); }}>
           <ChatExecutionLogo option={autoExecutionOption} /><span className={styles.optionName}>{autoExecutionOption.name}</span>
+          <ModelUsageSparkline modelId="auto" series={autoUsage} descriptionId={`${previewPanelId}-usage-auto`} />
+          <span className={styles.contextSize}>{formatModelTokens(autoContextWindow)}</span>
         </ChatPickerItem> : null}
         {catalogPending ? <p className={styles.status} role="status">{info('loading')}</p> :
           catalogUnavailable ? <div className={styles.status} role="status"><span>{info('unavailable')}</span>
@@ -160,7 +167,7 @@ export function ChatExecutionSelector({ context, onChange, t }: {
             const active = execution.kind === 'model' && execution.id === model.id;
             return <ChatPickerItem key={model.id} className={`${styles.option} ${styles.modelOption}`} role="menuitemradio" aria-checked={active} data-current={active} textValue={model.name}
               aria-expanded={previewModel?.id === model.id} aria-controls={previewModel?.id === model.id ? previewPanelId : undefined}
-              aria-label={model.name} onPointerDown={event => { pointerType.current = event.pointerType; }}
+              aria-label={model.name} aria-describedby={`${previewPanelId}-usage-${model.id}`} onPointerDown={event => { pointerType.current = event.pointerType; }}
               onPointerMove={event => { if (event.pointerType === 'mouse' && previewModel?.id !== model.id) showPreview({ kind: 'model', id: model.id }); }}
               onSelect={event => { if (pointerType.current === 'touch') { event.preventDefault(); showPreview({ kind: 'model', id: model.id }); } else selectModel(model); }}
               onKeyDown={event => previewKeys(event, { kind: 'model', id: model.id })}>
@@ -169,7 +176,7 @@ export function ChatExecutionSelector({ context, onChange, t }: {
                 {model.capabilities.imageGeneration ? <ImageSquare className={styles.imageIcon} data-static-color aria-label={t('imageModel')} /> : null}
                 {model.capabilities.videoGeneration ? <VideoCamera className={styles.videoIcon} data-static-color aria-label={t('videoModel')} /> : null}
               </span>
-              <ModelUsageSparkline modelId={model.id} />
+              <ModelUsageSparkline modelId={model.id} descriptionId={`${previewPanelId}-usage-${model.id}`} />
               <span className={styles.contextSize}>{formatModelTokens(model.contextWindow)}</span>
             </ChatPickerItem>;
           })}

@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useId, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Brain } from '@phosphor-icons/react';
 import type { ModelCatalogEntry, ModelReasoningLevel } from '@fouc/shared/model-catalog';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { StarfieldSlider } from '@/components/ui/starfield-slider';
 import type { ChatText } from './chat-messages';
 import { reasoningLabels } from './chat-reasoning';
 import styles from './model-reasoning-control.module.css';
@@ -38,17 +39,15 @@ export function ModelReasoningControl({ reasoning, value, onChange, t }: {
     </DropdownMenuTrigger>
     <DropdownMenuContent className={styles.panel} side="top" align="start" sideOffset={8} collisionPadding={12}
       role="dialog" aria-labelledby={titleId}>
-      <div className={styles.heading}><span id={titleId}>{t('reasoningEffort')}</span><strong aria-live="polite">{t(reasoningLabels[level])}</strong></div>
-      <input ref={input} className={styles.slider} type="range" min={0} max={levels.length - 1} step={1} value={index}
-        style={{ '--range-progress': `${index / (levels.length - 1) * 100}%` } as CSSProperties}
+      <div className={styles.heading}><span id={titleId}>{t('reasoningEffort')}</span><strong data-max={index === levels.length - 1}>{t(reasoningLabels[level])}</strong></div>
+      <p id={hintId} className={styles.hint}><span>{t('reasoningFaster')}</span><span>{t('reasoningDeeper')}</span></p>
+      <StarfieldSlider ref={input} max={levels.length - 1} value={index}
         aria-labelledby={titleId} aria-describedby={hintId} aria-valuetext={t(reasoningLabels[level])}
         onKeyDown={event => {
           if (event.key === 'Tab') setOpen(false);
           if (event.key !== 'Escape') event.stopPropagation();
         }}
-        onChange={event => onChange(levels[Number(event.target.value)])} />
-      <div className={styles.stops} aria-hidden="true">{levels.map((item, i) => <span key={item} data-active={i === index}>{t(reasoningLabels[item])}</span>)}</div>
-      <p id={hintId} className={styles.hint}><span>{t('reasoningFaster')}</span><span>{t('reasoningDeeper')}</span></p>
+        onValueChange={value => onChange(levels[value])} />
     </DropdownMenuContent>
   </DropdownMenu>;
 }

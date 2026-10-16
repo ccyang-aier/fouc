@@ -1,5 +1,5 @@
 .sparkline {
-  --usage-line: #739f98;
+  --usage-line: #45bca4;
   display: block;
   flex: 0 0 52px;
   width: 52px;
@@ -15,6 +15,42 @@
   stroke-linejoin: round;
 }
 
+.sparkline > svg {
+  display: block;
+  width: 52px;
+  height: 20px;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.tooltip {
+  min-width: 224px;
+  max-width: calc(100vw - 24px);
+  padding: 10px 12px;
+}
+
+.tooltip dl {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+}
+
+.tooltip dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.tooltip dt {
+  opacity: .74;
+}
+
+.tooltip dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 :global(html[data-theme="dark"]) .sparkline {
-  --usage-line: #85b5ad;
+  --usage-line: #66d4bd;
 }

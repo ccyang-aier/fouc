@@ -8,7 +8,7 @@ import {
   type SetStateAction,
 } from "react";
 import {
-  ArrowUp,
+  PaperPlaneTilt,
   Microphone,
   Plus,
   UploadSimple,
@@ -310,7 +310,7 @@ export function ChatComposer({
                     key={hasMessage ? "send" : "voice"}
                   >
                     {hasMessage ? (
-                      <ArrowUp size={20} />
+                      <PaperPlaneTilt size={18} />
                     ) : (
                       <Waveform size={20} />
                     )}

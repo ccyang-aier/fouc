@@ -118,7 +118,7 @@
   cursor: pointer;
 }
 .iconButton {
-  border-color: var(--chat-control-border);
+  border-color: var(--control-border);
   background: var(--panel);
   color: #28322b;
   box-shadow: 0 2px 4px rgb(22 33 23 / 3%);

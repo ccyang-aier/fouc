@@ -1,7 +1,12 @@
 import type { ModelCatalogEntry } from '@fouc/shared/model-catalog';
 
+export type ChatExecution =
+  | { kind: "auto" }
+  | { kind: "agent"; id: string; name?: string }
+  | { kind: "model"; id: string; name?: string; provider?: ModelCatalogEntry['provider'] };
+
 export type ChatContext = {
-  execution: { kind: "agent" | "model"; id: string; name?: string; provider?: ModelCatalogEntry['provider'] };
+  execution: ChatExecution;
   localEnvironment?: { createWorktree: boolean };
   projectId: string | null;
   projectName: string | null;

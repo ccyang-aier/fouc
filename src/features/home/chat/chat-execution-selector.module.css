@@ -32,6 +32,7 @@
 .logo[data-brand="nanobanana"] { background: #ffd440; color: #503d03; }
 .logo[data-brand="gemini"] { background: #4285f4; }
 .logo[data-brand="model"] { background: var(--surface-subtle); color: var(--ink-soft); }
+.logo[data-brand="auto"] { background: transparent; color: var(--ink); }
 .logo[data-brand="nova"] { background: transparent; color: #c7826f; }
 .logo[data-brand="codey"] { background: #eaf1ff; color: #4c70b8; }
 .logo[data-brand="sage"] { background: #ecf4ed; color: #5c8365; }
@@ -45,7 +46,12 @@
 .trigger .logo > svg { width: 16px; height: 16px; }
 .trigger .logo { flex-basis: 16px; width: 16px; height: 16px; }
 .trigger .brandMask { width: 12px; height: 12px; }
-.menu { --chat-picker-width: 300px; overflow: visible; }
+.menu { --chat-picker-width: 324px; --chat-picker-row-height: 34px; overflow: visible; padding: 6px; }
+.header { display: flex; flex-shrink: 0; align-items: center; gap: 8px; padding: 2px 2px 8px; }
+.search { height: 36px; gap: 8px; padding: 0 10px; border: 1px solid var(--control-border); border-radius: 9px; background: var(--panel); }
+.search > svg { width: 16px; height: 16px; }
+.search input { height: 32px; font-size: 13px; }
+.search:focus-within { border-color: var(--ink-soft); }
 .modeSwitch {
   display: flex;
   flex-shrink: 0;
@@ -77,10 +83,11 @@
 }
 .list {
   min-height: 0;
-  height: min(max(calc(var(--chat-picker-row-height) * var(--list-rows)), 56px), 280px, calc(var(--radix-dropdown-menu-content-available-height) - 50px));
+  height: min(var(--list-height), 340px, calc(var(--radix-dropdown-menu-content-available-height) - 60px));
 }
 .listViewport { padding: 0 12px 0 0; }
-.option { position: relative; padding-right: 8px; }
+.providerLabel { display: flex; align-items: flex-end; height: 32px; padding: 10px 9px 5px; font-family: var(--font-mono, monospace); font-size: 10px; font-weight: 400; text-transform: uppercase; }
+.option { position: relative; padding: 0 9px; gap: 9px; font-size: 13px; }
 .optionName { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .option .imageIcon { flex-shrink: 0; width: 14px; height: 14px; color: #36a34d; }
 .contextSize { flex-shrink: 0; font-size: 11px; font-variant-numeric: tabular-nums; color: var(--muted-strong); }

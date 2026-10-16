@@ -49,6 +49,7 @@ export const chatMessages = {
   noExecutionResults: ["没有匹配的结果", "No matching results"],
   selectedExecution: ["已选择", "Selected"],
   modelLabel: ["模型", "Model"],
+  autoMode: ["自动模式", "Auto mode"],
   imageModel: ["图像模型", "Image model"],
   voice: ["语音输入", "Voice input"],
   stopVoice: ["停止语音输入", "Stop voice input"],

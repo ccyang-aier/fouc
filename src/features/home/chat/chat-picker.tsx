@@ -11,8 +11,8 @@ export function ChatPickerContent({ className, ...props }: ComponentProps<typeof
     {...props} className={cn(styles.surface, className)} />;
 }
 
-export function ChatPickerSearch({ icon, onKeyDown, ...props }: ComponentPropsWithRef<"input"> & { icon?: ReactNode }) {
-  return <label className={styles.search}>
+export function ChatPickerSearch({ icon, containerClassName, onKeyDown, ...props }: ComponentPropsWithRef<"input"> & { icon?: ReactNode; containerClassName?: string }) {
+  return <label className={cn(styles.search, containerClassName)}>
     {icon ?? <MagnifyingGlass size={14} aria-hidden="true" />}
     <input autoFocus {...props} onKeyDown={(event) => {
       onKeyDown?.(event);

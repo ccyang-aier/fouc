@@ -162,9 +162,9 @@ export function ChatExecutionSelector({ context, onChange, t }: {
               onKeyDown={event => previewKeys(event, { kind: 'model', id: model.id })}>
               <ChatExecutionLogo option={modelExecutionOption(model)} />
               <span className={styles.optionName}>{model.name}</span>
-              {model.capabilities.imageGeneration ? <ImageSquare className={styles.imageIcon} data-static-color aria-label={t('imageModel')} /> : null}
               <span className={styles.optionMeta}>
-                <span className={styles.selectionSlot}>{active ? <Check size={13} weight="bold" className={styles.selected} data-static-color aria-label={t('selectedExecution')} /> : null}</span>
+                {model.capabilities.imageGeneration ? <ImageSquare className={styles.imageIcon} data-static-color aria-label={t('imageModel')} /> : null}
+                {active ? <Check size={13} weight="bold" className={styles.selected} data-static-color aria-label={t('selectedExecution')} /> : null}
                 <span className={styles.contextSize}>{formatModelTokens(model.contextWindow)}</span>
               </span>
             </ChatPickerItem>;

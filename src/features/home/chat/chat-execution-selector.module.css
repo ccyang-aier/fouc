@@ -19,10 +19,9 @@
 }
 .menu { --chat-picker-width: 324px; --chat-picker-row-height: 34px; overflow: visible; padding: 6px 0; }
 .header { display: flex; flex-shrink: 0; align-items: center; gap: 8px; padding: 2px 8px 12px; }
-.search { height: 36px; gap: 8px; padding: 0 10px; border: 1px solid var(--control-border); border-radius: 9px; background: var(--panel); }
+.search { height: 36px; gap: 8px; padding: 0 8px; }
 .search > svg { width: 16px; height: 16px; }
 .search input { height: 32px; font-size: 13px; }
-.search:focus-within { border-color: var(--ink-soft); }
 .modeSwitch {
   display: flex;
   flex-shrink: 0;
@@ -62,8 +61,7 @@
 .option { position: relative; padding: 0 9px; gap: 9px; font-size: 13px; }
 .optionName { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .option .imageIcon { display: block; flex-shrink: 0; width: 14px; height: 14px; color: #36a34d; }
-.optionMeta { display: grid; flex-shrink: 0; grid-template-columns: 14px max-content; align-items: center; gap: 6px; }
-.selectionSlot { display: grid; place-items: center; line-height: 0; }
+.optionMeta { display: flex; flex-shrink: 0; align-items: center; gap: 6px; }
 .contextSize { font-size: 11px; line-height: 18px; text-align: right; font-variant-numeric: tabular-nums; color: var(--muted-strong); }
 .option .selected { display: block; flex-shrink: 0; width: 12px; height: 12px; color: var(--ink); }
 .status { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0; padding: 16px 10px; min-height: 60px; font-size: 12px; color: var(--muted-strong); }

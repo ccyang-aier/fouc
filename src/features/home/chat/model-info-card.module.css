@@ -41,6 +41,8 @@
 .capabilityIcons [data-capability="imageGeneration"] { --capability-ink: #a97a19; }
 .compactPrice { display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-width: 0; font-size: 13px; font-variant-numeric: tabular-nums; color: var(--ink); }
 .compactPrice > span { display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; }
+/* The cache circle fills more of its icon box than the directional arrows. */
+.compactPrice > span[data-price="cacheRead"] { gap: 4px; }
 .compactPrice strong { font-weight: 600; }
 .compactPrice svg { color: currentColor; flex-shrink: 0; stroke-width: 1.7; }
 .empty { padding: 8px 0; margin: 0; font-size: 11px; color: var(--muted-strong); }

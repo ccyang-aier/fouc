@@ -98,7 +98,7 @@ export function ModelInfoCard({ model, expanded, onToggle, onSelect, onClose }: 
       </section>
       <section className={styles.section}>
         {header('pricing', <span className={styles.compactPrice} title={t('pricingUnit')}>
-          {model.pricing.cacheRead !== null ? <span title={t('cacheRead')}><CircleFadingArrowUp size={15} /><strong>{priceText(model.pricing.cacheRead)}</strong></span> : null}
+          {model.pricing.cacheRead !== null ? <span title={t('cacheRead')} data-price="cacheRead"><CircleFadingArrowUp size={15} /><strong>{priceText(model.pricing.cacheRead)}</strong></span> : null}
           <span title={t('input')}><ArrowUpFromDot size={15} /><strong>{priceText(model.pricing.input)}</strong></span>
           <span title={t('outputPrice')}><ArrowDownToDot size={15} /><strong>{priceText(model.pricing.output)}</strong></span>
         </span>)}

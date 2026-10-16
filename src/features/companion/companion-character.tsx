@@ -1,32 +1,14 @@
 import type { RefObject } from 'react';
-import { useTranslation } from '@/lib/i18n/react';
-import { messages } from './companion.messages';
 import styles from './companion-character.module.css';
 
-export function CompanionCharacter({ sceneRef, open, panelId, onInteract }: {
+export function CompanionCharacter({ sceneRef }: {
   sceneRef: RefObject<HTMLDivElement | null>;
-  open: boolean;
-  panelId: string;
-  onInteract: () => void;
 }) {
-  const { t } = useTranslation(messages);
   return (
     <div ref={sceneRef} className={styles.character}>
       <div className={styles['stage']}>
         <div className={styles['shadow']} />
-        <div
-          className={styles['hop']}
-          role="button"
-          tabIndex={0}
-          data-companion-drag
-          aria-label={t('互动')}
-          aria-expanded={open}
-          aria-controls={open ? panelId : undefined}
-          onClick={onInteract}
-          onKeyDown={event => {
-            if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onInteract(); }
-          }}
-        >
+        <div className={styles['hop']}>
           <div className={styles['bubble']} role="status" />
           <div className={styles['squash']}><div className={styles['tilt']}><div className={styles['breath']}>
             <canvas className={styles['body-svg']} aria-hidden />

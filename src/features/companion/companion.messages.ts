@@ -3,7 +3,11 @@ import { defineMessages } from '@/lib/i18n/messages';
 export const messages = defineMessages({
   精灵: ['小精灵', 'Companion'],
   互动: ['和 Feather 互动', 'Interact with Feather'],
-  收起: ['收起小精灵', 'Collapse companion'],
+  收起: ['收起精灵工具栏', 'Collapse companion toolbar'],
+  工具栏: ['精灵工具栏', 'Companion toolbar'],
+  表情: ['表情', 'Expressions'],
+  动作: ['动作', 'Actions'],
+  抚摸: ['抚摸小精灵', 'Pet companion'],
   拖动: ['拖动小精灵', 'Move companion'],
   心情: ['心情', 'Mood'],
   饱腹: ['饱腹', 'Fullness'],
@@ -39,11 +43,11 @@ export const messages = defineMessages({
   '你好呀，我是 Feather': ['你好呀，我是 Feather', 'Hello, I am Feather'],
 });
 
-export const companionActions = [
-  ['LOOK L', 'lookLeft', '左看'], ['LOOK R', 'lookRight', '右看'],
-  ['BLINK', 'blink', '眨眼'], ['WINK', 'wink', '眨单眼'],
-  ['HAPPY', 'happy', '开心'], ['DROWSY', 'drowsy', '瞌睡'],
-  ['TILT', 'curious', '好奇'], ['HOP', 'hopAct', '跳跃'],
-  ['POOF', 'poof', '炸毛'], ['SLEEP', 'sleep', '睡眠'],
+export const companionExpressions = [
+  ['lookLeft', '左看'], ['lookRight', '右看'], ['blink', '眨眼'],
+  ['wink', '眨单眼'], ['happy', '开心'], ['drowsy', '瞌睡'],
 ] as const;
-export type CompanionAction = typeof companionActions[number][1];
+export const companionMotions = [
+  ['curious', '好奇'], ['hopAct', '跳跃'], ['poof', '炸毛'],
+] as const;
+export type CompanionAction = typeof companionExpressions[number][0] | typeof companionMotions[number][0] | 'sleep';

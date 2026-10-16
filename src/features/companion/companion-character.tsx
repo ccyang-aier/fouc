@@ -1,4 +1,5 @@
 import type { RefObject } from 'react';
+import { Star } from 'lucide-react';
 import styles from './companion-character.module.css';
 
 export function CompanionCharacter({ sceneRef }: {
@@ -17,8 +18,11 @@ export function CompanionCharacter({ sceneRef }: {
               <div className={styles['eye']}><div className={styles['ball']}><div className={styles['pupil']} /><div className={styles['lid']} /></div><div className={styles['arc'] + ' ' + styles['down']} /><div className={styles['arc'] + ' ' + styles['up']} /></div>
               <div className={styles['eye']}><div className={styles['ball']}><div className={styles['pupil']} /><div className={styles['lid']} /></div><div className={styles['arc'] + ' ' + styles['down']} /><div className={styles['arc'] + ' ' + styles['up']} /></div>
             </div>
-            <span className={styles['zzz']} aria-hidden>z</span><span className={styles['zzz']} aria-hidden>z</span><span className={styles['zzz']} aria-hidden>Z</span>
+            <span className={styles.sleepMarks} aria-hidden><span className={styles.zzz}>z</span><span className={styles.zzz}>z</span><span className={styles.zzz}>Z</span></span>
           </div></div></div>
+          <div className={styles.dizzyStars} aria-hidden>
+            {[0, 1, 2].map(index => <span className={styles.starOrbit} key={index}><Star size={30} fill="currentColor" strokeWidth={1.5} /></span>)}
+          </div>
         </div>
       </div>
     </div>

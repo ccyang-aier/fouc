@@ -9,7 +9,7 @@ const groups = {
   expression: { label: '表情', Icon: Smile, actions: companionExpressions },
   motion: { label: '动作', Icon: WandSparkles, actions: companionMotions },
 } as const;
-const actionIcons = { blink: Eye, wink: EyeClosed, happy: Heart, drowsy: Moon, curious: CircleHelp, surprised: Eye, shy: SmilePlus, dizzy: Orbit, hopAct: ArrowUp, poof: Sparkles };
+const actionIcons = { blink: Eye, wink: EyeClosed, happy: Heart, drowsy: Moon, curious: CircleHelp, surprised: Eye, shy: SmilePlus, dizzy: Orbit, sleep: Moon, hopAct: ArrowUp, poof: Sparkles };
 
 export function CompanionActionMenu({ group, busy, onAction }: {
   group: keyof typeof groups;

@@ -23,7 +23,7 @@ export function createCompanionRuntime(root: HTMLElement, onChange: (state: Comp
   const particles = new Set<HTMLElement>();
   let disposed = false, frame = 0;
   let state = { ...initialCompanionState };
-  let lastMove = Date.now(), sleeping = false, lookOverride: { x: number; y: number } | null = null;
+  let lastMove = Date.now(), sleeping = false, manualSleep = false, lookOverride: { x: number; y: number } | null = null;
   const mouse = { x: innerWidth / 2, y: innerHeight / 2 }, cur = { x: 0, y: 0 };
   const clicks = createCompanionClickSequence();
   let pendingBurst = false, petAcc = 0, lastPet = 0;
@@ -176,8 +176,11 @@ export function createCompanionRuntime(root: HTMLElement, onChange: (state: Comp
 
   async function dizzy() {
     setLabel('DIZZY'); say('晕了晕了…', 1600);
-    for (let i = 0; i < 10; i++) { lookOverride = { x: Math.cos(i * 1.2), y: Math.sin(i * 1.2) }; tilt.style.transform = `rotate(${Math.sin(i) * 12}deg)`; await sleep(110); }
-    lookOverride = null; addMood(-5);
+    root.classList.add(styles.dizzy);
+    try {
+      for (let i = 0; i < 12; i++) { lookOverride = { x: Math.cos(i * 1.2), y: Math.sin(i * 1.2) }; tilt.style.transform = `rotate(${Math.sin(i) * 12}deg)`; await sleep(130); }
+      addMood(-5);
+    } finally { root.classList.remove(styles.dizzy); lookOverride = null; }
   }
   async function run(fn: () => Promise<void>) {
     if (state.busy || disposed) return;
@@ -191,8 +194,12 @@ export function createCompanionRuntime(root: HTMLElement, onChange: (state: Comp
       }
     }
   }
-  function goSleep() { sleeping = true; setLabel('SLEEP'); setEyes('m-down'); breath.classList.add(styles.sleeping); breath.style.animationDuration = '5.5s'; tilt.style.transform = 'rotate(-4deg)'; }
-  function clearSleep() { sleeping = false; breath.classList.remove(styles.sleeping); breath.style.animationDuration = ''; clearEyes(); }
+  function goSleep(manual = false) {
+    sleeping = true; manualSleep = manual; lookOverride = { x: 0, y: .1 };
+    cancelTimer(bubbleTimer); update({ label: 'SLEEP', speech: null }); setEyes('m-down');
+    breath.classList.add(styles.sleeping); breath.style.animationDuration = '5.5s'; tilt.style.transform = 'rotate(-4deg)';
+  }
+  function clearSleep() { sleeping = false; manualSleep = false; lookOverride = null; breath.classList.remove(styles.sleeping); breath.style.animationDuration = ''; clearEyes(); }
   function wake() {
     clicks.reset();
     lastMove = Date.now();
@@ -202,16 +209,17 @@ export function createCompanionRuntime(root: HTMLElement, onChange: (state: Comp
   }
   window.addEventListener('pointermove', e => {
     mouse.x = e.clientX; mouse.y = e.clientY; lastMove = Date.now();
-    if (sleeping) wake();
+    if (sleeping && !manualSleep) wake();
   }, { signal: events.signal, passive: true });
   hop.addEventListener('pointermove', e => {
+    if (sleeping) return;
     if (root.closest('[data-dragging="true"]')) return;
     const now = Date.now(); if (now - lastPet < 16) return; lastPet = now;
     petAcc += Math.abs(e.movementX) + Math.abs(e.movementY); fur.ruffle();
     if (!state.busy) { setEyes('m-up'); breath.classList.add(styles.shy); }
     if (petAcc > 900) { petAcc = 0; hearts(2); addMood(3); const lines = ['好舒服~', '嘿嘿嘿', '再摸摸'] as const; say(lines[Math.floor(Math.random() * 3)], 1200); }
   }, { signal: events.signal, passive: true });
-  hop.addEventListener('pointerleave', () => { petAcc = 0; if (!state.busy) { clearEyes(); breath.classList.remove(styles.shy); } }, { signal: events.signal });
+  hop.addEventListener('pointerleave', () => { petAcc = 0; if (!state.busy && !sleeping) { clearEyes(); breath.classList.remove(styles.shy); } }, { signal: events.signal });
 
   async function feed() {
     clearSleep(); lastMove = Date.now();
@@ -254,7 +262,7 @@ export function createCompanionRuntime(root: HTMLElement, onChange: (state: Comp
     if (state.busy) return;
     clicks.reset();
     lastMove = Date.now();
-    if (action === 'sleep') { goSleep(); return; }
+    if (action === 'sleep') { goSleep(true); return; }
     clearSleep(); void run(A[action]);
   }
 
@@ -280,7 +288,7 @@ export function createCompanionRuntime(root: HTMLElement, onChange: (state: Comp
   }
   const finishLoop = (error: unknown) => { if (error !== cancelled) throw error; };
   void blinkLoop().catch(finishLoop); void idleLoop().catch(finishLoop); void hungerLoop().catch(finishLoop);
-  later(() => say('你好呀，我是 Feather', 2200), 600);
+  later(() => { if (!sleeping) say('你好呀，我是 Feather', 2200); }, 600);
 
   return {
     act, feed, interact, wake,

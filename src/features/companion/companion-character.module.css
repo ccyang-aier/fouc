@@ -50,11 +50,23 @@
   .bursting .burst-line{ animation:bl .45s ease-out; }
   @keyframes bl{ 0%{opacity:0;transform:translateY(-50%) scale(.6)} 30%{opacity:1} 100%{opacity:0;transform:translateY(-50%) scale(1.4)} }
 
-  .zzz{ position:absolute; right:10px; top:10px; font-weight:700; color:#333; opacity:0; pointer-events:none; }
+  .sleepMarks{ position:absolute; right:-2px; top:-8px; pointer-events:none; }
+  .zzz{ position:absolute; right:0; top:0; font-size:24px; font-weight:700; color:#858995; opacity:0; pointer-events:none; }
   .sleeping .zzz{ animation:zz 2.4s ease-in-out infinite; }
-  .zzz:nth-child(2){ animation-delay:.8s!important; right:-4px; top:-10px; font-size:13px }
-  .zzz:nth-child(3){ animation-delay:1.6s!important; right:-18px; top:-30px; font-size:16px }
+  .zzz:nth-child(2){ animation-delay:.8s; right:-20px; top:-20px; font-size:28px; }
+  .zzz:nth-child(3){ animation-delay:1.6s; right:-40px; top:-40px; font-size:32px; }
   @keyframes zz{ 0%{opacity:0;transform:translate(0,10px)} 40%{opacity:.8} 100%{opacity:0;transform:translate(14px,-22px)} }
+
+  .dizzyStars{ position:absolute; z-index:5; left:50%; top:-14px; width:0; height:0; opacity:0; visibility:hidden; pointer-events:none; }
+  .character.dizzy .dizzyStars{ opacity:1; visibility:visible; }
+  .starOrbit{ --star-delay:0s; position:absolute; width:0; height:0; transform-style:preserve-3d; }
+  .starOrbit:nth-child(2){ --star-delay:-.4s; }
+  .starOrbit:nth-child(3){ --star-delay:-.8s; }
+  .starOrbit > svg{ position:absolute; left:65px; top:-15px; width:30px; height:30px; color:#ffd34d; stroke:#c68b16; }
+  .character.dizzy .starOrbit{ animation:stars-orbit 1.2s linear var(--star-delay) infinite; }
+  .character.dizzy .starOrbit > svg{ animation:stars-face 1.2s linear var(--star-delay) infinite; }
+  @keyframes stars-orbit{ from{transform:rotateX(66deg) rotateZ(0deg)} to{transform:rotateX(66deg) rotateZ(360deg)} }
+  @keyframes stars-face{ from{transform:rotateZ(0deg) rotateX(-66deg)} to{transform:rotateZ(-360deg) rotateX(-66deg)} }
 
   .mini{ position:absolute; width:26px; height:26px; pointer-events:none; z-index:4; }
   .heart{ position:absolute; pointer-events:none; color:#ff6b8a; font-size:16px; z-index:6; animation:heart 1.4s ease-out forwards; }
@@ -65,4 +77,10 @@
 @media (prefers-reduced-motion: reduce) {
   .character :is(.breath, .zzz, .tilt, .eye, .pupil, .face, .arc, .hop, .squash, .shadow, .blush, .burst-line, .heart),
   .character .eye.drowsy .lid { animation:none; transition:none; }
+  .character .sleeping .zzz { opacity:.8; }
+  .character.dizzy .starOrbit, .character.dizzy .starOrbit > svg { animation:none; }
+  .character.dizzy .starOrbit > svg { left:-15px; transform:none; }
+  .character.dizzy .starOrbit:nth-child(1) { transform:translate(-64px,0); }
+  .character.dizzy .starOrbit:nth-child(2) { transform:translate(0,-20px); }
+  .character.dizzy .starOrbit:nth-child(3) { transform:translate(64px,0); }
 }

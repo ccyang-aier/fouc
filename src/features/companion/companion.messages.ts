@@ -47,8 +47,9 @@ export const messages = defineMessages({
 export const companionExpressions = [
   ['blink', '眨眼'], ['wink', '眨单眼'], ['happy', '开心'], ['drowsy', '瞌睡'],
   ['curious', '好奇'], ['surprised', '惊讶'], ['shy', '害羞'], ['dizzy', '眩晕'],
+  ['sleep', '睡眠'],
 ] as const;
 export const companionMotions = [
   ['hopAct', '跳跃'], ['poof', '炸毛'],
 ] as const;
-export type CompanionAction = typeof companionExpressions[number][0] | typeof companionMotions[number][0] | 'sleep';
+export type CompanionAction = typeof companionExpressions[number][0] | typeof companionMotions[number][0];

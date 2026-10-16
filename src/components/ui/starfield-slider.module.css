@@ -21,11 +21,15 @@
   z-index: -1;
   inset: -8px -6px;
   border-radius: inherit;
-  background: radial-gradient(ellipse at 78% 50%, #b480ed8c, transparent 72%);
+  background: radial-gradient(ellipse at 84% 50%, #b480ed45, transparent 72%);
   filter: blur(8px);
-  opacity: calc(0.12 + var(--starfield-strength) * 0.88);
+  opacity: 0;
   pointer-events: none;
-  transition: opacity 240ms ease-out;
+  transition: opacity 100ms ease-out;
+}
+
+.root[data-max="true"] .aura {
+  opacity: 1;
 }
 
 .track {

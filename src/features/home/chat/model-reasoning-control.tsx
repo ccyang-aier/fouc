@@ -46,6 +46,9 @@ export function ModelReasoningControl({ reasoning, value, onChange, t }: {
           if (event.key !== 'Escape') event.stopPropagation();
         }}
         onValueChange={value => onChange(levels[value])} />
+      <div className={styles.levels} aria-hidden="true">{levels.map((item, i) =>
+        <span key={item} style={{ left: `${i / (levels.length - 1) * 100}%` }}>{item}</span>
+      )}</div>
     </DropdownMenuContent>
   </DropdownMenu>;
 }

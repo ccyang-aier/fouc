@@ -43,6 +43,7 @@ export function StarfieldSlider({
   return (
     <div
       className={styles.root}
+      data-max={value === max}
       data-disabled={disabled || undefined}
       style={{ "--starfield-strength": strength } as CSSProperties}
     >

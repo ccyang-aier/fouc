@@ -1,7 +1,8 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { ArrowSquareOut, Brain, CaretDown, Check, DownloadSimple, Eye, ImageSquare, SignIn, SignOut, UploadSimple, Wrench, X } from '@phosphor-icons/react';
+import { ArrowSquareOut, CaretDown, X } from '@phosphor-icons/react';
+import { ArrowDownToDot, ArrowUpFromDot, Atom, CircleFadingArrowUp, Eye, Image as ImageIcon, Wrench } from 'lucide-react';
 import type { ModelCatalogEntry } from '@fouc/shared/model-catalog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -29,12 +30,14 @@ export function ModelInfoCard({ model, expanded, onToggle, onSelect, onClose }: 
   const { t, locale } = useTranslation(modelInfoMessages);
   const language = locale === 'zh-CN' ? 'zh' : 'en';
   const capabilities = [
-    { key: 'vision', Icon: Eye }, { key: 'tools', Icon: Wrench },
-    { key: 'reasoning', Icon: Brain }, { key: 'imageGeneration', Icon: ImageSquare },
+    { key: 'vision', Icon: Eye, yes: 'visionSupported', no: 'visionUnsupported' },
+    { key: 'tools', Icon: Wrench, yes: 'toolsSupported', no: 'toolsUnsupported' },
+    { key: 'reasoning', Icon: Atom, yes: 'reasoningSupported', no: 'reasoningUnsupported' },
+    { key: 'imageGeneration', Icon: ImageIcon, yes: 'imageSupported', no: 'imageUnsupported' },
   ] as const;
   const priceRows = [
-    { key: 'input', label: 'input', Icon: SignIn }, { key: 'output', label: 'outputPrice', Icon: SignOut },
-    { key: 'cacheRead', label: 'cacheRead', Icon: DownloadSimple }, { key: 'cacheWrite', label: 'cacheWrite', Icon: UploadSimple },
+    { key: 'input', label: 'input', Icon: ArrowUpFromDot }, { key: 'output', label: 'outputPrice', Icon: ArrowDownToDot },
+    { key: 'cacheRead', label: 'cacheRead', Icon: CircleFadingArrowUp }, { key: 'cacheWrite', label: 'cacheWrite', Icon: CircleFadingArrowUp },
   ] as const;
   const priceNumber = (value: number) => value.toLocaleString(locale, { maximumFractionDigits: 4 });
   const priceText = (value: number | null) => value === null ? t('unknown') : `$${priceNumber(value)}`;
@@ -42,7 +45,7 @@ export function ModelInfoCard({ model, expanded, onToggle, onSelect, onClose }: 
     type="button" className={`fouc-action ${styles.sectionHeader}`} data-variant="collapsible" data-section={section} aria-label={t(section)} aria-expanded={expanded[section]}
     title={section === 'benchmarks' ? t('benchmarkNote') : undefined}
     onClick={() => onToggle(section)}>
-    <span>{t(section)}<CaretDown size={12} className={styles.caret} data-open={expanded[section]} /></span>
+    <span>{t(section)}<CaretDown size={10} weight="fill" className={styles.caret} data-open={expanded[section]} /></span>
     {!expanded[section] ? summary : null}
   </button>;
 
@@ -85,25 +88,24 @@ export function ModelInfoCard({ model, expanded, onToggle, onSelect, onClose }: 
           {capabilities.filter(({ key }) => model.capabilities[key]).map(({ key, Icon }) => <span key={key} data-capability={key} title={t(key)}><Icon size={14} /></span>)}
         </span>)}
         {expanded.capabilities ? <dl className={styles.rows}>
-          {capabilities.map(({ key, Icon }) => {
+          {capabilities.map(({ key, Icon, yes, no }) => {
             const supported = model.capabilities[key];
-            return <div key={key}><dt><Icon size={15} />{t(key)}</dt><dd data-supported={supported}>
-              {supported === null ? t('unknown') : <>{supported ? <Check size={13} /> : <X size={13} />}{t(supported ? 'supported' : 'unsupported')}</>}
+            return <div key={key}><dt><Icon size={14} />{t(key)}</dt><dd>
+              {supported === null ? t('unknown') : t(supported ? yes : no)}
             </dd></div>;
           })}
         </dl> : null}
       </section>
       <section className={styles.section}>
         {header('pricing', <span className={styles.compactPrice} title={t('pricingUnit')}>
-          {priceRows.filter(({ key }) => key !== 'cacheWrite' && (key !== 'cacheRead' || model.pricing.cacheRead !== null)).map(({ key, label, Icon }) =>
-            <span key={key} data-price={key} title={`${t(label)} · ${t('pricingUnit')}`}><Icon size={13} /><strong>{priceText(model.pricing[key])}</strong></span>)}
+          {model.pricing.cacheRead !== null ? <span title={t('cacheRead')}><CircleFadingArrowUp size={15} /><strong>{priceText(model.pricing.cacheRead)}</strong></span> : null}
+          <span title={t('input')}><ArrowUpFromDot size={15} /><strong>{priceText(model.pricing.input)}</strong></span>
+          <span title={t('outputPrice')}><ArrowDownToDot size={15} /><strong>{priceText(model.pricing.output)}</strong></span>
         </span>)}
         {expanded.pricing ? <div className={styles.sectionContent}>
-          <p className={styles.unit}>{t('pricingUnit')}</p>
-          <dl className={styles.priceRows}>{priceRows.map(({ key, label, Icon }) => <div key={key} data-price={key}>
-            <dt><span className={styles.priceIcon}><Icon size={15} /></span>{t(label)}</dt>
-            <dd data-published={model.pricing[key] !== null}>{model.pricing[key] === null ? t('unknown') :
-              <span className={styles.priceAmount}><span className={styles.currency}>$</span><strong>{priceNumber(model.pricing[key])}</strong></span>}
+          <dl className={styles.rows}>{priceRows.map(({ key, label, Icon }) => <div key={key}>
+            <dt><Icon size={14} />{t(label)}</dt>
+            <dd>{model.pricing[key] === null ? t('unknown') : t('priceAmount', { value: priceNumber(model.pricing[key]) })}
             </dd>
           </div>)}</dl>
           {model.pricing.note ? <p className={styles.note}>{model.pricing.note[language]}</p> : null}

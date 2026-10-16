@@ -8,8 +8,9 @@ export const modelInfoPaneGap = 8;
 export const modelInfoNarrowWidth = 760;
 
 /** Keep the detail pane aligned to the whole list, independent of the hovered row. */
-export function ModelInfoPane({ anchorRef, focusOnOpen, panelId, onPointerEnter, onPointerLeave, children }: {
+export function ModelInfoPane({ anchorRef, focusOnOpen, panelId, onPointerEnter, onPointerLeave, children, preferredWidth = modelInfoPaneWidth }: {
     children: ReactNode;
+    preferredWidth?: number;
     anchorRef: RefObject<HTMLDivElement | null>;
     focusOnOpen: boolean;
     panelId: string;
@@ -25,10 +26,10 @@ export function ModelInfoPane({ anchorRef, focusOnOpen, panelId, onPointerEnter,
       if (!pane || !anchor) return;
       const bounds = anchor.getBoundingClientRect();
       const narrow = window.innerWidth <= modelInfoNarrowWidth;
-      const width = narrow ? window.innerWidth - 24 : Math.min(modelInfoPaneWidth, Math.max(0, bounds.left - modelInfoPaneGap - 12));
+      const width = narrow ? Math.min(preferredWidth, window.innerWidth - 24) : Math.min(preferredWidth, Math.max(0, bounds.left - modelInfoPaneGap - 12));
       pane.style.width = `${width}px`;
-      pane.style.left = `${(narrow ? 12 : bounds.left - width - modelInfoPaneGap) - bounds.left}px`;
-      pane.style.top = `${(narrow ? 12 : Math.max(12, Math.min(bounds.top, window.innerHeight - pane.offsetHeight - 12))) - bounds.top}px`;
+      pane.style.left = `${(narrow ? Math.max(12, Math.min(bounds.left, window.innerWidth - width - 12)) : bounds.left - width - modelInfoPaneGap) - bounds.left}px`;
+      pane.style.top = `${Math.max(12, Math.min(bounds.top, window.innerHeight - pane.offsetHeight - 12)) - bounds.top}px`;
     }
     position();
     const observer = new ResizeObserver(position);
@@ -51,7 +52,7 @@ export function ModelInfoPane({ anchorRef, focusOnOpen, panelId, onPointerEnter,
       window.removeEventListener('scroll', position, true);
       anchor.removeEventListener('animationend', position);
     };
-  }, [anchorRef, focusOnOpen]);
+  }, [anchorRef, focusOnOpen, preferredWidth]);
 
   return <div id={panelId} ref={paneRef} tabIndex={-1} className={styles.pane} onPointerEnter={onPointerEnter} onPointerLeave={onPointerLeave}>
     {children}

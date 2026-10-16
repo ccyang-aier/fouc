@@ -185,7 +185,7 @@ export function ChatExecutionSelector({ context, onChange, t }: {
         {showEmpty ? <p className={picker.empty} role="status">{kind === 'model' && !normalizedQuery ? info('empty') : t('noExecutionResults')}</p> : null}
       </ScrollArea>
       {previewModel || previewAuto ? <ModelInfoPane key={previewAuto ? 'auto' : previewModel?.id} anchorRef={menu} focusOnOpen={focusPreview}
-        panelId={previewPanelId} onPointerEnter={keepPreview} onPointerLeave={leavePreview}>
+        panelId={previewPanelId} preferredWidth={previewAuto ? 300 : modelInfoPaneWidth} onPointerEnter={keepPreview} onPointerLeave={leavePreview}>
         {previewAuto ? <AutoModelInfoCard models={catalog.data ?? []} rules={context.autoRules}
           onChange={autoRules => onChange({ autoRules })} onSelect={selectAuto} onClose={closePreview}
           loading={catalogPending} unavailable={catalogUnavailable} onRetry={() => void catalog.refetch()} /> :

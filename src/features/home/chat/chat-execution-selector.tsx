@@ -42,7 +42,6 @@ export function ChatExecutionSelector({ context, onChange, t }: {
 }) {
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<ChatContext["execution"]["kind"]>("model");
-  const [side, setSide] = useState<"right" | "bottom">("right");
   const [query, setQuery] = useState("");
   const search = useRef<HTMLInputElement>(null);
   const selected = getChatExecutionOption(context.execution);
@@ -53,7 +52,6 @@ export function ChatExecutionSelector({ context, onChange, t }: {
     <DropdownMenu open={open} onOpenChange={(next) => {
       setOpen(next);
       if (next) {
-        setSide(window.innerWidth >= 900 ? "right" : "bottom");
         setQuery("");
       }
     }}>
@@ -64,11 +62,11 @@ export function ChatExecutionSelector({ context, onChange, t }: {
           <CaretDown size={11} />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align={side === "right" ? "center" : "start"} side={side} sideOffset={12}
+      <DropdownMenuContent align="start" side="top" sideOffset={8}
         collisionPadding={12} className={styles.menu} aria-description={kind === "model" ? t("modelPreviewDescription") : undefined}>
         <div className={styles.header} onKeyDown={(event) => { if (event.key === "Tab") event.stopPropagation(); }}>
           <label className={styles.search}>
-            <MagnifyingGlass size={22} aria-hidden="true" />
+            <MagnifyingGlass size={16} aria-hidden="true" />
             <input ref={search} autoFocus value={query} aria-label={t(kind === "agent" ? "searchAgents" : "searchModels")}
               placeholder={t(kind === "agent" ? "searchAgents" : "searchModels")}
               onChange={(event) => setQuery(event.target.value)}
@@ -90,7 +88,7 @@ export function ChatExecutionSelector({ context, onChange, t }: {
                     aria-label={t(mode === "model" ? "modelLabel" : "agentLabel")}
                     aria-pressed={kind === mode} data-active-mode={kind === mode}
                     onClick={() => { setKind(mode); setQuery(""); search.current?.focus(); }}>
-                    <Icon size={22} />
+                    <Icon size={16} />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>{t(mode === "model" ? "modelLabel" : "agentLabel")}</TooltipContent>
@@ -99,7 +97,7 @@ export function ChatExecutionSelector({ context, onChange, t }: {
           </div>
         </div>
         <ScrollArea className={styles.list} key={kind} viewportClassName={styles.listViewport}
-          style={{ "--list-height": `${Math.max(options.length * 57 + 9, 100)}px` } as CSSProperties}>
+          style={{ "--list-height": `${Math.max(options.length * 38 + 6, 70)}px` } as CSSProperties}>
           {options.length ? options.map((option) => {
             const active = context.execution.kind === kind && context.execution.id === option.id;
             return <DropdownMenuItem key={option.id} className={styles.option} data-selected={active} role="menuitemradio" aria-checked={active}

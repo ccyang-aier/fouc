@@ -49,7 +49,7 @@ export function ChatProjectSelector({ context, onChange, t }: {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" side="top" sideOffset={6} collisionPadding={12} className={styles.projectMenu}>
         <label className={styles.search}>
-          {creating ? <Plus size={21} aria-hidden="true" /> : <MagnifyingGlass size={21} aria-hidden="true" />}
+          {creating ? <Plus size={15} aria-hidden="true" /> : <MagnifyingGlass size={15} aria-hidden="true" />}
           <input ref={search} autoFocus value={query} disabled={saving}
             aria-label={t(creating ? "newProjectName" : "searchProjects")}
             placeholder={t(creating ? "newProjectName" : "searchProjects")}
@@ -70,10 +70,10 @@ export function ChatProjectSelector({ context, onChange, t }: {
         {creating ? (
           <Button type="button" variant="ghost" className={styles.createButton} loading={saving}
             disabled={!query.trim()} onClick={() => void saveProject()}>
-            <Check size={20} />{t("createProject")}
+            <Check size={15} />{t("createProject")}
           </Button>
         ) : <>
-          <ScrollArea className={styles.projectList} style={{ height: Math.min(Math.max(filtered.length * 43, 62), 215) }}>
+          <ScrollArea className={styles.projectList} style={{ height: Math.min(Math.max(filtered.length * 30, 44), 150) }}>
             {filtered.map((project) => (
               <DropdownMenuItem key={`${project.source}:${project.id}`} className={styles.projectItem}
                 role="menuitemradio" aria-checked={context.projectId === project.id}

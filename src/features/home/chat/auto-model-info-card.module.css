@@ -1,9 +1,6 @@
-.card { display: flex; flex-direction: column; width: 100%; min-height: 0; max-height: calc(100dvh - 24px); padding: 16px; color: var(--ink); font-size: 12px; }
-.header { position: relative; }
-.identity { display: flex; align-items: center; gap: 8px; }
-.identity h2 { margin: 0; font-size: 14px; line-height: 22px; font-weight: 500; }
-.header .back { display: none; }
-.description { margin: 10px 0 12px; color: var(--muted-strong); line-height: 1.65; }
+.card { position: relative; display: flex; flex-direction: column; width: 100%; min-height: 0; max-height: calc(100dvh - 24px); padding: 16px; color: var(--ink); font-size: 12px; }
+.card .back { display: none; }
+.description { margin: 0 0 12px; color: var(--muted-strong); line-height: 1.65; }
 .ruleTrigger { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-shrink: 0; min-height: 32px; width: calc(100% + 16px); margin-inline: -8px; padding: 6px 8px; border: 0; border-radius: 6px; background: transparent; color: var(--ink-soft); text-align: left; outline: none; font-size: 12px; cursor: pointer; }
 .ruleTrigger > span { display: inline-flex; align-items: center; gap: 6px; }
 .summary { color: var(--muted-strong); white-space: nowrap; }
@@ -28,7 +25,7 @@
 .footer { display: none; flex-shrink: 0; justify-content: flex-end; padding-top: 10px; }
 .footer .useAuto { height: 30px; font-size: 11px; }
 @media (max-width: 760px) {
-  .header .back { display: inline-flex; position: absolute; top: -5px; right: -5px; width: 25px; height: 25px; }
-  .identity { padding-right: 25px; }
+  .card .back { display: inline-flex; position: absolute; top: 11px; right: 11px; width: 25px; height: 25px; }
+  .description { padding-right: 25px; }
   .footer { display: flex; }
 }

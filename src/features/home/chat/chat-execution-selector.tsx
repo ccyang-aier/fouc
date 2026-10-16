@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
-import { Brain, CaretDown, Check, ImageSquare } from "@phosphor-icons/react";
+import { Brain, CaretDown, Check, ImageSquare, Robot } from "@phosphor-icons/react";
 import type { ModelCatalogEntry } from '@fouc/shared/model-catalog';
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -20,14 +20,6 @@ import { modelInfoMessages } from './model-info-messages';
 import { useModelCatalog } from './use-model-catalog';
 import styles from "./chat-execution-selector.module.css";
 import picker from "./chat-picker.module.css";
-
-function AgentModeIcon({ size }: { size: number }) {
-  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M6 11V9a6 6 0 0 1 12 0v2M4 10v3m16-3v3" />
-    <rect x="6" y="8" width="12" height="7" rx="3.5" />
-    <path d="M9.5 11.5h.01m5 0h.01M9 15v2l-4 1.5V21h14v-2.5L15 17v-2M9 18l3 1 3-1" />
-  </svg>;
-}
 
 type ExecutionPreview = { kind: 'auto' } | { kind: 'model'; id: string };
 
@@ -136,7 +128,7 @@ export function ChatExecutionSelector({ context, onChange, t }: {
           onChange={event => { setQuery(event.target.value); setPreview(null); }} />
         <div className={styles.modeSwitch} role="group" aria-label={t('executionMode')}>
           {(['model', 'agent'] as const).map(mode => {
-            const Icon = mode === 'model' ? Brain : AgentModeIcon;
+            const Icon = mode === 'model' ? Brain : Robot;
             return <Tooltip key={mode}><TooltipTrigger asChild>
               <Button type="button" variant="ghost" className={styles.modeButton} aria-label={t(mode === 'model' ? 'modelLabel' : 'agentLabel')}
                 aria-pressed={kind === mode} data-active-mode={kind === mode}

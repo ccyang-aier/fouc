@@ -62,7 +62,7 @@
 .option { position: relative; padding: 0 9px; gap: 9px; font-size: 13px; }
 .optionName { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .option .imageIcon { display: block; flex-shrink: 0; width: 14px; height: 14px; color: #36a34d; }
-.optionMeta { display: grid; flex-shrink: 0; grid-template-columns: 14px 40px; align-items: center; gap: 8px; }
+.optionMeta { display: grid; flex-shrink: 0; grid-template-columns: 14px max-content; align-items: center; gap: 6px; }
 .selectionSlot { display: grid; place-items: center; line-height: 0; }
 .contextSize { font-size: 11px; line-height: 18px; text-align: right; font-variant-numeric: tabular-nums; color: var(--muted-strong); }
 .option .selected { display: block; flex-shrink: 0; width: 12px; height: 12px; color: var(--ink); }

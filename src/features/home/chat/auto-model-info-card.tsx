@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useTranslation } from '@/lib/i18n';
 import type { AutoModelRules } from './chat-types';
-import { autoExecutionOption, modelExecutionOption } from './chat-execution-options';
+import { modelExecutionOption } from './chat-execution-options';
 import { ChatExecutionLogo } from './chat-execution-logo';
 import styles from './auto-model-info-card.module.css';
 
@@ -77,15 +77,10 @@ export function AutoModelInfoCard({ models, rules, onChange, onSelect, onClose, 
   return <article className={styles.card} aria-label={t('details')} onKeyDown={event => {
     if (event.key !== 'Escape') event.stopPropagation();
   }}>
-    <header className={styles.header}>
-      <Button type="button" variant="ghost" size="icon-sm" className={styles.back} aria-label={t('back')} onClick={onClose}>
-        <X size={14} />
-      </Button>
-      <div className={styles.identity}>
-        <ChatExecutionLogo option={autoExecutionOption} size={22} />
-        <h2>Auto</h2>
-      </div>
-    </header>
+    <h2 className="sr-only">Auto</h2>
+    <Button type="button" variant="ghost" size="icon-sm" className={styles.back} aria-label={t('back')} onClick={onClose}>
+      <X size={14} />
+    </Button>
     <p className={styles.description}>{t('description')}</p>
     <button type="button" className={`fouc-action ${styles.ruleTrigger}`} data-variant="collapsible"
       aria-label={t('configure')} aria-expanded={editing} aria-controls={rulesId} onClick={() => setEditing(current => !current)}>

@@ -21,7 +21,7 @@
   z-index: -1;
   inset: -8px -6px;
   border-radius: inherit;
-  background: radial-gradient(ellipse at 84% 50%, #b480ed66, transparent 72%);
+  background: radial-gradient(ellipse at 84% 50%, #b480ed45, transparent 72%);
   filter: blur(8px);
   opacity: 0;
   pointer-events: none;
@@ -63,7 +63,6 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  mix-blend-mode: screen;
 }
 
 .input {
@@ -118,14 +117,6 @@
   background: linear-gradient(160deg, #ffffff, #eae7ee);
   box-shadow: 0 1px 4px #0005;
   cursor: grab;
-}
-
-.root[data-max="true"] .input::-webkit-slider-thumb {
-  box-shadow: 0 1px 4px #0005, 0 0 20px #a855f780, 0 0 34px #a855f740;
-}
-
-.root[data-max="true"] .input::-moz-range-thumb {
-  box-shadow: 0 1px 4px #0005, 0 0 20px #a855f780, 0 0 34px #a855f740;
 }
 
 .input:active::-webkit-slider-thumb {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
-import { Brain, CaretDown, Check, ImageSquare, Robot } from "@phosphor-icons/react";
+import { Brain, CaretDown, ImageSquare, Robot, VideoCamera } from "@phosphor-icons/react";
 import type { ModelCatalogEntry } from '@fouc/shared/model-catalog';
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -18,6 +18,8 @@ import { ModelInfoCard, formatModelTokens, type ModelInfoSections } from './mode
 import { ModelInfoPane, modelInfoNarrowWidth, modelInfoPaneGap, modelInfoPaneWidth } from './model-info-pane';
 import { modelInfoMessages } from './model-info-messages';
 import { useModelCatalog } from './use-model-catalog';
+import { ModelReasoningControl } from './model-reasoning-control';
+import { ModelUsageSparkline } from './model-usage-sparkline';
 import styles from "./chat-execution-selector.module.css";
 import picker from "./chat-picker.module.css";
 
@@ -34,7 +36,7 @@ export function ChatExecutionSelector({ context, onChange, t }: {
   const [preview, setPreview] = useState<ExecutionPreview | null>(null);
   const [focusPreview, setFocusPreview] = useState(false);
   const [menuOffset, setMenuOffset] = useState(0);
-  const [expanded, setExpanded] = useState<ModelInfoSections>({ benchmarks: true, capabilities: true, pricing: true });
+  const [expanded, setExpanded] = useState<ModelInfoSections>({ ratings: true, capabilities: true, pricing: true });
   const search = useRef<HTMLInputElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
@@ -98,7 +100,9 @@ export function ChatExecutionSelector({ context, onChange, t }: {
   }
 
   function selectModel(model: ModelCatalogEntry) {
-    onChange({ execution: { kind: 'model', id: model.id, name: model.name, provider: model.provider } });
+    const reasoningEffort = execution.kind === 'model' && execution.id === model.id && execution.reasoningEffort && model.reasoning?.levels.includes(execution.reasoningEffort)
+      ? execution.reasoningEffort : model.reasoning?.defaultLevel ?? null;
+    onChange({ execution: { kind: 'model', id: model.id, name: model.name, provider: model.provider, reasoningEffort } });
     setPreview(null);
     setOpen(false);
   }
@@ -108,7 +112,8 @@ export function ChatExecutionSelector({ context, onChange, t }: {
     requestAnimationFrame(() => search.current?.focus());
   }
 
-  return <DropdownMenu open={open} onOpenChange={next => {
+  return <div className={styles.selection}>
+    <DropdownMenu open={open} onOpenChange={next => {
     keepPreview();
     setOpen(next);
     setPreview(null);
@@ -145,7 +150,6 @@ export function ChatExecutionSelector({ context, onChange, t }: {
           onKeyDown={event => previewKeys(event, { kind: 'auto' })}
           onSelect={event => { if (pointerType.current === 'touch') { event.preventDefault(); showPreview({ kind: 'auto' }); } else selectAuto(); }}>
           <ChatExecutionLogo option={autoExecutionOption} /><span className={styles.optionName}>{autoExecutionOption.name}</span>
-          {execution.kind === 'auto' ? <Check size={13} weight="bold" className={styles.selected} data-static-color aria-label={t('selectedExecution')} /> : null}
         </ChatPickerItem> : null}
         {catalogPending ? <p className={styles.status} role="status">{info('loading')}</p> :
           catalogUnavailable ? <div className={styles.status} role="status"><span>{info('unavailable')}</span>
@@ -154,26 +158,26 @@ export function ChatExecutionSelector({ context, onChange, t }: {
           <DropdownMenuLabel className={styles.providerLabel}>{group.name}</DropdownMenuLabel>
           {group.models.map(model => {
             const active = execution.kind === 'model' && execution.id === model.id;
-            return <ChatPickerItem key={model.id} className={styles.option} role="menuitemradio" aria-checked={active} data-current={active} textValue={model.name}
+            return <ChatPickerItem key={model.id} className={`${styles.option} ${styles.modelOption}`} role="menuitemradio" aria-checked={active} data-current={active} textValue={model.name}
               aria-expanded={previewModel?.id === model.id} aria-controls={previewModel?.id === model.id ? previewPanelId : undefined}
               aria-label={model.name} onPointerDown={event => { pointerType.current = event.pointerType; }}
               onPointerMove={event => { if (event.pointerType === 'mouse' && previewModel?.id !== model.id) showPreview({ kind: 'model', id: model.id }); }}
               onSelect={event => { if (pointerType.current === 'touch') { event.preventDefault(); showPreview({ kind: 'model', id: model.id }); } else selectModel(model); }}
               onKeyDown={event => previewKeys(event, { kind: 'model', id: model.id })}>
               <ChatExecutionLogo option={modelExecutionOption(model)} />
-              <span className={styles.optionName}>{model.name}</span>
-              <span className={styles.optionMeta}>
+              <span className={styles.modelName}><span className={styles.optionName}>{model.name}</span>
                 {model.capabilities.imageGeneration ? <ImageSquare className={styles.imageIcon} data-static-color aria-label={t('imageModel')} /> : null}
-                {active ? <Check size={13} weight="bold" className={styles.selected} data-static-color aria-label={t('selectedExecution')} /> : null}
-                <span className={styles.contextSize}>{formatModelTokens(model.contextWindow)}</span>
+                {model.capabilities.videoGeneration ? <VideoCamera className={styles.videoIcon} data-static-color aria-label={t('videoModel')} /> : null}
               </span>
+              <ModelUsageSparkline modelId={model.id} />
+              <span className={styles.contextSize}>{formatModelTokens(model.contextWindow)}</span>
             </ChatPickerItem>;
           })}
         </DropdownMenuGroup>) : agents.map(agent => {
           const active = execution.kind === 'agent' && execution.id === agent.id;
           return <ChatPickerItem key={agent.id} className={styles.option} role="menuitemradio" aria-checked={active} data-current={active} textValue={agent.name}
             onSelect={() => onChange({ execution: { kind: 'agent', id: agent.id, name: agent.name } })}>
-            <ChatExecutionLogo option={agent} /><span className={styles.optionName}>{agent.name}</span>{active ? <Check className={styles.selected} size={13} weight="bold" data-static-color /> : null}
+            <ChatExecutionLogo option={agent} /><span className={styles.optionName}>{agent.name}</span>
           </ChatPickerItem>;
         })}
         {showEmpty ? <p className={picker.empty} role="status">{kind === 'model' && !normalizedQuery ? info('empty') : t('noExecutionResults')}</p> : null}
@@ -187,5 +191,11 @@ export function ChatExecutionSelector({ context, onChange, t }: {
             onSelect={() => selectModel(previewModel)} onClose={closePreview} /> : null}
       </ModelInfoPane> : null}
     </ChatPickerContent>
-  </DropdownMenu>;
+    </DropdownMenu>
+    {currentModel?.reasoning && execution.kind === 'model' ? <>
+      <span className={styles.triggerDivider} aria-hidden="true" />
+      <ModelReasoningControl key={currentModel.id} reasoning={currentModel.reasoning} value={execution.reasoningEffort}
+        onChange={reasoningEffort => onChange({ execution: { ...execution, reasoningEffort } })} t={t} />
+    </> : null}
+  </div>;
 }

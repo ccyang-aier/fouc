@@ -1,0 +1,65 @@
+.figure {
+  margin: 3px 0 0;
+  border-radius: 12px;
+  background: var(--surface-subtle);
+}
+
+.chart {
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+
+.grid {
+  fill: none;
+  stroke: var(--separator-color);
+  stroke-width: 1;
+}
+
+.result {
+  fill: color-mix(in srgb, var(--ink) 20%, transparent);
+  stroke: var(--ink);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.partial {
+  fill: var(--ink);
+  stroke: var(--ink);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+}
+
+.label {
+  fill: var(--muted-strong);
+  font-size: 12.5px;
+}
+
+.score {
+  fill: var(--ink);
+  font-weight: 550;
+  font-variant-numeric: tabular-nums;
+}
+
+.sources {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px 5px;
+  padding: 0 12px 9px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.sources a {
+  padding: 1px 4px;
+  border-radius: 4px;
+  color: var(--muted-strong);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--separator-color);
+  text-underline-offset: 2px;
+}
+.scale { flex: 0 0 100%; color: var(--muted-strong); }

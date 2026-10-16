@@ -1,11 +1,13 @@
+.selection { display: flex; align-items: center; min-width: 0; max-width: 330px; padding: 0 1px; border: 1px solid var(--chat-control-border); border-radius: 8px; background: var(--panel); }
+.triggerDivider { flex: 0 0 1px; height: 14px; background: var(--separator-color); }
 .trigger {
-  height: 30px;
+  height: 28px;
   min-width: 0;
   flex-shrink: 1;
   max-width: 235px;
   gap: 7px;
   padding: 0 9px;
-  border-color: var(--chat-control-border);
+  border: 0;
   border-radius: 8px;
   font-size: 12px;
   font-weight: 400;
@@ -18,10 +20,11 @@
   white-space: nowrap;
 }
 .menu { --chat-picker-width: 324px; --chat-picker-row-height: 34px; overflow: visible; padding: 6px 0; }
-.header { display: flex; flex-shrink: 0; align-items: center; gap: 8px; padding: 2px 8px 6px; }
+.header { display: flex; flex-shrink: 0; align-items: center; gap: 8px; margin: 0 8px 3px; padding: 2px 0 8px; border-bottom: 1px solid var(--separator-color); }
 .search { height: 36px; gap: 8px; padding: 0 8px; }
 .search > svg { width: 16px; height: 16px; }
 .search input { height: 32px; font-size: 13px; }
+.search input::placeholder { color: var(--muted); opacity: 1; }
 .modeSwitch {
   display: flex;
   flex-shrink: 0;
@@ -60,10 +63,16 @@
 .providerLabel { display: flex; align-items: flex-end; height: 32px; padding: 10px 9px 5px; font-family: var(--font-mono, monospace); font-size: 10px; font-weight: 400; text-transform: uppercase; }
 .option { position: relative; padding: 0 9px; gap: 9px; font-size: 13px; }
 .optionName { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.modelOption { display: grid; grid-template-columns: 18px minmax(0, 1fr) 52px 49px; gap: 8px; }
+.modelOption > [data-usage-source] { width: 52px; height: 20px; }
+.modelName { display: flex; align-items: center; min-width: 0; gap: 5px; }
+.modelName .optionName { flex: 0 1 auto; }
 .option .imageIcon { display: block; flex-shrink: 0; width: 14px; height: 14px; color: #36a34d; }
-.optionMeta { display: flex; flex-shrink: 0; align-items: center; gap: 6px; }
+.option .videoIcon { display: block; flex-shrink: 0; width: 14px; height: 14px; color: #7477b8; }
 .contextSize { font-size: 11px; line-height: 18px; text-align: right; font-variant-numeric: tabular-nums; color: var(--muted-strong); }
-.option .selected { display: block; flex-shrink: 0; width: 12px; height: 12px; color: var(--ink); }
 .status { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0; padding: 16px 10px; min-height: 60px; font-size: 12px; color: var(--muted-strong); }
 .status button { height: 26px; font-size: 11px; }
 @media (max-width: 600px) { .trigger { max-width: 190px; } }
+@media (prefers-reduced-motion: reduce) {
+  .menu[data-state], .menu [role="menuitemradio"], .menu button { animation: none; }
+}

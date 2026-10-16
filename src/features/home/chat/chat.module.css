@@ -109,6 +109,7 @@
   align-items: center;
   gap: 10px;
 }
+.toolbarLeft { min-width: 0; }
 .iconButton,
 .sendButton {
   width: 30px;
@@ -475,7 +476,7 @@
     grid-template-columns: 88px 1fr;
   }
 }
-@container (max-width: 300px) {
+@container (max-width: 420px) {
   .toolbar {
     flex-wrap: wrap;
     gap: 8px;

@@ -4,7 +4,7 @@
 .logo[data-brand="nanobanana"] { background: #ffd440; color: #503d03; }
 .logo[data-brand="gemini"] { background: #4285f4; }
 .logo[data-brand="model"] { background: var(--surface-subtle); color: var(--ink-soft); }
-.logo[data-brand="auto"] { background: #7162d9; color: #fff; }
+.logo[data-brand="auto"] { background: #202124; color: #fff; }
 .logo[data-brand="nova"] { background: transparent; color: #c7826f; }
 .logo[data-brand="codey"] { background: #eaf1ff; color: #4c70b8; }
 .logo[data-brand="sage"] { background: #ecf4ed; color: #5c8365; }

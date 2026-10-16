@@ -17,6 +17,11 @@ describe('model catalog import boundary', () => {
     for (const value of [
       { items: [entry, entry] },
       { items: [{ ...entry, maxOutput: -1 }] },
+      { items: [{ ...entry, ratings: { ...entry.ratings, intelligence: { ...entry.ratings.intelligence, score: 101 } } }] },
+      { items: [{ ...entry, reasoning: { levels: ['low', 'low'], defaultLevel: 'low' } }] },
+      { items: [{ ...entry, reasoning: { levels: ['low', 'high'], defaultLevel: 'medium' } }] },
+      { items: [{ ...entry, capabilities: { ...entry.capabilities, reasoning: false } }] },
+      { items: [{ ...entry, benchmarks: [] }] },
       { items: [{ ...entry, apiKey: 'provider-secret' }] },
       { items: [{ ...entry, sources: [{ label: 'Unsafe URL', url: 'http://example.com' }] }] },
       { items: [entry], accountId: 'invented-scope' },

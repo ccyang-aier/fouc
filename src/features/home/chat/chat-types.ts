@@ -1,9 +1,9 @@
-import type { ModelCatalogEntry } from '@fouc/shared/model-catalog';
+import type { ModelCatalogEntry, ModelReasoningLevel } from '@fouc/shared/model-catalog';
 
 export type ChatExecution =
   | { kind: "auto" }
   | { kind: "agent"; id: string; name?: string }
-  | { kind: "model"; id: string; name?: string; provider?: ModelCatalogEntry['provider'] };
+  | { kind: "model"; id: string; name?: string; provider?: ModelCatalogEntry['provider']; reasoningEffort: ModelReasoningLevel | null };
 
 export type AutoModelRules = { modelIds: string[] | null };
 

@@ -12,8 +12,9 @@ export const catalogModel = catalogNamespace.table('model', {
   contextWindow: integer('context_window'),
   maxOutput: integer('max_output'),
   capabilities: jsonb('capabilities').$type<ModelCatalogEntry['capabilities']>().notNull(),
+  reasoning: jsonb('reasoning').$type<ModelCatalogEntry['reasoning']>(),
   pricing: jsonb('pricing').$type<ModelCatalogEntry['pricing']>().notNull(),
-  benchmarks: jsonb('benchmarks').$type<ModelCatalogEntry['benchmarks']>().notNull(),
+  ratings: jsonb('ratings').$type<ModelCatalogEntry['ratings']>().notNull(),
   sources: jsonb('sources').$type<ModelCatalogEntry['sources']>().notNull(),
   verifiedAt: date('verified_at', { mode: 'string' }).notNull(),
 }, (table) => [

@@ -9,7 +9,7 @@
 .section { margin-top: 13px; }
 .sectionHeader { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: calc(100% + 16px); min-height: 34px; margin-inline: -8px; padding: 5px 8px; border: 0; border-radius: 6px; background: transparent; text-align: left; outline: none; font-size: 13px; color: var(--ink-soft); cursor: pointer; }
 .sectionHeader > span:first-child { display: flex; align-items: center; gap: 6px; flex-shrink: 0; font-weight: 500; }
-.card [data-section="benchmarks"] { --section-marker: #e34397; }
+.card [data-section="ratings"] { --section-marker: #e34397; }
 .card [data-section="context"] { --section-marker: #3386ff; }
 .card [data-section="capabilities"] { --section-marker: #8b49db; }
 .card [data-section="pricing"] { --section-marker: #ed8c24; }
@@ -17,10 +17,6 @@
 .caret { transform: rotate(-90deg); transition: transform 150ms ease-out; color: var(--muted-strong); }
 .caret[data-open="true"] { transform: rotate(0); }
 .sectionContent { padding-top: 2px; }
-.benchmarks { display: flex; flex-direction: column; gap: 3px; list-style: none; margin: 0; padding: 4px 0; }
-.benchmarkLink { display: flex; align-items: center; gap: 7px; min-height: 30px; color: var(--ink-soft); font-size: 12px; border-radius: 4px; padding: 2px 5px; cursor: pointer; }
-.benchmarkLink > span { flex: 1; min-width: 0; }
-.benchmarkLink strong { font-weight: 500; font-variant-numeric: tabular-nums; color: var(--ink); }
 .tokenRows { margin: 18px 0 0; }
 .tokenRows > div, .rows > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .tokenRows dt { display: flex; align-items: center; gap: 6px; color: var(--ink-soft); font-size: 13px; }
@@ -39,6 +35,7 @@
 .capabilityIcons [data-capability="tools"] { --capability-ink: #087dff; }
 .capabilityIcons [data-capability="reasoning"] { --capability-ink: #ab35b2; }
 .capabilityIcons [data-capability="imageGeneration"] { --capability-ink: #a97a19; }
+.capabilityIcons [data-capability="videoGeneration"] { --capability-ink: #7477b8; }
 .compactPrice { display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-width: 0; font-size: 13px; font-variant-numeric: tabular-nums; color: var(--ink); }
 .compactPrice > span { display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; }
 /* The cache circle fills more of its icon box than the directional arrows. */

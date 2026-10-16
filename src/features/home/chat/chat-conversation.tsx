@@ -8,6 +8,7 @@ import type { ChatSubmission } from "./chat-types";
 import type { ChatText } from "./chat-messages";
 import styles from "./chat.module.css";
 import { getChatExecutionOption } from "./chat-execution-options";
+import { reasoningLabels } from './chat-reasoning';
 
 export function ChatConversation({
   submissions,
@@ -84,6 +85,9 @@ export function ChatConversation({
                 </div>
                 {submission.context.execution.kind === 'auto' ? <div>
                   <dt>{t('autoPool')}</dt><dd>{submission.context.autoRules.modelIds === null ? t('autoAllModels') : t('autoModelCount', { count: submission.context.autoRules.modelIds.length })}</dd>
+                </div> : null}
+                {submission.context.execution.kind === 'model' && submission.context.execution.reasoningEffort ? <div>
+                  <dt>{t('reasoningEffort')}</dt><dd>{t(reasoningLabels[submission.context.execution.reasoningEffort])}</dd>
                 </div> : null}
                 <div>
                   <dt>{t("project")}</dt>

@@ -15,9 +15,10 @@
 | `id`、`provider`、`name` | 官方稳定型号、厂商和展示名；型号为主键 |
 | `summary` | 中英文简述 |
 | `context_window`、`max_output` | 已核实的 API 输入上下文和输出上限；不能精确核实则为 null |
-| `capabilities` | 视觉输入、工具调用、推理、原生图像生成；明确支持/不支持/未知 |
+| `capabilities` | 视觉输入、工具调用、推理、原生图像／视频生成；明确支持/不支持/未知 |
+| `reasoning` | 官方核实的离散思考档位及默认值；不支持或只有 token 预算控制则为 null。档位去重、默认值必须在列表中且推理能力必须为 true |
 | `pricing` | USD 每百万 token 的标准输入、输出、缓存读取及写入价；双语备注保留长上下文、时段、缓存期限、图片和工具等计费条件 |
-| `benchmarks` | 原始公开测试名称、百分比成绩、双语条件和官方来源；不是主观能力评分 |
+| `ratings` | 智能、Agentic、写作、设计、速度、价格六个固定维度；每轴为可空的 0–100 分、来源链接、双语原值／测量配置／换算方法／观测日期 |
 | `sources`、`verified_at` | 官方资料链接及人工核实日期 |
 
 结构化嵌套字段用 typed JSONB，型号、厂商、名称、token 上限和日期使用普通列。当前只消费完整小目录，不提前拆出没有独立维护需求的厂商、价格历史或测评版本表。Drizzle 是唯一当前 schema 来源，生成 `current.sql`，不保留迁移链或旧开发数据兼容路径。
@@ -26,8 +27,25 @@
 
 首版收录 7 个已核实型号：Claude Haiku 4.5、Haiku 5.5、Sonnet 5.5、GPT-6.1 Sol、GPT-6 Luna、DeepSeek V4.1 Flash 和 Nano Banana 2。种子资料位于服务端 `modules/models/catalog-data.json`，核实日期为 2026-10-16。来源包括 [Anthropic 模型文档](https://platform.claude.com/docs/en/models/overview)、[OpenAI 模型文档](https://developers.openai.com/api/docs/models/gpt-6.1-sol)、[DeepSeek 模型与价格](https://api-docs.deepseek.com/quick_start/pricing/)及 [Google 模型 API 文档](https://ai.google.dev/gemini-api/docs/models/gemini-3.1-flash-image)，各行另外保存直接支持其规格、价格和测评的页面。
 
-不使用前端硬编码目录、不实时抓取供应商网页，也不把网页文本当作运行指令。新增或更新资料先人工核实官方模型 API、价格表及发布测评，修改服务端资料，再执行显式管理员导入。完整载荷必须通过共享 schema 和型号唯一性检查后才获取连接；替换在单个事务中完成，失败保留原目录。数据变更由 Git 与核实日期追溯。
+不使用前端硬编码目录，普通 API 请求不抓取外站，也不把网页文本当作运行指令。规格和档位先核实官方文档；评分由管理员脚本提取公开机器数据并保留来源，再执行显式管理员导入。完整载荷必须通过共享 schema 和型号唯一性检查后才获取连接；替换在单个事务中完成，失败保留原目录。数据变更由 Git 与核实日期追溯。
 
 运行命令使用 `bun --env-file=.env.fouc.local backend/server/scripts/models-catalog.ts init` 或 `import [catalog.json]`。`init` 只创建不存在的目录 schema 并写入种子，可用于已有独立业务库，不修改其他 schema；已有目录用 `import` 更新资料。空库的统一初始化同时建立目录。生产服务启动和普通 API 读取不创建表或写种子。
 
-事实缺失不填 0、不插值、不从模型规模推断能力。OpenAI 两个型号暂未找到适用的公开百分比基准；Google 公布的 Elo 不强制归一化到百分比；DeepSeek API 仅写“1M”时不把模型配置值擅自当作精确 API 限额。价格不换算为未经定义的平台积分或倍率。不同测评、工具设置和脚手架不能直接当作同一综合分比较。
+## 六维评分与来源
+
+评分是有固定换算规则的能力画像，不是某个机构发布的统一六维总榜，也不等同于准确率。每轴独立保留测量配置和原始值，不跨代借用成绩；未知值保持 null，不补 0、不插值、不把编程分数当作 Agentic。2026-10-17 已实际从 [Artificial Analysis](https://artificialanalysis.ai/leaderboards/models)、[Arena 创意写作榜](https://arena.ai/leaderboard/chat/text/creative-writing)和 [DesignArena 前端设计榜](https://www.designarena.ai/leaderboard)取得目录中有对应型号的数据。Arena 本机请求返回 403，目前五个模型的写作快照来自可读取的 2026-10-15 公开榜单；Haiku 5.5 写作和 DeepSeek 设计缺失，Nano Banana 2 没有同口径的文本六维成绩，六轴均为空。
+
+| 维度 | 数据与固定转换 |
+| --- | --- |
+| 智能 | AA Intelligence Index 原始 0–100 指数；排除来源明确标为估算的值 |
+| Agentic | AA-AnalystAgent 任务成功率 ×100；只代表代理数据分析任务集，不能当作通用 Agent 总分 |
+| 写作 | Arena Creative Writing 对应配置的偏好 Elo |
+| 设计 | DesignArena Overall Frontend 对应型号的偏好 Elo |
+| 速度 | AA 中位输出速度 v，评分 `100v/(v+100)`；单位 tokens/s，不包含首字等待 |
+| 价格 | 标准文本输入／输出 3:1 混合成本 c（USD/百万 tokens），评分 `100/(1+c)`，越便宜越高；不含缓存、折扣和工具费，生图／视频模型不使用该文本公式 |
+
+写作与设计 Elo 各自换算为对固定 1200 Elo 参考的偏好胜率：`100/(1+10^((1200−Elo)/400))`。这两个榜单的任务与投票人群不同，转换后仍不能跨轴解释为统一准确率。所有分数最多保留一位小数。DeepSeek API 仅公布“1M”时不擅自推定精确上下文 token 数；价格不换算为平台积分。
+
+执行 `bun backend/server/scripts/models-ratings-sync.ts` 更新种子快照。脚本只解析公开响应中的 JSON／HTML 数据，不执行网页脚本；按显式型号和测量配置映射，源站不可用时警告并保留该来源原快照及观测日期，全部来源失败则不写文件。可通过管理员环境 `ARTIFICIAL_ANALYSIS_API_KEY` 使用 [AA 正式 API](https://artificialanalysis.ai/api-reference) 的 `/api/v2/data/llms/models`；该 API 要求 `x-api-key`、来源署名及服务端缓存，当前未配置密钥，使用公开页面的结构化数据。正式 API 提供智能和速度，Agentic 仍来自公开页面的 AnalystAgent 测量。同步不直接写库；检查生成载荷后再运行目录 import。公开前端不接触密钥或管理员凭据。
+
+思考档位按型号文档维护：GPT-6.1 Sol 为 low／medium／high／xhigh／max；GPT-6 Luna 另支持 none；Haiku 5.5、Sonnet 5.5 支持 low 至 max；DeepSeek 为 none／low／high／max；Nano Banana 2 为 minimal／high。Haiku 4.5 使用 token 预算控制，当前不伪造离散 effort 档位。具体默认值由目录记录。

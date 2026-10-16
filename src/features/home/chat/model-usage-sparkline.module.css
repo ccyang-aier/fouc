@@ -1,0 +1,16 @@
+.sparkline {
+  display: block;
+  flex: 0 0 52px;
+  width: 52px;
+  height: 20px;
+  overflow: visible;
+}
+
+.sparkline path {
+  fill: none;
+  stroke: var(--muted-strong);
+  stroke-width: 1.2;
+  stroke-opacity: .65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

@@ -1,17 +1,17 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { ArrowSquareOut, CaretDown, X } from '@phosphor-icons/react';
-import { ArrowDownToDot, ArrowUpFromDot, Atom, CircleFadingArrowUp, Eye, Image as ImageIcon, Wrench } from 'lucide-react';
+import { CaretDown, X } from '@phosphor-icons/react';
+import { ArrowDownToDot, ArrowUpFromDot, Atom, CircleFadingArrowUp, Eye, Image as ImageIcon, Video, Wrench } from 'lucide-react';
 import type { ModelCatalogEntry } from '@fouc/shared/model-catalog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useTranslation } from '@/lib/i18n';
 import { modelInfoMessages } from './model-info-messages';
-import { ModelBenchmarkChart } from './model-benchmark-chart';
+import { ModelCapabilityChart } from './model-capability-chart';
 import styles from './model-info-card.module.css';
 
-export type ModelInfoSections = { benchmarks: boolean; capabilities: boolean; pricing: boolean };
+export type ModelInfoSections = { ratings: boolean; capabilities: boolean; pricing: boolean };
 
 export function formatModelTokens(value: number | null): string {
   if (value === null) return '—';
@@ -34,6 +34,7 @@ export function ModelInfoCard({ model, expanded, onToggle, onSelect, onClose }: 
     { key: 'tools', Icon: Wrench, yes: 'toolsSupported', no: 'toolsUnsupported' },
     { key: 'reasoning', Icon: Atom, yes: 'reasoningSupported', no: 'reasoningUnsupported' },
     { key: 'imageGeneration', Icon: ImageIcon, yes: 'imageSupported', no: 'imageUnsupported' },
+    { key: 'videoGeneration', Icon: Video, yes: 'videoSupported', no: 'videoUnsupported' },
   ] as const;
   const priceRows = [
     { key: 'input', label: 'input', Icon: ArrowUpFromDot }, { key: 'output', label: 'outputPrice', Icon: ArrowDownToDot },
@@ -43,7 +44,6 @@ export function ModelInfoCard({ model, expanded, onToggle, onSelect, onClose }: 
   const priceText = (value: number | null) => value === null ? t('unknown') : `$${priceNumber(value)}`;
   const header = (section: keyof ModelInfoSections, summary?: ReactNode) => <button
     type="button" className={`fouc-action ${styles.sectionHeader}`} data-variant="collapsible" data-section={section} aria-label={t(section)} aria-expanded={expanded[section]}
-    title={section === 'benchmarks' ? t('benchmarkNote') : undefined}
     onClick={() => onToggle(section)}>
     <span>{t(section)}<CaretDown size={10} weight="fill" className={styles.caret} data-open={expanded[section]} /></span>
     {!expanded[section] ? summary : null}
@@ -61,18 +61,9 @@ export function ModelInfoCard({ model, expanded, onToggle, onSelect, onClose }: 
         <p>{model.summary[language]}</p>
       </header>
       <section className={styles.section}>
-        {header('benchmarks')}
-        {expanded.benchmarks ? <div className={styles.sectionContent}>
-          {model.benchmarks.length ? <>
-            {model.benchmarks.length >= 3 ? <ModelBenchmarkChart benchmarks={model.benchmarks} /> : <ul className={styles.benchmarks}>
-              {model.benchmarks.map(benchmark => <li key={benchmark.name}>
-                <a href={benchmark.sourceUrl} target="_blank" rel="noreferrer" className={`fouc-action ${styles.benchmarkLink}`} title={benchmark.note[language]}>
-                  <span>{benchmark.name}</span>
-                  <strong>{benchmark.score}%</strong><ArrowSquareOut size={12} />
-                </a>
-              </li>)}
-            </ul>}
-          </> : <p className={styles.empty}>{t('noBenchmarks')}</p>}
+        {header('ratings')}
+        {expanded.ratings ? <div className={styles.sectionContent}>
+          <ModelCapabilityChart ratings={model.ratings} />
         </div> : null}
       </section>
       <dl className={styles.tokenRows}>

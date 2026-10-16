@@ -1,15 +1,17 @@
 "use client";
 
 import { useRef, useState, type CSSProperties } from "react";
-import { Brain, CaretDown, Check, Code, ImageSquare, Leaf, MagnifyingGlass, Sparkle } from "@phosphor-icons/react";
+import { Brain, CaretDown, Check, Code, ImageSquare, Leaf, Sparkle } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { chatAgents, chatModels, getChatExecutionOption, type ChatExecutionOption } from "./chat-execution-options";
 import type { ChatContext } from "./chat-types";
 import type { ChatText } from "./chat-messages";
 import styles from "./chat-execution-selector.module.css";
+import { ChatPickerContent, ChatPickerItem, ChatPickerSearch } from "./chat-picker";
+import picker from "./chat-picker.module.css";
 
 function AgentModeIcon({ size }: { size: number }) {
   return (
@@ -62,23 +64,11 @@ export function ChatExecutionSelector({ context, onChange, t }: {
           <CaretDown size={11} />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" side="top" sideOffset={8}
-        collisionPadding={12} className={styles.menu} aria-description={kind === "model" ? t("modelPreviewDescription") : undefined}>
-        <div className={styles.header} onKeyDown={(event) => { if (event.key === "Tab") event.stopPropagation(); }}>
-          <label className={styles.search}>
-            <MagnifyingGlass size={16} aria-hidden="true" />
-            <input ref={search} autoFocus value={query} aria-label={t(kind === "agent" ? "searchAgents" : "searchModels")}
+      <ChatPickerContent className={styles.menu} aria-description={kind === "model" ? t("modelPreviewDescription") : undefined}>
+        <div className={picker.header} onKeyDown={(event) => { if (event.key === "Tab") event.stopPropagation(); }}>
+            <ChatPickerSearch ref={search} value={query} aria-label={t(kind === "agent" ? "searchAgents" : "searchModels")}
               placeholder={t(kind === "agent" ? "searchAgents" : "searchModels")}
-              onChange={(event) => setQuery(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Escape" || event.key === "Tab") return;
-                event.stopPropagation();
-                if (event.key === "ArrowDown") {
-                  event.preventDefault();
-                  event.currentTarget.closest('[role="menu"]')?.querySelector<HTMLElement>('[role="menuitemradio"]')?.focus();
-                }
-              }} />
-          </label>
+              onChange={(event) => setQuery(event.target.value)} />
           <div className={styles.modeSwitch} role="group" aria-label={t("executionMode")}>
             {(["model", "agent"] as const).map((mode) => {
               const Icon = mode === "model" ? Brain : AgentModeIcon;
@@ -88,7 +78,7 @@ export function ChatExecutionSelector({ context, onChange, t }: {
                     aria-label={t(mode === "model" ? "modelLabel" : "agentLabel")}
                     aria-pressed={kind === mode} data-active-mode={kind === mode}
                     onClick={() => { setKind(mode); setQuery(""); search.current?.focus(); }}>
-                    <Icon size={16} />
+                    <Icon size={14} />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>{t(mode === "model" ? "modelLabel" : "agentLabel")}</TooltipContent>
@@ -97,10 +87,10 @@ export function ChatExecutionSelector({ context, onChange, t }: {
           </div>
         </div>
         <ScrollArea className={styles.list} key={kind} viewportClassName={styles.listViewport}
-          style={{ "--list-height": `${Math.max(options.length * 38 + 6, 70)}px` } as CSSProperties}>
+          style={{ "--list-rows": options.length } as CSSProperties}>
           {options.length ? options.map((option) => {
             const active = context.execution.kind === kind && context.execution.id === option.id;
-            return <DropdownMenuItem key={option.id} className={styles.option} data-selected={active} role="menuitemradio" aria-checked={active}
+            return <ChatPickerItem key={option.id} className={styles.option} data-selected={active} role="menuitemradio" aria-checked={active}
               textValue={option.name} onSelect={() => onChange({ execution: { kind, id: option.id } })}>
               <ExecutionLogo option={option} />
               <span className={styles.optionDetails}>
@@ -115,10 +105,10 @@ export function ChatExecutionSelector({ context, onChange, t }: {
               </span> : null}
               {option.multiplier ? <span className={styles.multiplier} title={t("modelPreviewDescription")}>{option.multiplier}</span> : null}
               {active ? <Check className={styles.selected} size={13} aria-label={t("selectedExecution")} /> : null}
-            </DropdownMenuItem>;
-          }) : <p className={styles.empty} role="status">{t("noExecutionResults")}</p>}
+            </ChatPickerItem>;
+          }) : <p className={picker.empty} role="status">{t("noExecutionResults")}</p>}
         </ScrollArea>
-      </DropdownMenuContent>
+      </ChatPickerContent>
     </DropdownMenu>
   );
 }

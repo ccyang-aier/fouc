@@ -1,15 +1,17 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Check, FolderSimple, MagnifyingGlass, Plus, X } from "@phosphor-icons/react";
+import { Check, FolderSimple, Plus, X } from "@phosphor-icons/react";
 import { useAppAlert } from "@/components/app-alert-provider";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useProjectResources } from "@/features/project/project-resources";
 import type { ChatContext } from "./chat-types";
 import type { ChatText } from "./chat-messages";
 import styles from "./chat-context-toolbar.module.css";
+import { ChatPickerContent, ChatPickerItem, ChatPickerSearch } from "./chat-picker";
+import picker from "./chat-picker.module.css";
 
 export function ChatProjectSelector({ context, onChange, t }: {
   context: ChatContext;
@@ -47,58 +49,54 @@ export function ChatProjectSelector({ context, onChange, t }: {
           <span>{context.projectName ?? t("project")}</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" side="top" sideOffset={6} collisionPadding={12} className={styles.projectMenu}>
-        <label className={styles.search}>
-          {creating ? <Plus size={15} aria-hidden="true" /> : <MagnifyingGlass size={15} aria-hidden="true" />}
-          <input ref={search} autoFocus value={query} disabled={saving}
+      <ChatPickerContent onEscapeKeyDown={(event) => {
+        if (!creating) return;
+        event.preventDefault();
+        setCreating(false);
+        setQuery("");
+      }}>
+        <div className={picker.header}>
+          <ChatPickerSearch ref={search} value={query} disabled={saving}
+            icon={creating ? <Plus size={14} aria-hidden="true" /> : undefined}
             aria-label={t(creating ? "newProjectName" : "searchProjects")}
             placeholder={t(creating ? "newProjectName" : "searchProjects")}
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={(event) => {
-              if (event.key === "Escape") {
-                if (creating) { event.preventDefault(); event.stopPropagation(); setCreating(false); setQuery(""); }
-                return;
-              }
-              event.stopPropagation();
               if (creating && event.key === "Enter" && !event.nativeEvent.isComposing) { event.preventDefault(); void saveProject(); }
-              if (!creating && event.key === "ArrowDown") {
-                event.preventDefault();
-                event.currentTarget.closest('[role="menu"]')?.querySelector<HTMLElement>('[role="menuitemradio"]')?.focus();
-              }
             }} />
-        </label>
+        </div>
         {creating ? (
-          <Button type="button" variant="ghost" className={styles.createButton} loading={saving}
+          <Button type="button" variant="ghost" className={`${picker.item} ${styles.createButton}`} loading={saving}
             disabled={!query.trim()} onClick={() => void saveProject()}>
             <Check size={15} />{t("createProject")}
           </Button>
         ) : <>
-          <ScrollArea className={styles.projectList} style={{ height: Math.min(Math.max(filtered.length * 30, 44), 150) }}>
+          <ScrollArea className={picker.list} style={{ height: filtered.length ? Math.min(filtered.length * 28, 140) : 40 }}>
             {filtered.map((project) => (
-              <DropdownMenuItem key={`${project.source}:${project.id}`} className={styles.projectItem}
+              <ChatPickerItem key={`${project.source}:${project.id}`} data-selected={context.projectId === project.id}
                 role="menuitemradio" aria-checked={context.projectId === project.id}
                 onSelect={() => onChange({ projectId: project.id, projectName: project.name })}>
                 <FolderSimple />
-                <span>{project.name}</span>
-                {context.projectId === project.id ? <Check /> : null}
-              </DropdownMenuItem>
+                <span className={picker.name}>{project.name}</span>
+                {context.projectId === project.id ? <Check className={picker.check} /> : null}
+              </ChatPickerItem>
             ))}
-            {!filtered.length ? <p className={styles.empty} role="status">{t(query ? "noProjectResults" : "emptyProjects")}</p> : null}
+            {!filtered.length ? <p className={picker.empty} role="status">{t(query ? "noProjectResults" : "emptyProjects")}</p> : null}
           </ScrollArea>
-          <DropdownMenuSeparator className={styles.projectSeparator} />
-          <DropdownMenuItem className={styles.projectItem} onSelect={(event) => {
+          <DropdownMenuSeparator className={picker.separator} />
+          <ChatPickerItem onSelect={(event) => {
             event.preventDefault();
             setCreating(true);
             requestAnimationFrame(() => search.current?.focus());
           }}>
             <Plus />{t("newProject")}
-          </DropdownMenuItem>
-          <DropdownMenuItem className={styles.projectItem} role="menuitemradio" aria-checked={!context.projectId}
+          </ChatPickerItem>
+          <ChatPickerItem role="menuitemradio" aria-checked={!context.projectId}
             data-selected={!context.projectId} onSelect={() => onChange({ projectId: null, projectName: null })}>
             <X />{t("noProject")}
-          </DropdownMenuItem>
+          </ChatPickerItem>
         </>}
-      </DropdownMenuContent>
+      </ChatPickerContent>
     </DropdownMenu>
   );
 }

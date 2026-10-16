@@ -47,13 +47,6 @@
   .bursting .burst-line{ animation:bl .45s ease-out; }
   @keyframes bl{ 0%{opacity:0;transform:translateY(-50%) scale(.6)} 30%{opacity:1} 100%{opacity:0;transform:translateY(-50%) scale(1.4)} }
 
-  /* 气泡 */
-  .bubble{ position:absolute; left:50%; top:-6px; transform:translate(-50%,6px) scale(.9); background:#111; color:#fff;
-           font-size:13px; padding:8px 14px; border-radius:16px; white-space:nowrap; opacity:0; pointer-events:none;
-           transition:all .35s cubic-bezier(.3,1.5,.5,1); letter-spacing:.5px; z-index:5; }
-  .bubble::after{ content:""; position:absolute; left:50%; bottom:-6px; margin-left:-6px; border:6px solid transparent; border-top-color:#111; border-bottom:0; }
-  .bubble.show{ opacity:1; transform:translate(-50%,0) scale(1); }
-
   .zzz{ position:absolute; right:10px; top:10px; font-weight:700; color:#333; opacity:0; pointer-events:none; }
   .sleeping .zzz{ animation:zz 2.4s ease-in-out infinite; }
   .zzz:nth-child(2){ animation-delay:.8s!important; right:-4px; top:-10px; font-size:13px }

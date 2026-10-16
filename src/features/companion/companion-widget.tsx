@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useId, useRef, useState } from 'react';
-import { Candy, Hand, Moon, X } from 'lucide-react';
-import { ButtonLoading } from '@/components/ui/button-loading';
+import { X } from 'lucide-react';
+import { AnimatePresence, MotionConfig } from 'motion/react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTranslation } from '@/lib/i18n/react';
 import { CompanionCharacter } from './companion-character';
-import { CompanionActionMenu } from './companion-action-menu';
+import { CompanionToolbar } from './companion-toolbar';
 import { CompanionLayer } from './companion-layer';
 import { createCompanionRuntime, initialCompanionState, type CompanionRuntime } from './companion-runtime';
 import { messages } from './companion.messages';
@@ -14,7 +15,13 @@ import { useCompanionDrag } from './use-companion-drag';
 import styles from './companion-widget.module.css';
 
 export function CompanionWidget() {
-  return <CompanionLayer><Companion /></CompanionLayer>;
+  return (
+    <MotionConfig reducedMotion="user">
+      <TooltipProvider delayDuration={280}>
+        <CompanionLayer><Companion /></CompanionLayer>
+      </TooltipProvider>
+    </MotionConfig>
+  );
 }
 
 function Companion() {
@@ -25,27 +32,30 @@ function Companion() {
   const triggerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<HTMLDivElement>(null);
   const runtime = useRef<CompanionRuntime | null>(null);
+  const keyboardOpen = useRef(false);
   const panelId = useId();
+  const descriptionId = useId();
   const drag = useCompanionDrag(widgetRef);
 
   useEffect(() => {
     const controller = createCompanionRuntime(sceneRef.current!, setState);
     runtime.current = controller;
-    const summon = () => { setOpen(true); controller.wake(); };
+    const summon = () => { keyboardOpen.current = false; setOpen(true); controller.wake(); };
     window.addEventListener(OPEN_COMPANION_EVENT, summon);
     return () => { controller.dispose(); runtime.current = null; window.removeEventListener(OPEN_COMPANION_EVENT, summon); };
   }, []);
 
   useEffect(() => {
-    if (open) widgetRef.current?.querySelector<HTMLButtonElement>('[role="toolbar"] button:not(:disabled)')?.focus({ preventScroll: true });
+    if (open && keyboardOpen.current) widgetRef.current?.querySelector<HTMLButtonElement>('[role="toolbar"] button:not(:disabled)')?.focus({ preventScroll: true });
+    keyboardOpen.current = false;
   }, [open]);
 
-  function collapse() {
-    setOpen(false);
-    triggerRef.current?.focus({ preventScroll: true });
+  function collapse() { setOpen(false); triggerRef.current?.focus({ preventScroll: true }); }
+  function interact(fromKeyboard = false) {
+    keyboardOpen.current = fromKeyboard;
+    setOpen(current => !current);
+    runtime.current?.interact(false);
   }
-
-  function interact() { setOpen(current => !current); runtime.current?.interact(); }
 
   return (
     <section
@@ -57,55 +67,47 @@ function Companion() {
       data-companion-state={state.label}
       {...drag}
       onKeyDown={event => {
-        if (open && event.key === 'Escape' && !event.defaultPrevented) { event.preventDefault(); event.stopPropagation(); collapse(); }
+        const fromMenu = event.target instanceof Element && event.target.closest('[role="menu"]');
+        if (open && event.key === 'Escape' && !fromMenu) { event.preventDefault(); event.stopPropagation(); collapse(); }
       }}
     >
-      {open ? (
-        <div className={styles.rail} id={panelId} role="toolbar" aria-label={t('工具栏')} aria-orientation="vertical">
-          <button
-            type="button"
-            className={`fouc-action ${styles.tool}`}
-            disabled={state.busy}
-            aria-busy={state.busy && state.label === 'CANDY!'}
-            aria-label={t('喂糖')}
-            title={t('喂糖')}
-            onClick={() => { void runtime.current?.feed(); }}
+      <AnimatePresence initial={false}>
+        {open ? <CompanionToolbar key="toolbar" id={panelId} state={state} onFeed={() => { void runtime.current?.feed(); }} onAction={action => runtime.current?.act(action)} /> : null}
+      </AnimatePresence>
+      <Tooltip open={Boolean(state.speech)} disableHoverableContent>
+        <TooltipTrigger asChild>
+          <div
+            ref={triggerRef}
+            className={styles.trigger}
+            role="button"
+            tabIndex={0}
+            data-companion-drag
+            aria-label={t('互动')}
+            aria-describedby={descriptionId}
+            aria-expanded={open}
+            aria-controls={open ? panelId : undefined}
+            onClick={event => interact(event.detail === 0)}
+            onKeyDown={event => {
+              if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); interact(true); }
+            }}
           >
-            {state.busy && state.label === 'CANDY!' ? <ButtonLoading /> : <Candy size={20} strokeWidth={1.65} aria-hidden />}
-          </button>
-          <span className={styles.divider} role="separator" />
-          <button type="button" className={`fouc-action ${styles.tool}`} disabled={state.busy} aria-label={t('抚摸')} title={t('抚摸')} onClick={() => runtime.current?.act('happy')}>
-            <Hand size={20} strokeWidth={1.65} aria-hidden />
-          </button>
-          <CompanionActionMenu group="expression" busy={state.busy} onAction={action => runtime.current?.act(action)} />
-          <CompanionActionMenu group="motion" busy={state.busy} onAction={action => runtime.current?.act(action)} />
-          <button type="button" className={`fouc-action ${styles.tool}`} disabled={state.busy} aria-label={t('睡眠')} title={t('睡眠')} onClick={() => runtime.current?.act('sleep')}>
-            <Moon size={20} strokeWidth={1.65} aria-hidden />
-          </button>
-        </div>
-      ) : null}
-      <div
-        ref={triggerRef}
-        className={styles.trigger}
-        role="button"
-        tabIndex={0}
-        data-companion-drag
-        aria-label={t('互动')}
-        aria-expanded={open}
-        aria-controls={open ? panelId : undefined}
-        title={`Feather · ${t('拖动')}\n${t('心情')} ${Math.round(state.mood)} · ${t('饱腹')} ${Math.round(state.full)}`}
-        onClick={interact}
-        onKeyDown={event => {
-          if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); interact(); }
-        }}
-      >
-        <div className={styles.scene}>
-          <CompanionCharacter sceneRef={sceneRef} />
-        </div>
-      </div>
-      {open ? (
-        <button type="button" className={`fouc-action ${styles.close}`} aria-label={t('收起')} title={t('收起')} onClick={collapse}><X size={12} aria-hidden /></button>
-      ) : null}
+            <div className={styles.scene}><CompanionCharacter sceneRef={sceneRef} /></div>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent
+          className={styles.speech}
+          side="left"
+          sideOffset={14}
+          collisionPadding={12}
+          updatePositionStrategy="always"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          data-companion-speech
+        >{state.speech}</TooltipContent>
+      </Tooltip>
+      <span id={descriptionId} className="sr-only">{t('拖动')} · {t('心情')} {Math.round(state.mood)} · {t('饱腹')} {Math.round(state.full)}</span>
+      {open ? <button type="button" className={`fouc-action ${styles.close}`} aria-label={t('收起')} onClick={collapse}><X size={12} aria-hidden /></button> : null}
     </section>
   );
 }

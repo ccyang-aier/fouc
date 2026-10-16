@@ -9,7 +9,6 @@ export function CompanionCharacter({ sceneRef }: {
       <div className={styles['stage']}>
         <div className={styles['shadow']} />
         <div className={styles['hop']}>
-          <div className={styles['bubble']} role="status" />
           <div className={styles['squash']}><div className={styles['tilt']}><div className={styles['breath']}>
             <canvas className={styles['body-svg']} aria-hidden />
             <span className={styles['burst-line'] + ' ' + styles['l']} aria-hidden>(</span><span className={styles['burst-line'] + ' ' + styles['r']} aria-hidden>)</span>

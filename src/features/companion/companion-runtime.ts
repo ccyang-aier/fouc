@@ -3,14 +3,14 @@ import styles from './companion-character.module.css';
 import { createCompanionFur } from './companion-fur';
 import { messages, type CompanionAction } from './companion.messages';
 
-export interface CompanionState { label: string; mood: number; full: number; busy: boolean }
-export const initialCompanionState: CompanionState = { label: 'REST', mood: 60, full: 40, busy: false };
+export interface CompanionState { label: string; mood: number; full: number; busy: boolean; speech: string | null }
+export const initialCompanionState: CompanionState = { label: 'REST', mood: 60, full: 40, busy: false, speech: null };
 
 /** Scoped animation controller: React owns the shell; this controller owns only the character DOM. */
 export function createCompanionRuntime(root: HTMLElement, onChange: (state: CompanionState) => void) {
   const get = <T extends HTMLElement>(selector: string) => root.querySelector<T>(`.${styles[selector.slice(1)]}`)!;
   const hop = get('.hop'), squash = get('.squash'), tilt = get('.tilt'), breath = get('.breath');
-  const face = get('.face'), shadow = get('.shadow'), bubble = get('.bubble'), stage = get('.stage');
+  const face = get('.face'), shadow = get('.shadow'), stage = get('.stage');
   const eyes = Array.from(root.querySelectorAll<HTMLElement>(`.${styles.eye}`));
   const pupils = Array.from(root.querySelectorAll<HTMLElement>(`.${styles.pupil}`));
   const fur = createCompanionFur(get<HTMLCanvasElement>('.body-svg'));
@@ -49,8 +49,8 @@ export function createCompanionRuntime(root: HTMLElement, onChange: (state: Comp
   const clearEyes = () => setEyes();
   let bubbleTimer: ReturnType<typeof setTimeout> | undefined;
   function say(key: keyof typeof messages, ms = 1800) {
-    bubble.textContent = text(key); bubble.classList.add(styles.show); cancelTimer(bubbleTimer);
-    bubbleTimer = later(() => bubble.classList.remove(styles.show), ms);
+    update({ speech: text(key) }); cancelTimer(bubbleTimer);
+    bubbleTimer = later(() => update({ speech: null }), ms);
   }
   const addMood = (d: number) => update({ mood: Math.max(0, Math.min(100, state.mood + d)) });
   const addFull = (d: number) => update({ full: Math.max(0, Math.min(100, state.full + d)) });
@@ -198,11 +198,12 @@ export function createCompanionRuntime(root: HTMLElement, onChange: (state: Comp
     });
   }
   let clickTimer: ReturnType<typeof setTimeout> | undefined;
-  function interact() {
+  function interact(animate = true) {
     lastMove = Date.now();
     if (sleeping) { wake(); return; }
     clicks++; cancelTimer(clickTimer); clickTimer = later(() => { clicks = 0; }, 1500);
     if (clicks >= 4) { clicks = 0; if (state.busy) pendingDizzy = true; else void run(dizzy); return; }
+    if (!animate) return;
     void run(async () => {
       await A.poof();
       const lines = ['噗！', '别戳我啦~', '再来一次？', '咕噜咕噜', '我是煤球，不是芝麻球', '嘿嘿', '软乎乎的吧'] as const;

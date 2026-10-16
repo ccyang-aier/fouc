@@ -65,8 +65,6 @@ export const chatMessages = {
   reasoningHigh: ["高", "High"],
   reasoningXhigh: ["极高", "Extra high"],
   reasoningMax: ["最高", "Max"],
-  reasoningFaster: ["更快响应", "Faster responses"],
-  reasoningDeeper: ["更充分思考", "Deeper reasoning"],
   voice: ["语音输入", "Voice input"],
   stopVoice: ["停止语音输入", "Stop voice input"],
   voiceChat: ["开始语音对话", "Start voice conversation"],

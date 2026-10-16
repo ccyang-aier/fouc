@@ -3,5 +3,4 @@
 .heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 12px; font-size: 13px; color: var(--ink-soft); }
 .heading strong { font-weight: 500; color: var(--ink); transition: color 180ms ease-out; }
 .heading strong[data-max="true"] { color: #9a58cb; }
-.hint { display: flex; justify-content: space-between; gap: 10px; margin: 0 0 7px; font-size: 11px; color: var(--muted-strong); }
 @media (prefers-reduced-motion: reduce) { .panel[data-state] { animation: none; } .heading strong { transition: none; } }

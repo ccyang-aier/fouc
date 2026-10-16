@@ -23,23 +23,31 @@ export function StarfieldSlider({
   ...inputProps
 }: StarfieldSliderProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const atMaximum = value === max
+  const effectRef = useRef<ReturnType<typeof createStarfieldEffect>>(undefined)
+  const strength = value / max
 
   useEffect(() => {
-    if (!atMaximum || disabled || !canvasRef.current) return
-    return createStarfieldEffect(canvasRef.current)
-  }, [atMaximum, disabled])
+    if (disabled || !canvasRef.current) return
+    const effect = createStarfieldEffect(canvasRef.current)
+    effectRef.current = effect
+    return () => {
+      effect?.dispose()
+      effectRef.current = undefined
+    }
+  }, [disabled])
+
+  useEffect(() => {
+    effectRef.current?.setStrength(strength)
+  }, [strength, disabled])
 
   return (
     <div
       className={styles.root}
-      data-max={atMaximum}
       data-disabled={disabled || undefined}
-      style={{ "--starfield-progress": value / max } as CSSProperties}
+      style={{ "--starfield-strength": strength } as CSSProperties}
     >
       <span className={styles.aura} aria-hidden="true" />
       <div className={styles.track} aria-hidden="true">
-        <span className={styles.progress} />
         <span className={styles.stops}>
           {Array.from({ length: max + 1 }, (_, index) => <i key={index} />)}
         </span>

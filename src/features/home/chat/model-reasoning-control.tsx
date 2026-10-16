@@ -19,7 +19,6 @@ export function ModelReasoningControl({ reasoning, value, onChange, t }: {
   const [open, setOpen] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   const titleId = useId();
-  const hintId = useId();
   const { levels, defaultLevel } = reasoning;
   const level = value && levels.includes(value) ? value : defaultLevel;
   const index = levels.indexOf(level);
@@ -40,9 +39,8 @@ export function ModelReasoningControl({ reasoning, value, onChange, t }: {
     <DropdownMenuContent className={styles.panel} side="top" align="start" sideOffset={8} collisionPadding={12}
       role="dialog" aria-labelledby={titleId}>
       <div className={styles.heading}><span id={titleId}>{t('reasoningEffort')}</span><strong data-max={index === levels.length - 1}>{t(reasoningLabels[level])}</strong></div>
-      <p id={hintId} className={styles.hint}><span>{t('reasoningFaster')}</span><span>{t('reasoningDeeper')}</span></p>
       <StarfieldSlider ref={input} max={levels.length - 1} value={index}
-        aria-labelledby={titleId} aria-describedby={hintId} aria-valuetext={t(reasoningLabels[level])}
+        aria-labelledby={titleId} aria-valuetext={t(reasoningLabels[level])}
         onKeyDown={event => {
           if (event.key === 'Tab') setOpen(false);
           if (event.key !== 'Escape') event.stopPropagation();

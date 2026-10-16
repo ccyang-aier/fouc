@@ -21,11 +21,11 @@
   z-index: -1;
   inset: -8px -6px;
   border-radius: inherit;
-  background: radial-gradient(ellipse at 84% 50%, #b480ed45, transparent 72%);
+  background: radial-gradient(ellipse at 78% 50%, #b480ed8c, transparent 72%);
   filter: blur(8px);
-  opacity: 0;
+  opacity: calc(0.12 + var(--starfield-strength) * 0.88);
   pointer-events: none;
-  transition: opacity 300ms ease;
+  transition: opacity 240ms ease-out;
 }
 
 .track {
@@ -37,26 +37,14 @@
   pointer-events: none;
 }
 
-.progress {
-  position: absolute;
-  top: calc(50% - 1px);
-  right: 13px;
-  left: 13px;
-  height: 2px;
-  border-radius: 2px;
-  background: #706779;
-  transform: scaleX(var(--starfield-progress));
-  transform-origin: left;
-  transition: opacity 200ms ease;
-}
-
 .stops {
   position: absolute;
   inset: 0 11px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  transition: opacity 200ms ease;
+  opacity: calc(0.5 - var(--starfield-strength) * 0.4);
+  transition: opacity 240ms ease-out;
 }
 
 .stops i {
@@ -71,18 +59,6 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  opacity: 0;
-  transition: opacity 300ms ease;
-}
-
-.root[data-max="true"] .aura,
-.root[data-max="true"] .field {
-  opacity: 1;
-}
-
-.root[data-max="true"] .progress,
-.root[data-max="true"] .stops {
-  opacity: 0;
 }
 
 .input {
@@ -167,7 +143,6 @@
   .root,
   .aura,
   .field,
-  .progress,
   .stops {
     transition: none;
   }

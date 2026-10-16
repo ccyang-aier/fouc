@@ -102,10 +102,6 @@ export function ModelInfoCard({ model, expanded, onToggle, onSelect, onClose }: 
           {model.pricing.note ? <p className={styles.note}>{model.pricing.note[language]}</p> : null}
         </div> : null}
       </section>
-      <details className={styles.sources}>
-        <summary className="fouc-action"><span>{t('sources')}<CaretDown size={11} /></span><span>{t('verified', { date: model.verifiedAt })}</span></summary>
-        <div>{model.sources.map(source => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{source.label}<ArrowSquareOut size={11} /></a>)}</div>
-      </details>
     </div>
     <div className={styles.actions}><Button type="button" variant="outline" size="sm" onClick={onSelect}>{t('useModel')}</Button></div>
   </article>;

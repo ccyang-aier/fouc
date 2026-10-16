@@ -21,8 +21,6 @@ export const modelInfoMessages = {
   outputPrice: ['输出', 'Output'],
   cacheRead: ['输入 · 缓存读取', 'Input · cache read'],
   cacheWrite: ['输入 · 缓存写入', 'Input · cache write'],
-  sources: ['官方来源', 'Official sources'],
-  verified: ['核实于 {date}', 'Verified {date}'],
   loading: ['正在加载模型…', 'Loading models…'],
   unavailable: ['模型目录暂不可用', 'Model catalog unavailable'],
   retry: ['重试', 'Retry'],

@@ -41,15 +41,6 @@
 .compactPrice svg { color: var(--ink-soft); }
 .unit { margin: 2px 0 0; padding-left: 11px; font-size: 10px; color: var(--muted-strong); }
 .empty { padding: 8px 0; margin: 0; font-size: 11px; color: var(--muted-strong); }
-.sources { border-top: 1px solid var(--separator-color); padding-top: 8px; margin-top: 12px; color: var(--muted-strong); font-size: 10px; }
-.sources > summary { display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 24px; padding: 2px 0; border-radius: 4px; cursor: pointer; list-style: none; }
-.sources > summary::-webkit-details-marker { display: none; }
-.sources > summary > span:first-child { display: inline-flex; align-items: center; gap: 4px; }
-.sources > summary svg { transform: rotate(-90deg); }
-.sources[open] > summary svg { transform: none; }
-.sources > div { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; padding: 6px 0 4px; }
-.sources a { display: inline-flex; align-items: center; gap: 3px; color: var(--ink-soft); cursor: pointer; }
-.sources a:hover { text-decoration: underline; }
 .actions { display: none; justify-content: flex-end; flex-shrink: 0; padding: 8px 12px; border-top: 1px solid var(--separator-color); }
 .actions > button { height: 28px; font-size: 11px; }
 @media (prefers-reduced-motion: reduce) { .caret { transition: none; } }

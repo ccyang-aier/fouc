@@ -462,7 +462,7 @@ input {
   --menu-state-ink: var(--menu-warning-hover-ink);
   color: var(--menu-warning-ink);
 }
-.fouc-menu-item:is(:hover, :focus-visible, [data-highlighted], [data-state="open"]):not(:disabled):not([data-disabled]):not([aria-disabled="true"]) {
+.fouc-menu-item:is(:hover, :focus-visible, [data-highlighted], [data-state="open"], [data-current="true"]):not(:disabled):not([data-disabled]):not([aria-disabled="true"]) {
   background: var(--menu-state-bg);
   color: var(--menu-state-ink);
 }

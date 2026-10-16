@@ -60,6 +60,11 @@ html button.fouc-action[data-surface="subtle"] {
   --action-state-bg: transparent;
 }
 
+/* 文字入口以文案和图标反馈交互，不添加背景面。 */
+.fouc-action[data-variant="text"] {
+  --action-state-bg: transparent;
+}
+
 /* 内容折叠按钮仅在当前交互时高亮；展开的内容本身已表达状态。 */
 html .fouc-action:is(:hover, :focus-visible, :active, [aria-expanded="true"]:not([data-variant="collapsible"])):not(:disabled):not([aria-disabled="true"]):not([data-disabled]) {
   background: var(--action-state-bg);

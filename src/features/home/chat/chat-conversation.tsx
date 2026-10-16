@@ -82,6 +82,9 @@ export function ChatConversation({
                   <dt>{t(submission.context.execution.kind === "agent" ? "agentLabel" : "modelLabel")}</dt>
                   <dd>{getChatExecutionOption(submission.context.execution).name}</dd>
                 </div>
+                {submission.context.execution.kind === 'auto' ? <div>
+                  <dt>{t('autoPool')}</dt><dd>{submission.context.autoRules.modelIds === null ? t('autoAllModels') : t('autoModelCount', { count: submission.context.autoRules.modelIds.length })}</dd>
+                </div> : null}
                 <div>
                   <dt>{t("project")}</dt>
                   <dd>{submission.context.projectName ?? t("noProject")}</dd>

@@ -1,9 +1,10 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { ArrowDown, ArrowSquareOut, ArrowUp, Brain, CaretDown, Check, ClockCounterClockwise, Eye, ImageSquare, Wrench, X } from '@phosphor-icons/react';
+import { ArrowSquareOut, Brain, CaretDown, Check, DownloadSimple, Eye, ImageSquare, SignIn, SignOut, UploadSimple, Wrench, X } from '@phosphor-icons/react';
 import type { ModelCatalogEntry } from '@fouc/shared/model-catalog';
 import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useTranslation } from '@/lib/i18n';
 import { modelInfoMessages } from './model-info-messages';
 import { ModelBenchmarkChart } from './model-benchmark-chart';
@@ -32,10 +33,11 @@ export function ModelInfoCard({ model, expanded, onToggle, onSelect, onClose }: 
     { key: 'reasoning', Icon: Brain }, { key: 'imageGeneration', Icon: ImageSquare },
   ] as const;
   const priceRows = [
-    { key: 'input', label: 'input', Icon: ArrowUp }, { key: 'output', label: 'outputPrice', Icon: ArrowDown },
-    { key: 'cacheRead', label: 'cacheRead', Icon: ClockCounterClockwise }, { key: 'cacheWrite', label: 'cacheWrite', Icon: ClockCounterClockwise },
+    { key: 'input', label: 'input', Icon: SignIn }, { key: 'output', label: 'outputPrice', Icon: SignOut },
+    { key: 'cacheRead', label: 'cacheRead', Icon: DownloadSimple }, { key: 'cacheWrite', label: 'cacheWrite', Icon: UploadSimple },
   ] as const;
-  const priceText = (value: number | null) => value === null ? t('unknown') : `$${value.toLocaleString(locale, { maximumFractionDigits: 4 })}`;
+  const priceNumber = (value: number) => value.toLocaleString(locale, { maximumFractionDigits: 4 });
+  const priceText = (value: number | null) => value === null ? t('unknown') : `$${priceNumber(value)}`;
   const header = (section: keyof ModelInfoSections, summary?: ReactNode) => <button
     type="button" className={`fouc-action ${styles.sectionHeader}`} data-variant="collapsible" data-section={section} aria-label={t(section)} aria-expanded={expanded[section]}
     title={section === 'benchmarks' ? t('benchmarkNote') : undefined}
@@ -48,6 +50,7 @@ export function ModelInfoCard({ model, expanded, onToggle, onSelect, onClose }: 
     // Buttons and links in the detail panel keep their normal keyboard semantics.
     if (event.key !== 'Escape') event.stopPropagation();
   }}>
+    <ScrollArea className={styles.scrollArea} viewportClassName={styles.viewport}>
     <div className={styles.body}>
       <header className={styles.intro}>
         <Button type="button" variant="ghost" size="icon-sm" className={styles.close} aria-label={t('backToModels')} onClick={onClose}><X size={14} /></Button>
@@ -92,17 +95,22 @@ export function ModelInfoCard({ model, expanded, onToggle, onSelect, onClose }: 
       </section>
       <section className={styles.section}>
         {header('pricing', <span className={styles.compactPrice} title={t('pricingUnit')}>
-          {model.pricing.cacheRead !== null ? <span title={t('cacheRead')}><ClockCounterClockwise size={13} />{priceText(model.pricing.cacheRead)}</span> : null}
-          <span title={t('input')}><ArrowUp size={13} />{priceText(model.pricing.input)}</span>
-          <span title={t('outputPrice')}><ArrowDown size={13} />{priceText(model.pricing.output)}</span>
+          {priceRows.filter(({ key }) => key !== 'cacheWrite' && (key !== 'cacheRead' || model.pricing.cacheRead !== null)).map(({ key, label, Icon }) =>
+            <span key={key} data-price={key} title={`${t(label)} · ${t('pricingUnit')}`}><Icon size={13} /><strong>{priceText(model.pricing[key])}</strong></span>)}
         </span>)}
         {expanded.pricing ? <div className={styles.sectionContent}>
           <p className={styles.unit}>{t('pricingUnit')}</p>
-          <dl className={styles.rows}>{priceRows.map(({ key, label, Icon }) => <div key={key}><dt><Icon size={15} />{t(label)}</dt><dd>{priceText(model.pricing[key])}</dd></div>)}</dl>
+          <dl className={styles.priceRows}>{priceRows.map(({ key, label, Icon }) => <div key={key} data-price={key}>
+            <dt><span className={styles.priceIcon}><Icon size={15} /></span>{t(label)}</dt>
+            <dd data-published={model.pricing[key] !== null}>{model.pricing[key] === null ? t('unknown') :
+              <span className={styles.priceAmount}><span className={styles.currency}>$</span><strong>{priceNumber(model.pricing[key])}</strong></span>}
+            </dd>
+          </div>)}</dl>
           {model.pricing.note ? <p className={styles.note}>{model.pricing.note[language]}</p> : null}
         </div> : null}
       </section>
     </div>
+    </ScrollArea>
     <div className={styles.actions}><Button type="button" variant="outline" size="sm" onClick={onSelect}>{t('useModel')}</Button></div>
   </article>;
 }

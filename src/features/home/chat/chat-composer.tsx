@@ -310,7 +310,7 @@ export function ChatComposer({
                     key={hasMessage ? "send" : "voice"}
                   >
                     {hasMessage ? (
-                      <PaperPlaneTilt size={18} />
+                      <PaperPlaneTilt size={18} weight="fill" />
                     ) : (
                       <Waveform size={20} />
                     )}

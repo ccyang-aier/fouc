@@ -1,7 +1,6 @@
 'use client';
 
-import { useLayoutEffect, useRef, type ComponentProps, type RefObject } from 'react';
-import { ModelInfoCard } from './model-info-card';
+import { useLayoutEffect, useRef, type ReactNode, type RefObject } from 'react';
 import styles from './model-info-card.module.css';
 
 export const modelInfoPaneWidth = 400;
@@ -9,8 +8,8 @@ export const modelInfoPaneGap = 8;
 export const modelInfoNarrowWidth = 760;
 
 /** Keep the detail pane aligned to the whole list, independent of the hovered row. */
-export function ModelInfoPane({ anchorRef, focusOnOpen, panelId, onPointerEnter, onPointerLeave, ...props }:
-  ComponentProps<typeof ModelInfoCard> & {
+export function ModelInfoPane({ anchorRef, focusOnOpen, panelId, onPointerEnter, onPointerLeave, children }: {
+    children: ReactNode;
     anchorRef: RefObject<HTMLDivElement | null>;
     focusOnOpen: boolean;
     panelId: string;
@@ -41,7 +40,10 @@ export function ModelInfoPane({ anchorRef, focusOnOpen, panelId, onPointerEnter,
     window.addEventListener('resize', position);
     window.addEventListener('scroll', position, { capture: true, passive: true });
     anchor.addEventListener('animationend', position);
-    if (focusOnOpen) Array.from(pane.querySelectorAll('button')).find(button => button.getClientRects().length)?.focus({ preventScroll: true });
+    if (focusOnOpen) {
+      const target = Array.from(pane.querySelectorAll('button')).find(button => !button.disabled && button.getClientRects().length);
+      (target ?? pane).focus({ preventScroll: true });
+    }
     return () => {
       observer.disconnect();
       placementObserver.disconnect();
@@ -51,7 +53,7 @@ export function ModelInfoPane({ anchorRef, focusOnOpen, panelId, onPointerEnter,
     };
   }, [anchorRef, focusOnOpen]);
 
-  return <div id={panelId} ref={paneRef} className={styles.pane} onPointerEnter={onPointerEnter} onPointerLeave={onPointerLeave}>
-    <ModelInfoCard {...props} />
+  return <div id={panelId} ref={paneRef} tabIndex={-1} className={styles.pane} onPointerEnter={onPointerEnter} onPointerLeave={onPointerLeave}>
+    {children}
   </div>;
 }

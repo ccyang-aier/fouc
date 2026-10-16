@@ -1,0 +1,12 @@
+.logo { display: grid; place-items: center; flex: 0 0 var(--logo-size); width: var(--logo-size); height: var(--logo-size); border-radius: 50%; background: #df7757; color: white; }
+.logo[data-brand="openai"] { background: #050706; }
+.logo[data-brand="deepseek"] { background: #536bff; }
+.logo[data-brand="nanobanana"] { background: #ffd440; color: #503d03; }
+.logo[data-brand="gemini"] { background: #4285f4; }
+.logo[data-brand="model"] { background: var(--surface-subtle); color: var(--ink-soft); }
+.logo[data-brand="auto"] { background: #7162d9; color: #fff; }
+.logo[data-brand="nova"] { background: transparent; color: #c7826f; }
+.logo[data-brand="codey"] { background: #eaf1ff; color: #4c70b8; }
+.logo[data-brand="sage"] { background: #ecf4ed; color: #5c8365; }
+.brandMask { width: 78%; height: 78%; background: currentColor; mask: var(--brand-logo) center / contain no-repeat; }
+.logo > svg { width: 74%; height: 74%; }

@@ -22,6 +22,12 @@
   flex-shrink: 0;
   gap: 15px;
 }
+.toolsArrow {
+  transition: transform 160ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.toolsLink:is(:hover, :focus-visible) .toolsArrow {
+  transform: translateX(3px);
+}
 .toolsLink > span:first-child {
   min-width: 0;
   overflow: hidden;
@@ -61,5 +67,13 @@
   .toolsLink {
     gap: 6px;
     padding-inline: 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toolsArrow {
+    transition: none;
+  }
+  .toolsLink:is(:hover, :focus-visible) .toolsArrow {
+    transform: none;
   }
 }

@@ -34,6 +34,7 @@ export function HomeChat({
   const [draft, setDraft] = useState<ChatDraft>({ text: "", attachments: [] });
   const [context, setContext] = useState<ChatContext>({
     execution: { kind: "auto" },
+    autoRules: { modelIds: null },
     projectId: selectedProject?.id ?? null,
     projectName: selectedProject?.name ?? null,
     knowledgeIncluded: true,

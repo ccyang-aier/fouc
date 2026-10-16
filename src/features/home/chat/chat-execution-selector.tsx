@@ -1,18 +1,20 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
-import { Brain, CaretDown, Check, Code, ImageSquare, Leaf, Sparkle, StarFour } from "@phosphor-icons/react";
+import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { Brain, CaretDown, Check, ImageSquare } from "@phosphor-icons/react";
 import type { ModelCatalogEntry } from '@fouc/shared/model-catalog';
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useTranslation } from '@/lib/i18n';
-import { autoExecutionOption, chatAgents, getChatExecutionOption, modelExecutionOption, modelProviders, type ChatExecutionOption } from "./chat-execution-options";
+import { autoExecutionOption, chatAgents, getChatExecutionOption, modelExecutionOption, modelProviders } from "./chat-execution-options";
+import { ChatExecutionLogo } from './chat-execution-logo';
+import { AutoModelInfoCard } from './auto-model-info-card';
 import type { ChatContext } from "./chat-types";
 import type { ChatText } from "./chat-messages";
 import { ChatPickerContent, ChatPickerItem, ChatPickerSearch } from "./chat-picker";
-import { formatModelTokens, type ModelInfoSections } from './model-info-card';
+import { ModelInfoCard, formatModelTokens, type ModelInfoSections } from './model-info-card';
 import { ModelInfoPane, modelInfoNarrowWidth, modelInfoPaneGap, modelInfoPaneWidth } from './model-info-pane';
 import { modelInfoMessages } from './model-info-messages';
 import { useModelCatalog } from './use-model-catalog';
@@ -27,14 +29,7 @@ function AgentModeIcon({ size }: { size: number }) {
   </svg>;
 }
 
-function ExecutionLogo({ option }: { option: ChatExecutionOption }) {
-  const { brand } = option;
-  const Icon = brand === 'auto' ? StarFour : brand === "codey" ? Code : brand === "sage" ? Leaf : brand === 'model' ? Brain : Sparkle;
-  return <span className={styles.logo} data-brand={brand} aria-hidden="true">
-    {["auto", "nova", "codey", "sage", "model"].includes(brand) ? <Icon weight={brand === 'auto' ? 'regular' : 'fill'} /> :
-      <span className={styles.brandMask} style={{ "--brand-logo": `url(/agent-logos/ai-major/${brand}.svg)` } as CSSProperties} />}
-  </span>;
-}
+type ExecutionPreview = { kind: 'auto' } | { kind: 'model'; id: string };
 
 export function ChatExecutionSelector({ context, onChange, t }: {
   context: ChatContext;
@@ -44,10 +39,10 @@ export function ChatExecutionSelector({ context, onChange, t }: {
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<'model' | 'agent'>("model");
   const [query, setQuery] = useState("");
-  const [previewId, setPreviewId] = useState<string | null>(null);
+  const [preview, setPreview] = useState<ExecutionPreview | null>(null);
   const [focusPreview, setFocusPreview] = useState(false);
   const [menuOffset, setMenuOffset] = useState(0);
-  const [expanded, setExpanded] = useState<ModelInfoSections>({ benchmarks: true, capabilities: false, pricing: false });
+  const [expanded, setExpanded] = useState<ModelInfoSections>({ benchmarks: true, capabilities: true, pricing: true });
   const search = useRef<HTMLInputElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
@@ -68,8 +63,9 @@ export function ChatExecutionSelector({ context, onChange, t }: {
   const catalogPending = kind === 'model' && catalog.isPending;
   const catalogUnavailable = kind === 'model' && catalog.isError && !catalog.data;
   const showEmpty = !catalogPending && !catalogUnavailable && (kind === 'model' ? !models.length && (!normalizedQuery || !showAuto) : !agents.length);
-  const listHeight = Math.max(56, rowCount * 34 + (kind === 'model' ? groups.length * 32 : 0) + (catalogPending || catalogUnavailable ? 60 : showEmpty ? 44 : 0));
-  const previewModel = kind === 'model' ? models.find(model => model.id === previewId) : undefined;
+  const listHeight = Math.max(56, rowCount * 34 + 8 + (kind === 'model' ? groups.length * 32 : 0) + (catalogPending || catalogUnavailable ? 60 : showEmpty ? 44 : 0));
+  const previewModel = kind === 'model' && preview?.kind === 'model' ? models.find(model => model.id === preview.id) : undefined;
+  const previewAuto = kind === 'model' && preview?.kind === 'auto';
 
   function updateMenuOffset() {
     const left = trigger.current?.getBoundingClientRect().left ?? 0;
@@ -81,6 +77,9 @@ export function ChatExecutionSelector({ context, onChange, t }: {
     return () => window.removeEventListener('resize', updateMenuOffset);
   }, [open]);
   useEffect(() => () => { if (previewTimer.current) clearTimeout(previewTimer.current); }, []);
+  useEffect(() => {
+    if (open) menu.current?.querySelector('[data-current="true"]')?.scrollIntoView({ block: 'nearest' });
+  }, [open, kind, catalog.data, execution]);
 
   function keepPreview() {
     if (previewTimer.current) clearTimeout(previewTimer.current);
@@ -88,61 +87,72 @@ export function ChatExecutionSelector({ context, onChange, t }: {
   function leavePreview() {
     if (window.innerWidth <= modelInfoNarrowWidth || focusPreview) return;
     keepPreview();
-    previewTimer.current = setTimeout(() => setPreviewId(null), 220);
+    previewTimer.current = setTimeout(() => setPreview(null), 220);
   }
-  function showPreview(id: string, focus = false) {
+  function showPreview(target: ExecutionPreview, focus = false) {
     keepPreview();
     setFocusPreview(focus);
-    setPreviewId(id);
+    setPreview(target);
+  }
+  function previewKeys(event: KeyboardEvent, target: ExecutionPreview) {
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); showPreview(target, true); }
+    else if (event.key === 'Enter' || event.key === ' ') pointerType.current = 'keyboard';
+  }
+
+  function selectAuto() {
+    onChange({ execution: { kind: 'auto' } });
+    setPreview(null);
+    setOpen(false);
   }
 
   function selectModel(model: ModelCatalogEntry) {
     onChange({ execution: { kind: 'model', id: model.id, name: model.name, provider: model.provider } });
-    setPreviewId(null);
+    setPreview(null);
     setOpen(false);
   }
   function closePreview() {
     keepPreview();
-    setPreviewId(null);
+    setPreview(null);
     requestAnimationFrame(() => search.current?.focus());
   }
 
   return <DropdownMenu open={open} onOpenChange={next => {
     keepPreview();
     setOpen(next);
-    setPreviewId(null);
-    if (next) { setQuery(''); updateMenuOffset(); }
+    setPreview(null);
+    if (next) { setKind(execution.kind === 'agent' ? 'agent' : 'model'); setQuery(''); updateMenuOffset(); }
   }}>
     <DropdownMenuTrigger asChild>
       <Button ref={trigger} type="button" variant="outline" className={styles.trigger} aria-label={t("executionSelector")}>
-        <ExecutionLogo option={selected} /><span className={styles.triggerName}>{selected.name}</span><CaretDown size={11} />
+        <ChatExecutionLogo option={selected} size={16} /><span className={styles.triggerName}>{selected.name}</span><CaretDown size={11} />
       </Button>
     </DropdownMenuTrigger>
     <ChatPickerContent ref={menu} className={styles.menu} alignOffset={menuOffset} aria-description={info('detailsHint')}
       onPointerEnter={keepPreview} onPointerLeave={leavePreview}
-      onEscapeKeyDown={event => { if (previewModel) { event.preventDefault(); closePreview(); } }}>
+      onEscapeKeyDown={event => { if (preview) { event.preventDefault(); closePreview(); } }}>
       <div className={styles.header} onKeyDown={event => { if (event.key === 'Tab') event.stopPropagation(); }}>
         <ChatPickerSearch ref={search} containerClassName={styles.search} value={query} aria-label={t(kind === 'agent' ? 'searchAgents' : 'searchModels')}
           placeholder={t(kind === 'agent' ? 'searchAgents' : 'searchModels')}
-          onChange={event => { setQuery(event.target.value); setPreviewId(null); }} />
+          onChange={event => { setQuery(event.target.value); setPreview(null); }} />
         <div className={styles.modeSwitch} role="group" aria-label={t('executionMode')}>
           {(['model', 'agent'] as const).map(mode => {
             const Icon = mode === 'model' ? Brain : AgentModeIcon;
             return <Tooltip key={mode}><TooltipTrigger asChild>
               <Button type="button" variant="ghost" className={styles.modeButton} aria-label={t(mode === 'model' ? 'modelLabel' : 'agentLabel')}
                 aria-pressed={kind === mode} data-active-mode={kind === mode}
-                onClick={() => { setKind(mode); setQuery(''); setPreviewId(null); search.current?.focus(); }}><Icon size={14} /></Button>
+                onClick={() => { setKind(mode); setQuery(''); setPreview(null); search.current?.focus(); }}><Icon size={14} /></Button>
             </TooltipTrigger><TooltipContent>{t(mode === 'model' ? 'modelLabel' : 'agentLabel')}</TooltipContent></Tooltip>;
           })}
         </div>
       </div>
       <ScrollArea className={styles.list} key={kind} viewportClassName={styles.listViewport} style={{ '--list-height': `${listHeight}px` } as CSSProperties}>
-        {showAuto ? <ChatPickerItem className={styles.option} role="menuitemradio" aria-checked={execution.kind === 'auto'} textValue={autoExecutionOption.name}
-          aria-label={autoExecutionOption.name} title={t('autoMode')}
-          onPointerMove={() => { keepPreview(); setPreviewId(null); }}
-          onFocus={() => setPreviewId(null)}
-          onSelect={() => onChange({ execution: { kind: 'auto' } })}>
-          <ExecutionLogo option={autoExecutionOption} /><span className={styles.optionName}>{autoExecutionOption.name}</span>
+        {showAuto ? <ChatPickerItem className={styles.option} role="menuitemradio" aria-checked={execution.kind === 'auto'} data-current={execution.kind === 'auto'} textValue={autoExecutionOption.name}
+          aria-label={autoExecutionOption.name} aria-expanded={previewAuto} aria-controls={previewAuto ? previewPanelId : undefined}
+          onPointerDown={event => { pointerType.current = event.pointerType; }}
+          onPointerMove={event => { if (event.pointerType === 'mouse' && !previewAuto) showPreview({ kind: 'auto' }); }}
+          onKeyDown={event => previewKeys(event, { kind: 'auto' })}
+          onSelect={event => { if (pointerType.current === 'touch') { event.preventDefault(); showPreview({ kind: 'auto' }); } else selectAuto(); }}>
+          <ChatExecutionLogo option={autoExecutionOption} /><span className={styles.optionName}>{autoExecutionOption.name}</span>
           {execution.kind === 'auto' ? <Check size={13} className={styles.selected} aria-label={t('selectedExecution')} /> : null}
         </ChatPickerItem> : null}
         {catalogPending ? <p className={styles.status} role="status">{info('loading')}</p> :
@@ -152,16 +162,13 @@ export function ChatExecutionSelector({ context, onChange, t }: {
           <DropdownMenuLabel className={styles.providerLabel}>{group.name}</DropdownMenuLabel>
           {group.models.map(model => {
             const active = execution.kind === 'model' && execution.id === model.id;
-            return <ChatPickerItem key={model.id} className={styles.option} role="menuitemradio" aria-checked={active} textValue={model.name}
-              aria-expanded={previewId === model.id} aria-controls={previewId === model.id ? previewPanelId : undefined}
+            return <ChatPickerItem key={model.id} className={styles.option} role="menuitemradio" aria-checked={active} data-current={active} textValue={model.name}
+              aria-expanded={previewModel?.id === model.id} aria-controls={previewModel?.id === model.id ? previewPanelId : undefined}
               aria-label={model.name} onPointerDown={event => { pointerType.current = event.pointerType; }}
-              onPointerMove={event => { if (event.pointerType === 'mouse' && previewId !== model.id) showPreview(model.id); }}
-              onSelect={event => { if (pointerType.current === 'touch') { event.preventDefault(); showPreview(model.id); } else selectModel(model); }}
-              onKeyDown={event => {
-                if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); showPreview(model.id, true); }
-                else if (event.key === 'Enter' || event.key === ' ') pointerType.current = 'keyboard';
-              }}>
-              <ExecutionLogo option={modelExecutionOption(model)} />
+              onPointerMove={event => { if (event.pointerType === 'mouse' && previewModel?.id !== model.id) showPreview({ kind: 'model', id: model.id }); }}
+              onSelect={event => { if (pointerType.current === 'touch') { event.preventDefault(); showPreview({ kind: 'model', id: model.id }); } else selectModel(model); }}
+              onKeyDown={event => previewKeys(event, { kind: 'model', id: model.id })}>
+              <ChatExecutionLogo option={modelExecutionOption(model)} />
               <span className={styles.optionName}>{model.name}</span>
               {model.capabilities.imageGeneration ? <ImageSquare className={styles.imageIcon} aria-label={t('imageModel')} /> : null}
               <span className={styles.contextSize}>{formatModelTokens(model.contextWindow)}</span>
@@ -170,17 +177,21 @@ export function ChatExecutionSelector({ context, onChange, t }: {
           })}
         </DropdownMenuGroup>) : agents.map(agent => {
           const active = execution.kind === 'agent' && execution.id === agent.id;
-          return <ChatPickerItem key={agent.id} className={styles.option} role="menuitemradio" aria-checked={active} textValue={agent.name}
+          return <ChatPickerItem key={agent.id} className={styles.option} role="menuitemradio" aria-checked={active} data-current={active} textValue={agent.name}
             onSelect={() => onChange({ execution: { kind: 'agent', id: agent.id, name: agent.name } })}>
-            <ExecutionLogo option={agent} /><span className={styles.optionName}>{agent.name}</span>{active ? <Check className={styles.selected} size={13} /> : null}
+            <ChatExecutionLogo option={agent} /><span className={styles.optionName}>{agent.name}</span>{active ? <Check className={styles.selected} size={13} /> : null}
           </ChatPickerItem>;
         })}
         {showEmpty ? <p className={picker.empty} role="status">{kind === 'model' && !normalizedQuery ? info('empty') : t('noExecutionResults')}</p> : null}
       </ScrollArea>
-      {previewModel ? <ModelInfoPane key={previewModel.id} anchorRef={menu} focusOnOpen={focusPreview}
-        panelId={previewPanelId} onPointerEnter={keepPreview} onPointerLeave={leavePreview}
-        model={previewModel} expanded={expanded} onToggle={section => setExpanded(current => ({ ...current, [section]: !current[section] }))}
-        onSelect={() => selectModel(previewModel)} onClose={closePreview} /> : null}
+      {previewModel || previewAuto ? <ModelInfoPane key={previewAuto ? 'auto' : previewModel?.id} anchorRef={menu} focusOnOpen={focusPreview}
+        panelId={previewPanelId} onPointerEnter={keepPreview} onPointerLeave={leavePreview}>
+        {previewAuto ? <AutoModelInfoCard models={catalog.data ?? []} rules={context.autoRules}
+          onChange={autoRules => onChange({ autoRules })} onSelect={selectAuto} onClose={closePreview}
+          loading={catalogPending} unavailable={catalogUnavailable} onRetry={() => void catalog.refetch()} /> :
+          previewModel ? <ModelInfoCard model={previewModel} expanded={expanded} onToggle={section => setExpanded(current => ({ ...current, [section]: !current[section] }))}
+            onSelect={() => selectModel(previewModel)} onClose={closePreview} /> : null}
+      </ModelInfoPane> : null}
     </ChatPickerContent>
   </DropdownMenu>;
 }

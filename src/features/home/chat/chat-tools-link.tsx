@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { ArrowRight } from "@phosphor-icons/react";
+import { CaretRight } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import type { ChatText } from "./chat-messages";
 import styles from "./chat-tools-link.module.css";
@@ -13,6 +13,7 @@ export function ChatToolsLink({ onOpen, t }: { onOpen: () => void; t: ChatText }
     <Button
       type="button"
       variant="ghost"
+      data-variant="text"
       className={styles.toolsLink}
       onClick={onOpen}
     >
@@ -30,7 +31,7 @@ export function ChatToolsLink({ onOpen, t }: { onOpen: () => void; t: ChatText }
             </span>
           ))}
         </span>
-        <ArrowRight size={20} />
+        <CaretRight className={styles.toolsArrow} size={16} />
       </span>
     </Button>
   );

@@ -5,8 +5,11 @@ export type ChatExecution =
   | { kind: "agent"; id: string; name?: string }
   | { kind: "model"; id: string; name?: string; provider?: ModelCatalogEntry['provider'] };
 
+export type AutoModelRules = { modelIds: string[] | null };
+
 export type ChatContext = {
   execution: ChatExecution;
+  autoRules: AutoModelRules;
   localEnvironment?: { createWorktree: boolean };
   projectId: string | null;
   projectName: string | null;

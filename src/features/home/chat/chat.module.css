@@ -118,12 +118,13 @@
   cursor: pointer;
 }
 .iconButton {
-  border-color: var(--control-border);
+  border-color: var(--chat-control-border);
   background: var(--panel);
   color: #28322b;
   box-shadow: 0 2px 4px rgb(22 33 23 / 3%);
 }
 .sendButton {
+  border: 1px solid var(--chat-control-border);
   color: #fff;
   background: #232b25;
   box-shadow:
@@ -143,7 +144,7 @@
 .composerGroup button:focus-visible {
   outline: none;
   box-shadow: none;
-  border-color: var(--control-border);
+  border-color: var(--chat-control-border);
 }
 .fileInput {
   display: none;
@@ -417,7 +418,6 @@
   filter: invert(1);
 }
 :global(html[data-theme="dark"]) .composer,
-:global(html[data-theme="dark"]) .iconButton,
 :global(html[data-theme="dark"]) .fileCard,
 :global(html[data-theme="dark"]) .contextSummary {
   border-color: var(--control-border);

@@ -54,7 +54,7 @@ function Companion() {
   function interact(fromKeyboard = false) {
     keyboardOpen.current = fromKeyboard;
     setOpen(current => !current);
-    runtime.current?.interact(false);
+    runtime.current?.interact();
   }
 
   return (

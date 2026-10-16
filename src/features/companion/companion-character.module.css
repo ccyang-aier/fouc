@@ -10,28 +10,31 @@
   .squash{ width:100%; height:100%; transform-origin:50% 100%;
            transition:transform .28s cubic-bezier(.3,1.6,.5,1); }
   .tilt{ width:100%; height:100%; transition:transform .5s cubic-bezier(.3,1.5,.5,1); }
+  .character[data-tracking="true"] .tilt{ transition:none; }
   .breath{ width:100%; height:100%; animation:breath 3.6s ease-in-out infinite; transform-origin:50% 90%; }
   @keyframes breath{ 0%,100%{transform:scale(1,1)} 50%{transform:scale(1.025,.975)} }
   .body-svg{ position:absolute; left:-65px; top:-65px; width:300px; height:300px; pointer-events:none; }
 
   /* ===== 面部 ===== */
-  .face{ position:absolute; left:50%; top:47%; display:flex; gap:10px; transform:translate(-50%,-50%);
-         transition:transform .25s ease-out; }
+  .face{ position:absolute; left:50%; top:47%; display:flex; gap:10px; transform:translate(-50%,-50%); }
   .eye{ position:relative; width:40px; height:40px; transition:transform .12s ease-in, width .3s, height .3s; }
   .eye .ball{ position:absolute; inset:0; background:#fff; border-radius:50%; overflow:hidden;
               box-shadow: inset 0 -3px 6px rgba(0,0,0,.12); transition:opacity .12s; }
   .pupil{ position:absolute; left:50%; top:50%; width:14px; height:14px; margin:-7px 0 0 -7px; background:#0c0c0c;
-          border-radius:50%; transition:transform .12s ease-out, width .3s, height .3s, margin .3s; }
+          border-radius:50%; transition:width .3s, height .3s, margin .3s; }
   .pupil::after{ content:none; }
   .lid{ position:absolute; left:-2px; right:-2px; top:-2px; height:0; background:#0b0b0b; transition:height .45s ease;
         border-bottom:2px solid rgba(255,255,255,.0); }
   .arc{ position:absolute; left:6px; right:6px; height:22px; border:4px solid #fff; border-radius:50%;
         opacity:0; transition:opacity .12s; }
   .arc.down{ top:4px; border-color:transparent transparent #f2f2f2 transparent; }
-  .arc.up{ top:12px; border-color:#fff transparent transparent transparent; }
+  .arc.up{ top:12px; left:3px; right:3px; height:25px; border-width:6px; border-color:#fff transparent transparent transparent; }
   .eye.closed{ transform:scaleY(.08); }
   .eye.m-down .ball, .eye.m-up .ball{ opacity:0 } .eye.m-down .arc.down{opacity:1} .eye.m-up .arc.up{opacity:1}
-  .eye.drowsy .lid{ height:52%; }
+  .eye.drowsy .lid{ height:55%; animation:drowsy-lid 1.2s ease-in-out 2; }
+  .tilt.nodding{ animation:drowsy-nod 1.2s ease-in-out 2; transform-origin:50% 80%; }
+  @keyframes drowsy-lid{ 0%,20%,100%{height:55%} 55%,75%{height:105%} }
+  @keyframes drowsy-nod{ 0%,20%,100%{transform:rotate(-3deg) translateY(0)} 60%{transform:rotate(7deg) translateY(6px)} }
   .eye.wide{ width:46px; height:46px; }
   .eye.wide .pupil{ width:10px;height:10px;margin:-5px 0 0 -5px; }
 
@@ -58,3 +61,8 @@
   @keyframes heart{ 0%{opacity:0;transform:translate(0,0) scale(.4)} 20%{opacity:1;transform:translate(0,-10px) scale(1)} 100%{opacity:0;transform:translate(var(--dx),-80px) scale(.8)} }
 
   .candy{ position:absolute; width:18px; height:18px; z-index:6; pointer-events:none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .character :is(.breath, .zzz, .tilt, .eye, .pupil, .face, .arc, .hop, .squash, .shadow, .blush, .burst-line, .heart),
+  .character .eye.drowsy .lid { animation:none; transition:none; }
+}

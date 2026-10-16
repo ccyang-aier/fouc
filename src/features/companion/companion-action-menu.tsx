@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, ArrowUp, CircleHelp, Eye, EyeClosed, Heart, Moon, Smile, Sparkles, WandSparkles } from 'lucide-react';
+import { ArrowUp, CircleHelp, Eye, EyeClosed, Heart, Moon, Orbit, Smile, SmilePlus, Sparkles, WandSparkles } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useTranslation } from '@/lib/i18n/react';
 import { companionExpressions, companionMotions, messages, type CompanionAction } from './companion.messages';
@@ -9,7 +9,7 @@ const groups = {
   expression: { label: '表情', Icon: Smile, actions: companionExpressions },
   motion: { label: '动作', Icon: WandSparkles, actions: companionMotions },
 } as const;
-const actionIcons = { lookLeft: ArrowLeft, lookRight: ArrowRight, blink: Eye, wink: EyeClosed, happy: Heart, drowsy: Moon, curious: CircleHelp, hopAct: ArrowUp, poof: Sparkles };
+const actionIcons = { blink: Eye, wink: EyeClosed, happy: Heart, drowsy: Moon, curious: CircleHelp, surprised: Eye, shy: SmilePlus, dizzy: Orbit, hopAct: ArrowUp, poof: Sparkles };
 
 export function CompanionActionMenu({ group, busy, onAction }: {
   group: keyof typeof groups;

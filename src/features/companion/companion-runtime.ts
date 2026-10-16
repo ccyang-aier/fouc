@@ -1,6 +1,7 @@
 import { createTranslator } from '@/lib/i18n/messages';
 import styles from './companion-character.module.css';
 import { createCompanionFur } from './companion-fur';
+import { createCompanionClickSequence } from './companion-click-sequence';
 import { messages, type CompanionAction } from './companion.messages';
 
 export interface CompanionState { label: string; mood: number; full: number; busy: boolean; speech: string | null }
@@ -13,7 +14,8 @@ export function createCompanionRuntime(root: HTMLElement, onChange: (state: Comp
   const face = get('.face'), shadow = get('.shadow'), stage = get('.stage');
   const eyes = Array.from(root.querySelectorAll<HTMLElement>(`.${styles.eye}`));
   const pupils = Array.from(root.querySelectorAll<HTMLElement>(`.${styles.pupil}`));
-  const fur = createCompanionFur(get<HTMLCanvasElement>('.body-svg'));
+  const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const fur = createCompanionFur(get<HTMLCanvasElement>('.body-svg'), motionPreference.matches);
   const text = createTranslator(messages);
   const events = new AbortController();
   const cancelled = Symbol('disposed companion');
@@ -23,7 +25,18 @@ export function createCompanionRuntime(root: HTMLElement, onChange: (state: Comp
   let state = { ...initialCompanionState };
   let lastMove = Date.now(), sleeping = false, lookOverride: { x: number; y: number } | null = null;
   const mouse = { x: innerWidth / 2, y: innerHeight / 2 }, cur = { x: 0, y: 0 };
-  let clicks = 0, pendingDizzy = false, petAcc = 0, lastPet = 0;
+  const clicks = createCompanionClickSequence();
+  let pendingBurst = false, petAcc = 0, lastPet = 0;
+  let previousFrame = 0, nearPointer: boolean | null = null, measureNeeded = true;
+  const anchor = root.closest<HTMLElement>('[data-companion-drag]') ?? root;
+  const widget = root.closest<HTMLElement>('[data-companion]') ?? anchor;
+  const anchorCenter = { x: 0, y: 0 };
+  root.dataset.tracking = 'true';
+  const invalidatePosition = () => { measureNeeded = true; };
+  const positionObserver = new MutationObserver(invalidatePosition);
+  positionObserver.observe(widget, { attributes: true, attributeFilter: ['style', 'data-open'] });
+  window.addEventListener('resize', () => { invalidatePosition(); fur.resize(); }, { signal: events.signal });
+  motionPreference.addEventListener('change', event => fur.setReducedMotion(event.matches), { signal: events.signal });
 
   function later(fn: () => void, ms: number) {
     const id = setTimeout(() => { timers.delete(id); if (!disposed) fn(); }, ms);
@@ -40,7 +53,13 @@ export function createCompanionRuntime(root: HTMLElement, onChange: (state: Comp
       timers.set(id, () => reject(cancelled));
     });
   }
-  function update(next: Partial<CompanionState>) { if (!disposed) { state = { ...state, ...next }; onChange(state); } }
+  function update(next: Partial<CompanionState>) {
+    if (disposed) return;
+    if (next.busy !== undefined && next.busy !== state.busy) nearPointer = null;
+    state = { ...state, ...next };
+    root.dataset.tracking = String(!state.busy && !sleeping);
+    onChange(state);
+  }
   const setLabel = (label: string) => update({ label });
   const eyeClasses = ['closed', 'm-down', 'm-up', 'drowsy', 'wide'].map(name => styles[name]);
   function setEyes(cls = '', which = [0, 1]) {
@@ -54,23 +73,40 @@ export function createCompanionRuntime(root: HTMLElement, onChange: (state: Comp
   }
   const addMood = (d: number) => update({ mood: Math.max(0, Math.min(100, state.mood + d)) });
   const addFull = (d: number) => update({ full: Math.max(0, Math.min(100, state.full + d)) });
-  function center() { const r = hop.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height * .47 }; }
+  function center() {
+    if (measureNeeded) {
+      const r = anchor.getBoundingClientRect();
+      anchorCenter.x = r.left + r.width / 2; anchorCenter.y = r.top + r.height / 2;
+      measureNeeded = false;
+    }
+    return anchorCenter;
+  }
   function render(now: number) {
-    fur.draw(now);
+    const c = center(), dx = mouse.x - c.x, dy = mouse.y - c.y, distance = Math.hypot(dx, dy), d = distance || 1;
     let tx: number, ty: number;
     if (lookOverride) { tx = lookOverride.x; ty = lookOverride.y; }
     else {
-      const c = center(), dx = mouse.x - c.x, dy = mouse.y - c.y, d = Math.hypot(dx, dy) || 1;
       const k = Math.min(1, d / 260); tx = dx / d * k; ty = dy / d * k;
     }
-    cur.x += (tx - cur.x) * .18; cur.y += (ty - cur.y) * .18;
-    pupils.forEach(p => { p.style.transform = `translate(${cur.x * 10}px,${cur.y * 10}px)`; });
-    face.style.transform = `translate(calc(-50% + ${cur.x * 12}px), calc(-50% + ${cur.y * 9}px))`;
-    if (!state.busy && !sleeping) tilt.style.transform = `rotate(${cur.x * 4}deg)`;
+    const dt = previousFrame ? Math.min(64, now - previousFrame) : 1000 / 60;
+    previousFrame = now;
+    const follow = motionPreference.matches ? 1 : 1 - Math.pow(.82, dt / (1000 / 60));
+    if (Math.abs(tx - cur.x) + Math.abs(ty - cur.y) > .001) {
+      cur.x += (tx - cur.x) * follow; cur.y += (ty - cur.y) * follow;
+      pupils.forEach(p => { p.style.transform = `translate(${cur.x * 10}px,${cur.y * 10}px)`; });
+      face.style.transform = `translate(calc(-50% + ${cur.x * 6}px), calc(-50% + ${cur.y * 5}px))`;
+      if (!state.busy && !sleeping) tilt.style.transform = `rotate(${cur.x * 4}deg)`;
+    }
+    if (!state.busy && !sleeping) {
+      const near = distance < 140 && distance > 80;
+      if (near !== nearPointer) { nearPointer = near; eyes.forEach(el => el.classList.toggle(styles.wide, near)); }
+    }
+    fur.draw(now);
     frame = requestAnimationFrame(render);
   }
   function visibility() {
     cancelAnimationFrame(frame);
+    previousFrame = 0; invalidatePosition();
     if (!document.hidden && !disposed) frame = requestAnimationFrame(render);
   }
   document.addEventListener('visibilitychange', visibility, { signal: events.signal });
@@ -109,7 +145,13 @@ export function createCompanionRuntime(root: HTMLElement, onChange: (state: Comp
       for (let i = 0; i < 2; i++) { squash.style.transform = 'scale(1.06,.92)'; await sleep(160); squash.style.transform = 'scale(.96,1.05)'; await sleep(160); }
       squash.style.transform = ''; hearts(3); await sleep(700); clearEyes(); breath.classList.remove(styles.shy);
     },
-    async drowsy() { setLabel('DROWSY'); setEyes('drowsy'); lookOverride = { x: 0, y: .4 }; tilt.style.transform = 'rotate(-3deg)'; await sleep(2200); clearEyes(); lookOverride = null; },
+    async drowsy() {
+      setLabel('DROWSY'); setEyes('drowsy'); lookOverride = { x: 0, y: .4 }; tilt.classList.add(styles.nodding);
+      await sleep(2600); tilt.classList.remove(styles.nodding); clearEyes(); lookOverride = null;
+    },
+    async surprised() { setLabel('SURPRISED'); setEyes('wide'); lookOverride = { x: 0, y: 0 }; await sleep(1600); clearEyes(); lookOverride = null; },
+    async shy() { setLabel('SHY'); setEyes('m-up'); breath.classList.add(styles.shy); tilt.style.transform = 'rotate(-7deg)'; await sleep(1800); clearEyes(); breath.classList.remove(styles.shy); },
+    dizzy,
     async curious() { setLabel('CURIOUS TILT'); tilt.style.transform = 'rotate(-16deg)'; lookOverride = { x: .5, y: -.6 }; setEyes('wide'); say('嗯？', 1300); await sleep(1500); clearEyes(); lookOverride = null; },
     async hopAct(n = 2) {
       setLabel('HOP');
@@ -145,13 +187,14 @@ export function createCompanionRuntime(root: HTMLElement, onChange: (state: Comp
     finally {
       if (!disposed) {
         tilt.style.transform = ''; update({ busy: false, label: sleeping ? 'SLEEP' : 'REST' });
-        if (pendingDizzy) { pendingDizzy = false; void run(dizzy); }
+        if (pendingBurst) { pendingBurst = false; void run(tapBurst); }
       }
     }
   }
   function goSleep() { sleeping = true; setLabel('SLEEP'); setEyes('m-down'); breath.classList.add(styles.sleeping); breath.style.animationDuration = '5.5s'; tilt.style.transform = 'rotate(-4deg)'; }
   function clearSleep() { sleeping = false; breath.classList.remove(styles.sleeping); breath.style.animationDuration = ''; clearEyes(); }
   function wake() {
+    clicks.reset();
     lastMove = Date.now();
     if (!sleeping) return;
     clearSleep();
@@ -160,8 +203,6 @@ export function createCompanionRuntime(root: HTMLElement, onChange: (state: Comp
   window.addEventListener('pointermove', e => {
     mouse.x = e.clientX; mouse.y = e.clientY; lastMove = Date.now();
     if (sleeping) wake();
-    const c = center(), d = Math.hypot(mouse.x - c.x, mouse.y - c.y);
-    if (!state.busy) eyes.forEach(el => el.classList.toggle(styles.wide, d < 140 && d > 80));
   }, { signal: events.signal, passive: true });
   hop.addEventListener('pointermove', e => {
     if (root.closest('[data-dragging="true"]')) return;
@@ -170,7 +211,7 @@ export function createCompanionRuntime(root: HTMLElement, onChange: (state: Comp
     if (!state.busy) { setEyes('m-up'); breath.classList.add(styles.shy); }
     if (petAcc > 900) { petAcc = 0; hearts(2); addMood(3); const lines = ['好舒服~', '嘿嘿嘿', '再摸摸'] as const; say(lines[Math.floor(Math.random() * 3)], 1200); }
   }, { signal: events.signal, passive: true });
-  hop.addEventListener('pointerleave', () => { petAcc = 0; if (!state.busy) clearEyes(); breath.classList.remove(styles.shy); }, { signal: events.signal });
+  hop.addEventListener('pointerleave', () => { petAcc = 0; if (!state.busy) { clearEyes(); breath.classList.remove(styles.shy); } }, { signal: events.signal });
 
   async function feed() {
     clearSleep(); lastMove = Date.now();
@@ -197,21 +238,21 @@ export function createCompanionRuntime(root: HTMLElement, onChange: (state: Comp
       addFull(state.full > 85 ? 0 : 15); addMood(8); await sleep(900); breath.classList.remove(styles.shy); clearEyes();
     });
   }
-  let clickTimer: ReturnType<typeof setTimeout> | undefined;
-  function interact(animate = true) {
+  async function tapBurst() {
+    await A.poof();
+    const lines = ['噗！', '别戳我啦~', '再来一次？', '咕噜咕噜', '我是煤球，不是芝麻球', '嘿嘿', '软乎乎的吧'] as const;
+    say(lines[Math.floor(Math.random() * lines.length)]); addMood(4);
+  }
+  function interact() {
     lastMove = Date.now();
     if (sleeping) { wake(); return; }
-    clicks++; cancelTimer(clickTimer); clickTimer = later(() => { clicks = 0; }, 1500);
-    if (clicks >= 4) { clicks = 0; if (state.busy) pendingDizzy = true; else void run(dizzy); return; }
-    if (!animate) return;
-    void run(async () => {
-      await A.poof();
-      const lines = ['噗！', '别戳我啦~', '再来一次？', '咕噜咕噜', '我是煤球，不是芝麻球', '嘿嘿', '软乎乎的吧'] as const;
-      say(lines[Math.floor(Math.random() * lines.length)]); addMood(4);
-    });
+    if (!clicks.register(lastMove)) return;
+    if (state.busy) pendingBurst = true;
+    else void run(tapBurst);
   }
   function act(action: CompanionAction) {
     if (state.busy) return;
+    clicks.reset();
     lastMove = Date.now();
     if (action === 'sleep') { goSleep(); return; }
     clearSleep(); void run(A[action]);
@@ -244,7 +285,7 @@ export function createCompanionRuntime(root: HTMLElement, onChange: (state: Comp
   return {
     act, feed, interact, wake,
     dispose() {
-      disposed = true; events.abort(); cancelAnimationFrame(frame);
+      disposed = true; events.abort(); positionObserver.disconnect(); cancelAnimationFrame(frame);
       for (const [id, reject] of timers) { clearTimeout(id); reject?.(); } timers.clear();
       for (const node of particles) removeParticle(node);
     },

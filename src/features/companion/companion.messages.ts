@@ -12,13 +12,14 @@ export const messages = defineMessages({
   心情: ['心情', 'Mood'],
   饱腹: ['饱腹', 'Fullness'],
   喂糖: ['喂一颗金平糖 ✦', 'Feed a star candy ✦'],
-  左看: ['向左看', 'Look left'],
-  右看: ['向右看', 'Look right'],
   眨眼: ['眨眼', 'Blink'],
   眨单眼: ['眨单眼', 'Wink'],
   开心: ['开心', 'Happy'],
   瞌睡: ['打瞌睡', 'Drowsy'],
   好奇: ['好奇歪头', 'Curious tilt'],
+  惊讶: ['惊讶', 'Surprised'],
+  害羞: ['害羞', 'Shy'],
+  眩晕: ['眩晕', 'Dizzy'],
   跳跃: ['跳跃', 'Hop'],
   炸毛: ['炸毛', 'Poof'],
   睡眠: ['睡觉', 'Sleep'],
@@ -44,10 +45,10 @@ export const messages = defineMessages({
 });
 
 export const companionExpressions = [
-  ['lookLeft', '左看'], ['lookRight', '右看'], ['blink', '眨眼'],
-  ['wink', '眨单眼'], ['happy', '开心'], ['drowsy', '瞌睡'],
+  ['blink', '眨眼'], ['wink', '眨单眼'], ['happy', '开心'], ['drowsy', '瞌睡'],
+  ['curious', '好奇'], ['surprised', '惊讶'], ['shy', '害羞'], ['dizzy', '眩晕'],
 ] as const;
 export const companionMotions = [
-  ['curious', '好奇'], ['hopAct', '跳跃'], ['poof', '炸毛'],
+  ['hopAct', '跳跃'], ['poof', '炸毛'],
 ] as const;
 export type CompanionAction = typeof companionExpressions[number][0] | typeof companionMotions[number][0] | 'sleep';

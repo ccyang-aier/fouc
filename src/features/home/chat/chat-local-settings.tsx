@@ -31,7 +31,6 @@ const messages = {
   noEnvironment: ["无环境", "No environment"],
   environmentUnavailable: ["当前对话尚未绑定执行环境", "This conversation has no execution environment"],
   manageLocalAgents: ["管理本机 Agent", "Manage local agents"],
-  draftPreference: ["应用于当前对话草稿", "Applies to this conversation draft"],
 } as const;
 
 export function ChatLocalSettings({ context, onChange }: {
@@ -88,8 +87,6 @@ export function ChatLocalSettings({ context, onChange }: {
             </DropdownMenuItem>
           </DropdownMenuSubContent>
         </DropdownMenuSub>
-        <DropdownMenuSeparator className={styles.separator} />
-        <p className={styles.draftHint}>{t("draftPreference")}</p>
       </DropdownMenuContent>
     </DropdownMenu>
   );

@@ -47,7 +47,7 @@ export function ModelReasoningControl({ reasoning, value, onChange, t }: {
         }}
         onValueChange={value => onChange(levels[value])} />
       <div className={styles.levels} aria-hidden="true">{levels.map((item, i) =>
-        <span key={item} style={{ left: `${i / (levels.length - 1) * 100}%` }}>{item}</span>
+        <span key={item} data-current={i === index} style={{ left: `${i / (levels.length - 1) * 100}%` }}>{item}</span>
       )}</div>
     </DropdownMenuContent>
   </DropdownMenu>;

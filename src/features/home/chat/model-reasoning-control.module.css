@@ -5,4 +5,5 @@
 .heading strong[data-max="true"] { color: #9a58cb; }
 .levels { position: relative; height: 14px; margin: 6px 14px 0; font-size: 10px; line-height: 14px; color: var(--muted); user-select: none; }
 .levels span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.levels span[data-current="true"] { color: var(--ink-soft); font-weight: 500; }
 @media (prefers-reduced-motion: reduce) { .panel[data-state] { animation: none; } .heading strong { transition: none; } }

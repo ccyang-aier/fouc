@@ -32,12 +32,14 @@ import { ChatAttachments } from "./chat-attachments";
 import { ChatContextSelectors } from "./chat-selectors";
 import { ChatExecutionSelector } from "./chat-execution-selector";
 import { ChatToolsLink } from "./chat-tools-link";
+import { ChatQuickActions } from "./chat-quick-actions";
+import { ChatPromptInput } from "./chat-prompt-input";
 import { useChatVoice } from "./use-chat-voice";
-import type { ChatAttachment, ChatContext, ChatSubmission } from "./chat-types";
+import type { ChatAttachment, ChatContext, ChatSubmission, ChatTaskKind } from "./chat-types";
 import type { ChatText } from "./chat-messages";
 import styles from "./chat.module.css";
 
-export type ChatDraft = { text: string; attachments: ChatAttachment[] };
+export type ChatDraft = { text: string; attachments: ChatAttachment[]; task: ChatTaskKind | null };
 export function ChatComposer({
   draft,
   setDraft,
@@ -145,13 +147,19 @@ export function ChatComposer({
     onSubmit({
       id: crypto.randomUUID(),
       text: draft.text.trim(),
+      task: draft.task,
       attachments: draft.attachments,
       context: { ...context },
       createdAt: new Date(),
     });
-    setDraft({ text: "", attachments: [] });
+    setDraft({ text: "", attachments: [], task: null });
   }
   return (
+    <>
+    <ChatQuickActions value={draft.task} onSelect={task => {
+      setDraft(current => ({ ...current, task }));
+      inputRef.current?.focus({ preventScroll: true });
+    }} t={t} />
     <div className={styles.composerGroup} data-compact={compact}>
       <ChatContextSelectors context={context} onChange={setContext} t={t} />
       <div
@@ -188,15 +196,21 @@ export function ChatComposer({
             attachments={draft.attachments}
             t={t}
             onRemove={(id) =>
-              setDraft({
-                ...draft,
-                attachments: draft.attachments.filter((item) => item.id !== id),
-              })
+              setDraft(current => ({
+                ...current,
+                attachments: current.attachments.filter((item) => item.id !== id),
+              }))
             }
           />
         ) : null}
-        <textarea
-          ref={inputRef}
+        <ChatPromptInput
+          inputRef={inputRef}
+          task={draft.task}
+          t={t}
+          onRemoveTask={() => {
+            setDraft(current => ({ ...current, task: null }));
+            inputRef.current?.focus({ preventScroll: true });
+          }}
           className={`chat-scope ${styles.input}`}
           aria-label={t("input")}
           aria-invalid={invalid}
@@ -204,7 +218,8 @@ export function ChatComposer({
           placeholder={voice.listening ? t("listening") : t("placeholder")}
           rows={compact ? 2 : 3}
           onChange={(event) => {
-            setDraft({ ...draft, text: event.target.value });
+            const text = event.target.value;
+            setDraft(current => ({ ...current, text }));
             setInvalid(false);
           }}
           onPaste={(event) => {
@@ -332,5 +347,6 @@ export function ChatComposer({
       </div>
       {!compact ? <ChatToolsLink onOpen={onOpenConnectors} t={t} /> : null}
     </div>
+    </>
   );
 }

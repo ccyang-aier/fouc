@@ -16,9 +16,11 @@ export type ChatContext = {
   knowledgeIncluded: boolean;
 };
 export type ChatAttachment = { id: string; file: File };
+export type ChatTaskKind = 'website' | 'desktop' | 'slides' | 'design' | 'writing' | 'research' | 'data';
 export type ChatSubmission = {
   id: string;
   text: string;
+  task: ChatTaskKind | null;
   attachments: ChatAttachment[];
   context: ChatContext;
   createdAt: Date;

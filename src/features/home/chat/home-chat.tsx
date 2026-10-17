@@ -31,7 +31,7 @@ export function HomeChat({
   const { selectedProject } = useProjectResources();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const conversationViewport = useRef<HTMLDivElement>(null);
-  const [draft, setDraft] = useState<ChatDraft>({ text: "", attachments: [] });
+  const [draft, setDraft] = useState<ChatDraft>({ text: "", attachments: [], task: null });
   const [context, setContext] = useState<ChatContext>({
     execution: { kind: "auto" },
     autoRules: { modelIds: null },
@@ -65,7 +65,7 @@ export function HomeChat({
     });
   }
   function edit(submission: ChatSubmission) {
-    setDraft({ text: submission.text, attachments: submission.attachments });
+    setDraft({ text: submission.text, attachments: submission.attachments, task: submission.task });
     setContext(submission.context);
     setEditingId(submission.id);
     inputRef.current?.focus();
@@ -74,7 +74,7 @@ export function HomeChat({
     setConversationId(entry.id);
     setSubmissions(entry.submissions);
     setContext(entry.submissions.at(-1)!.context);
-    setDraft({ text: "", attachments: [] });
+    setDraft({ text: "", attachments: [], task: null });
     setEditingId(null);
     requestAnimationFrame(() => inputRef.current?.focus());
   }
@@ -94,7 +94,7 @@ export function HomeChat({
               setSubmissions([]);
               setEditingId(null);
               setConversationId(null);
-              setDraft({ text: "", attachments: [] });
+              setDraft({ text: "", attachments: [], task: null });
             }}
           >
             <ArrowLeft size={15} />

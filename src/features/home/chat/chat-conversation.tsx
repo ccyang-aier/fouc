@@ -4,6 +4,7 @@ import { ClipboardText, PencilSimple, Sparkle } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { useAppAlert } from "@/components/app-alert-provider";
 import { ChatAttachments } from "./chat-attachments";
+import { ChatTaskTag } from "./chat-quick-actions";
 import type { ChatSubmission } from "./chat-types";
 import type { ChatText } from "./chat-messages";
 import styles from "./chat.module.css";
@@ -49,6 +50,7 @@ export function ChatConversation({
             {submission.attachments.length ? (
               <ChatAttachments attachments={submission.attachments} t={t} />
             ) : null}
+            {submission.task ? <ChatTaskTag task={submission.task} t={t} /> : null}
             <p>{submission.text}</p>
             <div className={styles.messageActions}>
               <Button

@@ -7,6 +7,7 @@ export const messages = defineMessages({
   展开主导航: ['展开主导航', 'Expand main navigation'], 收起主导航: ['收起主导航', 'Collapse main navigation'],
   项目导航: ['项目导航', 'Project navigation'], 服务: ['服务', 'Services'], 频道: ['频道', 'Channels'], 最近: ['最近', 'Recent'],
   暂无频道: ['暂无频道', 'No channels yet'], 暂无最近对话: ['暂无最近对话', 'No recent chats'],
+  置顶分区: ['置顶', 'Pinned'], 暂无其他频道: ['暂无其他频道', 'No other channels'], 暂无其他对话: ['暂无其他对话', 'No other chats'],
   频道更多操作: ['频道更多操作', 'More channel actions'], 最近更多操作: ['最近更多操作', 'More recent actions'], 查看全部对话: ['查看全部对话', 'View all chats'],
   新建频道: ['新建频道', 'New channel'], 重命名频道: ['重命名频道', 'Rename channel'], 频道名称: ['频道名称', 'Channel name'], 输入频道名称: ['输入频道名称', 'Enter a channel name'],
   编辑频道名称: ['编辑频道“{name}”', 'Edit channel “{name}”'], 按名称排序: ['按名称排序', 'Sort by name'], 频道名称已存在: ['频道名称已存在', 'This channel name already exists'],

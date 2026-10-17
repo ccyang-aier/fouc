@@ -57,27 +57,35 @@ export function SidebarProjectSections({ onNewChat, onAllChats, onOpenChat }: { 
     pinChatConversation(scopeKey, entry.id, !entry.pinned);
     notify('success', t(entry.pinned ? '已取消置顶名称' : '已置顶名称', { name: chatConversationTitle(entry) }));
   }
-  const sortedChannels = [...channels].sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)));
+  const pinnedChannels = channels.filter(channel => channel.pinned);
+  const unpinnedChannels = channels.filter(channel => !channel.pinned);
+  const pinnedChats = history.filter(entry => entry.pinned);
+  const recentChats = history.filter(entry => !entry.pinned).slice(0, 6);
+  function channelRow(channel: SidebarChannel) {
+    const rename = () => setEditing({ kind: 'rename', resource: 'channel', id: channel.id, name: channel.name });
+    return <SidebarEntryRow key={`channel:${channel.id}`} name={channel.name} label={t('编辑频道名称', { name: channel.name })} icon={<Hash size={15} className="sidebar-nav-icon shrink-0" aria-hidden />} pinned={channel.pinned} onOpen={rename} onPin={() => toggleChannelPin(channel)} onRename={rename} onDelete={() => setEditing({ kind: 'delete', resource: 'channel', id: channel.id, name: channel.name })} />;
+  }
+  function chatRow(entry: ChatHistoryEntry) {
+    const name = chatConversationTitle(entry);
+    return <SidebarEntryRow key={`chat:${entry.id}`} name={name} icon={<ChatCircleDots size={15} weight="duotone" className="sidebar-nav-icon shrink-0" aria-hidden />} pinned={entry.pinned} onOpen={() => onOpenChat(entry)} onPin={() => toggleChatPin(entry)} onRename={() => setEditing({ kind: 'rename', resource: 'chat', id: entry.id, name })} onDelete={() => setEditing({ kind: 'delete', resource: 'chat', id: entry.id, name })} />;
+  }
   return <>
+    {Boolean(pinnedChannels.length + pinnedChats.length) && <SidebarSection title={t('置顶分区')}>
+      <div className={styles.list}>{pinnedChannels.map(channelRow)}{pinnedChats.map(chatRow)}</div>
+    </SidebarSection>}
     <SidebarSection title={t('频道')} actions={<>
       <DropdownMenu open={channelMenuOpen} onOpenChange={setChannelMenuOpen}><DropdownMenuTrigger className={styles.action} aria-label={t('频道更多操作')}><DotsThree size={17} weight="bold" /></DropdownMenuTrigger>{channelMenuOpen && <DropdownMenuContent side="right" align="start" density="compact"><DropdownMenuGroup>
         <DropdownMenuItem disabled={!scopeKey} onSelect={newChannel}><Plus />{t('新建频道')}</DropdownMenuItem><DropdownMenuSeparator /><DropdownMenuItem disabled={channels.length < 2} onSelect={() => saveChannels([...channels].sort((a, b) => a.name.localeCompare(b.name, locale)))}><SortAscending />{t('按名称排序')}</DropdownMenuItem>
       </DropdownMenuGroup></DropdownMenuContent>}</DropdownMenu>
       {action(t('新建频道'), newChannel, <Plus size={15} />)}
     </>}>
-      {channels.length ? <div className={styles.list}>{sortedChannels.map(channel => {
-        const rename = () => setEditing({ kind: 'rename', resource: 'channel', id: channel.id, name: channel.name });
-        return <SidebarEntryRow key={channel.id} name={channel.name} label={t('编辑频道名称', { name: channel.name })} icon={<Hash size={15} className="sidebar-nav-icon shrink-0" aria-hidden />} pinned={channel.pinned} onOpen={rename} onPin={() => toggleChannelPin(channel)} onRename={rename} onDelete={() => setEditing({ kind: 'delete', resource: 'channel', id: channel.id, name: channel.name })} />;
-      })}</div> : <p className={styles.empty}>{t('暂无频道')}</p>}
+      {unpinnedChannels.length ? <div className={styles.list}>{unpinnedChannels.map(channelRow)}</div> : <p className={styles.empty}>{t(channels.length ? '暂无其他频道' : '暂无频道')}</p>}
     </SidebarSection>
     <SidebarSection title={t('最近')} actions={<>
       <DropdownMenu open={recentMenuOpen} onOpenChange={setRecentMenuOpen}><DropdownMenuTrigger className={styles.action} aria-label={t('最近更多操作')}><DotsThree size={17} weight="bold" /></DropdownMenuTrigger>{recentMenuOpen && <DropdownMenuContent side="right" align="start" density="compact"><DropdownMenuGroup><DropdownMenuItem disabled={!scopeKey} onSelect={onAllChats}><ChatsCircle weight="duotone" />{t('查看全部对话')}</DropdownMenuItem></DropdownMenuGroup></DropdownMenuContent>}</DropdownMenu>
       {action(t('新对话'), onNewChat, <Plus size={15} />)}
     </>}>
-      {history.length ? <div className={styles.list}>{history.slice(0, 6).map(entry => {
-        const name = chatConversationTitle(entry);
-        return <SidebarEntryRow key={entry.id} name={name} icon={<ChatCircleDots size={15} weight="duotone" className="sidebar-nav-icon shrink-0" aria-hidden />} pinned={entry.pinned} onOpen={() => onOpenChat(entry)} onPin={() => toggleChatPin(entry)} onRename={() => setEditing({ kind: 'rename', resource: 'chat', id: entry.id, name })} onDelete={() => setEditing({ kind: 'delete', resource: 'chat', id: entry.id, name })} />;
-      })}</div> : <p className={styles.empty}>{t('暂无最近对话')}</p>}
+      {recentChats.length ? <div className={styles.list}>{recentChats.map(chatRow)}</div> : <p className={styles.empty}>{t(history.length ? '暂无其他对话' : '暂无最近对话')}</p>}
     </SidebarSection>
     {editing && <SidebarEntryDialog action={editing} nameExists={editing.resource === 'channel' ? name => channels.some(item => (editing.kind === 'create' || item.id !== editing.id) && item.name.toLocaleLowerCase() === name.toLocaleLowerCase()) : undefined} onConfirm={confirm} onClose={() => setEditing(null)} />}
   </>;

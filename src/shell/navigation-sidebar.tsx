@@ -49,7 +49,7 @@ export function NavigationSidebar({ open, onCollapse, onExpand, view, onViewChan
       {open ? <><FoucMark /><span className="ml-1.5 text-[13px] font-semibold">Fouc</span><button type="button" className="fouc-action ml-auto grid size-7 cursor-pointer place-items-center rounded-md text-[var(--muted-strong)]" aria-label={t('收起主导航')} onClick={onCollapse}><SidebarSimple size={16} weight="duotone" /></button></> : <button type="button" className="fouc-action grid size-8 cursor-pointer place-items-center rounded-md" aria-label={t('展开主导航')} onClick={onExpand}><FoucMark compact /></button>}
     </header>
     {open && <div className="shrink-0 px-3 py-3"><ProjectSwitcher onSwitch={onProjectChange} /></div>}
-    <ScrollArea className="min-h-0 flex-1" viewportClassName={open ? 'px-3 pb-4' : 'px-1 pb-3'}>
+    <ScrollArea className="min-h-0 flex-1" viewportClassName={open ? 'px-3 pb-4' : 'px-1 pb-3 pt-3'}>
       <nav aria-label={t('项目导航')} className="flex flex-col gap-0.5">{primary.map(row)}</nav>
       <div role="separator" className="mx-2 my-3 border-t border-[var(--line)]" />
       {open && <SidebarProjectSections key={scopeKey ?? 'no-project'} onNewChat={() => onViewChange('home')} onAllChats={() => onViewChange('chats')} onOpenChat={onOpenChat} />}
@@ -59,11 +59,11 @@ export function NavigationSidebar({ open, onCollapse, onExpand, view, onViewChan
       {row({ id: 'help', label: t('帮助与反馈'), icon: Question })}
       <div className={styles.dock} data-compact={!open}>
         <div className={styles.account}><AccountItem compact={!open} /></div>
-        <SidebarThemeSwitch compact={!open} />
+        {open && <><SidebarThemeSwitch />
         <Tooltip>
           <TooltipTrigger asChild><button type="button" className={`fouc-action ${styles.iconButton}`} aria-label={t('设置')} aria-haspopup="dialog" onClick={() => onViewChange('settings')}><GearSix size={18} weight="duotone" aria-hidden /></button></TooltipTrigger>
-          <TooltipContent side={open ? 'top' : 'right'}>{t('设置')}</TooltipContent>
-        </Tooltip>
+          <TooltipContent side="top">{t('设置')}</TooltipContent>
+        </Tooltip></>}
       </div>
     </footer>
     {open && <SidebarResizeHandle dragging={dragging} onPointerDown={startResize} />}

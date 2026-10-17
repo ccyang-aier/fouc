@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from 'react';
 
-export type SidebarChannel = { id: string; name: string };
+export type SidebarChannel = { id: string; name: string; pinned?: boolean };
 // The navigation label changes without replacing the stored project entries.
 const prefix = 'fouc.project.sidebar-tags.';
 const empty: SidebarChannel[] = [];

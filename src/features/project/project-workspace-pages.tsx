@@ -2,7 +2,7 @@
 
 import { Archive, ChatCircleDots, FolderSimple, ListChecks, Plus, UsersThree } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
-import { useChatHistory, type ChatHistoryEntry } from '@/features/home/chat/chat-history';
+import { chatConversationTitle, useChatHistory, type ChatHistoryEntry } from '@/features/home/chat/chat-history';
 import { useTranslation } from '@/lib/i18n';
 import { formatRelativeTime } from '@/lib/relative-time';
 import { useProjectResources } from './project-resources';
@@ -26,6 +26,6 @@ export function ProjectChatsPage({ onNew, onOpen }: { onNew: () => void; onOpen:
   const history = useChatHistory();
   return <section className={styles.page} aria-label={t('chats')}>
     <header className={styles.header}><h1>{t('chats')}</h1><Button size="sm" variant="outline" onClick={onNew}><Plus size={15} />{t('newChat')}</Button></header>
-    {history.length ? <ul className={styles.list}>{history.map(entry => <li key={entry.id}><button type="button" className={`fouc-action ${styles.row}`} onClick={() => onOpen(entry)}><ChatCircleDots size={22} weight="duotone" /><span><strong>{entry.submissions[0].text}</strong><small>{t('messages', { count: entry.submissions.length })}</small></span><time dateTime={entry.updatedAt.toISOString()}>{formatRelativeTime(entry.updatedAt.getTime(), locale)}</time></button></li>)}</ul> : <div className={styles.empty}><ChatCircleDots size={36} weight="duotone" aria-hidden /><h2>{t('noChats')}</h2><p>{t('chatDescription')}</p><Button size="sm" onClick={onNew}><Plus size={15} />{t('newChat')}</Button></div>}
+    {history.length ? <ul className={styles.list}>{history.map(entry => <li key={entry.id}><button type="button" className={`fouc-action ${styles.row}`} onClick={() => onOpen(entry)}><ChatCircleDots size={22} weight="duotone" /><span><strong>{chatConversationTitle(entry)}</strong><small>{t('messages', { count: entry.submissions.length })}</small></span><time dateTime={entry.updatedAt.toISOString()}>{formatRelativeTime(entry.updatedAt.getTime(), locale)}</time></button></li>)}</ul> : <div className={styles.empty}><ChatCircleDots size={36} weight="duotone" aria-hidden /><h2>{t('noChats')}</h2><p>{t('chatDescription')}</p><Button size="sm" onClick={onNew}><Plus size={15} />{t('newChat')}</Button></div>}
   </section>;
 }

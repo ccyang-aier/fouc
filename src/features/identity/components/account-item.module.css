@@ -1,5 +1,5 @@
 .trigger {
-  --action-state-bg: var(--sidebar-row-bg);
+  --action-state-bg: var(--wt-sidebar-identity-hover);
   --action-state-ink: var(--ink);
   display: flex;
   width: 100%;

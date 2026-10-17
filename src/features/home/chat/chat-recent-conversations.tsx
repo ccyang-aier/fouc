@@ -5,7 +5,7 @@ import { ClockCounterClockwise } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { formatRelativeTime } from "@/lib/relative-time";
 import type { Locale } from "@/lib/i18n";
-import { useChatHistory, type ChatHistoryEntry } from "./chat-history";
+import { chatConversationTitle, useChatHistory, type ChatHistoryEntry } from "./chat-history";
 import type { ChatText } from "./chat-messages";
 import styles from "./chat-recent-conversations.module.css";
 
@@ -27,8 +27,7 @@ export function ChatRecentConversations({ onOpen, t, locale }: {
       {visible.length ? (
         <ul className={styles.recentList} id="recent-conversations-list">
           {visible.map((entry, index) => {
-            const first = entry.submissions[0];
-            const title = first.attachments[0]?.file.name ?? first.text;
+            const title = chatConversationTitle(entry);
             return (
               <li key={entry.id}>
                 <Button variant="ghost" className={styles.recentRow} onClick={() => onOpen(entry)}>

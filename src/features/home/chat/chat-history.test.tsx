@@ -12,6 +12,7 @@ let session: { status: 'anonymous' } | { status: 'authenticated'; user: { id: st
 let resources: ResourceState;
 let history: ChatHistoryEntry[];
 let save: typeof import('./chat-history').saveChatConversation;
+let actions: typeof import('./chat-history');
 let renderHistory: () => ReactNode;
 let testId = 0;
 
@@ -26,7 +27,8 @@ beforeAll(async () => {
   mock.module('@/features/identity/identity-provider', () => ({ useIdentity: () => ({ session }) }));
   mock.module('@/features/project/project-client', () => ({ projectClient: { list: async () => [] } }));
   const { ProjectResourceProvider, useProjectResources } = await import('@/features/project/project-resources');
-  const { saveChatConversation, useChatHistory } = await import('./chat-history');
+  actions = await import('./chat-history');
+  const { saveChatConversation, useChatHistory } = actions;
   save = saveChatConversation;
   function Capture() {
     const project = useProjectResources();
@@ -125,5 +127,40 @@ test('without a selected real project the history stays empty when another scope
   expect(resources.scopeKey).toBeNull();
   expect(history).toEqual([]);
   await write(entry('unrelated'), `history-user-a:local:absent-${testId}`);
+  expect(history).toEqual([]);
+});
+
+test('pinning, renaming and deleting stay scoped and preserve message content and metadata on updates', async () => {
+  const first = `history-${testId}-a`, second = `history-${testId}-b`;
+  localStorage.setItem('fouc.local-projects', JSON.stringify([{ id: first, name: 'A' }, { id: second, name: 'B' }]));
+  await render();
+  const original = entry('same-conversation');
+  const newer = { ...entry('newer'), updatedAt: new Date('2026-10-17T09:00:00Z') };
+  await write(original);
+  await write(newer);
+  const firstScope = resources.scopeKey!;
+  await act(async () => {
+    actions.renameChatConversation(firstScope, original.id, '  Planning  ');
+    actions.pinChatConversation(firstScope, original.id, true);
+  });
+  expect(history.map(item => item.id)).toEqual([original.id, newer.id]);
+  expect(actions.chatConversationTitle(history[0])).toBe('Planning');
+  expect(history[0].submissions).toBe(original.submissions);
+  expect(history[0].updatedAt).toBe(original.updatedAt);
+  const update = { ...original, updatedAt: new Date('2026-10-17T10:00:00Z') };
+  await write(update);
+  expect(history[0].title).toBe('Planning');
+  expect(history[0].pinned).toBe(true);
+  await act(async () => actions.pinChatConversation(firstScope, original.id, false));
+  expect(history[0].pinned).toBe(false);
+  await select(second);
+  await write(original);
+  await act(async () => actions.deleteChatConversation(firstScope, original.id));
+  expect(history).toEqual([original]);
+  await select(first);
+  expect(history.map(item => item.id)).toEqual([newer.id]);
+  await act(async () => actions.renameChatConversation(firstScope, original.id, 'Deleted'));
+  expect(history.map(item => item.id)).toEqual([newer.id]);
+  await switchUser('other-account');
   expect(history).toEqual([]);
 });

@@ -110,12 +110,13 @@
   --wt-sidebar-content-panel: var(--panel);
   --wt-sidebar-database-panel: var(--panel);
   --wt-sidebar-identity-panel: #f0f0f0;
+  --wt-sidebar-identity-hover: #e4e4e4;
   --wt-sidebar-edge: var(--line);
-  /* 侧栏交互悬停面：浅白色，与标准面板协调 */
-  --sidebar-row-bg: #ffffff;
+  /* 侧栏交互使用浅灰平面，悬停与激活保持同一反馈。 */
+  --sidebar-row-bg: #eeeeee;
   --sidebar-row-border: #e3e3e3;
   --sidebar-row-hover-border: var(--sidebar-row-border);
-  --sidebar-row-shadow: 0 1px 2px rgb(20 20 20 / 0.04);
+  --sidebar-row-shadow: none;
   --sidebar-icon: #525252;
   --wt-sidebar-hover: rgb(255 255 255 / 0.55);
 }
@@ -187,6 +188,7 @@ html[data-theme="dark"] {
   --wt-sidebar-standard-panel: #141414;
   --wt-sidebar-database-panel: var(--surface-subtle);
   --wt-sidebar-identity-panel: var(--surface-subtle);
+  --wt-sidebar-identity-hover: var(--action-hover-bg);
   --wt-sidebar-edge: var(--line);
   --sidebar-row-bg: rgb(255 255 255 / 0.06);
   --sidebar-row-border: rgb(255 255 255 / 0.08);

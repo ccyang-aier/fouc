@@ -14,7 +14,7 @@ import { ChatComposer, type ChatDraft } from "./chat-composer";
 import { ChatConversation } from "./chat-conversation";
 import { ChatGreeting } from "./chat-greeting";
 import { ChatRecentConversations } from "./chat-recent-conversations";
-import { saveChatConversation, type ChatHistoryEntry } from "./chat-history";
+import { chatConversationTitle, saveChatConversation, useChatHistory, type ChatHistoryEntry } from "./chat-history";
 import type { ChatContext, ChatSubmission } from "./chat-types";
 import type { ChatText } from "./chat-messages";
 import { autoReasoning } from './chat-reasoning';
@@ -32,6 +32,7 @@ export function HomeChat({
   conversation?: ChatHistoryEntry;
 }) {
   const { selectedProject, scopeKey } = useProjectResources();
+  const history = useChatHistory();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const conversationViewport = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState<ChatDraft>({ text: "", attachments: [], mode: null });
@@ -48,6 +49,15 @@ export function HomeChat({
   const [submissions, setSubmissions] = useState<ChatSubmission[]>(conversation?.submissions ?? []);
   const [conversationId, setConversationId] = useState<string | null>(conversation?.id ?? null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const savedConversation = history.find(entry => entry.id === conversationId);
+  // A deleted preview must stop being editable, including one started on this page.
+  if (conversationId && !savedConversation) {
+    setConversationId(null);
+    setSubmissions([]);
+    setEditingId(null);
+    setDraft({ text: '', attachments: [], mode: null });
+    setContext(current => ({ ...current, resources: [] }));
+  }
   const inConversation = submissions.length > 0;
   function updateContext(change: Partial<ChatContext>) {
     setContext((current) => ({ ...current, ...change, projectId: selectedProject?.id ?? null, projectName: selectedProject?.name ?? null }));
@@ -108,7 +118,7 @@ export function HomeChat({
           </Button>
           <span>
             <ChatIcon size={15} />
-            {submissions[0].attachments[0]?.file.name ?? submissions[0].text}
+            {savedConversation ? chatConversationTitle(savedConversation) : null}
           </span>
         </header>
       ) : null}

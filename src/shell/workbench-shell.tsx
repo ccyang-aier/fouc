@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { HomeCanvas } from '@/features/home/home-canvas';
-import type { ChatHistoryEntry } from '@/features/home/chat/chat-history';
+import { useChatHistory, type ChatHistoryEntry } from '@/features/home/chat/chat-history';
 import { CommunityCanvas } from '@/features/community/community-canvas';
 import { ConnectorsCanvas } from '@/features/connectors/connectors-canvas';
 import { KnowledgePage } from '@/features/knowledge/knowledge-page';
@@ -31,10 +31,11 @@ export function WorkbenchShell() {
   useMenuMotion();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [conversationVersion, setConversationVersion] = useState(0);
-  const [conversation, setConversation] = useState<{ scopeKey: string; entry: ChatHistoryEntry } | null>(null);
+  const [conversation, setConversation] = useState<{ scopeKey: string; id: string } | null>(null);
   const [view, setView, settingsOpen] = useWorkbenchView();
   const settingsSection = useSettingsSection();
   const { projects, selectedProject, selectProject, scopeKey } = useProjectResources();
+  const history = useChatHistory();
   const frameRef = useRef<HTMLDivElement>(null);
   useEffect(() => { applyAppearancePrefs(readAppearancePrefs()); }, []);
   useEffect(() => {
@@ -50,10 +51,10 @@ export function WorkbenchShell() {
   function openChat(entry: ChatHistoryEntry) {
     if (!scopeKey) return;
     setConversationVersion(value => value + 1);
-    setConversation({ scopeKey, entry });
+    setConversation({ scopeKey, id: entry.id });
     setView('home');
   }
-  const activeConversation = conversation?.scopeKey === scopeKey ? conversation.entry : undefined;
+  const activeConversation = conversation?.scopeKey === scopeKey ? history.find(entry => entry.id === conversation.id) : undefined;
   const projectView = ['home', 'workbench', 'tasks', 'members', 'assets', 'chats', 'agents'].includes(view);
   return <TooltipProvider>
     <div className="h-dvh w-full p-[var(--win-frame-inset)]">

@@ -57,3 +57,20 @@ test('a storage failure never publishes a channel change that was not saved', as
     expect(current).toEqual([{ id: 'saved', name: 'Saved' }]);
   } finally { Object.defineProperty(storage, 'setItem', { configurable: true, value: originalSetItem }); }
 });
+
+test('pinning and renaming round-trip together without changing another project', async () => {
+  const scope = 'pin-user:local:channel-a', other = 'pin-user:local:channel-b';
+  await render(scope);
+  await act(async () => saveSidebarChannels(scope, [{ id: 'same', name: 'Before' }]));
+  await render(other);
+  await act(async () => saveSidebarChannels(other, [{ id: 'same', name: 'Other' }]));
+  await act(async () => saveSidebarChannels(scope, [{ id: 'same', name: 'Renamed', pinned: true }]));
+  expect(current).toEqual([{ id: 'same', name: 'Other' }]);
+  await render(scope);
+  expect(current).toEqual([{ id: 'same', name: 'Renamed', pinned: true }]);
+  expect(JSON.parse(localStorage.getItem(`fouc.project.sidebar-tags.${scope}`)!)).toEqual(current);
+  await act(async () => saveSidebarChannels(scope, []));
+  expect(current).toEqual([]);
+  await render(other);
+  expect(current).toEqual([{ id: 'same', name: 'Other' }]);
+});

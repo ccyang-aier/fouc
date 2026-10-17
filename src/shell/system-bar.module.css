@@ -3,7 +3,7 @@
   align-items:center;
   height:var(--workbench-toolbar-height);
   flex-shrink:0;
-  gap:12px;
+  gap:8px;
   padding:0 12px;
   user-select:none;
 }

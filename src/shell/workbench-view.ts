@@ -32,5 +32,5 @@ export function useWorkbenchView(scopeKey: string | null) {
     if (next !== 'settings') { url.searchParams.delete('section'); url.searchParams.delete('returnView'); }
     if (next === 'settings' || settingsOpen) replaceWorkbenchLocation(url);
     else pushWorkbenchLocation(url);
-  }, settingsOpen, { ...navigation, goBack, goForward }] as const;
+  }, settingsOpen, { ...navigation, goBack, goForward }, search] as const;
 }

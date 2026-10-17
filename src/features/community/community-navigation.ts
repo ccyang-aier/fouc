@@ -1,6 +1,7 @@
 'use client';
 
 import { pushWorkbenchLocation, replaceWorkbenchLocation } from '@/lib/navigation-history';
+export const COMMUNITY_SKILLS_REQUESTED = 'fouc:community-skills-requested';
 
 export function openSkillsMarket() {
   const url = new URL(window.location.href);
@@ -11,4 +12,5 @@ export function openSkillsMarket() {
   url.searchParams.delete('returnView');
   if (fromSettings) replaceWorkbenchLocation(url);
   else pushWorkbenchLocation(url);
+  window.dispatchEvent(new Event(COMMUNITY_SKILLS_REQUESTED));
 }

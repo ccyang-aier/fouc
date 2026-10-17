@@ -6,6 +6,8 @@ import { useTranslation } from '@/lib/i18n/react';
 import { messages } from './i18n/community-canvas.messages';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { usePageVisible } from '@/lib/page-visibility';
+import { COMMUNITY_SKILLS_REQUESTED } from './community-navigation';
 import {
   CaretDown,
   CheckCircle,
@@ -83,6 +85,7 @@ function itemMatchesDomain(item: CommunityLibraryItem, domain: string) {
 }
 
 export function CommunityCanvas() {
+  const visible = usePageVisible();
   const { t: uiText, locale } = useTranslation(messages);
   const SORT_OPTIONS = getSortOptions(locale);
   const [agents, setAgents] = useState(initialCommunityAgents);
@@ -284,6 +287,13 @@ export function CommunityCanvas() {
   }
 
   useEffect(() => {
+    function showSkills() { setTypeFilter('skills'); }
+    window.addEventListener(COMMUNITY_SKILLS_REQUESTED, showSkills);
+    return () => window.removeEventListener(COMMUNITY_SKILLS_REQUESTED, showSkills);
+  }, []);
+
+  useEffect(() => {
+    if (!visible) return;
     function onKeyDown(event: KeyboardEvent) {
       if (event.key !== '/') return;
       const target = event.target as HTMLElement | null;
@@ -297,7 +307,7 @@ export function CommunityCanvas() {
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
+  }, [visible]);
 
   function acquireItem(item: CommunityLibraryItem) {
     if (item.installed) return;

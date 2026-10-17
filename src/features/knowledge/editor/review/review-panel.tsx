@@ -1,4 +1,5 @@
 'use client';
+import { usePageVisible } from '@/lib/page-visibility';
 
 import { useTranslation } from '@/lib/i18n';
 import { knowledgeMessages } from './review-panel.messages';
@@ -85,6 +86,7 @@ function BatchButton({
 type RailIntent = 'auto' | 'open' | 'closed';
 
 export function ReviewPanel({ editor, editable }: { editor: Editor | null; editable: boolean }) {
+  const visible = usePageVisible();
   const { t: knowledgeT } = useTranslation(knowledgeMessages);
 
   const view = useReviewPanel(editor, editable);
@@ -100,13 +102,13 @@ export function ReviewPanel({ editor, editable }: { editor: Editor | null; edita
 
   // Escape closes the rail — the same contract the shell's assistant rail follows.
   useEffect(() => {
-    if (!open) return undefined;
+    if (!open || !visible) return undefined;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setIntent('closed');
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [open]);
+  }, [open, visible]);
 
   if (!editor || total === 0) return null;
 

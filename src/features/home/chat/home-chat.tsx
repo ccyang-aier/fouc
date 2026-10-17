@@ -25,11 +25,17 @@ export function HomeChat({
   locale = "zh-CN",
   onOpenConnectors,
   conversation,
+  onOpenConversation,
+  onNewConversation,
+  onConversationStarted,
 }: {
   t: ChatText;
   locale?: Locale;
   onOpenConnectors: () => void;
   conversation?: ChatHistoryEntry;
+  onOpenConversation?: (entry: ChatHistoryEntry) => void;
+  onNewConversation?: () => void;
+  onConversationStarted?: (id: string) => void;
 }) {
   const { selectedProject, scopeKey } = useProjectResources();
   const history = useChatHistory();
@@ -70,6 +76,7 @@ export function HomeChat({
     setSubmissions(next);
     setConversationId(id);
     if (scopeKey) saveChatConversation(scopeKey, { id, submissions: next, updatedAt: submission.createdAt });
+    if (!conversationId) onConversationStarted?.(id);
     setEditingId(null);
     requestAnimationFrame(() => {
       conversationViewport.current?.scrollTo({
@@ -86,6 +93,7 @@ export function HomeChat({
     inputRef.current?.focus();
   }
   function openConversation(entry: ChatHistoryEntry) {
+    if (onOpenConversation) { onOpenConversation(entry); return; }
     setConversationId(entry.id);
     setSubmissions(entry.submissions);
     setContext({ ...entry.submissions.at(-1)!.context, resources: [] });
@@ -106,6 +114,7 @@ export function HomeChat({
             variant="ghost"
             size="sm"
             onClick={() => {
+              if (onNewConversation) { onNewConversation(); return; }
               setSubmissions([]);
               setEditingId(null);
               setConversationId(null);

@@ -1,6 +1,6 @@
 'use client';
 
-import { Archive, BookOpenText, ChatCircleDots, ChatsCircle, GearSix, ListChecks, Planet, PlugsConnected, Robot, SidebarSimple, SquaresFour, UsersThree } from '@phosphor-icons/react';
+import { GearSix, SidebarSimple } from '@phosphor-icons/react';
 import { AccountItem } from '@/features/identity/components/account-item';
 import { ProjectSwitcher } from '@/features/project/project-switcher';
 import type { ChatHistoryEntry } from '@/features/home/chat/chat-history';
@@ -15,6 +15,7 @@ import type { WorkbenchView } from './workbench-view';
 import { messages } from './i18n/navigation-sidebar.messages';
 import { SidebarProjectSections } from './sidebar-project-sections';
 import { SidebarThemeSwitch } from './sidebar-theme-switch';
+import { workbenchPages, type WorkbenchPage } from './workbench-pages';
 import styles from './sidebar-footer.module.css';
 import layout from './navigation-sidebar.module.css';
 
@@ -26,21 +27,11 @@ export function NavigationSidebar({ open, onCollapse, onExpand, view, onViewChan
   const { t } = useTranslation(messages);
   const { width, dragging, startResize } = useSidebarWidth(272);
   const { scopeKey } = useProjectResources();
-  const primary: Array<SidebarRowItem & { id: WorkbenchView }> = [
-    { id: 'home', label: t('新对话'), icon: ChatCircleDots },
-    { id: 'workbench', label: t('工作台'), icon: SquaresFour },
-    { id: 'tasks', label: t('任务'), icon: ListChecks },
-    { id: 'members', label: t('成员'), icon: UsersThree },
-    { id: 'assets', label: t('资产'), icon: Archive },
-    { id: 'chats', label: t('聊天'), icon: ChatsCircle },
-    { id: 'agents', label: t('智能体'), icon: Robot },
-  ];
-  const services: Array<SidebarRowItem & { id: WorkbenchView }> = [
-    { id: 'community', label: t('社区'), icon: Planet },
-    { id: 'connectors', label: t('连接器'), icon: PlugsConnected },
-    { id: 'knowledge', label: t('知识库'), icon: BookOpenText },
-  ];
-  function row(item: SidebarRowItem & { id: WorkbenchView }) {
+  const primary: WorkbenchPage[] = ['home', 'workbench', 'tasks', 'members', 'assets', 'chats', 'agents'];
+  const services: WorkbenchPage[] = ['community', 'connectors', 'knowledge'];
+  function row(id: WorkbenchPage) {
+    const page = workbenchPages[id];
+    const item: SidebarRowItem & { id: WorkbenchPage } = { id, label: t(page.label), icon: page.icon };
     const button = <NavButton item={item} active={view === item.id} compact={!open} onSelect={() => onViewChange(item.id)} />;
     return open ? <div key={item.id}>{button}</div> : <Tooltip key={item.id}><TooltipTrigger asChild>{button}</TooltipTrigger><TooltipContent side="right" sideOffset={10}>{item.label}</TooltipContent></Tooltip>;
   }

@@ -1,4 +1,5 @@
 'use client';
+import { usePageVisible } from '@/lib/page-visibility';
 
 import { useUiMessage } from '../ui-message';
 import { useTranslation } from '@/lib/i18n';
@@ -76,6 +77,7 @@ export function DocumentNavigationTools({
 
   const reference = useDocumentReference();
   const host = useRef<HTMLDivElement>(null);
+  const visible = usePageVisible();
   const documentHost = useRef<HTMLDivElement>(null);
   const outlineTrigger = useRef<HTMLButtonElement>(null);
   const outlineId = useId();
@@ -197,6 +199,7 @@ export function DocumentNavigationTools({
   }
   useEffect(() => {
     function keydown(event: KeyboardEvent) {
+      if (!visible) return;
       if (
         (event.ctrlKey || event.metaKey) &&
         event.key.toLowerCase() === 'f' &&
@@ -208,13 +211,10 @@ export function DocumentNavigationTools({
       if (event.key === 'Escape') setSearchOpen(false);
     }
     document.addEventListener('keydown', keydown);
-    // This is a request counter, not a DOM ref: invalidate pending snapshots on unmount.
-    return () => {
-      document.removeEventListener('keydown', keydown);
-      // eslint-disable-next-line react-hooks/exhaustive-deps -- This ref is a request counter, not a DOM node.
-      pending.current++;
-    };
-  }, []);
+    return () => document.removeEventListener('keydown', keydown);
+  }, [visible]);
+  // A hidden tab keeps its pending export; only releasing the page cancels it.
+  useEffect(() => () => { pending.current++; }, []);
   async function onPresent() {
     if (!editor) return;
     const request = ++pending.current;

@@ -11,11 +11,14 @@
   flex:1;
   min-width:0;
   min-height:0;
-  margin:0;
+  margin:0 2px 4px 0;
   overflow:hidden;
   border:var(--separator-width) solid var(--separator-color);
-  border-right:0;
-  border-radius:16px 0 0 16px;
+  border-radius:16px;
   background:var(--panel);
   isolation:isolate;
 }
+.page { position:absolute; inset:0; min-width:0; min-height:0; outline:none; }
+.page[hidden] { display:none; }
+.page:not([hidden]) { animation:workbench-page-in 180ms cubic-bezier(.22,1,.36,1); }
+@keyframes workbench-page-in { from { opacity:.65; transform:translateY(3px); } to { opacity:1; transform:translateY(0); } }

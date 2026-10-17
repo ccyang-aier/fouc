@@ -1,4 +1,5 @@
 'use client';
+import { usePageVisible } from '@/lib/page-visibility';
 
 import { createTranslator, useTranslation } from '@/lib/i18n';
 import { knowledgeMessages } from './ui.messages';
@@ -199,14 +200,15 @@ export function ModalDialog({
   footer: ReactNode;
   width?: string;
 }) {
+  const visible = usePageVisible();
   useEffect(() => {
-    if (!open) return undefined;
+    if (!open || !visible) return undefined;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [open, onClose]);
+  }, [open, onClose, visible]);
   if (!open) return null;
   return (
     <div

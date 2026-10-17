@@ -10,6 +10,7 @@ import { knowledgeMessages } from './assistant-rail.messages';
  */
 
 import { useEffect } from 'react';
+import { usePageVisible } from '@/lib/page-visibility';
 import { ChatCircleDots, X } from '@phosphor-icons/react';
 import { motion } from 'motion/react';
 import { CanvasState } from './canvas-states';
@@ -42,16 +43,17 @@ export function AssistantRailToggle({ open, onToggle }: { open: boolean; onToggl
 }
 
 export function AssistantRail({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const visible = usePageVisible();
   const { t: knowledgeT } = useTranslation(knowledgeMessages);
 
   useEffect(() => {
-    if (!open) return undefined;
+    if (!open || !visible) return undefined;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [open, onClose]);
+  }, [open, onClose, visible]);
 
   if (!open) return null;
 

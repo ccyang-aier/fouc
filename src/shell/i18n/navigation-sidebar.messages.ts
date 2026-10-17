@@ -19,5 +19,7 @@ export const messages = defineMessages({
   删除频道确认: ['删除频道“{name}”？此操作无法撤销。', 'Delete channel “{name}”? This cannot be undone.'], 删除对话确认: ['删除对话“{name}”及其中的全部消息？此操作无法撤销。', 'Delete chat “{name}” and all its messages? This cannot be undone.'],
   关闭: ['关闭', 'Close'], 取消: ['取消', 'Cancel'], 保存: ['保存', 'Save'],
   设置: ['设置', 'Settings'],
+  工作页面: ['工作页面', 'Open pages'], 关闭页面: ['关闭“{name}”页签', 'Close “{name}” tab'],
+  向左浏览页签: ['向左浏览页签', 'Scroll tabs left'], 向右浏览页签: ['向右浏览页签', 'Scroll tabs right'],
   切换到浅色模式: ['切换到浅色模式', 'Switch to light mode'], 切换到深色模式: ['切换到深色模式', 'Switch to dark mode'],
 });

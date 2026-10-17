@@ -150,11 +150,7 @@
 .fileInput {
   display: none;
 }
-.menu {
-  width: 226px;
-  border-radius: 11px;
-  padding: 5px;
-}
+.messageTags { display: flex; flex-wrap: wrap; gap: 6px; }
 .attachments {
   display: flex;
   flex-wrap: wrap;

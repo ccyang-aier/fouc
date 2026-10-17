@@ -10,19 +10,11 @@ import {
 import {
   PaperPlaneTilt,
   Microphone,
-  Plus,
   UploadSimple,
   Waveform,
-  ClipboardText,
 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { useAppAlert } from "@/components/app-alert-provider";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Tooltip,
   TooltipContent,
@@ -30,16 +22,17 @@ import {
 } from "@/components/ui/tooltip";
 import { ChatAttachments } from "./chat-attachments";
 import { ChatContextSelectors } from "./chat-selectors";
-import { ChatExecutionSelector } from "./chat-execution-selector";
+import { ChatExecutionSelector, type ChatExecutionSelectorHandle } from "./chat-execution-selector";
+import { ChatAddMenu } from "./chat-add-menu";
 import { ChatToolsLink } from "./chat-tools-link";
 import { ChatQuickActions } from "./chat-quick-actions";
 import { ChatPromptInput } from "./chat-prompt-input";
 import { useChatVoice } from "./use-chat-voice";
-import type { ChatAttachment, ChatContext, ChatSubmission, ChatTaskKind } from "./chat-types";
+import type { ChatAttachment, ChatContext, ChatMode, ChatSubmission, ChatTaskKind } from "./chat-types";
 import type { ChatText } from "./chat-messages";
 import styles from "./chat.module.css";
 
-export type ChatDraft = { text: string; attachments: ChatAttachment[]; task: ChatTaskKind | null };
+export type ChatDraft = { text: string; attachments: ChatAttachment[]; task: ChatTaskKind | null; mode: ChatMode | null };
 export function ChatComposer({
   draft,
   setDraft,
@@ -62,6 +55,7 @@ export function ChatComposer({
   t: ChatText;
 }) {
   const fileInput = useRef<HTMLInputElement>(null);
+  const executionPicker = useRef<ChatExecutionSelectorHandle>(null);
   const dragDepth = useRef(0);
   const [dragging, setDragging] = useState(false);
   const [invalid, setInvalid] = useState(false);
@@ -148,11 +142,12 @@ export function ChatComposer({
       id: crypto.randomUUID(),
       text: draft.text.trim(),
       task: draft.task,
+      mode: draft.mode,
       attachments: draft.attachments,
       context: { ...context },
       createdAt: new Date(),
     });
-    setDraft({ text: "", attachments: [], task: null });
+    setDraft({ text: "", attachments: [], task: null, mode: null });
   }
   return (
     <>
@@ -206,7 +201,12 @@ export function ChatComposer({
         <ChatPromptInput
           inputRef={inputRef}
           task={draft.task}
+          mode={draft.mode}
           t={t}
+          onRemoveMode={() => {
+            setDraft(current => ({ ...current, mode: null }));
+            inputRef.current?.focus({ preventScroll: true });
+          }}
           onRemoveTask={() => {
             setDraft(current => ({ ...current, task: null }));
             inputRef.current?.focus({ preventScroll: true });
@@ -252,34 +252,14 @@ export function ChatComposer({
                 event.target.value = "";
               }}
             />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className={styles.iconButton}
-                  aria-label={t("attach")}
-                >
-                  <Plus size={19} />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="start"
-                side="bottom"
-                className={styles.menu}
-              >
-                <DropdownMenuItem onSelect={() => fileInput.current?.click()}>
-                  <UploadSimple />
-                  {t("files")}
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => void pasteClipboard()}>
-                  <ClipboardText />
-                  {t("paste")}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <ChatExecutionSelector context={context} onChange={setContext} t={t} />
+            <ChatAddMenu className={styles.iconButton} mode={draft.mode} context={context} t={t}
+              onModeChange={mode => {
+                setDraft(current => ({ ...current, mode }));
+                inputRef.current?.focus({ preventScroll: true });
+              }}
+              onFiles={() => fileInput.current?.click()} onPaste={() => void pasteClipboard()}
+              onModels={() => executionPicker.current?.open()} onConnectors={onOpenConnectors} />
+            <ChatExecutionSelector ref={executionPicker} context={context} onChange={setContext} t={t} />
           </div>
           <div className={styles.toolbarRight}>
             <Tooltip>

@@ -32,7 +32,7 @@ export function HomeChat({
   const { selectedProject } = useProjectResources();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const conversationViewport = useRef<HTMLDivElement>(null);
-  const [draft, setDraft] = useState<ChatDraft>({ text: "", attachments: [], task: null });
+  const [draft, setDraft] = useState<ChatDraft>({ text: "", attachments: [], task: null, mode: null });
   const [context, setContext] = useState<ChatContext>({
     execution: { kind: "auto" },
     autoRules: { modelIds: null, reasoningEffort: autoReasoning.defaultLevel },
@@ -66,7 +66,7 @@ export function HomeChat({
     });
   }
   function edit(submission: ChatSubmission) {
-    setDraft({ text: submission.text, attachments: submission.attachments, task: submission.task });
+    setDraft({ text: submission.text, attachments: submission.attachments, task: submission.task, mode: submission.mode });
     setContext(submission.context);
     setEditingId(submission.id);
     inputRef.current?.focus();
@@ -75,7 +75,7 @@ export function HomeChat({
     setConversationId(entry.id);
     setSubmissions(entry.submissions);
     setContext(entry.submissions.at(-1)!.context);
-    setDraft({ text: "", attachments: [], task: null });
+    setDraft({ text: "", attachments: [], task: null, mode: null });
     setEditingId(null);
     requestAnimationFrame(() => inputRef.current?.focus());
   }
@@ -95,7 +95,7 @@ export function HomeChat({
               setSubmissions([]);
               setEditingId(null);
               setConversationId(null);
-              setDraft({ text: "", attachments: [], task: null });
+              setDraft({ text: "", attachments: [], task: null, mode: null });
             }}
           >
             <ArrowLeft size={15} />

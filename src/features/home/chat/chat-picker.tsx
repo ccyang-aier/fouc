@@ -20,7 +20,7 @@ export function ChatPickerSearch({ icon, containerClassName, onKeyDown, ...props
       event.stopPropagation();
       if (event.key === "ArrowDown") {
         event.preventDefault();
-        event.currentTarget.closest('[role="menu"]')?.querySelector<HTMLElement>('[role="menuitemradio"], [role="menuitemcheckbox"]')?.focus();
+        event.currentTarget.closest('[role="menu"]')?.querySelector<HTMLElement>('[role="menuitemradio"], [role="menuitemcheckbox"], [role="menuitem"]')?.focus();
       }
     }} />
   </label>;

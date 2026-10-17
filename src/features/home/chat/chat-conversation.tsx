@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useAppAlert } from "@/components/app-alert-provider";
 import { ChatAttachments } from "./chat-attachments";
 import { ChatTaskTag } from "./chat-quick-actions";
+import { ChatModeTag } from "./chat-modes";
 import type { ChatSubmission } from "./chat-types";
 import type { ChatText } from "./chat-messages";
 import styles from "./chat.module.css";
@@ -53,7 +54,10 @@ export function ChatConversation({
             {submission.attachments.length ? (
               <ChatAttachments attachments={submission.attachments} t={t} />
             ) : null}
-            {submission.task ? <ChatTaskTag task={submission.task} t={t} /> : null}
+            {submission.mode || submission.task ? <div className={styles.messageTags}>
+              {submission.mode ? <ChatModeTag mode={submission.mode} t={t} /> : null}
+              {submission.task ? <ChatTaskTag task={submission.task} t={t} /> : null}
+            </div> : null}
             <p>{submission.text}</p>
             <div className={styles.messageActions}>
               <Button

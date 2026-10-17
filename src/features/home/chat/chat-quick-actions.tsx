@@ -1,10 +1,11 @@
 "use client";
 
-import { Browser, Monitor, PresentationChart, Intersect, PenNib, MagnifyingGlass, ChartBar, X } from '@phosphor-icons/react';
+import { Browser, Monitor, PresentationChart, Intersect, PenNib, MagnifyingGlass, ChartBar } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import type { ChatText } from './chat-messages';
 import type { ChatTaskKind } from './chat-types';
+import { ChatPromptTag } from './chat-prompt-tag';
 import styles from './chat-quick-actions.module.css';
 
 const tasks = {
@@ -67,8 +68,5 @@ export function ChatTaskTag({ task, onRemove, t }: {
   t: ChatText;
 }) {
   const label = t(tasks[task].tag);
-  return onRemove ? <Button type="button" variant="ghost" className={styles.tag}
-    aria-label={t('removeTask', { task: label })} onPointerDown={event => event.preventDefault()} onClick={onRemove}>
-    <X size={12} aria-hidden="true" /><span>{label}</span>
-  </Button> : <span className={`${styles.tag} ${styles.messageTag}`}>{label}</span>;
+  return <ChatPromptTag label={label} removeLabel={t('removeTask', { task: label })} onRemove={onRemove} />;
 }

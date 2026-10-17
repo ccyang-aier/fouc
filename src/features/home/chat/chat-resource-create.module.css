@@ -8,6 +8,6 @@
 .body label { display: flex; flex-direction: column; gap: 7px; font-size: 12px; font-weight: 500; }
 .body :is(input, textarea, select) { width: 100%; min-height: 34px; padding: 7px 9px; border: 1px solid var(--control-border); border-radius: 5px; outline: none; box-shadow: none; background: var(--panel); font-size: 12px; font-weight: 400; color: var(--ink); }
 .body :is(input, textarea, select):focus { border-color: var(--accent); }
-.body :is(input, textarea)::placeholder { color: var(--muted-strong); }
+.body :is(input, textarea)::placeholder { color: var(--muted); opacity: 1; }
 .body textarea { resize: vertical; }
 .dialog footer { border-top: 1px solid var(--separator-color); }

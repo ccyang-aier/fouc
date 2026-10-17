@@ -29,10 +29,17 @@
 .resourceRow { height: 32px; gap: 9px; padding: 0 8px; border-radius: 5px; animation: none !important; }
 .resourceIcon { display: block; flex-shrink: 0; width: 16px; height: 16px; color: var(--ink-soft); }
 .resourceName { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 400; line-height: 18px; }
-.resourceRow > .check { margin-left: auto; color: var(--accent-ink); }
-.resourceRow > .check[data-builtin="true"] { color: var(--ok-ink); }
+.check { display: grid; flex-shrink: 0; place-items: center; width: 20px; height: 20px; margin-left: auto; border-radius: 5px; color: var(--accent-ink); }
+.check > svg { width: 14px; height: 14px; color: inherit; }
+.check[data-builtin="true"] { color: var(--ok-ink); background: color-mix(in srgb, var(--ok-ink) 9%, var(--panel)); }
+.check[data-builtin="true"] > svg { width: 16px; height: 16px; }
 .infoButton { display: none; flex-shrink: 0; place-items: center; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--muted-strong); cursor: pointer; outline: none; }
-.triggerCount { margin-left: auto; font-size: 10px; color: var(--muted-strong); }
+.resourceTone { --resource-ink: #755e9a; --resource-fill: color-mix(in srgb, var(--resource-ink) 9%, var(--panel)); --resource-border: color-mix(in srgb, var(--resource-ink) 19%, var(--panel)); }
+.resourceTone[data-resource-kind="mcp"] { --resource-ink: #487898; }
+:global(html[data-theme="dark"]) .resourceTone { --resource-ink: #baa6dc; }
+:global(html[data-theme="dark"]) .resourceTone[data-resource-kind="mcp"] { --resource-ink: #92bfdd; }
+.triggerLabel { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.triggerCount { display: inline-grid; place-items: center; flex-shrink: 0; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 4px; background: color-mix(in srgb, var(--resource-ink) 12%, var(--panel)); color: var(--resource-ink); font-size: 10px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
 .empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 22px 10px 16px; color: var(--muted-strong); text-align: center; }
 .empty > strong { color: var(--ink-soft); font-size: 12px; font-weight: 500; }
 .empty > span { font-size: 11px; }
@@ -50,9 +57,11 @@
 .stars { display: flex; align-items: center; gap: 2px; color: color-mix(in srgb, var(--tooltip-ink) 25%, #c78b25); }
 .stars strong { padding-left: 5px; font-size: 11px; color: var(--tooltip-ink); font-weight: 500; font-variant-numeric: tabular-nums; }
 .unrated { font-size: 11px; }
-.selectedResources { display: flex; flex-wrap: wrap; gap: 5px; padding: 10px 14px 0; }
-.resourceTag { display: inline-flex; align-items: center; gap: 5px; max-width: 220px; min-height: 25px; padding: 3px 7px; border: 1px solid var(--control-border); border-radius: 5px; background: var(--panel); color: var(--ink-soft); font-size: 11px; }
+.selectedResources { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; margin: 0 0 8px; padding: 0; }
+.selectedResources[data-readonly] { justify-content: flex-end; margin: 8px 0 0; }
+.resourceTag { display: inline-flex; align-items: center; gap: 6px; max-width: min(220px, 100%); min-height: 26px; padding: 3px 7px; border: 1px solid var(--resource-border); border-radius: 6px; background: var(--resource-fill); color: var(--ink-soft); font-size: 12px; line-height: 18px; }
+.resourceTag > svg { flex-shrink: 0; color: var(--resource-ink); }
 .resourceTag > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.removeTag { display: grid; place-items: center; flex-shrink: 0; width: 17px; height: 17px; padding: 0; border: 0; border-radius: 3px; background: transparent; cursor: pointer; outline: none; }
+.removeTag { display: grid; place-items: center; flex-shrink: 0; width: 16px; height: 16px; padding: 0; border: 0; border-radius: 3px; background: transparent; color: var(--resource-ink); cursor: pointer; outline: none; }
 @media (hover: none), (max-width: 760px) { .infoButton { display: grid; } }
 @media (prefers-reduced-motion: reduce) { .menu, .infoCard { animation: none; } .collapse svg { transition: none; } }

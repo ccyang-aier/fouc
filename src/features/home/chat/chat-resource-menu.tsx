@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
-import { ArrowSquareOut, CaretDown, Check, GearSix, Info, PlugsConnected, Plus, SlidersHorizontal } from '@phosphor-icons/react';
+import { ArrowSquareOut, CaretDown, Check, GearSix, Info, PlugsConnected, Plus, SealCheck, SlidersHorizontal } from '@phosphor-icons/react';
 import { SkillIcon } from '@/components/icons/skill-icon';
 import { DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
@@ -94,12 +94,11 @@ export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigu
     if (previewTimer.current !== null) clearTimeout(previewTimer.current);
     previewTimer.current = null;
     const bounds = row.getBoundingClientRect();
-    const surface = menu.current!.getBoundingClientRect();
     const width = Math.min(264, window.innerWidth - 24);
-    // Keep the card near its row, staggered beyond the menu's edge where space allows.
-    const right = surface.right - 48;
-    const left = surface.left + 48 - width;
-    const preferred = right + width <= window.innerWidth - 12 || surface.left < window.innerWidth - surface.right ? right : left;
+    // A modest stagger keeps the card visibly attached to the current row.
+    const right = bounds.left + 80;
+    const left = bounds.right - width - 80;
+    const preferred = right + width <= window.innerWidth - 12 || bounds.left < window.innerWidth - bounds.right ? right : left;
     const x = Math.max(12, Math.min(preferred, window.innerWidth - width - 12));
     const side = bounds.top + bounds.height / 2 < window.innerHeight / 2 ? 'bottom' : 'top';
     setTooltipPlacement({ side, alignOffset: x - bounds.left });
@@ -129,7 +128,9 @@ export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigu
         onSelect={event => { event.preventDefault(); hidePreview(); if (builtin) toggleBuiltinSkill(resource.id); else onToggle(resource); }}>
         <ResourceIcon resource={resource} />
         <span className={styles.resourceName}>{resource.name}</span>
-        {checked ? <Check className={styles.check} size={13} weight="bold" data-builtin={builtin} data-static-color aria-hidden="true" /> : null}
+        {checked ? <span className={styles.check} data-builtin={builtin} aria-hidden="true">
+          {builtin ? <SealCheck size={16} data-static-color /> : <Check size={14} weight="bold" data-static-color />}
+        </span> : null}
         <button type="button" tabIndex={-1} className={`fouc-action ${styles.infoButton}`} aria-label={t('details', { name: resource.name })}
           onPointerDown={event => event.stopPropagation()} onPointerUp={event => event.stopPropagation()}
           onClick={event => { event.stopPropagation(); showPreview(resource.id, event.currentTarget.parentElement!); }}><Info size={15} /></button>
@@ -142,9 +143,12 @@ export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigu
     setOpen(next); hidePreview(); setCategoryOpen(false);
     if (next) { setQuery(''); setCategory(''); }
   }}>
-    <DropdownMenuSubTrigger ref={trigger} className={addStyles.item} aria-label={t(kind)}>
-      <Icon className={addStyles.neutralIcon} data-resource-kind={kind} data-static-color aria-hidden="true" /><span>{t(kind)}</span>
-      {selectedCount ? <span className={styles.triggerCount} aria-hidden="true">{selectedCount}</span> : null}
+    <DropdownMenuSubTrigger ref={trigger} className={addStyles.item} aria-label={t(kind)}
+      aria-description={selectedCount ? t('selectedCount', { count: selectedCount }) : undefined}>
+      <Icon className={addStyles.neutralIcon} data-resource-kind={kind} data-static-color aria-hidden="true" />
+      <span className={styles.triggerLabel}><span>{t(kind)}</span>
+        {selectedCount ? <span className={`${styles.resourceTone} ${styles.triggerCount}`} data-resource-kind={kind} aria-hidden="true">{selectedCount}</span> : null}
+      </span>
     </DropdownMenuSubTrigger>
     <DropdownMenuSubContent ref={menu} className={styles.menu} collisionPadding={12} sideOffset={sideOffset} alignOffset={alignOffset}
       aria-label={t(kind)}

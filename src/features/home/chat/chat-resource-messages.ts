@@ -11,6 +11,7 @@ export const resourceMessages = {
   recommendation: ['推荐指数', 'Recommendation'], unrated: ['暂无评分', 'Not rated yet'],
   author: ['作者', 'Author'], updated: ['最近更新', 'Last updated'], details: ['查看{name}详情', 'View {name} details'],
   remove: ['移除{name}', 'Remove {name}'],
+  selectedResources: ['已选 skills 和 MCP', 'Selected skills and MCP'], selectedCount: ['已选 {count} 项', '{count} selected'],
   name: ['名称', 'Name'], description: ['描述', 'Description'],
   namePlaceholder: ['给资源起个名字', 'Name this resource'], descriptionPlaceholder: ['描述适合使用它的任务', 'Describe the tasks it helps with'],
   creator: ['我', 'Me'], cancel: ['取消', 'Cancel'], save: ['添加到当前任务', 'Add to this task'],

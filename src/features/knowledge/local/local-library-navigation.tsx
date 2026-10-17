@@ -142,7 +142,7 @@ export function LocalLibraryNavigation({
           <SidebarRow
             key={item.id}
             icon={sidebarIconMap[item.icon]}
-            iconTone={item.tone}
+
             label={t(item.labelKey)}
             count={counts[item.id as MainView]}
             selected={!selectedId && !activeTagId && item.id === view}

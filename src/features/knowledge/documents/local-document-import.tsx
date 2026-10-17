@@ -68,15 +68,15 @@ export function LocalDocumentImport({
         event.preventDefault();
         if (!busy) void importFiles(event.dataTransfer.files);
       }}
-      className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-7 text-center"
+      className="rounded-xl border border-dashed border-[var(--control-border)] bg-[var(--surface-subtle)] p-7 text-center"
     >
       <UploadSimpleIcon />
-      <p className="mb-4 text-xs leading-6 text-slate-500">
+      <p className="mb-4 text-xs leading-6 text-[var(--muted-strong)]">
         {knowledgeT('dropDocumentsHereOrChoosePdfPptxWord')}
         <br />
         {knowledgeT('contentIsStoredOnlyInThisBrowserUp')}
       </p>
-      <label className="inline-block cursor-pointer rounded-md bg-blue-600 px-4 py-2 text-xs text-white">
+      <label className="inline-block cursor-pointer rounded-md bg-[var(--accent)] px-4 py-2 text-xs text-[var(--accent-foreground)] hover:bg-[var(--accent-strong)]">
         {busy ? knowledgeT('importing') : knowledgeT('chooseFiles')}
         <input
           className="sr-only"
@@ -95,5 +95,5 @@ export function LocalDocumentImport({
   );
 }
 function UploadSimpleIcon() {
-  return <FilePlus size={28} className="mx-auto mb-3 text-blue-500" />;
+  return <FilePlus size={28} className="mx-auto mb-3 text-[var(--muted-strong)]" />;
 }

@@ -5,7 +5,7 @@
 .panel svg:focus-visible, .panel [data-er-node]:focus-visible, .panel [data-er-edge]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .panel input, .panel select { min-width: 0; height: 28px; color: var(--ink); background: var(--panel); border: 1px solid var(--control-border); border-radius: 4px; font: inherit; padding: 0 8px; outline: none; box-shadow: none; }
 .panel input:focus, .panel select:focus { border-color: var(--accent); outline: none; box-shadow: none; }
-.panel input::placeholder { color: var(--muted-strong); }
+.panel input::placeholder { color: var(--muted); }
 .header { display: flex; justify-content: space-between; align-items: center; gap: 12px; height: 36px; padding: 0 12px; border-bottom: 1px solid var(--line); flex: none; }
 .title { display: flex; gap: 8px; align-items: center; min-width: 0; }.title > svg { flex: none; color: var(--muted-strong); }
 .title h2 { margin: 0; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -71,7 +71,7 @@
 .panel .relationItem { width: 100%; height: auto; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 6px; margin-top: 5px; text-align: left; overflow-wrap: anywhere; }.relationItem span, .relationItem small { color: var(--muted-strong); font-size: 11px; }.relationItem b { font-size: 13px; font-weight: 500; }
 .fields > input { width: 100%; margin-bottom: 8px; }
 .panel .fields > button { width: 100%; height: 30px; display: flex; justify-content: space-between; text-align: left; padding: 0 5px; }
-.fields button > span { min-width: 0; flex: 1; display: flex; align-items: baseline; gap: 7px; }.fields button b { flex: 1; min-width: 0; font: 13px var(--font-code); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.fields button small { max-width: 98px; color: var(--muted-strong); font: 11px var(--font-code); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.fields button em { width: 18px; text-align: right; color: var(--muted-strong); font: 10px var(--font-sans); }.fields button em[data-key="PK"] { color: var(--warn-ink); }.fields button em:is([data-key="FK"],[data-key="UQ"]) { color: var(--accent-ink); }
+.fields button > span { min-width: 0; flex: 1; display: flex; align-items: baseline; gap: 7px; }.fields button b { flex: 1; min-width: 0; font: 13px var(--font-code); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.fields button small { max-width: 98px; color: var(--muted-strong); font: 11px var(--font-code); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.fields button em { width: 18px; text-align: right; color: var(--muted-strong); font: 10px var(--font-sans); }.fields button em[data-key="PK"] { color: #b88d43; }.fields button em:is([data-key="FK"],[data-key="UQ"]) { color: var(--accent-ink); }
 .panel .fields > .activeField { background: var(--action-hover-bg); color: var(--ink); }
 .panel .nodeRelations > button { width: 100%; height: auto; min-height: 28px; justify-content: space-between; text-align: left; margin-bottom: 3px; padding: 5px; overflow-wrap: anywhere; }.nodeRelations button span { font-size: 11px; color: var(--muted-strong); white-space: nowrap; }
 .panel .endpoint { width: 100%; text-align: left; justify-content: flex-start; color: var(--ink); overflow-wrap: anywhere; }

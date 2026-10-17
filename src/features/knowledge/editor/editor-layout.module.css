@@ -42,12 +42,12 @@
   align-items: center;
   gap: 8px;
   margin-top: 8px;
-  color: #71839d;
+  color: var(--muted-strong);
   font-size: 13px;
   line-height: 24px;
 }
 .metadata > * { display:inline-flex; align-items:center; gap:6px; min-height:24px; }
-.metadata > * + *::before { flex:none; width:4px; height:4px; margin-right:2px; border-radius:50%; background:#8999ae; content:''; }
+.metadata > * + *::before { flex:none; width:4px; height:4px; margin-right:2px; border-radius:50%; background:var(--muted); content:''; }
 
 .document :global(.ProseMirror) { min-height: 48vh; outline: none; color: var(--ink); font-size: var(--document-size); line-height: var(--document-line-height); }
 .document :global(.ProseMirror > *) { margin-top: 0; margin-bottom: 18px; }
@@ -57,7 +57,7 @@
 .document :global(.ProseMirror > p:first-child:last-child:has(> br.ProseMirror-trailingBreak)::before) {
   float: left;
   height: 0;
-  color: #9aabc1;
+  color: var(--muted);
   content: '输入内容，或输入 / 插入内容';
   pointer-events: none;
 }
@@ -78,7 +78,7 @@
 .document :global(.ProseMirror blockquote) { border-left: 3px solid var(--line-strong); padding-left: 18px; color: var(--muted-strong); }
 .document :global(.ProseMirror code) { border-radius: 4px; background: var(--raise); padding: 2px 4px; font-family: var(--document-code-font, var(--font-code)); font-size: .88em; }
 .document :global(.ProseMirror hr) { border: 0; border-top: var(--separator-width) solid var(--separator-color); margin: 32px 0; }
-.document :global(.ProseMirror a) { color: #0869cf; text-decoration: underline; text-underline-offset: 3px; }
+.document :global(.ProseMirror a) { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 .document :global(.ProseMirror mark) { background: #e6f0ff; }
 
 @media (max-width: 700px) {

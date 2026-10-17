@@ -166,7 +166,7 @@ function SummaryCards({ detail }: { detail: WorkObjectDetail }) {
     <div className="grid grid-cols-3 gap-[18px] max-[980px]:grid-cols-1">
       <section className="rounded-[10px] border border-[var(--line)] bg-panel p-4">
         <div className="flex items-center gap-2">
-          <Cube className="size-[17px] text-[#5f7396]" />
+          <Cube className="size-[17px] text-[var(--ink-soft)]" />
           <h2 className="text-[13px] font-semibold text-[var(--ink)]">{t('当前结论')}</h2>
         </div>
         <div className="mt-3 space-y-1">
@@ -210,7 +210,7 @@ function PlanCard({ plan }: { plan: WorkObjectDetail['plan'] }) {
   return (
     <section className="rounded-[10px] border border-[var(--line)] bg-panel p-4">
       <div className="flex items-center gap-2">
-        <ListChecks className="size-[17px] text-[#5f7396]" />
+        <ListChecks className="size-[17px] text-[var(--ink-soft)]" />
         <h2 className="text-[13px] font-semibold text-[var(--ink)]">{t('当前计划')}</h2>
       </div>
       <div className="mt-3 space-y-[10px]">
@@ -226,8 +226,8 @@ function PlanCard({ plan }: { plan: WorkObjectDetail['plan'] }) {
               className={cn(
                 'flex size-[15px] shrink-0 items-center justify-center rounded-[4px] border transition-colors',
                 done[index]
-                  ? 'border-[#4674ab] bg-[#4674ab] text-white'
-                  : 'border-[#c9ced6] bg-panel group-hover:border-[#a9b4c4]',
+                  ? 'border-[var(--control-border)] bg-[var(--accent)] text-[var(--accent-foreground)]'
+                  : 'border-[var(--control-border)] bg-panel group-hover:border-[var(--control-border)]',
               )}
             >
               {done[index] ? <Check className="size-2.5" weight="bold" /> : null}
@@ -243,7 +243,7 @@ function PlanCard({ plan }: { plan: WorkObjectDetail['plan'] }) {
 }
 
 const BotAvatar = () => (
-  <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-[var(--line-strong)] bg-panel text-[#44536e]">
+  <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-[var(--line-strong)] bg-panel text-[var(--ink-soft)]">
     <User className="size-[15px]" weight="fill" />
   </span>
 );
@@ -413,7 +413,7 @@ function ResultCard({ entry }: { entry: Extract<DetailFeedEntry, { kind: 'result
             <p className="text-[12.5px] font-semibold text-[var(--ink)]">{entry.suite}</p>
             <div className="mt-2.5 flex items-center gap-6">
               <span className="flex items-baseline gap-1.5 text-[12px]">
-                <span className="font-medium text-[#4674ab]">{t('通过')}</span>
+                <span className="font-medium text-[var(--ok-ink)]">{t('通过')}</span>
                 <span className="font-semibold text-[var(--ink)]">{entry.pass}</span>
               </span>
               <span className="flex items-baseline gap-1.5 text-[12px]">
@@ -432,9 +432,9 @@ function ResultCard({ entry }: { entry: Extract<DetailFeedEntry, { kind: 'result
                       {entry.rate}
                     </span>
                   </span>
-                  <span className="h-1 overflow-hidden rounded-full bg-[#e8eaf0]">
+                  <span className="h-1 overflow-hidden rounded-full bg-[var(--surface-subtle)]">
                     <span
-                      className="block h-full rounded-full bg-[#4674ab]"
+                      className="block h-full rounded-full bg-[var(--ok-ink)]"
                       style={{ width: `${total === 0 ? 0 : (entry.pass / total) * 100}%` }}
                     />
                   </span>
@@ -488,7 +488,7 @@ function Composer({ detail }: { detail: WorkObjectDetail }) {
 
   return (
     <div className="shrink-0 pb-5 pt-4">
-      <div className="rounded-[12px] border border-[var(--line)] bg-panel px-4 pb-3 pt-3.5 transition-colors focus-within:border-[#a9c0e0]">
+      <div className="rounded-[12px] border border-[var(--line)] bg-panel px-4 pb-3 pt-3.5 transition-colors focus-within:border-[var(--control-border)]">
         <textarea
           value={value}
           onChange={(event) => setValue(event.target.value)}
@@ -552,7 +552,7 @@ function Composer({ detail }: { detail: WorkObjectDetail }) {
             <button
               type="button"
               aria-label={t('发送')}
-              className="ml-1 flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[#4674ab] text-white outline-none transition-[background-color,transform] hover:bg-[#3d67a0] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-95"
+              className="ml-1 flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--accent)] text-[var(--accent-foreground)] outline-none transition-[background-color,transform] hover:bg-[var(--accent-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-95"
             >
               <PaperPlaneTilt className="size-[15px]" weight="fill" />
             </button>

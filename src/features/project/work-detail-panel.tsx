@@ -88,7 +88,7 @@ export function WorkDetailPanel({
           {fixtureField(item, 'title', locale)}
         </h2>
         <div className="mt-3 flex items-center gap-2">
-          <span className="flex items-center gap-1 rounded-[5px] bg-[#f3f5f8] px-2 py-1 text-[8.5px] font-medium text-[var(--muted-strong)]">
+          <span className="flex items-center gap-1 rounded-[5px] bg-[var(--surface-subtle)] px-2 py-1 text-[8.5px] font-medium text-[var(--muted-strong)]">
             <Target className="size-3" />
             {item.id}
           </span>
@@ -118,13 +118,13 @@ export function WorkDetailPanel({
           </span>
           <span className="text-[var(--muted-strong)]">{t('阶段')}</span>
           <span className="flex items-center gap-2 text-[var(--ink-soft)]">
-            <SpinnerGap className="size-4 text-[#6d7990]" />
+            <SpinnerGap className="size-4 text-[var(--ink-soft)]" />
             {t('实现与验证')}
           </span>
         </div>
 
         <DetailSection title={t('验收进度')} trailing={`${completed} / ${issueChecklist.length}`}>
-          <div className="mb-3 h-[3px] overflow-hidden rounded-full bg-[#e8eaf0]">
+          <div className="mb-3 h-[3px] overflow-hidden rounded-full bg-[var(--surface-subtle)]">
             <span
               className="block h-full rounded-full bg-[#5674b5] transition-[width] duration-300"
               style={{ width: `${(completed / issueChecklist.length) * 100}%` }}
@@ -146,8 +146,8 @@ export function WorkDetailPanel({
                   className={cn(
                     'flex size-3.5 items-center justify-center rounded-full border transition-colors',
                     checks[index]
-                      ? 'border-[#8291aa] bg-[#8291aa] text-white'
-                      : 'border-[#cbd0d8] bg-panel group-hover:border-[#8291aa]',
+                      ? 'border-[var(--control-border)] bg-[var(--accent)] text-[var(--accent-foreground)]'
+                      : 'border-[var(--control-border)] bg-panel group-hover:border-[var(--control-border)]',
                   )}
                 >
                   {checks[index] ? <Check className="size-2.5" weight="bold" /> : null}
@@ -234,10 +234,10 @@ export function WorkDetailPanel({
           type="button"
           onClick={() => setRoomOpen(true)}
           className={cn(
-            'flex h-9 w-full items-center justify-center gap-2 rounded-[7px] text-[10.5px] font-semibold text-white outline-none transition-[background-color,transform,box-shadow] hover:-translate-y-px focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]',
+            'flex h-9 w-full items-center justify-center gap-2 rounded-[7px] text-[10.5px] font-semibold outline-none transition-[background-color,transform] hover:-translate-y-px focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]',
             roomOpen
-              ? 'bg-[#4f866d] shadow-[0_5px_14px_rgba(54,112,84,0.18)]'
-              : 'bg-[#4f6da8] shadow-[0_5px_14px_rgba(58,84,140,0.22)]',
+              ? 'bg-[#4f866d] text-white'
+              : 'bg-[var(--accent)] text-[var(--accent-foreground)] hover:bg-[var(--accent-strong)]',
           )}
         >
           {roomOpen ? (

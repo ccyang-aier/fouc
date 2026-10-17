@@ -343,7 +343,7 @@ function WorkBoard({
           key: name,
           label: name,
           tint: 'bg-[#f7f8fa]',
-          accent: 'text-[#6f7b8e]',
+          accent: 'text-[var(--ink-soft)]',
           items: items.filter((item) => item.assignee.name === name),
         }));
 
@@ -493,7 +493,7 @@ function WorkTimeline({ items, onSelect }: { items: WorkItem[]; onSelect: (id: s
             onClick={() => onSelect(item.id)}
             className="relative mb-3 flex w-full items-center gap-4 rounded-[7px] border border-[var(--line)] bg-panel p-3 text-left outline-none transition-shadow hover:shadow-[0_5px_16px_rgba(35,40,48,0.06)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
           >
-            <span className="absolute -left-[27px] size-3 rounded-full border-2 border-panel bg-[#7185ab]" />
+            <span className="absolute -left-[27px] size-3 rounded-full border-2 border-panel bg-[var(--accent)]" />
             <span className="w-16 text-[9.5px] text-[var(--muted)]">
               {index < 3 ? t('今天') : t('明天')}
             </span>

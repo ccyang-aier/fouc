@@ -31,7 +31,7 @@ export function TaskProgress({ editor }: { editor: Editor | null }) {
   const checked = useSyncExternalStore(subscribe, snapshot, () => 0);
   return (
     <span className="inline-flex items-center gap-1">
-      <CheckCircle size={14} weight="fill" className="text-[#0869cf]" aria-hidden />
+      <CheckCircle size={14} weight="fill" className="text-[var(--ink-soft)]" aria-hidden />
       {knowledgeT('completed')}
       {checked} {knowledgeT('tasks')}
     </span>

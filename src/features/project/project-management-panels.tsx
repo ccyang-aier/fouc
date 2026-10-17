@@ -1077,7 +1077,7 @@ function rowClass(active?: boolean) {
 }
 
 function iconBoxClass(active?: boolean, tone?: IconTone) {
-  // 有语义色的行使用彩色软底芯片；未指定 tone 的行保持中性灰形态
+  // 资源身份图标使用克制彩色；普通操作行保持中性灰形态
   if (tone)
     return cn(
       'flex size-8 shrink-0 items-center justify-center rounded-[8px] transition-colors',

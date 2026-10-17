@@ -254,7 +254,7 @@ export function DtsTicketList(props: Props) {
                   {dtsStatusLabel(ticket.status, locale)}
                 </span>
                 {ticket.relatedCount != null ? (
-                  <span className="flex max-w-[96px] min-w-0 items-center gap-1 rounded-[5px] bg-[color-mix(in_srgb,#7658f5_10%,var(--panel))] px-1.5 py-0.5 font-medium text-[#6b54c7]">
+                  <span className="flex max-w-[96px] min-w-0 items-center gap-1 rounded-[5px] bg-[var(--accent-soft)] px-1.5 py-0.5 font-medium text-[var(--ink-soft)]">
                     <LinkSimple className="size-2.5 shrink-0" />
                     <span className="truncate">
                       {tu('与')} {ticket.relatedCount} {tu('个问题相关')}

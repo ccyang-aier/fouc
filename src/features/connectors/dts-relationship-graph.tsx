@@ -541,7 +541,7 @@ function NodeActions({
         }}
         className={cn(
           baseClassName,
-          'border-[#4d5f78] bg-[#4d5f78] text-white hover:brightness-105',
+          'border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)] hover:bg-[var(--accent-strong)]',
         )}
       >
         <NotePencil className="size-3.5" weight="bold" />
@@ -724,7 +724,7 @@ function CanvasControls({
         onClick={onTogglePan}
         className={cn(
           controlClassName,
-          panMode && 'border-[#172033] bg-[#172033] text-white hover:bg-[#172033]',
+          panMode && 'border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-foreground)] hover:bg-[var(--accent-strong)]',
         )}
       >
         <Hand className="size-4" weight={panMode ? 'fill' : 'regular'} />

@@ -1,0 +1,2 @@
+.badge { color: #3b82f6; }
+:global(html[data-theme="dark"]) .badge { color: #7cb0ff; }

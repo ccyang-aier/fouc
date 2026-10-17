@@ -65,7 +65,7 @@ export function ProjectHeader({
 
           <div className="mt-2 flex h-7 items-center gap-4 text-[10.5px] text-[var(--muted-strong)]">
             <span className="flex items-center gap-2 whitespace-nowrap">
-              <Circle className="size-[11px] text-[#68748a]" weight="fill" />
+              <Circle className="size-[11px] text-[var(--ink-soft)]" weight="fill" />
               <span>{t('当前运行中任务')}</span>
               <span className="font-semibold text-[var(--ink-soft)]">3</span>
             </span>
@@ -110,7 +110,7 @@ export function ProjectHeader({
             aria-pressed={panelOpen}
             onClick={onTogglePanel}
             className={cn(
-              'fouc-action flex size-9 items-center justify-center rounded-[8px] text-[#566888] outline-none transition-[color,transform] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-95',
+              'fouc-action flex size-9 items-center justify-center rounded-[8px] text-[var(--ink-soft)] outline-none transition-[color,transform] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-95',
               panelOpen ? 'bg-[var(--surface-hover)]' : 'bg-transparent',
             )}
           >

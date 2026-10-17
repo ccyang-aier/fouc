@@ -7,6 +7,7 @@ import { messages } from './i18n/work-card';
 import { CircleNotch, Diamond, Target } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
+import cardStyles from '@/components/ui/resource-card.module.css';
 
 import type { WorkItem } from './project-work-data';
 import { WorkAssigneeAvatar } from './work-assignee';
@@ -51,10 +52,8 @@ export function WorkCard({
         onDragStart();
       }}
       className={cn(
-        'group cursor-grab rounded-[8px] border bg-panel px-3 py-[14px] outline-none transition-[border-color,box-shadow,transform] active:cursor-grabbing active:scale-[0.99]',
-        selected
-          ? 'border-[#5f8ff7] shadow-[0_0_0_1px_rgba(95,143,247,0.12),0_7px_18px_rgba(66,103,175,0.09)]'
-          : 'border-[var(--line)] shadow-[0_1px_2px_rgba(30,35,45,0.025)] hover:-translate-y-px hover:border-[var(--line-strong)] hover:shadow-[0_7px_18px_rgba(36,41,50,0.07)]',
+        cardStyles.card,
+        'group cursor-grab px-3 py-[14px] outline-none active:cursor-grabbing',
       )}
     >
       <div className="flex items-center gap-1.5 text-[8.5px] font-medium tracking-[0.01em] text-[var(--muted)]">

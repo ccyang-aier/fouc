@@ -52,7 +52,7 @@ export function OutputsContextPanel({
           title={t('进入工作对象详情')}
           disabled={!groupId}
           onClick={() => groupId && onOpenWorkObject(groupId)}
-          className="flex size-[30px] items-center justify-center rounded-[8px] bg-[#4674ab] text-white outline-none transition-[background-color,transform,opacity] hover:bg-[#3d67a0] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-95 disabled:pointer-events-none disabled:opacity-40"
+          className="flex size-[30px] items-center justify-center rounded-[8px] bg-[var(--accent)] text-[var(--accent-foreground)] outline-none transition-[background-color,transform,opacity] hover:bg-[var(--accent-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-95 disabled:pointer-events-none disabled:opacity-40"
         >
           <ArrowLineRight className="size-4" weight="bold" />
         </button>
@@ -123,7 +123,7 @@ function ContextBody({ groupId, output }: { groupId: string | null; output: Outp
           <ContextRow label={t('关联工作任务')}>
             <button
               type="button"
-              className="flex items-center gap-2 rounded text-left text-[#4674ab] outline-none transition-colors hover:underline focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+              className="flex items-center gap-2 rounded text-left text-[var(--ink-soft)] outline-none transition-colors hover:underline focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
             >
               <span>{detail.relatedTask.id}</span>
               <span>{fixtureField(detail.relatedTask, 'title', locale)}</span>
@@ -163,9 +163,9 @@ function ContextBody({ groupId, output }: { groupId: string | null; output: Outp
                   className="group flex w-full items-center gap-2 rounded text-left text-[12px] text-[var(--ink-soft)] outline-none transition-colors hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                 >
                   {checks[index] ? (
-                    <CheckCircle className="size-[15px] shrink-0 text-[#4674ab] transition-opacity group-hover:opacity-80" />
+                    <CheckCircle className="size-[15px] shrink-0 text-[var(--ok-ink)] transition-opacity group-hover:opacity-80" />
                   ) : (
-                    <span className="size-[15px] shrink-0 rounded-[4px] border border-[#c9ced6] bg-panel transition-colors group-hover:border-[#a9b4c4]" />
+                    <span className="size-[15px] shrink-0 rounded-[4px] border border-[var(--control-border)] bg-panel transition-colors group-hover:border-[var(--control-border)]" />
                   )}
                   <span>{fixtureField(item, 'label', locale)}</span>
                 </button>
@@ -182,7 +182,7 @@ function ContextBody({ groupId, output }: { groupId: string | null; output: Outp
                   </span>
                   <button
                     type="button"
-                    className="rounded text-left text-[#4674ab] outline-none transition-colors hover:underline focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                    className="rounded text-left text-[var(--ink-soft)] outline-none transition-colors hover:underline focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                   >
                     {item.file}
                   </button>
@@ -192,7 +192,7 @@ function ContextBody({ groupId, output }: { groupId: string | null; output: Outp
           </ContextRow>
 
           <ContextRow label={t('残余风险')}>
-            <span className="grid size-[28px] place-items-center rounded-[9px] bg-[#eef3fa] text-[13px] font-medium text-[#4674ab]">
+            <span className="grid size-[28px] place-items-center rounded-[9px] bg-[var(--warn-soft)] text-[13px] font-medium text-[var(--warn-ink)]">
               {fixtureField(detail.risk, 'level', locale)}
             </span>
             <p className="mt-[7px]">{fixtureField(detail.risk, 'note', locale)}</p>
@@ -208,7 +208,7 @@ function ContextBody({ groupId, output }: { groupId: string | null; output: Outp
               <button
                 key={action.label}
                 type="button"
-                className="flex h-[30px] w-full items-center gap-2.5 rounded-[6px] px-1 text-[12.5px] font-medium text-[#4674ab] outline-none transition-colors hover:bg-[#f5f8fc] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                className="flex h-[30px] w-full items-center gap-2.5 rounded-[6px] px-1 text-[12.5px] font-medium text-[var(--ink-soft)] outline-none transition-colors hover:bg-[var(--surface-subtle)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
               >
                 <action.icon className="size-4" />
                 {fixtureField(action, 'label', locale)}

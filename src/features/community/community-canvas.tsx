@@ -13,7 +13,6 @@ import {
   DownloadSimple,
   MagnifyingGlass,
   Plus,
-  SealCheck,
   Star,
   StarHalf,
   X,
@@ -37,6 +36,7 @@ import {
 } from './community-cards';
 import { CommunityDetailPage, type RelatedItem } from './community-detail';
 import { CommunityFacets, type CommunityTypeFilter } from './community-facets';
+import { CommunityOfficialBadge } from './community-official-badge';
 import {
   buildCommunityDetail,
   initialCommunityAgents,
@@ -746,10 +746,7 @@ export function CommunityCanvas() {
                           {selectedItem.name}
                         </h2>
                         {selectedItem.official ? (
-                          <SealCheck
-                            className="size-4 shrink-0 text-[var(--accent)]"
-                            weight="fill"
-                          />
+                          <CommunityOfficialBadge className="size-4" />
                         ) : null}
                       </div>
                       <p className="mt-1 text-[10px] text-[var(--muted)]">

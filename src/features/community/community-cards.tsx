@@ -1,11 +1,13 @@
 'use client';
 
+import { toneChips, type IconTone } from '@/lib/icon-tones';
+import { CommunityOfficialBadge } from './community-official-badge';
+
 import { useTranslation } from '@/lib/i18n/react';
 import { messages } from './i18n/community-cards.messages';
 
-import { CaretDown, CaretUp, Check, DownloadSimple, SealCheck, Star } from '@phosphor-icons/react';
+import { CaretDown, CaretUp, Check, DownloadSimple, Star } from '@phosphor-icons/react';
 
-import { toneChips, type IconTone } from '@/lib/icon-tones';
 import { cn } from '@/lib/utils';
 
 import {
@@ -17,6 +19,7 @@ import {
 
 import type { CommunitySortKey } from './community-canvas';
 import styles from '@/components/ui/resource-card.module.css';
+import identityStyles from './community-cards.module.css';
 
 export type CommunityLibraryItem = {
   id: string;
@@ -36,9 +39,10 @@ export type CommunityLibraryItem = {
   updated: string;
 };
 
+
 const kindBadge = {
-  agents: 'bg-[color-mix(in_srgb,#4f7ee8_11%,transparent)] text-[#416bc8]',
-  skills: 'bg-[color-mix(in_srgb,#8765d8_11%,transparent)] text-[#7452c1]',
+  agents: identityStyles.agentKind,
+  skills: identityStyles.skillKind,
 } as const;
 
 export function CommunityAssetTable({
@@ -121,7 +125,7 @@ export function CommunityAssetTable({
               }
             }}
             className={cn(
-              'group grid min-w-[950px] cursor-default items-center gap-3 border-b border-[var(--line)] px-3 py-[9px] outline-none transition-colors last:border-b-0 hover:bg-[var(--surface-subtle)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)]',
+              'group grid min-w-[950px] cursor-pointer items-center gap-3 border-b border-[var(--line)] px-3 py-[9px] outline-none transition-colors last:border-b-0 hover:bg-[var(--surface-subtle)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)]',
               gridColumns,
               selected && 'bg-[color-mix(in_srgb,var(--accent)_7%,transparent)]',
             )}
@@ -132,7 +136,7 @@ export function CommunityAssetTable({
                   {item.name}
                 </p>
                 {item.official ? (
-                  <SealCheck className="size-3.5 shrink-0 text-[var(--accent)]" weight="fill" />
+                  <CommunityOfficialBadge />
                 ) : null}
                 {item.installed ? (
                   <span
@@ -262,7 +266,7 @@ export function CommunityAssetCard({
         onDoubleClick={onOpen}
         onKeyDown={onKeyDown}
         className={cn(
-          'group grid min-w-[620px] cursor-default grid-cols-[44px_minmax(190px,1.5fr)_120px_92px_76px] items-center gap-3 border-b border-[var(--line)] px-3 py-2 outline-none transition-colors',
+          'group grid min-w-[620px] cursor-pointer grid-cols-[44px_minmax(190px,1.5fr)_120px_92px_76px] items-center gap-3 border-b border-[var(--line)] px-3 py-2 outline-none transition-colors',
           selected
             ? 'bg-[color-mix(in_srgb,var(--accent)_7%,transparent)]'
             : 'hover:bg-[var(--surface-subtle)]',
@@ -273,7 +277,7 @@ export function CommunityAssetCard({
           <div className="flex items-center gap-1.5">
             <p className="truncate text-[12px] font-semibold text-[var(--ink)]">{item.name}</p>
             {item.official ? (
-              <SealCheck className="size-3.5 shrink-0 text-[var(--accent)]" weight="fill" />
+              <CommunityOfficialBadge />
             ) : null}
           </div>
           <p className="mt-1 truncate text-[10.5px] text-[var(--muted)]">{item.summary}</p>
@@ -325,7 +329,7 @@ export function CommunityAssetCard({
           <div className="flex items-center gap-1">
             <h3 className="truncate text-[12.5px] font-semibold text-[var(--ink)]">{item.name}</h3>
             {item.official ? (
-              <SealCheck className="size-3.5 shrink-0 text-[var(--accent)]" weight="fill" />
+              <CommunityOfficialBadge />
             ) : null}
           </div>
           <p className="mt-1 truncate text-[10px] text-[var(--muted)]">{item.author}</p>

@@ -118,7 +118,7 @@ export function OutputsTable({
                   />
                   {isWorkObject ? (
                     <>
-                      <FileText className="ml-3 size-[17px] shrink-0 text-[#33497c]" />
+                      <FileText className="ml-3 size-[17px] shrink-0 text-[var(--ink-soft)]" />
                       <span className="ml-4 truncate text-[12.5px] font-medium text-[var(--ink)]">
                         {section.id} · {fixtureField(section, 'title', locale)}
                       </span>
@@ -205,7 +205,7 @@ function OutputRow({
       className={cn(
         GRID_COLS,
         'h-12 w-full pl-[44px] text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)]',
-        selected ? 'bg-[#f1f4f9]' : 'hover:bg-[#f7f9fc]',
+        selected ? 'bg-[var(--surface-subtle)]' : 'hover:bg-[var(--surface-subtle)]',
       )}
     >
       <span className="flex min-w-0 items-center gap-[15px]">

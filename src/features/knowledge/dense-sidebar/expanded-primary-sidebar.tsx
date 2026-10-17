@@ -135,7 +135,7 @@ export function ExpandedPrimarySidebar({
                   label={t(item.labelKey)}
                   icon={Icon}
                   count={counts[item.id] ?? 0}
-                  iconTone={item.tone}
+
                   selected={activeItem === item.id}
                   onClick={() => onNavigateMain(item.id)}
                 />
@@ -208,7 +208,7 @@ export function ExpandedPrimarySidebar({
             {tagPopoverOpen && (
               <form
                 onSubmit={submitTag}
-                className="my-1 flex gap-1 rounded-md border border-[#e7e9ed] bg-white p-1"
+                className="my-1 flex gap-1 rounded-md border border-[var(--line)] bg-panel p-1"
               >
                 <input
                   autoFocus
@@ -220,7 +220,7 @@ export function ExpandedPrimarySidebar({
                 <button
                   type="submit"
                   disabled={!tagName.trim()}
-                  className="px-2 text-xs text-[#3f8990] disabled:opacity-40"
+                  className="px-2 text-xs text-[var(--ink)] disabled:opacity-40"
                 >
                   {knowledgeT('create')}
                 </button>

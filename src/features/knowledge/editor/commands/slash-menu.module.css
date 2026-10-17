@@ -37,5 +37,5 @@
 .icon { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 17px; color: inherit; font-weight: 750; }
 .icon { height: 17px; }
 .title { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.shortcut { flex: none; color: #879bb5; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.shortcut { flex: none; color: var(--muted-strong); font-size: 12px; font-weight: 600; white-space: nowrap; }
 .empty { display: flex; align-items: center; justify-content: center; min-height: 64px; color: var(--muted); font-size: 13px; }

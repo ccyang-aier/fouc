@@ -41,17 +41,17 @@ function FilePreview({ source, title }: { source: ResolvedMedia; title: string }
         <FileText aria-hidden size={23} weight="duotone" />
       </span>
       <span className="min-w-0 flex-1">
-        <strong className="block truncate text-[13px] font-semibold text-[#2c3d54]">
+        <strong className="block truncate text-[13px] font-semibold text-[var(--ink)]">
           {source.name || title}
         </strong>
-        <small className="mt-0.5 block text-[11px] text-[#8b99ad]">
+        <small className="mt-0.5 block text-[11px] text-[var(--muted-strong)]">
           {formatSize(source.size) || source.mime || knowledgeT('attachment')}
         </small>
       </span>
       <a
         href={source.url}
         download={source.name || title}
-        className="rounded-[6px] border border-[#dbe5f1] bg-white px-3 py-1.5 text-[11px] font-medium text-[#2d6eb9] hover:bg-[#f0f6fd]"
+        className="rounded-[6px] border border-[var(--control-border)] bg-panel px-3 py-1.5 text-[11px] font-medium text-[var(--ink-soft)] hover:bg-[var(--surface-hover)]"
       >
         {knowledgeT('download')}
       </a>

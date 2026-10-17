@@ -1,0 +1,5 @@
+.agentKind { background: rgb(79 126 232 / 11%); color: #416bc8; }
+.skillKind { background: rgb(135 101 216 / 11%); color: #7452c1; }
+
+:global(html[data-theme="dark"]) .agentKind { background: rgb(120 162 255 / 14%); color: #a5c0ff; }
+:global(html[data-theme="dark"]) .skillKind { background: rgb(171 144 239 / 14%); color: #c5afff; }

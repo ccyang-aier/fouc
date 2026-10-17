@@ -65,9 +65,9 @@ export function WorkObjectPanel({
                 aria-selected={active}
                 onClick={() => setTab(item.id)}
                 className={cn(
-                  'relative flex h-full items-center text-[13px] outline-none transition-colors after:absolute after:-inset-x-1 after:bottom-0 after:h-0.5 after:rounded-full after:bg-[#4674ab] after:transition-transform focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)]',
+                  'relative flex h-full items-center text-[13px] outline-none transition-colors after:absolute after:-inset-x-1 after:bottom-0 after:h-0.5 after:rounded-full after:bg-[var(--accent)] after:transition-transform focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)]',
                   active
-                    ? 'font-semibold text-[#3d67a0] after:scale-x-100'
+                    ? 'font-semibold text-[var(--ink-soft)] after:scale-x-100'
                     : 'text-[var(--muted-strong)] after:scale-x-0 hover:text-[var(--ink)]',
                 )}
               >
@@ -145,7 +145,7 @@ export function WorkObjectPanel({
       <div className="shrink-0 space-y-3 px-4 pb-4">
         <button
           type="button"
-          className="flex h-[38px] w-full items-center justify-center gap-2 rounded-[10px] bg-[#4674ab] text-[13px] font-semibold text-white outline-none transition-[background-color,transform] hover:bg-[#3d67a0] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-[0.99]"
+          className="flex h-[38px] w-full items-center justify-center gap-2 rounded-[10px] bg-[var(--accent)] text-[13px] font-semibold text-[var(--accent-foreground)] outline-none transition-[background-color,transform] hover:bg-[var(--accent-strong)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-[0.99]"
         >
           <PaperPlaneTilt className="size-[15px]" weight="fill" />
           {t('提交评审')}

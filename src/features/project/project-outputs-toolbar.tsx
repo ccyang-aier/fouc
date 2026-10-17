@@ -69,7 +69,7 @@ function FilterTrigger({ label, active, leading, children }: FilterTriggerProps)
             'flex h-[34px] shrink-0 items-center gap-2 rounded-[8px] border px-3 text-[12px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]',
             leading === 'funnel' ? 'whitespace-nowrap' : 'w-[110px] justify-between',
             active
-              ? 'border-[#d7e2f2] bg-[#eef3fa] text-[#3d67a0]'
+              ? 'border-[var(--control-border)] bg-[var(--surface-subtle)] text-[var(--ink-soft)]'
               : 'border-[var(--line)] bg-panel text-[var(--ink)] hover:bg-[var(--surface-subtle)] data-[state=open]:bg-[var(--surface-subtle)]',
           )}
         >
@@ -81,7 +81,7 @@ function FilterTrigger({ label, active, leading, children }: FilterTriggerProps)
             <CaretDown
               className={cn(
                 'size-3.5 shrink-0',
-                active ? 'text-[#4674ab]' : 'text-[var(--muted-strong)]',
+                active ? 'text-[var(--ink-soft)]' : 'text-[var(--muted-strong)]',
               )}
             />
           )}
@@ -120,7 +120,7 @@ export function OutputsScopeSwitch({
             className={cn(
               'h-full rounded-[7px] border px-[18px] text-[12px] font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]',
               active
-                ? 'border-[var(--line)] bg-panel text-[#3d67a0] shadow-[0_1px_2px_rgba(35,40,48,0.05)]'
+                ? 'border-[var(--line)] bg-panel text-[var(--ink-soft)] shadow-[0_1px_2px_rgba(35,40,48,0.05)]'
                 : 'border-transparent text-[var(--muted-strong)] hover:text-[var(--ink)]',
             )}
           >
@@ -173,7 +173,7 @@ export function OutputsToolbar({
 
   return (
     <div className="flex h-[34px] items-center gap-3">
-      <label className="flex h-[34px] w-[268px] shrink-0 items-center gap-2 rounded-[8px] border border-[var(--line)] bg-panel px-3 text-[12px] transition-colors focus-within:border-[#a9c0e0]">
+      <label className="flex h-[34px] w-[268px] shrink-0 items-center gap-2 rounded-[8px] border border-[var(--line)] bg-panel px-3 text-[12px] transition-colors focus-within:border-[var(--control-border)]">
         <MagnifyingGlass className="size-4 shrink-0 text-[var(--muted-strong)]" />
         <input
           ref={searchRef}
@@ -187,14 +187,14 @@ export function OutputsToolbar({
       </label>
 
       {chipLabel ? (
-        <span className="flex h-[28px] shrink-0 items-center gap-2 rounded-[8px] bg-[#eef3fa] py-1 pl-3 pr-2 text-[12px] font-medium text-[#3d67a0]">
+        <span className="flex h-[28px] shrink-0 items-center gap-2 rounded-[8px] bg-[var(--surface-subtle)] py-1 pl-3 pr-2 text-[12px] font-medium text-[var(--ink-soft)]">
           {t('工作对象:')}
           {chipLabel}
           <button
             type="button"
             aria-label={t('清除工作对象聚焦')}
             onClick={onChipClear}
-            className="flex size-4 items-center justify-center rounded text-[#8598b4] outline-none transition-colors hover:text-[#3d67a0] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+            className="flex size-4 items-center justify-center rounded text-[var(--ink-soft)] outline-none transition-colors hover:text-[var(--ink-soft)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
           >
             <X className="size-3" weight="bold" />
           </button>
@@ -320,7 +320,7 @@ export function OutputsToolbar({
           onClick={onRefresh}
           className="flex size-[34px] shrink-0 items-center justify-center rounded-[8px] border border-[var(--line)] bg-panel text-[var(--ink-soft)] outline-none transition-colors hover:bg-[var(--surface-subtle)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
         >
-          <ArrowsClockwise className={cn('size-4', refreshing && 'animate-spin text-[#4674ab]')} />
+          <ArrowsClockwise className={cn('size-4', refreshing && 'animate-spin text-[var(--ink-soft)]')} />
         </button>
       </div>
     </div>

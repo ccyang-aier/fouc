@@ -33,7 +33,7 @@
 .titleDivider { width: 1px; height: 15px; background: var(--separator-color); }
 .count { color: var(--list-soft-ink); white-space: nowrap; font-size: max(13px, var(--ui-size)); }
 .headerActions { display: flex; flex-shrink: 0; align-items: center; gap: 8px; }
-.createButton { display: inline-flex; height: 32px; align-items: center; justify-content: center; gap: 7px; border: 1px solid transparent; border-radius: 5px; padding: 0 12px; background: var(--list-accent); color: #fff; font-size: max(13px, var(--ui-size)); font-weight: 500; box-shadow: 0 1px 2px rgb(24 92 255 / .13); }
+.createButton { display: inline-flex; height: 32px; align-items: center; justify-content: center; gap: 7px; border: 1px solid transparent; border-radius: 5px; padding: 0 12px; background: var(--list-accent); color: var(--accent-foreground); font-size: max(13px, var(--ui-size)); font-weight: 500; box-shadow: 0 1px 2px rgb(24 24 24 / .13); }
 .createButton:hover { filter: brightness(.95); }
 
 .toolbar { display: flex; min-height: 30px; align-items: center; gap: 10px; margin-bottom: 11px; }

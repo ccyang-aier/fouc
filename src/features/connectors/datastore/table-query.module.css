@@ -39,8 +39,8 @@
   background: var(--panel);
   text-align: left;
 }
-.condition b { color: #246cff; font-size: 13px; font-weight: 600; }
-.condition[data-kind="sort"] b { color: #ed6c1b; }
+.condition b { color: var(--ink); font-size: 13px; font-weight: 600; }
+.condition[data-kind="sort"] b { color: var(--ink); }
 .condition > span { min-width: 0; flex: 1; overflow: hidden; color: var(--muted-strong); text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
 .condition > svg { flex-shrink: 0; color: var(--muted-strong); }
 .conditionIcon { display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; width: 25px; height: 25px; border-radius: 4px; color: var(--muted-strong); cursor: pointer; outline: none; box-shadow: none; }

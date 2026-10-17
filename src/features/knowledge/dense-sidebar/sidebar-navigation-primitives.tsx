@@ -24,10 +24,7 @@ import {
 import { ProjectIcon } from '@/features/knowledge/dense-sidebar/project-icon';
 import type { ProjectIconId } from '@/features/knowledge/dense-sidebar/project-icons';
 import type { DocumentAction } from '@/features/knowledge/dense-sidebar/document-action-menu-content';
-import type {
-  SidebarIconName,
-  SidebarNavigationItem,
-} from '@/features/knowledge/dense-sidebar/sidebar-navigation';
+import type { SidebarIconName } from '@/features/knowledge/dense-sidebar/sidebar-navigation';
 import { cn } from '@/lib/utils';
 import { IconButton } from './icon-button';
 import { SidebarDocumentMenu } from '@/features/knowledge/dense-sidebar/sidebar-document-menu';
@@ -54,16 +51,8 @@ export function SidebarCreateIcon() {
 }
 
 export const sidebarDocumentIconClass =
-  'mr-2 shrink-0 text-[#626d7a] transition-colors duration-150 ease-out group-hover:text-foreground group-focus-within:text-foreground group-data-[selected=true]:text-foreground';
+  'mr-2 shrink-0 text-[var(--muted-strong)] transition-colors duration-150 ease-out group-hover:text-foreground group-focus-within:text-foreground group-data-[selected=true]:text-foreground';
 
-export const sidebarIconToneClasses: Record<NonNullable<SidebarNavigationItem['tone']>, string> = {
-  teal: 'text-[#3f8990]',
-  amber: 'text-[#e9ad16]',
-  indigo: 'text-[#667dc4]',
-  rose: 'text-[#d76d68]',
-  blue: 'text-[#3989c9]',
-  violet: 'text-[#7a67d5]',
-};
 
 export function SidebarSectionHeader({
   icon: Icon,
@@ -97,7 +86,7 @@ export function SidebarSectionHeader({
         onClick={onToggle}
         className="flex h-full min-w-0 flex-1 items-center text-left text-[13px] font-medium text-[var(--sidebar-heading)] outline-none"
       >
-        <Icon aria-hidden size={15} className="mr-2 shrink-0 text-[#7c8387]" />
+        <Icon aria-hidden size={15} className="mr-2 shrink-0 text-[var(--muted-strong)]" />
         <span className="truncate">{label}</span>
         <CaretRight
           aria-hidden
@@ -147,7 +136,6 @@ export function SidebarRow({
   icon: Icon,
   selected,
   count,
-  iconTone,
   compact,
   depth = 0,
   leading,
@@ -157,7 +145,6 @@ export function SidebarRow({
   icon?: PhosphorIcon;
   selected?: boolean;
   count?: number;
-  iconTone?: SidebarNavigationItem['tone'];
   compact?: boolean;
   depth?: number;
   leading?: React.ReactNode;
@@ -182,47 +169,19 @@ export function SidebarRow({
           <Icon
             aria-hidden="true"
             size={15}
-            weight="fill"
-            className={cn(
-              'mr-2 shrink-0 text-[#7c8387]',
-              iconTone && sidebarIconToneClasses[iconTone],
-            )}
+            weight={selected ? 'fill' : 'regular'}
+            className="mr-2 shrink-0 text-[var(--sidebar-icon)]"
           />
         ) : null)}
       <span className="my-auto inline-flex h-4 min-w-0 items-center truncate leading-4">
         {label}
       </span>
       {count !== undefined ? (
-        <span className="ml-auto pl-2 pr-0.5 text-[10.5px] tabular-nums text-[#8b9093]">
+        <span className="ml-auto pl-2 pr-0.5 text-[10.5px] tabular-nums text-[var(--muted)]">
           {count}
         </span>
       ) : null}
     </button>
-  );
-}
-
-export function ProductivityGlyph({
-  icon,
-  tone,
-  className,
-}: {
-  icon: SidebarIconName;
-  tone?: SidebarNavigationItem['tone'];
-  className?: string;
-}) {
-  const Icon = sidebarIconMap[icon];
-
-  return (
-    <span
-      className={cn(
-        'mr-2 inline-flex size-[15px] shrink-0 items-center justify-center rounded-[4px] text-white shadow-[inset_0_0_0_1px_rgb(255_255_255/0.14)]',
-        tone === 'blue' && 'bg-[#3989c9]',
-        tone === 'violet' && 'bg-[#7a67d5]',
-        className,
-      )}
-    >
-      <Icon aria-hidden="true" size={10} weight="fill" />
-    </span>
   );
 }
 

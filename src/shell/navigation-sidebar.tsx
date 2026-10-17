@@ -15,6 +15,8 @@ import { cn } from '@/lib/utils';
 import type { WorkbenchView } from './workbench-view';
 import { messages } from './i18n/navigation-sidebar.messages';
 import { SidebarProjectSections } from './sidebar-project-sections';
+import { SidebarThemeSwitch } from './sidebar-theme-switch';
+import styles from './sidebar-footer.module.css';
 
 export function NavigationSidebar({ open, onCollapse, onExpand, view, onViewChange, onProjectChange, onOpenChat }: {
   open: boolean; onCollapse: () => void; onExpand: () => void;
@@ -22,7 +24,7 @@ export function NavigationSidebar({ open, onCollapse, onExpand, view, onViewChan
   onProjectChange: () => void; onOpenChat: (entry: ChatHistoryEntry) => void;
 }) {
   const { t } = useTranslation(messages);
-  const { width, dragging, startResize } = useSidebarWidth();
+  const { width, dragging, startResize } = useSidebarWidth(272);
   const { scopeKey } = useProjectResources();
   const primary: Array<SidebarRowItem & { id: WorkbenchView }> = [
     { id: 'home', label: t('新对话'), icon: ChatCircleDots },
@@ -46,16 +48,23 @@ export function NavigationSidebar({ open, onCollapse, onExpand, view, onViewChan
     <header className={cn('flex h-11 shrink-0 items-center border-b border-[var(--line)]', open ? 'px-3' : 'justify-center')}>
       {open ? <><FoucMark /><span className="ml-1.5 text-[13px] font-semibold">Fouc</span><button type="button" className="fouc-action ml-auto grid size-7 cursor-pointer place-items-center rounded-md text-[var(--muted-strong)]" aria-label={t('收起主导航')} onClick={onCollapse}><SidebarSimple size={16} weight="duotone" /></button></> : <button type="button" className="fouc-action grid size-8 cursor-pointer place-items-center rounded-md" aria-label={t('展开主导航')} onClick={onExpand}><FoucMark compact /></button>}
     </header>
-    <div className={cn('shrink-0 py-3', open ? 'px-3' : 'px-1')}><ProjectSwitcher compact={!open} onSwitch={onProjectChange} /></div>
+    {open && <div className="shrink-0 px-3 py-3"><ProjectSwitcher onSwitch={onProjectChange} /></div>}
     <ScrollArea className="min-h-0 flex-1" viewportClassName={open ? 'px-3 pb-4' : 'px-1 pb-3'}>
-      <nav aria-label={t('项目导航')} className="space-y-0.5">{primary.map(row)}</nav>
+      <nav aria-label={t('项目导航')} className="flex flex-col gap-0.5">{primary.map(row)}</nav>
       <div role="separator" className="mx-2 my-3 border-t border-[var(--line)]" />
-      {open ? <SidebarProjectSections key={scopeKey ?? 'no-project'} services={<nav aria-label={t('服务')} className="space-y-0.5">{services.map(row)}</nav>} onNewChat={() => onViewChange('home')} onAllChats={() => onViewChange('chats')} onOpenChat={onOpenChat} /> : <nav aria-label={t('服务')} className="space-y-0.5">{services.map(row)}</nav>}
+      {open && <SidebarProjectSections key={scopeKey ?? 'no-project'} onNewChat={() => onViewChange('home')} onAllChats={() => onViewChange('chats')} onOpenChat={onOpenChat} />}
     </ScrollArea>
-    <footer className={cn('shrink-0 space-y-0.5 pt-2', open ? 'px-3' : 'px-1')}>
-      {row({ id: 'settings', label: t('设置'), icon: GearSix })}
+    <footer className={cn('flex shrink-0 flex-col gap-0.5 pt-2', open ? 'px-3' : 'px-1')}>
+      <nav aria-label={t('服务')} className="flex flex-col gap-0.5">{services.map(row)}</nav>
       {row({ id: 'help', label: t('帮助与反馈'), icon: Question })}
-      <div className={cn('mt-2 border-t border-[var(--line)] py-2', !open && 'flex justify-center')}><AccountItem compact={!open} /></div>
+      <div className={styles.dock} data-compact={!open}>
+        <div className={styles.account}><AccountItem compact={!open} /></div>
+        <SidebarThemeSwitch compact={!open} />
+        <Tooltip>
+          <TooltipTrigger asChild><button type="button" className={`fouc-action ${styles.iconButton}`} aria-label={t('设置')} aria-haspopup="dialog" onClick={() => onViewChange('settings')}><GearSix size={18} weight="duotone" aria-hidden /></button></TooltipTrigger>
+          <TooltipContent side={open ? 'top' : 'right'}>{t('设置')}</TooltipContent>
+        </Tooltip>
+      </div>
     </footer>
     {open && <SidebarResizeHandle dragging={dragging} onPointerDown={startResize} />}
   </aside>;

@@ -260,6 +260,7 @@ function ensureSystemListener(): void {
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
     if (current.theme !== 'system') return;
     applyResolvedTheme(resolveTheme('system'));
+    for (const listener of listeners) listener();
   });
 }
 

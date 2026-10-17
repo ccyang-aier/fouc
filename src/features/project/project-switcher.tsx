@@ -15,7 +15,7 @@ import { useProjectAvatarPalette, saveProjectAvatarPalette } from './project-ava
 
 type ProjectAction = { kind: 'create' } | { kind: 'rename' | 'remove'; project: ProjectResource };
 
-export function ProjectSwitcher({ compact = false, onSwitch }: { compact?: boolean; onSwitch: () => void }) {
+export function ProjectSwitcher({ onSwitch }: { onSwitch: () => void }) {
   const { t } = useTranslation(messages);
   const { principal, scopeKey, projects, selectedProject, selectProject, status, error, refreshProjects } = useProjectResources();
   const selectedPalette = useProjectAvatarPalette(scopeKey);
@@ -32,12 +32,12 @@ export function ProjectSwitcher({ compact = false, onSwitch }: { compact?: boole
   return <>
     <DropdownMenu open={menuOpen} onOpenChange={open => { setMenuOpen(open); if (open) setQuery(''); }}>
       <DropdownMenuTrigger asChild>
-        <button type="button" className={`fouc-action ${styles.trigger}`} data-compact={compact} aria-label={t('switch')} title={compact ? selectedProject?.name ?? t('select') : undefined}>
+        <button type="button" className={`fouc-action ${styles.trigger}`} aria-label={t('switch')}>
           {selectedProject ? <ProjectSwitcherAvatar project={selectedProject} principal={principal} /> : <span className={styles.avatar}><FolderSimple size={17} weight="duotone" /></span>}
-          {!compact && <><span className={styles.name}>{selectedProject?.name ?? t(status === 'loading' ? 'loading' : 'select')}</span><CaretUpDown size={13} className={styles.chevrons} /></>}
+          <span className={styles.name}>{selectedProject?.name ?? t(status === 'loading' ? 'loading' : 'select')}</span><CaretUpDown size={13} className={styles.chevrons} />
         </button>
       </DropdownMenuTrigger>
-      {menuOpen && <DropdownMenuContent className={styles.menu} align="start" side={compact ? 'right' : 'bottom'} sideOffset={6} aria-label={t('switch')}>
+      {menuOpen && <DropdownMenuContent className={styles.menu} align="start" side="bottom" sideOffset={6} aria-label={t('switch')}>
         <div className={styles.search}><MagnifyingGlass size={15} /><input autoFocus value={query} onChange={e => setQuery(e.target.value)} onKeyDown={e => {
           if (e.key === 'Escape') return;
           e.stopPropagation();

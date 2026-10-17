@@ -22,8 +22,8 @@ const MIN_WIDTH = 204;
 const MAX_WIDTH = 360;
 const DEFAULT_WIDTH = 224;
 
-export function useSidebarWidth() {
-  const [width, setWidth] = useState(DEFAULT_WIDTH);
+export function useSidebarWidth(defaultWidth = DEFAULT_WIDTH) {
+  const [width, setWidth] = useState(defaultWidth);
   const [dragging, setDragging] = useState(false);
   const dragStart = useRef<{ pointerX: number; width: number } | null>(null);
 

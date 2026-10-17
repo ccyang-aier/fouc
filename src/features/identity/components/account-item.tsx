@@ -5,8 +5,6 @@ import { messages } from './i18n/account-item.messages';
 
 import {
   ArrowsLeftRight,
-  CaretDown,
-  CaretRight,
   Check,
   CircleNotch,
   SignOut,
@@ -38,12 +36,11 @@ export function AccountItem({ compact = false }: { compact?: boolean }) {
   const { session, openSignIn, openSwitchAccount, presence, presencePreference, setPresence } =
     useIdentity();
   const [logoutOpen, setLogoutOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const openingDialog = useRef(false);
   const user = session.status === 'authenticated' ? session.user : null;
   const label =
-    user?.name ?? (session.status === 'checking' ? uiText('正在确认身份') : uiText('未登录'));
-  const detail =
-    session.status === 'error' ? uiText('登录服务暂不可用') : uiText('登录你的 Fouc 账户');
+    user?.name ?? (session.status === 'checking' ? uiText('正在确认身份') : session.status === 'error' ? uiText('登录服务暂不可用') : uiText('未登录'));
   const status = presenceDisplay(presence, locale);
   const button = (
     <button
@@ -81,27 +78,7 @@ export function AccountItem({ compact = false }: { compact?: boolean }) {
         ) : null}
       </span>
       {!compact ? (
-        <>
-          <span className={styles.identityText}>
-            <span className={styles.name}>{label}</span>
-            <span className={styles.detail}>
-              {user ? (
-                <>
-                  {status.label}
-                  <span aria-hidden className={styles.detailDivider}>
-                    ·
-                  </span>
-                  {uiText('Fouc 账户')}
-                </>
-              ) : (
-                detail
-              )}
-            </span>
-          </span>
-          <span aria-hidden className={styles.chevron}>
-            {user ? <CaretDown size={14} /> : <CaretRight size={14} />}
-          </span>
-        </>
+        <span className={styles.identityText}><span className={styles.name}>{label}</span></span>
       ) : null}
     </button>
   );
@@ -117,7 +94,7 @@ export function AccountItem({ compact = false }: { compact?: boolean }) {
 
   return (
     <>
-      <DropdownMenu>
+      <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
         {compact ? (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -130,9 +107,9 @@ export function AccountItem({ compact = false }: { compact?: boolean }) {
         ) : (
           <DropdownMenuTrigger asChild>{button}</DropdownMenuTrigger>
         )}
-        <DropdownMenuContent
+        {menuOpen && <DropdownMenuContent
           side={compact ? 'right' : 'top'}
-          align={compact ? 'start' : 'center'}
+          align="start"
           sideOffset={8}
           className={styles.menu}
           onCloseAutoFocus={(event) => {
@@ -228,7 +205,7 @@ export function AccountItem({ compact = false }: { compact?: boolean }) {
             <SignOut />
             {uiText('退出登录')}
           </DropdownMenuItem>
-        </DropdownMenuContent>
+        </DropdownMenuContent>}
       </DropdownMenu>
       <LogoutConfirmDialog open={logoutOpen} onClose={() => setLogoutOpen(false)} />
     </>

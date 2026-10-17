@@ -2,10 +2,11 @@
 
 import { useSyncExternalStore } from 'react';
 
-export type SidebarTag = { id: string; name: string };
+export type SidebarChannel = { id: string; name: string };
+// The navigation label changes without replacing the stored project entries.
 const prefix = 'fouc.project.sidebar-tags.';
-const empty: SidebarTag[] = [];
-const snapshots = new Map<string, SidebarTag[]>();
+const empty: SidebarChannel[] = [];
+const snapshots = new Map<string, SidebarChannel[]>();
 const listeners = new Set<() => void>();
 
 function subscribe(listener: () => void) {
@@ -23,19 +24,19 @@ function subscribe(listener: () => void) {
 function read(scopeKey: string) {
   const cached = snapshots.get(scopeKey);
   if (cached) return cached;
-  let tags: SidebarTag[];
-  try { tags = JSON.parse(window.localStorage.getItem(prefix + scopeKey) ?? '[]') as SidebarTag[]; }
-  catch { tags = []; }
-  snapshots.set(scopeKey, tags);
-  return tags;
+  let channels: SidebarChannel[];
+  try { channels = JSON.parse(window.localStorage.getItem(prefix + scopeKey) ?? '[]') as SidebarChannel[]; }
+  catch { channels = []; }
+  snapshots.set(scopeKey, channels);
+  return channels;
 }
 
-export function saveSidebarTags(scopeKey: string, tags: SidebarTag[]) {
-  window.localStorage.setItem(prefix + scopeKey, JSON.stringify(tags));
-  snapshots.set(scopeKey, tags);
+export function saveSidebarChannels(scopeKey: string, channels: SidebarChannel[]) {
+  window.localStorage.setItem(prefix + scopeKey, JSON.stringify(channels));
+  snapshots.set(scopeKey, channels);
   listeners.forEach(listener => listener());
 }
 
-export function useSidebarTags(scopeKey: string | null) {
+export function useSidebarChannels(scopeKey: string | null) {
   return useSyncExternalStore(subscribe, () => scopeKey ? read(scopeKey) : empty, () => empty);
 }

@@ -112,8 +112,9 @@
   --wt-sidebar-identity-panel: #f0f0f0;
   --wt-sidebar-identity-hover: #e4e4e4;
   --wt-sidebar-edge: var(--line);
-  /* 侧栏交互使用浅灰平面，悬停与激活保持同一反馈。 */
+  /* 悬停比激活更轻，避免指针经过时与当前页面混淆。 */
   --sidebar-row-bg: #f1f1f1;
+  --sidebar-row-hover-bg: #f5f5f5;
   --sidebar-row-border: #e3e3e3;
   --sidebar-row-hover-border: var(--sidebar-row-border);
   --sidebar-row-shadow: none;
@@ -191,6 +192,7 @@ html[data-theme="dark"] {
   --wt-sidebar-identity-hover: var(--action-hover-bg);
   --wt-sidebar-edge: var(--line);
   --sidebar-row-bg: rgb(255 255 255 / 0.06);
+  --sidebar-row-hover-bg: rgb(255 255 255 / 0.04);
   --sidebar-row-border: rgb(255 255 255 / 0.08);
   --sidebar-row-hover-border: var(--sidebar-row-border);
   --sidebar-row-shadow: none;

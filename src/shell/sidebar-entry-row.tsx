@@ -15,7 +15,7 @@ export function SidebarEntryRow({ name, label, icon, pinned, onOpen, onPin, onRe
   const { t } = useTranslation(messages);
   const [menuOpen, setMenuOpen] = useState(false);
   const pinLabel = t(pinned ? '取消置顶名称' : '置顶名称', { name });
-  return <div className={`sidebar-nav-row ${styles.row}`} data-menu-open={menuOpen} data-active={menuOpen} data-pinned={Boolean(pinned)}>
+  return <div className={`sidebar-nav-row ${styles.row}`} data-menu-open={menuOpen} data-pinned={Boolean(pinned)}>
     <button type="button" className={styles.entry} onClick={onOpen} aria-label={label} title={name}>{icon}<span>{name}</span></button>
     <div className={styles.rowActions}>
       <Tooltip><TooltipTrigger asChild><button type="button" className={`fouc-action ${styles.action}`} data-variant="nested" aria-label={pinLabel} aria-pressed={Boolean(pinned)} onClick={onPin}><PushPin size={14} weight="duotone" aria-hidden /></button></TooltipTrigger><TooltipContent side="top">{t(pinned ? '取消置顶' : '置顶')}</TooltipContent></Tooltip>

@@ -1,6 +1,6 @@
 /* Explicit document fullscreen uses the native Fullscreen API. */
 .frame {
-  --workbench-toolbar-height: 56px;
+  --workbench-toolbar-height: 44px;
   min-width: 0;
   background: var(--wt-sidebar-standard-panel);
 }
@@ -11,10 +11,11 @@
   flex:1;
   min-width:0;
   min-height:0;
-  margin:0 8px 8px 0;
+  margin:0;
   overflow:hidden;
   border:var(--separator-width) solid var(--separator-color);
-  border-radius:16px 0 16px 0;
+  border-right:0;
+  border-radius:16px 0 0 16px;
   background:var(--panel);
   isolation:isolate;
 }

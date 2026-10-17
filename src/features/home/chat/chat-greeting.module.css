@@ -1,0 +1,40 @@
+.character {
+  position: relative;
+  animation: reveal 1ms step-end var(--typing-delay) both;
+}
+
+.character::after {
+  content: "";
+  position: absolute;
+  top: 0.12em;
+  bottom: 0.08em;
+  right: -0.06em;
+  width: 1.5px;
+  background: currentColor;
+  opacity: 0;
+  animation: cursorStep 90ms step-end var(--typing-delay) both;
+}
+
+.character:last-child::after {
+  animation: cursorBlink 600ms step-end var(--typing-delay) 3 backwards;
+}
+
+@keyframes reveal {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes cursorStep {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes cursorBlink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .character { animation: none; }
+  .character::after { display: none; }
+}

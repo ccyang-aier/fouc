@@ -12,7 +12,7 @@ import { useProjectResources } from "@/features/project/project-resources";
 import type { Locale } from "@/lib/i18n";
 import { ChatComposer, type ChatDraft } from "./chat-composer";
 import { ChatConversation } from "./chat-conversation";
-import { ChatGreetingMark } from "./chat-greeting-mark";
+import { ChatGreeting } from "./chat-greeting";
 import { ChatRecentConversations } from "./chat-recent-conversations";
 import { saveChatConversation, type ChatHistoryEntry } from "./chat-history";
 import type { ChatContext, ChatSubmission } from "./chat-types";
@@ -117,8 +117,7 @@ export function HomeChat({
         <div className={styles.content}>
           {!inConversation ? (
             <header className={styles.greeting}>
-              <ChatGreetingMark />
-              <h1>{t("greeting")}</h1>
+              <ChatGreeting key={locale} text={t("greeting")} />
             </header>
           ) : (
             <ChatConversation

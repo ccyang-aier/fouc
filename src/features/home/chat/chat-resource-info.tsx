@@ -3,11 +3,11 @@
 import {
   Binoculars, BracketsCurly, Browser, CalendarDots, ChartBar, ChartPieSlice, ChatsCircle,
   Checks, CheckSquare, Code, Database, EnvelopeSimple, FigmaLogo, FileText, FolderSimple,
-  GitBranch, GitDiff, Lightbulb, MagnifyingGlass, Megaphone, NotePencil, PlugsConnected,
-  PresentationChart, ShieldCheck, Star, StarHalf, TextT,
+  GitBranch, GitDiff, Lightbulb, MagnifyingGlass, Megaphone, NotePencil,
+  PresentationChart, ShieldCheck, Star, StarHalf, TextT, Monitor, Intersect, PenNib,
 } from '@phosphor-icons/react';
 import { TooltipContent } from '@/components/ui/tooltip';
-import { SkillIcon } from '@/components/icons/skill-icon';
+import { resourceKindIcons } from './chat-resource-icons';
 import { useTranslation } from '@/lib/i18n';
 import type { ComposerResource } from '@/features/community/composer-catalog';
 import { resourceMessages } from './chat-resource-messages';
@@ -22,12 +22,17 @@ const resourceIcons = {
   'skill-validation': Checks, 'skill-competitor': Binoculars, 'skill-attribution': ChartPieSlice, 'skill-chart': ChartBar,
   'mcp-github': GitBranch, 'mcp-browser': Browser, 'mcp-filesystem': FolderSimple, 'mcp-notion': FileText,
   'mcp-postgres': Database, 'mcp-figma': FigmaLogo, 'mcp-search': MagnifyingGlass, 'mcp-slack': ChatsCircle,
+  'plugin-website': Browser, 'plugin-desktop': Monitor, 'plugin-slides': PresentationChart, 'plugin-design': Intersect,
+  'plugin-writing': PenNib, 'plugin-research': MagnifyingGlass, 'plugin-data': ChartBar,
+  'prompt-requirements': FileText, 'prompt-review': GitDiff, 'prompt-researchOutline': Binoculars,
+  'prompt-weekly': CalendarDots, 'prompt-meeting': NotePencil, 'prompt-analysis': ChartBar, 'prompt-copy': TextT, 'prompt-launch': Checks,
 };
 
 export function ResourceIcon({ resource }: { resource: ComposerResource }) {
-  const Icon = resourceIcons[resource.id as keyof typeof resourceIcons] ?? (resource.kind === 'mcp' ? PlugsConnected : null);
+  const Icon = resourceIcons[resource.id as keyof typeof resourceIcons];
+  const KindIcon = resourceKindIcons[resource.kind];
   return Icon ? <Icon className={styles.resourceIcon} size={16} weight="duotone" data-static-color aria-hidden="true" />
-    : <SkillIcon className={styles.resourceIcon} data-static-color aria-hidden="true" />;
+    : <KindIcon className={styles.resourceIcon} size={16} data-static-color aria-hidden="true" />;
 }
 
 export function ChatResourceInfo({ resource, side, alignOffset, onEscape }: {

@@ -5,8 +5,10 @@ import type { Locale } from '@/lib/i18n';
 import type { IconTone } from '@/lib/icon-tones';
 import { initialCommunitySkills } from './community-data';
 import { communityUpdatedLabel, localizeCommunitySkill } from './community-localization';
+import { getComposerPlugins, getComposerPrompts } from './composer-extensions';
 
-export type ComposerResourceKind = 'skills' | 'mcp';
+export const composerResourceKinds = ['skills', 'mcp', 'plugins', 'prompts'] as const;
+export type ComposerResourceKind = typeof composerResourceKinds[number];
 export type ComposerResource = {
   id: string;
   kind: ComposerResourceKind;
@@ -48,16 +50,21 @@ export function addComposerResource(resource: Omit<ComposerResource, 'id' | 'rat
   return entry;
 }
 
-export function useComposerCatalog(kind: ComposerResourceKind, locale: Locale) {
-  const custom = useSyncExternalStore(subscribe, () => customResources, () => emptyResources);
-  const market: ComposerResource[] = kind === 'skills'
-    ? initialCommunitySkills.map(seed => {
+export function getComposerCatalog(kind: ComposerResourceKind, locale: Locale): ComposerResource[] {
+  if (kind === 'plugins') return getComposerPlugins(locale);
+  if (kind === 'prompts') return getComposerPrompts(locale);
+  if (kind === 'skills') return initialCommunitySkills.map(seed => {
       const item = localizeCommunitySkill(seed, locale);
       return { id: item.id, kind, name: item.name, description: item.summary, author: item.author,
         category: item.category, updated: communityUpdatedLabel(item.updated, locale), rating: item.rating, tone: item.tone };
-    })
-    : mcpCatalog.map(item => ({ ...item, kind, description: item.description[locale === 'zh-CN' ? 0 : 1],
+    });
+  return mcpCatalog.map(item => ({ ...item, kind, description: item.description[locale === 'zh-CN' ? 0 : 1],
       updated: item.updated[locale === 'zh-CN' ? 0 : 1] }));
+}
+
+export function useComposerCatalog(kind: ComposerResourceKind, locale: Locale) {
+  const custom = useSyncExternalStore(subscribe, () => customResources, () => emptyResources);
+  const market = getComposerCatalog(kind, locale);
   return [...market, ...custom.filter(item => item.kind === kind).map(item => ({ ...item,
     updated: new Date(item.updated).toLocaleDateString(locale) }))];
 }

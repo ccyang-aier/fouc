@@ -1,24 +1,16 @@
 "use client";
 
-import { Browser, Monitor, PresentationChart, Intersect, PenNib, MagnifyingGlass, ChartBar } from '@phosphor-icons/react';
+import { useRef } from 'react';
+import { Check } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import type { ChatText } from './chat-messages';
-import type { ChatTaskKind } from './chat-types';
-import { ChatPromptTag } from './chat-prompt-tag';
+import { useLocale } from '@/lib/i18n/react';
+import { getComposerPlugins } from '@/features/community/composer-extensions';
+import type { ComposerResourceReference } from '@/features/community/composer-catalog';
+import { ResourceIcon } from './chat-resource-info';
 import styles from './chat-quick-actions.module.css';
-
-const tasks = {
-  website: { icon: Browser, label: 'buildWebsite', tag: 'websiteTag' },
-  desktop: { icon: Monitor, label: 'developDesktop', tag: 'desktopTag' },
-  slides: { icon: PresentationChart, label: 'createSlides', tag: 'slidesTag' },
-  design: { icon: Intersect, label: 'designTask', tag: 'designTask' },
-  writing: { icon: PenNib, label: 'writingTask', tag: 'writingTask' },
-  research: { icon: MagnifyingGlass, label: 'researchTask', tag: 'researchTask' },
-  data: { icon: ChartBar, label: 'dataTask', tag: 'dataTask' },
-} as const;
-const primaryTasks = ['website', 'desktop', 'slides', 'design'] as const;
-const moreTasks = ['writing', 'research', 'data'] as const;
+import tones from './chat-resource-tones.module.css';
 
 function animatePress(button: HTMLButtonElement) {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -29,44 +21,45 @@ function animatePress(button: HTMLButtonElement) {
   ], { duration: 240, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' });
 }
 
-export function ChatQuickActions({ value, onSelect, t }: {
-  value: ChatTaskKind | null;
-  onSelect: (task: ChatTaskKind) => void;
+export function ChatQuickActions({ resources, onToggle, t }: {
+  resources: ComposerResourceReference[];
+  onToggle: (plugin: ComposerResourceReference) => void;
   t: ChatText;
 }) {
-  return <div className={styles.actions} role="group" aria-label={t('quickActions')}>
-    {primaryTasks.map(task => {
-      const { icon: Icon, label } = tasks[task];
-      return <Button key={task} type="button" variant="outline" className={styles.action}
-        aria-pressed={value === task} onClick={event => {
+  const plugins = getComposerPlugins(useLocale());
+  const selectedFromMore = useRef(false);
+  const primary = plugins.slice(0, 4);
+  const more = plugins.slice(4);
+  const selected = (id: string) => resources.some(resource => resource.kind === 'plugins' && resource.id === id);
+  return <div className={`${styles.actions} ${tones.tone}`} data-resource-kind="plugins" role="group" aria-label={t('quickActions')}>
+    {primary.map(plugin => {
+      return <Button key={plugin.id} type="button" variant="outline" className={styles.action}
+        aria-pressed={selected(plugin.id)} onClick={event => {
           animatePress(event.currentTarget);
-          onSelect(task);
+          onToggle(plugin);
         }}>
-        <Icon size={17} aria-hidden="true" />{t(label)}
+        <ResourceIcon resource={plugin} />{plugin.name}
       </Button>;
     })}
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button type="button" variant="outline" className={styles.action}
-          data-selected={moreTasks.some(task => task === value)} onClick={event => animatePress(event.currentTarget)}>{t('moreTasks')}</Button>
+          data-selected={more.some(plugin => selected(plugin.id))} onClick={event => animatePress(event.currentTarget)}>{t('moreTasks')}</Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" sideOffset={6}>
-        {moreTasks.map(task => {
-          const { icon: Icon, label } = tasks[task];
-          return <DropdownMenuItem key={task} onSelect={() => onSelect(task)}>
-            <Icon size={16} aria-hidden="true" />{t(label)}
+      <DropdownMenuContent align="start" sideOffset={6} onCloseAutoFocus={event => {
+        if (selectedFromMore.current) event.preventDefault();
+        selectedFromMore.current = false;
+      }}>
+        {more.map(plugin => {
+          return <DropdownMenuItem key={plugin.id} role="menuitemcheckbox" aria-checked={selected(plugin.id)} onSelect={() => {
+            selectedFromMore.current = true;
+            onToggle(plugin);
+          }}>
+            <ResourceIcon resource={plugin} />{plugin.name}
+            {selected(plugin.id) ? <Check className="ml-auto" size={14} aria-hidden="true" /> : null}
           </DropdownMenuItem>;
         })}
       </DropdownMenuContent>
     </DropdownMenu>
   </div>;
-}
-
-export function ChatTaskTag({ task, onRemove, t }: {
-  task: ChatTaskKind;
-  onRemove?: () => void;
-  t: ChatText;
-}) {
-  const label = t(tasks[task].tag);
-  return <ChatPromptTag label={label} removeLabel={t('removeTask', { task: label })} onRemove={onRemove} />;
 }

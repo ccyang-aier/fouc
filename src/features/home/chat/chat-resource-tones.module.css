@@ -1,0 +1,8 @@
+.tone { --resource-ink: #087747; --resource-fill: #e8faee; --resource-border: #bcebcf; }
+.tone[data-resource-kind="mcp"] { --resource-ink: #096eaf; --resource-fill: #e9f5ff; --resource-border: #bee2ff; }
+.tone[data-resource-kind="plugins"] { --resource-ink: #9a500b; --resource-fill: #fff4df; --resource-border: #f4d69a; }
+.tone[data-resource-kind="prompts"] { --resource-ink: #b83b69; --resource-fill: #fff0f5; --resource-border: #f4c4d5; }
+:global(html[data-theme="dark"]) .tone { --resource-ink: #79edac; --resource-fill: #0d3524; --resource-border: #1b6542; }
+:global(html[data-theme="dark"]) .tone[data-resource-kind="mcp"] { --resource-ink: #81d0ff; --resource-fill: #0d304b; --resource-border: #1a608b; }
+:global(html[data-theme="dark"]) .tone[data-resource-kind="plugins"] { --resource-ink: #ffd18a; --resource-fill: #3f2b11; --resource-border: #755323; }
+:global(html[data-theme="dark"]) .tone[data-resource-kind="prompts"] { --resource-ink: #ffadc9; --resource-fill: #3d1d2d; --resource-border: #74354f; }

@@ -1,71 +1,7 @@
-.actions,
-.tag {
-  --task-blue-bg: #e8f3ff;
-  --task-blue-ink: #2589ec;
-  --task-blue-border: #3094fb;
-}
-
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.action {
-  height: 34px;
-  gap: 7px;
-  padding: 0 13px;
-  border: 1px dashed var(--resource-card-border);
-  border-radius: 999px;
-  background: var(--panel);
-  color: var(--ink);
-  font-size: 12px;
-  font-weight: 450;
-  box-shadow: none;
-  cursor: pointer;
-  translate: none;
-}
-
-.action.action,
-.tag.tag {
-  --action-state-bg: var(--task-blue-bg);
-  --action-state-ink: var(--task-blue-ink);
-}
-
-.action svg { color: var(--muted-strong); }
-.action:is(:hover, :focus-visible, [aria-pressed="true"], [aria-expanded="true"], [data-selected="true"]) {
-  background: var(--task-blue-bg);
-  color: var(--task-blue-ink);
-  border-color: var(--task-blue-border);
-  border-style: solid;
-}
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 10px; }
+.action { height: 28px; gap: 6px; padding: 0 10px; border: 1px dashed var(--resource-card-border); border-radius: 999px; background: var(--panel); color: var(--ink); font-size: 12px; font-weight: 450; box-shadow: none; cursor: pointer; translate: none; }
+.action.action { --action-state-bg: var(--resource-fill); --action-state-ink: var(--resource-ink); }
+.action svg { width: 15px; height: 15px; color: var(--muted-strong); }
+.action:is(:hover, :focus-visible, [aria-pressed="true"], [aria-expanded="true"], [data-selected="true"]) { background: var(--resource-fill); color: var(--resource-ink); border-color: var(--resource-border); border-style: solid; }
 .action:is(:hover, :focus-visible, [aria-pressed="true"], [aria-expanded="true"], [data-selected="true"]) svg { color: currentColor; }
 .action:focus-visible { outline: none; box-shadow: none; }
-
-.tag {
-  display: inline-flex;
-  align-items: center;
-  height: 24px;
-  gap: 7px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: 999px;
-  background: var(--task-blue-bg);
-  color: var(--task-blue-ink);
-  font-size: 12px;
-  line-height: 24px;
-  font-weight: 500;
-  white-space: nowrap;
-  box-shadow: none;
-  cursor: pointer;
-}
-
-.messageTag { margin-bottom: 8px; cursor: default; }
-:global(html[data-theme="dark"]) .actions,
-:global(html[data-theme="dark"]) .tag {
-  --task-blue-bg: #17354f;
-  --task-blue-ink: #8cc7ff;
-  --task-blue-border: #589ee4;
-}

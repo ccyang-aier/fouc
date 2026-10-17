@@ -27,15 +27,16 @@ import { ChatAddMenu } from "./chat-add-menu";
 import { ChatResourceTags } from './chat-resource-tags';
 import { getBuiltinSkills, useBuiltinSkills } from '@/features/skills/builtin-skills';
 import { useLocale } from '@/lib/i18n/react';
+import type { ComposerResourceReference } from '@/features/community/composer-catalog';
 import { ChatToolsLink } from "./chat-tools-link";
 import { ChatQuickActions } from "./chat-quick-actions";
 import { ChatPromptInput } from "./chat-prompt-input";
 import { useChatVoice } from "./use-chat-voice";
-import type { ChatAttachment, ChatContext, ChatMode, ChatSubmission, ChatTaskKind } from "./chat-types";
+import type { ChatAttachment, ChatContext, ChatMode, ChatSubmission } from "./chat-types";
 import type { ChatText } from "./chat-messages";
 import styles from "./chat.module.css";
 
-export type ChatDraft = { text: string; attachments: ChatAttachment[]; task: ChatTaskKind | null; mode: ChatMode | null };
+export type ChatDraft = { text: string; attachments: ChatAttachment[]; mode: ChatMode | null };
 export function ChatComposer({
   draft,
   setDraft,
@@ -83,6 +84,12 @@ export function ChatComposer({
       ),
   });
   const hasMessage = Boolean(draft.text.trim());
+  function toggleResource(resource: ComposerResourceReference) {
+    const resources = context.resources ?? [];
+    const exists = resources.some(item => item.id === resource.id && item.kind === resource.kind);
+    setContext({ resources: exists ? resources.filter(item => item.id !== resource.id || item.kind !== resource.kind)
+      : [...resources, { id: resource.id, kind: resource.kind, name: resource.name }] });
+  }
   function addFiles(files: File[]) {
     setDraft((current) => {
       const identity = (file: File) =>
@@ -118,20 +125,19 @@ export function ChatComposer({
     onSubmit({
       id: crypto.randomUUID(),
       text: draft.text.trim(),
-      task: draft.task,
       mode: draft.mode,
       attachments: draft.attachments,
       context: { ...context, resources: context.resources?.map(resource => ({ ...resource })),
         builtinSkillIds: getBuiltinSkills(locale).filter(skill => !disabledBuiltinIds.includes(skill.id)).map(skill => skill.id) },
       createdAt: new Date(),
     });
-    setDraft({ text: "", attachments: [], task: null, mode: null });
+    setDraft({ text: "", attachments: [], mode: null });
     setContext({ resources: [] });
   }
   return (
     <>
-    <ChatQuickActions value={draft.task} onSelect={task => {
-      setDraft(current => ({ ...current, task }));
+    <ChatQuickActions resources={context.resources ?? []} onToggle={plugin => {
+      toggleResource(plugin);
       inputRef.current?.focus({ preventScroll: true });
     }} t={t} />
     <div className={styles.composerGroup} data-compact={compact}>
@@ -183,15 +189,10 @@ export function ChatComposer({
         }} />
         <ChatPromptInput
           inputRef={inputRef}
-          task={draft.task}
           mode={draft.mode}
           t={t}
           onRemoveMode={() => {
             setDraft(current => ({ ...current, mode: null }));
-            inputRef.current?.focus({ preventScroll: true });
-          }}
-          onRemoveTask={() => {
-            setDraft(current => ({ ...current, task: null }));
             inputRef.current?.focus({ preventScroll: true });
           }}
           className={`chat-scope ${styles.input}`}
@@ -241,12 +242,7 @@ export function ChatComposer({
                 inputRef.current?.focus({ preventScroll: true });
               }}
               onFiles={() => fileInput.current?.click()}
-              onResourceToggle={resource => {
-                const resources = context.resources ?? [];
-                const exists = resources.some(item => item.id === resource.id && item.kind === resource.kind);
-                setContext({ resources: exists ? resources.filter(item => item.id !== resource.id || item.kind !== resource.kind)
-                  : [...resources, { id: resource.id, kind: resource.kind, name: resource.name }] });
-              }} />
+              onResourceToggle={toggleResource} />
             <ChatExecutionSelector context={context} onChange={setContext} t={t} />
           </div>
           <div className={styles.toolbarRight}>

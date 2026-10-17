@@ -1,0 +1,22 @@
+.tag {
+  --mode-bg: #e8f3ff;
+  --mode-ink: #2589ec;
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  gap: 7px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--mode-bg);
+  color: var(--mode-ink);
+  font-size: 12px;
+  line-height: 24px;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: none;
+  cursor: pointer;
+}
+.tag.tag { --action-state-bg: var(--mode-bg); --action-state-ink: var(--mode-ink); }
+.messageTag { margin-bottom: 8px; cursor: default; }
+:global(html[data-theme="dark"]) .tag { --mode-bg: #17354f; --mode-ink: #8cc7ff; }

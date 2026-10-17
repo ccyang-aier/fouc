@@ -4,5 +4,5 @@
   overflow: hidden;
 }
 
-.input { text-indent: var(--task-offset, 0px); }
+.input { text-indent: var(--mode-offset, 0px); }
 .tag { position: absolute; top: 1px; left: 0; z-index: 1; display: flex; gap: 6px; }

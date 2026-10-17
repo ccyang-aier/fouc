@@ -1,8 +1,7 @@
 'use client';
 
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
-import { ArrowSquareOut, CaretDown, Check, GearSix, Info, PlugsConnected, Plus, SealCheck, SlidersHorizontal } from '@phosphor-icons/react';
-import { SkillIcon } from '@/components/icons/skill-icon';
+import { ArrowSquareOut, CaretDown, Check, GearSix, Info, Plus, SealCheck, SlidersHorizontal } from '@phosphor-icons/react';
 import { DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -13,7 +12,9 @@ import { useComposerCatalog, type ComposerResource, type ComposerResourceKind, t
 import { communityCategoryLabel } from '@/features/community/community-localization';
 import { ChatPickerItem, ChatPickerSearch } from './chat-picker';
 import { ChatResourceInfo, ResourceIcon } from './chat-resource-info';
-import { resourceMessages } from './chat-resource-messages';
+import { resourceMenuText, resourceMessages } from './chat-resource-messages';
+import { resourceKindIcons } from './chat-resource-icons';
+import tones from './chat-resource-tones.module.css';
 import styles from './chat-resource-menu.module.css';
 import addStyles from './chat-add-menu.module.css';
 
@@ -56,7 +57,8 @@ export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigu
   const builtinResults = builtin.filter(matches);
   const marketResults = market.filter(matches);
   const selectedCount = selected.filter(item => item.kind === kind).length;
-  const Icon = kind === 'skills' ? SkillIcon : PlugsConnected;
+  const Icon = resourceKindIcons[kind];
+  const labels = resourceMenuText[kind];
 
   useLayoutEffect(() => {
     if (!open) return;
@@ -147,7 +149,7 @@ export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigu
       aria-description={selectedCount ? t('selectedCount', { count: selectedCount }) : undefined}>
       <Icon className={addStyles.neutralIcon} data-resource-kind={kind} data-static-color aria-hidden="true" />
       <span className={styles.triggerLabel}><span>{t(kind)}</span>
-        {selectedCount ? <span className={`${styles.resourceTone} ${styles.triggerCount}`} data-resource-kind={kind} aria-hidden="true">{selectedCount}</span> : null}
+        {selectedCount ? <span className={`${tones.tone} ${styles.triggerCount}`} data-resource-kind={kind} aria-hidden="true">{selectedCount}</span> : null}
       </span>
     </DropdownMenuSubTrigger>
     <DropdownMenuSubContent ref={menu} className={styles.menu} collisionPadding={12} sideOffset={sideOffset} alignOffset={alignOffset}
@@ -160,12 +162,12 @@ export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigu
       }}
       onEscapeKeyDown={event => { if (previewId || categoryOpen) { event.preventDefault(); hidePreview(); setCategoryOpen(false); search.current?.focus(); } }}>
       <div className={styles.toolbar} onPointerEnter={hidePreview} onKeyDown={event => { if (event.key === 'Tab') event.stopPropagation(); }}>
-        <ChatPickerSearch ref={search} value={query} aria-label={t(kind === 'skills' ? 'searchSkills' : 'searchMcp')}
-          placeholder={t(kind === 'skills' ? 'searchSkills' : 'searchMcp')} onChange={event => { setQuery(event.target.value); hidePreview(); }} />
+        <ChatPickerSearch ref={search} value={query} aria-label={t(labels.search)}
+          placeholder={t(labels.search)} onChange={event => { setQuery(event.target.value); hidePreview(); }} />
         <Button type="button" variant="ghost" className={styles.toolbarButton} aria-label={t('category')} aria-expanded={categoryOpen}
           title={t('category')} data-active={Boolean(category)} onClick={() => { setCategoryOpen(value => !value); hidePreview(); }}><SlidersHorizontal size={16} weight="bold" /></Button>
-        <Button type="button" variant="ghost" className={styles.toolbarButton} aria-label={t(kind === 'skills' ? 'addSkill' : 'addMcp')}
-          title={t(kind === 'skills' ? 'addSkill' : 'addMcp')} onClick={onCreate}><Plus size={16} weight="bold" /></Button>
+        <Button type="button" variant="ghost" className={styles.toolbarButton} aria-label={t(labels.add)}
+          title={t(labels.add)} onClick={onCreate}><Plus size={16} weight="bold" /></Button>
       </div>
       {categoryOpen || category ? <div className={styles.categories} role="group" aria-label={t('category')}>
         {['', ...new Set(all.map(item => item.category))].map(value => <button key={value} type="button" className={`fouc-action ${styles.category}`}
@@ -181,14 +183,14 @@ export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigu
           </div>
           {!collapsed ? builtinResults.map(item => renderResource(item, true)) : null}
         </section> : null}
-        {marketResults.length ? <section className={styles.section} aria-label={t(kind === 'skills' ? 'market' : 'mcpMarket')}>
+        {marketResults.length ? <section className={styles.section} aria-label={t(labels.market)}>
           {kind === 'skills' ? <div className={`fouc-menu-item ${styles.sectionHeading}`} data-variant="group" onPointerEnter={hidePreview}>
             <button type="button" className={`fouc-action ${styles.collapse}`} data-variant="disclosure" aria-expanded={!marketCollapsed}
               onClick={() => { setMarketCollapsed(value => !value); hidePreview(); }}><CaretDown size={10} data-collapsed={marketCollapsed} />{t('market')}</button>
             <button type="button" className={`fouc-action ${styles.configure}`} data-variant="disclosure" aria-label={t('openMarket')} title={t('openMarket')}
               onClick={onOpenMarket}><ArrowSquareOut size={15} weight="bold" /></button>
           </div> : null}
-          {kind === 'mcp' || !marketCollapsed ? marketResults.map(item => renderResource(item)) : null}
+          {kind !== 'skills' || !marketCollapsed ? marketResults.map(item => renderResource(item)) : null}
         </section> : null}
         {!builtinResults.length && !marketResults.length ? <div className={styles.empty} role="status"><Icon size={25} /><strong>{t('empty')}</strong><span>{t('emptyHint')}</span>
           <Button variant="ghost" size="sm" onClick={() => { setQuery(''); toggleCategory(''); }}>{t('clear')}</Button></div> : null}

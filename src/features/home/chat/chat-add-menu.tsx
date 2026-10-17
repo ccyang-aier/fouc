@@ -11,7 +11,7 @@ import { ChatResourceMenu } from './chat-resource-menu';
 import { ChatResourceCreate } from './chat-resource-create';
 import { openSettings } from '@/lib/settings-navigation';
 import { openSkillsMarket } from '@/features/community/community-navigation';
-import type { ComposerResource, ComposerResourceKind, ComposerResourceReference } from '@/features/community/composer-catalog';
+import { composerResourceKinds, type ComposerResource, type ComposerResourceKind, type ComposerResourceReference } from '@/features/community/composer-catalog';
 import type { ChatMode } from './chat-types';
 import type { ChatText } from './chat-messages';
 import styles from './chat-add-menu.module.css';
@@ -38,9 +38,9 @@ export function ChatAddMenu({ mode, resources, onModeChange, onFiles, onResource
     return matches(id, t(item.label), t(item.description));
   });
   const showFiles = matches('files attachments upload', t('actionFiles'), t('files'));
-  const showSkills = matches('skills skill 技能');
-  const showMcp = matches('mcp connectors', t('mcp'), t('connectTools'));
-  const hasActions = showFiles || showSkills || showMcp;
+  const resourceKeywords = { skills: 'skill 技能', mcp: 'connectors 连接器', plugins: 'plugin 插件', prompts: 'prompt 提示词' };
+  const visibleKinds = composerResourceKinds.filter(kind => matches(kind, resourceKeywords[kind]));
+  const hasActions = showFiles || visibleKinds.length > 0;
 
   function afterClose(action: () => void) {
     nextAction.current = action;
@@ -90,11 +90,10 @@ export function ChatAddMenu({ mode, resources, onModeChange, onFiles, onResource
           {showFiles ? <ChatPickerItem className={styles.item} textValue={t('actionFiles')} onSelect={onFiles}>
             <Paperclip className={styles.neutralIcon} aria-hidden="true" /><span>{t('actionFiles')}</span>
           </ChatPickerItem> : null}
-          {showSkills ? <ChatResourceMenu kind="skills" selected={resources} onToggle={onResourceToggle}
-            onCreate={() => closeFor(() => setCreating('skills'))} onConfigure={() => closeFor(() => openSettings('skills'))}
-            onOpenMarket={() => closeFor(openSkillsMarket)} /> : null}
-          {showMcp ? <ChatResourceMenu kind="mcp" selected={resources} onToggle={onResourceToggle}
-            onCreate={() => closeFor(() => setCreating('mcp'))} /> : null}
+          {visibleKinds.map(kind => <ChatResourceMenu key={kind} kind={kind} selected={resources} onToggle={onResourceToggle}
+            onCreate={() => closeFor(() => setCreating(kind))}
+            onConfigure={kind === 'skills' ? () => closeFor(() => openSettings('skills')) : undefined}
+            onOpenMarket={kind === 'skills' ? () => closeFor(openSkillsMarket) : undefined} />)}
         </DropdownMenuGroup> : null}
         {!modes.length && !hasActions ? <p className={picker.empty} role="status">{t('noExecutionResults')}</p> : null}
       </ScrollArea>

@@ -2,7 +2,7 @@
 
 import { X } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
-import styles from './chat-quick-actions.module.css';
+import styles from './chat-prompt-tag.module.css';
 
 export function ChatPromptTag({ label, removeLabel, onRemove }: {
   label: string;

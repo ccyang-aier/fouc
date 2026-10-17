@@ -9,11 +9,14 @@ type StarfieldSliderProps = Omit<ComponentProps<"input">, "type" | "value" | "mi
   value: number
   max: number
   label: string
+  heading: string
+  startLabel: string
+  endLabel: string
   titleId: string
   onValueChange: (value: number) => void
 }
 
-export function StarfieldSlider({ value, max, label, titleId, onValueChange, className, disabled, ...inputProps }: StarfieldSliderProps) {
+export function StarfieldSlider({ value, max, label, heading, startLabel, endLabel, titleId, onValueChange, className, disabled, ...inputProps }: StarfieldSliderProps) {
   const id = useId()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const effectRef = useRef<ReturnType<typeof createStarfieldEffect>>(undefined)
@@ -43,13 +46,13 @@ export function StarfieldSlider({ value, max, label, titleId, onValueChange, cla
       <div className={styles.card} style={{ clipPath: `url(#${clipId})` }}>
         <div className={styles.header}>
           <div className={styles["header-left"]}>
-            <span id={titleId} className={styles["label-text"]}>Effort</span>
+            <span id={titleId} className={styles["label-text"]}>{heading}</span>
             <span className={cn(styles["status-text"], active && styles.glowing, slider.animate && styles["animate-up"])}
               onAnimationEnd={() => setSlider(current => ({ ...current, animate: false }))}>{label}</span>
           </div>
           <div className={styles["help-btn"]} aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" /></svg></div>
         </div>
-        <div className={styles["scale-labels"]}><span>Faster</span><span>Smarter</span></div>
+        <div className={styles["scale-labels"]}><span>{startLabel}</span><span>{endLabel}</span></div>
         <div className={cn(styles["track-wrapper"], active && styles.active, active && styles.full)} style={{ clipPath: `url(#${trackClipId})` }}>
           <div className={styles["track-bg"]} />
           <div className={styles["dots-layer"]}>{Array.from({ length: 5 }, (_, i) => <span key={i} className={styles.dot} />)}</div>

@@ -27,11 +27,11 @@
 
 .card {
   background: #000000;
-  width: 376px;
+  width: 296px;
   max-width: 100%;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 20px;
-  padding: 18px 20px 16px;
+  border-radius: 14px;
+  padding: 12px 14px;
   user-select: none;
 }
 
@@ -52,14 +52,14 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 
 .header-left {
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 500;
   perspective: 280px;
   perspective-origin: center 120%;
@@ -118,7 +118,7 @@
 .help-btn:hover { color: #d4d4d8; }
 
 .help-btn svg {
-  height: 18px;
+  height: 16px;
   width: auto;
   display: block;
   flex-shrink: 0;
@@ -128,11 +128,34 @@
 .scale-labels {
   display: flex;
   justify-content: space-between;
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 800;
   color: #b0b0b8;
-  margin-bottom: 7px;
+  margin-bottom: 6px;
   letter-spacing: 0.04em;
+}
+
+:global(html:not([data-theme="dark"])) .card {
+  background: #ffffff;
+  border-color: var(--floating-border);
+}
+
+:global(html:not([data-theme="dark"])) .label-text {
+  color: var(--ink-soft);
+}
+
+:global(html:not([data-theme="dark"])) .status-text,
+:global(html:not([data-theme="dark"])) .scale-labels,
+:global(html:not([data-theme="dark"])) .help-btn {
+  color: var(--muted-strong);
+}
+
+:global(html:not([data-theme="dark"])) .status-text.glowing {
+  color: #9253c2;
+}
+
+:global(html:not([data-theme="dark"])) .help-btn:hover {
+  color: var(--ink);
 }
 
 /* ── track ─────────────────────────────────── */

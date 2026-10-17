@@ -58,6 +58,8 @@ export const chatMessages = {
   imageModel: ["图像模型", "Image model"],
   videoModel: ["视频生成模型", "Video generation model"],
   reasoningEffort: ["思考强度", "Reasoning effort"],
+  reasoningFaster: ["更快响应", "Faster"],
+  reasoningSmarter: ["更充分思考", "Smarter"],
   reasoningNone: ["关闭", "Off"],
   reasoningMinimal: ["轻量", "Minimal"],
   reasoningLow: ["低", "Low"],

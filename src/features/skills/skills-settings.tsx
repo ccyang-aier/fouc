@@ -1,6 +1,6 @@
 'use client';
 
-import { Sparkle } from '@phosphor-icons/react';
+import { BookOpenText } from '@phosphor-icons/react';
 import { useTranslation } from '@/lib/i18n';
 import { getBuiltinSkills, toggleBuiltinSkill, useBuiltinSkills } from './builtin-skills';
 import styles from './skills-settings.module.css';
@@ -23,7 +23,7 @@ export function SkillsSettings() {
       {getBuiltinSkills(locale).map(skill => {
         const enabled = !disabled.includes(skill.id);
         return <div key={skill.id} className={styles.row}>
-          <span className={styles.icon}><Sparkle size={20} /></span>
+          <span className={styles.icon}><BookOpenText size={20} /></span>
           <div className={styles.text}><h3>{skill.name}</h3><p>{skill.description}</p><span>{skill.author}</span></div>
           <span className={styles.state}>{t(enabled ? 'enabled' : 'disabled')}</span>
           <button type="button" role="switch" aria-checked={enabled} aria-label={t('toggle', { name: skill.name })}

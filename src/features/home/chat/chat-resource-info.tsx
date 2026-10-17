@@ -1,17 +1,31 @@
 'use client';
 
 import { useLayoutEffect, useRef, type RefObject } from 'react';
-import { BookOpenText, ChartBar, Code, Graph, PencilLine, Star, StarHalf, X } from '@phosphor-icons/react';
+import {
+  Binoculars, BookOpenText, BracketsCurly, Browser, CalendarDots, ChartBar, ChartPieSlice, ChatsCircle,
+  Checks, CheckSquare, Code, Database, EnvelopeSimple, FigmaLogo, FileText, FolderSimple,
+  GitBranch, GitDiff, Lightbulb, MagnifyingGlass, Megaphone, NotePencil, PlugsConnected,
+  PresentationChart, ShieldCheck, Star, StarHalf, TextT, X,
+} from '@phosphor-icons/react';
 import { useTranslation } from '@/lib/i18n';
-import { toneIcons } from '@/lib/icon-tones';
 import type { ComposerResource } from '@/features/community/composer-catalog';
 import { resourceMessages } from './chat-resource-messages';
 import styles from './chat-resource-menu.module.css';
 
+const resourceIcons = {
+  'builtin-research': MagnifyingGlass, 'builtin-documents': FileText, 'builtin-code': Code,
+  'skill-review': GitDiff, 'skill-apiread': BracketsCurly, 'skill-unittest': CheckSquare,
+  'skill-depaudit': ShieldCheck, 'skill-regex': TextT, 'skill-slides': PresentationChart,
+  'skill-weekly': CalendarDots, 'skill-minutes': NotePencil, 'skill-email': EnvelopeSimple,
+  'skill-brainstorm': Lightbulb, 'skill-release-note': Megaphone, 'skill-sql': Database,
+  'skill-validation': Checks, 'skill-competitor': Binoculars, 'skill-attribution': ChartPieSlice, 'skill-chart': ChartBar,
+  'mcp-github': GitBranch, 'mcp-browser': Browser, 'mcp-filesystem': FolderSimple, 'mcp-notion': FileText,
+  'mcp-postgres': Database, 'mcp-figma': FigmaLogo, 'mcp-search': MagnifyingGlass, 'mcp-slack': ChatsCircle,
+};
+
 export function ResourceIcon({ resource }: { resource: ComposerResource }) {
-  const Icon = resource.kind === 'mcp' ? Graph : resource.category === '研发' ? Code
-    : resource.category === '数据' ? ChartBar : resource.category === '内容' ? PencilLine : BookOpenText;
-  return <span className={`${styles.resourceIcon} ${toneIcons[resource.tone]}`} data-static-color><Icon size={17} aria-hidden="true" /></span>;
+  const Icon = resourceIcons[resource.id as keyof typeof resourceIcons] ?? (resource.kind === 'mcp' ? PlugsConnected : BookOpenText);
+  return <Icon className={styles.resourceIcon} size={16} data-static-color aria-hidden="true" />;
 }
 
 export function ChatResourceInfo({ resource, anchor, onClose }: {
@@ -30,7 +44,7 @@ export function ChatResourceInfo({ resource, anchor, onClose }: {
     function position() {
       if (!panel || !menu) return;
       const bounds = menu.getBoundingClientRect();
-      const width = Math.min(282, window.innerWidth - 24);
+      const width = Math.min(264, window.innerWidth - 24);
       const right = window.innerWidth - bounds.right;
       const left = right >= width + 8 ? bounds.right + 8 : bounds.left >= width + 8 ? bounds.left - width - 8
         : Math.max(12, Math.min(bounds.left, window.innerWidth - width - 12));
@@ -51,7 +65,7 @@ export function ChatResourceInfo({ resource, anchor, onClose }: {
   return <div ref={card} className={styles.infoCard} role="region" aria-label={t('details', { name: resource.name })}>
     <div className={styles.infoHeading}>
       <ResourceIcon resource={resource} />
-      <div><span className={styles.infoType}>{resource.kind === 'skills' ? 'SKILL' : 'MCP'}</span><h3>{resource.name}</h3></div>
+      <h3>{resource.name}</h3>
       <button type="button" className={`fouc-action ${styles.closeInfo}`} aria-label={t('close')} onClick={onClose}><X size={14} /></button>
     </div>
     <p className={styles.infoDescription}>{resource.description}</p>

@@ -9,7 +9,7 @@ import { messages } from './i18n/settings-canvas.messages';
  */
 
 import { useState } from 'react';
-import { Info, MagnifyingGlass, PaintBrush, Robot, SlidersHorizontal, Sparkle } from '@phosphor-icons/react';
+import { BookOpenText, Info, MagnifyingGlass, PaintBrush, Robot, SlidersHorizontal } from '@phosphor-icons/react';
 
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -28,7 +28,7 @@ const SECTIONS: Array<SidebarRowItem & { id: SettingsSection; label: keyof typeo
   { id: 'appearance', label: '外观', icon: PaintBrush },
   { id: 'general', label: '通用', icon: SlidersHorizontal },
   { id: 'agents', label: 'Agent', icon: Robot },
-  { id: 'skills', label: 'Skills', icon: Sparkle },
+  { id: 'skills', label: 'Skills', icon: BookOpenText },
   { id: 'about', label: '关于', icon: Info },
 ];
 

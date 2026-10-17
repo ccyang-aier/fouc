@@ -34,12 +34,12 @@
 .check[data-builtin="true"] { color: var(--ok-ink); background: color-mix(in srgb, var(--ok-ink) 9%, var(--panel)); }
 .check[data-builtin="true"] > svg { width: 16px; height: 16px; }
 .infoButton { display: none; flex-shrink: 0; place-items: center; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--muted-strong); cursor: pointer; outline: none; }
-.resourceTone { --resource-ink: #755e9a; --resource-fill: color-mix(in srgb, var(--resource-ink) 9%, var(--panel)); --resource-border: color-mix(in srgb, var(--resource-ink) 19%, var(--panel)); }
-.resourceTone[data-resource-kind="mcp"] { --resource-ink: #487898; }
-:global(html[data-theme="dark"]) .resourceTone { --resource-ink: #baa6dc; }
-:global(html[data-theme="dark"]) .resourceTone[data-resource-kind="mcp"] { --resource-ink: #92bfdd; }
+.resourceTone { --resource-ink: #087747; --resource-fill: #e8faee; --resource-border: #bcebcf; }
+.resourceTone[data-resource-kind="mcp"] { --resource-ink: #096eaf; --resource-fill: #e9f5ff; --resource-border: #bee2ff; }
+:global(html[data-theme="dark"]) .resourceTone { --resource-ink: #79edac; --resource-fill: #0d3524; --resource-border: #1b6542; }
+:global(html[data-theme="dark"]) .resourceTone[data-resource-kind="mcp"] { --resource-ink: #81d0ff; --resource-fill: #0d304b; --resource-border: #1a608b; }
 .triggerLabel { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
-.triggerCount { display: inline-grid; place-items: center; flex-shrink: 0; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 4px; background: color-mix(in srgb, var(--resource-ink) 12%, var(--panel)); color: var(--resource-ink); font-size: 10px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+.triggerCount { display: inline-grid; place-items: center; flex-shrink: 0; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 4px; background: var(--resource-fill); color: var(--resource-ink); font-size: 10px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
 .empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 22px 10px 16px; color: var(--muted-strong); text-align: center; }
 .empty > strong { color: var(--ink-soft); font-size: 12px; font-weight: 500; }
 .empty > span { font-size: 11px; }
@@ -59,7 +59,7 @@
 .unrated { font-size: 11px; }
 .selectedResources { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; margin: 0 0 8px; padding: 0; }
 .selectedResources[data-readonly] { justify-content: flex-end; margin: 8px 0 0; }
-.resourceTag { display: inline-flex; align-items: center; gap: 6px; max-width: min(220px, 100%); min-height: 26px; padding: 3px 7px; border: 1px solid var(--resource-border); border-radius: 6px; background: var(--resource-fill); color: var(--ink-soft); font-size: 12px; line-height: 18px; }
+.resourceTag { display: inline-flex; align-items: center; gap: 6px; max-width: min(220px, 100%); min-height: 26px; padding: 3px 7px; border: 1px solid var(--resource-border); border-radius: 6px; background: var(--resource-fill); color: var(--resource-ink); font-size: 12px; line-height: 18px; }
 .resourceTag > svg { flex-shrink: 0; color: var(--resource-ink); }
 .resourceTag > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .removeTag { display: grid; place-items: center; flex-shrink: 0; width: 16px; height: 16px; padding: 0; border: 0; border-radius: 3px; background: transparent; color: var(--resource-ink); cursor: pointer; outline: none; }

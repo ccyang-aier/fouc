@@ -53,55 +53,14 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 10px;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 7px;
   font-size: 13px;
   font-weight: 500;
-  perspective: 280px;
-  perspective-origin: center 120%;
 }
 
 .label-text {
   color: #b0b0c7;
   font-weight: 700;
   line-height: 1.3;
-}
-
-.status-text {
-  display: inline-block;
-  color: #a1a1aa;
-  transition: color 0.3s, text-shadow 0.3s;
-  will-change: transform, opacity, filter;
-  vertical-align: middle;
-  transform-origin: center bottom;
-  transform: rotateX(0deg) translateY(0);
-}
-
-.status-text.glowing {
-  color: #c084fc;
-  text-shadow: 0 0 12px rgba(168, 85, 247, 0.6);
-  font-weight: 600;
-}
-
-@keyframes flipUpFromBottom {
-  0% {
-    opacity: 0;
-    transform: translateY(18px) rotateX(-80deg);
-    filter: blur(4px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) rotateX(0deg);
-    filter: blur(0);
-  }
-}
-
-.status-text.animate-up {
-  animation: flipUpFromBottom 0.42s cubic-bezier(0.33, 1, 0.68, 1) forwards;
 }
 
 .help-btn {
@@ -125,14 +84,28 @@
   shape-rendering: geometricPrecision;
 }
 
-.scale-labels {
-  display: flex;
-  justify-content: space-between;
-  font-size: 11px;
-  font-weight: 800;
-  color: #b0b0b8;
-  margin-bottom: 6px;
-  letter-spacing: 0.04em;
+.levels {
+  position: relative;
+  height: 14px;
+  margin: 7px 15.5px 0;
+  font-size: 10px;
+  line-height: 14px;
+  color: var(--muted);
+}
+
+.levels span {
+  position: absolute;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.levels span[data-current="true"] {
+  color: #9253c2;
+  font-weight: 600;
+}
+
+:global(html[data-theme="dark"]) .levels span[data-current="true"] {
+  color: #c084fc;
 }
 
 :global(html:not([data-theme="dark"])) .card {
@@ -144,14 +117,8 @@
   color: var(--ink-soft);
 }
 
-:global(html:not([data-theme="dark"])) .status-text,
-:global(html:not([data-theme="dark"])) .scale-labels,
 :global(html:not([data-theme="dark"])) .help-btn {
   color: var(--muted-strong);
-}
-
-:global(html:not([data-theme="dark"])) .status-text.glowing {
-  color: #9253c2;
 }
 
 :global(html:not([data-theme="dark"])) .help-btn:hover {

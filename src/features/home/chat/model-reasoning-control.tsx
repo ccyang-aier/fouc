@@ -38,9 +38,7 @@ export function ModelReasoningControl({ reasoning, value, onChange, t }: {
     </DropdownMenuTrigger>
     <DropdownMenuContent className={styles.panel} side="top" align="start" sideOffset={8} collisionPadding={12}
       role="dialog" aria-labelledby={titleId}>
-      <StarfieldSlider ref={input} max={levels.length - 1} value={index} titleId={titleId}
-        heading={t('reasoningEffort')} label={t(reasoningLabels[level])}
-        startLabel={t('reasoningFaster')} endLabel={t('reasoningSmarter')}
+      <StarfieldSlider ref={input} levels={levels} value={index} titleId={titleId} heading={t('reasoningEffort')}
         aria-label={t('reasoningEffort')} aria-valuetext={t(reasoningLabels[level])}
         onKeyDown={event => {
           if (event.key === 'Tab') setOpen(false);

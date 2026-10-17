@@ -12,6 +12,7 @@ type Surface = {
 export const PROJECT_AVATAR_RENDER_SIZE = 48;
 const SIZE = PROJECT_AVATAR_RENDER_SIZE;
 const FRAME_DURATION = 1000 / 24;
+const MAX_IDLE_FLUIDS = 24;
 const surfaces = new Map<string, Surface>();
 const fluids = new Map<string, FluidState>();
 const canvasSurfaces = new Map<HTMLCanvasElement, Surface>();
@@ -92,19 +93,34 @@ function startAnimation() {
   if (!animationFrame && hasVisibleTargets()) animationFrame = requestAnimationFrame(animate);
 }
 
-export function attachProjectAvatar(canvas: HTMLCanvasElement, seed: string, palette: { id: string; colors: readonly string[] }) {
+function trimIdleFluids() {
+  const active = new Set(Array.from(surfaces.values(), surface => surface.fluid));
+  let idle = fluids.size - active.size;
+  for (const [key, fluid] of fluids) {
+    if (idle <= MAX_IDLE_FLUIDS) break;
+    if (!active.has(fluid)) { fluids.delete(key); idle--; }
+  }
+}
+
+export function attachProjectAvatar(canvas: HTMLCanvasElement, seed: string, palette: { id: string; colors: readonly string[] }, preview = false) {
   const context = canvas.getContext('2d', { alpha: false });
   if (!context) return;
-  const key = `${palette.id}:${seed}`;
+  const flowKey = JSON.stringify([seed, preview ? palette.id : null]);
+  const key = JSON.stringify([flowKey, palette.id]);
   let surface = surfaces.get(key);
   if (!surface) {
-    let fluid = fluids.get(seed);
+    let fluid = fluids.get(flowKey);
     if (!fluid) {
-      fluid = { field: createProjectFluid(hashProjectAvatarSeed(seed)), lastFrame: performance.now() };
-      fluids.set(seed, fluid);
+      // Project IDs choose the default palette, never a fixed opening picture.
+      const randomSeed = crypto.getRandomValues(new Uint32Array(1))[0];
+      fluid = { field: createProjectFluid(randomSeed), lastFrame: performance.now() };
     }
+    // Touch this flow in the bounded session cache. Reopening a menu resumes it.
+    fluids.delete(flowKey);
+    fluids.set(flowKey, fluid);
     surface = { pixels: context.createImageData(SIZE, SIZE), pigments: palette.colors.map(parseColor), fluid, targets: new Map() };
     surfaces.set(key, surface);
+    trimIdleFluids();
   }
   surface.targets.set(canvas, { context, visible: true });
   canvasSurfaces.set(canvas, surface);
@@ -123,12 +139,13 @@ export function attachProjectAvatar(canvas: HTMLCanvasElement, seed: string, pal
     observer?.unobserve(canvas);
     canvasSurfaces.delete(canvas);
     surface.targets.delete(canvas);
-    if (!surface.targets.size) surfaces.delete(key);
-    // React changes the palette by detaching and reattaching in the same commit.
-    // Keep the liquid state through that hand-off, then release unused simulations.
-    queueMicrotask(() => {
-      if (fluids.get(seed) === surface.fluid && !Array.from(surfaces.values()).some(entry => entry.fluid === surface.fluid)) fluids.delete(seed);
-    });
+    if (!surface.targets.size) {
+      surfaces.delete(key);
+      // A long-lived visible project is the most recently used flow on detach.
+      fluids.delete(flowKey);
+      fluids.set(flowKey, surface.fluid);
+    }
+    trimIdleFluids();
     if (!surfaces.size) {
       observer?.disconnect();
       observer = null;

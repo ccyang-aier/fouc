@@ -21,17 +21,18 @@ export function resolveProjectAvatarPalette(seed: string, palette?: ProjectAvata
     ?? PROJECT_AVATAR_PALETTES[hashProjectAvatarSeed(seed) % PROJECT_AVATAR_PALETTES.length];
 }
 
-export function ProjectAvatar({ seed = 'fouc', palette, className }: {
+export function ProjectAvatar({ seed = 'fouc', palette, preview = false, className }: {
   seed?: string;
   palette?: ProjectAvatarPalette;
+  preview?: boolean;
   className?: string;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const selectedPalette = resolveProjectAvatarPalette(seed, palette);
 
   useEffect(() => {
-    if (canvasRef.current) return attachProjectAvatar(canvasRef.current, seed, selectedPalette);
-  }, [seed, selectedPalette]);
+    if (canvasRef.current) return attachProjectAvatar(canvasRef.current, seed, selectedPalette, preview);
+  }, [seed, selectedPalette, preview]);
 
   return (
     <span className={cn(styles.avatar, className)} aria-hidden="true" data-palette={selectedPalette.id}>

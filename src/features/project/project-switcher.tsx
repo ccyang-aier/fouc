@@ -61,7 +61,7 @@ export function ProjectSwitcher({ compact = false, onSwitch }: { compact?: boole
         {selectedProject && <>
           <DropdownMenuItem onSelect={() => setAction({ kind: 'rename', project: selectedProject })}><PencilSimple size={16} weight="duotone" />{t('rename')}</DropdownMenuItem>
           <DropdownMenuSub><DropdownMenuSubTrigger><Palette size={16} weight="duotone" />{t('palette')}</DropdownMenuSubTrigger><DropdownMenuSubContent>
-            {PROJECT_AVATAR_PALETTES.map(palette => <DropdownMenuItem key={palette.id} role="menuitemradio" aria-checked={activePalette === palette.id} onSelect={() => choosePalette(palette.id)}><ProjectAvatar seed={selectedProject.id} palette={palette.id} className={styles.palettePreview} /><span>{t(palette.id)}</span>{activePalette === palette.id && <Check size={14} className="ml-auto" />}</DropdownMenuItem>)}
+            {PROJECT_AVATAR_PALETTES.map(palette => <DropdownMenuItem key={palette.id} role="menuitemradio" aria-checked={activePalette === palette.id} onSelect={() => choosePalette(palette.id)}><ProjectAvatar seed={selectedProject.id} palette={palette.id} preview className={styles.palettePreview} /><span>{t(palette.id)}</span>{activePalette === palette.id && <Check size={14} className="ml-auto" />}</DropdownMenuItem>)}
           </DropdownMenuSubContent></DropdownMenuSub>
           <DropdownMenuItem variant="destructive" onSelect={() => setAction({ kind: 'remove', project: selectedProject })}><Trash size={16} weight="duotone" />{t('remove')}</DropdownMenuItem>
         </>}

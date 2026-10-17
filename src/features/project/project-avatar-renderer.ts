@@ -60,54 +60,77 @@ function parseColor(color: string): RGB {
 
 function paint(surface: Surface, milliseconds: number) {
   const { noise, phase, pigments, pixels } = surface;
-  const time = milliseconds * 0.000085;
-  const driftX = time * 0.39;
-  const driftY = time * 0.27;
+  const time = milliseconds * 0.00012;
+  const driftX = time * 0.44;
+  const driftY = time * 0.31;
   const originX = 9 + phase * 13;
   const originY = 21 + phase * 7;
+  // Counter-flowing eddies fold the pools into curved tongues of pigment.
+  // Their centers and strengths drift independently; the whole tile never rotates.
+  const eddies = [
+    { x: .34 + Math.sin(time * .63 + phase * 6) * .15, y: .33 + Math.cos(time * .51 + phase * 4) * .16, turn: 2.8 + Math.sin(time * .57 + phase * 5) * 1.2, falloff: 3.7 },
+    { x: .72 + Math.cos(time * .47 + phase * 7) * .14, y: .71 + Math.sin(time * .59 + phase * 3) * .15, turn: -3.2 + Math.cos(time * .49 + phase * 6) * 1.1, falloff: 4.2 },
+  ];
   const centers = [
-    [0.1 + Math.sin(time * 0.73 + phase) * 0.1, 0.1 + Math.cos(time * 0.59) * 0.08],
-    [0.9 + Math.cos(time * 0.61 + phase) * 0.09, 0.08 + Math.sin(time * 0.83) * 0.1],
-    [0.88 + Math.sin(time * 0.67) * 0.08, 0.9 + Math.cos(time * 0.79 + phase) * 0.09],
-    [0.08 + Math.cos(time * 0.89) * 0.09, 0.88 + Math.sin(time * 0.53 + phase) * 0.1],
+    [.16 + Math.sin(time * .39 + phase) * .12, .12],
+    [.86, .19 + Math.sin(time * .43 + phase * 2) * .12],
+    [.79 + Math.cos(time * .37) * .12, .87],
+    [.1, .76 + Math.cos(time * .41 + phase) * .12],
   ];
 
   for (let row = 0; row < SIZE; row++) {
     const y = row / (SIZE - 1);
     for (let column = 0; column < SIZE; column++) {
       const x = column / (SIZE - 1);
-      const u = x * 1.7 + originX;
-      const v = y * 1.7 + originY;
-
-      // Two advected noise domains fold the pigment boundaries into each other.
-      // The second domain changes their shape, rather than translating a gradient.
-      const curlX = sampleNoise(noise, u + driftX, v - driftY) - 0.5;
-      const curlY = sampleNoise(noise, u + 12.7 - driftY, v + 8.3 + driftX) - 0.5;
-      const warpX = sampleNoise(noise, u + curlX * 2.4 - driftY, v + curlY * 2.4 + driftX) - 0.5;
-      const warpY = sampleNoise(noise, u + 32.1 + curlX * 2.4 + driftX, v + 17.4 + curlY * 2.4 - driftY) - 0.5;
-      const fluidX = x + warpX * 0.73 + curlY * 0.23;
-      const fluidY = y + warpY * 0.73 - curlX * 0.23;
+      let flowX = x;
+      let flowY = y;
+      for (const eddy of eddies) {
+        const dx = flowX - eddy.x;
+        const dy = flowY - eddy.y;
+        const turn = eddy.turn * Math.exp(-(dx * dx + dy * dy) * eddy.falloff);
+        const sine = Math.sin(turn);
+        const cosine = Math.cos(turn);
+        flowX = eddy.x + dx * cosine - dy * sine;
+        flowY = eddy.y + dx * sine + dy * cosine;
+      }
+      const u = flowX * 2.1 + originX;
+      const v = flowY * 2.1 + originY;
+      const curlX = sampleNoise(noise, u + driftX, v - driftY) - .5;
+      const curlY = sampleNoise(noise, u + 12.7 - driftY, v + 8.3 + driftX) - .5;
+      const warpX = sampleNoise(noise, u + curlX * 2.8 - driftY, v + curlY * 2.8 + driftX) - .5;
+      const warpY = sampleNoise(noise, u + 32.1 + curlX * 2.8 + driftX, v + 17.4 + curlY * 2.8 - driftY) - .5;
+      const fluidX = flowX + warpX * .43 + curlY * .17;
+      const fluidY = flowY + warpY * .43 - curlX * .17;
       let red = 0;
       let green = 0;
       let blue = 0;
       let total = 0;
+      let strongest = 0;
+      let second = 0;
 
       for (let pigment = 0; pigment < pigments.length; pigment++) {
         const dx = fluidX - centers[pigment][0];
         const dy = fluidY - centers[pigment][1];
-        const weight = Math.exp((dx * dx + dy * dy) * -5.6);
+        // Narrow mixing zones keep the curling pigment fronts readable at 24px.
+        const weight = Math.exp((dx * dx + dy * dy) * -13.5);
         red += pigments[pigment][0] * weight;
         green += pigments[pigment][1] * weight;
         blue += pigments[pigment][2] * weight;
         total += weight;
+        if (weight > strongest) { second = strongest; strongest = weight; }
+        else if (weight > second) second = weight;
       }
 
-      // A broad, restrained light area gives the dye depth without a glass glare.
-      const light = 0.025 + (1 - y) * 0.035 + (warpX + 0.5) * 0.025;
+      // A narrow, directional meniscus travels with the folds. Its lit and shaded
+      // shoulders give the pigment thickness without an outline or a glass glare.
+      const front = Math.pow(2 * second / (strongest + second), 5);
+      const shoulder = (strongest - second) / (strongest + second);
+      const relief = .96 + (1 - y) * .045 + (warpX - warpY) * .065 - front * shoulder * .1;
+      const light = .012 + front * Math.max(0, .035 + (curlX - curlY) * .065);
       const offset = (row * SIZE + column) * 4;
-      pixels.data[offset] = (red / total) * (1 - light) + 255 * light;
-      pixels.data[offset + 1] = (green / total) * (1 - light) + 255 * light;
-      pixels.data[offset + 2] = (blue / total) * (1 - light) + 255 * light;
+      pixels.data[offset] = (red / total) * relief * (1 - light) + 255 * light;
+      pixels.data[offset + 1] = (green / total) * relief * (1 - light) + 255 * light;
+      pixels.data[offset + 2] = (blue / total) * relief * (1 - light) + 255 * light;
       pixels.data[offset + 3] = 255;
     }
   }

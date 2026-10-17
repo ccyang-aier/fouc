@@ -1,0 +1,22 @@
+.mark {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  flex: 0 0 64px;
+  color: var(--ink);
+  pointer-events: none;
+}
+
+.gear {
+  display: flex;
+  animation: turn 32s linear infinite;
+}
+
+@keyframes turn {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gear { animation: none; }
+}

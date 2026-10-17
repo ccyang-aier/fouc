@@ -91,7 +91,7 @@ export function ChatAddMenu({ mode, context, onModeChange, onFiles, onPaste, onM
             <ClipboardText className={styles.neutralIcon} aria-hidden="true" /><span>{t('paste')}</span>
           </ChatPickerItem> : null}
           {showModels ? <ChatPickerItem className={styles.item} textValue={execution.name} onSelect={() => afterClose(onModels)}>
-            <ChatExecutionLogo option={execution} size={18} /><span className={styles.modelName}>{execution.name}</span>
+            <ChatExecutionLogo option={execution} size={16} /><span className={styles.modelName}>{execution.name}</span>
             {effort ? <span className={styles.effort}>{t(reasoningLabels[effort])}</span> : null}
             <CaretRight className={styles.chevron} aria-hidden="true" />
           </ChatPickerItem> : null}

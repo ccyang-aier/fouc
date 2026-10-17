@@ -10,6 +10,7 @@ import { chatModeOrder, chatModes } from './chat-modes';
 import { ChatResourceMenu } from './chat-resource-menu';
 import { ChatResourceCreate } from './chat-resource-create';
 import { openSettings } from '@/lib/settings-navigation';
+import { openSkillsMarket } from '@/features/community/community-navigation';
 import type { ComposerResource, ComposerResourceKind, ComposerResourceReference } from '@/features/community/composer-catalog';
 import type { ChatMode } from './chat-types';
 import type { ChatText } from './chat-messages';
@@ -90,7 +91,8 @@ export function ChatAddMenu({ mode, resources, onModeChange, onFiles, onResource
             <Paperclip className={styles.neutralIcon} aria-hidden="true" /><span>{t('actionFiles')}</span>
           </ChatPickerItem> : null}
           {showSkills ? <ChatResourceMenu kind="skills" selected={resources} onToggle={onResourceToggle}
-            onCreate={() => closeFor(() => setCreating('skills'))} onConfigure={() => closeFor(() => openSettings('skills'))} /> : null}
+            onCreate={() => closeFor(() => setCreating('skills'))} onConfigure={() => closeFor(() => openSettings('skills'))}
+            onOpenMarket={() => closeFor(openSkillsMarket)} /> : null}
           {showMcp ? <ChatResourceMenu kind="mcp" selected={resources} onToggle={onResourceToggle}
             onCreate={() => closeFor(() => setCreating('mcp'))} /> : null}
         </DropdownMenuGroup> : null}

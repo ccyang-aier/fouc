@@ -87,7 +87,8 @@ export function CommunityCanvas() {
   const SORT_OPTIONS = getSortOptions(locale);
   const [agents, setAgents] = useState(initialCommunityAgents);
   const [skills, setSkills] = useState(initialCommunitySkills);
-  const [typeFilter, setTypeFilter] = useState<CommunityTypeFilter>('all');
+  const [typeFilter, setTypeFilter] = useState<CommunityTypeFilter>(() =>
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('communityType') === 'skills' ? 'skills' : 'all');
   const [domain, setDomain] = useState('');
   const [tag, setTag] = useState('');
   const [minRating, setMinRating] = useState(0);

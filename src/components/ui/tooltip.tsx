@@ -56,7 +56,6 @@ function TooltipContent({
         {...props}
       >
         {children}
-        <TooltipPrimitive.Arrow className="fill-[var(--tooltip-bg)]" />
       </TooltipPrimitive.Content>
     </TooltipPrimitive.Portal>
   )

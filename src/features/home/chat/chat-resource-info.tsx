@@ -1,12 +1,13 @@
 'use client';
 
 import {
-  Binoculars, BookOpenText, BracketsCurly, Browser, CalendarDots, ChartBar, ChartPieSlice, ChatsCircle,
+  Binoculars, BracketsCurly, Browser, CalendarDots, ChartBar, ChartPieSlice, ChatsCircle,
   Checks, CheckSquare, Code, Database, EnvelopeSimple, FigmaLogo, FileText, FolderSimple,
   GitBranch, GitDiff, Lightbulb, MagnifyingGlass, Megaphone, NotePencil, PlugsConnected,
   PresentationChart, ShieldCheck, Star, StarHalf, TextT,
 } from '@phosphor-icons/react';
 import { TooltipContent } from '@/components/ui/tooltip';
+import { SkillIcon } from '@/components/icons/skill-icon';
 import { useTranslation } from '@/lib/i18n';
 import type { ComposerResource } from '@/features/community/composer-catalog';
 import { resourceMessages } from './chat-resource-messages';
@@ -24,20 +25,21 @@ const resourceIcons = {
 };
 
 export function ResourceIcon({ resource }: { resource: ComposerResource }) {
-  const Icon = resourceIcons[resource.id as keyof typeof resourceIcons] ?? (resource.kind === 'mcp' ? PlugsConnected : BookOpenText);
-  return <Icon className={styles.resourceIcon} size={16} weight="duotone" data-static-color aria-hidden="true" />;
+  const Icon = resourceIcons[resource.id as keyof typeof resourceIcons] ?? (resource.kind === 'mcp' ? PlugsConnected : null);
+  return Icon ? <Icon className={styles.resourceIcon} size={16} weight="duotone" data-static-color aria-hidden="true" />
+    : <SkillIcon className={styles.resourceIcon} data-static-color aria-hidden="true" />;
 }
 
 export function ChatResourceInfo({ resource, side, onEscape }: {
   resource: ComposerResource;
-  side: 'right' | 'top';
+  side: 'top' | 'bottom';
   onEscape: () => void;
 }) {
   const { t } = useTranslation(resourceMessages);
   const rating = resource.rating;
   const stars = Math.round((rating ?? 0) * 2) / 2;
 
-  return <TooltipContent className={styles.infoCard} side={side} sideOffset={16} collisionPadding={12}
+  return <TooltipContent className={styles.infoCard} side={side} sideOffset={8} collisionPadding={12}
     onEscapeKeyDown={event => { event.preventDefault(); onEscape(); }}>
     <div className={styles.infoHeading}>
       <ResourceIcon resource={resource} />

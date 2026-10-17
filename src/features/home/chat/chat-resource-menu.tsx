@@ -1,7 +1,8 @@
 'use client';
 
 import { useLayoutEffect, useRef, useState } from 'react';
-import { BookOpenText, CaretDown, Check, FunnelSimple, GearSix, Info, PlugsConnected, Plus } from '@phosphor-icons/react';
+import { ArrowUpRight, CaretDown, Check, GearSix, Info, PlugsConnected, Plus, SlidersHorizontal } from '@phosphor-icons/react';
+import { SkillIcon } from '@/components/icons/skill-icon';
 import { DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -16,23 +17,25 @@ import { resourceMessages } from './chat-resource-messages';
 import styles from './chat-resource-menu.module.css';
 import addStyles from './chat-add-menu.module.css';
 
-export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigure }: {
+export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigure, onOpenMarket }: {
   kind: ComposerResourceKind;
   selected: ComposerResourceReference[];
   onToggle: (resource: ComposerResource) => void;
   onCreate: () => void;
   onConfigure?: () => void;
+  onOpenMarket?: () => void;
 }) {
   const { t, locale } = useTranslation(resourceMessages);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('');
   const [collapsed, setCollapsed] = useState(false);
+  const [marketCollapsed, setMarketCollapsed] = useState(false);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [sideOffset, setSideOffset] = useState(8);
   const [alignOffset, setAlignOffset] = useState(0);
-  const [tooltipSide, setTooltipSide] = useState<'right' | 'top'>('right');
+  const [tooltipSide, setTooltipSide] = useState<'top' | 'bottom'>('bottom');
   const trigger = useRef<HTMLDivElement>(null);
   const search = useRef<HTMLInputElement>(null);
   const disabledBuiltinIds = useBuiltinSkills();
@@ -45,7 +48,7 @@ export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigu
   const builtinResults = builtin.filter(matches);
   const marketResults = market.filter(matches);
   const selectedCount = selected.filter(item => item.kind === kind).length;
-  const Icon = kind === 'skills' ? BookOpenText : PlugsConnected;
+  const Icon = kind === 'skills' ? SkillIcon : PlugsConnected;
 
   useLayoutEffect(() => {
     if (!open) return;
@@ -59,7 +62,6 @@ export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigu
         // Radix offsets from the inset trigger; the visible menu surfaces need a 6px gap.
         setSideOffset(Math.min(6 + inset, Math.max(bounds.left - 12, window.innerWidth - bounds.right - 12) - Math.min(284, window.innerWidth - 24)));
         setAlignOffset(parent.top - bounds.top);
-        setTooltipSide(window.innerWidth > 760 ? 'right' : 'top');
       }
     }
     position();
@@ -76,12 +78,18 @@ export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigu
     search.current?.focus();
   }
 
+  function positionTooltip(row: HTMLElement) {
+    const bounds = row.getBoundingClientRect();
+    setTooltipSide(bounds.top + bounds.height / 2 < window.innerHeight / 2 ? 'bottom' : 'top');
+  }
+
   function renderResource(resource: ComposerResource, builtin = false) {
     const checked = builtin ? !disabledBuiltinIds.includes(resource.id) : selected.some(item => item.id === resource.id && item.kind === kind);
     return <Tooltip key={resource.id} open={previewId === resource.id} delayDuration={300} disableHoverableContent
       onOpenChange={next => setPreviewId(current => next ? resource.id : current === resource.id ? null : current)}>
       <TooltipTrigger asChild><ChatPickerItem className={styles.resourceRow} role="menuitemcheckbox" aria-checked={checked}
         textValue={resource.name} aria-label={resource.name}
+        onPointerEnter={event => positionTooltip(event.currentTarget)} onFocus={event => positionTooltip(event.currentTarget)}
         onKeyDown={event => { if (event.key === 'ArrowRight') { event.preventDefault(); setPreviewId(resource.id); } }}
         onSelect={event => { event.preventDefault(); if (builtin) toggleBuiltinSkill(resource.id); else onToggle(resource); }}>
         <ResourceIcon resource={resource} />
@@ -100,7 +108,7 @@ export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigu
     if (next) { setQuery(''); setCategory(''); }
   }}>
     <DropdownMenuSubTrigger ref={trigger} className={addStyles.item} aria-label={t(kind)}>
-      <Icon className={addStyles.neutralIcon} weight="duotone" data-resource-kind={kind} data-static-color aria-hidden="true" /><span>{t(kind)}</span>
+      <Icon className={addStyles.neutralIcon} data-resource-kind={kind} data-static-color aria-hidden="true" /><span>{t(kind)}</span>
       {selectedCount ? <span className={styles.triggerCount} aria-hidden="true">{selectedCount}</span> : null}
     </DropdownMenuSubTrigger>
     <DropdownMenuSubContent className={styles.menu} collisionPadding={12} sideOffset={sideOffset} alignOffset={alignOffset}
@@ -115,7 +123,7 @@ export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigu
         <ChatPickerSearch ref={search} value={query} aria-label={t(kind === 'skills' ? 'searchSkills' : 'searchMcp')}
           placeholder={t(kind === 'skills' ? 'searchSkills' : 'searchMcp')} onChange={event => { setQuery(event.target.value); setPreviewId(null); }} />
         <Button type="button" variant="ghost" className={styles.toolbarButton} aria-label={t('category')} aria-expanded={categoryOpen}
-          title={t('category')} data-active={Boolean(category)} onClick={() => { setCategoryOpen(value => !value); setPreviewId(null); }}><FunnelSimple size={15} /></Button>
+          title={t('category')} data-active={Boolean(category)} onClick={() => { setCategoryOpen(value => !value); setPreviewId(null); }}><SlidersHorizontal size={15} /></Button>
         <Button type="button" variant="ghost" className={styles.toolbarButton} aria-label={t(kind === 'skills' ? 'addSkill' : 'addMcp')}
           title={t(kind === 'skills' ? 'addSkill' : 'addMcp')} onClick={onCreate}><Plus size={16} /></Button>
       </div>
@@ -123,7 +131,8 @@ export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigu
         {['', ...new Set(all.map(item => item.category))].map(value => <button key={value} type="button" className={`fouc-action ${styles.category}`}
           aria-pressed={category === value} data-active={category === value} onClick={() => toggleCategory(value)}>{value ? communityCategoryLabel(value, locale) : t('all')}</button>)}
       </div> : null}
-      <ScrollArea className={styles.list} viewportClassName={styles.viewport} onScrollCapture={() => setPreviewId(null)}>
+      <ScrollArea className={styles.list} viewportClassName={styles.viewport} onScrollCapture={() => setPreviewId(null)}
+        onKeyDown={event => { if (event.key === 'Tab') event.stopPropagation(); }}>
         {kind === 'skills' && builtinResults.length ? <section className={styles.section} aria-label={t('builtin')}>
           <div className={styles.sectionHeading}>
             <button type="button" className={`fouc-action ${styles.collapse}`} data-variant="collapsible" aria-expanded={!collapsed}
@@ -133,8 +142,13 @@ export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigu
           {!collapsed ? builtinResults.map(item => renderResource(item, true)) : null}
         </section> : null}
         {marketResults.length ? <section className={styles.section} aria-label={t(kind === 'skills' ? 'market' : 'mcpMarket')}>
-          {kind === 'skills' ? <div className={styles.sectionHeading}><span className={styles.marketHeading}>{t('market')}</span></div> : null}
-          {marketResults.map(item => renderResource(item))}
+          {kind === 'skills' ? <div className={styles.sectionHeading}>
+            <button type="button" className={`fouc-action ${styles.collapse}`} data-variant="collapsible" aria-expanded={!marketCollapsed}
+              onClick={() => { setMarketCollapsed(value => !value); setPreviewId(null); }}><CaretDown size={10} data-collapsed={marketCollapsed} />{t('market')}</button>
+            <button type="button" className={`fouc-action ${styles.configure}`} aria-label={t('openMarket')} title={t('openMarket')}
+              onClick={onOpenMarket}><ArrowUpRight size={14} /></button>
+          </div> : null}
+          {kind === 'mcp' || !marketCollapsed ? marketResults.map(item => renderResource(item)) : null}
         </section> : null}
         {!builtinResults.length && !marketResults.length ? <div className={styles.empty} role="status"><Icon size={25} /><strong>{t('empty')}</strong><span>{t('emptyHint')}</span>
           <Button variant="ghost" size="sm" onClick={() => { setQuery(''); toggleCategory(''); }}>{t('clear')}</Button></div> : null}

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuGroup, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ChatPickerContent, ChatPickerItem, ChatPickerSearch } from './chat-picker';
-import { chatModeOrder, chatModes } from './chat-modes';
+import { ChatModeItems, chatModeOrder, chatModes } from './chat-modes';
 import { ChatResourceMenu } from './chat-resource-menu';
 import { ChatResourceCreate } from './chat-resource-create';
 import { openSettings } from '@/lib/settings-navigation';
@@ -74,16 +74,7 @@ export function ChatAddMenu({ mode, resources, onModeChange, onFiles, onResource
       </div>
       <ScrollArea className={styles.list} viewportClassName={styles.viewport}>
         {modes.length ? <DropdownMenuGroup aria-label={t('executionMode')}>
-          {modes.map(id => {
-            const { icon: Icon, label, description } = chatModes[id];
-            return <ChatPickerItem key={id} className={styles.item} role="menuitemradio"
-              aria-checked={mode === id} data-current={mode === id} textValue={t(label)}
-              onSelect={() => afterClose(() => onModeChange(id))}>
-              <Icon className={styles.modeIcon} data-mode={id} data-static-color aria-hidden="true" />
-              <span className={styles.name}>{t(label)}</span>
-              <span className={styles.description}>{t(description)}</span>
-            </ChatPickerItem>;
-          })}
+          <ChatModeItems modes={modes} selected={mode} onSelect={id => afterClose(() => onModeChange(id))} t={t} />
         </DropdownMenuGroup> : null}
         {modes.length && hasActions ? <DropdownMenuSeparator className={styles.separator} /> : null}
         {hasActions ? <DropdownMenuGroup>

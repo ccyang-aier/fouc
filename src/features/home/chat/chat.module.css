@@ -109,7 +109,7 @@
   align-items: center;
   gap: 10px;
 }
-.toolbarLeft { min-width: 0; }
+.toolbarLeft { min-width: 0; flex-wrap: wrap; row-gap: 8px; }
 .iconButton,
 .sendButton {
   width: 30px;

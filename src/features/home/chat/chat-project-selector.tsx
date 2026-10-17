@@ -1,10 +1,10 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Check, FolderSimple, Plus, X, XCircle } from "@phosphor-icons/react";
+import { Check, FolderSimple, Plus, X } from "@phosphor-icons/react";
 import { useAppAlert } from "@/components/app-alert-provider";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useProjectResources } from "@/features/project/project-resources";
 import type { ChatContext } from "./chat-types";
@@ -12,6 +12,7 @@ import type { ChatText } from "./chat-messages";
 import styles from "./chat-context-toolbar.module.css";
 import { ChatPickerContent, ChatPickerItem, ChatPickerSearch } from "./chat-picker";
 import picker from "./chat-picker.module.css";
+import { ChatContextChip } from './chat-context-chip';
 
 export function ChatProjectSelector({ context, onChange, t }: {
   context: ChatContext;
@@ -50,17 +51,9 @@ export function ChatProjectSelector({ context, onChange, t }: {
       setOpen(next);
       if (next) { setQuery(""); setCreating(false); }
     }}>
-      <div className={`fouc-action ${styles.projectChip}`} data-selected={Boolean(context.projectId)}>
-        <DropdownMenuTrigger asChild>
-          <Button ref={trigger} type="button" variant="ghost" className={styles.resourceButton} aria-label={t("projectContext")}>
-            <FolderSimple size={16} className={styles.projectIcon} />
-            <span>{context.projectId ? context.projectName ?? t("project") : t("selectProject")}</span>
-          </Button>
-        </DropdownMenuTrigger>
-        {context.projectId ? <button type="button" className={`fouc-action ${styles.clearProject}`} aria-label={t("clearProject")} title={t("clearProject")} onClick={clearProject}>
-          <XCircle size={16} weight="fill" aria-hidden="true" />
-        </button> : null}
-      </div>
+      <ChatContextChip selected={Boolean(context.projectId)} triggerRef={trigger} icon={<FolderSimple size={16} />}
+        label={context.projectId ? context.projectName ?? t('project') : t('selectProject')}
+        accessibleLabel={t('projectContext')} clearLabel={t('clearProject')} onClear={clearProject} />
       <ChatPickerContent onEscapeKeyDown={(event) => {
         if (!creating) return;
         event.preventDefault();

@@ -30,7 +30,7 @@ import { useLocale } from '@/lib/i18n/react';
 import type { ComposerResourceReference } from '@/features/community/composer-catalog';
 import { ChatToolsLink } from "./chat-tools-link";
 import { ChatQuickActions } from "./chat-quick-actions";
-import { ChatPromptInput } from "./chat-prompt-input";
+import { ChatModeControl } from './chat-mode-control';
 import { useChatVoice } from "./use-chat-voice";
 import type { ChatAttachment, ChatContext, ChatMode, ChatSubmission } from "./chat-types";
 import type { ChatText } from "./chat-messages";
@@ -187,14 +187,8 @@ export function ChatComposer({
           setContext({ resources: context.resources?.filter(item => item.id !== resource.id || item.kind !== resource.kind) });
           inputRef.current?.focus({ preventScroll: true });
         }} />
-        <ChatPromptInput
-          inputRef={inputRef}
-          mode={draft.mode}
-          t={t}
-          onRemoveMode={() => {
-            setDraft(current => ({ ...current, mode: null }));
-            inputRef.current?.focus({ preventScroll: true });
-          }}
+        <textarea
+          ref={inputRef}
           className={`chat-scope ${styles.input}`}
           aria-label={t("input")}
           aria-invalid={invalid}
@@ -244,6 +238,10 @@ export function ChatComposer({
               onFiles={() => fileInput.current?.click()}
               onResourceToggle={toggleResource} />
             <ChatExecutionSelector context={context} onChange={setContext} t={t} />
+            {draft.mode ? <ChatModeControl mode={draft.mode} t={t} onChange={mode => {
+              setDraft(current => ({ ...current, mode }));
+              inputRef.current?.focus({ preventScroll: true });
+            }} /> : null}
           </div>
           <div className={styles.toolbarRight}>
             <Tooltip>

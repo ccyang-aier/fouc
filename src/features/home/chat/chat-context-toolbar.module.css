@@ -1,20 +1,19 @@
 .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; height: 40px; padding: 5px 9px; }
 .resources { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .resourceButton { height: 28px; min-width: 0; max-width: 230px; padding: 0 9px; gap: 7px; border: 0; border-radius: 16px; font-size: 12px; font-weight: 400; color: var(--ink-soft); cursor: pointer; }
-.resourceButton[data-selected="true"] { background: var(--action-surface-bg); }
-.resources .resourceButton, .resources .projectChip { --action-state-bg: var(--action-surface-hover-bg); }
+.resources .resourceButton, .resources .contextChip { --action-state-bg: var(--action-surface-hover-bg); }
 .resourceButton span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.projectChip { position: relative; display: flex; min-width: 0; max-width: 230px; border-radius: 16px; }
-.projectChip[data-selected="true"] { background: var(--action-surface-bg); }
-.projectChip .resourceButton { max-width: 100%; }
-.projectIcon { transition: opacity 120ms ease-out; }
-.clearProject { position: absolute; top: 0; left: 3px; display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--muted-strong); outline: none; opacity: 0; pointer-events: none; cursor: pointer; transition: opacity 120ms ease-out; }
-.projectChip[data-selected="true"]:is(:hover, :focus-within) .projectIcon { opacity: 0; }
-.projectChip:is(:hover, :focus-within) .clearProject { opacity: 1; pointer-events: auto; }
+.contextChip { position: relative; display: flex; min-width: 0; max-width: 230px; border-radius: 16px; }
+.contextChip[data-selected="true"] { background: var(--action-surface-bg); }
+.contextChip .resourceButton { max-width: 100%; }
+.contextIcon { display: flex; flex: 0 0 16px; overflow: visible; transition: opacity 120ms ease-out; }
+.clearContext { position: absolute; top: 0; left: 3px; display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--muted-strong); outline: none; opacity: 0; pointer-events: none; cursor: pointer; transition: opacity 120ms ease-out; }
+.contextChip[data-selected="true"]:is(:hover, :focus-within) .contextIcon { opacity: 0; }
+.contextChip:is(:hover, :focus-within) .clearContext { opacity: 1; pointer-events: auto; }
 .settingsButton { width: 28px; height: 28px; padding: 0; border: 1px solid transparent; border-radius: 7px; cursor: pointer; }
 .toolbar button:focus-visible { outline: none; box-shadow: none; border-color: var(--control-border); }
 .createButton { width: 100%; justify-content: flex-start; cursor: pointer; }
-@container (max-width: 560px) { .resourceButton, .projectChip { max-width: 170px; } .resourceButton { padding-inline: 7px; } .clearProject { left: 1px; } .toolbar { padding-inline: 7px; } }
+@container (max-width: 560px) { .resourceButton, .contextChip { max-width: 170px; } .resourceButton { padding-inline: 7px; } .clearContext { left: 1px; } .toolbar { padding-inline: 7px; } }
 @container (max-width: 300px) { .toolbar { height: auto; min-height: 40px; align-items: flex-start; } .resources { flex-wrap: wrap; gap: 2px; } .resourceButton { max-width: 100%; } }
-@media (hover: none) { .projectChip[data-selected="true"] .projectIcon { opacity: 0; } .projectChip .clearProject { opacity: 1; pointer-events: auto; } }
-@media (prefers-reduced-motion: reduce) { .projectIcon, .clearProject { transition: none; } }
+@media (hover: none) { .contextChip[data-selected="true"] .contextIcon { opacity: 0; } .contextChip .clearContext { opacity: 1; pointer-events: auto; } }
+@media (prefers-reduced-motion: reduce) { .contextIcon, .clearContext { transition: none; } }

@@ -1,7 +1,8 @@
 import { Path, TerminalWindow, SquaresFour, Target } from '@phosphor-icons/react';
-import { ChatPromptTag } from './chat-prompt-tag';
+import { ChatPickerItem } from './chat-picker';
 import type { ChatMode } from './chat-types';
 import type { ChatText } from './chat-messages';
+import styles from './chat-modes.module.css';
 
 export const chatModes = {
   plan: { icon: Path, label: 'modePlan', description: 'modePlanDescription' },
@@ -12,11 +13,27 @@ export const chatModes = {
 
 export const chatModeOrder: readonly ChatMode[] = ['plan', 'debug', 'multitask', 'goal'];
 
-export function ChatModeTag({ mode, onRemove, t }: {
+export function ChatModeItems({ modes = chatModeOrder, selected, onSelect, t }: {
+  modes?: readonly ChatMode[];
+  selected: ChatMode | null;
+  onSelect: (mode: ChatMode) => void;
+  t: ChatText;
+}) {
+  return modes.map(id => {
+    const { icon: Icon, label, description } = chatModes[id];
+    return <ChatPickerItem key={id} className={styles.item} role="menuitemradio"
+      aria-checked={selected === id} data-current={selected === id} textValue={t(label)} onSelect={() => onSelect(id)}>
+      <Icon className={styles.icon} data-mode={id} data-static-color aria-hidden="true" />
+      <span className={styles.name}>{t(label)}</span>
+      <span className={styles.description}>{t(description)}</span>
+    </ChatPickerItem>;
+  });
+}
+
+export function ChatModeTag({ mode, t }: {
   mode: ChatMode;
-  onRemove?: () => void;
   t: ChatText;
 }) {
   const label = t(chatModes[mode].label);
-  return <ChatPromptTag label={label} removeLabel={t('removeMode', { mode: label })} onRemove={onRemove} />;
+  return <span className={styles.messageTag}>{label}</span>;
 }

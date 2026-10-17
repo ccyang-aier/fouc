@@ -1,12 +1,12 @@
 'use client';
 
-import { useLayoutEffect, useRef, type RefObject } from 'react';
 import {
   Binoculars, BookOpenText, BracketsCurly, Browser, CalendarDots, ChartBar, ChartPieSlice, ChatsCircle,
   Checks, CheckSquare, Code, Database, EnvelopeSimple, FigmaLogo, FileText, FolderSimple,
   GitBranch, GitDiff, Lightbulb, MagnifyingGlass, Megaphone, NotePencil, PlugsConnected,
-  PresentationChart, ShieldCheck, Star, StarHalf, TextT, X,
+  PresentationChart, ShieldCheck, Star, StarHalf, TextT,
 } from '@phosphor-icons/react';
+import { TooltipContent } from '@/components/ui/tooltip';
 import { useTranslation } from '@/lib/i18n';
 import type { ComposerResource } from '@/features/community/composer-catalog';
 import { resourceMessages } from './chat-resource-messages';
@@ -25,48 +25,23 @@ const resourceIcons = {
 
 export function ResourceIcon({ resource }: { resource: ComposerResource }) {
   const Icon = resourceIcons[resource.id as keyof typeof resourceIcons] ?? (resource.kind === 'mcp' ? PlugsConnected : BookOpenText);
-  return <Icon className={styles.resourceIcon} size={16} data-static-color aria-hidden="true" />;
+  return <Icon className={styles.resourceIcon} size={16} weight="duotone" data-static-color aria-hidden="true" />;
 }
 
-export function ChatResourceInfo({ resource, anchor, onClose }: {
+export function ChatResourceInfo({ resource, side, onEscape }: {
   resource: ComposerResource;
-  anchor: RefObject<HTMLDivElement | null>;
-  onClose: () => void;
+  side: 'right' | 'top';
+  onEscape: () => void;
 }) {
   const { t } = useTranslation(resourceMessages);
-  const card = useRef<HTMLDivElement>(null);
   const rating = resource.rating;
   const stars = Math.round((rating ?? 0) * 2) / 2;
-  useLayoutEffect(() => {
-    const panel = card.current;
-    const menu = anchor.current;
-    if (!panel || !menu) return;
-    function position() {
-      if (!panel || !menu) return;
-      const bounds = menu.getBoundingClientRect();
-      const width = Math.min(264, window.innerWidth - 24);
-      const right = window.innerWidth - bounds.right;
-      const left = right >= width + 8 ? bounds.right + 8 : bounds.left >= width + 8 ? bounds.left - width - 8
-        : Math.max(12, Math.min(bounds.left, window.innerWidth - width - 12));
-      panel.style.width = `${width}px`;
-      panel.style.left = `${left - bounds.left}px`;
-      panel.style.top = `${Math.max(12, Math.min(bounds.top, window.innerHeight - panel.offsetHeight - 12)) - bounds.top}px`;
-    }
-    position();
-    const observer = new ResizeObserver(position);
-    observer.observe(panel);
-    observer.observe(menu);
-    const placement = new MutationObserver(position);
-    if (menu.parentElement) placement.observe(menu.parentElement, { attributes: true, attributeFilter: ['style'] });
-    window.addEventListener('resize', position);
-    return () => { observer.disconnect(); placement.disconnect(); window.removeEventListener('resize', position); };
-  }, [anchor, resource.id]);
 
-  return <div ref={card} className={styles.infoCard} role="region" aria-label={t('details', { name: resource.name })}>
+  return <TooltipContent className={styles.infoCard} side={side} sideOffset={16} collisionPadding={12}
+    onEscapeKeyDown={event => { event.preventDefault(); onEscape(); }}>
     <div className={styles.infoHeading}>
       <ResourceIcon resource={resource} />
       <h3>{resource.name}</h3>
-      <button type="button" className={`fouc-action ${styles.closeInfo}`} aria-label={t('close')} onClick={onClose}><X size={14} /></button>
     </div>
     <p className={styles.infoDescription}>{resource.description}</p>
     <dl className={styles.infoMeta}>
@@ -82,5 +57,5 @@ export function ChatResourceInfo({ resource, anchor, onClose }: {
         })}<strong>{rating.toFixed(1)}</strong>
       </span>}
     </div>
-  </div>;
+  </TooltipContent>;
 }

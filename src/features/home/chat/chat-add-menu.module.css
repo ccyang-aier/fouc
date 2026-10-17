@@ -1,8 +1,10 @@
 .menu {
-  --chat-picker-width: 344px;
+  --chat-picker-width: 304px;
   --chat-picker-row-height: 32px;
   padding: 5px;
   border-radius: 12px;
+  border-color: var(--menu-border);
+  box-shadow: var(--menu-shadow);
 }
 .search { display: flex; flex-shrink: 0; height: 32px; padding: 0 9px; }
 .list { min-height: 0; max-height: min(300px, calc(var(--radix-dropdown-menu-content-available-height) - 44px)); }
@@ -16,6 +18,8 @@
 .modeIcon[data-mode="multitask"] { color: #8770e7; }
 .modeIcon[data-mode="goal"] { color: #29b28a; }
 .neutralIcon { color: var(--muted-strong); }
+.neutralIcon[data-resource-kind="skills"] { color: var(--accent-ink); }
+.neutralIcon[data-resource-kind="mcp"] { color: var(--ink-soft); }
 .separator { margin: 4px 6px; }
 .item > svg:last-child:not(:first-child) { width: 12px; height: 12px; margin-left: auto; color: var(--muted); }
 @media (max-width: 480px) {

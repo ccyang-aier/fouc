@@ -5,6 +5,7 @@ import { BookOpenText, CaretDown, Check, FunnelSimple, GearSix, Info, PlugsConne
 import { DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tooltip, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTranslation } from '@/lib/i18n';
 import { getBuiltinSkills, toggleBuiltinSkill, useBuiltinSkills } from '@/features/skills/builtin-skills';
 import { useComposerCatalog, type ComposerResource, type ComposerResourceKind, type ComposerResourceReference } from '@/features/community/composer-catalog';
@@ -31,8 +32,8 @@ export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigu
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [sideOffset, setSideOffset] = useState(8);
   const [alignOffset, setAlignOffset] = useState(0);
+  const [tooltipSide, setTooltipSide] = useState<'right' | 'top'>('right');
   const trigger = useRef<HTMLDivElement>(null);
-  const menu = useRef<HTMLDivElement>(null);
   const search = useRef<HTMLInputElement>(null);
   const disabledBuiltinIds = useBuiltinSkills();
   const builtin = kind === 'skills' ? getBuiltinSkills(locale) : [];
@@ -43,7 +44,6 @@ export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigu
     && `${item.name} ${item.description} ${item.author} ${communityCategoryLabel(item.category, locale)}`.toLocaleLowerCase(locale).includes(normalized);
   const builtinResults = builtin.filter(matches);
   const marketResults = market.filter(matches);
-  const preview = all.find(item => item.id === previewId);
   const selectedCount = selected.filter(item => item.kind === kind).length;
   const Icon = kind === 'skills' ? BookOpenText : PlugsConnected;
 
@@ -54,8 +54,12 @@ export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigu
       const bounds = trigger.current?.getBoundingClientRect();
       // Overlap the parent when neither side can fit, keeping the full menu usable.
       if (bounds) {
-        setSideOffset(Math.min(6, Math.max(bounds.left - 12, window.innerWidth - bounds.right - 12) - Math.min(284, window.innerWidth - 24)));
-        setAlignOffset((parentMenu?.getBoundingClientRect().top ?? bounds.top) - bounds.top);
+        const parent = parentMenu?.getBoundingClientRect() ?? bounds;
+        const inset = Math.max(parent.right - bounds.right, bounds.left - parent.left);
+        // Radix offsets from the inset trigger; the visible menu surfaces need a 6px gap.
+        setSideOffset(Math.min(6 + inset, Math.max(bounds.left - 12, window.innerWidth - bounds.right - 12) - Math.min(284, window.innerWidth - 24)));
+        setAlignOffset(parent.top - bounds.top);
+        setTooltipSide(window.innerWidth > 760 ? 'right' : 'top');
       }
     }
     position();
@@ -74,18 +78,21 @@ export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigu
 
   function renderResource(resource: ComposerResource, builtin = false) {
     const checked = builtin ? !disabledBuiltinIds.includes(resource.id) : selected.some(item => item.id === resource.id && item.kind === kind);
-    return <ChatPickerItem key={resource.id} className={styles.resourceRow} role="menuitemcheckbox" aria-checked={checked}
-      textValue={resource.name} aria-label={resource.name}
-      onPointerMove={event => { if (event.pointerType === 'mouse' && window.innerWidth > 760) setPreviewId(resource.id); }}
-      onFocus={() => { if (window.innerWidth > 760) setPreviewId(resource.id); }}
-      onKeyDown={event => { if (event.key === 'ArrowRight') { event.preventDefault(); setPreviewId(resource.id); } }}
-      onSelect={event => { event.preventDefault(); if (builtin) toggleBuiltinSkill(resource.id); else onToggle(resource); }}>
-      <ResourceIcon resource={resource} />
-      <span className={styles.resourceName}>{resource.name}</span>
-      {checked ? <Check className={styles.check} size={13} data-static-color aria-hidden="true" /> : null}
-      <button type="button" tabIndex={-1} className={`fouc-action ${styles.infoButton}`} aria-label={t('details', { name: resource.name })}
-        onPointerDown={event => event.stopPropagation()} onClick={event => { event.stopPropagation(); setPreviewId(resource.id); }}><Info size={15} /></button>
-    </ChatPickerItem>;
+    return <Tooltip key={resource.id} open={previewId === resource.id} delayDuration={300} disableHoverableContent
+      onOpenChange={next => setPreviewId(current => next ? resource.id : current === resource.id ? null : current)}>
+      <TooltipTrigger asChild><ChatPickerItem className={styles.resourceRow} role="menuitemcheckbox" aria-checked={checked}
+        textValue={resource.name} aria-label={resource.name}
+        onKeyDown={event => { if (event.key === 'ArrowRight') { event.preventDefault(); setPreviewId(resource.id); } }}
+        onSelect={event => { event.preventDefault(); if (builtin) toggleBuiltinSkill(resource.id); else onToggle(resource); }}>
+        <ResourceIcon resource={resource} />
+        <span className={styles.resourceName}>{resource.name}</span>
+        {checked ? <Check className={styles.check} size={13} weight="bold" data-builtin={builtin} data-static-color aria-hidden="true" /> : null}
+        <button type="button" tabIndex={-1} className={`fouc-action ${styles.infoButton}`} aria-label={t('details', { name: resource.name })}
+          onPointerDown={event => event.stopPropagation()} onPointerUp={event => event.stopPropagation()}
+          onClick={event => { event.stopPropagation(); setPreviewId(resource.id); }}><Info size={15} /></button>
+      </ChatPickerItem></TooltipTrigger>
+      <ChatResourceInfo resource={resource} side={tooltipSide} onEscape={() => { setPreviewId(null); search.current?.focus(); }} />
+    </Tooltip>;
   }
 
   return <DropdownMenuSub open={open} onOpenChange={next => {
@@ -93,10 +100,10 @@ export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigu
     if (next) { setQuery(''); setCategory(''); }
   }}>
     <DropdownMenuSubTrigger ref={trigger} className={addStyles.item} aria-label={t(kind)}>
-      <Icon className={addStyles.neutralIcon} aria-hidden="true" /><span>{t(kind)}</span>
+      <Icon className={addStyles.neutralIcon} weight="duotone" data-resource-kind={kind} data-static-color aria-hidden="true" /><span>{t(kind)}</span>
       {selectedCount ? <span className={styles.triggerCount} aria-hidden="true">{selectedCount}</span> : null}
     </DropdownMenuSubTrigger>
-    <DropdownMenuSubContent ref={menu} className={styles.menu} collisionPadding={12} sideOffset={sideOffset} alignOffset={alignOffset}
+    <DropdownMenuSubContent className={styles.menu} collisionPadding={12} sideOffset={sideOffset} alignOffset={alignOffset}
       aria-label={t(kind)}
       onFocusOutside={event => {
         // Radix briefly focuses the parent container while crossing an overlapping submenu.
@@ -116,10 +123,7 @@ export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigu
         {['', ...new Set(all.map(item => item.category))].map(value => <button key={value} type="button" className={`fouc-action ${styles.category}`}
           aria-pressed={category === value} data-active={category === value} onClick={() => toggleCategory(value)}>{value ? communityCategoryLabel(value, locale) : t('all')}</button>)}
       </div> : null}
-      <ScrollArea className={styles.list} viewportClassName={styles.viewport} onPointerLeave={event => {
-        const target = event.relatedTarget;
-        if (!(target instanceof Node) || !event.currentTarget.parentElement?.contains(target)) setPreviewId(null);
-      }}>
+      <ScrollArea className={styles.list} viewportClassName={styles.viewport} onScrollCapture={() => setPreviewId(null)}>
         {kind === 'skills' && builtinResults.length ? <section className={styles.section} aria-label={t('builtin')}>
           <div className={styles.sectionHeading}>
             <button type="button" className={`fouc-action ${styles.collapse}`} data-variant="collapsible" aria-expanded={!collapsed}
@@ -135,7 +139,6 @@ export function ChatResourceMenu({ kind, selected, onToggle, onCreate, onConfigu
         {!builtinResults.length && !marketResults.length ? <div className={styles.empty} role="status"><Icon size={25} /><strong>{t('empty')}</strong><span>{t('emptyHint')}</span>
           <Button variant="ghost" size="sm" onClick={() => { setQuery(''); toggleCategory(''); }}>{t('clear')}</Button></div> : null}
       </ScrollArea>
-      {preview ? <ChatResourceInfo resource={preview} anchor={menu} onClose={() => { setPreviewId(null); search.current?.focus(); }} /> : null}
     </DropdownMenuSubContent>
   </DropdownMenuSub>;
 }

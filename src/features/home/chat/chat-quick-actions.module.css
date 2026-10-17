@@ -1,3 +1,10 @@
+.actions,
+.tag {
+  --task-blue-bg: #e8f3ff;
+  --task-blue-ink: #2589ec;
+  --task-blue-border: #3094fb;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;
@@ -23,15 +30,15 @@
 
 .action.action,
 .tag.tag {
-  --action-state-bg: var(--accent-soft);
-  --action-state-ink: var(--accent-ink);
+  --action-state-bg: var(--task-blue-bg);
+  --action-state-ink: var(--task-blue-ink);
 }
 
 .action svg { color: var(--muted-strong); }
 .action:is(:hover, :focus-visible, [aria-pressed="true"], [aria-expanded="true"], [data-selected="true"]) {
-  background: var(--accent-soft);
-  color: var(--accent-ink);
-  border-color: var(--accent-soft-line);
+  background: var(--task-blue-bg);
+  color: var(--task-blue-ink);
+  border-color: var(--task-blue-border);
   border-style: solid;
 }
 .action:is(:hover, :focus-visible, [aria-pressed="true"], [aria-expanded="true"], [data-selected="true"]) svg { color: currentColor; }
@@ -45,8 +52,8 @@
   padding: 0 10px;
   border: 0;
   border-radius: 999px;
-  background: var(--accent-soft);
-  color: var(--accent-ink);
+  background: var(--task-blue-bg);
+  color: var(--task-blue-ink);
   font-size: 12px;
   line-height: 24px;
   font-weight: 500;
@@ -56,3 +63,9 @@
 }
 
 .messageTag { margin-bottom: 8px; cursor: default; }
+:global(html[data-theme="dark"]) .actions,
+:global(html[data-theme="dark"]) .tag {
+  --task-blue-bg: #17354f;
+  --task-blue-ink: #8cc7ff;
+  --task-blue-border: #589ee4;
+}

@@ -13,6 +13,10 @@
 .item > svg { width: 16px; height: 16px; }
 .name { flex-shrink: 0; font-weight: 500; }
 .description { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-weight: 400; }
+.modeIcon[data-mode="plan"] { color: #21acd0; }
+.modeIcon[data-mode="debug"] { color: #ec4985; }
+.modeIcon[data-mode="multitask"] { color: #8770e7; }
+.modeIcon[data-mode="goal"] { color: #29b28a; }
 .neutralIcon { color: var(--muted-strong); }
 .neutralIcon[data-resource-kind="skills"] { color: var(--ink-soft); }
 .neutralIcon[data-resource-kind="mcp"] { color: var(--ink-soft); }

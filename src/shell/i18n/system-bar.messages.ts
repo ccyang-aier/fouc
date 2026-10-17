@@ -12,7 +12,7 @@ export const messages = defineMessages({
   查看项目资产: ['查看项目资产', 'View project assets'],
   聊天: ['聊天', 'Chats'],
   查看项目对话: ['查看项目对话', 'View project conversations'],
-  Agents: ['Agents', 'Agents'],
+  Agents: ['智能体', 'Agents'],
   '管理本机 Agent': ['管理本机 Agent', 'Manage local agents'],
   社区: ['社区', 'Community'],
   '发现 Agent 与技能': ['发现 Agent 与技能', 'Discover agents and skills'],

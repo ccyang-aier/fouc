@@ -19,12 +19,15 @@ import { useMenuMotion } from '@/lib/use-menu-motion';
 import { applyAppearancePrefs, readAppearancePrefs } from '@/lib/appearance';
 import { setOverlayRoot } from '@/lib/overlay-root';
 import { manageWindowFrame } from '@/lib/window-frame';
+import { useTranslation } from '@/lib/i18n';
+import { messages } from './i18n/navigation-sidebar.messages';
 import { useWorkbenchView, type WorkbenchView } from './workbench-view';
 import { NavigationSidebar } from './navigation-sidebar';
 import { SystemBar } from './system-bar';
 import styles from './workbench-shell.module.css';
 
 export function WorkbenchShell() {
+  const { t } = useTranslation(messages);
   useMenuMotion();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [conversationVersion, setConversationVersion] = useState(0);
@@ -67,7 +70,7 @@ export function WorkbenchShell() {
                       : view === 'workbench' && selectedProject && scopeKey ? <ProjectDashboard projectName={selectedProject.name} scopeKey={scopeKey} onNavigate={changeView} />
                       : view === 'tasks' || view === 'members' || view === 'assets' ? <ProjectEmptyPage page={view} />
                       : view === 'chats' ? <ProjectChatsPage onNew={() => changeView('home')} onOpen={openChat} />
-                      : view === 'agents' ? <section className="h-full overflow-auto" aria-label="Agents"><AgentSettings /></section>
+                      : view === 'agents' ? <section className="h-full overflow-auto" aria-label={t('智能体')}><AgentSettings /></section>
                       : view === 'community' ? <CommunityCanvas />
                       : view === 'connectors' ? <ConnectorsCanvas onOpenProject={id => { if (projects.some(project => project.id === id)) selectProject(id); changeView('workbench'); }} />
                       : view === 'knowledge' ? <KnowledgePage onOpenSettings={() => changeView('settings')} />

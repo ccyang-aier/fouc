@@ -10,4 +10,6 @@ export const messages = defineMessages({
   deleteDescription: ['删除“{name}”后，该项目将无法再访问。此操作无法撤销。', '“{name}” will no longer be accessible. This cannot be undone.'],
   failed: ['操作失败，请重试', 'Could not save. Try again.'], retry: ['重试', 'Retry'], loading: ['正在加载项目…', 'Loading projects…'],
   created: ['项目已创建', 'Project created'], renamed: ['项目名称已更新', 'Project renamed'], removed: ['项目已删除', 'Project deleted'],
+  palette: ['图标配色', 'Icon colors'], paletteFailed: ['配色保存失败，请重试', 'Could not save icon colors. Try again.'],
+  lagoon: ['青柠湖泊', 'Lime lagoon'], iris: ['鸢尾暮色', 'Iris dusk'], sky: ['蓝色晴空', 'Blue sky'], citrus: ['柑橘薄荷', 'Citrus mint'], meadow: ['晴日草甸', 'Sunlit meadow'], coral: ['珊瑚日落', 'Coral sunset'],
 });

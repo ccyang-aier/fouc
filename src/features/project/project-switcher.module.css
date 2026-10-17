@@ -1,6 +1,7 @@
 .trigger { display:flex; align-items:center; gap:9px; width:100%; height:42px; padding:0 10px; border:1px solid var(--sidebar-row-border); border-radius:8px; background:var(--panel); text-align:left; box-shadow:var(--sidebar-row-shadow); cursor:pointer; }
 .trigger[data-compact=true] { width:34px; height:34px; padding:0; justify-content:center; margin:auto; }
 .avatar { display:grid; place-items:center; flex-shrink:0; width:24px; height:24px; border-radius:6px; background:var(--accent-soft); color:var(--sidebar-icon); }
+.palettePreview { width: 20px; height: 20px; border-radius: 5px; }
 .name { min-width:0; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; font-weight:500; color:var(--ink); }
 .chevrons { flex-shrink:0; color:var(--muted); }
 .menu { width:304px; padding:5px; }

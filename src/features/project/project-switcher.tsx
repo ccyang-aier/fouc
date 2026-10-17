@@ -1,33 +1,43 @@
 'use client';
 
 import { useEffect, useId, useRef, useState } from 'react';
-import { CaretUpDown, Check, FolderSimple, MagnifyingGlass, PencilSimple, Plus, Trash, X } from '@phosphor-icons/react';
+import { CaretUpDown, Check, FolderSimple, MagnifyingGlass, Palette, PencilSimple, Plus, Trash, X } from '@phosphor-icons/react';
 import { useAppAlert } from '@/components/app-alert-provider';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useTranslation } from '@/lib/i18n';
 import { useProjectResources, type ProjectResource } from './project-resources';
 import { messages } from './i18n/project-switcher';
 import styles from './project-switcher.module.css';
+import { ProjectAvatar, PROJECT_AVATAR_PALETTES, resolveProjectAvatarPalette, type ProjectAvatarPalette } from './project-avatar';
+import { useProjectAvatarPalette, saveProjectAvatarPalette } from './project-avatar-preferences';
 
 type ProjectAction = { kind: 'create' } | { kind: 'rename' | 'remove'; project: ProjectResource };
 
 export function ProjectSwitcher({ compact = false, onSwitch }: { compact?: boolean; onSwitch: () => void }) {
   const { t } = useTranslation(messages);
-  const { projects, selectedProject, selectProject, status, error, refreshProjects } = useProjectResources();
+  const { principal, scopeKey, projects, selectedProject, selectProject, status, error, refreshProjects } = useProjectResources();
+  const selectedPalette = useProjectAvatarPalette(scopeKey);
+  const activePalette = selectedProject ? resolveProjectAvatarPalette(selectedProject.id, selectedPalette).id : undefined;
+  const { notify } = useAppAlert();
+  function choosePalette(palette: ProjectAvatarPalette) {
+    if (!scopeKey) return;
+    try { saveProjectAvatarPalette(scopeKey, palette); } catch { notify('error', t('paletteFailed')); }
+  }
   const [query, setQuery] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
   const [action, setAction] = useState<ProjectAction | null>(null);
   const filtered = projects.filter(project => project.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
   return <>
-    <DropdownMenu onOpenChange={open => { if (open) setQuery(''); }}>
+    <DropdownMenu open={menuOpen} onOpenChange={open => { setMenuOpen(open); if (open) setQuery(''); }}>
       <DropdownMenuTrigger asChild>
         <button type="button" className={`fouc-action ${styles.trigger}`} data-compact={compact} aria-label={t('switch')} title={compact ? selectedProject?.name ?? t('select') : undefined}>
-          <span className={styles.avatar}><FolderSimple size={17} weight="duotone" /></span>
+          {selectedProject ? <ProjectSwitcherAvatar project={selectedProject} principal={principal} /> : <span className={styles.avatar}><FolderSimple size={17} weight="duotone" /></span>}
           {!compact && <><span className={styles.name}>{selectedProject?.name ?? t(status === 'loading' ? 'loading' : 'select')}</span><CaretUpDown size={13} className={styles.chevrons} /></>}
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className={styles.menu} align="start" side={compact ? 'right' : 'bottom'} sideOffset={6} aria-label={t('switch')}>
+      {menuOpen && <DropdownMenuContent className={styles.menu} align="start" side={compact ? 'right' : 'bottom'} sideOffset={6} aria-label={t('switch')}>
         <div className={styles.search}><MagnifyingGlass size={15} /><input autoFocus value={query} onChange={e => setQuery(e.target.value)} onKeyDown={e => {
           if (e.key === 'Escape') return;
           e.stopPropagation();
@@ -39,7 +49,7 @@ export function ProjectSwitcher({ compact = false, onSwitch }: { compact?: boole
         }} aria-label={t('search')} placeholder={t('search')} /></div>
         <ScrollArea className={styles.list}>
           {filtered.map(project => <DropdownMenuItem key={`${project.source}:${project.id}`} className={styles.item} role="menuitemradio" aria-checked={selectedProject?.id === project.id} textValue={project.name} onSelect={() => { selectProject(project.id); if (selectedProject?.id !== project.id) onSwitch(); }}>
-            <span className={styles.avatar}><FolderSimple size={17} weight="duotone" /></span>
+            <ProjectSwitcherAvatar project={project} principal={principal} />
             <span><strong>{project.name}</strong><small>{t(project.source)}</small></span>
             {selectedProject?.id === project.id && <Check size={15} />}
           </DropdownMenuItem>)}
@@ -50,12 +60,20 @@ export function ProjectSwitcher({ compact = false, onSwitch }: { compact?: boole
         <DropdownMenuItem onSelect={() => setAction({ kind: 'create' })}><Plus size={16} />{t('create')}</DropdownMenuItem>
         {selectedProject && <>
           <DropdownMenuItem onSelect={() => setAction({ kind: 'rename', project: selectedProject })}><PencilSimple size={16} weight="duotone" />{t('rename')}</DropdownMenuItem>
+          <DropdownMenuSub><DropdownMenuSubTrigger><Palette size={16} weight="duotone" />{t('palette')}</DropdownMenuSubTrigger><DropdownMenuSubContent>
+            {PROJECT_AVATAR_PALETTES.map(palette => <DropdownMenuItem key={palette.id} role="menuitemradio" aria-checked={activePalette === palette.id} onSelect={() => choosePalette(palette.id)}><ProjectAvatar seed={selectedProject.id} palette={palette.id} className={styles.palettePreview} /><span>{t(palette.id)}</span>{activePalette === palette.id && <Check size={14} className="ml-auto" />}</DropdownMenuItem>)}
+          </DropdownMenuSubContent></DropdownMenuSub>
           <DropdownMenuItem variant="destructive" onSelect={() => setAction({ kind: 'remove', project: selectedProject })}><Trash size={16} weight="duotone" />{t('remove')}</DropdownMenuItem>
         </>}
-      </DropdownMenuContent>
+      </DropdownMenuContent>}
     </DropdownMenu>
     {action && <ProjectDialog action={action} onClose={() => setAction(null)} onChanged={onSwitch} />}
   </>;
+}
+
+function ProjectSwitcherAvatar({ project, principal }: { project: ProjectResource; principal: string }) {
+  const palette = useProjectAvatarPalette(`${principal}:${project.source}:${project.id}`);
+  return <ProjectAvatar seed={project.id} palette={palette} />;
 }
 
 function ProjectDialog({ action, onClose, onChanged }: { action: ProjectAction; onClose: () => void; onChanged: () => void }) {

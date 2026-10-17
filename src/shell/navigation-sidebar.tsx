@@ -1,10 +1,10 @@
 'use client';
 
-import type { ReactNode } from 'react';
-import { Archive, BookOpenText, ChatCircleDots, ChatsCircle, GearSix, ListChecks, Planet, PlugsConnected, Plus, Question, Robot, SidebarSimple, SquaresFour, UsersThree } from '@phosphor-icons/react';
+import { Archive, BookOpenText, ChatCircleDots, ChatsCircle, GearSix, ListChecks, Planet, PlugsConnected, Question, Robot, SidebarSimple, SquaresFour, UsersThree } from '@phosphor-icons/react';
 import { AccountItem } from '@/features/identity/components/account-item';
 import { ProjectSwitcher } from '@/features/project/project-switcher';
-import { useChatHistory, type ChatHistoryEntry } from '@/features/home/chat/chat-history';
+import type { ChatHistoryEntry } from '@/features/home/chat/chat-history';
+import { useProjectResources } from '@/features/project/project-resources';
 import { FoucMark } from '@/components/fouc-mark';
 import { NavButton, type SidebarRowItem } from '@/components/nav-button';
 import { SidebarResizeHandle, useSidebarWidth } from '@/components/sidebar-resize';
@@ -14,6 +14,7 @@ import { useTranslation } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import type { WorkbenchView } from './workbench-view';
 import { messages } from './i18n/navigation-sidebar.messages';
+import { SidebarProjectSections } from './sidebar-project-sections';
 
 export function NavigationSidebar({ open, onCollapse, onExpand, view, onViewChange, onProjectChange, onOpenChat }: {
   open: boolean; onCollapse: () => void; onExpand: () => void;
@@ -22,14 +23,15 @@ export function NavigationSidebar({ open, onCollapse, onExpand, view, onViewChan
 }) {
   const { t } = useTranslation(messages);
   const { width, dragging, startResize } = useSidebarWidth();
-  const history = useChatHistory();
+  const { scopeKey } = useProjectResources();
   const primary: Array<SidebarRowItem & { id: WorkbenchView }> = [
+    { id: 'home', label: t('新对话'), icon: ChatCircleDots },
     { id: 'workbench', label: t('工作台'), icon: SquaresFour },
     { id: 'tasks', label: t('任务'), icon: ListChecks },
     { id: 'members', label: t('成员'), icon: UsersThree },
     { id: 'assets', label: t('资产'), icon: Archive },
     { id: 'chats', label: t('聊天'), icon: ChatsCircle },
-    { id: 'agents', label: 'Agents', icon: Robot },
+    { id: 'agents', label: t('智能体'), icon: Robot },
   ];
   const services: Array<SidebarRowItem & { id: WorkbenchView }> = [
     { id: 'community', label: t('社区'), icon: Planet },
@@ -46,18 +48,9 @@ export function NavigationSidebar({ open, onCollapse, onExpand, view, onViewChan
     </header>
     <div className={cn('shrink-0 py-3', open ? 'px-3' : 'px-1')}><ProjectSwitcher compact={!open} onSwitch={onProjectChange} /></div>
     <ScrollArea className="min-h-0 flex-1" viewportClassName={open ? 'px-3 pb-4' : 'px-1 pb-3'}>
-      <div className="mb-3">{row({ id: 'home', label: t('新对话'), icon: Plus })}</div>
       <nav aria-label={t('项目导航')} className="space-y-0.5">{primary.map(row)}</nav>
-      <div className="mt-5">
-        {open ? <SectionCaption>{t('服务')}</SectionCaption> : <div className="mx-2 my-3 border-t border-[var(--line)]" />}
-        <nav aria-label={t('服务')} className="mt-1 space-y-0.5">{services.map(row)}</nav>
-      </div>
-      {open && <>
-        <section className="mt-5" aria-label={t('标签')}><SectionCaption>{t('标签')}</SectionCaption><p className="px-2 pt-1 text-[11px] leading-6 text-[var(--muted)]">{t('暂无标签')}</p></section>
-        <section className="mt-4" aria-label={t('最近')}><SectionCaption>{t('最近')}</SectionCaption>
-          {history.length ? <div className="mt-1 space-y-0.5">{history.slice(0, 6).map(entry => <button type="button" key={entry.id} onClick={() => onOpenChat(entry)} className="sidebar-nav-row flex h-[30px] w-full cursor-pointer items-center gap-2 rounded-md px-2 text-left text-[11px]" title={entry.submissions[0]?.text}><ChatCircleDots size={15} weight="duotone" className="sidebar-nav-icon shrink-0" /><span className="truncate">{entry.submissions[0]?.text}</span></button>)}</div> : <p className="px-2 pt-1 text-[11px] leading-6 text-[var(--muted)]">{t('暂无最近对话')}</p>}
-        </section>
-      </>}
+      <div role="separator" className="mx-2 my-3 border-t border-[var(--line)]" />
+      {open ? <SidebarProjectSections key={scopeKey ?? 'no-project'} services={<nav aria-label={t('服务')} className="space-y-0.5">{services.map(row)}</nav>} onNewChat={() => onViewChange('home')} onAllChats={() => onViewChange('chats')} onOpenChat={onOpenChat} /> : <nav aria-label={t('服务')} className="space-y-0.5">{services.map(row)}</nav>}
     </ScrollArea>
     <footer className={cn('shrink-0 space-y-0.5 pt-2', open ? 'px-3' : 'px-1')}>
       {row({ id: 'settings', label: t('设置'), icon: GearSix })}
@@ -66,8 +59,4 @@ export function NavigationSidebar({ open, onCollapse, onExpand, view, onViewChan
     </footer>
     {open && <SidebarResizeHandle dragging={dragging} onPointerDown={startResize} />}
   </aside>;
-}
-
-function SectionCaption({ children }: { children: ReactNode }) {
-  return <h2 className="flex h-6 items-center px-2 text-[11px] font-medium text-[var(--muted)]">{children}</h2>;
 }
